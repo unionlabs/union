@@ -47,6 +47,7 @@
             nodejs
           ];
           PROTOC="${pkgs.protobuf}/bin/protoc";
+          SWAGGER_BIN="${pkgs.nodePackages_latest.swagger}/bin/swagger";
         };
         
         apps = {
