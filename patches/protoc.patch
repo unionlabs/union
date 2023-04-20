@@ -1,3 +1,14 @@
+diff --git a/ignite/pkg/cosmosgen/generate_openapi.go b/ignite/pkg/cosmosgen/generate_openapi.go
+index a7ed801f..9dc08b99 100644
+--- a/ignite/pkg/cosmosgen/generate_openapi.go
++++ b/ignite/pkg/cosmosgen/generate_openapi.go
+@@ -151,5 +151,6 @@ func generateOpenAPISpec(g *generator) error {
+ 		return err
+ 	}
+ 
++	println("about to save dir checksum")
+ 	return dirchange.SaveDirChecksum(specCache, out, g.appPath, out)
+ }
 diff --git a/ignite/pkg/dirchange/dirchange.go b/ignite/pkg/dirchange/dirchange.go
 index bf5f26c5..9a8dbef0 100644
 --- a/ignite/pkg/dirchange/dirchange.go

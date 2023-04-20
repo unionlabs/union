@@ -10,6 +10,11 @@
       flake = false;
       url = "github:ignite/cli/v0.26.1";      
     };
+
+    swagger-combine-src = {
+      flake = false;
+      url = "github:maxdome/swagger-combine";
+    };
   };
   outputs = inputs@{ self, nixpkgs, flake-parts, ... }:
     flake-parts.lib.mkFlake { inherit inputs; } {
@@ -18,6 +23,14 @@
       perSystem = { config, self', inputs', pkgs, system, lib, ... }: rec {
         packages = {
           # ignite cli package for build/devshell
+          swagger-combine = pkgs.buildNpmPackage {
+            pname = "swagger-combine";
+            version = "10.0.9";
+            src = inputs.swagger-combine-src;
+            dontNpmBuild = true;
+            npmDepsHash = "sha256-FZR8hefkqTwSZJMX4lzS4zk7iGXi0+zi0ol1ia3iLYs=";
+          };
+          
           ignite-cli = pkgs.buildGoModule rec {
             allowGoReference = true;
             patches = [
@@ -47,7 +60,7 @@
             nodejs
           ];
           PROTOC="${pkgs.protobuf}/bin/protoc";
-          SWAGGER_BIN="${pkgs.nodePackages_latest.swagger}/bin/swagger";
+          SWAGGER_BIN="${self'.packages.swagger-combine}/bin/swagger-combine";
         };
         
         apps = {

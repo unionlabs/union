@@ -89,7 +89,8 @@
         "flake-parts": "flake-parts",
         "ignite-cli-src": "ignite-cli-src",
         "nixpkgs": "nixpkgs",
-        "rust-overlay": "rust-overlay"
+        "rust-overlay": "rust-overlay",
+        "swagger-combine-src": "swagger-combine-src"
       }
     },
     "rust-overlay": {
@@ -110,6 +111,22 @@
       "original": {
         "owner": "oxalica",
         "repo": "rust-overlay",
+        "type": "github"
+      }
+    },
+    "swagger-combine-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1635175020,
+        "narHash": "sha256-eBScPrHWDtyRP76kfKfM71WbbNh1j5EhuxwNT/M+H8Y=",
+        "owner": "maxdome",
+        "repo": "swagger-combine",
+        "rev": "d240f610e60ed09070db3f58b4a9fc09bfc0b9b3",
+        "type": "github"
+      },
+      "original": {
+        "owner": "maxdome",
+        "repo": "swagger-combine",
         "type": "github"
       }
     }
