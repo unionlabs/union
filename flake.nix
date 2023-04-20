@@ -20,7 +20,9 @@
           # ignite cli package for build/devshell
           ignite-cli = pkgs.buildGoModule rec {
             allowGoReference = true;
-
+            patches = [
+              ./patches/protoc.patch
+            ];
             nativeBuildInputs = [pkgs.protobuf];
             buildInputs = [pkgs.protobuf];
             name = "ignite-cli";
