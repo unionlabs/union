@@ -19,6 +19,10 @@
         packages = {
           # ignite cli package for build/devshell
           ignite-cli = pkgs.buildGoModule rec {
+            allowGoReference = true;
+
+            nativeBuildInputs = [pkgs.protobuf];
+            buildInputs = [pkgs.protobuf];
             name = "ignite-cli";
             src = inputs.ignite-cli-src;
             vendorSha256 = "sha256-4ajrp1UQ6mF75ZnZ69Y3QtRbsEsdDNm0J6pVZG+EwiY=";
@@ -34,11 +38,13 @@
         devShells.default = pkgs.mkShell {
           buildInputs = with pkgs; [
             self'.packages.ignite-cli
+            protobuf
             nixfmt
             go
             gopls
             nodejs
           ];
+          PROTOC="${pkgs.protobuf}/bin/protoc";
         };
         
         apps = {
