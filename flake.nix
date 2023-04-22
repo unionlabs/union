@@ -8,7 +8,7 @@
     };
     ignite-cli-src = {
       flake = false;
-      url = "github:ignite/cli/v0.26.1";      
+      url = "github:ignite/cli/4098ae9a5941fd1875c8eb62540482076bd6f6d6";      
     };
 
     swagger-combine-src = {
@@ -40,7 +40,7 @@
             buildInputs = [pkgs.protobuf];
             name = "ignite-cli";
             src = inputs.ignite-cli-src;
-            vendorSha256 = "sha256-4ajrp1UQ6mF75ZnZ69Y3QtRbsEsdDNm0J6pVZG+EwiY=";
+            vendorSha256 = "sha256-TWOxdq2LTnxd718Ra0viD1z2tBnNmcN92A1wpX97xtc=";
             doCheck = false;
             ldflags = ''
               -X github.com/ignite/cli/ignite/version.Head=${src.rev}
