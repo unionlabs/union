@@ -36,17 +36,17 @@
     "ignite-cli-src": {
       "flake": false,
       "locked": {
-        "lastModified": 1674586218,
-        "narHash": "sha256-CG1y5uVLCYiKQSnMeZcrvnO3SE1Kj1kiBXMXRJoDBuI=",
+        "lastModified": 1680379003,
+        "narHash": "sha256-nSiLd8GKxGiiIdB5MZlsZTOTh9hkfUzvCjJiWgzaqDk=",
         "owner": "ignite",
         "repo": "cli",
-        "rev": "d2a2e287c176ba010557f0b8fbaa198cdeee928d",
+        "rev": "4098ae9a5941fd1875c8eb62540482076bd6f6d6",
         "type": "github"
       },
       "original": {
         "owner": "ignite",
-        "ref": "v0.26.1",
         "repo": "cli",
+        "rev": "4098ae9a5941fd1875c8eb62540482076bd6f6d6",
         "type": "github"
       }
     },
