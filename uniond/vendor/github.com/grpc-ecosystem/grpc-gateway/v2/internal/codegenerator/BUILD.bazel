@@ -1,0 +1,36 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+
+package(default_visibility = ["//visibility:public"])
+
+go_library(
+    name = "codegenerator",
+    srcs = [
+        "doc.go",
+        "parse_req.go",
+        "supported_features.go",
+    ],
+    importpath = "github.com/grpc-ecosystem/grpc-gateway/v2/internal/codegenerator",
+    deps = [
+        "@org_golang_google_protobuf//compiler/protogen",
+        "@org_golang_google_protobuf//proto",
+        "@org_golang_google_protobuf//types/pluginpb",
+    ],
+)
+
+go_test(
+    name = "codegenerator_test",
+    srcs = ["parse_req_test.go"],
+    deps = [
+        ":codegenerator",
+        "@com_github_google_go_cmp//cmp",
+        "@org_golang_google_protobuf//proto",
+        "@org_golang_google_protobuf//testing/protocmp",
+        "@org_golang_google_protobuf//types/pluginpb",
+    ],
+)
+
+alias(
+    name = "go_default_library",
+    actual = ":codegenerator",
+    visibility = ["//:__subpackages__"],
+)

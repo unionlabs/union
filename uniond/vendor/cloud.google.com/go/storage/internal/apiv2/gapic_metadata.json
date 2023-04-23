@@ -1,0 +1,168 @@
+{
+  "schema": "1.0",
+  "comment": "This file maps proto services/RPCs to the corresponding library clients/methods.",
+  "language": "go",
+  "protoPackage": "google.storage.v2",
+  "libraryPackage": "cloud.google.com/go/storage/internal/apiv2",
+  "services": {
+    "Storage": {
+      "clients": {
+        "grpc": {
+          "libraryClient": "Client",
+          "rpcs": {
+            "CancelResumableWrite": {
+              "methods": [
+                "CancelResumableWrite"
+              ]
+            },
+            "ComposeObject": {
+              "methods": [
+                "ComposeObject"
+              ]
+            },
+            "CreateBucket": {
+              "methods": [
+                "CreateBucket"
+              ]
+            },
+            "CreateHmacKey": {
+              "methods": [
+                "CreateHmacKey"
+              ]
+            },
+            "CreateNotification": {
+              "methods": [
+                "CreateNotification"
+              ]
+            },
+            "DeleteBucket": {
+              "methods": [
+                "DeleteBucket"
+              ]
+            },
+            "DeleteHmacKey": {
+              "methods": [
+                "DeleteHmacKey"
+              ]
+            },
+            "DeleteNotification": {
+              "methods": [
+                "DeleteNotification"
+              ]
+            },
+            "DeleteObject": {
+              "methods": [
+                "DeleteObject"
+              ]
+            },
+            "GetBucket": {
+              "methods": [
+                "GetBucket"
+              ]
+            },
+            "GetHmacKey": {
+              "methods": [
+                "GetHmacKey"
+              ]
+            },
+            "GetIamPolicy": {
+              "methods": [
+                "GetIamPolicy"
+              ]
+            },
+            "GetNotification": {
+              "methods": [
+                "GetNotification"
+              ]
+            },
+            "GetObject": {
+              "methods": [
+                "GetObject"
+              ]
+            },
+            "GetServiceAccount": {
+              "methods": [
+                "GetServiceAccount"
+              ]
+            },
+            "ListBuckets": {
+              "methods": [
+                "ListBuckets"
+              ]
+            },
+            "ListHmacKeys": {
+              "methods": [
+                "ListHmacKeys"
+              ]
+            },
+            "ListNotifications": {
+              "methods": [
+                "ListNotifications"
+              ]
+            },
+            "ListObjects": {
+              "methods": [
+                "ListObjects"
+              ]
+            },
+            "LockBucketRetentionPolicy": {
+              "methods": [
+                "LockBucketRetentionPolicy"
+              ]
+            },
+            "QueryWriteStatus": {
+              "methods": [
+                "QueryWriteStatus"
+              ]
+            },
+            "ReadObject": {
+              "methods": [
+                "ReadObject"
+              ]
+            },
+            "RewriteObject": {
+              "methods": [
+                "RewriteObject"
+              ]
+            },
+            "SetIamPolicy": {
+              "methods": [
+                "SetIamPolicy"
+              ]
+            },
+            "StartResumableWrite": {
+              "methods": [
+                "StartResumableWrite"
+              ]
+            },
+            "TestIamPermissions": {
+              "methods": [
+                "TestIamPermissions"
+              ]
+            },
+            "UpdateBucket": {
+              "methods": [
+                "UpdateBucket"
+              ]
+            },
+            "UpdateHmacKey": {
+              "methods": [
+                "UpdateHmacKey"
+              ]
+            },
+            "UpdateObject": {
+              "methods": [
+                "UpdateObject"
+              ]
+            },
+            "WriteObject": {
+              "methods": [
+                "WriteObject"
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,92 @@
+syntax = "proto3";
+package tendermint.consensus;
+
+option go_package = "github.com/cometbft/cometbft/proto/tendermint/consensus";
+
+import "gogoproto/gogo.proto";
+import "tendermint/types/types.proto";
+import "tendermint/libs/bits/types.proto";
+
+// NewRoundStep is sent for every step taken in the ConsensusState.
+// For every height/round/step transition
+message NewRoundStep {
+  int64  height                   = 1;
+  int32  round                    = 2;
+  uint32 step                     = 3;
+  int64  seconds_since_start_time = 4;
+  int32  last_commit_round        = 5;
+}
+
+// NewValidBlock is sent when a validator observes a valid block B in some round r,
+// i.e., there is a Proposal for block B and 2/3+ prevotes for the block B in the round r.
+// In case the block is also committed, then IsCommit flag is set to true.
+message NewValidBlock {
+  int64                          height                = 1;
+  int32                          round                 = 2;
+  tendermint.types.PartSetHeader block_part_set_header = 3 [(gogoproto.nullable) = false];
+  tendermint.libs.bits.BitArray  block_parts           = 4;
+  bool                           is_commit             = 5;
+}
+
+// Proposal is sent when a new block is proposed.
+message Proposal {
+  tendermint.types.Proposal proposal = 1 [(gogoproto.nullable) = false];
+}
+
+// ProposalPOL is sent when a previous proposal is re-proposed.
+message ProposalPOL {
+  int64                         height             = 1;
+  int32                         proposal_pol_round = 2;
+  tendermint.libs.bits.BitArray proposal_pol       = 3 [(gogoproto.nullable) = false];
+}
+
+// BlockPart is sent when gossipping a piece of the proposed block.
+message BlockPart {
+  int64                 height = 1;
+  int32                 round  = 2;
+  tendermint.types.Part part   = 3 [(gogoproto.nullable) = false];
+}
+
+// Vote is sent when voting for a proposal (or lack thereof).
+message Vote {
+  tendermint.types.Vote vote = 1;
+}
+
+// HasVote is sent to indicate that a particular vote has been received.
+message HasVote {
+  int64                          height = 1;
+  int32                          round  = 2;
+  tendermint.types.SignedMsgType type   = 3;
+  int32                          index  = 4;
+}
+
+// VoteSetMaj23 is sent to indicate that a given BlockID has seen +2/3 votes.
+message VoteSetMaj23 {
+  int64                          height   = 1;
+  int32                          round    = 2;
+  tendermint.types.SignedMsgType type     = 3;
+  tendermint.types.BlockID       block_id = 4 [(gogoproto.customname) = "BlockID", (gogoproto.nullable) = false];
+}
+
+// VoteSetBits is sent to communicate the bit-array of votes seen for the BlockID.
+message VoteSetBits {
+  int64                          height   = 1;
+  int32                          round    = 2;
+  tendermint.types.SignedMsgType type     = 3;
+  tendermint.types.BlockID       block_id = 4 [(gogoproto.customname) = "BlockID", (gogoproto.nullable) = false];
+  tendermint.libs.bits.BitArray  votes    = 5 [(gogoproto.nullable) = false];
+}
+
+message Message {
+  oneof sum {
+    NewRoundStep  new_round_step  = 1;
+    NewValidBlock new_valid_block = 2;
+    Proposal      proposal        = 3;
+    ProposalPOL   proposal_pol    = 4;
+    BlockPart     block_part      = 5;
+    Vote          vote            = 6;
+    HasVote       has_vote        = 7;
+    VoteSetMaj23  vote_set_maj23  = 8;
+    VoteSetBits   vote_set_bits   = 9;
+  }
+}

@@ -1,0 +1,51 @@
+syntax = "proto3";
+
+package grpc.gateway.internal.descriptor.openapiconfig;
+
+import "protoc-gen-openapiv2/options/openapiv2.proto";
+
+option go_package = "github.com/grpc-ecosystem/grpc-gateway/v2/internal/descriptor/openapiconfig";
+
+// OpenAPIFileOption represents OpenAPI options on a file
+message OpenAPIFileOption {
+  string file = 1;
+  grpc.gateway.protoc_gen_openapiv2.options.Swagger option = 2;
+}
+
+// OpenAPIMethodOption represents OpenAPI options on a method
+message OpenAPIMethodOption {
+  string method = 1;
+  grpc.gateway.protoc_gen_openapiv2.options.Operation option = 2;
+}
+
+// OpenAPIMessageOption represents OpenAPI options on a message
+message OpenAPIMessageOption {
+  string message = 1;
+  grpc.gateway.protoc_gen_openapiv2.options.Schema option = 2;
+}
+
+// OpenAPIServiceOption represents OpenAPI options on a service
+message OpenAPIServiceOption {
+  string service = 1; // ex: Service
+  grpc.gateway.protoc_gen_openapiv2.options.Tag option = 2;
+}
+
+// OpenAPIFieldOption represents OpenAPI options on a field
+message OpenAPIFieldOption {
+  string field = 1;
+  grpc.gateway.protoc_gen_openapiv2.options.JSONSchema option = 2;
+}
+
+// OpenAPIOptions represents OpenAPI protobuf options
+message OpenAPIOptions {
+  repeated OpenAPIFileOption file = 1;
+  repeated OpenAPIMethodOption method = 2;
+  repeated OpenAPIMessageOption message = 3;
+  repeated OpenAPIServiceOption service = 4;
+  repeated OpenAPIFieldOption field = 5;
+}
+
+// OpenAPIConfig represents a set of OpenAPI options
+message OpenAPIConfig {
+  OpenAPIOptions openapi_options = 1;
+}

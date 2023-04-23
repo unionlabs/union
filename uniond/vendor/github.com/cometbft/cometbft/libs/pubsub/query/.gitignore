@@ -1,0 +1,7 @@
+# This is a temporary directory to hold the peg binary,
+# to work around https://github.com/pointlander/peg/issues/129.
+# Note that once we have a new version of peg fixing #129,
+# we may still want to keep this .gitignore to prevent anyone
+# from accidentally running "git add ." and including their built
+# peg binary in a commit.
+.bin/

@@ -21,7 +21,7 @@
       systems =
         [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" "x86_64-darwin" ];
       perSystem = { config, self', inputs', pkgs, system, lib, ... }: rec {
-        packages = {
+        packages = rec {
           # ignite cli package for build/devshell
           swagger-combine = pkgs.buildNpmPackage {
             pname = "swagger-combine";
@@ -29,6 +29,13 @@
             src = inputs.swagger-combine-src;
             dontNpmBuild = true;
             npmDepsHash = "sha256-FZR8hefkqTwSZJMX4lzS4zk7iGXi0+zi0ol1ia3iLYs=";
+          };
+
+          uniond = pkgs.buildGoModule rec {
+            name = "uniond";
+            src = ./uniond;
+            vendorSha256 = null;
+            doCheck = true;
           };
           
           ignite-cli = pkgs.buildGoModule rec {
@@ -48,6 +55,8 @@
               -X github.com/ignite/cli/ignite/version.Date=${builtins.toString (src.lastModified)}
             '';
           };
+
+          default = uniond;
         };
 
         devShells.default = pkgs.mkShell {

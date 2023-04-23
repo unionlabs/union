@@ -1,0 +1,34 @@
+project_name: rosetta
+
+release:
+  disable: false
+  name_template: "{{.Tag}}"
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - main: ./cmd/rosetta
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    env:
+      - CGO_ENABLED=0
+
+archives:
+  - name_template: '{{ replace .Version "rosetta/" "rosetta-" }}-{{ .Os }}-{{ .Arch }}'
+    format_overrides:
+      - goos: windows
+        format: zip
+
+checksum:
+  name_template: 'SHA256SUMS-{{ replace .Version "rosetta/" "rosetta-" }}.txt'
+  algorithm: sha256
+
+changelog:
+  skip: false

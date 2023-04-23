@@ -1,0 +1,14 @@
+syntax = "proto3";
+package tendermint.mempool;
+
+option go_package = "github.com/cometbft/cometbft/proto/tendermint/mempool";
+
+message Txs {
+  repeated bytes txs = 1;
+}
+
+message Message {
+  oneof sum {
+    Txs txs = 1;
+  }
+}

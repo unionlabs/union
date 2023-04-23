@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+//This file needs to be synced with the one of same name in Zemu repo
+
+package ledger_go;
+
+service ZemuCommand {
+  rpc Exchange (ExchangeRequest) returns (ExchangeReply) {}
+}
+
+message ExchangeRequest {
+  bytes command = 1;
+}
+
+message ExchangeReply {
+  bytes reply = 1;
+}

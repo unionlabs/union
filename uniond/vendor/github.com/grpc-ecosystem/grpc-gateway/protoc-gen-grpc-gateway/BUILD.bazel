@@ -1,0 +1,47 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+load("@io_bazel_rules_go//proto:compiler.bzl", "go_proto_compiler")
+
+package(default_visibility = ["//visibility:private"])
+
+go_library(
+    name = "go_default_library",
+    srcs = ["main.go"],
+    importpath = "github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway",
+    deps = [
+        "//codegenerator:go_default_library",
+        "//protoc-gen-grpc-gateway/descriptor:go_default_library",
+        "//protoc-gen-grpc-gateway/internal/gengateway:go_default_library",
+        "@com_github_golang_glog//:go_default_library",
+        "@com_github_golang_protobuf//proto:go_default_library",
+        "@io_bazel_rules_go//proto/wkt:compiler_plugin_go_proto",
+    ],
+)
+
+go_binary(
+    name = "protoc-gen-grpc-gateway",
+    embed = [":go_default_library"],
+    visibility = ["//visibility:public"],
+)
+
+go_proto_compiler(
+    name = "go_gen_grpc_gateway",
+    options = [
+        "logtostderr=true",
+        "allow_repeated_fields_in_body=true",
+    ],
+    plugin = ":protoc-gen-grpc-gateway",
+    suffix = ".pb.gw.go",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//runtime:go_default_library",
+        "//utilities:go_default_library",
+        "@com_github_golang_protobuf//descriptor:go_default_library_gen",
+        "@com_github_golang_protobuf//proto:go_default_library",
+        "@org_golang_google_grpc//:go_default_library",
+        "@org_golang_google_grpc//codes:go_default_library",
+        "@org_golang_google_grpc//grpclog:go_default_library",
+        "@org_golang_google_grpc//metadata:go_default_library",
+        "@org_golang_google_grpc//status:go_default_library",
+        "@org_golang_x_net//context:go_default_library",
+    ],
+)

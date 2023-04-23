@@ -1,0 +1,11 @@
+language: go
+go: 
+ - 1.3.3
+ - 1.4.2
+ - 1.5.1
+ - release
+ - tip
+
+script:
+ - go get github.com/stretchr/testify/assert
+ - go test -v ./...

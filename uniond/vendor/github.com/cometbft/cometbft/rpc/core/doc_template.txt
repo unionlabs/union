@@ -1,0 +1,8 @@
+{{with .PDoc}}
+{{comment_md .Doc}}
+{{example_html $ ""}}
+
+{{range .Funcs}}{{$name_html := html .Name}}## [{{$name_html}}]({{posLink_url $ .Decl}})
+{{comment_md .Doc}}{{end}}
+{{end}}
+---

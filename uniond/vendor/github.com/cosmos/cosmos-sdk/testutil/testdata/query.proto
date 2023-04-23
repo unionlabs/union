@@ -1,0 +1,39 @@
+syntax = "proto3";
+package testdata;
+
+import "google/protobuf/any.proto";
+import "testdata.proto";
+
+option go_package = "github.com/cosmos/cosmos-sdk/testutil/testdata";
+
+// Query tests the protobuf Query service as defined in
+// https://github.com/cosmos/cosmos-sdk/issues/5921.
+service Query {
+  rpc Echo(EchoRequest) returns (EchoResponse);
+  rpc SayHello(SayHelloRequest) returns (SayHelloResponse);
+  rpc TestAny(TestAnyRequest) returns (TestAnyResponse);
+}
+
+message EchoRequest {
+  string message = 1;
+}
+
+message EchoResponse {
+  string message = 1;
+}
+
+message SayHelloRequest {
+  string name = 1;
+}
+
+message SayHelloResponse {
+  string greeting = 1;
+}
+
+message TestAnyRequest {
+  google.protobuf.Any any_animal = 1;
+}
+
+message TestAnyResponse {
+  testdata.HasAnimal has_animal = 1;
+}

@@ -1,0 +1,32 @@
+load("@rules_proto//proto:defs.bzl", "proto_library")
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("@io_bazel_rules_go//proto:def.bzl", "go_proto_library")
+
+proto_library(
+    name = "openapiconfig_proto",
+    srcs = ["openapiconfig.proto"],
+    visibility = ["//:__subpackages__"],
+    deps = ["//protoc-gen-openapiv2/options:options_proto"],
+)
+
+go_proto_library(
+    name = "openapiconfig_go_proto",
+    compilers = ["//:go_apiv2"],
+    importpath = "github.com/grpc-ecosystem/grpc-gateway/v2/internal/descriptor/openapiconfig",
+    proto = ":openapiconfig_proto",
+    visibility = ["//:__subpackages__"],
+    deps = ["//protoc-gen-openapiv2/options"],
+)
+
+go_library(
+    name = "openapiconfig",
+    embed = [":openapiconfig_go_proto"],
+    importpath = "github.com/grpc-ecosystem/grpc-gateway/v2/internal/descriptor/openapiconfig",
+    visibility = ["//:__subpackages__"],
+)
+
+alias(
+    name = "go_default_library",
+    actual = ":openapiconfig",
+    visibility = ["//:__subpackages__"],
+)

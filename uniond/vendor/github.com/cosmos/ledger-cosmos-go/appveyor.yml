@@ -1,0 +1,25 @@
+version: 1.0.0.{build}
+
+platform: x64
+
+branches:
+  only:
+    - master
+
+clone_folder: c:\ledger-cosmos-go
+
+environment:
+  GOPATH: c:\gopath
+
+install:
+  - choco install -y mingw
+  - echo %PATH%
+  - echo %GOPATH%
+  - set PATH=%GOPATH%\bin;c:\go\bin;C:\tools\mingw64\bin;%PATH%
+  - go version
+  - go env
+
+build_script:
+  - go build -x ./common.go ./user_app.go ./validator_app.go
+  - go test ./common
+

@@ -1,0 +1,38 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+
+package(default_visibility = ["//protoc-gen-grpc-gateway:__subpackages__"])
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "doc.go",
+        "generator.go",
+        "template.go",
+    ],
+    importpath = "github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway/internal/gengateway",
+    deps = [
+        "//internal/casing:go_default_library",
+        "//protoc-gen-grpc-gateway/descriptor:go_default_library",
+        "//protoc-gen-grpc-gateway/generator:go_default_library",
+        "//utilities:go_default_library",
+        "@com_github_golang_glog//:go_default_library",
+        "@com_github_golang_protobuf//proto:go_default_library",
+        "@io_bazel_rules_go//proto/wkt:compiler_plugin_go_proto",
+    ],
+)
+
+go_test(
+    name = "go_default_test",
+    size = "small",
+    srcs = [
+        "generator_test.go",
+        "template_test.go",
+    ],
+    embed = [":go_default_library"],
+    deps = [
+        "//protoc-gen-grpc-gateway/descriptor:go_default_library",
+        "//protoc-gen-grpc-gateway/httprule:go_default_library",
+        "@com_github_golang_protobuf//proto:go_default_library",
+        "@io_bazel_rules_go//proto/wkt:descriptor_go_proto",
+    ],
+)

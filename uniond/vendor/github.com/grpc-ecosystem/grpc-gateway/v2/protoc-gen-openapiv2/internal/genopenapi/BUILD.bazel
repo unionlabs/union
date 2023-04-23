@@ -1,0 +1,83 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+
+package(default_visibility = ["//protoc-gen-openapiv2:__subpackages__"])
+
+go_library(
+    name = "genopenapi",
+    srcs = [
+        "doc.go",
+        "format.go",
+        "generator.go",
+        "helpers.go",
+        "helpers_go111_old.go",
+        "naming.go",
+        "template.go",
+        "types.go",
+    ],
+    importpath = "github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2/internal/genopenapi",
+    deps = [
+        "//internal/casing",
+        "//internal/descriptor",
+        "//internal/generator",
+        "//protoc-gen-openapiv2/options",
+        "@com_github_golang_glog//:glog",
+        "@com_github_golang_protobuf//descriptor:go_default_library_gen",
+        "@go_googleapis//google/api:annotations_go_proto",
+        "@go_googleapis//google/api:visibility_go_proto",
+        "@go_googleapis//google/rpc:status_go_proto",
+        "@in_gopkg_yaml_v3//:yaml_v3",
+        "@io_bazel_rules_go//proto/wkt:any_go_proto",
+        "@org_golang_google_protobuf//encoding/protojson",
+        "@org_golang_google_protobuf//proto",
+        "@org_golang_google_protobuf//types/descriptorpb",
+        "@org_golang_google_protobuf//types/known/structpb",
+        "@org_golang_google_protobuf//types/pluginpb",
+        "@org_golang_x_text//cases",
+        "@org_golang_x_text//language",
+    ],
+)
+
+go_test(
+    name = "genopenapi_test",
+    size = "small",
+    srcs = [
+        "cycle_test.go",
+        "format_test.go",
+        "generator_test.go",
+        "helpers_test.go",
+        "naming_test.go",
+        "template_test.go",
+        "types_test.go",
+    ],
+    embed = [":genopenapi"],
+    deps = [
+        "//internal/descriptor",
+        "//internal/descriptor/openapiconfig",
+        "//internal/httprule",
+        "//protoc-gen-openapiv2/options",
+        "//runtime",
+        "@com_github_google_go_cmp//cmp",
+        "@go_googleapis//google/api:annotations_go_proto",
+        "@go_googleapis//google/api:visibility_go_proto",
+        "@in_gopkg_yaml_v3//:yaml_v3",
+        "@io_bazel_rules_go//proto/wkt:field_mask_go_proto",
+        "@org_golang_google_protobuf//encoding/protojson",
+        "@org_golang_google_protobuf//encoding/prototext",
+        "@org_golang_google_protobuf//proto",
+        "@org_golang_google_protobuf//reflect/protodesc",
+        "@org_golang_google_protobuf//types/descriptorpb",
+        "@org_golang_google_protobuf//types/known/anypb",
+        "@org_golang_google_protobuf//types/known/durationpb",
+        "@org_golang_google_protobuf//types/known/emptypb",
+        "@org_golang_google_protobuf//types/known/structpb",
+        "@org_golang_google_protobuf//types/known/timestamppb",
+        "@org_golang_google_protobuf//types/known/wrapperspb",
+        "@org_golang_google_protobuf//types/pluginpb",
+    ],
+)
+
+alias(
+    name = "go_default_library",
+    actual = ":genopenapi",
+    visibility = ["//protoc-gen-openapiv2:__subpackages__"],
+)

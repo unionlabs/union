@@ -1,0 +1,49 @@
+env:
+  - GOPRIVATE=github.com/hashicorp
+
+builds:
+  - id: signable
+    mod_timestamp: '{{ .CommitTimestamp }}'
+    targets:
+      - darwin_amd64
+      - windows_386
+      - windows_amd64
+    dir: ./cmd/go-getter/
+    flags:
+      - -trimpath
+    ldflags:
+      - -X main.GitCommit={{ .Commit }}
+  - mod_timestamp: '{{ .CommitTimestamp }}'
+    targets:
+      - linux_386
+      - linux_amd64
+    dir: ./cmd/go-getter/
+    flags:
+      - -trimpath
+    ldflags:
+      - -X main.GitCommit={{ .Commit }}
+
+archives:
+  - format: zip
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    files: 
+      - none*
+
+checksum:
+  name_template: '{{ .ProjectName }}_{{ .Version }}_SHA256SUMS'
+  algorithm: sha256
+
+signs:
+  - signature: ${artifact}.sig
+    cmd: sh
+    args:
+    - -c
+    - >-
+      signore
+      sign
+      --file ${artifact}
+      --out ${signature}
+    artifacts: checksum
+
+changelog:
+  skip: true

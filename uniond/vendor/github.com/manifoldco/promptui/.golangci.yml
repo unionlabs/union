@@ -1,0 +1,26 @@
+run:
+  deadline: 5m
+
+issues:
+  # Disable maximums so we see all issues
+  max-per-linter: 0
+  max-same-issues: 0
+
+  # golangci-lint ignores missing docstrings by default. That's no good!
+  exclude-use-default: false
+
+linters:
+  disable-all: true
+  enable:
+    - misspell
+    - golint
+    - goimports
+    - ineffassign
+    - deadcode
+    - gofmt
+    - govet
+    - structcheck
+    - unconvert
+    - megacheck
+    - typecheck
+    - varcheck

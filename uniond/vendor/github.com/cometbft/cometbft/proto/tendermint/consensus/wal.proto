@@ -1,0 +1,46 @@
+syntax = "proto3";
+package tendermint.consensus;
+
+option go_package = "github.com/cometbft/cometbft/proto/tendermint/consensus";
+
+import "gogoproto/gogo.proto";
+import "tendermint/consensus/types.proto";
+import "tendermint/types/events.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
+
+// MsgInfo are msgs from the reactor which may update the state
+message MsgInfo {
+  Message msg     = 1 [(gogoproto.nullable) = false];
+  string  peer_id = 2 [(gogoproto.customname) = "PeerID"];
+}
+
+// TimeoutInfo internally generated messages which may update the state
+message TimeoutInfo {
+  google.protobuf.Duration duration = 1
+      [(gogoproto.nullable) = false, (gogoproto.stdduration) = true];
+  int64  height = 2;
+  int32  round  = 3;
+  uint32 step   = 4;
+}
+
+// EndHeight marks the end of the given height inside WAL.
+// @internal used by scripts/wal2json util.
+message EndHeight {
+  int64 height = 1;
+}
+
+message WALMessage {
+  oneof sum {
+    tendermint.types.EventDataRoundState event_data_round_state = 1;
+    MsgInfo                              msg_info               = 2;
+    TimeoutInfo                          timeout_info           = 3;
+    EndHeight                            end_height             = 4;
+  }
+}
+
+// TimedWALMessage wraps WALMessage and adds Time for debugging purposes.
+message TimedWALMessage {
+  google.protobuf.Timestamp time = 1 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+  WALMessage                msg  = 2;
+}

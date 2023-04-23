@@ -1,0 +1,35 @@
+package query
+
+type QueryParser Peg {
+}
+
+e <- '\"' condition ( ' '+ and ' '+ condition )* '\"' !.
+
+condition <- tag ' '* (le ' '* (number / time / date)
+                      / ge ' '* (number / time / date)
+                      / l ' '* (number / time / date)
+                      / g ' '* (number / time / date)
+                      / equal ' '* (number / time / date / value)
+                      / contains ' '* value
+                      / exists
+                      )
+
+tag <- < (![ \t\n\r\\()"'=><] .)+ >
+value <- < '\'' (!["'] .)* '\''>
+number <- < ('0'
+           / [1-9] digit* ('.' digit*)?) >
+digit <- [0-9]
+time <- "TIME " < year '-' month '-' day 'T' digit digit ':' digit digit ':' digit digit (('-' / '+') digit digit ':' digit digit / 'Z') >
+date <- "DATE " < year '-' month '-' day >
+year <- ('1' / '2') digit digit digit
+month <- ('0' / '1') digit
+day <- ('0' / '1' / '2' / '3') digit
+and <- "AND"
+
+equal <- "="
+contains <- "CONTAINS"
+exists <- "EXISTS"
+le <- "<="
+ge <- ">="
+l <- "<"
+g <- ">"

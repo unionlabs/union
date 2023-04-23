@@ -1,0 +1,76 @@
+syntax = "proto3";
+package tendermint.privval;
+
+import "tendermint/crypto/keys.proto";
+import "tendermint/types/types.proto";
+import "gogoproto/gogo.proto";
+
+option go_package = "github.com/cometbft/cometbft/proto/tendermint/privval";
+
+enum Errors {
+  ERRORS_UNKNOWN             = 0;
+  ERRORS_UNEXPECTED_RESPONSE = 1;
+  ERRORS_NO_CONNECTION       = 2;
+  ERRORS_CONNECTION_TIMEOUT  = 3;
+  ERRORS_READ_TIMEOUT        = 4;
+  ERRORS_WRITE_TIMEOUT       = 5;
+}
+
+message RemoteSignerError {
+  int32  code        = 1;
+  string description = 2;
+}
+
+// PubKeyRequest requests the consensus public key from the remote signer.
+message PubKeyRequest {
+  string chain_id = 1;
+}
+
+// PubKeyResponse is a response message containing the public key.
+message PubKeyResponse {
+  tendermint.crypto.PublicKey pub_key = 1 [(gogoproto.nullable) = false];
+  RemoteSignerError           error   = 2;
+}
+
+// SignVoteRequest is a request to sign a vote
+message SignVoteRequest {
+  tendermint.types.Vote vote     = 1;
+  string                chain_id = 2;
+}
+
+// SignedVoteResponse is a response containing a signed vote or an error
+message SignedVoteResponse {
+  tendermint.types.Vote vote  = 1 [(gogoproto.nullable) = false];
+  RemoteSignerError     error = 2;
+}
+
+// SignProposalRequest is a request to sign a proposal
+message SignProposalRequest {
+  tendermint.types.Proposal proposal = 1;
+  string                    chain_id = 2;
+}
+
+// SignedProposalResponse is response containing a signed proposal or an error
+message SignedProposalResponse {
+  tendermint.types.Proposal proposal = 1 [(gogoproto.nullable) = false];
+  RemoteSignerError         error    = 2;
+}
+
+// PingRequest is a request to confirm that the connection is alive.
+message PingRequest {}
+
+// PingResponse is a response to confirm that the connection is alive.
+message PingResponse {}
+
+message Message {
+  oneof sum {
+    PubKeyRequest          pub_key_request          = 1;
+    PubKeyResponse         pub_key_response         = 2;
+    SignVoteRequest        sign_vote_request        = 3;
+    SignedVoteResponse     signed_vote_response     = 4;
+    SignProposalRequest    sign_proposal_request    = 5;
+    SignedProposalResponse signed_proposal_response = 6;
+    PingRequest            ping_request             = 7;
+    PingResponse           ping_response            = 8;
+  }
+}
