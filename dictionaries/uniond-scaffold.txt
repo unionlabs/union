@@ -69,11 +69,13 @@ genutilcli
 genutils
 genutiltypes
 Getenv
+goblingarden
 gocosmos
 gofmt
 gogoproto
 googleapis
 gopls
+GOPRIVATE
 gotools
 govclient
 govkeeper
@@ -234,6 +236,7 @@ upgradekeeper
 upgradetypes
 utilised
 utilising
+uunionx
 valcons
 valconspub
 validatorsets
