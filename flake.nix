@@ -58,7 +58,7 @@
               -X github.com/ignite/cli/ignite/version.Date=${builtins.toString (src.lastModified)}
             '';
           };
-          
+
           docs-package = pkgs.buildNpmPackage {
             name = "docs-package";
             src = ./docs/.;
@@ -71,7 +71,7 @@
               cp -dR ./build $out
             '';
           };
-          
+
           default = uniond;
         };
 
@@ -139,7 +139,7 @@
 
         apps = {
           ignite-cli.program = "${config.packages.ignite-cli}/bin/ignite";
-          
+
           docs = {
             type = "app";
             program = pkgs.writeShellApplication {
