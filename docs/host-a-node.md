@@ -2,67 +2,27 @@
 
 This document will walk you through the process of self-hosting a union node.
 
-# Nix Install
+# Building The `uniond` Binary
 
-Run `nix build` in the root of our repository after cloning.
+This section will walk you through building the node binary. These instructions are different for Docker and Nix.
 
-# Docker Install
+*NOTE: It's expected that all validators/nodes use Nix or Docker to set up their node. Imperative installations are not officially supported.*
 
-*NOTE: Not yet available*
+## Docker
 
-# Manual Install
+<!-- TODO: Add docker instructions following PR -->
 
-This section details the manual process for self-hosting a node.
+## Nix
 
-## Requirements
-
-Before continuing with this process, ensure the following requirements are available on your system:
-
-* make
-* build-essential
-* gcc
-* git
-* jq
-* chrony
-* go
-
-After installing the requirements, you'll need to create some environment variables.
+Run `nix build` in the root of our repository after cloning:
 
 ```sh
-export GOPATH=$HOME/go
-export PATH=$PATH:$HOME/go/bin
-```
-
-## Installing `uniond`
-
-This section will walk you through installing the `uniond` binary that will be used for running the node.
-
-To begin, clone the `UnionFi/union` repository and checkout the release branch you desire.
-
-<!-- TODO: Replace `$RELEASE_BRANCH` with our current release branch or test-net release branch. -->
-
-```sh
-cd ~
-git clone https://github.com/UnionFi/union
+git clone https://github.com/UnionFi/union.git
 cd union
-git fetch
-git checkout $RELEASE_BRANCH
+nix build
 ```
 
-Now that you have the `UnionFi/union` repository, you can build the `uniond` binary.
-
-```sh
-cd ~/union/uniond
-make install
-```
-
-To ensure the installation has succeeded, you can run:
-
-```sh
-uniond version
-```
-
-## Connect to the Public RPC
+# Connect to the Public RPC
 
 *NOTE: The public RPC is currently not available.*
 
@@ -82,3 +42,60 @@ Set the public RPC node:
 uniond config node $RPC_NODE_URL
 ```
 
+# Setting up the Node
+
+## Initialize the chain
+
+```sh
+uniond init <$YOUR_MONIKER_NAME> --chain-id $CHAIN_ID
+```
+
+## Download the Genesis File
+
+<!-- TODO: Create and upload genisis file for users to download -->
+```sh
+curl $GENISIS_URL > ~/.union/config/genesis.json
+```
+
+## Configure Persistent Peers
+
+<!-- TODO: Create and upload presistent peers linst for users to download -->
+<!-- TODO: Update instructions -->
+
+## Create Local Key Pair
+
+You'll need your own local key pair to participate on the chain. You can either create a new key pair, or import an existing one from your mnemonic seed.
+
+### Create a new Key Pair
+
+Create the new key pair, making sure to note the mnemonic seed and public key:
+
+```sh
+uniond keys add $KEY_NAME
+```
+
+Ensure the public key and other details match:
+  
+```sh
+uniond keys show $KEY_NAME -a
+```
+
+### Import an Existing Key Pair
+
+Restore existing Union wallet with mnemonic seed phrase:
+
+```sh
+uniond keys add $KEY_NAME --recover
+```
+  
+Ensure the public key and other details match:
+
+```sh
+uniond keys show $KEY_NAME -a
+```
+
+## Acquire Tokens
+
+<!-- TODO: Determine process for distributing tokens on testnet -->
+
+# Setup cosmovisor
