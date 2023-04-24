@@ -84,13 +84,30 @@
         "type": "github"
       }
     },
+    "nixpkgs_2": {
+      "locked": {
+        "lastModified": 1679944645,
+        "narHash": "sha256-e5Qyoe11UZjVfgRfwNoSU57ZeKuEmjYb77B9IVW7L/M=",
+        "owner": "nixos",
+        "repo": "nixpkgs",
+        "rev": "4bb072f0a8b267613c127684e099a70e1f6ff106",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nixos",
+        "ref": "nixos-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
     "root": {
       "inputs": {
         "flake-parts": "flake-parts",
         "ignite-cli-src": "ignite-cli-src",
         "nixpkgs": "nixpkgs",
         "rust-overlay": "rust-overlay",
-        "swagger-combine-src": "swagger-combine-src"
+        "swagger-combine-src": "swagger-combine-src",
+        "treefmt-nix": "treefmt-nix"
       }
     },
     "rust-overlay": {
@@ -127,6 +144,24 @@
       "original": {
         "owner": "maxdome",
         "repo": "swagger-combine",
+        "type": "github"
+      }
+    },
+    "treefmt-nix": {
+      "inputs": {
+        "nixpkgs": "nixpkgs_2"
+      },
+      "locked": {
+        "lastModified": 1680542917,
+        "narHash": "sha256-lwqpGONfUhyPgNJ3vtFjB1+mEEWDqgsU7pDXsoCjdP4=",
+        "owner": "numtide",
+        "repo": "treefmt-nix",
+        "rev": "08850c9808fd5e1891cad51f38e92226c7e8f8bd",
+        "type": "github"
+      },
+      "original": {
+        "owner": "numtide",
+        "repo": "treefmt-nix",
         "type": "github"
       }
     }
