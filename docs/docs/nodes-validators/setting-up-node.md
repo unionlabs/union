@@ -29,7 +29,18 @@ nix build "github:UnionFi/union"
 nix build "git+ssh://git@github.com/UnionFi/union"
 ```
 
-*NOTE: the `uniond` executable is stored as `./result/bin/uniond`. Alternatively, you can run `nix run` in place of `uniond`*
+*NOTE: the `uniond` executable is stored as `./result/bin/uniond`*
+
+# Environment Variables
+
+This document will often refer to environment variables you likely don't have set. You can either manually replace them before running commands, or set them before starting with the rest of the tutorial.
+
+Here's a list of the environment variables we'll use and hints for setting them:
+
+<!-- TODO: Replace `$CHAIN_ID` with our the chain-id of our main-net or test-net. https://github.com/UnionFi/union/issues/29 -->
+* `$CHAIN_ID` - 
+* `$MONIKER_NAME` - The name used for your validator node
+* `$KEY_NAME` - The name you've assigned to the key pair you'll use for this tutorial
 
 # Connect to the Public RPC
 
@@ -39,7 +50,6 @@ Now to connect the `uniond` binary to the public RPC.
 
 First, set the chain-id with:
 
-<!-- TODO: Replace `$CHAIN_ID` with our the chain-id of our main-net or test-net. https://github.com/UnionFi/union/issues/29 -->
 ```sh
 uniond config chain-id $CHAIN_ID
 ```
