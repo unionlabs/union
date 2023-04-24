@@ -7,6 +7,8 @@
       url = "github:oxalica/rust-overlay";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    pre-commit-hooks.url = "github:cachix/pre-commit-hooks.nix";
   };
   outputs = inputs@{ flake-parts, ... }:
     flake-parts.lib.mkFlake { inherit inputs; } {
@@ -14,6 +16,7 @@
         [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" "x86_64-darwin" ];
       imports = [
         inputs.treefmt-nix.flakeModule
+        inputs.pre-commit-hooks.flakeModule
         ./uniond/uniond.nix
         ./docs/docs.nix
       ];
@@ -35,9 +38,18 @@
               touch $out
             '';
           };
+          pre-commit-check = inputs.pre-commit-hooks.lib.${system}.run {
+            src = ./.;
+            hooks = {
+              nixpkgs-fmt.enable = true;
+              # gotest.enable = true;
+              commitizen.enable = true;
+            };
+          };
         };
 
         devShells.default = pkgs.mkShell {
+          inherit (self'.checks.pre-commit-check) shellHook;
           buildInputs = with pkgs; [
             protobuf
             nixfmt

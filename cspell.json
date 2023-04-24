@@ -6,6 +6,11 @@
       "name": "uniond-scaffold",
       "path": "dictionaries/uniond-scaffold.txt",
       "addWords": true
+    },
+    {
+      "name": "nix",
+      "path": "dictionaries/nix.txt",
+      "addWords": true
     }
   ],
   "dictionaries": [
@@ -14,7 +19,8 @@
     "softwareTerms",
     "go",
     "latex",
-    "uniond-scaffold"
+    "uniond-scaffold",
+    "nix"
   ],
   "ignorePaths": [
     "dictionaries/**",
