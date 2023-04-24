@@ -37,10 +37,26 @@ This document will often refer to environment variables you likely don't have se
 
 Here's a list of the environment variables we'll use and hints for setting them:
 
-<!-- TODO: Replace `$CHAIN_ID` with our the chain-id of our main-net or test-net. https://github.com/UnionFi/union/issues/29 -->
-* `$CHAIN_ID` -
-* `$MONIKER_NAME` - The name used for your validator node
-* `$KEY_NAME` - The name you've assigned to the key pair you'll use for this tutorial
+* ` $CHAIN_ID` - either `union-1` for mainnet, or `union-test-1` for testnet.
+
+  ```sh
+  # Example $CHAIN_ID
+  CHAIN_ID=union-test-1
+  ```
+
+* ` $MONIKER_NAME` - The name used for your validator node.
+
+  ```sh
+  # Example $MONIKER_NAME
+  MONIKER_NAME="Unionized Goblin"
+  ```
+
+* ` $KEY_NAME` - The name you've assigned to the key pair you'll use for this tutorial.
+
+  ```sh
+  # Example $KEY_NAME
+  KEY_NAME=some_key
+  ```
 
 # Connect to the Public RPC
 
@@ -142,7 +158,7 @@ uniond tx staking create-validator \
   --commission-max-rate "0.20" \
   --commission-rate "0.1" \
   --min-self-delegation "1" \
-  --details "validators write bios too" \
+  --details "" \
   --pubkey=$(uniond tendermint show-validator) \
   --moniker $MONIKER_NAME \
   --chain-id $CHAIN_ID \
