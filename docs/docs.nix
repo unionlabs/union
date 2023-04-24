@@ -14,8 +14,8 @@
       };
 
     packages = {
-      docs-package = pkgs.buildNpmPackage {
-        name = "docs-package";
+      docs = pkgs.buildNpmPackage {
+        name = "docs";
         src = ./.;
         buildPhase = ''
           npm run build
