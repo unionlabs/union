@@ -1,41 +1,21 @@
-# Website
+# Union docs
 
-This website is built using [Docusaurus 2](https://docusaurus.io/), a modern static website generator.
+Our docs are built using [Docusaurus 2](https://docusaurus.io/), a static website generator.
 
-### Installation
-
-```
-$ yarn
-```
-
-### Local Development
 
 ```
-$ yarn start
-```
-
-This command starts a local development server and opens up a browser window. Most changes are reflected live without having to restart the server.
-
-### Build
+## Local Development
 
 ```
-$ yarn build
+nix run .\#docs-dev-server
 ```
 
-This command generates static content into the `build` directory and can be served using any static contents hosting service.
+Then open [localhost:3000](http://localhost:3000) in your browser. Edit the contents of `docs/` and see them change live in your browser.
 
-### Deployment
 
-Using SSH:
-
-```
-$ USE_SSH=true yarn deploy
-```
-
-Not using SSH:
+## Static Build
 
 ```
-$ GIT_USER=<Your GitHub username> yarn deploy
+nix build .\#docs
 ```
 
-If you are using GitHub pages for hosting, this command is a convenient way to build the website and push to the `gh-pages` branch.
