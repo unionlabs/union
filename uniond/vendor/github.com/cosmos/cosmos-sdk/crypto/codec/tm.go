@@ -5,6 +5,7 @@ import (
 	"github.com/cometbft/cometbft/crypto/encoding"
 	tmprotocrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
 
+	"github.com/cosmos/cosmos-sdk/crypto/keys/bn254"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
@@ -21,6 +22,10 @@ func FromTmProtoPublicKey(protoPk tmprotocrypto.PublicKey) (cryptotypes.PubKey, 
 	case *tmprotocrypto.PublicKey_Secp256K1:
 		return &secp256k1.PubKey{
 			Key: protoPk.Secp256K1,
+		}, nil
+	case *tmprotocrypto.PublicKey_Bn254:
+		return &bn254.PubKey{
+			Key: protoPk.Bn254,
 		}, nil
 	default:
 		return nil, sdkerrors.Wrapf(sdkerrors.ErrInvalidType, "cannot convert %v from Tendermint public key", protoPk)
@@ -40,6 +45,12 @@ func ToTmProtoPublicKey(pk cryptotypes.PubKey) (tmprotocrypto.PublicKey, error) 
 		return tmprotocrypto.PublicKey{
 			Sum: &tmprotocrypto.PublicKey_Secp256K1{
 				Secp256K1: pk.Key,
+			},
+		}, nil
+	case *bn254.PubKey:
+		return tmprotocrypto.PublicKey{
+			Sum: &tmprotocrypto.PublicKey_Bn254{
+				Bn254: pk.Key,
 			},
 		}, nil
 	default:

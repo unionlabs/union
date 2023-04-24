@@ -305,7 +305,7 @@ github.com/cosmos/btcutil/bech32
 github.com/cosmos/cosmos-proto
 github.com/cosmos/cosmos-proto/any
 github.com/cosmos/cosmos-proto/runtime
-# github.com/cosmos/cosmos-sdk v0.47.1
+# github.com/cosmos/cosmos-sdk v0.47.0 => github.com/goblingarden/cosmos-sdk v0.0.0-20230401110632-cbd47960547c
 ## explicit; go 1.19
 github.com/cosmos/cosmos-sdk/baseapp
 github.com/cosmos/cosmos-sdk/client
@@ -329,6 +329,7 @@ github.com/cosmos/cosmos-sdk/crypto/codec
 github.com/cosmos/cosmos-sdk/crypto/hd
 github.com/cosmos/cosmos-sdk/crypto/keyring
 github.com/cosmos/cosmos-sdk/crypto/keys/bcrypt
+github.com/cosmos/cosmos-sdk/crypto/keys/bn254
 github.com/cosmos/cosmos-sdk/crypto/keys/ed25519
 github.com/cosmos/cosmos-sdk/crypto/keys/internal/ecdsa
 github.com/cosmos/cosmos-sdk/crypto/keys/multisig
@@ -1375,5 +1376,5 @@ rsc.io/tmplfunc/internal/parse
 ## explicit; go 1.12
 sigs.k8s.io/yaml
 # github.com/cometbft/cometbft => github.com/goblingarden/cometbft v0.0.0-20230315194842-f705144e7d29
-# github.com/cosmos-sdk/cosmos-sdk => github.com/goblingarden/cosmos-sdk v0.0.0-20230401110632-cbd47960547
+# github.com/cosmos/cosmos-sdk => github.com/goblingarden/cosmos-sdk v0.0.0-20230401110632-cbd47960547c
 # github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7

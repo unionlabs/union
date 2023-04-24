@@ -12,14 +12,14 @@
     "en_US",
     "companies",
     "softwareTerms",
-    "go", 
+    "go",
     "latex",
     "uniond-scaffold"
   ],
   "ignorePaths": [
     "dictionaries/**",
-    "node_modules", 
-    "uniond/vendor", 
+    "node_modules",
+    "uniond/vendor",
     "uniond/x/union/types",
     "uniond/proto",
     "uniond/go.mod",

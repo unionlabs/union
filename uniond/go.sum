@@ -319,8 +319,6 @@ github.com/cosmos/btcutil v1.0.5 h1:t+ZFcX77LpKtDBhjucvnOH8C2l2ioGsBNEQ3jef8xFk=
 github.com/cosmos/btcutil v1.0.5/go.mod h1:IyB7iuqZMJlthe2tkIFL33xPyzbFYP0XVdS8P5lUPis=
 github.com/cosmos/cosmos-proto v1.0.0-beta.2 h1:X3OKvWgK9Gsejo0F1qs5l8Qn6xJV/AzgIWR2wZ8Nua8=
 github.com/cosmos/cosmos-proto v1.0.0-beta.2/go.mod h1:+XRCLJ14pr5HFEHIUcn51IKXD1Fy3rkEQqt4WqmN4V0=
-github.com/cosmos/cosmos-sdk v0.47.1 h1:HnaCYtaAMWZp1SdlwwE1mPJ8kFlZ/TuEJ/ciNXH6Uno=
-github.com/cosmos/cosmos-sdk v0.47.1/go.mod h1:14tO5KQaTrl2q3OxBnDRfue7TRN9zkXS0cLutrSqkOo=
 github.com/cosmos/go-bip39 v0.0.0-20180819234021-555e2067c45d/go.mod h1:tSxLoYXyBmiFeKpvmq4dzayMdCjCnu8uqmCysIGBT2Y=
 github.com/cosmos/go-bip39 v1.0.0 h1:pcomnQdrdH22njcAatO0yWojsUnCO3y2tNoV1cb6hHY=
 github.com/cosmos/go-bip39 v1.0.0/go.mod h1:RNJv0H/pOIVgxw6KS7QeX2a0Uo0aKUlfhZ4xuwvCdJw=
@@ -436,6 +434,8 @@ github.com/go-sql-driver/mysql v1.4.0/go.mod h1:zAC/RDZ24gD3HViQzih4MyKcchzm+sOG
 github.com/go-stack/stack v1.8.0/go.mod h1:v0f6uXyyMGvRgIKkXu+yp6POWl0qKG85gN/melR3HDY=
 github.com/goblingarden/cometbft v0.0.0-20230315194842-f705144e7d29 h1:o/2EIuHj/O5QjPsNrOHEFENdYB5MGaW6IiERTRZuIn4=
 github.com/goblingarden/cometbft v0.0.0-20230315194842-f705144e7d29/go.mod h1:g19Cle9IZtzlUEhjK9qXOlcQ/icvuU+11MDKQLA32O4=
+github.com/goblingarden/cosmos-sdk v0.0.0-20230401110632-cbd47960547c h1:vTpyPjpkAcDMcVwwt8Jv08QTtuc2qPmBigzbyFwm2Qs=
+github.com/goblingarden/cosmos-sdk v0.0.0-20230401110632-cbd47960547c/go.mod h1:gS+qFbdpwuGlx+BD6VF1Gep+2GZPAojKzjtFPWa634E=
 github.com/gobwas/httphead v0.0.0-20180130184737-2c6c146eadee h1:s+21KNqlpePfkah2I+gwHF8xmJWRjooY+5248k6m4A0=
 github.com/gobwas/httphead v0.0.0-20180130184737-2c6c146eadee/go.mod h1:L0fX3K22YWvt/FAX9NnzrNzcI4wNYi9Yku4O0LKYflo=
 github.com/gobwas/pool v0.2.0 h1:QEmUOlnSjWtnpRGHF3SauEiOsy82Cup83Vf2LcMlnc8=

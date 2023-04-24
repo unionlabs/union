@@ -38,7 +38,7 @@ This document will often refer to environment variables you likely don't have se
 Here's a list of the environment variables we'll use and hints for setting them:
 
 <!-- TODO: Replace `$CHAIN_ID` with our the chain-id of our main-net or test-net. https://github.com/UnionFi/union/issues/29 -->
-* `$CHAIN_ID` - 
+* `$CHAIN_ID` -
 * `$MONIKER_NAME` - The name used for your validator node
 * `$KEY_NAME` - The name you've assigned to the key pair you'll use for this tutorial
 
@@ -71,14 +71,14 @@ uniond init $MONIKER_NAME --chain-id $CHAIN_ID
 
 ## Download the Genesis File
 
-<!-- TODO: Create and upload genisis file for users to download. https://github.com/UnionFi/union/issues/31 -->
+<!-- TODO: Create and upload genesis file for users to download. https://github.com/UnionFi/union/issues/31 -->
 ```sh
-curl $GENISIS_URL > ~/.union/config/genesis.json
+curl $GENESIS_URL > ~/.union/config/genesis.json
 ```
 
 ## Configure Persistent Peers
 
-<!-- TODO: Create and upload presistent peers linst for users to download. https://github.com/UnionFi/union/issues/32 -->
+<!-- TODO: Create and upload persistent peers list for users to download. https://github.com/UnionFi/union/issues/32 -->
 <!-- TODO: Update instructions. https://github.com/UnionFi/union/issues/32 -->
 
 ## Create Local Key Pair
@@ -94,7 +94,7 @@ uniond keys add $KEY_NAME
 ```
 
 Ensure the public key and other details match:
-  
+
 ```sh
 uniond keys show $KEY_NAME -a
 ```
@@ -106,7 +106,7 @@ Restore existing Union wallet with mnemonic seed phrase:
 ```sh
 uniond keys add $KEY_NAME --recover
 ```
-  
+
 Ensure the public key and other details match:
 
 ```sh

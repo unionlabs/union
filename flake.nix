@@ -41,7 +41,7 @@
           buildInputs = with pkgs; [
             protobuf
             nixfmt
-            go
+            go_1_20
             gopls
             gotools
             go-tools
@@ -52,6 +52,7 @@
           nativeBuildInputs = [
             config.treefmt.build.wrapper
           ];
+          GOPRIVATE = "github.com/goblingarden/*";
         };
 
         treefmt = {
