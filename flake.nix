@@ -24,8 +24,8 @@
         [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" "x86_64-darwin" ];
       imports = [
         inputs.treefmt-nix.flakeModule
-        ./inputs/ignite-cli.nix
-        ./inputs/swagger-combine.nix
+        ./tools/ignite-cli/ignite-cli.nix
+        ./tools/swagger-combine/swagger-combine.nix
 
         ./uniond/uniond.nix
 
