@@ -29,10 +29,10 @@
     };
 
     apps = {
-      docs = {
+      docs-dev-server = {
         type = "app";
         program = pkgs.writeShellApplication {
-          name = "docs";
+          name = "docs-dev-server";
           runtimeInputs = [ pkgs.nodejs ];
           text = ''
             cd docs
