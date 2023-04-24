@@ -8,9 +8,8 @@ on:
     branches:
     - main
 
-permissions:
-  pull-requests: read
-
+permissions: read-all
+  
 jobs:
   check:
     runs-on: ubuntu-latest
