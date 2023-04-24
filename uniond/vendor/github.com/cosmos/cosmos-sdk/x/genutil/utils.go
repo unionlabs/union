@@ -53,9 +53,14 @@ func InitializeNodeValidatorFiles(config *cfg.Config) (nodeID string, valPubKey 
 	return InitializeNodeValidatorFilesFromMnemonic(config, "")
 }
 
+func InitializeNodeValidatorFilesFromMnemonic(config *cfg.Config, mnemonic string) (nodeID string, valPubKey cryptotypes.PubKey, err error) {
+	return InitializeNodeValidatorFilesFromMnemonicCustom(config, mnemonic, tmtypes.ABCIPubKeyTypeEd25519)
+}
+
 // InitializeNodeValidatorFilesFromMnemonic creates private validator and p2p configuration files using the given mnemonic.
 // If no valid mnemonic is given, a random one will be used instead.
-func InitializeNodeValidatorFilesFromMnemonic(config *cfg.Config, mnemonic string) (nodeID string, valPubKey cryptotypes.PubKey, err error) {
+// Note that if `mnemonic` is not null, the `keyType` parameter is ignored (defaulting to ed25519).
+func InitializeNodeValidatorFilesFromMnemonicCustom(config *cfg.Config, mnemonic string, keyType string) (nodeID string, valPubKey cryptotypes.PubKey, err error) {
 	if len(mnemonic) > 0 && !bip39.IsMnemonicValid(mnemonic) {
 		return "", nil, fmt.Errorf("invalid mnemonic")
 	}
@@ -78,7 +83,7 @@ func InitializeNodeValidatorFilesFromMnemonic(config *cfg.Config, mnemonic strin
 
 	var filePV *privval.FilePV
 	if len(mnemonic) == 0 {
-		filePV = privval.LoadOrGenFilePV(pvKeyFile, pvStateFile)
+		filePV = privval.LoadOrGenFilePVCustom(pvKeyFile, pvStateFile, keyType)
 	} else {
 		privKey := tmed25519.GenPrivKeyFromSecret([]byte(mnemonic))
 		filePV = privval.NewFilePV(privKey, pvKeyFile, pvStateFile)

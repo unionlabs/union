@@ -356,6 +356,10 @@ func (app *BaseApp) Init() error {
 
 	// needed for the export command which inits from store but never calls initchain
 	app.setState(runTxModeCheck, emptyHeader)
+
+	// needed for ABCI Replay Blocks mode which calls Prepare/Process proposal (InitChain is not called)
+	app.setState(runTxPrepareProposal, emptyHeader)
+	app.setState(runTxProcessProposal, emptyHeader)
 	app.Seal()
 
 	rms, ok := app.cms.(*rootmulti.Store)

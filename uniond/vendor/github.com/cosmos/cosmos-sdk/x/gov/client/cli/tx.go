@@ -20,6 +20,7 @@ import (
 
 // Proposal flags
 const (
+	// Deprecated: only used for v1beta1 legacy proposals.
 	FlagTitle = "title"
 	// Deprecated: only used for v1beta1 legacy proposals.
 	FlagDescription = "description"
@@ -29,8 +30,7 @@ const (
 	flagVoter        = "voter"
 	flagDepositor    = "depositor"
 	flagStatus       = "status"
-	FlagMetadata     = "metadata"
-	FlagSummary      = "summary"
+	flagMetadata     = "metadata"
 	// Deprecated: only used for v1beta1 legacy proposals.
 	FlagProposal = "proposal"
 )
@@ -303,7 +303,7 @@ $ %s tx gov vote 1 yes --from mykey
 				return err
 			}
 
-			metadata, err := cmd.Flags().GetString(FlagMetadata)
+			metadata, err := cmd.Flags().GetString(flagMetadata)
 			if err != nil {
 				return err
 			}
@@ -315,7 +315,7 @@ $ %s tx gov vote 1 yes --from mykey
 		},
 	}
 
-	cmd.Flags().String(FlagMetadata, "", "Specify metadata of the vote")
+	cmd.Flags().String(flagMetadata, "", "Specify metadata of the vote")
 	flags.AddTxFlagsToCmd(cmd)
 
 	return cmd
@@ -358,7 +358,7 @@ $ %s tx gov weighted-vote 1 yes=0.6,no=0.3,abstain=0.05,no_with_veto=0.05 --from
 				return err
 			}
 
-			metadata, err := cmd.Flags().GetString(FlagMetadata)
+			metadata, err := cmd.Flags().GetString(flagMetadata)
 			if err != nil {
 				return err
 			}
@@ -369,7 +369,7 @@ $ %s tx gov weighted-vote 1 yes=0.6,no=0.3,abstain=0.05,no_with_veto=0.05 --from
 		},
 	}
 
-	cmd.Flags().String(FlagMetadata, "", "Specify metadata of the weighted vote")
+	cmd.Flags().String(flagMetadata, "", "Specify metadata of the weighted vote")
 	flags.AddTxFlagsToCmd(cmd)
 
 	return cmd

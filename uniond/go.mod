@@ -6,7 +6,7 @@ require (
 	cosmossdk.io/api v0.3.1
 	github.com/cometbft/cometbft v0.37.0
 	github.com/cometbft/cometbft-db v0.7.0
-	github.com/cosmos/cosmos-sdk v0.47.1
+	github.com/cosmos/cosmos-sdk v0.47.0
 	github.com/cosmos/gogoproto v1.4.7
 	github.com/cosmos/ibc-go/v7 v7.0.0
 	github.com/golang/protobuf v1.5.3
@@ -171,6 +171,6 @@ require (
 
 replace (
 	github.com/cometbft/cometbft => github.com/goblingarden/cometbft v0.0.0-20230315194842-f705144e7d29
-	github.com/cosmos-sdk/cosmos-sdk => github.com/goblingarden/cosmos-sdk v0.0.0-20230401110632-cbd47960547
+	github.com/cosmos/cosmos-sdk => github.com/goblingarden/cosmos-sdk v0.0.0-20230401110632-cbd47960547c
 	github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
 )

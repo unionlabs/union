@@ -224,7 +224,7 @@ At present, validators are not punished for failing to vote.
 
 #### Governance address
 
-Later, we may add permissioned keys that could only sign txs from certain modules. For the MVP, the `Governance address` will be the main validator address generated at account creation. This address corresponds to a different PrivKey than the CometBFT PrivKey which is responsible for signing consensus messages. Validators thus do not have to sign governance transactions with the sensitive CometBFT PrivKey.
+Later, we may add permissioned keys that could only sign txs from certain modules. For the MVP, the `Governance address` will be the main validator address generated at account creation. This address corresponds to a different PrivKey than the Tendermint PrivKey which is responsible for signing consensus messages. Validators thus do not have to sign governance transactions with the sensitive Tendermint PrivKey.
 
 ### Software Upgrade
 

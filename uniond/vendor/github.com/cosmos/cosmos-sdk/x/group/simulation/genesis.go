@@ -21,16 +21,6 @@ const (
 	GroupVote       = "group-vote"
 )
 
-func checkAccExists(acc sdk.AccAddress, g []*group.GroupMember, lastIndex int) bool {
-	s := acc.String()
-	for i := 0; i < lastIndex; i++ {
-		if g[i].Member.Address == s {
-			return true
-		}
-	}
-	return false
-}
-
 func getGroups(r *rand.Rand, accounts []simtypes.Account) []*group.GroupInfo {
 	groups := make([]*group.GroupInfo, 3)
 	for i := 0; i < 3; i++ {
@@ -50,9 +40,6 @@ func getGroupMembers(r *rand.Rand, accounts []simtypes.Account) []*group.GroupMe
 	groupMembers := make([]*group.GroupMember, 3)
 	for i := 0; i < 3; i++ {
 		acc, _ := simtypes.RandomAcc(r, accounts)
-		for checkAccExists(acc.Address, groupMembers, i) {
-			acc, _ = simtypes.RandomAcc(r, accounts)
-		}
 		groupMembers[i] = &group.GroupMember{
 			GroupId: uint64(i + 1),
 			Member: &group.Member{
@@ -160,11 +147,6 @@ func getVoteOption(index int) group.VoteOption {
 
 // RandomizedGenState generates a random GenesisState for the group module.
 func RandomizedGenState(simState *module.SimulationState) {
-	// The test requires we have at least 3 accounts.
-	if len(simState.Accounts) < 3 {
-		return
-	}
-
 	// groups
 	var groups []*group.GroupInfo
 	simState.AppParams.GetOrGenerate(

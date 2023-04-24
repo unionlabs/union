@@ -73,13 +73,12 @@ const (
 	FlagOffset           = "offset"
 	FlagCountTotal       = "count-total"
 	FlagTimeoutHeight    = "timeout-height"
-	FlagKeyType          = "key-type"
+	FlagKeyAlgorithm     = "algo"
 	FlagFeePayer         = "fee-payer"
 	FlagFeeGranter       = "fee-granter"
 	FlagReverse          = "reverse"
 	FlagTip              = "tip"
 	FlagAux              = "aux"
-	FlagInitHeight       = "initial-height"
 	// FlagOutput is the flag to set the output format.
 	// This differs from FlagOutputDocument that is used to set the output file.
 	FlagOutput = tmcli.OutputFlag

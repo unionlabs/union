@@ -33,9 +33,9 @@ func GenTxCmd(mbm module.BasicManager, txEncCfg client.TxEncodingConfig, genBalI
 	fsCreateValidator, defaultsDesc := cli.CreateValidatorMsgFlagSet(ipDefault)
 
 	cmd := &cobra.Command{
-		Use:   "gentx [key_name] [amount]",
+		Use:   "gentx [key_name] [amount] [key_type]",
 		Short: "Generate a genesis tx carrying a self delegation",
-		Args:  cobra.ExactArgs(2),
+		Args:  cobra.ExactArgs(3),
 		Long: fmt.Sprintf(`Generate a genesis transaction that creates a validator with a self-delegation,
 that is signed by the key in the Keyring referenced by a given name. A node ID and Bech32 consensus
 pubkey may optionally be provided. If they are omitted, they will be retrieved from the priv_validator.json
@@ -43,7 +43,7 @@ file. The following default parameters are included:
     %s
 
 Example:
-$ %s gentx my-key-name 1000000stake --home=/path/to/home/dir --keyring-backend=os --chain-id=test-chain-1 \
+$ %s gentx my-key-name 1000000stake secp256k1 --home=/path/to/home/dir --keyring-backend=os --chain-id=test-chain-1 \
     --moniker="myvalidator" \
     --commission-max-change-rate=0.01 \
     --commission-max-rate=1.0 \
@@ -64,7 +64,9 @@ $ %s gentx my-key-name 1000000stake --home=/path/to/home/dir --keyring-backend=o
 			config := serverCtx.Config
 			config.SetRoot(clientCtx.HomeDir)
 
-			nodeID, valPubKey, err := genutil.InitializeNodeValidatorFiles(serverCtx.Config)
+			keyType := args[2]
+			mnemonic := ""
+			nodeID, valPubKey, err := genutil.InitializeNodeValidatorFilesFromMnemonicCustom(serverCtx.Config, mnemonic, keyType)
 			if err != nil {
 				return errors.Wrap(err, "failed to initialize node validator files")
 			}
@@ -128,10 +130,7 @@ $ %s gentx my-key-name 1000000stake --home=/path/to/home/dir --keyring-backend=o
 				return errors.Wrap(err, "failed to validate account in genesis")
 			}
 
-			txFactory, err := tx.NewFactoryCLI(clientCtx, cmd.Flags())
-			if err != nil {
-				return err
-			}
+			txFactory := tx.NewFactoryCLI(clientCtx, cmd.Flags())
 
 			pub, err := key.GetAddress()
 			if err != nil {
