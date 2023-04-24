@@ -18,7 +18,7 @@
 
     treefmt-nix.url = "github:numtide/treefmt-nix";
   };
-  outputs = inputs@{ self, nixpkgs, flake-parts, ... }:
+  outputs = inputs@{ flake-parts, ... }:
     flake-parts.lib.mkFlake { inherit inputs; } {
       systems =
         [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" "x86_64-darwin" ];
@@ -31,7 +31,7 @@
 
         ./docs/docs.nix
       ];
-      perSystem = { config, self', inputs', pkgs, system, lib, ... }: rec {
+      perSystem = { config, self', inputs', pkgs, system, lib, ... }: {
         packages = {
           default = self'.packages.uniond;
         };
