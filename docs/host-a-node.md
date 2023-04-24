@@ -22,7 +22,7 @@ cd union
 nix build
 ```
 
-*NOTE: the `uniond` executable is stored as `./result/bin/uniond`*
+*NOTE: the `uniond` executable is stored as `./result/bin/uniond`. Alternatively, you can run `nix run` in place of `uniond`*
 
 # Connect to the Public RPC
 
@@ -49,7 +49,7 @@ uniond config node $RPC_NODE_URL
 ## Initialize the chain
 
 ```sh
-uniond init <$YOUR_MONIKER_NAME> --chain-id $CHAIN_ID
+uniond init $MONIKER_NAME --chain-id $CHAIN_ID
 ```
 
 ## Download the Genesis File
@@ -105,3 +105,35 @@ uniond keys show $KEY_NAME -a
 ```sh
 uniond start
 ```
+
+You can query the status of the node with:
+
+```sh
+curl http://localhost:26657/status | jq .result.sync_info.catching_up
+```
+
+If this returns `true` the node is still syncing, once it returns `false` you can move to becoming a validator.
+
+# Become a Validator
+
+To become a validator, you must submit a `create-validator` transaction:
+
+```sh
+uniond tx staking create-validator \
+  --amount 9000000uunionx \
+  --commission-max-change-rate "0.1" \
+  --commission-max-rate "0.20" \
+  --commission-rate "0.1" \
+  --min-self-delegation "1" \
+  --details "validators write bios too" \
+  --pubkey=$(uniond tendermint show-validator) \
+  --moniker $MONIKER_NAME \
+  --chain-id $CHAIN_ID \
+  --gas-prices 0.025uunionx \
+  --from $KEY_NAME
+```
+
+It's then recommended to backup these files from `~/.union/config`:
+
+* `priv_validator_key.json`
+* `node_key.json`
