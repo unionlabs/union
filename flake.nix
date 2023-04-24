@@ -41,7 +41,7 @@
           buildInputs = with pkgs; [
             protobuf
             nixfmt
-            go
+            go_1_20
             gopls
             gotools
             go-tools
