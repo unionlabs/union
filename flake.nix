@@ -112,6 +112,7 @@
             gotools
             go-tools
             nodejs
+            nil
           ];
           nativeBuildInputs = [
             config.treefmt.build.wrapper
