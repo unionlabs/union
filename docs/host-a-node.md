@@ -22,6 +22,8 @@ cd union
 nix build
 ```
 
+*NOTE: the `uniond` executable is stored as `./result/bin/uniond`*
+
 # Connect to the Public RPC
 
 *NOTE: The public RPC is currently not available.*
@@ -98,4 +100,8 @@ uniond keys show $KEY_NAME -a
 
 <!-- TODO: Determine process for distributing tokens on testnet -->
 
-# Setup cosmovisor
+# Start the node
+
+```sh
+uniond start
+```
