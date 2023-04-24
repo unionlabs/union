@@ -24,57 +24,16 @@
         [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" "x86_64-darwin" ];
       imports = [
         inputs.treefmt-nix.flakeModule
-        ./docs/docs.nix
         ./inputs/ignite-cli.nix
         ./inputs/swagger-combine.nix
+
+        ./uniond/uniond.nix
+
+        ./docs/docs.nix
       ];
       perSystem = { config, self', inputs', pkgs, system, lib, ... }: rec {
-        packages = rec {
-          uniond = pkgs.buildGoModule rec {
-            name = "uniond";
-            src = ./uniond;
-            vendorSha256 = null;
-            doCheck = true;
-          };
-          
-          default = uniond;
-        };
-
-
-        checks = {
-          go-test = pkgs.go.stdenv.mkDerivation {
-            name = "go-test";
-            buildInputs = [ pkgs.go ];
-            src = ./uniond;
-            doCheck = true;
-            checkPhase = ''
-              # Go will try to create a .cache/ dir in $HOME. 
-              # We avoid this by setting $HOME to the builder directory
-              export HOME=$(pwd) 
-
-              go version
-              go test ./...
-              touch $out
-            '';
-          };
-
-          go-vet = pkgs.go.stdenv.mkDerivation {
-            name = "go-vet";
-            buildInputs = [ pkgs.go ];
-            src = ./uniond;
-            doCheck = true;
-            checkPhase = ''
-              # Go will try to create a .cache/ dir in $HOME. 
-              # We avoid this by setting $HOME to the builder directory
-              export HOME=$(pwd) 
-
-              go version
-              go vet ./...
-              touch $out
-            '';
-          };
-
-
+        packages = {
+          default = self'.packages.uniond;
         };
 
         devShells.default = pkgs.mkShell {
@@ -93,6 +52,8 @@
           nativeBuildInputs = [
             config.treefmt.build.wrapper
           ];
+
+          # TODO: See if we can link these in the `ignite-cli` package instead of in the devShell
           PROTOC = "${pkgs.protobuf}/bin/protoc";
           SWAGGER_BIN = "${self'.packages.swagger-combine}/bin/swagger-combine";
         };
