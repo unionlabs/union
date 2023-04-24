@@ -25,43 +25,18 @@
       imports = [
         inputs.treefmt-nix.flakeModule
         ./docs/docs.nix
+        ./inputs/ignite-cli.nix
+        ./inputs/swagger-combine.nix
       ];
       perSystem = { config, self', inputs', pkgs, system, lib, ... }: rec {
         packages = rec {
-          # ignite cli package for build/devshell
-          swagger-combine = pkgs.buildNpmPackage {
-            pname = "swagger-combine";
-            version = "10.0.9";
-            src = inputs.swagger-combine-src;
-            dontNpmBuild = true;
-            npmDepsHash = "sha256-FZR8hefkqTwSZJMX4lzS4zk7iGXi0+zi0ol1ia3iLYs=";
-          };
-
           uniond = pkgs.buildGoModule rec {
             name = "uniond";
             src = ./uniond;
             vendorSha256 = null;
             doCheck = true;
           };
-
-          ignite-cli = pkgs.buildGoModule rec {
-            allowGoReference = true;
-            patches = [
-              ./patches/protoc.patch
-            ];
-            nativeBuildInputs = [ pkgs.protobuf ];
-            buildInputs = [ pkgs.protobuf ];
-            name = "ignite-cli";
-            src = inputs.ignite-cli-src;
-            vendorSha256 = "sha256-TWOxdq2LTnxd718Ra0viD1z2tBnNmcN92A1wpX97xtc=";
-            doCheck = false;
-            ldflags = ''
-              -X github.com/ignite/cli/ignite/version.Head=${src.rev}
-              -X github.com/ignite/cli/ignite/version.Version=v0.26.1
-              -X github.com/ignite/cli/ignite/version.Date=${builtins.toString (src.lastModified)}
-            '';
-          };
-
+          
           default = uniond;
         };
 
