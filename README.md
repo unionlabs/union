@@ -2,7 +2,7 @@
 
 # Union
 
-This repository hosts the [`uniond`](./uniond/) codebase, the node for the Union network. 
+This repository hosts the [`uniond`](./uniond/) codebase, the node for the Union network.
 
 ## Building
 
