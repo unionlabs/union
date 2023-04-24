@@ -52,7 +52,7 @@ git checkout $RELEASE_BRANCH
 Now that you have the `UnionFi/union` repository, you can build the `uniond` binary.
 
 ```sh
-cd ~/union
+cd ~/union/uniond
 make install
 ```
 
