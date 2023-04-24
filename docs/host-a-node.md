@@ -32,14 +32,14 @@ Now to connect the `uniond` binary to the public RPC.
 
 First, set the chain-id with:
 
-<!-- TODO: Replace `$CHAIN_ID` with our the chain-id of our main-net or test-net. -->
+<!-- TODO: Replace `$CHAIN_ID` with our the chain-id of our main-net or test-net. https://github.com/UnionFi/union/issues/29 -->
 ```sh
 uniond config chain-id $CHAIN_ID
 ```
 
 Set the public RPC node:
 
-<!-- TODO: Replace `$RPC_NODE_URL` with our RPC node URL. -->
+<!-- TODO: Replace `$RPC_NODE_URL` with our RPC node URL. https://github.com/UnionFi/union/issues/30 -->
 ```sh
 uniond config node $RPC_NODE_URL
 ```
@@ -54,15 +54,15 @@ uniond init $MONIKER_NAME --chain-id $CHAIN_ID
 
 ## Download the Genesis File
 
-<!-- TODO: Create and upload genisis file for users to download -->
+<!-- TODO: Create and upload genisis file for users to download. https://github.com/UnionFi/union/issues/31 -->
 ```sh
 curl $GENISIS_URL > ~/.union/config/genesis.json
 ```
 
 ## Configure Persistent Peers
 
-<!-- TODO: Create and upload presistent peers linst for users to download -->
-<!-- TODO: Update instructions -->
+<!-- TODO: Create and upload presistent peers linst for users to download. https://github.com/UnionFi/union/issues/32 -->
+<!-- TODO: Update instructions. https://github.com/UnionFi/union/issues/32 -->
 
 ## Create Local Key Pair
 
@@ -98,7 +98,7 @@ uniond keys show $KEY_NAME -a
 
 ## Acquire Tokens
 
-<!-- TODO: Determine process for distributing tokens on testnet -->
+<!-- TODO: Determine process for distributing tokens on testnet. https://github.com/UnionFi/union/issues/33 -->
 
 # Start the node
 
