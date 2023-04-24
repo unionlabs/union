@@ -1,0 +1,28 @@
+{
+  "$schema": "https://raw.githubusercontent.com/streetsidesoftware/cspell/main/cspell.schema.json",
+  "version": "0.2",
+  "dictionaryDefinitions": [
+    {
+      "name": "uniond-scaffold",
+      "path": "dictionaries/uniond-scaffold.txt",
+      "addWords": true
+    }
+  ],
+  "dictionaries": [
+    "en_US",
+    "companies",
+    "softwareTerms",
+    "go", 
+    "latex",
+    "uniond-scaffold"
+  ],
+  "ignorePaths": [
+    "dictionaries/**",
+    "node_modules", 
+    "uniond/vendor", 
+    "uniond/x/union/types",
+    "uniond/proto",
+    "uniond/go.mod",
+    "uniond/go.sum"
+  ]
+}
