@@ -33,23 +33,6 @@
         "type": "github"
       }
     },
-    "ignite-cli-src": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1680379003,
-        "narHash": "sha256-nSiLd8GKxGiiIdB5MZlsZTOTh9hkfUzvCjJiWgzaqDk=",
-        "owner": "ignite",
-        "repo": "cli",
-        "rev": "4098ae9a5941fd1875c8eb62540482076bd6f6d6",
-        "type": "github"
-      },
-      "original": {
-        "owner": "ignite",
-        "repo": "cli",
-        "rev": "4098ae9a5941fd1875c8eb62540482076bd6f6d6",
-        "type": "github"
-      }
-    },
     "nixpkgs": {
       "locked": {
         "lastModified": 1679944645,
@@ -103,10 +86,8 @@
     "root": {
       "inputs": {
         "flake-parts": "flake-parts",
-        "ignite-cli-src": "ignite-cli-src",
         "nixpkgs": "nixpkgs",
         "rust-overlay": "rust-overlay",
-        "swagger-combine-src": "swagger-combine-src",
         "treefmt-nix": "treefmt-nix"
       }
     },
@@ -128,22 +109,6 @@
       "original": {
         "owner": "oxalica",
         "repo": "rust-overlay",
-        "type": "github"
-      }
-    },
-    "swagger-combine-src": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1635175020,
-        "narHash": "sha256-eBScPrHWDtyRP76kfKfM71WbbNh1j5EhuxwNT/M+H8Y=",
-        "owner": "maxdome",
-        "repo": "swagger-combine",
-        "rev": "d240f610e60ed09070db3f58b4a9fc09bfc0b9b3",
-        "type": "github"
-      },
-      "original": {
-        "owner": "maxdome",
-        "repo": "swagger-combine",
         "type": "github"
       }
     },
