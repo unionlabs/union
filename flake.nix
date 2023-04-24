@@ -22,7 +22,10 @@
     flake-parts.lib.mkFlake { inherit inputs; } {
       systems =
         [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" "x86_64-darwin" ];
-      imports = [ inputs.treefmt-nix.flakeModule ];
+      imports = [
+        inputs.treefmt-nix.flakeModule
+        ./docs/docs.nix
+      ];
       perSystem = { config, self', inputs', pkgs, system, lib, ... }: rec {
         packages = rec {
           # ignite cli package for build/devshell
@@ -56,19 +59,6 @@
               -X github.com/ignite/cli/ignite/version.Head=${src.rev}
               -X github.com/ignite/cli/ignite/version.Version=v0.26.1
               -X github.com/ignite/cli/ignite/version.Date=${builtins.toString (src.lastModified)}
-            '';
-          };
-
-          docs-package = pkgs.buildNpmPackage {
-            name = "docs-package";
-            src = ./docs/.;
-            buildPhase = ''
-              npm run build
-            '';
-            npmDepsHash = "sha256-j/i0MM+kzvcsZs8aWab6xdHJ+QSW0S1MQcS+A2RiTY0=";
-            installPhase = ''
-              mkdir -p $out
-              cp -dR ./build $out
             '';
           };
 
@@ -108,6 +98,8 @@
               touch $out
             '';
           };
+
+
         };
 
         devShells.default = pkgs.mkShell {
@@ -139,19 +131,6 @@
 
         apps = {
           ignite-cli.program = "${config.packages.ignite-cli}/bin/ignite";
-
-          docs = {
-            type = "app";
-            program = pkgs.writeShellApplication {
-              name = "docs";
-              runtimeInputs = [ pkgs.nodejs ];
-              text = ''
-                cd docs
-                npm install
-                npm run start
-              '';
-            };
-          };
         };
       };
     };
