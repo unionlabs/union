@@ -1,4 +1,4 @@
-name: Check
+name: Build
 
 on:
   push:
@@ -9,7 +9,7 @@ on:
     - main
     
 jobs:
-  checks:
+  build:
     uses: nixbuild/nixbuild-action/.github/workflows/ci-workflow.yml@v16
     secrets:
       nixbuild_token: ${{ secrets.nixbuild_token }}

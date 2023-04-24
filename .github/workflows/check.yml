@@ -1,0 +1,20 @@
+name: Check
+
+on:
+  push:
+    branches:
+    - main
+  pull_request:
+    branches:
+    - main
+    
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          lfs: true
+      - name: Check for LFS files
+        run: ./.github/scripts/lfs.sh
