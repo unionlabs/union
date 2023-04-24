@@ -22,7 +22,10 @@
     flake-parts.lib.mkFlake { inherit inputs; } {
       systems =
         [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" "x86_64-darwin" ];
-      imports = [ inputs.treefmt-nix.flakeModule ];
+      imports = [
+        inputs.treefmt-nix.flakeModule
+        ./docs/docs.nix
+      ];
       perSystem = { config, self', inputs', pkgs, system, lib, ... }: rec {
         packages = rec {
           # ignite cli package for build/devshell
@@ -95,6 +98,8 @@
               touch $out
             '';
           };
+
+
         };
 
         devShells.default = pkgs.mkShell {
@@ -107,6 +112,8 @@
             gotools
             go-tools
             nodejs
+            nil
+            marksman
           ];
           nativeBuildInputs = [
             config.treefmt.build.wrapper
