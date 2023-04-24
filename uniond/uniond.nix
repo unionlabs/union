@@ -1,11 +1,18 @@
 { inputs, ... }: {
-  perSystem = { pkgs, ... }: {
+  perSystem = { pkgs, self', ... }: {
     packages = {
       uniond = pkgs.buildGoModule rec {
         name = "uniond";
         src = ./.;
         vendorSha256 = null;
         doCheck = true;
+      };
+
+      uniond-image = pkgs.dockerTools.buildImage {
+        name = "uniond";
+        config = {
+          Cmd = [ "${self'.packages.uniond}/bin/uniond" ];
+        };
       };
     };
 
