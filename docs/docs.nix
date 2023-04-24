@@ -23,7 +23,7 @@
         npmDepsHash = "sha256-j/i0MM+kzvcsZs8aWab6xdHJ+QSW0S1MQcS+A2RiTY0=";
         installPhase = ''
           mkdir -p $out
-          cp -dR ./build $out
+          cp -dR ./build/* $out
         '';
       };
     };
