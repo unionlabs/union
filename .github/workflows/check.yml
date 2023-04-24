@@ -7,7 +7,10 @@ on:
   pull_request:
     branches:
     - main
-    
+
+permissions:
+  pull-requests: read
+
 jobs:
   check:
     runs-on: ubuntu-latest
@@ -16,6 +19,7 @@ jobs:
       - uses: actions/checkout@v3
         with:
           lfs: true
+          fetch-depth: 0
       - name: Check for LFS files
         run: ./.github/scripts/lfs.sh
       - name: Lint commit messages
