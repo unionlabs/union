@@ -53,7 +53,6 @@
             config.treefmt.build.wrapper
           ];
 
-          # TODO: See if we can link these in the `ignite-cli` package instead of in the devShell
           PROTOC = "${pkgs.protobuf}/bin/protoc";
           SWAGGER_BIN = "${self'.packages.swagger-combine}/bin/swagger-combine";
         };
