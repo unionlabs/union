@@ -58,7 +58,20 @@
               -X github.com/ignite/cli/ignite/version.Date=${builtins.toString (src.lastModified)}
             '';
           };
-
+          
+          docs-package = pkgs.buildNpmPackage {
+            name = "docs-package";
+            src = ./docs/.;
+            buildPhase = ''
+              npm run build
+            '';
+            npmDepsHash = "sha256-j/i0MM+kzvcsZs8aWab6xdHJ+QSW0S1MQcS+A2RiTY0=";
+            installPhase = ''
+              mkdir -p $out
+              cp -dR ./build $out
+            '';
+          };
+          
           default = uniond;
         };
 
@@ -126,6 +139,19 @@
 
         apps = {
           ignite-cli.program = "${config.packages.ignite-cli}/bin/ignite";
+          
+          docs = {
+            type = "app";
+            program = pkgs.writeShellApplication {
+              name = "docs";
+              runtimeInputs = [ pkgs.nodejs ];
+              text = ''
+                cd docs
+                npm install
+                npm run start
+              '';
+            };
+          };
         };
       };
     };
