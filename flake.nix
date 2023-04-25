@@ -69,7 +69,7 @@
           nativeBuildInputs = [
             config.treefmt.build.wrapper
           ];
-          GOPRIVATE = "github.com/goblingarden/*";
+          GOPRIVATE = "github.com/unionfi/*";
         };
 
         treefmt = {
