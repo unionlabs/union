@@ -34,6 +34,7 @@ capabilitytypes
 cdctypes
 Chainer
 clsx
+cmtjson
 codectypes
 codespace
 cometbft
@@ -63,6 +64,7 @@ feegrant
 Feegrant
 feegrantkeeper
 feegrantmodule
+genbn
 gentx
 genutil
 genutilcli
@@ -159,6 +161,7 @@ PROTOC
 pruningtypes
 pubkey
 pubkey's
+privval
 redelegate
 Redelegate
 redelegating
@@ -167,6 +170,7 @@ Redelegation
 redelegations
 Redelegations
 reflectionv
+Repr
 runtimeservices
 secp
 Secp
