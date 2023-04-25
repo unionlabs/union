@@ -1,4 +1,4 @@
-[![build](https://github.com/UnionFi/union/actions/workflows/main.yml/badge.svg)](https://github.com/UnionFi/union/actions/workflows/main.yml)
+[![Build](https://github.com/UnionFi/union/actions/workflows/build.yml/badge.svg)](https://github.com/UnionFi/union/actions/workflows/build.yml)
 
 # Union
 
