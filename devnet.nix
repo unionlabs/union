@@ -1,18 +1,15 @@
-
-{ inputs, ... }: {
-  perSystem = { pkgs, self', ... }: {
+{ ... }: {
+  perSystem = { pkgs, self', inputs', ... }: {
     packages = {
       devnet = pkgs.writeShellApplication {
         name = "union-devnet";
-        runtimeInputs = [ self'.inputs.arion.packages.default ];
+        runtimeInputs = [ inputs'.arion.packages.default ];
         text = ''
           arion
         '';
-     
       };
     };
 
-    checks = {
-    };
+    checks = { };
   };
 }

@@ -1,6 +1,6 @@
 {
   "nodes": {
-    "arion-src": {
+    "arion": {
       "inputs": {
         "flake-parts": "flake-parts",
         "haskell-flake": "haskell-flake",
@@ -41,7 +41,7 @@
     "flake-parts": {
       "inputs": {
         "nixpkgs-lib": [
-          "arion-src",
+          "arion",
           "nixpkgs"
         ]
       },
@@ -220,7 +220,7 @@
     },
     "root": {
       "inputs": {
-        "arion-src": "arion-src",
+        "arion": "arion",
         "flake-parts": "flake-parts_2",
         "nixpkgs": "nixpkgs",
         "pre-commit-hooks": "pre-commit-hooks",
