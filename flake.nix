@@ -93,6 +93,8 @@
             nodejs
             nil
             marksman
+            jq
+            yq
           ];
           nativeBuildInputs = [
             config.treefmt.build.wrapper
