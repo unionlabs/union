@@ -52,11 +52,13 @@
                 enable = true;
                 name = "treefmt";
                 entry = "nix build .#checks.${system}.treefmt -L";
+                pass_filenames = false;
               };
               spellcheck = {
                 enable = true;
                 name = "spellcheck";
                 entry = "nix build .#checks.${system}.spellcheck -L";
+                pass_filenames = false;
               };
             };
           };
