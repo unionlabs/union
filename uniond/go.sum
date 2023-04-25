@@ -432,10 +432,6 @@ github.com/go-playground/validator/v10 v10.2.0/go.mod h1:uOYAAleCW8F/7oMFd6aG0GO
 github.com/go-playground/validator/v10 v10.11.1 h1:prmOlTVv+YjZjmRmNSF3VmspqJIxJWXmqUsHwfTRRkQ=
 github.com/go-sql-driver/mysql v1.4.0/go.mod h1:zAC/RDZ24gD3HViQzih4MyKcchzm+sOG5ZlKdlhCg5w=
 github.com/go-stack/stack v1.8.0/go.mod h1:v0f6uXyyMGvRgIKkXu+yp6POWl0qKG85gN/melR3HDY=
-github.com/goblingarden/cometbft v0.0.0-20230315194842-f705144e7d29 h1:o/2EIuHj/O5QjPsNrOHEFENdYB5MGaW6IiERTRZuIn4=
-github.com/goblingarden/cometbft v0.0.0-20230315194842-f705144e7d29/go.mod h1:g19Cle9IZtzlUEhjK9qXOlcQ/icvuU+11MDKQLA32O4=
-github.com/goblingarden/cosmos-sdk v0.0.0-20230401110632-cbd47960547c h1:vTpyPjpkAcDMcVwwt8Jv08QTtuc2qPmBigzbyFwm2Qs=
-github.com/goblingarden/cosmos-sdk v0.0.0-20230401110632-cbd47960547c/go.mod h1:gS+qFbdpwuGlx+BD6VF1Gep+2GZPAojKzjtFPWa634E=
 github.com/gobwas/httphead v0.0.0-20180130184737-2c6c146eadee h1:s+21KNqlpePfkah2I+gwHF8xmJWRjooY+5248k6m4A0=
 github.com/gobwas/httphead v0.0.0-20180130184737-2c6c146eadee/go.mod h1:L0fX3K22YWvt/FAX9NnzrNzcI4wNYi9Yku4O0LKYflo=
 github.com/gobwas/pool v0.2.0 h1:QEmUOlnSjWtnpRGHF3SauEiOsy82Cup83Vf2LcMlnc8=
@@ -937,6 +933,10 @@ github.com/ugorji/go/codec v1.1.7/go.mod h1:Ax+UKWsSmolVDwsd+7N3ZtXu+yMGCf907BLY
 github.com/ulikunitz/xz v0.5.10/go.mod h1:nbz6k7qbPmH4IRqmfOplQw/tblSgqTqBwxkY0oWt/14=
 github.com/ulikunitz/xz v0.5.11 h1:kpFauv27b6ynzBNT/Xy+1k+fK4WswhN/6PN5WhFAGw8=
 github.com/ulikunitz/xz v0.5.11/go.mod h1:nbz6k7qbPmH4IRqmfOplQw/tblSgqTqBwxkY0oWt/14=
+github.com/unionfi/cometbft v0.0.0-20230315194842-f705144e7d29 h1:kzC0WQGw3d+70EnwIUJPB34nqeFbcxoMKfxRhr+qnH4=
+github.com/unionfi/cometbft v0.0.0-20230315194842-f705144e7d29/go.mod h1:g19Cle9IZtzlUEhjK9qXOlcQ/icvuU+11MDKQLA32O4=
+github.com/unionfi/cosmos-sdk v0.0.0-20230407114305-15f73c26a390 h1:+lP0YuLoQYPizHir752zyGut7RMqqe31/N18BBptfwo=
+github.com/unionfi/cosmos-sdk v0.0.0-20230407114305-15f73c26a390/go.mod h1:gS+qFbdpwuGlx+BD6VF1Gep+2GZPAojKzjtFPWa634E=
 github.com/urfave/cli v1.20.0/go.mod h1:70zkFmudgCuE/ngEzBv17Jvp/497gISqfk5gWijbERA=
 github.com/urfave/cli v1.22.1/go.mod h1:Gos4lmkARVdJ6EkW0WaNv/tZAAMe9V7XWyB60NtXRu0=
 github.com/xiang90/probing v0.0.0-20190116061207-43a291ad63a2/go.mod h1:UETIi67q53MR2AWcXfiuqkDkRtnGDLqkBTpCHuJHxtU=

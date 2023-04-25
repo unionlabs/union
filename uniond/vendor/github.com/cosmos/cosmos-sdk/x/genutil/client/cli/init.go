@@ -68,10 +68,10 @@ func displayInfo(info printInfo) error {
 // and the respective application.
 func InitCmd(mbm module.BasicManager, defaultNodeHome string) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "init [moniker]",
+		Use:   "init [moniker] [key_type]",
 		Short: "Initialize private validator, p2p, genesis, and application configuration files",
 		Long:  `Initialize validators's and node's configuration files.`,
-		Args:  cobra.ExactArgs(1),
+		Args:  cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx := client.GetClientContextFromCmd(cmd)
 			cdc := clientCtx.Codec
@@ -105,7 +105,9 @@ func InitCmd(mbm module.BasicManager, defaultNodeHome string) *cobra.Command {
 				}
 			}
 
-			nodeID, _, err := genutil.InitializeNodeValidatorFilesFromMnemonic(config, mnemonic)
+			keyType := args[1]
+
+			nodeID, _, err := genutil.InitializeNodeValidatorFilesFromMnemonicCustom(config, mnemonic, keyType)
 			if err != nil {
 				return err
 			}
@@ -146,6 +148,8 @@ func InitCmd(mbm module.BasicManager, defaultNodeHome string) *cobra.Command {
 			}
 
 			genDoc.ChainID = chainID
+			genDoc.ConsensusParams = types.DefaultConsensusParams()
+			genDoc.ConsensusParams.Validator.PubKeyTypes = []string{keyType}
 			genDoc.Validators = nil
 			genDoc.AppState = appState
 

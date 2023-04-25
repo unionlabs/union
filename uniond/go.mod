@@ -170,7 +170,7 @@ require (
 )
 
 replace (
-	github.com/cometbft/cometbft => github.com/goblingarden/cometbft v0.0.0-20230315194842-f705144e7d29
-	github.com/cosmos/cosmos-sdk => github.com/goblingarden/cosmos-sdk v0.0.0-20230401110632-cbd47960547c
+	github.com/cometbft/cometbft => github.com/unionfi/cometbft v0.0.0-20230315194842-f705144e7d29
+	github.com/cosmos/cosmos-sdk => github.com/unionfi/cosmos-sdk v0.0.0-20230407114305-15f73c26a390
 	github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
 )
