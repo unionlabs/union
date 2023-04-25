@@ -47,6 +47,7 @@
             src = ./.;
             hooks = {
               commitizen.enable = true;
+              nil.enable = true;
             };
           };
         };
