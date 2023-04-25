@@ -1,7 +1,7 @@
-{ inputs, ... }: {
+{ ... }: {
   perSystem = { pkgs, self', ... }: {
     packages = {
-      uniond = pkgs.buildGoModule rec {
+      uniond = pkgs.buildGoModule {
         name = "uniond";
         src = ./.;
         vendorSha256 = null;
