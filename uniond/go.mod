@@ -103,6 +103,7 @@ require (
 	github.com/hashicorp/golang-lru v0.5.5-0.20210104140557-80c98217689d // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/hdevalence/ed25519consensus v0.1.0 // indirect
+	github.com/holiman/uint256 v1.2.2 // indirect
 	github.com/huandu/skiplist v1.2.0 // indirect
 	github.com/improbable-eng/grpc-web v0.15.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
@@ -170,7 +171,10 @@ require (
 )
 
 replace (
-	github.com/cometbft/cometbft => github.com/unionfi/cometbft v0.0.0-20230315194842-f705144e7d29
+
+	github.com/cometbft/cometbft => github.com/unionfi/cometbls v0.0.0-20230407142035-367fef0f2c0f
+	// Fork of gnark crypto until https://github.com/ConsenSys/gnark-crypto/pull/314 is merged
+	github.com/consensys/gnark-crypto => github.com/hussein-aitlahcen/gnark-crypto v0.0.0-20230407134206-ccbf17121d92
 	github.com/cosmos/cosmos-sdk => github.com/unionfi/cosmos-sdk v0.0.0-20230407114305-15f73c26a390
 	github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
 )

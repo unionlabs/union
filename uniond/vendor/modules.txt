@@ -175,7 +175,7 @@ github.com/cockroachdb/apd/v2
 # github.com/coinbase/rosetta-sdk-go/types v1.0.0
 ## explicit; go 1.18
 github.com/coinbase/rosetta-sdk-go/types
-# github.com/cometbft/cometbft v0.37.0 => github.com/unionfi/cometbft v0.0.0-20230315194842-f705144e7d29
+# github.com/cometbft/cometbft v0.37.0 => github.com/unionfi/cometbls v0.0.0-20230407142035-367fef0f2c0f
 ## explicit; go 1.20
 github.com/cometbft/cometbft/abci/client
 github.com/cometbft/cometbft/abci/example/code
@@ -283,7 +283,7 @@ github.com/confio/ics23/go
 # github.com/consensys/bavard v0.1.13
 ## explicit; go 1.15
 github.com/consensys/bavard
-# github.com/consensys/gnark-crypto v0.9.1-0.20230127122953-83736ef21d69
+# github.com/consensys/gnark-crypto v0.9.1-0.20230127122953-83736ef21d69 => github.com/hussein-aitlahcen/gnark-crypto v0.0.0-20230407134206-ccbf17121d92
 ## explicit; go 1.18
 github.com/consensys/gnark-crypto/ecc
 github.com/consensys/gnark-crypto/ecc/bn254
@@ -885,6 +885,9 @@ github.com/hashicorp/hcl/json/token
 # github.com/hdevalence/ed25519consensus v0.1.0
 ## explicit; go 1.19
 github.com/hdevalence/ed25519consensus
+# github.com/holiman/uint256 v1.2.2
+## explicit; go 1.18
+github.com/holiman/uint256
 # github.com/huandu/skiplist v1.2.0
 ## explicit; go 1.12
 github.com/huandu/skiplist
@@ -1375,6 +1378,7 @@ rsc.io/tmplfunc/internal/parse
 # sigs.k8s.io/yaml v1.3.0
 ## explicit; go 1.12
 sigs.k8s.io/yaml
-# github.com/cometbft/cometbft => github.com/unionfi/cometbft v0.0.0-20230315194842-f705144e7d29
+# github.com/cometbft/cometbft => github.com/unionfi/cometbls v0.0.0-20230407142035-367fef0f2c0f
+# github.com/consensys/gnark-crypto => github.com/hussein-aitlahcen/gnark-crypto v0.0.0-20230407134206-ccbf17121d92
 # github.com/cosmos/cosmos-sdk => github.com/unionfi/cosmos-sdk v0.0.0-20230407114305-15f73c26a390
 # github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7

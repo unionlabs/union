@@ -1,0 +1,97 @@
+version: 2.1
+
+commands:
+  test:
+    parameters:
+      arch:
+        default: "amd64"
+        description: The target architecture.
+        type: enum
+        enum: ["amd64", "386"]
+    steps:
+      - run:
+          name: "Test (<<parameters.arch>>)"
+          command: |
+            export GOARCH=<<parameters.arch>>
+            go version
+            go env
+            go test -v -coverprofile=coverage-<<parameters.arch>>.txt -covermode=count
+
+jobs:
+
+  go120:
+    docker:
+      - image: cimg/go:1.20
+    steps:
+      - run:
+          name: "Install tools"
+          command: |
+            curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.51.1
+      - checkout
+      - run:
+          name: "Lint"
+          command: golangci-lint run
+      - test:
+          arch: "amd64"
+      - test:
+          arch: "386"
+      - run:
+          name: "Codecov upload"
+          command: bash <(curl -s https://codecov.io/bash)
+      - restore_cache:
+          keys:
+            - corpus-v3
+      - run:
+          name: "Fuzzing"
+          command: |
+            GOCACHE=/home/circleci/project/corpus-v3 go test . -run - -fuzz FuzzBase10StringCompare -fuzztime 30s
+            GOCACHE=/home/circleci/project/corpus-v3 go test . -run - -fuzz FuzzDecimal -fuzztime 30s
+      - save_cache:
+          key: corpus-v3-{{ epoch }}
+          paths:
+            - corpus-v3
+      - run:
+          name: "Benchmark"
+          command: go test -run=- -bench=. -benchmem
+      - run:
+          name: "Build tests for PPC64"
+          command: |
+            GOARCH=ppc64 go test -c
+            mv uint256.test uint256.test.ppc64
+      - persist_to_workspace:
+          root: .
+          paths:
+            - uint256.test.*
+
+  bigendian:
+    docker:
+      - image: circleci/buildpack-deps:bullseye
+    steps:
+      - run:
+          name: "Install QEMU"
+          command: sudo apt-get -q update && sudo apt-get -qy install qemu-user-static --no-install-recommends
+      - attach_workspace:
+          at: .
+      - run:
+          name: "Test (PPC64 emulation)"
+          command: qemu-ppc64-static uint256.test.ppc64 -test.v
+
+  go119:
+    docker:
+      - image: cimg/go:1.19
+    steps:
+      - checkout
+      - test
+
+
+
+
+workflows:
+  version: 2
+  uint256:
+    jobs:
+      - go120
+      - go119
+      - bigendian:
+          requires:
+            - go120
