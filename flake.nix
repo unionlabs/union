@@ -48,6 +48,11 @@
             hooks = {
               commitizen.enable = true;
               nil.enable = true;
+              treefmt-nix = {
+                enable = true;
+                name = "treefmt";
+                entry = "nix build .#checks.${system}.treefmt -L";
+              };
             };
           };
         };
