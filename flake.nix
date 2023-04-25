@@ -53,6 +53,11 @@
                 name = "treefmt";
                 entry = "nix build .#checks.${system}.treefmt -L";
               };
+              spellcheck = {
+                enable = true;
+                name = "spellcheck";
+                entry = "nix build .#checks.${system}.spellcheck -L";
+              };
             };
           };
         };
