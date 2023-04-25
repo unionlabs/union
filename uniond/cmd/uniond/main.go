@@ -12,6 +12,7 @@ import (
 
 func main() {
 	rootCmd, _ := cmd.NewRootCmd()
+	rootCmd.AddCommand(cmd.GenBn254())
 	if err := svrcmd.Execute(rootCmd, "", app.DefaultNodeHome); err != nil {
 		switch e := err.(type) {
 		case server.ErrorCode:
