@@ -252,3 +252,7 @@ verison
 vestingtypes
 vuex
 wctx
+
+keypairs
+KEYPAIR
+gentxs
