@@ -3,7 +3,7 @@
     let
       uniond = pkgs.lib.getExe self'.packages.uniond;
       chainId = "union-devnet-1";
-      N = 3;
+      N = 1;
       mkHome = { genesisAccounts }:
         pkgs.runCommand "genesis-home" { } ''
           mkdir -p $out
@@ -30,7 +30,7 @@
               }.json | ${pkgs.jq}/bin/jq ."pub_key"."value"`
               PUBKEY="{\"@type\":\"/cosmos.crypto.bn254.PubKey\",\"key\":$PUBKEY}"
               mkdir -p $out
-              ${uniond} gentx ${txAccount} 1000000000000000000000stake "bn254" --keyring-backend test --chain-id ${chainId} --home ${home} --ip "0.0.0.0" --pubkey $PUBKEY --output-document $out/valgentx-${
+              ${uniond} gentx ${txAccount} 1000000000000000000000stake "bn254" --keyring-backend test --chain-id ${chainId} --home ${home} --ip "0.0.0.0" --pubkey $PUBKEY --sequence ${toString i} --output-document $out/valgentx-${
                 toString i
               }.json
             '')
