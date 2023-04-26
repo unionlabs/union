@@ -1,4 +1,5 @@
 # uniond scaffold words
+
 aarch
 abci
 ABCI
@@ -66,6 +67,7 @@ feegrantkeeper
 feegrantmodule
 genbn
 gentx
+gentxs
 genutil
 genutilcli
 genutils
@@ -107,9 +109,12 @@ identifing
 Infima
 interchain
 Interchain
+interchainaccounts
 keepertest
 keybase
 Keybase
+KEYPAIR
+keypairs
 kwallet
 ldflags
 maxdome
@@ -153,6 +158,7 @@ PRECOMMIT
 prevote
 PREVOTE
 println
+privval
 proto
 protobuf
 Protobuf
@@ -161,7 +167,6 @@ PROTOC
 pruningtypes
 pubkey
 pubkey's
-privval
 redelegate
 Redelegate
 redelegating
@@ -251,3 +256,7 @@ verison
 vestingtypes
 vuex
 wctx
+valkey
+imap
+valgentx
+concat

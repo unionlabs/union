@@ -22,6 +22,7 @@
       imports = [
         ./uniond/uniond.nix
         ./docs/docs.nix
+        ./genesis/genesis.nix
         inputs.treefmt-nix.flakeModule
         inputs.pre-commit-hooks.flakeModule
       ];
@@ -92,6 +93,8 @@
             nodejs
             nil
             marksman
+            jq
+            yq
           ];
           nativeBuildInputs = [
             config.treefmt.build.wrapper

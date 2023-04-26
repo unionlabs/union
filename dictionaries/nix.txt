@@ -1,3 +1,4 @@
 cachix
 gotest
 commitizen
+devnet
