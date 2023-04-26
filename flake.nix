@@ -2,6 +2,10 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-parts.url = "github:hercules-ci/flake-parts";
+    arion = {
+      url = "github:hercules-ci/arion";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     treefmt-nix = {
       url = "github:numtide/treefmt-nix";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -23,10 +27,13 @@
         ./uniond/uniond.nix
         ./docs/docs.nix
         ./genesis/genesis.nix
+        ./devnet.nix
         inputs.treefmt-nix.flakeModule
         inputs.pre-commit-hooks.flakeModule
       ];
       perSystem = { config, self', inputs', pkgs, system, lib, ... }: {
+        _module.args.devnetConfig = { validatorCount = 3; };
+
         packages = {
           default = self'.packages.uniond;
         };

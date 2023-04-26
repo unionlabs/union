@@ -1,9 +1,14 @@
 { ... }: {
-  perSystem = { pkgs, self', ... }:
+  perSystem = { devnetConfig, pkgs, self', ... }:
     let
       uniond = pkgs.lib.getExe self'.packages.uniond;
       chainId = "union-devnet-1";
-      N = 3;
+      mkNodeID = name:
+        pkgs.runCommand "node-id" { } ''
+          ${uniond} init testnet bn254 --chain-id ${chainId} --home .
+          mkdir -p $out
+          mv ./config/node_key.json $out/${name}
+        '';
       mkHome = { genesisAccounts }:
         pkgs.runCommand "genesis-home" { } ''
           mkdir -p $out
@@ -13,15 +18,15 @@
             ${uniond} add-genesis-account ${key} 100000000000000000000000000stake --keyring-backend test --home $out
           '') genesisAccounts)}
         '';
-      mkValidatorKeys = { home }:
+      mkValidatorKeys = { validatorCount, home }:
         builtins.genList
           (i:
             pkgs.runCommand "valkey-${toString i}" { } ''
               mkdir -p $out
               ${uniond} genbn --home ${home} >> $out/valkey-${toString i}.json
             '')
-          N;
-      mkValidatorGentx = { home, txAccount, validatorKeys }:
+          validatorCount;
+      mkValidatorGentx = { home, validatorKeys }:
         pkgs.lib.lists.imap0
           (i: valKey:
             pkgs.runCommand "valgentx-${toString i}" { } ''
@@ -30,18 +35,20 @@
               }.json | ${pkgs.jq}/bin/jq ."pub_key"."value"`
               PUBKEY="{\"@type\":\"/cosmos.crypto.bn254.PubKey\",\"key\":$PUBKEY}"
               mkdir -p $out
-              ${uniond} gentx ${txAccount} 1000000000000000000000stake "bn254" --keyring-backend test --chain-id ${chainId} --home ${home} --ip "0.0.0.0" --pubkey $PUBKEY --output-document $out/valgentx-${
+              ${uniond} gentx val-${toString i} 1000000000000000000000stake "bn254" --keyring-backend test --chain-id ${chainId} --home ${home} --ip "0.0.0.0" --pubkey $PUBKEY --moniker validator-${toString i} --output-document $out/valgentx-${
                 toString i
               }.json
             '')
           validatorKeys;
-      genesisHome = mkHome { genesisAccounts = [ "alice" ]; };
-      validatorKeys = mkValidatorKeys { home = genesisHome; };
+      genesisHome = mkHome {
+        genesisAccounts = builtins.genList (i: "val-${toString i}") devnetConfig.validatorCount;
+      };
+      validatorKeys = mkValidatorKeys { inherit (devnetConfig) validatorCount; home = genesisHome; };
       validatorGentxs = mkValidatorGentx {
         home = genesisHome;
         inherit validatorKeys;
-        txAccount = "alice";
       };
+      validatorNodeIDs = { validatorCount }: builtins.genList (i: mkNodeID "valnode-${toString i}.json") validatorCount;
     in
     {
       packages.devnet-genesis = pkgs.runCommand "genesis" { } ''
@@ -72,6 +79,11 @@
       packages.devnet-validator-gentxs = pkgs.symlinkJoin {
         name = "validator-gentxs";
         paths = validatorGentxs;
+      };
+
+      packages.devnet-validator-node-ids = pkgs.symlinkJoin {
+        name = "validator-node-ids";
+        paths = validatorNodeIDs { inherit (devnetConfig) validatorCount; };
       };
 
       checks = { };
