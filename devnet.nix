@@ -6,13 +6,14 @@
 
         mkUniondService = id: {
           image.enableRecommendedContents = true;
-          image.contents = [ pkgs.coreutils self'.packages.devnet-genesis self'.packages.uniond ];
+          image.contents = [ pkgs.coreutils self'.packages.devnet-genesis self'.packages.uniond self'.packages.devnet-validator-keys ];
           service.command = [
             "sh"
             "-c"
             ''
               cp -R ${self'.packages.devnet-genesis} .
-              ${self'.packages.uniond}/bin/uniond start --home .
+              cp ${self'.packages.devnet-validator-keys}/valkey-0.json ./config/priv_validator_key.json
+              ${self'.packages.uniond}/bin/uniond start --home . 
             ''
           ];
           service.ports = [
