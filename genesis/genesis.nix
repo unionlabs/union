@@ -3,7 +3,7 @@
     let
       uniond = pkgs.lib.getExe self'.packages.uniond;
       chainId = "union-devnet-1";
-      N = 1;
+      N = 2;
       mkHome = { genesisAccounts }:
         pkgs.runCommand "genesis-home" { } ''
           mkdir -p $out
@@ -21,7 +21,7 @@
               ${uniond} genbn --home ${home} >> $out/valkey-${toString i}.json
             '')
           N;
-      mkValidatorGentx = { home, txAccount, validatorKeys }:
+      mkValidatorGentx = { home, validatorKeys }:
         pkgs.lib.lists.imap0
           (i: valKey:
             pkgs.runCommand "valgentx-${toString i}" { } ''
@@ -30,17 +30,18 @@
               }.json | ${pkgs.jq}/bin/jq ."pub_key"."value"`
               PUBKEY="{\"@type\":\"/cosmos.crypto.bn254.PubKey\",\"key\":$PUBKEY}"
               mkdir -p $out
-              ${uniond} gentx ${txAccount} 1000000000000000000000stake "bn254" --keyring-backend test --chain-id ${chainId} --home ${home} --ip "0.0.0.0" --pubkey $PUBKEY --sequence ${toString i} --output-document $out/valgentx-${
+              ${uniond} gentx val-${toString i} 1000000000000000000000stake "bn254" --keyring-backend test --chain-id ${chainId} --home ${home} --ip "0.0.0.0" --pubkey $PUBKEY --moniker validator-${toString i} --output-document $out/valgentx-${
                 toString i
               }.json
             '')
           validatorKeys;
-      genesisHome = mkHome { genesisAccounts = [ "alice" ]; };
+      genesisHome = mkHome {
+        genesisAccounts = builtins.genList (i: "val-${toString i}") N;
+      };
       validatorKeys = mkValidatorKeys { home = genesisHome; };
       validatorGentxs = mkValidatorGentx {
         home = genesisHome;
         inherit validatorKeys;
-        txAccount = "alice";
       };
     in
     {
