@@ -32,6 +32,5 @@ message CanonicalVote {
   sfixed64                  height    = 2;  // canonicalization requires fixed size encoding here
   sfixed64                  round     = 3;  // canonicalization requires fixed size encoding here
   CanonicalBlockID          block_id  = 4 [(gogoproto.customname) = "BlockID"];
-  google.protobuf.Timestamp timestamp = 5 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
   string                    chain_id  = 6 [(gogoproto.customname) = "ChainID"];
 }

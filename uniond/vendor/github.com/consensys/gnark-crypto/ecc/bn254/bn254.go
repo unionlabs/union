@@ -54,7 +54,8 @@ import (
 // ID bn254 ID
 const ID = ecc.BN254
 
-// bCurveCoeff b coeff of the curve Y²=X³+b
+// aCurveCoeff is the a coefficients of the curve Y²=X³+ax+b
+var aCurveCoeff fp.Element
 var bCurveCoeff fp.Element
 
 // twist
@@ -96,6 +97,11 @@ var endo struct {
 	v fptower.E2
 }
 
+// seed x₀ of the curve
+var xGen big.Int
+
+// expose the tower -- github.com/consensys/gnark uses it in a gnark circuit
+
 // 𝔽p²
 type E2 = fptower.E2
 
@@ -105,11 +111,8 @@ type E6 = fptower.E6
 // 𝔽p¹²
 type E12 = fptower.E12
 
-// seed x₀ of the curve
-var xGen big.Int
-
 func init() {
-
+	aCurveCoeff.SetUint64(0)
 	bCurveCoeff.SetUint64(3)
 	// D-twist
 	twist.A0.SetUint64(9)
@@ -162,4 +165,9 @@ func Generators() (g1Jac G1Jac, g2Jac G2Jac, g1Aff G1Affine, g2Aff G2Affine) {
 	g1Jac = g1Gen
 	g2Jac = g2Gen
 	return
+}
+
+// CurveCoefficients returns the a, b coefficients of the curve equation.
+func CurveCoefficients() (a, b fp.Element) {
+	return aCurveCoeff, bCurveCoeff
 }

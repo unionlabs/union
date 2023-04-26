@@ -59,7 +59,6 @@ func CanonicalizeVote(chainID string, vote *cmtproto.Vote) cmtproto.CanonicalVot
 		Height:    vote.Height,       // encoded as sfixed64
 		Round:     int64(vote.Round), // encoded as sfixed64
 		BlockID:   CanonicalizeBlockID(vote.BlockID),
-		Timestamp: vote.Timestamp,
 		ChainID:   chainID,
 	}
 }

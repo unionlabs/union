@@ -153,6 +153,9 @@ github.com/bgentry/go-netrc/netrc
 # github.com/bgentry/speakeasy v0.1.1-0.20220910012023-760eaf8b6816
 ## explicit
 github.com/bgentry/speakeasy
+# github.com/bits-and-blooms/bitset v1.5.0
+## explicit; go 1.14
+github.com/bits-and-blooms/bitset
 # github.com/btcsuite/btcd/btcec/v2 v2.3.2
 ## explicit; go 1.17
 github.com/btcsuite/btcd/btcec/v2
@@ -175,7 +178,7 @@ github.com/cockroachdb/apd/v2
 # github.com/coinbase/rosetta-sdk-go/types v1.0.0
 ## explicit; go 1.18
 github.com/coinbase/rosetta-sdk-go/types
-# github.com/cometbft/cometbft v0.37.0 => github.com/unionfi/cometbls v0.0.0-20230407142035-367fef0f2c0f
+# github.com/cometbft/cometbft v0.37.0 => github.com/unionfi/cometbls v0.0.0-20230410071201-f19ae296cf17
 ## explicit; go 1.20
 github.com/cometbft/cometbft/abci/client
 github.com/cometbft/cometbft/abci/example/code
@@ -283,7 +286,7 @@ github.com/confio/ics23/go
 # github.com/consensys/bavard v0.1.13
 ## explicit; go 1.15
 github.com/consensys/bavard
-# github.com/consensys/gnark-crypto v0.9.1-0.20230127122953-83736ef21d69 => github.com/hussein-aitlahcen/gnark-crypto v0.0.0-20230407134206-ccbf17121d92
+# github.com/consensys/gnark-crypto v0.9.1-0.20230127122953-83736ef21d69 => github.com/hussein-aitlahcen/gnark-crypto v0.0.0-20230409222230-5346db050fea
 ## explicit; go 1.18
 github.com/consensys/gnark-crypto/ecc
 github.com/consensys/gnark-crypto/ecc/bn254
@@ -291,9 +294,10 @@ github.com/consensys/gnark-crypto/ecc/bn254/fp
 github.com/consensys/gnark-crypto/ecc/bn254/fr
 github.com/consensys/gnark-crypto/ecc/bn254/internal/fptower
 github.com/consensys/gnark-crypto/ecc/bn254/signature/bls
-github.com/consensys/gnark-crypto/field
 github.com/consensys/gnark-crypto/field/generator/config
 github.com/consensys/gnark-crypto/field/generator/internal/addchain
+github.com/consensys/gnark-crypto/field/hash
+github.com/consensys/gnark-crypto/field/pool
 github.com/consensys/gnark-crypto/internal/generator/config
 github.com/consensys/gnark-crypto/internal/parallel
 github.com/consensys/gnark-crypto/signature
@@ -1378,7 +1382,7 @@ rsc.io/tmplfunc/internal/parse
 # sigs.k8s.io/yaml v1.3.0
 ## explicit; go 1.12
 sigs.k8s.io/yaml
-# github.com/cometbft/cometbft => github.com/unionfi/cometbls v0.0.0-20230407142035-367fef0f2c0f
-# github.com/consensys/gnark-crypto => github.com/hussein-aitlahcen/gnark-crypto v0.0.0-20230407134206-ccbf17121d92
+# github.com/cometbft/cometbft => github.com/unionfi/cometbls v0.0.0-20230410071201-f19ae296cf17
+# github.com/consensys/gnark-crypto => github.com/hussein-aitlahcen/gnark-crypto v0.0.0-20230409222230-5346db050fea
 # github.com/cosmos/cosmos-sdk => github.com/unionfi/cosmos-sdk v0.0.0-20230407114305-15f73c26a390
 # github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
