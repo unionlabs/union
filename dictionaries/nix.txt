@@ -1,4 +1,7 @@
 cachix
+coreutils
+SIGINT
 gotest
 commitizen
 devnet
+arion

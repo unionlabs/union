@@ -6,8 +6,15 @@
 
         mkUniondService = id: {
           image.enableRecommendedContents = true;
-          service.useHostStore = true;
-          service.command = [ "sh" "-c" "${self'.packages.uniond}/bin/uniond start" ];
+          image.contents = [ pkgs.coreutils self'.packages.devnet-genesis self'.packages.uniond ];
+          service.command = [
+            "sh"
+            "-c"
+            ''
+              cp -R ${self'.packages.devnet-genesis} .
+              ${self'.packages.uniond}/bin/uniond start --home .
+            ''
+          ];
           service.ports = [
             "8000:8000" # host:container
           ];
