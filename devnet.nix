@@ -20,24 +20,39 @@
             params = if id == 0 then "" else "--p2p.persistent_peers ${seedNode}@uniond-0:26656";
           in
           {
-            image.enableRecommendedContents = true;
-            image.contents = [ pkgs.coreutils self'.packages.devnet-genesis self'.packages.uniond self'.packages.devnet-validator-keys self'.packages.devnet-validator-node-ids ];
-            service.networks = [ "union-devnet" ];
-            service.command = [
-              "sh"
-              "-c"
-              ''
-                cp -R ${self'.packages.devnet-genesis} .
-                cp ${self'.packages.devnet-validator-keys}/valkey-${toString id}.json ./config/priv_validator_key.json
-                cp ${self'.packages.devnet-validator-node-ids}/valnode-${toString id}.json ./config/node_key.json
-                echo ${params}
-                ${uniond} start --home . ${params}
-              ''
-            ];
-            service.ports = [
-              # TODO: map ports used to interact with the network on the first node?
-            ];
-            service.stop_signal = "SIGINT";
+            image = {
+              enableRecommendedContents = true;
+              contents = [
+                pkgs.coreutils
+                self'.packages.devnet-genesis
+                self'.packages.uniond
+                self'.packages.devnet-validator-keys
+                self'.packages.devnet-validator-node-ids
+              ];
+            };
+            service = {
+              stop_signal = "SIGINT";
+              networks = [ "union-devnet" ];
+              ports = [
+                # CometBLS JSONRPC 26657
+                "${toString (26657 + id)}:26657"
+                # Cosmos SDK GRPC 9090
+                "${toString (9090 + id)}:9090"
+                # Cosmos SDK REST 1317
+                "${toString (1317 + id)}:1317"
+              ];
+              command = [
+                "sh"
+                "-c"
+                ''
+                  cp -R ${self'.packages.devnet-genesis} .
+                  cp ${self'.packages.devnet-validator-keys}/valkey-${toString id}.json ./config/priv_validator_key.json
+                  cp ${self'.packages.devnet-validator-node-ids}/valnode-${toString id}.json ./config/node_key.json
+                  echo ${params}
+                  ${uniond} start --home . ${params} --rpc.laddr tcp://0.0.0.0:26657 --api.address tcp://0.0.0.0:1317 --grpc.address 0.0.0.0:9090
+                ''
+              ];
+            };
           };
 
         spec = {
