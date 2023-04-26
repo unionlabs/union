@@ -32,6 +32,8 @@
         inputs.pre-commit-hooks.flakeModule
       ];
       perSystem = { config, self', inputs', pkgs, system, lib, ... }: {
+        _module.args.devnetConfig = { validatorCount = 10; };
+
         packages = {
           default = self'.packages.uniond;
         };

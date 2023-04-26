@@ -1,9 +1,14 @@
 { ... }: {
-  perSystem = { pkgs, self', ... }:
+  perSystem = { devnetConfig, pkgs, self', ... }:
     let
       uniond = pkgs.lib.getExe self'.packages.uniond;
       chainId = "union-devnet-1";
-      N = 2;
+      mkNodeID = name:
+        pkgs.runCommand "node-id" { } ''
+          ${uniond} init testnet bn254 --chain-id ${chainId} --home .
+          mkdir -p $out
+          mv ./config/node_key.json $out/${name}
+        '';
       mkHome = { genesisAccounts }:
         pkgs.runCommand "genesis-home" { } ''
           mkdir -p $out
@@ -13,14 +18,14 @@
             ${uniond} add-genesis-account ${key} 100000000000000000000000000stake --keyring-backend test --home $out
           '') genesisAccounts)}
         '';
-      mkValidatorKeys = { home }:
+      mkValidatorKeys = { validatorCount, home }:
         builtins.genList
           (i:
             pkgs.runCommand "valkey-${toString i}" { } ''
               mkdir -p $out
               ${uniond} genbn --home ${home} >> $out/valkey-${toString i}.json
             '')
-          N;
+          validatorCount;
       mkValidatorGentx = { home, validatorKeys }:
         pkgs.lib.lists.imap0
           (i: valKey:
@@ -36,13 +41,14 @@
             '')
           validatorKeys;
       genesisHome = mkHome {
-        genesisAccounts = builtins.genList (i: "val-${toString i}") N;
+        genesisAccounts = builtins.genList (i: "val-${toString i}") devnetConfig.validatorCount;
       };
-      validatorKeys = mkValidatorKeys { home = genesisHome; };
+      validatorKeys = mkValidatorKeys { inherit (devnetConfig) validatorCount; home = genesisHome; };
       validatorGentxs = mkValidatorGentx {
         home = genesisHome;
         inherit validatorKeys;
       };
+      validatorNodeIDs = { validatorCount }: builtins.genList (i: mkNodeID "valnode-${toString i}.json") validatorCount;
     in
     {
       packages.devnet-genesis = pkgs.runCommand "genesis" { } ''
@@ -73,6 +79,11 @@
       packages.devnet-validator-gentxs = pkgs.symlinkJoin {
         name = "validator-gentxs";
         paths = validatorGentxs;
+      };
+
+      packages.devnet-validator-node-ids = pkgs.symlinkJoin {
+        name = "validator-node-ids";
+        paths = validatorNodeIDs { inherit (devnetConfig) validatorCount; };
       };
 
       checks = { };
