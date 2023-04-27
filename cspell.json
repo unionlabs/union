@@ -32,6 +32,11 @@
       "path": "dictionaries/eth.txt",
       "addWords": true
     },
+    {
+      "name": "cosmwasm",
+      "path": "dictionaries/cosmwasm.txt",
+      "addWords": true
+    }
   ],
   "dictionaries": [
     "en_US",
@@ -45,6 +50,7 @@
     "proto",
     "cosmwasm",
     "eth"
+    "cosmwasm"
   ],
   "ignorePaths": [
     "dictionaries/**",
