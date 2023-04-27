@@ -58,6 +58,7 @@ dirchange
 distrkeeper
 distrtypes
 dont
+drawio
 elems
 evidencekeeper
 evidencetypes
@@ -85,6 +86,7 @@ govclient
 govkeeper
 govtypes
 govv
+groth
 groupkeeper
 groupmodule
 horiz

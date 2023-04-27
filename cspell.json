@@ -24,6 +24,7 @@
   ],
   "ignorePaths": [
     "dictionaries/**",
+    "**/*.svg",
     "node_modules",
     "uniond/vendor",
     "uniond/x/union/types",

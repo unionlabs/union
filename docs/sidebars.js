@@ -8,7 +8,18 @@ const sidebars = {
       type: 'category',
       label: 'Validators & Nodes',
       items: [
-        'nodes-validators/setting-up-node'],
+        'nodes-validators/setting-up-node'
+      ],
+    },
+  ],
+  architectureSidebar: [
+    'intro',
+    {
+      type: 'category',
+      label: 'Architecture',
+      items: [
+        'architecture/testnet'
+      ],
     },
   ],
 };
