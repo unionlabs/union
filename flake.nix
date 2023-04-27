@@ -89,27 +89,35 @@
           };
         };
 
-        devShells.default = pkgs.mkShell {
-          inherit (self'.checks.pre-commit-check) shellHook;
-          buildInputs = with pkgs; [
-            protobuf
-            buf
-            nixfmt
-            go_1_20
-            gopls
-            gotools
-            go-tools
-            nodejs
-            nil
-            marksman
-            jq
-            yq
-          ];
-          nativeBuildInputs = [
-            config.treefmt.build.wrapper
-          ];
-          GOPRIVATE = "github.com/unionfi/*";
-        };
+        devShells =
+          let
+            baseShell = {
+              buildInputs = with pkgs; [
+                protobuf
+                buf
+                nixfmt
+                go_1_20
+                gopls
+                gotools
+                go-tools
+                nodejs
+                nil
+                marksman
+                jq
+                yq
+              ];
+              nativeBuildInputs = [
+                config.treefmt.build.wrapper
+              ];
+              GOPRIVATE = "github.com/unionfi/*";
+            };
+          in
+          {
+            default = pkgs.mkShell baseShell;
+            githook = pkgs.mkShell (baseShell // {
+              inherit (self'.checks.pre-commit-check) shellHook;
+            });
+          };
 
         treefmt = {
           projectRootFile = "flake.nix";
