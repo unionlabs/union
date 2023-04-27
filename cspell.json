@@ -16,6 +16,11 @@
       "name": "proto",
       "path": "dictionaries/proto.txt",
       "addWords": true
+    },
+    {
+      "name": "cosmwasm",
+      "path": "dictionaries/cosmwasm.txt",
+      "addWords": true
     }
   ],
   "dictionaries": [
@@ -26,7 +31,8 @@
     "latex",
     "uniond-scaffold",
     "nix",
-    "proto"
+    "proto",
+    "cosmwasm"
   ],
   "ignorePaths": [
     "dictionaries/**",

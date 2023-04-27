@@ -1,0 +1,8 @@
+cosmwasm
+thiserror
+schemars
+rlib
+rpath
+codegen
+cdylib
+serde

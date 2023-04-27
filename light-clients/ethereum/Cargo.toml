@@ -1,0 +1,37 @@
+[package]
+name = "union-ethereum-lc"
+version = "0.1.0"
+authors = ["UnionFi Developers"]
+edition = "2021"
+publish = false
+license = "Apache-2.0"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[profile.release]
+opt-level = 3
+debug = false
+rpath = false
+lto = true
+debug-assertions = false
+codegen-units = 1
+panic = "abort"
+incremental = false
+overflow-checks = true
+
+[features]
+default = []
+
+[dependencies]
+cosmwasm-schema = "1.2.0"
+cosmwasm-std = { version = "1.2.0", default-features = false, features = ["abort"] }
+schemars = "0.8.3"
+serde = { version = "1.0.103", default-features = false, features = ["derive"] }
+thiserror = "1.0.26"
+
+[dev-dependencies]
+# cosmwasm-storage = { path = "../../packages/storage", default-features = false }
+# cosmwasm-vm = { path = "../../packages/vm", default-features = false }
