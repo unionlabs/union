@@ -51,7 +51,7 @@
 
       go-staticcheck = pkgs.go.stdenv.mkDerivation {
         name = "go-staticcheck";
-        buildInputs = [pkgs.go pkgs.go-tools];
+        buildInputs = [ pkgs.go pkgs.go-tools ];
         src = ./.;
         doCheck = true;
         checkPhase = ''
@@ -63,7 +63,7 @@
           touch $out
         '';
       };
-      
+
     };
   };
 }
