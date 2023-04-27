@@ -17,8 +17,12 @@
       url = "github:cachix/pre-commit-hooks.nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    foundry = {
+      url = "github:shazow/foundry.nix/monthly";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
-  outputs = inputs@{ flake-parts, ... }:
+  outputs = inputs@{ flake-parts, foundry, ... }:
     flake-parts.lib.mkFlake { inherit inputs; } {
       systems =
         [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" "x86_64-darwin" ];
@@ -32,7 +36,17 @@
         inputs.pre-commit-hooks.flakeModule
       ];
       perSystem = { config, self', inputs', pkgs, system, lib, ... }: {
-        _module.args.devnetConfig = { validatorCount = 3; };
+       _module = {
+         args = {
+           # @hussein-aitlahcen: this overwrite `pkgs` input for all modules. Couldn't find
+           # any other way to extend nixpkgs with a custom overlay in flake-parts
+           pkgs = import inputs.nixpkgs {
+             inherit system;
+             overlays = [ foundry.overlay ];
+           };
+           devnetConfig = { validatorCount = 3; };
+         };
+        };
 
         packages = {
           default = self'.packages.uniond;
@@ -104,6 +118,8 @@
                 marksman
                 jq
                 yq
+                foundry-bin
+                solc
               ];
               nativeBuildInputs = [
                 config.treefmt.build.wrapper
