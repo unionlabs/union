@@ -1,4 +1,4 @@
-package field
+package hash
 
 import (
 	"crypto/sha256"

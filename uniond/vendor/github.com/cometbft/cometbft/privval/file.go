@@ -352,9 +352,6 @@ func (pv *FilePV) signVote(chainID string, vote *cmtproto.Vote) error {
 	if sameHRS {
 		if bytes.Equal(signBytes, lss.SignBytes) {
 			vote.Signature = lss.Signature
-		} else if timestamp, ok := checkVotesOnlyDifferByTimestamp(lss.SignBytes, signBytes); ok {
-			vote.Timestamp = timestamp
-			vote.Signature = lss.Signature
 		} else {
 			err = fmt.Errorf("conflicting data")
 		}
@@ -426,26 +423,6 @@ func (pv *FilePV) saveSigned(height int64, round int32, step int8,
 }
 
 //-----------------------------------------------------------------------------------------
-
-// returns the timestamp from the lastSignBytes.
-// returns true if the only difference in the votes is their timestamp.
-func checkVotesOnlyDifferByTimestamp(lastSignBytes, newSignBytes []byte) (time.Time, bool) {
-	var lastVote, newVote cmtproto.CanonicalVote
-	if err := protoio.UnmarshalDelimited(lastSignBytes, &lastVote); err != nil {
-		panic(fmt.Sprintf("LastSignBytes cannot be unmarshalled into vote: %v", err))
-	}
-	if err := protoio.UnmarshalDelimited(newSignBytes, &newVote); err != nil {
-		panic(fmt.Sprintf("signBytes cannot be unmarshalled into vote: %v", err))
-	}
-
-	lastTime := lastVote.Timestamp
-	// set the times to the same value and check equality
-	now := cmttime.Now()
-	lastVote.Timestamp = now
-	newVote.Timestamp = now
-
-	return lastTime, proto.Equal(&newVote, &lastVote)
-}
 
 // returns the timestamp from the lastSignBytes.
 // returns true if the only difference in the proposals is their timestamp
