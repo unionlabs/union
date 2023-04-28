@@ -24,14 +24,14 @@ If a version update is `required`, validators who fail to update will face slash
 
 ## Release Candidates
 
-The Union testnet will track the most recent release candidate. Release candidates will be marked by post-fixed version information in the form of `-rc-{A}` where `{A}` is the incremented release candidate version. The full release candidate version will be in the form of `v{X}.{Y}.{Z}-rc-{A}`.
+The Union testnet will track the most recent release candidate. Release candidates will be marked by post-fixed version information in the form of `-rc{A}` where `{A}` is the incremented release candidate version. The full release candidate version will be in the form of `v{X}.{Y}.{Z}-rc{A}`.
 
 ## Release Branch Hygiene
 
-When the time comes for a new major/minor release version, a new branch of the form `release-v{X}.{Y}` will be created. Once the correct commits for this release have been cherry-picked from main, the first release candidate tag will be pushed: `v{X}.{Y}.{Z}-rc-1`. The release candidate tag will trigger a new pre-release workflow which will bundle the release.
+When the time comes for a new major/minor release version, a new branch of the form `release-v{X}.{Y}` will be created. Once the correct commits for this release have been cherry-picked from main, the first release candidate tag will be pushed: `v{X}.{Y}.{Z}-rc1`. The release candidate tag will trigger a new pre-release workflow which will bundle the release.
 
 Release candidates will continue to be produced from cherry-picked commits until a release candidate tag sufficiently passes quality assurance. Once a release candidate tag is sufficient, a release tag is pushed of the form `v{X}.{Y}.{Z}`. This release tag will trigger the release workflow which will bundle a full release.
 
-Once a release tag has been pushed, the next release candidate tag should be of the form `v{X}.{Y}.{Z+1}-rc-1` for the next patch version. After this - the process towards the next patch version can begin again.
+Once a release tag has been pushed, the next release candidate tag should be of the form `v{X}.{Y}.{Z+1}-rc1` for the next patch version. After this - the process towards the next patch version can begin again.
 
 Commits should always flow from `dev-branch`→`main`→`release-v{X}.{Y}`. In other words, commits should never be made directly to `main` or release branches.
