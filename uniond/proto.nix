@@ -53,10 +53,20 @@
       {
         gen-proto = pkgs.writeShellApplication {
           name = "gen-proto";
-          runtimeInputs = (with pkgs; [ buf go ]) ++ [ grpc-gateway cosmos-proto gogoproto ];
+          runtimeInputs = (with pkgs; [ buf go gnused ]) ++ [ grpc-gateway cosmos-proto gogoproto ];
           text = ''
-            cd uniond
             set -eo pipefail
+
+            # If the current directory contains flake.nix, then we are at the repository root          
+            if [[ -f flake.nix ]] 
+            then
+              echo "We are at the repository root. Starting generation..."
+            else
+              echo "We are NOT at the repository root. Please cd to the repository root and try again."
+              exit 1
+            fi
+
+            cd uniond
 
             echo "Generating go code based on ./uniond/proto"
             cd proto
@@ -64,9 +74,14 @@
             buf generate
             cd ..
 
-            # move proto files to the right places
+            echo "Patching generated go files to ignore staticcheck warnings"
+            find ./union -name "*.go" -exec sed -i "1s/^/\/\/lint:file-ignore SA1019 This code is generated\n/" {} +;
+
+            echo "Moving patched go sources to correct directories"
             cp -r ./union/x/* x/
             rm -rf ./union
+
+            echo "Done! Generated .pb.go files are added to ./uniond/x"
           '';
         };
       };
