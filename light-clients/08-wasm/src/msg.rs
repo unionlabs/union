@@ -3,8 +3,26 @@ use cosmwasm_schema::{cw_serde, QueryResponses};
 // TODO(aeryz): Move this to its own project
 #[cw_serde]
 pub struct Height {
+    #[serde(default)]
     pub revision_number: u64,
+    #[serde(default)]
     pub revision_height: u64,
+}
+
+// // TODO(aeryz): Move this to its own project
+// // TODO(aeryz): Also, the only path I see is used is MerklePath
+// // check if this can be MerklePath or enum.
+// #[cw_serde]
+// #[serde(untagged)]
+// pub enum Path {
+//     Merkle { key_path: Vec<String> },
+// }
+
+// TODO(aeryz): Normally, the above Path was being used but serde untagged
+// produces floating point code which makes the code unusable. Will figure out.
+#[cw_serde]
+pub struct MerklePath {
+    key_path: Vec<String>,
 }
 
 // TODO(aeryz): This is probably not belong to here
@@ -52,24 +70,24 @@ pub enum ExecuteMsg {
         height: Height,
         delay_time_period: u64,
         delay_block_period: u64,
-        // TODO(aeryz): This might be base64
-        proof: Vec<u8>,
+        // TODO(aeryz): This is base64, check serde to convert from base64 to bytes
+        proof: String,
         // TODO(aeryz): This is a very long type so check that out
-        path: String,
-        // TODO(aeryz): This might be base64
-        value: Vec<u8>,
+        path: MerklePath,
+        // TODO(aeryz): This is base64, check serde to convert from base64 to bytes
+        value: String,
     },
 
     VerifyNonMembership {
         height: Height,
         delay_time_period: u64,
         delay_block_period: u64,
-        // TODO(aeryz): This might be base64
-        proof: Vec<u8>,
+        // TODO(aeryz): This is base64, check serde to convert from base64 to bytes
+        proof: String,
         // TODO(aeryz): This is a very long type so check that out
-        path: String,
-        // TODO(aeryz): This might be base64
-        value: Vec<u8>,
+        path: MerklePath,
+        // TODO(aeryz): This is base64, check serde to convert from base64 to bytes
+        value: String,
     },
 
     VerifyClientMessage {
