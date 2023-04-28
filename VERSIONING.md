@@ -12,7 +12,7 @@ Our implementation of semantic versioning is in the form of `v{X}.{Y}.{Z}` where
 
   Node Update: `required`
 
-* `{Y}` indicates the minor version. Minor versions may contain non-feature changes that may still be breaking. Usually these are reserved for security updates and bugfixes. Detailed release notes and announcements can be expected for minor versions.
+* `{Y}` indicates the minor version. Minor versions may contain non-feature changes that may still be breaking. Usually these are reserved for security updates and bug fixes. Detailed release notes and announcements can be expected for minor versions.
 
   Node Update: `required`
 
@@ -28,10 +28,10 @@ The Union testnet will track the most recent release candidate. Release candidat
 
 ## Release Branch Hygiene
 
-When the time comes for a new major/minor release version, a new branch of the form `release-v{X}.{Y}` will be created. Once the correct commits for this release have been cherry-picked from main, the first release candidate tag will be pushed: `v{X}.{Y}.{Z}-rc1`. The release candidate tag will trigger a new pre-release workflow which will bundle the release.
+When the time comes for a new major/minor release version, a new branch of the form `release-v{X}.{Y}.{Z}` will be created. Then the first release candidate tag will be pushed: `v{X}.{Y}.{Z}-rc1`. The release candidate tag will trigger a new pre-release workflow which will bundle the release.
 
-Release candidates will continue to be produced from cherry-picked commits until a release candidate tag sufficiently passes quality assurance. Once a release candidate tag is sufficient, a release tag is pushed of the form `v{X}.{Y}.{Z}`. This release tag will trigger the release workflow which will bundle a full release.
+In case of regressions in testnet, bug fixes are cherry-picked from main to the candidate, and a new candidate is tagged. Once a release candidate passes testnet, a release tag is pushed in the form `v{X}.{Y}.{Z}`. This release tag will trigger the release workflow which will bundle a full release.
 
-Once a release tag has been pushed, the next release candidate tag should be of the form `v{X}.{Y}.{Z+1}-rc1` for the next patch version. After this - the process towards the next patch version can begin again.
+Once a release tag has been pushed, the current `release-v{X}.{Y}.{Z}` branch is frozen. Future work should then be assembled in a new release branch.
 
-Commits should always flow from `dev-branch`→`main`→`release-v{X}.{Y}`. In other words, commits should never be made directly to `main` or release branches.
+Commits should always flow from `dev-branch`→`main`→`release-v{X}.{Y}.{Z}`. In other words, commits should never be made directly to `main` or release branches.
