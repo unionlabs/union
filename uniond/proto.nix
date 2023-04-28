@@ -56,8 +56,8 @@
           buf generate
 
           # move proto files to the right places
-          # cp -r ./union/x/* x/
-          # rm -rf ./union
+          cp -r ./union/x/* x/
+          rm -rf ./union
         '';
 
       };
