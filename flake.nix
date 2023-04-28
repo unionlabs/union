@@ -32,7 +32,7 @@
         ./docs/docs.nix
         ./genesis/genesis.nix
         ./devnet.nix
-        ./contracts/evm/evm.nix
+        ./evm/evm.nix
         inputs.treefmt-nix.flakeModule
         inputs.pre-commit-hooks.flakeModule
       ];
@@ -133,7 +133,12 @@
           # @hussein-aitlahcen: require `--option sandbox relaxed`
           evm = pkgs.mkShell (baseShell // {
             buildInputs = baseShell.buildInputs
-              ++ (with pkgs; [ foundry-bin solc self'.packages.lodestar-cli ]);
+              ++ (with pkgs; [
+                foundry-bin
+                solc
+                go-ethereum
+                self'.packages.lodestar-cli
+              ]);
           });
         };
 
