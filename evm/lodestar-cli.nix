@@ -1,8 +1,6 @@
 { ... }: {
   perSystem = { self', pkgs, ... }: {
-    checks = { };
-
-    packages =
+    packages.lodestar-cli =
       let
         src = pkgs.fetchFromGitHub {
           owner = "chainsafe";
@@ -35,14 +33,13 @@
           '';
         };
       in
-      {
-        lodestar-cli = pkgs.writeShellApplication {
-          name = "lodestar-cli";
-          runtimeInputs = [ pkgs.nodejs ];
-          text = ''
-            ${nodePackage}/packages/cli/bin/lodestar.js "$@"
-          '';
-        };
+      pkgs.writeShellApplication {
+        name = "lodestar-cli";
+        runtimeInputs = [ pkgs.nodejs ];
+        text = ''
+          ${nodePackage}/packages/cli/bin/lodestar.js "$@"
+        '';
       };
   };
 }
+
