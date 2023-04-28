@@ -34,6 +34,7 @@
         };
       in
       pkgs.writeShellApplication {
+        NIXBUILDNET_SANDBOX = "relaxed";
         name = "lodestar-cli";
         runtimeInputs = [ pkgs.nodejs ];
         text = ''
