@@ -93,6 +93,7 @@
           inherit (self'.checks.pre-commit-check) shellHook;
           buildInputs = with pkgs; [
             protobuf
+            buf
             nixfmt
             go_1_20
             gopls

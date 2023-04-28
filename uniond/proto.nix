@@ -61,7 +61,7 @@
             echo "Generating go code based on ./uniond/proto"
             cd proto
             buf mod update
-            buf generate --template ./buf.gen.gogo.yaml
+            buf generate
             cd ..
 
             # move proto files to the right places
@@ -69,8 +69,6 @@
             rm -rf ./union
           '';
         };
-
-
       };
     checks = { };
   };
