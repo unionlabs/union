@@ -1,0 +1,43 @@
+name: Release Candidate
+
+on:
+  workflow_run:
+    workflows: [Build]
+    types: [completed]
+    tags: ['v[0-9]+\.[0-9]+\.[0-9]+\-rc[0-9]+']
+
+jobs:
+  download:
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        system: [ aarch64-linux, x86_64-linux ]
+    steps: 
+      - name: 'Download Github build artifacts'
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          run_id: context.payload.workflow_run.id,
+          name: packages.${{ matrix.system }}.uniond-image
+          path: artifacts
+
+      - name: 'Download nixbuild artifacts'
+        uses: nixbuild/nix-quick-install-action@v22
+        uses: nixbuild/nixbuild-action@v17
+        with:
+          nixbuild_ssh_key: ${{ secrets.nixbuild_ssh_key }}
+        run: nix copy --to file://`pwd` --from ssh-ng://eu.nixbuild.net `cat artifacts/result.json | jq -r 'packages."${{ matrix.system }}"."uniond-image".outputs.out'`
+        
+  release-candidate:
+      - name: Automatic Releases
+        needs: [download]
+        uses: marvinpinto/action-automatic-releases@v1.2.1
+        with:
+          repo_token: '${{secrets.GITHUB_TOKEN}}'
+          prerelease: true
+          automatic_release_tag: latest
+          title: ${{github.ref_name}}
+          files:
+            *.tar.gz
+
+
+
