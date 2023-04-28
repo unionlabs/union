@@ -7,7 +7,7 @@ on:
   pull_request:
     branches:
     - main
-    
+
 jobs:
   build:
     uses: nixbuild/nixbuild-action/.github/workflows/ci-workflow.yml@v16

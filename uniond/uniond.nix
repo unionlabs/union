@@ -55,9 +55,9 @@
         src = ./.;
         doCheck = true;
         checkPhase = ''
-          # Go will try to create a .cache/ dir in $HOME. 
+          # Go will try to create a .cache/ dir in $HOME.
           # We avoid this by setting $HOME to the builder directory
-          export HOME=$(pwd) 
+          export HOME=$(pwd)
 
           staticcheck ./...
           touch $out
