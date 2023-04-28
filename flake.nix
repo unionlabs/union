@@ -1,7 +1,10 @@
 {
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    flake-parts.url = "github:hercules-ci/flake-parts";
+    flake-parts = {
+      url = "github:hercules-ci/flake-parts";
+      inputs.nixpkgs-lib.follows = "nixpkgs";
+    };
     arion = {
       url = "github:hercules-ci/arion";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -10,12 +13,12 @@
       url = "github:numtide/treefmt-nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    rust-overlay = {
-      url = "github:oxalica/rust-overlay";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
     pre-commit-hooks = {
       url = "github:cachix/pre-commit-hooks.nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    foundry = {
+      url = "github:shazow/foundry.nix/monthly";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
@@ -29,15 +32,18 @@
         ./docs/docs.nix
         ./genesis/genesis.nix
         ./devnet.nix
+        ./evm/lodestar-cli.nix
         inputs.treefmt-nix.flakeModule
         inputs.pre-commit-hooks.flakeModule
       ];
       perSystem = { config, self', inputs', pkgs, system, lib, ... }: {
-        _module.args.devnetConfig = { validatorCount = 3; };
-
-        packages = {
-          default = self'.packages.uniond;
+        _module = {
+          args = {
+            devnetConfig = { validatorCount = 3; };
+          };
         };
+
+        packages = { default = self'.packages.uniond; };
 
         checks = {
           spellcheck = pkgs.stdenv.mkDerivation {
@@ -89,35 +95,52 @@
           };
         };
 
-        devShells.default = pkgs.mkShell {
-          inherit (self'.checks.pre-commit-check) shellHook;
-          buildInputs = with pkgs; [
-            protobuf
-            buf
-            nixfmt
-            go_1_20
-            gopls
-            gotools
-            go-tools
-            nodejs
-            nil
-            marksman
-            jq
-            yq
-          ];
-          nativeBuildInputs = [
-            config.treefmt.build.wrapper
-          ];
-          GOPRIVATE = "github.com/unionfi/*";
-        };
+        devShells =
+          let
+            baseShell = {
+              buildInputs = with pkgs; [
+                protobuf
+                buf
+                nixfmt
+                go_1_20
+                gopls
+                gotools
+                go-tools
+                nodejs
+                nil
+                marksman
+                jq
+                yq
+                solc
+              ];
+              nativeBuildInputs = [
+                config.treefmt.build.wrapper
+              ];
+              GOPRIVATE = "github.com/unionfi/*";
+            };
+          in
+          {
+            default = pkgs.mkShell baseShell;
+            githook = pkgs.mkShell (baseShell // {
+              inherit (self'.checks.pre-commit-check) shellHook;
+            });
+            # @hussein-aitlahcen: require `--option sandbox relaxed`
+            evm = pkgs.mkShell (baseShell // {
+              buildInputs = baseShell.buildInputs
+                ++ [
+                inputs.foundry.defaultPackage.${system}
+                pkgs.solc
+                pkgs.go-ethereum
+                self'.packages.lodestar-cli
+              ];
+            });
+          };
 
         treefmt = {
           projectRootFile = "flake.nix";
           programs.nixpkgs-fmt.enable = true;
           programs.gofmt.enable = true;
-          settings.global.excludes = [
-            "uniond/vendor/**"
-          ];
+          settings.global.excludes = [ "uniond/vendor/**" ];
         };
       };
     };

@@ -7,11 +7,13 @@ on:
   pull_request:
     branches:
     - main
-    
+
 jobs:
   build:
     uses: nixbuild/nixbuild-action/.github/workflows/ci-workflow.yml@v16
     secrets:
       nixbuild_token: ${{ secrets.nixbuild_token }}
     with:
-      filter_builds: '((.top_attr == "checks" or .top_attr == "packages") and (.system == "x86_64-linux" or .system == "aarch64-linux") and (.attr != "pre-commit-check" and .attr != "pre-commit" and .attr != "devnet")) or (.attr == "devnet" and .system == "x86_64-linux")'
+      filter_builds: '((.top_attr == "checks" or .top_attr == "packages") and (.system == "x86_64-linux" or .system == "aarch64-linux") and (.attr != "pre-commit-check" and .attr != "pre-commit" and .attr != "devnet" and .attr != "lodestar-cli"))'
+      # filter_builds: '((.top_attr == "checks" or .top_attr == "packages") and (.system == "x86_64-linux" or .system == "aarch64-linux") and (.attr != "pre-commit-check" and .attr != "pre-commit" and .attr != "devnet")) or (.attr == "devnet" and .system == "x86_64-linux")'
+      # Restore commented line when nixbuild.net settings have changed ^

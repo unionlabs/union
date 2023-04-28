@@ -36,6 +36,7 @@
     "uniond/x/union/types",
     "uniond/proto",
     "uniond/go.mod",
-    "uniond/go.sum"
+    "uniond/go.sum",
+    "evm"
   ]
 }

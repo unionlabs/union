@@ -6,7 +6,7 @@ on:
     - main
 
 permissions: read-all
-  
+
 jobs:
   check:
     runs-on: ubuntu-latest
@@ -21,5 +21,4 @@ jobs:
       - name: Lint commit messages
         uses: wagoid/commitlint-github-action@v5
         with:
-          failOnWarnings: true    
-
+          failOnWarnings: true
