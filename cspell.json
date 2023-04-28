@@ -11,6 +11,11 @@
       "name": "nix",
       "path": "dictionaries/nix.txt",
       "addWords": true
+    },
+    {
+      "name": "proto",
+      "path": "dictionaries/proto.txt",
+      "addWords": true
     }
   ],
   "dictionaries": [
@@ -20,7 +25,8 @@
     "go",
     "latex",
     "uniond-scaffold",
-    "nix"
+    "nix",
+    "proto"
   ],
   "ignorePaths": [
     "dictionaries/**",

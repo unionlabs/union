@@ -25,6 +25,7 @@
         [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" "x86_64-darwin" ];
       imports = [
         ./uniond/uniond.nix
+        ./uniond/proto.nix
         ./docs/docs.nix
         ./genesis/genesis.nix
         ./devnet.nix
@@ -92,6 +93,7 @@
           inherit (self'.checks.pre-commit-check) shellHook;
           buildInputs = with pkgs; [
             protobuf
+            buf
             nixfmt
             go_1_20
             gopls

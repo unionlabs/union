@@ -39,6 +39,7 @@ cmtjson
 codectypes
 codespace
 cometbft
+concat
 configurator
 Configurator
 consensusparamkeeper
@@ -74,6 +75,7 @@ genutilcli
 genutils
 genutiltypes
 Getenv
+gnused
 goblingarden
 gocosmos
 gofmt
@@ -108,6 +110,7 @@ icahostkeeper
 icahosttypes
 icatypes
 identifing
+imap
 Infima
 interchain
 Interchain
@@ -118,6 +121,7 @@ Keybase
 KEYPAIR
 keypairs
 kwallet
+laddr
 ldflags
 maxdome
 merkle
@@ -250,7 +254,10 @@ utilising
 uunionx
 valcons
 valconspub
+valgentx
 validatorsets
+valkey
+valnode
 valoper
 valoperpub
 valset
@@ -258,9 +265,4 @@ verison
 vestingtypes
 vuex
 wctx
-valkey
-imap
-valgentx
-concat
-valnode
-laddr
+

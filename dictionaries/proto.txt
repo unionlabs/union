@@ -1,0 +1,6 @@
+interfacetype
+GOPATH
+regen
+pipefail
+Mgoogle
+logtostderr
