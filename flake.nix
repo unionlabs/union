@@ -39,12 +39,6 @@
       perSystem = { config, self', inputs', pkgs, system, lib, ... }: {
         _module = {
           args = {
-            # @hussein-aitlahcen: this overwrite `pkgs` input for all modules. Couldn't find
-            # any other way to extend nixpkgs with a custom overlay in flake-parts
-            pkgs = import inputs.nixpkgs {
-              inherit system;
-              overlays = [ inputs.foundry.overlay ];
-            };
             devnetConfig = { validatorCount = 3; };
           };
         };
@@ -117,7 +111,6 @@
                 marksman
                 jq
                 yq
-                foundry-bin
                 solc
               ];
               nativeBuildInputs = [
@@ -134,12 +127,12 @@
             # @hussein-aitlahcen: require `--option sandbox relaxed`
             evm = pkgs.mkShell (baseShell // {
               buildInputs = baseShell.buildInputs
-                ++ (with pkgs; [
-                foundry-bin
-                solc
-                go-ethereum
+                ++ [
+                inputs.foundry.defaultPackage.${system}
+                pkgs.solc
+                pkgs.go-ethereum
                 self'.packages.lodestar-cli
-              ]);
+              ];
             });
           };
 
