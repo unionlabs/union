@@ -24,7 +24,7 @@ If a version update is `required`, validators who fail to update will face slash
 
 ## Release Candidates
 
-The Union testnet will track the most recent release candidate. Release candidates will be marked by post-fixed version information in the form of `-rc{A}` where `{A}` is the incremented release candidate version. The full release candidate version will be in the form of `v{X}.{Y}.{Z}-rc{A}`.
+The Union testnet will track the most recent release candidate. Release candidates will be marked by post-fixed version information in the form of `-rc{A}` where `{A}` is the incremented release candidate version, starting at `1`. The full release candidate version will be in the form of `v{X}.{Y}.{Z}-rc{A}`.
 
 ## Release Branch Hygiene
 
