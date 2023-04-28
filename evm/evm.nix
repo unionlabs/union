@@ -46,10 +46,6 @@
       };
 
     apps = {
-      lodestar-cli = {
-        type = "app";
-        program = self'.packages.lodestar-cli;
-      };
       # @hussein-aitlahcen: arion the following two apps
       lodestar-local = {
         type = "app";
