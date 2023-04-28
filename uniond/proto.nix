@@ -14,22 +14,38 @@
         vendorSha256 = "sha256-jVOb2uHjPley+K41pV+iMPNx67jtb75Rb/ENhw+ZMoM=";
       };
 
-      protoc-gen-cosmos = pkgs.buildGoModule {
+      cosmos-proto = pkgs.buildGoModule {
         pname = "protoc-gen-cosmos";
-        version = "1.16.0";
+        version = "1.0.0";
         src = pkgs.fetchFromGitHub {
-          owner = "regen-network";
+          owner = "cosmos";
           repo = "cosmos-proto";
-          rev = "v0.3.1";
-          sha256 = "sha256-Bchbq/Hg72EA7Hevs8+PNuENuQaZAzk3qeVjMqFMUxc=";
+          rev = "v1.0.0-beta.3";
+          sha256 = "sha256-kFm1ChSmm5pU9oJqKmWq4KfO/hxgxzvcSzr66oTulos=";
         };
+        doCheck = false;
 
-        vendorSha256 = "sha256-d3qVcgL0Lil2jSNfgC9hPPNDidSzITUAoJRiHQrExrw=";
+        vendorSha256 = "sha256-7kDz0RAon2L/3NTHIxya8nWMyN28G9rAfqUu+lbkea4=";
+      };
+
+      gogoproto = pkgs.buildGoModule {
+        pname = "gogoproto";
+        version = "1.4.7";
+        src = pkgs.fetchFromGitHub {
+          owner = "cosmos";
+          repo = "gogoproto";
+          rev = "v1.4.7";
+          sha256 = "sha256-oaGwDFbz/xgL7hDtvdh/mIcRIGBdp+/xuKeuBE2ZpqY=";
+        };
+        nativeBuildInputs = with pkgs; [ protobuf ];
+        doCheck = false;
+
+        vendorSha256 = "sha256-nfeqVsPMQz7EL+qWxFzRukCE3YqXErhS9urRaJo44Fg=";
       };
 
       gen-proto = pkgs.writeShellApplication {
         name = "gen-proto";
-        runtimeInputs = [ pkgs.buf pkgs.go pkgs.protobuf self'.packages.grpc-gateway self'.packages.protoc-gen-cosmos ];
+        runtimeInputs = (with pkgs; [ buf go ]) ++ (with self'.packages; [ grpc-gateway cosmos-proto gogoproto ]);
         text = ''
           #== Requirements ==
           ## make sure your `go env GOPATH` is in the `$PATH`
@@ -52,8 +68,8 @@
           echo "Generating go code based on ./proto"
           cd proto
           buf mod update
+          buf generate --template ./buf.gen.gogo.yaml
           cd ..
-          buf generate
 
           # move proto files to the right places
           cp -r ./union/x/* x/
