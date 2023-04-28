@@ -1,18 +1,19 @@
 use cosmwasm_std::{
-    entry_point, Deps, DepsMut, Env, MessageInfo, QueryResponse, Response, StdError, StdResult,
+    entry_point, to_binary, Deps, DepsMut, Env, MessageInfo, QueryResponse, Response, StdError,
+    StdResult,
 };
+use wasm_lc_types::msg::StatusResponse;
 
 use crate::errors::ContractError;
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 
 #[entry_point]
 pub fn instantiate(
-    deps: DepsMut,
+    _deps: DepsMut,
     _env: Env,
     _info: MessageInfo,
     _msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
-    deps.api.debug("here we go 🚀");
     Ok(Response::new().add_attribute("Let the", "hacking begin"))
 }
 
@@ -21,12 +22,26 @@ pub fn execute(
     _deps: DepsMut,
     _env: Env,
     _info: MessageInfo,
-    _msg: ExecuteMsg,
+    msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
-    Err(StdError::not_found("Execute not implemented").into())
+    match msg {
+        ExecuteMsg::VerifyMembership { .. } => {
+            todo!()
+        }
+        _ => Err(StdError::not_found("Not implemented").into()),
+    }
 }
 
 #[entry_point]
-pub fn query(_deps: Deps, _env: Env, _msg: QueryMsg) -> StdResult<QueryResponse> {
-    Err(StdError::not_found("Query not implemented"))
+pub fn query(_deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<QueryResponse> {
+    match msg {
+        QueryMsg::Status {} => to_binary(&query_status()),
+    }
+}
+
+fn query_status() -> StatusResponse {
+    StatusResponse {
+        status: "Active".into(),
+        genesis_metadata: vec![],
+    }
 }
