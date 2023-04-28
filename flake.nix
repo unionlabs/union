@@ -125,22 +125,23 @@
               ];
               GOPRIVATE = "github.com/unionfi/*";
             };
-        in {
-          default = pkgs.mkShell baseShell;
-          githook = pkgs.mkShell (baseShell // {
-            inherit (self'.checks.pre-commit-check) shellHook;
-          });
-          # @hussein-aitlahcen: require `--option sandbox relaxed`
-          evm = pkgs.mkShell (baseShell // {
-            buildInputs = baseShell.buildInputs
-              ++ (with pkgs; [
+          in
+          {
+            default = pkgs.mkShell baseShell;
+            githook = pkgs.mkShell (baseShell // {
+              inherit (self'.checks.pre-commit-check) shellHook;
+            });
+            # @hussein-aitlahcen: require `--option sandbox relaxed`
+            evm = pkgs.mkShell (baseShell // {
+              buildInputs = baseShell.buildInputs
+                ++ (with pkgs; [
                 foundry-bin
                 solc
                 go-ethereum
                 self'.packages.lodestar-cli
               ]);
-          });
-        };
+            });
+          };
 
         treefmt = {
           projectRootFile = "flake.nix";
