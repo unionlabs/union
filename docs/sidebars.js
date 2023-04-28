@@ -18,7 +18,8 @@ const sidebars = {
       type: 'category',
       label: 'Architecture',
       items: [
-        'architecture/testnet'
+        'architecture/testnet',
+        'architecture/mainnet'
       ],
     },
   ],
