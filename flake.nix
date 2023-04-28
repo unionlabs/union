@@ -22,7 +22,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
-  outputs = inputs@{ flake-parts, foundry, ... }:
+  outputs = inputs@{ flake-parts, ... }:
     flake-parts.lib.mkFlake { inherit inputs; } {
       systems =
         [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" "x86_64-darwin" ];
@@ -32,25 +32,24 @@
         ./docs/docs.nix
         ./genesis/genesis.nix
         ./devnet.nix
+        ./contracts/evm/evm.nix
         inputs.treefmt-nix.flakeModule
         inputs.pre-commit-hooks.flakeModule
       ];
       perSystem = { config, self', inputs', pkgs, system, lib, ... }: {
-       _module = {
-         args = {
-           # @hussein-aitlahcen: this overwrite `pkgs` input for all modules. Couldn't find
-           # any other way to extend nixpkgs with a custom overlay in flake-parts
-           pkgs = import inputs.nixpkgs {
-             inherit system;
-             overlays = [ foundry.overlay ];
-           };
-           devnetConfig = { validatorCount = 3; };
-         };
+        _module = {
+          args = {
+            # @hussein-aitlahcen: this overwrite `pkgs` input for all modules. Couldn't find
+            # any other way to extend nixpkgs with a custom overlay in flake-parts
+            pkgs = import inputs.nixpkgs {
+              inherit system;
+              overlays = [ inputs.foundry.overlay ];
+            };
+            devnetConfig = { validatorCount = 3; };
+          };
         };
 
-        packages = {
-          default = self'.packages.uniond;
-        };
+        packages = { default = self'.packages.uniond; };
 
         checks = {
           spellcheck = pkgs.stdenv.mkDerivation {
@@ -126,21 +125,23 @@
               ];
               GOPRIVATE = "github.com/unionfi/*";
             };
-          in
-          {
-            default = pkgs.mkShell baseShell;
-            githook = pkgs.mkShell (baseShell // {
-              inherit (self'.checks.pre-commit-check) shellHook;
-            });
-          };
+        in {
+          default = pkgs.mkShell baseShell;
+          githook = pkgs.mkShell (baseShell // {
+            inherit (self'.checks.pre-commit-check) shellHook;
+          });
+          # @hussein-aitlahcen: require `--option sandbox relaxed`
+          evm = pkgs.mkShell (baseShell // {
+            buildInputs = baseShell.buildInputs
+              ++ (with pkgs; [ foundry-bin solc self'.packages.lodestar-cli ]);
+          });
+        };
 
         treefmt = {
           projectRootFile = "flake.nix";
           programs.nixpkgs-fmt.enable = true;
           programs.gofmt.enable = true;
-          settings.global.excludes = [
-            "uniond/vendor/**"
-          ];
+          settings.global.excludes = [ "uniond/vendor/**" ];
         };
       };
     };

@@ -24,3 +24,5 @@ yarn-debug.log*
 yarn-error.log*
 
 .pre-commit-config.yaml
+
+genesis.ssz
