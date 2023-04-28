@@ -16,7 +16,7 @@ The network was bootstrapped with 6 validators from the founding team. The genes
 
 The private testnet has 6 validators. It is not configured to be proof of authority (POA), but since tokens are not available until the public testnet, it is effectively a POA chain. The genesis validators are used as boot and RPC nodes. 
 
-<img src="/img/overview.drawio.svg"  width="100%" height="30%"/>
+<img src="/img/testnet-overview.drawio.svg"  width="100%" height="30%"/>
 
 ### Prover
 
