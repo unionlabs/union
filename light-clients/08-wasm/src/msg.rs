@@ -1,49 +1,49 @@
-use cosmwasm_schema::cw_serde;
+use cosmwasm_schema::{cw_serde, QueryResponses};
 
 // TODO(aeryz): Move this to its own project
 #[cw_serde]
 pub struct Height {
-    revision_number: u64,
-    revision_height: u64,
+    pub revision_number: u64,
+    pub revision_height: u64,
 }
 
 // TODO(aeryz): This is probably not belong to here
 #[cw_serde]
 pub struct Header {
     // TODO(aeryz): this might be base64
-    data: Vec<u8>,
-    height: Height,
+    pub data: Vec<u8>,
+    pub height: Height,
 }
 
 // TODO(aeryz): This is probably not belong to here
 #[cw_serde]
 pub struct Misbehaviour {
     // TODO(aeryz): this might be base64
-    data: Vec<u8>,
+    pub data: Vec<u8>,
 }
 
 #[cw_serde]
 pub struct ClientMessage {
-    header: Option<Header>,
-    misbehaviour: Option<Misbehaviour>,
+    pub header: Option<Header>,
+    pub misbehaviour: Option<Misbehaviour>,
 }
 
 // TODO(aeryz): not here
 #[cw_serde]
 pub struct ClientState {
     // TODO(aeryz): Check base64
-    data: Vec<u8>,
+    pub data: Vec<u8>,
     // TODO(aeryz): This is provided as base64 byte array. Check how to do that in serde.
-    code_id: String,
-    latest_height: Height,
+    pub code_id: String,
+    pub latest_height: Height,
 }
 
 // TODO(aeryz): not here
 #[cw_serde]
 pub struct ConsensusState {
     // TODO(aeryz): Check base64
-    data: Vec<u8>,
-    timestamp: u64,
+    pub data: Vec<u8>,
+    pub timestamp: u64,
 }
 
 #[cw_serde]
@@ -103,6 +103,21 @@ pub enum ExecuteMsg {
 }
 
 #[cw_serde]
+#[derive(QueryResponses)]
 pub enum QueryMsg {
+    #[returns(StatusResponse)]
     Status {},
+}
+
+// TODO(aeryz): This belongs to 02-client
+#[cw_serde]
+pub struct GenesisMetadata {
+    pub key: Vec<u8>,
+    pub value: Vec<u8>,
+}
+
+#[cw_serde]
+pub struct StatusResponse {
+    pub status: String,
+    pub genesis_metadata: Vec<GenesisMetadata>,
 }
