@@ -16,6 +16,7 @@
             python3
             nodejs
             nodePackages.node-gyp-build
+            nodePackages.node-pre-gyp
             yarn
             (snappy.override { static = true; })
             pkg-config
