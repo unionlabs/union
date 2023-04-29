@@ -239,7 +239,6 @@
         build = arion.build spec;
       in
       pkgs.writeShellApplication {
-        NIXBUILDNET_SANDBOX = "relaxed";
         name = "union-devnet";
         runtimeInputs = [ arion ];
         text = ''
