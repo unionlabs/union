@@ -10,7 +10,6 @@
         };
         nodePackage = pkgs.stdenv.mkDerivation {
           __noChroot = true;
-          NIXBUILDNET_SANDBOX = "relaxed";
           name = "lodestar-node";
           version = "v1.6.0";
           nativeBuildInputs = with pkgs; [
