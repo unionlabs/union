@@ -57,8 +57,8 @@
           text = ''
             set -eo pipefail
 
-            # If the current directory contains flake.nix, then we are at the repository root          
-            if [[ -f flake.nix ]] 
+            # If the current directory contains flake.nix, then we are at the repository root
+            if [[ -f flake.nix ]]
             then
               echo "We are at the repository root. Starting generation..."
             else

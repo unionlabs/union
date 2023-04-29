@@ -1,0 +1,13 @@
+[profile.default]
+optimizer = true
+optimizer_runs = 200_000
+
+cache = true
+cache_path = "evm/cache"
+
+src = "evm/contracts"
+libs = ["evm/tests/foundry/lib", "evm/tests/node_modules"]
+out = "evm/out"
+test = "evm/tests/foundry/src"
+
+gas_reports = ["*"]

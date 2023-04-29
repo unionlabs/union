@@ -32,7 +32,7 @@
         ./docs/docs.nix
         ./genesis/genesis.nix
         ./devnet.nix
-        ./evm/lodestar-cli.nix
+        ./evm/evm.nix
         inputs.treefmt-nix.flakeModule
         inputs.pre-commit-hooks.flakeModule
       ];
