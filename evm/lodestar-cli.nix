@@ -16,6 +16,8 @@
             python3
             nodejs
             yarn
+            nodePackages.node-gyp-build
+            nodePackages.node-pre-gyp
             (snappy.override { static = true; })
             pkg-config
           ];
@@ -23,7 +25,9 @@
           buildPhase = ''
             export HOME=$(mktemp -d)
             yarn
-            PATH="$(pwd)/node_modules/.bin:$PATH" yarn run build
+            patchShebangs .
+            export PATH="$(pwd)/node_modules/.bin:$PATH"
+            yarn run build
           '';
           installPhase = ''
             mkdir -p $out
