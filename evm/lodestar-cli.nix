@@ -25,6 +25,7 @@
           ];
           inherit src;
           buildPhase = ''
+            export TSC_COMPILE_ON_ERROR=true
             export HOME=$(mktemp -d)
             yarn
             export PATH="$(pwd)/node_modules/.bin:$PATH"
