@@ -15,21 +15,15 @@
           nativeBuildInputs = with pkgs; [
             python3
             nodejs
-            nodePackages.node-gyp-build
-            nodePackages.node-pre-gyp
-            nodePackages.lerna
-            nodePackages.typescript
             yarn
             (snappy.override { static = true; })
             pkg-config
           ];
           inherit src;
           buildPhase = ''
-            export TSC_COMPILE_ON_ERROR=true
             export HOME=$(mktemp -d)
             yarn
-            export PATH="$(pwd)/node_modules/.bin:$PATH"
-            yarn run build
+            PATH="$(pwd)/node_modules/.bin:$PATH" yarn run build
           '';
           installPhase = ''
             mkdir -p $out
