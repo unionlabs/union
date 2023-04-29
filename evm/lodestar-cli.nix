@@ -17,6 +17,7 @@
             nodejs
             nodePackages.node-gyp-build
             nodePackages.node-pre-gyp
+            nodePackages.lerna
             yarn
             (snappy.override { static = true; })
             pkg-config
