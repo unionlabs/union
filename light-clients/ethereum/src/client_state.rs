@@ -140,9 +140,14 @@ impl<const SYNC_COMMITTEE_SIZE: usize> TryFrom<RawClientState>
             trusting_period: Duration::from_secs(value.trusting_period),
             latest_slot: value.latest_slot.into(),
             latest_execution_block_number: value.latest_execution_block_number.into(),
-            frozen_height: value
-                .frozen_height
-                .map(|h| Height::new(h.revision_number, h.revision_height).unwrap()),
+            frozen_height: if let Some(h) = value.frozen_height {
+                Some(
+                    Height::new(h.revision_number, h.revision_height)
+                        .map_err(|_| Error::DecodeError)?,
+                )
+            } else {
+                None
+            },
         })
     }
 }
@@ -243,4 +248,50 @@ pub fn downcast_eth_client_state<const SYNC_COMMITTEE_SIZE: usize>(
         .ok_or_else(|| ClientError::ClientArgsTypeMismatch {
             client_type: ClientType::new("08-wasm".into()),
         })
+}
+
+#[test]
+fn generate_dummy_client_state() {
+    let client_state = MinimalClientState {
+        genesis_validators_root: H256::from_hex(
+            "0xed7f00ebc8ff8c17db3bf48a12f006a9f767bd00ff8b28fb147b983f4e401ffc",
+        )
+        .unwrap(),
+        min_sync_committee_participants: 32u64.into(),
+        genesis_time: 32u64.into(),
+        fork_parameters: ForkParameters {
+            genesis_fork_version: Version([0, 0, 16, 32]),
+            genesis_slot: U64(0),
+
+            altair_fork_version: Version([1, 0, 16, 32]),
+            altair_fork_epoch: U64(36660),
+
+            bellatrix_fork_version: Version([2, 0, 16, 32]),
+            bellatrix_fork_epoch: U64(112260),
+
+            capella_fork_version: Version([3, 0, 16, 32]),
+            capella_fork_epoch: U64(162304),
+
+            // NOTE: dummy data
+            eip4844_fork_version: Version([4, 0, 0, 0]),
+            eip4844_fork_epoch: U64(u64::MAX),
+        },
+        seconds_per_slot: 32u64.into(),
+        slots_per_epoch: 32u64.into(),
+        epochs_per_sync_committee_period: 32u64.into(),
+        ibc_address: Address::try_from([1u8; 20].as_slice()).unwrap(),
+        ibc_commitments_slot: H256::from_hex(
+            "0xed7f00ebc8ff8c17db3bf48a12f006a9f767bd00ff8b28fb147b983f4e401ffc",
+        )
+        .unwrap(),
+        trust_level: Fraction::new(1, 1),
+        trusting_period: Duration::MAX,
+        latest_slot: U64(32),
+        latest_execution_block_number: U64(32),
+        frozen_height: None,
+    };
+
+    let raw_client_state: RawClientState = client_state.into();
+
+    println!("{:?}", raw_client_state.encode_to_vec());
 }

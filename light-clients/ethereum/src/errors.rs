@@ -18,4 +18,16 @@ pub enum Error {
 
     #[error("Client state not found")]
     ClientStateNotFound,
+
+    #[error("Invalid proof format")]
+    InvalidProofFormat,
+
+    #[error("Invalid client id")]
+    InvalidClientId,
+
+    #[error("Invalid client id")]
+    InvalidPublicKey,
+
+    #[error("Invalid height")]
+    InvalidHeight,
 }

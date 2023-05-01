@@ -1,8 +1,11 @@
 use crate::{errors::Error, ClientState};
-use cosmwasm_std::{from_slice, Deps};
+use cosmwasm_std::Deps;
 use cw_storage_plus::Item;
 use ibc_proto::{
-    google::protobuf::Any, ibc::lightclients::wasm::v1::ClientState as WasmClientState,
+    google::protobuf::Any,
+    ibc::lightclients::{
+        ethereum::v1::ClientState as RawClientState, wasm::v1::ClientState as WasmClientState,
+    },
 };
 use prost::Message;
 use schemars::JsonSchema;
@@ -27,5 +30,8 @@ pub fn extract_client_state_from_wasm(deps: Deps) -> Result<ClientState, Error> 
     let wasm_client_state =
         WasmClientState::decode(any_state.value.as_slice()).map_err(|_| Error::DecodeError)?;
 
-    from_slice(wasm_client_state.data.as_slice()).map_err(|_| Error::DecodeError)
+    let raw_client_state = RawClientState::decode(wasm_client_state.data.as_slice())
+        .map_err(|_| Error::DecodeError)?;
+
+    ClientState::try_from(raw_client_state)
 }

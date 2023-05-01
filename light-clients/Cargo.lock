@@ -464,7 +464,7 @@ dependencies = [
 [[package]]
 name = "ethereum-consensus"
 version = "0.1.0"
-source = "git+https://github.com/datachainlab/ethereum-light-client-rs?rev=1ac6905ad7020fd377e66e0ac116d41509cca1fe#1ac6905ad7020fd377e66e0ac116d41509cca1fe"
+source = "git+https://github.com/UnionFi/ethereum-light-client-rs?branch=dev#e56a19ba06e05e5b88fa5f828ee0a8ea4f9aa468"
 dependencies = [
  "displaydoc",
  "hex",
@@ -480,7 +480,7 @@ dependencies = [
 [[package]]
 name = "ethereum-light-client-verifier"
 version = "0.1.0"
-source = "git+https://github.com/datachainlab/ethereum-light-client-rs?rev=1ac6905ad7020fd377e66e0ac116d41509cca1fe#1ac6905ad7020fd377e66e0ac116d41509cca1fe"
+source = "git+https://github.com/UnionFi/ethereum-light-client-rs?branch=dev#e56a19ba06e05e5b88fa5f828ee0a8ea4f9aa468"
 dependencies = [
  "displaydoc",
  "ethereum-consensus",
@@ -1725,6 +1725,7 @@ checksum = "f962df74c8c05a667b5ee8bcf162993134c104e96440b663c8daa176dc772d8c"
 name = "union-ethereum-lc"
 version = "0.1.0"
 dependencies = [
+ "base64 0.13.1",
  "bytes",
  "cosmwasm-schema",
  "cosmwasm-std",
@@ -1734,9 +1735,13 @@ dependencies = [
  "ibc",
  "ibc-proto 0.29.0",
  "prost",
+ "rlp",
  "schemars",
  "serde",
+ "serde_json",
+ "ssz-rs",
  "thiserror",
+ "tiny-keccak",
  "wasm-lc-types",
 ]
 
