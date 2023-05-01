@@ -47,7 +47,7 @@ jobs:
         with:
           repo_token: '${{secrets.GITHUB_TOKEN}}'
           prerelease: true
-          automatic_release_tag: ${{github.ref_name}}
+          automatic_release_tag: latest-rc
           title: ${{github.ref_name}}
           files: |
             **/*.uniond-image
