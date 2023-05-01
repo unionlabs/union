@@ -30,4 +30,10 @@ pub enum Error {
 
     #[error("Invalid height")]
     InvalidHeight,
+
+    #[error("Invalid sync committee")]
+    InvalidSyncCommittee,
+
+    #[error("No next sync committee")]
+    NoNextSyncCommittee,
 }

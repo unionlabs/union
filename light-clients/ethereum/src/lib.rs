@@ -1,5 +1,6 @@
 pub mod client_state;
 pub mod commitment;
+pub mod consensus_state;
 pub mod contract;
 pub mod errors;
 pub mod header;
