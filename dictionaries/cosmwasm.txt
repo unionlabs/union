@@ -6,3 +6,9 @@ rpath
 codegen
 cdylib
 serde
+keccak
+prost
+lightclients
+pubkeys
+Bitvector
+Hasher

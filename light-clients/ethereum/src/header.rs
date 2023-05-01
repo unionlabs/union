@@ -29,6 +29,8 @@ pub struct Header<const SYNC_COMMITTEE_SIZE: usize> {
     pub timestamp: Timestamp,
 }
 
+const NANO_SECONDS_MULTIPLIER: u64 = 1_000_000_000;
+
 impl<const SYNC_COMMITTEE_SIZE: usize> Protobuf<RawHeader> for Header<SYNC_COMMITTEE_SIZE> {}
 
 impl<const SYNC_COMMITTEE_SIZE: usize> TryFrom<RawHeader> for Header<SYNC_COMMITTEE_SIZE> {
@@ -44,7 +46,7 @@ impl<const SYNC_COMMITTEE_SIZE: usize> TryFrom<RawHeader> for Header<SYNC_COMMIT
             consensus_update: convert_proto_to_consensus_update(consensus_update)?,
             execution_update: convert_proto_to_execution_update(execution_update),
             account_update: account_update.try_into()?,
-            timestamp: Timestamp::from_nanoseconds(value.timestamp * 1_000_000_000)
+            timestamp: Timestamp::from_nanoseconds(value.timestamp * NANO_SECONDS_MULTIPLIER)
                 .map_err(|_| Error::DecodeError)?,
         })
     }
@@ -61,7 +63,7 @@ impl<const SYNC_COMMITTEE_SIZE: usize> From<Header<SYNC_COMMITTEE_SIZE>> for Raw
             consensus_update: Some(convert_consensus_update_to_proto(consensus_update)),
             execution_update: Some(convert_execution_update_to_proto(execution_update)),
             account_update: Some(account_update.into()),
-            timestamp: value.timestamp.nanoseconds() / 1_000_000_000,
+            timestamp: value.timestamp.nanoseconds() / NANO_SECONDS_MULTIPLIER,
         }
     }
 }
