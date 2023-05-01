@@ -80,6 +80,23 @@
           	          --sol_out=gen_runtime="ProtoBufRuntime.sol&solc_version=0.8.18:$2" \
                       "$file"
                   done
+                  find ${../uniond/proto} -type f -regex ".*ibc.*proto" |\
+                  while read -r file; do
+                    echo "Generating $file"
+                    protoc \
+                      -I"${cometbls-src}/proto" \
+                      -I"${cosmossdk-src}/proto" \
+                      -I"${ibcgo-src}/proto" \
+                      -I"${cosmosproto-src}/proto" \
+                      -I"${ics23-src}/proto" \
+                      -I"${googleapis-src}" \
+                      -I"${gogoproto-src}" \
+                      -I"${../uniond/proto}" \
+          	          -I"$plugindir/include" \
+          	          --plugin="protoc-gen-sol=$plugindir/plugin/gen_sol.py" \
+          	          --sol_out=gen_runtime="ProtoBufRuntime.sol&solc_version=0.8.18:$2" \
+                      "$file"
+                  done
         '';
       };
     packages.lodestar-cli =
