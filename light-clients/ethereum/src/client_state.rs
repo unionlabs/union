@@ -3,7 +3,7 @@ use ethereum_consensus::{
     beacon::{Epoch, Root, Slot, Version},
     fork::ForkParameters,
     preset,
-    types::{Address, H256, U64},
+    types::{H256, U64},
 };
 use ethereum_light_client_verifier::context::Fraction;
 use ibc::{
@@ -36,10 +36,6 @@ pub struct ClientState<const SYNC_COMMITTEE_SIZE: usize> {
     pub seconds_per_slot: U64,
     pub slots_per_epoch: Slot,
     pub epochs_per_sync_committee_period: Epoch,
-
-    /// IBC Solidity parameters
-    pub ibc_address: Address,
-    pub ibc_commitments_slot: H256,
 
     /// Light Client parameters
     pub trust_level: Fraction,
@@ -130,12 +126,6 @@ impl<const SYNC_COMMITTEE_SIZE: usize> TryFrom<RawClientState>
             seconds_per_slot: value.seconds_per_slot.into(),
             slots_per_epoch: value.slots_per_epoch.into(),
             epochs_per_sync_committee_period: value.epochs_per_sync_committee_period.into(),
-            ibc_address: value
-                .ibc_address
-                .as_slice()
-                .try_into()
-                .map_err(|_| Error::DecodeError)?,
-            ibc_commitments_slot: H256::from_slice(&value.ibc_commitments_slot),
             trust_level: Fraction::new(trust_level.numerator, trust_level.denominator),
             trusting_period: Duration::from_secs(value.trusting_period),
             latest_slot: value.latest_slot.into(),
@@ -199,8 +189,6 @@ impl<const SYNC_COMMITTEE_SIZE: usize> From<ClientState<SYNC_COMMITTEE_SIZE>> fo
             seconds_per_slot: value.seconds_per_slot.into(),
             slots_per_epoch: value.slots_per_epoch.into(),
             epochs_per_sync_committee_period: value.epochs_per_sync_committee_period.into(),
-            ibc_address: value.ibc_address.0.to_vec(),
-            ibc_commitments_slot: value.ibc_commitments_slot.as_bytes().to_vec(),
             trust_level: Some(ProtoFraction {
                 numerator: value.trust_level.numerator,
                 denominator: value.trust_level.denominator,
@@ -279,11 +267,6 @@ fn generate_dummy_client_state() {
         seconds_per_slot: 32u64.into(),
         slots_per_epoch: 32u64.into(),
         epochs_per_sync_committee_period: 32u64.into(),
-        ibc_address: Address::try_from([1u8; 20].as_slice()).unwrap(),
-        ibc_commitments_slot: H256::from_hex(
-            "0xed7f00ebc8ff8c17db3bf48a12f006a9f767bd00ff8b28fb147b983f4e401ffc",
-        )
-        .unwrap(),
         trust_level: Fraction::new(1, 1),
         trusting_period: Duration::MAX,
         latest_slot: U64(32),

@@ -1,22 +1,10 @@
 use crate::errors::Error;
 use ethereum_consensus::types::{Address, H256};
-use ibc::core::ics24_host::Path;
 use rlp::Rlp;
 use tiny_keccak::{Hasher, Keccak};
 
 pub fn calculate_account_path(ibc_address: &Address) -> H256 {
     keccak_256(&ibc_address.0).into()
-}
-
-pub fn calculate_ibc_commitment_storage_key(ibc_commitments_slot: &H256, path: Path) -> H256 {
-    keccak_256(
-        &[
-            &keccak_256(&path.into_bytes()),
-            ibc_commitments_slot.as_bytes(),
-        ]
-        .concat(),
-    )
-    .into()
 }
 
 /// decode rlp format `List<List>` to `Vec<List>`
