@@ -34,6 +34,14 @@ jobs:
         with:
           name: ${{matrix.system}}.uniond-image
           path: ${{matrix.system}}.uniond-image
+      - uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - run: docker load < ${{matrix.system}}.uniond-image
+      - run: docker tag `docker images -q uniond` ghcr.io/unionfi/uniond:${{github.ref_name}}
+      - run: docker push ghcr.io/unionfi/uniond:${{github.ref_name}}
 
   release-candidate:
     runs-on: ubuntu-latest
