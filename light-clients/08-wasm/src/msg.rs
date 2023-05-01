@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use cosmwasm_std::Binary;
 use ibc::Height;
 use ibc_proto::ibc::{
@@ -76,4 +78,17 @@ pub enum QueryMsg {
 pub struct StatusResponse {
     pub status: String,
     pub genesis_metadata: Vec<GenesisMetadata>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+pub enum Status {
+    Active,
+}
+
+impl Display for Status {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Status::Active => write!(f, "Active"),
+        }
+    }
 }

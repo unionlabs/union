@@ -15,25 +15,23 @@ crate-type = ["cdylib", "rlib"]
 default = []
 
 [dependencies]
+bytes = { version = "1.2.1", default-features = false }
 cosmwasm-schema = "1.2.0"
 cosmwasm-std = { version = "1.2.0", default-features = false, features = ["abort"] }
 cw-storage-plus = "1.0"
-bytes = { version = "1.2.1", default-features = false }
-schemars = "0.8.3"
-serde = { version = "1.0.103", default-features = false, features = ["derive"] }
-thiserror = "1.0.26"
-wasm-lc-types = { path = "../08-wasm" }
+ethereum-consensus = { git = "https://github.com/UnionFi/ethereum-light-client-rs", branch = "dev", default-features = false }
+ethereum-light-client-verifier = { git = "https://github.com/UnionFi/ethereum-light-client-rs", branch = "dev", default-features = false }
 ibc-proto = { git = "https://github.com/UnionFi/ibc-proto-rs", branch = "dev", default-features = false }
 ibc = { version = "0.37.0", default-features = false, features = [ "serde" ] }
-ethereum-consensus = { git = "https://github.com/UnionFi/ethereum-light-client-rs", branch = "dev", default-features = false }
 prost = { version = "0.11", default-features = false }
-ethereum-light-client-verifier = { git = "https://github.com/UnionFi/ethereum-light-client-rs", branch = "dev", default-features = false }
-ssz-rs = { git = "https://github.com/bluele/ssz_rs", branch = "serde-no-std", features = ["serde"] }
 rlp = { version = "0.5.2", default-features = false }
+schemars = "0.8.3"
+serde = { version = "1.0.103", default-features = false, features = ["derive"] }
+ssz-rs = { git = "https://github.com/bluele/ssz_rs", branch = "serde-no-std", features = ["serde"] }
+thiserror = "1.0.26"
 tiny-keccak = { version = "2.0.2", default-features = false }
+wasm-lc-types = { path = "../08-wasm" }
 
 [dev-dependencies]
-# cosmwasm-storage = { path = "../../packages/storage", default-features = false }
-# cosmwasm-vm = { path = "../../packages/vm", default-features = false }
 serde_json = "*"
 base64 = "*"
