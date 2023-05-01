@@ -1,4 +1,4 @@
-use cosmwasm_schema::{cw_serde, QueryResponses};
+use cosmwasm_schema::cw_serde;
 
 pub use wasm_lc_types::msg::{ExecuteMsg, QueryMsg};
 

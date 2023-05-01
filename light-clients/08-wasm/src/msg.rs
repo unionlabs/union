@@ -1,93 +1,42 @@
-use cosmwasm_schema::{cw_serde, QueryResponses};
+use cosmwasm_std::Binary;
+use ibc::Height;
+use ibc_proto::ibc::{
+    core::client::v1::GenesisMetadata,
+    lightclients::wasm::v1::{ClientState, ConsensusState, Header, Misbehaviour},
+};
+use serde::{Deserialize, Serialize};
 
-// TODO(aeryz): Move this to its own project
-#[cw_serde]
-pub struct Height {
-    #[serde(default)]
-    pub revision_number: u64,
-    #[serde(default)]
-    pub revision_height: u64,
-}
-
-// // TODO(aeryz): Move this to its own project
-// // TODO(aeryz): Also, the only path I see is used is MerklePath
-// // check if this can be MerklePath or enum.
-// #[cw_serde]
-// #[serde(untagged)]
-// pub enum Path {
-//     Merkle { key_path: Vec<String> },
-// }
-
-// TODO(aeryz): Normally, the above Path was being used but serde untagged
-// produces floating point code which makes the code unusable. Will figure out.
-#[cw_serde]
+// TODO(aeryz): Normally, this type should be an enum. Need more
+// research on that. For now, this is fine though.
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct MerklePath {
     key_path: Vec<String>,
 }
 
-// TODO(aeryz): This is probably not belong to here
-#[cw_serde]
-pub struct Header {
-    // TODO(aeryz): this might be base64
-    pub data: Vec<u8>,
-    pub height: Height,
-}
-
-// TODO(aeryz): This is probably not belong to here
-#[cw_serde]
-pub struct Misbehaviour {
-    // TODO(aeryz): this might be base64
-    pub data: Vec<u8>,
-}
-
-#[cw_serde]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct ClientMessage {
     pub header: Option<Header>,
     pub misbehaviour: Option<Misbehaviour>,
 }
 
-// TODO(aeryz): not here
-#[cw_serde]
-pub struct ClientState {
-    // TODO(aeryz): Check base64
-    pub data: Vec<u8>,
-    // TODO(aeryz): This is provided as base64 byte array. Check how to do that in serde.
-    pub code_id: String,
-    pub latest_height: Height,
-}
-
-// TODO(aeryz): not here
-#[cw_serde]
-pub struct ConsensusState {
-    // TODO(aeryz): Check base64
-    pub data: Vec<u8>,
-    pub timestamp: u64,
-}
-
-#[cw_serde]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub enum ExecuteMsg {
     VerifyMembership {
         height: Height,
         delay_time_period: u64,
         delay_block_period: u64,
-        // TODO(aeryz): This is base64, check serde to convert from base64 to bytes
-        proof: String,
-        // TODO(aeryz): This is a very long type so check that out
+        proof: Binary,
         path: MerklePath,
-        // TODO(aeryz): This is base64, check serde to convert from base64 to bytes
-        value: String,
+        value: Binary,
     },
 
     VerifyNonMembership {
         height: Height,
         delay_time_period: u64,
         delay_block_period: u64,
-        // TODO(aeryz): This is base64, check serde to convert from base64 to bytes
-        proof: String,
-        // TODO(aeryz): This is a very long type so check that out
+        proof: Binary,
         path: MerklePath,
-        // TODO(aeryz): This is base64, check serde to convert from base64 to bytes
-        value: String,
+        value: Binary,
     },
 
     VerifyClientMessage {
@@ -109,10 +58,8 @@ pub enum ExecuteMsg {
     VerifyUpgradeAndUpdateState {
         upgrade_client_state: ClientState,
         upgrade_consensus_state: ConsensusState,
-        // TODO(aeryz): check base64
-        proof_upgrade_client: Vec<u8>,
-        // TODO(aeryz): check base64
-        proof_upgrade_consensus_state: Vec<u8>,
+        proof_upgrade_client: Binary,
+        proof_upgrade_consensus_state: Binary,
     },
 
     CheckSubstituteAndUpdateState {},
@@ -120,21 +67,12 @@ pub enum ExecuteMsg {
     ExportMetadata {},
 }
 
-#[cw_serde]
-#[derive(QueryResponses)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub enum QueryMsg {
-    #[returns(StatusResponse)]
     Status {},
 }
 
-// TODO(aeryz): This belongs to 02-client
-#[cw_serde]
-pub struct GenesisMetadata {
-    pub key: Vec<u8>,
-    pub value: Vec<u8>,
-}
-
-#[cw_serde]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct StatusResponse {
     pub status: String,
     pub genesis_metadata: Vec<GenesisMetadata>,

@@ -17,10 +17,18 @@ default = []
 [dependencies]
 cosmwasm-schema = "1.2.0"
 cosmwasm-std = { version = "1.2.0", default-features = false, features = ["abort"] }
+cw-storage-plus = "1.0"
+bytes = { version = "1.2.1", default-features = false }
 schemars = "0.8.3"
 serde = { version = "1.0.103", default-features = false, features = ["derive"] }
 thiserror = "1.0.26"
 wasm-lc-types = { path = "../08-wasm" }
+ibc-proto = { git = "https://github.com/UnionFi/ibc-proto-rs", branch = "dev", default-features = false }
+ibc = { version = "0.37.0", default-features = false, features = [ "serde" ] }
+ethereum-consensus = { git = "https://github.com/datachainlab/ethereum-light-client-rs", rev = "1ac6905ad7020fd377e66e0ac116d41509cca1fe", default-features = false }
+prost = { version = "0.11", default-features = false }
+ethereum-light-client-verifier = { git = "https://github.com/datachainlab/ethereum-light-client-rs", rev = "1ac6905ad7020fd377e66e0ac116d41509cca1fe", default-features = false }
+
 
 [dev-dependencies]
 # cosmwasm-storage = { path = "../../packages/storage", default-features = false }
