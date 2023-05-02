@@ -21,7 +21,12 @@
       "name": "cosmwasm",
       "path": "dictionaries/cosmwasm.txt",
       "addWords": true
-    }
+    },
+    {
+      "name": "eth",
+      "path": "dictionaries/eth.txt",
+      "addWords": true
+    },
   ],
   "dictionaries": [
     "en_US",
@@ -32,7 +37,8 @@
     "uniond-scaffold",
     "nix",
     "proto",
-    "cosmwasm"
+    "cosmwasm",
+    "eth"
   ],
   "ignorePaths": [
     "dictionaries/**",

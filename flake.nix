@@ -30,9 +30,11 @@
         ./uniond/uniond.nix
         ./uniond/proto.nix
         ./docs/docs.nix
-        ./genesis/genesis.nix
-        ./devnet.nix
-        ./evm/lodestar-cli.nix
+        ./tools/lodestar-cli/lodestar-cli.nix
+
+
+        ./genesis/devnet.nix
+        ./networks/devnet.nix
         inputs.treefmt-nix.flakeModule
         inputs.pre-commit-hooks.flakeModule
       ];
