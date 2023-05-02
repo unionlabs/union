@@ -11,7 +11,7 @@
       uniond-image = pkgs.dockerTools.buildImage {
         name = "uniond";
         config = {
-          Cmd = [ "${self'.packages.uniond}/bin/uniond" ];
+          Entrypoint = [ "${self'.packages.uniond}/bin/uniond" ];
         };
       };
     };
