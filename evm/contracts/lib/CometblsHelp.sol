@@ -16,9 +16,13 @@ library CometblsHelp {
     using BytesLib for bytes;
 
     uint256 constant PRIME_Q = 21888242871839275222246405745257275088696311157297823662689037894645226208583;
+    uint256 constant PRIME_Q_MINUS_ONE = PRIME_Q - 1;
 
     bytes constant HMAC_I = hex"75595B5342747A653636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636";
     bytes constant HMAC_O = hex"1F333139281E100F5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C";
+
+    bytes1 constant ZERO = bytes1(uint8(0));
+    bytes1 constant ONE = bytes1(uint8(1));
 
     // Specialized https://en.wikipedia.org/wiki/HMAC for keccak256 with `CometBLS` as key.
     function hmac(bytes memory message) internal pure returns (bytes32) {
@@ -26,12 +30,12 @@ library CometblsHelp {
     }
 
     function hashToField(bytes memory message) internal pure returns (uint256) {
-        return (uint256(hmac(message)) % (PRIME_Q - 1)) + 1;
+        return (uint256(hmac(message)) % PRIME_Q_MINUS_ONE) + 1;
     }
 
     function hashToField2(bytes memory message) internal pure returns (uint256, uint256) {
-        return (hashToField(abi.encodePacked(hex"00", message)),
-                hashToField(abi.encodePacked(hex"01", message)));
+        return (hashToField(abi.encodePacked(ZERO, message)),
+                hashToField(abi.encodePacked(ONE, message)));
     }
 
     function verifyZKP(IZKVerifier verifier, bytes memory trustedValidatorsHash, bytes memory untrustedValidatorsHash, bytes memory message, bytes memory zkp) internal view returns (bool) {
@@ -43,10 +47,10 @@ library CometblsHelp {
 
         uint256[9] memory inputs =
             [
-             uint256(trustedValidatorsHash.slice(0, 16).toUint128(0)),
-             uint256(trustedValidatorsHash.slice(16, 16).toUint128(0)),
-             uint256(untrustedValidatorsHash.slice(0, 16).toUint128(0)),
-             uint256(untrustedValidatorsHash.slice(16, 16).toUint128(0)),
+             uint256(trustedValidatorsHash.toUint128(0)),
+             uint256(trustedValidatorsHash.toUint128(16)),
+             uint256(untrustedValidatorsHash.toUint128(0)),
+             uint256(untrustedValidatorsHash.toUint128(16)),
              messageX,
              messageY,
              // Gnark commitment API extend public inputs with the following commitment hash and proof commitment
