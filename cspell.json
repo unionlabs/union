@@ -16,7 +16,12 @@
       "name": "proto",
       "path": "dictionaries/proto.txt",
       "addWords": true
-    }
+    },
+    {
+      "name": "eth",
+      "path": "dictionaries/eth.txt",
+      "addWords": true
+    },
   ],
   "dictionaries": [
     "en_US",
@@ -26,7 +31,8 @@
     "latex",
     "uniond-scaffold",
     "nix",
-    "proto"
+    "proto",
+    "eth"
   ],
   "ignorePaths": [
     "dictionaries/**",

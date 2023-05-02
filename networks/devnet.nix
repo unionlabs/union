@@ -7,9 +7,7 @@
 
         lodestarService =
           let
-            config = pkgs.linkFarm "lodestar-config" [
-              { name = "dev-jwt.prv"; path = "${./evm/dev-jwt.prv}"; }
-            ];
+            config = self'.packages.devnet-lodestar-config;
             script = pkgs.writeShellApplication {
               name = "lodestar-init";
               runtimeInputs = [
@@ -81,12 +79,7 @@
         # @hussein-aitlahcen: maybe move the command part to its own package to run it outside of devnet
         gethService =
           let
-            config = pkgs.linkFarm "geth-config" [
-              { name = "genesis.json"; path = "${./evm/genesis.json}"; }
-              { name = "dev-key0.prv"; path = "${./evm/dev-key0.prv}"; }
-              { name = "dev-key1.prv"; path = "${./evm/dev-key1.prv}"; }
-              { name = "dev-jwt.prv"; path = "${./evm/dev-jwt.prv}"; }
-            ];
+            config = self'.packages.devnet-geth-config;
             script = pkgs.writeShellApplication {
               name = "geth-init";
               runtimeInputs = [
