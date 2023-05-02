@@ -39,7 +39,7 @@
       perSystem = { config, self', inputs', pkgs, system, lib, ... }: {
         _module = {
           args = {
-            devnetConfig = { validatorCount = 3; };
+            devnetConfig = { validatorCount = 4; };
           };
         };
 

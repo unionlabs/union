@@ -3,6 +3,13 @@ pragma solidity ^0.8.18;
 
 import "../../proto/ibc/core/client/v1/client.sol";
 
+struct ConsensusStateUpdate {
+    // commitment for updated consensusState
+    bytes32 consensusStateCommitment;
+    // updated height
+    IbcCoreClientV1Height.Data height;
+}
+
 /**
  * @dev This defines an interface for Light Client contract can be integrated with ibc-solidity.
  * You can register the Light Client contract that implements this through `registerClient` on IBCHandler.
@@ -88,11 +95,4 @@ interface ILightClient {
         external
         view
         returns (bytes memory, bool);
-}
-
-struct ConsensusStateUpdate {
-    // commitment for updated consensusState
-    bytes32 consensusStateCommitment;
-    // updated height
-    IbcCoreClientV1Height.Data height;
 }
