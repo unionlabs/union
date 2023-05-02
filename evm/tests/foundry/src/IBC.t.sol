@@ -8,7 +8,9 @@ import "../../../contracts/core/03-connection/IBCConnection.sol";
 import "../../../contracts/core/04-channel/IBCChannelHandshake.sol";
 import "../../../contracts/core/04-channel/IBCPacket.sol";
 import "../../../contracts/core/24-host/IBCCommitment.sol";
+import "../../../contracts/core/IZKVerifier.sol";
 import "../../../contracts/clients/MockClient.sol";
+import "../../../contracts/clients/DevnetVerifier.sol";
 import "../../../contracts/proto/MockClient.sol";
 import "../../../contracts/proto/ibc/core/connection/v1/connection.sol";
 import "../../../contracts/proto/ibc/core/channel/v1/channel.sol";
@@ -20,12 +22,15 @@ contract IBCTest is Test {
     TestableIBCHandler handler;
     MockClient mockClient;
     MockApp mockApp;
+    IZKVerifier verifier;
 
     string private constant mockClientType = "mock-client";
     string private constant portId = "mock";
     bytes32 private testPacketCommitment;
 
     function setUp() public {
+        verifier = new DevnetVerifier();
+
         address ibcClient = address(new IBCClient());
         address ibcConnection = address(new IBCConnection());
         address ibcChannelHandshake = address(new IBCChannelHandshake());
@@ -103,7 +108,15 @@ contract IBCTest is Test {
         assertEq(connectionId, "connection-1");
     }
 
-    /* gas benchmarks */
+    function testProof() public {
+        (uint256[2] memory a, uint256[2][2] memory b, uint256[2] memory c) =
+            abi.decode(hex"22d7a3190e1eddc1f8e1ffd4ede2b8b3a2952d20a94301d7b8c3ed50b33cbba72bb1021ad4a8bcc14c296bb1c26f4931fdc41700862ace6b9378fe0e6fdcf1ea0f6e628500126a9bf10b6ad8224bdb3da1bba70d7427dd8118f86d1e6b7cdef2006ea2958baab963cd75b4d07def912521aa0b9a0109edfd58c561e1133ebc032b6a6c07fabfbe274fa79eb22562df786c8eadd182aa0ff662bd068ee1702f462e2a1a8935783891085cff462aab85e2e83d6ebbd0938fd6ab40f1aefb7f1e1b1162645b194740f7cc2541bf0d319bfb65ff9ef4fdcb9c3f63bb4fc8d766d7542ba97d40c02df5aaffa016142f8daca0b63a1a99e9b91e80e9a46ec235a56252", (uint256[2], uint256[2][2], uint256[2]));
+
+        (uint256[9] memory inputs) = abi.decode(hex"00000000000000000000000000000000d9a17d56267ffefdef74c37aa87bf09500000000000000000000000000000000decd38b6540daeacd4fdfe40418f6c8900000000000000000000000000000000d9a17d56267ffefdef74c37aa87bf09500000000000000000000000000000000decd38b6540daeacd4fdfe40418f6c89263cb8e7b41d2ef3a4ee22f8bc8bfd54d3e93372fbe8e26cf473c8c5af1d5b7128dcc7cf00b1a8f58ab328b18a7ca34e4c45a774f2d8cd926f0ac0172633d3ac11d7788d5bd281e237595c203aba336e48baef357d7bccc7c415aa57910f111e1473837b130d67a6ff28e12ab3ae9a77bd66f1d7786985e6d194b15869c94ce104c3abd2fd886a9a9e4d83daf6b292b0c31b0176b54a34ae4d90bd4ed34af355", (uint256[9]));
+
+        bool ok = verifier.verifyProof(a, b, c, inputs);
+        require(ok, "Invalid proof");
+    }
 
     function testBenchmarkCreateMockClient() public {
         createMockClient(1);

@@ -88,13 +88,13 @@ library TendermintHelper {
     /* } */
 
     function isExpired(
-        TendermintTypesHeader.Data memory header,
+        GoogleProtobufTimestamp.Data memory headerTime,
         GoogleProtobufDuration.Data memory trustingPeriod,
         GoogleProtobufDuration.Data memory currentTime
     ) internal pure returns (bool) {
         GoogleProtobufTimestamp.Data memory expirationTime = GoogleProtobufTimestamp.Data({
-            secs: header.time.secs + int64(trustingPeriod.Seconds),
-            nanos: header.time.nanos
+            secs: headerTime.secs + int64(trustingPeriod.Seconds),
+            nanos: headerTime.nanos
         });
         return gt(GoogleProtobufTimestamp.Data({secs: int64(currentTime.Seconds), nanos: 0}), expirationTime);
     }
@@ -102,11 +102,11 @@ library TendermintHelper {
     function gt(GoogleProtobufTimestamp.Data memory t1, GoogleProtobufTimestamp.Data memory t2) internal pure returns (bool) {
         if (t1.secs > t2.secs) {
             return true;
-        }
-        if (t1.secs == t2.secs && t1.nanos > t2.nanos) {
+        } else if (t1.secs == t2.secs && t1.nanos > t2.nanos) {
             return true;
+        } else {
+            return false;
         }
-        return false;
     }
 
     /* function hash(SignedHeader.Data memory h) internal pure returns (bytes32) { */
