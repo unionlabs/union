@@ -95,18 +95,11 @@ contract IBCConnection is IBCStore, IIBCConnectionHandshake {
      */
     function connectionOpenAck(IBCMsgs.MsgConnectionOpenAck calldata msg_) external override {
         IbcCoreConnectionV1ConnectionEnd.Data storage connection = connections[msg_.connectionId];
-        if (connection.state != IbcCoreConnectionV1GlobalEnums.State.STATE_INIT && connection.state != IbcCoreConnectionV1GlobalEnums.State.STATE_TRYOPEN)
-        {
-            revert("connection state is not INIT or TRYOPEN");
-        } else if (connection.state == IbcCoreConnectionV1GlobalEnums.State.STATE_INIT && !isSupportedVersion(msg_.version)) {
-            revert("connection state is in INIT but the provided version is not supported");
-        } else if (
-            connection.state == IbcCoreConnectionV1GlobalEnums.State.STATE_TRYOPEN
-                && (connection.versions.length != 1 || !isEqualVersion(connection.versions[0], msg_.version))
-        ) {
-            revert(
-                "connection state is in TRYOPEN but the provided version is not set in the previous connection versions"
-            );
+        if (connection.state != IbcCoreConnectionV1GlobalEnums.State.STATE_INIT) {
+            revert("connection state is not INIT");
+        }
+        if (!isSupportedVersion(msg_.version)) {
+            revert("the counterparty selected version is not supported by versions selected on INIT");
         }
 
         require(validateSelfClient(msg_.clientStateBytes), "failed to validate self client state");

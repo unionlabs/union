@@ -30,8 +30,6 @@ contract IBCChannelHandshake is IBCStore, IIBCChannelHandshake {
 
         // TODO verifySupportedFeature
 
-        // TODO authenticates a port binding
-
         string memory channelId = generateChannelIdentifier();
         channels[msg_.portId][channelId] = msg_.channel;
         nextSequenceSends[msg_.portId][channelId] = 1;
@@ -54,8 +52,6 @@ contract IBCChannelHandshake is IBCStore, IIBCChannelHandshake {
         require(msg_.channel.connection_hops.length == 1);
 
         // TODO verifySupportedFeature
-
-        // TODO authenticates a port binding
 
         IbcCoreChannelV1Counterparty.Data memory expectedCounterparty =
             IbcCoreChannelV1Counterparty.Data({port_id: msg_.portId, channel_id: ""});
@@ -93,11 +89,9 @@ contract IBCChannelHandshake is IBCStore, IIBCChannelHandshake {
     function channelOpenAck(IBCMsgs.MsgChannelOpenAck calldata msg_) external {
         IbcCoreChannelV1Channel.Data storage channel = channels[msg_.portId][msg_.channelId];
         require(
-            channel.state == IbcCoreChannelV1GlobalEnums.State.STATE_INIT || channel.state == IbcCoreChannelV1GlobalEnums.State.STATE_TRYOPEN,
-            "invalid channel state"
+                channel.state == IbcCoreChannelV1GlobalEnums.State.STATE_INIT,
+                "channel.state != STATE_INIT"
         );
-
-        // TODO authenticates a port binding
 
         IbcCoreConnectionV1ConnectionEnd.Data storage connection = connections[channel.connection_hops[0]];
         require(connection.state == IbcCoreConnectionV1GlobalEnums.State.STATE_OPEN, "connection state is not OPEN");
@@ -136,8 +130,6 @@ contract IBCChannelHandshake is IBCStore, IIBCChannelHandshake {
         IbcCoreChannelV1Channel.Data storage channel = channels[msg_.portId][msg_.channelId];
         require(channel.state == IbcCoreChannelV1GlobalEnums.State.STATE_TRYOPEN, "channel state is not TRYOPEN");
 
-        // TODO authenticates a port binding
-
         IbcCoreConnectionV1ConnectionEnd.Data storage connection = connections[channel.connection_hops[0]];
         require(connection.state == IbcCoreConnectionV1GlobalEnums.State.STATE_OPEN, "connection state is not OPEN");
         require(channel.connection_hops.length == 1);
@@ -173,8 +165,6 @@ contract IBCChannelHandshake is IBCStore, IIBCChannelHandshake {
         IbcCoreChannelV1Channel.Data storage channel = channels[msg_.portId][msg_.channelId];
         require(channel.state != IbcCoreChannelV1GlobalEnums.State.STATE_CLOSED, "channel state is already CLOSED");
 
-        // TODO authenticates a port binding
-
         IbcCoreConnectionV1ConnectionEnd.Data storage connection = connections[channel.connection_hops[0]];
         require(connection.state == IbcCoreConnectionV1GlobalEnums.State.STATE_OPEN, "connection state is not OPEN");
 
@@ -189,8 +179,6 @@ contract IBCChannelHandshake is IBCStore, IIBCChannelHandshake {
     function channelCloseConfirm(IBCMsgs.MsgChannelCloseConfirm calldata msg_) external {
         IbcCoreChannelV1Channel.Data storage channel = channels[msg_.portId][msg_.channelId];
         require(channel.state != IbcCoreChannelV1GlobalEnums.State.STATE_CLOSED, "channel state is already CLOSED");
-
-        // TODO authenticates a port binding
 
         require(channel.connection_hops.length == 1);
         IbcCoreConnectionV1ConnectionEnd.Data storage connection = connections[channel.connection_hops[0]];
