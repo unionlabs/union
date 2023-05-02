@@ -2,6 +2,8 @@
 optimizer = true
 optimizer_runs = 200_000
 
+via_ir = true
+
 cache = true
 cache_path = "evm/cache"
 
