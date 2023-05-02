@@ -11,7 +11,7 @@ import "../proto/ibc/lightclients/wasm/v1/wasm.sol";
 import {GoogleProtobufAny as Any} from "../proto/GoogleProtobufAny.sol";
 import "solidity-bytes-utils/contracts/BytesLib.sol";
 import "../lib/TrieProofs.sol";
-import "../lib/TendermintHelp.sol";
+import "../lib/CometblsHelp.sol";
 import "../core/IZKVerifier.sol";
 
 
@@ -20,7 +20,6 @@ contract TendermintClient is ILightClient {
     using BytesLib for bytes;
     using IBCHeight for IbcCoreClientV1Height.Data;
 
-    uint256 constant PRIME_Q = 21888242871839275222246405745257275088696311157297823662689037894645226208583;
     string private constant HEADER_TYPE_URL = "/ibc.lightclients.wasm.v1.Header";
     string private constant CLIENT_STATE_TYPE_URL = "/ibc.lightclients.wasm.v1.ClientState";
     string private constant CONSENSUS_STATE_TYPE_URL = "/ibc.lightclients.wasm.v1.ConsensusState";
@@ -86,32 +85,6 @@ contract TendermintClient is ILightClient {
         return (clientState.latest_height, clientState.latest_height.revision_height != 0);
     }
 
-    function hmac(bytes memory key, bytes memory message) internal pure returns (bytes32) {
-        bytes32 keyl;
-        bytes32 keyr;
-        uint i;
-        if (key.length > 64) {
-            keyl = keccak256(key);
-        } else {
-            for (i = 0; i < key.length && i < 32; i++)
-                keyl |= bytes32(uint256(uint8(key[i])) * 2 ** (8 * (31 - i)));
-            for (i = 32; i < key.length && i < 64; i++)
-                keyr |= bytes32(uint256(uint8(key[i])) * 2 ** (8 * (63 - i)));
-        }
-        bytes32 threesix = 0x3636363636363636363636363636363636363636363636363636363636363636;
-        bytes32 fivec = 0x5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c;
-        return keccak256(abi.encodePacked(fivec ^ keyl, fivec ^ keyr, keccak256(abi.encodePacked(threesix ^ keyl, threesix ^ keyr, message))));
-    }
-
-    function hashToField(bytes memory message) internal pure returns (uint256) {
-        return (uint256(hmac("CometBLS", message)) % (PRIME_Q - 1)) + 1;
-    }
-
-    function hashToField2(bytes memory message) internal pure returns (uint256, uint256) {
-        return (hashToField(bytes(hex"00").concat(message)),
-                hashToField(bytes(hex"01").concat(message)));
-    }
-
     function updateClient(string calldata clientId, bytes calldata clientMessageBytes)
         external
         override
@@ -126,6 +99,11 @@ contract TendermintClient is ILightClient {
             clientStates[clientId];
         UnionIbcLightclientsCometblsV1ConsensusState.Data storage consensusState =
             consensusStates[clientId][header.trusted_height.toUint128()];
+
+        require(
+                consensusState.timestamp.secs != 0,
+                "LC: unkonwn trusted height"
+        );
 
         uint64 untrustedHeight = uint64(header.signed_header.header.height);
         uint64 trustedHeight = header.trusted_height.revision_height;
@@ -147,7 +125,7 @@ contract TendermintClient is ILightClient {
             nanos: 0
             });
         require(
-                !TendermintHelper.isExpired(header.signed_header.header.time, clientState.trusting_period, currentTime),
+                !CometblsHelp.isExpired(header.signed_header.header.time, clientState.trusting_period, currentTime),
                 "LC: header expired"
         );
 
@@ -175,28 +153,10 @@ contract TendermintClient is ILightClient {
             untrustedValidatorsHash = header.untrusted_validator_set_root;
         }
 
-        (uint256 messageX, uint256 messageY) =
-            hashToField2(TendermintTypesSignedHeader.encode(header.signed_header));
+        bytes memory message = TendermintTypesSignedHeader.encode(header.signed_header);
 
-        (uint256[2] memory a, uint256[2][2] memory b, uint256[2] memory c, uint256 commitmentHash, uint256[2] memory proofCommitment) =
-            abi.decode(header.zero_knowledge_proof, (uint256[2], uint256[2][2], uint256[2], uint256, uint256[2]));
+        ok = CometblsHelp.verifyZKP(verifier, trustedValidatorsHash, untrustedValidatorsHash, message, header.zero_knowledge_proof);
 
-        uint256[9] memory inputs =
-            [
-             trustedValidatorsHash.slice(0, 16).toUint256(0),
-             trustedValidatorsHash.slice(16, 32).toUint256(0),
-             untrustedValidatorsHash.slice(0, 16).toUint256(0),
-             untrustedValidatorsHash.slice(16, 32).toUint256(0),
-             messageX,
-             messageY,
-             // Gnark commitment API extend public inputs with the following commitment hash and proof commitment
-             // See https://github.com/ConsenSys/gnark/issues/652
-             commitmentHash,
-             proofCommitment[0],
-             proofCommitment[1]
-            ];
-
-        ok = verifier.verifyProof(a, b, c, inputs);
         require(ok, "LC: invalid ZKP");
 
         IbcCoreClientV1Height.Data memory newHeight = IbcCoreClientV1Height.Data({
