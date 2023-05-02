@@ -6,67 +6,67 @@ library MerkleTree {
         internal
         pure
         returns (bytes32)
-    {
-        uint256 n = data.length;
-        if (n == 0) return sha256(new bytes(0));
-        if (n == 1) return leafHash(data[0]);
-        uint256 k = getSplitPoint(data.length);
-        bytes32 left = hashFromByteSlices(subArray(data, 0, k));
-        bytes32 right = hashFromByteSlices(subArray(data, k, n));
-        return innerHash(left, right);
+   {
+       return merkleRootHash(data, 0, data.length);
+   }
+
+  /**
+     * @dev returns empty hash
+     */
+    function emptyHash() internal pure returns (bytes32) {
+        return sha256(abi.encode());
     }
 
-    function leafHash(bytes memory data) internal pure returns (bytes32) {
-        bytes memory rs = new bytes(data.length + 1);
-        rs[0] = 0x00;
-        for (uint256 i = 0; i < data.length; i++) {
-            rs[i + 1] = data[i];
-        }
-        return sha256(rs);
+    /**
+     * @dev returns tmhash(0x00 || leaf)
+     *
+     */
+    function leafHash(bytes memory leaf) internal pure returns (bytes32) {
+        uint8 leafPrefix = 0x00;
+        return sha256(abi.encodePacked(leafPrefix, leaf));
     }
 
-    function innerHash(bytes32 left, bytes32 right)
-        internal
-        pure
-        returns (bytes32)
-    {
-        bytes memory rs = new bytes(left.length + right.length + 1);
-        rs[0] = 0x01;
-
-        uint256 offset = 1;
-        for (uint256 i = 0; i < left.length; i++) {
-            rs[offset] = left[i];
-            offset++;
-        }
-
-        for (uint256 i = 0; i < right.length; i++) {
-            rs[offset] = right[i];
-            offset++;
-        }
-        return sha256(rs);
+    /**
+     * @dev returns tmhash(0x01 || left || right)
+     */
+    function innerHash(bytes32 leaf, bytes32 right) internal pure returns (bytes32) {
+        uint8 innerPrefix = 0x01;
+        return sha256(abi.encodePacked(innerPrefix, leaf, right));
     }
 
-    function getSplitPoint(uint256 n) internal pure returns (uint256) {
-        require(n >= 1, "Trying to split a tree with size < 1");
-        if (n == 1) {
-            return 0;
-        }
+    /**
+     * @dev returns the largest power of 2 less than length
+     *
+     * TODO: This function can be optimized with bit shifting approach:
+     * https://www.baeldung.com/java-largest-power-of-2-less-than-number
+     */
+    function getSplitPoint(uint256 input) internal pure returns (uint) {
+        require(input > 1, "MerkleTree: invalid input");
 
-        uint256 splitPoint = 1;
-        while (splitPoint * 2 < n) {
-            splitPoint *= 2;
+        uint result = 1;
+        for (uint i = input - 1; i > 1; i--) {
+            if ((i & (i - 1)) == 0) {
+                result = i;
+                break;
+            }
         }
-        return splitPoint;
+        return result;
     }
 
-    function subArray(
-        bytes[] memory data,
-        uint256 begin,
-        uint256 end
-    ) internal pure returns (bytes[] memory) {
-        bytes[] memory ret = new bytes[](end - begin);
-        for (uint256 i = 0; i < ret.length; i++) {
-            ret[i] = data[begin + i];
+    /**
+     * @dev computes a Merkle tree where the leaves are the byte slice in the provided order
+     * Follows RFC-696
+     */
+    function merkleRootHash(bytes[] memory data, uint start, uint total) internal pure returns (bytes32) {
+        if (total == 0) {
+            return emptyHash();
+        } else if (total == 1) {
+            return leafHash(data[start]);
+        }  else {
+            uint k = getSplitPoint(total);
+            bytes32 left = merkleRootHash(data, start, k); // validators[:k]
+            bytes32 right = merkleRootHash(data, start+k, total-k); // validators[k:]
+            return innerHash(left, right);
         }
-        return ret;
-    }}
+    }
+}

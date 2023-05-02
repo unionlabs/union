@@ -6,6 +6,7 @@ import "../core/02-client/IBCHeight.sol";
 import "../proto/ibc/core/client/v1/client.sol";
 import "../proto/ibc/lightclients/tendermint/v1/tendermint.sol";
 import "../proto/tendermint/types/types.sol";
+import "../proto/tendermint/types/canonical.sol";
 import "../proto/union/ibc/lightclients/cometbls/v1/cometbls.sol";
 import "../proto/ibc/lightclients/wasm/v1/wasm.sol";
 import {GoogleProtobufAny as Any} from "../proto/GoogleProtobufAny.sol";
@@ -19,6 +20,8 @@ contract TendermintClient is ILightClient {
     using TrieProofs for bytes;
     using BytesLib for bytes;
     using IBCHeight for IbcCoreClientV1Height.Data;
+    using CometblsHelp for TendermintTypesHeader.Data;
+    using CometblsHelp for TendermintTypesCommit.Data;
 
     string private constant HEADER_TYPE_URL = "/ibc.lightclients.wasm.v1.Header";
     string private constant CLIENT_STATE_TYPE_URL = "/ibc.lightclients.wasm.v1.ClientState";
@@ -105,7 +108,7 @@ contract TendermintClient is ILightClient {
                 "LC: unkonwn trusted height"
         );
 
-        uint64 untrustedHeight = uint64(header.signed_header.header.height);
+        uint64 untrustedHeight = uint64(header.signed_header.commit.height);
         uint64 trustedHeight = header.trusted_height.revision_height;
         require(
                 untrustedHeight > trustedHeight,
@@ -153,9 +156,14 @@ contract TendermintClient is ILightClient {
             untrustedValidatorsHash = header.untrusted_validator_set_root;
         }
 
-        bytes memory message = TendermintTypesSignedHeader.encode(header.signed_header);
+        bytes memory blockHash = abi.encodePacked(header.signed_header.header.merkleRoot());
 
-        ok = CometblsHelp.verifyZKP(verifier, trustedValidatorsHash, untrustedValidatorsHash, message, header.zero_knowledge_proof);
+        TendermintTypesCanonicalVote.Data memory vote =
+            header.signed_header.commit.toCanonicalVote(clientState.chain_id, blockHash);
+
+        bytes memory signedVote = Encoder.encodeDelim(TendermintTypesCanonicalVote.encode(vote));
+
+        ok = CometblsHelp.verifyZKP(verifier, trustedValidatorsHash, untrustedValidatorsHash, signedVote, header.zero_knowledge_proof);
 
         require(ok, "LC: invalid ZKP");
 

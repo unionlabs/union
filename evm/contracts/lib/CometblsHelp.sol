@@ -6,11 +6,13 @@ import "../proto/ibc/core/commitment/v1/commitment.sol";
 import "../proto/ibc/lightclients/tendermint/v1/tendermint.sol";
 import "../proto/tendermint/types/types.sol";
 import "../proto/tendermint/types/validator.sol";
+import "../proto/tendermint/types/canonical.sol";
 import "./Encoder.sol";
 import "./MerkleTree.sol";
 import "../core/IZKVerifier.sol";
 import "solidity-bytes-utils/contracts/BytesLib.sol";
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import "forge-std/Test.sol";
 
 library CometblsHelp {
     using BytesLib for bytes;
@@ -63,15 +65,6 @@ library CometblsHelp {
         return verifier.verifyProof(a, b, c, inputs);
     }
 
-    function toConsensusState(IbcLightclientsTendermintV1Header.Data memory header) internal pure returns (IbcLightclientsTendermintV1ConsensusState.Data memory) {
-        return
-            IbcLightclientsTendermintV1ConsensusState.Data({
-                timestamp: header.signed_header.header.time,
-                root: IbcCoreCommitmentV1MerkleRoot.Data({hash: header.signed_header.header.app_hash}),
-                next_validators_hash: header.signed_header.header.next_validators_hash
-            });
-    }
-
     function isExpired(
         GoogleProtobufTimestamp.Data memory headerTime,
         GoogleProtobufDuration.Data memory trustingPeriod,
@@ -92,5 +85,49 @@ library CometblsHelp {
         } else {
             return false;
         }
+    }
+
+    function merkleRoot(TendermintTypesHeader.Data memory h) internal view returns (bytes32) {
+        require(h.validators_hash.length > 0, "Tendermint: hash can't be empty");
+        uint256 gasPrevious = gasleft();
+        bytes memory hbz = TendermintVersionConsensus.encode(h.version);
+        bytes memory pbt = GoogleProtobufTimestamp.encode(h.time);
+        bytes memory bzbi = TendermintTypesBlockID.encode(h.last_block_id);
+        bytes[] memory normalizedHeader = new bytes[](14);
+        normalizedHeader[0] = hbz;
+        normalizedHeader[1] = Encoder.cdcEncode(h.chain_id);
+        normalizedHeader[2] = Encoder.cdcEncode(h.height);
+        normalizedHeader[3] = pbt;
+        normalizedHeader[4] = bzbi;
+        normalizedHeader[5] = Encoder.cdcEncode(h.last_commit_hash);
+        normalizedHeader[6] = Encoder.cdcEncode(h.data_hash);
+        normalizedHeader[7] = Encoder.cdcEncode(h.validators_hash);
+        normalizedHeader[8] = Encoder.cdcEncode(h.next_validators_hash);
+        normalizedHeader[9] = Encoder.cdcEncode(h.consensus_hash);
+        normalizedHeader[10] = Encoder.cdcEncode(h.app_hash);
+        normalizedHeader[11] = Encoder.cdcEncode(h.last_results_hash);
+        normalizedHeader[12] = Encoder.cdcEncode(h.evidence_hash);
+        normalizedHeader[13] = Encoder.cdcEncode(h.proposer_address);
+        console.log(gasPrevious - gasleft());
+        gasPrevious = gasleft();
+        bytes32 root = MerkleTree.hashFromByteSlices(normalizedHeader);
+        console.log(gasPrevious - gasleft());
+        return root;
+    }
+
+    function toCanonicalVote(TendermintTypesCommit.Data memory commit, string memory chainId, bytes memory blockHash) internal pure returns (TendermintTypesCanonicalVote.Data memory) {
+        return TendermintTypesCanonicalVote.Data({
+            type_: TendermintTypesTypesGlobalEnums.SignedMsgType.SIGNED_MSG_TYPE_PRECOMMIT,
+            height: commit.height,
+            round: commit.round,
+            block_id: TendermintTypesCanonicalBlockID.Data({
+                hash: blockHash,
+                part_set_header: TendermintTypesCanonicalPartSetHeader.Data({
+                    total: commit.block_id.part_set_header.total,
+                    hash: commit.block_id.part_set_header.hash
+                    })
+                }),
+            chain_id: chainId
+            });
     }
 }
