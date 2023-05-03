@@ -10,6 +10,13 @@
 
       uniond-image = pkgs.dockerTools.buildImage {
         name = "uniond";
+
+        copyToRoot = pkgs.buildEnv {
+          name = "image-root";
+          paths = [ pkgs.coreutils-full ];
+          pathsToLink = [ "/bin" ];
+        };
+
         config = {
           Entrypoint = [ "${self'.packages.uniond}/bin/uniond" ];
         };
