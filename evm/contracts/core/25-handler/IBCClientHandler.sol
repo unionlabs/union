@@ -24,7 +24,7 @@ abstract contract IBCClientHandler {
         (bool success,) = ibcClientAddress.delegatecall(
             abi.encodeWithSelector(IIBCClient.registerClient.selector, clientType, client)
         );
-        require(success);
+        require(success, "IBCClientHandler: registerClient failed");
     }
 
     /**
@@ -33,7 +33,7 @@ abstract contract IBCClientHandler {
     function createClient(IBCMsgs.MsgCreateClient calldata msg_) external returns (string memory clientId) {
         (bool success, bytes memory res) =
             ibcClientAddress.delegatecall(abi.encodeWithSelector(IIBCClient.createClient.selector, msg_));
-        require(success);
+        require(success, "IBCClientHandler: createClient failed");
         clientId = abi.decode(res, (string));
         emit GeneratedClientIdentifier(clientId);
         return clientId;
@@ -44,6 +44,6 @@ abstract contract IBCClientHandler {
      */
     function updateClient(IBCMsgs.MsgUpdateClient calldata msg_) external {
         (bool success,) = ibcClientAddress.delegatecall(abi.encodeWithSelector(IIBCClient.updateClient.selector, msg_));
-        require(success);
+        require(success, "IBCClientHandler: updateClient failed");
     }
 }
