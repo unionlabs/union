@@ -107,6 +107,7 @@
                 gotools
                 go-tools
                 nodejs
+                yarn
                 nil
                 marksman
                 jq

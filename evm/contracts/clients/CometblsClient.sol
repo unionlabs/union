@@ -11,6 +11,7 @@ import "../proto/union/ibc/lightclients/cometbls/v1/cometbls.sol";
 import "../proto/ibc/lightclients/wasm/v1/wasm.sol";
 import {GoogleProtobufAny as Any} from "../proto/GoogleProtobufAny.sol";
 import "solidity-bytes-utils/contracts/BytesLib.sol";
+import "0xsequence-sstore2/contracts/SSTORE2.sol";
 import "../lib/TrieProofs.sol";
 import "../lib/CometblsHelp.sol";
 import "../core/IZKVerifier.sol";
@@ -27,10 +28,9 @@ contract CometblsClient is ILightClient {
     using CometblsHelp for OptimizedConsensusState;
     using CometblsHelp for bytes;
 
-    mapping(string => UnionIbcLightclientsCometblsV1ClientState.Data) internal clientStates;
-    mapping(string => mapping(uint128 => OptimizedConsensusState)) internal consensusStates;
-    mapping(string => mapping(uint128 => uint256)) internal processedTimes;
-    mapping(string => mapping(uint128 => uint256)) internal processedHeights;
+    mapping(string => address) internal clientStates;
+    mapping(string => mapping(uint128 => address)) internal consensusStates;
+    mapping(string => mapping(uint128 => ProcessedMoment)) internal processedMoments;
     address internal ibcHandler;
     IZKVerifier internal verifier;
 
@@ -56,8 +56,8 @@ contract CometblsClient is ILightClient {
         if (!ok) {
             return (clientStateCommitment, update, false);
         }
-        clientStates[clientId] = clientState;
-        consensusStates[clientId][clientState.latest_height.toUint128()] = consensusState.toOptimizedConsensusState();
+        clientStates[clientId] = SSTORE2.write(abi.encode(clientState));
+        consensusStates[clientId][clientState.latest_height.toUint128()] = SSTORE2.write(abi.encode(consensusState.toOptimizedConsensusState()));
         return (
             keccak256(clientStateBytes),
             ConsensusStateUpdate({
@@ -74,13 +74,14 @@ contract CometblsClient is ILightClient {
         override
         returns (uint64, bool)
     {
-        OptimizedConsensusState storage consensusState =
-            consensusStates[clientId][height.toUint128()];
+        OptimizedConsensusState memory consensusState =
+            abi.decode(SSTORE2.read(consensusStates[clientId][height.toUint128()]), (OptimizedConsensusState));
         return (consensusState.timestamp, consensusState.timestamp != 0);
     }
 
     function getLatestHeight(string calldata clientId) external view override returns (IbcCoreClientV1Height.Data memory, bool) {
-        UnionIbcLightclientsCometblsV1ClientState.Data storage clientState = clientStates[clientId];
+        UnionIbcLightclientsCometblsV1ClientState.Data memory clientState =
+            abi.decode(SSTORE2.read(clientStates[clientId]), (UnionIbcLightclientsCometblsV1ClientState.Data));
         return (clientState.latest_height, clientState.latest_height.revision_height != 0);
     }
 
@@ -91,16 +92,15 @@ contract CometblsClient is ILightClient {
         returns (bytes32, ConsensusStateUpdate[] memory, bool)
     {
         uint256 gas = gasleft();
-        (UnionIbcLightclientsCometblsV1Header.Data memory header, bool ok) =
-            clientMessageBytes.unmarshalHeader();
-        require(ok, "LC: invalid block header");
+        UnionIbcLightclientsCometblsV1Header.Data memory header =
+            abi.decode(clientMessageBytes, (UnionIbcLightclientsCometblsV1Header.Data));
         console.log("Cometbls: Header.unmarshal(): ", gas - gasleft());
 
         gas = gasleft();
-        UnionIbcLightclientsCometblsV1ClientState.Data storage clientState =
-            clientStates[clientId];
-        OptimizedConsensusState storage consensusState =
-            consensusStates[clientId][header.trusted_height.toUint128()];
+        UnionIbcLightclientsCometblsV1ClientState.Data memory clientState =
+            abi.decode(SSTORE2.read(clientStates[clientId]), (UnionIbcLightclientsCometblsV1ClientState.Data));
+        OptimizedConsensusState memory consensusState =
+            abi.decode(SSTORE2.read(consensusStates[clientId][header.trusted_height.toUint128()]), (OptimizedConsensusState));
         console.log("Cometbls: loadState(): ", gas - gasleft());
 
         gas = gasleft();
@@ -123,9 +123,10 @@ contract CometblsClient is ILightClient {
                 "LC: header time <= consensus state time"
         );
 
-        GoogleProtobufDuration.Data memory currentTime = GoogleProtobufDuration.Data({
-            Seconds: int64(uint64(block.timestamp)),
-            nanos: 0
+        GoogleProtobufDuration.Data memory currentTime =
+            GoogleProtobufDuration.Data({
+                Seconds: int64(uint64(block.timestamp)),
+                nanos: 0
             });
         require(
                 !CometblsHelp.isExpired(header.signed_header.header.time, clientState.trusting_period, currentTime),
@@ -165,27 +166,29 @@ contract CometblsClient is ILightClient {
         console.log("Cometbls: Commit.toSignedVote()", gas - gasleft());
 
         gas = gasleft();
-        ok = CometblsHelp.verifyZKP(verifier, trustedValidatorsHash, untrustedValidatorsHash, signedVote, header.zero_knowledge_proof);
+        bool ok = CometblsHelp.verifyZKP(verifier, trustedValidatorsHash, untrustedValidatorsHash, signedVote, header.zero_knowledge_proof);
         require(ok, "LC: invalid ZKP");
         console.log("Cometbls: ZKP.verify()", gas - gasleft());
 
-        IbcCoreClientV1Height.Data memory newHeight = IbcCoreClientV1Height.Data({
-            revision_number: header.trusted_height.revision_number,
-            revision_height: untrustedHeight
+        IbcCoreClientV1Height.Data memory newHeight =
+            IbcCoreClientV1Height.Data({
+                revision_number: header.trusted_height.revision_number,
+                revision_height: untrustedHeight
             });
 
         uint128 newHeightIdx = newHeight.toUint128();
 
         // Update states
         if (untrustedHeight > clientState.latest_height.revision_height) {
-            clientState.latest_height.revision_height = untrustedHeight;
+            // TODO!!
+            /* clientState.latest_height.revision_height = untrustedHeight; */
         }
 
         gas = gasleft();
-        consensusState = consensusStates[clientId][newHeightIdx];
         consensusState.timestamp = uint64(header.signed_header.header.time.secs);
         consensusState.root = header.signed_header.header.app_hash.toBytes32(0);
         consensusState.nextValidatorsHash = untrustedValidatorsHash;
+        consensusStates[clientId][newHeightIdx] = SSTORE2.write(abi.encode(consensusState));
         console.log("Cometbls: ConsensusState.update()", gas - gasleft());
 
         ConsensusStateUpdate[] memory updates = new ConsensusStateUpdate[](1);
@@ -193,11 +196,14 @@ contract CometblsClient is ILightClient {
             ConsensusStateUpdate({
                 consensusStateCommitment: keccak256(consensusState.toUnoptimizedConsensusState().marshalConsensusState()),
                 height: newHeight
-                });
+            });
 
         gas = gasleft();
-        processedTimes[clientId][newHeightIdx] = block.timestamp;
-        processedHeights[clientId][newHeightIdx] = block.number;
+        processedMoments[clientId][newHeightIdx] =
+            ProcessedMoment({
+                timestamp: block.timestamp,
+                height: block.number
+            });
         console.log("Cometbls: updateProcessed()", gas - gasleft());
 
         gas = gasleft();
@@ -235,7 +241,8 @@ contract CometblsClient is ILightClient {
     }
 
     function getClientState(string calldata clientId) external view returns (bytes memory clientStateBytes, bool) {
-        UnionIbcLightclientsCometblsV1ClientState.Data storage clientState = clientStates[clientId];
+        UnionIbcLightclientsCometblsV1ClientState.Data memory clientState =
+            abi.decode(SSTORE2.read(clientStates[clientId]), (UnionIbcLightclientsCometblsV1ClientState.Data));
         if (clientState.latest_height.revision_height == 0) {
             return (clientStateBytes, false);
         }
@@ -247,7 +254,8 @@ contract CometblsClient is ILightClient {
         view
         returns (bytes memory consensusStateBytes, bool)
     {
-        OptimizedConsensusState storage consensusState = consensusStates[clientId][height.toUint128()];
+        OptimizedConsensusState memory consensusState =
+            abi.decode(SSTORE2.read(consensusStates[clientId][height.toUint128()]), (OptimizedConsensusState));
         if (consensusState.timestamp == 0) {
             return (consensusStateBytes, false);
         }

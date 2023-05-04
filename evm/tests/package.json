@@ -6,6 +6,7 @@
         "@openzeppelin/contracts": "^4.8.3",
         "solidity-bytes-utils": "0.8.0",
         "solidity-rlp": "^2.0.6",
-        "solidity-stringutils": "git+https://github.com/ibc-solidity/solidity-stringutils.git#716294569dd2304ae8d81681951733542f999015"
+        "solidity-stringutils": "git+https://github.com/ibc-solidity/solidity-stringutils.git#716294569dd2304ae8d81681951733542f999015",
+        "0xsequence-sstore2": "git+https://github.com/0xsequence/sstore2.git#0a28fe61b6e81de9a05b462a24b9f4ba8c70d5b7"
     }
 }

@@ -22,6 +22,11 @@ struct OptimizedConsensusState {
     uint64 timestamp;
 }
 
+struct ProcessedMoment {
+    uint256 timestamp;
+    uint256 height;
+}
+
 library CometblsHelp {
     using BytesLib for bytes;
 
@@ -138,7 +143,7 @@ library CometblsHelp {
             });
     }
 
-    function toUnoptimizedConsensusState(OptimizedConsensusState storage consensusState) internal view returns (UnionIbcLightclientsCometblsV1ConsensusState.Data memory) {
+    function toUnoptimizedConsensusState(OptimizedConsensusState memory consensusState) internal view returns (UnionIbcLightclientsCometblsV1ConsensusState.Data memory) {
         return UnionIbcLightclientsCometblsV1ConsensusState.Data({
             timestamp: GoogleProtobufTimestamp.Data({
                 secs: int64(consensusState.timestamp),

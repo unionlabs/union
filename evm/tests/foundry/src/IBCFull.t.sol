@@ -220,7 +220,7 @@ contract IBCFullTest is Test {
                 zero_knowledge_proof: zero_knowledge_proof
                 });
         vm.warp(1682000040);
-        bytes memory clientMessage = cometblsHeader.marshalHeader();
+        bytes memory clientMessage = abi.encode(cometblsHeader);
         uint256 gas = gasleft();
         updateClient(clientMessage);
         console.log("IBCFull.updateClient(): ", gas - gasleft());
