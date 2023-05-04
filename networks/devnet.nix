@@ -25,7 +25,7 @@
             services = uniond-services // {
               geth = import ./services/geth.nix {
                 inherit pkgs;
-                geth-init = self'.packages.devnet-geth-init;
+                config = self'.packages.devnet-geth-config;
               };
               lodestar = import ./services/lodestar.nix {
                 inherit pkgs;
