@@ -133,7 +133,7 @@ contract IBCFullTest is Test {
                             revision_number: 0,
                             revision_height: height
                             })
-                    }).marshalClientState()
+                    }).marshalClientStateEthABI()
                 ,
                 consensusStateBytes: UnionIbcLightclientsCometblsV1ConsensusState.Data({
                         timestamp: GoogleProtobufTimestamp.Data({
@@ -144,7 +144,7 @@ contract IBCFullTest is Test {
                             hash: rootHash
                             }),
                         next_validators_hash: nextValidatorsHash
-                    }).marshalConsensusState()
+                    }).marshalConsensusStateEthABI()
                 })
         );
     }
@@ -220,7 +220,7 @@ contract IBCFullTest is Test {
                 zero_knowledge_proof: zero_knowledge_proof
                 });
         vm.warp(1682000040);
-        bytes memory clientMessage = abi.encode(cometblsHeader);
+        bytes memory clientMessage = cometblsHeader.marshalHeaderEthABI();
         uint256 gas = gasleft();
         updateClient(clientMessage);
         console.log("IBCFull.updateClient(): ", gas - gasleft());
