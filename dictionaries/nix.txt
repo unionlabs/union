@@ -2,6 +2,7 @@ aitlahcen
 arion
 authrpc
 cachix
+mktemp
 commitizen
 coreutils
 corsdomain
