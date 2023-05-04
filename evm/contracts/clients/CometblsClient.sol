@@ -217,13 +217,6 @@ contract CometblsClient is ILightClient {
         bytes calldata path,
         bytes calldata value
     ) external view override returns (bool) {
-        if (!validateArgsAndDelayPeriod(clientId, height, delayTimePeriod, delayBlockPeriod, prefix, proof)) {
-            return false;
-        }
-        OptimizedConsensusState storage consensusState =
-            consensusStates[clientId][height.toUint128()];
-        assert(consensusState.timestamp != 0);
-
         // TODO
         revert("not implemented");
     }
@@ -237,62 +230,7 @@ contract CometblsClient is ILightClient {
         bytes calldata prefix,
         bytes calldata path
     ) external returns (bool) {
-        if (!validateArgsAndDelayPeriod(clientId, height, delayTimePeriod, delayBlockPeriod, prefix, proof)) {
-            return false;
-        }
-        OptimizedConsensusState storage consensusState =
-            consensusStates[clientId][height.toUint128()];
-        assert(consensusState.timestamp != 0);
-
         // TODO
-        revert("not implemented");
-    }
-
-
-    function validateArgs(
-                          UnionIbcLightclientsCometblsV1ClientState.Data storage cs,
-        IbcCoreClientV1Height.Data memory height,
-        bytes memory prefix,
-        bytes memory proof
-    ) internal view returns (bool) {
-        if (cs.latest_height.lt(height)) {
-            return false;
-        } else if (prefix.length == 0) {
-            return false;
-        } else if (proof.length == 0) {
-            return false;
-        }
-        return true;
-    }
-
-    function validateDelayPeriod(
-        string memory clientId,
-        IbcCoreClientV1Height.Data memory height,
-        uint64 delayPeriodTime,
-        uint64 delayPeriodBlocks
-    ) private view returns (bool) {
-        uint128 heightU128 = height.toUint128();
-        uint64 currentTime = uint64(block.timestamp * 1000 * 1000 * 1000);
-        uint64 validTime = uint64(processedTimes[clientId][heightU128]) * 1000 * 1000 * 1000 + delayPeriodTime;
-        if (currentTime < validTime) {
-            return false;
-        }
-        uint64 currentHeight = uint64(block.number);
-        uint64 validHeight = uint64(processedHeights[clientId][heightU128]) + delayPeriodBlocks;
-        if (currentHeight < validHeight) {
-            return false;
-        }
-        return true;
-    }
-
-    function validateArgsAndDelayPeriod(
-        string memory clientId,
-        IbcCoreClientV1Height.Data memory height,
-        uint64 delayTimePeriod,
-        uint64 delayBlockPeriod,
-        bytes memory prefix,
-        bytes memory proof
-    ) internal view returns (bool) {
         revert("not implemented");
     }
 
