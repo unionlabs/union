@@ -29,7 +29,8 @@
               };
               lodestar = import ./services/lodestar.nix {
                 inherit pkgs;
-                lodestar-init = self'.packages.devnet-lodestar-init;
+                lodestar-cli = self'.packages.lodestar-cli;
+                config = self'.packages.devnet-lodestar-config;
               };
             };
           }];

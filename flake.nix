@@ -34,7 +34,6 @@
         ./networks/devnet.nix
         ./networks/genesis/devnet.nix
         ./networks/packages/geth-init.nix
-        ./networks/packages/lodestar-init.nix
 
         inputs.treefmt-nix.flakeModule
         inputs.pre-commit-hooks.flakeModule
