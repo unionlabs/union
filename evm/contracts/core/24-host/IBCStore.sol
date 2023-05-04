@@ -4,6 +4,7 @@ pragma solidity ^0.8.18;
 import "../../proto/ibc/core/connection/v1/connection.sol";
 import "../../proto/ibc/core/channel/v1/channel.sol";
 import "../02-client/ILightClient.sol";
+import "forge-std/Test.sol";
 
 abstract contract IBCStore {
     // Commitments
@@ -31,10 +32,11 @@ abstract contract IBCStore {
     uint64 internal nextChannelSequence;
 
     // Storage accessors
-
     function getClient(string memory clientId) internal view returns (ILightClient) {
+        uint256 gas = gasleft();
         address clientImpl = clientImpls[clientId];
-        require(clientImpl != address(0));
+        require(clientImpl != address(0), "IBCStore: client not found");
+        console.log("IBCStore.GetClient(): ", gas - gasleft());
         return ILightClient(clientImpl);
     }
 }

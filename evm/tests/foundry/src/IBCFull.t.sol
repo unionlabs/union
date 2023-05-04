@@ -38,6 +38,8 @@ contract IBCFullTest is Test {
     string constant PORT_ID = "cometbls:0";
     string constant CHANNEL_VERSION = "1";
     bytes constant MERKLE_PREFIX = "ibc";
+
+    bytes constant GENESIS_APP_ROOT = hex"E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855";
     bytes constant GENESIS_VALIDATOR_ROOT = hex"811594B875D1BF0C7992459AE166367C094CB7EAD07DF3F849F4D01EBFBF9A07";
 
     function setUp() public {
@@ -53,7 +55,7 @@ contract IBCFullTest is Test {
     }
 
     function setUpClient() internal {
-        createClient(0, GENESIS_VALIDATOR_ROOT, bytes(""));
+        createClient(0, GENESIS_VALIDATOR_ROOT, GENESIS_APP_ROOT);
     }
 
     function getConnectionVersions() internal pure returns (IbcCoreConnectionV1Version.Data[] memory) {
@@ -142,7 +144,7 @@ contract IBCFullTest is Test {
                             hash: rootHash
                             }),
                         next_validators_hash: nextValidatorsHash
-                    }).marshalConsensusStateMemory()
+                    }).marshalConsensusState()
                 })
         );
     }
@@ -158,7 +160,7 @@ contract IBCFullTest is Test {
 
 
     function testCreateClient() public {
-        createClient(0, GENESIS_VALIDATOR_ROOT, bytes(""));
+        createClient(0, GENESIS_VALIDATOR_ROOT, GENESIS_APP_ROOT);
     }
 
     function testUpdateClient() public {
@@ -221,6 +223,6 @@ contract IBCFullTest is Test {
         bytes memory clientMessage = cometblsHeader.marshalHeader();
         uint256 gas = gasleft();
         updateClient(clientMessage);
-        console.log("IBCClient.updateClient(): ", gas - gasleft());
+        console.log("IBCFull.updateClient(): ", gas - gasleft());
     }
 }

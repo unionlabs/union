@@ -41,11 +41,11 @@ contract IBCPacket is IBCStore, IIBCPacket {
             packet.timeout_height.isZero() || latestHeight.lt(packet.timeout_height),
             "receiving chain block height >= packet timeout height"
         );
-        GoogleProtobufTimestamp.Data memory latestTimestamp;
+        uint64 latestTimestamp;
         (latestTimestamp, found) = client.getTimestampAtHeight(connection.client_id, latestHeight);
         require(found, "consensusState not found");
         require(
-            packet.timeout_timestamp == 0 || uint64(latestTimestamp.secs) < packet.timeout_timestamp,
+            packet.timeout_timestamp == 0 || latestTimestamp < packet.timeout_timestamp,
             "receiving chain block timestamp >= packet timeout timestamp"
         );
 

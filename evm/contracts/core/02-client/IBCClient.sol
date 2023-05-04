@@ -32,7 +32,7 @@ contract IBCClient is IBCStore, IIBCClient {
         clientImpls[clientId] = clientImpl;
         (bytes32 clientStateCommitment, ConsensusStateUpdate memory update, bool ok) =
             ILightClient(clientImpl).createClient(clientId, msg_.clientStateBytes, msg_.consensusStateBytes);
-        require(ok, "failed to create client");
+        require(ok, "IBCClient: failed to create client");
 
         // update commitments
         commitments[keccak256(IBCCommitment.clientStatePath(clientId))] = clientStateCommitment;
@@ -47,12 +47,12 @@ contract IBCClient is IBCStore, IIBCClient {
      * @dev updateClient updates the consensus state and the state root from a provided header
      */
     function updateClient(IBCMsgs.MsgUpdateClient calldata msg_) external override {
-        uint256 gas = gasleft();
         require(commitments[IBCCommitment.clientStateCommitmentKey(msg_.clientId)] != bytes32(0), "IBCClient: no state");
+        uint256 gas = gasleft();
         (bytes32 clientStateCommitment, ConsensusStateUpdate[] memory updates, bool ok) =
             getClient(msg_.clientId).updateClient(msg_.clientId, msg_.clientMessage);
-        require(ok, "failed to update client");
         console.log("IBCClient.getClient(clientId).updateClient(): ", gas - gasleft());
+        require(ok, "IBCClient: failed to update client");
 
         gas = gasleft();
         // update commitments

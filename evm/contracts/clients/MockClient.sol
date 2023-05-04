@@ -79,14 +79,10 @@ contract MockClient is ILightClient {
         external
         view
         override
-        returns (GoogleProtobufTimestamp.Data memory, bool)
+        returns (uint64, bool)
     {
         ConsensusState.Data storage consensusState = consensusStates[clientId][height.toUint128()];
-        GoogleProtobufTimestamp.Data memory timestamp = GoogleProtobufTimestamp.Data({
-                secs: int64(consensusState.timestamp),
-                nanos: 0
-            });
-        return (timestamp, consensusState.timestamp != 0);
+        return (consensusState.timestamp, consensusState.timestamp != 0);
     }
 
     /**

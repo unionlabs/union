@@ -16,6 +16,12 @@ import "solidity-bytes-utils/contracts/BytesLib.sol";
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {GoogleProtobufAny as Any} from "../proto/GoogleProtobufAny.sol";
 
+struct OptimizedConsensusState {
+    bytes32 root;
+    bytes32 nextValidatorsHash;
+    uint64 timestamp;
+}
+
 library CometblsHelp {
     using BytesLib for bytes;
 
@@ -50,19 +56,22 @@ library CometblsHelp {
                 hashToField(abi.encodePacked(ONE, message)));
     }
 
-    function verifyZKP(IZKVerifier verifier, bytes memory trustedValidatorsHash, bytes memory untrustedValidatorsHash, bytes memory message, bytes memory zkp) internal view returns (bool) {
+    function verifyZKP(IZKVerifier verifier, bytes32 trustedValidatorsHash, bytes32 untrustedValidatorsHash, bytes memory message, bytes memory zkp) internal view returns (bool) {
         (uint256 messageX, uint256 messageY) =
             hashToField2(message);
 
         (uint256[2] memory a, uint256[2][2] memory b, uint256[2] memory c, uint256 commitmentHash, uint256[2] memory proofCommitment) =
             abi.decode(zkp, (uint256[2], uint256[2][2], uint256[2], uint256, uint256[2]));
 
+        bytes memory packedTrustedValidatorsHash = abi.encodePacked(trustedValidatorsHash);
+        bytes memory packedUntrustedValidatorsHash = abi.encodePacked(untrustedValidatorsHash);
+
         uint256[9] memory inputs =
             [
-             uint256(trustedValidatorsHash.toUint128(0)),
-             uint256(trustedValidatorsHash.toUint128(16)),
-             uint256(untrustedValidatorsHash.toUint128(0)),
-             uint256(untrustedValidatorsHash.toUint128(16)),
+             uint256(packedTrustedValidatorsHash.toUint128(0)),
+             uint256(packedTrustedValidatorsHash.toUint128(16)),
+             uint256(packedUntrustedValidatorsHash.toUint128(0)),
+             uint256(packedUntrustedValidatorsHash.toUint128(16)),
              messageX,
              messageY,
              // Gnark commitment API extend public inputs with the following commitment hash and proof commitment
@@ -121,13 +130,34 @@ library CometblsHelp {
         return root;
     }
 
-    function toCanonicalVote(TendermintTypesCommit.Data memory commit, string memory chainId, bytes memory blockHash) internal pure returns (TendermintTypesCanonicalVote.Data memory) {
+    function toOptimizedConsensusState(UnionIbcLightclientsCometblsV1ConsensusState.Data memory consensusState) internal pure returns (OptimizedConsensusState memory) {
+        return OptimizedConsensusState({
+                timestamp: uint64(consensusState.timestamp.secs),
+                root: consensusState.root.hash.toBytes32(0),
+                nextValidatorsHash: consensusState.next_validators_hash.toBytes32(0)
+            });
+    }
+
+    function toUnoptimizedConsensusState(OptimizedConsensusState storage consensusState) internal view returns (UnionIbcLightclientsCometblsV1ConsensusState.Data memory) {
+        return UnionIbcLightclientsCometblsV1ConsensusState.Data({
+            timestamp: GoogleProtobufTimestamp.Data({
+                secs: int64(consensusState.timestamp),
+                nanos: 0
+                }),
+            root: IbcCoreCommitmentV1MerkleRoot.Data({
+                hash: abi.encodePacked(consensusState.root)
+                }),
+            next_validators_hash: abi.encodePacked(consensusState.nextValidatorsHash)
+            });
+    }
+
+    function toCanonicalVote(TendermintTypesCommit.Data memory commit, string memory chainId, bytes32 blockHash) internal pure returns (TendermintTypesCanonicalVote.Data memory) {
         return TendermintTypesCanonicalVote.Data({
             type_: TendermintTypesTypesGlobalEnums.SignedMsgType.SIGNED_MSG_TYPE_PRECOMMIT,
             height: commit.height,
             round: commit.round,
             block_id: TendermintTypesCanonicalBlockID.Data({
-                hash: blockHash,
+                hash: abi.encodePacked(blockHash),
                 part_set_header: TendermintTypesCanonicalPartSetHeader.Data({
                     total: commit.block_id.part_set_header.total,
                     hash: commit.block_id.part_set_header.hash
@@ -149,16 +179,7 @@ library CometblsHelp {
         return Any.encode(Any.Data({type_url: CLIENT_STATE_TYPE_URL, value: IbcLightclientsWasmV1ClientState.encode(wasmClientState)}));
     }
 
-    function marshalConsensusState(UnionIbcLightclientsCometblsV1ConsensusState.Data storage consensusState) internal view returns (bytes memory) {
-        IbcLightclientsWasmV1ConsensusState.Data memory wasmConsensusState =
-            IbcLightclientsWasmV1ConsensusState.Data({
-                data: UnionIbcLightclientsCometblsV1ConsensusState.encode(consensusState),
-                timestamp: uint64(consensusState.timestamp.secs)
-                });
-        return Any.encode(Any.Data({type_url: CONSENSUS_STATE_TYPE_URL, value: IbcLightclientsWasmV1ConsensusState.encode(wasmConsensusState)}));
-    }
-
-    function marshalConsensusStateMemory(UnionIbcLightclientsCometblsV1ConsensusState.Data memory consensusState) internal pure returns (bytes memory) {
+    function marshalConsensusState(UnionIbcLightclientsCometblsV1ConsensusState.Data memory consensusState) internal view returns (bytes memory) {
         IbcLightclientsWasmV1ConsensusState.Data memory wasmConsensusState =
             IbcLightclientsWasmV1ConsensusState.Data({
                 data: UnionIbcLightclientsCometblsV1ConsensusState.encode(consensusState),

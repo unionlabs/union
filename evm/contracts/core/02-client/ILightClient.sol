@@ -29,7 +29,7 @@ interface ILightClient {
     function getTimestampAtHeight(string calldata clientId, IbcCoreClientV1Height.Data calldata height)
         external
         view
-        returns (GoogleProtobufTimestamp.Data memory, bool);
+        returns (uint64, bool);
 
     /**
      * @dev getLatestHeight returns the latest height of the client state corresponding to `clientId`.
