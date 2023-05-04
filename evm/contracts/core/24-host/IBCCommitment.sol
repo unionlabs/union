@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
-import "@openzeppelin/contracts/utils/Strings.sol";
+import "solady/utils/LibString.sol";
 
 library IBCCommitment {
     // Commitment path generators that comply with https://github.com/cosmos/ibc/tree/main/spec/core/ics-024-host-requirements#path-space
@@ -19,9 +19,9 @@ library IBCCommitment {
             "clients/",
             clientId,
             "/consensusStates/",
-            Strings.toString(revisionNumber),
+            LibString.toString(revisionNumber),
             "-",
-            Strings.toString(revisionHeight)
+            LibString.toString(revisionHeight)
         );
     }
 
@@ -39,7 +39,7 @@ library IBCCommitment {
         returns (bytes memory)
     {
         return abi.encodePacked(
-            "commitments/ports/", portId, "/channels/", channelId, "/sequences/", Strings.toString(sequence)
+            "commitments/ports/", portId, "/channels/", channelId, "/sequences/", LibString.toString(sequence)
         );
     }
 
@@ -49,7 +49,7 @@ library IBCCommitment {
         returns (bytes memory)
     {
         return
-            abi.encodePacked("acks/ports/", portId, "/channels/", channelId, "/sequences/", Strings.toString(sequence));
+            abi.encodePacked("acks/ports/", portId, "/channels/", channelId, "/sequences/", LibString.toString(sequence));
     }
 
     function packetReceiptCommitmentPath(string memory portId, string memory channelId, uint64 sequence)
@@ -58,7 +58,7 @@ library IBCCommitment {
         returns (bytes memory)
     {
         return abi.encodePacked(
-            "receipts/ports/", portId, "/channels/", channelId, "/sequences/", Strings.toString(sequence)
+            "receipts/ports/", portId, "/channels/", channelId, "/sequences/", LibString.toString(sequence)
         );
     }
 
