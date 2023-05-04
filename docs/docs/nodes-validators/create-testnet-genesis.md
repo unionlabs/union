@@ -17,17 +17,7 @@ There are two main sets of instructions, those for the host node that will compi
 
 # Key Generation
 
-Both the host node and genesis validators should generate a consensus key pair and an app key pair.
-
-## Consensus Key
-
-The Union Testnet uses `bn254` as opposed to `ed25519` for its consensus keys. To generate a `bn254` key pair, the `uniond` binary comes packaged with a generator. To save this to a file named `priv_validator_key.json`, run the following command:
-
-```sh
-uniond genbn > priv_validator_key.json
-```
-
-Later, we will inject this into your local `uniond` config in place of the auto-generated `ed25519` key pair.
+Both the host node and genesis validators should generate an app key pair.
 
 ## App Key
 
@@ -70,10 +60,10 @@ Before anything else, an initial genesis file must be created with some basic co
 To create the initial genesis file at `~/.uniond/config/genesis.json`, both the host node and genesis validators should run:
 
 ```sh
-uniond init union-testnet-1 bn254
+uniond init $MONIKER bn254
 ```
 
-This creates a new genesis file with the current time as the `genesis_time` and a `chain_id` of `union-testnet-1`.
+This creates a new genesis file with the current time as the `genesis_time`.
 
 At this point, you can move your consensus key from earlier to `~/.uniond/config/priv_validator_key.json`.
 
@@ -129,7 +119,7 @@ The following values should be defined as follows:
 
 * `STAKE` The stake you will put down to be a validator (`10000000 <= STAKE < genesis_balance`).
 
-* `PUBKEY` `"{\"@type\":\"/cosmos.crypto.bn254.PubKey\",\"key\":$BN254_PUB}"` where `BN254_PUB` is the `.pub_key.value` value from `~/.uniond/config/priv_validator_key.json`.
+* `PUBKEY` the value returned from `uniond tendermint show-validator`
 
 * `MONIKER` Your moniker ID.
 
