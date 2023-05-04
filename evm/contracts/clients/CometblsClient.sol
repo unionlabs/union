@@ -14,22 +14,17 @@ import "solidity-bytes-utils/contracts/BytesLib.sol";
 import "../lib/TrieProofs.sol";
 import "../lib/CometblsHelp.sol";
 import "../core/IZKVerifier.sol";
+import "forge-std/Test.sol";
 
-
-contract TendermintClient is ILightClient {
+contract CometblsClient is ILightClient {
     using TrieProofs for bytes;
     using BytesLib for bytes;
     using IBCHeight for IbcCoreClientV1Height.Data;
     using CometblsHelp for TendermintTypesHeader.Data;
     using CometblsHelp for TendermintTypesCommit.Data;
-
-    string private constant HEADER_TYPE_URL = "/ibc.lightclients.wasm.v1.Header";
-    string private constant CLIENT_STATE_TYPE_URL = "/ibc.lightclients.wasm.v1.ClientState";
-    string private constant CONSENSUS_STATE_TYPE_URL = "/ibc.lightclients.wasm.v1.ConsensusState";
-
-    bytes32 private constant HEADER_TYPE_URL_HASH = keccak256(abi.encodePacked(HEADER_TYPE_URL));
-    bytes32 private constant CLIENT_STATE_TYPE_URL_HASH = keccak256(abi.encodePacked(CLIENT_STATE_TYPE_URL));
-    bytes32 private constant CONSENSUS_STATE_TYPE_URL_HASH = keccak256(abi.encodePacked(CONSENSUS_STATE_TYPE_URL));
+    using CometblsHelp for UnionIbcLightclientsCometblsV1ConsensusState.Data;
+    using CometblsHelp for UnionIbcLightclientsCometblsV1ClientState.Data;
+    using CometblsHelp for bytes;
 
     mapping(string => UnionIbcLightclientsCometblsV1ClientState.Data) internal clientStates;
     mapping(string => mapping(uint128 => UnionIbcLightclientsCometblsV1ConsensusState.Data)) internal consensusStates;
@@ -52,11 +47,11 @@ contract TendermintClient is ILightClient {
         UnionIbcLightclientsCometblsV1ClientState.Data memory clientState;
         UnionIbcLightclientsCometblsV1ConsensusState.Data memory consensusState;
 
-        (clientState, ok) = unmarshalClientState(clientStateBytes);
+        (clientState, ok) = clientStateBytes.unmarshalClientState();
         if (!ok) {
             return (clientStateCommitment, update, false);
         }
-        (consensusState, ok) = unmarshalConsensusState(consensusStateBytes);
+        (consensusState, ok) = consensusStateBytes.unmarshalConsensusState();
         if (!ok) {
             return (clientStateCommitment, update, false);
         }
@@ -94,15 +89,20 @@ contract TendermintClient is ILightClient {
         onlyIBC
         returns (bytes32, ConsensusStateUpdate[] memory, bool)
     {
+        uint256 gas = gasleft();
         (UnionIbcLightclientsCometblsV1Header.Data memory header, bool ok) =
-            unmarshalHeader(clientMessageBytes);
+            clientMessageBytes.unmarshalHeader();
         require(ok, "LC: invalid block header");
+        console.log("Header.unmarshal(): ", gas - gasleft());
 
+        gas = gasleft();
         UnionIbcLightclientsCometblsV1ClientState.Data storage clientState =
             clientStates[clientId];
         UnionIbcLightclientsCometblsV1ConsensusState.Data storage consensusState =
             consensusStates[clientId][header.trusted_height.toUint128()];
+        console.log("Cometbls: loadState(): ", gas - gasleft());
 
+        gas = gasleft();
         require(
                 consensusState.timestamp.secs != 0,
                 "LC: unkonwn trusted height"
@@ -142,6 +142,7 @@ contract TendermintClient is ILightClient {
             "LC: header back to the future"
         );
 
+        console.log("Cometbls: validate()", gas - gasleft());
         /*
          We want to verify that 1/3 of trusted valset & 2/3 of untrusted valset signed.
          In adjacent verification, trusted vals = untrusted vals.
@@ -156,16 +157,20 @@ contract TendermintClient is ILightClient {
             untrustedValidatorsHash = header.untrusted_validator_set_root;
         }
 
+        gas = gasleft();
         bytes memory blockHash = abi.encodePacked(header.signed_header.header.merkleRoot());
+        console.log("Header.merkleRoot(): ", gas - gasleft());
 
+        gas = gasleft();
         TendermintTypesCanonicalVote.Data memory vote =
             header.signed_header.commit.toCanonicalVote(clientState.chain_id, blockHash);
-
         bytes memory signedVote = Encoder.encodeDelim(TendermintTypesCanonicalVote.encode(vote));
+        console.log("Cometbls: Commit.toSignedVote()", gas - gasleft());
 
+        gas = gasleft();
         ok = CometblsHelp.verifyZKP(verifier, trustedValidatorsHash, untrustedValidatorsHash, signedVote, header.zero_knowledge_proof);
-
         require(ok, "LC: invalid ZKP");
+        console.log("Cometbls: ZKP.verify()", gas - gasleft());
 
         IbcCoreClientV1Height.Data memory newHeight = IbcCoreClientV1Height.Data({
             revision_number: header.trusted_height.revision_number,
@@ -185,17 +190,25 @@ contract TendermintClient is ILightClient {
             });
         consensusState.next_validators_hash = untrustedValidatorsHash;
 
+        gas = gasleft();
         ConsensusStateUpdate[] memory updates = new ConsensusStateUpdate[](1);
         updates[0] =
             ConsensusStateUpdate({
-                consensusStateCommitment: keccak256(marshalConsensusState(consensusState)),
+                consensusStateCommitment: keccak256(consensusState.marshalConsensusState()),
                 height: newHeight
                 });
+        console.log("Cometbls: ConsensusState.marshal()", gas - gasleft());
 
+        gas = gasleft();
         processedTimes[clientId][newHeightIdx] = block.timestamp;
         processedHeights[clientId][newHeightIdx] = block.number;
+        console.log("Cometbls: updateProcessed()", gas - gasleft());
 
-        return (keccak256(marshalClientState(clientState)), updates, true);
+        gas = gasleft();
+        bytes32 newClientState = keccak256(clientState.marshalClientState());
+        console.log("Cometbls: ClientState.marshal()", gas - gasleft());
+
+        return (newClientState, updates, true);
     }
 
     function verifyMembership(
@@ -238,96 +251,6 @@ contract TendermintClient is ILightClient {
         revert("not implemented");
     }
 
-    function marshalClientState(UnionIbcLightclientsCometblsV1ClientState.Data memory clientState) internal pure returns (bytes memory) {
-        IbcLightclientsWasmV1ClientState.Data memory wasmClientState =
-            IbcLightclientsWasmV1ClientState.Data({
-                data: UnionIbcLightclientsCometblsV1ClientState.encode(clientState),
-                // Not used
-                code_id: bytes(""),
-                // Not used
-                latest_height: clientState.latest_height
-                });
-        return Any.encode(Any.Data({type_url: CLIENT_STATE_TYPE_URL, value: IbcLightclientsWasmV1ClientState.encode(wasmClientState)}));
-    }
-
-    function marshalConsensusState(UnionIbcLightclientsCometblsV1ConsensusState.Data storage consensusState) internal pure returns (bytes memory) {
-        IbcLightclientsWasmV1ConsensusState.Data memory wasmConsensusState =
-            IbcLightclientsWasmV1ConsensusState.Data({
-                data: UnionIbcLightclientsCometblsV1ConsensusState.encode(consensusState),
-                // Not used
-                timestamp: 0
-                });
-        return Any.encode(Any.Data({type_url: CONSENSUS_STATE_TYPE_URL, value: IbcLightclientsWasmV1ConsensusState.encode(wasmConsensusState)}));
-    }
-
-    function unmarshalHeader(bytes memory bz) internal pure returns (UnionIbcLightclientsCometblsV1Header.Data memory header, bool) {
-        (IbcLightclientsWasmV1Header.Data memory wasmHeader, bool ok) = unmarshalWasmHeader(bz);
-        if (ok) {
-            return (UnionIbcLightclientsCometblsV1Header.decode(wasmHeader.data), true);
-        } else {
-            return (header, false);
-        }
-    }
-
-    function unmarshalClientState(bytes memory bz)
-        internal
-        pure
-        returns (UnionIbcLightclientsCometblsV1ClientState.Data memory clientState, bool)
-    {
-        (IbcLightclientsWasmV1ClientState.Data memory wasmClientState, bool ok) = unmarshalWasmClientState(bz);
-        if (ok) {
-            return (UnionIbcLightclientsCometblsV1ClientState.decode(wasmClientState.data), true);
-        }
-        else {
-            return (clientState, false);
-        }
-    }
-
-    function unmarshalConsensusState(bytes memory bz)
-        internal
-        pure
-        returns (UnionIbcLightclientsCometblsV1ConsensusState.Data memory consensusState, bool)
-    {
-        (IbcLightclientsWasmV1ConsensusState.Data memory wasmConsensusState, bool ok) = unmarshalWasmConsensusState(bz);
-        if (ok) {
-            return (UnionIbcLightclientsCometblsV1ConsensusState.decode(wasmConsensusState.data), true);
-        } else {
-            return (consensusState, false);
-        }
-    }
-
-    function unmarshalWasmHeader(bytes memory bz) internal pure returns (IbcLightclientsWasmV1Header.Data memory header, bool ok) {
-        Any.Data memory anyHeader = Any.decode(bz);
-        if (keccak256(abi.encodePacked(anyHeader.type_url)) != HEADER_TYPE_URL_HASH) {
-            return (header, false);
-        }
-        return (IbcLightclientsWasmV1Header.decode(anyHeader.value), true);
-    }
-
-
-    function unmarshalWasmClientState(bytes memory bz)
-        internal
-        pure
-        returns (IbcLightclientsWasmV1ClientState.Data memory clientState, bool ok)
-    {
-        Any.Data memory anyClientState = Any.decode(bz);
-        if (keccak256(abi.encodePacked(anyClientState.type_url)) != CLIENT_STATE_TYPE_URL_HASH) {
-            return (clientState, false);
-        }
-        return (IbcLightclientsWasmV1ClientState.decode(anyClientState.value), true);
-    }
-
-    function unmarshalWasmConsensusState(bytes memory bz)
-        internal
-        pure
-        returns (IbcLightclientsWasmV1ConsensusState.Data memory consensusState, bool ok)
-    {
-        Any.Data memory anyConsensusState = Any.decode(bz);
-        if (keccak256(abi.encodePacked(anyConsensusState.type_url)) != CONSENSUS_STATE_TYPE_URL_HASH) {
-            return (consensusState, false);
-        }
-        return (IbcLightclientsWasmV1ConsensusState.decode(anyConsensusState.value), true);
-    }
 
     function validateArgs(
                           UnionIbcLightclientsCometblsV1ClientState.Data storage cs,
@@ -381,7 +304,7 @@ contract TendermintClient is ILightClient {
         if (clientState.latest_height.revision_height == 0) {
             return (clientStateBytes, false);
         }
-        return (Any.encode(Any.Data({type_url: CLIENT_STATE_TYPE_URL, value: UnionIbcLightclientsCometblsV1ClientState.encode(clientState)})), true);
+        return (clientState.marshalClientState(), true);
     }
 
     function getConsensusState(string calldata clientId, IbcCoreClientV1Height.Data calldata height)
@@ -393,10 +316,7 @@ contract TendermintClient is ILightClient {
         if (consensusState.timestamp.secs == 0) {
             return (consensusStateBytes, false);
         }
-        return (
-                Any.encode(Any.Data({type_url: CONSENSUS_STATE_TYPE_URL, value: UnionIbcLightclientsCometblsV1ConsensusState.encode(consensusState)})),
-            true
-        );
+        return (consensusState.marshalConsensusState(), true);
     }
 
     modifier onlyIBC() {

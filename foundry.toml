@@ -1,7 +1,6 @@
 [profile.default]
 optimizer = true
-optimizer_runs = 200_000
-
+optimizer_runs = 20000
 via_ir = true
 
 cache = true
