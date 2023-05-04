@@ -33,8 +33,8 @@
         ./tools/lodestar-cli/lodestar-cli.nix
         ./networks/devnet.nix
         ./networks/genesis/devnet.nix
-        ./networks/services/geth-init.nix
-        ./networks/services/lodestar-init.nix
+        ./networks/packages/geth-init.nix
+        ./networks/packages/lodestar-init.nix
 
         inputs.treefmt-nix.flakeModule
         inputs.pre-commit-hooks.flakeModule
