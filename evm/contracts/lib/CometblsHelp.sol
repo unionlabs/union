@@ -15,6 +15,7 @@ import "../core/IZKVerifier.sol";
 import "solidity-bytes-utils/contracts/BytesLib.sol";
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {GoogleProtobufAny as Any} from "../proto/GoogleProtobufAny.sol";
+import "forge-std/Test.sol";
 
 struct OptimizedConsensusState {
     bytes32 root;
@@ -108,22 +109,26 @@ library CometblsHelp {
         bytes memory hbz = TendermintVersionConsensus.encode(h.version);
         bytes memory pbt = GoogleProtobufTimestamp.encode(h.time);
         bytes memory bzbi = TendermintTypesBlockID.encode(h.last_block_id);
-        bytes[] memory normalizedHeader = new bytes[](14);
-        normalizedHeader[0] = hbz;
-        normalizedHeader[1] = Encoder.cdcEncode(h.chain_id);
-        normalizedHeader[2] = Encoder.cdcEncode(h.height);
-        normalizedHeader[3] = pbt;
-        normalizedHeader[4] = bzbi;
-        normalizedHeader[5] = Encoder.cdcEncode(h.last_commit_hash);
-        normalizedHeader[6] = Encoder.cdcEncode(h.data_hash);
-        normalizedHeader[7] = Encoder.cdcEncode(h.validators_hash);
-        normalizedHeader[8] = Encoder.cdcEncode(h.next_validators_hash);
-        normalizedHeader[9] = Encoder.cdcEncode(h.consensus_hash);
-        normalizedHeader[10] = Encoder.cdcEncode(h.app_hash);
-        normalizedHeader[11] = Encoder.cdcEncode(h.last_results_hash);
-        normalizedHeader[12] = Encoder.cdcEncode(h.evidence_hash);
-        normalizedHeader[13] = Encoder.cdcEncode(h.proposer_address);
-        return MerkleTree.hashFromByteSlices(normalizedHeader);
+        bytes32[14] memory normalizedHeader = [
+            MerkleTree.leafHash(hbz),
+            MerkleTree.leafHash(Encoder.cdcEncode(h.chain_id)),
+            MerkleTree.leafHash(Encoder.cdcEncode(h.height)),
+            MerkleTree.leafHash(pbt),
+            MerkleTree.leafHash(bzbi),
+            MerkleTree.leafHash(Encoder.cdcEncode(h.last_commit_hash)),
+            MerkleTree.leafHash(Encoder.cdcEncode(h.data_hash)),
+            MerkleTree.leafHash(Encoder.cdcEncode(h.validators_hash)),
+            MerkleTree.leafHash(Encoder.cdcEncode(h.next_validators_hash)),
+            MerkleTree.leafHash(Encoder.cdcEncode(h.consensus_hash)),
+            MerkleTree.leafHash(Encoder.cdcEncode(h.app_hash)),
+            MerkleTree.leafHash(Encoder.cdcEncode(h.last_results_hash)),
+            MerkleTree.leafHash(Encoder.cdcEncode(h.evidence_hash)),
+            MerkleTree.leafHash(Encoder.cdcEncode(h.proposer_address))
+        ];
+        uint256 gas = gasleft();
+        bytes32 root = MerkleTree.optimizedBlockRoot(normalizedHeader);
+        console.log("Cometbls: hashFromByteSlices(): ", gas - gasleft());
+        return root;
     }
 
     function toOptimizedConsensusState(UnionIbcLightclientsCometblsV1ConsensusState.Data memory consensusState) internal pure returns (OptimizedConsensusState memory) {

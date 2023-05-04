@@ -69,4 +69,24 @@ library MerkleTree {
             return innerHash(left, right);
         }
     }
+
+    function optimizedBlockRoot(bytes32[14] memory data) internal pure returns (bytes32) {
+        bytes32 x0 = innerHash(data[0], data[1]);
+        bytes32 x1 = innerHash(data[2], data[3]);
+        bytes32 x2 = innerHash(data[4], data[5]);
+        bytes32 x3 = innerHash(data[6], data[7]);
+        bytes32 x4 = innerHash(data[8], data[9]);
+        bytes32 x5 = innerHash(data[10], data[11]);
+        bytes32 x6 = innerHash(data[12], data[13]);
+
+        x0 = innerHash(x0, x1);
+        x1 = innerHash(x2, x3);
+        x2 = innerHash(x4, x5);
+        x3 = x6;
+
+        x0 = innerHash(x0, x1);
+        x1 = innerHash(x2, x3);
+
+        return innerHash(x0, x1);
+    }
 }
