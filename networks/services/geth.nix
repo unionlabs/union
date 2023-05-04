@@ -57,7 +57,7 @@ in
       # Auth RPC
       "8551:8551"
     ];
-    command = [ "sh" "-c" "${geth-init}/bin/geth-init" ];
+    command = [ "${geth-init}/bin/geth-init" ];
     healthcheck = {
       start_period = "5s";
       interval = "10s";

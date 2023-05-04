@@ -51,7 +51,7 @@ in
       # Beacon node rest API
       "9596:9596"
     ];
-    command = [ "sh" "-c" "${lodestar-init}/bin/lodestar-init" ];
+    command = [ "${lodestar-init}/bin/lodestar-init" ];
     depends_on = {
       geth = {
         condition = "service_healthy";
