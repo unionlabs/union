@@ -8,6 +8,11 @@
       "addWords": true
     },
     {
+      "name": "unionfi",
+      "path": "dictionaries/unionfi.txt",
+      "addWords": true
+    },
+    {
       "name": "nix",
       "path": "dictionaries/nix.txt",
       "addWords": true
@@ -35,6 +40,7 @@
     "go",
     "latex",
     "uniond-scaffold",
+    "unionfi",
     "nix",
     "proto",
     "cosmwasm",
