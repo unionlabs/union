@@ -39,9 +39,38 @@ You should now be able to download and run docker images from ghcr.io.
 You should now visit the [`uniond` Package Container](https://github.com/unionfi/union/pkgs/container/uniond) and find the version of `uniond` you are trying to run. With the version in mind, you can run:
 
 ```sh
-docker run ghcr.io/unionfi/uniond:$VERSION
+docker run ghcr.io/unionfi/uniond:$UNIOND_VERSION
 ```
 
 You should now be able to run this version of `uniond` locally.
+
+### Tips
+
+Running `uniond` with `docker run` has a few caveats. These tips will help ensure you're able to accomplish everything you need with `uniond` using `docker`.
+
+* **Storing your `uniond` configuration:**
+
+  When interacting with `uniond` it is helpful to have a persistent and accessible location to store your `uniond` configuration.
+
+  This can be accomplished with the `--mount` flag for `docker run`. For example, to store your union configuration that `docker` will use in `$HOME/uniond-config` you should:
+
+  ```sh
+  cd ~
+  # Ensure $HOME/uniond-config exists
+  mkdir uniond-config
+  # Then use the --mount flag from docker and --home flag from uniond to store/use the configuration stored in $HOME/uniond-config
+  docker run --mount type=bind,source="$HOME/uniond-config",target=/uniond-config $DOCKER_FLAGS ghcr.io/unionfi/uniond:$UNIOND_VERSION $UNIOND_SUB_COMMAND --home "/uniond-config"
+  ```
+
+* **Publish your docker container ports:**
+
+  When running a validator node, you will need to publish the necessary TCP ports to communicate with and receive request from other nodes.
+
+  To do this, use the `-p` flag for `docker run`. For example, assuming you're using ports `26656` and `26657` you should:
+
+  ```sh
+  # Include both ports for traffic to flow through
+  docker run -p 26656:26656 -p 26657:26657 $DOCKER_FLAGS ghcr.io/unionfi/uniond:$UNIOND_VERSION $UNIOND_SUB_COMMAND
+  ```
 
 
