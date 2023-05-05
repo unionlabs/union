@@ -2,6 +2,10 @@
 pragma solidity ^0.8.18;
 
 library MerkleTree {
+
+    uint8 constant LEAF_PREFIX = 0x00;
+    uint8 constant INNER_PREFIX = 0x01;
+
    function hashFromByteSlices(bytes[] memory data)
         internal
         pure
@@ -22,16 +26,14 @@ library MerkleTree {
      *
      */
     function leafHash(bytes memory leaf) internal pure returns (bytes32) {
-        uint8 leafPrefix = 0x00;
-        return sha256(abi.encodePacked(leafPrefix, leaf));
+        return sha256(abi.encodePacked(LEAF_PREFIX, leaf));
     }
 
     /**
      * @dev returns tmhash(0x01 || left || right)
      */
     function innerHash(bytes32 leaf, bytes32 right) internal pure returns (bytes32) {
-        uint8 innerPrefix = 0x01;
-        return sha256(abi.encodePacked(innerPrefix, leaf, right));
+        return sha256(abi.encodePacked(INNER_PREFIX, leaf, right));
     }
 
     /**
