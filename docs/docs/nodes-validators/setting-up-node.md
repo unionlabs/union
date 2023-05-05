@@ -6,6 +6,14 @@ title: 'Setting up a node'
 
 This document will walk you through the process of self-hosting a Union node.
 
+# Requirements 
+
+To be able to send and receive messages in the network, you'll need to conduct TCP port forwarding for ports `26656` & `26657`.
+
+## System Specs
+
+<!-- TODO(unionfi/union#120): document system requirements for validators -->
+
 # Building The `uniond` Binary
 
 This section will walk you through building the node binary. These instructions are different for Docker and Nix.
@@ -14,7 +22,7 @@ This section will walk you through building the node binary. These instructions 
 
 ## Docker
 
-<!-- TODO: Add docker instructions following PR -->
+To run `uniond` with Docker, you can follow the [Docker instructions for running `uniond`](./running-uniond.md#Docker)
 
 ## Nix
 
@@ -37,25 +45,25 @@ This document will often refer to environment variables you likely don't have se
 
 Here's a list of the environment variables we'll use and hints for setting them:
 
-* ` $CHAIN_ID` - either `union-1` for mainnet, or `union-test-1` for testnet.
+* ` $CHAIN_ID` - either `union-1` for mainnet, or `union-testnet-1` for testnet.
 
   ```sh
   # Example $CHAIN_ID
-  CHAIN_ID=union-test-1
+  CHAIN_ID=union-testnet-1
   ```
 
-* ` $MONIKER_NAME` - The name used for your validator node.
+* ` $MONIKER` - The name used for your validator node.
 
   ```sh
-  # Example $MONIKER_NAME
-  MONIKER_NAME="Unionized Goblin"
+  # Example $MONIKER
+  MONIKER="Unionized Goblin"
   ```
 
 * ` $KEY_NAME` - The name you've assigned to the key pair you'll use for this tutorial.
 
   ```sh
   # Example $KEY_NAME
-  KEY_NAME=some_key
+  KEY_NAME=alice
   ```
 
 # Connect to the Public RPC
@@ -82,7 +90,7 @@ uniond config node $RPC_NODE_URL
 ## Initialize the chain
 
 ```sh
-uniond init $MONIKER_NAME --chain-id $CHAIN_ID
+uniond init $MONIKER "bn254" --chain-id $CHAIN_ID
 ```
 
 ## Download the Genesis File
@@ -92,10 +100,32 @@ uniond init $MONIKER_NAME --chain-id $CHAIN_ID
 curl $GENESIS_URL > ~/.union/config/genesis.json
 ```
 
-## Configure Persistent Peers
+## Configure Seed nodes
 
-<!-- TODO: Create and upload persistent peers list for users to download. https://github.com/UnionFi/union/issues/32 -->
-<!-- TODO: Update instructions. https://github.com/UnionFi/union/issues/32 -->
+To begin connecting to other nodes in the network, you will need to add the seeds nodes for the respective network to your configuration.
+
+To do this, edit the configuration file at `~/.union/config/config.toml`
+
+```toml
+#######################################################
+###           P2P Configuration Options             ###
+#######################################################
+[p2p]
+
+# <snip>...
+
+# Comma separated list of seed nodes to connect to
+seeds = ""
+
+# <snip>...
+```
+
+For the Union Testnet replace `seeds = ""` with:
+
+```toml
+# Comma separated list of seed nodes to connect to
+seeds = "c649931f0ef98bc3e086bbfbcf3b04896a9ec7de@uniontestnet.poisonphang.com:26656"
+```
 
 ## Create Local Key Pair
 
@@ -139,34 +169,28 @@ uniond keys show $KEY_NAME -a
 uniond start
 ```
 
-You can query the status of the node with:
+At this point, you may want to consider setting up a `systemd` service to run `uniond`.
 
-```sh
-curl http://localhost:26657/status | jq .result.sync_info.catching_up
-```
+Once the node is done catching up, you are ready to start the process of becoming a validator.
 
-If this returns `true` the node is still syncing, once it returns `false` you can move to becoming a validator.
+# Becoming a Validator
 
-# Become a Validator
+## Submitting a `create-validator` Transaction
 
 To become a validator, you must submit a `create-validator` transaction:
 
 ```sh
 uniond tx staking create-validator \
-  --amount 9000000uunionx \
-  --commission-max-change-rate "0.1" \
-  --commission-max-rate "0.20" \
-  --commission-rate "0.1" \
-  --min-self-delegation "1" \
-  --details "" \
+  --amount $STAKE \
   --pubkey=$(uniond tendermint show-validator) \
-  --moniker $MONIKER_NAME \
+  --moniker $MONIKER \
   --chain-id $CHAIN_ID \
-  --gas-prices 0.025uunionx \
   --from $KEY_NAME
 ```
 
-It's then recommended to backup these files from `~/.union/config`:
+Where `STAKE` is the amount of stake you're putting down for your validator (i.e. `100000000uuno`).
+
+It's then recommended to backup these files from `~/.union/config` in a secure location:
 
 * `priv_validator_key.json`
 * `node_key.json`
