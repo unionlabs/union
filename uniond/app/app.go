@@ -556,9 +556,6 @@ func New(
 	// we prefer to be more strict in what arguments the modules expect.
 	skipGenesisInvariants := cast.ToBool(appOpts.Get(crisis.FlagSkipGenesisInvariants))
 
-	app.setupUpgradeStoreLoaders()
-	app.setupUpgradeHandlers()
-
 	// NOTE: Any module instantiated in the module manager that is later modified
 	// must be passed by reference here.
 
@@ -740,6 +737,9 @@ func New(
 	app.ScopedIBCKeeper = scopedIBCKeeper
 	app.ScopedTransferKeeper = scopedTransferKeeper
 	// this line is used by starport scaffolding # stargate/app/beforeInitReturn
+
+	app.setupUpgradeStoreLoaders()
+	app.setupUpgradeHandlers()
 
 	return app
 }
