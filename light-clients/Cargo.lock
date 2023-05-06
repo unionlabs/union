@@ -464,7 +464,7 @@ dependencies = [
 [[package]]
 name = "ethereum-consensus"
 version = "0.1.0"
-source = "git+https://github.com/UnionFi/ethereum-light-client-rs?branch=dev#9694aa42e49926ea69c619856e60e3fdfbf52cd6"
+source = "git+https://github.com/UnionFi/ethereum-light-client-rs?branch=dev#6bc2196c2c33b5c2569c0302f3b624bd0e3a8375"
 dependencies = [
  "displaydoc",
  "hex",
@@ -480,7 +480,7 @@ dependencies = [
 [[package]]
 name = "ethereum-light-client-verifier"
 version = "0.1.0"
-source = "git+https://github.com/UnionFi/ethereum-light-client-rs?branch=dev#9694aa42e49926ea69c619856e60e3fdfbf52cd6"
+source = "git+https://github.com/UnionFi/ethereum-light-client-rs?branch=dev#6bc2196c2c33b5c2569c0302f3b624bd0e3a8375"
 dependencies = [
  "displaydoc",
  "ethereum-consensus",
@@ -1224,9 +1224,9 @@ dependencies = [
 
 [[package]]
 name = "scale-info"
-version = "2.5.0"
+version = "2.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0cfdffd972d76b22f3d7f81c8be34b2296afd3a25e0a547bd9abe340a4dbbe97"
+checksum = "dfdef77228a4c05dc94211441595746732131ad7f6530c6c18f045da7b7ab937"
 dependencies = [
  "cfg-if",
  "derive_more",
@@ -1236,9 +1236,9 @@ dependencies = [
 
 [[package]]
 name = "scale-info-derive"
-version = "2.5.0"
+version = "2.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "61fa974aea2d63dd18a4ec3a49d59af9f34178c73a4f56d2f18205628d00681e"
+checksum = "53012eae69e5aa5c14671942a5dd47de59d4cdcff8532a6dd0e081faf1119482"
 dependencies = [
  "proc-macro-crate 1.3.1",
  "proc-macro2",
