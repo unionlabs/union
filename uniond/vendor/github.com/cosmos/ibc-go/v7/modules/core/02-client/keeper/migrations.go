@@ -16,7 +16,7 @@ func NewMigrator(keeper Keeper) Migrator {
 	return Migrator{keeper: keeper}
 }
 
-// Migrate2to3 migrates from version 2 to 3.
+// Migrate2to3 migrates from consensus version 2 to 3.
 // This migration
 // - migrates solo machine client states from v2 to v3 protobuf definition
 // - prunes solo machine consensus states
@@ -24,4 +24,10 @@ func NewMigrator(keeper Keeper) Migrator {
 // - asserts that existing tendermint clients are properly registered on the chain codec
 func (m Migrator) Migrate2to3(ctx sdk.Context) error {
 	return v7.MigrateStore(ctx, m.keeper.storeKey, m.keeper.cdc, m.keeper)
+}
+
+// Migrate3to4 migrates from consensus version 3 to 4.
+// This migration enables the localhost client.
+func (m Migrator) Migrate3to4(ctx sdk.Context) error {
+	return v7.MigrateLocalhostClient(ctx, m.keeper)
 }

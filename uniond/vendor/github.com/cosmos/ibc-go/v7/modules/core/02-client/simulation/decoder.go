@@ -23,7 +23,7 @@ type ClientUnmarshaler interface {
 // Value to the corresponding client type.
 func NewDecodeStore(cdc ClientUnmarshaler, kvA, kvB kv.Pair) (string, bool) {
 	switch {
-	case bytes.HasPrefix(kvA.Key, host.KeyClientStorePrefix) && bytes.HasSuffix(kvA.Key, []byte(host.KeyClientState)):
+	case bytes.HasPrefix(kvA.Key, host.KeyClientStorePrefix) && bytes.HasSuffix(kvA.Key, host.ClientStateKey()):
 		clientStateA := cdc.MustUnmarshalClientState(kvA.Value)
 		clientStateB := cdc.MustUnmarshalClientState(kvB.Value)
 		return fmt.Sprintf("ClientState A: %v\nClientState B: %v", clientStateA, clientStateB), true

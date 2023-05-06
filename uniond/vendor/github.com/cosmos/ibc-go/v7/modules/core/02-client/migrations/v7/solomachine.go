@@ -22,9 +22,9 @@ import (
 
 // Interface implementation checks.
 var (
-	_, _ codectypes.UnpackInterfacesMessage = &ClientState{}, &ConsensusState{}
+	_, _ codectypes.UnpackInterfacesMessage = (*ClientState)(nil), (*ConsensusState)(nil)
 	_    exported.ClientState               = (*ClientState)(nil)
-	_    exported.ConsensusState            = &ConsensusState{}
+	_    exported.ConsensusState            = (*ConsensusState)(nil)
 )
 
 // RegisterInterfaces registers the solomachine v2 ClientState and ConsensusState types in the interface registry.

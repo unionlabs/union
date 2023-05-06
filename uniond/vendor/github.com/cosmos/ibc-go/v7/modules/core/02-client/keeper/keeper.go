@@ -5,21 +5,24 @@ import (
 	"reflect"
 	"strings"
 
+	errorsmod "cosmossdk.io/errors"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/light"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 
+	ibcerrors "github.com/cosmos/ibc-go/v7/internal/errors"
 	"github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	commitmenttypes "github.com/cosmos/ibc-go/v7/modules/core/23-commitment/types"
 	host "github.com/cosmos/ibc-go/v7/modules/core/24-host"
 	"github.com/cosmos/ibc-go/v7/modules/core/exported"
 	ibctm "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
+	wasmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/08-wasm/types"
+	localhost "github.com/cosmos/ibc-go/v7/modules/light-clients/09-localhost"
 )
 
 // Keeper represents a type that grants read and write permissions to any client
@@ -51,6 +54,17 @@ func NewKeeper(cdc codec.BinaryCodec, key storetypes.StoreKey, paramSpace paramt
 // Logger returns a module-specific logger.
 func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 	return ctx.Logger().With("module", "x/"+exported.ModuleName+"/"+types.SubModuleName)
+}
+
+// CreateLocalhostClient initialises the 09-localhost client state and sets it in state.
+func (k Keeper) CreateLocalhostClient(ctx sdk.Context) error {
+	var clientState localhost.ClientState
+	return clientState.Initialize(ctx, k.cdc, k.ClientStore(ctx, exported.LocalhostClientID), nil)
+}
+
+// UpdateLocalhostClient updates the 09-localhost client to the latest block height and chain ID.
+func (k Keeper) UpdateLocalhostClient(ctx sdk.Context, clientState exported.ClientState) []exported.Height {
+	return clientState.UpdateState(ctx, k.cdc, k.ClientStore(ctx, exported.LocalhostClientID), nil)
 }
 
 // GenerateClientIdentifier returns the next client identifier.
@@ -173,7 +187,7 @@ func (k Keeper) GetAllClientMetadata(ctx sdk.Context, genClients []types.Identif
 		for i, metadata := range gms {
 			cmd, ok := metadata.(types.GenesisMetadata)
 			if !ok {
-				return nil, sdkerrors.Wrapf(types.ErrInvalidClientMetadata, "expected metadata type: %T, got: %T",
+				return nil, errorsmod.Wrapf(types.ErrInvalidClientMetadata, "expected metadata type: %T, got: %T",
 					types.GenesisMetadata{}, cmd)
 			}
 			clientMetadata[i] = cmd
@@ -242,26 +256,39 @@ func (k Keeper) GetLatestClientConsensusState(ctx sdk.Context, clientID string) 
 // GetSelfConsensusState introspects the (self) past historical info at a given height
 // and returns the expected consensus state at that height.
 // For now, can only retrieve self consensus states for the current revision
-func (k Keeper) GetSelfConsensusState(ctx sdk.Context, height exported.Height) (exported.ConsensusState, error) {
+func (k Keeper) GetSelfConsensusState(ctx sdk.Context, height exported.Height, clientType string) (exported.ConsensusState, error) {
 	selfHeight, ok := height.(types.Height)
 	if !ok {
-		return nil, sdkerrors.Wrapf(sdkerrors.ErrInvalidType, "expected %T, got %T", types.Height{}, height)
+		return nil, errorsmod.Wrapf(ibcerrors.ErrInvalidType, "expected %T, got %T", types.Height{}, height)
 	}
 	// check that height revision matches chainID revision
 	revision := types.ParseChainID(ctx.ChainID())
 	if revision != height.GetRevisionNumber() {
-		return nil, sdkerrors.Wrapf(types.ErrInvalidHeight, "chainID revision number does not match height revision number: expected %d, got %d", revision, height.GetRevisionNumber())
+		return nil, errorsmod.Wrapf(types.ErrInvalidHeight, "chainID revision number does not match height revision number: expected %d, got %d", revision, height.GetRevisionNumber())
 	}
 	histInfo, found := k.stakingKeeper.GetHistoricalInfo(ctx, int64(selfHeight.RevisionHeight))
 	if !found {
-		return nil, sdkerrors.Wrapf(sdkerrors.ErrNotFound, "no historical info found at height %d", selfHeight.RevisionHeight)
+		return nil, errorsmod.Wrapf(ibcerrors.ErrNotFound, "no historical info found at height %d", selfHeight.RevisionHeight)
 	}
 
-	consensusState := &ibctm.ConsensusState{
+	tmConsensusState := &ibctm.ConsensusState{
 		Timestamp:          histInfo.Header.Time,
 		Root:               commitmenttypes.NewMerkleRoot(histInfo.Header.GetAppHash()),
 		NextValidatorsHash: histInfo.Header.NextValidatorsHash,
 	}
+	var consensusState exported.ConsensusState
+	consensusState = tmConsensusState
+	if clientType == exported.Wasm {
+		wasmData, err := k.cdc.MarshalInterface(tmConsensusState)
+		if err != nil {
+			return nil, errorsmod.Wrapf(ibcerrors.ErrInvalidType, "cannot marshal tendermint consensus state")
+		}
+		consensusState = &wasmtypes.ConsensusState{
+			Data:      wasmData,
+			Timestamp: tmConsensusState.GetTimestamp(),
+		}
+	}
+
 	return consensusState, nil
 }
 
@@ -269,9 +296,16 @@ func (k Keeper) GetSelfConsensusState(ctx sdk.Context, height exported.Height) (
 // This function is only used to validate the client state the counterparty stores for this chain
 // Client must be in same revision as the executing chain
 func (k Keeper) ValidateSelfClient(ctx sdk.Context, clientState exported.ClientState) error {
+	if clientState.ClientType() == exported.Wasm {
+		wasmClientState := clientState.(*wasmtypes.ClientState)
+		err := k.cdc.UnmarshalInterface(wasmClientState.Data, &clientState)
+		if err != nil {
+			return errorsmod.Wrapf(types.ErrInvalidClient, "cannot unmarshal wasm client state data")
+		}
+	}
 	tmClient, ok := clientState.(*ibctm.ClientState)
 	if !ok {
-		return sdkerrors.Wrapf(types.ErrInvalidClient, "client must be a Tendermint client, expected: %T, got: %T",
+		return errorsmod.Wrapf(types.ErrInvalidClient, "client must be a Tendermint client, expected: %T, got: %T",
 			&ibctm.ClientState{}, tmClient)
 	}
 
@@ -280,7 +314,7 @@ func (k Keeper) ValidateSelfClient(ctx sdk.Context, clientState exported.ClientS
 	}
 
 	if ctx.ChainID() != tmClient.ChainId {
-		return sdkerrors.Wrapf(types.ErrInvalidClient, "invalid chain-id. expected: %s, got: %s",
+		return errorsmod.Wrapf(types.ErrInvalidClient, "invalid chain-id. expected: %s, got: %s",
 			ctx.ChainID(), tmClient.ChainId)
 	}
 
@@ -288,34 +322,34 @@ func (k Keeper) ValidateSelfClient(ctx sdk.Context, clientState exported.ClientS
 
 	// client must be in the same revision as executing chain
 	if tmClient.LatestHeight.RevisionNumber != revision {
-		return sdkerrors.Wrapf(types.ErrInvalidClient, "client is not in the same revision as the chain. expected revision: %d, got: %d",
+		return errorsmod.Wrapf(types.ErrInvalidClient, "client is not in the same revision as the chain. expected revision: %d, got: %d",
 			tmClient.LatestHeight.RevisionNumber, revision)
 	}
 
 	selfHeight := types.NewHeight(revision, uint64(ctx.BlockHeight()))
 	if tmClient.LatestHeight.GTE(selfHeight) {
-		return sdkerrors.Wrapf(types.ErrInvalidClient, "client has LatestHeight %d greater than or equal to chain height %d",
+		return errorsmod.Wrapf(types.ErrInvalidClient, "client has LatestHeight %d greater than or equal to chain height %d",
 			tmClient.LatestHeight, selfHeight)
 	}
 
 	expectedProofSpecs := commitmenttypes.GetSDKSpecs()
 	if !reflect.DeepEqual(expectedProofSpecs, tmClient.ProofSpecs) {
-		return sdkerrors.Wrapf(types.ErrInvalidClient, "client has invalid proof specs. expected: %v got: %v",
+		return errorsmod.Wrapf(types.ErrInvalidClient, "client has invalid proof specs. expected: %v got: %v",
 			expectedProofSpecs, tmClient.ProofSpecs)
 	}
 
 	if err := light.ValidateTrustLevel(tmClient.TrustLevel.ToTendermint()); err != nil {
-		return sdkerrors.Wrapf(types.ErrInvalidClient, "trust-level invalid: %v", err)
+		return errorsmod.Wrapf(types.ErrInvalidClient, "trust-level invalid: %v", err)
 	}
 
 	expectedUbdPeriod := k.stakingKeeper.UnbondingTime(ctx)
 	if expectedUbdPeriod != tmClient.UnbondingPeriod {
-		return sdkerrors.Wrapf(types.ErrInvalidClient, "invalid unbonding period. expected: %s, got: %s",
+		return errorsmod.Wrapf(types.ErrInvalidClient, "invalid unbonding period. expected: %s, got: %s",
 			expectedUbdPeriod, tmClient.UnbondingPeriod)
 	}
 
 	if tmClient.UnbondingPeriod < tmClient.TrustingPeriod {
-		return sdkerrors.Wrapf(types.ErrInvalidClient, "unbonding period must be greater than trusting period. unbonding period (%d) < trusting period (%d)",
+		return errorsmod.Wrapf(types.ErrInvalidClient, "unbonding period must be greater than trusting period. unbonding period (%d) < trusting period (%d)",
 			tmClient.UnbondingPeriod, tmClient.TrustingPeriod)
 	}
 
@@ -323,7 +357,7 @@ func (k Keeper) ValidateSelfClient(ctx sdk.Context, clientState exported.ClientS
 		// For now, SDK IBC implementation assumes that upgrade path (if defined) is defined by SDK upgrade module
 		expectedUpgradePath := []string{upgradetypes.StoreKey, upgradetypes.KeyUpgradedIBCState}
 		if !reflect.DeepEqual(expectedUpgradePath, tmClient.UpgradePath) {
-			return sdkerrors.Wrapf(types.ErrInvalidClient, "upgrade path must be the upgrade path defined by upgrade module. expected %v, got %v",
+			return errorsmod.Wrapf(types.ErrInvalidClient, "upgrade path must be the upgrade path defined by upgrade module. expected %v, got %v",
 				expectedUpgradePath, tmClient.UpgradePath)
 		}
 	}
@@ -390,4 +424,13 @@ func (k Keeper) GetAllClients(ctx sdk.Context) []exported.ClientState {
 func (k Keeper) ClientStore(ctx sdk.Context, clientID string) sdk.KVStore {
 	clientPrefix := []byte(fmt.Sprintf("%s/%s/", host.KeyClientStorePrefix, clientID))
 	return prefix.NewStore(ctx.KVStore(k.storeKey), clientPrefix)
+}
+
+// GetClientStatus returns the status for a given clientState. If the client type is not in the allowed
+// clients param field, Unauthorized is returned, otherwise the client state status is returned.
+func (k Keeper) GetClientStatus(ctx sdk.Context, clientState exported.ClientState, clientID string) exported.Status {
+	if !k.GetParams(ctx).IsAllowedClient(clientState.ClientType()) {
+		return exported.Unauthorized
+	}
+	return clientState.Status(ctx, k.ClientStore(ctx, clientID), k.cdc)
 }

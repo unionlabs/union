@@ -18,6 +18,7 @@ import (
 	ibcclient "github.com/cosmos/ibc-go/v7/modules/core/02-client"
 	clientkeeper "github.com/cosmos/ibc-go/v7/modules/core/02-client/keeper"
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	connectionkeeper "github.com/cosmos/ibc-go/v7/modules/core/03-connection/keeper"
 	connectiontypes "github.com/cosmos/ibc-go/v7/modules/core/03-connection/types"
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 	"github.com/cosmos/ibc-go/v7/modules/core/client/cli"
@@ -28,15 +29,13 @@ import (
 )
 
 var (
-	_ module.AppModule           = AppModule{}
-	_ module.AppModuleBasic      = AppModuleBasic{}
-	_ module.AppModuleSimulation = AppModule{}
+	_ module.AppModule           = (*AppModule)(nil)
+	_ module.AppModuleBasic      = (*AppModuleBasic)(nil)
+	_ module.AppModuleSimulation = (*AppModule)(nil)
 )
 
 // AppModuleBasic defines the basic application module used by the ibc module.
 type AppModuleBasic struct{}
-
-var _ module.AppModuleBasic = AppModuleBasic{}
 
 // Name returns the ibc module's name.
 func (AppModuleBasic) Name() string {
@@ -123,9 +122,19 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 	channeltypes.RegisterMsgServer(cfg.MsgServer(), am.keeper)
 	types.RegisterQueryService(cfg.QueryServer(), am.keeper)
 
-	m := clientkeeper.NewMigrator(am.keeper.ClientKeeper)
-	err := cfg.RegisterMigration(exported.ModuleName, 2, m.Migrate2to3)
-	if err != nil {
+	clientMigrator := clientkeeper.NewMigrator(am.keeper.ClientKeeper)
+	if err := cfg.RegisterMigration(exported.ModuleName, 2, clientMigrator.Migrate2to3); err != nil {
+		panic(err)
+	}
+
+	connectionMigrator := connectionkeeper.NewMigrator(am.keeper.ConnectionKeeper)
+	if err := cfg.RegisterMigration(exported.ModuleName, 3, func(ctx sdk.Context) error {
+		if err := connectionMigrator.Migrate3to4(ctx); err != nil {
+			return err
+		}
+
+		return clientMigrator.Migrate3to4(ctx)
+	}); err != nil {
 		panic(err)
 	}
 }
@@ -149,7 +158,7 @@ func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.Raw
 }
 
 // ConsensusVersion implements AppModule/ConsensusVersion.
-func (AppModule) ConsensusVersion() uint64 { return 3 }
+func (AppModule) ConsensusVersion() uint64 { return 4 }
 
 // BeginBlock returns the begin blocker for the ibc module.
 func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {

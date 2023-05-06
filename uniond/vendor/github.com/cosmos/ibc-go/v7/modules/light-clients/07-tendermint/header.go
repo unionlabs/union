@@ -4,15 +4,15 @@ import (
 	"bytes"
 	"time"
 
+	errorsmod "cosmossdk.io/errors"
 	tmtypes "github.com/cometbft/cometbft/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	commitmenttypes "github.com/cosmos/ibc-go/v7/modules/core/23-commitment/types"
 	"github.com/cosmos/ibc-go/v7/modules/core/exported"
 )
 
-var _ exported.ClientMessage = &Header{}
+var _ exported.ClientMessage = (*Header)(nil)
 
 // ConsensusState returns the updated consensus state associated with the header
 func (h Header) ConsensusState() *ConsensusState {
@@ -49,34 +49,34 @@ func (h Header) GetTime() time.Time {
 // with MsgCreateClient
 func (h Header) ValidateBasic() error {
 	if h.SignedHeader == nil {
-		return sdkerrors.Wrap(clienttypes.ErrInvalidHeader, "tendermint signed header cannot be nil")
+		return errorsmod.Wrap(clienttypes.ErrInvalidHeader, "tendermint signed header cannot be nil")
 	}
 	if h.Header == nil {
-		return sdkerrors.Wrap(clienttypes.ErrInvalidHeader, "tendermint header cannot be nil")
+		return errorsmod.Wrap(clienttypes.ErrInvalidHeader, "tendermint header cannot be nil")
 	}
 	tmSignedHeader, err := tmtypes.SignedHeaderFromProto(h.SignedHeader)
 	if err != nil {
-		return sdkerrors.Wrap(err, "header is not a tendermint header")
+		return errorsmod.Wrap(err, "header is not a tendermint header")
 	}
 	if err := tmSignedHeader.ValidateBasic(h.Header.GetChainID()); err != nil {
-		return sdkerrors.Wrap(err, "header failed basic validation")
+		return errorsmod.Wrap(err, "header failed basic validation")
 	}
 
 	// TrustedHeight is less than Header for updates and misbehaviour
 	if h.TrustedHeight.GTE(h.GetHeight()) {
-		return sdkerrors.Wrapf(ErrInvalidHeaderHeight, "TrustedHeight %d must be less than header height %d",
+		return errorsmod.Wrapf(ErrInvalidHeaderHeight, "TrustedHeight %d must be less than header height %d",
 			h.TrustedHeight, h.GetHeight())
 	}
 
 	if h.ValidatorSet == nil {
-		return sdkerrors.Wrap(clienttypes.ErrInvalidHeader, "validator set is nil")
+		return errorsmod.Wrap(clienttypes.ErrInvalidHeader, "validator set is nil")
 	}
 	tmValset, err := tmtypes.ValidatorSetFromProto(h.ValidatorSet)
 	if err != nil {
-		return sdkerrors.Wrap(err, "validator set is not tendermint validator set")
+		return errorsmod.Wrap(err, "validator set is not tendermint validator set")
 	}
 	if !bytes.Equal(h.Header.ValidatorsHash, tmValset.Hash()) {
-		return sdkerrors.Wrap(clienttypes.ErrInvalidHeader, "validator set does not match hash")
+		return errorsmod.Wrap(clienttypes.ErrInvalidHeader, "validator set does not match hash")
 	}
 	return nil
 }

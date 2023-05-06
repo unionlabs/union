@@ -11,7 +11,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var _ module.AppModuleBasic = AppModuleBasic{}
+var _ module.AppModuleBasic = (*AppModuleBasic)(nil)
 
 // AppModuleBasic defines the basic application module used by the tendermint light client.
 // Only the RegisterInterfaces function needs to be implemented. All other function perform

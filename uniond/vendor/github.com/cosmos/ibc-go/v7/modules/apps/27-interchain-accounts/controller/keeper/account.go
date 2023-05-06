@@ -1,10 +1,11 @@
 package keeper
 
 import (
+	errorsmod "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 
+	ibcerrors "github.com/cosmos/ibc-go/v7/internal/errors"
 	"github.com/cosmos/ibc-go/v7/internal/logging"
 	icatypes "github.com/cosmos/ibc-go/v7/modules/apps/27-interchain-accounts/types"
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
@@ -34,7 +35,7 @@ func (k Keeper) RegisterInterchainAccount(ctx sdk.Context, connectionID, owner, 
 	}
 
 	if k.IsMiddlewareDisabled(ctx, portID, connectionID) && !k.IsActiveChannelClosed(ctx, connectionID, portID) {
-		return sdkerrors.Wrap(icatypes.ErrInvalidChannelFlow, "channel is already active or a handshake is in flight")
+		return errorsmod.Wrap(icatypes.ErrInvalidChannelFlow, "channel is already active or a handshake is in flight")
 	}
 
 	k.SetMiddlewareEnabled(ctx, portID, connectionID)
@@ -53,16 +54,16 @@ func (k Keeper) registerInterchainAccount(ctx sdk.Context, connectionID, portID,
 	// if there is an active channel for this portID / connectionID return an error
 	activeChannelID, found := k.GetOpenActiveChannel(ctx, connectionID, portID)
 	if found {
-		return "", sdkerrors.Wrapf(icatypes.ErrActiveChannelAlreadySet, "existing active channel %s for portID %s on connection %s", activeChannelID, portID, connectionID)
+		return "", errorsmod.Wrapf(icatypes.ErrActiveChannelAlreadySet, "existing active channel %s for portID %s on connection %s", activeChannelID, portID, connectionID)
 	}
 
 	switch {
-	case k.portKeeper.IsBound(ctx, portID) && !k.IsBound(ctx, portID):
-		return "", sdkerrors.Wrapf(icatypes.ErrPortAlreadyBound, "another module has claimed capability for and bound port with portID: %s", portID)
+	case k.portKeeper.IsBound(ctx, portID) && !k.hasCapability(ctx, portID):
+		return "", errorsmod.Wrapf(icatypes.ErrPortAlreadyBound, "another module has claimed capability for and bound port with portID: %s", portID)
 	case !k.portKeeper.IsBound(ctx, portID):
-		cap := k.BindPort(ctx, portID)
-		if err := k.ClaimCapability(ctx, cap, host.PortPath(portID)); err != nil {
-			return "", sdkerrors.Wrapf(err, "unable to bind to newly generated portID: %s", portID)
+		capability := k.BindPort(ctx, portID)
+		if err := k.ClaimCapability(ctx, capability, host.PortPath(portID)); err != nil {
+			return "", errorsmod.Wrapf(err, "unable to bind to newly generated portID: %s", portID)
 		}
 	}
 
@@ -82,7 +83,7 @@ func (k Keeper) registerInterchainAccount(ctx sdk.Context, connectionID, portID,
 	firstMsgResponse := res.MsgResponses[0]
 	channelOpenInitResponse, ok := firstMsgResponse.GetCachedValue().(*channeltypes.MsgChannelOpenInitResponse)
 	if !ok {
-		return "", sdkerrors.Wrapf(sdkerrors.ErrInvalidType, "failed to covert %T message response to %T", firstMsgResponse.GetCachedValue(), &channeltypes.MsgChannelOpenInitResponse{})
+		return "", errorsmod.Wrapf(ibcerrors.ErrInvalidType, "failed to covert %T message response to %T", firstMsgResponse.GetCachedValue(), &channeltypes.MsgChannelOpenInitResponse{})
 	}
 
 	return channelOpenInitResponse.ChannelId, nil

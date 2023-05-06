@@ -8,8 +8,8 @@ import (
 )
 
 var (
-	_ codectypes.UnpackInterfacesMessage = QueryChannelClientStateResponse{}
-	_ codectypes.UnpackInterfacesMessage = QueryChannelConsensusStateResponse{}
+	_ codectypes.UnpackInterfacesMessage = (*QueryChannelClientStateResponse)(nil)
+	_ codectypes.UnpackInterfacesMessage = (*QueryChannelConsensusStateResponse)(nil)
 )
 
 // NewQueryChannelResponse creates a new QueryChannelResponse instance
@@ -91,5 +91,16 @@ func NewQueryNextSequenceReceiveResponse(
 		NextSequenceReceive: sequence,
 		Proof:               proof,
 		ProofHeight:         height,
+	}
+}
+
+// NewQueryNextSequenceSendResponse creates a new QueryNextSequenceSendResponse instance
+func NewQueryNextSequenceSendResponse(
+	sequence uint64, proof []byte, height clienttypes.Height,
+) *QueryNextSequenceSendResponse {
+	return &QueryNextSequenceSendResponse{
+		NextSequenceSend: sequence,
+		Proof:            proof,
+		ProofHeight:      height,
 	}
 }

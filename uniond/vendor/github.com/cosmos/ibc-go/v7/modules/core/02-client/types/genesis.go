@@ -11,15 +11,13 @@ import (
 )
 
 var (
-	_ codectypes.UnpackInterfacesMessage = IdentifiedClientState{}
-	_ codectypes.UnpackInterfacesMessage = ClientsConsensusStates{}
-	_ codectypes.UnpackInterfacesMessage = ClientConsensusStates{}
-	_ codectypes.UnpackInterfacesMessage = GenesisState{}
-)
+	_ codectypes.UnpackInterfacesMessage = (*IdentifiedClientState)(nil)
+	_ codectypes.UnpackInterfacesMessage = (*ClientsConsensusStates)(nil)
+	_ codectypes.UnpackInterfacesMessage = (*ClientConsensusStates)(nil)
+	_ codectypes.UnpackInterfacesMessage = (*GenesisState)(nil)
 
-var (
-	_ sort.Interface           = ClientsConsensusStates{}
-	_ exported.GenesisMetadata = GenesisMetadata{}
+	_ sort.Interface           = (*ClientsConsensusStates)(nil)
+	_ exported.GenesisMetadata = (*GenesisMetadata)(nil)
 )
 
 // ClientsConsensusStates defines a slice of ClientConsensusStates that supports the sort interface

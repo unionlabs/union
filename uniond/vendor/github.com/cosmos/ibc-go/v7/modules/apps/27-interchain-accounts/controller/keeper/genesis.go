@@ -12,9 +12,9 @@ import (
 // InitGenesis initializes the interchain accounts controller application state from a provided genesis state
 func InitGenesis(ctx sdk.Context, keeper Keeper, state genesistypes.ControllerGenesisState) {
 	for _, portID := range state.Ports {
-		if !keeper.IsBound(ctx, portID) {
-			cap := keeper.BindPort(ctx, portID)
-			if err := keeper.ClaimCapability(ctx, cap, host.PortPath(portID)); err != nil {
+		if !keeper.hasCapability(ctx, portID) {
+			capability := keeper.BindPort(ctx, portID)
+			if err := keeper.ClaimCapability(ctx, capability, host.PortPath(portID)); err != nil {
 				panic(fmt.Sprintf("could not claim port capability: %v", err))
 			}
 		}

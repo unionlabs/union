@@ -3,9 +3,9 @@ package solomachine
 import (
 	"reflect"
 
+	errorsmod "cosmossdk.io/errors"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	"github.com/cosmos/ibc-go/v7/modules/core/exported"
@@ -24,21 +24,21 @@ func (cs ClientState) CheckSubstituteAndUpdateState(
 ) error {
 	substituteClientState, ok := substituteClient.(*ClientState)
 	if !ok {
-		return sdkerrors.Wrapf(clienttypes.ErrInvalidClientType, "substitute client state type %T, expected  %T", substituteClient, &ClientState{})
+		return errorsmod.Wrapf(clienttypes.ErrInvalidClientType, "substitute client state type %T, expected  %T", substituteClient, &ClientState{})
 	}
 
 	subjectPublicKey, err := cs.ConsensusState.GetPubKey()
 	if err != nil {
-		return sdkerrors.Wrap(err, "failed to get consensus public key")
+		return errorsmod.Wrap(err, "failed to get consensus public key")
 	}
 
 	substitutePublicKey, err := substituteClientState.ConsensusState.GetPubKey()
 	if err != nil {
-		return sdkerrors.Wrap(err, "failed to get substitute client public key")
+		return errorsmod.Wrap(err, "failed to get substitute client public key")
 	}
 
 	if reflect.DeepEqual(subjectPublicKey, substitutePublicKey) {
-		return sdkerrors.Wrapf(clienttypes.ErrInvalidHeader, "subject and substitute have the same public key")
+		return errorsmod.Wrapf(clienttypes.ErrInvalidHeader, "subject and substitute have the same public key")
 	}
 
 	// update to substitute parameters

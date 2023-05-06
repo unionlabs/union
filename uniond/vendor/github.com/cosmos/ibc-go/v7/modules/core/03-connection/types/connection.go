@@ -1,8 +1,9 @@
 package types
 
 import (
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	errorsmod "cosmossdk.io/errors"
 
+	ibcerrors "github.com/cosmos/ibc-go/v7/internal/errors"
 	commitmenttypes "github.com/cosmos/ibc-go/v7/modules/core/23-commitment/types"
 	host "github.com/cosmos/ibc-go/v7/modules/core/24-host"
 	"github.com/cosmos/ibc-go/v7/modules/core/exported"
@@ -51,10 +52,10 @@ func (c ConnectionEnd) GetDelayPeriod() uint64 {
 // counterparty's.
 func (c ConnectionEnd) ValidateBasic() error {
 	if err := host.ClientIdentifierValidator(c.ClientId); err != nil {
-		return sdkerrors.Wrap(err, "invalid client ID")
+		return errorsmod.Wrap(err, "invalid client ID")
 	}
 	if len(c.Versions) == 0 {
-		return sdkerrors.Wrap(sdkerrors.ErrInvalidVersion, "empty connection versions")
+		return errorsmod.Wrap(ibcerrors.ErrInvalidVersion, "empty connection versions")
 	}
 	for _, version := range c.Versions {
 		if err := ValidateVersion(version); err != nil {
@@ -94,14 +95,14 @@ func (c Counterparty) GetPrefix() exported.Prefix {
 func (c Counterparty) ValidateBasic() error {
 	if c.ConnectionId != "" {
 		if err := host.ConnectionIdentifierValidator(c.ConnectionId); err != nil {
-			return sdkerrors.Wrap(err, "invalid counterparty connection ID")
+			return errorsmod.Wrap(err, "invalid counterparty connection ID")
 		}
 	}
 	if err := host.ClientIdentifierValidator(c.ClientId); err != nil {
-		return sdkerrors.Wrap(err, "invalid counterparty client ID")
+		return errorsmod.Wrap(err, "invalid counterparty client ID")
 	}
 	if c.Prefix.Empty() {
-		return sdkerrors.Wrap(ErrInvalidCounterparty, "counterparty prefix cannot be empty")
+		return errorsmod.Wrap(ErrInvalidCounterparty, "counterparty prefix cannot be empty")
 	}
 	return nil
 }
@@ -121,7 +122,7 @@ func NewIdentifiedConnection(connectionID string, conn ConnectionEnd) Identified
 // ValidateBasic performs a basic validation of the connection identifier and connection fields.
 func (ic IdentifiedConnection) ValidateBasic() error {
 	if err := host.ConnectionIdentifierValidator(ic.Id); err != nil {
-		return sdkerrors.Wrap(err, "invalid connection ID")
+		return errorsmod.Wrap(err, "invalid connection ID")
 	}
 	connection := NewConnectionEnd(ic.State, ic.ClientId, ic.Counterparty, ic.Versions, ic.DelayPeriod)
 	return connection.ValidateBasic()

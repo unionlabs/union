@@ -5,8 +5,8 @@ import (
 	"reflect"
 	"strings"
 
+	errorsmod "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
 const (
@@ -32,7 +32,7 @@ func NewResultAcknowledgement(result []byte) Acknowledgement {
 func NewErrorAcknowledgement(err error) Acknowledgement {
 	// the ABCI code is included in the abcitypes.ResponseDeliverTx hash
 	// constructed in Tendermint and is therefore deterministic
-	_, code, _ := sdkerrors.ABCIInfo(err, false) // discard non-determinstic codespace and log values
+	_, code, _ := errorsmod.ABCIInfo(err, false) // discard non-determinstic codespace and log values
 
 	return Acknowledgement{
 		Response: &Acknowledgement_Error{
@@ -46,15 +46,15 @@ func (ack Acknowledgement) ValidateBasic() error {
 	switch resp := ack.Response.(type) {
 	case *Acknowledgement_Result:
 		if len(resp.Result) == 0 {
-			return sdkerrors.Wrap(ErrInvalidAcknowledgement, "acknowledgement result cannot be empty")
+			return errorsmod.Wrap(ErrInvalidAcknowledgement, "acknowledgement result cannot be empty")
 		}
 	case *Acknowledgement_Error:
 		if strings.TrimSpace(resp.Error) == "" {
-			return sdkerrors.Wrap(ErrInvalidAcknowledgement, "acknowledgement error cannot be empty")
+			return errorsmod.Wrap(ErrInvalidAcknowledgement, "acknowledgement error cannot be empty")
 		}
 
 	default:
-		return sdkerrors.Wrapf(ErrInvalidAcknowledgement, "unsupported acknowledgement response field type %T", resp)
+		return errorsmod.Wrapf(ErrInvalidAcknowledgement, "unsupported acknowledgement response field type %T", resp)
 	}
 	return nil
 }

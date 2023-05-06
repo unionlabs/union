@@ -7,10 +7,10 @@ import (
 	"sort"
 	"strings"
 
+	errorsmod "cosmossdk.io/errors"
 	tmbytes "github.com/cometbft/cometbft/libs/bytes"
 	tmtypes "github.com/cometbft/cometbft/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 	host "github.com/cosmos/ibc-go/v7/modules/core/24-host"
@@ -113,10 +113,10 @@ func validateTraceIdentifiers(identifiers []string) error {
 	// validate correctness of port and channel identifiers
 	for i := 0; i < len(identifiers); i += 2 {
 		if err := host.PortIdentifierValidator(identifiers[i]); err != nil {
-			return sdkerrors.Wrapf(err, "invalid port ID at position %d", i)
+			return errorsmod.Wrapf(err, "invalid port ID at position %d", i)
 		}
 		if err := host.ChannelIdentifierValidator(identifiers[i+1]); err != nil {
-			return sdkerrors.Wrapf(err, "invalid channel ID at position %d", i)
+			return errorsmod.Wrapf(err, "invalid channel ID at position %d", i)
 		}
 	}
 	return nil
@@ -151,14 +151,14 @@ func (t Traces) Validate() error {
 		}
 
 		if err := trace.Validate(); err != nil {
-			return sdkerrors.Wrapf(err, "failed denom trace %d validation", i)
+			return errorsmod.Wrapf(err, "failed denom trace %d validation", i)
 		}
 		seenTraces[hash] = true
 	}
 	return nil
 }
 
-var _ sort.Interface = Traces{}
+var _ sort.Interface = (*Traces)(nil)
 
 // Len implements sort.Interface for Traces
 func (t Traces) Len() int { return len(t) }
@@ -190,7 +190,7 @@ func ValidatePrefixedDenom(denom string) error {
 	}
 
 	if strings.TrimSpace(denomSplit[len(denomSplit)-1]) == "" {
-		return sdkerrors.Wrap(ErrInvalidDenomForTransfer, "base denomination cannot be blank")
+		return errorsmod.Wrap(ErrInvalidDenomForTransfer, "base denomination cannot be blank")
 	}
 
 	path, _ := extractPathAndBaseFromFullDenom(denomSplit)
@@ -216,15 +216,15 @@ func ValidateIBCDenom(denom string) error {
 
 	switch {
 	case denom == DenomPrefix:
-		return sdkerrors.Wrapf(ErrInvalidDenomForTransfer, "denomination should be prefixed with the format 'ibc/{hash(trace + \"/\" + %s)}'", denom)
+		return errorsmod.Wrapf(ErrInvalidDenomForTransfer, "denomination should be prefixed with the format 'ibc/{hash(trace + \"/\" + %s)}'", denom)
 
 	case len(denomSplit) == 2 && denomSplit[0] == DenomPrefix:
 		if strings.TrimSpace(denomSplit[1]) == "" {
-			return sdkerrors.Wrapf(ErrInvalidDenomForTransfer, "denomination should be prefixed with the format 'ibc/{hash(trace + \"/\" + %s)}'", denom)
+			return errorsmod.Wrapf(ErrInvalidDenomForTransfer, "denomination should be prefixed with the format 'ibc/{hash(trace + \"/\" + %s)}'", denom)
 		}
 
 		if _, err := ParseHexHash(denomSplit[1]); err != nil {
-			return sdkerrors.Wrapf(err, "invalid denom trace hash %s", denomSplit[1])
+			return errorsmod.Wrapf(err, "invalid denom trace hash %s", denomSplit[1])
 		}
 	}
 

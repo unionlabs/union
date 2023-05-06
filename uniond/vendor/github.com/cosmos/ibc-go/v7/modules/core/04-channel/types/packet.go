@@ -3,9 +3,9 @@ package types
 import (
 	"crypto/sha256"
 
+	errorsmod "cosmossdk.io/errors"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	host "github.com/cosmos/ibc-go/v7/modules/core/24-host"
@@ -89,25 +89,25 @@ func (p Packet) GetTimeoutTimestamp() uint64 { return p.TimeoutTimestamp }
 // ValidateBasic implements PacketI interface
 func (p Packet) ValidateBasic() error {
 	if err := host.PortIdentifierValidator(p.SourcePort); err != nil {
-		return sdkerrors.Wrap(err, "invalid source port ID")
+		return errorsmod.Wrap(err, "invalid source port ID")
 	}
 	if err := host.PortIdentifierValidator(p.DestinationPort); err != nil {
-		return sdkerrors.Wrap(err, "invalid destination port ID")
+		return errorsmod.Wrap(err, "invalid destination port ID")
 	}
 	if err := host.ChannelIdentifierValidator(p.SourceChannel); err != nil {
-		return sdkerrors.Wrap(err, "invalid source channel ID")
+		return errorsmod.Wrap(err, "invalid source channel ID")
 	}
 	if err := host.ChannelIdentifierValidator(p.DestinationChannel); err != nil {
-		return sdkerrors.Wrap(err, "invalid destination channel ID")
+		return errorsmod.Wrap(err, "invalid destination channel ID")
 	}
 	if p.Sequence == 0 {
-		return sdkerrors.Wrap(ErrInvalidPacket, "packet sequence cannot be 0")
+		return errorsmod.Wrap(ErrInvalidPacket, "packet sequence cannot be 0")
 	}
 	if p.TimeoutHeight.IsZero() && p.TimeoutTimestamp == 0 {
-		return sdkerrors.Wrap(ErrInvalidPacket, "packet timeout height and packet timeout timestamp cannot both be 0")
+		return errorsmod.Wrap(ErrInvalidPacket, "packet timeout height and packet timeout timestamp cannot both be 0")
 	}
 	if len(p.Data) == 0 {
-		return sdkerrors.Wrap(ErrInvalidPacket, "packet data bytes cannot be empty")
+		return errorsmod.Wrap(ErrInvalidPacket, "packet data bytes cannot be empty")
 	}
 	return nil
 }
@@ -115,15 +115,15 @@ func (p Packet) ValidateBasic() error {
 // Validates a PacketId
 func (p PacketId) Validate() error {
 	if err := host.PortIdentifierValidator(p.PortId); err != nil {
-		return sdkerrors.Wrap(err, "invalid source port ID")
+		return errorsmod.Wrap(err, "invalid source port ID")
 	}
 
 	if err := host.ChannelIdentifierValidator(p.ChannelId); err != nil {
-		return sdkerrors.Wrap(err, "invalid source channel ID")
+		return errorsmod.Wrap(err, "invalid source channel ID")
 	}
 
 	if p.Sequence == 0 {
-		return sdkerrors.Wrap(ErrInvalidPacket, "packet sequence cannot be 0")
+		return errorsmod.Wrap(ErrInvalidPacket, "packet sequence cannot be 0")
 	}
 
 	return nil

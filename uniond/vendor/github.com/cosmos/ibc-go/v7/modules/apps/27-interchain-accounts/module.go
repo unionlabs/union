@@ -29,11 +29,11 @@ import (
 )
 
 var (
-	_ module.AppModule           = AppModule{}
-	_ module.AppModuleBasic      = AppModuleBasic{}
-	_ module.AppModuleSimulation = AppModule{}
+	_ module.AppModule           = (*AppModule)(nil)
+	_ module.AppModuleBasic      = (*AppModuleBasic)(nil)
+	_ module.AppModuleSimulation = (*AppModule)(nil)
 
-	_ porttypes.IBCModule = host.IBCModule{}
+	_ porttypes.IBCModule = (*host.IBCModule)(nil)
 )
 
 // AppModuleBasic is the IBC interchain accounts AppModuleBasic
@@ -117,8 +117,8 @@ func (am AppModule) InitModule(ctx sdk.Context, controllerParams controllertypes
 	if am.hostKeeper != nil {
 		am.hostKeeper.SetParams(ctx, hostParams)
 
-		cap := am.hostKeeper.BindPort(ctx, types.HostPortID)
-		if err := am.hostKeeper.ClaimCapability(ctx, cap, ibchost.PortPath(types.HostPortID)); err != nil {
+		capability := am.hostKeeper.BindPort(ctx, types.HostPortID)
+		if err := am.hostKeeper.ClaimCapability(ctx, capability, ibchost.PortPath(types.HostPortID)); err != nil {
 			panic(fmt.Sprintf("could not claim port capability: %v", err))
 		}
 	}
