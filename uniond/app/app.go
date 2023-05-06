@@ -538,6 +538,8 @@ func New(
 	// this line is used by starport scaffolding # ibc/app/router
 	app.IBCKeeper.SetRouter(ibcRouter)
 
+	app.setupUpgradeStoreLoaders()
+
 	/**** Module Hooks ****/
 
 	// register hooks after all modules have been initialized
@@ -701,6 +703,8 @@ func New(
 	app.sm = module.NewSimulationManagerFromAppModules(app.mm.Modules, overrideModules)
 	app.sm.RegisterStoreDecoders()
 
+	app.setupUpgradeHandlers()
+
 	// initialize stores
 	app.MountKVStores(keys)
 	app.MountTransientStores(tkeys)
@@ -737,9 +741,6 @@ func New(
 	app.ScopedIBCKeeper = scopedIBCKeeper
 	app.ScopedTransferKeeper = scopedTransferKeeper
 	// this line is used by starport scaffolding # stargate/app/beforeInitReturn
-
-	app.setupUpgradeStoreLoaders()
-	app.setupUpgradeHandlers()
 
 	return app
 }
