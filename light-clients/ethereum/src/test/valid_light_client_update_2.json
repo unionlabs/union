@@ -1,0 +1,131 @@
+{
+  "trusted_sync_committee": {
+    "trusted_height": {
+      "revision_number": 0,
+      "revision_height": 1224
+    },
+    "sync_committee": {
+      "pubkeys": [
+        "uJvrxpl2lyajGMjplxvTFxKXxhrqSmV4p6T5S1R9y6W6wWqJEItrah/jaV0ah0oL",
+        "mXfxyLcxqNVVgUa/uGyuomQ088WHi1ib8oCkLJFZ5wDp3w5AhilsILAR0ueMJ9Nz",
+        "qwvdoPhfhC9DG+rM8SUL8f17pRtBAP1kNktkAf2oW7AGmz5xW1iBloTn/AsQpyo0",
+        "gSg7eiDhykYOvZu9dwBdVXNwyrsfmkT1MMTExmIw9nX434tMKBiFGqfXeoDKWkpe",
+        "qZp27XeW974i1bfoXe63xWd+iOUR4LM3YY+MTrYTSbS/LRU/ZJ97UzWf6LlKOORM",
+        "o6MrD4tN24PxoKhT2B3XJd/ld9T0w9uOzlLOKwJuyoSBXBp+jpKk3j11VzO/fkqb",
+        "qNTHwneVpyWWExfvWVOnAy7W2Dc524sOinI1PRuLRDlCf376LInKoDzJ8o+Muris",
+        "iMFB33fNnY16cadcgmxBqcnwPG7hsYDz54UvaigAmd7TUbWNZuZTr45CgWpNj1Mu",
+        "uJvrxpl2lyajGMjplxvTFxKXxhrqSmV4p6T5S1R9y6W6wWqJEItrah/jaV0ah0oL",
+        "mXfxyLcxqNVVgUa/uGyuomQ088WHi1ib8oCkLJFZ5wDp3w5AhilsILAR0ueMJ9Nz",
+        "qwvdoPhfhC9DG+rM8SUL8f17pRtBAP1kNktkAf2oW7AGmz5xW1iBloTn/AsQpyo0",
+        "gSg7eiDhykYOvZu9dwBdVXNwyrsfmkT1MMTExmIw9nX434tMKBiFGqfXeoDKWkpe",
+        "qZp27XeW974i1bfoXe63xWd+iOUR4LM3YY+MTrYTSbS/LRU/ZJ97UzWf6LlKOORM",
+        "o6MrD4tN24PxoKhT2B3XJd/ld9T0w9uOzlLOKwJuyoSBXBp+jpKk3j11VzO/fkqb",
+        "qNTHwneVpyWWExfvWVOnAy7W2Dc524sOinI1PRuLRDlCf376LInKoDzJ8o+Muris",
+        "iMFB33fNnY16cadcgmxBqcnwPG7hsYDz54UvaigAmd7TUbWNZuZTr45CgWpNj1Mu",
+        "uJvrxpl2lyajGMjplxvTFxKXxhrqSmV4p6T5S1R9y6W6wWqJEItrah/jaV0ah0oL",
+        "mXfxyLcxqNVVgUa/uGyuomQ088WHi1ib8oCkLJFZ5wDp3w5AhilsILAR0ueMJ9Nz",
+        "qwvdoPhfhC9DG+rM8SUL8f17pRtBAP1kNktkAf2oW7AGmz5xW1iBloTn/AsQpyo0",
+        "gSg7eiDhykYOvZu9dwBdVXNwyrsfmkT1MMTExmIw9nX434tMKBiFGqfXeoDKWkpe",
+        "qZp27XeW974i1bfoXe63xWd+iOUR4LM3YY+MTrYTSbS/LRU/ZJ97UzWf6LlKOORM",
+        "o6MrD4tN24PxoKhT2B3XJd/ld9T0w9uOzlLOKwJuyoSBXBp+jpKk3j11VzO/fkqb",
+        "qNTHwneVpyWWExfvWVOnAy7W2Dc524sOinI1PRuLRDlCf376LInKoDzJ8o+Muris",
+        "iMFB33fNnY16cadcgmxBqcnwPG7hsYDz54UvaigAmd7TUbWNZuZTr45CgWpNj1Mu",
+        "uJvrxpl2lyajGMjplxvTFxKXxhrqSmV4p6T5S1R9y6W6wWqJEItrah/jaV0ah0oL",
+        "mXfxyLcxqNVVgUa/uGyuomQ088WHi1ib8oCkLJFZ5wDp3w5AhilsILAR0ueMJ9Nz",
+        "qwvdoPhfhC9DG+rM8SUL8f17pRtBAP1kNktkAf2oW7AGmz5xW1iBloTn/AsQpyo0",
+        "gSg7eiDhykYOvZu9dwBdVXNwyrsfmkT1MMTExmIw9nX434tMKBiFGqfXeoDKWkpe",
+        "qZp27XeW974i1bfoXe63xWd+iOUR4LM3YY+MTrYTSbS/LRU/ZJ97UzWf6LlKOORM",
+        "o6MrD4tN24PxoKhT2B3XJd/ld9T0w9uOzlLOKwJuyoSBXBp+jpKk3j11VzO/fkqb",
+        "qNTHwneVpyWWExfvWVOnAy7W2Dc524sOinI1PRuLRDlCf376LInKoDzJ8o+Muris",
+        "iMFB33fNnY16cadcgmxBqcnwPG7hsYDz54UvaigAmd7TUbWNZuZTr45CgWpNj1Mu"
+      ],
+      "aggregate_pubkey": "j+EUdqBXUMUmGN63mRji5nT1bfvxLbzlWuQ4bRCOih6DxjJvWVfi7xkTdYLOJw3G"
+    },
+    "is_next": false
+  },
+  "consensus_update": {
+    "attested_header": {
+      "beacon": {
+        "slot": 1248,
+        "proposer_index": 7,
+        "parent_root": "LicU+dT/pGSJt1jGvV15xr+b/jg6p6zP8W6X1GqGKl8=",
+        "state_root": "wf3/buYFT3BBSSSm3uTwjtIzvINTlUexgfs4kZEGAdk=",
+        "body_root": "LcLoQ7dKh7/zFG7cqEeiDVv8TXZR0bgRKcMPuAl2XR8="
+      },
+      "execution": {
+        "parent_hash": "duqYTQGpGEPnbBw5EsLy0oLAGkaEAwz9MHnvT9kN/EY=",
+        "fee_recipient": "AAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+        "state_root": "BLYp9HSLDzC239HiHTfLM062adCxa+v0LC73o0NJc5M=",
+        "receipts_root": "VugfFxvMVab/g0XmksD4bltI4BuZbK3AAWIvteNjtCE=",
+        "logs_bloom": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+        "prev_randao": "RjbqMNllVSQItQtmZ9JIXH5S+8cIdd4XR8MpgRBDHzY=",
+        "block_number": 1248,
+        "gas_limit": 30000000,
+        "gas_used": 0,
+        "timestamp": 1682415333,
+        "extra_data": "2IMBCwWEZ2V0aIhnbzEuMjAuMoVsaW51eA==",
+        "base_fee_per_gas": "BwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+        "block_hash": "MBsLFsBGmf3dGTk3INJ0f04hEKTs3Tm2juTUWHLyIXU=",
+        "transactions_root": "f/4kHqYBh/2wGHv6It410fm+16sGHZQB/UfjSlT77eE=",
+        "withdrawals_root": "KLoYNKOntldGDOefo6HZCauIKP1VdlnU0FVKm9vA7DA="
+      },
+      "execution_branch": [
+        "fXxN8KMUMC/Rb5Ol4mLCFCY0t4M081gfsipYqAXVQPE=",
+        "M2SIAz/l8+9MzBKvB7k3C5LlU+Ney0ozehscDkr+Hg4=",
+        "21YRTgD91MH4XIkr81rJqJKJquyx69CpbN5ganSLXXE=",
+        "TBqMzWSpH3gCA7f2xm356Xx8Q5+gH043i+lrIfBBx0s="
+      ]
+    },
+    "next_sync_committee_branch": [],
+    "finalized_header": {
+      "beacon": {
+        "slot": 1232,
+        "proposer_index": 0,
+        "parent_root": "r9evywjh59vAq4nIQbCcHa0oH1nG7cPf86c2JMRqsww=",
+        "state_root": "QKogL/+B+PTEc4Qo0NwhdfczTegcVIj6sed9h5Uyvvg=",
+        "body_root": "W6a3kq9PaT2GuHhER7N6tK+INf/CplCTCIsWsJCa7nI="
+      },
+      "execution": {
+        "parent_hash": "8A/y2C/rIVg89eNbaKOE7SmxDrWfjGrjC4GGWMgU/ZM=",
+        "fee_recipient": "AAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+        "state_root": "BLYp9HSLDzC239HiHTfLM062adCxa+v0LC73o0NJc5M=",
+        "receipts_root": "VugfFxvMVab/g0XmksD4bltI4BuZbK3AAWIvteNjtCE=",
+        "logs_bloom": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+        "prev_randao": "sbDSHFrMC6a7dqi95PWRlv8tKpMs/RMyWo2ZdTLd7IM=",
+        "block_number": 1232,
+        "gas_limit": 30000000,
+        "gas_used": 0,
+        "timestamp": 1682415237,
+        "extra_data": "2IMBCwWEZ2V0aIhnbzEuMjAuMoVsaW51eA==",
+        "base_fee_per_gas": "BwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+        "block_hash": "MNo7mvOUhldNKRSscp0VZdrnshZh+CbhB27/CDZrReY=",
+        "transactions_root": "f/4kHqYBh/2wGHv6It410fm+16sGHZQB/UfjSlT77eE=",
+        "withdrawals_root": "KLoYNKOntldGDOefo6HZCauIKP1VdlnU0FVKm9vA7DA="
+      },
+      "execution_branch": [
+        "PS/p6qe9IcpeaIGXAvjNkh8FSWZCzv8rSlB23qwmfxo=",
+        "M2SIAz/l8+9MzBKvB7k3C5LlU+Ney0ozehscDkr+Hg4=",
+        "21YRTgD91MH4XIkr81rJqJKJquyx69CpbN5ganSLXXE=",
+        "Q7yFzmfjXxQJEYEB2rhpmkrVTr6zCHQ746rtXStq1sc="
+      ]
+    },
+    "finality_branch": [
+      "mgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+      "EMcm+sk1v5ZXzHR208+nvt7FmD3PtZ6KffbQphnhCNc=",
+      "1Z2LAG4iB6sgBsb3aTsqI/8E3bDHz/eY38UrEjOhtMQ=",
+      "I43bG5gWNr4AGzWDZDsBHzgzTzzxDFHjhqred4DL6qE=",
+      "NsetwNOG+yARb5JtwpSDNW812UCUKsU+hnztZzABKm8=",
+      "Rwwayodla23FMcyCfo5/ALsbEtc7ynDzNddQCENFa/Y="
+    ],
+    "sync_aggregate": {
+      "sync_committee_bits": "/////w==",
+      "sync_committee_signature": "rEd/hzVYInHtdwKYUu3ptVM2xMQC4ufjj8YIG3LaISS8tCCzM9GqJQ6g3uP1eV0WCW96cMtPaoagNnyoYXXdjXFw+Gx32S9X0MxspdXYQ4lzPTaFTMN25x27CV/psGgB"
+    },
+    "signature_slot": 1249
+  },
+  "account_update": {
+    "account_proof": "yIQjIyMjgiMj",
+    "account_storage_root": "AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE="
+  },
+  "timestamp": 1682415340
+}

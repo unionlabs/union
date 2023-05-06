@@ -1,15 +1,22 @@
-use crate::errors::Error;
+use crate::{consensus_state::TrustedConsensusState, errors::Error};
 use ethereum_consensus::{
     beacon::{Epoch, Root, Slot, Version},
+    context::ChainContext,
     fork::ForkParameters,
-    preset,
     types::{H256, U64},
 };
-use ethereum_light_client_verifier::context::Fraction;
+use ethereum_light_client_verifier::{
+    consensus::CurrentNextSyncProtocolVerifier,
+    context::ConsensusVerificationContext,
+    context::{Fraction, LightClientContext},
+    execution::ExecutionVerifier,
+};
+
 use ibc::{
     core::ics02_client::{
         client_state::ClientState as Ics2ClientState, client_type::ClientType, error::ClientError,
     },
+    timestamp::Timestamp,
     Height,
 };
 use ibc_proto::{
@@ -23,11 +30,8 @@ use std::time::Duration;
 
 pub const ETHEREUM_CLIENT_STATE_TYPE_URL: &str = "/ibc.lightclients.ethereum.v1.ClientState";
 
-pub type MainnetClientState = ClientState<{ preset::mainnet::PRESET.SYNC_COMMITTEE_SIZE }>;
-pub type MinimalClientState = ClientState<{ preset::minimal::PRESET.SYNC_COMMITTEE_SIZE }>;
-
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
-pub struct ClientState<const SYNC_COMMITTEE_SIZE: usize> {
+pub struct ClientState {
     /// Chain parameters
     pub genesis_validators_root: Root,
     pub min_sync_committee_participants: U64,
@@ -45,16 +49,51 @@ pub struct ClientState<const SYNC_COMMITTEE_SIZE: usize> {
     pub latest_slot: Slot,
     pub latest_execution_block_number: U64,
     pub frozen_height: Option<Height>,
+
+    /// Verifier
+    #[serde(skip)]
+    pub consensus_verifier: CurrentNextSyncProtocolVerifier<TrustedConsensusState>,
+    #[serde(skip)]
+    pub execution_verifier: ExecutionVerifier,
 }
 
-impl<const SYNC_COMMITTEE_SIZE: usize> Protobuf<RawClientState>
-    for ClientState<SYNC_COMMITTEE_SIZE>
-{
+impl ClientState {
+    pub fn with_frozen_height(self, h: Height) -> Self {
+        Self {
+            frozen_height: Some(h),
+            ..self
+        }
+    }
+
+    pub fn build_context(
+        &self,
+        current_timestamp: Timestamp,
+    ) -> Result<impl ChainContext + ConsensusVerificationContext, Error> {
+        let current_timestamp = U64::from(
+            current_timestamp
+                .into_tm_time()
+                .ok_or(Error::TimestampNotSet)?
+                .unix_timestamp() as u64,
+        );
+        let current_slot = (current_timestamp - self.genesis_time) / self.seconds_per_slot
+            + self.fork_parameters.genesis_slot;
+        Ok(LightClientContext::new(
+            self.fork_parameters.clone(),
+            self.seconds_per_slot,
+            self.slots_per_epoch,
+            self.epochs_per_sync_committee_period,
+            self.genesis_time,
+            self.genesis_validators_root.clone(),
+            self.min_sync_committee_participants.0 as usize,
+            self.trust_level.clone(),
+            move || current_slot,
+        ))
+    }
 }
 
-impl<const SYNC_COMMITTEE_SIZE: usize> TryFrom<RawClientState>
-    for ClientState<SYNC_COMMITTEE_SIZE>
-{
+impl Protobuf<RawClientState> for ClientState {}
+
+impl TryFrom<RawClientState> for ClientState {
     type Error = Error;
 
     fn try_from(value: RawClientState) -> Result<Self, Self::Error> {
@@ -65,8 +104,12 @@ impl<const SYNC_COMMITTEE_SIZE: usize> TryFrom<RawClientState>
             version
         }
 
-        let fork_parameters = value.fork_parameters.ok_or(Error::DecodeError)?;
-        let trust_level = value.trust_level.ok_or(Error::DecodeError)?;
+        let fork_parameters = value
+            .fork_parameters
+            .ok_or(Error::decode("no `fork_parameters` in `RawClientState`"))?;
+        let trust_level = value
+            .trust_level
+            .ok_or(Error::decode("no `trust_level` in `RawClientState`"))?;
         Ok(Self {
             genesis_validators_root: H256::from_slice(&value.genesis_validators_root),
             min_sync_committee_participants: value.min_sync_committee_participants.into(),
@@ -78,48 +121,48 @@ impl<const SYNC_COMMITTEE_SIZE: usize> TryFrom<RawClientState>
                     fork_parameters
                         .altair
                         .clone()
-                        .ok_or(Error::DecodeError)?
+                        .ok_or(Error::decode("no `altair` in `RawClientState`"))?
                         .version,
                 ),
                 altair_fork_epoch: fork_parameters
                     .altair
-                    .ok_or(Error::DecodeError)?
+                    .ok_or(Error::decode("no `altair` in `RawClientState`"))?
                     .epoch
                     .into(),
                 bellatrix_fork_version: bytes_to_version(
                     fork_parameters
                         .bellatrix
                         .clone()
-                        .ok_or(Error::DecodeError)?
+                        .ok_or(Error::decode("no `bellatrix` in `RawClientState`"))?
                         .version,
                 ),
                 bellatrix_fork_epoch: fork_parameters
                     .bellatrix
-                    .ok_or(Error::DecodeError)?
+                    .ok_or(Error::decode("no `bellatrix` in `RawClientState`"))?
                     .epoch
                     .into(),
                 capella_fork_version: bytes_to_version(
                     fork_parameters
                         .capella
                         .clone()
-                        .ok_or(Error::DecodeError)?
+                        .ok_or(Error::decode("no `capella` in `RawClientState`"))?
                         .version,
                 ),
                 capella_fork_epoch: fork_parameters
                     .capella
-                    .ok_or(Error::DecodeError)?
+                    .ok_or(Error::decode("no `bellatrix` in `RawClientState`"))?
                     .epoch
                     .into(),
                 eip4844_fork_version: bytes_to_version(
                     fork_parameters
                         .eip4844
                         .clone()
-                        .ok_or(Error::DecodeError)?
+                        .ok_or(Error::decode("no `eip4844` in `RawClientState`"))?
                         .version,
                 ),
                 eip4844_fork_epoch: fork_parameters
                     .eip4844
-                    .ok_or(Error::DecodeError)?
+                    .ok_or(Error::decode("no `eip4844` in `RawClientState`"))?
                     .epoch
                     .into(),
             },
@@ -132,18 +175,21 @@ impl<const SYNC_COMMITTEE_SIZE: usize> TryFrom<RawClientState>
             latest_execution_block_number: value.latest_execution_block_number.into(),
             frozen_height: if let Some(h) = value.frozen_height {
                 Some(
-                    Height::new(h.revision_number, h.revision_height)
-                        .map_err(|_| Error::DecodeError)?,
+                    Height::new(h.revision_number, h.revision_height).map_err(|_| {
+                        Error::decode("Invalid `frozen_height` in `RawClientState`")
+                    })?,
                 )
             } else {
                 None
             },
+            consensus_verifier: Default::default(),
+            execution_verifier: Default::default(),
         })
     }
 }
 
-impl<const SYNC_COMMITTEE_SIZE: usize> From<ClientState<SYNC_COMMITTEE_SIZE>> for RawClientState {
-    fn from(value: ClientState<SYNC_COMMITTEE_SIZE>) -> Self {
+impl From<ClientState> for RawClientState {
+    fn from(value: ClientState) -> Self {
         use ibc_proto::ibc::core::client::v1::Height as ProtoHeight;
         use ibc_proto::ibc::lightclients::ethereum::v1::{
             ForkParameters as ProtoForkParameters, Fraction as ProtoFraction,
@@ -204,23 +250,23 @@ impl<const SYNC_COMMITTEE_SIZE: usize> From<ClientState<SYNC_COMMITTEE_SIZE>> fo
     }
 }
 
-impl<const SYNC_COMMITTEE_SIZE: usize> Protobuf<Any> for ClientState<SYNC_COMMITTEE_SIZE> {}
+impl Protobuf<Any> for ClientState {}
 
-impl<const SYNC_COMMITTEE_SIZE: usize> TryFrom<Any> for ClientState<SYNC_COMMITTEE_SIZE> {
+impl TryFrom<Any> for ClientState {
     type Error = Error;
 
     fn try_from(raw: Any) -> Result<Self, Self::Error> {
         match raw.type_url.as_str() {
             ETHEREUM_CLIENT_STATE_TYPE_URL => RawClientState::decode(raw.value.as_slice())
-                .map_err(|_| Error::DecodeError)?
+                .map_err(|_| Error::decode("during parsing `RawClientState` from `Any`"))?
                 .try_into(),
             _ => Err(Error::UnknownTypeUrl),
         }
     }
 }
 
-impl<const SYNC_COMMITTEE_SIZE: usize> From<ClientState<SYNC_COMMITTEE_SIZE>> for Any {
-    fn from(value: ClientState<SYNC_COMMITTEE_SIZE>) -> Self {
+impl From<ClientState> for Any {
+    fn from(value: ClientState) -> Self {
         Self {
             type_url: ETHEREUM_CLIENT_STATE_TYPE_URL.to_string(),
             value: Protobuf::<RawClientState>::encode_vec(&value),
@@ -228,53 +274,10 @@ impl<const SYNC_COMMITTEE_SIZE: usize> From<ClientState<SYNC_COMMITTEE_SIZE>> fo
     }
 }
 
-pub fn downcast_eth_client_state<const SYNC_COMMITTEE_SIZE: usize>(
-    cs: &dyn Ics2ClientState,
-) -> Result<&ClientState<SYNC_COMMITTEE_SIZE>, ClientError> {
+pub fn downcast_eth_client_state(cs: &dyn Ics2ClientState) -> Result<&ClientState, ClientError> {
     cs.as_any()
-        .downcast_ref::<ClientState<SYNC_COMMITTEE_SIZE>>()
+        .downcast_ref::<ClientState>()
         .ok_or_else(|| ClientError::ClientArgsTypeMismatch {
             client_type: ClientType::new("08-wasm".into()),
         })
-}
-
-#[test]
-fn generate_dummy_client_state() {
-    let client_state = MinimalClientState {
-        genesis_validators_root: H256::from_hex(
-            "0xed7f00ebc8ff8c17db3bf48a12f006a9f767bd00ff8b28fb147b983f4e401ffc",
-        )
-        .unwrap(),
-        min_sync_committee_participants: 32u64.into(),
-        genesis_time: 32u64.into(),
-        fork_parameters: ForkParameters {
-            genesis_fork_version: Version([0, 0, 16, 32]),
-            genesis_slot: U64(0),
-
-            altair_fork_version: Version([1, 0, 16, 32]),
-            altair_fork_epoch: U64(36660),
-
-            bellatrix_fork_version: Version([2, 0, 16, 32]),
-            bellatrix_fork_epoch: U64(112260),
-
-            capella_fork_version: Version([3, 0, 16, 32]),
-            capella_fork_epoch: U64(162304),
-
-            // NOTE: dummy data
-            eip4844_fork_version: Version([4, 0, 0, 0]),
-            eip4844_fork_epoch: U64(u64::MAX),
-        },
-        seconds_per_slot: 32u64.into(),
-        slots_per_epoch: 32u64.into(),
-        epochs_per_sync_committee_period: 32u64.into(),
-        trust_level: Fraction::new(1, 1),
-        trusting_period: Duration::MAX,
-        latest_slot: U64(32),
-        latest_execution_block_number: U64(32),
-        frozen_height: None,
-    };
-
-    let raw_client_state: RawClientState = client_state.into();
-
-    println!("{:?}", raw_client_state.encode_to_vec());
 }

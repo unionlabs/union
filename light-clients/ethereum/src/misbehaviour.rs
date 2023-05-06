@@ -1,9 +1,9 @@
 use crate::{
     errors::Error,
+    eth_types::{ConsensusUpdateInfo, SYNC_COMMITTEE_SIZE},
     types::{
         convert_consensus_update_to_proto, convert_proto_to_consensus_update, TrustedSyncCommittee,
     },
-    update::ConsensusUpdateInfo,
 };
 use ethereum_light_client_verifier::misbehaviour::{
     FinalizedHeaderMisbehaviour, Misbehaviour as MisbehaviourData, NextSyncCommitteeMisbehaviour,
@@ -25,72 +25,64 @@ pub const ETHEREUM_NEXT_SYNC_COMMITTEE_MISBEHAVIOUR_TYPE_URL: &str =
     "/ibc.lightclients.ethereum.v1.NextSyncCommitteeMisbehaviour";
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct Misbehaviour<const SYNC_COMMITTEE_SIZE: usize> {
+pub struct Misbehaviour {
     pub client_id: ClientId,
-    pub trusted_sync_committee: TrustedSyncCommittee<SYNC_COMMITTEE_SIZE>,
-    pub data: MisbehaviourData<SYNC_COMMITTEE_SIZE, ConsensusUpdateInfo<SYNC_COMMITTEE_SIZE>>,
+    pub trusted_sync_committee: TrustedSyncCommittee,
+    pub data: MisbehaviourData<SYNC_COMMITTEE_SIZE, ConsensusUpdateInfo>,
 }
 
-impl<const SYNC_COMMITTEE_SIZE: usize> Protobuf<RawFinalizedHeaderMisbehaviour>
-    for Misbehaviour<SYNC_COMMITTEE_SIZE>
-{
-}
+impl Protobuf<RawFinalizedHeaderMisbehaviour> for Misbehaviour {}
 
-impl<const SYNC_COMMITTEE_SIZE: usize> Protobuf<RawNextSyncCommitteeMisbehaviour>
-    for Misbehaviour<SYNC_COMMITTEE_SIZE>
-{
-}
+impl Protobuf<RawNextSyncCommitteeMisbehaviour> for Misbehaviour {}
 
-impl<const SYNC_COMMITTEE_SIZE: usize> TryFrom<RawFinalizedHeaderMisbehaviour>
-    for Misbehaviour<SYNC_COMMITTEE_SIZE>
-{
+impl TryFrom<RawFinalizedHeaderMisbehaviour> for Misbehaviour {
     type Error = Error;
     fn try_from(value: RawFinalizedHeaderMisbehaviour) -> Result<Self, Self::Error> {
         Ok(Self {
             client_id: ClientId::from_str(&value.client_id).map_err(|_| Error::InvalidClientId)?,
             trusted_sync_committee: value
                 .trusted_sync_committee
-                .ok_or(Error::DecodeError)?
+                .ok_or(Error::decode("misbehavior trusted_sync_committee"))?
                 .try_into()?,
             data: MisbehaviourData::FinalizedHeader(FinalizedHeaderMisbehaviour {
                 consensus_update_1: convert_proto_to_consensus_update(
-                    value.consensus_update_1.ok_or(Error::DecodeError)?,
+                    value
+                        .consensus_update_1
+                        .ok_or(Error::decode("misbehavior consensus_update_1"))?,
                 )?,
                 consensus_update_2: convert_proto_to_consensus_update(
-                    value.consensus_update_2.ok_or(Error::DecodeError)?,
+                    value
+                        .consensus_update_2
+                        .ok_or(Error::decode("misbehaviour consensus_update_2"))?,
                 )?,
             }),
         })
     }
 }
 
-impl<const SYNC_COMMITTEE_SIZE: usize> TryFrom<RawNextSyncCommitteeMisbehaviour>
-    for Misbehaviour<SYNC_COMMITTEE_SIZE>
-{
+impl TryFrom<RawNextSyncCommitteeMisbehaviour> for Misbehaviour {
     type Error = Error;
     fn try_from(value: RawNextSyncCommitteeMisbehaviour) -> Result<Self, Self::Error> {
         Ok(Self {
             client_id: ClientId::from_str(&value.client_id).map_err(|_| Error::InvalidClientId)?,
             trusted_sync_committee: value
                 .trusted_sync_committee
-                .ok_or(Error::DecodeError)?
+                .ok_or(Error::decode(""))?
                 .try_into()?,
             data: MisbehaviourData::NextSyncCommittee(NextSyncCommitteeMisbehaviour {
                 consensus_update_1: convert_proto_to_consensus_update(
-                    value.consensus_update_1.ok_or(Error::DecodeError)?,
+                    value.consensus_update_1.ok_or(Error::decode(""))?,
                 )?,
                 consensus_update_2: convert_proto_to_consensus_update(
-                    value.consensus_update_2.ok_or(Error::DecodeError)?,
+                    value.consensus_update_2.ok_or(Error::decode(""))?,
                 )?,
             }),
         })
     }
 }
 
-impl<const SYNC_COMMITTEE_SIZE: usize> From<Misbehaviour<SYNC_COMMITTEE_SIZE>>
-    for RawFinalizedHeaderMisbehaviour
-{
-    fn from(value: Misbehaviour<SYNC_COMMITTEE_SIZE>) -> Self {
+impl From<Misbehaviour> for RawFinalizedHeaderMisbehaviour {
+    fn from(value: Misbehaviour) -> Self {
         let data = match value.data {
             MisbehaviourData::FinalizedHeader(data) => data,
             _ => panic!("unexpected misbehaviour type"),
@@ -104,10 +96,8 @@ impl<const SYNC_COMMITTEE_SIZE: usize> From<Misbehaviour<SYNC_COMMITTEE_SIZE>>
     }
 }
 
-impl<const SYNC_COMMITTEE_SIZE: usize> From<Misbehaviour<SYNC_COMMITTEE_SIZE>>
-    for RawNextSyncCommitteeMisbehaviour
-{
-    fn from(value: Misbehaviour<SYNC_COMMITTEE_SIZE>) -> Self {
+impl From<Misbehaviour> for RawNextSyncCommitteeMisbehaviour {
+    fn from(value: Misbehaviour) -> Self {
         let data = match value.data {
             MisbehaviourData::NextSyncCommittee(data) => data,
             _ => panic!("unexpected misbehaviour type"),
@@ -121,21 +111,21 @@ impl<const SYNC_COMMITTEE_SIZE: usize> From<Misbehaviour<SYNC_COMMITTEE_SIZE>>
     }
 }
 
-impl<const SYNC_COMMITTEE_SIZE: usize> Protobuf<IBCAny> for Misbehaviour<SYNC_COMMITTEE_SIZE> {}
+impl Protobuf<IBCAny> for Misbehaviour {}
 
-impl<const SYNC_COMMITTEE_SIZE: usize> TryFrom<IBCAny> for Misbehaviour<SYNC_COMMITTEE_SIZE> {
+impl TryFrom<IBCAny> for Misbehaviour {
     type Error = Error;
 
     fn try_from(raw: IBCAny) -> Result<Self, Self::Error> {
         match raw.type_url.as_str() {
             ETHEREUM_FINALIZED_HEADER_MISBEHAVIOUR_TYPE_URL => {
                 RawFinalizedHeaderMisbehaviour::decode(raw.value.as_slice())
-                    .map_err(|_| Error::DecodeError)?
+                    .map_err(|_| Error::decode(""))?
                     .try_into()
             }
             ETHEREUM_NEXT_SYNC_COMMITTEE_MISBEHAVIOUR_TYPE_URL => {
                 RawNextSyncCommitteeMisbehaviour::decode(raw.value.as_slice())
-                    .map_err(|_| Error::DecodeError)?
+                    .map_err(|_| Error::decode(""))?
                     .try_into()
             }
             _ => Err(Error::UnknownTypeUrl),
@@ -143,8 +133,8 @@ impl<const SYNC_COMMITTEE_SIZE: usize> TryFrom<IBCAny> for Misbehaviour<SYNC_COM
     }
 }
 
-impl<const SYNC_COMMITTEE_SIZE: usize> From<Misbehaviour<SYNC_COMMITTEE_SIZE>> for IBCAny {
-    fn from(value: Misbehaviour<SYNC_COMMITTEE_SIZE>) -> Self {
+impl From<Misbehaviour> for IBCAny {
+    fn from(value: Misbehaviour) -> Self {
         match value.data {
             MisbehaviourData::FinalizedHeader(_) => Self {
                 type_url: ETHEREUM_FINALIZED_HEADER_MISBEHAVIOUR_TYPE_URL.to_string(),

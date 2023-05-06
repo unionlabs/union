@@ -13,12 +13,12 @@ crate-type = ["cdylib", "rlib"]
 
 [features]
 default = []
+eth-minimal = []
 
 [dependencies]
 bytes = { version = "1.2.1", default-features = false }
 cosmwasm-schema = "1.2.0"
 cosmwasm-std = { version = "1.2.0", default-features = false, features = ["abort"] }
-cw-storage-plus = "1.0"
 ethereum-consensus = { git = "https://github.com/UnionFi/ethereum-light-client-rs", branch = "dev", default-features = false }
 ethereum-light-client-verifier = { git = "https://github.com/UnionFi/ethereum-light-client-rs", branch = "dev", default-features = false }
 ibc-proto = { git = "https://github.com/UnionFi/ibc-proto-rs", branch = "dev", default-features = false }

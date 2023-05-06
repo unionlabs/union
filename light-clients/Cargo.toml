@@ -6,7 +6,7 @@ members = [
 resolver = "2"
 
 [profile.release]
-opt-level = 3
+opt-level = 's'
 debug = false
 rpath = false
 lto = true

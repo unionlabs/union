@@ -10,8 +10,8 @@ pub enum Error {
     #[error("Unimplemented")]
     Unimplemented,
 
-    #[error("Decode error")]
-    DecodeError,
+    #[error("Decode error: {0}")]
+    DecodeError(String),
 
     #[error("Unknown type url")]
     UnknownTypeUrl,
@@ -36,4 +36,31 @@ pub enum Error {
 
     #[error("No next sync committee")]
     NoNextSyncCommittee,
+
+    #[error("Consensus state not found for {0}-{1}")]
+    ConsensusStateNotFound(u64, u64),
+
+    #[error("Timestamp not set")]
+    TimestampNotSet,
+
+    #[error("Verification error: {0}")]
+    Verification(String),
+
+    #[error("Unexpected timestamp: Expected timestamp {0}, got {1}")]
+    UnexpectedTimestamp(u64, u64),
+
+    #[error("Future period")]
+    FuturePeriod,
+
+    #[error("Cannot generate proof")]
+    CannotGenerateProof,
+
+    #[error("Invalid chain version")]
+    InvalidChainVersion,
+}
+
+impl Error {
+    pub fn decode<S: Into<String>>(s: S) -> Error {
+        Error::DecodeError(s.into())
+    }
 }

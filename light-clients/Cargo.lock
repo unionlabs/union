@@ -247,9 +247,9 @@ dependencies = [
 
 [[package]]
 name = "cpufeatures"
-version = "0.2.6"
+version = "0.2.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "280a9f2d8b3a38871a3c8a46fb80db65e5e5ed97da80c4d08bf27fb63e35e181"
+checksum = "3e4c1eaa2012c47becbbad2ab175484c2a84d1185b566fb2cc5b8707343dfe58"
 dependencies = [
  "libc",
 ]
@@ -306,17 +306,6 @@ dependencies = [
  "rand_core 0.6.4",
  "subtle-ng",
  "zeroize",
-]
-
-[[package]]
-name = "cw-storage-plus"
-version = "1.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "053a5083c258acd68386734f428a5a171b29f7d733151ae83090c6fcc9417ffa"
-dependencies = [
- "cosmwasm-std",
- "schemars",
- "serde",
 ]
 
 [[package]]
@@ -475,7 +464,7 @@ dependencies = [
 [[package]]
 name = "ethereum-consensus"
 version = "0.1.0"
-source = "git+https://github.com/UnionFi/ethereum-light-client-rs?branch=dev#e56a19ba06e05e5b88fa5f828ee0a8ea4f9aa468"
+source = "git+https://github.com/UnionFi/ethereum-light-client-rs?branch=dev#9694aa42e49926ea69c619856e60e3fdfbf52cd6"
 dependencies = [
  "displaydoc",
  "hex",
@@ -491,7 +480,7 @@ dependencies = [
 [[package]]
 name = "ethereum-light-client-verifier"
 version = "0.1.0"
-source = "git+https://github.com/UnionFi/ethereum-light-client-rs?branch=dev#e56a19ba06e05e5b88fa5f828ee0a8ea4f9aa468"
+source = "git+https://github.com/UnionFi/ethereum-light-client-rs?branch=dev#9694aa42e49926ea69c619856e60e3fdfbf52cd6"
 dependencies = [
  "displaydoc",
  "ethereum-consensus",
@@ -738,7 +727,7 @@ dependencies = [
 [[package]]
 name = "ibc-proto"
 version = "0.29.0"
-source = "git+https://github.com/UnionFi/ibc-proto-rs?branch=dev#8b2a802e067f8f7558f6462c02b977d2af28c28e"
+source = "git+https://github.com/UnionFi/ibc-proto-rs?branch=dev#f2b773e8c31a60ab69e1f8e45490fde6a44af515"
 dependencies = [
  "base64 0.21.0",
  "bytes",
@@ -841,9 +830,9 @@ dependencies = [
 
 [[package]]
 name = "libc"
-version = "0.2.141"
+version = "0.2.142"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3304a64d199bb964be99741b7a14d26972741915b3649639149b2479bb46f4b5"
+checksum = "6a987beff54b60ffa6d51982e1aa1146bc42f19bd26be28b0586f252fccf5317"
 
 [[package]]
 name = "log"
@@ -1684,11 +1673,10 @@ dependencies = [
 
 [[package]]
 name = "tracing"
-version = "0.1.37"
+version = "0.1.38"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8ce8c33a8d48bd45d624a6e523445fd21ec13d3653cd51f681abf67418f54eb8"
+checksum = "cf9cf6a813d3f40c88b0b6b6f29a5c95c6cdbf97c1f9cc53fb820200f5ad814d"
 dependencies = [
- "cfg-if",
  "pin-project-lite",
  "tracing-core",
 ]
@@ -1749,7 +1737,6 @@ dependencies = [
  "bytes",
  "cosmwasm-schema",
  "cosmwasm-std",
- "cw-storage-plus",
  "ethereum-consensus",
  "ethereum-light-client-verifier",
  "ibc",

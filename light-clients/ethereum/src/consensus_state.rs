@@ -1,4 +1,4 @@
-use crate::errors::Error;
+use crate::{errors::Error, eth_types::SYNC_COMMITTEE_SIZE};
 use ethereum_consensus::{beacon::Slot, bls::PublicKey, sync_protocol::SyncCommittee};
 use ethereum_light_client_verifier::state::SyncCommitteeView;
 use ibc::core::ics23_commitment::commitment::CommitmentRoot;
@@ -85,9 +85,9 @@ impl TryFrom<IBCAny> for ConsensusState {
     fn try_from(raw: IBCAny) -> Result<Self, Self::Error> {
         match raw.type_url.as_str() {
             ETHEREUM_CONSENSUS_STATE_TYPE_URL => RawConsensusState::decode(raw.value.as_slice())
-                .map_err(|_| Error::DecodeError)?
+                .map_err(|_| Error::decode("when decoding proto consensus state (Any)"))?
                 .try_into()
-                .map_err(|_| Error::DecodeError),
+                .map_err(|_| Error::decode("when converting to consensus state (Any)")),
             _ => Err(Error::UnknownTypeUrl),
         }
     }
@@ -103,13 +103,13 @@ impl From<ConsensusState> for IBCAny {
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
-pub struct TrustedConsensusState<const SYNC_COMMITTEE_SIZE: usize> {
+pub struct TrustedConsensusState {
     state: ConsensusState,
     current_sync_committee: Option<SyncCommittee<SYNC_COMMITTEE_SIZE>>,
     next_sync_committee: Option<SyncCommittee<SYNC_COMMITTEE_SIZE>>,
 }
 
-impl<const SYNC_COMMITTEE_SIZE: usize> TrustedConsensusState<SYNC_COMMITTEE_SIZE> {
+impl TrustedConsensusState {
     pub fn new(
         consensus_state: ConsensusState,
         sync_committee: SyncCommittee<SYNC_COMMITTEE_SIZE>,
@@ -150,9 +150,7 @@ impl<const SYNC_COMMITTEE_SIZE: usize> TrustedConsensusState<SYNC_COMMITTEE_SIZE
     }
 }
 
-impl<const SYNC_COMMITTEE_SIZE: usize> SyncCommitteeView<SYNC_COMMITTEE_SIZE>
-    for TrustedConsensusState<SYNC_COMMITTEE_SIZE>
-{
+impl SyncCommitteeView<SYNC_COMMITTEE_SIZE> for TrustedConsensusState {
     fn current_slot(&self) -> Slot {
         self.state.slot
     }

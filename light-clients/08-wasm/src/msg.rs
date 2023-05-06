@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use cosmwasm_std::Binary;
+use cosmwasm_std::{to_binary, Binary, StdResult};
 use ibc::Height;
 use ibc_proto::ibc::{
     core::client::v1::GenesisMetadata,
@@ -22,6 +22,40 @@ pub struct ClientMessage {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+pub struct ContractResult {
+    pub is_valid: bool,
+    pub error_msg: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub data: Option<Vec<u8>>,
+    pub found_misbehaviour: bool,
+}
+
+impl ContractResult {
+    pub fn valid(data: Option<Vec<u8>>) -> Self {
+        Self {
+            is_valid: true,
+            error_msg: Default::default(),
+            data,
+            found_misbehaviour: false,
+        }
+    }
+
+    pub fn invalid(error_msg: String) -> Self {
+        Self {
+            is_valid: false,
+            error_msg,
+            data: None,
+            found_misbehaviour: true,
+        }
+    }
+
+    pub fn encode(self) -> StdResult<Binary> {
+        to_binary(&self)
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub enum ExecuteMsg {
     VerifyMembership {
         height: Height,
@@ -70,6 +104,7 @@ pub enum ExecuteMsg {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub enum QueryMsg {
     Status {},
 }

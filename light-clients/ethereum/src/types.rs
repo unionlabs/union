@@ -1,22 +1,27 @@
 use crate::{
     commitment::decode_eip1184_rlp_proof,
     errors::Error,
-    update::{new_consensus_update, ConsensusUpdateInfo, ExecutionUpdateInfo, LightClientUpdate},
+    eth_types::{
+        CapellaExecutionPayloadHeader, ConsensusUpdateInfo, LightClientHeader, LightClientUpdate,
+        SYNC_COMMITTEE_SIZE,
+    },
 };
 use ethereum_consensus::{
     beacon::BeaconBlockHeader,
     bls::{PublicKey, Signature},
     sync_protocol::{SyncAggregate, SyncCommittee},
-    types::H256,
+    types::{Address, ByteList, ByteVector, H256, U256},
 };
-
-use ethereum_light_client_verifier::updates::ConsensusUpdate;
+use ethereum_light_client_verifier::updates::{
+    capella::ConsensusUpdateInfo as CapellaConsensusUpdateInfo, ConsensusUpdate,
+};
 use ibc::Height;
 use ibc_proto::ibc::{
     core::client::v1::Height as ProtoHeight,
     lightclients::ethereum::v1::{
         AccountUpdate as ProtoAccountUpdate, BeaconBlockHeader as ProtoBeaconBlockHeader,
-        ExecutionUpdate as ProtoExecutionUpdate, LightClientUpdate as ProtoLightClientUpdate,
+        ExecutionPayloadHeader as ProtoExecutionPayloadHeader,
+        LightClientHeader as ProtoLightClientHeader, LightClientUpdate as ProtoLightClientUpdate,
         SyncAggregate as ProtoSyncAggregate, SyncCommittee as ProtoSyncCommittee,
         TrustedSyncCommittee as ProtoTrustedSyncCommittee,
     },
@@ -24,7 +29,7 @@ use ibc_proto::ibc::{
 use ssz_rs::{Bitvector, Deserialize, Vector};
 
 #[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
-pub struct TrustedSyncCommittee<const SYNC_COMMITTEE_SIZE: usize> {
+pub struct TrustedSyncCommittee {
     /// height(i.e. execution's block number) of consensus state to trusted sync committee stored at
     pub height: Height,
     /// trusted sync committee
@@ -33,9 +38,7 @@ pub struct TrustedSyncCommittee<const SYNC_COMMITTEE_SIZE: usize> {
     pub is_next: bool,
 }
 
-impl<const SYNC_COMMITTEE_SIZE: usize> TryFrom<ProtoTrustedSyncCommittee>
-    for TrustedSyncCommittee<SYNC_COMMITTEE_SIZE>
-{
+impl TryFrom<ProtoTrustedSyncCommittee> for TrustedSyncCommittee {
     type Error = Error;
 
     fn try_from(value: ProtoTrustedSyncCommittee) -> Result<Self, Error> {
@@ -44,12 +47,16 @@ impl<const SYNC_COMMITTEE_SIZE: usize> TryFrom<ProtoTrustedSyncCommittee>
                 value
                     .trusted_height
                     .as_ref()
-                    .ok_or(Error::DecodeError)?
+                    .ok_or(Error::decode(
+                        "no `trusted_height` in `RawTrustedSyncCommittee`",
+                    ))?
                     .revision_number,
                 value
                     .trusted_height
                     .as_ref()
-                    .ok_or(Error::DecodeError)?
+                    .ok_or(Error::decode(
+                        "no `trusted_height` in `RawTrustedSyncCommittee`",
+                    ))?
                     .revision_height,
             )
             .map_err(|_| Error::InvalidHeight)?,
@@ -58,18 +65,22 @@ impl<const SYNC_COMMITTEE_SIZE: usize> TryFrom<ProtoTrustedSyncCommittee>
                     value
                         .sync_committee
                         .as_ref()
-                        .ok_or(Error::DecodeError)?
+                        .ok_or(Error::decode(
+                            "no `sync_committee` in `RawTrustedSyncCommittee`",
+                        ))?
                         .pubkeys
                         .clone()
                         .into_iter()
-                        .map(|pk| PublicKey::try_from(pk))
+                        .map(PublicKey::try_from)
                         .collect::<Result<Vec<PublicKey>, _>>()
                         .map_err(|_| Error::InvalidPublicKey)?,
                 ),
                 aggregate_pubkey: PublicKey::try_from(
                     value
                         .sync_committee
-                        .ok_or(Error::DecodeError)?
+                        .ok_or(Error::decode(
+                            "no `sync_committee` in `RawTrustedSyncCommittee`",
+                        ))?
                         .aggregate_pubkey,
                 )
                 .map_err(|_| Error::InvalidPublicKey)?,
@@ -79,10 +90,8 @@ impl<const SYNC_COMMITTEE_SIZE: usize> TryFrom<ProtoTrustedSyncCommittee>
     }
 }
 
-impl<const SYNC_COMMITTEE_SIZE: usize> From<TrustedSyncCommittee<SYNC_COMMITTEE_SIZE>>
-    for ProtoTrustedSyncCommittee
-{
-    fn from(value: TrustedSyncCommittee<SYNC_COMMITTEE_SIZE>) -> Self {
+impl From<TrustedSyncCommittee> for ProtoTrustedSyncCommittee {
+    fn from(value: TrustedSyncCommittee) -> Self {
         Self {
             trusted_height: Some(ProtoHeight {
                 revision_number: value.height.revision_number(),
@@ -137,7 +146,7 @@ fn encode_account_proof(bz: Vec<Vec<u8>>) -> Vec<u8> {
     stream.out().freeze().into()
 }
 
-pub(crate) fn convert_proto_to_header(
+pub(crate) fn convert_proto_to_beacon_header(
     header: &ProtoBeaconBlockHeader,
 ) -> Result<BeaconBlockHeader, Error> {
     Ok(BeaconBlockHeader {
@@ -149,7 +158,60 @@ pub(crate) fn convert_proto_to_header(
     })
 }
 
-pub(crate) fn convert_header_to_proto(header: &BeaconBlockHeader) -> ProtoBeaconBlockHeader {
+pub(crate) fn convert_proto_to_header(
+    header: &ProtoLightClientHeader,
+) -> Result<LightClientHeader, Error> {
+    let execution = header
+        .execution
+        .clone()
+        .ok_or(Error::decode("no `execution` in `RawLightClientHeader`"))?;
+
+    Ok(LightClientHeader {
+        beacon: convert_proto_to_beacon_header(
+            header
+                .beacon
+                .as_ref()
+                .ok_or(Error::decode("no `beacon` in `RawLightClientHeader`"))?,
+        )?,
+        execution: CapellaExecutionPayloadHeader {
+            parent_hash: H256::from_slice(&execution.parent_hash),
+            fee_recipient: Address::try_from(execution.fee_recipient.as_slice()).map_err(|_| {
+                Error::decode("cannot parse `fee_recipient` in `RawLightClientHeader`")
+            })?,
+            state_root: H256::from_slice(&execution.state_root),
+            receipts_root: H256::from_slice(&execution.receipts_root),
+            logs_bloom: ByteVector::try_from(execution.logs_bloom.as_slice()).map_err(|_| {
+                Error::decode("cannot parse `logs_bloom` in `RawLightClientHeader`")
+            })?,
+            prev_randao: H256::from_slice(&execution.prev_randao),
+            block_number: execution.block_number.into(),
+            gas_limit: execution.gas_limit.into(),
+            gas_used: execution.gas_used.into(),
+            timestamp: execution.timestamp.into(),
+            extra_data: ByteList::try_from(execution.extra_data.as_slice()).map_err(|_| {
+                Error::decode("cannot parse `extra_data` in `RawLightClientHeader`")
+            })?,
+            base_fee_per_gas: U256::try_from_bytes_le(execution.base_fee_per_gas.as_slice())
+                .map_err(|_| {
+                    Error::decode("cannot parse `base_fee_per_gas` in `RawLightClientHeader`")
+                })?,
+            block_hash: H256::from_slice(&execution.block_hash),
+            transactions_root: H256::from_slice(&execution.transactions_root),
+            withdrawals_root: H256::from_slice(&execution.withdrawals_root),
+        },
+        execution_branch: header
+            .execution_branch
+            .iter()
+            .map(|h| H256::from_slice(h))
+            .collect::<Vec<H256>>()
+            .try_into()
+            .map_err(|_| {
+                Error::decode("cannot parse `execution_branch` in `RawLightClientHeader`")
+            })?,
+    })
+}
+
+pub(crate) fn convert_beacon_header_to_proto(header: &BeaconBlockHeader) -> ProtoBeaconBlockHeader {
     ProtoBeaconBlockHeader {
         slot: header.slot.into(),
         proposer_index: header.proposer_index.into(),
@@ -159,45 +221,35 @@ pub(crate) fn convert_header_to_proto(header: &BeaconBlockHeader) -> ProtoBeacon
     }
 }
 
-pub(crate) fn convert_proto_to_execution_update(
-    execution_update: ProtoExecutionUpdate,
-) -> ExecutionUpdateInfo {
-    ExecutionUpdateInfo {
-        state_root: H256::from_slice(&execution_update.state_root),
-        state_root_branch: execution_update
-            .state_root_branch
-            .into_iter()
-            .map(|n| H256::from_slice(&n))
-            .collect(),
-        block_number: execution_update.block_number.into(),
-        block_number_branch: execution_update
-            .block_number_branch
-            .into_iter()
-            .map(|n| H256::from_slice(&n))
-            .collect(),
-    }
-}
-
-pub(crate) fn convert_execution_update_to_proto(
-    execution_update: ExecutionUpdateInfo,
-) -> ProtoExecutionUpdate {
-    ProtoExecutionUpdate {
-        state_root: execution_update.state_root.as_bytes().into(),
-        state_root_branch: execution_update
-            .state_root_branch
-            .into_iter()
-            .map(|n| n.as_bytes().to_vec())
-            .collect(),
-        block_number: execution_update.block_number.into(),
-        block_number_branch: execution_update
-            .block_number_branch
-            .into_iter()
-            .map(|n| n.as_bytes().to_vec())
+pub(crate) fn convert_header_to_proto(header: &LightClientHeader) -> ProtoLightClientHeader {
+    ProtoLightClientHeader {
+        beacon: Some(convert_beacon_header_to_proto(&header.beacon)),
+        execution: Some(ProtoExecutionPayloadHeader {
+            parent_hash: header.execution.parent_hash.as_bytes().into(),
+            fee_recipient: header.execution.fee_recipient.0.into(),
+            state_root: header.execution.state_root.as_bytes().into(),
+            receipts_root: header.execution.receipts_root.as_bytes().into(),
+            logs_bloom: header.execution.logs_bloom.as_ref().into(),
+            prev_randao: header.execution.prev_randao.as_bytes().into(),
+            block_number: header.execution.block_number.into(),
+            gas_limit: header.execution.gas_limit.into(),
+            gas_used: header.execution.gas_used.into(),
+            timestamp: header.execution.timestamp.into(),
+            extra_data: header.execution.extra_data.as_ref().into(),
+            base_fee_per_gas: header.execution.base_fee_per_gas.to_bytes_le(),
+            block_hash: header.execution.block_hash.as_bytes().into(),
+            transactions_root: header.execution.transactions_root.as_bytes().into(),
+            withdrawals_root: header.execution.transactions_root.as_bytes().into(),
+        }),
+        execution_branch: header
+            .execution_branch
+            .iter()
+            .map(|h| h.as_bytes().into())
             .collect(),
     }
 }
 
-pub(crate) fn convert_sync_aggregate_to_proto<const SYNC_COMMITTEE_SIZE: usize>(
+pub(crate) fn convert_sync_aggregate_to_proto(
     sync_aggregate: SyncAggregate<SYNC_COMMITTEE_SIZE>,
 ) -> ProtoSyncAggregate {
     ProtoSyncAggregate {
@@ -210,26 +262,27 @@ pub(crate) fn convert_sync_aggregate_to_proto<const SYNC_COMMITTEE_SIZE: usize>(
     }
 }
 
-pub(crate) fn convert_proto_sync_aggregate<const SYNC_COMMITTEE_SIZE: usize>(
+pub(crate) fn convert_proto_sync_aggregate(
     sync_aggregate: ProtoSyncAggregate,
 ) -> Result<SyncAggregate<SYNC_COMMITTEE_SIZE>, Error> {
     Ok(SyncAggregate {
         sync_committee_bits: Bitvector::<SYNC_COMMITTEE_SIZE>::deserialize(
             sync_aggregate.sync_committee_bits.as_slice(),
         )
-        .map_err(|_| Error::DecodeError)?,
+        .map_err(|_| Error::decode("cannot parse `sync_committee_bits` in `RawSyncAggregate`"))?,
         sync_committee_signature: Signature::try_from(sync_aggregate.sync_committee_signature)
-            .map_err(|_| Error::DecodeError)?,
+            .map_err(|_| {
+                Error::decode("cannot parse `sync_committee_signature` in `RawSyncAggregate`")
+            })?,
     })
 }
 
-pub(crate) fn convert_consensus_update_to_proto<const SYNC_COMMITTEE_SIZE: usize>(
-    consensus_update: ConsensusUpdateInfo<SYNC_COMMITTEE_SIZE>,
+pub(crate) fn convert_consensus_update_to_proto(
+    consensus_update: ConsensusUpdateInfo,
 ) -> ProtoLightClientUpdate {
-    let finalized_beacon_header_branch = consensus_update.finalized_beacon_header_branch().clone();
-    let sync_aggregate = consensus_update.light_client_update.sync_aggregate.clone();
+    let sync_aggregate = consensus_update.0.sync_aggregate.clone();
     let signature_slot = consensus_update.signature_slot();
-    let light_client_update = consensus_update.light_client_update;
+    let light_client_update = consensus_update.0;
 
     ProtoLightClientUpdate {
         attested_header: Some(convert_header_to_proto(
@@ -247,37 +300,32 @@ pub(crate) fn convert_consensus_update_to_proto<const SYNC_COMMITTEE_SIZE: usize
                 branch.into_iter().map(|n| n.as_bytes().to_vec()).collect()
             }),
         finalized_header: Some(convert_header_to_proto(
-            &light_client_update.finalized_header.0,
+            &light_client_update.finalized_header,
         )),
-        finalized_header_branch: finalized_beacon_header_branch
-            .into_iter()
-            .map(|n| n.as_bytes().to_vec())
-            .collect(),
-        finalized_execution_root: consensus_update.finalized_execution_root.as_bytes().into(),
-        finalized_execution_branch: consensus_update
-            .finalized_execution_branch
-            .into_iter()
-            .map(|n| n.as_bytes().to_vec())
+        finality_branch: light_client_update
+            .finality_branch
+            .iter()
+            .map(|h| h.as_bytes().into())
             .collect(),
         sync_aggregate: Some(convert_sync_aggregate_to_proto(sync_aggregate)),
         signature_slot: signature_slot.into(),
     }
 }
 
-pub(crate) fn convert_proto_to_consensus_update<const SYNC_COMMITTEE_SIZE: usize>(
+pub(crate) fn convert_proto_to_consensus_update(
     consensus_update: ProtoLightClientUpdate,
-) -> Result<ConsensusUpdateInfo<SYNC_COMMITTEE_SIZE>, Error> {
+) -> Result<ConsensusUpdateInfo, Error> {
     let attested_header = convert_proto_to_header(
         consensus_update
             .attested_header
             .as_ref()
-            .ok_or(Error::DecodeError)?,
+            .ok_or(Error::decode("no `attested_header` in consensus update"))?,
     )?;
     let finalized_header = convert_proto_to_header(
         consensus_update
             .finalized_header
             .as_ref()
-            .ok_or(Error::DecodeError)?,
+            .ok_or(Error::decode("no `finalized_header` in consensus update"))?,
     )?;
 
     let light_client_update = LightClientUpdate {
@@ -286,11 +334,12 @@ pub(crate) fn convert_proto_to_consensus_update<const SYNC_COMMITTEE_SIZE: usize
             || consensus_update
                 .next_sync_committee
                 .as_ref()
-                .ok_or(Error::DecodeError)?
+                .ok_or(Error::decode(
+                    "no `next_sync_committee` in consensus update",
+                ))?
                 .pubkeys
-                .len()
-                == 0
-            || consensus_update.next_sync_committee_branch.len() == 0
+                .is_empty()
+            || consensus_update.next_sync_committee_branch.is_empty()
         {
             None
         } else {
@@ -300,17 +349,21 @@ pub(crate) fn convert_proto_to_consensus_update<const SYNC_COMMITTEE_SIZE: usize
                         consensus_update
                             .next_sync_committee
                             .clone()
-                            .ok_or(Error::DecodeError)?
+                            .ok_or(Error::decode(
+                                "no `next_sync_committee` in consensus update",
+                            ))?
                             .pubkeys
                             .into_iter()
-                            .map(|pk| PublicKey::try_from(pk))
+                            .map(PublicKey::try_from)
                             .collect::<Result<Vec<PublicKey>, _>>()
                             .map_err(|_| Error::InvalidPublicKey)?,
                     ),
                     aggregate_pubkey: PublicKey::try_from(
                         consensus_update
                             .next_sync_committee
-                            .ok_or(Error::DecodeError)?
+                            .ok_or(Error::decode(
+                                "no `next_sync_committee` in consensus update",
+                            ))?
                             .aggregate_pubkey,
                     )
                     .map_err(|_| Error::InvalidPublicKey)?,
@@ -318,25 +371,23 @@ pub(crate) fn convert_proto_to_consensus_update<const SYNC_COMMITTEE_SIZE: usize
                 decode_branch(consensus_update.next_sync_committee_branch),
             ))
         },
-        finalized_header: (
-            finalized_header,
-            decode_branch(consensus_update.finalized_header_branch),
-        ),
+        finalized_header,
+        finality_branch: consensus_update
+            .finality_branch
+            .iter()
+            .map(|h| H256::from_slice(h))
+            .collect::<Vec<_>>()
+            .try_into()
+            .map_err(|_| Error::decode("cannot parse `finality_branch` in consensus update"))?,
         sync_aggregate: convert_proto_sync_aggregate(
-            consensus_update.sync_aggregate.ok_or(Error::DecodeError)?,
+            consensus_update
+                .sync_aggregate
+                .ok_or(Error::decode("no `sync_aggregate` in consensus update"))?,
         )?,
         signature_slot: consensus_update.signature_slot.into(),
     };
 
-    Ok(new_consensus_update(
-        light_client_update,
-        H256::from_slice(&consensus_update.finalized_execution_root),
-        consensus_update
-            .finalized_execution_branch
-            .into_iter()
-            .map(|n| H256::from_slice(&n))
-            .collect(),
-    ))
+    Ok(CapellaConsensusUpdateInfo(light_client_update))
 }
 
 pub(crate) fn decode_branch<const N: usize>(bz: Vec<Vec<u8>>) -> [H256; N]
