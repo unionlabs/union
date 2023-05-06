@@ -556,6 +556,9 @@ func New(
 	// we prefer to be more strict in what arguments the modules expect.
 	skipGenesisInvariants := cast.ToBool(appOpts.Get(crisis.FlagSkipGenesisInvariants))
 
+	app.setupUpgradeStoreLoaders()
+	app.setupUpgradeHandlers()
+
 	// NOTE: Any module instantiated in the module manager that is later modified
 	// must be passed by reference here.
 
