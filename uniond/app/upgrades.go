@@ -10,7 +10,7 @@ import (
 var Upgrades = []upgrades.Upgrade{v0_3_0.Upgrade}
 
 // configure store loader that checks if version == upgradeHeight and applies store upgrades
-func (app *App) setupUpgradeStoreLoaders() {
+func (app *UnionApp) setupUpgradeStoreLoaders() {
 	upgradeInfo, err := app.UpgradeKeeper.ReadUpgradeInfoFromDisk()
 	if err != nil {
 		panic(fmt.Sprintf("failed to read upgrade info from disk %s", err))
@@ -27,7 +27,7 @@ func (app *App) setupUpgradeStoreLoaders() {
 	}
 }
 
-func (app *App) setupUpgradeHandlers() {
+func (app *UnionApp) setupUpgradeHandlers() {
 	for _, upgrade := range Upgrades {
 		app.UpgradeKeeper.SetUpgradeHandler(
 			upgrade.UpgradeName,
