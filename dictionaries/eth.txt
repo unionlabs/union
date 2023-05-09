@@ -1,2 +1,4 @@
 ethash
 chainsafe
+teku
+prysm

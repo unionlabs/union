@@ -21,6 +21,10 @@
       url = "github:shazow/foundry.nix/monthly";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    ethereum-nix = {
+      url = "github:nix-community/ethereum.nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
   outputs = inputs@{ flake-parts, ... }:
     flake-parts.lib.mkFlake { inherit inputs; } {
@@ -30,7 +34,6 @@
         ./uniond/uniond.nix
         ./uniond/proto.nix
         ./docs/docs.nix
-        ./tools/lodestar-cli/lodestar-cli.nix
         ./networks/devnet.nix
         ./networks/genesis/devnet.nix
 
@@ -132,8 +135,11 @@
                 inputs.foundry.defaultPackage.${system}
                 pkgs.solc
                 pkgs.go-ethereum
-                self'.packages.lodestar-cli
-              ];
+              ] ++
+                (with inputs.ethereum-nix.packages.${system}; [
+                  teku
+                  prysm
+                ]);
             });
           };
 
