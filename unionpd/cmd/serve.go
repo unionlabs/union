@@ -10,14 +10,14 @@ import (
 
 const (
 	flagR1CS = "cs-path"
-	flagPK = "pk-path"
-	flagVK = "vk-path"
+	flagPK   = "pk-path"
+	flagVK   = "vk-path"
 )
 
 func ServeCmd() *cobra.Command {
 	var cmd = &cobra.Command{
-		Use:   "serve [uri]",
-		Args:  cobra.ExactArgs(1),
+		Use:  "serve [uri]",
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			uri := args[0]
 			lis, err := net.Listen("tcp", uri)
@@ -52,4 +52,3 @@ func ServeCmd() *cobra.Command {
 	cmd.Flags().String(flagVK, "vk.bin", "Path to the verifying key.")
 	return cmd
 }
-
