@@ -53,7 +53,7 @@ var ProveCmd = &cobra.Command{
 				panic(err)
 			}
 			return &types.SimpleValidator{
-				PubKey: &protoPK,
+				PubKey:      &protoPK,
 				VotingPower: sdk.TokensToConsensusPower(sdk.NewIntFromBigInt(tokens), sdk.DefaultPowerReduction),
 			}
 		}
@@ -79,7 +79,7 @@ var ProveCmd = &cobra.Command{
 					Hash:  partSetHeaderHash,
 				},
 			},
-			ChainID:   "union-devnet-1",
+			ChainID: "union-devnet-1",
 		}
 
 		validators := []*types.SimpleValidator{
@@ -116,12 +116,12 @@ var ProveCmd = &cobra.Command{
 			TrustedCommit: &provergrpc.ValidatorSetCommit{
 				Validators: trustedValidators,
 				Signatures: trustedSignatures,
-				Bitmap: trustedBitmap.Bytes(),
+				Bitmap:     trustedBitmap.Bytes(),
 			},
 			UntrustedCommit: &provergrpc.ValidatorSetCommit{
 				Validators: untrustedValidators,
 				Signatures: untrustedSignatures,
-				Bitmap: untrustedBitmap.Bytes(),
+				Bitmap:     untrustedBitmap.Bytes(),
 			},
 		})
 		if err != nil {

@@ -9,9 +9,9 @@ import (
 )
 
 type Circuit struct {
-	Input lightclient.TendermintLightClientInput
+	Input           lightclient.TendermintLightClientInput
 	ExpectedValRoot [2]frontend.Variable `gnark:",public"`
-	Message                  fields_bn254.E2      `gnark:",public"`
+	Message         fields_bn254.E2      `gnark:",public"`
 }
 
 func (circuit *Circuit) Define(api frontend.API) error {

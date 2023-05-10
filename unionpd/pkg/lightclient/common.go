@@ -145,7 +145,7 @@ func (lc *TendermintLightClientAPI) Verify(message *gadget.G2Affine, expectedVal
 	var g1Zero curve.G1Affine
 	g1Zero.X.SetZero()
 	g1Zero.Y.SetZero()
-	emulatedG1Zero  := gadget.NewG1Affine(g1Zero)
+	emulatedG1Zero := gadget.NewG1Affine(g1Zero)
 	aggregatedPublicKey := emulatedG1Zero
 
 	leafHashes := make([][]frontend.Variable, MaxVal)

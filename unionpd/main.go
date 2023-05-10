@@ -3,16 +3,17 @@ package main
 import (
 	"bufio"
 	"bytes"
-	"crypto/hmac"
+	provercmd "cometbls-prover/cmd"
 	"cometbls-prover/pkg/lightclient"
 	lcgadget "cometbls-prover/pkg/lightclient/nonadjacent"
+	"crypto/hmac"
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
-	"math/big"
 	cometbn254 "github.com/cometbft/cometbft/crypto/bn254"
 	ce "github.com/cometbft/cometbft/crypto/encoding"
 	"github.com/cometbft/cometbft/crypto/merkle"
+	"github.com/cometbft/cometbft/libs/protoio"
 	"github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/consensys/gnark-crypto/ecc"
 	curve "github.com/consensys/gnark-crypto/ecc/bn254"
@@ -27,10 +28,9 @@ import (
 	gadget "github.com/consensys/gnark/std/algebra/emulated/sw_bn254"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/holiman/uint256"
-	"golang.org/x/crypto/sha3"
-	"github.com/cometbft/cometbft/libs/protoio"
 	"github.com/spf13/cobra"
-	provercmd "cometbls-prover/cmd"
+	"golang.org/x/crypto/sha3"
+	"math/big"
 )
 
 const NbOfVal = 4
@@ -251,7 +251,7 @@ func HashToG2(msg []byte) curve.G2Affine {
 	return point
 }
 
-func main()  {
+func main() {
 	var rootCmd = &cobra.Command{Use: "cometbls-prover"}
 	rootCmd.AddCommand(provercmd.ServeCmd)
 	rootCmd.AddCommand(provercmd.ProveCmd)
@@ -280,7 +280,7 @@ func prove() {
 				Hash:  partSetHeaderHash,
 			},
 		},
-		ChainID:   "union-devnet-1",
+		ChainID: "union-devnet-1",
 	}
 
 	bz, err := protoio.MarshalDelimited(&canonicalVote)
@@ -288,13 +288,12 @@ func prove() {
 		panic(err)
 	}
 
-	fmt.Printf("Signed vote: %X\n", bz);
-
+	fmt.Printf("Signed vote: %X\n", bz)
 
 	HMF := HashToField2(bz)
 
-	fmt.Printf("Hashed messageX: %X\n", HMF.A0.Bytes());
-	fmt.Printf("Hashed messageY: %X\n", HMF.A1.Bytes());
+	fmt.Printf("Hashed messageX: %X\n", HMF.A0.Bytes())
+	fmt.Printf("Hashed messageY: %X\n", HMF.A1.Bytes())
 
 	HM := HashToG2(bz)
 
@@ -539,13 +538,12 @@ func prove() {
 	case *backend_bn254.ProvingKey:
 		switch _vk := vk.(type) {
 		case *backend_bn254.VerifyingKey:
-			_pk.CommitmentKey = _vk.CommitmentKey;
-			commitment = _vk.CommitmentInfo;
-			break;
+			_pk.CommitmentKey = _vk.CommitmentKey
+			commitment = _vk.CommitmentInfo
+			break
 		}
-		break;
+		break
 	}
-
 
 	// saveTo := func(file string, x io.WriterTo) {
 	// 	fmt.Printf("Saving %s\n", file)
@@ -576,18 +574,17 @@ func prove() {
 	var commitmentHash []byte
 	var proofCommitment []byte
 	switch _proof := proof.(type) {
-		case *backend_bn254.Proof:
+	case *backend_bn254.Proof:
 		if commitment.Is() {
 			res, err := fr.Hash(commitment.SerializeCommitment(_proof.Commitment.Marshal(), []*big.Int{}, (fr.Bits-1)/8+1), []byte(constraint.CommitmentDst), 1)
 			if err != nil {
-				panic(err);
+				panic(err)
 			}
-			proofCommitment = _proof.Commitment.Marshal();
-			commitmentHash = res[0].Marshal();
+			proofCommitment = _proof.Commitment.Marshal()
+			commitmentHash = res[0].Marshal()
 		}
-		break;
+		break
 	}
-
 
 	var buffer bytes.Buffer
 	mem := bufio.NewWriter(&buffer)

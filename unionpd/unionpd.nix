@@ -39,27 +39,28 @@
         rev = "6774ccbbc3f182f6ae3a32dca29e1da489ad8a8f";
         sha256 = "sha256-TME4wkdmqrb0Shuc5uFqSGSoDaMhM9YJv9kvTam7c9I=";
       };
-    in {
+    in
+    {
       packages.generate-prover-proto = pkgs.writeShellApplication {
         name = "generate-prover-proto";
         runtimeInputs = [ pkgs.protobuf pkgs.protoc-gen-go pkgs.protoc-gen-go-grpc ];
         text = ''
-            find ${../unionpd/proto} -type f -regex ".*proto" |\
-            while read -r file; do
-              echo "Generating $file"
-              protoc \
-                -I"${cometbls-src}/proto" \
-                -I"${cosmossdk-src}/proto" \
-                -I"${ibcgo-src}/proto" \
-                -I"${cosmosproto-src}/proto" \
-                -I"${ics23-src}/proto" \
-                -I"${../unionpd/proto}" \
-                -I"${googleapis-src}" \
-                -I"${gogoproto-src}" \
-                --go_out=./grpc --go_opt=paths=source_relative \
-                --go-grpc_out=./grpc --go-grpc_opt=paths=source_relative \
-                "$file"
-            done
+          find ${../unionpd/proto} -type f -regex ".*proto" |\
+          while read -r file; do
+            echo "Generating $file"
+            protoc \
+              -I"${cometbls-src}/proto" \
+              -I"${cosmossdk-src}/proto" \
+              -I"${ibcgo-src}/proto" \
+              -I"${cosmosproto-src}/proto" \
+              -I"${ics23-src}/proto" \
+              -I"${../unionpd/proto}" \
+              -I"${googleapis-src}" \
+              -I"${gogoproto-src}" \
+              --go_out=./grpc --go_opt=paths=source_relative \
+              --go-grpc_out=./grpc --go-grpc_opt=paths=source_relative \
+              "$file"
+          done
         '';
       };
     };

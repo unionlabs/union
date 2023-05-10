@@ -3,13 +3,13 @@ package main
 import (
 	"crypto/rand"
 	"fmt"
+	"github.com/consensys/gnark-crypto/ecc"
+	backend "github.com/consensys/gnark/backend/groth16"
+	backend_bn254 "github.com/consensys/gnark/backend/groth16/bn254"
+	"github.com/consensys/gnark/frontend"
+	"github.com/consensys/gnark/frontend/cs/r1cs"
 	"math/big"
 	"testing"
-	"github.com/consensys/gnark-crypto/ecc"
-	"github.com/consensys/gnark/frontend"
-	backend "github.com/consensys/gnark/backend/groth16"
-	"github.com/consensys/gnark/frontend/cs/r1cs"
-	backend_bn254 "github.com/consensys/gnark/backend/groth16/bn254"
 	// curve "github.com/consensys/gnark-crypto/ecc/bn254"
 )
 
@@ -59,9 +59,9 @@ func TestTest(t *testing.T) {
 			_ = _vk
 			_pk.G1.Alpha.ScalarMultiplicationBase(big.NewInt(2))
 			_vk.G1.Alpha.ScalarMultiplicationBase(big.NewInt(2))
-			break;
+			break
 		}
-		break;
+		break
 	}
 
 	privateWitness, err := frontend.NewWitness(&testCircuit{X: 1}, ecc.BN254.ScalarField())

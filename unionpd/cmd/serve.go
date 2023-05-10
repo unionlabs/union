@@ -1,12 +1,12 @@
 package cmd
 
 import (
+	provergrpc "cometbls-prover/grpc/api/v1"
 	"fmt"
-	"log"
-	"net"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
-	provergrpc "cometbls-prover/grpc/api/v1"
+	"log"
+	"net"
 )
 
 var ServeCmd = &cobra.Command{
