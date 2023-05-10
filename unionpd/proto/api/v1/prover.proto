@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+package union.prover.api.v1;
+
+import "google/protobuf/timestamp.proto";
+import "tendermint/types/types.proto";
+import "tendermint/types/validator.proto";
+import "tendermint/types/canonical.proto";
+
+option go_package = "union/prover/rpc/grpc";
+
+message ZeroKnowledgeProof {
+  bytes content = 1;
+}
+
+message ValidatorSetCommit {
+  repeated .tendermint.types.SimpleValidator validators = 1;
+  repeated bytes signatures = 2;
+  bytes bitmap = 3;
+}
+
+message ProveRequest {
+  .tendermint.types.CanonicalVote vote = 1;
+  ValidatorSetCommit trusted_commit = 2;
+  ValidatorSetCommit untrusted_commit = 3;
+}
+
+message ProveResponse {
+  ZeroKnowledgeProof proof = 1;
+  bytes untrusted_validator_set_root = 2;
+}
+
+service UnionProverAPI {
+  rpc Prove(ProveRequest) returns (ProveResponse);
+}
+
