@@ -44,7 +44,7 @@ abstract contract ICS20Transfer is Context, IICS20Transfer {
                 amount: Strings.toString(amount),
                 sender: string(abi.encodePacked(_msgSender())),
                 receiver: string(abi.encodePacked(receiver)),
-                // TODO: allow for users to dispatch packet?
+                // TODO: allow for users to dispatch memo?
                 memo: ""
             }),
             sourcePort,

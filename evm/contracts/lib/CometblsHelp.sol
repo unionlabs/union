@@ -41,12 +41,12 @@ library CometblsHelp {
     bytes1 constant ONE = bytes1(uint8(1));
 
     // Specialized https://en.wikipedia.org/wiki/HMAC for keccak256 with `CometBLS` as key.
-    function hmac(bytes memory message) internal pure returns (bytes32) {
+    function hmac_keccak(bytes memory message) internal pure returns (bytes32) {
         return keccak256(abi.encodePacked(HMAC_O, keccak256(abi.encodePacked(HMAC_I, message))));
     }
 
     function hashToField(bytes memory message) internal pure returns (uint256) {
-        return (uint256(hmac(message)) % PRIME_Q_MINUS_ONE) + 1;
+        return (uint256(hmac_keccak(message)) % PRIME_Q_MINUS_ONE) + 1;
     }
 
     function hashToField2(bytes memory message) internal pure returns (uint256, uint256) {
@@ -106,6 +106,7 @@ library CometblsHelp {
 
     function merkleRoot(TendermintTypesHeader.Data memory h) internal view returns (bytes32) {
         require(h.validators_hash.length > 0, "Tendermint: hash can't be empty");
+        uint256 gas = gasleft();
         bytes memory hbz = TendermintVersionConsensus.encode(h.version);
         bytes memory pbt = GoogleProtobufTimestamp.encode(h.time);
         bytes memory bzbi = TendermintTypesBlockID.encode(h.last_block_id);
@@ -125,7 +126,8 @@ library CometblsHelp {
             MerkleTree.leafHash(Encoder.cdcEncode(h.evidence_hash)),
             MerkleTree.leafHash(Encoder.cdcEncode(h.proposer_address))
         ];
-        uint256 gas = gasleft();
+        console.log("Cometbls: normalizedHeader(): ", gas - gasleft());
+        gas = gasleft();
         bytes32 root = MerkleTree.optimizedBlockRoot(normalizedHeader);
         console.log("Cometbls: hashFromByteSlices(): ", gas - gasleft());
         return root;

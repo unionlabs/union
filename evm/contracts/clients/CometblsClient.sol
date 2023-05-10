@@ -5,6 +5,7 @@ import "../core/02-client/ILightClient.sol";
 import "../core/02-client/IBCHeight.sol";
 import "../proto/ibc/core/client/v1/client.sol";
 import "../proto/ibc/lightclients/tendermint/v1/tendermint.sol";
+import "../proto/cosmos/ics23/v1/proofs.sol";
 import "../proto/tendermint/types/types.sol";
 import "../proto/tendermint/types/canonical.sol";
 import "../proto/union/ibc/lightclients/cometbls/v1/cometbls.sol";
@@ -12,6 +13,7 @@ import "../proto/ibc/lightclients/wasm/v1/wasm.sol";
 import {GoogleProtobufAny as Any} from "../proto/GoogleProtobufAny.sol";
 import "solidity-bytes-utils/contracts/BytesLib.sol";
 import "../lib/CometblsHelp.sol";
+import "../lib/ICS23.sol";
 import "../core/IZKVerifier.sol";
 import "forge-std/Test.sol";
 
@@ -32,6 +34,34 @@ contract CometblsClient is ILightClient {
 
     address internal ibcHandler;
     IZKVerifier internal verifier;
+
+    CosmosIcs23V1ProofSpec.Data private _tendermintProofSpec = CosmosIcs23V1ProofSpec.Data({
+        leaf_spec: CosmosIcs23V1LeafOp.Data({
+            prefix: hex"00",
+            prehash_key: CosmosIcs23V1GlobalEnums.HashOp.NO_HASH,
+            hash: CosmosIcs23V1GlobalEnums.HashOp.SHA256,
+            prehash_value: CosmosIcs23V1GlobalEnums.HashOp.SHA256,
+            length: CosmosIcs23V1GlobalEnums.LengthOp.VAR_PROTO
+        }),
+        inner_spec: CosmosIcs23V1InnerSpec.Data({
+            child_order: getTmChildOrder(),
+            child_size: 32,
+            min_prefix_length: 1,
+            max_prefix_length: 1,
+            empty_child: abi.encodePacked(),
+            hash: CosmosIcs23V1GlobalEnums.HashOp.SHA256
+        }),
+        min_depth: 0,
+        max_depth: 0
+    });
+
+    function getTmChildOrder() internal pure returns (int32[] memory) {
+        int32[] memory childOrder = new int32[](2);
+        childOrder[0] = 0;
+        childOrder[1] = 1;
+
+        return childOrder;
+    }
 
     constructor(address ibcHandler_, IZKVerifier verifier_) {
         ibcHandler = ibcHandler_;
@@ -119,7 +149,11 @@ contract CometblsClient is ILightClient {
                 nanos: 0
             });
         require(
-                !CometblsHelp.isExpired(header.signed_header.header.time, clientState.trusting_period, currentTime),
+                !CometblsHelp.isExpired(
+                     header.signed_header.header.time,
+                     clientState.trusting_period,
+                     currentTime
+                ),
                 "LC: header expired"
         );
 
@@ -160,7 +194,13 @@ contract CometblsClient is ILightClient {
         console.log("Cometbls: Commit.toSignedVote()", gas - gasleft());
 
         gas = gasleft();
-        ok = CometblsHelp.verifyZKP(verifier, trustedValidatorsHash, untrustedValidatorsHash, signedVote, header.zero_knowledge_proof);
+        ok = CometblsHelp.verifyZKP(
+            verifier,
+            trustedValidatorsHash,
+            untrustedValidatorsHash,
+            signedVote,
+            header.zero_knowledge_proof
+        );
         require(ok, "LC: invalid ZKP");
         console.log("Cometbls: ZKP.verify()", gas - gasleft());
 
@@ -219,8 +259,18 @@ contract CometblsClient is ILightClient {
         bytes calldata path,
         bytes calldata value
     ) external view override returns (bool) {
-        // TODO
-        revert("not implemented");
+        OptimizedConsensusState memory consensusState =
+            consensusStates[stateIndex(clientId, height.toUint128())];
+        CosmosIcs23V1CommitmentProof.Data memory commitmentProof = CosmosIcs23V1CommitmentProof.decode(proof);
+        Ics23.VerifyMembershipError result =
+            Ics23.verifyMembership(
+                _tendermintProofSpec,
+                abi.encodePacked(consensusState.root),
+                commitmentProof,
+                path,
+                value
+            );
+        return result == Ics23.VerifyMembershipError.None;
     }
 
     function verifyNonMembership(
