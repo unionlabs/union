@@ -285,7 +285,7 @@ func padding(api frontend.API, input []frontend.Variable, size frontend.Variable
 	inputLen := len(input)
 	paddingLen := inputLen % 64
 
-	// t is start index of intputBitLen encoding
+	// t is start index of inputBitLen encoding
 	var t int
 	if inputLen%64 < 56 {
 		t = 56 - inputLen%64

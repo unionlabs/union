@@ -338,7 +338,7 @@ func DoubleAndAdd(ba *fields_bn254.Ext2, p, q *gadget.G2Affine) *gadget.G2Affine
 	xqxp = ba.Add(&p.X, &q.X)
 	x2 := ba.Sub(λ1λ1, xqxp)
 
-	// ommit y2 computation
+	// omit y2 computation
 	// compute λ2 = -λ1-2*p.y/(x2-p.x)
 	ypyp := ba.Double(&p.Y)
 	x2xp := ba.Sub(x2, &p.X)
@@ -401,7 +401,7 @@ func Triple(ba *fields_bn254.Ext2, p *gadget.G2Affine) *gadget.G2Affine {
 	λ1λ1 := ba.Mul(λ1, λ1)
 	x2 = ba.Sub(λ1λ1, x2)
 
-	// ommit y2 computation, and
+	// omit y2 computation, and
 	// compute λ2 = 2p.y/(x2 − p.x) − λ1.
 	x1x2 := ba.Sub(&p.X, x2)
 	λ2 := ba.DivUnchecked(y2, x1x2)
