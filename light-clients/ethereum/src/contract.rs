@@ -8,8 +8,8 @@ use crate::{
     update::apply_updates,
 };
 use cosmwasm_std::{
-    entry_point, to_binary, Deps, DepsMut, Env, MessageInfo, QueryResponse, Response, StdError,
-    StdResult,
+    entry_point, to_binary, Binary, Deps, DepsMut, Env, MessageInfo, QueryResponse, Response,
+    StdError, StdResult,
 };
 use ethereum_consensus::{
     capella,
@@ -18,11 +18,19 @@ use ethereum_consensus::{
     execution::{EXECUTION_PAYLOAD_BLOCK_NUMBER_INDEX, EXECUTION_PAYLOAD_STATE_ROOT_INDEX},
     merkle::is_valid_merkle_branch,
     sync_protocol::EXECUTION_PAYLOAD_INDEX,
+    types::H256,
 };
 use ethereum_light_client_verifier::consensus::SyncProtocolVerifier;
-use ibc_proto::ibc::lightclients::ethereum::v1::Header as RawEthHeader;
+use ibc::core::ics24_host::Path;
+use ibc_proto::ibc::{
+    core::connection::v1::ConnectionEnd,
+    lightclients::ethereum::v1::{Header as RawEthHeader, StorageProof},
+};
 use prost::Message;
-use wasm_lc_types::msg::{ClientMessage, ContractResult, Status, StatusResponse};
+use std::str::FromStr;
+use wasm_lc_types::msg::{
+    ClientMessage, ContractResult, Height, MerklePath, Status, StatusResponse,
+};
 
 #[entry_point]
 pub fn instantiate(
@@ -42,6 +50,22 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> Result<Response, Error> {
     let result = match msg {
+        ExecuteMsg::VerifyMembership {
+            height,
+            delay_time_period,
+            delay_block_period,
+            proof,
+            path,
+            value,
+        } => verify_membership(
+            deps.as_ref(),
+            height,
+            delay_time_period,
+            delay_block_period,
+            proof,
+            path,
+            value,
+        ),
         ExecuteMsg::UpdateState {
             client_message: ClientMessage { header, .. },
         } => {
@@ -58,6 +82,78 @@ pub fn execute(
     }?;
 
     Ok(Response::default().set_data(result.encode()?))
+}
+
+pub fn verify_membership(
+    deps: Deps,
+    height: Height,
+    _delay_time_period: u64,
+    _delay_block_period: u64,
+    proof: Binary,
+    path: MerklePath,
+    value: Binary,
+) -> Result<ContractResult, Error> {
+    let (_, consensus_state) =
+        read_consensus_state(deps, height.try_into().map_err(|_| Error::InvalidHeight)?)?.ok_or(
+            Error::ConsensusStateNotFound(height.revision_number, height.revision_height),
+        )?;
+    let (_, client_state) = read_client_state(deps)?;
+    let path = Path::from_str(
+        path.key_path
+            .last()
+            .ok_or(Error::InvalidPath("path is empty".into()))?,
+    )
+    .map_err(|e| Error::InvalidPath(e.to_string()))?;
+    let raw_value = match path {
+        Path::Connection(_) => ConnectionEnd::decode(value.0.as_slice()),
+        p => {
+            return Err(Error::InvalidPath(format!(
+                "path type not supported: {p:?}"
+            )))
+        }
+    }
+    .map_err(|_| Error::InvalidValue)?;
+
+    let storage_proof = StorageProof::decode(proof.0.as_slice())
+        .map_err(|_| Error::decode("when decoding storage proof"))?;
+    let encoded_value = cosmwasm_std::to_vec(&raw_value).map_err(|_| Error::InvalidValue)?;
+
+    let mut i = 0;
+    for proof in storage_proof.proof {
+        let root = H256::from_slice(consensus_state.storage_root.as_bytes());
+        let key = hex::decode(&proof.key[2..]).unwrap();
+
+        let value = {
+            if i + 32 > encoded_value.len() {
+                let mut value: [u8; 32] = [0; 32];
+                for (ci, item) in encoded_value[i..].iter().enumerate() {
+                    value[ci] = *item;
+                }
+                value.to_vec()
+            } else {
+                let value: &[u8; 32] = encoded_value[i..i + 32].try_into().unwrap();
+                value.to_vec()
+            }
+        };
+        i += 32;
+
+        let value = rlp::encode(&value);
+
+        client_state
+            .execution_verifier
+            .verify_membership(
+                root,
+                &key,
+                &value,
+                proof
+                    .proof
+                    .iter()
+                    .map(|p| hex::decode(&p[2..]).unwrap())
+                    .collect(),
+            )
+            .map_err(|e| Error::Verification(e.to_string()))?;
+    }
+    Ok(ContractResult::valid(None))
 }
 
 pub fn update_header(mut deps: DepsMut, header: EthHeader) -> Result<ContractResult, Error> {
@@ -164,6 +260,7 @@ pub fn query(_deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<QueryResponse> 
     }
 }
 
+// TODO(aeryz): Status needs to be stored and fetched
 fn query_status() -> StatusResponse {
     StatusResponse {
         status: Status::Active.to_string(),

@@ -1,18 +1,35 @@
-use std::fmt::Display;
-
 use cosmwasm_std::{to_binary, Binary, StdResult};
-use ibc::Height;
 use ibc_proto::ibc::{
     core::client::v1::GenesisMetadata,
     lightclients::wasm::v1::{ClientState, ConsensusState, Header, Misbehaviour},
 };
 use serde::{Deserialize, Serialize};
+use std::fmt::Display;
+
+#[derive(Debug, Serialize, Deserialize, Copy, Clone, PartialEq, Eq, Hash)]
+pub struct Height {
+    /// Previously known as "epoch"
+    #[serde(default)]
+    pub revision_number: u64,
+
+    /// The height of a block
+    #[serde(default)]
+    pub revision_height: u64,
+}
+
+impl TryInto<ibc::Height> for Height {
+    type Error = ();
+
+    fn try_into(self) -> Result<ibc::Height, Self::Error> {
+        ibc::Height::new(self.revision_number, self.revision_height).map_err(|_| ())
+    }
+}
 
 // TODO(aeryz): Normally, this type should be an enum. Need more
 // research on that. For now, this is fine though.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct MerklePath {
-    key_path: Vec<String>,
+    pub key_path: Vec<String>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]

@@ -57,6 +57,12 @@ pub enum Error {
 
     #[error("Invalid chain version")]
     InvalidChainVersion,
+
+    #[error("Invalid path {0}")]
+    InvalidPath(String),
+
+    #[error("Invalid membership value")]
+    InvalidValue,
 }
 
 impl Error {

@@ -31,6 +31,8 @@ ssz-rs = { git = "https://github.com/bluele/ssz_rs", branch = "serde-no-std", fe
 thiserror = "1.0.26"
 tiny-keccak = { version = "2.0.2", default-features = false }
 wasm-lc-types = { path = "../08-wasm" }
+serde-json-wasm = "*"
+hex = { version = "0.4" }
 
 [dev-dependencies]
 serde_json = "*"
