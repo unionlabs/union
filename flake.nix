@@ -25,8 +25,12 @@
       url = "github:ipetkov/crane";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    rust-overlay = {
+      url = "github:oxalica/rust-overlay";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
-  outputs = inputs@{ flake-parts, crane, ... }:
+  outputs = inputs@{ self, nixpkgs, flake-parts, crane, ... }:
     flake-parts.lib.mkFlake { inherit inputs; } {
       systems =
         [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" "x86_64-darwin" ];
@@ -34,6 +38,7 @@
         ./uniond/uniond.nix
         ./uniond/proto.nix
         ./docs/docs.nix
+        ./light-clients/light-clients.nix
         ./tools/lodestar-cli/lodestar-cli.nix
         ./networks/devnet.nix
         ./networks/genesis/devnet.nix
@@ -41,15 +46,30 @@
         inputs.treefmt-nix.flakeModule
         inputs.pre-commit-hooks.flakeModule
       ];
-      perSystem = { config, self', inputs', pkgs, system, lib, ... }: {
+      perSystem = { config, self', inputs', pkgs, system, lib, ... }: 
+        let
+          crane = rec {
+            lib = self.inputs.crane.lib.${system};
+            nightly = lib.overrideToolchain self'.packages.rust-nightly;
+          };
+        in {
         _module = {
           args = {
+            inherit crane;
             devnetConfig = { validatorCount = 3; };
-            craneLib = crane.lib.${system};
+            pkgs = import nixpkgs {
+              inherit system;
+              overlays = with inputs; [
+                rust-overlay.overlays.default
+              ];
+            };
           };
         };
 
-        packages = { default = self'.packages.uniond; };
+        packages = { 
+          default = self'.packages.uniond; 
+          rust-nightly = pkgs.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml;
+        };
 
         checks = {
           spellcheck = pkgs.stdenv.mkDerivation {
@@ -104,21 +124,22 @@
         devShells =
           let
             baseShell = {
-              buildInputs = with pkgs; [
-                protobuf
-                buf
-                nixfmt
-                go_1_20
-                gopls
-                gotools
-                go-tools
-                nodejs
-                nil
-                marksman
-                jq
-                yq
-                solc
-              ];
+              buildInputs = [ self'.packages.rust-nightly ] ++
+                (with pkgs; [
+                  protobuf
+                  buf
+                  nixfmt
+                  go_1_20
+                  gopls
+                  gotools
+                  go-tools
+                  nodejs
+                  nil
+                  marksman
+                  jq
+                  yq
+                  solc
+                ]);
               nativeBuildInputs = [
                 config.treefmt.build.wrapper
               ];

@@ -1,7 +1,7 @@
 { ... }: {
-  perSystem = { pkgs, self', system, craneLib, ... }: {
+  perSystem = { pkgs, self', system, crane, ... }: {
     packages = {
-       wasmvm = craneLib.buildPackage {
+       wasmvm = crane.lib.buildPackage {
         src = "${
             pkgs.fetchFromGitHub {
               owner = "CosmWasm";

@@ -3,6 +3,7 @@ package types
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 
 	errorsmod "cosmossdk.io/errors"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -243,6 +244,7 @@ func (cs ClientState) VerifyNonMembership(
 func call[T ContractResult](ctx sdk.Context, clientStore sdk.KVStore, cs *ClientState, payload any) (T, error) {
 	var output T
 	encodedData, err := json.Marshal(payload)
+	fmt.Println("MESSAGE IS: ", string(encodedData[:]))
 	if err != nil {
 		return output, sdkerrors.Wrapf(ErrMarshalPayloadFailed, "err: %s", err)
 	}

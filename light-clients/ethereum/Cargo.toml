@@ -37,3 +37,6 @@ hex = { version = "0.4" }
 [dev-dependencies]
 serde_json = "*"
 base64 = "*"
+
+[unstable]
+build-std = ["core", "compiler_builtins"]
