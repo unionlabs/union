@@ -7,7 +7,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/kv"
-	"github.com/cosmos/cosmos-sdk/x/capability/types"
+
+	"github.com/cosmos/ibc-go/modules/capability/types"
 )
 
 // NewDecodeStore returns a decoder function closure that unmarshals the KVPair's

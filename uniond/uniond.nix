@@ -1,12 +1,34 @@
 { ... }: {
-  perSystem = { pkgs, self', ... }: {
+  perSystem = { pkgs, self', system, craneLib, ... }: {
     packages = {
+       wasmvm = craneLib.buildPackage {
+        src = "${
+            pkgs.fetchFromGitHub {
+              owner = "CosmWasm";
+              repo = "wasmvm";
+              rev = "753fb688ce408d17cdf6c6d7c81954d105e07c98";
+              hash = "sha256-t8kOaXjAhXZcrn3jlytQlJ8gvbvTkTEw3KcxIS45DLg=";
+            }
+          }/libwasmvm";
+        doCheck = false;
+        installPhase = ''
+          mkdir -p $out/lib
+          mv target/release/libwasmvm.so $out/lib/libwasmvm.${
+            builtins.head (pkgs.lib.strings.splitString "-" system)
+          }.so
+        '';
+      };
+
       uniond = pkgs.buildGoModule {
         name = "uniond";
         src = ./.;
         vendorSha256 = null;
         doCheck = true;
-      };
+        dontFixup = true;
+        ldflags = [
+          "-v -extldflags '-L${self'.packages.wasmvm}/lib'"
+        ];
+      };    
 
       uniond-image = pkgs.dockerTools.buildImage {
         name = "uniond";

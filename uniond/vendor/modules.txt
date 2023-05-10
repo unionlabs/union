@@ -32,7 +32,6 @@ cosmossdk.io/api/cosmos/autocli/v1
 cosmossdk.io/api/cosmos/bank/module/v1
 cosmossdk.io/api/cosmos/base/query/v1beta1
 cosmossdk.io/api/cosmos/base/v1beta1
-cosmossdk.io/api/cosmos/capability/module/v1
 cosmossdk.io/api/cosmos/consensus/module/v1
 cosmossdk.io/api/cosmos/crisis/module/v1
 cosmossdk.io/api/cosmos/distribution/module/v1
@@ -449,10 +448,6 @@ github.com/cosmos/cosmos-sdk/x/bank/migrations/v3
 github.com/cosmos/cosmos-sdk/x/bank/migrations/v4
 github.com/cosmos/cosmos-sdk/x/bank/simulation
 github.com/cosmos/cosmos-sdk/x/bank/types
-github.com/cosmos/cosmos-sdk/x/capability
-github.com/cosmos/cosmos-sdk/x/capability/keeper
-github.com/cosmos/cosmos-sdk/x/capability/simulation
-github.com/cosmos/cosmos-sdk/x/capability/types
 github.com/cosmos/cosmos-sdk/x/consensus
 github.com/cosmos/cosmos-sdk/x/consensus/exported
 github.com/cosmos/cosmos-sdk/x/consensus/keeper
@@ -608,7 +603,9 @@ github.com/cosmos/iavl/internal/logger
 github.com/cosmos/iavl/keyformat
 # github.com/cosmos/ibc-go/modules/capability v1.0.0-rc1
 ## explicit; go 1.19
+github.com/cosmos/ibc-go/modules/capability
 github.com/cosmos/ibc-go/modules/capability/keeper
+github.com/cosmos/ibc-go/modules/capability/simulation
 github.com/cosmos/ibc-go/modules/capability/types
 # github.com/cosmos/ibc-go/v7 v7.0.0 => github.com/strangelove-ventures/ibc-go/v7 v7.0.0-20230418220939-f60edbfb225a
 ## explicit; go 1.19
@@ -665,6 +662,9 @@ github.com/cosmos/ibc-go/v7/modules/core/simulation
 github.com/cosmos/ibc-go/v7/modules/core/types
 github.com/cosmos/ibc-go/v7/modules/light-clients/06-solomachine
 github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint
+github.com/cosmos/ibc-go/v7/modules/light-clients/08-wasm
+github.com/cosmos/ibc-go/v7/modules/light-clients/08-wasm/client/cli
+github.com/cosmos/ibc-go/v7/modules/light-clients/08-wasm/keeper
 github.com/cosmos/ibc-go/v7/modules/light-clients/08-wasm/types
 github.com/cosmos/ibc-go/v7/modules/light-clients/09-localhost
 # github.com/cosmos/ics23/go v0.10.0

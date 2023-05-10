@@ -2,8 +2,9 @@ package capability
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/capability/keeper"
-	"github.com/cosmos/cosmos-sdk/x/capability/types"
+
+	"github.com/cosmos/ibc-go/modules/capability/keeper"
+	"github.com/cosmos/ibc-go/modules/capability/types"
 )
 
 // InitGenesis initializes the capability module's state from a provided genesis
@@ -17,6 +18,7 @@ func InitGenesis(ctx sdk.Context, k keeper.Keeper, genState types.GenesisState) 
 	for _, genOwner := range genState.Owners {
 		k.SetOwners(ctx, genOwner.Index, genOwner.IndexOwners)
 	}
+
 	// initialize in-memory capabilities
 	k.InitMemStore(ctx)
 }
