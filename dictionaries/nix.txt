@@ -2,6 +2,7 @@ aitlahcen
 arion
 authrpc
 cachix
+mktemp
 commitizen
 coreutils
 corsdomain
@@ -25,3 +26,9 @@ syncmode
 txpool
 vhosts
 vmdebug
+cometbls
+ibcgo
+cosmosproto
+unionpd
+provergrpc
+strangelove

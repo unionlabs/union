@@ -10,8 +10,16 @@
 
       uniond-image = pkgs.dockerTools.buildImage {
         name = "uniond";
+
+        copyToRoot = pkgs.buildEnv {
+          name = "image-root";
+          paths = [ pkgs.coreutils-full pkgs.cacert ];
+          pathsToLink = [ "/bin" ];
+        };
+
         config = {
-          Cmd = [ "${self'.packages.uniond}/bin/uniond" ];
+          Entrypoint = [ "${self'.packages.uniond}/bin/uniond" ];
+          Env = [ "SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt" ];
         };
       };
     };
