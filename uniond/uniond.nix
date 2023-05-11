@@ -1,6 +1,6 @@
 { ... }: {
-  perSystem = { pkgs, self', system, crane, ... }: {
-    packages = {
+  perSystem = { pkgs, self', system, crane, ... }: 
+    let 
       wasmvm = crane.lib.buildPackage {
         src = "${
             pkgs.fetchFromGitHub {
@@ -18,7 +18,9 @@
           }.so
         '';
       };
-
+    in
+  {
+    packages = {
       uniond = pkgs.buildGoModule {
         name = "uniond";
         src = ./.;
@@ -26,7 +28,7 @@
         doCheck = true;
         dontFixup = true;
         ldflags = [
-          "-v -extldflags '-L${self'.packages.wasmvm}/lib'"
+          "-v -extldflags '-L${wasmvm}/lib'"
         ];
       };
 
