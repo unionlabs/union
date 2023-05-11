@@ -42,6 +42,48 @@
         _module = {
           args = {
             devnetConfig = { validatorCount = 4; };
+            proto = {
+              uniond = ./uniond/proto;
+              unionpd = ./unionpd/proto;
+              cometbls = builtins.fetchGit {
+                url = "git@github.com:UnionFi/cometbls.git";
+                rev = "f19ae296cf176b343ea214967810ba735813e73f";
+              };
+              cosmossdk = builtins.fetchGit {
+                url = "git@github.com:UnionFi/cosmos-sdk.git";
+                rev = "021566a5aba49e79356e2e6e246494e118f12605";
+              };
+              ibcgo = pkgs.fetchFromGitHub {
+                owner = "strangelove-ventures";
+                repo = "ibc-go";
+                rev = "f8081a1828e47e11791b036659dd6d0e7be5473b";
+                sha256 = "sha256-e9z9+VxoQkrvWeYzdxHax6L10eQebRjW7GrD5wnaLv8=";
+              };
+              ics23 = pkgs.fetchFromGitHub {
+                owner = "cosmos";
+                repo = "ics23";
+                rev = "b1abd8678aab07165efd453c96796a179eb3131f";
+                sha256 = "sha256-O7oZI+29xKAbMHssg5HhxlssedSfejCuzHNHYX7WwBc=";
+              };
+              cosmosproto = pkgs.fetchFromGitHub {
+                owner = "cosmos";
+                repo = "cosmos-proto";
+                rev = "v1.0.0-beta.3";
+                sha256 = "sha256-kFm1ChSmm5pU9oJqKmWq4KfO/hxgxzvcSzr66oTulos=";
+              };
+              gogoproto = pkgs.fetchFromGitHub {
+                owner = "cosmos";
+                repo = "gogoproto";
+                rev = "v1.4.7";
+                sha256 = "sha256-oaGwDFbz/xgL7hDtvdh/mIcRIGBdp+/xuKeuBE2ZpqY=";
+              };
+              googleapis = pkgs.fetchFromGitHub {
+                owner = "googleapis";
+                repo = "googleapis";
+                rev = "6774ccbbc3f182f6ae3a32dca29e1da489ad8a8f";
+                sha256 = "sha256-TME4wkdmqrb0Shuc5uFqSGSoDaMhM9YJv9kvTam7c9I=";
+              };
+            };
           };
         };
 
@@ -97,47 +139,42 @@
           };
         };
 
-        devShells =
-          let
-            baseShell = {
-              buildInputs = with pkgs; [
-                protobuf
-                buf
-                nixfmt
-                go_1_20
-                gopls
-                gotools
-                go-tools
-                nodejs
-                yarn
-                nil
-                marksman
-                jq
-                yq
-                solc
-              ];
-              nativeBuildInputs = [
-                config.treefmt.build.wrapper
-              ];
-              GOPRIVATE = "github.com/unionfi/*";
-            };
-          in
-          {
-            default = pkgs.mkShell baseShell;
-            githook = pkgs.mkShell (baseShell // {
-              inherit (self'.checks.pre-commit-check) shellHook;
-            });
-            # @hussein-aitlahcen: require `--option sandbox relaxed`
-            evm = pkgs.mkShell (baseShell // {
-              buildInputs = baseShell.buildInputs
-                ++ [
-                inputs.foundry.defaultPackage.${system}
-                pkgs.solc
-                pkgs.go-ethereum
-                self'.packages.lodestar-cli
-              ];
-            });
+        devShells = let
+          baseShell = {
+            buildInputs = with pkgs; [
+              protobuf
+              buf
+              nixfmt
+              go_1_20
+              gopls
+              gotools
+              go-tools
+              nodejs
+              yarn
+              nil
+              marksman
+              jq
+              yq
+              solc
+            ];
+            nativeBuildInputs = [ config.treefmt.build.wrapper ];
+            GOPRIVATE = "github.com/unionfi/*";
           };
+        in {
+          default = pkgs.mkShell baseShell;
+          githook = pkgs.mkShell (baseShell // {
+            inherit (self'.checks.pre-commit-check) shellHook;
+          });
+          # @hussein-aitlahcen: require `--option sandbox relaxed`
+          evm = pkgs.mkShell (baseShell // {
+            buildInputs = baseShell.buildInputs ++ [
+              inputs.foundry.defaultPackage.${system}
+              pkgs.solc
+              pkgs.go-ethereum
+              self'.packages.lodestar-cli
+            ];
+          });
+        };
 
         treefmt = {
           projectRootFile = "flake.nix";
