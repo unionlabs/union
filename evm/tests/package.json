@@ -1,0 +1,11 @@
+{
+    "name": "ibc-solidity",
+    "version": "0.1.0",
+    "description": "IBC in Solidity",
+    "dependencies": {
+        "@openzeppelin/contracts": "^4.8.3",
+        "solidity-bytes-utils": "0.8.0",
+        "solidity-rlp": "^2.0.6",
+        "solidity-stringutils": "git+https://github.com/ibc-solidity/solidity-stringutils.git#716294569dd2304ae8d81681951733542f999015"
+    }
+}

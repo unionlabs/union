@@ -1,0 +1,51 @@
+syntax = "proto3";
+
+package union.ibc.lightclients.cometbls.v1;
+
+import "tendermint/types/types.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
+import "ibc/core/client/v1/client.proto";
+import "ibc/core/commitment/v1/commitment.proto";
+
+message ClientState {
+  string   chain_id    = 1;
+  Fraction trust_level = 2;
+  // duration of the period since the LastestTimestamp during which the
+  // submitted headers are valid for upgrade
+  google.protobuf.Duration trusting_period = 3;
+  // duration of the staking unbonding period
+  google.protobuf.Duration unbonding_period = 4;
+  // defines how much new (untrusted) header's Time can drift into the future.
+  google.protobuf.Duration max_clock_drift = 5;
+  // Block height when the client was frozen due to a misbehaviour
+  .ibc.core.client.v1.Height frozen_height = 6;
+  // Latest height the client was updated to
+  .ibc.core.client.v1.Height latest_height = 7;
+}
+
+message ConsensusState {
+  // timestamp that corresponds to the block height in which the ConsensusState
+  // was stored.
+  google.protobuf.Timestamp timestamp = 1;
+  // commitment root (i.e app hash)
+  .ibc.core.commitment.v1.MerkleRoot root = 2;
+  bytes next_validators_hash = 3;
+}
+
+message Misbehaviour {
+  Header header_1  = 2;
+  Header header_2  = 3;
+}
+
+message Header {
+  .tendermint.types.SignedHeader    signed_header                = 1;
+  bytes                             untrusted_validator_set_root = 2;
+  .ibc.core.client.v1.Height        trusted_height               = 3;
+  bytes                             zero_knowledge_proof         = 4;
+}
+
+message Fraction {
+  uint64 numerator   = 1;
+  uint64 denominator = 2;
+}
