@@ -42,6 +42,7 @@
         ./tools/lodestar-cli/lodestar-cli.nix
         ./networks/devnet.nix
         ./networks/genesis/devnet.nix
+        ./unionpd/unionpd.nix
 
         inputs.treefmt-nix.flakeModule
         inputs.pre-commit-hooks.flakeModule

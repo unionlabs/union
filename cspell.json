@@ -3,38 +3,8 @@
   "version": "0.2",
   "dictionaryDefinitions": [
     {
-      "name": "uniond-scaffold",
-      "path": "dictionaries/uniond-scaffold.txt",
-      "addWords": true
-    },
-    {
-      "name": "unionfi",
-      "path": "dictionaries/unionfi.txt",
-      "addWords": true
-    },
-    {
-      "name": "nix",
-      "path": "dictionaries/nix.txt",
-      "addWords": true
-    },
-    {
-      "name": "proto",
-      "path": "dictionaries/proto.txt",
-      "addWords": true
-    },
-    {
-      "name": "cosmwasm",
-      "path": "dictionaries/cosmwasm.txt",
-      "addWords": true
-    },
-    {
-      "name": "eth",
-      "path": "dictionaries/eth.txt",
-      "addWords": true
-    },
-    {
-      "name": "cosmwasm",
-      "path": "dictionaries/cosmwasm.txt",
+      "name": "union",
+      "path": "dictionary.txt",
       "addWords": true
     }
   ],
@@ -43,24 +13,18 @@
     "companies",
     "softwareTerms",
     "go",
-    "latex",
-    "uniond-scaffold",
-    "unionfi",
-    "nix",
-    "proto",
-    "cosmwasm",
-    "eth"
-    "cosmwasm"
+    "union"
   ],
   "ignorePaths": [
     "dictionaries/**",
     "**/*.svg",
-    "node_modules",
+    "**/node_modules",
     "uniond/vendor",
     "uniond/x/union/types",
     "uniond/proto",
-    "uniond/go.mod",
-    "uniond/go.sum",
-    "evm"
+    "**/go.mod",
+    "**/go.sum",
+    "evm",
+    "**/*.pb.go"
   ]
 }
