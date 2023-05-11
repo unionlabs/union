@@ -7,7 +7,7 @@
               owner = "CosmWasm";
               repo = "wasmvm";
               rev = "a9e26c0e4e5a076d82556c4f44abeee2a64ff37e";
-              hash = "sha256-t8kOaXjAhXZcrn3jlytQlJ8gvbvTkTEw3KcxIS45DLg=";
+              hash = "sha256-zR47q8Z2znPigecPDmw5L4ef20/TXv8cPxaXTdJGxg0=";
             }
           }/libwasmvm";
         doCheck = false;

@@ -8,6 +8,6 @@ edition = "2021"
 [dependencies]
 cosmwasm-schema = "1.2.0"
 cosmwasm-std = "1.2.0"
-ibc-proto = { git = "https://github.com/UnionFi/ibc-proto-rs", branch = "dev", default-features = false }
+ibc-proto = { git = "ssh://git@github.com/UnionFi/ibc-proto-rs.git", branch = "dev", default-features = false }
 ibc = { version = "0.37.0", default-features = false, features = [ "serde" ] }
 serde = { version = "1.0", default-features = false, features = ["derive"] }

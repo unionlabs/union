@@ -464,7 +464,7 @@ dependencies = [
 [[package]]
 name = "ethereum-consensus"
 version = "0.1.0"
-source = "git+https://github.com/UnionFi/ethereum-light-client-rs?branch=dev#6bc2196c2c33b5c2569c0302f3b624bd0e3a8375"
+source = "git+ssh://git@github.com/UnionFi/ethereum-light-client-rs.git?branch=dev#6bc2196c2c33b5c2569c0302f3b624bd0e3a8375"
 dependencies = [
  "displaydoc",
  "hex",
@@ -480,7 +480,7 @@ dependencies = [
 [[package]]
 name = "ethereum-light-client-verifier"
 version = "0.1.0"
-source = "git+https://github.com/UnionFi/ethereum-light-client-rs?branch=dev#6bc2196c2c33b5c2569c0302f3b624bd0e3a8375"
+source = "git+ssh://git@github.com/UnionFi/ethereum-light-client-rs.git?branch=dev#6bc2196c2c33b5c2569c0302f3b624bd0e3a8375"
 dependencies = [
  "displaydoc",
  "ethereum-consensus",
@@ -726,8 +726,8 @@ dependencies = [
 
 [[package]]
 name = "ibc-proto"
-version = "0.29.0"
-source = "git+https://github.com/UnionFi/ibc-proto-rs?branch=dev#61d1a79e25a10bcc9b61a845e832a26766b5933c"
+version = "0.30.0"
+source = "git+ssh://git@github.com/UnionFi/ibc-proto-rs.git?branch=dev#2f4f44f930bc9fd8702559c1454f345b2c95a4a1"
 dependencies = [
  "base64 0.21.0",
  "bytes",
@@ -735,7 +735,7 @@ dependencies = [
  "prost",
  "serde",
  "subtle-encoding",
- "tendermint-proto 0.30.0",
+ "tendermint-proto 0.31.1",
 ]
 
 [[package]]
@@ -1575,9 +1575,9 @@ dependencies = [
 
 [[package]]
 name = "tendermint-proto"
-version = "0.30.0"
+version = "0.31.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e553ed65874c3f35a71eb60d255edfea956274b5af37a0297d54bba039fe45e3"
+checksum = "a1f15666993e193fa4d2b2479aa1e4f1bbe41283c820812df8dd618f41ca3f7a"
 dependencies = [
  "bytes",
  "flex-error",
@@ -1742,7 +1742,7 @@ dependencies = [
  "ethereum-light-client-verifier",
  "hex",
  "ibc",
- "ibc-proto 0.29.0",
+ "ibc-proto 0.30.0",
  "prost",
  "rlp",
  "schemars",
@@ -1774,7 +1774,7 @@ dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
  "ibc",
- "ibc-proto 0.29.0",
+ "ibc-proto 0.30.0",
  "serde",
 ]
 
