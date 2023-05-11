@@ -26,7 +26,7 @@
       "name": "eth",
       "path": "dictionaries/eth.txt",
       "addWords": true
-    },
+    }
   ],
   "dictionaries": [
     "en_US",
@@ -43,12 +43,13 @@
   "ignorePaths": [
     "dictionaries/**",
     "**/*.svg",
-    "node_modules",
+    "**/node_modules",
     "uniond/vendor",
     "uniond/x/union/types",
     "uniond/proto",
-    "uniond/go.mod",
-    "uniond/go.sum",
-    "evm"
+    "**/go.mod",
+    "**/go.sum",
+    "evm",
+    "**/*.pb.go"
   ]
 }
