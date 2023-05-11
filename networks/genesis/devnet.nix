@@ -16,12 +16,15 @@
           # Generate the wasm client genesis state
           base64 -w0 ${self'.packages.wasm-ethereum-lc}/lib/union_ethereum_lc.wasm > $out/encoded.txt
           ${uniond} init testnet bn254 --chain-id ${chainId} --home $out
+          CHECKSUM=`sha256sum ${self'.packages.wasm-ethereum-lc}/lib/union_ethereum_lc.wasm | cut -f1 -d " "`
+          CODE_ID=`echo -ne codeId/$CHECKSUM | base64 -w0`
+          # CODE_ID_B64=`import base64;import codecs;bytesObj=codecs.decode('2489c7cf2b4f1537be575c87dcd2d2f1e8bad15b0ca2303f4bca6abeeba41f32','hex_codec');print(base64.b64encode(bytesObj).decode()`
           cat $out/config/genesis.json | \
-             ${pkgs.jq}/bin/jq --rawfile encoded_file $out/encoded.txt '.app_state."08-wasm".contracts'='[ { "code_id_key": "Y29kZUlkLzljMDkyZDcyMGM4NjgxZWMzYzJjM2ZhNWQxYzRlZTdjZTFhZWQ5ODBhNTZjYWE1ZDdjZDYxMGI3M2IxZmE3Nzg=", "contract_code": $encoded_file }  ]' \
-            | ${pkgs.jq}/bin/jq .app_state.ibc.client_genesis.clients='[{"client_id":"08-wasm-0","client_state":{"@type":"/ibc.lightclients.wasm.v1.ClientState","code_id":"7yXkG6u40NEUfcvVa87Mzq2yheE++0PjZ4OA0duUGh0=","data":"e30=","latest_height":{"revision_height":"2","revision_number":"0"}}}]' | ${pkgs.jq}/bin/jq .app_state.ibc.client_genesis.clients_consensus='[{"client_id":"08-wasm-0","consensus_states":[{"consensus_state":{"@type":"/ibc.lightclients.wasm.v1.ConsensusState","data":"e30=","timestamp":"1678732260023000000"},"height":{"revision_height":"1","revision_number":"0"}}]}]' \
+             ${pkgs.jq}/bin/jq --arg code_id $CODE_ID --rawfile encoded_file $out/encoded.txt '.app_state."08-wasm".contracts'='[ { "code_id_key": $code_id, "contract_code": $encoded_file }  ]' \
           > $out/tmp-genesis.json
           mv $out/tmp-genesis.json $out/config/genesis.json
-
+            # | ${pkgs.jq}/bin/jq --arg code_id $CODE_ID_B64 .app_state.ibc.client_genesis.clients='[{"client_id":"08-wasm-0","client_state":{"@type":"/ibc.lightclients.wasm.v1.ClientState","code_id":$code_id,"data":"e30=","latest_height":{"revision_height":"2","revision_number":"0"}}}]' | ${pkgs.jq}/bin/jq .app_state.ibc.client_genesis.clients_consensus='[{"client_id":"08-wasm-0","consensus_states":[{"consensus_state":{"@type":"/ibc.lightclients.wasm.v1.ConsensusState","data":"e30=","timestamp":"1678732260023000000"},"height":{"revision_height":"1","revision_number":"0"}}]}]' \
+            
           # Add the dev account
           ADDRESS=`echo 'wine parrot nominee girl exchange element pudding grow area twenty next junior come render shadow evidence sentence start rough debate feed all limb real' | ${uniond} keys add --recover testkey --keyring-backend test --home $out --output json | ${pkgs.jq}/bin/jq -r .address`
           ${uniond} add-genesis-account $ADDRESS 10000000000000000000000000stake --keyring-backend test --home $out
@@ -82,6 +85,8 @@
 
         ${uniond} collect-gentxs --home .
         ${uniond} validate-genesis --home .
+
+        echo OUTPUT DIR IS: $out
       '';
 
       packages.devnet-validator-keys = pkgs.symlinkJoin {

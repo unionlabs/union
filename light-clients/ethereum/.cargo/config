@@ -5,9 +5,3 @@ unit-test = "test --lib"
 integration-test = "test --test integration"
 schema = "run --bin schema"
 
-[build]
-rustflags = "-C target-feature=-sign-ext -C link-arg=-s -C target-cpu=mvp"
-
-[unstable]
-build-std = ["std" , "panic_abort"]
-build-std-features = ["panic_immediate_abort"]

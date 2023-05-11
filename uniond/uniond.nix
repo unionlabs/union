@@ -1,12 +1,12 @@
 { ... }: {
   perSystem = { pkgs, self', system, crane, ... }: {
     packages = {
-       wasmvm = crane.lib.buildPackage {
+      wasmvm = crane.lib.buildPackage {
         src = "${
             pkgs.fetchFromGitHub {
               owner = "CosmWasm";
               repo = "wasmvm";
-              rev = "753fb688ce408d17cdf6c6d7c81954d105e07c98";
+              rev = "a9e26c0e4e5a076d82556c4f44abeee2a64ff37e";
               hash = "sha256-t8kOaXjAhXZcrn3jlytQlJ8gvbvTkTEw3KcxIS45DLg=";
             }
           }/libwasmvm";
@@ -28,7 +28,7 @@
         ldflags = [
           "-v -extldflags '-L${self'.packages.wasmvm}/lib'"
         ];
-      };    
+      };
 
       uniond-image = pkgs.dockerTools.buildImage {
         name = "uniond";

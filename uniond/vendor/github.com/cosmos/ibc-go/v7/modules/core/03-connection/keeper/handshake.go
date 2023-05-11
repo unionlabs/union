@@ -2,7 +2,6 @@ package keeper
 
 import (
 	errorsmod "cosmossdk.io/errors"
-	"fmt"
 	"github.com/cosmos/cosmos-sdk/telemetry"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
@@ -122,7 +121,6 @@ func (k Keeper) ConnOpenTry(
 	connection := types.NewConnectionEnd(types.TRYOPEN, clientID, counterparty, []*types.Version{version}, delayPeriod)
 
 	// Check that ChainA committed expectedConnectionEnd to its state
-	fmt.Println("[PROOF HEIGHT] ", proofHeight)
 	if err := k.VerifyConnectionState(
 		ctx, connection, proofHeight, proofInit, counterparty.ConnectionId,
 		expectedConnection,

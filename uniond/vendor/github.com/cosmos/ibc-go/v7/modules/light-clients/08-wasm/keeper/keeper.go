@@ -3,7 +3,6 @@ package keeper
 import (
 	"bytes"
 	"crypto/sha256"
-	"fmt"
 	"math"
 	"strings"
 
@@ -114,8 +113,6 @@ func (k Keeper) importWasmCode(ctx sdk.Context, codeIDKey, wasmCode []byte) erro
 	if err != nil {
 		return sdkerrors.Wrap(types.ErrCreateContractFailed, err.Error())
 	}
-	fmt.Println("codeIdKey", string(codeIDKey))
-	fmt.Println("expected", string(types.CodeIDKey(codeID)))
 	if !bytes.Equal(codeIDKey, types.CodeIDKey(codeID)) {
 		return sdkerrors.Wrap(types.ErrInvalid, "code hashes not same")
 	}

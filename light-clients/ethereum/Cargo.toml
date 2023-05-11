@@ -25,18 +25,15 @@ ibc-proto = { git = "https://github.com/UnionFi/ibc-proto-rs", branch = "dev", d
 ibc = { version = "0.37.0", default-features = false, features = [ "serde" ] }
 prost = { version = "0.11", default-features = false }
 rlp = { version = "0.5.2", default-features = false }
-schemars = "0.8.3"
+schemars = { version = "0.8.3", default-features = false }
 serde = { version = "1.0.103", default-features = false, features = ["derive"] }
-ssz-rs = { git = "https://github.com/bluele/ssz_rs", branch = "serde-no-std", features = ["serde"] }
-thiserror = "1.0.26"
+ssz-rs = { git = "https://github.com/bluele/ssz_rs", branch = "serde-no-std", features = ["serde"], default-features = false }
+thiserror = { version = "1.0.26", default-features = false }
 tiny-keccak = { version = "2.0.2", default-features = false }
 wasm-lc-types = { path = "../08-wasm" }
-serde-json-wasm = "*"
-hex = { version = "0.4" }
+serde-json-wasm = { version = "*", default-features = false }
+hex = { version = "0.4", default-features = false }
 
 [dev-dependencies]
 serde_json = "*"
 base64 = "*"
-
-[unstable]
-build-std = ["core", "compiler_builtins"]

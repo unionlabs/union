@@ -1,7 +1,6 @@
 package types
 
 import (
-	"fmt"
 	cosmwasm "github.com/CosmWasm/wasmvm"
 	wasmvmtypes "github.com/CosmWasm/wasmvm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -73,8 +72,6 @@ func initContract(codeID []byte, ctx sdk.Context, clientStore sdk.KVStore) (*was
 	initMsg := []byte("{}")
 	ctx.GasMeter().ConsumeGas(VMGasRegister.NewContractInstanceCosts(len(initMsg)), "Loading CosmWasm module: instantiate")
 	response, gasUsed, err := WasmVM.Instantiate(codeID, env, msgInfo, initMsg, newStoreAdapter(clientStore), cosmwasm.GoAPI{}, nil, multipliedGasMeter, gasLimit, costJSONDeserialization)
-	fmt.Println("[INSTANTIATE] Response: ", response)
-	fmt.Println("[INSTANTIATE] Error: ", err)
 	VMGasRegister.consumeRuntimeGas(ctx, gasUsed)
 	return response, err
 }
@@ -111,8 +108,6 @@ func callContract(codeID []byte, ctx sdk.Context, clientStore sdk.KVStore, msg [
 	}
 	ctx.GasMeter().ConsumeGas(VMGasRegister.InstantiateContractCosts(len(msg)), "Loading CosmWasm module: execute")
 	resp, gasUsed, err := WasmVM.Execute(codeID, env, msgInfo, msg, newStoreAdapter(clientStore), cosmwasm.GoAPI{}, nil, multipliedGasMeter, gasLimit, costJSONDeserialization)
-	fmt.Println("[EXECUTE] Response: ", resp)
-	fmt.Println("[EXECUTE] Error: ", err)
 	VMGasRegister.consumeRuntimeGas(ctx, gasUsed)
 	return resp, err
 }
@@ -144,8 +139,6 @@ func queryContractWithStore(ctx sdk.Context, clientStore sdk.KVStore, codeID cos
 	}
 	ctx.GasMeter().ConsumeGas(VMGasRegister.InstantiateContractCosts(len(msg)), "Loading CosmWasm module: query")
 	resp, gasUsed, err := WasmVM.Query(codeID, env, msg, newStoreAdapter(clientStore), cosmwasm.GoAPI{}, nil, multipliedGasMeter, gasLimit, costJSONDeserialization)
-	fmt.Println("[QUERY] Response: ", resp)
-	fmt.Println("[QUERY] Error: ", err)
 	VMGasRegister.consumeRuntimeGas(ctx, gasUsed)
 	return resp, err
 }

@@ -6,12 +6,12 @@ members = [
 resolver = "2"
 
 [profile.release]
-opt-level = 's'
+opt-level = 3
 debug = false
 rpath = false
 lto = true
 debug-assertions = false
 codegen-units = 1
-# panic = "abort"
+panic = "abort"
 incremental = false
 overflow-checks = true

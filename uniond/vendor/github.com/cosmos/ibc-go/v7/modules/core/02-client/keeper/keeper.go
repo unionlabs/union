@@ -300,7 +300,6 @@ func (k Keeper) ValidateSelfClient(ctx sdk.Context, clientState exported.ClientS
 		wasmClientState := clientState.(*wasmtypes.ClientState)
 		err := k.cdc.UnmarshalInterface(wasmClientState.Data, &clientState)
 		if err != nil {
-			fmt.Println("ERROR: ", err)
 			return errorsmod.Wrapf(types.ErrInvalidClient, "cannot unmarshal wasm client state data")
 		}
 	}
