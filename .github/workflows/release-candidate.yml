@@ -18,22 +18,23 @@ jobs:
     permissions: write-all
     strategy:
       matrix:
+        package: [ uniond uniond-image ]
         system: [ aarch64-linux, x86_64-linux ]
     steps: 
       - uses: actions/download-artifact@v3
         with:
-          name: packages.${{ matrix.system }}.uniond-image
+          name: packages.${{ matrix.system }}.${{ matrix.package }}
       - uses: nixbuild/nix-quick-install-action@v22
       - uses: nixbuild/nixbuild-action@v17
         with:
           nixbuild_token: ${{ secrets.nixbuild_token }}
       - run: mkdir ${{ matrix.system }}
-      - run: nix copy --to file://`pwd`/${{ matrix.system }} --from ssh-ng://eu.nixbuild.net `cat result.json | jq -r '.packages."${{ matrix.system }}"."uniond-image".outputs.out'` --extra-experimental-features nix-command
-      - run: cat ${{ matrix.system }}/nar/*.nar.xz | xz -dc | nix-store --restore ${{ matrix.system }}.uniond-image
+      - run: nix copy --to file://`pwd`/${{ matrix.system }} --from ssh-ng://eu.nixbuild.net `cat result.json | jq -r '.packages."${{ matrix.system }}"."${{ matrix.package }}".outputs.out'` --extra-experimental-features nix-command
+      - run: cat ${{ matrix.system }}/nar/*.nar.xz | xz -dc | nix-store --restore ${{ matrix.system }}.${{ matrix.package }}
       - uses: actions/upload-artifact@v3
         with:
-          name: ${{matrix.system}}.uniond-image
-          path: ${{matrix.system}}.uniond-image
+          name: ${{ matrix.system }}.${{ matrix.package }}
+          path: ${{ matrix.system }}.${{ matrix.package }}
       - uses: docker/login-action@v2
         with:
           registry: ghcr.io
@@ -79,6 +80,7 @@ jobs:
           title: ${{github.ref_name}}
           files: |
             **/*.uniond-image
+            **/*.uniond
 
 
 

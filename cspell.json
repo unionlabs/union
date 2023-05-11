@@ -3,42 +3,17 @@
   "version": "0.2",
   "dictionaryDefinitions": [
     {
-      "name": "uniond-scaffold",
-      "path": "dictionaries/uniond-scaffold.txt",
+      "name": "union",
+      "path": "dictionary.txt",
       "addWords": true
     },
-    {
-      "name": "unionfi",
-      "path": "dictionaries/unionfi.txt",
-      "addWords": true
-    },
-    {
-      "name": "nix",
-      "path": "dictionaries/nix.txt",
-      "addWords": true
-    },
-    {
-      "name": "proto",
-      "path": "dictionaries/proto.txt",
-      "addWords": true
-    },
-    {
-      "name": "eth",
-      "path": "dictionaries/eth.txt",
-      "addWords": true
-    }
   ],
   "dictionaries": [
     "en_US",
     "companies",
     "softwareTerms",
     "go",
-    "latex",
-    "uniond-scaffold",
-    "unionfi",
-    "nix",
-    "proto",
-    "eth"
+    "union"
   ],
   "ignorePaths": [
     "dictionaries/**",
