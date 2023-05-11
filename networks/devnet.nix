@@ -16,7 +16,7 @@
           };
         })
         devnetConfig.validatorCount));
-        
+
       evm-services = {
         geth = import ./services/geth.nix {
           inherit pkgs;

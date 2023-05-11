@@ -2,8 +2,6 @@ syntax = "proto3";
 
 package union.prover.api.v1;
 
-import "google/protobuf/timestamp.proto";
-import "tendermint/types/types.proto";
 import "tendermint/types/validator.proto";
 import "tendermint/types/canonical.proto";
 
