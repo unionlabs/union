@@ -139,42 +139,44 @@
           };
         };
 
-        devShells = let
-          baseShell = {
-            buildInputs = with pkgs; [
-              protobuf
-              buf
-              nixfmt
-              go_1_20
-              gopls
-              gotools
-              go-tools
-              nodejs
-              yarn
-              nil
-              marksman
-              jq
-              yq
-              solc
-            ];
-            nativeBuildInputs = [ config.treefmt.build.wrapper ];
-            GOPRIVATE = "github.com/unionfi/*";
+        devShells =
+          let
+            baseShell = {
+              buildInputs = with pkgs; [
+                protobuf
+                buf
+                nixfmt
+                go_1_20
+                gopls
+                gotools
+                go-tools
+                nodejs
+                yarn
+                nil
+                marksman
+                jq
+                yq
+                solc
+              ];
+              nativeBuildInputs = [ config.treefmt.build.wrapper ];
+              GOPRIVATE = "github.com/unionfi/*";
+            };
+          in
+          {
+            default = pkgs.mkShell baseShell;
+            githook = pkgs.mkShell (baseShell // {
+              inherit (self'.checks.pre-commit-check) shellHook;
+            });
+            # @hussein-aitlahcen: require `--option sandbox relaxed`
+            evm = pkgs.mkShell (baseShell // {
+              buildInputs = baseShell.buildInputs ++ [
+                inputs.foundry.defaultPackage.${system}
+                pkgs.solc
+                pkgs.go-ethereum
+                self'.packages.lodestar-cli
+              ];
+            });
           };
-        in {
-          default = pkgs.mkShell baseShell;
-          githook = pkgs.mkShell (baseShell // {
-            inherit (self'.checks.pre-commit-check) shellHook;
-          });
-          # @hussein-aitlahcen: require `--option sandbox relaxed`
-          evm = pkgs.mkShell (baseShell // {
-            buildInputs = baseShell.buildInputs ++ [
-              inputs.foundry.defaultPackage.${system}
-              pkgs.solc
-              pkgs.go-ethereum
-              self'.packages.lodestar-cli
-            ];
-          });
-        };
 
         treefmt = {
           projectRootFile = "flake.nix";

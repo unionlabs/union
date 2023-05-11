@@ -34,16 +34,16 @@ func GenStateProof() *cobra.Command {
 				return err
 			}
 
-			clientCtx.NodeURI =  nodeURI
+			clientCtx.NodeURI = nodeURI
 
-			data := args[0];
-			path := args[1];
+			data := args[0]
+			path := args[1]
 
 			res, err := clientCtx.QueryABCI(abci.RequestQuery{
-				Data: []byte(data),
-				Path: path,
+				Data:   []byte(data),
+				Path:   path,
 				Height: 2,
-				Prove: true,
+				Prove:  true,
 			})
 			if err != nil {
 				return err
@@ -64,7 +64,7 @@ func GenStateProof() *cobra.Command {
 				return err
 			}
 
-			fmt.Println(hex.EncodeToString(proofBz));
+			fmt.Println(hex.EncodeToString(proofBz))
 
 			return nil
 		},
