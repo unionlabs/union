@@ -1,0 +1,3 @@
+- Update protobufs for Cosmos SDK to v0.46.4 
+  - Adds the `module_account_by_name` method to the `Query` trait
+  - ([#2776](https://github.com/informalsystems/hermes/2776))

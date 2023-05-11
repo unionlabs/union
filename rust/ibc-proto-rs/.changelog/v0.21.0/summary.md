@@ -1,0 +1,1 @@
+This is the first release of ibc-proto with its own changelog. For past releases, please check the [Hermes](https://github.com/informalsystems/hermes/blob/c34b354e310da7f59631ae315ea22c5f2b420d44/CHANGELOG.md) changelog.

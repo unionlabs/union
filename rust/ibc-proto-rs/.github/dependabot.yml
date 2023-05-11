@@ -1,0 +1,20 @@
+# Automatically open PRs to update outdated deps
+# See https://docs.github.com/en/github/administering-a-repository/enabling-and-disabling-version-updates
+
+version: 2
+updates:
+  - package-ecosystem: "cargo"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+
+  ## Disable dependabot for `proto-compiler`.
+  ## Rationale: we maintain the dependencies for proto-compiler
+  ##    manually, so that we update the proto-compiler binary
+  ##    (and the Cargo.lock file) only when we regenerate
+  ##    Rust types from the .proto files.
+  #  - package-ecosystem: "cargo"
+  #    directory: "proto-compiler"
+  #    schedule:
+  #      interval: "weekly"
+

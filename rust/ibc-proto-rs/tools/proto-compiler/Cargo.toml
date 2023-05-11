@@ -1,0 +1,16 @@
+[package]
+name         = "ibc-proto-compiler"
+version      = "0.2.0"
+authors      = ["Informal Systems <hello@informal.systems>"]
+edition      = "2021"
+publish      = false
+rust-version = "1.60"
+
+[dependencies]
+git2        = "0.16"
+prost-build = "0.11"
+walkdir     = "2.3"
+argh        = "0.1"
+tonic       = "0.9"
+tonic-build = "0.9"
+similar     = "2.2"

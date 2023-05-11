@@ -38,7 +38,7 @@
         ./uniond/uniond.nix
         ./uniond/proto.nix
         ./docs/docs.nix
-        ./light-clients/light-clients.nix
+        ./rust/rust.nix
         ./evm/evm.nix
         ./tools/lodestar-cli/lodestar-cli.nix
         ./networks/devnet.nix

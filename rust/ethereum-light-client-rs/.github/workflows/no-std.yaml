@@ -1,0 +1,45 @@
+name: no_std check
+on:
+  pull_request:
+    paths:
+      - .github/workflows/no-std.yml
+      - Cargo.toml
+      - Cargo.lock
+      - ci/**
+      - crates/**
+  push:
+    branches: main
+    paths:
+      - .github/workflows/no-std.yml
+      - Cargo.toml
+      - Cargo.lock
+      - ci/**
+      - crates/**
+
+jobs:
+  check-no-std-panic-conflict:
+    name: Check no_std panic conflict
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      - run: |
+          cd ci/no-std-check
+          make check-panic-conflict
+
+  check-substrate:
+    name: Check no_std substrate support
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          target: wasm32-unknown-unknown
+          override: true
+      - run: |
+          cd ci/no-std-check
+          make check-substrate

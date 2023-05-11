@@ -1,0 +1,19 @@
+[package]
+name = "no-std-check"
+version = "0.1.0"
+edition = "2021"
+resolver = "2"
+
+[dependencies]
+ethereum-consensus = { path = "../../crates/consensus", default-features = false }
+ethereum-light-client-verifier = { path = "../../crates/light-client-verifier", default-features = false }
+
+sp-core = { version = "18.0.0", default-features = false, optional = true }
+sp-io = { version = "20.0.0", default-features = false, optional = true }
+sp-runtime = { version = "21.0.0", default-features = false, optional = true }
+sp-std = { version = "7.0.0", default-features = false, optional = true }
+
+[features]
+panic-handler = []
+use-substrate = ["sp-core", "sp-io", "sp-runtime", "sp-std"]
+substrate-std = ["sp-core/std", "sp-io/std", "sp-runtime/std", "sp-std/std"]

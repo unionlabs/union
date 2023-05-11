@@ -1,0 +1,27 @@
+[package]
+name = "ethereum-light-client-cli"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "ethlc"
+path = "bin/main.rs"
+
+[dependencies]
+clap = { version = "4.1.1", features = ["derive"] }
+serde = { version = "1.0", default-features = false, features = ["alloc", "derive"] }
+serde_json = { version = "1.0.91" }
+displaydoc = { version = "0.2", default-features = false }
+anyhow = { version = "1.0.56" }
+log = { version = "0.4.17" }
+dirs = "4.0"
+env_logger = { version = "0.10.0" }
+tokio = { version = "1.24.1", default-features = false, features = ["rt-multi-thread", "macros"] }
+
+ssz-rs = { git = "https://github.com/bluele/ssz_rs", branch = "serde-no-std", default-features = false, features = ["serde"] }
+ssz-rs-derive = { git = "https://github.com/bluele/ssz_rs", branch = "serde-no-std", default-features = false }
+rs_merkle = { git = "https://github.com/antouhou/rs-merkle", rev = "8ffa623ce70a3659ae73619397b813887cd8d1c9" }
+
+ethereum-consensus = { path = "../consensus" }
+ethereum-light-client-verifier = { path = "../light-client-verifier" }
+lodestar-rpc = { path = "../lodestar-rpc" }
