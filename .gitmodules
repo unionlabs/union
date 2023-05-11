@@ -3,4 +3,4 @@
 	url = https://github.com/foundry-rs/forge-std
 [submodule "evm/tests/foundry/lib/solady"]
 	path = evm/tests/foundry/lib/solady
-	url = https://github.com/Vectorized/solady
+	url = https://github.com/vectorized/solady
