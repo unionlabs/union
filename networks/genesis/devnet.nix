@@ -9,6 +9,7 @@
           mkdir -p $out
           mv ./config/node_key.json $out/${name}
         '';
+      mkClientState = 
       mkHome = { genesisAccounts }:
         pkgs.runCommand "genesis-home" { } ''
           mkdir -p $out
@@ -85,8 +86,6 @@
 
         ${uniond} collect-gentxs --home .
         ${uniond} validate-genesis --home .
-
-        echo OUTPUT DIR IS: $out
       '';
 
       packages.devnet-validator-keys = pkgs.symlinkJoin {

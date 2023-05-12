@@ -1,13 +1,14 @@
 [package]
 name = "wasm-lc-types"
 version = "0.1.0"
+authors = ["UnionFi Developers"]
 edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+publish = false
+license = "BSL-1.1"
 
 [dependencies]
 cosmwasm-schema = "1.2.0"
 cosmwasm-std = "1.2.0"
-ibc-proto = { path = "../ibc-proto-rs", default-features = false }
 ibc = { version = "0.37.0", default-features = false, features = [ "serde" ] }
+ibc-proto = { path = "../ibc-proto-rs", default-features = false }
 serde = { version = "1.0", default-features = false, features = ["derive"] }

@@ -6,8 +6,6 @@ edition = "2021"
 publish = false
 license = "BSL-1.1"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [lib]
 crate-type = ["cdylib", "rlib"]
 
@@ -19,21 +17,21 @@ eth-minimal = []
 bytes = { version = "1.2.1", default-features = false }
 cosmwasm-schema = "1.2.0"
 cosmwasm-std = { version = "1.2.0", default-features = false, features = ["abort"] }
-ethereum-consensus = { path = "../ethereum-light-client-rs/crates/consensus", default-features = false }
-ethereum-light-client-verifier = { path = "../ethereum-light-client-rs/crates/light-client-verifier", default-features = false }
-ibc-proto = { path = "../ibc-proto-rs", default-features = false }
+ethereum-consensus = { path = "../ethereum-consensus", default-features = false }
+ethereum-light-client-verifier = { path = "../ethereum-verifier", default-features = false }
+hex = { version = "0.4", default-features = false }
 ibc = { version = "0.37.0", default-features = false, features = [ "serde" ] }
+ibc-proto = { path = "../ibc-proto-rs", default-features = false }
 prost = { version = "0.11", default-features = false }
 rlp = { version = "0.5.2", default-features = false }
 schemars = { version = "0.8.3", default-features = false }
 serde = { version = "1.0.103", default-features = false, features = ["derive"] }
+serde-json-wasm = { version = "*", default-features = false }
 ssz-rs = { git = "https://github.com/bluele/ssz_rs", branch = "serde-no-std", features = ["serde"], default-features = false }
 thiserror = { version = "1.0.26", default-features = false }
 tiny-keccak = { version = "2.0.2", default-features = false }
-wasm-lc-types = { path = "../08-wasm" }
-serde-json-wasm = { version = "*", default-features = false }
-hex = { version = "0.4", default-features = false }
+wasm-lc-types = { path = "../wasm-light-client-types" }
 
 [dev-dependencies]
-serde_json = "*"
 base64 = "*"
+serde_json = "*"

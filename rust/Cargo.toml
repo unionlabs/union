@@ -1,11 +1,10 @@
 [workspace]
 members = [
-  "ethereum",
-  "08-wasm"
-]
-exclude = [
-  "ethereum-light-client-rs" 
-]
+  "ethereum-consensus",
+  "ethereum-light-client",
+  "ethereum-verifier",
+  "wasm-light-client-types"]
+
 resolver = "2"
 
 [profile.release]

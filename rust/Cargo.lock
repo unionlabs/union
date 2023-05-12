@@ -533,6 +533,7 @@ dependencies = [
  "primitive-types",
  "rs_merkle",
  "serde",
+ "serde_json",
  "sha2 0.10.6",
  "ssz-rs",
  "ssz-rs-derive",
@@ -544,11 +545,13 @@ version = "0.1.0"
 dependencies = [
  "displaydoc",
  "ethereum-consensus",
+ "hex-literal",
  "log",
  "patricia-merkle-trie",
  "primitive-types",
  "rlp",
  "serde",
+ "serde_json",
  "trie-db",
 ]
 
@@ -568,6 +571,9 @@ version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "835c052cb0c08c1acf6ffd71c022172e18723949c8282f2b9f27efbc51e64534"
 dependencies = [
+ "byteorder",
+ "rand",
+ "rustc-hex",
  "static_assertions",
 ]
 
@@ -753,6 +759,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "hex-literal"
+version = "0.3.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7ebdb29d2ea9ed0083cd8cece49bbd968021bd99b0849edb4a9a7ee0fdf6a4e0"
+
+[[package]]
 name = "hmac"
 version = "0.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -910,6 +922,15 @@ dependencies = [
  "ripemd",
  "sha2 0.10.6",
  "sha3",
+]
+
+[[package]]
+name = "impl-codec"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ba6a270039626615617f3f36d15fc827041df3b78c439da2cadfa47455a77f2f"
+dependencies = [
+ "parity-scale-codec",
 ]
 
 [[package]]
@@ -1113,9 +1134,11 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5ddb756ca205bd108aee3c62c6d3c994e1df84a59b9d6d4a5ea42ee1fd5a9a28"
 dependencies = [
  "arrayvec",
+ "bitvec",
  "byte-slice-cast",
  "impl-trait-for-tuples",
  "parity-scale-codec-derive",
+ "serde",
 ]
 
 [[package]]
@@ -1236,6 +1259,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9f3486ccba82358b11a77516035647c34ba167dfa53312630de83b12bd4f3d66"
 dependencies = [
  "fixed-hash",
+ "impl-codec",
  "impl-serde",
  "uint",
 ]
@@ -2092,6 +2116,7 @@ dependencies = [
  "hash-db",
  "hashbrown 0.12.3",
  "log",
+ "rustc-hex",
  "smallvec",
 ]
 

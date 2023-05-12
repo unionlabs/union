@@ -1,8 +1,0 @@
-[workspace]
-resolver = "2"
-members = [
-    "crates/*"
-]
-exclude = [
-    "ci/no-std-check",
-]
