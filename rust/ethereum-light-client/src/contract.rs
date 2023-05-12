@@ -84,6 +84,9 @@ pub fn execute(
     Ok(Response::default().set_data(result.encode()?))
 }
 
+// TODO(aeryz): this POC implementation of membership verification assumes that the
+// counterparty stores the data as json and verifies multiple proofs. This will be
+// properly implemented when the dependent PRs/issues are resolved.
 pub fn verify_membership(
     deps: Deps,
     height: Height,
@@ -121,7 +124,7 @@ pub fn verify_membership(
     let mut i = 0;
     for proof in storage_proof.proof {
         let root = H256::from_slice(consensus_state.storage_root.as_bytes());
-        let key = hex::decode(&proof.key[2..]).unwrap();
+        let key = hex::decode(&proof.key[2..]).map_err(|_| Error::DecodeError("".into()))?;
 
         let value = {
             if i + 32 > encoded_value.len() {
@@ -131,7 +134,9 @@ pub fn verify_membership(
                 }
                 value.to_vec()
             } else {
-                let value: &[u8; 32] = encoded_value[i..i + 32].try_into().unwrap();
+                let value: &[u8; 32] = encoded_value[i..i + 32]
+                    .try_into()
+                    .map_err(|_| Error::DecodeError("".into()))?;
                 value.to_vec()
             }
         };
@@ -148,8 +153,8 @@ pub fn verify_membership(
                 proof
                     .proof
                     .iter()
-                    .map(|p| hex::decode(&p[2..]).unwrap())
-                    .collect(),
+                    .map(|p| hex::decode(&p[2..]).map_err(|_| Error::DecodeError("".into())))
+                    .collect::<Result<Vec<_>, _>>()?,
             )
             .map_err(|e| Error::Verification(e.to_string()))?;
     }
