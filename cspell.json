@@ -16,9 +16,10 @@
     "union"
   ],
   "ignorePaths": [
-    "rust/ethereum/src/test/valid_light_client_update_*.json",
+    "rust/ethereum-light-client/src/test/valid_light_client_update_*.json",
     "rust/ibc-proto-rs/*",
-    "rust/ethereum-light-client-rs/*",
+    "rust/ethereum-consensus/*",
+    "rust/ethereum-verifier/*",
     "dictionaries/**",
     "**/*.svg",
     "**/node_modules",

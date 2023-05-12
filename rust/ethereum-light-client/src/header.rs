@@ -52,7 +52,6 @@ impl TryFrom<RawHeader> for Header {
         Ok(Self {
             trusted_sync_committee: trusted_sync_committee.try_into()?,
             consensus_update: convert_proto_to_consensus_update(consensus_update)?,
-            // execution_update: convert_proto_to_execution_update(execution_update),
             account_update: account_update.try_into()?,
             timestamp: Timestamp::from_nanoseconds(value.timestamp * NANO_SECONDS_MULTIPLIER)
                 .map_err(|_| Error::decode("invalid timestamp in `Header`"))?,
@@ -63,7 +62,6 @@ impl TryFrom<RawHeader> for Header {
 impl From<Header> for RawHeader {
     fn from(value: Header) -> Self {
         let consensus_update = value.consensus_update;
-        // let execution_update = value.execution_update;
         let account_update = value.account_update;
 
         Self {

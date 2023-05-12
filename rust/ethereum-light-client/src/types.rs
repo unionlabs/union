@@ -269,11 +269,7 @@ pub(crate) fn convert_proto_sync_aggregate(
         sync_committee_bits: Bitvector::<SYNC_COMMITTEE_SIZE>::deserialize(
             sync_aggregate.sync_committee_bits.as_slice(),
         )
-        .map_err(|e| {
-            Error::decode(format!(
-                "{e}: cannot parse `sync_committee_bits` in `RawSyncAggregate`"
-            ))
-        })?,
+        .map_err(|_| Error::decode("cannot parse `sync_committee_bits` in `RawSyncAggregate`"))?,
         sync_committee_signature: Signature::try_from(sync_aggregate.sync_committee_signature)
             .map_err(|_| {
                 Error::decode("cannot parse `sync_committee_signature` in `RawSyncAggregate`")
