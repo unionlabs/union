@@ -62,8 +62,14 @@ jobs:
         with:
           nixbuild_token: ${{ secrets.nixbuild_token }}
       - run: mkdir ${{ matrix.system }}
+      - run: ls -la
+      - run: ls -la ${{ matrix.system }}
       - run: nix copy --to file://`pwd`/${{ matrix.system }} --from ssh-ng://eu.nixbuild.net `cat result.json | jq -r '.packages."${{ matrix.system }}"."${{ matrix.package }}".outputs.out'` --extra-experimental-features nix-command
+      - run: ls -la
+      - run: ls -la ${{ matrix.system }}
       - run: cat ${{ matrix.system }}/nar/*.nar.xz | xz -dc | nix-store --restore ${{ matrix.system }}.${{ matrix.package }}
+      - run: ls -la
+      - run: ls -la ${{ matrix.system }}
       - uses: actions/upload-artifact@v3
         with:
           name: ${{ matrix.system }}.${{ matrix.package }}
@@ -103,7 +109,7 @@ jobs:
           automatic_release_tag: latest-rc
           title: ${{github.ref_name}}
           files: |
-            **/*.uniond
+            **/uniond
 
 
 
