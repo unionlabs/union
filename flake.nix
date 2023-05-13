@@ -40,6 +40,7 @@
         ./docs/docs.nix
         ./rust/rust.nix
         ./evm/evm.nix
+        ./rust/proto.nix
         ./tools/lodestar-cli/lodestar-cli.nix
         ./networks/devnet.nix
         ./networks/genesis/devnet.nix

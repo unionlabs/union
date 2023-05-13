@@ -1,0 +1,2 @@
+[workspace]
+members = ["cometbls", "cosmos-sdk", "ibc-go", "ics23"]
