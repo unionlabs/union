@@ -19,7 +19,7 @@ jobs:
     permissions: write-all
     strategy:
       matrix:
-        package: [ uniond-image ]
+        package: [ uniond, uniond-image ]
         system: [ aarch64-linux, x86_64-linux ]
     steps: 
       - uses: actions/download-artifact@v3
