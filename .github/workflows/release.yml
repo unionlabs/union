@@ -128,8 +128,8 @@ jobs:
           automatic_release_tag: ${{github.ref_name}}
           title: ${{github.ref_name}}
           files: |
-            uniond-aarch64
-            uniond-x86_64
+            uniond-aarch64-linux
+            uniond-x86_64-linux
       - if: "!contains(github.ref_name, 'rc')"
         name: 'Create Release'
         uses: marvinpinto/action-automatic-releases@v1.2.1
@@ -139,5 +139,5 @@ jobs:
           automatic_release_tag: ${{github.ref_name}}
           title: ${{github.ref_name}}
           files: |
-            uniond-aarch64
-            uniond-x86_64
+            uniond-aarch64-linux
+            uniond-x86_64-linux
