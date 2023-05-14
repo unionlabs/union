@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	provergrpc "cometbls-prover/grpc/api/v1"
+	provergrpc "unionp/grpc/api/v1"
 	"context"
 	"encoding/base64"
 	"encoding/hex"
@@ -20,13 +20,13 @@ import (
 )
 
 var ProveCmd = &cobra.Command{
-	Use:   "prove",
-	Short: "",
-	Long:  ``,
+	Use:   "example-prove [uri]",
+	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		conn, err := grpc.Dial("localhost:9091", grpc.WithTransportCredentials(insecure.NewCredentials()))
+		uri := args[0]
+		conn, err := grpc.Dial(uri, grpc.WithTransportCredentials(insecure.NewCredentials()))
 		if err != nil {
-			log.Fatalf("fail to dial: %v", err)
+			log.Fatalf("Failed to dial: %v", err)
 		}
 		defer conn.Close()
 		client := provergrpc.NewUnionProverAPIClient(conn)
@@ -36,7 +36,7 @@ var ProveCmd = &cobra.Command{
 		decodeB64 := func(s string) []byte {
 			bz, err := base64.StdEncoding.DecodeString(s)
 			if err != nil {
-				panic(err)
+				log.Fatal(err)
 			}
 			return bz
 		}
@@ -44,13 +44,13 @@ var ProveCmd = &cobra.Command{
 		// Nb of tokens for each val in devnet
 		tokens, success := new(big.Int).SetString("1000000000000000000000", 10)
 		if !success {
-			panic("oops")
+			log.Fatal("Impossible; qed;")
 		}
 
 		toValidator := func(pubKey []byte) *types.SimpleValidator {
 			protoPK, err := ce.PubKeyToProto(cometbn254.PubKey(pubKey))
 			if err != nil {
-				panic(err)
+				log.Fatal(err)
 			}
 			return &types.SimpleValidator{
 				PubKey: &protoPK,
@@ -125,8 +125,9 @@ var ProveCmd = &cobra.Command{
 			},
 		})
 		if err != nil {
-			panic(err)
+			log.Fatal(err)
 		}
+
 		fmt.Println(res)
 	},
 }

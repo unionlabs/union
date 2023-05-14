@@ -1,8 +1,8 @@
 package nonadjacent
 
 import (
-	"cometbls-prover/pkg/emulated"
-	"cometbls-prover/pkg/lightclient"
+	"unionp/pkg/emulated"
+	"unionp/pkg/lightclient"
 
 	"github.com/consensys/gnark/frontend"
 	"github.com/consensys/gnark/std/algebra/emulated/fields_bn254"

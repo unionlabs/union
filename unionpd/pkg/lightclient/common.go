@@ -1,8 +1,8 @@
 package lightclient
 
 import (
-	"cometbls-prover/pkg/merkle"
-	"cometbls-prover/pkg/proto"
+	"unionp/pkg/merkle"
+	"unionp/pkg/proto"
 	"fmt"
 	curve "github.com/consensys/gnark-crypto/ecc/bn254"
 	"github.com/consensys/gnark/frontend"

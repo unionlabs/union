@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	provergrpc "cometbls-prover/grpc/api/v1"
+	provergrpc "unionp/grpc/api/v1"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
 	"log"

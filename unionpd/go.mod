@@ -1,4 +1,4 @@
-module cometbls-prover
+module unionp
 
 go 1.20
 

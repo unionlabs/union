@@ -1,7 +1,7 @@
 package merkle
 
 import (
-	"cometbls-prover/pkg/sha256"
+	"unionp/pkg/sha256"
 	"github.com/consensys/gnark/frontend"
 	"math"
 )

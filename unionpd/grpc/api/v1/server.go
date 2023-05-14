@@ -3,8 +3,8 @@ package grpc
 import (
 	"bufio"
 	"bytes"
-	"cometbls-prover/pkg/lightclient"
-	lcgadget "cometbls-prover/pkg/lightclient/nonadjacent"
+	"unionp/pkg/lightclient"
+	lcgadget "unionp/pkg/lightclient/nonadjacent"
 	context "context"
 	"fmt"
 	"io"
