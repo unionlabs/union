@@ -23,7 +23,7 @@ github.com/cespare/xxhash
 # github.com/cespare/xxhash/v2 v2.2.0
 ## explicit; go 1.11
 github.com/cespare/xxhash/v2
-# github.com/cometbft/cometbft v0.37.0 => github.com/unionfi/cometbls v0.0.0-20230410071201-f19ae296cf17
+# github.com/cometbft/cometbft v0.37.0 => github.com/unionfi/cometbls v0.0.0-20230512064939-963390dd5d1e
 ## explicit; go 1.20
 github.com/cometbft/cometbft/abci/types
 github.com/cometbft/cometbft/config
@@ -192,7 +192,7 @@ github.com/cosmos/btcutil/bech32
 # github.com/cosmos/cosmos-proto v1.0.0-beta.2
 ## explicit; go 1.18
 github.com/cosmos/cosmos-proto
-# github.com/cosmos/cosmos-sdk v0.47.0 => github.com/unionfi/cosmos-sdk v0.0.0-20230410074509-021566a5aba4
+# github.com/cosmos/cosmos-sdk v0.47.0 => github.com/unionfi/cosmos-sdk v0.0.0-20230512065059-fd36c0d536f8
 ## explicit; go 1.19
 github.com/cosmos/cosmos-sdk/codec
 github.com/cosmos/cosmos-sdk/codec/types
@@ -628,7 +628,7 @@ rsc.io/tmplfunc/internal/parse
 # sigs.k8s.io/yaml v1.3.0
 ## explicit; go 1.12
 sigs.k8s.io/yaml
-# github.com/cometbft/cometbft => github.com/unionfi/cometbls v0.0.0-20230410071201-f19ae296cf17
+# github.com/cometbft/cometbft => github.com/unionfi/cometbls v0.0.0-20230512064939-963390dd5d1e
 # github.com/consensys/gnark => github.com/hussein-aitlahcen/gnark v0.0.0-20230419121246-e325d86969ea
 # github.com/consensys/gnark-crypto => github.com/hussein-aitlahcen/gnark-crypto v0.0.0-20230419121058-59d3a8050fda
-# github.com/cosmos/cosmos-sdk => github.com/unionfi/cosmos-sdk v0.0.0-20230410074509-021566a5aba4
+# github.com/cosmos/cosmos-sdk => github.com/unionfi/cosmos-sdk v0.0.0-20230512065059-fd36c0d536f8
