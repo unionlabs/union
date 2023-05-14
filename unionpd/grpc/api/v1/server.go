@@ -6,13 +6,13 @@ import (
 	"cometbls-prover/pkg/lightclient"
 	lcgadget "cometbls-prover/pkg/lightclient/nonadjacent"
 	context "context"
-	"crypto/hmac"
 	"fmt"
 	"io"
 	"log"
 	"math/big"
 	"os"
 
+	cometbft_bn254 "github.com/cometbft/cometbft/crypto/bn254"
 	ce "github.com/cometbft/cometbft/crypto/encoding"
 	"github.com/cometbft/cometbft/crypto/merkle"
 	"github.com/cometbft/cometbft/libs/protoio"
@@ -26,35 +26,7 @@ import (
 	"github.com/consensys/gnark/frontend"
 	"github.com/consensys/gnark/frontend/cs/r1cs"
 	gadget "github.com/consensys/gnark/std/algebra/emulated/sw_bn254"
-	"github.com/holiman/uint256"
-	"golang.org/x/crypto/sha3"
 )
-
-func hashToField(msg []byte) fr.Element {
-	hmac := hmac.New(sha3.NewLegacyKeccak256, []byte("CometBLS"))
-	hmac.Write(msg)
-	modMinusOne := new(big.Int).Sub(fr.Modulus(), big.NewInt(1))
-	num := new(big.Int).SetBytes(hmac.Sum(nil))
-	num.Mod(num, modMinusOne)
-	num.Add(num, big.NewInt(1))
-	val, overflow := uint256.FromBig(num)
-	if overflow {
-		panic("impossible; qed;")
-	}
-	valBytes := val.Bytes32()
-	var element fr.Element
-	err := element.SetBytesCanonical(valBytes[:])
-	if err != nil {
-		panic("impossible; qed;")
-	}
-	return element
-}
-
-func hashToField2(msg []byte) (fr.Element, fr.Element) {
-	e0 := hashToField(append([]byte{0}, msg...))
-	e1 := hashToField(append([]byte{1}, msg...))
-	return e0, e1
-}
 
 type proverServer struct {
 	UnimplementedUnionProverAPIServer
@@ -171,7 +143,7 @@ func (p *proverServer) Prove(c context.Context, request *ProveRequest) (*ProveRe
 		return nil, err
 	}
 
-	hmX, hmY := hashToField2(signedBytes)
+	hmX, hmY := cometbft_bn254.HashToField2(signedBytes)
 
 	witness := lcgadget.Circuit{
 		TrustedInput:   trustedInput,
