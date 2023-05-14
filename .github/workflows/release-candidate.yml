@@ -65,14 +65,20 @@ jobs:
       - run: ls -la
       - run: ls -la ${{ matrix.system }}
       - run: OUTPUT=`cat result.json | jq -r '.packages."${{ matrix.system }}"."${{ matrix.package }}".outputs.out'`
-      - run: echo $OUTPUT
+      - run: |
+          echo $OUTPUT
+          prefix="/nix/store"
+          suffix="-uniond"
+          trimmed=${string#$prefix}
+          trimmed=${trimmed%$suffix}
+          NAR_NAME=trimmed
       - run: nix copy --to file://`pwd`/${{ matrix.system }} --from ssh-ng://eu.nixbuild.net $OUTPUT --extra-experimental-features nix-command
       - run: ls -la
       - run: ls -la ${{ matrix.system }}
       - run: ls -la ${{ matrix.system }}/nar
       - run: tree ${{ matrix.system }}/nar
-      - run: cat ${{ matrix.system }}/nar/*.nar.xz | xz -dc | nix-store --restore ${{ matrix.system }}.${{ matrix.package }}
-      - run: cat ${{ matrix.system }}/nar/*.nar.xz | xz -dc
+      - run: cat ${{ matrix.system }}/nar/${NARNAME}.nar.xz | xz -dc | nix-store --restore ${{ matrix.system }}.${{ matrix.package }}
+      # - run: cat ${{ matrix.system }}/nar/*.nar.xz | xz -dc
       - run: tree
       - run: ls -la
       - run: ls -la ${{ matrix.system }}
