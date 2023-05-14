@@ -262,12 +262,8 @@
 
       packages.generate-rust-proto = pkgs.writeShellApplication {
         name = "generate-rust-proto";
-        runtimeInputs = [ pkgs.protobuf ];
+        runtimeInputs = [ pkgs.protobuf protoc-gen-tonic ];
         text = ''
-          plugindir=${protoc-gen-tonic}
-
-          export PATH="$plugindir/bin:$PATH"
-
           readarray -t protos < <(cat ${pkgs.lib.concatStringsSep " " (pkgs.lib.mapAttrsToList proto-inputs all-proto-build)})
 
           outdir=rust/protos
