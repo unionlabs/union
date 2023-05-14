@@ -3,23 +3,22 @@ package grpc
 import (
 	"bufio"
 	"bytes"
-	"cometbls-prover/pkg/lightclient"
-	lcgadget "cometbls-prover/pkg/lightclient/nonadjacent"
 	context "context"
-	"crypto/hmac"
 	"fmt"
 	"io"
 	"log"
 	"math/big"
 	"os"
+	"unionp/pkg/lightclient"
+	lcgadget "unionp/pkg/lightclient/nonadjacent"
 
+	cometbft_bn254 "github.com/cometbft/cometbft/crypto/bn254"
 	ce "github.com/cometbft/cometbft/crypto/encoding"
 	"github.com/cometbft/cometbft/crypto/merkle"
 	"github.com/cometbft/cometbft/libs/protoio"
 	"github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/consensys/gnark-crypto/ecc"
 	curve "github.com/consensys/gnark-crypto/ecc/bn254"
-	"github.com/consensys/gnark-crypto/ecc/bn254/fp"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr"
 	backend "github.com/consensys/gnark/backend/groth16"
 	backend_bn254 "github.com/consensys/gnark/backend/groth16/bn254"
@@ -27,35 +26,7 @@ import (
 	"github.com/consensys/gnark/frontend"
 	"github.com/consensys/gnark/frontend/cs/r1cs"
 	gadget "github.com/consensys/gnark/std/algebra/emulated/sw_bn254"
-	"github.com/holiman/uint256"
-	"golang.org/x/crypto/sha3"
 )
-
-func hashToField(msg []byte) fp.Element {
-	hmac := hmac.New(sha3.NewLegacyKeccak256, []byte("CometBLS"))
-	hmac.Write(msg)
-	modMinusOne := new(big.Int).Sub(fp.Modulus(), big.NewInt(1))
-	num := new(big.Int).SetBytes(hmac.Sum(nil))
-	num.Mod(num, modMinusOne)
-	num.Add(num, big.NewInt(1))
-	val, overflow := uint256.FromBig(num)
-	if overflow {
-		panic("impossible; qed;")
-	}
-	valBytes := val.Bytes32()
-	var element fp.Element
-	err := element.SetBytesCanonical(valBytes[:])
-	if err != nil {
-		panic("impossible; qed;")
-	}
-	return element
-}
-
-func hashToField2(msg []byte) curve.E2 {
-	e0 := hashToField(append([]byte{0}, msg...))
-	e1 := hashToField(append([]byte{1}, msg...))
-	return curve.E2{A0: e0, A1: e1}
-}
 
 type proverServer struct {
 	UnimplementedUnionProverAPIServer
@@ -172,7 +143,7 @@ func (p *proverServer) Prove(c context.Context, request *ProveRequest) (*ProveRe
 		return nil, err
 	}
 
-	hm := hashToField2(signedBytes)
+	hmX, hmY := cometbft_bn254.HashToField2(signedBytes)
 
 	witness := lcgadget.Circuit{
 		TrustedInput:   trustedInput,
@@ -185,7 +156,7 @@ func (p *proverServer) Prove(c context.Context, request *ProveRequest) (*ProveRe
 			untrustedValidatorsRoot[0:16],
 			untrustedValidatorsRoot[16:32],
 		},
-		Message: [2]frontend.Variable{hm.A0.BigInt(new(big.Int)), hm.A1.BigInt(new(big.Int))},
+		Message: [2]frontend.Variable{hmX, hmY},
 	}
 
 	log.Println("Witness: ", witness)
@@ -245,7 +216,7 @@ func (p *proverServer) Prove(c context.Context, request *ProveRequest) (*ProveRe
 		return nil, err
 	}
 
-	fmt.Println(publicWitness)
+	log.Println(publicWitness)
 
 	publicInputs, err := publicWitness.MarshalBinary()
 	if err != nil {

@@ -30,6 +30,9 @@ const (
 	sizeFp         = fp.Bytes
 	sizePublicKey  = sizeFp
 	sizePrivateKey = sizeFr + sizePublicKey
+
+	XHashToScalarFieldPrefix = 0
+	YHashToScalarFieldPrefix = 1
 )
 
 var _ crypto.PrivKey = PrivKey{}
@@ -46,7 +49,7 @@ func (privKey PrivKey) Bytes() []byte {
 func (privKey PrivKey) Sign(msg []byte) ([]byte, error) {
 	s := new(big.Int)
 	s = s.SetBytes(privKey)
-	point := hashToG2(msg)
+	point := HashToG2(msg)
 	var p bn254.G2Affine
 	p.ScalarMultiplication(&point, s)
 	compressedSig := p.Bytes()
@@ -90,16 +93,22 @@ func (pubKey PubKey) Bytes() []byte {
 }
 
 func (pubKey PubKey) VerifySignature(msg []byte, sig []byte) bool {
-	hashedMessage := hashToG2(msg)
+	hashedMessage := HashToG2(msg)
 	var public bn254.G1Affine
 	_, err := public.SetBytes(pubKey)
 	if err != nil {
+		return false
+	}
+	if public.IsInfinity() {
 		return false
 	}
 
 	var signature bn254.G2Affine
 	_, err = signature.SetBytes(sig)
 	if err != nil {
+		return false
+	}
+	if signature.IsInfinity() {
 		return false
 	}
 
@@ -312,10 +321,10 @@ func nativeNaiveScalarMul(p bn254.G2Affine, s *big.Int) bn254.G2Affine {
 }
 
 // Custom function: (hmac_keccak(msg) mod (p - 1)) + 1
-func hashToField(msg []byte) fp.Element {
+func HashToField(msg []byte) fr.Element {
 	hmac := hmac.New(Hash, []byte("CometBLS"))
 	hmac.Write(msg)
-	modMinusOne := new(big.Int).Sub(fp.Modulus(), big.NewInt(1))
+	modMinusOne := new(big.Int).Sub(fr.Modulus(), big.NewInt(1))
 	num := new(big.Int).SetBytes(hmac.Sum(nil))
 	num.Mod(num, modMinusOne)
 	num.Add(num, big.NewInt(1))
@@ -324,7 +333,7 @@ func hashToField(msg []byte) fp.Element {
 		panic("impossible; qed;")
 	}
 	valBytes := val.Bytes32()
-	var element fp.Element
+	var element fr.Element
 	err := element.SetBytesCanonical(valBytes[:])
 	if err != nil {
 		panic("impossible; qed;")
@@ -332,15 +341,18 @@ func hashToField(msg []byte) fp.Element {
 	return element
 }
 
-func hashToField2(msg []byte) bn254.E2 {
-	e0 := hashToField(append([]byte{0}, msg...))
-	e1 := hashToField(append([]byte{1}, msg...))
-	return bn254.E2{A0: e0, A1: e1}
+func HashToField2(msg []byte) (fr.Element, fr.Element) {
+	x := HashToField(append([]byte{XHashToScalarFieldPrefix}, msg...))
+	y := HashToField(append([]byte{YHashToScalarFieldPrefix}, msg...))
+	return x, y
 }
 
-func hashToG2(msg []byte) bn254.G2Affine {
-	e := hashToField2(msg)
-	point := nativeNaiveScalarMul(mapToCurve2(&e), &G2Cofactor)
+func HashToG2(msg []byte) bn254.G2Affine {
+	x, y := HashToField2(msg)
+	point := nativeNaiveScalarMul(mapToCurve2(&bn254.E2{
+		A0: *new(fp.Element).SetBigInt(x.BigInt(new(big.Int))),
+		A1: *new(fp.Element).SetBigInt(y.BigInt(new(big.Int))),
+	}), &G2Cofactor)
 	if !point.IsOnCurve() {
 		panic("Point is not on the curve")
 	}

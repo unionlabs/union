@@ -1,0 +1,23 @@
+run:
+  tests: false
+  skip-dirs:
+    - contrib
+    - sim
+
+linters-settings:
+  lll:
+    line-length: 120
+
+linters:
+  disable-all: true
+  enable:
+    #- errcheck
+    #- ineffassign
+    - gas
+    #- gofmt
+    #- golint
+    #- gosimple
+    #- govet
+    - lll
+    #- varcheck
+    #- unused

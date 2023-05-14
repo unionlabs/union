@@ -1,0 +1,34 @@
+syntax = "proto3";
+package tendermint.p2p;
+
+option go_package = "github.com/cometbft/cometbft/proto/tendermint/p2p";
+
+import "gogoproto/gogo.proto";
+
+message NetAddress {
+  string id   = 1 [(gogoproto.customname) = "ID"];
+  string ip   = 2 [(gogoproto.customname) = "IP"];
+  uint32 port = 3;
+}
+
+message ProtocolVersion {
+  uint64 p2p   = 1 [(gogoproto.customname) = "P2P"];
+  uint64 block = 2;
+  uint64 app   = 3;
+}
+
+message DefaultNodeInfo {
+  ProtocolVersion      protocol_version = 1 [(gogoproto.nullable) = false];
+  string               default_node_id  = 2 [(gogoproto.customname) = "DefaultNodeID"];
+  string               listen_addr      = 3;
+  string               network          = 4;
+  string               version          = 5;
+  bytes                channels         = 6;
+  string               moniker          = 7;
+  DefaultNodeInfoOther other            = 8 [(gogoproto.nullable) = false];
+}
+
+message DefaultNodeInfoOther {
+  string tx_index    = 1;
+  string rpc_address = 2 [(gogoproto.customname) = "RPCAddress"];
+}

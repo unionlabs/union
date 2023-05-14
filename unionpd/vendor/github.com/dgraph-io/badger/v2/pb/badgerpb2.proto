@@ -1,0 +1,90 @@
+/*
+ * Copyright (C) 2017 Dgraph Labs, Inc. and Contributors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+// Use protos/gen.sh to generate .pb.go files.
+syntax = "proto3";
+
+package badgerpb2;
+
+option go_package = "github.com/dgraph-io/badger/v2/pb";
+
+message KV {
+  bytes key = 1;
+  bytes value = 2;
+  bytes user_meta = 3;
+  uint64 version = 4;
+  uint64 expires_at = 5;
+  bytes meta = 6;
+
+  // Stream id is used to identify which stream the KV came from.
+  uint32 stream_id = 10;
+  // Stream done is used to indicate end of stream.
+  bool stream_done = 11;
+}
+
+message KVList {
+  repeated KV kv = 1;
+}
+
+message ManifestChangeSet {
+  // A set of changes that are applied atomically.
+  repeated ManifestChange changes = 1;
+}
+
+enum EncryptionAlgo {
+  aes = 0;
+}
+
+message ManifestChange {
+  uint64 Id = 1;            // Table ID.
+  enum Operation {
+          CREATE = 0;
+          DELETE = 1;
+  }
+  Operation Op   = 2;
+  uint32 Level   = 3;       // Only used for CREATE.
+  uint64 key_id  = 4;
+  EncryptionAlgo encryption_algo = 5;
+  uint32 compression = 6;   // Only used for CREATE Op.
+}
+
+message BlockOffset {
+  bytes key = 1;
+  uint32 offset = 2;
+  uint32 len = 3;
+}
+
+message TableIndex {
+  repeated BlockOffset offsets = 1;
+  bytes bloom_filter = 2;
+  uint64 estimated_size = 3;
+}
+
+message Checksum {
+  enum Algorithm {
+    CRC32C = 0;
+    XXHash64 = 1;
+  }
+  Algorithm algo = 1; // For storing type of Checksum algorithm used
+  uint64 sum = 2;
+}
+
+message DataKey {
+  uint64 key_id      = 1;
+  bytes  data       = 2;
+  bytes  iv         = 3;
+  int64  created_at = 4;
+}
