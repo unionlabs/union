@@ -71,20 +71,25 @@ jobs:
           trimmed=${OUTPUT#$prefix}
           trimmed=${trimmed%$suffix}
           NARINFO_NAME=$trimmed
+        
+
+          echo "the three vars"
+          echo $OUTPUT
+          echo $url
+
+          nix copy --to file://`pwd`/${{ matrix.system }} --from ssh-ng://eu.nixbuild.net $OUTPUT --extra-experimental-features nix-command
+
+
+        
+          echo "url_line V"
 
           # Use grep to find the line that contains the URL
           url_line=$(cat ./${NARINFO_NAME}.narinfo | grep "URL:")
 
           # Use cut to extract the URL field from the line
-          url=$(echo "$url_line" | cut -d " " -f 2-)
-        
-
-          echo "the three vars"
+          NAR_NAME=$(echo "$url_line" | cut -d " " -f 2-)
           echo $NAR_NAME
-          echo $OUTPUT
-          echo $url
 
-          nix copy --to file://`pwd`/${{ matrix.system }} --from ssh-ng://eu.nixbuild.net $OUTPUT --extra-experimental-features nix-command
           ls -la
           ls -la ${{ matrix.system }}
           ls -la ${{ matrix.system }}/nar
