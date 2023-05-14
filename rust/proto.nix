@@ -42,23 +42,6 @@
           echo "$cargotoml" | ${pkgs.lib.meta.getExe pkgs.yj} -jt | sed 's/^PROTOC_INSERTION_POINT = 1$/## @@protoc_insertion_point(features)/' > $out
         '';
 
-      # TODO(benluelo): structured rust attr builder?
-      # something like:
-      # { derive = ["Eq", "PartialOrd", "Ord"] }
-      # { cfg_attr = [{ feature = "std"; } {serde = ["default"]} ]}
-      attrs = {
-        ord = ''#[derive(Eq, PartialOrd, Ord)]'';
-        eq = ''#[derive(Eq)]'';
-
-        serde = ''#[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]'';
-        serde_default = ''#[cfg_attr(feature = "std", serde(default))]'';
-        serde_base64 = ''#[cfg_attr(feature = "std", serde(with = "::serde_utils::base64"))]'';
-        serde_inner_base64 = ''#[serde(with = "::serde_utils::inner_base64")]'';
-
-        jsonschema = ''#[cfg_attr(all(feature = "json-schema", feature = "std"), derive(::schemars::JsonSchema))]'';
-        jsonschema_str = ''#[cfg_attr(all(feature = "json-schema", feature = "std"), schemars(with = "String"))]'';
-      };
-
       all-proto-build = rec {
         cometbls = rec {
           src = "${proto.cometbls}/proto";
@@ -123,92 +106,114 @@
         };
       };
 
-      type_attributes = with attrs; {
-        ".google.protobuf.Any" = [ serde eq ];
-        ".google.protobuf.Timestamp" = [ serde ];
-        ".google.protobuf.Duration" = [ serde eq ];
-        ".ibc.core.client.v1" = [ serde ];
-        ".ibc.core.client.v1.Height" = [ jsonschema ord ];
-        ".ibc.core.commitment.v1" = [ serde ];
-        ".ibc.core.commitment.v1.MerkleRoot" = [ jsonschema ];
-        ".ibc.core.commitment.v1.MerklePrefix" = [ jsonschema ];
-        ".ibc.core.channel.v1" = [ serde ];
-        ".ibc.core.channel.v1.Channel" = [ jsonschema ];
-        ".ibc.core.channel.v1.Counterparty" = [ jsonschema ];
-        ".ibc.core.connection.v1" = [ serde ];
-        ".ibc.core.connection.v1.ConnectionEnd" = [ jsonschema ];
-        ".ibc.core.connection.v1.Counterparty" = [ jsonschema ];
-        ".ibc.core.connection.v1.Version" = [ jsonschema ];
-        ".ibc.core.types.v1" = [ serde ];
-        ".ibc.applications.transfer.v1" = [ serde ];
-        ".ibc.applications.transfer.v2" = [ serde ];
-        ".ibc.applications.interchain_accounts.v1" = [ serde ];
-        ".ibc.applications.interchain_accounts.controller.v1" = [ serde ];
-        ".ibc.lightclients.wasm.v1" = [ serde ];
-        ".ibc.lightclients.ethereum.v1" = [ serde ];
-        ".cosmos.ics23.v1" = [ serde ];
-        ".cosmos.ics23.v1.LeafOp" = [ jsonschema eq ];
-        ".cosmos.ics23.v1.InnerOp" = [ jsonschema eq ];
-        ".cosmos.ics23.v1.ProofSpec" = [ eq jsonschema ];
-        ".cosmos.ics23.v1.InnerSpec" = [ jsonschema eq ];
-        ".cosmos.auth.v1beta1" = [ serde ];
-        ".cosmos.upgrade.v1beta1" = [ serde ];
-        ".cosmos.base.v1beta1" = [ serde ];
-        ".cosmos.base.query.v1beta1" = [ serde ];
-        ".cosmos.bank.v1beta1" = [ serde ];
-      };
+      fold-opts = attrs: with pkgs.lib; escapeShellArg (
+        concatStringsSep "," (
+          flatten (
+            foldlAttrs
+              (acc: opt-name: opt-value: acc ++ (
+                # protoc splits on commas so we have to escape any in the attribute values
+                foldlAttrs (acc: name: values: acc ++ (map (attr: "${opt-name}=${name}=${escape [","] attr}") values)) [ ] opt-value
+              ))
+              [ ]
+              attrs
+          )
+        )
+      );
 
-      field_attributes = with attrs; {
-        ".ibc.core.client.v1.Height" = [ serde_default ];
-        ".ibc.core.commitment.v1.MerkleRoot.hash" = [ jsonschema_str serde_base64 ];
-        ".ibc.core.commitment.v1.MerklePrefix.key_prefix" = [ jsonschema_str serde_base64 ];
-        ".ibc.lightclients.wasm.v1.ClientState.data" = [ serde_base64 ];
-        ".ibc.lightclients.wasm.v1.ClientState.code_id" = [ serde_base64 ];
-        ".ibc.lightclients.wasm.v1.ConsensusState.data" = [ serde_base64 ];
-        ".ibc.lightclients.wasm.v1.Header.data" = [ serde_base64 ];
-        ".ibc.lightclients.ethereum.v1.SyncCommittee.aggregate_pubkey" = [ serde_base64 ];
-        ".ibc.lightclients.ethereum.v1.SyncCommittee.pubkeys" = [ serde_inner_base64 ];
-        ".ibc.lightclients.ethereum.v1.BeaconBlockHeader.parent_root" = [ serde_base64 ];
-        ".ibc.lightclients.ethereum.v1.BeaconBlockHeader.state_root" = [ serde_base64 ];
-        ".ibc.lightclients.ethereum.v1.BeaconBlockHeader.body_root" = [ serde_base64 ];
-        ".ibc.lightclients.ethereum.v1.ExecutionPayloadHeader.parent_hash" = [ serde_base64 ];
-        ".ibc.lightclients.ethereum.v1.ExecutionPayloadHeader.fee_recipient" = [ serde_base64 ];
-        ".ibc.lightclients.ethereum.v1.ExecutionPayloadHeader.state_root" = [ serde_base64 ];
-        ".ibc.lightclients.ethereum.v1.ExecutionPayloadHeader.receipts_root" = [ serde_base64 ];
-        ".ibc.lightclients.ethereum.v1.ExecutionPayloadHeader.logs_bloom" = [ serde_base64 ];
-        ".ibc.lightclients.ethereum.v1.ExecutionPayloadHeader.prev_randao" = [ serde_base64 ];
-        ".ibc.lightclients.ethereum.v1.ExecutionPayloadHeader.extra_data" = [ serde_base64 ];
-        ".ibc.lightclients.ethereum.v1.ExecutionPayloadHeader.base_fee_per_gas" = [ serde_base64 ];
-        ".ibc.lightclients.ethereum.v1.ExecutionPayloadHeader.block_hash" = [ serde_base64 ];
-        ".ibc.lightclients.ethereum.v1.ExecutionPayloadHeader.transactions_root" = [ serde_base64 ];
-        ".ibc.lightclients.ethereum.v1.ExecutionPayloadHeader.withdrawals_root" = [ serde_base64 ];
-        ".ibc.lightclients.ethereum.v1.LightClientHeader.execution_branch" = [ serde_inner_base64 ];
-        ".ibc.lightclients.ethereum.v1.LightClientUpdate.next_sync_committee_branch" = [ serde_inner_base64 ];
-        ".ibc.lightclients.ethereum.v1.LightClientUpdate.finality_branch" = [ serde_inner_base64 ];
-        ".ibc.lightclients.ethereum.v1.SyncAggregate.sync_committee_bits" = [ serde_base64 ];
-        ".ibc.lightclients.ethereum.v1.SyncAggregate.sync_committee_signature" = [ serde_base64 ];
-        ".ibc.lightclients.ethereum.v1.AccountUpdate.account_proof" = [ serde_base64 ];
-        ".ibc.lightclients.ethereum.v1.AccountUpdate.account_storage_root" = [ serde_base64 ];
-        ".cosmos.ics23.v1.LeafOp.prehash_key" = [ serde_default ];
-        ".cosmos.ics23.v1.LeafOp.prefix" = [ jsonschema_str serde_base64 ];
-        ".cosmos.ics23.v1.InnerOp.prefix" = [ serde_base64 jsonschema_str ];
-        ".cosmos.ics23.v1.InnerOp.suffix" = [ serde_base64 jsonschema_str ];
-        ".cosmos.ics23.v1.ProofSpec.max_depth" = [ serde_default ];
-        ".cosmos.ics23.v1.ProofSpec.min_depth" = [ serde_default ];
-        ".cosmos.ics23.v1.InnerSpec.empty_child" = [ serde_default jsonschema_str serde_base64 ];
-      };
+      prost-opts =
+        let
+          # TODO(benluelo): structured rust attr builder?
+          # something like:
+          # { derive = ["Eq", "PartialOrd", "Ord"] }
+          # { cfg_attr = [{ feature = "std"; } {serde = ["default"]} ]}
+          attrs = {
+            ord = ''#[derive(Eq, PartialOrd, Ord)]'';
+            eq = ''#[derive(Eq)]'';
 
-      fold-opts = with pkgs.lib; foldlAttrs
-        (acc: opt-name: opt-value: acc ++ (
-          # protoc splits on commas so we have to escape any in the attribute values
-          foldlAttrs (acc: name: values: acc ++ (map (attr: "${opt-name}=${name}=${escape [","] attr}") values)) [ ] opt-value
-        ))
-        [ ];
+            serde = ''#[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]'';
+            serde_default = ''#[cfg_attr(feature = "std", serde(default))]'';
+            serde_base64 = ''#[cfg_attr(feature = "std", serde(with = "::serde_utils::base64"))]'';
+            serde_inner_base64 = ''#[serde(with = "::serde_utils::inner_base64")]'';
 
-      parsed-attrs = fold-opts
-        {
-          type_attribute = type_attributes;
-          field_attribute = field_attributes;
+            jsonschema = ''#[cfg_attr(all(feature = "json-schema", feature = "std"), derive(::schemars::JsonSchema))]'';
+            jsonschema_str = ''#[cfg_attr(all(feature = "json-schema", feature = "std"), schemars(with = "String"))]'';
+          };
+        in
+        with attrs; {
+          type_attribute = {
+            ".google.protobuf.Any" = [ serde eq ];
+            ".google.protobuf.Timestamp" = [ serde ];
+            ".google.protobuf.Duration" = [ serde eq ];
+            ".ibc.core.client.v1" = [ serde ];
+            ".ibc.core.client.v1.Height" = [ jsonschema ord ];
+            ".ibc.core.commitment.v1" = [ serde ];
+            ".ibc.core.commitment.v1.MerkleRoot" = [ jsonschema ];
+            ".ibc.core.commitment.v1.MerklePrefix" = [ jsonschema ];
+            ".ibc.core.channel.v1" = [ serde ];
+            ".ibc.core.channel.v1.Channel" = [ jsonschema ];
+            ".ibc.core.channel.v1.Counterparty" = [ jsonschema ];
+            ".ibc.core.connection.v1" = [ serde ];
+            ".ibc.core.connection.v1.ConnectionEnd" = [ jsonschema ];
+            ".ibc.core.connection.v1.Counterparty" = [ jsonschema ];
+            ".ibc.core.connection.v1.Version" = [ jsonschema ];
+            ".ibc.core.types.v1" = [ serde ];
+            ".ibc.applications.transfer.v1" = [ serde ];
+            ".ibc.applications.transfer.v2" = [ serde ];
+            ".ibc.applications.interchain_accounts.v1" = [ serde ];
+            ".ibc.applications.interchain_accounts.controller.v1" = [ serde ];
+            ".ibc.lightclients.wasm.v1" = [ serde ];
+            ".ibc.lightclients.ethereum.v1" = [ serde ];
+            ".cosmos.ics23.v1" = [ serde ];
+            ".cosmos.ics23.v1.LeafOp" = [ jsonschema eq ];
+            ".cosmos.ics23.v1.InnerOp" = [ jsonschema eq ];
+            ".cosmos.ics23.v1.ProofSpec" = [ eq jsonschema ];
+            ".cosmos.ics23.v1.InnerSpec" = [ jsonschema eq ];
+            ".cosmos.auth.v1beta1" = [ serde ];
+            ".cosmos.upgrade.v1beta1" = [ serde ];
+            ".cosmos.base.v1beta1" = [ serde ];
+            ".cosmos.base.query.v1beta1" = [ serde ];
+            ".cosmos.bank.v1beta1" = [ serde ];
+          };
+
+          field_attribute = {
+            ".ibc.core.client.v1.Height" = [ serde_default ];
+            ".ibc.core.commitment.v1.MerkleRoot.hash" = [ jsonschema_str serde_base64 ];
+            ".ibc.core.commitment.v1.MerklePrefix.key_prefix" = [ jsonschema_str serde_base64 ];
+            ".ibc.lightclients.wasm.v1.ClientState.data" = [ serde_base64 ];
+            ".ibc.lightclients.wasm.v1.ClientState.code_id" = [ serde_base64 ];
+            ".ibc.lightclients.wasm.v1.ConsensusState.data" = [ serde_base64 ];
+            ".ibc.lightclients.wasm.v1.Header.data" = [ serde_base64 ];
+            ".ibc.lightclients.ethereum.v1.SyncCommittee.aggregate_pubkey" = [ serde_base64 ];
+            ".ibc.lightclients.ethereum.v1.SyncCommittee.pubkeys" = [ serde_inner_base64 ];
+            ".ibc.lightclients.ethereum.v1.BeaconBlockHeader.parent_root" = [ serde_base64 ];
+            ".ibc.lightclients.ethereum.v1.BeaconBlockHeader.state_root" = [ serde_base64 ];
+            ".ibc.lightclients.ethereum.v1.BeaconBlockHeader.body_root" = [ serde_base64 ];
+            ".ibc.lightclients.ethereum.v1.ExecutionPayloadHeader.parent_hash" = [ serde_base64 ];
+            ".ibc.lightclients.ethereum.v1.ExecutionPayloadHeader.fee_recipient" = [ serde_base64 ];
+            ".ibc.lightclients.ethereum.v1.ExecutionPayloadHeader.state_root" = [ serde_base64 ];
+            ".ibc.lightclients.ethereum.v1.ExecutionPayloadHeader.receipts_root" = [ serde_base64 ];
+            ".ibc.lightclients.ethereum.v1.ExecutionPayloadHeader.logs_bloom" = [ serde_base64 ];
+            ".ibc.lightclients.ethereum.v1.ExecutionPayloadHeader.prev_randao" = [ serde_base64 ];
+            ".ibc.lightclients.ethereum.v1.ExecutionPayloadHeader.extra_data" = [ serde_base64 ];
+            ".ibc.lightclients.ethereum.v1.ExecutionPayloadHeader.base_fee_per_gas" = [ serde_base64 ];
+            ".ibc.lightclients.ethereum.v1.ExecutionPayloadHeader.block_hash" = [ serde_base64 ];
+            ".ibc.lightclients.ethereum.v1.ExecutionPayloadHeader.transactions_root" = [ serde_base64 ];
+            ".ibc.lightclients.ethereum.v1.ExecutionPayloadHeader.withdrawals_root" = [ serde_base64 ];
+            ".ibc.lightclients.ethereum.v1.LightClientHeader.execution_branch" = [ serde_inner_base64 ];
+            ".ibc.lightclients.ethereum.v1.LightClientUpdate.next_sync_committee_branch" = [ serde_inner_base64 ];
+            ".ibc.lightclients.ethereum.v1.LightClientUpdate.finality_branch" = [ serde_inner_base64 ];
+            ".ibc.lightclients.ethereum.v1.SyncAggregate.sync_committee_bits" = [ serde_base64 ];
+            ".ibc.lightclients.ethereum.v1.SyncAggregate.sync_committee_signature" = [ serde_base64 ];
+            ".ibc.lightclients.ethereum.v1.AccountUpdate.account_proof" = [ serde_base64 ];
+            ".ibc.lightclients.ethereum.v1.AccountUpdate.account_storage_root" = [ serde_base64 ];
+            ".cosmos.ics23.v1.LeafOp.prehash_key" = [ serde_default ];
+            ".cosmos.ics23.v1.LeafOp.prefix" = [ jsonschema_str serde_base64 ];
+            ".cosmos.ics23.v1.InnerOp.prefix" = [ serde_base64 jsonschema_str ];
+            ".cosmos.ics23.v1.InnerOp.suffix" = [ serde_base64 jsonschema_str ];
+            ".cosmos.ics23.v1.ProofSpec.max_depth" = [ serde_default ];
+            ".cosmos.ics23.v1.ProofSpec.min_depth" = [ serde_default ];
+            ".cosmos.ics23.v1.InnerSpec.empty_child" = [ serde_default jsonschema_str serde_base64 ];
+          };
         };
 
       tonic-opts = {
@@ -271,9 +276,9 @@
 
           protoc "''${protos[@]}" \
             --prost_out="$outdir"/src \
-            --prost_opt=compile_well_known_types=true,${with pkgs.lib; escapeShellArg (concatStringsSep "," (flatten parsed-attrs))} \
+            --prost_opt=compile_well_known_types=true,${fold-opts prost-opts} \
             --tonic_out="$outdir"/src \
-            --tonic_opt=compile_well_known_types=true,${with pkgs.lib; escapeShellArg (concatStringsSep "," (flatten (fold-opts tonic-opts)))} \
+            --tonic_opt=compile_well_known_types=true,${fold-opts tonic-opts} \
             --prost-crate_out="$outdir" \
             --prost-crate_opt=package_separator="+",gen_crate=${cargo_toml { name = "protos"; }} \
             ${includes}
