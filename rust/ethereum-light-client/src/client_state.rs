@@ -28,8 +28,6 @@ use protos::{
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
 
-pub const ETHEREUM_CLIENT_STATE_TYPE_URL: &str = "/ibc.lightclients.ethereum.v1.ClientState";
-
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ClientState {
     /// Chain parameters
@@ -58,6 +56,8 @@ pub struct ClientState {
 }
 
 impl ClientState {
+    pub const TYPE_URL: &str = "/ibc.lightclients.ethereum.v1.ClientState";
+
     pub fn with_frozen_height(self, h: Height) -> Self {
         Self {
             frozen_height: Some(h),
@@ -257,7 +257,7 @@ impl TryFrom<Any> for ClientState {
 
     fn try_from(raw: Any) -> Result<Self, Self::Error> {
         match raw.type_url.as_str() {
-            ETHEREUM_CLIENT_STATE_TYPE_URL => RawClientState::decode(raw.value.as_slice())
+            Self::TYPE_URL => RawClientState::decode(raw.value.as_slice())
                 .map_err(|_| Error::decode("during parsing `RawClientState` from `Any`"))?
                 .try_into(),
             _ => Err(Error::UnknownTypeUrl),
