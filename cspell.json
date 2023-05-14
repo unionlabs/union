@@ -18,8 +18,7 @@
   "ignorePaths": [
     "rust/ethereum-light-client/src/test/valid_light_client_update_*.json",
     "rust/protos/*",
-    "rust/ethereum-consensus/*",
-    "rust/ethereum-verifier/*",
+    "rust/forks/*",
     "dictionaries/**",
     "**/*.svg",
     "**/node_modules",
