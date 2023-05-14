@@ -1,0 +1,50 @@
+# version format
+version: "{build}"
+
+# Operating system (build VM template)
+os: Windows Server 2012 R2
+
+# Platform.
+platform: x64
+
+clone_folder: c:\gopath\src\github.com\dgraph-io\badger
+
+# Environment variables
+environment:
+  GOVERSION: 1.12
+  GOPATH: c:\gopath
+  GO111MODULE: on
+
+# scripts that run after cloning repository
+install:
+  - set PATH=%GOPATH%\bin;c:\go\bin;c:\msys64\mingw64\bin;%PATH%
+  - go version
+  - go env
+  - python --version
+  - gcc --version
+
+# To run your custom scripts instead of automatic MSBuild
+build_script:
+  # We need to disable firewall - https://github.com/appveyor/ci/issues/1579#issuecomment-309830648
+  - ps: Disable-NetFirewallRule -DisplayName 'File and Printer Sharing (SMB-Out)'
+  - cd c:\gopath\src\github.com\dgraph-io\badger
+  - git branch
+  - go get -t ./...
+
+# To run your custom scripts instead of automatic tests
+test_script:
+  # Unit tests
+  - ps: Add-AppveyorTest "Unit Tests" -Outcome Running
+  - go test -v github.com/dgraph-io/badger/...
+  - go test -v -vlog_mmap=false github.com/dgraph-io/badger/...
+  - ps: Update-AppveyorTest "Unit Tests" -Outcome Passed
+
+notifications:
+  - provider: Email
+    to:
+      - pawan@dgraph.io
+    on_build_failure: true
+    on_build_status_changed: true
+# to disable deployment
+deploy: off
+

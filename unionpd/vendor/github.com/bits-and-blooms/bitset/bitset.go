@@ -613,7 +613,7 @@ func (b *BitSet) Equal(c *BitSet) bool {
 		return true
 	}
 	wn := b.wordCount()
-	for p := 0; p < wn; p++ {
+	for p:= 0; p < wn; p++ {
 		if c.set[p] != b.set[p] {
 			return false
 		}

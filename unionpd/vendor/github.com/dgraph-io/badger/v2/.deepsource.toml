@@ -1,0 +1,18 @@
+version = 1
+
+test_patterns = [
+  'integration/testgc/**',
+  '**/*_test.go'
+]
+
+exclude_patterns = [
+  
+]
+
+[[analyzers]]
+name = 'go'
+enabled = true
+
+
+  [analyzers.meta]
+  import_path = 'github.com/dgraph-io/badger'

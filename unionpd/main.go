@@ -8,5 +8,6 @@ import (
 func main() {
 	var rootCmd = &cobra.Command{Use: "cometbls-prover"}
 	rootCmd.AddCommand(provercmd.ServeCmd())
+	rootCmd.AddCommand(provercmd.ProveCmd)
 	rootCmd.Execute()
 }

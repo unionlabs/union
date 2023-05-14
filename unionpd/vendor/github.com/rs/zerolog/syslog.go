@@ -1,5 +1,5 @@
-//go:build !windows && !binary_log
-// +build !windows,!binary_log
+// +build !windows
+// +build !binary_log
 
 package zerolog
 
@@ -34,8 +34,8 @@ func SyslogLevelWriter(w SyslogWriter) LevelWriter {
 }
 
 // SyslogCEEWriter wraps a SyslogWriter with a SyslogLevelWriter that adds a
-// MITRE CEE prefix for JSON syslog entries, compatible with rsyslog
-// and syslog-ng JSON logging support.
+// MITRE CEE prefix for JSON syslog entries, compatible with rsyslog 
+// and syslog-ng JSON logging support. 
 // See https://www.rsyslog.com/json-elasticsearch/
 func SyslogCEEWriter(w SyslogWriter) LevelWriter {
 	return syslogWriter{w, ceePrefix}

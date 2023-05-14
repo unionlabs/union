@@ -39,30 +39,30 @@ func helpers() template.FuncMap {
 		"div":        div,
 		"divides":    divides,
 		"first":      first,
-		"gt":         gt,
+		"gt":		  gt,
 		"interval":   interval,
 		"iterate":    iterate,
-		"select":     _select,
+		"select":	_select,
 		"last":       last,
 		"list":       makeSlice,
 		"log":        fmt.Println,
-		"lt":         lt,
-		"mod":        mod,
-		"mul":        mul,
-		"mul2":       mul2,
-		"noFirst":    noFirst,
-		"noLast":     noLast,
-		"notNil":     notNil,
-		"pretty":     pretty,
-		"printList":  printList,
-		"reverse":    reverse,
-		"sub":        sub,
-		"supScr":     toSuperscript,
-		"toInt64":    toInt64,
-		"toLower":    strings.ToLower,
-		"toTitle":    strings.Title,
-		"toUpper":    strings.ToUpper,
-		"words64":    bigIntToUint64SliceAsString,
+		"lt":		  lt,
+		"mod":       mod,
+		"mul":       mul,
+		"mul2":      mul2,
+		"noFirst":   noFirst,
+		"noLast":    noLast,
+		"notNil":    notNil,
+		"pretty":    pretty,
+		"printList": printList,
+		"reverse":   reverse,
+		"sub":       sub,
+		"supScr":    toSuperscript,
+		"toInt64":   toInt64,
+		"toLower":   strings.ToLower,
+		"toTitle":   strings.Title,
+		"toUpper":   strings.ToUpper,
+		"words64":   bigIntToUint64SliceAsString,
 	}
 }
 
@@ -109,7 +109,7 @@ func gt(a, b interface{}) (bool, error) {
 func getBitsBig(a big.Int) ([]bool, error) {
 	l := a.BitLen()
 	res := make([]bool, l)
-	for i := 0; i < l; i++ {
+	for i := 0; i < l; i ++ {
 		res[i] = a.Bit(i) == 1
 	}
 	return res, nil
@@ -143,9 +143,9 @@ func toBigInt(a interface{}) (big.Int, error) {
 	case *big.Int:
 		return *i, nil
 	/*case string:
-	var res big.Int
-	res.SetString(i, 0)
-	return res, nil*/
+		var res big.Int
+		res.SetString(i, 0)
+		return res, nil*/
 	default:
 		n, err := toInt64(i)
 		return *big.NewInt(n), err
@@ -506,8 +506,8 @@ var superscripts = map[rune]rune{
 }
 
 // toSuperscript writes a number as a "power"
-// TODO: Use https://github.com/lynn9388/supsub ?
-// Copying supsub
+//TODO: Use https://github.com/lynn9388/supsub ?
+//Copying supsub
 func toSuperscript(a interface{}) (string, error) {
 	i, err := toInt64(a)
 

@@ -1,4 +1,3 @@
-//go:build gccgo && go1.8
 // +build gccgo,go1.8
 
 package goid
