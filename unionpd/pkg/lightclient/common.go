@@ -105,8 +105,6 @@ func (lc *TendermintLightClientAPI) Verify(message *gadget.G2Affine, expectedVal
 
 			power, powerSize := proto.NewProtoAPI(lc.api).DecodeVarint64(validatorPowerBytes)
 
-			lc.api.Println("Power: ", power)
-
 			protoEncodedSize := lc.api.Add(ValProtoPower, powerSize)
 
 			powerBytes := Unpack(lc.api, validatorPowerProto, proto.MaxVarintSize*8, 8)

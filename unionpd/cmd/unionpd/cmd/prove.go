@@ -58,12 +58,12 @@ var ProveCmd = &cobra.Command{
 			}
 		}
 
-		blockHash, err := hex.DecodeString("CF8FB45282F3687C4BF305090C950BC28C7A7A5E35C2A9A1F5930D56A77F3C75")
+		blockHash, err := hex.DecodeString("1AD5BACC115AF66ADBA05C6D2393D73FD41E0DF1F761ED33344668BF71DEB9CB")
 		if err != nil {
 			panic(err)
 		}
 
-		partSetHeaderHash, err := hex.DecodeString("39C604A64DDBDA8F2E0F31F0DF30315CE4B8E65DB91F74F29A5ED6926C70A03F")
+		partSetHeaderHash, err := hex.DecodeString("6A80C88DA6FE1FA7773949270805567C963028008B10441E0180CF8AA1D400C9")
 		if err != nil {
 			panic(err)
 		}
@@ -83,20 +83,20 @@ var ProveCmd = &cobra.Command{
 		}
 
 		validators := []*types.SimpleValidator{
-			toValidator(decodeB64("wiY2IMV1eUwte40Km2Lw4H1zYGQ0ZvemMPoru9rf/pQ=")),
-			toValidator(decodeB64("xCIuHcyesunreiQ86q+R2+KgP/rVYaGJ+XQGP8VShNc=")),
-			toValidator(decodeB64("q/8jFgPQVjyyLqCvJo0Qsk8v8M0M51Ojw0Eg1KCsebo=")),
-			toValidator(decodeB64("0QPPjuq9oaGp6nRm/SKrwNJkQTQDT2DtdVQm/9yJ3g0=")),
+			toValidator(decodeB64("pNfYwyKvOhox3FNqU+ddZXqj8DS44ucdXs8mEfYPghI=")),
+			toValidator(decodeB64("5vyjk9eK0ZsP06232NzpKp7dyz5AMmwG7sRHtje51pY=")),
+			toValidator(decodeB64("hAPYPNTvyBT0Fl+BDrPlPFdWpq2eNI+YpHyEDaLpRGg=")),
+			toValidator(decodeB64("nKwZsaaiIs/x+X+bOi+yPD2XR3Np3mf9iTYveD/JR3M=")),
 		}
 
 		trustedValidators := validators
 		untrustedValidators := validators
 
 		signatures := [][]byte{
-			decodeB64("k6kYQdqpOikXAPAm0uZGUHv6E2J5eT0SfehBSLcsFRELX0eWzq0spupRtr1z1f9I9fvSDVXcUNAMSLIjd9Rrtw=="),
-			decodeB64("5E2bEigmCNTTf21Y1mP2mSKflg5r/oM1F3uGQDyqmbwN6lUmJ5lxx2lUTcmUWsYce3860+TQE/NORlW3d79Uzw=="),
-			decodeB64("x0w000Y91HCtN5+j4cSO66c9Wsdznr/SomryXMXCQRQZWuBYZWIMF7K4hL+U35Q28IHpkGaJXWnRXs/oStm0Pw=="),
-			decodeB64("zNVt/Ivgvjwl9EEGOo7YH3AfOTIpJCwcf+5IpslQmmUsfvrFMrwhOybQNgNukSZAzrujxCbZimBxbNgw/a5OCw=="),
+			decodeB64("gdAsIuv3EMi250CS9dG6ym1exEAQm8gwYvJflmMDlroZiWIWI14nJhOHdXBqxevsjF1XInzck4sTsM8EuD3wJA=="),
+			decodeB64("jtMDB9UOctP0tNloF/3RaPQXMYNadQt8T8DJYFgtHu8bC+9gpcyp7zcSc7OOrqQC8QKRGLBiGgX20F1BEQZLEw=="),
+			decodeB64("ylbl7UYU2cBuaqxIFECloU+9yX2WAPGFXFkRt5Q7pg8ctKqz1Hz0oU7Fakyc/W+i6RDcFj9D+hpCWcx9HOEMiw=="),
+			decodeB64("6lPTpzoSYY5N/F/TFUAGT+yyr3DOJV+Fq2JvCxOJojwOKe9e0bl+RB4ZarI9oB2YsQr/jLi2YfDLzo2tuvWfYw=="),
 		}
 
 		trustedSignatures := signatures
