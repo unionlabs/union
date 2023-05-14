@@ -64,12 +64,14 @@ jobs:
       - run: mkdir ${{ matrix.system }}
       - run: ls -la
       - run: ls -la ${{ matrix.system }}
-      - run: nix copy --to file://`pwd`/${{ matrix.system }} --from ssh-ng://eu.nixbuild.net `cat result.json | jq -r '.packages."${{ matrix.system }}"."${{ matrix.package }}".outputs.out'` --extra-experimental-features nix-command
+      - run: OUTPUT=`cat result.json | jq -r '.packages."${{ matrix.system }}"."${{ matrix.package }}".outputs.out'`
+      - run: echo $OUTPUT
+      - run: nix copy --to file://`pwd`/${{ matrix.system }} --from ssh-ng://eu.nixbuild.net $OUTPUT --extra-experimental-features nix-command
       - run: ls -la
       - run: ls -la ${{ matrix.system }}
       - run: ls -la ${{ matrix.system }}/nar
       - run: tree ${{ matrix.system }}/nar
-      # - run: cat ${{ matrix.system }}/nar/*.nar.xz | xz -dc | nix-store --restore ${{ matrix.system }}.${{ matrix.package }}
+      - run: cat ${{ matrix.system }}/nar/*.nar.xz | xz -dc | nix-store --restore ${{ matrix.system }}.${{ matrix.package }}
       - run: cat ${{ matrix.system }}/nar/*.nar.xz | xz -dc
       - run: tree
       - run: ls -la
