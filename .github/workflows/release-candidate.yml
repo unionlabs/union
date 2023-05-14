@@ -65,14 +65,14 @@ jobs:
       - run: ls -la ${{ matrix.system }}
       - run: |
           echo "Getting OUTPUT and NARINFO_NAME"
-          OUTPUT=$(cat result.json | jq -r '.packages."${{ matrix.system }}".uniond.outputs.out')
+          OUTPUT=`cat result.json | jq -r '.packages."${{ matrix.system }}".uniond.outputs.out'`
           prefix="/nix/store/"
           suffix="-uniond" # <- HACK: suffix is hardcoded, change when you want to build a different package
           trimmed=${OUTPUT#$prefix}
           trimmed=${trimmed%$suffix}
           NARINFO_NAME=$trimmed
         
-          echo "Copying artifacts from nixbuild.net
+          echo "Copying artifacts from nixbuild.net"
           nix copy --to file://`pwd`/${{ matrix.system }} --from ssh-ng://eu.nixbuild.net $OUTPUT --extra-experimental-features nix-command
         
           echo "Get the NAR_URL"
