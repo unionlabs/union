@@ -69,7 +69,9 @@ jobs:
       - run: ls -la ${{ matrix.system }}
       - run: ls -la ${{ matrix.system }}/nar
       - run: tree ${{ matrix.system }}/nar
-      - run: cat ${{ matrix.system }}/nar/*.nar.xz | xz -dc | nix-store --restore ${{ matrix.system }}.${{ matrix.package }}
+      # - run: cat ${{ matrix.system }}/nar/*.nar.xz | xz -dc | nix-store --restore ${{ matrix.system }}.${{ matrix.package }}
+      - run: cat ${{ matrix.system }}/nar/*.nar.xz | xz -dc
+      - run: tree
       - run: ls -la
       - run: ls -la ${{ matrix.system }}
       - uses: actions/upload-artifact@v3
