@@ -64,24 +64,25 @@ jobs:
       - run: mkdir ${{ matrix.system }}
       - run: ls -la
       - run: ls -la ${{ matrix.system }}
-      - run: OUTPUT=`cat result.json | jq -r '.packages."${{ matrix.system }}"."${{ matrix.package }}".outputs.out'`
       - run: |
-          echo $OUTPUT
-          prefix="/nix/store"
+          OUTPUT=`cat result.json | jq -r '.packages."${{ matrix.system }}"."${{ matrix.package }}".outputs.out'`
+          prefix="/nix/store/"
           suffix="-uniond"
-          trimmed=${string#$prefix}
+          trimmed=${OUTPUT#$prefix}
           trimmed=${trimmed%$suffix}
-          NAR_NAME=trimmed
-      - run: nix copy --to file://`pwd`/${{ matrix.system }} --from ssh-ng://eu.nixbuild.net $OUTPUT --extra-experimental-features nix-command
-      - run: ls -la
-      - run: ls -la ${{ matrix.system }}
-      - run: ls -la ${{ matrix.system }}/nar
-      - run: tree ${{ matrix.system }}/nar
-      - run: cat ${{ matrix.system }}/nar/${NARNAME}.nar.xz | xz -dc | nix-store --restore ${{ matrix.system }}.${{ matrix.package }}
-      # - run: cat ${{ matrix.system }}/nar/*.nar.xz | xz -dc
-      - run: tree
-      - run: ls -la
-      - run: ls -la ${{ matrix.system }}
+          NAR_NAME=$trimmed
+          echo $NAR_NAME
+          echo $OUTPUT
+
+          nix copy --to file://`pwd`/${{ matrix.system }} --from ssh-ng://eu.nixbuild.net $OUTPUT --extra-experimental-features nix-command
+          ls -la
+          ls -la ${{ matrix.system }}
+          ls -la ${{ matrix.system }}/nar
+          tree ${{ matrix.system }}/nar
+          cat ${{ matrix.system }}/nar/${NAR_NAME}.nar.xz | xz -dc | nix-store --restore ${{ matrix.system }}.${{ matrix.package }}
+          tree
+          ls -la
+          ls -la ${{ matrix.system }}
       - uses: actions/upload-artifact@v3
         with:
           name: ${{ matrix.system }}.${{ matrix.package }}
