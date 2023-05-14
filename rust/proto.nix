@@ -257,9 +257,6 @@
       dbg = value: builtins.trace (pkgs.lib.generators.toPretty { } value) value;
     in
     {
-      # packages.test = dbg (pkgs.lib.concatStringsSep " " (pkgs.lib.mapAttrsToList proto-inputs all-proto-build));
-      packages.test = dbg all-proto-build;
-
       packages.generate-rust-proto = pkgs.writeShellApplication {
         name = "generate-rust-proto";
         runtimeInputs = [ pkgs.protobuf protoc-gen-tonic ];

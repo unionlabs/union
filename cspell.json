@@ -17,7 +17,7 @@
   ],
   "ignorePaths": [
     "rust/ethereum-light-client/src/test/valid_light_client_update_*.json",
-    "rust/ibc-proto-rs/*",
+    "rust/protos/*",
     "rust/ethereum-consensus/*",
     "rust/ethereum-verifier/*",
     "dictionaries/**",
