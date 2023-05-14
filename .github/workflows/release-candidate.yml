@@ -51,12 +51,11 @@ jobs:
     permissions: write-all
     strategy:
       matrix:
-        package: [ uniond ]
         system: [ aarch64-linux, x86_64-linux ]
     steps: 
       - uses: actions/download-artifact@v3
         with:
-          name: packages.${{ matrix.system }}.${{ matrix.package }}
+          name: packages.${{ matrix.system }}.uniond
       - uses: nixbuild/nix-quick-install-action@v22
       - uses: nixbuild/nixbuild-action@v17
         with:
@@ -65,30 +64,32 @@ jobs:
       - run: ls -la
       - run: ls -la ${{ matrix.system }}
       - run: |
-          echo "Getting $OUTPUT and $NARINFO_NAME"
-          OUTPUT=`cat result.json | jq -r '.packages."${{ matrix.system }}"."${{ matrix.package }}".outputs.out'`
+          echo "Getting OUTPUT and NARINFO_NAME"
+          OUTPUT=$(cat result.json | jq -r '.packages."${{ matrix.system }}".uniond.outputs.out')
           prefix="/nix/store/"
           suffix="-uniond" # <- HACK: suffix is hardcoded, change when you want to build a different package
           trimmed=${OUTPUT#$prefix}
           trimmed=${trimmed%$suffix}
           NARINFO_NAME=$trimmed
         
-          echo "Copying artifacts from nixbuild.net"
+          echo "Copying artifacts from nixbuild.net
           nix copy --to file://`pwd`/${{ matrix.system }} --from ssh-ng://eu.nixbuild.net $OUTPUT --extra-experimental-features nix-command
         
-          echo "Get the $NAR_URL
+          echo "Get the NAR_URL"
           nar_url_line=$(cat ./${{ matrix.system }}/${NARINFO_NAME}.narinfo | grep "URL:")
           NAR_URL=$(echo "$nar_url_line" | cut -d " " -f 2-)
 
           echo "Restore the package from the NAR_URL archive"
-          cat ${{ matrix.system }}/${NAR_URL} | xz -dc | nix-store --restore ${{ matrix.system }}.${{ matrix.package }}
+          cat ${{ matrix.system }}/${NAR_URL} | xz -dc | nix-store --restore ${{ matrix.system }}.uniond
+          mv ${{ matrix.system }}.uniond/bin/uniond uniond-${{ matrix.system }}
 
-          echo "TREE"
+          echo "DEBUG"
+          ls -la 
           tree
       - uses: actions/upload-artifact@v3
         with:
-          name: ${{ matrix.system }}.${{ matrix.package }}
-          path: ${{ matrix.system }}.${{ matrix.package }}
+          name: uniond-${{ matrix.system }}
+          path: uniond-${{ matrix.system }}
 
   create-docker-manifest:
     runs-on: ubuntu-latest
@@ -124,7 +125,8 @@ jobs:
           automatic_release_tag: latest-rc
           title: ${{github.ref_name}}
           files: |
-            **/uniond
+            uniond-aarch64
+            uniond-x86_64
 
 
 
