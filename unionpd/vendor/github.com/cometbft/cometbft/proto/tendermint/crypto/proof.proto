@@ -1,0 +1,41 @@
+syntax = "proto3";
+package tendermint.crypto;
+
+option go_package = "github.com/cometbft/cometbft/proto/tendermint/crypto";
+
+import "gogoproto/gogo.proto";
+
+message Proof {
+  int64          total     = 1;
+  int64          index     = 2;
+  bytes          leaf_hash = 3;
+  repeated bytes aunts     = 4;
+}
+
+message ValueOp {
+  // Encoded in ProofOp.Key.
+  bytes key = 1;
+
+  // To encode in ProofOp.Data
+  Proof proof = 2;
+}
+
+message DominoOp {
+  string key    = 1;
+  string input  = 2;
+  string output = 3;
+}
+
+// ProofOp defines an operation used for calculating Merkle root
+// The data could be arbitrary format, providing nessecary data
+// for example neighbouring node hash
+message ProofOp {
+  string type = 1;
+  bytes  key  = 2;
+  bytes  data = 3;
+}
+
+// ProofOps is Merkle proof defined by the list of ProofOps
+message ProofOps {
+  repeated ProofOp ops = 1 [(gogoproto.nullable) = false];
+}

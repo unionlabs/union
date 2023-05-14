@@ -18,5 +18,18 @@
           done
         '';
       };
+
+      packages.unionpd = pkgs.buildGoModule {
+        name = "unionpd";
+        src = ./.;
+        vendorSha256 = null;
+        doCheck = true;
+        nativeBuildInputs = [ pkgs.musl ];
+        CGO_ENABLED = 0;
+        ldflags = [
+          "-linkmode external"
+          "-extldflags '-static -L${pkgs.musl}/lib'"
+        ];
+      };
     };
 }
