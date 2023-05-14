@@ -87,14 +87,14 @@ jobs:
           url_line=$(cat ./${NARINFO_NAME}.narinfo | grep "URL:")
 
           # Use cut to extract the URL field from the line
-          NAR_NAME=$(echo "$url_line" | cut -d " " -f 2-)
+          NAR_URL=$(echo "$url_line" | cut -d " " -f 2-)
           echo $NAR_NAME
 
           ls -la
           ls -la ${{ matrix.system }}
           ls -la ${{ matrix.system }}/nar
           tree ${{ matrix.system }}/nar
-          cat ${{ matrix.system }}/nar/${NAR_NAME}.nar.xz | xz -dc | nix-store --restore ${{ matrix.system }}.${{ matrix.package }}
+          cat ${{ matrix.system }}/${NAR_URL} | xz -dc | nix-store --restore ${{ matrix.system }}.${{ matrix.package }}
           tree
           ls -la
           ls -la ${{ matrix.system }}
