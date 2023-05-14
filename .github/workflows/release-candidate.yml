@@ -65,40 +65,26 @@ jobs:
       - run: ls -la
       - run: ls -la ${{ matrix.system }}
       - run: |
+          echo "Getting $OUTPUT and $NARINFO_NAME"
           OUTPUT=`cat result.json | jq -r '.packages."${{ matrix.system }}"."${{ matrix.package }}".outputs.out'`
           prefix="/nix/store/"
-          suffix="-uniond"
+          suffix="-uniond" # <- HACK: suffix is hardcoded, change when you want to build a different package
           trimmed=${OUTPUT#$prefix}
           trimmed=${trimmed%$suffix}
           NARINFO_NAME=$trimmed
         
-
-          echo "the three vars"
-          echo $OUTPUT
-          echo $url
-
+          echo "Copying artifacts from nixbuild.net"
           nix copy --to file://`pwd`/${{ matrix.system }} --from ssh-ng://eu.nixbuild.net $OUTPUT --extra-experimental-features nix-command
-
-
         
-          echo "url_line V"
-          ls -la
-          ls -la ${{ matrix.system }}
-          ls -la ${{ matrix.system }}/nar
+          echo "Get the $NAR_URL
+          nar_url_line=$(cat ./${{ matrix.system }}/${NARINFO_NAME}.narinfo | grep "URL:")
+          NAR_URL=$(echo "$nar_url_line" | cut -d " " -f 2-)
 
-          # Use grep to find the line that contains the URL
-          url_line=$(cat ./${{ matrix.system }}/${NARINFO_NAME}.narinfo | grep "URL:")
-
-          echo "url_line V2"
-          # Use cut to extract the URL field from the line
-          NAR_URL=$(echo "$url_line" | cut -d " " -f 2-)
-          echo $NAR_URL
-
-          tree ${{ matrix.system }}/nar
+          echo "Restore the package from the NAR_URL archive"
           cat ${{ matrix.system }}/${NAR_URL} | xz -dc | nix-store --restore ${{ matrix.system }}.${{ matrix.package }}
+
+          echo "TREE"
           tree
-          ls -la
-          ls -la ${{ matrix.system }}
       - uses: actions/upload-artifact@v3
         with:
           name: ${{ matrix.system }}.${{ matrix.package }}
