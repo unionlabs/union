@@ -278,7 +278,7 @@
             --tonic_out="$outdir"/src \
             --tonic_opt=compile_well_known_types=true,${with pkgs.lib; escapeShellArg (concatStringsSep "," (flatten (fold-opts tonic-opts)))} \
             --prost-crate_out="$outdir" \
-            --prost-crate_opt=gen_crate=${cargo_toml { name = "protos"; }} \
+            --prost-crate_opt=package_separator="+",gen_crate=${cargo_toml { name = "protos"; }} \
             ${includes}
 
           ${fixup-scripts}
