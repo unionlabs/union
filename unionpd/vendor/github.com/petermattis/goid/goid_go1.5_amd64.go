@@ -13,8 +13,10 @@
 // permissions and limitations under the License. See the AUTHORS file
 // for names of contributors.
 
+//go:build (amd64 || amd64p32) && gc && go1.5
 // +build amd64 amd64p32
-// +build gc,go1.5
+// +build gc
+// +build go1.5
 
 package goid
 

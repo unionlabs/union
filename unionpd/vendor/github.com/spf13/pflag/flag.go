@@ -27,23 +27,32 @@ unaffected.
 Define flags using flag.String(), Bool(), Int(), etc.
 
 This declares an integer flag, -flagname, stored in the pointer ip, with type *int.
+
 	var ip = flag.Int("flagname", 1234, "help message for flagname")
+
 If you like, you can bind the flag to a variable using the Var() functions.
+
 	var flagvar int
 	func init() {
 		flag.IntVar(&flagvar, "flagname", 1234, "help message for flagname")
 	}
+
 Or you can create custom flags that satisfy the Value interface (with
 pointer receivers) and couple them to flag parsing by
+
 	flag.Var(&flagVal, "name", "help message for flagname")
+
 For such flags, the default value is just the initial value of the variable.
 
 After all flags are defined, call
+
 	flag.Parse()
+
 to parse the command line into the defined flags.
 
 Flags may then be used directly. If you're using the flags themselves,
 they are all pointers; if you bind to variables, they're values.
+
 	fmt.Println("ip has value ", *ip)
 	fmt.Println("flagvar has value ", flagvar)
 
@@ -54,22 +63,26 @@ The arguments are indexed from 0 through flag.NArg()-1.
 The pflag package also defines some new functions that are not in flag,
 that give one-letter shorthands for flags. You can use these by appending
 'P' to the name of any function that defines a flag.
+
 	var ip = flag.IntP("flagname", "f", 1234, "help message")
 	var flagvar bool
 	func init() {
 		flag.BoolVarP(&flagvar, "boolname", "b", true, "help message")
 	}
 	flag.VarP(&flagval, "varname", "v", "help message")
+
 Shorthand letters can be used with single dashes on the command line.
 Boolean shorthand flags can be combined with other shorthand flags.
 
 Command line flag syntax:
+
 	--flag    // boolean flags only
 	--flag=x
 
 Unlike the flag package, a single dash before an option means something
 different than a double dash. Single dashes signify a series of shorthand
 letters for flags. All but the last shorthand letter must be boolean flags.
+
 	// boolean flags
 	-f
 	-abc
@@ -927,9 +940,9 @@ func (f *FlagSet) usage() {
 	}
 }
 
-//--unknown (args will be empty)
-//--unknown --next-flag ... (args will be --next-flag ...)
-//--unknown arg ... (args will be arg ...)
+// --unknown (args will be empty)
+// --unknown --next-flag ... (args will be --next-flag ...)
+// --unknown arg ... (args will be arg ...)
 func stripUnknownFlagValue(args []string) []string {
 	if len(args) == 0 {
 		//--unknown

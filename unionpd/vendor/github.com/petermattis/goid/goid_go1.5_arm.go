@@ -13,8 +13,8 @@
 // permissions and limitations under the License. See the AUTHORS file
 // for names of contributors.
 
-// +build arm
-// +build gc,go1.5
+//go:build arm && gc && go1.5
+// +build arm,gc,go1.5
 
 package goid
 

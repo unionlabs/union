@@ -299,19 +299,18 @@ type EncOptions struct {
 // CanonicalEncOptions returns EncOptions for "Canonical CBOR" encoding,
 // defined in RFC 7049 Section 3.9 with the following rules:
 //
-//     1. "Integers must be as small as possible."
-//     2. "The expression of lengths in major types 2 through 5 must be as short as possible."
-//     3. The keys in every map must be sorted in length-first sorting order.
-//        See SortLengthFirst for details.
-//     4. "Indefinite-length items must be made into definite-length items."
-//     5. "If a protocol allows for IEEE floats, then additional canonicalization rules might
-//        need to be added.  One example rule might be to have all floats start as a 64-bit
-//        float, then do a test conversion to a 32-bit float; if the result is the same numeric
-//        value, use the shorter value and repeat the process with a test conversion to a
-//        16-bit float.  (This rule selects 16-bit float for positive and negative Infinity
-//        as well.)  Also, there are many representations for NaN.  If NaN is an allowed value,
-//        it must always be represented as 0xf97e00."
-//
+//  1. "Integers must be as small as possible."
+//  2. "The expression of lengths in major types 2 through 5 must be as short as possible."
+//  3. The keys in every map must be sorted in length-first sorting order.
+//     See SortLengthFirst for details.
+//  4. "Indefinite-length items must be made into definite-length items."
+//  5. "If a protocol allows for IEEE floats, then additional canonicalization rules might
+//     need to be added.  One example rule might be to have all floats start as a 64-bit
+//     float, then do a test conversion to a 32-bit float; if the result is the same numeric
+//     value, use the shorter value and repeat the process with a test conversion to a
+//     16-bit float.  (This rule selects 16-bit float for positive and negative Infinity
+//     as well.)  Also, there are many representations for NaN.  If NaN is an allowed value,
+//     it must always be represented as 0xf97e00."
 func CanonicalEncOptions() EncOptions {
 	return EncOptions{
 		Sort:          SortCanonical,
@@ -325,14 +324,13 @@ func CanonicalEncOptions() EncOptions {
 // CTAP2EncOptions returns EncOptions for "CTAP2 Canonical CBOR" encoding,
 // defined in CTAP specification, with the following rules:
 //
-//     1. "Integers must be encoded as small as possible."
-//     2. "The representations of any floating-point values are not changed."
-//     3. "The expression of lengths in major types 2 through 5 must be as short as possible."
-//     4. "Indefinite-length items must be made into definite-length items.""
-//     5. The keys in every map must be sorted in bytewise lexicographic order.
-//        See SortBytewiseLexical for details.
-//     6. "Tags as defined in Section 2.4 in [RFC7049] MUST NOT be present."
-//
+//  1. "Integers must be encoded as small as possible."
+//  2. "The representations of any floating-point values are not changed."
+//  3. "The expression of lengths in major types 2 through 5 must be as short as possible."
+//  4. "Indefinite-length items must be made into definite-length items.""
+//  5. The keys in every map must be sorted in bytewise lexicographic order.
+//     See SortBytewiseLexical for details.
+//  6. "Tags as defined in Section 2.4 in [RFC7049] MUST NOT be present."
 func CTAP2EncOptions() EncOptions {
 	return EncOptions{
 		Sort:          SortCTAP2,
@@ -347,14 +345,13 @@ func CTAP2EncOptions() EncOptions {
 // CoreDetEncOptions returns EncOptions for "Core Deterministic" encoding,
 // defined in RFC 7049bis with the following rules:
 //
-//     1. "Preferred serialization MUST be used. In particular, this means that arguments
-//        (see Section 3) for integers, lengths in major types 2 through 5, and tags MUST
-//        be as short as possible"
-//        "Floating point values also MUST use the shortest form that preserves the value"
-//     2. "Indefinite-length items MUST NOT appear."
-//     3. "The keys in every map MUST be sorted in the bytewise lexicographic order of
-//        their deterministic encodings."
-//
+//  1. "Preferred serialization MUST be used. In particular, this means that arguments
+//     (see Section 3) for integers, lengths in major types 2 through 5, and tags MUST
+//     be as short as possible"
+//     "Floating point values also MUST use the shortest form that preserves the value"
+//  2. "Indefinite-length items MUST NOT appear."
+//  3. "The keys in every map MUST be sorted in the bytewise lexicographic order of
+//     their deterministic encodings."
 func CoreDetEncOptions() EncOptions {
 	return EncOptions{
 		Sort:          SortCoreDeterministic,
@@ -368,19 +365,18 @@ func CoreDetEncOptions() EncOptions {
 // PreferredUnsortedEncOptions returns EncOptions for "Preferred Serialization" encoding,
 // defined in RFC 7049bis with the following rules:
 //
-//     1. "The preferred serialization always uses the shortest form of representing the argument
-//        (Section 3);"
-//     2. "it also uses the shortest floating-point encoding that preserves the value being
-//        encoded (see Section 5.5)."
-//        "The preferred encoding for a floating-point value is the shortest floating-point encoding
-//        that preserves its value, e.g., 0xf94580 for the number 5.5, and 0xfa45ad9c00 for the
-//        number 5555.5, unless the CBOR-based protocol specifically excludes the use of the shorter
-//        floating-point encodings. For NaN values, a shorter encoding is preferred if zero-padding
-//        the shorter significand towards the right reconstitutes the original NaN value (for many
-//        applications, the single NaN encoding 0xf97e00 will suffice)."
-//     3. "Definite length encoding is preferred whenever the length is known at the time the
-//        serialization of the item starts."
-//
+//  1. "The preferred serialization always uses the shortest form of representing the argument
+//     (Section 3);"
+//  2. "it also uses the shortest floating-point encoding that preserves the value being
+//     encoded (see Section 5.5)."
+//     "The preferred encoding for a floating-point value is the shortest floating-point encoding
+//     that preserves its value, e.g., 0xf94580 for the number 5.5, and 0xfa45ad9c00 for the
+//     number 5555.5, unless the CBOR-based protocol specifically excludes the use of the shorter
+//     floating-point encodings. For NaN values, a shorter encoding is preferred if zero-padding
+//     the shorter significand towards the right reconstitutes the original NaN value (for many
+//     applications, the single NaN encoding 0xf97e00 will suffice)."
+//  3. "Definite length encoding is preferred whenever the length is known at the time the
+//     serialization of the item starts."
 func PreferredUnsortedEncOptions() EncOptions {
 	return EncOptions{
 		Sort:          SortNone,
