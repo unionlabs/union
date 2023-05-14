@@ -2,7 +2,8 @@ name: Release
 
 on:
   push:
-    tags: ['v[0-9]+\.[0-9]+\.[0-9]+']
+    branches: [ fix-rc-pipeline ]
+    tags: ['v[0-9]+\.[0-9]+\.[0-9]+\-rc[0-9]+', 'v[0-9]+\.[0-9]+\.[0-9]+']
 
 jobs:
   build:
@@ -10,9 +11,41 @@ jobs:
     secrets:
       nixbuild_token: ${{ secrets.nixbuild_token }}
     with:
-      filter_builds: '((.top_attr == "packages") and (.system == "x86_64-linux" or .system == "aarch64-linux") and (.attr != "pre-commit-check" and .attr != "pre-commit" and .attr != "devnet" and .attr != "lodestar-cli"))'
+      filter_builds: '(.top_attr == "packages") and (.system == "x86_64-linux" or .system == "aarch64-linux") and (.attr == "uniond" or .attr == "uniond-image")' # ensure to append this list if you want to release more artifacts
 
   download-docker-images:
+    runs-on: ubuntu-latest
+    needs: [build]
+    permissions: write-all
+    strategy:
+      matrix:
+        package: [ uniond-image ]
+        system: [ aarch64-linux, x86_64-linux ]
+    steps: 
+      - uses: actions/download-artifact@v3
+        with:
+          name: packages.${{ matrix.system }}.${{ matrix.package }}
+      - uses: nixbuild/nix-quick-install-action@v22
+      - uses: nixbuild/nixbuild-action@v17
+        with:
+          nixbuild_token: ${{ secrets.nixbuild_token }}
+      - run: mkdir ${{ matrix.system }}
+      - run: nix copy --to file://`pwd`/${{ matrix.system }} --from ssh-ng://eu.nixbuild.net `cat result.json | jq -r '.packages."${{ matrix.system }}"."${{ matrix.package }}".outputs.out'` --extra-experimental-features nix-command
+      - run: cat ${{ matrix.system }}/nar/*.nar.xz | xz -dc | nix-store --restore ${{ matrix.system }}.${{ matrix.package }}
+      - uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.system }}.${{ matrix.package }}
+          path: ${{ matrix.system }}.${{ matrix.package }}
+      - uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - run: docker load < ${{ matrix.system }}.uniond-image
+      - run: docker tag `docker images -q uniond` ghcr.io/unionfi/uniond:${{ github.ref_name }}-${{ matrix.system }}
+      - run: docker push ghcr.io/unionfi/uniond:${{ github.ref_name }}-${{ matrix.system }}
+
+  download-static-binaries:
     runs-on: ubuntu-latest
     needs: [build]
     permissions: write-all
@@ -22,26 +55,41 @@ jobs:
     steps: 
       - uses: actions/download-artifact@v3
         with:
-          name: packages.${{ matrix.system }}.uniond-image
+          name: packages.${{ matrix.system }}.uniond
       - uses: nixbuild/nix-quick-install-action@v22
       - uses: nixbuild/nixbuild-action@v17
         with:
           nixbuild_token: ${{ secrets.nixbuild_token }}
       - run: mkdir ${{ matrix.system }}
-      - run: nix copy --to file://`pwd`/${{ matrix.system }} --from ssh-ng://eu.nixbuild.net `cat result.json | jq -r '.packages."${{ matrix.system }}"."uniond-image".outputs.out'` --extra-experimental-features nix-command
-      - run: cat ${{ matrix.system }}/nar/*.nar.xz | xz -dc | nix-store --restore ${{ matrix.system }}.uniond-image
+      - run: ls -la
+      - run: ls -la ${{ matrix.system }}
+      - run: |
+          echo "Getting OUTPUT and NARINFO_NAME"
+          OUTPUT=`cat result.json | jq -r '.packages."${{ matrix.system }}".uniond.outputs.out'`
+          prefix="/nix/store/"
+          suffix="-uniond" # <- HACK: suffix is hardcoded, change when you want to build a different package
+          trimmed=${OUTPUT#$prefix}
+          trimmed=${trimmed%$suffix}
+          NARINFO_NAME=$trimmed
+        
+          echo "Copying artifacts from nixbuild.net"
+          nix copy --to file://`pwd`/${{ matrix.system }} --from ssh-ng://eu.nixbuild.net $OUTPUT --extra-experimental-features nix-command
+        
+          echo "Get the NAR_URL"
+          nar_url_line=$(cat ./${{ matrix.system }}/${NARINFO_NAME}.narinfo | grep "URL:")
+          NAR_URL=$(echo "$nar_url_line" | cut -d " " -f 2-)
+
+          echo "Restore the package from the NAR_URL archive"
+          cat ${{ matrix.system }}/${NAR_URL} | xz -dc | nix-store --restore ${{ matrix.system }}.uniond
+          mv ${{ matrix.system }}.uniond/bin/uniond uniond-${{ matrix.system }}
+
+          echo "DEBUG"
+          ls -la 
+          tree
       - uses: actions/upload-artifact@v3
         with:
-          name: ${{matrix.system}}.uniond-image
-          path: ${{matrix.system}}.uniond-image
-      - uses: docker/login-action@v2
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - run: docker load < ${{ matrix.system }}.uniond-image
-      - run: docker tag `docker images -q uniond` ghcr.io/unionfi/uniond:${{ github.ref_name }}-${{ matrix.system }}
-      - run: docker push ghcr.io/unionfi/uniond:${{ github.ref_name }}-${{ matrix.system }}
+          name: uniond-${{ matrix.system }}
+          path: uniond-${{ matrix.system }}
 
   create-docker-manifest:
     runs-on: ubuntu-latest
@@ -61,15 +109,29 @@ jobs:
           --amend ghcr.io/unionfi/uniond:${{ github.ref_name }}-aarch64-linux \
           --amend ghcr.io/unionfi/uniond:${{ github.ref_name }}-x86_64-linux \
       - run: docker manifest push ghcr.io/unionfi/uniond:${{ github.ref_name }}
-
-  release-candidate:
+    
+  release:
     runs-on: ubuntu-latest
-    needs: [download-docker-images]
+    needs: [create-docker-manifest, download-static-binaries]
     permissions: write-all
     steps:
       - uses: actions/download-artifact@v3
       - run: ls -R
-      - name: 'Create release candidate'
+      # NOTE: please ensure that the following two steps remain in sync, other than the 
+      # if condition, the `prerelease` value, and the name.
+      - if: "contains(github.ref_name, 'rc')"
+        name: 'Create Release Candidate'
+        uses: marvinpinto/action-automatic-releases@v1.2.1
+        with:
+          repo_token: '${{secrets.GITHUB_TOKEN}}'
+          prerelease: true
+          automatic_release_tag: ${{github.ref_name}}
+          title: ${{github.ref_name}}
+          files: |
+            uniond-aarch64
+            uniond-x86_64
+      - if: "!contains(github.ref_name, 'rc')"
+        name: 'Create Release'
         uses: marvinpinto/action-automatic-releases@v1.2.1
         with:
           repo_token: '${{secrets.GITHUB_TOKEN}}'
@@ -77,7 +139,5 @@ jobs:
           automatic_release_tag: ${{github.ref_name}}
           title: ${{github.ref_name}}
           files: |
-            **/*.uniond-image
-
-
-
+            uniond-aarch64
+            uniond-x86_64
