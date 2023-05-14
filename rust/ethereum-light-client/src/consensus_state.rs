@@ -2,11 +2,11 @@ use crate::{errors::Error, eth_types::SYNC_COMMITTEE_SIZE};
 use ethereum_consensus::{beacon::Slot, bls::PublicKey, sync_protocol::SyncCommittee};
 use ethereum_light_client_verifier::state::SyncCommitteeView;
 use ibc::core::ics23_commitment::commitment::CommitmentRoot;
-use ibc_proto::{
-    google::protobuf::Any as IBCAny,
-    ibc::lightclients::ethereum::v1::ConsensusState as RawConsensusState, protobuf::Protobuf,
-};
 use prost::Message;
+use protos::{
+    google::protobuf::Any as IBCAny,
+    ibc::lightclients::ethereum::v1::ConsensusState as RawConsensusState,
+};
 
 pub const ETHEREUM_CONSENSUS_STATE_TYPE_URL: &str = "/ibc.lightclients.ethereum.v1.ConsensusState";
 
@@ -36,7 +36,7 @@ impl Default for ConsensusState {
     }
 }
 
-impl Protobuf<RawConsensusState> for ConsensusState {}
+// impl Protobuf<RawConsensusState> for ConsensusState {}
 
 impl TryFrom<RawConsensusState> for ConsensusState {
     type Error = Error;
@@ -77,7 +77,7 @@ impl From<ConsensusState> for RawConsensusState {
     }
 }
 
-impl Protobuf<IBCAny> for ConsensusState {}
+// impl Protobuf<IBCAny> for ConsensusState {}
 
 impl TryFrom<IBCAny> for ConsensusState {
     type Error = Error;
@@ -93,14 +93,14 @@ impl TryFrom<IBCAny> for ConsensusState {
     }
 }
 
-impl From<ConsensusState> for IBCAny {
-    fn from(consensus_state: ConsensusState) -> Self {
-        Self {
-            type_url: ETHEREUM_CONSENSUS_STATE_TYPE_URL.to_string(),
-            value: Protobuf::<RawConsensusState>::encode_vec(&consensus_state),
-        }
-    }
-}
+// impl From<ConsensusState> for IBCAny {
+//     fn from(consensus_state: ConsensusState) -> Self {
+//         Self {
+//             type_url: ETHEREUM_CONSENSUS_STATE_TYPE_URL.to_string(),
+//             value: Protobuf::<RawConsensusState>::encode_vec(&consensus_state),
+//         }
+//     }
+// }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct TrustedConsensusState {

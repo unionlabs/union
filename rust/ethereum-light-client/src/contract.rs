@@ -22,11 +22,11 @@ use ethereum_consensus::{
 };
 use ethereum_light_client_verifier::consensus::SyncProtocolVerifier;
 use ibc::core::ics24_host::Path;
-use ibc_proto::ibc::{
+use prost::Message;
+use protos::ibc::{
     core::connection::v1::ConnectionEnd,
     lightclients::ethereum::v1::{Header as RawEthHeader, StorageProof},
 };
-use prost::Message;
 use std::str::FromStr;
 use wasm_lc_types::msg::{
     ClientMessage, ContractResult, Height, MerklePath, Status, StatusResponse,
@@ -283,7 +283,7 @@ mod test {
     };
     use ethereum_consensus::bls::PublicKeyBytes;
     use ibc::Height;
-    use ibc_proto::ibc::lightclients::wasm::v1::{
+    use protos::ibc::lightclients::wasm::v1::{
         ClientState as WasmClientState, ConsensusState as WasmConsensusState,
     };
 

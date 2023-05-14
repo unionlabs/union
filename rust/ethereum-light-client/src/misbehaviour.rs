@@ -9,13 +9,13 @@ use ethereum_light_client_verifier::misbehaviour::{
     FinalizedHeaderMisbehaviour, Misbehaviour as MisbehaviourData, NextSyncCommitteeMisbehaviour,
 };
 use ibc::core::ics24_host::identifier::ClientId;
-use ibc_proto::google::protobuf::Any as IBCAny;
-use ibc_proto::ibc::lightclients::ethereum::v1::{
+use prost::Message;
+use protos::google::protobuf::Any as IBCAny;
+use protos::ibc::lightclients::ethereum::v1::{
     FinalizedHeaderMisbehaviour as RawFinalizedHeaderMisbehaviour,
     NextSyncCommitteeMisbehaviour as RawNextSyncCommitteeMisbehaviour,
 };
-use ibc_proto::protobuf::Protobuf;
-use prost::Message;
+// use protos::protobuf::Protobuf;
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 
@@ -31,9 +31,9 @@ pub struct Misbehaviour {
     pub data: MisbehaviourData<SYNC_COMMITTEE_SIZE, ConsensusUpdateInfo>,
 }
 
-impl Protobuf<RawFinalizedHeaderMisbehaviour> for Misbehaviour {}
+// impl Protobuf<RawFinalizedHeaderMisbehaviour> for Misbehaviour {}
 
-impl Protobuf<RawNextSyncCommitteeMisbehaviour> for Misbehaviour {}
+// impl Protobuf<RawNextSyncCommitteeMisbehaviour> for Misbehaviour {}
 
 impl TryFrom<RawFinalizedHeaderMisbehaviour> for Misbehaviour {
     type Error = Error;
@@ -111,7 +111,7 @@ impl From<Misbehaviour> for RawNextSyncCommitteeMisbehaviour {
     }
 }
 
-impl Protobuf<IBCAny> for Misbehaviour {}
+// impl Protobuf<IBCAny> for Misbehaviour {}
 
 impl TryFrom<IBCAny> for Misbehaviour {
     type Error = Error;
@@ -133,17 +133,17 @@ impl TryFrom<IBCAny> for Misbehaviour {
     }
 }
 
-impl From<Misbehaviour> for IBCAny {
-    fn from(value: Misbehaviour) -> Self {
-        match value.data {
-            MisbehaviourData::FinalizedHeader(_) => Self {
-                type_url: ETHEREUM_FINALIZED_HEADER_MISBEHAVIOUR_TYPE_URL.to_string(),
-                value: Protobuf::<RawFinalizedHeaderMisbehaviour>::encode_vec(&value),
-            },
-            MisbehaviourData::NextSyncCommittee(_) => Self {
-                type_url: ETHEREUM_NEXT_SYNC_COMMITTEE_MISBEHAVIOUR_TYPE_URL.to_string(),
-                value: Protobuf::<RawNextSyncCommitteeMisbehaviour>::encode_vec(&value),
-            },
-        }
-    }
-}
+// impl From<Misbehaviour> for IBCAny {
+//     fn from(value: Misbehaviour) -> Self {
+//         match value.data {
+//             MisbehaviourData::FinalizedHeader(_) => Self {
+//                 type_url: ETHEREUM_FINALIZED_HEADER_MISBEHAVIOUR_TYPE_URL.to_string(),
+//                 value: Protobuf::<RawFinalizedHeaderMisbehaviour>::encode_vec(&value),
+//             },
+//             MisbehaviourData::NextSyncCommittee(_) => Self {
+//                 type_url: ETHEREUM_NEXT_SYNC_COMMITTEE_MISBEHAVIOUR_TYPE_URL.to_string(),
+//                 value: Protobuf::<RawNextSyncCommitteeMisbehaviour>::encode_vec(&value),
+//             },
+//         }
+//     }
+// }

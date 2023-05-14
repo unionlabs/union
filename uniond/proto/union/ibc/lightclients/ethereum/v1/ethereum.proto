@@ -1,0 +1,153 @@
+syntax = "proto3";
+package ibc.lightclients.ethereum.v1;
+
+option go_package = "github.com/datachainlab/ethereum-lcp/go/light-clients/ethereum/types";
+import "ibc/core/client/v1/client.proto";
+
+message StorageProof {
+  repeated Proof proof = 1;
+}
+
+message Proof {
+  string key = 1;
+  string value = 2;
+  repeated string proof = 3;
+}
+
+message ClientState {
+  bytes genesis_validators_root = 1;
+  uint64 min_sync_committee_participants = 2;
+  uint64 genesis_time = 3;
+  ForkParameters fork_parameters = 4;
+  uint64 seconds_per_slot = 5;
+  uint64 slots_per_epoch = 6;
+  uint64 epochs_per_sync_committee_period = 7;
+
+  Fraction trust_level = 8;
+  uint64 trusting_period = 9;
+
+  uint64 latest_slot = 10;
+  uint64 latest_execution_block_number = 11;
+  ibc.core.client.v1.Height frozen_height = 12;
+}
+
+message ConsensusState {
+  uint64 slot = 1;
+  bytes storage_root = 2;
+  uint64 timestamp = 3;
+  bytes current_sync_committee = 4;
+  bytes next_sync_committee = 5;
+}
+
+message Header {
+  TrustedSyncCommittee trusted_sync_committee = 1;
+  LightClientUpdate consensus_update = 2;
+  AccountUpdate account_update = 3;
+  uint64 timestamp = 4;
+}
+
+message TrustedSyncCommittee {
+  ibc.core.client.v1.Height trusted_height = 1;
+  SyncCommittee sync_committee = 2;
+  bool is_next = 3;
+}
+
+message ForkParameters {
+  bytes genesis_fork_version = 1;
+  uint64 genesis_slot = 2;
+
+  Fork altair = 3;
+  Fork bellatrix = 4;
+  Fork capella = 5;
+  Fork eip4844 = 6;
+}
+
+message Fraction {
+  uint64 numerator = 1;
+  uint64 denominator = 2;
+}
+
+message Fork {
+  bytes version = 1;
+  uint64 epoch = 2;
+}
+
+message LightClientUpdate {
+  LightClientHeader attested_header = 1;
+  SyncCommittee next_sync_committee = 2;
+  repeated bytes next_sync_committee_branch = 3;
+  LightClientHeader finalized_header = 4;
+  repeated bytes finality_branch = 5;
+  SyncAggregate sync_aggregate = 8;
+  uint64 signature_slot = 9;
+}
+
+message SyncCommittee {
+  repeated bytes pubkeys = 1;
+  bytes aggregate_pubkey = 2;
+}
+
+message SyncAggregate {
+  bytes sync_committee_bits = 1;
+  bytes sync_committee_signature = 2;
+}
+
+message ExecutionUpdate {
+  bytes state_root = 1;
+  repeated bytes state_root_branch = 2;
+  uint64 block_number = 3;
+  repeated bytes block_number_branch = 4;
+}
+
+message AccountUpdate {
+  bytes account_proof = 1;
+  bytes account_storage_root = 2;
+}
+
+message LightClientHeader {
+  BeaconBlockHeader beacon = 1;
+  ExecutionPayloadHeader execution = 2;
+  repeated bytes execution_branch = 3;
+}
+
+message ExecutionPayloadHeader {
+  bytes parent_hash = 1;
+  bytes fee_recipient = 2;
+  bytes state_root = 3;
+  bytes receipts_root = 4;
+  bytes logs_bloom = 5;
+  bytes prev_randao = 6;
+  uint64 block_number = 7;
+  uint64 gas_limit = 8;
+  uint64 gas_used = 9;
+  uint64 timestamp = 10;
+  bytes extra_data = 11;
+  // TODO(aeryz): U256
+  bytes base_fee_per_gas = 12;
+  bytes block_hash = 13;
+  bytes transactions_root = 14;
+  bytes withdrawals_root = 15;
+}
+
+message BeaconBlockHeader {
+  uint64 slot = 1;
+  uint64 proposer_index = 2;
+  bytes parent_root = 3;
+  bytes state_root = 4;
+  bytes body_root = 5;
+}
+
+message FinalizedHeaderMisbehaviour {
+  string client_id = 1;
+  TrustedSyncCommittee trusted_sync_committee = 2;
+  LightClientUpdate consensus_update_1 = 3;
+  LightClientUpdate consensus_update_2 = 4;
+}
+
+message NextSyncCommitteeMisbehaviour {
+  string client_id = 1;
+  TrustedSyncCommittee trusted_sync_committee = 2;
+  LightClientUpdate consensus_update_1 = 3;
+  LightClientUpdate consensus_update_2 = 4;
+}
+

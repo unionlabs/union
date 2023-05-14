@@ -16,7 +16,7 @@ use ethereum_light_client_verifier::updates::{
     capella::ConsensusUpdateInfo as CapellaConsensusUpdateInfo, ConsensusUpdate,
 };
 use ibc::Height;
-use ibc_proto::ibc::{
+use protos::ibc::{
     core::client::v1::Height as ProtoHeight,
     lightclients::ethereum::v1::{
         AccountUpdate as ProtoAccountUpdate, BeaconBlockHeader as ProtoBeaconBlockHeader,

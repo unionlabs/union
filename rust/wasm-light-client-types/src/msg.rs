@@ -1,5 +1,5 @@
 use cosmwasm_std::{to_binary, Binary, StdResult};
-use ibc_proto::ibc::{
+use protos::ibc::{
     core::client::v1::GenesisMetadata,
     lightclients::wasm::v1::{ClientState, ConsensusState, Header, Misbehaviour},
 };

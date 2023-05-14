@@ -3,7 +3,9 @@ members = [
   "ethereum-consensus",
   "ethereum-light-client",
   "ethereum-verifier",
-  "wasm-light-client-types"
+  "wasm-light-client-types",
+  "protos",
+  "serde-utils"
 ]
 
 resolver = "2"

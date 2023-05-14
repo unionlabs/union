@@ -19,12 +19,12 @@ use ibc::{
     timestamp::Timestamp,
     Height,
 };
-use ibc_proto::{
+use prost::Message;
+use protos::{
     google::protobuf::Any,
     ibc::lightclients::ethereum::v1::{ClientState as RawClientState, Fork},
-    protobuf::Protobuf,
+    // protobuf::Protobuf,
 };
-use prost::Message;
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
 
@@ -91,7 +91,7 @@ impl ClientState {
     }
 }
 
-impl Protobuf<RawClientState> for ClientState {}
+// impl Protobuf<RawClientState> for ClientState {}
 
 impl TryFrom<RawClientState> for ClientState {
     type Error = Error;
@@ -190,8 +190,8 @@ impl TryFrom<RawClientState> for ClientState {
 
 impl From<ClientState> for RawClientState {
     fn from(value: ClientState) -> Self {
-        use ibc_proto::ibc::core::client::v1::Height as ProtoHeight;
-        use ibc_proto::ibc::lightclients::ethereum::v1::{
+        use protos::ibc::core::client::v1::Height as ProtoHeight;
+        use protos::ibc::lightclients::ethereum::v1::{
             ForkParameters as ProtoForkParameters, Fraction as ProtoFraction,
         };
 
@@ -250,7 +250,7 @@ impl From<ClientState> for RawClientState {
     }
 }
 
-impl Protobuf<Any> for ClientState {}
+// impl Protobuf<Any> for ClientState {}
 
 impl TryFrom<Any> for ClientState {
     type Error = Error;
@@ -265,14 +265,14 @@ impl TryFrom<Any> for ClientState {
     }
 }
 
-impl From<ClientState> for Any {
-    fn from(value: ClientState) -> Self {
-        Self {
-            type_url: ETHEREUM_CLIENT_STATE_TYPE_URL.to_string(),
-            value: Protobuf::<RawClientState>::encode_vec(&value),
-        }
-    }
-}
+// impl From<ClientState> for Any {
+//     fn from(value: ClientState) -> Self {
+//         Self {
+//             type_url: ETHEREUM_CLIENT_STATE_TYPE_URL.to_string(),
+//             value: Protobuf::<RawClientState>::encode_vec(&value),
+//         }
+//     }
+// }
 
 pub fn downcast_eth_client_state(cs: &dyn Ics2ClientState) -> Result<&ClientState, ClientError> {
     cs.as_any()

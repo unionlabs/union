@@ -21,7 +21,7 @@ ethereum-consensus = { path = "../ethereum-consensus", default-features = false 
 ethereum-light-client-verifier = { path = "../ethereum-verifier", default-features = false }
 hex = { version = "0.4", default-features = false }
 ibc = { version = "0.37.0", default-features = false, features = [ "serde" ] }
-ibc-proto = { path = "../ibc-proto-rs", default-features = false }
+protos = { path = "../protos", default-features = false }
 prost = { version = "0.11", default-features = false }
 rlp = { version = "0.5.2", default-features = false }
 schemars = { version = "0.8.3", default-features = false }

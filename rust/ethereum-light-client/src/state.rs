@@ -1,14 +1,14 @@
 use crate::{client_state::ClientState, consensus_state::ConsensusState, errors::Error};
 use cosmwasm_std::{Deps, DepsMut};
 use ibc::Height;
-use ibc_proto::{
+use prost::Message;
+use protos::{
     google::protobuf::Any,
     ibc::lightclients::{
         ethereum::v1::{ClientState as RawClientState, ConsensusState as RawConsensusState},
         wasm::v1::{ClientState as WasmClientState, ConsensusState as WasmConsensusState},
     },
 };
-use prost::Message;
 
 pub const WASM_CLIENT_STATE_TYPE_URL: &str = "/ibc.lightclients.wasm.v1.ClientState";
 pub const WASM_CONSENSUS_STATE_TYPE_URL: &str = "/ibc.lightclients.wasm.v1.ConsensusState";

@@ -8,11 +8,12 @@ use crate::{
     },
 };
 use ibc::timestamp::Timestamp;
-use ibc_proto::{
-    google::protobuf::Any as IBCAny, ibc::lightclients::ethereum::v1::Header as RawHeader,
-    protobuf::Protobuf,
-};
 use prost::Message;
+use protos::{
+    google::protobuf::Any as IBCAny,
+    ibc::lightclients::ethereum::v1::Header as RawHeader,
+    // protobuf::Protobuf,
+};
 
 pub const ETHEREUM_HEADER_TYPE_URL: &str = "/ibc.lightclients.ethereum.v1.Header";
 
@@ -34,7 +35,7 @@ pub struct Header {
 
 const NANO_SECONDS_MULTIPLIER: u64 = 1_000_000_000;
 
-impl Protobuf<RawHeader> for Header {}
+// impl Protobuf<RawHeader> for Header {}
 
 impl TryFrom<RawHeader> for Header {
     type Error = Error;
@@ -73,7 +74,7 @@ impl From<Header> for RawHeader {
     }
 }
 
-impl Protobuf<IBCAny> for Header {}
+// impl Protobuf<IBCAny> for Header {}
 
 impl TryFrom<IBCAny> for Header {
     type Error = Error;
@@ -88,11 +89,11 @@ impl TryFrom<IBCAny> for Header {
     }
 }
 
-impl From<Header> for IBCAny {
-    fn from(header: Header) -> Self {
-        Self {
-            type_url: ETHEREUM_HEADER_TYPE_URL.to_string(),
-            value: Protobuf::<RawHeader>::encode_vec(&header),
-        }
-    }
-}
+// impl From<Header> for IBCAny {
+//     fn from(header: Header) -> Self {
+//         Self {
+//             type_url: ETHEREUM_HEADER_TYPE_URL.to_string(),
+//             value: Protobuf::<RawHeader>::encode_vec(&header),
+//         }
+//     }
+// }
