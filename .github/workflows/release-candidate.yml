@@ -67,6 +67,8 @@ jobs:
       - run: nix copy --to file://`pwd`/${{ matrix.system }} --from ssh-ng://eu.nixbuild.net `cat result.json | jq -r '.packages."${{ matrix.system }}"."${{ matrix.package }}".outputs.out'` --extra-experimental-features nix-command
       - run: ls -la
       - run: ls -la ${{ matrix.system }}
+      - run: ls -la ${{ matrix.system }}/nar
+      - run: tree ${{ matrix.system }}/nar
       - run: cat ${{ matrix.system }}/nar/*.nar.xz | xz -dc | nix-store --restore ${{ matrix.system }}.${{ matrix.package }}
       - run: ls -la
       - run: ls -la ${{ matrix.system }}
