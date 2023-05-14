@@ -904,7 +904,8 @@ func (db *DB) doWrites(lc *y.Closer) {
 
 // batchSet applies a list of badger.Entry. If a request level error occurs it
 // will be returned.
-//   Check(kv.BatchSet(entries))
+//
+//	Check(kv.BatchSet(entries))
 func (db *DB) batchSet(entries []*Entry) error {
 	req, err := db.sendToWriteCh(entries)
 	if err != nil {
@@ -917,9 +918,10 @@ func (db *DB) batchSet(entries []*Entry) error {
 // batchSetAsync is the asynchronous version of batchSet. It accepts a callback
 // function which is called when all the sets are complete. If a request level
 // error occurs, it will be passed back via the callback.
-//   err := kv.BatchSetAsync(entries, func(err error)) {
-//      Check(err)
-//   }
+//
+//	err := kv.BatchSetAsync(entries, func(err error)) {
+//	   Check(err)
+//	}
 func (db *DB) batchSetAsync(entries []*Entry, f func(error)) error {
 	req, err := db.sendToWriteCh(entries)
 	if err != nil {
@@ -1644,16 +1646,16 @@ func (db *DB) dropAll() (func(), error) {
 }
 
 // DropPrefix would drop all the keys with the provided prefix. It does this in the following way:
-// - Stop accepting new writes.
-// - Stop memtable flushes before acquiring lock. Because we're acquring lock here
-//   and memtable flush stalls for lock, which leads to deadlock
-// - Flush out all memtables, skipping over keys with the given prefix, Kp.
-// - Write out the value log header to memtables when flushing, so we don't accidentally bring Kp
-//   back after a restart.
-// - Stop compaction.
-// - Compact L0->L1, skipping over Kp.
-// - Compact rest of the levels, Li->Li, picking tables which have Kp.
-// - Resume memtable flushes, compactions and writes.
+//   - Stop accepting new writes.
+//   - Stop memtable flushes before acquiring lock. Because we're acquring lock here
+//     and memtable flush stalls for lock, which leads to deadlock
+//   - Flush out all memtables, skipping over keys with the given prefix, Kp.
+//   - Write out the value log header to memtables when flushing, so we don't accidentally bring Kp
+//     back after a restart.
+//   - Stop compaction.
+//   - Compact L0->L1, skipping over Kp.
+//   - Compact rest of the levels, Li->Li, picking tables which have Kp.
+//   - Resume memtable flushes, compactions and writes.
 func (db *DB) DropPrefix(prefixes ...[]byte) error {
 	db.opt.Infof("DropPrefix Called")
 	f, err := db.prepareToDrop()

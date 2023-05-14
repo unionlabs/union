@@ -502,10 +502,11 @@ type disfixWrapper struct {
 
 // decodeInterfaceJSON helps unravel the type name and
 // the stored data, which are expected in the form:
-// {
-//    "type": "<canonical concrete type name>",
-//    "value":  {}
-// }
+//
+//	{
+//	   "type": "<canonical concrete type name>",
+//	   "value":  {}
+//	}
 func decodeInterfaceJSON(bz []byte) (name string, data []byte, err error) {
 	dfw := new(disfixWrapper)
 	err = json.Unmarshal(bz, dfw)

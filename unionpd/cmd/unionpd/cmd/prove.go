@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	provergrpc "unionp/grpc/api/v1"
 	"context"
 	"encoding/base64"
 	"encoding/hex"
@@ -9,6 +8,7 @@ import (
 	"log"
 	"math/big"
 	"time"
+	provergrpc "unionp/grpc/api/v1"
 
 	cometbn254 "github.com/cometbft/cometbft/crypto/bn254"
 	ce "github.com/cometbft/cometbft/crypto/encoding"
@@ -20,7 +20,7 @@ import (
 )
 
 var ProveCmd = &cobra.Command{
-	Use:   "example-prove [uri]",
+	Use:  "example-prove [uri]",
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		uri := args[0]
@@ -53,7 +53,7 @@ var ProveCmd = &cobra.Command{
 				log.Fatal(err)
 			}
 			return &types.SimpleValidator{
-				PubKey: &protoPK,
+				PubKey:      &protoPK,
 				VotingPower: sdk.TokensToConsensusPower(sdk.NewIntFromBigInt(tokens), sdk.DefaultPowerReduction),
 			}
 		}
@@ -79,7 +79,7 @@ var ProveCmd = &cobra.Command{
 					Hash:  partSetHeaderHash,
 				},
 			},
-			ChainID:   "union-devnet-1",
+			ChainID: "union-devnet-1",
 		}
 
 		validators := []*types.SimpleValidator{
@@ -116,12 +116,12 @@ var ProveCmd = &cobra.Command{
 			TrustedCommit: &provergrpc.ValidatorSetCommit{
 				Validators: trustedValidators,
 				Signatures: trustedSignatures,
-				Bitmap: trustedBitmap.Bytes(),
+				Bitmap:     trustedBitmap.Bytes(),
 			},
 			UntrustedCommit: &provergrpc.ValidatorSetCommit{
 				Validators: untrustedValidators,
 				Signatures: untrustedSignatures,
-				Bitmap: untrustedBitmap.Bytes(),
+				Bitmap:     untrustedBitmap.Bytes(),
 			},
 		})
 		if err != nil {

@@ -63,11 +63,11 @@ func (HashOp) EnumDescriptor() ([]byte, []int) {
 	return fileDescriptor_855156e15e7b8e99, []int{0}
 }
 
-//*
-//LengthOp defines how to process the key and value of the LeafOp
-//to include length information. After encoding the length with the given
-//algorithm, the length will be prepended to the key and value bytes.
-//(Each one with it's own encoded length)
+// *
+// LengthOp defines how to process the key and value of the LeafOp
+// to include length information. After encoding the length with the given
+// algorithm, the length will be prepended to the key and value bytes.
+// (Each one with it's own encoded length)
 type LengthOp int32
 
 const (
@@ -123,26 +123,26 @@ func (LengthOp) EnumDescriptor() ([]byte, []int) {
 	return fileDescriptor_855156e15e7b8e99, []int{1}
 }
 
-//*
-//ExistenceProof takes a key and a value and a set of steps to perform on it.
-//The result of peforming all these steps will provide a "root hash", which can
-//be compared to the value in a header.
+// *
+// ExistenceProof takes a key and a value and a set of steps to perform on it.
+// The result of peforming all these steps will provide a "root hash", which can
+// be compared to the value in a header.
 //
-//Since it is computationally infeasible to produce a hash collission for any of the used
-//cryptographic hash functions, if someone can provide a series of operations to transform
-//a given key and value into a root hash that matches some trusted root, these key and values
-//must be in the referenced merkle tree.
+// Since it is computationally infeasible to produce a hash collission for any of the used
+// cryptographic hash functions, if someone can provide a series of operations to transform
+// a given key and value into a root hash that matches some trusted root, these key and values
+// must be in the referenced merkle tree.
 //
-//The only possible issue is maliablity in LeafOp, such as providing extra prefix data,
-//which should be controlled by a spec. Eg. with lengthOp as NONE,
-//prefix = FOO, key = BAR, value = CHOICE
-//and
-//prefix = F, key = OOBAR, value = CHOICE
-//would produce the same value.
+// The only possible issue is maliablity in LeafOp, such as providing extra prefix data,
+// which should be controlled by a spec. Eg. with lengthOp as NONE,
+// prefix = FOO, key = BAR, value = CHOICE
+// and
+// prefix = F, key = OOBAR, value = CHOICE
+// would produce the same value.
 //
-//With LengthOp this is tricker but not impossible. Which is why the "leafPrefixEqual" field
-//in the ProofSpec is valuable to prevent this mutability. And why all trees should
-//length-prefix the data before hashing it.
+// With LengthOp this is tricker but not impossible. Which is why the "leafPrefixEqual" field
+// in the ProofSpec is valuable to prevent this mutability. And why all trees should
+// length-prefix the data before hashing it.
 type ExistenceProof struct {
 	Key   []byte     `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
 	Value []byte     `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
@@ -211,10 +211,9 @@ func (m *ExistenceProof) GetPath() []*InnerOp {
 	return nil
 }
 
-//
-//NonExistenceProof takes a proof of two neighbors, one left of the desired key,
-//one right of the desired key. If both proofs are valid AND they are neighbors,
-//then there is no valid proof for the given key.
+// NonExistenceProof takes a proof of two neighbors, one left of the desired key,
+// one right of the desired key. If both proofs are valid AND they are neighbors,
+// then there is no valid proof for the given key.
 type NonExistenceProof struct {
 	Key   []byte          `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
 	Left  *ExistenceProof `protobuf:"bytes,2,opt,name=left,proto3" json:"left,omitempty"`
@@ -275,8 +274,7 @@ func (m *NonExistenceProof) GetRight() *ExistenceProof {
 	return nil
 }
 
-//
-//CommitmentProof is either an ExistenceProof or a NonExistenceProof, or a Batch of such messages
+// CommitmentProof is either an ExistenceProof or a NonExistenceProof, or a Batch of such messages
 type CommitmentProof struct {
 	// Types that are valid to be assigned to Proof:
 	//	*CommitmentProof_Exist
@@ -388,21 +386,21 @@ func (*CommitmentProof) XXX_OneofWrappers() []interface{} {
 	}
 }
 
-//*
-//LeafOp represents the raw key-value data we wish to prove, and
-//must be flexible to represent the internal transformation from
-//the original key-value pairs into the basis hash, for many existing
-//merkle trees.
+// *
+// LeafOp represents the raw key-value data we wish to prove, and
+// must be flexible to represent the internal transformation from
+// the original key-value pairs into the basis hash, for many existing
+// merkle trees.
 //
-//key and value are passed in. So that the signature of this operation is:
-//leafOp(key, value) -> output
+// key and value are passed in. So that the signature of this operation is:
+// leafOp(key, value) -> output
 //
-//To process this, first prehash the keys and values if needed (ANY means no hash in this case):
-//hkey = prehashKey(key)
-//hvalue = prehashValue(value)
+// To process this, first prehash the keys and values if needed (ANY means no hash in this case):
+// hkey = prehashKey(key)
+// hvalue = prehashValue(value)
 //
-//Then combine the bytes, and hash it
-//output = hash(prefix || length(hkey) || hkey || length(hvalue) || hvalue)
+// Then combine the bytes, and hash it
+// output = hash(prefix || length(hkey) || hkey || length(hvalue) || hvalue)
 type LeafOp struct {
 	Hash         HashOp   `protobuf:"varint,1,opt,name=hash,proto3,enum=ics23.HashOp" json:"hash,omitempty"`
 	PrehashKey   HashOp   `protobuf:"varint,2,opt,name=prehash_key,json=prehashKey,proto3,enum=ics23.HashOp" json:"prehash_key,omitempty"`
@@ -481,22 +479,22 @@ func (m *LeafOp) GetPrefix() []byte {
 	return nil
 }
 
-//*
-//InnerOp represents a merkle-proof step that is not a leaf.
-//It represents concatenating two children and hashing them to provide the next result.
+// *
+// InnerOp represents a merkle-proof step that is not a leaf.
+// It represents concatenating two children and hashing them to provide the next result.
 //
-//The result of the previous step is passed in, so the signature of this op is:
-//innerOp(child) -> output
+// The result of the previous step is passed in, so the signature of this op is:
+// innerOp(child) -> output
 //
-//The result of applying InnerOp should be:
-//output = op.hash(op.prefix || child || op.suffix)
+// The result of applying InnerOp should be:
+// output = op.hash(op.prefix || child || op.suffix)
 //
-//where the || operator is concatenation of binary data,
-//and child is the result of hashing all the tree below this step.
+// where the || operator is concatenation of binary data,
+// and child is the result of hashing all the tree below this step.
 //
-//Any special data, like prepending child with the length, or prepending the entire operation with
-//some value to differentiate from leaf nodes, should be included in prefix and suffix.
-//If either of prefix or suffix is empty, we just treat it as an empty string
+// Any special data, like prepending child with the length, or prepending the entire operation with
+// some value to differentiate from leaf nodes, should be included in prefix and suffix.
+// If either of prefix or suffix is empty, we just treat it as an empty string
 type InnerOp struct {
 	Hash   HashOp `protobuf:"varint,1,opt,name=hash,proto3,enum=ics23.HashOp" json:"hash,omitempty"`
 	Prefix []byte `protobuf:"bytes,2,opt,name=prefix,proto3" json:"prefix,omitempty"`
@@ -557,17 +555,17 @@ func (m *InnerOp) GetSuffix() []byte {
 	return nil
 }
 
-//*
-//ProofSpec defines what the expected parameters are for a given proof type.
-//This can be stored in the client and used to validate any incoming proofs.
+// *
+// ProofSpec defines what the expected parameters are for a given proof type.
+// This can be stored in the client and used to validate any incoming proofs.
 //
-//verify(ProofSpec, Proof) -> Proof | Error
+// verify(ProofSpec, Proof) -> Proof | Error
 //
-//As demonstrated in tests, if we don't fix the algorithm used to calculate the
-//LeafHash for a given tree, there are many possible key-value pairs that can
-//generate a given hash (by interpretting the preimage differently).
-//We need this for proper security, requires client knows a priori what
-//tree format server uses. But not in code, rather a configuration object.
+// As demonstrated in tests, if we don't fix the algorithm used to calculate the
+// LeafHash for a given tree, there are many possible key-value pairs that can
+// generate a given hash (by interpretting the preimage differently).
+// We need this for proper security, requires client knows a priori what
+// tree format server uses. But not in code, rather a configuration object.
 type ProofSpec struct {
 	// any field in the ExistenceProof must be the same as in this spec.
 	// except Prefix, which is just the first bytes of prefix (spec can be longer)
@@ -640,15 +638,14 @@ func (m *ProofSpec) GetMinDepth() int32 {
 	return 0
 }
 
+// InnerSpec contains all store-specific structure info to determine if two proofs from a
+// given store are neighbors.
 //
-//InnerSpec contains all store-specific structure info to determine if two proofs from a
-//given store are neighbors.
+// This enables:
 //
-//This enables:
-//
-//isLeftMost(spec: InnerSpec, op: InnerOp)
-//isRightMost(spec: InnerSpec, op: InnerOp)
-//isLeftNeighbor(spec: InnerSpec, left: InnerOp, right: InnerOp)
+// isLeftMost(spec: InnerSpec, op: InnerOp)
+// isRightMost(spec: InnerSpec, op: InnerOp)
+// isLeftNeighbor(spec: InnerSpec, left: InnerOp, right: InnerOp)
 type InnerSpec struct {
 	// Child order is the ordering of the children node, must count from 0
 	// iavl tree is [0, 1] (left then right)
@@ -738,8 +735,7 @@ func (m *InnerSpec) GetHash() HashOp {
 	return HashOp_NO_HASH
 }
 
-//
-//BatchProof is a group of multiple proof types than can be compressed
+// BatchProof is a group of multiple proof types than can be compressed
 type BatchProof struct {
 	Entries []*BatchEntry `protobuf:"bytes,1,rep,name=entries,proto3" json:"entries,omitempty"`
 }

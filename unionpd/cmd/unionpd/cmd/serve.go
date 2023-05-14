@@ -1,11 +1,11 @@
 package cmd
 
 import (
-	provergrpc "unionp/grpc/api/v1"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
 	"log"
 	"net"
+	provergrpc "unionp/grpc/api/v1"
 )
 
 const (

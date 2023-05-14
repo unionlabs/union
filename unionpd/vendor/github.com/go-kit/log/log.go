@@ -125,11 +125,11 @@ func WithSuffix(logger Logger, keyvals ...interface{}) Logger {
 //
 // Two implementation details provide the needed stack depth consistency.
 //
-//    1. newContext avoids introducing an additional layer when asked to
-//       wrap another context.
-//    2. With, WithPrefix, and WithSuffix avoid introducing an additional
-//       layer by returning a newly constructed context with a merged keyvals
-//       rather than simply wrapping the existing context.
+//  1. newContext avoids introducing an additional layer when asked to
+//     wrap another context.
+//  2. With, WithPrefix, and WithSuffix avoid introducing an additional
+//     layer by returning a newly constructed context with a merged keyvals
+//     rather than simply wrapping the existing context.
 type context struct {
 	logger     Logger
 	keyvals    []interface{}

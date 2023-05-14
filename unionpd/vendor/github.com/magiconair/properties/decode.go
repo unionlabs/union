@@ -48,49 +48,49 @@ import (
 //
 // Examples:
 //
-//     // Field is ignored.
-//     Field int `properties:"-"`
+//	// Field is ignored.
+//	Field int `properties:"-"`
 //
-//     // Field is assigned value of 'Field'.
-//     Field int
+//	// Field is assigned value of 'Field'.
+//	Field int
 //
-//     // Field is assigned value of 'myName'.
-//     Field int `properties:"myName"`
+//	// Field is assigned value of 'myName'.
+//	Field int `properties:"myName"`
 //
-//     // Field is assigned value of key 'myName' and has a default
-//     // value 15 if the key does not exist.
-//     Field int `properties:"myName,default=15"`
+//	// Field is assigned value of key 'myName' and has a default
+//	// value 15 if the key does not exist.
+//	Field int `properties:"myName,default=15"`
 //
-//     // Field is assigned value of key 'Field' and has a default
-//     // value 15 if the key does not exist.
-//     Field int `properties:",default=15"`
+//	// Field is assigned value of key 'Field' and has a default
+//	// value 15 if the key does not exist.
+//	Field int `properties:",default=15"`
 //
-//     // Field is assigned value of key 'date' and the date
-//     // is in format 2006-01-02
-//     Field time.Time `properties:"date,layout=2006-01-02"`
+//	// Field is assigned value of key 'date' and the date
+//	// is in format 2006-01-02
+//	Field time.Time `properties:"date,layout=2006-01-02"`
 //
-//     // Field is assigned the non-empty and whitespace trimmed
-//     // values of key 'Field' split by commas.
-//     Field []string
+//	// Field is assigned the non-empty and whitespace trimmed
+//	// values of key 'Field' split by commas.
+//	Field []string
 //
-//     // Field is assigned the non-empty and whitespace trimmed
-//     // values of key 'Field' split by commas and has a default
-//     // value ["a", "b", "c"] if the key does not exist.
-//     Field []string `properties:",default=a;b;c"`
+//	// Field is assigned the non-empty and whitespace trimmed
+//	// values of key 'Field' split by commas and has a default
+//	// value ["a", "b", "c"] if the key does not exist.
+//	Field []string `properties:",default=a;b;c"`
 //
-//     // Field is decoded recursively with "Field." as key prefix.
-//     Field SomeStruct
+//	// Field is decoded recursively with "Field." as key prefix.
+//	Field SomeStruct
 //
-//     // Field is decoded recursively with "myName." as key prefix.
-//     Field SomeStruct `properties:"myName"`
+//	// Field is decoded recursively with "myName." as key prefix.
+//	Field SomeStruct `properties:"myName"`
 //
-//     // Field is decoded recursively with "Field." as key prefix
-//     // and the next dotted element of the key as map key.
-//     Field map[string]string
+//	// Field is decoded recursively with "Field." as key prefix
+//	// and the next dotted element of the key as map key.
+//	Field map[string]string
 //
-//     // Field is decoded recursively with "myName." as key prefix
-//     // and the next dotted element of the key as map key.
-//     Field map[string]string `properties:"myName"`
+//	// Field is decoded recursively with "myName." as key prefix
+//	// and the next dotted element of the key as map key.
+//	Field map[string]string `properties:"myName"`
 func (p *Properties) Decode(x interface{}) error {
 	t, v := reflect.TypeOf(x), reflect.ValueOf(x)
 	if t.Kind() != reflect.Ptr || v.Elem().Type().Kind() != reflect.Struct {

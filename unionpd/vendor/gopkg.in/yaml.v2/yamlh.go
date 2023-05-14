@@ -408,7 +408,9 @@ type yaml_document_t struct {
 // The number of written bytes should be set to the size_read variable.
 //
 // [in,out]   data        A pointer to an application data specified by
-//                        yaml_parser_set_input().
+//
+//	yaml_parser_set_input().
+//
 // [out]      buffer      The buffer to write the data from the source.
 // [in]       size        The size of the buffer.
 // [out]      size_read   The actual number of bytes read from the source.
@@ -604,13 +606,14 @@ type yaml_parser_t struct {
 // @a buffer to the output.
 //
 // @param[in,out]   data        A pointer to an application data specified by
-//                              yaml_emitter_set_output().
+//
+//	yaml_emitter_set_output().
+//
 // @param[in]       buffer      The buffer with bytes to be written.
 // @param[in]       size        The size of the buffer.
 //
 // @returns On success, the handler should return @c 1.  If the handler failed,
 // the returned value should be @c 0.
-//
 type yaml_write_handler_t func(emitter *yaml_emitter_t, buffer []byte) error
 
 type yaml_emitter_state_t int

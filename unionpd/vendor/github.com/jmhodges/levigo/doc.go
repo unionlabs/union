@@ -1,5 +1,4 @@
 /*
-
 Package levigo provides the ability to create and access LevelDB databases.
 
 levigo.Open opens and creates databases.

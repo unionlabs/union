@@ -33,7 +33,8 @@ const (
 // policy is the interface encapsulating eviction/admission behavior.
 //
 // TODO: remove this interface and just rename defaultPolicy to policy, as we
-//       are probably only going to use/implement/maintain one policy.
+//
+//	are probably only going to use/implement/maintain one policy.
 type policy interface {
 	ringConsumer
 	// Add attempts to Add the key-cost pair to the Policy. It returns a slice

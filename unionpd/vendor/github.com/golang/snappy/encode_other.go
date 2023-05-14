@@ -2,6 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+//go:build (!amd64 && !arm64) || appengine || !gc || noasm
 // +build !amd64,!arm64 appengine !gc noasm
 
 package snappy
@@ -20,6 +21,7 @@ func load64(b []byte, i int) uint64 {
 // emitLiteral writes a literal chunk and returns the number of bytes written.
 //
 // It assumes that:
+//
 //	dst is long enough to hold the encoded bytes
 //	1 <= len(lit) && len(lit) <= 65536
 func emitLiteral(dst, lit []byte) int {
@@ -44,6 +46,7 @@ func emitLiteral(dst, lit []byte) int {
 // emitCopy writes a copy chunk and returns the number of bytes written.
 //
 // It assumes that:
+//
 //	dst is long enough to hold the encoded bytes
 //	1 <= offset && offset <= 65535
 //	4 <= length && length <= 65535
@@ -91,6 +94,7 @@ func emitCopy(dst []byte, offset, length int) int {
 // src[i:i+k-j] and src[j:k] have the same contents.
 //
 // It assumes that:
+//
 //	0 <= i && i < j && j <= len(src)
 func extendMatch(src []byte, i, j int) int {
 	for ; j < len(src) && src[i] == src[j]; i, j = i+1, j+1 {
@@ -107,8 +111,9 @@ func hash(u, shift uint32) uint32 {
 // been written.
 //
 // It also assumes that:
+//
 //	len(dst) >= MaxEncodedLen(len(src)) &&
-// 	minNonLiteralBlockSize <= len(src) && len(src) <= maxBlockSize
+//	minNonLiteralBlockSize <= len(src) && len(src) <= maxBlockSize
 func encodeBlock(dst, src []byte) (d int) {
 	// Initialize the hash table. Its size ranges from 1<<8 to 1<<14 inclusive.
 	// The table element type is uint16, as s < sLimit and sLimit < len(src)

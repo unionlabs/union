@@ -3,14 +3,14 @@ package grpc
 import (
 	"bufio"
 	"bytes"
-	"unionp/pkg/lightclient"
-	lcgadget "unionp/pkg/lightclient/nonadjacent"
 	context "context"
 	"fmt"
 	"io"
 	"log"
 	"math/big"
 	"os"
+	"unionp/pkg/lightclient"
+	lcgadget "unionp/pkg/lightclient/nonadjacent"
 
 	cometbft_bn254 "github.com/cometbft/cometbft/crypto/bn254"
 	ce "github.com/cometbft/cometbft/crypto/encoding"

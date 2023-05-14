@@ -1,14 +1,14 @@
 package lightclient
 
 import (
-	"unionp/pkg/merkle"
-	"unionp/pkg/proto"
 	"fmt"
 	curve "github.com/consensys/gnark-crypto/ecc/bn254"
 	"github.com/consensys/gnark/frontend"
 	gadget "github.com/consensys/gnark/std/algebra/emulated/sw_bn254"
 	"github.com/consensys/gnark/std/algebra/emulated/sw_emulated"
 	"github.com/consensys/gnark/std/math/emulated"
+	"unionp/pkg/merkle"
+	"unionp/pkg/proto"
 )
 
 /*

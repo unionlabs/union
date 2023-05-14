@@ -753,9 +753,9 @@ func (txn *Txn) ReadTs() uint64 {
 // to. Commit API internally runs Discard, but running it twice wouldn't cause
 // any issues.
 //
-//  txn := db.NewTransaction(false)
-//  defer txn.Discard()
-//  // Call various APIs.
+//	txn := db.NewTransaction(false)
+//	defer txn.Discard()
+//	// Call various APIs.
 func (db *DB) NewTransaction(update bool) *Txn {
 	return db.newTransaction(update, false)
 }

@@ -23,10 +23,10 @@ import (
 //
 // However:
 //
-// 1. If you frequently create/destroy buffers, this implementation will be
-//    significantly nicer to the allocator.
-// 2. If you have many buffers with bursty traffic, this implementation will use
-//    significantly less memory.
+//  1. If you frequently create/destroy buffers, this implementation will be
+//     significantly nicer to the allocator.
+//  2. If you have many buffers with bursty traffic, this implementation will use
+//     significantly less memory.
 type Buffer struct {
 	// Pool is the buffer pool to use. If nil, this Buffer will use the
 	// global buffer pool.

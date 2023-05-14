@@ -17,7 +17,6 @@
 //	// Output:
 //	// small2 len: 1024
 //	// large2 len: 4194304
-//
 package pool
 
 import (

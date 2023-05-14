@@ -2,6 +2,7 @@
 // of this source code is governed by a BSD-style license that can be found in
 // the LICENSE file.
 
+//go:build jemalloc
 // +build jemalloc
 
 package z
@@ -161,7 +162,7 @@ func fetchStat(s string) uint64 {
 		unsafe.Pointer(&out),             // Variable to store the output.
 		(*C.size_t)(unsafe.Pointer(&sz)), // Size of the output variable.
 		nil,                              // Input variable used to set a value.
-		0) // Size of the input variable.
+		0)                                // Size of the input variable.
 	return out
 }
 

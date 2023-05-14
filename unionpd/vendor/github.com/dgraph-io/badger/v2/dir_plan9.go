@@ -123,9 +123,9 @@ func syncDir(dir string) error {
 // Opening an exclusive-use file returns an error.
 // The expected error strings are:
 //
-//  - "open/create -- file is locked" (cwfs, kfs)
-//  - "exclusive lock" (fossil)
-//  - "exclusive use file already open" (ramfs)
+//   - "open/create -- file is locked" (cwfs, kfs)
+//   - "exclusive lock" (fossil)
+//   - "exclusive use file already open" (ramfs)
 //
 // See https://github.com/golang/go/blob/go1.15rc1/src/cmd/go/internal/lockedfile/lockedfile_plan9.go#L16
 var lockedErrStrings = [...]string{

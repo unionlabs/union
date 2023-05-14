@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-//----------------------------------------
+// ----------------------------------------
 // Global methods for global sealed codec.
 var gcdc *Codec
 
