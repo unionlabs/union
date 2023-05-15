@@ -281,8 +281,17 @@ contract CometblsClient is ILightClient {
         bytes calldata prefix,
         bytes calldata path
     ) external returns (bool) {
-        // TODO
-        revert("not implemented");
+        OptimizedConsensusState memory consensusState =
+            consensusStates[stateIndex(clientId, height.toUint128())];
+        CosmosIcs23V1CommitmentProof.Data memory commitmentProof = CosmosIcs23V1CommitmentProof.decode(proof);
+        Ics23.VerifyNonMembershipError result =
+            Ics23.verifyNonMembership(
+                                   _tendermintProofSpec,
+                                   abi.encodePacked(consensusState.root),
+                                   commitmentProof,
+                                   path
+            );
+        return result == Ics23.VerifyNonMembershipError.None;
     }
 
     function getClientState(string calldata clientId) external view returns (bytes memory, bool) {
