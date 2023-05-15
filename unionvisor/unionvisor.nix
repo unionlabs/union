@@ -49,16 +49,16 @@
       checks = {
         inherit unionvisor;
 
-        clippy = crane.stable.cargoClippy (commonArgs // {
+        unionvisor-clippy = crane.stable.cargoClippy (commonArgs // {
           inherit cargoArtifacts;
           cargoClippyExtraArgs = "--all-targets -- --deny warnings";
         });
 
-        rustfmt = crane.stable.cargoFmt {
+        unionvisor-rustfmt = crane.stable.cargoFmt {
           inherit src;
         };
 
-        tests = crane.stable.cargoNextest (commonArgs // {
+        unionvisor-tests = crane.stable.cargoNextest (commonArgs // {
           inherit cargoArtifacts;
           partitions = 1;
           partitionType = "count";
