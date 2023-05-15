@@ -44,6 +44,8 @@
         [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" "x86_64-darwin" ];
       imports = [
         ./uniond/uniond.nix
+        ./unionpd/unionpd.nix
+        ./unionvisor/unionvisor.nix
         ./uniond/proto.nix
         ./docs/docs.nix
         ./rust/rust.nix
@@ -53,10 +55,8 @@
         ./tools/prysm-validator.nix
         ./rust/proto.nix
         ./tools/libwasmvm/libwasmvm.nix
-        ./tools/unionvisor/unionvisor.nix
         ./networks/devnet.nix
         ./networks/genesis/devnet.nix
-        ./unionpd/unionpd.nix
         inputs.treefmt-nix.flakeModule
         inputs.pre-commit-hooks.flakeModule
       ];
