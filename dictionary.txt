@@ -339,3 +339,5 @@ ctypes
 cometbn
 unionp
 typecheck
+rclone
+esac
