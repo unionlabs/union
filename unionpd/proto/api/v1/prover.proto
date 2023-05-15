@@ -7,8 +7,13 @@ import "tendermint/types/canonical.proto";
 
 option go_package = "union/prover/rpc/grpc";
 
+message FrElement {
+  bytes value = 1;
+}
+
 message ZeroKnowledgeProof {
   bytes content = 1;
+  bytes public_inputs = 2;
 }
 
 message ValidatorSetCommit {
@@ -28,7 +33,27 @@ message ProveResponse {
   bytes untrusted_validator_set_root = 2;
 }
 
+message VerifyRequest {
+  ZeroKnowledgeProof proof = 1;
+  bytes trusted_validator_set_root = 2;
+  bytes untrusted_validator_set_root = 3;
+  FrElement block_header_x = 4;
+  FrElement block_header_y = 5;
+}
+
+message VerifyResponse {
+  bool valid = 1;
+}
+
+message GenerateContractRequest {}
+
+message GenerateContractResponse {
+  bytes content = 1;
+}
+
 service UnionProverAPI {
   rpc Prove(ProveRequest) returns (ProveResponse);
+  rpc Verify(VerifyRequest) returns (VerifyResponse);
+  rpc GenerateContract(GenerateContractRequest) returns (GenerateContractResponse);
 }
 
