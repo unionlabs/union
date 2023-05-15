@@ -1,18 +1,20 @@
 { ... }: {
   perSystem = { pkgs, self', ... }: {
     packages = {
-      uniond = pkgs.buildGoModule {
+      uniond = pkgs.buildGoModule ({
         name = "uniond";
         src = ./.;
         vendorSha256 = null;
         doCheck = true;
+      } // (if pkgs.stdenv.isLinux then {
+        # statically link if we're on linux
         nativeBuildInputs = [ pkgs.musl ];
         CGO_ENABLED = 0;
         ldflags = [
           "-linkmode external"
           "-extldflags '-static -L${pkgs.musl}/lib'"
         ];
-      };
+      } else { }));
 
       uniond-image = pkgs.dockerTools.buildImage {
         name = "uniond";
