@@ -137,7 +137,6 @@
                 pkgs.go-ethereum
               ] ++
                 (with inputs.ethereum-nix.packages.${system}; [
-                  teku
                   prysm
                 ]);
             });

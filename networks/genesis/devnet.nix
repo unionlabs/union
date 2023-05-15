@@ -1,5 +1,5 @@
 { ... }: {
-  perSystem = { devnetConfig, pkgs, self', ... }:
+  perSystem = { devnetConfig, pkgs, self', inputs', ... }:
     let
       uniond = pkgs.lib.getExe self'.packages.uniond;
       chainId = "union-devnet-1";
@@ -40,6 +40,21 @@
               }.json
             '')
           validatorKeys;
+      mkGethPrysmGenesis = { }:
+        pkgs.runCommand "geth-prysm-genesis" { } ''
+          mkdir -p $out
+          cp ${./devnet-evm/genesis.json} "./genesis.json"
+        
+          echo connorisdumb
+          ${inputs'.ethereum-nix.packages.prysm}/bin/prysmctl \
+          testnet generate-genesis \
+            --fork=bellatrix \
+            --num-validators=64 \
+            --output-ssz=$out/genesis.ssz \
+            --chain-config-file=${./devnet-evm/beacon-config.yml} \
+            --geth-genesis-json-in=./genesis.json \
+            --geth-genesis-json-out=$out/genesis.json \
+        '';
       genesisHome = mkHome {
         genesisAccounts = builtins.genList (i: "val-${toString i}") devnetConfig.validatorCount;
       };
@@ -86,15 +101,22 @@
         paths = validatorNodeIDs { inherit (devnetConfig) validatorCount; };
       };
 
+      packages.devnet-geth-prysm-genesis = pkgs.symlinkJoin {
+        name = "geth-prysm-genesis-state";
+        paths = mkGethPrysmGenesis {};
+      };
+
       packages.devnet-geth-config = pkgs.linkFarm "devnet-geth-config" [
         { name = "genesis.json"; path = "${./devnet-evm/genesis.json}"; }
+        { name = "beacon-config.yml"; path = "${./devnet-evm/beacon-config.yml}"; }
         { name = "dev-key0.prv"; path = "${./devnet-evm/dev-key0.prv}"; }
         { name = "dev-key1.prv"; path = "${./devnet-evm/dev-key1.prv}"; }
         { name = "dev-jwt.prv"; path = "${./devnet-evm/dev-jwt.prv}"; }
       ];
 
-      packages.devnet-lodestar-config = pkgs.linkFarm "lodestar-config" [
+      packages.devnet-prysm-config = pkgs.linkFarm "prysm-config" [
         { name = "dev-jwt.prv"; path = "${./devnet-evm/dev-jwt.prv}"; }
+        { name = "beacon-config.yml"; path = "${./devnet-evm/beacon-config.yml}"; }
       ];
       checks = { };
     };
