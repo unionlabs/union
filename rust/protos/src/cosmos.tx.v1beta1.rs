@@ -119,16 +119,13 @@ pub struct TxBody {
     /// when the default options are not sufficient. If any of these are present
     /// and can't be handled, the transaction will be rejected
     #[prost(message, repeated, tag = "1023")]
-    pub extension_options: ::prost::alloc::vec::Vec<
-        super::super::super::google::protobuf::Any,
-    >,
+    pub extension_options: ::prost::alloc::vec::Vec<super::super::super::google::protobuf::Any>,
     /// extension_options are arbitrary options that can be added by chains
     /// when the default options are not sufficient. If any of these are present
     /// and can't be handled, they will be ignored
     #[prost(message, repeated, tag = "2047")]
-    pub non_critical_extension_options: ::prost::alloc::vec::Vec<
-        super::super::super::google::protobuf::Any,
-    >,
+    pub non_critical_extension_options:
+        ::prost::alloc::vec::Vec<super::super::super::google::protobuf::Any>,
 }
 /// AuthInfo describes the fee and signer modes that are used to sign a
 /// transaction.
@@ -203,9 +200,8 @@ pub mod mode_info {
     pub struct Multi {
         /// bitarray specifies which keys within the multisig are signing
         #[prost(message, optional, tag = "1")]
-        pub bitarray: ::core::option::Option<
-            super::super::super::crypto::multisig::v1beta1::CompactBitArray,
-        >,
+        pub bitarray:
+            ::core::option::Option<super::super::super::crypto::multisig::v1beta1::CompactBitArray>,
         /// mode_infos is the corresponding modes of the signers of the multisig
         /// which could include nested multisig public keys
         #[prost(message, repeated, tag = "2")]
@@ -299,9 +295,7 @@ pub struct GetTxsEventRequest {
     /// Deprecated post v0.46.x: use page and limit instead.
     #[deprecated]
     #[prost(message, optional, tag = "2")]
-    pub pagination: ::core::option::Option<
-        super::super::base::query::v1beta1::PageRequest,
-    >,
+    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageRequest>,
     #[prost(enumeration = "OrderBy", tag = "3")]
     pub order_by: i32,
     /// page is the page number to query, starts at 1. If not provided, will default to first page.
@@ -322,16 +316,12 @@ pub struct GetTxsEventResponse {
     pub txs: ::prost::alloc::vec::Vec<Tx>,
     /// tx_responses is the list of queried TxResponses.
     #[prost(message, repeated, tag = "2")]
-    pub tx_responses: ::prost::alloc::vec::Vec<
-        super::super::base::abci::v1beta1::TxResponse,
-    >,
+    pub tx_responses: ::prost::alloc::vec::Vec<super::super::base::abci::v1beta1::TxResponse>,
     /// pagination defines a pagination for the response.
     /// Deprecated post v0.46.x: use total instead.
     #[deprecated]
     #[prost(message, optional, tag = "3")]
-    pub pagination: ::core::option::Option<
-        super::super::base::query::v1beta1::PageResponse,
-    >,
+    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageResponse>,
     /// total is total number of results available
     #[prost(uint64, tag = "4")]
     pub total: u64,
@@ -354,9 +344,7 @@ pub struct BroadcastTxRequest {
 pub struct BroadcastTxResponse {
     /// tx_response is the queried TxResponses.
     #[prost(message, optional, tag = "1")]
-    pub tx_response: ::core::option::Option<
-        super::super::base::abci::v1beta1::TxResponse,
-    >,
+    pub tx_response: ::core::option::Option<super::super::base::abci::v1beta1::TxResponse>,
 }
 /// SimulateRequest is the request type for the Service.Simulate
 /// RPC method.
@@ -404,9 +392,7 @@ pub struct GetTxResponse {
     pub tx: ::core::option::Option<Tx>,
     /// tx_response is the queried TxResponses.
     #[prost(message, optional, tag = "2")]
-    pub tx_response: ::core::option::Option<
-        super::super::base::abci::v1beta1::TxResponse,
-    >,
+    pub tx_response: ::core::option::Option<super::super::base::abci::v1beta1::TxResponse>,
 }
 /// GetBlockWithTxsRequest is the request type for the Service.GetBlockWithTxs
 /// RPC method.
@@ -420,9 +406,7 @@ pub struct GetBlockWithTxsRequest {
     pub height: i64,
     /// pagination defines a pagination for the request.
     #[prost(message, optional, tag = "2")]
-    pub pagination: ::core::option::Option<
-        super::super::base::query::v1beta1::PageRequest,
-    >,
+    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageRequest>,
 }
 /// GetBlockWithTxsResponse is the response type for the Service.GetBlockWithTxs method.
 ///
@@ -434,16 +418,12 @@ pub struct GetBlockWithTxsResponse {
     #[prost(message, repeated, tag = "1")]
     pub txs: ::prost::alloc::vec::Vec<Tx>,
     #[prost(message, optional, tag = "2")]
-    pub block_id: ::core::option::Option<
-        super::super::super::tendermint::types::BlockId,
-    >,
+    pub block_id: ::core::option::Option<super::super::super::tendermint::types::BlockId>,
     #[prost(message, optional, tag = "3")]
     pub block: ::core::option::Option<super::super::super::tendermint::types::Block>,
     /// pagination defines a pagination for the response.
     #[prost(message, optional, tag = "4")]
-    pub pagination: ::core::option::Option<
-        super::super::base::query::v1beta1::PageResponse,
-    >,
+    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageResponse>,
 }
 /// TxDecodeRequest is the request type for the Service.TxDecode
 /// RPC method.

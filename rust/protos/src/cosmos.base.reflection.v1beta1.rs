@@ -26,9 +26,7 @@ pub struct ListImplementationsRequest {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ListImplementationsResponse {
     #[prost(string, repeated, tag = "1")]
-    pub implementation_message_names: ::prost::alloc::vec::Vec<
-        ::prost::alloc::string::String,
-    >,
+    pub implementation_message_names: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
 }
 include!("cosmos.base.reflection.v1beta1.tonic.rs");
 // @@protoc_insertion_point(module)

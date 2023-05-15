@@ -135,17 +135,7 @@ pub mod code_generator_response {
         pub generated_code_info: ::core::option::Option<super::super::GeneratedCodeInfo>,
     }
     /// Sync with code_generator.h.
-    #[derive(
-        Clone,
-        Copy,
-        Debug,
-        PartialEq,
-        Eq,
-        Hash,
-        PartialOrd,
-        Ord,
-        ::prost::Enumeration
-    )]
+    #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
     #[repr(i32)]
     pub enum Feature {
         None = 0,

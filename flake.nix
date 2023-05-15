@@ -208,6 +208,7 @@
                     jq
                     yq
                     solc
+                    self'.packages.rust-stable
                   ]);
                 nativeBuildInputs = [ config.treefmt.build.wrapper ];
                 GOPRIVATE = "github.com/unionfi/*";
@@ -235,6 +236,7 @@
             projectRootFile = "flake.nix";
             programs.nixpkgs-fmt.enable = true;
             programs.gofmt.enable = true;
+            programs.rustfmt.enable = true;
             settings.global.excludes = [ "uniond/vendor/**" ];
           };
         };

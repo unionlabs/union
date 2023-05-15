@@ -3,8 +3,8 @@
 #[cfg(feature = "client")]
 pub mod query_client {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
-    use tonic::codegen::*;
     use tonic::codegen::http::Uri;
+    use tonic::codegen::*;
     #[derive(Debug, Clone)]
     pub struct QueryClient<T> {
         inner: tonic::client::Grpc<T>,
@@ -48,9 +48,8 @@ pub mod query_client {
                     <T as tonic::client::GrpcService<tonic::body::BoxBody>>::ResponseBody,
                 >,
             >,
-            <T as tonic::codegen::Service<
-                http::Request<tonic::body::BoxBody>,
-            >>::Error: Into<StdError> + Send + Sync,
+            <T as tonic::codegen::Service<http::Request<tonic::body::BoxBody>>>::Error:
+                Into<StdError> + Send + Sync,
         {
             QueryClient::new(InterceptedService::new(inner, interceptor))
         }
@@ -73,56 +72,41 @@ pub mod query_client {
             &mut self,
             request: impl tonic::IntoRequest<super::QueryBalanceRequest>,
         ) -> Result<tonic::Response<super::QueryBalanceResponse>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/cosmos.bank.v1beta1.Query/Balance",
-            );
+            let path = http::uri::PathAndQuery::from_static("/cosmos.bank.v1beta1.Query/Balance");
             self.inner.unary(request.into_request(), path, codec).await
         }
         pub async fn all_balances(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryAllBalancesRequest>,
         ) -> Result<tonic::Response<super::QueryAllBalancesResponse>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/cosmos.bank.v1beta1.Query/AllBalances",
-            );
+            let path =
+                http::uri::PathAndQuery::from_static("/cosmos.bank.v1beta1.Query/AllBalances");
             self.inner.unary(request.into_request(), path, codec).await
         }
         pub async fn spendable_balances(
             &mut self,
             request: impl tonic::IntoRequest<super::QuerySpendableBalancesRequest>,
-        ) -> Result<
-            tonic::Response<super::QuerySpendableBalancesResponse>,
-            tonic::Status,
-        > {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+        ) -> Result<tonic::Response<super::QuerySpendableBalancesResponse>, tonic::Status> {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/cosmos.bank.v1beta1.Query/SpendableBalances",
@@ -132,19 +116,14 @@ pub mod query_client {
         pub async fn spendable_balance_by_denom(
             &mut self,
             request: impl tonic::IntoRequest<super::QuerySpendableBalanceByDenomRequest>,
-        ) -> Result<
-            tonic::Response<super::QuerySpendableBalanceByDenomResponse>,
-            tonic::Status,
-        > {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+        ) -> Result<tonic::Response<super::QuerySpendableBalanceByDenomResponse>, tonic::Status>
+        {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/cosmos.bank.v1beta1.Query/SpendableBalanceByDenom",
@@ -155,133 +134,103 @@ pub mod query_client {
             &mut self,
             request: impl tonic::IntoRequest<super::QueryTotalSupplyRequest>,
         ) -> Result<tonic::Response<super::QueryTotalSupplyResponse>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/cosmos.bank.v1beta1.Query/TotalSupply",
-            );
+            let path =
+                http::uri::PathAndQuery::from_static("/cosmos.bank.v1beta1.Query/TotalSupply");
             self.inner.unary(request.into_request(), path, codec).await
         }
         pub async fn supply_of(
             &mut self,
             request: impl tonic::IntoRequest<super::QuerySupplyOfRequest>,
         ) -> Result<tonic::Response<super::QuerySupplyOfResponse>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/cosmos.bank.v1beta1.Query/SupplyOf",
-            );
+            let path = http::uri::PathAndQuery::from_static("/cosmos.bank.v1beta1.Query/SupplyOf");
             self.inner.unary(request.into_request(), path, codec).await
         }
         pub async fn params(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryParamsRequest>,
         ) -> Result<tonic::Response<super::QueryParamsResponse>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/cosmos.bank.v1beta1.Query/Params",
-            );
+            let path = http::uri::PathAndQuery::from_static("/cosmos.bank.v1beta1.Query/Params");
             self.inner.unary(request.into_request(), path, codec).await
         }
         pub async fn denom_metadata(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryDenomMetadataRequest>,
         ) -> Result<tonic::Response<super::QueryDenomMetadataResponse>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/cosmos.bank.v1beta1.Query/DenomMetadata",
-            );
+            let path =
+                http::uri::PathAndQuery::from_static("/cosmos.bank.v1beta1.Query/DenomMetadata");
             self.inner.unary(request.into_request(), path, codec).await
         }
         pub async fn denoms_metadata(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryDenomsMetadataRequest>,
         ) -> Result<tonic::Response<super::QueryDenomsMetadataResponse>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/cosmos.bank.v1beta1.Query/DenomsMetadata",
-            );
+            let path =
+                http::uri::PathAndQuery::from_static("/cosmos.bank.v1beta1.Query/DenomsMetadata");
             self.inner.unary(request.into_request(), path, codec).await
         }
         pub async fn denom_owners(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryDenomOwnersRequest>,
         ) -> Result<tonic::Response<super::QueryDenomOwnersResponse>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/cosmos.bank.v1beta1.Query/DenomOwners",
-            );
+            let path =
+                http::uri::PathAndQuery::from_static("/cosmos.bank.v1beta1.Query/DenomOwners");
             self.inner.unary(request.into_request(), path, codec).await
         }
         pub async fn send_enabled(
             &mut self,
             request: impl tonic::IntoRequest<super::QuerySendEnabledRequest>,
         ) -> Result<tonic::Response<super::QuerySendEnabledResponse>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/cosmos.bank.v1beta1.Query/SendEnabled",
-            );
+            let path =
+                http::uri::PathAndQuery::from_static("/cosmos.bank.v1beta1.Query/SendEnabled");
             self.inner.unary(request.into_request(), path, codec).await
         }
     }
@@ -305,17 +254,11 @@ pub mod query_server {
         async fn spendable_balances(
             &self,
             request: tonic::Request<super::QuerySpendableBalancesRequest>,
-        ) -> Result<
-            tonic::Response<super::QuerySpendableBalancesResponse>,
-            tonic::Status,
-        >;
+        ) -> Result<tonic::Response<super::QuerySpendableBalancesResponse>, tonic::Status>;
         async fn spendable_balance_by_denom(
             &self,
             request: tonic::Request<super::QuerySpendableBalanceByDenomRequest>,
-        ) -> Result<
-            tonic::Response<super::QuerySpendableBalanceByDenomResponse>,
-            tonic::Status,
-        >;
+        ) -> Result<tonic::Response<super::QuerySpendableBalanceByDenomResponse>, tonic::Status>;
         async fn total_supply(
             &self,
             request: tonic::Request<super::QueryTotalSupplyRequest>,
@@ -364,10 +307,7 @@ pub mod query_server {
                 send_compression_encodings: Default::default(),
             }
         }
-        pub fn with_interceptor<F>(
-            inner: T,
-            interceptor: F,
-        ) -> InterceptedService<Self, F>
+        pub fn with_interceptor<F>(inner: T, interceptor: F) -> InterceptedService<Self, F>
         where
             F: tonic::service::Interceptor,
         {
@@ -395,10 +335,7 @@ pub mod query_server {
         type Response = http::Response<tonic::body::BoxBody>;
         type Error = std::convert::Infallible;
         type Future = BoxFuture<Self::Response, Self::Error>;
-        fn poll_ready(
-            &mut self,
-            _cx: &mut Context<'_>,
-        ) -> Poll<Result<(), Self::Error>> {
+        fn poll_ready(&mut self, _cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
             Poll::Ready(Ok(()))
         }
         fn call(&mut self, req: http::Request<B>) -> Self::Future {
@@ -407,15 +344,9 @@ pub mod query_server {
                 "/cosmos.bank.v1beta1.Query/Balance" => {
                     #[allow(non_camel_case_types)]
                     struct BalanceSvc<T: Query>(pub Arc<T>);
-                    impl<
-                        T: Query,
-                    > tonic::server::UnaryService<super::QueryBalanceRequest>
-                    for BalanceSvc<T> {
+                    impl<T: Query> tonic::server::UnaryService<super::QueryBalanceRequest> for BalanceSvc<T> {
                         type Response = super::QueryBalanceResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::QueryBalanceRequest>,
@@ -432,11 +363,10 @@ pub mod query_server {
                         let inner = inner.0;
                         let method = BalanceSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -445,23 +375,15 @@ pub mod query_server {
                 "/cosmos.bank.v1beta1.Query/AllBalances" => {
                     #[allow(non_camel_case_types)]
                     struct AllBalancesSvc<T: Query>(pub Arc<T>);
-                    impl<
-                        T: Query,
-                    > tonic::server::UnaryService<super::QueryAllBalancesRequest>
-                    for AllBalancesSvc<T> {
+                    impl<T: Query> tonic::server::UnaryService<super::QueryAllBalancesRequest> for AllBalancesSvc<T> {
                         type Response = super::QueryAllBalancesResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::QueryAllBalancesRequest>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
-                            let fut = async move {
-                                (*inner).all_balances(request).await
-                            };
+                            let fut = async move { (*inner).all_balances(request).await };
                             Box::pin(fut)
                         }
                     }
@@ -472,11 +394,10 @@ pub mod query_server {
                         let inner = inner.0;
                         let method = AllBalancesSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -485,23 +406,17 @@ pub mod query_server {
                 "/cosmos.bank.v1beta1.Query/SpendableBalances" => {
                     #[allow(non_camel_case_types)]
                     struct SpendableBalancesSvc<T: Query>(pub Arc<T>);
-                    impl<
-                        T: Query,
-                    > tonic::server::UnaryService<super::QuerySpendableBalancesRequest>
-                    for SpendableBalancesSvc<T> {
+                    impl<T: Query> tonic::server::UnaryService<super::QuerySpendableBalancesRequest>
+                        for SpendableBalancesSvc<T>
+                    {
                         type Response = super::QuerySpendableBalancesResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::QuerySpendableBalancesRequest>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
-                            let fut = async move {
-                                (*inner).spendable_balances(request).await
-                            };
+                            let fut = async move { (*inner).spendable_balances(request).await };
                             Box::pin(fut)
                         }
                     }
@@ -512,11 +427,10 @@ pub mod query_server {
                         let inner = inner.0;
                         let method = SpendableBalancesSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -525,26 +439,19 @@ pub mod query_server {
                 "/cosmos.bank.v1beta1.Query/SpendableBalanceByDenom" => {
                     #[allow(non_camel_case_types)]
                     struct SpendableBalanceByDenomSvc<T: Query>(pub Arc<T>);
-                    impl<
-                        T: Query,
-                    > tonic::server::UnaryService<
-                        super::QuerySpendableBalanceByDenomRequest,
-                    > for SpendableBalanceByDenomSvc<T> {
+                    impl<T: Query>
+                        tonic::server::UnaryService<super::QuerySpendableBalanceByDenomRequest>
+                        for SpendableBalanceByDenomSvc<T>
+                    {
                         type Response = super::QuerySpendableBalanceByDenomResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
-                            request: tonic::Request<
-                                super::QuerySpendableBalanceByDenomRequest,
-                            >,
+                            request: tonic::Request<super::QuerySpendableBalanceByDenomRequest>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
-                            let fut = async move {
-                                (*inner).spendable_balance_by_denom(request).await
-                            };
+                            let fut =
+                                async move { (*inner).spendable_balance_by_denom(request).await };
                             Box::pin(fut)
                         }
                     }
@@ -555,11 +462,10 @@ pub mod query_server {
                         let inner = inner.0;
                         let method = SpendableBalanceByDenomSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -568,23 +474,15 @@ pub mod query_server {
                 "/cosmos.bank.v1beta1.Query/TotalSupply" => {
                     #[allow(non_camel_case_types)]
                     struct TotalSupplySvc<T: Query>(pub Arc<T>);
-                    impl<
-                        T: Query,
-                    > tonic::server::UnaryService<super::QueryTotalSupplyRequest>
-                    for TotalSupplySvc<T> {
+                    impl<T: Query> tonic::server::UnaryService<super::QueryTotalSupplyRequest> for TotalSupplySvc<T> {
                         type Response = super::QueryTotalSupplyResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::QueryTotalSupplyRequest>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
-                            let fut = async move {
-                                (*inner).total_supply(request).await
-                            };
+                            let fut = async move { (*inner).total_supply(request).await };
                             Box::pin(fut)
                         }
                     }
@@ -595,11 +493,10 @@ pub mod query_server {
                         let inner = inner.0;
                         let method = TotalSupplySvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -608,15 +505,9 @@ pub mod query_server {
                 "/cosmos.bank.v1beta1.Query/SupplyOf" => {
                     #[allow(non_camel_case_types)]
                     struct SupplyOfSvc<T: Query>(pub Arc<T>);
-                    impl<
-                        T: Query,
-                    > tonic::server::UnaryService<super::QuerySupplyOfRequest>
-                    for SupplyOfSvc<T> {
+                    impl<T: Query> tonic::server::UnaryService<super::QuerySupplyOfRequest> for SupplyOfSvc<T> {
                         type Response = super::QuerySupplyOfResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::QuerySupplyOfRequest>,
@@ -633,11 +524,10 @@ pub mod query_server {
                         let inner = inner.0;
                         let method = SupplyOfSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -646,13 +536,9 @@ pub mod query_server {
                 "/cosmos.bank.v1beta1.Query/Params" => {
                     #[allow(non_camel_case_types)]
                     struct ParamsSvc<T: Query>(pub Arc<T>);
-                    impl<T: Query> tonic::server::UnaryService<super::QueryParamsRequest>
-                    for ParamsSvc<T> {
+                    impl<T: Query> tonic::server::UnaryService<super::QueryParamsRequest> for ParamsSvc<T> {
                         type Response = super::QueryParamsResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::QueryParamsRequest>,
@@ -669,11 +555,10 @@ pub mod query_server {
                         let inner = inner.0;
                         let method = ParamsSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -682,23 +567,17 @@ pub mod query_server {
                 "/cosmos.bank.v1beta1.Query/DenomMetadata" => {
                     #[allow(non_camel_case_types)]
                     struct DenomMetadataSvc<T: Query>(pub Arc<T>);
-                    impl<
-                        T: Query,
-                    > tonic::server::UnaryService<super::QueryDenomMetadataRequest>
-                    for DenomMetadataSvc<T> {
+                    impl<T: Query> tonic::server::UnaryService<super::QueryDenomMetadataRequest>
+                        for DenomMetadataSvc<T>
+                    {
                         type Response = super::QueryDenomMetadataResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::QueryDenomMetadataRequest>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
-                            let fut = async move {
-                                (*inner).denom_metadata(request).await
-                            };
+                            let fut = async move { (*inner).denom_metadata(request).await };
                             Box::pin(fut)
                         }
                     }
@@ -709,11 +588,10 @@ pub mod query_server {
                         let inner = inner.0;
                         let method = DenomMetadataSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -722,23 +600,17 @@ pub mod query_server {
                 "/cosmos.bank.v1beta1.Query/DenomsMetadata" => {
                     #[allow(non_camel_case_types)]
                     struct DenomsMetadataSvc<T: Query>(pub Arc<T>);
-                    impl<
-                        T: Query,
-                    > tonic::server::UnaryService<super::QueryDenomsMetadataRequest>
-                    for DenomsMetadataSvc<T> {
+                    impl<T: Query> tonic::server::UnaryService<super::QueryDenomsMetadataRequest>
+                        for DenomsMetadataSvc<T>
+                    {
                         type Response = super::QueryDenomsMetadataResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::QueryDenomsMetadataRequest>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
-                            let fut = async move {
-                                (*inner).denoms_metadata(request).await
-                            };
+                            let fut = async move { (*inner).denoms_metadata(request).await };
                             Box::pin(fut)
                         }
                     }
@@ -749,11 +621,10 @@ pub mod query_server {
                         let inner = inner.0;
                         let method = DenomsMetadataSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -762,23 +633,15 @@ pub mod query_server {
                 "/cosmos.bank.v1beta1.Query/DenomOwners" => {
                     #[allow(non_camel_case_types)]
                     struct DenomOwnersSvc<T: Query>(pub Arc<T>);
-                    impl<
-                        T: Query,
-                    > tonic::server::UnaryService<super::QueryDenomOwnersRequest>
-                    for DenomOwnersSvc<T> {
+                    impl<T: Query> tonic::server::UnaryService<super::QueryDenomOwnersRequest> for DenomOwnersSvc<T> {
                         type Response = super::QueryDenomOwnersResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::QueryDenomOwnersRequest>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
-                            let fut = async move {
-                                (*inner).denom_owners(request).await
-                            };
+                            let fut = async move { (*inner).denom_owners(request).await };
                             Box::pin(fut)
                         }
                     }
@@ -789,11 +652,10 @@ pub mod query_server {
                         let inner = inner.0;
                         let method = DenomOwnersSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -802,23 +664,15 @@ pub mod query_server {
                 "/cosmos.bank.v1beta1.Query/SendEnabled" => {
                     #[allow(non_camel_case_types)]
                     struct SendEnabledSvc<T: Query>(pub Arc<T>);
-                    impl<
-                        T: Query,
-                    > tonic::server::UnaryService<super::QuerySendEnabledRequest>
-                    for SendEnabledSvc<T> {
+                    impl<T: Query> tonic::server::UnaryService<super::QuerySendEnabledRequest> for SendEnabledSvc<T> {
                         type Response = super::QuerySendEnabledResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::QuerySendEnabledRequest>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
-                            let fut = async move {
-                                (*inner).send_enabled(request).await
-                            };
+                            let fut = async move { (*inner).send_enabled(request).await };
                             Box::pin(fut)
                         }
                     }
@@ -829,28 +683,23 @@ pub mod query_server {
                         let inner = inner.0;
                         let method = SendEnabledSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
                     Box::pin(fut)
                 }
-                _ => {
-                    Box::pin(async move {
-                        Ok(
-                            http::Response::builder()
-                                .status(200)
-                                .header("grpc-status", "12")
-                                .header("content-type", "application/grpc")
-                                .body(empty_body())
-                                .unwrap(),
-                        )
-                    })
-                }
+                _ => Box::pin(async move {
+                    Ok(http::Response::builder()
+                        .status(200)
+                        .header("grpc-status", "12")
+                        .header("content-type", "application/grpc")
+                        .body(empty_body())
+                        .unwrap())
+                }),
             }
         }
     }
@@ -882,8 +731,8 @@ pub mod query_server {
 #[cfg(feature = "client")]
 pub mod msg_client {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
-    use tonic::codegen::*;
     use tonic::codegen::http::Uri;
+    use tonic::codegen::*;
     #[derive(Debug, Clone)]
     pub struct MsgClient<T> {
         inner: tonic::client::Grpc<T>,
@@ -914,10 +763,7 @@ pub mod msg_client {
             let inner = tonic::client::Grpc::with_origin(inner, origin);
             Self { inner }
         }
-        pub fn with_interceptor<F>(
-            inner: T,
-            interceptor: F,
-        ) -> MsgClient<InterceptedService<T, F>>
+        pub fn with_interceptor<F>(inner: T, interceptor: F) -> MsgClient<InterceptedService<T, F>>
         where
             F: tonic::service::Interceptor,
             T::ResponseBody: Default,
@@ -927,9 +773,8 @@ pub mod msg_client {
                     <T as tonic::client::GrpcService<tonic::body::BoxBody>>::ResponseBody,
                 >,
             >,
-            <T as tonic::codegen::Service<
-                http::Request<tonic::body::BoxBody>,
-            >>::Error: Into<StdError> + Send + Sync,
+            <T as tonic::codegen::Service<http::Request<tonic::body::BoxBody>>>::Error:
+                Into<StdError> + Send + Sync,
         {
             MsgClient::new(InterceptedService::new(inner, interceptor))
         }
@@ -952,76 +797,58 @@ pub mod msg_client {
             &mut self,
             request: impl tonic::IntoRequest<super::MsgSend>,
         ) -> Result<tonic::Response<super::MsgSendResponse>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/cosmos.bank.v1beta1.Msg/Send",
-            );
+            let path = http::uri::PathAndQuery::from_static("/cosmos.bank.v1beta1.Msg/Send");
             self.inner.unary(request.into_request(), path, codec).await
         }
         pub async fn multi_send(
             &mut self,
             request: impl tonic::IntoRequest<super::MsgMultiSend>,
         ) -> Result<tonic::Response<super::MsgMultiSendResponse>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/cosmos.bank.v1beta1.Msg/MultiSend",
-            );
+            let path = http::uri::PathAndQuery::from_static("/cosmos.bank.v1beta1.Msg/MultiSend");
             self.inner.unary(request.into_request(), path, codec).await
         }
         pub async fn update_params(
             &mut self,
             request: impl tonic::IntoRequest<super::MsgUpdateParams>,
         ) -> Result<tonic::Response<super::MsgUpdateParamsResponse>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/cosmos.bank.v1beta1.Msg/UpdateParams",
-            );
+            let path =
+                http::uri::PathAndQuery::from_static("/cosmos.bank.v1beta1.Msg/UpdateParams");
             self.inner.unary(request.into_request(), path, codec).await
         }
         pub async fn set_send_enabled(
             &mut self,
             request: impl tonic::IntoRequest<super::MsgSetSendEnabled>,
         ) -> Result<tonic::Response<super::MsgSetSendEnabledResponse>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/cosmos.bank.v1beta1.Msg/SetSendEnabled",
-            );
+            let path =
+                http::uri::PathAndQuery::from_static("/cosmos.bank.v1beta1.Msg/SetSendEnabled");
             self.inner.unary(request.into_request(), path, codec).await
         }
     }
@@ -1070,10 +897,7 @@ pub mod msg_server {
                 send_compression_encodings: Default::default(),
             }
         }
-        pub fn with_interceptor<F>(
-            inner: T,
-            interceptor: F,
-        ) -> InterceptedService<Self, F>
+        pub fn with_interceptor<F>(inner: T, interceptor: F) -> InterceptedService<Self, F>
         where
             F: tonic::service::Interceptor,
         {
@@ -1101,10 +925,7 @@ pub mod msg_server {
         type Response = http::Response<tonic::body::BoxBody>;
         type Error = std::convert::Infallible;
         type Future = BoxFuture<Self::Response, Self::Error>;
-        fn poll_ready(
-            &mut self,
-            _cx: &mut Context<'_>,
-        ) -> Poll<Result<(), Self::Error>> {
+        fn poll_ready(&mut self, _cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
             Poll::Ready(Ok(()))
         }
         fn call(&mut self, req: http::Request<B>) -> Self::Future {
@@ -1113,13 +934,9 @@ pub mod msg_server {
                 "/cosmos.bank.v1beta1.Msg/Send" => {
                     #[allow(non_camel_case_types)]
                     struct SendSvc<T: Msg>(pub Arc<T>);
-                    impl<T: Msg> tonic::server::UnaryService<super::MsgSend>
-                    for SendSvc<T> {
+                    impl<T: Msg> tonic::server::UnaryService<super::MsgSend> for SendSvc<T> {
                         type Response = super::MsgSendResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::MsgSend>,
@@ -1136,11 +953,10 @@ pub mod msg_server {
                         let inner = inner.0;
                         let method = SendSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -1149,13 +965,9 @@ pub mod msg_server {
                 "/cosmos.bank.v1beta1.Msg/MultiSend" => {
                     #[allow(non_camel_case_types)]
                     struct MultiSendSvc<T: Msg>(pub Arc<T>);
-                    impl<T: Msg> tonic::server::UnaryService<super::MsgMultiSend>
-                    for MultiSendSvc<T> {
+                    impl<T: Msg> tonic::server::UnaryService<super::MsgMultiSend> for MultiSendSvc<T> {
                         type Response = super::MsgMultiSendResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::MsgMultiSend>,
@@ -1172,11 +984,10 @@ pub mod msg_server {
                         let inner = inner.0;
                         let method = MultiSendSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -1185,21 +996,15 @@ pub mod msg_server {
                 "/cosmos.bank.v1beta1.Msg/UpdateParams" => {
                     #[allow(non_camel_case_types)]
                     struct UpdateParamsSvc<T: Msg>(pub Arc<T>);
-                    impl<T: Msg> tonic::server::UnaryService<super::MsgUpdateParams>
-                    for UpdateParamsSvc<T> {
+                    impl<T: Msg> tonic::server::UnaryService<super::MsgUpdateParams> for UpdateParamsSvc<T> {
                         type Response = super::MsgUpdateParamsResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::MsgUpdateParams>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
-                            let fut = async move {
-                                (*inner).update_params(request).await
-                            };
+                            let fut = async move { (*inner).update_params(request).await };
                             Box::pin(fut)
                         }
                     }
@@ -1210,11 +1015,10 @@ pub mod msg_server {
                         let inner = inner.0;
                         let method = UpdateParamsSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -1223,21 +1027,15 @@ pub mod msg_server {
                 "/cosmos.bank.v1beta1.Msg/SetSendEnabled" => {
                     #[allow(non_camel_case_types)]
                     struct SetSendEnabledSvc<T: Msg>(pub Arc<T>);
-                    impl<T: Msg> tonic::server::UnaryService<super::MsgSetSendEnabled>
-                    for SetSendEnabledSvc<T> {
+                    impl<T: Msg> tonic::server::UnaryService<super::MsgSetSendEnabled> for SetSendEnabledSvc<T> {
                         type Response = super::MsgSetSendEnabledResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::MsgSetSendEnabled>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
-                            let fut = async move {
-                                (*inner).set_send_enabled(request).await
-                            };
+                            let fut = async move { (*inner).set_send_enabled(request).await };
                             Box::pin(fut)
                         }
                     }
@@ -1248,28 +1046,23 @@ pub mod msg_server {
                         let inner = inner.0;
                         let method = SetSendEnabledSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
                     Box::pin(fut)
                 }
-                _ => {
-                    Box::pin(async move {
-                        Ok(
-                            http::Response::builder()
-                                .status(200)
-                                .header("grpc-status", "12")
-                                .header("content-type", "application/grpc")
-                                .body(empty_body())
-                                .unwrap(),
-                        )
-                    })
-                }
+                _ => Box::pin(async move {
+                    Ok(http::Response::builder()
+                        .status(200)
+                        .header("grpc-status", "12")
+                        .header("content-type", "application/grpc")
+                        .body(empty_body())
+                        .unwrap())
+                }),
             }
         }
     }

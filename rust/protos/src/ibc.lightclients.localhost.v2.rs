@@ -5,8 +5,6 @@
 pub struct ClientState {
     /// the latest block height
     #[prost(message, optional, tag = "1")]
-    pub latest_height: ::core::option::Option<
-        super::super::super::core::client::v1::Height,
-    >,
+    pub latest_height: ::core::option::Option<super::super::super::core::client::v1::Height>,
 }
 // @@protoc_insertion_point(module)

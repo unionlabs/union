@@ -3,8 +3,8 @@
 #[cfg(feature = "client")]
 pub mod broadcast_api_client {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
-    use tonic::codegen::*;
     use tonic::codegen::http::Uri;
+    use tonic::codegen::*;
     ///
     #[derive(Debug, Clone)]
     pub struct BroadcastApiClient<T> {
@@ -49,9 +49,8 @@ pub mod broadcast_api_client {
                     <T as tonic::client::GrpcService<tonic::body::BoxBody>>::ResponseBody,
                 >,
             >,
-            <T as tonic::codegen::Service<
-                http::Request<tonic::body::BoxBody>,
-            >>::Error: Into<StdError> + Send + Sync,
+            <T as tonic::codegen::Service<http::Request<tonic::body::BoxBody>>>::Error:
+                Into<StdError> + Send + Sync,
         {
             BroadcastApiClient::new(InterceptedService::new(inner, interceptor))
         }
@@ -75,19 +74,15 @@ pub mod broadcast_api_client {
             &mut self,
             request: impl tonic::IntoRequest<super::RequestPing>,
         ) -> Result<tonic::Response<super::ResponsePing>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/tendermint.rpc.grpc.BroadcastAPI/Ping",
-            );
+            let path =
+                http::uri::PathAndQuery::from_static("/tendermint.rpc.grpc.BroadcastAPI/Ping");
             self.inner.unary(request.into_request(), path, codec).await
         }
         ///
@@ -95,15 +90,12 @@ pub mod broadcast_api_client {
             &mut self,
             request: impl tonic::IntoRequest<super::RequestBroadcastTx>,
         ) -> Result<tonic::Response<super::ResponseBroadcastTx>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/tendermint.rpc.grpc.BroadcastAPI/BroadcastTx",
@@ -151,10 +143,7 @@ pub mod broadcast_api_server {
                 send_compression_encodings: Default::default(),
             }
         }
-        pub fn with_interceptor<F>(
-            inner: T,
-            interceptor: F,
-        ) -> InterceptedService<Self, F>
+        pub fn with_interceptor<F>(inner: T, interceptor: F) -> InterceptedService<Self, F>
         where
             F: tonic::service::Interceptor,
         {
@@ -182,10 +171,7 @@ pub mod broadcast_api_server {
         type Response = http::Response<tonic::body::BoxBody>;
         type Error = std::convert::Infallible;
         type Future = BoxFuture<Self::Response, Self::Error>;
-        fn poll_ready(
-            &mut self,
-            _cx: &mut Context<'_>,
-        ) -> Poll<Result<(), Self::Error>> {
+        fn poll_ready(&mut self, _cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
             Poll::Ready(Ok(()))
         }
         fn call(&mut self, req: http::Request<B>) -> Self::Future {
@@ -194,13 +180,9 @@ pub mod broadcast_api_server {
                 "/tendermint.rpc.grpc.BroadcastAPI/Ping" => {
                     #[allow(non_camel_case_types)]
                     struct PingSvc<T: BroadcastApi>(pub Arc<T>);
-                    impl<T: BroadcastApi> tonic::server::UnaryService<super::RequestPing>
-                    for PingSvc<T> {
+                    impl<T: BroadcastApi> tonic::server::UnaryService<super::RequestPing> for PingSvc<T> {
                         type Response = super::ResponsePing;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::RequestPing>,
@@ -217,11 +199,10 @@ pub mod broadcast_api_server {
                         let inner = inner.0;
                         let method = PingSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -230,23 +211,15 @@ pub mod broadcast_api_server {
                 "/tendermint.rpc.grpc.BroadcastAPI/BroadcastTx" => {
                     #[allow(non_camel_case_types)]
                     struct BroadcastTxSvc<T: BroadcastApi>(pub Arc<T>);
-                    impl<
-                        T: BroadcastApi,
-                    > tonic::server::UnaryService<super::RequestBroadcastTx>
-                    for BroadcastTxSvc<T> {
+                    impl<T: BroadcastApi> tonic::server::UnaryService<super::RequestBroadcastTx> for BroadcastTxSvc<T> {
                         type Response = super::ResponseBroadcastTx;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::RequestBroadcastTx>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
-                            let fut = async move {
-                                (*inner).broadcast_tx(request).await
-                            };
+                            let fut = async move { (*inner).broadcast_tx(request).await };
                             Box::pin(fut)
                         }
                     }
@@ -257,28 +230,23 @@ pub mod broadcast_api_server {
                         let inner = inner.0;
                         let method = BroadcastTxSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
                     Box::pin(fut)
                 }
-                _ => {
-                    Box::pin(async move {
-                        Ok(
-                            http::Response::builder()
-                                .status(200)
-                                .header("grpc-status", "12")
-                                .header("content-type", "application/grpc")
-                                .body(empty_body())
-                                .unwrap(),
-                        )
-                    })
-                }
+                _ => Box::pin(async move {
+                    Ok(http::Response::builder()
+                        .status(200)
+                        .header("grpc-status", "12")
+                        .header("content-type", "application/grpc")
+                        .body(empty_body())
+                        .unwrap())
+                }),
             }
         }
     }

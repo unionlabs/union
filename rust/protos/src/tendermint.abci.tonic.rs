@@ -3,8 +3,8 @@
 #[cfg(feature = "client")]
 pub mod abci_application_client {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
-    use tonic::codegen::*;
     use tonic::codegen::http::Uri;
+    use tonic::codegen::*;
     ///
     #[derive(Debug, Clone)]
     pub struct AbciApplicationClient<T> {
@@ -49,9 +49,8 @@ pub mod abci_application_client {
                     <T as tonic::client::GrpcService<tonic::body::BoxBody>>::ResponseBody,
                 >,
             >,
-            <T as tonic::codegen::Service<
-                http::Request<tonic::body::BoxBody>,
-            >>::Error: Into<StdError> + Send + Sync,
+            <T as tonic::codegen::Service<http::Request<tonic::body::BoxBody>>>::Error:
+                Into<StdError> + Send + Sync,
         {
             AbciApplicationClient::new(InterceptedService::new(inner, interceptor))
         }
@@ -75,19 +74,15 @@ pub mod abci_application_client {
             &mut self,
             request: impl tonic::IntoRequest<super::RequestEcho>,
         ) -> Result<tonic::Response<super::ResponseEcho>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/tendermint.abci.ABCIApplication/Echo",
-            );
+            let path =
+                http::uri::PathAndQuery::from_static("/tendermint.abci.ABCIApplication/Echo");
             self.inner.unary(request.into_request(), path, codec).await
         }
         ///
@@ -95,19 +90,15 @@ pub mod abci_application_client {
             &mut self,
             request: impl tonic::IntoRequest<super::RequestFlush>,
         ) -> Result<tonic::Response<super::ResponseFlush>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/tendermint.abci.ABCIApplication/Flush",
-            );
+            let path =
+                http::uri::PathAndQuery::from_static("/tendermint.abci.ABCIApplication/Flush");
             self.inner.unary(request.into_request(), path, codec).await
         }
         ///
@@ -115,19 +106,15 @@ pub mod abci_application_client {
             &mut self,
             request: impl tonic::IntoRequest<super::RequestInfo>,
         ) -> Result<tonic::Response<super::ResponseInfo>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/tendermint.abci.ABCIApplication/Info",
-            );
+            let path =
+                http::uri::PathAndQuery::from_static("/tendermint.abci.ABCIApplication/Info");
             self.inner.unary(request.into_request(), path, codec).await
         }
         ///
@@ -135,19 +122,15 @@ pub mod abci_application_client {
             &mut self,
             request: impl tonic::IntoRequest<super::RequestDeliverTx>,
         ) -> Result<tonic::Response<super::ResponseDeliverTx>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/tendermint.abci.ABCIApplication/DeliverTx",
-            );
+            let path =
+                http::uri::PathAndQuery::from_static("/tendermint.abci.ABCIApplication/DeliverTx");
             self.inner.unary(request.into_request(), path, codec).await
         }
         ///
@@ -155,19 +138,15 @@ pub mod abci_application_client {
             &mut self,
             request: impl tonic::IntoRequest<super::RequestCheckTx>,
         ) -> Result<tonic::Response<super::ResponseCheckTx>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/tendermint.abci.ABCIApplication/CheckTx",
-            );
+            let path =
+                http::uri::PathAndQuery::from_static("/tendermint.abci.ABCIApplication/CheckTx");
             self.inner.unary(request.into_request(), path, codec).await
         }
         ///
@@ -175,19 +154,15 @@ pub mod abci_application_client {
             &mut self,
             request: impl tonic::IntoRequest<super::RequestQuery>,
         ) -> Result<tonic::Response<super::ResponseQuery>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/tendermint.abci.ABCIApplication/Query",
-            );
+            let path =
+                http::uri::PathAndQuery::from_static("/tendermint.abci.ABCIApplication/Query");
             self.inner.unary(request.into_request(), path, codec).await
         }
         ///
@@ -195,19 +170,15 @@ pub mod abci_application_client {
             &mut self,
             request: impl tonic::IntoRequest<super::RequestCommit>,
         ) -> Result<tonic::Response<super::ResponseCommit>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/tendermint.abci.ABCIApplication/Commit",
-            );
+            let path =
+                http::uri::PathAndQuery::from_static("/tendermint.abci.ABCIApplication/Commit");
             self.inner.unary(request.into_request(), path, codec).await
         }
         ///
@@ -215,19 +186,15 @@ pub mod abci_application_client {
             &mut self,
             request: impl tonic::IntoRequest<super::RequestInitChain>,
         ) -> Result<tonic::Response<super::ResponseInitChain>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/tendermint.abci.ABCIApplication/InitChain",
-            );
+            let path =
+                http::uri::PathAndQuery::from_static("/tendermint.abci.ABCIApplication/InitChain");
             self.inner.unary(request.into_request(), path, codec).await
         }
         ///
@@ -235,19 +202,15 @@ pub mod abci_application_client {
             &mut self,
             request: impl tonic::IntoRequest<super::RequestBeginBlock>,
         ) -> Result<tonic::Response<super::ResponseBeginBlock>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/tendermint.abci.ABCIApplication/BeginBlock",
-            );
+            let path =
+                http::uri::PathAndQuery::from_static("/tendermint.abci.ABCIApplication/BeginBlock");
             self.inner.unary(request.into_request(), path, codec).await
         }
         ///
@@ -255,19 +218,15 @@ pub mod abci_application_client {
             &mut self,
             request: impl tonic::IntoRequest<super::RequestEndBlock>,
         ) -> Result<tonic::Response<super::ResponseEndBlock>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/tendermint.abci.ABCIApplication/EndBlock",
-            );
+            let path =
+                http::uri::PathAndQuery::from_static("/tendermint.abci.ABCIApplication/EndBlock");
             self.inner.unary(request.into_request(), path, codec).await
         }
         ///
@@ -275,15 +234,12 @@ pub mod abci_application_client {
             &mut self,
             request: impl tonic::IntoRequest<super::RequestListSnapshots>,
         ) -> Result<tonic::Response<super::ResponseListSnapshots>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/tendermint.abci.ABCIApplication/ListSnapshots",
@@ -295,15 +251,12 @@ pub mod abci_application_client {
             &mut self,
             request: impl tonic::IntoRequest<super::RequestOfferSnapshot>,
         ) -> Result<tonic::Response<super::ResponseOfferSnapshot>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/tendermint.abci.ABCIApplication/OfferSnapshot",
@@ -315,15 +268,12 @@ pub mod abci_application_client {
             &mut self,
             request: impl tonic::IntoRequest<super::RequestLoadSnapshotChunk>,
         ) -> Result<tonic::Response<super::ResponseLoadSnapshotChunk>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/tendermint.abci.ABCIApplication/LoadSnapshotChunk",
@@ -335,15 +285,12 @@ pub mod abci_application_client {
             &mut self,
             request: impl tonic::IntoRequest<super::RequestApplySnapshotChunk>,
         ) -> Result<tonic::Response<super::ResponseApplySnapshotChunk>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/tendermint.abci.ABCIApplication/ApplySnapshotChunk",
@@ -355,15 +302,12 @@ pub mod abci_application_client {
             &mut self,
             request: impl tonic::IntoRequest<super::RequestPrepareProposal>,
         ) -> Result<tonic::Response<super::ResponsePrepareProposal>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/tendermint.abci.ABCIApplication/PrepareProposal",
@@ -375,15 +319,12 @@ pub mod abci_application_client {
             &mut self,
             request: impl tonic::IntoRequest<super::RequestProcessProposal>,
         ) -> Result<tonic::Response<super::ResponseProcessProposal>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/tendermint.abci.ABCIApplication/ProcessProposal",
@@ -501,10 +442,7 @@ pub mod abci_application_server {
                 send_compression_encodings: Default::default(),
             }
         }
-        pub fn with_interceptor<F>(
-            inner: T,
-            interceptor: F,
-        ) -> InterceptedService<Self, F>
+        pub fn with_interceptor<F>(inner: T, interceptor: F) -> InterceptedService<Self, F>
         where
             F: tonic::service::Interceptor,
         {
@@ -532,10 +470,7 @@ pub mod abci_application_server {
         type Response = http::Response<tonic::body::BoxBody>;
         type Error = std::convert::Infallible;
         type Future = BoxFuture<Self::Response, Self::Error>;
-        fn poll_ready(
-            &mut self,
-            _cx: &mut Context<'_>,
-        ) -> Poll<Result<(), Self::Error>> {
+        fn poll_ready(&mut self, _cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
             Poll::Ready(Ok(()))
         }
         fn call(&mut self, req: http::Request<B>) -> Self::Future {
@@ -544,14 +479,9 @@ pub mod abci_application_server {
                 "/tendermint.abci.ABCIApplication/Echo" => {
                     #[allow(non_camel_case_types)]
                     struct EchoSvc<T: AbciApplication>(pub Arc<T>);
-                    impl<
-                        T: AbciApplication,
-                    > tonic::server::UnaryService<super::RequestEcho> for EchoSvc<T> {
+                    impl<T: AbciApplication> tonic::server::UnaryService<super::RequestEcho> for EchoSvc<T> {
                         type Response = super::ResponseEcho;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::RequestEcho>,
@@ -568,11 +498,10 @@ pub mod abci_application_server {
                         let inner = inner.0;
                         let method = EchoSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -581,14 +510,9 @@ pub mod abci_application_server {
                 "/tendermint.abci.ABCIApplication/Flush" => {
                     #[allow(non_camel_case_types)]
                     struct FlushSvc<T: AbciApplication>(pub Arc<T>);
-                    impl<
-                        T: AbciApplication,
-                    > tonic::server::UnaryService<super::RequestFlush> for FlushSvc<T> {
+                    impl<T: AbciApplication> tonic::server::UnaryService<super::RequestFlush> for FlushSvc<T> {
                         type Response = super::ResponseFlush;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::RequestFlush>,
@@ -605,11 +529,10 @@ pub mod abci_application_server {
                         let inner = inner.0;
                         let method = FlushSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -618,14 +541,9 @@ pub mod abci_application_server {
                 "/tendermint.abci.ABCIApplication/Info" => {
                     #[allow(non_camel_case_types)]
                     struct InfoSvc<T: AbciApplication>(pub Arc<T>);
-                    impl<
-                        T: AbciApplication,
-                    > tonic::server::UnaryService<super::RequestInfo> for InfoSvc<T> {
+                    impl<T: AbciApplication> tonic::server::UnaryService<super::RequestInfo> for InfoSvc<T> {
                         type Response = super::ResponseInfo;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::RequestInfo>,
@@ -642,11 +560,10 @@ pub mod abci_application_server {
                         let inner = inner.0;
                         let method = InfoSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -655,15 +572,9 @@ pub mod abci_application_server {
                 "/tendermint.abci.ABCIApplication/DeliverTx" => {
                     #[allow(non_camel_case_types)]
                     struct DeliverTxSvc<T: AbciApplication>(pub Arc<T>);
-                    impl<
-                        T: AbciApplication,
-                    > tonic::server::UnaryService<super::RequestDeliverTx>
-                    for DeliverTxSvc<T> {
+                    impl<T: AbciApplication> tonic::server::UnaryService<super::RequestDeliverTx> for DeliverTxSvc<T> {
                         type Response = super::ResponseDeliverTx;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::RequestDeliverTx>,
@@ -680,11 +591,10 @@ pub mod abci_application_server {
                         let inner = inner.0;
                         let method = DeliverTxSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -693,15 +603,9 @@ pub mod abci_application_server {
                 "/tendermint.abci.ABCIApplication/CheckTx" => {
                     #[allow(non_camel_case_types)]
                     struct CheckTxSvc<T: AbciApplication>(pub Arc<T>);
-                    impl<
-                        T: AbciApplication,
-                    > tonic::server::UnaryService<super::RequestCheckTx>
-                    for CheckTxSvc<T> {
+                    impl<T: AbciApplication> tonic::server::UnaryService<super::RequestCheckTx> for CheckTxSvc<T> {
                         type Response = super::ResponseCheckTx;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::RequestCheckTx>,
@@ -718,11 +622,10 @@ pub mod abci_application_server {
                         let inner = inner.0;
                         let method = CheckTxSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -731,14 +634,9 @@ pub mod abci_application_server {
                 "/tendermint.abci.ABCIApplication/Query" => {
                     #[allow(non_camel_case_types)]
                     struct QuerySvc<T: AbciApplication>(pub Arc<T>);
-                    impl<
-                        T: AbciApplication,
-                    > tonic::server::UnaryService<super::RequestQuery> for QuerySvc<T> {
+                    impl<T: AbciApplication> tonic::server::UnaryService<super::RequestQuery> for QuerySvc<T> {
                         type Response = super::ResponseQuery;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::RequestQuery>,
@@ -755,11 +653,10 @@ pub mod abci_application_server {
                         let inner = inner.0;
                         let method = QuerySvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -768,15 +665,9 @@ pub mod abci_application_server {
                 "/tendermint.abci.ABCIApplication/Commit" => {
                     #[allow(non_camel_case_types)]
                     struct CommitSvc<T: AbciApplication>(pub Arc<T>);
-                    impl<
-                        T: AbciApplication,
-                    > tonic::server::UnaryService<super::RequestCommit>
-                    for CommitSvc<T> {
+                    impl<T: AbciApplication> tonic::server::UnaryService<super::RequestCommit> for CommitSvc<T> {
                         type Response = super::ResponseCommit;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::RequestCommit>,
@@ -793,11 +684,10 @@ pub mod abci_application_server {
                         let inner = inner.0;
                         let method = CommitSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -806,15 +696,9 @@ pub mod abci_application_server {
                 "/tendermint.abci.ABCIApplication/InitChain" => {
                     #[allow(non_camel_case_types)]
                     struct InitChainSvc<T: AbciApplication>(pub Arc<T>);
-                    impl<
-                        T: AbciApplication,
-                    > tonic::server::UnaryService<super::RequestInitChain>
-                    for InitChainSvc<T> {
+                    impl<T: AbciApplication> tonic::server::UnaryService<super::RequestInitChain> for InitChainSvc<T> {
                         type Response = super::ResponseInitChain;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::RequestInitChain>,
@@ -831,11 +715,10 @@ pub mod abci_application_server {
                         let inner = inner.0;
                         let method = InitChainSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -844,15 +727,11 @@ pub mod abci_application_server {
                 "/tendermint.abci.ABCIApplication/BeginBlock" => {
                     #[allow(non_camel_case_types)]
                     struct BeginBlockSvc<T: AbciApplication>(pub Arc<T>);
-                    impl<
-                        T: AbciApplication,
-                    > tonic::server::UnaryService<super::RequestBeginBlock>
-                    for BeginBlockSvc<T> {
+                    impl<T: AbciApplication> tonic::server::UnaryService<super::RequestBeginBlock>
+                        for BeginBlockSvc<T>
+                    {
                         type Response = super::ResponseBeginBlock;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::RequestBeginBlock>,
@@ -869,11 +748,10 @@ pub mod abci_application_server {
                         let inner = inner.0;
                         let method = BeginBlockSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -882,15 +760,9 @@ pub mod abci_application_server {
                 "/tendermint.abci.ABCIApplication/EndBlock" => {
                     #[allow(non_camel_case_types)]
                     struct EndBlockSvc<T: AbciApplication>(pub Arc<T>);
-                    impl<
-                        T: AbciApplication,
-                    > tonic::server::UnaryService<super::RequestEndBlock>
-                    for EndBlockSvc<T> {
+                    impl<T: AbciApplication> tonic::server::UnaryService<super::RequestEndBlock> for EndBlockSvc<T> {
                         type Response = super::ResponseEndBlock;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::RequestEndBlock>,
@@ -907,11 +779,10 @@ pub mod abci_application_server {
                         let inner = inner.0;
                         let method = EndBlockSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -920,23 +791,18 @@ pub mod abci_application_server {
                 "/tendermint.abci.ABCIApplication/ListSnapshots" => {
                     #[allow(non_camel_case_types)]
                     struct ListSnapshotsSvc<T: AbciApplication>(pub Arc<T>);
-                    impl<
-                        T: AbciApplication,
-                    > tonic::server::UnaryService<super::RequestListSnapshots>
-                    for ListSnapshotsSvc<T> {
+                    impl<T: AbciApplication>
+                        tonic::server::UnaryService<super::RequestListSnapshots>
+                        for ListSnapshotsSvc<T>
+                    {
                         type Response = super::ResponseListSnapshots;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::RequestListSnapshots>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
-                            let fut = async move {
-                                (*inner).list_snapshots(request).await
-                            };
+                            let fut = async move { (*inner).list_snapshots(request).await };
                             Box::pin(fut)
                         }
                     }
@@ -947,11 +813,10 @@ pub mod abci_application_server {
                         let inner = inner.0;
                         let method = ListSnapshotsSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -960,23 +825,18 @@ pub mod abci_application_server {
                 "/tendermint.abci.ABCIApplication/OfferSnapshot" => {
                     #[allow(non_camel_case_types)]
                     struct OfferSnapshotSvc<T: AbciApplication>(pub Arc<T>);
-                    impl<
-                        T: AbciApplication,
-                    > tonic::server::UnaryService<super::RequestOfferSnapshot>
-                    for OfferSnapshotSvc<T> {
+                    impl<T: AbciApplication>
+                        tonic::server::UnaryService<super::RequestOfferSnapshot>
+                        for OfferSnapshotSvc<T>
+                    {
                         type Response = super::ResponseOfferSnapshot;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::RequestOfferSnapshot>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
-                            let fut = async move {
-                                (*inner).offer_snapshot(request).await
-                            };
+                            let fut = async move { (*inner).offer_snapshot(request).await };
                             Box::pin(fut)
                         }
                     }
@@ -987,11 +847,10 @@ pub mod abci_application_server {
                         let inner = inner.0;
                         let method = OfferSnapshotSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -1000,23 +859,18 @@ pub mod abci_application_server {
                 "/tendermint.abci.ABCIApplication/LoadSnapshotChunk" => {
                     #[allow(non_camel_case_types)]
                     struct LoadSnapshotChunkSvc<T: AbciApplication>(pub Arc<T>);
-                    impl<
-                        T: AbciApplication,
-                    > tonic::server::UnaryService<super::RequestLoadSnapshotChunk>
-                    for LoadSnapshotChunkSvc<T> {
+                    impl<T: AbciApplication>
+                        tonic::server::UnaryService<super::RequestLoadSnapshotChunk>
+                        for LoadSnapshotChunkSvc<T>
+                    {
                         type Response = super::ResponseLoadSnapshotChunk;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::RequestLoadSnapshotChunk>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
-                            let fut = async move {
-                                (*inner).load_snapshot_chunk(request).await
-                            };
+                            let fut = async move { (*inner).load_snapshot_chunk(request).await };
                             Box::pin(fut)
                         }
                     }
@@ -1027,11 +881,10 @@ pub mod abci_application_server {
                         let inner = inner.0;
                         let method = LoadSnapshotChunkSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -1040,23 +893,18 @@ pub mod abci_application_server {
                 "/tendermint.abci.ABCIApplication/ApplySnapshotChunk" => {
                     #[allow(non_camel_case_types)]
                     struct ApplySnapshotChunkSvc<T: AbciApplication>(pub Arc<T>);
-                    impl<
-                        T: AbciApplication,
-                    > tonic::server::UnaryService<super::RequestApplySnapshotChunk>
-                    for ApplySnapshotChunkSvc<T> {
+                    impl<T: AbciApplication>
+                        tonic::server::UnaryService<super::RequestApplySnapshotChunk>
+                        for ApplySnapshotChunkSvc<T>
+                    {
                         type Response = super::ResponseApplySnapshotChunk;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::RequestApplySnapshotChunk>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
-                            let fut = async move {
-                                (*inner).apply_snapshot_chunk(request).await
-                            };
+                            let fut = async move { (*inner).apply_snapshot_chunk(request).await };
                             Box::pin(fut)
                         }
                     }
@@ -1067,11 +915,10 @@ pub mod abci_application_server {
                         let inner = inner.0;
                         let method = ApplySnapshotChunkSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -1080,23 +927,18 @@ pub mod abci_application_server {
                 "/tendermint.abci.ABCIApplication/PrepareProposal" => {
                     #[allow(non_camel_case_types)]
                     struct PrepareProposalSvc<T: AbciApplication>(pub Arc<T>);
-                    impl<
-                        T: AbciApplication,
-                    > tonic::server::UnaryService<super::RequestPrepareProposal>
-                    for PrepareProposalSvc<T> {
+                    impl<T: AbciApplication>
+                        tonic::server::UnaryService<super::RequestPrepareProposal>
+                        for PrepareProposalSvc<T>
+                    {
                         type Response = super::ResponsePrepareProposal;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::RequestPrepareProposal>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
-                            let fut = async move {
-                                (*inner).prepare_proposal(request).await
-                            };
+                            let fut = async move { (*inner).prepare_proposal(request).await };
                             Box::pin(fut)
                         }
                     }
@@ -1107,11 +949,10 @@ pub mod abci_application_server {
                         let inner = inner.0;
                         let method = PrepareProposalSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -1120,23 +961,18 @@ pub mod abci_application_server {
                 "/tendermint.abci.ABCIApplication/ProcessProposal" => {
                     #[allow(non_camel_case_types)]
                     struct ProcessProposalSvc<T: AbciApplication>(pub Arc<T>);
-                    impl<
-                        T: AbciApplication,
-                    > tonic::server::UnaryService<super::RequestProcessProposal>
-                    for ProcessProposalSvc<T> {
+                    impl<T: AbciApplication>
+                        tonic::server::UnaryService<super::RequestProcessProposal>
+                        for ProcessProposalSvc<T>
+                    {
                         type Response = super::ResponseProcessProposal;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::RequestProcessProposal>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
-                            let fut = async move {
-                                (*inner).process_proposal(request).await
-                            };
+                            let fut = async move { (*inner).process_proposal(request).await };
                             Box::pin(fut)
                         }
                     }
@@ -1147,28 +983,23 @@ pub mod abci_application_server {
                         let inner = inner.0;
                         let method = ProcessProposalSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
                     Box::pin(fut)
                 }
-                _ => {
-                    Box::pin(async move {
-                        Ok(
-                            http::Response::builder()
-                                .status(200)
-                                .header("grpc-status", "12")
-                                .header("content-type", "application/grpc")
-                                .body(empty_body())
-                                .unwrap(),
-                        )
-                    })
-                }
+                _ => Box::pin(async move {
+                    Ok(http::Response::builder()
+                        .status(200)
+                        .header("grpc-status", "12")
+                        .header("content-type", "application/grpc")
+                        .body(empty_body())
+                        .unwrap())
+                }),
             }
         }
     }

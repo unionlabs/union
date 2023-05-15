@@ -45,27 +45,19 @@ pub struct Proposal {
     pub final_tally_result: ::core::option::Option<TallyResult>,
     /// submit_time is the time of proposal submission.
     #[prost(message, optional, tag = "5")]
-    pub submit_time: ::core::option::Option<
-        super::super::super::google::protobuf::Timestamp,
-    >,
+    pub submit_time: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
     /// deposit_end_time is the end time for deposition.
     #[prost(message, optional, tag = "6")]
-    pub deposit_end_time: ::core::option::Option<
-        super::super::super::google::protobuf::Timestamp,
-    >,
+    pub deposit_end_time: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
     /// total_deposit is the total deposit on the proposal.
     #[prost(message, repeated, tag = "7")]
     pub total_deposit: ::prost::alloc::vec::Vec<super::super::base::v1beta1::Coin>,
     /// voting_start_time is the starting time to vote on a proposal.
     #[prost(message, optional, tag = "8")]
-    pub voting_start_time: ::core::option::Option<
-        super::super::super::google::protobuf::Timestamp,
-    >,
+    pub voting_start_time: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
     /// voting_end_time is the end time of voting on a proposal.
     #[prost(message, optional, tag = "9")]
-    pub voting_end_time: ::core::option::Option<
-        super::super::super::google::protobuf::Timestamp,
-    >,
+    pub voting_end_time: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
     /// metadata is any arbitrary metadata attached to the proposal.
     #[prost(string, tag = "10")]
     pub metadata: ::prost::alloc::string::String,
@@ -130,9 +122,7 @@ pub struct DepositParams {
     /// Maximum period for Atom holders to deposit on a proposal. Initial value: 2
     /// months.
     #[prost(message, optional, tag = "2")]
-    pub max_deposit_period: ::core::option::Option<
-        super::super::super::google::protobuf::Duration,
-    >,
+    pub max_deposit_period: ::core::option::Option<super::super::super::google::protobuf::Duration>,
 }
 /// VotingParams defines the params for voting on governance proposals.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -140,9 +130,7 @@ pub struct DepositParams {
 pub struct VotingParams {
     /// Duration of the voting period.
     #[prost(message, optional, tag = "1")]
-    pub voting_period: ::core::option::Option<
-        super::super::super::google::protobuf::Duration,
-    >,
+    pub voting_period: ::core::option::Option<super::super::super::google::protobuf::Duration>,
 }
 /// TallyParams defines the params for tallying votes on governance proposals.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -172,14 +160,10 @@ pub struct Params {
     /// Maximum period for Atom holders to deposit on a proposal. Initial value: 2
     /// months.
     #[prost(message, optional, tag = "2")]
-    pub max_deposit_period: ::core::option::Option<
-        super::super::super::google::protobuf::Duration,
-    >,
+    pub max_deposit_period: ::core::option::Option<super::super::super::google::protobuf::Duration>,
     /// Duration of the voting period.
     #[prost(message, optional, tag = "3")]
-    pub voting_period: ::core::option::Option<
-        super::super::super::google::protobuf::Duration,
-    >,
+    pub voting_period: ::core::option::Option<super::super::super::google::protobuf::Duration>,
     ///   Minimum percentage of total stake needed to vote for a result to be
     ///   considered valid.
     #[prost(string, tag = "4")]
@@ -326,9 +310,7 @@ pub struct QueryProposalsRequest {
     pub depositor: ::prost::alloc::string::String,
     /// pagination defines an optional pagination for the request.
     #[prost(message, optional, tag = "4")]
-    pub pagination: ::core::option::Option<
-        super::super::base::query::v1beta1::PageRequest,
-    >,
+    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageRequest>,
 }
 /// QueryProposalsResponse is the response type for the Query/Proposals RPC
 /// method.
@@ -340,9 +322,7 @@ pub struct QueryProposalsResponse {
     pub proposals: ::prost::alloc::vec::Vec<Proposal>,
     /// pagination defines the pagination in the response.
     #[prost(message, optional, tag = "2")]
-    pub pagination: ::core::option::Option<
-        super::super::base::query::v1beta1::PageResponse,
-    >,
+    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageResponse>,
 }
 /// QueryVoteRequest is the request type for the Query/Vote RPC method.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -372,9 +352,7 @@ pub struct QueryVotesRequest {
     pub proposal_id: u64,
     /// pagination defines an optional pagination for the request.
     #[prost(message, optional, tag = "2")]
-    pub pagination: ::core::option::Option<
-        super::super::base::query::v1beta1::PageRequest,
-    >,
+    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageRequest>,
 }
 /// QueryVotesResponse is the response type for the Query/Votes RPC method.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -385,9 +363,7 @@ pub struct QueryVotesResponse {
     pub votes: ::prost::alloc::vec::Vec<Vote>,
     /// pagination defines the pagination in the response.
     #[prost(message, optional, tag = "2")]
-    pub pagination: ::core::option::Option<
-        super::super::base::query::v1beta1::PageResponse,
-    >,
+    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageResponse>,
 }
 /// QueryParamsRequest is the request type for the Query/Params RPC method.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -451,9 +427,7 @@ pub struct QueryDepositsRequest {
     pub proposal_id: u64,
     /// pagination defines an optional pagination for the request.
     #[prost(message, optional, tag = "2")]
-    pub pagination: ::core::option::Option<
-        super::super::base::query::v1beta1::PageRequest,
-    >,
+    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageRequest>,
 }
 /// QueryDepositsResponse is the response type for the Query/Deposits RPC method.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -464,9 +438,7 @@ pub struct QueryDepositsResponse {
     pub deposits: ::prost::alloc::vec::Vec<Deposit>,
     /// pagination defines the pagination in the response.
     #[prost(message, optional, tag = "2")]
-    pub pagination: ::core::option::Option<
-        super::super::base::query::v1beta1::PageResponse,
-    >,
+    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageResponse>,
 }
 /// QueryTallyResultRequest is the request type for the Query/Tally RPC method.
 #[allow(clippy::derive_partial_eq_without_eq)]

@@ -3,8 +3,8 @@
 #[cfg(feature = "client")]
 pub mod query_client {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
-    use tonic::codegen::*;
     use tonic::codegen::http::Uri;
+    use tonic::codegen::*;
     #[derive(Debug, Clone)]
     pub struct QueryClient<T> {
         inner: tonic::client::Grpc<T>,
@@ -48,9 +48,8 @@ pub mod query_client {
                     <T as tonic::client::GrpcService<tonic::body::BoxBody>>::ResponseBody,
                 >,
             >,
-            <T as tonic::codegen::Service<
-                http::Request<tonic::body::BoxBody>,
-            >>::Error: Into<StdError> + Send + Sync,
+            <T as tonic::codegen::Service<http::Request<tonic::body::BoxBody>>>::Error:
+                Into<StdError> + Send + Sync,
         {
             QueryClient::new(InterceptedService::new(inner, interceptor))
         }
@@ -73,56 +72,43 @@ pub mod query_client {
             &mut self,
             request: impl tonic::IntoRequest<super::QueryCurrentPlanRequest>,
         ) -> Result<tonic::Response<super::QueryCurrentPlanResponse>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/cosmos.upgrade.v1beta1.Query/CurrentPlan",
-            );
+            let path =
+                http::uri::PathAndQuery::from_static("/cosmos.upgrade.v1beta1.Query/CurrentPlan");
             self.inner.unary(request.into_request(), path, codec).await
         }
         pub async fn applied_plan(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryAppliedPlanRequest>,
         ) -> Result<tonic::Response<super::QueryAppliedPlanResponse>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/cosmos.upgrade.v1beta1.Query/AppliedPlan",
-            );
+            let path =
+                http::uri::PathAndQuery::from_static("/cosmos.upgrade.v1beta1.Query/AppliedPlan");
             self.inner.unary(request.into_request(), path, codec).await
         }
         pub async fn upgraded_consensus_state(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryUpgradedConsensusStateRequest>,
-        ) -> Result<
-            tonic::Response<super::QueryUpgradedConsensusStateResponse>,
-            tonic::Status,
-        > {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+        ) -> Result<tonic::Response<super::QueryUpgradedConsensusStateResponse>, tonic::Status>
+        {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/cosmos.upgrade.v1beta1.Query/UpgradedConsensusState",
@@ -133,15 +119,12 @@ pub mod query_client {
             &mut self,
             request: impl tonic::IntoRequest<super::QueryModuleVersionsRequest>,
         ) -> Result<tonic::Response<super::QueryModuleVersionsResponse>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/cosmos.upgrade.v1beta1.Query/ModuleVersions",
@@ -152,19 +135,15 @@ pub mod query_client {
             &mut self,
             request: impl tonic::IntoRequest<super::QueryAuthorityRequest>,
         ) -> Result<tonic::Response<super::QueryAuthorityResponse>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/cosmos.upgrade.v1beta1.Query/Authority",
-            );
+            let path =
+                http::uri::PathAndQuery::from_static("/cosmos.upgrade.v1beta1.Query/Authority");
             self.inner.unary(request.into_request(), path, codec).await
         }
     }
@@ -188,10 +167,7 @@ pub mod query_server {
         async fn upgraded_consensus_state(
             &self,
             request: tonic::Request<super::QueryUpgradedConsensusStateRequest>,
-        ) -> Result<
-            tonic::Response<super::QueryUpgradedConsensusStateResponse>,
-            tonic::Status,
-        >;
+        ) -> Result<tonic::Response<super::QueryUpgradedConsensusStateResponse>, tonic::Status>;
         async fn module_versions(
             &self,
             request: tonic::Request<super::QueryModuleVersionsRequest>,
@@ -220,10 +196,7 @@ pub mod query_server {
                 send_compression_encodings: Default::default(),
             }
         }
-        pub fn with_interceptor<F>(
-            inner: T,
-            interceptor: F,
-        ) -> InterceptedService<Self, F>
+        pub fn with_interceptor<F>(inner: T, interceptor: F) -> InterceptedService<Self, F>
         where
             F: tonic::service::Interceptor,
         {
@@ -251,10 +224,7 @@ pub mod query_server {
         type Response = http::Response<tonic::body::BoxBody>;
         type Error = std::convert::Infallible;
         type Future = BoxFuture<Self::Response, Self::Error>;
-        fn poll_ready(
-            &mut self,
-            _cx: &mut Context<'_>,
-        ) -> Poll<Result<(), Self::Error>> {
+        fn poll_ready(&mut self, _cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
             Poll::Ready(Ok(()))
         }
         fn call(&mut self, req: http::Request<B>) -> Self::Future {
@@ -263,23 +233,15 @@ pub mod query_server {
                 "/cosmos.upgrade.v1beta1.Query/CurrentPlan" => {
                     #[allow(non_camel_case_types)]
                     struct CurrentPlanSvc<T: Query>(pub Arc<T>);
-                    impl<
-                        T: Query,
-                    > tonic::server::UnaryService<super::QueryCurrentPlanRequest>
-                    for CurrentPlanSvc<T> {
+                    impl<T: Query> tonic::server::UnaryService<super::QueryCurrentPlanRequest> for CurrentPlanSvc<T> {
                         type Response = super::QueryCurrentPlanResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::QueryCurrentPlanRequest>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
-                            let fut = async move {
-                                (*inner).current_plan(request).await
-                            };
+                            let fut = async move { (*inner).current_plan(request).await };
                             Box::pin(fut)
                         }
                     }
@@ -290,11 +252,10 @@ pub mod query_server {
                         let inner = inner.0;
                         let method = CurrentPlanSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -303,23 +264,15 @@ pub mod query_server {
                 "/cosmos.upgrade.v1beta1.Query/AppliedPlan" => {
                     #[allow(non_camel_case_types)]
                     struct AppliedPlanSvc<T: Query>(pub Arc<T>);
-                    impl<
-                        T: Query,
-                    > tonic::server::UnaryService<super::QueryAppliedPlanRequest>
-                    for AppliedPlanSvc<T> {
+                    impl<T: Query> tonic::server::UnaryService<super::QueryAppliedPlanRequest> for AppliedPlanSvc<T> {
                         type Response = super::QueryAppliedPlanResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::QueryAppliedPlanRequest>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
-                            let fut = async move {
-                                (*inner).applied_plan(request).await
-                            };
+                            let fut = async move { (*inner).applied_plan(request).await };
                             Box::pin(fut)
                         }
                     }
@@ -330,11 +283,10 @@ pub mod query_server {
                         let inner = inner.0;
                         let method = AppliedPlanSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -343,26 +295,19 @@ pub mod query_server {
                 "/cosmos.upgrade.v1beta1.Query/UpgradedConsensusState" => {
                     #[allow(non_camel_case_types)]
                     struct UpgradedConsensusStateSvc<T: Query>(pub Arc<T>);
-                    impl<
-                        T: Query,
-                    > tonic::server::UnaryService<
-                        super::QueryUpgradedConsensusStateRequest,
-                    > for UpgradedConsensusStateSvc<T> {
+                    impl<T: Query>
+                        tonic::server::UnaryService<super::QueryUpgradedConsensusStateRequest>
+                        for UpgradedConsensusStateSvc<T>
+                    {
                         type Response = super::QueryUpgradedConsensusStateResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
-                            request: tonic::Request<
-                                super::QueryUpgradedConsensusStateRequest,
-                            >,
+                            request: tonic::Request<super::QueryUpgradedConsensusStateRequest>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
-                            let fut = async move {
-                                (*inner).upgraded_consensus_state(request).await
-                            };
+                            let fut =
+                                async move { (*inner).upgraded_consensus_state(request).await };
                             Box::pin(fut)
                         }
                     }
@@ -373,11 +318,10 @@ pub mod query_server {
                         let inner = inner.0;
                         let method = UpgradedConsensusStateSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -386,23 +330,17 @@ pub mod query_server {
                 "/cosmos.upgrade.v1beta1.Query/ModuleVersions" => {
                     #[allow(non_camel_case_types)]
                     struct ModuleVersionsSvc<T: Query>(pub Arc<T>);
-                    impl<
-                        T: Query,
-                    > tonic::server::UnaryService<super::QueryModuleVersionsRequest>
-                    for ModuleVersionsSvc<T> {
+                    impl<T: Query> tonic::server::UnaryService<super::QueryModuleVersionsRequest>
+                        for ModuleVersionsSvc<T>
+                    {
                         type Response = super::QueryModuleVersionsResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::QueryModuleVersionsRequest>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
-                            let fut = async move {
-                                (*inner).module_versions(request).await
-                            };
+                            let fut = async move { (*inner).module_versions(request).await };
                             Box::pin(fut)
                         }
                     }
@@ -413,11 +351,10 @@ pub mod query_server {
                         let inner = inner.0;
                         let method = ModuleVersionsSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -426,15 +363,9 @@ pub mod query_server {
                 "/cosmos.upgrade.v1beta1.Query/Authority" => {
                     #[allow(non_camel_case_types)]
                     struct AuthoritySvc<T: Query>(pub Arc<T>);
-                    impl<
-                        T: Query,
-                    > tonic::server::UnaryService<super::QueryAuthorityRequest>
-                    for AuthoritySvc<T> {
+                    impl<T: Query> tonic::server::UnaryService<super::QueryAuthorityRequest> for AuthoritySvc<T> {
                         type Response = super::QueryAuthorityResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::QueryAuthorityRequest>,
@@ -451,28 +382,23 @@ pub mod query_server {
                         let inner = inner.0;
                         let method = AuthoritySvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
                     Box::pin(fut)
                 }
-                _ => {
-                    Box::pin(async move {
-                        Ok(
-                            http::Response::builder()
-                                .status(200)
-                                .header("grpc-status", "12")
-                                .header("content-type", "application/grpc")
-                                .body(empty_body())
-                                .unwrap(),
-                        )
-                    })
-                }
+                _ => Box::pin(async move {
+                    Ok(http::Response::builder()
+                        .status(200)
+                        .header("grpc-status", "12")
+                        .header("content-type", "application/grpc")
+                        .body(empty_body())
+                        .unwrap())
+                }),
             }
         }
     }
@@ -504,8 +430,8 @@ pub mod query_server {
 #[cfg(feature = "client")]
 pub mod msg_client {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
-    use tonic::codegen::*;
     use tonic::codegen::http::Uri;
+    use tonic::codegen::*;
     #[derive(Debug, Clone)]
     pub struct MsgClient<T> {
         inner: tonic::client::Grpc<T>,
@@ -536,10 +462,7 @@ pub mod msg_client {
             let inner = tonic::client::Grpc::with_origin(inner, origin);
             Self { inner }
         }
-        pub fn with_interceptor<F>(
-            inner: T,
-            interceptor: F,
-        ) -> MsgClient<InterceptedService<T, F>>
+        pub fn with_interceptor<F>(inner: T, interceptor: F) -> MsgClient<InterceptedService<T, F>>
         where
             F: tonic::service::Interceptor,
             T::ResponseBody: Default,
@@ -549,9 +472,8 @@ pub mod msg_client {
                     <T as tonic::client::GrpcService<tonic::body::BoxBody>>::ResponseBody,
                 >,
             >,
-            <T as tonic::codegen::Service<
-                http::Request<tonic::body::BoxBody>,
-            >>::Error: Into<StdError> + Send + Sync,
+            <T as tonic::codegen::Service<http::Request<tonic::body::BoxBody>>>::Error:
+                Into<StdError> + Send + Sync,
         {
             MsgClient::new(InterceptedService::new(inner, interceptor))
         }
@@ -574,38 +496,30 @@ pub mod msg_client {
             &mut self,
             request: impl tonic::IntoRequest<super::MsgSoftwareUpgrade>,
         ) -> Result<tonic::Response<super::MsgSoftwareUpgradeResponse>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/cosmos.upgrade.v1beta1.Msg/SoftwareUpgrade",
-            );
+            let path =
+                http::uri::PathAndQuery::from_static("/cosmos.upgrade.v1beta1.Msg/SoftwareUpgrade");
             self.inner.unary(request.into_request(), path, codec).await
         }
         pub async fn cancel_upgrade(
             &mut self,
             request: impl tonic::IntoRequest<super::MsgCancelUpgrade>,
         ) -> Result<tonic::Response<super::MsgCancelUpgradeResponse>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/cosmos.upgrade.v1beta1.Msg/CancelUpgrade",
-            );
+            let path =
+                http::uri::PathAndQuery::from_static("/cosmos.upgrade.v1beta1.Msg/CancelUpgrade");
             self.inner.unary(request.into_request(), path, codec).await
         }
     }
@@ -646,10 +560,7 @@ pub mod msg_server {
                 send_compression_encodings: Default::default(),
             }
         }
-        pub fn with_interceptor<F>(
-            inner: T,
-            interceptor: F,
-        ) -> InterceptedService<Self, F>
+        pub fn with_interceptor<F>(inner: T, interceptor: F) -> InterceptedService<Self, F>
         where
             F: tonic::service::Interceptor,
         {
@@ -677,10 +588,7 @@ pub mod msg_server {
         type Response = http::Response<tonic::body::BoxBody>;
         type Error = std::convert::Infallible;
         type Future = BoxFuture<Self::Response, Self::Error>;
-        fn poll_ready(
-            &mut self,
-            _cx: &mut Context<'_>,
-        ) -> Poll<Result<(), Self::Error>> {
+        fn poll_ready(&mut self, _cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
             Poll::Ready(Ok(()))
         }
         fn call(&mut self, req: http::Request<B>) -> Self::Future {
@@ -689,21 +597,15 @@ pub mod msg_server {
                 "/cosmos.upgrade.v1beta1.Msg/SoftwareUpgrade" => {
                     #[allow(non_camel_case_types)]
                     struct SoftwareUpgradeSvc<T: Msg>(pub Arc<T>);
-                    impl<T: Msg> tonic::server::UnaryService<super::MsgSoftwareUpgrade>
-                    for SoftwareUpgradeSvc<T> {
+                    impl<T: Msg> tonic::server::UnaryService<super::MsgSoftwareUpgrade> for SoftwareUpgradeSvc<T> {
                         type Response = super::MsgSoftwareUpgradeResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::MsgSoftwareUpgrade>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
-                            let fut = async move {
-                                (*inner).software_upgrade(request).await
-                            };
+                            let fut = async move { (*inner).software_upgrade(request).await };
                             Box::pin(fut)
                         }
                     }
@@ -714,11 +616,10 @@ pub mod msg_server {
                         let inner = inner.0;
                         let method = SoftwareUpgradeSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -727,21 +628,15 @@ pub mod msg_server {
                 "/cosmos.upgrade.v1beta1.Msg/CancelUpgrade" => {
                     #[allow(non_camel_case_types)]
                     struct CancelUpgradeSvc<T: Msg>(pub Arc<T>);
-                    impl<T: Msg> tonic::server::UnaryService<super::MsgCancelUpgrade>
-                    for CancelUpgradeSvc<T> {
+                    impl<T: Msg> tonic::server::UnaryService<super::MsgCancelUpgrade> for CancelUpgradeSvc<T> {
                         type Response = super::MsgCancelUpgradeResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::MsgCancelUpgrade>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
-                            let fut = async move {
-                                (*inner).cancel_upgrade(request).await
-                            };
+                            let fut = async move { (*inner).cancel_upgrade(request).await };
                             Box::pin(fut)
                         }
                     }
@@ -752,28 +647,23 @@ pub mod msg_server {
                         let inner = inner.0;
                         let method = CancelUpgradeSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
                     Box::pin(fut)
                 }
-                _ => {
-                    Box::pin(async move {
-                        Ok(
-                            http::Response::builder()
-                                .status(200)
-                                .header("grpc-status", "12")
-                                .header("content-type", "application/grpc")
-                                .body(empty_body())
-                                .unwrap(),
-                        )
-                    })
-                }
+                _ => Box::pin(async move {
+                    Ok(http::Response::builder()
+                        .status(200)
+                        .header("grpc-status", "12")
+                        .header("content-type", "application/grpc")
+                        .body(empty_body())
+                        .unwrap())
+                }),
             }
         }
     }

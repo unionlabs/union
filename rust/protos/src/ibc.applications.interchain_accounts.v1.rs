@@ -5,9 +5,8 @@
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct InterchainAccount {
     #[prost(message, optional, tag = "1")]
-    pub base_account: ::core::option::Option<
-        super::super::super::super::cosmos::auth::v1beta1::BaseAccount,
-    >,
+    pub base_account:
+        ::core::option::Option<super::super::super::super::cosmos::auth::v1beta1::BaseAccount>,
     #[prost(string, tag = "2")]
     pub account_owner: ::prost::alloc::string::String,
 }
@@ -29,9 +28,7 @@ pub struct InterchainAccountPacketData {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct CosmosTx {
     #[prost(message, repeated, tag = "1")]
-    pub messages: ::prost::alloc::vec::Vec<
-        super::super::super::super::google::protobuf::Any,
-    >,
+    pub messages: ::prost::alloc::vec::Vec<super::super::super::super::google::protobuf::Any>,
 }
 /// Type defines a classification of message issued from a controller chain to its associated interchain accounts
 /// host

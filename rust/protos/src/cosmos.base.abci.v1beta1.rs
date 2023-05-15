@@ -50,9 +50,7 @@ pub struct TxResponse {
     ///
     /// Since: cosmos-sdk 0.42.11, 0.44.5, 0.45
     #[prost(message, repeated, tag = "13")]
-    pub events: ::prost::alloc::vec::Vec<
-        super::super::super::super::tendermint::abci::Event,
-    >,
+    pub events: ::prost::alloc::vec::Vec<super::super::super::super::tendermint::abci::Event>,
 }
 /// ABCIMessageLog defines a structure containing an indexed tx ABCI message log.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -115,16 +113,12 @@ pub struct Result {
     /// Events contains a slice of Event objects that were emitted during message
     /// or handler execution.
     #[prost(message, repeated, tag = "3")]
-    pub events: ::prost::alloc::vec::Vec<
-        super::super::super::super::tendermint::abci::Event,
-    >,
+    pub events: ::prost::alloc::vec::Vec<super::super::super::super::tendermint::abci::Event>,
     /// msg_responses contains the Msg handler responses type packed in Anys.
     ///
     /// Since: cosmos-sdk 0.46
     #[prost(message, repeated, tag = "4")]
-    pub msg_responses: ::prost::alloc::vec::Vec<
-        super::super::super::super::google::protobuf::Any,
-    >,
+    pub msg_responses: ::prost::alloc::vec::Vec<super::super::super::super::google::protobuf::Any>,
 }
 /// SimulationResponse defines the response generated when a transaction is
 /// successfully simulated.
@@ -159,9 +153,7 @@ pub struct TxMsgData {
     ///
     /// Since: cosmos-sdk 0.46
     #[prost(message, repeated, tag = "2")]
-    pub msg_responses: ::prost::alloc::vec::Vec<
-        super::super::super::super::google::protobuf::Any,
-    >,
+    pub msg_responses: ::prost::alloc::vec::Vec<super::super::super::super::google::protobuf::Any>,
 }
 /// SearchTxsResult defines a structure for querying txs pageable
 #[allow(clippy::derive_partial_eq_without_eq)]

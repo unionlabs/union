@@ -14,16 +14,12 @@ pub struct GenericAuthorization {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Grant {
     #[prost(message, optional, tag = "1")]
-    pub authorization: ::core::option::Option<
-        super::super::super::google::protobuf::Any,
-    >,
+    pub authorization: ::core::option::Option<super::super::super::google::protobuf::Any>,
     /// time when the grant will expire and will be pruned. If null, then the grant
     /// doesn't have a time expiration (other conditions  in `authorization`
     /// may apply to invalidate the grant)
     #[prost(message, optional, tag = "2")]
-    pub expiration: ::core::option::Option<
-        super::super::super::google::protobuf::Timestamp,
-    >,
+    pub expiration: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
 }
 /// GrantAuthorization extends a grant with both the addresses of the grantee and granter.
 /// It is used in genesis.proto and query.proto
@@ -35,13 +31,9 @@ pub struct GrantAuthorization {
     #[prost(string, tag = "2")]
     pub grantee: ::prost::alloc::string::String,
     #[prost(message, optional, tag = "3")]
-    pub authorization: ::core::option::Option<
-        super::super::super::google::protobuf::Any,
-    >,
+    pub authorization: ::core::option::Option<super::super::super::google::protobuf::Any>,
     #[prost(message, optional, tag = "4")]
-    pub expiration: ::core::option::Option<
-        super::super::super::google::protobuf::Timestamp,
-    >,
+    pub expiration: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
 }
 /// GrantQueueItem contains the list of TypeURL of a sdk.Msg.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -64,9 +56,7 @@ pub struct QueryGrantsRequest {
     pub msg_type_url: ::prost::alloc::string::String,
     /// pagination defines an pagination for the request.
     #[prost(message, optional, tag = "4")]
-    pub pagination: ::core::option::Option<
-        super::super::base::query::v1beta1::PageRequest,
-    >,
+    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageRequest>,
 }
 /// QueryGrantsResponse is the response type for the Query/Authorizations RPC method.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -77,9 +67,7 @@ pub struct QueryGrantsResponse {
     pub grants: ::prost::alloc::vec::Vec<Grant>,
     /// pagination defines an pagination for the response.
     #[prost(message, optional, tag = "2")]
-    pub pagination: ::core::option::Option<
-        super::super::base::query::v1beta1::PageResponse,
-    >,
+    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageResponse>,
 }
 /// QueryGranterGrantsRequest is the request type for the Query/GranterGrants RPC method.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -89,9 +77,7 @@ pub struct QueryGranterGrantsRequest {
     pub granter: ::prost::alloc::string::String,
     /// pagination defines an pagination for the request.
     #[prost(message, optional, tag = "2")]
-    pub pagination: ::core::option::Option<
-        super::super::base::query::v1beta1::PageRequest,
-    >,
+    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageRequest>,
 }
 /// QueryGranterGrantsResponse is the response type for the Query/GranterGrants RPC method.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -102,9 +88,7 @@ pub struct QueryGranterGrantsResponse {
     pub grants: ::prost::alloc::vec::Vec<GrantAuthorization>,
     /// pagination defines an pagination for the response.
     #[prost(message, optional, tag = "2")]
-    pub pagination: ::core::option::Option<
-        super::super::base::query::v1beta1::PageResponse,
-    >,
+    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageResponse>,
 }
 /// QueryGranteeGrantsRequest is the request type for the Query/IssuedGrants RPC method.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -114,9 +98,7 @@ pub struct QueryGranteeGrantsRequest {
     pub grantee: ::prost::alloc::string::String,
     /// pagination defines an pagination for the request.
     #[prost(message, optional, tag = "2")]
-    pub pagination: ::core::option::Option<
-        super::super::base::query::v1beta1::PageRequest,
-    >,
+    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageRequest>,
 }
 /// QueryGranteeGrantsResponse is the response type for the Query/GranteeGrants RPC method.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -127,9 +109,7 @@ pub struct QueryGranteeGrantsResponse {
     pub grants: ::prost::alloc::vec::Vec<GrantAuthorization>,
     /// pagination defines an pagination for the response.
     #[prost(message, optional, tag = "2")]
-    pub pagination: ::core::option::Option<
-        super::super::base::query::v1beta1::PageResponse,
-    >,
+    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageResponse>,
 }
 /// MsgGrant is a request type for Grant method. It declares authorization to the grantee
 /// on behalf of the granter with the provided expiration time.

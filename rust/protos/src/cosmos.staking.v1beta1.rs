@@ -35,9 +35,7 @@ pub struct Commission {
     pub commission_rates: ::core::option::Option<CommissionRates>,
     /// update_time is the last time the commission rate was changed.
     #[prost(message, optional, tag = "2")]
-    pub update_time: ::core::option::Option<
-        super::super::super::google::protobuf::Timestamp,
-    >,
+    pub update_time: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
 }
 /// Description defines a validator description.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -75,9 +73,7 @@ pub struct Validator {
     pub operator_address: ::prost::alloc::string::String,
     /// consensus_pubkey is the consensus public key of the validator, as a Protobuf Any.
     #[prost(message, optional, tag = "2")]
-    pub consensus_pubkey: ::core::option::Option<
-        super::super::super::google::protobuf::Any,
-    >,
+    pub consensus_pubkey: ::core::option::Option<super::super::super::google::protobuf::Any>,
     /// jailed defined whether the validator has been jailed from bonded status or not.
     #[prost(bool, tag = "3")]
     pub jailed: bool,
@@ -98,9 +94,7 @@ pub struct Validator {
     pub unbonding_height: i64,
     /// unbonding_time defines, if unbonding, the min time for the validator to complete unbonding.
     #[prost(message, optional, tag = "9")]
-    pub unbonding_time: ::core::option::Option<
-        super::super::super::google::protobuf::Timestamp,
-    >,
+    pub unbonding_time: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
     /// commission defines the commission parameters.
     #[prost(message, optional, tag = "10")]
     pub commission: ::core::option::Option<Commission>,
@@ -204,9 +198,7 @@ pub struct UnbondingDelegationEntry {
     pub creation_height: i64,
     /// completion_time is the unix time for unbonding completion.
     #[prost(message, optional, tag = "2")]
-    pub completion_time: ::core::option::Option<
-        super::super::super::google::protobuf::Timestamp,
-    >,
+    pub completion_time: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
     /// initial_balance defines the tokens initially scheduled to receive at completion.
     #[prost(string, tag = "3")]
     pub initial_balance: ::prost::alloc::string::String,
@@ -229,9 +221,7 @@ pub struct RedelegationEntry {
     pub creation_height: i64,
     /// completion_time defines the unix time for redelegation completion.
     #[prost(message, optional, tag = "2")]
-    pub completion_time: ::core::option::Option<
-        super::super::super::google::protobuf::Timestamp,
-    >,
+    pub completion_time: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
     /// initial_balance defines the initial balance when redelegation started.
     #[prost(string, tag = "3")]
     pub initial_balance: ::prost::alloc::string::String,
@@ -271,9 +261,7 @@ pub struct Redelegation {
 pub struct Params {
     /// unbonding_time is the time duration of unbonding.
     #[prost(message, optional, tag = "1")]
-    pub unbonding_time: ::core::option::Option<
-        super::super::super::google::protobuf::Duration,
-    >,
+    pub unbonding_time: ::core::option::Option<super::super::super::google::protobuf::Duration>,
     /// max_validators is the maximum number of validators.
     #[prost(uint32, tag = "2")]
     pub max_validators: u32,
@@ -338,9 +326,7 @@ pub struct Pool {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ValidatorUpdates {
     #[prost(message, repeated, tag = "1")]
-    pub updates: ::prost::alloc::vec::Vec<
-        super::super::super::tendermint::abci::ValidatorUpdate,
-    >,
+    pub updates: ::prost::alloc::vec::Vec<super::super::super::tendermint::abci::ValidatorUpdate>,
 }
 /// BondStatus is the status of a validator.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
@@ -421,9 +407,7 @@ pub struct QueryValidatorsRequest {
     pub status: ::prost::alloc::string::String,
     /// pagination defines an optional pagination for the request.
     #[prost(message, optional, tag = "2")]
-    pub pagination: ::core::option::Option<
-        super::super::base::query::v1beta1::PageRequest,
-    >,
+    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageRequest>,
 }
 /// QueryValidatorsResponse is response type for the Query/Validators RPC method
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -434,9 +418,7 @@ pub struct QueryValidatorsResponse {
     pub validators: ::prost::alloc::vec::Vec<Validator>,
     /// pagination defines the pagination in the response.
     #[prost(message, optional, tag = "2")]
-    pub pagination: ::core::option::Option<
-        super::super::base::query::v1beta1::PageResponse,
-    >,
+    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageResponse>,
 }
 /// QueryValidatorRequest is response type for the Query/Validator RPC method
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -464,9 +446,7 @@ pub struct QueryValidatorDelegationsRequest {
     pub validator_addr: ::prost::alloc::string::String,
     /// pagination defines an optional pagination for the request.
     #[prost(message, optional, tag = "2")]
-    pub pagination: ::core::option::Option<
-        super::super::base::query::v1beta1::PageRequest,
-    >,
+    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageRequest>,
 }
 /// QueryValidatorDelegationsResponse is response type for the
 /// Query/ValidatorDelegations RPC method
@@ -477,9 +457,7 @@ pub struct QueryValidatorDelegationsResponse {
     pub delegation_responses: ::prost::alloc::vec::Vec<DelegationResponse>,
     /// pagination defines the pagination in the response.
     #[prost(message, optional, tag = "2")]
-    pub pagination: ::core::option::Option<
-        super::super::base::query::v1beta1::PageResponse,
-    >,
+    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageResponse>,
 }
 /// QueryValidatorUnbondingDelegationsRequest is required type for the
 /// Query/ValidatorUnbondingDelegations RPC method
@@ -491,9 +469,7 @@ pub struct QueryValidatorUnbondingDelegationsRequest {
     pub validator_addr: ::prost::alloc::string::String,
     /// pagination defines an optional pagination for the request.
     #[prost(message, optional, tag = "2")]
-    pub pagination: ::core::option::Option<
-        super::super::base::query::v1beta1::PageRequest,
-    >,
+    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageRequest>,
 }
 /// QueryValidatorUnbondingDelegationsResponse is response type for the
 /// Query/ValidatorUnbondingDelegations RPC method.
@@ -504,9 +480,7 @@ pub struct QueryValidatorUnbondingDelegationsResponse {
     pub unbonding_responses: ::prost::alloc::vec::Vec<UnbondingDelegation>,
     /// pagination defines the pagination in the response.
     #[prost(message, optional, tag = "2")]
-    pub pagination: ::core::option::Option<
-        super::super::base::query::v1beta1::PageResponse,
-    >,
+    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageResponse>,
 }
 /// QueryDelegationRequest is request type for the Query/Delegation RPC method.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -558,9 +532,7 @@ pub struct QueryDelegatorDelegationsRequest {
     pub delegator_addr: ::prost::alloc::string::String,
     /// pagination defines an optional pagination for the request.
     #[prost(message, optional, tag = "2")]
-    pub pagination: ::core::option::Option<
-        super::super::base::query::v1beta1::PageRequest,
-    >,
+    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageRequest>,
 }
 /// QueryDelegatorDelegationsResponse is response type for the
 /// Query/DelegatorDelegations RPC method.
@@ -572,9 +544,7 @@ pub struct QueryDelegatorDelegationsResponse {
     pub delegation_responses: ::prost::alloc::vec::Vec<DelegationResponse>,
     /// pagination defines the pagination in the response.
     #[prost(message, optional, tag = "2")]
-    pub pagination: ::core::option::Option<
-        super::super::base::query::v1beta1::PageResponse,
-    >,
+    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageResponse>,
 }
 /// QueryDelegatorUnbondingDelegationsRequest is request type for the
 /// Query/DelegatorUnbondingDelegations RPC method.
@@ -586,9 +556,7 @@ pub struct QueryDelegatorUnbondingDelegationsRequest {
     pub delegator_addr: ::prost::alloc::string::String,
     /// pagination defines an optional pagination for the request.
     #[prost(message, optional, tag = "2")]
-    pub pagination: ::core::option::Option<
-        super::super::base::query::v1beta1::PageRequest,
-    >,
+    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageRequest>,
 }
 /// QueryUnbondingDelegatorDelegationsResponse is response type for the
 /// Query/UnbondingDelegatorDelegations RPC method.
@@ -599,9 +567,7 @@ pub struct QueryDelegatorUnbondingDelegationsResponse {
     pub unbonding_responses: ::prost::alloc::vec::Vec<UnbondingDelegation>,
     /// pagination defines the pagination in the response.
     #[prost(message, optional, tag = "2")]
-    pub pagination: ::core::option::Option<
-        super::super::base::query::v1beta1::PageResponse,
-    >,
+    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageResponse>,
 }
 /// QueryRedelegationsRequest is request type for the Query/Redelegations RPC
 /// method.
@@ -619,9 +585,7 @@ pub struct QueryRedelegationsRequest {
     pub dst_validator_addr: ::prost::alloc::string::String,
     /// pagination defines an optional pagination for the request.
     #[prost(message, optional, tag = "4")]
-    pub pagination: ::core::option::Option<
-        super::super::base::query::v1beta1::PageRequest,
-    >,
+    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageRequest>,
 }
 /// QueryRedelegationsResponse is response type for the Query/Redelegations RPC
 /// method.
@@ -632,9 +596,7 @@ pub struct QueryRedelegationsResponse {
     pub redelegation_responses: ::prost::alloc::vec::Vec<RedelegationResponse>,
     /// pagination defines the pagination in the response.
     #[prost(message, optional, tag = "2")]
-    pub pagination: ::core::option::Option<
-        super::super::base::query::v1beta1::PageResponse,
-    >,
+    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageResponse>,
 }
 /// QueryDelegatorValidatorsRequest is request type for the
 /// Query/DelegatorValidators RPC method.
@@ -646,9 +608,7 @@ pub struct QueryDelegatorValidatorsRequest {
     pub delegator_addr: ::prost::alloc::string::String,
     /// pagination defines an optional pagination for the request.
     #[prost(message, optional, tag = "2")]
-    pub pagination: ::core::option::Option<
-        super::super::base::query::v1beta1::PageRequest,
-    >,
+    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageRequest>,
 }
 /// QueryDelegatorValidatorsResponse is response type for the
 /// Query/DelegatorValidators RPC method.
@@ -660,9 +620,7 @@ pub struct QueryDelegatorValidatorsResponse {
     pub validators: ::prost::alloc::vec::Vec<Validator>,
     /// pagination defines the pagination in the response.
     #[prost(message, optional, tag = "2")]
-    pub pagination: ::core::option::Option<
-        super::super::base::query::v1beta1::PageResponse,
-    >,
+    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageResponse>,
 }
 /// QueryDelegatorValidatorRequest is request type for the
 /// Query/DelegatorValidator RPC method.
@@ -806,9 +764,7 @@ pub struct MsgBeginRedelegate {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgBeginRedelegateResponse {
     #[prost(message, optional, tag = "1")]
-    pub completion_time: ::core::option::Option<
-        super::super::super::google::protobuf::Timestamp,
-    >,
+    pub completion_time: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
 }
 /// MsgUndelegate defines a SDK message for performing an undelegation from a
 /// delegate and a validator.
@@ -827,9 +783,7 @@ pub struct MsgUndelegate {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgUndelegateResponse {
     #[prost(message, optional, tag = "1")]
-    pub completion_time: ::core::option::Option<
-        super::super::super::google::protobuf::Timestamp,
-    >,
+    pub completion_time: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
 }
 /// MsgCancelUnbondingDelegation defines the SDK message for performing a cancel unbonding delegation for delegator
 ///

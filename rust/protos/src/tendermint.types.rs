@@ -344,9 +344,7 @@ pub struct EvidenceParams {
     /// mechanism for handling [Nothing-At-Stake
     /// attacks](<https://github.com/ethereum/wiki/wiki/Proof-of-Stake-FAQ#what-is-the-nothing-at-stake-problem-and-how-can-it-be-fixed>).
     #[prost(message, optional, tag = "2")]
-    pub max_age_duration: ::core::option::Option<
-        super::super::google::protobuf::Duration,
-    >,
+    pub max_age_duration: ::core::option::Option<super::super::google::protobuf::Duration>,
     /// This sets the maximum size of total evidence in bytes that can be committed in a single block.
     /// and should fall comfortably under the max block bytes.
     /// Default is 1048576 or 1MB

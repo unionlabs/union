@@ -34,9 +34,7 @@ pub struct Params {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ValidatorHistoricalRewards {
     #[prost(message, repeated, tag = "1")]
-    pub cumulative_reward_ratio: ::prost::alloc::vec::Vec<
-        super::super::base::v1beta1::DecCoin,
-    >,
+    pub cumulative_reward_ratio: ::prost::alloc::vec::Vec<super::super::base::v1beta1::DecCoin>,
     #[prost(uint32, tag = "2")]
     pub reference_count: u32,
 }
@@ -184,9 +182,7 @@ pub struct QueryValidatorDistributionInfoResponse {
     pub operator_address: ::prost::alloc::string::String,
     /// self_bond_rewards defines the self delegations rewards.
     #[prost(message, repeated, tag = "2")]
-    pub self_bond_rewards: ::prost::alloc::vec::Vec<
-        super::super::base::v1beta1::DecCoin,
-    >,
+    pub self_bond_rewards: ::prost::alloc::vec::Vec<super::super::base::v1beta1::DecCoin>,
     /// commission defines the commission the validator received.
     #[prost(message, repeated, tag = "3")]
     pub commission: ::prost::alloc::vec::Vec<super::super::base::v1beta1::DecCoin>,
@@ -242,9 +238,7 @@ pub struct QueryValidatorSlashesRequest {
     pub ending_height: u64,
     /// pagination defines an optional pagination for the request.
     #[prost(message, optional, tag = "4")]
-    pub pagination: ::core::option::Option<
-        super::super::base::query::v1beta1::PageRequest,
-    >,
+    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageRequest>,
 }
 /// QueryValidatorSlashesResponse is the response type for the
 /// Query/ValidatorSlashes RPC method.
@@ -256,9 +250,7 @@ pub struct QueryValidatorSlashesResponse {
     pub slashes: ::prost::alloc::vec::Vec<ValidatorSlashEvent>,
     /// pagination defines the pagination in the response.
     #[prost(message, optional, tag = "2")]
-    pub pagination: ::core::option::Option<
-        super::super::base::query::v1beta1::PageResponse,
-    >,
+    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageResponse>,
 }
 /// QueryDelegationRewardsRequest is the request type for the
 /// Query/DelegationRewards RPC method.
@@ -484,9 +476,7 @@ pub struct ValidatorOutstandingRewardsRecord {
     pub validator_address: ::prost::alloc::string::String,
     /// outstanding_rewards represents the outstanding rewards of a validator.
     #[prost(message, repeated, tag = "2")]
-    pub outstanding_rewards: ::prost::alloc::vec::Vec<
-        super::super::base::v1beta1::DecCoin,
-    >,
+    pub outstanding_rewards: ::prost::alloc::vec::Vec<super::super::base::v1beta1::DecCoin>,
 }
 /// ValidatorAccumulatedCommissionRecord is used for import / export via genesis
 /// json.
@@ -578,19 +568,14 @@ pub struct GenesisState {
     pub outstanding_rewards: ::prost::alloc::vec::Vec<ValidatorOutstandingRewardsRecord>,
     /// fee_pool defines the accumulated commissions of all validators at genesis.
     #[prost(message, repeated, tag = "6")]
-    pub validator_accumulated_commissions: ::prost::alloc::vec::Vec<
-        ValidatorAccumulatedCommissionRecord,
-    >,
+    pub validator_accumulated_commissions:
+        ::prost::alloc::vec::Vec<ValidatorAccumulatedCommissionRecord>,
     /// fee_pool defines the historical rewards of all validators at genesis.
     #[prost(message, repeated, tag = "7")]
-    pub validator_historical_rewards: ::prost::alloc::vec::Vec<
-        ValidatorHistoricalRewardsRecord,
-    >,
+    pub validator_historical_rewards: ::prost::alloc::vec::Vec<ValidatorHistoricalRewardsRecord>,
     /// fee_pool defines the current rewards of all validators at genesis.
     #[prost(message, repeated, tag = "8")]
-    pub validator_current_rewards: ::prost::alloc::vec::Vec<
-        ValidatorCurrentRewardsRecord,
-    >,
+    pub validator_current_rewards: ::prost::alloc::vec::Vec<ValidatorCurrentRewardsRecord>,
     /// fee_pool defines the delegator starting infos at genesis.
     #[prost(message, repeated, tag = "9")]
     pub delegator_starting_infos: ::prost::alloc::vec::Vec<DelegatorStartingInfoRecord>,

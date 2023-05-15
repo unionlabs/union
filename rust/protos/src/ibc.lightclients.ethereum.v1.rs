@@ -44,9 +44,7 @@ pub struct ClientState {
     #[prost(uint64, tag = "11")]
     pub latest_execution_block_number: u64,
     #[prost(message, optional, tag = "12")]
-    pub frozen_height: ::core::option::Option<
-        super::super::super::core::client::v1::Height,
-    >,
+    pub frozen_height: ::core::option::Option<super::super::super::core::client::v1::Height>,
 }
 #[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -81,9 +79,7 @@ pub struct Header {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TrustedSyncCommittee {
     #[prost(message, optional, tag = "1")]
-    pub trusted_height: ::core::option::Option<
-        super::super::super::core::client::v1::Height,
-    >,
+    pub trusted_height: ::core::option::Option<super::super::super::core::client::v1::Height>,
     #[prost(message, optional, tag = "2")]
     pub sync_committee: ::core::option::Option<SyncCommittee>,
     #[prost(bool, tag = "3")]
@@ -134,9 +130,7 @@ pub struct LightClientUpdate {
     pub next_sync_committee: ::core::option::Option<SyncCommittee>,
     #[prost(bytes = "vec", repeated, tag = "3")]
     #[serde(with = "::serde_utils::inner_base64")]
-    pub next_sync_committee_branch: ::prost::alloc::vec::Vec<
-        ::prost::alloc::vec::Vec<u8>,
-    >,
+    pub next_sync_committee_branch: ::prost::alloc::vec::Vec<::prost::alloc::vec::Vec<u8>>,
     #[prost(message, optional, tag = "4")]
     pub finalized_header: ::core::option::Option<LightClientHeader>,
     #[prost(bytes = "vec", repeated, tag = "5")]

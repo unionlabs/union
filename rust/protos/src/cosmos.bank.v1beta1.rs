@@ -148,9 +148,7 @@ pub struct QueryAllBalancesRequest {
     pub address: ::prost::alloc::string::String,
     /// pagination defines an optional pagination for the request.
     #[prost(message, optional, tag = "2")]
-    pub pagination: ::core::option::Option<
-        super::super::base::query::v1beta1::PageRequest,
-    >,
+    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageRequest>,
 }
 /// QueryAllBalancesResponse is the response type for the Query/AllBalances RPC
 /// method.
@@ -163,9 +161,7 @@ pub struct QueryAllBalancesResponse {
     pub balances: ::prost::alloc::vec::Vec<super::super::base::v1beta1::Coin>,
     /// pagination defines the pagination in the response.
     #[prost(message, optional, tag = "2")]
-    pub pagination: ::core::option::Option<
-        super::super::base::query::v1beta1::PageResponse,
-    >,
+    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageResponse>,
 }
 /// QuerySpendableBalancesRequest defines the gRPC request structure for querying
 /// an account's spendable balances.
@@ -180,9 +176,7 @@ pub struct QuerySpendableBalancesRequest {
     pub address: ::prost::alloc::string::String,
     /// pagination defines an optional pagination for the request.
     #[prost(message, optional, tag = "2")]
-    pub pagination: ::core::option::Option<
-        super::super::base::query::v1beta1::PageRequest,
-    >,
+    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageRequest>,
 }
 /// QuerySpendableBalancesResponse defines the gRPC response structure for querying
 /// an account's spendable balances.
@@ -197,9 +191,7 @@ pub struct QuerySpendableBalancesResponse {
     pub balances: ::prost::alloc::vec::Vec<super::super::base::v1beta1::Coin>,
     /// pagination defines the pagination in the response.
     #[prost(message, optional, tag = "2")]
-    pub pagination: ::core::option::Option<
-        super::super::base::query::v1beta1::PageResponse,
-    >,
+    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageResponse>,
 }
 /// QuerySpendableBalanceByDenomRequest defines the gRPC request structure for
 /// querying an account's spendable balance for a specific denom.
@@ -238,9 +230,7 @@ pub struct QueryTotalSupplyRequest {
     ///
     /// Since: cosmos-sdk 0.43
     #[prost(message, optional, tag = "1")]
-    pub pagination: ::core::option::Option<
-        super::super::base::query::v1beta1::PageRequest,
-    >,
+    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageRequest>,
 }
 /// QueryTotalSupplyResponse is the response type for the Query/TotalSupply RPC
 /// method
@@ -255,9 +245,7 @@ pub struct QueryTotalSupplyResponse {
     ///
     /// Since: cosmos-sdk 0.43
     #[prost(message, optional, tag = "2")]
-    pub pagination: ::core::option::Option<
-        super::super::base::query::v1beta1::PageResponse,
-    >,
+    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageResponse>,
 }
 /// QuerySupplyOfRequest is the request type for the Query/SupplyOf RPC method.
 #[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]
@@ -297,9 +285,7 @@ pub struct QueryParamsResponse {
 pub struct QueryDenomsMetadataRequest {
     /// pagination defines an optional pagination for the request.
     #[prost(message, optional, tag = "1")]
-    pub pagination: ::core::option::Option<
-        super::super::base::query::v1beta1::PageRequest,
-    >,
+    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageRequest>,
 }
 /// QueryDenomsMetadataResponse is the response type for the Query/DenomsMetadata RPC
 /// method.
@@ -312,9 +298,7 @@ pub struct QueryDenomsMetadataResponse {
     pub metadatas: ::prost::alloc::vec::Vec<Metadata>,
     /// pagination defines the pagination in the response.
     #[prost(message, optional, tag = "2")]
-    pub pagination: ::core::option::Option<
-        super::super::base::query::v1beta1::PageResponse,
-    >,
+    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageResponse>,
 }
 /// QueryDenomMetadataRequest is the request type for the Query/DenomMetadata RPC method.
 #[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]
@@ -347,9 +331,7 @@ pub struct QueryDenomOwnersRequest {
     pub denom: ::prost::alloc::string::String,
     /// pagination defines an optional pagination for the request.
     #[prost(message, optional, tag = "2")]
-    pub pagination: ::core::option::Option<
-        super::super::base::query::v1beta1::PageRequest,
-    >,
+    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageRequest>,
 }
 /// DenomOwner defines structure representing an account that owns or holds a
 /// particular denominated token. It contains the account address and account
@@ -378,9 +360,7 @@ pub struct QueryDenomOwnersResponse {
     pub denom_owners: ::prost::alloc::vec::Vec<DenomOwner>,
     /// pagination defines the pagination in the response.
     #[prost(message, optional, tag = "2")]
-    pub pagination: ::core::option::Option<
-        super::super::base::query::v1beta1::PageResponse,
-    >,
+    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageResponse>,
 }
 /// QuerySendEnabledRequest defines the RPC request for looking up SendEnabled entries.
 ///
@@ -395,9 +375,7 @@ pub struct QuerySendEnabledRequest {
     /// pagination defines an optional pagination for the request. This field is
     /// only read if the denoms field is empty.
     #[prost(message, optional, tag = "99")]
-    pub pagination: ::core::option::Option<
-        super::super::base::query::v1beta1::PageRequest,
-    >,
+    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageRequest>,
 }
 /// QuerySendEnabledResponse defines the RPC response of a SendEnable query.
 ///
@@ -411,9 +389,7 @@ pub struct QuerySendEnabledResponse {
     /// pagination defines the pagination in the response. This field is only
     /// populated if the denoms field in the request is empty.
     #[prost(message, optional, tag = "99")]
-    pub pagination: ::core::option::Option<
-        super::super::base::query::v1beta1::PageResponse,
-    >,
+    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageResponse>,
 }
 /// MsgSend represents a message to send coins from one account to another.
 #[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]

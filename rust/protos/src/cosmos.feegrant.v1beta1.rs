@@ -11,9 +11,7 @@ pub struct BasicAllowance {
     pub spend_limit: ::prost::alloc::vec::Vec<super::super::base::v1beta1::Coin>,
     /// expiration specifies an optional time when this allowance expires
     #[prost(message, optional, tag = "2")]
-    pub expiration: ::core::option::Option<
-        super::super::super::google::protobuf::Timestamp,
-    >,
+    pub expiration: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
 }
 /// PeriodicAllowance extends Allowance to allow for both a maximum cap,
 /// as well as a limit per time period.
@@ -38,9 +36,7 @@ pub struct PeriodicAllowance {
     /// it is calculated from the start time of the first transaction after the
     /// last period ended
     #[prost(message, optional, tag = "5")]
-    pub period_reset: ::core::option::Option<
-        super::super::super::google::protobuf::Timestamp,
-    >,
+    pub period_reset: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
 }
 /// AllowedMsgAllowance creates allowance only for specified message types.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -94,9 +90,7 @@ pub struct QueryAllowancesRequest {
     pub grantee: ::prost::alloc::string::String,
     /// pagination defines an pagination for the request.
     #[prost(message, optional, tag = "2")]
-    pub pagination: ::core::option::Option<
-        super::super::base::query::v1beta1::PageRequest,
-    >,
+    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageRequest>,
 }
 /// QueryAllowancesResponse is the response type for the Query/Allowances RPC method.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -107,9 +101,7 @@ pub struct QueryAllowancesResponse {
     pub allowances: ::prost::alloc::vec::Vec<Grant>,
     /// pagination defines an pagination for the response.
     #[prost(message, optional, tag = "2")]
-    pub pagination: ::core::option::Option<
-        super::super::base::query::v1beta1::PageResponse,
-    >,
+    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageResponse>,
 }
 /// QueryAllowancesByGranterRequest is the request type for the Query/AllowancesByGranter RPC method.
 ///
@@ -121,9 +113,7 @@ pub struct QueryAllowancesByGranterRequest {
     pub granter: ::prost::alloc::string::String,
     /// pagination defines an pagination for the request.
     #[prost(message, optional, tag = "2")]
-    pub pagination: ::core::option::Option<
-        super::super::base::query::v1beta1::PageRequest,
-    >,
+    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageRequest>,
 }
 /// QueryAllowancesByGranterResponse is the response type for the Query/AllowancesByGranter RPC method.
 ///
@@ -136,9 +126,7 @@ pub struct QueryAllowancesByGranterResponse {
     pub allowances: ::prost::alloc::vec::Vec<Grant>,
     /// pagination defines an pagination for the response.
     #[prost(message, optional, tag = "2")]
-    pub pagination: ::core::option::Option<
-        super::super::base::query::v1beta1::PageResponse,
-    >,
+    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageResponse>,
 }
 /// MsgGrantAllowance adds permission for Grantee to spend up to Allowance
 /// of fees from the account of Granter.

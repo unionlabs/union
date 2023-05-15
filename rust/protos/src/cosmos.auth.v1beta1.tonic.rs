@@ -3,8 +3,8 @@
 #[cfg(feature = "client")]
 pub mod query_client {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
-    use tonic::codegen::*;
     use tonic::codegen::http::Uri;
+    use tonic::codegen::*;
     #[derive(Debug, Clone)]
     pub struct QueryClient<T> {
         inner: tonic::client::Grpc<T>,
@@ -48,9 +48,8 @@ pub mod query_client {
                     <T as tonic::client::GrpcService<tonic::body::BoxBody>>::ResponseBody,
                 >,
             >,
-            <T as tonic::codegen::Service<
-                http::Request<tonic::body::BoxBody>,
-            >>::Error: Into<StdError> + Send + Sync,
+            <T as tonic::codegen::Service<http::Request<tonic::body::BoxBody>>>::Error:
+                Into<StdError> + Send + Sync,
         {
             QueryClient::new(InterceptedService::new(inner, interceptor))
         }
@@ -73,56 +72,41 @@ pub mod query_client {
             &mut self,
             request: impl tonic::IntoRequest<super::QueryAccountsRequest>,
         ) -> Result<tonic::Response<super::QueryAccountsResponse>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/cosmos.auth.v1beta1.Query/Accounts",
-            );
+            let path = http::uri::PathAndQuery::from_static("/cosmos.auth.v1beta1.Query/Accounts");
             self.inner.unary(request.into_request(), path, codec).await
         }
         pub async fn account(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryAccountRequest>,
         ) -> Result<tonic::Response<super::QueryAccountResponse>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/cosmos.auth.v1beta1.Query/Account",
-            );
+            let path = http::uri::PathAndQuery::from_static("/cosmos.auth.v1beta1.Query/Account");
             self.inner.unary(request.into_request(), path, codec).await
         }
         pub async fn account_address_by_id(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryAccountAddressByIdRequest>,
-        ) -> Result<
-            tonic::Response<super::QueryAccountAddressByIdResponse>,
-            tonic::Status,
-        > {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+        ) -> Result<tonic::Response<super::QueryAccountAddressByIdResponse>, tonic::Status>
+        {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/cosmos.auth.v1beta1.Query/AccountAddressByID",
@@ -133,56 +117,42 @@ pub mod query_client {
             &mut self,
             request: impl tonic::IntoRequest<super::QueryParamsRequest>,
         ) -> Result<tonic::Response<super::QueryParamsResponse>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/cosmos.auth.v1beta1.Query/Params",
-            );
+            let path = http::uri::PathAndQuery::from_static("/cosmos.auth.v1beta1.Query/Params");
             self.inner.unary(request.into_request(), path, codec).await
         }
         pub async fn module_accounts(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryModuleAccountsRequest>,
         ) -> Result<tonic::Response<super::QueryModuleAccountsResponse>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/cosmos.auth.v1beta1.Query/ModuleAccounts",
-            );
+            let path =
+                http::uri::PathAndQuery::from_static("/cosmos.auth.v1beta1.Query/ModuleAccounts");
             self.inner.unary(request.into_request(), path, codec).await
         }
         pub async fn module_account_by_name(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryModuleAccountByNameRequest>,
-        ) -> Result<
-            tonic::Response<super::QueryModuleAccountByNameResponse>,
-            tonic::Status,
-        > {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+        ) -> Result<tonic::Response<super::QueryModuleAccountByNameResponse>, tonic::Status>
+        {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/cosmos.auth.v1beta1.Query/ModuleAccountByName",
@@ -193,37 +163,27 @@ pub mod query_client {
             &mut self,
             request: impl tonic::IntoRequest<super::Bech32PrefixRequest>,
         ) -> Result<tonic::Response<super::Bech32PrefixResponse>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/cosmos.auth.v1beta1.Query/Bech32Prefix",
-            );
+            let path =
+                http::uri::PathAndQuery::from_static("/cosmos.auth.v1beta1.Query/Bech32Prefix");
             self.inner.unary(request.into_request(), path, codec).await
         }
         pub async fn address_bytes_to_string(
             &mut self,
             request: impl tonic::IntoRequest<super::AddressBytesToStringRequest>,
-        ) -> Result<
-            tonic::Response<super::AddressBytesToStringResponse>,
-            tonic::Status,
-        > {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+        ) -> Result<tonic::Response<super::AddressBytesToStringResponse>, tonic::Status> {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/cosmos.auth.v1beta1.Query/AddressBytesToString",
@@ -233,19 +193,13 @@ pub mod query_client {
         pub async fn address_string_to_bytes(
             &mut self,
             request: impl tonic::IntoRequest<super::AddressStringToBytesRequest>,
-        ) -> Result<
-            tonic::Response<super::AddressStringToBytesResponse>,
-            tonic::Status,
-        > {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+        ) -> Result<tonic::Response<super::AddressStringToBytesResponse>, tonic::Status> {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/cosmos.auth.v1beta1.Query/AddressStringToBytes",
@@ -256,19 +210,15 @@ pub mod query_client {
             &mut self,
             request: impl tonic::IntoRequest<super::QueryAccountInfoRequest>,
         ) -> Result<tonic::Response<super::QueryAccountInfoResponse>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/cosmos.auth.v1beta1.Query/AccountInfo",
-            );
+            let path =
+                http::uri::PathAndQuery::from_static("/cosmos.auth.v1beta1.Query/AccountInfo");
             self.inner.unary(request.into_request(), path, codec).await
         }
     }
@@ -292,10 +242,7 @@ pub mod query_server {
         async fn account_address_by_id(
             &self,
             request: tonic::Request<super::QueryAccountAddressByIdRequest>,
-        ) -> Result<
-            tonic::Response<super::QueryAccountAddressByIdResponse>,
-            tonic::Status,
-        >;
+        ) -> Result<tonic::Response<super::QueryAccountAddressByIdResponse>, tonic::Status>;
         async fn params(
             &self,
             request: tonic::Request<super::QueryParamsRequest>,
@@ -307,10 +254,7 @@ pub mod query_server {
         async fn module_account_by_name(
             &self,
             request: tonic::Request<super::QueryModuleAccountByNameRequest>,
-        ) -> Result<
-            tonic::Response<super::QueryModuleAccountByNameResponse>,
-            tonic::Status,
-        >;
+        ) -> Result<tonic::Response<super::QueryModuleAccountByNameResponse>, tonic::Status>;
         async fn bech32_prefix(
             &self,
             request: tonic::Request<super::Bech32PrefixRequest>,
@@ -347,10 +291,7 @@ pub mod query_server {
                 send_compression_encodings: Default::default(),
             }
         }
-        pub fn with_interceptor<F>(
-            inner: T,
-            interceptor: F,
-        ) -> InterceptedService<Self, F>
+        pub fn with_interceptor<F>(inner: T, interceptor: F) -> InterceptedService<Self, F>
         where
             F: tonic::service::Interceptor,
         {
@@ -378,10 +319,7 @@ pub mod query_server {
         type Response = http::Response<tonic::body::BoxBody>;
         type Error = std::convert::Infallible;
         type Future = BoxFuture<Self::Response, Self::Error>;
-        fn poll_ready(
-            &mut self,
-            _cx: &mut Context<'_>,
-        ) -> Poll<Result<(), Self::Error>> {
+        fn poll_ready(&mut self, _cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
             Poll::Ready(Ok(()))
         }
         fn call(&mut self, req: http::Request<B>) -> Self::Future {
@@ -390,15 +328,9 @@ pub mod query_server {
                 "/cosmos.auth.v1beta1.Query/Accounts" => {
                     #[allow(non_camel_case_types)]
                     struct AccountsSvc<T: Query>(pub Arc<T>);
-                    impl<
-                        T: Query,
-                    > tonic::server::UnaryService<super::QueryAccountsRequest>
-                    for AccountsSvc<T> {
+                    impl<T: Query> tonic::server::UnaryService<super::QueryAccountsRequest> for AccountsSvc<T> {
                         type Response = super::QueryAccountsResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::QueryAccountsRequest>,
@@ -415,11 +347,10 @@ pub mod query_server {
                         let inner = inner.0;
                         let method = AccountsSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -428,15 +359,9 @@ pub mod query_server {
                 "/cosmos.auth.v1beta1.Query/Account" => {
                     #[allow(non_camel_case_types)]
                     struct AccountSvc<T: Query>(pub Arc<T>);
-                    impl<
-                        T: Query,
-                    > tonic::server::UnaryService<super::QueryAccountRequest>
-                    for AccountSvc<T> {
+                    impl<T: Query> tonic::server::UnaryService<super::QueryAccountRequest> for AccountSvc<T> {
                         type Response = super::QueryAccountResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::QueryAccountRequest>,
@@ -453,11 +378,10 @@ pub mod query_server {
                         let inner = inner.0;
                         let method = AccountSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -466,25 +390,18 @@ pub mod query_server {
                 "/cosmos.auth.v1beta1.Query/AccountAddressByID" => {
                     #[allow(non_camel_case_types)]
                     struct AccountAddressByIDSvc<T: Query>(pub Arc<T>);
-                    impl<
-                        T: Query,
-                    > tonic::server::UnaryService<super::QueryAccountAddressByIdRequest>
-                    for AccountAddressByIDSvc<T> {
+                    impl<T: Query>
+                        tonic::server::UnaryService<super::QueryAccountAddressByIdRequest>
+                        for AccountAddressByIDSvc<T>
+                    {
                         type Response = super::QueryAccountAddressByIdResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
-                            request: tonic::Request<
-                                super::QueryAccountAddressByIdRequest,
-                            >,
+                            request: tonic::Request<super::QueryAccountAddressByIdRequest>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
-                            let fut = async move {
-                                (*inner).account_address_by_id(request).await
-                            };
+                            let fut = async move { (*inner).account_address_by_id(request).await };
                             Box::pin(fut)
                         }
                     }
@@ -495,11 +412,10 @@ pub mod query_server {
                         let inner = inner.0;
                         let method = AccountAddressByIDSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -508,13 +424,9 @@ pub mod query_server {
                 "/cosmos.auth.v1beta1.Query/Params" => {
                     #[allow(non_camel_case_types)]
                     struct ParamsSvc<T: Query>(pub Arc<T>);
-                    impl<T: Query> tonic::server::UnaryService<super::QueryParamsRequest>
-                    for ParamsSvc<T> {
+                    impl<T: Query> tonic::server::UnaryService<super::QueryParamsRequest> for ParamsSvc<T> {
                         type Response = super::QueryParamsResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::QueryParamsRequest>,
@@ -531,11 +443,10 @@ pub mod query_server {
                         let inner = inner.0;
                         let method = ParamsSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -544,23 +455,17 @@ pub mod query_server {
                 "/cosmos.auth.v1beta1.Query/ModuleAccounts" => {
                     #[allow(non_camel_case_types)]
                     struct ModuleAccountsSvc<T: Query>(pub Arc<T>);
-                    impl<
-                        T: Query,
-                    > tonic::server::UnaryService<super::QueryModuleAccountsRequest>
-                    for ModuleAccountsSvc<T> {
+                    impl<T: Query> tonic::server::UnaryService<super::QueryModuleAccountsRequest>
+                        for ModuleAccountsSvc<T>
+                    {
                         type Response = super::QueryModuleAccountsResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::QueryModuleAccountsRequest>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
-                            let fut = async move {
-                                (*inner).module_accounts(request).await
-                            };
+                            let fut = async move { (*inner).module_accounts(request).await };
                             Box::pin(fut)
                         }
                     }
@@ -571,11 +476,10 @@ pub mod query_server {
                         let inner = inner.0;
                         let method = ModuleAccountsSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -584,25 +488,18 @@ pub mod query_server {
                 "/cosmos.auth.v1beta1.Query/ModuleAccountByName" => {
                     #[allow(non_camel_case_types)]
                     struct ModuleAccountByNameSvc<T: Query>(pub Arc<T>);
-                    impl<
-                        T: Query,
-                    > tonic::server::UnaryService<super::QueryModuleAccountByNameRequest>
-                    for ModuleAccountByNameSvc<T> {
+                    impl<T: Query>
+                        tonic::server::UnaryService<super::QueryModuleAccountByNameRequest>
+                        for ModuleAccountByNameSvc<T>
+                    {
                         type Response = super::QueryModuleAccountByNameResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
-                            request: tonic::Request<
-                                super::QueryModuleAccountByNameRequest,
-                            >,
+                            request: tonic::Request<super::QueryModuleAccountByNameRequest>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
-                            let fut = async move {
-                                (*inner).module_account_by_name(request).await
-                            };
+                            let fut = async move { (*inner).module_account_by_name(request).await };
                             Box::pin(fut)
                         }
                     }
@@ -613,11 +510,10 @@ pub mod query_server {
                         let inner = inner.0;
                         let method = ModuleAccountByNameSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -626,23 +522,15 @@ pub mod query_server {
                 "/cosmos.auth.v1beta1.Query/Bech32Prefix" => {
                     #[allow(non_camel_case_types)]
                     struct Bech32PrefixSvc<T: Query>(pub Arc<T>);
-                    impl<
-                        T: Query,
-                    > tonic::server::UnaryService<super::Bech32PrefixRequest>
-                    for Bech32PrefixSvc<T> {
+                    impl<T: Query> tonic::server::UnaryService<super::Bech32PrefixRequest> for Bech32PrefixSvc<T> {
                         type Response = super::Bech32PrefixResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::Bech32PrefixRequest>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
-                            let fut = async move {
-                                (*inner).bech32_prefix(request).await
-                            };
+                            let fut = async move { (*inner).bech32_prefix(request).await };
                             Box::pin(fut)
                         }
                     }
@@ -653,11 +541,10 @@ pub mod query_server {
                         let inner = inner.0;
                         let method = Bech32PrefixSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -666,23 +553,18 @@ pub mod query_server {
                 "/cosmos.auth.v1beta1.Query/AddressBytesToString" => {
                     #[allow(non_camel_case_types)]
                     struct AddressBytesToStringSvc<T: Query>(pub Arc<T>);
-                    impl<
-                        T: Query,
-                    > tonic::server::UnaryService<super::AddressBytesToStringRequest>
-                    for AddressBytesToStringSvc<T> {
+                    impl<T: Query> tonic::server::UnaryService<super::AddressBytesToStringRequest>
+                        for AddressBytesToStringSvc<T>
+                    {
                         type Response = super::AddressBytesToStringResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::AddressBytesToStringRequest>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
-                            let fut = async move {
-                                (*inner).address_bytes_to_string(request).await
-                            };
+                            let fut =
+                                async move { (*inner).address_bytes_to_string(request).await };
                             Box::pin(fut)
                         }
                     }
@@ -693,11 +575,10 @@ pub mod query_server {
                         let inner = inner.0;
                         let method = AddressBytesToStringSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -706,23 +587,18 @@ pub mod query_server {
                 "/cosmos.auth.v1beta1.Query/AddressStringToBytes" => {
                     #[allow(non_camel_case_types)]
                     struct AddressStringToBytesSvc<T: Query>(pub Arc<T>);
-                    impl<
-                        T: Query,
-                    > tonic::server::UnaryService<super::AddressStringToBytesRequest>
-                    for AddressStringToBytesSvc<T> {
+                    impl<T: Query> tonic::server::UnaryService<super::AddressStringToBytesRequest>
+                        for AddressStringToBytesSvc<T>
+                    {
                         type Response = super::AddressStringToBytesResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::AddressStringToBytesRequest>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
-                            let fut = async move {
-                                (*inner).address_string_to_bytes(request).await
-                            };
+                            let fut =
+                                async move { (*inner).address_string_to_bytes(request).await };
                             Box::pin(fut)
                         }
                     }
@@ -733,11 +609,10 @@ pub mod query_server {
                         let inner = inner.0;
                         let method = AddressStringToBytesSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -746,23 +621,15 @@ pub mod query_server {
                 "/cosmos.auth.v1beta1.Query/AccountInfo" => {
                     #[allow(non_camel_case_types)]
                     struct AccountInfoSvc<T: Query>(pub Arc<T>);
-                    impl<
-                        T: Query,
-                    > tonic::server::UnaryService<super::QueryAccountInfoRequest>
-                    for AccountInfoSvc<T> {
+                    impl<T: Query> tonic::server::UnaryService<super::QueryAccountInfoRequest> for AccountInfoSvc<T> {
                         type Response = super::QueryAccountInfoResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::QueryAccountInfoRequest>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
-                            let fut = async move {
-                                (*inner).account_info(request).await
-                            };
+                            let fut = async move { (*inner).account_info(request).await };
                             Box::pin(fut)
                         }
                     }
@@ -773,28 +640,23 @@ pub mod query_server {
                         let inner = inner.0;
                         let method = AccountInfoSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
                     Box::pin(fut)
                 }
-                _ => {
-                    Box::pin(async move {
-                        Ok(
-                            http::Response::builder()
-                                .status(200)
-                                .header("grpc-status", "12")
-                                .header("content-type", "application/grpc")
-                                .body(empty_body())
-                                .unwrap(),
-                        )
-                    })
-                }
+                _ => Box::pin(async move {
+                    Ok(http::Response::builder()
+                        .status(200)
+                        .header("grpc-status", "12")
+                        .header("content-type", "application/grpc")
+                        .body(empty_body())
+                        .unwrap())
+                }),
             }
         }
     }
@@ -826,8 +688,8 @@ pub mod query_server {
 #[cfg(feature = "client")]
 pub mod msg_client {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
-    use tonic::codegen::*;
     use tonic::codegen::http::Uri;
+    use tonic::codegen::*;
     #[derive(Debug, Clone)]
     pub struct MsgClient<T> {
         inner: tonic::client::Grpc<T>,
@@ -858,10 +720,7 @@ pub mod msg_client {
             let inner = tonic::client::Grpc::with_origin(inner, origin);
             Self { inner }
         }
-        pub fn with_interceptor<F>(
-            inner: T,
-            interceptor: F,
-        ) -> MsgClient<InterceptedService<T, F>>
+        pub fn with_interceptor<F>(inner: T, interceptor: F) -> MsgClient<InterceptedService<T, F>>
         where
             F: tonic::service::Interceptor,
             T::ResponseBody: Default,
@@ -871,9 +730,8 @@ pub mod msg_client {
                     <T as tonic::client::GrpcService<tonic::body::BoxBody>>::ResponseBody,
                 >,
             >,
-            <T as tonic::codegen::Service<
-                http::Request<tonic::body::BoxBody>,
-            >>::Error: Into<StdError> + Send + Sync,
+            <T as tonic::codegen::Service<http::Request<tonic::body::BoxBody>>>::Error:
+                Into<StdError> + Send + Sync,
         {
             MsgClient::new(InterceptedService::new(inner, interceptor))
         }
@@ -896,19 +754,15 @@ pub mod msg_client {
             &mut self,
             request: impl tonic::IntoRequest<super::MsgUpdateParams>,
         ) -> Result<tonic::Response<super::MsgUpdateParamsResponse>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/cosmos.auth.v1beta1.Msg/UpdateParams",
-            );
+            let path =
+                http::uri::PathAndQuery::from_static("/cosmos.auth.v1beta1.Msg/UpdateParams");
             self.inner.unary(request.into_request(), path, codec).await
         }
     }
@@ -945,10 +799,7 @@ pub mod msg_server {
                 send_compression_encodings: Default::default(),
             }
         }
-        pub fn with_interceptor<F>(
-            inner: T,
-            interceptor: F,
-        ) -> InterceptedService<Self, F>
+        pub fn with_interceptor<F>(inner: T, interceptor: F) -> InterceptedService<Self, F>
         where
             F: tonic::service::Interceptor,
         {
@@ -976,10 +827,7 @@ pub mod msg_server {
         type Response = http::Response<tonic::body::BoxBody>;
         type Error = std::convert::Infallible;
         type Future = BoxFuture<Self::Response, Self::Error>;
-        fn poll_ready(
-            &mut self,
-            _cx: &mut Context<'_>,
-        ) -> Poll<Result<(), Self::Error>> {
+        fn poll_ready(&mut self, _cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
             Poll::Ready(Ok(()))
         }
         fn call(&mut self, req: http::Request<B>) -> Self::Future {
@@ -988,21 +836,15 @@ pub mod msg_server {
                 "/cosmos.auth.v1beta1.Msg/UpdateParams" => {
                     #[allow(non_camel_case_types)]
                     struct UpdateParamsSvc<T: Msg>(pub Arc<T>);
-                    impl<T: Msg> tonic::server::UnaryService<super::MsgUpdateParams>
-                    for UpdateParamsSvc<T> {
+                    impl<T: Msg> tonic::server::UnaryService<super::MsgUpdateParams> for UpdateParamsSvc<T> {
                         type Response = super::MsgUpdateParamsResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::MsgUpdateParams>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
-                            let fut = async move {
-                                (*inner).update_params(request).await
-                            };
+                            let fut = async move { (*inner).update_params(request).await };
                             Box::pin(fut)
                         }
                     }
@@ -1013,28 +855,23 @@ pub mod msg_server {
                         let inner = inner.0;
                         let method = UpdateParamsSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
                     Box::pin(fut)
                 }
-                _ => {
-                    Box::pin(async move {
-                        Ok(
-                            http::Response::builder()
-                                .status(200)
-                                .header("grpc-status", "12")
-                                .header("content-type", "application/grpc")
-                                .body(empty_body())
-                                .unwrap(),
-                        )
-                    })
-                }
+                _ => Box::pin(async move {
+                    Ok(http::Response::builder()
+                        .status(200)
+                        .header("grpc-status", "12")
+                        .header("content-type", "application/grpc")
+                        .body(empty_body())
+                        .unwrap())
+                }),
             }
         }
     }
