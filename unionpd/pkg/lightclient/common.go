@@ -27,7 +27,7 @@ const ValProtoPowerMeta = 4 + 32
 const ValProtoPower = 4 + 32 + 1
 
 // Max number of validators this lc can handle
-const MaxVal = 8
+const MaxVal = 16
 
 type TendermintLightClientInput struct {
 	Sig             gadget.G2Affine

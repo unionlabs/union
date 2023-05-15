@@ -73,7 +73,7 @@ github.com/confio/ics23/go
 # github.com/consensys/bavard v0.1.13
 ## explicit; go 1.15
 github.com/consensys/bavard
-# github.com/consensys/gnark v0.7.2-0.20230418172633-f83323bdf138 => github.com/hussein-aitlahcen/gnark v0.0.0-20230419121246-e325d86969ea
+# github.com/consensys/gnark v0.7.2-0.20230418172633-f83323bdf138 => github.com/hussein-aitlahcen/gnark v0.0.0-20230513134152-dd41e4b5e252
 ## explicit; go 1.18
 github.com/consensys/gnark
 github.com/consensys/gnark/backend
@@ -629,6 +629,6 @@ rsc.io/tmplfunc/internal/parse
 ## explicit; go 1.12
 sigs.k8s.io/yaml
 # github.com/cometbft/cometbft => github.com/unionfi/cometbls v0.0.0-20230512064939-963390dd5d1e
-# github.com/consensys/gnark => github.com/hussein-aitlahcen/gnark v0.0.0-20230419121246-e325d86969ea
+# github.com/consensys/gnark => github.com/hussein-aitlahcen/gnark v0.0.0-20230513134152-dd41e4b5e252
 # github.com/consensys/gnark-crypto => github.com/hussein-aitlahcen/gnark-crypto v0.0.0-20230419121058-59d3a8050fda
 # github.com/cosmos/cosmos-sdk => github.com/unionfi/cosmos-sdk v0.0.0-20230512065059-fd36c0d536f8

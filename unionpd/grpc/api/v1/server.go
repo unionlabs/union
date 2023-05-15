@@ -9,6 +9,7 @@ import (
 	"log"
 	"math/big"
 	"os"
+	"runtime"
 	"unionp/pkg/lightclient"
 	lcgadget "unionp/pkg/lightclient/nonadjacent"
 
@@ -22,6 +23,8 @@ import (
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr"
 	backend "github.com/consensys/gnark/backend/groth16"
 	backend_bn254 "github.com/consensys/gnark/backend/groth16/bn254"
+
+	// "github.com/consensys/gnark/backend/witness"
 	"github.com/consensys/gnark/constraint"
 	"github.com/consensys/gnark/frontend"
 	"github.com/consensys/gnark/frontend/cs/r1cs"
@@ -30,14 +33,113 @@ import (
 
 type proverServer struct {
 	UnimplementedUnionProverAPIServer
-	cs constraint.ConstraintSystem
-	pk backend.ProvingKey
-	vk backend.VerifyingKey
+	cs         constraint.ConstraintSystem
+	pk         backend.ProvingKey
+	vk         backend.VerifyingKey
+	commitment constraint.Commitment
 }
 
 func (*proverServer) mustEmbedUnimplementedUnionProverAPIServer() {}
 
-func (p *proverServer) Prove(c context.Context, request *ProveRequest) (*ProveResponse, error) {
+func (p *proverServer) Verify(ctx context.Context, req *VerifyRequest) (*VerifyResponse, error) {
+	log.Println("Verifying...")
+
+	var proof backend_bn254.Proof
+	_, err := proof.ReadFrom(bytes.NewReader(req.Proof.Content))
+	if err != nil {
+		return nil, err
+	}
+
+	if len(req.TrustedValidatorSetRoot) != 32 {
+		return nil, fmt.Errorf("The trusted validator set root must be a SHA256 hash")
+	}
+	if len(req.UntrustedValidatorSetRoot) != 32 {
+		return nil, fmt.Errorf("The untrusted validator set root must be a SHA256 hash")
+	}
+
+	var blockX fr.Element
+	err = blockX.SetBytesCanonical(req.BlockHeaderX.Value)
+	if err != nil {
+		return nil, fmt.Errorf("The block header X must be a BN254 fr.Element")
+	}
+
+	var blockY fr.Element
+	err = blockY.SetBytesCanonical(req.BlockHeaderY.Value)
+	if err != nil {
+		return nil, fmt.Errorf("The block header Y must be a BN254 fr.Element")
+	}
+
+	validatorsProto := [lightclient.MaxVal][4]frontend.Variable{}
+	for i := 0; i < lightclient.MaxVal; i++ {
+		validatorsProto[i][0] = 0
+		validatorsProto[i][1] = 0
+		validatorsProto[i][2] = 0
+		validatorsProto[i][3] = 0
+	}
+
+	// We don't need the private input to verify, this is present to typecheck
+	dummyInput := lcgadget.TendermintNonAdjacentLightClientInput{
+		Sig:             gadget.G2Affine{},
+		ProtoValidators: validatorsProto,
+		NbOfVal:         0,
+		NbOfSignature:   0,
+		Bitmap:          0,
+	}
+
+	witness := lcgadget.Circuit{
+		TrustedInput:   dummyInput,
+		UntrustedInput: dummyInput,
+		ExpectedTrustedValRoot: [2]frontend.Variable{
+			req.TrustedValidatorSetRoot[0:16],
+			req.TrustedValidatorSetRoot[16:32],
+		},
+		ExpectedUntrustedValRoot: [2]frontend.Variable{
+			req.UntrustedValidatorSetRoot[0:16],
+			req.UntrustedValidatorSetRoot[16:32],
+		},
+		Message: [2]frontend.Variable{req.BlockHeaderX, req.BlockHeaderY},
+	}
+
+	privateWitness, err := frontend.NewWitness(&witness, ecc.BN254.ScalarField())
+	if err != nil {
+		return nil, err
+	}
+
+	publicWitness, err := privateWitness.Public()
+	if err != nil {
+		return nil, err
+	}
+
+	err = backend.Verify(backend.Proof(&proof), p.vk, publicWitness)
+	if err != nil {
+		log.Println(err)
+		return &VerifyResponse{
+			Valid: false,
+		}, nil
+	} else {
+		return &VerifyResponse{
+			Valid: true,
+		}, nil
+	}
+}
+
+func (p *proverServer) GenerateContract(ctx context.Context, req *GenerateContractRequest) (*GenerateContractResponse, error) {
+	log.Println("Generating contract...")
+
+	var buffer bytes.Buffer
+	mem := bufio.NewWriter(&buffer)
+	err := p.vk.ExportSolidity(mem)
+	if err != nil {
+		return nil, err
+	}
+	mem.Flush()
+
+	return &GenerateContractResponse{
+		Content: buffer.Bytes(),
+	}, nil
+}
+
+func (p *proverServer) Prove(ctx context.Context, req *ProveRequest) (*ProveResponse, error) {
 	log.Println("Proving...")
 
 	reverseBytes := func(numbers []byte) []byte {
@@ -50,6 +152,7 @@ func (p *proverServer) Prove(c context.Context, request *ProveRequest) (*ProveRe
 
 	marshalValidators := func(validators []*types.SimpleValidator) ([lightclient.MaxVal][4]frontend.Variable, []byte, error) {
 		validatorsProto := [lightclient.MaxVal][4]frontend.Variable{}
+		// Make sure we zero initialize
 		for i := 0; i < lightclient.MaxVal; i++ {
 			validatorsProto[i][0] = 0
 			validatorsProto[i][1] = 0
@@ -104,20 +207,20 @@ func (p *proverServer) Prove(c context.Context, request *ProveRequest) (*ProveRe
 		return aggregatedSignature, nil
 	}
 
-	trustedValidatorsProto, trustedValidatorsRoot, err := marshalValidators(request.TrustedCommit.Validators)
+	trustedValidatorsProto, trustedValidatorsRoot, err := marshalValidators(req.TrustedCommit.Validators)
 	if err != nil {
 		return nil, err
 	}
-	trustedAggregatedSignature, err := aggregateSignatures(request.TrustedCommit.Signatures)
+	trustedAggregatedSignature, err := aggregateSignatures(req.TrustedCommit.Signatures)
 	if err != nil {
 		return nil, err
 	}
 
-	untrustedValidatorsProto, untrustedValidatorsRoot, err := marshalValidators(request.UntrustedCommit.Validators)
+	untrustedValidatorsProto, untrustedValidatorsRoot, err := marshalValidators(req.UntrustedCommit.Validators)
 	if err != nil {
 		return nil, err
 	}
-	untrustedAggregatedSignature, err := aggregateSignatures(request.UntrustedCommit.Signatures)
+	untrustedAggregatedSignature, err := aggregateSignatures(req.UntrustedCommit.Signatures)
 	if err != nil {
 		return nil, err
 	}
@@ -125,20 +228,20 @@ func (p *proverServer) Prove(c context.Context, request *ProveRequest) (*ProveRe
 	trustedInput := lcgadget.TendermintNonAdjacentLightClientInput{
 		Sig:             gadget.NewG2Affine(trustedAggregatedSignature),
 		ProtoValidators: trustedValidatorsProto,
-		NbOfVal:         len(request.TrustedCommit.Validators),
-		NbOfSignature:   len(request.TrustedCommit.Signatures),
-		Bitmap:          new(big.Int).SetBytes(request.TrustedCommit.Bitmap),
+		NbOfVal:         len(req.TrustedCommit.Validators),
+		NbOfSignature:   len(req.TrustedCommit.Signatures),
+		Bitmap:          new(big.Int).SetBytes(req.TrustedCommit.Bitmap),
 	}
 
 	untrustedInput := lcgadget.TendermintNonAdjacentLightClientInput{
 		Sig:             gadget.NewG2Affine(untrustedAggregatedSignature),
 		ProtoValidators: untrustedValidatorsProto,
-		NbOfVal:         len(request.UntrustedCommit.Validators),
-		NbOfSignature:   len(request.UntrustedCommit.Signatures),
-		Bitmap:          new(big.Int).SetBytes(request.UntrustedCommit.Bitmap),
+		NbOfVal:         len(req.UntrustedCommit.Validators),
+		NbOfSignature:   len(req.UntrustedCommit.Signatures),
+		Bitmap:          new(big.Int).SetBytes(req.UntrustedCommit.Bitmap),
 	}
 
-	signedBytes, err := protoio.MarshalDelimited(request.Vote)
+	signedBytes, err := protoio.MarshalDelimited(req.Vote)
 	if err != nil {
 		return nil, err
 	}
@@ -166,32 +269,24 @@ func (p *proverServer) Prove(c context.Context, request *ProveRequest) (*ProveRe
 		return nil, err
 	}
 
-	var commitment constraint.Commitment
-	switch _pk := p.pk.(type) {
-	case *backend_bn254.ProvingKey:
-		switch _vk := p.vk.(type) {
-		case *backend_bn254.VerifyingKey:
-			_pk.CommitmentKey = _vk.CommitmentKey
-			commitment = _vk.CommitmentInfo
-			break
-		}
-		break
-	default:
-		return nil, fmt.Errorf("Invalid proving key type, must be BN254")
-	}
-
 	log.Println("Proving...")
 	proof, err := backend.Prove(p.cs, p.pk, privateWitness)
 	if err != nil {
 		return nil, err
 	}
 
+	// Run GC to avoid high residency, a single prove call is very expensive in term of memory.
+	runtime.GC()
+
+	// F_r element
 	var commitmentHash []byte
+	// G1 uncompressed
 	var proofCommitment []byte
+	// Ugly but https://github.com/ConsenSys/gnark/issues/652
 	switch _proof := proof.(type) {
 	case *backend_bn254.Proof:
-		if commitment.Is() {
-			res, err := fr.Hash(commitment.SerializeCommitment(_proof.Commitment.Marshal(), []*big.Int{}, (fr.Bits-1)/8+1), []byte(constraint.CommitmentDst), 1)
+		if p.commitment.Is() {
+			res, err := fr.Hash(p.commitment.SerializeCommitment(_proof.Commitment.Marshal(), []*big.Int{}, (fr.Bits-1)/8+1), []byte(constraint.CommitmentDst), 1)
 			if err != nil {
 				return nil, err
 			}
@@ -200,7 +295,7 @@ func (p *proverServer) Prove(c context.Context, request *ProveRequest) (*ProveRe
 		}
 		break
 	default:
-		return nil, fmt.Errorf("Invalid proof type, must be BN254")
+		return nil, fmt.Errorf("Impossible: proof backend must be BN254 at this point")
 	}
 
 	var buffer bytes.Buffer
@@ -216,18 +311,15 @@ func (p *proverServer) Prove(c context.Context, request *ProveRequest) (*ProveRe
 		return nil, err
 	}
 
-	log.Println(publicWitness)
-
 	publicInputs, err := publicWitness.MarshalBinary()
 	if err != nil {
 		return nil, err
 	}
 
-	proofBz := append(append(publicInputs, commitmentHash...), proofCommitment...)
-
 	return &ProveResponse{
 		Proof: &ZeroKnowledgeProof{
-			Content: proofBz,
+			Content:      buffer.Bytes(),
+			PublicInputs: append(append(publicInputs, commitmentHash...), proofCommitment...),
 		},
 	}, nil
 }
@@ -240,16 +332,6 @@ func loadOrCreate(r1csPath string, pkPath string, vkPath string) (constraint.Con
 	if _, err := os.Stat(r1csPath); err == nil {
 		if _, err = os.Stat(pkPath); err == nil {
 			if _, err = os.Stat(vkPath); err == nil {
-				readFrom := func(file string, obj io.ReaderFrom) error {
-					f, err := os.OpenFile(file, os.O_RDONLY, os.ModePerm)
-					if err != nil {
-						return err
-					}
-					defer f.Close()
-					obj.ReadFrom(f)
-					return nil
-				}
-
 				log.Println("Loading R1CS...")
 				err := readFrom(r1csPath, r1csInstance)
 				if err != nil {
@@ -287,23 +369,6 @@ func loadOrCreate(r1csPath string, pkPath string, vkPath string) (constraint.Con
 		return nil, nil, nil, err
 	}
 
-	saveTo := func(file string, x io.WriterTo) error {
-		log.Printf("Saving %s\n", file)
-		f, err := os.Create(file)
-		if err != nil {
-			return err
-		}
-		defer f.Close()
-		w := bufio.NewWriter(f)
-		written, err := x.WriteTo(w)
-		if err != nil {
-			return err
-		}
-		log.Printf("Saved %d bytes\n", written)
-		w.Flush()
-		return nil
-	}
-
 	err = saveTo(r1csPath, r1csInstance)
 	if err != nil {
 		return nil, nil, nil, err
@@ -325,5 +390,49 @@ func NewProverServer(r1csPath string, pkPath string, vkPath string) (*proverServ
 	if err != nil {
 		return nil, err
 	}
-	return &proverServer{cs: cs, pk: pk, vk: vk}, nil
+
+	var commitment constraint.Commitment
+	switch _pk := pk.(type) {
+	case *backend_bn254.ProvingKey:
+		switch _vk := vk.(type) {
+		case *backend_bn254.VerifyingKey:
+			_pk.CommitmentKey = _vk.CommitmentKey
+			commitment = _vk.CommitmentInfo
+			break
+		}
+		break
+	default:
+		return nil, fmt.Errorf("Impossible: vk backend must be BN254 at this point")
+	}
+
+	runtime.GC()
+
+	return &proverServer{cs: cs, pk: pk, vk: vk, commitment: commitment}, nil
+}
+
+func readFrom(file string, obj io.ReaderFrom) error {
+	f, err := os.OpenFile(file, os.O_RDONLY, os.ModePerm)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	obj.ReadFrom(f)
+	return nil
+}
+
+func saveTo(file string, x io.WriterTo) error {
+	log.Printf("Saving %s\n", file)
+	f, err := os.Create(file)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	w := bufio.NewWriter(f)
+	written, err := x.WriteTo(w)
+	if err != nil {
+		return err
+	}
+	log.Printf("Saved %d bytes\n", written)
+	w.Flush()
+	return nil
 }

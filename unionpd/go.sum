@@ -265,8 +265,8 @@ github.com/holiman/uint256 v1.2.2 h1:TXKcSGc2WaxPD2+bmzAsVthL4+pEN0YwXcL5qED83vk
 github.com/holiman/uint256 v1.2.2/go.mod h1:SC8Ryt4n+UBbPbIBKaG9zbbDlp4jOru9xFZmPzLUTxw=
 github.com/hpcloud/tail v1.0.0/go.mod h1:ab1qPbhIpdTxEkNHXyeSf5vhxWSCs/tWer42PpOxQnU=
 github.com/huandu/skiplist v1.2.0 h1:gox56QD77HzSC0w+Ws3MH3iie755GBJU1OER3h5VsYw=
-github.com/hussein-aitlahcen/gnark v0.0.0-20230419121246-e325d86969ea h1:S6hc+GT8kIvU+CX71fL3PUPxJWymo13DwnmsnOIrbhY=
-github.com/hussein-aitlahcen/gnark v0.0.0-20230419121246-e325d86969ea/go.mod h1:TAuRTdK+tMu6nIGAAaBCNO7NgUcRUyU981trdNaryfk=
+github.com/hussein-aitlahcen/gnark v0.0.0-20230513134152-dd41e4b5e252 h1:enl16YpBEc/2fUiS9AbKrSxSkR0tjBeFRqZTYcT5/XI=
+github.com/hussein-aitlahcen/gnark v0.0.0-20230513134152-dd41e4b5e252/go.mod h1:TAuRTdK+tMu6nIGAAaBCNO7NgUcRUyU981trdNaryfk=
 github.com/hussein-aitlahcen/gnark-crypto v0.0.0-20230419121058-59d3a8050fda h1:ekkc24EqFEN4IdLQHySmREQlHN6H9xtmzACZxBku52c=
 github.com/hussein-aitlahcen/gnark-crypto v0.0.0-20230419121058-59d3a8050fda/go.mod h1:Iq/P3HHl0ElSjsg2E1gsMwhAyxnxoKK5nVyZKd+/KhU=
 github.com/ianlancetaylor/demangle v0.0.0-20181102032728-5e5cf60278f6/go.mod h1:aSSvb/t6k1mPoxDqO4vJh6VOCGPwU4O0C2/Eqndh1Sc=

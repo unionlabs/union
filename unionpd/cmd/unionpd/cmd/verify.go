@@ -4,14 +4,16 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/hex"
-	"fmt"
 	"log"
 	"math/big"
 	"time"
 	provergrpc "unionp/grpc/api/v1"
 
+	cometbft_bn254 "github.com/cometbft/cometbft/crypto/bn254"
 	cometbn254 "github.com/cometbft/cometbft/crypto/bn254"
 	ce "github.com/cometbft/cometbft/crypto/encoding"
+	"github.com/cometbft/cometbft/crypto/merkle"
+	"github.com/cometbft/cometbft/libs/protoio"
 	"github.com/cometbft/cometbft/proto/tendermint/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/spf13/cobra"
@@ -19,12 +21,12 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-// Example call to the prover `Prove` endpoint using hardcoded values dumped from a local devnet.
+// Example call to the prover `Prove` and then `Verify` endpoints using hardcoded values dumped from a local devnet.
 // The sole purpose of this command is to see a live example and understand how to interact with the prover.
-var ProveCmd = &cobra.Command{
-	Use:  "example-prove [uri]",
+var VerifyCmd = &cobra.Command{
+	Use:  "example-verify [uri]",
 	Args: cobra.ExactArgs(1),
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		uri := args[0]
 		conn, err := grpc.Dial(uri, grpc.WithTransportCredentials(insecure.NewCredentials()))
 		if err != nil {
@@ -35,6 +37,7 @@ var ProveCmd = &cobra.Command{
 		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Hour)
 		defer cancel()
 
+		// TODO: refactor: this code (prove call) is duplicated from `prove.go`
 		decodeB64 := func(s string) []byte {
 			bz, err := base64.StdEncoding.DecodeString(s)
 			if err != nil {
@@ -113,7 +116,7 @@ var ProveCmd = &cobra.Command{
 		trustedBitmap := bitmap
 		untrustedBitmap := bitmap
 
-		res, err := client.Prove(ctx, &provergrpc.ProveRequest{
+		proveRes, err := client.Prove(ctx, &provergrpc.ProveRequest{
 			Vote: &vote,
 			TrustedCommit: &provergrpc.ValidatorSetCommit{
 				Validators: trustedValidators,
@@ -130,6 +133,50 @@ var ProveCmd = &cobra.Command{
 			log.Fatal(err)
 		}
 
-		fmt.Println(res)
+		log.Printf("Proof: %v\n", proveRes)
+
+		trustedValidatorBytes := make([][]byte, len(trustedValidators))
+		for i, val := range trustedValidators {
+			protoEncoding, err := val.Marshal()
+			if err != nil {
+				return err
+			}
+			trustedValidatorBytes[i] = protoEncoding
+		}
+
+		untrustedValidatorBytes := make([][]byte, len(untrustedValidators))
+		for i, val := range trustedValidators {
+			protoEncoding, err := val.Marshal()
+			if err != nil {
+				return err
+			}
+			untrustedValidatorBytes[i] = protoEncoding
+		}
+
+		trustedValidatorSetRoot := merkle.HashFromByteSlices(trustedValidatorBytes)
+		untrustedValidatorSetRoot := merkle.HashFromByteSlices(untrustedValidatorBytes)
+
+		signedBytes, err := protoio.MarshalDelimited(&vote)
+		if err != nil {
+			return err
+		}
+
+		hmX, hmY := cometbft_bn254.HashToField2(signedBytes)
+
+		verifyRes, err := client.Verify(ctx, &provergrpc.VerifyRequest{
+			Proof:                     proveRes.Proof,
+			TrustedValidatorSetRoot:   trustedValidatorSetRoot,
+			UntrustedValidatorSetRoot: untrustedValidatorSetRoot,
+			BlockHeaderX:              &provergrpc.FrElement{Value: hmX.Marshal()},
+			BlockHeaderY:              &provergrpc.FrElement{Value: hmY.Marshal()},
+		})
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		log.Printf("Result: %v\n", verifyRes.Valid)
+
+		return nil
 	},
 }
