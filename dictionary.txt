@@ -338,3 +338,4 @@ genstateproof
 ctypes
 cometbn
 unionp
+typecheck
