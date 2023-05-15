@@ -68,41 +68,54 @@
               };
               devnetConfig = { validatorCount = 4; };
               proto = {
-                uniond = ./uniond/proto;
-                unionpd = ./unionpd/proto;
+                uniond = builtins.path {
+                  name = "uniond-proto";
+                  path = ./uniond/proto;
+                };
+                unionpd = builtins.path {
+                  name = "unionpd-proto";
+                  path = ./unionpd/proto;
+                };
                 cometbls = builtins.fetchGit {
+                  name = "cometbls";
                   url = "git@github.com:UnionFi/cometbls.git";
                   rev = "f19ae296cf176b343ea214967810ba735813e73f";
                 };
                 cosmossdk = builtins.fetchGit {
+                  name = "cosmos-sdk";
                   url = "git@github.com:UnionFi/cosmos-sdk.git";
                   rev = "021566a5aba49e79356e2e6e246494e118f12605";
                 };
                 ibcgo = pkgs.fetchFromGitHub {
+                  name = "ibc-go";
                   owner = "strangelove-ventures";
                   repo = "ibc-go";
                   rev = "f8081a1828e47e11791b036659dd6d0e7be5473b";
                   sha256 = "sha256-e9z9+VxoQkrvWeYzdxHax6L10eQebRjW7GrD5wnaLv8=";
                 };
                 ics23 = pkgs.fetchFromGitHub {
+                  name = "ics23";
                   owner = "cosmos";
                   repo = "ics23";
                   rev = "b1abd8678aab07165efd453c96796a179eb3131f";
                   sha256 = "sha256-O7oZI+29xKAbMHssg5HhxlssedSfejCuzHNHYX7WwBc=";
                 };
                 cosmosproto = pkgs.fetchFromGitHub {
+                  name = "cosmosproto";
                   owner = "cosmos";
                   repo = "cosmos-proto";
                   rev = "v1.0.0-beta.3";
                   sha256 = "sha256-kFm1ChSmm5pU9oJqKmWq4KfO/hxgxzvcSzr66oTulos=";
                 };
                 gogoproto = pkgs.fetchFromGitHub {
+                  name = "gogoproto";
                   owner = "cosmos";
                   repo = "gogoproto";
                   rev = "v1.4.7";
                   sha256 = "sha256-oaGwDFbz/xgL7hDtvdh/mIcRIGBdp+/xuKeuBE2ZpqY=";
                 };
                 googleapis = pkgs.fetchFromGitHub {
+                  name = "googleapis";
                   owner = "googleapis";
                   repo = "googleapis";
                   rev = "6774ccbbc3f182f6ae3a32dca29e1da489ad8a8f";

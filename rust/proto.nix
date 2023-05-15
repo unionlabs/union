@@ -42,7 +42,7 @@
           echo "$cargotoml" | ${pkgs.lib.meta.getExe pkgs.yj} -jt | sed 's/^PROTOC_INSERTION_POINT = 1$/## @@protoc_insertion_point(features)/' > $out
         '';
 
-      all-proto-build = rec {
+      all-protos-to-build = rec {
         cometbls = rec {
           src = "${proto.cometbls}/proto";
           proto-deps = [
@@ -99,9 +99,9 @@
           # SEE: https://github.com/neoeinstein/protoc-gen-prost/issues/61
           additional-filter = "-not -path '*cosmos/msg/v1/msg.proto' -not -path '*cosmos/query/v1/query.proto' -and -not -path '*/proto/tendermint/*'";
           fixup-script = ''
-            sed -i 's/pub struct Validators/pub struct ValidatorsVec/' "$outdir/src/cosmos.staking.v1beta1.rs"
-            sed -i 's/AllowList(Validators)/AllowList(ValidatorsVec)/' "$outdir/src/cosmos.staking.v1beta1.rs"
-            sed -i 's/DenyList(Validators)/DenyList(ValidatorsVec)/' "$outdir/src/cosmos.staking.v1beta1.rs"
+            sed -i 's/pub struct Validators/pub struct ValidatorsVec/' "$out/src/cosmos.staking.v1beta1.rs"
+            sed -i 's/AllowList(Validators)/AllowList(ValidatorsVec)/' "$out/src/cosmos.staking.v1beta1.rs"
+            sed -i 's/DenyList(Validators)/DenyList(ValidatorsVec)/' "$out/src/cosmos.staking.v1beta1.rs"
           '';
         };
       };
@@ -245,7 +245,7 @@
                     ${fixup-script}
                   ''
             )
-            all-proto-build
+            all-protos-to-build
         )
       );
 
@@ -254,38 +254,65 @@
           mapAttrsToList
             (
               _: { proto-deps, ... }:
-                map (src: ''-I"${dbg src}"'') proto-deps
+                map (src: ''-I"${src}"'') proto-deps
             )
-            all-proto-build
+            all-protos-to-build
         ));
 
-      dbg = value: builtins.trace (pkgs.lib.generators.toPretty { } value) value;
-    in
-    {
-      packages.generate-rust-proto = pkgs.writeShellApplication {
-        name = "generate-rust-proto";
-        runtimeInputs = [ pkgs.protobuf protoc-gen-tonic ];
-        text = ''
-          readarray -t protos < <(cat ${pkgs.lib.concatStringsSep " " (pkgs.lib.mapAttrsToList proto-inputs all-proto-build)})
+      # dbg = value: builtins.trace (pkgs.lib.generators.toPretty { } value) value;
 
-          outdir=rust/protos
+      rust-proto = pkgs.stdenv.mkDerivation {
+        name = "rust-proto";
+        pname = "rust-proto";
+        src = pkgs.linkFarm "rust-proto-srcs" (pkgs.lib.mapAttrsToList (name: { src, ... }: { name = name + "-protos"; path = src; }) all-protos-to-build);
+        buildInputs = [ pkgs.protobuf protoc-gen-tonic ];
+        buildPhase = ''
+          mkdir $out
+
+          readarray -t protos < <(cat ${pkgs.lib.concatStringsSep " " (pkgs.lib.mapAttrsToList proto-inputs all-protos-to-build)})
 
           for file in "''${protos[@]}"; do
             echo "[FOUND] $file"
           done
 
           protoc "''${protos[@]}" \
-            --prost_out="$outdir"/src \
+            --prost_out=./src \
             --prost_opt=compile_well_known_types=true,${fold-opts prost-opts} \
-            --tonic_out="$outdir"/src \
+            --tonic_out=./src \
             --tonic_opt=compile_well_known_types=true,${fold-opts tonic-opts} \
-            --prost-crate_out="$outdir" \
+            --prost-crate_out=. \
             --prost-crate_opt=package_separator="+",gen_crate=${cargo_toml { name = "protos"; }} \
             ${includes}
 
+          cp -r ./src $out/
+          cp -r ./Cargo.toml $out/
+
           ${fixup-scripts}
         '';
+      };
+    in
+    {
+      packages.rust-proto = rust-proto;
 
+      packages.generate-rust-proto = pkgs.writeShellApplication {
+        name = "generate-rust-proto";
+        runtimeInputs = [ rust-proto ];
+        text = ''
+          # If the current directory contains flake.nix, then we are at the repository root
+          if [[ -f flake.nix ]]
+          then
+            echo "We are at the repository root. Starting generation..."
+          else
+            echo "We are NOT at the repository root. Please cd to the repository root and try again."
+            exit 1
+          fi
+
+          outdir=rust/protos
+
+          cp -r ${rust-proto}/* $outdir
+
+          echo "Generation successful!"
+        '';
       };
     };
 }

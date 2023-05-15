@@ -390,3 +390,4 @@ statesync
 blocksync
 statesync
 alloc
+srcs
