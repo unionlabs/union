@@ -1,0 +1,25 @@
+arch:
+  - amd64
+  - ppc64le
+language: go
+sudo: false
+go:
+  - 1.5.x
+  - 1.6.x
+  - 1.7.x
+  - 1.8.x
+  - 1.9.x
+  - 1.10.x
+  - 1.11.x
+  - master
+  - tip
+
+before_install:
+  - go get golang.org/x/tools/cmd/cover
+  - go get -t -v ./...
+
+script:
+  - ./test.sh
+
+after_success:
+  - bash <(curl -s https://codecov.io/bash)

@@ -2,7 +2,7 @@
 let
   prysm-beacon-init = pkgs.writeShellApplication {
     name = "prysm-beacon-init";
-    runtimeInputs = [ 
+    runtimeInputs = [
       pkgs.curl
       pkgs.jq
       prysm

@@ -1,0 +1,10 @@
+codecov:
+  require_ci_to_pass: no
+
+coverage:
+  status:
+    project: no
+    patch: no
+
+comment:
+  layout: "diff"

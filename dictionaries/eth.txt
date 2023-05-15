@@ -2,3 +2,7 @@ ethash
 chainsafe
 teku
 prysm
+prysmctl
+nodiscover
+beacondata
+validatordata

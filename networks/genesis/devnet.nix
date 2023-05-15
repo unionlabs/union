@@ -2,6 +2,7 @@
   perSystem = { devnetConfig, pkgs, self', inputs', ... }:
     let
       uniond = pkgs.lib.getExe self'.packages.uniond;
+      prysm = inputs'.ethereum-nix.packages.prysm;
       chainId = "union-devnet-1";
       mkNodeID = name:
         pkgs.runCommand "node-id" { } ''
@@ -40,13 +41,12 @@
               }.json
             '')
           validatorKeys;
-      mkGethPrysmGenesis = { }:
+      mkGethPrysmGenesis = {}:
         pkgs.runCommand "geth-prysm-genesis" { } ''
           mkdir -p $out
           cp ${./devnet-evm/genesis.json} "./genesis.json"
         
-          echo connorisdumb
-          ${inputs'.ethereum-nix.packages.prysm}/bin/prysmctl \
+          ${prysm}/bin/prysmctl \
           testnet generate-genesis \
             --fork=bellatrix \
             --num-validators=64 \
@@ -103,7 +103,7 @@
 
       packages.devnet-geth-prysm-genesis = pkgs.symlinkJoin {
         name = "geth-prysm-genesis-state";
-        paths = mkGethPrysmGenesis {};
+        paths = mkGethPrysmGenesis { };
       };
 
       packages.devnet-geth-config = pkgs.linkFarm "devnet-geth-config" [

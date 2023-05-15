@@ -2,7 +2,7 @@
 let
   prysm-validator-init = pkgs.writeShellApplication {
     name = "prysm-validator-init";
-    runtimeInputs = [ 
+    runtimeInputs = [
       prysm
       config
     ];

@@ -95,6 +95,10 @@ uniond init $MONIKER "bn254" --chain-id $CHAIN_ID
 
 ## Download the Genesis File
 
+**`GENESIS_URL` options:**
+
+* Union Testnet: `https://raw.githubusercontent.com/unionfi/genesis/main/union-testnet-1/genesis.json`
+
 <!-- TODO: Create and upload genesis file for users to download. https://github.com/UnionFi/union/issues/31 -->
 ```sh
 curl $GENESIS_URL > ~/.union/config/genesis.json

@@ -1,0 +1,35 @@
+dist: xenial
+language: go
+go:
+  - 1.12.x
+  - 1.13.x
+  - tip
+
+before_install:
+  - sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
+  - sudo apt-get update -qq
+  - sudo apt-get install gcc-6 g++-6 libsnappy-dev zlib1g-dev libbz2-dev -qq
+  - export CXX="g++-6" CC="gcc-6"
+
+  - wget https://launchpad.net/ubuntu/+archive/primary/+files/libgflags2_2.0-1.1ubuntu1_amd64.deb
+  - sudo dpkg -i libgflags2_2.0-1.1ubuntu1_amd64.deb
+  - wget https://launchpad.net/ubuntu/+archive/primary/+files/libgflags-dev_2.0-1.1ubuntu1_amd64.deb
+  - sudo dpkg -i libgflags-dev_2.0-1.1ubuntu1_amd64.deb
+
+install:
+  - git clone https://github.com/facebook/rocksdb.git /tmp/rocksdb
+  - pushd /tmp/rocksdb
+  - make clean
+  - make shared_lib -j`nproc`
+  - sudo cp --preserve=links ./librocksdb.* /usr/lib/
+  - sudo cp -r ./include/rocksdb/ /usr/include/
+  - popd
+  - go get -t ./...
+
+script:
+  - go test -v ./
+
+notifications:
+  email:
+    on_success: change
+    on_failure: always
