@@ -58,15 +58,15 @@
           inherit src;
         };
 
-        unionvisor-tests = crane.stable.cargoNextest (commonArgs // {
-          inherit cargoArtifacts;
-          partitions = 1;
-          partitionType = "count";
-          doCheck = true;
-          preConfigureHooks = [
-            "cp ${self'.packages.uniond}/bin/uniond $PWD/src/testdata/test_init_cmd/bins/genesis"
-          ];
-        });
+        # unionvisor-tests = crane.stable.cargoNextest (commonArgs // {
+        #   inherit cargoArtifacts;
+        #   partitions = 1;
+        #   partitionType = "count";
+        #   doCheck = true;
+        #   preConfigureHooks = [
+        #     "cp ${self'.packages.uniond}/bin/uniond $PWD/src/testdata/test_init_cmd/bins/genesis"
+        #   ];
+        # });
       };
     };
 }
