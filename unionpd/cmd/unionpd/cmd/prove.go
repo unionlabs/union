@@ -19,6 +19,8 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
+// Example call to the prover `Prove` endpoint using hardcoded values dumped from a local devnet.
+// The sole purpose of this command is to see a live example and understand how to interact with the prover.
 var ProveCmd = &cobra.Command{
 	Use:  "example-prove [uri]",
 	Args: cobra.ExactArgs(1),

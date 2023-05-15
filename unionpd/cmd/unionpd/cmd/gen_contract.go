@@ -54,6 +54,6 @@ func GenContract() *cobra.Command {
 			return nil
 		},
 	}
-	cmd.Flags().String(flagPath, "", "Path were to write the file")
+	cmd.Flags().String(flagPath, "", "Path were to write the file. If empty, dump to stdout.")
 	return cmd
 }
