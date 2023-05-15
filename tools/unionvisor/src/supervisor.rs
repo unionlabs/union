@@ -19,7 +19,7 @@ pub struct Supervisor {
     /// data dir.
     root: PathBuf,
 
-    /// The binart to run which will be supervised. This should be the name of the binary, which will be run by the
+    /// The binary to run which will be supervised. This should be the name of the binary, which will be run by the
     /// supervisor as ./{binary}.
     binary: PathBuf,
 
@@ -167,7 +167,7 @@ pub fn run_and_upgrade<S: AsRef<OsStr>, I: IntoIterator<Item = S> + Clone>(
                     height = new.height,
                 "upgrade detected"
                 );
-                debug!(target: "unionvisor", "checking binary availibility");
+                debug!(target: "unionvisor", "checking binary availability");
                 bindir.is_available(&new.name).map_err(|err| {
                     error!(target: "unionvisor", "binary {} unavailable", &new.name);
                     RuntimeError::BinaryUnavailable {

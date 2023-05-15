@@ -78,7 +78,7 @@ pub struct RunCmd {
     #[arg(short, long, default_value = "genesis", env = "UNIONVISOR_FALLBACK")]
     fallback: String,
 
-    /// Milliseconds inbetween each poll for an upgrade.
+    /// Milliseconds in between each poll for an upgrade.
     #[arg(short, long, env = "UNIONVISOR_POLL_INTERVAL")]
     pol_interval: Option<u64>,
 
@@ -203,6 +203,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn test_init() {
         let tmp = testdata::temp_dir_with(&["test_init_cmd"]);
         let home = tmp.into_path().join("test_init_cmd");

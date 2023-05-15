@@ -1,4 +1,4 @@
-inputs@{ self, flake-parts, ... }: {
+{ self, ... }: {
   perSystem = { self', pkgs, system, config, inputs', ... }:
     let
       crane = rec {
