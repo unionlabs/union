@@ -1,0 +1,7 @@
+#!/usr/bin/env sh
+set -e
+
+sleep 5 # we emulate not directly upgrading.
+mkdir -p $4
+printf %s '{"name": "upgrade1", "height": 123}' > $4/upgrade-info.json
+sleep 10

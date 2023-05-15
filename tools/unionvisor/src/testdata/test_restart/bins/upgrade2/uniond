@@ -1,0 +1,4 @@
+#!/usr/bin/env sh
+
+printf %s '{"name": "upgrade3", "height": 123}' > $4/upgrade-info.json
+sleep 10 
