@@ -90,6 +90,46 @@ pub mod union_prover_api_client {
             );
             self.inner.unary(request.into_request(), path, codec).await
         }
+        ///
+        pub async fn verify(
+            &mut self,
+            request: impl tonic::IntoRequest<super::VerifyRequest>,
+        ) -> Result<tonic::Response<super::VerifyResponse>, tonic::Status> {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/union.prover.api.v1.UnionProverAPI/Verify",
+            );
+            self.inner.unary(request.into_request(), path, codec).await
+        }
+        ///
+        pub async fn generate_contract(
+            &mut self,
+            request: impl tonic::IntoRequest<super::GenerateContractRequest>,
+        ) -> Result<tonic::Response<super::GenerateContractResponse>, tonic::Status> {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/union.prover.api.v1.UnionProverAPI/GenerateContract",
+            );
+            self.inner.unary(request.into_request(), path, codec).await
+        }
     }
 }
 /// Generated server implementations.
@@ -105,6 +145,16 @@ pub mod union_prover_api_server {
             &self,
             request: tonic::Request<super::ProveRequest>,
         ) -> Result<tonic::Response<super::ProveResponse>, tonic::Status>;
+        ///
+        async fn verify(
+            &self,
+            request: tonic::Request<super::VerifyRequest>,
+        ) -> Result<tonic::Response<super::VerifyResponse>, tonic::Status>;
+        ///
+        async fn generate_contract(
+            &self,
+            request: tonic::Request<super::GenerateContractRequest>,
+        ) -> Result<tonic::Response<super::GenerateContractResponse>, tonic::Status>;
     }
     ///
     #[derive(Debug)]
@@ -192,6 +242,84 @@ pub mod union_prover_api_server {
                     let fut = async move {
                         let inner = inner.0;
                         let method = ProveSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/union.prover.api.v1.UnionProverAPI/Verify" => {
+                    #[allow(non_camel_case_types)]
+                    struct VerifySvc<T: UnionProverApi>(pub Arc<T>);
+                    impl<
+                        T: UnionProverApi,
+                    > tonic::server::UnaryService<super::VerifyRequest>
+                    for VerifySvc<T> {
+                        type Response = super::VerifyResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::VerifyRequest>,
+                        ) -> Self::Future {
+                            let inner = self.0.clone();
+                            let fut = async move { (*inner).verify(request).await };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = VerifySvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/union.prover.api.v1.UnionProverAPI/GenerateContract" => {
+                    #[allow(non_camel_case_types)]
+                    struct GenerateContractSvc<T: UnionProverApi>(pub Arc<T>);
+                    impl<
+                        T: UnionProverApi,
+                    > tonic::server::UnaryService<super::GenerateContractRequest>
+                    for GenerateContractSvc<T> {
+                        type Response = super::GenerateContractResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::GenerateContractRequest>,
+                        ) -> Self::Future {
+                            let inner = self.0.clone();
+                            let fut = async move {
+                                (*inner).generate_contract(request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = GenerateContractSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(

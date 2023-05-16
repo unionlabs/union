@@ -137,6 +137,9 @@ json-schema = ["schemars"]
 server = ["tonic"]
 std = ["prost/std", "serde/std"]
 
+[lib]
+doctest = false
+
 [package]
 edition = "2021"
 name = "protos"

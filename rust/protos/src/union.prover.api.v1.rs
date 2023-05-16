@@ -1,9 +1,17 @@
 // @generated
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
+pub struct FrElement {
+    #[prost(bytes = "vec", tag = "1")]
+    pub value: ::prost::alloc::vec::Vec<u8>,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ZeroKnowledgeProof {
     #[prost(bytes = "vec", tag = "1")]
     pub content: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes = "vec", tag = "2")]
+    pub public_inputs: ::prost::alloc::vec::Vec<u8>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -36,6 +44,35 @@ pub struct ProveResponse {
     pub proof: ::core::option::Option<ZeroKnowledgeProof>,
     #[prost(bytes = "vec", tag = "2")]
     pub untrusted_validator_set_root: ::prost::alloc::vec::Vec<u8>,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct VerifyRequest {
+    #[prost(message, optional, tag = "1")]
+    pub proof: ::core::option::Option<ZeroKnowledgeProof>,
+    #[prost(bytes = "vec", tag = "2")]
+    pub trusted_validator_set_root: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes = "vec", tag = "3")]
+    pub untrusted_validator_set_root: ::prost::alloc::vec::Vec<u8>,
+    #[prost(message, optional, tag = "4")]
+    pub block_header_x: ::core::option::Option<FrElement>,
+    #[prost(message, optional, tag = "5")]
+    pub block_header_y: ::core::option::Option<FrElement>,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct VerifyResponse {
+    #[prost(bool, tag = "1")]
+    pub valid: bool,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GenerateContractRequest {}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GenerateContractResponse {
+    #[prost(bytes = "vec", tag = "1")]
+    pub content: ::prost::alloc::vec::Vec<u8>,
 }
 include!("union.prover.api.v1.tonic.rs");
 // @@protoc_insertion_point(module)
