@@ -86,6 +86,7 @@ feegrant
 Feegrant
 feegrantkeeper
 feegrantmodule
+fetchurl
 gascap
 gcmode
 genbn
@@ -188,6 +189,7 @@ openapi
 openapiv
 overrrides
 oxalica
+Patchelf
 paramaters
 paramproposal
 paramsclient

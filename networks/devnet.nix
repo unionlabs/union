@@ -1,5 +1,5 @@
 { ... }: {
-  perSystem = { devnetConfig, pkgs, self', inputs', ... }: {
+  perSystem = { devnetConfig, pkgs, system, self', inputs', ... }: {
     packages.devnet =
       let
         arion = inputs'.arion.packages.default;
@@ -30,13 +30,13 @@
               };
               prysm-beacon = import ./services/prysm-beacon.nix {
                 inherit pkgs;
-                prysm-beacon-chain = import ./tools/prysm-beacon-chain.nix { inherit pkgs; };
+                prysm-beacon-chain = import ./tools/prysm-beacon-chain.nix { inherit pkgs; inherit system; };
                 config = self'.packages.devnet-prysm-config;
                 genesis = self'.packages.devnet-geth-prysm-genesis;
               };
               prysm-validator = import ./services/prysm-validator.nix {
                 inherit pkgs;
-                prysm-validator = import ./tools/prysm-validator.nix { inherit pkgs; };
+                prysm-validator = import ./tools/prysm-validator.nix { inherit pkgs; inherit system; };
                 config = self'.packages.devnet-prysm-config;
               };
             };
