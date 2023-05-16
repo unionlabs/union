@@ -22,6 +22,7 @@
           in
           {
             name = "libwasmvm";
+            version = "1.2.3";
             src = "${
               pkgs.fetchFromGitHub {
                 owner = "CosmWasm";
