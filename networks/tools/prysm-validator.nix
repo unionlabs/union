@@ -1,19 +1,30 @@
 { pkgs, system, ... }:
-pkgs.stdenv.mkDerivation rec {
-  pname = "validator";
-  version = "4.0.3";
+let
+  version = "4.0.4";
 
-  validator-amd64 = pkgs.fetchurl {
-    url = "https://github.com/prysmaticlabs/prysm/releases/download/v${version}/validator-v${version}-linux-amd64";
-    sha256 = "sha256-gmveVLd9fXXlZS65vZ2HznghLdlA7tY2oJFLMRWXT8Q=";
+  validator-targets = {
+    x86_64-linux = pkgs.fetchurl {
+      url = "https://github.com/prysmaticlabs/prysm/releases/download/v${version}/validator-v${version}-linux-amd64";
+      sha256 = "sha256-d9k/5UVyW0tzY1jU8+Bnp5+y2e5grEfgpU/oSiraOTM=";
+    };
+    aarch64-linux = {
+      url = "https://github.com/prysmaticlabs/prysm/releases/download/v${version}/validator-v${version}-linux-arm64";
+      sha256 = "sha256-ILX+R1a6Mz0A0IoaBjaaSRQd4xrqk6ZrKoRjptOGHKA=";
+    };
+    x86_64-darwin = pkgs.fetchurl {
+      url = "https://github.com/prysmaticlabs/prysm/releases/download/v${version}/validator-v${version}-darwin-amd64";
+      sha256 = "sha256-xk17V0BHr+6Flu47KdrCa/SAZ2N1IIf0xGRPBUZ9Ljs=";
+    };
+    aarch64-darwin = {
+      url = "https://github.com/prysmaticlabs/prysm/releases/download/v${version}/validator-v${version}-darwin-arm64";
+      sha256 = "sha256-TsdZD7669Nz8IvuKYv8UHg9r1ojTzGy1bBc6iqc7cws=";
+    };
   };
 
-  validator-arm64 = pkgs.fetchurl {
-    url = "https://github.com/prysmaticlabs/prysm/releases/download/v${version}/validator-v${version}-linux-arm64";
-    sha256 = "sha256-IeupVlZ564aMn4IVvTes6I0r/40yBiZBRHyAL8Sqyxg=";
-  };
-
-  validator = (if system == "x86_64-linux" then validator-amd64 else validator-arm64);
+  validator = validator-targets.${system};
+in
+pkgs.stdenv.mkDerivation {
+  name = "validator";
 
   nativeBuildInputs = [
     pkgs.autoPatchelfHook
@@ -25,12 +36,12 @@ pkgs.stdenv.mkDerivation rec {
 
   installPhase = ''
     cp ${validator} .
-    install -m775 -D *-validator-v${version}-linux-* $out/bin/validator
+    install -m775 -D *-validator-v${version}-*-* $out/bin/validator
   '';
 
   meta = {
     homepage = "https://github.com/prysmaticlabs/prysm";
     description = "Launches an Ethereum validator client that interacts with a beacon chain, starts proposer and attester services, p2p connections, and more.";
-    platforms = [ "x86_64-linux" "aarch64-linux" ];
+    platforms = [ "x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
   };
 }
