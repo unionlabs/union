@@ -31,6 +31,9 @@
         ./uniond/proto.nix
         ./docs/docs.nix
         ./evm/evm.nix
+        ./tools/prysmctl.nix
+        ./tools/prysm-beacon-chain.nix
+        ./tools/prysm-validator.nix
         ./networks/devnet.nix
         ./networks/genesis/devnet.nix
         ./unionpd/unionpd.nix
@@ -172,6 +175,9 @@
                 inputs.foundry.defaultPackage.${system}
                 pkgs.solc
                 pkgs.go-ethereum
+                self'.packages.prysmctl
+                self'.packages.prysm-beacon-chain
+                self'.packages.prysm-validator
               ];
             });
           };

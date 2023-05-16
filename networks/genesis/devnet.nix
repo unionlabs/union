@@ -2,7 +2,7 @@
   perSystem = { devnetConfig, system, pkgs, self', inputs', ... }:
     let
       uniond = pkgs.lib.getExe self'.packages.uniond;
-      prysmctl = import ./../tools/prysmctl.nix { inherit pkgs; inherit system; };
+      prysmctl = self'.packages.prysmctl;
       chainId = "union-devnet-1";
       mkNodeID = name:
         pkgs.runCommand "node-id" { } ''
