@@ -1,8 +1,8 @@
 package types
 
 import (
+	errorsmod "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
 	connectiontypes "github.com/cosmos/ibc-go/v7/modules/core/03-connection/types"
 )
@@ -67,11 +67,11 @@ func IsPreviousMetadataEqual(previousVersion string, metadata Metadata) bool {
 // ValidateControllerMetadata performs validation of the provided ICS27 controller metadata parameters
 func ValidateControllerMetadata(ctx sdk.Context, channelKeeper ChannelKeeper, connectionHops []string, metadata Metadata) error {
 	if !isSupportedEncoding(metadata.Encoding) {
-		return sdkerrors.Wrapf(ErrInvalidCodec, "unsupported encoding format %s", metadata.Encoding)
+		return errorsmod.Wrapf(ErrInvalidCodec, "unsupported encoding format %s", metadata.Encoding)
 	}
 
 	if !isSupportedTxType(metadata.TxType) {
-		return sdkerrors.Wrapf(ErrUnknownDataType, "unsupported transaction type %s", metadata.TxType)
+		return errorsmod.Wrapf(ErrUnknownDataType, "unsupported transaction type %s", metadata.TxType)
 	}
 
 	connection, err := channelKeeper.GetConnection(ctx, connectionHops[0])
@@ -90,7 +90,7 @@ func ValidateControllerMetadata(ctx sdk.Context, channelKeeper ChannelKeeper, co
 	}
 
 	if metadata.Version != Version {
-		return sdkerrors.Wrapf(ErrInvalidVersion, "expected %s, got %s", Version, metadata.Version)
+		return errorsmod.Wrapf(ErrInvalidVersion, "expected %s, got %s", Version, metadata.Version)
 	}
 
 	return nil
@@ -99,11 +99,11 @@ func ValidateControllerMetadata(ctx sdk.Context, channelKeeper ChannelKeeper, co
 // ValidateHostMetadata performs validation of the provided ICS27 host metadata parameters
 func ValidateHostMetadata(ctx sdk.Context, channelKeeper ChannelKeeper, connectionHops []string, metadata Metadata) error {
 	if !isSupportedEncoding(metadata.Encoding) {
-		return sdkerrors.Wrapf(ErrInvalidCodec, "unsupported encoding format %s", metadata.Encoding)
+		return errorsmod.Wrapf(ErrInvalidCodec, "unsupported encoding format %s", metadata.Encoding)
 	}
 
 	if !isSupportedTxType(metadata.TxType) {
-		return sdkerrors.Wrapf(ErrUnknownDataType, "unsupported transaction type %s", metadata.TxType)
+		return errorsmod.Wrapf(ErrUnknownDataType, "unsupported transaction type %s", metadata.TxType)
 	}
 
 	connection, err := channelKeeper.GetConnection(ctx, connectionHops[0])
@@ -122,7 +122,7 @@ func ValidateHostMetadata(ctx sdk.Context, channelKeeper ChannelKeeper, connecti
 	}
 
 	if metadata.Version != Version {
-		return sdkerrors.Wrapf(ErrInvalidVersion, "expected %s, got %s", Version, metadata.Version)
+		return errorsmod.Wrapf(ErrInvalidVersion, "expected %s, got %s", Version, metadata.Version)
 	}
 
 	return nil
@@ -163,11 +163,11 @@ func getSupportedTxTypes() []string {
 // validateConnectionParams compares the given the controller and host connection IDs to those set in the provided ICS27 Metadata
 func validateConnectionParams(metadata Metadata, controllerConnectionID, hostConnectionID string) error {
 	if metadata.ControllerConnectionId != controllerConnectionID {
-		return sdkerrors.Wrapf(connectiontypes.ErrInvalidConnection, "expected %s, got %s", controllerConnectionID, metadata.ControllerConnectionId)
+		return errorsmod.Wrapf(connectiontypes.ErrInvalidConnection, "expected %s, got %s", controllerConnectionID, metadata.ControllerConnectionId)
 	}
 
 	if metadata.HostConnectionId != hostConnectionID {
-		return sdkerrors.Wrapf(connectiontypes.ErrInvalidConnection, "expected %s, got %s", hostConnectionID, metadata.HostConnectionId)
+		return errorsmod.Wrapf(connectiontypes.ErrInvalidConnection, "expected %s, got %s", hostConnectionID, metadata.HostConnectionId)
 	}
 
 	return nil

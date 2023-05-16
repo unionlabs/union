@@ -1,8 +1,8 @@
 package v7
 
 import (
+	errorsmod "cosmossdk.io/errors"
 	"github.com/cosmos/cosmos-sdk/codec"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	"github.com/cosmos/ibc-go/v7/modules/core/exported"
@@ -31,7 +31,7 @@ func MigrateGenesis(clientGenState *clienttypes.GenesisState, cdc codec.ProtoCod
 		case exported.Solomachine:
 			var clientState ClientState
 			if err := cdc.Unmarshal(client.ClientState.Value, &clientState); err != nil {
-				return nil, sdkerrors.Wrap(err, "failed to unmarshal client state bytes into solo machine client state")
+				return nil, errorsmod.Wrap(err, "failed to unmarshal client state bytes into solo machine client state")
 			}
 
 			updatedClientState := migrateSolomachine(clientState)

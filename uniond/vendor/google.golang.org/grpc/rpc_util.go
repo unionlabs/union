@@ -159,6 +159,7 @@ type callInfo struct {
 	contentSubtype        string
 	codec                 baseCodec
 	maxRetryRPCBufferSize int
+	onFinish              []func(err error)
 }
 
 func defaultCallInfo() *callInfo {
@@ -294,6 +295,41 @@ func (o FailFastCallOption) before(c *callInfo) error {
 	return nil
 }
 func (o FailFastCallOption) after(c *callInfo, attempt *csAttempt) {}
+
+// OnFinish returns a CallOption that configures a callback to be called when
+// the call completes. The error passed to the callback is the status of the
+// RPC, and may be nil. The onFinish callback provided will only be called once
+// by gRPC. This is mainly used to be used by streaming interceptors, to be
+// notified when the RPC completes along with information about the status of
+// the RPC.
+//
+// # Experimental
+//
+// Notice: This API is EXPERIMENTAL and may be changed or removed in a
+// later release.
+func OnFinish(onFinish func(err error)) CallOption {
+	return OnFinishCallOption{
+		OnFinish: onFinish,
+	}
+}
+
+// OnFinishCallOption is CallOption that indicates a callback to be called when
+// the call completes.
+//
+// # Experimental
+//
+// Notice: This type is EXPERIMENTAL and may be changed or removed in a
+// later release.
+type OnFinishCallOption struct {
+	OnFinish func(error)
+}
+
+func (o OnFinishCallOption) before(c *callInfo) error {
+	c.onFinish = append(c.onFinish, o.OnFinish)
+	return nil
+}
+
+func (o OnFinishCallOption) after(c *callInfo, attempt *csAttempt) {}
 
 // MaxCallRecvMsgSize returns a CallOption which sets the maximum message size
 // in bytes the client can receive. If this is not set, gRPC uses the default
@@ -658,12 +694,13 @@ func msgHeader(data, compData []byte) (hdr []byte, payload []byte) {
 
 func outPayload(client bool, msg interface{}, data, payload []byte, t time.Time) *stats.OutPayload {
 	return &stats.OutPayload{
-		Client:     client,
-		Payload:    msg,
-		Data:       data,
-		Length:     len(data),
-		WireLength: len(payload) + headerLen,
-		SentTime:   t,
+		Client:           client,
+		Payload:          msg,
+		Data:             data,
+		Length:           len(data),
+		WireLength:       len(payload) + headerLen,
+		CompressedLength: len(payload),
+		SentTime:         t,
 	}
 }
 
@@ -684,7 +721,7 @@ func checkRecvPayload(pf payloadFormat, recvCompress string, haveCompressor bool
 }
 
 type payloadInfo struct {
-	wireLength        int // The compressed length got from wire.
+	compressedLength  int // The compressed length got from wire.
 	uncompressedBytes []byte
 }
 
@@ -694,7 +731,7 @@ func recvAndDecompress(p *parser, s *transport.Stream, dc Decompressor, maxRecei
 		return nil, err
 	}
 	if payInfo != nil {
-		payInfo.wireLength = len(d)
+		payInfo.compressedLength = len(d)
 	}
 
 	if st := checkRecvPayload(pf, s.RecvCompress(), compressor != nil || dc != nil); st != nil {

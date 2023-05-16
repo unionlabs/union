@@ -7,10 +7,10 @@ import (
 )
 
 var (
-	_ codectypes.UnpackInterfacesMessage = QueryClientStateResponse{}
-	_ codectypes.UnpackInterfacesMessage = QueryClientStatesResponse{}
-	_ codectypes.UnpackInterfacesMessage = QueryConsensusStateResponse{}
-	_ codectypes.UnpackInterfacesMessage = QueryConsensusStatesResponse{}
+	_ codectypes.UnpackInterfacesMessage = (*QueryClientStateResponse)(nil)
+	_ codectypes.UnpackInterfacesMessage = (*QueryClientStatesResponse)(nil)
+	_ codectypes.UnpackInterfacesMessage = (*QueryConsensusStateResponse)(nil)
+	_ codectypes.UnpackInterfacesMessage = (*QueryConsensusStatesResponse)(nil)
 )
 
 // UnpackInterfaces implements UnpackInterfacesMesssage.UnpackInterfaces

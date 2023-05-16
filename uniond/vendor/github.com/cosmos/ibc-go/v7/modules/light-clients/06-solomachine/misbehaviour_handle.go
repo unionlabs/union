@@ -3,8 +3,8 @@ package solomachine
 import (
 	"github.com/cosmos/cosmos-sdk/codec"
 
+	errorsmod "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
 	commitmenttypes "github.com/cosmos/ibc-go/v7/modules/core/23-commitment/types"
 	"github.com/cosmos/ibc-go/v7/modules/core/exported"
@@ -24,12 +24,12 @@ func (cs ClientState) verifyMisbehaviour(ctx sdk.Context, cdc codec.BinaryCodec,
 	// misbehaviour.ValidateBasic which is called by the 02-client keeper.
 	// verify first signature
 	if err := cs.verifySignatureAndData(cdc, misbehaviour, misbehaviour.SignatureOne); err != nil {
-		return sdkerrors.Wrap(err, "failed to verify signature one")
+		return errorsmod.Wrap(err, "failed to verify signature one")
 	}
 
 	// verify second signature
 	if err := cs.verifySignatureAndData(cdc, misbehaviour, misbehaviour.SignatureTwo); err != nil {
-		return sdkerrors.Wrap(err, "failed to verify signature two")
+		return errorsmod.Wrap(err, "failed to verify signature two")
 	}
 
 	return nil
@@ -67,9 +67,5 @@ func (cs ClientState) verifySignatureAndData(cdc codec.BinaryCodec, misbehaviour
 		return err
 	}
 
-	if err := VerifySignature(publicKey, data, sigData); err != nil {
-		return err
-	}
-
-	return nil
+	return VerifySignature(publicKey, data, sigData)
 }

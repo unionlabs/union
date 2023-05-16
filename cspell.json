@@ -6,7 +6,7 @@
       "name": "union",
       "path": "dictionary.txt",
       "addWords": true
-    },
+    }
   ],
   "dictionaries": [
     "en_US",
@@ -16,6 +16,9 @@
     "union"
   ],
   "ignorePaths": [
+    "rust/ethereum-light-client/src/test/valid_light_client_update_*.json",
+    "rust/protos/*",
+    "rust/forks/*",
     "dictionaries/**",
     "**/*.svg",
     "**/node_modules",

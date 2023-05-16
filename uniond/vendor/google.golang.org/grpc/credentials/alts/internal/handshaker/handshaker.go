@@ -138,7 +138,7 @@ func DefaultServerHandshakerOptions() *ServerHandshakerOptions {
 //       and server options (server options struct does not exist now. When
 //       caller can provide endpoints, it should be created.
 
-// altsHandshaker is used to complete a ALTS handshaking between client and
+// altsHandshaker is used to complete an ALTS handshake between client and
 // server. This handshaker talks to the ALTS handshaker service in the metadata
 // server.
 type altsHandshaker struct {
@@ -146,6 +146,8 @@ type altsHandshaker struct {
 	stream altsgrpc.HandshakerService_DoHandshakeClient
 	// the connection to the peer.
 	conn net.Conn
+	// a virtual connection to the ALTS handshaker service.
+	clientConn *grpc.ClientConn
 	// client handshake options.
 	clientOpts *ClientHandshakerOptions
 	// server handshake options.
@@ -154,39 +156,33 @@ type altsHandshaker struct {
 	side core.Side
 }
 
-// NewClientHandshaker creates a ALTS handshaker for GCP which contains an RPC
-// stub created using the passed conn and used to talk to the ALTS Handshaker
+// NewClientHandshaker creates a core.Handshaker that performs a client-side
+// ALTS handshake by acting as a proxy between the peer and the ALTS handshaker
 // service in the metadata server.
 func NewClientHandshaker(ctx context.Context, conn *grpc.ClientConn, c net.Conn, opts *ClientHandshakerOptions) (core.Handshaker, error) {
-	stream, err := altsgrpc.NewHandshakerServiceClient(conn).DoHandshake(ctx)
-	if err != nil {
-		return nil, err
-	}
 	return &altsHandshaker{
-		stream:     stream,
+		stream:     nil,
 		conn:       c,
+		clientConn: conn,
 		clientOpts: opts,
 		side:       core.ClientSide,
 	}, nil
 }
 
-// NewServerHandshaker creates a ALTS handshaker for GCP which contains an RPC
-// stub created using the passed conn and used to talk to the ALTS Handshaker
+// NewServerHandshaker creates a core.Handshaker that performs a server-side
+// ALTS handshake by acting as a proxy between the peer and the ALTS handshaker
 // service in the metadata server.
 func NewServerHandshaker(ctx context.Context, conn *grpc.ClientConn, c net.Conn, opts *ServerHandshakerOptions) (core.Handshaker, error) {
-	stream, err := altsgrpc.NewHandshakerServiceClient(conn).DoHandshake(ctx)
-	if err != nil {
-		return nil, err
-	}
 	return &altsHandshaker{
-		stream:     stream,
+		stream:     nil,
 		conn:       c,
+		clientConn: conn,
 		serverOpts: opts,
 		side:       core.ServerSide,
 	}, nil
 }
 
-// ClientHandshake starts and completes a client ALTS handshaking for GCP. Once
+// ClientHandshake starts and completes a client ALTS handshake for GCP. Once
 // done, ClientHandshake returns a secure connection.
 func (h *altsHandshaker) ClientHandshake(ctx context.Context) (net.Conn, credentials.AuthInfo, error) {
 	if !acquire() {
@@ -196,6 +192,16 @@ func (h *altsHandshaker) ClientHandshake(ctx context.Context) (net.Conn, credent
 
 	if h.side != core.ClientSide {
 		return nil, nil, errors.New("only handshakers created using NewClientHandshaker can perform a client handshaker")
+	}
+
+	// TODO(matthewstevenson88): Change unit tests to use public APIs so
+	// that h.stream can unconditionally be set based on h.clientConn.
+	if h.stream == nil {
+		stream, err := altsgrpc.NewHandshakerServiceClient(h.clientConn).DoHandshake(ctx)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to establish stream to ALTS handshaker service: %v", err)
+		}
+		h.stream = stream
 	}
 
 	// Create target identities from service account list.
@@ -229,7 +235,7 @@ func (h *altsHandshaker) ClientHandshake(ctx context.Context) (net.Conn, credent
 	return conn, authInfo, nil
 }
 
-// ServerHandshake starts and completes a server ALTS handshaking for GCP. Once
+// ServerHandshake starts and completes a server ALTS handshake for GCP. Once
 // done, ServerHandshake returns a secure connection.
 func (h *altsHandshaker) ServerHandshake(ctx context.Context) (net.Conn, credentials.AuthInfo, error) {
 	if !acquire() {
@@ -239,6 +245,16 @@ func (h *altsHandshaker) ServerHandshake(ctx context.Context) (net.Conn, credent
 
 	if h.side != core.ServerSide {
 		return nil, nil, errors.New("only handshakers created using NewServerHandshaker can perform a server handshaker")
+	}
+
+	// TODO(matthewstevenson88): Change unit tests to use public APIs so
+	// that h.stream can unconditionally be set based on h.clientConn.
+	if h.stream == nil {
+		stream, err := altsgrpc.NewHandshakerServiceClient(h.clientConn).DoHandshake(ctx)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to establish stream to ALTS handshaker service: %v", err)
+		}
+		h.stream = stream
 	}
 
 	p := make([]byte, frameLimit)

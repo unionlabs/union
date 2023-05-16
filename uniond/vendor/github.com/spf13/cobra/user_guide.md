@@ -188,6 +188,37 @@ var versionCmd = &cobra.Command{
 }
 ```
 
+### Organizing subcommands
+
+A command may have subcommands which in turn may have other subcommands. This is achieved by using
+`AddCommand`. In some cases, especially in larger applications, each subcommand may be defined in
+its own go package.
+
+The suggested approach is for the parent command to use `AddCommand` to add its most immediate
+subcommands. For example, consider the following directory structure:
+
+```text
+├── cmd
+│   ├── root.go
+│   └── sub1
+│       ├── sub1.go
+│       └── sub2
+│           ├── leafA.go
+│           ├── leafB.go
+│           └── sub2.go
+└── main.go
+```
+
+In this case:
+
+* The `init` function of `root.go` adds the command defined in `sub1.go` to the root command.
+* The `init` function of `sub1.go` adds the command defined in `sub2.go` to the sub1 command.
+* The `init` function of `sub2.go` adds the commands defined in `leafA.go` and `leafB.go` to the
+  sub2 command.
+
+This approach ensures the subcommands are always included at compile time while avoiding cyclic
+references.
+
 ### Returning and handling errors
 
 If you wish to return an error to the caller of a command, `RunE` can be used.
@@ -313,8 +344,8 @@ rootCmd.MarkFlagsRequiredTogether("username", "password")
 You can also prevent different flags from being provided together if they represent mutually
 exclusive options such as specifying an output format as either `--json` or `--yaml` but never both:
 ```go
-rootCmd.Flags().BoolVar(&u, "json", false, "Output in JSON")
-rootCmd.Flags().BoolVar(&pw, "yaml", false, "Output in YAML")
+rootCmd.Flags().BoolVar(&ofJson, "json", false, "Output in JSON")
+rootCmd.Flags().BoolVar(&ofYaml, "yaml", false, "Output in YAML")
 rootCmd.MarkFlagsMutuallyExclusive("json", "yaml")
 ```
 
@@ -349,7 +380,7 @@ shown below:
 ```go
 var cmd = &cobra.Command{
   Short: "hello",
-  Args: MatchAll(ExactArgs(2), OnlyValidArgs),
+  Args: cobra.MatchAll(cobra.ExactArgs(2), cobra.OnlyValidArgs),
   Run: func(cmd *cobra.Command, args []string) {
     fmt.Println("Hello, World!")
   },

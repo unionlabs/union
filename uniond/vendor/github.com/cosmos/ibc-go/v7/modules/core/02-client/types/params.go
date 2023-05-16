@@ -10,8 +10,8 @@ import (
 )
 
 var (
-	// DefaultAllowedClients are "06-solomachine" and "07-tendermint"
-	DefaultAllowedClients = []string{exported.Solomachine, exported.Tendermint}
+	// DefaultAllowedClients are the default clients for the AllowedClients parameter.
+	DefaultAllowedClients = []string{exported.Solomachine, exported.Tendermint, exported.Wasm, exported.Localhost}
 
 	// KeyAllowedClients is store's key for AllowedClients Params
 	KeyAllowedClients = []byte("AllowedClients")
@@ -29,7 +29,7 @@ func NewParams(allowedClients ...string) Params {
 	}
 }
 
-// DefaultParams is the default parameter configuration for the ibc-client module
+// DefaultParams is the default parameter configuration for the ibc-client module.
 func DefaultParams() Params {
 	return NewParams(DefaultAllowedClients...)
 }

@@ -5,10 +5,10 @@ import (
 	"reflect"
 	"time"
 
+	errorsmod "cosmossdk.io/errors"
 	tmtypes "github.com/cometbft/cometbft/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	"github.com/cosmos/ibc-go/v7/modules/core/exported"
@@ -94,12 +94,12 @@ func (cs *ClientState) verifyMisbehaviour(ctx sdk.Context, clientStore sdk.KVSto
 	// Retrieve trusted consensus states for each Header in misbehaviour
 	tmConsensusState1, found := GetConsensusState(clientStore, cdc, misbehaviour.Header1.TrustedHeight)
 	if !found {
-		return sdkerrors.Wrapf(clienttypes.ErrConsensusStateNotFound, "could not get trusted consensus state from clientStore for Header1 at TrustedHeight: %s", misbehaviour.Header1.TrustedHeight)
+		return errorsmod.Wrapf(clienttypes.ErrConsensusStateNotFound, "could not get trusted consensus state from clientStore for Header1 at TrustedHeight: %s", misbehaviour.Header1.TrustedHeight)
 	}
 
 	tmConsensusState2, found := GetConsensusState(clientStore, cdc, misbehaviour.Header2.TrustedHeight)
 	if !found {
-		return sdkerrors.Wrapf(clienttypes.ErrConsensusStateNotFound, "could not get trusted consensus state from clientStore for Header2 at TrustedHeight: %s", misbehaviour.Header2.TrustedHeight)
+		return errorsmod.Wrapf(clienttypes.ErrConsensusStateNotFound, "could not get trusted consensus state from clientStore for Header2 at TrustedHeight: %s", misbehaviour.Header2.TrustedHeight)
 	}
 
 	// Check the validity of the two conflicting headers against their respective
@@ -110,12 +110,12 @@ func (cs *ClientState) verifyMisbehaviour(ctx sdk.Context, clientStore sdk.KVSto
 	if err := checkMisbehaviourHeader(
 		cs, tmConsensusState1, misbehaviour.Header1, ctx.BlockTime(),
 	); err != nil {
-		return sdkerrors.Wrap(err, "verifying Header1 in Misbehaviour failed")
+		return errorsmod.Wrap(err, "verifying Header1 in Misbehaviour failed")
 	}
 	if err := checkMisbehaviourHeader(
 		cs, tmConsensusState2, misbehaviour.Header2, ctx.BlockTime(),
 	); err != nil {
-		return sdkerrors.Wrap(err, "verifying Header2 in Misbehaviour failed")
+		return errorsmod.Wrap(err, "verifying Header2 in Misbehaviour failed")
 	}
 
 	return nil
@@ -128,12 +128,12 @@ func checkMisbehaviourHeader(
 ) error {
 	tmTrustedValset, err := tmtypes.ValidatorSetFromProto(header.TrustedValidators)
 	if err != nil {
-		return sdkerrors.Wrap(err, "trusted validator set is not tendermint validator set type")
+		return errorsmod.Wrap(err, "trusted validator set is not tendermint validator set type")
 	}
 
 	tmCommit, err := tmtypes.CommitFromProto(header.Commit)
 	if err != nil {
-		return sdkerrors.Wrap(err, "commit is not tendermint commit type")
+		return errorsmod.Wrap(err, "commit is not tendermint commit type")
 	}
 
 	// check the trusted fields for the header against ConsensusState
@@ -143,7 +143,7 @@ func checkMisbehaviourHeader(
 
 	// assert that the age of the trusted consensus state is not older than the trusting period
 	if currentTimestamp.Sub(consState.Timestamp) >= clientState.TrustingPeriod {
-		return sdkerrors.Wrapf(
+		return errorsmod.Wrapf(
 			ErrTrustingPeriodExpired,
 			"current timestamp minus the latest consensus state timestamp is greater than or equal to the trusting period (%d >= %d)",
 			currentTimestamp.Sub(consState.Timestamp), clientState.TrustingPeriod,
@@ -164,7 +164,7 @@ func checkMisbehaviourHeader(
 	if err := tmTrustedValset.VerifyCommitLightTrusting(
 		chainID, tmCommit, clientState.TrustLevel.ToTendermint(),
 	); err != nil {
-		return sdkerrors.Wrapf(clienttypes.ErrInvalidMisbehaviour, "validator set in header has too much change from trusted validator set: %v", err)
+		return errorsmod.Wrapf(clienttypes.ErrInvalidMisbehaviour, "validator set in header has too much change from trusted validator set: %v", err)
 	}
 	return nil
 }

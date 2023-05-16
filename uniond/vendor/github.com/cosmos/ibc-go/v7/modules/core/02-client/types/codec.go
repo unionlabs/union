@@ -1,13 +1,14 @@
 package types
 
 import (
+	errorsmod "cosmossdk.io/errors"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/types/msgservice"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 	proto "github.com/cosmos/gogoproto/proto"
 
+	ibcerrors "github.com/cosmos/ibc-go/v7/internal/errors"
 	"github.com/cosmos/ibc-go/v7/modules/core/exported"
 )
 
@@ -56,12 +57,12 @@ func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
 func PackClientState(clientState exported.ClientState) (*codectypes.Any, error) {
 	msg, ok := clientState.(proto.Message)
 	if !ok {
-		return nil, sdkerrors.Wrapf(sdkerrors.ErrPackAny, "cannot proto marshal %T", clientState)
+		return nil, errorsmod.Wrapf(ibcerrors.ErrPackAny, "cannot proto marshal %T", clientState)
 	}
 
 	anyClientState, err := codectypes.NewAnyWithValue(msg)
 	if err != nil {
-		return nil, sdkerrors.Wrap(sdkerrors.ErrPackAny, err.Error())
+		return nil, errorsmod.Wrap(ibcerrors.ErrPackAny, err.Error())
 	}
 
 	return anyClientState, nil
@@ -71,12 +72,12 @@ func PackClientState(clientState exported.ClientState) (*codectypes.Any, error) 
 // client state can't be unpacked into a ClientState.
 func UnpackClientState(any *codectypes.Any) (exported.ClientState, error) {
 	if any == nil {
-		return nil, sdkerrors.Wrap(sdkerrors.ErrUnpackAny, "protobuf Any message cannot be nil")
+		return nil, errorsmod.Wrap(ibcerrors.ErrUnpackAny, "protobuf Any message cannot be nil")
 	}
 
 	clientState, ok := any.GetCachedValue().(exported.ClientState)
 	if !ok {
-		return nil, sdkerrors.Wrapf(sdkerrors.ErrUnpackAny, "cannot unpack Any into ClientState %T", any)
+		return nil, errorsmod.Wrapf(ibcerrors.ErrUnpackAny, "cannot unpack Any into ClientState %T", any)
 	}
 
 	return clientState, nil
@@ -88,12 +89,12 @@ func UnpackClientState(any *codectypes.Any) (exported.ClientState, error) {
 func PackConsensusState(consensusState exported.ConsensusState) (*codectypes.Any, error) {
 	msg, ok := consensusState.(proto.Message)
 	if !ok {
-		return nil, sdkerrors.Wrapf(sdkerrors.ErrPackAny, "cannot proto marshal %T", consensusState)
+		return nil, errorsmod.Wrapf(ibcerrors.ErrPackAny, "cannot proto marshal %T", consensusState)
 	}
 
 	anyConsensusState, err := codectypes.NewAnyWithValue(msg)
 	if err != nil {
-		return nil, sdkerrors.Wrap(sdkerrors.ErrPackAny, err.Error())
+		return nil, errorsmod.Wrap(ibcerrors.ErrPackAny, err.Error())
 	}
 
 	return anyConsensusState, nil
@@ -113,12 +114,12 @@ func MustPackConsensusState(consensusState exported.ConsensusState) *codectypes.
 // consensus state can't be unpacked into a ConsensusState.
 func UnpackConsensusState(any *codectypes.Any) (exported.ConsensusState, error) {
 	if any == nil {
-		return nil, sdkerrors.Wrap(sdkerrors.ErrUnpackAny, "protobuf Any message cannot be nil")
+		return nil, errorsmod.Wrap(ibcerrors.ErrUnpackAny, "protobuf Any message cannot be nil")
 	}
 
 	consensusState, ok := any.GetCachedValue().(exported.ConsensusState)
 	if !ok {
-		return nil, sdkerrors.Wrapf(sdkerrors.ErrUnpackAny, "cannot unpack Any into ConsensusState %T", any)
+		return nil, errorsmod.Wrapf(ibcerrors.ErrUnpackAny, "cannot unpack Any into ConsensusState %T", any)
 	}
 
 	return consensusState, nil
@@ -130,27 +131,27 @@ func UnpackConsensusState(any *codectypes.Any) (exported.ConsensusState, error) 
 func PackClientMessage(clientMessage exported.ClientMessage) (*codectypes.Any, error) {
 	msg, ok := clientMessage.(proto.Message)
 	if !ok {
-		return nil, sdkerrors.Wrapf(sdkerrors.ErrPackAny, "cannot proto marshal %T", clientMessage)
+		return nil, errorsmod.Wrapf(ibcerrors.ErrPackAny, "cannot proto marshal %T", clientMessage)
 	}
 
-	any, err := codectypes.NewAnyWithValue(msg)
+	protoAny, err := codectypes.NewAnyWithValue(msg)
 	if err != nil {
-		return nil, sdkerrors.Wrap(sdkerrors.ErrPackAny, err.Error())
+		return nil, errorsmod.Wrap(ibcerrors.ErrPackAny, err.Error())
 	}
 
-	return any, nil
+	return protoAny, nil
 }
 
 // UnpackClientMessage unpacks an Any into a ClientMessage. It returns an error if the
 // consensus state can't be unpacked into a ClientMessage.
 func UnpackClientMessage(any *codectypes.Any) (exported.ClientMessage, error) {
 	if any == nil {
-		return nil, sdkerrors.Wrap(sdkerrors.ErrUnpackAny, "protobuf Any message cannot be nil")
+		return nil, errorsmod.Wrap(ibcerrors.ErrUnpackAny, "protobuf Any message cannot be nil")
 	}
 
 	clientMessage, ok := any.GetCachedValue().(exported.ClientMessage)
 	if !ok {
-		return nil, sdkerrors.Wrapf(sdkerrors.ErrUnpackAny, "cannot unpack Any into Header %T", any)
+		return nil, errorsmod.Wrapf(ibcerrors.ErrUnpackAny, "cannot unpack Any into Header %T", any)
 	}
 
 	return clientMessage, nil

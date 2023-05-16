@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"os"
 
+	errorsmod "cosmossdk.io/errors"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
 	clientutils "github.com/cosmos/ibc-go/v7/modules/core/02-client/client/utils"
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
@@ -47,7 +47,7 @@ func queryConnectionABCI(clientCtx client.Context, connectionID string) (*types.
 
 	// check if connection exists
 	if len(value) == 0 {
-		return nil, sdkerrors.Wrap(types.ErrConnectionNotFound, connectionID)
+		return nil, errorsmod.Wrap(types.ErrConnectionNotFound, connectionID)
 	}
 
 	cdc := codec.NewProtoCodec(clientCtx.InterfaceRegistry)
@@ -88,7 +88,7 @@ func queryClientConnectionsABCI(clientCtx client.Context, clientID string) (*typ
 
 	// check if connection paths exist
 	if len(value) == 0 {
-		return nil, sdkerrors.Wrap(types.ErrClientConnectionPathsNotFound, clientID)
+		return nil, errorsmod.Wrap(types.ErrClientConnectionPathsNotFound, clientID)
 	}
 
 	var paths []string

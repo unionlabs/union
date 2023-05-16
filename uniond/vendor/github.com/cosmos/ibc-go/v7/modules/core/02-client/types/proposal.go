@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"reflect"
 
+	errorsmod "cosmossdk.io/errors"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 
@@ -19,9 +19,9 @@ const (
 )
 
 var (
-	_ govtypes.Content                   = &ClientUpdateProposal{}
-	_ govtypes.Content                   = &UpgradeProposal{}
-	_ codectypes.UnpackInterfacesMessage = &UpgradeProposal{}
+	_ govtypes.Content                   = (*ClientUpdateProposal)(nil)
+	_ govtypes.Content                   = (*UpgradeProposal)(nil)
+	_ codectypes.UnpackInterfacesMessage = (*UpgradeProposal)(nil)
 )
 
 func init() {
@@ -59,7 +59,7 @@ func (cup *ClientUpdateProposal) ValidateBasic() error {
 	}
 
 	if cup.SubjectClientId == cup.SubstituteClientId {
-		return sdkerrors.Wrap(ErrInvalidSubstitute, "subject and substitute client identifiers are equal")
+		return errorsmod.Wrap(ErrInvalidSubstitute, "subject and substitute client identifiers are equal")
 	}
 	if _, _, err := ParseClientIdentifier(cup.SubjectClientId); err != nil {
 		return err
@@ -73,7 +73,7 @@ func (cup *ClientUpdateProposal) ValidateBasic() error {
 
 // NewUpgradeProposal creates a new IBC breaking upgrade proposal.
 func NewUpgradeProposal(title, description string, plan upgradetypes.Plan, upgradedClientState exported.ClientState) (govtypes.Content, error) {
-	any, err := PackClientState(upgradedClientState)
+	protoAny, err := PackClientState(upgradedClientState)
 	if err != nil {
 		return nil, err
 	}
@@ -82,7 +82,7 @@ func NewUpgradeProposal(title, description string, plan upgradetypes.Plan, upgra
 		Title:               title,
 		Description:         description,
 		Plan:                plan,
-		UpgradedClientState: any,
+		UpgradedClientState: protoAny,
 	}, nil
 }
 
@@ -109,16 +109,16 @@ func (up *UpgradeProposal) ValidateBasic() error {
 	}
 
 	if up.UpgradedClientState == nil {
-		return sdkerrors.Wrap(ErrInvalidUpgradeProposal, "upgraded client state cannot be nil")
+		return errorsmod.Wrap(ErrInvalidUpgradeProposal, "upgraded client state cannot be nil")
 	}
 
 	clientState, err := UnpackClientState(up.UpgradedClientState)
 	if err != nil {
-		return sdkerrors.Wrap(err, "failed to unpack upgraded client state")
+		return errorsmod.Wrap(err, "failed to unpack upgraded client state")
 	}
 
 	if !reflect.DeepEqual(clientState, clientState.ZeroCustomFields()) {
-		return sdkerrors.Wrap(ErrInvalidUpgradeProposal, "upgraded client state is not zeroed out")
+		return errorsmod.Wrap(ErrInvalidUpgradeProposal, "upgraded client state is not zeroed out")
 	}
 
 	return nil
