@@ -29,14 +29,6 @@
       url = "github:oxalica/rust-overlay";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    cometbls = {
-      url = "git+ssh://git@github.com/UnionFi/cometbls?rev=f19ae296cf176b343ea214967810ba735813e73f";
-      flake = false;
-    };
-    cosmossdk = {
-      url = "git+ssh://git@github.com/UnionFi/cosmos-sdk?rev=021566a5aba49e79356e2e6e246494e118f12605";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
   };
   outputs = inputs@{ self, nixpkgs, flake-parts, crane, ... }:
     flake-parts.lib.mkFlake { inherit inputs; } {
@@ -85,8 +77,16 @@
                   name = "unionpd-proto";
                   path = ./unionpd/proto;
                 };
-                cometbls = inputs.cometbls;
-                cosmossdk = inputs.cosmossdk;
+                cometbls = builtins.fetchGit {
+                  name = "cometbls";
+                  url = "github:UnionFi/cometbls";
+                  rev = "f19ae296cf176b343ea214967810ba735813e73f";
+                };
+                cosmossdk = builtins.fetchGit {
+                  name = "cosmos-sdk";
+                  url = "github:UnionFi/cosmos-sdk";
+                  rev = "021566a5aba49e79356e2e6e246494e118f12605";
+                };
                 ibcgo = pkgs.fetchFromGitHub {
                   name = "ibc-go";
                   owner = "strangelove-ventures";
