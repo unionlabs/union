@@ -395,3 +395,6 @@ srcs
 cometbn
 unionp
 typecheck
+staticlib
+muslc
+libmuslc
