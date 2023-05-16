@@ -30,11 +30,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     cometbls = {
-      url = "git+ssh://git@github:UnionFi/cometbls?rev=f19ae296cf176b343ea214967810ba735813e73f";
+      url = "git+ssh://git@github.com/UnionFi/cometbls?rev=f19ae296cf176b343ea214967810ba735813e73f";
       flake = false;
     };
     cosmossdk = {
-      url = "git+ssh://git@github:UnionFi/cosmos-sdk?rev=021566a5aba49e79356e2e6e246494e118f12605";
+      url = "git+ssh://git@github.com/UnionFi/cosmos-sdk?rev=021566a5aba49e79356e2e6e246494e118f12605";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };

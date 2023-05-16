@@ -30,12 +30,12 @@
         "rev": "f19ae296cf176b343ea214967810ba735813e73f",
         "revCount": 9109,
         "type": "git",
-        "url": "ssh://git@github:UnionFi/cometbls"
+        "url": "ssh://git@github.com/UnionFi/cometbls"
       },
       "original": {
         "rev": "f19ae296cf176b343ea214967810ba735813e73f",
         "type": "git",
-        "url": "ssh://git@github:UnionFi/cometbls"
+        "url": "ssh://git@github.com/UnionFi/cometbls"
       }
     },
     "cosmossdk": {
@@ -54,12 +54,12 @@
         "rev": "021566a5aba49e79356e2e6e246494e118f12605",
         "revCount": 10339,
         "type": "git",
-        "url": "ssh://git@github:UnionFi/cosmos-sdk"
+        "url": "ssh://git@github.com/UnionFi/cosmos-sdk"
       },
       "original": {
         "rev": "021566a5aba49e79356e2e6e246494e118f12605",
         "type": "git",
-        "url": "ssh://git@github:UnionFi/cosmos-sdk"
+        "url": "ssh://git@github.com/UnionFi/cosmos-sdk"
       }
     },
     "crane": {
