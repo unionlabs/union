@@ -265,8 +265,8 @@ github.com/holiman/uint256 v1.2.2 h1:TXKcSGc2WaxPD2+bmzAsVthL4+pEN0YwXcL5qED83vk
 github.com/holiman/uint256 v1.2.2/go.mod h1:SC8Ryt4n+UBbPbIBKaG9zbbDlp4jOru9xFZmPzLUTxw=
 github.com/hpcloud/tail v1.0.0/go.mod h1:ab1qPbhIpdTxEkNHXyeSf5vhxWSCs/tWer42PpOxQnU=
 github.com/huandu/skiplist v1.2.0 h1:gox56QD77HzSC0w+Ws3MH3iie755GBJU1OER3h5VsYw=
-github.com/hussein-aitlahcen/gnark v0.0.0-20230419121246-e325d86969ea h1:S6hc+GT8kIvU+CX71fL3PUPxJWymo13DwnmsnOIrbhY=
-github.com/hussein-aitlahcen/gnark v0.0.0-20230419121246-e325d86969ea/go.mod h1:TAuRTdK+tMu6nIGAAaBCNO7NgUcRUyU981trdNaryfk=
+github.com/hussein-aitlahcen/gnark v0.0.0-20230513134152-dd41e4b5e252 h1:enl16YpBEc/2fUiS9AbKrSxSkR0tjBeFRqZTYcT5/XI=
+github.com/hussein-aitlahcen/gnark v0.0.0-20230513134152-dd41e4b5e252/go.mod h1:TAuRTdK+tMu6nIGAAaBCNO7NgUcRUyU981trdNaryfk=
 github.com/hussein-aitlahcen/gnark-crypto v0.0.0-20230419121058-59d3a8050fda h1:ekkc24EqFEN4IdLQHySmREQlHN6H9xtmzACZxBku52c=
 github.com/hussein-aitlahcen/gnark-crypto v0.0.0-20230419121058-59d3a8050fda/go.mod h1:Iq/P3HHl0ElSjsg2E1gsMwhAyxnxoKK5nVyZKd+/KhU=
 github.com/ianlancetaylor/demangle v0.0.0-20181102032728-5e5cf60278f6/go.mod h1:aSSvb/t6k1mPoxDqO4vJh6VOCGPwU4O0C2/Eqndh1Sc=
@@ -383,8 +383,7 @@ github.com/prometheus/procfs v0.8.0 h1:ODq8ZFEaYeCaZOJlZZdJA2AbQR98dSHSM1KW/You5
 github.com/prometheus/procfs v0.8.0/go.mod h1:z7EfXMXOkbkqb9IINtpCn86r/to3BnA0uaxHdg830/4=
 github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475 h1:N/ElC8H3+5XpJzTSTfLsJV/mx9Q9g7kxmchpfZyxgzM=
 github.com/rogpeppe/go-internal v1.3.0/go.mod h1:M8bDsm7K2OlrFYOpmOWEs/qY81heoFRclV5y23lUDJ4=
-github.com/rogpeppe/go-internal v1.10.0 h1:TMyTOH3F/DB16zRVcYyreMH6GnZZrwQVAoYjRBZyWFQ=
-github.com/rogpeppe/go-internal v1.10.0/go.mod h1:UQnix2H7Ngw/k4C5ijL5+65zddjncjaFoBhdsK/akog=
+github.com/rogpeppe/go-internal v1.9.0 h1:73kH8U+JUqXU8lRuOHeVHaa/SZPifC7BkcraZVejAe8=
 github.com/rs/xid v1.4.0/go.mod h1:trrq9SKmegXys3aeAKXMUTdJsYXVwGY3RLcfgqegfbg=
 github.com/rs/zerolog v1.29.0 h1:Zes4hju04hjbvkVkOhdl2HpZa+0PmVwigmo8XoORE5w=
 github.com/rs/zerolog v1.29.0/go.mod h1:NILgTygv/Uej1ra5XxGf82ZFSLk58MFGAUS2o6usyD0=
@@ -437,10 +436,10 @@ github.com/tendermint/go-amino v0.16.0 h1:GyhmgQKvqF82e2oZeuMSp9JTN0N09emoSZlb2l
 github.com/tendermint/go-amino v0.16.0/go.mod h1:TQU0M1i/ImAo+tYpZi73AU3V/dKeCoMC9Sphe2ZwGME=
 github.com/tidwall/btree v1.6.0 h1:LDZfKfQIBHGHWSwckhXI0RPSXzlo+KYdjK7FWSqOzzg=
 github.com/ugorji/go/codec v0.0.0-20181204163529-d75b2dcb6bc8/go.mod h1:VFNgLljTbGfSG7qAOspJ7OScBnGdDN/yBr0sguwnwf0=
-github.com/unionfi/cometbls v0.0.0-20230410071201-f19ae296cf17 h1:Akvpts4dqH5P3XkDp7x1xisD69G+7LhmHHGKjV8VUMc=
-github.com/unionfi/cometbls v0.0.0-20230410071201-f19ae296cf17/go.mod h1:DQBrLANmGK8o6LQPxaH03I3prPrLy3gecQ2Nf2NvD6I=
-github.com/unionfi/cosmos-sdk v0.0.0-20230410074509-021566a5aba4 h1:B9314DQtxuPqMVZLtCG+fzaEnrtaTEhWIkvODVs9nwo=
-github.com/unionfi/cosmos-sdk v0.0.0-20230410074509-021566a5aba4/go.mod h1:z2ncDrk0Hk7ymDUoyQ3A69W5r/y48nHD9G4oBppWvLQ=
+github.com/unionfi/cometbls v0.0.0-20230512064939-963390dd5d1e h1:OBk9Iw1vWWieH6+a9ZGWhkFdjogkbWbhcV4U0i/In5w=
+github.com/unionfi/cometbls v0.0.0-20230512064939-963390dd5d1e/go.mod h1:DQBrLANmGK8o6LQPxaH03I3prPrLy3gecQ2Nf2NvD6I=
+github.com/unionfi/cosmos-sdk v0.0.0-20230512065059-fd36c0d536f8 h1:bIOf5ek0t6Yaj6hLoGhcqG/teAGb1dr/RJ4fbDkqkek=
+github.com/unionfi/cosmos-sdk v0.0.0-20230512065059-fd36c0d536f8/go.mod h1:KRO/bFablzixOdk/TkYuE+n1uM6fsrX/AW+RckqC9Lc=
 github.com/x448/float16 v0.8.4 h1:qLwI1I70+NjRFUR3zs1JPUCgaCXSh3SW62uAKT1mSBM=
 github.com/x448/float16 v0.8.4/go.mod h1:14CWIYCyZA/cWjXOioeEpHeN/83MdbZDRQHoFcYsOfg=
 github.com/xordataexchange/crypt v0.0.3-0.20170626215501-b2862e3d0a77/go.mod h1:aYKd//L2LvnjZzWKhF00oedf4jCCReLcmhLdhm1A27Q=
@@ -790,8 +789,8 @@ google.golang.org/protobuf v1.24.0/go.mod h1:r/3tXBNzIEhYS9I1OUVjXDlt8tc493IdKGj
 google.golang.org/protobuf v1.25.0/go.mod h1:9JNX74DMeImyA3h4bdi1ymwjUzf21/xIlbajtzgsN7c=
 google.golang.org/protobuf v1.26.0-rc.1/go.mod h1:jlhhOSvTdKEhbULTjvd4ARK9grFBp09yW+WbY/TyQbw=
 google.golang.org/protobuf v1.26.0/go.mod h1:9q0QmTI4eRPtz6boOQmLYwt+qCgq0jsYwAQnmE0givc=
-google.golang.org/protobuf v1.30.0 h1:kPPoIgf3TsEvrm0PFe15JQ+570QVxYzEvvHqChK+cng=
-google.golang.org/protobuf v1.30.0/go.mod h1:HV8QOd/L58Z+nl8r43ehVNZIU/HEI6OcFqwMG9pJV4I=
+google.golang.org/protobuf v1.29.1 h1:7QBf+IK2gx70Ap/hDsOmam3GE0v9HicjfEdAxE62UoM=
+google.golang.org/protobuf v1.29.1/go.mod h1:HV8QOd/L58Z+nl8r43ehVNZIU/HEI6OcFqwMG9pJV4I=
 gopkg.in/alecthomas/kingpin.v2 v2.2.6/go.mod h1:FMv+mEhP44yOT+4EoQTLFTRgOQ1FBLkstjWtayDeSgw=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
 gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=

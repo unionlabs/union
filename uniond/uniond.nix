@@ -1,5 +1,5 @@
 { ... }: {
-  perSystem = { pkgs, self', system, crane, ... }:
+  perSystem = { pkgs, self', crane, system, ... }:
     let
       wasmvm = crane.lib.buildPackage {
         src = "${
@@ -21,16 +21,20 @@
     in
     {
       packages = {
-        uniond = pkgs.buildGoModule {
+        uniond = pkgs.buildGoModule ({
           name = "uniond";
           src = ./.;
           vendorSha256 = null;
           doCheck = true;
-          dontFixup = true;
+        } // (if pkgs.stdenv.isLinux then {
+          # statically link if we're on linux
+          nativeBuildInputs = [ pkgs.musl ];
+          CGO_ENABLED = 0;
           ldflags = [
-            "-v -extldflags '-L${wasmvm}/lib'"
+            "-linkmode external"
+            "-extldflags '-static -L${pkgs.musl}/lib' '-L${wasmvm}/lib'"
           ];
-        };
+        } else { }));
 
         uniond-image = pkgs.dockerTools.buildImage {
           name = "uniond";
@@ -41,11 +45,23 @@
             pathsToLink = [ "/bin" ];
           };
 
-          config = {
-            Entrypoint = [ "${self'.packages.uniond}/bin/uniond" ];
-            Env = [ "SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt" ];
+          uniond-image = pkgs.dockerTools.buildImage {
+            name = "uniond";
+
+            copyToRoot = pkgs.buildEnv {
+              name = "image-root";
+              paths = [ pkgs.coreutils-full pkgs.cacert ];
+              pathsToLink = [ "/bin" ];
+            };
+
+            config = {
+              Entrypoint = [ "${self'.packages.uniond}/bin/uniond" ];
+              Env = [ "SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt" ];
+            };
           };
         };
+
+
       };
 
       checks = {

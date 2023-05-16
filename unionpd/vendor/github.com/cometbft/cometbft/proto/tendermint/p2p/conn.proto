@@ -1,0 +1,30 @@
+syntax = "proto3";
+package tendermint.p2p;
+
+option go_package = "github.com/cometbft/cometbft/proto/tendermint/p2p";
+
+import "gogoproto/gogo.proto";
+import "tendermint/crypto/keys.proto";
+
+message PacketPing {}
+
+message PacketPong {}
+
+message PacketMsg {
+  int32 channel_id = 1 [(gogoproto.customname) = "ChannelID"];
+  bool  eof        = 2 [(gogoproto.customname) = "EOF"];
+  bytes data       = 3;
+}
+
+message Packet {
+  oneof sum {
+    PacketPing packet_ping = 1;
+    PacketPong packet_pong = 2;
+    PacketMsg  packet_msg  = 3;
+  }
+}
+
+message AuthSigMessage {
+  tendermint.crypto.PublicKey pub_key = 1 [(gogoproto.nullable) = false];
+  bytes                       sig     = 2;
+}

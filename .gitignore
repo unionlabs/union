@@ -28,3 +28,7 @@ yarn-error.log*
 .pre-commit-config.yaml
 
 genesis.ssz
+
+r1cs.bin
+vk.bin
+pk.bin

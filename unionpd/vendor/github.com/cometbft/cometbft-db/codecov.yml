@@ -1,0 +1,26 @@
+#
+# This codecov.yml is the default configuration for
+# all repositories on Codecov. You may adjust the settings
+# below in your own codecov.yml in your repository.
+#
+codecov:
+  require_ci_to_pass: yes
+
+coverage:
+  precision: 2
+  round: down
+  range: 70...100
+
+  status:
+    # Learn more at https://docs.codecov.io/docs/commit-status
+    project:
+      default:
+        threshold: 1% # allow this much decrease on project
+
+comment:
+  layout: "reach, diff, files, tree"
+  behavior: default # update if exists else create new
+  require_changes: true
+
+ignore:
+  - "remotedb/proto"

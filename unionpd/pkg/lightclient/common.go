@@ -1,14 +1,14 @@
 package lightclient
 
 import (
-	"cometbls-prover/pkg/merkle"
-	"cometbls-prover/pkg/proto"
 	"fmt"
 	curve "github.com/consensys/gnark-crypto/ecc/bn254"
 	"github.com/consensys/gnark/frontend"
 	gadget "github.com/consensys/gnark/std/algebra/emulated/sw_bn254"
 	"github.com/consensys/gnark/std/algebra/emulated/sw_emulated"
 	"github.com/consensys/gnark/std/math/emulated"
+	"unionp/pkg/merkle"
+	"unionp/pkg/proto"
 )
 
 /*
@@ -27,7 +27,7 @@ const ValProtoPowerMeta = 4 + 32
 const ValProtoPower = 4 + 32 + 1
 
 // Max number of validators this lc can handle
-const MaxVal = 8
+const MaxVal = 16
 
 type TendermintLightClientInput struct {
 	Sig             gadget.G2Affine
@@ -104,8 +104,6 @@ func (lc *TendermintLightClientAPI) Verify(message *gadget.G2Affine, expectedVal
 			validatorPowerBytes := Unpack(lc.api, validatorPowerProto, proto.MaxVarintSize*8, 1)
 
 			power, powerSize := proto.NewProtoAPI(lc.api).DecodeVarint64(validatorPowerBytes)
-
-			lc.api.Println("Power: ", power)
 
 			protoEncodedSize := lc.api.Add(ValProtoPower, powerSize)
 

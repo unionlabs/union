@@ -25,6 +25,7 @@
     "uniond/vendor",
     "uniond/x/union/types",
     "uniond/proto",
+    "unionpd/vendor",
     "**/go.mod",
     "**/go.sum",
     "evm",

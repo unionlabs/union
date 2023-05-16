@@ -1,0 +1,131 @@
+{
+
+package parser
+
+func exprs(first, rest interface{}) []ast.Expr {
+    es := []ast.Expr{first.(ast.Expr)}
+    if rest == nil {
+        return es
+    }
+    for _, i := range rest.([]interface{}) {
+        es = append(es, i.([]interface{})[3].(ast.Expr))
+    }
+    return es
+}
+
+}
+
+// Chain
+
+Chain <- as:Assignment* r:Return _ EOF {
+    ch := &ast.Chain{}
+    for _, a := range as.([]interface{}) {
+        ch.Statements = append(ch.Statements, a.(ast.Statement))
+    }
+    ch.Statements = append(ch.Statements, r.(ast.Statement))
+    return ch, nil
+}
+
+// Statements
+
+Assignment <- _ n:Identifier _ '=' _ e:Expr _ EOL {
+    return ast.Statement{
+        Name: n.(ast.Identifier),
+        Expr: e.(ast.Expr),
+    }, nil
+}
+
+Return <- _ ("return" __)? e:Expr _ EOL? {
+    return ast.Statement{
+        Name: "",
+        Expr: e.(ast.Expr),
+    }, nil
+}
+
+// Expressions
+
+Expr <- e:AddExpr {
+    return e, nil
+}
+
+AddExpr <- _ x:ShiftExpr rest:(_ AddOperator _ ShiftExpr)* _ {
+    es := exprs(x, rest)
+    r := es[0]
+    for _, e := range es[1:] {
+        r = ast.Add{
+            X: r,
+            Y: e,
+        }
+    }
+    return r, nil
+}
+
+ShiftExpr <- _ x:BaseExpr _ ShiftOperator _ s:UintLiteral _ {
+    return ast.Shift{
+        X: x.(ast.Expr),
+        S: s.(uint),
+    }, nil
+} / _ DoubleOperator _ x:BaseExpr {
+    return ast.Double{
+        X: x.(ast.Expr),
+    }, nil
+} / BaseExpr
+
+BaseExpr <- ParenExpr / Operand
+
+ParenExpr <- '(' _ e:Expr _ ')' {
+    return e, nil
+}
+
+// Operators
+
+AddOperator <- '+' / "add"
+
+ShiftOperator <- "<<" / "shl"
+
+DoubleOperator <- '2' _ '*' / "dbl"
+
+// Operands
+
+Operand <- op:( One / Index / Identifier ) {
+    return op, nil
+}
+
+One <- '1' {
+    return ast.Operand(0), nil
+}
+
+Index <- '[' _ idx:UintLiteral _ ']' {
+    return ast.Operand(idx.(uint)), nil
+}
+
+// Identifiers
+
+Identifier <- [a-zA-Z_] [a-zA-Z0-9_]* {
+    return ast.Identifier(c.text), nil
+}
+
+// Primitives
+
+UintLiteral <- u64:Uint64Literal {
+    return uint(u64.(uint64)), nil
+}
+
+Uint64Literal <- (HexUintLiteral / OctalUintLiteral / DecimalUintLiteral) {
+    return strconv.ParseUint(string(c.text), 0, 64)
+}
+
+DecimalUintLiteral <- [0-9]+
+
+HexUintLiteral <- "0x" [0-9a-fA-F]+
+
+OctalUintLiteral <- '0' [0-7]+
+
+// Character classes
+
+__ <- Whitespace+
+_ <- Whitespace*
+
+Whitespace <- [ \t\r]
+EOL <- '\n'
+EOF <- !.
