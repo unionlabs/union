@@ -79,7 +79,10 @@ counterparty
 Counterparty
 crisiskeeper
 crisistypes
+<<<<<<< HEAD
 ctype
+=======
+>>>>>>> 7d698b9 (chore: fix spelling)
 ctypes
 datadir
 datadir
@@ -366,6 +369,7 @@ unionmoduletypes
 unionp
 unionpd
 unionsimulation
+unionvisor
 Unjail
 unjailed
 Unmarshal
@@ -411,3 +415,4 @@ typecheck
 rclone
 esac
 libiconv
+unionvisor
