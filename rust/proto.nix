@@ -266,7 +266,7 @@
         name = "rust-proto";
         pname = "rust-proto";
         src = pkgs.linkFarm "rust-proto-srcs" (pkgs.lib.mapAttrsToList (name: { src, ... }: { name = name + "-protos"; path = src; }) all-protos-to-build);
-        buildInputs = [ pkgs.protobuf protoc-gen-tonic ];
+        buildInputs = [ pkgs.protobuf protoc-gen-tonic ] ++ (if pkgs.stdenv.isDarwin then [ pkgs.libiconv ] else [ ]);
         buildPhase = ''
           mkdir $out
 
