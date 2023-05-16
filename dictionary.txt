@@ -139,7 +139,6 @@ groth
 groupkeeper
 groupmodule
 Hasher
-<<<<<<< HEAD
 healthcheck
 holiman
 horiz
@@ -403,3 +402,9 @@ yqyp
 λpxrx
 DYLD
 dylib
+commitmenttypes
+genstateproof
+ctypes
+cometbn
+unionp
+typecheck
