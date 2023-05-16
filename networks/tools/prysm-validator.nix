@@ -9,8 +9,8 @@ pkgs.stdenv.mkDerivation rec {
   };
 
   validator-arm64 = pkgs.fetchurl {
-    url = "https://github.com/prysmaticlabs/prysm/releases/download/v${version}/validator-v${version}-linux-amd64";
-    sha256 = "sha256-gmveVLd9fXXlZS65vZ2HznghLdlA7tY2oJFLMRWXT8Q=";
+    url = "https://github.com/prysmaticlabs/prysm/releases/download/v${version}/validator-v${version}-linux-arm64";
+    sha256 = "sha256-IeupVlZ564aMn4IVvTes6I0r/40yBiZBRHyAL8Sqyxg=";
   };
 
   validator = (if system == "x86_64-linux" then validator-amd64 else validator-arm64);
