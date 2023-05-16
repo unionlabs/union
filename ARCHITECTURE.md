@@ -10,7 +10,7 @@ At the root of the repository, you'll find directories such as `uniond`, `unionv
 nix build ./#uniond # or unionvisor or unionpd
 ```
 
-To find the names of these packages, check out the packages section in the `flake.nix`, or inside the package's Nix file, for example, `uniond/uniond.nix`.
+To see all packages/apps that we define, run `nix flake show`. To see how these are built, check out `flake.nix`. Here we import all [`flake-parts`](https://flake.parts), such as `uniond/uniond.nix`.
 
 ### Generated Code
 
