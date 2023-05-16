@@ -46,6 +46,10 @@
           name = "download-circuit";
           runtimeInputs = [ pkgs.rclone ];
           text = ''
+            if [[ "$#" -ne 2 ]]; then
+              echo "Invalid arguments, must be: download-circuit [network] [path]"
+              exit 1
+            fi
             case $1 in
               testnet)
                 url="https://testnet.union.cryptware.io"
