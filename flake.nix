@@ -128,7 +128,7 @@
 
           packages = {
             default = self'.packages.uniond;
-            rust-nightly = pkgs.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml;
+            rust-nightly = pkgs.rust-bin.fromRustupToolchainFile ./rust/rust-toolchain.toml;
           };
 
           checks = {
