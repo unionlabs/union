@@ -49,5 +49,5 @@ Finally, remain polite and friendly. Reviewing can feel harsh, but it is a learn
 
 ## Post-Merge
 
-You'll be an official contributor and mentioned in the release, as well as visible in Github's analytics. 
+You'll be an official contributor and mentioned in the release, as well as visible in GitHub's analytics. 
 
