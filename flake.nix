@@ -195,6 +195,8 @@
                 buildInputs = [ self'.packages.rust-nightly ] ++
                   (with pkgs; [
                     protobuf
+                    pkg-config
+                    openssl
                     buf
                     nixfmt
                     go_1_20
