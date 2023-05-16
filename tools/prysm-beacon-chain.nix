@@ -25,7 +25,7 @@
 
         beacon-chain = beacon-chain-targets.${system};
       in
-      pkgs.stdenv.mkDerivation {
+      pkgs.stdenv.mkDerivation rec {
         name = "prysm-beacon-chain";
         inherit version;
 
@@ -38,10 +38,11 @@
 
         installPhase = ''
           cp ${beacon-chain} .
-          install -m775 -D *-beacon-chain-v${version}-*-* $out/bin/beacon-chain
+          install -m775 -D *-beacon-chain-v${version}-*-* $out/bin/${name}
         '';
 
         meta = {
+          mainProgram = name;
           homepage = "https://github.com/prysmaticlabs/prysm";
           description = "This is a beacon chain implementation for Ethereum.";
           platforms = [ "x86_64-linux" "aarch64-linux" "x86_64-linux" "aarch64-linux" ];

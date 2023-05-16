@@ -25,7 +25,7 @@
 
         prysmctl = prysmctl-targets.${system};
       in
-      pkgs.stdenv.mkDerivation {
+      pkgs.stdenv.mkDerivation rec {
         name = "prysmctl";
         inherit version;
 
@@ -39,10 +39,11 @@
 
         installPhase = ''
           cp ${prysmctl} .
-          install -m775 -D *-prysmctl-v${version}-*-* $out/bin/prysmctl
+          install -m775 -D *-prysmctl-v${version}-*-* $out/bin/${name}
         '';
 
         meta = {
+          mainProgram = name;
           homepage = "https://github.com/prysmaticlabs/prysm";
           description = "This is a command-line utility for common and one-off Ethereum proof-of-stake tasks, like helping users with validator exits or withdrawals. Most prysmctl commands require access to a fully synced beacon node.";
           platforms = [ "x86_64-linux" "aarch64-linux" "x86_64-linux" "aarch64-linux" ];

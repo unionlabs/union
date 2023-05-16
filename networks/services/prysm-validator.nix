@@ -25,7 +25,7 @@ in
   service = {
     stop_signal = "SIGINT";
     networks = [ "union-devnet" ];
-    command = [ "${prysm-validator-init}/bin/prysm-validator-init" ];
+    command = [ (pkgs.lib.getExe prysm-validator-init) ];
     depends_on = {
       geth = {
         condition = "service_healthy";

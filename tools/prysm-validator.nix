@@ -25,7 +25,7 @@
 
         validator = validator-targets.${system};
       in
-      pkgs.stdenv.mkDerivation {
+      pkgs.stdenv.mkDerivation rec {
         name = "prysm-validator";
         inherit version;
 
@@ -39,11 +39,11 @@
 
         installPhase = ''
           cp ${validator} .
-          install -m775 -D *-validator-v${version}-*-* $out/bin/prysm-validator
+          install -m775 -D *-validator-v${version}-*-* $out/bin/${name}
         '';
 
         meta = {
-          mainProgram = "prysm-validator";
+          mainProgram = name;
           homepage = "https://github.com/prysmaticlabs/prysm";
           description = "Launches an Ethereum validator client that interacts with a beacon chain, starts proposer and attester services, p2p connections, and more.";
           platforms = [ "x86_64-linux" "aarch64-linux" "x86_64-linux" "aarch64-linux" ];

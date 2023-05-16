@@ -10,7 +10,7 @@ let
       config
     ];
     text = ''
-      ${prysm-beacon-chain}/bin/beacon-chain \
+      ${pkgs.lib.getExe prysm-beacon-chain} \
         --datadir=./beacondata \
         --min-sync-peers=0 \
         --genesis-state=${genesis}/genesis.ssz \
