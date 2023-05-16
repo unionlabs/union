@@ -21,6 +21,7 @@
               version = "0.1.0";
               edition = "2021";
             };
+            lib = { doctest = false; };
             dependencies = {
               prost = { version = "0.11.0"; default-features = false; features = ["prost-derive"]; };
               serde = { version = "1.0"; default-features = false; features = ["derive"]; };

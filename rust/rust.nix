@@ -12,7 +12,7 @@
           # Optimize the binary size a little bit more
           mv target/wasm32-unknown-unknown/release/union_ethereum_lc.wasm $out/lib/union_ethereum_lc.wasm
           # ${pkgs.binaryen}/bin/wasm-opt -Os target/wasm32-unknown-unknown/release/union_ethereum_lc.wasm -o $out/lib/union_ethereum_lc.wasm
-          # We also put zipped binary since it is smaller
+          # We also zip the binary since it is smaller
           gzip -fk $out/lib/union_ethereum_lc.wasm
         '';
         checkPhase = ''

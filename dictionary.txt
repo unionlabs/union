@@ -398,3 +398,4 @@ typecheck
 staticlib
 muslc
 libmuslc
+doctest
