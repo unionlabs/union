@@ -1,13 +1,13 @@
-{ pkgs, prysm, config, ... }:
+{ pkgs, prysm-validator, config, ... }:
 let
   prysm-validator-init = pkgs.writeShellApplication {
     name = "prysm-validator-init";
     runtimeInputs = [
-      prysm
+      prysm-validator
       config
     ];
     text = ''
-      ${prysm}/bin/validator \
+      ${prysm-validator}/bin/validator \
       --beacon-rpc-provider=prysm-beacon:4000 \
       --datadir=./validatordata \
       --accept-terms-of-use \

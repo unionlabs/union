@@ -21,10 +21,6 @@
       url = "github:shazow/foundry.nix/monthly";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    ethereum-nix = {
-      url = "github:PoisonPhang/ethereum.nix/284-support-aarch64-linux-for-prysm";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
   };
   outputs = inputs@{ flake-parts, ... }:
     flake-parts.lib.mkFlake { inherit inputs; } {
@@ -176,10 +172,7 @@
                 inputs.foundry.defaultPackage.${system}
                 pkgs.solc
                 pkgs.go-ethereum
-              ] ++
-                (with inputs.ethereum-nix.packages.${system}; [
-                  prysm
-                ]);
+              ];
             });
           };
 

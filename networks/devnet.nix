@@ -26,18 +26,17 @@
               geth = import ./services/geth.nix {
                 inherit pkgs;
                 config = self'.packages.devnet-geth-config;
-                prysm = inputs'.ethereum-nix.packages.prysm;
                 genesis = self'.packages.devnet-geth-prysm-genesis;
               };
               prysm-beacon = import ./services/prysm-beacon.nix {
                 inherit pkgs;
-                prysm = inputs'.ethereum-nix.packages.prysm;
+                prysm-beacon-chain = import ./tools/prysm-beacon-chain.nix { inherit pkgs; };
                 config = self'.packages.devnet-prysm-config;
                 genesis = self'.packages.devnet-geth-prysm-genesis;
               };
               prysm-validator = import ./services/prysm-validator.nix {
                 inherit pkgs;
-                prysm = inputs'.ethereum-nix.packages.prysm;
+                prysm-validator = import ./tools/prysm-validator.nix { inherit pkgs; };
                 config = self'.packages.devnet-prysm-config;
               };
             };

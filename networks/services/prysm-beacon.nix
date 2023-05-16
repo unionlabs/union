@@ -1,16 +1,16 @@
-{ pkgs, prysm, config, genesis, ... }:
+{ pkgs, prysm-beacon-chain, config, genesis, ... }:
 let
   prysm-beacon-init = pkgs.writeShellApplication {
     name = "prysm-beacon-init";
     runtimeInputs = [
       pkgs.curl
       pkgs.jq
-      prysm
+      prysm-beacon-chain
       genesis
       config
     ];
     text = ''
-      ${prysm}/bin/beacon-chain \
+      ${prysm-beacon-chain}/bin/beacon-chain \
         --datadir=./beacondata \
         --min-sync-peers=0 \
         --genesis-state=${genesis}/genesis.ssz \
