@@ -199,6 +199,9 @@ paramtypes
 Partset
 pflag
 pipefail
+phang
+poisonphang
+PoisonPhang
 pkgs
 pname
 posthandler

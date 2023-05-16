@@ -22,7 +22,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     ethereum-nix = {
-      url = "github:nix-community/ethereum.nix";
+      url = "github:PoisonPhang/ethereum.nix/284-support-aarch64-linux-for-prysm";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
