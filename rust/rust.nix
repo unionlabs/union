@@ -17,7 +17,6 @@
         '';
         checkPhase = ''
           cargo test --features eth-minimal   
-          # TODO(aeryz): check if the binary produces floating point operation
         '';
       };
     };
