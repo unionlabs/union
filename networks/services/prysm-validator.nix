@@ -7,7 +7,7 @@ let
       config
     ];
     text = ''
-      ${prysm-validator}/bin/validator \
+      ${pkgs.lib.getExe prysm-validator} \
       --beacon-rpc-provider=prysm-beacon:4000 \
       --datadir=./validatordata \
       --accept-terms-of-use \

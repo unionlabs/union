@@ -26,7 +26,8 @@
         beacon-chain = beacon-chain-targets.${system};
       in
       pkgs.stdenv.mkDerivation {
-        name = "beacon-chain";
+        name = "prysm-beacon-chain";
+        inherit version;
 
         nativeBuildInputs = (if pkgs.stdenv.isDarwin then [ ] else [
           pkgs.autoPatchelfHook

@@ -27,6 +27,7 @@
       in
       pkgs.stdenv.mkDerivation {
         name = "prysmctl";
+        inherit version;
 
         nativeBuildInputs = (if pkgs.stdenv.isDarwin then [ ] else [
           pkgs.autoPatchelfHook
