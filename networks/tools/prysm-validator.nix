@@ -7,7 +7,7 @@ let
       url = "https://github.com/prysmaticlabs/prysm/releases/download/v${version}/validator-v${version}-linux-amd64";
       sha256 = "sha256-d9k/5UVyW0tzY1jU8+Bnp5+y2e5grEfgpU/oSiraOTM=";
     };
-    aarch64-linux = {
+    aarch64-linux = pkgs.fetchurl {
       url = "https://github.com/prysmaticlabs/prysm/releases/download/v${version}/validator-v${version}-linux-arm64";
       sha256 = "sha256-ILX+R1a6Mz0A0IoaBjaaSRQd4xrqk6ZrKoRjptOGHKA=";
     };
@@ -15,7 +15,7 @@ let
       url = "https://github.com/prysmaticlabs/prysm/releases/download/v${version}/validator-v${version}-darwin-amd64";
       sha256 = "sha256-xk17V0BHr+6Flu47KdrCa/SAZ2N1IIf0xGRPBUZ9Ljs=";
     };
-    aarch64-darwin = {
+    aarch64-darwin = pkgs.fetchurl {
       url = "https://github.com/prysmaticlabs/prysm/releases/download/v${version}/validator-v${version}-darwin-arm64";
       sha256 = "sha256-TsdZD7669Nz8IvuKYv8UHg9r1ojTzGy1bBc6iqc7cws=";
     };
