@@ -15,9 +15,7 @@
           # We also zip the binary since it is smaller
           gzip -fk $out/lib/union_ethereum_lc.wasm
         '';
-        checkPhase = ''
-          cargo test --features eth-minimal   
-        '';
+        cargoTestCommand = "cargo test --features eth-minimal --profile release";
       };
     };
   };
