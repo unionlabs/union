@@ -1,5 +1,3 @@
-# STRUCTURE
-
 Our networks configuration is structured like this:
 
 ## Networks
