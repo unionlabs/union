@@ -31,8 +31,8 @@ struct ProcessedMoment {
 library CometblsHelp {
     using BytesLib for bytes;
 
-    uint256 constant PRIME_Q = 21888242871839275222246405745257275088696311157297823662689037894645226208583;
-    uint256 constant PRIME_Q_MINUS_ONE = PRIME_Q - 1;
+    uint256 constant PRIME_R = 21888242871839275222246405745257275088548364400416034343698204186575808495617;
+    uint256 constant PRIME_R_MINUS_ONE = PRIME_R - 1;
 
     bytes constant HMAC_I = hex"75595B5342747A653636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636";
     bytes constant HMAC_O = hex"1F333139281E100F5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C";
@@ -41,14 +41,17 @@ library CometblsHelp {
     bytes1 constant ONE = bytes1(uint8(1));
 
     // Specialized https://en.wikipedia.org/wiki/HMAC for keccak256 with `CometBLS` as key.
+    // TODO: link whitepaper
     function hmac_keccak(bytes memory message) internal pure returns (bytes32) {
         return keccak256(abi.encodePacked(HMAC_O, keccak256(abi.encodePacked(HMAC_I, message))));
     }
 
+    // TODO: link whitepaper
     function hashToField(bytes memory message) internal pure returns (uint256) {
-        return (uint256(hmac_keccak(message)) % PRIME_Q_MINUS_ONE) + 1;
+        return (uint256(hmac_keccak(message)) % PRIME_R_MINUS_ONE) + 1;
     }
 
+    // TODO: link whitepaper
     function hashToField2(bytes memory message) internal pure returns (uint256, uint256) {
         return (hashToField(abi.encodePacked(ZERO, message)),
                 hashToField(abi.encodePacked(ONE, message)));
