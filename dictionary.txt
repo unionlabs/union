@@ -26,6 +26,7 @@ autocliv
 bankkeeper
 banktypes
 baseapp
+beacondata
 bech
 Bech
 bitarray
@@ -37,6 +38,7 @@ capabilitytypes
 cdctypes
 Chainer
 chainsafe
+chainsafe
 clsx
 CMOV
 cmtjson
@@ -46,7 +48,9 @@ Coeff
 Cofactor
 cometbft
 cometbls
+cometbn
 commitizen
+commitmenttypes
 concat
 configurator
 Configurator
@@ -62,6 +66,7 @@ counterparty
 Counterparty
 crisiskeeper
 crisistypes
+ctypes
 datadir
 datadir
 DATADIR
@@ -78,6 +83,7 @@ dont
 drawio
 elems
 ethash
+ethash
 etherbase
 evidencekeeper
 evidencetypes
@@ -90,6 +96,7 @@ fetchurl
 gascap
 gcmode
 genbn
+genstateproof
 gentx
 gentxs
 genutil
@@ -182,6 +189,7 @@ nixos
 nixpkgs
 nodeservice
 nodetime
+nodiscover
 nolint
 numtide
 omit
@@ -189,7 +197,6 @@ openapi
 openapiv
 overrrides
 oxalica
-Patchelf
 paramaters
 paramproposal
 paramsclient
@@ -199,13 +206,14 @@ paramstore
 paramstypes
 paramtypes
 Partset
+Patchelf
 pflag
-pipefail
 phang
-poisonphang
-PoisonPhang
+pipefail
 pkgs
 pname
+poisonphang
+PoisonPhang
 posthandler
 precommit
 PRECOMMIT
@@ -223,6 +231,8 @@ protoio
 provercmd
 provergrpc
 pruningtypes
+prysm
+prysmctl
 pubkey
 pubkey's
 pxrx
@@ -270,6 +280,7 @@ substores
 sumbitter
 svrcmd
 syncmode
+teku
 tendermint
 Tendermint
 testkeeper
@@ -289,6 +300,7 @@ treefmt
 trustlessly
 TRYOPEN
 txpool
+typecheck
 typesparams
 uatom
 unbond
@@ -304,6 +316,7 @@ unionfi
 unionmodule
 unionmodulekeeper
 unionmoduletypes
+unionp
 unionpd
 unionsimulation
 Unjail
@@ -320,6 +333,7 @@ uuno
 valcons
 valconspub
 valgentx
+validatordata
 validatorsets
 valkey
 valnode
@@ -338,9 +352,3 @@ ypyp
 yqyp
 λpxrx
 λpxrx
-commitmenttypes
-genstateproof
-ctypes
-cometbn
-unionp
-typecheck

@@ -7,19 +7,13 @@
       "path": "dictionary.txt",
       "addWords": true
     },
-    {
-      "name": "eth",
-      "path":"dictionaries/eth.txt",
-      "addWords": true
-    }
   ],
   "dictionaries": [
     "en_US",
     "companies",
     "softwareTerms",
     "go",
-    "union",
-    "eth"
+    "union"
   ],
   "ignorePaths": [
     "dictionaries/**",
