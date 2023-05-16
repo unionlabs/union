@@ -42,7 +42,7 @@ in
       "4000:4000"
       "8080:8080"
     ];
-    command = [ "${prysm-beacon-init}/bin/prysm-beacon-init" ];
+    command = [ (pkgs.lib.getExe prysm-beacon-init) ];
     depends_on = {
       geth = {
         condition = "service_healthy";

@@ -2,7 +2,7 @@
   perSystem = { devnetConfig, system, pkgs, self', inputs', ... }:
     let
       uniond = pkgs.lib.getExe self'.packages.uniond;
-      prysmctl = self'.packages.prysmctl;
+      prysmctl = pkgs.lib.getExe self'.packages.prysmctl;
       chainId = "union-devnet-1";
       mkNodeID = name:
         pkgs.runCommand "node-id" { } ''
@@ -46,7 +46,7 @@
           mkdir -p $out
           cp ${./devnet-evm/genesis.json} "./genesis.json"
         
-          ${prysmctl}/bin/prysmctl \
+          ${prysmctl} \
           testnet generate-genesis \
             --fork=bellatrix \
             --num-validators=64 \
