@@ -4,12 +4,12 @@ pkgs.stdenv.mkDerivation rec {
   version = "4.0.3";
 
   validator-amd64 = pkgs.fetchurl {
-    url = "https://github.com/prysmaticlabs/prysm/releases/download/v${version}/validator-v4.0.3-linux-amd64";
+    url = "https://github.com/prysmaticlabs/prysm/releases/download/v${version}/validator-v${version}-linux-amd64";
     sha256 = "sha256-gmveVLd9fXXlZS65vZ2HznghLdlA7tY2oJFLMRWXT8Q=";
   };
 
   validator-arm64 = pkgs.fetchurl {
-    url = "https://github.com/prysmaticlabs/prysm/releases/download/v${version}/validator-v4.0.3-linux-amd64";
+    url = "https://github.com/prysmaticlabs/prysm/releases/download/v${version}/validator-v${version}-linux-amd64";
     sha256 = "sha256-gmveVLd9fXXlZS65vZ2HznghLdlA7tY2oJFLMRWXT8Q=";
   };
 
@@ -30,7 +30,7 @@ pkgs.stdenv.mkDerivation rec {
 
   meta = {
     homepage = "https://github.com/prysmaticlabs/prysm";
-    description = "";
+    description = "Launches an Ethereum validator client that interacts with a beacon chain, starts proposer and attester services, p2p connections, and more.";
     platforms = [ "x86_64-linux" "aarch64-linux" ];
   };
 }
