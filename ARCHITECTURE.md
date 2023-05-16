@@ -7,7 +7,7 @@ This document describes the high-level architecture of Union and associated pack
 At the root of the repository, you'll find directories such as `uniond`, `unionvisor`, and `unionpd`, which are binaries necessary to run the network. To see how to build one of these binaries, check the `flake.nix` file. These binaries can be built by running 
 
 ```nix
-nix build ./#uniond # or unionvisor or unionpd
+nix build .\#uniond # or unionvisor or unionpd
 ```
 
 To see all packages/apps that we define, run `nix flake show`. To see how these are built, check out `flake.nix`. Here we import all [`flake-parts`](https://flake.parts), such as `uniond/uniond.nix`.
