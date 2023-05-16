@@ -22,7 +22,7 @@
             }/libwasmvm";
           doCheck = false;
         } // (if pkgs.stdenv.isLinux then rec {
-          CARGO_BUILD_TARGET = if system == "aarch64-linux" then "aarch64-unknown-linux-musl" else "x86_64-linux";
+          CARGO_BUILD_TARGET = if system == "aarch64-linux" then "aarch64-unknown-linux-musl" else "x86_64-unknown-linux-musl";
           cargoBuildCommand = "cargo build --release --example=muslc";
           installPhase = ''
             mkdir -p $out/lib
