@@ -21,14 +21,19 @@
       url = "github:shazow/foundry.nix/monthly";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    crane = {
-      url = "github:ipetkov/crane";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
     rust-overlay = {
       url = "github:oxalica/rust-overlay";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    crane = {
+      url = "github:ipetkov/crane";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    # uniond versions
+    "v0.0.2".url = "git+https://github.com/unionfi/union?ref=v0.0.2";
+    "v0.3.0".url = "git+https://github.com/unionfi/union?ref=v0.3.0";
+    "v0.4.2".url = "git+https://github.com/unionfi/union?ref=release-v0.4.2";
   };
   outputs = inputs@{ self, nixpkgs, flake-parts, crane, ... }:
     flake-parts.lib.mkFlake { inherit inputs; } {
@@ -36,6 +41,8 @@
         [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" "x86_64-darwin" ];
       imports = [
         ./uniond/uniond.nix
+        ./unionpd/unionpd.nix
+        ./unionvisor/unionvisor.nix
         ./uniond/proto.nix
         ./docs/docs.nix
         ./rust/rust.nix
@@ -47,7 +54,6 @@
         ./tools/libwasmvm/libwasmvm.nix
         ./networks/devnet.nix
         ./networks/genesis/devnet.nix
-        ./unionpd/unionpd.nix
         inputs.treefmt-nix.flakeModule
         inputs.pre-commit-hooks.flakeModule
       ];
@@ -189,6 +195,8 @@
                 buildInputs = [ self'.packages.rust-nightly ] ++
                   (with pkgs; [
                     protobuf
+                    pkg-config
+                    openssl
                     buf
                     nixfmt
                     go_1_20
@@ -202,6 +210,7 @@
                     jq
                     yq
                     solc
+                    self'.packages.rust-stable
                   ]);
                 nativeBuildInputs = [ config.treefmt.build.wrapper ];
                 GOPRIVATE = "github.com/unionfi/*";
@@ -229,6 +238,7 @@
             projectRootFile = "flake.nix";
             programs.nixpkgs-fmt.enable = true;
             programs.gofmt.enable = true;
+            programs.rustfmt.enable = true;
             settings.global.excludes = [ "uniond/vendor/**" ];
           };
         };

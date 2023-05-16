@@ -147,9 +147,7 @@ pub struct MsgTransfer {
     pub source_channel: ::prost::alloc::string::String,
     /// the tokens to be transferred
     #[prost(message, optional, tag = "3")]
-    pub token: ::core::option::Option<
-        super::super::super::super::cosmos::base::v1beta1::Coin,
-    >,
+    pub token: ::core::option::Option<super::super::super::super::cosmos::base::v1beta1::Coin>,
     /// the sender address
     #[prost(string, tag = "4")]
     pub sender: ::prost::alloc::string::String,
@@ -159,9 +157,7 @@ pub struct MsgTransfer {
     /// Timeout height relative to the current block height.
     /// The timeout is disabled when set to 0.
     #[prost(message, optional, tag = "6")]
-    pub timeout_height: ::core::option::Option<
-        super::super::super::core::client::v1::Height,
-    >,
+    pub timeout_height: ::core::option::Option<super::super::super::core::client::v1::Height>,
     /// Timeout timestamp in absolute nanoseconds since unix epoch.
     /// The timeout is disabled when set to 0.
     #[prost(uint64, tag = "7")]
@@ -192,9 +188,8 @@ pub struct Allocation {
     pub source_channel: ::prost::alloc::string::String,
     /// spend limitation on the channel
     #[prost(message, repeated, tag = "3")]
-    pub spend_limit: ::prost::alloc::vec::Vec<
-        super::super::super::super::cosmos::base::v1beta1::Coin,
-    >,
+    pub spend_limit:
+        ::prost::alloc::vec::Vec<super::super::super::super::cosmos::base::v1beta1::Coin>,
     /// allow list of receivers, an empty allow list permits any receiver address
     #[prost(string, repeated, tag = "4")]
     pub allow_list: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,

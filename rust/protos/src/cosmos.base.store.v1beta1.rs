@@ -54,27 +54,22 @@ pub struct StoreKvPair {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct BlockMetadata {
     #[prost(message, optional, tag = "1")]
-    pub request_begin_block: ::core::option::Option<
-        super::super::super::super::tendermint::abci::RequestBeginBlock,
-    >,
+    pub request_begin_block:
+        ::core::option::Option<super::super::super::super::tendermint::abci::RequestBeginBlock>,
     #[prost(message, optional, tag = "2")]
-    pub response_begin_block: ::core::option::Option<
-        super::super::super::super::tendermint::abci::ResponseBeginBlock,
-    >,
+    pub response_begin_block:
+        ::core::option::Option<super::super::super::super::tendermint::abci::ResponseBeginBlock>,
     #[prost(message, repeated, tag = "3")]
     pub deliver_txs: ::prost::alloc::vec::Vec<block_metadata::DeliverTx>,
     #[prost(message, optional, tag = "4")]
-    pub request_end_block: ::core::option::Option<
-        super::super::super::super::tendermint::abci::RequestEndBlock,
-    >,
+    pub request_end_block:
+        ::core::option::Option<super::super::super::super::tendermint::abci::RequestEndBlock>,
     #[prost(message, optional, tag = "5")]
-    pub response_end_block: ::core::option::Option<
-        super::super::super::super::tendermint::abci::ResponseEndBlock,
-    >,
+    pub response_end_block:
+        ::core::option::Option<super::super::super::super::tendermint::abci::ResponseEndBlock>,
     #[prost(message, optional, tag = "6")]
-    pub response_commit: ::core::option::Option<
-        super::super::super::super::tendermint::abci::ResponseCommit,
-    >,
+    pub response_commit:
+        ::core::option::Option<super::super::super::super::tendermint::abci::ResponseCommit>,
 }
 /// Nested message and enum types in `BlockMetadata`.
 pub mod block_metadata {

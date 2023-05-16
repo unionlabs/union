@@ -10,7 +10,10 @@
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MerkleRoot {
     #[prost(bytes = "vec", tag = "1")]
-    #[cfg_attr(all(feature = "json-schema", feature = "std"), schemars(with = "String"))]
+    #[cfg_attr(
+        all(feature = "json-schema", feature = "std"),
+        schemars(with = "String")
+    )]
     #[cfg_attr(feature = "std", serde(with = "::serde_utils::base64"))]
     pub hash: ::prost::alloc::vec::Vec<u8>,
 }
@@ -26,7 +29,10 @@ pub struct MerkleRoot {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MerklePrefix {
     #[prost(bytes = "vec", tag = "1")]
-    #[cfg_attr(all(feature = "json-schema", feature = "std"), schemars(with = "String"))]
+    #[cfg_attr(
+        all(feature = "json-schema", feature = "std"),
+        schemars(with = "String")
+    )]
     #[cfg_attr(feature = "std", serde(with = "::serde_utils::base64"))]
     pub key_prefix: ::prost::alloc::vec::Vec<u8>,
 }
@@ -50,8 +56,7 @@ pub struct MerklePath {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MerkleProof {
     #[prost(message, repeated, tag = "1")]
-    pub proofs: ::prost::alloc::vec::Vec<
-        super::super::super::super::cosmos::ics23::v1::CommitmentProof,
-    >,
+    pub proofs:
+        ::prost::alloc::vec::Vec<super::super::super::super::cosmos::ics23::v1::CommitmentProof>,
 }
 // @@protoc_insertion_point(module)

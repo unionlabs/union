@@ -11,9 +11,7 @@ pub struct QueryParamsResponse {
     /// Please note that `params.version` is not populated in this response, it is
     /// tracked separately in the x/upgrade module.
     #[prost(message, optional, tag = "1")]
-    pub params: ::core::option::Option<
-        super::super::super::tendermint::types::ConsensusParams,
-    >,
+    pub params: ::core::option::Option<super::super::super::tendermint::types::ConsensusParams>,
 }
 /// MsgUpdateParams is the Msg/UpdateParams request type.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -28,17 +26,11 @@ pub struct MsgUpdateParams {
     ///
     /// NOTE: All parameters must be supplied.
     #[prost(message, optional, tag = "2")]
-    pub block: ::core::option::Option<
-        super::super::super::tendermint::types::BlockParams,
-    >,
+    pub block: ::core::option::Option<super::super::super::tendermint::types::BlockParams>,
     #[prost(message, optional, tag = "3")]
-    pub evidence: ::core::option::Option<
-        super::super::super::tendermint::types::EvidenceParams,
-    >,
+    pub evidence: ::core::option::Option<super::super::super::tendermint::types::EvidenceParams>,
     #[prost(message, optional, tag = "4")]
-    pub validator: ::core::option::Option<
-        super::super::super::tendermint::types::ValidatorParams,
-    >,
+    pub validator: ::core::option::Option<super::super::super::tendermint::types::ValidatorParams>,
 }
 /// MsgUpdateParamsResponse defines the response structure for executing a
 /// MsgUpdateParams message.

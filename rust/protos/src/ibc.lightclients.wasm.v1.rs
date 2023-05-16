@@ -90,9 +90,7 @@ pub struct ClientState {
     #[cfg_attr(feature = "std", serde(with = "::serde_utils::base64"))]
     pub code_id: ::prost::alloc::vec::Vec<u8>,
     #[prost(message, optional, tag = "3")]
-    pub latest_height: ::core::option::Option<
-        super::super::super::core::client::v1::Height,
-    >,
+    pub latest_height: ::core::option::Option<super::super::super::core::client::v1::Height>,
 }
 /// Wasm light client's ConsensusState
 #[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]

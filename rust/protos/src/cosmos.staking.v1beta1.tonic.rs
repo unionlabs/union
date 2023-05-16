@@ -3,8 +3,8 @@
 #[cfg(feature = "client")]
 pub mod query_client {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
-    use tonic::codegen::*;
     use tonic::codegen::http::Uri;
+    use tonic::codegen::*;
     #[derive(Debug, Clone)]
     pub struct QueryClient<T> {
         inner: tonic::client::Grpc<T>,
@@ -48,9 +48,8 @@ pub mod query_client {
                     <T as tonic::client::GrpcService<tonic::body::BoxBody>>::ResponseBody,
                 >,
             >,
-            <T as tonic::codegen::Service<
-                http::Request<tonic::body::BoxBody>,
-            >>::Error: Into<StdError> + Send + Sync,
+            <T as tonic::codegen::Service<http::Request<tonic::body::BoxBody>>>::Error:
+                Into<StdError> + Send + Sync,
         {
             QueryClient::new(InterceptedService::new(inner, interceptor))
         }
@@ -73,56 +72,43 @@ pub mod query_client {
             &mut self,
             request: impl tonic::IntoRequest<super::QueryValidatorsRequest>,
         ) -> Result<tonic::Response<super::QueryValidatorsResponse>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/cosmos.staking.v1beta1.Query/Validators",
-            );
+            let path =
+                http::uri::PathAndQuery::from_static("/cosmos.staking.v1beta1.Query/Validators");
             self.inner.unary(request.into_request(), path, codec).await
         }
         pub async fn validator(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryValidatorRequest>,
         ) -> Result<tonic::Response<super::QueryValidatorResponse>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/cosmos.staking.v1beta1.Query/Validator",
-            );
+            let path =
+                http::uri::PathAndQuery::from_static("/cosmos.staking.v1beta1.Query/Validator");
             self.inner.unary(request.into_request(), path, codec).await
         }
         pub async fn validator_delegations(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryValidatorDelegationsRequest>,
-        ) -> Result<
-            tonic::Response<super::QueryValidatorDelegationsResponse>,
-            tonic::Status,
-        > {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+        ) -> Result<tonic::Response<super::QueryValidatorDelegationsResponse>, tonic::Status>
+        {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/cosmos.staking.v1beta1.Query/ValidatorDelegations",
@@ -131,22 +117,15 @@ pub mod query_client {
         }
         pub async fn validator_unbonding_delegations(
             &mut self,
-            request: impl tonic::IntoRequest<
-                super::QueryValidatorUnbondingDelegationsRequest,
-            >,
-        ) -> Result<
-            tonic::Response<super::QueryValidatorUnbondingDelegationsResponse>,
-            tonic::Status,
-        > {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            request: impl tonic::IntoRequest<super::QueryValidatorUnbondingDelegationsRequest>,
+        ) -> Result<tonic::Response<super::QueryValidatorUnbondingDelegationsResponse>, tonic::Status>
+        {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/cosmos.staking.v1beta1.Query/ValidatorUnbondingDelegations",
@@ -157,37 +136,28 @@ pub mod query_client {
             &mut self,
             request: impl tonic::IntoRequest<super::QueryDelegationRequest>,
         ) -> Result<tonic::Response<super::QueryDelegationResponse>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/cosmos.staking.v1beta1.Query/Delegation",
-            );
+            let path =
+                http::uri::PathAndQuery::from_static("/cosmos.staking.v1beta1.Query/Delegation");
             self.inner.unary(request.into_request(), path, codec).await
         }
         pub async fn unbonding_delegation(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryUnbondingDelegationRequest>,
-        ) -> Result<
-            tonic::Response<super::QueryUnbondingDelegationResponse>,
-            tonic::Status,
-        > {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+        ) -> Result<tonic::Response<super::QueryUnbondingDelegationResponse>, tonic::Status>
+        {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/cosmos.staking.v1beta1.Query/UnbondingDelegation",
@@ -197,19 +167,14 @@ pub mod query_client {
         pub async fn delegator_delegations(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryDelegatorDelegationsRequest>,
-        ) -> Result<
-            tonic::Response<super::QueryDelegatorDelegationsResponse>,
-            tonic::Status,
-        > {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+        ) -> Result<tonic::Response<super::QueryDelegatorDelegationsResponse>, tonic::Status>
+        {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/cosmos.staking.v1beta1.Query/DelegatorDelegations",
@@ -218,22 +183,15 @@ pub mod query_client {
         }
         pub async fn delegator_unbonding_delegations(
             &mut self,
-            request: impl tonic::IntoRequest<
-                super::QueryDelegatorUnbondingDelegationsRequest,
-            >,
-        ) -> Result<
-            tonic::Response<super::QueryDelegatorUnbondingDelegationsResponse>,
-            tonic::Status,
-        > {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            request: impl tonic::IntoRequest<super::QueryDelegatorUnbondingDelegationsRequest>,
+        ) -> Result<tonic::Response<super::QueryDelegatorUnbondingDelegationsResponse>, tonic::Status>
+        {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/cosmos.staking.v1beta1.Query/DelegatorUnbondingDelegations",
@@ -244,37 +202,28 @@ pub mod query_client {
             &mut self,
             request: impl tonic::IntoRequest<super::QueryRedelegationsRequest>,
         ) -> Result<tonic::Response<super::QueryRedelegationsResponse>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/cosmos.staking.v1beta1.Query/Redelegations",
-            );
+            let path =
+                http::uri::PathAndQuery::from_static("/cosmos.staking.v1beta1.Query/Redelegations");
             self.inner.unary(request.into_request(), path, codec).await
         }
         pub async fn delegator_validators(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryDelegatorValidatorsRequest>,
-        ) -> Result<
-            tonic::Response<super::QueryDelegatorValidatorsResponse>,
-            tonic::Status,
-        > {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+        ) -> Result<tonic::Response<super::QueryDelegatorValidatorsResponse>, tonic::Status>
+        {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/cosmos.staking.v1beta1.Query/DelegatorValidators",
@@ -284,19 +233,14 @@ pub mod query_client {
         pub async fn delegator_validator(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryDelegatorValidatorRequest>,
-        ) -> Result<
-            tonic::Response<super::QueryDelegatorValidatorResponse>,
-            tonic::Status,
-        > {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+        ) -> Result<tonic::Response<super::QueryDelegatorValidatorResponse>, tonic::Status>
+        {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/cosmos.staking.v1beta1.Query/DelegatorValidator",
@@ -307,15 +251,12 @@ pub mod query_client {
             &mut self,
             request: impl tonic::IntoRequest<super::QueryHistoricalInfoRequest>,
         ) -> Result<tonic::Response<super::QueryHistoricalInfoResponse>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/cosmos.staking.v1beta1.Query/HistoricalInfo",
@@ -326,38 +267,28 @@ pub mod query_client {
             &mut self,
             request: impl tonic::IntoRequest<super::QueryPoolRequest>,
         ) -> Result<tonic::Response<super::QueryPoolResponse>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/cosmos.staking.v1beta1.Query/Pool",
-            );
+            let path = http::uri::PathAndQuery::from_static("/cosmos.staking.v1beta1.Query/Pool");
             self.inner.unary(request.into_request(), path, codec).await
         }
         pub async fn params(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryParamsRequest>,
         ) -> Result<tonic::Response<super::QueryParamsResponse>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/cosmos.staking.v1beta1.Query/Params",
-            );
+            let path = http::uri::PathAndQuery::from_static("/cosmos.staking.v1beta1.Query/Params");
             self.inner.unary(request.into_request(), path, codec).await
         }
     }
@@ -381,17 +312,11 @@ pub mod query_server {
         async fn validator_delegations(
             &self,
             request: tonic::Request<super::QueryValidatorDelegationsRequest>,
-        ) -> Result<
-            tonic::Response<super::QueryValidatorDelegationsResponse>,
-            tonic::Status,
-        >;
+        ) -> Result<tonic::Response<super::QueryValidatorDelegationsResponse>, tonic::Status>;
         async fn validator_unbonding_delegations(
             &self,
             request: tonic::Request<super::QueryValidatorUnbondingDelegationsRequest>,
-        ) -> Result<
-            tonic::Response<super::QueryValidatorUnbondingDelegationsResponse>,
-            tonic::Status,
-        >;
+        ) -> Result<tonic::Response<super::QueryValidatorUnbondingDelegationsResponse>, tonic::Status>;
         async fn delegation(
             &self,
             request: tonic::Request<super::QueryDelegationRequest>,
@@ -399,24 +324,15 @@ pub mod query_server {
         async fn unbonding_delegation(
             &self,
             request: tonic::Request<super::QueryUnbondingDelegationRequest>,
-        ) -> Result<
-            tonic::Response<super::QueryUnbondingDelegationResponse>,
-            tonic::Status,
-        >;
+        ) -> Result<tonic::Response<super::QueryUnbondingDelegationResponse>, tonic::Status>;
         async fn delegator_delegations(
             &self,
             request: tonic::Request<super::QueryDelegatorDelegationsRequest>,
-        ) -> Result<
-            tonic::Response<super::QueryDelegatorDelegationsResponse>,
-            tonic::Status,
-        >;
+        ) -> Result<tonic::Response<super::QueryDelegatorDelegationsResponse>, tonic::Status>;
         async fn delegator_unbonding_delegations(
             &self,
             request: tonic::Request<super::QueryDelegatorUnbondingDelegationsRequest>,
-        ) -> Result<
-            tonic::Response<super::QueryDelegatorUnbondingDelegationsResponse>,
-            tonic::Status,
-        >;
+        ) -> Result<tonic::Response<super::QueryDelegatorUnbondingDelegationsResponse>, tonic::Status>;
         async fn redelegations(
             &self,
             request: tonic::Request<super::QueryRedelegationsRequest>,
@@ -424,17 +340,11 @@ pub mod query_server {
         async fn delegator_validators(
             &self,
             request: tonic::Request<super::QueryDelegatorValidatorsRequest>,
-        ) -> Result<
-            tonic::Response<super::QueryDelegatorValidatorsResponse>,
-            tonic::Status,
-        >;
+        ) -> Result<tonic::Response<super::QueryDelegatorValidatorsResponse>, tonic::Status>;
         async fn delegator_validator(
             &self,
             request: tonic::Request<super::QueryDelegatorValidatorRequest>,
-        ) -> Result<
-            tonic::Response<super::QueryDelegatorValidatorResponse>,
-            tonic::Status,
-        >;
+        ) -> Result<tonic::Response<super::QueryDelegatorValidatorResponse>, tonic::Status>;
         async fn historical_info(
             &self,
             request: tonic::Request<super::QueryHistoricalInfoRequest>,
@@ -467,10 +377,7 @@ pub mod query_server {
                 send_compression_encodings: Default::default(),
             }
         }
-        pub fn with_interceptor<F>(
-            inner: T,
-            interceptor: F,
-        ) -> InterceptedService<Self, F>
+        pub fn with_interceptor<F>(inner: T, interceptor: F) -> InterceptedService<Self, F>
         where
             F: tonic::service::Interceptor,
         {
@@ -498,10 +405,7 @@ pub mod query_server {
         type Response = http::Response<tonic::body::BoxBody>;
         type Error = std::convert::Infallible;
         type Future = BoxFuture<Self::Response, Self::Error>;
-        fn poll_ready(
-            &mut self,
-            _cx: &mut Context<'_>,
-        ) -> Poll<Result<(), Self::Error>> {
+        fn poll_ready(&mut self, _cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
             Poll::Ready(Ok(()))
         }
         fn call(&mut self, req: http::Request<B>) -> Self::Future {
@@ -510,15 +414,9 @@ pub mod query_server {
                 "/cosmos.staking.v1beta1.Query/Validators" => {
                     #[allow(non_camel_case_types)]
                     struct ValidatorsSvc<T: Query>(pub Arc<T>);
-                    impl<
-                        T: Query,
-                    > tonic::server::UnaryService<super::QueryValidatorsRequest>
-                    for ValidatorsSvc<T> {
+                    impl<T: Query> tonic::server::UnaryService<super::QueryValidatorsRequest> for ValidatorsSvc<T> {
                         type Response = super::QueryValidatorsResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::QueryValidatorsRequest>,
@@ -535,11 +433,10 @@ pub mod query_server {
                         let inner = inner.0;
                         let method = ValidatorsSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -548,15 +445,9 @@ pub mod query_server {
                 "/cosmos.staking.v1beta1.Query/Validator" => {
                     #[allow(non_camel_case_types)]
                     struct ValidatorSvc<T: Query>(pub Arc<T>);
-                    impl<
-                        T: Query,
-                    > tonic::server::UnaryService<super::QueryValidatorRequest>
-                    for ValidatorSvc<T> {
+                    impl<T: Query> tonic::server::UnaryService<super::QueryValidatorRequest> for ValidatorSvc<T> {
                         type Response = super::QueryValidatorResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::QueryValidatorRequest>,
@@ -573,11 +464,10 @@ pub mod query_server {
                         let inner = inner.0;
                         let method = ValidatorSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -586,26 +476,18 @@ pub mod query_server {
                 "/cosmos.staking.v1beta1.Query/ValidatorDelegations" => {
                     #[allow(non_camel_case_types)]
                     struct ValidatorDelegationsSvc<T: Query>(pub Arc<T>);
-                    impl<
-                        T: Query,
-                    > tonic::server::UnaryService<
-                        super::QueryValidatorDelegationsRequest,
-                    > for ValidatorDelegationsSvc<T> {
+                    impl<T: Query>
+                        tonic::server::UnaryService<super::QueryValidatorDelegationsRequest>
+                        for ValidatorDelegationsSvc<T>
+                    {
                         type Response = super::QueryValidatorDelegationsResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
-                            request: tonic::Request<
-                                super::QueryValidatorDelegationsRequest,
-                            >,
+                            request: tonic::Request<super::QueryValidatorDelegationsRequest>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
-                            let fut = async move {
-                                (*inner).validator_delegations(request).await
-                            };
+                            let fut = async move { (*inner).validator_delegations(request).await };
                             Box::pin(fut)
                         }
                     }
@@ -616,11 +498,10 @@ pub mod query_server {
                         let inner = inner.0;
                         let method = ValidatorDelegationsSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -629,16 +510,13 @@ pub mod query_server {
                 "/cosmos.staking.v1beta1.Query/ValidatorUnbondingDelegations" => {
                     #[allow(non_camel_case_types)]
                     struct ValidatorUnbondingDelegationsSvc<T: Query>(pub Arc<T>);
-                    impl<
-                        T: Query,
-                    > tonic::server::UnaryService<
-                        super::QueryValidatorUnbondingDelegationsRequest,
-                    > for ValidatorUnbondingDelegationsSvc<T> {
+                    impl<T: Query>
+                        tonic::server::UnaryService<
+                            super::QueryValidatorUnbondingDelegationsRequest,
+                        > for ValidatorUnbondingDelegationsSvc<T>
+                    {
                         type Response = super::QueryValidatorUnbondingDelegationsResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<
@@ -659,11 +537,10 @@ pub mod query_server {
                         let inner = inner.0;
                         let method = ValidatorUnbondingDelegationsSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -672,15 +549,9 @@ pub mod query_server {
                 "/cosmos.staking.v1beta1.Query/Delegation" => {
                     #[allow(non_camel_case_types)]
                     struct DelegationSvc<T: Query>(pub Arc<T>);
-                    impl<
-                        T: Query,
-                    > tonic::server::UnaryService<super::QueryDelegationRequest>
-                    for DelegationSvc<T> {
+                    impl<T: Query> tonic::server::UnaryService<super::QueryDelegationRequest> for DelegationSvc<T> {
                         type Response = super::QueryDelegationResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::QueryDelegationRequest>,
@@ -697,11 +568,10 @@ pub mod query_server {
                         let inner = inner.0;
                         let method = DelegationSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -710,25 +580,18 @@ pub mod query_server {
                 "/cosmos.staking.v1beta1.Query/UnbondingDelegation" => {
                     #[allow(non_camel_case_types)]
                     struct UnbondingDelegationSvc<T: Query>(pub Arc<T>);
-                    impl<
-                        T: Query,
-                    > tonic::server::UnaryService<super::QueryUnbondingDelegationRequest>
-                    for UnbondingDelegationSvc<T> {
+                    impl<T: Query>
+                        tonic::server::UnaryService<super::QueryUnbondingDelegationRequest>
+                        for UnbondingDelegationSvc<T>
+                    {
                         type Response = super::QueryUnbondingDelegationResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
-                            request: tonic::Request<
-                                super::QueryUnbondingDelegationRequest,
-                            >,
+                            request: tonic::Request<super::QueryUnbondingDelegationRequest>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
-                            let fut = async move {
-                                (*inner).unbonding_delegation(request).await
-                            };
+                            let fut = async move { (*inner).unbonding_delegation(request).await };
                             Box::pin(fut)
                         }
                     }
@@ -739,11 +602,10 @@ pub mod query_server {
                         let inner = inner.0;
                         let method = UnbondingDelegationSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -752,26 +614,18 @@ pub mod query_server {
                 "/cosmos.staking.v1beta1.Query/DelegatorDelegations" => {
                     #[allow(non_camel_case_types)]
                     struct DelegatorDelegationsSvc<T: Query>(pub Arc<T>);
-                    impl<
-                        T: Query,
-                    > tonic::server::UnaryService<
-                        super::QueryDelegatorDelegationsRequest,
-                    > for DelegatorDelegationsSvc<T> {
+                    impl<T: Query>
+                        tonic::server::UnaryService<super::QueryDelegatorDelegationsRequest>
+                        for DelegatorDelegationsSvc<T>
+                    {
                         type Response = super::QueryDelegatorDelegationsResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
-                            request: tonic::Request<
-                                super::QueryDelegatorDelegationsRequest,
-                            >,
+                            request: tonic::Request<super::QueryDelegatorDelegationsRequest>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
-                            let fut = async move {
-                                (*inner).delegator_delegations(request).await
-                            };
+                            let fut = async move { (*inner).delegator_delegations(request).await };
                             Box::pin(fut)
                         }
                     }
@@ -782,11 +636,10 @@ pub mod query_server {
                         let inner = inner.0;
                         let method = DelegatorDelegationsSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -795,16 +648,13 @@ pub mod query_server {
                 "/cosmos.staking.v1beta1.Query/DelegatorUnbondingDelegations" => {
                     #[allow(non_camel_case_types)]
                     struct DelegatorUnbondingDelegationsSvc<T: Query>(pub Arc<T>);
-                    impl<
-                        T: Query,
-                    > tonic::server::UnaryService<
-                        super::QueryDelegatorUnbondingDelegationsRequest,
-                    > for DelegatorUnbondingDelegationsSvc<T> {
+                    impl<T: Query>
+                        tonic::server::UnaryService<
+                            super::QueryDelegatorUnbondingDelegationsRequest,
+                        > for DelegatorUnbondingDelegationsSvc<T>
+                    {
                         type Response = super::QueryDelegatorUnbondingDelegationsResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<
@@ -825,11 +675,10 @@ pub mod query_server {
                         let inner = inner.0;
                         let method = DelegatorUnbondingDelegationsSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -838,23 +687,17 @@ pub mod query_server {
                 "/cosmos.staking.v1beta1.Query/Redelegations" => {
                     #[allow(non_camel_case_types)]
                     struct RedelegationsSvc<T: Query>(pub Arc<T>);
-                    impl<
-                        T: Query,
-                    > tonic::server::UnaryService<super::QueryRedelegationsRequest>
-                    for RedelegationsSvc<T> {
+                    impl<T: Query> tonic::server::UnaryService<super::QueryRedelegationsRequest>
+                        for RedelegationsSvc<T>
+                    {
                         type Response = super::QueryRedelegationsResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::QueryRedelegationsRequest>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
-                            let fut = async move {
-                                (*inner).redelegations(request).await
-                            };
+                            let fut = async move { (*inner).redelegations(request).await };
                             Box::pin(fut)
                         }
                     }
@@ -865,11 +708,10 @@ pub mod query_server {
                         let inner = inner.0;
                         let method = RedelegationsSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -878,25 +720,18 @@ pub mod query_server {
                 "/cosmos.staking.v1beta1.Query/DelegatorValidators" => {
                     #[allow(non_camel_case_types)]
                     struct DelegatorValidatorsSvc<T: Query>(pub Arc<T>);
-                    impl<
-                        T: Query,
-                    > tonic::server::UnaryService<super::QueryDelegatorValidatorsRequest>
-                    for DelegatorValidatorsSvc<T> {
+                    impl<T: Query>
+                        tonic::server::UnaryService<super::QueryDelegatorValidatorsRequest>
+                        for DelegatorValidatorsSvc<T>
+                    {
                         type Response = super::QueryDelegatorValidatorsResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
-                            request: tonic::Request<
-                                super::QueryDelegatorValidatorsRequest,
-                            >,
+                            request: tonic::Request<super::QueryDelegatorValidatorsRequest>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
-                            let fut = async move {
-                                (*inner).delegator_validators(request).await
-                            };
+                            let fut = async move { (*inner).delegator_validators(request).await };
                             Box::pin(fut)
                         }
                     }
@@ -907,11 +742,10 @@ pub mod query_server {
                         let inner = inner.0;
                         let method = DelegatorValidatorsSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -920,25 +754,18 @@ pub mod query_server {
                 "/cosmos.staking.v1beta1.Query/DelegatorValidator" => {
                     #[allow(non_camel_case_types)]
                     struct DelegatorValidatorSvc<T: Query>(pub Arc<T>);
-                    impl<
-                        T: Query,
-                    > tonic::server::UnaryService<super::QueryDelegatorValidatorRequest>
-                    for DelegatorValidatorSvc<T> {
+                    impl<T: Query>
+                        tonic::server::UnaryService<super::QueryDelegatorValidatorRequest>
+                        for DelegatorValidatorSvc<T>
+                    {
                         type Response = super::QueryDelegatorValidatorResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
-                            request: tonic::Request<
-                                super::QueryDelegatorValidatorRequest,
-                            >,
+                            request: tonic::Request<super::QueryDelegatorValidatorRequest>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
-                            let fut = async move {
-                                (*inner).delegator_validator(request).await
-                            };
+                            let fut = async move { (*inner).delegator_validator(request).await };
                             Box::pin(fut)
                         }
                     }
@@ -949,11 +776,10 @@ pub mod query_server {
                         let inner = inner.0;
                         let method = DelegatorValidatorSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -962,23 +788,17 @@ pub mod query_server {
                 "/cosmos.staking.v1beta1.Query/HistoricalInfo" => {
                     #[allow(non_camel_case_types)]
                     struct HistoricalInfoSvc<T: Query>(pub Arc<T>);
-                    impl<
-                        T: Query,
-                    > tonic::server::UnaryService<super::QueryHistoricalInfoRequest>
-                    for HistoricalInfoSvc<T> {
+                    impl<T: Query> tonic::server::UnaryService<super::QueryHistoricalInfoRequest>
+                        for HistoricalInfoSvc<T>
+                    {
                         type Response = super::QueryHistoricalInfoResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::QueryHistoricalInfoRequest>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
-                            let fut = async move {
-                                (*inner).historical_info(request).await
-                            };
+                            let fut = async move { (*inner).historical_info(request).await };
                             Box::pin(fut)
                         }
                     }
@@ -989,11 +809,10 @@ pub mod query_server {
                         let inner = inner.0;
                         let method = HistoricalInfoSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -1002,13 +821,9 @@ pub mod query_server {
                 "/cosmos.staking.v1beta1.Query/Pool" => {
                     #[allow(non_camel_case_types)]
                     struct PoolSvc<T: Query>(pub Arc<T>);
-                    impl<T: Query> tonic::server::UnaryService<super::QueryPoolRequest>
-                    for PoolSvc<T> {
+                    impl<T: Query> tonic::server::UnaryService<super::QueryPoolRequest> for PoolSvc<T> {
                         type Response = super::QueryPoolResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::QueryPoolRequest>,
@@ -1025,11 +840,10 @@ pub mod query_server {
                         let inner = inner.0;
                         let method = PoolSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -1038,13 +852,9 @@ pub mod query_server {
                 "/cosmos.staking.v1beta1.Query/Params" => {
                     #[allow(non_camel_case_types)]
                     struct ParamsSvc<T: Query>(pub Arc<T>);
-                    impl<T: Query> tonic::server::UnaryService<super::QueryParamsRequest>
-                    for ParamsSvc<T> {
+                    impl<T: Query> tonic::server::UnaryService<super::QueryParamsRequest> for ParamsSvc<T> {
                         type Response = super::QueryParamsResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::QueryParamsRequest>,
@@ -1061,28 +871,23 @@ pub mod query_server {
                         let inner = inner.0;
                         let method = ParamsSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
                     Box::pin(fut)
                 }
-                _ => {
-                    Box::pin(async move {
-                        Ok(
-                            http::Response::builder()
-                                .status(200)
-                                .header("grpc-status", "12")
-                                .header("content-type", "application/grpc")
-                                .body(empty_body())
-                                .unwrap(),
-                        )
-                    })
-                }
+                _ => Box::pin(async move {
+                    Ok(http::Response::builder()
+                        .status(200)
+                        .header("grpc-status", "12")
+                        .header("content-type", "application/grpc")
+                        .body(empty_body())
+                        .unwrap())
+                }),
             }
         }
     }
@@ -1114,8 +919,8 @@ pub mod query_server {
 #[cfg(feature = "client")]
 pub mod msg_client {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
-    use tonic::codegen::*;
     use tonic::codegen::http::Uri;
+    use tonic::codegen::*;
     #[derive(Debug, Clone)]
     pub struct MsgClient<T> {
         inner: tonic::client::Grpc<T>,
@@ -1146,10 +951,7 @@ pub mod msg_client {
             let inner = tonic::client::Grpc::with_origin(inner, origin);
             Self { inner }
         }
-        pub fn with_interceptor<F>(
-            inner: T,
-            interceptor: F,
-        ) -> MsgClient<InterceptedService<T, F>>
+        pub fn with_interceptor<F>(inner: T, interceptor: F) -> MsgClient<InterceptedService<T, F>>
         where
             F: tonic::service::Interceptor,
             T::ResponseBody: Default,
@@ -1159,9 +961,8 @@ pub mod msg_client {
                     <T as tonic::client::GrpcService<tonic::body::BoxBody>>::ResponseBody,
                 >,
             >,
-            <T as tonic::codegen::Service<
-                http::Request<tonic::body::BoxBody>,
-            >>::Error: Into<StdError> + Send + Sync,
+            <T as tonic::codegen::Service<http::Request<tonic::body::BoxBody>>>::Error:
+                Into<StdError> + Send + Sync,
         {
             MsgClient::new(InterceptedService::new(inner, interceptor))
         }
@@ -1184,113 +985,87 @@ pub mod msg_client {
             &mut self,
             request: impl tonic::IntoRequest<super::MsgCreateValidator>,
         ) -> Result<tonic::Response<super::MsgCreateValidatorResponse>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/cosmos.staking.v1beta1.Msg/CreateValidator",
-            );
+            let path =
+                http::uri::PathAndQuery::from_static("/cosmos.staking.v1beta1.Msg/CreateValidator");
             self.inner.unary(request.into_request(), path, codec).await
         }
         pub async fn edit_validator(
             &mut self,
             request: impl tonic::IntoRequest<super::MsgEditValidator>,
         ) -> Result<tonic::Response<super::MsgEditValidatorResponse>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/cosmos.staking.v1beta1.Msg/EditValidator",
-            );
+            let path =
+                http::uri::PathAndQuery::from_static("/cosmos.staking.v1beta1.Msg/EditValidator");
             self.inner.unary(request.into_request(), path, codec).await
         }
         pub async fn delegate(
             &mut self,
             request: impl tonic::IntoRequest<super::MsgDelegate>,
         ) -> Result<tonic::Response<super::MsgDelegateResponse>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/cosmos.staking.v1beta1.Msg/Delegate",
-            );
+            let path = http::uri::PathAndQuery::from_static("/cosmos.staking.v1beta1.Msg/Delegate");
             self.inner.unary(request.into_request(), path, codec).await
         }
         pub async fn begin_redelegate(
             &mut self,
             request: impl tonic::IntoRequest<super::MsgBeginRedelegate>,
         ) -> Result<tonic::Response<super::MsgBeginRedelegateResponse>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/cosmos.staking.v1beta1.Msg/BeginRedelegate",
-            );
+            let path =
+                http::uri::PathAndQuery::from_static("/cosmos.staking.v1beta1.Msg/BeginRedelegate");
             self.inner.unary(request.into_request(), path, codec).await
         }
         pub async fn undelegate(
             &mut self,
             request: impl tonic::IntoRequest<super::MsgUndelegate>,
         ) -> Result<tonic::Response<super::MsgUndelegateResponse>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/cosmos.staking.v1beta1.Msg/Undelegate",
-            );
+            let path =
+                http::uri::PathAndQuery::from_static("/cosmos.staking.v1beta1.Msg/Undelegate");
             self.inner.unary(request.into_request(), path, codec).await
         }
         pub async fn cancel_unbonding_delegation(
             &mut self,
             request: impl tonic::IntoRequest<super::MsgCancelUnbondingDelegation>,
-        ) -> Result<
-            tonic::Response<super::MsgCancelUnbondingDelegationResponse>,
-            tonic::Status,
-        > {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+        ) -> Result<tonic::Response<super::MsgCancelUnbondingDelegationResponse>, tonic::Status>
+        {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/cosmos.staking.v1beta1.Msg/CancelUnbondingDelegation",
@@ -1301,19 +1076,15 @@ pub mod msg_client {
             &mut self,
             request: impl tonic::IntoRequest<super::MsgUpdateParams>,
         ) -> Result<tonic::Response<super::MsgUpdateParamsResponse>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/cosmos.staking.v1beta1.Msg/UpdateParams",
-            );
+            let path =
+                http::uri::PathAndQuery::from_static("/cosmos.staking.v1beta1.Msg/UpdateParams");
             self.inner.unary(request.into_request(), path, codec).await
         }
     }
@@ -1349,10 +1120,7 @@ pub mod msg_server {
         async fn cancel_unbonding_delegation(
             &self,
             request: tonic::Request<super::MsgCancelUnbondingDelegation>,
-        ) -> Result<
-            tonic::Response<super::MsgCancelUnbondingDelegationResponse>,
-            tonic::Status,
-        >;
+        ) -> Result<tonic::Response<super::MsgCancelUnbondingDelegationResponse>, tonic::Status>;
         async fn update_params(
             &self,
             request: tonic::Request<super::MsgUpdateParams>,
@@ -1377,10 +1145,7 @@ pub mod msg_server {
                 send_compression_encodings: Default::default(),
             }
         }
-        pub fn with_interceptor<F>(
-            inner: T,
-            interceptor: F,
-        ) -> InterceptedService<Self, F>
+        pub fn with_interceptor<F>(inner: T, interceptor: F) -> InterceptedService<Self, F>
         where
             F: tonic::service::Interceptor,
         {
@@ -1408,10 +1173,7 @@ pub mod msg_server {
         type Response = http::Response<tonic::body::BoxBody>;
         type Error = std::convert::Infallible;
         type Future = BoxFuture<Self::Response, Self::Error>;
-        fn poll_ready(
-            &mut self,
-            _cx: &mut Context<'_>,
-        ) -> Poll<Result<(), Self::Error>> {
+        fn poll_ready(&mut self, _cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
             Poll::Ready(Ok(()))
         }
         fn call(&mut self, req: http::Request<B>) -> Self::Future {
@@ -1420,21 +1182,15 @@ pub mod msg_server {
                 "/cosmos.staking.v1beta1.Msg/CreateValidator" => {
                     #[allow(non_camel_case_types)]
                     struct CreateValidatorSvc<T: Msg>(pub Arc<T>);
-                    impl<T: Msg> tonic::server::UnaryService<super::MsgCreateValidator>
-                    for CreateValidatorSvc<T> {
+                    impl<T: Msg> tonic::server::UnaryService<super::MsgCreateValidator> for CreateValidatorSvc<T> {
                         type Response = super::MsgCreateValidatorResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::MsgCreateValidator>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
-                            let fut = async move {
-                                (*inner).create_validator(request).await
-                            };
+                            let fut = async move { (*inner).create_validator(request).await };
                             Box::pin(fut)
                         }
                     }
@@ -1445,11 +1201,10 @@ pub mod msg_server {
                         let inner = inner.0;
                         let method = CreateValidatorSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -1458,21 +1213,15 @@ pub mod msg_server {
                 "/cosmos.staking.v1beta1.Msg/EditValidator" => {
                     #[allow(non_camel_case_types)]
                     struct EditValidatorSvc<T: Msg>(pub Arc<T>);
-                    impl<T: Msg> tonic::server::UnaryService<super::MsgEditValidator>
-                    for EditValidatorSvc<T> {
+                    impl<T: Msg> tonic::server::UnaryService<super::MsgEditValidator> for EditValidatorSvc<T> {
                         type Response = super::MsgEditValidatorResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::MsgEditValidator>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
-                            let fut = async move {
-                                (*inner).edit_validator(request).await
-                            };
+                            let fut = async move { (*inner).edit_validator(request).await };
                             Box::pin(fut)
                         }
                     }
@@ -1483,11 +1232,10 @@ pub mod msg_server {
                         let inner = inner.0;
                         let method = EditValidatorSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -1496,13 +1244,9 @@ pub mod msg_server {
                 "/cosmos.staking.v1beta1.Msg/Delegate" => {
                     #[allow(non_camel_case_types)]
                     struct DelegateSvc<T: Msg>(pub Arc<T>);
-                    impl<T: Msg> tonic::server::UnaryService<super::MsgDelegate>
-                    for DelegateSvc<T> {
+                    impl<T: Msg> tonic::server::UnaryService<super::MsgDelegate> for DelegateSvc<T> {
                         type Response = super::MsgDelegateResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::MsgDelegate>,
@@ -1519,11 +1263,10 @@ pub mod msg_server {
                         let inner = inner.0;
                         let method = DelegateSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -1532,21 +1275,15 @@ pub mod msg_server {
                 "/cosmos.staking.v1beta1.Msg/BeginRedelegate" => {
                     #[allow(non_camel_case_types)]
                     struct BeginRedelegateSvc<T: Msg>(pub Arc<T>);
-                    impl<T: Msg> tonic::server::UnaryService<super::MsgBeginRedelegate>
-                    for BeginRedelegateSvc<T> {
+                    impl<T: Msg> tonic::server::UnaryService<super::MsgBeginRedelegate> for BeginRedelegateSvc<T> {
                         type Response = super::MsgBeginRedelegateResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::MsgBeginRedelegate>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
-                            let fut = async move {
-                                (*inner).begin_redelegate(request).await
-                            };
+                            let fut = async move { (*inner).begin_redelegate(request).await };
                             Box::pin(fut)
                         }
                     }
@@ -1557,11 +1294,10 @@ pub mod msg_server {
                         let inner = inner.0;
                         let method = BeginRedelegateSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -1570,13 +1306,9 @@ pub mod msg_server {
                 "/cosmos.staking.v1beta1.Msg/Undelegate" => {
                     #[allow(non_camel_case_types)]
                     struct UndelegateSvc<T: Msg>(pub Arc<T>);
-                    impl<T: Msg> tonic::server::UnaryService<super::MsgUndelegate>
-                    for UndelegateSvc<T> {
+                    impl<T: Msg> tonic::server::UnaryService<super::MsgUndelegate> for UndelegateSvc<T> {
                         type Response = super::MsgUndelegateResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::MsgUndelegate>,
@@ -1593,11 +1325,10 @@ pub mod msg_server {
                         let inner = inner.0;
                         let method = UndelegateSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -1606,23 +1337,18 @@ pub mod msg_server {
                 "/cosmos.staking.v1beta1.Msg/CancelUnbondingDelegation" => {
                     #[allow(non_camel_case_types)]
                     struct CancelUnbondingDelegationSvc<T: Msg>(pub Arc<T>);
-                    impl<
-                        T: Msg,
-                    > tonic::server::UnaryService<super::MsgCancelUnbondingDelegation>
-                    for CancelUnbondingDelegationSvc<T> {
+                    impl<T: Msg> tonic::server::UnaryService<super::MsgCancelUnbondingDelegation>
+                        for CancelUnbondingDelegationSvc<T>
+                    {
                         type Response = super::MsgCancelUnbondingDelegationResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::MsgCancelUnbondingDelegation>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
-                            let fut = async move {
-                                (*inner).cancel_unbonding_delegation(request).await
-                            };
+                            let fut =
+                                async move { (*inner).cancel_unbonding_delegation(request).await };
                             Box::pin(fut)
                         }
                     }
@@ -1633,11 +1359,10 @@ pub mod msg_server {
                         let inner = inner.0;
                         let method = CancelUnbondingDelegationSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -1646,21 +1371,15 @@ pub mod msg_server {
                 "/cosmos.staking.v1beta1.Msg/UpdateParams" => {
                     #[allow(non_camel_case_types)]
                     struct UpdateParamsSvc<T: Msg>(pub Arc<T>);
-                    impl<T: Msg> tonic::server::UnaryService<super::MsgUpdateParams>
-                    for UpdateParamsSvc<T> {
+                    impl<T: Msg> tonic::server::UnaryService<super::MsgUpdateParams> for UpdateParamsSvc<T> {
                         type Response = super::MsgUpdateParamsResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::MsgUpdateParams>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
-                            let fut = async move {
-                                (*inner).update_params(request).await
-                            };
+                            let fut = async move { (*inner).update_params(request).await };
                             Box::pin(fut)
                         }
                     }
@@ -1671,28 +1390,23 @@ pub mod msg_server {
                         let inner = inner.0;
                         let method = UpdateParamsSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
                     Box::pin(fut)
                 }
-                _ => {
-                    Box::pin(async move {
-                        Ok(
-                            http::Response::builder()
-                                .status(200)
-                                .header("grpc-status", "12")
-                                .header("content-type", "application/grpc")
-                                .body(empty_body())
-                                .unwrap(),
-                        )
-                    })
-                }
+                _ => Box::pin(async move {
+                    Ok(http::Response::builder()
+                        .status(200)
+                        .header("grpc-status", "12")
+                        .header("content-type", "application/grpc")
+                        .body(empty_body())
+                        .unwrap())
+                }),
             }
         }
     }

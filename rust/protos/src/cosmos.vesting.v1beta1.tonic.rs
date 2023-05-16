@@ -3,8 +3,8 @@
 #[cfg(feature = "client")]
 pub mod msg_client {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
-    use tonic::codegen::*;
     use tonic::codegen::http::Uri;
+    use tonic::codegen::*;
     #[derive(Debug, Clone)]
     pub struct MsgClient<T> {
         inner: tonic::client::Grpc<T>,
@@ -35,10 +35,7 @@ pub mod msg_client {
             let inner = tonic::client::Grpc::with_origin(inner, origin);
             Self { inner }
         }
-        pub fn with_interceptor<F>(
-            inner: T,
-            interceptor: F,
-        ) -> MsgClient<InterceptedService<T, F>>
+        pub fn with_interceptor<F>(inner: T, interceptor: F) -> MsgClient<InterceptedService<T, F>>
         where
             F: tonic::service::Interceptor,
             T::ResponseBody: Default,
@@ -48,9 +45,8 @@ pub mod msg_client {
                     <T as tonic::client::GrpcService<tonic::body::BoxBody>>::ResponseBody,
                 >,
             >,
-            <T as tonic::codegen::Service<
-                http::Request<tonic::body::BoxBody>,
-            >>::Error: Into<StdError> + Send + Sync,
+            <T as tonic::codegen::Service<http::Request<tonic::body::BoxBody>>>::Error:
+                Into<StdError> + Send + Sync,
         {
             MsgClient::new(InterceptedService::new(inner, interceptor))
         }
@@ -72,19 +68,14 @@ pub mod msg_client {
         pub async fn create_vesting_account(
             &mut self,
             request: impl tonic::IntoRequest<super::MsgCreateVestingAccount>,
-        ) -> Result<
-            tonic::Response<super::MsgCreateVestingAccountResponse>,
-            tonic::Status,
-        > {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+        ) -> Result<tonic::Response<super::MsgCreateVestingAccountResponse>, tonic::Status>
+        {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/cosmos.vesting.v1beta1.Msg/CreateVestingAccount",
@@ -94,19 +85,14 @@ pub mod msg_client {
         pub async fn create_permanent_locked_account(
             &mut self,
             request: impl tonic::IntoRequest<super::MsgCreatePermanentLockedAccount>,
-        ) -> Result<
-            tonic::Response<super::MsgCreatePermanentLockedAccountResponse>,
-            tonic::Status,
-        > {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+        ) -> Result<tonic::Response<super::MsgCreatePermanentLockedAccountResponse>, tonic::Status>
+        {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/cosmos.vesting.v1beta1.Msg/CreatePermanentLockedAccount",
@@ -116,19 +102,14 @@ pub mod msg_client {
         pub async fn create_periodic_vesting_account(
             &mut self,
             request: impl tonic::IntoRequest<super::MsgCreatePeriodicVestingAccount>,
-        ) -> Result<
-            tonic::Response<super::MsgCreatePeriodicVestingAccountResponse>,
-            tonic::Status,
-        > {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+        ) -> Result<tonic::Response<super::MsgCreatePeriodicVestingAccountResponse>, tonic::Status>
+        {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/cosmos.vesting.v1beta1.Msg/CreatePeriodicVestingAccount",
@@ -148,24 +129,15 @@ pub mod msg_server {
         async fn create_vesting_account(
             &self,
             request: tonic::Request<super::MsgCreateVestingAccount>,
-        ) -> Result<
-            tonic::Response<super::MsgCreateVestingAccountResponse>,
-            tonic::Status,
-        >;
+        ) -> Result<tonic::Response<super::MsgCreateVestingAccountResponse>, tonic::Status>;
         async fn create_permanent_locked_account(
             &self,
             request: tonic::Request<super::MsgCreatePermanentLockedAccount>,
-        ) -> Result<
-            tonic::Response<super::MsgCreatePermanentLockedAccountResponse>,
-            tonic::Status,
-        >;
+        ) -> Result<tonic::Response<super::MsgCreatePermanentLockedAccountResponse>, tonic::Status>;
         async fn create_periodic_vesting_account(
             &self,
             request: tonic::Request<super::MsgCreatePeriodicVestingAccount>,
-        ) -> Result<
-            tonic::Response<super::MsgCreatePeriodicVestingAccountResponse>,
-            tonic::Status,
-        >;
+        ) -> Result<tonic::Response<super::MsgCreatePeriodicVestingAccountResponse>, tonic::Status>;
     }
     #[derive(Debug)]
     pub struct MsgServer<T: Msg> {
@@ -186,10 +158,7 @@ pub mod msg_server {
                 send_compression_encodings: Default::default(),
             }
         }
-        pub fn with_interceptor<F>(
-            inner: T,
-            interceptor: F,
-        ) -> InterceptedService<Self, F>
+        pub fn with_interceptor<F>(inner: T, interceptor: F) -> InterceptedService<Self, F>
         where
             F: tonic::service::Interceptor,
         {
@@ -217,10 +186,7 @@ pub mod msg_server {
         type Response = http::Response<tonic::body::BoxBody>;
         type Error = std::convert::Infallible;
         type Future = BoxFuture<Self::Response, Self::Error>;
-        fn poll_ready(
-            &mut self,
-            _cx: &mut Context<'_>,
-        ) -> Poll<Result<(), Self::Error>> {
+        fn poll_ready(&mut self, _cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
             Poll::Ready(Ok(()))
         }
         fn call(&mut self, req: http::Request<B>) -> Self::Future {
@@ -229,23 +195,17 @@ pub mod msg_server {
                 "/cosmos.vesting.v1beta1.Msg/CreateVestingAccount" => {
                     #[allow(non_camel_case_types)]
                     struct CreateVestingAccountSvc<T: Msg>(pub Arc<T>);
-                    impl<
-                        T: Msg,
-                    > tonic::server::UnaryService<super::MsgCreateVestingAccount>
-                    for CreateVestingAccountSvc<T> {
+                    impl<T: Msg> tonic::server::UnaryService<super::MsgCreateVestingAccount>
+                        for CreateVestingAccountSvc<T>
+                    {
                         type Response = super::MsgCreateVestingAccountResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::MsgCreateVestingAccount>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
-                            let fut = async move {
-                                (*inner).create_vesting_account(request).await
-                            };
+                            let fut = async move { (*inner).create_vesting_account(request).await };
                             Box::pin(fut)
                         }
                     }
@@ -256,11 +216,10 @@ pub mod msg_server {
                         let inner = inner.0;
                         let method = CreateVestingAccountSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -269,20 +228,14 @@ pub mod msg_server {
                 "/cosmos.vesting.v1beta1.Msg/CreatePermanentLockedAccount" => {
                     #[allow(non_camel_case_types)]
                     struct CreatePermanentLockedAccountSvc<T: Msg>(pub Arc<T>);
-                    impl<
-                        T: Msg,
-                    > tonic::server::UnaryService<super::MsgCreatePermanentLockedAccount>
-                    for CreatePermanentLockedAccountSvc<T> {
+                    impl<T: Msg> tonic::server::UnaryService<super::MsgCreatePermanentLockedAccount>
+                        for CreatePermanentLockedAccountSvc<T>
+                    {
                         type Response = super::MsgCreatePermanentLockedAccountResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
-                            request: tonic::Request<
-                                super::MsgCreatePermanentLockedAccount,
-                            >,
+                            request: tonic::Request<super::MsgCreatePermanentLockedAccount>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
                             let fut = async move {
@@ -298,11 +251,10 @@ pub mod msg_server {
                         let inner = inner.0;
                         let method = CreatePermanentLockedAccountSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -311,20 +263,14 @@ pub mod msg_server {
                 "/cosmos.vesting.v1beta1.Msg/CreatePeriodicVestingAccount" => {
                     #[allow(non_camel_case_types)]
                     struct CreatePeriodicVestingAccountSvc<T: Msg>(pub Arc<T>);
-                    impl<
-                        T: Msg,
-                    > tonic::server::UnaryService<super::MsgCreatePeriodicVestingAccount>
-                    for CreatePeriodicVestingAccountSvc<T> {
+                    impl<T: Msg> tonic::server::UnaryService<super::MsgCreatePeriodicVestingAccount>
+                        for CreatePeriodicVestingAccountSvc<T>
+                    {
                         type Response = super::MsgCreatePeriodicVestingAccountResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
-                            request: tonic::Request<
-                                super::MsgCreatePeriodicVestingAccount,
-                            >,
+                            request: tonic::Request<super::MsgCreatePeriodicVestingAccount>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
                             let fut = async move {
@@ -340,28 +286,23 @@ pub mod msg_server {
                         let inner = inner.0;
                         let method = CreatePeriodicVestingAccountSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
                     Box::pin(fut)
                 }
-                _ => {
-                    Box::pin(async move {
-                        Ok(
-                            http::Response::builder()
-                                .status(200)
-                                .header("grpc-status", "12")
-                                .header("content-type", "application/grpc")
-                                .body(empty_body())
-                                .unwrap(),
-                        )
-                    })
-                }
+                _ => Box::pin(async move {
+                    Ok(http::Response::builder()
+                        .status(200)
+                        .header("grpc-status", "12")
+                        .header("content-type", "application/grpc")
+                        .body(empty_body())
+                        .unwrap())
+                }),
             }
         }
     }

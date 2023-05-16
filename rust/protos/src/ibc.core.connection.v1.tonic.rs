@@ -3,8 +3,8 @@
 #[cfg(feature = "client")]
 pub mod query_client {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
-    use tonic::codegen::*;
     use tonic::codegen::http::Uri;
+    use tonic::codegen::*;
     #[derive(Debug, Clone)]
     pub struct QueryClient<T> {
         inner: tonic::client::Grpc<T>,
@@ -48,9 +48,8 @@ pub mod query_client {
                     <T as tonic::client::GrpcService<tonic::body::BoxBody>>::ResponseBody,
                 >,
             >,
-            <T as tonic::codegen::Service<
-                http::Request<tonic::body::BoxBody>,
-            >>::Error: Into<StdError> + Send + Sync,
+            <T as tonic::codegen::Service<http::Request<tonic::body::BoxBody>>>::Error:
+                Into<StdError> + Send + Sync,
         {
             QueryClient::new(InterceptedService::new(inner, interceptor))
         }
@@ -73,56 +72,42 @@ pub mod query_client {
             &mut self,
             request: impl tonic::IntoRequest<super::QueryConnectionRequest>,
         ) -> Result<tonic::Response<super::QueryConnectionResponse>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/ibc.core.connection.v1.Query/Connection",
-            );
+            let path =
+                http::uri::PathAndQuery::from_static("/ibc.core.connection.v1.Query/Connection");
             self.inner.unary(request.into_request(), path, codec).await
         }
         pub async fn connections(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryConnectionsRequest>,
         ) -> Result<tonic::Response<super::QueryConnectionsResponse>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/ibc.core.connection.v1.Query/Connections",
-            );
+            let path =
+                http::uri::PathAndQuery::from_static("/ibc.core.connection.v1.Query/Connections");
             self.inner.unary(request.into_request(), path, codec).await
         }
         pub async fn client_connections(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryClientConnectionsRequest>,
-        ) -> Result<
-            tonic::Response<super::QueryClientConnectionsResponse>,
-            tonic::Status,
-        > {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+        ) -> Result<tonic::Response<super::QueryClientConnectionsResponse>, tonic::Status> {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/ibc.core.connection.v1.Query/ClientConnections",
@@ -132,19 +117,14 @@ pub mod query_client {
         pub async fn connection_client_state(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryConnectionClientStateRequest>,
-        ) -> Result<
-            tonic::Response<super::QueryConnectionClientStateResponse>,
-            tonic::Status,
-        > {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+        ) -> Result<tonic::Response<super::QueryConnectionClientStateResponse>, tonic::Status>
+        {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/ibc.core.connection.v1.Query/ConnectionClientState",
@@ -154,19 +134,14 @@ pub mod query_client {
         pub async fn connection_consensus_state(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryConnectionConsensusStateRequest>,
-        ) -> Result<
-            tonic::Response<super::QueryConnectionConsensusStateResponse>,
-            tonic::Status,
-        > {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+        ) -> Result<tonic::Response<super::QueryConnectionConsensusStateResponse>, tonic::Status>
+        {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/ibc.core.connection.v1.Query/ConnectionConsensusState",
@@ -176,19 +151,13 @@ pub mod query_client {
         pub async fn connection_params(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryConnectionParamsRequest>,
-        ) -> Result<
-            tonic::Response<super::QueryConnectionParamsResponse>,
-            tonic::Status,
-        > {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+        ) -> Result<tonic::Response<super::QueryConnectionParamsResponse>, tonic::Status> {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/ibc.core.connection.v1.Query/ConnectionParams",
@@ -216,31 +185,19 @@ pub mod query_server {
         async fn client_connections(
             &self,
             request: tonic::Request<super::QueryClientConnectionsRequest>,
-        ) -> Result<
-            tonic::Response<super::QueryClientConnectionsResponse>,
-            tonic::Status,
-        >;
+        ) -> Result<tonic::Response<super::QueryClientConnectionsResponse>, tonic::Status>;
         async fn connection_client_state(
             &self,
             request: tonic::Request<super::QueryConnectionClientStateRequest>,
-        ) -> Result<
-            tonic::Response<super::QueryConnectionClientStateResponse>,
-            tonic::Status,
-        >;
+        ) -> Result<tonic::Response<super::QueryConnectionClientStateResponse>, tonic::Status>;
         async fn connection_consensus_state(
             &self,
             request: tonic::Request<super::QueryConnectionConsensusStateRequest>,
-        ) -> Result<
-            tonic::Response<super::QueryConnectionConsensusStateResponse>,
-            tonic::Status,
-        >;
+        ) -> Result<tonic::Response<super::QueryConnectionConsensusStateResponse>, tonic::Status>;
         async fn connection_params(
             &self,
             request: tonic::Request<super::QueryConnectionParamsRequest>,
-        ) -> Result<
-            tonic::Response<super::QueryConnectionParamsResponse>,
-            tonic::Status,
-        >;
+        ) -> Result<tonic::Response<super::QueryConnectionParamsResponse>, tonic::Status>;
     }
     #[derive(Debug)]
     pub struct QueryServer<T: Query> {
@@ -261,10 +218,7 @@ pub mod query_server {
                 send_compression_encodings: Default::default(),
             }
         }
-        pub fn with_interceptor<F>(
-            inner: T,
-            interceptor: F,
-        ) -> InterceptedService<Self, F>
+        pub fn with_interceptor<F>(inner: T, interceptor: F) -> InterceptedService<Self, F>
         where
             F: tonic::service::Interceptor,
         {
@@ -292,10 +246,7 @@ pub mod query_server {
         type Response = http::Response<tonic::body::BoxBody>;
         type Error = std::convert::Infallible;
         type Future = BoxFuture<Self::Response, Self::Error>;
-        fn poll_ready(
-            &mut self,
-            _cx: &mut Context<'_>,
-        ) -> Poll<Result<(), Self::Error>> {
+        fn poll_ready(&mut self, _cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
             Poll::Ready(Ok(()))
         }
         fn call(&mut self, req: http::Request<B>) -> Self::Future {
@@ -304,15 +255,9 @@ pub mod query_server {
                 "/ibc.core.connection.v1.Query/Connection" => {
                     #[allow(non_camel_case_types)]
                     struct ConnectionSvc<T: Query>(pub Arc<T>);
-                    impl<
-                        T: Query,
-                    > tonic::server::UnaryService<super::QueryConnectionRequest>
-                    for ConnectionSvc<T> {
+                    impl<T: Query> tonic::server::UnaryService<super::QueryConnectionRequest> for ConnectionSvc<T> {
                         type Response = super::QueryConnectionResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::QueryConnectionRequest>,
@@ -329,11 +274,10 @@ pub mod query_server {
                         let inner = inner.0;
                         let method = ConnectionSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -342,15 +286,9 @@ pub mod query_server {
                 "/ibc.core.connection.v1.Query/Connections" => {
                     #[allow(non_camel_case_types)]
                     struct ConnectionsSvc<T: Query>(pub Arc<T>);
-                    impl<
-                        T: Query,
-                    > tonic::server::UnaryService<super::QueryConnectionsRequest>
-                    for ConnectionsSvc<T> {
+                    impl<T: Query> tonic::server::UnaryService<super::QueryConnectionsRequest> for ConnectionsSvc<T> {
                         type Response = super::QueryConnectionsResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::QueryConnectionsRequest>,
@@ -367,11 +305,10 @@ pub mod query_server {
                         let inner = inner.0;
                         let method = ConnectionsSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -380,23 +317,17 @@ pub mod query_server {
                 "/ibc.core.connection.v1.Query/ClientConnections" => {
                     #[allow(non_camel_case_types)]
                     struct ClientConnectionsSvc<T: Query>(pub Arc<T>);
-                    impl<
-                        T: Query,
-                    > tonic::server::UnaryService<super::QueryClientConnectionsRequest>
-                    for ClientConnectionsSvc<T> {
+                    impl<T: Query> tonic::server::UnaryService<super::QueryClientConnectionsRequest>
+                        for ClientConnectionsSvc<T>
+                    {
                         type Response = super::QueryClientConnectionsResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::QueryClientConnectionsRequest>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
-                            let fut = async move {
-                                (*inner).client_connections(request).await
-                            };
+                            let fut = async move { (*inner).client_connections(request).await };
                             Box::pin(fut)
                         }
                     }
@@ -407,11 +338,10 @@ pub mod query_server {
                         let inner = inner.0;
                         let method = ClientConnectionsSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -420,26 +350,19 @@ pub mod query_server {
                 "/ibc.core.connection.v1.Query/ConnectionClientState" => {
                     #[allow(non_camel_case_types)]
                     struct ConnectionClientStateSvc<T: Query>(pub Arc<T>);
-                    impl<
-                        T: Query,
-                    > tonic::server::UnaryService<
-                        super::QueryConnectionClientStateRequest,
-                    > for ConnectionClientStateSvc<T> {
+                    impl<T: Query>
+                        tonic::server::UnaryService<super::QueryConnectionClientStateRequest>
+                        for ConnectionClientStateSvc<T>
+                    {
                         type Response = super::QueryConnectionClientStateResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
-                            request: tonic::Request<
-                                super::QueryConnectionClientStateRequest,
-                            >,
+                            request: tonic::Request<super::QueryConnectionClientStateRequest>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
-                            let fut = async move {
-                                (*inner).connection_client_state(request).await
-                            };
+                            let fut =
+                                async move { (*inner).connection_client_state(request).await };
                             Box::pin(fut)
                         }
                     }
@@ -450,11 +373,10 @@ pub mod query_server {
                         let inner = inner.0;
                         let method = ConnectionClientStateSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -463,26 +385,19 @@ pub mod query_server {
                 "/ibc.core.connection.v1.Query/ConnectionConsensusState" => {
                     #[allow(non_camel_case_types)]
                     struct ConnectionConsensusStateSvc<T: Query>(pub Arc<T>);
-                    impl<
-                        T: Query,
-                    > tonic::server::UnaryService<
-                        super::QueryConnectionConsensusStateRequest,
-                    > for ConnectionConsensusStateSvc<T> {
+                    impl<T: Query>
+                        tonic::server::UnaryService<super::QueryConnectionConsensusStateRequest>
+                        for ConnectionConsensusStateSvc<T>
+                    {
                         type Response = super::QueryConnectionConsensusStateResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
-                            request: tonic::Request<
-                                super::QueryConnectionConsensusStateRequest,
-                            >,
+                            request: tonic::Request<super::QueryConnectionConsensusStateRequest>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
-                            let fut = async move {
-                                (*inner).connection_consensus_state(request).await
-                            };
+                            let fut =
+                                async move { (*inner).connection_consensus_state(request).await };
                             Box::pin(fut)
                         }
                     }
@@ -493,11 +408,10 @@ pub mod query_server {
                         let inner = inner.0;
                         let method = ConnectionConsensusStateSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -506,23 +420,17 @@ pub mod query_server {
                 "/ibc.core.connection.v1.Query/ConnectionParams" => {
                     #[allow(non_camel_case_types)]
                     struct ConnectionParamsSvc<T: Query>(pub Arc<T>);
-                    impl<
-                        T: Query,
-                    > tonic::server::UnaryService<super::QueryConnectionParamsRequest>
-                    for ConnectionParamsSvc<T> {
+                    impl<T: Query> tonic::server::UnaryService<super::QueryConnectionParamsRequest>
+                        for ConnectionParamsSvc<T>
+                    {
                         type Response = super::QueryConnectionParamsResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::QueryConnectionParamsRequest>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
-                            let fut = async move {
-                                (*inner).connection_params(request).await
-                            };
+                            let fut = async move { (*inner).connection_params(request).await };
                             Box::pin(fut)
                         }
                     }
@@ -533,28 +441,23 @@ pub mod query_server {
                         let inner = inner.0;
                         let method = ConnectionParamsSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
                     Box::pin(fut)
                 }
-                _ => {
-                    Box::pin(async move {
-                        Ok(
-                            http::Response::builder()
-                                .status(200)
-                                .header("grpc-status", "12")
-                                .header("content-type", "application/grpc")
-                                .body(empty_body())
-                                .unwrap(),
-                        )
-                    })
-                }
+                _ => Box::pin(async move {
+                    Ok(http::Response::builder()
+                        .status(200)
+                        .header("grpc-status", "12")
+                        .header("content-type", "application/grpc")
+                        .body(empty_body())
+                        .unwrap())
+                }),
             }
         }
     }
@@ -586,8 +489,8 @@ pub mod query_server {
 #[cfg(feature = "client")]
 pub mod msg_client {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
-    use tonic::codegen::*;
     use tonic::codegen::http::Uri;
+    use tonic::codegen::*;
     #[derive(Debug, Clone)]
     pub struct MsgClient<T> {
         inner: tonic::client::Grpc<T>,
@@ -618,10 +521,7 @@ pub mod msg_client {
             let inner = tonic::client::Grpc::with_origin(inner, origin);
             Self { inner }
         }
-        pub fn with_interceptor<F>(
-            inner: T,
-            interceptor: F,
-        ) -> MsgClient<InterceptedService<T, F>>
+        pub fn with_interceptor<F>(inner: T, interceptor: F) -> MsgClient<InterceptedService<T, F>>
         where
             F: tonic::service::Interceptor,
             T::ResponseBody: Default,
@@ -631,9 +531,8 @@ pub mod msg_client {
                     <T as tonic::client::GrpcService<tonic::body::BoxBody>>::ResponseBody,
                 >,
             >,
-            <T as tonic::codegen::Service<
-                http::Request<tonic::body::BoxBody>,
-            >>::Error: Into<StdError> + Send + Sync,
+            <T as tonic::codegen::Service<http::Request<tonic::body::BoxBody>>>::Error:
+                Into<StdError> + Send + Sync,
         {
             MsgClient::new(InterceptedService::new(inner, interceptor))
         }
@@ -655,19 +554,13 @@ pub mod msg_client {
         pub async fn connection_open_init(
             &mut self,
             request: impl tonic::IntoRequest<super::MsgConnectionOpenInit>,
-        ) -> Result<
-            tonic::Response<super::MsgConnectionOpenInitResponse>,
-            tonic::Status,
-        > {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+        ) -> Result<tonic::Response<super::MsgConnectionOpenInitResponse>, tonic::Status> {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/ibc.core.connection.v1.Msg/ConnectionOpenInit",
@@ -677,19 +570,13 @@ pub mod msg_client {
         pub async fn connection_open_try(
             &mut self,
             request: impl tonic::IntoRequest<super::MsgConnectionOpenTry>,
-        ) -> Result<
-            tonic::Response<super::MsgConnectionOpenTryResponse>,
-            tonic::Status,
-        > {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+        ) -> Result<tonic::Response<super::MsgConnectionOpenTryResponse>, tonic::Status> {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/ibc.core.connection.v1.Msg/ConnectionOpenTry",
@@ -699,19 +586,13 @@ pub mod msg_client {
         pub async fn connection_open_ack(
             &mut self,
             request: impl tonic::IntoRequest<super::MsgConnectionOpenAck>,
-        ) -> Result<
-            tonic::Response<super::MsgConnectionOpenAckResponse>,
-            tonic::Status,
-        > {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+        ) -> Result<tonic::Response<super::MsgConnectionOpenAckResponse>, tonic::Status> {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/ibc.core.connection.v1.Msg/ConnectionOpenAck",
@@ -721,19 +602,14 @@ pub mod msg_client {
         pub async fn connection_open_confirm(
             &mut self,
             request: impl tonic::IntoRequest<super::MsgConnectionOpenConfirm>,
-        ) -> Result<
-            tonic::Response<super::MsgConnectionOpenConfirmResponse>,
-            tonic::Status,
-        > {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+        ) -> Result<tonic::Response<super::MsgConnectionOpenConfirmResponse>, tonic::Status>
+        {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/ibc.core.connection.v1.Msg/ConnectionOpenConfirm",
@@ -753,10 +629,7 @@ pub mod msg_server {
         async fn connection_open_init(
             &self,
             request: tonic::Request<super::MsgConnectionOpenInit>,
-        ) -> Result<
-            tonic::Response<super::MsgConnectionOpenInitResponse>,
-            tonic::Status,
-        >;
+        ) -> Result<tonic::Response<super::MsgConnectionOpenInitResponse>, tonic::Status>;
         async fn connection_open_try(
             &self,
             request: tonic::Request<super::MsgConnectionOpenTry>,
@@ -768,10 +641,7 @@ pub mod msg_server {
         async fn connection_open_confirm(
             &self,
             request: tonic::Request<super::MsgConnectionOpenConfirm>,
-        ) -> Result<
-            tonic::Response<super::MsgConnectionOpenConfirmResponse>,
-            tonic::Status,
-        >;
+        ) -> Result<tonic::Response<super::MsgConnectionOpenConfirmResponse>, tonic::Status>;
     }
     #[derive(Debug)]
     pub struct MsgServer<T: Msg> {
@@ -792,10 +662,7 @@ pub mod msg_server {
                 send_compression_encodings: Default::default(),
             }
         }
-        pub fn with_interceptor<F>(
-            inner: T,
-            interceptor: F,
-        ) -> InterceptedService<Self, F>
+        pub fn with_interceptor<F>(inner: T, interceptor: F) -> InterceptedService<Self, F>
         where
             F: tonic::service::Interceptor,
         {
@@ -823,10 +690,7 @@ pub mod msg_server {
         type Response = http::Response<tonic::body::BoxBody>;
         type Error = std::convert::Infallible;
         type Future = BoxFuture<Self::Response, Self::Error>;
-        fn poll_ready(
-            &mut self,
-            _cx: &mut Context<'_>,
-        ) -> Poll<Result<(), Self::Error>> {
+        fn poll_ready(&mut self, _cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
             Poll::Ready(Ok(()))
         }
         fn call(&mut self, req: http::Request<B>) -> Self::Future {
@@ -835,23 +699,17 @@ pub mod msg_server {
                 "/ibc.core.connection.v1.Msg/ConnectionOpenInit" => {
                     #[allow(non_camel_case_types)]
                     struct ConnectionOpenInitSvc<T: Msg>(pub Arc<T>);
-                    impl<
-                        T: Msg,
-                    > tonic::server::UnaryService<super::MsgConnectionOpenInit>
-                    for ConnectionOpenInitSvc<T> {
+                    impl<T: Msg> tonic::server::UnaryService<super::MsgConnectionOpenInit>
+                        for ConnectionOpenInitSvc<T>
+                    {
                         type Response = super::MsgConnectionOpenInitResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::MsgConnectionOpenInit>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
-                            let fut = async move {
-                                (*inner).connection_open_init(request).await
-                            };
+                            let fut = async move { (*inner).connection_open_init(request).await };
                             Box::pin(fut)
                         }
                     }
@@ -862,11 +720,10 @@ pub mod msg_server {
                         let inner = inner.0;
                         let method = ConnectionOpenInitSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -875,21 +732,15 @@ pub mod msg_server {
                 "/ibc.core.connection.v1.Msg/ConnectionOpenTry" => {
                     #[allow(non_camel_case_types)]
                     struct ConnectionOpenTrySvc<T: Msg>(pub Arc<T>);
-                    impl<T: Msg> tonic::server::UnaryService<super::MsgConnectionOpenTry>
-                    for ConnectionOpenTrySvc<T> {
+                    impl<T: Msg> tonic::server::UnaryService<super::MsgConnectionOpenTry> for ConnectionOpenTrySvc<T> {
                         type Response = super::MsgConnectionOpenTryResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::MsgConnectionOpenTry>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
-                            let fut = async move {
-                                (*inner).connection_open_try(request).await
-                            };
+                            let fut = async move { (*inner).connection_open_try(request).await };
                             Box::pin(fut)
                         }
                     }
@@ -900,11 +751,10 @@ pub mod msg_server {
                         let inner = inner.0;
                         let method = ConnectionOpenTrySvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -913,21 +763,15 @@ pub mod msg_server {
                 "/ibc.core.connection.v1.Msg/ConnectionOpenAck" => {
                     #[allow(non_camel_case_types)]
                     struct ConnectionOpenAckSvc<T: Msg>(pub Arc<T>);
-                    impl<T: Msg> tonic::server::UnaryService<super::MsgConnectionOpenAck>
-                    for ConnectionOpenAckSvc<T> {
+                    impl<T: Msg> tonic::server::UnaryService<super::MsgConnectionOpenAck> for ConnectionOpenAckSvc<T> {
                         type Response = super::MsgConnectionOpenAckResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::MsgConnectionOpenAck>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
-                            let fut = async move {
-                                (*inner).connection_open_ack(request).await
-                            };
+                            let fut = async move { (*inner).connection_open_ack(request).await };
                             Box::pin(fut)
                         }
                     }
@@ -938,11 +782,10 @@ pub mod msg_server {
                         let inner = inner.0;
                         let method = ConnectionOpenAckSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -951,23 +794,18 @@ pub mod msg_server {
                 "/ibc.core.connection.v1.Msg/ConnectionOpenConfirm" => {
                     #[allow(non_camel_case_types)]
                     struct ConnectionOpenConfirmSvc<T: Msg>(pub Arc<T>);
-                    impl<
-                        T: Msg,
-                    > tonic::server::UnaryService<super::MsgConnectionOpenConfirm>
-                    for ConnectionOpenConfirmSvc<T> {
+                    impl<T: Msg> tonic::server::UnaryService<super::MsgConnectionOpenConfirm>
+                        for ConnectionOpenConfirmSvc<T>
+                    {
                         type Response = super::MsgConnectionOpenConfirmResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::MsgConnectionOpenConfirm>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
-                            let fut = async move {
-                                (*inner).connection_open_confirm(request).await
-                            };
+                            let fut =
+                                async move { (*inner).connection_open_confirm(request).await };
                             Box::pin(fut)
                         }
                     }
@@ -978,28 +816,23 @@ pub mod msg_server {
                         let inner = inner.0;
                         let method = ConnectionOpenConfirmSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
                     Box::pin(fut)
                 }
-                _ => {
-                    Box::pin(async move {
-                        Ok(
-                            http::Response::builder()
-                                .status(200)
-                                .header("grpc-status", "12")
-                                .header("content-type", "application/grpc")
-                                .body(empty_body())
-                                .unwrap(),
-                        )
-                    })
-                }
+                _ => Box::pin(async move {
+                    Ok(http::Response::builder()
+                        .status(200)
+                        .header("grpc-status", "12")
+                        .header("content-type", "application/grpc")
+                        .body(empty_body())
+                        .unwrap())
+                }),
             }
         }
     }

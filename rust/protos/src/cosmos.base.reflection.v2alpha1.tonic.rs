@@ -3,8 +3,8 @@
 #[cfg(feature = "client")]
 pub mod reflection_service_client {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
-    use tonic::codegen::*;
     use tonic::codegen::http::Uri;
+    use tonic::codegen::*;
     #[derive(Debug, Clone)]
     pub struct ReflectionServiceClient<T> {
         inner: tonic::client::Grpc<T>,
@@ -48,9 +48,8 @@ pub mod reflection_service_client {
                     <T as tonic::client::GrpcService<tonic::body::BoxBody>>::ResponseBody,
                 >,
             >,
-            <T as tonic::codegen::Service<
-                http::Request<tonic::body::BoxBody>,
-            >>::Error: Into<StdError> + Send + Sync,
+            <T as tonic::codegen::Service<http::Request<tonic::body::BoxBody>>>::Error:
+                Into<StdError> + Send + Sync,
         {
             ReflectionServiceClient::new(InterceptedService::new(inner, interceptor))
         }
@@ -73,15 +72,12 @@ pub mod reflection_service_client {
             &mut self,
             request: impl tonic::IntoRequest<super::GetAuthnDescriptorRequest>,
         ) -> Result<tonic::Response<super::GetAuthnDescriptorResponse>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/cosmos.base.reflection.v2alpha1.ReflectionService/GetAuthnDescriptor",
@@ -92,15 +88,12 @@ pub mod reflection_service_client {
             &mut self,
             request: impl tonic::IntoRequest<super::GetChainDescriptorRequest>,
         ) -> Result<tonic::Response<super::GetChainDescriptorResponse>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/cosmos.base.reflection.v2alpha1.ReflectionService/GetChainDescriptor",
@@ -111,15 +104,12 @@ pub mod reflection_service_client {
             &mut self,
             request: impl tonic::IntoRequest<super::GetCodecDescriptorRequest>,
         ) -> Result<tonic::Response<super::GetCodecDescriptorResponse>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/cosmos.base.reflection.v2alpha1.ReflectionService/GetCodecDescriptor",
@@ -129,19 +119,14 @@ pub mod reflection_service_client {
         pub async fn get_configuration_descriptor(
             &mut self,
             request: impl tonic::IntoRequest<super::GetConfigurationDescriptorRequest>,
-        ) -> Result<
-            tonic::Response<super::GetConfigurationDescriptorResponse>,
-            tonic::Status,
-        > {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+        ) -> Result<tonic::Response<super::GetConfigurationDescriptorResponse>, tonic::Status>
+        {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/cosmos.base.reflection.v2alpha1.ReflectionService/GetConfigurationDescriptor",
@@ -151,19 +136,14 @@ pub mod reflection_service_client {
         pub async fn get_query_services_descriptor(
             &mut self,
             request: impl tonic::IntoRequest<super::GetQueryServicesDescriptorRequest>,
-        ) -> Result<
-            tonic::Response<super::GetQueryServicesDescriptorResponse>,
-            tonic::Status,
-        > {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+        ) -> Result<tonic::Response<super::GetQueryServicesDescriptorResponse>, tonic::Status>
+        {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/cosmos.base.reflection.v2alpha1.ReflectionService/GetQueryServicesDescriptor",
@@ -174,15 +154,12 @@ pub mod reflection_service_client {
             &mut self,
             request: impl tonic::IntoRequest<super::GetTxDescriptorRequest>,
         ) -> Result<tonic::Response<super::GetTxDescriptorResponse>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/cosmos.base.reflection.v2alpha1.ReflectionService/GetTxDescriptor",
@@ -214,17 +191,11 @@ pub mod reflection_service_server {
         async fn get_configuration_descriptor(
             &self,
             request: tonic::Request<super::GetConfigurationDescriptorRequest>,
-        ) -> Result<
-            tonic::Response<super::GetConfigurationDescriptorResponse>,
-            tonic::Status,
-        >;
+        ) -> Result<tonic::Response<super::GetConfigurationDescriptorResponse>, tonic::Status>;
         async fn get_query_services_descriptor(
             &self,
             request: tonic::Request<super::GetQueryServicesDescriptorRequest>,
-        ) -> Result<
-            tonic::Response<super::GetQueryServicesDescriptorResponse>,
-            tonic::Status,
-        >;
+        ) -> Result<tonic::Response<super::GetQueryServicesDescriptorResponse>, tonic::Status>;
         async fn get_tx_descriptor(
             &self,
             request: tonic::Request<super::GetTxDescriptorRequest>,
@@ -249,10 +220,7 @@ pub mod reflection_service_server {
                 send_compression_encodings: Default::default(),
             }
         }
-        pub fn with_interceptor<F>(
-            inner: T,
-            interceptor: F,
-        ) -> InterceptedService<Self, F>
+        pub fn with_interceptor<F>(inner: T, interceptor: F) -> InterceptedService<Self, F>
         where
             F: tonic::service::Interceptor,
         {
@@ -280,10 +248,7 @@ pub mod reflection_service_server {
         type Response = http::Response<tonic::body::BoxBody>;
         type Error = std::convert::Infallible;
         type Future = BoxFuture<Self::Response, Self::Error>;
-        fn poll_ready(
-            &mut self,
-            _cx: &mut Context<'_>,
-        ) -> Poll<Result<(), Self::Error>> {
+        fn poll_ready(&mut self, _cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
             Poll::Ready(Ok(()))
         }
         fn call(&mut self, req: http::Request<B>) -> Self::Future {
@@ -292,23 +257,18 @@ pub mod reflection_service_server {
                 "/cosmos.base.reflection.v2alpha1.ReflectionService/GetAuthnDescriptor" => {
                     #[allow(non_camel_case_types)]
                     struct GetAuthnDescriptorSvc<T: ReflectionService>(pub Arc<T>);
-                    impl<
-                        T: ReflectionService,
-                    > tonic::server::UnaryService<super::GetAuthnDescriptorRequest>
-                    for GetAuthnDescriptorSvc<T> {
+                    impl<T: ReflectionService>
+                        tonic::server::UnaryService<super::GetAuthnDescriptorRequest>
+                        for GetAuthnDescriptorSvc<T>
+                    {
                         type Response = super::GetAuthnDescriptorResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::GetAuthnDescriptorRequest>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
-                            let fut = async move {
-                                (*inner).get_authn_descriptor(request).await
-                            };
+                            let fut = async move { (*inner).get_authn_descriptor(request).await };
                             Box::pin(fut)
                         }
                     }
@@ -319,11 +279,10 @@ pub mod reflection_service_server {
                         let inner = inner.0;
                         let method = GetAuthnDescriptorSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -332,23 +291,18 @@ pub mod reflection_service_server {
                 "/cosmos.base.reflection.v2alpha1.ReflectionService/GetChainDescriptor" => {
                     #[allow(non_camel_case_types)]
                     struct GetChainDescriptorSvc<T: ReflectionService>(pub Arc<T>);
-                    impl<
-                        T: ReflectionService,
-                    > tonic::server::UnaryService<super::GetChainDescriptorRequest>
-                    for GetChainDescriptorSvc<T> {
+                    impl<T: ReflectionService>
+                        tonic::server::UnaryService<super::GetChainDescriptorRequest>
+                        for GetChainDescriptorSvc<T>
+                    {
                         type Response = super::GetChainDescriptorResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::GetChainDescriptorRequest>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
-                            let fut = async move {
-                                (*inner).get_chain_descriptor(request).await
-                            };
+                            let fut = async move { (*inner).get_chain_descriptor(request).await };
                             Box::pin(fut)
                         }
                     }
@@ -359,11 +313,10 @@ pub mod reflection_service_server {
                         let inner = inner.0;
                         let method = GetChainDescriptorSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -372,23 +325,18 @@ pub mod reflection_service_server {
                 "/cosmos.base.reflection.v2alpha1.ReflectionService/GetCodecDescriptor" => {
                     #[allow(non_camel_case_types)]
                     struct GetCodecDescriptorSvc<T: ReflectionService>(pub Arc<T>);
-                    impl<
-                        T: ReflectionService,
-                    > tonic::server::UnaryService<super::GetCodecDescriptorRequest>
-                    for GetCodecDescriptorSvc<T> {
+                    impl<T: ReflectionService>
+                        tonic::server::UnaryService<super::GetCodecDescriptorRequest>
+                        for GetCodecDescriptorSvc<T>
+                    {
                         type Response = super::GetCodecDescriptorResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::GetCodecDescriptorRequest>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
-                            let fut = async move {
-                                (*inner).get_codec_descriptor(request).await
-                            };
+                            let fut = async move { (*inner).get_codec_descriptor(request).await };
                             Box::pin(fut)
                         }
                     }
@@ -399,11 +347,10 @@ pub mod reflection_service_server {
                         let inner = inner.0;
                         let method = GetCodecDescriptorSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -411,29 +358,20 @@ pub mod reflection_service_server {
                 }
                 "/cosmos.base.reflection.v2alpha1.ReflectionService/GetConfigurationDescriptor" => {
                     #[allow(non_camel_case_types)]
-                    struct GetConfigurationDescriptorSvc<T: ReflectionService>(
-                        pub Arc<T>,
-                    );
-                    impl<
-                        T: ReflectionService,
-                    > tonic::server::UnaryService<
-                        super::GetConfigurationDescriptorRequest,
-                    > for GetConfigurationDescriptorSvc<T> {
+                    struct GetConfigurationDescriptorSvc<T: ReflectionService>(pub Arc<T>);
+                    impl<T: ReflectionService>
+                        tonic::server::UnaryService<super::GetConfigurationDescriptorRequest>
+                        for GetConfigurationDescriptorSvc<T>
+                    {
                         type Response = super::GetConfigurationDescriptorResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
-                            request: tonic::Request<
-                                super::GetConfigurationDescriptorRequest,
-                            >,
+                            request: tonic::Request<super::GetConfigurationDescriptorRequest>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
-                            let fut = async move {
-                                (*inner).get_configuration_descriptor(request).await
-                            };
+                            let fut =
+                                async move { (*inner).get_configuration_descriptor(request).await };
                             Box::pin(fut)
                         }
                     }
@@ -444,11 +382,10 @@ pub mod reflection_service_server {
                         let inner = inner.0;
                         let method = GetConfigurationDescriptorSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -456,24 +393,16 @@ pub mod reflection_service_server {
                 }
                 "/cosmos.base.reflection.v2alpha1.ReflectionService/GetQueryServicesDescriptor" => {
                     #[allow(non_camel_case_types)]
-                    struct GetQueryServicesDescriptorSvc<T: ReflectionService>(
-                        pub Arc<T>,
-                    );
-                    impl<
-                        T: ReflectionService,
-                    > tonic::server::UnaryService<
-                        super::GetQueryServicesDescriptorRequest,
-                    > for GetQueryServicesDescriptorSvc<T> {
+                    struct GetQueryServicesDescriptorSvc<T: ReflectionService>(pub Arc<T>);
+                    impl<T: ReflectionService>
+                        tonic::server::UnaryService<super::GetQueryServicesDescriptorRequest>
+                        for GetQueryServicesDescriptorSvc<T>
+                    {
                         type Response = super::GetQueryServicesDescriptorResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
-                            request: tonic::Request<
-                                super::GetQueryServicesDescriptorRequest,
-                            >,
+                            request: tonic::Request<super::GetQueryServicesDescriptorRequest>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
                             let fut = async move {
@@ -489,11 +418,10 @@ pub mod reflection_service_server {
                         let inner = inner.0;
                         let method = GetQueryServicesDescriptorSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -502,23 +430,18 @@ pub mod reflection_service_server {
                 "/cosmos.base.reflection.v2alpha1.ReflectionService/GetTxDescriptor" => {
                     #[allow(non_camel_case_types)]
                     struct GetTxDescriptorSvc<T: ReflectionService>(pub Arc<T>);
-                    impl<
-                        T: ReflectionService,
-                    > tonic::server::UnaryService<super::GetTxDescriptorRequest>
-                    for GetTxDescriptorSvc<T> {
+                    impl<T: ReflectionService>
+                        tonic::server::UnaryService<super::GetTxDescriptorRequest>
+                        for GetTxDescriptorSvc<T>
+                    {
                         type Response = super::GetTxDescriptorResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::GetTxDescriptorRequest>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
-                            let fut = async move {
-                                (*inner).get_tx_descriptor(request).await
-                            };
+                            let fut = async move { (*inner).get_tx_descriptor(request).await };
                             Box::pin(fut)
                         }
                     }
@@ -529,28 +452,23 @@ pub mod reflection_service_server {
                         let inner = inner.0;
                         let method = GetTxDescriptorSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
                     Box::pin(fut)
                 }
-                _ => {
-                    Box::pin(async move {
-                        Ok(
-                            http::Response::builder()
-                                .status(200)
-                                .header("grpc-status", "12")
-                                .header("content-type", "application/grpc")
-                                .body(empty_body())
-                                .unwrap(),
-                        )
-                    })
-                }
+                _ => Box::pin(async move {
+                    Ok(http::Response::builder()
+                        .status(200)
+                        .header("grpc-status", "12")
+                        .header("content-type", "application/grpc")
+                        .body(empty_body())
+                        .unwrap())
+                }),
             }
         }
     }
@@ -574,8 +492,7 @@ pub mod reflection_service_server {
             write!(f, "{:?}", self.0)
         }
     }
-    impl<T: ReflectionService> tonic::server::NamedService
-    for ReflectionServiceServer<T> {
+    impl<T: ReflectionService> tonic::server::NamedService for ReflectionServiceServer<T> {
         const NAME: &'static str = "cosmos.base.reflection.v2alpha1.ReflectionService";
     }
 }

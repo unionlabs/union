@@ -24,9 +24,7 @@ pub struct GetResponse {
     /// result is the result of the get query. If no value is found, the gRPC
     /// status code NOT_FOUND will be returned.
     #[prost(message, optional, tag = "1")]
-    pub result: ::core::option::Option<
-        super::super::super::super::google::protobuf::Any,
-    >,
+    pub result: ::core::option::Option<super::super::super::super::google::protobuf::Any>,
 }
 /// ListRequest is the Query/List request type.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -41,9 +39,7 @@ pub struct ListRequest {
     pub index: ::prost::alloc::string::String,
     /// pagination is the pagination request.
     #[prost(message, optional, tag = "5")]
-    pub pagination: ::core::option::Option<
-        super::super::super::base::query::v1beta1::PageRequest,
-    >,
+    pub pagination: ::core::option::Option<super::super::super::base::query::v1beta1::PageRequest>,
     /// query is the query expression corresponding to the provided index. If
     /// neither prefix nor range is specified, the query will list all the fields
     /// in the index.
@@ -97,14 +93,10 @@ pub mod list_request {
 pub struct ListResponse {
     /// results are the results of the query.
     #[prost(message, repeated, tag = "1")]
-    pub results: ::prost::alloc::vec::Vec<
-        super::super::super::super::google::protobuf::Any,
-    >,
+    pub results: ::prost::alloc::vec::Vec<super::super::super::super::google::protobuf::Any>,
     /// pagination is the pagination response.
     #[prost(message, optional, tag = "5")]
-    pub pagination: ::core::option::Option<
-        super::super::super::base::query::v1beta1::PageResponse,
-    >,
+    pub pagination: ::core::option::Option<super::super::super::base::query::v1beta1::PageResponse>,
 }
 /// IndexValue represents the value of a field in an ORM index expression.
 #[allow(clippy::derive_partial_eq_without_eq)]

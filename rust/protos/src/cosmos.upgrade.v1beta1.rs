@@ -31,9 +31,7 @@ pub struct Plan {
     /// If this field is not empty, an error will be thrown.
     #[deprecated]
     #[prost(message, optional, tag = "5")]
-    pub upgraded_client_state: ::core::option::Option<
-        super::super::super::google::protobuf::Any,
-    >,
+    pub upgraded_client_state: ::core::option::Option<super::super::super::google::protobuf::Any>,
 }
 /// SoftwareUpgradeProposal is a gov Content type for initiating a software
 /// upgrade.

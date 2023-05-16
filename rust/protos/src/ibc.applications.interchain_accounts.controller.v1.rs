@@ -73,9 +73,7 @@ pub struct MsgSendTx {
     #[prost(string, tag = "2")]
     pub connection_id: ::prost::alloc::string::String,
     #[prost(message, optional, tag = "3")]
-    pub packet_data: ::core::option::Option<
-        super::super::v1::InterchainAccountPacketData,
-    >,
+    pub packet_data: ::core::option::Option<super::super::v1::InterchainAccountPacketData>,
     /// Relative timeout timestamp provided will be added to the current block time during transaction execution.
     /// The timeout timestamp must be non-zero.
     #[prost(uint64, tag = "4")]

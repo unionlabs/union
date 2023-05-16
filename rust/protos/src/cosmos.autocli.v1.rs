@@ -28,10 +28,8 @@ pub struct ServiceCommandDescriptor {
     /// different protobuf services. The map key is used as the name of the
     /// sub-command.
     #[prost(map = "string, message", tag = "3")]
-    pub sub_commands: ::std::collections::HashMap<
-        ::prost::alloc::string::String,
-        ServiceCommandDescriptor,
-    >,
+    pub sub_commands:
+        ::std::collections::HashMap<::prost::alloc::string::String, ServiceCommandDescriptor>,
 }
 /// RpcCommandOptions specifies options for commands generated from protobuf
 /// rpc methods.
@@ -78,10 +76,7 @@ pub struct RpcCommandOptions {
     /// By default all request fields are configured as flags. They can
     /// also be configured as positional args instead using positional_args.
     #[prost(map = "string, message", tag = "10")]
-    pub flag_options: ::std::collections::HashMap<
-        ::prost::alloc::string::String,
-        FlagOptions,
-    >,
+    pub flag_options: ::std::collections::HashMap<::prost::alloc::string::String, FlagOptions>,
     /// positional_args specifies positional arguments for the command.
     #[prost(message, repeated, tag = "11")]
     pub positional_args: ::prost::alloc::vec::Vec<PositionalArgDescriptor>,
@@ -145,10 +140,7 @@ pub struct AppOptionsRequest {}
 pub struct AppOptionsResponse {
     /// module_options is a map of module name to autocli module options.
     #[prost(map = "string, message", tag = "1")]
-    pub module_options: ::std::collections::HashMap<
-        ::prost::alloc::string::String,
-        ModuleOptions,
-    >,
+    pub module_options: ::std::collections::HashMap<::prost::alloc::string::String, ModuleOptions>,
 }
 include!("cosmos.autocli.v1.tonic.rs");
 // @@protoc_insertion_point(module)

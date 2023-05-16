@@ -89,9 +89,7 @@ pub struct InterfaceDescriptor {
     /// interface_accepting_messages contains information regarding the proto messages which contain the interface as
     /// google.protobuf.Any field
     #[prost(message, repeated, tag = "2")]
-    pub interface_accepting_messages: ::prost::alloc::vec::Vec<
-        InterfaceAcceptingMessageDescriptor,
-    >,
+    pub interface_accepting_messages: ::prost::alloc::vec::Vec<InterfaceAcceptingMessageDescriptor>,
     /// interface_implementers is a list of the descriptors of the interface implementers
     #[prost(message, repeated, tag = "3")]
     pub interface_implementers: ::prost::alloc::vec::Vec<InterfaceImplementerDescriptor>,

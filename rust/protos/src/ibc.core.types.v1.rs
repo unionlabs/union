@@ -9,9 +9,7 @@ pub struct GenesisState {
     pub client_genesis: ::core::option::Option<super::super::client::v1::GenesisState>,
     /// ICS003 - Connections genesis state
     #[prost(message, optional, tag = "2")]
-    pub connection_genesis: ::core::option::Option<
-        super::super::connection::v1::GenesisState,
-    >,
+    pub connection_genesis: ::core::option::Option<super::super::connection::v1::GenesisState>,
     /// ICS004 - Channel genesis state
     #[prost(message, optional, tag = "3")]
     pub channel_genesis: ::core::option::Option<super::super::channel::v1::GenesisState>,

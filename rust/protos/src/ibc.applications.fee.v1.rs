@@ -19,19 +19,14 @@ pub struct IncentivizedAcknowledgement {
 pub struct Fee {
     /// the packet receive fee
     #[prost(message, repeated, tag = "1")]
-    pub recv_fee: ::prost::alloc::vec::Vec<
-        super::super::super::super::cosmos::base::v1beta1::Coin,
-    >,
+    pub recv_fee: ::prost::alloc::vec::Vec<super::super::super::super::cosmos::base::v1beta1::Coin>,
     /// the packet acknowledgement fee
     #[prost(message, repeated, tag = "2")]
-    pub ack_fee: ::prost::alloc::vec::Vec<
-        super::super::super::super::cosmos::base::v1beta1::Coin,
-    >,
+    pub ack_fee: ::prost::alloc::vec::Vec<super::super::super::super::cosmos::base::v1beta1::Coin>,
     /// the packet timeout fee
     #[prost(message, repeated, tag = "3")]
-    pub timeout_fee: ::prost::alloc::vec::Vec<
-        super::super::super::super::cosmos::base::v1beta1::Coin,
-    >,
+    pub timeout_fee:
+        ::prost::alloc::vec::Vec<super::super::super::super::cosmos::base::v1beta1::Coin>,
 }
 /// PacketFee contains ICS29 relayer fees, refund address and optional list of permitted relayers
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -61,9 +56,7 @@ pub struct PacketFees {
 pub struct IdentifiedPacketFees {
     /// unique packet identifier comprised of the channel ID, port ID and sequence
     #[prost(message, optional, tag = "1")]
-    pub packet_id: ::core::option::Option<
-        super::super::super::core::channel::v1::PacketId,
-    >,
+    pub packet_id: ::core::option::Option<super::super::super::core::channel::v1::PacketId>,
     /// list of packet fees
     #[prost(message, repeated, tag = "2")]
     pub packet_fees: ::prost::alloc::vec::Vec<PacketFee>,
@@ -83,9 +76,7 @@ pub struct GenesisState {
     pub registered_payees: ::prost::alloc::vec::Vec<RegisteredPayee>,
     /// list of registered counterparty payees
     #[prost(message, repeated, tag = "4")]
-    pub registered_counterparty_payees: ::prost::alloc::vec::Vec<
-        RegisteredCounterpartyPayee,
-    >,
+    pub registered_counterparty_payees: ::prost::alloc::vec::Vec<RegisteredCounterpartyPayee>,
     /// list of forward relayer addresses
     #[prost(message, repeated, tag = "5")]
     pub forward_relayers: ::prost::alloc::vec::Vec<ForwardRelayerAddress>,
@@ -139,9 +130,7 @@ pub struct ForwardRelayerAddress {
     pub address: ::prost::alloc::string::String,
     /// unique packet identifer comprised of the channel ID, port ID and sequence
     #[prost(message, optional, tag = "2")]
-    pub packet_id: ::core::option::Option<
-        super::super::super::core::channel::v1::PacketId,
-    >,
+    pub packet_id: ::core::option::Option<super::super::super::core::channel::v1::PacketId>,
 }
 /// QueryIncentivizedPacketsRequest defines the request type for the IncentivizedPackets rpc
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -175,9 +164,7 @@ pub struct QueryIncentivizedPacketsResponse {
 pub struct QueryIncentivizedPacketRequest {
     /// unique packet identifier comprised of channel ID, port ID and sequence
     #[prost(message, optional, tag = "1")]
-    pub packet_id: ::core::option::Option<
-        super::super::super::core::channel::v1::PacketId,
-    >,
+    pub packet_id: ::core::option::Option<super::super::super::core::channel::v1::PacketId>,
     /// block height at which to query
     #[prost(uint64, tag = "2")]
     pub query_height: u64,
@@ -227,9 +214,7 @@ pub struct QueryIncentivizedPacketsForChannelResponse {
 pub struct QueryTotalRecvFeesRequest {
     /// the packet identifier for the associated fees
     #[prost(message, optional, tag = "1")]
-    pub packet_id: ::core::option::Option<
-        super::super::super::core::channel::v1::PacketId,
-    >,
+    pub packet_id: ::core::option::Option<super::super::super::core::channel::v1::PacketId>,
 }
 /// QueryTotalRecvFeesResponse defines the response type for the TotalRecvFees rpc
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -237,9 +222,8 @@ pub struct QueryTotalRecvFeesRequest {
 pub struct QueryTotalRecvFeesResponse {
     /// the total packet receive fees
     #[prost(message, repeated, tag = "1")]
-    pub recv_fees: ::prost::alloc::vec::Vec<
-        super::super::super::super::cosmos::base::v1beta1::Coin,
-    >,
+    pub recv_fees:
+        ::prost::alloc::vec::Vec<super::super::super::super::cosmos::base::v1beta1::Coin>,
 }
 /// QueryTotalAckFeesRequest defines the request type for the TotalAckFees rpc
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -247,9 +231,7 @@ pub struct QueryTotalRecvFeesResponse {
 pub struct QueryTotalAckFeesRequest {
     /// the packet identifier for the associated fees
     #[prost(message, optional, tag = "1")]
-    pub packet_id: ::core::option::Option<
-        super::super::super::core::channel::v1::PacketId,
-    >,
+    pub packet_id: ::core::option::Option<super::super::super::core::channel::v1::PacketId>,
 }
 /// QueryTotalAckFeesResponse defines the response type for the TotalAckFees rpc
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -257,9 +239,7 @@ pub struct QueryTotalAckFeesRequest {
 pub struct QueryTotalAckFeesResponse {
     /// the total packet acknowledgement fees
     #[prost(message, repeated, tag = "1")]
-    pub ack_fees: ::prost::alloc::vec::Vec<
-        super::super::super::super::cosmos::base::v1beta1::Coin,
-    >,
+    pub ack_fees: ::prost::alloc::vec::Vec<super::super::super::super::cosmos::base::v1beta1::Coin>,
 }
 /// QueryTotalTimeoutFeesRequest defines the request type for the TotalTimeoutFees rpc
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -267,9 +247,7 @@ pub struct QueryTotalAckFeesResponse {
 pub struct QueryTotalTimeoutFeesRequest {
     /// the packet identifier for the associated fees
     #[prost(message, optional, tag = "1")]
-    pub packet_id: ::core::option::Option<
-        super::super::super::core::channel::v1::PacketId,
-    >,
+    pub packet_id: ::core::option::Option<super::super::super::core::channel::v1::PacketId>,
 }
 /// QueryTotalTimeoutFeesResponse defines the response type for the TotalTimeoutFees rpc
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -277,9 +255,8 @@ pub struct QueryTotalTimeoutFeesRequest {
 pub struct QueryTotalTimeoutFeesResponse {
     /// the total packet timeout fees
     #[prost(message, repeated, tag = "1")]
-    pub timeout_fees: ::prost::alloc::vec::Vec<
-        super::super::super::super::cosmos::base::v1beta1::Coin,
-    >,
+    pub timeout_fees:
+        ::prost::alloc::vec::Vec<super::super::super::super::cosmos::base::v1beta1::Coin>,
 }
 /// QueryPayeeRequest defines the request type for the Payee rpc
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -439,9 +416,7 @@ pub struct MsgPayPacketFeeResponse {}
 pub struct MsgPayPacketFeeAsync {
     /// unique packet identifier comprised of the channel ID, port ID and sequence
     #[prost(message, optional, tag = "1")]
-    pub packet_id: ::core::option::Option<
-        super::super::super::core::channel::v1::PacketId,
-    >,
+    pub packet_id: ::core::option::Option<super::super::super::core::channel::v1::PacketId>,
     /// the packet fee associated with a particular IBC packet
     #[prost(message, optional, tag = "2")]
     pub packet_fee: ::core::option::Option<PacketFee>,
