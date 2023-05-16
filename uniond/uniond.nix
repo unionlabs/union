@@ -28,13 +28,17 @@
           doCheck = true;
         } // (if pkgs.stdenv.isLinux then {
           # statically link if we're on linux
-          nativeBuildInputs = [ pkgs.musl ];
+          nativeBuildInputs = [ pkgs.musl wasmvm ];
           CGO_ENABLED = 0;
           ldflags = [
             "-linkmode external"
-            "-extldflags '-static -L${pkgs.musl}/lib' '-L${wasmvm}/lib'"
+            "-extldflags '-static -L${pkgs.musl}/lib' '-static -L${wasmvm}/lib'"
           ];
-        } else { }));
+        } else {
+          ldflags = [
+            "-extldflags '-L${wasmvm}/lib'"
+          ];
+        }));
 
         uniond-image = pkgs.dockerTools.buildImage {
           name = "uniond";
