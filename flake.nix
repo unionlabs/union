@@ -42,6 +42,7 @@
         ./evm/evm.nix
         ./rust/proto.nix
         ./tools/lodestar-cli/lodestar-cli.nix
+        ./tools/libwasmvm/libwasmvm.nix
         ./networks/devnet.nix
         ./networks/genesis/devnet.nix
         ./unionpd/unionpd.nix
