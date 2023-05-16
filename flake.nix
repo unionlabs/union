@@ -79,12 +79,12 @@
                 };
                 cometbls = builtins.fetchGit {
                   name = "cometbls";
-                  url = "https://github.com:UnionFi/cometbls.git";
+                  url = "https://github.com/UnionFi/cometbls.git";
                   rev = "f19ae296cf176b343ea214967810ba735813e73f";
                 };
                 cosmossdk = builtins.fetchGit {
                   name = "cosmos-sdk";
-                  url = "https://github.com:UnionFi/cosmos-sdk.git";
+                  url = "https://github.com/UnionFi/cosmos-sdk.git";
                   rev = "021566a5aba49e79356e2e6e246494e118f12605";
                 };
                 ibcgo = pkgs.fetchFromGitHub {
