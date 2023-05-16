@@ -21,14 +21,12 @@ let
     };
   };
 
-  isDarwin = system == "x86_64-darwin" || system == "aarch64-darwin";
-
   prysmctl = prysmctl-targets.${system};
 in
 pkgs.stdenv.mkDerivation {
   name = "prysmctl";
 
-  nativeBuildInputs = (if isDarwin then [ ] else [
+  nativeBuildInputs = (if pkgs.stdenv.isDarwin then [ ] else [
     pkgs.autoPatchelfHook
   ]);
 

@@ -21,14 +21,12 @@ let
     };
   };
 
-  isDarwin = system == "x86_64-darwin" || system == "aarch64-darwin";
-
   beacon-chain = beacon-chain-targets.${system};
 in
 pkgs.stdenv.mkDerivation {
   name = "beacon-chain";
 
-  nativeBuildInputs = (if isDarwin then [ ] else [
+  nativeBuildInputs = (if pkgs.stdenv.isDarwin then [ ] else [
     pkgs.autoPatchelfHook
   ]);
 
