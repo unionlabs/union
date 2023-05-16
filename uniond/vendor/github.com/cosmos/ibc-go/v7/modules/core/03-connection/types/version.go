@@ -3,7 +3,7 @@ package types
 import (
 	"strings"
 
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	errorsmod "cosmossdk.io/errors"
 
 	"github.com/cosmos/ibc-go/v7/modules/core/exported"
 )
@@ -26,7 +26,7 @@ var (
 	}
 )
 
-var _ exported.Version = &Version{}
+var _ exported.Version = (*Version)(nil)
 
 // NewVersion returns a new instance of Version.
 func NewVersion(identifier string, features []string) *Version {
@@ -50,14 +50,14 @@ func (version Version) GetFeatures() []string {
 // features. It unmarshals the version string into a Version object.
 func ValidateVersion(version *Version) error {
 	if version == nil {
-		return sdkerrors.Wrap(ErrInvalidVersion, "version cannot be nil")
+		return errorsmod.Wrap(ErrInvalidVersion, "version cannot be nil")
 	}
 	if strings.TrimSpace(version.Identifier) == "" {
-		return sdkerrors.Wrap(ErrInvalidVersion, "version identifier cannot be blank")
+		return errorsmod.Wrap(ErrInvalidVersion, "version identifier cannot be blank")
 	}
 	for i, feature := range version.Features {
 		if strings.TrimSpace(feature) == "" {
-			return sdkerrors.Wrapf(ErrInvalidVersion, "feature cannot be blank, index %d", i)
+			return errorsmod.Wrapf(ErrInvalidVersion, "feature cannot be blank, index %d", i)
 		}
 	}
 
@@ -70,14 +70,14 @@ func ValidateVersion(version *Version) error {
 // identifier.
 func (version Version) VerifyProposedVersion(proposedVersion exported.Version) error {
 	if proposedVersion.GetIdentifier() != version.GetIdentifier() {
-		return sdkerrors.Wrapf(
+		return errorsmod.Wrapf(
 			ErrVersionNegotiationFailed,
 			"proposed version identifier does not equal supported version identifier (%s != %s)", proposedVersion.GetIdentifier(), version.GetIdentifier(),
 		)
 	}
 
 	if len(proposedVersion.GetFeatures()) == 0 && !allowNilFeatureSet[proposedVersion.GetIdentifier()] {
-		return sdkerrors.Wrapf(
+		return errorsmod.Wrapf(
 			ErrVersionNegotiationFailed,
 			"nil feature sets are not supported for version identifier (%s)", proposedVersion.GetIdentifier(),
 		)
@@ -85,7 +85,7 @@ func (version Version) VerifyProposedVersion(proposedVersion exported.Version) e
 
 	for _, proposedFeature := range proposedVersion.GetFeatures() {
 		if !contains(proposedFeature, version.GetFeatures()) {
-			return sdkerrors.Wrapf(
+			return errorsmod.Wrapf(
 				ErrVersionNegotiationFailed,
 				"proposed feature (%s) is not a supported feature set (%s)", proposedFeature, version.GetFeatures(),
 			)
@@ -166,7 +166,7 @@ func PickVersion(supportedVersions, counterpartyVersions []exported.Version) (*V
 		}
 	}
 
-	return nil, sdkerrors.Wrapf(
+	return nil, errorsmod.Wrapf(
 		ErrVersionNegotiationFailed,
 		"failed to find a matching counterparty version (%v) from the supported version list (%v)", counterpartyVersions, supportedVersions,
 	)

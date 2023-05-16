@@ -3,13 +3,14 @@ package keeper
 import (
 	"context"
 
+	errorsmod "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
+	ibcerrors "github.com/cosmos/ibc-go/v7/internal/errors"
 	"github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
 )
 
-var _ types.MsgServer = Keeper{}
+var _ types.MsgServer = (*Keeper)(nil)
 
 // Transfer defines an rpc handler method for MsgTransfer.
 func (k Keeper) Transfer(goCtx context.Context, msg *types.MsgTransfer) (*types.MsgTransferResponse, error) {
@@ -25,11 +26,11 @@ func (k Keeper) Transfer(goCtx context.Context, msg *types.MsgTransfer) (*types.
 	}
 
 	if !k.bankKeeper.IsSendEnabledCoin(ctx, msg.Token) {
-		return nil, sdkerrors.Wrapf(types.ErrSendDisabled, "%s transfers are currently disabled", msg.Token.Denom)
+		return nil, errorsmod.Wrapf(types.ErrSendDisabled, "%s transfers are currently disabled", msg.Token.Denom)
 	}
 
 	if k.bankKeeper.BlockedAddr(sender) {
-		return nil, sdkerrors.Wrapf(sdkerrors.ErrUnauthorized, "%s is not allowed to send funds", sender)
+		return nil, errorsmod.Wrapf(ibcerrors.ErrUnauthorized, "%s is not allowed to send funds", sender)
 	}
 
 	sequence, err := k.sendTransfer(

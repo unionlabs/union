@@ -38,13 +38,14 @@ import (
 
 func init() {
 	internal.AddGlobalDialOptions = func(opt ...DialOption) {
-		extraDialOptions = append(extraDialOptions, opt...)
+		globalDialOptions = append(globalDialOptions, opt...)
 	}
 	internal.ClearGlobalDialOptions = func() {
-		extraDialOptions = nil
+		globalDialOptions = nil
 	}
 	internal.WithBinaryLogger = withBinaryLogger
 	internal.JoinDialOptions = newJoinDialOption
+	internal.DisableGlobalDialOptions = newDisableGlobalDialOptions
 }
 
 // dialOptions configure a Dial call. dialOptions are set by the DialOption
@@ -83,7 +84,7 @@ type DialOption interface {
 	apply(*dialOptions)
 }
 
-var extraDialOptions []DialOption
+var globalDialOptions []DialOption
 
 // EmptyDialOption does not alter the dial configuration. It can be embedded in
 // another structure to build custom dial options.
@@ -95,6 +96,16 @@ var extraDialOptions []DialOption
 type EmptyDialOption struct{}
 
 func (EmptyDialOption) apply(*dialOptions) {}
+
+type disableGlobalDialOptions struct{}
+
+func (disableGlobalDialOptions) apply(*dialOptions) {}
+
+// newDisableGlobalDialOptions returns a DialOption that prevents the ClientConn
+// from applying the global DialOptions (set via AddGlobalDialOptions).
+func newDisableGlobalDialOptions() DialOption {
+	return &disableGlobalDialOptions{}
+}
 
 // funcDialOption wraps a function that modifies dialOptions into an
 // implementation of the DialOption interface.

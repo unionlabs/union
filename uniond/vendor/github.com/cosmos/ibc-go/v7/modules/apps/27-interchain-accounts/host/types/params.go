@@ -43,11 +43,7 @@ func (p Params) Validate() error {
 		return err
 	}
 
-	if err := validateAllowlist(p.AllowMessages); err != nil {
-		return err
-	}
-
-	return nil
+	return validateAllowlist(p.AllowMessages)
 }
 
 // ParamSetPairs implements params.ParamSet

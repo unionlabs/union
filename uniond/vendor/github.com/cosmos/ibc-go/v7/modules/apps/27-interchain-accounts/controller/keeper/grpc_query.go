@@ -11,7 +11,7 @@ import (
 	icatypes "github.com/cosmos/ibc-go/v7/modules/apps/27-interchain-accounts/types"
 )
 
-var _ types.QueryServer = Keeper{}
+var _ types.QueryServer = (*Keeper)(nil)
 
 // InterchainAccount implements the Query/InterchainAccount gRPC method
 func (k Keeper) InterchainAccount(goCtx context.Context, req *types.QueryInterchainAccountRequest) (*types.QueryInterchainAccountResponse, error) {
@@ -19,12 +19,13 @@ func (k Keeper) InterchainAccount(goCtx context.Context, req *types.QueryInterch
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
 	portID, err := icatypes.NewControllerPortID(req.Owner)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to generate portID from owner address: %s", err)
 	}
 
-	ctx := sdk.UnwrapSDKContext(goCtx)
 	addr, found := k.GetInterchainAccountAddress(ctx, req.ConnectionId, portID)
 	if !found {
 		return nil, status.Errorf(codes.NotFound, "failed to retrieve account address for %s on connection %s", portID, req.ConnectionId)

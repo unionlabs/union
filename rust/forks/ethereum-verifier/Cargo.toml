@@ -1,0 +1,26 @@
+[package]
+name = "ethereum-light-client-verifier"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+displaydoc = { version = "0.2", default-features = false }
+ethereum-consensus = { path = "../ethereum-consensus", default-features = false }
+log = { version = "0.4.17", default-features = false }
+patricia-merkle-trie = { git = "https://github.com/bluele/patricia-merkle-trie", branch = "no-std-keccak-hasher", default-features = false, features = ["keccak"] }
+primitive-types = { version = "0.12.1", default-features = false }
+rlp = { version = "0.5.2", default-features = false }
+serde = { version = "1.0", default-features = false, features = ["alloc", "derive"] }
+trie-db = { version = "0.24.0", default-features = false }
+
+[dev-dependencies]
+hex-literal = "0.3.4"
+serde_json = "1.0.91"
+
+[features]
+default = ["std"]
+std = [
+    "trie-db/std",
+    "patricia-merkle-trie/std"
+]
+mock = []

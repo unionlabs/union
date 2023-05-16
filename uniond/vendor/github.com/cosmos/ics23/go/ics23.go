@@ -52,7 +52,7 @@ func VerifyMembership(spec *ProofSpec, root CommitmentRoot, proof *CommitmentPro
 func VerifyNonMembership(spec *ProofSpec, root CommitmentRoot, proof *CommitmentProof, key []byte) bool {
 	// decompress it before running code (no-op if not compressed)
 	proof = Decompress(proof)
-	np := getNonExistProofForKey(proof, key)
+	np := getNonExistProofForKey(spec, proof, key)
 	if np == nil {
 		return false
 	}
@@ -148,16 +148,16 @@ func getExistProofForKey(proof *CommitmentProof, key []byte) *ExistenceProof {
 	return nil
 }
 
-func getNonExistProofForKey(proof *CommitmentProof, key []byte) *NonExistenceProof {
+func getNonExistProofForKey(spec *ProofSpec, proof *CommitmentProof, key []byte) *NonExistenceProof {
 	switch p := proof.Proof.(type) {
 	case *CommitmentProof_Nonexist:
 		np := p.Nonexist
-		if isLeft(np.Left, key) && isRight(np.Right, key) {
+		if isLeft(spec, np.Left, key) && isRight(spec, np.Right, key) {
 			return np
 		}
 	case *CommitmentProof_Batch:
 		for _, sub := range p.Batch.Entries {
-			if np := sub.GetNonexist(); np != nil && isLeft(np.Left, key) && isRight(np.Right, key) {
+			if np := sub.GetNonexist(); np != nil && isLeft(spec, np.Left, key) && isRight(spec, np.Right, key) {
 				return np
 			}
 		}
@@ -165,10 +165,10 @@ func getNonExistProofForKey(proof *CommitmentProof, key []byte) *NonExistencePro
 	return nil
 }
 
-func isLeft(left *ExistenceProof, key []byte) bool {
-	return left == nil || bytes.Compare(left.Key, key) < 0
+func isLeft(spec *ProofSpec, left *ExistenceProof, key []byte) bool {
+	return left == nil || bytes.Compare(keyForComparison(spec, left.Key), keyForComparison(spec, key)) < 0
 }
 
-func isRight(right *ExistenceProof, key []byte) bool {
-	return right == nil || bytes.Compare(right.Key, key) > 0
+func isRight(spec *ProofSpec, right *ExistenceProof, key []byte) bool {
+	return right == nil || bytes.Compare(keyForComparison(spec, right.Key), keyForComparison(spec, key)) > 0
 }

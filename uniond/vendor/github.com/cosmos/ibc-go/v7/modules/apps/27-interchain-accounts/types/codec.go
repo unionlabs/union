@@ -1,10 +1,10 @@
 package types
 
 import (
+	errorsmod "cosmossdk.io/errors"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/cosmos/gogoproto/proto"
 )
@@ -29,7 +29,7 @@ func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
 func SerializeCosmosTx(cdc codec.BinaryCodec, msgs []proto.Message) (bz []byte, err error) {
 	// only ProtoCodec is supported
 	if _, ok := cdc.(*codec.ProtoCodec); !ok {
-		return nil, sdkerrors.Wrap(ErrInvalidCodec, "only ProtoCodec is supported for receiving messages on the host chain")
+		return nil, errorsmod.Wrap(ErrInvalidCodec, "only ProtoCodec is supported for receiving messages on the host chain")
 	}
 
 	msgAnys := make([]*codectypes.Any, len(msgs))
@@ -59,7 +59,7 @@ func SerializeCosmosTx(cdc codec.BinaryCodec, msgs []proto.Message) (bz []byte, 
 func DeserializeCosmosTx(cdc codec.BinaryCodec, data []byte) ([]sdk.Msg, error) {
 	// only ProtoCodec is supported
 	if _, ok := cdc.(*codec.ProtoCodec); !ok {
-		return nil, sdkerrors.Wrap(ErrInvalidCodec, "only ProtoCodec is supported for receiving messages on the host chain")
+		return nil, errorsmod.Wrap(ErrInvalidCodec, "only ProtoCodec is supported for receiving messages on the host chain")
 	}
 
 	var cosmosTx CosmosTx
@@ -69,10 +69,10 @@ func DeserializeCosmosTx(cdc codec.BinaryCodec, data []byte) ([]sdk.Msg, error) 
 
 	msgs := make([]sdk.Msg, len(cosmosTx.Messages))
 
-	for i, any := range cosmosTx.Messages {
+	for i, protoAny := range cosmosTx.Messages {
 		var msg sdk.Msg
 
-		err := cdc.UnpackAny(any, &msg)
+		err := cdc.UnpackAny(protoAny, &msg)
 		if err != nil {
 			return nil, err
 		}

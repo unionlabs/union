@@ -3,12 +3,13 @@ package solomachine
 import (
 	"reflect"
 
+	errorsmod "cosmossdk.io/errors"
 	"github.com/cosmos/cosmos-sdk/codec"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 
+	ibcerrors "github.com/cosmos/ibc-go/v7/internal/errors"
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	commitmenttypes "github.com/cosmos/ibc-go/v7/modules/core/23-commitment/types"
 	host "github.com/cosmos/ibc-go/v7/modules/core/24-host"
@@ -63,10 +64,10 @@ func (cs ClientState) Status(_ sdk.Context, _ sdk.KVStore, _ codec.BinaryCodec) 
 // Validate performs basic validation of the client state fields.
 func (cs ClientState) Validate() error {
 	if cs.Sequence == 0 {
-		return sdkerrors.Wrap(clienttypes.ErrInvalidClient, "sequence cannot be 0")
+		return errorsmod.Wrap(clienttypes.ErrInvalidClient, "sequence cannot be 0")
 	}
 	if cs.ConsensusState == nil {
-		return sdkerrors.Wrap(clienttypes.ErrInvalidConsensus, "consensus state cannot be nil")
+		return errorsmod.Wrap(clienttypes.ErrInvalidConsensus, "consensus state cannot be nil")
 	}
 	return cs.ConsensusState.ValidateBasic()
 }
@@ -80,7 +81,7 @@ func (cs ClientState) ZeroCustomFields() exported.ClientState {
 // sets the client state in the provided client store.
 func (cs ClientState) Initialize(_ sdk.Context, cdc codec.BinaryCodec, clientStore sdk.KVStore, consState exported.ConsensusState) error {
 	if !reflect.DeepEqual(cs.ConsensusState, consState) {
-		return sdkerrors.Wrapf(clienttypes.ErrInvalidConsensus, "consensus state in initial client does not equal initial consensus state. expected: %s, got: %s",
+		return errorsmod.Wrapf(clienttypes.ErrInvalidConsensus, "consensus state in initial client does not equal initial consensus state. expected: %s, got: %s",
 			cs.ConsensusState, consState)
 	}
 
@@ -99,7 +100,7 @@ func (cs ClientState) VerifyUpgradeAndUpdateState(
 	_ sdk.Context, _ codec.BinaryCodec, _ sdk.KVStore,
 	_ exported.ClientState, _ exported.ConsensusState, _, _ []byte,
 ) error {
-	return sdkerrors.Wrap(clienttypes.ErrInvalidUpgradeClient, "cannot upgrade solomachine client")
+	return errorsmod.Wrap(clienttypes.ErrInvalidUpgradeClient, "cannot upgrade solomachine client")
 }
 
 // VerifyMembership is a generic proof verification method which verifies a proof of the existence of a value at a given CommitmentPath at the latest sequence.
@@ -122,11 +123,11 @@ func (cs *ClientState) VerifyMembership(
 
 	merklePath, ok := path.(commitmenttypes.MerklePath)
 	if !ok {
-		return sdkerrors.Wrapf(sdkerrors.ErrInvalidType, "expected %T, got %T", commitmenttypes.MerklePath{}, path)
+		return errorsmod.Wrapf(ibcerrors.ErrInvalidType, "expected %T, got %T", commitmenttypes.MerklePath{}, path)
 	}
 
 	if merklePath.Empty() {
-		return sdkerrors.Wrap(commitmenttypes.ErrInvalidProof, "path is empty")
+		return errorsmod.Wrap(commitmenttypes.ErrInvalidProof, "path is empty")
 	}
 
 	signBytes := &SignBytes{
@@ -172,7 +173,7 @@ func (cs *ClientState) VerifyNonMembership(
 
 	merklePath, ok := path.(commitmenttypes.MerklePath)
 	if !ok {
-		return sdkerrors.Wrapf(sdkerrors.ErrInvalidType, "expected %T, got %T", commitmenttypes.MerklePath{}, path)
+		return errorsmod.Wrapf(ibcerrors.ErrInvalidType, "expected %T, got %T", commitmenttypes.MerklePath{}, path)
 	}
 
 	signBytes := &SignBytes{
@@ -208,17 +209,17 @@ func produceVerificationArgs(
 	proof []byte,
 ) (cryptotypes.PubKey, signing.SignatureData, uint64, uint64, error) {
 	if proof == nil {
-		return nil, nil, 0, 0, sdkerrors.Wrap(ErrInvalidProof, "proof cannot be empty")
+		return nil, nil, 0, 0, errorsmod.Wrap(ErrInvalidProof, "proof cannot be empty")
 	}
 
 	var timestampedSigData TimestampedSignatureData
 	if err := cdc.Unmarshal(proof, &timestampedSigData); err != nil {
-		return nil, nil, 0, 0, sdkerrors.Wrapf(err, "failed to unmarshal proof into type %T", timestampedSigData)
+		return nil, nil, 0, 0, errorsmod.Wrapf(err, "failed to unmarshal proof into type %T", timestampedSigData)
 	}
 
 	timestamp := timestampedSigData.Timestamp
 	if len(timestampedSigData.SignatureData) == 0 {
-		return nil, nil, 0, 0, sdkerrors.Wrap(ErrInvalidProof, "signature data cannot be empty")
+		return nil, nil, 0, 0, errorsmod.Wrap(ErrInvalidProof, "signature data cannot be empty")
 	}
 
 	sigData, err := UnmarshalSignatureData(cdc, timestampedSigData.SignatureData)
@@ -227,7 +228,7 @@ func produceVerificationArgs(
 	}
 
 	if cs.ConsensusState.GetTimestamp() > timestamp {
-		return nil, nil, 0, 0, sdkerrors.Wrapf(ErrInvalidProof, "the consensus state timestamp is greater than the signature timestamp (%d >= %d)", cs.ConsensusState.GetTimestamp(), timestamp)
+		return nil, nil, 0, 0, errorsmod.Wrapf(ErrInvalidProof, "the consensus state timestamp is greater than the signature timestamp (%d >= %d)", cs.ConsensusState.GetTimestamp(), timestamp)
 	}
 
 	sequence := cs.GetLatestHeight().GetRevisionHeight()
@@ -242,5 +243,5 @@ func produceVerificationArgs(
 // sets the client state to the store
 func setClientState(store sdk.KVStore, cdc codec.BinaryCodec, clientState exported.ClientState) {
 	bz := clienttypes.MustMarshalClientState(cdc, clientState)
-	store.Set([]byte(host.KeyClientState), bz)
+	store.Set(host.ClientStateKey(), bz)
 }

@@ -3,14 +3,15 @@ package types
 import (
 	"strings"
 
+	errorsmod "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
+	ibcerrors "github.com/cosmos/ibc-go/v7/internal/errors"
 	icatypes "github.com/cosmos/ibc-go/v7/modules/apps/27-interchain-accounts/types"
 	host "github.com/cosmos/ibc-go/v7/modules/core/24-host"
 )
 
-var _ sdk.Msg = &MsgRegisterInterchainAccount{}
+var _ sdk.Msg = (*MsgRegisterInterchainAccount)(nil)
 
 // NewMsgRegisterInterchainAccount creates a new instance of MsgRegisterInterchainAccount
 func NewMsgRegisterInterchainAccount(connectionID, owner, version string) *MsgRegisterInterchainAccount {
@@ -24,11 +25,11 @@ func NewMsgRegisterInterchainAccount(connectionID, owner, version string) *MsgRe
 // ValidateBasic implements sdk.Msg
 func (msg MsgRegisterInterchainAccount) ValidateBasic() error {
 	if err := host.ConnectionIdentifierValidator(msg.ConnectionId); err != nil {
-		return sdkerrors.Wrap(err, "invalid connection ID")
+		return errorsmod.Wrap(err, "invalid connection ID")
 	}
 
 	if strings.TrimSpace(msg.Owner) == "" {
-		return sdkerrors.Wrap(sdkerrors.ErrInvalidAddress, "owner address cannot be empty")
+		return errorsmod.Wrap(ibcerrors.ErrInvalidAddress, "owner address cannot be empty")
 	}
 
 	return nil
@@ -57,19 +58,19 @@ func NewMsgSendTx(owner, connectionID string, relativeTimeoutTimestamp uint64, p
 // ValidateBasic implements sdk.Msg
 func (msg MsgSendTx) ValidateBasic() error {
 	if err := host.ConnectionIdentifierValidator(msg.ConnectionId); err != nil {
-		return sdkerrors.Wrap(err, "invalid connection ID")
+		return errorsmod.Wrap(err, "invalid connection ID")
 	}
 
 	if strings.TrimSpace(msg.Owner) == "" {
-		return sdkerrors.Wrap(sdkerrors.ErrInvalidAddress, "owner address cannot be empty")
+		return errorsmod.Wrap(ibcerrors.ErrInvalidAddress, "owner address cannot be empty")
 	}
 
 	if err := msg.PacketData.ValidateBasic(); err != nil {
-		return sdkerrors.Wrap(err, "invalid interchain account packet data")
+		return errorsmod.Wrap(err, "invalid interchain account packet data")
 	}
 
 	if msg.RelativeTimeout == 0 {
-		return sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "relative timeout cannot be zero")
+		return errorsmod.Wrap(ibcerrors.ErrInvalidRequest, "relative timeout cannot be zero")
 	}
 
 	return nil

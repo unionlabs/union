@@ -3,9 +3,9 @@ package solomachine
 import (
 	"fmt"
 
+	errorsmod "cosmossdk.io/errors"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	"github.com/cosmos/ibc-go/v7/modules/core/exported"
@@ -21,14 +21,14 @@ func (cs ClientState) VerifyClientMessage(ctx sdk.Context, cdc codec.BinaryCodec
 	case *Misbehaviour:
 		return cs.verifyMisbehaviour(ctx, cdc, clientStore, msg)
 	default:
-		return sdkerrors.Wrapf(clienttypes.ErrInvalidClientType, "expected type of %T or %T, got type %T", Header{}, Misbehaviour{}, msg)
+		return errorsmod.Wrapf(clienttypes.ErrInvalidClientType, "expected type of %T or %T, got type %T", Header{}, Misbehaviour{}, msg)
 	}
 }
 
 func (cs ClientState) verifyHeader(ctx sdk.Context, cdc codec.BinaryCodec, clientStore sdk.KVStore, header *Header) error {
 	// assert update timestamp is not less than current consensus state timestamp
 	if header.Timestamp < cs.ConsensusState.Timestamp {
-		return sdkerrors.Wrapf(
+		return errorsmod.Wrapf(
 			clienttypes.ErrInvalidHeader,
 			"header timestamp is less than to the consensus state timestamp (%d < %d)", header.Timestamp, cs.ConsensusState.Timestamp,
 		)
@@ -69,7 +69,7 @@ func (cs ClientState) verifyHeader(ctx sdk.Context, cdc codec.BinaryCodec, clien
 	}
 
 	if err := VerifySignature(publicKey, data, sigData); err != nil {
-		return sdkerrors.Wrap(ErrInvalidHeader, err.Error())
+		return errorsmod.Wrap(ErrInvalidHeader, err.Error())
 	}
 
 	return nil

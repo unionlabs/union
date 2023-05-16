@@ -47,7 +47,7 @@ var TendermintSpec = &ProofSpec{
 var SmtSpec = &ProofSpec{
 	LeafSpec: &LeafOp{
 		Hash:         HashOp_SHA256,
-		PrehashKey:   HashOp_NO_HASH,
+		PrehashKey:   HashOp_SHA256,
 		PrehashValue: HashOp_SHA256,
 		Length:       LengthOp_NO_PREFIX,
 		Prefix:       []byte{0},
@@ -60,7 +60,8 @@ var SmtSpec = &ProofSpec{
 		EmptyChild:      make([]byte, 32),
 		Hash:            HashOp_SHA256,
 	},
-	MaxDepth: 256,
+	MaxDepth:                   256,
+	PrehashKeyBeforeComparison: true,
 }
 
 func encodeVarintProto(l int) []byte {
@@ -204,6 +205,17 @@ func (p *ExistenceProof) CheckAgainstSpec(spec *ProofSpec) error {
 	return nil
 }
 
+// If we should prehash the key before comparison, do so; otherwise, return the key. Prehashing
+// changes lexical comparison, so we do so before comparison if the spec sets
+// `PrehashKeyBeforeComparison`.
+func keyForComparison(spec *ProofSpec, key []byte) []byte {
+	if !spec.PrehashKeyBeforeComparison {
+		return key
+	}
+	hash, _ := doHashOrNoop(spec.LeafSpec.PrehashKey, key)
+	return hash
+}
+
 // Verify does all checks to ensure the proof has valid non-existence proofs,
 // and they ensure the given key is not in the CommitmentState
 func (p *NonExistenceProof) Verify(spec *ProofSpec, root CommitmentRoot, key []byte) error {
@@ -229,13 +241,13 @@ func (p *NonExistenceProof) Verify(spec *ProofSpec, root CommitmentRoot, key []b
 
 	// Ensure in valid range
 	if rightKey != nil {
-		if bytes.Compare(key, rightKey) >= 0 {
+		if bytes.Compare(keyForComparison(spec, key), keyForComparison(spec, rightKey)) >= 0 {
 			return errors.New("key is not left of right proof")
 		}
 	}
 
 	if leftKey != nil {
-		if bytes.Compare(key, leftKey) <= 0 {
+		if bytes.Compare(keyForComparison(spec, key), keyForComparison(spec, leftKey)) <= 0 {
 			return errors.New("key is not right of left proof")
 		}
 	}

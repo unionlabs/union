@@ -17,6 +17,7 @@ const (
 	AttributeKeyUpgradeStore      = "upgrade_store"
 	AttributeKeyUpgradePlanHeight = "upgrade_plan_height"
 	AttributeKeyUpgradePlanTitle  = "title"
+	AttributeKeyWasmCodeID        = "wasm_code_id"
 )
 
 // IBC client events vars
@@ -28,6 +29,7 @@ var (
 	EventTypeUpdateClientProposal  = "update_client_proposal"
 	EventTypeUpgradeChain          = "upgrade_chain"
 	EventTypeUpgradeClientProposal = "upgrade_client_proposal"
+	EventTypeStoreWasmCode         = "store_wasm_code"
 
 	AttributeValueCategory = fmt.Sprintf("%s_%s", ibcexported.ModuleName, SubModuleName)
 )
