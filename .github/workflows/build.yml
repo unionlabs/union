@@ -10,7 +10,7 @@ on:
 
 jobs:
   build:
-    uses: unionfi/workflows/.github/workflows/build.yml@v16
+    uses: unionfi/workflows/.github/workflows/build.yml@main
     secrets:
       nixbuild_token: ${{ secrets.nixbuild_token }}
       access-token: github.com=${{ secrets.GITHUB_TOKEN }}
