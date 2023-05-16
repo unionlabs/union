@@ -21,14 +21,16 @@ let
     };
   };
 
+  isDarwin = system == "x86_64-darwin" || system == "aarch64-darwin";
+
   prysmctl = prysmctl-targets.${system};
 in
 pkgs.stdenv.mkDerivation {
   name = "prysmctl";
 
-  nativeBuildInputs = [
+  nativeBuildInputs = (if isDarwin then [ ] else [
     pkgs.autoPatchelfHook
-  ];
+  ]);
 
   src = ".";
 
@@ -42,6 +44,6 @@ pkgs.stdenv.mkDerivation {
   meta = {
     homepage = "https://github.com/prysmaticlabs/prysm";
     description = "This is a command-line utility for common and one-off Ethereum proof-of-stake tasks, like helping users with validator exits or withdrawals. Most prysmctl commands require access to a fully synced beacon node.";
-    platforms = [ "x86_64-linux" "aarch64-linux" ];
+    platforms = [ "x86_64-linux" "aarch64-linux" "x86_64-linux" "aarch64-linux" ];
   };
 }

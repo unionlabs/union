@@ -21,14 +21,16 @@ let
     };
   };
 
+  isDarwin = system == "x86_64-darwin" || system == "aarch64-darwin";
+
   validator = validator-targets.${system};
 in
 pkgs.stdenv.mkDerivation {
   name = "validator";
 
-  nativeBuildInputs = [
+  nativeBuildInputs = (if isDarwin then [ ] else [
     pkgs.autoPatchelfHook
-  ];
+  ]);
 
   src = ".";
 
@@ -42,6 +44,6 @@ pkgs.stdenv.mkDerivation {
   meta = {
     homepage = "https://github.com/prysmaticlabs/prysm";
     description = "Launches an Ethereum validator client that interacts with a beacon chain, starts proposer and attester services, p2p connections, and more.";
-    platforms = [ "x86_64-linux" "aarch64-linux" ];
+    platforms = [ "x86_64-linux" "aarch64-linux" "x86_64-linux" "aarch64-linux" ];
   };
 }

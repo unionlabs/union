@@ -21,14 +21,16 @@ let
     };
   };
 
+  isDarwin = system == "x86_64-darwin" || system == "aarch64-darwin";
+
   beacon-chain = beacon-chain-targets.${system};
 in
 pkgs.stdenv.mkDerivation {
   name = "beacon-chain";
 
-  nativeBuildInputs = [
+  nativeBuildInputs = (if isDarwin then [ ] else [
     pkgs.autoPatchelfHook
-  ];
+  ]);
 
   src = ".";
   dontUnpack = true;
@@ -41,6 +43,6 @@ pkgs.stdenv.mkDerivation {
   meta = {
     homepage = "https://github.com/prysmaticlabs/prysm";
     description = "This is a beacon chain implementation for Ethereum.";
-    platforms = [ "x86_64-linux" "aarch64-linux" ];
+    platforms = [ "x86_64-linux" "aarch64-linux" "x86_64-linux" "aarch64-linux" ];
   };
 }
