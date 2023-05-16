@@ -37,6 +37,7 @@
           src = ./.;
           vendorSha256 = null;
           doCheck = true;
+          meta.mainProgram = "uniond";
         } // (if pkgs.stdenv.isLinux then {
           # statically link if we're on linux
           nativeBuildInputs = [ pkgs.musl wasmvm ];
