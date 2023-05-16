@@ -69,7 +69,7 @@ pub mod query_client {
             self
         }
         /** Parameters queries the parameters of the module.
-        */
+         */
         pub async fn params(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryParamsRequest>,
@@ -95,7 +95,7 @@ pub mod query_server {
     #[async_trait]
     pub trait Query: Send + Sync + 'static {
         /** Parameters queries the parameters of the module.
-        */
+         */
         async fn params(
             &self,
             request: tonic::Request<super::QueryParamsRequest>,

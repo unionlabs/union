@@ -6,7 +6,7 @@ pub mod query_client {
     use tonic::codegen::http::Uri;
     use tonic::codegen::*;
     /** Query provides defines the gRPC querier service.
-    */
+     */
     #[derive(Debug, Clone)]
     pub struct QueryClient<T> {
         inner: tonic::client::Grpc<T>,
@@ -71,7 +71,7 @@ pub mod query_client {
             self
         }
         /** Params queries all parameters of the ICA host submodule.
-        */
+         */
         pub async fn params(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryParamsRequest>,
@@ -99,14 +99,14 @@ pub mod query_server {
     #[async_trait]
     pub trait Query: Send + Sync + 'static {
         /** Params queries all parameters of the ICA host submodule.
-        */
+         */
         async fn params(
             &self,
             request: tonic::Request<super::QueryParamsRequest>,
         ) -> Result<tonic::Response<super::QueryParamsResponse>, tonic::Status>;
     }
     /** Query provides defines the gRPC querier service.
-    */
+     */
     #[derive(Debug)]
     pub struct QueryServer<T: Query> {
         inner: _Inner<T>,
