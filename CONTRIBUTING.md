@@ -6,7 +6,7 @@ In this guide, you will get an overview of the contribution workflow from openin
 
 ## Before you start working on a PR
 
-We do not just accept any code changes; as we might have different priorities at that time. Make sure to start by creating an [issue](https://github.com/unionfi/union/issues) first, and then discussing the implementation, challenges, and work with core members before starting.
+Before starting work on any code changes, make sure to start by creating an [issue](https://github.com/unionfi/union/issues) first. Once you've created an issue you can start discussing the implementation, challenges, and work with core members before starting on code contributions.
 
 For more complex conversations, use the [discussions](https://github.com/unionfi/union/discussions). Usually, a discussion becomes one or more issues.
 
