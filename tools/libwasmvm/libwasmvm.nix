@@ -21,6 +21,7 @@
               else "";
           in
           {
+            name = "libwasmvm";
             src = "${
               pkgs.fetchFromGitHub {
                 owner = "CosmWasm";
