@@ -41,6 +41,6 @@ pkgs.stdenv.mkDerivation {
   meta = {
     homepage = "https://github.com/prysmaticlabs/prysm";
     description = "This is a beacon chain implementation for Ethereum.";
-    platforms = [ "x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
+    platforms = [ "x86_64-linux" "aarch64-linux" ];
   };
 }

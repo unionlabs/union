@@ -42,6 +42,6 @@ pkgs.stdenv.mkDerivation {
   meta = {
     homepage = "https://github.com/prysmaticlabs/prysm";
     description = "Launches an Ethereum validator client that interacts with a beacon chain, starts proposer and attester services, p2p connections, and more.";
-    platforms = [ "x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
+    platforms = [ "x86_64-linux" "aarch64-linux" ];
   };
 }
