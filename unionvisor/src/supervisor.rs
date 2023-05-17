@@ -11,7 +11,7 @@ use std::{
     process::{Child, ExitStatus},
     time::Duration,
 };
-use tracing::{debug, error, field::display as as_display, info};
+use tracing::{debug, error, field::display as as_display, info, warn};
 
 /// A process supervisor for the uniond binary, which can start, gracefully exit and backup uniond data.
 pub struct Supervisor {
@@ -41,6 +41,7 @@ impl Supervisor {
         logformat: LogFormat,
         args: I,
     ) -> Result<()> {
+        assert!(&self.binary.exists());
         let handle = std::process::Command::new(&self.binary)
             .args(vec!["--log_format", logformat.as_str()])
             .arg("start")
@@ -133,8 +134,12 @@ pub fn run_and_upgrade<S: AsRef<OsStr>, I: IntoIterator<Item = S> + Clone>(
         home =  as_display(home.display()),
         "spawning supervisor process for the uniond binary"
     );
-
-    supervisor.spawn(logformat.clone(), args.clone())?;
+    supervisor
+        .spawn(logformat.clone(), args.clone())
+        .map_err(|err| {
+            warn!(target: "supervisor", "failed to spawn initial binary call");
+            err
+        })?;
     std::thread::sleep(Duration::from_millis(300));
     loop {
         if let Some(code) = supervisor.try_wait()? {
@@ -298,7 +303,8 @@ mod tests {
         let tmp_dir = testdata::temp_dir_with(&["test_early_exit"]);
         let home = tmp_dir.into_path().join("test_early_exit");
         assert!(home.join("bins/genesis/uniond.sh").exists());
-        let bindir = Bindir::new(home.clone(), home.join("bins"), "genesis", "uniond.sh").expect("should be able to create a bindir");
+        let bindir = Bindir::new(home.clone(), home.join("bins"), "genesis", "uniond.sh")
+            .expect("should be able to create a bindir");
         assert!(bindir.current().exists());
         let err = run_and_upgrade(
             home.clone(),

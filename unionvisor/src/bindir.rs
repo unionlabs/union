@@ -4,7 +4,7 @@ use std::ffi::OsString;
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use std::{fs, io};
-use tracing::{debug, warn, field::display as as_display};
+use tracing::{debug, field::display as as_display, warn};
 
 pub struct Bindir {
     home: PathBuf,
@@ -102,7 +102,8 @@ mod tests {
         std::os::unix::fs::symlink(home.join("bins/bar.foo"), home.join("bins/current"))
             .expect("should be able to symlink");
 
-        let bindir = Bindir::new(home.clone(), home.join("bins"), "bar.foo", "").expect("should be able to create a bindir");
+        let bindir = Bindir::new(home.clone(), home.join("bins"), "bar.foo", "")
+            .expect("should be able to create a bindir");
         bindir.swap("foo.bar").unwrap();
     }
 }
