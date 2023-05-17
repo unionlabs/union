@@ -46,6 +46,12 @@ func InitGenesis(ctx sdk.Context, k keeper.Keeper, gs types.GenesisState) {
 	}
 
 	k.SetNextClientSequence(ctx, gs.NextClientSequence)
+
+	// if the localhost already exists in state (included in the genesis file),
+	// it must be overwritten to ensure its stored height equals the context block height
+	if err := k.CreateLocalhostClient(ctx); err != nil {
+		panic(fmt.Sprintf("failed to initialise localhost client: %s", err.Error()))
+	}
 }
 
 // ExportGenesis returns the ibc client submodule's exported genesis.

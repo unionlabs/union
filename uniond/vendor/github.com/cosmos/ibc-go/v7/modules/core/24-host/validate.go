@@ -4,7 +4,7 @@ import (
 	"regexp"
 	"strings"
 
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	errorsmod "cosmossdk.io/errors"
 )
 
 // DefaultMaxCharacterLength defines the default maximum character length used
@@ -38,19 +38,19 @@ type ValidateFn func(string) error
 
 func defaultIdentifierValidator(id string, min, max int) error {
 	if strings.TrimSpace(id) == "" {
-		return sdkerrors.Wrap(ErrInvalidID, "identifier cannot be blank")
+		return errorsmod.Wrap(ErrInvalidID, "identifier cannot be blank")
 	}
 	// valid id MUST NOT contain "/" separator
 	if strings.Contains(id, "/") {
-		return sdkerrors.Wrapf(ErrInvalidID, "identifier %s cannot contain separator '/'", id)
+		return errorsmod.Wrapf(ErrInvalidID, "identifier %s cannot contain separator '/'", id)
 	}
 	// valid id must fit the length requirements
 	if len(id) < min || len(id) > max {
-		return sdkerrors.Wrapf(ErrInvalidID, "identifier %s has invalid length: %d, must be between %d-%d characters", id, len(id), min, max)
+		return errorsmod.Wrapf(ErrInvalidID, "identifier %s has invalid length: %d, must be between %d-%d characters", id, len(id), min, max)
 	}
 	// valid id must contain only lower alphabetic characters
 	if !IsValidID(id) {
-		return sdkerrors.Wrapf(
+		return errorsmod.Wrapf(
 			ErrInvalidID,
 			"identifier %s must contain only alphanumeric or the following characters: '.', '_', '+', '-', '#', '[', ']', '<', '>'",
 			id,
@@ -95,13 +95,13 @@ func NewPathValidator(idValidator ValidateFn) ValidateFn {
 	return func(path string) error {
 		pathArr := strings.Split(path, "/")
 		if len(pathArr) > 0 && pathArr[0] == path {
-			return sdkerrors.Wrapf(ErrInvalidPath, "path %s doesn't contain any separator '/'", path)
+			return errorsmod.Wrapf(ErrInvalidPath, "path %s doesn't contain any separator '/'", path)
 		}
 
 		for _, p := range pathArr {
 			// a path beginning or ending in a separator returns empty string elements.
 			if p == "" {
-				return sdkerrors.Wrapf(ErrInvalidPath, "path %s cannot begin or end with '/'", path)
+				return errorsmod.Wrapf(ErrInvalidPath, "path %s cannot begin or end with '/'", path)
 			}
 
 			if err := idValidator(p); err != nil {
@@ -109,7 +109,7 @@ func NewPathValidator(idValidator ValidateFn) ValidateFn {
 			}
 			// Each path element must either be a valid identifier or constant number
 			if err := defaultIdentifierValidator(p, 1, DefaultMaxCharacterLength); err != nil {
-				return sdkerrors.Wrapf(err, "path %s contains an invalid identifier: '%s'", path, p)
+				return errorsmod.Wrapf(err, "path %s contains an invalid identifier: '%s'", path, p)
 			}
 		}
 

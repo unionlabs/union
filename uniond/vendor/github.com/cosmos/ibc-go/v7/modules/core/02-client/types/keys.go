@@ -6,9 +6,10 @@ import (
 	"strconv"
 	"strings"
 
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	errorsmod "cosmossdk.io/errors"
 
 	host "github.com/cosmos/ibc-go/v7/modules/core/24-host"
+	"github.com/cosmos/ibc-go/v7/modules/core/exported"
 )
 
 const (
@@ -49,8 +50,12 @@ func IsValidClientID(clientID string) bool {
 
 // ParseClientIdentifier parses the client type and sequence from the client identifier.
 func ParseClientIdentifier(clientID string) (string, uint64, error) {
+	if clientID == exported.LocalhostClientID {
+		return clientID, 0, nil
+	}
+
 	if !IsClientIDFormat(clientID) {
-		return "", 0, sdkerrors.Wrapf(host.ErrInvalidID, "invalid client identifier %s is not in format: `{client-type}-{N}`", clientID)
+		return "", 0, errorsmod.Wrapf(host.ErrInvalidID, "invalid client identifier %s is not in format: `{client-type}-{N}`", clientID)
 	}
 
 	splitStr := strings.Split(clientID, "-")
@@ -58,12 +63,12 @@ func ParseClientIdentifier(clientID string) (string, uint64, error) {
 
 	clientType := strings.Join(splitStr[:lastIndex], "-")
 	if strings.TrimSpace(clientType) == "" {
-		return "", 0, sdkerrors.Wrap(host.ErrInvalidID, "client identifier must be in format: `{client-type}-{N}` and client type cannot be blank")
+		return "", 0, errorsmod.Wrap(host.ErrInvalidID, "client identifier must be in format: `{client-type}-{N}` and client type cannot be blank")
 	}
 
 	sequence, err := strconv.ParseUint(splitStr[lastIndex], 10, 64)
 	if err != nil {
-		return "", 0, sdkerrors.Wrap(err, "failed to parse client identifier sequence")
+		return "", 0, errorsmod.Wrap(err, "failed to parse client identifier sequence")
 	}
 
 	return clientType, sequence, nil

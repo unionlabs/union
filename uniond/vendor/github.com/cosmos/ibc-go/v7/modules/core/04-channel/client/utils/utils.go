@@ -4,10 +4,11 @@ import (
 	"context"
 	"encoding/binary"
 
+	errorsmod "cosmossdk.io/errors"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
+	ibcerrors "github.com/cosmos/ibc-go/v7/internal/errors"
 	clientutils "github.com/cosmos/ibc-go/v7/modules/core/02-client/client/utils"
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	"github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
@@ -45,7 +46,7 @@ func queryChannelABCI(clientCtx client.Context, portID, channelID string) (*type
 
 	// check if channel exists
 	if len(value) == 0 {
-		return nil, sdkerrors.Wrapf(types.ErrChannelNotFound, "portID (%s), channelID (%s)", portID, channelID)
+		return nil, errorsmod.Wrapf(types.ErrChannelNotFound, "portID (%s), channelID (%s)", portID, channelID)
 	}
 
 	cdc := codec.NewProtoCodec(clientCtx.InterfaceRegistry)
@@ -140,7 +141,7 @@ func QueryLatestConsensusState(
 
 	clientHeight, ok := clientState.GetLatestHeight().(clienttypes.Height)
 	if !ok {
-		return nil, clienttypes.Height{}, clienttypes.Height{}, sdkerrors.Wrapf(sdkerrors.ErrInvalidHeight, "invalid height type. expected type: %T, got: %T",
+		return nil, clienttypes.Height{}, clienttypes.Height{}, errorsmod.Wrapf(ibcerrors.ErrInvalidHeight, "invalid height type. expected type: %T, got: %T",
 			clienttypes.Height{}, clientHeight)
 	}
 	res, err := QueryChannelConsensusState(clientCtx, portID, channelID, clientHeight, false)
@@ -185,12 +186,48 @@ func queryNextSequenceRecvABCI(clientCtx client.Context, portID, channelID strin
 
 	// check if next sequence receive exists
 	if len(value) == 0 {
-		return nil, sdkerrors.Wrapf(types.ErrChannelNotFound, "portID (%s), channelID (%s)", portID, channelID)
+		return nil, errorsmod.Wrapf(types.ErrChannelNotFound, "portID (%s), channelID (%s)", portID, channelID)
 	}
 
 	sequence := binary.BigEndian.Uint64(value)
 
 	return types.NewQueryNextSequenceReceiveResponse(sequence, proofBz, proofHeight), nil
+}
+
+// QueryNextSequenceSend returns the next sequence send.
+// If prove is true, it performs an ABCI store query in order to retrieve the merkle proof. Otherwise,
+// it uses the gRPC query client.
+func QueryNextSequenceSend(
+	clientCtx client.Context, portID, channelID string, prove bool,
+) (*types.QueryNextSequenceSendResponse, error) {
+	if prove {
+		return queryNextSequenceSendABCI(clientCtx, portID, channelID)
+	}
+
+	queryClient := types.NewQueryClient(clientCtx)
+	req := &types.QueryNextSequenceSendRequest{
+		PortId:    portID,
+		ChannelId: channelID,
+	}
+	return queryClient.NextSequenceSend(context.Background(), req)
+}
+
+func queryNextSequenceSendABCI(clientCtx client.Context, portID, channelID string) (*types.QueryNextSequenceSendResponse, error) {
+	key := host.NextSequenceSendKey(portID, channelID)
+
+	value, proofBz, proofHeight, err := ibcclient.QueryTendermintProof(clientCtx, key)
+	if err != nil {
+		return nil, err
+	}
+
+	// check if next sequence send exists
+	if len(value) == 0 {
+		return nil, errorsmod.Wrapf(types.ErrChannelNotFound, "portID (%s), channelID (%s)", portID, channelID)
+	}
+
+	sequence := binary.BigEndian.Uint64(value)
+
+	return types.NewQueryNextSequenceSendResponse(sequence, proofBz, proofHeight), nil
 }
 
 // QueryPacketCommitment returns a packet commitment.
@@ -226,7 +263,7 @@ func queryPacketCommitmentABCI(
 
 	// check if packet commitment exists
 	if len(value) == 0 {
-		return nil, sdkerrors.Wrapf(types.ErrPacketCommitmentNotFound, "portID (%s), channelID (%s), sequence (%d)", portID, channelID, sequence)
+		return nil, errorsmod.Wrapf(types.ErrPacketCommitmentNotFound, "portID (%s), channelID (%s), sequence (%d)", portID, channelID, sequence)
 	}
 
 	return types.NewQueryPacketCommitmentResponse(value, proofBz, proofHeight), nil
@@ -293,7 +330,7 @@ func queryPacketAcknowledgementABCI(clientCtx client.Context, portID, channelID 
 	}
 
 	if len(value) == 0 {
-		return nil, sdkerrors.Wrapf(types.ErrInvalidAcknowledgement, "portID (%s), channelID (%s), sequence (%d)", portID, channelID, sequence)
+		return nil, errorsmod.Wrapf(types.ErrInvalidAcknowledgement, "portID (%s), channelID (%s), sequence (%d)", portID, channelID, sequence)
 	}
 
 	return types.NewQueryPacketAcknowledgementResponse(value, proofBz, proofHeight), nil

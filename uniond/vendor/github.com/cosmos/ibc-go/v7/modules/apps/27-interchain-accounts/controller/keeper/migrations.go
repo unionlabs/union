@@ -3,9 +3,9 @@ package keeper
 import (
 	"fmt"
 
+	errorsmod "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
+	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
 
 	controllertypes "github.com/cosmos/ibc-go/v7/modules/apps/27-interchain-accounts/controller/types"
 	icatypes "github.com/cosmos/ibc-go/v7/modules/apps/27-interchain-accounts/types"
@@ -33,13 +33,13 @@ func (m Migrator) AssertChannelCapabilityMigrations(ctx sdk.Context) error {
 			capability, found := m.keeper.scopedKeeper.GetCapability(ctx, name)
 			if !found {
 				logger.Error(fmt.Sprintf("failed to find capability: %s", name))
-				return sdkerrors.Wrapf(capabilitytypes.ErrCapabilityNotFound, "failed to find capability: %s", name)
+				return errorsmod.Wrapf(capabilitytypes.ErrCapabilityNotFound, "failed to find capability: %s", name)
 			}
 
 			isAuthenticated := m.keeper.scopedKeeper.AuthenticateCapability(ctx, capability, name)
 			if !isAuthenticated {
 				logger.Error(fmt.Sprintf("expected capability owner: %s", controllertypes.SubModuleName))
-				return sdkerrors.Wrapf(capabilitytypes.ErrCapabilityNotOwned, "expected capability owner: %s", controllertypes.SubModuleName)
+				return errorsmod.Wrapf(capabilitytypes.ErrCapabilityNotOwned, "expected capability owner: %s", controllertypes.SubModuleName)
 			}
 
 			m.keeper.SetMiddlewareEnabled(ctx, ch.PortId, ch.ConnectionHops[0])

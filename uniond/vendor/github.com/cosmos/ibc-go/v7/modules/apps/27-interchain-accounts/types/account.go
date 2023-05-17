@@ -5,10 +5,10 @@ import (
 	"regexp"
 	"strings"
 
+	errorsmod "cosmossdk.io/errors"
 	crypto "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkaddress "github.com/cosmos/cosmos-sdk/types/address"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	yaml "gopkg.in/yaml.v2"
 )
@@ -56,7 +56,7 @@ func GenerateAddress(ctx sdk.Context, connectionID, portID string) sdk.AccAddres
 // on address length and character set
 func ValidateAccountAddress(addr string) error {
 	if !isValidAddr(addr) || len(addr) > DefaultMaxAddrLength {
-		return sdkerrors.Wrapf(
+		return errorsmod.Wrapf(
 			ErrInvalidAccountAddress,
 			"address must contain strictly alphanumeric characters, not exceeding %d characters in length",
 			DefaultMaxAddrLength,
@@ -76,18 +76,18 @@ func NewInterchainAccount(ba *authtypes.BaseAccount, accountOwner string) *Inter
 
 // SetPubKey implements the authtypes.AccountI interface
 func (ia InterchainAccount) SetPubKey(pubKey crypto.PubKey) error {
-	return sdkerrors.Wrap(ErrUnsupported, "cannot set public key for interchain account")
+	return errorsmod.Wrap(ErrUnsupported, "cannot set public key for interchain account")
 }
 
 // SetSequence implements the authtypes.AccountI interface
 func (ia InterchainAccount) SetSequence(seq uint64) error {
-	return sdkerrors.Wrap(ErrUnsupported, "cannot set sequence number for interchain account")
+	return errorsmod.Wrap(ErrUnsupported, "cannot set sequence number for interchain account")
 }
 
 // Validate implements basic validation of the InterchainAccount
 func (ia InterchainAccount) Validate() error {
 	if strings.TrimSpace(ia.AccountOwner) == "" {
-		return sdkerrors.Wrap(ErrInvalidAccountAddress, "AccountOwner cannot be empty")
+		return errorsmod.Wrap(ErrInvalidAccountAddress, "AccountOwner cannot be empty")
 	}
 
 	return ia.BaseAccount.Validate()

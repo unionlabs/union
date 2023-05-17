@@ -1,11 +1,12 @@
 package keeper
 
 import (
+	errorsmod "cosmossdk.io/errors"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/gogoproto/proto"
 
+	ibcerrors "github.com/cosmos/ibc-go/v7/internal/errors"
 	"github.com/cosmos/ibc-go/v7/modules/apps/27-interchain-accounts/host/types"
 	icatypes "github.com/cosmos/ibc-go/v7/modules/apps/27-interchain-accounts/types"
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
@@ -18,21 +19,20 @@ func (k Keeper) OnRecvPacket(ctx sdk.Context, packet channeltypes.Packet) ([]byt
 
 	if err := icatypes.ModuleCdc.UnmarshalJSON(packet.GetData(), &data); err != nil {
 		// UnmarshalJSON errors are indeterminate and therefore are not wrapped and included in failed acks
-		return nil, sdkerrors.Wrapf(icatypes.ErrUnknownDataType, "cannot unmarshal ICS-27 interchain account packet data")
+		return nil, errorsmod.Wrapf(icatypes.ErrUnknownDataType, "cannot unmarshal ICS-27 interchain account packet data")
 	}
 
 	switch data.Type {
 	case icatypes.EXECUTE_TX:
 		msgs, err := icatypes.DeserializeCosmosTx(k.cdc, data.Data)
 		if err != nil {
-			return nil, err
+			return nil, errorsmod.Wrapf(err, "failed to deserialize interchain account transaction")
 		}
 
 		txResponse, err := k.executeTx(ctx, packet.SourcePort, packet.DestinationPort, packet.DestinationChannel, msgs)
 		if err != nil {
-			return nil, err
+			return nil, errorsmod.Wrapf(err, "failed to execute interchain account transaction")
 		}
-
 		return txResponse, nil
 	default:
 		return nil, icatypes.ErrUnknownDataType
@@ -65,19 +65,19 @@ func (k Keeper) executeTx(ctx sdk.Context, sourcePort, destPort, destChannel str
 			return nil, err
 		}
 
-		any, err := k.executeMsg(cacheCtx, msg)
+		protoAny, err := k.executeMsg(cacheCtx, msg)
 		if err != nil {
 			return nil, err
 		}
 
-		txMsgData.MsgResponses[i] = any
+		txMsgData.MsgResponses[i] = protoAny
 	}
 
 	writeCache()
 
 	txResponse, err := proto.Marshal(txMsgData)
 	if err != nil {
-		return nil, sdkerrors.Wrap(err, "failed to marshal tx data")
+		return nil, errorsmod.Wrap(err, "failed to marshal tx data")
 	}
 
 	return txResponse, nil
@@ -88,18 +88,18 @@ func (k Keeper) executeTx(ctx sdk.Context, sourcePort, destPort, destChannel str
 func (k Keeper) authenticateTx(ctx sdk.Context, msgs []sdk.Msg, connectionID, portID string) error {
 	interchainAccountAddr, found := k.GetInterchainAccountAddress(ctx, connectionID, portID)
 	if !found {
-		return sdkerrors.Wrapf(icatypes.ErrInterchainAccountNotFound, "failed to retrieve interchain account on port %s", portID)
+		return errorsmod.Wrapf(icatypes.ErrInterchainAccountNotFound, "failed to retrieve interchain account on port %s", portID)
 	}
 
 	allowMsgs := k.GetAllowMessages(ctx)
 	for _, msg := range msgs {
 		if !types.ContainsMsgType(allowMsgs, msg) {
-			return sdkerrors.Wrapf(sdkerrors.ErrUnauthorized, "message type not allowed: %s", sdk.MsgTypeURL(msg))
+			return errorsmod.Wrapf(ibcerrors.ErrUnauthorized, "message type not allowed: %s", sdk.MsgTypeURL(msg))
 		}
 
 		for _, signer := range msg.GetSigners() {
 			if interchainAccountAddr != signer.String() {
-				return sdkerrors.Wrapf(sdkerrors.ErrUnauthorized, "unexpected signer address: expected %s, got %s", interchainAccountAddr, signer.String())
+				return errorsmod.Wrapf(ibcerrors.ErrUnauthorized, "unexpected signer address: expected %s, got %s", interchainAccountAddr, signer.String())
 			}
 		}
 	}
@@ -126,7 +126,7 @@ func (k Keeper) executeMsg(ctx sdk.Context, msg sdk.Msg) (*codectypes.Any, error
 	// Each individual sdk.Result has exactly one Msg response. We aggregate here.
 	msgResponse := res.MsgResponses[0]
 	if msgResponse == nil {
-		return nil, sdkerrors.Wrapf(sdkerrors.ErrLogic, "got nil Msg response for msg %s", sdk.MsgTypeURL(msg))
+		return nil, errorsmod.Wrapf(ibcerrors.ErrLogic, "got nil Msg response for msg %s", sdk.MsgTypeURL(msg))
 	}
 
 	return msgResponse, nil

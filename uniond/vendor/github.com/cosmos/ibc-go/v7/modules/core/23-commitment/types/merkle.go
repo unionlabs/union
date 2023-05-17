@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"net/url"
 
+	errorsmod "cosmossdk.io/errors"
 	tmcrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/gogoproto/proto"
 	ics23 "github.com/cosmos/ics23/go"
 
@@ -121,7 +121,7 @@ func (mp MerklePath) Empty() bool {
 // with the given path.
 func ApplyPrefix(prefix exported.Prefix, path MerklePath) (MerklePath, error) {
 	if prefix == nil || prefix.Empty() {
-		return MerklePath{}, sdkerrors.Wrap(ErrInvalidPrefix, "prefix can't be empty")
+		return MerklePath{}, errorsmod.Wrap(ErrInvalidPrefix, "prefix can't be empty")
 	}
 	return NewMerklePath(append([]string{string(prefix.Bytes())}, path.KeyPath...)...), nil
 }
@@ -138,22 +138,19 @@ func (proof MerkleProof) VerifyMembership(specs []*ics23.ProofSpec, root exporte
 	// VerifyMembership specific argument validation
 	mpath, ok := path.(MerklePath)
 	if !ok {
-		return sdkerrors.Wrapf(ErrInvalidProof, "path %v is not of type MerklePath", path)
+		return errorsmod.Wrapf(ErrInvalidProof, "path %v is not of type MerklePath", path)
 	}
 	if len(mpath.KeyPath) != len(specs) {
-		return sdkerrors.Wrapf(ErrInvalidProof, "path length %d not same as proof %d",
+		return errorsmod.Wrapf(ErrInvalidProof, "path length %d not same as proof %d",
 			len(mpath.KeyPath), len(specs))
 	}
 	if len(value) == 0 {
-		return sdkerrors.Wrap(ErrInvalidProof, "empty value in membership proof")
+		return errorsmod.Wrap(ErrInvalidProof, "empty value in membership proof")
 	}
 
 	// Since every proof in chain is a membership proof we can use verifyChainedMembershipProof from index 0
 	// to validate entire proof
-	if err := verifyChainedMembershipProof(root.GetHash(), specs, proof.Proofs, mpath, value, 0); err != nil {
-		return err
-	}
-	return nil
+	return verifyChainedMembershipProof(root.GetHash(), specs, proof.Proofs, mpath, value, 0)
 }
 
 // VerifyNonMembership verifies the absence of a merkle proof against the given root and path.
@@ -167,10 +164,10 @@ func (proof MerkleProof) VerifyNonMembership(specs []*ics23.ProofSpec, root expo
 	// VerifyNonMembership specific argument validation
 	mpath, ok := path.(MerklePath)
 	if !ok {
-		return sdkerrors.Wrapf(ErrInvalidProof, "path %v is not of type MerkleProof", path)
+		return errorsmod.Wrapf(ErrInvalidProof, "path %v is not of type MerkleProof", path)
 	}
 	if len(mpath.KeyPath) != len(specs) {
-		return sdkerrors.Wrapf(ErrInvalidProof, "path length %d not same as proof %d",
+		return errorsmod.Wrapf(ErrInvalidProof, "path length %d not same as proof %d",
 			len(mpath.KeyPath), len(specs))
 	}
 
@@ -180,14 +177,14 @@ func (proof MerkleProof) VerifyNonMembership(specs []*ics23.ProofSpec, root expo
 		// of all subroots up to final root
 		subroot, err := proof.Proofs[0].Calculate()
 		if err != nil {
-			return sdkerrors.Wrapf(ErrInvalidProof, "could not calculate root for proof index 0, merkle tree is likely empty. %v", err)
+			return errorsmod.Wrapf(ErrInvalidProof, "could not calculate root for proof index 0, merkle tree is likely empty. %v", err)
 		}
 		key, err := mpath.GetKey(uint64(len(mpath.KeyPath) - 1))
 		if err != nil {
-			return sdkerrors.Wrapf(ErrInvalidProof, "could not retrieve key bytes for key: %s", mpath.KeyPath[len(mpath.KeyPath)-1])
+			return errorsmod.Wrapf(ErrInvalidProof, "could not retrieve key bytes for key: %s", mpath.KeyPath[len(mpath.KeyPath)-1])
 		}
 		if ok := ics23.VerifyNonMembership(specs[0], subroot, proof.Proofs[0], key); !ok {
-			return sdkerrors.Wrapf(ErrInvalidProof, "could not verify absence of key %s. Please ensure that the path is correct.", string(key))
+			return errorsmod.Wrapf(ErrInvalidProof, "could not verify absence of key %s. Please ensure that the path is correct.", string(key))
 		}
 
 		// Verify chained membership proof starting from index 1 with value = subroot
@@ -195,10 +192,10 @@ func (proof MerkleProof) VerifyNonMembership(specs []*ics23.ProofSpec, root expo
 			return err
 		}
 	case *ics23.CommitmentProof_Exist:
-		return sdkerrors.Wrapf(ErrInvalidProof,
+		return errorsmod.Wrapf(ErrInvalidProof,
 			"got ExistenceProof in VerifyNonMembership. If this is unexpected, please ensure that proof was queried with the correct key.")
 	default:
-		return sdkerrors.Wrapf(ErrInvalidProof,
+		return errorsmod.Wrapf(ErrInvalidProof,
 			"expected proof type: %T, got: %T", &ics23.CommitmentProof_Exist{}, proof.Proofs[0].Proof)
 	}
 	return nil
@@ -207,13 +204,13 @@ func (proof MerkleProof) VerifyNonMembership(specs []*ics23.ProofSpec, root expo
 // BatchVerifyMembership verifies a group of key value pairs against the given root
 // NOTE: Currently left unimplemented as it is unused
 func (proof MerkleProof) BatchVerifyMembership(specs []*ics23.ProofSpec, root exported.Root, path exported.Path, items map[string][]byte) error {
-	return sdkerrors.Wrap(ErrInvalidProof, "batch proofs are currently unsupported")
+	return errorsmod.Wrap(ErrInvalidProof, "batch proofs are currently unsupported")
 }
 
 // BatchVerifyNonMembership verifies absence of a group of keys against the given root
 // NOTE: Currently left unimplemented as it is unused
 func (proof MerkleProof) BatchVerifyNonMembership(specs []*ics23.ProofSpec, root exported.Root, path exported.Path, items [][]byte) error {
-	return sdkerrors.Wrap(ErrInvalidProof, "batch proofs are currently unsupported")
+	return errorsmod.Wrap(ErrInvalidProof, "batch proofs are currently unsupported")
 }
 
 // verifyChainedMembershipProof takes a list of proofs and specs and verifies each proof sequentially ensuring that the value is committed to
@@ -235,35 +232,35 @@ func verifyChainedMembershipProof(root []byte, specs []*ics23.ProofSpec, proofs 
 		case *ics23.CommitmentProof_Exist:
 			subroot, err = proofs[i].Calculate()
 			if err != nil {
-				return sdkerrors.Wrapf(ErrInvalidProof, "could not calculate proof root at index %d, merkle tree may be empty. %v", i, err)
+				return errorsmod.Wrapf(ErrInvalidProof, "could not calculate proof root at index %d, merkle tree may be empty. %v", i, err)
 			}
 			// Since keys are passed in from highest to lowest, we must grab their indices in reverse order
 			// from the proofs and specs which are lowest to highest
 			key, err := keys.GetKey(uint64(len(keys.KeyPath) - 1 - i))
 			if err != nil {
-				return sdkerrors.Wrapf(ErrInvalidProof, "could not retrieve key bytes for key %s: %v", keys.KeyPath[len(keys.KeyPath)-1-i], err)
+				return errorsmod.Wrapf(ErrInvalidProof, "could not retrieve key bytes for key %s: %v", keys.KeyPath[len(keys.KeyPath)-1-i], err)
 			}
 
 			// verify membership of the proof at this index with appropriate key and value
 			if ok := ics23.VerifyMembership(specs[i], subroot, proofs[i], key, value); !ok {
-				return sdkerrors.Wrapf(ErrInvalidProof,
+				return errorsmod.Wrapf(ErrInvalidProof,
 					"chained membership proof failed to verify membership of value: %X in subroot %X at index %d. Please ensure the path and value are both correct.",
 					value, subroot, i)
 			}
 			// Set value to subroot so that we verify next proof in chain commits to this subroot
 			value = subroot
 		case *ics23.CommitmentProof_Nonexist:
-			return sdkerrors.Wrapf(ErrInvalidProof,
+			return errorsmod.Wrapf(ErrInvalidProof,
 				"chained membership proof contains nonexistence proof at index %d. If this is unexpected, please ensure that proof was queried from a height that contained the value in store and was queried with the correct key. The key used: %s",
 				i, keys)
 		default:
-			return sdkerrors.Wrapf(ErrInvalidProof,
+			return errorsmod.Wrapf(ErrInvalidProof,
 				"expected proof type: %T, got: %T", &ics23.CommitmentProof_Exist{}, proofs[i].Proof)
 		}
 	}
 	// Check that chained proof root equals passed-in root
 	if !bytes.Equal(root, subroot) {
-		return sdkerrors.Wrapf(ErrInvalidProof,
+		return errorsmod.Wrapf(ErrInvalidProof,
 			"proof did not commit to expected root: %X, got: %X. Please ensure proof was submitted with correct proofHeight and to the correct chain.",
 			root, subroot)
 	}
@@ -293,22 +290,22 @@ func (proof MerkleProof) ValidateBasic() error {
 // validateVerificationArgs verifies the proof arguments are valid
 func (proof MerkleProof) validateVerificationArgs(specs []*ics23.ProofSpec, root exported.Root) error {
 	if proof.Empty() {
-		return sdkerrors.Wrap(ErrInvalidMerkleProof, "proof cannot be empty")
+		return errorsmod.Wrap(ErrInvalidMerkleProof, "proof cannot be empty")
 	}
 
 	if root == nil || root.Empty() {
-		return sdkerrors.Wrap(ErrInvalidMerkleProof, "root cannot be empty")
+		return errorsmod.Wrap(ErrInvalidMerkleProof, "root cannot be empty")
 	}
 
 	if len(specs) != len(proof.Proofs) {
-		return sdkerrors.Wrapf(ErrInvalidMerkleProof,
+		return errorsmod.Wrapf(ErrInvalidMerkleProof,
 			"length of specs: %d not equal to length of proof: %d",
 			len(specs), len(proof.Proofs))
 	}
 
 	for i, spec := range specs {
 		if spec == nil {
-			return sdkerrors.Wrapf(ErrInvalidProof, "spec at position %d is nil", i)
+			return errorsmod.Wrapf(ErrInvalidProof, "spec at position %d is nil", i)
 		}
 	}
 	return nil

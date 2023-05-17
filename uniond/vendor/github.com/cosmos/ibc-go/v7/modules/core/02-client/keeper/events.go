@@ -14,8 +14,8 @@ import (
 	"github.com/cosmos/ibc-go/v7/modules/core/exported"
 )
 
-// EmitCreateClientEvent emits a create client event
-func EmitCreateClientEvent(ctx sdk.Context, clientID string, clientState exported.ClientState) {
+// emitCreateClientEvent emits a create client event
+func emitCreateClientEvent(ctx sdk.Context, clientID string, clientState exported.ClientState) {
 	ctx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(
 			types.EventTypeCreateClient,
@@ -30,8 +30,8 @@ func EmitCreateClientEvent(ctx sdk.Context, clientID string, clientState exporte
 	})
 }
 
-// EmitUpdateClientEvent emits an update client event
-func EmitUpdateClientEvent(ctx sdk.Context, clientID string, clientType string, consensusHeights []exported.Height, cdc codec.BinaryCodec, clientMsg exported.ClientMessage) {
+// emitUpdateClientEvent emits an update client event
+func emitUpdateClientEvent(ctx sdk.Context, clientID string, clientType string, consensusHeights []exported.Height, cdc codec.BinaryCodec, clientMsg exported.ClientMessage) {
 	// Marshal the ClientMessage as an Any and encode the resulting bytes to hex.
 	// This prevents the event value from containing invalid UTF-8 characters
 	// which may cause data to be lost when JSON encoding/decoding.
@@ -65,8 +65,8 @@ func EmitUpdateClientEvent(ctx sdk.Context, clientID string, clientType string, 
 	})
 }
 
-// EmitUpdateClientEvent emits an upgrade client event
-func EmitUpgradeClientEvent(ctx sdk.Context, clientID string, clientState exported.ClientState) {
+// emitUpgradeClientEvent emits an upgrade client event
+func emitUpgradeClientEvent(ctx sdk.Context, clientID string, clientState exported.ClientState) {
 	ctx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(
 			types.EventTypeUpgradeClient,
@@ -81,8 +81,8 @@ func EmitUpgradeClientEvent(ctx sdk.Context, clientID string, clientState export
 	})
 }
 
-// EmitUpdateClientProposalEvent emits an update client proposal event
-func EmitUpdateClientProposalEvent(ctx sdk.Context, clientID, clientType string) {
+// emitUpdateClientProposalEvent emits an update client proposal event
+func emitUpdateClientProposalEvent(ctx sdk.Context, clientID, clientType string) {
 	ctx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(
 			types.EventTypeUpdateClientProposal,
@@ -96,8 +96,8 @@ func EmitUpdateClientProposalEvent(ctx sdk.Context, clientID, clientType string)
 	})
 }
 
-// EmitUpgradeClientProposalEvent emits an upgrade client proposal event
-func EmitUpgradeClientProposalEvent(ctx sdk.Context, title string, height int64) {
+// emitUpgradeClientProposalEvent emits an upgrade client proposal event
+func emitUpgradeClientProposalEvent(ctx sdk.Context, title string, height int64) {
 	ctx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(
 			types.EventTypeUpgradeClientProposal,
@@ -111,8 +111,8 @@ func EmitUpgradeClientProposalEvent(ctx sdk.Context, title string, height int64)
 	})
 }
 
-// EmitSubmitMisbehaviourEvent emits a client misbehaviour event
-func EmitSubmitMisbehaviourEvent(ctx sdk.Context, clientID string, clientState exported.ClientState) {
+// emitSubmitMisbehaviourEvent emits a client misbehaviour event
+func emitSubmitMisbehaviourEvent(ctx sdk.Context, clientID string, clientState exported.ClientState) {
 	ctx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(
 			types.EventTypeSubmitMisbehaviour,

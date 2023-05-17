@@ -4,13 +4,14 @@ import (
 	"strings"
 	"time"
 
+	errorsmod "cosmossdk.io/errors"
 	"github.com/cometbft/cometbft/light"
 	tmtypes "github.com/cometbft/cometbft/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	ics23 "github.com/cosmos/ics23/go"
 
+	ibcerrors "github.com/cosmos/ibc-go/v7/internal/errors"
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	commitmenttypes "github.com/cosmos/ibc-go/v7/modules/core/23-commitment/types"
 	"github.com/cosmos/ibc-go/v7/modules/core/exported"
@@ -63,7 +64,7 @@ func (cs ClientState) GetTimestampAtHeight(
 	// get consensus state at height from clientStore to check for expiry
 	consState, found := GetConsensusState(clientStore, cdc, height)
 	if !found {
-		return 0, sdkerrors.Wrapf(clienttypes.ErrConsensusStateNotFound, "height (%s)", height)
+		return 0, errorsmod.Wrapf(clienttypes.ErrConsensusStateNotFound, "height (%s)", height)
 	}
 	return consState.GetTimestamp(), nil
 }
@@ -110,7 +111,7 @@ func (cs ClientState) IsExpired(latestTimestamp, now time.Time) bool {
 // Validate performs a basic validation of the client state fields.
 func (cs ClientState) Validate() error {
 	if strings.TrimSpace(cs.ChainId) == "" {
-		return sdkerrors.Wrap(ErrInvalidChainID, "chain id cannot be empty string")
+		return errorsmod.Wrap(ErrInvalidChainID, "chain id cannot be empty string")
 	}
 
 	// NOTE: the value of tmtypes.MaxChainIDLen may change in the future.
@@ -119,49 +120,49 @@ func (cs ClientState) Validate() error {
 	// and the tendermint version used by this light client.
 	// https://github.com/cosmos/ibc-go/issues/177
 	if len(cs.ChainId) > tmtypes.MaxChainIDLen {
-		return sdkerrors.Wrapf(ErrInvalidChainID, "chainID is too long; got: %d, max: %d", len(cs.ChainId), tmtypes.MaxChainIDLen)
+		return errorsmod.Wrapf(ErrInvalidChainID, "chainID is too long; got: %d, max: %d", len(cs.ChainId), tmtypes.MaxChainIDLen)
 	}
 
 	if err := light.ValidateTrustLevel(cs.TrustLevel.ToTendermint()); err != nil {
 		return err
 	}
 	if cs.TrustingPeriod <= 0 {
-		return sdkerrors.Wrap(ErrInvalidTrustingPeriod, "trusting period must be greater than zero")
+		return errorsmod.Wrap(ErrInvalidTrustingPeriod, "trusting period must be greater than zero")
 	}
 	if cs.UnbondingPeriod <= 0 {
-		return sdkerrors.Wrap(ErrInvalidUnbondingPeriod, "unbonding period must be greater than zero")
+		return errorsmod.Wrap(ErrInvalidUnbondingPeriod, "unbonding period must be greater than zero")
 	}
 	if cs.MaxClockDrift <= 0 {
-		return sdkerrors.Wrap(ErrInvalidMaxClockDrift, "max clock drift must be greater than zero")
+		return errorsmod.Wrap(ErrInvalidMaxClockDrift, "max clock drift must be greater than zero")
 	}
 
 	// the latest height revision number must match the chain id revision number
 	if cs.LatestHeight.RevisionNumber != clienttypes.ParseChainID(cs.ChainId) {
-		return sdkerrors.Wrapf(ErrInvalidHeaderHeight,
+		return errorsmod.Wrapf(ErrInvalidHeaderHeight,
 			"latest height revision number must match chain id revision number (%d != %d)", cs.LatestHeight.RevisionNumber, clienttypes.ParseChainID(cs.ChainId))
 	}
 	if cs.LatestHeight.RevisionHeight == 0 {
-		return sdkerrors.Wrapf(ErrInvalidHeaderHeight, "tendermint client's latest height revision height cannot be zero")
+		return errorsmod.Wrapf(ErrInvalidHeaderHeight, "tendermint client's latest height revision height cannot be zero")
 	}
 	if cs.TrustingPeriod >= cs.UnbondingPeriod {
-		return sdkerrors.Wrapf(
+		return errorsmod.Wrapf(
 			ErrInvalidTrustingPeriod,
 			"trusting period (%s) should be < unbonding period (%s)", cs.TrustingPeriod, cs.UnbondingPeriod,
 		)
 	}
 
 	if cs.ProofSpecs == nil {
-		return sdkerrors.Wrap(ErrInvalidProofSpecs, "proof specs cannot be nil for tm client")
+		return errorsmod.Wrap(ErrInvalidProofSpecs, "proof specs cannot be nil for tm client")
 	}
 	for i, spec := range cs.ProofSpecs {
 		if spec == nil {
-			return sdkerrors.Wrapf(ErrInvalidProofSpecs, "proof spec cannot be nil at index: %d", i)
+			return errorsmod.Wrapf(ErrInvalidProofSpecs, "proof spec cannot be nil at index: %d", i)
 		}
 	}
 	// UpgradePath may be empty, but if it isn't, each key must be non-empty
 	for i, k := range cs.UpgradePath {
 		if strings.TrimSpace(k) == "" {
-			return sdkerrors.Wrapf(clienttypes.ErrInvalidClient, "key in upgrade path at index %d cannot be empty", i)
+			return errorsmod.Wrapf(clienttypes.ErrInvalidClient, "key in upgrade path at index %d cannot be empty", i)
 		}
 	}
 
@@ -193,7 +194,7 @@ func (cs ClientState) ZeroCustomFields() exported.ClientState {
 func (cs ClientState) Initialize(ctx sdk.Context, cdc codec.BinaryCodec, clientStore sdk.KVStore, consState exported.ConsensusState) error {
 	consensusState, ok := consState.(*ConsensusState)
 	if !ok {
-		return sdkerrors.Wrapf(clienttypes.ErrInvalidConsensus, "invalid initial consensus state. expected type: %T, got: %T",
+		return errorsmod.Wrapf(clienttypes.ErrInvalidConsensus, "invalid initial consensus state. expected type: %T, got: %T",
 			&ConsensusState{}, consState)
 	}
 
@@ -219,8 +220,8 @@ func (cs ClientState) VerifyMembership(
 	value []byte,
 ) error {
 	if cs.GetLatestHeight().LT(height) {
-		return sdkerrors.Wrapf(
-			sdkerrors.ErrInvalidHeight,
+		return errorsmod.Wrapf(
+			ibcerrors.ErrInvalidHeight,
 			"client state height < proof height (%d < %d), please ensure the client has been updated", cs.GetLatestHeight(), height,
 		)
 	}
@@ -231,24 +232,20 @@ func (cs ClientState) VerifyMembership(
 
 	var merkleProof commitmenttypes.MerkleProof
 	if err := cdc.Unmarshal(proof, &merkleProof); err != nil {
-		return sdkerrors.Wrap(commitmenttypes.ErrInvalidProof, "failed to unmarshal proof into ICS 23 commitment merkle proof")
+		return errorsmod.Wrap(commitmenttypes.ErrInvalidProof, "failed to unmarshal proof into ICS 23 commitment merkle proof")
 	}
 
 	merklePath, ok := path.(commitmenttypes.MerklePath)
 	if !ok {
-		return sdkerrors.Wrapf(sdkerrors.ErrInvalidType, "expected %T, got %T", commitmenttypes.MerklePath{}, path)
+		return errorsmod.Wrapf(ibcerrors.ErrInvalidType, "expected %T, got %T", commitmenttypes.MerklePath{}, path)
 	}
 
 	consensusState, found := GetConsensusState(clientStore, cdc, height)
 	if !found {
-		return sdkerrors.Wrap(clienttypes.ErrConsensusStateNotFound, "please ensure the proof was constructed against a height that exists on the client")
+		return errorsmod.Wrap(clienttypes.ErrConsensusStateNotFound, "please ensure the proof was constructed against a height that exists on the client")
 	}
 
-	if err := merkleProof.VerifyMembership(cs.ProofSpecs, consensusState.GetRoot(), merklePath, value); err != nil {
-		return err
-	}
-
-	return nil
+	return merkleProof.VerifyMembership(cs.ProofSpecs, consensusState.GetRoot(), merklePath, value)
 }
 
 // VerifyNonMembership is a generic proof verification method which verifies the absence of a given CommitmentPath at a specified height.
@@ -265,8 +262,8 @@ func (cs ClientState) VerifyNonMembership(
 	path exported.Path,
 ) error {
 	if cs.GetLatestHeight().LT(height) {
-		return sdkerrors.Wrapf(
-			sdkerrors.ErrInvalidHeight,
+		return errorsmod.Wrapf(
+			ibcerrors.ErrInvalidHeight,
 			"client state height < proof height (%d < %d), please ensure the client has been updated", cs.GetLatestHeight(), height,
 		)
 	}
@@ -277,24 +274,20 @@ func (cs ClientState) VerifyNonMembership(
 
 	var merkleProof commitmenttypes.MerkleProof
 	if err := cdc.Unmarshal(proof, &merkleProof); err != nil {
-		return sdkerrors.Wrap(commitmenttypes.ErrInvalidProof, "failed to unmarshal proof into ICS 23 commitment merkle proof")
+		return errorsmod.Wrap(commitmenttypes.ErrInvalidProof, "failed to unmarshal proof into ICS 23 commitment merkle proof")
 	}
 
 	merklePath, ok := path.(commitmenttypes.MerklePath)
 	if !ok {
-		return sdkerrors.Wrapf(sdkerrors.ErrInvalidType, "expected %T, got %T", commitmenttypes.MerklePath{}, path)
+		return errorsmod.Wrapf(ibcerrors.ErrInvalidType, "expected %T, got %T", commitmenttypes.MerklePath{}, path)
 	}
 
 	consensusState, found := GetConsensusState(clientStore, cdc, height)
 	if !found {
-		return sdkerrors.Wrap(clienttypes.ErrConsensusStateNotFound, "please ensure the proof was constructed against a height that exists on the client")
+		return errorsmod.Wrap(clienttypes.ErrConsensusStateNotFound, "please ensure the proof was constructed against a height that exists on the client")
 	}
 
-	if err := merkleProof.VerifyNonMembership(cs.ProofSpecs, consensusState.GetRoot(), merklePath); err != nil {
-		return err
-	}
-
-	return nil
+	return merkleProof.VerifyNonMembership(cs.ProofSpecs, consensusState.GetRoot(), merklePath)
 }
 
 // verifyDelayPeriodPassed will ensure that at least delayTimePeriod amount of time and delayBlockPeriod number of blocks have passed
@@ -304,7 +297,7 @@ func verifyDelayPeriodPassed(ctx sdk.Context, store sdk.KVStore, proofHeight exp
 		// check that executing chain's timestamp has passed consensusState's processed time + delay time period
 		processedTime, ok := GetProcessedTime(store, proofHeight)
 		if !ok {
-			return sdkerrors.Wrapf(ErrProcessedTimeNotFound, "processed time not found for height: %s", proofHeight)
+			return errorsmod.Wrapf(ErrProcessedTimeNotFound, "processed time not found for height: %s", proofHeight)
 		}
 
 		currentTimestamp := uint64(ctx.BlockTime().UnixNano())
@@ -312,7 +305,7 @@ func verifyDelayPeriodPassed(ctx sdk.Context, store sdk.KVStore, proofHeight exp
 
 		// NOTE: delay time period is inclusive, so if currentTimestamp is validTime, then we return no error
 		if currentTimestamp < validTime {
-			return sdkerrors.Wrapf(ErrDelayPeriodNotPassed, "cannot verify packet until time: %d, current time: %d",
+			return errorsmod.Wrapf(ErrDelayPeriodNotPassed, "cannot verify packet until time: %d, current time: %d",
 				validTime, currentTimestamp)
 		}
 
@@ -322,7 +315,7 @@ func verifyDelayPeriodPassed(ctx sdk.Context, store sdk.KVStore, proofHeight exp
 		// check that executing chain's height has passed consensusState's processed height + delay block period
 		processedHeight, ok := GetProcessedHeight(store, proofHeight)
 		if !ok {
-			return sdkerrors.Wrapf(ErrProcessedHeightNotFound, "processed height not found for height: %s", proofHeight)
+			return errorsmod.Wrapf(ErrProcessedHeightNotFound, "processed height not found for height: %s", proofHeight)
 		}
 
 		currentHeight := clienttypes.GetSelfHeight(ctx)
@@ -330,7 +323,7 @@ func verifyDelayPeriodPassed(ctx sdk.Context, store sdk.KVStore, proofHeight exp
 
 		// NOTE: delay block period is inclusive, so if currentHeight is validHeight, then we return no error
 		if currentHeight.LT(validHeight) {
-			return sdkerrors.Wrapf(ErrDelayPeriodNotPassed, "cannot verify packet until height: %s, current height: %s",
+			return errorsmod.Wrapf(ErrDelayPeriodNotPassed, "cannot verify packet until height: %s, current height: %s",
 				validHeight, currentHeight)
 		}
 	}
