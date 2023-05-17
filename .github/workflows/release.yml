@@ -41,9 +41,9 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - run: docker load < ${{ matrix.system }}.uniond-image
-      - run: docker tag `docker images -q uniond` ghcr.io/unionfi/uniond:${{ github.ref_name }}-${{ matrix.system }}
-      - run: docker push ghcr.io/unionfi/uniond:${{ github.ref_name }}-${{ matrix.system }}
+      - run: docker load < ${{ matrix.system }}.${{ matrix.package }}-image
+      - run: docker tag `docker images -q ${{ matrix.package }}` ghcr.io/unionfi/${{ matrix.package }}:${{ github.ref_name }}-${{ matrix.system }}
+      - run: docker push ghcr.io/unionfi/${{ matrix.package }}:${{ github.ref_name }}-${{ matrix.system }}
 
   download-static-binaries:
     runs-on: ubuntu-latest
