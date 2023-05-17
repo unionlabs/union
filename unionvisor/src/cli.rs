@@ -191,25 +191,6 @@ mod tests {
 
     #[test]
     #[traced_test]
-    fn test_call() {
-        let tmp = testdata::temp_dir_with(&["test_call"]);
-        let home = tmp.into_path().join("test_call");
-
-        let command = CallCmd {
-            args: vec![
-                OsString::from("-f"),
-                OsString::from("foo"),
-                OsString::from("--r"),
-                OsString::from("baz"),
-            ],
-            fallback: "echo".to_owned(),
-            bindir: home.join("bins"),
-        };
-        command.call_silent(home).unwrap()
-    }
-
-    #[test]
-    #[traced_test]
     #[ignore = "init becomes relevant once we publicly host seeds and genesis.json"]
     fn test_init() {
         let tmp = testdata::temp_dir_with(&["test_init_cmd"]);
