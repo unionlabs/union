@@ -38,7 +38,7 @@
             pathsToLink = [ "/bin" ];
           };
           config = {
-            Entrypoint = [ "${self'.packages.uniond}/bin/uniond" ];
+            Entrypoint = [ (pkgs.lib.getExe self'.packages.uniond) ];
             Env = [ "SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt" ];
           };
         };
