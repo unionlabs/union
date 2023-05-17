@@ -77,6 +77,9 @@ jobs:
         
           echo "Copying artifacts from nixbuild.net"
           nix copy --to file://`pwd`/${{ matrix.system }} --from ssh-ng://eu.nixbuild.net $OUTPUT --extra-experimental-features nix-command
+
+          echo "TREE v"
+          tree
         
           echo "Get the NAR_URL"
           nar_url_line=$(cat ./${{ matrix.system }}/${NARINFO_NAME}.narinfo | grep "URL:")
