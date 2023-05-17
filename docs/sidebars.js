@@ -3,24 +3,19 @@
 /** @type {import('@docusaurus/plugin-content-docs').SidebarsConfig} */
 const sidebars = {
   tutorialSidebar: [
-    'intro',
+    "intro",
     {
-      type: 'category',
-      label: 'Validators & Nodes',
-      items: [
-        'nodes-validators/setting-up-node'
-      ],
+      type: "category",
+      label: "Validators & Nodes",
+      items: ["nodes-validators/setting-up-node"],
     },
   ],
   architectureSidebar: [
-    'intro',
+    "intro",
     {
-      type: 'category',
-      label: 'Architecture',
-      items: [
-        'architecture/testnet',
-        'architecture/mainnet'
-      ],
+      type: "category",
+      label: "Architecture",
+      items: ["architecture/testnet", "architecture/mainnet"],
     },
   ],
 };

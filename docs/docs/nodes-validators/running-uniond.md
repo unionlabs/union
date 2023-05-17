@@ -1,5 +1,5 @@
 ---
-title: 'Running uniond'
+title: "Running uniond"
 ---
 
 # Running `uniond`
@@ -12,11 +12,11 @@ To run `uniond` without manually installing `nix` or NixOS, you can use docker.
 
 ## Pre-requisites
 
-* A working installation of docker
+- A working installation of docker
 
 ## Login
 
-*Note: This section will not be required once the [union](https://github.com/unionfi/union) repository is public*
+_Note: This section will not be required once the [union](https://github.com/unionfi/union) repository is public_
 
 We use the GitHub Container Registry to host our docker images. Given the [union](https://github.com/unionfi/union) repository is under a private organization, you will first need to authenticate docker with ghcr.io before downloading and running the `uniond` docker image.
 
@@ -30,7 +30,7 @@ docker login ghcr.io
 
 Supply `docker` with your GitHub username. When asked for your password, instead supply your GitHub PAT that you just created and noted.
 
-*Note: By default, `docker` will insecurely store your GitHub PAT. For alternatives, see: [docker login: Credentials Store](https://docs.docker.com/engine/reference/commandline/login/#credentials-store)*
+_Note: By default, `docker` will insecurely store your GitHub PAT. For alternatives, see: [docker login: Credentials Store](https://docs.docker.com/engine/reference/commandline/login/#credentials-store)_
 
 You should now be able to download and run docker images from ghcr.io.
 
@@ -48,7 +48,7 @@ You should now be able to run this version of `uniond` locally.
 
 Running `uniond` with `docker run` has a few caveats. These tips will help ensure you're able to accomplish everything you need with `uniond` using `docker`.
 
-* **Storing your `uniond` configuration:**
+- **Storing your `uniond` configuration:**
 
   When interacting with `uniond` it is helpful to have a persistent and accessible location to store your `uniond` configuration.
 
@@ -62,7 +62,7 @@ Running `uniond` with `docker run` has a few caveats. These tips will help ensur
   docker run --mount type=bind,source="$HOME/uniond-config",target=/uniond-config $DOCKER_FLAGS ghcr.io/unionfi/uniond:$UNIOND_VERSION $UNIOND_SUB_COMMAND --home "/uniond-config"
   ```
 
-* **Publish your docker container ports:**
+- **Publish your docker container ports:**
 
   When running a validator node, you will need to publish the necessary TCP ports to communicate with and receive request from other nodes.
 
@@ -72,5 +72,3 @@ Running `uniond` with `docker run` has a few caveats. These tips will help ensur
   # Include both ports for traffic to flow through
   docker run -p 26656:26656 -p 26657:26657 $DOCKER_FLAGS ghcr.io/unionfi/uniond:$UNIOND_VERSION $UNIOND_SUB_COMMAND
   ```
-
-

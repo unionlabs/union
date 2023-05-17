@@ -245,7 +245,8 @@
             programs.nixpkgs-fmt.enable = true;
             programs.gofmt.enable = true;
             programs.rustfmt.enable = true;
-            settings.global.excludes = [ "uniond/vendor/**" ];
+            programs.prettier.enable = true;
+            settings.global.excludes = [ "**/vendor/**" ];
           };
         };
     };

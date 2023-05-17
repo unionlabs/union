@@ -1,6 +1,6 @@
 # Welcome to Union
 
-Thank you for investing your time in contributing to our project! 
+Thank you for investing your time in contributing to our project!
 
 In this guide, you will get an overview of the contribution workflow from opening an issue, creating a PR, reviewing, and merging the PR.
 
@@ -16,7 +16,6 @@ We evaluate the need for a PR based on:
 2. Maintainability: will this become a burden for little gain, or add value?
 3. Can the core team understand the code additions being made, and maintain them, or will they rely on you in the future?
 
-
 ## Working on a PR
 
 Make sure to check the ARCHITECTURE.md document to get a feel for the repository structure. It explains our build system more in-depth. If you want to run approximately the same tests as CI does, run `nix flake check`. For this, you will need to install [nix](https://zero-to-nix.com/start/install).
@@ -25,7 +24,7 @@ Make sure to check the ARCHITECTURE.md document to get a feel for the repository
 
 Sometimes you might need to extend the CI. For this always use nix. You'll need to keep a few things into account:
 
-1. Your additions must ensure compatibility with our supported targets: 
+1. Your additions must ensure compatibility with our supported targets:
 
 ```nix
 systems = [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" "x86_64-darwin" ];
@@ -49,5 +48,4 @@ Finally, remain polite and friendly. Reviewing can feel harsh, but it is a learn
 
 ## Post-Merge
 
-You'll be an official contributor and mentioned in the release, as well as visible in GitHub's analytics. 
-
+You'll be an official contributor and mentioned in the release, as well as visible in GitHub's analytics.
