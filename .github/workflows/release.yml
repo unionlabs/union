@@ -100,20 +100,23 @@ jobs:
     runs-on: ubuntu-latest
     needs: [download-docker-images]
     permissions: write-all
+    strategy:
+      matrix:
+        package: [ uniond, unionpd ]
     steps:
       - uses: docker/login-action@v2
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - run: docker pull ghcr.io/unionfi/uniond:${{ github.ref_name }}-aarch64-linux
-      - run: docker pull ghcr.io/unionfi/uniond:${{ github.ref_name }}-x86_64-linux
+      - run: docker pull ghcr.io/unionfi/${{ matrix.package }}:${{ github.ref_name }}-aarch64-linux
+      - run: docker pull ghcr.io/unionfi/${{ matrix.package }}:${{ github.ref_name }}-x86_64-linux
       - run: |
           docker manifest create \
-          ghcr.io/unionfi/uniond:${{ github.ref_name }} \
-          --amend ghcr.io/unionfi/uniond:${{ github.ref_name }}-aarch64-linux \
-          --amend ghcr.io/unionfi/uniond:${{ github.ref_name }}-x86_64-linux \
-      - run: docker manifest push ghcr.io/unionfi/uniond:${{ github.ref_name }}
+          ghcr.io/unionfi/${{ matrix.package }}:${{ github.ref_name }} \
+          --amend ghcr.io/unionfi/${{ matrix.package }}:${{ github.ref_name }}-aarch64-linux \
+          --amend ghcr.io/unionfi/${{ matrix.package }}:${{ github.ref_name }}-x86_64-linux \
+      - run: docker manifest push ghcr.io/unionfi/${{ matrix.package }}:${{ github.ref_name }}
     
   release:
     runs-on: ubuntu-latest
