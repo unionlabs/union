@@ -1,5 +1,5 @@
 { self, ... }: {
-  perSystem = { self', pkgs, system, config, inputs', ... }:
+  perSystem = { self', pkgs, system, config, inputs', stdenv, ... }:
     let
       crane = rec {
         lib = self.inputs.crane.lib.${system};
@@ -63,6 +63,12 @@
           partitions = 1;
           partitionType = "count";
           doCheck = true;
+          preBuildHooks = [
+            ''
+              echo "patching testdata" && \
+              source ${pkgs.stdenv}/setup && patchShebangsAuto $PWD/src/testdata
+            ''
+          ];
           preConfigureHooks = [
             "cp ${self'.packages.uniond}/bin/uniond $PWD/src/testdata/test_init_cmd/bins/genesis"
           ];
