@@ -31,6 +31,7 @@
         };
         prysm-validator = import ./services/prysm-validator.nix {
           inherit pkgs;
+          validatorCount = devnetConfig.ethereum.beacon.validatorCount;
           prysm-validator = self'.packages.prysm-validator;
           config = self'.packages.devnet-prysm-config;
         };

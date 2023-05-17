@@ -67,7 +67,6 @@
         {
           _module = {
             args = {
-
               inherit crane;
               pkgs = import nixpkgs {
                 inherit system;
@@ -75,7 +74,14 @@
                   rust-overlay.overlays.default
                 ];
               };
-              devnetConfig = { validatorCount = 4; };
+              devnetConfig = {
+                validatorCount = 4;
+                ethereum = {
+                  beacon = {
+                    validatorCount = 64;
+                  };
+                };
+              };
               proto = {
                 uniond = builtins.path {
                   name = "uniond-proto";

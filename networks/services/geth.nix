@@ -8,7 +8,7 @@ let
         DATADIR=.
         ETH_DATADIR=$DATADIR/geth
         cp ${genesis}/genesis.json "$DATADIR/genesis.json"
-        
+
         geth init --datadir "$ETH_DATADIR" "$DATADIR/genesis.json"
         geth account import --datadir "$ETH_DATADIR" \
           --password /dev/null ${config}/dev-key0.prv
@@ -52,7 +52,7 @@ in
     ];
     command = [ "${geth-init}/bin/geth-init" ];
     healthcheck = {
-      start_period = "5s";
+      start_period = "20s";
       interval = "10s";
       retries = 4;
       test = [
