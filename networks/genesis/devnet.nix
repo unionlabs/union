@@ -13,7 +13,7 @@
       mkHome = { genesisAccounts }:
         pkgs.runCommand "genesis-home" { } ''
           mkdir -p $out
-          
+
           # Generate the wasm client genesis state
           base64 -w0 ${self'.packages.wasm-ethereum-lc}/lib/union_ethereum_lc.wasm > $out/encoded.txt
           ${uniond} init testnet bn254 --chain-id ${chainId} --home $out
@@ -26,11 +26,11 @@
           cat $out/config/genesis.json | \
              ${pkgs.jq}/bin/jq --arg code_id $CODE_ID --rawfile encoded_file $out/encoded.txt '.app_state."08-wasm".contracts'='[ { "code_id_key": $code_id, "contract_code": $encoded_file }  ]' \
           > $out/tmp-genesis.json
-          
+
           # TODO(aeryz): This can be enabled with `CODE_ID_B64` line if we want to add the client at the genesis.
           # | ${pkgs.jq}/bin/jq --arg code_id $CODE_ID_B64 .app_state.ibc.client_genesis.clients='[{"client_id":"08-wasm-0","client_state":{"@type":"/ibc.lightclients.wasm.v1.ClientState","code_id":$code_id,"data":"e30=","latest_height":{"revision_height":"2","revision_number":"0"}}}]' | ${pkgs.jq}/bin/jq .app_state.ibc.client_genesis.clients_consensus='[{"client_id":"08-wasm-0","consensus_states":[{"consensus_state":{"@type":"/ibc.lightclients.wasm.v1.ConsensusState","data":"e30=","timestamp":"1678732260023000000"},"height":{"revision_height":"1","revision_number":"0"}}]}]' \
           mv $out/tmp-genesis.json $out/config/genesis.json
-            
+
           # Add the dev account
           ADDRESS=`echo 'wine parrot nominee girl exchange element pudding grow area twenty next junior come render shadow evidence sentence start rough debate feed all limb real' | ${uniond} keys add --recover testkey --keyring-backend test --home $out --output json | ${pkgs.jq}/bin/jq -r .address`
           ${uniond} add-genesis-account $ADDRESS 10000000000000000000000000stake --keyring-backend test --home $out
@@ -65,12 +65,11 @@
       mkGethPrysmGenesis = {}:
         pkgs.runCommand "geth-prysm-genesis" { } ''
           mkdir -p $out
-          cp ${./devnet-evm/genesis.json} "./genesis.json"
-        
-          ${prysmctl} \
-          testnet generate-genesis \
+          cp ${./devnet-evm/genesis.json} ./genesis.json
+
+          ${prysmctl} testnet generate-genesis \
             --fork=bellatrix \
-            --num-validators=64 \
+            --num-validators=${toString devnetConfig.ethereum.beacon.validatorCount} \
             --output-ssz=$out/genesis.ssz \
             --chain-config-file=${./devnet-evm/beacon-config.yml} \
             --geth-genesis-json-in=./genesis.json \
@@ -128,7 +127,6 @@
       };
 
       packages.devnet-geth-config = pkgs.linkFarm "devnet-geth-config" [
-        { name = "genesis.json"; path = "${./devnet-evm/genesis.json}"; }
         { name = "beacon-config.yml"; path = "${./devnet-evm/beacon-config.yml}"; }
         { name = "dev-key0.prv"; path = "${./devnet-evm/dev-key0.prv}"; }
         { name = "dev-key1.prv"; path = "${./devnet-evm/dev-key1.prv}"; }
