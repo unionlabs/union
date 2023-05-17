@@ -210,6 +210,7 @@ mod tests {
 
     #[test]
     #[traced_test]
+    #[ignore = "init becomes relevant once we publicly host seeds and genesis.json"]
     fn test_init() {
         let tmp = testdata::temp_dir_with(&["test_init_cmd"]);
         let home = tmp.into_path().join("test_init_cmd");
