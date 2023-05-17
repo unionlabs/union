@@ -4868,6 +4868,7 @@ dependencies = [
  "bytes",
  "cosmwasm-schema",
  "cosmwasm-std",
+ "ethabi",
  "ethereum-consensus",
  "ethereum-light-client-verifier",
  "hex",
@@ -4879,6 +4880,7 @@ dependencies = [
  "serde",
  "serde-json-wasm",
  "serde_json",
+ "sha3",
  "ssz-rs",
  "thiserror",
  "tiny-keccak",
@@ -5060,6 +5062,7 @@ dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
  "ibc",
+ "prost",
  "protos",
  "serde",
 ]

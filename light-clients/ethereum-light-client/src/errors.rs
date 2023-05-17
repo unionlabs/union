@@ -62,10 +62,24 @@ pub enum Error {
 
     #[error("Invalid membership value")]
     InvalidValue,
+
+    #[error("Invalid commitment key")]
+    InvalidCommitmentKey,
+
+    #[error("Missing field in the protobuf encoded data")]
+    MissingProtoField,
 }
 
 impl Error {
     pub fn decode<S: Into<String>>(s: S) -> Error {
         Error::DecodeError(s.into())
+    }
+}
+
+impl From<wasm_light_client_types::Error> for Error {
+    fn from(error: wasm_light_client_types::Error) -> Self {
+        match error {
+            wasm_light_client_types::Error::Decode(e) => Error::DecodeError(e),
+        }
     }
 }
