@@ -86,7 +86,10 @@ impl Supervisor {
 
     pub fn try_wait(&mut self) -> Result<Option<ExitStatus>> {
         if let Some(child) = &mut self.child {
-            Ok(child.try_wait()?)
+            Ok(child.try_wait().map_err(|err| {
+                debug!(target: "unionvisor", "unknown error while try_waiting for child: {:?}", err);
+                err
+            })?)
         } else {
             unreachable!("try_waiting for a child should only happen after spawn")
         }
@@ -140,6 +143,7 @@ pub fn run_and_upgrade<S: AsRef<OsStr>, I: IntoIterator<Item = S> + Clone>(
             warn!(target: "supervisor", "failed to spawn initial binary call");
             err
         })?;
+    info!(target: "unionvisor", "spawned uniond, starting poll for upgrade signals");
     std::thread::sleep(Duration::from_millis(300));
     loop {
         if let Some(code) = supervisor.try_wait()? {
