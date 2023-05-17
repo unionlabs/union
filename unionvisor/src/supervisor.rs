@@ -149,7 +149,10 @@ pub fn run_and_upgrade<S: AsRef<OsStr>, I: IntoIterator<Item = S> + Clone>(
 
         match watcher.poll() {
             Err(FileReaderError::FileNotFound) => continue,
-            Err(err) => return Err(RuntimeError::Other(err.into())),
+            Err(err) => {
+                warn!(target: "supervisor", "unknown error while polling for upgrades: {}", err.to_string());
+                return Err(RuntimeError::Other(err.into()));
+            }
             Ok(None) => continue,
             Ok(Some(new)) => {
                 // If the daemon restarts, then upgrade-info.json may be stale. We need to

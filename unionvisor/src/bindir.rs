@@ -30,13 +30,16 @@ impl Bindir {
         };
 
         // If there exists no symlink to current yet, we create it.
-        if let Err(err) = fs::read_link(dir.current()) {
-            match err.kind() {
+        match fs::read_link(dir.current()) {
+            Err(err) => match err.kind() {
                 io::ErrorKind::NotFound => dir.swap(name).map_err(|err| {
                     warn!(target: "unionvisor", "unable to swap fallback binary to current");
                     err
                 })?,
                 _ => return Err(err.into()),
+            },
+            Ok(path) => {
+                debug!(target: "unionvisor", "existing symlink found at {}, pointing to {}, continueing using that", dir.current().display(), path.display())
             }
         }
         Ok(dir)
