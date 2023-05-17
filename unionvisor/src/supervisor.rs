@@ -150,13 +150,17 @@ pub fn run_and_upgrade<S: AsRef<OsStr>, I: IntoIterator<Item = S> + Clone>(
         match watcher.poll() {
             Err(FileReaderError::FileNotFound) => continue,
             Err(err) => {
-                warn!(target: "supervisor", "unknown error while polling for upgrades: {}", err.to_string());
+                warn!(target: "unionvisor", "unknown error while polling for upgrades: {}", err.to_string());
                 return Err(RuntimeError::Other(err.into()));
             }
             Ok(None) => continue,
             Ok(Some(new)) => {
                 // If the daemon restarts, then upgrade-info.json may be stale. We need to
                 // resolve the current symlink and compare it with the info.
+                info!(
+                    target = "unionvisor",
+                    "detected an upgrade signal: {:?}", new
+                );
                 let symlink = supervisor.symlink();
                 let actual =
                     fs::read_link(symlink).map_err(|err| RuntimeError::Other(err.into()))?;

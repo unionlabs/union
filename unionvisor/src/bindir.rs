@@ -1,5 +1,4 @@
 use color_eyre::Result;
-use fs_extra::error;
 use std::ffi::OsString;
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
@@ -39,7 +38,7 @@ impl Bindir {
                 _ => return Err(err.into()),
             },
             Ok(path) => {
-                debug!(target: "unionvisor", "existing symlink found at {}, pointing to {}, continueing using that", dir.current().display(), path.display())
+                debug!(target: "unionvisor", "existing symlink found at {}, pointing to {}, continuing using that", dir.current().display(), path.display())
             }
         }
         Ok(dir)
