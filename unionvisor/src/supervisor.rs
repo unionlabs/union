@@ -303,6 +303,6 @@ mod tests {
             Duration::from_secs(1),
         )
         .unwrap_err();
-        assert!(matches!(err, RuntimeError::EarlyExit { .. }))
+        assert!(matches!(dbg!(err), RuntimeError::EarlyExit { .. }))
     }
 }
