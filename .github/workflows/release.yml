@@ -66,6 +66,8 @@ jobs:
       - run: ls -la ${{ matrix.system }}
       - run: |
           echo "Getting OUTPUT and NARINFO_NAME"
+          pwd
+          cat result.json
           OUTPUT=`cat result.json | jq -r '.packages."${{ matrix.system }}"."${{ matrix.package }}".outputs.out'`
           prefix="/nix/store/"
           suffix="-${{ matrix.package }}" # <- HACK: suffix is hardcoded, change when you want to build a different package
