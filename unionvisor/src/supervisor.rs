@@ -219,8 +219,8 @@ mod tests {
     use std::fs;
     use tracing_test::traced_test;
 
-    #[traced_test]
     #[test]
+    #[traced_test]
     fn test_run_and_upgrade() {
         let tmp_dir = testdata::temp_dir_with(&["test_run"]);
         let path = tmp_dir.into_path().join("test_run");
@@ -240,8 +240,8 @@ mod tests {
         }
     }
 
-    #[traced_test]
     #[test]
+    #[traced_test]
     fn test_run_and_upgrade_restart() {
         let tmp_dir = testdata::temp_dir_with(&["test_restart"]);
         let path = tmp_dir.into_path().join("test_restart");
@@ -262,6 +262,7 @@ mod tests {
     }
 
     #[test]
+    #[traced_test]
     fn test_backup() {
         let tmp = testdata::temp_dir_with(&["test_backup"]);
         let home = tmp.into_path().join("test_backup");
@@ -279,6 +280,7 @@ mod tests {
     }
 
     #[test]
+    #[traced_test]
     fn test_revert() {
         let tmp = testdata::temp_dir_with(&["test_revert"]);
         let home = tmp.into_path().join("test_revert");
@@ -291,10 +293,13 @@ mod tests {
     }
 
     #[test]
+    #[traced_test]
     fn test_early_exit() {
         let tmp_dir = testdata::temp_dir_with(&["test_early_exit"]);
         let home = tmp_dir.into_path().join("test_early_exit");
-        let bindir = Bindir::new(home.clone(), home.join("bins"), "genesis", "uniond.sh").unwrap();
+        assert!(home.join("bins/genesis/uniond.sh").exists());
+        let bindir = Bindir::new(home.clone(), home.join("bins"), "genesis", "uniond.sh").expect("should be able to create a bindir");
+        assert!(bindir.current().exists());
         let err = run_and_upgrade(
             home.clone(),
             LogFormat::Plain,

@@ -1,9 +1,10 @@
 use color_eyre::Result;
+use fs_extra::error;
 use std::ffi::OsString;
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use std::{fs, io};
-use tracing::{debug, field::display as as_display};
+use tracing::{debug, warn, field::display as as_display};
 
 pub struct Bindir {
     home: PathBuf,
@@ -31,7 +32,10 @@ impl Bindir {
         // If there exists no symlink to current yet, we create it.
         if let Err(err) = fs::read_link(dir.current()) {
             match err.kind() {
-                io::ErrorKind::NotFound => dir.swap(name)?,
+                io::ErrorKind::NotFound => dir.swap(name).map_err(|err| {
+                    warn!(target: "unionvisor", "unable to swap fallback binary to current");
+                    err
+                })?,
                 _ => return Err(err.into()),
             }
         }
@@ -98,7 +102,7 @@ mod tests {
         std::os::unix::fs::symlink(home.join("bins/bar.foo"), home.join("bins/current"))
             .expect("should be able to symlink");
 
-        let bindir = Bindir::new(home.clone(), home.join("bins"), "bar.foo", "").unwrap();
+        let bindir = Bindir::new(home.clone(), home.join("bins"), "bar.foo", "").expect("should be able to create a bindir");
         bindir.swap("foo.bar").unwrap();
     }
 }
