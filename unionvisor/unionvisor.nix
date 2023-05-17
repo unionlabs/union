@@ -66,7 +66,7 @@
           preBuildHooks = [
             ''
               echo "patching testdata" && \
-              source ${pkgs.stdenv}/setup && patchShebangsAuto $PWD/src/testdata
+              source ${pkgs.stdenv}/setup && patchShebangs $PWD/src/testdata/test_early_exit/bins/genesis
             ''
           ];
           preConfigureHooks = [
