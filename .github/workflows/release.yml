@@ -13,7 +13,7 @@ jobs:
     with:
       filter_builds: '(.top_attr == "packages") and (.system == "x86_64-linux" or .system == "aarch64-linux") and (.attr == "uniond" or .attr == "unionpd" or .attr == "uniond-image" or .attr == "unionpd-image")' # ensure to append this list if you want to release more artifacts
 
-  download-docker-images:
+  dl-images:
     runs-on: ubuntu-latest
     needs: [build]
     permissions: write-all
@@ -45,7 +45,7 @@ jobs:
       - run: docker tag `docker images -q ${{ matrix.package }}` ghcr.io/unionfi/${{ matrix.package }}:${{ github.ref_name }}-${{ matrix.system }}
       - run: docker push ghcr.io/unionfi/${{ matrix.package }}:${{ github.ref_name }}-${{ matrix.system }}
 
-  download-static-binaries:
+  dl-bins:
     runs-on: ubuntu-latest
     needs: [build]
     permissions: write-all
@@ -96,9 +96,9 @@ jobs:
           name: ${{ matrix.package }}-${{ matrix.system }}
           path: ${{ matrix.package }}-${{ matrix.system }}
 
-  create-docker-manifest:
+  docker-manifest:
     runs-on: ubuntu-latest
-    needs: [download-docker-images]
+    needs: [ dl-images ]
     permissions: write-all
     strategy:
       matrix:
@@ -120,7 +120,7 @@ jobs:
     
   release:
     runs-on: ubuntu-latest
-    needs: [create-docker-manifest, download-static-binaries]
+    needs: [ docker-manifest, dl-bins ]
     permissions: write-all
     steps:
       - uses: actions/download-artifact@v3
