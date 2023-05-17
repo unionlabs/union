@@ -3,6 +3,7 @@ name: Release
 on:
   push:
     tags: ['v[0-9]+\.[0-9]+\.[0-9]+\-rc[0-9]+', 'v[0-9]+\.[0-9]+\.[0-9]+']
+    branches: [ 4-include-unionpd-in-release ]
 
 jobs:
   build:
@@ -10,7 +11,7 @@ jobs:
     secrets:
       nixbuild_token: ${{ secrets.nixbuild_token }}
     with:
-      filter_builds: '(.top_attr == "packages") and (.system == "x86_64-linux" or .system == "aarch64-linux") and (.attr == "uniond" or .attr == "uniond-image")' # ensure to append this list if you want to release more artifacts
+      filter_builds: '(.top_attr == "packages") and (.system == "x86_64-linux" or .system == "aarch64-linux") and (.attr == "uniond" or .attr == "unionpd" or .attr == "uniond-image")' # ensure to append this list if you want to release more artifacts
 
   download-docker-images:
     runs-on: ubuntu-latest
@@ -51,10 +52,11 @@ jobs:
     strategy:
       matrix:
         system: [ aarch64-linux, x86_64-linux ]
+        package: [ uniond, unionpd ]
     steps: 
       - uses: actions/download-artifact@v3
         with:
-          name: packages.${{ matrix.system }}.uniond
+          name: packages.${{ matrix.system }}.${{ matrix.package }}
       - uses: nixbuild/nix-quick-install-action@v22
       - uses: nixbuild/nixbuild-action@v17
         with:
@@ -64,9 +66,9 @@ jobs:
       - run: ls -la ${{ matrix.system }}
       - run: |
           echo "Getting OUTPUT and NARINFO_NAME"
-          OUTPUT=`cat result.json | jq -r '.packages."${{ matrix.system }}".uniond.outputs.out'`
+          OUTPUT=`cat result.json | jq -r '.packages."${{ matrix.system }}"."${{ matrix.package }}".outputs.out'`
           prefix="/nix/store/"
-          suffix="-uniond" # <- HACK: suffix is hardcoded, change when you want to build a different package
+          suffix="-${{ matrix.package }}" # <- HACK: suffix is hardcoded, change when you want to build a different package
           trimmed=${OUTPUT#$prefix}
           trimmed=${trimmed%$suffix}
           NARINFO_NAME=$trimmed
@@ -79,16 +81,16 @@ jobs:
           NAR_URL=$(echo "$nar_url_line" | cut -d " " -f 2-)
 
           echo "Restore the package from the NAR_URL archive"
-          cat ${{ matrix.system }}/${NAR_URL} | xz -dc | nix-store --restore ${{ matrix.system }}.uniond
-          mv ${{ matrix.system }}.uniond/bin/uniond uniond-${{ matrix.system }}
+          cat ${{ matrix.system }}/${NAR_URL} | xz -dc | nix-store --restore ${{ matrix.system }}.${{ matrix.package }}
+          mv ${{ matrix.system }}.${{ matrix.package }}/bin/${{ matrix.package }} ${{ matrix.package }}-${{ matrix.system }}
 
           echo "DEBUG"
           ls -la 
           tree
       - uses: actions/upload-artifact@v3
         with:
-          name: uniond-${{ matrix.system }}
-          path: uniond-${{ matrix.system }}
+          name: ${{ matrix.package }}-${{ matrix.system }}
+          path: ${{ matrix.package }}-${{ matrix.system }}
 
   create-docker-manifest:
     runs-on: ubuntu-latest
@@ -140,3 +142,5 @@ jobs:
           files: |
             uniond-aarch64-linux
             uniond-x86_64-linux
+            unionpd-aarch64-linux
+            unionpd-x86_64-linux
