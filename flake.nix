@@ -245,6 +245,15 @@
             programs.nixpkgs-fmt.enable = true;
             programs.gofmt.enable = true;
             programs.rustfmt.enable = true;
+            programs.dprint = {
+              enable = true;
+              config = {
+                includes = [ "**/*.json" ];
+                plugins = [
+                  "https://plugins.dprint.dev/json-0.17.2.wasm"
+                ];
+              };
+            };
             settings.global.excludes = [ "uniond/vendor/**" ];
           };
         };
