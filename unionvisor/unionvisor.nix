@@ -63,14 +63,11 @@
           partitions = 1;
           partitionType = "count";
           doCheck = true;
-          preBuildHooks = [
-            ''
-              echo "patching testdata" && \
-              source ${pkgs.stdenv}/setup && patchShebangs $PWD/src/testdata
-            ''
-          ];
           preConfigureHooks = [
-            "cp ${self'.packages.uniond}/bin/uniond $PWD/src/testdata/test_init_cmd/bins/genesis"
+            ''cp ${self'.packages.uniond}/bin/uniond $PWD/src/testdata/test_init_cmd/bins/genesis && \
+             echo "patching testdata" && \
+             source ${pkgs.stdenv}/setup && patchShebangs $PWD/src/testdata
+            ''
           ];
           RUST_BACKTRACE = 1;
         });
