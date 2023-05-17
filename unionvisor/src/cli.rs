@@ -185,17 +185,23 @@ impl CallCmd {
 
 #[cfg(test)]
 mod tests {
-    use crate::testdata;
-
     use super::*;
+    use crate::testdata;
+    use tracing_test::traced_test;
 
     #[test]
+    #[traced_test]
     fn test_call() {
         let tmp = testdata::temp_dir_with(&["test_call"]);
         let home = tmp.into_path().join("test_call");
 
         let command = CallCmd {
-            args: vec![OsString::from("-f foo --r baz".to_owned())],
+            args: vec![
+                OsString::from("-f"),
+                OsString::from("foo"),
+                OsString::from("--r"),
+                OsString::from("baz"),
+            ],
             fallback: "echo".to_owned(),
             bindir: home.join("bins"),
         };
@@ -203,7 +209,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
+    #[traced_test]
     fn test_init() {
         let tmp = testdata::temp_dir_with(&["test_init_cmd"]);
         let home = tmp.into_path().join("test_init_cmd");
