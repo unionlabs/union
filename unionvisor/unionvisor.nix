@@ -58,8 +58,9 @@
           inherit src;
         };
 
-        unionvisor-tests = crane.stable.cargoNextest (commonArgs // {
+        unionvisor-tests = crane.stable.cargoTest (commonArgs // {
           inherit cargoArtifacts;
+          buildInputs = [ pkgs.baseShell ];
           partitions = 1;
           partitionType = "count";
           doCheck = true;
