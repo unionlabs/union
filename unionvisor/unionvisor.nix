@@ -58,7 +58,7 @@
           inherit src;
         };
 
-        unionvisor-tests = crane.stable.cargoTest (commonArgs // {
+        unionvisor-tests = crane.stable.cargoNextest (commonArgs // {
           inherit cargoArtifacts;
           partitions = 1;
           partitionType = "count";
