@@ -1,5 +1,5 @@
 [package]
-name = "wasm-lc-types"
+name = "wasm-light-client-types"
 version = "0.1.0"
 authors = ["UnionFi Developers"]
 edition = "2021"

@@ -28,7 +28,7 @@ use protos::ibc::{
     lightclients::ethereum::v1::{Header as RawEthHeader, StorageProof},
 };
 use std::str::FromStr;
-use wasm_lc_types::msg::{
+use wasm_light_client_types::msg::{
     ClientMessage, ContractResult, Height, MerklePath, Status, StatusResponse,
 };
 

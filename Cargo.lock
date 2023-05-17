@@ -3032,7 +3032,7 @@ dependencies = [
  "ssz-rs",
  "thiserror",
  "tiny-keccak",
- "wasm-lc-types",
+ "wasm-light-client-types",
 ]
 
 [[package]]
@@ -3170,7 +3170,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ed9d5b4305409d1fc9482fee2d7f9bcbf24b3972bf59817ef757e23982242a93"
 
 [[package]]
-name = "wasm-lc-types"
+name = "wasm-light-client-types"
 version = "0.1.0"
 dependencies = [
  "cosmwasm-schema",
