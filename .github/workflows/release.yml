@@ -69,11 +69,10 @@ jobs:
           pwd
           cat result.json
           OUTPUT=`cat result.json | jq -r '.packages."${{ matrix.system }}"."${{ matrix.package }}".outputs.out'`
-          prefix="/nix/store/"
-          suffix="-${{ matrix.package }}" # <- HACK: suffix is hardcoded, change when you want to build a different package
-          trimmed=${OUTPUT#$prefix}
-          trimmed=${trimmed%$suffix}
-          NARINFO_NAME=$trimmed
+          NARINFO_NAME=$(basename "$OUTPUT" | cut -d'-' -f1)
+          echo "OUTPUT = $OUTPUT"
+          echo "NARINFO_NAME = $NARINFO_NAME"
+        
         
           echo "Copying artifacts from nixbuild.net"
           nix copy --to file://`pwd`/${{ matrix.system }} --from ssh-ng://eu.nixbuild.net $OUTPUT --extra-experimental-features nix-command
