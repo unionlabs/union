@@ -69,12 +69,16 @@ impl Bindir {
     /// Swaps the symlink of the current binary with the binary associated with `name`.
     pub fn swap(&self, name: &str) -> Result<()> {
         let old = self.current();
-        debug!(target: "unionvisor", "removing old symlink at {}", as_display(old.display()));
-        if let Err(err) = std::fs::remove_file(old) {
-            if err.kind() != io::ErrorKind::NotFound {
-                return Err(err.into());
-            }
-        };
+
+        if old.exists() {
+            debug!(target: "unionvisor", "removing old symlink at {}", as_display(old.display()));
+            if let Err(err) = std::fs::remove_file(old) {
+                if err.kind() != io::ErrorKind::NotFound {
+                    return Err(err.into());
+                }
+            };
+        }
+
         let new = self.get_path_to(name);
         let to = self.current();
         debug!(target: "unionvisor", "creating symlink from {} to {}", as_display(new.display()), as_display(to.display()));
