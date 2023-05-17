@@ -22,8 +22,14 @@ use ibc::{
 use prost::Message;
 use protos::{
     google::protobuf::Any,
-    ibc::lightclients::ethereum::v1::{ClientState as RawClientState, Fork},
-    // protobuf::Protobuf,
+    ibc::lightclients::{
+        ethereum::v1::{ClientState as RawClientState, Fork},
+        tendermint::v1::ClientState as RawTmClientState,
+        wasm::v1::ClientState as RawWasmClientState,
+    },
+    union::ibc::lightclients::cometbls::v1::{
+        ClientState as RawCometClientState, Fraction as RawCometFraction,
+    },
 };
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
@@ -47,6 +53,7 @@ pub struct ClientState {
     pub latest_slot: Slot,
     pub latest_execution_block_number: U64,
     pub frozen_height: Option<Height>,
+    pub counterparty_connection_state_slot: Slot,
 
     /// Verifier
     #[serde(skip)]
@@ -184,6 +191,7 @@ impl TryFrom<RawClientState> for ClientState {
             },
             consensus_verifier: Default::default(),
             execution_verifier: Default::default(),
+            counterparty_connection_state_slot: 3.into(),
         })
     }
 }
@@ -248,6 +256,39 @@ impl From<ClientState> for RawClientState {
             }),
         }
     }
+}
+
+pub fn tendermint_to_cometbls_client_state(state: RawTmClientState) -> RawCometClientState {
+    RawCometClientState {
+        chain_id: state.chain_id,
+        trust_level: state.trust_level.map(|tl| RawCometFraction {
+            numerator: tl.numerator,
+            denominator: tl.denominator,
+        }),
+        trusting_period: state.trusting_period,
+        unbonding_period: state.unbonding_period,
+        max_clock_drift: state.max_clock_drift,
+        frozen_height: state.frozen_height,
+        latest_height: state.latest_height,
+    }
+}
+
+pub fn decode_any_to_tendermint_client_state(state: &[u8]) -> Result<RawTmClientState, Error> {
+    let any_state = Any::decode(state)
+        .map_err(|_| Error::decode("when decoding raw bytes to any in `verify_membership`"))?;
+
+    let wasm_client_state =
+        RawWasmClientState::decode(any_state.value.as_slice()).map_err(|_| {
+            Error::decode("when decoding any value to wasm client state in `verify_membership`")
+        })?;
+
+    let any_state = Any::decode(wasm_client_state.data.as_slice()).map_err(|_| {
+        Error::decode("when decoding wasm client state to tm client state in `verify_membership`")
+    })?;
+
+    RawTmClientState::decode(any_state.value.as_slice()).map_err(|_| {
+        Error::decode("when decoding any state to tm client state in `verify_membership`")
+    })
 }
 
 // impl Protobuf<Any> for ClientState {}

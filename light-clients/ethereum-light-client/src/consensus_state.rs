@@ -5,7 +5,11 @@ use ibc::core::ics23_commitment::commitment::CommitmentRoot;
 use prost::Message;
 use protos::{
     google::protobuf::Any as IBCAny,
-    ibc::lightclients::ethereum::v1::ConsensusState as RawConsensusState,
+    ibc::lightclients::{
+        ethereum::v1::ConsensusState as RawConsensusState,
+        tendermint::v1::ConsensusState as RawTmConsensusState,
+    },
+    union::ibc::lightclients::cometbls::v1::ConsensusState as RawCometConsensusState,
 };
 
 pub const ETHEREUM_CONSENSUS_STATE_TYPE_URL: &str = "/ibc.lightclients.ethereum.v1.ConsensusState";
@@ -35,8 +39,6 @@ impl Default for ConsensusState {
         }
     }
 }
-
-// impl Protobuf<RawConsensusState> for ConsensusState {}
 
 impl TryFrom<RawConsensusState> for ConsensusState {
     type Error = Error;
@@ -77,8 +79,6 @@ impl From<ConsensusState> for RawConsensusState {
     }
 }
 
-// impl Protobuf<IBCAny> for ConsensusState {}
-
 impl TryFrom<IBCAny> for ConsensusState {
     type Error = Error;
 
@@ -90,6 +90,16 @@ impl TryFrom<IBCAny> for ConsensusState {
                 .map_err(|_| Error::decode("when converting to consensus state (Any)")),
             _ => Err(Error::UnknownTypeUrl),
         }
+    }
+}
+
+pub fn tendermint_to_cometbls_consensus_state(
+    state: RawTmConsensusState,
+) -> RawCometConsensusState {
+    RawCometConsensusState {
+        timestamp: state.timestamp,
+        root: state.root,
+        next_validators_hash: state.next_validators_hash,
     }
 }
 

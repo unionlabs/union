@@ -1,6 +1,10 @@
 use crate::{
-    consensus_state::TrustedConsensusState,
+    client_state::tendermint_to_cometbls_client_state,
+    consensus_state::{tendermint_to_cometbls_consensus_state, TrustedConsensusState},
     errors::Error,
+    eth_encoding::{
+        encode_cometbls_client_state, encode_cometbls_consensus_state, generate_commitment_key,
+    },
     eth_types::{ExecutionUpdateInfo, LightClientHeader},
     header::Header as EthHeader,
     msg::{ExecuteMsg, InstantiateMsg, QueryMsg},
@@ -23,13 +27,12 @@ use ethereum_consensus::{
 use ethereum_light_client_verifier::consensus::SyncProtocolVerifier;
 use ibc::core::ics24_host::Path;
 use prost::Message;
-use protos::ibc::{
-    core::connection::v1::ConnectionEnd,
-    lightclients::ethereum::v1::{Header as RawEthHeader, StorageProof},
-};
+use protos::ibc::lightclients::ethereum::v1::{Header as RawEthHeader, StorageProof};
+use sha3::Digest;
 use std::str::FromStr;
-use wasm_light_client_types::msg::{
-    ClientMessage, ContractResult, Height, MerklePath, Status, StatusResponse,
+use wasm_light_client_types::{
+    decode_client_state_to_concrete_state, decode_consensus_state_to_concrete_state,
+    msg::{ClientMessage, ContractResult, Height, MerklePath, Status, StatusResponse},
 };
 
 #[entry_point]
@@ -101,63 +104,73 @@ pub fn verify_membership(
             Error::ConsensusStateNotFound(height.revision_number, height.revision_height),
         )?;
     let (_, client_state) = read_client_state(deps)?;
+
     let path = Path::from_str(
         path.key_path
             .last()
             .ok_or(Error::InvalidPath("path is empty".into()))?,
     )
     .map_err(|e| Error::InvalidPath(e.to_string()))?;
+
+    // TODO(aeryz): generate and check the path here
     let raw_value = match path {
-        Path::Connection(_) => ConnectionEnd::decode(value.0.as_slice()),
+        Path::Connection(_) => value.0.as_slice().to_vec(),
+        Path::ClientState(_) => {
+            let cometbls_client_state = tendermint_to_cometbls_client_state(
+                decode_client_state_to_concrete_state(value.0.as_slice())?,
+            );
+
+            encode_cometbls_client_state(cometbls_client_state)?
+        }
+        Path::ClientConsensusState(_) => {
+            let cometbls_consensus_state = tendermint_to_cometbls_consensus_state(
+                decode_consensus_state_to_concrete_state(value.0.as_slice())?,
+            );
+
+            panic!("COMET CONSENSUS STATE: {:?}", cometbls_consensus_state);
+
+            encode_cometbls_consensus_state(cometbls_consensus_state)?
+        }
         p => {
             return Err(Error::InvalidPath(format!(
                 "path type not supported: {p:?}"
             )))
         }
-    }
-    .map_err(|_| Error::InvalidValue)?;
+    };
 
     let storage_proof = StorageProof::decode(proof.0.as_slice())
         .map_err(|_| Error::decode("when decoding storage proof"))?;
-    let encoded_value = cosmwasm_std::to_vec(&raw_value).map_err(|_| Error::InvalidValue)?;
 
-    let mut i = 0;
-    for proof in storage_proof.proof {
-        let root = H256::from_slice(consensus_state.storage_root.as_bytes());
-        let key = hex::decode(&proof.key[2..]).map_err(|_| Error::DecodeError("".into()))?;
+    let proof = storage_proof.proof[0].clone();
 
-        let value = {
-            if i + 32 > encoded_value.len() {
-                let mut value: [u8; 32] = [0; 32];
-                for (ci, item) in encoded_value[i..].iter().enumerate() {
-                    value[ci] = *item;
-                }
-                value.to_vec()
-            } else {
-                let value: &[u8; 32] = encoded_value[i..i + 32]
-                    .try_into()
-                    .map_err(|_| Error::DecodeError("".into()))?;
-                value.to_vec()
-            }
-        };
-        i += 32;
+    let root = H256::from_slice(consensus_state.storage_root.as_bytes());
 
-        let value = rlp::encode(&value);
+    let expected_key = generate_commitment_key(
+        path.to_string(),
+        client_state.counterparty_connection_state_slot.0,
+    );
 
-        client_state
-            .execution_verifier
-            .verify_membership(
-                root,
-                &key,
-                &value,
-                proof
-                    .proof
-                    .iter()
-                    .map(|p| hex::decode(&p[2..]).map_err(|_| Error::DecodeError("".into())))
-                    .collect::<Result<Vec<_>, _>>()?,
-            )
-            .map_err(|e| Error::Verification(e.to_string()))?;
+    if hex::encode(&expected_key) != &proof.key[2..] {
+        return Err(Error::InvalidCommitmentKey);
     }
+
+    let mut value = sha3::Keccak256::new();
+    value.update(&raw_value);
+    let value = rlp::encode(&value.finalize().to_vec());
+
+    client_state
+        .execution_verifier
+        .verify_membership(
+            root,
+            &expected_key,
+            &value,
+            proof
+                .proof
+                .iter()
+                .map(|p| hex::decode(&p[2..]).map_err(|_| Error::DecodeError("".into())))
+                .collect::<Result<Vec<_>, _>>()?,
+        )
+        .map_err(|e| Error::Verification(e.to_string()))?;
     Ok(ContractResult::valid(None))
 }
 
@@ -276,7 +289,10 @@ fn query_status() -> StatusResponse {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::state::{save_wasm_client_state, save_wasm_consensus_state};
+    use crate::{
+        eth_encoding::{abi, SolidityDataType},
+        state::{save_wasm_client_state, save_wasm_consensus_state},
+    };
     use cosmwasm_std::{
         testing::{mock_dependencies, MockApi, MockQuerier, MockStorage},
         Empty, OwnedDeps,

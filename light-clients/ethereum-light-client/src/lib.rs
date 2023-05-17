@@ -3,6 +3,7 @@ pub mod commitment;
 pub mod consensus_state;
 pub mod contract;
 pub mod errors;
+pub mod eth_encoding;
 pub mod header;
 pub mod misbehaviour;
 pub mod msg;
