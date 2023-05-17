@@ -72,11 +72,7 @@ impl Bindir {
 
         if old.exists() {
             debug!(target: "unionvisor", "removing old symlink at {}", as_display(old.display()));
-            if let Err(err) = std::fs::remove_file(old) {
-                if err.kind() != io::ErrorKind::NotFound {
-                    return Err(err.into());
-                }
-            };
+            std::fs::remove_file(old)?;
         }
 
         let new = self.get_path_to(name);
@@ -105,11 +101,11 @@ mod tests {
         let dir = testdata::temp_dir_with(&["test_swap"]);
         let home = dir.into_path().join("test_swap");
 
-        std::os::unix::fs::symlink(home.join("bins/bar.foo"), home.join("bins/current"))
+        std::os::unix::fs::symlink(home.join("bins/bar/uniond"), home.join("bins/current"))
             .expect("should be able to symlink");
 
-        let bindir = Bindir::new(home.clone(), home.join("bins"), "bar.foo", "")
+        let bindir = Bindir::new(home.clone(), home.join("bins"), "bar", "uniond")
             .expect("should be able to create a bindir");
-        bindir.swap("foo.bar").unwrap();
+        bindir.swap("foo").unwrap();
     }
 }

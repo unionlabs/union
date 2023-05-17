@@ -9,7 +9,7 @@
 
       commonArgs = {
         inherit src;
-        buildInputs = [ pkgs.pkg-config pkgs.openssl ]
+        buildInputs = [ pkgs.pkg-config pkgs.openssl pkgs.bash ]
           ++ (
           pkgs.lib.optionals pkgs.stdenv.isDarwin (with pkgs.darwin.apple_sdk.frameworks; [
             Security
@@ -66,6 +66,7 @@
           preConfigureHooks = [
             "cp ${self'.packages.uniond}/bin/uniond $PWD/src/testdata/test_init_cmd/bins/genesis"
           ];
+          RUST_BACKTRACE = 1;
         });
       };
     };
