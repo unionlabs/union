@@ -1,4 +1,4 @@
-{ pkgs, prysm-beacon-chain, config, genesis, ... }:
+{ pkgs, prysm-beacon-chain, config, sharedVolume, ... }:
 let
   prysm-beacon-init = pkgs.writeShellApplication {
     name = "prysm-beacon-init";
@@ -6,18 +6,17 @@ let
       pkgs.curl
       pkgs.jq
       prysm-beacon-chain
-      genesis
       config
     ];
     text = ''
       ${pkgs.lib.getExe prysm-beacon-chain} \
         --datadir=./beacondata \
         --min-sync-peers=0 \
-        --genesis-state=${genesis}/genesis.ssz \
+        --genesis-state=/${sharedVolume}/genesis.ssz \
         --interop-eth1data-votes \
         --bootstrap-node= \
         --chain-config-file=${config}/beacon-config.yml \
-        --chain-id=15 \
+        --chain-id=32382 \
         --rpc-host=0.0.0.0 \
         --grpc-gateway-host=0.0.0.0 \
         --execution-endpoint=http://geth:8551 \
@@ -42,10 +41,16 @@ in
       "4000:4000"
       "8080:8080"
     ];
+    volumes = [
+      "${sharedVolume}:/${sharedVolume}"
+    ];
     command = [ (pkgs.lib.getExe prysm-beacon-init) ];
     depends_on = {
       geth = {
         condition = "service_healthy";
+      };
+      prysm-bootstrap = {
+        condition = "service_completed_successfully";
       };
     };
   };

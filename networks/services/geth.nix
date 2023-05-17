@@ -1,21 +1,21 @@
-{ pkgs, config, genesis, ... }:
+{ pkgs, config, sharedVolume, ... }:
 let
   geth-init =
     pkgs.writeShellApplication {
       name = "geth-init";
-      runtimeInputs = [ pkgs.go-ethereum config genesis ];
+      runtimeInputs = [ pkgs.go-ethereum config ];
       text = ''
-        DATADIR=.
-        ETH_DATADIR=$DATADIR/geth
-        cp ${genesis}/genesis.json "$DATADIR/genesis.json"
+        ETH_DATADIR=/geth
 
-        geth init --datadir "$ETH_DATADIR" "$DATADIR/genesis.json"
+        geth init --datadir "$ETH_DATADIR" /${sharedVolume}/genesis.json
         geth account import --datadir "$ETH_DATADIR" \
           --password /dev/null ${config}/dev-key0.prv
         geth account import --datadir "$ETH_DATADIR" \
           --password /dev/null ${config}/dev-key1.prv
 
         geth \
+          --vmdebug \
+          --verbosity=4 \
           --http \
           --http.api=eth \
           --http.addr=0.0.0.0 \
@@ -24,10 +24,11 @@ let
           --authrpc.jwtsecret=${config}/dev-jwt.prv \
           --datadir=$ETH_DATADIR \
           --allow-insecure-unlock \
-          --unlock=0xBe68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD,0x89b4AB1eF20763630df9743ACF155865600daFF2 \
+          --unlock=0xBe68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD \
           --password=/dev/null \
           --nodiscover \
-          --syncmode=full
+          --syncmode=full \
+          --nat=none
       '';
     };
 in
@@ -51,10 +52,12 @@ in
       "8551:8551"
     ];
     command = [ "${geth-init}/bin/geth-init" ];
+    volumes = [
+      "${sharedVolume}:/${sharedVolume}"
+    ];
     healthcheck = {
-      start_period = "20s";
-      interval = "10s";
-      retries = 4;
+      interval = "5s";
+      retries = 2;
       test = [
         "CMD-SHELL"
         ''
@@ -64,6 +67,11 @@ in
             -d '{"jsonrpc": "2.0", "id": "1", "method": "eth_getBlockByNumber","params": ["0x0", false]}' | jq -r '.result.hash' || exit 1
         ''
       ];
+    };
+    depends_on = {
+      prysm-bootstrap = {
+        condition = "service_completed_successfully";
+      };
     };
   };
 }
