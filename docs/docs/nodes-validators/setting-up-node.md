@@ -1,12 +1,12 @@
 ---
-title: 'Setting up a node'
+title: "Setting up a node"
 ---
 
 # Setting Up a Node
 
 This document will walk you through the process of self-hosting a Union node.
 
-# Requirements 
+# Requirements
 
 To be able to send and receive messages in the network, you'll need to conduct TCP port forwarding for ports `26656` & `26657`.
 
@@ -18,7 +18,7 @@ To be able to send and receive messages in the network, you'll need to conduct T
 
 This section will walk you through building the node binary. These instructions are different for Docker and Nix.
 
-*NOTE: It's expected that all validators/nodes use Nix or Docker to set up their node. Imperative installations are not officially supported.*
+_NOTE: It's expected that all validators/nodes use Nix or Docker to set up their node. Imperative installations are not officially supported._
 
 ## Docker
 
@@ -33,11 +33,12 @@ Run `nix build` in the root of our repository after cloning:
 nix build "github:UnionFi/union"
 ```
 -->
+
 ```sh
 nix build "git+ssh://git@github.com/UnionFi/union"
 ```
 
-*NOTE: the `uniond` executable is stored as `./result/bin/uniond`*
+_NOTE: the `uniond` executable is stored as `./result/bin/uniond`_
 
 # Environment Variables
 
@@ -45,21 +46,21 @@ This document will often refer to environment variables you likely don't have se
 
 Here's a list of the environment variables we'll use and hints for setting them:
 
-* ` $CHAIN_ID` - either `union-1` for mainnet, or `union-testnet-1` for testnet.
+- ` $CHAIN_ID` - either `union-1` for mainnet, or `union-testnet-1` for testnet.
 
   ```sh
   # Example $CHAIN_ID
   CHAIN_ID=union-testnet-1
   ```
 
-* ` $MONIKER` - The name used for your validator node.
+- ` $MONIKER` - The name used for your validator node.
 
   ```sh
   # Example $MONIKER
   MONIKER="Unionized Goblin"
   ```
 
-* ` $KEY_NAME` - The name you've assigned to the key pair you'll use for this tutorial.
+- ` $KEY_NAME` - The name you've assigned to the key pair you'll use for this tutorial.
 
   ```sh
   # Example $KEY_NAME
@@ -68,7 +69,7 @@ Here's a list of the environment variables we'll use and hints for setting them:
 
 # Connect to the Public RPC
 
-*NOTE: The public RPC is currently not available.*
+_NOTE: The public RPC is currently not available._
 
 Now to connect the `uniond` binary to the public RPC.
 
@@ -81,6 +82,7 @@ uniond config chain-id $CHAIN_ID
 Set the public RPC node:
 
 <!-- TODO: Replace `$RPC_NODE_URL` with our RPC node URL. https://github.com/UnionFi/union/issues/30 -->
+
 ```sh
 uniond config node $RPC_NODE_URL
 ```
@@ -97,9 +99,10 @@ uniond init $MONIKER "bn254" --chain-id $CHAIN_ID
 
 **`GENESIS_URL` options:**
 
-* Union Testnet: `https://raw.githubusercontent.com/unionfi/genesis/main/union-testnet-1/genesis.json`
+- Union Testnet: `https://raw.githubusercontent.com/unionfi/genesis/main/union-testnet-1/genesis.json`
 
 <!-- TODO: Create and upload genesis file for users to download. https://github.com/UnionFi/union/issues/31 -->
+
 ```sh
 curl $GENESIS_URL > ~/.union/config/genesis.json
 ```
@@ -196,5 +199,5 @@ Where `STAKE` is the amount of stake you're putting down for your validator (i.e
 
 It's then recommended to backup these files from `~/.union/config` in a secure location:
 
-* `priv_validator_key.json`
-* `node_key.json`
+- `priv_validator_key.json`
+- `node_key.json`

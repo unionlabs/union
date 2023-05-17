@@ -5,7 +5,7 @@ Our networks configuration is structured like this:
 We define the following **networks**:
 
 - **devnet**: what a developer runs _locally on their machine_ to simulate a full end-to-end network setup.
-- **testnet**: what Union runs on their nodes in order to _test a mainnet-like environment_. 
+- **testnet**: what Union runs on their nodes in order to _test a mainnet-like environment_.
 - **mainnet**: what runs on the public Union mainnet. _("the production environment")_
 
 ## Genesis

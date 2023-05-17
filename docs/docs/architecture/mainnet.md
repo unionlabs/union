@@ -1,12 +1,12 @@
 ---
-title: 'Mainnet Overview'
+title: "Mainnet Overview"
 ---
 
 # Mainnet
 
-The union.fi mainnet release date will be announced after the public testnet period has ended. 
+The union.fi mainnet release date will be announced after the public testnet period has ended.
 
-## Genesis 
+## Genesis
 
 The network will be bootstrapped with the top validators from the public testnet
 

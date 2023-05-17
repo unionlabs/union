@@ -8,13 +8,7 @@
       "addWords": true
     }
   ],
-  "dictionaries": [
-    "en_US",
-    "companies",
-    "softwareTerms",
-    "go",
-    "union"
-  ],
+  "dictionaries": ["en_US", "companies", "softwareTerms", "go", "union"],
   "ignorePaths": [
     "rust/ethereum-light-client/src/test/valid_light_client_update_*.json",
     "rust/protos/*",

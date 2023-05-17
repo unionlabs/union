@@ -8,15 +8,15 @@ Two main versioning processes are elaborated on below: our use of semantic versi
 
 Our implementation of semantic versioning is in the form of `v{X}.{Y}.{Z}` where:
 
-* `{X}` indicates the major version. Major versions contain new features that may be incompatible with older versions and alter union's consensus. Detailed release notes and announcements can be expected for major versions.
+- `{X}` indicates the major version. Major versions contain new features that may be incompatible with older versions and alter union's consensus. Detailed release notes and announcements can be expected for major versions.
 
   Node Update: `required`
 
-* `{Y}` indicates the minor version. Minor versions may contain non-feature changes that may still be breaking. Usually these are reserved for security updates and bug fixes. Detailed release notes and announcements can be expected for minor versions.
+- `{Y}` indicates the minor version. Minor versions may contain non-feature changes that may still be breaking. Usually these are reserved for security updates and bug fixes. Detailed release notes and announcements can be expected for minor versions.
 
   Node Update: `required`
 
-* `{Z}` indicates the patch version. Patch versions will not contain breaking changes or new features. Release notes will be auto-generated from git commits for patch versions, announcements should not be expected.
+- `{Z}` indicates the patch version. Patch versions will not contain breaking changes or new features. Release notes will be auto-generated from git commits for patch versions, announcements should not be expected.
 
   Node Update: `optional`
 

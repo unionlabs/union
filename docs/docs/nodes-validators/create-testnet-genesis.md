@@ -1,5 +1,5 @@
 ---
-title: 'Creating the Testnet Genesis'
+title: "Creating the Testnet Genesis"
 ---
 
 <!--
@@ -23,7 +23,7 @@ Both the host node and genesis validators should generate an app key pair.
 
 To add your app key, you can use the `uniond keys` interface to either create a new key pair or import an existing key pair.
 
-*Note: The variable ` $KEY_NAME` is to be replaced by whatever name you desire to locally refer to your app key by.*
+_Note: The variable ` $KEY_NAME` is to be replaced by whatever name you desire to locally refer to your app key by._
 
 ### Create a new Key Pair
 
@@ -95,9 +95,9 @@ The `genesis.json` file has many options for configuration. A good summary of wh
 
 Most notably, the sections:
 
-* [Mint](https://hub.cosmos.network/main/resources/genesis.html#mint)
-* [Staking](https://hub.cosmos.network/main/resources/genesis.html#staking)
-* [Slashing](https://hub.cosmos.network/main/resources/genesis.html#slashing)
+- [Mint](https://hub.cosmos.network/main/resources/genesis.html#mint)
+- [Staking](https://hub.cosmos.network/main/resources/genesis.html#staking)
+- [Slashing](https://hub.cosmos.network/main/resources/genesis.html#slashing)
 
 ### Provide Genesis Validators Proto-Config
 
@@ -115,13 +115,13 @@ To generate the genesis transaction, we will use `uniond gentx`.
 
 The following values should be defined as follows:
 
-* `KEY_NAME` Name of the app key you created/restored earlier.
+- `KEY_NAME` Name of the app key you created/restored earlier.
 
-* `STAKE` The stake you will put down to be a validator (`10000000 <= STAKE < genesis_balance`).
+- `STAKE` The stake you will put down to be a validator (`10000000 <= STAKE < genesis_balance`).
 
-* `PUBKEY` the value returned from `uniond tendermint show-validator`
+- `PUBKEY` the value returned from `uniond tendermint show-validator`
 
-* `MONIKER` Your moniker ID.
+- `MONIKER` Your moniker ID.
 
 ```sh
 uniond gentx $KEY_NAME $STAKE "bn254" --chain-id union-testnet-1 --pubkey $PUBKEY --moniker $MONIKER
@@ -163,7 +163,6 @@ cp ~/.uniond/config/genesis.json union-testnet/
 ```
 
 After you have contributed the genesis file, genesis validators will be able to obtain the final genesis config.
-
 
 ## Genesis Validators
 
