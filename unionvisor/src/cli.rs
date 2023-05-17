@@ -48,6 +48,10 @@ pub struct CallCmd {
     #[arg(short, long, env = "UNIONVISOR_BINDIR")]
     bindir: PathBuf,
 
+    /// The fallback binary to use incase no symlink is found.
+    #[arg(short, long, default_value = "uniond")]
+    binary_name: OsString,
+
     args: Vec<OsString>,
 }
 #[derive(Clone, Parser)]
@@ -63,6 +67,10 @@ pub struct InitCmd {
     /// Path to where the binaries are stored.
     #[arg(short, long, env = "UNIONVISOR_BINDIR")]
     bindir: PathBuf,
+
+    /// The fallback binary to use incase no symlink is found.
+    #[arg(short, long, default_value = "uniond")]
+    binary_name: OsString,
 
     /// The network to create the configuration for (union-1 or union-testnet-1)
     #[arg(short, long, default_value = "union-testnet-1")]
@@ -85,6 +93,10 @@ pub struct RunCmd {
     /// Path to where the binaries are stored.
     #[arg(short, long, env = "UNIONVISOR_BINDIR")]
     bindir: PathBuf,
+
+    /// The fallback binary to use incase no symlink is found.
+    #[arg(short, long, default_value = "uniond")]
+    binary_name: OsString,
 }
 
 impl Cli {
@@ -112,6 +124,7 @@ impl InitCmd {
     fn init(&self, home: impl Into<PathBuf>) -> Result<()> {
         let home = home.into();
         let init = CallCmd {
+            binary_name: self.binary_name.clone(),
             fallback: self.fallback.clone(),
             bindir: self.bindir.clone(),
             args: vec![
@@ -134,7 +147,12 @@ impl InitCmd {
 impl RunCmd {
     fn run(&self, root: impl Into<PathBuf>, logformat: LogFormat) -> Result<()> {
         let root = root.into();
-        let bindir = Bindir::new(root.clone(), &self.bindir, &self.fallback)?;
+        let bindir = Bindir::new(
+            root.clone(),
+            &self.bindir,
+            &self.fallback,
+            &self.binary_name,
+        )?;
         supervisor::run_and_upgrade(
             root,
             logformat,
@@ -164,7 +182,12 @@ impl CallCmd {
         stderr: impl Into<Stdio>,
     ) -> Result<()> {
         let home = home.into();
-        let bindir = Bindir::new(home.clone(), &self.bindir, &self.fallback)?;
+        let bindir = Bindir::new(
+            home.clone(),
+            &self.bindir,
+            &self.fallback,
+            &self.binary_name,
+        )?;
         let current = bindir.current();
         debug!(target: "unionvisor",
             binary = as_display(current.display()),
@@ -196,6 +219,7 @@ mod tests {
         let tmp = testdata::temp_dir_with(&["test_init_cmd"]);
         let home = tmp.into_path().join("test_init_cmd");
         let command = InitCmd {
+            binary_name: OsString::from("uniond"),
             monniker: String::from("test_init_monniker"),
             fallback: String::from("genesis"),
             bindir: home.join("bins"),

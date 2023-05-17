@@ -1,4 +1,5 @@
 use color_eyre::Result;
+use std::ffi::OsString;
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use std::{fs, io};
@@ -8,16 +9,23 @@ pub struct Bindir {
     home: PathBuf,
     bindir: PathBuf,
     current: String,
+    binary_name: OsString,
 }
 
 impl Bindir {
     /// Creates a new bindir. If a symlink named "current" is present, no further action is taken. Otherwise
     /// `name` is symlinked to "bins/current".
-    pub fn new(home: impl Into<PathBuf>, bindir: impl Into<PathBuf>, name: &str) -> Result<Self> {
+    pub fn new(
+        home: impl Into<PathBuf>,
+        bindir: impl Into<PathBuf>,
+        name: &str,
+        binary_name: impl Into<OsString>,
+    ) -> Result<Self> {
         let dir = Bindir {
             home: home.into(),
             bindir: bindir.into(),
             current: "current".to_owned(),
+            binary_name: binary_name.into(),
         };
 
         // If there exists no symlink to current yet, we create it.
@@ -72,7 +80,7 @@ impl Bindir {
 
     /// Obtains the path to the binary within the bindir with name `name`.
     pub fn get_path_to(&self, name: &str) -> PathBuf {
-        self.bindir.join(name).join("uniond")
+        self.bindir.join(name).join(&self.binary_name)
     }
 }
 
@@ -90,7 +98,7 @@ mod tests {
         std::os::unix::fs::symlink(home.join("bins/bar.foo"), home.join("bins/current"))
             .expect("should be able to symlink");
 
-        let bindir = Bindir::new(home.clone(), home.join("bins"), "bar.foo").unwrap();
+        let bindir = Bindir::new(home.clone(), home.join("bins"), "bar.foo", "").unwrap();
         bindir.swap("foo.bar").unwrap();
     }
 }

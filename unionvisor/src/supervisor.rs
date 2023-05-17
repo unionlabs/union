@@ -224,7 +224,7 @@ mod tests {
     fn test_run_and_upgrade() {
         let tmp_dir = testdata::temp_dir_with(&["test_run"]);
         let path = tmp_dir.into_path().join("test_run");
-        let bindir = Bindir::new(path.clone(), path.join("bins"), "genesis").unwrap();
+        let bindir = Bindir::new(path.clone(), path.join("bins"), "genesis", "uniond").unwrap();
         let err = run_and_upgrade(
             path.clone(),
             LogFormat::Plain,
@@ -245,7 +245,7 @@ mod tests {
     fn test_run_and_upgrade_restart() {
         let tmp_dir = testdata::temp_dir_with(&["test_restart"]);
         let path = tmp_dir.into_path().join("test_restart");
-        let bindir = Bindir::new(path.clone(), path.join("bins"), "upgrade1").unwrap();
+        let bindir = Bindir::new(path.clone(), path.join("bins"), "upgrade1", "uniond").unwrap();
         let err = run_and_upgrade(
             path.clone(),
             LogFormat::Plain,
@@ -294,7 +294,7 @@ mod tests {
     fn test_early_exit() {
         let tmp_dir = testdata::temp_dir_with(&["test_early_exit"]);
         let home = tmp_dir.into_path().join("test_early_exit");
-        let bindir = Bindir::new(home.clone(), home.join("bins"), "genesis").unwrap();
+        let bindir = Bindir::new(home.clone(), home.join("bins"), "genesis", "uniond.sh").unwrap();
         let err = run_and_upgrade(
             home.clone(),
             LogFormat::Plain,
