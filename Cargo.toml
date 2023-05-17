@@ -1,10 +1,11 @@
 [workspace]
 members = [
   "forks/*",
-  "ethereum-light-client",
-  "wasm-light-client-types",
-  "protos",
-  "serde-utils"
+  "light-clients/ethereum-light-client",
+  "light-clients/wasm-light-client-types",
+  "generated/rust",
+  "utils/rust/serde-utils",
+  "unionvisor"
 ]
 
 resolver = "2"

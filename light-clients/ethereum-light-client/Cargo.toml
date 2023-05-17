@@ -17,11 +17,11 @@ eth-minimal = []
 bytes = { version = "1.2.1", default-features = false }
 cosmwasm-schema = "1.2.0"
 cosmwasm-std = { version = "1.2.0", default-features = false, features = ["abort"] }
-ethereum-consensus = { path = "../forks/ethereum-consensus", default-features = false }
-ethereum-light-client-verifier = { path = "../forks/ethereum-verifier", default-features = false }
+ethereum-consensus = { path = "../../forks/ethereum-consensus", default-features = false }
+ethereum-light-client-verifier = { path = "../../forks/ethereum-verifier", default-features = false }
 hex = { version = "0.4", default-features = false }
 ibc = { version = "0.37.0", default-features = false, features = [ "serde" ] }
-protos = { path = "../protos", default-features = false }
+protos = { path = "../../generated/rust", default-features = false }
 prost = { version = "0.11", default-features = false }
 rlp = { version = "0.5.2", default-features = false }
 schemars = { version = "0.8.3", default-features = false }

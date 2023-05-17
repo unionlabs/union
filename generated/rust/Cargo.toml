@@ -12,7 +12,7 @@ default-features = false
 features = ["derive"]
 version = "1.0"
 [dependencies.serde-utils]
-path = "../serde-utils"
+path = "../../utils/rust/serde-utils"
 [dependencies.tonic]
 features = ["gzip"]
 optional = true

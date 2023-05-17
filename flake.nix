@@ -45,9 +45,9 @@
         ./unionvisor/unionvisor.nix
         ./uniond/proto.nix
         ./docs/docs.nix
-        ./rust/rust.nix
+        ./light-clients/ethereum-light-client.nix
         ./evm/evm.nix
-        ./rust/proto.nix
+        ./tools/rust-proto.nix
         ./tools/libwasmvm/libwasmvm.nix
         ./networks/devnet.nix
         ./networks/genesis/devnet.nix
@@ -139,7 +139,7 @@
 
           packages = {
             default = self'.packages.uniond;
-            rust-nightly = pkgs.rust-bin.fromRustupToolchainFile ./rust/rust-toolchain.toml;
+            rust-nightly = pkgs.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml;
           };
 
           checks = {

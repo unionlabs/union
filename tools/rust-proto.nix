@@ -27,7 +27,7 @@
               serde = { version = "1.0"; default-features = false; features = ["derive"]; };
               tonic = { version = "0.8"; features = [ "gzip" ]; optional = true; };
               schemars = { version = "0.8.3"; default-features = false; optional = true; };
-              serde-utils = { path = "../serde-utils"; };
+              serde-utils = { path = "../../utils/rust/serde-utils"; };
             };
             features = {
               default = [ "proto_full" "std" ];
@@ -308,7 +308,7 @@
             exit 1
           fi
 
-          outdir=rust/protos
+          outdir="generated/rust"
 
           cp -r ${rust-proto}/* $outdir
 
