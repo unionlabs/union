@@ -21,11 +21,18 @@
         geth = import ./services/geth.nix {
           inherit pkgs;
           config = self'.packages.devnet-geth-config;
+          genesis = self'.packages.devnet-geth-prysm-genesis;
         };
-        lodestar = import ./services/lodestar.nix {
+        prysm-beacon = import ./services/prysm-beacon.nix {
           inherit pkgs;
-          lodestar-cli = self'.packages.lodestar-cli;
-          config = self'.packages.devnet-lodestar-config;
+          prysm-beacon-chain = self'.packages.prysm-beacon-chain;
+          config = self'.packages.devnet-prysm-config;
+          genesis = self'.packages.devnet-geth-prysm-genesis;
+        };
+        prysm-validator = import ./services/prysm-validator.nix {
+          inherit pkgs;
+          prysm-validator = self'.packages.prysm-validator;
+          config = self'.packages.devnet-prysm-config;
         };
       };
 

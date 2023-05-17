@@ -40,8 +40,10 @@
         ./docs/docs.nix
         ./rust/rust.nix
         ./evm/evm.nix
+        ./tools/prysmctl.nix
+        ./tools/prysm-beacon-chain.nix
+        ./tools/prysm-validator.nix
         ./rust/proto.nix
-        ./tools/lodestar-cli/lodestar-cli.nix
         ./tools/libwasmvm/libwasmvm.nix
         ./networks/devnet.nix
         ./networks/genesis/devnet.nix
@@ -216,7 +218,9 @@
                   inputs.foundry.defaultPackage.${system}
                   pkgs.solc
                   pkgs.go-ethereum
-                  self'.packages.lodestar-cli
+                  self'.packages.prysmctl
+                  self'.packages.prysm-beacon-chain
+                  self'.packages.prysm-validator
                 ];
               });
             };
