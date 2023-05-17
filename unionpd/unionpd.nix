@@ -15,6 +15,21 @@
         ];
       } else { }));
 
+
+      unionpd-image = pkgs.dockerTools.buildImage {
+        name = "unionpd";
+
+        copyToRoot = pkgs.buildEnv {
+          name = "image-root";
+          paths = [ pkgs.coreutils-full pkgs.cacert ];
+          pathsToLink = [ "/bin" ];
+        };
+        config = {
+          Entrypoint = [ (pkgs.lib.getExe self'.packages.unionpd) ];
+          Env = [ "SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt" ];
+        };
+      };
+
       generate-prover-proto = pkgs.writeShellApplication {
         name = "generate-prover-proto";
         runtimeInputs =
