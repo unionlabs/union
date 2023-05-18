@@ -1,4 +1,4 @@
-{ pkgs, config }:
+{ pkgs, config, validatorCount }:
 let
   lodestar-init = pkgs.writeTextFile {
     name = "lodestar-init";
@@ -19,8 +19,8 @@ let
       node ./packages/cli/bin/lodestar dev \
         --genesisTime="$GENESIS_TIMESTAMP" \
         --genesisEth1Hash="$ETH_GENESIS_HASH" \
-        --genesisValidators=8 \
-        --startValidators="0..7" \
+        --genesisValidators=${toString validatorCount} \
+        --startValidators="0..${toString (validatorCount - 1)}" \
         --rest.address="0.0.0.0" \
         --rest.cors="*" \
         --eth1.providerUrls="$ETH_ENDPOINT" \
