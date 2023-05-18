@@ -1,26 +1,12 @@
-{ self, ... }: {
-  perSystem = { self', pkgs, system, config, inputs', stdenv, ... }:
+{ ... }: {
+  perSystem = { self', pkgs, system, config, inputs', crane, stdenv, ... }:
     let
-      crane = rec {
-        lib = self.inputs.crane.lib.${system};
-        stable = lib.overrideToolchain self'.packages.rust-stable;
-      };
-      src = ./.;
+      attrs = crane.commonAttrs // {
+        inherit (crane) cargoArtifacts;
+        cargoExtraArgs = "-p unionvisor";
+      } // (crane.lib.crateNameFromCargoToml { cargoToml = ./Cargo.toml; });
 
-      commonArgs = {
-        inherit src;
-        buildInputs = [ pkgs.pkg-config pkgs.openssl ]
-          ++ (
-          pkgs.lib.optionals pkgs.stdenv.isDarwin (with pkgs.darwin.apple_sdk.frameworks; [
-            Security
-          ])
-        );
-        doCheck = false;
-        PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
-      };
-      cargoArtifacts = crane.stable.buildDepsOnly commonArgs;
-
-      unionvisor = crane.stable.buildPackage (commonArgs // { });
+      unionvisor = crane.lib.buildPackage attrs;
 
       mkBundle = name: versions: pkgs.linkFarm "union-bundle-${name}" ([
         {
@@ -37,38 +23,28 @@
     {
       packages = {
         inherit unionvisor;
-        rust-stable = inputs'.rust-overlay.packages.rust.override {
-          extensions = [ "rust-src" "rust-analyzer" "clippy" ];
-        };
 
         bundle-testnet = mkBundle "testnet" [ "v0.0.2" "v0.3.0" "v0.4.2" ];
         bundle-mainnet = mkBundle "mainnet" [ "v0.0.2" "v0.3.0" ];
       };
 
-      checks = {
-        inherit unionvisor;
-
-        unionvisor-clippy = crane.stable.cargoClippy (commonArgs // {
-          inherit cargoArtifacts;
-          cargoClippyExtraArgs = "--all-targets -- --deny warnings";
+      checks = crane.mkChecks "unionvisor" {
+        clippy = crane.lib.cargoClippy ((builtins.trace attrs attrs) // {
+          cargoClippyExtraArgs = "-- --deny warnings --no-deps";
         });
 
-        unionvisor-rustfmt = crane.stable.cargoFmt {
-          inherit src;
-        };
-
-        unionvisor-tests = crane.stable.cargoNextest (commonArgs // {
-          inherit cargoArtifacts;
+        tests = crane.lib.cargoNextest (attrs // {
+          inherit (crane) cargoArtifacts;
           partitions = 1;
           partitionType = "count";
           preConfigureHooks = [
-            ''cp ${self'.packages.uniond}/bin/uniond $PWD/src/testdata/test_init_cmd/bins/genesis && \
+            ''cp ${self'.packages.uniond}/bin/uniond $PWD/unionvisor/src/testdata/test_init_cmd/bins/genesis && \
              echo "patching testdata" && \
-             source ${pkgs.stdenv}/setup && patchShebangs $PWD/src/testdata
+             source ${pkgs.stdenv}/setup && patchShebangs $PWD/unionvisor/src/testdata
             ''
           ];
           buildPhase = ''
-            cargo nextest run
+            cargo nextest run -p unionvisor
           '';
           installPhase = ''
             mkdir -p $out

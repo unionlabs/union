@@ -1,0 +1,22 @@
+[workspace]
+members = [
+  "forks/*",
+  "light-clients/ethereum-light-client",
+  "light-clients/wasm-light-client-types",
+  "generated/rust",
+  "utils/rust/serde-utils",
+  "unionvisor"
+]
+
+resolver = "2"
+
+[profile.release]
+opt-level = 3
+debug = false
+rpath = false
+lto = true
+debug-assertions = false
+codegen-units = 1
+panic = "abort"
+incremental = false
+overflow-checks = true

@@ -45,9 +45,9 @@
         ./unionvisor/unionvisor.nix
         ./uniond/proto.nix
         ./docs/docs.nix
-        ./rust/rust.nix
+        ./light-clients/ethereum-light-client.nix
         ./evm/evm.nix
-        ./rust/proto.nix
+        ./tools/rust-proto.nix
         ./tools/libwasmvm/libwasmvm.nix
         ./networks/devnet.nix
         ./networks/genesis/devnet.nix
@@ -56,21 +56,61 @@
       ];
       perSystem = { config, self', inputs', pkgs, system, lib, ... }:
         let
-          crane = rec {
-            lib = self.inputs.crane.lib.${system};
-            nightly = lib.overrideToolchain self'.packages.rust-nightly;
+          rust-nightly = pkgs.rust-bin.fromRustupToolchain {
+            channel = "nightly-2022-12-07";
+            profile = "default";
           };
+
+          withBuildTarget = target: self.inputs.crane.lib.${system}.overrideToolchain (pkgs.rust-bin.fromRustupToolchain {
+            channel = "nightly-2022-12-07";
+            components = [ "cargo" "rustc" "rust-src" ];
+            targets = [ target ];
+          });
+          craneLib = self.inputs.crane.lib.${system}.overrideToolchain rust-nightly;
+
+          mkChecks = pkgName: checks: pkgs.lib.mapAttrs' (name: value: { name = "${pkgName}-${name}"; value = value; }) checks;
+
+          rustSrc =
+            let
+              unionvisor-testdata = path: _type: (builtins.match ".*unionvisor/src/testdata/.*" path) != null;
+              jsonFilter = path: _type: (builtins.match ".*json$" path) != null;
+              jsonOrCargo = path: type:
+                (unionvisor-testdata path type) || (jsonFilter path type) || (craneLib.filterCargoSources path type);
+            in
+            lib.cleanSourceWith {
+              src = craneLib.path ./.;
+              filter = jsonOrCargo;
+            };
+
+          commonAttrs = {
+            # fake values to suppress warnings; see https://github.com/ipetkov/crane/issues/281
+            pname = "union-workspace";
+            version = "v0.0.0";
+
+            src = rustSrc;
+            buildInputs = [ pkgs.pkg-config pkgs.openssl ]
+              ++ (
+              pkgs.lib.optionals pkgs.stdenv.isDarwin (with pkgs.darwin.apple_sdk.frameworks; [
+                Security
+              ])
+            );
+            doCheck = false;
+            cargoExtraArgs = "--workspace --exclude ethereum-consensus --exclude ethereum-verifier";
+            PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
+          };
+
+          cargoArtifacts = craneLib.buildDepsOnly commonAttrs;
         in
         {
           _module = {
             args = {
-              inherit crane;
               pkgs = import nixpkgs {
                 inherit system;
                 overlays = with inputs; [
                   rust-overlay.overlays.default
                 ];
               };
+
               devnetConfig = {
                 validatorCount = 4;
                 ethereum = {
@@ -79,6 +119,12 @@
                   };
                 };
               };
+
+              crane = {
+                lib = craneLib;
+                inherit withBuildTarget cargoArtifacts commonAttrs mkChecks;
+              };
+
               proto = {
                 uniond = builtins.path {
                   name = "uniond-proto";
@@ -139,7 +185,6 @@
 
           packages = {
             default = self'.packages.uniond;
-            rust-nightly = pkgs.rust-bin.fromRustupToolchainFile ./rust/rust-toolchain.toml;
           };
 
           checks = {
@@ -195,7 +240,7 @@
           devShells =
             let
               baseShell = {
-                buildInputs = [ self'.packages.rust-nightly ] ++
+                buildInputs = [ rust-nightly ] ++
                   (with pkgs; [
                     protobuf
                     pkg-config
@@ -213,7 +258,7 @@
                     jq
                     yq
                     solc
-                    self'.packages.rust-stable
+                    # self'.packages.rust-stable
                   ]);
                 nativeBuildInputs = [ config.treefmt.build.wrapper ];
                 GOPRIVATE = "github.com/unionfi/*";

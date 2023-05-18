@@ -10,9 +10,9 @@
   ],
   "dictionaries": ["en_US", "companies", "softwareTerms", "go", "union"],
   "ignorePaths": [
-    "rust/ethereum-light-client/src/test/valid_light_client_update_*.json",
-    "rust/protos/*",
-    "rust/forks/*",
+    "light-clients/ethereum-light-client/src/test/valid_light_client_update_*.json",
+    "generated/**",
+    "forks/*",
     "dictionaries/**",
     "**/*.svg",
     "**/node_modules",

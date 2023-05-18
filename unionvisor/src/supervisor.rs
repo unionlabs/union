@@ -261,7 +261,7 @@ mod tests {
         if let RuntimeError::BinaryUnavailable { name, err: _ } = err {
             assert_eq!(name, "upgrade3")
         } else {
-            panic!("didn't receive expected error: {:?}", err)
+            panic!("didn't receive expected error: {err:?}")
         }
     }
 
@@ -282,7 +282,7 @@ mod tests {
         if let RuntimeError::BinaryUnavailable { name, err: _ } = err {
             assert_eq!(name, "upgrade3")
         } else {
-            panic!("didn't receive expected error: {:?}", err)
+            panic!("didn't receive expected error: {err:?}")
         }
     }
 
