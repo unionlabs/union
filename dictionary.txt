@@ -454,3 +454,4 @@ ypyp
 yqyp
 λpxrx
 λpxrx
+rustc
