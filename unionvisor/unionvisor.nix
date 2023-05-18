@@ -52,4 +52,26 @@
         });
       };
     };
+
+  flake.nixosModules.unionvisor = { lib, pkgs, config, ... }:
+    with lib;
+    let
+      cfg = config.services.unionvisor;
+    in
+    {
+      options.services.unionvisor = {
+        enable = mkEnableOption "Unionvisor service";
+        greeter = mkOption {
+          type = types.str;
+          default = "world";
+        };
+      };
+
+      config = mkIf cfg.enable {
+        systemd.services.unionvisor = {
+          wantedBy = [ "multi-user.target" ];
+          serviceConfig.ExecStart = "${pkgs.hello}/bin/hello -g'Hello Unionvisor, ${escapeShellArg cfg.greeter}!'";
+        };
+      };
+    };
 }
