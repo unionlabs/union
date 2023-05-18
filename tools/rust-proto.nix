@@ -266,7 +266,7 @@
         name = "rust-proto";
         pname = "rust-proto";
         src = pkgs.linkFarm "rust-proto-srcs" (pkgs.lib.mapAttrsToList (name: { src, ... }: { name = name + "-protos"; path = src; }) all-protos-to-build);
-        buildInputs = [ pkgs.protobuf protoc-gen-tonic (dbg (pkgs.lib.attrValues config.treefmt.build.programs)) ] ++ (if pkgs.stdenv.isDarwin then [ pkgs.libiconv ] else [ ]);
+        buildInputs = [ pkgs.protobuf protoc-gen-tonic config.treefmt.build.programs.rustfmt pkgs.taplo ] ++ (if pkgs.stdenv.isDarwin then [ pkgs.libiconv ] else [ ]);
         buildPhase = ''
           mkdir $out
 
@@ -300,6 +300,8 @@
             echo "[FORMAT] $i"
             rustfmt --config normalize_comments=true --edition "2021" "$i"
           done
+
+          taplo format ./Cargo.toml
 
           cp -r ./src $out/
           cp -r ./Cargo.toml $out/
