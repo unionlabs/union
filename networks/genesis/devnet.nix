@@ -41,6 +41,7 @@
             val_index=''${key_base//[^0-9]/}
             echo $val_index
             echo "
+              set timeout 30
               spawn ${uniond} keys mnemonic --unsafe-entropy --home $out
               expect \"WARNING:\"
               send \"abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz$val_index\\r\"
