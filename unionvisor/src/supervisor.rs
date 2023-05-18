@@ -26,6 +26,15 @@ pub struct Supervisor {
     child: Option<Child>,
 }
 
+impl Drop for Supervisor {
+    fn drop(&mut self) {
+        if self.child.is_some() {
+            // Make a best effort at cleaning up processes.
+            let _ = self.kill();
+        }
+    }
+}
+
 impl Supervisor {
     pub fn new(root: impl Into<PathBuf>, current: impl Into<PathBuf>) -> Self {
         Self {
@@ -96,10 +105,10 @@ impl Supervisor {
     }
 
     pub fn kill(&mut self) -> Result<()> {
-        if let Some(ref mut child) = self.child {
+        if let Some(ref mut child) = self.child.take() {
             child.kill()?;
         } else {
-            unreachable!("killing a child should only happen after spawn")
+            debug_assert!(false, "killing a child should only happen after spawn")
         }
         Ok(())
     }
