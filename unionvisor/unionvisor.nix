@@ -38,13 +38,13 @@
           partitions = 1;
           partitionType = "count";
           preConfigureHooks = [
-            ''cp ${self'.packages.uniond}/bin/uniond $PWD/src/testdata/test_init_cmd/bins/genesis && \
+            ''cp ${self'.packages.uniond}/bin/uniond $PWD/unionvisor/src/testdata/test_init_cmd/bins/genesis && \
              echo "patching testdata" && \
-             source ${pkgs.stdenv}/setup && patchShebangs $PWD/src/testdata
+             source ${pkgs.stdenv}/setup && patchShebangs $PWD/unionvisor/src/testdata
             ''
           ];
           buildPhase = ''
-            cargo nextest run
+            cargo nextest run -p unionvisor
           '';
           installPhase = ''
             mkdir -p $out

@@ -72,9 +72,10 @@
 
           rustSrc =
             let
-              jsonFilter = path: _type: builtins.match ".*json$" path != null;
+              unionvisor-testdata = path: _type: (builtins.match ".*unionvisor/src/testdata/.*" path) != null;
+              jsonFilter = path: _type: (builtins.match ".*json$" path) != null;
               jsonOrCargo = path: type:
-                (jsonFilter path type) || (craneLib.filterCargoSources path type);
+                (unionvisor-testdata path type) || (jsonFilter path type) || (craneLib.filterCargoSources path type);
             in
             lib.cleanSourceWith {
               src = craneLib.path ./.;
