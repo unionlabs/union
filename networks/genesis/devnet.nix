@@ -107,16 +107,11 @@
         paths = validatorNodeIDs { inherit (devnetConfig) validatorCount; };
       };
 
-      packages.devnet-geth-config = pkgs.linkFarm "devnet-geth-config" [
+      packages.devnet-evm-config = pkgs.linkFarm "devnet-evm-config" [
+        { name = "genesis.json"; path = "${./devnet-evm/genesis.json}"; }
         { name = "dev-key0.prv"; path = "${./devnet-evm/dev-key0.prv}"; }
         { name = "dev-key1.prv"; path = "${./devnet-evm/dev-key1.prv}"; }
         { name = "dev-jwt.prv"; path = "${./devnet-evm/dev-jwt.prv}"; }
-      ];
-
-      packages.devnet-prysm-config = pkgs.linkFarm "prysm-config" [
-        { name = "genesis.json"; path = "${./devnet-evm/genesis.json}"; }
-        { name = "dev-jwt.prv"; path = "${./devnet-evm/dev-jwt.prv}"; }
-        { name = "beacon-config.yml"; path = "${./devnet-evm/beacon-config.yml}"; }
       ];
 
       checks = { };

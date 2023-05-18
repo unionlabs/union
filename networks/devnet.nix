@@ -1,8 +1,6 @@
 { ... }: {
   perSystem = { devnetConfig, pkgs, self', inputs', ... }:
     let
-      sharedVolume = "prysm-config";
-
       arion = inputs'.arion.packages.default;
 
       uniond-services = (builtins.listToAttrs (builtins.genList
@@ -22,30 +20,11 @@
       evm-services = {
         geth = import ./services/geth.nix {
           inherit pkgs;
-          inherit sharedVolume;
-          config = self'.packages.devnet-geth-config;
-          genesis = self'.packages.devnet-geth-prysm-genesis;
+          config = self'.packages.devnet-evm-config;
         };
-        prysm-bootstrap = import ./services/prysm-bootstrap.nix {
+        lodestar = import ./services/lodestar.nix {
           inherit pkgs;
-          inherit sharedVolume;
-          prysmctl = self'.packages.prysmctl;
-          config = self'.packages.devnet-prysm-config;
-          validatorCount = devnetConfig.ethereum.beacon.validatorCount;
-        };
-        prysm-beacon = import ./services/prysm-beacon.nix {
-          inherit pkgs;
-          inherit sharedVolume;
-          prysm-beacon-chain = self'.packages.prysm-beacon-chain;
-          config = self'.packages.devnet-prysm-config;
-          genesis = self'.packages.devnet-geth-prysm-genesis;
-        };
-        prysm-validator = import ./services/prysm-validator.nix {
-          inherit pkgs;
-          inherit sharedVolume;
-          validatorCount = devnetConfig.ethereum.beacon.validatorCount;
-          prysm-validator = self'.packages.prysm-validator;
-          config = self'.packages.devnet-prysm-config;
+          config = self'.packages.devnet-evm-config;
         };
       };
 
@@ -54,11 +33,6 @@
           project.name = "union-devnet";
           networks.union-devnet = { };
           services = uniond-services // evm-services;
-          docker-compose = {
-            volumes = {
-              ${sharedVolume} = { };
-            };
-          };
         }];
       };
 
@@ -75,11 +49,6 @@
           project.name = "union-devnet-evm";
           networks.union-devnet = { };
           services = evm-services;
-          docker-compose = {
-            volumes = {
-              ${sharedVolume} = { };
-            };
-          };
         }];
       };
 
