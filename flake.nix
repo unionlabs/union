@@ -47,9 +47,6 @@
         ./docs/docs.nix
         ./rust/rust.nix
         ./evm/evm.nix
-        ./tools/prysmctl.nix
-        ./tools/prysm-beacon-chain.nix
-        ./tools/prysm-validator.nix
         ./rust/proto.nix
         ./tools/libwasmvm/libwasmvm.nix
         ./networks/devnet.nix
