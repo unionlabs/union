@@ -25,6 +25,7 @@
         lodestar = import ./services/lodestar.nix {
           inherit pkgs;
           config = self'.packages.devnet-evm-config;
+          validatorCount = devnetConfig.ethereum.beacon.validatorCount;
         };
       };
 
