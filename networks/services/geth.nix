@@ -1,4 +1,4 @@
-{ pkgs, config, sharedVolume, ... }:
+{ pkgs, config, ... }:
 let
   geth-init =
     pkgs.writeShellApplication {
@@ -7,7 +7,7 @@ let
       text = ''
         ETH_DATADIR=/geth
 
-        geth init --datadir "$ETH_DATADIR" /${sharedVolume}/genesis.json
+        geth init --datadir "$ETH_DATADIR" /${config}/genesis.json
         geth account import --datadir "$ETH_DATADIR" \
           --password /dev/null ${config}/dev-key0.prv
         geth account import --datadir "$ETH_DATADIR" \
@@ -17,9 +17,10 @@ let
           --vmdebug \
           --verbosity=4 \
           --http \
-          --http.api=eth \
+          --http.api=eth,debug,net,web3,admin,engine \
           --http.addr=0.0.0.0 \
-          --authrpc.vhosts=* \
+          --http.vhosts="*" \
+          --authrpc.vhosts="*" \
           --authrpc.addr=0.0.0.0 \
           --authrpc.jwtsecret=${config}/dev-jwt.prv \
           --datadir=$ETH_DATADIR \
@@ -52,11 +53,8 @@ in
       "8551:8551"
     ];
     command = [ "${geth-init}/bin/geth-init" ];
-    volumes = [
-      "${sharedVolume}:/${sharedVolume}"
-    ];
     healthcheck = {
-      interval = "5s";
+      interval = "10s";
       retries = 2;
       test = [
         "CMD-SHELL"
@@ -67,11 +65,6 @@ in
             -d '{"jsonrpc": "2.0", "id": "1", "method": "eth_getBlockByNumber","params": ["0x0", false]}' | jq -r '.result.hash' || exit 1
         ''
       ];
-    };
-    depends_on = {
-      prysm-bootstrap = {
-        condition = "service_completed_successfully";
-      };
     };
   };
 }
