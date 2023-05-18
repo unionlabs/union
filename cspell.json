@@ -23,6 +23,7 @@
     "**/go.mod",
     "**/go.sum",
     "evm",
-    "**/*.pb.go"
+    "**/*.pb.go",
+    "**/testdata"
   ]
 }
