@@ -13,9 +13,7 @@
       "max_bytes": "1048576"
     },
     "validator": {
-      "pub_key_types": [
-        "bn254"
-      ]
+      "pub_key_types": ["bn254"]
     },
     "version": {
       "app": "0"
@@ -176,9 +174,7 @@
         "port": "icahost",
         "params": {
           "host_enabled": true,
-          "allow_messages": [
-            "*"
-          ]
+          "allow_messages": ["*"]
         }
       }
     },
