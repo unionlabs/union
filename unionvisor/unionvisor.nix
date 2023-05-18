@@ -9,14 +9,13 @@
 
       commonArgs = {
         inherit src;
-        buildInputs = [ pkgs.pkg-config pkgs.openssl pkgs.bash ]
+        buildInputs = [ pkgs.pkg-config pkgs.openssl ]
           ++ (
           pkgs.lib.optionals pkgs.stdenv.isDarwin (with pkgs.darwin.apple_sdk.frameworks; [
             Security
           ])
         );
         doCheck = false;
-        cargoBuildCommand = "cargo build --release";
         PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
       };
       cargoArtifacts = crane.stable.buildDepsOnly commonArgs;
@@ -58,18 +57,19 @@
           inherit src;
         };
 
-        unionvisor-tests = crane.stable.cargoNextest (commonArgs // {
+        unionvisor-tests = crane.stable.cargoTest (commonArgs // {
           inherit cargoArtifacts;
           partitions = 1;
           partitionType = "count";
-          doCheck = true;
           preConfigureHooks = [
             ''cp ${self'.packages.uniond}/bin/uniond $PWD/src/testdata/test_init_cmd/bins/genesis && \
              echo "patching testdata" && \
              source ${pkgs.stdenv}/setup && patchShebangs $PWD/src/testdata
             ''
           ];
-          RUST_BACKTRACE = 1;
+          installPhase = ''
+            mkdir -p $out
+          '';
         });
       };
     };
