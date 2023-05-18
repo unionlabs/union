@@ -288,7 +288,7 @@
           ${fixup-scripts}
 
           # prepend clippy allow to root lib.rs file
-          echo -e "#[allow(clippy::all)]\n$(cat ./src/lib.rs)" > ./src/lib.rs
+          echo -e "#![allow(clippy::all)]\n$(cat ./src/lib.rs)" > ./src/lib.rs
 
           # format generated files
           touch flake.nix # treefmt looks for this file to find the project root
