@@ -1,5 +1,5 @@
-{ ... }: {
-  perSystem = { self', pkgs, proto, crane, system, ... }:
+{ inputs, ... }: {
+  perSystem = { self', pkgs, proto, crane, system, inputs', ... }:
     let
       protoc-gen-tonic = crane.lib.buildPackage {
         pname = "protoc-gen-tonic";
@@ -100,9 +100,9 @@
           # SEE: https://github.com/neoeinstein/protoc-gen-prost/issues/61
           additional-filter = "-not -path '*cosmos/msg/v1/msg.proto' -not -path '*cosmos/query/v1/query.proto' -and -not -path '*/proto/tendermint/*'";
           fixup-script = ''
-            sed -i 's/pub struct Validators/pub struct ValidatorsVec/' "$out/src/cosmos.staking.v1beta1.rs"
-            sed -i 's/AllowList(Validators)/AllowList(ValidatorsVec)/' "$out/src/cosmos.staking.v1beta1.rs"
-            sed -i 's/DenyList(Validators)/DenyList(ValidatorsVec)/' "$out/src/cosmos.staking.v1beta1.rs"
+            sed -i 's/pub struct Validators/pub struct ValidatorsVec/' "./src/cosmos.staking.v1beta1.rs"
+            sed -i 's/AllowList(Validators)/AllowList(ValidatorsVec)/' "./src/cosmos.staking.v1beta1.rs"
+            sed -i 's/DenyList(Validators)/DenyList(ValidatorsVec)/' "./src/cosmos.staking.v1beta1.rs"
           '';
         };
       };
@@ -260,13 +260,18 @@
             all-protos-to-build
         ));
 
+      fmt = inputs.treefmt-nix.lib.mkWrapper pkgs {
+        projectRootFile = "Cargo.toml";
+        programs.rustfmt.enable = true;
+      };
+
       # dbg = value: builtins.trace (pkgs.lib.generators.toPretty { } value) value;
 
       rust-proto = pkgs.stdenv.mkDerivation {
         name = "rust-proto";
         pname = "rust-proto";
         src = pkgs.linkFarm "rust-proto-srcs" (pkgs.lib.mapAttrsToList (name: { src, ... }: { name = name + "-protos"; path = src; }) all-protos-to-build);
-        buildInputs = [ pkgs.protobuf protoc-gen-tonic ] ++ (if pkgs.stdenv.isDarwin then [ pkgs.libiconv ] else [ ]);
+        buildInputs = [ pkgs.protobuf protoc-gen-tonic fmt ] ++ (if pkgs.stdenv.isDarwin then [ pkgs.libiconv ] else [ ]);
         buildPhase = ''
           mkdir $out
 
@@ -285,15 +290,16 @@
             --prost-crate_opt=package_separator="+",gen_crate=${cargo_toml { name = "protos"; }} \
             ${includes}
 
-          cp -r ./src $out/
-          cp -r ./Cargo.toml $out/
-
           ${fixup-scripts}
 
-          # prepend clippy allow to file
-          echo -e "#[allow(clippy::all)]\n$(cat input)" > input
+          # prepend clippy allow to root lib.rs file
+          echo -e "#[allow(clippy::all)]\n$(cat ./src/lib.rs)" > ./src/lib.rs
 
-          # run nix fmt
+          # format generated files
+          treefmt -C $out --no-cache
+
+          cp -r ./src $out/
+          cp -r ./Cargo.toml $out/
         '';
       };
     in
