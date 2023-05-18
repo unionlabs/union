@@ -289,6 +289,11 @@
           cp -r ./Cargo.toml $out/
 
           ${fixup-scripts}
+
+          # prepend clippy allow to file
+          echo -e "#[allow(clippy::all)]\n$(cat input)" > input
+
+          # run nix fmt
         '';
       };
     in

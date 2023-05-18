@@ -112,11 +112,11 @@ mod tests {
     fn test_read_upgrade_info_when_created() {
         println!("starting test_read_upgrade_info_when_created");
         let tmp = testdata::temp_dir_with(&["test_create_and_read"]);
-        println!("tmp: {:?}", tmp);
+        println!("tmp: {tmp:?}");
         let home = tmp.path().join("test_create_and_read");
-        println!("home: {:?}", home);
+        println!("home: {home:?}");
         let upgrade_path = home.as_path().join("data/upgrade-info.json");
-        println!("upgrade_path: {:?}", upgrade_path);
+        println!("upgrade_path: {upgrade_path:?}");
         let reader = FileReader::new(upgrade_path.clone());
         reader.read_upgrade_info().unwrap_err();
 

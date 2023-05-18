@@ -19,6 +19,7 @@ pub const ETHEREUM_HEADER_TYPE_URL: &str = "/ibc.lightclients.ethereum.v1.Header
 
 // TODO(aeryz): We might not need to represent the client message like this because the
 // the size difference between the invariants are too much.
+#[allow(clippy::large_enum_variant)]
 #[derive(serde::Serialize, serde::Deserialize)]
 pub enum ClientMessage {
     Header(Header),

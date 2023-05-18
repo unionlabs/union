@@ -274,6 +274,7 @@ impl<const N: usize> TryFrom<&[u8]> for ByteList<N> {
     }
 }
 
+#[allow(clippy::derive_hash_xor_eq)]
 impl<const N: usize> core::hash::Hash for ByteList<N> {
     fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
         self.as_ref().hash(state);

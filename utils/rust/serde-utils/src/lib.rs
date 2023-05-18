@@ -30,6 +30,7 @@ pub mod inner_base64 {
     use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
     pub fn serialize<S: Serializer>(
+        #[allow(clippy::ptr_arg)] // required by serde
         bytes: &Vec<Vec<u8>>,
         serializer: S,
     ) -> Result<S::Ok, S::Error> {
