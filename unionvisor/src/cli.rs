@@ -1,6 +1,6 @@
 use crate::{bindir::Bindir, init, logging::LogFormat, network::Network, supervisor};
 use clap::Parser;
-use color_eyre::Result;
+use color_eyre::{eyre::bail, Report, Result};
 use std::{ffi::OsString, path::PathBuf, process::Stdio, time::Duration};
 use tracing::{debug, field::display as as_display};
 use tracing_subscriber::filter::LevelFilter;
@@ -75,6 +75,11 @@ pub struct InitCmd {
     /// The network to create the configuration for (union-1 or union-testnet-1)
     #[arg(short, long, default_value = "union-testnet-1")]
     network: Network,
+
+    /// Determines if unionvisor initializes regardless of previous dirty state.
+    /// This might still error depending on the behaviour of the underlying uniond binary
+    #[arg(short, long, default_value = "false")]
+    allow_dirty: bool,
 }
 
 #[derive(Clone, Parser)]
@@ -120,9 +125,26 @@ impl Cli {
     }
 }
 
+/// The state that the init command left the fs in.
+#[derive(PartialEq, Debug)]
+pub enum InitState {
+    None,
+    SeedsConfigured,
+}
+
 impl InitCmd {
-    fn init(&self, home: impl Into<PathBuf>) -> Result<()> {
+    fn init(&self, home: impl Into<PathBuf>) -> Result<InitState> {
         let home = home.into();
+        let config = home.join("config");
+
+        if config.exists() {
+            if self.allow_dirty {
+                return Ok(InitState::None);
+            } else {
+                bail!("{} already exists, refusing to override", config.display())
+            }
+        }
+
         let init = CallCmd {
             binary_name: self.binary_name.clone(),
             fallback: self.fallback.clone(),
@@ -140,7 +162,7 @@ impl InitCmd {
         init.call_silent(home.clone())?;
         init::download_genesis(self.network, home.join("config/genesis.json"))?;
         init::set_seeds(self.network, home.join("config/config.toml"))?;
-        Ok(())
+        Ok(InitState::SeedsConfigured)
     }
 }
 
@@ -212,6 +234,40 @@ mod tests {
     use crate::testdata;
     use tracing_test::traced_test;
 
+    /// Verifies that calling unionvisor init -i will return without impacting the fs.
+    #[test]
+    fn test_init_noops() {
+        let tmp = testdata::temp_dir_with(&["home"]);
+        let home = tmp.into_path().join("home");
+        let state = InitCmd {
+            binary_name: OsString::from("uniond"),
+            monniker: String::from("test_init_monniker"),
+            fallback: String::from("genesis"),
+            bindir: home.join("bins"),
+            network: Network::Testnet1,
+            allow_dirty: true,
+        }
+        .init(home)
+        .unwrap();
+        assert_eq!(InitState::None, state);
+    }
+
+    #[test]
+    fn test_init_errors_if_dirty() {
+        let tmp = testdata::temp_dir_with(&["home"]);
+        let home = tmp.into_path().join("home");
+        let _ = InitCmd {
+            binary_name: OsString::from("uniond"),
+            monniker: String::from("test_init_monniker"),
+            fallback: String::from("genesis"),
+            bindir: home.join("bins"),
+            network: Network::Testnet1,
+            allow_dirty: false,
+        }
+        .init(home)
+        .expect_err("unionvisor should refuse to initialize if the home directory is populated");
+    }
+
     #[test]
     #[traced_test]
     #[ignore = "init becomes relevant once we publicly host seeds and genesis.json"]
@@ -224,6 +280,7 @@ mod tests {
             fallback: String::from("genesis"),
             bindir: home.join("bins"),
             network: Network::Testnet1,
+            allow_dirty: false,
         };
         command.init(home).unwrap();
     }
