@@ -1,30 +1,44 @@
 use color_eyre::Result;
+use std::ffi::OsString;
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use std::{fs, io};
-use tracing::{debug, field::display as as_display};
+use tracing::{debug, field::display as as_display, warn};
 
 pub struct Bindir {
     home: PathBuf,
     bindir: PathBuf,
     current: String,
+    binary_name: OsString,
 }
 
 impl Bindir {
     /// Creates a new bindir. If a symlink named "current" is present, no further action is taken. Otherwise
     /// `name` is symlinked to "bins/current".
-    pub fn new(home: impl Into<PathBuf>, bindir: impl Into<PathBuf>, name: &str) -> Result<Self> {
+    pub fn new(
+        home: impl Into<PathBuf>,
+        bindir: impl Into<PathBuf>,
+        name: &str,
+        binary_name: impl Into<OsString>,
+    ) -> Result<Self> {
         let dir = Bindir {
             home: home.into(),
             bindir: bindir.into(),
             current: "current".to_owned(),
+            binary_name: binary_name.into(),
         };
 
         // If there exists no symlink to current yet, we create it.
-        if let Err(err) = fs::read_link(dir.current()) {
-            match err.kind() {
-                io::ErrorKind::NotFound => dir.swap(name)?,
+        match fs::read_link(dir.current()) {
+            Err(err) => match err.kind() {
+                io::ErrorKind::NotFound => dir.swap(name).map_err(|err| {
+                    warn!(target: "unionvisor", "unable to swap fallback binary to current");
+                    err
+                })?,
                 _ => return Err(err.into()),
+            },
+            Ok(path) => {
+                debug!(target: "unionvisor", "existing symlink found at {}, pointing to {}, continuing using that", dir.current().display(), path.display())
             }
         }
         Ok(dir)
@@ -55,12 +69,12 @@ impl Bindir {
     /// Swaps the symlink of the current binary with the binary associated with `name`.
     pub fn swap(&self, name: &str) -> Result<()> {
         let old = self.current();
-        debug!(target: "unionvisor", "removing old symlink at {}", as_display(old.display()));
-        if let Err(err) = std::fs::remove_file(old) {
-            if err.kind() != io::ErrorKind::NotFound {
-                return Err(err.into());
-            }
-        };
+
+        if old.exists() {
+            debug!(target: "unionvisor", "removing old symlink at {}", as_display(old.display()));
+            std::fs::remove_file(old)?;
+        }
+
         let new = self.get_path_to(name);
         let to = self.current();
         debug!(target: "unionvisor", "creating symlink from {} to {}", as_display(new.display()), as_display(to.display()));
@@ -72,7 +86,7 @@ impl Bindir {
 
     /// Obtains the path to the binary within the bindir with name `name`.
     pub fn get_path_to(&self, name: &str) -> PathBuf {
-        self.bindir.join(name).join("uniond")
+        self.bindir.join(name).join(&self.binary_name)
     }
 }
 
@@ -87,10 +101,11 @@ mod tests {
         let dir = testdata::temp_dir_with(&["test_swap"]);
         let home = dir.into_path().join("test_swap");
 
-        std::os::unix::fs::symlink(home.join("bins/bar.foo"), home.join("bins/current"))
+        std::os::unix::fs::symlink(home.join("bins/bar/uniond"), home.join("bins/current"))
             .expect("should be able to symlink");
 
-        let bindir = Bindir::new(home.clone(), home.join("bins"), "bar.foo").unwrap();
-        bindir.swap("foo.bar").unwrap();
+        let bindir = Bindir::new(home.clone(), home.join("bins"), "bar", "uniond")
+            .expect("should be able to create a bindir");
+        bindir.swap("foo").unwrap();
     }
 }

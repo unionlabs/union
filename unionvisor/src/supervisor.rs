@@ -11,7 +11,7 @@ use std::{
     process::{Child, ExitStatus},
     time::Duration,
 };
-use tracing::{debug, error, field::display as as_display, info};
+use tracing::{debug, error, field::display as as_display, info, warn};
 
 /// A process supervisor for the uniond binary, which can start, gracefully exit and backup uniond data.
 pub struct Supervisor {
@@ -24,6 +24,15 @@ pub struct Supervisor {
     binary: PathBuf,
 
     child: Option<Child>,
+}
+
+impl Drop for Supervisor {
+    fn drop(&mut self) {
+        if self.child.is_some() {
+            // Make a best effort at cleaning up processes.
+            let _ = self.kill();
+        }
+    }
 }
 
 impl Supervisor {
@@ -41,6 +50,7 @@ impl Supervisor {
         logformat: LogFormat,
         args: I,
     ) -> Result<()> {
+        assert!(&self.binary.exists());
         let handle = std::process::Command::new(&self.binary)
             .args(vec!["--log_format", logformat.as_str()])
             .arg("start")
@@ -85,17 +95,20 @@ impl Supervisor {
 
     pub fn try_wait(&mut self) -> Result<Option<ExitStatus>> {
         if let Some(child) = &mut self.child {
-            Ok(child.try_wait()?)
+            Ok(child.try_wait().map_err(|err| {
+                debug!(target: "unionvisor", "unknown error while try_waiting for child: {:?}", err);
+                err
+            })?)
         } else {
             unreachable!("try_waiting for a child should only happen after spawn")
         }
     }
 
     pub fn kill(&mut self) -> Result<()> {
-        if let Some(ref mut child) = self.child {
+        if let Some(ref mut child) = self.child.take() {
             child.kill()?;
         } else {
-            unreachable!("killing a child should only happen after spawn")
+            debug_assert!(false, "killing a child should only happen after spawn")
         }
         Ok(())
     }
@@ -133,8 +146,13 @@ pub fn run_and_upgrade<S: AsRef<OsStr>, I: IntoIterator<Item = S> + Clone>(
         home =  as_display(home.display()),
         "spawning supervisor process for the uniond binary"
     );
-
-    supervisor.spawn(logformat.clone(), args.clone())?;
+    supervisor
+        .spawn(logformat.clone(), args.clone())
+        .map_err(|err| {
+            warn!(target: "supervisor", "failed to spawn initial binary call");
+            err
+        })?;
+    info!(target: "unionvisor", "spawned uniond, starting poll for upgrade signals");
     std::thread::sleep(Duration::from_millis(300));
     loop {
         if let Some(code) = supervisor.try_wait()? {
@@ -144,11 +162,18 @@ pub fn run_and_upgrade<S: AsRef<OsStr>, I: IntoIterator<Item = S> + Clone>(
 
         match watcher.poll() {
             Err(FileReaderError::FileNotFound) => continue,
-            Err(err) => return Err(RuntimeError::Other(err.into())),
+            Err(err) => {
+                warn!(target: "unionvisor", "unknown error while polling for upgrades: {}", err.to_string());
+                return Err(RuntimeError::Other(err.into()));
+            }
             Ok(None) => continue,
             Ok(Some(new)) => {
                 // If the daemon restarts, then upgrade-info.json may be stale. We need to
                 // resolve the current symlink and compare it with the info.
+                info!(
+                    target = "unionvisor",
+                    "detected an upgrade signal: {:?}", new
+                );
                 let symlink = supervisor.symlink();
                 let actual =
                     fs::read_link(symlink).map_err(|err| RuntimeError::Other(err.into()))?;
@@ -219,12 +244,12 @@ mod tests {
     use std::fs;
     use tracing_test::traced_test;
 
-    #[traced_test]
     #[test]
+    #[traced_test]
     fn test_run_and_upgrade() {
         let tmp_dir = testdata::temp_dir_with(&["test_run"]);
         let path = tmp_dir.into_path().join("test_run");
-        let bindir = Bindir::new(path.clone(), path.join("bins"), "genesis").unwrap();
+        let bindir = Bindir::new(path.clone(), path.join("bins"), "genesis", "uniond").unwrap();
         let err = run_and_upgrade(
             path.clone(),
             LogFormat::Plain,
@@ -240,12 +265,12 @@ mod tests {
         }
     }
 
-    #[traced_test]
     #[test]
+    #[traced_test]
     fn test_run_and_upgrade_restart() {
         let tmp_dir = testdata::temp_dir_with(&["test_restart"]);
         let path = tmp_dir.into_path().join("test_restart");
-        let bindir = Bindir::new(path.clone(), path.join("bins"), "upgrade1").unwrap();
+        let bindir = Bindir::new(path.clone(), path.join("bins"), "upgrade1", "uniond").unwrap();
         let err = run_and_upgrade(
             path.clone(),
             LogFormat::Plain,
@@ -262,6 +287,7 @@ mod tests {
     }
 
     #[test]
+    #[traced_test]
     fn test_backup() {
         let tmp = testdata::temp_dir_with(&["test_backup"]);
         let home = tmp.into_path().join("test_backup");
@@ -279,6 +305,7 @@ mod tests {
     }
 
     #[test]
+    #[traced_test]
     fn test_revert() {
         let tmp = testdata::temp_dir_with(&["test_revert"]);
         let home = tmp.into_path().join("test_revert");
@@ -291,10 +318,14 @@ mod tests {
     }
 
     #[test]
+    #[traced_test]
     fn test_early_exit() {
         let tmp_dir = testdata::temp_dir_with(&["test_early_exit"]);
         let home = tmp_dir.into_path().join("test_early_exit");
-        let bindir = Bindir::new(home.clone(), home.join("bins"), "genesis").unwrap();
+        assert!(home.join("bins/genesis/uniond.sh").exists());
+        let bindir = Bindir::new(home.clone(), home.join("bins"), "genesis", "uniond.sh")
+            .expect("should be able to create a bindir");
+        assert!(bindir.current().exists());
         let err = run_and_upgrade(
             home.clone(),
             LogFormat::Plain,
@@ -303,6 +334,6 @@ mod tests {
             Duration::from_secs(1),
         )
         .unwrap_err();
-        assert!(matches!(err, RuntimeError::EarlyExit { .. }))
+        assert!(matches!(dbg!(err), RuntimeError::EarlyExit { .. }))
     }
 }

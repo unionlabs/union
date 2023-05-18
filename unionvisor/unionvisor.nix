@@ -1,5 +1,5 @@
 { self, ... }: {
-  perSystem = { self', pkgs, system, config, inputs', ... }:
+  perSystem = { self', pkgs, system, config, inputs', stdenv, ... }:
     let
       crane = rec {
         lib = self.inputs.crane.lib.${system};
@@ -16,7 +16,6 @@
           ])
         );
         doCheck = false;
-        cargoBuildCommand = "cargo build --release";
         PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
       };
       cargoArtifacts = crane.stable.buildDepsOnly commonArgs;
@@ -58,15 +57,23 @@
           inherit src;
         };
 
-        # unionvisor-tests = crane.stable.cargoNextest (commonArgs // {
-        #   inherit cargoArtifacts;
-        #   partitions = 1;
-        #   partitionType = "count";
-        #   doCheck = true;
-        #   preConfigureHooks = [
-        #     "cp ${self'.packages.uniond}/bin/uniond $PWD/src/testdata/test_init_cmd/bins/genesis"
-        #   ];
-        # });
+        unionvisor-tests = crane.stable.cargoNextest (commonArgs // {
+          inherit cargoArtifacts;
+          partitions = 1;
+          partitionType = "count";
+          preConfigureHooks = [
+            ''cp ${self'.packages.uniond}/bin/uniond $PWD/src/testdata/test_init_cmd/bins/genesis && \
+             echo "patching testdata" && \
+             source ${pkgs.stdenv}/setup && patchShebangs $PWD/src/testdata
+            ''
+          ];
+          buildPhase = ''
+            cargo nextest run
+          '';
+          installPhase = ''
+            mkdir -p $out
+          '';
+        });
       };
     };
 }
