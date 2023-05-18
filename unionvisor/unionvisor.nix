@@ -57,7 +57,7 @@
           inherit src;
         };
 
-        unionvisor-tests = crane.stable.cargoTest (commonArgs // {
+        unionvisor-tests = crane.stable.cargoNextest (commonArgs // {
           inherit cargoArtifacts;
           partitions = 1;
           partitionType = "count";
@@ -67,6 +67,9 @@
              source ${pkgs.stdenv}/setup && patchShebangs $PWD/src/testdata
             ''
           ];
+          buildPhase = ''
+            cargo nextest run
+          '';
           installPhase = ''
             mkdir -p $out
           '';
