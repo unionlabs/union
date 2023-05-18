@@ -455,3 +455,4 @@ yqyp
 λpxrx
 λpxrx
 rustc
+taplo

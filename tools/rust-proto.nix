@@ -260,7 +260,7 @@
             all-protos-to-build
         ));
 
-      dbg = value: builtins.trace (pkgs.lib.generators.toPretty { } value) value;
+      # dbg = value: builtins.trace (pkgs.lib.generators.toPretty { } value) value;
 
       rust-proto = pkgs.stdenv.mkDerivation {
         name = "rust-proto";
