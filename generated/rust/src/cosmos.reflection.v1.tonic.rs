@@ -5,9 +5,8 @@ pub mod reflection_service_client {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
     use tonic::codegen::http::Uri;
     use tonic::codegen::*;
-    /** Package cosmos.reflection.v1 provides support for inspecting protobuf
-     file descriptors.
-    */
+    /// Package cosmos.reflection.v1 provides support for inspecting protobuf
+    /// file descriptors.
     #[derive(Debug, Clone)]
     pub struct ReflectionServiceClient<T> {
         inner: tonic::client::Grpc<T>,
@@ -71,9 +70,8 @@ pub mod reflection_service_client {
             self.inner = self.inner.accept_compressed(encoding);
             self
         }
-        /** FileDescriptors queries all the file descriptors in the app in order
-         to enable easier generation of dynamic clients.
-        */
+        /// FileDescriptors queries all the file descriptors in the app in order
+        /// to enable easier generation of dynamic clients.
         pub async fn file_descriptors(
             &mut self,
             request: impl tonic::IntoRequest<super::FileDescriptorsRequest>,
@@ -100,17 +98,15 @@ pub mod reflection_service_server {
     /// Generated trait containing gRPC methods that should be implemented for use with ReflectionServiceServer.
     #[async_trait]
     pub trait ReflectionService: Send + Sync + 'static {
-        /** FileDescriptors queries all the file descriptors in the app in order
-         to enable easier generation of dynamic clients.
-        */
+        /// FileDescriptors queries all the file descriptors in the app in order
+        /// to enable easier generation of dynamic clients.
         async fn file_descriptors(
             &self,
             request: tonic::Request<super::FileDescriptorsRequest>,
         ) -> Result<tonic::Response<super::FileDescriptorsResponse>, tonic::Status>;
     }
-    /** Package cosmos.reflection.v1 provides support for inspecting protobuf
-     file descriptors.
-    */
+    /// Package cosmos.reflection.v1 provides support for inspecting protobuf
+    /// file descriptors.
     #[derive(Debug)]
     pub struct ReflectionServiceServer<T: ReflectionService> {
         inner: _Inner<T>,

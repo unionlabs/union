@@ -32,7 +32,6 @@ pub struct ExistenceProof {
     #[prost(message, repeated, tag = "4")]
     pub path: ::prost::alloc::vec::Vec<InnerOp>,
 }
-///
 /// NonExistenceProof takes a proof of two neighbors, one left of the desired key,
 /// one right of the desired key. If both proofs are valid AND they are neighbors,
 /// then there is no valid proof for the given key.
@@ -48,7 +47,6 @@ pub struct NonExistenceProof {
     #[prost(message, optional, tag = "3")]
     pub right: ::core::option::Option<ExistenceProof>,
 }
-///
 /// CommitmentProof is either an ExistenceProof or a NonExistenceProof, or a Batch of such messages
 #[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -193,7 +191,6 @@ pub struct ProofSpec {
     #[cfg_attr(feature = "std", serde(default))]
     pub min_depth: i32,
 }
-///
 /// InnerSpec contains all store-specific structure info to determine if two proofs from a
 /// given store are neighbors.
 ///
@@ -235,7 +232,6 @@ pub struct InnerSpec {
     #[prost(enumeration = "HashOp", tag = "6")]
     pub hash: i32,
 }
-///
 /// BatchProof is a group of multiple proof types than can be compressed
 #[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]

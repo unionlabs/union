@@ -68,8 +68,7 @@ pub mod query_client {
             self.inner = self.inner.accept_compressed(encoding);
             self
         }
-        /** Parameters queries the parameters of the module.
-        */
+        /// Parameters queries the parameters of the module.
         pub async fn params(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryParamsRequest>,
@@ -94,8 +93,7 @@ pub mod query_server {
     /// Generated trait containing gRPC methods that should be implemented for use with QueryServer.
     #[async_trait]
     pub trait Query: Send + Sync + 'static {
-        /** Parameters queries the parameters of the module.
-        */
+        /// Parameters queries the parameters of the module.
         async fn params(
             &self,
             request: tonic::Request<super::QueryParamsRequest>,

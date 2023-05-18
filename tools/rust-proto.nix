@@ -260,13 +260,13 @@
             all-protos-to-build
         ));
 
-      # dbg = value: builtins.trace (pkgs.lib.generators.toPretty { } value) value;
+      dbg = value: builtins.trace (pkgs.lib.generators.toPretty { } value) value;
 
       rust-proto = pkgs.stdenv.mkDerivation {
         name = "rust-proto";
         pname = "rust-proto";
         src = pkgs.linkFarm "rust-proto-srcs" (pkgs.lib.mapAttrsToList (name: { src, ... }: { name = name + "-protos"; path = src; }) all-protos-to-build);
-        buildInputs = [ pkgs.protobuf protoc-gen-tonic config.treefmt.build.wrapper ] ++ (if pkgs.stdenv.isDarwin then [ pkgs.libiconv ] else [ ]);
+        buildInputs = [ pkgs.protobuf protoc-gen-tonic (dbg (pkgs.lib.attrValues config.treefmt.build.programs)) ] ++ (if pkgs.stdenv.isDarwin then [ pkgs.libiconv ] else [ ]);
         buildPhase = ''
           mkdir $out
 
@@ -291,8 +291,15 @@
           echo -e "#![allow(clippy::all)]\n$(cat ./src/lib.rs)" > ./src/lib.rs
 
           # format generated files
-          touch flake.nix # treefmt looks for this file to find the project root
-          treefmt -C . --no-cache
+          # echo 'formatter = { rust = { options = []}}' > treefmt.toml
+          # touch flake.nix # treefmt looks for this file to find the project root
+          # treefmt -C . --no-cache --config-file="treefmt.toml"
+
+          # normalize comments in generated code
+          for i in $(find . -name "*.rs" -type f); do
+            echo "[FORMAT] $i"
+            rustfmt --config normalize_comments=true --edition "2021" "$i"
+          done
 
           cp -r ./src $out/
           cp -r ./Cargo.toml $out/

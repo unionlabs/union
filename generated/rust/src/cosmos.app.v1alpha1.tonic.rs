@@ -5,8 +5,7 @@ pub mod query_client {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
     use tonic::codegen::http::Uri;
     use tonic::codegen::*;
-    /** Query is the app module query service.
-    */
+    /// Query is the app module query service.
     #[derive(Debug, Clone)]
     pub struct QueryClient<T> {
         inner: tonic::client::Grpc<T>,
@@ -70,8 +69,7 @@ pub mod query_client {
             self.inner = self.inner.accept_compressed(encoding);
             self
         }
-        /** Config returns the current app config.
-        */
+        /// Config returns the current app config.
         pub async fn config(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryConfigRequest>,
@@ -96,15 +94,13 @@ pub mod query_server {
     /// Generated trait containing gRPC methods that should be implemented for use with QueryServer.
     #[async_trait]
     pub trait Query: Send + Sync + 'static {
-        /** Config returns the current app config.
-        */
+        /// Config returns the current app config.
         async fn config(
             &self,
             request: tonic::Request<super::QueryConfigRequest>,
         ) -> Result<tonic::Response<super::QueryConfigResponse>, tonic::Status>;
     }
-    /** Query is the app module query service.
-    */
+    /// Query is the app module query service.
     #[derive(Debug)]
     pub struct QueryServer<T: Query> {
         inner: _Inner<T>,

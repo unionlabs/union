@@ -1170,7 +1170,6 @@ pub mod generated_code_info {
 /// <http://www.joda.org/joda-time/apidocs/org/joda/time/format/ISODateTimeFormat.html#dateTime%2D%2D>
 /// ) to obtain a formatter capable of generating timestamps in this format.
 ///
-///
 #[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -1245,7 +1244,6 @@ pub struct Timestamp {
 /// encoded in JSON format as "3s", while 3 seconds and 1 nanosecond should
 /// be expressed in JSON format as "3.000000001s", and 3 seconds and 1
 /// microsecond should be expressed in JSON format as "3.000001s".
-///
 ///
 #[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]
 #[derive(Eq)]
@@ -1348,7 +1346,6 @@ pub struct Duration {
 ///        "@type": "type.googleapis.com/google.protobuf.Duration",
 ///        "value": "1.212s"
 ///      }
-///
 #[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]
 #[derive(Eq)]
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -1381,7 +1378,6 @@ pub struct Any {
     ///
     /// Schemes other than `http`, `https` (or the empty scheme) might be
     /// used with implementation specific semantics.
-    ///
     #[prost(string, tag = "1")]
     pub type_url: ::prost::alloc::string::String,
     /// Must be a valid serialized protocol buffer of the above specified type.
@@ -1899,7 +1895,6 @@ pub struct Api {
     /// `google.feature.v1`. For major versions 0 and 1, the suffix can
     /// be omitted. Zero major versions must only be used for
     /// experimental, non-GA interfaces.
-    ///
     ///
     #[prost(string, tag = "4")]
     pub version: ::prost::alloc::string::String,
