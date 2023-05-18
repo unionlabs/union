@@ -1,7 +1,12 @@
 use crate::{bindir::Bindir, init, logging::LogFormat, network::Network, supervisor};
 use clap::Parser;
-use color_eyre::{eyre::bail, Report, Result};
-use std::{ffi::OsString, path::PathBuf, process::Stdio, time::Duration};
+use color_eyre::{eyre::bail, eyre::eyre, Result};
+use figment::{
+    providers::{Data, Format as FigmentFormat, Json, Toml},
+    Figment,
+};
+use serde::de::DeserializeOwned;
+use std::{ffi::OsString, io::Read, path::PathBuf, process::Stdio, time::Duration};
 use tracing::{debug, field::display as as_display};
 use tracing_subscriber::filter::LevelFilter;
 
@@ -18,7 +23,12 @@ pub struct Cli {
     pub log_level: LevelFilter,
 
     /// The log format for both unionvisor and uniond.
-    #[arg(short, long, env = "UNIONVISOR_LOG_FORMAT", default_value = "json")]
+    #[arg(
+        short = 'f',
+        long,
+        env = "UNIONVISOR_LOG_FORMAT",
+        default_value = "json"
+    )]
     pub log_format: LogFormat,
 
     #[command(subcommand)]
@@ -36,6 +46,9 @@ enum Command {
 
     /// Initializes a local directory to join the union network.
     Init(InitCmd),
+
+    /// Merges toml or json configuration files.
+    Merge(MergeCmd),
 }
 
 #[derive(Clone, Parser)]
@@ -54,6 +67,7 @@ pub struct CallCmd {
 
     args: Vec<OsString>,
 }
+
 #[derive(Clone, Parser)]
 pub struct InitCmd {
     /// The validator's monniker.
@@ -104,6 +118,17 @@ pub struct RunCmd {
     binary_name: OsString,
 }
 
+/// Merges toml or json files and writes the merged output to `file`.
+#[derive(Clone, Parser)]
+pub struct MergeCmd {
+    /// The file to use as base and write to.
+    file: PathBuf,
+
+    /// Input file to read from. If ommitted, stdin is used.
+    #[arg(short, long)]
+    from: Option<PathBuf>,
+}
+
 impl Cli {
     pub fn run(self) -> Result<()> {
         match &self.command {
@@ -111,18 +136,100 @@ impl Cli {
                 cmd.call(self.root)?;
                 Ok(())
             }
-
             Command::Run(cmd) => {
                 cmd.run(self.root, self.log_format)?;
                 Ok(())
             }
-
             Command::Init(cmd) => {
                 cmd.init(self.root)?;
                 Ok(())
             }
+            Command::Merge(cmd) => cmd.merge(),
         }
     }
+}
+
+pub trait MergeFormat {
+    type Output: DeserializeOwned + ToString;
+    type Format: FigmentFormat;
+}
+
+impl MergeFormat for Json {
+    type Output = serde_json::Value;
+    type Format = Self;
+}
+
+impl MergeFormat for Toml {
+    type Output = toml::map::Map<String, toml::Value>;
+    type Format = Self;
+}
+
+impl MergeCmd {
+    fn merge_to_string(&self, input: String) -> Result<String> {
+        let output = &self.file;
+        let ext = output
+            .extension()
+            .ok_or(eyre!("file must have either a .json or .toml extension"))?;
+        let base = std::fs::read_to_string(output)?;
+        let data = match ext.to_str().unwrap() {
+            "toml" => merge_inner::<Toml>(input, base)?.to_string(),
+            "json" => merge_inner::<Json>(input, base)?.to_string(),
+            _ => bail!("unknown extension: {:?}", ext),
+        };
+        Ok(data)
+    }
+
+    fn merge_from_reader_or_file<R: Read>(&self, mut r: R) -> Result<String> {
+        let input = if let Some(file) = &self.from {
+            std::fs::read_to_string(file)?
+        } else {
+            let mut buffer = Vec::new();
+            r.read_to_end(&mut buffer)?;
+            String::from_utf8(buffer)?
+        };
+        self.merge_to_string(input)
+    }
+
+    fn merge(&self) -> Result<()> {
+        let output = self.merge_from_reader_or_file(std::io::stdin().lock())?;
+        write_to_file(&self.file, &output)?;
+        Ok(())
+    }
+}
+
+fn merge_inner<F: MergeFormat>(add: String, base: String) -> Result<F::Output> {
+    let value: F::Output = Figment::new()
+        .merge(Data::<<F as MergeFormat>::Format>::string(&base))
+        .merge(Data::<<F as MergeFormat>::Format>::string(&add))
+        .extract()?;
+    Ok(value)
+}
+
+fn write_to_file(path: impl Into<PathBuf>, contents: &str) -> Result<()> {
+    let path = path.into();
+    let mut tmp = path.clone();
+    tmp.set_file_name("__unionvisor.tmp");
+    let mut backup = path.clone();
+    backup.set_file_name("__unionvisor.bak");
+    std::fs::rename(&path, &backup)?;
+
+    // We try writing to the temp file. If that fails, we remove the temp file and rename back the original.
+    // If the write succeeds, we rename the temp file to the original, if that fails we perform the same cleanup.
+    // If cleanup fails, we ignore errors and just show the original
+    std::fs::write(&tmp, contents)
+        .or_else(|err| {
+            std::fs::remove_file(&tmp)?;
+            Err(err)
+        })
+        .and_then(|_| std::fs::rename(&tmp, &path))
+        .map_err(|err| {
+            // Best effort to restore the original file
+            let _ = std::fs::rename(&backup, &path);
+            let _ = std::fs::remove_file(&tmp);
+            err
+        })?;
+    std::fs::remove_file(backup)?;
+    Ok(())
 }
 
 /// The state that the init command left the fs in.
@@ -233,6 +340,116 @@ mod tests {
     use super::*;
     use crate::testdata;
     use tracing_test::traced_test;
+
+    #[test]
+    fn test_write_to_file() {
+        let tmp = testdata::temp_dir_with(&["home"]);
+        let home = tmp.into_path().join("home");
+        let path = home.join("config/client.toml");
+        write_to_file(&path, "hello").unwrap();
+        let contents = std::fs::read_to_string(&path).unwrap();
+        assert_eq!(contents, "hello")
+    }
+
+    #[test]
+    fn test_merge_from_reader() {
+        use toml::toml;
+
+        let tmp = testdata::temp_dir_with(&["home"]);
+        let home = tmp.into_path().join("home");
+
+        let cmd = MergeCmd {
+            file: home.join("config").join("client.toml"),
+            from: None,
+        };
+
+        let input = toml! {
+            broadcast-mode = "async"
+            foo = "bar"
+        };
+
+        let output = cmd
+            .merge_from_reader_or_file(input.to_string().as_bytes())
+            .unwrap();
+        let expected = toml! {
+            chain-id = "union"
+            keyring-backend = "os"
+            output = "text"
+            node = "tcp://localhost:26657"
+            broadcast-mode = "async"
+            foo = "bar"
+        };
+        assert_eq!(output, expected.to_string());
+    }
+
+    #[test]
+    fn test_merge_to_string() {
+        use toml::toml;
+
+        let tmp = testdata::temp_dir_with(&["home"]);
+        let home = tmp.into_path().join("home");
+
+        let cmd = MergeCmd {
+            file: home.join("config").join("client.toml"),
+            from: None,
+        };
+
+        let input = toml! {
+            broadcast-mode = "async"
+            foo = "bar"
+        };
+
+        let output = cmd.merge_to_string(input.to_string()).unwrap();
+        let expected = toml! {
+            chain-id = "union"
+            keyring-backend = "os"
+            output = "text"
+            node = "tcp://localhost:26657"
+            broadcast-mode = "async"
+            foo = "bar"
+        };
+        assert_eq!(output, expected.to_string());
+    }
+
+    #[test]
+    fn test_merge_inner_json() {
+        use serde_json::json;
+
+        let base = json!({"a": true, "b": false});
+        let added = json!({"b": true, "c": true});
+        let result = merge_inner::<Json>(added.to_string(), base.to_string()).unwrap();
+        assert_eq!(result, json!({"a": true, "b": true, "c": true}))
+    }
+
+    #[test]
+    fn test_merge_inner_toml() {
+        use toml::toml;
+
+        let base = toml! {
+            [package]
+            name = "toml"
+            version = "1"
+        };
+
+        let added = toml! {
+            [package]
+            name = "json"
+
+            [dependencies]
+            serde = "1.0"
+        };
+
+        let expected = toml! {
+            [package]
+            name = "json"
+            version = "1"
+
+            [dependencies]
+            serde = "1.0"
+        };
+        let result = merge_inner::<Toml>(added.to_string(), base.to_string()).unwrap();
+        assert_eq!(result, expected)
+    }
 
     /// Verifies that calling unionvisor init -i will return without impacting the fs.
     #[test]
