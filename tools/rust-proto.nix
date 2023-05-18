@@ -1,5 +1,5 @@
-{ inputs, ... }: {
-  perSystem = { self', pkgs, proto, crane, system, inputs', ... }:
+{ ... }: {
+  perSystem = { self', pkgs, proto, crane, system, inputs', config, ... }:
     let
       protoc-gen-tonic = crane.lib.buildPackage {
         pname = "protoc-gen-tonic";
@@ -260,18 +260,13 @@
             all-protos-to-build
         ));
 
-      fmt = inputs.treefmt-nix.lib.mkWrapper pkgs {
-        projectRootFile = "Cargo.toml";
-        programs.rustfmt.enable = true;
-      };
-
       # dbg = value: builtins.trace (pkgs.lib.generators.toPretty { } value) value;
 
       rust-proto = pkgs.stdenv.mkDerivation {
         name = "rust-proto";
         pname = "rust-proto";
         src = pkgs.linkFarm "rust-proto-srcs" (pkgs.lib.mapAttrsToList (name: { src, ... }: { name = name + "-protos"; path = src; }) all-protos-to-build);
-        buildInputs = [ pkgs.protobuf protoc-gen-tonic fmt ] ++ (if pkgs.stdenv.isDarwin then [ pkgs.libiconv ] else [ ]);
+        buildInputs = [ pkgs.protobuf protoc-gen-tonic config.treefmt.build.wrapper ] ++ (if pkgs.stdenv.isDarwin then [ pkgs.libiconv ] else [ ]);
         buildPhase = ''
           mkdir $out
 
@@ -296,7 +291,8 @@
           echo -e "#[allow(clippy::all)]\n$(cat ./src/lib.rs)" > ./src/lib.rs
 
           # format generated files
-          treefmt -C $out --no-cache
+          touch flake.nix # treefmt looks for this file to find the project root
+          treefmt -C . --no-cache
 
           cp -r ./src $out/
           cp -r ./Cargo.toml $out/
