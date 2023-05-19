@@ -285,7 +285,7 @@
             programs.gofmt.enable = true;
             programs.rustfmt.enable = true;
             programs.prettier.enable = true;
-            settings.global.excludes = [ "**/vendor/**" ];
+            settings.global.excludes = [ "**/vendor/**" "**/foundry/lib/**" ];
           };
         };
     };
