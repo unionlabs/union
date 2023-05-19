@@ -136,12 +136,12 @@
                 };
                 cometbls = builtins.fetchGit {
                   name = "cometbls";
-                  url = "github:UnionFi/cometbls";
+                  url = "git@github.com:UnionFi/cometbls";
                   rev = "f19ae296cf176b343ea214967810ba735813e73f";
                 };
                 cosmossdk = builtins.fetchGit {
                   name = "cosmos-sdk";
-                  url = "github:UnionFi/cosmos-sdk";
+                  url = "git@github.com:UnionFi/cosmos-sdk";
                   rev = "021566a5aba49e79356e2e6e246494e118f12605";
                 };
                 ibcgo = pkgs.fetchFromGitHub {
@@ -275,9 +275,6 @@
                   inputs.foundry.defaultPackage.${system}
                   pkgs.solc
                   pkgs.go-ethereum
-                  self'.packages.prysmctl
-                  self'.packages.prysm-beacon-chain
-                  self'.packages.prysm-validator
                 ];
               });
             };
@@ -288,7 +285,7 @@
             programs.gofmt.enable = true;
             programs.rustfmt.enable = true;
             programs.prettier.enable = true;
-            settings.global.excludes = [ "**/vendor/**" ];
+            settings.global.excludes = [ "**/vendor/**" "**/foundry/lib/**" ];
           };
         };
     };
