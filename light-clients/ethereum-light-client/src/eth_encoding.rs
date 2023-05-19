@@ -37,15 +37,15 @@ pub fn generate_commitment_key<S: Into<U256>>(path: String, slot: S) -> Vec<u8> 
 
 pub fn encode_cometbls_consensus_state(data: RawCometConsensusState) -> Result<Vec<u8>, Error> {
     Ok(ethabi::encode(&[ethabi::Token::Tuple(vec![
-        ethabi::Token::Bytes(
+        ethabi::Token::FixedBytes(
             data.root
                 .clone()
                 .ok_or(Error::MissingProtoField)?
                 .hash
                 .into(),
         ),
-        ethabi::Token::Bytes(data.next_validators_hash.clone().into()),
-        ethabi::Token::Int(
+        ethabi::Token::FixedBytes(data.next_validators_hash.clone().into()),
+        ethabi::Token::Uint(
             data.timestamp
                 .ok_or(Error::MissingProtoField)?
                 .seconds
