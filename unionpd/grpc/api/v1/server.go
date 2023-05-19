@@ -298,8 +298,8 @@ func (p *proverServer) Prove(ctx context.Context, req *ProveRequest) (*ProveResp
 		return nil, fmt.Errorf("Impossible: proof backend must be BN254 at this point")
 	}
 
-	var buffer bytes.Buffer
-	mem := bufio.NewWriter(&buffer)
+	var proofBuffer bytes.Buffer
+	mem := bufio.NewWriter(&proofBuffer)
 	_, err = proof.WriteRawTo(mem)
 	if err != nil {
 		return nil, err
@@ -316,12 +316,19 @@ func (p *proverServer) Prove(ctx context.Context, req *ProveRequest) (*ProveResp
 		return nil, err
 	}
 
+	proofBz := proofBuffer.Bytes()
+
+	// Due to how gnark prove, we not only need the ZKP A/B/C points, but also a commitment hash and proof commitment.
+	// The proof is a compressed proof serialized by gnark, we extract A(G1)/B(G2)/C(G1) and then append the commitment hash and commitment proof from the public inputs.
+	evmProof := append(append(proofBz[:256], commitmentHash...), proofCommitment...)
+
 	return &ProveResponse{
 		Proof: &ZeroKnowledgeProof{
-			Content:      buffer.Bytes(),
-			PublicInputs: append(append(publicInputs, commitmentHash...), proofCommitment...),
+			Content:      proofBz,
+			PublicInputs: publicInputs,
+			EvmProof:     evmProof,
 		},
-		TrustedValidatorSetRoot: trustedValidatorsRoot,
+		TrustedValidatorSetRoot:   trustedValidatorsRoot,
 		UntrustedValidatorSetRoot: untrustedValidatorsRoot,
 	}, nil
 }

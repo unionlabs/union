@@ -13,7 +13,8 @@ message FrElement {
 
 message ZeroKnowledgeProof {
   bytes content = 1;
-  bytes public_inputs = 2;
+  bytes evm_proof = 2;
+  bytes public_inputs = 3;
 }
 
 message ValidatorSetCommit {

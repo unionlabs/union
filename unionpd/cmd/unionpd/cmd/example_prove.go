@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
@@ -16,7 +17,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/credentials"
 )
 
 // Example call to the prover `Prove` endpoint using hardcoded values dumped from a local devnet.
@@ -26,13 +27,13 @@ var ExampleProveCmd = &cobra.Command{
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		uri := args[0]
-		conn, err := grpc.Dial(uri, grpc.WithTransportCredentials(insecure.NewCredentials()))
+		conn, err := grpc.Dial(uri, grpc.WithTransportCredentials(credentials.NewTLS( &tls.Config{} )))
 		if err != nil {
 			log.Fatalf("Failed to dial: %v", err)
 		}
 		defer conn.Close()
 		client := provergrpc.NewUnionProverAPIClient(conn)
-		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Hour)
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 		defer cancel()
 
 		decodeB64 := func(s string) []byte {
@@ -130,6 +131,10 @@ var ExampleProveCmd = &cobra.Command{
 			log.Fatal(err)
 		}
 
-		fmt.Println(res)
+		fmt.Printf("Gnark Proof: %X\n", res.Proof.Content)
+		fmt.Printf("Public inputs: %X\n", res.Proof.PublicInputs)
+		fmt.Printf("Trusted root: %X\n", res.TrustedValidatorSetRoot)
+		fmt.Printf("Untrusted root: %X\n", res.UntrustedValidatorSetRoot)
+		fmt.Printf("EVM compatible ZKP: %X\n", res.Proof.EvmProof)
 	},
 }
