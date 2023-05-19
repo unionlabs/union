@@ -317,7 +317,7 @@ impl CallCmd {
             &self.fallback,
             &self.binary_name,
         )?;
-        let current = bindir.current();
+        let current = bindir.current_checked()?;
         debug!(target: "unionvisor",
             binary = as_display(current.display()),
             home = as_display(home.display()),

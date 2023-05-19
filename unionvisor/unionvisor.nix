@@ -79,7 +79,7 @@
             WorkingDirectory = "/home/unionvisor";
             ExecStart = "${cfg.bundle}/bin/unionvisor init --bindir ${cfg.bundle}/bins --monniker ${cfg.monniker}";
             Restart = mkForce "always";
-          }; 
+          };
         };
       };
     };

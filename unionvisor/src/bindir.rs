@@ -1,8 +1,9 @@
 use color_eyre::Result;
 use std::ffi::OsString;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::{fs, io};
+use tracing::error;
 use tracing::{debug, field::display as as_display, warn};
 
 pub struct Bindir {
@@ -10,6 +11,12 @@ pub struct Bindir {
     bindir: PathBuf,
     current: String,
     binary_name: OsString,
+}
+
+pub enum BinaryAvailability {
+    NotFound,
+    PermissionDenied,
+    Ok,
 }
 
 impl Bindir {
@@ -44,22 +51,17 @@ impl Bindir {
         Ok(dir)
     }
 
+    /// Returns the path to the current binary and checks if it is executable.
+    pub fn current_checked(&self) -> Result<PathBuf> {
+        let current = self.current();
+        is_available_logged(&current, &self.bindir)?;
+        Ok(current)
+    }
+
     /// Checks if the program with `name` is available in the bindir and runnable.
-    pub fn is_available(&self, name: &str) -> Result<bool> {
+    pub fn is_available(&self, name: &str) -> Result<BinaryAvailability> {
         let path = self.get_path_to(name);
-        debug!(
-            bindir = as_display(self.bindir.display()),
-            "testing if binary {} is available by calling --help",
-            as_display(path.display())
-        );
-        let mut child = Command::new(&path)
-            .arg("--help")
-            .stderr(Stdio::null())
-            .stdout(Stdio::null())
-            .spawn()?;
-        debug!(target: "unionvisor", "killing test call of {}", as_display(path.display()));
-        child.kill()?;
-        Ok(true)
+        is_available_logged(path, &self.bindir)
     }
 
     pub fn current(&self) -> PathBuf {
@@ -88,6 +90,51 @@ impl Bindir {
     pub fn get_path_to(&self, name: &str) -> PathBuf {
         self.bindir.join(name).join(&self.binary_name)
     }
+}
+
+/// Checks if the program with `name` is available in the bindir and runnable, and emits appropriate logs on failures.
+fn is_available_logged(
+    path: impl AsRef<Path>,
+    bindir: impl AsRef<Path>,
+) -> Result<BinaryAvailability> {
+    let path = path.as_ref();
+    let bindir = bindir.as_ref();
+    let status = is_available(path, bindir)?;
+
+    match status {
+        BinaryAvailability::NotFound => {
+            error!(target: "unionvisor", "could not find binary {} in {}", path.display(), bindir.display())
+        }
+        BinaryAvailability::PermissionDenied => {
+            error!(target: "unionvisor", "could not execute binary {} in {}", path.display(), bindir.display())
+        }
+        BinaryAvailability::Ok => (),
+    }
+    Ok(status)
+}
+/// Checks if the program with `name` is available in the bindir and runnable.
+fn is_available(path: impl AsRef<Path>, bindir: impl AsRef<Path>) -> Result<BinaryAvailability> {
+    let path = path.as_ref();
+    let bindir = bindir.as_ref();
+    debug!(
+        bindir = as_display(bindir.display()),
+        "testing if binary {} is available by calling --help",
+        as_display(path.display())
+    );
+    let mut child = Command::new(path)
+        .arg("--help")
+        .stderr(Stdio::null())
+        .stdout(Stdio::null())
+        .spawn()?;
+    debug!(target: "unionvisor", "killing test call of {}", as_display(path.display()));
+    if let Err(err) = child.kill() {
+        match err.kind() {
+            io::ErrorKind::NotFound => return Ok(BinaryAvailability::NotFound),
+            io::ErrorKind::PermissionDenied => return Ok(BinaryAvailability::PermissionDenied),
+            _ => return Err(err.into()),
+        }
+    }
+    Ok(BinaryAvailability::Ok)
 }
 
 #[cfg(test)]

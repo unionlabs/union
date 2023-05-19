@@ -134,7 +134,7 @@ pub fn run_and_upgrade<S: AsRef<OsStr>, I: IntoIterator<Item = S> + Clone>(
     args: I,
     pol_interval: Duration,
 ) -> color_eyre::Result<(), RuntimeError> {
-    let current = bindir.current();
+    let current = bindir.current_checked()?;
     let home = home.into();
     let mut supervisor = Supervisor::new(home.clone(), current.clone());
     let mut watcher = FileReader::new(home.join("data/upgrade-info.json"));
