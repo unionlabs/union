@@ -275,9 +275,6 @@
                   inputs.foundry.defaultPackage.${system}
                   pkgs.solc
                   pkgs.go-ethereum
-                  self'.packages.prysmctl
-                  self'.packages.prysm-beacon-chain
-                  self'.packages.prysm-validator
                 ];
               });
             };
