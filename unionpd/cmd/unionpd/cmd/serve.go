@@ -1,17 +1,20 @@
 package cmd
 
 import (
-	"github.com/spf13/cobra"
-	"google.golang.org/grpc"
 	"log"
 	"net"
 	provergrpc "unionp/grpc/api/v1"
+
+	"github.com/spf13/cobra"
+	"golang.org/x/net/netutil"
+	"google.golang.org/grpc"
 )
 
 const (
-	flagR1CS = "cs-path"
-	flagPK   = "pk-path"
-	flagVK   = "vk-path"
+	flagR1CS    = "cs-path"
+	flagPK      = "pk-path"
+	flagVK      = "vk-path"
+	flagMaxConn = "max-conn"
 )
 
 func ServeCmd() *cobra.Command {
@@ -35,20 +38,26 @@ func ServeCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
+			maxConn, err := cmd.Flags().GetInt(flagMaxConn)
+			if err != nil {
+				return err
+			}
 			uri := args[0]
 			lis, err := net.Listen("tcp", uri)
 			if err != nil {
 				return err
 			}
+			limitedLis := netutil.LimitListener(lis, maxConn)
 			var opts []grpc.ServerOption
 			grpcServer := grpc.NewServer(opts...)
 			provergrpc.RegisterUnionProverAPIServer(grpcServer, server)
 			log.Println("Serving...")
-			return grpcServer.Serve(lis)
+			return grpcServer.Serve(limitedLis)
 		},
 	}
 	cmd.Flags().String(flagR1CS, "r1cs.bin", "Path to the compiled R1CS circuit.")
 	cmd.Flags().String(flagPK, "pk.bin", "Path to the proving key.")
 	cmd.Flags().String(flagVK, "vk.bin", "Path to the verifying key.")
+	cmd.Flags().Int(flagMaxConn, 1, "Maximum number of concurrent connection.")
 	return cmd
 }
