@@ -24,6 +24,7 @@
         installPhase = ''
           mkdir -p $out
           cp -dR ./build/* $out
+          echo "built docs"
         '';
       };
     };
