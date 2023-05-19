@@ -27,7 +27,7 @@ var ExampleProveCmd = &cobra.Command{
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		uri := args[0]
-		conn, err := grpc.Dial(uri, grpc.WithTransportCredentials(credentials.NewTLS( &tls.Config{} )))
+		conn, err := grpc.Dial(uri, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{})))
 		if err != nil {
 			log.Fatalf("Failed to dial: %v", err)
 		}
