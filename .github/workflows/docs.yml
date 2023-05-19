@@ -1,0 +1,18 @@
+name: Docs
+
+on:
+  # For now `pull_request` is used to test the PR, will be removed later
+  pull_request:
+    branches:
+    - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3  
+      - uses: cachix/install-nix-action@v20
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+          github_access_token: ${{ github.token }}
+      - run: nix build ./#docs
