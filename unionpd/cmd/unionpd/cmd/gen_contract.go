@@ -3,8 +3,8 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"log"
+	"os"
 	"time"
 	provergrpc "unionp/grpc/api/v1"
 
@@ -45,7 +45,7 @@ func GenContract() *cobra.Command {
 			if path == "" {
 				fmt.Print(string(res.Content))
 			} else {
-				err := ioutil.WriteFile(path, res.Content, 0)
+				err := os.WriteFile(path, res.Content, 0644)
 				if err != nil {
 					return err
 				}
