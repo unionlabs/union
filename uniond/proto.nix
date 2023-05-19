@@ -5,7 +5,7 @@
 # - https://github.com/cosmos/cosmos-sdk/blob/bf17fec0e7b83f98be8eba220f1800bd2d7d5011/scripts/protocgen.sh
 #
 { ... }: {
-  perSystem = { pkgs, self', ... }: {
+  perSystem = { pkgs, self', proto, ... }: {
     packages =
       let
         grpc-gateway = pkgs.buildGoModule {
@@ -22,7 +22,7 @@
         };
 
         cosmos-proto = pkgs.buildGoModule {
-          pname = "protoc-gen-cosmos";
+          pname = "cosmos-proto";
           version = "1.0.0";
           src = pkgs.fetchFromGitHub {
             owner = "cosmos";
@@ -49,6 +49,49 @@
 
           vendorSha256 = "sha256-nfeqVsPMQz7EL+qWxFzRukCE3YqXErhS9urRaJo44Fg=";
         };
+        generate-uniond-proto = pkgs.stdenv.mkDerivation {
+          name = "generate-uniond-proto";
+          pname = "generate-uniond-proto";
+          src = ./.;
+          buildInputs = [ 
+            pkgs.protobuf 
+            pkgs.protoc-gen-go 
+            pkgs.protoc-gen-go-grpc
+            pkgs.grpc-gateway
+            pkgs.gnused
+            cosmos-proto
+            gogoproto
+          ];
+
+          buildPhase = ''
+            mkdir $out
+
+            find ${proto.uniond} -type f -regex ".*proto" | \
+            while read -r file; do
+              echo "Generating protobuf for $file"
+              protoc \
+                -I"${proto.uniond}" \
+                -I"${proto.gogoproto}" \
+                -I"${proto.googleapis}" \
+                -I"${proto.cosmossdk}/proto" \
+                -I"${proto.cosmosproto}/proto" \
+                -I"${proto.ibcgo}/proto" \
+                -I"${proto.ics23}/proto" \
+                --go_out $out \
+                --go_opt=paths=source_relative \
+                --gocosmos_out $out \
+                --gocosmos_opt=plugins=interfacetype+grpc,Mgoogle/protobuf/any.proto=github.com/cosmos/cosmos-sdk/codec/types \
+                --grpc-gateway_out $out \
+                --grpc-gateway_opt=logtostderr=true \
+                "$file"
+            done
+
+                # --grpc-gateway_out= $out \
+                # --grpc-gateway_opt=logtostderr=true,allow_colon_final_segments=true \
+            echo "Patching generated go files to ignore staticcheck warnings"
+            find $out -name "*.go" -exec sed -i "1s/^/\/\/lint:file-ignore SA1019 This code is generated\n/" {} +;
+          '';
+        };
       in
       {
         gen-proto = pkgs.writeShellApplication {
@@ -69,17 +112,15 @@
             cd uniond
 
             echo "Generating go code based on ./uniond/proto"
-            cd proto
-            buf mod update
-            buf generate
-            cd ..
-
-            echo "Patching generated go files to ignore staticcheck warnings"
-            find ./union -name "*.go" -exec sed -i "1s/^/\/\/lint:file-ignore SA1019 This code is generated\n/" {} +;
+            # cd proto
+            # buf mod update
+            # buf generate
+            # cd ..
+            cp -r ${generate-uniond-proto}/union/x/* ./x/
 
             echo "Moving patched go sources to correct directories"
-            cp -r ./union/x/* x/
-            rm -rf ./union
+            # cp -r ./union/x/* x/
+            # rm -rf ./union
 
             echo "Done! Generated .pb.go files are added to ./uniond/x"
           '';

@@ -1,5 +1,5 @@
 syntax = "proto3";
-package ibc.lightclients.ethereum.v1;
+package union.ibc.lightclients.ethereum.v1;
 
 option go_package = "github.com/datachainlab/ethereum-lcp/go/light-clients/ethereum/types";
 import "ibc/core/client/v1/client.proto";
@@ -28,7 +28,7 @@ message ClientState {
 
   uint64 latest_slot = 10;
   uint64 latest_execution_block_number = 11;
-  ibc.core.client.v1.Height frozen_height = 12;
+  .ibc.core.client.v1.Height frozen_height = 12;
 }
 
 message ConsensusState {
@@ -47,7 +47,7 @@ message Header {
 }
 
 message TrustedSyncCommittee {
-  ibc.core.client.v1.Height trusted_height = 1;
+  .ibc.core.client.v1.Height trusted_height = 1;
   SyncCommittee sync_committee = 2;
   bool is_next = 3;
 }
