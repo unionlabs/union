@@ -1,3 +1,4 @@
+#cspell:ignore abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz
 { ... }: {
   perSystem = { devnetConfig, system, pkgs, self', inputs', ... }:
     let
@@ -11,6 +12,7 @@
         '';
       mkHome = { genesisAccounts }:
         pkgs.runCommand "genesis-home" { } ''
+          export HOME=$(pwd)
           mkdir -p $out
 
           # Generate the wasm client genesis state
@@ -30,7 +32,22 @@
           ${uniond} add-genesis-account $ADDRESS 10000000000000000000000000stake --keyring-backend test --home $out
 
           ${builtins.concatStringsSep "\n" (builtins.map (key: ''
-            ${uniond} keys add ${key} --keyring-backend test --home $out
+            key_base=${key}
+            val_index=''${key_base//[^0-9]/}
+            echo $val_index
+            echo "
+              set timeout 30
+              spawn ${uniond} keys mnemonic --unsafe-entropy --home $out
+              expect \"WARNING:\"
+              send \"abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz$val_index\\r\"
+              expect \"Input length:\"
+              send \"y\\r\"
+              expect eof
+            " > expect-${key}.exp
+            val_mnemonic=$(${pkgs.expect}/bin/expect expect-${key}.exp | tail -n 1)
+            echo $val_mnemonic
+
+            echo $val_mnemonic | ${uniond} keys add --recover ${key} --keyring-backend test --home $out
             ${uniond} add-genesis-account ${key} 100000000000000000000000000stake --keyring-backend test --home $out
           '') genesisAccounts)}
         '';
