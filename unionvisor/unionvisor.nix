@@ -24,8 +24,8 @@
       packages = {
         inherit unionvisor;
 
-        bundle-testnet = mkBundle "testnet" [ "v0.0.2" "v0.3.0" "v0.4.2" ];
-        bundle-mainnet = mkBundle "mainnet" [ "v0.0.2" "v0.3.0" ];
+        bundle-testnet = mkBundle "testnet" [ "v0.5.0" ];
+        bundle-mainnet = mkBundle "mainnet" [ "v0.5.0" ];
       };
 
       checks = crane.mkChecks "unionvisor" {
@@ -53,18 +53,20 @@
       };
     };
 
-  flake.nixosModules.unionvisor = { lib, pkgs, config, system, ... }:
+  flake.nixosModules.unionvisor = { lib, pkgs, config, ... }:
     with lib;
     let
       cfg = config.services.unionvisor;
-      unionvisor = self.packages.${pkgs.system}.unionvisor;
     in
     {
       options.services.unionvisor = {
         enable = mkEnableOption "Unionvisor service";
-        greeter = mkOption {
+        bundle = mkOption {
+          type = types.package;
+          default = self.packages.${pkgs.system}.bundle-testnet;
+        };
+        monniker = mkOption {
           type = types.str;
-          default = "world";
         };
       };
 
@@ -75,8 +77,8 @@
           serviceConfig = {
             Type = "simple";
             WorkingDirectory = "/home/unionvisor";
-            ExecStart = "${lib.getExe unionvisor} start --home /home/uniond/.union";
-            Restart = pkgs.lib.mkForce "always";
+            ExecStart = "${cfg.bundle}/bin/unionvisor init --bindir ${cfg.bundle}/bins --monniker ${cfg.monniker}";
+            Restart = mkForce "always";
           }; 
         };
       };
