@@ -63,7 +63,7 @@
 
           withBuildTarget = target: crane.lib.${system}.overrideToolchain (pkgs.rust-bin.fromRustupToolchain {
             channel = "nightly-2022-12-07";
-            components = [ "cargo" "rustc" "rust-src" ];
+            profile = "minimal";
             targets = [ target ];
           });
           craneLib = crane.lib.${system}.overrideToolchain rust-nightly;
