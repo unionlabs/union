@@ -1,8 +1,7 @@
 name: Docs
 
 on:
-  # For now `pull_request` is used to test the PR, will be removed later
-  pull_request:
+  push:
     branches:
     - main
 
