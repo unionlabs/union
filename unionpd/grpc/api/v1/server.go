@@ -320,7 +320,7 @@ func (p *proverServer) Prove(ctx context.Context, req *ProveRequest) (*ProveResp
 
 	// Due to how gnark prove, we not only need the ZKP A/B/C points, but also a commitment hash and proof commitment.
 	// The proof is a compressed proof serialized by gnark, we extract A(G1)/B(G2)/C(G1) and then append the commitment hash and commitment proof from the public inputs.
-	evmProof := append(append(proofBz[:256], commitmentHash...), proofCommitment...)
+	evmProof := append(append(proofBz[4:256], commitmentHash...), proofCommitment...)
 
 	return &ProveResponse{
 		Proof: &ZeroKnowledgeProof{
