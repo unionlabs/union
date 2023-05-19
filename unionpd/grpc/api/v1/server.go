@@ -321,6 +321,8 @@ func (p *proverServer) Prove(ctx context.Context, req *ProveRequest) (*ProveResp
 			Content:      buffer.Bytes(),
 			PublicInputs: append(append(publicInputs, commitmentHash...), proofCommitment...),
 		},
+		TrustedValidatorSetRoot: trustedValidatorsRoot,
+		UntrustedValidatorSetRoot: untrustedValidatorsRoot,
 	}, nil
 }
 

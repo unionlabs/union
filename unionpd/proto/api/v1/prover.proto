@@ -30,7 +30,8 @@ message ProveRequest {
 
 message ProveResponse {
   ZeroKnowledgeProof proof = 1;
-  bytes untrusted_validator_set_root = 2;
+  bytes trusted_validator_set_root = 2;
+  bytes untrusted_validator_set_root = 3;
 }
 
 message VerifyRequest {
