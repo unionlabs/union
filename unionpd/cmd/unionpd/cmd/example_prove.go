@@ -18,123 +18,147 @@ import (
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/credentials/insecure"
+)
+
+const (
+	flagTLS = "tls"
 )
 
 // Example call to the prover `Prove` endpoint using hardcoded values dumped from a local devnet.
 // The sole purpose of this command is to see a live example and understand how to interact with the prover.
-var ExampleProveCmd = &cobra.Command{
-	Use:  "example-prove [uri]",
-	Args: cobra.ExactArgs(1),
-	Run: func(cmd *cobra.Command, args []string) {
-		uri := args[0]
-		conn, err := grpc.Dial(uri, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{})))
-		if err != nil {
-			log.Fatalf("Failed to dial: %v", err)
-		}
-		defer conn.Close()
-		client := provergrpc.NewUnionProverAPIClient(conn)
-		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
-		defer cancel()
+func ExampleProveCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:  "example-prove [uri]",
+		Args: cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
 
-		decodeB64 := func(s string) []byte {
-			bz, err := base64.StdEncoding.DecodeString(s)
+			tlsEnabled, err := cmd.Flags().GetString(flagTLS)
 			if err != nil {
-				log.Fatal(err)
+				return err
 			}
-			return bz
-		}
 
-		// Nb of tokens for each val in devnet
-		tokens, success := new(big.Int).SetString("1000000000000000000000", 10)
-		if !success {
-			log.Fatal("Impossible; qed;")
-		}
+			var creds credentials.TransportCredentials
+			if tlsEnabled == "yes" {
+				creds = credentials.NewTLS(&tls.Config{})
+			} else {
+				creds = insecure.NewCredentials()
+			}
 
-		toValidator := func(pubKey []byte) *types.SimpleValidator {
-			protoPK, err := ce.PubKeyToProto(cometbn254.PubKey(pubKey))
+			uri := args[0]
+			conn, err := grpc.Dial(uri, grpc.WithTransportCredentials(creds))
 			if err != nil {
-				log.Fatal(err)
+				return err
 			}
-			return &types.SimpleValidator{
-				PubKey:      &protoPK,
-				VotingPower: sdk.TokensToConsensusPower(sdk.NewIntFromBigInt(tokens), sdk.DefaultPowerReduction),
+			defer conn.Close()
+			client := provergrpc.NewUnionProverAPIClient(conn)
+			ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+			defer cancel()
+
+			decodeB64 := func(s string) []byte {
+				bz, err := base64.StdEncoding.DecodeString(s)
+				if err != nil {
+					log.Fatal(err)
+				}
+				return bz
 			}
-		}
 
-		blockHash, err := hex.DecodeString("1AD5BACC115AF66ADBA05C6D2393D73FD41E0DF1F761ED33344668BF71DEB9CB")
-		if err != nil {
-			panic(err)
-		}
+			// Nb of tokens for each val in devnet
+			tokens, success := new(big.Int).SetString("1000000000000000000000", 10)
+			if !success {
+				log.Fatal("Impossible; qed;")
+			}
 
-		partSetHeaderHash, err := hex.DecodeString("6A80C88DA6FE1FA7773949270805567C963028008B10441E0180CF8AA1D400C9")
-		if err != nil {
-			panic(err)
-		}
+			toValidator := func(pubKey []byte) *types.SimpleValidator {
+				protoPK, err := ce.PubKeyToProto(cometbn254.PubKey(pubKey))
+				if err != nil {
+					log.Fatal(err)
+				}
+				return &types.SimpleValidator{
+					PubKey:      &protoPK,
+					VotingPower: sdk.TokensToConsensusPower(sdk.NewIntFromBigInt(tokens), sdk.DefaultPowerReduction),
+				}
+			}
 
-		vote := types.CanonicalVote{
-			Type:   types.PrecommitType,
-			Height: 1,
-			Round:  0,
-			BlockID: &types.CanonicalBlockID{
-				Hash: blockHash,
-				PartSetHeader: types.CanonicalPartSetHeader{
-					Total: 1,
-					Hash:  partSetHeaderHash,
+			blockHash, err := hex.DecodeString("1AD5BACC115AF66ADBA05C6D2393D73FD41E0DF1F761ED33344668BF71DEB9CB")
+			if err != nil {
+				return err
+			}
+
+			partSetHeaderHash, err := hex.DecodeString("6A80C88DA6FE1FA7773949270805567C963028008B10441E0180CF8AA1D400C9")
+			if err != nil {
+				return err
+			}
+
+			vote := types.CanonicalVote{
+				Type:   types.PrecommitType,
+				Height: 1,
+				Round:  0,
+				BlockID: &types.CanonicalBlockID{
+					Hash: blockHash,
+					PartSetHeader: types.CanonicalPartSetHeader{
+						Total: 1,
+						Hash:  partSetHeaderHash,
+					},
 				},
-			},
-			ChainID: "union-devnet-1",
-		}
+				ChainID: "union-devnet-1",
+			}
 
-		validators := []*types.SimpleValidator{
-			toValidator(decodeB64("pNfYwyKvOhox3FNqU+ddZXqj8DS44ucdXs8mEfYPghI=")),
-			toValidator(decodeB64("5vyjk9eK0ZsP06232NzpKp7dyz5AMmwG7sRHtje51pY=")),
-			toValidator(decodeB64("hAPYPNTvyBT0Fl+BDrPlPFdWpq2eNI+YpHyEDaLpRGg=")),
-			toValidator(decodeB64("nKwZsaaiIs/x+X+bOi+yPD2XR3Np3mf9iTYveD/JR3M=")),
-		}
+			validators := []*types.SimpleValidator{
+				toValidator(decodeB64("pNfYwyKvOhox3FNqU+ddZXqj8DS44ucdXs8mEfYPghI=")),
+				toValidator(decodeB64("5vyjk9eK0ZsP06232NzpKp7dyz5AMmwG7sRHtje51pY=")),
+				toValidator(decodeB64("hAPYPNTvyBT0Fl+BDrPlPFdWpq2eNI+YpHyEDaLpRGg=")),
+				toValidator(decodeB64("nKwZsaaiIs/x+X+bOi+yPD2XR3Np3mf9iTYveD/JR3M=")),
+			}
 
-		trustedValidators := validators
-		untrustedValidators := validators
+			trustedValidators := validators
+			untrustedValidators := validators
 
-		signatures := [][]byte{
-			decodeB64("gdAsIuv3EMi250CS9dG6ym1exEAQm8gwYvJflmMDlroZiWIWI14nJhOHdXBqxevsjF1XInzck4sTsM8EuD3wJA=="),
-			decodeB64("jtMDB9UOctP0tNloF/3RaPQXMYNadQt8T8DJYFgtHu8bC+9gpcyp7zcSc7OOrqQC8QKRGLBiGgX20F1BEQZLEw=="),
-			decodeB64("ylbl7UYU2cBuaqxIFECloU+9yX2WAPGFXFkRt5Q7pg8ctKqz1Hz0oU7Fakyc/W+i6RDcFj9D+hpCWcx9HOEMiw=="),
-			decodeB64("6lPTpzoSYY5N/F/TFUAGT+yyr3DOJV+Fq2JvCxOJojwOKe9e0bl+RB4ZarI9oB2YsQr/jLi2YfDLzo2tuvWfYw=="),
-		}
+			signatures := [][]byte{
+				decodeB64("gdAsIuv3EMi250CS9dG6ym1exEAQm8gwYvJflmMDlroZiWIWI14nJhOHdXBqxevsjF1XInzck4sTsM8EuD3wJA=="),
+				decodeB64("jtMDB9UOctP0tNloF/3RaPQXMYNadQt8T8DJYFgtHu8bC+9gpcyp7zcSc7OOrqQC8QKRGLBiGgX20F1BEQZLEw=="),
+				decodeB64("ylbl7UYU2cBuaqxIFECloU+9yX2WAPGFXFkRt5Q7pg8ctKqz1Hz0oU7Fakyc/W+i6RDcFj9D+hpCWcx9HOEMiw=="),
+				decodeB64("6lPTpzoSYY5N/F/TFUAGT+yyr3DOJV+Fq2JvCxOJojwOKe9e0bl+RB4ZarI9oB2YsQr/jLi2YfDLzo2tuvWfYw=="),
+			}
 
-		trustedSignatures := signatures
-		untrustedSignatures := signatures
+			trustedSignatures := signatures
+			untrustedSignatures := signatures
 
-		var bitmap big.Int
-		bitmap.SetBit(&bitmap, 0, 1)
-		bitmap.SetBit(&bitmap, 1, 1)
-		bitmap.SetBit(&bitmap, 2, 1)
-		bitmap.SetBit(&bitmap, 3, 1)
+			var bitmap big.Int
+			bitmap.SetBit(&bitmap, 0, 1)
+			bitmap.SetBit(&bitmap, 1, 1)
+			bitmap.SetBit(&bitmap, 2, 1)
+			bitmap.SetBit(&bitmap, 3, 1)
 
-		trustedBitmap := bitmap
-		untrustedBitmap := bitmap
+			trustedBitmap := bitmap
+			untrustedBitmap := bitmap
 
-		res, err := client.Prove(ctx, &provergrpc.ProveRequest{
-			Vote: &vote,
-			TrustedCommit: &provergrpc.ValidatorSetCommit{
-				Validators: trustedValidators,
-				Signatures: trustedSignatures,
-				Bitmap:     trustedBitmap.Bytes(),
-			},
-			UntrustedCommit: &provergrpc.ValidatorSetCommit{
-				Validators: untrustedValidators,
-				Signatures: untrustedSignatures,
-				Bitmap:     untrustedBitmap.Bytes(),
-			},
-		})
-		if err != nil {
-			log.Fatal(err)
-		}
+			res, err := client.Prove(ctx, &provergrpc.ProveRequest{
+				Vote: &vote,
+				TrustedCommit: &provergrpc.ValidatorSetCommit{
+					Validators: trustedValidators,
+					Signatures: trustedSignatures,
+					Bitmap:     trustedBitmap.Bytes(),
+				},
+				UntrustedCommit: &provergrpc.ValidatorSetCommit{
+					Validators: untrustedValidators,
+					Signatures: untrustedSignatures,
+					Bitmap:     untrustedBitmap.Bytes(),
+				},
+			})
+			if err != nil {
+				return err
+			}
 
-		fmt.Printf("Gnark Proof: %X\n", res.Proof.Content)
-		fmt.Printf("Public inputs: %X\n", res.Proof.PublicInputs)
-		fmt.Printf("Trusted root: %X\n", res.TrustedValidatorSetRoot)
-		fmt.Printf("Untrusted root: %X\n", res.UntrustedValidatorSetRoot)
-		fmt.Printf("EVM compatible ZKP: %X\n", res.Proof.EvmProof)
-	},
+			fmt.Printf("Gnark Proof: %X\n", res.Proof.Content)
+			fmt.Printf("Public inputs: %X\n", res.Proof.PublicInputs)
+			fmt.Printf("Trusted root: %X\n", res.TrustedValidatorSetRoot)
+			fmt.Printf("Untrusted root: %X\n", res.UntrustedValidatorSetRoot)
+			fmt.Printf("EVM compatible ZKP: %X\n", res.Proof.EvmProof)
+
+			return nil
+		},
+	}
+	cmd.Flags().String(flagTLS, "", "Wether the gRPC endpoint expect TLS.")
+	return cmd
 }
