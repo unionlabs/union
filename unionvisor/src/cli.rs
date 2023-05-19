@@ -91,7 +91,7 @@ pub struct InitCmd {
     network: Network,
 
     /// Determines if unionvisor initializes regardless of previous dirty state.
-    /// This might still error depending on the behaviour of the underlying uniond binary
+    /// This might still error depending on the behavior of the underlying uniond binary
     #[arg(short, long, default_value = "false")]
     allow_dirty: bool,
 }
@@ -124,7 +124,7 @@ pub struct MergeCmd {
     /// The file to use as base and write to.
     file: PathBuf,
 
-    /// Input file to read from. If ommitted, stdin is used.
+    /// Input file to read from. If omitted, stdin is used.
     #[arg(short, long)]
     from: Option<PathBuf>,
 }
@@ -453,7 +453,7 @@ mod tests {
 
     /// Verifies that calling unionvisor init -i will return without impacting the fs.
     #[test]
-    fn test_init_noops() {
+    fn test_init_disallow_dirty_no_error() {
         let tmp = testdata::temp_dir_with(&["home"]);
         let home = tmp.into_path().join("home");
         let state = InitCmd {
