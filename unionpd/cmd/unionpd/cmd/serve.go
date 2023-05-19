@@ -19,13 +19,6 @@ func ServeCmd() *cobra.Command {
 		Use:  "serve [uri]",
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			uri := args[0]
-			lis, err := net.Listen("tcp", uri)
-			if err != nil {
-				return err
-			}
-			var opts []grpc.ServerOption
-			grpcServer := grpc.NewServer(opts...)
 			r1csPath, err := cmd.Flags().GetString(flagR1CS)
 			if err != nil {
 				return err
@@ -42,6 +35,13 @@ func ServeCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
+			uri := args[0]
+			lis, err := net.Listen("tcp", uri)
+			if err != nil {
+				return err
+			}
+			var opts []grpc.ServerOption
+			grpcServer := grpc.NewServer(opts...)
 			provergrpc.RegisterUnionProverAPIServer(grpcServer, server)
 			log.Println("Serving...")
 			return grpcServer.Serve(lis)
