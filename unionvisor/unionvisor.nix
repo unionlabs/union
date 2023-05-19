@@ -1,4 +1,4 @@
-{ ... }: {
+{ self, ... }: {
   perSystem = { self', pkgs, system, config, inputs', crane, stdenv, ... }:
     let
       attrs = crane.commonAttrs // {
@@ -53,10 +53,11 @@
       };
     };
 
-  flake.nixosModules.unionvisor = { lib, pkgs, config, ... }:
+  flake.nixosModules.unionvisor = { lib, pkgs, config, system, ... }:
     with lib;
     let
       cfg = config.services.unionvisor;
+      unionvisor = self.packages.${pkgs.system}.unionvisor;
     in
     {
       options.services.unionvisor = {
@@ -70,7 +71,13 @@
       config = mkIf cfg.enable {
         systemd.services.unionvisor = {
           wantedBy = [ "multi-user.target" ];
-          serviceConfig.ExecStart = "${pkgs.hello}/bin/hello -g'Hello Unionvisor, ${escapeShellArg cfg.greeter}!'";
+          description = "Unionvisor";
+          serviceConfig = {
+            Type = "simple";
+            WorkingDirectory = "/home/unionvisor";
+            ExecStart = "${lib.getExe unionvisor} start --home /home/uniond/.union";
+            Restart = pkgs.lib.mkForce "always";
+          }; 
         };
       };
     };
