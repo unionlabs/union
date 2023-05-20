@@ -10,6 +10,13 @@
 
       mkBundle = name: versions: pkgs.linkFarm "union-bundle-${name}" ([
         {
+          name = "meta.json";
+          path = pkgs.writeText "meta.json" (builtins.toJSON {
+            binary_name = "uniond";
+            fallback_version = "v0.5.0";
+          });
+        }
+        {
           name = "unionvisor";
           path = "${unionvisor}/bin/unionvisor";
         }
