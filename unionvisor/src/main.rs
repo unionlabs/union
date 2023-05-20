@@ -1,6 +1,6 @@
 use clap::Parser;
 
-mod bindir;
+mod bundle;
 mod cli;
 mod init;
 mod logging;

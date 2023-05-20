@@ -6,10 +6,19 @@ use std::{fs, io};
 use tracing::error;
 use tracing::{debug, field::display as as_display, warn};
 
-pub struct Bindir {
+/// Bundles should have the following structure on the filesystem:
+/// ```text
+/// bins
+/// └── v0.5.0
+///     └── uniond
+/// ```
+pub struct Bundle {
+    /// The home of the bundle
     home: PathBuf,
-    bindir: PathBuf,
+    /// The directory containing all versions' directories
+    versions_dir: PathBuf,
     current: String,
+    /// The name of the binary that lives in each version's directory
     binary_name: OsString,
 }
 
@@ -19,49 +28,49 @@ pub enum BinaryAvailability {
     Ok,
 }
 
-impl Bindir {
+impl Bundle {
     /// Creates a new bindir. If a symlink named "current" is present, no further action is taken. Otherwise
     /// `name` is symlinked to "bins/current".
     pub fn new(
         home: impl Into<PathBuf>,
-        bindir: impl Into<PathBuf>,
+        versions_dir: impl Into<PathBuf>,
         name: &str,
         binary_name: impl Into<OsString>,
     ) -> Result<Self> {
-        let dir = Bindir {
+        let bundle = Bundle {
             home: home.into(),
-            bindir: bindir.into(),
+            versions_dir: versions_dir.into(),
             current: "current".to_owned(),
             binary_name: binary_name.into(),
         };
 
         // If there exists no symlink to current yet, we create it.
-        match fs::read_link(dir.current()) {
+        match fs::read_link(bundle.current()) {
             Err(err) => match err.kind() {
-                io::ErrorKind::NotFound => dir.swap(name).map_err(|err| {
+                io::ErrorKind::NotFound => bundle.swap(name).map_err(|err| {
                     warn!(target: "unionvisor", "unable to swap fallback binary to current");
                     err
                 })?,
                 _ => return Err(err.into()),
             },
             Ok(path) => {
-                debug!(target: "unionvisor", "existing symlink found at {}, pointing to {}, continuing using that", dir.current().display(), path.display())
+                debug!(target: "unionvisor", "existing symlink found at {}, pointing to {}, continuing using that", bundle.current().display(), path.display())
             }
         }
-        Ok(dir)
+        Ok(bundle)
     }
 
     /// Returns the path to the current binary and checks if it is executable.
     pub fn current_checked(&self) -> Result<PathBuf> {
         let current = self.current();
-        is_available_logged(&current, &self.bindir)?;
+        is_available_logged(&current, &self.versions_dir)?;
         Ok(current)
     }
 
     /// Checks if the program with `name` is available in the bindir and runnable.
     pub fn is_available(&self, name: &str) -> Result<BinaryAvailability> {
         let path = self.get_path_to(name);
-        is_available_logged(path, &self.bindir)
+        is_available_logged(path, &self.versions_dir)
     }
 
     pub fn current(&self) -> PathBuf {
@@ -88,7 +97,7 @@ impl Bindir {
 
     /// Obtains the path to the binary within the bindir with name `name`.
     pub fn get_path_to(&self, name: &str) -> PathBuf {
-        self.bindir.join(name).join(&self.binary_name)
+        self.versions_dir.join(name).join(&self.binary_name)
     }
 }
 
@@ -151,7 +160,7 @@ mod tests {
         std::os::unix::fs::symlink(home.join("bins/bar/uniond"), home.join("bins/current"))
             .expect("should be able to symlink");
 
-        let bindir = Bindir::new(home.clone(), home.join("bins"), "bar", "uniond")
+        let bindir = Bundle::new(home.clone(), home.join("bins"), "bar", "uniond")
             .expect("should be able to create a bindir");
         bindir.swap("foo").unwrap();
     }

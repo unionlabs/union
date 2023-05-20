@@ -1,5 +1,5 @@
 use crate::{
-    bindir::Bindir,
+    bundle::Bundle,
     logging::LogFormat,
     watcher::{FileReader, FileReaderError},
 };
@@ -130,11 +130,11 @@ pub enum RuntimeError {
 pub fn run_and_upgrade<S: AsRef<OsStr>, I: IntoIterator<Item = S> + Clone>(
     home: impl Into<PathBuf>,
     logformat: LogFormat,
-    bindir: Bindir,
+    bundle: Bundle,
     args: I,
     pol_interval: Duration,
 ) -> color_eyre::Result<(), RuntimeError> {
-    let current = bindir.current_checked()?;
+    let current = bundle.current_checked()?;
     let home = home.into();
     let mut supervisor = Supervisor::new(home.clone(), current.clone());
     let mut watcher = FileReader::new(home.join("data/upgrade-info.json"));
@@ -193,7 +193,7 @@ pub fn run_and_upgrade<S: AsRef<OsStr>, I: IntoIterator<Item = S> + Clone>(
                 "upgrade detected"
                 );
                 debug!(target: "unionvisor", "checking binary availability");
-                bindir.is_available(&new.name).map_err(|err| {
+                bundle.is_available(&new.name).map_err(|err| {
                     error!(target: "unionvisor", "binary {} unavailable", &new.name);
                     RuntimeError::BinaryUnavailable {
                         err,
@@ -210,7 +210,7 @@ pub fn run_and_upgrade<S: AsRef<OsStr>, I: IntoIterator<Item = S> + Clone>(
                 supervisor.backup(&backup_file)?;
 
                 debug!(target: "unionvisor", "creating new symlink for {}", &new.name);
-                bindir.swap(&new.name)?;
+                bundle.swap(&new.name)?;
 
                 // Store the old supervisor incase of reverts.
                 let old = supervisor;
@@ -249,7 +249,7 @@ mod tests {
     fn test_run_and_upgrade() {
         let tmp_dir = testdata::temp_dir_with(&["test_run"]);
         let path = tmp_dir.into_path().join("test_run");
-        let bindir = Bindir::new(path.clone(), path.join("bins"), "genesis", "uniond").unwrap();
+        let bundle = Bundle::new(path.clone(), path.join("bins"), "genesis", "uniond").unwrap();
         let err = run_and_upgrade(
             path.clone(),
             LogFormat::Plain,
@@ -270,7 +270,7 @@ mod tests {
     fn test_run_and_upgrade_restart() {
         let tmp_dir = testdata::temp_dir_with(&["test_restart"]);
         let path = tmp_dir.into_path().join("test_restart");
-        let bindir = Bindir::new(path.clone(), path.join("bins"), "upgrade1", "uniond").unwrap();
+        let bindir = Bundle::new(path.clone(), path.join("bins"), "upgrade1", "uniond").unwrap();
         let err = run_and_upgrade(
             path.clone(),
             LogFormat::Plain,
@@ -323,7 +323,7 @@ mod tests {
         let tmp_dir = testdata::temp_dir_with(&["test_early_exit"]);
         let home = tmp_dir.into_path().join("test_early_exit");
         assert!(home.join("bins/genesis/uniond.sh").exists());
-        let bindir = Bindir::new(home.clone(), home.join("bins"), "genesis", "uniond.sh")
+        let bindir = Bundle::new(home.clone(), home.join("bins"), "genesis", "uniond.sh")
             .expect("should be able to create a bindir");
         assert!(bindir.current().exists());
         let err = run_and_upgrade(

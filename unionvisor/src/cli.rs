@@ -1,4 +1,4 @@
-use crate::{bindir::Bindir, init, logging::LogFormat, network::Network, supervisor};
+use crate::{bundle::Bundle, init, logging::LogFormat, network::Network, supervisor};
 use clap::Parser;
 use color_eyre::{eyre::bail, eyre::eyre, Result};
 use figment::{
@@ -57,9 +57,9 @@ pub struct CallCmd {
     #[arg(short, long, default_value = "genesis", env = "UNIONVISOR_FALLBACK")]
     fallback: String,
 
-    /// Path to where the binaries are stored.
-    #[arg(short, long, env = "UNIONVISOR_BINDIR")]
-    bindir: PathBuf,
+    /// Path to where the binary bundle is stored.
+    #[arg(short, long, env = "UNIONVISOR_BUNDLE")]
+    bundle: PathBuf,
 
     /// The fallback binary to use incase no symlink is found.
     #[arg(short, long, default_value = "uniond")]
@@ -79,8 +79,8 @@ pub struct InitCmd {
     fallback: String,
 
     /// Path to where the binaries are stored.
-    #[arg(short, long, env = "UNIONVISOR_BINDIR")]
-    bindir: PathBuf,
+    #[arg(short, long, env = "UNIONVISOR_BUNDLE")]
+    bundle: PathBuf,
 
     /// The fallback binary to use incase no symlink is found.
     #[arg(long, default_value = "uniond")]
@@ -110,8 +110,8 @@ pub struct RunCmd {
     pol_interval: Option<u64>,
 
     /// Path to where the binaries are stored.
-    #[arg(short, long, env = "UNIONVISOR_BINDIR")]
-    bindir: PathBuf,
+    #[arg(short, long, env = "UNIONVISOR_BUNDLE")]
+    bundle: PathBuf,
 
     /// The fallback binary to use incase no symlink is found.
     #[arg(short, long, default_value = "uniond")]
@@ -255,7 +255,7 @@ impl InitCmd {
         let init = CallCmd {
             binary_name: self.binary_name.clone(),
             fallback: self.fallback.clone(),
-            bindir: self.bindir.clone(),
+            bundle: self.bundle.clone(),
             args: vec![
                 OsString::from("--home"),
                 home.clone().into_os_string(),
@@ -276,9 +276,9 @@ impl InitCmd {
 impl RunCmd {
     fn run(&self, root: impl Into<PathBuf>, logformat: LogFormat) -> Result<()> {
         let root = root.into();
-        let bindir = Bindir::new(
+        let bindir = Bundle::new(
             root.clone(),
-            &self.bindir,
+            &self.bundle,
             &self.fallback,
             &self.binary_name,
         )?;
@@ -311,9 +311,9 @@ impl CallCmd {
         stderr: impl Into<Stdio>,
     ) -> Result<()> {
         let home = home.into();
-        let bindir = Bindir::new(
+        let bindir = Bundle::new(
             home.clone(),
-            &self.bindir,
+            &self.bundle,
             &self.fallback,
             &self.binary_name,
         )?;
@@ -460,7 +460,7 @@ mod tests {
             binary_name: OsString::from("uniond"),
             monniker: String::from("test_init_monniker"),
             fallback: String::from("genesis"),
-            bindir: home.join("bins"),
+            bundle: home.join("bins"),
             network: Network::Testnet1,
             allow_dirty: true,
         }
