@@ -1,21 +1,21 @@
 pragma solidity ^0.8.18;
 
 import "forge-std/Test.sol";
-import "../../../contracts/core/25-handler/IBCHandler.sol";
-import "../../../contracts/core/02-client/IBCClient.sol";
-import "../../../contracts/core/03-connection/IBCConnection.sol";
-import "../../../contracts/core/04-channel/IBCChannelHandshake.sol";
-import "../../../contracts/core/04-channel/IBCPacket.sol";
-import "../../../contracts/core/24-host/IBCCommitment.sol";
-import "../../../contracts/proto/ibc/core/connection/v1/connection.sol";
-import "../../../contracts/proto/ibc/core/channel/v1/channel.sol";
-import "../../../contracts/proto/ibc/lightclients/wasm/v1/wasm.sol";
-import "../../../contracts/proto/union/ibc/lightclients/cometbls/v1/cometbls.sol";
-import "../../../contracts/proto/tendermint/types/canonical.sol";
-import "../../../contracts/lib/CometblsHelp.sol";
-import "../../../contracts/lib/Encoder.sol";
-import "../../../contracts/clients/TestnetVerifier.sol";
-import "../../../contracts/clients/CometblsClient.sol";
+import "../../contracts/core/25-handler/IBCHandler.sol";
+import "../../contracts/core/02-client/IBCClient.sol";
+import "../../contracts/core/03-connection/IBCConnection.sol";
+import "../../contracts/core/04-channel/IBCChannelHandshake.sol";
+import "../../contracts/core/04-channel/IBCPacket.sol";
+import "../../contracts/core/24-host/IBCCommitment.sol";
+import "../../contracts/proto/ibc/core/connection/v1/connection.sol";
+import "../../contracts/proto/ibc/core/channel/v1/channel.sol";
+import "../../contracts/proto/ibc/lightclients/wasm/v1/wasm.sol";
+import "../../contracts/proto/union/ibc/lightclients/cometbls/v1/cometbls.sol";
+import "../../contracts/proto/tendermint/types/canonical.sol";
+import "../../contracts/lib/CometblsHelp.sol";
+import "../../contracts/lib/Encoder.sol";
+import "../../contracts/clients/TestnetVerifier.sol";
+import "../../contracts/clients/CometblsClient.sol";
 import "./TestableIBCHandler.t.sol";
 
 contract IBCFullTest is Test {

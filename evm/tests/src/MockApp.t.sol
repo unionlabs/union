@@ -1,9 +1,9 @@
 pragma solidity ^0.8.18;
 
-import "../../../contracts/proto/ibc/core/channel/v1/channel.sol";
-import "../../../contracts/core/05-port/IIBCModule.sol";
-import "../../../contracts/core/25-handler/IBCHandler.sol";
-import "../../../contracts/core/24-host/IBCHost.sol";
+import "../../contracts/proto/ibc/core/channel/v1/channel.sol";
+import "../../contracts/core/05-port/IIBCModule.sol";
+import "../../contracts/core/25-handler/IBCHandler.sol";
+import "../../contracts/core/24-host/IBCHost.sol";
 import "@openzeppelin/contracts/utils/Context.sol";
 
 contract MockApp is IIBCModule {

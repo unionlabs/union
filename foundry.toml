@@ -7,8 +7,8 @@ cache = true
 cache_path = "evm/cache"
 
 src = "evm/contracts"
-libs = ["evm/tests/foundry/lib", "evm/tests/node_modules"]
+libs = ["evm/lib", "evm/node_modules"]
+test = "evm/tests/src"
 out = "evm/out"
-test = "evm/tests/foundry/src"
 
 gas_reports = ["*"]
