@@ -10,7 +10,7 @@ import "../proto/tendermint/types/canonical.sol";
 import "../proto/union/ibc/lightclients/cometbls/v1/cometbls.sol";
 import "../proto/ibc/lightclients/wasm/v1/wasm.sol";
 import {GoogleProtobufAny as Any} from "../proto/GoogleProtobufAny.sol";
-import "solidity-bytes-utils/contracts/BytesLib.sol";
+import "solidity-bytes-utils/BytesLib.sol";
 import "../lib/CometblsHelp.sol";
 import "../lib/ICS23.sol";
 import "../core/IZKVerifier.sol";

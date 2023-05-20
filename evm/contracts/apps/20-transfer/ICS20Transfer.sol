@@ -5,8 +5,8 @@ import "../../proto/ibc/core/channel/v1/channel.sol";
 import "../../proto/ibc/applications/transfer/v2/packet.sol";
 import "../../core/05-port/IIBCModule.sol";
 import "../../core/25-handler/IBCHandler.sol";
-import "solidity-stringutils/src/strings.sol";
-import "solidity-bytes-utils/contracts/BytesLib.sol";
+import "solidity-stringutils/strings.sol";
+import "solidity-bytes-utils/BytesLib.sol";
 import "@openzeppelin/contracts/utils/Context.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 

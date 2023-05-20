@@ -9,7 +9,7 @@ import {
     IbcLightclientsMockV1Header as Header
 } from "../proto/MockClient.sol";
 import {GoogleProtobufAny as Any} from "../proto/GoogleProtobufAny.sol";
-import "solidity-bytes-utils/contracts/BytesLib.sol";
+import "solidity-bytes-utils/BytesLib.sol";
 
 // MockClient implements https://github.com/datachainlab/ibc-mock-client
 // WARNING: This client is intended to be used for testing purpose. Therefore, it is not generally available in a production, except in a fully trusted environment.

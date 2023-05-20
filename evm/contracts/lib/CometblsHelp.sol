@@ -12,7 +12,7 @@ import "../proto/tendermint/types/canonical.sol";
 import "./Encoder.sol";
 import "./MerkleTree.sol";
 import "../core/IZKVerifier.sol";
-import "solidity-bytes-utils/contracts/BytesLib.sol";
+import "solidity-bytes-utils/BytesLib.sol";
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {GoogleProtobufAny as Any} from "../proto/GoogleProtobufAny.sol";
 
