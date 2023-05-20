@@ -56,7 +56,7 @@
         let
           rust-nightly = pkgs.rust-bin.fromRustupToolchain {
             channel = "nightly-2022-12-07";
-            components = [ "cargo" "rustc" "rust-src" "rust-docs" "rust-analyzer" "clippy" ];
+            components = [ "rust-src" "rust-analyzer" ];
             profile = "default";
           };
 
