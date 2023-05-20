@@ -104,18 +104,18 @@ impl Bundle {
 /// Checks if the program with `name` is available in the bindir and runnable, and emits appropriate logs on failures.
 fn is_available_logged(
     path: impl AsRef<Path>,
-    bindir: impl AsRef<Path>,
+    bundle: impl AsRef<Path>,
 ) -> Result<BinaryAvailability> {
     let path = path.as_ref();
-    let bindir = bindir.as_ref();
-    let status = is_available(path, bindir)?;
+    let bundle = bundle.as_ref();
+    let status = is_available(path, bundle)?;
 
     match status {
         BinaryAvailability::NotFound => {
-            error!(target: "unionvisor", "could not find binary {} in {}", path.display(), bindir.display())
+            error!(target: "unionvisor", "could not find binary {} in {}", path.display(), bundle.display())
         }
         BinaryAvailability::PermissionDenied => {
-            error!(target: "unionvisor", "could not execute binary {} in {}", path.display(), bindir.display())
+            error!(target: "unionvisor", "could not execute binary {} in {}", path.display(), bundle.display())
         }
         BinaryAvailability::Ok => (),
     }

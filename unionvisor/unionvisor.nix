@@ -65,7 +65,7 @@
           type = types.package;
           default = self.packages.${pkgs.system}.bundle-testnet;
         };
-        monniker = mkOption {
+        moniker = mkOption {
           type = types.str;
         };
       };
@@ -77,7 +77,7 @@
           serviceConfig = {
             Type = "simple";
             WorkingDirectory = "/home/unionvisor";
-            ExecStart = "${cfg.bundle}/bin/unionvisor init --bindir ${cfg.bundle}/bins --monniker ${cfg.monniker}";
+            ExecStart = "${cfg.bundle}/bin/unionvisor init --bindir ${cfg.bundle}/bins --moniker ${cfg.monniker}";
             Restart = mkForce "always";
           };
         };

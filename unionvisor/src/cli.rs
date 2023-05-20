@@ -70,9 +70,9 @@ pub struct CallCmd {
 
 #[derive(Clone, Parser)]
 pub struct InitCmd {
-    /// The validator's monniker.
+    /// The validator's moniker.
     #[arg(short, long)]
-    monniker: String,
+    moniker: String,
 
     /// The fallback binary to use incase no symlink is found.
     #[arg(short, long, default_value = "genesis")]
@@ -260,7 +260,7 @@ impl InitCmd {
                 OsString::from("--home"),
                 home.clone().into_os_string(),
                 OsString::from("init"),
-                OsString::from(self.monniker.clone()),
+                OsString::from(self.moniker.clone()),
                 OsString::from("bn254"),
                 OsString::from("--chain-id"),
                 OsString::from(self.network.to_string()),
@@ -276,7 +276,7 @@ impl InitCmd {
 impl RunCmd {
     fn run(&self, root: impl Into<PathBuf>, logformat: LogFormat) -> Result<()> {
         let root = root.into();
-        let bindir = Bundle::new(
+        let bundle = Bundle::new(
             root.clone(),
             &self.bundle,
             &self.fallback,
@@ -285,7 +285,7 @@ impl RunCmd {
         supervisor::run_and_upgrade(
             root,
             logformat,
-            bindir,
+            bundle,
             self.args.clone(),
             Duration::from_millis(self.pol_interval.unwrap_or(6000)),
         )?;
@@ -311,13 +311,13 @@ impl CallCmd {
         stderr: impl Into<Stdio>,
     ) -> Result<()> {
         let home = home.into();
-        let bindir = Bundle::new(
+        let bundle = Bundle::new(
             home.clone(),
             &self.bundle,
             &self.fallback,
             &self.binary_name,
         )?;
-        let current = bindir.current_checked()?;
+        let current = bundle.current_checked()?;
         debug!(target: "unionvisor",
             binary = as_display(current.display()),
             home = as_display(home.display()),
@@ -458,7 +458,7 @@ mod tests {
         let home = tmp.into_path().join("home");
         let state = InitCmd {
             binary_name: OsString::from("uniond"),
-            monniker: String::from("test_init_monniker"),
+            moniker: String::from("test_init_moniker"),
             fallback: String::from("genesis"),
             bundle: home.join("bins"),
             network: Network::Testnet1,
@@ -475,9 +475,9 @@ mod tests {
         let home = tmp.into_path().join("home");
         let _ = InitCmd {
             binary_name: OsString::from("uniond"),
-            monniker: String::from("test_init_monniker"),
+            moniker: String::from("test_init_moniker"),
             fallback: String::from("genesis"),
-            bindir: home.join("bins"),
+            bundle: home.join("bins"),
             network: Network::Testnet1,
             allow_dirty: false,
         }
@@ -493,9 +493,9 @@ mod tests {
         let home = tmp.into_path().join("test_init_cmd");
         let command = InitCmd {
             binary_name: OsString::from("uniond"),
-            monniker: String::from("test_init_monniker"),
+            moniker: String::from("test_init_moniker"),
             fallback: String::from("genesis"),
-            bindir: home.join("bins"),
+            bundle: home.join("bins"),
             network: Network::Testnet1,
             allow_dirty: false,
         };
