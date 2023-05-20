@@ -77,8 +77,6 @@
                 -I"${proto.cosmosproto}/proto" \
                 -I"${proto.ibcgo}/proto" \
                 -I"${proto.ics23}/proto" \
-                --go_out $out \
-                --go_opt=paths=source_relative \
                 --gocosmos_out $out \
                 --gocosmos_opt=plugins=interfacetype+grpc,Mgoogle/protobuf/any.proto=github.com/cosmos/cosmos-sdk/codec/types \
                 --grpc-gateway_out $out \
@@ -86,8 +84,6 @@
                 "$file"
             done
 
-                # --grpc-gateway_out= $out \
-                # --grpc-gateway_opt=logtostderr=true,allow_colon_final_segments=true \
             echo "Patching generated go files to ignore staticcheck warnings"
             find $out -name "*.go" -exec sed -i "1s/^/\/\/lint:file-ignore SA1019 This code is generated\n/" {} +;
           '';
@@ -112,15 +108,9 @@
             cd uniond
 
             echo "Generating go code based on ./uniond/proto"
-            # cd proto
-            # buf mod update
-            # buf generate
-            # cd ..
             cp -r ${generate-uniond-proto}/union/x/* ./x/
 
             echo "Moving patched go sources to correct directories"
-            # cp -r ./union/x/* x/
-            # rm -rf ./union
 
             echo "Done! Generated .pb.go files are added to ./uniond/x"
           '';
