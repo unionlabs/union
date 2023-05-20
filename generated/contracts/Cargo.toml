@@ -1,0 +1,7 @@
+[dependencies]
+ethers = "2.0.4"
+
+[package]
+edition = "2021"
+name = "contracts"
+version = "0.0.0"

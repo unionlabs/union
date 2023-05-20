@@ -45,6 +45,7 @@ use bip32::{DerivationPath, Language, XPrv};
 // use cosmrs::crypto::secp256k1::SigningKey;
 
 mod cosmos;
+mod eth;
 
 #[tokio::main]
 async fn main() {

@@ -1,6 +1,7 @@
 aarch
 abci
 ABCI
+abigen
 accs
 Accs
 Acknowledgemets
@@ -269,6 +270,7 @@ openapiv
 outdir
 outdir
 outdir
+outfile
 overrrides
 oxalica
 paramaters
@@ -499,4 +501,3 @@ xqxp
 ypyp
 yqyp
 zkps
-λpxrx
