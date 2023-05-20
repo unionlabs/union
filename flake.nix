@@ -31,9 +31,7 @@
     };
 
     # uniond versions
-    "v0.0.2".url = "git+https://github.com/unionfi/union?ref=v0.0.2";
-    "v0.3.0".url = "git+https://github.com/unionfi/union?ref=v0.3.0";
-    "v0.4.2".url = "git+https://github.com/unionfi/union?ref=release-v0.4.2";
+    "v0.5.0".url = "git+https://github.com/unionfi/union?ref=release-v0.5.0";
   };
   outputs = inputs@{ self, nixpkgs, flake-parts, crane, ... }:
     flake-parts.lib.mkFlake { inherit inputs; } {
@@ -58,6 +56,7 @@
         let
           rust-nightly = pkgs.rust-bin.fromRustupToolchain {
             channel = "nightly-2022-12-07";
+            components = [ "rust-src" "rust-analyzer" ];
             profile = "default";
           };
 
@@ -258,7 +257,6 @@
                     jq
                     yq
                     solc
-                    # self'.packages.rust-stable
                   ]);
                 nativeBuildInputs = [ config.treefmt.build.wrapper ];
                 GOPRIVATE = "github.com/unionfi/*";
