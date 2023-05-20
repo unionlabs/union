@@ -57,14 +57,14 @@
       perSystem = { config, self', inputs', pkgs, system, lib, ... }:
         let
           rust-nightly = pkgs.rust-bin.fromRustupToolchain {
-            channel = "nightly-2022-12-07";
+            channel = "nightly-2023-05-16";
             components = [ "rust-src" "rust-analyzer" ];
             profile = "default";
           };
 
           withBuildTarget = target: crane.lib.${system}.overrideToolchain (pkgs.rust-bin.fromRustupToolchain {
-            channel = "nightly-2022-12-07";
-            profile = "minimal";
+            channel = "nightly-2023-05-16";
+            components = [ "cargo" "rustc" "rust-src" ];
             targets = [ target ];
           });
           craneLib = crane.lib.${system}.overrideToolchain rust-nightly;
