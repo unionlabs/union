@@ -388,7 +388,7 @@ fn get_wallet() -> XPrv {
 //     // connect from chain A to chain B
 
 //     // MsgUpdateClient updates the client on the initializing chain A with the latest consensus state of chain B
-//     let client_a_udpate = MsgUpdateClient {
+//     let client_a_update = MsgUpdateClient {
 //         client_id: CLIENT_B_ID.to_string(),
 //         client_message: todo!(),
 //         signer: todo!(),

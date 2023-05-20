@@ -25,6 +25,7 @@ authzkeeper
 authzmodule
 autocli
 autocliv
+Axelar
 bankkeeper
 banktypes
 baseapp
@@ -35,6 +36,8 @@ benluelo
 binaryen
 bindir
 bitarray
+bitslice
+bitvec
 Bitvector
 Blcok
 blocksync
@@ -46,6 +49,7 @@ capabilitytypes
 cargotoml
 cargotoml
 cargotoml
+CCTP
 cdctypes
 cdylib
 Chainer
@@ -78,9 +82,11 @@ consensys
 coreutils
 corsdomain
 Cosm
+cosmjs
 cosmosgen
 cosmosproto
 cosmossdk
+cosmrs
 cosmwasm
 counterparty
 Counterparty
@@ -191,6 +197,7 @@ interchainaccounts
 interfacetype
 ipetkov
 ipetkov
+journalctl
 jsonschema
 jwtsecret
 keccak
@@ -201,6 +208,7 @@ KEYPAIR
 keypairs
 kwallet
 laddr
+LCFUR
 lcgadget
 ldflags
 legendres
@@ -232,6 +240,7 @@ monniker
 muslc
 neighbouring
 neoeinstein
+netutil
 networkid
 nextest
 NIXBUILDNET
@@ -319,14 +328,21 @@ reflectionv
 regen
 Repr
 reqwest
+ripemd
+ripemd
+ripemd
 rlib
 rpath
 runtimeservices
+rustc
 RUSTFLAGS
 rustfmt
 rustfmt
+rustls
+rustls
 Rustup
 schemars
+schnorr
 secp
 Secp
 serde
@@ -363,6 +379,7 @@ substores
 sumbitter
 svrcmd
 syncmode
+taplo
 teku
 tempdir
 Tempdirs
@@ -423,6 +440,7 @@ Unjail
 unjailed
 Unmarshal
 unwithdrawn
+upgradability
 upgradeclient
 upgradekeeper
 upgradetypes
@@ -448,16 +466,10 @@ vuex
 wasmvm
 wasmvmstatic
 wctx
+webpki
 Woestijne
 xqxp
 ypyp
 yqyp
 λpxrx
 λpxrx
-rustc
-taplo
-netutil
-journalctl
-upgradability
-Axelar
-CCTP
