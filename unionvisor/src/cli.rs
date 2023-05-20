@@ -83,7 +83,7 @@ pub struct InitCmd {
     bindir: PathBuf,
 
     /// The fallback binary to use incase no symlink is found.
-    #[arg(short, long, default_value = "uniond")]
+    #[arg(long, default_value = "uniond")]
     binary_name: OsString,
 
     /// The network to create the configuration for (union-1 or union-testnet-1)
