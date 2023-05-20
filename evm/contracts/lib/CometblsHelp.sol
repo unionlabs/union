@@ -15,7 +15,6 @@ import "../core/IZKVerifier.sol";
 import "solidity-bytes-utils/contracts/BytesLib.sol";
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {GoogleProtobufAny as Any} from "../proto/GoogleProtobufAny.sol";
-import "forge-std/Test.sol";
 
 struct OptimizedConsensusState {
     bytes32 root;
@@ -109,7 +108,6 @@ library CometblsHelp {
 
     function merkleRoot(TendermintTypesHeader.Data memory h) internal view returns (bytes32) {
         require(h.validators_hash.length > 0, "Tendermint: hash can't be empty");
-        uint256 gas = gasleft();
         bytes memory hbz = TendermintVersionConsensus.encode(h.version);
         bytes memory pbt = GoogleProtobufTimestamp.encode(h.time);
         bytes memory bzbi = TendermintTypesBlockID.encode(h.last_block_id);
@@ -129,11 +127,7 @@ library CometblsHelp {
             MerkleTree.leafHash(Encoder.cdcEncode(h.evidence_hash)),
             MerkleTree.leafHash(Encoder.cdcEncode(h.proposer_address))
         ];
-        console.log("Cometbls: normalizedHeader(): ", gas - gasleft());
-        gas = gasleft();
-        bytes32 root = MerkleTree.optimizedBlockRoot(normalizedHeader);
-        console.log("Cometbls: hashFromByteSlices(): ", gas - gasleft());
-        return root;
+        return MerkleTree.optimizedBlockRoot(normalizedHeader);
     }
 
     function toOptimizedConsensusState(UnionIbcLightclientsCometblsV1ConsensusState.Data memory consensusState) internal pure returns (OptimizedConsensusState memory) {
