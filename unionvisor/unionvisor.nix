@@ -8,21 +8,24 @@
 
       unionvisor = crane.lib.buildPackage attrs;
 
+      meta = { # TODO: make this bundle specific
+        binary_name = "uniond";
+        versions_directory = "versions";
+        fallback_version = "v0.5.0";
+      };
+
       mkBundle = name: versions: pkgs.linkFarm "union-bundle-${name}" ([
         {
           name = "meta.json";
-          path = pkgs.writeText "meta.json" (builtins.toJSON {
-            binary_name = "uniond";
-            fallback_version = "v0.5.0";
-          });
+          path = pkgs.writeText "meta.json" (builtins.toJSON meta);
         }
-        {
-          name = "unionvisor";
-          path = "${unionvisor}/bin/unionvisor";
-        }
+        # {
+        #   name = "unionvisor";
+        #   path = "${unionvisor}/bin/unionvisor";
+        # }
       ] ++ map
         (version: {
-          name = "bins/${version}/uniond";
+          name = "${meta.versions_directory}/${version}/${meta.binary_name}";
           path = "${inputs'."${version}".packages.uniond}/bin/uniond";
         })
         versions);

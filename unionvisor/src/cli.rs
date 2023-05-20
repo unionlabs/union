@@ -53,17 +53,9 @@ enum Command {
 
 #[derive(Clone, Parser)]
 pub struct CallCmd {
-    /// The fallback binary to use incase no symlink is found.
-    #[arg(short, long, default_value = "genesis", env = "UNIONVISOR_FALLBACK")]
-    fallback: String,
-
     /// Path to where the binary bundle is stored.
     #[arg(short, long, env = "UNIONVISOR_BUNDLE")]
     bundle: PathBuf,
-
-    /// The fallback binary to use incase no symlink is found.
-    #[arg(short, long, default_value = "uniond")]
-    binary_name: OsString,
 
     args: Vec<OsString>,
 }
@@ -74,17 +66,9 @@ pub struct InitCmd {
     #[arg(short, long)]
     moniker: String,
 
-    /// The fallback binary to use incase no symlink is found.
-    #[arg(short, long, default_value = "genesis")]
-    fallback: String,
-
-    /// Path to where the binaries are stored.
+    /// Path to where the bundle of binaries is stored. Can be an immutable `/nix/store` dir.
     #[arg(short, long, env = "UNIONVISOR_BUNDLE")]
     bundle: PathBuf,
-
-    /// The fallback binary to use incase no symlink is found.
-    #[arg(long, default_value = "uniond")]
-    binary_name: OsString,
 
     /// The network to create the configuration for (union-1 or union-testnet-1)
     #[arg(short, long, default_value = "union-testnet-1")]
