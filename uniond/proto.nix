@@ -78,7 +78,7 @@
                 -I"${proto.ibcgo}/proto" \
                 -I"${proto.ics23}/proto" \
                 --grpc-gateway_out $out \
-                --grpc-gateway_opt=logtostderr=true \
+                --grpc-gateway_opt=logtostderr=true,allow_colon_final_segments=true \
                 --gocosmos_out $out \
                 --gocosmos_opt=plugins=interfacetype+grpc,Mgoogle/protobuf/any.proto=github.com/cosmos/cosmos-sdk/codec/types \
                 "$file"
@@ -108,9 +108,9 @@
             cd uniond
 
             echo "Generating go code based on ./uniond/proto"
+            echo "Moving patched go sources to correct directories"
             cp -r ${generate-uniond-proto}/union/x/* ./x/
 
-            echo "Moving patched go sources to correct directories"
 
             echo "Done! Generated .pb.go files are added to ./uniond/x"
           '';
