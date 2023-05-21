@@ -2,7 +2,7 @@
 let
   lodestar-init = pkgs.writeShellApplication {
     name = "lodestar-init";
-    runtimeInputs = [pkgs.coreutils pkgs.curl pkgs.jq config];
+    runtimeInputs = [ pkgs.coreutils pkgs.curl pkgs.jq config ];
     text = ''
       ETH_ENDPOINT=http://geth:8545
       EXECUTION_ENDPOINT=http://geth:8551
