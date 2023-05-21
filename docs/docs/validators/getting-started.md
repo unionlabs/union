@@ -8,7 +8,7 @@ This guide is intended for validators running on bare-metal servers and explains
 
 ## Obtaining uniond
 
-You can obtain `uniond` from a recent [release](https://github.com/unionfi/union/releases).
+You can obtain `uniond` from a recent [release](https://github.com/unionfi/union/releases/latest).
 
 ```bash
 curl -L -o uniond https://github.com/unionfi/union/releases/download/v0.5.0-rc1/uniond-x86_64-linux
