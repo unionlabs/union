@@ -12,6 +12,10 @@ module.exports = {
           type: "doc",
           id: "infrastructure/running-a-validator",
         },
+        {
+          type: "doc",
+          id: "infrastructure/docker-compose",
+        },
       ],
     },
     {
