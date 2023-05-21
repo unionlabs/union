@@ -1,5 +1,5 @@
 ---
-title: "Validator with docker-compose"
+title: "Docker Compose"
 ---
 
 This guide assumes you are familiar with running a Union validator. If not, start with the [validator guide](./running-a-validator.md).

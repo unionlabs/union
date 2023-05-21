@@ -6,15 +6,19 @@ module.exports = {
     "intro",
     {
       type: "category",
-      label: "Infrastructure",
+      label: "Validators",
       items: [
         {
           type: "doc",
-          id: "infrastructure/running-a-validator",
+          id: "validators/getting-started",
         },
         {
           type: "doc",
-          id: "infrastructure/docker-compose",
+          id: "validators/docker-compose",
+        },
+        {
+          type: "doc",
+          id: "validators/kubernetes",
         },
       ],
     },
