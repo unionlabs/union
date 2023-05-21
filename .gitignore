@@ -33,3 +33,6 @@ genesis.ssz
 r1cs.bin
 vk.bin
 pk.bin
+
+out
+cache
