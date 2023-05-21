@@ -222,8 +222,8 @@ impl InitCmd {
         let root = root.into();
         let config = root.join("config");
 
-        let bundle = Bundle::new(self.bundle)?;
-        let symlinker = Symlinker::new(root, bundle);
+        let bundle = Bundle::new(self.bundle.clone())?;
+        let symlinker = Symlinker::new(root.clone(), bundle);
 
         if symlinker.current_validated().is_err() {
             symlinker.make_fallback_link()?;
@@ -259,12 +259,12 @@ impl InitCmd {
 impl RunCmd {
     fn run(&self, root: impl Into<PathBuf>, logformat: LogFormat) -> Result<()> {
         let root = root.into();
-        let bundle = Bundle::new(self.bundle)?;
-        let symlinker = Symlinker::new(root, bundle);
+        let bundle = Bundle::new(self.bundle.clone())?;
+        let symlinker = Symlinker::new(root.clone(), bundle);
         supervisor::run_and_upgrade(
             root,
             logformat,
-            bundle,
+            symlinker,
             self.args.clone(),
             Duration::from_millis(self.poll_interval.unwrap_or(6000)),
         )?;
@@ -290,8 +290,8 @@ impl CallCmd {
         stderr: impl Into<Stdio>,
     ) -> Result<()> {
         let root = root.into();
-        let bundle = Bundle::new(self.bundle)?;
-        let symlinker = Symlinker::new(root, bundle);
+        let bundle = Bundle::new(self.bundle.clone())?;
+        let symlinker = Symlinker::new(root.clone(), bundle);
         let current = symlinker.current_validated()?;
         debug!(target: "unionvisor",
             binary = as_display(current.0.display()),

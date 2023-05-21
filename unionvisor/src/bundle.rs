@@ -16,9 +16,10 @@ use tracing::{debug, field::display as as_display, warn};
 ///     └── v0.5.0
 ///         └── uniond
 /// ```
+#[derive(Clone)]
 pub struct Bundle {
     /// The path of the bundle
-    path: PathBuf,
+    pub path: PathBuf,
     /// The deserialized meta info from `bundle/meta.json`
     meta: BundleMeta,
 }
@@ -39,7 +40,8 @@ pub struct ValidVersionPath(pub PathBuf);
 
 impl UnvalidatedVersionPath {
     pub fn validate(&self) -> Result<ValidVersionPath> {
-        self.is_available_logged().map(|_| ValidVersionPath(self.0))
+        self.is_available_logged()
+            .map(|_| ValidVersionPath(self.0.clone()))
     }
 
     fn is_available_logged(&self) -> Result<BinaryAvailability> {
@@ -80,7 +82,7 @@ impl UnvalidatedVersionPath {
 }
 
 /// Bundle meta info found in `bundle/meta.json`
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct BundleMeta {
     /// The name of the binary in `bundle/bins/$VERSION/`
     binary_name: OsString,

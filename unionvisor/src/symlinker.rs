@@ -1,14 +1,15 @@
-use std::path::PathBuf;
+use std::{fs, path::PathBuf};
 
 use crate::bundle::{Bundle, UnvalidatedVersionPath, ValidVersionPath};
-use color_eyre::Result;
+use color_eyre::{eyre::eyre, Result};
 use std::ffi::OsString;
 use tracing::debug;
 
 /// Symlinker will maintain a symlink `root/current` to point to a [`Bundle`]'s [`ValidVersionPath`]
+#[derive(Clone)]
 pub struct Symlinker {
     root: PathBuf,
-    bundle: Bundle,
+    pub bundle: Bundle,
 }
 
 impl Symlinker {
@@ -21,12 +22,12 @@ impl Symlinker {
         let current = self.current_path();
 
         if current.exists() {
-            debug!(target: "unionvisor", "removing old symlink at {}", current.display());
-            std::fs::remove_file(current)?;
+            debug!(target: "unionvisor", "removing old symlink at {}", &current.display());
+            std::fs::remove_file(&current)?;
         }
 
-        debug!(target: "unionvisor", "creating symlink from {} to {}", current.display(), new_path.0.display());
-        std::os::unix::fs::symlink(new_path.0, current);
+        debug!(target: "unionvisor", "creating symlink from {} to {}", &current.display(), new_path.0.display());
+        std::os::unix::fs::symlink(new_path.0, current)?;
 
         Ok(())
     }
@@ -36,7 +37,7 @@ impl Symlinker {
         let current = self.current_path();
 
         debug!(target: "unionvisor", "creating fallback symlink from {} to {}", current.display(), fallback_path.0.display());
-        std::os::unix::fs::symlink(fallback_path.0, current);
+        std::os::unix::fs::symlink(fallback_path.0, current)?;
 
         Ok(())
     }
@@ -52,6 +53,22 @@ impl Symlinker {
 
     pub fn current_validated(&self) -> Result<ValidVersionPath> {
         UnvalidatedVersionPath::new(self.current_path()).validate()
+    }
+
+    // TODO: Move version fetching logic to Bundle?
+    pub fn current_version(&self) -> Result<OsString> {
+        let mut actual =
+            fs::read_link(self.current_path()).map_err(|_| eyre!("Invalid `current` link"))?;
+
+        actual.pop(); // pop binary name (such as `uniond`) from the path
+        let version = actual.file_name();
+
+        match version {
+            None => Err(eyre!(
+                "Invalid bundle structure: binary parent directory is not a version"
+            )),
+            Some(v) => Ok(v.to_os_string()),
+        }
     }
 }
 
