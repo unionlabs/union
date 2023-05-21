@@ -1,5 +1,5 @@
 { ... }: {
-  perSystem = { self', pkgs, proto, forge, ... }:
+  perSystem = { self', inputs', pkgs, proto, forge, nix-filter, ... }:
     let
       solidity-stringutils = pkgs.fetchFromGitHub {
         owner = "Arachnid";
@@ -66,29 +66,50 @@
           cp -rL ${linkedLibs}/* $out
         '';
       };
-      mkEvmContracts = { optimizerRuns, doCheck ? true }: pkgs.stdenv.mkDerivation {
-        name = "evm-contracts";
-        src = ./.;
-        buildInputs = [ forge pkgs.solc ];
-        buildPhase = ''
-          forge build --offline --no-auto-detect
+      evmSources = nix-filter {
+        root = ./.;
+        include = [
+          "contracts"
+          "tests"
+        ];
+      };
+      foundryEnv = {
+        FOUNDRY_OPTIMIZER = "true";
+        FOUNDRY_VIA_IR = "true";
+        FOUNDRY_OPTIMIZER_RUNS = "1";
+        FOUNDRY_SRC = "${evmSources}/contracts";
+        FOUNDRY_TEST = "${evmSources}/tests/src";
+        FOUNDRY_LIBS = ''["${libraries}"]'';
+        FOUNDRY_GAS_REPORTS = ''["*"]'';
+      };
+      wrappedForge = pkgs.symlinkJoin {
+        name = "forge";
+        paths = [ forge ];
+        buildInputs = [ pkgs.makeWrapper ];
+        postBuild = ''
+          wrapProgram $out/bin/forge \
+            --append-flags "--offline --no-auto-detect" \
+            --set PATH ${pkgs.lib.makeBinPath [ pkgs.solc ]} \
+            --set SSL_CERT_FILE "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt" \
+             ${pkgs.lib.foldlAttrs (acc: name: value: "${acc} --set-default ${name} '${value}'") "" foundryEnv}
         '';
-        inherit doCheck;
+      };
+      mkEvmContracts = pkgs.stdenv.mkDerivation {
+        name = "evm-contracts";
+        src = evmSources;
+        buildInputs = [ wrappedForge ];
+        buildPhase = ''
+          forge build
+        '';
+        doCheck = true;
         checkPhase = ''
-          forge test --offline --no-auto-detect
+          forge test
         '';
         installPhase = ''
           mkdir -p $out
-          mv out/* $out
+          mv out $out
+          mv cache $out
         '';
-        FOUNDRY_SRC = "./contracts";
-        FOUNDRY_TEST = "./tests/src";
-        FOUNDRY_LIBS = ''["${libraries}"]'';
-        FOUNDRY_OPTIMIZER = "true";
-        FOUNDRY_VIA_IR = "true";
-        FOUNDRY_OPTIMIZER_RUNS = builtins.toString optimizerRuns;
-        FOUNDRY_GAS_REPORTS = ''["*"]'';
-        SSL_CERT_FILE = "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
       };
     in
     {
@@ -153,10 +174,36 @@
           '';
       };
 
-      packages.evm-contracts = mkEvmContracts {
-        optimizerRuns = 10000;
-        doCheck = true;
-      };
+      packages.evm-contracts = mkEvmContracts;
+
+      packages.evm-devnet-deploy =
+        let
+          deploy = { path, name, args ? "" }: ''
+            echo "Deploying ${name}..."
+            ${pkgs.lib.toUpper name}=$(forge create \
+                     --json \
+                     --rpc-url http://0.0.0.0:8545 \
+                     --private-key ${builtins.readFile ./../networks/genesis/devnet-evm/dev-key0.prv} \
+                     ${evmSources}/contracts/${path}:${name} ${args} | jq --raw-output .deployedTo)
+            echo "${name} => ''$${pkgs.lib.toUpper name}"
+          '';
+        in
+        pkgs.writeShellApplication {
+          name = "evm-deploy";
+          runtimeInputs = [ pkgs.jq wrappedForge ];
+          # Sadly, forge is trying to write back the cache file even if no change is needed :).
+          # For this reason we copy the artifacts in a temp folder and work from there.
+          text = ''
+            OUT="$(mktemp -d)"
+            cd "$OUT"
+            cp --no-preserve=mode -r ${self'.packages.evm-contracts}/* .
+            ${deploy { path = "core/02-client/IBCClient.sol"; name = "IBCClient"; }}
+            ${deploy { path = "core/03-connection/IBCConnection.sol"; name = "IBCConnection"; }}
+            ${deploy { path = "core/04-channel/IBCChannelHandshake.sol"; name = "IBCChannelHandshake"; }}
+            ${deploy { path = "core/04-channel/IBCPacket.sol"; name = "IBCPacket"; }}
+            ${deploy { path = "core/OwnableIBCHandler.sol"; name = "OwnableIBCHandler"; args = ''--constructor-args "$IBCCLIENT" "$IBCCONNECTION" "$IBCCHANNELHANDSHAKE" "$IBCPACKET"''; }}
+          '';
+        };
     };
 }
 

@@ -29,11 +29,12 @@
       url = "github:ipetkov/crane";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    nix-filter.url = "github:numtide/nix-filter";
 
     # uniond versions
     "v0.5.0".url = "git+https://github.com/unionfi/union?ref=release-v0.5.0";
   };
-  outputs = inputs@{ self, nixpkgs, flake-parts, crane, foundry, treefmt-nix, pre-commit-hooks, ... }:
+  outputs = inputs@{ self, nixpkgs, flake-parts, nix-filter, crane, foundry, treefmt-nix, pre-commit-hooks, ... }:
     flake-parts.lib.mkFlake { inherit inputs; } {
       systems =
         [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" "x86_64-darwin" ];
@@ -120,6 +121,8 @@
               };
 
               forge = foundry.defaultPackage.${system};
+
+              nix-filter = nix-filter.lib;
 
               crane = {
                 lib = craneLib;
