@@ -1,10 +1,9 @@
 { pkgs, config, validatorCount }:
 let
-  lodestar-init = pkgs.writeTextFile {
+  lodestar-init = pkgs.writeShellApplication {
     name = "lodestar-init";
+    runtimeInputs = [pkgs.coreutils pkgs.curl pkgs.jq config];
     text = ''
-      #!/usr/bin/env sh
-
       ETH_ENDPOINT=http://geth:8545
       EXECUTION_ENDPOINT=http://geth:8551
       curl "$ETH_ENDPOINT" \
@@ -31,52 +30,45 @@ let
         --params.BELLATRIX_FORK_EPOCH=0 \
         --params.CAPELLA_FORK_EPOCH=0 \
         --eth1=true \
-        --jwt-secret=/dev-jwt.prv \
+        --jwt-secret=${config}/dev-jwt.prv \
         --rest.namespace="*"
     '';
-    executable = true;
-    destination = "/lodestar-init";
   };
-
-  context =
-    let
-      files = pkgs.symlinkJoin {
-        name = "docker-context";
-        paths = [
-          lodestar-init
-          config
-          (pkgs.writeTextFile {
-            name = "Dockerfile";
-            text = ''
-              FROM chainsafe/lodestar:v1.8.0
-              RUN apk update && apk add jq curl
-              COPY lodestar-init /bin/lodestar-init
-              COPY dev-jwt.prv /dev-jwt.prv
-            '';
-            destination = "/Dockerfile";
-          })
-        ];
-      };
-    in
-    pkgs.stdenv.mkDerivation {
-      name = "context";
-      phases = [ "installPhase" ];
-      installPhase = ''
-        mkdir $out
-        cp -rL ${files}/* $out
-      '';
-    };
 in
 {
+  build = {
+    image = pkgs.lib.mkForce (pkgs.dockerTools.streamLayeredImage {
+      name = "lodestar-extended";
+      fromImage = pkgs.dockerTools.pullImage ({
+        imageName = "chainsafe/lodestar";
+        imageDigest = "sha256:5e262f6e631ed3d60ba867200d8b53da6e06ba965eac1a0fdc9b0621c5f65a61";
+        finalImageName = "chainsafe/lodestar";
+        finalImageTag = "v1.8.0";
+      } // (if pkgs.stdenv.isx86_64 then {
+        sha256 = "1p5kc4gs9g6igcs4g0ppgji50xkq79jkyyg3z9cdn2d9m5vam4fm";
+        arch = "amd64";
+      } else {
+        sha256 = "0gnkk3y90wcz78ngqx341kfh25zbjm15z3jdidwl7vh5hbmpsjrz";
+        arch = "arm64";
+      }));
+      contents = [
+        lodestar-init
+      ];
+      config = {
+        # dockerTools only preserves Env from the base "fromImage"
+        # this is directly coming from https://github.com/ChainSafe/lodestar/blob/402c46f0d9f1f964066efb3e0e53863d6a913a80/Dockerfile#L39
+        WorkingDir = "/usr/app";
+        Entrypoint = pkgs.lib.meta.getExe lodestar-init;
+      };
+    });
+  };
   service = {
-    build = { context = "${context}"; };
     stop_signal = "SIGINT";
     networks = [ "union-devnet" ];
     ports = [
       # Beacon node rest API
       "9596:9596"
     ];
-    entrypoint = "lodestar-init";
     depends_on = {
       geth = {
         condition = "service_healthy";
