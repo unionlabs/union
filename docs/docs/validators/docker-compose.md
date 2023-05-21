@@ -2,7 +2,7 @@
 title: "Docker Compose"
 ---
 
-This guide assumes you are familiar with running a Union validator. If not, start with the [validator guide](./running-a-validator.md).
+This guide assumes you are familiar with running a Union validator. If not, start with the [validator guide](./getting-started).
 
 [docker-compose](https://docs.docker.com/compose/) is a tool for running containers in a declarative manner. This allows for better automation, upgrades, and monitoring.
 
@@ -24,7 +24,7 @@ services:
     restart: unless-stopped
 ```
 
-The only section of significance is the `volumes` key. Here we map an already initialized `~/.uniond` directory to the `node` service. The `~/.uniond` directory should contain a `config` and `data` directory. To properly set these up, check out the validator [guide](./running-a-validator.md#initialization).
+The only section of significance is the `volumes` key. Here we map an already initialized `~/.uniond` directory to the `node` service. The `~/.uniond` directory should contain a `config` and `data` directory. To properly set these up, check out the validator [guide](./getting-started#initialization).
 
 ## Monitoring
 
