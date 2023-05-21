@@ -46,7 +46,7 @@ enum Command {
     /// Starts unionvisor, intended to be run under systemd or as a daemon
     Run(RunCmd),
 
-    /// Initializes a local directory to join the union network.
+    /// Initializes a local directory to join the union network. FOOBAR
     Init(InitCmd),
 
     /// Merges toml or json configuration files.
@@ -219,6 +219,7 @@ pub enum InitState {
 
 impl InitCmd {
     fn init(&self, root: impl Into<PathBuf>) -> Result<InitState> {
+        debug!("in init");
         let root = root.into();
         let config = root.join("config");
 

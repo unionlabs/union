@@ -1,8 +1,8 @@
-use color_eyre::Result;
+use color_eyre::{eyre::eyre, Result};
 use serde::{Deserialize, Serialize};
 use std::ffi::OsString;
 
-use std::path::{PathBuf};
+use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use std::{fs, io};
 use tracing::error;
@@ -85,9 +85,9 @@ impl UnvalidatedVersionPath {
 #[derive(Clone, Serialize, Deserialize)]
 pub struct BundleMeta {
     /// The name of the binary in `bundle/bins/$VERSION/`
-    binary_name: OsString,
+    binary_name: String,
     /// The fallback version directory in `bundle/bins/`
-    fallback_version: OsString,
+    fallback_version: String,
     /// The directory containing a directory for each version
     versions_directory: PathBuf,
 }
@@ -103,8 +103,10 @@ impl Bundle {
         let path: PathBuf = path.into();
 
         // Read `bundle/meta.json` and deserialize into `BundleMeta`
-        let meta = path.join("meta");
-        let meta = fs::read_to_string(meta)?;
+        let meta = path.join("meta.json");
+        let meta = fs::read_to_string(meta).map_err(|_| {
+            eyre!("Can't find meta.json in bundle. Please make sure it exists at bundle/meta.json")
+        })?;
         let meta = serde_json::from_str(&meta)?;
 
         let bundle = Bundle { path, meta };
@@ -123,7 +125,8 @@ impl Bundle {
     }
 
     pub fn fallback_path(&self) -> Result<ValidVersionPath> {
-        self.path_to(&self.meta.fallback_version).validate()
+        let fallback_version = &self.meta.fallback_version.clone().into();
+        self.path_to(fallback_version).validate()
     }
 
     // pub fn current_checked(&self) -> Result<PathBuf> {
