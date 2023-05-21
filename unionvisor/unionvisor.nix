@@ -8,7 +8,8 @@
 
       unionvisor = crane.lib.buildPackage attrs;
 
-      meta = { # TODO: make this bundle specific
+      meta = {
+        # TODO: make this bundle specific
         binary_name = "uniond";
         versions_directory = "versions";
         fallback_version = "v0.5.0";
