@@ -49,7 +49,7 @@ impl Supervisor {
         args: I,
     ) -> Result<()> {
         let program = self.symlinker.current_validated()?;
-        let handle = std::process::Command::new(&program.0)
+        let handle = std::process::Command::new(program.0)
             .args(vec!["--log_format", logformat.as_str()])
             .arg("start")
             .args(args)

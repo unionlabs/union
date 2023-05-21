@@ -219,7 +219,6 @@ pub enum InitState {
 
 impl InitCmd {
     fn init(&self, root: impl Into<PathBuf>) -> Result<InitState> {
-        debug!("in init");
         let root = root.into();
         let config = root.join("config");
 
