@@ -1,0 +1,32 @@
+name: Docs
+
+on:
+  push:
+    branches:
+    - main
+
+env:
+  NIX_VERSION: nix-2.13.2
+  NIXPKGS_CHANNEL: nixos-22.11
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3  
+        with:
+          lfs: true
+      - uses: cachix/install-nix-action@v20
+        with:
+          nix_path: nixpkgs=channel:${{ env.NIXPKGS_CHANNEL }}
+          github_access_token: ${{ github.token }}
+      - run: |
+          nix-channel --add https://nixos.org/channels/${{ env.NIXPKGS_CHANNEL }} nixpkgs
+          nix-channel --update
+          nix-env -iA nixpkgs.nodePackages.vercel
+      - name: "Publish to Vercel"
+        working-directory: docs
+        run: |
+          vercel pull --yes --environment=production --token=${{secrets.VERCEL_TOKEN}}
+          vercel build --prod --token=${{secrets.VERCEL_TOKEN}}
+          vercel deploy --prod --prebuilt --token=${{secrets.VERCEL_TOKEN}}

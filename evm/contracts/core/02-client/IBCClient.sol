@@ -6,7 +6,6 @@ import "../25-handler/IBCMsgs.sol";
 import "../24-host/IBCStore.sol";
 import "../24-host/IBCCommitment.sol";
 import "../02-client/IIBCClient.sol";
-import "forge-std/Test.sol";
 
 /**
  * @dev IBCClient is a contract that implements [ICS-2](https://github.com/cosmos/ibc/tree/main/spec/core/ics-002-client-semantics).
@@ -48,13 +47,10 @@ contract IBCClient is IBCStore, IIBCClient {
      */
     function updateClient(IBCMsgs.MsgUpdateClient calldata msg_) external override {
         require(commitments[IBCCommitment.clientStateCommitmentKey(msg_.clientId)] != bytes32(0), "IBCClient: no state");
-        uint256 gas = gasleft();
         (bytes32 clientStateCommitment, ConsensusStateUpdate[] memory updates, bool ok) =
             getClient(msg_.clientId).updateClient(msg_.clientId, msg_.clientMessage);
-        console.log("IBCClient.getClient(clientId).updateClient(): ", gas - gasleft());
         require(ok, "IBCClient: failed to update client");
 
-        gas = gasleft();
         // update commitments
         commitments[keccak256(IBCCommitment.clientStatePath(msg_.clientId))] = clientStateCommitment;
         for (uint256 i = 0; i < updates.length; i++) {
@@ -62,7 +58,6 @@ contract IBCClient is IBCStore, IIBCClient {
                 msg_.clientId, updates[i].height.revision_number, updates[i].height.revision_height
             )] = updates[i].consensusStateCommitment;
         }
-        console.log("IBCClient.updateCommitments()", gas - gasleft());
     }
 
     function generateClientIdentifier(string calldata clientType) private returns (string memory) {

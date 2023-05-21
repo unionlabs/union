@@ -31,11 +31,9 @@
     };
 
     # uniond versions
-    "v0.0.2".url = "git+https://github.com/unionfi/union?ref=v0.0.2";
-    "v0.3.0".url = "git+https://github.com/unionfi/union?ref=v0.3.0";
-    "v0.4.2".url = "git+https://github.com/unionfi/union?ref=release-v0.4.2";
+    "v0.5.0".url = "git+https://github.com/unionfi/union?ref=release-v0.5.0";
   };
-  outputs = inputs@{ self, nixpkgs, flake-parts, crane, ... }:
+  outputs = inputs@{ self, nixpkgs, flake-parts, crane, foundry, treefmt-nix, pre-commit-hooks, ... }:
     flake-parts.lib.mkFlake { inherit inputs; } {
       systems =
         [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" "x86_64-darwin" ];
@@ -51,22 +49,23 @@
         ./tools/libwasmvm/libwasmvm.nix
         ./networks/devnet.nix
         ./networks/genesis/devnet.nix
-        inputs.treefmt-nix.flakeModule
-        inputs.pre-commit-hooks.flakeModule
+        treefmt-nix.flakeModule
+        pre-commit-hooks.flakeModule
       ];
       perSystem = { config, self', inputs', pkgs, system, lib, ... }:
         let
           rust-nightly = pkgs.rust-bin.fromRustupToolchain {
             channel = "nightly-2022-12-07";
+            components = [ "rust-src" "rust-analyzer" ];
             profile = "default";
           };
 
-          withBuildTarget = target: self.inputs.crane.lib.${system}.overrideToolchain (pkgs.rust-bin.fromRustupToolchain {
+          withBuildTarget = target: crane.lib.${system}.overrideToolchain (pkgs.rust-bin.fromRustupToolchain {
             channel = "nightly-2022-12-07";
             components = [ "cargo" "rustc" "rust-src" ];
             targets = [ target ];
           });
-          craneLib = self.inputs.crane.lib.${system}.overrideToolchain rust-nightly;
+          craneLib = crane.lib.${system}.overrideToolchain rust-nightly;
 
           mkChecks = pkgName: checks: pkgs.lib.mapAttrs' (name: value: { name = "${pkgName}-${name}"; value = value; }) checks;
 
@@ -119,6 +118,8 @@
                   };
                 };
               };
+
+              forge = foundry.defaultPackage.${system};
 
               crane = {
                 lib = craneLib;
@@ -216,7 +217,7 @@
               '';
             };
 
-            pre-commit-check = inputs.pre-commit-hooks.lib.${system}.run {
+            pre-commit-check = pre-commit-hooks.lib.${system}.run {
               src = ./.;
               hooks = {
                 commitizen.enable = true;
@@ -258,7 +259,6 @@
                     jq
                     yq
                     solc
-                    # self'.packages.rust-stable
                   ]);
                 nativeBuildInputs = [ config.treefmt.build.wrapper ];
                 GOPRIVATE = "github.com/unionfi/*";
@@ -269,10 +269,9 @@
               githook = pkgs.mkShell (baseShell // {
                 inherit (self'.checks.pre-commit-check) shellHook;
               });
-              # @hussein-aitlahcen: require `--option sandbox relaxed`
               evm = pkgs.mkShell (baseShell // {
                 buildInputs = baseShell.buildInputs ++ [
-                  inputs.foundry.defaultPackage.${system}
+                  foundry.defaultPackage.${system}
                   pkgs.solc
                   pkgs.go-ethereum
                 ];

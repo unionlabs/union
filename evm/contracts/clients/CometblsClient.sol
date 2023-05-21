@@ -10,11 +10,10 @@ import "../proto/tendermint/types/canonical.sol";
 import "../proto/union/ibc/lightclients/cometbls/v1/cometbls.sol";
 import "../proto/ibc/lightclients/wasm/v1/wasm.sol";
 import {GoogleProtobufAny as Any} from "../proto/GoogleProtobufAny.sol";
-import "solidity-bytes-utils/contracts/BytesLib.sol";
+import "solidity-bytes-utils/BytesLib.sol";
 import "../lib/CometblsHelp.sol";
 import "../lib/ICS23.sol";
 import "../core/IZKVerifier.sol";
-import "forge-std/Test.sol";
 
 contract CometblsClient is ILightClient {
     using BytesLib for bytes;
@@ -25,6 +24,7 @@ contract CometblsClient is ILightClient {
     using CometblsHelp for UnionIbcLightclientsCometblsV1ClientState.Data;
     using CometblsHelp for UnionIbcLightclientsCometblsV1ConsensusState.Data;
     using CometblsHelp for bytes;
+    using CometblsHelp for IZKVerifier;
 
     // OptimizedConsensusState
     mapping(string => UnionIbcLightclientsCometblsV1ClientState.Data) internal clientStates;
@@ -114,20 +114,15 @@ contract CometblsClient is ILightClient {
         onlyIBC
         returns (bytes32, ConsensusStateUpdate[] memory, bool)
     {
-        uint256 gas = gasleft();
         (UnionIbcLightclientsCometblsV1Header.Data memory header, bool ok) =
             clientMessageBytes.unmarshalHeaderEthABI();
         require(ok, "LC: invalid block header");
-        console.log("Cometbls: Header.unmarshal(): ", gas - gasleft());
 
-        gas = gasleft();
         UnionIbcLightclientsCometblsV1ClientState.Data storage clientState =
             clientStates[clientId];
         OptimizedConsensusState storage consensusState =
             consensusStates[stateIndex(clientId, header.trusted_height.toUint128())];
-        console.log("Cometbls: loadState(): ", gas - gasleft());
 
-        gas = gasleft();
         uint64 untrustedHeight = uint64(header.signed_header.commit.height);
         uint64 trustedHeight = header.trusted_height.revision_height;
         require(
@@ -161,7 +156,6 @@ contract CometblsClient is ILightClient {
             untrustedTimestamp < maxClockDrift,
             "LC: header back to the future"
         );
-        console.log("Cometbls: validate()", gas - gasleft());
 
         /*
          We want to verify that 1/3 of trusted valset & 2/3 of untrusted valset signed.
@@ -177,31 +171,24 @@ contract CometblsClient is ILightClient {
             untrustedValidatorsHash = header.untrusted_validator_set_root.toBytes32(0);
         }
 
-        gas = gasleft();
         bytes32 expectedBlockHash = header.signed_header.header.merkleRoot();
-        console.log("Cometbls: Header.merkleRoot(): ", gas - gasleft());
 
         require(
             header.signed_header.commit.block_id.hash.toBytes32(0) == expectedBlockHash,
             "LC: commit.block_id.hash != expectedBlockHash"
         );
 
-        gas = gasleft();
         TendermintTypesCanonicalVote.Data memory vote =
             header.signed_header.commit.toCanonicalVote(clientState.chain_id, expectedBlockHash);
         bytes memory signedVote = Encoder.encodeDelim(TendermintTypesCanonicalVote.encode(vote));
-        console.log("Cometbls: Commit.toSignedVote()", gas - gasleft());
 
-        gas = gasleft();
-        ok = CometblsHelp.verifyZKP(
-            verifier,
+        ok = verifier.verifyZKP(
             trustedValidatorsHash,
             untrustedValidatorsHash,
             signedVote,
             header.zero_knowledge_proof
         );
         require(ok, "LC: invalid ZKP");
-        console.log("Cometbls: ZKP.verify()", gas - gasleft());
 
         IbcCoreClientV1Height.Data memory newHeight =
             IbcCoreClientV1Height.Data({
@@ -211,39 +198,29 @@ contract CometblsClient is ILightClient {
 
         uint128 newHeightIdx = newHeight.toUint128();
 
-        gas = gasleft();
         // Update states
         if (untrustedHeight > clientState.latest_height.revision_height) {
             clientState.latest_height = newHeight;
         }
-        console.log("Cometbls: ClientState.update()", gas - gasleft());
 
-        gas = gasleft();
         consensusState.timestamp = uint64(header.signed_header.header.time.secs);
         consensusState.root = header.signed_header.header.app_hash.toBytes32(0);
         consensusState.nextValidatorsHash = untrustedValidatorsHash;
-        console.log("Cometbls: ConsensusState.update()", gas - gasleft());
 
-        gas = gasleft();
         ConsensusStateUpdate[] memory updates = new ConsensusStateUpdate[](1);
         updates[0] =
             ConsensusStateUpdate({
                 consensusStateCommitment: keccak256(abi.encode(consensusState)),
                 height: newHeight
             });
-        console.log("Cometbls: constructConsensusStateUpdate()", gas - gasleft());
 
-        gas = gasleft();
         processedMoments[stateIndex(clientId, newHeightIdx)] =
             ProcessedMoment({
                 timestamp: uint128(block.timestamp),
                 height: uint128(block.number)
             });
-        console.log("Cometbls: updateProcessed()", gas - gasleft());
 
-        gas = gasleft();
         bytes32 newClientState = keccak256(clientState.marshalClientStateEthABI());
-        console.log("Cometbls: ClientState.marshal()", gas - gasleft());
 
         return (newClientState, updates, true);
     }
