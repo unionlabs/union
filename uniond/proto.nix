@@ -53,14 +53,14 @@
           name = "generate-uniond-proto";
           pname = "generate-uniond-proto";
           src = ./.;
-          buildInputs = [ 
-            pkgs.protobuf 
-            pkgs.protoc-gen-go 
+          buildInputs = [
+            pkgs.protobuf
+            pkgs.protoc-gen-go
             pkgs.protoc-gen-go-grpc
-            pkgs.grpc-gateway
             pkgs.gnused
             cosmos-proto
             gogoproto
+            grpc-gateway
           ];
 
           buildPhase = ''
@@ -77,10 +77,10 @@
                 -I"${proto.cosmosproto}/proto" \
                 -I"${proto.ibcgo}/proto" \
                 -I"${proto.ics23}/proto" \
-                --gocosmos_out $out \
-                --gocosmos_opt=plugins=interfacetype+grpc,Mgoogle/protobuf/any.proto=github.com/cosmos/cosmos-sdk/codec/types \
                 --grpc-gateway_out $out \
                 --grpc-gateway_opt=logtostderr=true \
+                --gocosmos_out $out \
+                --gocosmos_opt=plugins=interfacetype+grpc,Mgoogle/protobuf/any.proto=github.com/cosmos/cosmos-sdk/codec/types \
                 "$file"
             done
 
