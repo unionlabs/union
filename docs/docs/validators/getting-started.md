@@ -10,13 +10,13 @@ This guide is intended for validators running on bare-metal servers and explains
 
 You can obtain `uniond` from a recent [release](https://github.com/unionfi/union/releases/latest).
 
-```bash
+```sh
 curl -L -o uniond https://github.com/unionfi/union/releases/download/v0.5.0-rc1/uniond-x86_64-linux
 ```
 
 Verify that the binary works on your server by running:
 
-```bash
+```sh
 ./uniond --help
 ```
 
@@ -30,7 +30,7 @@ mv ./uniond /usr/bin/
 
 We also provide containers in our [package registry](https://github.com/unionfi/union/pkgs/container/uniond).
 
-```bash
+```sh
 docker pull ghcr.io/unionfi/uniond:v0.5.0-rc1
 ```
 
