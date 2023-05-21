@@ -241,6 +241,7 @@ muslc
 neighbouring
 neoeinstein
 netutil
+netutil
 networkid
 nextest
 NIXBUILDNET
@@ -335,6 +336,7 @@ rlib
 rpath
 runtimeservices
 rustc
+rustc
 RUSTFLAGS
 rustfmt
 rustfmt
@@ -378,7 +380,9 @@ stylesheet
 substores
 sumbitter
 svrcmd
+symlinker
 syncmode
+taplo
 taplo
 teku
 tempdir
