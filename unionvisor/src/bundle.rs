@@ -1,12 +1,12 @@
 use color_eyre::Result;
 use serde::{Deserialize, Serialize};
 use std::ffi::OsString;
-use std::fs::File;
-use std::path::{Path, PathBuf};
+
+use std::path::{PathBuf};
 use std::process::{Command, Stdio};
 use std::{fs, io};
 use tracing::error;
-use tracing::{debug, field::display as as_display, warn};
+use tracing::{debug, field::display as as_display};
 
 /// Bundles should have the following structure on the filesystem:
 /// ```text
