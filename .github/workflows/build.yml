@@ -20,7 +20,7 @@ jobs:
       nixbuild_token: ${{ secrets.nixbuild_token }}
       access-tokens: github.com=${{ secrets.GITHUB_TOKEN }}
     with:
-      filter_builds: '((.top_attr == "checks" or .top_attr == "packages") and (.system == "x86_64-linux" or .system == "aarch64-linux") and (.attr != "bundle-mainnet" and .attr != "bundle-testnet" and .attr != "generate-evm-proto" and .attr != "generate-prover-proto" and .attr != "pre-commit-check" and .attr != "pre-commit" and .attr != "devnet" and .attr != "devnet-cosmos" and .attr != "devnet-evm" and .attr != "rust-proto" and .attr != "generate-rust-proto" and .attr != "evm-contracts")) or (.attr == "evm-contracts" and .system == "x86_64-linux") or (.attr == "devnet" and .system == "x86_64-linux") or (.attr == "devnet-cosmos" and .system == "x86_64-linux") or (.attr == "devnet-evm" and .system == "x86_64-linux")'
+      filter_builds: '((.top_attr == "checks" or .top_attr == "packages") and (.system == "x86_64-linux" or .system == "aarch64-linux") and (.attr != "bundle-mainnet" and .attr != "bundle-testnet" and .attr != "generate-evm-proto" and .attr != "generate-prover-proto" and .attr != "gen-proto" and .attr != "pre-commit-check" and .attr != "pre-commit" and .attr != "devnet" and .attr != "devnet-cosmos" and .attr != "devnet-evm" and .attr != "rust-proto" and .attr != "generate-rust-proto" and .attr != "evm-contracts")) or (.attr == "evm-contracts" and .system == "x86_64-linux") or (.attr == "devnet" and .system == "x86_64-linux") or (.attr == "devnet-cosmos" and .system == "x86_64-linux") or (.attr == "devnet-evm" and .system == "x86_64-linux")'
   preview:
     runs-on: ubuntu-latest
     outputs:

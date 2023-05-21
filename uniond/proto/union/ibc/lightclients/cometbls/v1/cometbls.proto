@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package union.ibc.lightclients.cometbls.v1;
 
+option go_package = "github.com/unionfi/cometbls/types";
+
 import "tendermint/types/types.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
