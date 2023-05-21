@@ -28,4 +28,4 @@ The only section of significance is the `volumes` key. Here we map an already in
 
 ## Monitoring
 
-We suggest adding additional monitoring services, such as [datadog](https://www.datadoghq.com/)
+We suggest adding additional monitoring services, such as [datadog](https://www.datadoghq.com/).
