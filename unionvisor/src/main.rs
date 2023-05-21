@@ -6,6 +6,7 @@ mod init;
 mod logging;
 mod network;
 mod supervisor;
+mod symlinker;
 mod watcher;
 
 #[cfg(test)]

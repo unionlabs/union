@@ -1,6 +1,7 @@
 use crate::{
     bundle::Bundle,
     logging::LogFormat,
+    symlinker::Symlinker,
     watcher::{FileReader, FileReaderError},
 };
 use color_eyre::{eyre::eyre, Result};
@@ -18,11 +19,9 @@ pub struct Supervisor {
     /// The path where the subprocess is called, containing configuration files and more importantly, the
     /// data dir.
     root: PathBuf,
-
-    /// The binary to run which will be supervised. This should be the name of the binary, which will be run by the
-    /// supervisor as ./{binary}.
-    binary: PathBuf,
-
+    /// Symlinker manages the `root/current` symlink and swaps the link to a new version on upgrade
+    symlinker: Symlinker,
+    /// The child process that is being supervised
     child: Option<Child>,
 }
 
@@ -36,10 +35,10 @@ impl Drop for Supervisor {
 }
 
 impl Supervisor {
-    pub fn new(root: impl Into<PathBuf>, current: impl Into<PathBuf>) -> Self {
+    pub fn new(root: impl Into<PathBuf>, symlinker: Symlinker) -> Self {
         Self {
             root: root.into(),
-            binary: current.into(),
+            symlinker,
             child: None,
         }
     }

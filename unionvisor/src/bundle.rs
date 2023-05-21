@@ -24,14 +24,15 @@ pub struct Bundle {
 }
 
 /// Version paths that have not been validated
+/// The inner [`PathBuf`] is not public as it should not be accessed
 pub struct UnvalidatedVersionPath(PathBuf);
 
 /// Version paths that have been validated.
 /// This means that the binary at this path produces valid output when called with --help
-pub struct ValidVersionPath(PathBuf);
+pub struct ValidVersionPath(pub PathBuf);
 
 impl UnvalidatedVersionPath {
-    fn validate(&self) -> Result<ValidVersionPath> {
+    pub fn validate(&self) -> Result<ValidVersionPath> {
         self.is_available_logged().map(|_| ValidVersionPath(self.0))
     }
 
@@ -104,13 +105,17 @@ impl Bundle {
     }
 
     /// Obtains the path to the binary within the bundle with version `version`.
-    pub fn path_to(&self, version: &str) -> UnvalidatedVersionPath {
+    pub fn path_to(&self, version: &OsString) -> UnvalidatedVersionPath {
         UnvalidatedVersionPath(
             self.path
                 .join(&self.meta.versions_directory)
                 .join(version)
                 .join(&self.meta.binary_name),
         )
+    }
+
+    pub fn fallback_path(&self) -> Result<ValidVersionPath> {
+        self.path_to(&self.meta.fallback_version).validate()
     }
 
     // pub fn current_checked(&self) -> Result<PathBuf> {
@@ -137,23 +142,3 @@ impl Bundle {
     //     Ok(())
     // }
 }
-
-// #[cfg(test)]
-// mod tests {
-//     use crate::testdata;
-
-//     use super::*;
-
-//     #[test]
-//     fn test_swap() {
-//         let dir = testdata::temp_dir_with(&["test_swap"]);
-//         let home = dir.into_path().join("test_swap");
-
-//         std::os::unix::fs::symlink(home.join("bins/bar/uniond"), home.join("bins/current"))
-//             .expect("should be able to symlink");
-
-//         let bindir = Bundle::new(home.clone(), home.join("bins"), "bar", "uniond")
-//             .expect("should be able to create a bindir");
-//         bindir.swap("foo").unwrap();
-//     }
-// }
