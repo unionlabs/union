@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use crate::bundle::Bundle;
+use crate::bundle::{Bundle, UnvalidatedVersionPath, ValidVersionPath};
 use color_eyre::Result;
 use std::ffi::OsString;
 use tracing::debug;
@@ -26,18 +26,32 @@ impl Symlinker {
         }
 
         debug!(target: "unionvisor", "creating symlink from {} to {}", current.display(), new_path.0.display());
-
         std::os::unix::fs::symlink(new_path.0, current);
 
         Ok(())
     }
 
-    pub fn current_path(&self) -> PathBuf {
+    pub fn make_fallback_link(&self) -> Result<()> {
+        let fallback_path = self.bundle.fallback_path()?;
+        let current = self.current_path();
+
+        debug!(target: "unionvisor", "creating fallback symlink from {} to {}", current.display(), fallback_path.0.display());
+        std::os::unix::fs::symlink(fallback_path.0, current);
+
+        Ok(())
+    }
+
+    /// Only used by the `Symlinker` internally. Consumers of the current link should use [`current_validated`]
+    fn current_path(&self) -> PathBuf {
         self.root.join("current")
     }
 
-    pub fn previous_path(&self) -> PathBuf {
-        self.root.join("previous")
+    // pub fn previous_path(&self) -> PathBuf {
+    //     self.root.join("previous")
+    // }
+
+    pub fn current_validated(&self) -> Result<ValidVersionPath> {
+        UnvalidatedVersionPath::new(self.current_path()).validate()
     }
 }
 

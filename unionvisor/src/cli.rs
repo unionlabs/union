@@ -222,6 +222,13 @@ impl InitCmd {
         let root = root.into();
         let config = root.join("config");
 
+        let bundle = Bundle::new(self.bundle)?;
+        let symlinker = Symlinker::new(root, bundle);
+
+        if symlinker.current_validated().is_err() {
+            symlinker.make_fallback_link()?;
+        }
+
         if config.exists() {
             if self.allow_dirty {
                 return Ok(InitState::None);
@@ -267,31 +274,32 @@ impl RunCmd {
 
 impl CallCmd {
     /// Executes the logic for the Call variant. Will panic if the enum is not Command::Call.
-    fn call(&self, home: impl Into<PathBuf>) -> Result<()> {
-        self.call_inner(home, Stdio::inherit(), Stdio::inherit(), Stdio::inherit())
+    fn call(&self, root: impl Into<PathBuf>) -> Result<()> {
+        self.call_inner(root, Stdio::inherit(), Stdio::inherit(), Stdio::inherit())
     }
 
-    fn call_silent(&self, home: impl Into<PathBuf>) -> Result<()> {
-        self.call_inner(home, Stdio::null(), Stdio::null(), Stdio::null())
+    fn call_silent(&self, root: impl Into<PathBuf>) -> Result<()> {
+        self.call_inner(root, Stdio::null(), Stdio::null(), Stdio::null())
     }
 
     fn call_inner(
         &self,
-        home: impl Into<PathBuf>,
+        root: impl Into<PathBuf>,
         stdin: impl Into<Stdio>,
         stdout: impl Into<Stdio>,
         stderr: impl Into<Stdio>,
     ) -> Result<()> {
-        let home = home.into();
+        let root = root.into();
         let bundle = Bundle::new(self.bundle)?;
-        // let current = bundle.current_checked()?;
-        // debug!(target: "unionvisor",
-        //     binary = as_display(current.display()),
-        //     home = as_display(home.display()),
-        //     "calling uniond binary at {}",
-        //     as_display(current.display())
-        // );
-        let mut child = std::process::Command::new(&current)
+        let symlinker = Symlinker::new(root, bundle);
+        let current = symlinker.current_validated()?;
+        debug!(target: "unionvisor",
+            binary = as_display(current.0.display()),
+            root = as_display(root.display()),
+            "calling uniond binary at {}",
+            as_display(current.0.display())
+        );
+        let mut child = std::process::Command::new(&current.0)
             .args(&self.args)
             .stdin(stdin.into())
             .stderr(stderr.into())

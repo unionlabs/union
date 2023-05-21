@@ -27,6 +27,12 @@ pub struct Bundle {
 /// The inner [`PathBuf`] is not public as it should not be accessed
 pub struct UnvalidatedVersionPath(PathBuf);
 
+impl UnvalidatedVersionPath {
+    pub fn new(path: PathBuf) -> Self {
+        Self(path)
+    }
+}
+
 /// Version paths that have been validated.
 /// This means that the binary at this path produces valid output when called with --help
 pub struct ValidVersionPath(pub PathBuf);
@@ -106,7 +112,7 @@ impl Bundle {
 
     /// Obtains the path to the binary within the bundle with version `version`.
     pub fn path_to(&self, version: &OsString) -> UnvalidatedVersionPath {
-        UnvalidatedVersionPath(
+        UnvalidatedVersionPath::new(
             self.path
                 .join(&self.meta.versions_directory)
                 .join(version)
