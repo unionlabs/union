@@ -24,7 +24,7 @@ services:
     restart: unless-stopped
 ```
 
-The only section of significance is the `volumes` key. Here we map an already initialized `~/.uniond` directory to the `node` service. The `~/.uniond` directory should contain a `config` and `data` directory. To properly set these up, check out the validator [guide](./getting-started#initialization).
+The only section of significance is the `volumes` key. Here we map an already initialized `~/.uniond` directory to the `node` service. The `~/.uniond` directory should contain a `config` and `data` directory. To properly set these up, check out the [validator guide](./getting-started#initialization).
 
 ## Monitoring
 
