@@ -22,7 +22,7 @@ Verify that the binary works on your server by running:
 
 For convenience, we can add the binary to the `PATH`, to make it callable from anywhere.
 
-```bash
+```sh
 mv ./uniond /usr/bin/
 ```
 
