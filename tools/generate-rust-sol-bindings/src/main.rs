@@ -1,14 +1,13 @@
 use std::{error::Error, path::PathBuf};
 
 use clap::Parser;
-use ethers_contract_abigen::Abigen;
+use ethers_contract_abigen::{Abigen, MultiAbigen};
 
 #[derive(Parser)]
 struct Args {
+    input: Vec<PathBuf>,
     #[arg(long)]
-    input: PathBuf,
-    #[arg(long)]
-    outfile: PathBuf,
+    cratedir: PathBuf,
     #[arg(long)]
     overwrite: bool,
 }
@@ -16,13 +15,19 @@ struct Args {
 fn main() -> Result<(), Box<dyn Error>> {
     let args = Args::parse();
 
-    if args.outfile.exists() && !args.overwrite {
+    if args.cratedir.exists() && !args.overwrite {
         return Err("out file exists, not overwriting".into());
     }
 
-    Abigen::from_file(args.input)?
-        .generate()?
-        .write_to_file(args.outfile)?;
+    dbg!(&args.input);
+
+    MultiAbigen::from_abigens(
+        args.input
+            .into_iter()
+            .map(|s| Abigen::from_file(s).unwrap()),
+    )
+    .build()?
+    .write_to_crate("contracts", "0.0.0", args.cratedir, false)?;
 
     Ok(())
 }

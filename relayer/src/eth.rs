@@ -21,4 +21,6 @@ pub async fn update_contract() {
         .call()
         .await
         .unwrap();
+
+    //
 }

@@ -44,8 +44,14 @@ use std::str::FromStr;
 use bip32::{DerivationPath, Language, XPrv};
 // use cosmrs::crypto::secp256k1::SigningKey;
 
-mod cosmos;
-mod eth;
+mod cosmos_to_eth;
+mod eth_to_cosmos;
+
+const ETH_BEACON_RPC_API: &str = "http://localhost:9596";
+
+const ETH_RPC_API: &str = "http://localhost:8545";
+
+const WASM_CLIENT_ID: &str = "08-wasm-0";
 
 #[tokio::main]
 async fn main() {
@@ -55,15 +61,17 @@ async fn main() {
 
     // cosmos::get_wasm_code().await
 
-    let mut sequence = 0;
+    // let mut sequence = 0;
 
-    cosmos::create_wasm_client(sequence).await;
+    // eth_to_cosmos::create_wasm_client(sequence).await;
 
-    sequence += 1;
+    // sequence += 1;
 
-    // dbg!(cosmos::query_for_wasm_light_client().await);
+    // // dbg!(cosmos::query_for_wasm_light_client().await);
 
-    cosmos::update_wasm_client(sequence).await;
+    // eth_to_cosmos::update_wasm_client(sequence).await;
+
+    cosmos_to_eth::update_contract().await;
 }
 
 // const API_URL: &str = "http://127.0.0.1:27444";

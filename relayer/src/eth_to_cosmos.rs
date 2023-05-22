@@ -4,11 +4,8 @@ use std::{
 };
 
 use base64::{prelude::BASE64_STANDARD, Engine};
-use bip32::secp256k1::{ecdsa::Signature, schnorr::signature::Signer};
-use ethers::{
-    providers::{Middleware, Provider},
-    utils::hex::ToHex,
-};
+use k256::{ecdsa::Signature, schnorr::signature::Signer};
+
 // use ethers::providers::{Http, Provider};
 use lodestar_rpc::types::{
     BeaconHeaderResponse, LightClientBootstrapResponse, LightClientFinalityUpdateData,
@@ -40,21 +37,17 @@ use reqwest::header::{HeaderMap, HeaderValue, CONTENT_TYPE};
 use ripemd::Digest;
 use serde_json::{json, Value};
 
-use crate::get_wallet;
-
-const ETH_RPC_API: &str = "http://localhost:9596";
-
-const WASM_CLIENT_ID: &str = "08-wasm-0";
+use crate::{get_wallet, ETH_BEACON_RPC_API, WASM_CLIENT_ID};
 
 async fn get_genesis() -> lodestar_rpc::types::GenesisData {
-    let client = lodestar_rpc::client::RPCClient::new(ETH_RPC_API);
+    let client = lodestar_rpc::client::RPCClient::new(ETH_BEACON_RPC_API);
     client.get_genesis().await.unwrap().data
 }
 
 async fn get_latest_finalized_block() -> serde_json::Value {
     const API: &str = "eth/v2/debug/beacon/states";
     reqwest::Client::new()
-        .get(format!("{ETH_RPC_API}/{API}/finalized"))
+        .get(format!("{ETH_BEACON_RPC_API}/{API}/finalized"))
         .send()
         .await
         .unwrap()
@@ -126,7 +119,7 @@ pub async fn create_wasm_client(sequence: u64) {
         counterparty_commitment_slot: 3,
     };
 
-    let trusted_header = lodestar_rpc::client::RPCClient::new(ETH_RPC_API)
+    let trusted_header = lodestar_rpc::client::RPCClient::new(ETH_BEACON_RPC_API)
         .get_beacon_header_by_slot(dbg!(ethereum_consensus::types::U64(latest_slot)))
         .await
         .unwrap()
@@ -261,9 +254,8 @@ pub async fn get_wasm_code() -> u64 {
     //     .code;
 }
 
-async fn wasm_client(
-) -> protos::ibc::lightclients::wasm::v1::query_client::QueryClient<tonic::transport::Channel> {
-    protos::ibc::lightclients::wasm::v1::query_client::QueryClient::connect("tcp://0.0.0.0:9090")
+async fn wasm_client() -> wasm::v1::query_client::QueryClient<tonic::transport::Channel> {
+    wasm::v1::query_client::QueryClient::connect("tcp://0.0.0.0:9090")
         .await
         .unwrap()
 }

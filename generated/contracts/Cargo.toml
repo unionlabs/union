@@ -1,7 +1,9 @@
-[dependencies]
-ethers = "2.0.4"
-
 [package]
-edition = "2021"
 name = "contracts"
 version = "0.0.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+ethers = { version = "2", default-features = false, features = ["abigen"] }
