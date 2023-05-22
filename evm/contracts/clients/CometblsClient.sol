@@ -22,7 +22,6 @@ contract CometblsClient is ILightClient {
     using CometblsHelp for TendermintTypesCommit.Data;
     using CometblsHelp for UnionIbcLightclientsCometblsV1ConsensusState.Data;
     using CometblsHelp for UnionIbcLightclientsCometblsV1ClientState.Data;
-    using CometblsHelp for UnionIbcLightclientsCometblsV1ConsensusState.Data;
     using CometblsHelp for bytes;
     using CometblsHelp for IZKVerifier;
 
