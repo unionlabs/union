@@ -32,6 +32,7 @@
     nix-filter.url = "github:numtide/nix-filter";
 
     # uniond versions
+    "v0.2.0".url = "git+https://github.com/unionfi/union?rev=8b2d62abf1795a5e7531b4af7a4e1b995d482206";
     "v0.5.0".url = "git+https://github.com/unionfi/union?ref=release-v0.5.0";
   };
   outputs = inputs@{ self, nixpkgs, flake-parts, nix-filter, crane, foundry, treefmt-nix, pre-commit-hooks, ... }:
