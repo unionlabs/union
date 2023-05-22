@@ -16,7 +16,7 @@ Which will build the `uniond` binary for the current architecture.
 
 For an overview of the commands and usage, run:
 
-```
+```sh
 /path/to/uniond --help
 ```
 
