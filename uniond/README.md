@@ -7,7 +7,7 @@
 The easiest way to obtain the `uniond` binary is to check the [releases](https://github.com/unionfi/union/releases). Alternatively, they can be built by running:
 
 ```sh
-nix build ./#uniond
+nix build .\#uniond
 ```
 
 Which will create a binary for the current architecture.
