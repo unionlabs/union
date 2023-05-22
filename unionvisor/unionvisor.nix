@@ -83,16 +83,19 @@
       };
 
       config = mkIf cfg.enable {
-        systemd.services.unionvisor = {
+        systemd.services.unionvisor = let
+          unionvisor-systemd-script = pkgs.writeScript "unionvisor-systemd.sh" ''
+            ${pkgs.coreutils}/bin/mkdir -p /var/lib/unionvisor 
+            cd /var/lib/unionvisor 
+            ${cfg.bundle}/unionvisor --root /var/lib/unionvisor init --bundle ${cfg.bundle} --moniker ${cfg.moniker} --allow-dirty 
+            ${cfg.bundle}/unionvisor --root /var/lib/unionvisor run --bundle
+          '';
+        in {
           wantedBy = [ "multi-user.target" ];
           description = "Unionvisor";
           serviceConfig = {
             Type = "simple";
-            ExecStart = ''
-              ${pkgs.coreutils}/bin/mkdir -p /var/lib/unionvisor          
-              ${cfg.bundle}/unionvisor --root /var/lib/unionvisor init --bundle ${cfg.bundle} --moniker ${cfg.moniker} --allow-dirty
-              ${cfg.bundle}/unionvisor --root /var/lib/unionvisor run --bundle
-            '';
+            ExecStart = "${unionvisor-systemd-script}";
             Restart = mkForce "always";
           };
         };
