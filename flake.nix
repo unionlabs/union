@@ -248,22 +248,23 @@
               baseShell = {
                 buildInputs = [ rust-nightly ] ++
                   (with pkgs; [
-                    protobuf
-                    pkg-config
-                    openssl
                     buf
-                    nixfmt
+                    cargo-nextest                    
                     go_1_20
                     gopls
-                    gotools
                     go-tools
-                    nodejs
-                    yarn
-                    nil
-                    marksman
+                    gotools
                     jq
-                    yq
+                    marksman
+                    nil
+                    nixfmt
+                    nodejs
+                    openssl
+                    pkg-config
+                    protobuf
                     solc
+                    yarn
+                    yq
                   ]);
                 nativeBuildInputs = [ config.treefmt.build.wrapper ];
                 GOPRIVATE = "github.com/unionfi/*";
