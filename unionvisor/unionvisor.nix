@@ -91,7 +91,7 @@
               ${pkgs.coreutils}/bin/mkdir -p /var/lib/unionvisor 
               cd /var/lib/unionvisor 
               ${cfg.bundle}/unionvisor --root /var/lib/unionvisor init --bundle ${cfg.bundle} --moniker ${cfg.moniker} --allow-dirty 
-              ${cfg.bundle}/unionvisor --root /var/lib/unionvisor run --bundle
+              ${cfg.bundle}/unionvisor --root /var/lib/unionvisor run --bundle ${cfg.bundle} 
             '';
           };
         in {
