@@ -36,6 +36,8 @@ impl Network {
     }
 
     pub fn genesis_url(&self) -> &str {
-        "https://raw.githubusercontent.com/unionfi/genesis/union-testnet-1/union-testnet-1/genesis.json?token=GHSAT0AAAAAACCAQNLRQP3P6X7KO4UQBTUGZC36IBA"
+        // We use a secret gist for the genesis.json until testnet is public
+        // "https://raw.githubusercontent.com/unionfi/genesis/main/union-testnet-1/genesis.json"
+        "https://gist.githubusercontent.com/cor/53e083cc949ee4c63eb50c123a39bee8/raw/ec36b47ae60658307bfec383a477300213c933d3/genesis.json"
     }
 }
