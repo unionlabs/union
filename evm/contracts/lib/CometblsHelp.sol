@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: TBD
-
 pragma solidity ^0.8.18;
 
 import "../proto/union/ibc/lightclients/cometbls/v1/cometbls.sol";
