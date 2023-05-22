@@ -24,4 +24,4 @@ The commands are self-explanatory and can be used to both run a node and interac
 
 ### Production Usage
 
-When using `uniond` in production, have a look at [`unionvisor`](../unionvisor/README.md) first.
+When running `uniond` in production, we recommend using [`unionvisor`](../unionvisor/README.md).
