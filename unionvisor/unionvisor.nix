@@ -88,10 +88,11 @@
           description = "Unionvisor";
           serviceConfig = {
             Type = "simple";
-            WorkingDirectory = "/home/unionvisor";
+            WorkingDirectory = "/var/lib/unionvisor";
+            ExecStartPre = "${pkgs.coreutils}/bin/mkdir -p /var/lib/unionvisor";
             ExecStart = ''
-              ${cfg.bundle}/unionvisor --root /home/unionvisor init --bundle ${cfg.bundle} --moniker ${cfg.moniker} --allow-dirty
-              ${cfg.bundle}/unionvisor --root /home/unionvisor run --bundle
+              ${cfg.bundle}/unionvisor --root /var/lib/unionvisor init --bundle ${cfg.bundle} --moniker ${cfg.moniker} --allow-dirty
+              ${cfg.bundle}/unionvisor --root /var/lib/unionvisor run --bundle
             '';
             Restart = mkForce "always";
           };
