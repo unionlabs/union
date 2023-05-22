@@ -457,3 +457,4 @@ yqyp
 rustc
 taplo
 netutil
+journalctl
