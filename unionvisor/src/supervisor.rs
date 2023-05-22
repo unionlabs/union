@@ -52,11 +52,11 @@ impl Supervisor {
         let handle = std::process::Command::new(program.0)
             .args(vec!["--log_format", logformat.as_str()])
             .arg("start")
+            .args(args)
             .args(vec![
                 OsString::from("--home"),
                 self.home_dir().into_os_string(),
             ])
-            .args(args)
             .stderr(std::process::Stdio::inherit())
             .stdout(std::process::Stdio::inherit())
             .spawn()?;
@@ -232,103 +232,121 @@ pub fn run_and_upgrade<S: AsRef<OsStr>, I: IntoIterator<Item = S> + Clone>(
     }
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-//     use crate::testdata;
-//     use std::fs;
-//     use tracing_test::traced_test;
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{bundle::Bundle, testdata};
+    use std::fs;
+    use tracing_test::traced_test;
 
-//     #[test]
-//     #[traced_test]
-//     fn test_run_and_upgrade() {
-//         let tmp_dir = testdata::temp_dir_with(&["test_run"]);
-//         let path = tmp_dir.into_path().join("test_run");
-//         let bundle = Bundle::new(path.clone(), path.join("bins"), "genesis", "uniond").unwrap();
-//         let err = run_and_upgrade(
-//             path.clone(),
-//             LogFormat::Plain,
-//             bindir,
-//             vec![path.join("data").as_os_str()],
-//             Duration::from_secs(1),
-//         )
-//         .unwrap_err();
-//         if let RuntimeError::BinaryUnavailable { name, err: _ } = err {
-//             assert_eq!(name, "upgrade3")
-//         } else {
-//             panic!("didn't receive expected error: {err:?}")
-//         }
-//     }
+    #[test]
+    #[traced_test]
+    /// Will keep upgrading the `current` version until it hits the signal for upgrade3,
+    /// which it cannot provide.
+    fn test_run_and_upgrade() {
+        let tmp = testdata::temp_dir_with(&["test_run"]);
+        let root = tmp.into_path().join("test_run");
+        let bundle = Bundle::new(root.join("bundle")).unwrap();
+        let symlinker = Symlinker::new(root.clone(), bundle);
 
-//     #[test]
-//     #[traced_test]
-//     fn test_run_and_upgrade_restart() {
-//         let tmp_dir = testdata::temp_dir_with(&["test_restart"]);
-//         let path = tmp_dir.into_path().join("test_restart");
-//         let bindir = Bundle::new(path.clone(), path.join("bins"), "upgrade1", "uniond").unwrap();
-//         let err = run_and_upgrade(
-//             path.clone(),
-//             LogFormat::Plain,
-//             bindir,
-//             vec![path.join("data").as_os_str()],
-//             Duration::from_secs(1),
-//         )
-//         .unwrap_err();
-//         if let RuntimeError::BinaryUnavailable { name, err: _ } = err {
-//             assert_eq!(name, "upgrade3")
-//         } else {
-//             panic!("didn't receive expected error: {err:?}")
-//         }
-//     }
+        // Usually this is made as part of the init process, but we're not test that here.
+        symlinker
+            .make_fallback_link()
+            .expect("fallback link should be made");
 
-//     #[test]
-//     #[traced_test]
-//     fn test_backup() {
-//         let tmp = testdata::temp_dir_with(&["test_backup"]);
-//         let home = tmp.into_path().join("test_backup");
-//         let supervisor: Supervisor = Supervisor::new(home.clone(), "");
-//         supervisor.backup(home.join("backup")).unwrap();
-//         assert_file_contains(home.join("backup/data/foo.db"), "foo");
-//         assert_file_contains(home.join("data/foo.db"), "foo");
-//         assert_file_contains(home.join("backup/data/bar.db"), "bar");
-//         assert_file_contains(home.join("data/bar.db"), "bar");
-//     }
+        let err = run_and_upgrade(
+            root.clone(),
+            LogFormat::Plain,
+            symlinker,
+            vec![root.join("data").as_os_str()],
+            Duration::from_secs(1),
+        )
+        .unwrap_err();
 
-//     fn assert_file_contains(file: impl AsRef<Path>, want: &str) {
-//         let contents = fs::read_to_string(file.as_ref()).unwrap();
-//         assert_eq!(contents, want);
-//     }
+        if let RuntimeError::BinaryUnavailable { name, err: _ } = err {
+            assert_eq!(name, "upgrade3")
+        } else {
+            panic!("didn't receive expected error: {err:?}")
+        }
+    }
 
-//     #[test]
-//     #[traced_test]
-//     fn test_revert() {
-//         let tmp = testdata::temp_dir_with(&["test_revert"]);
-//         let home = tmp.into_path().join("test_revert");
-//         let supervisor: Supervisor = Supervisor::new(home.clone(), "");
-//         supervisor.backup(home.join("backup")).unwrap();
-//         assert_file_contains(home.join("backup/data/foo.db"), "foo");
-//         std::fs::remove_file(home.join("data/foo.db")).unwrap();
-//         supervisor.revert(home.join("backup/data")).unwrap();
-//         assert_file_contains(home.join("data/foo.db"), "foo");
-//     }
+    #[test]
+    #[traced_test]
+    fn test_run_and_upgrade_restart() {
+        let tmp = testdata::temp_dir_with(&["test_run"]);
+        let root = tmp.into_path().join("test_run");
+        let bundle = Bundle::new(root.join("bundle")).unwrap();
+        let symlinker = Symlinker::new(root.clone(), bundle);
 
-//     #[test]
-//     #[traced_test]
-//     fn test_early_exit() {
-//         let tmp_dir = testdata::temp_dir_with(&["test_early_exit"]);
-//         let home = tmp_dir.into_path().join("test_early_exit");
-//         assert!(home.join("bins/genesis/uniond.sh").exists());
-//         let bindir = Bundle::new(home.clone(), home.join("bins"), "genesis", "uniond.sh")
-//             .expect("should be able to create a bindir");
-//         assert!(bindir.current().exists());
-//         let err = run_and_upgrade(
-//             home.clone(),
-//             LogFormat::Plain,
-//             bindir,
-//             vec![home.join("data").as_os_str()],
-//             Duration::from_secs(1),
-//         )
-//         .unwrap_err();
-//         assert!(matches!(dbg!(err), RuntimeError::EarlyExit { .. }))
-//     }
-// }
+        // Usually this is made as part of the init process, but we're not test that here.
+        symlinker
+            .make_fallback_link()
+            .expect("fallback link should be made");
+
+        let err = run_and_upgrade(
+            root.clone(),
+            LogFormat::Plain,
+            symlinker,
+            vec![root.join("data").as_os_str()],
+            Duration::from_secs(1),
+        )
+        .unwrap_err();
+
+        if let RuntimeError::BinaryUnavailable { name, err: _ } = err {
+            assert_eq!(name, "upgrade3")
+        } else {
+            panic!("didn't receive expected error: {err:?}")
+        }
+    }
+
+    // #[test]
+    // #[traced_test]
+    // fn test_backup() {
+    //     let tmp = testdata::temp_dir_with(&["test_backup"]);
+    //     let home = tmp.into_path().join("test_backup");
+    //     let supervisor: Supervisor = Supervisor::new(home.clone(), "");
+    //     supervisor.backup(home.join("backup")).unwrap();
+    //     assert_file_contains(home.join("backup/data/foo.db"), "foo");
+    //     assert_file_contains(home.join("data/foo.db"), "foo");
+    //     assert_file_contains(home.join("backup/data/bar.db"), "bar");
+    //     assert_file_contains(home.join("data/bar.db"), "bar");
+    // }
+
+    // fn assert_file_contains(file: impl AsRef<Path>, want: &str) {
+    //     let contents = fs::read_to_string(file.as_ref()).unwrap();
+    //     assert_eq!(contents, want);
+    // }
+
+    // #[test]
+    // #[traced_test]
+    // fn test_revert() {
+    //     let tmp = testdata::temp_dir_with(&["test_revert"]);
+    //     let home = tmp.into_path().join("test_revert");
+    //     let supervisor: Supervisor = Supervisor::new(home.clone(), "");
+    //     supervisor.backup(home.join("backup")).unwrap();
+    //     assert_file_contains(home.join("backup/data/foo.db"), "foo");
+    //     std::fs::remove_file(home.join("data/foo.db")).unwrap();
+    //     supervisor.revert(home.join("backup/data")).unwrap();
+    //     assert_file_contains(home.join("data/foo.db"), "foo");
+    // }
+
+    // #[test]
+    // #[traced_test]
+    // fn test_early_exit() {
+    //     let tmp_dir = testdata::temp_dir_with(&["test_early_exit"]);
+    //     let home = tmp_dir.into_path().join("test_early_exit");
+    //     assert!(home.join("bins/genesis/uniond.sh").exists());
+    //     let bindir = Bundle::new(home.clone(), home.join("bins"), "genesis", "uniond.sh")
+    //         .expect("should be able to create a bindir");
+    //     assert!(bindir.current().exists());
+    //     let err = run_and_upgrade(
+    //         home.clone(),
+    //         LogFormat::Plain,
+    //         bindir,
+    //         vec![home.join("data").as_os_str()],
+    //         Duration::from_secs(1),
+    //     )
+    //     .unwrap_err();
+    //     assert!(matches!(dbg!(err), RuntimeError::EarlyExit { .. }))
+    // }
+}
