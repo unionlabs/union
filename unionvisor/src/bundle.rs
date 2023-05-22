@@ -107,7 +107,11 @@ impl Bundle {
         let meta = fs::read_to_string(meta).map_err(|_| {
             eyre!("Can't find meta.json in bundle. Please make sure it exists at bundle/meta.json")
         })?;
-        let meta = serde_json::from_str(&meta)?;
+        let meta = serde_json::from_str(&meta).map_err(|_| {
+            eyre!(
+                "Can't deserialize bundle/meta.json. Please ensure that it adheres to the scheme."
+            )
+        })?;
 
         let bundle = Bundle { path, meta };
 
