@@ -53,7 +53,7 @@ impl UnvalidatedVersionPath {
 pub struct ValidVersionPath(pub PathBuf);
 
 impl UnvalidatedVersionPath {
-    /// Validates a [`UnvalidatedVersionPath`], turning it into a [`ValidVersionPath`] if validation is succesful
+    /// Validates a [`UnvalidatedVersionPath`], turning it into a [`ValidVersionPath`] if validation is successful
     pub fn validate(&self) -> Result<ValidVersionPath> {
         self.is_available_logged()
             .map(|_| ValidVersionPath(self.0.clone()))

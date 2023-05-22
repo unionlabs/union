@@ -18,7 +18,7 @@ impl Symlinker {
     /// # Arguments
     ///
     /// * `root` - The path where the `root` symlink should be put
-    /// * `bundle` - The [`Bundle`] containg binaries to which `root/current` can point
+    /// * `bundle` - The [`Bundle`] containing binaries to which `root/current` can point
     pub fn new(root: PathBuf, bundle: Bundle) -> Self {
         Self { root, bundle }
     }
