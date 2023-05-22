@@ -1,7 +1,7 @@
 { ... }: {
   perSystem = { pkgs, lib, ... }:
     let
-      npmDepsHash = "sha256-A/8NpoJTWi6ylnrkpCwekfXbPH82jNdIA8Z58jMbYQI=";
+      npmDepsHash = "sha256-Xj8s7tNjZcbq474jitfq0sII50gy6nj9Bwrs09+9Zqc=";
     in
     {
       checks =
