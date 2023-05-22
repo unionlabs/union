@@ -90,8 +90,8 @@
             Type = "simple";
             WorkingDirectory = "/home/unionvisor";
             ExecStart = ''
-              ${cfg.bundle}/bin/unionvisor --root /home/unionvisor init --bundle ${cfg.bundle} --moniker ${cfg.moniker} --allow-dirty
-              ${cfg.bundle}/bin/unionvisor --root /home/unionvisor run --bundle
+              ${cfg.bundle}/unionvisor --root /home/unionvisor init --bundle ${cfg.bundle} --moniker ${cfg.moniker} --allow-dirty
+              ${cfg.bundle}/unionvisor --root /home/unionvisor run --bundle
             '';
             Restart = mkForce "always";
           };
