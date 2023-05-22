@@ -10,7 +10,7 @@ The easiest way to obtain the `uniond` binary is to check the [releases](https:/
 nix build .\#uniond
 ```
 
-Which will create a binary for the current architecture.
+Which will build the `uniond` binary for the current architecture.
 
 ### Usage
 
