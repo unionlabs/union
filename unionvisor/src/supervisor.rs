@@ -81,15 +81,6 @@ impl Supervisor {
         Ok(())
     }
 
-    /// Revert a backup at `dir`.
-    pub fn revert(&self, dir: impl AsRef<Path>) -> Result<()> {
-        use fs_extra::dir::{copy, CopyOptions};
-        let dir = dir.as_ref();
-        let options = CopyOptions::new().overwrite(true);
-        copy(dir, &self.root, &options)?;
-        Ok(())
-    }
-
     pub fn try_wait(&mut self) -> Result<Option<ExitStatus>> {
         if let Some(child) = &mut self.child {
             Ok(child.try_wait().map_err(|err| {
@@ -207,8 +198,6 @@ pub fn run_and_upgrade<S: AsRef<OsStr>, I: IntoIterator<Item = S> + Clone>(
                 debug!(target: "unionvisor", "creating new symlink for {}", &upgrade.name);
                 symlinker.swap(&upgrade_name)?;
 
-                // Store the old supervisor incase of reverts.
-                let old = supervisor;
                 supervisor = Supervisor::new(root.clone(), symlinker.clone());
 
                 // If this upgrade fails, we'll revert the local DB and exit the node, ensuring we keep the filesystem in
@@ -216,11 +205,6 @@ pub fn run_and_upgrade<S: AsRef<OsStr>, I: IntoIterator<Item = S> + Clone>(
                 debug!(target: "unionvisor", "spawning new supervisor process for {}", &upgrade.name);
                 supervisor.spawn(logformat.clone(), args.clone()).map_err(|err| {
                     error!(target: "unionvisor", err = err.to_string().as_str(), "spawning new supervisor process for {} failed", &upgrade.name);
-                    // An error here is uber fubar. 
-                    if let Err(err) = old.revert(backup_dir) {
-                        error!(target: "unionvisor", err = err.to_string().as_str(), "reverting backup failed");
-                        return err;
-                    }
                     // This error is most likely caused by incorrect args because of an upgrade. We can reduce the chance of that happening
                     // by introducing a configuration file with name -> args mappings.
                     err
@@ -299,54 +283,49 @@ mod tests {
         }
     }
 
-    // #[test]
-    // #[traced_test]
-    // fn test_backup() {
-    //     let tmp = testdata::temp_dir_with(&["test_backup"]);
-    //     let home = tmp.into_path().join("test_backup");
-    //     let supervisor: Supervisor = Supervisor::new(home.clone(), "");
-    //     supervisor.backup(home.join("backup")).unwrap();
-    //     assert_file_contains(home.join("backup/data/foo.db"), "foo");
-    //     assert_file_contains(home.join("data/foo.db"), "foo");
-    //     assert_file_contains(home.join("backup/data/bar.db"), "bar");
-    //     assert_file_contains(home.join("data/bar.db"), "bar");
-    // }
+    #[test]
+    #[traced_test]
+    fn test_backup() {
+        let tmp = testdata::temp_dir_with(&["test_backup", "bundle"]);
+        let tmp = tmp.into_path();
+        let root = tmp.join("test_backup");
+        let bundle = Bundle::new(tmp.join("bundle")).unwrap();
+        let symlinker = Symlinker::new(root.clone(), bundle);
+        let supervisor: Supervisor = Supervisor::new(root.clone(), symlinker);
+        supervisor.backup(root.join("home_backup")).unwrap();
+        assert_file_contains(root.join("home_backup/home/data/foo.db"), "foo");
+        assert_file_contains(root.join("home/data/foo.db"), "foo");
+        assert_file_contains(root.join("home_backup/home/data/bar.db"), "bar");
+        assert_file_contains(root.join("home/data/bar.db"), "bar");
+    }
 
-    // fn assert_file_contains(file: impl AsRef<Path>, want: &str) {
-    //     let contents = fs::read_to_string(file.as_ref()).unwrap();
-    //     assert_eq!(contents, want);
-    // }
+    fn assert_file_contains(file: impl AsRef<Path>, want: &str) {
+        let contents = fs::read_to_string(file.as_ref()).unwrap();
+        assert_eq!(contents, want);
+    }
 
-    // #[test]
-    // #[traced_test]
-    // fn test_revert() {
-    //     let tmp = testdata::temp_dir_with(&["test_revert"]);
-    //     let home = tmp.into_path().join("test_revert");
-    //     let supervisor: Supervisor = Supervisor::new(home.clone(), "");
-    //     supervisor.backup(home.join("backup")).unwrap();
-    //     assert_file_contains(home.join("backup/data/foo.db"), "foo");
-    //     std::fs::remove_file(home.join("data/foo.db")).unwrap();
-    //     supervisor.revert(home.join("backup/data")).unwrap();
-    //     assert_file_contains(home.join("data/foo.db"), "foo");
-    // }
+    #[test]
+    #[traced_test]
+    fn test_early_exit() {
+        let tmp_dir = testdata::temp_dir_with(&["test_early_exit"]);
+        let root = tmp_dir.into_path().join("test_early_exit");
+        let bundle = Bundle::new(root.join("bundle")).expect("should be able to create a bundle");
+        let symlinker = Symlinker::new(root.clone(), bundle);
 
-    // #[test]
-    // #[traced_test]
-    // fn test_early_exit() {
-    //     let tmp_dir = testdata::temp_dir_with(&["test_early_exit"]);
-    //     let home = tmp_dir.into_path().join("test_early_exit");
-    //     assert!(home.join("bins/genesis/uniond.sh").exists());
-    //     let bindir = Bundle::new(home.clone(), home.join("bins"), "genesis", "uniond.sh")
-    //         .expect("should be able to create a bindir");
-    //     assert!(bindir.current().exists());
-    //     let err = run_and_upgrade(
-    //         home.clone(),
-    //         LogFormat::Plain,
-    //         bindir,
-    //         vec![home.join("data").as_os_str()],
-    //         Duration::from_secs(1),
-    //     )
-    //     .unwrap_err();
-    //     assert!(matches!(dbg!(err), RuntimeError::EarlyExit { .. }))
-    // }
+        // Usually this is made as part of the init process, but we're not test that here.
+        symlinker
+            .make_fallback_link()
+            .expect("fallback link should be made");
+
+        let err = run_and_upgrade(
+            root.clone(),
+            LogFormat::Plain,
+            symlinker,
+            vec![root.join("data").as_os_str()],
+            Duration::from_secs(1),
+        )
+        .unwrap_err();
+
+        assert!(matches!(dbg!(err), RuntimeError::EarlyExit { .. }))
+    }
 }
