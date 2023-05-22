@@ -76,7 +76,7 @@
       foundryEnv = {
         FOUNDRY_OPTIMIZER = "true";
         FOUNDRY_VIA_IR = "true";
-        FOUNDRY_OPTIMIZER_RUNS = "1";
+        FOUNDRY_OPTIMIZER_RUNS = "10000";
         FOUNDRY_SRC = "${evmSources}/contracts";
         FOUNDRY_TEST = "${evmSources}/tests/src";
         FOUNDRY_LIBS = ''["${libraries}"]'';
@@ -202,6 +202,9 @@
             ${deploy { path = "core/04-channel/IBCChannelHandshake.sol"; name = "IBCChannelHandshake"; }}
             ${deploy { path = "core/04-channel/IBCPacket.sol"; name = "IBCPacket"; }}
             ${deploy { path = "core/OwnableIBCHandler.sol"; name = "OwnableIBCHandler"; args = ''--constructor-args "$IBCCLIENT" "$IBCCONNECTION" "$IBCCHANNELHANDSHAKE" "$IBCPACKET"''; }}
+
+            ${deploy { path = "clients/TestnetVerifier.sol"; name = "TestnetVerifier"; }}
+            ${deploy { path = "clients/CometblsClient.sol"; name = "CometblsClient"; args = ''--constructor-args "$OWNABLEIBCHANDLER" "$TESTNETVERIFIER"''; }}
           '';
         };
     };
