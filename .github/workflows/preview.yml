@@ -1,0 +1,48 @@
+name: Preview
+
+on:
+  pull_request:
+    paths:
+    - 'docs/**'
+
+env:
+    ARTIFACT_NAME: BUILD_LOG
+    NIX_VERSION: nix-2.13.2
+    NIXPKGS_CHANNEL: nixos-22.11
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    outputs:
+      preview-url: ${{ steps.publish-preview.outputs.preview-url }}
+    permissions: write-all
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          lfs: true
+      - uses: cachix/install-nix-action@v20
+        with:
+          nix_path: nixpkgs=channel:${{ env.NIXPKGS_CHANNEL }}
+          github_access_token: ${{ github.token }}
+      - run: |
+          nix-channel --add https://nixos.org/channels/${{ env.NIXPKGS_CHANNEL }} nixpkgs
+          nix-channel --update
+          nix-env -iA nixpkgs.nodePackages.vercel
+      - name: "Publish Preview to Vercel"
+        id: publish-preview
+        working-directory: docs
+        run: |
+            vercel pull --yes --environment=preview --token=${{secrets.VERCEL_TOKEN}}
+            vercel build --token=${{secrets.VERCEL_TOKEN}}
+            PREVIEW_URL=$(vercel deploy --prebuilt --token=${{secrets.VERCEL_TOKEN}})
+            echo "preview-url=${PREVIEW_URL}" >> "$GITHUB_OUTPUT"
+      - name: Create Preview Comment
+        if: github.event_name == 'pull_request'
+        uses: thollander/actions-comment-pull-request@v2
+        with:
+          mode: upsert
+          message: |
+            # Docs Preview URL
+            ${{ steps.publish-preview.outputs.preview-url }}
+            comment_tag: Docs Preview URL
+            GITHUB_TOKEN: ${{ github.token }}
