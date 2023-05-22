@@ -52,6 +52,10 @@ impl Supervisor {
         let handle = std::process::Command::new(program.0)
             .args(vec!["--log_format", logformat.as_str()])
             .arg("start")
+            .args(vec![
+                OsString::from("--home"),
+                self.home_dir().into_os_string(),
+            ])
             .args(args)
             .stderr(std::process::Stdio::inherit())
             .stdout(std::process::Stdio::inherit())
@@ -60,25 +64,20 @@ impl Supervisor {
         Ok(())
     }
 
-    // /// Returns the {root}/{binary} symlink that is being used by this supervisor.
-    // pub fn symlink(&self) -> PathBuf {
-    //     self.binary.clone()
-    // }
-
-    fn data_dir(&self) -> PathBuf {
-        self.root.join("data")
+    fn home_dir(&self) -> PathBuf {
+        self.root.join("home")
     }
 
-    /// Backup the current data directory to the provided path. The location will be "{dir}/data".
-    pub fn backup(&self, dir: impl AsRef<Path>) -> Result<()> {
+    /// Backup the current uniond home directory to the provided path. The location will be "{dir}/data".
+    pub fn backup(&self, backup_dir: impl AsRef<Path>) -> Result<()> {
         use fs_extra::dir::{copy, CopyOptions};
-        let dir = dir.as_ref();
-        debug!(target: "unionvisor", "creating backup dir at {}",  as_display(dir.display()));
-        create_dir_all(dir)?;
-        let data_dir = self.data_dir();
+        let backup_dir = backup_dir.as_ref();
+        debug!(target: "unionvisor", "creating backup dir at {}",  as_display(backup_dir.display()));
+        create_dir_all(backup_dir)?;
+        let home_dir = self.home_dir();
         let options = CopyOptions::new().overwrite(true);
-        debug!(target: "unionvisor", "backing up {} to {}",  as_display(data_dir.display()),  as_display(dir.display()));
-        copy(data_dir, dir, &options)?;
+        debug!(target: "unionvisor", "backing up {} to {}",  as_display(home_dir.display()),  as_display(backup_dir.display()));
+        copy(home_dir, backup_dir, &options)?;
         Ok(())
     }
 
@@ -198,11 +197,11 @@ pub fn run_and_upgrade<S: AsRef<OsStr>, I: IntoIterator<Item = S> + Clone>(
 
                 debug!(target: "unionvisor", "killing supervisor process");
                 supervisor.kill()?;
-                let backup_dir = root.join("backup");
+                let backup_dir = root.join("home_backup");
 
                 // If we fail to backup, the file system is incorrectly configured (permissions) or we are running
                 // out of disk space. Either way we exit the node as now the server itself has become unreliable.
-                debug!(target: "unionvisor", "backing up current database");
+                debug!(target: "unionvisor", "backing up current home");
                 supervisor.backup(&backup_dir)?;
 
                 debug!(target: "unionvisor", "creating new symlink for {}", &upgrade.name);

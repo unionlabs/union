@@ -220,7 +220,7 @@ pub enum InitState {
 impl InitCmd {
     fn init(&self, root: impl Into<PathBuf>) -> Result<InitState> {
         let root = root.into();
-        let config = root.join("config");
+        let home = root.join("home");
 
         let bundle = Bundle::new(self.bundle.clone())?;
         let symlinker = Symlinker::new(root.clone(), bundle);
@@ -229,11 +229,11 @@ impl InitCmd {
             symlinker.make_fallback_link()?;
         }
 
-        if config.exists() {
+        if home.exists() {
             if self.allow_dirty {
                 return Ok(InitState::None);
             } else {
-                bail!("{} already exists, refusing to override", config.display())
+                bail!("{} already exists, refusing to override", home.display())
             }
         }
 
@@ -241,7 +241,7 @@ impl InitCmd {
             bundle: self.bundle.clone(),
             args: vec![
                 OsString::from("--home"),
-                root.clone().into_os_string(),
+                home.clone().into_os_string(),
                 OsString::from("init"),
                 OsString::from(self.moniker.clone()),
                 OsString::from("bn254"),
@@ -249,9 +249,9 @@ impl InitCmd {
                 OsString::from(self.network.to_string()),
             ],
         };
-        init.call_silent(root.clone())?;
-        init::download_genesis(self.network, root.join("config/genesis.json"))?;
-        init::set_seeds(self.network, root.join("config/config.toml"))?;
+        init.call_silent(root)?;
+        init::download_genesis(self.network, home.join("config/genesis.json"))?;
+        init::set_seeds(self.network, home.join("config/config.toml"))?;
         Ok(InitState::SeedsConfigured)
     }
 }
