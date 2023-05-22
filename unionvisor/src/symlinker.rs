@@ -5,7 +5,7 @@ use color_eyre::{eyre::eyre, Result};
 use std::ffi::OsString;
 use tracing::debug;
 
-/// Symlinker will maintain a symlink `root/current` to point to a [`Bundle`]'s [`ValidVersionPath`]
+/// Symlinker maintains a symlink `root/current` to a binary at a [`Bundle`]'s [`ValidVersionPath`]
 #[derive(Clone)]
 pub struct Symlinker {
     root: PathBuf,
@@ -13,10 +13,22 @@ pub struct Symlinker {
 }
 
 impl Symlinker {
+    /// Constructs a new [`Symlinker`].
+    ///
+    /// # Arguments
+    ///
+    /// * `root` - The path where the `root` symlink should be put
+    /// * `bundle` - The [`Bundle`] containg binaries to which `root/current` can point
     pub fn new(root: PathBuf, bundle: Bundle) -> Self {
         Self { root, bundle }
     }
 
+    /// Swaps the `root/current` symlink to point to `bundle/meta.versions_dir/new_version/meta.binary_name`
+    /// where meta = Symlinker.bundle.meta
+    ///
+    /// # Arguments
+    ///
+    /// * `new_version` the new version the symlink should point to
     pub fn swap(&self, new_version: &OsString) -> Result<()> {
         let new_path = self.bundle.path_to(new_version).validate()?;
         let current = self.current_path();
@@ -32,6 +44,10 @@ impl Symlinker {
         Ok(())
     }
 
+    /// Creates a link `root/current` that points to `bundle/meta.versions_dir/meta.fallback_version/meta.binary_name`
+    /// where meta = Symlinker.bundle.meta
+    ///
+    /// Note that this initial link is unvalidated.
     pub fn make_fallback_link(&self) -> Result<()> {
         let fallback_path = self.bundle.fallback_path()?;
         let current = self.current_path();
@@ -47,20 +63,17 @@ impl Symlinker {
         self.root.join("current")
     }
 
-    // pub fn previous_path(&self) -> PathBuf {
-    //     self.root.join("previous")
-    // }
-
+    /// Returns a [`ValidVersionPath`] if teh `current` symlink is valid.
     pub fn current_validated(&self) -> Result<ValidVersionPath> {
         UnvalidatedVersionPath::new(self.current_path()).validate()
     }
 
-    // TODO: Move version fetching logic to Bundle?
+    /// Reads the `root/current` link and determines the binary version based on the path.
     pub fn current_version(&self) -> Result<OsString> {
         let mut actual =
             fs::read_link(self.current_path()).map_err(|_| eyre!("Invalid `current` link"))?;
 
-        actual.pop(); // pop binary name (such as `uniond`) from the path
+        actual.pop(); // pop meta.binary_name (such as `uniond`) from the path
         let version = actual.file_name();
 
         match version {
@@ -91,4 +104,4 @@ mod tests {
 
         symlinker.swap(&OsString::from("foo")).unwrap();
     }
-}
+
