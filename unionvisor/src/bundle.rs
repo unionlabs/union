@@ -9,13 +9,26 @@ use tracing::error;
 use tracing::{debug, field::display as as_display};
 
 /// Bundles should have the following structure on the filesystem:
+///
 /// ```text
-/// result
+/// bundle
 /// ├── meta.json
 /// └── versions
 ///     └── v0.5.0
 ///         └── uniond
 /// ```
+///
+/// Or, more generally:
+///
+/// ```text
+/// bundle
+/// ├── meta.json
+/// └── META.VERSIONS_PATH
+///     └── BINARY_VERSION_IDENTIFIER
+///         └── META.BINARY_NAME
+/// ```
+///
+/// Bundle meta information is defined in meta.json, which gets deserialized to [`BundleMeta`]
 #[derive(Clone)]
 pub struct Bundle {
     /// The path of the bundle
@@ -24,11 +37,12 @@ pub struct Bundle {
     meta: BundleMeta,
 }
 
-/// Version paths that have not been validated
-/// The inner [`PathBuf`] is not public as it should not be accessed
+/// Version paths that have not been validated.
+/// The inner [`PathBuf`] is not public as it should not be accessed.
 pub struct UnvalidatedVersionPath(PathBuf);
 
 impl UnvalidatedVersionPath {
+    /// Constructs a new [`UnvalidatedVersionPath`] based on any `PathBuf`]
     pub fn new(path: PathBuf) -> Self {
         Self(path)
     }
@@ -39,6 +53,7 @@ impl UnvalidatedVersionPath {
 pub struct ValidVersionPath(pub PathBuf);
 
 impl UnvalidatedVersionPath {
+    /// Validates a [`UnvalidatedVersionPath`], turning it into a [`ValidVersionPath`] if validation is succesful
     pub fn validate(&self) -> Result<ValidVersionPath> {
         self.is_available_logged()
             .map(|_| ValidVersionPath(self.0.clone()))
@@ -49,10 +64,10 @@ impl UnvalidatedVersionPath {
 
         match status {
             BinaryAvailability::NotFound => {
-                error!(target: "unionvisor", "could not find binary {} in bundle", self.0.display())
+                error!(target: "unionvisor", "could not find binary {} in bundle", as_display(self.0.display()))
             }
             BinaryAvailability::PermissionDenied => {
-                error!(target: "unionvisor", "could not execute binary {} in bundle", self.0.display())
+                error!(target: "unionvisor", "could not execute binary {} in bundle", as_display(self.0.display()))
             }
             BinaryAvailability::Ok => (),
         }
@@ -99,6 +114,8 @@ pub enum BinaryAvailability {
 }
 
 impl Bundle {
+    /// Constructs a new [`Bundle`] based on a path.
+    /// Will read `bundle/meta.json` and error if invalid.
     pub fn new(path: impl Into<PathBuf>) -> Result<Self> {
         let path: PathBuf = path.into();
 
@@ -128,32 +145,9 @@ impl Bundle {
         )
     }
 
+    /// Construct the path to the fallback verison, based on the [`BundleMeta`]
     pub fn fallback_path(&self) -> Result<ValidVersionPath> {
         let fallback_version = &self.meta.fallback_version.clone().into();
         self.path_to(fallback_version).validate()
     }
-
-    // pub fn current_checked(&self) -> Result<PathBuf> {
-    //     let current = self.current();
-    //     is_available_logged(&current, &self.versions_dir)?;
-    //     Ok(current)
-    // }
-
-    // /// Swaps the symlink of the current binary with the binary associated with `name`.
-    // pub fn swap(&self, name: &str) -> Result<()> {
-    //     let old = self.current();
-
-    //     if old.exists() {
-    //         debug!(target: "unionvisor", "removing old symlink at {}", as_display(old.display()));
-    //         std::fs::remove_file(old)?;
-    //     }
-
-    //     let new = self.get_path_to(name);
-    //     let to = self.current();
-    //     debug!(target: "unionvisor", "creating symlink from {} to {}", as_display(new.display()), as_display(to.display()));
-    //     // soft_link is deprecated as it does not work on windows, but we do not care about
-    //     // windows anyway.
-    //     std::os::unix::fs::symlink(new, to)?;
-    //     Ok(())
-    // }
 }
