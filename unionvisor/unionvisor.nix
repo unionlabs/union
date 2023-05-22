@@ -89,7 +89,10 @@
           serviceConfig = {
             Type = "simple";
             WorkingDirectory = "/home/unionvisor";
-            ExecStart = "${cfg.bundle}/bin/unionvisor init --bindir ${cfg.bundle}/bins --moniker ${cfg.monniker}";
+            ExecStart = ''
+              ${cfg.bundle}/bin/unionvisor --root /home/unionvisor init --bundle ${cfg.bundle} --moniker ${cfg.moniker} --allow-dirty
+              ${cfg.bundle}/bin/unionvisor --root /home/unionvisor run --bundle
+            '';
             Restart = mkForce "always";
           };
         };

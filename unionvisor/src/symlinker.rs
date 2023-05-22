@@ -104,4 +104,4 @@ mod tests {
 
         symlinker.swap(&OsString::from("foo")).unwrap();
     }
-
+}
