@@ -44,5 +44,5 @@ jobs:
           message: |
             # Docs Preview URL
             ${{ steps.publish-preview.outputs.preview-url }}
-            comment_tag: Docs Preview URL
-            GITHUB_TOKEN: ${{ github.token }}
+          comment_tag: Docs Preview URL
+          GITHUB_TOKEN: ${{ github.token }}
