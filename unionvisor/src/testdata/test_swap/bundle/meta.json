@@ -1,0 +1,5 @@
+{
+  "binary_name": "swapperd",
+  "fallback_version": "bar",
+  "versions_directory": "versions"
+}

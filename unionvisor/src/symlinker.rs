@@ -72,22 +72,23 @@ impl Symlinker {
     }
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use crate::testdata;
+#[cfg(test)]
+mod tests {
+    use crate::testdata;
 
-//     use super::*;
+    use super::*;
 
-//     #[test]
-//     fn test_swap() {
-//         let dir = testdata::temp_dir_with(&["test_swap"]);
-//         let home = dir.into_path().join("test_swap");
+    #[test]
+    fn test_swap() {
+        let tmp = testdata::temp_dir_with(&["test_swap"]);
+        let root = tmp.into_path().join("test_swap");
+        let bundle = Bundle::new(root.join("bundle")).unwrap();
+        let symlinker = Symlinker::new(root, bundle);
 
-//         std::os::unix::fs::symlink(home.join("bins/bar/uniond"), home.join("bins/current"))
-//             .expect("should be able to symlink");
+        symlinker
+            .make_fallback_link()
+            .expect("fallback link should be made");
 
-//         let bindir = Bundle::new(home.clone(), home.join("bins"), "bar", "uniond")
-//             .expect("should be able to create a bindir");
-//         bindir.swap("foo").unwrap();
-//     }
-// }
+        symlinker.swap(&OsString::from("foo")).unwrap();
+    }
+}
