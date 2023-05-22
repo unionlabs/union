@@ -83,26 +83,28 @@
       };
 
       config = mkIf cfg.enable {
-        systemd.services.unionvisor = let
-          unionvisor-systemd-script = pkgs.writeShellApplication {
-            name = "unionvisor-systemd";
-            runtimeInputs = [ pkgs.coreutils cfg.bundle ];
-            text = ''
-              ${pkgs.coreutils}/bin/mkdir -p /var/lib/unionvisor 
-              cd /var/lib/unionvisor 
-              HOME=/var/lib/unionvisor ${cfg.bundle}/unionvisor --root /var/lib/unionvisor init --bundle ${cfg.bundle} --moniker ${cfg.moniker} --allow-dirty 
-              HOME=/var/lib/unionvisor ${cfg.bundle}/unionvisor --root /var/lib/unionvisor run --bundle ${cfg.bundle} 
-            '';
+        systemd.services.unionvisor =
+          let
+            unionvisor-systemd-script = pkgs.writeShellApplication {
+              name = "unionvisor-systemd";
+              runtimeInputs = [ pkgs.coreutils cfg.bundle ];
+              text = ''
+                ${pkgs.coreutils}/bin/mkdir -p /var/lib/unionvisor 
+                cd /var/lib/unionvisor 
+                HOME=/var/lib/unionvisor ${cfg.bundle}/unionvisor --root /var/lib/unionvisor init --bundle ${cfg.bundle} --moniker ${cfg.moniker} --allow-dirty 
+                HOME=/var/lib/unionvisor ${cfg.bundle}/unionvisor --root /var/lib/unionvisor run --bundle ${cfg.bundle} 
+              '';
+            };
+          in
+          {
+            wantedBy = [ "multi-user.target" ];
+            description = "Unionvisor";
+            serviceConfig = {
+              Type = "simple";
+              ExecStart = pkgs.lib.getExe unionvisor-systemd-script;
+              Restart = mkForce "always";
+            };
           };
-        in {
-          wantedBy = [ "multi-user.target" ];
-          description = "Unionvisor";
-          serviceConfig = {
-            Type = "simple";
-            ExecStart = pkgs.lib.getExe unionvisor-systemd-script;
-            Restart = mkForce "always";
-          };
-        };
       };
     };
 }
