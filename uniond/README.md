@@ -6,7 +6,7 @@
 
 The easiest way to obtain the `uniond` binary is to check the [releases](https://github.com/unionfi/union/releases). Alternatively, they can be built by running:
 
-```
+```sh
 nix build ./#uniond
 ```
 
