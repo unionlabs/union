@@ -458,3 +458,6 @@ rustc
 taplo
 netutil
 journalctl
+upgradability
+Axelar
+CCTP
