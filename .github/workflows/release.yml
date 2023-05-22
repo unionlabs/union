@@ -2,7 +2,7 @@ name: Release
 
 on:
   push:
-    tags: ['v[0-9]+\.[0-9]+\.[0-9]+\-rc[0-9]+', 'v[0-9]+\.[0-9]+\.[0-9]+']
+    # tags: ['v[0-9]+\.[0-9]+\.[0-9]+\-rc[0-9]+', 'v[0-9]+\.[0-9]+\.[0-9]+']
 
 jobs:
   build:
@@ -35,14 +35,6 @@ jobs:
         with:
           name: ${{ matrix.system }}.${{ matrix.package }}-image
           path: ${{ matrix.system }}.${{ matrix.package }}-image
-      - uses: docker/login-action@v2
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - run: docker load < ${{ matrix.system }}.${{ matrix.package }}-image
-      - run: docker tag `docker images -q ${{ matrix.package }}` ghcr.io/unionfi/${{ matrix.package }}:${{ github.ref_name }}-${{ matrix.system }}
-      - run: docker push ghcr.io/unionfi/${{ matrix.package }}:${{ github.ref_name }}-${{ matrix.system }}
 
   dl-bins:
     runs-on: ubuntu-latest
@@ -102,20 +94,69 @@ jobs:
     strategy:
       matrix:
         package: [ uniond, unionpd ]
+    services:
+      registry:
+        image: registry:2
+        ports:
+          - 5000:5000
     steps:
       - uses: docker/login-action@v2
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - run: docker pull ghcr.io/unionfi/${{ matrix.package }}:${{ github.ref_name }}-aarch64-linux
-      - run: docker pull ghcr.io/unionfi/${{ matrix.package }}:${{ github.ref_name }}-x86_64-linux
-      - run: |
-          docker manifest create \
-          ghcr.io/unionfi/${{ matrix.package }}:${{ github.ref_name }} \
-          --amend ghcr.io/unionfi/${{ matrix.package }}:${{ github.ref_name }}-aarch64-linux \
-          --amend ghcr.io/unionfi/${{ matrix.package }}:${{ github.ref_name }}-x86_64-linux \
-      - run: docker manifest push ghcr.io/unionfi/${{ matrix.package }}:${{ github.ref_name }}
+
+      # Download Images
+      - name: Download aarch64-linux.${{ matrix.package }}-image
+        uses: actions/download-artifact@v3
+        with:
+          name: aarch64-linux.${{ matrix.package }}-image
+      - name: Download x86_64-linux.${{ matrix.package }}-image
+        uses: actions/download-artifact@v3
+        with:
+          name: x86_64-linux.${{ matrix.package }}-image
+
+      - name: Tag Docker Images
+        run: |
+          docker images uniond --format "{{.ID}}:{{.Tag}}"
+          for arch in 'aarch64-linux' 'x86_64-linux'
+          do
+            dockerstring=$(docker load < $arch.${{ matrix.package }}-image)
+            dockerstring=$(echo ${dockerstring##*':'})
+
+            imageid=$(docker images ${{ matrix.package }} --format "{{.ID}}:{{.Tag}}" | grep $dockerstring)
+            imageid=$(echo ${imageid%%':'*})
+
+            docker tag $imageid localhost:5000/unionfi/${{ matrix.package }}:${{ github.ref_name }}-$arch
+
+
+            echo "${{ matrix.package }} for $arch is tagged"
+
+            docker push localhost:5000/unionfi/${{ matrix.package }}:${{ github.ref_name }}-$arch
+
+            echo "localhost:5000/unionfi/${{ matrix.package }}:${{ github.ref_name }}-$arch is pushed"
+          done
+
+      - name: Create Manifest
+        run: |
+          docker pull localhost:5000/unionfi/${{ matrix.package }}:${{ github.ref_name }}-aarch64-linux
+          docker pull localhost:5000/unionfi/${{ matrix.package }}:${{ github.ref_name }}-x86_64-linux
+          docker manifest create --insecure \
+          localhost:5000/unionfi/${{ matrix.package }}:${{ github.ref_name }} \
+          --amend localhost:5000/unionfi/${{ matrix.package }}:${{ github.ref_name }}-aarch64-linux \
+          --amend localhost:5000/unionfi/${{ matrix.package }}:${{ github.ref_name }}-x86_64-linux \
+      - name: Push Manifest to Local Registry
+        run: docker manifest push localhost:5000/unionfi/${{ matrix.package }}:${{ github.ref_name }}
+      - name: Copy Manifest to GHCR
+        run: |
+          wget https://github.com/rapidsai/skopeo/releases/download/v1.12/skopeo-linux-amd64 -O ./skopeo
+          chmod +x ./skopeo && sudo cp ./skopeo /usr/bin
+
+          echo "Downloaded & installed skopeo"
+
+          skopeo copy --multi-arch=all --insecure-policy --src-tls-verify=false "docker://localhost:5000/unionfi/${{ matrix.package }}:${{ github.ref_name }}" "docker://ghcr.io/unionfi/${{ matrix.package }}:${{ github.ref_name }}"
+
+          echo "Copied ${{ matrix.package }}:${{ github.ref_name }} multi-arch to GHCR"
     
   release:
     runs-on: ubuntu-latest
