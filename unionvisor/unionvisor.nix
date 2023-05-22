@@ -8,14 +8,7 @@
 
       unionvisor = crane.lib.buildPackage attrs;
 
-      meta = {
-        # TODO: make this bundle specific
-        binary_name = "uniond";
-        versions_directory = "versions";
-        fallback_version = "v0.2.0";
-      };
-
-      mkBundle = name: versions: pkgs.linkFarm "union-bundle-${name}" ([
+      mkBundle = name: versions: meta: pkgs.linkFarm "union-bundle-${name}" ([
         {
           name = "meta.json";
           path = pkgs.writeText "meta.json" (builtins.toJSON meta);
@@ -27,7 +20,7 @@
       ] ++ map
         (version: {
           name = "${meta.versions_directory}/${version}/${meta.binary_name}";
-          path = "${inputs'."${version}".packages.uniond}/bin/uniond";
+          path = pkgs.lib.getExe inputs'."${version}".packages.uniond;
         })
         versions);
     in
@@ -35,8 +28,16 @@
       packages = {
         inherit unionvisor;
 
-        bundle-testnet = mkBundle "testnet" [ "v0.2.0" "v0.5.0" ];
-        bundle-mainnet = mkBundle "mainnet" [ "v0.2.0" "v0.5.0" ];
+        bundle-testnet = mkBundle "testnet" [ "v0.2.0" "v0.5.0" ] {
+          binary_name = "uniond";
+          versions_directory = "versions";
+          fallback_version = "v0.2.0";
+        };
+        bundle-mainnet = mkBundle "mainnet" [ "v0.2.0" "v0.5.0" ] {
+          binary_name = "uniond";
+          versions_directory = "versions";
+          fallback_version = "v0.2.0";
+        };
       };
 
       checks = crane.mkChecks "unionvisor" {
