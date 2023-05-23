@@ -8,7 +8,7 @@ use std::{
 };
 use tracing::error;
 
-/// UpgradeInfo is set by the node periodically when a chain upgrade is required.
+/// `UpgradeInfo` is set by the node periodically when a chain upgrade is required.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 pub struct UpgradeInfo {
     /// The name of the upgrade; which operators must match to a binary.

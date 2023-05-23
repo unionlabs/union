@@ -96,7 +96,7 @@ impl Supervisor {
         if let Some(ref mut child) = self.child.take() {
             child.kill()?;
         } else {
-            debug_assert!(false, "killing a child should only happen after spawn")
+            debug_assert!(false, "killing a child should only happen after spawn");
         }
         Ok(())
     }
@@ -118,8 +118,8 @@ pub enum RuntimeError {
 pub fn run_and_upgrade<S: AsRef<OsStr>, I: IntoIterator<Item = S> + Clone>(
     root: impl Into<PathBuf>,
     logformat: LogFormat,
-    symlinker: Symlinker,
-    args: I,
+    symlinker: &Symlinker,
+    args: &I,
     pol_interval: Duration,
 ) -> color_eyre::Result<(), RuntimeError> {
     let root = root.into();
@@ -127,12 +127,10 @@ pub fn run_and_upgrade<S: AsRef<OsStr>, I: IntoIterator<Item = S> + Clone>(
     let mut watcher = FileReader::new(root.join("data/upgrade-info.json"));
 
     info!(target: "unionvisor", "spawning supervisor process for the current uniond binary");
-    supervisor
-        .spawn(logformat.clone(), args.clone())
-        .map_err(|err| {
-            warn!(target: "supervisor", "failed to spawn initial binary call");
-            err
-        })?;
+    supervisor.spawn(logformat, args.clone()).map_err(|err| {
+        warn!(target: "supervisor", "failed to spawn initial binary call");
+        err
+    })?;
     info!(target: "unionvisor", "spawned uniond, starting poll for upgrade signals");
     std::thread::sleep(Duration::from_millis(300));
     loop {
@@ -142,12 +140,11 @@ pub fn run_and_upgrade<S: AsRef<OsStr>, I: IntoIterator<Item = S> + Clone>(
         }
 
         match watcher.poll() {
-            Err(FileReaderError::FileNotFound) => continue,
+            Err(FileReaderError::FileNotFound) | Ok(None) => continue,
             Err(err) => {
                 warn!(target: "unionvisor", "unknown error while polling for upgrades: {}", err.to_string());
                 return Err(RuntimeError::Other(err.into()));
             }
-            Ok(None) => continue,
             Ok(Some(upgrade)) => {
                 // If the daemon restarts, then upgrade-info.json may be stale. We need to
                 // resolve the current symlink and compare it with the info.
@@ -203,7 +200,7 @@ pub fn run_and_upgrade<S: AsRef<OsStr>, I: IntoIterator<Item = S> + Clone>(
                 // If this upgrade fails, we'll revert the local DB and exit the node, ensuring we keep the filesystem in
                 // the last correct state.
                 debug!(target: "unionvisor", "spawning new supervisor process for {}", &upgrade.name);
-                supervisor.spawn(logformat.clone(), args.clone()).map_err(|err| {
+                supervisor.spawn(logformat, args.clone()).map_err(|err| {
                     error!(target: "unionvisor", err = err.to_string().as_str(), "spawning new supervisor process for {} failed", &upgrade.name);
                     // This error is most likely caused by incorrect args because of an upgrade. We can reduce the chance of that happening
                     // by introducing a configuration file with name -> args mappings.
@@ -212,7 +209,7 @@ pub fn run_and_upgrade<S: AsRef<OsStr>, I: IntoIterator<Item = S> + Clone>(
             }
         }
         debug!(target: "unionvisor", "no upgrade detected, sleeping for {} milliseconds.", &pol_interval.as_millis());
-        std::thread::sleep(pol_interval)
+        std::thread::sleep(pol_interval);
     }
 }
 
@@ -241,8 +238,8 @@ mod tests {
         let err = run_and_upgrade(
             root.clone(),
             LogFormat::Plain,
-            symlinker,
-            vec![root.join("data").as_os_str()],
+            &symlinker,
+            &vec![root.join("data").as_os_str()],
             Duration::from_secs(1),
         )
         .unwrap_err();
@@ -270,8 +267,8 @@ mod tests {
         let err = run_and_upgrade(
             root.clone(),
             LogFormat::Plain,
-            symlinker,
-            vec![root.join("data").as_os_str()],
+            &symlinker,
+            &vec![root.join("data").as_os_str()],
             Duration::from_secs(1),
         )
         .unwrap_err();
@@ -320,8 +317,8 @@ mod tests {
         let err = run_and_upgrade(
             root.clone(),
             LogFormat::Plain,
-            symlinker,
-            vec![root.join("data").as_os_str()],
+            &symlinker,
+            &vec![root.join("data").as_os_str()],
             Duration::from_secs(1),
         )
         .unwrap_err();

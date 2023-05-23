@@ -8,7 +8,6 @@ use figment::{
     providers::{Data, Format as FigmentFormat, Json, Toml},
     Figment,
 };
-use fs_extra::file::read_to_string;
 use serde::de::DeserializeOwned;
 use std::{ffi::OsString, io::Read, path::PathBuf, process::Stdio};
 use tracing::{debug, field::display as as_display};
@@ -266,8 +265,8 @@ impl RunCmd {
         supervisor::run_and_upgrade(
             root,
             logformat,
-            symlinker,
-            self.args.clone(),
+            &symlinker,
+            &self.args,
             Duration::from_millis(self.poll_interval.unwrap_or(6000)),
         )?;
         Ok(())
