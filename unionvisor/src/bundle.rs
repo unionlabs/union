@@ -65,10 +65,10 @@ impl UnvalidatedVersionPath {
 
         match status {
             BinaryAvailability::NotFound => {
-                error!(target: "unionvisor", "could not find binary {} in bundle", as_display(self.0.display()))
+                error!(target: "unionvisor", "could not find binary {} in bundle", as_display(self.0.display()));
             }
             BinaryAvailability::PermissionDenied => {
-                error!(target: "unionvisor", "could not execute binary {} in bundle", as_display(self.0.display()))
+                error!(target: "unionvisor", "could not execute binary {} in bundle", as_display(self.0.display()));
             }
             BinaryAvailability::Ok => (),
         }
@@ -99,6 +99,7 @@ impl UnvalidatedVersionPath {
 
 /// Bundle meta info found in `bundle/meta.json`
 #[derive(Clone, Serialize, Deserialize)]
+#[allow(clippy::module_name_repetitions)]
 pub struct BundleMeta {
     /// The name of the binary in `bundle/bins/$VERSION/`
     binary_name: String,

@@ -2,8 +2,8 @@ use color_eyre::eyre::bail;
 use std::str::FromStr;
 use tracing_subscriber::filter::LevelFilter;
 
-pub fn init(logformat: LogFormat, level: LevelFilter) {
-    match logformat {
+pub fn init(log_format: LogFormat, level: LevelFilter) {
+    match log_format {
         LogFormat::Plain => {
             tracing_subscriber::fmt()
                 .with_max_level(level)
@@ -20,7 +20,7 @@ pub fn init(logformat: LogFormat, level: LevelFilter) {
     }
 }
 
-#[derive(Clone)]
+#[derive(Copy, Clone)]
 pub enum LogFormat {
     Plain,
     Json,
@@ -39,8 +39,8 @@ impl FromStr for LogFormat {
 }
 
 impl LogFormat {
-    pub fn as_str(&self) -> &'static str {
-        match &self {
+    pub fn as_str(self) -> &'static str {
+        match self {
             LogFormat::Json => "json",
             LogFormat::Plain => "plain",
         }

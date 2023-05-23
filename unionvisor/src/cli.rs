@@ -3,21 +3,23 @@ use crate::{
 };
 use clap::Parser;
 use color_eyre::{eyre::bail, eyre::eyre, Result};
+use core::time::Duration;
 use figment::{
     providers::{Data, Format as FigmentFormat, Json, Toml},
     Figment,
 };
 use serde::de::DeserializeOwned;
-use std::{ffi::OsString, io::Read, path::PathBuf, process::Stdio, time::Duration};
+use std::{ffi::OsString, io::Read, path::PathBuf, process::Stdio};
 use tracing::{debug, field::display as as_display};
 use tracing_subscriber::filter::LevelFilter;
 
 #[derive(Parser, Clone)]
 #[command(about = "unionvisor is a process supervisor for uniond.", long_about = None)]
+/// [`Cli`]
 pub struct Cli {
     /// The home directory for unionvisor, used to store unionvisor state.
     #[arg(short, long, env = "UNIONVISOR_ROOT")]
-    root: PathBuf,
+    pub root: PathBuf,
 
     /// The log level for unionvisor. uniond logs are piped to stdout and stderr regardless of level.
     /// and should be controlled with the commands args.
@@ -34,11 +36,11 @@ pub struct Cli {
     pub log_format: LogFormat,
 
     #[command(subcommand)]
-    command: Command,
+    pub command: Command,
 }
 
 #[derive(Clone, Parser)]
-enum Command {
+pub enum Command {
     /// Call the current binary, forwarding all arguments passed.
     /// `unionvisor call ..arg` is equivalent to `uniond ..args`.
     Call(CallCmd),
@@ -143,15 +145,15 @@ impl MergeFormat for Toml {
 }
 
 impl MergeCmd {
-    fn merge_to_string(&self, input: String) -> Result<String> {
+    fn merge_to_string(&self, input: &str) -> Result<String> {
         let output = &self.file;
         let ext = output
             .extension()
             .ok_or(eyre!("file must have either a .json or .toml extension"))?;
         let base = std::fs::read_to_string(output)?;
         let data = match ext.to_str().unwrap() {
-            "toml" => merge_inner::<Toml>(input, base)?.to_string(),
-            "json" => merge_inner::<Json>(input, base)?.to_string(),
+            "toml" => merge_inner::<Toml>(input, &base)?.to_string(),
+            "json" => merge_inner::<Json>(input, &base)?.to_string(),
             _ => bail!("unknown extension: {:?}", ext),
         };
         Ok(data)
@@ -165,7 +167,7 @@ impl MergeCmd {
             r.read_to_end(&mut buffer)?;
             String::from_utf8(buffer)?
         };
-        self.merge_to_string(input)
+        self.merge_to_string(&input)
     }
 
     fn merge(&self) -> Result<()> {
@@ -175,10 +177,10 @@ impl MergeCmd {
     }
 }
 
-fn merge_inner<F: MergeFormat>(add: String, base: String) -> Result<F::Output> {
+fn merge_inner<F: MergeFormat>(add: &str, base: &str) -> Result<F::Output> {
     let value: F::Output = Figment::new()
-        .merge(Data::<<F as MergeFormat>::Format>::string(&base))
-        .merge(Data::<<F as MergeFormat>::Format>::string(&add))
+        .merge(Data::<<F as MergeFormat>::Format>::string(base))
+        .merge(Data::<<F as MergeFormat>::Format>::string(add))
         .extract()?;
     Ok(value)
 }
@@ -232,9 +234,8 @@ impl InitCmd {
         if home.exists() {
             if self.allow_dirty {
                 return Ok(InitState::None);
-            } else {
-                bail!("{} already exists, refusing to override", home.display())
             }
+            bail!("{} already exists, refusing to override", home.display())
         }
 
         let init = CallCmd {
@@ -273,7 +274,7 @@ impl RunCmd {
 }
 
 impl CallCmd {
-    /// Executes the logic for the Call variant. Will panic if the enum is not Command::Call.
+    /// Executes the logic for the Call variant. Will panic if the enum is not [`Command::Call`].
     fn call(&self, root: impl Into<PathBuf>) -> Result<()> {
         self.call_inner(root, Stdio::inherit(), Stdio::inherit(), Stdio::inherit())
     }
@@ -323,7 +324,7 @@ mod tests {
         let path = home.join("config/client.toml");
         write_to_file(&path, "hello").unwrap();
         let contents = std::fs::read_to_string(&path).unwrap();
-        assert_eq!(contents, "hello")
+        assert_eq!(contents, "hello");
     }
 
     #[test]
@@ -374,7 +375,7 @@ mod tests {
             foo = "bar"
         };
 
-        let output = cmd.merge_to_string(input.to_string()).unwrap();
+        let output = cmd.merge_to_string(&input.to_string()).unwrap();
         let expected = toml! {
             chain-id = "union"
             keyring-backend = "os"
@@ -392,8 +393,8 @@ mod tests {
 
         let base = json!({"a": true, "b": false});
         let added = json!({"b": true, "c": true});
-        let result = merge_inner::<Json>(added.to_string(), base.to_string()).unwrap();
-        assert_eq!(result, json!({"a": true, "b": true, "c": true}))
+        let result = merge_inner::<Json>(&added.to_string(), &base.to_string()).unwrap();
+        assert_eq!(result, json!({"a": true, "b": true, "c": true}));
     }
 
     #[test]
@@ -422,8 +423,8 @@ mod tests {
             [dependencies]
             serde = "1.0"
         };
-        let result = merge_inner::<Toml>(added.to_string(), base.to_string()).unwrap();
-        assert_eq!(result, expected)
+        let result = merge_inner::<Toml>(&added.to_string(), &base.to_string()).unwrap();
+        assert_eq!(result, expected);
     }
 
     /// Verifies that calling unionvisor init -i will return without impacting the fs.

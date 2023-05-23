@@ -249,6 +249,7 @@
                 buildInputs = [ rust-nightly ] ++
                   (with pkgs; [
                     buf
+                    bacon
                     cargo-nextest
                     go_1_20
                     gopls

@@ -8,7 +8,7 @@ use tracing::debug;
 /// Symlinker maintains a symlink `root/current` to a binary at a [`Bundle`]'s [`ValidVersionPath`]
 #[derive(Clone)]
 pub struct Symlinker {
-    root: PathBuf,
+    pub root: PathBuf,
     pub bundle: Bundle,
 }
 

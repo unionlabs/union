@@ -31,10 +31,14 @@ impl FromStr for Network {
 }
 
 impl Network {
+    // `self` will be used later on to determine which URL to use based on the network
+    #[allow(clippy::unused_self)]
     pub fn seeds(&self) -> &str {
         "c649931f0ef98bc3e086bbfbcf3b04896a9ec7de@uniontestnet.poisonphang.com:26656"
     }
 
+    // `self` will be used later on to determine which URL to use based on the network
+    #[allow(clippy::unused_self)]
     pub fn genesis_url(&self) -> &str {
         // We use a secret gist for the genesis.json until testnet is public
         // "https://raw.githubusercontent.com/unionfi/genesis/main/union-testnet-1/genesis.json"
