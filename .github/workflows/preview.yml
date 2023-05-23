@@ -7,7 +7,7 @@ on:
 
 env:
     ARTIFACT_NAME: BUILD_LOG
-    NIX_VERSION: nix-2.13.2
+    NIX_VERSION: nix-2.14.1
     NIXPKGS_CHANNEL: nixos-22.11
 
 jobs:
