@@ -482,3 +482,15 @@ ypyp
 yqyp
 λpxrx
 λpxrx
+rustc
+taplo
+netutil
+journalctl
+upgradability
+Axelar
+CCTP
+Boneh
+Shacham
+zkps
+Verkle
+Polkadot

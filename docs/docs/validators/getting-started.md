@@ -4,7 +4,7 @@ title: "Getting Started"
 
 This guide is intended for validators running on bare-metal servers and explains how Union releases work. Check out the [NixOS](./nixos) and the [kubernetes](./kubernetes) guide for more production-ready deployments.
 
-[Validators](../architecture/validator) are the backbone of the network. Becoming one requires significant token bonding and delegations, and is not intended for non-power users.
+Validators are the backbone of the network. Becoming one requires significant token bonding and delegations, and is not intended for non-power users.
 
 ## Obtaining uniond
 
