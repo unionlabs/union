@@ -1,0 +1,5 @@
+{
+  "binary_name": "uniond.sh",
+  "fallback_version": "genesis",
+  "versions_directory": "bins"
+}

@@ -32,6 +32,7 @@
     nix-filter.url = "github:numtide/nix-filter";
 
     # uniond versions
+    "v0.2.0".url = "git+https://github.com/unionfi/union?rev=8b2d62abf1795a5e7531b4af7a4e1b995d482206";
     "v0.5.0".url = "git+https://github.com/unionfi/union?ref=release-v0.5.0";
   };
   outputs = inputs@{ self, nixpkgs, flake-parts, nix-filter, crane, foundry, treefmt-nix, pre-commit-hooks, ... }:
@@ -57,14 +58,14 @@
       perSystem = { config, self', inputs', pkgs, system, lib, ... }:
         let
           rust-nightly = pkgs.rust-bin.fromRustupToolchain {
-            channel = "nightly-2022-12-07";
+            channel = "nightly-2023-05-16";
             components = [ "rust-src" "rust-analyzer" ];
             profile = "default";
           };
 
           withBuildTarget = target: crane.lib.${system}.overrideToolchain (pkgs.rust-bin.fromRustupToolchain {
-            channel = "nightly-2022-12-07";
-            profile = "minimal";
+            channel = "nightly-2023-05-16";
+            components = [ "cargo" "rustc" "rust-src" ];
             targets = [ target ];
           });
           craneLib = crane.lib.${system}.overrideToolchain rust-nightly;
@@ -247,22 +248,24 @@
               baseShell = {
                 buildInputs = [ rust-nightly ] ++
                   (with pkgs; [
-                    protobuf
-                    pkg-config
-                    openssl
                     buf
-                    nixfmt
+                    bacon
+                    cargo-nextest
                     go_1_20
                     gopls
-                    gotools
                     go-tools
-                    nodejs
-                    yarn
-                    nil
-                    marksman
+                    gotools
                     jq
-                    yq
+                    marksman
+                    nil
+                    nixfmt
+                    nodejs
+                    openssl
+                    pkg-config
+                    protobuf
                     solc
+                    yarn
+                    yq
                   ]);
                 nativeBuildInputs = [ config.treefmt.build.wrapper ];
                 GOPRIVATE = "github.com/unionfi/*";

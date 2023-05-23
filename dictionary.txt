@@ -198,6 +198,7 @@ interfacetype
 ipetkov
 ipetkov
 journalctl
+journalctl
 jsonschema
 jwtsecret
 keccak
@@ -240,6 +241,8 @@ monniker
 muslc
 neighbouring
 neoeinstein
+netutil
+netutil
 netutil
 networkid
 nextest
@@ -335,6 +338,8 @@ rlib
 rpath
 runtimeservices
 rustc
+rustc
+rustc
 RUSTFLAGS
 rustfmt
 rustfmt
@@ -378,7 +383,10 @@ stylesheet
 substores
 sumbitter
 svrcmd
+symlinker
 syncmode
+taplo
+taplo
 taplo
 teku
 tempdir
@@ -439,6 +447,7 @@ unionvisor
 Unjail
 unjailed
 Unmarshal
+unvalidated
 unwithdrawn
 upgradability
 upgradeclient

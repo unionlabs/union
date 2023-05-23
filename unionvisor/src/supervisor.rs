@@ -1,12 +1,12 @@
 use crate::{
-    bindir::Bindir,
     logging::LogFormat,
+    symlinker::Symlinker,
     watcher::{FileReader, FileReaderError},
 };
-use color_eyre::{eyre::eyre, Result};
+use color_eyre::Result;
 use std::{
     ffi::{OsStr, OsString},
-    fs::{self, create_dir_all},
+    fs::create_dir_all,
     path::{Path, PathBuf},
     process::{Child, ExitStatus},
     time::Duration,
@@ -18,11 +18,9 @@ pub struct Supervisor {
     /// The path where the subprocess is called, containing configuration files and more importantly, the
     /// data dir.
     root: PathBuf,
-
-    /// The binary to run which will be supervised. This should be the name of the binary, which will be run by the
-    /// supervisor as ./{binary}.
-    binary: PathBuf,
-
+    /// Symlinker manages the `root/current` symlink and swaps the link to a new version on upgrade
+    symlinker: Symlinker,
+    /// The child process that is being supervised
     child: Option<Child>,
 }
 
@@ -36,10 +34,10 @@ impl Drop for Supervisor {
 }
 
 impl Supervisor {
-    pub fn new(root: impl Into<PathBuf>, current: impl Into<PathBuf>) -> Self {
+    pub fn new(root: impl Into<PathBuf>, symlinker: Symlinker) -> Self {
         Self {
             root: root.into(),
-            binary: current.into(),
+            symlinker,
             child: None,
         }
     }
@@ -50,11 +48,15 @@ impl Supervisor {
         logformat: LogFormat,
         args: I,
     ) -> Result<()> {
-        assert!(&self.binary.exists());
-        let handle = std::process::Command::new(&self.binary)
+        let program = self.symlinker.current_validated()?;
+        let handle = std::process::Command::new(program.0)
             .args(vec!["--log_format", logformat.as_str()])
             .arg("start")
             .args(args)
+            .args(vec![
+                OsString::from("--home"),
+                self.home_dir().into_os_string(),
+            ])
             .stderr(std::process::Stdio::inherit())
             .stdout(std::process::Stdio::inherit())
             .spawn()?;
@@ -62,34 +64,20 @@ impl Supervisor {
         Ok(())
     }
 
-    /// Returns the {root}/{binary} symlink that is being used by this supervisor.
-    pub fn symlink(&self) -> PathBuf {
-        self.binary.clone()
+    fn home_dir(&self) -> PathBuf {
+        self.root.join("home")
     }
 
-    fn data_dir(&self) -> PathBuf {
-        self.root.join("data")
-    }
-
-    /// Backup the current data directory to the provided path. The location will be "{dir}/data".
-    pub fn backup(&self, dir: impl AsRef<Path>) -> Result<()> {
+    /// Backup the current uniond home directory to the provided path. The location will be "{dir}/data".
+    pub fn backup(&self, backup_dir: impl AsRef<Path>) -> Result<()> {
         use fs_extra::dir::{copy, CopyOptions};
-        let dir = dir.as_ref();
-        debug!(target: "unionvisor", "creating backup dir at {}",  as_display(dir.display()));
-        create_dir_all(dir)?;
-        let data_dir = self.data_dir();
+        let backup_dir = backup_dir.as_ref();
+        debug!(target: "unionvisor", "creating backup dir at {}",  as_display(backup_dir.display()));
+        create_dir_all(backup_dir)?;
+        let home_dir = self.home_dir();
         let options = CopyOptions::new().overwrite(true);
-        debug!(target: "unionvisor", "backing up {} to {}",  as_display(data_dir.display()),  as_display(dir.display()));
-        copy(data_dir, dir, &options)?;
-        Ok(())
-    }
-
-    /// Revert a backup at `dir`.
-    pub fn revert(&self, dir: impl AsRef<Path>) -> Result<()> {
-        use fs_extra::dir::{copy, CopyOptions};
-        let dir = dir.as_ref();
-        let options = CopyOptions::new().overwrite(true);
-        copy(dir, &self.root, &options)?;
+        debug!(target: "unionvisor", "backing up {} to {}",  as_display(home_dir.display()),  as_display(backup_dir.display()));
+        copy(home_dir, backup_dir, &options)?;
         Ok(())
     }
 
@@ -108,7 +96,7 @@ impl Supervisor {
         if let Some(ref mut child) = self.child.take() {
             child.kill()?;
         } else {
-            debug_assert!(false, "killing a child should only happen after spawn")
+            debug_assert!(false, "killing a child should only happen after spawn");
         }
         Ok(())
     }
@@ -128,30 +116,21 @@ pub enum RuntimeError {
 }
 
 pub fn run_and_upgrade<S: AsRef<OsStr>, I: IntoIterator<Item = S> + Clone>(
-    home: impl Into<PathBuf>,
+    root: impl Into<PathBuf>,
     logformat: LogFormat,
-    bindir: Bindir,
-    args: I,
+    symlinker: &Symlinker,
+    args: &I,
     pol_interval: Duration,
 ) -> color_eyre::Result<(), RuntimeError> {
-    let current = bindir.current();
-    let home = home.into();
-    let mut supervisor = Supervisor::new(home.clone(), current.clone());
-    let mut watcher = FileReader::new(home.join("data/upgrade-info.json"));
+    let root = root.into();
+    let mut supervisor = Supervisor::new(root.clone(), symlinker.clone());
+    let mut watcher = FileReader::new(root.join("data/upgrade-info.json"));
 
-    info!(target: "unionvisor", "spawning supervisor process for the uniond binary");
-    debug!(
-        target: "unionvisor",
-        binary =  as_display(current.display()),
-        home =  as_display(home.display()),
-        "spawning supervisor process for the uniond binary"
-    );
-    supervisor
-        .spawn(logformat.clone(), args.clone())
-        .map_err(|err| {
-            warn!(target: "supervisor", "failed to spawn initial binary call");
-            err
-        })?;
+    info!(target: "unionvisor", "spawning supervisor process for the current uniond binary");
+    supervisor.spawn(logformat, args.clone()).map_err(|err| {
+        warn!(target: "supervisor", "failed to spawn initial binary call");
+        err
+    })?;
     info!(target: "unionvisor", "spawned uniond, starting poll for upgrade signals");
     std::thread::sleep(Duration::from_millis(300));
     loop {
@@ -161,71 +140,68 @@ pub fn run_and_upgrade<S: AsRef<OsStr>, I: IntoIterator<Item = S> + Clone>(
         }
 
         match watcher.poll() {
-            Err(FileReaderError::FileNotFound) => continue,
+            Err(FileReaderError::FileNotFound) | Ok(None) => continue,
             Err(err) => {
                 warn!(target: "unionvisor", "unknown error while polling for upgrades: {}", err.to_string());
                 return Err(RuntimeError::Other(err.into()));
             }
-            Ok(None) => continue,
-            Ok(Some(new)) => {
+            Ok(Some(upgrade)) => {
                 // If the daemon restarts, then upgrade-info.json may be stale. We need to
                 // resolve the current symlink and compare it with the info.
                 info!(
                     target = "unionvisor",
-                    "detected an upgrade signal: {:?}", new
+                    "detected an upgrade signal: {:?}", upgrade
                 );
-                let symlink = supervisor.symlink();
-                let actual =
-                    fs::read_link(symlink).map_err(|err| RuntimeError::Other(err.into()))?;
-                let name = actual
-                    .file_name()
-                    .ok_or(RuntimeError::Other(eyre!("could not read symlink")))?;
-                if name == OsString::from(&new.name) {
-                    debug!(target: "unionvisor", "detected upgrade {}, but already running that binary. sleeping for {} milliseconds.", &new.name, pol_interval.as_millis());
+
+                // let symlink = supervisor.symlink();
+
+                let current_version = symlinker.current_version()?;
+                let upgrade_name = OsString::from(&upgrade.name);
+                if current_version == upgrade_name {
+                    debug!(target: "unionvisor", "detected upgrade {}, but already running that binary. sleeping for {} milliseconds.", &upgrade.name, pol_interval.as_millis());
                     std::thread::sleep(pol_interval);
                     continue;
                 }
 
                 info!(
                     target: "unionvisor",
-                    name = new.name.as_str(),
-                    height = new.height,
-                "upgrade detected"
+                    name = upgrade.name.as_str(),
+                    height = upgrade.height,
+                    "upgrade detected"
                 );
                 debug!(target: "unionvisor", "checking binary availability");
-                bindir.is_available(&new.name).map_err(|err| {
-                    error!(target: "unionvisor", "binary {} unavailable", &new.name);
-                    RuntimeError::BinaryUnavailable {
-                        err,
-                        name: new.name.clone(),
-                    }
-                })?;
+
+                symlinker
+                    .bundle
+                    .path_to(&upgrade_name)
+                    .validate()
+                    .map_err(|err| {
+                        error!(target: "unionvisor", "binary {} unavailable", &upgrade.name);
+                        RuntimeError::BinaryUnavailable {
+                            err,
+                            name: upgrade.name.clone(),
+                        }
+                    })?;
+
                 debug!(target: "unionvisor", "killing supervisor process");
                 supervisor.kill()?;
-                let backup_file = home.join("backup");
+                let backup_dir = root.join("home_backup");
 
                 // If we fail to backup, the file system is incorrectly configured (permissions) or we are running
                 // out of disk space. Either way we exit the node as now the server itself has become unreliable.
-                debug!(target: "unionvisor", "backing up current database");
-                supervisor.backup(&backup_file)?;
+                debug!(target: "unionvisor", "backing up current home");
+                supervisor.backup(&backup_dir)?;
 
-                debug!(target: "unionvisor", "creating new symlink for {}", &new.name);
-                bindir.swap(&new.name)?;
+                debug!(target: "unionvisor", "creating new symlink for {}", &upgrade.name);
+                symlinker.swap(&upgrade_name)?;
 
-                // Store the old supervisor incase of reverts.
-                let old = supervisor;
-                supervisor = Supervisor::new(home.clone(), current.clone());
+                supervisor = Supervisor::new(root.clone(), symlinker.clone());
 
                 // If this upgrade fails, we'll revert the local DB and exit the node, ensuring we keep the filesystem in
                 // the last correct state.
-                debug!(target: "unionvisor", "spawning new supervisor process for {}", &new.name);
-                supervisor.spawn(logformat.clone(), args.clone()).map_err(|err| {
-                    error!(target: "unionvisor", err = err.to_string().as_str(), "spawning new supervisor process for {} failed", &new.name);
-                    // An error here is uber fubar. 
-                    if let Err(err) = old.revert(backup_file) {
-                        error!(target: "unionvisor", err = err.to_string().as_str(), "reverting backup failed");
-                        return err;
-                    }
+                debug!(target: "unionvisor", "spawning new supervisor process for {}", &upgrade.name);
+                supervisor.spawn(logformat, args.clone()).map_err(|err| {
+                    error!(target: "unionvisor", err = err.to_string().as_str(), "spawning new supervisor process for {} failed", &upgrade.name);
                     // This error is most likely caused by incorrect args because of an upgrade. We can reduce the chance of that happening
                     // by introducing a configuration file with name -> args mappings.
                     err
@@ -233,31 +209,41 @@ pub fn run_and_upgrade<S: AsRef<OsStr>, I: IntoIterator<Item = S> + Clone>(
             }
         }
         debug!(target: "unionvisor", "no upgrade detected, sleeping for {} milliseconds.", &pol_interval.as_millis());
-        std::thread::sleep(pol_interval)
+        std::thread::sleep(pol_interval);
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::testdata;
+    use crate::{bundle::Bundle, testdata};
     use std::fs;
     use tracing_test::traced_test;
 
     #[test]
     #[traced_test]
+    /// Will keep upgrading the `current` version until it hits the signal for upgrade3,
+    /// which it cannot provide.
     fn test_run_and_upgrade() {
-        let tmp_dir = testdata::temp_dir_with(&["test_run"]);
-        let path = tmp_dir.into_path().join("test_run");
-        let bindir = Bindir::new(path.clone(), path.join("bins"), "genesis", "uniond").unwrap();
+        let tmp = testdata::temp_dir_with(&["test_run"]);
+        let root = tmp.into_path().join("test_run");
+        let bundle = Bundle::new(root.join("bundle")).unwrap();
+        let symlinker = Symlinker::new(root.clone(), bundle);
+
+        // Usually this is made as part of the init process, but we're not test that here.
+        symlinker
+            .make_fallback_link()
+            .expect("fallback link should be made");
+
         let err = run_and_upgrade(
-            path.clone(),
+            root.clone(),
             LogFormat::Plain,
-            bindir,
-            vec![path.join("data").as_os_str()],
+            &symlinker,
+            &vec![root.join("data").as_os_str()],
             Duration::from_secs(1),
         )
         .unwrap_err();
+
         if let RuntimeError::BinaryUnavailable { name, err: _ } = err {
             assert_eq!(name, "upgrade3")
         } else {
@@ -268,17 +254,25 @@ mod tests {
     #[test]
     #[traced_test]
     fn test_run_and_upgrade_restart() {
-        let tmp_dir = testdata::temp_dir_with(&["test_restart"]);
-        let path = tmp_dir.into_path().join("test_restart");
-        let bindir = Bindir::new(path.clone(), path.join("bins"), "upgrade1", "uniond").unwrap();
+        let tmp = testdata::temp_dir_with(&["test_run"]);
+        let root = tmp.into_path().join("test_run");
+        let bundle = Bundle::new(root.join("bundle")).unwrap();
+        let symlinker = Symlinker::new(root.clone(), bundle);
+
+        // Usually this is made as part of the init process, but we're not test that here.
+        symlinker
+            .make_fallback_link()
+            .expect("fallback link should be made");
+
         let err = run_and_upgrade(
-            path.clone(),
+            root.clone(),
             LogFormat::Plain,
-            bindir,
-            vec![path.join("data").as_os_str()],
+            &symlinker,
+            &vec![root.join("data").as_os_str()],
             Duration::from_secs(1),
         )
         .unwrap_err();
+
         if let RuntimeError::BinaryUnavailable { name, err: _ } = err {
             assert_eq!(name, "upgrade3")
         } else {
@@ -289,14 +283,17 @@ mod tests {
     #[test]
     #[traced_test]
     fn test_backup() {
-        let tmp = testdata::temp_dir_with(&["test_backup"]);
-        let home = tmp.into_path().join("test_backup");
-        let supervisor: Supervisor = Supervisor::new(home.clone(), "");
-        supervisor.backup(home.join("backup")).unwrap();
-        assert_file_contains(home.join("backup/data/foo.db"), "foo");
-        assert_file_contains(home.join("data/foo.db"), "foo");
-        assert_file_contains(home.join("backup/data/bar.db"), "bar");
-        assert_file_contains(home.join("data/bar.db"), "bar");
+        let tmp = testdata::temp_dir_with(&["test_backup", "bundle"]);
+        let tmp = tmp.into_path();
+        let root = tmp.join("test_backup");
+        let bundle = Bundle::new(tmp.join("bundle")).unwrap();
+        let symlinker = Symlinker::new(root.clone(), bundle);
+        let supervisor: Supervisor = Supervisor::new(root.clone(), symlinker);
+        supervisor.backup(root.join("home_backup")).unwrap();
+        assert_file_contains(root.join("home_backup/home/data/foo.db"), "foo");
+        assert_file_contains(root.join("home/data/foo.db"), "foo");
+        assert_file_contains(root.join("home_backup/home/data/bar.db"), "bar");
+        assert_file_contains(root.join("home/data/bar.db"), "bar");
     }
 
     fn assert_file_contains(file: impl AsRef<Path>, want: &str) {
@@ -306,34 +303,26 @@ mod tests {
 
     #[test]
     #[traced_test]
-    fn test_revert() {
-        let tmp = testdata::temp_dir_with(&["test_revert"]);
-        let home = tmp.into_path().join("test_revert");
-        let supervisor: Supervisor = Supervisor::new(home.clone(), "");
-        supervisor.backup(home.join("backup")).unwrap();
-        assert_file_contains(home.join("backup/data/foo.db"), "foo");
-        std::fs::remove_file(home.join("data/foo.db")).unwrap();
-        supervisor.revert(home.join("backup/data")).unwrap();
-        assert_file_contains(home.join("data/foo.db"), "foo");
-    }
-
-    #[test]
-    #[traced_test]
     fn test_early_exit() {
         let tmp_dir = testdata::temp_dir_with(&["test_early_exit"]);
-        let home = tmp_dir.into_path().join("test_early_exit");
-        assert!(home.join("bins/genesis/uniond.sh").exists());
-        let bindir = Bindir::new(home.clone(), home.join("bins"), "genesis", "uniond.sh")
-            .expect("should be able to create a bindir");
-        assert!(bindir.current().exists());
+        let root = tmp_dir.into_path().join("test_early_exit");
+        let bundle = Bundle::new(root.join("bundle")).expect("should be able to create a bundle");
+        let symlinker = Symlinker::new(root.clone(), bundle);
+
+        // Usually this is made as part of the init process, but we're not test that here.
+        symlinker
+            .make_fallback_link()
+            .expect("fallback link should be made");
+
         let err = run_and_upgrade(
-            home.clone(),
+            root.clone(),
             LogFormat::Plain,
-            bindir,
-            vec![home.join("data").as_os_str()],
+            &symlinker,
+            &vec![root.join("data").as_os_str()],
             Duration::from_secs(1),
         )
         .unwrap_err();
+
         assert!(matches!(dbg!(err), RuntimeError::EarlyExit { .. }))
     }
 }

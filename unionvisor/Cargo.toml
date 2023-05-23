@@ -13,6 +13,8 @@ serde = { version = "1.0.162", features = ["derive"] }
 serde_json = "1.0.96"
 thiserror = "1.0.40"
 tracing-subscriber = { version = "0.3.17", features = ["json", "tracing-log"] }
+figment = {version = "0.10.8", features = ["toml", "json"] }
+toml = "0.7.2"
 
 [dev-dependencies]
 tempfile = "3.5.0"
