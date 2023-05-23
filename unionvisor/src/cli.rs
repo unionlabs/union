@@ -8,6 +8,7 @@ use figment::{
     providers::{Data, Format as FigmentFormat, Json, Toml},
     Figment,
 };
+use fs_extra::file::read_to_string;
 use serde::de::DeserializeOwned;
 use std::{ffi::OsString, io::Read, path::PathBuf, process::Stdio};
 use tracing::{debug, field::display as as_display};
@@ -48,7 +49,7 @@ pub enum Command {
     /// Starts unionvisor, intended to be run under systemd or as a daemon
     Run(RunCmd),
 
-    /// Initializes a local directory to join the union network. FOOBAR
+    /// Initializes a local directory to join the union network.
     Init(InitCmd),
 
     /// Merges toml or json configuration files.
@@ -163,9 +164,9 @@ impl MergeCmd {
         let input = if let Some(file) = &self.from {
             std::fs::read_to_string(file)?
         } else {
-            let mut buffer = Vec::new();
-            r.read_to_end(&mut buffer)?;
-            String::from_utf8(buffer)?
+            let mut string = String::new();
+            r.read_to_string(&mut string)?;
+            string
         };
         self.merge_to_string(&input)
     }
