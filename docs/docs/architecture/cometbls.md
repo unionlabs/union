@@ -20,7 +20,7 @@ Boneh–Lynn–Shacham (BLS) signatures form the foundation of CometBLS. They ar
 
 - Zkp verification is much more efficient.
 
-Note that the Union network does not produce zkps. This function is performed by [galois](./galois.md). Relayers can produce proofs themselves, or use Union as a distributed sequencing layer through the use of [proof claims](https://github.com/unionfi/union/discussions/41).
+Note that the Union validators do not produce zkps directly. This function is performed by [galois](./galois.md). Relayers can produce proofs themselves, or use Union as a distributed sequencing layer through the use of [proof claims](https://github.com/unionfi/union/discussions/41).
 
 Under CometBLS, the Union network can scale to over a hundred validators without impacting performance or bridging latency.
 
