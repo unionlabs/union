@@ -1,11 +1,7 @@
 use crate::errors::Error;
-use ethereum_consensus::types::{Address, H256};
+use ethereum_consensus::primitives::Root;
 use rlp::Rlp;
 use tiny_keccak::{Hasher, Keccak};
-
-pub fn calculate_account_path(ibc_address: &Address) -> H256 {
-    keccak_256(&ibc_address.0).into()
-}
 
 /// decode rlp format `List<List>` to `Vec<List>`
 pub fn decode_eip1184_rlp_proof(proof: Vec<u8>) -> Result<Vec<Vec<u8>>, Error> {
@@ -24,7 +20,7 @@ pub fn decode_eip1184_rlp_proof(proof: Vec<u8>) -> Result<Vec<Vec<u8>>, Error> {
     }
 }
 
-pub fn extract_storage_root_from_account(account_rlp: &[u8]) -> Result<H256, Error> {
+pub fn extract_storage_root_from_account(account_rlp: &[u8]) -> Result<Root, Error> {
     let r = Rlp::new(account_rlp);
     if !r.is_list() {
         let items: Vec<Vec<u8>> = r.as_list().map_err(|_| {
@@ -33,9 +29,7 @@ pub fn extract_storage_root_from_account(account_rlp: &[u8]) -> Result<H256, Err
         if items.len() != 4 {
             Err(Error::InvalidProofFormat)
         } else {
-            Ok(H256::from_slice(
-                items.get(2).ok_or(Error::InvalidProofFormat)?,
-            ))
+            Ok(Root::try_from(items.get(2).ok_or(Error::InvalidProofFormat)?.as_slice()).unwrap())
         }
     } else {
         Err(Error::InvalidProofFormat)

@@ -1,22 +1,56 @@
 [package]
 name = "ethereum-consensus"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
+license = "MIT OR Apache-2.0"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[features]
+default = ["serde", "async"]
+serde = ["dep:serde", "hex", "serde_json", "serde_yaml"]
+async = ["tokio", "tokio-stream", "async-stream"]
+spec-tests = ["serde", "serde_yaml"]
+gen-spec = ["syn", "prettyplease", "quote"]
+gen-tests = ["walkdir", "convert_case"]
 
 [dependencies]
-displaydoc = { version = "0.2", default-features = false }
-hex = { version = "0.4.3", default-features = false, features = ["alloc", "serde"] }
-milagro_bls = { git = "https://github.com/datachainlab/milagro_bls", rev = "bc2b5b5e8d48b7e2e1bfaa56dc2d93e13cb32095", default-features = false }
-primitive-types = { version = "0.12.1", default-features = false }
-rs_merkle = { version = "1.2.0", default-features = false }
-serde = { version = "1.0", default-features = false, features = ["alloc", "derive"] }
-sha2 = { version = "0.10.2", default-features = false }
-ssz-rs = { git = "https://github.com/bluele/ssz_rs", branch = "serde-no-std", default-features = false, features = ["serde"] }
-ssz-rs-derive = { git = "https://github.com/bluele/ssz_rs", branch = "serde-no-std", default-features = false }
+ssz-rs = { git = "https://github.com/ralexstokes/ssz-rs", rev = "adf1a0b14cef90b9536f28ef89da1fab316465e1" }
+blst = "0.3.6"
+rand = "0.8.4"
+thiserror = "1.0.30"
+sha2 = "0.9.8"
+integer-sqrt = "0.1.5"
+enr = "0.6.2"
+multihash = { version = "0.16", default-features = false, features = ["std", "multihash-impl", "identity", "sha2"] }
+multiaddr = "0.14.0"
+
+serde = { version = "1.0", features = ["derive"], optional = true }
+serde_json = { version = "1.0.81", optional = true }
+serde_yaml = { version = "0.8", optional = true }
+hex = {version = "0.4.3", optional = true }
+
+tokio = { version =  "1.18.2", features = ["full"], optional = true }
+tokio-stream = { version = "0.1.8", optional = true }
+async-stream = { version = "0.3.3", optional = true }
+
+syn = { version = "1.0.98", features = ["full", "visit", "visit-mut", "extra-traits"], optional = true }
+prettyplease = { version = "0.1.10", optional = true }
+quote = { version = "1.0.18", optional = true }
+
+walkdir = { version = "2.3.2", optional = true }
+convert_case = { version =  "0.5.0", optional = true }
+bs58 = "0.4.0"
 
 [dev-dependencies]
-serde_json = "1.0.91"
+serde_with = "1.13.0"
+snap = "1"
 
-[features]
-default = ["std"]
-std = []
+[[bin]]
+name = "gen-spec"
+path = "src/bin/gen_spec.rs"
+required-features = ["gen-spec"]
+
+[[bin]]
+name = "gen-tests"
+path = "src/bin/gen_tests.rs"
+required-features = ["gen-tests"]

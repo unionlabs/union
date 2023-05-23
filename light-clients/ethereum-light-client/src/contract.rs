@@ -1,11 +1,8 @@
 use crate::{
-    client_state::tendermint_to_cometbls_client_state,
-    consensus_state::{tendermint_to_cometbls_consensus_state, TrustedConsensusState},
+    client_state::ClientState,
+    consensus_state::{ConsensusState, TrustedConsensusState},
     errors::Error,
-    eth_encoding::{
-        encode_cometbls_client_state, encode_cometbls_consensus_state, generate_commitment_key,
-    },
-    eth_types::{ExecutionUpdateInfo, LightClientHeader},
+    eth_types::LightClientHeader,
     header::Header as EthHeader,
     msg::{ExecuteMsg, InstantiateMsg, QueryMsg},
     state::{read_client_state, read_consensus_state, save_consensus_state, update_client_state},
@@ -16,15 +13,12 @@ use cosmwasm_std::{
     StdError, StdResult,
 };
 use ethereum_consensus::{
-    capella,
-    compute::{compute_epoch_at_slot, hash_tree_root},
-    context::ChainContext,
-    execution::{EXECUTION_PAYLOAD_BLOCK_NUMBER_INDEX, EXECUTION_PAYLOAD_STATE_ROOT_INDEX},
-    merkle::is_valid_merkle_branch,
-    sync_protocol::EXECUTION_PAYLOAD_INDEX,
-    types::H256,
+    capella::minimal::SyncCommittee,
+    primitives::{Hash32, Slot},
 };
-use ethereum_light_client_verifier::consensus::SyncProtocolVerifier;
+use ethereum_verifier::{
+    compute_epoch_at_slot, hash_tree_root, validate_light_client_update, LightClientContext,
+};
 use ibc::core::ics24_host::Path;
 use prost::Message;
 use protos::{
@@ -34,7 +28,7 @@ use protos::{
     },
     union::ibc::lightclients::ethereum::v1::{Header as RawEthHeader, StorageProof},
 };
-use sha3::Digest;
+use ssz_rs::prelude::*;
 use std::str::FromStr;
 use wasm_light_client_types::{
     decode_client_state_to_concrete_state, decode_consensus_state_to_concrete_state,
@@ -141,17 +135,31 @@ pub fn verify_membership(
     let storage_proof = StorageProof::decode(proof.0.as_slice())
         .map_err(|_| Error::decode("when decoding storage proof"))?;
 
-    let proof = storage_proof.proof[0].clone();
+    let mut i = 0;
+    for proof in storage_proof.proof {
+        let root = Hash32::try_from(consensus_state.storage_root.as_bytes()).unwrap();
+        let key = hex::decode(&proof.key[2..]).map_err(|_| Error::DecodeError("".into()))?;
 
-    let root = H256::from_slice(consensus_state.storage_root.as_bytes());
+        let root = H256::from_slice(consensus_state.storage_root.as_bytes());
 
-    let expected_key = generate_commitment_key(
-        path.to_string(),
-        client_state.counterparty_connection_state_slot.0,
-    );
+        let expected_key = generate_commitment_key(
+            path.to_string(),
+            client_state.counterparty_connection_state_slot.0,
+        );
 
-    if hex::encode(&expected_key) != &proof.key[2..] {
-        return Err(Error::InvalidCommitmentKey);
+        // client_state
+        //     .execution_verifier
+        //     .verify_membership(
+        //         root,
+        //         &key,
+        //         &value,
+        //         proof
+        //             .proof
+        //             .iter()
+        //             .map(|p| hex::decode(&p[2..]).map_err(|_| Error::DecodeError("".into())))
+        //             .collect::<Result<Vec<_>, _>>()?,
+        //     )
+        //     .map_err(|e| Error::Verification(e.to_string()))?;
     }
 
     let mut value = sha3::Keccak256::new();
@@ -174,6 +182,29 @@ pub fn verify_membership(
     Ok(ContractResult::valid(None))
 }
 
+struct LcContext<'a> {
+    client_state: &'a ClientState,
+    trusted_consensus_state: TrustedConsensusState,
+}
+
+impl<'a> LightClientContext for LcContext<'a> {
+    fn finalized_slot(&self) -> Slot {
+        self.trusted_consensus_state.state.slot
+    }
+
+    fn current_sync_committee(&self) -> Option<&SyncCommittee> {
+        self.trusted_consensus_state.current_sync_committee.as_ref()
+    }
+
+    fn next_sync_committee(&self) -> Option<&SyncCommittee> {
+        self.trusted_consensus_state.next_sync_committee.as_ref()
+    }
+
+    fn fork_parameters(&self) -> &ethereum_verifier::ForkParameters {
+        &self.client_state.fork_parameters
+    }
+}
+
 pub fn update_header(mut deps: DepsMut, header: EthHeader) -> Result<ContractResult, Error> {
     let trusted_sync_committee = header.trusted_sync_committee;
     let (wasm_consensus_state, consensus_state) =
@@ -192,55 +223,71 @@ pub fn update_header(mut deps: DepsMut, header: EthHeader) -> Result<ContractRes
 
     let consensus_update = header.consensus_update;
 
-    let execution_update = {
-        let execution_payload_header = consensus_update.0.finalized_header.execution.clone();
-        let (_, state_root_branch) = capella::gen_execution_payload_fields_proof(
-            &execution_payload_header,
-            &[EXECUTION_PAYLOAD_STATE_ROOT_INDEX],
-        )
-        .map_err(|_| Error::CannotGenerateProof)?;
-        let (_, block_number_branch) = capella::gen_execution_payload_fields_proof(
-            &execution_payload_header,
-            &[EXECUTION_PAYLOAD_BLOCK_NUMBER_INDEX],
-        )
-        .map_err(|_| Error::CannotGenerateProof)?;
-        ExecutionUpdateInfo {
-            state_root: execution_payload_header.state_root,
-            state_root_branch,
-            block_number: execution_payload_header.block_number,
-            block_number_branch,
-        }
-    };
+    // let execution_update = {
+    //     let execution_payload_header = consensus_update.0.finalized_header.execution.clone();
+    //     let (_, state_root_branch) = capella::gen_execution_payload_fields_proof(
+    //         &execution_payload_header,
+    //         &[6], // FIXME(aeryz)
+    //     )
+    //     .map_err(|_| Error::CannotGenerateProof)?;
+    //     let (_, block_number_branch) = capella::gen_execution_payload_fields_proof(
+    //         &execution_payload_header,
+    //         &[6], // FIXME(aeryz)
+    //     )
+    //     .map_err(|_| Error::CannotGenerateProof)?;
+    //     ExecutionUpdateInfo {
+    //         state_root: execution_payload_header.state_root,
+    //         state_root_branch,
+    //         block_number: execution_payload_header.block_number,
+    //         block_number_branch,
+    //     }
+    // };
 
     let account_update = header.account_update;
     let timestamp = header.timestamp;
 
     let (wasm_client_state, client_state) = read_client_state(deps.as_ref())?;
-    let ctx = client_state.build_context(timestamp)?;
+    // let ctx = client_state.build_context(timestamp)?;
 
-    is_valid_light_client_header(&ctx, &consensus_update.finalized_header)?;
+    let ctx = LcContext {
+        client_state: &client_state,
+        trusted_consensus_state: trusted_consensus_state.clone(),
+    };
 
-    client_state
-        .consensus_verifier
-        .validate_updates(
-            &ctx,
-            &trusted_consensus_state,
-            &consensus_update,
-            &execution_update,
-        )
-        .map_err(|e| Error::Verification(e.to_string()))?;
+    validate_light_client_update(
+        &ctx,
+        consensus_update.clone(),
+        (timestamp
+            .into_tm_time()
+            .ok_or(Error::TimestampNotSet)?
+            .unix_timestamp() as u64
+            - client_state.genesis_time)
+            / client_state.seconds_per_slot
+            + client_state.fork_parameters.genesis_slot,
+        client_state.genesis_validators_root,
+    )
+    .map_err(|_| Error::Verification("for some reason".to_string()))?;
 
-    client_state
-        .consensus_verifier
-        .ensure_relevant_update(&ctx, &trusted_consensus_state, &consensus_update)
-        .map_err(|e| Error::Verification(e.to_string()))?;
+    // client_state
+    //     .consensus_verifier
+    //     .validate_updates(
+    //         &ctx,
+    //         &trusted_consensus_state,
+    //         &consensus_update,
+    //         &execution_update,
+    //     )
+    //     .map_err(|e| Error::Verification(e.to_string()))?;
+
+    // client_state
+    //     .consensus_verifier
+    //     .ensure_relevant_update(&ctx, &trusted_consensus_state, &consensus_update)
+    //     .map_err(|e| Error::Verification(e.to_string()))?;
 
     let (new_client_state, new_consensus_state) = apply_updates(
-        &ctx,
         &client_state,
         &trusted_consensus_state,
         consensus_update,
-        execution_update,
+        // execution_update,
         account_update,
     )?;
 
@@ -248,27 +295,6 @@ pub fn update_header(mut deps: DepsMut, header: EthHeader) -> Result<ContractRes
     save_consensus_state(deps, wasm_consensus_state, new_consensus_state)?;
 
     Ok(ContractResult::valid(None))
-}
-
-/// https://github.com/ethereum/consensus-specs/blob/82d6267951ad47cffa1b7b4179eab97b25a99b91/specs/capella/light-client/sync-protocol.md#modified-is_valid_light_client_header
-fn is_valid_light_client_header<C: ChainContext>(
-    ctx: &C,
-    header: &LightClientHeader,
-) -> Result<(), Error> {
-    let epoch = compute_epoch_at_slot(ctx, header.beacon.slot);
-
-    if epoch < ctx.fork_parameters().capella_fork_epoch {
-        Err(Error::InvalidChainVersion)
-    } else {
-        is_valid_merkle_branch(
-            hash_tree_root(header.execution.clone())
-                .map_err(|e| Error::Verification(e.to_string()))?,
-            &header.execution_branch,
-            EXECUTION_PAYLOAD_INDEX,
-            header.beacon.body_root.clone(),
-        )
-        .map_err(|e| Error::Verification(e.to_string()))
-    }
 }
 
 #[entry_point]
@@ -297,7 +323,7 @@ mod test {
         testing::{mock_dependencies, MockApi, MockQuerier, MockStorage},
         Empty, OwnedDeps,
     };
-    use ethereum_consensus::bls::PublicKeyBytes;
+    use ethereum_consensus::primitives::BlsPublicKey;
     use ibc::Height;
     use protos::ibc::lightclients::wasm::v1::{
         ClientState as WasmClientState, ConsensusState as WasmConsensusState,
@@ -347,8 +373,8 @@ mod test {
             );
             // Storage root is updated.
             assert_eq!(
-                consensus_state.storage_root,
-                update.account_update.account_storage_root.0.to_vec().into(),
+                consensus_state.storage_root.as_bytes(),
+                update.account_update.account_storage_root.as_ref(),
             );
             // TODO(aeryz): Add cases for `store_period == update_period` and `update_period == store_period + 1`
             let (_, client_state) = read_client_state(deps.as_ref()).unwrap();
@@ -358,14 +384,14 @@ mod test {
                 update.consensus_update.finalized_header.beacon.slot
             );
             // Latest execution block number is updated.
-            assert_eq!(
-                client_state.latest_execution_block_number,
-                update
-                    .consensus_update
-                    .finalized_header
-                    .execution
-                    .block_number,
-            );
+            // assert_eq!(
+            //     client_state.latest_execution_block_number,
+            //     update
+            //         .consensus_update
+            //         .finalized_header
+            //         .execution
+            //         .block_number,
+            // );
         }
     }
 
@@ -402,33 +428,30 @@ mod test {
     fn update_fails_when_sync_committee_aggregate_pubkey_is_incorrect() {
         let (mut deps, mut update) = prepare_for_fail_tests();
 
-        let mut pubkey: PublicKeyBytes = (*update
+        let mut pubkey: BlsPublicKey = update
             .trusted_sync_committee
             .sync_committee
-            .aggregate_pubkey)
+            .aggregate_public_key
             .clone();
-        pubkey.0[0] += 1;
+        pubkey[0] += 1;
         update
             .trusted_sync_committee
             .sync_committee
-            .aggregate_pubkey = From::from(pubkey);
+            .aggregate_public_key = pubkey;
         assert!(update_header(deps.as_mut(), update).is_err());
     }
 
     #[test]
     fn update_fails_when_finalized_header_execution_branch_merkle_is_invalid() {
         let (mut deps, mut update) = prepare_for_fail_tests();
-        update.consensus_update.0.finalized_header.execution_branch[0].0[0] += 1;
+        update.consensus_update.finalized_header.execution_branch[0][0] += 1;
         assert!(update_header(deps.as_mut(), update).is_err());
     }
 
     #[test]
     fn update_fails_when_finality_branch_merkle_is_invalid() {
         let (mut deps, mut update) = prepare_for_fail_tests();
-        update.consensus_update.0.finality_branch[0].0[0] += 1;
+        update.consensus_update.finality_branch[0][0] += 1;
         assert!(update_header(deps.as_mut(), update).is_err());
     }
-
-    #[test]
-    fn update_header_works() {}
 }

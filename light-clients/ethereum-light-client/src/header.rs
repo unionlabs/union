@@ -1,7 +1,7 @@
 use crate::{
     errors::Error,
-    eth_types::ConsensusUpdateInfo,
-    misbehaviour::Misbehaviour,
+    eth_types::LightClientUpdate,
+    // misbehaviour::Misbehaviour,
     types::{
         convert_consensus_update_to_proto, convert_proto_to_consensus_update, AccountUpdateInfo,
         TrustedSyncCommittee,
@@ -20,13 +20,13 @@ pub const ETHEREUM_HEADER_TYPE_URL: &str = "/ibc.lightclients.ethereum.v1.Header
 #[derive(serde::Serialize, serde::Deserialize)]
 pub enum ClientMessage {
     Header(Header),
-    Misbehaviour(Misbehaviour),
+    // Misbehaviour(Misbehaviour),
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct Header {
     pub trusted_sync_committee: TrustedSyncCommittee,
-    pub consensus_update: ConsensusUpdateInfo,
+    pub consensus_update: LightClientUpdate,
     pub account_update: AccountUpdateInfo,
     pub timestamp: Timestamp,
 }

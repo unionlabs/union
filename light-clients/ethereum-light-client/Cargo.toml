@@ -29,10 +29,11 @@ schemars = { version = "0.8.3", default-features = false }
 serde = { version = "1.0.103", default-features = false, features = ["derive"] }
 serde-json-wasm = { version = "*", default-features = false }
 sha3 = { version = "0.10.8", default-features = false }
-ssz-rs = { git = "https://github.com/bluele/ssz_rs", branch = "serde-no-std", features = ["serde"], default-features = false }
+ssz-rs = { git = "https://github.com/ralexstokes/ssz-rs", rev = "adf1a0b14cef90b9536f28ef89da1fab316465e1" }
 thiserror = { version = "1.0.26", default-features = false }
-tiny-keccak = { version = "2.0.2", default-features = false }
+tiny-keccak = { version = "2.0.2", default-features = false, features = ["keccak"] }
 wasm-light-client-types = { path = "../wasm-light-client-types" }
+ethereum-verifier = { path = "../lib/ethereum-verifier", default-features = false, features = [ "config-minimal" ] }
 
 [dev-dependencies]
 base64 = "0.21"
