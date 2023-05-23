@@ -42,6 +42,7 @@
         ./uniond/uniond.nix
         ./unionpd/unionpd.nix
         ./unionvisor/unionvisor.nix
+        ./relayer/relayer.nix
         ./uniond/proto.nix
         ./docs/docs.nix
         ./light-clients/ethereum-light-client.nix
@@ -63,7 +64,7 @@
 
           withBuildTarget = target: crane.lib.${system}.overrideToolchain (pkgs.rust-bin.fromRustupToolchain {
             channel = "nightly-2022-12-07";
-            components = [ "cargo" "rustc" "rust-src" ];
+            profile = "minimal";
             targets = [ target ];
           });
           craneLib = crane.lib.${system}.overrideToolchain rust-nightly;

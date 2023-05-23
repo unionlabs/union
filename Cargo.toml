@@ -5,7 +5,8 @@ members = [
   "light-clients/wasm-light-client-types",
   "generated/rust",
   "utils/rust/serde-utils",
-  "unionvisor"
+  "unionvisor",
+  "relayer"
 ]
 
 resolver = "2"
