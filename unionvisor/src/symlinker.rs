@@ -19,7 +19,8 @@ impl Symlinker {
     ///
     /// * `root` - The path where the `root` symlink should be put
     /// * `bundle` - The [`Bundle`] containing binaries to which `root/current` can point
-    pub fn new(root: PathBuf, bundle: Bundle) -> Self {
+    pub fn new(root: impl Into<PathBuf>, bundle: Bundle) -> Self {
+        let root = root.into();
         Self { root, bundle }
     }
 
@@ -29,7 +30,8 @@ impl Symlinker {
     /// # Arguments
     ///
     /// * `new_version` the new version the symlink should point to
-    pub fn swap(&self, new_version: &OsString) -> Result<()> {
+    pub fn swap(&self, new_version: impl Into<OsString>) -> Result<()> {
+        let new_version = new_version.into();
         let new_path = self.bundle.path_to(new_version).validate()?;
         let current = self.current_path();
 
@@ -102,6 +104,6 @@ mod tests {
             .make_fallback_link()
             .expect("fallback link should be made");
 
-        symlinker.swap(&OsString::from("foo")).unwrap();
+        symlinker.swap("foo").unwrap();
     }
 }

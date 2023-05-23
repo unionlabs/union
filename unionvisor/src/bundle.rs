@@ -43,7 +43,8 @@ pub struct UnvalidatedVersionPath(PathBuf);
 
 impl UnvalidatedVersionPath {
     /// Constructs a new [`UnvalidatedVersionPath`] based on any `PathBuf`]
-    pub fn new(path: PathBuf) -> Self {
+    pub fn new(path: impl Into<PathBuf>) -> Self {
+        let path = path.into();
         Self(path)
     }
 }
@@ -136,7 +137,8 @@ impl Bundle {
     }
 
     /// Obtains the path to the binary within the bundle with version `version`.
-    pub fn path_to(&self, version: &OsString) -> UnvalidatedVersionPath {
+    pub fn path_to(&self, version: impl Into<OsString>) -> UnvalidatedVersionPath {
+        let version = version.into();
         UnvalidatedVersionPath::new(
             self.path
                 .join(&self.meta.versions_directory)
@@ -147,7 +149,7 @@ impl Bundle {
 
     /// Construct the path to the fallback verison, based on the [`BundleMeta`]
     pub fn fallback_path(&self) -> Result<ValidVersionPath> {
-        let fallback_version = &self.meta.fallback_version.clone().into();
+        let fallback_version = &self.meta.fallback_version.clone();
         self.path_to(fallback_version).validate()
     }
 }
