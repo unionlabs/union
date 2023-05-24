@@ -57,17 +57,24 @@
       ];
       perSystem = { config, self', inputs', pkgs, system, lib, ... }:
         let
-          rust-nightly = pkgs.rust-bin.fromRustupToolchain {
+          nightlyConfig = {
             channel = "nightly-2023-05-16";
             components = [ "rust-src" "rust-analyzer" ];
             profile = "default";
           };
 
-          withBuildTarget = target: crane.lib.${system}.overrideToolchain (pkgs.rust-bin.fromRustupToolchain {
-            channel = "nightly-2023-05-16";
-            components = [ "cargo" "rustc" "rust-src" ];
-            targets = [ target ];
-          });
+          rust-nightly = pkgs.rust-bin.fromRustupToolchain nightlyConfig;
+
+          withBuildTarget = target:
+            let
+              toolchain = pkgs.rust-bin.fromRustupToolchain {
+                inherit (nightlyConfig) channel profile;
+                components = nightlyConfig.components ++ [ "cargo" "rustc" "rust-src" ];
+                # hopefully if we ever use wasi this issue will be resolved: pkgs.rust.toRustTarget pkgs.hostPlatform
+                targets = [ target (pkgs.rust.toRustTarget pkgs.hostPlatform) ];
+              };
+            in
+            crane.lib.${system}.overrideToolchain (toolchain) // { inherit toolchain; };
           craneLib = crane.lib.${system}.overrideToolchain rust-nightly;
 
           mkChecks = pkgName: checks: pkgs.lib.mapAttrs' (name: value: { name = "${pkgName}-${name}"; value = value; }) checks;
@@ -128,7 +135,8 @@
 
               crane = {
                 lib = craneLib;
-                inherit withBuildTarget cargoArtifacts commonAttrs mkChecks;
+                hostTarget = pkgs.rust.toRustTarget pkgs.hostPlatform;
+                inherit withBuildTarget cargoArtifacts commonAttrs mkChecks rustSrc;
               };
 
               proto = {

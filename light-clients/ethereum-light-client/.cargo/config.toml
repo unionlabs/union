@@ -5,4 +5,5 @@ unit-test = "test --lib"
 integration-test = "test --test integration"
 schema = "run --bin schema"
 
-rustflags = ["-C link-arg=-s"]
+rustflags = ["-C target-feature=-sign-ext", "-C link-arg=-s", "-C target-cpu=mvp"]
+
