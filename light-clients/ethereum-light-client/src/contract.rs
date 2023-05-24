@@ -87,9 +87,6 @@ pub fn execute(
     Ok(Response::default().set_data(result.encode()?))
 }
 
-// TODO(aeryz): this POC implementation of membership verification assumes that the
-// counterparty stores the data as json and verifies multiple proofs. This will be
-// properly implemented when the dependent PRs/issues are resolved.
 pub fn verify_membership(
     deps: Deps,
     height: Height,
@@ -112,7 +109,6 @@ pub fn verify_membership(
     )
     .map_err(|e| Error::InvalidPath(e.to_string()))?;
 
-    // TODO(aeryz): generate and check the path here
     let raw_value = match path {
         Path::Connection(_) => value.0.as_slice().to_vec(),
         Path::ClientState(_) => {
@@ -126,8 +122,6 @@ pub fn verify_membership(
             let cometbls_consensus_state = tendermint_to_cometbls_consensus_state(
                 decode_consensus_state_to_concrete_state(value.0.as_slice())?,
             );
-
-            panic!("COMET CONSENSUS STATE: {:?}", cometbls_consensus_state);
 
             encode_cometbls_consensus_state(cometbls_consensus_state)?
         }
