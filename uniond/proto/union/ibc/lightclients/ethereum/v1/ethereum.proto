@@ -1,7 +1,7 @@
 syntax = "proto3";
 package union.ibc.lightclients.ethereum.v1;
 
-option go_package = "github.com/datachainlab/ethereum-lcp/go/light-clients/ethereum/types";
+option go_package = "union/ibc/lightclients/ethereum";
 import "ibc/core/client/v1/client.proto";
 
 message StorageProof {

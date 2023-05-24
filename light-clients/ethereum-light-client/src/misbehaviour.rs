@@ -11,7 +11,7 @@ use ethereum_light_client_verifier::misbehaviour::{
 use ibc::core::ics24_host::identifier::ClientId;
 use prost::Message;
 use protos::google::protobuf::Any as IBCAny;
-use protos::ibc::lightclients::ethereum::v1::{
+use protos::union::ibc::lightclients::ethereum::v1::{
     FinalizedHeaderMisbehaviour as RawFinalizedHeaderMisbehaviour,
     NextSyncCommitteeMisbehaviour as RawNextSyncCommitteeMisbehaviour,
 };

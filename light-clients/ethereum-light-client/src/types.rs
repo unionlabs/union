@@ -16,15 +16,13 @@ use ethereum_light_client_verifier::updates::{
     capella::ConsensusUpdateInfo as CapellaConsensusUpdateInfo, ConsensusUpdate,
 };
 use ibc::Height;
-use protos::ibc::{
-    core::client::v1::Height as ProtoHeight,
-    lightclients::ethereum::v1::{
-        AccountUpdate as ProtoAccountUpdate, BeaconBlockHeader as ProtoBeaconBlockHeader,
-        ExecutionPayloadHeader as ProtoExecutionPayloadHeader,
-        LightClientHeader as ProtoLightClientHeader, LightClientUpdate as ProtoLightClientUpdate,
-        SyncAggregate as ProtoSyncAggregate, SyncCommittee as ProtoSyncCommittee,
-        TrustedSyncCommittee as ProtoTrustedSyncCommittee,
-    },
+use protos::ibc::core::client::v1::Height as ProtoHeight;
+use protos::union::ibc::lightclients::ethereum::v1::{
+    AccountUpdate as ProtoAccountUpdate, BeaconBlockHeader as ProtoBeaconBlockHeader,
+    ExecutionPayloadHeader as ProtoExecutionPayloadHeader,
+    LightClientHeader as ProtoLightClientHeader, LightClientUpdate as ProtoLightClientUpdate,
+    SyncAggregate as ProtoSyncAggregate, SyncCommittee as ProtoSyncCommittee,
+    TrustedSyncCommittee as ProtoTrustedSyncCommittee,
 };
 use ssz_rs::{Bitvector, Deserialize, Vector};
 

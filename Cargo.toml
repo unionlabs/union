@@ -1,10 +1,9 @@
 [workspace]
 members = [
-  "forks/*",
+  "lib/*",
   "light-clients/ethereum-light-client",
   "light-clients/wasm-light-client-types",
   "generated/rust",
-  "utils/rust/serde-utils",
   "unionvisor",
   "relayer"
 ]

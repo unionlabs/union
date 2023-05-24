@@ -5,7 +5,7 @@ use ibc::core::ics23_commitment::commitment::CommitmentRoot;
 use prost::Message;
 use protos::{
     google::protobuf::Any as IBCAny,
-    ibc::lightclients::ethereum::v1::ConsensusState as RawConsensusState,
+    union::ibc::lightclients::ethereum::v1::ConsensusState as RawConsensusState,
 };
 
 pub const ETHEREUM_CONSENSUS_STATE_TYPE_URL: &str = "/ibc.lightclients.ethereum.v1.ConsensusState";

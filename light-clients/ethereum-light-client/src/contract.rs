@@ -23,10 +23,8 @@ use ethereum_consensus::{
 use ethereum_light_client_verifier::consensus::SyncProtocolVerifier;
 use ibc::core::ics24_host::Path;
 use prost::Message;
-use protos::ibc::{
-    core::connection::v1::ConnectionEnd,
-    lightclients::ethereum::v1::{Header as RawEthHeader, StorageProof},
-};
+use protos::ibc::core::connection::v1::ConnectionEnd;
+use protos::union::ibc::lightclients::ethereum::v1::{Header as RawEthHeader, StorageProof};
 use std::str::FromStr;
 use wasm_light_client_types::msg::{
     ClientMessage, ContractResult, Height, MerklePath, Status, StatusResponse,

@@ -27,7 +27,7 @@
               serde = { version = "1.0"; default-features = false; features = ["derive"]; };
               tonic = { version = "0.8"; features = [ "gzip" ]; optional = true; };
               schemars = { version = "0.8.3"; default-features = false; optional = true; };
-              serde-utils = { path = "../../utils/rust/serde-utils"; };
+              serde-utils = { path = "../../lib/serde-utils"; };
             };
             features = {
               default = [ "proto_full" "std" ];
@@ -163,7 +163,7 @@
             ".ibc.applications.interchain_accounts.v1" = [ serde ];
             ".ibc.applications.interchain_accounts.controller.v1" = [ serde ];
             ".ibc.lightclients.wasm.v1" = [ serde ];
-            ".ibc.lightclients.ethereum.v1" = [ serde ];
+            ".union.ibc.lightclients.ethereum.v1" = [ serde ];
             ".cosmos.ics23.v1" = [ serde ];
             ".cosmos.ics23.v1.LeafOp" = [ jsonschema eq ];
             ".cosmos.ics23.v1.InnerOp" = [ jsonschema eq ];
@@ -184,29 +184,29 @@
             ".ibc.lightclients.wasm.v1.ClientState.code_id" = [ serde_base64 ];
             ".ibc.lightclients.wasm.v1.ConsensusState.data" = [ serde_base64 ];
             ".ibc.lightclients.wasm.v1.Header.data" = [ serde_base64 ];
-            ".ibc.lightclients.ethereum.v1.SyncCommittee.aggregate_pubkey" = [ serde_base64 ];
-            ".ibc.lightclients.ethereum.v1.SyncCommittee.pubkeys" = [ serde_inner_base64 ];
-            ".ibc.lightclients.ethereum.v1.BeaconBlockHeader.parent_root" = [ serde_base64 ];
-            ".ibc.lightclients.ethereum.v1.BeaconBlockHeader.state_root" = [ serde_base64 ];
-            ".ibc.lightclients.ethereum.v1.BeaconBlockHeader.body_root" = [ serde_base64 ];
-            ".ibc.lightclients.ethereum.v1.ExecutionPayloadHeader.parent_hash" = [ serde_base64 ];
-            ".ibc.lightclients.ethereum.v1.ExecutionPayloadHeader.fee_recipient" = [ serde_base64 ];
-            ".ibc.lightclients.ethereum.v1.ExecutionPayloadHeader.state_root" = [ serde_base64 ];
-            ".ibc.lightclients.ethereum.v1.ExecutionPayloadHeader.receipts_root" = [ serde_base64 ];
-            ".ibc.lightclients.ethereum.v1.ExecutionPayloadHeader.logs_bloom" = [ serde_base64 ];
-            ".ibc.lightclients.ethereum.v1.ExecutionPayloadHeader.prev_randao" = [ serde_base64 ];
-            ".ibc.lightclients.ethereum.v1.ExecutionPayloadHeader.extra_data" = [ serde_base64 ];
-            ".ibc.lightclients.ethereum.v1.ExecutionPayloadHeader.base_fee_per_gas" = [ serde_base64 ];
-            ".ibc.lightclients.ethereum.v1.ExecutionPayloadHeader.block_hash" = [ serde_base64 ];
-            ".ibc.lightclients.ethereum.v1.ExecutionPayloadHeader.transactions_root" = [ serde_base64 ];
-            ".ibc.lightclients.ethereum.v1.ExecutionPayloadHeader.withdrawals_root" = [ serde_base64 ];
-            ".ibc.lightclients.ethereum.v1.LightClientHeader.execution_branch" = [ serde_inner_base64 ];
-            ".ibc.lightclients.ethereum.v1.LightClientUpdate.next_sync_committee_branch" = [ serde_inner_base64 ];
-            ".ibc.lightclients.ethereum.v1.LightClientUpdate.finality_branch" = [ serde_inner_base64 ];
-            ".ibc.lightclients.ethereum.v1.SyncAggregate.sync_committee_bits" = [ serde_base64 ];
-            ".ibc.lightclients.ethereum.v1.SyncAggregate.sync_committee_signature" = [ serde_base64 ];
-            ".ibc.lightclients.ethereum.v1.AccountUpdate.account_proof" = [ serde_base64 ];
-            ".ibc.lightclients.ethereum.v1.AccountUpdate.account_storage_root" = [ serde_base64 ];
+            ".union.ibc.lightclients.ethereum.v1.SyncCommittee.aggregate_pubkey" = [ serde_base64 ];
+            ".union.ibc.lightclients.ethereum.v1.SyncCommittee.pubkeys" = [ serde_inner_base64 ];
+            ".union.ibc.lightclients.ethereum.v1.BeaconBlockHeader.parent_root" = [ serde_base64 ];
+            ".union.ibc.lightclients.ethereum.v1.BeaconBlockHeader.state_root" = [ serde_base64 ];
+            ".union.ibc.lightclients.ethereum.v1.BeaconBlockHeader.body_root" = [ serde_base64 ];
+            ".union.ibc.lightclients.ethereum.v1.ExecutionPayloadHeader.parent_hash" = [ serde_base64 ];
+            ".union.ibc.lightclients.ethereum.v1.ExecutionPayloadHeader.fee_recipient" = [ serde_base64 ];
+            ".union.ibc.lightclients.ethereum.v1.ExecutionPayloadHeader.state_root" = [ serde_base64 ];
+            ".union.ibc.lightclients.ethereum.v1.ExecutionPayloadHeader.receipts_root" = [ serde_base64 ];
+            ".union.ibc.lightclients.ethereum.v1.ExecutionPayloadHeader.logs_bloom" = [ serde_base64 ];
+            ".union.ibc.lightclients.ethereum.v1.ExecutionPayloadHeader.prev_randao" = [ serde_base64 ];
+            ".union.ibc.lightclients.ethereum.v1.ExecutionPayloadHeader.extra_data" = [ serde_base64 ];
+            ".union.ibc.lightclients.ethereum.v1.ExecutionPayloadHeader.base_fee_per_gas" = [ serde_base64 ];
+            ".union.ibc.lightclients.ethereum.v1.ExecutionPayloadHeader.block_hash" = [ serde_base64 ];
+            ".union.ibc.lightclients.ethereum.v1.ExecutionPayloadHeader.transactions_root" = [ serde_base64 ];
+            ".union.ibc.lightclients.ethereum.v1.ExecutionPayloadHeader.withdrawals_root" = [ serde_base64 ];
+            ".union.ibc.lightclients.ethereum.v1.LightClientHeader.execution_branch" = [ serde_inner_base64 ];
+            ".union.ibc.lightclients.ethereum.v1.LightClientUpdate.next_sync_committee_branch" = [ serde_inner_base64 ];
+            ".union.ibc.lightclients.ethereum.v1.LightClientUpdate.finality_branch" = [ serde_inner_base64 ];
+            ".union.ibc.lightclients.ethereum.v1.SyncAggregate.sync_committee_bits" = [ serde_base64 ];
+            ".union.ibc.lightclients.ethereum.v1.SyncAggregate.sync_committee_signature" = [ serde_base64 ];
+            ".union.ibc.lightclients.ethereum.v1.AccountUpdate.account_proof" = [ serde_base64 ];
+            ".union.ibc.lightclients.ethereum.v1.AccountUpdate.account_storage_root" = [ serde_base64 ];
             ".cosmos.ics23.v1.LeafOp.prehash_key" = [ serde_default ];
             ".cosmos.ics23.v1.LeafOp.prefix" = [ jsonschema_str serde_base64 ];
             ".cosmos.ics23.v1.InnerOp.prefix" = [ serde_base64 jsonschema_str ];
@@ -326,7 +326,7 @@
 
           outdir="generated/rust"
 
-          cp -r ${rust-proto}/* $outdir
+          cp -r --no-preserve=mode ${rust-proto}/* $outdir
 
           echo "Generation successful!"
         '';

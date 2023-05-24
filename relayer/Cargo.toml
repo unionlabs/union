@@ -15,8 +15,8 @@ tokio = { version = "1.27.0", features = ["macros"] }
 protos = { path = "../generated/rust", features = ["proto_full", "client"] }
 tonic = { version = "0.8", features = ["transport","tls","tls-roots","tls-webpki-roots"] }
 tower = { version = "*", features = ["log"] }
-ethereum-consensus = { path = "../forks/ethereum-consensus", default-features = false }
-lodestar-rpc = { path = "../forks/lodestar-rpc", default-features = false }
+ethereum-consensus = { path = "../lib/ethereum-consensus", default-features = false }
+lodestar-rpc = { path = "../lib/lodestar-rpc", default-features = false }
 reqwest = { version = "0.11.17", default-features = false, features = ["tokio-rustls"] }
 bech32 = "0.9.1"
 subtle-encoding = { version = "0.5.1", features = ["bech32-preview"] }

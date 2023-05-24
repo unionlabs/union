@@ -12,7 +12,7 @@ default-features = false
 features = ["derive"]
 version = "1.0"
 [dependencies.serde-utils]
-path = "../../utils/rust/serde-utils"
+path = "../../lib/serde-utils"
 [dependencies.tonic]
 features = ["gzip"]
 optional = true
@@ -107,7 +107,6 @@ proto_full = [
   "ibc+core+commitment+v1",
   "ibc+core+connection+v1",
   "ibc+core+types+v1",
-  "ibc+lightclients+ethereum+v1",
   "ibc+lightclients+localhost+v2",
   "ibc+lightclients+solomachine+v2",
   "ibc+lightclients+solomachine+v3",
@@ -128,6 +127,7 @@ proto_full = [
   "tendermint+types",
   "tendermint+version",
   "union+ibc+lightclients+cometbls+v1",
+  "union+ibc+lightclients+ethereum+v1",
   "union+prover+api+v1",
   "union+union",
 ]
@@ -282,7 +282,6 @@ proto_full = [
   "ibc+core+client+v1",
   "ibc+core+connection+v1",
 ]
-"ibc+lightclients+ethereum+v1" = ["ibc+core+client+v1"]
 "ibc+lightclients+localhost+v2" = ["ibc+core+client+v1"]
 "ibc+lightclients+solomachine+v2" = [
   "google+protobuf",
@@ -331,6 +330,7 @@ proto_full = [
   "ibc+core+commitment+v1",
   "tendermint+types",
 ]
+"union+ibc+lightclients+ethereum+v1" = ["ibc+core+client+v1"]
 "union+prover+api+v1" = ["tendermint+types"]
 "union+union" = []
 ## @@protoc_insertion_point(features)
