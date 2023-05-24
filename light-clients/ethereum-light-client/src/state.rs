@@ -4,9 +4,11 @@ use ibc::Height;
 use prost::Message;
 use protos::{
     google::protobuf::Any,
-    ibc::lightclients::{
-        ethereum::v1::{ClientState as RawClientState, ConsensusState as RawConsensusState},
-        wasm::v1::{ClientState as WasmClientState, ConsensusState as WasmConsensusState},
+    ibc::lightclients::wasm::v1::{
+        ClientState as WasmClientState, ConsensusState as WasmConsensusState,
+    },
+    union::ibc::lightclients::ethereum::v1::{
+        ClientState as RawClientState, ConsensusState as RawConsensusState,
     },
 };
 

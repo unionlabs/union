@@ -9,11 +9,8 @@ use crate::{
 };
 use ibc::timestamp::Timestamp;
 use prost::Message;
-use protos::{
-    google::protobuf::Any as IBCAny,
-    ibc::lightclients::ethereum::v1::Header as RawHeader,
-    // protobuf::Protobuf,
-};
+use protos::google::protobuf::Any as IBCAny;
+use protos::union::ibc::lightclients::ethereum::v1::Header as RawHeader;
 
 pub const ETHEREUM_HEADER_TYPE_URL: &str = "/ibc.lightclients.ethereum.v1.Header";
 

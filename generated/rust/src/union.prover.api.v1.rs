@@ -11,6 +11,8 @@ pub struct ZeroKnowledgeProof {
     #[prost(bytes = "vec", tag = "1")]
     pub content: ::prost::alloc::vec::Vec<u8>,
     #[prost(bytes = "vec", tag = "2")]
+    pub evm_proof: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes = "vec", tag = "3")]
     pub public_inputs: ::prost::alloc::vec::Vec<u8>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -40,6 +42,8 @@ pub struct ProveResponse {
     #[prost(message, optional, tag = "1")]
     pub proof: ::core::option::Option<ZeroKnowledgeProof>,
     #[prost(bytes = "vec", tag = "2")]
+    pub trusted_validator_set_root: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes = "vec", tag = "3")]
     pub untrusted_validator_set_root: ::prost::alloc::vec::Vec<u8>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]

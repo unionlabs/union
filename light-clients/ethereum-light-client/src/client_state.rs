@@ -22,7 +22,7 @@ use ibc::{
 use prost::Message;
 use protos::{
     google::protobuf::Any,
-    ibc::lightclients::ethereum::v1::{ClientState as RawClientState, Fork},
+    union::ibc::lightclients::ethereum::v1::{ClientState as RawClientState, Fork},
     // protobuf::Protobuf,
 };
 use serde::{Deserialize, Serialize};
@@ -191,7 +191,7 @@ impl TryFrom<RawClientState> for ClientState {
 impl From<ClientState> for RawClientState {
     fn from(value: ClientState) -> Self {
         use protos::ibc::core::client::v1::Height as ProtoHeight;
-        use protos::ibc::lightclients::ethereum::v1::{
+        use protos::union::ibc::lightclients::ethereum::v1::{
             ForkParameters as ProtoForkParameters, Fraction as ProtoFraction,
         };
 

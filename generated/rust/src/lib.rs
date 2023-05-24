@@ -660,14 +660,6 @@ pub mod ibc {
         }
     }
     pub mod lightclients {
-        pub mod ethereum {
-            #[cfg(feature = "ibc+lightclients+ethereum+v1")]
-            // @@protoc_insertion_point(attribute:ibc.lightclients.ethereum.v1)
-            pub mod v1 {
-                include!("ibc.lightclients.ethereum.v1.rs");
-                // @@protoc_insertion_point(ibc.lightclients.ethereum.v1)
-            }
-        }
         pub mod localhost {
             #[cfg(feature = "ibc+lightclients+localhost+v2")]
             // @@protoc_insertion_point(attribute:ibc.lightclients.localhost.v2)
@@ -807,6 +799,14 @@ pub mod union {
                 pub mod v1 {
                     include!("union.ibc.lightclients.cometbls.v1.rs");
                     // @@protoc_insertion_point(union.ibc.lightclients.cometbls.v1)
+                }
+            }
+            pub mod ethereum {
+                #[cfg(feature = "union+ibc+lightclients+ethereum+v1")]
+                // @@protoc_insertion_point(attribute:union.ibc.lightclients.ethereum.v1)
+                pub mod v1 {
+                    include!("union.ibc.lightclients.ethereum.v1.rs");
+                    // @@protoc_insertion_point(union.ibc.lightclients.ethereum.v1)
                 }
             }
         }

@@ -26,15 +26,13 @@ use protos::{
             Height, MsgCreateClient, MsgUpdateClient, QueryClientStateRequest,
             QueryClientStateResponse,
         },
-        lightclients::{
-            ethereum::{
-                self,
-                v1::{
-                    AccountUpdate, BeaconBlockHeader, ExecutionPayloadHeader, LightClientUpdate,
-                    SyncAggregate, TrustedSyncCommittee,
-                },
-            },
-            wasm::{self, v1::QueryCodeIdsRequest},
+        lightclients::wasm::{self, v1::QueryCodeIdsRequest},
+    },
+    union::ibc::lightclients::ethereum::{
+        self,
+        v1::{
+            AccountUpdate, BeaconBlockHeader, ExecutionPayloadHeader, LightClientUpdate,
+            SyncAggregate, TrustedSyncCommittee,
         },
     },
 };

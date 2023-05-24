@@ -12,7 +12,9 @@
   "ignorePaths": [
     "light-clients/ethereum-light-client/src/test/valid_light_client_update_*.json",
     "generated/**",
-    "forks/*",
+    "lib/ethereum-consensus",
+    "lib/ethereum-verifier",
+    "lib/lodestar-rpc",
     "dictionaries/**",
     "**/*.svg",
     "**/node_modules",
