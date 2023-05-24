@@ -22,6 +22,7 @@ use ibc::{
 use prost::Message;
 use protos::{
     google::protobuf::Any,
+<<<<<<< HEAD
     ibc::lightclients::{
         tendermint::v1::ClientState as RawTmClientState,
         wasm::v1::ClientState as RawWasmClientState,
@@ -30,6 +31,10 @@ use protos::{
         cometbls::v1::{ClientState as RawCometClientState, Fraction as RawCometFraction},
         ethereum::v1::{ClientState as RawClientState, Fork},
     },
+=======
+    union::ibc::lightclients::ethereum::v1::{ClientState as RawClientState, Fork},
+    // protobuf::Protobuf,
+>>>>>>> dccaa0b (refactor!: refactor repository structure)
 };
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
