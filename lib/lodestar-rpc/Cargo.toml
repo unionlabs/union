@@ -13,7 +13,6 @@ reqwest = { version = "0.11.13", features = ["json"] }
 tokio = { version = "1.24.1", default-features = false, features = ["rt-multi-thread", "macros"] }
 
 ethereum-consensus =  { path = "../ethereum-consensus" }
-ethereum-light-client-verifier = { path = "../ethereum-verifier" }
 
 [features]
 default = []

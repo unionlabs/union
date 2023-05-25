@@ -1,8 +1,7 @@
 use crate::{
-    client_state::ClientState,
-    consensus_state::{ConsensusState, TrustedConsensusState},
+    consensus_state::TrustedConsensusState,
+    context::LightClientContext,
     errors::Error,
-    eth_types::LightClientHeader,
     header::Header as EthHeader,
     msg::{ExecuteMsg, InstantiateMsg, QueryMsg},
     state::{read_client_state, read_consensus_state, save_consensus_state, update_client_state},
@@ -12,20 +11,11 @@ use cosmwasm_std::{
     entry_point, to_binary, Binary, Deps, DepsMut, Env, MessageInfo, QueryResponse, Response,
     StdError, StdResult,
 };
-use ethereum_consensus::{
-    capella::minimal::SyncCommittee,
-    primitives::{Hash32, Slot},
-};
-use ethereum_verifier::{
-    compute_epoch_at_slot, hash_tree_root, validate_light_client_update, LightClientContext,
-};
+use ethereum_verifier::{primitives::Hash32, validate_light_client_update};
 use ibc::core::ics24_host::Path;
 use prost::Message;
 use protos::{
-    ibc::{
-        core::connection::v1::ConnectionEnd,
-        lightclients::ethereum::v1::{Header as RawEthHeader, StorageProof},
-    },
+    ibc::core::connection::v1::ConnectionEnd,
     union::ibc::lightclients::ethereum::v1::{Header as RawEthHeader, StorageProof},
 };
 use ssz_rs::prelude::*;
@@ -182,29 +172,6 @@ pub fn verify_membership(
     Ok(ContractResult::valid(None))
 }
 
-struct LcContext<'a> {
-    client_state: &'a ClientState,
-    trusted_consensus_state: TrustedConsensusState,
-}
-
-impl<'a> LightClientContext for LcContext<'a> {
-    fn finalized_slot(&self) -> Slot {
-        self.trusted_consensus_state.state.slot
-    }
-
-    fn current_sync_committee(&self) -> Option<&SyncCommittee> {
-        self.trusted_consensus_state.current_sync_committee.as_ref()
-    }
-
-    fn next_sync_committee(&self) -> Option<&SyncCommittee> {
-        self.trusted_consensus_state.next_sync_committee.as_ref()
-    }
-
-    fn fork_parameters(&self) -> &ethereum_verifier::ForkParameters {
-        &self.client_state.fork_parameters
-    }
-}
-
 pub fn update_header(mut deps: DepsMut, header: EthHeader) -> Result<ContractResult, Error> {
     let trusted_sync_committee = header.trusted_sync_committee;
     let (wasm_consensus_state, consensus_state) =
@@ -223,38 +190,14 @@ pub fn update_header(mut deps: DepsMut, header: EthHeader) -> Result<ContractRes
 
     let consensus_update = header.consensus_update;
 
-    // let execution_update = {
-    //     let execution_payload_header = consensus_update.0.finalized_header.execution.clone();
-    //     let (_, state_root_branch) = capella::gen_execution_payload_fields_proof(
-    //         &execution_payload_header,
-    //         &[6], // FIXME(aeryz)
-    //     )
-    //     .map_err(|_| Error::CannotGenerateProof)?;
-    //     let (_, block_number_branch) = capella::gen_execution_payload_fields_proof(
-    //         &execution_payload_header,
-    //         &[6], // FIXME(aeryz)
-    //     )
-    //     .map_err(|_| Error::CannotGenerateProof)?;
-    //     ExecutionUpdateInfo {
-    //         state_root: execution_payload_header.state_root,
-    //         state_root_branch,
-    //         block_number: execution_payload_header.block_number,
-    //         block_number_branch,
-    //     }
-    // };
-
     let account_update = header.account_update;
     let timestamp = header.timestamp;
 
     let (wasm_client_state, client_state) = read_client_state(deps.as_ref())?;
-    // let ctx = client_state.build_context(timestamp)?;
 
-    let ctx = LcContext {
-        client_state: &client_state,
-        trusted_consensus_state: trusted_consensus_state.clone(),
-    };
+    let ctx = LightClientContext::new(&client_state, trusted_consensus_state.clone());
 
-    validate_light_client_update(
+    validate_light_client_update::<LightClientContext>(
         &ctx,
         consensus_update.clone(),
         (timestamp
@@ -268,22 +211,7 @@ pub fn update_header(mut deps: DepsMut, header: EthHeader) -> Result<ContractRes
     )
     .map_err(|_| Error::Verification("for some reason".to_string()))?;
 
-    // client_state
-    //     .consensus_verifier
-    //     .validate_updates(
-    //         &ctx,
-    //         &trusted_consensus_state,
-    //         &consensus_update,
-    //         &execution_update,
-    //     )
-    //     .map_err(|e| Error::Verification(e.to_string()))?;
-
-    // client_state
-    //     .consensus_verifier
-    //     .ensure_relevant_update(&ctx, &trusted_consensus_state, &consensus_update)
-    //     .map_err(|e| Error::Verification(e.to_string()))?;
-
-    let (new_client_state, new_consensus_state) = apply_updates(
+    let (new_client_state, new_consensus_state) = apply_updates::<LightClientContext>(
         &client_state,
         &trusted_consensus_state,
         consensus_update,

@@ -1,7 +1,6 @@
 use crate::errors::Error;
-use ethereum_consensus::primitives::Root;
+use ethereum_verifier::primitives::Root;
 use rlp::Rlp;
-use tiny_keccak::{Hasher, Keccak};
 
 /// decode rlp format `List<List>` to `Vec<List>`
 pub fn decode_eip1184_rlp_proof(proof: Vec<u8>) -> Result<Vec<Vec<u8>>, Error> {
@@ -34,12 +33,4 @@ pub fn extract_storage_root_from_account(account_rlp: &[u8]) -> Result<Root, Err
     } else {
         Err(Error::InvalidProofFormat)
     }
-}
-
-fn keccak_256(input: &[u8]) -> [u8; 32] {
-    let mut out = [0u8; 32];
-    let mut k = Keccak::v256();
-    k.update(input);
-    k.finalize(&mut out);
-    out
 }

@@ -1,4 +1,6 @@
-use ethereum_verifier::{compute_sync_committee_period_at_slot, compute_timestamp_at_slot};
+use ethereum_verifier::{
+    compute_sync_committee_period_at_slot, compute_timestamp_at_slot, LightClientContext,
+};
 use ibc::core::ics23_commitment::commitment::CommitmentRoot;
 
 use crate::{
@@ -9,7 +11,7 @@ use crate::{
     types::AccountUpdateInfo,
 };
 
-pub fn apply_updates(
+pub fn apply_updates<C: LightClientContext>(
     client_state: &ClientState,
     trusted_consensus_state: &TrustedConsensusState,
     consensus_update: LightClientUpdate,
@@ -18,10 +20,11 @@ pub fn apply_updates(
 ) -> Result<(ClientState, ConsensusState), Error> {
     let mut new_client_state = client_state.clone();
 
-    let store_period = compute_sync_committee_period_at_slot(trusted_consensus_state.state.slot);
+    let store_period =
+        compute_sync_committee_period_at_slot::<C>(trusted_consensus_state.state.slot);
     let update_period =
-        compute_sync_committee_period_at_slot(consensus_update.finalized_header.beacon.slot);
-    let finalized_header_timestamp: u64 = compute_timestamp_at_slot(
+        compute_sync_committee_period_at_slot::<C>(consensus_update.finalized_header.beacon.slot);
+    let finalized_header_timestamp: u64 = compute_timestamp_at_slot::<C>(
         client_state.genesis_time,
         consensus_update.finalized_header.beacon.slot,
     );
@@ -29,6 +32,8 @@ pub fn apply_updates(
     if client_state.latest_slot < consensus_update.finalized_header.beacon.slot {
         new_client_state.latest_slot = consensus_update.finalized_header.beacon.slot;
     }
+
+    // TODO(aeryz): Is execution checks necessary?
     // if client_state.latest_execution_block_number < execution_update.block_number {
     //     new_client_state.latest_execution_block_number = execution_update.block_number;
     // }

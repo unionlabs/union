@@ -1,7 +1,8 @@
-use crate::errors::Error;
-use ethereum_consensus::capella::minimal::SyncCommittee;
-use ethereum_consensus::crypto::eth_aggregate_public_keys;
-use ethereum_consensus::primitives::{BlsPublicKey, Slot};
+use crate::{errors::Error, eth_types::SyncCommittee};
+use ethereum_verifier::{
+    crypto::{eth_aggregate_public_keys, BlsPublicKey},
+    primitives::Slot,
+};
 use ibc::core::ics23_commitment::commitment::CommitmentRoot;
 use prost::Message;
 use protos::{
@@ -54,7 +55,7 @@ impl TryFrom<RawConsensusState> for ConsensusState {
             )
         };
         Ok(Self {
-            slot: value.slot.into(),
+            slot: value.slot,
             storage_root: value.storage_root.into(),
             timestamp: value.timestamp,
             current_sync_committee: BlsPublicKey::try_from(value.current_sync_committee.as_slice())
@@ -71,7 +72,7 @@ impl From<ConsensusState> for RawConsensusState {
             None => Vec::new(),
         };
         Self {
-            slot: value.slot.into(),
+            slot: value.slot,
             storage_root: value.storage_root.into_vec(),
             timestamp: value.timestamp,
             current_sync_committee: value.current_sync_committee.to_vec(),
@@ -103,15 +104,6 @@ pub fn tendermint_to_cometbls_consensus_state(
         next_validators_hash: state.next_validators_hash,
     }
 }
-
-// impl From<ConsensusState> for IBCAny {
-//     fn from(consensus_state: ConsensusState) -> Self {
-//         Self {
-//             type_url: ETHEREUM_CONSENSUS_STATE_TYPE_URL.to_string(),
-//             value: Protobuf::<RawConsensusState>::encode_vec(&consensus_state),
-//         }
-//     }
-// }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct TrustedConsensusState {

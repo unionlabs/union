@@ -1,6 +1,8 @@
 use crate::{errors::Error, types::Fraction};
-use ethereum_consensus::primitives::{Epoch, Root, Slot, Version};
-use ethereum_verifier::ForkParameters;
+use ethereum_verifier::{
+    primitives::{Epoch, Root, Slot, Version},
+    ForkParameters,
+};
 use ibc::{
     core::ics02_client::{
         client_state::ClientState as Ics2ClientState, client_type::ClientType, error::ClientError,

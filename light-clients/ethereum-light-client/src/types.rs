@@ -2,15 +2,15 @@ use crate::{
     commitment::decode_eip1184_rlp_proof,
     errors::Error,
     eth_types::{
-        ExecutionPayloadHeader, LightClientHeader, LightClientUpdate, SYNC_COMMITTEE_SIZE,
+        ExecutionPayloadHeader, LightClientHeader, LightClientUpdate, SyncAggregate, SyncCommittee,
+        SYNC_COMMITTEE_SIZE,
     },
 };
-use ethereum_consensus::{
-    altair::NEXT_SYNC_COMMITTEE_INDEX_FLOOR_LOG_2,
-    capella::minimal::{SyncAggregate, SyncCommittee},
-    phase0::BeaconBlockHeader,
-    primitives::{BlsPublicKey, BlsSignature, Bytes32, ExecutionAddress, Hash32, Root},
-    ssz::{ByteList, ByteVector},
+use ethereum_verifier::{
+    capella::{BeaconBlockHeader, NEXT_SYNC_COMMITTEE_INDEX_FLOOR_LOG_2},
+    crypto::{BlsPublicKey, BlsSignature},
+    primitives::{Bytes32, ExecutionAddress, Hash32, Root},
+    ByteList, ByteVector,
 };
 use ibc::Height;
 use protos::ibc::core::client::v1::Height as ProtoHeight;
@@ -21,7 +21,7 @@ use protos::union::ibc::lightclients::ethereum::v1::{
     SyncAggregate as ProtoSyncAggregate, SyncCommittee as ProtoSyncCommittee,
     TrustedSyncCommittee as ProtoTrustedSyncCommittee,
 };
-use ssz_rs::{Bitvector, Deserialize, Vector, U256};
+use ssz_rs::{Bitvector, Deserialize, U256};
 
 #[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct TrustedSyncCommittee {
@@ -35,7 +35,6 @@ pub struct TrustedSyncCommittee {
 
 impl TryFrom<ProtoTrustedSyncCommittee> for TrustedSyncCommittee {
     type Error = Error;
-
     fn try_from(value: ProtoTrustedSyncCommittee) -> Result<Self, Error> {
         Ok(TrustedSyncCommittee {
             height: Height::new(
@@ -161,7 +160,7 @@ pub(crate) fn convert_proto_to_beacon_header(
     header: &ProtoBeaconBlockHeader,
 ) -> Result<BeaconBlockHeader, Error> {
     Ok(BeaconBlockHeader {
-        slot: header.slot.into(),
+        slot: header.slot,
         proposer_index: header.proposer_index.try_into().unwrap(),
         parent_root: Root::try_from(header.parent_root.as_slice()).unwrap(),
         state_root: Root::try_from(header.state_root.as_slice()).unwrap(),
@@ -200,10 +199,10 @@ pub(crate) fn convert_proto_to_header(
                 Error::decode("cannot parse `logs_bloom` in `RawLightClientHeader`")
             })?,
             prev_randao: Hash32::try_from(execution.prev_randao.as_slice()).unwrap(),
-            block_number: execution.block_number.into(),
-            gas_limit: execution.gas_limit.into(),
-            gas_used: execution.gas_used.into(),
-            timestamp: execution.timestamp.into(),
+            block_number: execution.block_number,
+            gas_limit: execution.gas_limit,
+            gas_used: execution.gas_used,
+            timestamp: execution.timestamp,
             extra_data: ByteList::try_from(execution.extra_data.as_slice()).map_err(|_| {
                 Error::decode("cannot parse `extra_data` in `RawLightClientHeader`")
             })?,
@@ -232,7 +231,7 @@ pub(crate) fn convert_proto_to_header(
 
 pub(crate) fn convert_beacon_header_to_proto(header: &BeaconBlockHeader) -> ProtoBeaconBlockHeader {
     ProtoBeaconBlockHeader {
-        slot: header.slot.into(),
+        slot: header.slot,
         proposer_index: header.proposer_index.try_into().unwrap(),
         parent_root: header.parent_root.as_ref().into(),
         state_root: header.state_root.as_ref().into(),
@@ -250,10 +249,10 @@ pub(crate) fn convert_header_to_proto(header: &LightClientHeader) -> ProtoLightC
             receipts_root: header.execution.receipts_root.as_ref().into(),
             logs_bloom: header.execution.logs_bloom.as_ref().into(),
             prev_randao: header.execution.prev_randao.as_ref().into(),
-            block_number: header.execution.block_number.into(),
-            gas_limit: header.execution.gas_limit.into(),
-            gas_used: header.execution.gas_used.into(),
-            timestamp: header.execution.timestamp.into(),
+            block_number: header.execution.block_number,
+            gas_limit: header.execution.gas_limit,
+            gas_used: header.execution.gas_used,
+            timestamp: header.execution.timestamp,
             extra_data: header.execution.extra_data.as_ref().into(),
             base_fee_per_gas: header.execution.base_fee_per_gas.to_bytes_le(),
             block_hash: header.execution.block_hash.as_ref().into(),
@@ -327,7 +326,7 @@ pub(crate) fn convert_consensus_update_to_proto(
             .map(|h| h.as_ref().into())
             .collect(),
         sync_aggregate: Some(convert_sync_aggregate_to_proto(sync_aggregate)),
-        signature_slot: signature_slot,
+        signature_slot,
     }
 }
 

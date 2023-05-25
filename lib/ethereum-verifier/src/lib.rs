@@ -1,38 +1,26 @@
+#![feature(generic_const_exprs)]
+
+extern crate alloc;
+
+mod byte_list;
+mod byte_vector;
 mod context;
+pub mod crypto;
 mod error;
+pub mod primitives;
+mod serde;
+mod types;
 mod utils;
 mod verify;
 
+pub use byte_list::*;
+pub use byte_vector::*;
 pub use context::*;
 pub use error::*;
 pub use utils::*;
 pub use verify::*;
 
-#[cfg(feature = "config-minimal")]
-pub(crate) use minimal::*;
-
-#[cfg(feature = "config-minimal")]
-pub(crate) mod minimal {
-    pub use ethereum_consensus::{
-        altair::minimal::{EPOCHS_PER_SYNC_COMMITTEE_PERIOD, MIN_SYNC_COMMITTEE_PARTICIPANTS},
-        capella::minimal::*,
-        configs::minimal::*,
-        phase0::minimal::SLOTS_PER_EPOCH,
-    };
-}
-
-#[cfg(feature = "config-mainnet")]
-pub(crate) use mainnet::*;
-
-#[cfg(feature = "config-mainnet")]
-pub(crate) mod mainnet {
-    pub use ethereum_consensus::{
-        altair::mainnet::{EPOCHS_PER_SYNC_COMMITTEE_PERIOD, MIN_SYNC_COMMITTEE_PARTICIPANTS},
-        capella::mainnet::*,
-        configs::mainnet::*,
-        phase0::mainnet::SLOTS_PER_EPOCH,
-    };
-}
+pub use types::*;
 
 pub const FINALIZED_ROOT_INDEX: usize = 105;
 pub const FINALIZED_ROOT_SUBTREE_INDEX: usize = 41;

@@ -1,59 +1,57 @@
+use milagro_bls::AmclError;
 use ssz_rs::MerkleizationError;
-use thiserror::Error as ThisError;
 
-#[derive(ThisError, Debug)]
+#[derive(Debug)]
 pub enum Error {
-    #[error("Invalid merkle branch.")]
     InvalidMerkleBranch,
-
-    #[error("Merkleization error: {0}")]
     Merkleization(MerkleizationError),
-
-    #[error("Invalid chain version")]
     InvalidChainVersion,
-
-    #[error("Crypto error: {0}")]
-    Crypto(ethereum_consensus::crypto::Error),
-
-    #[error("State transition error: {0}")]
-    StateTransition(ethereum_consensus::state_transition::Error),
-
-    #[error("Expected current sync committee.")]
+    Crypto,
     ExpectedCurrentSyncCommittee,
-
-    #[error("Expected next sync committee.")]
+    EmptyAggregate,
     ExpectedNextSyncCommittee,
-
-    #[error("Irrelevant update.")]
     IrrelevantUpdate,
-
-    #[error("Invalid slots.")]
     InvalidSlots,
-
-    #[error("Signature period must be equal to `store_period` or `store_period + 1`")]
+    InvalidSignature,
     InvalidSignaturePeriod,
-
-    #[error("Next sync committee does not match with the one in the current state.")]
+    InvalidPublicKey,
     NextSyncCommitteeMismatch,
-
-    #[error("Insufficient number of sync committee participants.")]
     InsufficientSyncCommitteeParticipents,
+    Bls(AmclError),
+}
+
+impl core::fmt::Display for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Error::InvalidMerkleBranch => write!(f, "Invalid merkle branch."),
+            Error::Merkleization(e) => write!(f, "Merkleization error: {e}"),
+            Error::InvalidChainVersion => write!(f, "Invalid chain conversion."),
+            Error::Crypto => write!(f, "Crypto error."),
+            Error::ExpectedCurrentSyncCommittee => write!(f, "Expected current sync committee."),
+            Error::ExpectedNextSyncCommittee => write!(f, "Expected next sync committee"),
+            Error::IrrelevantUpdate => write!(f, "Irrelevant update."),
+            Error::InvalidSlots => write!(f, "Invalid slots."),
+            Error::InvalidSignaturePeriod => write!(
+                f,
+                "Signature period must be equal to `store_period` or `store_period + 1`"
+            ),
+            Error::NextSyncCommitteeMismatch => write!(
+                f,
+                "Next sync committee does not match with the one in the current state."
+            ),
+            Error::InsufficientSyncCommitteeParticipents => {
+                write!(f, "Insufficient number of sync committee participants.")
+            }
+            Error::Bls(e) => write!(f, "Bls error: {e:?}"),
+            Error::EmptyAggregate => write!(f, "Item list to be aggregated is empty."),
+            Error::InvalidSignature => write!(f, "Signature is not valid."),
+            Error::InvalidPublicKey => write!(f, "Invalid public key."),
+        }
+    }
 }
 
 impl From<MerkleizationError> for Error {
     fn from(e: MerkleizationError) -> Self {
         Error::Merkleization(e)
-    }
-}
-
-impl From<ethereum_consensus::crypto::Error> for Error {
-    fn from(e: ethereum_consensus::crypto::Error) -> Self {
-        Error::Crypto(e)
-    }
-}
-
-impl From<ethereum_consensus::state_transition::Error> for Error {
-    fn from(e: ethereum_consensus::state_transition::Error) -> Self {
-        Error::StateTransition(e)
     }
 }

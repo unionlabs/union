@@ -25,8 +25,6 @@ impl TryInto<ibc::Height> for Height {
     }
 }
 
-// TODO(aeryz): Normally, this type should be an enum. Need more
-// research on that. For now, this is fine though.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct MerklePath {
     pub key_path: Vec<String>,
