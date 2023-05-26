@@ -494,3 +494,6 @@ Shacham
 zkps
 Verkle
 Polkadot
+passthru
+wasi
+rustlib
