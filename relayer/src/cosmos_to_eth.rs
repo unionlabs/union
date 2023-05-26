@@ -2,59 +2,56 @@ use std::sync::Arc;
 
 use contracts::{
     glue::{
-        self, GoogleProtobufDurationData, GoogleProtobufTimestampData,
-        IbcCoreCommitmentV1MerkleRootData, UnionIbcLightclientsCometblsV1ClientStateData,
+        GoogleProtobufDurationData, GoogleProtobufTimestampData, IbcCoreCommitmentV1MerkleRootData,
+        UnionIbcLightclientsCometblsV1ClientStateData,
         UnionIbcLightclientsCometblsV1ConsensusStateData,
         UnionIbcLightclientsCometblsV1FractionData,
     },
     ibc_handler::MsgCreateClient,
     shared_types::IbcCoreClientV1HeightData,
 };
-use ethers::abi::AbiEncode;
 use ethers::{
-    prelude::{k256::ecdsa::SigningKey, MiddlewareBuilder},
+    abi::AbiEncode,
+    prelude::SignerMiddleware,
+    providers::Middleware,
+    signers::{LocalWallet, Signer},
+    types::U256,
+};
+use ethers::{
     providers::{Http, Provider},
-    signers::Wallet,
     types::Address,
 };
-use hex_literal::hex;
-use protos::union::ibc::lightclients::cometbls;
-use protos::{
-    cosmos::staking::{self, v1beta1::QueryParamsRequest},
-    ibc::core::commitment::v1::MerkleRoot,
-};
-use tendermint_rpc::{
-    endpoint::{abci_query, block, commit, consensus_state, header},
-    Client, HttpClient,
-};
+use protos::cosmos::staking;
+use tendermint_rpc::{endpoint::commit, Client, HttpClient};
 
 use crate::ETH_RPC_API;
 
 pub async fn update_contract() {
-    const IBC_HANDLER_ADDRESS: &str = "0xF8F7758FbcEfd546eAEff7dE24AFf666B6228e73";
+    const IBC_HANDLER_ADDRESS: &str = "0x00144a7Ca3f73C0cE2272c19B7db4192F48e9411";
 
-    const CLIENT_ADDRESS: &str = "0xB8EA8cB425d85536b158d661da1ef0895Bb92F1D";
+    const CLIENT_ADDRESS: &str = "0x433488cec14C4478e5ff18DDC7E7384Fc416f148";
 
-    let s = SigningKey::from_slice(&hex!(
-        "4e9444a6efd6d42725a250b650a781da2737ea308c839eaccb0f7f3dbd2fea77"
-    ))
-    .unwrap();
-
-    let client = Arc::new(
-        Provider::<Http>::try_from(ETH_RPC_API)
+    let provider = Arc::new({
+        let provider = Provider::<Http>::try_from(ETH_RPC_API).unwrap();
+        let chain_id = provider.get_chainid().await.unwrap();
+        let wallet = "4e9444a6efd6d42725a250b650a781da2737ea308c839eaccb0f7f3dbd2fea77"
+            .parse::<LocalWallet>()
             .unwrap()
-            .with_signer(Wallet::from(s)),
-    );
+            .with_chain_id(chain_id.as_u64());
+        SignerMiddleware::new(provider, wallet)
+    });
 
     let address: Address = IBC_HANDLER_ADDRESS.parse().unwrap();
 
-    let contract = contracts::ibc_handler::IBCHandler::new(address, client);
+    let contract = contracts::ibc_handler::IBCHandler::new(address, provider);
 
-    // contract
-    //     .register_client("cometbls".to_string(), CLIENT_ADDRESS.parse().unwrap())
-    //     .call()
-    //     .await
-    //     .unwrap();
+    contract
+        .register_client("cometbls".to_string(), CLIENT_ADDRESS.parse().unwrap())
+        .send()
+        .await
+        .unwrap()
+        .await
+        .unwrap();
 
     let tm_client = HttpClient::new("http://0.0.0.0:26657").unwrap();
 
@@ -81,8 +78,6 @@ pub async fn update_contract() {
 
     let height = commit.signed_header.header.height;
 
-    dbg!(height);
-
     // let consensus_params = tm_client.consensus_params(height).await.unwrap();
 
     // dbg!(consensus_state);
@@ -104,76 +99,95 @@ pub async fn update_contract() {
             .unwrap(),
     );
 
+    let client_state_bytes = UnionIbcLightclientsCometblsV1ClientStateData {
+        chain_id: "union-devnet-1".to_string(),
+        // https://github.com/cometbft/cometbft/blob/da0e55604b075bac9e1d5866cb2e62eaae386dd9/light/verifier.go#L16
+        trust_level: UnionIbcLightclientsCometblsV1FractionData {
+            numerator: 1,
+            denominator: 3,
+        },
+        // https://github.com/cosmos/relayer/blob/23d1e5c864b35d133cad6a0ef06970a2b1e1b03f/relayer/chains/cosmos/provider.go#L177
+        trusting_period: GoogleProtobufDurationData {
+            seconds: (unbonding_period * 85 / 100).as_secs().try_into().unwrap(),
+            nanos: (unbonding_period * 85 / 100)
+                .subsec_nanos()
+                .try_into()
+                .unwrap(),
+        },
+        unbonding_period: GoogleProtobufDurationData {
+            seconds: unbonding_period.as_secs().try_into().unwrap(),
+            nanos: unbonding_period.subsec_nanos().try_into().unwrap(),
+        },
+        // https://github.com/cosmos/relayer/blob/23d1e5c864b35d133cad6a0ef06970a2b1e1b03f/relayer/chains/cosmos/provider.go#L177
+        max_clock_drift: GoogleProtobufDurationData {
+            seconds: 60 * 10,
+            nanos: 0,
+        },
+        frozen_height: IbcCoreClientV1HeightData {
+            revision_number: 0,
+            revision_height: 0,
+        },
+        latest_height: IbcCoreClientV1HeightData {
+            revision_number: 0,
+            revision_height: height.value(),
+        },
+    }
+    .encode();
+
+    let consensus_state_bytes = UnionIbcLightclientsCometblsV1ConsensusStateData {
+        timestamp: {
+            let ts = commit.signed_header.header.time;
+            GoogleProtobufTimestampData {
+                secs: ts.unix_timestamp(),
+                nanos: (ts.unix_timestamp_nanos()
+                    - (ts.unix_timestamp() as i128 * 1_000_000_000_i128))
+                    .try_into()
+                    .unwrap(),
+            }
+        },
+        root: IbcCoreCommitmentV1MerkleRootData {
+            hash: commit
+                .signed_header
+                .header
+                .app_hash
+                .as_bytes()
+                .to_vec()
+                .into(),
+        },
+        next_validators_hash: commit
+            .signed_header
+            .header
+            .next_validators_hash
+            .as_bytes()
+            .to_vec()
+            .into(),
+    }
+    .encode();
+
+    // The story behind this is too dark to be explained, you must personnaly ask hussein.aitlahcen@gmail.com
+    let prefix = U256::from(32).encode();
+    let normalized_client_state_bytes = prefix
+        .iter()
+        .copied()
+        .chain(client_state_bytes.iter().copied())
+        .collect::<Vec<_>>();
+    let normalized_consensus_state_bytes = prefix
+        .iter()
+        .copied()
+        .chain(consensus_state_bytes.iter().copied())
+        .collect::<Vec<_>>();
+
+    let msg_create_client = MsgCreateClient {
+        client_type: "cometbls".to_string(),
+        client_state_bytes: normalized_client_state_bytes.into(),
+        consensus_state_bytes: normalized_consensus_state_bytes.into(),
+    };
+
     contract
-        .create_client(MsgCreateClient {
-            client_type: "cometbls".to_string(),
-            client_state_bytes: UnionIbcLightclientsCometblsV1ClientStateData {
-                chain_id: "union-devnet".to_string(),
-                // https://github.com/cometbft/cometbft/blob/da0e55604b075bac9e1d5866cb2e62eaae386dd9/light/verifier.go#L16
-                trust_level: UnionIbcLightclientsCometblsV1FractionData {
-                    numerator: 1,
-                    denominator: 3,
-                },
-                // https://github.com/cosmos/relayer/blob/23d1e5c864b35d133cad6a0ef06970a2b1e1b03f/relayer/chains/cosmos/provider.go#L177
-                trusting_period: GoogleProtobufDurationData {
-                    seconds: (unbonding_period * 85 / 100).as_secs().try_into().unwrap(),
-                    nanos: (unbonding_period * 85 / 100)
-                        .subsec_nanos()
-                        .try_into()
-                        .unwrap(),
-                },
-                unbonding_period: GoogleProtobufDurationData {
-                    seconds: unbonding_period.as_secs().try_into().unwrap(),
-                    nanos: unbonding_period.subsec_nanos().try_into().unwrap(),
-                },
-                // https://github.com/cosmos/relayer/blob/23d1e5c864b35d133cad6a0ef06970a2b1e1b03f/relayer/chains/cosmos/provider.go#L177
-                max_clock_drift: GoogleProtobufDurationData {
-                    seconds: 60 * 10,
-                    nanos: 0,
-                },
-                frozen_height: IbcCoreClientV1HeightData {
-                    revision_number: 0,
-                    revision_height: 0,
-                },
-                latest_height: IbcCoreClientV1HeightData {
-                    revision_number: 0,
-                    revision_height: height.value(),
-                },
-            }
-            .encode()
-            .into(),
-            consensus_state_bytes: UnionIbcLightclientsCometblsV1ConsensusStateData {
-                timestamp: {
-                    let ts = commit.signed_header.header.time;
-                    GoogleProtobufTimestampData {
-                        secs: ts.unix_timestamp(),
-                        nanos: (ts.unix_timestamp_nanos()
-                            - (ts.unix_timestamp() as i128 * 1_000_000_000_i128))
-                            .try_into()
-                            .unwrap(),
-                    }
-                },
-                root: IbcCoreCommitmentV1MerkleRootData {
-                    hash: commit
-                        .signed_header
-                        .header
-                        .app_hash
-                        .as_bytes()
-                        .to_vec()
-                        .into(),
-                },
-                next_validators_hash: commit
-                    .signed_header
-                    .header
-                    .next_validators_hash
-                    .as_bytes()
-                    .to_vec()
-                    .into(),
-            }
-            .encode()
-            .into(),
-        })
-        .call()
+        .create_client(msg_create_client)
+        .send()
+        .await
+        .unwrap()
         .await
         .unwrap();
 }
