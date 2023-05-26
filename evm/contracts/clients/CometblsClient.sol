@@ -55,11 +55,12 @@ contract CometblsClient is ILightClient {
         UnionIbcLightclientsCometblsV1ConsensusState.Data memory consensusState =
             consensusStateBytes.unmarshalConsensusStateEthABI();
         clientStates[clientId] = clientState;
-        consensusStates[stateIndex(clientId, clientState.latest_height.toUint128())] = consensusState.toOptimizedConsensusState();
+        OptimizedConsensusState memory optimizedConsensusState = consensusState.toOptimizedConsensusState();
+        consensusStates[stateIndex(clientId, clientState.latest_height.toUint128())] = optimizedConsensusState;
         return (
             keccak256(clientStateBytes),
             ConsensusStateUpdate({
-                consensusStateCommitment: keccak256(consensusStateBytes),
+                consensusStateCommitment: keccak256(abi.encode(optimizedConsensusState)),
                 height: clientState.latest_height
             }),
             true
