@@ -99,11 +99,11 @@
         src = evmSources;
         buildInputs = [ wrappedForge ];
         buildPhase = ''
-          forge build
+          forge build --revert-strings debug
         '';
         doCheck = true;
         checkPhase = ''
-          forge test -vv
+          forge test --revert-strings debug -vv
         '';
         installPhase = ''
           mkdir -p $out
@@ -181,6 +181,7 @@
           deploy = { path, name, args ? "" }: ''
             echo "Deploying ${name}..."
             ${pkgs.lib.toUpper name}=$(forge create \
+                     --revert-strings debug \
                      --json \
                      --rpc-url http://0.0.0.0:8545 \
                      --private-key ${builtins.readFile ./../networks/genesis/devnet-evm/dev-key0.prv} \

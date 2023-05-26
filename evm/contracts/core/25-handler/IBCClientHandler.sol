@@ -20,10 +20,12 @@ abstract contract IBCClientHandler {
      * @dev registerClient registers a new client type into the client registry
      */
     function registerClient(string calldata clientType, ILightClient client) public virtual {
-        (bool success,) = ibcClientAddress.delegatecall(
+        (bool success, bytes memory res) = ibcClientAddress.delegatecall(
             abi.encodeWithSelector(IIBCClient.registerClient.selector, clientType, client)
         );
-        require(success, "IBCClientHandler: registerClient failed");
+        if (!success) {
+            revert(_getRevertMsg(res));
+        }
     }
 
     /**
@@ -32,7 +34,9 @@ abstract contract IBCClientHandler {
     function createClient(IBCMsgs.MsgCreateClient calldata msg_) external returns (string memory clientId) {
         (bool success, bytes memory res) =
             ibcClientAddress.delegatecall(abi.encodeWithSelector(IIBCClient.createClient.selector, msg_));
-        require(success, "IBCClientHandler: createClient failed");
+        if (!success) {
+            revert(_getRevertMsg(res));
+        }
         clientId = abi.decode(res, (string));
         emit GeneratedClientIdentifier(clientId);
         return clientId;
@@ -42,7 +46,9 @@ abstract contract IBCClientHandler {
      * @dev updateClient updates the consensus state and the state root from a provided header
      */
     function updateClient(IBCMsgs.MsgUpdateClient calldata msg_) external {
-        (bool success,) = ibcClientAddress.delegatecall(abi.encodeWithSelector(IIBCClient.updateClient.selector, msg_));
-        require(success, "IBCClientHandler: updateClient failed");
+        (bool success, bytes memory res) = ibcClientAddress.delegatecall(abi.encodeWithSelector(IIBCClient.updateClient.selector, msg_));
+        if (!success) {
+            revert(_getRevertMsg(res));
+        }
     }
 }

@@ -161,7 +161,7 @@ library CometblsHelp {
     }
 
     function marshalHeaderEthABI(UnionIbcLightclientsCometblsV1Header.Data memory header) internal pure returns (bytes memory) {
-      return abi.encode(header);
+        return abi.encode(header);
     }
 
     function unmarshalHeaderEthABI(bytes memory bz) internal pure returns (UnionIbcLightclientsCometblsV1Header.Data memory header, bool) {
