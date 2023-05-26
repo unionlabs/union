@@ -39,22 +39,22 @@ library CometblsHelp {
 
     // Specialized https://en.wikipedia.org/wiki/HMAC for keccak256 with `CometBLS` as key.
     // TODO: link whitepaper
-    function hmac_keccak(bytes memory message) public pure returns (bytes32) {
+    function hmac_keccak(bytes memory message) internal pure returns (bytes32) {
         return keccak256(abi.encodePacked(HMAC_O, keccak256(abi.encodePacked(HMAC_I, message))));
     }
 
     // TODO: link whitepaper
-    function hashToField(bytes memory message) public pure returns (uint256) {
+    function hashToField(bytes memory message) internal pure returns (uint256) {
         return (uint256(hmac_keccak(message)) % PRIME_R_MINUS_ONE) + 1;
     }
 
     // TODO: link whitepaper
-    function hashToField2(bytes memory message) public pure returns (uint256, uint256) {
+    function hashToField2(bytes memory message) internal pure returns (uint256, uint256) {
         return (hashToField(abi.encodePacked(ZERO, message)),
                 hashToField(abi.encodePacked(ONE, message)));
     }
 
-    function verifyZKP(IZKVerifier verifier, bytes32 trustedValidatorsHash, bytes32 untrustedValidatorsHash, bytes memory message, bytes memory zkp) public view returns (bool) {
+    function verifyZKP(IZKVerifier verifier, bytes32 trustedValidatorsHash, bytes32 untrustedValidatorsHash, bytes memory message, bytes memory zkp) internal view returns (bool) {
         (uint256 messageX, uint256 messageY) =
             hashToField2(message);
 
@@ -72,7 +72,7 @@ library CometblsHelp {
              uint256(packedUntrustedValidatorsHash.toUint128(16)),
              messageX,
              messageY,
-             // Gnark commitment API extend public inputs with the following commitment hash and proof commitment
+             // Gnark commitment API extend internal inputs with the following commitment hash and proof commitment
              // See https://github.com/ConsenSys/gnark/issues/652
              commitmentHash,
              proofCommitment[0],
@@ -86,7 +86,7 @@ library CometblsHelp {
         GoogleProtobufTimestamp.Data memory headerTime,
         GoogleProtobufDuration.Data memory trustingPeriod,
         GoogleProtobufDuration.Data memory currentTime
-    ) public pure returns (bool) {
+    ) internal pure returns (bool) {
         GoogleProtobufTimestamp.Data memory expirationTime = GoogleProtobufTimestamp.Data({
             secs: headerTime.secs + int64(trustingPeriod.Seconds),
             nanos: headerTime.nanos
@@ -94,7 +94,7 @@ library CometblsHelp {
         return gt(GoogleProtobufTimestamp.Data({secs: int64(currentTime.Seconds), nanos: 0}), expirationTime);
     }
 
-    function gt(GoogleProtobufTimestamp.Data memory t1, GoogleProtobufTimestamp.Data memory t2) public pure returns (bool) {
+    function gt(GoogleProtobufTimestamp.Data memory t1, GoogleProtobufTimestamp.Data memory t2) internal pure returns (bool) {
         if (t1.secs > t2.secs) {
             return true;
         } else if (t1.secs == t2.secs && t1.nanos > t2.nanos) {
@@ -104,7 +104,7 @@ library CometblsHelp {
         }
     }
 
-    function merkleRoot(TendermintTypesHeader.Data memory h) public view returns (bytes32) {
+    function merkleRoot(TendermintTypesHeader.Data memory h) internal view returns (bytes32) {
         require(h.validators_hash.length > 0, "Tendermint: hash can't be empty");
         bytes memory hbz = TendermintVersionConsensus.encode(h.version);
         bytes memory pbt = GoogleProtobufTimestamp.encode(h.time);
@@ -128,7 +128,7 @@ library CometblsHelp {
         return MerkleTree.optimizedBlockRoot(normalizedHeader);
     }
 
-    function toOptimizedConsensusState(UnionIbcLightclientsCometblsV1ConsensusState.Data memory consensusState) public pure returns (OptimizedConsensusState memory) {
+    function toOptimizedConsensusState(UnionIbcLightclientsCometblsV1ConsensusState.Data memory consensusState) internal pure returns (OptimizedConsensusState memory) {
         return OptimizedConsensusState({
                 timestamp: uint64(consensusState.timestamp.secs),
                 root: consensusState.root.hash.toBytes32(0),
@@ -136,7 +136,7 @@ library CometblsHelp {
             });
     }
 
-    function toCanonicalVote(TendermintTypesCommit.Data memory commit, string memory chainId, bytes32 blockHash) public pure returns (TendermintTypesCanonicalVote.Data memory) {
+    function toCanonicalVote(TendermintTypesCommit.Data memory commit, string memory chainId, bytes32 blockHash) internal pure returns (TendermintTypesCanonicalVote.Data memory) {
         return TendermintTypesCanonicalVote.Data({
             type_: TendermintTypesTypesGlobalEnums.SignedMsgType.SIGNED_MSG_TYPE_PRECOMMIT,
             height: commit.height,
@@ -152,24 +152,24 @@ library CometblsHelp {
             });
     }
 
-    function marshalClientStateEthABI(UnionIbcLightclientsCometblsV1ClientState.Data memory clientState) public pure returns (bytes memory) {
+    function marshalClientStateEthABI(UnionIbcLightclientsCometblsV1ClientState.Data memory clientState) internal pure returns (bytes memory) {
         return abi.encode(clientState);
     }
 
-    function marshalConsensusStateEthABI(UnionIbcLightclientsCometblsV1ConsensusState.Data memory consensusState) public view returns (bytes memory) {
+    function marshalConsensusStateEthABI(UnionIbcLightclientsCometblsV1ConsensusState.Data memory consensusState) internal view returns (bytes memory) {
         return abi.encode(consensusState);
     }
 
-    function marshalHeaderEthABI(UnionIbcLightclientsCometblsV1Header.Data memory header) public pure returns (bytes memory) {
+    function marshalHeaderEthABI(UnionIbcLightclientsCometblsV1Header.Data memory header) internal pure returns (bytes memory) {
       return abi.encode(header);
     }
 
-    function unmarshalHeaderEthABI(bytes memory bz) public pure returns (UnionIbcLightclientsCometblsV1Header.Data memory header, bool) {
+    function unmarshalHeaderEthABI(bytes memory bz) internal pure returns (UnionIbcLightclientsCometblsV1Header.Data memory header, bool) {
         return (abi.decode(bz, (UnionIbcLightclientsCometblsV1Header.Data)), true);
     }
 
     function unmarshalClientStateEthABI(bytes memory bz)
-        public
+        internal
         pure
         returns (UnionIbcLightclientsCometblsV1ClientState.Data memory)
     {
@@ -177,7 +177,7 @@ library CometblsHelp {
     }
 
     function unmarshalConsensusStateEthABI(bytes memory bz)
-        public
+        internal
         pure
         returns (UnionIbcLightclientsCometblsV1ConsensusState.Data memory)
     {

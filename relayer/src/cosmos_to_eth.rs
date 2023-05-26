@@ -33,7 +33,7 @@ use crate::ETH_RPC_API;
 pub async fn update_contract() {
     const IBC_HANDLER_ADDRESS: &str = "0xF8F7758FbcEfd546eAEff7dE24AFf666B6228e73";
 
-    const CLIENT_ADDRESS: &str = "0xB1185EDE04202fE62D38F5db72F71e38Ff3E8305";
+    const CLIENT_ADDRESS: &str = "0xB8EA8cB425d85536b158d661da1ef0895Bb92F1D";
 
     let s = SigningKey::from_slice(&hex!(
         "4e9444a6efd6d42725a250b650a781da2737ea308c839eaccb0f7f3dbd2fea77"
@@ -80,6 +80,8 @@ pub async fn update_contract() {
         .unwrap();
 
     let height = commit.signed_header.header.height;
+
+    dbg!(height);
 
     // let consensus_params = tm_client.consensus_params(height).await.unwrap();
 
