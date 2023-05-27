@@ -67,6 +67,12 @@ impl<const N: usize> DerefMut for ByteVector<N> {
     }
 }
 
+impl Into<primitive_types::H256> for ByteVector<32> {
+    fn into(self) -> primitive_types::H256 {
+        primitive_types::H256::from_slice(self.as_ref())
+    }
+}
+
 pub fn write_bytes_to_lower_hex<T: AsRef<[u8]>>(
     f: &mut fmt::Formatter<'_>,
     data: T,

@@ -1,5 +1,6 @@
 use milagro_bls::AmclError;
 use ssz_rs::MerkleizationError;
+use trie_db::TrieError;
 
 #[derive(Debug)]
 pub enum Error {
@@ -18,6 +19,8 @@ pub enum Error {
     NextSyncCommitteeMismatch,
     InsufficientSyncCommitteeParticipents,
     Bls(AmclError),
+    ValueMismatch,
+    Trie(Box<TrieError<primitive_types::H256, rlp::DecoderError>>),
 }
 
 impl core::fmt::Display for Error {
@@ -46,6 +49,8 @@ impl core::fmt::Display for Error {
             Error::EmptyAggregate => write!(f, "Item list to be aggregated is empty."),
             Error::InvalidSignature => write!(f, "Signature is not valid."),
             Error::InvalidPublicKey => write!(f, "Invalid public key."),
+            Error::ValueMismatch => write!(f, "Proof is invalid. Value mismatch."),
+            Error::Trie(e) => write!(f, "Trie error: {e:?}"),
         }
     }
 }
@@ -53,5 +58,11 @@ impl core::fmt::Display for Error {
 impl From<MerkleizationError> for Error {
     fn from(e: MerkleizationError) -> Self {
         Error::Merkleization(e)
+    }
+}
+
+impl From<Box<TrieError<primitive_types::H256, rlp::DecoderError>>> for Error {
+    fn from(e: Box<TrieError<primitive_types::H256, rlp::DecoderError>>) -> Self {
+        Error::Trie(e)
     }
 }

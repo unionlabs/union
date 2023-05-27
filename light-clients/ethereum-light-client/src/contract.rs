@@ -11,7 +11,7 @@ use cosmwasm_std::{
     entry_point, to_binary, Binary, Deps, DepsMut, Env, MessageInfo, QueryResponse, Response,
     StdError, StdResult,
 };
-use ethereum_verifier::{primitives::Hash32, validate_light_client_update};
+use ethereum_verifier::{primitives::Hash32, validate_light_client_update, verify_storage_proof};
 use ibc::core::ics24_host::Path;
 use prost::Message;
 use protos::{
@@ -90,8 +90,6 @@ pub fn verify_membership(
         read_consensus_state(deps, height.try_into().map_err(|_| Error::InvalidHeight)?)?.ok_or(
             Error::ConsensusStateNotFound(height.revision_number, height.revision_height),
         )?;
-    let (_, client_state) = read_client_state(deps)?;
-
     let path = Path::from_str(
         path.key_path
             .last()
@@ -137,19 +135,17 @@ pub fn verify_membership(
             client_state.counterparty_connection_state_slot.0,
         );
 
-        // client_state
-        //     .execution_verifier
-        //     .verify_membership(
-        //         root,
-        //         &key,
-        //         &value,
-        //         proof
-        //             .proof
-        //             .iter()
-        //             .map(|p| hex::decode(&p[2..]).map_err(|_| Error::DecodeError("".into())))
-        //             .collect::<Result<Vec<_>, _>>()?,
-        //     )
-        //     .map_err(|e| Error::Verification(e.to_string()))?;
+        verify_storage_proof(
+            root,
+            &key,
+            &value,
+            proof
+                .proof
+                .iter()
+                .map(|p| hex::decode(&p[2..]).map_err(|e| Error::decode(e.to_string())))
+                .collect::<Result<Vec<_>, _>>()?,
+        )
+        .map_err(|e| Error::Verification(e.to_string()))?;
     }
 
     let mut value = sha3::Keccak256::new();
@@ -251,7 +247,7 @@ mod test {
         testing::{mock_dependencies, MockApi, MockQuerier, MockStorage},
         Empty, OwnedDeps,
     };
-    use ethereum_consensus::primitives::BlsPublicKey;
+    use ethereum_verifier::crypto::BlsPublicKey;
     use ibc::Height;
     use protos::ibc::lightclients::wasm::v1::{
         ClientState as WasmClientState, ConsensusState as WasmConsensusState,

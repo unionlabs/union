@@ -1321,6 +1321,7 @@ dependencies = [
 ]
 
 [[package]]
+<<<<<<< HEAD
 name = "ethereum-light-client-verifier"
 version = "0.1.0"
 dependencies = [
@@ -1333,6 +1334,17 @@ dependencies = [
  "rlp",
  "serde",
  "serde_json",
+=======
+name = "ethereum-trie"
+version = "0.1.0"
+source = "git+https://github.com/polytope-labs/ethereum-triedb#824e16bc3f6666f12010acc5dd26a273ef622068"
+dependencies = [
+ "hash-db",
+ "memory-db",
+ "parity-scale-codec",
+ "primitive-types",
+ "rlp",
+>>>>>>> 68888b9 (feat(light-client): add storage proof verification)
  "trie-db",
 ]
 
@@ -1353,6 +1365,28 @@ dependencies = [
 ]
 
 [[package]]
+<<<<<<< HEAD
+=======
+name = "ethereum-verifier"
+version = "0.1.0"
+dependencies = [
+ "ethereum-trie",
+ "ethers-core",
+ "hash-db",
+ "hash256-std-hasher",
+ "hex",
+ "milagro_bls 1.5.1",
+ "primitive-types",
+ "rlp",
+ "serde",
+ "sha2 0.10.6",
+ "ssz_rs",
+ "thiserror",
+ "trie-db",
+]
+
+[[package]]
+>>>>>>> 68888b9 (feat(light-client): add storage proof verification)
 name = "ethers"
 version = "2.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2532,6 +2566,19 @@ name = "memory-db"
 version = "0.30.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "34ac11bb793c28fa095b7554466f53b3a60a2cd002afdac01bcf135cbd73a269"
+<<<<<<< HEAD
+=======
+dependencies = [
+ "hash-db",
+ "hashbrown 0.12.3",
+ "parity-util-mem",
+]
+
+[[package]]
+name = "milagro_bls"
+version = "1.5.0"
+source = "git+https://github.com/datachainlab/milagro_bls?rev=bc2b5b5e8d48b7e2e1bfaa56dc2d93e13cb32095#bc2b5b5e8d48b7e2e1bfaa56dc2d93e13cb32095"
+>>>>>>> 68888b9 (feat(light-client): add storage proof verification)
 dependencies = [
  "hash-db",
  "hashbrown 0.12.3",
@@ -4775,7 +4822,10 @@ dependencies = [
  "hash-db",
  "hashbrown 0.12.3",
  "log",
+<<<<<<< HEAD
  "rustc-hex",
+=======
+>>>>>>> 68888b9 (feat(light-client): add storage proof verification)
  "smallvec",
 ]
 

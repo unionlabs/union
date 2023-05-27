@@ -1,11 +1,14 @@
 use crate::{
     capella::{LightClientHeader, LightClientUpdate, NEXT_SYNC_COMMITTEE_INDEX_FLOOR_LOG_2},
     crypto::{fast_aggregate_verify, BlsPublicKey},
-    primitives::{DomainType, Root, Slot},
+    primitives::{DomainType, Hash32, Root, Slot},
     utils::*,
     ChainConfig, Error, LightClientContext, EXECUTION_PAYLOAD_DEPTH, EXECUTION_PAYLOAD_INDEX,
     FINALIZED_ROOT_DEPTH, FINALIZED_ROOT_SUBTREE_INDEX, NEXT_SYNC_COMMITTEE_SUBTREE_INDEX,
 };
+use ethereum_trie::{EIP1186Layout, StorageProof};
+use ethers_core::utils::keccak256;
+use trie_db::{Trie, TrieDBBuilder};
 
 // use ethereum_consensus::state_transition::Context;
 use ssz_rs::prelude::*;
@@ -131,6 +134,22 @@ pub fn validate_light_client_update<C: LightClientContext>(
     Ok(())
 }
 
+pub fn verify_storage_proof(
+    root: Hash32,
+    key: &[u8],
+    expected_value: &[u8],
+    proof: Vec<Vec<u8>>,
+) -> Result<(), Error> {
+    let db = StorageProof::new(proof).into_memory_db::<KeccakHasher>();
+    let root: primitive_types::H256 = root.into();
+    let trie = TrieDBBuilder::<EIP1186Layout<KeccakHasher>>::new(&db, &root).build();
+
+    match trie.get(&keccak256(key))? {
+        Some(value) if value == expected_value => Ok(()),
+        _ => Err(Error::ValueMismatch),
+    }
+}
+
 /// https://github.com/ethereum/consensus-specs/blob/82d6267951ad47cffa1b7b4179eab97b25a99b91/specs/capella/light-client/sync-protocol.md#modified-is_valid_light_client_header
 pub fn is_valid_light_client_header<C: LightClientContext>(
     ctx: &C,
@@ -152,4 +171,22 @@ pub fn is_valid_light_client_header<C: LightClientContext>(
         EXECUTION_PAYLOAD_INDEX,
         &header.beacon.body_root,
     )
+}
+
+use hash256_std_hasher::Hash256StdHasher;
+use hash_db::Hasher;
+
+/// Keccak hasher.
+#[derive(Default, Debug, Clone, PartialEq)]
+pub struct KeccakHasher;
+
+impl Hasher for KeccakHasher {
+    type Out = primitive_types::H256;
+    type StdHasher = Hash256StdHasher;
+
+    const LENGTH: usize = 32;
+
+    fn hash(bytes: &[u8]) -> Self::Out {
+        keccak256(bytes).into()
+    }
 }

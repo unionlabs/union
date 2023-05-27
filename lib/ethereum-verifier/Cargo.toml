@@ -11,4 +11,11 @@ hex = {version = "0.4.3", default-features = false, features = ["alloc"] }
 milagro_bls = { git = "https://github.com/sigp/milagro_bls", tag = "v1.5.1", default-features = false }
 serde = { version = "1.0.103", default-features = false, features = ["derive", "alloc"] }
 thiserror = { version = "1.0.26", default-features = false }
-sha2 = { version = "0.10" }
+sha2 = { version = "0.10", default-features = false }
+ethereum-trie = { git = "https://github.com/polytope-labs/ethereum-triedb", default-features = false }
+trie-db = { version= "0.24.0", default-features = false }
+primitive-types = { version = "0.12.1", default-features = false }
+rlp = { version = "0.5.2", default-features = false }
+ethers-core = { version = "2.0.4", default-features = false }
+hash256-std-hasher = { version = "0.15.2", default-features = false }
+hash-db = { version = "0.15.2", default-features = false }
