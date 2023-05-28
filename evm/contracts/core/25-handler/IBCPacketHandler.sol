@@ -28,18 +28,22 @@ abstract contract IBCPacketHandler is Context, ModuleManager {
 
     function sendPacket(IbcCoreChannelV1Packet.Data calldata packet) external {
         require(authenticateCapability(channelCapabilityPath(packet.source_port, packet.source_channel)));
-        (bool success,) =
+        (bool success, bytes memory res) =
             ibcChannelPacketAddress.delegatecall(abi.encodeWithSelector(IIBCPacket.sendPacket.selector, packet));
-        require(success);
+        if (!success) {
+            revert(_getRevertMsg(res));
+        }
         emit SendPacket(packet);
     }
 
     function recvPacket(IBCMsgs.MsgPacketRecv calldata msg_) external {
         IIBCModule module = lookupModuleByChannel(msg_.packet.destination_port, msg_.packet.destination_channel);
         bytes memory acknowledgement = module.onRecvPacket(msg_.packet, _msgSender());
-        (bool success,) =
+        (bool success, bytes memory res) =
             ibcChannelPacketAddress.delegatecall(abi.encodeWithSelector(IIBCPacket.recvPacket.selector, msg_));
-        require(success);
+        if (!success) {
+            revert(_getRevertMsg(res));
+        }
         if (acknowledgement.length > 0) {
             (success,) = ibcChannelPacketAddress.delegatecall(
                 abi.encodeWithSelector(
@@ -65,7 +69,7 @@ abstract contract IBCPacketHandler is Context, ModuleManager {
         bytes calldata acknowledgement
     ) external {
         require(authenticateCapability(channelCapabilityPath(destinationPortId, destinationChannel)));
-        (bool success,) = ibcChannelPacketAddress.delegatecall(
+        (bool success, bytes memory res) = ibcChannelPacketAddress.delegatecall(
             abi.encodeWithSelector(
                 IIBCPacket.writeAcknowledgement.selector,
                 destinationPortId,
@@ -74,16 +78,20 @@ abstract contract IBCPacketHandler is Context, ModuleManager {
                 acknowledgement
             )
         );
-        require(success);
+        if (!success) {
+            revert(_getRevertMsg(res));
+        }
         emit WriteAcknowledgement(destinationPortId, destinationChannel, sequence, acknowledgement);
     }
 
     function acknowledgePacket(IBCMsgs.MsgPacketAcknowledgement calldata msg_) external {
         IIBCModule module = lookupModuleByChannel(msg_.packet.source_port, msg_.packet.source_channel);
         module.onAcknowledgementPacket(msg_.packet, msg_.acknowledgement, _msgSender());
-        (bool success,) =
+        (bool success, bytes memory res) =
             ibcChannelPacketAddress.delegatecall(abi.encodeWithSelector(IIBCPacket.acknowledgePacket.selector, msg_));
-        require(success);
+        if (!success) {
+            revert(_getRevertMsg(res));
+        }
         emit AcknowledgePacket(msg_.packet, msg_.acknowledgement);
     }
 }

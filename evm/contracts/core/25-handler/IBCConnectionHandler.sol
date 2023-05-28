@@ -24,7 +24,9 @@ abstract contract IBCConnectionHandler {
         (bool success, bytes memory res) = ibcConnectionAddress.delegatecall(
             abi.encodeWithSelector(IIBCConnectionHandshake.connectionOpenInit.selector, msg_)
         );
-        require(success);
+        if (!success) {
+            revert(_getRevertMsg(res));
+        }
         connectionId = abi.decode(res, (string));
         emit GeneratedConnectionIdentifier(connectionId);
         return connectionId;
@@ -37,23 +39,29 @@ abstract contract IBCConnectionHandler {
         (bool success, bytes memory res) = ibcConnectionAddress.delegatecall(
             abi.encodeWithSelector(IIBCConnectionHandshake.connectionOpenTry.selector, msg_)
         );
-        require(success);
+        if (!success) {
+            revert(_getRevertMsg(res));
+        }
         connectionId = abi.decode(res, (string));
         emit GeneratedConnectionIdentifier(connectionId);
         return connectionId;
     }
 
     function connectionOpenAck(IBCMsgs.MsgConnectionOpenAck calldata msg_) external {
-        (bool success,) = ibcConnectionAddress.delegatecall(
+        (bool success, bytes memory res) = ibcConnectionAddress.delegatecall(
             abi.encodeWithSelector(IIBCConnectionHandshake.connectionOpenAck.selector, msg_)
         );
-        require(success);
+        if (!success) {
+            revert(_getRevertMsg(res));
+        }
     }
 
     function connectionOpenConfirm(IBCMsgs.MsgConnectionOpenConfirm calldata msg_) external {
-        (bool success,) = ibcConnectionAddress.delegatecall(
+        (bool success, bytes memory res) = ibcConnectionAddress.delegatecall(
             abi.encodeWithSelector(IIBCConnectionHandshake.connectionOpenConfirm.selector, msg_)
         );
-        require(success);
+        if (!success) {
+            revert(_getRevertMsg(res));
+        }
     }
 }

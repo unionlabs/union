@@ -136,13 +136,13 @@ library CometblsHelp {
             });
     }
 
-    function toCanonicalVote(TendermintTypesCommit.Data memory commit, string memory chainId, bytes32 blockHash) internal pure returns (TendermintTypesCanonicalVote.Data memory) {
+    function toCanonicalVote(TendermintTypesCommit.Data memory commit, string memory chainId, bytes32 expectedBlockHash) internal pure returns (TendermintTypesCanonicalVote.Data memory) {
         return TendermintTypesCanonicalVote.Data({
             type_: TendermintTypesTypesGlobalEnums.SignedMsgType.SIGNED_MSG_TYPE_PRECOMMIT,
             height: commit.height,
             round: commit.round,
             block_id: TendermintTypesCanonicalBlockID.Data({
-                hash: abi.encodePacked(blockHash),
+                hash: abi.encodePacked(expectedBlockHash),
                 part_set_header: TendermintTypesCanonicalPartSetHeader.Data({
                     total: commit.block_id.part_set_header.total,
                     hash: commit.block_id.part_set_header.hash
