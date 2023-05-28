@@ -97,10 +97,15 @@ contract CometblsClient is ILightClient {
         OptimizedConsensusState storage consensusState =
             consensusStates[stateIndex(clientId, header.trusted_height.toUint128())];
 
-        uint64 untrustedHeight = uint64(header.signed_header.commit.height);
-        uint64 trustedHeight = header.trusted_height.revision_height;
         require(
-                untrustedHeight > trustedHeight,
+                consensusState.timestamp != 0,
+                "LC: trusted height does not exists"
+        );
+
+        uint64 untrustedHeightNumber = uint64(header.signed_header.commit.height);
+        uint64 trustedHeightNumber = header.trusted_height.revision_height;
+        require(
+                untrustedHeightNumber > trustedHeightNumber,
                 "LC: header height <= consensus state height"
         );
 
@@ -138,7 +143,7 @@ contract CometblsClient is ILightClient {
          */
         bytes32 trustedValidatorsHash = consensusState.nextValidatorsHash;
         bytes32 untrustedValidatorsHash;
-        bool adjacent = untrustedHeight == trustedHeight + 1;
+        bool adjacent = untrustedHeightNumber == trustedHeightNumber + 1;
         if (adjacent) {
             untrustedValidatorsHash = trustedValidatorsHash;
         } else {
@@ -149,7 +154,7 @@ contract CometblsClient is ILightClient {
 
         require(
             header.signed_header.commit.block_id.hash.toBytes32(0) == expectedBlockHash,
-            "LC: commit.block_id.hash != expectedBlockHash"
+            "LC: commit.block_id.hash != header.root()"
         );
 
         TendermintTypesCanonicalVote.Data memory vote =
@@ -164,19 +169,20 @@ contract CometblsClient is ILightClient {
         );
         require(ok, "LC: invalid ZKP");
 
-        IbcCoreClientV1Height.Data memory newHeight =
+        IbcCoreClientV1Height.Data memory untrustedHeight =
             IbcCoreClientV1Height.Data({
                 revision_number: header.trusted_height.revision_number,
-                revision_height: untrustedHeight
+                revision_height: untrustedHeightNumber
             });
 
-        uint128 newHeightIdx = newHeight.toUint128();
+        uint128 newHeightIdx = untrustedHeight.toUint128();
 
         // Update states
-        if (untrustedHeight > clientState.latest_height.revision_height) {
-            clientState.latest_height = newHeight;
+        if (untrustedHeightNumber > clientState.latest_height.revision_height) {
+            clientState.latest_height = untrustedHeight;
         }
 
+        consensusState = consensusStates[stateIndex(clientId, untrustedHeight.toUint128())];
         consensusState.timestamp = uint64(header.signed_header.header.time.secs);
         consensusState.root = header.signed_header.header.app_hash.toBytes32(0);
         consensusState.nextValidatorsHash = untrustedValidatorsHash;
@@ -185,7 +191,7 @@ contract CometblsClient is ILightClient {
         updates[0] =
             ConsensusStateUpdate({
                 consensusStateCommitment: keccak256(abi.encode(consensusState)),
-                height: newHeight
+                height: untrustedHeight
             });
 
         processedMoments[stateIndex(clientId, newHeightIdx)] =
@@ -194,9 +200,7 @@ contract CometblsClient is ILightClient {
                 height: uint128(block.number)
             });
 
-        bytes32 newClientState = keccak256(clientState.marshalClientStateEthABI());
-
-        return (newClientState, updates, true);
+        return (keccak256(clientState.marshalClientStateEthABI()), updates, true);
     }
 
     function verifyMembership(
