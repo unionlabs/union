@@ -55,6 +55,8 @@ const WASM_CLIENT_ID: &str = "08-wasm-0";
 
 #[tokio::main]
 async fn main() {
+    tracing_subscriber::fmt::init();
+
     // dbg!(get_wallet());
 
     // panic!();
