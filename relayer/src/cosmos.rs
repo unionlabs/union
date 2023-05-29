@@ -129,6 +129,7 @@ pub async fn create_wasm_client(sequence: u64) {
             denominator: 3,
         }),
         frozen_height: None,
+        counterparty_commitment_slot: 3,
     };
 
     let trusted_header = lodestar_rpc::client::RPCClient::new(ETH_RPC_API)

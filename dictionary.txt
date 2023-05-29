@@ -117,6 +117,7 @@ dylib
 elems
 esac
 esac
+ethabi
 ethash
 ethash
 etherbase
@@ -239,6 +240,7 @@ mktemp
 monitonically
 monniker
 muslc
+nanos
 neighbouring
 neoeinstein
 netutil
