@@ -1,7 +1,11 @@
 use crate::{
-    consensus_state::TrustedConsensusState,
+    client_state::tendermint_to_cometbls_client_state,
+    consensus_state::{tendermint_to_cometbls_consensus_state, TrustedConsensusState},
     context::LightClientContext,
     errors::Error,
+    eth_encoding::{
+        encode_cometbls_client_state, encode_cometbls_consensus_state, generate_commitment_key,
+    },
     header::Header as EthHeader,
     msg::{ExecuteMsg, InstantiateMsg, QueryMsg},
     state::{read_client_state, read_consensus_state, save_consensus_state, update_client_state},
@@ -14,10 +18,8 @@ use cosmwasm_std::{
 use ethereum_verifier::{primitives::Hash32, validate_light_client_update, verify_storage_proof};
 use ibc::core::ics24_host::Path;
 use prost::Message;
-use protos::{
-    ibc::core::connection::v1::ConnectionEnd,
-    union::ibc::lightclients::ethereum::v1::{Header as RawEthHeader, StorageProof},
-};
+use protos::union::ibc::lightclients::ethereum::v1::{Header as RawEthHeader, StorageProof};
+use sha3::Digest;
 use ssz_rs::prelude::*;
 use std::str::FromStr;
 use wasm_light_client_types::{
@@ -90,6 +92,8 @@ pub fn verify_membership(
         read_consensus_state(deps, height.try_into().map_err(|_| Error::InvalidHeight)?)?.ok_or(
             Error::ConsensusStateNotFound(height.revision_number, height.revision_height),
         )?;
+    let (_, client_state) = read_client_state(deps)?;
+
     let path = Path::from_str(
         path.key_path
             .last()
@@ -123,48 +127,35 @@ pub fn verify_membership(
     let storage_proof = StorageProof::decode(proof.0.as_slice())
         .map_err(|_| Error::decode("when decoding storage proof"))?;
 
-    let mut i = 0;
-    for proof in storage_proof.proof {
-        let root = Hash32::try_from(consensus_state.storage_root.as_bytes()).unwrap();
-        let key = hex::decode(&proof.key[2..]).map_err(|_| Error::DecodeError("".into()))?;
+    let proof = storage_proof.proof[0].clone();
 
-        let root = H256::from_slice(consensus_state.storage_root.as_bytes());
+    let root =
+        Hash32::try_from(consensus_state.storage_root.as_bytes()).map_err(|_| Error::decode(""))?;
 
-        let expected_key = generate_commitment_key(
-            path.to_string(),
-            client_state.counterparty_connection_state_slot.0,
-        );
+    let expected_key = generate_commitment_key(
+        path.to_string(),
+        client_state.counterparty_connection_state_slot,
+    );
 
-        verify_storage_proof(
-            root,
-            &key,
-            &value,
-            proof
-                .proof
-                .iter()
-                .map(|p| hex::decode(&p[2..]).map_err(|e| Error::decode(e.to_string())))
-                .collect::<Result<Vec<_>, _>>()?,
-        )
-        .map_err(|e| Error::Verification(e.to_string()))?;
+    if hex::encode(&expected_key) != proof.key[2..] {
+        return Err(Error::InvalidCommitmentKey);
     }
 
     let mut value = sha3::Keccak256::new();
     value.update(&raw_value);
     let value = rlp::encode(&value.finalize().to_vec());
 
-    client_state
-        .execution_verifier
-        .verify_membership(
-            root,
-            &expected_key,
-            &value,
-            proof
-                .proof
-                .iter()
-                .map(|p| hex::decode(&p[2..]).map_err(|_| Error::DecodeError("".into())))
-                .collect::<Result<Vec<_>, _>>()?,
-        )
-        .map_err(|e| Error::Verification(e.to_string()))?;
+    verify_storage_proof(
+        root,
+        &expected_key,
+        &value,
+        proof
+            .proof
+            .iter()
+            .map(|p| hex::decode(&p[2..]).map_err(|_| Error::DecodeError("".into())))
+            .collect::<Result<Vec<_>, _>>()?,
+    )
+    .map_err(|e| Error::Verification(e.to_string()))?;
     Ok(ContractResult::valid(None))
 }
 
@@ -239,10 +230,7 @@ fn query_status() -> StatusResponse {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::{
-        eth_encoding::{abi, SolidityDataType},
-        state::{save_wasm_client_state, save_wasm_consensus_state},
-    };
+    use crate::state::{save_wasm_client_state, save_wasm_consensus_state};
     use cosmwasm_std::{
         testing::{mock_dependencies, MockApi, MockQuerier, MockStorage},
         Empty, OwnedDeps,
@@ -282,11 +270,7 @@ mod test {
             // Consensus state is saved to the updated height.
             let (_, consensus_state) = read_consensus_state(
                 deps.as_ref(),
-                Height::new(
-                    0,
-                    update.consensus_update.finalized_header.beacon.slot.into(),
-                )
-                .unwrap(),
+                Height::new(0, update.consensus_update.finalized_header.beacon.slot).unwrap(),
             )
             .unwrap()
             .unwrap();

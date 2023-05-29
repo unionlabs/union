@@ -13,9 +13,11 @@ serde = { version = "1.0.103", default-features = false, features = ["derive", "
 thiserror = { version = "1.0.26", default-features = false }
 sha2 = { version = "0.10", default-features = false }
 ethereum-trie = { git = "https://github.com/polytope-labs/ethereum-triedb", default-features = false }
-trie-db = { version= "0.24.0", default-features = false }
+trie-db = { version= "0.27.1", default-features = false }
 primitive-types = { version = "0.12.1", default-features = false }
 rlp = { version = "0.5.2", default-features = false }
-ethers-core = { version = "2.0.4", default-features = false }
 hash256-std-hasher = { version = "0.15.2", default-features = false }
-hash-db = { version = "0.15.2", default-features = false }
+hash-db = { version = "0.16.0", default-features = false }
+tiny-keccak = { version = "2.0.2", features = ["keccak"],  default-features= false }
+memory-db = { version = "0.32.0", default-features = false }
+sha3 = { version = "0.10", default-features = false }

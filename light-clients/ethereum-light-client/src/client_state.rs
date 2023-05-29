@@ -20,7 +20,6 @@ use protos::{
         cometbls::v1::{ClientState as RawCometClientState, Fraction as RawCometFraction},
         ethereum::v1::{ClientState as RawClientState, Fork},
     },
-    union::ibc::lightclients::ethereum::v1::{ClientState as RawClientState, Fork},
 };
 use serde::{Deserialize, Serialize};
 use ssz_rs::prelude::*;
@@ -147,7 +146,7 @@ impl TryFrom<RawClientState> for ClientState {
             } else {
                 None
             },
-            counterparty_connection_state_slot: 3.into(),
+            counterparty_connection_state_slot: 3u64,
         })
     }
 }

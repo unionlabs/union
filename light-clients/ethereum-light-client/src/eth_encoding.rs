@@ -29,7 +29,7 @@ pub fn generate_commitment_key<S: Into<U256>>(path: String, slot: S) -> Vec<u8> 
     slot.to_big_endian(&mut slot_bytes);
 
     sha3::Keccak256::new()
-        .chain_update(&h1.finalize())
+        .chain_update(h1.finalize())
         .chain_update(&slot_bytes)
         .finalize()
         .to_vec()
@@ -37,14 +37,8 @@ pub fn generate_commitment_key<S: Into<U256>>(path: String, slot: S) -> Vec<u8> 
 
 pub fn encode_cometbls_consensus_state(data: RawCometConsensusState) -> Result<Vec<u8>, Error> {
     Ok(ethabi::encode(&[ethabi::Token::Tuple(vec![
-        ethabi::Token::FixedBytes(
-            data.root
-                .clone()
-                .ok_or(Error::MissingProtoField)?
-                .hash
-                .into(),
-        ),
-        ethabi::Token::FixedBytes(data.next_validators_hash.clone().into()),
+        ethabi::Token::FixedBytes(data.root.clone().ok_or(Error::MissingProtoField)?.hash),
+        ethabi::Token::FixedBytes(data.next_validators_hash),
         ethabi::Token::Uint(
             data.timestamp
                 .ok_or(Error::MissingProtoField)?
@@ -131,7 +125,6 @@ pub fn encode_cometbls_client_state(data: RawCometClientState) -> Result<Vec<u8>
             ),
             ethabi::Token::Int(
                 data.frozen_height
-                    .clone()
                     .ok_or(Error::MissingProtoField)?
                     .revision_height
                     .into(),
@@ -147,7 +140,6 @@ pub fn encode_cometbls_client_state(data: RawCometClientState) -> Result<Vec<u8>
             ),
             ethabi::Token::Int(
                 data.latest_height
-                    .clone()
                     .ok_or(Error::MissingProtoField)?
                     .revision_height
                     .into(),
@@ -160,7 +152,7 @@ pub mod abi {
     use super::SolidityDataType;
 
     /// Pack a single `SolidityDataType` into bytes
-    fn pack<'a>(data_type: &'a SolidityDataType) -> Vec<u8> {
+    fn pack(data_type: &SolidityDataType) -> Vec<u8> {
         let mut res = Vec::new();
         match data_type {
             SolidityDataType::String(s) => {
@@ -197,7 +189,7 @@ pub mod abi {
                 res.extend(local_res);
             }
         };
-        return res;
+        res
     }
 
     pub fn encode_packed(items: &[SolidityDataType]) -> (Vec<u8>, String) {
