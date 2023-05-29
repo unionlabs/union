@@ -46,6 +46,8 @@ pub struct ClientState {
     #[prost(message, optional, tag = "12")]
     pub frozen_height:
         ::core::option::Option<super::super::super::super::super::ibc::core::client::v1::Height>,
+    #[prost(uint64, tag = "13")]
+    pub counterparty_commitment_slot: u64,
 }
 #[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]

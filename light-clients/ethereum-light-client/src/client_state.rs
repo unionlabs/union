@@ -44,7 +44,7 @@ pub struct ClientState {
     pub latest_slot: Slot,
     pub latest_execution_block_number: u64,
     pub frozen_height: Option<Height>,
-    pub counterparty_connection_state_slot: Slot,
+    pub counterparty_commitment_slot: Slot,
 }
 
 impl ClientState {
@@ -146,7 +146,7 @@ impl TryFrom<RawClientState> for ClientState {
             } else {
                 None
             },
-            counterparty_connection_state_slot: 3u64,
+            counterparty_commitment_slot: value.counterparty_commitment_slot,
         })
     }
 }
@@ -209,6 +209,7 @@ impl From<ClientState> for RawClientState {
                 revision_number: h.revision_number(),
                 revision_height: h.revision_height(),
             }),
+            counterparty_commitment_slot: value.counterparty_commitment_slot,
         }
     }
 }

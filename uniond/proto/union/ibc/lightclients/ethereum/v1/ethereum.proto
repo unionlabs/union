@@ -29,6 +29,8 @@ message ClientState {
   uint64 latest_slot = 10;
   uint64 latest_execution_block_number = 11;
   .ibc.core.client.v1.Height frozen_height = 12;
+
+  uint64 counterparty_commitment_slot = 13;
 }
 
 message ConsensusState {

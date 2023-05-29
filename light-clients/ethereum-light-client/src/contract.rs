@@ -132,10 +132,8 @@ pub fn verify_membership(
     let root =
         Hash32::try_from(consensus_state.storage_root.as_bytes()).map_err(|_| Error::decode(""))?;
 
-    let expected_key = generate_commitment_key(
-        path.to_string(),
-        client_state.counterparty_connection_state_slot,
-    );
+    let expected_key =
+        generate_commitment_key(path.to_string(), client_state.counterparty_commitment_slot);
 
     if hex::encode(&expected_key) != proof.key[2..] {
         return Err(Error::InvalidCommitmentKey);
