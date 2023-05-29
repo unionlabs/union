@@ -12,40 +12,56 @@ import "../05-port/IIBCModule.sol";
  */
 abstract contract IBCPacketHandler is Context, ModuleManager {
     // IBC Packet contract address
-    address immutable ibcChannelPacketAddress;
+    address immutable ibcPacket;
 
     // Events
-    event SendPacket(IbcCoreChannelV1Packet.Data packet);
+    event SendPacket(
+        uint64 sequence,
+        string sourcePort,
+        string sourceChannel,
+        IbcCoreClientV1Height.Data timeoutHeight,
+        uint64 timeoutTimestamp,
+        bytes data
+    );
     event RecvPacket(IbcCoreChannelV1Packet.Data packet);
     event WriteAcknowledgement(
         string destinationPortId, string destinationChannel, uint64 sequence, bytes acknowledgement
     );
     event AcknowledgePacket(IbcCoreChannelV1Packet.Data packet, bytes acknowledgement);
 
-    constructor(address ibcChannelPacket) {
-        ibcChannelPacketAddress = ibcChannelPacket;
+    constructor(address _ibcPacket) {
+        ibcPacket = _ibcPacket;
     }
 
-    function sendPacket(IbcCoreChannelV1Packet.Data calldata packet) external {
-        require(authenticateCapability(channelCapabilityPath(packet.source_port, packet.source_channel)));
-        (bool success, bytes memory res) =
-            ibcChannelPacketAddress.delegatecall(abi.encodeWithSelector(IIBCPacket.sendPacket.selector, packet));
+    function sendPacket(
+        string calldata sourcePort,
+        string calldata sourceChannel,
+        IbcCoreClientV1Height.Data calldata timeoutHeight,
+        uint64 timeoutTimestamp,
+        bytes calldata data
+    ) external {
+        require(authenticateCapability(channelCapabilityPath(sourcePort, sourceChannel)));
+        (bool success, bytes memory res) = ibcPacket.delegatecall(
+            abi.encodeWithSelector(
+                IIBCPacket.sendPacket.selector, sourcePort, sourceChannel, timeoutHeight, timeoutTimestamp, data
+            )
+        );
         if (!success) {
             revert(_getRevertMsg(res));
         }
-        emit SendPacket(packet);
+        emit SendPacket(abi.decode(res, (uint64)), sourcePort, sourceChannel, timeoutHeight, timeoutTimestamp, data);
     }
 
     function recvPacket(IBCMsgs.MsgPacketRecv calldata msg_) external {
         IIBCModule module = lookupModuleByChannel(msg_.packet.destination_port, msg_.packet.destination_channel);
         bytes memory acknowledgement = module.onRecvPacket(msg_.packet, _msgSender());
         (bool success, bytes memory res) =
-            ibcChannelPacketAddress.delegatecall(abi.encodeWithSelector(IIBCPacket.recvPacket.selector, msg_));
+            ibcPacket.delegatecall(abi.encodeWithSelector(IIBCPacket.recvPacket.selector, msg_));
         if (!success) {
             revert(_getRevertMsg(res));
         }
         if (acknowledgement.length > 0) {
-            (success,) = ibcChannelPacketAddress.delegatecall(
+            (success,) = ibcPacket.delegatecall(
                 abi.encodeWithSelector(
                     IIBCPacket.writeAcknowledgement.selector,
                     msg_.packet.destination_port,
@@ -69,7 +85,7 @@ abstract contract IBCPacketHandler is Context, ModuleManager {
         bytes calldata acknowledgement
     ) external {
         require(authenticateCapability(channelCapabilityPath(destinationPortId, destinationChannel)));
-        (bool success, bytes memory res) = ibcChannelPacketAddress.delegatecall(
+        (bool success, bytes memory res) = ibcPacket.delegatecall(
             abi.encodeWithSelector(
                 IIBCPacket.writeAcknowledgement.selector,
                 destinationPortId,
@@ -88,7 +104,7 @@ abstract contract IBCPacketHandler is Context, ModuleManager {
         IIBCModule module = lookupModuleByChannel(msg_.packet.source_port, msg_.packet.source_channel);
         module.onAcknowledgementPacket(msg_.packet, msg_.acknowledgement, _msgSender());
         (bool success, bytes memory res) =
-            ibcChannelPacketAddress.delegatecall(abi.encodeWithSelector(IIBCPacket.acknowledgePacket.selector, msg_));
+            ibcPacket.delegatecall(abi.encodeWithSelector(IIBCPacket.acknowledgePacket.selector, msg_));
         if (!success) {
             revert(_getRevertMsg(res));
         }

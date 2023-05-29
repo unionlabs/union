@@ -7,57 +7,20 @@ import "../../core/05-port/IIBCModule.sol";
 import "../../core/25-handler/IBCHandler.sol";
 import "solidity-stringutils/strings.sol";
 import "solidity-bytes-utils/BytesLib.sol";
-import "@openzeppelin/contracts/utils/Context.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
+import "../Base.sol";
 
-abstract contract ICS20Transfer is Context, IICS20Transfer {
+abstract contract ICS20Transfer is IBCAppBase {
     using strings for *;
     using BytesLib for bytes;
 
-    IBCHandler ibcHandler;
-
     mapping(string => address) channelEscrowAddresses;
-
-    constructor(IBCHandler ibcHandler_) {
-        ibcHandler = ibcHandler_;
-    }
-
-    function sendTransfer(
-        string calldata denom,
-        uint64 amount,
-        address receiver,
-        string calldata sourcePort,
-        string calldata sourceChannel,
-        uint64 timeoutHeight
-    ) external virtual override {
-        if (!denom.toSlice().startsWith(_makeDenomPrefix(sourcePort, sourceChannel))) {
-            // sender is source chain
-            require(_transferFrom(_msgSender(), _getEscrowAddress(sourceChannel), denom, amount));
-        } else {
-            require(_burn(_msgSender(), denom, amount));
-        }
-
-        _sendPacket(
-            IbcApplicationsTransferV2FungibleTokenPacketData.Data({
-                denom: denom,
-                amount: Strings.toString(amount),
-                sender: string(abi.encodePacked(_msgSender())),
-                receiver: string(abi.encodePacked(receiver)),
-                // TODO: allow for users to dispatch memo?
-                memo: ""
-            }),
-            sourcePort,
-            sourceChannel,
-            timeoutHeight
-        );
-    }
-
-    /// Module callbacks ///
 
     function onRecvPacket(IbcCoreChannelV1Packet.Data calldata packet, address relayer)
         external
         virtual
         override
+        onlyIBC
         returns (bytes memory acknowledgement)
     {
         IbcApplicationsTransferV2FungibleTokenPacketData.Data memory data = IbcApplicationsTransferV2FungibleTokenPacketData.decode(packet.data);
@@ -85,6 +48,7 @@ abstract contract ICS20Transfer is Context, IICS20Transfer {
         external
         virtual
         override
+        onlyIBC
     {
         if (!_isSuccessAcknowledgement(acknowledgement)) {
             _refundTokens(IbcApplicationsTransferV2FungibleTokenPacketData.decode(packet.data), packet.source_port, packet.source_channel);
@@ -98,7 +62,7 @@ abstract contract ICS20Transfer is Context, IICS20Transfer {
         string calldata channelId,
         IbcCoreChannelV1Counterparty.Data calldata,
         string calldata
-    ) external virtual override {
+    ) external virtual override onlyIBC {
         // TODO authenticate a capability
         channelEscrowAddresses[channelId] = address(this);
     }
@@ -111,7 +75,7 @@ abstract contract ICS20Transfer is Context, IICS20Transfer {
         IbcCoreChannelV1Counterparty.Data calldata,
         string calldata,
         string calldata
-    ) external virtual override {
+    ) external virtual override onlyIBC {
         // TODO authenticate a capability
         channelEscrowAddresses[channelId] = address(this);
     }
@@ -120,13 +84,14 @@ abstract contract ICS20Transfer is Context, IICS20Transfer {
         external
         virtual
         override
+        onlyIBC
     {}
 
-    function onChanOpenConfirm(string calldata portId, string calldata channelId) external virtual override {}
+    function onChanOpenConfirm(string calldata portId, string calldata channelId) external virtual override onlyIBC {}
 
-    function onChanCloseInit(string calldata portId, string calldata channelId) external virtual override {}
+    function onChanCloseInit(string calldata portId, string calldata channelId) external virtual override onlyIBC {}
 
-    function onChanCloseConfirm(string calldata portId, string calldata channelId) external virtual override {}
+    function onChanCloseConfirm(string calldata portId, string calldata channelId) external virtual override onlyIBC {}
 
     /// Internal functions ///
 
@@ -145,19 +110,12 @@ abstract contract ICS20Transfer is Context, IICS20Transfer {
         string memory sourceChannel,
         uint64 timeoutHeight
     ) internal virtual {
-        (IbcCoreChannelV1Channel.Data memory channel, bool found) = ibcHandler.getChannel(sourcePort, sourceChannel);
-        require(found, "channel not found");
-        ibcHandler.sendPacket(
-            IbcCoreChannelV1Packet.Data({
-                sequence: ibcHandler.getNextSequenceSend(sourcePort, sourceChannel),
-                source_port: sourcePort,
-                source_channel: sourceChannel,
-                destination_port: channel.counterparty.port_id,
-                destination_channel: channel.counterparty.channel_id,
-                data: IbcApplicationsTransferV2FungibleTokenPacketData.encode(data),
-                timeout_height: IbcCoreClientV1Height.Data({revision_number: 0, revision_height: timeoutHeight}),
-                timeout_timestamp: 0
-            })
+        IBCHandler(ibcAddress()).sendPacket(
+            sourcePort,
+            sourceChannel,
+            IbcCoreClientV1Height.Data({revision_number: 0, revision_height: timeoutHeight}),
+            0,
+            IbcApplicationsTransferV2FungibleTokenPacketData.encode(data)
         );
     }
 
