@@ -33,11 +33,6 @@ pub fn apply_updates<C: LightClientContext>(
         new_client_state.latest_slot = consensus_update.finalized_header.beacon.slot;
     }
 
-    // TODO(aeryz): Is execution checks necessary?
-    // if client_state.latest_execution_block_number < execution_update.block_number {
-    //     new_client_state.latest_execution_block_number = execution_update.block_number;
-    // }
-
     let new_consensus_state = if store_period == update_period {
         ConsensusState {
             slot: consensus_update.finalized_header.beacon.slot,

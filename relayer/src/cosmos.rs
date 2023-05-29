@@ -117,12 +117,6 @@ pub async fn create_wasm_client(sequence: u64) {
         epochs_per_sync_committee_period: 8,
         trusting_period: 100000000,
         latest_slot: dbg!(latest_slot),
-        latest_execution_block_number: latest_finalized_block["latest_execution_payload_header"]
-            ["block_number"]
-            .as_str()
-            .unwrap()
-            .parse()
-            .unwrap(),
         min_sync_committee_participants: 0,
         trust_level: Some(ethereum::v1::Fraction {
             numerator: 1,

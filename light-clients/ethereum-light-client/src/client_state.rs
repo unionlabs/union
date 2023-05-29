@@ -135,7 +135,6 @@ impl TryFrom<RawClientState> for ClientState {
             trust_level: Fraction::new(trust_level.numerator, trust_level.denominator),
             trusting_period: Duration::from_secs(value.trusting_period),
             latest_slot: value.latest_slot,
-            latest_execution_block_number: value.latest_execution_block_number,
             frozen_height: if let Some(h) = value.frozen_height {
                 Some(
                     Height::new(h.revision_number, h.revision_height).map_err(|_| {
@@ -203,7 +202,6 @@ impl From<ClientState> for RawClientState {
             }),
             trusting_period: value.trusting_period.as_secs(),
             latest_slot: value.latest_slot,
-            latest_execution_block_number: value.latest_execution_block_number,
             frozen_height: value.frozen_height.map(|h| ProtoHeight {
                 revision_number: h.revision_number(),
                 revision_height: h.revision_height(),
