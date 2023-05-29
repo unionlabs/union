@@ -42,7 +42,6 @@ pub struct ClientState {
 
     /// State
     pub latest_slot: Slot,
-    pub latest_execution_block_number: u64,
     pub frozen_height: Option<Height>,
     pub counterparty_commitment_slot: Slot,
 }

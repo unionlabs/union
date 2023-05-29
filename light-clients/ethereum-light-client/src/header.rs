@@ -1,7 +1,6 @@
 use crate::{
     errors::Error,
     eth_types::LightClientUpdate,
-    // misbehaviour::Misbehaviour,
     types::{
         convert_consensus_update_to_proto, convert_proto_to_consensus_update, AccountUpdateInfo,
         TrustedSyncCommittee,

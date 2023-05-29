@@ -289,15 +289,6 @@ mod test {
                 client_state.latest_slot,
                 update.consensus_update.finalized_header.beacon.slot
             );
-            // Latest execution block number is updated.
-            // assert_eq!(
-            //     client_state.latest_execution_block_number,
-            //     update
-            //         .consensus_update
-            //         .finalized_header
-            //         .execution
-            //         .block_number,
-            // );
         }
     }
 
