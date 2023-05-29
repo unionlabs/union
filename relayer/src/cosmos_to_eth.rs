@@ -45,6 +45,7 @@ const PORT_ID: &str = "unique";
 type ConnectionId = String;
 type ChannelId = String;
 type ClientId = String;
+type PortId = String;
 
 struct Connections {
     pub evm: ConnectionId,
@@ -283,19 +284,19 @@ where
     };
 }
 
-async fn channel_handshake<M>(handler: &IBCHandler<M>, connections: &Connections) -> Channels
+async fn channel_handshake<M>(handler: &IBCHandler<M>, connections: &Connections, port_id: PortId) -> Channels
 where
     M: Middleware,
 {
     // port/channel and connection ids will highly likely be different for the counterparty
     let rcp = handler
         .channel_open_init(MsgChannelOpenInit {
-            port_id: PORT_ID.into(),
+            port_id: port_id.clone(),
             channel: IbcCoreChannelV1ChannelData {
                 state: 1,
                 ordering: 1,
                 counterparty: IbcCoreChannelV1CounterpartyData {
-                    port_id: PORT_ID.into(),
+                    port_id: port_id.clone(),
                     channel_id: COSMOS_CHANNEL_ID.into(),
                 },
                 connection_hops: vec![connections.evm.clone()],
@@ -330,7 +331,7 @@ where
     // TODO: query cosmos `abci_query` to generate membership proof
     handler
         .channel_open_ack(MsgChannelOpenAck {
-            port_id: PORT_ID.into(),
+            port_id,
             channel_id: evm_channel_id.clone(),
             counterparty_version: "1".into(),
             counterparty_channel_id: COSMOS_CHANNEL_ID.into(),
@@ -370,9 +371,13 @@ where
 NOTE: 1/2/3/4 must be done only once
  */
 pub async fn update_contract() {
-    const IBC_HANDLER_ADDRESS: &str = "0x875f5DeCA45f2f3F216E951b85cE54a8f8a49f27";
-
-    const COMETBLS_CLIENT_ADDRESS: &str = "0xE63d3C2A800b6127AaDc4d77c1ECABAC80f13a33";
+    // nix run .#evm-devnet-deploy -L
+    // OwnableIBCHandler => address
+    const IBC_HANDLER_ADDRESS: &str = "0xFc97A6197dc90bef6bbEFD672742Ed75E9768553";
+    // TestnetVerifier => address
+    const COMETBLS_CLIENT_ADDRESS: &str = "0x87d1f7fdfEe7f651FaBc8bFCB6E086C278b77A7d";
+    // ICS20TransferBank => address
+    const ICS20_MODULE_ADDRESS: &str = "0x83428c7db9815f482a39a1715684dCF755021997";
 
     let mut staking_client =
         staking::v1beta1::query_client::QueryClient::connect("http://0.0.0.0:9090")
@@ -411,13 +416,13 @@ pub async fn update_contract() {
 
     let handler = contracts::ibc_handler::IBCHandler::new(address, provider);
 
-    // handler
-    //     .register_client(CLIENT_TYPE.into(), COMETBLS_CLIENT_ADDRESS.parse().unwrap())
-    //     .send()
-    //     .await
-    //     .unwrap()
-    //     .await
-    //     .unwrap();
+    handler
+        .register_client(CLIENT_TYPE.into(), COMETBLS_CLIENT_ADDRESS.parse().unwrap())
+        .send()
+        .await
+        .unwrap()
+        .await
+        .unwrap();
 
     println!("Creating client...");
 
@@ -425,11 +430,19 @@ pub async fn update_contract() {
 
     println!("Created client - {}", client_id);
 
+    println!("Binding ICS20 bank...");
+    handler.bind_port(PORT_ID.into(), ICS20_MODULE_ADDRESS.parse().unwrap())
+        .send()
+        .await
+        .unwrap()
+        .await
+        .unwrap();
+
     // NOTE: the following is possible if we register a module to a port, i.e. handler.bind_port with a contract that act as an IBC module
-    // println!("Creating connections...");
-    // let connections = connection_handshake(&handler, client_id.clone()).await;
-    // println!("Creating channels...");
-    // let _ = channel_handshake(&handler, &connections).await;
+    println!("Creating connections...");
+    let connections = connection_handshake(&handler, client_id.clone()).await;
+    println!("Creating channels...");
+    let _ = channel_handshake(&handler, &connections, PORT_ID.into()).await;
 
     let mut previous_height = commit.signed_header.header.height;
     loop {
