@@ -129,8 +129,9 @@ pub fn verify_membership(
 
     let proof = storage_proof.proof[0].clone();
 
-    let root =
-        Hash32::try_from(consensus_state.storage_root.as_bytes()).map_err(|_| Error::decode(""))?;
+    let root = Hash32::try_from(consensus_state.storage_root.as_bytes()).map_err(|_| {
+        Error::decode("consensus state has invalid `storage_root` (must be 32 bytes)")
+    })?;
 
     let expected_key =
         generate_commitment_key(path.to_string(), client_state.counterparty_commitment_slot);
@@ -150,7 +151,7 @@ pub fn verify_membership(
         proof
             .proof
             .iter()
-            .map(|p| hex::decode(&p[2..]).map_err(|_| Error::DecodeError("".into())))
+            .map(|p| hex::decode(&p[2..]).map_err(|_| Error::decode("proof paths must be hex")))
             .collect::<Result<Vec<_>, _>>()?,
     )
     .map_err(|e| Error::Verification(e.to_string()))?;

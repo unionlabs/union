@@ -28,7 +28,10 @@ pub fn extract_storage_root_from_account(account_rlp: &[u8]) -> Result<Root, Err
         if items.len() != 4 {
             Err(Error::InvalidProofFormat)
         } else {
-            Ok(Root::try_from(items.get(2).ok_or(Error::InvalidProofFormat)?.as_slice()).unwrap())
+            Ok(
+                Root::try_from(items.get(2).ok_or(Error::InvalidProofFormat)?.as_slice())
+                    .map_err(|_| Error::decode("proofs must be 32 bytes long"))?,
+            )
         }
     } else {
         Err(Error::InvalidProofFormat)

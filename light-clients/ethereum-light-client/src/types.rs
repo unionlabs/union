@@ -68,7 +68,7 @@ impl TryFrom<ProtoTrustedSyncCommittee> for TrustedSyncCommittee {
                     .collect::<Result<Vec<BlsPublicKey>, _>>()
                     .map_err(|_| Error::InvalidPublicKey)?
                     .try_into()
-                    .unwrap(),
+                    .map_err(|_| Error::InvalidPublicKey)?,
                 aggregate_public_key: BlsPublicKey::try_from(
                     value
                         .sync_committee
@@ -141,7 +141,8 @@ impl TryFrom<ProtoAccountUpdate> for AccountUpdateInfo {
     fn try_from(value: ProtoAccountUpdate) -> Result<Self, Self::Error> {
         Ok(Self {
             account_proof: decode_eip1184_rlp_proof(value.account_proof)?,
-            account_storage_root: Root::try_from(value.account_storage_root.as_slice()).unwrap(),
+            account_storage_root: Root::try_from(value.account_storage_root.as_slice())
+                .map_err(|_| Error::decode("`account_storage_root` must be 32 bytes"))?,
         })
     }
 }
@@ -161,10 +162,16 @@ pub(crate) fn convert_proto_to_beacon_header(
 ) -> Result<BeaconBlockHeader, Error> {
     Ok(BeaconBlockHeader {
         slot: header.slot,
-        proposer_index: header.proposer_index.try_into().unwrap(),
-        parent_root: Root::try_from(header.parent_root.as_slice()).unwrap(),
-        state_root: Root::try_from(header.state_root.as_slice()).unwrap(),
-        body_root: Root::try_from(header.body_root.as_slice()).unwrap(),
+        proposer_index: header
+            .proposer_index
+            .try_into()
+            .map_err(|_| Error::decode("`proposer_index` overflow"))?,
+        parent_root: Root::try_from(header.parent_root.as_slice())
+            .map_err(|_| Error::decode("`parent_root` must be 32 bytes long"))?,
+        state_root: Root::try_from(header.state_root.as_slice())
+            .map_err(|_| Error::decode("`state_root` must be 32 bytes long"))?,
+        body_root: Root::try_from(header.body_root.as_slice())
+            .map_err(|_| Error::decode("`body_root` must be 32 bytes long"))?,
     })
 }
 
@@ -185,7 +192,8 @@ pub(crate) fn convert_proto_to_header(
         )?,
 
         execution: ExecutionPayloadHeader {
-            parent_hash: Hash32::try_from(execution.parent_hash.as_slice()).unwrap(),
+            parent_hash: Hash32::try_from(execution.parent_hash.as_slice())
+                .map_err(|_| Error::decode("`parent_hash` must be 32 bytes long"))?,
             fee_recipient: ExecutionAddress::try_from(execution.fee_recipient.as_slice()).map_err(
                 |_| Error::decode("cannot parse `fee_recipient` in `RawLightClientHeader`"),
             )?,
@@ -198,7 +206,8 @@ pub(crate) fn convert_proto_to_header(
             logs_bloom: ByteVector::try_from(execution.logs_bloom.as_slice()).map_err(|_| {
                 Error::decode("cannot parse `logs_bloom` in `RawLightClientHeader`")
             })?,
-            prev_randao: Hash32::try_from(execution.prev_randao.as_slice()).unwrap(),
+            prev_randao: Hash32::try_from(execution.prev_randao.as_slice())
+                .map_err(|_| Error::decode("`prev_randao` must be 32 bytes long"))?,
             block_number: execution.block_number,
             gas_limit: execution.gas_limit,
             gas_used: execution.gas_used,
@@ -210,9 +219,12 @@ pub(crate) fn convert_proto_to_header(
                 .map_err(|_| {
                     Error::decode("cannot parse `base_fee_per_gas` in `RawLightClientHeader`")
                 })?,
-            block_hash: Hash32::try_from(execution.block_hash.as_slice()).unwrap(),
-            transactions_root: Root::try_from(execution.transactions_root.as_slice()).unwrap(),
-            withdrawals_root: Root::try_from(execution.withdrawals_root.as_slice()).unwrap(),
+            block_hash: Hash32::try_from(execution.block_hash.as_slice())
+                .map_err(|_| Error::decode("`block_hash` must be 32 bytes long"))?,
+            transactions_root: Root::try_from(execution.transactions_root.as_slice())
+                .map_err(|_| Error::decode("`transactions_root` must be 32 bytes long"))?,
+            withdrawals_root: Root::try_from(execution.withdrawals_root.as_slice())
+                .map_err(|_| Error::decode("`withdrawals_root` must be 32 bytes long"))?,
         },
         execution_branch: header
             .execution_branch
@@ -232,7 +244,10 @@ pub(crate) fn convert_proto_to_header(
 pub(crate) fn convert_beacon_header_to_proto(header: &BeaconBlockHeader) -> ProtoBeaconBlockHeader {
     ProtoBeaconBlockHeader {
         slot: header.slot,
-        proposer_index: header.proposer_index.try_into().unwrap(),
+        proposer_index: header
+            .proposer_index
+            .try_into()
+            .expect("`proposer_index` cannot be larger than u64"),
         parent_root: header.parent_root.as_ref().into(),
         state_root: header.state_root.as_ref().into(),
         body_root: header.body_root.as_ref().into(),
@@ -374,7 +389,7 @@ pub(crate) fn convert_proto_to_consensus_update(
                     .collect::<Result<Vec<BlsPublicKey>, _>>()
                     .map_err(|_| Error::InvalidPublicKey)?
                     .try_into()
-                    .unwrap(),
+                    .map_err(|_| Error::InvalidPublicKey)?,
                 aggregate_public_key: BlsPublicKey::try_from(
                     consensus_update
                         .next_sync_committee
@@ -392,17 +407,18 @@ pub(crate) fn convert_proto_to_consensus_update(
         } else {
             decode_branch::<_, NEXT_SYNC_COMMITTEE_INDEX_FLOOR_LOG_2>(
                 consensus_update.next_sync_committee_branch.into_iter(),
-            )
+            )?
             .to_vec()
             .try_into()
-            .unwrap()
+            .map_err(|_| Error::decode("branch items must be 32 bytes"))?
         },
         finalized_header,
         finality_branch: consensus_update
             .finality_branch
             .iter()
-            .map(|h| Hash32::try_from(h.as_slice()).unwrap())
-            .collect::<Vec<_>>()
+            .map(|h| Hash32::try_from(h.as_slice()))
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(|_| Error::decode("branch items must be 32 bytes"))?
             .try_into()
             .map_err(|_| Error::decode("cannot parse `finality_branch` in consensus update"))?,
         sync_aggregate: convert_proto_sync_aggregate(
@@ -416,15 +432,18 @@ pub(crate) fn convert_proto_to_consensus_update(
     Ok(light_client_update)
 }
 
-pub(crate) fn decode_branch<B: Iterator<Item = Vec<u8>>, const N: usize>(bz: B) -> [Hash32; N]
+pub(crate) fn decode_branch<B: Iterator<Item = Vec<u8>>, const N: usize>(
+    bz: B,
+) -> Result<[Hash32; N], Error>
 where
     [Hash32; N]: Default,
 {
     let mut array: [Hash32; N] = Default::default();
     let v: Vec<Hash32> = bz
         .into_iter()
-        .map(|b| Hash32::try_from(b.as_slice()).unwrap())
-        .collect();
+        .map(|b| Hash32::try_from(b.as_slice()))
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|_| Error::decode("branch items must be 32 bytes"))?;
     array.clone_from_slice(v.as_slice());
-    array
+    Ok(array)
 }

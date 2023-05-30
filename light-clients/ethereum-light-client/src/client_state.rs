@@ -78,7 +78,7 @@ impl TryFrom<RawClientState> for ClientState {
             .ok_or(Error::decode("no `trust_level` in `RawClientState`"))?;
         Ok(Self {
             genesis_validators_root: Root::try_from(value.genesis_validators_root.as_slice())
-                .unwrap(),
+                .map_err(|_| Error::decode("`genesis_validators_root` must be 32 bytes long"))?,
             min_sync_committee_participants: value.min_sync_committee_participants,
             genesis_time: value.genesis_time,
             fork_parameters: ForkParameters {
