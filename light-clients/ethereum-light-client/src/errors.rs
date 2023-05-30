@@ -68,6 +68,9 @@ pub enum Error {
 
     #[error("Missing field in the protobuf encoded data")]
     MissingProtoField,
+
+    #[error("Client's store period must be equal to update's finalized period")]
+    StorePeriodMustBeEqualToFinalizedPeriod,
 }
 
 impl Error {

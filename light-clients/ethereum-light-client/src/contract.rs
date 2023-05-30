@@ -9,7 +9,7 @@ use crate::{
     header::Header as EthHeader,
     msg::{ExecuteMsg, InstantiateMsg, QueryMsg},
     state::{read_client_state, read_consensus_state, save_consensus_state, update_client_state},
-    update::apply_updates,
+    update::apply_light_client_update,
 };
 use cosmwasm_std::{
     entry_point, to_binary, Binary, Deps, DepsMut, Env, MessageInfo, QueryResponse, Response,
@@ -159,7 +159,7 @@ pub fn verify_membership(
 
 pub fn update_header(mut deps: DepsMut, header: EthHeader) -> Result<ContractResult, Error> {
     let trusted_sync_committee = header.trusted_sync_committee;
-    let (wasm_consensus_state, consensus_state) =
+    let (wasm_consensus_state, mut consensus_state) =
         read_consensus_state(deps.as_ref(), trusted_sync_committee.height)?.ok_or(
             Error::ConsensusStateNotFound(
                 trusted_sync_committee.height.revision_number(),
@@ -168,7 +168,7 @@ pub fn update_header(mut deps: DepsMut, header: EthHeader) -> Result<ContractRes
         )?;
 
     let trusted_consensus_state = TrustedConsensusState::new(
-        consensus_state,
+        consensus_state.clone(),
         trusted_sync_committee.sync_committee,
         trusted_sync_committee.is_next,
     )?;
@@ -178,9 +178,9 @@ pub fn update_header(mut deps: DepsMut, header: EthHeader) -> Result<ContractRes
     let account_update = header.account_update;
     let timestamp = header.timestamp;
 
-    let (wasm_client_state, client_state) = read_client_state(deps.as_ref())?;
+    let (wasm_client_state, mut client_state) = read_client_state(deps.as_ref())?;
 
-    let ctx = LightClientContext::new(&client_state, trusted_consensus_state.clone());
+    let ctx = LightClientContext::new(&client_state, trusted_consensus_state);
 
     validate_light_client_update::<LightClientContext>(
         &ctx,
@@ -196,16 +196,15 @@ pub fn update_header(mut deps: DepsMut, header: EthHeader) -> Result<ContractRes
     )
     .map_err(|_| Error::Verification("for some reason".to_string()))?;
 
-    let (new_client_state, new_consensus_state) = apply_updates::<LightClientContext>(
-        &client_state,
-        &trusted_consensus_state,
+    apply_light_client_update::<LightClientContext>(
+        &mut client_state,
+        &mut consensus_state,
         consensus_update,
-        // execution_update,
         account_update,
     )?;
 
-    update_client_state(deps.branch(), wasm_client_state, new_client_state);
-    save_consensus_state(deps, wasm_consensus_state, new_consensus_state)?;
+    update_client_state(deps.branch(), wasm_client_state, client_state);
+    save_consensus_state(deps, wasm_consensus_state, consensus_state)?;
 
     Ok(ContractResult::valid(None))
 }
