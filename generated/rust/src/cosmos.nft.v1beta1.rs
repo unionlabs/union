@@ -1,4 +1,49 @@
 // @generated
+/// EventSend is emitted on Msg/Send
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventSend {
+    /// class_id associated with the nft
+    #[prost(string, tag = "1")]
+    pub class_id: ::prost::alloc::string::String,
+    /// id is a unique identifier of the nft
+    #[prost(string, tag = "2")]
+    pub id: ::prost::alloc::string::String,
+    /// sender is the address of the owner of nft
+    #[prost(string, tag = "3")]
+    pub sender: ::prost::alloc::string::String,
+    /// receiver is the receiver address of nft
+    #[prost(string, tag = "4")]
+    pub receiver: ::prost::alloc::string::String,
+}
+/// EventMint is emitted on Mint
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventMint {
+    /// class_id associated with the nft
+    #[prost(string, tag = "1")]
+    pub class_id: ::prost::alloc::string::String,
+    /// id is a unique identifier of the nft
+    #[prost(string, tag = "2")]
+    pub id: ::prost::alloc::string::String,
+    /// owner is the owner address of the nft
+    #[prost(string, tag = "3")]
+    pub owner: ::prost::alloc::string::String,
+}
+/// EventBurn is emitted on Burn
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventBurn {
+    /// class_id associated with the nft
+    #[prost(string, tag = "1")]
+    pub class_id: ::prost::alloc::string::String,
+    /// id is a unique identifier of the nft
+    #[prost(string, tag = "2")]
+    pub id: ::prost::alloc::string::String,
+    /// owner is the owner address of the nft
+    #[prost(string, tag = "3")]
+    pub owner: ::prost::alloc::string::String,
+}
 /// Class defines the class of the nft type.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -220,51 +265,6 @@ pub struct Entry {
     /// nfts is a group of nfts of the same owner
     #[prost(message, repeated, tag = "2")]
     pub nfts: ::prost::alloc::vec::Vec<Nft>,
-}
-/// EventSend is emitted on Msg/Send
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct EventSend {
-    /// class_id associated with the nft
-    #[prost(string, tag = "1")]
-    pub class_id: ::prost::alloc::string::String,
-    /// id is a unique identifier of the nft
-    #[prost(string, tag = "2")]
-    pub id: ::prost::alloc::string::String,
-    /// sender is the address of the owner of nft
-    #[prost(string, tag = "3")]
-    pub sender: ::prost::alloc::string::String,
-    /// receiver is the receiver address of nft
-    #[prost(string, tag = "4")]
-    pub receiver: ::prost::alloc::string::String,
-}
-/// EventMint is emitted on Mint
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct EventMint {
-    /// class_id associated with the nft
-    #[prost(string, tag = "1")]
-    pub class_id: ::prost::alloc::string::String,
-    /// id is a unique identifier of the nft
-    #[prost(string, tag = "2")]
-    pub id: ::prost::alloc::string::String,
-    /// owner is the owner address of the nft
-    #[prost(string, tag = "3")]
-    pub owner: ::prost::alloc::string::String,
-}
-/// EventBurn is emitted on Burn
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct EventBurn {
-    /// class_id associated with the nft
-    #[prost(string, tag = "1")]
-    pub class_id: ::prost::alloc::string::String,
-    /// id is a unique identifier of the nft
-    #[prost(string, tag = "2")]
-    pub id: ::prost::alloc::string::String,
-    /// owner is the owner address of the nft
-    #[prost(string, tag = "3")]
-    pub owner: ::prost::alloc::string::String,
 }
 include!("cosmos.nft.v1beta1.tonic.rs");
 // @@protoc_insertion_point(module)

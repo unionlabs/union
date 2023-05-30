@@ -72,6 +72,11 @@ dependencies = [
 [[package]]
 name = "amcl"
 version = "0.3.0"
+source = "git+https://github.com/sigp/milagro_bls?tag=v1.5.1#d3fc0a40cfe8b72ccda46ba050ee6786a59ce753"
+
+[[package]]
+name = "amcl"
+version = "0.3.0"
 source = "git+https://github.com/datachainlab/milagro_bls?rev=bc2b5b5e8d48b7e2e1bfaa56dc2d93e13cb32095#bc2b5b5e8d48b7e2e1bfaa56dc2d93e13cb32095"
 
 [[package]]
@@ -1310,7 +1315,7 @@ version = "0.1.0"
 dependencies = [
  "displaydoc",
  "hex",
- "milagro_bls",
+ "milagro_bls 1.5.0",
  "primitive-types",
  "rs_merkle",
  "serde",
@@ -1318,22 +1323,6 @@ dependencies = [
  "sha2 0.10.6",
  "ssz-rs",
  "ssz-rs-derive",
-]
-
-[[package]]
-name = "ethereum-light-client-verifier"
-version = "0.1.0"
-dependencies = [
- "displaydoc",
- "ethereum-consensus",
- "hex-literal 0.3.4",
- "log",
- "patricia-merkle-trie",
- "primitive-types",
- "rlp",
- "serde",
- "serde_json",
- "trie-db",
 ]
 
 [[package]]
@@ -1350,6 +1339,24 @@ dependencies = [
  "primitive-types",
  "scale-info",
  "uint",
+]
+
+[[package]]
+name = "ethereum-verifier"
+version = "0.1.0"
+dependencies = [
+ "hash-db",
+ "hash256-std-hasher",
+ "hex",
+ "memory-db",
+ "milagro_bls 1.5.1",
+ "primitive-types",
+ "rlp",
+ "serde",
+ "sha2 0.10.6",
+ "sha3",
+ "ssz_rs",
+ "trie-db",
 ]
 
 [[package]]
@@ -1963,9 +1970,9 @@ dependencies = [
 
 [[package]]
 name = "hash-db"
-version = "0.15.2"
+version = "0.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d23bd4e7b5eda0d0f3a307e8b381fdc8ba9000f26fbe912250c0a4cc3956364a"
+checksum = "8e7d7786361d7425ae2fe4f9e407eb0efaa0840f5212d109cc018c40c35c6ab4"
 
 [[package]]
 name = "hash256-std-hasher"
@@ -2032,12 +2039,6 @@ checksum = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70"
 dependencies = [
  "serde",
 ]
-
-[[package]]
-name = "hex-literal"
-version = "0.3.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7ebdb29d2ea9ed0083cd8cece49bbd968021bd99b0849edb4a9a7ee0fdf6a4e0"
 
 [[package]]
 name = "hex-literal"
@@ -2470,7 +2471,6 @@ version = "0.1.0"
 dependencies = [
  "displaydoc",
  "ethereum-consensus",
- "ethereum-light-client-verifier",
  "hex",
  "log",
  "reqwest",
@@ -2529,13 +2529,11 @@ dependencies = [
 
 [[package]]
 name = "memory-db"
-version = "0.30.0"
+version = "0.32.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "34ac11bb793c28fa095b7554466f53b3a60a2cd002afdac01bcf135cbd73a269"
+checksum = "808b50db46293432a45e63bc15ea51e0ab4c0a1647b8eb114e31a3e698dd6fbe"
 dependencies = [
  "hash-db",
- "hashbrown 0.12.3",
- "parity-util-mem",
 ]
 
 [[package]]
@@ -2543,7 +2541,17 @@ name = "milagro_bls"
 version = "1.5.0"
 source = "git+https://github.com/datachainlab/milagro_bls?rev=bc2b5b5e8d48b7e2e1bfaa56dc2d93e13cb32095#bc2b5b5e8d48b7e2e1bfaa56dc2d93e13cb32095"
 dependencies = [
- "amcl",
+ "amcl 0.3.0 (git+https://github.com/datachainlab/milagro_bls?rev=bc2b5b5e8d48b7e2e1bfaa56dc2d93e13cb32095)",
+ "rand",
+ "zeroize",
+]
+
+[[package]]
+name = "milagro_bls"
+version = "1.5.1"
+source = "git+https://github.com/sigp/milagro_bls?tag=v1.5.1#d3fc0a40cfe8b72ccda46ba050ee6786a59ce753"
+dependencies = [
+ "amcl 0.3.0 (git+https://github.com/sigp/milagro_bls?tag=v1.5.1)",
  "rand",
  "zeroize",
 ]
@@ -2819,30 +2827,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "parity-util-mem"
-version = "0.12.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0d32c34f4f5ca7f9196001c0aba5a1f9a5a12382c8944b8b0f90233282d1e8f8"
-dependencies = [
- "cfg-if",
- "hashbrown 0.12.3",
- "impl-trait-for-tuples",
- "parity-util-mem-derive",
- "winapi",
-]
-
-[[package]]
-name = "parity-util-mem-derive"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f557c32c6d268a07c921471619c0295f5efad3a0e76d4f97a05c091a51d110b2"
-dependencies = [
- "proc-macro2",
- "syn 1.0.109",
- "synstructure",
-]
-
-[[package]]
 name = "parking_lot"
 version = "0.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2887,21 +2871,6 @@ name = "path-slash"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1e91099d4268b0e11973f036e885d652fb0b21fedcf69738c627f94db6a44f42"
-
-[[package]]
-name = "patricia-merkle-trie"
-version = "0.1.0"
-source = "git+https://github.com/bluele/patricia-merkle-trie?branch=no-std-keccak-hasher#ea5094383596137c396609d873d2df10d8415f58"
-dependencies = [
- "hash-db",
- "hash256-std-hasher",
- "memory-db",
- "parity-scale-codec",
- "primitive-types",
- "rlp",
- "tiny-keccak",
- "trie-db",
-]
 
 [[package]]
 name = "pbkdf2"
@@ -3341,7 +3310,7 @@ dependencies = [
  "cosmrs",
  "ethereum-consensus",
  "ethers",
- "hex-literal 0.4.1",
+ "hex-literal",
  "lodestar-rpc",
  "prost",
  "protos",
@@ -4068,6 +4037,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "ssz_rs"
+version = "0.8.0"
+source = "git+https://github.com/aeryz/ssz-rs?rev=a728c72ea8e2c942a710a4971065f388e148b7e4#a728c72ea8e2c942a710a4971065f388e148b7e4"
+dependencies = [
+ "bitvec 1.0.1",
+ "hex",
+ "num-bigint",
+ "serde",
+ "sha2 0.9.9",
+ "ssz_rs_derive",
+]
+
+[[package]]
+name = "ssz_rs_derive"
+version = "0.8.0"
+source = "git+https://github.com/aeryz/ssz-rs?rev=a728c72ea8e2c942a710a4971065f388e148b7e4#a728c72ea8e2c942a710a4971065f388e148b7e4"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 1.0.109",
+]
+
+[[package]]
 name = "static_assertions"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4182,18 +4174,6 @@ name = "sync_wrapper"
 version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2047c6ded9c721764247e62cd3b03c09ffc529b2ba5b10ec482ae507a4a70160"
-
-[[package]]
-name = "synstructure"
-version = "0.12.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f36bdaa60a83aca3921b5259d5400cbf5e90fc51931376a9bd4a0eb79aa7210f"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 1.0.109",
- "unicode-xid",
-]
 
 [[package]]
 name = "tap"
@@ -4768,14 +4748,13 @@ dependencies = [
 
 [[package]]
 name = "trie-db"
-version = "0.24.0"
+version = "0.27.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "004e1e8f92535694b4cb1444dc5a8073ecf0815e3357f729638b9f8fc4062908"
+checksum = "767abe6ffed88a1889671a102c2861ae742726f52e0a5a425b92c9fbfa7e9c85"
 dependencies = [
  "hash-db",
- "hashbrown 0.12.3",
+ "hashbrown 0.13.2",
  "log",
- "rustc-hex",
  "smallvec",
 ]
 
@@ -4868,8 +4847,8 @@ dependencies = [
  "bytes",
  "cosmwasm-schema",
  "cosmwasm-std",
- "ethereum-consensus",
- "ethereum-light-client-verifier",
+ "ethabi",
+ "ethereum-verifier",
  "hex",
  "ibc",
  "prost",
@@ -4879,7 +4858,8 @@ dependencies = [
  "serde",
  "serde-json-wasm",
  "serde_json",
- "ssz-rs",
+ "sha3",
+ "ssz_rs",
  "thiserror",
  "tiny-keccak",
  "wasm-light-client-types",
@@ -5057,9 +5037,9 @@ checksum = "ed9d5b4305409d1fc9482fee2d7f9bcbf24b3972bf59817ef757e23982242a93"
 name = "wasm-light-client-types"
 version = "0.1.0"
 dependencies = [
- "cosmwasm-schema",
  "cosmwasm-std",
  "ibc",
+ "prost",
  "protos",
  "serde",
 ]

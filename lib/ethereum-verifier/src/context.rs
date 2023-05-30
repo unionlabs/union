@@ -1,135 +1,91 @@
-use ethereum_consensus::{
-    beacon::{Epoch, Root, Slot},
-    config::Config,
-    context::ChainContext,
-    fork::ForkParameters,
-    types::U64,
-};
-#[derive(Clone, Default, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
-pub struct Fraction {
-    pub numerator: u64,
-    pub denominator: u64,
+use crate::capella::{self, SyncCommittee};
+use crate::primitives::{Epoch, Slot, Version};
+
+pub trait LightClientContext {
+    type Config: ChainConfig;
+
+    fn finalized_slot(&self) -> Slot;
+
+    fn current_sync_committee(
+        &self,
+    ) -> Option<&SyncCommittee<{ Self::Config::SYNC_COMMITTEE_SIZE }>>;
+
+    fn next_sync_committee(&self) -> Option<&SyncCommittee<{ Self::Config::SYNC_COMMITTEE_SIZE }>>;
+    // # Max number of active participants in a sync committee (used to calculate safety threshold)
+    // previous_max_active_participants: uint64
+    // current_max_active_participants: uint64
+    fn fork_parameters(&self) -> &ForkParameters;
 }
 
-impl Fraction {
-    pub fn new(numerator: u64, denominator: u64) -> Self {
-        Self {
-            numerator,
-            denominator,
-        }
-    }
+pub trait ChainConfig {
+    const SECONDS_PER_SLOT: u64;
+    const SLOTS_PER_EPOCH: u64;
+    const SYNC_COMMITTEE_SIZE: usize;
+    const EPOCHS_PER_SYNC_COMMITTEE_PERIOD: Epoch;
+    const BYTES_PER_LOGS_BLOOM: usize;
+    const MAX_EXTRA_DATA_BYTES: usize;
+    const MIN_SYNC_COMMITTEE_PARTICIPANTS: usize;
+    const GENESIS_FORK_VERSION: Version;
 }
 
-pub trait ConsensusVerificationContext {
-    fn genesis_validators_root(&self) -> Root;
+pub struct MinimalConfig;
 
-    fn current_slot(&self) -> Slot;
+impl ChainConfig for MinimalConfig {
+    const SECONDS_PER_SLOT: u64 = capella::minimal::SECONDS_PER_SLOT;
 
-    fn min_sync_committee_participants(&self) -> usize;
+    const SLOTS_PER_EPOCH: u64 = capella::minimal::SLOTS_PER_EPOCH;
 
-    fn signature_threshold(&self) -> Fraction;
+    const SYNC_COMMITTEE_SIZE: usize = capella::minimal::SYNC_COMMITTEE_SIZE;
+
+    const EPOCHS_PER_SYNC_COMMITTEE_PERIOD: Epoch =
+        capella::minimal::EPOCHS_PER_SYNC_COMMITTEE_PERIOD;
+
+    const BYTES_PER_LOGS_BLOOM: usize = capella::minimal::BYTES_PER_LOGS_BLOOM;
+
+    const MAX_EXTRA_DATA_BYTES: usize = capella::minimal::MAX_EXTRA_DATA_BYTES;
+
+    const MIN_SYNC_COMMITTEE_PARTICIPANTS: usize =
+        capella::minimal::MIN_SYNC_COMMITTEE_PARTICIPANTS;
+
+    const GENESIS_FORK_VERSION: Version = capella::minimal::GENESIS_FORK_VERSION;
 }
 
-pub struct LightClientContext<F> {
-    fork_parameters: ForkParameters,
-    seconds_per_slot: U64,
-    slots_per_epoch: Slot,
-    epochs_per_sync_committee_period: Epoch,
-    genesis_time: U64,
+pub struct MainnetConfig;
 
-    genesis_validators_root: Root,
-    min_sync_committee_participants: usize,
-    signature_threshold: Fraction,
-    get_current_slot: F,
+impl ChainConfig for MainnetConfig {
+    const SECONDS_PER_SLOT: u64 = capella::mainnet::SECONDS_PER_SLOT;
+
+    const SLOTS_PER_EPOCH: u64 = capella::mainnet::SLOTS_PER_EPOCH;
+
+    const SYNC_COMMITTEE_SIZE: usize = capella::mainnet::SYNC_COMMITTEE_SIZE;
+
+    const EPOCHS_PER_SYNC_COMMITTEE_PERIOD: Epoch =
+        capella::mainnet::EPOCHS_PER_SYNC_COMMITTEE_PERIOD;
+
+    const BYTES_PER_LOGS_BLOOM: usize = capella::mainnet::BYTES_PER_LOGS_BLOOM;
+
+    const MAX_EXTRA_DATA_BYTES: usize = capella::mainnet::MAX_EXTRA_DATA_BYTES;
+
+    const MIN_SYNC_COMMITTEE_PARTICIPANTS: usize =
+        capella::mainnet::MIN_SYNC_COMMITTEE_PARTICIPANTS;
+
+    const GENESIS_FORK_VERSION: Version = capella::mainnet::GENESIS_FORK_VERSION;
 }
 
-impl<F> LightClientContext<F> {
-    pub fn new(
-        fork_parameters: ForkParameters,
-        seconds_per_slot: U64,
-        slots_per_epoch: Slot,
-        epochs_per_sync_committee_period: Epoch,
-        genesis_time: U64,
+#[derive(Debug, Default, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+pub struct ForkParameters {
+    pub genesis_fork_version: Version,
+    pub genesis_slot: Slot,
 
-        genesis_validators_root: Root,
-        min_sync_committee_participants: usize,
-        signature_threshold: Fraction,
-        get_current_slot: F,
-    ) -> Self {
-        Self {
-            fork_parameters,
-            seconds_per_slot,
-            slots_per_epoch,
-            epochs_per_sync_committee_period,
-            genesis_time,
+    pub altair_fork_version: Version,
+    pub altair_fork_epoch: Epoch,
 
-            genesis_validators_root,
-            min_sync_committee_participants,
-            signature_threshold,
-            get_current_slot,
-        }
-    }
+    pub bellatrix_fork_version: Version,
+    pub bellatrix_fork_epoch: Epoch,
 
-    pub fn new_with_config(
-        config: Config,
-        genesis_validators_root: Root,
-        genesis_time: U64,
-        signature_threshold: Fraction,
-        get_current_slot: F,
-    ) -> Self {
-        Self::new(
-            config.fork_parameters,
-            config.preset.SECONDS_PER_SLOT,
-            config.preset.SLOTS_PER_EPOCH,
-            config.preset.EPOCHS_PER_SYNC_COMMITTEE_PERIOD,
-            genesis_time,
-            genesis_validators_root,
-            config.preset.MIN_SYNC_COMMITTEE_PARTICIPANTS,
-            signature_threshold,
-            get_current_slot,
-        )
-    }
-}
+    pub capella_fork_version: Version,
+    pub capella_fork_epoch: Epoch,
 
-impl<F> ConsensusVerificationContext for LightClientContext<F>
-where
-    F: Fn() -> Slot,
-{
-    fn genesis_validators_root(&self) -> Root {
-        self.genesis_validators_root.clone()
-    }
-
-    fn min_sync_committee_participants(&self) -> usize {
-        self.min_sync_committee_participants
-    }
-
-    fn signature_threshold(&self) -> Fraction {
-        self.signature_threshold.clone()
-    }
-
-    fn current_slot(&self) -> Slot {
-        (self.get_current_slot)()
-    }
-}
-
-impl<F> ChainContext for LightClientContext<F> {
-    fn genesis_time(&self) -> U64 {
-        self.genesis_time
-    }
-
-    fn fork_parameters(&self) -> &ForkParameters {
-        &self.fork_parameters
-    }
-
-    fn seconds_per_slot(&self) -> U64 {
-        self.seconds_per_slot
-    }
-
-    fn slots_per_epoch(&self) -> Slot {
-        self.slots_per_epoch
-    }
-
-    fn epochs_per_sync_committee_period(&self) -> Epoch {
-        self.epochs_per_sync_committee_period
-    }
+    pub eip4844_fork_version: Version,
+    pub eip4844_fork_epoch: Epoch,
 }

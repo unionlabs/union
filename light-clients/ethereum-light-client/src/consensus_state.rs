@@ -1,11 +1,17 @@
-use crate::{errors::Error, eth_types::SYNC_COMMITTEE_SIZE};
-use ethereum_consensus::{beacon::Slot, bls::PublicKey, sync_protocol::SyncCommittee};
-use ethereum_light_client_verifier::state::SyncCommitteeView;
+use crate::{errors::Error, eth_types::SyncCommittee};
+use ethereum_verifier::{
+    crypto::{eth_aggregate_public_keys, BlsPublicKey},
+    primitives::Slot,
+};
 use ibc::core::ics23_commitment::commitment::CommitmentRoot;
 use prost::Message;
 use protos::{
     google::protobuf::Any as IBCAny,
-    union::ibc::lightclients::ethereum::v1::ConsensusState as RawConsensusState,
+    ibc::lightclients::tendermint::v1::ConsensusState as RawTmConsensusState,
+    union::ibc::lightclients::{
+        cometbls::v1::ConsensusState as RawCometConsensusState,
+        ethereum::v1::ConsensusState as RawConsensusState,
+    },
 };
 
 pub const ETHEREUM_CONSENSUS_STATE_TYPE_URL: &str = "/ibc.lightclients.ethereum.v1.ConsensusState";
@@ -19,9 +25,9 @@ pub struct ConsensusState {
     /// timestamp from execution payload
     pub timestamp: u64,
     /// aggregate public key of current sync committee
-    pub current_sync_committee: PublicKey,
+    pub current_sync_committee: BlsPublicKey,
     /// aggregate public key of next sync committee
-    pub next_sync_committee: Option<PublicKey>,
+    pub next_sync_committee: Option<BlsPublicKey>,
 }
 
 impl Default for ConsensusState {
@@ -36,8 +42,6 @@ impl Default for ConsensusState {
     }
 }
 
-// impl Protobuf<RawConsensusState> for ConsensusState {}
-
 impl TryFrom<RawConsensusState> for ConsensusState {
     type Error = Error;
 
@@ -46,15 +50,15 @@ impl TryFrom<RawConsensusState> for ConsensusState {
             None
         } else {
             Some(
-                PublicKey::try_from(value.next_sync_committee)
+                BlsPublicKey::try_from(value.next_sync_committee.as_slice())
                     .map_err(|_| Error::InvalidPublicKey)?,
             )
         };
         Ok(Self {
-            slot: value.slot.into(),
+            slot: value.slot,
             storage_root: value.storage_root.into(),
             timestamp: value.timestamp,
-            current_sync_committee: PublicKey::try_from(value.current_sync_committee)
+            current_sync_committee: BlsPublicKey::try_from(value.current_sync_committee.as_slice())
                 .map_err(|_| Error::InvalidPublicKey)?,
             next_sync_committee,
         })
@@ -64,11 +68,11 @@ impl TryFrom<RawConsensusState> for ConsensusState {
 impl From<ConsensusState> for RawConsensusState {
     fn from(value: ConsensusState) -> Self {
         let next_sync_committee = match value.next_sync_committee {
-            Some(next_sync_committee) => next_sync_committee.0.to_vec(),
+            Some(next_sync_committee) => next_sync_committee.to_vec(),
             None => Vec::new(),
         };
         Self {
-            slot: value.slot.into(),
+            slot: value.slot,
             storage_root: value.storage_root.into_vec(),
             timestamp: value.timestamp,
             current_sync_committee: value.current_sync_committee.to_vec(),
@@ -76,8 +80,6 @@ impl From<ConsensusState> for RawConsensusState {
         }
     }
 }
-
-// impl Protobuf<IBCAny> for ConsensusState {}
 
 impl TryFrom<IBCAny> for ConsensusState {
     type Error = Error;
@@ -93,33 +95,39 @@ impl TryFrom<IBCAny> for ConsensusState {
     }
 }
 
-// impl From<ConsensusState> for IBCAny {
-//     fn from(consensus_state: ConsensusState) -> Self {
-//         Self {
-//             type_url: ETHEREUM_CONSENSUS_STATE_TYPE_URL.to_string(),
-//             value: Protobuf::<RawConsensusState>::encode_vec(&consensus_state),
-//         }
-//     }
-// }
+pub fn tendermint_to_cometbls_consensus_state(
+    state: RawTmConsensusState,
+) -> RawCometConsensusState {
+    RawCometConsensusState {
+        timestamp: state.timestamp,
+        root: state.root,
+        next_validators_hash: state.next_validators_hash,
+    }
+}
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct TrustedConsensusState {
-    state: ConsensusState,
-    current_sync_committee: Option<SyncCommittee<SYNC_COMMITTEE_SIZE>>,
-    next_sync_committee: Option<SyncCommittee<SYNC_COMMITTEE_SIZE>>,
+    pub state: ConsensusState,
+    pub current_sync_committee: Option<SyncCommittee>,
+    pub next_sync_committee: Option<SyncCommittee>,
 }
 
 impl TrustedConsensusState {
     pub fn new(
         consensus_state: ConsensusState,
-        sync_committee: SyncCommittee<SYNC_COMMITTEE_SIZE>,
+        sync_committee: SyncCommittee,
         is_next: bool,
     ) -> Result<Self, Error> {
-        sync_committee
-            .validate()
-            .map_err(|_| Error::InvalidSyncCommittee)?;
+        if eth_aggregate_public_keys(&sync_committee.public_keys)
+            .map_err(|_| Error::InvalidSyncCommittee)?
+            != sync_committee.aggregate_public_key
+        {
+            return Err(Error::InvalidSyncCommittee);
+        }
+
         if !is_next {
-            return if sync_committee.aggregate_pubkey == consensus_state.current_sync_committee {
+            return if sync_committee.aggregate_public_key == consensus_state.current_sync_committee
+            {
                 Ok(Self {
                     state: consensus_state,
                     current_sync_committee: Some(sync_committee),
@@ -131,7 +139,7 @@ impl TrustedConsensusState {
         }
 
         if let Some(next_sync_committee) = consensus_state.next_sync_committee.clone() {
-            if sync_committee.aggregate_pubkey == next_sync_committee {
+            if sync_committee.aggregate_public_key == next_sync_committee {
                 Ok(Self {
                     state: consensus_state,
                     current_sync_committee: None,
@@ -145,27 +153,7 @@ impl TrustedConsensusState {
         }
     }
 
-    pub fn current_sync_committee_aggregate_key(&self) -> PublicKey {
+    pub fn current_sync_committee_aggregate_key(&self) -> BlsPublicKey {
         self.state.current_sync_committee.clone()
-    }
-}
-
-impl SyncCommitteeView<SYNC_COMMITTEE_SIZE> for TrustedConsensusState {
-    fn current_slot(&self) -> Slot {
-        self.state.slot
-    }
-
-    // TODO(aeryz): `current_sync_committee` can be empty, this means that this function
-    // should return Result/Option.
-    fn current_sync_committee(
-        &self,
-    ) -> &ethereum_consensus::sync_protocol::SyncCommittee<SYNC_COMMITTEE_SIZE> {
-        self.current_sync_committee.as_ref().unwrap()
-    }
-
-    fn next_sync_committee(
-        &self,
-    ) -> Option<&ethereum_consensus::sync_protocol::SyncCommittee<SYNC_COMMITTEE_SIZE>> {
-        self.next_sync_committee.as_ref()
     }
 }

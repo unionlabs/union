@@ -7,8 +7,8 @@ publish = false
 license = "BSL-1.1"
 
 [dependencies]
-cosmwasm-schema = "1.2.0"
 cosmwasm-std = "1.2.0"
 ibc = { version = "0.37.0", default-features = false, features = [ "serde" ] }
+prost = { version = "0.11", default-features = false }
 protos = { path = "../../generated/rust", default-features = false, features = ["proto_full", "std"] }
 serde = { version = "1.0", default-features = false, features = ["derive"] }

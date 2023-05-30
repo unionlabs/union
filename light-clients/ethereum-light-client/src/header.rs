@@ -1,7 +1,6 @@
 use crate::{
     errors::Error,
-    eth_types::ConsensusUpdateInfo,
-    misbehaviour::Misbehaviour,
+    eth_types::LightClientUpdate,
     types::{
         convert_consensus_update_to_proto, convert_proto_to_consensus_update, AccountUpdateInfo,
         TrustedSyncCommittee,
@@ -9,31 +8,26 @@ use crate::{
 };
 use ibc::timestamp::Timestamp;
 use prost::Message;
-use protos::google::protobuf::Any as IBCAny;
-use protos::union::ibc::lightclients::ethereum::v1::Header as RawHeader;
+use protos::{
+    google::protobuf::Any as IBCAny, union::ibc::lightclients::ethereum::v1::Header as RawHeader,
+};
 
 pub const ETHEREUM_HEADER_TYPE_URL: &str = "/ibc.lightclients.ethereum.v1.Header";
 
-// TODO(aeryz): We might not need to represent the client message like this because the
-// the size difference between the invariants are too much.
-#[allow(clippy::large_enum_variant)]
 #[derive(serde::Serialize, serde::Deserialize)]
 pub enum ClientMessage {
     Header(Header),
-    Misbehaviour(Misbehaviour),
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct Header {
     pub trusted_sync_committee: TrustedSyncCommittee,
-    pub consensus_update: ConsensusUpdateInfo,
+    pub consensus_update: LightClientUpdate,
     pub account_update: AccountUpdateInfo,
     pub timestamp: Timestamp,
 }
 
 const NANO_SECONDS_MULTIPLIER: u64 = 1_000_000_000;
-
-// impl Protobuf<RawHeader> for Header {}
 
 impl TryFrom<RawHeader> for Header {
     type Error = Error;
@@ -72,8 +66,6 @@ impl From<Header> for RawHeader {
     }
 }
 
-// impl Protobuf<IBCAny> for Header {}
-
 impl TryFrom<IBCAny> for Header {
     type Error = Error;
 
@@ -86,12 +78,3 @@ impl TryFrom<IBCAny> for Header {
         }
     }
 }
-
-// impl From<Header> for IBCAny {
-//     fn from(header: Header) -> Self {
-//         Self {
-//             type_url: ETHEREUM_HEADER_TYPE_URL.to_string(),
-//             value: Protobuf::<RawHeader>::encode_vec(&header),
-//         }
-//     }
-// }

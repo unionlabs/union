@@ -136,7 +136,7 @@ pub fn save_consensus_state(
     mut wasm_consensus_state: WasmConsensusState,
     consensus_state: ConsensusState,
 ) -> Result<(), Error> {
-    let height = Height::new(0, consensus_state.slot.into()).map_err(|_| Error::InvalidHeight)?;
+    let height = Height::new(0, consensus_state.slot).map_err(|_| Error::InvalidHeight)?;
     let timestamp = consensus_state.timestamp;
     let raw_consensus_state = Into::<RawConsensusState>::into(consensus_state).encode_to_vec();
     wasm_consensus_state.data = raw_consensus_state;
