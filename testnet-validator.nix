@@ -2,9 +2,7 @@
   flake = {
     nixosConfigurations.testnet-validator =
       let
-
         nixpkgs = self.inputs.nixpkgs;
-
         pkgs = import nixpkgs { system = "x86_64-linux"; };
       in
       nixpkgs.lib.nixosSystem {
@@ -12,7 +10,9 @@
 
         modules = [
           {
-            imports = [ "${nixpkgs}/nixos/modules/virtualisation/openstack-config.nix" ];
+            imports = [ 
+              "${nixpkgs}/nixos/modules/virtualisation/openstack-config.nix" 
+            ];
             system.stateVersion = "23.11";
 
             environment.systemPackages = with pkgs; [
@@ -20,7 +20,13 @@
               bat
               bottom
             ];
-
+          }
+          self.nixosModules.unionvisor  
+          {
+            services.unionvisor = {
+              enable = true;
+              moniker = "cor-systems";
+            };
           }
         ];
       };
