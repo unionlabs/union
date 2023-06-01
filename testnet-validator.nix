@@ -1,11 +1,12 @@
 { self, ... }: {
   flake.nixosConfigurations.testnet-validator =
     let
+      system = "x86_64-linux";
       nixpkgs = self.inputs.nixpkgs;
-      pkgs = import nixpkgs { system = "x86_64-linux"; };
+      pkgs = import nixpkgs { inherit system; };
     in
     nixpkgs.lib.nixosSystem {
-      system = "x86_64-linux";
+      inherit system;
 
       modules = [
         self.nixosModules.unionvisor
