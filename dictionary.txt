@@ -26,6 +26,7 @@ authzmodule
 autocli
 autocliv
 Axelar
+Axelar
 bankkeeper
 banktypes
 baseapp
@@ -42,6 +43,7 @@ Bitvector
 Blcok
 blocksync
 blocksync
+Boneh
 builtins
 cachix
 capabilitykeeper
@@ -49,6 +51,7 @@ capabilitytypes
 cargotoml
 cargotoml
 cargotoml
+CCTP
 CCTP
 cdctypes
 cdylib
@@ -200,6 +203,7 @@ ipetkov
 ipetkov
 journalctl
 journalctl
+journalctl
 jsonschema
 jwtsecret
 keccak
@@ -243,6 +247,8 @@ muslc
 nanos
 neighbouring
 neoeinstein
+neofetch
+netutil
 netutil
 netutil
 netutil
@@ -274,6 +280,7 @@ paramstore
 paramstypes
 paramtypes
 Partset
+passthru
 Patchelf
 pflag
 phang
@@ -283,6 +290,7 @@ pkgs
 pname
 poisonphang
 PoisonPhang
+Polkadot
 posthandler
 precommit
 PRECOMMIT
@@ -342,9 +350,11 @@ runtimeservices
 rustc
 rustc
 rustc
+rustc
 RUSTFLAGS
 rustfmt
 rustfmt
+rustlib
 rustls
 rustls
 Rustup
@@ -356,6 +366,7 @@ serde
 serde
 serverconfig
 servertypes
+Shacham
 Shallue
 shazow
 SIGINT
@@ -387,6 +398,7 @@ sumbitter
 svrcmd
 symlinker
 syncmode
+taplo
 taplo
 taplo
 taplo
@@ -452,6 +464,7 @@ Unmarshal
 unvalidated
 unwithdrawn
 upgradability
+upgradability
 upgradeclient
 upgradekeeper
 upgradetypes
@@ -470,10 +483,13 @@ valoper
 valoperpub
 valset
 verison
+Verkle
 vestingtypes
 vhosts
+virtualisation
 vmdebug
 vuex
+wasi
 wasmvm
 wasmvmstatic
 wctx
@@ -482,20 +498,6 @@ Woestijne
 xqxp
 ypyp
 yqyp
-λpxrx
-λpxrx
-rustc
-taplo
-netutil
-journalctl
-upgradability
-Axelar
-CCTP
-Boneh
-Shacham
 zkps
-Verkle
-Polkadot
-passthru
-wasi
-rustlib
+λpxrx
+λpxrx
