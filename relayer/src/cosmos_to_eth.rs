@@ -25,22 +25,22 @@ use protos::{
     },
     union::prover::api::v1::{union_prover_api_client, ProveRequest, ValidatorSetCommit},
 };
-use sha2::{Sha256, Digest};
+use sha2::{Digest, Sha256};
 use std::{str::FromStr, sync::Arc, time::Duration};
 use tendermint_rpc::{
     endpoint::commit, query::EventType, Client, HttpClient, SubscriptionClient, WebSocketClient,
     WebSocketClientUrl,
 };
 
-use crate::ETH_RPC_API;
+use crate::{COMETBLS_CLIENT_ADDRESS, ETH_RPC_API, IBC_HANDLER_ADDRESS, ICS20_MODULE_ADDRESS};
 
-const CHAIN_ID: &str = "union-devnet-1";
-const CLIENT_TYPE: &str = "cometbls";
+pub const CHAIN_ID: &str = "union-devnet-1";
+pub const COMETBLS_CLIENT_TYPE: &str = "cometbls";
 const COSMOS_CLIENT_ID: &str = "evm";
 const COSMOS_CONNECTION_ID: &str = "union";
 const COSMOS_CHANNEL_ID: &str = "default";
 const MERKLE_PREFIX: &str = "ibc";
-const PORT_ID: &str = "unique";
+pub const PORT_ID: &str = "transfer";
 
 type ConnectionId = String;
 type ChannelId = String;
@@ -67,7 +67,7 @@ fn encode_dynamic_singleton_tuple(bytes: Vec<u8>) -> Vec<u8> {
         .collect::<Vec<_>>()
 }
 
-async fn create_client<M>(
+pub async fn create_client<M>(
     handler: &IBCHandler<M>,
     commit: &commit::Response,
     params: &staking::v1beta1::Params,
@@ -123,7 +123,7 @@ where
             revision_height: 0,
         },
         latest_height: IbcCoreClientV1HeightData {
-            revision_number: 0,
+            revision_number: 1,
             revision_height: height.value(),
         },
     };
@@ -165,7 +165,7 @@ where
     let normalized_consensus_state_bytes = encode_dynamic_singleton_tuple(consensus_state.encode());
 
     let msg_create_client = MsgCreateClient {
-        client_type: "cometbls".to_string(),
+        client_type: COMETBLS_CLIENT_TYPE.to_string(),
         client_state_bytes: normalized_client_state_bytes.into(),
         consensus_state_bytes: normalized_consensus_state_bytes.into(),
     };
@@ -179,6 +179,7 @@ where
         .unwrap()
         .unwrap();
 
+    // TODO(benluelo): get logs this way
     let client_id = decode_logs::<IBCHandlerEvents>(
         rcp.logs
             .into_iter()
@@ -284,7 +285,11 @@ where
     };
 }
 
-async fn channel_handshake<M>(handler: &IBCHandler<M>, connections: &Connections, port_id: PortId) -> Channels
+async fn channel_handshake<M>(
+    handler: &IBCHandler<M>,
+    connections: &Connections,
+    port_id: PortId,
+) -> Channels
 where
     M: Middleware,
 {
@@ -371,14 +376,6 @@ where
 NOTE: 1/2/3/4 must be done only once
  */
 pub async fn update_contract() {
-    // nix run .#evm-devnet-deploy -L
-    // OwnableIBCHandler => address
-    const IBC_HANDLER_ADDRESS: &str = "0xFc97A6197dc90bef6bbEFD672742Ed75E9768553";
-    // TestnetVerifier => address
-    const COMETBLS_CLIENT_ADDRESS: &str = "0x87d1f7fdfEe7f651FaBc8bFCB6E086C278b77A7d";
-    // ICS20TransferBank => address
-    const ICS20_MODULE_ADDRESS: &str = "0x83428c7db9815f482a39a1715684dCF755021997";
-
     let mut staking_client =
         staking::v1beta1::query_client::QueryClient::connect("http://0.0.0.0:9090")
             .await
@@ -402,22 +399,13 @@ pub async fn update_contract() {
 
     let commit: commit::Response = tm_client.latest_commit().await.unwrap();
 
-    let provider = Arc::new({
-        let provider = Provider::<Http>::try_from(ETH_RPC_API).unwrap();
-        let chain_id = provider.get_chainid().await.unwrap();
-        let wallet = "4e9444a6efd6d42725a250b650a781da2737ea308c839eaccb0f7f3dbd2fea77"
-            .parse::<LocalWallet>()
-            .unwrap()
-            .with_chain_id(chain_id.as_u64());
-        SignerMiddleware::new(provider, wallet)
-    });
-
-    let address: Address = IBC_HANDLER_ADDRESS.parse().unwrap();
-
-    let handler = contracts::ibc_handler::IBCHandler::new(address, provider);
+    let handler = create_ibc_handler_client().await;
 
     handler
-        .register_client(CLIENT_TYPE.into(), COMETBLS_CLIENT_ADDRESS.parse().unwrap())
+        .register_client(
+            COMETBLS_CLIENT_TYPE.into(),
+            COMETBLS_CLIENT_ADDRESS.parse().unwrap(),
+        )
         .send()
         .await
         .unwrap()
@@ -431,7 +419,8 @@ pub async fn update_contract() {
     println!("Created client - {}", client_id);
 
     println!("Binding ICS20 bank...");
-    handler.bind_port(PORT_ID.into(), ICS20_MODULE_ADDRESS.parse().unwrap())
+    handler
+        .bind_port(PORT_ID.into(), ICS20_MODULE_ADDRESS.parse().unwrap())
         .send()
         .await
         .unwrap()
@@ -484,12 +473,14 @@ pub async fn update_contract() {
                 .unwrap()
                 .key;
                 // Tendermint address are sha256(pubkey)[0:20]
-                let a_address = Sha256::new().chain_update(a_key)
+                let a_address = Sha256::new()
+                    .chain_update(a_key)
                     .finalize()
                     .into_iter()
                     .take(20)
                     .collect::<Vec<_>>();
-                let b_address = Sha256::new().chain_update(b_key)
+                let b_address = Sha256::new()
+                    .chain_update(b_key)
                     .finalize()
                     .into_iter()
                     .take(20)
@@ -738,7 +729,7 @@ pub async fn update_contract() {
             untrusted_validator_set_root: prove_res.untrusted_validator_set_root.into(),
             trusted_height: IbcCoreClientV1HeightData {
                 revision_number: 0,
-                revision_height: previous_height.into()
+                revision_height: previous_height.into(),
             },
             zero_knowledge_proof: prove_res.proof.unwrap().evm_proof.into(),
         };
@@ -764,3 +755,25 @@ pub async fn update_contract() {
         previous_height = previous_height.increment();
     }
 }
+
+pub async fn create_ibc_handler_client() -> IBCHandler<impl Middleware + 'static> {
+    let provider = Arc::new({
+        let provider = Provider::<Http>::try_from(ETH_RPC_API).unwrap();
+        let chain_id = provider.get_chainid().await.unwrap();
+        let wallet = "4e9444a6efd6d42725a250b650a781da2737ea308c839eaccb0f7f3dbd2fea77"
+            .parse::<LocalWallet>()
+            .unwrap()
+            .with_chain_id(chain_id.as_u64());
+        SignerMiddleware::new(provider, wallet)
+    });
+
+    let address: Address = IBC_HANDLER_ADDRESS.parse().unwrap();
+
+    let handler = contracts::ibc_handler::IBCHandler::new(address, provider);
+
+    handler
+}
+
+// async fn event_listener() -> StreamExt {
+//     //
+// }

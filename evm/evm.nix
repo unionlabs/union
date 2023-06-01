@@ -209,6 +209,8 @@
 
             ${deploy { path = "apps/20-transfer/ICS20Bank.sol"; name = "ICS20Bank"; }}
             ${deploy { path = "apps/20-transfer/ICS20TransferBank.sol"; name = "ICS20TransferBank";  args = ''--constructor-args "$OWNABLEIBCHANDLER" "$ICS20BANK"''; }}
+
+            rm -rf "$OUT"
           '';
         };
     };
