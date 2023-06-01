@@ -37,7 +37,7 @@ impl Network {
     // `self` will be used later on to determine which URL to use based on the network
     #[allow(clippy::unused_self)]
     pub fn seeds(&self) -> &str {
-        "7139b86ff37752437cf01a4970bf2b26c45c53e0@uniontestnet.poisonphang.com:26656"
+        "6a2d3a6f846792b99c4cfa3ccb40f80073bac30d@union-testnet.cor.systems:26656,7139b86ff37752437cf01a4970bf2b26c45c53e0@uniontestnet.poisonphang.com:26656"
     }
 
     // `self` will be used later on to determine which URL to use based on the network
