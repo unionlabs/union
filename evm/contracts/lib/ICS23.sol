@@ -3,12 +3,8 @@ pragma solidity ^0.8.18;
 import {CosmosIcs23V1GlobalEnums, CosmosIcs23V1CompressedBatchEntry, CosmosIcs23V1LeafOp, CosmosIcs23V1InnerOp, CosmosIcs23V1InnerSpec, CosmosIcs23V1BatchProof, CosmosIcs23V1BatchEntry, CosmosIcs23V1CompressedBatchProof, CosmosIcs23V1CommitmentProof, CosmosIcs23V1ProofSpec, CosmosIcs23V1ExistenceProof, CosmosIcs23V1CompressedExistenceProof, CosmosIcs23V1NonExistenceProof} from "../proto/cosmos/ics23/v1/proofs.sol";
 import {BytesLib} from "solidity-bytes-utils/BytesLib.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import {BytesLib} from "solidity-bytes-utils/BytesLib.sol";
 import {ProtoBufRuntime} from "../proto/ProtoBufRuntime.sol";
-import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-import {BytesLib} from "solidity-bytes-utils/BytesLib.sol";
-import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 library Ics23  {
 
@@ -448,7 +444,7 @@ library Proof{
             if (innerOpsDepthTooLong) return CheckAgainstSpecError.InnerOpsDepthTooLong;
         }
         for(uint i = 0; i < proof.path.length; i++) {
-            Ops.CheckAgainstSpecError cCode = Ops.checkAgainstSpec(proof.path[i], spec);
+            cCode = Ops.checkAgainstSpec(proof.path[i], spec);
             if (cCode != Ops.CheckAgainstSpecError.None) return CheckAgainstSpecError.OpsCheckAgainstSpec;
         }
     }

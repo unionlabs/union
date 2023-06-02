@@ -33,33 +33,7 @@ contract CometblsClient is ILightClient {
     address internal ibcHandler;
     IZKVerifier internal verifier;
 
-    CosmosIcs23V1ProofSpec.Data private _tendermintProofSpec = CosmosIcs23V1ProofSpec.Data({
-        leaf_spec: CosmosIcs23V1LeafOp.Data({
-            prefix: hex"00",
-            prehash_key: CosmosIcs23V1GlobalEnums.HashOp.NO_HASH,
-            hash: CosmosIcs23V1GlobalEnums.HashOp.SHA256,
-            prehash_value: CosmosIcs23V1GlobalEnums.HashOp.SHA256,
-            length: CosmosIcs23V1GlobalEnums.LengthOp.VAR_PROTO
-        }),
-        inner_spec: CosmosIcs23V1InnerSpec.Data({
-            child_order: getTmChildOrder(),
-            child_size: 32,
-            min_prefix_length: 1,
-            max_prefix_length: 1,
-            empty_child: abi.encodePacked(),
-            hash: CosmosIcs23V1GlobalEnums.HashOp.SHA256
-        }),
-        min_depth: 0,
-        max_depth: 0
-    });
-
-    function getTmChildOrder() internal pure returns (int32[] memory) {
-        int32[] memory childOrder = new int32[](2);
-        childOrder[0] = 0;
-        childOrder[1] = 1;
-
-        return childOrder;
-    }
+    CosmosIcs23V1ProofSpec.Data private _tendermintProofSpec = CometblsHelp.getTendermintProofSpec();
 
     constructor(address ibcHandler_, IZKVerifier verifier_) {
         ibcHandler = ibcHandler_;

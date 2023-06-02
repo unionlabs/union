@@ -3,6 +3,7 @@ package cmd
 import (
 	"encoding/hex"
 	"fmt"
+	"strconv"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -18,10 +19,10 @@ const (
 
 func GenStateProof() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "genstateproof [data] [path]",
+		Use:   "genstateproof [height] [data] [path]",
 		Short: "Generate a state proof.",
 		Long:  `Generate a state proof.`,
-		Args:  cobra.ExactArgs(2),
+		Args:  cobra.ExactArgs(3),
 		RunE: func(cmd *cobra.Command, args []string) error {
 
 			clientCtx, err := client.GetClientQueryContext(cmd)
@@ -36,27 +37,28 @@ func GenStateProof() *cobra.Command {
 
 			clientCtx.NodeURI = nodeURI
 
-			data := args[0]
-			path := args[1]
+			height, err := strconv.Atoi(args[0])
+			if err != nil {
+				return err
+			}
+
+			data := args[1]
+			path := args[2]
 
 			res, err := clientCtx.QueryABCI(abci.RequestQuery{
 				Data:   []byte(data),
 				Path:   path,
-				Height: 2,
+				Height: int64(height),
 				Prove:  true,
 			})
 			if err != nil {
 				return err
 			}
 
-			fmt.Println(res.ProofOps)
-
 			merkleProof, err := commitmenttypes.ConvertProofs(res.ProofOps)
 			if err != nil {
 				return err
 			}
-
-			fmt.Println(merkleProof)
 
 			cdc := codec.NewProtoCodec(ctypes.NewInterfaceRegistry())
 			proofBz, err := cdc.Marshal(&merkleProof)
