@@ -1,9 +1,6 @@
 ABCI
-<<<<<<< HEAD
 abigen
 accs
-=======
->>>>>>> 10093725 (docs(nixos): add guide for nixos-validators)
 Accs
 Acknowledgemets
 Acks
@@ -94,11 +91,7 @@ authzkeeper
 authzmodule
 autocli
 autocliv
-<<<<<<< HEAD
 Axelar
-Axelar
-=======
->>>>>>> 10093725 (docs(nixos): add guide for nixos-validators)
 bankkeeper
 banktypes
 baseapp
@@ -120,11 +113,7 @@ capabilitytypes
 cargotoml
 cargotoml
 cargotoml
-<<<<<<< HEAD
 CCTP
-CCTP
-=======
->>>>>>> 10093725 (docs(nixos): add guide for nixos-validators)
 cdctypes
 cdylib
 chainsafe
@@ -327,13 +316,10 @@ paramskeeper
 paramstore
 paramstypes
 paramtypes
-<<<<<<< HEAD
 Partset
 passthru
 Patchelf
-=======
 passthru
->>>>>>> 10093725 (docs(nixos): add guide for nixos-validators)
 pflag
 phang
 pipefail
@@ -341,11 +327,8 @@ pkgconfig
 pkgs
 pname
 poisonphang
-<<<<<<< HEAD
 PoisonPhang
 Polkadot
-=======
->>>>>>> 10093725 (docs(nixos): add guide for nixos-validators)
 posthandler
 precommit
 prehash
@@ -398,10 +381,7 @@ rustc
 rustc
 rustc
 rustc
-<<<<<<< HEAD
 RUSTFLAGS
-=======
->>>>>>> 10093725 (docs(nixos): add guide for nixos-validators)
 rustfmt
 rustfmt
 rustlib
@@ -414,11 +394,8 @@ serde
 serde
 serverconfig
 servertypes
-<<<<<<< HEAD
 Shacham
 Shallue
-=======
->>>>>>> 10093725 (docs(nixos): add guide for nixos-validators)
 shazow
 simapp
 simtestutil
