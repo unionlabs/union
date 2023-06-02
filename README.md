@@ -1,4 +1,5 @@
 [![Build](https://github.com/UnionFi/union/actions/workflows/build.yml/badge.svg)](https://github.com/UnionFi/union/actions/workflows/build.yml)
+[![Docs](https://img.shields.io/badge/docs-main-blue)](https://docs-plum-one.vercel.app)
 
 Union is a trust-minimized, zero-knowledge bridging protocol, designed for censorship resistance, extremely high security, and usage in decentralized finance. It implements [IBC](https://github.com/cosmos/ibc) for compatibility with Cosmos chains and connects to Ethereum.
 
@@ -20,7 +21,7 @@ You can find these components in the [releases](https://github.com/unionfi/union
 
 ## Documentation
 
-The documentation is not publicly hosted yet. Check out the docs [here](./docs)
+The official docs are hosted [here](https://docs-plum-one.vercel.app). Each individual component also has accompanying developer documentation for contributors, which you can find in each `README.md`.
 
 ## Contributing
 
