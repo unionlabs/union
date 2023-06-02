@@ -3408,6 +3408,7 @@ dependencies = [
  "bech32 0.9.1",
  "bip32",
  "contracts",
+ "ethereum-consensus",
  "ethers",
  "futures",
  "hex-literal",

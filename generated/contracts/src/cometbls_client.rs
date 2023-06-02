@@ -7,15 +7,17 @@ pub use cometbls_client::*;
     clippy::upper_case_acronyms,
     clippy::type_complexity,
     dead_code,
-    non_camel_case_types,
+    non_camel_case_types
 )]
 pub mod cometbls_client {
     pub use super::super::shared_types::*;
     #[rustfmt::skip]
     const __ABI: &str = "[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"ibcHandler_\",\"type\":\"address\",\"components\":[]},{\"internalType\":\"contract IZKVerifier\",\"name\":\"verifier_\",\"type\":\"address\",\"components\":[]}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\",\"outputs\":[]},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"clientId\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"bytes\",\"name\":\"clientStateBytes\",\"type\":\"bytes\",\"components\":[]},{\"internalType\":\"bytes\",\"name\":\"consensusStateBytes\",\"type\":\"bytes\",\"components\":[]}],\"stateMutability\":\"nonpayable\",\"type\":\"function\",\"name\":\"createClient\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"clientStateCommitment\",\"type\":\"bytes32\",\"components\":[]},{\"internalType\":\"struct ConsensusStateUpdate\",\"name\":\"update\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"bytes32\",\"name\":\"consensusStateCommitment\",\"type\":\"bytes32\",\"components\":[]},{\"internalType\":\"struct IbcCoreClientV1Height.Data\",\"name\":\"height\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"uint64\",\"name\":\"revision_number\",\"type\":\"uint64\",\"components\":[]},{\"internalType\":\"uint64\",\"name\":\"revision_height\",\"type\":\"uint64\",\"components\":[]}]}]},{\"internalType\":\"bool\",\"name\":\"ok\",\"type\":\"bool\",\"components\":[]}]},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"clientId\",\"type\":\"string\",\"components\":[]}],\"stateMutability\":\"view\",\"type\":\"function\",\"name\":\"getClientState\",\"outputs\":[{\"internalType\":\"bytes\",\"name\":\"\",\"type\":\"bytes\",\"components\":[]},{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\",\"components\":[]}]},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"clientId\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"struct IbcCoreClientV1Height.Data\",\"name\":\"height\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"uint64\",\"name\":\"revision_number\",\"type\":\"uint64\",\"components\":[]},{\"internalType\":\"uint64\",\"name\":\"revision_height\",\"type\":\"uint64\",\"components\":[]}]}],\"stateMutability\":\"view\",\"type\":\"function\",\"name\":\"getConsensusState\",\"outputs\":[{\"internalType\":\"bytes\",\"name\":\"\",\"type\":\"bytes\",\"components\":[]},{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\",\"components\":[]}]},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"clientId\",\"type\":\"string\",\"components\":[]}],\"stateMutability\":\"view\",\"type\":\"function\",\"name\":\"getLatestHeight\",\"outputs\":[{\"internalType\":\"struct IbcCoreClientV1Height.Data\",\"name\":\"\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"uint64\",\"name\":\"revision_number\",\"type\":\"uint64\",\"components\":[]},{\"internalType\":\"uint64\",\"name\":\"revision_height\",\"type\":\"uint64\",\"components\":[]}]},{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\",\"components\":[]}]},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"clientId\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"struct IbcCoreClientV1Height.Data\",\"name\":\"height\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"uint64\",\"name\":\"revision_number\",\"type\":\"uint64\",\"components\":[]},{\"internalType\":\"uint64\",\"name\":\"revision_height\",\"type\":\"uint64\",\"components\":[]}]}],\"stateMutability\":\"view\",\"type\":\"function\",\"name\":\"getTimestampAtHeight\",\"outputs\":[{\"internalType\":\"uint64\",\"name\":\"\",\"type\":\"uint64\",\"components\":[]},{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\",\"components\":[]}]},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"clientId\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"bytes\",\"name\":\"clientMessageBytes\",\"type\":\"bytes\",\"components\":[]}],\"stateMutability\":\"nonpayable\",\"type\":\"function\",\"name\":\"updateClient\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\",\"components\":[]},{\"internalType\":\"struct ConsensusStateUpdate[]\",\"name\":\"\",\"type\":\"tuple[]\",\"components\":[{\"internalType\":\"bytes32\",\"name\":\"consensusStateCommitment\",\"type\":\"bytes32\",\"components\":[]},{\"internalType\":\"struct IbcCoreClientV1Height.Data\",\"name\":\"height\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"uint64\",\"name\":\"revision_number\",\"type\":\"uint64\",\"components\":[]},{\"internalType\":\"uint64\",\"name\":\"revision_height\",\"type\":\"uint64\",\"components\":[]}]}]},{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\",\"components\":[]}]},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"clientId\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"struct IbcCoreClientV1Height.Data\",\"name\":\"height\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"uint64\",\"name\":\"revision_number\",\"type\":\"uint64\",\"components\":[]},{\"internalType\":\"uint64\",\"name\":\"revision_height\",\"type\":\"uint64\",\"components\":[]}]},{\"internalType\":\"uint64\",\"name\":\"delayTimePeriod\",\"type\":\"uint64\",\"components\":[]},{\"internalType\":\"uint64\",\"name\":\"delayBlockPeriod\",\"type\":\"uint64\",\"components\":[]},{\"internalType\":\"bytes\",\"name\":\"proof\",\"type\":\"bytes\",\"components\":[]},{\"internalType\":\"bytes\",\"name\":\"prefix\",\"type\":\"bytes\",\"components\":[]},{\"internalType\":\"bytes\",\"name\":\"path\",\"type\":\"bytes\",\"components\":[]},{\"internalType\":\"bytes\",\"name\":\"value\",\"type\":\"bytes\",\"components\":[]}],\"stateMutability\":\"view\",\"type\":\"function\",\"name\":\"verifyMembership\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\",\"components\":[]}]},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"clientId\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"struct IbcCoreClientV1Height.Data\",\"name\":\"height\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"uint64\",\"name\":\"revision_number\",\"type\":\"uint64\",\"components\":[]},{\"internalType\":\"uint64\",\"name\":\"revision_height\",\"type\":\"uint64\",\"components\":[]}]},{\"internalType\":\"uint64\",\"name\":\"delayTimePeriod\",\"type\":\"uint64\",\"components\":[]},{\"internalType\":\"uint64\",\"name\":\"delayBlockPeriod\",\"type\":\"uint64\",\"components\":[]},{\"internalType\":\"bytes\",\"name\":\"proof\",\"type\":\"bytes\",\"components\":[]},{\"internalType\":\"bytes\",\"name\":\"prefix\",\"type\":\"bytes\",\"components\":[]},{\"internalType\":\"bytes\",\"name\":\"path\",\"type\":\"bytes\",\"components\":[]}],\"stateMutability\":\"nonpayable\",\"type\":\"function\",\"name\":\"verifyNonMembership\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\",\"components\":[]}]}]";
     ///The parsed JSON ABI of the contract.
-    pub static COMETBLSCLIENT_ABI: ::ethers::contract::Lazy<::ethers::core::abi::Abi> = ::ethers::contract::Lazy::new(||
-    ::ethers::core::utils::__serde_json::from_str(__ABI).expect("ABI is always valid"));
+    pub static COMETBLSCLIENT_ABI: ::ethers::contract::Lazy<::ethers::core::abi::Abi> =
+        ::ethers::contract::Lazy::new(|| {
+            ::ethers::core::utils::__serde_json::from_str(__ABI).expect("ABI is always valid")
+        });
     pub struct CometblsClient<M>(::ethers::contract::Contract<M>);
     impl<M> ::core::clone::Clone for CometblsClient<M> {
         fn clone(&self) -> Self {
@@ -35,7 +37,9 @@ pub mod cometbls_client {
     }
     impl<M> ::core::fmt::Debug for CometblsClient<M> {
         fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
-            f.debug_tuple(stringify!(CometblsClient)).field(&self.address()).finish()
+            f.debug_tuple(stringify!(CometblsClient))
+                .field(&self.address())
+                .finish()
         }
     }
     impl<M: ::ethers::providers::Middleware> CometblsClient<M> {
@@ -45,13 +49,11 @@ pub mod cometbls_client {
             address: T,
             client: ::std::sync::Arc<M>,
         ) -> Self {
-            Self(
-                ::ethers::contract::Contract::new(
-                    address.into(),
-                    COMETBLSCLIENT_ABI.clone(),
-                    client,
-                ),
-            )
+            Self(::ethers::contract::Contract::new(
+                address.into(),
+                COMETBLSCLIENT_ABI.clone(),
+                client,
+            ))
         }
         ///Calls the contract's `createClient` (0x2629636b) function
         pub fn create_client(
@@ -59,10 +61,8 @@ pub mod cometbls_client {
             client_id: ::std::string::String,
             client_state_bytes: ::ethers::core::types::Bytes,
             consensus_state_bytes: ::ethers::core::types::Bytes,
-        ) -> ::ethers::contract::builders::ContractCall<
-            M,
-            ([u8; 32], ConsensusStateUpdate, bool),
-        > {
+        ) -> ::ethers::contract::builders::ContractCall<M, ([u8; 32], ConsensusStateUpdate, bool)>
+        {
             self.0
                 .method_hash(
                     [38, 41, 99, 107],
@@ -74,10 +74,8 @@ pub mod cometbls_client {
         pub fn get_client_state(
             &self,
             client_id: ::std::string::String,
-        ) -> ::ethers::contract::builders::ContractCall<
-            M,
-            (::ethers::core::types::Bytes, bool),
-        > {
+        ) -> ::ethers::contract::builders::ContractCall<M, (::ethers::core::types::Bytes, bool)>
+        {
             self.0
                 .method_hash([118, 200, 28, 66], client_id)
                 .expect("method not found (this should never happen)")
@@ -87,10 +85,8 @@ pub mod cometbls_client {
             &self,
             client_id: ::std::string::String,
             height: Data,
-        ) -> ::ethers::contract::builders::ContractCall<
-            M,
-            (::ethers::core::types::Bytes, bool),
-        > {
+        ) -> ::ethers::contract::builders::ContractCall<M, (::ethers::core::types::Bytes, bool)>
+        {
             self.0
                 .method_hash([108, 244, 75, 244], (client_id, height))
                 .expect("method not found (this should never happen)")
@@ -183,7 +179,8 @@ pub mod cometbls_client {
         }
     }
     impl<M: ::ethers::providers::Middleware> From<::ethers::contract::Contract<M>>
-    for CometblsClient<M> {
+        for CometblsClient<M>
+    {
         fn from(contract: ::ethers::contract::Contract<M>) -> Self {
             Self::new(contract.address(), contract.client())
         }
@@ -197,7 +194,7 @@ pub mod cometbls_client {
         Debug,
         PartialEq,
         Eq,
-        Hash
+        Hash,
     )]
     #[ethcall(name = "createClient", abi = "createClient(string,bytes,bytes)")]
     pub struct CreateClientCall {
@@ -214,7 +211,7 @@ pub mod cometbls_client {
         Debug,
         PartialEq,
         Eq,
-        Hash
+        Hash,
     )]
     #[ethcall(name = "getClientState", abi = "getClientState(string)")]
     pub struct GetClientStateCall {
@@ -229,7 +226,7 @@ pub mod cometbls_client {
         Debug,
         PartialEq,
         Eq,
-        Hash
+        Hash,
     )]
     #[ethcall(
         name = "getConsensusState",
@@ -248,7 +245,7 @@ pub mod cometbls_client {
         Debug,
         PartialEq,
         Eq,
-        Hash
+        Hash,
     )]
     #[ethcall(name = "getLatestHeight", abi = "getLatestHeight(string)")]
     pub struct GetLatestHeightCall {
@@ -263,7 +260,7 @@ pub mod cometbls_client {
         Debug,
         PartialEq,
         Eq,
-        Hash
+        Hash,
     )]
     #[ethcall(
         name = "getTimestampAtHeight",
@@ -282,7 +279,7 @@ pub mod cometbls_client {
         Debug,
         PartialEq,
         Eq,
-        Hash
+        Hash,
     )]
     #[ethcall(name = "updateClient", abi = "updateClient(string,bytes)")]
     pub struct UpdateClientCall {
@@ -298,7 +295,7 @@ pub mod cometbls_client {
         Debug,
         PartialEq,
         Eq,
-        Hash
+        Hash,
     )]
     #[ethcall(
         name = "verifyMembership",
@@ -323,7 +320,7 @@ pub mod cometbls_client {
         Debug,
         PartialEq,
         Eq,
-        Hash
+        Hash,
     )]
     #[ethcall(
         name = "verifyNonMembership",
@@ -355,44 +352,42 @@ pub mod cometbls_client {
             data: impl AsRef<[u8]>,
         ) -> ::core::result::Result<Self, ::ethers::core::abi::AbiError> {
             let data = data.as_ref();
-            if let Ok(decoded)
-                = <CreateClientCall as ::ethers::core::abi::AbiDecode>::decode(data) {
+            if let Ok(decoded) = <CreateClientCall as ::ethers::core::abi::AbiDecode>::decode(data)
+            {
                 return Ok(Self::CreateClient(decoded));
             }
-            if let Ok(decoded)
-                = <GetClientStateCall as ::ethers::core::abi::AbiDecode>::decode(data) {
+            if let Ok(decoded) =
+                <GetClientStateCall as ::ethers::core::abi::AbiDecode>::decode(data)
+            {
                 return Ok(Self::GetClientState(decoded));
             }
-            if let Ok(decoded)
-                = <GetConsensusStateCall as ::ethers::core::abi::AbiDecode>::decode(
-                    data,
-                ) {
+            if let Ok(decoded) =
+                <GetConsensusStateCall as ::ethers::core::abi::AbiDecode>::decode(data)
+            {
                 return Ok(Self::GetConsensusState(decoded));
             }
-            if let Ok(decoded)
-                = <GetLatestHeightCall as ::ethers::core::abi::AbiDecode>::decode(data) {
+            if let Ok(decoded) =
+                <GetLatestHeightCall as ::ethers::core::abi::AbiDecode>::decode(data)
+            {
                 return Ok(Self::GetLatestHeight(decoded));
             }
-            if let Ok(decoded)
-                = <GetTimestampAtHeightCall as ::ethers::core::abi::AbiDecode>::decode(
-                    data,
-                ) {
+            if let Ok(decoded) =
+                <GetTimestampAtHeightCall as ::ethers::core::abi::AbiDecode>::decode(data)
+            {
                 return Ok(Self::GetTimestampAtHeight(decoded));
             }
-            if let Ok(decoded)
-                = <UpdateClientCall as ::ethers::core::abi::AbiDecode>::decode(data) {
+            if let Ok(decoded) = <UpdateClientCall as ::ethers::core::abi::AbiDecode>::decode(data)
+            {
                 return Ok(Self::UpdateClient(decoded));
             }
-            if let Ok(decoded)
-                = <VerifyMembershipCall as ::ethers::core::abi::AbiDecode>::decode(
-                    data,
-                ) {
+            if let Ok(decoded) =
+                <VerifyMembershipCall as ::ethers::core::abi::AbiDecode>::decode(data)
+            {
                 return Ok(Self::VerifyMembership(decoded));
             }
-            if let Ok(decoded)
-                = <VerifyNonMembershipCall as ::ethers::core::abi::AbiDecode>::decode(
-                    data,
-                ) {
+            if let Ok(decoded) =
+                <VerifyNonMembershipCall as ::ethers::core::abi::AbiDecode>::decode(data)
+            {
                 return Ok(Self::VerifyNonMembership(decoded));
             }
             Err(::ethers::core::abi::Error::InvalidData.into())
@@ -401,27 +396,15 @@ pub mod cometbls_client {
     impl ::ethers::core::abi::AbiEncode for CometblsClientCalls {
         fn encode(self) -> Vec<u8> {
             match self {
-                Self::CreateClient(element) => {
-                    ::ethers::core::abi::AbiEncode::encode(element)
-                }
-                Self::GetClientState(element) => {
-                    ::ethers::core::abi::AbiEncode::encode(element)
-                }
-                Self::GetConsensusState(element) => {
-                    ::ethers::core::abi::AbiEncode::encode(element)
-                }
-                Self::GetLatestHeight(element) => {
-                    ::ethers::core::abi::AbiEncode::encode(element)
-                }
+                Self::CreateClient(element) => ::ethers::core::abi::AbiEncode::encode(element),
+                Self::GetClientState(element) => ::ethers::core::abi::AbiEncode::encode(element),
+                Self::GetConsensusState(element) => ::ethers::core::abi::AbiEncode::encode(element),
+                Self::GetLatestHeight(element) => ::ethers::core::abi::AbiEncode::encode(element),
                 Self::GetTimestampAtHeight(element) => {
                     ::ethers::core::abi::AbiEncode::encode(element)
                 }
-                Self::UpdateClient(element) => {
-                    ::ethers::core::abi::AbiEncode::encode(element)
-                }
-                Self::VerifyMembership(element) => {
-                    ::ethers::core::abi::AbiEncode::encode(element)
-                }
+                Self::UpdateClient(element) => ::ethers::core::abi::AbiEncode::encode(element),
+                Self::VerifyMembership(element) => ::ethers::core::abi::AbiEncode::encode(element),
                 Self::VerifyNonMembership(element) => {
                     ::ethers::core::abi::AbiEncode::encode(element)
                 }
@@ -435,14 +418,10 @@ pub mod cometbls_client {
                 Self::GetClientState(element) => ::core::fmt::Display::fmt(element, f),
                 Self::GetConsensusState(element) => ::core::fmt::Display::fmt(element, f),
                 Self::GetLatestHeight(element) => ::core::fmt::Display::fmt(element, f),
-                Self::GetTimestampAtHeight(element) => {
-                    ::core::fmt::Display::fmt(element, f)
-                }
+                Self::GetTimestampAtHeight(element) => ::core::fmt::Display::fmt(element, f),
                 Self::UpdateClient(element) => ::core::fmt::Display::fmt(element, f),
                 Self::VerifyMembership(element) => ::core::fmt::Display::fmt(element, f),
-                Self::VerifyNonMembership(element) => {
-                    ::core::fmt::Display::fmt(element, f)
-                }
+                Self::VerifyNonMembership(element) => ::core::fmt::Display::fmt(element, f),
             }
         }
     }
@@ -495,7 +474,7 @@ pub mod cometbls_client {
         Debug,
         PartialEq,
         Eq,
-        Hash
+        Hash,
     )]
     pub struct CreateClientReturn {
         pub client_state_commitment: [u8; 32],
@@ -511,7 +490,7 @@ pub mod cometbls_client {
         Debug,
         PartialEq,
         Eq,
-        Hash
+        Hash,
     )]
     pub struct GetClientStateReturn(pub ::ethers::core::types::Bytes, pub bool);
     ///Container type for all return fields from the `getConsensusState` function with signature `getConsensusState(string,(uint64,uint64))` and selector `0x6cf44bf4`
@@ -523,7 +502,7 @@ pub mod cometbls_client {
         Debug,
         PartialEq,
         Eq,
-        Hash
+        Hash,
     )]
     pub struct GetConsensusStateReturn(pub ::ethers::core::types::Bytes, pub bool);
     ///Container type for all return fields from the `getLatestHeight` function with signature `getLatestHeight(string)` and selector `0x329681d0`
@@ -535,7 +514,7 @@ pub mod cometbls_client {
         Debug,
         PartialEq,
         Eq,
-        Hash
+        Hash,
     )]
     pub struct GetLatestHeightReturn(pub Data, pub bool);
     ///Container type for all return fields from the `getTimestampAtHeight` function with signature `getTimestampAtHeight(string,(uint64,uint64))` and selector `0x4b0bbdc4`
@@ -547,7 +526,7 @@ pub mod cometbls_client {
         Debug,
         PartialEq,
         Eq,
-        Hash
+        Hash,
     )]
     pub struct GetTimestampAtHeightReturn(pub u64, pub bool);
     ///Container type for all return fields from the `updateClient` function with signature `updateClient(string,bytes)` and selector `0x6fbf8079`
@@ -559,7 +538,7 @@ pub mod cometbls_client {
         Debug,
         PartialEq,
         Eq,
-        Hash
+        Hash,
     )]
     pub struct UpdateClientReturn(
         pub [u8; 32],
@@ -575,7 +554,7 @@ pub mod cometbls_client {
         Debug,
         PartialEq,
         Eq,
-        Hash
+        Hash,
     )]
     pub struct VerifyMembershipReturn(pub bool);
     ///Container type for all return fields from the `verifyNonMembership` function with signature `verifyNonMembership(string,(uint64,uint64),uint64,uint64,bytes,bytes,bytes)` and selector `0x999fbbb3`
@@ -587,7 +566,7 @@ pub mod cometbls_client {
         Debug,
         PartialEq,
         Eq,
-        Hash
+        Hash,
     )]
     pub struct VerifyNonMembershipReturn(pub bool);
     ///`ConsensusStateUpdate(bytes32,(uint64,uint64))`
@@ -599,7 +578,7 @@ pub mod cometbls_client {
         Debug,
         PartialEq,
         Eq,
-        Hash
+        Hash,
     )]
     pub struct ConsensusStateUpdate {
         pub consensus_state_commitment: [u8; 32],

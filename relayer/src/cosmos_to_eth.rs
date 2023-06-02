@@ -57,7 +57,7 @@ struct Channels {
     pub cosmos: ChannelId,
 }
 
-// The story behind this is too dark to be explained, you must personnaly ask hussein.aitlahcen@gmail.com
+// The story behind this is too dark to be explained, you must personally ask hussein.aitlahcen@gmail.com
 fn encode_dynamic_singleton_tuple(bytes: Vec<u8>) -> Vec<u8> {
     U256::from(32)
         .encode()
