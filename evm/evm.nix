@@ -103,7 +103,7 @@
         '';
         doCheck = true;
         checkPhase = ''
-          forge test
+          forge test -vv
         '';
         installPhase = ''
           mkdir -p $out
