@@ -15,8 +15,8 @@ contract IBCClient is IBCStore, IIBCClient {
      * @dev registerClient registers a new client type into the client registry
      */
     function registerClient(string calldata clientType, ILightClient client) external override {
-        require(address(clientRegistry[clientType]) == address(0), "IBCClient: clientImpl already exists");
-        require(address(client) != address(this), "IBCClient: must not be self");
+        require(address(clientRegistry[clientType]) == address(0), "registerClient: client type already exists");
+        require(address(client) != address(this), "registerClient: must not be self");
         clientRegistry[clientType] = address(client);
     }
 
@@ -25,13 +25,13 @@ contract IBCClient is IBCStore, IIBCClient {
      */
     function createClient(IBCMsgs.MsgCreateClient calldata msg_) external override returns (string memory clientId) {
         address clientImpl = clientRegistry[msg_.clientType];
-        require(clientImpl != address(0), "IBCClient: unregistered client type");
+        require(clientImpl != address(0), "createClient: unregistered client type");
         clientId = generateClientIdentifier(msg_.clientType);
         clientTypes[clientId] = msg_.clientType;
         clientImpls[clientId] = clientImpl;
         (bytes32 clientStateCommitment, ConsensusStateUpdate memory update, bool ok) =
             ILightClient(clientImpl).createClient(clientId, msg_.clientStateBytes, msg_.consensusStateBytes);
-        require(ok, "IBCClient: failed to create client");
+        require(ok, "createClient: failed to create client");
 
         // update commitments
         commitments[keccak256(IBCCommitment.clientStatePath(clientId))] = clientStateCommitment;
@@ -46,10 +46,10 @@ contract IBCClient is IBCStore, IIBCClient {
      * @dev updateClient updates the consensus state and the state root from a provided header
      */
     function updateClient(IBCMsgs.MsgUpdateClient calldata msg_) external override {
-        require(commitments[IBCCommitment.clientStateCommitmentKey(msg_.clientId)] != bytes32(0), "IBCClient: no state");
+        require(commitments[IBCCommitment.clientStateCommitmentKey(msg_.clientId)] != bytes32(0), "updateClient: no state");
         (bytes32 clientStateCommitment, ConsensusStateUpdate[] memory updates, bool ok) =
             getClient(msg_.clientId).updateClient(msg_.clientId, msg_.clientMessage);
-        require(ok, "IBCClient: failed to update client");
+        require(ok, "updateClient: failed to update client");
 
         // update commitments
         commitments[keccak256(IBCCommitment.clientStatePath(msg_.clientId))] = clientStateCommitment;

@@ -41,7 +41,13 @@ interface IIBCPacket {
      * The packet sequence generated for the packet to be sent is returned. An error
      * is returned if one occurs.
      */
-    function sendPacket(IbcCoreChannelV1Packet.Data calldata packet) external;
+    function sendPacket(
+                        string calldata sourcePort,
+                        string calldata sourceChannel,
+                        IbcCoreClientV1Height.Data calldata timeoutHeight,
+                        uint64 timeoutTimestamp,
+                        bytes calldata data
+    ) external returns (uint64);
 
     /**
      * @dev recvPacket is called by a module in order to receive & process an IBC packet

@@ -48,6 +48,7 @@
         ./light-clients/ethereum-light-client.nix
         ./evm/evm.nix
         ./tools/rust-proto.nix
+        ./tools/generate-rust-sol-bindings/generate-rust-sol-bindings.nix
         ./tools/libwasmvm/libwasmvm.nix
         ./networks/devnet.nix
         ./networks/genesis/devnet.nix

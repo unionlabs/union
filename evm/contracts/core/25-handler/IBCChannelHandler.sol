@@ -22,7 +22,9 @@ abstract contract IBCChannelHandler is ModuleManager {
     function channelOpenInit(IBCMsgs.MsgChannelOpenInit calldata msg_) external returns (string memory channelId) {
         (bool success, bytes memory res) =
             ibcChannelAddress.delegatecall(abi.encodeWithSelector(IIBCChannelHandshake.channelOpenInit.selector, msg_));
-        require(success);
+        if (!success) {
+            revert(_getRevertMsg(res));
+        }
         channelId = abi.decode(res, (string));
 
         IIBCModule module = lookupModuleByPort(msg_.portId);
@@ -40,14 +42,13 @@ abstract contract IBCChannelHandler is ModuleManager {
     }
 
     function channelOpenTry(IBCMsgs.MsgChannelOpenTry calldata msg_) external returns (string memory channelId) {
-        {
-            // avoid "Stack too deep" error
-            (bool success, bytes memory res) = ibcChannelAddress.delegatecall(
-                abi.encodeWithSelector(IIBCChannelHandshake.channelOpenTry.selector, msg_)
-            );
-            require(success);
-            channelId = abi.decode(res, (string));
+        (bool success, bytes memory res) = ibcChannelAddress.delegatecall(
+            abi.encodeWithSelector(IIBCChannelHandshake.channelOpenTry.selector, msg_)
+        );
+        if (!success) {
+            revert(_getRevertMsg(res));
         }
+        channelId = abi.decode(res, (string));
         IIBCModule module = lookupModuleByPort(msg_.portId);
         module.onChanOpenTry(
             msg_.channel.ordering,
@@ -64,32 +65,40 @@ abstract contract IBCChannelHandler is ModuleManager {
     }
 
     function channelOpenAck(IBCMsgs.MsgChannelOpenAck calldata msg_) external {
-        (bool success,) =
+        (bool success, bytes memory res) =
             ibcChannelAddress.delegatecall(abi.encodeWithSelector(IIBCChannelHandshake.channelOpenAck.selector, msg_));
-        require(success);
+        if (!success) {
+            revert(_getRevertMsg(res));
+        }
         lookupModuleByPort(msg_.portId).onChanOpenAck(msg_.portId, msg_.channelId, msg_.counterpartyVersion);
     }
 
     function channelOpenConfirm(IBCMsgs.MsgChannelOpenConfirm calldata msg_) external {
-        (bool success,) = ibcChannelAddress.delegatecall(
+        (bool success, bytes memory res) = ibcChannelAddress.delegatecall(
             abi.encodeWithSelector(IIBCChannelHandshake.channelOpenConfirm.selector, msg_)
         );
-        require(success);
+        if (!success) {
+            revert(_getRevertMsg(res));
+        }
         lookupModuleByPort(msg_.portId).onChanOpenConfirm(msg_.portId, msg_.channelId);
     }
 
     function channelCloseInit(IBCMsgs.MsgChannelCloseInit calldata msg_) external {
-        (bool success,) =
+        (bool success, bytes memory res) =
             ibcChannelAddress.delegatecall(abi.encodeWithSelector(IIBCChannelHandshake.channelCloseInit.selector, msg_));
-        require(success);
+        if (!success) {
+            revert(_getRevertMsg(res));
+        }
         lookupModuleByPort(msg_.portId).onChanCloseInit(msg_.portId, msg_.channelId);
     }
 
     function channelCloseConfirm(IBCMsgs.MsgChannelCloseConfirm calldata msg_) external {
-        (bool success,) = ibcChannelAddress.delegatecall(
+        (bool success, bytes memory res) = ibcChannelAddress.delegatecall(
             abi.encodeWithSelector(IIBCChannelHandshake.channelCloseConfirm.selector, msg_)
         );
-        require(success);
+        if (!success) {
+            revert(_getRevertMsg(res));
+        }
         lookupModuleByPort(msg_.portId).onChanCloseConfirm(msg_.portId, msg_.channelId);
     }
 }

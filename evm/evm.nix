@@ -76,7 +76,7 @@
       foundryEnv = {
         FOUNDRY_OPTIMIZER = "true";
         FOUNDRY_VIA_IR = "true";
-        FOUNDRY_OPTIMIZER_RUNS = "1";
+        FOUNDRY_OPTIMIZER_RUNS = "10000";
         FOUNDRY_SRC = "${evmSources}/contracts";
         FOUNDRY_TEST = "${evmSources}/tests/src";
         FOUNDRY_LIBS = ''["${libraries}"]'';
@@ -99,11 +99,11 @@
         src = evmSources;
         buildInputs = [ wrappedForge ];
         buildPhase = ''
-          forge build
+          forge build --revert-strings debug
         '';
         doCheck = true;
         checkPhase = ''
-          forge test -vv
+          forge test --revert-strings debug -vv
         '';
         installPhase = ''
           mkdir -p $out
@@ -181,6 +181,7 @@
           deploy = { path, name, args ? "" }: ''
             echo "Deploying ${name}..."
             ${pkgs.lib.toUpper name}=$(forge create \
+                     --revert-strings debug \
                      --json \
                      --rpc-url http://0.0.0.0:8545 \
                      --private-key ${builtins.readFile ./../networks/genesis/devnet-evm/dev-key0.prv} \
@@ -202,6 +203,14 @@
             ${deploy { path = "core/04-channel/IBCChannelHandshake.sol"; name = "IBCChannelHandshake"; }}
             ${deploy { path = "core/04-channel/IBCPacket.sol"; name = "IBCPacket"; }}
             ${deploy { path = "core/OwnableIBCHandler.sol"; name = "OwnableIBCHandler"; args = ''--constructor-args "$IBCCLIENT" "$IBCCONNECTION" "$IBCCHANNELHANDSHAKE" "$IBCPACKET"''; }}
+
+            ${deploy { path = "clients/TestnetVerifier.sol"; name = "TestnetVerifier"; }}
+            ${deploy { path = "clients/CometblsClient.sol"; name = "CometblsClient"; args = ''--constructor-args "$OWNABLEIBCHANDLER" "$TESTNETVERIFIER"''; }}
+
+            ${deploy { path = "apps/20-transfer/ICS20Bank.sol"; name = "ICS20Bank"; }}
+            ${deploy { path = "apps/20-transfer/ICS20TransferBank.sol"; name = "ICS20TransferBank";  args = ''--constructor-args "$OWNABLEIBCHANDLER" "$ICS20BANK"''; }}
+
+            rm -rf "$OUT"
           '';
         };
     };

@@ -72,7 +72,7 @@ library CometblsHelp {
              uint256(packedUntrustedValidatorsHash.toUint128(16)),
              messageX,
              messageY,
-             // Gnark commitment API extend public inputs with the following commitment hash and proof commitment
+             // Gnark commitment API extend internal inputs with the following commitment hash and proof commitment
              // See https://github.com/ConsenSys/gnark/issues/652
              commitmentHash,
              proofCommitment[0],
@@ -136,13 +136,13 @@ library CometblsHelp {
             });
     }
 
-    function toCanonicalVote(TendermintTypesCommit.Data memory commit, string memory chainId, bytes32 blockHash) internal pure returns (TendermintTypesCanonicalVote.Data memory) {
+    function toCanonicalVote(TendermintTypesCommit.Data memory commit, string memory chainId, bytes32 expectedBlockHash) internal pure returns (TendermintTypesCanonicalVote.Data memory) {
         return TendermintTypesCanonicalVote.Data({
             type_: TendermintTypesTypesGlobalEnums.SignedMsgType.SIGNED_MSG_TYPE_PRECOMMIT,
             height: commit.height,
             round: commit.round,
             block_id: TendermintTypesCanonicalBlockID.Data({
-                hash: abi.encodePacked(blockHash),
+                hash: abi.encodePacked(expectedBlockHash),
                 part_set_header: TendermintTypesCanonicalPartSetHeader.Data({
                     total: commit.block_id.part_set_header.total,
                     hash: commit.block_id.part_set_header.hash
@@ -161,7 +161,7 @@ library CometblsHelp {
     }
 
     function marshalHeaderEthABI(UnionIbcLightclientsCometblsV1Header.Data memory header) internal pure returns (bytes memory) {
-      return abi.encode(header);
+        return abi.encode(header);
     }
 
     function unmarshalHeaderEthABI(bytes memory bz) internal pure returns (UnionIbcLightclientsCometblsV1Header.Data memory header, bool) {

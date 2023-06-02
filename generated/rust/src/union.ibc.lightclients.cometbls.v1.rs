@@ -1,5 +1,6 @@
 // @generated
 #[allow(clippy::derive_partial_eq_without_eq)]
+#[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ClientState {
     #[prost(string, tag = "1")]
@@ -29,6 +30,7 @@ pub struct ClientState {
         ::core::option::Option<super::super::super::super::super::ibc::core::client::v1::Height>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
+#[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ConsensusState {
     /// timestamp that corresponds to the block height in which the ConsensusState
@@ -67,6 +69,7 @@ pub struct Header {
     pub zero_knowledge_proof: ::prost::alloc::vec::Vec<u8>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
+#[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Fraction {
     #[prost(uint64, tag = "1")]

@@ -1,0 +1,11 @@
+[package]
+name = "generate-rust-sol-bindings"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+clap = { version = "4.3.0", features = ["derive"] }
+# ethers-contract-abigen = { path = "/home/ben/projects/clones/ethers-rs/ethers-contract/ethers-contract-abigen" }
+ethers-contract-abigen = { git = "https://github.com/benluelo/ethers-rs", rev = "907b87deabacd091cc027b4696c67d365017c934" }

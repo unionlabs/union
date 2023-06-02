@@ -24,6 +24,7 @@
             lib = { doctest = false; };
             dependencies = {
               prost = { version = "0.11.0"; default-features = false; features = ["prost-derive"]; };
+              ethers = { version = "2.0.4"; optional = true; };
               serde = { version = "1.0"; default-features = false; features = ["derive"]; };
               tonic = { version = "0.8"; features = [ "gzip" ]; optional = true; };
               schemars = { version = "0.8.3"; default-features = false; optional = true; };
@@ -32,6 +33,7 @@
             features = {
               default = [ "proto_full" "std" ];
               std = [ "prost/std" "serde/std" ];
+              eth-abi = [ "ethers" "std" ];
               client = [ "tonic" ];
               server = [ "tonic" ];
               json-schema = ["schemars"];
@@ -131,6 +133,8 @@
             ord = ''#[derive(Eq, PartialOrd, Ord)]'';
             eq = ''#[derive(Eq)]'';
 
+            eth_abi = ''#[cfg_attr(feature = "ethers", derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec))]'';
+
             serde = ''#[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]'';
             serde_default = ''#[cfg_attr(feature = "std", serde(default))]'';
             serde_base64 = ''#[cfg_attr(feature = "std", serde(with = "::serde_utils::base64"))]'';
@@ -142,6 +146,7 @@
         in
         with attrs; {
           type_attribute = {
+            "." = [ eth_abi ];
             ".google.protobuf.Any" = [ serde eq ];
             ".google.protobuf.Timestamp" = [ serde ];
             ".google.protobuf.Duration" = [ serde eq ];

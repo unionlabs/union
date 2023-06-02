@@ -4,8 +4,13 @@ members = [
   "light-clients/ethereum-light-client",
   "light-clients/wasm-light-client-types",
   "generated/rust",
+  "generated/contracts",
   "unionvisor",
-  "relayer"
+  "relayer",
+]
+
+exclude = [
+  "tools/generate-rust-sol-bindings"
 ]
 
 resolver = "2"

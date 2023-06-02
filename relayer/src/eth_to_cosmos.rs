@@ -4,11 +4,8 @@ use std::{
 };
 
 use base64::{prelude::BASE64_STANDARD, Engine};
-use bip32::secp256k1::{ecdsa::Signature, schnorr::signature::Signer};
-use ethers::{
-    providers::{Middleware, Provider},
-    utils::hex::ToHex,
-};
+use k256::{ecdsa::Signature, schnorr::signature::Signer};
+
 // use ethers::providers::{Http, Provider};
 use lodestar_rpc::types::{
     BeaconHeaderResponse, LightClientBootstrapResponse, LightClientFinalityUpdateData,
@@ -28,6 +25,7 @@ use protos::{
         },
         lightclients::wasm::{self, v1::QueryCodeIdsRequest},
     },
+    tendermint::rpc::grpc::ResponseBroadcastTx,
     union::ibc::lightclients::ethereum::{
         self,
         v1::{
@@ -39,22 +37,19 @@ use protos::{
 use reqwest::header::{HeaderMap, HeaderValue, CONTENT_TYPE};
 use ripemd::Digest;
 use serde_json::{json, Value};
+use tendermint_rpc::Client;
 
-use crate::get_wallet;
-
-const ETH_RPC_API: &str = "http://localhost:9596";
-
-const WASM_CLIENT_ID: &str = "08-wasm-0";
+use crate::{get_wallet, ETH_BEACON_RPC_API, WASM_CLIENT_ID};
 
 async fn get_genesis() -> lodestar_rpc::types::GenesisData {
-    let client = lodestar_rpc::client::RPCClient::new(ETH_RPC_API);
+    let client = lodestar_rpc::client::RPCClient::new(ETH_BEACON_RPC_API);
     client.get_genesis().await.unwrap().data
 }
 
 async fn get_latest_finalized_block() -> serde_json::Value {
     const API: &str = "eth/v2/debug/beacon/states";
     reqwest::Client::new()
-        .get(format!("{ETH_RPC_API}/{API}/finalized"))
+        .get(format!("{ETH_BEACON_RPC_API}/{API}/finalized"))
         .send()
         .await
         .unwrap()
@@ -66,7 +61,9 @@ async fn get_latest_finalized_block() -> serde_json::Value {
         .clone()
 }
 
-pub async fn create_wasm_client(sequence: u64) {
+pub async fn create_wasm_client(
+    sequence: u64,
+) -> tendermint_rpc::endpoint::broadcast::tx_commit::Response {
     println!("[ i ] Creating a new wasm client..");
 
     let alice = get_wallet();
@@ -126,7 +123,7 @@ pub async fn create_wasm_client(sequence: u64) {
         counterparty_commitment_slot: 3,
     };
 
-    let trusted_header = lodestar_rpc::client::RPCClient::new(ETH_RPC_API)
+    let trusted_header = lodestar_rpc::client::RPCClient::new(ETH_BEACON_RPC_API)
         .get_beacon_header_by_slot(dbg!(ethereum_consensus::types::U64(latest_slot)))
         .await
         .unwrap()
@@ -176,7 +173,7 @@ pub async fn create_wasm_client(sequence: u64) {
                     ))
                     .unwrap(),
                     latest_height: Some(Height {
-                        revision_number: 0,
+                        revision_number: 1,
                         revision_height: latest_slot,
                     }),
                 }
@@ -197,7 +194,7 @@ pub async fn create_wasm_client(sequence: u64) {
         .encode_to_vec(),
     };
 
-    broadcast_tx_commit([msg].to_vec(), alice_pk, alice, sequence).await;
+    broadcast_tx_commit([msg].to_vec(), alice_pk, alice, sequence).await
 }
 
 // ethereum::v1::ClientState
@@ -261,9 +258,8 @@ pub async fn get_wasm_code() -> u64 {
     //     .code;
 }
 
-async fn wasm_client(
-) -> protos::ibc::lightclients::wasm::v1::query_client::QueryClient<tonic::transport::Channel> {
-    protos::ibc::lightclients::wasm::v1::query_client::QueryClient::connect("tcp://0.0.0.0:9090")
+async fn wasm_client() -> wasm::v1::query_client::QueryClient<tonic::transport::Channel> {
+    wasm::v1::query_client::QueryClient::connect("tcp://0.0.0.0:9090")
         .await
         .unwrap()
 }
@@ -444,12 +440,12 @@ pub async fn update_wasm_client(sequence: u64) {
     broadcast_tx_commit(messages, alice_pk, alice, sequence).await;
 }
 
-async fn broadcast_tx_commit(
+pub async fn broadcast_tx_commit(
     messages: Vec<Any>,
     alice_pk: Vec<u8>,
     alice: bip32::ExtendedPrivateKey<bip32::secp256k1::ecdsa::SigningKey>,
     sequence: u64,
-) {
+) -> tendermint_rpc::endpoint::broadcast::tx_commit::Response {
     let tx_body = TxBody {
         messages,
         memo: "".into(),
@@ -484,58 +480,65 @@ async fn broadcast_tx_commit(
         }),
         tip: None,
     };
+
     let sign_doc = SignDoc {
         body_bytes: tx_body.encode_to_vec(),
         auth_info_bytes: auth_info.encode_to_vec(),
         chain_id: "union-devnet-1".to_string(),
         account_number: 0,
     };
+
     let alice_signature =
         Signer::<Signature>::try_sign(alice.private_key(), &sign_doc.encode_to_vec())
             .unwrap()
             .to_vec();
+
     let tx_raw = TxRaw {
         body_bytes: sign_doc.body_bytes,
         auth_info_bytes: sign_doc.auth_info_bytes,
         signatures: [alice_signature].to_vec(),
     };
-    let base64_encoded_tx_raw = BASE64_STANDARD.encode(tx_raw.encode_to_vec());
-    let resp = reqwest::Client::new()
-        .post("http://0.0.0.0:26657/")
-        .body(
-            json! ({
-                "jsonrpc": "2.0",
-                "id": "anything",
-                "method": "broadcast_tx_commit",
-                "params": {
-                    "tx": base64_encoded_tx_raw,
-                }
-            })
-            .to_string(),
-        )
-        .headers(HeaderMap::from_iter([(
-            CONTENT_TYPE,
-            HeaderValue::from_static("text/plain"),
-        )]))
-        .send()
-        .await
-        .unwrap()
-        .json::<Value>()
+
+    // let base64_encoded_tx_raw = BASE64_STANDARD.encode(tx_raw.encode_to_vec());
+    // let resp = reqwest::Client::new()
+    //     .post("http://0.0.0.0:26657/")
+    //     .body(
+    //         json! ({
+    //             "jsonrpc": "2.0",
+    //             "id": "anything",
+    //             "method": "broadcast_tx_commit",
+    //             "params": {
+    //                 "tx": base64_encoded_tx_raw,
+    //             }
+    //         })
+    //         .to_string(),
+    //     )
+    //     .headers(HeaderMap::from_iter([(
+    //         CONTENT_TYPE,
+    //         HeaderValue::from_static("text/plain"),
+    //     )]))
+    //     .send()
+    //     .await
+    //     .unwrap()
+    //     .json::<Value>()
+    //     .await
+    //     .unwrap();
+
+    // dbg!(&resp);
+
+    let tm_client = tendermint_rpc::HttpClient::new("http://0.0.0.0:26657").unwrap();
+
+    let response = tm_client
+        .broadcast_tx_commit(tx_raw.encode_to_vec())
         .await
         .unwrap();
 
-    dbg!(&resp);
+    // println!("{:#?}", response);
 
-    println!(
-        "{}",
-        resp["result"]["deliver_tx"]
-            .get("log")
-            .map(|log| log.as_str().unwrap())
-            .unwrap_or_default()
-    );
+    response
 }
 
-fn signer_from_pk(alice_pk: &Vec<u8>) -> String {
+pub fn signer_from_pk(alice_pk: &Vec<u8>) -> String {
     subtle_encoding::bech32::encode(
         "union",
         ripemd::Ripemd160::new()
