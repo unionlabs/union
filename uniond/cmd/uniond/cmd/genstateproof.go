@@ -42,11 +42,15 @@ func GenStateProof() *cobra.Command {
 				return err
 			}
 
-			data := args[1]
+			data, err := hex.DecodeString(args[1])
+			if err != nil {
+				return err
+			}
+
 			path := args[2]
 
 			res, err := clientCtx.QueryABCI(abci.RequestQuery{
-				Data:   []byte(data),
+				Data:   data,
 				Path:   path,
 				Height: int64(height),
 				Prove:  true,
@@ -55,10 +59,14 @@ func GenStateProof() *cobra.Command {
 				return err
 			}
 
+			fmt.Println(res)
+
 			merkleProof, err := commitmenttypes.ConvertProofs(res.ProofOps)
 			if err != nil {
 				return err
 			}
+
+			fmt.Println(merkleProof)
 
 			cdc := codec.NewProtoCodec(ctypes.NewInterfaceRegistry())
 			proofBz, err := cdc.Marshal(&merkleProof)
@@ -66,7 +74,10 @@ func GenStateProof() *cobra.Command {
 				return err
 			}
 
-			fmt.Println(hex.EncodeToString(proofBz))
+			fmt.Println("Proof for height: ", res.Height)
+			fmt.Println("Proof: ", hex.EncodeToString(proofBz))
+			fmt.Println("Key: ", hex.EncodeToString(res.Key))
+			fmt.Println("Value: ", hex.EncodeToString(res.Value))
 
 			return nil
 		},
