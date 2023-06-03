@@ -1,20 +1,118 @@
 pragma solidity ^0.8.18;
 
-import {CosmosIcs23V1GlobalEnums, CosmosIcs23V1CompressedBatchEntry, CosmosIcs23V1LeafOp, CosmosIcs23V1InnerOp, CosmosIcs23V1InnerSpec, CosmosIcs23V1BatchProof, CosmosIcs23V1BatchEntry, CosmosIcs23V1CompressedBatchProof, CosmosIcs23V1CommitmentProof, CosmosIcs23V1ProofSpec, CosmosIcs23V1ExistenceProof, CosmosIcs23V1CompressedExistenceProof, CosmosIcs23V1NonExistenceProof} from "../proto/cosmos/ics23/v1/proofs.sol";
 import {BytesLib} from "solidity-bytes-utils/BytesLib.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {ProtoBufRuntime} from "../proto/ProtoBufRuntime.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import "../proto/ibc/core/commitment/v1/commitment.sol";
+import "../proto/cosmos/ics23/v1/proofs.sol";
 
 library Ics23  {
+
+    function getIavlProofSpec() internal pure returns (CosmosIcs23V1ProofSpec.Data memory iavlProofSpec) {
+        int32[] memory childOrder = new int32[](2);
+        childOrder[0] = 0;
+        childOrder[1] = 1;
+        iavlProofSpec = CosmosIcs23V1ProofSpec.Data({
+            leaf_spec: CosmosIcs23V1LeafOp.Data({
+                prefix: hex"00",
+                prehash_key: CosmosIcs23V1GlobalEnums.HashOp.NO_HASH,
+                hash: CosmosIcs23V1GlobalEnums.HashOp.SHA256,
+                prehash_value: CosmosIcs23V1GlobalEnums.HashOp.SHA256,
+                length: CosmosIcs23V1GlobalEnums.LengthOp.VAR_PROTO
+                }),
+            inner_spec: CosmosIcs23V1InnerSpec.Data({
+                child_order: childOrder,
+                child_size: 33,
+                min_prefix_length: 4,
+                max_prefix_length: 12,
+                empty_child: abi.encodePacked(),
+                hash: CosmosIcs23V1GlobalEnums.HashOp.SHA256
+                }),
+            min_depth: 0,
+            max_depth: 0
+            });
+    }
+
+    function getTendermintProofSpec() internal pure returns (CosmosIcs23V1ProofSpec.Data memory tendermintProofSpec) {
+        int32[] memory childOrder = new int32[](2);
+        childOrder[0] = 0;
+        childOrder[1] = 1;
+        tendermintProofSpec = CosmosIcs23V1ProofSpec.Data({
+            leaf_spec: CosmosIcs23V1LeafOp.Data({
+                prefix: hex"00",
+                prehash_key: CosmosIcs23V1GlobalEnums.HashOp.NO_HASH,
+                hash: CosmosIcs23V1GlobalEnums.HashOp.SHA256,
+                prehash_value: CosmosIcs23V1GlobalEnums.HashOp.SHA256,
+                length: CosmosIcs23V1GlobalEnums.LengthOp.VAR_PROTO
+                }),
+            inner_spec: CosmosIcs23V1InnerSpec.Data({
+                child_order: childOrder,
+                child_size: 32,
+                min_prefix_length: 1,
+                max_prefix_length: 1,
+                empty_child: abi.encodePacked(),
+                hash: CosmosIcs23V1GlobalEnums.HashOp.SHA256
+                }),
+            min_depth: 0,
+            max_depth: 0
+            });
+    }
 
     enum VerifyMembershipError {
         None,
         ExistenceProofIsNil,
         ProofVerify
     }
+
+    function verifyChainedMembership(
+        IbcCoreCommitmentV1MerkleProof.Data memory merkleProof,
+        bytes memory root,
+        bytes[] memory path,
+        bytes memory value
+    ) internal pure {
+        CosmosIcs23V1ProofSpec.Data memory iavlSpec = getIavlProofSpec();
+        CosmosIcs23V1ProofSpec.Data memory tendermintSpec = getTendermintProofSpec();
+        bytes memory subroot = value;
+        for(uint256 i = 0; i < merkleProof.proofs.length; i++) {
+            CosmosIcs23V1CommitmentProof.Data memory proof = merkleProof.proofs[i];
+            CosmosIcs23V1ExistenceProof.Data memory existenceProof = proof.exist;
+            require(
+                    !CosmosIcs23V1ExistenceProof.isNil(existenceProof),
+                    "verifyChainedMembership: must be an existence proof."
+            );
+            Proof.CalculateRootError rCode;
+            (subroot, rCode) = Proof.calculateRoot(proof);
+            require(
+                    rCode == Proof.CalculateRootError.None,
+                    "verifyChainedMembership: unable to compute proof root"
+            );
+            /*
+             * Path is provided as /a/b/c, we need to pop
+             */
+            bytes memory key = path[path.length - i - 1];
+            Proof.VerifyExistenceError vCode = Proof.verify(
+                existenceProof,
+                // TODO: double check that long paths does only have the root with tm spec
+                i == (path.length - 1) ? tendermintSpec : iavlSpec,
+                subroot,
+                key,
+                value
+            );
+            require(
+                    vCode == Proof.VerifyExistenceError.None,
+                    "verifyChainedMembership: membership verification failed"
+            );
+            value = subroot;
+        }
+        require(
+                keccak256(root) == keccak256(subroot),
+                "verifyChainedMembership: proof did not commit to expected root"
+        );
+    }
+
     // verifyMembership, throws an exception in case anything goes wrong
-        function verifyMembership(CosmosIcs23V1ProofSpec.Data memory spec, bytes memory commitmentRoot, CosmosIcs23V1CommitmentProof.Data memory proof, bytes memory key, bytes memory value) internal pure returns(VerifyMembershipError){
+    function verifyMembership(CosmosIcs23V1ProofSpec.Data memory spec, bytes memory commitmentRoot, CosmosIcs23V1CommitmentProof.Data memory proof, bytes memory key, bytes memory value) internal pure returns(VerifyMembershipError){
         CosmosIcs23V1CommitmentProof.Data memory decoProof = Compress.decompress(proof);
         CosmosIcs23V1ExistenceProof.Data memory exiProof = getExistProofForKey(decoProof, key);
         //require(CosmosIcs23V1ExistenceProof.isNil(exiProof) == false); // dev: getExistProofForKey not available
@@ -25,12 +123,14 @@ library Ics23  {
         return VerifyMembershipError.None;
     }
 
+    /* enum VerifyNonMembershipError { */
     enum VerifyNonMembershipError {
         None,
         NonExistenceProofIsNil,
         ProofVerify
     }
-        function verifyNonMembership(CosmosIcs23V1ProofSpec.Data memory spec, bytes memory commitmentRoot, CosmosIcs23V1CommitmentProof.Data memory proof, bytes memory key) internal pure returns(VerifyNonMembershipError) {
+
+    function verifyNonMembership(CosmosIcs23V1ProofSpec.Data memory spec, bytes memory commitmentRoot, CosmosIcs23V1CommitmentProof.Data memory proof, bytes memory key) internal pure returns(VerifyNonMembershipError) {
         CosmosIcs23V1CommitmentProof.Data memory decoProof = Compress.decompress(proof);
         CosmosIcs23V1NonExistenceProof.Data memory nonProof = getNonExistProofForKey(decoProof, key);
         //require(CosmosIcs23V1ExistenceProof.isNil(nonProof) == false); // dev: getNonExistProofForKey not available
