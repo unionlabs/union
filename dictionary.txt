@@ -1,16 +1,17 @@
 ABCI
-abigen
-accs
 Accs
 Acknowledgemets
 Acks
 Anys
 Axelar
 Axelar
+Axelar
 Bech
 Bitvector
 Blcok
 Boneh
+Boneh
+CCTP
 CCTP
 CCTP
 CMOV
@@ -44,10 +45,15 @@ PREVOTE
 PROTOC
 Paramspace
 Partset
+Partset
+Patchelf
 Patchelf
 PoisonPhang
+PoisonPhang
+Polkadot
 Polkadot
 Protobuf
+RUSTFLAGS
 RUSTFLAGS
 Redelegate
 Redelegation
@@ -57,6 +63,8 @@ Rustup
 SIGINT
 Secp
 Shacham
+Shacham
+Shallue
 Shallue
 TRYOPEN
 Tempdirs
@@ -68,9 +76,13 @@ Undelegate
 Unjail
 Unmarshal
 Verkle
+Verkle
 Woestijne
 aarch
 abci
+abigen
+abigens
+accs
 accs
 acks
 aeryz
@@ -91,7 +103,6 @@ authzkeeper
 authzmodule
 autocli
 autocliv
-Axelar
 bankkeeper
 banktypes
 baseapp
@@ -105,7 +116,6 @@ bitslice
 bitvec
 blocksync
 blocksync
-Boneh
 builtins
 cachix
 capabilitykeeper
@@ -113,9 +123,9 @@ capabilitytypes
 cargotoml
 cargotoml
 cargotoml
-CCTP
 cdctypes
 cdylib
+chainid
 chainsafe
 clippy
 clippy
@@ -147,6 +157,7 @@ cosmossdk
 cosmrs
 cosmwasm
 counterparty
+cratedir
 crisiskeeper
 crisistypes
 ctypes
@@ -316,9 +327,7 @@ paramskeeper
 paramstore
 paramstypes
 paramtypes
-Partset
 passthru
-Patchelf
 passthru
 pflag
 phang
@@ -327,8 +336,6 @@ pkgconfig
 pkgs
 pname
 poisonphang
-PoisonPhang
-Polkadot
 posthandler
 precommit
 prehash
@@ -381,7 +388,6 @@ rustc
 rustc
 rustc
 rustc
-RUSTFLAGS
 rustfmt
 rustfmt
 rustlib
@@ -394,8 +400,6 @@ serde
 serde
 serverconfig
 servertypes
-Shacham
-Shallue
 shazow
 simapp
 simtestutil
@@ -420,6 +424,7 @@ stretchr
 struct
 structs
 stylesheet
+subsec
 substores
 sumbitter
 svrcmd
@@ -501,7 +506,6 @@ valoper
 valoperpub
 valset
 verison
-Verkle
 vestingtypes
 vhosts
 virtualisation
@@ -516,10 +520,6 @@ xqxp
 ypyp
 yqyp
 zkps
-subsec
-chainid
-cratedir
-abigens
 λpxrx
 λpxrx
 λpxrx
