@@ -8,7 +8,7 @@ graph LR
         x/bank
         x/gov
         subgraph x/wasm
-            ethereum-light-client[ethereum-light-client]
+            ethereum-light-client["ethereum-light-client"]
         end
         x/etc
         ...
@@ -17,4 +17,4 @@ graph LR
 
 ## Ethereum Light Client
 
-The Ethereum Light client is [defined here](https://github.com/unionfi/union/tree/main/light-clients/ethereum-light-client).
+The Ethereum Light client is [defined here](../light-clients/ethereum-light-client/ARCHITECTURE.md).
