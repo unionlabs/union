@@ -26,6 +26,7 @@
     "**/go.sum",
     "evm",
     "**/*.pb.go",
-    "**/testdata"
+    "**/testdata",
+    "networks/genesis/union-testnet-2/**"
   ]
 }
