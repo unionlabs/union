@@ -1,6 +1,6 @@
 # EVM Architecture
 
-This is where all of our EVM smart contracts live. The basis of this IBC in Solidity implementation is provided by [yui-ibc-solidity](https://github.com/hyperledger-labs/yui-ibc-solidity). We provide [CometblsClient](./contracts/clients/CometblsClient.sol), which is a light client that implements [CometBLS](../docs/docs/architecture/cometbls.md)
+This is where all of our EVM smart contracts live. The basis of this IBC in Solidity implementation is provided by [yui-ibc-solidity](https://github.com/hyperledger-labs/yui-ibc-solidity). We provide [CometblsClient](./contracts/clients/CometblsClient.sol), which is a light client that implements [CometBLS](../docs/docs/architecture/cometbls.md).
 
 ```mermaid
 ---
@@ -10,10 +10,10 @@ flowchart BT
     relayer(Relayer)
 
     subgraph EVM chain with BN254 precompile
-        client("`**ICS-002** client`")
-        connection("`**ICS-003** connection`")
-        channel("`**ICS-004** channel`")
-        handler("`**ICS-025** handler`")
+        client(ICS-002 client)
+        connection(ICS-003 connection)
+        channel(ICS-004 channel)
+        handler(ICS-025 handler)
     end
 
     handler -- CometBLS client --> client
