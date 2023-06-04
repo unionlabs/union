@@ -12,13 +12,17 @@ The current example does not support remote signers yet. We will expand the guid
 
 Below is an example configuration.nix which can be used in production.
 
+:::caution
+The example currently uses `git+ssh://` syntax rather than `github:` syntax because our repository is not public yet. Once it is, this will be simplified. When this happens, `GIT_LFS_SKIP_SMUDGE` will also no longer be required.
+:::
+
 ```nix
 {
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    union.url = "github:unionfi/union";
+    union.url = "git+ssh://git@github.com/unionfi/union";
   };
-  outputs = inputs@{self, nixpkgs,... }:
+  outputs = inputs@{self, nixpkgs, union,... }:
   {
     nixosConfigurations.testnet-validator =
     let
@@ -62,7 +66,7 @@ Below is an example configuration.nix which can be used in production.
 You can then deploy the configuration by running
 
 ```
-nixos-rebuild --target-host $NODE_IP switch --flake .\#my-moniker
+GIT_LFS_SKIP_SMUDGE=1 nixos-rebuild switch --flake .#testnet-validator --target-host user@validator.domain -L
 ```
 
 ## Upgrading
@@ -71,7 +75,7 @@ To upgrade to newer versions, simply run
 
 ```
 nix flake update
-nixos-rebuild --target-host $NODE_IP switch --flake .\#my-moniker
+GIT_LFS_SKIP_SMUDGE=1 nixos-rebuild switch --flake .#testnet-validator --target-host user@validator.domain -L
 ```
 
 This will pull in the latest changes to union configurations and prepare your node for future upgrades.
