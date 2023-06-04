@@ -103,7 +103,7 @@
         '';
         doCheck = true;
         checkPhase = ''
-          forge test --revert-strings debug -vv
+          forge test --revert-strings debug -vvv
         '';
         installPhase = ''
           mkdir -p $out

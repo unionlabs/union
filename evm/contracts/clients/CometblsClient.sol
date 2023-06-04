@@ -33,8 +33,6 @@ contract CometblsClient is ILightClient {
     address internal ibcHandler;
     IZKVerifier internal verifier;
 
-    CosmosIcs23V1ProofSpec.Data private _tendermintProofSpec = CometblsHelp.getTendermintProofSpec();
-
     constructor(address ibcHandler_, IZKVerifier verifier_) {
         ibcHandler = ibcHandler_;
         verifier = verifier_;
@@ -213,19 +211,6 @@ contract CometblsClient is ILightClient {
         bytes calldata path,
         bytes calldata value
     ) external view override returns (bool) {
-        // FIXME: bloat the contract, must be provided in constructor
-        /* OptimizedConsensusState memory consensusState = */
-        /*     consensusStates[stateIndex(clientId, height.toUint128())]; */
-        /* CosmosIcs23V1CommitmentProof.Data memory commitmentProof = CosmosIcs23V1CommitmentProof.decode(proof); */
-        /* Ics23.VerifyMembershipError result = */
-        /*     Ics23.verifyMembership( */
-        /*         _tendermintProofSpec, */
-        /*         abi.encodePacked(consensusState.root), */
-        /*         commitmentProof, */
-        /*         path, */
-        /*         value */
-        /*     ); */
-        /* return result == Ics23.VerifyMembershipError.None; */
         return true;
     }
 
@@ -238,18 +223,6 @@ contract CometblsClient is ILightClient {
         bytes calldata prefix,
         bytes calldata path
     ) external returns (bool) {
-        // FIXME: bloat the contract, must be provided in constructor
-        /* OptimizedConsensusState memory consensusState = */
-        /*     consensusStates[stateIndex(clientId, height.toUint128())]; */
-        /* CosmosIcs23V1CommitmentProof.Data memory commitmentProof = CosmosIcs23V1CommitmentProof.decode(proof); */
-        /* Ics23.VerifyNonMembershipError result = */
-        /*     Ics23.verifyNonMembership( */
-        /*                            _tendermintProofSpec, */
-        /*                            abi.encodePacked(consensusState.root), */
-        /*                            commitmentProof, */
-        /*                            path */
-        /*     ); */
-        /* return result == Ics23.VerifyNonMembershipError.None; */
         return true;
     }
 

@@ -2,6 +2,7 @@ pragma solidity ^0.8.18;
 
 import "forge-std/Test.sol";
 import "../../contracts/proto/cosmos/ics23/v1/proofs.sol";
+import "../../contracts/proto/ibc/core/commitment/v1/commitment.sol";
 import "../../contracts/lib/ICS23.sol";
 import "../../contracts/lib/CometblsHelp.sol";
 
@@ -15,7 +16,7 @@ contract ICS23Test is Test {
     function ensureNonExistant(bytes memory proof, bytes memory root, bytes memory key) internal {
         CosmosIcs23V1CommitmentProof.Data memory commitmentProof = CosmosIcs23V1CommitmentProof.decode(proof);
 
-        CosmosIcs23V1ProofSpec.Data memory tendermintProofSpec = CometblsHelp.getTendermintProofSpec();
+        CosmosIcs23V1ProofSpec.Data memory tendermintProofSpec = Ics23.getTendermintProofSpec();
 
         Ics23.VerifyNonMembershipError result =
             Ics23.verifyNonMembership(
@@ -34,6 +35,7 @@ contract ICS23Test is Test {
 
         assert(result == Ics23.VerifyNonMembershipError.None);
     }
+
 
     // https://github.com/cosmos/ics23/blob/b1abd8678aab07165efd453c96796a179eb3131f/testdata/tendermint/nonexist_left.json
     function testNonExistLeft() public {
@@ -62,7 +64,7 @@ contract ICS23Test is Test {
     function ensureExistant(bytes memory proof, bytes memory root, bytes memory key, bytes memory value) internal {
         CosmosIcs23V1CommitmentProof.Data memory commitmentProof = CosmosIcs23V1CommitmentProof.decode(proof);
 
-        CosmosIcs23V1ProofSpec.Data memory tendermintProofSpec = CometblsHelp.getTendermintProofSpec();
+        CosmosIcs23V1ProofSpec.Data memory tendermintProofSpec = Ics23.getTendermintProofSpec();
 
         Ics23.VerifyMembershipError result =
             Ics23.verifyMembership(
@@ -108,5 +110,25 @@ contract ICS23Test is Test {
         bytes memory key = hex"7a785a4e6b534c64634d655657526c7658456644";
         bytes memory value = hex"76616c75655f666f725f7a785a4e6b534c64634d655657526c7658456644";
         ensureExistant(proof, root, key, value);
+    }
+
+    // union-testnet-2
+    // key = 0x01 + take(20, sha256(account))
+    // proof, value = nix run .#uniond -- genstateproof 345 "014152090B0C95C948EDC407995560FEED4A9DF81E" "/store/acc/key" --node https://rpc.0xc0dejug.uno:443
+    // path = split('/', '/acc/${key}')
+    // root = nix run .#uniond -- query block 346 --node https://rpc.0xc0dejug.uno:443 | jq .block.header.app_hash
+    function testTestnetExist() public {
+        bytes memory root = hex"B802C903BEFE08624832AAF853DBEA4EDE1F7D50E88BEDD6317831F45CC74A3D";
+        bytes memory proof = hex"0afa020af7020a15014152090b0c95c948edc407995560feed4a9df81e129e010a202f636f736d6f732e617574682e763162657461312e426173654163636f756e74127a0a2c756e696f6e31673966716a7a63766a687935336d77797137763432633837613439666d37713772646568386312460a1f2f636f736d6f732e63727970746f2e736563703235366b312e5075624b657912230a2103820c4b94dccd7d74706216c426fe884d9a4404410df69d6421899595c5a9c122180120011a0b0801180120012a0300020222290801122502040220170c890f01b9fa9ab803511bbc7be7c25359309f04d021a72e0a9b93b8ff72c020222b08011204040802201a2120a89a7b1aedf861a8c6316009af3d19448bfe8834dfb5546c7e1af7f95c3000b4222b08011204061002201a212029347d33c119e85fc1335f43ad17c4a1986ad44c71837158ceffd36e2f38f986222b080112040a3002201a2120e284b7ed0385d018b1ffcd6f33bf6ac575fb7731704d0ae71be278bd8bf5e0b50a80020afd010a03616363122082d7d632a58654a81bb6764379eff4b6e641e96620a12dac0e250e6caf94f7761a090801180120012a010022250801122101ba30cf8122e71a87fea08d0da9499e0373495a64e1648de8f08ca1a73e1fc1a8222708011201011a208a19e0585632ebada293099d24f28707d453266ae7ded6e854dfd8a025c7ce71222708011201011a204a22410f42f7706402b38c460e74d712c95cea8e6e370c691f43c0abf3f4e104222708011201011a20b999d9a62cbd36a843f207580c4802d194e6441f7f3715ddce55d5194d46e57a222708011201011a2022ecbf124eff995ecf01998dd8346b71810af164e192feeb4d4287085128b9df";
+        bytes memory value = hex"0a202f636f736d6f732e617574682e763162657461312e426173654163636f756e74127a0a2c756e696f6e31673966716a7a63766a687935336d77797137763432633837613439666d37713772646568386312460a1f2f636f736d6f732e63727970746f2e736563703235366b312e5075624b657912230a2103820c4b94dccd7d74706216c426fe884d9a4404410df69d6421899595c5a9c12218012001";
+        bytes[] memory path = new bytes[](2);
+        path[0] = "acc";
+        path[1] = hex"014152090B0C95C948EDC407995560FEED4A9DF81E";
+        Ics23.verifyChainedMembership(
+            IbcCoreCommitmentV1MerkleProof.decode(proof),
+            root,
+            path,
+            value
+        );
     }
 }

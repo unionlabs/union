@@ -183,29 +183,4 @@ library CometblsHelp {
     {
         return abi.decode(bz, (UnionIbcLightclientsCometblsV1ConsensusState.Data));
     }
-
-    function getTendermintProofSpec() internal pure returns (CosmosIcs23V1ProofSpec.Data memory tendermintProofSpec) {
-        int32[] memory childOrder = new int32[](2);
-        childOrder[0] = 0;
-        childOrder[1] = 1;
-        tendermintProofSpec = CosmosIcs23V1ProofSpec.Data({
-            leaf_spec: CosmosIcs23V1LeafOp.Data({
-                prefix: hex"00",
-                prehash_key: CosmosIcs23V1GlobalEnums.HashOp.NO_HASH,
-                hash: CosmosIcs23V1GlobalEnums.HashOp.SHA256,
-                prehash_value: CosmosIcs23V1GlobalEnums.HashOp.SHA256,
-                length: CosmosIcs23V1GlobalEnums.LengthOp.VAR_PROTO
-                }),
-            inner_spec: CosmosIcs23V1InnerSpec.Data({
-                child_order: childOrder,
-                child_size: 32,
-                min_prefix_length: 1,
-                max_prefix_length: 1,
-                empty_child: abi.encodePacked(),
-                hash: CosmosIcs23V1GlobalEnums.HashOp.SHA256
-                }),
-            min_depth: 0,
-            max_depth: 0
-            });
-    }
 }
