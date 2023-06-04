@@ -20,7 +20,7 @@
       packages = {
         docs = pkgs.buildNpmPackage {
           name = "docs";
-          src = ./.;
+          srcs = ./. ../unionvisor/docs;
           buildPhase = ''
             npm run build
           '';
