@@ -1,0 +1,62 @@
+{
+  "body": {
+    "messages": [
+      {
+        "@type": "/cosmos.staking.v1beta1.MsgCreateValidator",
+        "description": {
+          "moniker": "cor-systems",
+          "identity": "",
+          "website": "",
+          "security_contact": "",
+          "details": ""
+        },
+        "commission": {
+          "rate": "0.100000000000000000",
+          "max_rate": "0.200000000000000000",
+          "max_change_rate": "0.010000000000000000"
+        },
+        "min_self_delegation": "1",
+        "delegator_address": "union1fkuylme06a02h4qdepgnzvwjzpdv543qmm54gd",
+        "validator_address": "unionvaloper1fkuylme06a02h4qdepgnzvwjzpdv543q24xq9y",
+        "pubkey": {
+          "@type": "/cosmos.crypto.bn254.PubKey",
+          "key": "6Eu9aJDlchBmqzkybdSmeZjIxDnaHWfDObixGUZGpjo="
+        },
+        "value": {
+          "denom": "muno",
+          "amount": "1000000000000"
+        }
+      }
+    ],
+    "memo": "6a2d3a6f846792b99c4cfa3ccb40f80073bac30d@10.211.55.4:26656",
+    "timeout_height": "0",
+    "extension_options": [],
+    "non_critical_extension_options": []
+  },
+  "auth_info": {
+    "signer_infos": [
+      {
+        "public_key": {
+          "@type": "/cosmos.crypto.secp256k1.PubKey",
+          "key": "AqJN/5zmcm+KoH/OyqjmYGU6gf5M4aH1DRJafNPuvvtP"
+        },
+        "mode_info": {
+          "single": {
+            "mode": "SIGN_MODE_DIRECT"
+          }
+        },
+        "sequence": "0"
+      }
+    ],
+    "fee": {
+      "amount": [],
+      "gas_limit": "200000",
+      "payer": "",
+      "granter": ""
+    },
+    "tip": null
+  },
+  "signatures": [
+    "89oMnz2pCjbSP97baROldIqPo5vZ0NhwIDi3SQZkbwh8GrVEDgQQgoV9fVXcPuoUXc5XL9pRR52CjrR9LGgPmA=="
+  ]
+}
