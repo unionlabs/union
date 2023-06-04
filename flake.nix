@@ -50,7 +50,7 @@
         ./tools/rust-proto.nix
         ./tools/generate-rust-sol-bindings/generate-rust-sol-bindings.nix
         ./tools/libwasmvm/libwasmvm.nix
-        ./tools/mdx/mdx.nix
+        ./tools/tera/tera.nix
         ./networks/devnet.nix
         ./networks/genesis/devnet.nix
         ./testnet-validator.nix
