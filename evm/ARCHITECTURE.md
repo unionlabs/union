@@ -23,7 +23,6 @@ flowchart BT
 
 ```
 
-
 ```mermaid
 ---
 title: Setup Sequence
@@ -36,7 +35,7 @@ sequenceDiagram
 
     Relayer->>Handler: Create connection
     Handler->>ICS-003 Connection: Create connection
-    
+
     Relayer->>Handler: Create channel
     Handler->>ICS-004 Channel: Create channel
 
