@@ -34,6 +34,7 @@ IAVL
 Infima
 Interchain
 KEYPAIR
+Karel
 Keybase
 LCFUR
 Merkle
