@@ -23,6 +23,8 @@ flowchart BT
 
 ```
 
+Note that all of the component upgrades are initiated from our Union chain through governance.
+
 ```mermaid
 ---
 title: Setup Sequence
