@@ -18,6 +18,10 @@ module.exports = {
         },
         {
           type: "doc",
+          id: "validators/nixos",
+        },
+        {
+          type: "doc",
           id: "validators/kubernetes",
         },
       ],
