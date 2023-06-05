@@ -35,7 +35,6 @@
 
           installPhase = ''
             mkdir -p $out
-            cp -r ./node_modules $out
             cp -r ./docs/build $out
           '';
 
