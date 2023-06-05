@@ -1,3 +1,5 @@
+# Union
+
 [![Build](https://github.com/UnionFi/union/actions/workflows/build.yml/badge.svg)](https://github.com/UnionFi/union/actions/workflows/build.yml)
 [![Docs](https://img.shields.io/badge/docs-main-blue)](https://docs-plum-one.vercel.app)
 
