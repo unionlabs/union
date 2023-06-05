@@ -6,8 +6,8 @@
     {
       packages = {
         tera = crane.lib.buildPackage {
-          pname = name;
-          name = name;  
+          name = name;
+          version = "0.2.4";  
           src = pkgs.fetchFromGitHub {
             name = "tera";
             owner = "chevdor";
