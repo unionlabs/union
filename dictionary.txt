@@ -128,6 +128,7 @@ cdctypes
 cdylib
 chainid
 chainsafe
+chevdor
 clippy
 clippy
 clsx
@@ -174,6 +175,7 @@ devshell
 dirchange
 distrkeeper
 distrtypes
+docgen
 doctest
 dont
 drawio
@@ -277,6 +279,7 @@ libiconv
 libmuslc
 libwasmvm
 libwasmvmstatic
+lifecycles
 lightclient
 lightclients
 linkmode
@@ -441,6 +444,7 @@ teku
 tempdir
 tempfile
 tendermint
+tera
 testdata
 testkeeper
 testkey
@@ -473,6 +477,7 @@ unbond
 unbonded
 unbonding
 undelegations
+unionbundle
 uniond
 unionfi
 unionmodule

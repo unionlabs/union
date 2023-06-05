@@ -30,7 +30,6 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     nix-filter.url = "github:numtide/nix-filter";
-
     # uniond versions
     "v0.6.0".url = "git+https://github.com/unionfi/union?ref=release-v0.6.0";
   };
@@ -50,6 +49,8 @@
         ./tools/rust-proto.nix
         ./tools/generate-rust-sol-bindings/generate-rust-sol-bindings.nix
         ./tools/libwasmvm/libwasmvm.nix
+        ./tools/tera/tera.nix
+        ./tools/docgen/docgen.nix
         ./networks/devnet.nix
         ./networks/genesis/devnet.nix
         ./testnet-validator.nix
