@@ -178,8 +178,7 @@ replace (
 	github.com/cometbft/cometbft => github.com/unionfi/cometbls v0.0.0-20230512064939-963390dd5d1e
 	// Fork of gnark crypto until https://github.com/ConsenSys/gnark-crypto/pull/314 is merged
 	github.com/consensys/gnark-crypto => github.com/hussein-aitlahcen/gnark-crypto v0.0.0-20230409222230-5346db050fea
-	github.com/cosmos/cosmos-sdk => github.com/unionfi/cosmos-sdk v0.0.0-20230512065059-fd36c0d536f8
-	github.com/cosmos/cosmos-sdk/x/capability => github.com/strangelove-ventures/ibc-go/modules/capability v0.0.0-20230418220939-f60edbfb225a
-	github.com/cosmos/ibc-go/v7 => github.com/strangelove-ventures/ibc-go/v7 v7.0.0-20230418220939-f60edbfb225a
+	github.com/cosmos/cosmos-sdk => github.com/unionfi/cosmos-sdk v0.0.0-20230605150035-5e0e80cc455a
+	github.com/cosmos/ibc-go/v7 => github.com/hussein-aitlahcen/ibc-go/v7 v7.0.0-20230605143907-7795f755632c
 	github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
 )

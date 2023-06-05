@@ -21,6 +21,16 @@ const (
 	GroupVote       = "group-vote"
 )
 
+func checkAccExists(acc sdk.AccAddress, g []*group.GroupMember, lastIndex int) bool {
+	s := acc.String()
+	for i := 0; i < lastIndex; i++ {
+		if g[i].Member.Address == s {
+			return true
+		}
+	}
+	return false
+}
+
 func getGroups(r *rand.Rand, accounts []simtypes.Account) []*group.GroupInfo {
 	groups := make([]*group.GroupInfo, 3)
 	for i := 0; i < 3; i++ {
@@ -40,6 +50,9 @@ func getGroupMembers(r *rand.Rand, accounts []simtypes.Account) []*group.GroupMe
 	groupMembers := make([]*group.GroupMember, 3)
 	for i := 0; i < 3; i++ {
 		acc, _ := simtypes.RandomAcc(r, accounts)
+		for checkAccExists(acc.Address, groupMembers, i) {
+			acc, _ = simtypes.RandomAcc(r, accounts)
+		}
 		groupMembers[i] = &group.GroupMember{
 			GroupId: uint64(i + 1),
 			Member: &group.Member{
@@ -53,21 +66,34 @@ func getGroupMembers(r *rand.Rand, accounts []simtypes.Account) []*group.GroupMe
 }
 
 func getGroupPolicies(r *rand.Rand, simState *module.SimulationState) []*group.GroupPolicyInfo {
-	groupPolicies := make([]*group.GroupPolicyInfo, 3)
+	var groupPolicies []*group.GroupPolicyInfo
+
+	usedAccs := make(map[string]bool)
 	for i := 0; i < 3; i++ {
 		acc, _ := simtypes.RandomAcc(r, simState.Accounts)
+
+		if usedAccs[acc.Address.String()] {
+			if len(usedAccs) != len(simState.Accounts) {
+				// Go again if the account is used and there are more to take from
+				i--
+			}
+
+			continue
+		}
+		usedAccs[acc.Address.String()] = true
+
 		any, err := codectypes.NewAnyWithValue(group.NewThresholdDecisionPolicy("10", time.Second, 0))
 		if err != nil {
 			panic(err)
 		}
-		groupPolicies[i] = &group.GroupPolicyInfo{
+		groupPolicies = append(groupPolicies, &group.GroupPolicyInfo{
 			GroupId:        uint64(i + 1),
 			Admin:          acc.Address.String(),
 			Address:        acc.Address.String(),
 			Version:        1,
 			DecisionPolicy: any,
 			Metadata:       simtypes.RandStringOfLength(r, 10),
-		}
+		})
 	}
 	return groupPolicies
 }
@@ -147,6 +173,11 @@ func getVoteOption(index int) group.VoteOption {
 
 // RandomizedGenState generates a random GenesisState for the group module.
 func RandomizedGenState(simState *module.SimulationState) {
+	// The test requires we have at least 3 accounts.
+	if len(simState.Accounts) < 3 {
+		return
+	}
+
 	// groups
 	var groups []*group.GroupInfo
 	simState.AppParams.GetOrGenerate(

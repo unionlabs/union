@@ -16,9 +16,6 @@ func (k Keeper) HandleValidatorSignature(ctx sdk.Context, addr cryptotypes.Addre
 
 	// fetch the validator public key
 	consAddr := sdk.ConsAddress(addr)
-	if _, err := k.GetPubkey(ctx, addr); err != nil {
-		panic(fmt.Sprintf("Validator consensus-address %s not found", consAddr))
-	}
 
 	// don't update missed blocks when validator's jailed
 	if k.sk.IsValidatorJailed(ctx, consAddr) {

@@ -131,7 +131,10 @@ func readTxAndInitContexts(clientCtx client.Context, cmd *cobra.Command, filenam
 		return clientCtx, tx.Factory{}, nil, err
 	}
 
-	txFactory := tx.NewFactoryCLI(clientCtx, cmd.Flags())
+	txFactory, err := tx.NewFactoryCLI(clientCtx, cmd.Flags())
+	if err != nil {
+		return clientCtx, tx.Factory{}, nil, err
+	}
 
 	return clientCtx, txFactory, stdTx, nil
 }

@@ -33,6 +33,7 @@ type Keeper interface {
 	GetDenomMetaData(ctx sdk.Context, denom string) (types.Metadata, bool)
 	HasDenomMetaData(ctx sdk.Context, denom string) bool
 	SetDenomMetaData(ctx sdk.Context, denomMetaData types.Metadata)
+	GetAllDenomMetaData(ctx sdk.Context) []types.Metadata
 	IterateAllDenomMetaData(ctx sdk.Context, cb func(types.Metadata) bool)
 
 	SendCoinsFromModuleToAccount(ctx sdk.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error

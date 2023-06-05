@@ -3,6 +3,7 @@ package keeper
 import (
 	"context"
 	"encoding/hex"
+	"fmt"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -47,7 +48,7 @@ func (k Keeper) CodeIds(c context.Context, req *types.QueryCodeIdsRequest) (*typ
 
 	ctx := sdk.UnwrapSDKContext(c)
 	store := ctx.KVStore(k.storeKey)
-	prefixStore := prefix.NewStore(store, []byte(types.KeyCodeIDPrefix))
+	prefixStore := prefix.NewStore(store, []byte(fmt.Sprintf("%s/", types.KeyCodeIDPrefix)))
 
 	pageRes, err := sdkquery.FilteredPaginate(prefixStore, req.Pagination, func(key []byte, _ []byte, accumulate bool) (bool, error) {
 		if accumulate {

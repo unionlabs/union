@@ -61,9 +61,9 @@ func (k Keeper) storeWasmCode(ctx sdk.Context, code []byte) ([]byte, error) {
 	store := ctx.KVStore(k.storeKey)
 
 	var err error
-	if IsGzip(code) {
+	if types.IsGzip(code) {
 		ctx.GasMeter().ConsumeGas(types.VMGasRegister.UncompressCosts(len(code)), "Uncompress gzip bytecode")
-		code, err = Uncompress(code, uint64(types.MaxWasmSize))
+		code, err = types.Uncompress(code, types.MaxWasmByteSize())
 		if err != nil {
 			return nil, sdkerrors.Wrap(types.ErrCreateContractFailed, err.Error())
 		}
@@ -77,15 +77,13 @@ func (k Keeper) storeWasmCode(ctx sdk.Context, code []byte) ([]byte, error) {
 	}
 
 	// run the code through the wasm light client validation process
-	if isValidWasmCode, err := types.ValidateWasmCode(code); err != nil {
+	if err := types.ValidateWasmCode(code); err != nil {
 		return nil, sdkerrors.Wrapf(types.ErrWasmCodeValidation, err.Error())
-	} else if !isValidWasmCode {
-		return nil, types.ErrWasmInvalidCode
 	}
 
 	// create the code in the vm
 	ctx.GasMeter().ConsumeGas(types.VMGasRegister.CompileCosts(len(code)), "Compiling wasm bytecode")
-	codeID, err := k.wasmVM.Create(code)
+	codeID, err := k.wasmVM.StoreCode(code)
 	if err != nil {
 		return nil, sdkerrors.Wrap(types.ErrCreateContractFailed, err.Error())
 	}
@@ -101,9 +99,9 @@ func (k Keeper) storeWasmCode(ctx sdk.Context, code []byte) ([]byte, error) {
 
 func (k Keeper) importWasmCode(ctx sdk.Context, codeIDKey, wasmCode []byte) error {
 	store := ctx.KVStore(k.storeKey)
-	if IsGzip(wasmCode) {
+	if types.IsGzip(wasmCode) {
 		var err error
-		wasmCode, err = Uncompress(wasmCode, uint64(types.MaxWasmSize))
+		wasmCode, err = types.Uncompress(wasmCode, types.MaxWasmByteSize())
 		if err != nil {
 			return sdkerrors.Wrap(types.ErrCreateContractFailed, err.Error())
 		}

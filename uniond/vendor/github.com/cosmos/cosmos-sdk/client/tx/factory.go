@@ -47,7 +47,7 @@ type Factory struct {
 }
 
 // NewFactoryCLI creates a new Factory.
-func NewFactoryCLI(clientCtx client.Context, flagSet *pflag.FlagSet) Factory {
+func NewFactoryCLI(clientCtx client.Context, flagSet *pflag.FlagSet) (Factory, error) {
 	signModeStr := clientCtx.SignModeStr
 
 	signMode := signing.SignMode_SIGN_MODE_UNSPECIFIED
@@ -62,8 +62,16 @@ func NewFactoryCLI(clientCtx client.Context, flagSet *pflag.FlagSet) Factory {
 		signMode = signing.SignMode_SIGN_MODE_EIP_191
 	}
 
-	accNum, _ := flagSet.GetUint64(flags.FlagAccountNumber)
-	accSeq, _ := flagSet.GetUint64(flags.FlagSequence)
+	var accNum, accSeq uint64
+	if clientCtx.Offline {
+		if flagSet.Changed(flags.FlagAccountNumber) && flagSet.Changed(flags.FlagSequence) {
+			accNum, _ = flagSet.GetUint64(flags.FlagAccountNumber)
+			accSeq, _ = flagSet.GetUint64(flags.FlagSequence)
+		} else {
+			return Factory{}, errors.New("account-number and sequence must be set in offline mode")
+		}
+	}
+
 	gasAdj, _ := flagSet.GetFloat64(flags.FlagGasAdjustment)
 	memo, _ := flagSet.GetString(flags.FlagNote)
 	timeoutHeight, _ := flagSet.GetUint64(flags.FlagTimeoutHeight)
@@ -103,7 +111,7 @@ func NewFactoryCLI(clientCtx client.Context, flagSet *pflag.FlagSet) Factory {
 
 	f = f.WithPreprocessTxHook(clientCtx.PreprocessTxHook)
 
-	return f
+	return f, nil
 }
 
 func (f Factory) AccountNumber() uint64                     { return f.accountNumber }
@@ -433,19 +441,14 @@ func (f Factory) Prepare(clientCtx client.Context) (Factory, error) {
 	}
 
 	initNum, initSeq := fc.accountNumber, fc.sequence
-	if initNum == 0 || initSeq == 0 {
+	if initNum == 0 && initSeq == 0 {
 		num, seq, err := fc.accountRetriever.GetAccountNumberSequence(clientCtx, from)
 		if err != nil {
 			return fc, err
 		}
 
-		if initNum == 0 {
-			fc = fc.WithAccountNumber(num)
-		}
-
-		if initSeq == 0 {
-			fc = fc.WithSequence(seq)
-		}
+		fc = fc.WithAccountNumber(num)
+		fc = fc.WithSequence(seq)
 	}
 
 	return fc, nil
