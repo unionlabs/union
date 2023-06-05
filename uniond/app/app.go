@@ -191,7 +191,7 @@ var (
 		vesting.AppModuleBasic{},
 		consensus.AppModuleBasic{},
 		unionmodule.AppModuleBasic{},
-		wasm.AppModuleBasic{}
+		wasm.AppModuleBasic{},
 		// this line is used by starport scaffolding # stargate/app/moduleBasic
 	)
 
