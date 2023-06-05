@@ -4,9 +4,10 @@ Galois exposes gRPC endpoints to generate and verify CometBLS zero-knowledge pro
 
 ## Circuit
 
-The CometBLS circuit is generic over $2^n$ validators. It is built to verify non-adjacents transition between blocks.
+The CometBLS circuit is generic over $2^n$ validators. It is built to verify non-adjacent transitions between blocks.
 We decided to implements the circuit on top of [Gnark](https://github.com/ConsenSys/gnark).
 Galois includes the following **gadgets** that are not available in Gnark:
+
 - a **protobuf** gadget for deserialization of protobuf payloads.
 - a **SHA-256** gadget to verify CometBLS hashes (derived from Cometbft, almost everything is hashed with sha256).
 - a **Merkle Root** gadget to re-compute merkle root in-circuit (using the **SHA-256** gadget for instance).
