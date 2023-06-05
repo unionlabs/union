@@ -1,5 +1,5 @@
 { self, ... }: {
-  perSystem = { pkgs, self', lib, ... }:
+  perSystem = { pkgs, self', lib, config, ... }:
     let
       tera = "${self'.packages.tera}/bin/tera";
       rootFile = "flake.nix";
@@ -9,7 +9,7 @@
       packages = {
         docgen = pkgs.writeShellApplication {
           name = "docgen";
-          runtimeInputs = [ tera ];
+          runtimeInputs = [ tera config.treefmt.build.wrapper ];
           text = ''
             if ! test -f "${rootFile}"; then
                 echo "Error: please run docgen from the root of the repository"
@@ -17,6 +17,7 @@
             fi
 
             echo '{"doc_comment": "${doc_comment}"}' | ${tera} --template unionvisor/docs/README.md --include-path unionvisor -s -o unionvisor/README.md > /dev/null 2>&1
+            treefmt > /dev/null 2>&1
           '';
         };
       };
