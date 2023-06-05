@@ -14,7 +14,7 @@ An example flake.nix configuration can be found in [`usage.nix`](./usage.nix):
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     union.url = "git+ssh://git@github.com/unionfi/union";
   };
-  outputs = inputs@{ self, nixpkgs, union, ... }:
+  outputs = { self, nixpkgs, union, ... }:
     {
       nixosConfigurations.testnet-validator =
         let

@@ -1,7 +1,7 @@
 { self, ... }: {
   perSystem = { pkgs, self', lib, ... }:
     let
-      tera = lib.meta.getExe self'.packages.tera;
+      tera = "${self'.packages.tera}/bin/tera";
       rootFile = "flake.nix";
       doc_comment = "<!-- GENERATED: DO NOT EDIT -->";
     in
@@ -46,7 +46,7 @@
             git commit -m init --quiet
             export LANG=C.UTF-8
             export LC_ALL=C.UTF-8
-            ${lib.meta.getExe self'.packages.docgen}
+            ${self'.packages.docgen}/bin/docgen
             git status
             git --no-pager diff --exit-code
             touch $out
