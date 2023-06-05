@@ -1,9 +1,9 @@
 use contracts::{glue::*, ibc_handler::*, shared_types::IbcCoreClientV1HeightData};
 use ethers::{
     abi::AbiEncode,
-    prelude::{decode_logs, SignerMiddleware},
+    prelude::{decode_logs, k256::ecdsa, SignerMiddleware},
     providers::{Middleware, StreamExt},
-    signers::{LocalWallet, Signer},
+    signers::{LocalWallet, Signer, Wallet},
     types::U256,
 };
 use ethers::{
@@ -32,7 +32,7 @@ use tendermint_rpc::{
     WebSocketClientUrl,
 };
 
-use crate::{COMETBLS_CLIENT_ADDRESS, ETH_RPC_API, IBC_HANDLER_ADDRESS, ICS20_MODULE_ADDRESS};
+use crate::{Args, ETH_RPC_API};
 
 pub const CHAIN_ID: &str = "union-devnet-1";
 pub const COMETBLS_CLIENT_TYPE: &str = "cometbls";
@@ -375,7 +375,7 @@ where
 
 NOTE: 1/2/3/4 must be done only once
  */
-pub async fn update_contract() {
+pub async fn update_contract(args: &Args) {
     let mut staking_client =
         staking::v1beta1::query_client::QueryClient::connect("http://0.0.0.0:9090")
             .await
@@ -399,13 +399,10 @@ pub async fn update_contract() {
 
     let commit: commit::Response = tm_client.latest_commit().await.unwrap();
 
-    let handler = create_ibc_handler_client().await;
+    let handler = create_ibc_handler_client(args).await;
 
     handler
-        .register_client(
-            COMETBLS_CLIENT_TYPE.into(),
-            COMETBLS_CLIENT_ADDRESS.parse().unwrap(),
-        )
+        .register_client(COMETBLS_CLIENT_TYPE.into(), args.cometbls_client_address)
         .send()
         .await
         .unwrap()
@@ -420,7 +417,7 @@ pub async fn update_contract() {
 
     println!("Binding ICS20 bank...");
     handler
-        .bind_port(PORT_ID.into(), ICS20_MODULE_ADDRESS.parse().unwrap())
+        .bind_port(PORT_ID.into(), args.ics20_module_address)
         .send()
         .await
         .unwrap()
@@ -524,7 +521,7 @@ pub async fn update_contract() {
                     ..
                 } => {
                     bitmap.set_bit(i as _, true);
-                    signatures.push(signature.clone().unwrap().to_bytes());
+                    signatures.push(signature.clone().unwrap().into_bytes());
                     println!("Validator {:?} signed", validator_address);
                 }
                 // TODO: not sure about this case
@@ -756,7 +753,9 @@ pub async fn update_contract() {
     }
 }
 
-pub async fn create_ibc_handler_client() -> IBCHandler<impl Middleware + 'static> {
+pub async fn create_ibc_handler_client(
+    args: &Args,
+) -> IBCHandler<SignerMiddleware<Provider<Http>, Wallet<ecdsa::SigningKey>>> {
     let provider = Arc::new({
         let provider = Provider::<Http>::try_from(ETH_RPC_API).unwrap();
         let chain_id = provider.get_chainid().await.unwrap();
@@ -767,11 +766,7 @@ pub async fn create_ibc_handler_client() -> IBCHandler<impl Middleware + 'static
         SignerMiddleware::new(provider, wallet)
     });
 
-    let address: Address = IBC_HANDLER_ADDRESS.parse().unwrap();
-
-    let handler = contracts::ibc_handler::IBCHandler::new(address, provider);
-
-    handler
+    contracts::ibc_handler::IBCHandler::new(args.ibc_handler_address, provider)
 }
 
 // async fn event_listener() -> StreamExt {

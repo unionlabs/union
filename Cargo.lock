@@ -3528,6 +3528,7 @@ dependencies = [
  "base64 0.21.0",
  "bech32 0.9.1",
  "bip32",
+ "clap",
  "contracts",
  "ethereum-consensus",
  "ethers",
@@ -3542,6 +3543,7 @@ dependencies = [
  "ripemd",
  "serde_json",
  "sha2 0.10.6",
+ "strum",
  "subtle-encoding",
  "tendermint 0.32.0",
  "tendermint-proto 0.32.0",
@@ -3549,6 +3551,8 @@ dependencies = [
  "tokio",
  "tonic",
  "tower",
+ "tracing",
+ "tracing-forest",
  "tracing-subscriber 0.3.17",
 ]
 
@@ -4489,8 +4493,7 @@ dependencies = [
 [[package]]
 name = "tendermint"
 version = "0.32.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a46ec6b25b028097ab682ffae11d09d64fe1e2535833b902f26a278a0f88a705"
+source = "git+https://github.com/benluelo/tendermint-rs?branch=bn254#94439e97bfe8fd9ab9d4d591a2673da364595070"
 dependencies = [
  "bytes",
  "digest 0.10.6",
@@ -4518,8 +4521,7 @@ dependencies = [
 [[package]]
 name = "tendermint-config"
 version = "0.32.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7dbb7610ef8422d5886116868e48ab6a9ea72859b3bf9021c6d87318e5600225"
+source = "git+https://github.com/benluelo/tendermint-rs?branch=bn254#94439e97bfe8fd9ab9d4d591a2673da364595070"
 dependencies = [
  "flex-error",
  "serde",
@@ -4563,8 +4565,7 @@ dependencies = [
 [[package]]
 name = "tendermint-proto"
 version = "0.32.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6ce23c8ff0e6634eb4c3c4aeed45076dc97dac91aac5501a905a67fa222e165b"
+source = "git+https://github.com/benluelo/tendermint-rs?branch=bn254#94439e97bfe8fd9ab9d4d591a2673da364595070"
 dependencies = [
  "bytes",
  "flex-error",
@@ -4581,8 +4582,7 @@ dependencies = [
 [[package]]
 name = "tendermint-rpc"
 version = "0.32.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bd2cc789170db5a35d4e0bb2490035c03ef96df08f119bee25fd8dab5a09aa25"
+source = "git+https://github.com/benluelo/tendermint-rs?branch=bn254#94439e97bfe8fd9ab9d4d591a2673da364595070"
 dependencies = [
  "async-trait",
  "async-tungstenite",
@@ -4980,6 +4980,18 @@ checksum = "b4d7c0b83d4a500748fa5879461652b361edf5c9d51ede2a2ac03875ca185e24"
 dependencies = [
  "tracing",
  "tracing-subscriber 0.2.25",
+]
+
+[[package]]
+name = "tracing-forest"
+version = "0.1.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "119324027fc01804d9f83aefb7d80fda2e8fbe7c28e0acc59187cbd751a12915"
+dependencies = [
+ "smallvec",
+ "thiserror",
+ "tracing",
+ "tracing-subscriber 0.3.17",
 ]
 
 [[package]]
