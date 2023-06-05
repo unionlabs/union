@@ -16,10 +16,12 @@ Below is an example configuration.nix which can be used in production.
 The example currently uses `git+ssh://` syntax rather than `github:` syntax because our repository is not public yet. Once it is, this will be simplified. When this happens, `GIT_LFS_SKIP_SMUDGE` will also no longer be required.
 :::
 
-import Configuration from '!!raw-loader!../../../unionvisor/usage.nix';
-import CodeBlock from '@theme/CodeBlock';
+import Configuration from "!!raw-loader!../../../unionvisor/usage.nix";
+import CodeBlock from "@theme/CodeBlock";
 
-<CodeBlock language="nix">{Configuration}</CodeBlock>
+<CodeBlock title="flake.nix" language="nix">
+  {Configuration}
+</CodeBlock>
 
 You can then deploy the configuration by running
 
