@@ -1,10 +1,9 @@
 package main
 
 import (
-	"os"
-
 	"github.com/cosmos/cosmos-sdk/server"
 	svrcmd "github.com/cosmos/cosmos-sdk/server/cmd"
+	"os"
 
 	"union/app"
 	"union/cmd/uniond/cmd"
