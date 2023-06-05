@@ -1,13 +1,13 @@
-{ self, ... }: {
+{ ... }: {
   perSystem = { pkgs, crane, ... }:
-    let 
-        name = "tera";
+    let
+      name = "tera";
     in
     {
       packages = {
         tera = crane.lib.buildPackage {
           name = name;
-          version = "0.2.4";  
+          version = "0.2.4";
           src = pkgs.fetchFromGitHub {
             name = "tera";
             owner = "chevdor";

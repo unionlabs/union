@@ -524,3 +524,7 @@ zkps
 λpxrx
 λpxrx
 λpxrx
+tera
+docgen
+lifecycles
+unionbundle
