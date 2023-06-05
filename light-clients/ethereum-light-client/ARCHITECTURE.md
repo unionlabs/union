@@ -26,6 +26,10 @@ sequenceDiagram
 ```
 
 ## Membership verification
+
+This diagram roughly describes the membership verification process. The sample process used here is connection handshake. The light client verifies whether the counterparty
+client committed the necessary data.
+
 ```mermaid
 sequenceDiagram
     Relayer->>Uniond: MsgConnectionOpenTry
