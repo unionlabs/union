@@ -1,5 +1,4 @@
 use crate::{
-    commitment::decode_eip1184_rlp_proof,
     errors::Error,
     eth_types::{
         ExecutionPayloadHeader, LightClientHeader, LightClientUpdate, SyncAggregate, SyncCommittee,
@@ -18,7 +17,7 @@ use protos::union::ibc::lightclients::ethereum::v1::{
     AccountUpdate as ProtoAccountUpdate, BeaconBlockHeader as ProtoBeaconBlockHeader,
     ExecutionPayloadHeader as ProtoExecutionPayloadHeader,
     LightClientHeader as ProtoLightClientHeader, LightClientUpdate as ProtoLightClientUpdate,
-    SyncAggregate as ProtoSyncAggregate, SyncCommittee as ProtoSyncCommittee,
+    Proof as ProtoProof, SyncAggregate as ProtoSyncAggregate, SyncCommittee as ProtoSyncCommittee,
     TrustedSyncCommittee as ProtoTrustedSyncCommittee,
 };
 use ssz_rs::{Bitvector, Deserialize, U256};
@@ -122,17 +121,44 @@ impl Fraction {
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+pub struct AccountProof {
+    pub address: String,
+    pub storage_hash: String,
+    pub proof: Vec<String>,
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct AccountUpdateInfo {
-    pub account_proof: Vec<Vec<u8>>,
-    pub account_storage_root: Root,
+    pub proofs: Vec<AccountProof>,
 }
 
 impl From<AccountUpdateInfo> for ProtoAccountUpdate {
     fn from(value: AccountUpdateInfo) -> Self {
         Self {
-            account_proof: encode_account_proof(value.account_proof),
-            account_storage_root: value.account_storage_root.as_ref().into(),
+            proof: value.proofs.into_iter().map(Into::into).collect(),
         }
+    }
+}
+
+impl From<AccountProof> for ProtoProof {
+    fn from(value: AccountProof) -> Self {
+        Self {
+            key: value.address,
+            value: value.storage_hash,
+            proof: value.proof,
+        }
+    }
+}
+
+impl TryFrom<ProtoProof> for AccountProof {
+    type Error = Error;
+
+    fn try_from(value: ProtoProof) -> Result<Self, Self::Error> {
+        Ok(Self {
+            address: value.key,
+            storage_hash: value.value,
+            proof: value.proof,
+        })
     }
 }
 
@@ -140,21 +166,13 @@ impl TryFrom<ProtoAccountUpdate> for AccountUpdateInfo {
     type Error = Error;
     fn try_from(value: ProtoAccountUpdate) -> Result<Self, Self::Error> {
         Ok(Self {
-            account_proof: decode_eip1184_rlp_proof(value.account_proof)?,
-            account_storage_root: Root::try_from(value.account_storage_root.as_slice())
-                .map_err(|_| Error::decode("`account_storage_root` must be 32 bytes"))?,
+            proofs: value
+                .proof
+                .into_iter()
+                .map(TryInto::<AccountProof>::try_into)
+                .collect::<Result<Vec<_>, _>>()?,
         })
     }
-}
-
-fn encode_account_proof(bz: Vec<Vec<u8>>) -> Vec<u8> {
-    let proof: Vec<Vec<u8>> = bz.into_iter().map(|b| b.to_vec()).collect();
-    let mut stream = rlp::RlpStream::new();
-    stream.begin_list(proof.len());
-    for p in proof.iter() {
-        stream.append_raw(p, 1);
-    }
-    stream.out().freeze().into()
 }
 
 pub(crate) fn convert_proto_to_beacon_header(

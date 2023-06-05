@@ -102,8 +102,7 @@ message ExecutionUpdate {
 }
 
 message AccountUpdate {
-  bytes account_proof = 1;
-  bytes account_storage_root = 2;
+  repeated Proof proof = 1;
 }
 
 message LightClientHeader {

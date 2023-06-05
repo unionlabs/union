@@ -5,7 +5,6 @@ use crate::{
 use ethereum_verifier::{
     compute_sync_committee_period_at_slot, compute_timestamp_at_slot, LightClientContext,
 };
-use ibc::core::ics23_commitment::commitment::CommitmentRoot;
 
 // TODO(aeryz): This is an ethereum spec implementation. Although implementing this in here is more performant, we might also
 // consider moving this to `ethereum-verifier`, and calling it here, so that all spec related updates/verifications will be at
@@ -14,13 +13,13 @@ pub fn apply_light_client_update<C: LightClientContext>(
     client_state: &mut ClientState,
     consensus_state: &mut ConsensusState,
     consensus_update: LightClientUpdate,
-    account_update: AccountUpdateInfo,
+    _account_update: AccountUpdateInfo,
 ) -> Result<(), Error> {
     // TODO(aeryz): Verify `account_update.account_storage_root`
 
-    let store_period = compute_sync_committee_period_at_slot::<C>(consensus_state.slot);
+    let store_period = compute_sync_committee_period_at_slot(consensus_state.slot);
     let update_finalized_period =
-        compute_sync_committee_period_at_slot::<C>(consensus_update.finalized_header.beacon.slot);
+        compute_sync_committee_period_at_slot(consensus_update.finalized_header.beacon.slot);
 
     match consensus_state.next_sync_committee {
         None if update_finalized_period != store_period => {
@@ -46,10 +45,10 @@ pub fn apply_light_client_update<C: LightClientContext>(
     }
 
     // We implemented the spec until, this point. We apply our updates now.
-    consensus_state.storage_root =
-        CommitmentRoot::from_bytes(account_update.account_storage_root.as_ref());
+    // consensus_state.storage_root =
+    //     CommitmentRoot::from_bytes(account_update.account_storage_root.as_ref());
 
-    consensus_state.timestamp = compute_timestamp_at_slot::<C>(
+    consensus_state.timestamp = compute_timestamp_at_slot(
         client_state.genesis_time,
         consensus_update.finalized_header.beacon.slot,
     );

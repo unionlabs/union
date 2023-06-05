@@ -182,12 +182,8 @@ pub struct ExecutionUpdate {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AccountUpdate {
-    #[prost(bytes = "vec", tag = "1")]
-    #[cfg_attr(feature = "std", serde(with = "::serde_utils::base64"))]
-    pub account_proof: ::prost::alloc::vec::Vec<u8>,
-    #[prost(bytes = "vec", tag = "2")]
-    #[cfg_attr(feature = "std", serde(with = "::serde_utils::base64"))]
-    pub account_storage_root: ::prost::alloc::vec::Vec<u8>,
+    #[prost(message, repeated, tag = "1")]
+    pub proof: ::prost::alloc::vec::Vec<Proof>,
 }
 #[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]

@@ -1,5 +1,4 @@
 pub mod client_state;
-pub mod commitment;
 pub mod consensus_state;
 pub mod context;
 pub mod contract;
@@ -16,9 +15,4 @@ pub mod eth_types {
     pub use ethereum_verifier::capella::mainnet::*;
     #[cfg(feature = "eth-minimal")]
     pub use ethereum_verifier::capella::minimal::*;
-
-    #[cfg(not(feature = "eth-minimal"))]
-    pub type LightClientConfig = ethereum_verifier::MainnetConfig;
-    #[cfg(feature = "eth-minimal")]
-    pub type LightClientConfig = ethereum_verifier::MinimalConfig;
 }

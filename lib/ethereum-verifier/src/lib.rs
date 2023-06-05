@@ -1,5 +1,3 @@
-#![feature(generic_const_exprs)]
-
 extern crate alloc;
 
 mod byte_list;
