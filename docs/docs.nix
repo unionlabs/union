@@ -35,7 +35,7 @@
 
           installPhase = ''
             mkdir -p $out
-            cp -r ./docs/build $out
+            cp -r ./docs/build/* $out
           '';
 
           doDist = false;
