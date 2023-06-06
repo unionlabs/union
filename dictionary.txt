@@ -180,6 +180,7 @@ drawio
 dylib
 dylib
 elems
+errorsmod
 esac
 esac
 ethabi
@@ -230,6 +231,7 @@ holiman
 horcrux
 horiz
 httptemplate
+ibcante
 ibcclient
 ibcclientclient
 ibcclienttypes
@@ -399,6 +401,7 @@ rustls
 rustls
 schemars
 schnorr
+sdkerrors
 secp
 serde
 serde
