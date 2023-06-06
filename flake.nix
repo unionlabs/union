@@ -50,6 +50,8 @@
         ./tools/rust-proto.nix
         ./tools/generate-rust-sol-bindings/generate-rust-sol-bindings.nix
         ./tools/libwasmvm/libwasmvm.nix
+        ./tools/rust/rust.nix
+        ./tools/rust/crane.nix
         ./tools/tera/tera.nix
         ./tools/docgen/docgen.nix
         ./networks/devnet.nix
@@ -58,62 +60,7 @@
         treefmt-nix.flakeModule
         pre-commit-hooks.flakeModule
       ];
-      perSystem = { config, self', inputs', pkgs, system, lib, ... }:
-        let
-          nightlyConfig = {
-            channel = "nightly-2023-05-16";
-            components = [ "rust-src" "rust-analyzer" ];
-            profile = "default";
-            targets = [ "wasm32-unknown-unknown" ];
-          };
-
-          rust-nightly = pkgs.rust-bin.fromRustupToolchain nightlyConfig;
-
-          withBuildTarget = target:
-            let
-              toolchain = pkgs.rust-bin.fromRustupToolchain {
-                inherit (nightlyConfig) channel profile;
-                components = nightlyConfig.components ++ [ "cargo" "rustc" "rust-src" ];
-                # hopefully if we ever use wasi this issue will be resolved: pkgs.rust.toRustTarget pkgs.hostPlatform
-                targets = [ target (pkgs.rust.toRustTarget pkgs.hostPlatform) ];
-              };
-            in
-            crane.lib.${system}.overrideToolchain (toolchain) // { inherit toolchain; };
-          craneLib = crane.lib.${system}.overrideToolchain rust-nightly;
-
-          mkChecks = pkgName: checks: pkgs.lib.mapAttrs' (name: value: { name = "${pkgName}-${name}"; value = value; }) checks;
-
-          rustSrc =
-            let
-              unionvisor-testdata = path: _type: (builtins.match ".*unionvisor/src/testdata/.*" path) != null;
-              jsonFilter = path: _type: (builtins.match ".*json$" path) != null;
-              jsonOrCargo = path: type:
-                (unionvisor-testdata path type) || (jsonFilter path type) || (craneLib.filterCargoSources path type);
-            in
-            lib.cleanSourceWith {
-              src = craneLib.path ./.;
-              filter = jsonOrCargo;
-            };
-
-          commonAttrs = {
-            # fake values to suppress warnings; see https://github.com/ipetkov/crane/issues/281
-            pname = "union-workspace";
-            version = "v0.0.0";
-
-            src = rustSrc;
-            buildInputs = [ pkgs.pkg-config pkgs.openssl ]
-              ++ (
-              pkgs.lib.optionals pkgs.stdenv.isDarwin (with pkgs.darwin.apple_sdk.frameworks; [
-                Security
-              ])
-            );
-            doCheck = false;
-            cargoExtraArgs = "--workspace --exclude ethereum-consensus --exclude ethereum-verifier";
-            PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
-          };
-
-          cargoArtifacts = craneLib.buildDepsOnly commonAttrs;
-        in
+      perSystem = { config, self', inputs', pkgs, rust, crane, system, lib, ... }:
         {
           _module = {
             args = {
@@ -136,12 +83,6 @@
               forge = foundry.defaultPackage.${system};
 
               nix-filter = nix-filter.lib;
-
-              crane = {
-                lib = craneLib;
-                hostTarget = pkgs.rust.toRustTarget pkgs.hostPlatform;
-                inherit withBuildTarget cargoArtifacts commonAttrs mkChecks rustSrc;
-              };
 
               proto = {
                 uniond = builtins.path {
@@ -258,7 +199,7 @@
           devShells =
             let
               baseShell = {
-                buildInputs = [ rust-nightly ] ++
+                buildInputs = [ rust.nightly ] ++
                   (with pkgs; [
                     buf
                     bacon
