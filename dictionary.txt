@@ -234,6 +234,9 @@ ibcclient
 ibcclientclient
 ibcclienttypes
 ibcexported
+ibcfee
+ibcfeekeeper
+ibcfeetypes
 ibcgo
 ibckeeper
 ibcporttypes
@@ -407,6 +410,7 @@ simtestutil
 simtypes
 slashingkeeper
 slashingtypes
+Snapshotter
 snapshottypes
 solomachine
 srcs
@@ -513,6 +517,9 @@ virtualisation
 vmdebug
 vuex
 wasi
+wasmd
+wasmkeeper
+wasmtypes
 wasmvm
 wasmvmstatic
 wctx
