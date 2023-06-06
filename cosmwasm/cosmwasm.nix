@@ -23,7 +23,7 @@
         wasm-cw20-ics20 = rustToolchain.buildPackage (attrs // {
           inherit CARGO_BUILD_TARGET;
 
-          cargoBuildCommand = "RUSTFLAGS='-C target-feature=-sign-ext -C link-arg=-s -C target-cpu=mvp' cargo -Z build-std=std,panic_abort -Z build-std-features=panic_immediate_abort build --release --lib --target ${CARGO_BUILD_TARGET}";
+          cargoBuildCommand = "RUSTFLAGS='-C target-feature=-sign-ext -C link-arg=-s -C target-cpu=mvp' cargo -Z build-std=std,panic_abort -Z build-std-features=panic_immediate_abort build --release --no-default-features --lib --target ${CARGO_BUILD_TARGET}";
 
           checkPhase = ''
             cargo test ${attrs.cargoExtraArgs} --target ${crane.hostTarget}

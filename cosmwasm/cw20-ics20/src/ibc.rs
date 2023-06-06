@@ -12,16 +12,14 @@ use cosmwasm_std::{
     IbcReceiveResponse, Reply, Response, SubMsg, SubMsgResult, Uint128, WasmMsg,
 };
 use cw20::Cw20ExecuteMsg;
-use ethers::abi::{AbiDecode, AbiEncode};
-use ethers_contract::{EthAbiCodec, EthAbiType};
+use ethabi::{ParamType, Token};
 
 pub const ICS20_VERSION: &str = "ics20-1";
 pub const ICS20_ORDERING: IbcOrder = IbcOrder::Unordered;
 
 /// The format for sending an ics20 packet.
 /// Proto defined here: https://github.com/cosmos/cosmos-sdk/blob/v0.42.0/proto/ibc/applications/transfer/v1/transfer.proto#L11-L20
-/// This is compatible with the JSON serialization
-#[derive(Clone, PartialEq, Eq, Debug, Default, EthAbiType, EthAbiCodec)]
+#[derive(Clone, PartialEq, Eq, Debug, Default)]
 pub struct Ics20Packet {
     /// amount of tokens to transfer is encoded as a string, but limited to u64 max
     pub amount: u64,
@@ -44,14 +42,42 @@ impl Ics20Packet {
     }
 
     pub fn eth_encode(self) -> Binary {
-        self.encode().into()
+        ethabi::encode(&[
+            Token::Uint(self.amount.into()),
+            Token::String(self.denom),
+            Token::String(self.receiver),
+            Token::String(self.sender),
+        ])
+        .into()
     }
 }
 
 impl TryFrom<&Binary> for Ics20Packet {
     type Error = ContractError;
     fn try_from(value: &Binary) -> Result<Self, Self::Error> {
-        AbiDecode::decode(value.as_ref()).map_err(|_| ContractError::EthAbiDecoding)
+        let values = ethabi::decode(
+            &[
+                ParamType::Uint(256),
+                ParamType::String,
+                ParamType::String,
+                ParamType::String,
+            ],
+            &value.0,
+        )
+        .map_err(|_| ContractError::EthAbiDecoding)?;
+        match &values[..] {
+            [Token::Uint(amount), Token::String(denom), Token::String(receiver), Token::String(sender)] => {
+                Ok(Ics20Packet {
+                    denom: denom.clone(),
+                    amount: (*amount)
+                        .try_into()
+                        .map_err(|_| ContractError::AmountOverflow {})?,
+                    sender: sender.clone(),
+                    receiver: receiver.clone(),
+                })
+            }
+            _ => Err(ContractError::EthAbiDecoding),
+        }
     }
 }
 

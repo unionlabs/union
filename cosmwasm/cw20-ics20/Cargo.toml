@@ -13,20 +13,17 @@ documentation = "https://docs.cosmwasm.com"
 crate-type = ["cdylib", "rlib"]
 
 [features]
-backtraces = ["cosmwasm-std/backtraces"]
-# use library feature to disable all init/handle/query exports
 library = []
 
 [dependencies]
-ethers = { version = "2.0", default-features = false }
-ethers-contract = { version = "2.0", default-features = false }
+ethabi = { version = "18.0.0", default-features = false }
 cosmwasm-schema = { version = "1.1.0" }
-cw-utils = "1.0.1"
-cw2 = { version = "1.0.1" }
-cw20 = { version = "1.0.1" }
+cw-utils = { git = "https://github.com/CosmWasm/cw-utils", rev = "477fdbeea8b2e50a7bf3e55be8d3b195ad6d5041" }
+cw2 = { git = "https://github.com/CosmWasm/cw-plus", rev = "de1fb0b9836e56e5640575d246274d882509d714" }
+cw20 = { git = "https://github.com/CosmWasm/cw-plus", rev = "de1fb0b9836e56e5640575d246274d882509d714" }
+cw-controllers = { git = "https://github.com/CosmWasm/cw-plus", rev = "de1fb0b9836e56e5640575d246274d882509d714" }
+cw-storage-plus = { git = "https://github.com/CosmWasm/cw-storage-plus", rev = "3822f951ab33ad289e2b1333b6373a55b30906c7" }
 cosmwasm-std = { version = "1.1.0", features = ["stargate"] }
-cw-storage-plus = "1.0.1"
-cw-controllers = { version = "1.0.1" }
 schemars = "0.8.1"
 semver = "1"
 serde = { version = "1.0.103", default-features = false, features = ["derive"] }
