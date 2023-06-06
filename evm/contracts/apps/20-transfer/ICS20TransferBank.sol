@@ -1,5 +1,6 @@
 pragma solidity ^0.8.18;
 
+import "./TransferPacket.sol";
 import "./ICS20Transfer.sol";
 import "./IICS20Bank.sol";
 import "../../core/25-handler/IBCHandler.sol";
@@ -31,13 +32,11 @@ contract ICS20TransferBank is ICS20Transfer {
         }
 
         _sendPacket(
-            IbcApplicationsTransferV2FungibleTokenPacketData.Data({
+            TransferPacket({
                 denom: denom,
-                amount: Strings.toString(amount),
+                amount: amount,
                 sender: string(abi.encodePacked(_msgSender())),
-                receiver: string(abi.encodePacked(receiver)),
-                // TODO: allow for users to dispatch memo?
-                memo: ""
+                receiver: string(abi.encodePacked(receiver))
             }),
             sourcePort,
             sourceChannel,
