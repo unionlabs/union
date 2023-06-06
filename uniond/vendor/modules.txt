@@ -671,6 +671,7 @@ github.com/cosmos/ibc-go/v7/modules/core/05-port/keeper
 github.com/cosmos/ibc-go/v7/modules/core/05-port/types
 github.com/cosmos/ibc-go/v7/modules/core/23-commitment/types
 github.com/cosmos/ibc-go/v7/modules/core/24-host
+github.com/cosmos/ibc-go/v7/modules/core/ante
 github.com/cosmos/ibc-go/v7/modules/core/client
 github.com/cosmos/ibc-go/v7/modules/core/client/cli
 github.com/cosmos/ibc-go/v7/modules/core/exported
