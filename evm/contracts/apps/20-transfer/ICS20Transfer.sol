@@ -1,5 +1,6 @@
 pragma solidity ^0.8.18;
 
+import "./TransferPacket.sol";
 import "./IICS20Transfer.sol";
 import "../../proto/ibc/core/channel/v1/channel.sol";
 import "../../proto/ibc/applications/transfer/v2/packet.sol";
@@ -23,24 +24,24 @@ abstract contract ICS20Transfer is IBCAppBase {
         onlyIBC
         returns (bytes memory acknowledgement)
     {
-        IbcApplicationsTransferV2FungibleTokenPacketData.Data memory data = IbcApplicationsTransferV2FungibleTokenPacketData.decode(packet.data);
-        strings.slice memory denom = data.denom.toSlice();
+        TransferPacket memory transferPacket = TransferPacketHelp.decode(packet.data);
+        strings.slice memory denom = transferPacket.denom.toSlice();
         strings.slice memory trimedDenom =
-            data.denom.toSlice().beyond(_makeDenomPrefix(packet.source_port, packet.source_channel));
+            transferPacket.denom.toSlice().beyond(_makeDenomPrefix(packet.source_port, packet.source_channel));
         if (!denom.equals(trimedDenom)) {
             // receiver is source chain
             return _newAcknowledgement(
                 _transferFrom(
                     _getEscrowAddress(packet.destination_channel),
-                    bytes(data.receiver).toAddress(0),
+                    bytes(transferPacket.receiver).toAddress(0),
                     trimedDenom.toString(),
-                    bytes(data.amount).toUint256(0)
+                    transferPacket.amount
                 )
             );
         } else {
             string memory prefixedDenom =
                 _makeDenomPrefix(packet.destination_port, packet.destination_channel).concat(denom);
-            return _newAcknowledgement(_mint(bytes(data.receiver).toAddress(0), prefixedDenom, bytes(data.amount).toUint256(0)));
+            return _newAcknowledgement(_mint(bytes(transferPacket.receiver).toAddress(0), prefixedDenom, transferPacket.amount));
         }
     }
 
@@ -105,7 +106,7 @@ abstract contract ICS20Transfer is IBCAppBase {
     function _burn(address account, string memory denom, uint256 amount) internal virtual returns (bool);
 
     function _sendPacket(
-        IbcApplicationsTransferV2FungibleTokenPacketData.Data memory data,
+        TransferPacket memory packet,
         string memory sourcePort,
         string memory sourceChannel,
         uint64 timeoutHeight
@@ -115,7 +116,7 @@ abstract contract ICS20Transfer is IBCAppBase {
             sourceChannel,
             IbcCoreClientV1Height.Data({revision_number: 0, revision_height: timeoutHeight}),
             0,
-            IbcApplicationsTransferV2FungibleTokenPacketData.encode(data)
+            TransferPacketHelp.encode(packet)
         );
     }
 
