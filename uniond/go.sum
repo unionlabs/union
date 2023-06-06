@@ -955,8 +955,8 @@ github.com/ugorji/go/codec v1.2.7 h1:YPXUKf7fYbp/y8xloBqZOw2qaVggbfwMlI8WM3wZUJ0
 github.com/ulikunitz/xz v0.5.10/go.mod h1:nbz6k7qbPmH4IRqmfOplQw/tblSgqTqBwxkY0oWt/14=
 github.com/ulikunitz/xz v0.5.11 h1:kpFauv27b6ynzBNT/Xy+1k+fK4WswhN/6PN5WhFAGw8=
 github.com/ulikunitz/xz v0.5.11/go.mod h1:nbz6k7qbPmH4IRqmfOplQw/tblSgqTqBwxkY0oWt/14=
-github.com/unionfi/cometbls v0.0.0-20230606111126-ce4db599d216 h1:32KdXdSk0wSMN3vkXrDhNN5YiXpxqR4KfmOeyaWnObI=
-github.com/unionfi/cometbls v0.0.0-20230606111126-ce4db599d216/go.mod h1:DQBrLANmGK8o6LQPxaH03I3prPrLy3gecQ2Nf2NvD6I=
+github.com/unionfi/cometbls v0.0.0-20230606200400-20834775a066 h1:h3xbEvrUMpdLaNDviZcLOisk1cT1mxx3eR1c9ICmjNk=
+github.com/unionfi/cometbls v0.0.0-20230606200400-20834775a066/go.mod h1:DQBrLANmGK8o6LQPxaH03I3prPrLy3gecQ2Nf2NvD6I=
 github.com/unionfi/cosmos-sdk v0.0.0-20230606111321-dbdb28960bff h1:JGvdFB/4eU082q/VzVNeuuUL4MrYkA6aB9gKkJWroRk=
 github.com/unionfi/cosmos-sdk v0.0.0-20230606111321-dbdb28960bff/go.mod h1:RT1BlAihYON6rPlX3yYfT7GmBIs8fZor/ZhGBg5Irzc=
 github.com/urfave/cli v1.20.0/go.mod h1:70zkFmudgCuE/ngEzBv17Jvp/497gISqfk5gWijbERA=
