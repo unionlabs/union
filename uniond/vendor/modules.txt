@@ -620,12 +620,6 @@ github.com/cosmos/iavl/internal/bytes
 github.com/cosmos/iavl/internal/encoding
 github.com/cosmos/iavl/internal/logger
 github.com/cosmos/iavl/keyformat
-# github.com/cosmos/ibc-go/modules/capability v1.0.0-rc1
-## explicit; go 1.19
-github.com/cosmos/ibc-go/modules/capability
-github.com/cosmos/ibc-go/modules/capability/keeper
-github.com/cosmos/ibc-go/modules/capability/simulation
-github.com/cosmos/ibc-go/modules/capability/types
 # github.com/cosmos/ibc-go/v7 v7.0.1 => github.com/hussein-aitlahcen/ibc-go/v7 v7.0.0-20230605143907-7795f755632c
 ## explicit; go 1.19
 github.com/cosmos/ibc-go/v7/internal/errors
@@ -642,6 +636,10 @@ github.com/cosmos/ibc-go/v7/modules/apps/27-interchain-accounts/host/keeper
 github.com/cosmos/ibc-go/v7/modules/apps/27-interchain-accounts/host/types
 github.com/cosmos/ibc-go/v7/modules/apps/27-interchain-accounts/simulation
 github.com/cosmos/ibc-go/v7/modules/apps/27-interchain-accounts/types
+github.com/cosmos/ibc-go/v7/modules/apps/29-fee
+github.com/cosmos/ibc-go/v7/modules/apps/29-fee/client/cli
+github.com/cosmos/ibc-go/v7/modules/apps/29-fee/keeper
+github.com/cosmos/ibc-go/v7/modules/apps/29-fee/types
 github.com/cosmos/ibc-go/v7/modules/apps/transfer
 github.com/cosmos/ibc-go/v7/modules/apps/transfer/client/cli
 github.com/cosmos/ibc-go/v7/modules/apps/transfer/keeper
@@ -756,6 +754,8 @@ github.com/fsnotify/fsnotify
 # github.com/ghodss/yaml v1.0.0
 ## explicit
 github.com/ghodss/yaml
+# github.com/gin-gonic/gin v1.8.1
+## explicit; go 1.18
 # github.com/go-kit/kit v0.12.0
 ## explicit; go 1.17
 github.com/go-kit/kit/metrics
@@ -770,6 +770,10 @@ github.com/go-kit/log/term
 # github.com/go-logfmt/logfmt v0.6.0
 ## explicit; go 1.17
 github.com/go-logfmt/logfmt
+# github.com/go-playground/validator/v10 v10.11.1
+## explicit; go 1.13
+# github.com/goccy/go-json v0.9.11
+## explicit; go 1.12
 # github.com/godbus/dbus v0.0.0-20190726142602-4481cbc300e2
 ## explicit; go 1.12
 github.com/godbus/dbus

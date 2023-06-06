@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
 	autocliv1 "cosmossdk.io/api/cosmos/autocli/v1"
 	reflectionv1 "cosmossdk.io/api/cosmos/reflection/v1"
@@ -13,6 +14,7 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/libs/log"
 	tmos "github.com/cometbft/cometbft/libs/os"
+	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
 	nodeservice "github.com/cosmos/cosmos-sdk/client/grpc/node"
@@ -41,6 +43,9 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/bank"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	"github.com/cosmos/cosmos-sdk/x/capability"
+	capabilitykeeper "github.com/cosmos/cosmos-sdk/x/capability/keeper"
+	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	"github.com/cosmos/cosmos-sdk/x/consensus"
 	consensusparamkeeper "github.com/cosmos/cosmos-sdk/x/consensus/keeper"
 	consensusparamtypes "github.com/cosmos/cosmos-sdk/x/consensus/types"
@@ -85,9 +90,6 @@ import (
 	upgradeclient "github.com/cosmos/cosmos-sdk/x/upgrade/client"
 	upgradekeeper "github.com/cosmos/cosmos-sdk/x/upgrade/keeper"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
-	"github.com/cosmos/ibc-go/modules/capability"
-	capabilitykeeper "github.com/cosmos/ibc-go/modules/capability/keeper"
-	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
 	ica "github.com/cosmos/ibc-go/v7/modules/apps/27-interchain-accounts"
 	icacontrollerkeeper "github.com/cosmos/ibc-go/v7/modules/apps/27-interchain-accounts/controller/keeper"
 	icacontrollertypes "github.com/cosmos/ibc-go/v7/modules/apps/27-interchain-accounts/controller/types"
@@ -95,6 +97,9 @@ import (
 	icahostkeeper "github.com/cosmos/ibc-go/v7/modules/apps/27-interchain-accounts/host/keeper"
 	icahosttypes "github.com/cosmos/ibc-go/v7/modules/apps/27-interchain-accounts/host/types"
 	icatypes "github.com/cosmos/ibc-go/v7/modules/apps/27-interchain-accounts/types"
+	ibcfee "github.com/cosmos/ibc-go/v7/modules/apps/29-fee"
+	ibcfeekeeper "github.com/cosmos/ibc-go/v7/modules/apps/29-fee/keeper"
+	ibcfeetypes "github.com/cosmos/ibc-go/v7/modules/apps/29-fee/types"
 	"github.com/cosmos/ibc-go/v7/modules/apps/transfer"
 	ibctransferkeeper "github.com/cosmos/ibc-go/v7/modules/apps/transfer/keeper"
 	ibctransfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
@@ -108,7 +113,6 @@ import (
 	solomachine "github.com/cosmos/ibc-go/v7/modules/light-clients/06-solomachine"
 	ibctm "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
 	ibcwasm "github.com/cosmos/ibc-go/v7/modules/light-clients/08-wasm"
-	wasm "github.com/cosmos/ibc-go/v7/modules/light-clients/08-wasm"
 	ibcwasmkeeper "github.com/cosmos/ibc-go/v7/modules/light-clients/08-wasm/keeper"
 	ibcwasmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/08-wasm/types"
 	"github.com/spf13/cast"
@@ -192,6 +196,7 @@ var (
 		consensus.AppModuleBasic{},
 		unionmodule.AppModuleBasic{},
 		wasm.AppModuleBasic{},
+		ibcfee.AppModuleBasic{},
 		// this line is used by starport scaffolding # stargate/app/moduleBasic
 	)
 
@@ -205,6 +210,7 @@ var (
 		stakingtypes.NotBondedPoolName: {authtypes.Burner, authtypes.Staking},
 		govtypes.ModuleName:            {authtypes.Burner},
 		ibctransfertypes.ModuleName:    {authtypes.Minter, authtypes.Burner},
+		ibcfeetypes.ModuleName:         nil,
 		wasm.ModuleName:                {authtypes.Burner}, // TODO(aeryz): is this necessary?
 		// this line is used by starport scaffolding # stargate/app/maccPerms
 	}
@@ -240,17 +246,6 @@ func GetEnabledProposals() []wasm.ProposalType {
 	return proposals
 }
 
-func GetWasmOpts(appOpts servertypes.AppOptions) []wasm.Option {
-	var wasmOpts []wasm.Option
-	if cast.ToBool(appOpts.Get("telemetry.enabled")) {
-		wasmOpts = append(wasmOpts, wasmkeeper.WithVMCacheMetrics(prometheus.DefaultRegisterer))
-	}
-
-	wasmOpts = append(wasmOpts, wasmkeeper.WithGasRegister(NewJunoWasmGasRegister()))
-
-	return wasmOpts
-}
-
 // UnionApp extends an ABCI application, but with most of its parameters exported.
 // They are exported for convenience in creating helper functions, as object
 // capabilities aren't needed for testing.
@@ -283,6 +278,7 @@ type UnionApp struct {
 	UpgradeKeeper         *upgradekeeper.Keeper
 	ParamsKeeper          paramskeeper.Keeper
 	IBCKeeper             *ibckeeper.Keeper // IBC Keeper must be a pointer in the app, so we can SetRouter on it correctly
+	IBCFeeKeeper          ibcfeekeeper.Keeper
 	EvidenceKeeper        evidencekeeper.Keeper
 	TransferKeeper        ibctransferkeeper.Keeper
 	WasmClientKeeper      ibcwasmkeeper.Keeper
@@ -296,6 +292,7 @@ type UnionApp struct {
 	ScopedIBCKeeper      capabilitykeeper.ScopedKeeper
 	ScopedTransferKeeper capabilitykeeper.ScopedKeeper
 	ScopedICAHostKeeper  capabilitykeeper.ScopedKeeper
+	ScopedIBCFeeKeeper   capabilitykeeper.ScopedKeeper
 	ScopedWasmKeeper     capabilitykeeper.ScopedKeeper
 
 	UnionKeeper unionmodulekeeper.Keeper
@@ -347,7 +344,7 @@ func New(
 		govtypes.StoreKey, paramstypes.StoreKey, ibcexported.StoreKey, upgradetypes.StoreKey,
 		feegrant.StoreKey, evidencetypes.StoreKey, ibctransfertypes.StoreKey, ibcwasmtypes.StoreKey, icahosttypes.StoreKey,
 		capabilitytypes.StoreKey, group.StoreKey, icacontrollertypes.StoreKey, consensusparamtypes.StoreKey,
-		unionmoduletypes.StoreKey, wasm.StoreKey,
+		unionmoduletypes.StoreKey, ibcfeetypes.StoreKey, wasm.StoreKey,
 		// this line is used by starport scaffolding # stargate/app/storeKey
 	)
 	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey)
@@ -502,12 +499,20 @@ func New(
 		scopedIBCKeeper,
 	)
 
+	// IBC Fee Module keeper
+	app.IBCFeeKeeper = ibcfeekeeper.NewKeeper(
+		appCodec, keys[ibcfeetypes.StoreKey],
+		app.IBCKeeper.ChannelKeeper, // may be replaced with IBC middleware
+		app.IBCKeeper.ChannelKeeper,
+		&app.IBCKeeper.PortKeeper, app.AccountKeeper, app.BankKeeper,
+	)
+
 	// Create Transfer Keepers
 	app.TransferKeeper = ibctransferkeeper.NewKeeper(
 		appCodec,
 		keys[ibctransfertypes.StoreKey],
 		app.GetSubspace(ibctransfertypes.ModuleName),
-		app.IBCKeeper.ChannelKeeper,
+		app.IBCFeeKeeper, // ICS24 Wrapper: fee IBC middleware
 		app.IBCKeeper.ChannelKeeper,
 		&app.IBCKeeper.PortKeeper,
 		app.AccountKeeper,
@@ -520,7 +525,7 @@ func New(
 	app.ICAHostKeeper = icahostkeeper.NewKeeper(
 		appCodec, keys[icahosttypes.StoreKey],
 		app.GetSubspace(icahosttypes.SubModuleName),
-		app.IBCKeeper.ChannelKeeper,
+		app.IBCFeeKeeper, // use ics29 fee as ics4Wrapper in middleware stack
 		app.IBCKeeper.ChannelKeeper,
 		&app.IBCKeeper.PortKeeper,
 		app.AccountKeeper,
@@ -530,7 +535,7 @@ func New(
 	icaControllerKeeper := icacontrollerkeeper.NewKeeper(
 		appCodec, keys[icacontrollertypes.StoreKey],
 		app.GetSubspace(icacontrollertypes.SubModuleName),
-		app.IBCKeeper.ChannelKeeper, // may be replaced with middleware such as ics29 fee
+		app.IBCFeeKeeper, // use ics29 fee as ics4Wrapper in middleware stack
 		app.IBCKeeper.ChannelKeeper, &app.IBCKeeper.PortKeeper,
 		scopedICAControllerKeeper, app.MsgServiceRouter(),
 	)
@@ -546,7 +551,6 @@ func New(
 	)
 	// If evidence needs to be handled for the app, set routes in router here and seal
 	app.EvidenceKeeper = *evidenceKeeper
-
 
 	govRouter := govv1beta1.NewRouter()
 	govRouter.
@@ -624,13 +628,13 @@ func New(
 	app.CapabilityKeeper.Seal()
 
 	// Create static IBC router, add transfer route, then set and seal it
-	var wasmStack porttypes.IBCModule
+	var wasmStack ibcporttypes.IBCModule
 	wasmStack = wasm.NewIBCHandler(app.WasmKeeper, app.IBCKeeper.ChannelKeeper, app.IBCFeeKeeper)
 	wasmStack = ibcfee.NewIBCMiddleware(wasmStack, app.IBCFeeKeeper)
 
 	ibcRouter := ibcporttypes.NewRouter()
 	ibcRouter.AddRoute(icahosttypes.SubModuleName, icaHostIBCModule).
-			AddRoute(wasm.ModuleName, wasmStack).
+		AddRoute(wasm.ModuleName, wasmStack).
 		AddRoute(ibctransfertypes.ModuleName, transferIBCModule)
 	// this line is used by starport scaffolding # ibc/app/router
 	app.IBCKeeper.SetRouter(ibcRouter)
@@ -855,6 +859,8 @@ func New(
 			tmos.Exit(err.Error())
 		}
 
+		ctx := app.BaseApp.NewUncachedContext(true, tmproto.Header{})
+
 		// Initialize pinned codes in wasmvm as they are not persisted there
 		if err := app.WasmKeeper.InitializePinnedCodes(ctx); err != nil {
 			tmos.Exit(fmt.Sprintf("failed initialize pinned codes %s", err))
@@ -1040,4 +1046,14 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 // SimulationManager implements the SimulationApp interface
 func (app *UnionApp) SimulationManager() *module.SimulationManager {
 	return app.sm
+}
+
+func AllCapabilities() []string {
+	return []string{
+		"iterator",
+		"staking",
+		"stargate",
+		"cosmwasm_1_1",
+		"cosmwasm_1_2",
+	}
 }
