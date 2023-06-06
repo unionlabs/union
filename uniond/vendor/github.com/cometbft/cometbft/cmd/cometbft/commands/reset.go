@@ -18,16 +18,15 @@ var ResetAllCmd = &cobra.Command{
 	Aliases: []string{"unsafe_reset_all"},
 	Short:   "(unsafe) Remove all the data and WAL, reset this node's validator to genesis state",
 	RunE:    resetAllCmd,
-	PreRun:  deprecateSnakeCase,
 }
 
 var keepAddrBook bool
 
 // ResetStateCmd removes the database of the specified CometBFT core instance.
 var ResetStateCmd = &cobra.Command{
-	Use:    "reset-state",
-	Short:  "Remove all the data and WAL",
-	PreRun: deprecateSnakeCase,
+	Use:     "reset-state",
+	Aliases: []string{"reset_state"},
+	Short:   "Remove all the data and WAL",
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		config, err = ParseConfig(cmd)
 		if err != nil {
@@ -47,7 +46,6 @@ var ResetPrivValidatorCmd = &cobra.Command{
 	Use:     "unsafe-reset-priv-validator",
 	Aliases: []string{"unsafe_reset_priv_validator"},
 	Short:   "(unsafe) Reset this node's validator to genesis state",
-	PreRun:  deprecateSnakeCase,
 	RunE:    resetPrivValidator,
 }
 

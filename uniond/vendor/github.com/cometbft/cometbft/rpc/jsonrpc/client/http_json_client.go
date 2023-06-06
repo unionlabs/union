@@ -214,15 +214,22 @@ func (c *Client) Call(
 	if err != nil {
 		return nil, fmt.Errorf("post failed: %w", err)
 	}
-
 	defer httpResponse.Body.Close()
 
 	responseBytes, err := io.ReadAll(httpResponse.Body)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
+		return nil, fmt.Errorf("%s. Failed to read response body: %w", getHTTPRespErrPrefix(httpResponse), err)
 	}
 
-	return unmarshalResponseBytes(responseBytes, id, result)
+	res, err := unmarshalResponseBytes(responseBytes, id, result)
+	if err != nil {
+		return nil, fmt.Errorf("%s. %w", getHTTPRespErrPrefix(httpResponse), err)
+	}
+	return res, nil
+}
+
+func getHTTPRespErrPrefix(resp *http.Response) string {
+	return fmt.Sprintf("error in json rpc client, with http response metadata: (Status: %s, Protocol %s)", resp.Status, resp.Proto)
 }
 
 // NewRequestBatch starts a batch of requests for this client.

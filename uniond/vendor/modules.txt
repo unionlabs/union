@@ -198,7 +198,7 @@ github.com/cockroachdb/apd/v2
 # github.com/coinbase/rosetta-sdk-go/types v1.0.0
 ## explicit; go 1.18
 github.com/coinbase/rosetta-sdk-go/types
-# github.com/cometbft/cometbft v0.37.1 => github.com/unionfi/cometbls v0.0.0-20230606111126-ce4db599d216
+# github.com/cometbft/cometbft v0.37.1 => github.com/unionfi/cometbls v0.0.0-20230606200400-20834775a066
 ## explicit; go 1.20
 github.com/cometbft/cometbft/abci/client
 github.com/cometbft/cometbft/abci/example/code
@@ -1422,7 +1422,7 @@ rsc.io/tmplfunc/internal/parse
 # sigs.k8s.io/yaml v1.3.0
 ## explicit; go 1.12
 sigs.k8s.io/yaml
-# github.com/cometbft/cometbft => github.com/unionfi/cometbls v0.0.0-20230606111126-ce4db599d216
+# github.com/cometbft/cometbft => github.com/unionfi/cometbls v0.0.0-20230606200400-20834775a066
 # github.com/consensys/gnark-crypto => github.com/hussein-aitlahcen/gnark-crypto v0.0.0-20230409222230-5346db050fea
 # github.com/cosmos/cosmos-sdk => github.com/unionfi/cosmos-sdk v0.0.0-20230606111321-dbdb28960bff
 # github.com/cosmos/ibc-go/v7 => github.com/hussein-aitlahcen/ibc-go/v7 v7.0.0-20230605143907-7795f755632c
