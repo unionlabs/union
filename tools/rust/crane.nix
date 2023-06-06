@@ -46,13 +46,16 @@
       };
 
       cargoArtifacts = craneLib.buildDepsOnly commonAttrs;
+
     in
     {
-      _module.args.crane = {
-        lib = craneLib;
-        hostTarget = pkgs.rust.toRustTarget pkgs.hostPlatform;
-        inherit withBuildTarget cargoArtifacts commonAttrs mkChecks rustSrc;
+      _module.args = rec {
+        crane = {
+          lib = craneLib;
+          hostTarget = pkgs.rust.toRustTarget pkgs.hostPlatform;
+          inherit withBuildTarget cargoArtifacts commonAttrs mkChecks rustSrc;
+          buildWasmContract = import ./buildWasmContract.nix { inherit crane pkgs lib; };
+        };
       };
-
     };
 }
