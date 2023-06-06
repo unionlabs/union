@@ -24,5 +24,4 @@ var ReplayConsoleCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		consensus.RunReplayFile(config.BaseConfig, config.Consensus, true)
 	},
-	PreRun: deprecateSnakeCase,
 }

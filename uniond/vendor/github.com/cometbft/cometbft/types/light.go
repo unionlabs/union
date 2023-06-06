@@ -120,6 +120,11 @@ type SignedHeader struct {
 	Commit *Commit `json:"commit"`
 }
 
+// IsEmpty returns true if both the header and commit are nil.
+func (sh SignedHeader) IsEmpty() bool {
+	return sh.Header == nil && sh.Commit == nil
+}
+
 // ValidateBasic does basic consistency checks and makes sure the header
 // and commit are consistent.
 //

@@ -177,7 +177,7 @@ require (
 )
 
 replace (
-	github.com/cometbft/cometbft => github.com/unionfi/cometbls v0.0.0-20230606111126-ce4db599d216
+	github.com/cometbft/cometbft => github.com/unionfi/cometbls v0.0.0-20230606200400-20834775a066
 	// Fork of gnark crypto until https://github.com/ConsenSys/gnark-crypto/pull/314 is merged
 	github.com/consensys/gnark-crypto => github.com/hussein-aitlahcen/gnark-crypto v0.0.0-20230409222230-5346db050fea
 	github.com/cosmos/cosmos-sdk => github.com/unionfi/cosmos-sdk v0.0.0-20230606111321-dbdb28960bff

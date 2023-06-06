@@ -15,7 +15,6 @@ var ProbeUpnpCmd = &cobra.Command{
 	Aliases: []string{"probe_upnp"},
 	Short:   "Test UPnP functionality",
 	RunE:    probeUpnp,
-	PreRun:  deprecateSnakeCase,
 }
 
 func probeUpnp(cmd *cobra.Command, args []string) error {
