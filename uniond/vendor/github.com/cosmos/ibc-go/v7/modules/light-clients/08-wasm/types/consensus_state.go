@@ -8,6 +8,14 @@ import (
 
 var _ exported.ConsensusState = (*ConsensusState)(nil)
 
+// NewConsensusState creates a new ConsensusState instance.
+func NewConsensusState(data []byte, timestamp uint64) *ConsensusState {
+	return &ConsensusState{
+		Data:      data,
+		Timestamp: timestamp,
+	}
+}
+
 // ClientType returns Wasm type.
 func (cs ConsensusState) ClientType() string {
 	return exported.Wasm

@@ -1,6 +1,7 @@
 package types
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 
@@ -254,7 +255,7 @@ func call[T ContractResult](ctx sdk.Context, clientStore sdk.KVStore, cs *Client
 		return output, sdkerrors.Wrapf(ErrUnmarshalPayloadFailed, "err: %s", err)
 	}
 	if !output.Validate() {
-		return output, sdkerrors.Wrapf(errors.New(output.Error()), "error occurred while calling contract with code ID %s", cs.CodeId)
+		return output, sdkerrors.Wrapf(errors.New(output.Error()), "error occurred while calling contract with code ID %s", hex.EncodeToString(cs.CodeId))
 	}
 	return output, nil
 }

@@ -1,7 +1,7 @@
 # Server
 
 The `server` package is responsible for providing the mechanisms necessary to
-start an ABCI Tendermint application and provides the CLI framework (based on [cobra](https://github.com/spf13/cobra))
+start an ABCI CometBFT application and provides the CLI framework (based on [cobra](https://github.com/spf13/cobra))
 necessary to fully bootstrap an application. The package exposes two core functions: `StartCmd`
 and `ExportCmd` which creates commands to start the application and export state respectively.
 
@@ -47,7 +47,7 @@ which creates a `client.Context` and sets that on the root command's `Context`.
 The `InterceptConfigsPreRunHandler` call creates a viper literal, default `server.Context`,
 and a logger and sets that on the root command's `Context`. The `server.Context`
 will be modified and saved to disk via the internal `interceptConfigs` call, which
-either reads or creates a Tendermint configuration based on the home path provided.
+either reads or creates a CometBFT configuration based on the home path provided.
 In addition, `interceptConfigs` also reads and loads the application configuration,
 `app.toml`, and binds that to the `server.Context` viper literal. This is vital
 so the application can get access to not only the CLI flags, but also to the
@@ -64,11 +64,11 @@ may use and provide to the construction process are defined by the `StartCmd`
 and by the application's config file, `app.toml`.
 
 The application can either be started in-process or as an external process. The
-former creates a Tendermint service and the latter creates a Tendermint Node.
+former creates a CometBFT service and the latter creates a CometBFT Node.
 
 Under the hood, `StartCmd` will call `GetServerContextFromCmd`, which provides
 the command access to a `server.Context`. This context provides access to the
-viper literal, the Tendermint config and logger. This allows flags to be bound
+viper literal, the CometBFT config and logger. This allows flags to be bound
 the viper literal and passed to the application construction.
 
 Example:

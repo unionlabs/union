@@ -71,7 +71,10 @@ func makeSignBatchCmd() func(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return err
 		}
-		txFactory := tx.NewFactoryCLI(clientCtx, cmd.Flags())
+		txFactory, err := tx.NewFactoryCLI(clientCtx, cmd.Flags())
+		if err != nil {
+			return err
+		}
 		txCfg := clientCtx.TxConfig
 		printSignatureOnly, _ := cmd.Flags().GetBool(flagSigOnly)
 

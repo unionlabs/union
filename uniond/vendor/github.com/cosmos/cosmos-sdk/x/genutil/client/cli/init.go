@@ -105,6 +105,12 @@ func InitCmd(mbm module.BasicManager, defaultNodeHome string) *cobra.Command {
 				}
 			}
 
+			// Get initial height
+			initHeight, _ := cmd.Flags().GetInt64(flags.FlagInitHeight)
+			if initHeight < 1 {
+				initHeight = 1
+			}
+
 			keyType := args[1]
 
 			nodeID, _, err := genutil.InitializeNodeValidatorFilesFromMnemonicCustom(config, mnemonic, keyType)
@@ -152,6 +158,7 @@ func InitCmd(mbm module.BasicManager, defaultNodeHome string) *cobra.Command {
 			genDoc.ConsensusParams.Validator.PubKeyTypes = []string{keyType}
 			genDoc.Validators = nil
 			genDoc.AppState = appState
+			genDoc.InitialHeight = initHeight
 
 			if err = genutil.ExportGenesisFile(genDoc, genFile); err != nil {
 				return errors.Wrap(err, "Failed to export genesis file")
@@ -169,6 +176,7 @@ func InitCmd(mbm module.BasicManager, defaultNodeHome string) *cobra.Command {
 	cmd.Flags().Bool(FlagRecover, false, "provide seed phrase to recover existing key instead of creating")
 	cmd.Flags().String(flags.FlagChainID, "", "genesis file chain-id, if left blank will be randomly created")
 	cmd.Flags().String(FlagDefaultBondDenom, "", "genesis file default denomination, if left blank default value is 'stake'")
+	cmd.Flags().Int64(flags.FlagInitHeight, 1, "specify the initial block height at genesis")
 
 	return cmd
 }

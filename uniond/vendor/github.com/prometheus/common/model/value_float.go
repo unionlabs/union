@@ -18,14 +18,7 @@ import (
 	"fmt"
 	"math"
 	"strconv"
-	"unsafe"
-
-	jsoniter "github.com/json-iterator/go"
 )
-
-func init() {
-	jsoniter.RegisterTypeEncoderFunc("model.SamplePair", marshalSamplePairJSON, marshalJSONIsEmpty)
-}
 
 var (
 	// ZeroSamplePair is the pseudo zero-value of SamplePair used to signal a
@@ -78,18 +71,16 @@ type SamplePair struct {
 	Value     SampleValue
 }
 
-// marshalSamplePairJSON writes `[ts, "val"]`.
-func marshalSamplePairJSON(ptr unsafe.Pointer, stream *jsoniter.Stream) {
-	p := *((*SamplePair)(ptr))
-	stream.WriteArrayStart()
-	MarshalTimestamp(int64(p.Timestamp), stream)
-	stream.WriteMore()
-	MarshalValue(float64(p.Value), stream)
-	stream.WriteArrayEnd()
-}
-
 func (s SamplePair) MarshalJSON() ([]byte, error) {
-	return jsoniter.ConfigCompatibleWithStandardLibrary.Marshal(s)
+	t, err := json.Marshal(s.Timestamp)
+	if err != nil {
+		return nil, err
+	}
+	v, err := json.Marshal(s.Value)
+	if err != nil {
+		return nil, err
+	}
+	return []byte(fmt.Sprintf("[%s,%s]", t, v)), nil
 }
 
 // UnmarshalJSON implements json.Unmarshaler.

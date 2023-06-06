@@ -130,7 +130,10 @@ $ %s gentx my-key-name 1000000stake secp256k1 --home=/path/to/home/dir --keyring
 				return errors.Wrap(err, "failed to validate account in genesis")
 			}
 
-			txFactory := tx.NewFactoryCLI(clientCtx, cmd.Flags())
+			txFactory, err := tx.NewFactoryCLI(clientCtx, cmd.Flags())
+			if err != nil {
+				return err
+			}
 
 			pub, err := key.GetAddress()
 			if err != nil {

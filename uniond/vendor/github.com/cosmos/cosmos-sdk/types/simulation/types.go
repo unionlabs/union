@@ -173,9 +173,8 @@ type AppStateFn func(r *rand.Rand, accs []Account, config Config) (
 )
 
 // AppStateFnWithExtendedCb returns the app state json bytes and the genesis accounts
-type AppStateFnWithExtendedCb func(r *rand.Rand, accs []Account, config Config) (
-	appState json.RawMessage, accounts []Account, chainId string, genesisTimestamp time.Time,
-)
+// Deprecated: Use AppStateFn instead. This will be removed in a future relase.
+type AppStateFnWithExtendedCb AppStateFn
 
 // RandomAccountFn returns a slice of n random simulation accounts
 type RandomAccountFn func(r *rand.Rand, n int) []Account

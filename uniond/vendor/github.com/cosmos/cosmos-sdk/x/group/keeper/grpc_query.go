@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"context"
+	"math"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -355,5 +356,27 @@ func (k Keeper) TallyResult(goCtx context.Context, request *group.QueryTallyResu
 
 	return &group.QueryTallyResultResponse{
 		Tally: tallyResult,
+	}, nil
+}
+
+// Groups returns all the groups present in the state.
+func (k Keeper) Groups(goCtx context.Context, request *group.QueryGroupsRequest) (*group.QueryGroupsResponse, error) {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	it, err := k.groupTable.PrefixScan(ctx.KVStore(k.key), 1, math.MaxUint64)
+	if err != nil {
+		return nil, err
+	}
+	defer it.Close()
+
+	var groups []*group.GroupInfo
+	pageRes, err := orm.Paginate(it, request.Pagination, &groups)
+	if err != nil {
+		return nil, err
+	}
+
+	return &group.QueryGroupsResponse{
+		Groups:     groups,
+		Pagination: pageRes,
 	}, nil
 }

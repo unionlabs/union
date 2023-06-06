@@ -35,7 +35,10 @@ func GetAuxToFeeCommand() *cobra.Command {
 				return fmt.Errorf("expected chain-id %s, got %s in aux signer data", clientCtx.ChainID, auxSignerData.SignDoc.ChainId)
 			}
 
-			f := clienttx.NewFactoryCLI(clientCtx, cmd.Flags())
+			f, err := clienttx.NewFactoryCLI(clientCtx, cmd.Flags())
+			if err != nil {
+				return err
+			}
 
 			txBuilder := clientCtx.TxConfig.NewTxBuilder()
 			err = txBuilder.AddAuxSignerData(auxSignerData)

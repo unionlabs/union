@@ -1,9 +1,9 @@
 .PHONY: all build build-rust build-go test
 
 # Builds the Rust library libwasmvm
-BUILDERS_PREFIX := cosmwasm/go-ext-builder:0014
+BUILDERS_PREFIX := cosmwasm/go-ext-builder:0015
 # Contains a full Go dev environment in order to run Go tests on the built library
-ALPINE_TESTER := cosmwasm/go-ext-builder:0014-alpine
+ALPINE_TESTER := cosmwasm/go-ext-builder:0015-alpine
 
 USER_ID := $(shell id -u)
 USER_GROUP = $(shell id -g)
@@ -54,6 +54,7 @@ build-rust-release:
 
 build-go:
 	go build ./...
+	go build -o build/demo ./cmd/demo
 
 test:
 	# Use package list mode to include all subdirectores. The -count=1 turns off caching.
@@ -92,10 +93,7 @@ release-build-macos:
 release-build-macos-static:
 	rm -rf libwasmvm/target/x86_64-apple-darwin/release
 	rm -rf libwasmvm/target/aarch64-apple-darwin/release
-	docker run --rm -u $(USER_ID):$(USER_GROUP) \
-		-v $(shell pwd)/libwasmvm:/code \
-		-v $(shell pwd)/builders/guest/build_macos_static.sh:/usr/local/bin/build_macos_static.sh \
-		$(BUILDERS_PREFIX)-cross build_macos_static.sh
+	docker run --rm -u $(USER_ID):$(USER_GROUP) -v $(shell pwd)/libwasmvm:/code $(BUILDERS_PREFIX)-cross build_macos_static.sh
 	cp libwasmvm/artifacts/libwasmvmstatic_darwin.a internal/api/libwasmvmstatic_darwin.a
 	make update-bindings
 

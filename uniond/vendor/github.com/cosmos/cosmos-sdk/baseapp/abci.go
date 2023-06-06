@@ -18,6 +18,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	snapshottypes "github.com/cosmos/cosmos-sdk/snapshots/types"
+	"github.com/cosmos/cosmos-sdk/store/rootmulti"
 	"github.com/cosmos/cosmos-sdk/telemetry"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -44,13 +45,14 @@ func (app *BaseApp) InitChain(req abci.RequestInitChain) (res abci.ResponseInitC
 
 	app.logger.Info("InitChain", "initialHeight", req.InitialHeight, "chainID", req.ChainId)
 
-	// If req.InitialHeight is > 1, then we set the initial version in the
-	// stores.
+	// Set the initial height, which will be used to determine if we are proposing
+	// or processing the first block or not.
+	app.initialHeight = req.InitialHeight
+
+	// if req.InitialHeight is > 1, then we set the initial version on all stores
 	if req.InitialHeight > 1 {
-		app.initialHeight = req.InitialHeight
-		initHeader = tmproto.Header{ChainID: req.ChainId, Height: req.InitialHeight, Time: req.Time}
-		err := app.cms.SetInitialVersion(req.InitialHeight)
-		if err != nil {
+		initHeader.Height = req.InitialHeight
+		if err := app.cms.SetInitialVersion(req.InitialHeight); err != nil {
 			panic(err)
 		}
 	}
@@ -58,14 +60,6 @@ func (app *BaseApp) InitChain(req abci.RequestInitChain) (res abci.ResponseInitC
 	// initialize states with a correct header
 	app.setState(runTxModeDeliver, initHeader)
 	app.setState(runTxModeCheck, initHeader)
-
-	// Use an empty header for prepare and process proposal states. The header
-	// will be overwritten for the first block (see getContextForProposal()) and
-	// cleaned up on every Commit(). Only the ChainID is needed so it's set in
-	// the context.
-	emptyHeader := tmproto.Header{ChainID: req.ChainId}
-	app.setState(runTxPrepareProposal, emptyHeader)
-	app.setState(runTxProcessProposal, emptyHeader)
 
 	// Store the consensus params in the BaseApp's paramstore. Note, this must be
 	// done after the deliver state and context have been set as it's persisted
@@ -258,8 +252,12 @@ func (app *BaseApp) PrepareProposal(req abci.RequestPrepareProposal) (resp abci.
 		panic("PrepareProposal method not set")
 	}
 
-	// Tendermint must never call PrepareProposal with a height of 0.
-	// Ref: https://github.com/tendermint/tendermint/blob/059798a4f5b0c9f52aa8655fa619054a0154088c/spec/core/state.md?plain=1#L37-L38
+	// always reset state given that PrepareProposal can timeout and be called again
+	emptyHeader := tmproto.Header{ChainID: app.chainID}
+	app.setState(runTxPrepareProposal, emptyHeader)
+
+	// CometBFT must never call PrepareProposal with a height of 0.
+	// Ref: https://github.com/cometbft/cometbft/blob/059798a4f5b0c9f52aa8655fa619054a0154088c/spec/core/state.md?plain=1#L37-L38
 	if req.Height < 1 {
 		panic("PrepareProposal called with invalid height")
 	}
@@ -310,6 +308,16 @@ func (app *BaseApp) ProcessProposal(req abci.RequestProcessProposal) (resp abci.
 	if app.processProposal == nil {
 		panic("app.ProcessProposal is not set")
 	}
+
+	// CometBFT must never call ProcessProposal with a height of 0.
+	// Ref: https://github.com/cometbft/cometbft/blob/059798a4f5b0c9f52aa8655fa619054a0154088c/spec/core/state.md?plain=1#L37-L38
+	if req.Height < 1 {
+		panic("ProcessProposal called with invalid height")
+	}
+
+	// always reset state given that ProcessProposal can timeout and be called again
+	emptyHeader := tmproto.Header{ChainID: app.chainID}
+	app.setState(runTxProcessProposal, emptyHeader)
 
 	app.processProposalState.ctx = app.getContextForProposal(app.processProposalState.ctx, req.Height).
 		WithVoteInfos(app.voteInfos).
@@ -424,6 +432,11 @@ func (app *BaseApp) Commit() abci.ResponseCommit {
 	header := app.deliverState.ctx.BlockHeader()
 	retainHeight := app.GetBlockRetentionHeight(header.Height)
 
+	rms, ok := app.cms.(*rootmulti.Store)
+	if ok {
+		rms.SetCommitHeader(header)
+	}
+
 	// Write the DeliverTx state into branched storage and commit the MultiStore.
 	// The write to the DeliverTx state writes all state transitions to the root
 	// MultiStore (app.cms) so when Commit() is called is persists those values.
@@ -449,12 +462,6 @@ func (app *BaseApp) Commit() abci.ResponseCommit {
 	// NOTE: This is safe because Tendermint holds a lock on the mempool for
 	// Commit. Use the header from this latest block.
 	app.setState(runTxModeCheck, header)
-
-	// Reset state to the latest committed but with an empty header to avoid
-	// leaking the header from the last block.
-	emptyHeader := tmproto.Header{ChainID: app.chainID}
-	app.setState(runTxPrepareProposal, emptyHeader)
-	app.setState(runTxProcessProposal, emptyHeader)
 
 	// empty/reset the deliver state
 	app.deliverState = nil
@@ -778,6 +785,16 @@ func (app *BaseApp) CreateQueryContext(height int64, prove bool) (sdk.Context, e
 		WithMinGasPrices(app.minGasPrices).
 		WithBlockHeight(height)
 
+	if height != lastBlockHeight {
+		rms, ok := app.cms.(*rootmulti.Store)
+		if ok {
+			cInfo, err := rms.GetCommitInfo(height)
+			if cInfo != nil && err == nil {
+				ctx = ctx.WithBlockTime(cInfo.Timestamp)
+			}
+		}
+	}
+
 	return ctx, nil
 }
 
@@ -970,11 +987,13 @@ func SplitABCIQueryPath(requestPath string) (path []string) {
 // ProcessProposal. We use deliverState on the first block to be able to access
 // any state changes made in InitChain.
 func (app *BaseApp) getContextForProposal(ctx sdk.Context, height int64) sdk.Context {
-	if height == 1 {
+	if height == app.initialHeight {
 		ctx, _ = app.deliverState.ctx.CacheContext()
+
 		// clear all context data set during InitChain to avoid inconsistent behavior
 		ctx = ctx.WithBlockHeader(tmproto.Header{})
 		return ctx
 	}
+
 	return ctx
 }

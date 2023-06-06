@@ -36,18 +36,18 @@ type Cache struct {
 
 type Querier = types.Querier
 
-func InitCache(dataDir string, supportedFeatures string, cacheSize uint32, instanceMemoryLimit uint32) (Cache, error) {
+func InitCache(dataDir string, supportedCapabilities string, cacheSize uint32, instanceMemoryLimit uint32) (Cache, error) {
 	dataDirBytes := []byte(dataDir)
-	supportedFeaturesBytes := []byte(supportedFeatures)
+	supportedCapabilitiesBytes := []byte(supportedCapabilities)
 
 	d := makeView(dataDirBytes)
 	defer runtime.KeepAlive(dataDirBytes)
-	f := makeView(supportedFeaturesBytes)
-	defer runtime.KeepAlive(supportedFeaturesBytes)
+	capabilitiesView := makeView(supportedCapabilitiesBytes)
+	defer runtime.KeepAlive(supportedCapabilitiesBytes)
 
 	errmsg := uninitializedUnmanagedVector()
 
-	ptr, err := C.init_cache(d, f, cu32(cacheSize), cu32(instanceMemoryLimit), &errmsg)
+	ptr, err := C.init_cache(d, capabilitiesView, cu32(cacheSize), cu32(instanceMemoryLimit), &errmsg)
 	if err != nil {
 		return Cache{}, errorWithMessage(err, errmsg)
 	}

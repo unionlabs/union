@@ -137,7 +137,7 @@ concern for the changing public key.
  validators by the unbonding IDs corresponding to their current unbonding.
 
 `ValidatorByConsAddr` is an additional index that enables lookups for slashing.
-When Tendermint reports evidence, it provides the validator address, so this
+When CometBFT reports evidence, it provides the validator address, so this
 map is needed to find the operator. Note that the `ConsAddr` corresponds to the
 address which can be derived from the validator's `ConsPubKey`.
 
@@ -372,7 +372,7 @@ moves from bonded to unbonded
 
 #### Jail/Unjail
 
-when a validator is jailed it is effectively removed from the Tendermint set.
+when a validator is jailed it is effectively removed from the CometBFT set.
 this process may be also be reversed. the following operations occur:
 
 * set `Validator.Jailed` and update object
@@ -741,8 +741,8 @@ changes are specified to execute.
 
 The staking validator set is updated during this process by state transitions
 that run at the end of every block. As a part of this process any updated
-validators are also returned back to Tendermint for inclusion in the Tendermint
-validator set which is responsible for validating Tendermint messages at the
+validators are also returned back to CometBFT for inclusion in the CometBFT
+validator set which is responsible for validating CometBFT messages at the
 consensus layer. Operations are as following:
 
 * the new validator set is taken as the top `params.MaxValidators` number of
@@ -755,7 +755,7 @@ consensus layer. Operations are as following:
 
 In all cases, any validators leaving or entering the bonded validator set or
 changing balances and staying within the bonded validator set incur an update
-message reporting their new consensus power which is passed back to Tendermint.
+message reporting their new consensus power which is passed back to CometBFT.
 
 The `LastTotalPower` and `LastValidatorsPower` hold the state of the total power
 and validator power from the end of the last block, and are used to check for

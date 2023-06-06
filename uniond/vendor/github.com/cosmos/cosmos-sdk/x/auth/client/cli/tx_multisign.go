@@ -80,7 +80,10 @@ func makeMultiSignCmd() func(cmd *cobra.Command, args []string) (err error) {
 			return
 		}
 
-		txFactory := tx.NewFactoryCLI(clientCtx, cmd.Flags())
+		txFactory, err := tx.NewFactoryCLI(clientCtx, cmd.Flags())
+		if err != nil {
+			return err
+		}
 		if txFactory.SignMode() == signingtypes.SignMode_SIGN_MODE_UNSPECIFIED {
 			txFactory = txFactory.WithSignMode(signingtypes.SignMode_SIGN_MODE_LEGACY_AMINO_JSON)
 		}
@@ -254,7 +257,10 @@ func makeBatchMultisignCmd() func(cmd *cobra.Command, args []string) error {
 		}
 
 		txCfg := clientCtx.TxConfig
-		txFactory := tx.NewFactoryCLI(clientCtx, cmd.Flags())
+		txFactory, err := tx.NewFactoryCLI(clientCtx, cmd.Flags())
+		if err != nil {
+			return err
+		}
 		if txFactory.SignMode() == signingtypes.SignMode_SIGN_MODE_UNSPECIFIED {
 			txFactory = txFactory.WithSignMode(signingtypes.SignMode_SIGN_MODE_LEGACY_AMINO_JSON)
 		}

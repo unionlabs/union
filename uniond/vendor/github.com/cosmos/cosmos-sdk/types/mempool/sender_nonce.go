@@ -151,6 +151,9 @@ func (snm *SenderNonceMempool) Insert(_ context.Context, tx sdk.Tx) error {
 
 // Select returns an iterator ordering transactions the mempool with the lowest
 // nonce of a random selected sender first.
+//
+// NOTE: It is not safe to use this iterator while removing transactions from
+// the underlying mempool.
 func (snm *SenderNonceMempool) Select(_ context.Context, _ [][]byte) Iterator {
 	var senders []string
 

@@ -23,13 +23,13 @@ type VM struct {
 // NewVM creates a new VM.
 //
 // `dataDir` is a base directory for Wasm blobs and various caches.
-// `supportedFeatures` is a comma separated list of features suppored by the chain.
+// `supportedCapabilities` is a comma separated list of capabilities suppored by the chain.
 // `memoryLimit` is the memory limit of each contract execution (in MiB)
 // `printDebug` is a flag to enable/disable printing debug logs from the contract to STDOUT. This should be false in production environments.
 // `cacheSize` sets the size in MiB of an in-memory cache for e.g. module caching. Set to 0 to disable.
 // `deserCost` sets the gas cost of deserializing one byte of data.
-func NewVM(dataDir string, supportedFeatures string, memoryLimit uint32, printDebug bool, cacheSize uint32) (*VM, error) {
-	cache, err := api.InitCache(dataDir, supportedFeatures, cacheSize, memoryLimit)
+func NewVM(dataDir string, supportedCapabilities string, memoryLimit uint32, printDebug bool, cacheSize uint32) (*VM, error) {
+	cache, err := api.InitCache(dataDir, supportedCapabilities, cacheSize, memoryLimit)
 	if err != nil {
 		return nil, err
 	}

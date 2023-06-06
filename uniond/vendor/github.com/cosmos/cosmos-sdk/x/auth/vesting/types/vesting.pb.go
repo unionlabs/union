@@ -34,7 +34,8 @@ type BaseVestingAccount struct {
 	OriginalVesting    github_com_cosmos_cosmos_sdk_types.Coins `protobuf:"bytes,2,rep,name=original_vesting,json=originalVesting,proto3,castrepeated=github.com/cosmos/cosmos-sdk/types.Coins" json:"original_vesting"`
 	DelegatedFree      github_com_cosmos_cosmos_sdk_types.Coins `protobuf:"bytes,3,rep,name=delegated_free,json=delegatedFree,proto3,castrepeated=github.com/cosmos/cosmos-sdk/types.Coins" json:"delegated_free"`
 	DelegatedVesting   github_com_cosmos_cosmos_sdk_types.Coins `protobuf:"bytes,4,rep,name=delegated_vesting,json=delegatedVesting,proto3,castrepeated=github.com/cosmos/cosmos-sdk/types.Coins" json:"delegated_vesting"`
-	EndTime            int64                                    `protobuf:"varint,5,opt,name=end_time,json=endTime,proto3" json:"end_time,omitempty"`
+	// Vesting end time, as unix timestamp (in seconds).
+	EndTime int64 `protobuf:"varint,5,opt,name=end_time,json=endTime,proto3" json:"end_time,omitempty"`
 }
 
 func (m *BaseVestingAccount) Reset()      { *m = BaseVestingAccount{} }
@@ -73,7 +74,8 @@ var xxx_messageInfo_BaseVestingAccount proto.InternalMessageInfo
 // continuously vests by unlocking coins linearly with respect to time.
 type ContinuousVestingAccount struct {
 	*BaseVestingAccount `protobuf:"bytes,1,opt,name=base_vesting_account,json=baseVestingAccount,proto3,embedded=base_vesting_account" json:"base_vesting_account,omitempty"`
-	StartTime           int64 `protobuf:"varint,2,opt,name=start_time,json=startTime,proto3" json:"start_time,omitempty"`
+	// Vesting start time, as unix timestamp (in seconds).
+	StartTime int64 `protobuf:"varint,2,opt,name=start_time,json=startTime,proto3" json:"start_time,omitempty"`
 }
 
 func (m *ContinuousVestingAccount) Reset()      { *m = ContinuousVestingAccount{} }
@@ -149,6 +151,7 @@ var xxx_messageInfo_DelayedVestingAccount proto.InternalMessageInfo
 
 // Period defines a length of time and amount of coins that will vest.
 type Period struct {
+	// Period duration in seconds.
 	Length int64                                    `protobuf:"varint,1,opt,name=length,proto3" json:"length,omitempty"`
 	Amount github_com_cosmos_cosmos_sdk_types.Coins `protobuf:"bytes,2,rep,name=amount,proto3,castrepeated=github.com/cosmos/cosmos-sdk/types.Coins" json:"amount"`
 }

@@ -32,6 +32,7 @@ cosmossdk.io/api/cosmos/autocli/v1
 cosmossdk.io/api/cosmos/bank/module/v1
 cosmossdk.io/api/cosmos/base/query/v1beta1
 cosmossdk.io/api/cosmos/base/v1beta1
+cosmossdk.io/api/cosmos/capability/module/v1
 cosmossdk.io/api/cosmos/consensus/module/v1
 cosmossdk.io/api/cosmos/crisis/module/v1
 cosmossdk.io/api/cosmos/distribution/module/v1
@@ -65,7 +66,7 @@ cosmossdk.io/depinject/internal/util
 # cosmossdk.io/errors v1.0.0-beta.7
 ## explicit; go 1.18
 cosmossdk.io/errors
-# cosmossdk.io/math v1.0.0
+# cosmossdk.io/math v1.0.1
 ## explicit; go 1.20
 cosmossdk.io/math
 # cosmossdk.io/tools/rosetta v0.2.1
@@ -88,7 +89,21 @@ github.com/99designs/keyring
 # github.com/ChainSafe/go-schnorrkel v0.0.0-20200405005733-88cbf1b4c40d
 ## explicit; go 1.13
 github.com/ChainSafe/go-schnorrkel
-# github.com/CosmWasm/wasmvm v1.2.1
+# github.com/CosmWasm/wasmd v0.40.0
+## explicit; go 1.19
+github.com/CosmWasm/wasmd/app/params
+github.com/CosmWasm/wasmd/x/wasm
+github.com/CosmWasm/wasmd/x/wasm/client/cli
+github.com/CosmWasm/wasmd/x/wasm/exported
+github.com/CosmWasm/wasmd/x/wasm/ioutils
+github.com/CosmWasm/wasmd/x/wasm/keeper
+github.com/CosmWasm/wasmd/x/wasm/keeper/testdata
+github.com/CosmWasm/wasmd/x/wasm/keeper/wasmtesting
+github.com/CosmWasm/wasmd/x/wasm/migrations/v1
+github.com/CosmWasm/wasmd/x/wasm/migrations/v2
+github.com/CosmWasm/wasmd/x/wasm/simulation
+github.com/CosmWasm/wasmd/x/wasm/types
+# github.com/CosmWasm/wasmvm v1.2.3
 ## explicit; go 1.18
 github.com/CosmWasm/wasmvm
 github.com/CosmWasm/wasmvm/internal/api
@@ -183,7 +198,7 @@ github.com/cockroachdb/apd/v2
 # github.com/coinbase/rosetta-sdk-go/types v1.0.0
 ## explicit; go 1.18
 github.com/coinbase/rosetta-sdk-go/types
-# github.com/cometbft/cometbft v0.37.0 => github.com/unionfi/cometbls v0.0.0-20230512064939-963390dd5d1e
+# github.com/cometbft/cometbft v0.37.1 => github.com/unionfi/cometbls v0.0.0-20230512064939-963390dd5d1e
 ## explicit; go 1.20
 github.com/cometbft/cometbft/abci/client
 github.com/cometbft/cometbft/abci/example/code
@@ -314,7 +329,7 @@ github.com/cosmos/btcutil/bech32
 github.com/cosmos/cosmos-proto
 github.com/cosmos/cosmos-proto/any
 github.com/cosmos/cosmos-proto/runtime
-# github.com/cosmos/cosmos-sdk v0.47.0 => github.com/unionfi/cosmos-sdk v0.0.0-20230512065059-fd36c0d536f8
+# github.com/cosmos/cosmos-sdk v0.47.2 => github.com/unionfi/cosmos-sdk v0.0.0-20230605150035-5e0e80cc455a
 ## explicit; go 1.19
 github.com/cosmos/cosmos-sdk/baseapp
 github.com/cosmos/cosmos-sdk/client
@@ -448,6 +463,10 @@ github.com/cosmos/cosmos-sdk/x/bank/migrations/v3
 github.com/cosmos/cosmos-sdk/x/bank/migrations/v4
 github.com/cosmos/cosmos-sdk/x/bank/simulation
 github.com/cosmos/cosmos-sdk/x/bank/types
+github.com/cosmos/cosmos-sdk/x/capability
+github.com/cosmos/cosmos-sdk/x/capability/keeper
+github.com/cosmos/cosmos-sdk/x/capability/simulation
+github.com/cosmos/cosmos-sdk/x/capability/types
 github.com/cosmos/cosmos-sdk/x/consensus
 github.com/cosmos/cosmos-sdk/x/consensus/exported
 github.com/cosmos/cosmos-sdk/x/consensus/keeper
@@ -559,7 +578,7 @@ github.com/cosmos/go-bip39
 # github.com/cosmos/gogogateway v1.2.0
 ## explicit; go 1.12
 github.com/cosmos/gogogateway
-# github.com/cosmos/gogoproto v1.4.7
+# github.com/cosmos/gogoproto v1.4.8
 ## explicit; go 1.19
 github.com/cosmos/gogoproto/gogoproto
 github.com/cosmos/gogoproto/grpc
@@ -601,13 +620,7 @@ github.com/cosmos/iavl/internal/bytes
 github.com/cosmos/iavl/internal/encoding
 github.com/cosmos/iavl/internal/logger
 github.com/cosmos/iavl/keyformat
-# github.com/cosmos/ibc-go/modules/capability v1.0.0-rc1
-## explicit; go 1.19
-github.com/cosmos/ibc-go/modules/capability
-github.com/cosmos/ibc-go/modules/capability/keeper
-github.com/cosmos/ibc-go/modules/capability/simulation
-github.com/cosmos/ibc-go/modules/capability/types
-# github.com/cosmos/ibc-go/v7 v7.0.0 => github.com/strangelove-ventures/ibc-go/v7 v7.0.0-20230418220939-f60edbfb225a
+# github.com/cosmos/ibc-go/v7 v7.0.1 => github.com/hussein-aitlahcen/ibc-go/v7 v7.0.0-20230605143907-7795f755632c
 ## explicit; go 1.19
 github.com/cosmos/ibc-go/v7/internal/errors
 github.com/cosmos/ibc-go/v7/internal/logging
@@ -623,6 +636,10 @@ github.com/cosmos/ibc-go/v7/modules/apps/27-interchain-accounts/host/keeper
 github.com/cosmos/ibc-go/v7/modules/apps/27-interchain-accounts/host/types
 github.com/cosmos/ibc-go/v7/modules/apps/27-interchain-accounts/simulation
 github.com/cosmos/ibc-go/v7/modules/apps/27-interchain-accounts/types
+github.com/cosmos/ibc-go/v7/modules/apps/29-fee
+github.com/cosmos/ibc-go/v7/modules/apps/29-fee/client/cli
+github.com/cosmos/ibc-go/v7/modules/apps/29-fee/keeper
+github.com/cosmos/ibc-go/v7/modules/apps/29-fee/types
 github.com/cosmos/ibc-go/v7/modules/apps/transfer
 github.com/cosmos/ibc-go/v7/modules/apps/transfer/client/cli
 github.com/cosmos/ibc-go/v7/modules/apps/transfer/keeper
@@ -654,6 +671,7 @@ github.com/cosmos/ibc-go/v7/modules/core/05-port/keeper
 github.com/cosmos/ibc-go/v7/modules/core/05-port/types
 github.com/cosmos/ibc-go/v7/modules/core/23-commitment/types
 github.com/cosmos/ibc-go/v7/modules/core/24-host
+github.com/cosmos/ibc-go/v7/modules/core/ante
 github.com/cosmos/ibc-go/v7/modules/core/client
 github.com/cosmos/ibc-go/v7/modules/core/client/cli
 github.com/cosmos/ibc-go/v7/modules/core/exported
@@ -711,6 +729,10 @@ github.com/dgraph-io/ristretto/z/simd
 # github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13
 ## explicit
 github.com/dgryski/go-farm
+# github.com/docker/distribution v2.8.2+incompatible
+## explicit
+github.com/docker/distribution/digestset
+github.com/docker/distribution/reference
 # github.com/dustin/go-humanize v1.0.1
 ## explicit; go 1.16
 github.com/dustin/go-humanize
@@ -733,6 +755,8 @@ github.com/fsnotify/fsnotify
 # github.com/ghodss/yaml v1.0.0
 ## explicit
 github.com/ghodss/yaml
+# github.com/gin-gonic/gin v1.8.1
+## explicit; go 1.18
 # github.com/go-kit/kit v0.12.0
 ## explicit; go 1.17
 github.com/go-kit/kit/metrics
@@ -747,6 +771,10 @@ github.com/go-kit/log/term
 # github.com/go-logfmt/logfmt v0.6.0
 ## explicit; go 1.17
 github.com/go-logfmt/logfmt
+# github.com/go-playground/validator/v10 v10.11.1
+## explicit; go 1.13
+# github.com/goccy/go-json v0.9.11
+## explicit; go 1.12
 # github.com/godbus/dbus v0.0.0-20190726142602-4481cbc300e2
 ## explicit; go 1.12
 github.com/godbus/dbus
@@ -799,6 +827,10 @@ github.com/google/go-cmp/cmp/internal/diff
 github.com/google/go-cmp/cmp/internal/flags
 github.com/google/go-cmp/cmp/internal/function
 github.com/google/go-cmp/cmp/internal/value
+# github.com/google/gofuzz v1.2.0
+## explicit; go 1.12
+github.com/google/gofuzz
+github.com/google/gofuzz/bytesource
 # github.com/google/orderedcode v0.0.1
 ## explicit
 github.com/google/orderedcode
@@ -871,7 +903,7 @@ github.com/gtank/ristretto255/internal/scalar
 # github.com/hashicorp/go-cleanhttp v0.5.2
 ## explicit; go 1.13
 github.com/hashicorp/go-cleanhttp
-# github.com/hashicorp/go-getter v1.7.0
+# github.com/hashicorp/go-getter v1.7.1
 ## explicit; go 1.13
 github.com/hashicorp/go-getter
 github.com/hashicorp/go-getter/helper/url
@@ -921,9 +953,6 @@ github.com/jmespath/go-jmespath
 # github.com/jmhodges/levigo v1.0.0
 ## explicit
 github.com/jmhodges/levigo
-# github.com/json-iterator/go v1.1.12
-## explicit; go 1.12
-github.com/json-iterator/go
 # github.com/klauspost/compress v1.16.3
 ## explicit; go 1.18
 github.com/klauspost/compress
@@ -995,15 +1024,12 @@ github.com/mmcloughlin/addchain/internal/container/heap
 github.com/mmcloughlin/addchain/internal/errutil
 github.com/mmcloughlin/addchain/internal/print
 github.com/mmcloughlin/addchain/meta
-# github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd
-## explicit
-github.com/modern-go/concurrent
-# github.com/modern-go/reflect2 v1.0.2
-## explicit; go 1.12
-github.com/modern-go/reflect2
 # github.com/mtibben/percent v0.2.1
 ## explicit; go 1.14
 github.com/mtibben/percent
+# github.com/opencontainers/go-digest v1.0.0
+## explicit; go 1.13
+github.com/opencontainers/go-digest
 # github.com/pelletier/go-toml/v2 v2.0.6
 ## explicit; go 1.16
 github.com/pelletier/go-toml/v2
@@ -1020,7 +1046,7 @@ github.com/pkg/errors
 # github.com/pmezard/go-difflib v1.0.0
 ## explicit
 github.com/pmezard/go-difflib/difflib
-# github.com/prometheus/client_golang v1.14.0
+# github.com/prometheus/client_golang v1.15.0
 ## explicit; go 1.17
 github.com/prometheus/client_golang/prometheus
 github.com/prometheus/client_golang/prometheus/internal
@@ -1029,8 +1055,8 @@ github.com/prometheus/client_golang/prometheus/push
 # github.com/prometheus/client_model v0.3.0
 ## explicit; go 1.9
 github.com/prometheus/client_model/go
-# github.com/prometheus/common v0.40.0
-## explicit; go 1.17
+# github.com/prometheus/common v0.42.0
+## explicit; go 1.18
 github.com/prometheus/common/expfmt
 github.com/prometheus/common/internal/bitbucket.org/ww/goautoneg
 github.com/prometheus/common/model
@@ -1056,7 +1082,7 @@ github.com/sasha-s/go-deadlock
 github.com/spf13/afero
 github.com/spf13/afero/internal/common
 github.com/spf13/afero/mem
-# github.com/spf13/cast v1.5.0
+# github.com/spf13/cast v1.5.1
 ## explicit; go 1.18
 github.com/spf13/cast
 # github.com/spf13/cobra v1.7.0
@@ -1079,8 +1105,8 @@ github.com/spf13/viper/internal/encoding/javaproperties
 github.com/spf13/viper/internal/encoding/json
 github.com/spf13/viper/internal/encoding/toml
 github.com/spf13/viper/internal/encoding/yaml
-# github.com/stretchr/testify v1.8.2
-## explicit; go 1.13
+# github.com/stretchr/testify v1.8.3
+## explicit; go 1.20
 github.com/stretchr/testify/assert
 github.com/stretchr/testify/require
 # github.com/subosito/gotenv v1.4.2
@@ -1398,6 +1424,6 @@ rsc.io/tmplfunc/internal/parse
 sigs.k8s.io/yaml
 # github.com/cometbft/cometbft => github.com/unionfi/cometbls v0.0.0-20230512064939-963390dd5d1e
 # github.com/consensys/gnark-crypto => github.com/hussein-aitlahcen/gnark-crypto v0.0.0-20230409222230-5346db050fea
-# github.com/cosmos/cosmos-sdk => github.com/unionfi/cosmos-sdk v0.0.0-20230512065059-fd36c0d536f8
-# github.com/cosmos/ibc-go/v7 => github.com/strangelove-ventures/ibc-go/v7 v7.0.0-20230418220939-f60edbfb225a
+# github.com/cosmos/cosmos-sdk => github.com/unionfi/cosmos-sdk v0.0.0-20230605150035-5e0e80cc455a
+# github.com/cosmos/ibc-go/v7 => github.com/hussein-aitlahcen/ibc-go/v7 v7.0.0-20230605143907-7795f755632c
 # github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7

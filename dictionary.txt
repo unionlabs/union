@@ -182,6 +182,7 @@ drawio
 dylib
 dylib
 elems
+errorsmod
 esac
 esac
 ethabi
@@ -234,10 +235,14 @@ holiman
 horcrux
 horiz
 httptemplate
+ibcante
 ibcclient
 ibcclientclient
 ibcclienttypes
 ibcexported
+ibcfee
+ibcfeekeeper
+ibcfeetypes
 ibcgo
 ibckeeper
 ibcporttypes
@@ -401,6 +406,7 @@ rustls
 rustls
 schemars
 schnorr
+sdkerrors
 secp
 serde
 serde
@@ -412,6 +418,7 @@ simtestutil
 simtypes
 slashingkeeper
 slashingtypes
+Snapshotter
 snapshottypes
 solomachine
 srcs
@@ -520,6 +527,9 @@ virtualisation
 vmdebug
 vuex
 wasi
+wasmd
+wasmkeeper
+wasmtypes
 wasmvm
 wasmvmstatic
 wctx

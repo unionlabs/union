@@ -93,7 +93,7 @@ func NewCmdSubmitLegacyUpgradeProposal() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().String(cli.FlagTitle, "", "title of proposal")             //nolint:staticcheck // we are intentionally using a deprecated flag here.
+	cmd.Flags().String(cli.FlagTitle, "", "title of proposal")
 	cmd.Flags().String(cli.FlagDescription, "", "description of proposal") //nolint:staticcheck // we are intentionally using a deprecated flag here.
 	cmd.Flags().String(cli.FlagDeposit, "", "deposit of proposal")
 	cmd.Flags().Int64(FlagUpgradeHeight, 0, "The height at which the upgrade must happen")
@@ -129,7 +129,7 @@ func NewCmdSubmitLegacyCancelUpgradeProposal() *cobra.Command {
 				return err
 			}
 
-			title, err := cmd.Flags().GetString(cli.FlagTitle) //nolint:staticcheck // we are intentionally using a deprecated flag here.
+			title, err := cmd.Flags().GetString(cli.FlagTitle)
 			if err != nil {
 				return err
 			}
@@ -150,10 +150,10 @@ func NewCmdSubmitLegacyCancelUpgradeProposal() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().String(cli.FlagTitle, "", "title of proposal")             //nolint:staticcheck // we are intentionally using a deprecated flag here.
+	cmd.Flags().String(cli.FlagTitle, "", "title of proposal")
 	cmd.Flags().String(cli.FlagDescription, "", "description of proposal") //nolint:staticcheck // we are intentionally using a deprecated flag here.
 	cmd.Flags().String(cli.FlagDeposit, "", "deposit of proposal")
-	cmd.MarkFlagRequired(cli.FlagTitle)       //nolint:staticcheck // we are intentionally using a deprecated flag here.
+	cmd.MarkFlagRequired(cli.FlagTitle)
 	cmd.MarkFlagRequired(cli.FlagDescription) //nolint:staticcheck // we are intentionally using a deprecated flag here.
 
 	return cmd

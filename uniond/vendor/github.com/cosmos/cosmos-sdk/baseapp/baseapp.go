@@ -17,7 +17,6 @@ import (
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/snapshots"
 	"github.com/cosmos/cosmos-sdk/store"
-	"github.com/cosmos/cosmos-sdk/store/rootmulti"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -356,17 +355,13 @@ func (app *BaseApp) Init() error {
 
 	// needed for the export command which inits from store but never calls initchain
 	app.setState(runTxModeCheck, emptyHeader)
-
-	// needed for ABCI Replay Blocks mode which calls Prepare/Process proposal (InitChain is not called)
-	app.setState(runTxPrepareProposal, emptyHeader)
-	app.setState(runTxProcessProposal, emptyHeader)
 	app.Seal()
 
-	rms, ok := app.cms.(*rootmulti.Store)
-	if !ok {
-		return fmt.Errorf("invalid commit multi-store; expected %T, got: %T", &rootmulti.Store{}, app.cms)
+	if app.cms == nil {
+		return errors.New("commit multi-store must not be nil")
 	}
-	return rms.GetPruning().Validate()
+
+	return app.cms.GetPruning().Validate()
 }
 
 func (app *BaseApp) setMinGasPrices(gasPrices sdk.DecCoins) {
@@ -501,19 +496,21 @@ func (app *BaseApp) validateHeight(req abci.RequestBeginBlock) error {
 		return fmt.Errorf("invalid height: %d", req.Header.Height)
 	}
 
-	// expectedHeight holds the expected height to validate.
+	lastBlockHeight := app.LastBlockHeight()
+
+	// expectedHeight holds the expected height to validate
 	var expectedHeight int64
-	if app.LastBlockHeight() == 0 && app.initialHeight > 1 {
-		// In this case, we're validating the first block of the chain (no
-		// previous commit). The height we're expecting is the initial height.
+	if lastBlockHeight == 0 && app.initialHeight > 1 {
+		// In this case, we're validating the first block of the chain, i.e no
+		// previous commit. The height we're expecting is the initial height.
 		expectedHeight = app.initialHeight
 	} else {
 		// This case can mean two things:
-		// - either there was already a previous commit in the store, in which
-		// case we increment the version from there,
-		// - or there was no previous commit, and initial version was not set,
-		// in which case we start at version 1.
-		expectedHeight = app.LastBlockHeight() + 1
+		//
+		// - Either there was already a previous commit in the store, in which
+		// case we increment the version from there.
+		// - Or there was no previous commit, in which case we start at version 1.
+		expectedHeight = lastBlockHeight + 1
 	}
 
 	if req.Header.Height != expectedHeight {

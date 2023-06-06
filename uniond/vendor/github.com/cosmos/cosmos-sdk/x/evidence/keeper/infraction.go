@@ -27,17 +27,27 @@ func (k Keeper) HandleEquivocationEvidence(ctx sdk.Context, evidence *types.Equi
 	logger := k.Logger(ctx)
 	consAddr := evidence.GetConsensusAddress()
 
-	if _, err := k.slashingKeeper.GetPubkey(ctx, consAddr.Bytes()); err != nil {
-		// Ignore evidence that cannot be handled.
-		//
-		// NOTE: We used to panic with:
-		// `panic(fmt.Sprintf("Validator consensus-address %v not found", consAddr))`,
-		// but this couples the expectations of the app to both Tendermint and
-		// the simulator.  Both are expected to provide the full range of
-		// allowable but none of the disallowed evidence types.  Instead of
-		// getting this coordination right, it is easier to relax the
-		// constraints and ignore evidence that cannot be handled.
+	validator := k.stakingKeeper.ValidatorByConsAddr(ctx, consAddr)
+	if validator == nil || validator.IsUnbonded() {
+		// Defensive: Simulation doesn't take unbonding periods into account, and
+		// CometBFT might break this assumption at some point.
 		return
+	}
+
+	if !validator.GetOperator().Empty() {
+		if _, err := k.slashingKeeper.GetPubkey(ctx, consAddr.Bytes()); err != nil {
+			// Ignore evidence that cannot be handled.
+			//
+			// NOTE: We used to panic with:
+			// `panic(fmt.Sprintf("Validator consensus-address %v not found", consAddr))`,
+			// but this couples the expectations of the app to both CometBFT and
+			// the simulator.  Both are expected to provide the full range of
+			// allowable but none of the disallowed evidence types.  Instead of
+			// getting this coordination right, it is easier to relax the
+			// constraints and ignore evidence that cannot be handled.
+			logger.Error(fmt.Sprintf("ignore evidence; expected public key for validator %s not found", consAddr))
+			return
+		}
 	}
 
 	// calculate the age of the evidence
@@ -60,28 +70,6 @@ func (k Keeper) HandleEquivocationEvidence(ctx sdk.Context, evidence *types.Equi
 				"infraction_time", infractionTime,
 				"max_age_duration", cp.Evidence.MaxAgeDuration,
 			)
-			return
-		}
-	}
-
-	validator := k.stakingKeeper.ValidatorByConsAddr(ctx, consAddr)
-	if validator == nil || validator.IsUnbonded() {
-		// Defensive: Simulation doesn't take unbonding periods into account, and
-		// Tendermint might break this assumption at some point.
-		return
-	}
-
-	if !validator.GetOperator().Empty() {
-		if _, err := k.slashingKeeper.GetPubkey(ctx, consAddr.Bytes()); err != nil {
-			// Ignore evidence that cannot be handled.
-			//
-			// NOTE: We used to panic with:
-			// `panic(fmt.Sprintf("Validator consensus-address %v not found", consAddr))`,
-			// but this couples the expectations of the app to both Tendermint and
-			// the simulator.  Both are expected to provide the full range of
-			// allowable but none of the disallowed evidence types.  Instead of
-			// getting this coordination right, it is easier to relax the
-			// constraints and ignore evidence that cannot be handled.
 			return
 		}
 	}
