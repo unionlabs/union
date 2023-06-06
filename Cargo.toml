@@ -7,6 +7,7 @@ members = [
   "generated/contracts",
   "unionvisor",
   "relayer",
+  "cosmwasm/*"
 ]
 
 exclude = [

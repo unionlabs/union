@@ -1,0 +1,33 @@
+[package]
+name = "cw20-ics20"
+version = "1.0.1"
+authors = ["Ethan Frey <ethanfrey@users.noreply.github.com>", "Hussein Ait Lahcen <hussein.aitlahcen@gmail.com>"]
+edition = "2021"
+description = "IBC Enabled contracts that receives CW20 tokens and sends them over ICS20 to a remote chain"
+license = "Apache-2.0"
+repository = "https://github.com/CosmWasm/cw-plus"
+homepage = "https://cosmwasm.com"
+documentation = "https://docs.cosmwasm.com"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+backtraces = ["cosmwasm-std/backtraces"]
+# use library feature to disable all init/handle/query exports
+library = []
+
+[dependencies]
+ethers = { version = "2.0", default-features = false }
+ethers-contract = { version = "2.0", default-features = false }
+cosmwasm-schema = { version = "1.1.0" }
+cw-utils = "1.0.1"
+cw2 = { version = "1.0.1" }
+cw20 = { version = "1.0.1" }
+cosmwasm-std = { version = "1.1.0", features = ["stargate"] }
+cw-storage-plus = "1.0.1"
+cw-controllers = { version = "1.0.1" }
+schemars = "0.8.1"
+semver = "1"
+serde = { version = "1.0.103", default-features = false, features = ["derive"] }
+thiserror = { version = "1.0.23" }
