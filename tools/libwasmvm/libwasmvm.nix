@@ -13,8 +13,8 @@
       wasmvm = pkgs.fetchFromGitHub {
         owner = "CosmWasm";
         repo = "wasmvm";
-        rev = "a9e26c0e4e5a076d82556c4f44abeee2a64ff37e";
-        hash = "sha256-zR47q8Z2znPigecPDmw5L4ef20/TXv8cPxaXTdJGxg0=";
+        rev = "v1.2.3"; # wasmd 0.40
+        hash = "sha256-GscUMJ0Tkg77S9IYA9komyKKoa1AyVXSSaU8hw3ZNwk=";
       };
     in
     {
