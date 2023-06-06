@@ -41,7 +41,7 @@ pub struct TransferMsg {
 ```
 
 In addition, it supports directly sending native tokens via `ExecuteMsg::Transfer(TransferMsg)`.
-You must send _exactly one_ coin denom along with the transfer message, and that amount will be transfered
+You must send _exactly one_ coin denom along with the transfer message, and that amount will be transferred
 to the remote host.
 
 ## Queries
