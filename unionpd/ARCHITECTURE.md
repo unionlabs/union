@@ -1,6 +1,6 @@
-# Galois Architecture
+# Galoisd Architecture
 
-Galois exposes gRPC endpoints to generate and verify CometBLS zero-knowledge proofs.
+Galoisd exposes gRPC endpoints to generate and verify CometBLS zero-knowledge proofs.
 
 ## Circuit
 
