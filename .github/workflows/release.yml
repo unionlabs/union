@@ -147,6 +147,20 @@ jobs:
           --amend localhost:5000/unionfi/${{ matrix.package }}:${{ github.ref_name }}-x86_64-linux \
       - name: Push Manifest to Local Registry
         run: docker manifest push localhost:5000/unionfi/${{ matrix.package }}:${{ github.ref_name }}
+      - uses: actions/checkout@v3
+        with:
+          lfs: true
+          fetch-depth: 0
+      - name: Annotate Manifest
+        run: |
+          curl -L https://github.com/regclient/regclient/releases/latest/download/regctl-linux-amd64 >regctl
+          chmod 755 regctl && sudo cp ./regctl /usr/bin
+
+          echo "downloaded & installed regctl"
+
+          regctl registry set --tls disabled localhost:5000
+          regctl image mod localhost:5000/unionfi/${{ matrix.package }}:${{ github.ref_name }} --to-oci --create ${{ github.ref_name }} --annotation org.opencontainers.image.description="$(cat $GITHUB_WORKSPACE/.github/container-descriptions/${{ matrix.package }}.txt)"
+         
       - name: Copy Manifest to GHCR
         run: |
           wget https://github.com/rapidsai/skopeo/releases/download/v1.12/skopeo-linux-amd64 -O ./skopeo

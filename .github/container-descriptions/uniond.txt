@@ -1,0 +1,1 @@
+uniond is the canonical implementation of a full node for the union network. Validators, RPC, and archive operators can run it to participate in the network.
