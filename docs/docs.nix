@@ -49,6 +49,7 @@
             name = "docs-dev-server";
             runtimeInputs = [ pkgs.nodejs ];
             text = ''
+              yarn install --offline
               yarn workspace docs run start
             '';
           };
