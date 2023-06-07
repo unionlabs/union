@@ -69,17 +69,24 @@
                 "created": { "block_height": 0, "tx_index": 0 } 
               }, 
               "contract_state": [ 
-                {"key":"61646D696E","value":"InVuaW9uMWprOXBzeWh2Z2tydDJjdW16OGV5dGxsMjI0NG0ybm56NHl0MmcyIg=="}, 
-                {"key":"636F6E74726163745F696E666F","value":"eyJjb250cmFjdCI6ImNyYXRlcy5pbzpjdzIwLWljczIwIiwidmVyc2lvbiI6IjEuMC4xIn0="}, 
-                {"key":"69637332305F636F6E666967","value":"eyJkZWZhdWx0X3RpbWVvdXQiOjk5OTk5OTk5LCJkZWZhdWx0X2dhc19saW1pdCI6bnVsbH0="} 
+                {"key":"61646D696E","value":"InVuaW9uMWprOXBzeWh2Z2tydDJjdW16OGV5dGxsMjI0NG0ybm56NHl0MmcyIg=="},
+                {"key":"636F6E74726163745F696E666F","value":"eyJjb250cmFjdCI6ImNyYXRlcy5pbzpjdzIwLWljczIwIiwidmVyc2lvbiI6IjEuMC4xIn0="},
+                {"key":"69637332305F636F6E666967","value":"eyJkZWZhdWx0X3RpbWVvdXQiOjMwMCwiZGVmYXVsdF9nYXNfbGltaXQiOm51bGx9"}
               ],  
               "contract_code_history": [ 
-                { 
-                  "operation": "CONTRACT_CODE_HISTORY_OPERATION_TYPE_INIT", 
-                  "code_id": "1", 
-                  "updated":  {"block_height": "0", "tx_index": "0" }, 
-                  "msg": { "default_timeout": 99999999, "gov_contract": "union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2", "allowlist": [] } 
-                } 
+                {
+                  "operation": "CONTRACT_CODE_HISTORY_OPERATION_TYPE_INIT",
+                  "code_id": "1",
+                  "updated": {
+                    "block_height": "0",
+                    "tx_index": "0"
+                  },
+                  "msg": {
+                    "default_timeout": 300,
+                    "gov_contract": "union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2",
+                    "allowlist": []
+                  }
+                }
               ] 
             }]' | \
             ${pkgs.jq}/bin/jq --arg last_contract_id_key $LAST_CONTRACT_ID_KEY --arg last_code_id_key $LAST_CODE_ID_KEY '.app_state.wasm.sequences'='[ 
