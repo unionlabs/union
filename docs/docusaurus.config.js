@@ -9,6 +9,10 @@ const config = {
   title: "Union Finance",
   tagline: "Connecting blockchains trustlessly",
 
+  markdown: {
+    mermaid: true,
+  },
+  themes: ["@docusaurus/theme-mermaid"],
   // Set the production url of your site here
   url: "https://union.fi",
 
