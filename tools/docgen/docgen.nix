@@ -1,5 +1,5 @@
 { self, ... }: {
-  perSystem = { pkgs, self', lib, config, ... }:
+  perSystem = { pkgs, self', lib, config, treefmt, ... }:
     let
       tera = "${self'.packages.tera}/bin/tera";
       rootFile = "flake.nix";
@@ -9,7 +9,7 @@
       packages = {
         docgen = pkgs.writeShellApplication {
           name = "docgen";
-          runtimeInputs = [ tera config.treefmt.build.wrapper ];
+          runtimeInputs = [ tera treefmt ];
           text = ''
             if ! test -f "${rootFile}"; then
                 echo "Error: please run docgen from the root of the repository"

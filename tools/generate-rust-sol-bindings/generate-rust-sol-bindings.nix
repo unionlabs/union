@@ -1,5 +1,5 @@
 { ... }: {
-  perSystem = { self', pkgs, system, config, inputs', crane, stdenv, ... }:
+  perSystem = { self', pkgs, system, config, inputs', crane, stdenv, treefmt, ... }:
     let
       attrs = {
         src = crane.lib.cleanCargoSource ./.;
@@ -25,7 +25,7 @@
         name = "generate-rust-sol-bindings";
         pname = "generate-rust-sol-bindings";
         src = ./.;
-        buildInputs = [ config.treefmt.build.programs.rustfmt pkgs.taplo ];
+        buildInputs = [ pkgs.taplo ];
         buildPhase = ''
           mkdir $out
 

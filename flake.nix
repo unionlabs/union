@@ -52,15 +52,15 @@
         ./tools/libwasmvm/libwasmvm.nix
         ./tools/rust/rust.nix
         ./tools/rust/crane.nix
+        ./tools/treefmt/treefmt.nix
         ./tools/tera/tera.nix
         ./tools/docgen/docgen.nix
         ./networks/devnet.nix
         ./networks/genesis/devnet.nix
         ./testnet-validator.nix
-        treefmt-nix.flakeModule
         pre-commit-hooks.flakeModule
       ];
-      perSystem = { config, self', inputs', pkgs, rust, crane, system, lib, ... }:
+      perSystem = { config, self', inputs', pkgs, treefmt, rust, crane, system, lib, ... }:
         {
           _module = {
             args = {
@@ -220,7 +220,7 @@
                     yarn
                     yq
                   ]);
-                nativeBuildInputs = [ config.treefmt.build.wrapper ];
+                nativeBuildInputs = [ treefmt ];
                 GOPRIVATE = "github.com/unionfi/*";
               };
             in
@@ -238,14 +238,7 @@
               });
             };
 
-          treefmt = {
-            projectRootFile = "flake.nix";
-            programs.nixpkgs-fmt.enable = true;
-            programs.gofmt.enable = true;
-            programs.rustfmt.enable = true;
-            programs.prettier.enable = true;
-            settings.global.excludes = [ "**/vendor/**" "**/foundry/lib/**" ];
-          };
+          formatter = treefmt;
         };
     };
 }
