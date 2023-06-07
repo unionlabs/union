@@ -239,6 +239,7 @@ icahosttypes
 icatypes
 identifing
 imap
+incentivizes
 interchain
 interchainaccounts
 interfacetype
@@ -356,6 +357,7 @@ regen
 reqwest
 ripemd
 rlib
+roadmap
 rpath
 runtimeservices
 rustc

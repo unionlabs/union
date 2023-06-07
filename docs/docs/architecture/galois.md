@@ -19,7 +19,7 @@ sequenceDiagram
     Union->>Galois: Generate a zkp of Union consensus
     Galois->>Relayer: Forward zkp for to HA relaying service
     Galois->>Union: Submit zkp for proof caching
-    Relayer->Counterparty: Submit zkp for packet processing
+    Relayer->>Counterparty: Submit zkp for packet processing
 ```
 
 [Proof caching](https://github.com/unionfi/union/discussions/41) is currently in the pre-RFC stage. It ensures that the network does not perform redundant work and incentivizes decentralized proving, effectively using Union as a decentralized sequencers orchestration layer.
