@@ -56,7 +56,6 @@
         ./tools/docgen/docgen.nix
         ./networks/devnet.nix
         ./networks/genesis/devnet.nix
-        ./testnet-validator.nix
         treefmt-nix.flakeModule
         pre-commit-hooks.flakeModule
       ];
