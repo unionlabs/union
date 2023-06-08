@@ -358,6 +358,7 @@ reqwest
 ripemd
 rlib
 roadmap
+rollups
 rpath
 runtimeservices
 rustc
