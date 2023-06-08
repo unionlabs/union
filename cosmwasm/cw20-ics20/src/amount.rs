@@ -4,6 +4,8 @@ use cosmwasm_std::{Coin, Uint128};
 use cw20::Cw20Coin;
 use std::convert::TryInto;
 
+const CW20_DENOM_PREFIX: &str = "cw20:";
+
 #[cw_serde]
 pub enum Amount {
     Native(Coin),
@@ -12,14 +14,14 @@ pub enum Amount {
 }
 
 impl Amount {
-    // TODO: write test for this
     pub fn from_parts(denom: String, amount: impl Into<Uint128>) -> Self {
         let amount = amount.into();
-        if denom.starts_with("cw20:") {
-            let address = denom.get(5..).unwrap().into();
-            Amount::Cw20(Cw20Coin { address, amount })
-        } else {
-            Amount::Native(Coin { denom, amount })
+        match denom.strip_prefix(CW20_DENOM_PREFIX) {
+            Some(address) => Amount::Cw20(Cw20Coin {
+                address: address.to_string(),
+                amount,
+            }),
+            None => Amount::Native(Coin { denom, amount }),
         }
     }
 
@@ -42,7 +44,7 @@ impl Amount {
     pub fn denom(&self) -> String {
         match self {
             Amount::Native(c) => c.denom.clone(),
-            Amount::Cw20(c) => format!("cw20:{}", c.address.as_str()),
+            Amount::Cw20(c) => format!("{}{}", CW20_DENOM_PREFIX, c.address.as_str()),
         }
     }
 
