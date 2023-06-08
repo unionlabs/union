@@ -13,6 +13,8 @@ pub enum Amount {
     Cw20(Cw20Coin),
 }
 
+
+
 impl Amount {
     pub fn from_parts(denom: String, amount: impl Into<Uint128>) -> Self {
         let amount = amount.into();

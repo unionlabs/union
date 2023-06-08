@@ -9,7 +9,9 @@ import (
 	"union/cmd/uniond/cmd"
 )
 
+
 func main() {
+
 	rootCmd, _ := cmd.NewRootCmd()
 	rootCmd.AddCommand(cmd.GenBn254())
 	rootCmd.AddCommand(cmd.GenStateProof())
