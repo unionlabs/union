@@ -1,6 +1,7 @@
 { self, ... }: {
-  perSystem = { pkgs, self', lib, config, treefmt, ... }:
+  perSystem = { pkgs, self', lib, config, ... }:
     let
+      treefmt = config.treefmt.build.wrapper;
       tera = "${self'.packages.tera}/bin/tera";
       rootFile = "flake.nix";
       doc_comment = "<!-- GENERATED: DO NOT EDIT -->";

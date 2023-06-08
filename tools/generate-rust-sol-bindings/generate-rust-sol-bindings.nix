@@ -1,5 +1,5 @@
 { ... }: {
-  perSystem = { self', pkgs, system, config, inputs', crane, stdenv, treefmt, ... }:
+  perSystem = { self', pkgs, system, config, inputs', crane, stdenv, ... }:
     let
       attrs = {
         src = crane.lib.cleanCargoSource ./.;

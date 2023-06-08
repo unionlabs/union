@@ -10,7 +10,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     treefmt-nix = {
-      url = "github:numtide/treefmt-nix";
+      url = "github:unionfi/treefmt-nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     pre-commit-hooks = {
@@ -52,12 +52,12 @@
         ./tools/libwasmvm/libwasmvm.nix
         ./tools/rust/rust.nix
         ./tools/rust/crane.nix
-        ./tools/treefmt/treefmt.nix
         ./tools/tera/tera.nix
         ./tools/docgen/docgen.nix
         ./networks/devnet.nix
         ./networks/genesis/devnet.nix
         ./testnet-validator.nix
+        treefmt-nix.flakeModule
         pre-commit-hooks.flakeModule
       ];
       perSystem = { config, self', inputs', pkgs, treefmt, rust, crane, system, lib, ... }:
@@ -220,7 +220,7 @@
                     yarn
                     yq
                   ]);
-                nativeBuildInputs = [ treefmt ];
+                nativeBuildInputs = [ config.build.treefmt.wrapper ];
                 GOPRIVATE = "github.com/unionfi/*";
               };
             in
@@ -238,7 +238,18 @@
               });
             };
 
-          formatter = treefmt;
+          treefmt = {
+            projectRootFile = "flake.nix";
+            programs.nixpkgs-fmt.enable = true;
+            programs.gofmt.enable = true;
+            programs.rustfmt.enable = true;
+            programs.prettier.enable = true;
+            programs.sort = {
+              enable = true;
+              file = "dictionary.txt";
+            };
+            settings.global.excludes = [ "**/vendor/**" "**/foundry/lib/**" ];
+          };
         };
     };
 }
