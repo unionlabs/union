@@ -14,6 +14,7 @@ use tracing::{debug, field::display as as_display};
 use tracing_subscriber::filter::LevelFilter;
 
 #[derive(Parser, Clone)]
+
 #[command(about = "unionvisor is a process supervisor for uniond.", long_about = None)]
 /// [`Cli`]
 pub struct Cli {

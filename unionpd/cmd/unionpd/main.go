@@ -8,6 +8,7 @@ import (
 func main() {
 
 
+
 	var rootCmd = &cobra.Command{Use: "unionpd"}
 	rootCmd.AddCommand(cmd.ServeCmd())
 	rootCmd.AddCommand(cmd.GenContract())
