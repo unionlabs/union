@@ -10,6 +10,10 @@ env:
     NIX_VERSION: nix-2.14.1
     NIXPKGS_CHANNEL: nixos-22.11
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   preview:
     runs-on: ubuntu-latest
