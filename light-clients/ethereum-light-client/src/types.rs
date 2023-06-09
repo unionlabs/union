@@ -122,9 +122,9 @@ impl Fraction {
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct AccountProof {
-    pub address: String,
-    pub storage_hash: String,
-    pub proof: Vec<String>,
+    pub address: Vec<u8>,
+    pub storage_hash: Vec<u8>,
+    pub proof: Vec<Vec<u8>>,
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]

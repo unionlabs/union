@@ -139,7 +139,7 @@ pub fn verify_membership(
     let expected_key =
         generate_commitment_key(path.to_string(), client_state.counterparty_commitment_slot);
 
-    if hex::encode(&expected_key) != proof.key[2..] {
+    if expected_key != proof.key {
         return Err(Error::InvalidCommitmentKey);
     }
 

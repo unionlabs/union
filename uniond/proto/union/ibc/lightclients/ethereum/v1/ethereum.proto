@@ -9,9 +9,9 @@ message StorageProof {
 }
 
 message Proof {
-  string key = 1;
-  string value = 2;
-  repeated string proof = 3;
+  bytes key = 1;
+  bytes value = 2;
+  repeated bytes proof = 3;
 }
 
 message ClientState {
