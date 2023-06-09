@@ -55,10 +55,12 @@
         ./tools/rust/rust.nix
         ./tools/rust/crane.nix
         ./tools/tera/tera.nix
+        ./tools/e2e/e2e.nix
         ./tools/docgen/docgen.nix
         ./networks/devnet.nix
         ./networks/genesis/devnet.nix
         ./testnet-validator.nix
+        ./e2e/all-tests.nix
         treefmt-nix.flakeModule
         pre-commit-hooks.flakeModule
       ];
@@ -67,6 +69,8 @@
         {
           _module = {
             args = {
+              inherit nixpkgs;
+
               pkgs = import nixpkgs {
                 inherit system;
                 overlays = with inputs; [

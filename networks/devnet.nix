@@ -29,12 +29,13 @@
         };
       };
 
+      devnet = {
+        project.name = "union-devnet";
+        services = uniond-services // evm-services;
+      };
+
       spec = {
-        modules = [{
-          project.name = "union-devnet";
-          networks.union-devnet = { };
-          services = uniond-services // evm-services;
-        }];
+        modules = [ (devnet // { networks.union-devnet = { }; }) ];
       };
 
       spec-cosmos = {
@@ -86,5 +87,9 @@
             arion --prebuilt-file ${build-cosmos} up --build --force-recreate -V --always-recreate-deps --remove-orphans
           '';
         };
+
+      _module.args.networks = {
+        inherit devnet;
+      };
     };
 }
