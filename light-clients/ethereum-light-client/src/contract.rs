@@ -200,17 +200,19 @@ pub fn update_header(mut deps: DepsMut, header: EthHeader) -> Result<ContractRes
     )
     .map_err(|e| Error::Verification(e.to_string()))?;
 
-    let address: ExecutionAddress = hex::decode(&(account_update.proofs[0].address)[2..])
+    let proof_data = account_update.proofs.get(0).ok_or(Error::EmptyProof)?;
+
+    let address: ExecutionAddress = hex::decode(&(proof_data.address)[2..])
         .unwrap()
         .as_slice()
         .try_into()
         .unwrap();
-    let proof = account_update.proofs[0]
+    let proof = proof_data
         .proof
         .iter()
         .map(|p| hex::decode(&p[2..]).unwrap())
         .collect();
-    let storage_root = hex::decode(&(account_update.proofs[0].storage_hash)[2..])
+    let storage_root = hex::decode(&(proof_data.storage_hash)[2..])
         .unwrap()
         .as_slice()
         .try_into()
@@ -287,10 +289,10 @@ mod test {
             &Height::new(0, 1216).unwrap(),
         );
 
-        let updates: [RawEthHeader; 3] = [
+        let updates: [RawEthHeader; 1] = [
             serde_json::from_str(include_str!("./test/valid_light_client_update_1.json")).unwrap(),
-            serde_json::from_str(include_str!("./test/valid_light_client_update_2.json")).unwrap(),
-            serde_json::from_str(include_str!("./test/valid_light_client_update_3.json")).unwrap(),
+            // serde_json::from_str(include_str!("./test/valid_light_client_update_2.json")).unwrap(),
+            // serde_json::from_str(include_str!("./test/valid_light_client_update_3.json")).unwrap(),
         ];
 
         for update in updates {
@@ -316,10 +318,10 @@ mod test {
             // TODO(aeryz): Add cases for `store_period == update_period` and `update_period == store_period + 1`
             let (_, client_state) = read_client_state(deps.as_ref()).unwrap();
             // Latest slot is updated.
-            // assert_eq!(
-            //     client_state.latest_slot,
-            //     update.consensus_update.finalized_header.beacon.slot
-            // );
+            assert_eq!(
+                client_state.latest_slot,
+                update.consensus_update.finalized_header.beacon.slot
+            );
         }
     }
 

@@ -84,10 +84,20 @@ impl Account {
     pub fn from_rlp_bytes(bz: &[u8]) -> Result<Account, Error> {
         let r = rlp::Rlp::new(bz);
         Ok(Account {
-            nonce: r.val_at::<u64>(0).unwrap(),
-            balance: r.val_at::<Vec<u8>>(1).unwrap(),
-            storage_root: Hash32::try_from(r.val_at::<Vec<u8>>(2).unwrap().as_slice()).unwrap(),
-            code_hash: Hash32::try_from(r.val_at::<Vec<u8>>(3).unwrap().as_slice()).unwrap(),
+            nonce: r.val_at::<u64>(0).map_err(|_| Error::RlpDecode)?,
+            balance: r.val_at::<Vec<u8>>(1).map_err(|_| Error::RlpDecode)?,
+            storage_root: Hash32::try_from(
+                r.val_at::<Vec<u8>>(2)
+                    .map_err(|_| Error::RlpDecode)?
+                    .as_slice(),
+            )
+            .map_err(|_| Error::InvalidHash)?,
+            code_hash: Hash32::try_from(
+                r.val_at::<Vec<u8>>(3)
+                    .map_err(|_| Error::RlpDecode)?
+                    .as_slice(),
+            )
+            .map_err(|_| Error::InvalidHash)?,
         })
     }
 }

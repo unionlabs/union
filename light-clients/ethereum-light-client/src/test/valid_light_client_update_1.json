@@ -124,8 +124,7 @@
     "signature_slot": 1241
   },
   "account_update": {
-    "account_proof": "yIQjIyMjgiMj",
-    "account_storage_root": "AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE="
+    "proof": []
   },
   "timestamp": 1682415292
 }
