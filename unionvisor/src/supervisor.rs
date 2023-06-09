@@ -240,13 +240,13 @@ mod tests {
             root.clone(),
             LogFormat::Plain,
             &symlinker,
-            &vec![root.join("data").as_os_str()],
+            &vec![root.join("home/data").as_os_str()],
             Duration::from_secs(1),
         )
         .unwrap_err();
 
         if let RuntimeError::BinaryUnavailable { name, err: _ } = err {
-            assert_eq!(name, "upgrade3")
+            assert_eq!(name, "upgrade3");
         } else {
             panic!("didn't receive expected error: {err:?}")
         }
@@ -269,13 +269,13 @@ mod tests {
             root.clone(),
             LogFormat::Plain,
             &symlinker,
-            &vec![root.join("data").as_os_str()],
+            &vec![root.join("home/data").as_os_str()],
             Duration::from_secs(1),
         )
         .unwrap_err();
 
         if let RuntimeError::BinaryUnavailable { name, err: _ } = err {
-            assert_eq!(name, "upgrade3")
+            assert_eq!(name, "upgrade3");
         } else {
             panic!("didn't receive expected error: {err:?}")
         }
