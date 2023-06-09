@@ -220,7 +220,9 @@
                     yarn
                     yq
                   ]);
-                nativeBuildInputs = [ config.build.treefmt.wrapper ];
+                nativeBuildInputs = [
+                  config.treefmt.build.wrapper
+                ] ++ lib.attrsets.attrValues config.treefmt.build.programs;
                 GOPRIVATE = "github.com/unionfi/*";
               };
             in
