@@ -1,6 +1,10 @@
 // @generated
 /// BaseVestingAccount implements the VestingAccount interface. It contains all
 /// the necessary fields needed for any vesting account implementation.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct BaseVestingAccount {
@@ -17,6 +21,10 @@ pub struct BaseVestingAccount {
 }
 /// ContinuousVestingAccount implements the VestingAccount interface. It
 /// continuously vests by unlocking coins linearly with respect to time.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ContinuousVestingAccount {
@@ -28,6 +36,10 @@ pub struct ContinuousVestingAccount {
 /// DelayedVestingAccount implements the VestingAccount interface. It vests all
 /// coins after a specific time, but non prior. In other words, it keeps them
 /// locked until a specified time.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct DelayedVestingAccount {
@@ -35,6 +47,10 @@ pub struct DelayedVestingAccount {
     pub base_vesting_account: ::core::option::Option<BaseVestingAccount>,
 }
 /// Period defines a length of time and amount of coins that will vest.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Period {
@@ -45,6 +61,10 @@ pub struct Period {
 }
 /// PeriodicVestingAccount implements the VestingAccount interface. It
 /// periodically vests by unlocking coins during each specified period.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PeriodicVestingAccount {
@@ -60,6 +80,10 @@ pub struct PeriodicVestingAccount {
 /// still be used for delegating and for governance votes even while locked.
 ///
 /// Since: cosmos-sdk 0.43
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PermanentLockedAccount {
@@ -68,6 +92,10 @@ pub struct PermanentLockedAccount {
 }
 /// MsgCreateVestingAccount defines a message that enables creating a vesting
 /// account.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgCreateVestingAccount {
@@ -83,6 +111,10 @@ pub struct MsgCreateVestingAccount {
     pub delayed: bool,
 }
 /// MsgCreateVestingAccountResponse defines the Msg/CreateVestingAccount response type.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgCreateVestingAccountResponse {}
@@ -90,6 +122,10 @@ pub struct MsgCreateVestingAccountResponse {}
 /// locked account.
 ///
 /// Since: cosmos-sdk 0.46
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgCreatePermanentLockedAccount {
@@ -103,6 +139,10 @@ pub struct MsgCreatePermanentLockedAccount {
 /// MsgCreatePermanentLockedAccountResponse defines the Msg/CreatePermanentLockedAccount response type.
 ///
 /// Since: cosmos-sdk 0.46
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgCreatePermanentLockedAccountResponse {}
@@ -110,6 +150,10 @@ pub struct MsgCreatePermanentLockedAccountResponse {}
 /// account.
 ///
 /// Since: cosmos-sdk 0.46
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgCreatePeriodicVestingAccount {
@@ -126,6 +170,10 @@ pub struct MsgCreatePeriodicVestingAccount {
 /// response type.
 ///
 /// Since: cosmos-sdk 0.46
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgCreatePeriodicVestingAccountResponse {}

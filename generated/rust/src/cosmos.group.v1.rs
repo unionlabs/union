@@ -1,6 +1,10 @@
 // @generated
 /// Member represents a group member with an account address,
 /// non-zero weight, metadata and added_at timestamp.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Member {
@@ -20,6 +24,10 @@ pub struct Member {
 /// MemberRequest represents a group member to be used in Msg server requests.
 /// Contrary to `Member`, it doesn't have any `added_at` field
 /// since this field cannot be set as part of requests.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MemberRequest {
@@ -39,6 +47,10 @@ pub struct MemberRequest {
 ///     `threshold`.
 /// 2. The voting and execution periods of the proposal respect the parameters
 ///     given by `windows`.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ThresholdDecisionPolicy {
@@ -56,6 +68,10 @@ pub struct ThresholdDecisionPolicy {
 ///     is greater or equal than the given `percentage`.
 /// 2. The voting and execution periods of the proposal respect the parameters
 ///     given by `windows`.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PercentageDecisionPolicy {
@@ -68,6 +84,10 @@ pub struct PercentageDecisionPolicy {
     pub windows: ::core::option::Option<DecisionPolicyWindows>,
 }
 /// DecisionPolicyWindows defines the different windows for voting and execution.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct DecisionPolicyWindows {
@@ -91,6 +111,10 @@ pub struct DecisionPolicyWindows {
         ::core::option::Option<super::super::super::google::protobuf::Duration>,
 }
 /// GroupInfo represents the high-level on-chain information for a group.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GroupInfo {
@@ -117,6 +141,10 @@ pub struct GroupInfo {
     pub created_at: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
 }
 /// GroupMember represents the relationship between a group and a member.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GroupMember {
@@ -128,6 +156,10 @@ pub struct GroupMember {
     pub member: ::core::option::Option<Member>,
 }
 /// GroupPolicyInfo represents the high-level on-chain information for a group policy.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GroupPolicyInfo {
@@ -158,6 +190,10 @@ pub struct GroupPolicyInfo {
 /// for a group policy to decide upon.
 /// A proposal consists of a set of `sdk.Msg`s that will be executed if the proposal
 /// passes as well as some optional metadata associated with the proposal.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Proposal {
@@ -220,6 +256,10 @@ pub struct Proposal {
     pub summary: ::prost::alloc::string::String,
 }
 /// TallyResult represents the sum of weighted votes for each vote option.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TallyResult {
@@ -237,6 +277,10 @@ pub struct TallyResult {
     pub no_with_veto_count: ::prost::alloc::string::String,
 }
 /// Vote represents a vote for a proposal.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Vote {
@@ -257,6 +301,10 @@ pub struct Vote {
     pub submit_time: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
 }
 /// VoteOption enumerates the valid vote options for a given proposal.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum VoteOption {
@@ -299,6 +347,10 @@ impl VoteOption {
     }
 }
 /// ProposalStatus defines proposal statuses.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum ProposalStatus {
@@ -348,6 +400,10 @@ impl ProposalStatus {
     }
 }
 /// ProposalExecutorResult defines types of proposal executor results.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum ProposalExecutorResult {
@@ -385,6 +441,10 @@ impl ProposalExecutorResult {
     }
 }
 /// QueryGroupInfoRequest is the Query/GroupInfo request type.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryGroupInfoRequest {
@@ -393,6 +453,10 @@ pub struct QueryGroupInfoRequest {
     pub group_id: u64,
 }
 /// QueryGroupInfoResponse is the Query/GroupInfo response type.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryGroupInfoResponse {
@@ -401,6 +465,10 @@ pub struct QueryGroupInfoResponse {
     pub info: ::core::option::Option<GroupInfo>,
 }
 /// QueryGroupPolicyInfoRequest is the Query/GroupPolicyInfo request type.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryGroupPolicyInfoRequest {
@@ -409,6 +477,10 @@ pub struct QueryGroupPolicyInfoRequest {
     pub address: ::prost::alloc::string::String,
 }
 /// QueryGroupPolicyInfoResponse is the Query/GroupPolicyInfo response type.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryGroupPolicyInfoResponse {
@@ -417,6 +489,10 @@ pub struct QueryGroupPolicyInfoResponse {
     pub info: ::core::option::Option<GroupPolicyInfo>,
 }
 /// QueryGroupMembersRequest is the Query/GroupMembers request type.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryGroupMembersRequest {
@@ -428,6 +504,10 @@ pub struct QueryGroupMembersRequest {
     pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageRequest>,
 }
 /// QueryGroupMembersResponse is the Query/GroupMembersResponse response type.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryGroupMembersResponse {
@@ -439,6 +519,10 @@ pub struct QueryGroupMembersResponse {
     pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageResponse>,
 }
 /// QueryGroupsByAdminRequest is the Query/GroupsByAdmin request type.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryGroupsByAdminRequest {
@@ -450,6 +534,10 @@ pub struct QueryGroupsByAdminRequest {
     pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageRequest>,
 }
 /// QueryGroupsByAdminResponse is the Query/GroupsByAdminResponse response type.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryGroupsByAdminResponse {
@@ -461,6 +549,10 @@ pub struct QueryGroupsByAdminResponse {
     pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageResponse>,
 }
 /// QueryGroupPoliciesByGroupRequest is the Query/GroupPoliciesByGroup request type.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryGroupPoliciesByGroupRequest {
@@ -472,6 +564,10 @@ pub struct QueryGroupPoliciesByGroupRequest {
     pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageRequest>,
 }
 /// QueryGroupPoliciesByGroupResponse is the Query/GroupPoliciesByGroup response type.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryGroupPoliciesByGroupResponse {
@@ -483,6 +579,10 @@ pub struct QueryGroupPoliciesByGroupResponse {
     pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageResponse>,
 }
 /// QueryGroupPoliciesByAdminRequest is the Query/GroupPoliciesByAdmin request type.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryGroupPoliciesByAdminRequest {
@@ -494,6 +594,10 @@ pub struct QueryGroupPoliciesByAdminRequest {
     pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageRequest>,
 }
 /// QueryGroupPoliciesByAdminResponse is the Query/GroupPoliciesByAdmin response type.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryGroupPoliciesByAdminResponse {
@@ -505,6 +609,10 @@ pub struct QueryGroupPoliciesByAdminResponse {
     pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageResponse>,
 }
 /// QueryProposalRequest is the Query/Proposal request type.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryProposalRequest {
@@ -513,6 +621,10 @@ pub struct QueryProposalRequest {
     pub proposal_id: u64,
 }
 /// QueryProposalResponse is the Query/Proposal response type.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryProposalResponse {
@@ -521,6 +633,10 @@ pub struct QueryProposalResponse {
     pub proposal: ::core::option::Option<Proposal>,
 }
 /// QueryProposalsByGroupPolicyRequest is the Query/ProposalByGroupPolicy request type.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryProposalsByGroupPolicyRequest {
@@ -532,6 +648,10 @@ pub struct QueryProposalsByGroupPolicyRequest {
     pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageRequest>,
 }
 /// QueryProposalsByGroupPolicyResponse is the Query/ProposalByGroupPolicy response type.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryProposalsByGroupPolicyResponse {
@@ -543,6 +663,10 @@ pub struct QueryProposalsByGroupPolicyResponse {
     pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageResponse>,
 }
 /// QueryVoteByProposalVoterRequest is the Query/VoteByProposalVoter request type.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryVoteByProposalVoterRequest {
@@ -554,6 +678,10 @@ pub struct QueryVoteByProposalVoterRequest {
     pub voter: ::prost::alloc::string::String,
 }
 /// QueryVoteByProposalVoterResponse is the Query/VoteByProposalVoter response type.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryVoteByProposalVoterResponse {
@@ -562,6 +690,10 @@ pub struct QueryVoteByProposalVoterResponse {
     pub vote: ::core::option::Option<Vote>,
 }
 /// QueryVotesByProposalRequest is the Query/VotesByProposal request type.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryVotesByProposalRequest {
@@ -573,6 +705,10 @@ pub struct QueryVotesByProposalRequest {
     pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageRequest>,
 }
 /// QueryVotesByProposalResponse is the Query/VotesByProposal response type.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryVotesByProposalResponse {
@@ -584,6 +720,10 @@ pub struct QueryVotesByProposalResponse {
     pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageResponse>,
 }
 /// QueryVotesByVoterRequest is the Query/VotesByVoter request type.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryVotesByVoterRequest {
@@ -595,6 +735,10 @@ pub struct QueryVotesByVoterRequest {
     pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageRequest>,
 }
 /// QueryVotesByVoterResponse is the Query/VotesByVoter response type.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryVotesByVoterResponse {
@@ -606,6 +750,10 @@ pub struct QueryVotesByVoterResponse {
     pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageResponse>,
 }
 /// QueryGroupsByMemberRequest is the Query/GroupsByMember request type.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryGroupsByMemberRequest {
@@ -617,6 +765,10 @@ pub struct QueryGroupsByMemberRequest {
     pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageRequest>,
 }
 /// QueryGroupsByMemberResponse is the Query/GroupsByMember response type.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryGroupsByMemberResponse {
@@ -628,6 +780,10 @@ pub struct QueryGroupsByMemberResponse {
     pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageResponse>,
 }
 /// QueryTallyResultRequest is the Query/TallyResult request type.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryTallyResultRequest {
@@ -636,6 +792,10 @@ pub struct QueryTallyResultRequest {
     pub proposal_id: u64,
 }
 /// QueryTallyResultResponse is the Query/TallyResult response type.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryTallyResultResponse {
@@ -644,6 +804,10 @@ pub struct QueryTallyResultResponse {
     pub tally: ::core::option::Option<TallyResult>,
 }
 /// EventCreateGroup is an event emitted when a group is created.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct EventCreateGroup {
@@ -652,6 +816,10 @@ pub struct EventCreateGroup {
     pub group_id: u64,
 }
 /// EventUpdateGroup is an event emitted when a group is updated.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct EventUpdateGroup {
@@ -660,6 +828,10 @@ pub struct EventUpdateGroup {
     pub group_id: u64,
 }
 /// EventCreateGroupPolicy is an event emitted when a group policy is created.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct EventCreateGroupPolicy {
@@ -668,6 +840,10 @@ pub struct EventCreateGroupPolicy {
     pub address: ::prost::alloc::string::String,
 }
 /// EventUpdateGroupPolicy is an event emitted when a group policy is updated.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct EventUpdateGroupPolicy {
@@ -676,6 +852,10 @@ pub struct EventUpdateGroupPolicy {
     pub address: ::prost::alloc::string::String,
 }
 /// EventSubmitProposal is an event emitted when a proposal is created.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct EventSubmitProposal {
@@ -684,6 +864,10 @@ pub struct EventSubmitProposal {
     pub proposal_id: u64,
 }
 /// EventWithdrawProposal is an event emitted when a proposal is withdrawn.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct EventWithdrawProposal {
@@ -692,6 +876,10 @@ pub struct EventWithdrawProposal {
     pub proposal_id: u64,
 }
 /// EventVote is an event emitted when a voter votes on a proposal.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct EventVote {
@@ -700,6 +888,10 @@ pub struct EventVote {
     pub proposal_id: u64,
 }
 /// EventExec is an event emitted when a proposal is executed.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct EventExec {
@@ -714,6 +906,10 @@ pub struct EventExec {
     pub logs: ::prost::alloc::string::String,
 }
 /// EventLeaveGroup is an event emitted when group member leaves the group.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct EventLeaveGroup {
@@ -725,6 +921,10 @@ pub struct EventLeaveGroup {
     pub address: ::prost::alloc::string::String,
 }
 /// MsgCreateGroup is the Msg/CreateGroup request type.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgCreateGroup {
@@ -739,6 +939,10 @@ pub struct MsgCreateGroup {
     pub metadata: ::prost::alloc::string::String,
 }
 /// MsgCreateGroupResponse is the Msg/CreateGroup response type.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgCreateGroupResponse {
@@ -747,6 +951,10 @@ pub struct MsgCreateGroupResponse {
     pub group_id: u64,
 }
 /// MsgUpdateGroupMembers is the Msg/UpdateGroupMembers request type.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgUpdateGroupMembers {
@@ -762,10 +970,18 @@ pub struct MsgUpdateGroupMembers {
     pub member_updates: ::prost::alloc::vec::Vec<MemberRequest>,
 }
 /// MsgUpdateGroupMembersResponse is the Msg/UpdateGroupMembers response type.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgUpdateGroupMembersResponse {}
 /// MsgUpdateGroupAdmin is the Msg/UpdateGroupAdmin request type.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgUpdateGroupAdmin {
@@ -780,10 +996,18 @@ pub struct MsgUpdateGroupAdmin {
     pub new_admin: ::prost::alloc::string::String,
 }
 /// MsgUpdateGroupAdminResponse is the Msg/UpdateGroupAdmin response type.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgUpdateGroupAdminResponse {}
 /// MsgUpdateGroupMetadata is the Msg/UpdateGroupMetadata request type.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgUpdateGroupMetadata {
@@ -798,10 +1022,18 @@ pub struct MsgUpdateGroupMetadata {
     pub metadata: ::prost::alloc::string::String,
 }
 /// MsgUpdateGroupMetadataResponse is the Msg/UpdateGroupMetadata response type.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgUpdateGroupMetadataResponse {}
 /// MsgCreateGroupPolicy is the Msg/CreateGroupPolicy request type.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgCreateGroupPolicy {
@@ -819,6 +1051,10 @@ pub struct MsgCreateGroupPolicy {
     pub decision_policy: ::core::option::Option<super::super::super::google::protobuf::Any>,
 }
 /// MsgCreateGroupPolicyResponse is the Msg/CreateGroupPolicy response type.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgCreateGroupPolicyResponse {
@@ -827,6 +1063,10 @@ pub struct MsgCreateGroupPolicyResponse {
     pub address: ::prost::alloc::string::String,
 }
 /// MsgUpdateGroupPolicyAdmin is the Msg/UpdateGroupPolicyAdmin request type.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgUpdateGroupPolicyAdmin {
@@ -841,10 +1081,18 @@ pub struct MsgUpdateGroupPolicyAdmin {
     pub new_admin: ::prost::alloc::string::String,
 }
 /// MsgUpdateGroupPolicyAdminResponse is the Msg/UpdateGroupPolicyAdmin response type.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgUpdateGroupPolicyAdminResponse {}
 /// MsgCreateGroupWithPolicy is the Msg/CreateGroupWithPolicy request type.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgCreateGroupWithPolicy {
@@ -869,6 +1117,10 @@ pub struct MsgCreateGroupWithPolicy {
     pub decision_policy: ::core::option::Option<super::super::super::google::protobuf::Any>,
 }
 /// MsgCreateGroupWithPolicyResponse is the Msg/CreateGroupWithPolicy response type.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgCreateGroupWithPolicyResponse {
@@ -880,6 +1132,10 @@ pub struct MsgCreateGroupWithPolicyResponse {
     pub group_policy_address: ::prost::alloc::string::String,
 }
 /// MsgUpdateGroupPolicyDecisionPolicy is the Msg/UpdateGroupPolicyDecisionPolicy request type.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgUpdateGroupPolicyDecisionPolicy {
@@ -894,10 +1150,18 @@ pub struct MsgUpdateGroupPolicyDecisionPolicy {
     pub decision_policy: ::core::option::Option<super::super::super::google::protobuf::Any>,
 }
 /// MsgUpdateGroupPolicyDecisionPolicyResponse is the Msg/UpdateGroupPolicyDecisionPolicy response type.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgUpdateGroupPolicyDecisionPolicyResponse {}
 /// MsgUpdateGroupPolicyMetadata is the Msg/UpdateGroupPolicyMetadata request type.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgUpdateGroupPolicyMetadata {
@@ -912,10 +1176,18 @@ pub struct MsgUpdateGroupPolicyMetadata {
     pub metadata: ::prost::alloc::string::String,
 }
 /// MsgUpdateGroupPolicyMetadataResponse is the Msg/UpdateGroupPolicyMetadata response type.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgUpdateGroupPolicyMetadataResponse {}
 /// MsgSubmitProposal is the Msg/SubmitProposal request type.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgSubmitProposal {
@@ -949,6 +1221,10 @@ pub struct MsgSubmitProposal {
     pub summary: ::prost::alloc::string::String,
 }
 /// MsgSubmitProposalResponse is the Msg/SubmitProposal response type.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgSubmitProposalResponse {
@@ -957,6 +1233,10 @@ pub struct MsgSubmitProposalResponse {
     pub proposal_id: u64,
 }
 /// MsgWithdrawProposal is the Msg/WithdrawProposal request type.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgWithdrawProposal {
@@ -968,10 +1248,18 @@ pub struct MsgWithdrawProposal {
     pub address: ::prost::alloc::string::String,
 }
 /// MsgWithdrawProposalResponse is the Msg/WithdrawProposal response type.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgWithdrawProposalResponse {}
 /// MsgVote is the Msg/Vote request type.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgVote {
@@ -993,10 +1281,18 @@ pub struct MsgVote {
     pub exec: i32,
 }
 /// MsgVoteResponse is the Msg/Vote response type.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgVoteResponse {}
 /// MsgExec is the Msg/Exec request type.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgExec {
@@ -1008,6 +1304,10 @@ pub struct MsgExec {
     pub executor: ::prost::alloc::string::String,
 }
 /// MsgExecResponse is the Msg/Exec request type.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgExecResponse {
@@ -1016,6 +1316,10 @@ pub struct MsgExecResponse {
     pub result: i32,
 }
 /// MsgLeaveGroup is the Msg/LeaveGroup request type.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgLeaveGroup {
@@ -1027,10 +1331,18 @@ pub struct MsgLeaveGroup {
     pub group_id: u64,
 }
 /// MsgLeaveGroupResponse is the Msg/LeaveGroup response type.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgLeaveGroupResponse {}
 /// Exec defines modes of execution of a proposal on creation or on new vote.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum Exec {
@@ -1064,6 +1376,10 @@ impl Exec {
     }
 }
 /// GenesisState defines the group module's genesis state.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GenesisState {

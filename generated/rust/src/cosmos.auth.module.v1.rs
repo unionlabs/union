@@ -1,5 +1,9 @@
 // @generated
 /// Module is the config object for the auth module.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Module {
@@ -14,6 +18,10 @@ pub struct Module {
     pub authority: ::prost::alloc::string::String,
 }
 /// ModuleAccountPermission represents permissions for a module account.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ModuleAccountPermission {

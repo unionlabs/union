@@ -1,4 +1,7 @@
 [dependencies]
+[dependencies.ethers]
+optional = true
+version = "2.0.4"
 [dependencies.prost]
 default-features = false
 features = ["prost-derive"]
@@ -336,6 +339,7 @@ proto_full = [
 ## @@protoc_insertion_point(features)
 client = ["tonic"]
 default = ["proto_full", "std"]
+eth-abi = ["ethers", "std"]
 json-schema = ["schemars"]
 server = ["tonic"]
 std = ["prost/std", "serde/std"]

@@ -1,6 +1,10 @@
 // @generated
 /// ValidatorSigningInfo defines a validator's signing info for monitoring their
 /// liveness activity.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ValidatorSigningInfo {
@@ -27,6 +31,10 @@ pub struct ValidatorSigningInfo {
     pub missed_blocks_counter: i64,
 }
 /// Params represents the parameters used for by the slashing module.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Params {
@@ -43,10 +51,18 @@ pub struct Params {
     pub slash_fraction_downtime: ::prost::alloc::vec::Vec<u8>,
 }
 /// QueryParamsRequest is the request type for the Query/Params RPC method
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryParamsRequest {}
 /// QueryParamsResponse is the response type for the Query/Params RPC method
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryParamsResponse {
@@ -55,6 +71,10 @@ pub struct QueryParamsResponse {
 }
 /// QuerySigningInfoRequest is the request type for the Query/SigningInfo RPC
 /// method
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QuerySigningInfoRequest {
@@ -64,6 +84,10 @@ pub struct QuerySigningInfoRequest {
 }
 /// QuerySigningInfoResponse is the response type for the Query/SigningInfo RPC
 /// method
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QuerySigningInfoResponse {
@@ -73,6 +97,10 @@ pub struct QuerySigningInfoResponse {
 }
 /// QuerySigningInfosRequest is the request type for the Query/SigningInfos RPC
 /// method
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QuerySigningInfosRequest {
@@ -81,6 +109,10 @@ pub struct QuerySigningInfosRequest {
 }
 /// QuerySigningInfosResponse is the response type for the Query/SigningInfos RPC
 /// method
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QuerySigningInfosResponse {
@@ -91,6 +123,10 @@ pub struct QuerySigningInfosResponse {
     pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageResponse>,
 }
 /// MsgUnjail defines the Msg/Unjail request type
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgUnjail {
@@ -98,12 +134,20 @@ pub struct MsgUnjail {
     pub validator_addr: ::prost::alloc::string::String,
 }
 /// MsgUnjailResponse defines the Msg/Unjail response type
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgUnjailResponse {}
 /// MsgUpdateParams is the Msg/UpdateParams request type.
 ///
 /// Since: cosmos-sdk 0.47
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgUpdateParams {
@@ -120,10 +164,18 @@ pub struct MsgUpdateParams {
 /// MsgUpdateParams message.
 ///
 /// Since: cosmos-sdk 0.47
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgUpdateParamsResponse {}
 /// GenesisState defines the slashing module's genesis state.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GenesisState {
@@ -140,6 +192,10 @@ pub struct GenesisState {
     pub missed_blocks: ::prost::alloc::vec::Vec<ValidatorMissedBlocks>,
 }
 /// SigningInfo stores validator signing info of corresponding address.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SigningInfo {
@@ -152,6 +208,10 @@ pub struct SigningInfo {
 }
 /// ValidatorMissedBlocks contains array of missed blocks of corresponding
 /// address.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ValidatorMissedBlocks {
@@ -163,6 +223,10 @@ pub struct ValidatorMissedBlocks {
     pub missed_blocks: ::prost::alloc::vec::Vec<MissedBlock>,
 }
 /// MissedBlock contains height and missed status as boolean.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MissedBlock {

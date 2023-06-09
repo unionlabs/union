@@ -4,6 +4,10 @@
 /// if the y-coordinate is the lexicographically largest of the two associated with
 /// the x-coordinate. Otherwise the first byte is a 0x03.
 /// This prefix is followed with the x-coordinate.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PubKey {
@@ -11,6 +15,10 @@ pub struct PubKey {
     pub key: ::prost::alloc::vec::Vec<u8>,
 }
 /// PrivKey defines a secp256k1 private key.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PrivKey {

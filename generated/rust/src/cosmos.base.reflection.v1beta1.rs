@@ -1,9 +1,17 @@
 // @generated
 /// ListAllInterfacesRequest is the request type of the ListAllInterfaces RPC.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ListAllInterfacesRequest {}
 /// ListAllInterfacesResponse is the response type of the ListAllInterfaces RPC.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ListAllInterfacesResponse {
@@ -13,6 +21,10 @@ pub struct ListAllInterfacesResponse {
 }
 /// ListImplementationsRequest is the request type of the ListImplementations
 /// RPC.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ListImplementationsRequest {
@@ -22,6 +34,10 @@ pub struct ListImplementationsRequest {
 }
 /// ListImplementationsResponse is the response type of the ListImplementations
 /// RPC.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ListImplementationsResponse {

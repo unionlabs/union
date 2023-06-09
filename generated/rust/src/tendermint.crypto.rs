@@ -1,5 +1,9 @@
 // @generated
 /// PublicKey defines the keys available for use with Validators
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PublicKey {
@@ -8,6 +12,10 @@ pub struct PublicKey {
 }
 /// Nested message and enum types in `PublicKey`.
 pub mod public_key {
+    #[cfg_attr(
+        feature = "ethers",
+        derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+    )]
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum Sum {
@@ -19,6 +27,10 @@ pub mod public_key {
         Bn254(::prost::alloc::vec::Vec<u8>),
     }
 }
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Proof {
@@ -31,6 +43,10 @@ pub struct Proof {
     #[prost(bytes = "vec", repeated, tag = "4")]
     pub aunts: ::prost::alloc::vec::Vec<::prost::alloc::vec::Vec<u8>>,
 }
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ValueOp {
@@ -41,6 +57,10 @@ pub struct ValueOp {
     #[prost(message, optional, tag = "2")]
     pub proof: ::core::option::Option<Proof>,
 }
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct DominoOp {
@@ -54,6 +74,10 @@ pub struct DominoOp {
 /// ProofOp defines an operation used for calculating Merkle root
 /// The data could be arbitrary format, providing nessecary data
 /// for example neighbouring node hash
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ProofOp {
@@ -65,6 +89,10 @@ pub struct ProofOp {
     pub data: ::prost::alloc::vec::Vec<u8>,
 }
 /// ProofOps is Merkle proof defined by the list of ProofOps
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ProofOps {

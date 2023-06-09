@@ -1,5 +1,9 @@
 // @generated
 /// QueryEvidenceRequest is the request type for the Query/Evidence RPC method.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryEvidenceRequest {
@@ -15,6 +19,10 @@ pub struct QueryEvidenceRequest {
     pub hash: ::prost::alloc::string::String,
 }
 /// QueryEvidenceResponse is the response type for the Query/Evidence RPC method.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryEvidenceResponse {
@@ -24,6 +32,10 @@ pub struct QueryEvidenceResponse {
 }
 /// QueryEvidenceRequest is the request type for the Query/AllEvidence RPC
 /// method.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryAllEvidenceRequest {
@@ -33,6 +45,10 @@ pub struct QueryAllEvidenceRequest {
 }
 /// QueryAllEvidenceResponse is the response type for the Query/AllEvidence RPC
 /// method.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryAllEvidenceResponse {
@@ -45,6 +61,10 @@ pub struct QueryAllEvidenceResponse {
 }
 /// MsgSubmitEvidence represents a message that supports submitting arbitrary
 /// Evidence of misbehavior such as equivocation or counterfactual signing.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgSubmitEvidence {
@@ -56,6 +76,10 @@ pub struct MsgSubmitEvidence {
     pub evidence: ::core::option::Option<super::super::super::google::protobuf::Any>,
 }
 /// MsgSubmitEvidenceResponse defines the Msg/SubmitEvidence response type.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgSubmitEvidenceResponse {
@@ -64,6 +88,10 @@ pub struct MsgSubmitEvidenceResponse {
     pub hash: ::prost::alloc::vec::Vec<u8>,
 }
 /// GenesisState defines the evidence module's genesis state.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GenesisState {
@@ -73,6 +101,10 @@ pub struct GenesisState {
 }
 /// Equivocation implements the Evidence interface and defines evidence of double
 /// signing misbehavior.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Equivocation {

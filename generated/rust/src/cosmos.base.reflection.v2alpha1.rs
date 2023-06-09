@@ -1,5 +1,9 @@
 // @generated
 /// AppDescriptor describes a cosmos-sdk based application
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AppDescriptor {
@@ -24,6 +28,10 @@ pub struct AppDescriptor {
     pub tx: ::core::option::Option<TxDescriptor>,
 }
 /// TxDescriptor describes the accepted transaction type
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TxDescriptor {
@@ -38,6 +46,10 @@ pub struct TxDescriptor {
 }
 /// AuthnDescriptor provides information on how to sign transactions without relying
 /// on the online RPCs GetTxMetadata and CombineUnsignedTxAndSignatures
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AuthnDescriptor {
@@ -49,6 +61,10 @@ pub struct AuthnDescriptor {
 /// NOTE(fdymylja): here we could go as far as providing an entire flow on how
 /// to sign a message given a SigningModeDescriptor, but it's better to think about
 /// this another time
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SigningModeDescriptor {
@@ -64,6 +80,10 @@ pub struct SigningModeDescriptor {
     pub authn_info_provider_method_fullname: ::prost::alloc::string::String,
 }
 /// ChainDescriptor describes chain information of the application
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ChainDescriptor {
@@ -72,6 +92,10 @@ pub struct ChainDescriptor {
     pub id: ::prost::alloc::string::String,
 }
 /// CodecDescriptor describes the registered interfaces and provides metadata information on the types
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct CodecDescriptor {
@@ -80,6 +104,10 @@ pub struct CodecDescriptor {
     pub interfaces: ::prost::alloc::vec::Vec<InterfaceDescriptor>,
 }
 /// InterfaceDescriptor describes the implementation of an interface
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct InterfaceDescriptor {
@@ -95,6 +123,10 @@ pub struct InterfaceDescriptor {
     pub interface_implementers: ::prost::alloc::vec::Vec<InterfaceImplementerDescriptor>,
 }
 /// InterfaceImplementerDescriptor describes an interface implementer
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct InterfaceImplementerDescriptor {
@@ -110,6 +142,10 @@ pub struct InterfaceImplementerDescriptor {
 }
 /// InterfaceAcceptingMessageDescriptor describes a protobuf message which contains
 /// an interface represented as a google.protobuf.Any
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct InterfaceAcceptingMessageDescriptor {
@@ -123,6 +159,10 @@ pub struct InterfaceAcceptingMessageDescriptor {
     pub field_descriptor_names: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
 }
 /// ConfigurationDescriptor contains metadata information on the sdk.Config
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ConfigurationDescriptor {
@@ -131,6 +171,10 @@ pub struct ConfigurationDescriptor {
     pub bech32_account_address_prefix: ::prost::alloc::string::String,
 }
 /// MsgDescriptor describes a cosmos-sdk message that can be delivered with a transaction
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgDescriptor {
@@ -139,10 +183,18 @@ pub struct MsgDescriptor {
     pub msg_type_url: ::prost::alloc::string::String,
 }
 /// GetAuthnDescriptorRequest is the request used for the GetAuthnDescriptor RPC
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GetAuthnDescriptorRequest {}
 /// GetAuthnDescriptorResponse is the response returned by the GetAuthnDescriptor RPC
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GetAuthnDescriptorResponse {
@@ -151,10 +203,18 @@ pub struct GetAuthnDescriptorResponse {
     pub authn: ::core::option::Option<AuthnDescriptor>,
 }
 /// GetChainDescriptorRequest is the request used for the GetChainDescriptor RPC
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GetChainDescriptorRequest {}
 /// GetChainDescriptorResponse is the response returned by the GetChainDescriptor RPC
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GetChainDescriptorResponse {
@@ -163,10 +223,18 @@ pub struct GetChainDescriptorResponse {
     pub chain: ::core::option::Option<ChainDescriptor>,
 }
 /// GetCodecDescriptorRequest is the request used for the GetCodecDescriptor RPC
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GetCodecDescriptorRequest {}
 /// GetCodecDescriptorResponse is the response returned by the GetCodecDescriptor RPC
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GetCodecDescriptorResponse {
@@ -175,10 +243,18 @@ pub struct GetCodecDescriptorResponse {
     pub codec: ::core::option::Option<CodecDescriptor>,
 }
 /// GetConfigurationDescriptorRequest is the request used for the GetConfigurationDescriptor RPC
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GetConfigurationDescriptorRequest {}
 /// GetConfigurationDescriptorResponse is the response returned by the GetConfigurationDescriptor RPC
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GetConfigurationDescriptorResponse {
@@ -187,10 +263,18 @@ pub struct GetConfigurationDescriptorResponse {
     pub config: ::core::option::Option<ConfigurationDescriptor>,
 }
 /// GetQueryServicesDescriptorRequest is the request used for the GetQueryServicesDescriptor RPC
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GetQueryServicesDescriptorRequest {}
 /// GetQueryServicesDescriptorResponse is the response returned by the GetQueryServicesDescriptor RPC
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GetQueryServicesDescriptorResponse {
@@ -199,10 +283,18 @@ pub struct GetQueryServicesDescriptorResponse {
     pub queries: ::core::option::Option<QueryServicesDescriptor>,
 }
 /// GetTxDescriptorRequest is the request used for the GetTxDescriptor RPC
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GetTxDescriptorRequest {}
 /// GetTxDescriptorResponse is the response returned by the GetTxDescriptor RPC
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GetTxDescriptorResponse {
@@ -212,6 +304,10 @@ pub struct GetTxDescriptorResponse {
     pub tx: ::core::option::Option<TxDescriptor>,
 }
 /// QueryServicesDescriptor contains the list of cosmos-sdk queriable services
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryServicesDescriptor {
@@ -220,6 +316,10 @@ pub struct QueryServicesDescriptor {
     pub query_services: ::prost::alloc::vec::Vec<QueryServiceDescriptor>,
 }
 /// QueryServiceDescriptor describes a cosmos-sdk queryable service
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryServiceDescriptor {
@@ -236,6 +336,10 @@ pub struct QueryServiceDescriptor {
 /// QueryMethodDescriptor describes a queryable method of a query service
 /// no other info is provided beside method name and tendermint queryable path
 /// because it would be redundant with the grpc reflection service
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryMethodDescriptor {

@@ -1,5 +1,9 @@
 // @generated
 /// Snapshot contains Tendermint state sync snapshot info.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Snapshot {
@@ -15,6 +19,10 @@ pub struct Snapshot {
     pub metadata: ::core::option::Option<Metadata>,
 }
 /// Metadata contains SDK-specific snapshot metadata.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Metadata {
@@ -25,6 +33,10 @@ pub struct Metadata {
 /// SnapshotItem is an item contained in a rootmulti.Store snapshot.
 ///
 /// Since: cosmos-sdk 0.46
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SnapshotItem {
@@ -35,6 +47,10 @@ pub struct SnapshotItem {
 /// Nested message and enum types in `SnapshotItem`.
 pub mod snapshot_item {
     /// item is the specific type of snapshot item.
+    #[cfg_attr(
+        feature = "ethers",
+        derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+    )]
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum Item {
@@ -55,6 +71,10 @@ pub mod snapshot_item {
 /// SnapshotStoreItem contains metadata about a snapshotted store.
 ///
 /// Since: cosmos-sdk 0.46
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SnapshotStoreItem {
@@ -64,6 +84,10 @@ pub struct SnapshotStoreItem {
 /// SnapshotIAVLItem is an exported IAVL node.
 ///
 /// Since: cosmos-sdk 0.46
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SnapshotIavlItem {
@@ -81,6 +105,10 @@ pub struct SnapshotIavlItem {
 /// SnapshotExtensionMeta contains metadata about an external snapshotter.
 ///
 /// Since: cosmos-sdk 0.46
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SnapshotExtensionMeta {
@@ -92,6 +120,10 @@ pub struct SnapshotExtensionMeta {
 /// SnapshotExtensionPayload contains payloads of an external snapshotter.
 ///
 /// Since: cosmos-sdk 0.46
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SnapshotExtensionPayload {
@@ -102,6 +134,10 @@ pub struct SnapshotExtensionPayload {
 ///
 /// Since: cosmos-sdk 0.46
 /// Deprecated: This message was part of store/v2alpha1 which has been deleted from v0.47.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SnapshotKvItem {
@@ -114,6 +150,10 @@ pub struct SnapshotKvItem {
 ///
 /// Since: cosmos-sdk 0.46
 /// Deprecated: This message was part of store/v2alpha1 which has been deleted from v0.47.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SnapshotSchema {
