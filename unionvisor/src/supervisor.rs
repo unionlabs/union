@@ -124,7 +124,8 @@ pub fn run_and_upgrade<S: AsRef<OsStr>, I: IntoIterator<Item = S> + Clone>(
 ) -> color_eyre::Result<(), RuntimeError> {
     let root = root.into();
     let mut supervisor = Supervisor::new(root.clone(), symlinker.clone());
-    let mut watcher = FileReader::new(root.join("data/upgrade-info.json"));
+    let home = supervisor.home_dir();
+    let mut watcher = FileReader::new(home.join("data/upgrade-info.json"));
 
     info!(target: "unionvisor", "spawning supervisor process for the current uniond binary");
     supervisor.spawn(logformat, args.clone()).map_err(|err| {
@@ -239,13 +240,13 @@ mod tests {
             root.clone(),
             LogFormat::Plain,
             &symlinker,
-            &vec![root.join("data").as_os_str()],
+            &vec![root.join("home/data").as_os_str()],
             Duration::from_secs(1),
         )
         .unwrap_err();
 
         if let RuntimeError::BinaryUnavailable { name, err: _ } = err {
-            assert_eq!(name, "upgrade3")
+            assert_eq!(name, "upgrade3");
         } else {
             panic!("didn't receive expected error: {err:?}")
         }
@@ -268,13 +269,13 @@ mod tests {
             root.clone(),
             LogFormat::Plain,
             &symlinker,
-            &vec![root.join("data").as_os_str()],
+            &vec![root.join("home/data").as_os_str()],
             Duration::from_secs(1),
         )
         .unwrap_err();
 
         if let RuntimeError::BinaryUnavailable { name, err: _ } = err {
-            assert_eq!(name, "upgrade3")
+            assert_eq!(name, "upgrade3");
         } else {
             panic!("didn't receive expected error: {err:?}")
         }

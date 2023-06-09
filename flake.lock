@@ -27,7 +27,7 @@
         "flake-parts": "flake-parts_19",
         "haskell-flake": "haskell-flake_10",
         "nixpkgs": [
-          "v0.7.0",
+          "v0_7_0",
           "v0.6.0",
           "nixpkgs"
         ]
@@ -51,7 +51,7 @@
         "flake-parts": "flake-parts_21",
         "haskell-flake": "haskell-flake_11",
         "nixpkgs": [
-          "v0.7.0",
+          "v0_7_0",
           "v0.6.0",
           "v0.6.0",
           "nixpkgs"
@@ -76,7 +76,7 @@
         "flake-parts": "flake-parts_23",
         "haskell-flake": "haskell-flake_12",
         "nixpkgs": [
-          "v0.7.0",
+          "v0_7_0",
           "v0.6.0",
           "v0.6.0",
           "v0.2.0",
@@ -102,7 +102,7 @@
         "flake-parts": "flake-parts_25",
         "haskell-flake": "haskell-flake_13",
         "nixpkgs": [
-          "v0.7.0",
+          "v0_7_0",
           "v0.6.0",
           "v0.6.0",
           "v0.5.0",
@@ -128,7 +128,7 @@
         "flake-parts": "flake-parts_27",
         "haskell-flake": "haskell-flake_14",
         "nixpkgs": [
-          "v0.7.0",
+          "v0_7_0",
           "v0.6.0",
           "v0.6.0",
           "v0.5.0",
@@ -155,7 +155,7 @@
         "flake-parts": "flake-parts_29",
         "haskell-flake": "haskell-flake_15",
         "nixpkgs": [
-          "v0.7.0",
+          "v0_7_0",
           "v0.6.0",
           "v0.6.0",
           "v0.5.0",
@@ -182,7 +182,7 @@
         "flake-parts": "flake-parts_31",
         "haskell-flake": "haskell-flake_16",
         "nixpkgs": [
-          "v0.7.0",
+          "v0_7_0",
           "v0.6.0",
           "v0.6.0",
           "v0.5.0",
@@ -209,7 +209,7 @@
         "flake-parts": "flake-parts_3",
         "haskell-flake": "haskell-flake_2",
         "nixpkgs": [
-          "v0.6.0",
+          "v0_6_0",
           "nixpkgs"
         ]
       },
@@ -232,7 +232,7 @@
         "flake-parts": "flake-parts_5",
         "haskell-flake": "haskell-flake_3",
         "nixpkgs": [
-          "v0.6.0",
+          "v0_6_0",
           "v0.6.0",
           "nixpkgs"
         ]
@@ -256,7 +256,7 @@
         "flake-parts": "flake-parts_7",
         "haskell-flake": "haskell-flake_4",
         "nixpkgs": [
-          "v0.6.0",
+          "v0_6_0",
           "v0.6.0",
           "v0.2.0",
           "nixpkgs"
@@ -281,7 +281,7 @@
         "flake-parts": "flake-parts_9",
         "haskell-flake": "haskell-flake_5",
         "nixpkgs": [
-          "v0.6.0",
+          "v0_6_0",
           "v0.6.0",
           "v0.5.0",
           "nixpkgs"
@@ -306,7 +306,7 @@
         "flake-parts": "flake-parts_11",
         "haskell-flake": "haskell-flake_6",
         "nixpkgs": [
-          "v0.6.0",
+          "v0_6_0",
           "v0.6.0",
           "v0.5.0",
           "v0.0.2",
@@ -332,7 +332,7 @@
         "flake-parts": "flake-parts_13",
         "haskell-flake": "haskell-flake_7",
         "nixpkgs": [
-          "v0.6.0",
+          "v0_6_0",
           "v0.6.0",
           "v0.5.0",
           "v0.3.0",
@@ -358,7 +358,7 @@
         "flake-parts": "flake-parts_15",
         "haskell-flake": "haskell-flake_8",
         "nixpkgs": [
-          "v0.6.0",
+          "v0_6_0",
           "v0.6.0",
           "v0.5.0",
           "v0.4.2",
@@ -384,7 +384,7 @@
         "flake-parts": "flake-parts_17",
         "haskell-flake": "haskell-flake_9",
         "nixpkgs": [
-          "v0.7.0",
+          "v0_7_0",
           "nixpkgs"
         ]
       },
@@ -430,7 +430,7 @@
         "flake-compat": "flake-compat_3",
         "flake-utils": "flake-utils_5",
         "nixpkgs": [
-          "v0.6.0",
+          "v0_6_0",
           "nixpkgs"
         ],
         "rust-overlay": "rust-overlay_3"
@@ -454,7 +454,7 @@
         "flake-compat": "flake-compat_5",
         "flake-utils": "flake-utils_9",
         "nixpkgs": [
-          "v0.6.0",
+          "v0_6_0",
           "v0.6.0",
           "nixpkgs"
         ],
@@ -479,7 +479,7 @@
         "flake-compat": "flake-compat_8",
         "flake-utils": "flake-utils_15",
         "nixpkgs": [
-          "v0.6.0",
+          "v0_6_0",
           "v0.6.0",
           "v0.5.0",
           "nixpkgs"
@@ -505,7 +505,7 @@
         "flake-compat": "flake-compat_13",
         "flake-utils": "flake-utils_25",
         "nixpkgs": [
-          "v0.7.0",
+          "v0_7_0",
           "nixpkgs"
         ],
         "rust-overlay": "rust-overlay_9"
@@ -529,7 +529,7 @@
         "flake-compat": "flake-compat_15",
         "flake-utils": "flake-utils_29",
         "nixpkgs": [
-          "v0.7.0",
+          "v0_7_0",
           "v0.6.0",
           "nixpkgs"
         ],
@@ -554,7 +554,7 @@
         "flake-compat": "flake-compat_17",
         "flake-utils": "flake-utils_33",
         "nixpkgs": [
-          "v0.7.0",
+          "v0_7_0",
           "v0.6.0",
           "v0.6.0",
           "nixpkgs"
@@ -580,7 +580,7 @@
         "flake-compat": "flake-compat_20",
         "flake-utils": "flake-utils_39",
         "nixpkgs": [
-          "v0.7.0",
+          "v0_7_0",
           "v0.6.0",
           "v0.6.0",
           "v0.5.0",
@@ -1010,7 +1010,7 @@
     "flake-parts_10": {
       "inputs": {
         "nixpkgs-lib": [
-          "v0.6.0",
+          "v0_6_0",
           "v0.6.0",
           "v0.5.0",
           "nixpkgs"
@@ -1033,7 +1033,7 @@
     "flake-parts_11": {
       "inputs": {
         "nixpkgs-lib": [
-          "v0.6.0",
+          "v0_6_0",
           "v0.6.0",
           "v0.5.0",
           "v0.0.2",
@@ -1058,7 +1058,7 @@
     "flake-parts_12": {
       "inputs": {
         "nixpkgs-lib": [
-          "v0.6.0",
+          "v0_6_0",
           "v0.6.0",
           "v0.5.0",
           "v0.0.2",
@@ -1082,7 +1082,7 @@
     "flake-parts_13": {
       "inputs": {
         "nixpkgs-lib": [
-          "v0.6.0",
+          "v0_6_0",
           "v0.6.0",
           "v0.5.0",
           "v0.3.0",
@@ -1107,7 +1107,7 @@
     "flake-parts_14": {
       "inputs": {
         "nixpkgs-lib": [
-          "v0.6.0",
+          "v0_6_0",
           "v0.6.0",
           "v0.5.0",
           "v0.3.0",
@@ -1131,7 +1131,7 @@
     "flake-parts_15": {
       "inputs": {
         "nixpkgs-lib": [
-          "v0.6.0",
+          "v0_6_0",
           "v0.6.0",
           "v0.5.0",
           "v0.4.2",
@@ -1156,7 +1156,7 @@
     "flake-parts_16": {
       "inputs": {
         "nixpkgs-lib": [
-          "v0.6.0",
+          "v0_6_0",
           "v0.6.0",
           "v0.5.0",
           "v0.4.2",
@@ -1180,7 +1180,7 @@
     "flake-parts_17": {
       "inputs": {
         "nixpkgs-lib": [
-          "v0.7.0",
+          "v0_7_0",
           "arion",
           "nixpkgs"
         ]
@@ -1202,7 +1202,7 @@
     "flake-parts_18": {
       "inputs": {
         "nixpkgs-lib": [
-          "v0.7.0",
+          "v0_7_0",
           "nixpkgs"
         ]
       },
@@ -1223,7 +1223,7 @@
     "flake-parts_19": {
       "inputs": {
         "nixpkgs-lib": [
-          "v0.7.0",
+          "v0_7_0",
           "v0.6.0",
           "arion",
           "nixpkgs"
@@ -1266,7 +1266,7 @@
     "flake-parts_20": {
       "inputs": {
         "nixpkgs-lib": [
-          "v0.7.0",
+          "v0_7_0",
           "v0.6.0",
           "nixpkgs"
         ]
@@ -1288,7 +1288,7 @@
     "flake-parts_21": {
       "inputs": {
         "nixpkgs-lib": [
-          "v0.7.0",
+          "v0_7_0",
           "v0.6.0",
           "v0.6.0",
           "arion",
@@ -1312,7 +1312,7 @@
     "flake-parts_22": {
       "inputs": {
         "nixpkgs-lib": [
-          "v0.7.0",
+          "v0_7_0",
           "v0.6.0",
           "v0.6.0",
           "nixpkgs"
@@ -1335,7 +1335,7 @@
     "flake-parts_23": {
       "inputs": {
         "nixpkgs-lib": [
-          "v0.7.0",
+          "v0_7_0",
           "v0.6.0",
           "v0.6.0",
           "v0.2.0",
@@ -1360,7 +1360,7 @@
     "flake-parts_24": {
       "inputs": {
         "nixpkgs-lib": [
-          "v0.7.0",
+          "v0_7_0",
           "v0.6.0",
           "v0.6.0",
           "v0.2.0",
@@ -1384,7 +1384,7 @@
     "flake-parts_25": {
       "inputs": {
         "nixpkgs-lib": [
-          "v0.7.0",
+          "v0_7_0",
           "v0.6.0",
           "v0.6.0",
           "v0.5.0",
@@ -1409,7 +1409,7 @@
     "flake-parts_26": {
       "inputs": {
         "nixpkgs-lib": [
-          "v0.7.0",
+          "v0_7_0",
           "v0.6.0",
           "v0.6.0",
           "v0.5.0",
@@ -1433,7 +1433,7 @@
     "flake-parts_27": {
       "inputs": {
         "nixpkgs-lib": [
-          "v0.7.0",
+          "v0_7_0",
           "v0.6.0",
           "v0.6.0",
           "v0.5.0",
@@ -1459,7 +1459,7 @@
     "flake-parts_28": {
       "inputs": {
         "nixpkgs-lib": [
-          "v0.7.0",
+          "v0_7_0",
           "v0.6.0",
           "v0.6.0",
           "v0.5.0",
@@ -1484,7 +1484,7 @@
     "flake-parts_29": {
       "inputs": {
         "nixpkgs-lib": [
-          "v0.7.0",
+          "v0_7_0",
           "v0.6.0",
           "v0.6.0",
           "v0.5.0",
@@ -1510,7 +1510,7 @@
     "flake-parts_3": {
       "inputs": {
         "nixpkgs-lib": [
-          "v0.6.0",
+          "v0_6_0",
           "arion",
           "nixpkgs"
         ]
@@ -1532,7 +1532,7 @@
     "flake-parts_30": {
       "inputs": {
         "nixpkgs-lib": [
-          "v0.7.0",
+          "v0_7_0",
           "v0.6.0",
           "v0.6.0",
           "v0.5.0",
@@ -1557,7 +1557,7 @@
     "flake-parts_31": {
       "inputs": {
         "nixpkgs-lib": [
-          "v0.7.0",
+          "v0_7_0",
           "v0.6.0",
           "v0.6.0",
           "v0.5.0",
@@ -1583,7 +1583,7 @@
     "flake-parts_32": {
       "inputs": {
         "nixpkgs-lib": [
-          "v0.7.0",
+          "v0_7_0",
           "v0.6.0",
           "v0.6.0",
           "v0.5.0",
@@ -1608,7 +1608,7 @@
     "flake-parts_4": {
       "inputs": {
         "nixpkgs-lib": [
-          "v0.6.0",
+          "v0_6_0",
           "nixpkgs"
         ]
       },
@@ -1629,7 +1629,7 @@
     "flake-parts_5": {
       "inputs": {
         "nixpkgs-lib": [
-          "v0.6.0",
+          "v0_6_0",
           "v0.6.0",
           "arion",
           "nixpkgs"
@@ -1652,7 +1652,7 @@
     "flake-parts_6": {
       "inputs": {
         "nixpkgs-lib": [
-          "v0.6.0",
+          "v0_6_0",
           "v0.6.0",
           "nixpkgs"
         ]
@@ -1674,7 +1674,7 @@
     "flake-parts_7": {
       "inputs": {
         "nixpkgs-lib": [
-          "v0.6.0",
+          "v0_6_0",
           "v0.6.0",
           "v0.2.0",
           "arion",
@@ -1698,7 +1698,7 @@
     "flake-parts_8": {
       "inputs": {
         "nixpkgs-lib": [
-          "v0.6.0",
+          "v0_6_0",
           "v0.6.0",
           "v0.2.0",
           "nixpkgs"
@@ -1721,7 +1721,7 @@
     "flake-parts_9": {
       "inputs": {
         "nixpkgs-lib": [
-          "v0.6.0",
+          "v0_6_0",
           "v0.6.0",
           "v0.5.0",
           "arion",
@@ -2542,7 +2542,7 @@
       "inputs": {
         "flake-utils": "flake-utils_30",
         "nixpkgs": [
-          "v0.7.0",
+          "v0_7_0",
           "v0.6.0",
           "nixpkgs"
         ]
@@ -2566,7 +2566,7 @@
       "inputs": {
         "flake-utils": "flake-utils_34",
         "nixpkgs": [
-          "v0.7.0",
+          "v0_7_0",
           "v0.6.0",
           "v0.6.0",
           "nixpkgs"
@@ -2591,7 +2591,7 @@
       "inputs": {
         "flake-utils": "flake-utils_37",
         "nixpkgs": [
-          "v0.7.0",
+          "v0_7_0",
           "v0.6.0",
           "v0.6.0",
           "v0.2.0",
@@ -2617,7 +2617,7 @@
       "inputs": {
         "flake-utils": "flake-utils_40",
         "nixpkgs": [
-          "v0.7.0",
+          "v0_7_0",
           "v0.6.0",
           "v0.6.0",
           "v0.5.0",
@@ -2643,7 +2643,7 @@
       "inputs": {
         "flake-utils": "flake-utils_43",
         "nixpkgs": [
-          "v0.7.0",
+          "v0_7_0",
           "v0.6.0",
           "v0.6.0",
           "v0.5.0",
@@ -2670,7 +2670,7 @@
       "inputs": {
         "flake-utils": "flake-utils_45",
         "nixpkgs": [
-          "v0.7.0",
+          "v0_7_0",
           "v0.6.0",
           "v0.6.0",
           "v0.5.0",
@@ -2697,7 +2697,7 @@
       "inputs": {
         "flake-utils": "flake-utils_47",
         "nixpkgs": [
-          "v0.7.0",
+          "v0_7_0",
           "v0.6.0",
           "v0.6.0",
           "v0.5.0",
@@ -2724,7 +2724,7 @@
       "inputs": {
         "flake-utils": "flake-utils_6",
         "nixpkgs": [
-          "v0.6.0",
+          "v0_6_0",
           "nixpkgs"
         ]
       },
@@ -2747,7 +2747,7 @@
       "inputs": {
         "flake-utils": "flake-utils_10",
         "nixpkgs": [
-          "v0.6.0",
+          "v0_6_0",
           "v0.6.0",
           "nixpkgs"
         ]
@@ -2771,7 +2771,7 @@
       "inputs": {
         "flake-utils": "flake-utils_13",
         "nixpkgs": [
-          "v0.6.0",
+          "v0_6_0",
           "v0.6.0",
           "v0.2.0",
           "nixpkgs"
@@ -2796,7 +2796,7 @@
       "inputs": {
         "flake-utils": "flake-utils_16",
         "nixpkgs": [
-          "v0.6.0",
+          "v0_6_0",
           "v0.6.0",
           "v0.5.0",
           "nixpkgs"
@@ -2821,7 +2821,7 @@
       "inputs": {
         "flake-utils": "flake-utils_19",
         "nixpkgs": [
-          "v0.6.0",
+          "v0_6_0",
           "v0.6.0",
           "v0.5.0",
           "v0.0.2",
@@ -2847,7 +2847,7 @@
       "inputs": {
         "flake-utils": "flake-utils_21",
         "nixpkgs": [
-          "v0.6.0",
+          "v0_6_0",
           "v0.6.0",
           "v0.5.0",
           "v0.3.0",
@@ -2873,7 +2873,7 @@
       "inputs": {
         "flake-utils": "flake-utils_23",
         "nixpkgs": [
-          "v0.6.0",
+          "v0_6_0",
           "v0.6.0",
           "v0.5.0",
           "v0.4.2",
@@ -2899,7 +2899,7 @@
       "inputs": {
         "flake-utils": "flake-utils_26",
         "nixpkgs": [
-          "v0.7.0",
+          "v0_7_0",
           "nixpkgs"
         ]
       },
@@ -2942,7 +2942,7 @@
     "gitignore_10": {
       "inputs": {
         "nixpkgs": [
-          "v0.7.0",
+          "v0_7_0",
           "v0.6.0",
           "pre-commit-hooks",
           "nixpkgs"
@@ -2965,7 +2965,7 @@
     "gitignore_11": {
       "inputs": {
         "nixpkgs": [
-          "v0.7.0",
+          "v0_7_0",
           "v0.6.0",
           "v0.6.0",
           "pre-commit-hooks",
@@ -2989,7 +2989,7 @@
     "gitignore_12": {
       "inputs": {
         "nixpkgs": [
-          "v0.7.0",
+          "v0_7_0",
           "v0.6.0",
           "v0.6.0",
           "v0.2.0",
@@ -3014,7 +3014,7 @@
     "gitignore_13": {
       "inputs": {
         "nixpkgs": [
-          "v0.7.0",
+          "v0_7_0",
           "v0.6.0",
           "v0.6.0",
           "v0.5.0",
@@ -3039,7 +3039,7 @@
     "gitignore_14": {
       "inputs": {
         "nixpkgs": [
-          "v0.7.0",
+          "v0_7_0",
           "v0.6.0",
           "v0.6.0",
           "v0.5.0",
@@ -3065,7 +3065,7 @@
     "gitignore_15": {
       "inputs": {
         "nixpkgs": [
-          "v0.7.0",
+          "v0_7_0",
           "v0.6.0",
           "v0.6.0",
           "v0.5.0",
@@ -3091,7 +3091,7 @@
     "gitignore_16": {
       "inputs": {
         "nixpkgs": [
-          "v0.7.0",
+          "v0_7_0",
           "v0.6.0",
           "v0.6.0",
           "v0.5.0",
@@ -3117,7 +3117,7 @@
     "gitignore_2": {
       "inputs": {
         "nixpkgs": [
-          "v0.6.0",
+          "v0_6_0",
           "pre-commit-hooks",
           "nixpkgs"
         ]
@@ -3139,7 +3139,7 @@
     "gitignore_3": {
       "inputs": {
         "nixpkgs": [
-          "v0.6.0",
+          "v0_6_0",
           "v0.6.0",
           "pre-commit-hooks",
           "nixpkgs"
@@ -3162,7 +3162,7 @@
     "gitignore_4": {
       "inputs": {
         "nixpkgs": [
-          "v0.6.0",
+          "v0_6_0",
           "v0.6.0",
           "v0.2.0",
           "pre-commit-hooks",
@@ -3186,7 +3186,7 @@
     "gitignore_5": {
       "inputs": {
         "nixpkgs": [
-          "v0.6.0",
+          "v0_6_0",
           "v0.6.0",
           "v0.5.0",
           "pre-commit-hooks",
@@ -3210,7 +3210,7 @@
     "gitignore_6": {
       "inputs": {
         "nixpkgs": [
-          "v0.6.0",
+          "v0_6_0",
           "v0.6.0",
           "v0.5.0",
           "v0.0.2",
@@ -3235,7 +3235,7 @@
     "gitignore_7": {
       "inputs": {
         "nixpkgs": [
-          "v0.6.0",
+          "v0_6_0",
           "v0.6.0",
           "v0.5.0",
           "v0.3.0",
@@ -3260,7 +3260,7 @@
     "gitignore_8": {
       "inputs": {
         "nixpkgs": [
-          "v0.6.0",
+          "v0_6_0",
           "v0.6.0",
           "v0.5.0",
           "v0.4.2",
@@ -3285,7 +3285,7 @@
     "gitignore_9": {
       "inputs": {
         "nixpkgs": [
-          "v0.7.0",
+          "v0_7_0",
           "pre-commit-hooks",
           "nixpkgs"
         ]
@@ -4192,7 +4192,7 @@
         "flake-utils": "flake-utils_31",
         "gitignore": "gitignore_10",
         "nixpkgs": [
-          "v0.7.0",
+          "v0_7_0",
           "v0.6.0",
           "nixpkgs"
         ],
@@ -4218,7 +4218,7 @@
         "flake-utils": "flake-utils_35",
         "gitignore": "gitignore_11",
         "nixpkgs": [
-          "v0.7.0",
+          "v0_7_0",
           "v0.6.0",
           "v0.6.0",
           "nixpkgs"
@@ -4245,7 +4245,7 @@
         "flake-utils": "flake-utils_38",
         "gitignore": "gitignore_12",
         "nixpkgs": [
-          "v0.7.0",
+          "v0_7_0",
           "v0.6.0",
           "v0.6.0",
           "v0.2.0",
@@ -4273,7 +4273,7 @@
         "flake-utils": "flake-utils_41",
         "gitignore": "gitignore_13",
         "nixpkgs": [
-          "v0.7.0",
+          "v0_7_0",
           "v0.6.0",
           "v0.6.0",
           "v0.5.0",
@@ -4301,7 +4301,7 @@
         "flake-utils": "flake-utils_44",
         "gitignore": "gitignore_14",
         "nixpkgs": [
-          "v0.7.0",
+          "v0_7_0",
           "v0.6.0",
           "v0.6.0",
           "v0.5.0",
@@ -4330,7 +4330,7 @@
         "flake-utils": "flake-utils_46",
         "gitignore": "gitignore_15",
         "nixpkgs": [
-          "v0.7.0",
+          "v0_7_0",
           "v0.6.0",
           "v0.6.0",
           "v0.5.0",
@@ -4359,7 +4359,7 @@
         "flake-utils": "flake-utils_48",
         "gitignore": "gitignore_16",
         "nixpkgs": [
-          "v0.7.0",
+          "v0_7_0",
           "v0.6.0",
           "v0.6.0",
           "v0.5.0",
@@ -4388,7 +4388,7 @@
         "flake-utils": "flake-utils_7",
         "gitignore": "gitignore_2",
         "nixpkgs": [
-          "v0.6.0",
+          "v0_6_0",
           "nixpkgs"
         ],
         "nixpkgs-stable": "nixpkgs-stable_2"
@@ -4413,7 +4413,7 @@
         "flake-utils": "flake-utils_11",
         "gitignore": "gitignore_3",
         "nixpkgs": [
-          "v0.6.0",
+          "v0_6_0",
           "v0.6.0",
           "nixpkgs"
         ],
@@ -4439,7 +4439,7 @@
         "flake-utils": "flake-utils_14",
         "gitignore": "gitignore_4",
         "nixpkgs": [
-          "v0.6.0",
+          "v0_6_0",
           "v0.6.0",
           "v0.2.0",
           "nixpkgs"
@@ -4466,7 +4466,7 @@
         "flake-utils": "flake-utils_17",
         "gitignore": "gitignore_5",
         "nixpkgs": [
-          "v0.6.0",
+          "v0_6_0",
           "v0.6.0",
           "v0.5.0",
           "nixpkgs"
@@ -4493,7 +4493,7 @@
         "flake-utils": "flake-utils_20",
         "gitignore": "gitignore_6",
         "nixpkgs": [
-          "v0.6.0",
+          "v0_6_0",
           "v0.6.0",
           "v0.5.0",
           "v0.0.2",
@@ -4521,7 +4521,7 @@
         "flake-utils": "flake-utils_22",
         "gitignore": "gitignore_7",
         "nixpkgs": [
-          "v0.6.0",
+          "v0_6_0",
           "v0.6.0",
           "v0.5.0",
           "v0.3.0",
@@ -4549,7 +4549,7 @@
         "flake-utils": "flake-utils_24",
         "gitignore": "gitignore_8",
         "nixpkgs": [
-          "v0.6.0",
+          "v0_6_0",
           "v0.6.0",
           "v0.5.0",
           "v0.4.2",
@@ -4577,7 +4577,7 @@
         "flake-utils": "flake-utils_27",
         "gitignore": "gitignore_9",
         "nixpkgs": [
-          "v0.7.0",
+          "v0_7_0",
           "nixpkgs"
         ],
         "nixpkgs-stable": "nixpkgs-stable_9"
@@ -4607,8 +4607,8 @@
         "pre-commit-hooks": "pre-commit-hooks",
         "rust-overlay": "rust-overlay_2",
         "treefmt-nix": "treefmt-nix",
-        "v0.6.0": "v0.6.0",
-        "v0.7.0": "v0.7.0"
+        "v0_6_0": "v0_6_0",
+        "v0_7_0": "v0_7_0"
       }
     },
     "rust-overlay": {
@@ -4640,7 +4640,7 @@
       "inputs": {
         "flake-utils": "flake-utils_28",
         "nixpkgs": [
-          "v0.7.0",
+          "v0_7_0",
           "nixpkgs"
         ]
       },
@@ -4661,13 +4661,13 @@
     "rust-overlay_11": {
       "inputs": {
         "flake-utils": [
-          "v0.7.0",
+          "v0_7_0",
           "v0.6.0",
           "crane",
           "flake-utils"
         ],
         "nixpkgs": [
-          "v0.7.0",
+          "v0_7_0",
           "v0.6.0",
           "crane",
           "nixpkgs"
@@ -4691,7 +4691,7 @@
       "inputs": {
         "flake-utils": "flake-utils_32",
         "nixpkgs": [
-          "v0.7.0",
+          "v0_7_0",
           "v0.6.0",
           "nixpkgs"
         ]
@@ -4713,14 +4713,14 @@
     "rust-overlay_13": {
       "inputs": {
         "flake-utils": [
-          "v0.7.0",
+          "v0_7_0",
           "v0.6.0",
           "v0.6.0",
           "crane",
           "flake-utils"
         ],
         "nixpkgs": [
-          "v0.7.0",
+          "v0_7_0",
           "v0.6.0",
           "v0.6.0",
           "crane",
@@ -4745,7 +4745,7 @@
       "inputs": {
         "flake-utils": "flake-utils_36",
         "nixpkgs": [
-          "v0.7.0",
+          "v0_7_0",
           "v0.6.0",
           "v0.6.0",
           "nixpkgs"
@@ -4768,7 +4768,7 @@
     "rust-overlay_15": {
       "inputs": {
         "flake-utils": [
-          "v0.7.0",
+          "v0_7_0",
           "v0.6.0",
           "v0.6.0",
           "v0.5.0",
@@ -4776,7 +4776,7 @@
           "flake-utils"
         ],
         "nixpkgs": [
-          "v0.7.0",
+          "v0_7_0",
           "v0.6.0",
           "v0.6.0",
           "v0.5.0",
@@ -4802,7 +4802,7 @@
       "inputs": {
         "flake-utils": "flake-utils_42",
         "nixpkgs": [
-          "v0.7.0",
+          "v0_7_0",
           "v0.6.0",
           "v0.6.0",
           "v0.5.0",
@@ -4847,12 +4847,12 @@
     "rust-overlay_3": {
       "inputs": {
         "flake-utils": [
-          "v0.6.0",
+          "v0_6_0",
           "crane",
           "flake-utils"
         ],
         "nixpkgs": [
-          "v0.6.0",
+          "v0_6_0",
           "crane",
           "nixpkgs"
         ]
@@ -4875,7 +4875,7 @@
       "inputs": {
         "flake-utils": "flake-utils_8",
         "nixpkgs": [
-          "v0.6.0",
+          "v0_6_0",
           "nixpkgs"
         ]
       },
@@ -4896,13 +4896,13 @@
     "rust-overlay_5": {
       "inputs": {
         "flake-utils": [
-          "v0.6.0",
+          "v0_6_0",
           "v0.6.0",
           "crane",
           "flake-utils"
         ],
         "nixpkgs": [
-          "v0.6.0",
+          "v0_6_0",
           "v0.6.0",
           "crane",
           "nixpkgs"
@@ -4926,7 +4926,7 @@
       "inputs": {
         "flake-utils": "flake-utils_12",
         "nixpkgs": [
-          "v0.6.0",
+          "v0_6_0",
           "v0.6.0",
           "nixpkgs"
         ]
@@ -4948,14 +4948,14 @@
     "rust-overlay_7": {
       "inputs": {
         "flake-utils": [
-          "v0.6.0",
+          "v0_6_0",
           "v0.6.0",
           "v0.5.0",
           "crane",
           "flake-utils"
         ],
         "nixpkgs": [
-          "v0.6.0",
+          "v0_6_0",
           "v0.6.0",
           "v0.5.0",
           "crane",
@@ -4980,7 +4980,7 @@
       "inputs": {
         "flake-utils": "flake-utils_18",
         "nixpkgs": [
-          "v0.6.0",
+          "v0_6_0",
           "v0.6.0",
           "v0.5.0",
           "nixpkgs"
@@ -5003,12 +5003,12 @@
     "rust-overlay_9": {
       "inputs": {
         "flake-utils": [
-          "v0.7.0",
+          "v0_7_0",
           "crane",
           "flake-utils"
         ],
         "nixpkgs": [
-          "v0.7.0",
+          "v0_7_0",
           "crane",
           "nixpkgs"
         ]
@@ -5320,7 +5320,7 @@
     "treefmt-nix_10": {
       "inputs": {
         "nixpkgs": [
-          "v0.7.0",
+          "v0_7_0",
           "v0.6.0",
           "nixpkgs"
         ]
@@ -5342,7 +5342,7 @@
     "treefmt-nix_11": {
       "inputs": {
         "nixpkgs": [
-          "v0.7.0",
+          "v0_7_0",
           "v0.6.0",
           "v0.6.0",
           "nixpkgs"
@@ -5365,7 +5365,7 @@
     "treefmt-nix_12": {
       "inputs": {
         "nixpkgs": [
-          "v0.7.0",
+          "v0_7_0",
           "v0.6.0",
           "v0.6.0",
           "v0.2.0",
@@ -5389,7 +5389,7 @@
     "treefmt-nix_13": {
       "inputs": {
         "nixpkgs": [
-          "v0.7.0",
+          "v0_7_0",
           "v0.6.0",
           "v0.6.0",
           "v0.5.0",
@@ -5413,7 +5413,7 @@
     "treefmt-nix_14": {
       "inputs": {
         "nixpkgs": [
-          "v0.7.0",
+          "v0_7_0",
           "v0.6.0",
           "v0.6.0",
           "v0.5.0",
@@ -5438,7 +5438,7 @@
     "treefmt-nix_15": {
       "inputs": {
         "nixpkgs": [
-          "v0.7.0",
+          "v0_7_0",
           "v0.6.0",
           "v0.6.0",
           "v0.5.0",
@@ -5463,7 +5463,7 @@
     "treefmt-nix_16": {
       "inputs": {
         "nixpkgs": [
-          "v0.7.0",
+          "v0_7_0",
           "v0.6.0",
           "v0.6.0",
           "v0.5.0",
@@ -5488,7 +5488,7 @@
     "treefmt-nix_2": {
       "inputs": {
         "nixpkgs": [
-          "v0.6.0",
+          "v0_6_0",
           "nixpkgs"
         ]
       },
@@ -5509,7 +5509,7 @@
     "treefmt-nix_3": {
       "inputs": {
         "nixpkgs": [
-          "v0.6.0",
+          "v0_6_0",
           "v0.6.0",
           "nixpkgs"
         ]
@@ -5531,7 +5531,7 @@
     "treefmt-nix_4": {
       "inputs": {
         "nixpkgs": [
-          "v0.6.0",
+          "v0_6_0",
           "v0.6.0",
           "v0.2.0",
           "nixpkgs"
@@ -5554,7 +5554,7 @@
     "treefmt-nix_5": {
       "inputs": {
         "nixpkgs": [
-          "v0.6.0",
+          "v0_6_0",
           "v0.6.0",
           "v0.5.0",
           "nixpkgs"
@@ -5577,7 +5577,7 @@
     "treefmt-nix_6": {
       "inputs": {
         "nixpkgs": [
-          "v0.6.0",
+          "v0_6_0",
           "v0.6.0",
           "v0.5.0",
           "v0.0.2",
@@ -5601,7 +5601,7 @@
     "treefmt-nix_7": {
       "inputs": {
         "nixpkgs": [
-          "v0.6.0",
+          "v0_6_0",
           "v0.6.0",
           "v0.5.0",
           "v0.3.0",
@@ -5625,7 +5625,7 @@
     "treefmt-nix_8": {
       "inputs": {
         "nixpkgs": [
-          "v0.6.0",
+          "v0_6_0",
           "v0.6.0",
           "v0.5.0",
           "v0.4.2",
@@ -5649,7 +5649,7 @@
     "treefmt-nix_9": {
       "inputs": {
         "nixpkgs": [
-          "v0.7.0",
+          "v0_7_0",
           "nixpkgs"
         ]
       },
@@ -5917,34 +5917,6 @@
     },
     "v0.6.0": {
       "inputs": {
-        "arion": "arion_2",
-        "crane": "crane_2",
-        "flake-parts": "flake-parts_4",
-        "foundry": "foundry_2",
-        "nix-filter": "nix-filter_2",
-        "nixpkgs": "nixpkgs_2",
-        "pre-commit-hooks": "pre-commit-hooks_2",
-        "rust-overlay": "rust-overlay_4",
-        "treefmt-nix": "treefmt-nix_2",
-        "v0.6.0": "v0.6.0_2"
-      },
-      "locked": {
-        "lastModified": 1685108129,
-        "narHash": "sha256-cyNgTDpm5YOiTKZj3VwQfDiPJTqS3EvvR49sNYHqWcY=",
-        "ref": "release-v0.6.0",
-        "rev": "84b8333c2699670ef87a6b515efa36c32050b4db",
-        "revCount": 665,
-        "type": "git",
-        "url": "https://github.com/unionfi/union"
-      },
-      "original": {
-        "ref": "release-v0.6.0",
-        "type": "git",
-        "url": "https://github.com/unionfi/union"
-      }
-    },
-    "v0.6.0_2": {
-      "inputs": {
         "arion": "arion_3",
         "crane": "crane_3",
         "flake-parts": "flake-parts_6",
@@ -5972,7 +5944,7 @@
         "url": "https://github.com/unionfi/union"
       }
     },
-    "v0.6.0_3": {
+    "v0.6.0_2": {
       "inputs": {
         "arion": "arion_10",
         "crane": "crane_6",
@@ -5983,7 +5955,7 @@
         "pre-commit-hooks": "pre-commit-hooks_10",
         "rust-overlay": "rust-overlay_12",
         "treefmt-nix": "treefmt-nix_10",
-        "v0.6.0": "v0.6.0_4"
+        "v0.6.0": "v0.6.0_3"
       },
       "locked": {
         "lastModified": 1685108129,
@@ -6000,7 +5972,7 @@
         "url": "https://github.com/unionfi/union"
       }
     },
-    "v0.6.0_4": {
+    "v0.6.0_3": {
       "inputs": {
         "arion": "arion_11",
         "crane": "crane_7",
@@ -6029,7 +6001,35 @@
         "url": "https://github.com/unionfi/union"
       }
     },
-    "v0.7.0": {
+    "v0_6_0": {
+      "inputs": {
+        "arion": "arion_2",
+        "crane": "crane_2",
+        "flake-parts": "flake-parts_4",
+        "foundry": "foundry_2",
+        "nix-filter": "nix-filter_2",
+        "nixpkgs": "nixpkgs_2",
+        "pre-commit-hooks": "pre-commit-hooks_2",
+        "rust-overlay": "rust-overlay_4",
+        "treefmt-nix": "treefmt-nix_2",
+        "v0.6.0": "v0.6.0"
+      },
+      "locked": {
+        "lastModified": 1685108129,
+        "narHash": "sha256-cyNgTDpm5YOiTKZj3VwQfDiPJTqS3EvvR49sNYHqWcY=",
+        "ref": "release-v0.6.0",
+        "rev": "84b8333c2699670ef87a6b515efa36c32050b4db",
+        "revCount": 665,
+        "type": "git",
+        "url": "https://github.com/unionfi/union"
+      },
+      "original": {
+        "ref": "release-v0.6.0",
+        "type": "git",
+        "url": "https://github.com/unionfi/union"
+      }
+    },
+    "v0_7_0": {
       "inputs": {
         "arion": "arion_9",
         "crane": "crane_5",
@@ -6040,14 +6040,14 @@
         "pre-commit-hooks": "pre-commit-hooks_9",
         "rust-overlay": "rust-overlay_10",
         "treefmt-nix": "treefmt-nix_9",
-        "v0.6.0": "v0.6.0_3"
+        "v0.6.0": "v0.6.0_2"
       },
       "locked": {
-        "lastModified": 1686299054,
-        "narHash": "sha256-X2cmYyyxGO5DchlrPm+/wExoz5x7KNqBMtCZ+hd6ZyY=",
+        "lastModified": 1686327948,
+        "narHash": "sha256-SdQEoceFQo8d1F1/EW+L4xDSy9JOIojaQa9HiJjVHoo=",
         "ref": "release-v0.7.0",
-        "rev": "bbf7a9dda76d46278c8eb974e59c04142e3a5750",
-        "revCount": 807,
+        "rev": "3aa2d2ff5e72ba3b4b3a83d898715202c500ea52",
+        "revCount": 810,
         "type": "git",
         "url": "https://github.com/unionfi/union"
       },

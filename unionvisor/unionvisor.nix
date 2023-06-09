@@ -8,6 +8,9 @@
 
       unionvisor = crane.lib.buildPackage attrs;
 
+
+      swapDotsWithUnderscores = pkgs.lib.replaceStrings [ "." ] [ "_" ];
+
       mkBundle = name: versions: meta: pkgs.linkFarm "union-bundle-${name}" ([
         {
           name = "meta.json";
@@ -20,7 +23,7 @@
       ] ++ map
         (version: {
           name = "${meta.versions_directory}/${version}/${meta.binary_name}";
-          path = pkgs.lib.getExe inputs'."${version}".packages.uniond;
+          path = pkgs.lib.getExe inputs'."${swapDotsWithUnderscores version}".packages.uniond;
         })
         versions);
     in
