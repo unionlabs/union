@@ -124,7 +124,8 @@ pub fn run_and_upgrade<S: AsRef<OsStr>, I: IntoIterator<Item = S> + Clone>(
 ) -> color_eyre::Result<(), RuntimeError> {
     let root = root.into();
     let mut supervisor = Supervisor::new(root.clone(), symlinker.clone());
-    let mut watcher = FileReader::new(root.join("data/upgrade-info.json"));
+    let home = supervisor.home_dir();
+    let mut watcher = FileReader::new(home.join("data/upgrade-info.json"));
 
     info!(target: "unionvisor", "spawning supervisor process for the current uniond binary");
     supervisor.spawn(logformat, args.clone()).map_err(|err| {
