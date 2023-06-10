@@ -8,7 +8,7 @@
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct StorageProof {
     #[prost(message, repeated, tag = "1")]
-    pub proof: ::prost::alloc::vec::Vec<Proof>,
+    pub proofs: ::prost::alloc::vec::Vec<Proof>,
 }
 #[cfg_attr(
     feature = "ethers",
@@ -19,10 +19,13 @@ pub struct StorageProof {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Proof {
     #[prost(bytes = "vec", tag = "1")]
+    #[cfg_attr(feature = "std", serde(with = "::serde_utils::base64"))]
     pub key: ::prost::alloc::vec::Vec<u8>,
     #[prost(bytes = "vec", tag = "2")]
+    #[cfg_attr(feature = "std", serde(with = "::serde_utils::base64"))]
     pub value: ::prost::alloc::vec::Vec<u8>,
     #[prost(bytes = "vec", repeated, tag = "3")]
+    #[serde(with = "::serde_utils::inner_base64")]
     pub proof: ::prost::alloc::vec::Vec<::prost::alloc::vec::Vec<u8>>,
 }
 #[cfg_attr(
@@ -239,7 +242,7 @@ pub struct ExecutionUpdate {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AccountUpdate {
     #[prost(message, repeated, tag = "1")]
-    pub proof: ::prost::alloc::vec::Vec<Proof>,
+    pub proofs: ::prost::alloc::vec::Vec<Proof>,
 }
 #[cfg_attr(
     feature = "ethers",

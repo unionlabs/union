@@ -5,7 +5,7 @@ option go_package = "union/ibc/lightclients/ethereum";
 import "ibc/core/client/v1/client.proto";
 
 message StorageProof {
-  repeated Proof proof = 1;
+  repeated Proof proofs = 1;
 }
 
 message Proof {
@@ -102,7 +102,7 @@ message ExecutionUpdate {
 }
 
 message AccountUpdate {
-  repeated Proof proof = 1;
+  repeated Proof proofs = 1;
 }
 
 message LightClientHeader {

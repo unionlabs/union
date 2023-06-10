@@ -130,7 +130,7 @@ pub fn validate_light_client_update<C: LightClientContext>(
     Ok(())
 }
 
-fn verify_state(root: Hash32, key: &[u8], proof: Vec<Vec<u8>>) -> Result<Option<Vec<u8>>, Error> {
+fn verify_state(root: Hash32, key: &[u8], proof: &[Vec<u8>]) -> Result<Option<Vec<u8>>, Error> {
     let mut db = MemoryDB::<KeccakHasher, HashKey<_>, Vec<u8>>::default();
     proof.iter().for_each(|n| {
         db.insert(hash_db::EMPTY_PREFIX, n);
@@ -144,13 +144,13 @@ fn verify_state(root: Hash32, key: &[u8], proof: Vec<Vec<u8>>) -> Result<Option<
 pub fn verify_account_storage_root(
     root: Hash32,
     address: &ExecutionAddress,
-    proof: Vec<Vec<u8>>,
-    storage_root: Hash32,
+    proof: &[Vec<u8>],
+    storage_root: &Hash32,
 ) -> Result<(), Error> {
     match verify_state(root, address.as_ref(), proof)? {
         Some(account) => {
             let account = Account::from_rlp_bytes(account.as_ref()).unwrap();
-            if account.storage_root == storage_root {
+            if account.storage_root == *storage_root {
                 Ok(())
             } else {
                 Err(Error::ValueMismatch)
@@ -164,7 +164,7 @@ pub fn verify_storage_proof(
     root: Hash32,
     key: &[u8],
     expected_value: &[u8],
-    proof: Vec<Vec<u8>>,
+    proof: &[Vec<u8>],
 ) -> Result<(), Error> {
     match verify_state(root, key, proof)? {
         Some(value) if value == expected_value => Ok(()),

@@ -82,6 +82,18 @@ pub fn execute(
     Ok(Response::default().set_data(result.encode()?))
 }
 
+/// Verifies if the `value` is committed at `path` in the counterparty light client.
+///
+/// To optimize the ethereum contracts for gas efficiency, we are storing little amount
+/// of data possible in custom formats. For this reason, value that we get from the host
+/// chain is sometimes different than what stored in Ethereum.
+/// - `Connection`: both `value` and stored data is protobuf encoded `ConnectionEnd`.
+/// - `ClientState`: `value` is protobuf encoded `wasm.ClientState` wrapped in `Any`. It's `data`
+/// field is protobuf encoded `tendermint.ClientState` wrapped in `Any`. Ethereum stores eth abi
+/// encoded `cometbls.ClientState`.
+/// - `ConsensusState`: `value` is protobuf encoded `wasm.ConsensusState` wrapped in `Any`. It's
+/// `data` field is protobuf encoded `tendermint.ConsensusState` wrapped in `Any`. Ethereum stores
+/// an eth abi encoded optimized version of `cometbls.ConsensusState`.
 pub fn verify_membership(
     deps: Deps,
     height: Height,
@@ -130,7 +142,7 @@ pub fn verify_membership(
     let storage_proof = StorageProof::decode(proof.0.as_slice())
         .map_err(|_| Error::decode("when decoding storage proof"))?;
 
-    let proof = storage_proof.proof[0].clone();
+    let proof = storage_proof.proofs[0].clone();
 
     let root = Hash32::try_from(consensus_state.storage_root.as_bytes()).map_err(|_| {
         Error::decode("consensus state has invalid `storage_root` (must be 32 bytes)")
@@ -147,17 +159,8 @@ pub fn verify_membership(
     value.update(&raw_value);
     let value = rlp::encode(&value.finalize().to_vec());
 
-    verify_storage_proof(
-        root,
-        &expected_key,
-        &value,
-        proof
-            .proof
-            .iter()
-            .map(|p| hex::decode(&p[2..]).map_err(|_| Error::decode("proof paths must be hex")))
-            .collect::<Result<Vec<_>, _>>()?,
-    )
-    .map_err(|e| Error::Verification(e.to_string()))?;
+    verify_storage_proof(root, &expected_key, &value, &proof.proof)
+        .map_err(|e| Error::Verification(e.to_string()))?;
     Ok(ContractResult::valid(None))
 }
 
@@ -202,21 +205,8 @@ pub fn update_header(mut deps: DepsMut, header: EthHeader) -> Result<ContractRes
 
     let proof_data = account_update.proofs.get(0).ok_or(Error::EmptyProof)?;
 
-    let address: ExecutionAddress = hex::decode(&(proof_data.address)[2..])
-        .unwrap()
-        .as_slice()
-        .try_into()
-        .unwrap();
-    let proof = proof_data
-        .proof
-        .iter()
-        .map(|p| hex::decode(&p[2..]).unwrap())
-        .collect();
-    let storage_root = hex::decode(&(proof_data.storage_hash)[2..])
-        .unwrap()
-        .as_slice()
-        .try_into()
-        .unwrap();
+    let address: ExecutionAddress = proof_data.address.as_slice().try_into().unwrap();
+    let storage_root = proof_data.storage_hash.as_slice().try_into().unwrap();
 
     verify_account_storage_root(
         consensus_update
@@ -225,8 +215,8 @@ pub fn update_header(mut deps: DepsMut, header: EthHeader) -> Result<ContractRes
             .state_root
             .clone(),
         &address,
-        proof,
-        storage_root,
+        &proof_data.proof,
+        &storage_root,
     )
     .map_err(|e| Error::Verification(e.to_string()))?;
 
@@ -234,7 +224,7 @@ pub fn update_header(mut deps: DepsMut, header: EthHeader) -> Result<ContractRes
         &mut client_state,
         &mut consensus_state,
         consensus_update,
-        account_update,
+        storage_root,
     )?;
 
     update_client_state(deps.branch(), wasm_client_state, client_state);
@@ -286,13 +276,13 @@ mod test {
         save_wasm_consensus_state(
             deps.as_mut(),
             &wasm_consensus_state,
-            &Height::new(0, 1216).unwrap(),
+            &Height::new(0, 14144).unwrap(),
         );
 
-        let updates: [RawEthHeader; 1] = [
+        let updates: [RawEthHeader; 3] = [
             serde_json::from_str(include_str!("./test/valid_light_client_update_1.json")).unwrap(),
-            // serde_json::from_str(include_str!("./test/valid_light_client_update_2.json")).unwrap(),
-            // serde_json::from_str(include_str!("./test/valid_light_client_update_3.json")).unwrap(),
+            serde_json::from_str(include_str!("./test/valid_light_client_update_2.json")).unwrap(),
+            serde_json::from_str(include_str!("./test/valid_light_client_update_3.json")).unwrap(),
         ];
 
         for update in updates {
@@ -311,10 +301,10 @@ mod test {
                 update.consensus_update.finalized_header.beacon.slot
             );
             // Storage root is updated.
-            // assert_eq!(
-            //     consensus_state.storage_root.as_bytes(),
-            //     update.account_update.account_storage_root.as_ref(),
-            // );
+            assert_eq!(
+                consensus_state.storage_root.as_bytes(),
+                update.account_update.proofs[0].storage_hash,
+            );
             // TODO(aeryz): Add cases for `store_period == update_period` and `update_period == store_period + 1`
             let (_, client_state) = read_client_state(deps.as_ref()).unwrap();
             // Latest slot is updated.
@@ -341,7 +331,7 @@ mod test {
         save_wasm_consensus_state(
             deps.as_mut(),
             &wasm_consensus_state,
-            &Height::new(0, 1216).unwrap(),
+            &Height::new(0, 14144).unwrap(),
         );
 
         let update: EthHeader = serde_json::from_str::<RawEthHeader>(include_str!(

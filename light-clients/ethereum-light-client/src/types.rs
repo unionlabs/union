@@ -135,7 +135,7 @@ pub struct AccountUpdateInfo {
 impl From<AccountUpdateInfo> for ProtoAccountUpdate {
     fn from(value: AccountUpdateInfo) -> Self {
         Self {
-            proof: value.proofs.into_iter().map(Into::into).collect(),
+            proofs: value.proofs.into_iter().map(Into::into).collect(),
         }
     }
 }
@@ -167,7 +167,7 @@ impl TryFrom<ProtoAccountUpdate> for AccountUpdateInfo {
     fn try_from(value: ProtoAccountUpdate) -> Result<Self, Self::Error> {
         Ok(Self {
             proofs: value
-                .proof
+                .proofs
                 .into_iter()
                 .map(TryInto::<AccountProof>::try_into)
                 .collect::<Result<Vec<_>, _>>()?,
