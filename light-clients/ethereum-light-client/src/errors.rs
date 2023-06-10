@@ -74,6 +74,9 @@ pub enum Error {
 
     #[error("Proof is empty.")]
     EmptyProof,
+
+    #[error("Batching proofs are not supported")]
+    BatchingProofsNotSupported,
 }
 
 impl Error {

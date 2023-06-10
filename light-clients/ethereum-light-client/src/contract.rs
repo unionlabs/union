@@ -55,18 +55,15 @@ pub fn execute(
             proof,
             path,
             value,
-        } => {
-            Ok(ContractResult::valid(None))
-            //     verify_membership(
-            //     deps.as_ref(),
-            //     height,
-            //     delay_time_period,
-            //     delay_block_period,
-            //     proof,
-            //     path,
-            //     value,
-            // )
-        }
+        } => verify_membership(
+            deps.as_ref(),
+            height,
+            delay_time_period,
+            delay_block_period,
+            proof,
+            path,
+            value,
+        ),
         ExecuteMsg::UpdateState {
             client_message: ClientMessage { header, .. },
         } => {
@@ -120,7 +117,6 @@ pub fn verify_membership(
     .map_err(|e| Error::InvalidPath(e.to_string()))?;
 
     let raw_value = match path {
-        Path::Connection(_) => value.0.as_slice().to_vec(),
         Path::ClientState(_) => {
             let cometbls_client_state = tendermint_to_cometbls_client_state(
                 decode_client_state_to_concrete_state(value.0.as_slice())?,
@@ -135,35 +131,54 @@ pub fn verify_membership(
 
             encode_cometbls_consensus_state(cometbls_consensus_state)?
         }
+        Path::Connection(_) | Path::ChannelEnd(_) | Path::Commitment(_) | Path::Ack(_) => {
+            value.0.as_slice().to_vec()
+        }
         p => {
             return Err(Error::InvalidPath(format!(
-                "path type not supported: {p:?}"
+                "path type not supported for membership verification: {p:?}"
             )))
         }
     };
 
-    let storage_proof = StorageProof::decode(proof.0.as_slice())
-        .map_err(|_| Error::decode("when decoding storage proof"))?;
+    let storage_proof = {
+        let mut proofs = StorageProof::decode(proof.0.as_slice())
+            .map_err(|_| Error::decode("when decoding storage proof"))?
+            .proofs;
+        if proofs.len() > 1 {
+            return Err(Error::BatchingProofsNotSupported);
+        }
+        proofs.pop().ok_or(Error::EmptyProof)?
+    };
 
-    let proof = storage_proof.proofs[0].clone();
-
-    let root = Hash32::try_from(consensus_state.storage_root.as_bytes()).map_err(|_| {
+    // This storage root is verified during the header update, so we don't need to verify it again.
+    let storage_root = Hash32::try_from(consensus_state.storage_root.as_bytes()).map_err(|_| {
         Error::decode("consensus state has invalid `storage_root` (must be 32 bytes)")
     })?;
 
-    let expected_key =
-        generate_commitment_key(path.to_string(), client_state.counterparty_commitment_slot);
-
-    if expected_key != proof.key {
+    // Data MUST be stored to the commitment path that is defined in ICS23.
+    if generate_commitment_key(path.to_string(), client_state.counterparty_commitment_slot)
+        != storage_proof.key
+    {
         return Err(Error::InvalidCommitmentKey);
     }
 
-    let mut value = sha3::Keccak256::new();
-    value.update(&raw_value);
-    let value = rlp::encode(&value.finalize().to_vec());
+    // We store the hash of the data, not the data itself to the commitments map.
+    let stored_value = rlp::encode(
+        &(sha3::Keccak256::new()
+            .chain_update(raw_value)
+            .finalize()
+            .as_slice()),
+    );
 
-    verify_storage_proof(root, &expected_key, &value, &proof.proof)
-        .map_err(|e| Error::Verification(e.to_string()))?;
+    verify_storage_proof(
+        storage_root,
+        &storage_proof.key,
+        &stored_value,
+        &storage_proof.proof,
+    )
+    .map_err(|e| Error::Verification(e.to_string()))?;
+
     Ok(ContractResult::valid(None))
 }
 
