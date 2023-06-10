@@ -343,7 +343,7 @@ pub async fn update_wasm_client(sequence: u64) {
     // dbg!(&bootstrap);
 
     // arbitrary data
-    let account_update = AccountUpdate { proof: vec![] };
+    let account_update = AccountUpdate { proofs: vec![] };
 
     let wasm_header = wasm::v1::Header {
         data: ethereum::v1::Header {
