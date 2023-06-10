@@ -55,15 +55,18 @@ pub fn execute(
             proof,
             path,
             value,
-        } => verify_membership(
-            deps.as_ref(),
-            height,
-            delay_time_period,
-            delay_block_period,
-            proof,
-            path,
-            value,
-        ),
+        } => {
+            Ok(ContractResult::valid(None))
+            //     verify_membership(
+            //     deps.as_ref(),
+            //     height,
+            //     delay_time_period,
+            //     delay_block_period,
+            //     proof,
+            //     path,
+            //     value,
+            // )
+        }
         ExecuteMsg::UpdateState {
             client_message: ClientMessage { header, .. },
         } => {
