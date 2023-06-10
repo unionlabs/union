@@ -131,9 +131,11 @@ pub fn verify_membership(
 
             encode_cometbls_consensus_state(cometbls_consensus_state)?
         }
-        Path::Connection(_) | Path::ChannelEnd(_) | Path::Commitment(_) | Path::Ack(_) => {
-            value.0.as_slice().to_vec()
-        }
+        Path::Connection(_)
+        | Path::ChannelEnd(_)
+        | Path::Commitment(_)
+        | Path::Ack(_)
+        | Path::SeqRecv(_) => value.0.as_slice().to_vec(),
         p => {
             return Err(Error::InvalidPath(format!(
                 "path type not supported for membership verification: {p:?}"
