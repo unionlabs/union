@@ -132,7 +132,7 @@ contract IBCFullTest is Test {
                     }).marshalToProto(IbcCoreClientV1Height.Data({
                         revision_number: 0,
                         revision_height: height
-                    }))
+                    }), hex"CAFEBABE")
                 ,
                 consensusStateBytes: OptimizedConsensusState({
                         root: rootHash,

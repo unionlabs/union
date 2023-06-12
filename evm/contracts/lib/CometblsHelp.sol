@@ -166,12 +166,12 @@ library CometblsHelp {
     function unmarshalClientStateFromProto(bytes memory bz)
         internal
         pure
-        returns (UnionIbcLightclientsCometblsV1ClientState.Data memory, IbcCoreClientV1Height.Data memory)
+        returns (UnionIbcLightclientsCometblsV1ClientState.Data memory, IbcCoreClientV1Height.Data memory, bytes memory)
     {
         Any.Data memory any = Any.decode(bz);
         require(keccak256(bytes(any.type_url)) == keccak256(bytes(WASM_CLIENT_STATE_URL)), "invalid client state url");
         IbcLightclientsWasmV1ClientState.Data memory wasmClientState = IbcLightclientsWasmV1ClientState.decode(any.value);
-        return (UnionIbcLightclientsCometblsV1ClientState.decode(wasmClientState.data), wasmClientState.latest_height);
+        return (UnionIbcLightclientsCometblsV1ClientState.decode(wasmClientState.data), wasmClientState.latest_height, wasmClientState.code_id);
     }
 
     function unmarshalConsensusStateFromProto(bytes memory bz)
@@ -202,12 +202,11 @@ library CometblsHelp {
         }));
     }
 
-    function marshalToProto(UnionIbcLightclientsCometblsV1ClientState.Data memory clientState, IbcCoreClientV1Height.Data memory latestHeight) internal pure returns (bytes memory) {
+    function marshalToProto(UnionIbcLightclientsCometblsV1ClientState.Data memory clientState, IbcCoreClientV1Height.Data memory latestHeight, bytes memory codeId) internal pure returns (bytes memory) {
         IbcLightclientsWasmV1ClientState.Data memory wasmClientState =
             IbcLightclientsWasmV1ClientState.Data({
                 data: UnionIbcLightclientsCometblsV1ClientState.encode(clientState),
-                // TODO: what do they expect?
-                code_id: hex"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                code_id: codeId,
                 latest_height: latestHeight
             });
         return Any.encode(Any.Data({
@@ -220,7 +219,7 @@ library CometblsHelp {
         return keccak256(marshalToProto(consensusState));
     }
 
-    function marshalToCommitment(UnionIbcLightclientsCometblsV1ClientState.Data memory clientState, IbcCoreClientV1Height.Data memory latestHeight) internal pure returns (bytes32) {
-        return keccak256(marshalToProto(clientState, latestHeight));
+    function marshalToCommitment(UnionIbcLightclientsCometblsV1ClientState.Data memory clientState, IbcCoreClientV1Height.Data memory latestHeight, bytes memory codeId) internal pure returns (bytes32) {
+        return keccak256(marshalToProto(clientState, latestHeight, codeId));
     }
 }
