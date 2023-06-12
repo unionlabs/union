@@ -28,6 +28,7 @@ contract CometblsClient is ILightClient {
 
     // OptimizedConsensusState
     mapping(string => IbcCoreClientV1Height.Data) internal latestHeights;
+    mapping(string => bytes) internal codeIds;
     mapping(string => UnionIbcLightclientsCometblsV1ClientState.Data) internal clientStates;
     mapping(bytes32 => OptimizedConsensusState) internal consensusStates;
     mapping(bytes32 => ProcessedMoment) internal processedMoments;
@@ -50,16 +51,17 @@ contract CometblsClient is ILightClient {
         onlyIBC
         returns (bytes32 clientStateCommitment, ConsensusStateUpdate memory update, bool ok)
     {
-        (UnionIbcLightclientsCometblsV1ClientState.Data memory clientState, IbcCoreClientV1Height.Data memory latestHeight) =
+        (UnionIbcLightclientsCometblsV1ClientState.Data memory clientState, IbcCoreClientV1Height.Data memory latestHeight, bytes memory codeId) =
             clientStateBytes.unmarshalClientStateFromProto();
         (UnionIbcLightclientsCometblsV1ConsensusState.Data memory consensusState, uint64 timestamp) =
             consensusStateBytes.unmarshalConsensusStateFromProto();
         clientStates[clientId] = clientState;
         latestHeights[clientId] = latestHeight;
+        codeIds[clientId] = codeId;
         OptimizedConsensusState memory optimizedConsensusState = consensusState.toOptimizedConsensusState(timestamp);
         consensusStates[stateIndex(clientId, latestHeight.toUint128())] = optimizedConsensusState;
         return (
-            clientState.marshalToCommitment(latestHeight),
+            clientState.marshalToCommitment(latestHeight, codeId),
             ConsensusStateUpdate({
                 consensusStateCommitment: optimizedConsensusState.marshalToCommitment(),
                 height: latestHeight
@@ -202,7 +204,7 @@ contract CometblsClient is ILightClient {
                 height: uint128(block.number)
             });
 
-        return (clientState.marshalToCommitment(latestHeight), updates, true);
+        return (clientState.marshalToCommitment(latestHeight, codeIds[clientId]), updates, true);
     }
 
     function verifyMembership(
@@ -231,7 +233,7 @@ contract CometblsClient is ILightClient {
     }
 
     function getClientState(string calldata clientId) external view returns (bytes memory, bool) {
-        return (clientStates[clientId].marshalToProto(latestHeights[clientId]), true);
+        return (clientStates[clientId].marshalToProto(latestHeights[clientId], codeIds[clientId]), true);
     }
 
     function getConsensusState(string calldata clientId, IbcCoreClientV1Height.Data calldata height)
