@@ -7,18 +7,15 @@ use std::{
 use contracts::{
     glue::{
         GoogleProtobufDurationData, GoogleProtobufTimestampData, IbcCoreCommitmentV1MerkleRootData,
-        OptimizedConsensusState, UnionIbcLightclientsCometblsV1ClientStateData,
+        UnionIbcLightclientsCometblsV1ClientStateData,
         UnionIbcLightclientsCometblsV1ConsensusStateData,
         UnionIbcLightclientsCometblsV1FractionData, UnionIbcLightclientsCometblsV1HeaderData,
     },
     ibc_handler::{
-        GeneratedConnectionIdentifierFilter, IBCHandler, IBCHandlerEvents,
+        self, GeneratedConnectionIdentifierFilter, IBCHandler, IBCHandlerEvents,
         IbcCoreChannelV1ChannelData, IbcCoreChannelV1CounterpartyData, IbcCoreChannelV1PacketData,
         IbcCoreCommitmentV1MerklePrefixData, IbcCoreConnectionV1ConnectionEndData,
-        IbcCoreConnectionV1CounterpartyData, IbcCoreConnectionV1VersionData, MsgChannelOpenAck,
-        MsgChannelOpenConfirm, MsgChannelOpenInit, MsgChannelOpenTry, MsgConnectionOpenAck,
-        MsgConnectionOpenConfirm, MsgConnectionOpenInit, MsgConnectionOpenTry, MsgCreateClient,
-        MsgPacketRecv, MsgUpdateClient,
+        IbcCoreConnectionV1CounterpartyData, IbcCoreConnectionV1VersionData,
     },
     shared_types::IbcCoreClientV1HeightData,
 };
@@ -27,23 +24,46 @@ use ethers::{
     prelude::{decode_logs, k256::ecdsa, SignerMiddleware},
     providers::{Http, Middleware, Provider},
     signers::{LocalWallet, Signer, Wallet},
-    types::{H160, U256},
+    types::{H160, H256, U256},
     utils::keccak256,
 };
 use futures::Future;
-use lodestar_rpc::types::LightClientBootstrapResponse;
-use prost::Message;
-use protos::{
-    ibc::lightclients::wasm::{self, v1::QueryCodeIdsRequest},
-    union::ibc::lightclients::ethereum::v1::{Proof, StorageProof},
+use lodestar_rpc::types::{
+    BeaconHeaderResponse, LightClientBootstrapResponse, LightClientFinalityUpdateData,
 };
+use prost::Message;
+use protos::{google, union::ibc::lightclients::ethereum::v1 as ethereum_v1};
 use strum::ParseError;
 
+use crate::chain::{evm::ethereum::SyncAggregate, msgs::ethereum::Proof};
 use crate::{
-    chain::cosmos::IntoProto, cosmos_to_eth::COMETBLS_CLIENT_TYPE, ETH_BEACON_RPC_API, ETH_RPC_API,
+    chain::{
+        cosmos::IntoProto,
+        msgs::ethereum::{AccountUpdate, LightClientUpdate, SyncCommittee, TrustedSyncCommittee},
+    },
+    cosmos_to_eth::COMETBLS_CLIENT_TYPE,
+    eth_to_cosmos::LCFUR,
+    ETH_BEACON_RPC_API, ETH_RPC_API,
 };
 
-use super::{cosmos::Ethereum, Connect, LightClient};
+use super::{
+    cosmos::{Any, Ethereum},
+    msgs::{
+        channel::{
+            self, Channel, MsgChannelOpenAck, MsgChannelOpenConfirm, MsgChannelOpenInit,
+            MsgChannelOpenTry, MsgRecvPacket, Packet,
+        },
+        cometbls,
+        connection::{
+            self, MsgConnectionOpenAck, MsgConnectionOpenConfirm, MsgConnectionOpenInit,
+            MsgConnectionOpenTry,
+        },
+        ethereum::{self, BeaconBlockHeader, ExecutionPayloadHeader},
+        wasm, ConnectionEnd, Duration, Fraction, Height, MerklePrefix, MerkleRoot, StateProof,
+        Timestamp, UnknownEnumVariant,
+    },
+    Connect, LightClient,
+};
 
 /// The solidity light client, tracking the state of the 08-wasm light client on union.
 // TODO(benluelo): Generic over middleware?
@@ -51,6 +71,7 @@ pub struct Cometbls {
     ibc_handler: IBCHandler<SignerMiddleware<Provider<Http>, Wallet<ecdsa::SigningKey>>>,
     pub provider: Provider<Http>,
     cometbls_client_address: H160,
+    wasm_code_id: H256,
 }
 
 fn encode_dynamic_singleton_tuple(t: impl AbiEncode) -> Vec<u8> {
@@ -73,8 +94,8 @@ fn decode_dynamic_singleton_tuple<T: AbiDecode>(bs: &[u8]) -> T {
 }
 
 impl LightClient for Cometbls {
-    type ClientState = super::msgs::wasm::ClientState<super::msgs::cometbls::ClientState>;
-    type ConsensusState = super::msgs::wasm::ConsensusState<super::msgs::cometbls::ConsensusState>;
+    type ClientState = Any<wasm::ClientState<cometbls::ClientState>>;
+    type ConsensusState = Any<wasm::ConsensusState<cometbls::ConsensusState>>;
     // TODO(benluelo): Wrap this in wasm?
     type UpdateClientMessage = UnionIbcLightclientsCometblsV1HeaderData;
 
@@ -102,14 +123,10 @@ impl LightClient for Cometbls {
 
             let tx_rcp = self
                 .ibc_handler
-                .create_client(MsgCreateClient {
+                .create_client(ibc_handler::MsgCreateClient {
                     client_type: COMETBLS_CLIENT_TYPE.to_string(),
-                    client_state_bytes: encode_dynamic_singleton_tuple(client_state.into_eth_abi())
-                        .into(),
-                    consensus_state_bytes: encode_dynamic_singleton_tuple(
-                        consensus_state.into_eth_abi(),
-                    )
-                    .into(),
+                    client_state_bytes: client_state.into_proto().encode_to_vec().into(),
+                    consensus_state_bytes: consensus_state.into_proto().encode_to_vec().into(),
                 })
                 .send()
                 .await
@@ -162,7 +179,7 @@ impl LightClient for Cometbls {
     ) -> impl Future<Output = ()> + '_ {
         async move {
             self.ibc_handler
-                .update_client(MsgUpdateClient {
+                .update_client(ibc_handler::MsgUpdateClient {
                     client_id,
                     client_message: encode_dynamic_singleton_tuple(msg).into(),
                 })
@@ -178,9 +195,9 @@ impl LightClient for Cometbls {
     fn consensus_state_proof(
         &self,
         client_id: String,
-        counterparty_height: super::msgs::Height,
-        self_height: super::msgs::Height,
-    ) -> impl Future<Output = super::msgs::StateProof<Self::ConsensusState>> + '_ {
+        counterparty_height: Height,
+        self_height: Height,
+    ) -> impl Future<Output = StateProof<Self::ConsensusState>> + '_ {
         async move {
             tracing::info!(?self_height);
             self.wait_for_block(self_height).await;
@@ -196,71 +213,16 @@ impl LightClient for Cometbls {
 
             dbg!(&consensus_state_bytes.to_string());
 
-            let optimized_consensus_state =
-                OptimizedConsensusState::decode(&consensus_state_bytes).unwrap();
+            // let optimized_consensus_state =
+            //     OptimizedConsensusState::decode(&consensus_state_bytes).unwrap();
 
-            tracing::info!(?optimized_consensus_state);
+            let cometbls_consensus_state: Self::ConsensusState =
+                google::protobuf::Any::decode(&*consensus_state_bytes)
+                    .unwrap()
+                    .try_into()
+                    .unwrap();
 
-            let consensus_state = super::msgs::cometbls::ConsensusState {
-                timestamp: super::msgs::Timestamp {
-                    seconds: optimized_consensus_state.timestamp.try_into().unwrap(),
-                    nanos: 0,
-                },
-                root: super::msgs::MerkleRoot {
-                    hash: optimized_consensus_state.root.into(),
-                },
-                next_validators_hash: optimized_consensus_state.next_validators_hash.into(),
-            };
-
-            // {
-            //     let location = <[u8; 32]>::try_from(U256::from(12).encode())
-            //         .unwrap()
-            //         .into();
-            //     // let encoded_differently = {
-            //     //     let mut slice = [0u8; 32];
-            //     //     U256::from(12).to_big_endian(&mut slice);
-            //     //     keccak256(slice).into()
-            //     // };
-
-            //     // assert_eq!(location, encoded_differently);
-
-            //     tracing::info!(?location, "sequence");
-
-            //     let proof = self
-            //         .provider
-            //         // eth_getProof
-            //         .get_proof(
-            //             self.ibc_handler.address(),
-            //             vec![location],
-            //             Some(self_height.revision_height.into()),
-            //         )
-            //         .await
-            //         .unwrap();
-
-            //     tracing::info!(?proof, "sequence");
-
-            //     for i in 0..=12 {
-            //         dbg!(i);
-            //         let storage = self
-            //             .provider
-            //             // eth_getProof
-            //             .get_storage_at(
-            //                 self.ibc_handler.address(),
-            //                 {
-            //                     let mut slice = [0u8; 32];
-            //                     U256::from(i).to_big_endian(&mut slice);
-            //                     slice.into()
-            //                 },
-            //                 None,
-            //             )
-            //             .await
-            //             .unwrap();
-
-            //         tracing::info!(?storage, "sequence");
-            //     }
-            // };
-
-            // panic!();
+            tracing::info!(?cometbls_consensus_state);
 
             self.get_proof(
                 format!(
@@ -268,9 +230,9 @@ impl LightClient for Cometbls {
                     counterparty_height.revision_number, counterparty_height.revision_height
                 ),
                 self_height,
-                consensus_state.clone(),
+                cometbls_consensus_state.clone(),
                 // AbiEncode::encode,
-                |_| optimized_consensus_state.encode(),
+                |x| x.into_proto().encode_to_vec(),
             )
             .await
         }
@@ -279,8 +241,8 @@ impl LightClient for Cometbls {
     fn client_state_proof(
         &self,
         client_id: String,
-        self_height: super::msgs::Height,
-    ) -> impl Future<Output = super::msgs::StateProof<Self::ClientState>> + '_ {
+        self_height: Height,
+    ) -> impl Future<Output = StateProof<Self::ClientState>> + '_ {
         async move {
             tracing::info!(?self_height);
             self.wait_for_block(self_height).await;
@@ -299,11 +261,17 @@ impl LightClient for Cometbls {
 
             dbg!(client_state_bytes.to_string());
 
-            let cometbls_client_state = decode_dynamic_singleton_tuple::<
-                UnionIbcLightclientsCometblsV1ClientStateData,
-            >(&client_state_bytes);
+            // let cometbls_client_state = decode_dynamic_singleton_tuple::<
+            //     UnionIbcLightclientsCometblsV1ClientStateData,
+            // >(&client_state_bytes);
 
-            tracing::info!(?cometbls_client_state);
+            let cometbls_client_state: Self::ClientState =
+                google::protobuf::Any::decode(&*client_state_bytes)
+                    .unwrap()
+                    .try_into()
+                    .unwrap();
+
+            // tracing::info!(?cometbls_client_state);
 
             // tokio::time::sleep(std::time::Duration::from_secs(30)).await;
 
@@ -313,8 +281,8 @@ impl LightClient for Cometbls {
             self.get_proof(
                 format!("clients/{client_id}/clientState"),
                 self_height,
-                cometbls_client_state.into(),
-                |x: Self::ClientState| encode_dynamic_singleton_tuple(x.into_eth_abi()),
+                cometbls_client_state,
+                |x| x.into_proto().encode_to_vec(),
             )
             .await
         }
@@ -323,8 +291,8 @@ impl LightClient for Cometbls {
     fn connection_state_proof(
         &self,
         connection_id: String,
-        self_height: super::msgs::Height,
-    ) -> impl Future<Output = super::msgs::StateProof<super::msgs::ConnectionEnd>> + '_ {
+        self_height: Height,
+    ) -> impl Future<Output = StateProof<ConnectionEnd>> + '_ {
         async move {
             tracing::info!(?self_height);
             self.wait_for_block(self_height).await;
@@ -336,12 +304,31 @@ impl LightClient for Cometbls {
                 .await
                 .unwrap();
 
+            // let (connection_end_bytes, _is_found) = self
+            //     .ibc_handler
+            //     .get_connection_serialize(connection_id.clone())
+            //     .block(self_height.revision_height)
+            //     .await
+            //     .unwrap();
+
             tracing::info!(?connection_end);
 
             assert!(is_found);
 
-            let canonical_connection_end: super::msgs::ConnectionEnd =
-                connection_end.try_into().unwrap();
+            let canonical_connection_end: ConnectionEnd = connection_end.try_into().unwrap();
+
+            // assert_eq!(
+            //     canonical_connection_end
+            //         .clone()
+            //         .into_proto()
+            //         .encode_to_vec(),
+            //     connection_end_bytes.to_vec()
+            // );
+
+            // let connection_end_from_contract =
+            //     connection_v1::ConnectionEnd::decode(&*connection_end_bytes.to_vec()).unwrap();
+
+            // dbg!(connection_end_from_contract);
 
             // super::msgs::StateProof {
             //     state: canonical_connection_end,
@@ -359,52 +346,53 @@ impl LightClient for Cometbls {
         }
     }
 
-    fn query_latest_height(&self) -> impl Future<Output = super::msgs::Height> + '_ {
+    fn query_latest_height(&self) -> impl Future<Output = Height> + '_ {
         async move {
-            // const API: &str = "eth/v2/debug/beacon/states";
-
-            // let height = reqwest::Client::new()
-            //     .get(format!("{ETH_BEACON_RPC_API}/{API}/finalized"))
-            //     .send()
-            //     .await
-            //     .unwrap()
-            //     .json::<serde_json::Value>()
-            //     .await
-            //     .unwrap()
-            //     .get("data")
-            //     .unwrap()
-            //     .get("slot")
-            //     .unwrap()
-            //     .as_str()
-            //     .unwrap()
-            //     .parse::<u64>()
-            //     .unwrap();
-
-            self.provider
-                .get_block_number()
+            const API: &str = "eth/v2/debug/beacon/states";
+            let height = reqwest::Client::new()
+                .get(format!("{ETH_BEACON_RPC_API}/{API}/finalized"))
+                .send()
                 .await
-                .map(|height| super::msgs::Height {
-                    revision_number: 0,
-                    revision_height: height.as_u64(),
-                })
                 .unwrap()
+                .json::<serde_json::Value>()
+                .await
+                .unwrap()
+                .get("data")
+                .unwrap()
+                .get("slot")
+                .unwrap()
+                .as_str()
+                .unwrap()
+                .parse::<u64>()
+                .unwrap();
+            Height {
+                revision_number: 0,
+                revision_height: height,
+            }
+
+            // self.provider
+            //     .get_block_number()
+            //     .await
+            //     .map(|height| Height {
+            //         revision_number: 0,
+            //         revision_height: height.as_u64(),
+            //     })
+            //     .unwrap()
         }
     }
 }
 
 impl Connect<Ethereum> for Cometbls {
-    type HandshakeClientState = <Ethereum as LightClient>::ClientState;
-
-    fn generate_counterparty_handshake_client_state(
-        &self,
-        counterparty_state: <Ethereum as LightClient>::ClientState,
-    ) -> impl Future<Output = Self::HandshakeClientState> + '_ {
-        async move { todo!() }
-    }
+    // fn generate_counterparty_handshake_client_state(
+    //     &self,
+    //     counterparty_state: <Ethereum as LightClient>::ClientState,
+    // ) -> impl Future<Output = Self::HandshakeClientState> + '_ {
+    //     async move { todo!() }
+    // }
 
     fn connection_open_init(
         &self,
-        msg: super::msgs::connection::MsgConnectionOpenInit,
+        msg: MsgConnectionOpenInit,
     ) -> impl Future<Output = String> + '_ {
         async move {
             let tx_rcp = self
@@ -417,7 +405,7 @@ impl Connect<Ethereum> for Cometbls {
                 .unwrap()
                 .unwrap();
 
-            decode_logs::<IBCHandlerEvents>(
+            let connection_id = decode_logs::<IBCHandlerEvents>(
                 tx_rcp
                     .logs
                     .into_iter()
@@ -437,13 +425,21 @@ impl Connect<Ethereum> for Cometbls {
                 }
                 _ => None,
             })
-            .unwrap()
+            .unwrap();
+
+            self.wait_for_block(Height {
+                revision_number: 0,
+                revision_height: tx_rcp.block_number.unwrap().0[0],
+            })
+            .await;
+
+            connection_id
         }
     }
 
     fn connection_open_try(
         &self,
-        msg: super::msgs::connection::MsgConnectionOpenTry<Self::HandshakeClientState>,
+        msg: MsgConnectionOpenTry<<Ethereum as LightClient>::ClientState>,
     ) -> impl Future<Output = String> + '_ {
         async move {
             let tx_rcp = self
@@ -455,6 +451,12 @@ impl Connect<Ethereum> for Cometbls {
                 .await
                 .unwrap()
                 .unwrap();
+
+            self.wait_for_block(Height {
+                revision_number: 0,
+                revision_height: tx_rcp.block_number.unwrap().0[0],
+            })
+            .await;
 
             decode_logs::<IBCHandlerEvents>(
                 tx_rcp
@@ -478,7 +480,7 @@ impl Connect<Ethereum> for Cometbls {
 
     fn connection_open_ack(
         &self,
-        msg: super::msgs::connection::MsgConnectionOpenAck<<Ethereum as LightClient>::ClientState>,
+        msg: MsgConnectionOpenAck<<Ethereum as LightClient>::ClientState>,
     ) -> impl Future<Output = ()> + '_ {
         async move {
             self.ibc_handler
@@ -494,7 +496,7 @@ impl Connect<Ethereum> for Cometbls {
 
     fn connection_open_confirm(
         &self,
-        msg: super::msgs::connection::MsgConnectionOpenConfirm,
+        msg: MsgConnectionOpenConfirm,
     ) -> impl Future<Output = ()> + '_ {
         async move {
             self.ibc_handler
@@ -508,10 +510,7 @@ impl Connect<Ethereum> for Cometbls {
         }
     }
 
-    fn channel_open_init(
-        &self,
-        msg: super::msgs::channel::MsgChannelOpenInit,
-    ) -> impl Future<Output = String> + '_ {
+    fn channel_open_init(&self, msg: MsgChannelOpenInit) -> impl Future<Output = String> + '_ {
         async move {
             let tx_rcp = self
                 .ibc_handler
@@ -543,10 +542,7 @@ impl Connect<Ethereum> for Cometbls {
         }
     }
 
-    fn channel_open_try(
-        &self,
-        msg: super::msgs::channel::MsgChannelOpenTry,
-    ) -> impl Future<Output = ()> + '_ {
+    fn channel_open_try(&self, msg: MsgChannelOpenTry) -> impl Future<Output = ()> + '_ {
         async move {
             self.ibc_handler
                 .channel_open_try(msg.into())
@@ -559,10 +555,7 @@ impl Connect<Ethereum> for Cometbls {
         }
     }
 
-    fn channel_open_ack(
-        &self,
-        msg: super::msgs::channel::MsgChannelOpenAck,
-    ) -> impl Future<Output = ()> + '_ {
+    fn channel_open_ack(&self, msg: MsgChannelOpenAck) -> impl Future<Output = ()> + '_ {
         async move {
             self.ibc_handler
                 .channel_open_ack(msg.into())
@@ -575,10 +568,7 @@ impl Connect<Ethereum> for Cometbls {
         }
     }
 
-    fn channel_open_confirm(
-        &self,
-        msg: super::msgs::channel::MsgChannelOpenConfirm,
-    ) -> impl Future<Output = ()> + '_ {
+    fn channel_open_confirm(&self, msg: MsgChannelOpenConfirm) -> impl Future<Output = ()> + '_ {
         async move {
             self.ibc_handler
                 .channel_open_confirm(msg.into())
@@ -591,10 +581,7 @@ impl Connect<Ethereum> for Cometbls {
         }
     }
 
-    fn recv_packet(
-        &self,
-        packet: super::msgs::channel::MsgRecvPacket,
-    ) -> impl Future<Output = ()> + '_ {
+    fn recv_packet(&self, packet: MsgRecvPacket) -> impl Future<Output = ()> + '_ {
         async move {
             self.ibc_handler
                 .recv_packet(packet.into())
@@ -609,7 +596,7 @@ impl Connect<Ethereum> for Cometbls {
 
     fn generate_counterparty_client_state(
         &self,
-        height: super::msgs::Height,
+        height: Height,
     ) -> impl Future<Output = <Ethereum as LightClient>::ClientState> + '_ {
         async move {
             let genesis = lodestar_rpc::client::RPCClient::new(ETH_BEACON_RPC_API)
@@ -618,26 +605,26 @@ impl Connect<Ethereum> for Cometbls {
                 .unwrap()
                 .data;
 
-            super::msgs::wasm::ClientState {
-                data: super::msgs::ethereum::ClientState {
+            Any(wasm::ClientState {
+                data: ethereum::ClientState {
                     genesis_validators_root: genesis.genesis_validators_root.as_bytes().to_vec(),
                     genesis_time: genesis.genesis_time.0,
-                    fork_parameters: super::msgs::ethereum::ForkParameters {
+                    fork_parameters: ethereum::ForkParameters {
                         genesis_fork_version: vec![0, 0, 0, 1],
                         genesis_slot: 0,
-                        altair: super::msgs::ethereum::Fork {
+                        altair: ethereum::Fork {
                             version: vec![1, 0, 0, 1],
                             epoch: 0,
                         },
-                        bellatrix: super::msgs::ethereum::Fork {
+                        bellatrix: ethereum::Fork {
                             version: vec![2, 0, 0, 1],
                             epoch: 0,
                         },
-                        capella: super::msgs::ethereum::Fork {
+                        capella: ethereum::Fork {
                             version: vec![3, 0, 0, 1],
                             epoch: 0,
                         },
-                        eip4844: super::msgs::ethereum::Fork {
+                        eip4844: ethereum::Fork {
                             version: vec![4, 0, 0, 0],
                             epoch: u64::MAX,
                         },
@@ -648,37 +635,25 @@ impl Connect<Ethereum> for Cometbls {
                     trusting_period: 100000000,
                     latest_slot: height.revision_height,
                     min_sync_committee_participants: 0,
-                    trust_level: super::msgs::Fraction {
+                    trust_level: Fraction {
                         numerator: 1,
                         denominator: 3,
                     },
-                    frozen_height: super::msgs::Height {
+                    frozen_height: Height {
                         revision_number: 0,
                         revision_height: 0,
                     },
                     counterparty_commitment_slot: 0,
                 },
-                code_id: ethers::utils::hex::decode(dbg!(
-                    &wasm::v1::query_client::QueryClient::connect("http://0.0.0.0:9090")
-                        .await
-                        .unwrap()
-                        .code_ids(QueryCodeIdsRequest { pagination: None })
-                        .await
-                        .unwrap()
-                        .into_inner()
-                        .code_ids
-                        .first()
-                        .unwrap()[1..]
-                ))
-                .unwrap(),
+                code_id: self.wasm_code_id.to_fixed_bytes().to_vec(),
                 latest_height: height,
-            }
+            })
         }
     }
 
     fn generate_counterparty_consensus_state(
         &self,
-        height: super::msgs::Height,
+        height: Height,
     ) -> impl Future<Output = <Ethereum as LightClient>::ConsensusState> + '_ {
         async move {
             let trusted_header = lodestar_rpc::client::RPCClient::new(ETH_BEACON_RPC_API)
@@ -700,8 +675,8 @@ impl Connect<Ethereum> for Cometbls {
             .unwrap()
             .data;
 
-            super::msgs::wasm::ConsensusState {
-                data: super::msgs::ethereum::ConsensusState {
+            Any(wasm::ConsensusState {
+                data: ethereum::ConsensusState {
                     slot: bootstrap.header.beacon.slot.0,
                     storage_root: vec![1, 2, 3],
                     timestamp: bootstrap.header.execution.timestamp.0,
@@ -715,21 +690,237 @@ impl Connect<Ethereum> for Cometbls {
                     .duration_since(UNIX_EPOCH)
                     .unwrap()
                     .as_secs(),
-            }
+            })
         }
     }
 
     fn generate_counterparty_update_client_message(
         &self,
+        latest_self_height_trusted_by_counterparty: Height,
     ) -> impl Future<Output = <Ethereum as LightClient>::UpdateClientMessage> + '_ {
-        async move { todo!() }
+        async move {
+            // self.wait_for_block(trusted_height).await;
+
+            let finality_update = loop {
+                let finality_update =
+                    reqwest::get("http://0.0.0.0:9596/eth/v1/beacon/light_client/finality_update")
+                        .await
+                        .unwrap()
+                        .json::<LCFUR>()
+                        .await
+                        .unwrap();
+
+                let block_number = finality_update.data.finalized_header.execution.block_number;
+
+                tracing::info!("latest trusted: {latest_self_height_trusted_by_counterparty:#?} current: {block_number}");
+
+                if block_number.0 > latest_self_height_trusted_by_counterparty.revision_height {
+                    break finality_update;
+                }
+
+                tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
+            };
+
+            dbg!(&finality_update);
+
+            // let light_client_updates: lodestar_rpc::types::LightClientUpdatesResponse<32, 356, 32> =
+            //     serde_json::from_value(
+            //         dbg!(reqwest::get(format!(
+            //             "http://0.0.0.0:9596/eth/v1/beacon/light_client/updates?start_period={}&count={}",
+            //             latest_self_height_trusted_by_counterparty.revision_height,
+            //             finality_update.data.finalized_header.beacon.slot.0
+            //                 - latest_self_height_trusted_by_counterparty.revision_height,
+            //         ))
+            //         .await
+            //         .unwrap()
+            //         .json()
+            //         .await
+            //         .unwrap()),
+            //     )
+            //     .unwrap();
+
+            // assert_eq!(light_client_updates.0.len(), 1);
+
+            // let [light_client_update] = &*light_client_updates.0 else { panic!() };
+
+            let trusted_block = reqwest::get(format!(
+                "http://0.0.0.0:9596/eth/v1/beacon/headers/{}",
+                latest_self_height_trusted_by_counterparty.revision_height
+            ))
+            .await
+            .unwrap()
+            .json::<BeaconHeaderResponse>()
+            .await
+            .unwrap();
+
+            let bootstrap: LightClientBootstrapResponse<32, 256, 32> = serde_json::from_value(
+                dbg!(
+                    reqwest::get(dbg!(format!(
+                        "http://0.0.0.0:9596/eth/v1/beacon/light_client/bootstrap/0x{}",
+                        trusted_block.data.root
+                    )))
+                    .await
+                    .unwrap()
+                    .json::<serde_json::Value>()
+                    // .json::<LightClientBootstrapResponse<32, 256, 32>>()
+                    .await
+                )
+                .unwrap(),
+            )
+            .unwrap();
+
+            // dbg!(&bootstrap);
+
+            let account_update = self
+                .provider
+                .get_proof(
+                    self.ibc_handler.address(),
+                    vec![],
+                    Some(finality_update.data.finalized_header.beacon.slot.0.into()),
+                )
+                .await
+                .unwrap();
+
+            let wasm_header = wasm::Header {
+                data: ethereum::Header {
+                    trusted_sync_committee: TrustedSyncCommittee {
+                        trusted_height: Height {
+                            revision_number: 0,
+                            revision_height: bootstrap.data.header.beacon.slot.0,
+                        },
+                        sync_committee: SyncCommittee {
+                            pubkeys: bootstrap
+                                .data
+                                .current_sync_committee
+                                .pubkeys
+                                .iter()
+                                .map(|x| x.0.iter().copied().collect())
+                                .collect(),
+                            aggregate_pubkey: bootstrap
+                                .data
+                                .current_sync_committee
+                                .aggregate_pubkey
+                                .iter()
+                                .copied()
+                                .collect(),
+                        },
+                        is_next: false,
+                    },
+                    consensus_update: {
+                        let LightClientFinalityUpdateData {
+                            attested_header,
+                            finalized_header,
+                            finality_branch,
+                            sync_aggregate,
+                            signature_slot,
+                        } = finality_update.data;
+
+                        LightClientUpdate {
+                            attested_header: translate_header(attested_header),
+                            // next_sync_committee: SyncCommittee {
+                            //     pubkeys: light_client_update
+                            //         .data
+                            //         .next_sync_committee
+                            //         .pubkeys
+                            //         .iter()
+                            //         .map(|x| x.0.to_vec())
+                            //         .collect(),
+                            //     aggregate_pubkey: light_client_update
+                            //         .data
+                            //         .next_sync_committee
+                            //         .aggregate_pubkey
+                            //         .to_vec(),
+                            // },
+                            // next_sync_committee_branch: light_client_update
+                            //     .data
+                            //     .next_sync_committee_branch
+                            //     .to_vec()
+                            //     .iter()
+                            //     .map(|x| x.as_bytes().to_vec())
+                            //     .collect(),
+                            next_sync_committee: SyncCommittee::default(),
+                            next_sync_committee_branch: Default::default(),
+                            finalized_header: translate_header(finalized_header),
+                            finality_branch: finality_branch
+                                .iter()
+                                .map(|x| x.as_bytes().to_vec())
+                                .collect(),
+                            sync_aggregate: SyncAggregate {
+                                sync_committee_bits: sync_aggregate
+                                    .sync_committee_bits
+                                    .as_bitslice()
+                                    .to_bitvec()
+                                    .into_vec(),
+                                sync_committee_signature: sync_aggregate
+                                    .sync_committee_signature
+                                    .iter()
+                                    .copied()
+                                    .collect(),
+                            },
+                            signature_slot: signature_slot.0,
+                        }
+                    },
+                    account_update: AccountUpdate {
+                        proofs: [Proof {
+                            key: self.ibc_handler.address().as_bytes().to_vec(),
+                            value: account_update.storage_hash.as_bytes().to_vec(),
+                            proof: account_update
+                                .account_proof
+                                .into_iter()
+                                .map(|x| x.to_vec())
+                                .collect(),
+                        }]
+                        .to_vec(),
+                    },
+                    timestamp: SystemTime::now()
+                        .duration_since(UNIX_EPOCH)
+                        .unwrap()
+                        .as_secs(),
+                },
+                height: Height {
+                    revision_number: 0,
+                    revision_height: 10_000,
+                },
+            };
+
+            wasm_header
+
+            // todo!();
+
+            // let alice = get_wallet();
+
+            // let alice_pk = alice.public_key().public_key().to_bytes().to_vec();
+
+            // dbg!(&alice_pk);
+
+            // let messages = [Any {
+            //     type_url: "/ibc.core.client.v1.MsgUpdateClient".to_string(),
+            //     value: MsgUpdateClient {
+            //         client_id: WASM_CLIENT_ID.to_string(),
+            //         client_message: Some(protos::google::protobuf::Any {
+            //             type_url: "/ibc.lightclients.wasm.v1.Header".to_string(),
+            //             value: wasm_header.encode_to_vec(),
+            //         }),
+            //         signer: signer_from_pk(&alice_pk),
+            //     }
+            //     .encode_to_vec(),
+            // }]
+            // .to_vec();
+
+            //     // broadcast_tx_commit(messages).await;
+        }
     }
 }
 
 impl Cometbls {
-    pub async fn new(cometbls_client_address: H160, ibc_handler_address: H160) -> Self {
+    pub async fn new(
+        cometbls_client_address: H160,
+        ibc_handler_address: H160,
+        wasm_code_id: H256,
+    ) -> Self {
         let provider = Provider::<Http>::try_from(ETH_RPC_API).unwrap();
         let chain_id = provider.get_chainid().await.unwrap();
+        // TODO(benluelo): Pass this in as a parameter
         let wallet = "4e9444a6efd6d42725a250b650a781da2737ea308c839eaccb0f7f3dbd2fea77"
             .parse::<LocalWallet>()
             .unwrap()
@@ -737,23 +928,23 @@ impl Cometbls {
 
         let signer_middleware = Arc::new(SignerMiddleware::new(provider.clone(), wallet));
 
-        let ibc_handler =
-            contracts::ibc_handler::IBCHandler::new(ibc_handler_address, signer_middleware);
+        let ibc_handler = ibc_handler::IBCHandler::new(ibc_handler_address, signer_middleware);
 
         Self {
             ibc_handler,
             provider,
             cometbls_client_address,
+            wasm_code_id,
         }
     }
 
     async fn get_proof<S: Clone + Debug>(
         &self,
         path: String,
-        height: super::msgs::Height,
+        height: Height,
         state: S,
         encode: impl FnOnce(S) -> Vec<u8>,
-    ) -> super::msgs::StateProof<S> {
+    ) -> StateProof<S> {
         tracing::info!(path, ?height);
 
         let u256 = U256::from(0).encode();
@@ -802,16 +993,17 @@ impl Cometbls {
 
         assert_eq!(found_value, proof.value);
 
-        super::msgs::StateProof {
+        StateProof {
             state,
-            proof: StorageProof {
-                proof: [Proof {
-                    key: proof.key.to_string(),
-                    value: proof.value.to_string(),
+            proof: ethereum_v1::StorageProof {
+                proofs: [ethereum_v1::Proof {
+                    key: proof.key.to_fixed_bytes().to_vec(),
+                    // REVIEW(benluelo): Make sure this encoding works
+                    value: proof.value.encode(),
                     proof: proof
                         .proof
                         .into_iter()
-                        .map(|bytes| bytes.to_string())
+                        .map(|bytes| bytes.to_vec())
                         .collect(),
                 }]
                 .to_vec(),
@@ -821,17 +1013,19 @@ impl Cometbls {
         }
     }
 
-    async fn wait_for_block(&self, requested_height: super::msgs::Height) {
+    async fn wait_for_block(&self, requested_height: Height) {
         loop {
-            let current_block = self.provider.get_block_number().await.unwrap();
+            // let current_block = self.provider.get_block_number().await.unwrap();
+
+            let current_block = self.query_latest_height().await;
 
             tracing::debug!(?current_block, waiting_for = ?requested_height, "waiting for block");
 
-            if current_block.0[0] >= requested_height.revision_height {
+            if current_block.revision_height >= requested_height.revision_height {
                 break;
             } else {
                 tracing::debug!("requested height not yet reached");
-                tokio::time::sleep(std::time::Duration::from_secs(3)).await;
+                tokio::time::sleep(std::time::Duration::from_secs(1)).await;
             }
         }
     }
@@ -860,9 +1054,9 @@ into_eth_abi! {
     super::msgs::cometbls::ConsensusState => UnionIbcLightclientsCometblsV1ConsensusStateData
 }
 
-impl From<super::msgs::connection::MsgConnectionOpenInit> for MsgConnectionOpenInit {
-    fn from(msg: super::msgs::connection::MsgConnectionOpenInit) -> MsgConnectionOpenInit {
-        MsgConnectionOpenInit {
+impl From<MsgConnectionOpenInit> for ibc_handler::MsgConnectionOpenInit {
+    fn from(msg: MsgConnectionOpenInit) -> ibc_handler::MsgConnectionOpenInit {
+        ibc_handler::MsgConnectionOpenInit {
             client_id: msg.client_id,
             counterparty: IbcCoreConnectionV1CounterpartyData {
                 client_id: msg.counterparty.client_id,
@@ -876,13 +1070,9 @@ impl From<super::msgs::connection::MsgConnectionOpenInit> for MsgConnectionOpenI
     }
 }
 
-impl<ClientState> From<super::msgs::connection::MsgConnectionOpenTry<ClientState>>
-    for MsgConnectionOpenTry
-{
-    fn from(
-        msg: super::msgs::connection::MsgConnectionOpenTry<ClientState>,
-    ) -> MsgConnectionOpenTry {
-        MsgConnectionOpenTry {
+impl<ClientState> From<MsgConnectionOpenTry<ClientState>> for ibc_handler::MsgConnectionOpenTry {
+    fn from(msg: MsgConnectionOpenTry<ClientState>) -> ibc_handler::MsgConnectionOpenTry {
+        ibc_handler::MsgConnectionOpenTry {
             counterparty: msg.counterparty.into(),
             delay_period: msg.delay_period,
             client_id: msg.client_id,
@@ -903,13 +1093,9 @@ impl<ClientState> From<super::msgs::connection::MsgConnectionOpenTry<ClientState
     }
 }
 
-impl<ClientState> From<super::msgs::connection::MsgConnectionOpenAck<ClientState>>
-    for MsgConnectionOpenAck
-{
-    fn from(
-        msg: super::msgs::connection::MsgConnectionOpenAck<ClientState>,
-    ) -> MsgConnectionOpenAck {
-        MsgConnectionOpenAck {
+impl<ClientState> From<MsgConnectionOpenAck<ClientState>> for ibc_handler::MsgConnectionOpenAck {
+    fn from(msg: MsgConnectionOpenAck<ClientState>) -> ibc_handler::MsgConnectionOpenAck {
+        ibc_handler::MsgConnectionOpenAck {
             connection_id: msg.connection_id,
             counterparty_connection_id: msg.counterparty_connection_id,
             version: msg.version.into(),
@@ -925,9 +1111,9 @@ impl<ClientState> From<super::msgs::connection::MsgConnectionOpenAck<ClientState
     }
 }
 
-impl From<super::msgs::connection::MsgConnectionOpenConfirm> for MsgConnectionOpenConfirm {
-    fn from(msg: super::msgs::connection::MsgConnectionOpenConfirm) -> MsgConnectionOpenConfirm {
-        MsgConnectionOpenConfirm {
+impl From<MsgConnectionOpenConfirm> for ibc_handler::MsgConnectionOpenConfirm {
+    fn from(msg: MsgConnectionOpenConfirm) -> ibc_handler::MsgConnectionOpenConfirm {
+        ibc_handler::MsgConnectionOpenConfirm {
             connection_id: msg.connection_id,
             proof_ack: msg.proof_ack.into(),
             proof_height: msg.proof_height.into(),
@@ -935,18 +1121,18 @@ impl From<super::msgs::connection::MsgConnectionOpenConfirm> for MsgConnectionOp
     }
 }
 
-impl From<super::msgs::channel::MsgChannelOpenInit> for MsgChannelOpenInit {
-    fn from(msg: super::msgs::channel::MsgChannelOpenInit) -> MsgChannelOpenInit {
-        MsgChannelOpenInit {
+impl From<MsgChannelOpenInit> for ibc_handler::MsgChannelOpenInit {
+    fn from(msg: MsgChannelOpenInit) -> ibc_handler::MsgChannelOpenInit {
+        ibc_handler::MsgChannelOpenInit {
             port_id: msg.port_id,
             channel: msg.channel.into(),
         }
     }
 }
 
-impl From<super::msgs::channel::MsgChannelOpenTry> for MsgChannelOpenTry {
-    fn from(msg: super::msgs::channel::MsgChannelOpenTry) -> MsgChannelOpenTry {
-        MsgChannelOpenTry {
+impl From<MsgChannelOpenTry> for ibc_handler::MsgChannelOpenTry {
+    fn from(msg: MsgChannelOpenTry) -> ibc_handler::MsgChannelOpenTry {
+        ibc_handler::MsgChannelOpenTry {
             port_id: msg.port_id,
             channel: msg.channel.into(),
             counterparty_version: msg.counterparty_version,
@@ -956,9 +1142,9 @@ impl From<super::msgs::channel::MsgChannelOpenTry> for MsgChannelOpenTry {
     }
 }
 
-impl From<super::msgs::channel::MsgChannelOpenAck> for MsgChannelOpenAck {
-    fn from(msg: super::msgs::channel::MsgChannelOpenAck) -> MsgChannelOpenAck {
-        MsgChannelOpenAck {
+impl From<MsgChannelOpenAck> for ibc_handler::MsgChannelOpenAck {
+    fn from(msg: MsgChannelOpenAck) -> ibc_handler::MsgChannelOpenAck {
+        ibc_handler::MsgChannelOpenAck {
             port_id: msg.port_id,
             channel_id: msg.channel_id,
             counterparty_version: msg.counterparty_version,
@@ -969,9 +1155,9 @@ impl From<super::msgs::channel::MsgChannelOpenAck> for MsgChannelOpenAck {
     }
 }
 
-impl From<super::msgs::channel::MsgChannelOpenConfirm> for MsgChannelOpenConfirm {
-    fn from(msg: super::msgs::channel::MsgChannelOpenConfirm) -> MsgChannelOpenConfirm {
-        MsgChannelOpenConfirm {
+impl From<MsgChannelOpenConfirm> for ibc_handler::MsgChannelOpenConfirm {
+    fn from(msg: MsgChannelOpenConfirm) -> ibc_handler::MsgChannelOpenConfirm {
+        ibc_handler::MsgChannelOpenConfirm {
             port_id: msg.port_id,
             channel_id: msg.channel_id,
             proof_ack: msg.proof_ack.into(),
@@ -980,8 +1166,8 @@ impl From<super::msgs::channel::MsgChannelOpenConfirm> for MsgChannelOpenConfirm
     }
 }
 
-impl From<super::msgs::Height> for IbcCoreClientV1HeightData {
-    fn from(value: super::msgs::Height) -> Self {
+impl From<Height> for IbcCoreClientV1HeightData {
+    fn from(value: Height) -> Self {
         Self {
             revision_number: value.revision_number,
             revision_height: value.revision_height,
@@ -989,7 +1175,7 @@ impl From<super::msgs::Height> for IbcCoreClientV1HeightData {
     }
 }
 
-impl From<IbcCoreClientV1HeightData> for super::msgs::Height {
+impl From<IbcCoreClientV1HeightData> for Height {
     fn from(value: IbcCoreClientV1HeightData) -> Self {
         Self {
             revision_number: value.revision_number,
@@ -998,8 +1184,8 @@ impl From<IbcCoreClientV1HeightData> for super::msgs::Height {
     }
 }
 
-impl From<super::msgs::connection::Counterparty> for IbcCoreConnectionV1CounterpartyData {
-    fn from(value: super::msgs::connection::Counterparty) -> Self {
+impl From<connection::Counterparty> for IbcCoreConnectionV1CounterpartyData {
+    fn from(value: connection::Counterparty) -> Self {
         Self {
             client_id: value.client_id,
             connection_id: value.connection_id,
@@ -1008,7 +1194,7 @@ impl From<super::msgs::connection::Counterparty> for IbcCoreConnectionV1Counterp
     }
 }
 
-impl From<IbcCoreConnectionV1CounterpartyData> for super::msgs::connection::Counterparty {
+impl From<IbcCoreConnectionV1CounterpartyData> for connection::Counterparty {
     fn from(value: IbcCoreConnectionV1CounterpartyData) -> Self {
         Self {
             client_id: value.client_id,
@@ -1018,8 +1204,8 @@ impl From<IbcCoreConnectionV1CounterpartyData> for super::msgs::connection::Coun
     }
 }
 
-impl From<super::msgs::connection::Version> for IbcCoreConnectionV1VersionData {
-    fn from(value: super::msgs::connection::Version) -> Self {
+impl From<connection::Version> for IbcCoreConnectionV1VersionData {
+    fn from(value: connection::Version) -> Self {
         Self {
             identifier: value.identifier,
             features: value
@@ -1031,7 +1217,7 @@ impl From<super::msgs::connection::Version> for IbcCoreConnectionV1VersionData {
     }
 }
 
-impl TryFrom<IbcCoreConnectionV1VersionData> for super::msgs::connection::Version {
+impl TryFrom<IbcCoreConnectionV1VersionData> for connection::Version {
     type Error = ParseError;
 
     fn try_from(value: IbcCoreConnectionV1VersionData) -> Result<Self, Self::Error> {
@@ -1046,15 +1232,15 @@ impl TryFrom<IbcCoreConnectionV1VersionData> for super::msgs::connection::Versio
     }
 }
 
-impl From<super::msgs::MerklePrefix> for IbcCoreCommitmentV1MerklePrefixData {
-    fn from(value: super::msgs::MerklePrefix) -> Self {
+impl From<MerklePrefix> for IbcCoreCommitmentV1MerklePrefixData {
+    fn from(value: MerklePrefix) -> Self {
         Self {
             key_prefix: value.key_prefix.into(),
         }
     }
 }
 
-impl From<IbcCoreCommitmentV1MerklePrefixData> for super::msgs::MerklePrefix {
+impl From<IbcCoreCommitmentV1MerklePrefixData> for MerklePrefix {
     fn from(value: IbcCoreCommitmentV1MerklePrefixData) -> Self {
         Self {
             key_prefix: value.key_prefix.to_vec(),
@@ -1062,8 +1248,8 @@ impl From<IbcCoreCommitmentV1MerklePrefixData> for super::msgs::MerklePrefix {
     }
 }
 
-impl From<super::msgs::channel::MsgRecvPacket> for MsgPacketRecv {
-    fn from(value: super::msgs::channel::MsgRecvPacket) -> Self {
+impl From<MsgRecvPacket> for ibc_handler::MsgPacketRecv {
+    fn from(value: MsgRecvPacket) -> Self {
         Self {
             packet: value.packet.into(),
             proof: value.proof_commitment.into(),
@@ -1072,8 +1258,8 @@ impl From<super::msgs::channel::MsgRecvPacket> for MsgPacketRecv {
     }
 }
 
-impl From<super::msgs::channel::Packet> for IbcCoreChannelV1PacketData {
-    fn from(value: super::msgs::channel::Packet) -> Self {
+impl From<Packet> for IbcCoreChannelV1PacketData {
+    fn from(value: Packet) -> Self {
         Self {
             sequence: value.sequence,
             source_port: value.source_port,
@@ -1087,8 +1273,8 @@ impl From<super::msgs::channel::Packet> for IbcCoreChannelV1PacketData {
     }
 }
 
-impl From<super::msgs::channel::Channel> for IbcCoreChannelV1ChannelData {
-    fn from(value: super::msgs::channel::Channel) -> Self {
+impl From<Channel> for IbcCoreChannelV1ChannelData {
+    fn from(value: Channel) -> Self {
         Self {
             state: value.state as u8,
             ordering: value.ordering as u8,
@@ -1099,8 +1285,8 @@ impl From<super::msgs::channel::Channel> for IbcCoreChannelV1ChannelData {
     }
 }
 
-impl From<super::msgs::channel::Counterparty> for IbcCoreChannelV1CounterpartyData {
-    fn from(value: super::msgs::channel::Counterparty) -> Self {
+impl From<channel::Counterparty> for IbcCoreChannelV1CounterpartyData {
+    fn from(value: channel::Counterparty) -> Self {
         Self {
             port_id: value.port_id,
             channel_id: value.channel_id,
@@ -1111,10 +1297,10 @@ impl From<super::msgs::channel::Counterparty> for IbcCoreChannelV1CounterpartyDa
 #[derive(Debug)]
 pub enum TryFromConnnectionEndError {
     ParseError(ParseError),
-    UnknownEnumVariant(super::msgs::UnknownEnumVariant<u8>),
+    UnknownEnumVariant(UnknownEnumVariant<u8>),
 }
 
-impl TryFrom<IbcCoreConnectionV1ConnectionEndData> for super::msgs::ConnectionEnd {
+impl TryFrom<IbcCoreConnectionV1ConnectionEndData> for ConnectionEnd {
     type Error = TryFromConnnectionEndError;
 
     fn try_from(val: IbcCoreConnectionV1ConnectionEndData) -> Result<Self, Self::Error> {
@@ -1135,8 +1321,8 @@ impl TryFrom<IbcCoreConnectionV1ConnectionEndData> for super::msgs::ConnectionEn
     }
 }
 
-impl From<super::msgs::cometbls::ClientState> for UnionIbcLightclientsCometblsV1ClientStateData {
-    fn from(value: super::msgs::cometbls::ClientState) -> Self {
+impl From<cometbls::ClientState> for UnionIbcLightclientsCometblsV1ClientStateData {
+    fn from(value: cometbls::ClientState) -> Self {
         Self {
             chain_id: value.chain_id,
             trust_level: value.trust_level.into(),
@@ -1144,12 +1330,11 @@ impl From<super::msgs::cometbls::ClientState> for UnionIbcLightclientsCometblsV1
             unbonding_period: value.unbonding_period.into(),
             max_clock_drift: value.max_clock_drift.into(),
             frozen_height: value.frozen_height.into(),
-            latest_height: value.latest_height.into(),
         }
     }
 }
 
-impl From<UnionIbcLightclientsCometblsV1ClientStateData> for super::msgs::cometbls::ClientState {
+impl From<UnionIbcLightclientsCometblsV1ClientStateData> for cometbls::ClientState {
     fn from(value: UnionIbcLightclientsCometblsV1ClientStateData) -> Self {
         Self {
             chain_id: value.chain_id,
@@ -1158,25 +1343,21 @@ impl From<UnionIbcLightclientsCometblsV1ClientStateData> for super::msgs::cometb
             unbonding_period: value.unbonding_period.into(),
             max_clock_drift: value.max_clock_drift.into(),
             frozen_height: value.frozen_height.into(),
-            latest_height: value.latest_height.into(),
         }
     }
 }
 
-impl From<super::msgs::cometbls::ConsensusState>
-    for UnionIbcLightclientsCometblsV1ConsensusStateData
-{
-    fn from(value: super::msgs::cometbls::ConsensusState) -> Self {
+impl From<cometbls::ConsensusState> for UnionIbcLightclientsCometblsV1ConsensusStateData {
+    fn from(value: cometbls::ConsensusState) -> Self {
         Self {
-            timestamp: value.timestamp.into(),
             root: value.root.into(),
             next_validators_hash: value.next_validators_hash.into(),
         }
     }
 }
 
-impl From<super::msgs::Timestamp> for GoogleProtobufTimestampData {
-    fn from(value: super::msgs::Timestamp) -> Self {
+impl From<Timestamp> for GoogleProtobufTimestampData {
+    fn from(value: Timestamp) -> Self {
         Self {
             secs: value.seconds,
             // REVIEW(benluelo): Is this conversion *actually* fallible?
@@ -1185,8 +1366,8 @@ impl From<super::msgs::Timestamp> for GoogleProtobufTimestampData {
     }
 }
 
-impl From<super::msgs::Duration> for GoogleProtobufDurationData {
-    fn from(value: super::msgs::Duration) -> Self {
+impl From<Duration> for GoogleProtobufDurationData {
+    fn from(value: Duration) -> Self {
         Self {
             seconds: value.seconds,
             nanos: value.nanos,
@@ -1194,7 +1375,7 @@ impl From<super::msgs::Duration> for GoogleProtobufDurationData {
     }
 }
 
-impl From<GoogleProtobufDurationData> for super::msgs::Duration {
+impl From<GoogleProtobufDurationData> for Duration {
     fn from(value: GoogleProtobufDurationData) -> Self {
         Self {
             seconds: value.seconds,
@@ -1203,16 +1384,16 @@ impl From<GoogleProtobufDurationData> for super::msgs::Duration {
     }
 }
 
-impl From<super::msgs::MerkleRoot> for IbcCoreCommitmentV1MerkleRootData {
-    fn from(value: super::msgs::MerkleRoot) -> Self {
+impl From<MerkleRoot> for IbcCoreCommitmentV1MerkleRootData {
+    fn from(value: MerkleRoot) -> Self {
         Self {
             hash: value.hash.into(),
         }
     }
 }
 
-impl From<super::msgs::Fraction> for UnionIbcLightclientsCometblsV1FractionData {
-    fn from(value: super::msgs::Fraction) -> Self {
+impl From<Fraction> for UnionIbcLightclientsCometblsV1FractionData {
+    fn from(value: Fraction) -> Self {
         Self {
             numerator: value.numerator,
             denominator: value.denominator,
@@ -1220,7 +1401,7 @@ impl From<super::msgs::Fraction> for UnionIbcLightclientsCometblsV1FractionData 
     }
 }
 
-impl From<UnionIbcLightclientsCometblsV1FractionData> for super::msgs::Fraction {
+impl From<UnionIbcLightclientsCometblsV1FractionData> for Fraction {
     fn from(value: UnionIbcLightclientsCometblsV1FractionData) -> Self {
         Self {
             numerator: value.numerator,
@@ -1228,3 +1409,58 @@ impl From<UnionIbcLightclientsCometblsV1FractionData> for super::msgs::Fraction 
         }
     }
 }
+
+pub fn translate_header(
+    header: ethereum_consensus::capella::LightClientHeader<256, 32>,
+) -> ethereum::LightClientHeader {
+    ethereum::LightClientHeader {
+        beacon: BeaconBlockHeader {
+            slot: header.beacon.slot.0,
+            proposer_index: header.beacon.proposer_index.0,
+            parent_root: header.beacon.parent_root.as_bytes().to_vec(),
+            state_root: header.beacon.state_root.as_bytes().to_vec(),
+            body_root: header.beacon.body_root.as_bytes().to_vec(),
+        },
+        execution: ExecutionPayloadHeader {
+            parent_hash: header.execution.parent_hash.as_bytes().to_vec(),
+            fee_recipient: header.execution.fee_recipient.0.to_vec(),
+            state_root: header.execution.state_root.as_bytes().to_vec(),
+            receipts_root: header.execution.receipts_root.as_bytes().to_vec(),
+            logs_bloom: header.execution.logs_bloom.iter().copied().collect(),
+            prev_randao: header.execution.prev_randao.as_bytes().to_vec(),
+            block_number: header.execution.block_number.0,
+            gas_limit: header.execution.gas_limit.0,
+            gas_used: header.execution.gas_used.0,
+            timestamp: header.execution.timestamp.0,
+            extra_data: header.execution.extra_data.iter().copied().collect(),
+            base_fee_per_gas: header.execution.base_fee_per_gas.to_bytes_le(),
+            block_hash: header.execution.block_hash.as_bytes().to_vec(),
+            transactions_root: header.execution.transactions_root.as_bytes().to_vec(),
+            withdrawals_root: header.execution.withdrawals_root.as_bytes().to_vec(),
+        },
+        execution_branch: header
+            .execution_branch
+            .iter()
+            .map(|x| x.0.to_vec())
+            .collect(),
+    }
+}
+
+// Deploying IBCClient...
+// IBCClient => 0x86D9aC0Bab011917f57B9E9607833b4340F9D4F8
+// Deploying IBCConnection...
+// IBCConnection => 0xD184c103F7acc340847eEE82a0B909E3358bc28d
+// Deploying IBCChannelHandshake...
+// IBCChannelHandshake => 0x992B9df075935E522EC7950F37eC8557e86f6fdb
+// Deploying IBCPacket...
+// IBCPacket => 0x2ffA5ecdBe006d30397c7636d3e015EEE251369F
+// Deploying OwnableIBCHandler...
+// OwnableIBCHandler => 0xFc97A6197dc90bef6bbEFD672742Ed75E9768553
+// Deploying TestnetVerifier...
+// TestnetVerifier => 0xEDa338E4dC46038493b885327842fD3E301CaB39
+// Deploying CometblsClient...
+// CometblsClient => 0x87d1f7fdfEe7f651FaBc8bFCB6E086C278b77A7d
+// Deploying ICS20Bank...
+// ICS20Bank => 0x774667629726ec1FaBEbCEc0D9139bD1C8f72a23
+// Deploying ICS20TransferBank...
+// ICS20TransferBank => 0x83428c7db9815f482a39a1715684dCF755021997

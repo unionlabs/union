@@ -122,25 +122,11 @@ where
             revision_number: 0,
             revision_height: 0,
         },
-        latest_height: IbcCoreClientV1HeightData {
-            revision_number: 1,
-            revision_height: height.value(),
-        },
     };
 
     println!("{:?}", client_state);
 
     let consensus_state = UnionIbcLightclientsCometblsV1ConsensusStateData {
-        timestamp: {
-            let ts = commit.signed_header.header.time;
-            GoogleProtobufTimestampData {
-                secs: ts.unix_timestamp(),
-                nanos: (ts.unix_timestamp_nanos()
-                    - (ts.unix_timestamp() as i128 * 1_000_000_000_i128))
-                    .try_into()
-                    .unwrap(),
-            }
-        },
         root: IbcCoreCommitmentV1MerkleRootData {
             hash: commit
                 .signed_header

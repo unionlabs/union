@@ -7,17 +7,15 @@ pub use ibc_handler::*;
     clippy::upper_case_acronyms,
     clippy::type_complexity,
     dead_code,
-    non_camel_case_types
+    non_camel_case_types,
 )]
 pub mod ibc_handler {
     pub use super::super::shared_types::*;
     #[rustfmt::skip]
-    const __ABI: &str = "[{\"inputs\":[{\"internalType\":\"struct IbcCoreChannelV1Packet.Data\",\"name\":\"packet\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"uint64\",\"name\":\"sequence\",\"type\":\"uint64\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"source_port\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"source_channel\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"destination_port\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"destination_channel\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"bytes\",\"name\":\"data\",\"type\":\"bytes\",\"components\":[]},{\"internalType\":\"struct IbcCoreClientV1Height.Data\",\"name\":\"timeout_height\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"uint64\",\"name\":\"revision_number\",\"type\":\"uint64\",\"components\":[]},{\"internalType\":\"uint64\",\"name\":\"revision_height\",\"type\":\"uint64\",\"components\":[]}]},{\"internalType\":\"uint64\",\"name\":\"timeout_timestamp\",\"type\":\"uint64\",\"components\":[]}],\"indexed\":false},{\"internalType\":\"bytes\",\"name\":\"acknowledgement\",\"type\":\"bytes\",\"components\":[],\"indexed\":false}],\"type\":\"event\",\"name\":\"AcknowledgePacket\",\"outputs\":[],\"anonymous\":false},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"\",\"type\":\"string\",\"components\":[],\"indexed\":false}],\"type\":\"event\",\"name\":\"GeneratedChannelIdentifier\",\"outputs\":[],\"anonymous\":false},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"\",\"type\":\"string\",\"components\":[],\"indexed\":false}],\"type\":\"event\",\"name\":\"GeneratedClientIdentifier\",\"outputs\":[],\"anonymous\":false},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"\",\"type\":\"string\",\"components\":[],\"indexed\":false}],\"type\":\"event\",\"name\":\"GeneratedConnectionIdentifier\",\"outputs\":[],\"anonymous\":false},{\"inputs\":[{\"internalType\":\"struct IbcCoreChannelV1Packet.Data\",\"name\":\"packet\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"uint64\",\"name\":\"sequence\",\"type\":\"uint64\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"source_port\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"source_channel\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"destination_port\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"destination_channel\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"bytes\",\"name\":\"data\",\"type\":\"bytes\",\"components\":[]},{\"internalType\":\"struct IbcCoreClientV1Height.Data\",\"name\":\"timeout_height\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"uint64\",\"name\":\"revision_number\",\"type\":\"uint64\",\"components\":[]},{\"internalType\":\"uint64\",\"name\":\"revision_height\",\"type\":\"uint64\",\"components\":[]}]},{\"internalType\":\"uint64\",\"name\":\"timeout_timestamp\",\"type\":\"uint64\",\"components\":[]}],\"indexed\":false}],\"type\":\"event\",\"name\":\"RecvPacket\",\"outputs\":[],\"anonymous\":false},{\"inputs\":[{\"internalType\":\"uint64\",\"name\":\"sequence\",\"type\":\"uint64\",\"components\":[],\"indexed\":false},{\"internalType\":\"string\",\"name\":\"sourcePort\",\"type\":\"string\",\"components\":[],\"indexed\":false},{\"internalType\":\"string\",\"name\":\"sourceChannel\",\"type\":\"string\",\"components\":[],\"indexed\":false},{\"internalType\":\"struct IbcCoreClientV1Height.Data\",\"name\":\"timeoutHeight\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"uint64\",\"name\":\"revision_number\",\"type\":\"uint64\",\"components\":[]},{\"internalType\":\"uint64\",\"name\":\"revision_height\",\"type\":\"uint64\",\"components\":[]}],\"indexed\":false},{\"internalType\":\"uint64\",\"name\":\"timeoutTimestamp\",\"type\":\"uint64\",\"components\":[],\"indexed\":false},{\"internalType\":\"bytes\",\"name\":\"data\",\"type\":\"bytes\",\"components\":[],\"indexed\":false}],\"type\":\"event\",\"name\":\"SendPacket\",\"outputs\":[],\"anonymous\":false},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"destinationPortId\",\"type\":\"string\",\"components\":[],\"indexed\":false},{\"internalType\":\"string\",\"name\":\"destinationChannel\",\"type\":\"string\",\"components\":[],\"indexed\":false},{\"internalType\":\"uint64\",\"name\":\"sequence\",\"type\":\"uint64\",\"components\":[],\"indexed\":false},{\"internalType\":\"bytes\",\"name\":\"acknowledgement\",\"type\":\"bytes\",\"components\":[],\"indexed\":false}],\"type\":\"event\",\"name\":\"WriteAcknowledgement\",\"outputs\":[],\"anonymous\":false},{\"inputs\":[{\"internalType\":\"struct IBCMsgs.MsgPacketAcknowledgement\",\"name\":\"msg_\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"struct IbcCoreChannelV1Packet.Data\",\"name\":\"packet\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"uint64\",\"name\":\"sequence\",\"type\":\"uint64\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"source_port\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"source_channel\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"destination_port\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"destination_channel\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"bytes\",\"name\":\"data\",\"type\":\"bytes\",\"components\":[]},{\"internalType\":\"struct IbcCoreClientV1Height.Data\",\"name\":\"timeout_height\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"uint64\",\"name\":\"revision_number\",\"type\":\"uint64\",\"components\":[]},{\"internalType\":\"uint64\",\"name\":\"revision_height\",\"type\":\"uint64\",\"components\":[]}]},{\"internalType\":\"uint64\",\"name\":\"timeout_timestamp\",\"type\":\"uint64\",\"components\":[]}]},{\"internalType\":\"bytes\",\"name\":\"acknowledgement\",\"type\":\"bytes\",\"components\":[]},{\"internalType\":\"bytes\",\"name\":\"proof\",\"type\":\"bytes\",\"components\":[]},{\"internalType\":\"struct IbcCoreClientV1Height.Data\",\"name\":\"proofHeight\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"uint64\",\"name\":\"revision_number\",\"type\":\"uint64\",\"components\":[]},{\"internalType\":\"uint64\",\"name\":\"revision_height\",\"type\":\"uint64\",\"components\":[]}]}]}],\"stateMutability\":\"nonpayable\",\"type\":\"function\",\"name\":\"acknowledgePacket\",\"outputs\":[]},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"portId\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"address\",\"name\":\"moduleAddress\",\"type\":\"address\",\"components\":[]}],\"stateMutability\":\"nonpayable\",\"type\":\"function\",\"name\":\"bindPort\",\"outputs\":[]},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"portId\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"channelId\",\"type\":\"string\",\"components\":[]}],\"stateMutability\":\"pure\",\"type\":\"function\",\"name\":\"channelCapabilityPath\",\"outputs\":[{\"internalType\":\"bytes\",\"name\":\"\",\"type\":\"bytes\",\"components\":[]}]},{\"inputs\":[{\"internalType\":\"struct IBCMsgs.MsgChannelCloseConfirm\",\"name\":\"msg_\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"string\",\"name\":\"portId\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"channelId\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"bytes\",\"name\":\"proofInit\",\"type\":\"bytes\",\"components\":[]},{\"internalType\":\"struct IbcCoreClientV1Height.Data\",\"name\":\"proofHeight\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"uint64\",\"name\":\"revision_number\",\"type\":\"uint64\",\"components\":[]},{\"internalType\":\"uint64\",\"name\":\"revision_height\",\"type\":\"uint64\",\"components\":[]}]}]}],\"stateMutability\":\"nonpayable\",\"type\":\"function\",\"name\":\"channelCloseConfirm\",\"outputs\":[]},{\"inputs\":[{\"internalType\":\"struct IBCMsgs.MsgChannelCloseInit\",\"name\":\"msg_\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"string\",\"name\":\"portId\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"channelId\",\"type\":\"string\",\"components\":[]}]}],\"stateMutability\":\"nonpayable\",\"type\":\"function\",\"name\":\"channelCloseInit\",\"outputs\":[]},{\"inputs\":[{\"internalType\":\"struct IBCMsgs.MsgChannelOpenAck\",\"name\":\"msg_\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"string\",\"name\":\"portId\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"channelId\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"counterpartyVersion\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"counterpartyChannelId\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"bytes\",\"name\":\"proofTry\",\"type\":\"bytes\",\"components\":[]},{\"internalType\":\"struct IbcCoreClientV1Height.Data\",\"name\":\"proofHeight\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"uint64\",\"name\":\"revision_number\",\"type\":\"uint64\",\"components\":[]},{\"internalType\":\"uint64\",\"name\":\"revision_height\",\"type\":\"uint64\",\"components\":[]}]}]}],\"stateMutability\":\"nonpayable\",\"type\":\"function\",\"name\":\"channelOpenAck\",\"outputs\":[]},{\"inputs\":[{\"internalType\":\"struct IBCMsgs.MsgChannelOpenConfirm\",\"name\":\"msg_\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"string\",\"name\":\"portId\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"channelId\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"bytes\",\"name\":\"proofAck\",\"type\":\"bytes\",\"components\":[]},{\"internalType\":\"struct IbcCoreClientV1Height.Data\",\"name\":\"proofHeight\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"uint64\",\"name\":\"revision_number\",\"type\":\"uint64\",\"components\":[]},{\"internalType\":\"uint64\",\"name\":\"revision_height\",\"type\":\"uint64\",\"components\":[]}]}]}],\"stateMutability\":\"nonpayable\",\"type\":\"function\",\"name\":\"channelOpenConfirm\",\"outputs\":[]},{\"inputs\":[{\"internalType\":\"struct IBCMsgs.MsgChannelOpenInit\",\"name\":\"msg_\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"string\",\"name\":\"portId\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"struct IbcCoreChannelV1Channel.Data\",\"name\":\"channel\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"enum IbcCoreChannelV1GlobalEnums.State\",\"name\":\"state\",\"type\":\"uint8\",\"components\":[]},{\"internalType\":\"enum IbcCoreChannelV1GlobalEnums.Order\",\"name\":\"ordering\",\"type\":\"uint8\",\"components\":[]},{\"internalType\":\"struct IbcCoreChannelV1Counterparty.Data\",\"name\":\"counterparty\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"string\",\"name\":\"port_id\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"channel_id\",\"type\":\"string\",\"components\":[]}]},{\"internalType\":\"string[]\",\"name\":\"connection_hops\",\"type\":\"string[]\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"version\",\"type\":\"string\",\"components\":[]}]}]}],\"stateMutability\":\"nonpayable\",\"type\":\"function\",\"name\":\"channelOpenInit\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"channelId\",\"type\":\"string\",\"components\":[]}]},{\"inputs\":[{\"internalType\":\"struct IBCMsgs.MsgChannelOpenTry\",\"name\":\"msg_\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"string\",\"name\":\"portId\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"struct IbcCoreChannelV1Channel.Data\",\"name\":\"channel\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"enum IbcCoreChannelV1GlobalEnums.State\",\"name\":\"state\",\"type\":\"uint8\",\"components\":[]},{\"internalType\":\"enum IbcCoreChannelV1GlobalEnums.Order\",\"name\":\"ordering\",\"type\":\"uint8\",\"components\":[]},{\"internalType\":\"struct IbcCoreChannelV1Counterparty.Data\",\"name\":\"counterparty\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"string\",\"name\":\"port_id\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"channel_id\",\"type\":\"string\",\"components\":[]}]},{\"internalType\":\"string[]\",\"name\":\"connection_hops\",\"type\":\"string[]\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"version\",\"type\":\"string\",\"components\":[]}]},{\"internalType\":\"string\",\"name\":\"counterpartyVersion\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"bytes\",\"name\":\"proofInit\",\"type\":\"bytes\",\"components\":[]},{\"internalType\":\"struct IbcCoreClientV1Height.Data\",\"name\":\"proofHeight\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"uint64\",\"name\":\"revision_number\",\"type\":\"uint64\",\"components\":[]},{\"internalType\":\"uint64\",\"name\":\"revision_height\",\"type\":\"uint64\",\"components\":[]}]}]}],\"stateMutability\":\"nonpayable\",\"type\":\"function\",\"name\":\"channelOpenTry\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"channelId\",\"type\":\"string\",\"components\":[]}]},{\"inputs\":[{\"internalType\":\"struct IBCMsgs.MsgConnectionOpenAck\",\"name\":\"msg_\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"string\",\"name\":\"connectionId\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"bytes\",\"name\":\"clientStateBytes\",\"type\":\"bytes\",\"components\":[]},{\"internalType\":\"struct IbcCoreConnectionV1Version.Data\",\"name\":\"version\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"string\",\"name\":\"identifier\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string[]\",\"name\":\"features\",\"type\":\"string[]\",\"components\":[]}]},{\"internalType\":\"string\",\"name\":\"counterpartyConnectionID\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"bytes\",\"name\":\"proofTry\",\"type\":\"bytes\",\"components\":[]},{\"internalType\":\"bytes\",\"name\":\"proofClient\",\"type\":\"bytes\",\"components\":[]},{\"internalType\":\"bytes\",\"name\":\"proofConsensus\",\"type\":\"bytes\",\"components\":[]},{\"internalType\":\"struct IbcCoreClientV1Height.Data\",\"name\":\"proofHeight\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"uint64\",\"name\":\"revision_number\",\"type\":\"uint64\",\"components\":[]},{\"internalType\":\"uint64\",\"name\":\"revision_height\",\"type\":\"uint64\",\"components\":[]}]},{\"internalType\":\"struct IbcCoreClientV1Height.Data\",\"name\":\"consensusHeight\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"uint64\",\"name\":\"revision_number\",\"type\":\"uint64\",\"components\":[]},{\"internalType\":\"uint64\",\"name\":\"revision_height\",\"type\":\"uint64\",\"components\":[]}]}]}],\"stateMutability\":\"nonpayable\",\"type\":\"function\",\"name\":\"connectionOpenAck\",\"outputs\":[]},{\"inputs\":[{\"internalType\":\"struct IBCMsgs.MsgConnectionOpenConfirm\",\"name\":\"msg_\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"string\",\"name\":\"connectionId\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"bytes\",\"name\":\"proofAck\",\"type\":\"bytes\",\"components\":[]},{\"internalType\":\"struct IbcCoreClientV1Height.Data\",\"name\":\"proofHeight\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"uint64\",\"name\":\"revision_number\",\"type\":\"uint64\",\"components\":[]},{\"internalType\":\"uint64\",\"name\":\"revision_height\",\"type\":\"uint64\",\"components\":[]}]}]}],\"stateMutability\":\"nonpayable\",\"type\":\"function\",\"name\":\"connectionOpenConfirm\",\"outputs\":[]},{\"inputs\":[{\"internalType\":\"struct IBCMsgs.MsgConnectionOpenInit\",\"name\":\"msg_\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"string\",\"name\":\"clientId\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"struct IbcCoreConnectionV1Counterparty.Data\",\"name\":\"counterparty\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"string\",\"name\":\"client_id\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"connection_id\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"struct IbcCoreCommitmentV1MerklePrefix.Data\",\"name\":\"prefix\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"bytes\",\"name\":\"key_prefix\",\"type\":\"bytes\",\"components\":[]}]}]},{\"internalType\":\"uint64\",\"name\":\"delayPeriod\",\"type\":\"uint64\",\"components\":[]}]}],\"stateMutability\":\"nonpayable\",\"type\":\"function\",\"name\":\"connectionOpenInit\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"connectionId\",\"type\":\"string\",\"components\":[]}]},{\"inputs\":[{\"internalType\":\"struct IBCMsgs.MsgConnectionOpenTry\",\"name\":\"msg_\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"struct IbcCoreConnectionV1Counterparty.Data\",\"name\":\"counterparty\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"string\",\"name\":\"client_id\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"connection_id\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"struct IbcCoreCommitmentV1MerklePrefix.Data\",\"name\":\"prefix\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"bytes\",\"name\":\"key_prefix\",\"type\":\"bytes\",\"components\":[]}]}]},{\"internalType\":\"uint64\",\"name\":\"delayPeriod\",\"type\":\"uint64\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"clientId\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"bytes\",\"name\":\"clientStateBytes\",\"type\":\"bytes\",\"components\":[]},{\"internalType\":\"struct IbcCoreConnectionV1Version.Data[]\",\"name\":\"counterpartyVersions\",\"type\":\"tuple[]\",\"components\":[{\"internalType\":\"string\",\"name\":\"identifier\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string[]\",\"name\":\"features\",\"type\":\"string[]\",\"components\":[]}]},{\"internalType\":\"bytes\",\"name\":\"proofInit\",\"type\":\"bytes\",\"components\":[]},{\"internalType\":\"bytes\",\"name\":\"proofClient\",\"type\":\"bytes\",\"components\":[]},{\"internalType\":\"bytes\",\"name\":\"proofConsensus\",\"type\":\"bytes\",\"components\":[]},{\"internalType\":\"struct IbcCoreClientV1Height.Data\",\"name\":\"proofHeight\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"uint64\",\"name\":\"revision_number\",\"type\":\"uint64\",\"components\":[]},{\"internalType\":\"uint64\",\"name\":\"revision_height\",\"type\":\"uint64\",\"components\":[]}]},{\"internalType\":\"struct IbcCoreClientV1Height.Data\",\"name\":\"consensusHeight\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"uint64\",\"name\":\"revision_number\",\"type\":\"uint64\",\"components\":[]},{\"internalType\":\"uint64\",\"name\":\"revision_height\",\"type\":\"uint64\",\"components\":[]}]}]}],\"stateMutability\":\"nonpayable\",\"type\":\"function\",\"name\":\"connectionOpenTry\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"connectionId\",\"type\":\"string\",\"components\":[]}]},{\"inputs\":[{\"internalType\":\"struct IBCMsgs.MsgCreateClient\",\"name\":\"msg_\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"string\",\"name\":\"clientType\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"bytes\",\"name\":\"clientStateBytes\",\"type\":\"bytes\",\"components\":[]},{\"internalType\":\"bytes\",\"name\":\"consensusStateBytes\",\"type\":\"bytes\",\"components\":[]}]}],\"stateMutability\":\"nonpayable\",\"type\":\"function\",\"name\":\"createClient\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"clientId\",\"type\":\"string\",\"components\":[]}]},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"portId\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"channelId\",\"type\":\"string\",\"components\":[]}],\"stateMutability\":\"view\",\"type\":\"function\",\"name\":\"getChannel\",\"outputs\":[{\"internalType\":\"struct IbcCoreChannelV1Channel.Data\",\"name\":\"\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"enum IbcCoreChannelV1GlobalEnums.State\",\"name\":\"state\",\"type\":\"uint8\",\"components\":[]},{\"internalType\":\"enum IbcCoreChannelV1GlobalEnums.Order\",\"name\":\"ordering\",\"type\":\"uint8\",\"components\":[]},{\"internalType\":\"struct IbcCoreChannelV1Counterparty.Data\",\"name\":\"counterparty\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"string\",\"name\":\"port_id\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"channel_id\",\"type\":\"string\",\"components\":[]}]},{\"internalType\":\"string[]\",\"name\":\"connection_hops\",\"type\":\"string[]\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"version\",\"type\":\"string\",\"components\":[]}]},{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\",\"components\":[]}]},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"clientId\",\"type\":\"string\",\"components\":[]}],\"stateMutability\":\"view\",\"type\":\"function\",\"name\":\"getClientState\",\"outputs\":[{\"internalType\":\"bytes\",\"name\":\"\",\"type\":\"bytes\",\"components\":[]},{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\",\"components\":[]}]},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"connectionId\",\"type\":\"string\",\"components\":[]}],\"stateMutability\":\"view\",\"type\":\"function\",\"name\":\"getConnection\",\"outputs\":[{\"internalType\":\"struct IbcCoreConnectionV1ConnectionEnd.Data\",\"name\":\"\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"string\",\"name\":\"client_id\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"struct IbcCoreConnectionV1Version.Data[]\",\"name\":\"versions\",\"type\":\"tuple[]\",\"components\":[{\"internalType\":\"string\",\"name\":\"identifier\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string[]\",\"name\":\"features\",\"type\":\"string[]\",\"components\":[]}]},{\"internalType\":\"enum IbcCoreConnectionV1GlobalEnums.State\",\"name\":\"state\",\"type\":\"uint8\",\"components\":[]},{\"internalType\":\"struct IbcCoreConnectionV1Counterparty.Data\",\"name\":\"counterparty\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"string\",\"name\":\"client_id\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"connection_id\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"struct IbcCoreCommitmentV1MerklePrefix.Data\",\"name\":\"prefix\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"bytes\",\"name\":\"key_prefix\",\"type\":\"bytes\",\"components\":[]}]}]},{\"internalType\":\"uint64\",\"name\":\"delay_period\",\"type\":\"uint64\",\"components\":[]}]},{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\",\"components\":[]}]},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"clientId\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"struct IbcCoreClientV1Height.Data\",\"name\":\"height\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"uint64\",\"name\":\"revision_number\",\"type\":\"uint64\",\"components\":[]},{\"internalType\":\"uint64\",\"name\":\"revision_height\",\"type\":\"uint64\",\"components\":[]}]}],\"stateMutability\":\"view\",\"type\":\"function\",\"name\":\"getConsensusState\",\"outputs\":[{\"internalType\":\"bytes\",\"name\":\"consensusStateBytes\",\"type\":\"bytes\",\"components\":[]},{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\",\"components\":[]}]},{\"inputs\":[],\"stateMutability\":\"view\",\"type\":\"function\",\"name\":\"getExpectedTimePerBlock\",\"outputs\":[{\"internalType\":\"uint64\",\"name\":\"\",\"type\":\"uint64\",\"components\":[]}]},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"portId\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"channelId\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"uint64\",\"name\":\"sequence\",\"type\":\"uint64\",\"components\":[]}],\"stateMutability\":\"view\",\"type\":\"function\",\"name\":\"getHashedPacketAcknowledgementCommitment\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\",\"components\":[]},{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\",\"components\":[]}]},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"portId\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"channelId\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"uint64\",\"name\":\"sequence\",\"type\":\"uint64\",\"components\":[]}],\"stateMutability\":\"view\",\"type\":\"function\",\"name\":\"getHashedPacketCommitment\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\",\"components\":[]},{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\",\"components\":[]}]},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"portId\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"channelId\",\"type\":\"string\",\"components\":[]}],\"stateMutability\":\"view\",\"type\":\"function\",\"name\":\"getNextSequenceSend\",\"outputs\":[{\"internalType\":\"uint64\",\"name\":\"\",\"type\":\"uint64\",\"components\":[]}]},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"portId\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"channelId\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"uint64\",\"name\":\"sequence\",\"type\":\"uint64\",\"components\":[]}],\"stateMutability\":\"view\",\"type\":\"function\",\"name\":\"hasPacketReceipt\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\",\"components\":[]}]},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"portId\",\"type\":\"string\",\"components\":[]}],\"stateMutability\":\"pure\",\"type\":\"function\",\"name\":\"portCapabilityPath\",\"outputs\":[{\"internalType\":\"bytes\",\"name\":\"\",\"type\":\"bytes\",\"components\":[]}]},{\"inputs\":[{\"internalType\":\"struct IBCMsgs.MsgPacketRecv\",\"name\":\"msg_\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"struct IbcCoreChannelV1Packet.Data\",\"name\":\"packet\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"uint64\",\"name\":\"sequence\",\"type\":\"uint64\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"source_port\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"source_channel\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"destination_port\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"destination_channel\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"bytes\",\"name\":\"data\",\"type\":\"bytes\",\"components\":[]},{\"internalType\":\"struct IbcCoreClientV1Height.Data\",\"name\":\"timeout_height\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"uint64\",\"name\":\"revision_number\",\"type\":\"uint64\",\"components\":[]},{\"internalType\":\"uint64\",\"name\":\"revision_height\",\"type\":\"uint64\",\"components\":[]}]},{\"internalType\":\"uint64\",\"name\":\"timeout_timestamp\",\"type\":\"uint64\",\"components\":[]}]},{\"internalType\":\"bytes\",\"name\":\"proof\",\"type\":\"bytes\",\"components\":[]},{\"internalType\":\"struct IbcCoreClientV1Height.Data\",\"name\":\"proofHeight\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"uint64\",\"name\":\"revision_number\",\"type\":\"uint64\",\"components\":[]},{\"internalType\":\"uint64\",\"name\":\"revision_height\",\"type\":\"uint64\",\"components\":[]}]}]}],\"stateMutability\":\"nonpayable\",\"type\":\"function\",\"name\":\"recvPacket\",\"outputs\":[]},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"clientType\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"contract ILightClient\",\"name\":\"client\",\"type\":\"address\",\"components\":[]}],\"stateMutability\":\"nonpayable\",\"type\":\"function\",\"name\":\"registerClient\",\"outputs\":[]},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"sourcePort\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"sourceChannel\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"struct IbcCoreClientV1Height.Data\",\"name\":\"timeoutHeight\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"uint64\",\"name\":\"revision_number\",\"type\":\"uint64\",\"components\":[]},{\"internalType\":\"uint64\",\"name\":\"revision_height\",\"type\":\"uint64\",\"components\":[]}]},{\"internalType\":\"uint64\",\"name\":\"timeoutTimestamp\",\"type\":\"uint64\",\"components\":[]},{\"internalType\":\"bytes\",\"name\":\"data\",\"type\":\"bytes\",\"components\":[]}],\"stateMutability\":\"nonpayable\",\"type\":\"function\",\"name\":\"sendPacket\",\"outputs\":[]},{\"inputs\":[{\"internalType\":\"uint64\",\"name\":\"expectedTimePerBlock_\",\"type\":\"uint64\",\"components\":[]}],\"stateMutability\":\"nonpayable\",\"type\":\"function\",\"name\":\"setExpectedTimePerBlock\",\"outputs\":[]},{\"inputs\":[{\"internalType\":\"struct IBCMsgs.MsgUpdateClient\",\"name\":\"msg_\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"string\",\"name\":\"clientId\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"bytes\",\"name\":\"clientMessage\",\"type\":\"bytes\",\"components\":[]}]}],\"stateMutability\":\"nonpayable\",\"type\":\"function\",\"name\":\"updateClient\",\"outputs\":[]},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"destinationPortId\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"destinationChannel\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"uint64\",\"name\":\"sequence\",\"type\":\"uint64\",\"components\":[]},{\"internalType\":\"bytes\",\"name\":\"acknowledgement\",\"type\":\"bytes\",\"components\":[]}],\"stateMutability\":\"nonpayable\",\"type\":\"function\",\"name\":\"writeAcknowledgement\",\"outputs\":[]}]";
+    const __ABI: &str = "[{\"inputs\":[{\"internalType\":\"struct IbcCoreChannelV1Packet.Data\",\"name\":\"packet\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"uint64\",\"name\":\"sequence\",\"type\":\"uint64\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"source_port\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"source_channel\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"destination_port\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"destination_channel\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"bytes\",\"name\":\"data\",\"type\":\"bytes\",\"components\":[]},{\"internalType\":\"struct IbcCoreClientV1Height.Data\",\"name\":\"timeout_height\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"uint64\",\"name\":\"revision_number\",\"type\":\"uint64\",\"components\":[]},{\"internalType\":\"uint64\",\"name\":\"revision_height\",\"type\":\"uint64\",\"components\":[]}]},{\"internalType\":\"uint64\",\"name\":\"timeout_timestamp\",\"type\":\"uint64\",\"components\":[]}],\"indexed\":false},{\"internalType\":\"bytes\",\"name\":\"acknowledgement\",\"type\":\"bytes\",\"components\":[],\"indexed\":false}],\"type\":\"event\",\"name\":\"AcknowledgePacket\",\"outputs\":[],\"anonymous\":false},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"\",\"type\":\"string\",\"components\":[],\"indexed\":false}],\"type\":\"event\",\"name\":\"GeneratedChannelIdentifier\",\"outputs\":[],\"anonymous\":false},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"\",\"type\":\"string\",\"components\":[],\"indexed\":false}],\"type\":\"event\",\"name\":\"GeneratedClientIdentifier\",\"outputs\":[],\"anonymous\":false},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"\",\"type\":\"string\",\"components\":[],\"indexed\":false}],\"type\":\"event\",\"name\":\"GeneratedConnectionIdentifier\",\"outputs\":[],\"anonymous\":false},{\"inputs\":[{\"internalType\":\"struct IbcCoreChannelV1Packet.Data\",\"name\":\"packet\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"uint64\",\"name\":\"sequence\",\"type\":\"uint64\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"source_port\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"source_channel\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"destination_port\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"destination_channel\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"bytes\",\"name\":\"data\",\"type\":\"bytes\",\"components\":[]},{\"internalType\":\"struct IbcCoreClientV1Height.Data\",\"name\":\"timeout_height\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"uint64\",\"name\":\"revision_number\",\"type\":\"uint64\",\"components\":[]},{\"internalType\":\"uint64\",\"name\":\"revision_height\",\"type\":\"uint64\",\"components\":[]}]},{\"internalType\":\"uint64\",\"name\":\"timeout_timestamp\",\"type\":\"uint64\",\"components\":[]}],\"indexed\":false}],\"type\":\"event\",\"name\":\"RecvPacket\",\"outputs\":[],\"anonymous\":false},{\"inputs\":[{\"internalType\":\"uint64\",\"name\":\"sequence\",\"type\":\"uint64\",\"components\":[],\"indexed\":false},{\"internalType\":\"string\",\"name\":\"sourcePort\",\"type\":\"string\",\"components\":[],\"indexed\":false},{\"internalType\":\"string\",\"name\":\"sourceChannel\",\"type\":\"string\",\"components\":[],\"indexed\":false},{\"internalType\":\"struct IbcCoreClientV1Height.Data\",\"name\":\"timeoutHeight\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"uint64\",\"name\":\"revision_number\",\"type\":\"uint64\",\"components\":[]},{\"internalType\":\"uint64\",\"name\":\"revision_height\",\"type\":\"uint64\",\"components\":[]}],\"indexed\":false},{\"internalType\":\"uint64\",\"name\":\"timeoutTimestamp\",\"type\":\"uint64\",\"components\":[],\"indexed\":false},{\"internalType\":\"bytes\",\"name\":\"data\",\"type\":\"bytes\",\"components\":[],\"indexed\":false}],\"type\":\"event\",\"name\":\"SendPacket\",\"outputs\":[],\"anonymous\":false},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"destinationPortId\",\"type\":\"string\",\"components\":[],\"indexed\":false},{\"internalType\":\"string\",\"name\":\"destinationChannel\",\"type\":\"string\",\"components\":[],\"indexed\":false},{\"internalType\":\"uint64\",\"name\":\"sequence\",\"type\":\"uint64\",\"components\":[],\"indexed\":false},{\"internalType\":\"bytes\",\"name\":\"acknowledgement\",\"type\":\"bytes\",\"components\":[],\"indexed\":false}],\"type\":\"event\",\"name\":\"WriteAcknowledgement\",\"outputs\":[],\"anonymous\":false},{\"inputs\":[{\"internalType\":\"struct IBCMsgs.MsgPacketAcknowledgement\",\"name\":\"msg_\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"struct IbcCoreChannelV1Packet.Data\",\"name\":\"packet\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"uint64\",\"name\":\"sequence\",\"type\":\"uint64\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"source_port\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"source_channel\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"destination_port\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"destination_channel\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"bytes\",\"name\":\"data\",\"type\":\"bytes\",\"components\":[]},{\"internalType\":\"struct IbcCoreClientV1Height.Data\",\"name\":\"timeout_height\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"uint64\",\"name\":\"revision_number\",\"type\":\"uint64\",\"components\":[]},{\"internalType\":\"uint64\",\"name\":\"revision_height\",\"type\":\"uint64\",\"components\":[]}]},{\"internalType\":\"uint64\",\"name\":\"timeout_timestamp\",\"type\":\"uint64\",\"components\":[]}]},{\"internalType\":\"bytes\",\"name\":\"acknowledgement\",\"type\":\"bytes\",\"components\":[]},{\"internalType\":\"bytes\",\"name\":\"proof\",\"type\":\"bytes\",\"components\":[]},{\"internalType\":\"struct IbcCoreClientV1Height.Data\",\"name\":\"proofHeight\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"uint64\",\"name\":\"revision_number\",\"type\":\"uint64\",\"components\":[]},{\"internalType\":\"uint64\",\"name\":\"revision_height\",\"type\":\"uint64\",\"components\":[]}]}]}],\"stateMutability\":\"nonpayable\",\"type\":\"function\",\"name\":\"acknowledgePacket\",\"outputs\":[]},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"portId\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"address\",\"name\":\"moduleAddress\",\"type\":\"address\",\"components\":[]}],\"stateMutability\":\"nonpayable\",\"type\":\"function\",\"name\":\"bindPort\",\"outputs\":[]},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"portId\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"channelId\",\"type\":\"string\",\"components\":[]}],\"stateMutability\":\"pure\",\"type\":\"function\",\"name\":\"channelCapabilityPath\",\"outputs\":[{\"internalType\":\"bytes\",\"name\":\"\",\"type\":\"bytes\",\"components\":[]}]},{\"inputs\":[{\"internalType\":\"struct IBCMsgs.MsgChannelCloseConfirm\",\"name\":\"msg_\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"string\",\"name\":\"portId\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"channelId\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"bytes\",\"name\":\"proofInit\",\"type\":\"bytes\",\"components\":[]},{\"internalType\":\"struct IbcCoreClientV1Height.Data\",\"name\":\"proofHeight\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"uint64\",\"name\":\"revision_number\",\"type\":\"uint64\",\"components\":[]},{\"internalType\":\"uint64\",\"name\":\"revision_height\",\"type\":\"uint64\",\"components\":[]}]}]}],\"stateMutability\":\"nonpayable\",\"type\":\"function\",\"name\":\"channelCloseConfirm\",\"outputs\":[]},{\"inputs\":[{\"internalType\":\"struct IBCMsgs.MsgChannelCloseInit\",\"name\":\"msg_\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"string\",\"name\":\"portId\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"channelId\",\"type\":\"string\",\"components\":[]}]}],\"stateMutability\":\"nonpayable\",\"type\":\"function\",\"name\":\"channelCloseInit\",\"outputs\":[]},{\"inputs\":[{\"internalType\":\"struct IBCMsgs.MsgChannelOpenAck\",\"name\":\"msg_\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"string\",\"name\":\"portId\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"channelId\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"counterpartyVersion\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"counterpartyChannelId\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"bytes\",\"name\":\"proofTry\",\"type\":\"bytes\",\"components\":[]},{\"internalType\":\"struct IbcCoreClientV1Height.Data\",\"name\":\"proofHeight\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"uint64\",\"name\":\"revision_number\",\"type\":\"uint64\",\"components\":[]},{\"internalType\":\"uint64\",\"name\":\"revision_height\",\"type\":\"uint64\",\"components\":[]}]}]}],\"stateMutability\":\"nonpayable\",\"type\":\"function\",\"name\":\"channelOpenAck\",\"outputs\":[]},{\"inputs\":[{\"internalType\":\"struct IBCMsgs.MsgChannelOpenConfirm\",\"name\":\"msg_\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"string\",\"name\":\"portId\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"channelId\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"bytes\",\"name\":\"proofAck\",\"type\":\"bytes\",\"components\":[]},{\"internalType\":\"struct IbcCoreClientV1Height.Data\",\"name\":\"proofHeight\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"uint64\",\"name\":\"revision_number\",\"type\":\"uint64\",\"components\":[]},{\"internalType\":\"uint64\",\"name\":\"revision_height\",\"type\":\"uint64\",\"components\":[]}]}]}],\"stateMutability\":\"nonpayable\",\"type\":\"function\",\"name\":\"channelOpenConfirm\",\"outputs\":[]},{\"inputs\":[{\"internalType\":\"struct IBCMsgs.MsgChannelOpenInit\",\"name\":\"msg_\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"string\",\"name\":\"portId\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"struct IbcCoreChannelV1Channel.Data\",\"name\":\"channel\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"enum IbcCoreChannelV1GlobalEnums.State\",\"name\":\"state\",\"type\":\"uint8\",\"components\":[]},{\"internalType\":\"enum IbcCoreChannelV1GlobalEnums.Order\",\"name\":\"ordering\",\"type\":\"uint8\",\"components\":[]},{\"internalType\":\"struct IbcCoreChannelV1Counterparty.Data\",\"name\":\"counterparty\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"string\",\"name\":\"port_id\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"channel_id\",\"type\":\"string\",\"components\":[]}]},{\"internalType\":\"string[]\",\"name\":\"connection_hops\",\"type\":\"string[]\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"version\",\"type\":\"string\",\"components\":[]}]}]}],\"stateMutability\":\"nonpayable\",\"type\":\"function\",\"name\":\"channelOpenInit\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"channelId\",\"type\":\"string\",\"components\":[]}]},{\"inputs\":[{\"internalType\":\"struct IBCMsgs.MsgChannelOpenTry\",\"name\":\"msg_\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"string\",\"name\":\"portId\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"struct IbcCoreChannelV1Channel.Data\",\"name\":\"channel\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"enum IbcCoreChannelV1GlobalEnums.State\",\"name\":\"state\",\"type\":\"uint8\",\"components\":[]},{\"internalType\":\"enum IbcCoreChannelV1GlobalEnums.Order\",\"name\":\"ordering\",\"type\":\"uint8\",\"components\":[]},{\"internalType\":\"struct IbcCoreChannelV1Counterparty.Data\",\"name\":\"counterparty\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"string\",\"name\":\"port_id\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"channel_id\",\"type\":\"string\",\"components\":[]}]},{\"internalType\":\"string[]\",\"name\":\"connection_hops\",\"type\":\"string[]\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"version\",\"type\":\"string\",\"components\":[]}]},{\"internalType\":\"string\",\"name\":\"counterpartyVersion\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"bytes\",\"name\":\"proofInit\",\"type\":\"bytes\",\"components\":[]},{\"internalType\":\"struct IbcCoreClientV1Height.Data\",\"name\":\"proofHeight\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"uint64\",\"name\":\"revision_number\",\"type\":\"uint64\",\"components\":[]},{\"internalType\":\"uint64\",\"name\":\"revision_height\",\"type\":\"uint64\",\"components\":[]}]}]}],\"stateMutability\":\"nonpayable\",\"type\":\"function\",\"name\":\"channelOpenTry\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"channelId\",\"type\":\"string\",\"components\":[]}]},{\"inputs\":[{\"internalType\":\"struct IBCMsgs.MsgConnectionOpenAck\",\"name\":\"msg_\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"string\",\"name\":\"connectionId\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"bytes\",\"name\":\"clientStateBytes\",\"type\":\"bytes\",\"components\":[]},{\"internalType\":\"struct IbcCoreConnectionV1Version.Data\",\"name\":\"version\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"string\",\"name\":\"identifier\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string[]\",\"name\":\"features\",\"type\":\"string[]\",\"components\":[]}]},{\"internalType\":\"string\",\"name\":\"counterpartyConnectionID\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"bytes\",\"name\":\"proofTry\",\"type\":\"bytes\",\"components\":[]},{\"internalType\":\"bytes\",\"name\":\"proofClient\",\"type\":\"bytes\",\"components\":[]},{\"internalType\":\"bytes\",\"name\":\"proofConsensus\",\"type\":\"bytes\",\"components\":[]},{\"internalType\":\"struct IbcCoreClientV1Height.Data\",\"name\":\"proofHeight\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"uint64\",\"name\":\"revision_number\",\"type\":\"uint64\",\"components\":[]},{\"internalType\":\"uint64\",\"name\":\"revision_height\",\"type\":\"uint64\",\"components\":[]}]},{\"internalType\":\"struct IbcCoreClientV1Height.Data\",\"name\":\"consensusHeight\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"uint64\",\"name\":\"revision_number\",\"type\":\"uint64\",\"components\":[]},{\"internalType\":\"uint64\",\"name\":\"revision_height\",\"type\":\"uint64\",\"components\":[]}]}]}],\"stateMutability\":\"nonpayable\",\"type\":\"function\",\"name\":\"connectionOpenAck\",\"outputs\":[]},{\"inputs\":[{\"internalType\":\"struct IBCMsgs.MsgConnectionOpenConfirm\",\"name\":\"msg_\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"string\",\"name\":\"connectionId\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"bytes\",\"name\":\"proofAck\",\"type\":\"bytes\",\"components\":[]},{\"internalType\":\"struct IbcCoreClientV1Height.Data\",\"name\":\"proofHeight\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"uint64\",\"name\":\"revision_number\",\"type\":\"uint64\",\"components\":[]},{\"internalType\":\"uint64\",\"name\":\"revision_height\",\"type\":\"uint64\",\"components\":[]}]}]}],\"stateMutability\":\"nonpayable\",\"type\":\"function\",\"name\":\"connectionOpenConfirm\",\"outputs\":[]},{\"inputs\":[{\"internalType\":\"struct IBCMsgs.MsgConnectionOpenInit\",\"name\":\"msg_\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"string\",\"name\":\"clientId\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"struct IbcCoreConnectionV1Counterparty.Data\",\"name\":\"counterparty\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"string\",\"name\":\"client_id\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"connection_id\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"struct IbcCoreCommitmentV1MerklePrefix.Data\",\"name\":\"prefix\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"bytes\",\"name\":\"key_prefix\",\"type\":\"bytes\",\"components\":[]}]}]},{\"internalType\":\"uint64\",\"name\":\"delayPeriod\",\"type\":\"uint64\",\"components\":[]}]}],\"stateMutability\":\"nonpayable\",\"type\":\"function\",\"name\":\"connectionOpenInit\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"connectionId\",\"type\":\"string\",\"components\":[]}]},{\"inputs\":[{\"internalType\":\"struct IBCMsgs.MsgConnectionOpenTry\",\"name\":\"msg_\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"struct IbcCoreConnectionV1Counterparty.Data\",\"name\":\"counterparty\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"string\",\"name\":\"client_id\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"connection_id\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"struct IbcCoreCommitmentV1MerklePrefix.Data\",\"name\":\"prefix\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"bytes\",\"name\":\"key_prefix\",\"type\":\"bytes\",\"components\":[]}]}]},{\"internalType\":\"uint64\",\"name\":\"delayPeriod\",\"type\":\"uint64\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"clientId\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"bytes\",\"name\":\"clientStateBytes\",\"type\":\"bytes\",\"components\":[]},{\"internalType\":\"struct IbcCoreConnectionV1Version.Data[]\",\"name\":\"counterpartyVersions\",\"type\":\"tuple[]\",\"components\":[{\"internalType\":\"string\",\"name\":\"identifier\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string[]\",\"name\":\"features\",\"type\":\"string[]\",\"components\":[]}]},{\"internalType\":\"bytes\",\"name\":\"proofInit\",\"type\":\"bytes\",\"components\":[]},{\"internalType\":\"bytes\",\"name\":\"proofClient\",\"type\":\"bytes\",\"components\":[]},{\"internalType\":\"bytes\",\"name\":\"proofConsensus\",\"type\":\"bytes\",\"components\":[]},{\"internalType\":\"struct IbcCoreClientV1Height.Data\",\"name\":\"proofHeight\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"uint64\",\"name\":\"revision_number\",\"type\":\"uint64\",\"components\":[]},{\"internalType\":\"uint64\",\"name\":\"revision_height\",\"type\":\"uint64\",\"components\":[]}]},{\"internalType\":\"struct IbcCoreClientV1Height.Data\",\"name\":\"consensusHeight\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"uint64\",\"name\":\"revision_number\",\"type\":\"uint64\",\"components\":[]},{\"internalType\":\"uint64\",\"name\":\"revision_height\",\"type\":\"uint64\",\"components\":[]}]}]}],\"stateMutability\":\"nonpayable\",\"type\":\"function\",\"name\":\"connectionOpenTry\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"connectionId\",\"type\":\"string\",\"components\":[]}]},{\"inputs\":[{\"internalType\":\"struct IBCMsgs.MsgCreateClient\",\"name\":\"msg_\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"string\",\"name\":\"clientType\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"bytes\",\"name\":\"clientStateBytes\",\"type\":\"bytes\",\"components\":[]},{\"internalType\":\"bytes\",\"name\":\"consensusStateBytes\",\"type\":\"bytes\",\"components\":[]}]}],\"stateMutability\":\"nonpayable\",\"type\":\"function\",\"name\":\"createClient\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"clientId\",\"type\":\"string\",\"components\":[]}]},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"portId\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"channelId\",\"type\":\"string\",\"components\":[]}],\"stateMutability\":\"view\",\"type\":\"function\",\"name\":\"getChannel\",\"outputs\":[{\"internalType\":\"struct IbcCoreChannelV1Channel.Data\",\"name\":\"\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"enum IbcCoreChannelV1GlobalEnums.State\",\"name\":\"state\",\"type\":\"uint8\",\"components\":[]},{\"internalType\":\"enum IbcCoreChannelV1GlobalEnums.Order\",\"name\":\"ordering\",\"type\":\"uint8\",\"components\":[]},{\"internalType\":\"struct IbcCoreChannelV1Counterparty.Data\",\"name\":\"counterparty\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"string\",\"name\":\"port_id\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"channel_id\",\"type\":\"string\",\"components\":[]}]},{\"internalType\":\"string[]\",\"name\":\"connection_hops\",\"type\":\"string[]\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"version\",\"type\":\"string\",\"components\":[]}]},{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\",\"components\":[]}]},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"clientId\",\"type\":\"string\",\"components\":[]}],\"stateMutability\":\"view\",\"type\":\"function\",\"name\":\"getClientState\",\"outputs\":[{\"internalType\":\"bytes\",\"name\":\"\",\"type\":\"bytes\",\"components\":[]},{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\",\"components\":[]}]},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"connectionId\",\"type\":\"string\",\"components\":[]}],\"stateMutability\":\"view\",\"type\":\"function\",\"name\":\"getConnection\",\"outputs\":[{\"internalType\":\"struct IbcCoreConnectionV1ConnectionEnd.Data\",\"name\":\"\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"string\",\"name\":\"client_id\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"struct IbcCoreConnectionV1Version.Data[]\",\"name\":\"versions\",\"type\":\"tuple[]\",\"components\":[{\"internalType\":\"string\",\"name\":\"identifier\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string[]\",\"name\":\"features\",\"type\":\"string[]\",\"components\":[]}]},{\"internalType\":\"enum IbcCoreConnectionV1GlobalEnums.State\",\"name\":\"state\",\"type\":\"uint8\",\"components\":[]},{\"internalType\":\"struct IbcCoreConnectionV1Counterparty.Data\",\"name\":\"counterparty\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"string\",\"name\":\"client_id\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"connection_id\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"struct IbcCoreCommitmentV1MerklePrefix.Data\",\"name\":\"prefix\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"bytes\",\"name\":\"key_prefix\",\"type\":\"bytes\",\"components\":[]}]}]},{\"internalType\":\"uint64\",\"name\":\"delay_period\",\"type\":\"uint64\",\"components\":[]}]},{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\",\"components\":[]}]},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"connectionId\",\"type\":\"string\",\"components\":[]}],\"stateMutability\":\"view\",\"type\":\"function\",\"name\":\"getConnectionSerialize\",\"outputs\":[{\"internalType\":\"bytes\",\"name\":\"\",\"type\":\"bytes\",\"components\":[]},{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\",\"components\":[]}]},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"clientId\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"struct IbcCoreClientV1Height.Data\",\"name\":\"height\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"uint64\",\"name\":\"revision_number\",\"type\":\"uint64\",\"components\":[]},{\"internalType\":\"uint64\",\"name\":\"revision_height\",\"type\":\"uint64\",\"components\":[]}]}],\"stateMutability\":\"view\",\"type\":\"function\",\"name\":\"getConsensusState\",\"outputs\":[{\"internalType\":\"bytes\",\"name\":\"consensusStateBytes\",\"type\":\"bytes\",\"components\":[]},{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\",\"components\":[]}]},{\"inputs\":[],\"stateMutability\":\"view\",\"type\":\"function\",\"name\":\"getExpectedTimePerBlock\",\"outputs\":[{\"internalType\":\"uint64\",\"name\":\"\",\"type\":\"uint64\",\"components\":[]}]},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"portId\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"channelId\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"uint64\",\"name\":\"sequence\",\"type\":\"uint64\",\"components\":[]}],\"stateMutability\":\"view\",\"type\":\"function\",\"name\":\"getHashedPacketAcknowledgementCommitment\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\",\"components\":[]},{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\",\"components\":[]}]},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"portId\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"channelId\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"uint64\",\"name\":\"sequence\",\"type\":\"uint64\",\"components\":[]}],\"stateMutability\":\"view\",\"type\":\"function\",\"name\":\"getHashedPacketCommitment\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\",\"components\":[]},{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\",\"components\":[]}]},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"portId\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"channelId\",\"type\":\"string\",\"components\":[]}],\"stateMutability\":\"view\",\"type\":\"function\",\"name\":\"getNextSequenceSend\",\"outputs\":[{\"internalType\":\"uint64\",\"name\":\"\",\"type\":\"uint64\",\"components\":[]}]},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"portId\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"channelId\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"uint64\",\"name\":\"sequence\",\"type\":\"uint64\",\"components\":[]}],\"stateMutability\":\"view\",\"type\":\"function\",\"name\":\"hasPacketReceipt\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\",\"components\":[]}]},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"portId\",\"type\":\"string\",\"components\":[]}],\"stateMutability\":\"pure\",\"type\":\"function\",\"name\":\"portCapabilityPath\",\"outputs\":[{\"internalType\":\"bytes\",\"name\":\"\",\"type\":\"bytes\",\"components\":[]}]},{\"inputs\":[{\"internalType\":\"struct IBCMsgs.MsgPacketRecv\",\"name\":\"msg_\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"struct IbcCoreChannelV1Packet.Data\",\"name\":\"packet\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"uint64\",\"name\":\"sequence\",\"type\":\"uint64\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"source_port\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"source_channel\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"destination_port\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"destination_channel\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"bytes\",\"name\":\"data\",\"type\":\"bytes\",\"components\":[]},{\"internalType\":\"struct IbcCoreClientV1Height.Data\",\"name\":\"timeout_height\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"uint64\",\"name\":\"revision_number\",\"type\":\"uint64\",\"components\":[]},{\"internalType\":\"uint64\",\"name\":\"revision_height\",\"type\":\"uint64\",\"components\":[]}]},{\"internalType\":\"uint64\",\"name\":\"timeout_timestamp\",\"type\":\"uint64\",\"components\":[]}]},{\"internalType\":\"bytes\",\"name\":\"proof\",\"type\":\"bytes\",\"components\":[]},{\"internalType\":\"struct IbcCoreClientV1Height.Data\",\"name\":\"proofHeight\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"uint64\",\"name\":\"revision_number\",\"type\":\"uint64\",\"components\":[]},{\"internalType\":\"uint64\",\"name\":\"revision_height\",\"type\":\"uint64\",\"components\":[]}]}]}],\"stateMutability\":\"nonpayable\",\"type\":\"function\",\"name\":\"recvPacket\",\"outputs\":[]},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"clientType\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"contract ILightClient\",\"name\":\"client\",\"type\":\"address\",\"components\":[]}],\"stateMutability\":\"nonpayable\",\"type\":\"function\",\"name\":\"registerClient\",\"outputs\":[]},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"sourcePort\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"sourceChannel\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"struct IbcCoreClientV1Height.Data\",\"name\":\"timeoutHeight\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"uint64\",\"name\":\"revision_number\",\"type\":\"uint64\",\"components\":[]},{\"internalType\":\"uint64\",\"name\":\"revision_height\",\"type\":\"uint64\",\"components\":[]}]},{\"internalType\":\"uint64\",\"name\":\"timeoutTimestamp\",\"type\":\"uint64\",\"components\":[]},{\"internalType\":\"bytes\",\"name\":\"data\",\"type\":\"bytes\",\"components\":[]}],\"stateMutability\":\"nonpayable\",\"type\":\"function\",\"name\":\"sendPacket\",\"outputs\":[]},{\"inputs\":[{\"internalType\":\"uint64\",\"name\":\"expectedTimePerBlock_\",\"type\":\"uint64\",\"components\":[]}],\"stateMutability\":\"nonpayable\",\"type\":\"function\",\"name\":\"setExpectedTimePerBlock\",\"outputs\":[]},{\"inputs\":[{\"internalType\":\"struct IBCMsgs.MsgUpdateClient\",\"name\":\"msg_\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"string\",\"name\":\"clientId\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"bytes\",\"name\":\"clientMessage\",\"type\":\"bytes\",\"components\":[]}]}],\"stateMutability\":\"nonpayable\",\"type\":\"function\",\"name\":\"updateClient\",\"outputs\":[]},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"destinationPortId\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"destinationChannel\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"uint64\",\"name\":\"sequence\",\"type\":\"uint64\",\"components\":[]},{\"internalType\":\"bytes\",\"name\":\"acknowledgement\",\"type\":\"bytes\",\"components\":[]}],\"stateMutability\":\"nonpayable\",\"type\":\"function\",\"name\":\"writeAcknowledgement\",\"outputs\":[]}]";
     ///The parsed JSON ABI of the contract.
-    pub static IBCHANDLER_ABI: ::ethers::contract::Lazy<::ethers::core::abi::Abi> =
-        ::ethers::contract::Lazy::new(|| {
-            ::ethers::core::utils::__serde_json::from_str(__ABI).expect("ABI is always valid")
-        });
+    pub static IBCHANDLER_ABI: ::ethers::contract::Lazy<::ethers::core::abi::Abi> = ::ethers::contract::Lazy::new(||
+    ::ethers::core::utils::__serde_json::from_str(__ABI).expect("ABI is always valid"));
     pub struct IBCHandler<M>(::ethers::contract::Contract<M>);
     impl<M> ::core::clone::Clone for IBCHandler<M> {
         fn clone(&self) -> Self {
@@ -37,9 +35,7 @@ pub mod ibc_handler {
     }
     impl<M> ::core::fmt::Debug for IBCHandler<M> {
         fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
-            f.debug_tuple(stringify!(IBCHandler))
-                .field(&self.address())
-                .finish()
+            f.debug_tuple(stringify!(IBCHandler)).field(&self.address()).finish()
         }
     }
     impl<M: ::ethers::providers::Middleware> IBCHandler<M> {
@@ -49,11 +45,13 @@ pub mod ibc_handler {
             address: T,
             client: ::std::sync::Arc<M>,
         ) -> Self {
-            Self(::ethers::contract::Contract::new(
-                address.into(),
-                IBCHANDLER_ABI.clone(),
-                client,
-            ))
+            Self(
+                ::ethers::contract::Contract::new(
+                    address.into(),
+                    IBCHANDLER_ABI.clone(),
+                    client,
+                ),
+            )
         }
         ///Calls the contract's `acknowledgePacket` (0x59f37976) function
         pub fn acknowledge_packet(
@@ -79,7 +77,10 @@ pub mod ibc_handler {
             &self,
             port_id: ::std::string::String,
             channel_id: ::std::string::String,
-        ) -> ::ethers::contract::builders::ContractCall<M, ::ethers::core::types::Bytes> {
+        ) -> ::ethers::contract::builders::ContractCall<
+            M,
+            ::ethers::core::types::Bytes,
+        > {
             self.0
                 .method_hash([59, 195, 51, 159], (port_id, channel_id))
                 .expect("method not found (this should never happen)")
@@ -188,8 +189,10 @@ pub mod ibc_handler {
             &self,
             port_id: ::std::string::String,
             channel_id: ::std::string::String,
-        ) -> ::ethers::contract::builders::ContractCall<M, (IbcCoreChannelV1ChannelData, bool)>
-        {
+        ) -> ::ethers::contract::builders::ContractCall<
+            M,
+            (IbcCoreChannelV1ChannelData, bool),
+        > {
             self.0
                 .method_hash([48, 0, 33, 122], (port_id, channel_id))
                 .expect("method not found (this should never happen)")
@@ -198,8 +201,10 @@ pub mod ibc_handler {
         pub fn get_client_state(
             &self,
             client_id: ::std::string::String,
-        ) -> ::ethers::contract::builders::ContractCall<M, (::ethers::core::types::Bytes, bool)>
-        {
+        ) -> ::ethers::contract::builders::ContractCall<
+            M,
+            (::ethers::core::types::Bytes, bool),
+        > {
             self.0
                 .method_hash([118, 200, 28, 66], client_id)
                 .expect("method not found (this should never happen)")
@@ -216,13 +221,27 @@ pub mod ibc_handler {
                 .method_hash([39, 113, 26, 105], connection_id)
                 .expect("method not found (this should never happen)")
         }
+        ///Calls the contract's `getConnectionSerialize` (0xc5c1e8fd) function
+        pub fn get_connection_serialize(
+            &self,
+            connection_id: ::std::string::String,
+        ) -> ::ethers::contract::builders::ContractCall<
+            M,
+            (::ethers::core::types::Bytes, bool),
+        > {
+            self.0
+                .method_hash([197, 193, 232, 253], connection_id)
+                .expect("method not found (this should never happen)")
+        }
         ///Calls the contract's `getConsensusState` (0x6cf44bf4) function
         pub fn get_consensus_state(
             &self,
             client_id: ::std::string::String,
             height: IbcCoreClientV1HeightData,
-        ) -> ::ethers::contract::builders::ContractCall<M, (::ethers::core::types::Bytes, bool)>
-        {
+        ) -> ::ethers::contract::builders::ContractCall<
+            M,
+            (::ethers::core::types::Bytes, bool),
+        > {
             self.0
                 .method_hash([108, 244, 75, 244], (client_id, height))
                 .expect("method not found (this should never happen)")
@@ -282,7 +301,10 @@ pub mod ibc_handler {
         pub fn port_capability_path(
             &self,
             port_id: ::std::string::String,
-        ) -> ::ethers::contract::builders::ContractCall<M, ::ethers::core::types::Bytes> {
+        ) -> ::ethers::contract::builders::ContractCall<
+            M,
+            ::ethers::core::types::Bytes,
+        > {
             self.0
                 .method_hash([37, 112, 218, 224], port_id)
                 .expect("method not found (this should never happen)")
@@ -357,20 +379,18 @@ pub mod ibc_handler {
             self.0
                 .method_hash(
                     [181, 110, 121, 222],
-                    (
-                        destination_port_id,
-                        destination_channel,
-                        sequence,
-                        acknowledgement,
-                    ),
+                    (destination_port_id, destination_channel, sequence, acknowledgement),
                 )
                 .expect("method not found (this should never happen)")
         }
         ///Gets the contract's `AcknowledgePacket` event
         pub fn acknowledge_packet_filter(
             &self,
-        ) -> ::ethers::contract::builders::Event<::std::sync::Arc<M>, M, AcknowledgePacketFilter>
-        {
+        ) -> ::ethers::contract::builders::Event<
+            ::std::sync::Arc<M>,
+            M,
+            AcknowledgePacketFilter,
+        > {
             self.0.event()
         }
         ///Gets the contract's `GeneratedChannelIdentifier` event
@@ -406,31 +426,46 @@ pub mod ibc_handler {
         ///Gets the contract's `RecvPacket` event
         pub fn recv_packet_filter(
             &self,
-        ) -> ::ethers::contract::builders::Event<::std::sync::Arc<M>, M, RecvPacketFilter> {
+        ) -> ::ethers::contract::builders::Event<
+            ::std::sync::Arc<M>,
+            M,
+            RecvPacketFilter,
+        > {
             self.0.event()
         }
         ///Gets the contract's `SendPacket` event
         pub fn send_packet_filter(
             &self,
-        ) -> ::ethers::contract::builders::Event<::std::sync::Arc<M>, M, SendPacketFilter> {
+        ) -> ::ethers::contract::builders::Event<
+            ::std::sync::Arc<M>,
+            M,
+            SendPacketFilter,
+        > {
             self.0.event()
         }
         ///Gets the contract's `WriteAcknowledgement` event
         pub fn write_acknowledgement_filter(
             &self,
-        ) -> ::ethers::contract::builders::Event<::std::sync::Arc<M>, M, WriteAcknowledgementFilter>
-        {
+        ) -> ::ethers::contract::builders::Event<
+            ::std::sync::Arc<M>,
+            M,
+            WriteAcknowledgementFilter,
+        > {
             self.0.event()
         }
         /// Returns an `Event` builder for all the events of this contract.
         pub fn events(
             &self,
-        ) -> ::ethers::contract::builders::Event<::std::sync::Arc<M>, M, IBCHandlerEvents> {
-            self.0
-                .event_with_filter(::core::default::Default::default())
+        ) -> ::ethers::contract::builders::Event<
+            ::std::sync::Arc<M>,
+            M,
+            IBCHandlerEvents,
+        > {
+            self.0.event_with_filter(::core::default::Default::default())
         }
     }
-    impl<M: ::ethers::providers::Middleware> From<::ethers::contract::Contract<M>> for IBCHandler<M> {
+    impl<M: ::ethers::providers::Middleware> From<::ethers::contract::Contract<M>>
+    for IBCHandler<M> {
         fn from(contract: ::ethers::contract::Contract<M>) -> Self {
             Self::new(contract.address(), contract.client())
         }
@@ -443,7 +478,7 @@ pub mod ibc_handler {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     #[ethevent(
         name = "AcknowledgePacket",
@@ -461,7 +496,7 @@ pub mod ibc_handler {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     #[ethevent(
         name = "GeneratedChannelIdentifier",
@@ -476,7 +511,7 @@ pub mod ibc_handler {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     #[ethevent(
         name = "GeneratedClientIdentifier",
@@ -491,7 +526,7 @@ pub mod ibc_handler {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     #[ethevent(
         name = "GeneratedConnectionIdentifier",
@@ -506,7 +541,7 @@ pub mod ibc_handler {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     #[ethevent(
         name = "RecvPacket",
@@ -523,7 +558,7 @@ pub mod ibc_handler {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     #[ethevent(
         name = "SendPacket",
@@ -545,7 +580,7 @@ pub mod ibc_handler {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     #[ethevent(
         name = "WriteAcknowledgement",
@@ -582,9 +617,9 @@ pub mod ibc_handler {
                 return Ok(IBCHandlerEvents::GeneratedClientIdentifierFilter(decoded));
             }
             if let Ok(decoded) = GeneratedConnectionIdentifierFilter::decode_log(log) {
-                return Ok(IBCHandlerEvents::GeneratedConnectionIdentifierFilter(
-                    decoded,
-                ));
+                return Ok(
+                    IBCHandlerEvents::GeneratedConnectionIdentifierFilter(decoded),
+                );
             }
             if let Ok(decoded) = RecvPacketFilter::decode_log(log) {
                 return Ok(IBCHandlerEvents::RecvPacketFilter(decoded));
@@ -601,7 +636,9 @@ pub mod ibc_handler {
     impl ::core::fmt::Display for IBCHandlerEvents {
         fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
             match self {
-                Self::AcknowledgePacketFilter(element) => ::core::fmt::Display::fmt(element, f),
+                Self::AcknowledgePacketFilter(element) => {
+                    ::core::fmt::Display::fmt(element, f)
+                }
                 Self::GeneratedChannelIdentifierFilter(element) => {
                     ::core::fmt::Display::fmt(element, f)
                 }
@@ -613,7 +650,9 @@ pub mod ibc_handler {
                 }
                 Self::RecvPacketFilter(element) => ::core::fmt::Display::fmt(element, f),
                 Self::SendPacketFilter(element) => ::core::fmt::Display::fmt(element, f),
-                Self::WriteAcknowledgementFilter(element) => ::core::fmt::Display::fmt(element, f),
+                Self::WriteAcknowledgementFilter(element) => {
+                    ::core::fmt::Display::fmt(element, f)
+                }
             }
         }
     }
@@ -632,7 +671,8 @@ pub mod ibc_handler {
             Self::GeneratedClientIdentifierFilter(value)
         }
     }
-    impl ::core::convert::From<GeneratedConnectionIdentifierFilter> for IBCHandlerEvents {
+    impl ::core::convert::From<GeneratedConnectionIdentifierFilter>
+    for IBCHandlerEvents {
         fn from(value: GeneratedConnectionIdentifierFilter) -> Self {
             Self::GeneratedConnectionIdentifierFilter(value)
         }
@@ -661,7 +701,7 @@ pub mod ibc_handler {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     #[ethcall(
         name = "acknowledgePacket",
@@ -679,7 +719,7 @@ pub mod ibc_handler {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     #[ethcall(name = "bindPort", abi = "bindPort(string,address)")]
     pub struct BindPortCall {
@@ -695,7 +735,7 @@ pub mod ibc_handler {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     #[ethcall(
         name = "channelCapabilityPath",
@@ -714,7 +754,7 @@ pub mod ibc_handler {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     #[ethcall(
         name = "channelCloseConfirm",
@@ -732,7 +772,7 @@ pub mod ibc_handler {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     #[ethcall(name = "channelCloseInit", abi = "channelCloseInit((string,string))")]
     pub struct ChannelCloseInitCall {
@@ -747,7 +787,7 @@ pub mod ibc_handler {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     #[ethcall(
         name = "channelOpenAck",
@@ -765,7 +805,7 @@ pub mod ibc_handler {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     #[ethcall(
         name = "channelOpenConfirm",
@@ -783,7 +823,7 @@ pub mod ibc_handler {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     #[ethcall(
         name = "channelOpenInit",
@@ -801,7 +841,7 @@ pub mod ibc_handler {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     #[ethcall(
         name = "channelOpenTry",
@@ -819,7 +859,7 @@ pub mod ibc_handler {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     #[ethcall(
         name = "connectionOpenAck",
@@ -837,7 +877,7 @@ pub mod ibc_handler {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     #[ethcall(
         name = "connectionOpenConfirm",
@@ -855,7 +895,7 @@ pub mod ibc_handler {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     #[ethcall(
         name = "connectionOpenInit",
@@ -873,7 +913,7 @@ pub mod ibc_handler {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     #[ethcall(
         name = "connectionOpenTry",
@@ -891,7 +931,7 @@ pub mod ibc_handler {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     #[ethcall(name = "createClient", abi = "createClient((string,bytes,bytes))")]
     pub struct CreateClientCall {
@@ -906,7 +946,7 @@ pub mod ibc_handler {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     #[ethcall(name = "getChannel", abi = "getChannel(string,string)")]
     pub struct GetChannelCall {
@@ -922,7 +962,7 @@ pub mod ibc_handler {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     #[ethcall(name = "getClientState", abi = "getClientState(string)")]
     pub struct GetClientStateCall {
@@ -937,10 +977,25 @@ pub mod ibc_handler {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     #[ethcall(name = "getConnection", abi = "getConnection(string)")]
     pub struct GetConnectionCall {
+        pub connection_id: ::std::string::String,
+    }
+    ///Container type for all input parameters for the `getConnectionSerialize` function with signature `getConnectionSerialize(string)` and selector `0xc5c1e8fd`
+    #[derive(
+        Clone,
+        ::ethers::contract::EthCall,
+        ::ethers::contract::EthDisplay,
+        Default,
+        Debug,
+        PartialEq,
+        Eq,
+        Hash
+    )]
+    #[ethcall(name = "getConnectionSerialize", abi = "getConnectionSerialize(string)")]
+    pub struct GetConnectionSerializeCall {
         pub connection_id: ::std::string::String,
     }
     ///Container type for all input parameters for the `getConsensusState` function with signature `getConsensusState(string,(uint64,uint64))` and selector `0x6cf44bf4`
@@ -952,7 +1007,7 @@ pub mod ibc_handler {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     #[ethcall(
         name = "getConsensusState",
@@ -971,7 +1026,7 @@ pub mod ibc_handler {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     #[ethcall(name = "getExpectedTimePerBlock", abi = "getExpectedTimePerBlock()")]
     pub struct GetExpectedTimePerBlockCall;
@@ -984,7 +1039,7 @@ pub mod ibc_handler {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     #[ethcall(
         name = "getHashedPacketAcknowledgementCommitment",
@@ -1004,7 +1059,7 @@ pub mod ibc_handler {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     #[ethcall(
         name = "getHashedPacketCommitment",
@@ -1024,12 +1079,9 @@ pub mod ibc_handler {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
-    #[ethcall(
-        name = "getNextSequenceSend",
-        abi = "getNextSequenceSend(string,string)"
-    )]
+    #[ethcall(name = "getNextSequenceSend", abi = "getNextSequenceSend(string,string)")]
     pub struct GetNextSequenceSendCall {
         pub port_id: ::std::string::String,
         pub channel_id: ::std::string::String,
@@ -1043,12 +1095,9 @@ pub mod ibc_handler {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
-    #[ethcall(
-        name = "hasPacketReceipt",
-        abi = "hasPacketReceipt(string,string,uint64)"
-    )]
+    #[ethcall(name = "hasPacketReceipt", abi = "hasPacketReceipt(string,string,uint64)")]
     pub struct HasPacketReceiptCall {
         pub port_id: ::std::string::String,
         pub channel_id: ::std::string::String,
@@ -1063,7 +1112,7 @@ pub mod ibc_handler {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     #[ethcall(name = "portCapabilityPath", abi = "portCapabilityPath(string)")]
     pub struct PortCapabilityPathCall {
@@ -1078,7 +1127,7 @@ pub mod ibc_handler {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     #[ethcall(
         name = "recvPacket",
@@ -1096,7 +1145,7 @@ pub mod ibc_handler {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     #[ethcall(name = "registerClient", abi = "registerClient(string,address)")]
     pub struct RegisterClientCall {
@@ -1112,7 +1161,7 @@ pub mod ibc_handler {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     #[ethcall(
         name = "sendPacket",
@@ -1134,12 +1183,9 @@ pub mod ibc_handler {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
-    #[ethcall(
-        name = "setExpectedTimePerBlock",
-        abi = "setExpectedTimePerBlock(uint64)"
-    )]
+    #[ethcall(name = "setExpectedTimePerBlock", abi = "setExpectedTimePerBlock(uint64)")]
     pub struct SetExpectedTimePerBlockCall {
         pub expected_time_per_block: u64,
     }
@@ -1152,7 +1198,7 @@ pub mod ibc_handler {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     #[ethcall(name = "updateClient", abi = "updateClient((string,bytes))")]
     pub struct UpdateClientCall {
@@ -1167,7 +1213,7 @@ pub mod ibc_handler {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     #[ethcall(
         name = "writeAcknowledgement",
@@ -1199,9 +1245,12 @@ pub mod ibc_handler {
         GetChannel(GetChannelCall),
         GetClientState(GetClientStateCall),
         GetConnection(GetConnectionCall),
+        GetConnectionSerialize(GetConnectionSerializeCall),
         GetConsensusState(GetConsensusStateCall),
         GetExpectedTimePerBlock(GetExpectedTimePerBlockCall),
-        GetHashedPacketAcknowledgementCommitment(GetHashedPacketAcknowledgementCommitmentCall),
+        GetHashedPacketAcknowledgementCommitment(
+            GetHashedPacketAcknowledgementCommitmentCall,
+        ),
         GetHashedPacketCommitment(GetHashedPacketCommitmentCall),
         GetNextSequenceSend(GetNextSequenceSendCall),
         HasPacketReceipt(HasPacketReceiptCall),
@@ -1218,93 +1267,108 @@ pub mod ibc_handler {
             data: impl AsRef<[u8]>,
         ) -> ::core::result::Result<Self, ::ethers::core::abi::AbiError> {
             let data = data.as_ref();
-            if let Ok(decoded) =
-                <AcknowledgePacketCall as ::ethers::core::abi::AbiDecode>::decode(data)
-            {
+            if let Ok(decoded)
+                = <AcknowledgePacketCall as ::ethers::core::abi::AbiDecode>::decode(
+                    data,
+                ) {
                 return Ok(Self::AcknowledgePacket(decoded));
             }
-            if let Ok(decoded) = <BindPortCall as ::ethers::core::abi::AbiDecode>::decode(data) {
+            if let Ok(decoded)
+                = <BindPortCall as ::ethers::core::abi::AbiDecode>::decode(data) {
                 return Ok(Self::BindPort(decoded));
             }
-            if let Ok(decoded) =
-                <ChannelCapabilityPathCall as ::ethers::core::abi::AbiDecode>::decode(data)
-            {
+            if let Ok(decoded)
+                = <ChannelCapabilityPathCall as ::ethers::core::abi::AbiDecode>::decode(
+                    data,
+                ) {
                 return Ok(Self::ChannelCapabilityPath(decoded));
             }
-            if let Ok(decoded) =
-                <ChannelCloseConfirmCall as ::ethers::core::abi::AbiDecode>::decode(data)
-            {
+            if let Ok(decoded)
+                = <ChannelCloseConfirmCall as ::ethers::core::abi::AbiDecode>::decode(
+                    data,
+                ) {
                 return Ok(Self::ChannelCloseConfirm(decoded));
             }
-            if let Ok(decoded) =
-                <ChannelCloseInitCall as ::ethers::core::abi::AbiDecode>::decode(data)
-            {
+            if let Ok(decoded)
+                = <ChannelCloseInitCall as ::ethers::core::abi::AbiDecode>::decode(
+                    data,
+                ) {
                 return Ok(Self::ChannelCloseInit(decoded));
             }
-            if let Ok(decoded) =
-                <ChannelOpenAckCall as ::ethers::core::abi::AbiDecode>::decode(data)
-            {
+            if let Ok(decoded)
+                = <ChannelOpenAckCall as ::ethers::core::abi::AbiDecode>::decode(data) {
                 return Ok(Self::ChannelOpenAck(decoded));
             }
-            if let Ok(decoded) =
-                <ChannelOpenConfirmCall as ::ethers::core::abi::AbiDecode>::decode(data)
-            {
+            if let Ok(decoded)
+                = <ChannelOpenConfirmCall as ::ethers::core::abi::AbiDecode>::decode(
+                    data,
+                ) {
                 return Ok(Self::ChannelOpenConfirm(decoded));
             }
-            if let Ok(decoded) =
-                <ChannelOpenInitCall as ::ethers::core::abi::AbiDecode>::decode(data)
-            {
+            if let Ok(decoded)
+                = <ChannelOpenInitCall as ::ethers::core::abi::AbiDecode>::decode(data) {
                 return Ok(Self::ChannelOpenInit(decoded));
             }
-            if let Ok(decoded) =
-                <ChannelOpenTryCall as ::ethers::core::abi::AbiDecode>::decode(data)
-            {
+            if let Ok(decoded)
+                = <ChannelOpenTryCall as ::ethers::core::abi::AbiDecode>::decode(data) {
                 return Ok(Self::ChannelOpenTry(decoded));
             }
-            if let Ok(decoded) =
-                <ConnectionOpenAckCall as ::ethers::core::abi::AbiDecode>::decode(data)
-            {
+            if let Ok(decoded)
+                = <ConnectionOpenAckCall as ::ethers::core::abi::AbiDecode>::decode(
+                    data,
+                ) {
                 return Ok(Self::ConnectionOpenAck(decoded));
             }
-            if let Ok(decoded) =
-                <ConnectionOpenConfirmCall as ::ethers::core::abi::AbiDecode>::decode(data)
-            {
+            if let Ok(decoded)
+                = <ConnectionOpenConfirmCall as ::ethers::core::abi::AbiDecode>::decode(
+                    data,
+                ) {
                 return Ok(Self::ConnectionOpenConfirm(decoded));
             }
-            if let Ok(decoded) =
-                <ConnectionOpenInitCall as ::ethers::core::abi::AbiDecode>::decode(data)
-            {
+            if let Ok(decoded)
+                = <ConnectionOpenInitCall as ::ethers::core::abi::AbiDecode>::decode(
+                    data,
+                ) {
                 return Ok(Self::ConnectionOpenInit(decoded));
             }
-            if let Ok(decoded) =
-                <ConnectionOpenTryCall as ::ethers::core::abi::AbiDecode>::decode(data)
-            {
+            if let Ok(decoded)
+                = <ConnectionOpenTryCall as ::ethers::core::abi::AbiDecode>::decode(
+                    data,
+                ) {
                 return Ok(Self::ConnectionOpenTry(decoded));
             }
-            if let Ok(decoded) = <CreateClientCall as ::ethers::core::abi::AbiDecode>::decode(data)
-            {
+            if let Ok(decoded)
+                = <CreateClientCall as ::ethers::core::abi::AbiDecode>::decode(data) {
                 return Ok(Self::CreateClient(decoded));
             }
-            if let Ok(decoded) = <GetChannelCall as ::ethers::core::abi::AbiDecode>::decode(data) {
+            if let Ok(decoded)
+                = <GetChannelCall as ::ethers::core::abi::AbiDecode>::decode(data) {
                 return Ok(Self::GetChannel(decoded));
             }
-            if let Ok(decoded) =
-                <GetClientStateCall as ::ethers::core::abi::AbiDecode>::decode(data)
-            {
+            if let Ok(decoded)
+                = <GetClientStateCall as ::ethers::core::abi::AbiDecode>::decode(data) {
                 return Ok(Self::GetClientState(decoded));
             }
-            if let Ok(decoded) = <GetConnectionCall as ::ethers::core::abi::AbiDecode>::decode(data)
-            {
+            if let Ok(decoded)
+                = <GetConnectionCall as ::ethers::core::abi::AbiDecode>::decode(data) {
                 return Ok(Self::GetConnection(decoded));
             }
-            if let Ok(decoded) =
-                <GetConsensusStateCall as ::ethers::core::abi::AbiDecode>::decode(data)
-            {
+            if let Ok(decoded)
+                = <GetConnectionSerializeCall as ::ethers::core::abi::AbiDecode>::decode(
+                    data,
+                ) {
+                return Ok(Self::GetConnectionSerialize(decoded));
+            }
+            if let Ok(decoded)
+                = <GetConsensusStateCall as ::ethers::core::abi::AbiDecode>::decode(
+                    data,
+                ) {
                 return Ok(Self::GetConsensusState(decoded));
             }
-            if let Ok(decoded) =
-                <GetExpectedTimePerBlockCall as ::ethers::core::abi::AbiDecode>::decode(data)
-            {
+            if let Ok(decoded)
+                = <GetExpectedTimePerBlockCall as ::ethers::core::abi::AbiDecode>::decode(
+                    data,
+                ) {
                 return Ok(Self::GetExpectedTimePerBlock(decoded));
             }
             if let Ok(decoded)
@@ -1313,49 +1377,56 @@ pub mod ibc_handler {
                 ) {
                 return Ok(Self::GetHashedPacketAcknowledgementCommitment(decoded));
             }
-            if let Ok(decoded) =
-                <GetHashedPacketCommitmentCall as ::ethers::core::abi::AbiDecode>::decode(data)
-            {
+            if let Ok(decoded)
+                = <GetHashedPacketCommitmentCall as ::ethers::core::abi::AbiDecode>::decode(
+                    data,
+                ) {
                 return Ok(Self::GetHashedPacketCommitment(decoded));
             }
-            if let Ok(decoded) =
-                <GetNextSequenceSendCall as ::ethers::core::abi::AbiDecode>::decode(data)
-            {
+            if let Ok(decoded)
+                = <GetNextSequenceSendCall as ::ethers::core::abi::AbiDecode>::decode(
+                    data,
+                ) {
                 return Ok(Self::GetNextSequenceSend(decoded));
             }
-            if let Ok(decoded) =
-                <HasPacketReceiptCall as ::ethers::core::abi::AbiDecode>::decode(data)
-            {
+            if let Ok(decoded)
+                = <HasPacketReceiptCall as ::ethers::core::abi::AbiDecode>::decode(
+                    data,
+                ) {
                 return Ok(Self::HasPacketReceipt(decoded));
             }
-            if let Ok(decoded) =
-                <PortCapabilityPathCall as ::ethers::core::abi::AbiDecode>::decode(data)
-            {
+            if let Ok(decoded)
+                = <PortCapabilityPathCall as ::ethers::core::abi::AbiDecode>::decode(
+                    data,
+                ) {
                 return Ok(Self::PortCapabilityPath(decoded));
             }
-            if let Ok(decoded) = <RecvPacketCall as ::ethers::core::abi::AbiDecode>::decode(data) {
+            if let Ok(decoded)
+                = <RecvPacketCall as ::ethers::core::abi::AbiDecode>::decode(data) {
                 return Ok(Self::RecvPacket(decoded));
             }
-            if let Ok(decoded) =
-                <RegisterClientCall as ::ethers::core::abi::AbiDecode>::decode(data)
-            {
+            if let Ok(decoded)
+                = <RegisterClientCall as ::ethers::core::abi::AbiDecode>::decode(data) {
                 return Ok(Self::RegisterClient(decoded));
             }
-            if let Ok(decoded) = <SendPacketCall as ::ethers::core::abi::AbiDecode>::decode(data) {
+            if let Ok(decoded)
+                = <SendPacketCall as ::ethers::core::abi::AbiDecode>::decode(data) {
                 return Ok(Self::SendPacket(decoded));
             }
-            if let Ok(decoded) =
-                <SetExpectedTimePerBlockCall as ::ethers::core::abi::AbiDecode>::decode(data)
-            {
+            if let Ok(decoded)
+                = <SetExpectedTimePerBlockCall as ::ethers::core::abi::AbiDecode>::decode(
+                    data,
+                ) {
                 return Ok(Self::SetExpectedTimePerBlock(decoded));
             }
-            if let Ok(decoded) = <UpdateClientCall as ::ethers::core::abi::AbiDecode>::decode(data)
-            {
+            if let Ok(decoded)
+                = <UpdateClientCall as ::ethers::core::abi::AbiDecode>::decode(data) {
                 return Ok(Self::UpdateClient(decoded));
             }
-            if let Ok(decoded) =
-                <WriteAcknowledgementCall as ::ethers::core::abi::AbiDecode>::decode(data)
-            {
+            if let Ok(decoded)
+                = <WriteAcknowledgementCall as ::ethers::core::abi::AbiDecode>::decode(
+                    data,
+                ) {
                 return Ok(Self::WriteAcknowledgement(decoded));
             }
             Err(::ethers::core::abi::Error::InvalidData.into())
@@ -1364,34 +1435,63 @@ pub mod ibc_handler {
     impl ::ethers::core::abi::AbiEncode for IBCHandlerCalls {
         fn encode(self) -> Vec<u8> {
             match self {
-                Self::AcknowledgePacket(element) => ::ethers::core::abi::AbiEncode::encode(element),
-                Self::BindPort(element) => ::ethers::core::abi::AbiEncode::encode(element),
+                Self::AcknowledgePacket(element) => {
+                    ::ethers::core::abi::AbiEncode::encode(element)
+                }
+                Self::BindPort(element) => {
+                    ::ethers::core::abi::AbiEncode::encode(element)
+                }
                 Self::ChannelCapabilityPath(element) => {
                     ::ethers::core::abi::AbiEncode::encode(element)
                 }
                 Self::ChannelCloseConfirm(element) => {
                     ::ethers::core::abi::AbiEncode::encode(element)
                 }
-                Self::ChannelCloseInit(element) => ::ethers::core::abi::AbiEncode::encode(element),
-                Self::ChannelOpenAck(element) => ::ethers::core::abi::AbiEncode::encode(element),
+                Self::ChannelCloseInit(element) => {
+                    ::ethers::core::abi::AbiEncode::encode(element)
+                }
+                Self::ChannelOpenAck(element) => {
+                    ::ethers::core::abi::AbiEncode::encode(element)
+                }
                 Self::ChannelOpenConfirm(element) => {
                     ::ethers::core::abi::AbiEncode::encode(element)
                 }
-                Self::ChannelOpenInit(element) => ::ethers::core::abi::AbiEncode::encode(element),
-                Self::ChannelOpenTry(element) => ::ethers::core::abi::AbiEncode::encode(element),
-                Self::ConnectionOpenAck(element) => ::ethers::core::abi::AbiEncode::encode(element),
+                Self::ChannelOpenInit(element) => {
+                    ::ethers::core::abi::AbiEncode::encode(element)
+                }
+                Self::ChannelOpenTry(element) => {
+                    ::ethers::core::abi::AbiEncode::encode(element)
+                }
+                Self::ConnectionOpenAck(element) => {
+                    ::ethers::core::abi::AbiEncode::encode(element)
+                }
                 Self::ConnectionOpenConfirm(element) => {
                     ::ethers::core::abi::AbiEncode::encode(element)
                 }
                 Self::ConnectionOpenInit(element) => {
                     ::ethers::core::abi::AbiEncode::encode(element)
                 }
-                Self::ConnectionOpenTry(element) => ::ethers::core::abi::AbiEncode::encode(element),
-                Self::CreateClient(element) => ::ethers::core::abi::AbiEncode::encode(element),
-                Self::GetChannel(element) => ::ethers::core::abi::AbiEncode::encode(element),
-                Self::GetClientState(element) => ::ethers::core::abi::AbiEncode::encode(element),
-                Self::GetConnection(element) => ::ethers::core::abi::AbiEncode::encode(element),
-                Self::GetConsensusState(element) => ::ethers::core::abi::AbiEncode::encode(element),
+                Self::ConnectionOpenTry(element) => {
+                    ::ethers::core::abi::AbiEncode::encode(element)
+                }
+                Self::CreateClient(element) => {
+                    ::ethers::core::abi::AbiEncode::encode(element)
+                }
+                Self::GetChannel(element) => {
+                    ::ethers::core::abi::AbiEncode::encode(element)
+                }
+                Self::GetClientState(element) => {
+                    ::ethers::core::abi::AbiEncode::encode(element)
+                }
+                Self::GetConnection(element) => {
+                    ::ethers::core::abi::AbiEncode::encode(element)
+                }
+                Self::GetConnectionSerialize(element) => {
+                    ::ethers::core::abi::AbiEncode::encode(element)
+                }
+                Self::GetConsensusState(element) => {
+                    ::ethers::core::abi::AbiEncode::encode(element)
+                }
                 Self::GetExpectedTimePerBlock(element) => {
                     ::ethers::core::abi::AbiEncode::encode(element)
                 }
@@ -1404,17 +1504,27 @@ pub mod ibc_handler {
                 Self::GetNextSequenceSend(element) => {
                     ::ethers::core::abi::AbiEncode::encode(element)
                 }
-                Self::HasPacketReceipt(element) => ::ethers::core::abi::AbiEncode::encode(element),
+                Self::HasPacketReceipt(element) => {
+                    ::ethers::core::abi::AbiEncode::encode(element)
+                }
                 Self::PortCapabilityPath(element) => {
                     ::ethers::core::abi::AbiEncode::encode(element)
                 }
-                Self::RecvPacket(element) => ::ethers::core::abi::AbiEncode::encode(element),
-                Self::RegisterClient(element) => ::ethers::core::abi::AbiEncode::encode(element),
-                Self::SendPacket(element) => ::ethers::core::abi::AbiEncode::encode(element),
+                Self::RecvPacket(element) => {
+                    ::ethers::core::abi::AbiEncode::encode(element)
+                }
+                Self::RegisterClient(element) => {
+                    ::ethers::core::abi::AbiEncode::encode(element)
+                }
+                Self::SendPacket(element) => {
+                    ::ethers::core::abi::AbiEncode::encode(element)
+                }
                 Self::SetExpectedTimePerBlock(element) => {
                     ::ethers::core::abi::AbiEncode::encode(element)
                 }
-                Self::UpdateClient(element) => ::ethers::core::abi::AbiEncode::encode(element),
+                Self::UpdateClient(element) => {
+                    ::ethers::core::abi::AbiEncode::encode(element)
+                }
                 Self::WriteAcknowledgement(element) => {
                     ::ethers::core::abi::AbiEncode::encode(element)
                 }
@@ -1426,36 +1536,61 @@ pub mod ibc_handler {
             match self {
                 Self::AcknowledgePacket(element) => ::core::fmt::Display::fmt(element, f),
                 Self::BindPort(element) => ::core::fmt::Display::fmt(element, f),
-                Self::ChannelCapabilityPath(element) => ::core::fmt::Display::fmt(element, f),
-                Self::ChannelCloseConfirm(element) => ::core::fmt::Display::fmt(element, f),
+                Self::ChannelCapabilityPath(element) => {
+                    ::core::fmt::Display::fmt(element, f)
+                }
+                Self::ChannelCloseConfirm(element) => {
+                    ::core::fmt::Display::fmt(element, f)
+                }
                 Self::ChannelCloseInit(element) => ::core::fmt::Display::fmt(element, f),
                 Self::ChannelOpenAck(element) => ::core::fmt::Display::fmt(element, f),
-                Self::ChannelOpenConfirm(element) => ::core::fmt::Display::fmt(element, f),
+                Self::ChannelOpenConfirm(element) => {
+                    ::core::fmt::Display::fmt(element, f)
+                }
                 Self::ChannelOpenInit(element) => ::core::fmt::Display::fmt(element, f),
                 Self::ChannelOpenTry(element) => ::core::fmt::Display::fmt(element, f),
                 Self::ConnectionOpenAck(element) => ::core::fmt::Display::fmt(element, f),
-                Self::ConnectionOpenConfirm(element) => ::core::fmt::Display::fmt(element, f),
-                Self::ConnectionOpenInit(element) => ::core::fmt::Display::fmt(element, f),
+                Self::ConnectionOpenConfirm(element) => {
+                    ::core::fmt::Display::fmt(element, f)
+                }
+                Self::ConnectionOpenInit(element) => {
+                    ::core::fmt::Display::fmt(element, f)
+                }
                 Self::ConnectionOpenTry(element) => ::core::fmt::Display::fmt(element, f),
                 Self::CreateClient(element) => ::core::fmt::Display::fmt(element, f),
                 Self::GetChannel(element) => ::core::fmt::Display::fmt(element, f),
                 Self::GetClientState(element) => ::core::fmt::Display::fmt(element, f),
                 Self::GetConnection(element) => ::core::fmt::Display::fmt(element, f),
+                Self::GetConnectionSerialize(element) => {
+                    ::core::fmt::Display::fmt(element, f)
+                }
                 Self::GetConsensusState(element) => ::core::fmt::Display::fmt(element, f),
-                Self::GetExpectedTimePerBlock(element) => ::core::fmt::Display::fmt(element, f),
+                Self::GetExpectedTimePerBlock(element) => {
+                    ::core::fmt::Display::fmt(element, f)
+                }
                 Self::GetHashedPacketAcknowledgementCommitment(element) => {
                     ::core::fmt::Display::fmt(element, f)
                 }
-                Self::GetHashedPacketCommitment(element) => ::core::fmt::Display::fmt(element, f),
-                Self::GetNextSequenceSend(element) => ::core::fmt::Display::fmt(element, f),
+                Self::GetHashedPacketCommitment(element) => {
+                    ::core::fmt::Display::fmt(element, f)
+                }
+                Self::GetNextSequenceSend(element) => {
+                    ::core::fmt::Display::fmt(element, f)
+                }
                 Self::HasPacketReceipt(element) => ::core::fmt::Display::fmt(element, f),
-                Self::PortCapabilityPath(element) => ::core::fmt::Display::fmt(element, f),
+                Self::PortCapabilityPath(element) => {
+                    ::core::fmt::Display::fmt(element, f)
+                }
                 Self::RecvPacket(element) => ::core::fmt::Display::fmt(element, f),
                 Self::RegisterClient(element) => ::core::fmt::Display::fmt(element, f),
                 Self::SendPacket(element) => ::core::fmt::Display::fmt(element, f),
-                Self::SetExpectedTimePerBlock(element) => ::core::fmt::Display::fmt(element, f),
+                Self::SetExpectedTimePerBlock(element) => {
+                    ::core::fmt::Display::fmt(element, f)
+                }
                 Self::UpdateClient(element) => ::core::fmt::Display::fmt(element, f),
-                Self::WriteAcknowledgement(element) => ::core::fmt::Display::fmt(element, f),
+                Self::WriteAcknowledgement(element) => {
+                    ::core::fmt::Display::fmt(element, f)
+                }
             }
         }
     }
@@ -1544,6 +1679,11 @@ pub mod ibc_handler {
             Self::GetConnection(value)
         }
     }
+    impl ::core::convert::From<GetConnectionSerializeCall> for IBCHandlerCalls {
+        fn from(value: GetConnectionSerializeCall) -> Self {
+            Self::GetConnectionSerialize(value)
+        }
+    }
     impl ::core::convert::From<GetConsensusStateCall> for IBCHandlerCalls {
         fn from(value: GetConsensusStateCall) -> Self {
             Self::GetConsensusState(value)
@@ -1554,7 +1694,8 @@ pub mod ibc_handler {
             Self::GetExpectedTimePerBlock(value)
         }
     }
-    impl ::core::convert::From<GetHashedPacketAcknowledgementCommitmentCall> for IBCHandlerCalls {
+    impl ::core::convert::From<GetHashedPacketAcknowledgementCommitmentCall>
+    for IBCHandlerCalls {
         fn from(value: GetHashedPacketAcknowledgementCommitmentCall) -> Self {
             Self::GetHashedPacketAcknowledgementCommitment(value)
         }
@@ -1618,7 +1759,7 @@ pub mod ibc_handler {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     pub struct ChannelCapabilityPathReturn(pub ::ethers::core::types::Bytes);
     ///Container type for all return fields from the `channelOpenInit` function with signature `channelOpenInit((string,(uint8,uint8,(string,string),string[],string)))` and selector `0xdd3469fc`
@@ -1630,7 +1771,7 @@ pub mod ibc_handler {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     pub struct ChannelOpenInitReturn {
         pub channel_id: ::std::string::String,
@@ -1644,7 +1785,7 @@ pub mod ibc_handler {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     pub struct ChannelOpenTryReturn {
         pub channel_id: ::std::string::String,
@@ -1658,7 +1799,7 @@ pub mod ibc_handler {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     pub struct ConnectionOpenInitReturn {
         pub connection_id: ::std::string::String,
@@ -1672,7 +1813,7 @@ pub mod ibc_handler {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     pub struct ConnectionOpenTryReturn {
         pub connection_id: ::std::string::String,
@@ -1686,7 +1827,7 @@ pub mod ibc_handler {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     pub struct CreateClientReturn {
         pub client_id: ::std::string::String,
@@ -1700,7 +1841,7 @@ pub mod ibc_handler {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     pub struct GetChannelReturn(pub IbcCoreChannelV1ChannelData, pub bool);
     ///Container type for all return fields from the `getClientState` function with signature `getClientState(string)` and selector `0x76c81c42`
@@ -1712,7 +1853,7 @@ pub mod ibc_handler {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     pub struct GetClientStateReturn(pub ::ethers::core::types::Bytes, pub bool);
     ///Container type for all return fields from the `getConnection` function with signature `getConnection(string)` and selector `0x27711a69`
@@ -1724,9 +1865,21 @@ pub mod ibc_handler {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     pub struct GetConnectionReturn(pub IbcCoreConnectionV1ConnectionEndData, pub bool);
+    ///Container type for all return fields from the `getConnectionSerialize` function with signature `getConnectionSerialize(string)` and selector `0xc5c1e8fd`
+    #[derive(
+        Clone,
+        ::ethers::contract::EthAbiType,
+        ::ethers::contract::EthAbiCodec,
+        Default,
+        Debug,
+        PartialEq,
+        Eq,
+        Hash
+    )]
+    pub struct GetConnectionSerializeReturn(pub ::ethers::core::types::Bytes, pub bool);
     ///Container type for all return fields from the `getConsensusState` function with signature `getConsensusState(string,(uint64,uint64))` and selector `0x6cf44bf4`
     #[derive(
         Clone,
@@ -1736,7 +1889,7 @@ pub mod ibc_handler {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     pub struct GetConsensusStateReturn {
         pub consensus_state_bytes: ::ethers::core::types::Bytes,
@@ -1751,7 +1904,7 @@ pub mod ibc_handler {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     pub struct GetExpectedTimePerBlockReturn(pub u64);
     ///Container type for all return fields from the `getHashedPacketAcknowledgementCommitment` function with signature `getHashedPacketAcknowledgementCommitment(string,string,uint64)` and selector `0x5be164ee`
@@ -1763,7 +1916,7 @@ pub mod ibc_handler {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     pub struct GetHashedPacketAcknowledgementCommitmentReturn(pub [u8; 32], pub bool);
     ///Container type for all return fields from the `getHashedPacketCommitment` function with signature `getHashedPacketCommitment(string,string,uint64)` and selector `0x23402a33`
@@ -1775,7 +1928,7 @@ pub mod ibc_handler {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     pub struct GetHashedPacketCommitmentReturn(pub [u8; 32], pub bool);
     ///Container type for all return fields from the `getNextSequenceSend` function with signature `getNextSequenceSend(string,string)` and selector `0x582418b6`
@@ -1787,7 +1940,7 @@ pub mod ibc_handler {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     pub struct GetNextSequenceSendReturn(pub u64);
     ///Container type for all return fields from the `hasPacketReceipt` function with signature `hasPacketReceipt(string,string,uint64)` and selector `0x5a9afac3`
@@ -1799,7 +1952,7 @@ pub mod ibc_handler {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     pub struct HasPacketReceiptReturn(pub bool);
     ///Container type for all return fields from the `portCapabilityPath` function with signature `portCapabilityPath(string)` and selector `0x2570dae0`
@@ -1811,7 +1964,7 @@ pub mod ibc_handler {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     pub struct PortCapabilityPathReturn(pub ::ethers::core::types::Bytes);
     ///`MsgChannelCloseConfirm(string,string,bytes,(uint64,uint64))`
@@ -1823,7 +1976,7 @@ pub mod ibc_handler {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     pub struct MsgChannelCloseConfirm {
         pub port_id: ::std::string::String,
@@ -1840,7 +1993,7 @@ pub mod ibc_handler {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     pub struct MsgChannelCloseInit {
         pub port_id: ::std::string::String,
@@ -1855,7 +2008,7 @@ pub mod ibc_handler {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     pub struct MsgChannelOpenAck {
         pub port_id: ::std::string::String,
@@ -1874,7 +2027,7 @@ pub mod ibc_handler {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     pub struct MsgChannelOpenConfirm {
         pub port_id: ::std::string::String,
@@ -1891,7 +2044,7 @@ pub mod ibc_handler {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     pub struct MsgChannelOpenInit {
         pub port_id: ::std::string::String,
@@ -1906,7 +2059,7 @@ pub mod ibc_handler {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     pub struct MsgChannelOpenTry {
         pub port_id: ::std::string::String,
@@ -1924,7 +2077,7 @@ pub mod ibc_handler {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     pub struct MsgConnectionOpenAck {
         pub connection_id: ::std::string::String,
@@ -1946,7 +2099,7 @@ pub mod ibc_handler {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     pub struct MsgConnectionOpenConfirm {
         pub connection_id: ::std::string::String,
@@ -1962,7 +2115,7 @@ pub mod ibc_handler {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     pub struct MsgConnectionOpenInit {
         pub client_id: ::std::string::String,
@@ -1978,7 +2131,7 @@ pub mod ibc_handler {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     pub struct MsgConnectionOpenTry {
         pub counterparty: IbcCoreConnectionV1CounterpartyData,
@@ -2001,7 +2154,7 @@ pub mod ibc_handler {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     pub struct MsgCreateClient {
         pub client_type: ::std::string::String,
@@ -2017,7 +2170,7 @@ pub mod ibc_handler {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     pub struct MsgPacketAcknowledgement {
         pub packet: IbcCoreChannelV1PacketData,
@@ -2034,7 +2187,7 @@ pub mod ibc_handler {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     pub struct MsgPacketRecv {
         pub packet: IbcCoreChannelV1PacketData,
@@ -2050,7 +2203,7 @@ pub mod ibc_handler {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     pub struct MsgUpdateClient {
         pub client_id: ::std::string::String,
@@ -2065,7 +2218,7 @@ pub mod ibc_handler {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     pub struct IbcCoreChannelV1ChannelData {
         pub state: u8,
@@ -2083,7 +2236,7 @@ pub mod ibc_handler {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     pub struct IbcCoreChannelV1CounterpartyData {
         pub port_id: ::std::string::String,
@@ -2098,7 +2251,7 @@ pub mod ibc_handler {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     pub struct IbcCoreChannelV1PacketData {
         pub sequence: u64,
@@ -2119,7 +2272,7 @@ pub mod ibc_handler {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     pub struct IbcCoreCommitmentV1MerklePrefixData {
         pub key_prefix: ::ethers::core::types::Bytes,
@@ -2133,7 +2286,7 @@ pub mod ibc_handler {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     pub struct IbcCoreConnectionV1ConnectionEndData {
         pub client_id: ::std::string::String,
@@ -2151,7 +2304,7 @@ pub mod ibc_handler {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     pub struct IbcCoreConnectionV1CounterpartyData {
         pub client_id: ::std::string::String,
@@ -2167,7 +2320,7 @@ pub mod ibc_handler {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     pub struct IbcCoreConnectionV1VersionData {
         pub identifier: ::std::string::String,

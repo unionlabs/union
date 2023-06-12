@@ -29,8 +29,13 @@ use contracts::{
     },
     shared_types::IbcCoreClientV1HeightData,
 };
-use ethers::{abi::AbiDecode, prelude::decode_logs, providers::Middleware, types::Address};
-use futures::StreamExt;
+use ethers::{
+    abi::AbiDecode,
+    prelude::decode_logs,
+    providers::Middleware,
+    types::{Address, H256},
+};
+use futures::{FutureExt, StreamExt};
 use prost::Message;
 use protos::{
     cosmos::{
@@ -101,15 +106,18 @@ const WASM_CLIENT_ID: &str = "08-wasm-0";
 #[derive(Debug, Parser)]
 pub struct Args {
     // nix run .#evm-devnet-deploy -L
-    // OwnableIBCHandler => address
+    /// OwnableIBCHandler => address
     #[arg(long = "ibc-handler")]
     pub ibc_handler_address: Address,
-    // CometblsClient => address
+    /// CometblsClient => address
     #[arg(long = "cometbls")]
     pub cometbls_client_address: Address,
-    // ICS20TransferBank => address
+    /// ICS20TransferBank => address
     #[arg(long = "ics20")]
     pub ics20_module_address: Address,
+
+    #[arg(long = "code-id")]
+    pub wasm_code_id: H256,
 }
 
 #[tokio::main]
@@ -168,7 +176,28 @@ async fn main() {
 }
 
 async fn do_main(args: Args) {
-    let cometbls = Cometbls::new(args.cometbls_client_address, args.ibc_handler_address).await;
+    // println!(
+    //     "{}",
+    //     wasm::v1::query_client::QueryClient::connect("tcp://0.0.0.0:9090")
+    //         .await
+    //         .unwrap()
+    //         .code_ids(QueryCodeIdsRequest { pagination: None })
+    //         .await
+    //         .unwrap()
+    //         .into_inner()
+    //         .code_ids
+    //         .first()
+    //         .unwrap()
+    // );
+
+    // panic!();
+
+    let cometbls = Cometbls::new(
+        args.cometbls_client_address,
+        args.ibc_handler_address,
+        args.wasm_code_id,
+    )
+    .await;
 
     // let tx = cometbls.provider.get_block_with_txs(261).await.unwrap();
 
@@ -176,7 +205,7 @@ async fn do_main(args: Args) {
 
     // panic!();
 
-    let ethereum = Ethereum::new(get_wallet()).await;
+    let ethereum = Ethereum::new(get_wallet(), args.wasm_code_id).await;
 
     poignee_de_main(cometbls, ethereum).await;
 }
@@ -230,6 +259,7 @@ async fn poignee_de_main<Chain1, Chain2>(cometbls: Chain1, ethereum: Chain2)
 where
     Chain1: LightClient + Connect<Chain2>,
     Chain2: LightClient + Connect<Chain1>,
+    <Chain1 as LightClient>::ClientState: std::fmt::Debug,
 {
     // let bytes = hex!("345656e1e0827561fa3ec35d3bc40493fd66ea4f52b68d38e915ecb403df2f6e");
 
@@ -310,31 +340,32 @@ where
         })
         .await;
 
+    let cometbls_latest_height = cometbls.query_latest_height().await;
+
+    cometbls
+        .generate_counterparty_update_client_message(cometbls_latest_height)
+        .then(|update| ethereum.update_client(ethereum_client_id.clone(), update))
+        .await;
+
     tracing::info!(
         chain_id = cometbls_id,
         connection_id = cometbls_connection_id
     );
 
-    let cometbls_client_state_proof = cometbls
-        .client_state_proof(
-            cometbls_client_id.clone(),
-            cometbls_latest_height.increment(),
-        )
-        .await;
+    // generate state proofs
 
+    let cometbls_client_state_proof = cometbls
+        .client_state_proof(cometbls_client_id.clone(), cometbls_latest_height)
+        .await;
     let cometbls_consensus_state_proof = cometbls
         .consensus_state_proof(
             cometbls_client_id.clone(),
             ethereum_latest_height,
-            cometbls_latest_height.increment(),
+            cometbls_latest_height,
         )
         .await;
-
     let cometbls_connection_state_proof = cometbls
-        .connection_state_proof(
-            cometbls_connection_id.clone(),
-            cometbls_latest_height.increment(),
-        )
+        .connection_state_proof(cometbls_connection_id.clone(), cometbls_latest_height)
         .await;
 
     let ethereum_connection_id = ethereum
@@ -349,12 +380,12 @@ where
             },
             delay_period: 6,
             client_state: cometbls_client_state_proof.state,
-            counterparty_versions: vec![],
+            counterparty_versions: cometbls_connection_state_proof.state.versions,
             proof_height: cometbls_consensus_state_proof.proof_height,
             proof_init: cometbls_connection_state_proof.proof,
             proof_client: cometbls_client_state_proof.proof,
             proof_consensus: cometbls_consensus_state_proof.proof,
-            consensus_height: cometbls_consensus_state_proof.proof_height,
+            consensus_height: ethereum_latest_height,
         })
         .await;
 
@@ -673,9 +704,7 @@ where
                                 //     .latest_height
                                 //     .revision_number,
                                 revision_number: 1,
-                                revision_height: cometbls_client_state
-                                    .latest_height
-                                    .revision_height,
+                                revision_height: todo!(),
                             }),
                             proof_specs: [
                                 ProofSpec {

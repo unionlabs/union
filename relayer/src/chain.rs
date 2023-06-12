@@ -6,6 +6,8 @@ pub mod cosmos;
 pub mod evm;
 
 pub trait LightClient {
+    // type SourceChain;
+
     /// The client state type that this light client stores about the counterparty.
     type ClientState;
 
@@ -54,13 +56,10 @@ pub trait Connect<C>: LightClient
 where
     C: LightClient,
 {
-    /// The client state type used in MsgConnectionOpen{Try,Ack}.
-    type HandshakeClientState;
-
-    fn generate_counterparty_handshake_client_state(
-        &self,
-        self_state: C::ClientState,
-    ) -> impl Future<Output = Self::HandshakeClientState> + '_;
+    // fn generate_counterparty_handshake_client_state(
+    //     &self,
+    //     self_state: C::ClientState,
+    // ) -> impl Future<Output = C::ClientState> + '_;
 
     // CONNECTION HANDSHAKE
 
@@ -71,7 +70,7 @@ where
 
     fn connection_open_try(
         &self,
-        _: msgs::connection::MsgConnectionOpenTry<Self::HandshakeClientState>,
+        _: msgs::connection::MsgConnectionOpenTry<C::ClientState>,
     ) -> impl Future<Output = String> + '_;
 
     fn connection_open_ack(
@@ -126,7 +125,14 @@ where
 
     fn generate_counterparty_update_client_message(
         &self,
+        trusted_height: msgs::Height,
     ) -> impl Future<Output = C::UpdateClientMessage> + '_;
+}
+
+trait ChainSource {
+    fn chain_id(&self) -> impl Future<Output = String> + '_;
+
+    fn query_latest_block(&self) -> impl Future<Output = msgs::Height>;
 }
 
 // pub trait NativeEncoding {}
@@ -179,126 +185,126 @@ pub mod msgs {
         pub hash: Vec<u8>,
     }
 
-    pub mod ics23 {
-        #[derive(Debug, Clone)]
-        pub struct ProofSpec {
-            pub leaf_spec: LeafOp,
-            pub inner_spec: InnerSpec,
-            // REVIEW(benluelo): Can these be < 0?
-            pub max_depth: i32,
-            pub min_depth: i32,
-        }
+    // pub mod ics23 {
+    //     #[derive(Debug, Clone)]
+    //     pub struct ProofSpec {
+    //         pub leaf_spec: LeafOp,
+    //         pub inner_spec: InnerSpec,
+    //         // REVIEW(benluelo): Can these be < 0?
+    //         pub max_depth: i32,
+    //         pub min_depth: i32,
+    //     }
 
-        #[derive(Debug, Clone)]
-        pub struct LeafOp {
-            pub hash: HashOp,
-            pub prehash_key: HashOp,
-            pub prehash_value: HashOp,
-            pub length: LengthOp,
-            pub prefix: Vec<u8>,
-        }
+    //     #[derive(Debug, Clone)]
+    //     pub struct LeafOp {
+    //         pub hash: HashOp,
+    //         pub prehash_key: HashOp,
+    //         pub prehash_value: HashOp,
+    //         pub length: LengthOp,
+    //         pub prefix: Vec<u8>,
+    //     }
 
-        #[derive(Debug, Clone)]
-        pub struct InnerOp {
-            pub hash: HashOp,
-            pub prefix: Vec<u8>,
-            pub suffix: Vec<u8>,
-        }
+    //     #[derive(Debug, Clone)]
+    //     pub struct InnerOp {
+    //         pub hash: HashOp,
+    //         pub prefix: Vec<u8>,
+    //         pub suffix: Vec<u8>,
+    //     }
 
-        #[derive(Debug, Clone)]
-        pub struct InnerSpec {
-            pub child_order: Vec<i32>,
-            pub child_size: i32,
-            pub min_prefix_length: i32,
-            pub max_prefix_length: i32,
-            pub empty_child: Vec<u8>,
-            pub hash: HashOp,
-        }
+    //     #[derive(Debug, Clone)]
+    //     pub struct InnerSpec {
+    //         pub child_order: Vec<i32>,
+    //         pub child_size: i32,
+    //         pub min_prefix_length: i32,
+    //         pub max_prefix_length: i32,
+    //         pub empty_child: Vec<u8>,
+    //         pub hash: HashOp,
+    //     }
 
-        #[derive(Debug, Clone)]
-        pub enum HashOp {
-            NoHash = 0,
-            Sha256 = 1,
-            Sha512 = 2,
-            Keccak = 3,
-            Ripemd160 = 4,
-            Bitcoin = 5,
-            Sha512256 = 6,
-        }
+    //     #[derive(Debug, Clone)]
+    //     pub enum HashOp {
+    //         NoHash = 0,
+    //         Sha256 = 1,
+    //         Sha512 = 2,
+    //         Keccak = 3,
+    //         Ripemd160 = 4,
+    //         Bitcoin = 5,
+    //         Sha512256 = 6,
+    //     }
 
-        #[derive(Debug, Clone)]
-        pub enum LengthOp {
-            NoPrefix = 0,
-            VarProto = 1,
-            VarRlp = 2,
-            Fixed32Big = 3,
-            Fixed32Little = 4,
-            Fixed64Big = 5,
-            Fixed64Little = 6,
-            Require32Bytes = 7,
-            Require64Bytes = 8,
-        }
+    //     #[derive(Debug, Clone)]
+    //     pub enum LengthOp {
+    //         NoPrefix = 0,
+    //         VarProto = 1,
+    //         VarRlp = 2,
+    //         Fixed32Big = 3,
+    //         Fixed32Little = 4,
+    //         Fixed64Big = 5,
+    //         Fixed64Little = 6,
+    //         Require32Bytes = 7,
+    //         Require64Bytes = 8,
+    //     }
 
-        impl ProofSpec {
-            pub fn default_tendermint_proof_specs() -> [ProofSpec; 2] {
-                [
-                    ProofSpec {
-                        leaf_spec: LeafOp {
-                            hash: HashOp::Sha256,
-                            prehash_key: HashOp::NoHash,
-                            prehash_value: HashOp::Sha256,
-                            length: LengthOp::VarProto,
-                            prefix: [0].to_vec(),
-                        },
-                        inner_spec: InnerSpec {
-                            child_order: vec![0, 1],
-                            child_size: 33,
-                            min_prefix_length: 4,
-                            max_prefix_length: 12,
-                            empty_child: vec![],
-                            hash: HashOp::Sha256,
-                        },
-                        max_depth: 0,
-                        min_depth: 0,
-                    },
-                    ProofSpec {
-                        leaf_spec: LeafOp {
-                            hash: HashOp::Sha256,
-                            prehash_key: HashOp::NoHash,
-                            prehash_value: HashOp::Sha256,
-                            length: LengthOp::VarProto,
-                            prefix: [0].to_vec(),
-                        },
-                        inner_spec: InnerSpec {
-                            child_order: vec![0, 1],
-                            child_size: 32,
-                            min_prefix_length: 1,
-                            max_prefix_length: 1,
-                            empty_child: vec![],
-                            hash: HashOp::Sha256,
-                        },
-                        max_depth: 0,
-                        min_depth: 0,
-                    },
-                ]
-            }
-        }
-    }
+    //     impl ProofSpec {
+    //         pub fn default_tendermint_proof_specs() -> [ProofSpec; 2] {
+    //             [
+    //                 ProofSpec {
+    //                     leaf_spec: LeafOp {
+    //                         hash: HashOp::Sha256,
+    //                         prehash_key: HashOp::NoHash,
+    //                         prehash_value: HashOp::Sha256,
+    //                         length: LengthOp::VarProto,
+    //                         prefix: [0].to_vec(),
+    //                     },
+    //                     inner_spec: InnerSpec {
+    //                         child_order: vec![0, 1],
+    //                         child_size: 33,
+    //                         min_prefix_length: 4,
+    //                         max_prefix_length: 12,
+    //                         empty_child: vec![],
+    //                         hash: HashOp::Sha256,
+    //                     },
+    //                     max_depth: 0,
+    //                     min_depth: 0,
+    //                 },
+    //                 ProofSpec {
+    //                     leaf_spec: LeafOp {
+    //                         hash: HashOp::Sha256,
+    //                         prehash_key: HashOp::NoHash,
+    //                         prehash_value: HashOp::Sha256,
+    //                         length: LengthOp::VarProto,
+    //                         prefix: [0].to_vec(),
+    //                     },
+    //                     inner_spec: InnerSpec {
+    //                         child_order: vec![0, 1],
+    //                         child_size: 32,
+    //                         min_prefix_length: 1,
+    //                         max_prefix_length: 1,
+    //                         empty_child: vec![],
+    //                         hash: HashOp::Sha256,
+    //                     },
+    //                     max_depth: 0,
+    //                     min_depth: 0,
+    //                 },
+    //             ]
+    //         }
+    //     }
+    // }
 
-    pub mod tendermint {
-        #[derive(Debug, Clone)]
-        pub struct ClientState {
-            pub chain_id: String,
-            pub trust_level: super::Fraction,
-            pub trusting_period: super::Duration,
-            pub unbonding_period: super::Duration,
-            pub max_clock_drift: super::Duration,
-            pub frozen_height: super::Height,
-            pub latest_height: super::Height,
-            pub proof_specs: Vec<super::ics23::ProofSpec>,
-            pub upgrade_path: Vec<String>,
-        }
-    }
+    // pub mod tendermint {
+    //     #[derive(Debug, Clone)]
+    //     pub struct ClientState {
+    //         pub chain_id: String,
+    //         pub trust_level: super::Fraction,
+    //         pub trusting_period: super::Duration,
+    //         pub unbonding_period: super::Duration,
+    //         pub max_clock_drift: super::Duration,
+    //         pub frozen_height: super::Height,
+    //         pub latest_height: super::Height,
+    //         pub proof_specs: Vec<super::ics23::ProofSpec>,
+    //         pub upgrade_path: Vec<String>,
+    //     }
+    // }
 
     pub mod cometbls {
         #[derive(Debug, Clone)]
@@ -309,33 +315,75 @@ pub mod msgs {
             pub unbonding_period: super::Duration,
             pub max_clock_drift: super::Duration,
             pub frozen_height: super::Height,
-            pub latest_height: super::Height,
         }
 
         #[derive(Debug, Clone)]
         pub struct ConsensusState {
-            pub timestamp: super::Timestamp,
             pub root: super::MerkleRoot,
             pub next_validators_hash: Vec<u8>,
         }
     }
 
     pub mod ethereum {
+        // , IntoProto
         #[derive(Debug, Clone)]
+        // #[proto(::protos::ibc::lightclients::ethereum::v1::ClientState)]
         pub struct ClientState {
             pub genesis_validators_root: Vec<u8>,
             pub min_sync_committee_participants: u64,
             pub genesis_time: u64,
+            // #[proto(required, try_into)]
             pub fork_parameters: ForkParameters,
             pub seconds_per_slot: u64,
             pub slots_per_epoch: u64,
             pub epochs_per_sync_committee_period: u64,
+            // #[proto(required, into)]
             pub trust_level: super::Fraction,
             pub trusting_period: u64,
             pub latest_slot: u64,
+            // #[proto(required, into)]
             pub frozen_height: super::Height,
             pub counterparty_commitment_slot: u64,
         }
+
+        // impl From<ethereum::ConsensusState> for ethereum_v1::ConsensusState {
+        //     fn from(value: ethereum::ConsensusState) -> Self {
+        //         Self {
+        //             slot: value.slot,
+        //             storage_root: value.storage_root,
+        //             timestamp: value.timestamp,
+        //             current_sync_committee: value.current_sync_committee,
+        //             next_sync_committee: value.next_sync_committee,
+        //         }
+        //     }
+        // }
+
+        // impl TryFrom<ethereum_v1::ClientState> for ethereum::ClientState {
+        //     type Error = MissingField;
+
+        //     fn try_from(value: ethereum_v1::ClientState) -> Result<Self, Self::Error> {
+        //         Ok(Self {
+        //             genesis_validators_root: value.genesis_validators_root,
+        //             min_sync_committee_participants: value.min_sync_committee_participants,
+        //             genesis_time: value.genesis_time,
+        //             fork_parameters: value
+        //                 .fork_parameters
+        //                 .ok_or(MissingField("fork_parameters"))?
+        //                 .try_into()?,
+        //             seconds_per_slot: value.seconds_per_slot,
+        //             slots_per_epoch: value.slots_per_epoch,
+        //             epochs_per_sync_committee_period: value.epochs_per_sync_committee_period,
+        //             trust_level: value.trust_level.ok_or(MissingField("trust_level"))?.into(),
+        //             trusting_period: value.trusting_period,
+        //             latest_slot: value.latest_slot,
+        //             frozen_height: value
+        //                 .frozen_height
+        //                 .ok_or(MissingField("frozen_height"))?
+        //                 .into(),
+        //             counterparty_commitment_slot: value.counterparty_commitment_slot,
+        //         })
+        //     }
+        // }
 
         #[derive(Debug, Clone)]
         pub struct ForkParameters {
@@ -363,12 +411,109 @@ pub mod msgs {
             pub next_sync_committee: Vec<u8>,
         }
 
-        // pub struct Header {
-        //     pub trusted_sync_committee: TrustedSyncCommittee,
-        //     pub consensus_update: LightClientUpdate,
-        //     pub account_update: AccountUpdate,
-        //     pub timestamp: u64,
-        // }
+        pub struct Header {
+            pub trusted_sync_committee: TrustedSyncCommittee,
+            pub consensus_update: LightClientUpdate,
+            pub account_update: AccountUpdate,
+            pub timestamp: u64,
+        }
+
+        #[derive(Clone, PartialEq)]
+        pub struct AccountUpdate {
+            pub proofs: Vec<Proof>,
+        }
+
+        #[derive(Clone, PartialEq)]
+        pub struct Proof {
+            // #[cfg_attr(feature = "std", serde(with = "::serde_utils::base64"))]
+            pub key: Vec<u8>,
+            // #[cfg_attr(feature = "std", serde(with = "::serde_utils::base64"))]
+            pub value: Vec<u8>,
+            // #[serde(with = "::serde_utils::inner_base64")]
+            pub proof: Vec<Vec<u8>>,
+        }
+
+        #[derive(Clone, PartialEq)]
+        pub struct SyncAggregate {
+            // #[cfg_attr(feature = "std", serde(with = "::serde_utils::base64"))]
+            pub sync_committee_bits: Vec<u8>,
+            // #[cfg_attr(feature = "std", serde(with = "::serde_utils::base64"))]
+            pub sync_committee_signature: Vec<u8>,
+        }
+
+        pub struct TrustedSyncCommittee {
+            pub trusted_height: super::Height,
+            pub sync_committee: SyncCommittee,
+            pub is_next: bool,
+        }
+
+        #[derive(Default)]
+        pub struct SyncCommittee {
+            pub pubkeys: Vec<Vec<u8>>,
+            pub aggregate_pubkey: Vec<u8>,
+        }
+
+        pub struct LightClientUpdate {
+            pub attested_header: LightClientHeader,
+            pub next_sync_committee: SyncCommittee,
+            // TODO(benluelo): vec<bytes32>
+            pub next_sync_committee_branch: Vec<Vec<u8>>,
+            pub finalized_header: LightClientHeader,
+            pub finality_branch: Vec<Vec<u8>>,
+            pub sync_aggregate: SyncAggregate,
+            pub signature_slot: u64,
+        }
+
+        #[derive(Clone, PartialEq)]
+        pub struct LightClientHeader {
+            pub beacon: BeaconBlockHeader,
+            pub execution: ExecutionPayloadHeader,
+            // #[serde(with = "::serde_utils::inner_base64")]
+            pub execution_branch: Vec<Vec<u8>>,
+        }
+
+        #[derive(Clone, PartialEq)]
+        pub struct ExecutionPayloadHeader {
+            // #[cfg_attr(feature = "std", serde(with = "::serde_utils::base64"))]
+            pub parent_hash: Vec<u8>,
+            // #[cfg_attr(feature = "std", serde(with = "::serde_utils::base64"))]
+            pub fee_recipient: Vec<u8>,
+            // #[cfg_attr(feature = "std", serde(with = "::serde_utils::base64"))]
+            pub state_root: Vec<u8>,
+            // #[cfg_attr(feature = "std", serde(with = "::serde_utils::base64"))]
+            pub receipts_root: Vec<u8>,
+            // #[cfg_attr(feature = "std", serde(with = "::serde_utils::base64"))]
+            pub logs_bloom: Vec<u8>,
+            // #[cfg_attr(feature = "std", serde(with = "::serde_utils::base64"))]
+            pub prev_randao: Vec<u8>,
+            pub block_number: u64,
+            pub gas_limit: u64,
+            pub gas_used: u64,
+            pub timestamp: u64,
+            // #[cfg_attr(feature = "std", serde(with = "::serde_utils::base64"))]
+            pub extra_data: Vec<u8>,
+            /// TODO(aeryz): U256
+            // #[cfg_attr(feature = "std", serde(with = "::serde_utils::base64"))]
+            pub base_fee_per_gas: Vec<u8>,
+            // #[cfg_attr(feature = "std", serde(with = "::serde_utils::base64"))]
+            pub block_hash: Vec<u8>,
+            // #[cfg_attr(feature = "std", serde(with = "::serde_utils::base64"))]
+            pub transactions_root: Vec<u8>,
+            // #[cfg_attr(feature = "std", serde(with = "::serde_utils::base64"))]
+            pub withdrawals_root: Vec<u8>,
+        }
+
+        #[derive(Clone, PartialEq)]
+        pub struct BeaconBlockHeader {
+            pub slot: u64,
+            pub proposer_index: u64,
+            // #[cfg_attr(feature = "std", serde(with = "::serde_utils::base64"))]
+            pub parent_root: Vec<u8>,
+            // #[cfg_attr(feature = "std", serde(with = "::serde_utils::base64"))]
+            pub state_root: Vec<u8>,
+            // #[cfg_attr(feature = "std", serde(with = "::serde_utils::base64"))]
+            pub body_root: Vec<u8>,
+        }
     }
 
     pub mod wasm {
@@ -386,15 +531,13 @@ pub mod msgs {
         }
 
         #[derive(Debug, Clone)]
-        pub struct Header {
-            pub data: Vec<u8>,
+        pub struct Header<Data> {
+            pub data: Data,
             pub height: super::Height,
         }
     }
 
     pub mod connection {
-        use std::collections::HashSet;
-
         use super::{channel::Order, UnknownEnumVariant};
 
         #[derive(Debug, Clone)]
@@ -408,8 +551,7 @@ pub mod msgs {
         pub struct Version {
             // TODO(benluelo): "The identifier field specifies a unique version identifier. A value of "1" specifies IBC 1.0.0."
             pub identifier: String,
-            // REVIEW(benluelo): Use bitflags?
-            pub features: HashSet<Order>,
+            pub features: Vec<Order>,
         }
 
         #[derive(Debug, Clone)]
@@ -460,6 +602,12 @@ pub mod msgs {
             pub delay_period: u64,
         }
 
+        pub struct MsgConnectionOpenInitResponse {
+            pub connection_id: String,
+            pub inclusion_height: super::Height,
+        }
+
+        #[derive(Debug)]
         pub struct MsgConnectionOpenTry<ClientState> {
             pub client_id: String,
             pub client_state: ClientState,
@@ -543,8 +691,6 @@ pub mod msgs {
         #[derive(Debug, Clone)]
         pub struct MsgChannelOpenTry {
             pub port_id: String,
-            #[deprecated]
-            pub previous_channel_id: String,
             pub channel: Channel,
             pub counterparty_version: String,
             pub proof_init: Vec<u8>,
@@ -600,16 +746,6 @@ pub mod msgs {
     pub struct StateProof<State> {
         /// client state associated with the request identifier
         pub state: State,
-        /// merkle proof of existence
-        pub proof: Vec<u8>,
-        /// height at which the proof was retrieved
-        pub proof_height: Height,
-    }
-
-    #[derive(Debug, Clone)]
-    pub struct ConnectionProof {
-        /// connection associated with the request identifier
-        pub connection: ConnectionEnd,
         /// merkle proof of existence
         pub proof: Vec<u8>,
         /// height at which the proof was retrieved

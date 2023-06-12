@@ -1,31 +1,19 @@
 use bip32::XPrv;
+use ethers::types::H256;
 use futures::{Future, FutureExt};
 use k256::{ecdsa::Signature, schnorr::signature::Signer};
 use prost::Message;
 use protos::{
-    cosmos::{ics23, staking, tx},
+    cosmos::{ics23::v1 as ics23_v1, staking, tx},
     google,
     ibc::{
         core::{
-            channel::{
-                self,
-                v1::{
-                    MsgChannelOpenAck, MsgChannelOpenConfirm, MsgChannelOpenInit,
-                    MsgChannelOpenTry, MsgRecvPacket,
-                },
-            },
-            client, commitment,
-            connection::{
-                self,
-                v1::{
-                    MsgConnectionOpenAck, MsgConnectionOpenConfirm, MsgConnectionOpenInit,
-                    MsgConnectionOpenTry,
-                },
-            },
+            channel::v1 as channel_v1, client::v1 as client_v1, commitment::v1 as commitment_v1,
+            connection::v1 as connection_v1,
         },
-        lightclients::{self, wasm},
+        lightclients::wasm::v1 as wasm_v1,
     },
-    union::ibc::lightclients::{cometbls, ethereum},
+    union::ibc::lightclients::{cometbls::v1 as cometbls_v1, ethereum::v1 as ethereum_v1},
 };
 use strum::ParseError;
 use tendermint_rpc::{Client, WebSocketClient};
@@ -33,21 +21,44 @@ use tokio::task::JoinHandle;
 
 use crate::{
     account_info_of_signer,
+    chain::{
+        evm::Cometbls,
+        msgs::{
+            channel::{
+                Channel, Counterparty as ChannelCounterparty, MsgChannelOpenAck,
+                MsgChannelOpenConfirm, MsgChannelOpenInit, MsgChannelOpenTry, MsgRecvPacket,
+                Packet, State as ChannelState,
+            },
+            cometbls,
+            connection::{
+                Counterparty as ConnectionCounterparty, MsgConnectionOpenAck,
+                MsgConnectionOpenConfirm, MsgConnectionOpenInit, MsgConnectionOpenTry,
+                State as ConnectionState, Version,
+            },
+            ethereum, wasm, ConnectionEnd, Duration, Fraction, Height, MerklePrefix, MerkleRoot,
+            StateProof, Timestamp, UnknownEnumVariant,
+        },
+        Connect, LightClient,
+    },
     cosmos_to_eth::CHAIN_ID,
     eth_to_cosmos::{broadcast_tx_commit, signer_from_pk, signer_from_sk},
 };
 
-use super::{evm::Cometbls, Connect, LightClient};
+use super::msgs::ethereum::{
+    AccountUpdate, BeaconBlockHeader, ExecutionPayloadHeader, LightClientHeader, LightClientUpdate,
+    Proof, SyncAggregate, SyncCommittee, TrustedSyncCommittee,
+};
 
 /// The 08-wasm light client running on the union chain.
 pub struct Ethereum {
     signer: XPrv,
     tm_client: WebSocketClient,
     driver_handle: JoinHandle<Result<(), tendermint_rpc::Error>>,
+    wasm_code_id: H256,
 }
 
 impl Ethereum {
-    pub async fn new(signer: XPrv) -> Self {
+    pub async fn new(signer: XPrv, wasm_code_id: H256) -> Self {
         let (tm_client, driver) =
             WebSocketClient::builder("ws://127.0.0.1:26657/websocket".parse().unwrap())
                 .compat_mode(tendermint_rpc::client::CompatMode::V0_37)
@@ -61,6 +72,7 @@ impl Ethereum {
             signer,
             tm_client,
             driver_handle,
+            wasm_code_id,
         }
     }
 
@@ -138,9 +150,9 @@ impl Ethereum {
 }
 
 impl LightClient for Ethereum {
-    type ClientState = super::msgs::wasm::ClientState<super::msgs::ethereum::ClientState>;
-    type ConsensusState = super::msgs::wasm::ConsensusState<super::msgs::ethereum::ConsensusState>;
-    type UpdateClientMessage = ();
+    type ClientState = Any<wasm::ClientState<ethereum::ClientState>>;
+    type ConsensusState = Any<wasm::ConsensusState<ethereum::ConsensusState>>;
+    type UpdateClientMessage = wasm::Header<ethereum::Header>;
 
     fn chain_id(&self) -> impl Future<Output = String> + '_ {
         async move {
@@ -162,12 +174,12 @@ impl LightClient for Ethereum {
         async move {
             let msg = google::protobuf::Any {
                 type_url: "/ibc.core.client.v1.MsgCreateClient".into(),
-                value: client::v1::MsgCreateClient {
+                value: client_v1::MsgCreateClient {
                     signer: signer_from_pk(
                         &self.signer.public_key().public_key().to_bytes().to_vec(),
                     ),
-                    client_state: Some(Any(client_state).into_proto()),
-                    consensus_state: Some(Any(consensus_state).into_proto()),
+                    client_state: Some(client_state.into_proto()),
+                    consensus_state: Some(consensus_state.into_proto()),
                 }
                 .encode_to_vec(),
             };
@@ -192,23 +204,34 @@ impl LightClient for Ethereum {
         client_id: String,
         msg: Self::UpdateClientMessage,
     ) -> impl futures::Future<Output = ()> + '_ {
-        async move { todo!() }
+        async move {
+            self.broadcast_tx_commit([google::protobuf::Any {
+                type_url: "/ibc.core.client.v1.MsgCreateClient".into(),
+                value: client_v1::MsgUpdateClient {
+                    client_id,
+                    client_message: Some(Any(msg).into_proto()),
+                    signer: signer_from_sk(&self.signer),
+                }
+                .encode_to_vec(),
+            }])
+            .await;
+        }
     }
 
     fn consensus_state_proof(
         &self,
         client_id: String,
-        counterparty_height: super::msgs::Height,
-        self_height: super::msgs::Height,
-    ) -> impl Future<Output = super::msgs::StateProof<Self::ConsensusState>> + '_ {
+        counterparty_height: Height,
+        self_height: Height,
+    ) -> impl Future<Output = StateProof<Self::ConsensusState>> + '_ {
         async move { todo!() }
     }
 
     fn client_state_proof(
         &self,
         client_id: String,
-        self_height: super::msgs::Height,
-    ) -> impl Future<Output = super::msgs::StateProof<Self::ClientState>> + '_ {
+        self_height: Height,
+    ) -> impl Future<Output = StateProof<Self::ClientState>> + '_ {
         async move {
             let path = format!("clients/{client_id}/clientState");
 
@@ -224,22 +247,22 @@ impl LightClient for Ethereum {
                 .await
                 .unwrap();
 
-            super::msgs::StateProof {
-                state: wasm::v1::ClientState::decode(&*query_result.value)
+            StateProof {
+                state: google::protobuf::Any::decode(&*query_result.value)
                     .unwrap()
                     .try_into()
                     .unwrap(),
-                proof: commitment::v1::MerkleProof {
+                proof: commitment_v1::MerkleProof {
                     proofs: query_result
                         .proof
                         .unwrap()
                         .ops
                         .into_iter()
-                        .map(|op| ics23::v1::CommitmentProof::decode(op.data.as_slice()).unwrap())
+                        .map(|op| ics23_v1::CommitmentProof::decode(op.data.as_slice()).unwrap())
                         .collect::<Vec<_>>(),
                 }
                 .encode_to_vec(),
-                proof_height: super::msgs::Height {
+                proof_height: Height {
                     // TODO(benluelo): Figure out revision number
                     revision_number: 0,
                     revision_height: query_result.height.value(),
@@ -251,12 +274,12 @@ impl LightClient for Ethereum {
     fn connection_state_proof(
         &self,
         connection_id: String,
-        self_height: super::msgs::Height,
-    ) -> impl Future<Output = super::msgs::StateProof<super::msgs::ConnectionEnd>> + '_ {
+        self_height: Height,
+    ) -> impl Future<Output = StateProof<ConnectionEnd>> + '_ {
         async move { todo!() }
     }
 
-    fn query_latest_height(&self) -> impl Future<Output = super::msgs::Height> + '_ {
+    fn query_latest_height(&self) -> impl Future<Output = Height> + '_ {
         async move {
             let height = self
                 .tm_client
@@ -268,8 +291,11 @@ impl LightClient for Ethereum {
                 .height
                 .value();
 
-            super::msgs::Height {
-                revision_number: 0,
+            let chain_id = self.chain_id().await;
+
+            Height {
+                revision_number: chain_id.split('-').last().unwrap().parse().unwrap(),
+                // revision_number: 0,
                 revision_height: height,
             }
         }
@@ -277,33 +303,29 @@ impl LightClient for Ethereum {
 }
 
 impl Connect<Cometbls> for Ethereum {
-    type HandshakeClientState =
-        super::msgs::wasm::ClientState<Any<<Cometbls as LightClient>::ClientState>>;
-
-    fn generate_counterparty_handshake_client_state(
-        &self,
-        counterparty_state: <Cometbls as LightClient>::ClientState,
-    ) -> impl Future<Output = Self::HandshakeClientState> + '_ {
-        async move {
-            super::msgs::wasm::ClientState {
-                data: Any(super::msgs::cometbls::ClientState {
-                    chain_id: todo!(),
-                    trust_level: todo!(),
-                    trusting_period: todo!(),
-                    unbonding_period: todo!(),
-                    max_clock_drift: todo!(),
-                    frozen_height: todo!(),
-                    latest_height: todo!(),
-                }),
-                code_id: todo!(),
-                latest_height: todo!(),
-            }
-        }
-    }
+    // fn generate_counterparty_handshake_client_state(
+    //     &self,
+    //     counterparty_state: <Cometbls as LightClient>::ClientState,
+    // ) -> impl Future<Output = Self::HandshakeClientState> + '_ {
+    //     async move {
+    //         super::msgs::wasm::ClientState {
+    //             data: Any(super::msgs::cometbls::ClientState {
+    //                 chain_id: todo!(),
+    //                 trust_level: todo!(),
+    //                 trusting_period: todo!(),
+    //                 unbonding_period: todo!(),
+    //                 max_clock_drift: todo!(),
+    //                 frozen_height: todo!(),
+    //             }),
+    //             code_id: todo!(),
+    //             latest_height: todo!(),
+    //         }
+    //     }
+    // }
 
     fn connection_open_init(
         &self,
-        msg: super::msgs::connection::MsgConnectionOpenInit,
+        msg: MsgConnectionOpenInit,
     ) -> impl futures::Future<Output = String> + '_ {
         self.broadcast_tx_commit([google::protobuf::Any {
             type_url: "/ibc.core.connection.v1.MsgConnectionOpenInit".to_string(),
@@ -326,11 +348,13 @@ impl Connect<Cometbls> for Ethereum {
 
     fn connection_open_try(
         &self,
-        msg: super::msgs::connection::MsgConnectionOpenTry<Self::HandshakeClientState>,
+        msg: MsgConnectionOpenTry<<Cometbls as LightClient>::ClientState>,
     ) -> impl futures::Future<Output = String> + '_ {
         self.broadcast_tx_commit([google::protobuf::Any {
             type_url: "/ibc.core.connection.v1.MsgConnectionOpenTry".to_string(),
-            value: msg.into_proto_with_signer(&self.signer).encode_to_vec(),
+            value: dbg!(msg)
+                .into_proto_with_signer(&self.signer)
+                .encode_to_vec(),
         }])
         .map(|response| {
             response
@@ -349,7 +373,7 @@ impl Connect<Cometbls> for Ethereum {
 
     fn connection_open_ack(
         &self,
-        msg: super::msgs::connection::MsgConnectionOpenAck<<Cometbls as LightClient>::ClientState>,
+        msg: MsgConnectionOpenAck<<Cometbls as LightClient>::ClientState>,
     ) -> impl futures::Future<Output = ()> + '_ {
         async move {
             self.broadcast_tx_commit([google::protobuf::Any {
@@ -362,7 +386,7 @@ impl Connect<Cometbls> for Ethereum {
 
     fn connection_open_confirm(
         &self,
-        msg: super::msgs::connection::MsgConnectionOpenConfirm,
+        msg: MsgConnectionOpenConfirm,
     ) -> impl futures::Future<Output = ()> + '_ {
         async move {
             self.broadcast_tx_commit([google::protobuf::Any {
@@ -375,7 +399,7 @@ impl Connect<Cometbls> for Ethereum {
 
     fn channel_open_init(
         &self,
-        msg: super::msgs::channel::MsgChannelOpenInit,
+        msg: MsgChannelOpenInit,
     ) -> impl futures::Future<Output = String> + '_ {
         async move {
             self.broadcast_tx_commit([google::protobuf::Any {
@@ -396,10 +420,7 @@ impl Connect<Cometbls> for Ethereum {
         }
     }
 
-    fn channel_open_try(
-        &self,
-        msg: super::msgs::channel::MsgChannelOpenTry,
-    ) -> impl futures::Future<Output = ()> + '_ {
+    fn channel_open_try(&self, msg: MsgChannelOpenTry) -> impl futures::Future<Output = ()> + '_ {
         async move {
             self.broadcast_tx_commit([google::protobuf::Any {
                 type_url: "/ibc.channel.v1.MsgChannelOpenTry".to_string(),
@@ -409,10 +430,7 @@ impl Connect<Cometbls> for Ethereum {
         }
     }
 
-    fn channel_open_ack(
-        &self,
-        msg: super::msgs::channel::MsgChannelOpenAck,
-    ) -> impl futures::Future<Output = ()> + '_ {
+    fn channel_open_ack(&self, msg: MsgChannelOpenAck) -> impl futures::Future<Output = ()> + '_ {
         async move {
             self.broadcast_tx_commit([google::protobuf::Any {
                 type_url: "/ibc.channel.v1.MsgchannelOpenAck".to_string(),
@@ -424,7 +442,7 @@ impl Connect<Cometbls> for Ethereum {
 
     fn channel_open_confirm(
         &self,
-        msg: super::msgs::channel::MsgChannelOpenConfirm,
+        msg: MsgChannelOpenConfirm,
     ) -> impl futures::Future<Output = ()> + '_ {
         async move {
             self.broadcast_tx_commit([google::protobuf::Any {
@@ -435,16 +453,13 @@ impl Connect<Cometbls> for Ethereum {
         }
     }
 
-    fn recv_packet(
-        &self,
-        msg: super::msgs::channel::MsgRecvPacket,
-    ) -> impl futures::Future<Output = ()> + '_ {
+    fn recv_packet(&self, msg: MsgRecvPacket) -> impl futures::Future<Output = ()> + '_ {
         async move { todo!() }
     }
 
     fn generate_counterparty_client_state(
         &self,
-        height: super::msgs::Height,
+        height: Height,
     ) -> impl Future<Output = <Cometbls as LightClient>::ClientState> + '_ {
         async move {
             let params =
@@ -483,47 +498,56 @@ impl Connect<Cometbls> for Ethereum {
                     .unwrap(),
             );
 
-            super::msgs::cometbls::ClientState {
-                // TODO(benluelo): Pass this in somehow
-                chain_id: CHAIN_ID.into(),
-                // https://github.com/cometbft/cometbft/blob/da0e55604b075bac9e1d5866cb2e62eaae386dd9/light/verifier.go#L16
-                trust_level: super::msgs::Fraction {
-                    numerator: 1,
-                    denominator: 3,
+            Any(wasm::ClientState {
+                data: cometbls::ClientState {
+                    // TODO(benluelo): Pass this in somehow
+                    chain_id: CHAIN_ID.into(),
+                    // https://github.com/cometbft/cometbft/blob/da0e55604b075bac9e1d5866cb2e62eaae386dd9/light/verifier.go#L16
+                    trust_level: Fraction {
+                        numerator: 1,
+                        denominator: 3,
+                    },
+                    // https://github.com/cosmos/relayer/blob/23d1e5c864b35d133cad6a0ef06970a2b1e1b03f/relayer/chains/cosmos/provider.go#L177
+                    trusting_period: Duration {
+                        seconds: (unbonding_period * 85 / 100).as_secs().try_into().unwrap(),
+                        nanos: (unbonding_period * 85 / 100)
+                            .subsec_nanos()
+                            .try_into()
+                            .unwrap(),
+                    },
+                    unbonding_period: Duration {
+                        seconds: unbonding_period.as_secs().try_into().unwrap(),
+                        nanos: unbonding_period.subsec_nanos().try_into().unwrap(),
+                    },
+                    // https://github.com/cosmos/relayer/blob/23d1e5c864b35d133cad6a0ef06970a2b1e1b03f/relayer/chains/cosmos/provider.go#L177
+                    max_clock_drift: Duration {
+                        seconds: 60 * 10,
+                        nanos: 0,
+                    },
+                    frozen_height: Height {
+                        revision_number: 0,
+                        revision_height: 0,
+                    },
                 },
-                // https://github.com/cosmos/relayer/blob/23d1e5c864b35d133cad6a0ef06970a2b1e1b03f/relayer/chains/cosmos/provider.go#L177
-                trusting_period: super::msgs::Duration {
-                    seconds: (unbonding_period * 85 / 100).as_secs().try_into().unwrap(),
-                    nanos: (unbonding_period * 85 / 100)
-                        .subsec_nanos()
-                        .try_into()
+                code_id: self.wasm_code_id.to_fixed_bytes().to_vec(),
+                latest_height: Height {
+                    revision_number: self
+                        .chain_id()
+                        .await
+                        .split('-')
+                        .last()
+                        .unwrap()
+                        .parse()
                         .unwrap(),
-                },
-                unbonding_period: super::msgs::Duration {
-                    seconds: unbonding_period.as_secs().try_into().unwrap(),
-                    nanos: unbonding_period.subsec_nanos().try_into().unwrap(),
-                },
-                // https://github.com/cosmos/relayer/blob/23d1e5c864b35d133cad6a0ef06970a2b1e1b03f/relayer/chains/cosmos/provider.go#L177
-                max_clock_drift: super::msgs::Duration {
-                    seconds: 60 * 10,
-                    nanos: 0,
-                },
-                frozen_height: super::msgs::Height {
-                    revision_number: 0,
-                    revision_height: 0,
-                },
-                latest_height: super::msgs::Height {
-                    // extract this to a constant
-                    revision_number: 0,
                     revision_height: height.value(),
                 },
-            }
+            })
         }
     }
 
     fn generate_counterparty_consensus_state(
         &self,
-        height: super::msgs::Height,
+        height: Height,
     ) -> impl Future<Output = <Cometbls as LightClient>::ConsensusState> + '_ {
         async move {
             let commit = self
@@ -532,39 +556,40 @@ impl Connect<Cometbls> for Ethereum {
                 .await
                 .unwrap();
 
-            super::msgs::cometbls::ConsensusState {
-                timestamp: {
-                    let ts = commit.signed_header.header.time;
-                    super::msgs::Timestamp {
-                        seconds: ts.unix_timestamp(),
-                        nanos: (ts.unix_timestamp_nanos()
-                            - (ts.unix_timestamp() as i128 * 1_000_000_000_i128))
-                            .try_into()
-                            .unwrap(),
-                    }
+            Any(wasm::ConsensusState {
+                data: cometbls::ConsensusState {
+                    root: MerkleRoot {
+                        hash: commit.signed_header.header.app_hash.as_bytes().to_vec(),
+                    },
+                    next_validators_hash: commit
+                        .signed_header
+                        .header
+                        .next_validators_hash
+                        .as_bytes()
+                        .to_vec(),
                 },
-                root: super::msgs::MerkleRoot {
-                    hash: commit.signed_header.header.app_hash.as_bytes().to_vec(),
-                },
-                next_validators_hash: commit
+                timestamp: commit
                     .signed_header
                     .header
-                    .next_validators_hash
-                    .as_bytes()
-                    .to_vec(),
-            }
+                    .time
+                    .unix_timestamp()
+                    .try_into()
+                    .unwrap(),
+            })
         }
     }
 
     fn generate_counterparty_update_client_message(
         &self,
+        trusted_height: Height,
     ) -> impl Future<Output = <Cometbls as LightClient>::UpdateClientMessage> + '_ {
         async move { todo!() }
     }
 }
 
 /// Wrapper type to indicate that a type is to be serialized as an Any.
-pub struct Any<T>(T);
+#[derive(Debug, Clone)]
+pub struct Any<T>(pub T);
 
 impl<T> From<Any<T>> for google::protobuf::Any
 where
@@ -587,27 +612,38 @@ where
     type Proto = google::protobuf::Any;
 }
 
-pub enum TryFromAnyError {
+#[derive(Debug)]
+pub enum TryFromAnyError<T: TryFromProto>
+where
+    <T as TryFrom<T::Proto>>::Error: std::fmt::Debug,
+{
     IncorrectTypeUrl {
         found: String,
         expected: &'static str,
     },
-
     Prost(prost::DecodeError),
+    TryFromProto(<T as TryFrom<T::Proto>>::Error),
 }
 
-impl<T: TypeUrl + Default> TryFrom<google::protobuf::Any> for Any<T> {
-    type Error = TryFromAnyError;
+impl<T> TryFrom<google::protobuf::Any> for Any<T>
+where
+    T: TryFromProto,
+    T::Proto: TypeUrl + Default,
+    <T as TryFrom<T::Proto>>::Error: std::fmt::Debug,
+{
+    type Error = TryFromAnyError<T>;
 
     fn try_from(value: google::protobuf::Any) -> Result<Self, Self::Error> {
-        if value.type_url != T::TYPE_URL {
+        if value.type_url != T::Proto::TYPE_URL {
             Err(TryFromAnyError::IncorrectTypeUrl {
                 found: value.type_url,
-                expected: T::TYPE_URL,
+                expected: T::Proto::TYPE_URL,
             })
         } else {
-            T::decode(&*value.value)
-                .map_err(TryFromAnyError::Prost)
+            T::Proto::decode(&*value.value)
+                .map_err(TryFromAnyError::Prost)?
+                .try_into()
+                .map_err(TryFromAnyError::TryFromProto)
                 .map(Any)
         }
     }
@@ -622,6 +658,40 @@ pub trait IntoProto: Into<Self::Proto> {
     fn into_proto(self) -> Self::Proto {
         self.into()
     }
+}
+
+macro_rules! into_proto {
+    ($(
+        [$type_url:literal]
+        $from:ty => $to:ty;
+    )+) => {
+        $(
+            impl IntoProto for $from {
+                type Proto = $to;
+            }
+
+            impl TypeUrl for $to {
+                const TYPE_URL: &'static str = $type_url;
+            }
+        )+
+    };
+}
+
+into_proto! {
+    ["/ibc.core.connection.v1.ConnectionEnd"]
+    ConnectionEnd => connection_v1::ConnectionEnd;
+
+    ["/union.ibc.lightclients.cometbls.v1.ConsensusState"]
+    cometbls::ConsensusState => cometbls_v1::ConsensusState;
+    ["/union.ibc.lightclients.cometbls.v1.ClientState"]
+    cometbls::ClientState => cometbls_v1::ClientState;
+
+    ["/union.ibc.lightclients.ethereum.v1.ClientState"]
+    ethereum::ClientState => ethereum_v1::ClientState;
+    ["/union.ibc.lightclients.ethereum.v1.ConsensusState"]
+    ethereum::ConsensusState => ethereum_v1::ConsensusState;
+    ["/union.ibc.lightclients.ethereum.v1.Header"]
+    ethereum::Header => ethereum_v1::Header;
 }
 
 // impl<T> IntoProto for T
@@ -666,21 +736,13 @@ trait MsgIntoProto {
     fn into_proto_with_signer(self, signer: &XPrv) -> Self::Proto;
 }
 
-impl TypeUrl for wasm::v1::ClientState {
+impl TypeUrl for wasm_v1::ClientState {
     const TYPE_URL: &'static str = "/ibc.lightclients.wasm.v1.ClientState";
 }
 
-impl TypeUrl for ethereum::v1::ClientState {
-    const TYPE_URL: &'static str = "/ibc.lightclients.ethereum.v1.ClientState";
-}
-
-impl TypeUrl for ethereum::v1::ConsensusState {
-    const TYPE_URL: &'static str = "/ibc.lightclients.ethereum.v1.ConsensusState";
-}
-
-impl<Data: IntoProto> From<super::msgs::wasm::ClientState<Data>> for wasm::v1::ClientState {
-    fn from(val: super::msgs::wasm::ClientState<Data>) -> Self {
-        wasm::v1::ClientState {
+impl<Data: IntoProto> From<wasm::ClientState<Data>> for wasm_v1::ClientState {
+    fn from(val: wasm::ClientState<Data>) -> Self {
+        wasm_v1::ClientState {
             data: val.data.into_proto().encode_to_vec(),
             code_id: val.code_id,
             latest_height: Some(val.latest_height.into()),
@@ -688,32 +750,49 @@ impl<Data: IntoProto> From<super::msgs::wasm::ClientState<Data>> for wasm::v1::C
     }
 }
 
-impl<Data: IntoProto> From<super::msgs::wasm::ConsensusState<Data>> for wasm::v1::ConsensusState {
-    fn from(value: super::msgs::wasm::ConsensusState<Data>) -> Self {
-        wasm::v1::ConsensusState {
+impl<Data: IntoProto> From<wasm::ConsensusState<Data>> for wasm_v1::ConsensusState {
+    fn from(value: wasm::ConsensusState<Data>) -> Self {
+        wasm_v1::ConsensusState {
             data: value.data.into_proto().encode_to_vec(),
             timestamp: value.timestamp,
         }
     }
 }
 
-impl<Data: IntoProto> IntoProto for super::msgs::wasm::ClientState<Data> {
-    type Proto = wasm::v1::ClientState;
+impl<Data: IntoProto> IntoProto for wasm::ClientState<Data> {
+    type Proto = wasm_v1::ClientState;
 }
 
-impl TypeUrl for wasm::v1::ConsensusState {
+impl<Data: IntoProto> IntoProto for wasm::Header<Data> {
+    type Proto = wasm_v1::Header;
+}
+
+impl<Data: IntoProto> From<wasm::Header<Data>> for wasm_v1::Header {
+    fn from(value: wasm::Header<Data>) -> Self {
+        Self {
+            data: value.data.into_proto().encode_to_vec(),
+            height: Some(value.height.into()),
+        }
+    }
+}
+
+impl TypeUrl for wasm_v1::ConsensusState {
     const TYPE_URL: &'static str = "/ibc.lightclients.wasm.v1.ConsensusState";
 }
 
-impl<Data: IntoProto> IntoProto for super::msgs::wasm::ConsensusState<Data> {
-    type Proto = wasm::v1::ConsensusState;
+impl TypeUrl for wasm_v1::Header {
+    const TYPE_URL: &'static str = "/ibc.lightclients.wasm.v1.Header";
 }
 
-impl MsgIntoProto for super::msgs::connection::MsgConnectionOpenInit {
-    type Proto = MsgConnectionOpenInit;
+impl<Data: IntoProto> IntoProto for wasm::ConsensusState<Data> {
+    type Proto = wasm_v1::ConsensusState;
+}
+
+impl MsgIntoProto for MsgConnectionOpenInit {
+    type Proto = connection_v1::MsgConnectionOpenInit;
 
     fn into_proto_with_signer(self, signer: &XPrv) -> Self::Proto {
-        MsgConnectionOpenInit {
+        connection_v1::MsgConnectionOpenInit {
             client_id: self.client_id,
             counterparty: Some(self.counterparty.into()),
             version: Some(self.version.into()),
@@ -723,19 +802,19 @@ impl MsgIntoProto for super::msgs::connection::MsgConnectionOpenInit {
     }
 }
 
-impl<ClientState> MsgIntoProto for super::msgs::connection::MsgConnectionOpenTry<ClientState>
+impl<ClientState> MsgIntoProto for MsgConnectionOpenTry<ClientState>
 where
-    ClientState: IntoProto,
-    <ClientState as IntoProto>::Proto: TypeUrl,
+    ClientState: IntoProto<Proto = google::protobuf::Any>,
+    // <ClientState as IntoProto>::Proto: ,
 {
-    type Proto = MsgConnectionOpenTry;
+    type Proto = connection_v1::MsgConnectionOpenTry;
 
     fn into_proto_with_signer(self, signer: &XPrv) -> Self::Proto {
         #[allow(deprecated)]
-        MsgConnectionOpenTry {
+        connection_v1::MsgConnectionOpenTry {
             client_id: self.client_id,
             previous_connection_id: "".to_string(),
-            client_state: Some(Any(self.client_state).into()),
+            client_state: Some(self.client_state.into_proto()),
             counterparty: Some(self.counterparty.into()),
             delay_period: self.delay_period,
             counterparty_versions: self
@@ -754,19 +833,19 @@ where
     }
 }
 
-impl<ClientState> MsgIntoProto for super::msgs::connection::MsgConnectionOpenAck<ClientState>
+impl<ClientState> MsgIntoProto for MsgConnectionOpenAck<ClientState>
 where
-    ClientState: IntoProto,
-    <ClientState as IntoProto>::Proto: TypeUrl,
+    ClientState: IntoProto<Proto = google::protobuf::Any>,
+    // <ClientState as IntoProto>::Proto: TypeUrl,
 {
-    type Proto = MsgConnectionOpenAck;
+    type Proto = connection_v1::MsgConnectionOpenAck;
 
     fn into_proto_with_signer(self, signer: &XPrv) -> Self::Proto {
-        MsgConnectionOpenAck {
+        connection_v1::MsgConnectionOpenAck {
             connection_id: self.connection_id,
             counterparty_connection_id: self.counterparty_connection_id,
             version: Some(self.version.into()),
-            client_state: Some(Any(self.client_state).into()),
+            client_state: Some(self.client_state.into_proto()),
             proof_height: Some(self.proof_height.into()),
             proof_try: self.proof_try,
             proof_client: self.proof_client,
@@ -778,11 +857,11 @@ where
     }
 }
 
-impl MsgIntoProto for super::msgs::connection::MsgConnectionOpenConfirm {
-    type Proto = MsgConnectionOpenConfirm;
+impl MsgIntoProto for MsgConnectionOpenConfirm {
+    type Proto = connection_v1::MsgConnectionOpenConfirm;
 
     fn into_proto_with_signer(self, signer: &XPrv) -> Self::Proto {
-        MsgConnectionOpenConfirm {
+        connection_v1::MsgConnectionOpenConfirm {
             connection_id: self.connection_id,
             proof_ack: self.proof_ack,
             proof_height: Some(self.proof_height.into()),
@@ -791,11 +870,11 @@ impl MsgIntoProto for super::msgs::connection::MsgConnectionOpenConfirm {
     }
 }
 
-impl MsgIntoProto for super::msgs::channel::MsgChannelOpenInit {
-    type Proto = MsgChannelOpenInit;
+impl MsgIntoProto for MsgChannelOpenInit {
+    type Proto = channel_v1::MsgChannelOpenInit;
 
     fn into_proto_with_signer(self, signer: &XPrv) -> Self::Proto {
-        MsgChannelOpenInit {
+        channel_v1::MsgChannelOpenInit {
             port_id: self.port_id,
             channel: Some(self.channel.into()),
             signer: signer_from_sk(signer),
@@ -803,12 +882,12 @@ impl MsgIntoProto for super::msgs::channel::MsgChannelOpenInit {
     }
 }
 
-impl MsgIntoProto for super::msgs::channel::MsgChannelOpenTry {
-    type Proto = MsgChannelOpenTry;
+impl MsgIntoProto for MsgChannelOpenTry {
+    type Proto = channel_v1::MsgChannelOpenTry;
 
     fn into_proto_with_signer(self, signer: &XPrv) -> Self::Proto {
         #[allow(deprecated)]
-        MsgChannelOpenTry {
+        channel_v1::MsgChannelOpenTry {
             port_id: self.port_id,
             channel: Some(self.channel.into()),
             counterparty_version: self.counterparty_version,
@@ -820,11 +899,11 @@ impl MsgIntoProto for super::msgs::channel::MsgChannelOpenTry {
     }
 }
 
-impl MsgIntoProto for super::msgs::channel::MsgChannelOpenAck {
-    type Proto = MsgChannelOpenAck;
+impl MsgIntoProto for MsgChannelOpenAck {
+    type Proto = channel_v1::MsgChannelOpenAck;
 
     fn into_proto_with_signer(self, signer: &XPrv) -> Self::Proto {
-        MsgChannelOpenAck {
+        channel_v1::MsgChannelOpenAck {
             port_id: self.port_id,
             channel_id: self.channel_id,
             counterparty_version: self.counterparty_version,
@@ -836,11 +915,11 @@ impl MsgIntoProto for super::msgs::channel::MsgChannelOpenAck {
     }
 }
 
-impl MsgIntoProto for super::msgs::channel::MsgChannelOpenConfirm {
-    type Proto = MsgChannelOpenConfirm;
+impl MsgIntoProto for MsgChannelOpenConfirm {
+    type Proto = channel_v1::MsgChannelOpenConfirm;
 
     fn into_proto_with_signer(self, signer: &XPrv) -> Self::Proto {
-        MsgChannelOpenConfirm {
+        channel_v1::MsgChannelOpenConfirm {
             port_id: self.port_id,
             channel_id: self.channel_id,
             proof_ack: self.proof_ack,
@@ -850,8 +929,8 @@ impl MsgIntoProto for super::msgs::channel::MsgChannelOpenConfirm {
     }
 }
 
-impl From<client::v1::Height> for super::msgs::Height {
-    fn from(proto: client::v1::Height) -> Self {
+impl From<client_v1::Height> for Height {
+    fn from(proto: client_v1::Height) -> Self {
         Self {
             revision_number: proto.revision_number,
             revision_height: proto.revision_height,
@@ -859,9 +938,9 @@ impl From<client::v1::Height> for super::msgs::Height {
     }
 }
 
-impl From<super::msgs::Height> for client::v1::Height {
-    fn from(value: super::msgs::Height) -> client::v1::Height {
-        client::v1::Height {
+impl From<Height> for client_v1::Height {
+    fn from(value: Height) -> client_v1::Height {
+        client_v1::Height {
             revision_number: value.revision_number,
             revision_height: value.revision_height,
         }
@@ -872,8 +951,8 @@ impl From<super::msgs::Height> for client::v1::Height {
 #[derive(Debug)]
 pub struct MissingField(&'static str);
 
-impl From<super::msgs::connection::Counterparty> for connection::v1::Counterparty {
-    fn from(value: super::msgs::connection::Counterparty) -> Self {
+impl From<ConnectionCounterparty> for connection_v1::Counterparty {
+    fn from(value: ConnectionCounterparty) -> Self {
         Self {
             client_id: value.client_id,
             connection_id: value.connection_id,
@@ -882,10 +961,10 @@ impl From<super::msgs::connection::Counterparty> for connection::v1::Counterpart
     }
 }
 
-impl TryFrom<connection::v1::Counterparty> for super::msgs::connection::Counterparty {
+impl TryFrom<connection_v1::Counterparty> for ConnectionCounterparty {
     type Error = MissingField;
 
-    fn try_from(value: connection::v1::Counterparty) -> Result<Self, Self::Error> {
+    fn try_from(value: connection_v1::Counterparty) -> Result<Self, Self::Error> {
         Ok(Self {
             client_id: value.client_id,
             connection_id: value.connection_id,
@@ -894,10 +973,10 @@ impl TryFrom<connection::v1::Counterparty> for super::msgs::connection::Counterp
     }
 }
 
-impl TryFrom<connection::v1::Version> for super::msgs::connection::Version {
+impl TryFrom<connection_v1::Version> for Version {
     type Error = strum::ParseError;
 
-    fn try_from(proto: connection::v1::Version) -> Result<Self, Self::Error> {
+    fn try_from(proto: connection_v1::Version) -> Result<Self, Self::Error> {
         Ok(Self {
             identifier: proto.identifier,
             features: proto
@@ -909,8 +988,8 @@ impl TryFrom<connection::v1::Version> for super::msgs::connection::Version {
     }
 }
 
-impl From<super::msgs::connection::Version> for connection::v1::Version {
-    fn from(value: super::msgs::connection::Version) -> Self {
+impl From<Version> for connection_v1::Version {
+    fn from(value: Version) -> Self {
         Self {
             identifier: value.identifier,
             features: value
@@ -922,27 +1001,27 @@ impl From<super::msgs::connection::Version> for connection::v1::Version {
     }
 }
 
-impl From<commitment::v1::MerklePrefix> for super::msgs::MerklePrefix {
-    fn from(proto: commitment::v1::MerklePrefix) -> Self {
+impl From<commitment_v1::MerklePrefix> for MerklePrefix {
+    fn from(proto: commitment_v1::MerklePrefix) -> Self {
         Self {
             key_prefix: proto.key_prefix,
         }
     }
 }
 
-impl From<super::msgs::MerklePrefix> for commitment::v1::MerklePrefix {
-    fn from(value: super::msgs::MerklePrefix) -> Self {
+impl From<MerklePrefix> for commitment_v1::MerklePrefix {
+    fn from(value: MerklePrefix) -> Self {
         Self {
             key_prefix: value.key_prefix,
         }
     }
 }
 
-impl MsgIntoProto for super::msgs::channel::MsgRecvPacket {
-    type Proto = MsgRecvPacket;
+impl MsgIntoProto for MsgRecvPacket {
+    type Proto = channel_v1::MsgRecvPacket;
 
     fn into_proto_with_signer(self, signer: &XPrv) -> Self::Proto {
-        MsgRecvPacket {
+        channel_v1::MsgRecvPacket {
             packet: Some(self.packet.into()),
             proof_commitment: self.proof_commitment,
             proof_height: Some(self.proof_height.into()),
@@ -951,8 +1030,8 @@ impl MsgIntoProto for super::msgs::channel::MsgRecvPacket {
     }
 }
 
-impl From<super::msgs::channel::Packet> for channel::v1::Packet {
-    fn from(value: super::msgs::channel::Packet) -> Self {
+impl From<Packet> for channel_v1::Packet {
+    fn from(value: Packet) -> Self {
         Self {
             sequence: value.sequence,
             source_port: value.source_port,
@@ -966,11 +1045,11 @@ impl From<super::msgs::channel::Packet> for channel::v1::Packet {
     }
 }
 
-impl TryFrom<channel::v1::Packet> for super::msgs::channel::Packet {
+impl TryFrom<channel_v1::Packet> for Packet {
     type Error = MissingField;
 
-    fn try_from(proto: channel::v1::Packet) -> Result<Self, Self::Error> {
-        Ok(super::msgs::channel::Packet {
+    fn try_from(proto: channel_v1::Packet) -> Result<Self, Self::Error> {
+        Ok(Packet {
             sequence: proto.sequence,
             source_port: proto.source_port,
             source_channel: proto.source_channel,
@@ -986,8 +1065,8 @@ impl TryFrom<channel::v1::Packet> for super::msgs::channel::Packet {
     }
 }
 
-impl From<super::msgs::channel::Channel> for channel::v1::Channel {
-    fn from(value: super::msgs::channel::Channel) -> Self {
+impl From<Channel> for channel_v1::Channel {
+    fn from(value: Channel) -> Self {
         Self {
             state: value.state as i32,
             ordering: value.ordering as i32,
@@ -998,11 +1077,11 @@ impl From<super::msgs::channel::Channel> for channel::v1::Channel {
     }
 }
 
-impl TryFrom<channel::v1::Channel> for super::msgs::channel::Channel {
+impl TryFrom<channel_v1::Channel> for Channel {
     type Error = MissingField;
 
-    fn try_from(proto: channel::v1::Channel) -> Result<Self, Self::Error> {
-        Ok(super::msgs::channel::Channel {
+    fn try_from(proto: channel_v1::Channel) -> Result<Self, Self::Error> {
+        Ok(Channel {
             // state: super::msgs::connection::State::from_i32(proto.state),
             // ordering: super::msgs::channel::Order::from_i32(proto.ordering),
             state: todo!(),
@@ -1017,8 +1096,8 @@ impl TryFrom<channel::v1::Channel> for super::msgs::channel::Channel {
     }
 }
 
-impl From<super::msgs::ethereum::ClientState> for ethereum::v1::ClientState {
-    fn from(value: super::msgs::ethereum::ClientState) -> Self {
+impl From<ethereum::ClientState> for ethereum_v1::ClientState {
+    fn from(value: ethereum::ClientState) -> Self {
         Self {
             genesis_validators_root: value.genesis_validators_root,
             min_sync_committee_participants: value.min_sync_committee_participants,
@@ -1036,8 +1115,8 @@ impl From<super::msgs::ethereum::ClientState> for ethereum::v1::ClientState {
     }
 }
 
-impl From<super::msgs::ethereum::ConsensusState> for ethereum::v1::ConsensusState {
-    fn from(value: super::msgs::ethereum::ConsensusState) -> Self {
+impl From<ethereum::ConsensusState> for ethereum_v1::ConsensusState {
+    fn from(value: ethereum::ConsensusState) -> Self {
         Self {
             slot: value.slot,
             storage_root: value.storage_root,
@@ -1048,10 +1127,10 @@ impl From<super::msgs::ethereum::ConsensusState> for ethereum::v1::ConsensusStat
     }
 }
 
-impl TryFrom<ethereum::v1::ClientState> for super::msgs::ethereum::ClientState {
+impl TryFrom<ethereum_v1::ClientState> for ethereum::ClientState {
     type Error = MissingField;
 
-    fn try_from(value: ethereum::v1::ClientState) -> Result<Self, Self::Error> {
+    fn try_from(value: ethereum_v1::ClientState) -> Result<Self, Self::Error> {
         Ok(Self {
             genesis_validators_root: value.genesis_validators_root,
             min_sync_committee_participants: value.min_sync_committee_participants,
@@ -1075,20 +1154,12 @@ impl TryFrom<ethereum::v1::ClientState> for super::msgs::ethereum::ClientState {
     }
 }
 
-impl TryFromProto for super::msgs::ethereum::ClientState {
-    type Proto = ethereum::v1::ClientState;
+impl TryFromProto for ethereum::ClientState {
+    type Proto = ethereum_v1::ClientState;
 }
 
-impl IntoProto for super::msgs::ethereum::ClientState {
-    type Proto = ethereum::v1::ClientState;
-}
-
-impl IntoProto for super::msgs::ethereum::ConsensusState {
-    type Proto = ethereum::v1::ConsensusState;
-}
-
-impl From<super::msgs::Fraction> for ethereum::v1::Fraction {
-    fn from(value: super::msgs::Fraction) -> Self {
+impl From<Fraction> for ethereum_v1::Fraction {
+    fn from(value: Fraction) -> Self {
         Self {
             numerator: value.numerator,
             denominator: value.denominator,
@@ -1096,8 +1167,8 @@ impl From<super::msgs::Fraction> for ethereum::v1::Fraction {
     }
 }
 
-impl From<super::msgs::Fraction> for cometbls::v1::Fraction {
-    fn from(value: super::msgs::Fraction) -> Self {
+impl From<Fraction> for cometbls_v1::Fraction {
+    fn from(value: Fraction) -> Self {
         Self {
             numerator: value.numerator,
             denominator: value.denominator,
@@ -1105,8 +1176,17 @@ impl From<super::msgs::Fraction> for cometbls::v1::Fraction {
     }
 }
 
-impl From<super::msgs::Fraction> for lightclients::tendermint::v1::Fraction {
-    fn from(value: super::msgs::Fraction) -> Self {
+// impl From<super::msgs::Fraction> for lightclients::tendermint_v1::Fraction {
+//     fn from(value: super::msgs::Fraction) -> Self {
+//         Self {
+//             numerator: value.numerator,
+//             denominator: value.denominator,
+//         }
+//     }
+// }
+
+impl From<cometbls_v1::Fraction> for Fraction {
+    fn from(value: cometbls_v1::Fraction) -> Self {
         Self {
             numerator: value.numerator,
             denominator: value.denominator,
@@ -1114,8 +1194,8 @@ impl From<super::msgs::Fraction> for lightclients::tendermint::v1::Fraction {
     }
 }
 
-impl From<super::msgs::Duration> for google::protobuf::Duration {
-    fn from(value: super::msgs::Duration) -> Self {
+impl From<Duration> for google::protobuf::Duration {
+    fn from(value: Duration) -> Self {
         Self {
             seconds: value.seconds,
             nanos: value.nanos,
@@ -1123,8 +1203,17 @@ impl From<super::msgs::Duration> for google::protobuf::Duration {
     }
 }
 
-impl From<ethereum::v1::Fraction> for super::msgs::Fraction {
-    fn from(proto: ethereum::v1::Fraction) -> Self {
+impl From<google::protobuf::Duration> for Duration {
+    fn from(value: google::protobuf::Duration) -> Self {
+        Self {
+            seconds: value.seconds,
+            nanos: value.nanos,
+        }
+    }
+}
+
+impl From<ethereum_v1::Fraction> for Fraction {
+    fn from(proto: ethereum_v1::Fraction) -> Self {
         Self {
             numerator: proto.numerator,
             denominator: proto.denominator,
@@ -1132,8 +1221,8 @@ impl From<ethereum::v1::Fraction> for super::msgs::Fraction {
     }
 }
 
-impl From<super::msgs::ethereum::ForkParameters> for ethereum::v1::ForkParameters {
-    fn from(value: super::msgs::ethereum::ForkParameters) -> Self {
+impl From<ethereum::ForkParameters> for ethereum_v1::ForkParameters {
+    fn from(value: ethereum::ForkParameters) -> Self {
         Self {
             genesis_fork_version: value.genesis_fork_version,
             genesis_slot: value.genesis_slot,
@@ -1145,10 +1234,10 @@ impl From<super::msgs::ethereum::ForkParameters> for ethereum::v1::ForkParameter
     }
 }
 
-impl TryFrom<ethereum::v1::ForkParameters> for super::msgs::ethereum::ForkParameters {
+impl TryFrom<ethereum_v1::ForkParameters> for ethereum::ForkParameters {
     type Error = MissingField;
 
-    fn try_from(proto: ethereum::v1::ForkParameters) -> Result<Self, Self::Error> {
+    fn try_from(proto: ethereum_v1::ForkParameters) -> Result<Self, Self::Error> {
         Ok(Self {
             genesis_fork_version: proto.genesis_fork_version,
             genesis_slot: proto.genesis_slot,
@@ -1160,8 +1249,8 @@ impl TryFrom<ethereum::v1::ForkParameters> for super::msgs::ethereum::ForkParame
     }
 }
 
-impl From<super::msgs::ethereum::Fork> for ethereum::v1::Fork {
-    fn from(value: super::msgs::ethereum::Fork) -> Self {
+impl From<ethereum::Fork> for ethereum_v1::Fork {
+    fn from(value: ethereum::Fork) -> Self {
         Self {
             version: value.version,
             epoch: value.epoch,
@@ -1169,8 +1258,8 @@ impl From<super::msgs::ethereum::Fork> for ethereum::v1::Fork {
     }
 }
 
-impl From<ethereum::v1::Fork> for super::msgs::ethereum::Fork {
-    fn from(proto: ethereum::v1::Fork) -> Self {
+impl From<ethereum_v1::Fork> for ethereum::Fork {
+    fn from(proto: ethereum_v1::Fork) -> Self {
         Self {
             version: proto.version,
             epoch: proto.epoch,
@@ -1178,8 +1267,8 @@ impl From<ethereum::v1::Fork> for super::msgs::ethereum::Fork {
     }
 }
 
-impl From<super::msgs::channel::Counterparty> for channel::v1::Counterparty {
-    fn from(value: super::msgs::channel::Counterparty) -> Self {
+impl From<ChannelCounterparty> for channel_v1::Counterparty {
+    fn from(value: ChannelCounterparty) -> Self {
         Self {
             port_id: value.port_id,
             channel_id: value.channel_id,
@@ -1187,8 +1276,8 @@ impl From<super::msgs::channel::Counterparty> for channel::v1::Counterparty {
     }
 }
 
-impl From<channel::v1::Counterparty> for super::msgs::channel::Counterparty {
-    fn from(proto: channel::v1::Counterparty) -> Self {
+impl From<channel_v1::Counterparty> for ChannelCounterparty {
+    fn from(proto: channel_v1::Counterparty) -> Self {
         Self {
             port_id: proto.port_id,
             channel_id: proto.channel_id,
@@ -1202,7 +1291,7 @@ pub enum TryFromWasmClientStateError<Err> {
     Prost(prost::DecodeError),
 }
 
-impl<Data> TryFrom<wasm::v1::ClientState> for super::msgs::wasm::ClientState<Data>
+impl<Data> TryFrom<wasm_v1::ClientState> for wasm::ClientState<Data>
 where
     Data: TryFromProto,
     <Data as TryFromProto>::Proto: prost::Message + Default,
@@ -1210,7 +1299,7 @@ where
     type Error =
         TryFromWasmClientStateError<<Data as TryFrom<<Data as TryFromProto>::Proto>>::Error>;
 
-    fn try_from(value: wasm::v1::ClientState) -> Result<Self, Self::Error> {
+    fn try_from(value: wasm_v1::ClientState) -> Result<Self, Self::Error> {
         Ok(Self {
             data: Data::try_from_proto(
                 <Data as TryFromProto>::Proto::decode(&*value.data)
@@ -1223,84 +1312,122 @@ where
     }
 }
 
-impl TypeUrl for lightclients::tendermint::v1::ClientState {
-    const TYPE_URL: &'static str = "/ibc.lightclients.tendermint.v1.ClientState";
+#[derive(Debug)]
+pub enum TryFromWasmConsensusStateError<Err> {
+    TryFromProto(Err),
+    Prost(prost::DecodeError),
 }
 
-impl From<super::msgs::tendermint::ClientState> for lightclients::tendermint::v1::ClientState {
-    fn from(val: super::msgs::tendermint::ClientState) -> Self {
-        #[allow(deprecated)]
-        lightclients::tendermint::v1::ClientState {
-            latest_height: Some(val.latest_height.into()),
-            chain_id: val.chain_id,
-            trust_level: Some(val.trust_level.into()),
-            trusting_period: Some(val.trusting_period.into()),
-            unbonding_period: Some(val.unbonding_period.into()),
-            max_clock_drift: Some(val.max_clock_drift.into()),
-            frozen_height: Some(val.frozen_height.into()),
-            proof_specs: val.proof_specs.into_iter().map(Into::into).collect(),
-            upgrade_path: val.upgrade_path,
-            allow_update_after_expiry: true,
-            allow_update_after_misbehaviour: true,
-        }
+impl<Data> TryFrom<wasm_v1::ConsensusState> for wasm::ConsensusState<Data>
+where
+    Data: TryFromProto,
+    <Data as TryFromProto>::Proto: prost::Message + Default,
+{
+    type Error =
+        TryFromWasmConsensusStateError<<Data as TryFrom<<Data as TryFromProto>::Proto>>::Error>;
+
+    fn try_from(value: wasm_v1::ConsensusState) -> Result<Self, Self::Error> {
+        Ok(Self {
+            data: Data::try_from_proto(
+                <Data as TryFromProto>::Proto::decode(&*value.data)
+                    .map_err(TryFromWasmConsensusStateError::Prost)?,
+            )
+            .map_err(TryFromWasmConsensusStateError::TryFromProto)?,
+            timestamp: value.timestamp,
+        })
     }
 }
 
-impl IntoProto for super::msgs::tendermint::ClientState {
-    type Proto = lightclients::tendermint::v1::ClientState;
+impl<Data> TryFromProto for wasm::ClientState<Data>
+where
+    Data: TryFromProto,
+    <Data as TryFromProto>::Proto: prost::Message + Default,
+{
+    type Proto = wasm_v1::ClientState;
 }
 
-impl From<super::msgs::ics23::ProofSpec> for ics23::v1::ProofSpec {
-    fn from(value: super::msgs::ics23::ProofSpec) -> Self {
-        Self {
-            leaf_spec: Some(value.leaf_spec.into()),
-            inner_spec: Some(value.inner_spec.into()),
-            max_depth: value.max_depth,
-            min_depth: value.min_depth,
-        }
-    }
+impl<Data> TryFromProto for wasm::ConsensusState<Data>
+where
+    Data: TryFromProto,
+    <Data as TryFromProto>::Proto: prost::Message + Default,
+{
+    type Proto = wasm_v1::ConsensusState;
 }
 
-impl From<super::msgs::ics23::InnerSpec> for ics23::v1::InnerSpec {
-    fn from(value: super::msgs::ics23::InnerSpec) -> Self {
-        Self {
-            child_order: value.child_order,
-            child_size: value.child_size,
-            min_prefix_length: value.min_prefix_length,
-            max_prefix_length: value.max_prefix_length,
-            empty_child: value.empty_child,
-            // TODO(benluelo): Better conversion here, go into the proto generated enum and then cast
-            hash: value.hash as i32,
-        }
-    }
-}
+// impl TypeUrl for lightclients::tendermint_v1::ClientState {
+//     const TYPE_URL: &'static str = "/ibc.lightclients.tendermint.v1.ClientState";
+// }
 
-impl From<super::msgs::ics23::LeafOp> for ics23::v1::LeafOp {
-    fn from(value: super::msgs::ics23::LeafOp) -> Self {
-        Self {
-            hash: value.hash as i32,
-            prehash_key: value.prehash_key as i32,
-            prehash_value: value.prehash_value as i32,
-            length: value.length as i32,
-            prefix: value.prefix,
-        }
-    }
-}
+// impl From<super::msgs::tendermint::ClientState> for lightclients::tendermint_v1::ClientState {
+//     fn from(val: super::msgs::tendermint::ClientState) -> Self {
+//         #[allow(deprecated)]
+//         lightclients::tendermint_v1::ClientState {
+//             latest_height: Some(val.latest_height.into()),
+//             chain_id: val.chain_id,
+//             trust_level: Some(val.trust_level.into()),
+//             trusting_period: Some(val.trusting_period.into()),
+//             unbonding_period: Some(val.unbonding_period.into()),
+//             max_clock_drift: Some(val.max_clock_drift.into()),
+//             frozen_height: Some(val.frozen_height.into()),
+//             proof_specs: val.proof_specs.into_iter().map(Into::into).collect(),
+//             upgrade_path: val.upgrade_path,
+//             allow_update_after_expiry: true,
+//             allow_update_after_misbehaviour: true,
+//         }
+//     }
+// }
 
-impl IntoProto for super::msgs::ConnectionEnd {
-    type Proto = connection::v1::ConnectionEnd;
-}
+// impl IntoProto for super::msgs::tendermint::ClientState {
+//     type Proto = lightclients::tendermint_v1::ClientState;
+// }
+
+// impl From<super::msgs::ics23::ProofSpec> for ics23_v1::ProofSpec {
+//     fn from(value: super::msgs::ics23::ProofSpec) -> Self {
+//         Self {
+//             leaf_spec: Some(value.leaf_spec.into()),
+//             inner_spec: Some(value.inner_spec.into()),
+//             max_depth: value.max_depth,
+//             min_depth: value.min_depth,
+//         }
+//     }
+// }
+
+// impl From<super::msgs::ics23::InnerSpec> for ics23_v1::InnerSpec {
+//     fn from(value: super::msgs::ics23::InnerSpec) -> Self {
+//         Self {
+//             child_order: value.child_order,
+//             child_size: value.child_size,
+//             min_prefix_length: value.min_prefix_length,
+//             max_prefix_length: value.max_prefix_length,
+//             empty_child: value.empty_child,
+//             // TODO(benluelo): Better conversion here, go into the proto generated enum and then cast
+//             hash: value.hash as i32,
+//         }
+//     }
+// }
+
+// impl From<super::msgs::ics23::LeafOp> for ics23_v1::LeafOp {
+//     fn from(value: super::msgs::ics23::LeafOp) -> Self {
+//         Self {
+//             hash: value.hash as i32,
+//             prehash_key: value.prehash_key as i32,
+//             prehash_value: value.prehash_value as i32,
+//             length: value.length as i32,
+//             prefix: value.prefix,
+//         }
+//     }
+// }
 
 pub enum TryFromConnnectionEndError {
     ParseError(ParseError),
-    UnknownEnumVariant(super::msgs::UnknownEnumVariant<i32>),
+    UnknownEnumVariant(UnknownEnumVariant<i32>),
     MissingField(MissingField),
 }
 
-impl TryFrom<connection::v1::ConnectionEnd> for super::msgs::ConnectionEnd {
+impl TryFrom<connection_v1::ConnectionEnd> for ConnectionEnd {
     type Error = TryFromConnnectionEndError;
 
-    fn try_from(val: connection::v1::ConnectionEnd) -> Result<Self, Self::Error> {
+    fn try_from(val: connection_v1::ConnectionEnd) -> Result<Self, Self::Error> {
         Ok(Self {
             client_id: val.client_id,
             versions: val
@@ -1324,8 +1451,8 @@ impl TryFrom<connection::v1::ConnectionEnd> for super::msgs::ConnectionEnd {
     }
 }
 
-impl From<super::msgs::ConnectionEnd> for connection::v1::ConnectionEnd {
-    fn from(val: super::msgs::ConnectionEnd) -> Self {
+impl From<ConnectionEnd> for connection_v1::ConnectionEnd {
+    fn from(val: ConnectionEnd) -> Self {
         Self {
             client_id: val.client_id,
             versions: val.versions.into_iter().map(|x| x.into()).collect(),
@@ -1336,34 +1463,34 @@ impl From<super::msgs::ConnectionEnd> for connection::v1::ConnectionEnd {
     }
 }
 
-impl From<super::msgs::connection::State> for connection::v1::State {
-    fn from(value: super::msgs::connection::State) -> Self {
+impl From<ConnectionState> for connection_v1::State {
+    fn from(value: ConnectionState) -> Self {
         match value {
-            super::msgs::connection::State::UninitializedUnspecified => {
-                connection::v1::State::UninitializedUnspecified
+            ConnectionState::UninitializedUnspecified => {
+                connection_v1::State::UninitializedUnspecified
             }
-            super::msgs::connection::State::Init => connection::v1::State::Init,
-            super::msgs::connection::State::Tryopen => connection::v1::State::Tryopen,
-            super::msgs::connection::State::Open => connection::v1::State::Open,
+            ConnectionState::Init => connection_v1::State::Init,
+            ConnectionState::Tryopen => connection_v1::State::Tryopen,
+            ConnectionState::Open => connection_v1::State::Open,
         }
     }
 }
 
-impl From<connection::v1::State> for super::msgs::connection::State {
-    fn from(value: connection::v1::State) -> Self {
+impl From<connection_v1::State> for ConnectionState {
+    fn from(value: connection_v1::State) -> Self {
         match value {
-            connection::v1::State::UninitializedUnspecified => {
-                super::msgs::connection::State::UninitializedUnspecified
+            connection_v1::State::UninitializedUnspecified => {
+                ConnectionState::UninitializedUnspecified
             }
-            connection::v1::State::Init => super::msgs::connection::State::Init,
-            connection::v1::State::Tryopen => super::msgs::connection::State::Tryopen,
-            connection::v1::State::Open => super::msgs::connection::State::Open,
+            connection_v1::State::Init => ConnectionState::Init,
+            connection_v1::State::Tryopen => ConnectionState::Tryopen,
+            connection_v1::State::Open => ConnectionState::Open,
         }
     }
 }
 
-impl From<super::msgs::cometbls::ClientState> for cometbls::v1::ClientState {
-    fn from(value: super::msgs::cometbls::ClientState) -> Self {
+impl From<cometbls::ClientState> for cometbls_v1::ClientState {
+    fn from(value: cometbls::ClientState) -> Self {
         Self {
             chain_id: value.chain_id,
             trust_level: Some(value.trust_level.into()),
@@ -1371,40 +1498,197 @@ impl From<super::msgs::cometbls::ClientState> for cometbls::v1::ClientState {
             unbonding_period: Some(value.unbonding_period.into()),
             max_clock_drift: Some(value.max_clock_drift.into()),
             frozen_height: Some(value.frozen_height.into()),
-            latest_height: Some(value.latest_height.into()),
         }
     }
 }
 
-impl IntoProto for super::msgs::cometbls::ClientState {
-    type Proto = cometbls::v1::ClientState;
+impl TryFromProto for cometbls::ClientState {
+    type Proto = cometbls_v1::ClientState;
 }
 
-impl TypeUrl for cometbls::v1::ClientState {
-    const TYPE_URL: &'static str = "/union.ibc.lightclients.cometbls.v1.ClientState";
+impl TryFrom<cometbls_v1::ClientState> for cometbls::ClientState {
+    type Error = MissingField;
+
+    fn try_from(value: cometbls_v1::ClientState) -> Result<Self, Self::Error> {
+        Ok(Self {
+            chain_id: value.chain_id,
+            trust_level: value.trust_level.ok_or(MissingField("trust_level"))?.into(),
+            trusting_period: value
+                .trusting_period
+                .ok_or(MissingField("trusting_period"))?
+                .into(),
+            unbonding_period: value
+                .unbonding_period
+                .ok_or(MissingField("unbonding_period"))?
+                .into(),
+            max_clock_drift: value
+                .max_clock_drift
+                .ok_or(MissingField("max_clock_drift"))?
+                .into(),
+            frozen_height: value
+                .frozen_height
+                .ok_or(MissingField("frozen_height"))?
+                .into(),
+        })
+    }
 }
 
-impl From<super::msgs::cometbls::ConsensusState> for cometbls::v1::ConsensusState {
-    fn from(value: super::msgs::cometbls::ConsensusState) -> Self {
+impl TryFrom<cometbls_v1::ConsensusState> for cometbls::ConsensusState {
+    type Error = MissingField;
+
+    fn try_from(value: cometbls_v1::ConsensusState) -> Result<Self, Self::Error> {
+        Ok(Self {
+            root: value.root.ok_or(MissingField("root"))?.into(),
+            next_validators_hash: value.next_validators_hash,
+        })
+    }
+}
+
+impl TryFromProto for cometbls::ConsensusState {
+    type Proto = cometbls_v1::ConsensusState;
+}
+
+impl From<cometbls::ConsensusState> for cometbls_v1::ConsensusState {
+    fn from(value: cometbls::ConsensusState) -> Self {
         Self {
-            timestamp: Some(value.timestamp.into()),
             root: Some(value.root.into()),
             next_validators_hash: value.next_validators_hash,
         }
     }
 }
 
-impl From<super::msgs::MerkleRoot> for commitment::v1::MerkleRoot {
-    fn from(value: super::msgs::MerkleRoot) -> Self {
+impl From<MerkleRoot> for commitment_v1::MerkleRoot {
+    fn from(value: MerkleRoot) -> Self {
         Self { hash: value.hash }
     }
 }
 
-impl From<super::msgs::Timestamp> for google::protobuf::Timestamp {
-    fn from(value: super::msgs::Timestamp) -> Self {
+impl From<commitment_v1::MerkleRoot> for MerkleRoot {
+    fn from(value: commitment_v1::MerkleRoot) -> Self {
+        Self { hash: value.hash }
+    }
+}
+
+impl From<Timestamp> for google::protobuf::Timestamp {
+    fn from(value: Timestamp) -> Self {
         Self {
             seconds: value.seconds,
             nanos: value.nanos,
+        }
+    }
+}
+
+impl From<ethereum::Header> for ethereum_v1::Header {
+    fn from(value: ethereum::Header) -> Self {
+        Self {
+            trusted_sync_committee: Some(value.trusted_sync_committee.into()),
+            consensus_update: Some(value.consensus_update.into()),
+            account_update: Some(value.account_update.into()),
+            timestamp: value.timestamp,
+        }
+    }
+}
+
+impl From<AccountUpdate> for ethereum_v1::AccountUpdate {
+    fn from(value: AccountUpdate) -> Self {
+        Self {
+            proofs: value.proofs.into_iter().map(|x| x.into()).collect(),
+        }
+    }
+}
+
+impl From<Proof> for ethereum_v1::Proof {
+    fn from(value: Proof) -> Self {
+        Self {
+            key: value.key,
+            value: value.value,
+            proof: value.proof,
+        }
+    }
+}
+
+impl From<LightClientUpdate> for ethereum_v1::LightClientUpdate {
+    fn from(value: LightClientUpdate) -> Self {
+        Self {
+            attested_header: Some(value.attested_header.into()),
+            next_sync_committee: Some(value.next_sync_committee.into()),
+            next_sync_committee_branch: value.next_sync_committee_branch,
+            finalized_header: Some(value.finalized_header.into()),
+            finality_branch: value.finality_branch,
+            sync_aggregate: Some(value.sync_aggregate.into()),
+            signature_slot: value.signature_slot,
+        }
+    }
+}
+
+impl From<LightClientHeader> for ethereum_v1::LightClientHeader {
+    fn from(value: LightClientHeader) -> Self {
+        Self {
+            beacon: Some(value.beacon.into()),
+            execution: Some(value.execution.into()),
+            execution_branch: value.execution_branch,
+        }
+    }
+}
+
+impl From<BeaconBlockHeader> for ethereum_v1::BeaconBlockHeader {
+    fn from(value: BeaconBlockHeader) -> Self {
+        Self {
+            slot: value.slot,
+            proposer_index: value.proposer_index,
+            parent_root: value.parent_root,
+            state_root: value.state_root,
+            body_root: value.body_root,
+        }
+    }
+}
+
+impl From<ExecutionPayloadHeader> for ethereum_v1::ExecutionPayloadHeader {
+    fn from(value: ExecutionPayloadHeader) -> Self {
+        Self {
+            parent_hash: value.parent_hash,
+            fee_recipient: value.fee_recipient,
+            state_root: value.state_root,
+            receipts_root: value.receipts_root,
+            logs_bloom: value.logs_bloom,
+            prev_randao: value.prev_randao,
+            block_number: value.block_number,
+            gas_limit: value.gas_limit,
+            gas_used: value.gas_used,
+            timestamp: value.timestamp,
+            extra_data: value.extra_data,
+            base_fee_per_gas: value.base_fee_per_gas,
+            block_hash: value.block_hash,
+            transactions_root: value.transactions_root,
+            withdrawals_root: value.withdrawals_root,
+        }
+    }
+}
+
+impl From<TrustedSyncCommittee> for ethereum_v1::TrustedSyncCommittee {
+    fn from(value: TrustedSyncCommittee) -> Self {
+        Self {
+            trusted_height: Some(value.trusted_height.into()),
+            sync_committee: Some(value.sync_committee.into()),
+            is_next: value.is_next,
+        }
+    }
+}
+
+impl From<SyncCommittee> for ethereum_v1::SyncCommittee {
+    fn from(value: SyncCommittee) -> Self {
+        Self {
+            pubkeys: value.pubkeys,
+            aggregate_pubkey: value.aggregate_pubkey,
+        }
+    }
+}
+
+impl From<SyncAggregate> for ethereum_v1::SyncAggregate {
+    fn from(value: SyncAggregate) -> Self {
+        Self {
+            sync_committee_bits: value.sync_committee_bits,
+            sync_committee_signature: value.sync_committee_signature,
         }
     }
 }

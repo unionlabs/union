@@ -285,7 +285,7 @@ pub async fn query_for_wasm_light_client() -> QueryClientStateResponse {
 }
 
 #[allow(clippy::upper_case_acronyms)]
-type LCFUR = LightClientFinalityUpdateResponse<32, 256, 32>;
+pub type LCFUR = LightClientFinalityUpdateResponse<32, 256, 32>;
 
 pub async fn update_wasm_client(sequence: u64) {
     let wasm_client_state = query_for_wasm_light_client().await;

@@ -7,7 +7,7 @@
     Debug,
     PartialEq,
     Eq,
-    Hash,
+    Hash
 )]
 pub struct IbcCoreClientV1HeightData {
     pub revision_number: u64,
