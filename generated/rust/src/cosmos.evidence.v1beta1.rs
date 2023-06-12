@@ -1,9 +1,5 @@
 // @generated
 /// QueryEvidenceRequest is the request type for the Query/Evidence RPC method.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryEvidenceRequest {
@@ -19,10 +15,6 @@ pub struct QueryEvidenceRequest {
     pub hash: ::prost::alloc::string::String,
 }
 /// QueryEvidenceResponse is the response type for the Query/Evidence RPC method.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryEvidenceResponse {
@@ -32,10 +24,6 @@ pub struct QueryEvidenceResponse {
 }
 /// QueryEvidenceRequest is the request type for the Query/AllEvidence RPC
 /// method.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryAllEvidenceRequest {
@@ -45,10 +33,6 @@ pub struct QueryAllEvidenceRequest {
 }
 /// QueryAllEvidenceResponse is the response type for the Query/AllEvidence RPC
 /// method.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryAllEvidenceResponse {
@@ -61,10 +45,6 @@ pub struct QueryAllEvidenceResponse {
 }
 /// MsgSubmitEvidence represents a message that supports submitting arbitrary
 /// Evidence of misbehavior such as equivocation or counterfactual signing.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgSubmitEvidence {
@@ -76,10 +56,6 @@ pub struct MsgSubmitEvidence {
     pub evidence: ::core::option::Option<super::super::super::google::protobuf::Any>,
 }
 /// MsgSubmitEvidenceResponse defines the Msg/SubmitEvidence response type.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgSubmitEvidenceResponse {
@@ -87,24 +63,8 @@ pub struct MsgSubmitEvidenceResponse {
     #[prost(bytes = "vec", tag = "4")]
     pub hash: ::prost::alloc::vec::Vec<u8>,
 }
-/// GenesisState defines the evidence module's genesis state.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct GenesisState {
-    /// evidence defines all the evidence at genesis.
-    #[prost(message, repeated, tag = "1")]
-    pub evidence: ::prost::alloc::vec::Vec<super::super::super::google::protobuf::Any>,
-}
 /// Equivocation implements the Evidence interface and defines evidence of double
 /// signing misbehavior.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Equivocation {
@@ -120,6 +80,14 @@ pub struct Equivocation {
     /// consensus_address is the equivocation validator consensus address.
     #[prost(string, tag = "4")]
     pub consensus_address: ::prost::alloc::string::String,
+}
+/// GenesisState defines the evidence module's genesis state.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GenesisState {
+    /// evidence defines all the evidence at genesis.
+    #[prost(message, repeated, tag = "1")]
+    pub evidence: ::prost::alloc::vec::Vec<super::super::super::google::protobuf::Any>,
 }
 include!("cosmos.evidence.v1beta1.tonic.rs");
 // @@protoc_insertion_point(module)

@@ -1,9 +1,5 @@
 // @generated
 /// GenesisState defines the interchain accounts genesis state
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GenesisState {
@@ -13,10 +9,6 @@ pub struct GenesisState {
     pub host_genesis_state: ::core::option::Option<HostGenesisState>,
 }
 /// ControllerGenesisState defines the interchain accounts controller genesis state
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ControllerGenesisState {
@@ -30,10 +22,6 @@ pub struct ControllerGenesisState {
     pub params: ::core::option::Option<super::super::controller::v1::Params>,
 }
 /// HostGenesisState defines the interchain accounts host genesis state
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct HostGenesisState {
@@ -48,10 +36,6 @@ pub struct HostGenesisState {
 }
 /// ActiveChannel contains a connection ID, port ID and associated active channel ID, as well as a boolean flag to
 /// indicate if the channel is middleware enabled
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ActiveChannel {
@@ -65,10 +49,6 @@ pub struct ActiveChannel {
     pub is_middleware_enabled: bool,
 }
 /// RegisteredInterchainAccount contains a connection ID, port ID and associated interchain account address
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct RegisteredInterchainAccount {

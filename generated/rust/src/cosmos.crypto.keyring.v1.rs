@@ -1,9 +1,5 @@
 // @generated
 /// Record is used for representing a key in the keyring.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Record {
@@ -21,10 +17,6 @@ pub struct Record {
 pub mod record {
     /// Item is a keyring item stored in a keyring backend.
     /// Local item
-    #[cfg_attr(
-        feature = "ethers",
-        derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-    )]
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Local {
@@ -33,10 +25,6 @@ pub mod record {
             ::core::option::Option<super::super::super::super::super::google::protobuf::Any>,
     }
     /// Ledger item
-    #[cfg_attr(
-        feature = "ethers",
-        derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-    )]
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Ledger {
@@ -44,26 +32,14 @@ pub mod record {
         pub path: ::core::option::Option<super::super::super::hd::v1::Bip44Params>,
     }
     /// Multi item
-    #[cfg_attr(
-        feature = "ethers",
-        derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-    )]
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Multi {}
     /// Offline item
-    #[cfg_attr(
-        feature = "ethers",
-        derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-    )]
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Offline {}
     /// Record contains one of the following items
-    #[cfg_attr(
-        feature = "ethers",
-        derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-    )]
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum Item {

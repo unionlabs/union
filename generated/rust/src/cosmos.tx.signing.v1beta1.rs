@@ -1,9 +1,5 @@
 // @generated
 /// SignatureDescriptors wraps multiple SignatureDescriptor's.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SignatureDescriptors {
@@ -15,10 +11,6 @@ pub struct SignatureDescriptors {
 /// a signature including the public key of the signer, signing modes and the
 /// signature itself. It is primarily used for coordinating signatures between
 /// clients.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SignatureDescriptor {
@@ -36,10 +28,6 @@ pub struct SignatureDescriptor {
 /// Nested message and enum types in `SignatureDescriptor`.
 pub mod signature_descriptor {
     /// Data represents signature data
-    #[cfg_attr(
-        feature = "ethers",
-        derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-    )]
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Data {
@@ -50,10 +38,6 @@ pub mod signature_descriptor {
     /// Nested message and enum types in `Data`.
     pub mod data {
         /// Single is the signature data for a single signer
-        #[cfg_attr(
-            feature = "ethers",
-            derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-        )]
         #[allow(clippy::derive_partial_eq_without_eq)]
         #[derive(Clone, PartialEq, ::prost::Message)]
         pub struct Single {
@@ -65,10 +49,6 @@ pub mod signature_descriptor {
             pub signature: ::prost::alloc::vec::Vec<u8>,
         }
         /// Multi is the signature data for a multisig public key
-        #[cfg_attr(
-            feature = "ethers",
-            derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-        )]
         #[allow(clippy::derive_partial_eq_without_eq)]
         #[derive(Clone, PartialEq, ::prost::Message)]
         pub struct Multi {
@@ -82,10 +62,6 @@ pub mod signature_descriptor {
             pub signatures: ::prost::alloc::vec::Vec<super::Data>,
         }
         /// sum is the oneof that specifies whether this represents single or multi-signature data
-        #[cfg_attr(
-            feature = "ethers",
-            derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-        )]
         #[allow(clippy::derive_partial_eq_without_eq)]
         #[derive(Clone, PartialEq, ::prost::Oneof)]
         pub enum Sum {
@@ -106,10 +82,6 @@ pub mod signature_descriptor {
 /// encouraged to open a small PR against this file to add a new case
 /// to this SignMode enum describing their sign mode so that different
 /// apps have a consistent version of this enum.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum SignMode {

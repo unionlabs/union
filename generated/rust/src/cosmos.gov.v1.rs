@@ -1,9 +1,5 @@
 // @generated
 /// WeightedVoteOption defines a unit of vote for vote split.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct WeightedVoteOption {
@@ -16,10 +12,6 @@ pub struct WeightedVoteOption {
 }
 /// Deposit defines an amount deposited by an account address to an active
 /// proposal.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Deposit {
@@ -34,10 +26,6 @@ pub struct Deposit {
     pub amount: ::prost::alloc::vec::Vec<super::super::base::v1beta1::Coin>,
 }
 /// Proposal defines the core field members of a governance proposal.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Proposal {
@@ -90,10 +78,6 @@ pub struct Proposal {
     pub proposer: ::prost::alloc::string::String,
 }
 /// TallyResult defines a standard tally for a governance proposal.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TallyResult {
@@ -112,10 +96,6 @@ pub struct TallyResult {
 }
 /// Vote defines a vote on a governance proposal.
 /// A Vote consists of a proposal ID, the voter, and the vote option.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Vote {
@@ -133,10 +113,6 @@ pub struct Vote {
     pub metadata: ::prost::alloc::string::String,
 }
 /// DepositParams defines the params for deposits on governance proposals.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct DepositParams {
@@ -149,10 +125,6 @@ pub struct DepositParams {
     pub max_deposit_period: ::core::option::Option<super::super::super::google::protobuf::Duration>,
 }
 /// VotingParams defines the params for voting on governance proposals.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct VotingParams {
@@ -161,10 +133,6 @@ pub struct VotingParams {
     pub voting_period: ::core::option::Option<super::super::super::google::protobuf::Duration>,
 }
 /// TallyParams defines the params for tallying votes on governance proposals.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TallyParams {
@@ -183,10 +151,6 @@ pub struct TallyParams {
 /// Params defines the parameters for the x/gov module.
 ///
 /// Since: cosmos-sdk 0.47
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Params {
@@ -225,10 +189,6 @@ pub struct Params {
     pub burn_vote_veto: bool,
 }
 /// VoteOption enumerates the valid vote options for a given governance proposal.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum VoteOption {
@@ -270,10 +230,6 @@ impl VoteOption {
     }
 }
 /// ProposalStatus enumerates the valid statuses of a proposal.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum ProposalStatus {
@@ -324,10 +280,6 @@ impl ProposalStatus {
     }
 }
 /// QueryProposalRequest is the request type for the Query/Proposal RPC method.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryProposalRequest {
@@ -336,10 +288,6 @@ pub struct QueryProposalRequest {
     pub proposal_id: u64,
 }
 /// QueryProposalResponse is the response type for the Query/Proposal RPC method.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryProposalResponse {
@@ -348,10 +296,6 @@ pub struct QueryProposalResponse {
     pub proposal: ::core::option::Option<Proposal>,
 }
 /// QueryProposalsRequest is the request type for the Query/Proposals RPC method.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryProposalsRequest {
@@ -370,10 +314,6 @@ pub struct QueryProposalsRequest {
 }
 /// QueryProposalsResponse is the response type for the Query/Proposals RPC
 /// method.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryProposalsResponse {
@@ -385,10 +325,6 @@ pub struct QueryProposalsResponse {
     pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageResponse>,
 }
 /// QueryVoteRequest is the request type for the Query/Vote RPC method.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryVoteRequest {
@@ -400,10 +336,6 @@ pub struct QueryVoteRequest {
     pub voter: ::prost::alloc::string::String,
 }
 /// QueryVoteResponse is the response type for the Query/Vote RPC method.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryVoteResponse {
@@ -412,10 +344,6 @@ pub struct QueryVoteResponse {
     pub vote: ::core::option::Option<Vote>,
 }
 /// QueryVotesRequest is the request type for the Query/Votes RPC method.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryVotesRequest {
@@ -427,10 +355,6 @@ pub struct QueryVotesRequest {
     pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageRequest>,
 }
 /// QueryVotesResponse is the response type for the Query/Votes RPC method.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryVotesResponse {
@@ -442,10 +366,6 @@ pub struct QueryVotesResponse {
     pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageResponse>,
 }
 /// QueryParamsRequest is the request type for the Query/Params RPC method.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryParamsRequest {
@@ -455,10 +375,6 @@ pub struct QueryParamsRequest {
     pub params_type: ::prost::alloc::string::String,
 }
 /// QueryParamsResponse is the response type for the Query/Params RPC method.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryParamsResponse {
@@ -484,10 +400,6 @@ pub struct QueryParamsResponse {
     pub params: ::core::option::Option<Params>,
 }
 /// QueryDepositRequest is the request type for the Query/Deposit RPC method.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryDepositRequest {
@@ -499,10 +411,6 @@ pub struct QueryDepositRequest {
     pub depositor: ::prost::alloc::string::String,
 }
 /// QueryDepositResponse is the response type for the Query/Deposit RPC method.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryDepositResponse {
@@ -511,10 +419,6 @@ pub struct QueryDepositResponse {
     pub deposit: ::core::option::Option<Deposit>,
 }
 /// QueryDepositsRequest is the request type for the Query/Deposits RPC method.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryDepositsRequest {
@@ -526,10 +430,6 @@ pub struct QueryDepositsRequest {
     pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageRequest>,
 }
 /// QueryDepositsResponse is the response type for the Query/Deposits RPC method.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryDepositsResponse {
@@ -541,10 +441,6 @@ pub struct QueryDepositsResponse {
     pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageResponse>,
 }
 /// QueryTallyResultRequest is the request type for the Query/Tally RPC method.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryTallyResultRequest {
@@ -553,10 +449,6 @@ pub struct QueryTallyResultRequest {
     pub proposal_id: u64,
 }
 /// QueryTallyResultResponse is the response type for the Query/Tally RPC method.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryTallyResultResponse {
@@ -566,10 +458,6 @@ pub struct QueryTallyResultResponse {
 }
 /// MsgSubmitProposal defines an sdk.Msg type that supports submitting arbitrary
 /// proposal Content.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgSubmitProposal {
@@ -597,10 +485,6 @@ pub struct MsgSubmitProposal {
     pub summary: ::prost::alloc::string::String,
 }
 /// MsgSubmitProposalResponse defines the Msg/SubmitProposal response type.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgSubmitProposalResponse {
@@ -610,10 +494,6 @@ pub struct MsgSubmitProposalResponse {
 }
 /// MsgExecLegacyContent is used to wrap the legacy content field into a message.
 /// This ensures backwards compatibility with v1beta1.MsgSubmitProposal.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgExecLegacyContent {
@@ -625,18 +505,10 @@ pub struct MsgExecLegacyContent {
     pub authority: ::prost::alloc::string::String,
 }
 /// MsgExecLegacyContentResponse defines the Msg/ExecLegacyContent response type.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgExecLegacyContentResponse {}
 /// MsgVote defines a message to cast a vote.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgVote {
@@ -654,18 +526,10 @@ pub struct MsgVote {
     pub metadata: ::prost::alloc::string::String,
 }
 /// MsgVoteResponse defines the Msg/Vote response type.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgVoteResponse {}
 /// MsgVoteWeighted defines a message to cast a vote.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgVoteWeighted {
@@ -683,18 +547,10 @@ pub struct MsgVoteWeighted {
     pub metadata: ::prost::alloc::string::String,
 }
 /// MsgVoteWeightedResponse defines the Msg/VoteWeighted response type.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgVoteWeightedResponse {}
 /// MsgDeposit defines a message to submit a deposit to an existing proposal.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgDeposit {
@@ -709,20 +565,12 @@ pub struct MsgDeposit {
     pub amount: ::prost::alloc::vec::Vec<super::super::base::v1beta1::Coin>,
 }
 /// MsgDepositResponse defines the Msg/Deposit response type.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgDepositResponse {}
 /// MsgUpdateParams is the Msg/UpdateParams request type.
 ///
 /// Since: cosmos-sdk 0.47
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgUpdateParams {
@@ -739,18 +587,10 @@ pub struct MsgUpdateParams {
 /// MsgUpdateParams message.
 ///
 /// Since: cosmos-sdk 0.47
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgUpdateParamsResponse {}
 /// GenesisState defines the gov module's genesis state.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GenesisState {

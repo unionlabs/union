@@ -133,7 +133,7 @@
             ord = ''#[derive(Eq, PartialOrd, Ord)]'';
             eq = ''#[derive(Eq)]'';
 
-            eth_abi = ''#[cfg_attr(feature = "ethers", derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec))]'';
+            # eth_abi = ''#[cfg_attr(feature = "ethers", derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec))]'';
 
             serde = ''#[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]'';
             serde_default = ''#[cfg_attr(feature = "std", serde(default))]'';
@@ -146,7 +146,7 @@
         in
         with attrs; {
           type_attribute = {
-            "." = [ eth_abi ];
+            # "." = [ eth_abi ];
             ".google.protobuf.Any" = [ serde eq ];
             ".google.protobuf.Timestamp" = [ serde ];
             ".google.protobuf.Duration" = [ serde eq ];

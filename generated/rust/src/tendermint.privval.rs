@@ -1,8 +1,4 @@
 // @generated
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct RemoteSignerError {
@@ -12,10 +8,6 @@ pub struct RemoteSignerError {
     pub description: ::prost::alloc::string::String,
 }
 /// PubKeyRequest requests the consensus public key from the remote signer.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PubKeyRequest {
@@ -23,10 +15,6 @@ pub struct PubKeyRequest {
     pub chain_id: ::prost::alloc::string::String,
 }
 /// PubKeyResponse is a response message containing the public key.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PubKeyResponse {
@@ -36,10 +24,6 @@ pub struct PubKeyResponse {
     pub error: ::core::option::Option<RemoteSignerError>,
 }
 /// SignVoteRequest is a request to sign a vote
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SignVoteRequest {
@@ -49,10 +33,6 @@ pub struct SignVoteRequest {
     pub chain_id: ::prost::alloc::string::String,
 }
 /// SignedVoteResponse is a response containing a signed vote or an error
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SignedVoteResponse {
@@ -62,10 +42,6 @@ pub struct SignedVoteResponse {
     pub error: ::core::option::Option<RemoteSignerError>,
 }
 /// SignProposalRequest is a request to sign a proposal
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SignProposalRequest {
@@ -75,10 +51,6 @@ pub struct SignProposalRequest {
     pub chain_id: ::prost::alloc::string::String,
 }
 /// SignedProposalResponse is response containing a signed proposal or an error
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SignedProposalResponse {
@@ -88,25 +60,13 @@ pub struct SignedProposalResponse {
     pub error: ::core::option::Option<RemoteSignerError>,
 }
 /// PingRequest is a request to confirm that the connection is alive.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PingRequest {}
 /// PingResponse is a response to confirm that the connection is alive.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PingResponse {}
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Message {
@@ -115,10 +75,6 @@ pub struct Message {
 }
 /// Nested message and enum types in `Message`.
 pub mod message {
-    #[cfg_attr(
-        feature = "ethers",
-        derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-    )]
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum Sum {
@@ -140,10 +96,6 @@ pub mod message {
         PingResponse(super::PingResponse),
     }
 }
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum Errors {

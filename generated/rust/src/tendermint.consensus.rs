@@ -1,10 +1,6 @@
 // @generated
 /// NewRoundStep is sent for every step taken in the ConsensusState.
 /// For every height/round/step transition
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct NewRoundStep {
@@ -22,10 +18,6 @@ pub struct NewRoundStep {
 /// NewValidBlock is sent when a validator observes a valid block B in some round r,
 /// i.e., there is a Proposal for block B and 2/3+ prevotes for the block B in the round r.
 /// In case the block is also committed, then IsCommit flag is set to true.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct NewValidBlock {
@@ -41,10 +33,6 @@ pub struct NewValidBlock {
     pub is_commit: bool,
 }
 /// Proposal is sent when a new block is proposed.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Proposal {
@@ -52,10 +40,6 @@ pub struct Proposal {
     pub proposal: ::core::option::Option<super::types::Proposal>,
 }
 /// ProposalPOL is sent when a previous proposal is re-proposed.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ProposalPol {
@@ -67,10 +51,6 @@ pub struct ProposalPol {
     pub proposal_pol: ::core::option::Option<super::libs::bits::BitArray>,
 }
 /// BlockPart is sent when gossipping a piece of the proposed block.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct BlockPart {
@@ -82,10 +62,6 @@ pub struct BlockPart {
     pub part: ::core::option::Option<super::types::Part>,
 }
 /// Vote is sent when voting for a proposal (or lack thereof).
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Vote {
@@ -93,10 +69,6 @@ pub struct Vote {
     pub vote: ::core::option::Option<super::types::Vote>,
 }
 /// HasVote is sent to indicate that a particular vote has been received.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct HasVote {
@@ -110,10 +82,6 @@ pub struct HasVote {
     pub index: i32,
 }
 /// VoteSetMaj23 is sent to indicate that a given BlockID has seen +2/3 votes.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct VoteSetMaj23 {
@@ -127,10 +95,6 @@ pub struct VoteSetMaj23 {
     pub block_id: ::core::option::Option<super::types::BlockId>,
 }
 /// VoteSetBits is sent to communicate the bit-array of votes seen for the BlockID.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct VoteSetBits {
@@ -145,10 +109,6 @@ pub struct VoteSetBits {
     #[prost(message, optional, tag = "5")]
     pub votes: ::core::option::Option<super::libs::bits::BitArray>,
 }
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Message {
@@ -157,10 +117,6 @@ pub struct Message {
 }
 /// Nested message and enum types in `Message`.
 pub mod message {
-    #[cfg_attr(
-        feature = "ethers",
-        derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-    )]
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum Sum {
@@ -185,10 +141,6 @@ pub mod message {
     }
 }
 /// MsgInfo are msgs from the reactor which may update the state
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgInfo {
@@ -198,10 +150,6 @@ pub struct MsgInfo {
     pub peer_id: ::prost::alloc::string::String,
 }
 /// TimeoutInfo internally generated messages which may update the state
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TimeoutInfo {
@@ -216,20 +164,12 @@ pub struct TimeoutInfo {
 }
 /// EndHeight marks the end of the given height inside WAL.
 /// @internal used by scripts/wal2json util.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct EndHeight {
     #[prost(int64, tag = "1")]
     pub height: i64,
 }
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct WalMessage {
@@ -238,10 +178,6 @@ pub struct WalMessage {
 }
 /// Nested message and enum types in `WALMessage`.
 pub mod wal_message {
-    #[cfg_attr(
-        feature = "ethers",
-        derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-    )]
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum Sum {
@@ -256,10 +192,6 @@ pub mod wal_message {
     }
 }
 /// TimedWALMessage wraps WALMessage and adds Time for debugging purposes.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TimedWalMessage {

@@ -1,18 +1,10 @@
 // @generated
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct FrElement {
     #[prost(bytes = "vec", tag = "1")]
     pub value: ::prost::alloc::vec::Vec<u8>,
 }
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ZeroKnowledgeProof {
@@ -25,10 +17,6 @@ pub struct ZeroKnowledgeProof {
     #[prost(bytes = "vec", tag = "4")]
     pub public_inputs: ::prost::alloc::vec::Vec<u8>,
 }
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ValidatorSetCommit {
@@ -40,10 +28,6 @@ pub struct ValidatorSetCommit {
     #[prost(bytes = "vec", tag = "3")]
     pub bitmap: ::prost::alloc::vec::Vec<u8>,
 }
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ProveRequest {
@@ -54,10 +38,6 @@ pub struct ProveRequest {
     #[prost(message, optional, tag = "3")]
     pub untrusted_commit: ::core::option::Option<ValidatorSetCommit>,
 }
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ProveResponse {
@@ -68,10 +48,6 @@ pub struct ProveResponse {
     #[prost(bytes = "vec", tag = "3")]
     pub untrusted_validator_set_root: ::prost::alloc::vec::Vec<u8>,
 }
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct VerifyRequest {
@@ -86,27 +62,15 @@ pub struct VerifyRequest {
     #[prost(message, optional, tag = "5")]
     pub block_header_y: ::core::option::Option<FrElement>,
 }
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct VerifyResponse {
     #[prost(bool, tag = "1")]
     pub valid: bool,
 }
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GenerateContractRequest {}
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GenerateContractResponse {

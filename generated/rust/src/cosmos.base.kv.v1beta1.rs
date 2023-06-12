@@ -1,9 +1,5 @@
 // @generated
 /// Pairs defines a repeated slice of Pair objects.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Pairs {
@@ -11,10 +7,6 @@ pub struct Pairs {
     pub pairs: ::prost::alloc::vec::Vec<Pair>,
 }
 /// Pair defines a key/value bytes tuple.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Pair {

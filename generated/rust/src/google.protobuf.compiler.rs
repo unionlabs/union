@@ -1,9 +1,5 @@
 // @generated
 /// The version number of protocol compiler.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Version {
@@ -19,10 +15,6 @@ pub struct Version {
     pub suffix: ::core::option::Option<::prost::alloc::string::String>,
 }
 /// An encoded CodeGeneratorRequest is written to the plugin's stdin.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct CodeGeneratorRequest {
@@ -55,10 +47,6 @@ pub struct CodeGeneratorRequest {
     pub compiler_version: ::core::option::Option<Version>,
 }
 /// The plugin writes an encoded CodeGeneratorResponse to stdout.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct CodeGeneratorResponse {
@@ -82,10 +70,6 @@ pub struct CodeGeneratorResponse {
 /// Nested message and enum types in `CodeGeneratorResponse`.
 pub mod code_generator_response {
     /// Represents a single generated file.
-    #[cfg_attr(
-        feature = "ethers",
-        derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-    )]
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct File {
@@ -151,10 +135,6 @@ pub mod code_generator_response {
         pub generated_code_info: ::core::option::Option<super::super::GeneratedCodeInfo>,
     }
     /// Sync with code_generator.h.
-    #[cfg_attr(
-        feature = "ethers",
-        derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-    )]
     #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
     #[repr(i32)]
     pub enum Feature {

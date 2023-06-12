@@ -1,9 +1,5 @@
 // @generated
 /// Tx is the standard type used for broadcasting transactions.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Tx {
@@ -25,10 +21,6 @@ pub struct Tx {
 /// verification. The binary `serialize(tx: TxRaw)` is stored in Tendermint and
 /// the hash `sha256(serialize(tx: TxRaw))` becomes the "txhash", commonly used
 /// as the transaction ID.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TxRaw {
@@ -47,10 +39,6 @@ pub struct TxRaw {
     pub signatures: ::prost::alloc::vec::Vec<::prost::alloc::vec::Vec<u8>>,
 }
 /// SignDoc is the type used for generating sign bytes for SIGN_MODE_DIRECT.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SignDoc {
@@ -75,10 +63,6 @@ pub struct SignDoc {
 /// SIGN_MODE_DIRECT_AUX.
 ///
 /// Since: cosmos-sdk 0.46
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SignDocDirectAux {
@@ -110,10 +94,6 @@ pub struct SignDocDirectAux {
     pub tip: ::core::option::Option<Tip>,
 }
 /// TxBody is the body of a transaction that all signers sign over.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TxBody {
@@ -149,10 +129,6 @@ pub struct TxBody {
 }
 /// AuthInfo describes the fee and signer modes that are used to sign a
 /// transaction.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AuthInfo {
@@ -179,10 +155,6 @@ pub struct AuthInfo {
 }
 /// SignerInfo describes the public key and signing mode of a single top-level
 /// signer.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SignerInfo {
@@ -202,10 +174,6 @@ pub struct SignerInfo {
     pub sequence: u64,
 }
 /// ModeInfo describes the signing mode of a single or nested multisig signer.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ModeInfo {
@@ -219,10 +187,6 @@ pub mod mode_info {
     /// Single is the mode info for a single signer. It is structured as a message
     /// to allow for additional fields such as locale for SIGN_MODE_TEXTUAL in the
     /// future
-    #[cfg_attr(
-        feature = "ethers",
-        derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-    )]
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Single {
@@ -231,10 +195,6 @@ pub mod mode_info {
         pub mode: i32,
     }
     /// Multi is the mode info for a multisig public key
-    #[cfg_attr(
-        feature = "ethers",
-        derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-    )]
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Multi {
@@ -249,10 +209,6 @@ pub mod mode_info {
     }
     /// sum is the oneof that specifies whether this represents a single or nested
     /// multisig signer
-    #[cfg_attr(
-        feature = "ethers",
-        derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-    )]
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum Sum {
@@ -267,10 +223,6 @@ pub mod mode_info {
 /// Fee includes the amount of coins paid in fees and the maximum
 /// gas to be used by the transaction. The ratio yields an effective "gasprice",
 /// which must be above some miminum to be accepted into the mempool.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Fee {
@@ -295,10 +247,6 @@ pub struct Fee {
 /// Tip is the tip used for meta-transactions.
 ///
 /// Since: cosmos-sdk 0.46
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Tip {
@@ -315,10 +263,6 @@ pub struct Tip {
 /// by the node if sent directly as-is.
 ///
 /// Since: cosmos-sdk 0.46
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AuxSignerData {
@@ -341,10 +285,6 @@ pub struct AuxSignerData {
 }
 /// GetTxsEventRequest is the request type for the Service.TxsByEvents
 /// RPC method.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GetTxsEventRequest {
@@ -368,10 +308,6 @@ pub struct GetTxsEventRequest {
 }
 /// GetTxsEventResponse is the response type for the Service.TxsByEvents
 /// RPC method.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GetTxsEventResponse {
@@ -392,10 +328,6 @@ pub struct GetTxsEventResponse {
 }
 /// BroadcastTxRequest is the request type for the Service.BroadcastTxRequest
 /// RPC method.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct BroadcastTxRequest {
@@ -407,10 +339,6 @@ pub struct BroadcastTxRequest {
 }
 /// BroadcastTxResponse is the response type for the
 /// Service.BroadcastTx method.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct BroadcastTxResponse {
@@ -420,10 +348,6 @@ pub struct BroadcastTxResponse {
 }
 /// SimulateRequest is the request type for the Service.Simulate
 /// RPC method.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SimulateRequest {
@@ -440,10 +364,6 @@ pub struct SimulateRequest {
 }
 /// SimulateResponse is the response type for the
 /// Service.SimulateRPC method.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SimulateResponse {
@@ -456,10 +376,6 @@ pub struct SimulateResponse {
 }
 /// GetTxRequest is the request type for the Service.GetTx
 /// RPC method.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GetTxRequest {
@@ -468,10 +384,6 @@ pub struct GetTxRequest {
     pub hash: ::prost::alloc::string::String,
 }
 /// GetTxResponse is the response type for the Service.GetTx method.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GetTxResponse {
@@ -486,10 +398,6 @@ pub struct GetTxResponse {
 /// RPC method.
 ///
 /// Since: cosmos-sdk 0.45.2
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GetBlockWithTxsRequest {
@@ -503,10 +411,6 @@ pub struct GetBlockWithTxsRequest {
 /// GetBlockWithTxsResponse is the response type for the Service.GetBlockWithTxs method.
 ///
 /// Since: cosmos-sdk 0.45.2
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GetBlockWithTxsResponse {
@@ -525,10 +429,6 @@ pub struct GetBlockWithTxsResponse {
 /// RPC method.
 ///
 /// Since: cosmos-sdk 0.47
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TxDecodeRequest {
@@ -540,10 +440,6 @@ pub struct TxDecodeRequest {
 /// Service.TxDecode method.
 ///
 /// Since: cosmos-sdk 0.47
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TxDecodeResponse {
@@ -555,10 +451,6 @@ pub struct TxDecodeResponse {
 /// RPC method.
 ///
 /// Since: cosmos-sdk 0.47
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TxEncodeRequest {
@@ -570,10 +462,6 @@ pub struct TxEncodeRequest {
 /// Service.TxEncode method.
 ///
 /// Since: cosmos-sdk 0.47
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TxEncodeResponse {
@@ -585,10 +473,6 @@ pub struct TxEncodeResponse {
 /// RPC method.
 ///
 /// Since: cosmos-sdk 0.47
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TxEncodeAminoRequest {
@@ -599,10 +483,6 @@ pub struct TxEncodeAminoRequest {
 /// RPC method.
 ///
 /// Since: cosmos-sdk 0.47
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TxEncodeAminoResponse {
@@ -613,10 +493,6 @@ pub struct TxEncodeAminoResponse {
 /// RPC method.
 ///
 /// Since: cosmos-sdk 0.47
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TxDecodeAminoRequest {
@@ -627,10 +503,6 @@ pub struct TxDecodeAminoRequest {
 /// RPC method.
 ///
 /// Since: cosmos-sdk 0.47
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TxDecodeAminoResponse {
@@ -638,10 +510,6 @@ pub struct TxDecodeAminoResponse {
     pub amino_json: ::prost::alloc::string::String,
 }
 /// OrderBy defines the sorting order
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum OrderBy {
@@ -675,10 +543,6 @@ impl OrderBy {
     }
 }
 /// BroadcastMode specifies the broadcast mode for the TxService.Broadcast RPC method.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum BroadcastMode {

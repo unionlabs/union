@@ -1,9 +1,5 @@
 // @generated
 /// BlockRequest requests a block for a specific height
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct BlockRequest {
@@ -11,10 +7,6 @@ pub struct BlockRequest {
     pub height: i64,
 }
 /// NoBlockResponse informs the node that the peer does not have block at the requested height
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct NoBlockResponse {
@@ -22,10 +14,6 @@ pub struct NoBlockResponse {
     pub height: i64,
 }
 /// BlockResponse returns block to the requested
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct BlockResponse {
@@ -33,18 +21,10 @@ pub struct BlockResponse {
     pub block: ::core::option::Option<super::types::Block>,
 }
 /// StatusRequest requests the status of a peer.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct StatusRequest {}
 /// StatusResponse is a peer response to inform their status.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct StatusResponse {
@@ -53,10 +33,6 @@ pub struct StatusResponse {
     #[prost(int64, tag = "2")]
     pub base: i64,
 }
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Message {
@@ -65,10 +41,6 @@ pub struct Message {
 }
 /// Nested message and enum types in `Message`.
 pub mod message {
-    #[cfg_attr(
-        feature = "ethers",
-        derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-    )]
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum Sum {

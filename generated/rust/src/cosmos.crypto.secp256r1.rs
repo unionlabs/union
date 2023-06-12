@@ -1,9 +1,5 @@
 // @generated
 /// PubKey defines a secp256r1 ECDSA public key.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PubKey {
@@ -13,10 +9,6 @@ pub struct PubKey {
     pub key: ::prost::alloc::vec::Vec<u8>,
 }
 /// PrivKey defines a secp256r1 ECDSA private key.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PrivKey {

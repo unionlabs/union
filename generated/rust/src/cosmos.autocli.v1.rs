@@ -1,9 +1,5 @@
 // @generated
 /// ModuleOptions describes the CLI options for a Cosmos SDK module.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ModuleOptions {
@@ -15,10 +11,6 @@ pub struct ModuleOptions {
     pub query: ::core::option::Option<ServiceCommandDescriptor>,
 }
 /// ServiceCommandDescriptor describes a CLI command based on a protobuf service.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ServiceCommandDescriptor {
@@ -41,10 +33,6 @@ pub struct ServiceCommandDescriptor {
 }
 /// RpcCommandOptions specifies options for commands generated from protobuf
 /// rpc methods.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct RpcCommandOptions {
@@ -100,10 +88,6 @@ pub struct RpcCommandOptions {
 /// By default, all request fields are configured as flags based on the
 /// kebab-case name of the field. Fields can be turned into positional arguments
 /// instead by using RpcCommandOptions.positional_args.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct FlagOptions {
@@ -133,10 +117,6 @@ pub struct FlagOptions {
     pub hidden: bool,
 }
 /// PositionalArgDescriptor describes a positional argument.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PositionalArgDescriptor {
@@ -151,18 +131,10 @@ pub struct PositionalArgDescriptor {
     pub varargs: bool,
 }
 /// AppOptionsRequest is the RemoteInfoService/AppOptions request type.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AppOptionsRequest {}
 /// AppOptionsResponse is the RemoteInfoService/AppOptions response type.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AppOptionsResponse {

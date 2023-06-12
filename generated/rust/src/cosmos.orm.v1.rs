@@ -1,9 +1,5 @@
 // @generated
 /// TableDescriptor describes an ORM table.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TableDescriptor {
@@ -20,10 +16,6 @@ pub struct TableDescriptor {
     pub id: u32,
 }
 /// PrimaryKeyDescriptor describes a table primary key.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PrimaryKeyDescriptor {
@@ -66,10 +58,6 @@ pub struct PrimaryKeyDescriptor {
     pub auto_increment: bool,
 }
 /// PrimaryKeyDescriptor describes a table secondary index.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SecondaryIndexDescriptor {
@@ -94,10 +82,6 @@ pub struct SecondaryIndexDescriptor {
     pub unique: bool,
 }
 /// TableDescriptor describes an ORM singleton table which has at most one instance.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SingletonDescriptor {

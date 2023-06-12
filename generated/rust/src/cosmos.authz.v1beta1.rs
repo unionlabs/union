@@ -1,46 +1,6 @@
 // @generated
-/// EventGrant is emitted on Msg/Grant
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct EventGrant {
-    /// Msg type URL for which an autorization is granted
-    #[prost(string, tag = "2")]
-    pub msg_type_url: ::prost::alloc::string::String,
-    /// Granter account address
-    #[prost(string, tag = "3")]
-    pub granter: ::prost::alloc::string::String,
-    /// Grantee account address
-    #[prost(string, tag = "4")]
-    pub grantee: ::prost::alloc::string::String,
-}
-/// EventRevoke is emitted on Msg/Revoke
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct EventRevoke {
-    /// Msg type URL for which an autorization is revoked
-    #[prost(string, tag = "2")]
-    pub msg_type_url: ::prost::alloc::string::String,
-    /// Granter account address
-    #[prost(string, tag = "3")]
-    pub granter: ::prost::alloc::string::String,
-    /// Grantee account address
-    #[prost(string, tag = "4")]
-    pub grantee: ::prost::alloc::string::String,
-}
 /// GenericAuthorization gives the grantee unrestricted permissions to execute
 /// the provided method on behalf of the granter's account.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GenericAuthorization {
@@ -50,10 +10,6 @@ pub struct GenericAuthorization {
 }
 /// Grant gives permissions to execute
 /// the provide method with expiration time.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Grant {
@@ -67,10 +23,6 @@ pub struct Grant {
 }
 /// GrantAuthorization extends a grant with both the addresses of the grantee and granter.
 /// It is used in genesis.proto and query.proto
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GrantAuthorization {
@@ -84,10 +36,6 @@ pub struct GrantAuthorization {
     pub expiration: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
 }
 /// GrantQueueItem contains the list of TypeURL of a sdk.Msg.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GrantQueueItem {
@@ -96,10 +44,6 @@ pub struct GrantQueueItem {
     pub msg_type_urls: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
 }
 /// QueryGrantsRequest is the request type for the Query/Grants RPC method.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryGrantsRequest {
@@ -115,10 +59,6 @@ pub struct QueryGrantsRequest {
     pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageRequest>,
 }
 /// QueryGrantsResponse is the response type for the Query/Authorizations RPC method.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryGrantsResponse {
@@ -130,10 +70,6 @@ pub struct QueryGrantsResponse {
     pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageResponse>,
 }
 /// QueryGranterGrantsRequest is the request type for the Query/GranterGrants RPC method.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryGranterGrantsRequest {
@@ -144,10 +80,6 @@ pub struct QueryGranterGrantsRequest {
     pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageRequest>,
 }
 /// QueryGranterGrantsResponse is the response type for the Query/GranterGrants RPC method.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryGranterGrantsResponse {
@@ -159,10 +91,6 @@ pub struct QueryGranterGrantsResponse {
     pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageResponse>,
 }
 /// QueryGranteeGrantsRequest is the request type for the Query/IssuedGrants RPC method.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryGranteeGrantsRequest {
@@ -173,10 +101,6 @@ pub struct QueryGranteeGrantsRequest {
     pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageRequest>,
 }
 /// QueryGranteeGrantsResponse is the response type for the Query/GranteeGrants RPC method.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryGranteeGrantsResponse {
@@ -189,10 +113,6 @@ pub struct QueryGranteeGrantsResponse {
 }
 /// MsgGrant is a request type for Grant method. It declares authorization to the grantee
 /// on behalf of the granter with the provided expiration time.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgGrant {
@@ -204,10 +124,6 @@ pub struct MsgGrant {
     pub grant: ::core::option::Option<Grant>,
 }
 /// MsgExecResponse defines the Msg/MsgExecResponse response type.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgExecResponse {
@@ -217,10 +133,6 @@ pub struct MsgExecResponse {
 /// MsgExec attempts to execute the provided messages using
 /// authorizations granted to the grantee. Each message should have only
 /// one signer corresponding to the granter of the authorization.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgExec {
@@ -233,19 +145,11 @@ pub struct MsgExec {
     pub msgs: ::prost::alloc::vec::Vec<super::super::super::google::protobuf::Any>,
 }
 /// MsgGrantResponse defines the Msg/MsgGrant response type.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgGrantResponse {}
 /// MsgRevoke revokes any authorization with the provided sdk.Msg type on the
 /// granter's account with that has been granted to the grantee.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgRevoke {
@@ -257,23 +161,43 @@ pub struct MsgRevoke {
     pub msg_type_url: ::prost::alloc::string::String,
 }
 /// MsgRevokeResponse defines the Msg/MsgRevokeResponse response type.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgRevokeResponse {}
 /// GenesisState defines the authz module's genesis state.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GenesisState {
     #[prost(message, repeated, tag = "1")]
     pub authorization: ::prost::alloc::vec::Vec<GrantAuthorization>,
+}
+/// EventGrant is emitted on Msg/Grant
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventGrant {
+    /// Msg type URL for which an autorization is granted
+    #[prost(string, tag = "2")]
+    pub msg_type_url: ::prost::alloc::string::String,
+    /// Granter account address
+    #[prost(string, tag = "3")]
+    pub granter: ::prost::alloc::string::String,
+    /// Grantee account address
+    #[prost(string, tag = "4")]
+    pub grantee: ::prost::alloc::string::String,
+}
+/// EventRevoke is emitted on Msg/Revoke
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventRevoke {
+    /// Msg type URL for which an autorization is revoked
+    #[prost(string, tag = "2")]
+    pub msg_type_url: ::prost::alloc::string::String,
+    /// Granter account address
+    #[prost(string, tag = "3")]
+    pub granter: ::prost::alloc::string::String,
+    /// Grantee account address
+    #[prost(string, tag = "4")]
+    pub grantee: ::prost::alloc::string::String,
 }
 include!("cosmos.authz.v1beta1.tonic.rs");
 // @@protoc_insertion_point(module)
