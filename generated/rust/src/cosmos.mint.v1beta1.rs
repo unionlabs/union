@@ -1,5 +1,9 @@
 // @generated
 /// Minter represents the minting state.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Minter {
@@ -11,6 +15,10 @@ pub struct Minter {
     pub annual_provisions: ::prost::alloc::string::String,
 }
 /// Params defines the parameters for the x/mint module.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Params {
@@ -34,10 +42,18 @@ pub struct Params {
     pub blocks_per_year: u64,
 }
 /// QueryParamsRequest is the request type for the Query/Params RPC method.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryParamsRequest {}
 /// QueryParamsResponse is the response type for the Query/Params RPC method.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryParamsResponse {
@@ -46,11 +62,19 @@ pub struct QueryParamsResponse {
     pub params: ::core::option::Option<Params>,
 }
 /// QueryInflationRequest is the request type for the Query/Inflation RPC method.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryInflationRequest {}
 /// QueryInflationResponse is the response type for the Query/Inflation RPC
 /// method.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryInflationResponse {
@@ -60,11 +84,19 @@ pub struct QueryInflationResponse {
 }
 /// QueryAnnualProvisionsRequest is the request type for the
 /// Query/AnnualProvisions RPC method.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryAnnualProvisionsRequest {}
 /// QueryAnnualProvisionsResponse is the response type for the
 /// Query/AnnualProvisions RPC method.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryAnnualProvisionsResponse {
@@ -75,6 +107,10 @@ pub struct QueryAnnualProvisionsResponse {
 /// MsgUpdateParams is the Msg/UpdateParams request type.
 ///
 /// Since: cosmos-sdk 0.47
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgUpdateParams {
@@ -91,10 +127,18 @@ pub struct MsgUpdateParams {
 /// MsgUpdateParams message.
 ///
 /// Since: cosmos-sdk 0.47
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgUpdateParamsResponse {}
 /// GenesisState defines the mint module's genesis state.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GenesisState {

@@ -1,5 +1,9 @@
 // @generated
 /// Params defines the set of params for the distribution module.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Params {
@@ -30,6 +34,10 @@ pub struct Params {
 ///   + number of slashes which ended the associated period (and might need to
 ///   read that record)
 ///   + one per validator for the zeroeth period, set on initialization
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ValidatorHistoricalRewards {
@@ -41,6 +49,10 @@ pub struct ValidatorHistoricalRewards {
 /// ValidatorCurrentRewards represents current rewards and current
 /// period for a validator kept as a running counter and incremented
 /// each block as long as the validator's tokens remain constant.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ValidatorCurrentRewards {
@@ -51,6 +63,10 @@ pub struct ValidatorCurrentRewards {
 }
 /// ValidatorAccumulatedCommission represents accumulated commission
 /// for a validator kept as a running counter, can be withdrawn at any time.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ValidatorAccumulatedCommission {
@@ -59,6 +75,10 @@ pub struct ValidatorAccumulatedCommission {
 }
 /// ValidatorOutstandingRewards represents outstanding (un-withdrawn) rewards
 /// for a validator inexpensive to track, allows simple sanity checks.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ValidatorOutstandingRewards {
@@ -69,6 +89,10 @@ pub struct ValidatorOutstandingRewards {
 /// Height is implicit within the store key.
 /// This is needed to calculate appropriate amount of staking tokens
 /// for delegations which are withdrawn after a slash has occurred.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ValidatorSlashEvent {
@@ -78,6 +102,10 @@ pub struct ValidatorSlashEvent {
     pub fraction: ::prost::alloc::string::String,
 }
 /// ValidatorSlashEvents is a collection of ValidatorSlashEvent messages.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ValidatorSlashEvents {
@@ -85,6 +113,10 @@ pub struct ValidatorSlashEvents {
     pub validator_slash_events: ::prost::alloc::vec::Vec<ValidatorSlashEvent>,
 }
 /// FeePool is the global fee pool for distribution.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct FeePool {
@@ -99,6 +131,10 @@ pub struct FeePool {
 /// longer a need for an explicit CommunityPoolSpendProposal. To spend community
 /// pool funds, a simple MsgCommunityPoolSpend can be invoked from the x/gov
 /// module via a v1 governance proposal.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct CommunityPoolSpendProposal {
@@ -117,6 +153,10 @@ pub struct CommunityPoolSpendProposal {
 /// occurred). NOTE: Even though validators are slashed to whole staking tokens,
 /// the delegators within the validator may be left with less than a full token,
 /// thus sdk.Dec is used.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct DelegatorStartingInfo {
@@ -129,6 +169,10 @@ pub struct DelegatorStartingInfo {
 }
 /// DelegationDelegatorReward represents the properties
 /// of a delegator's delegation reward.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct DelegationDelegatorReward {
@@ -139,6 +183,10 @@ pub struct DelegationDelegatorReward {
 }
 /// CommunityPoolSpendProposalWithDeposit defines a CommunityPoolSpendProposal
 /// with a deposit
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct CommunityPoolSpendProposalWithDeposit {
@@ -154,10 +202,18 @@ pub struct CommunityPoolSpendProposalWithDeposit {
     pub deposit: ::prost::alloc::string::String,
 }
 /// QueryParamsRequest is the request type for the Query/Params RPC method.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryParamsRequest {}
 /// QueryParamsResponse is the response type for the Query/Params RPC method.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryParamsResponse {
@@ -166,6 +222,10 @@ pub struct QueryParamsResponse {
     pub params: ::core::option::Option<Params>,
 }
 /// QueryValidatorDistributionInfoRequest is the request type for the Query/ValidatorDistributionInfo RPC method.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryValidatorDistributionInfoRequest {
@@ -174,6 +234,10 @@ pub struct QueryValidatorDistributionInfoRequest {
     pub validator_address: ::prost::alloc::string::String,
 }
 /// QueryValidatorDistributionInfoResponse is the response type for the Query/ValidatorDistributionInfo RPC method.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryValidatorDistributionInfoResponse {
@@ -189,6 +253,10 @@ pub struct QueryValidatorDistributionInfoResponse {
 }
 /// QueryValidatorOutstandingRewardsRequest is the request type for the
 /// Query/ValidatorOutstandingRewards RPC method.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryValidatorOutstandingRewardsRequest {
@@ -198,6 +266,10 @@ pub struct QueryValidatorOutstandingRewardsRequest {
 }
 /// QueryValidatorOutstandingRewardsResponse is the response type for the
 /// Query/ValidatorOutstandingRewards RPC method.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryValidatorOutstandingRewardsResponse {
@@ -206,6 +278,10 @@ pub struct QueryValidatorOutstandingRewardsResponse {
 }
 /// QueryValidatorCommissionRequest is the request type for the
 /// Query/ValidatorCommission RPC method
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryValidatorCommissionRequest {
@@ -215,6 +291,10 @@ pub struct QueryValidatorCommissionRequest {
 }
 /// QueryValidatorCommissionResponse is the response type for the
 /// Query/ValidatorCommission RPC method
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryValidatorCommissionResponse {
@@ -224,6 +304,10 @@ pub struct QueryValidatorCommissionResponse {
 }
 /// QueryValidatorSlashesRequest is the request type for the
 /// Query/ValidatorSlashes RPC method
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryValidatorSlashesRequest {
@@ -242,6 +326,10 @@ pub struct QueryValidatorSlashesRequest {
 }
 /// QueryValidatorSlashesResponse is the response type for the
 /// Query/ValidatorSlashes RPC method.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryValidatorSlashesResponse {
@@ -254,6 +342,10 @@ pub struct QueryValidatorSlashesResponse {
 }
 /// QueryDelegationRewardsRequest is the request type for the
 /// Query/DelegationRewards RPC method.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryDelegationRewardsRequest {
@@ -266,6 +358,10 @@ pub struct QueryDelegationRewardsRequest {
 }
 /// QueryDelegationRewardsResponse is the response type for the
 /// Query/DelegationRewards RPC method.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryDelegationRewardsResponse {
@@ -275,6 +371,10 @@ pub struct QueryDelegationRewardsResponse {
 }
 /// QueryDelegationTotalRewardsRequest is the request type for the
 /// Query/DelegationTotalRewards RPC method.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryDelegationTotalRewardsRequest {
@@ -284,6 +384,10 @@ pub struct QueryDelegationTotalRewardsRequest {
 }
 /// QueryDelegationTotalRewardsResponse is the response type for the
 /// Query/DelegationTotalRewards RPC method.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryDelegationTotalRewardsResponse {
@@ -296,6 +400,10 @@ pub struct QueryDelegationTotalRewardsResponse {
 }
 /// QueryDelegatorValidatorsRequest is the request type for the
 /// Query/DelegatorValidators RPC method.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryDelegatorValidatorsRequest {
@@ -305,6 +413,10 @@ pub struct QueryDelegatorValidatorsRequest {
 }
 /// QueryDelegatorValidatorsResponse is the response type for the
 /// Query/DelegatorValidators RPC method.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryDelegatorValidatorsResponse {
@@ -314,6 +426,10 @@ pub struct QueryDelegatorValidatorsResponse {
 }
 /// QueryDelegatorWithdrawAddressRequest is the request type for the
 /// Query/DelegatorWithdrawAddress RPC method.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryDelegatorWithdrawAddressRequest {
@@ -323,6 +439,10 @@ pub struct QueryDelegatorWithdrawAddressRequest {
 }
 /// QueryDelegatorWithdrawAddressResponse is the response type for the
 /// Query/DelegatorWithdrawAddress RPC method.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryDelegatorWithdrawAddressResponse {
@@ -332,11 +452,19 @@ pub struct QueryDelegatorWithdrawAddressResponse {
 }
 /// QueryCommunityPoolRequest is the request type for the Query/CommunityPool RPC
 /// method.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryCommunityPoolRequest {}
 /// QueryCommunityPoolResponse is the response type for the Query/CommunityPool
 /// RPC method.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryCommunityPoolResponse {
@@ -346,6 +474,10 @@ pub struct QueryCommunityPoolResponse {
 }
 /// MsgSetWithdrawAddress sets the withdraw address for
 /// a delegator (or validator self-delegation).
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgSetWithdrawAddress {
@@ -356,11 +488,19 @@ pub struct MsgSetWithdrawAddress {
 }
 /// MsgSetWithdrawAddressResponse defines the Msg/SetWithdrawAddress response
 /// type.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgSetWithdrawAddressResponse {}
 /// MsgWithdrawDelegatorReward represents delegation withdrawal to a delegator
 /// from a single validator.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgWithdrawDelegatorReward {
@@ -371,6 +511,10 @@ pub struct MsgWithdrawDelegatorReward {
 }
 /// MsgWithdrawDelegatorRewardResponse defines the Msg/WithdrawDelegatorReward
 /// response type.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgWithdrawDelegatorRewardResponse {
@@ -380,6 +524,10 @@ pub struct MsgWithdrawDelegatorRewardResponse {
 }
 /// MsgWithdrawValidatorCommission withdraws the full commission to the validator
 /// address.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgWithdrawValidatorCommission {
@@ -388,6 +536,10 @@ pub struct MsgWithdrawValidatorCommission {
 }
 /// MsgWithdrawValidatorCommissionResponse defines the
 /// Msg/WithdrawValidatorCommission response type.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgWithdrawValidatorCommissionResponse {
@@ -397,6 +549,10 @@ pub struct MsgWithdrawValidatorCommissionResponse {
 }
 /// MsgFundCommunityPool allows an account to directly
 /// fund the community pool.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgFundCommunityPool {
@@ -406,12 +562,20 @@ pub struct MsgFundCommunityPool {
     pub depositor: ::prost::alloc::string::String,
 }
 /// MsgFundCommunityPoolResponse defines the Msg/FundCommunityPool response type.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgFundCommunityPoolResponse {}
 /// MsgUpdateParams is the Msg/UpdateParams request type.
 ///
 /// Since: cosmos-sdk 0.47
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgUpdateParams {
@@ -428,6 +592,10 @@ pub struct MsgUpdateParams {
 /// MsgUpdateParams message.
 ///
 /// Since: cosmos-sdk 0.47
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgUpdateParamsResponse {}
@@ -436,6 +604,10 @@ pub struct MsgUpdateParamsResponse {}
 /// proposal with the governance module being the executing authority.
 ///
 /// Since: cosmos-sdk 0.47
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgCommunityPoolSpend {
@@ -451,12 +623,20 @@ pub struct MsgCommunityPoolSpend {
 /// MsgCommunityPoolSpend message.
 ///
 /// Since: cosmos-sdk 0.47
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgCommunityPoolSpendResponse {}
 /// DelegatorWithdrawInfo is the address for where distributions rewards are
 /// withdrawn to by default this struct is only used at genesis to feed in
 /// default withdraw addresses.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct DelegatorWithdrawInfo {
@@ -468,6 +648,10 @@ pub struct DelegatorWithdrawInfo {
     pub withdraw_address: ::prost::alloc::string::String,
 }
 /// ValidatorOutstandingRewardsRecord is used for import/export via genesis json.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ValidatorOutstandingRewardsRecord {
@@ -480,6 +664,10 @@ pub struct ValidatorOutstandingRewardsRecord {
 }
 /// ValidatorAccumulatedCommissionRecord is used for import / export via genesis
 /// json.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ValidatorAccumulatedCommissionRecord {
@@ -492,6 +680,10 @@ pub struct ValidatorAccumulatedCommissionRecord {
 }
 /// ValidatorHistoricalRewardsRecord is used for import / export via genesis
 /// json.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ValidatorHistoricalRewardsRecord {
@@ -506,6 +698,10 @@ pub struct ValidatorHistoricalRewardsRecord {
     pub rewards: ::core::option::Option<ValidatorHistoricalRewards>,
 }
 /// ValidatorCurrentRewardsRecord is used for import / export via genesis json.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ValidatorCurrentRewardsRecord {
@@ -517,6 +713,10 @@ pub struct ValidatorCurrentRewardsRecord {
     pub rewards: ::core::option::Option<ValidatorCurrentRewards>,
 }
 /// DelegatorStartingInfoRecord used for import / export via genesis json.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct DelegatorStartingInfoRecord {
@@ -531,6 +731,10 @@ pub struct DelegatorStartingInfoRecord {
     pub starting_info: ::core::option::Option<DelegatorStartingInfo>,
 }
 /// ValidatorSlashEventRecord is used for import / export via genesis json.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ValidatorSlashEventRecord {
@@ -548,6 +752,10 @@ pub struct ValidatorSlashEventRecord {
     pub validator_slash_event: ::core::option::Option<ValidatorSlashEvent>,
 }
 /// GenesisState defines the distribution module's genesis state.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GenesisState {

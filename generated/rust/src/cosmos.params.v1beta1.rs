@@ -1,5 +1,9 @@
 // @generated
 /// ParameterChangeProposal defines a proposal to change one or more parameters.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ParameterChangeProposal {
@@ -12,6 +16,10 @@ pub struct ParameterChangeProposal {
 }
 /// ParamChange defines an individual parameter change, for use in
 /// ParameterChangeProposal.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ParamChange {
@@ -23,6 +31,10 @@ pub struct ParamChange {
     pub value: ::prost::alloc::string::String,
 }
 /// QueryParamsRequest is request type for the Query/Params RPC method.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryParamsRequest {
@@ -34,6 +46,10 @@ pub struct QueryParamsRequest {
     pub key: ::prost::alloc::string::String,
 }
 /// QueryParamsResponse is response type for the Query/Params RPC method.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryParamsResponse {
@@ -45,6 +61,10 @@ pub struct QueryParamsResponse {
 /// subspaces and all keys for a subspace.
 ///
 /// Since: cosmos-sdk 0.46
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QuerySubspacesRequest {}
@@ -52,6 +72,10 @@ pub struct QuerySubspacesRequest {}
 /// registered subspaces and all keys for a subspace.
 ///
 /// Since: cosmos-sdk 0.46
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QuerySubspacesResponse {
@@ -62,6 +86,10 @@ pub struct QuerySubspacesResponse {
 /// the subspace.
 ///
 /// Since: cosmos-sdk 0.46
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Subspace {

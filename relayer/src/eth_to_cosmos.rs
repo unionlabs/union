@@ -13,9 +13,12 @@ use lodestar_rpc::types::{
 };
 use prost::Message;
 use protos::{
-    cosmos::tx::{
-        self,
-        v1beta1::{SignDoc, TxBody, TxRaw},
+    cosmos::{
+        ics23::v1::CompressedNonExistenceProof,
+        tx::{
+            self,
+            v1beta1::{SignDoc, TxBody, TxRaw},
+        },
     },
     google::protobuf::Any,
     ibc::{
@@ -29,7 +32,7 @@ use protos::{
     union::ibc::lightclients::ethereum::{
         self,
         v1::{
-            AccountUpdate, BeaconBlockHeader, ExecutionPayloadHeader, LightClientUpdate,
+            AccountUpdate, BeaconBlockHeader, ExecutionPayloadHeader, LightClientUpdate, Proof,
             SyncAggregate, TrustedSyncCommittee,
         },
     },
@@ -340,10 +343,7 @@ pub async fn update_wasm_client(sequence: u64) {
     // dbg!(&bootstrap);
 
     // arbitrary data
-    let account_update = AccountUpdate {
-        account_proof: vec![200, 132, 35, 35, 35, 35, 130, 35, 35],
-        account_storage_root: vec![1; 32],
-    };
+    let account_update = AccountUpdate { proofs: vec![] };
 
     let wasm_header = wasm::v1::Header {
         data: ethereum::v1::Header {

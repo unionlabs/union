@@ -21,6 +21,8 @@ pub enum Error {
     Bls(AmclError),
     ValueMismatch,
     Trie(Box<TrieError<primitive_types::H256, rlp::DecoderError>>),
+    RlpDecode,
+    InvalidHash,
 }
 
 impl core::fmt::Display for Error {
@@ -51,6 +53,8 @@ impl core::fmt::Display for Error {
             Error::InvalidPublicKey => write!(f, "Invalid public key."),
             Error::ValueMismatch => write!(f, "Proof is invalid. Value mismatch."),
             Error::Trie(e) => write!(f, "Trie error: {e:?}"),
+            Error::RlpDecode => write!(f, "Rlp decoding failed."),
+            Error::InvalidHash => write!(f, "Invalid hash."),
         }
     }
 }

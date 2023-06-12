@@ -2,6 +2,10 @@
 /// ABCIResponses retains the responses
 /// of the various ABCI calls during block processing.
 /// It is persisted to disk for each height before calling Commit.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AbciResponses {
@@ -13,6 +17,10 @@ pub struct AbciResponses {
     pub begin_block: ::core::option::Option<super::abci::ResponseBeginBlock>,
 }
 /// ValidatorsInfo represents the latest validator set, or the last height it changed
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ValidatorsInfo {
@@ -22,6 +30,10 @@ pub struct ValidatorsInfo {
     pub last_height_changed: i64,
 }
 /// ConsensusParamsInfo represents the latest consensus params, or the last height it changed
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ConsensusParamsInfo {
@@ -30,6 +42,10 @@ pub struct ConsensusParamsInfo {
     #[prost(int64, tag = "2")]
     pub last_height_changed: i64,
 }
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AbciResponsesInfo {
@@ -38,6 +54,10 @@ pub struct AbciResponsesInfo {
     #[prost(int64, tag = "2")]
     pub height: i64,
 }
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Version {
@@ -46,6 +66,10 @@ pub struct Version {
     #[prost(string, tag = "2")]
     pub software: ::prost::alloc::string::String,
 }
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct State {

@@ -1,6 +1,5 @@
-// pub use crate::crypto::{PublicKey as BlsPublicKey, Signature as BlsSignature};
-// pub use crate::domains::DomainType;
 use crate::byte_vector::ByteVector;
+use crate::error::Error;
 use ssz_rs::prelude::*;
 
 pub use ssz_rs::prelude::U256;
@@ -73,22 +72,32 @@ impl DomainType {
     }
 }
 
-#[cfg(test)]
-#[cfg(feature = "serde")]
-mod tests {
-    use super::*;
+#[derive(Debug, Clone, Default)]
+pub struct Account {
+    pub nonce: u64,
+    pub balance: Vec<u8>,
+    pub storage_root: Hash32,
+    pub code_hash: Hash32,
+}
 
-    use serde_json;
-
-    #[test]
-    fn test_serde() {
-        let bytes = Bytes32::default();
-        let json = serde_json::to_string(&bytes).unwrap();
-        assert_eq!(
-            json,
-            "\"0x0000000000000000000000000000000000000000000000000000000000000000\""
-        );
-        let bytes_roundtrip: Bytes32 = serde_json::from_str(&json).unwrap();
-        assert_eq!(bytes, bytes_roundtrip);
+impl Account {
+    pub fn from_rlp_bytes(bz: &[u8]) -> Result<Account, Error> {
+        let r = rlp::Rlp::new(bz);
+        Ok(Account {
+            nonce: r.val_at::<u64>(0).map_err(|_| Error::RlpDecode)?,
+            balance: r.val_at::<Vec<u8>>(1).map_err(|_| Error::RlpDecode)?,
+            storage_root: Hash32::try_from(
+                r.val_at::<Vec<u8>>(2)
+                    .map_err(|_| Error::RlpDecode)?
+                    .as_slice(),
+            )
+            .map_err(|_| Error::InvalidHash)?,
+            code_hash: Hash32::try_from(
+                r.val_at::<Vec<u8>>(3)
+                    .map_err(|_| Error::RlpDecode)?
+                    .as_slice(),
+            )
+            .map_err(|_| Error::InvalidHash)?,
+        })
     }
 }

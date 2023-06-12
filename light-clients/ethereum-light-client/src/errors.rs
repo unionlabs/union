@@ -71,6 +71,9 @@ pub enum Error {
 
     #[error("Client's store period must be equal to update's finalized period")]
     StorePeriodMustBeEqualToFinalizedPeriod,
+
+    #[error("Proof is empty.")]
+    EmptyProof,
 }
 
 impl Error {

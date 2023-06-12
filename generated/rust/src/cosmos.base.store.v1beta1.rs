@@ -1,6 +1,10 @@
 // @generated
 /// CommitInfo defines commit information used by the multi-store when committing
 /// a version/height.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct CommitInfo {
@@ -11,6 +15,10 @@ pub struct CommitInfo {
 }
 /// StoreInfo defines store-specific commit information. It contains a reference
 /// between a store name and the commit ID.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct StoreInfo {
@@ -21,6 +29,10 @@ pub struct StoreInfo {
 }
 /// CommitID defines the commitment information when a specific store is
 /// committed.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct CommitId {
@@ -34,6 +46,10 @@ pub struct CommitId {
 /// Deletes
 ///
 /// Since: cosmos-sdk 0.43
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct StoreKvPair {
@@ -50,6 +66,10 @@ pub struct StoreKvPair {
 }
 /// BlockMetadata contains all the abci event data of a block
 /// the file streamer dump them into files together with the state changes.
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct BlockMetadata {
@@ -74,6 +94,10 @@ pub struct BlockMetadata {
 /// Nested message and enum types in `BlockMetadata`.
 pub mod block_metadata {
     /// DeliverTx encapulate deliver tx request and response.
+    #[cfg_attr(
+        feature = "ethers",
+        derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+    )]
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct DeliverTx {

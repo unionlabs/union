@@ -1,7 +1,5 @@
 use crate::{
-    client_state::ClientState,
-    consensus_state::TrustedConsensusState,
-    eth_types::{LightClientConfig, SyncCommittee},
+    client_state::ClientState, consensus_state::TrustedConsensusState, eth_types::SyncCommittee,
 };
 use ethereum_verifier::{
     primitives::Slot, ForkParameters, LightClientContext as TLightClientContext,
@@ -25,8 +23,6 @@ impl<'a> LightClientContext<'a> {
 }
 
 impl<'a> TLightClientContext for LightClientContext<'a> {
-    type Config = LightClientConfig;
-
     fn finalized_slot(&self) -> Slot {
         self.trusted_consensus_state.state.slot
     }

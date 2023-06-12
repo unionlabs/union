@@ -3373,6 +3373,7 @@ dependencies = [
 name = "protos"
 version = "0.1.0"
 dependencies = [
+ "ethers",
  "prost",
  "schemars",
  "serde",

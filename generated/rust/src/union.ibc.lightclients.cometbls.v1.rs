@@ -1,6 +1,9 @@
 // @generated
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
-#[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ClientState {
     #[prost(string, tag = "1")]
@@ -29,8 +32,11 @@ pub struct ClientState {
     pub latest_height:
         ::core::option::Option<super::super::super::super::super::ibc::core::client::v1::Height>,
 }
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
-#[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ConsensusState {
     /// timestamp that corresponds to the block height in which the ConsensusState
@@ -46,6 +52,10 @@ pub struct ConsensusState {
     #[prost(bytes = "vec", tag = "3")]
     pub next_validators_hash: ::prost::alloc::vec::Vec<u8>,
 }
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Misbehaviour {
@@ -54,6 +64,10 @@ pub struct Misbehaviour {
     #[prost(message, optional, tag = "3")]
     pub header_2: ::core::option::Option<Header>,
 }
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Header {
@@ -68,8 +82,11 @@ pub struct Header {
     #[prost(bytes = "vec", tag = "4")]
     pub zero_knowledge_proof: ::prost::alloc::vec::Vec<u8>,
 }
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
 #[allow(clippy::derive_partial_eq_without_eq)]
-#[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Fraction {
     #[prost(uint64, tag = "1")]

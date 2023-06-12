@@ -210,8 +210,9 @@
             ".union.ibc.lightclients.ethereum.v1.LightClientUpdate.finality_branch" = [ serde_inner_base64 ];
             ".union.ibc.lightclients.ethereum.v1.SyncAggregate.sync_committee_bits" = [ serde_base64 ];
             ".union.ibc.lightclients.ethereum.v1.SyncAggregate.sync_committee_signature" = [ serde_base64 ];
-            ".union.ibc.lightclients.ethereum.v1.AccountUpdate.account_proof" = [ serde_base64 ];
-            ".union.ibc.lightclients.ethereum.v1.AccountUpdate.account_storage_root" = [ serde_base64 ];
+            ".union.ibc.lightclients.ethereum.v1.Proof.key" = [ serde_base64 ];
+            ".union.ibc.lightclients.ethereum.v1.Proof.value" = [ serde_base64 ];
+            ".union.ibc.lightclients.ethereum.v1.Proof.proof" = [ serde_inner_base64 ];
             ".cosmos.ics23.v1.LeafOp.prehash_key" = [ serde_default ];
             ".cosmos.ics23.v1.LeafOp.prefix" = [ jsonschema_str serde_base64 ];
             ".cosmos.ics23.v1.InnerOp.prefix" = [ serde_base64 jsonschema_str ];
