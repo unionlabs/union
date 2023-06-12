@@ -16,12 +16,12 @@ use cosmwasm_std::{
     StdError, StdResult,
 };
 use ethereum_verifier::{
-    primitives::{ExecutionAddress, Hash32},
+    primitives::{ExecutionAddress, Hash32, Slot},
     validate_light_client_update, verify_account_storage_root, verify_storage_proof,
 };
 use ibc::core::ics24_host::Path;
 use prost::Message;
-use protos::union::ibc::lightclients::ethereum::v1::{Header as RawEthHeader, StorageProof};
+use protos::union::ibc::lightclients::ethereum::v1::{Header as RawEthHeader, Proof, StorageProof};
 use sha3::Digest;
 use ssz_rs::prelude::*;
 use std::str::FromStr;
@@ -116,6 +116,39 @@ pub fn verify_membership(
     )
     .map_err(|e| Error::InvalidPath(e.to_string()))?;
 
+    // This storage root is verified during the header update, so we don't need to verify it again.
+    let storage_root = Hash32::try_from(consensus_state.storage_root.as_bytes()).map_err(|_| {
+        Error::decode("consensus state has invalid `storage_root` (must be 32 bytes)")
+    })?;
+
+    let storage_proof = {
+        let mut proofs = StorageProof::decode(proof.0.as_slice())
+            .map_err(|_| Error::decode("when decoding storage proof"))?
+            .proofs;
+        if proofs.len() > 1 {
+            return Err(Error::BatchingProofsNotSupported);
+        }
+        proofs.pop().ok_or(Error::EmptyProof)?
+    };
+
+    do_verify_membership(
+        path,
+        storage_root,
+        client_state.counterparty_commitment_slot,
+        storage_proof,
+        value,
+    )?;
+
+    Ok(ContractResult::valid(None))
+}
+
+pub fn do_verify_membership(
+    path: Path,
+    storage_root: Hash32,
+    counterparty_commitment_slot: Slot,
+    storage_proof: Proof,
+    value: Binary,
+) -> Result<(), Error> {
     let raw_value = match path {
         Path::ClientState(_) => {
             let cometbls_client_state = tendermint_to_cometbls_client_state(
@@ -143,24 +176,10 @@ pub fn verify_membership(
         }
     };
 
-    let storage_proof = {
-        let mut proofs = StorageProof::decode(proof.0.as_slice())
-            .map_err(|_| Error::decode("when decoding storage proof"))?
-            .proofs;
-        if proofs.len() > 1 {
-            return Err(Error::BatchingProofsNotSupported);
-        }
-        proofs.pop().ok_or(Error::EmptyProof)?
-    };
-
-    // This storage root is verified during the header update, so we don't need to verify it again.
-    let storage_root = Hash32::try_from(consensus_state.storage_root.as_bytes()).map_err(|_| {
-        Error::decode("consensus state has invalid `storage_root` (must be 32 bytes)")
-    })?;
+    println!("PATH: {:?}", path.to_string());
 
     // Data MUST be stored to the commitment path that is defined in ICS23.
-    if generate_commitment_key(path.to_string(), client_state.counterparty_commitment_slot)
-        != storage_proof.key
+    if generate_commitment_key(path.to_string(), counterparty_commitment_slot) != storage_proof.key
     {
         return Err(Error::InvalidCommitmentKey);
     }
@@ -179,9 +198,7 @@ pub fn verify_membership(
         &stored_value,
         &storage_proof.proof,
     )
-    .map_err(|e| Error::Verification(e.to_string()))?;
-
-    Ok(ContractResult::valid(None))
+    .map_err(|e| Error::Verification(e.to_string()))
 }
 
 pub fn update_header(mut deps: DepsMut, header: EthHeader) -> Result<ContractResult, Error> {
@@ -277,10 +294,29 @@ mod test {
         Empty, OwnedDeps,
     };
     use ethereum_verifier::crypto::BlsPublicKey;
-    use ibc::Height;
-    use protos::ibc::lightclients::wasm::v1::{
-        ClientState as WasmClientState, ConsensusState as WasmConsensusState,
+    use ibc::{
+        core::{
+            ics02_client::client_type::ClientType,
+            ics24_host::{identifier::ClientId, path::{ClientStatePath, ClientConsensusStatePath}},
+        },
+        Height as IbcHeight,
     };
+    use protos::{
+        google::protobuf::{Duration, Any, Timestamp},
+        ibc::{lightclients::{
+            tendermint::v1::{
+                ClientState as TmClientState, ConsensusState as TmConsensusState, Fraction,
+            },
+            wasm::v1::{ClientState as WasmClientState, ConsensusState as WasmConsensusState},
+        }, core::commitment::v1::MerkleRoot},
+    };
+    use protos::{
+        ibc::core::client::v1::Height as ProtoHeight,
+        union::ibc::lightclients::ethereum::v1::{
+            ClientState as EthClientState, ConsensusState as EthConsensusState,
+        },
+    };
+    use wasm_light_client_types::msg::Height;
 
     #[test]
     fn update_works_with_good_data() {
@@ -296,7 +332,7 @@ mod test {
         save_wasm_consensus_state(
             deps.as_mut(),
             &wasm_consensus_state,
-            &Height::new(0, 1328).unwrap(),
+            &IbcHeight::new(0, 1328).unwrap(),
         );
 
         let updates: &[RawEthHeader] = &[
@@ -318,7 +354,7 @@ mod test {
                 // It's a finality update
                 let (_, consensus_state) = read_consensus_state(
                     deps.as_ref(),
-                    Height::new(0, update.consensus_update.finalized_header.beacon.slot).unwrap(),
+                    IbcHeight::new(0, update.consensus_update.finalized_header.beacon.slot).unwrap(),
                 )
                 .unwrap()
                 .unwrap();
@@ -374,7 +410,7 @@ mod test {
         save_wasm_consensus_state(
             deps.as_mut(),
             &wasm_consensus_state,
-            &Height::new(0, 1328).unwrap(),
+            &IbcHeight::new(0, 1328).unwrap(),
         );
 
         let update: EthHeader = serde_json::from_str::<RawEthHeader>(include_str!(
@@ -416,5 +452,137 @@ mod test {
         let (mut deps, mut update) = prepare_for_fail_tests();
         update.consensus_update.finality_branch[0][0] += 1;
         assert!(update_header(deps.as_mut(), update).is_err());
+    }
+
+    #[test]
+    fn membership_verification_works_for_client_state() {
+        let proof = Proof {  
+                key: hex::decode(
+                    "b35cad2b263a62faaae30d8b3f51201fea5501d2df17d59a3eef2751403e684f",
+                )
+                .unwrap(),
+                value: hex::decode(
+                    "e83b93381f2e43cc03cb7e823317b5dd1854d02abccd5c2fa96a59888ddcd602"
+                ).unwrap(),
+                proof: vec![
+                    hex::decode("f871808080a08e048ecf26a7dc2320ef294e3def6e4e8d52934299986e0268f43fa426b283b5808080808080808080a0f7202a06e8dc011d3123f907597f51546fe03542551af2c9c54d21ba0fbafc7280a0771904c17414dbc0741f3d1fce0d2709d4f73418020b9b4961e4cb3ec6f46ac280").unwrap(),
+                    hex::decode("f843a03a8c7f353aebdcd6b56a67cd1b5829681a3c6e1695282161ab3faa6c3666d4c3a1a0e83b93381f2e43cc03cb7e823317b5dd1854d02abccd5c2fa96a59888ddcd602").unwrap(),
+                ],
+        };
+
+        let storage_root =
+            hex::decode("1223777f330ea4734b0a4ac964def8242a3bc17421c929494837d591bf1d33c4")
+                .unwrap();
+
+        let client_state = TmClientState {
+            chain_id: "ibc-0".to_string(),
+            trust_level: Some(Fraction {
+                numerator: 1,
+                denominator: 3,
+            }),
+            trusting_period: Some(Duration {
+                seconds: 1814400,
+                nanos: 0,
+            }),
+            unbonding_period: Some(Duration {
+                seconds: 1814400,
+                nanos: 0,
+            }),
+            max_clock_drift: Some(Duration {
+                seconds: 40,
+                nanos: 0,
+            }),
+            frozen_height: Some(ProtoHeight {
+                revision_number: 0,
+                revision_height: 0,
+            }),
+            latest_height: Some(ProtoHeight {
+                revision_number: 0,
+                revision_height: 1,
+            }),
+            ..Default::default()
+        };
+
+        let any_client_state = Any {
+            type_url: "/ibc.lightclients.tendermint.v1.ClientState".into(),
+            value: client_state.encode_to_vec(),
+        };
+
+        let wasm_client_state = WasmClientState {
+            data: any_client_state.encode_to_vec(),
+            ..Default::default()
+        };
+
+        let any_client_state = Any {
+            type_url: "/ibc.lightclients.wasm.v1.ClientState".into(),
+            value: wasm_client_state.encode_to_vec(),
+        };
+
+        do_verify_membership(
+            ClientStatePath::new(&ClientId::new(ClientType::new("10-ethereum".into()), 0).unwrap()).into(),
+            Hash32::try_from(storage_root.as_slice()).unwrap(),
+            3,
+            proof,
+            any_client_state.encode_to_vec().into(),
+        )
+        .unwrap();
+    }
+
+    #[test]
+    fn membership_verification_works_for_consensus_state() {
+        let proof = Proof {  
+                key: hex::decode(
+                    "9f22934f38bf5512b9c33ed55f71525c5d129895aad5585a2624f6c756c1c101",
+                )
+                .unwrap(),
+                value: hex::decode(
+                    "3a62ff0d63f377098f870ab7a320b5d6eb2f8cd70c766c987ea2d4aa74125e8a"
+                ).unwrap(),
+                proof: vec![
+                    hex::decode("f871808080a08e048ecf26a7dc2320ef294e3def6e4e8d52934299986e0268f43fa426b283b5808080808080808080a0f7202a06e8dc011d3123f907597f51546fe03542551af2c9c54d21ba0fbafc7280a0361d1cfb583d3e591e6f9b9114dc891a989736d2da999a0cd9333fe42bb99b1180").unwrap(),
+                    hex::decode("f843a036210c27d08bc29676360b820acc6de648bb730808a3a7d36a960f6869ac4a3aa1a03a62ff0d63f377098f870ab7a320b5d6eb2f8cd70c766c987ea2d4aa74125e8a").unwrap(),
+                ],
+        };
+
+        let storage_root =
+            hex::decode("034ad1c5701b0c51653c0529b1d1873365cb6ff8d262888b25876f3631ad52e3")
+                .unwrap();
+
+        let consensus_state = TmConsensusState {
+            timestamp: Some(Timestamp {
+                seconds: 1684400046,
+                nanos: 0,
+            }),
+            root: Some(MerkleRoot {
+                hash: hex::decode("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855").unwrap(),
+            }),
+            next_validators_hash: hex::decode("B41F9EE164A6520C269F8928A1F3264A6F983F27478CB3A2251B77A65E0CEFBF").unwrap(),
+        };
+
+        let any_consensus_state = Any {
+            type_url: "/ibc.lightclients.tendermint.v1.ConsensusState".into(),
+            value: consensus_state.encode_to_vec(),
+        };
+
+        let wasm_consensus_state = WasmConsensusState {
+            data: any_consensus_state.encode_to_vec(),
+            ..Default::default()
+        };
+
+        let any_consensus_state = Any {
+            type_url: "/ibc.lightclients.wasm.v1.ClientState".into(),
+            value: wasm_consensus_state.encode_to_vec(),
+        };
+
+        do_verify_membership(
+            ClientConsensusStatePath::new(
+                &ClientId::new(ClientType::new("10-ethereum".into()), 0).unwrap(), &IbcHeight::new(0, 1).unwrap()).into(),
+            Hash32::try_from(storage_root.as_slice()).unwrap(),
+            3,
+            proof,
+            any_consensus_state.encode_to_vec().into(),
+        )
+        .unwrap();
+
     }
 }

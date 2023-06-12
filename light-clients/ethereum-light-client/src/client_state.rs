@@ -243,24 +243,3 @@ pub fn decode_any_to_tendermint_client_state(state: &[u8]) -> Result<RawTmClient
         Error::decode("when decoding any state to tm client state in `verify_membership`")
     })
 }
-
-impl TryFrom<Any> for ClientState {
-    type Error = Error;
-
-    fn try_from(raw: Any) -> Result<Self, Self::Error> {
-        match raw.type_url.as_str() {
-            Self::TYPE_URL => RawClientState::decode(raw.value.as_slice())
-                .map_err(|_| Error::decode("during parsing `RawClientState` from `Any`"))?
-                .try_into(),
-            _ => Err(Error::UnknownTypeUrl),
-        }
-    }
-}
-
-pub fn downcast_eth_client_state(cs: &dyn Ics2ClientState) -> Result<&ClientState, ClientError> {
-    cs.as_any()
-        .downcast_ref::<ClientState>()
-        .ok_or_else(|| ClientError::ClientArgsTypeMismatch {
-            client_type: ClientType::new("08-wasm".into()),
-        })
-}
