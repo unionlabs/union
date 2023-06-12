@@ -28,6 +28,9 @@ struct ProcessedMoment {
 library CometblsHelp {
     using BytesLib for bytes;
 
+    string constant WASM_CLIENT_STATE_URL = "/ibc.lightsclients.wasm.v1.ClientState";
+    string constant WASM_CONSENSUS_STATE_URL = "/ibc.lightsclients.wasm.v1.ConsensusState";
+
     uint256 constant PRIME_R = 21888242871839275222246405745257275088548364400416034343698204186575808495617;
     uint256 constant PRIME_R_MINUS_ONE = PRIME_R - 1;
 
@@ -128,9 +131,9 @@ library CometblsHelp {
         return MerkleTree.optimizedBlockRoot(normalizedHeader);
     }
 
-    function toOptimizedConsensusState(UnionIbcLightclientsCometblsV1ConsensusState.Data memory consensusState) internal pure returns (OptimizedConsensusState memory) {
+    function toOptimizedConsensusState(UnionIbcLightclientsCometblsV1ConsensusState.Data memory consensusState, uint64 timestamp) internal pure returns (OptimizedConsensusState memory) {
         return OptimizedConsensusState({
-                timestamp: uint64(consensusState.timestamp.secs),
+                timestamp: timestamp,
                 root: consensusState.root.hash.toBytes32(0),
                 nextValidatorsHash: consensusState.next_validators_hash.toBytes32(0)
             });
@@ -148,16 +151,8 @@ library CometblsHelp {
                     hash: commit.block_id.part_set_header.hash
                     })
                 }),
-            chain_id: chainId
+                chain_id: chainId
             });
-    }
-
-    function marshalClientStateEthABI(UnionIbcLightclientsCometblsV1ClientState.Data memory clientState) internal pure returns (bytes memory) {
-        return abi.encode(clientState);
-    }
-
-    function marshalConsensusStateEthABI(UnionIbcLightclientsCometblsV1ConsensusState.Data memory consensusState) internal view returns (bytes memory) {
-        return abi.encode(consensusState);
     }
 
     function marshalHeaderEthABI(UnionIbcLightclientsCometblsV1Header.Data memory header) internal pure returns (bytes memory) {
@@ -168,19 +163,64 @@ library CometblsHelp {
         return (abi.decode(bz, (UnionIbcLightclientsCometblsV1Header.Data)), true);
     }
 
-    function unmarshalClientStateEthABI(bytes memory bz)
+    function unmarshalClientStateFromProto(bytes memory bz)
         internal
         pure
-        returns (UnionIbcLightclientsCometblsV1ClientState.Data memory)
+        returns (UnionIbcLightclientsCometblsV1ClientState.Data memory, IbcCoreClientV1Height.Data memory)
     {
-        return abi.decode(bz, (UnionIbcLightclientsCometblsV1ClientState.Data));
+        Any.Data memory any = Any.decode(bz);
+        require(keccak256(bytes(any.type_url)) == keccak256(bytes(WASM_CLIENT_STATE_URL)), "invalid client state url");
+        IbcLightclientsWasmV1ClientState.Data memory wasmClientState = IbcLightclientsWasmV1ClientState.decode(any.value);
+        return (UnionIbcLightclientsCometblsV1ClientState.decode(wasmClientState.data), wasmClientState.latest_height);
     }
 
-    function unmarshalConsensusStateEthABI(bytes memory bz)
+    function unmarshalConsensusStateFromProto(bytes memory bz)
         internal
         pure
-        returns (UnionIbcLightclientsCometblsV1ConsensusState.Data memory)
+        returns (UnionIbcLightclientsCometblsV1ConsensusState.Data memory, uint64)
     {
-        return abi.decode(bz, (UnionIbcLightclientsCometblsV1ConsensusState.Data));
+        Any.Data memory any = Any.decode(bz);
+        require(keccak256(bytes(any.type_url)) == keccak256(bytes(WASM_CONSENSUS_STATE_URL)), "invalid consensus state url");
+        IbcLightclientsWasmV1ConsensusState.Data memory wasmConsensusState = IbcLightclientsWasmV1ConsensusState.decode(any.value);
+        return (UnionIbcLightclientsCometblsV1ConsensusState.decode(wasmConsensusState.data), wasmConsensusState.timestamp);
+    }
+
+    function marshalToProto(OptimizedConsensusState memory consensusState) internal pure returns (bytes memory) {
+        IbcLightclientsWasmV1ConsensusState.Data memory wasmConsensusState =
+            IbcLightclientsWasmV1ConsensusState.Data({
+                    timestamp: consensusState.timestamp,
+                    data: UnionIbcLightclientsCometblsV1ConsensusState.encode(UnionIbcLightclientsCometblsV1ConsensusState.Data({
+                        root: IbcCoreCommitmentV1MerkleRoot.Data({
+                            hash: abi.encodePacked(consensusState.root)
+                        }),
+                        next_validators_hash: abi.encodePacked(consensusState.nextValidatorsHash)
+                    }))
+                });
+        return Any.encode(Any.Data({
+            type_url: WASM_CONSENSUS_STATE_URL,
+            value: IbcLightclientsWasmV1ConsensusState.encode(wasmConsensusState)
+        }));
+    }
+
+    function marshalToProto(UnionIbcLightclientsCometblsV1ClientState.Data memory clientState, IbcCoreClientV1Height.Data memory latestHeight) internal pure returns (bytes memory) {
+        IbcLightclientsWasmV1ClientState.Data memory wasmClientState =
+            IbcLightclientsWasmV1ClientState.Data({
+                data: UnionIbcLightclientsCometblsV1ClientState.encode(clientState),
+                // TODO: what do they expect?
+                code_id: hex"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                latest_height: latestHeight
+            });
+        return Any.encode(Any.Data({
+            type_url: WASM_CLIENT_STATE_URL,
+            value: IbcLightclientsWasmV1ClientState.encode(wasmClientState)
+        }));
+    }
+
+    function marshalToCommitment(OptimizedConsensusState memory consensusState) internal pure returns (bytes32) {
+        return keccak256(marshalToProto(consensusState));
+    }
+
+    function marshalToCommitment(UnionIbcLightclientsCometblsV1ClientState.Data memory clientState, IbcCoreClientV1Height.Data memory latestHeight) internal pure returns (bytes32) {
+        return keccak256(marshalToProto(clientState, latestHeight));
     }
 }

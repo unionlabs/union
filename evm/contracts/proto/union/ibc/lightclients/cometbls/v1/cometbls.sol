@@ -16,7 +16,6 @@ library UnionIbcLightclientsCometblsV1ClientState {
     GoogleProtobufDuration.Data unbonding_period;
     GoogleProtobufDuration.Data max_clock_drift;
     IbcCoreClientV1Height.Data frozen_height;
-    IbcCoreClientV1Height.Data latest_height;
   }
 
   // Decoder section
@@ -81,9 +80,6 @@ library UnionIbcLightclientsCometblsV1ClientState {
       } else
       if (fieldId == 6) {
         pointer += _read_frozen_height(pointer, bs, r);
-      } else
-      if (fieldId == 7) {
-        pointer += _read_latest_height(pointer, bs, r);
       } else
       {
         pointer += ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
@@ -194,23 +190,6 @@ library UnionIbcLightclientsCometblsV1ClientState {
   ) internal pure returns (uint) {
     (IbcCoreClientV1Height.Data memory x, uint256 sz) = _decode_IbcCoreClientV1Height(p, bs);
     r.frozen_height = x;
-    return sz;
-  }
-
-  /**
-   * @dev The decoder for reading a field
-   * @param p The offset of bytes array to start decode
-   * @param bs The bytes array to be decoded
-   * @param r The in-memory struct
-   * @return The number of bytes decoded
-   */
-  function _read_latest_height(
-    uint256 p,
-    bytes memory bs,
-    Data memory r
-  ) internal pure returns (uint) {
-    (IbcCoreClientV1Height.Data memory x, uint256 sz) = _decode_IbcCoreClientV1Height(p, bs);
-    r.latest_height = x;
     return sz;
   }
 
@@ -359,15 +338,6 @@ library UnionIbcLightclientsCometblsV1ClientState {
     );
     pointer += IbcCoreClientV1Height._encode_nested(r.frozen_height, pointer, bs);
     
-    
-    pointer += ProtoBufRuntime._encode_key(
-      7,
-      ProtoBufRuntime.WireType.LengthDelim,
-      pointer,
-      bs
-    );
-    pointer += IbcCoreClientV1Height._encode_nested(r.latest_height, pointer, bs);
-    
     return pointer - offset;
   }
   // nested encoder
@@ -417,7 +387,6 @@ library UnionIbcLightclientsCometblsV1ClientState {
     e += 1 + ProtoBufRuntime._sz_lendelim(GoogleProtobufDuration._estimate(r.unbonding_period));
     e += 1 + ProtoBufRuntime._sz_lendelim(GoogleProtobufDuration._estimate(r.max_clock_drift));
     e += 1 + ProtoBufRuntime._sz_lendelim(IbcCoreClientV1Height._estimate(r.frozen_height));
-    e += 1 + ProtoBufRuntime._sz_lendelim(IbcCoreClientV1Height._estimate(r.latest_height));
     return e;
   }
   // empty checker
@@ -447,7 +416,6 @@ library UnionIbcLightclientsCometblsV1ClientState {
     GoogleProtobufDuration.store(input.unbonding_period, output.unbonding_period);
     GoogleProtobufDuration.store(input.max_clock_drift, output.max_clock_drift);
     IbcCoreClientV1Height.store(input.frozen_height, output.frozen_height);
-    IbcCoreClientV1Height.store(input.latest_height, output.latest_height);
 
   }
 
@@ -482,7 +450,6 @@ library UnionIbcLightclientsCometblsV1ConsensusState {
 
   //struct definition
   struct Data {
-    GoogleProtobufTimestamp.Data timestamp;
     IbcCoreCommitmentV1MerkleRoot.Data root;
     bytes next_validators_hash;
   }
@@ -532,9 +499,6 @@ library UnionIbcLightclientsCometblsV1ConsensusState {
     while (pointer < offset + sz) {
       (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(pointer, bs);
       pointer += bytesRead;
-      if (fieldId == 1) {
-        pointer += _read_timestamp(pointer, bs, r);
-      } else
       if (fieldId == 2) {
         pointer += _read_root(pointer, bs, r);
       } else
@@ -550,23 +514,6 @@ library UnionIbcLightclientsCometblsV1ConsensusState {
   }
 
   // field readers
-
-  /**
-   * @dev The decoder for reading a field
-   * @param p The offset of bytes array to start decode
-   * @param bs The bytes array to be decoded
-   * @param r The in-memory struct
-   * @return The number of bytes decoded
-   */
-  function _read_timestamp(
-    uint256 p,
-    bytes memory bs,
-    Data memory r
-  ) internal pure returns (uint) {
-    (GoogleProtobufTimestamp.Data memory x, uint256 sz) = _decode_GoogleProtobufTimestamp(p, bs);
-    r.timestamp = x;
-    return sz;
-  }
 
   /**
    * @dev The decoder for reading a field
@@ -603,25 +550,6 @@ library UnionIbcLightclientsCometblsV1ConsensusState {
   }
 
   // struct decoder
-  /**
-   * @dev The decoder for reading a inner struct field
-   * @param p The offset of bytes array to start decode
-   * @param bs The bytes array to be decoded
-   * @return The decoded inner-struct
-   * @return The number of bytes used to decode
-   */
-  function _decode_GoogleProtobufTimestamp(uint256 p, bytes memory bs)
-    internal
-    pure
-    returns (GoogleProtobufTimestamp.Data memory, uint)
-  {
-    uint256 pointer = p;
-    (uint256 sz, uint256 bytesRead) = ProtoBufRuntime._decode_varint(pointer, bs);
-    pointer += bytesRead;
-    (GoogleProtobufTimestamp.Data memory r, ) = GoogleProtobufTimestamp._decode(pointer, bs, sz);
-    return (r, sz + bytesRead);
-  }
-
   /**
    * @dev The decoder for reading a inner struct field
    * @param p The offset of bytes array to start decode
@@ -673,15 +601,6 @@ library UnionIbcLightclientsCometblsV1ConsensusState {
   {
     uint256 offset = p;
     uint256 pointer = p;
-    
-    
-    pointer += ProtoBufRuntime._encode_key(
-      1,
-      ProtoBufRuntime.WireType.LengthDelim,
-      pointer,
-      bs
-    );
-    pointer += GoogleProtobufTimestamp._encode_nested(r.timestamp, pointer, bs);
     
     
     pointer += ProtoBufRuntime._encode_key(
@@ -744,7 +663,6 @@ library UnionIbcLightclientsCometblsV1ConsensusState {
     Data memory r
   ) internal pure returns (uint) {
     uint256 e;
-    e += 1 + ProtoBufRuntime._sz_lendelim(GoogleProtobufTimestamp._estimate(r.timestamp));
     e += 1 + ProtoBufRuntime._sz_lendelim(IbcCoreCommitmentV1MerkleRoot._estimate(r.root));
     e += 1 + ProtoBufRuntime._sz_lendelim(r.next_validators_hash.length);
     return e;
@@ -770,7 +688,6 @@ library UnionIbcLightclientsCometblsV1ConsensusState {
    * @param output The in-storage struct
    */
   function store(Data memory input, Data storage output) internal {
-    GoogleProtobufTimestamp.store(input.timestamp, output.timestamp);
     IbcCoreCommitmentV1MerkleRoot.store(input.root, output.root);
     output.next_validators_hash = input.next_validators_hash;
 
