@@ -26,6 +26,7 @@ message ClientState {
   Fraction trust_level = 8;
   uint64 trusting_period = 9;
 
+  // FIXME: isn't it already defined in ibc.lightclients.wasm.v1?
   uint64 latest_slot = 10;
   .ibc.core.client.v1.Height frozen_height = 11;
 
@@ -36,6 +37,7 @@ message ClientState {
 message ConsensusState {
   uint64 slot = 1;
   bytes storage_root = 2;
+  // FIXME: isn't it already defined in ibc.lightclients.wasm.v1?
   uint64 timestamp = 3;
   bytes current_sync_committee = 4;
   bytes next_sync_committee = 5;

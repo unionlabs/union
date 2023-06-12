@@ -25,6 +25,7 @@ contract IBCFullTest is Test {
     using CometblsHelp for UnionIbcLightclientsCometblsV1ConsensusState.Data;
     using CometblsHelp for UnionIbcLightclientsCometblsV1ClientState.Data;
     using CometblsHelp for UnionIbcLightclientsCometblsV1Header.Data;
+    using CometblsHelp for OptimizedConsensusState;
     using CometblsHelp for bytes;
 
     TestableIBCHandler handler;
@@ -38,8 +39,8 @@ contract IBCFullTest is Test {
     string constant CHANNEL_VERSION = "1";
     bytes constant MERKLE_PREFIX = "ibc";
 
-    bytes constant GENESIS_APP_ROOT = hex"03B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B850";
-    bytes constant GENESIS_VALIDATOR_ROOT = hex"811594B875D1BF0C7992459AE166367C094CB7EAD07DF3F849F4D01EBFBF9A07";
+    bytes32 constant GENESIS_APP_ROOT = hex"03B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B850";
+    bytes32 constant GENESIS_VALIDATOR_ROOT = hex"811594B875D1BF0C7992459AE166367C094CB7EAD07DF3F849F4D01EBFBF9A07";
 
     function setUp() public {
         address ibcClient = address(new IBCClient());
@@ -102,7 +103,7 @@ contract IBCFullTest is Test {
         handler.setNextSequenceAck(PORT_ID, CHANNEL_ID, 1);
     }
 
-    function createClient(uint64 height, bytes memory nextValidatorsHash, bytes memory rootHash) internal {
+    function createClient(uint64 height, bytes32 nextValidatorsHash, bytes32 rootHash) internal {
         handler.createClient(
             IBCMsgs.MsgCreateClient({
                 clientType: CLIENT_TYPE,
@@ -127,23 +128,17 @@ contract IBCFullTest is Test {
                         frozen_height: IbcCoreClientV1Height.Data({
                             revision_number: 0,
                             revision_height: 0
-                            }),
-                        latest_height: IbcCoreClientV1Height.Data({
-                            revision_number: 0,
-                            revision_height: height
                             })
-                    }).marshalClientStateEthABI()
+                    }).marshalToProto(IbcCoreClientV1Height.Data({
+                        revision_number: 0,
+                        revision_height: height
+                    }))
                 ,
-                consensusStateBytes: UnionIbcLightclientsCometblsV1ConsensusState.Data({
-                        timestamp: GoogleProtobufTimestamp.Data({
-                            secs: 1682000000,
-                            nanos: 0
-                            }),
-                        root: IbcCoreCommitmentV1MerkleRoot.Data({
-                            hash: rootHash
-                            }),
-                        next_validators_hash: nextValidatorsHash
-                    }).marshalConsensusStateEthABI()
+                consensusStateBytes: OptimizedConsensusState({
+                        root: rootHash,
+                        nextValidatorsHash: nextValidatorsHash,
+                        timestamp: 1682000000
+                    }).marshalToProto()
                 })
         );
     }
@@ -153,7 +148,7 @@ contract IBCFullTest is Test {
             IBCMsgs.MsgUpdateClient({
                 clientId: CLIENT_ID,
                 clientMessage: clientMessage
-                })
+            })
         );
     }
 
