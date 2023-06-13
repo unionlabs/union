@@ -53,24 +53,14 @@ jobs:
         with:
           nixbuild_token: ${{ secrets.nixbuild_token }}
       - run: mkdir ${{ matrix.system }}
-      - run: ls -la
-      - run: ls -la ${{ matrix.system }}
       - run: |
           echo "Getting OUTPUT and NARINFO_NAME"
-          pwd
-          cat result.json
           OUTPUT=`cat result.json | jq -r '.packages."${{ matrix.system }}"."${{ matrix.package }}".outputs.out'`
           NARINFO_NAME=$(basename "$OUTPUT" | cut -d'-' -f1)
-          echo "OUTPUT = $OUTPUT"
-          echo "NARINFO_NAME = $NARINFO_NAME"
-        
         
           echo "Copying artifacts from nixbuild.net"
           nix copy --to file://`pwd`/${{ matrix.system }} --from ssh-ng://eu.nixbuild.net $OUTPUT --extra-experimental-features nix-command
-
-          echo "TREE v"
-          tree
-        
+      
           echo "Get the NAR_URL"
           nar_url_line=$(cat ./${{ matrix.system }}/${NARINFO_NAME}.narinfo | grep "URL:")
           NAR_URL=$(echo "$nar_url_line" | cut -d " " -f 2-)
@@ -79,9 +69,6 @@ jobs:
           cat ${{ matrix.system }}/${NAR_URL} | xz -dc | nix-store --restore ${{ matrix.system }}.${{ matrix.package }}
           mv ${{ matrix.system }}.${{ matrix.package }}/bin/${{ matrix.package }} ${{ matrix.package }}-${{ matrix.system }}
 
-          echo "DEBUG"
-          ls -la 
-          tree
       - uses: actions/upload-artifact@v3
         with:
           name: ${{ matrix.package }}-${{ matrix.system }}
@@ -178,7 +165,6 @@ jobs:
     permissions: write-all
     steps:
       - uses: actions/download-artifact@v3
-      - run: ls -R
       # NOTE: please ensure that the following two steps remain in sync, other than the 
       # if condition, the `prerelease` value, and the name.
       - if: "contains(github.ref_name, 'rc')"
