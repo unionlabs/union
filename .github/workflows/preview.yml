@@ -11,7 +11,7 @@ env:
     NIXPKGS_CHANNEL: nixos-22.11
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
   cancel-in-progress: true
 
 jobs:
