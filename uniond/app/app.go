@@ -492,8 +492,6 @@ func New(
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
 
-	// ... other modules keepers
-
 	// Create IBC Keeper
 	ibcKeeper := ibckeeper.NewKeeper(
 		appCodec,
@@ -503,6 +501,7 @@ func New(
 		app.UpgradeKeeper,
 		scopedIBCKeeper,
 	)
+
 	/*
 	 We create an intermediate client keeper called cometbls client because
 	 the connection handshake does a `ValidateSelfClient` which downcast the
@@ -520,8 +519,8 @@ func New(
 		appCodec,
 		keys[ibcexported.StoreKey],
 		ibcCometblsClient,
-		app.IBCKeeper.ConnectionKeeper,
-		app.IBCKeeper.PortKeeper,
+		ibcKeeper.ConnectionKeeper,
+		ibcKeeper.PortKeeper,
 		scopedIBCKeeper,
 	)
 	app.IBCKeeper = ibcKeeper
