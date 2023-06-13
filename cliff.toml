@@ -52,13 +52,13 @@ commit_parsers = [
     { body = ".*security", group = "Security"},
 ]
 # protect breaking changes from being skipped due to matching a skipping commit_parser
-protect_breaking_commits = false
+protect_breaking_commits = true
 # filter out the commits that are not matched by commit parsers
 filter_commits = false
 # glob pattern for matching git tags
 tag_pattern = "v[0-9]\\.[0-9]\\.[0-9]"
 # regex for skipping tags
-skip_tags = "v0.1.0-beta.1"
+skip_tags = ""
 # regex for ignoring tags
 ignore_tags = "v[0-9]\\.[0-9]\\.[0-9]-rc[0-9]"
 # sort the tags chronologically
