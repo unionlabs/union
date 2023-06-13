@@ -14,10 +14,25 @@ body = """
     ## [unreleased]
 {% endif %}\
 {% for group, commits in commits | group_by(attribute="group") %}
-    ### {{ group }}
-    {% for commit in commits %}
-        - {% if commit.breaking %}[**breaking**] {% endif %}{{ commit.message }}\
-    {% endfor %}
+    ### {{ group | upper_first }}
+    {% for commit in commits
+    | filter(attribute="scope")
+    | sort(attribute="scope") %}
+        - *({{commit.scope}})* {{ commit.message }}
+        {%- if commit.breaking %}
+        {% raw %}  {% endraw %}- **BREAKING**: *({{commit.scope}})* {{commit.breaking_description}}
+        {%- endif -%}
+    {%- endfor -%}
+    {%- for commit in commits %}
+        {%- if commit.scope -%}
+        {% else -%}
+            - {{ commit.message }}
+            {% if commit.breaking -%}
+            {% raw %}  {% endraw %}- **BREAKING**: {{commit.breaking_description}}
+            {% endif -%}
+        {% endif -%}
+    {% endfor -%}
+    {% raw %}\n{% endraw %}\
 {% endfor %}\n
 """
 # remove the leading and trailing whitespace from the template
@@ -49,6 +64,7 @@ commit_parsers = [
     { message = "^test", group = "Testing"},
     { message = "^chore\\(release\\): prepare for", skip = true},
     { message = "^chore", group = "Miscellaneous Tasks"},
+    { message = "^ci", group = "CI/CD"},
     { body = ".*security", group = "Security"},
 ]
 # protect breaking changes from being skipped due to matching a skipping commit_parser
