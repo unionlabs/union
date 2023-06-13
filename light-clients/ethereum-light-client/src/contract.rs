@@ -183,17 +183,21 @@ pub fn do_verify_membership(
     }
 
     // We store the hash of the data, not the data itself to the commitments map.
-    let stored_value = rlp::encode(
-        &(sha3::Keccak256::new()
-            .chain_update(raw_value)
-            .finalize()
-            .as_slice()),
+    let stored_value = sha3::Keccak256::new().chain_update(raw_value).finalize();
+
+    println!(
+        "STORED: {:?}\nEXPECTED: {:?}",
+        storage_proof.value, stored_value
     );
+
+    if stored_value.as_slice() != storage_proof.value {
+        return Err(Error::ExpectedAndStoredValueMismatch);
+    }
 
     verify_storage_proof(
         storage_root,
         &storage_proof.key,
-        &stored_value,
+        &rlp::encode(&stored_value.as_slice()),
         &storage_proof.proof,
     )
     .map_err(|e| Error::Verification(e.to_string()))
@@ -296,17 +300,21 @@ mod test {
         core::{
             ics02_client::client_type::ClientType,
             ics24_host::{
-                identifier::ClientId,
-                path::{ClientConsensusStatePath, ClientStatePath},
+                identifier::{ClientId, ConnectionId},
+                path::{ClientConsensusStatePath, ClientStatePath, ConnectionPath},
             },
         },
         Height as IbcHeight,
     };
-    use protos::ibc::core::client::v1::Height as ProtoHeight;
+    use protos::ibc::core::{
+        client::v1::Height as ProtoHeight,
+        commitment::v1::MerklePrefix,
+        connection::v1::{Counterparty, Version},
+    };
     use protos::{
         google::protobuf::{Any, Duration, Timestamp},
         ibc::{
-            core::commitment::v1::MerkleRoot,
+            core::{commitment::v1::MerkleRoot, connection::v1::ConnectionEnd},
             lightclients::{
                 tendermint::v1::{
                     ClientState as TmClientState, ConsensusState as TmConsensusState, Fraction,
@@ -591,5 +599,123 @@ mod test {
             any_consensus_state.encode_to_vec().into(),
         )
         .unwrap();
+    }
+
+    fn prepare_connection_end() -> (Proof, Vec<u8>, ConnectionEnd) {
+        let proof = Proof {
+                key: hex::decode(
+                    "8e80b902df24e0c324c454fcd01ae0c92966a3f6fe4d1809e7fb75043b6549db",
+                )
+                .unwrap(),
+                value: hex::decode(
+                    "9ac95d1087518963f797142524b3c6c273bb74297c076c00b02ed129bcb4cfc0"
+                ).unwrap(),
+                proof: vec![
+                    hex::decode("f871808080a08e048ecf26a7dc2320ef294e3def6e4e8d52934299986e0268f43fa426b283b5808080808080808080a0f7202a06e8dc011d3123f907597f51546fe03542551af2c9c54d21ba0fbafc7280a0771904c17414dbc0741f3d1fce0d2709d4f73418020b9b4961e4cb3ec6f46ac280").unwrap(),
+                    hex::decode("f843a0320fddcfabb459601044296253eed7d7cb53d9a8a3e46b1f7db5115be261c419a1a09ac95d1087518963f797142524b3c6c273bb74297c076c00b02ed129bcb4cfc0").unwrap(),
+                ],
+        };
+
+        let storage_root =
+            hex::decode("1223777f330ea4734b0a4ac964def8242a3bc17421c929494837d591bf1d33c4")
+                .unwrap();
+
+        let connection_end = ConnectionEnd {
+            client_id: "10-ethereum-0".into(),
+            versions: vec![Version {
+                identifier: "1".into(),
+                features: vec!["ORDER_ORDERED".into(), "ORDER_UNORDERED".into()],
+            }],
+            state: 1,
+            counterparty: Some(Counterparty {
+                client_id: "08-wasm-0".into(),
+                connection_id: Default::default(),
+                prefix: Some(MerklePrefix {
+                    key_prefix: b"ibc".to_vec(),
+                }),
+            }),
+            delay_period: 0,
+        };
+
+        (proof, storage_root, connection_end)
+    }
+
+    #[test]
+    fn membership_verification_works_for_proto_encoded_data() {
+        let (proof, storage_root, connection_end) = prepare_connection_end();
+
+        do_verify_membership(
+            ConnectionPath::new(&ConnectionId::new(0)).into(),
+            Hash32::try_from(storage_root.as_slice()).unwrap(),
+            3,
+            proof,
+            connection_end.encode_to_vec().into(),
+        )
+        .unwrap();
+    }
+
+    #[test]
+    fn membership_verification_fails_for_incorrect_proofs() {
+        let (mut proof, storage_root, connection_end) = prepare_connection_end();
+
+        let proofs = vec![
+            {
+                let mut proof = proof.clone();
+                proof.value[10] = u8::MAX - proof.value[10]; // Makes sure that produced value is always valid and different
+                proof
+            },
+            {
+                let mut proof = proof.clone();
+                proof.key[5] = u8::MAX - proof.key[5];
+                proof
+            },
+            {
+                proof.proof[0][10] = u8::MAX - proof.proof[0][10];
+                proof
+            },
+        ];
+
+        for proof in proofs {
+            assert!(do_verify_membership(
+                ConnectionPath::new(&ConnectionId::new(0)).into(),
+                Hash32::try_from(storage_root.as_slice()).unwrap(),
+                3,
+                proof,
+                connection_end.encode_to_vec().into(),
+            )
+            .is_err());
+        }
+    }
+
+    #[test]
+    fn membership_verification_fails_for_incorrect_storage_root() {
+        let (proof, mut storage_root, connection_end) = prepare_connection_end();
+
+        storage_root[10] = u8::MAX - storage_root[10];
+
+        assert!(do_verify_membership(
+            ConnectionPath::new(&ConnectionId::new(0)).into(),
+            Hash32::try_from(storage_root.as_slice()).unwrap(),
+            3,
+            proof,
+            connection_end.encode_to_vec().into(),
+        )
+        .is_err());
+    }
+
+    #[test]
+    fn membership_verification_fails_for_incorrect_data() {
+        let (proof, storage_root, mut connection_end) = prepare_connection_end();
+
+        connection_end.client_id = "incorrect-client-id".into();
+
+        assert!(do_verify_membership(
+            ConnectionPath::new(&ConnectionId::new(0)).into(),
+            Hash32::try_from(storage_root.as_slice()).unwrap(),
+            3,
+            proof,
+            connection_end.encode_to_vec().into(),
+        )
+        .is_err());
     }
 }

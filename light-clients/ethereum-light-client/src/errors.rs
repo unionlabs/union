@@ -72,11 +72,14 @@ pub enum Error {
     #[error("Client's store period must be equal to update's finalized period")]
     StorePeriodMustBeEqualToFinalizedPeriod,
 
-    #[error("Proof is empty.")]
+    #[error("Proof is empty")]
     EmptyProof,
 
     #[error("Batching proofs are not supported")]
     BatchingProofsNotSupported,
+
+    #[error("Expected value and stored value doesn't match")]
+    ExpectedAndStoredValueMismatch,
 }
 
 impl Error {
