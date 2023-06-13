@@ -185,11 +185,6 @@ pub fn do_verify_membership(
     // We store the hash of the data, not the data itself to the commitments map.
     let stored_value = sha3::Keccak256::new().chain_update(raw_value).finalize();
 
-    println!(
-        "STORED: {:?}\nEXPECTED: {:?}",
-        storage_proof.value, stored_value
-    );
-
     if stored_value.as_slice() != storage_proof.value {
         return Err(Error::ExpectedAndStoredValueMismatch);
     }
