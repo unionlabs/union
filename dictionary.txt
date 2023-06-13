@@ -122,6 +122,7 @@ chainer
 chainid
 chainsafe
 chevdor
+clientkeeper
 clippy
 clsx
 cmov
@@ -139,6 +140,7 @@ commitizen
 commitmenttypes
 concat
 configurator
+connectiontypes
 consensusparamkeeper
 consensusparamtypes
 consensys
@@ -231,9 +233,12 @@ horiz
 httptemplate
 iavl
 ibcante
+ibcchannelkeeper
 ibcclient
 ibcclientclient
 ibcclienttypes
+ibccometblsclient
+ibcconnectionkeeper
 ibcexported
 ibcfee
 ibcfeekeeper
