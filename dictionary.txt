@@ -441,6 +441,7 @@ stylesheet
 submessage
 submsg
 subsec
+substituters
 substores
 sumbitter
 svrcmd

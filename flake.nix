@@ -1,4 +1,5 @@
 {
+  description = "Union is a trust-minimized, zero-knowledge bridging protocol, designed for censorship resistance, extremely high security and usage in decentralized finance.";
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-parts = {
@@ -61,6 +62,7 @@
         treefmt-nix.flakeModule
         pre-commit-hooks.flakeModule
       ];
+
       perSystem = { config, self', inputs', pkgs, treefmt, rust, crane, system, lib, ... }:
         {
           _module = {
@@ -255,4 +257,11 @@
           };
         };
     };
+
+
+  nixConfig = {
+    extra-substituters = [ "https://union.cachix.org/" ];
+    extra-trusted-public-keys = [ "union.cachix.org-1:TV9o8jexzNVbM1VNBOq9fu8NK+hL6ZhOyOh0quATy+M=" ];
+  };
+
 }
