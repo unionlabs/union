@@ -176,8 +176,6 @@ pub fn do_verify_membership(
         }
     };
 
-    println!("PATH: {:?}", path.to_string());
-
     // Data MUST be stored to the commitment path that is defined in ICS23.
     if generate_commitment_key(path.to_string(), counterparty_commitment_slot) != storage_proof.key
     {
@@ -297,26 +295,26 @@ mod test {
     use ibc::{
         core::{
             ics02_client::client_type::ClientType,
-            ics24_host::{identifier::ClientId, path::{ClientStatePath, ClientConsensusStatePath}},
+            ics24_host::{
+                identifier::ClientId,
+                path::{ClientConsensusStatePath, ClientStatePath},
+            },
         },
         Height as IbcHeight,
     };
+    use protos::ibc::core::client::v1::Height as ProtoHeight;
     use protos::{
-        google::protobuf::{Duration, Any, Timestamp},
-        ibc::{lightclients::{
-            tendermint::v1::{
-                ClientState as TmClientState, ConsensusState as TmConsensusState, Fraction,
+        google::protobuf::{Any, Duration, Timestamp},
+        ibc::{
+            core::commitment::v1::MerkleRoot,
+            lightclients::{
+                tendermint::v1::{
+                    ClientState as TmClientState, ConsensusState as TmConsensusState, Fraction,
+                },
+                wasm::v1::{ClientState as WasmClientState, ConsensusState as WasmConsensusState},
             },
-            wasm::v1::{ClientState as WasmClientState, ConsensusState as WasmConsensusState},
-        }, core::commitment::v1::MerkleRoot},
-    };
-    use protos::{
-        ibc::core::client::v1::Height as ProtoHeight,
-        union::ibc::lightclients::ethereum::v1::{
-            ClientState as EthClientState, ConsensusState as EthConsensusState,
         },
     };
-    use wasm_light_client_types::msg::Height;
 
     #[test]
     fn update_works_with_good_data() {
@@ -456,7 +454,7 @@ mod test {
 
     #[test]
     fn membership_verification_works_for_client_state() {
-        let proof = Proof {  
+        let proof = Proof {
                 key: hex::decode(
                     "b35cad2b263a62faaae30d8b3f51201fea5501d2df17d59a3eef2751403e684f",
                 )
@@ -519,7 +517,8 @@ mod test {
         };
 
         do_verify_membership(
-            ClientStatePath::new(&ClientId::new(ClientType::new("10-ethereum".into()), 0).unwrap()).into(),
+            ClientStatePath::new(&ClientId::new(ClientType::new("10-ethereum".into()), 0).unwrap())
+                .into(),
             Hash32::try_from(storage_root.as_slice()).unwrap(),
             3,
             proof,
@@ -530,7 +529,7 @@ mod test {
 
     #[test]
     fn membership_verification_works_for_consensus_state() {
-        let proof = Proof {  
+        let proof = Proof {
                 key: hex::decode(
                     "9f22934f38bf5512b9c33ed55f71525c5d129895aad5585a2624f6c756c1c101",
                 )
@@ -554,9 +553,15 @@ mod test {
                 nanos: 0,
             }),
             root: Some(MerkleRoot {
-                hash: hex::decode("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855").unwrap(),
+                hash: hex::decode(
+                    "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                )
+                .unwrap(),
             }),
-            next_validators_hash: hex::decode("B41F9EE164A6520C269F8928A1F3264A6F983F27478CB3A2251B77A65E0CEFBF").unwrap(),
+            next_validators_hash: hex::decode(
+                "B41F9EE164A6520C269F8928A1F3264A6F983F27478CB3A2251B77A65E0CEFBF",
+            )
+            .unwrap(),
         };
 
         let any_consensus_state = Any {
@@ -576,13 +581,15 @@ mod test {
 
         do_verify_membership(
             ClientConsensusStatePath::new(
-                &ClientId::new(ClientType::new("10-ethereum".into()), 0).unwrap(), &IbcHeight::new(0, 1).unwrap()).into(),
+                &ClientId::new(ClientType::new("10-ethereum".into()), 0).unwrap(),
+                &IbcHeight::new(0, 1).unwrap(),
+            )
+            .into(),
             Hash32::try_from(storage_root.as_slice()).unwrap(),
             3,
             proof,
             any_consensus_state.encode_to_vec().into(),
         )
         .unwrap();
-
     }
 }

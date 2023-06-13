@@ -3,12 +3,7 @@ use ethereum_verifier::{
     primitives::{Epoch, Root, Slot, Version},
     ForkParameters,
 };
-use ibc::{
-    core::ics02_client::{
-        client_state::ClientState as Ics2ClientState, client_type::ClientType, error::ClientError,
-    },
-    Height,
-};
+use ibc::Height;
 use prost::Message;
 use protos::{
     google::protobuf::Any,
