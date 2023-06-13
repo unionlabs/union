@@ -61,6 +61,7 @@
         treefmt-nix.flakeModule
         pre-commit-hooks.flakeModule
       ];
+
       perSystem = { config, self', inputs', pkgs, treefmt, rust, crane, system, lib, ... }:
         {
           _module = {
@@ -255,4 +256,11 @@
           };
         };
     };
+
+
+  nixConfig = {
+    extra-substituters = [ "https://union.cachix.org/" ];
+    extra-trusted-public-keys = [ "union.cachix.org-1:TV9o8jexzNVbM1VNBOq9fu8NK+hL6ZhOyOh0quATy+M=" ];
+  };
+
 }
