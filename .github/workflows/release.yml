@@ -177,33 +177,42 @@ jobs:
     needs: [ docker-manifest, dl-bins ]
     permissions: write-all
     steps:
+      - uses: actions/checkout@v3
+        with:
+          lfs: true
+          fetch-depth: 0
+      - uses: orhun/git-cliff-action@v2
+        with:
+          config: cliff.toml
+          args: -vl
+        env:
+          OUTPUT: ${{github.ref_name}}-CHANGELOG.md
       - uses: actions/download-artifact@v3
-      - run: ls -R
+      - run: ls uniond-aarch64-linux
       # NOTE: please ensure that the following two steps remain in sync, other than the 
       # if condition, the `prerelease` value, and the name.
       - if: "contains(github.ref_name, 'rc')"
         name: 'Create Release Candidate'
-        uses: marvinpinto/action-automatic-releases@v1.2.1
+        uses: softprops/action-gh-release@v1
         with:
-          repo_token: '${{secrets.GITHUB_TOKEN}}'
           prerelease: true
-          automatic_release_tag: ${{github.ref_name}}
-          title: ${{github.ref_name}}
+          tag_name: ${{github.ref_name}}
+          fail_on_unmatched_files: true
           files: |
-            uniond-aarch64-linux
-            uniond-x86_64-linux
-            unionpd-aarch64-linux
-            unionpd-x86_64-linux
+            **/uniond-aarch64-linux
+            **/uniond-x86_64-linux
+            **/unionpd-aarch64-linux
+            **/unionpd-x86_64-linux
       - if: "!contains(github.ref_name, 'rc')"
         name: 'Create Release'
-        uses: marvinpinto/action-automatic-releases@v1.2.1
+        uses: softprops/action-gh-release@v1
         with:
-          repo_token: '${{secrets.GITHUB_TOKEN}}'
           prerelease: false
-          automatic_release_tag: ${{github.ref_name}}
-          title: ${{github.ref_name}}
+          tag_name: ${{github.ref_name}}
+          body_path: ${{github.ref_name}}-CHANGELOG.md
+          fail_on_unmatched_files: true
           files: |
-            uniond-aarch64-linux
-            uniond-x86_64-linux
-            unionpd-aarch64-linux
-            unionpd-x86_64-linux
+            **/uniond-aarch64-linux
+            **/uniond-x86_64-linux
+            **/unionpd-aarch64-linux
+            **/unionpd-x86_64-linux

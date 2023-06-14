@@ -176,6 +176,8 @@ dyld
 dylib
 elems
 emptively
+endfor
+endraw
 errorsmod
 esac
 ethabi
@@ -357,6 +359,7 @@ posthandler
 precommit
 prehash
 preimage
+preprocessors
 prevote
 println
 privval
