@@ -117,13 +117,16 @@ pub fn verify_membership(
     .map_err(|e| Error::InvalidPath(e.to_string()))?;
 
     // This storage root is verified during the header update, so we don't need to verify it again.
-    let storage_root = Hash32::try_from(consensus_state.storage_root.as_bytes()).map_err(|_| {
-        Error::decode("consensus state has invalid `storage_root` (must be 32 bytes)")
+    let storage_root = Hash32::try_from(consensus_state.storage_root.as_bytes()).map_err(|e| {
+        Error::decode(format!(
+            "consensus state has invalid `storage_root`: {}",
+            e.to_string()
+        ))
     })?;
 
     let storage_proof = {
         let mut proofs = StorageProof::decode(proof.0.as_slice())
-            .map_err(|_| Error::decode("when decoding storage proof"))?
+            .map_err(|e| Error::decode(format!("when decoding storage proof: {}", e.to_string())))?
             .proofs;
         if proofs.len() > 1 {
             return Err(Error::BatchingProofsNotSupported);
@@ -176,23 +179,31 @@ pub fn do_verify_membership(
         }
     };
 
+    let expected_commitment_key =
+        generate_commitment_key(path.to_string(), counterparty_commitment_slot);
+
     // Data MUST be stored to the commitment path that is defined in ICS23.
-    if generate_commitment_key(path.to_string(), counterparty_commitment_slot) != storage_proof.key
-    {
-        return Err(Error::InvalidCommitmentKey);
+    if expected_commitment_key != storage_proof.key {
+        return Err(Error::invalid_commitment_key(
+            expected_commitment_key,
+            storage_proof.key,
+        ));
     }
 
     // We store the hash of the data, not the data itself to the commitments map.
-    let stored_value = sha3::Keccak256::new().chain_update(raw_value).finalize();
+    let expected_value = sha3::Keccak256::new().chain_update(raw_value).finalize();
 
-    if stored_value.as_slice() != storage_proof.value {
-        return Err(Error::ExpectedAndStoredValueMismatch);
+    if expected_value.as_slice() != storage_proof.value {
+        return Err(Error::stored_value_mismatch(
+            expected_value,
+            storage_proof.value.as_slice(),
+        ));
     }
 
     verify_storage_proof(
         storage_root,
         &storage_proof.key,
-        &rlp::encode(&stored_value.as_slice()),
+        &rlp::encode(&expected_value.as_slice()),
         &storage_proof.proof,
     )
     .map_err(|e| Error::Verification(e.to_string()))
@@ -318,6 +329,50 @@ mod test {
             },
         },
     };
+
+    /// These values are obtained by uploading a dummy contract with the necessary types to the devnet and
+    /// reading the values by `eth_getProof` RPC call.
+    const CLIENT_STATE_PROOF_KEY: &str =
+        "b35cad2b263a62faaae30d8b3f51201fea5501d2df17d59a3eef2751403e684f";
+    const CLIENT_STATE_PROOF_VALUE: &str =
+        "e83b93381f2e43cc03cb7e823317b5dd1854d02abccd5c2fa96a59888ddcd602";
+    const CLIENT_STATE_PROOF: [&str; 2] = [
+        "f871808080a08e048ecf26a7dc2320ef294e3def6e4e8d52934299986e0268f43fa426b283b5808080808080808080a0f7202a06e8dc011d3123f907597f51546fe03542551af2c9c54d21ba0fbafc7280a0771904c17414dbc0741f3d1fce0d2709d4f73418020b9b4961e4cb3ec6f46ac280",
+        "f843a03a8c7f353aebdcd6b56a67cd1b5829681a3c6e1695282161ab3faa6c3666d4c3a1a0e83b93381f2e43cc03cb7e823317b5dd1854d02abccd5c2fa96a59888ddcd602"
+    ];
+    /// Storage root of the contract at the time that this proof is obtained.
+    const CLIENT_STATE_STORAGE_ROOT: &str =
+        "1223777f330ea4734b0a4ac964def8242a3bc17421c929494837d591bf1d33c4";
+
+    const CONSENSUS_STATE_PROOF_KEY: &str =
+        "9f22934f38bf5512b9c33ed55f71525c5d129895aad5585a2624f6c756c1c101";
+    const CONSENSUS_STATE_PROOF_VALUE: &str =
+        "3a62ff0d63f377098f870ab7a320b5d6eb2f8cd70c766c987ea2d4aa74125e8a";
+    const CONSENSUS_STATE_PROOF: [&str; 2] = [
+        "f871808080a08e048ecf26a7dc2320ef294e3def6e4e8d52934299986e0268f43fa426b283b5808080808080808080a0f7202a06e8dc011d3123f907597f51546fe03542551af2c9c54d21ba0fbafc7280a0361d1cfb583d3e591e6f9b9114dc891a989736d2da999a0cd9333fe42bb99b1180",
+        "f843a036210c27d08bc29676360b820acc6de648bb730808a3a7d36a960f6869ac4a3aa1a03a62ff0d63f377098f870ab7a320b5d6eb2f8cd70c766c987ea2d4aa74125e8a"
+    ];
+    /// Storage root of the contract at the time that this proof is obtained.
+    const CONSENSUS_STATE_STORAGE_ROOT: &str =
+        "034ad1c5701b0c51653c0529b1d1873365cb6ff8d262888b25876f3631ad52e3";
+    const CONSENSUS_STATE_CONTRACT_MERKLE_ROOT: &str =
+        "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
+    const CONSENSUS_STATE_NEXT_VALIDATORS_HASH: &str =
+        "B41F9EE164A6520C269F8928A1F3264A6F983F27478CB3A2251B77A65E0CEFBF";
+
+    const CONNECTION_END_PROOF_KEY: &str =
+        "8e80b902df24e0c324c454fcd01ae0c92966a3f6fe4d1809e7fb75043b6549db";
+    const CONNECTION_END_PROOF_VALUE: &str =
+        "9ac95d1087518963f797142524b3c6c273bb74297c076c00b02ed129bcb4cfc0";
+    const CONNECTION_END_PROOF: [&str; 2] = ["f871808080a08e048ecf26a7dc2320ef294e3def6e4e8d52934299986e0268f43fa426b283b5808080808080808080a0f7202a06e8dc011d3123f907597f51546fe03542551af2c9c54d21ba0fbafc7280a0771904c17414dbc0741f3d1fce0d2709d4f73418020b9b4961e4cb3ec6f46ac280",
+        "f843a0320fddcfabb459601044296253eed7d7cb53d9a8a3e46b1f7db5115be261c419a1a09ac95d1087518963f797142524b3c6c273bb74297c076c00b02ed129bcb4cfc0"];
+    /// Storage root of the contract at the time that this proof is obtained.
+    const CONNECTION_END_STORAGE_ROOT: &str =
+        "1223777f330ea4734b0a4ac964def8242a3bc17421c929494837d591bf1d33c4";
+
+    const WASM_CLIENT_ID_PREFIX: &str = "08-wasm";
+    const ETHEREUM_CLIENT_ID_PREFIX: &str = "10-ethereum";
+    const IBC_KEY_PREFIX: &str = "ibc";
 
     #[test]
     fn update_works_with_good_data() {
@@ -458,22 +513,15 @@ mod test {
     #[test]
     fn membership_verification_works_for_client_state() {
         let proof = Proof {
-                key: hex::decode(
-                    "b35cad2b263a62faaae30d8b3f51201fea5501d2df17d59a3eef2751403e684f",
-                )
-                .unwrap(),
-                value: hex::decode(
-                    "e83b93381f2e43cc03cb7e823317b5dd1854d02abccd5c2fa96a59888ddcd602"
-                ).unwrap(),
-                proof: vec![
-                    hex::decode("f871808080a08e048ecf26a7dc2320ef294e3def6e4e8d52934299986e0268f43fa426b283b5808080808080808080a0f7202a06e8dc011d3123f907597f51546fe03542551af2c9c54d21ba0fbafc7280a0771904c17414dbc0741f3d1fce0d2709d4f73418020b9b4961e4cb3ec6f46ac280").unwrap(),
-                    hex::decode("f843a03a8c7f353aebdcd6b56a67cd1b5829681a3c6e1695282161ab3faa6c3666d4c3a1a0e83b93381f2e43cc03cb7e823317b5dd1854d02abccd5c2fa96a59888ddcd602").unwrap(),
-                ],
+            key: hex::decode(CLIENT_STATE_PROOF_KEY).unwrap(),
+            value: hex::decode(CLIENT_STATE_PROOF_VALUE).unwrap(),
+            proof: CLIENT_STATE_PROOF
+                .iter()
+                .map(|p| hex::decode(p).unwrap())
+                .collect(),
         };
 
-        let storage_root =
-            hex::decode("1223777f330ea4734b0a4ac964def8242a3bc17421c929494837d591bf1d33c4")
-                .unwrap();
+        let storage_root = hex::decode(CLIENT_STATE_STORAGE_ROOT).unwrap();
 
         let client_state = TmClientState {
             chain_id: "ibc-0".to_string(),
@@ -505,7 +553,7 @@ mod test {
         };
 
         let any_client_state = Any {
-            type_url: "/ibc.lightclients.tendermint.v1.ClientState".into(),
+            type_url: String::new(),
             value: client_state.encode_to_vec(),
         };
 
@@ -515,40 +563,35 @@ mod test {
         };
 
         let any_client_state = Any {
-            type_url: "/ibc.lightclients.wasm.v1.ClientState".into(),
+            type_url: String::new(),
             value: wasm_client_state.encode_to_vec(),
         };
 
         do_verify_membership(
-            ClientStatePath::new(&ClientId::new(ClientType::new("10-ethereum".into()), 0).unwrap())
-                .into(),
+            ClientStatePath::new(
+                &ClientId::new(ClientType::new(ETHEREUM_CLIENT_ID_PREFIX.into()), 0).unwrap(),
+            )
+            .into(),
             Hash32::try_from(storage_root.as_slice()).unwrap(),
             3,
             proof,
             any_client_state.encode_to_vec().into(),
         )
-        .unwrap();
+        .expect("Membership verification of client state failed");
     }
 
     #[test]
     fn membership_verification_works_for_consensus_state() {
         let proof = Proof {
-                key: hex::decode(
-                    "9f22934f38bf5512b9c33ed55f71525c5d129895aad5585a2624f6c756c1c101",
-                )
-                .unwrap(),
-                value: hex::decode(
-                    "3a62ff0d63f377098f870ab7a320b5d6eb2f8cd70c766c987ea2d4aa74125e8a"
-                ).unwrap(),
-                proof: vec![
-                    hex::decode("f871808080a08e048ecf26a7dc2320ef294e3def6e4e8d52934299986e0268f43fa426b283b5808080808080808080a0f7202a06e8dc011d3123f907597f51546fe03542551af2c9c54d21ba0fbafc7280a0361d1cfb583d3e591e6f9b9114dc891a989736d2da999a0cd9333fe42bb99b1180").unwrap(),
-                    hex::decode("f843a036210c27d08bc29676360b820acc6de648bb730808a3a7d36a960f6869ac4a3aa1a03a62ff0d63f377098f870ab7a320b5d6eb2f8cd70c766c987ea2d4aa74125e8a").unwrap(),
-                ],
+            key: hex::decode(CONSENSUS_STATE_PROOF_KEY).unwrap(),
+            value: hex::decode(CONSENSUS_STATE_PROOF_VALUE).unwrap(),
+            proof: CONSENSUS_STATE_PROOF
+                .iter()
+                .map(|p| hex::decode(p).unwrap())
+                .collect(),
         };
 
-        let storage_root =
-            hex::decode("034ad1c5701b0c51653c0529b1d1873365cb6ff8d262888b25876f3631ad52e3")
-                .unwrap();
+        let storage_root = hex::decode(CONSENSUS_STATE_STORAGE_ROOT).unwrap();
 
         let consensus_state = TmConsensusState {
             timestamp: Some(Timestamp {
@@ -556,19 +599,13 @@ mod test {
                 nanos: 0,
             }),
             root: Some(MerkleRoot {
-                hash: hex::decode(
-                    "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-                )
-                .unwrap(),
+                hash: hex::decode(CONSENSUS_STATE_CONTRACT_MERKLE_ROOT).unwrap(),
             }),
-            next_validators_hash: hex::decode(
-                "B41F9EE164A6520C269F8928A1F3264A6F983F27478CB3A2251B77A65E0CEFBF",
-            )
-            .unwrap(),
+            next_validators_hash: hex::decode(CONSENSUS_STATE_NEXT_VALIDATORS_HASH).unwrap(),
         };
 
         let any_consensus_state = Any {
-            type_url: "/ibc.lightclients.tendermint.v1.ConsensusState".into(),
+            type_url: String::new(),
             value: consensus_state.encode_to_vec(),
         };
 
@@ -578,13 +615,13 @@ mod test {
         };
 
         let any_consensus_state = Any {
-            type_url: "/ibc.lightclients.wasm.v1.ClientState".into(),
+            type_url: String::new(),
             value: wasm_consensus_state.encode_to_vec(),
         };
 
         do_verify_membership(
             ClientConsensusStatePath::new(
-                &ClientId::new(ClientType::new("10-ethereum".into()), 0).unwrap(),
+                &ClientId::new(ClientType::new(ETHEREUM_CLIENT_ID_PREFIX.into()), 0).unwrap(),
                 &IbcHeight::new(0, 1).unwrap(),
             )
             .into(),
@@ -593,40 +630,33 @@ mod test {
             proof,
             any_consensus_state.encode_to_vec().into(),
         )
-        .unwrap();
+        .expect("Membership verification of consensus state failed");
     }
 
     fn prepare_connection_end() -> (Proof, Vec<u8>, ConnectionEnd) {
         let proof = Proof {
-                key: hex::decode(
-                    "8e80b902df24e0c324c454fcd01ae0c92966a3f6fe4d1809e7fb75043b6549db",
-                )
-                .unwrap(),
-                value: hex::decode(
-                    "9ac95d1087518963f797142524b3c6c273bb74297c076c00b02ed129bcb4cfc0"
-                ).unwrap(),
-                proof: vec![
-                    hex::decode("f871808080a08e048ecf26a7dc2320ef294e3def6e4e8d52934299986e0268f43fa426b283b5808080808080808080a0f7202a06e8dc011d3123f907597f51546fe03542551af2c9c54d21ba0fbafc7280a0771904c17414dbc0741f3d1fce0d2709d4f73418020b9b4961e4cb3ec6f46ac280").unwrap(),
-                    hex::decode("f843a0320fddcfabb459601044296253eed7d7cb53d9a8a3e46b1f7db5115be261c419a1a09ac95d1087518963f797142524b3c6c273bb74297c076c00b02ed129bcb4cfc0").unwrap(),
-                ],
+            key: hex::decode(CONNECTION_END_PROOF_KEY).unwrap(),
+            value: hex::decode(CONNECTION_END_PROOF_VALUE).unwrap(),
+            proof: CONNECTION_END_PROOF
+                .iter()
+                .map(|p| hex::decode(p).unwrap())
+                .collect(),
         };
 
-        let storage_root =
-            hex::decode("1223777f330ea4734b0a4ac964def8242a3bc17421c929494837d591bf1d33c4")
-                .unwrap();
+        let storage_root = hex::decode(CONNECTION_END_STORAGE_ROOT).unwrap();
 
         let connection_end = ConnectionEnd {
-            client_id: "10-ethereum-0".into(),
+            client_id: format!("{ETHEREUM_CLIENT_ID_PREFIX}-0"),
             versions: vec![Version {
                 identifier: "1".into(),
                 features: vec!["ORDER_ORDERED".into(), "ORDER_UNORDERED".into()],
             }],
             state: 1,
             counterparty: Some(Counterparty {
-                client_id: "08-wasm-0".into(),
+                client_id: format!("{WASM_CLIENT_ID_PREFIX}-0"),
                 connection_id: Default::default(),
                 prefix: Some(MerklePrefix {
-                    key_prefix: b"ibc".to_vec(),
+                    key_prefix: IBC_KEY_PREFIX.as_bytes().to_vec(),
                 }),
             }),
             delay_period: 0,
@@ -646,7 +676,7 @@ mod test {
             proof,
             connection_end.encode_to_vec().into(),
         )
-        .unwrap();
+        .expect("Membership verification of connection end failed");
     }
 
     #[test]
