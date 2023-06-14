@@ -107,6 +107,8 @@ import (
 	ibcclient "github.com/cosmos/ibc-go/v7/modules/core/02-client"
 	ibcclientclient "github.com/cosmos/ibc-go/v7/modules/core/02-client/client"
 	ibcclienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	ibcconnectionkeeper "github.com/cosmos/ibc-go/v7/modules/core/03-connection/keeper"
+	ibcchannelkeeper "github.com/cosmos/ibc-go/v7/modules/core/04-channel/keeper"
 	ibcporttypes "github.com/cosmos/ibc-go/v7/modules/core/05-port/types"
 	ibcexported "github.com/cosmos/ibc-go/v7/modules/core/exported"
 	ibckeeper "github.com/cosmos/ibc-go/v7/modules/core/keeper"
@@ -124,6 +126,8 @@ import (
 	unionmodule "union/x/union"
 	unionmodulekeeper "union/x/union/keeper"
 	unionmoduletypes "union/x/union/types"
+
+	ibccometblsclient "union/app/ibc/cometbls/02-client/keeper"
 
 	// this line is used by starport scaffolding # stargate/app/moduleImport
 
@@ -488,16 +492,38 @@ func New(
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
 
-	// ... other modules keepers
-
 	// Create IBC Keeper
-	app.IBCKeeper = ibckeeper.NewKeeper(
-		appCodec, keys[ibcexported.StoreKey],
+	ibcKeeper := ibckeeper.NewKeeper(
+		appCodec,
+		keys[ibcexported.StoreKey],
 		app.GetSubspace(ibcexported.ModuleName),
 		app.StakingKeeper,
 		app.UpgradeKeeper,
 		scopedIBCKeeper,
 	)
+
+	/*
+	 We create an intermediate client keeper called cometbls client because
+	 the connection handshake does a `ValidateSelfClient` which downcast the
+	 client state to tendermint client state by default. This was blocking
+	 the ConnectionOpenTry to succeed.
+	*/
+	ibcCometblsClient := ibccometblsclient.NewKeeper(ibcKeeper.ClientKeeper)
+	ibcKeeper.ConnectionKeeper = ibcconnectionkeeper.NewKeeper(
+		appCodec,
+		keys[ibcexported.StoreKey],
+		app.GetSubspace(ibcexported.ModuleName),
+		ibcCometblsClient,
+	)
+	ibcKeeper.ChannelKeeper = ibcchannelkeeper.NewKeeper(
+		appCodec,
+		keys[ibcexported.StoreKey],
+		ibcCometblsClient,
+		ibcKeeper.ConnectionKeeper,
+		ibcKeeper.PortKeeper,
+		scopedIBCKeeper,
+	)
+	app.IBCKeeper = ibcKeeper
 
 	// IBC Fee Module keeper
 	app.IBCFeeKeeper = ibcfeekeeper.NewKeeper(
