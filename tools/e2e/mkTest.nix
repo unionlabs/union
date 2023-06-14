@@ -28,28 +28,18 @@ let
     hostPkgs = pkgs; # the Nixpkgs package set used outside the VMs
   };
 in
-(if (system == "x86_64-linux") then
-  pkgs.stdenv.mkDerivation
-  {
-    pname = name;
-    version = "1.2.3";
-    buildInputs = [ test ];
-    src = ./.;
-    doCheck = true;
-    checkPhase = ''
-      ls ${test}
-    '';
-    buildPhase = ''
-      touch $out
-    '';
-    requiredSystemFeatures = [ "kvm" "nixos-test" ];
-  }
-else
-  pkgs.stdenv.mkDerivation {
-    pname = name;
-    version = "1.2.3";
-    buildInputs = [ ];
-    src = ./.;
-    buildPhase = ''touch $out'';
-    checkPhase = '''';
-  })
+pkgs.stdenv.mkDerivation
+{
+  pname = name;
+  version = "1.2.3";
+  buildInputs = [ test ];
+  src = ./.;
+  doCheck = true;
+  checkPhase = ''
+    ls ${test}
+  '';
+  buildPhase = ''
+    touch $out
+  '';
+  requiredSystemFeatures = [ "kvm" "nixos-test" ];
+}
