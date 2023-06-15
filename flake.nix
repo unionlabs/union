@@ -86,6 +86,9 @@
       ];
 
       perSystem = { config, self', inputs', pkgs, treefmt, rust, crane, system, lib, ... }:
+        let
+          mkUnpack = import ./tools/mkUnpack.nix { inherit pkgs; };
+        in
         {
           _module = {
             args = {
@@ -130,56 +133,25 @@
                   url = "git@github.com:UnionFi/cosmos-sdk";
                   rev = "b437ae728cc04212eb815975cef4fa4de53ffdbf";
                 };
-                ibcgo = pkgs.stdenv.mkDerivation {
+                ibcgo = mkUnpack {
                   name = "ibc-go";
-                  src = ibc-go;
-                  buildPhase = ''
-                    cp -r $src $out
-                  '';
-                  installPhase = ''
-                    cp -r $src .
-                  '';
-                  doCheck = false;
+                  package = ibc-go;
                 };
-                ics23 = pkgs.stdenv.mkDerivation {
+                ics23 = mkUnpack {
                   name = "ics23";
-                  src = ics23;
-                  buildPhase = ''
-                    cp -r $src $out
-                  '';
-                  installPhase = ''
-                    cp -r $src .
-                  '';
+                  package = ics23;
                 };
-                cosmosproto = pkgs.stdenv.mkDerivation {
+                cosmosproto = mkUnpack {
                   name = "cosmos-proto";
-                  src = cosmosproto;
-                  buildPhase = ''
-                    cp -r $src $out
-                  '';
-                  installPhase = ''
-                    cp -r $src .
-                  '';
+                  package = cosmosproto;
                 };
-                gogoproto = pkgs.stdenv.mkDerivation {
+                gogoproto = mkUnpack {
                   name = "gogoproto";
-                  src = gogoproto;
-                  buildPhase = ''
-                    cp -r $src $out
-                  '';
-                  installPhase = ''
-                    cp -r $src .
-                  '';
+                  package = gogoproto;
                 };
-                googleapis = pkgs.stdenv.mkDerivation {
+                googleapis = mkUnpack {
                   name = "googleapis";
-                  src = googleapis;
-                  buildPhase = ''
-                    cp -r $src $out
-                  '';
-                  installPhase = ''
-                    cp -r $src .
-                  '';
+                  package = googleapis;
                 };
               };
             };
