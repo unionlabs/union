@@ -34,7 +34,7 @@ func ExampleVerifyCmd() *cobra.Command {
 
 			tlsEnabled, err := cmd.Flags().GetString(flagTLS)
 			if err != nil {
-				return err
+				log.Fatal(err)
 			}
 
 			var creds credentials.TransportCredentials
@@ -47,7 +47,7 @@ func ExampleVerifyCmd() *cobra.Command {
 			uri := args[0]
 			conn, err := grpc.Dial(uri, grpc.WithTransportCredentials(creds))
 			if err != nil {
-				return err
+				log.Fatal(err)
 			}
 			defer conn.Close()
 			client := provergrpc.NewUnionProverAPIClient(conn)
@@ -277,12 +277,12 @@ func ExampleVerifyCmd() *cobra.Command {
 
 			blockHash, err := hex.DecodeString("F8579B3A521F8F704B991FFB8CA9040124A2F7BF5FFB9A013AEA9E223370AC5F")
 			if err != nil {
-				return err
+				log.Fatal(err)
 			}
 
 			partSetHeaderHash, err := hex.DecodeString("ABE49229F06DC8E1F1BC3B564A6F06BEB5098B05F61971BF39297EAE4B1616AA")
 			if err != nil {
-				return err
+				log.Fatal(err)
 			}
 
 			vote := types.CanonicalVote{
@@ -342,7 +342,7 @@ func ExampleVerifyCmd() *cobra.Command {
 				},
 			})
 			if err != nil {
-				return err
+				log.Fatal(err)
 			}
 
 			log.Printf("Proof: %v\n", proveRes)
@@ -351,7 +351,7 @@ func ExampleVerifyCmd() *cobra.Command {
 			for i, val := range trustedValidators {
 				protoEncoding, err := val.Marshal()
 				if err != nil {
-					return err
+					log.Fatal(err)
 				}
 				trustedValidatorBytes[i] = protoEncoding
 			}
@@ -360,7 +360,7 @@ func ExampleVerifyCmd() *cobra.Command {
 			for i, val := range trustedValidators {
 				protoEncoding, err := val.Marshal()
 				if err != nil {
-					return err
+					log.Fatal(err)
 				}
 				untrustedValidatorBytes[i] = protoEncoding
 			}
@@ -370,7 +370,7 @@ func ExampleVerifyCmd() *cobra.Command {
 
 			signedBytes, err := protoio.MarshalDelimited(&vote)
 			if err != nil {
-				return err
+				log.Fatal(err)
 			}
 
 			hmX, hmY := cometbft_bn254.HashToField2(signedBytes)
