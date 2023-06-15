@@ -18,5 +18,5 @@ Union is developed to be a scalable powerhouse:
 
 - Fast: bridging transactions are generated and settled quickly.
 - Secure: zero-knowledge consensus verification.
-- Future proof: core tech is built for next decennium
+- Future proof: core tech is built for the next decennium
 - Easy to use: high-level API usable for developers from any ecosystem
