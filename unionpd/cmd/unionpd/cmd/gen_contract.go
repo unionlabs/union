@@ -25,7 +25,7 @@ func GenContract() *cobra.Command {
 			uri := args[0]
 			conn, err := grpc.Dial(uri, grpc.WithTransportCredentials(insecure.NewCredentials()))
 			if err != nil {
-				log.Fatalf("Failed to dial: %v", err)
+				log.Fatal(err)
 			}
 			defer conn.Close()
 			client := provergrpc.NewUnionProverAPIClient(conn)
@@ -34,12 +34,12 @@ func GenContract() *cobra.Command {
 
 			res, err := client.GenerateContract(ctx, &provergrpc.GenerateContractRequest{})
 			if err != nil {
-				return err
+				log.Fatal(err)
 			}
 
 			path, err := cmd.Flags().GetString(flagPath)
 			if err != nil {
-				return err
+				log.Fatal(err)
 			}
 
 			if path == "" {
@@ -47,7 +47,7 @@ func GenContract() *cobra.Command {
 			} else {
 				err := os.WriteFile(path, res.Content, 0644)
 				if err != nil {
-					return err
+					log.Fatal(err)
 				}
 			}
 
