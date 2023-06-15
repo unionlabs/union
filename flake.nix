@@ -30,12 +30,32 @@
       url = "github:ipetkov/crane";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    ibc-go = {
+      url = "github:strangelove-ventures/ibc-go?rev=f8081a1828e47e11791b036659dd6d0e7be5473b";
+      flake = false;
+    };
+    ics23 = {
+      url = "github:cosmos/ics23?rev=b1abd8678aab07165efd453c96796a179eb3131f";
+      flake = false;
+    };
+    cosmosproto = {
+      url = "github:cosmos/cosmos-proto?rev=78e33f25b874e7639f540037599d8ea1d161a62c";
+      flake = false;
+    };
+    gogoproto = {
+      url = "github:cosmos/gogoproto?rev=b12c8cae0624d2518ab995c775410694dfa5d50e";
+      flake = false;
+    };
+    googleapis = {
+      url = "github:googleapis/googleapis?rev=6774ccbbc3f182f6ae3a32dca29e1da489ad8a8f";
+      flake = false;
+    };
     nix-filter.url = "github:numtide/nix-filter";
     # uniond versions
     v0_6_0.url = "git+https://github.com/unionfi/union?ref=release-v0.6.0";
     v0_7_0.url = "git+https://github.com/unionfi/union?ref=release-v0.7.0";
   };
-  outputs = inputs@{ self, nixpkgs, flake-parts, nix-filter, crane, foundry, treefmt-nix, pre-commit-hooks, ... }:
+  outputs = inputs@{ self, nixpkgs, flake-parts, nix-filter, crane, foundry, treefmt-nix, pre-commit-hooks, ibc-go, ics23, cosmosproto, gogoproto, googleapis, ... }:
     flake-parts.lib.mkFlake { inherit inputs; } {
       systems =
         [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" "x86_64-darwin" ];
@@ -108,42 +128,58 @@
                 cosmossdk = builtins.fetchGit {
                   name = "cosmos-sdk";
                   url = "git@github.com:UnionFi/cosmos-sdk";
-                  rev = "021566a5aba49e79356e2e6e246494e118f12605";
+                  rev = "b437ae728cc04212eb815975cef4fa4de53ffdbf";
                 };
-                ibcgo = pkgs.fetchFromGitHub {
+                ibcgo = pkgs.stdenv.mkDerivation {
                   name = "ibc-go";
-                  owner = "strangelove-ventures";
-                  repo = "ibc-go";
-                  rev = "f8081a1828e47e11791b036659dd6d0e7be5473b";
-                  sha256 = "sha256-e9z9+VxoQkrvWeYzdxHax6L10eQebRjW7GrD5wnaLv8=";
+                  src = ibc-go;
+                  buildPhase = ''
+                    cp -r $src $out
+                  '';
+                  installPhase = ''
+                    cp -r $src .
+                  '';
+                  doCheck = false;
                 };
-                ics23 = pkgs.fetchFromGitHub {
+                ics23 = pkgs.stdenv.mkDerivation {
                   name = "ics23";
-                  owner = "cosmos";
-                  repo = "ics23";
-                  rev = "b1abd8678aab07165efd453c96796a179eb3131f";
-                  sha256 = "sha256-O7oZI+29xKAbMHssg5HhxlssedSfejCuzHNHYX7WwBc=";
+                  src = ics23;
+                  buildPhase = ''
+                    cp -r $src $out
+                  '';
+                  installPhase = ''
+                    cp -r $src .
+                  '';
                 };
-                cosmosproto = pkgs.fetchFromGitHub {
-                  name = "cosmosproto";
-                  owner = "cosmos";
-                  repo = "cosmos-proto";
-                  rev = "v1.0.0-beta.3";
-                  sha256 = "sha256-kFm1ChSmm5pU9oJqKmWq4KfO/hxgxzvcSzr66oTulos=";
+                cosmosproto = pkgs.stdenv.mkDerivation {
+                  name = "cosmos-proto";
+                  src = cosmosproto;
+                  buildPhase = ''
+                    cp -r $src $out
+                  '';
+                  installPhase = ''
+                    cp -r $src .
+                  '';
                 };
-                gogoproto = pkgs.fetchFromGitHub {
+                gogoproto = pkgs.stdenv.mkDerivation {
                   name = "gogoproto";
-                  owner = "cosmos";
-                  repo = "gogoproto";
-                  rev = "v1.4.7";
-                  sha256 = "sha256-oaGwDFbz/xgL7hDtvdh/mIcRIGBdp+/xuKeuBE2ZpqY=";
+                  src = gogoproto;
+                  buildPhase = ''
+                    cp -r $src $out
+                  '';
+                  installPhase = ''
+                    cp -r $src .
+                  '';
                 };
-                googleapis = pkgs.fetchFromGitHub {
+                googleapis = pkgs.stdenv.mkDerivation {
                   name = "googleapis";
-                  owner = "googleapis";
-                  repo = "googleapis";
-                  rev = "6774ccbbc3f182f6ae3a32dca29e1da489ad8a8f";
-                  sha256 = "sha256-TME4wkdmqrb0Shuc5uFqSGSoDaMhM9YJv9kvTam7c9I=";
+                  src = googleapis;
+                  buildPhase = ''
+                    cp -r $src $out
+                  '';
+                  installPhase = ''
+                    cp -r $src .
+                  '';
                 };
               };
             };
