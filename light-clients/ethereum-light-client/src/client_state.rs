@@ -217,7 +217,6 @@ pub fn tendermint_to_cometbls_client_state(state: RawTmClientState) -> RawCometC
         unbonding_period: state.unbonding_period,
         max_clock_drift: state.max_clock_drift,
         frozen_height: state.frozen_height,
-        latest_height: state.latest_height,
     }
 }
 

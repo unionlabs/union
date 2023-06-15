@@ -1,11 +1,8 @@
 use crate::{
-    client_state::tendermint_to_cometbls_client_state,
-    consensus_state::{tendermint_to_cometbls_consensus_state, TrustedConsensusState},
+    consensus_state::TrustedConsensusState,
     context::LightClientContext,
     errors::Error,
-    eth_encoding::{
-        encode_cometbls_client_state, encode_cometbls_consensus_state, generate_commitment_key,
-    },
+    eth_encoding::generate_commitment_key,
     header::Header as EthHeader,
     msg::{ExecuteMsg, InstantiateMsg, QueryMsg},
     state::{read_client_state, read_consensus_state, save_consensus_state, update_client_state},
@@ -25,9 +22,8 @@ use protos::union::ibc::lightclients::ethereum::v1::{Header as RawEthHeader, Pro
 use sha3::Digest;
 use ssz_rs::prelude::*;
 use std::str::FromStr;
-use wasm_light_client_types::{
-    decode_client_state_to_concrete_state, decode_consensus_state_to_concrete_state,
-    msg::{ClientMessage, ContractResult, Height, MerklePath, Status, StatusResponse},
+use wasm_light_client_types::msg::{
+    ClientMessage, ContractResult, Height, MerklePath, Status, StatusResponse,
 };
 
 #[entry_point]
@@ -83,17 +79,6 @@ pub fn execute(
 }
 
 /// Verifies if the `value` is committed at `path` in the counterparty light client.
-///
-/// To optimize the ethereum contracts for gas efficiency, we are storing little amount
-/// of data possible in custom formats. For this reason, value that we get from the host
-/// chain is sometimes different than what stored in Ethereum.
-/// - `Connection`: both `value` and stored data is protobuf encoded `ConnectionEnd`.
-/// - `ClientState`: `value` is protobuf encoded `wasm.ClientState` wrapped in `Any`. It's `data`
-/// field is protobuf encoded `tendermint.ClientState` wrapped in `Any`. Ethereum stores eth abi
-/// encoded `cometbls.ClientState`.
-/// - `ConsensusState`: `value` is protobuf encoded `wasm.ConsensusState` wrapped in `Any`. It's
-/// `data` field is protobuf encoded `tendermint.ConsensusState` wrapped in `Any`. Ethereum stores
-/// an eth abi encoded optimized version of `cometbls.ConsensusState`.
 pub fn verify_membership(
     deps: Deps,
     height: Height,
@@ -152,33 +137,6 @@ pub fn do_verify_membership(
     storage_proof: Proof,
     value: Binary,
 ) -> Result<(), Error> {
-    let raw_value = match path {
-        Path::ClientState(_) => {
-            let cometbls_client_state = tendermint_to_cometbls_client_state(
-                decode_client_state_to_concrete_state(value.0.as_slice())?,
-            );
-
-            encode_cometbls_client_state(cometbls_client_state)?
-        }
-        Path::ClientConsensusState(_) => {
-            let cometbls_consensus_state = tendermint_to_cometbls_consensus_state(
-                decode_consensus_state_to_concrete_state(value.0.as_slice())?,
-            );
-
-            encode_cometbls_consensus_state(cometbls_consensus_state)?
-        }
-        Path::Connection(_)
-        | Path::ChannelEnd(_)
-        | Path::Commitment(_)
-        | Path::Ack(_)
-        | Path::SeqRecv(_) => value.0.as_slice().to_vec(),
-        p => {
-            return Err(Error::InvalidPath(format!(
-                "path type not supported for membership verification: {p:?}"
-            )))
-        }
-    };
-
     let expected_commitment_key =
         generate_commitment_key(path.to_string(), counterparty_commitment_slot);
 
@@ -191,9 +149,24 @@ pub fn do_verify_membership(
     }
 
     // We store the hash of the data, not the data itself to the commitments map.
-    let expected_value = sha3::Keccak256::new().chain_update(raw_value).finalize();
+    let value_hash = sha3::Keccak256::new()
+        .chain_update(value)
+        .finalize()
+        .to_vec();
 
-    if expected_value.as_slice() != storage_proof.value {
+    // We have to get rid of the leading zero bytes because it is wiped in ethereum side.
+    let mut index_to_split = 0;
+    for i in &value_hash {
+        if *i == 0 {
+            index_to_split += 1;
+        } else {
+            break;
+        }
+    }
+
+    let expected_value = &value_hash[index_to_split..];
+
+    if expected_value != storage_proof.value {
         return Err(Error::stored_value_mismatch(
             expected_value,
             storage_proof.value.as_slice(),
@@ -203,7 +176,7 @@ pub fn do_verify_membership(
     verify_storage_proof(
         storage_root,
         &storage_proof.key,
-        &rlp::encode(&expected_value.as_slice()),
+        &rlp::encode(&expected_value),
         &storage_proof.proof,
     )
     .map_err(|e| Error::Verification(e.to_string()))
@@ -312,21 +285,23 @@ mod test {
         },
         Height as IbcHeight,
     };
-    use protos::ibc::core::{
-        client::v1::Height as ProtoHeight,
-        commitment::v1::MerklePrefix,
-        connection::v1::{Counterparty, Version},
-    };
     use protos::{
-        google::protobuf::{Any, Duration, Timestamp},
+        google::protobuf::{Any, Duration},
         ibc::{
             core::{commitment::v1::MerkleRoot, connection::v1::ConnectionEnd},
-            lightclients::{
-                tendermint::v1::{
-                    ClientState as TmClientState, ConsensusState as TmConsensusState, Fraction,
-                },
-                wasm::v1::{ClientState as WasmClientState, ConsensusState as WasmConsensusState},
+            lightclients::wasm::v1::{
+                ClientState as WasmClientState, ConsensusState as WasmConsensusState,
             },
+        },
+    };
+    use protos::{
+        ibc::core::{
+            client::v1::Height as ProtoHeight,
+            commitment::v1::MerklePrefix,
+            connection::v1::{Counterparty, Version},
+        },
+        union::ibc::lightclients::cometbls::v1::{
+            ClientState as CometClientState, ConsensusState as CometConsensusState, Fraction,
         },
     };
 
@@ -335,26 +310,28 @@ mod test {
     const CLIENT_STATE_PROOF_KEY: &str =
         "b35cad2b263a62faaae30d8b3f51201fea5501d2df17d59a3eef2751403e684f";
     const CLIENT_STATE_PROOF_VALUE: &str =
-        "e83b93381f2e43cc03cb7e823317b5dd1854d02abccd5c2fa96a59888ddcd602";
+        "272c7c82ac0f0adbfe4ae30614165bf3b94d49754ce8c1955cc255dcc829b5";
     const CLIENT_STATE_PROOF: [&str; 2] = [
-        "f871808080a08e048ecf26a7dc2320ef294e3def6e4e8d52934299986e0268f43fa426b283b5808080808080808080a0f7202a06e8dc011d3123f907597f51546fe03542551af2c9c54d21ba0fbafc7280a0771904c17414dbc0741f3d1fce0d2709d4f73418020b9b4961e4cb3ec6f46ac280",
-        "f843a03a8c7f353aebdcd6b56a67cd1b5829681a3c6e1695282161ab3faa6c3666d4c3a1a0e83b93381f2e43cc03cb7e823317b5dd1854d02abccd5c2fa96a59888ddcd602"
+        "f871808080a0b9f6e8d11cf768b8034f04b8b2ab45bb5ca792e1c6e3929cf8222a885631ffac808080808080808080a0f7202a06e8dc011d3123f907597f51546fe03542551af2c9c54d21ba0fbafc7280a0d1797d071b81705da736e39e75f1186c8e529ba339f7a7d12a9b4fafe33e43cc80",
+        "f842a03a8c7f353aebdcd6b56a67cd1b5829681a3c6e1695282161ab3faa6c3666d4c3a09f272c7c82ac0f0adbfe4ae30614165bf3b94d49754ce8c1955cc255dcc829b5"
     ];
     /// Storage root of the contract at the time that this proof is obtained.
     const CLIENT_STATE_STORAGE_ROOT: &str =
-        "1223777f330ea4734b0a4ac964def8242a3bc17421c929494837d591bf1d33c4";
+        "5634f342b966b609cdd8d2f7ed43bb94702c9e83d4e974b08a3c2b8205fd85e3";
+    const CLIENT_STATE_WASM_CODE_ID: &str =
+        "B41F9EE164A6520C269F8928A1F3264A6F983F27478CB3A2251B77A65E0CEFBF";
 
     const CONSENSUS_STATE_PROOF_KEY: &str =
         "9f22934f38bf5512b9c33ed55f71525c5d129895aad5585a2624f6c756c1c101";
     const CONSENSUS_STATE_PROOF_VALUE: &str =
-        "3a62ff0d63f377098f870ab7a320b5d6eb2f8cd70c766c987ea2d4aa74125e8a";
+        "504adb89d4e609110eebf79183a10b9a4788a797d973c0ba0504e7a97fc1daa6";
     const CONSENSUS_STATE_PROOF: [&str; 2] = [
-        "f871808080a08e048ecf26a7dc2320ef294e3def6e4e8d52934299986e0268f43fa426b283b5808080808080808080a0f7202a06e8dc011d3123f907597f51546fe03542551af2c9c54d21ba0fbafc7280a0361d1cfb583d3e591e6f9b9114dc891a989736d2da999a0cd9333fe42bb99b1180",
-        "f843a036210c27d08bc29676360b820acc6de648bb730808a3a7d36a960f6869ac4a3aa1a03a62ff0d63f377098f870ab7a320b5d6eb2f8cd70c766c987ea2d4aa74125e8a"
+        "f871808080a0b9f6e8d11cf768b8034f04b8b2ab45bb5ca792e1c6e3929cf8222a885631ffac808080808080808080a0f7202a06e8dc011d3123f907597f51546fe03542551af2c9c54d21ba0fbafc7280a0d1797d071b81705da736e39e75f1186c8e529ba339f7a7d12a9b4fafe33e43cc80",
+        "f843a036210c27d08bc29676360b820acc6de648bb730808a3a7d36a960f6869ac4a3aa1a0504adb89d4e609110eebf79183a10b9a4788a797d973c0ba0504e7a97fc1daa6"
     ];
     /// Storage root of the contract at the time that this proof is obtained.
     const CONSENSUS_STATE_STORAGE_ROOT: &str =
-        "034ad1c5701b0c51653c0529b1d1873365cb6ff8d262888b25876f3631ad52e3";
+        "5634f342b966b609cdd8d2f7ed43bb94702c9e83d4e974b08a3c2b8205fd85e3";
     const CONSENSUS_STATE_CONTRACT_MERKLE_ROOT: &str =
         "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
     const CONSENSUS_STATE_NEXT_VALIDATORS_HASH: &str =
@@ -364,11 +341,13 @@ mod test {
         "8e80b902df24e0c324c454fcd01ae0c92966a3f6fe4d1809e7fb75043b6549db";
     const CONNECTION_END_PROOF_VALUE: &str =
         "9ac95d1087518963f797142524b3c6c273bb74297c076c00b02ed129bcb4cfc0";
-    const CONNECTION_END_PROOF: [&str; 2] = ["f871808080a08e048ecf26a7dc2320ef294e3def6e4e8d52934299986e0268f43fa426b283b5808080808080808080a0f7202a06e8dc011d3123f907597f51546fe03542551af2c9c54d21ba0fbafc7280a0771904c17414dbc0741f3d1fce0d2709d4f73418020b9b4961e4cb3ec6f46ac280",
-        "f843a0320fddcfabb459601044296253eed7d7cb53d9a8a3e46b1f7db5115be261c419a1a09ac95d1087518963f797142524b3c6c273bb74297c076c00b02ed129bcb4cfc0"];
+    const CONNECTION_END_PROOF: [&str; 2] = [
+        "f871808080a01c44ba4a3ade71a6b527cb53c3f2dd91606f91cd119fd74e85208b1d13096739808080808080808080a0f7202a06e8dc011d3123f907597f51546fe03542551af2c9c54d21ba0fbafc7280a0771904c17414dbc0741f3d1fce0d2709d4f73418020b9b4961e4cb3ec6f46ac280",
+        "f843a0320fddcfabb459601044296253eed7d7cb53d9a8a3e46b1f7db5115be261c419a1a09ac95d1087518963f797142524b3c6c273bb74297c076c00b02ed129bcb4cfc0"
+    ];
     /// Storage root of the contract at the time that this proof is obtained.
     const CONNECTION_END_STORAGE_ROOT: &str =
-        "1223777f330ea4734b0a4ac964def8242a3bc17421c929494837d591bf1d33c4";
+        "78c3bf305b31e5f903d623b0b0023bfa764208429d3ecc0f8e61df44b643981d";
 
     const WASM_CLIENT_ID_PREFIX: &str = "08-wasm";
     const ETHEREUM_CLIENT_ID_PREFIX: &str = "10-ethereum";
@@ -523,7 +502,7 @@ mod test {
 
         let storage_root = hex::decode(CLIENT_STATE_STORAGE_ROOT).unwrap();
 
-        let client_state = TmClientState {
+        let client_state = CometClientState {
             chain_id: "ibc-0".to_string(),
             trust_level: Some(Fraction {
                 numerator: 1,
@@ -545,25 +524,19 @@ mod test {
                 revision_number: 0,
                 revision_height: 0,
             }),
+        };
+
+        let wasm_client_state = WasmClientState {
+            data: client_state.encode_to_vec(),
+            code_id: hex::decode(CLIENT_STATE_WASM_CODE_ID).unwrap(),
             latest_height: Some(ProtoHeight {
                 revision_number: 0,
                 revision_height: 1,
             }),
-            ..Default::default()
         };
 
         let any_client_state = Any {
-            type_url: String::new(),
-            value: client_state.encode_to_vec(),
-        };
-
-        let wasm_client_state = WasmClientState {
-            data: any_client_state.encode_to_vec(),
-            ..Default::default()
-        };
-
-        let any_client_state = Any {
-            type_url: String::new(),
+            type_url: "/ibc.lightclients.wasm.v1.ClientState".into(),
             value: wasm_client_state.encode_to_vec(),
         };
 
@@ -593,29 +566,20 @@ mod test {
 
         let storage_root = hex::decode(CONSENSUS_STATE_STORAGE_ROOT).unwrap();
 
-        let consensus_state = TmConsensusState {
-            timestamp: Some(Timestamp {
-                seconds: 1684400046,
-                nanos: 0,
-            }),
+        let consensus_state = CometConsensusState {
             root: Some(MerkleRoot {
                 hash: hex::decode(CONSENSUS_STATE_CONTRACT_MERKLE_ROOT).unwrap(),
             }),
             next_validators_hash: hex::decode(CONSENSUS_STATE_NEXT_VALIDATORS_HASH).unwrap(),
         };
 
-        let any_consensus_state = Any {
-            type_url: String::new(),
-            value: consensus_state.encode_to_vec(),
-        };
-
         let wasm_consensus_state = WasmConsensusState {
-            data: any_consensus_state.encode_to_vec(),
-            ..Default::default()
+            data: consensus_state.encode_to_vec(),
+            timestamp: 1684400046,
         };
 
         let any_consensus_state = Any {
-            type_url: String::new(),
+            type_url: "/ibc.lightclients.wasm.v1.ConsensusState".into(),
             value: wasm_consensus_state.encode_to_vec(),
         };
 

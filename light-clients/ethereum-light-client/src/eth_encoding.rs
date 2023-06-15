@@ -39,12 +39,6 @@ pub fn encode_cometbls_consensus_state(data: RawCometConsensusState) -> Result<V
     Ok(ethabi::encode(&[ethabi::Token::Tuple(vec![
         ethabi::Token::FixedBytes(data.root.clone().ok_or(Error::MissingProtoField)?.hash),
         ethabi::Token::FixedBytes(data.next_validators_hash),
-        ethabi::Token::Uint(
-            data.timestamp
-                .ok_or(Error::MissingProtoField)?
-                .seconds
-                .into(),
-        ),
     ])]))
 }
 
@@ -125,21 +119,6 @@ pub fn encode_cometbls_client_state(data: RawCometClientState) -> Result<Vec<u8>
             ),
             ethabi::Token::Int(
                 data.frozen_height
-                    .ok_or(Error::MissingProtoField)?
-                    .revision_height
-                    .into(),
-            ),
-        ]),
-        ethabi::Token::Tuple(vec![
-            ethabi::Token::Int(
-                data.latest_height
-                    .clone()
-                    .ok_or(Error::MissingProtoField)?
-                    .revision_number
-                    .into(),
-            ),
-            ethabi::Token::Int(
-                data.latest_height
                     .ok_or(Error::MissingProtoField)?
                     .revision_height
                     .into(),
