@@ -80,7 +80,7 @@
                 --grpc-gateway_out $out \
                 --grpc-gateway_opt=logtostderr=true,allow_colon_final_segments=true \
                 --gocosmos_out $out \
-                --gocosmos_opt=plugins=interfacetype+grpc,Mgoogle/protobuf/any.proto=github.com/cosmos/cosmos-sdk/codec/types \
+                --gocosmos_opt=plugins=interfacetype+grpc,Mgoogle/protobuf/any.proto=github.com/cosmos/cosmos-sdk/codec/types,Mgoogle/protobuf/duration.proto=time \
                 "$file"
             done
 
@@ -109,8 +109,9 @@
 
             echo "Generating go code based on ./uniond/proto"
             echo "Moving patched go sources to correct directories"
+            
             cp -r ${generate-uniond-proto}/union/x/* ./x/
-
+            cp ${generate-uniond-proto}/union/app/ibc/cometbls/02-client/keeper/* ./app/ibc/cometbls/02-client/keeper/
 
             echo "Done! Generated .pb.go files are added to ./uniond/x"
           '';
