@@ -45,7 +45,7 @@ func (p *proverServer) Verify(ctx context.Context, req *VerifyRequest) (*VerifyR
 	log.Println("Verifying...")
 
 	var proof backend_bn254.Proof
-	_, err := proof.ReadFrom(bytes.NewReader(req.Proof.Content))
+	_, err := proof.ReadFrom(bytes.NewReader(req.Proof.CompressedContent))
 	if err != nil {
 		return nil, fmt.Errorf("Failed to read compressed proof: %w", err)
 	}
@@ -297,14 +297,6 @@ func (p *proverServer) Prove(ctx context.Context, req *ProveRequest) (*ProveResp
 		return nil, fmt.Errorf("Impossible: proof backend must be BN254 at this point")
 	}
 
-	var proofBuffer bytes.Buffer
-	mem := bufio.NewWriter(&proofBuffer)
-	_, err = proof.WriteRawTo(mem)
-	if err != nil {
-		return nil, err
-	}
-	mem.Flush()
-
 	publicWitness, err := privateWitness.Public()
 	if err != nil {
 		return nil, err
@@ -315,15 +307,33 @@ func (p *proverServer) Prove(ctx context.Context, req *ProveRequest) (*ProveResp
 		return nil, err
 	}
 
+	var proofBuffer bytes.Buffer
+	mem := bufio.NewWriter(&proofBuffer)
+	_, err = proof.WriteRawTo(mem)
+	if err != nil {
+		return nil, err
+	}
+	mem.Flush()
 	proofBz := proofBuffer.Bytes()
+
+	var compressedProofBuffer bytes.Buffer
+	mem = bufio.NewWriter(&compressedProofBuffer)
+	_, err = proof.WriteTo(mem)
+	if err != nil {
+		return nil, err
+	}
+	mem.Flush()
+	compressedProofBz := compressedProofBuffer.Bytes()
 
 	// Due to how gnark proves, we not only need the ZKP A/B/C points, but also a commitment hash and proof commitment.
 	// The proof is an uncompressed proof serialized by gnark, we extract A(G1)/B(G2)/C(G1) and then append the commitment hash and commitment proof from the public inputs.
+	// The EVM verifier has been extended to support this two extra public inputs.
 	evmProof := append(append(proofBz[:256], commitmentHash...), proofCommitment...)
 
 	return &ProveResponse{
 		Proof: &ZeroKnowledgeProof{
 			Content:      proofBz,
+			CompressedContent: compressedProofBz,
 			PublicInputs: publicInputs,
 			EvmProof:     evmProof,
 		},
