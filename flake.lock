@@ -402,6 +402,23 @@
         "type": "github"
       }
     },
+    "cosmosproto": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1678351217,
+        "narHash": "sha256-kFm1ChSmm5pU9oJqKmWq4KfO/hxgxzvcSzr66oTulos=",
+        "owner": "cosmos",
+        "repo": "cosmos-proto",
+        "rev": "78e33f25b874e7639f540037599d8ea1d161a62c",
+        "type": "github"
+      },
+      "original": {
+        "owner": "cosmos",
+        "repo": "cosmos-proto",
+        "rev": "78e33f25b874e7639f540037599d8ea1d161a62c",
+        "type": "github"
+      }
+    },
     "crane": {
       "inputs": {
         "flake-compat": "flake-compat",
@@ -3304,6 +3321,40 @@
         "type": "github"
       }
     },
+    "gogoproto": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1680165077,
+        "narHash": "sha256-oaGwDFbz/xgL7hDtvdh/mIcRIGBdp+/xuKeuBE2ZpqY=",
+        "owner": "cosmos",
+        "repo": "gogoproto",
+        "rev": "b12c8cae0624d2518ab995c775410694dfa5d50e",
+        "type": "github"
+      },
+      "original": {
+        "owner": "cosmos",
+        "repo": "gogoproto",
+        "rev": "b12c8cae0624d2518ab995c775410694dfa5d50e",
+        "type": "github"
+      }
+    },
+    "googleapis": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1681506972,
+        "narHash": "sha256-TME4wkdmqrb0Shuc5uFqSGSoDaMhM9YJv9kvTam7c9I=",
+        "owner": "googleapis",
+        "repo": "googleapis",
+        "rev": "6774ccbbc3f182f6ae3a32dca29e1da489ad8a8f",
+        "type": "github"
+      },
+      "original": {
+        "owner": "googleapis",
+        "repo": "googleapis",
+        "rev": "6774ccbbc3f182f6ae3a32dca29e1da489ad8a8f",
+        "type": "github"
+      }
+    },
     "haskell-flake": {
       "locked": {
         "lastModified": 1675296942,
@@ -3557,6 +3608,40 @@
         "owner": "srid",
         "ref": "0.1.0",
         "repo": "haskell-flake",
+        "type": "github"
+      }
+    },
+    "ibc-go": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1681504072,
+        "narHash": "sha256-e9z9+VxoQkrvWeYzdxHax6L10eQebRjW7GrD5wnaLv8=",
+        "owner": "strangelove-ventures",
+        "repo": "ibc-go",
+        "rev": "f8081a1828e47e11791b036659dd6d0e7be5473b",
+        "type": "github"
+      },
+      "original": {
+        "owner": "strangelove-ventures",
+        "repo": "ibc-go",
+        "rev": "f8081a1828e47e11791b036659dd6d0e7be5473b",
+        "type": "github"
+      }
+    },
+    "ics23": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1670407596,
+        "narHash": "sha256-O7oZI+29xKAbMHssg5HhxlssedSfejCuzHNHYX7WwBc=",
+        "owner": "cosmos",
+        "repo": "ics23",
+        "rev": "b1abd8678aab07165efd453c96796a179eb3131f",
+        "type": "github"
+      },
+      "original": {
+        "owner": "cosmos",
+        "repo": "ics23",
+        "rev": "b1abd8678aab07165efd453c96796a179eb3131f",
         "type": "github"
       }
     },
@@ -4599,9 +4684,14 @@
     "root": {
       "inputs": {
         "arion": "arion",
+        "cosmosproto": "cosmosproto",
         "crane": "crane",
         "flake-parts": "flake-parts_2",
         "foundry": "foundry",
+        "gogoproto": "gogoproto",
+        "googleapis": "googleapis",
+        "ibc-go": "ibc-go",
+        "ics23": "ics23",
         "nix-filter": "nix-filter",
         "nixpkgs": "nixpkgs",
         "pre-commit-hooks": "pre-commit-hooks",
