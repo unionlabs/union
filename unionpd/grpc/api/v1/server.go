@@ -47,7 +47,7 @@ func (p *proverServer) Verify(ctx context.Context, req *VerifyRequest) (*VerifyR
 	var proof backend_bn254.Proof
 	_, err := proof.ReadFrom(bytes.NewReader(req.Proof.Content))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Failed to read compressed proof: %w", err)
 	}
 
 	if len(req.TrustedValidatorSetRoot) != 32 {
@@ -60,13 +60,13 @@ func (p *proverServer) Verify(ctx context.Context, req *VerifyRequest) (*VerifyR
 	var blockX fr.Element
 	err = blockX.SetBytesCanonical(req.BlockHeaderX.Value)
 	if err != nil {
-		return nil, fmt.Errorf("The block header X must be a BN254 fr.Element")
+		return nil, fmt.Errorf("The block header X must be a BN254 fr.Element: %w", err)
 	}
 
 	var blockY fr.Element
 	err = blockY.SetBytesCanonical(req.BlockHeaderY.Value)
 	if err != nil {
-		return nil, fmt.Errorf("The block header Y must be a BN254 fr.Element")
+		return nil, fmt.Errorf("The block header Y must be a BN254 fr.Element: %w", err)
 	}
 
 	validatorsProto := [lightclient.MaxVal][4]frontend.Variable{}
@@ -102,17 +102,17 @@ func (p *proverServer) Verify(ctx context.Context, req *VerifyRequest) (*VerifyR
 
 	privateWitness, err := frontend.NewWitness(&witness, ecc.BN254.ScalarField())
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Unable to create private witness: %w", err)
 	}
 
 	publicWitness, err := privateWitness.Public()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Unable to extract public witness: %w", err)
 	}
 
 	err = backend.Verify(backend.Proof(&proof), p.vk, publicWitness)
 	if err != nil {
-		log.Println(err)
+		log.Println("Verification failed: %w", err)
 		return &VerifyResponse{
 			Valid: false,
 		}, nil
@@ -263,7 +263,6 @@ func (p *proverServer) Prove(ctx context.Context, req *ProveRequest) (*ProveResp
 	}
 
 	log.Println("Witness: ", witness)
-
 	privateWitness, err := frontend.NewWitness(&witness, ecc.BN254.ScalarField())
 	if err != nil {
 		return nil, err
