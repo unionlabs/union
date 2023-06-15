@@ -45,9 +45,9 @@ func (p *proverServer) Verify(ctx context.Context, req *VerifyRequest) (*VerifyR
 	log.Println("Verifying...")
 
 	var proof backend_bn254.Proof
-	_, err := proof.ReadFrom(bytes.NewReader(req.Proof.Content))
+	_, err := proof.ReadFrom(bytes.NewReader(req.Proof.CompressedContent))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Failed to read compressed proof: %w", err)
 	}
 
 	if len(req.TrustedValidatorSetRoot) != 32 {
@@ -60,13 +60,13 @@ func (p *proverServer) Verify(ctx context.Context, req *VerifyRequest) (*VerifyR
 	var blockX fr.Element
 	err = blockX.SetBytesCanonical(req.BlockHeaderX.Value)
 	if err != nil {
-		return nil, fmt.Errorf("The block header X must be a BN254 fr.Element")
+		return nil, fmt.Errorf("The block header X must be a BN254 fr.Element: %w", err)
 	}
 
 	var blockY fr.Element
 	err = blockY.SetBytesCanonical(req.BlockHeaderY.Value)
 	if err != nil {
-		return nil, fmt.Errorf("The block header Y must be a BN254 fr.Element")
+		return nil, fmt.Errorf("The block header Y must be a BN254 fr.Element: %w", err)
 	}
 
 	validatorsProto := [lightclient.MaxVal][4]frontend.Variable{}
@@ -97,22 +97,22 @@ func (p *proverServer) Verify(ctx context.Context, req *VerifyRequest) (*VerifyR
 			req.UntrustedValidatorSetRoot[0:16],
 			req.UntrustedValidatorSetRoot[16:32],
 		},
-		Message: [2]frontend.Variable{req.BlockHeaderX, req.BlockHeaderY},
+		Message: [2]frontend.Variable{req.BlockHeaderX.Value, req.BlockHeaderY.Value},
 	}
 
 	privateWitness, err := frontend.NewWitness(&witness, ecc.BN254.ScalarField())
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Unable to create private witness: %w", err)
 	}
 
 	publicWitness, err := privateWitness.Public()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Unable to extract public witness: %w", err)
 	}
 
 	err = backend.Verify(backend.Proof(&proof), p.vk, publicWitness)
 	if err != nil {
-		log.Println(err)
+		log.Println("Verification failed: %w", err)
 		return &VerifyResponse{
 			Valid: false,
 		}, nil
@@ -263,7 +263,6 @@ func (p *proverServer) Prove(ctx context.Context, req *ProveRequest) (*ProveResp
 	}
 
 	log.Println("Witness: ", witness)
-
 	privateWitness, err := frontend.NewWitness(&witness, ecc.BN254.ScalarField())
 	if err != nil {
 		return nil, err
@@ -298,14 +297,6 @@ func (p *proverServer) Prove(ctx context.Context, req *ProveRequest) (*ProveResp
 		return nil, fmt.Errorf("Impossible: proof backend must be BN254 at this point")
 	}
 
-	var proofBuffer bytes.Buffer
-	mem := bufio.NewWriter(&proofBuffer)
-	_, err = proof.WriteRawTo(mem)
-	if err != nil {
-		return nil, err
-	}
-	mem.Flush()
-
 	publicWitness, err := privateWitness.Public()
 	if err != nil {
 		return nil, err
@@ -316,17 +307,35 @@ func (p *proverServer) Prove(ctx context.Context, req *ProveRequest) (*ProveResp
 		return nil, err
 	}
 
+	var proofBuffer bytes.Buffer
+	mem := bufio.NewWriter(&proofBuffer)
+	_, err = proof.WriteRawTo(mem)
+	if err != nil {
+		return nil, err
+	}
+	mem.Flush()
 	proofBz := proofBuffer.Bytes()
+
+	var compressedProofBuffer bytes.Buffer
+	mem = bufio.NewWriter(&compressedProofBuffer)
+	_, err = proof.WriteTo(mem)
+	if err != nil {
+		return nil, err
+	}
+	mem.Flush()
+	compressedProofBz := compressedProofBuffer.Bytes()
 
 	// Due to how gnark proves, we not only need the ZKP A/B/C points, but also a commitment hash and proof commitment.
 	// The proof is an uncompressed proof serialized by gnark, we extract A(G1)/B(G2)/C(G1) and then append the commitment hash and commitment proof from the public inputs.
+	// The EVM verifier has been extended to support this two extra public inputs.
 	evmProof := append(append(proofBz[:256], commitmentHash...), proofCommitment...)
 
 	return &ProveResponse{
 		Proof: &ZeroKnowledgeProof{
-			Content:      proofBz,
-			PublicInputs: publicInputs,
-			EvmProof:     evmProof,
+			Content:           proofBz,
+			CompressedContent: compressedProofBz,
+			PublicInputs:      publicInputs,
+			EvmProof:          evmProof,
 		},
 		TrustedValidatorSetRoot:   trustedValidatorsRoot,
 		UntrustedValidatorSetRoot: untrustedValidatorsRoot,
