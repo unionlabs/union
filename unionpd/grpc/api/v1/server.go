@@ -97,7 +97,7 @@ func (p *proverServer) Verify(ctx context.Context, req *VerifyRequest) (*VerifyR
 			req.UntrustedValidatorSetRoot[0:16],
 			req.UntrustedValidatorSetRoot[16:32],
 		},
-		Message: [2]frontend.Variable{req.BlockHeaderX, req.BlockHeaderY},
+		Message: [2]frontend.Variable{req.BlockHeaderX.Value, req.BlockHeaderY.Value},
 	}
 
 	privateWitness, err := frontend.NewWitness(&witness, ecc.BN254.ScalarField())
@@ -332,10 +332,10 @@ func (p *proverServer) Prove(ctx context.Context, req *ProveRequest) (*ProveResp
 
 	return &ProveResponse{
 		Proof: &ZeroKnowledgeProof{
-			Content:      proofBz,
+			Content:           proofBz,
 			CompressedContent: compressedProofBz,
-			PublicInputs: publicInputs,
-			EvmProof:     evmProof,
+			PublicInputs:      publicInputs,
+			EvmProof:          evmProof,
 		},
 		TrustedValidatorSetRoot:   trustedValidatorsRoot,
 		UntrustedValidatorSetRoot: untrustedValidatorsRoot,
