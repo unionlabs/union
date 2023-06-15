@@ -1,10 +1,9 @@
 { pkgs }:
 { name
 , package
-, ...
 }:
 pkgs.stdenv.mkDerivation {
-  name = name;
+  inherit name;
   src = package;
   buildPhase = ''
     cp -r $src $out
