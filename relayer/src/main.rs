@@ -22,7 +22,7 @@ use clap::Parser;
 use contracts::{
     glue::UnionIbcLightclientsCometblsV1ClientStateData,
     ibc_handler::{
-        IBCHandler, IBCHandlerEvents, IbcCoreChannelV1ChannelData,
+        self, IBCHandler, IBCHandlerEvents, IbcCoreChannelV1ChannelData,
         IbcCoreChannelV1CounterpartyData, IbcCoreChannelV1PacketData,
         IbcCoreCommitmentV1MerklePrefixData, IbcCoreConnectionV1CounterpartyData,
         IbcCoreConnectionV1VersionData,
@@ -42,30 +42,16 @@ use protos::{
         self,
         auth::v1beta1::{BaseAccount, QueryAccountRequest},
         base::v1beta1::Coin,
-        ics23::v1::{HashOp, InnerSpec, LeafOp, LengthOp, ProofSpec},
+        ics23::v1 as ics23_v1,
         staking,
     },
     google::protobuf::{self, Any},
     ibc::{
-        applications::transfer::v1::MsgTransfer,
+        applications::transfer::v1 as transfer_v1,
         core::{
-            channel::{
-                self,
-                v1::{MsgChannelOpenAck, QueryChannelRequest, QueryPacketCommitmentRequest},
-            },
-            client::{
-                self,
-                v1::{
-                    Height, QueryClientStateRequest, QueryConsensusStateHeightsRequest,
-                    QueryConsensusStateRequest,
-                },
-            },
-            connection::{self, v1::QueryConnectionRequest},
+            channel::v1 as channel_v1, client::v1 as client_v1, connection::v1 as connection_v1,
         },
-        lightclients::{
-            tendermint::{self, v1::Fraction},
-            wasm,
-        },
+        lightclients::{tendermint::v1 as tendermint_v1, wasm::v1 as wasm_v1},
     },
 };
 use tendermint_rpc::{
@@ -261,15 +247,6 @@ where
     Chain2: LightClient + Connect<Chain1>,
     <Chain1 as LightClient>::ClientState: std::fmt::Debug,
 {
-    // let bytes = hex!("345656e1e0827561fa3ec35d3bc40493fd66ea4f52b68d38e915ecb403df2f6e");
-
-    // let connection_end =
-    //     <protos::ibc::core::connection::v1::ConnectionEnd as prost::Message>::decode(&bytes[..]);
-
-    // dbg!(connection_end);
-
-    // panic!();
-
     let cometbls_id = cometbls.chain_id().await;
     let ethereum_id = ethereum.chain_id().await;
 
@@ -504,9 +481,9 @@ where
 
     let msg = protos::google::protobuf::Any {
         type_url: "/ibc.core.connection.v1.MsgConnectionOpenInit".into(),
-        value: connection::v1::MsgConnectionOpenInit {
+        value: connection_v1::MsgConnectionOpenInit {
             client_id: WASM_CLIENT_ID.to_string(),
-            counterparty: Some(connection::v1::Counterparty {
+            counterparty: Some(connection_v1::Counterparty {
                 client_id: eth_client_id.clone(),
                 connection_id: "".to_string(),
                 prefix: Some(default_merkle_prefix().into()),
@@ -535,12 +512,12 @@ where
         .value;
 
     let mut connection_query_client =
-        connection::v1::query_client::QueryClient::connect("http://0.0.0.0:9090")
+        connection_v1::query_client::QueryClient::connect("http://0.0.0.0:9090")
             .await
             .unwrap();
 
     let connection_proof = connection_query_client
-        .connection(QueryConnectionRequest {
+        .connection(connection_v1::QueryConnectionRequest {
             connection_id: connection_id.clone(),
         })
         .await
@@ -548,12 +525,12 @@ where
         .into_inner();
 
     let mut client_query_client =
-        client::v1::query_client::QueryClient::connect("http://0.0.0.0:9090")
+        client_v1::query_client::QueryClient::connect("http://0.0.0.0:9090")
             .await
             .unwrap();
 
     let client_state_proof = client_query_client
-        .client_state(QueryClientStateRequest {
+        .client_state(client_v1::QueryClientStateRequest {
             client_id: WASM_CLIENT_ID.to_string(),
         })
         .await
@@ -561,7 +538,7 @@ where
         .into_inner();
 
     let consensus_state_proof = client_query_client
-        .consensus_state(QueryConsensusStateRequest {
+        .consensus_state(client_v1::QueryConsensusStateRequest {
             client_id: WASM_CLIENT_ID.to_string(),
             revision_number: connection_proof
                 .proof_height
@@ -578,7 +555,7 @@ where
     dbg!(std::time::SystemTime::now());
 
     let try_response = ibc_handler
-        .connection_open_try(contracts::ibc_handler::MsgConnectionOpenTry {
+        .connection_open_try(ibc_handler::MsgConnectionOpenTry {
             counterparty: IbcCoreConnectionV1CounterpartyData {
                 client_id: WASM_CLIENT_ID.to_string(),
                 connection_id: connection_id.clone(),
@@ -648,26 +625,26 @@ where
     dbg!(&cometbls_client_state);
 
     let wasm_client_state =
-        wasm::v1::ClientState::decode(&*client_state_proof.client_state.unwrap().value).unwrap();
+        wasm_v1::ClientState::decode(&*client_state_proof.client_state.unwrap().value).unwrap();
 
     dbg!(&wasm_client_state);
 
     #[allow(deprecated)]
     let msg = protos::google::protobuf::Any {
         type_url: "/ibc.core.connection.v1.MsgConnectionOpenAck".into(),
-        value: connection::v1::MsgConnectionOpenAck {
+        value: connection_v1::MsgConnectionOpenAck {
             connection_id: connection_id.clone(),
             counterparty_connection_id: connection_id.clone(),
             version: Some(todo!()),
             // version: Some(default_connection_version()),
             client_state: Some(protos::google::protobuf::Any {
                 type_url: "/ibc.lightclients.wasm.v1.ClientState".to_string(),
-                value: wasm::v1::ClientState {
+                value: wasm_v1::ClientState {
                     data: protos::google::protobuf::Any {
                         type_url: "/ibc.lightclients.tendermint.v1.ClientState".to_string(),
-                        value: tendermint::v1::ClientState {
+                        value: tendermint_v1::ClientState {
                             chain_id: CHAIN_ID.to_string(),
-                            trust_level: Some(Fraction {
+                            trust_level: Some(tendermint_v1::Fraction {
                                 // numerator: cometbls_client_state.trust_level.numerator,
                                 // denominator: cometbls_client_state.trust_level.denominator,
                                 numerator: 1,
@@ -691,7 +668,7 @@ where
                                 seconds: 40,
                                 nanos: 0,
                             }),
-                            frozen_height: Some(Height {
+                            frozen_height: Some(client_v1::Height {
                                 revision_number: cometbls_client_state
                                     .frozen_height
                                     .revision_number,
@@ -699,7 +676,7 @@ where
                                     .frozen_height
                                     .revision_height,
                             }),
-                            latest_height: Some(Height {
+                            latest_height: Some(client_v1::Height {
                                 // revision_number: cometbls_client_state
                                 //     .latest_height
                                 //     .revision_number,
@@ -707,40 +684,40 @@ where
                                 revision_height: todo!(),
                             }),
                             proof_specs: [
-                                ProofSpec {
-                                    leaf_spec: Some(LeafOp {
-                                        hash: HashOp::Sha256 as _,
-                                        prehash_key: HashOp::NoHash as _,
-                                        prehash_value: HashOp::Sha256 as _,
-                                        length: LengthOp::VarProto as _,
+                                ics23_v1::ProofSpec {
+                                    leaf_spec: Some(ics23_v1::LeafOp {
+                                        hash: ics23_v1::HashOp::Sha256 as _,
+                                        prehash_key: ics23_v1::HashOp::NoHash as _,
+                                        prehash_value: ics23_v1::HashOp::Sha256 as _,
+                                        length: ics23_v1::LengthOp::VarProto as _,
                                         prefix: [0].to_vec(),
                                     }),
-                                    inner_spec: Some(InnerSpec {
+                                    inner_spec: Some(ics23_v1::InnerSpec {
                                         child_order: vec![0, 1],
                                         child_size: 33,
                                         min_prefix_length: 4,
                                         max_prefix_length: 12,
                                         empty_child: vec![],
-                                        hash: HashOp::Sha256 as _,
+                                        hash: ics23_v1::HashOp::Sha256 as _,
                                     }),
                                     max_depth: 0,
                                     min_depth: 0,
                                 },
-                                ProofSpec {
-                                    leaf_spec: Some(LeafOp {
-                                        hash: HashOp::Sha256 as _,
-                                        prehash_key: HashOp::NoHash as _,
-                                        prehash_value: HashOp::Sha256 as _,
-                                        length: LengthOp::VarProto as _,
+                                ics23_v1::ProofSpec {
+                                    leaf_spec: Some(ics23_v1::LeafOp {
+                                        hash: ics23_v1::HashOp::Sha256 as _,
+                                        prehash_key: ics23_v1::HashOp::NoHash as _,
+                                        prehash_value: ics23_v1::HashOp::Sha256 as _,
+                                        length: ics23_v1::LengthOp::VarProto as _,
                                         prefix: [0].to_vec(),
                                     }),
-                                    inner_spec: Some(InnerSpec {
+                                    inner_spec: Some(ics23_v1::InnerSpec {
                                         child_order: vec![0, 1],
                                         child_size: 32,
                                         min_prefix_length: 1,
                                         max_prefix_length: 1,
                                         empty_child: vec![],
-                                        hash: HashOp::Sha256 as _,
+                                        hash: ics23_v1::HashOp::Sha256 as _,
                                     }),
                                     max_depth: 0,
                                     min_depth: 0,
@@ -757,7 +734,7 @@ where
                     }
                     .encode_to_vec(),
                     code_id: wasm_client_state.code_id,
-                    latest_height: Some(Height {
+                    latest_height: Some(client_v1::Height {
                         revision_number: 1,
                         revision_height: wasm_client_state
                             .latest_height
@@ -784,7 +761,7 @@ where
     dbg!(ack_response);
 
     let connection_proof = connection_query_client
-        .connection(QueryConnectionRequest {
+        .connection(connection_v1::QueryConnectionRequest {
             connection_id: connection_id.clone(),
         })
         .await
@@ -794,7 +771,7 @@ where
     dbg!(&connection_proof);
 
     ibc_handler
-        .connection_open_confirm(contracts::ibc_handler::MsgConnectionOpenConfirm {
+        .connection_open_confirm(ibc_handler::MsgConnectionOpenConfirm {
             connection_id: connection_id.clone(),
             proof_ack: connection_proof.proof.into(),
             proof_height: IbcCoreClientV1HeightData {
@@ -830,17 +807,17 @@ where
     const CHANNEL_VERSION: &str = "ics20-1";
     const COMETBLS_CLIENT_ID: &str = "cometbls-0";
 
-    // let wasm_client_update = client::v1::MsgUpdateClient {
+    // let wasm_client_update = client_v1::MsgUpdateClient {
     //     client_id: WASM_CLIENT_ID.to_string(),
     //     client_message: todo!(),
     //     signer: todo!(),
     // };
 
-    // let a_end = connection::v1::ChannelEnd {
+    // let a_end = connection_v1::ChannelEnd {
     //     client_id: CLIENT_A_ID.to_string(),
     //     versions: vec![default_connection_version()],
-    //     state: connection::v1::State::Init.into(),
-    //     counterparty: Some(connection::v1::Counterparty {
+    //     state: connection_v1::State::Init.into(),
+    //     counterparty: Some(connection_v1::Counterparty {
     //         client_id: CLIENT_B_ID.to_string(),
     //         connection_id: "connection-1".to_string(),
     //         prefix: Some(default_merkle_prefix()),
@@ -865,13 +842,13 @@ where
 
     let msg = protos::google::protobuf::Any {
         type_url: "/ibc.core.channel.v1.MsgChannelOpenInit".into(),
-        value: channel::v1::MsgChannelOpenInit {
+        value: channel_v1::MsgChannelOpenInit {
             signer: signer_from_pk(&alice_pk),
             port_id: PORT_ID.to_string(),
-            channel: Some(channel::v1::Channel {
-                state: channel::v1::State::Init as i32,
-                ordering: channel::v1::Order::Unordered as i32,
-                counterparty: Some(channel::v1::Counterparty {
+            channel: Some(channel_v1::Channel {
+                state: channel_v1::State::Init as i32,
+                ordering: channel_v1::Order::Unordered as i32,
+                counterparty: Some(channel_v1::Counterparty {
                     port_id: PORT_ID.to_string(),
                     channel_id: "".to_string(),
                 }),
@@ -899,12 +876,12 @@ where
         .value;
 
     let mut channel_query_client =
-        channel::v1::query_client::QueryClient::connect("http://0.0.0.0:9090")
+        channel_v1::query_client::QueryClient::connect("http://0.0.0.0:9090")
             .await
             .unwrap();
 
     let channel_proof = channel_query_client
-        .channel(QueryChannelRequest {
+        .channel(channel_v1::QueryChannelRequest {
             port_id: PORT_ID.to_string(),
             channel_id: cosmos_channel_id.clone(),
         })
@@ -913,7 +890,7 @@ where
         .into_inner();
 
     let channel_open_try_receipt = ibc_handler
-        .channel_open_try(contracts::ibc_handler::MsgChannelOpenTry {
+        .channel_open_try(ibc_handler::MsgChannelOpenTry {
             proof_init: channel_proof.proof.clone().into(),
             proof_height: IbcCoreClientV1HeightData {
                 revision_number: channel_proof.proof_height.clone().unwrap().revision_number,
@@ -921,8 +898,8 @@ where
             },
             port_id: PORT_ID.to_string(),
             channel: IbcCoreChannelV1ChannelData {
-                state: channel::v1::State::Tryopen as u8,
-                ordering: channel::v1::Order::Ordered as u8,
+                state: channel_v1::State::Tryopen as u8,
+                ordering: channel_v1::Order::Ordered as u8,
                 counterparty: IbcCoreChannelV1CounterpartyData {
                     port_id: PORT_ID.to_string(),
                     channel_id: cosmos_channel_id.clone(),
@@ -970,12 +947,12 @@ where
     dbg!(&cometbls_client_state);
 
     let mut client_query_client =
-        client::v1::query_client::QueryClient::connect("http://0.0.0.0:9090")
+        client_v1::query_client::QueryClient::connect("http://0.0.0.0:9090")
             .await
             .unwrap();
 
     let consensus_state_proof = client_query_client
-        .consensus_state(QueryConsensusStateRequest {
+        .consensus_state(client_v1::QueryConsensusStateRequest {
             client_id: WASM_CLIENT_ID.to_string(),
             revision_number: channel_proof.proof_height.clone().unwrap().revision_number,
             revision_height: 0,
@@ -988,7 +965,7 @@ where
     dbg!(&consensus_state_proof);
 
     let height = client_query_client
-        .consensus_state_heights(QueryConsensusStateHeightsRequest {
+        .consensus_state_heights(client_v1::QueryConsensusStateHeightsRequest {
             client_id: WASM_CLIENT_ID.to_string(),
             pagination: None,
         })
@@ -1002,7 +979,7 @@ where
 
     let msg = protos::google::protobuf::Any {
         type_url: "/ibc.core.channel.v1.MsgChannelOpenAck".into(),
-        value: MsgChannelOpenAck {
+        value: channel_v1::MsgChannelOpenAck {
             proof_height: Some(height),
             proof_try: vec![1, 2, 3],
             signer: signer_from_pk(&alice_pk),
@@ -1019,7 +996,7 @@ where
     dbg!(ack_response);
 
     let channel_proof = channel_query_client
-        .channel(QueryChannelRequest {
+        .channel(channel_v1::QueryChannelRequest {
             port_id: PORT_ID.to_string(),
             channel_id: cosmos_channel_id.clone(),
         })
@@ -1030,7 +1007,7 @@ where
     dbg!(&channel_proof);
 
     ibc_handler
-        .channel_open_confirm(contracts::ibc_handler::MsgChannelOpenConfirm {
+        .channel_open_confirm(ibc_handler::MsgChannelOpenConfirm {
             port_id: PORT_ID.to_string(),
             channel_id: eth_channel_id.clone(),
             proof_ack: channel_proof.proof.into(),
@@ -1106,10 +1083,10 @@ async fn relay_packets(ibc_handler: IBCHandler<impl Middleware + 'static>) {
                         let sequence = send_packet_event["packet_sequence"].parse().unwrap();
 
                         let packet_commitment =
-                            channel::v1::query_client::QueryClient::connect("http://0.0.0.0:9090")
+                            channel_v1::query_client::QueryClient::connect("http://0.0.0.0:9090")
                                 .await
                                 .unwrap()
-                                .packet_commitment(QueryPacketCommitmentRequest {
+                                .packet_commitment(channel_v1::QueryPacketCommitmentRequest {
                                     port_id: PORT_ID.to_string(),
                                     channel_id: "channel-0".to_string(),
                                     sequence,
@@ -1119,7 +1096,7 @@ async fn relay_packets(ibc_handler: IBCHandler<impl Middleware + 'static>) {
                                 .into_inner();
 
                         let rcp = ibc_handler
-                            .recv_packet(contracts::ibc_handler::MsgPacketRecv {
+                            .recv_packet(ibc_handler::MsgPacketRecv {
                                 packet: IbcCoreChannelV1PacketData {
                                     sequence,
                                     source_port: send_packet_event["packet_src_port"].clone(),
@@ -1186,7 +1163,7 @@ async fn relay_packets(ibc_handler: IBCHandler<impl Middleware + 'static>) {
     let send_handle = tokio::spawn(async move {
         tokio::time::sleep(Duration::from_secs(20)).await;
 
-        let msg = MsgTransfer {
+        let msg = transfer_v1::MsgTransfer {
             source_port: PORT_ID.to_string(),
             source_channel: "channel-0".to_string(),
             token: Some(Coin {
@@ -1195,7 +1172,7 @@ async fn relay_packets(ibc_handler: IBCHandler<impl Middleware + 'static>) {
             }),
             sender: signer_from_pk(&get_wallet().public_key().public_key().to_bytes().to_vec()),
             receiver: "union1nrv37pqfcqul73v7d2e8y0jhjyeuhg57m3eqdt".to_string(),
-            timeout_height: Some(Height {
+            timeout_height: Some(client_v1::Height {
                 revision_number: 1,
                 revision_height: 12_345_678_765,
             }),
