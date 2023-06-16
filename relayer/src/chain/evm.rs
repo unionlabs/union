@@ -152,20 +152,20 @@ impl LightClient for Cometbls {
             })
             .unwrap();
 
-            let (consensus_state, is_found) = self
-                .ibc_handler
-                .get_consensus_state(
-                    client_id.clone(),
-                    IbcCoreClientV1HeightData {
-                        revision_number: 0,
-                        revision_height: tx_rcp.block_number.unwrap().as_u64(),
-                    },
-                )
-                .call()
-                .await
-                .unwrap();
+            // let (consensus_state, is_found) = self
+            //     .ibc_handler
+            //     .get_consensus_state(
+            //         client_id.clone(),
+            //         IbcCoreClientV1HeightData {
+            //             revision_number: 0,
+            //             revision_height: tx_rcp.block_number.unwrap().as_u64(),
+            //         },
+            //     )
+            //     .call()
+            //     .await
+            //     .unwrap();
 
-            assert!(is_found);
+            // assert!(is_found);
 
             // dbg!(consensus_state.to_string());
 
@@ -305,42 +305,49 @@ impl LightClient for Cometbls {
                 .await
                 .unwrap();
 
-            // let (connection_end_bytes, _is_found) = self
-            //     .ibc_handler
-            //     .get_connection_serialize(connection_id.clone())
-            //     .block(self_height.revision_height)
-            //     .await
-            //     .unwrap();
-
             tracing::info!(?connection_end);
 
             assert!(is_found);
 
             let canonical_connection_end: ConnectionEnd = connection_end.try_into().unwrap();
 
-            // assert_eq!(
-            //     canonical_connection_end
-            //         .clone()
-            //         .into_proto()
-            //         .encode_to_vec(),
-            //     connection_end_bytes.to_vec()
-            // );
-
-            // let connection_end_from_contract =
-            //     connection_v1::ConnectionEnd::decode(&*connection_end_bytes.to_vec()).unwrap();
-
-            // dbg!(connection_end_from_contract);
-
-            // super::msgs::StateProof {
-            //     state: canonical_connection_end,
-            //     proof: state_proof.proof,
-            //     proof_height: state_proof.proof_height,
-            // }
-
             self.get_proof(
                 format!("connections/{connection_id}"),
                 self_height,
                 canonical_connection_end,
+                |x| x.into_proto().encode_to_vec(),
+            )
+            .await
+        }
+    }
+
+    fn channel_state_proof(
+        &self,
+        channel_id: String,
+        port_id: String,
+        self_height: super::msgs::Height,
+    ) -> impl Future<Output = StateProof<super::msgs::channel::Channel>> + '_ {
+        async move {
+            tracing::info!(?self_height);
+            self.wait_for_block(self_height).await;
+
+            let (channel, is_found): (IbcCoreChannelV1ChannelData, bool) = self
+                .ibc_handler
+                .get_channel(channel_id.clone(), port_id.clone())
+                .block(self_height.revision_height)
+                .await
+                .unwrap();
+
+            tracing::info!(?channel);
+
+            assert!(is_found);
+
+            let canonical_channel: super::msgs::channel::Channel = channel.try_into().unwrap();
+
+            self.get_proof(
+                format!("channelEnds/ports/{port_id}/channels/{channel_id}"),
+                self_height,
+                canonical_channel,
                 |x| x.into_proto().encode_to_vec(),
             )
             .await
@@ -379,6 +386,26 @@ impl LightClient for Cometbls {
             //         revision_height: height.as_u64(),
             //     })
             //     .unwrap()
+        }
+    }
+
+    fn query_client_state(
+        &self,
+        client_id: String,
+    ) -> impl Future<Output = Self::ClientState> + '_ {
+        async move {
+            let (client_state_bytes, is_found) = self
+                .ibc_handler
+                .get_client_state(client_id.clone())
+                .await
+                .unwrap();
+
+            assert!(is_found);
+
+            google::protobuf::Any::decode(&*client_state_bytes)
+                .unwrap()
+                .try_into()
+                .unwrap()
         }
     }
 }
@@ -543,9 +570,10 @@ impl Connect<Ethereum> for Cometbls {
         }
     }
 
-    fn channel_open_try(&self, msg: MsgChannelOpenTry) -> impl Future<Output = ()> + '_ {
+    fn channel_open_try(&self, msg: MsgChannelOpenTry) -> impl Future<Output = String> + '_ {
         async move {
-            self.ibc_handler
+            let tx_rcp = self
+                .ibc_handler
                 .channel_open_try(msg.into())
                 .send()
                 .await
@@ -553,6 +581,24 @@ impl Connect<Ethereum> for Cometbls {
                 .await
                 .unwrap()
                 .unwrap();
+
+            decode_logs::<IBCHandlerEvents>(
+                tx_rcp
+                    .logs
+                    .into_iter()
+                    .map(|l| l.into())
+                    .collect::<Vec<_>>()
+                    .as_ref(),
+            )
+            .unwrap()
+            .into_iter()
+            .find_map(|l| match l {
+                IBCHandlerEvents::GeneratedChannelIdentifierFilter(channel_id) => {
+                    Some(channel_id.0)
+                }
+                _ => None,
+            })
+            .unwrap()
         }
     }
 
@@ -762,143 +808,144 @@ impl Connect<Ethereum> for Cometbls {
             )
             .unwrap();
 
+            let periods_to_update = (update_to_period - current_period).clamp(1, u64::MAX);
+
             // contains the sync committee update for the current period
-            let light_client_update = {
-                let light_client_updates: lodestar_rpc::types::LightClientUpdatesResponse<32, 256, 32> =
-                serde_json::from_value(
-                    reqwest::get(format!(
-                        "http://0.0.0.0:9596/eth/v1/beacon/light_client/updates?start_period={current_period}&count=1",
-                    ))
-                    .await
-                    .unwrap()
-                    .json()
-                    .await
-                    .unwrap(),
-                )
-                .unwrap();
+            let light_client_updates = reqwest::get(format!(
+                    "http://0.0.0.0:9596/eth/v1/beacon/light_client/updates?start_period={current_period}&count={}",
+                    periods_to_update
+                ))
+                .await
+                .unwrap()
+                .json::<lodestar_rpc::types::LightClientUpdatesResponse<32, 256, 32>>()
+                .await
+                .unwrap()
+                .0;
 
-                let [light_client_update] = &*light_client_updates.0 else { panic!() };
+            let light_client_update = light_client_updates.first().unwrap().clone();
 
-                light_client_update.clone()
-            };
+            // don't do sync commmittee updates if the sync committee period is the same
+            if update_to_period != current_period {
+                // send the sync committee update if we are at the beginning of the period
+                for light_client_update in light_client_updates {
+                    tracing::info!("applying light client update");
 
-            // send the sync committee update if we are at the beginning of the period
-            if slot_in_period == 0 || update_to_period > current_period {
-                tracing::info!("at the beginning of the period, updating sync committee");
-
-                let account_update = self
-                    .provider
-                    .get_proof(
-                        self.ibc_handler.address(),
-                        vec![],
-                        Some(
-                            light_client_update
-                                .data
-                                .finalized_header
-                                .beacon
-                                .slot
-                                .0
-                                .into(),
-                        ),
-                    )
-                    .await
-                    .unwrap();
-
-                let header = wasm::Header {
-                    data: ethereum::Header {
-                        trusted_sync_committee: TrustedSyncCommittee {
-                            trusted_height: Height {
-                                revision_number: 0,
-                                // NOTE: should be the same as trusted height passed in to this function
-                                revision_height: bootstrap.data.header.beacon.slot.0,
-                            },
-                            sync_committee: SyncCommittee {
-                                pubkeys: bootstrap
+                    let account_update = self
+                        .provider
+                        .get_proof(
+                            self.ibc_handler.address(),
+                            vec![],
+                            Some(
+                                light_client_update
                                     .data
-                                    .current_sync_committee
-                                    .pubkeys
-                                    .iter()
-                                    .map(|x| x.0.iter().copied().collect())
-                                    .collect(),
-                                aggregate_pubkey: bootstrap
-                                    .data
-                                    .current_sync_committee
-                                    .aggregate_pubkey
-                                    .iter()
-                                    .copied()
-                                    .collect(),
-                            },
-                            is_next: false,
-                        },
-                        consensus_update: {
-                            let LightClientUpdateData {
-                                attested_header,
-                                finalized_header,
-                                finality_branch,
-                                sync_aggregate,
-                                signature_slot,
-                                next_sync_committee,
-                                next_sync_committee_branch,
-                            } = light_client_update.clone().data;
+                                    .finalized_header
+                                    .beacon
+                                    .slot
+                                    .0
+                                    .into(),
+                            ),
+                        )
+                        .await
+                        .unwrap();
 
-                            LightClientUpdate {
-                                attested_header: translate_header(attested_header),
-                                next_sync_committee: SyncCommittee {
-                                    pubkeys: next_sync_committee
+                    let header = wasm::Header {
+                        data: ethereum::Header {
+                            trusted_sync_committee: TrustedSyncCommittee {
+                                trusted_height: Height {
+                                    revision_number: 0,
+                                    // NOTE: should be the same as trusted height passed in to this function
+                                    revision_height: bootstrap.data.header.beacon.slot.0,
+                                },
+                                sync_committee: SyncCommittee {
+                                    pubkeys: bootstrap
+                                        .data
+                                        .current_sync_committee
                                         .pubkeys
                                         .iter()
-                                        .map(|x| x.0.to_vec())
+                                        .map(|x| x.0.iter().copied().collect())
                                         .collect(),
-                                    aggregate_pubkey: next_sync_committee.aggregate_pubkey.to_vec(),
-                                },
-                                next_sync_committee_branch: next_sync_committee_branch
-                                    .to_vec()
-                                    .iter()
-                                    .map(|x| x.as_bytes().to_vec())
-                                    .collect(),
-                                finalized_header: translate_header(finalized_header),
-                                finality_branch: finality_branch
-                                    .iter()
-                                    .map(|x| x.as_bytes().to_vec())
-                                    .collect(),
-                                sync_aggregate: SyncAggregate {
-                                    sync_committee_bits: sync_aggregate
-                                        .sync_committee_bits
-                                        .as_bitslice()
-                                        .to_bitvec()
-                                        .into_vec(),
-                                    sync_committee_signature: sync_aggregate
-                                        .sync_committee_signature
+                                    aggregate_pubkey: bootstrap
+                                        .data
+                                        .current_sync_committee
+                                        .aggregate_pubkey
                                         .iter()
                                         .copied()
                                         .collect(),
                                 },
-                                signature_slot: signature_slot.0,
-                            }
-                        },
-                        account_update: AccountUpdate {
-                            proofs: [Proof {
-                                key: self.ibc_handler.address().as_bytes().to_vec(),
-                                value: account_update.storage_hash.as_bytes().to_vec(),
-                                proof: account_update
-                                    .account_proof
-                                    .into_iter()
-                                    .map(|x| x.to_vec())
-                                    .collect(),
-                            }]
-                            .to_vec(),
-                        },
-                        timestamp: SystemTime::now()
-                            .duration_since(UNIX_EPOCH)
-                            .unwrap()
-                            .as_secs(),
-                    },
-                    height: update_to,
-                };
+                                is_next: false,
+                            },
+                            consensus_update: {
+                                let LightClientUpdateData {
+                                    attested_header,
+                                    finalized_header,
+                                    finality_branch,
+                                    sync_aggregate,
+                                    signature_slot,
+                                    next_sync_committee,
+                                    next_sync_committee_branch,
+                                } = light_client_update.clone().data;
 
-                counterparty
-                    .update_client(counterparty_client_id.clone(), header)
-                    .await;
+                                LightClientUpdate {
+                                    attested_header: translate_header(attested_header),
+                                    next_sync_committee: SyncCommittee {
+                                        pubkeys: next_sync_committee
+                                            .pubkeys
+                                            .iter()
+                                            .map(|x| x.0.to_vec())
+                                            .collect(),
+                                        aggregate_pubkey: next_sync_committee
+                                            .aggregate_pubkey
+                                            .to_vec(),
+                                    },
+                                    next_sync_committee_branch: next_sync_committee_branch
+                                        .to_vec()
+                                        .iter()
+                                        .map(|x| x.as_bytes().to_vec())
+                                        .collect(),
+                                    finalized_header: translate_header(finalized_header),
+                                    finality_branch: finality_branch
+                                        .iter()
+                                        .map(|x| x.as_bytes().to_vec())
+                                        .collect(),
+                                    sync_aggregate: SyncAggregate {
+                                        sync_committee_bits: sync_aggregate
+                                            .sync_committee_bits
+                                            .as_bitslice()
+                                            .to_bitvec()
+                                            .into_vec(),
+                                        sync_committee_signature: sync_aggregate
+                                            .sync_committee_signature
+                                            .iter()
+                                            .copied()
+                                            .collect(),
+                                    },
+                                    signature_slot: signature_slot.0,
+                                }
+                            },
+                            account_update: AccountUpdate {
+                                proofs: [Proof {
+                                    key: self.ibc_handler.address().as_bytes().to_vec(),
+                                    value: account_update.storage_hash.as_bytes().to_vec(),
+                                    proof: account_update
+                                        .account_proof
+                                        .into_iter()
+                                        .map(|x| x.to_vec())
+                                        .collect(),
+                                }]
+                                .to_vec(),
+                            },
+                            timestamp: SystemTime::now()
+                                .duration_since(UNIX_EPOCH)
+                                .unwrap()
+                                .as_secs(),
+                        },
+                        height: update_to,
+                    };
+
+                    counterparty
+                        .update_client(counterparty_client_id.clone(), header)
+                        .await;
+                }
             }
 
             // wait until the execution height is >= the latest trusted height
@@ -1423,8 +1470,31 @@ impl From<Channel> for IbcCoreChannelV1ChannelData {
     }
 }
 
+impl TryFrom<IbcCoreChannelV1ChannelData> for Channel {
+    type Error = UnknownEnumVariant<u8>;
+
+    fn try_from(value: IbcCoreChannelV1ChannelData) -> Result<Self, Self::Error> {
+        Ok(Self {
+            state: value.state.try_into()?,
+            ordering: value.ordering.try_into()?,
+            counterparty: value.counterparty.into(),
+            connection_hops: value.connection_hops,
+            version: value.version,
+        })
+    }
+}
+
 impl From<channel::Counterparty> for IbcCoreChannelV1CounterpartyData {
     fn from(value: channel::Counterparty) -> Self {
+        Self {
+            port_id: value.port_id,
+            channel_id: value.channel_id,
+        }
+    }
+}
+
+impl From<IbcCoreChannelV1CounterpartyData> for channel::Counterparty {
+    fn from(value: IbcCoreChannelV1CounterpartyData) -> Self {
         Self {
             port_id: value.port_id,
             channel_id: value.channel_id,

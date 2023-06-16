@@ -49,7 +49,23 @@ pub trait LightClient {
         self_height: msgs::Height,
     ) -> impl Future<Output = StateProof<msgs::ConnectionEnd>> + '_;
 
+    fn channel_state_proof(
+        &self,
+        channel_id: String,
+        port_id: String,
+        self_height: msgs::Height,
+    ) -> impl Future<Output = StateProof<msgs::channel::Channel>> + '_;
+
     fn query_latest_height(&self) -> impl Future<Output = msgs::Height> + '_;
+
+    fn query_client_state(&self, client_id: String)
+        -> impl Future<Output = Self::ClientState> + '_;
+}
+
+#[derive(Debug)]
+pub enum QueryHeight {
+    Latest,
+    Specific(msgs::Height),
 }
 
 pub trait Connect<C>: LightClient
@@ -93,7 +109,7 @@ where
     fn channel_open_try(
         &self,
         _: msgs::channel::MsgChannelOpenTry,
-    ) -> impl Future<Output = ()> + '_;
+    ) -> impl Future<Output = String> + '_;
 
     fn channel_open_ack(
         &self,
@@ -530,6 +546,12 @@ pub mod msgs {
             pub latest_height: super::Height,
         }
 
+        impl<Data> crate::chain::ClientState for ClientState<Data> {
+            fn height(&self) -> super::Height {
+                self.latest_height
+            }
+        }
+
         #[derive(Debug, Clone)]
         pub struct ConsensusState<Data> {
             pub data: Data,
@@ -647,6 +669,8 @@ pub mod msgs {
     }
 
     pub mod channel {
+        use super::UnknownEnumVariant;
+
         #[derive(Debug, Clone)]
         pub struct Channel {
             pub state: State,
@@ -665,6 +689,36 @@ pub mod msgs {
             Closed,
         }
 
+        impl TryFrom<i32> for State {
+            type Error = UnknownEnumVariant<i32>;
+
+            fn try_from(value: i32) -> Result<Self, Self::Error> {
+                match value {
+                    0 => Ok(State::UninitializedUnspecified),
+                    1 => Ok(State::Init),
+                    2 => Ok(State::Tryopen),
+                    3 => Ok(State::Open),
+                    3 => Ok(State::Closed),
+                    state => Err(UnknownEnumVariant(state)),
+                }
+            }
+        }
+
+        impl TryFrom<u8> for State {
+            type Error = UnknownEnumVariant<u8>;
+
+            fn try_from(value: u8) -> Result<Self, Self::Error> {
+                match value {
+                    0 => Ok(State::UninitializedUnspecified),
+                    1 => Ok(State::Init),
+                    2 => Ok(State::Tryopen),
+                    3 => Ok(State::Open),
+                    4 => Ok(State::Closed),
+                    state => Err(UnknownEnumVariant(state)),
+                }
+            }
+        }
+
         #[derive(
             Debug, PartialEq, Eq, Hash, strum::EnumString, strum::IntoStaticStr, Clone, Copy,
         )]
@@ -673,6 +727,18 @@ pub mod msgs {
             Unordered,
             #[strum(serialize = "ORDER_ORDERED")]
             Ordered,
+        }
+
+        impl TryFrom<u8> for Order {
+            type Error = UnknownEnumVariant<u8>;
+
+            fn try_from(value: u8) -> Result<Self, Self::Error> {
+                match value {
+                    1 => Ok(Order::Ordered),
+                    2 => Ok(Order::Unordered),
+                    state => Err(UnknownEnumVariant(state)),
+                }
+            }
         }
 
         #[derive(Debug, Clone)]
@@ -685,7 +751,6 @@ pub mod msgs {
         pub struct MsgChannelOpenInit {
             pub port_id: String,
             pub channel: Channel,
-            pub signer: String,
         }
 
         #[derive(Debug, Clone)]
@@ -701,7 +766,6 @@ pub mod msgs {
             pub counterparty_version: String,
             pub proof_init: Vec<u8>,
             pub proof_height: super::Height,
-            pub signer: String,
         }
 
         #[derive(Debug, Clone)]
@@ -773,5 +837,18 @@ pub mod msgs {
         /// packet-verification NOTE: delay period logic is only implemented by some
         /// clients.
         pub delay_period: u64,
+    }
+}
+
+pub trait ClientState {
+    fn height(&self) -> msgs::Height;
+}
+
+impl<T> ClientState for cosmos::Any<T>
+where
+    T: ClientState,
+{
+    fn height(&self) -> msgs::Height {
+        self.0.height()
     }
 }

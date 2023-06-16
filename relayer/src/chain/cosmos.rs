@@ -1,12 +1,8 @@
 use bip32::XPrv;
-use contracts::{
-    glue::{
-        GoogleProtobufTimestampData, TendermintTypesBlockIDData, TendermintTypesCommitData,
-        TendermintTypesHeaderData, TendermintTypesPartSetHeaderData,
-        TendermintTypesSignedHeaderData, TendermintVersionConsensusData,
-        UnionIbcLightclientsCometblsV1HeaderData,
-    },
-    shared_types::IbcCoreClientV1HeightData,
+use contracts::glue::{
+    GoogleProtobufTimestampData, TendermintTypesBlockIDData, TendermintTypesCommitData,
+    TendermintTypesHeaderData, TendermintTypesPartSetHeaderData, TendermintTypesSignedHeaderData,
+    TendermintVersionConsensusData, UnionIbcLightclientsCometblsV1HeaderData,
 };
 use ethers::types::H256;
 use futures::{Future, FutureExt};
@@ -22,9 +18,7 @@ use protos::{
     google,
     ibc::{
         core::{
-            channel::v1 as channel_v1,
-            client::v1::{self as client_v1, QueryClientStateRequest},
-            commitment::v1 as commitment_v1,
+            channel::v1 as channel_v1, client::v1 as client_v1, commitment::v1 as commitment_v1,
             connection::v1 as connection_v1,
         },
         lightclients::wasm::v1 as wasm_v1,
@@ -47,7 +41,7 @@ use crate::{
             channel::{
                 Channel, Counterparty as ChannelCounterparty, MsgChannelOpenAck,
                 MsgChannelOpenConfirm, MsgChannelOpenInit, MsgChannelOpenTry, MsgRecvPacket,
-                Packet, State as ChannelState,
+                Packet,
             },
             cometbls,
             connection::{
@@ -241,10 +235,10 @@ impl LightClient for Ethereum {
         msg: Self::UpdateClientMessage,
     ) -> impl futures::Future<Output = ()> + '_ {
         async move {
-            let mut query_client =
-                client_v1::query_client::QueryClient::connect("http://0.0.0.0:9090")
-                    .await
-                    .unwrap();
+            // let mut query_client =
+            //     client_v1::query_client::QueryClient::connect("http://0.0.0.0:9090")
+            //         .await
+            //         .unwrap();
 
             // dbg!(&msg.data.consensus_update.finalized_header.beacon.slot);
 
@@ -427,6 +421,53 @@ impl LightClient for Ethereum {
         }
     }
 
+    fn channel_state_proof(
+        &self,
+        channel_id: String,
+        port_id: String,
+        self_height: super::msgs::Height,
+    ) -> impl Future<Output = StateProof<super::msgs::channel::Channel>> + '_ {
+        async move {
+            let path = format!("channelEnds/ports/{port_id}/channels/{channel_id}");
+
+            let query_result = self
+                .tm_client
+                .abci_query(
+                    Some("store/ibc/key".to_string()),
+                    path,
+                    Some(self_height.revision_height.try_into().unwrap()),
+                    true,
+                )
+                .await
+                .unwrap();
+
+            println!("{:#?}", query_result);
+
+            let connection_end = channel_v1::Channel::decode(&*query_result.value).unwrap();
+
+            dbg!(&connection_end);
+
+            StateProof {
+                state: connection_end.try_into().unwrap(),
+                proof: commitment_v1::MerkleProof {
+                    proofs: query_result
+                        .proof
+                        .unwrap()
+                        .ops
+                        .into_iter()
+                        .map(|op| ics23_v1::CommitmentProof::decode(op.data.as_slice()).unwrap())
+                        .collect::<Vec<_>>(),
+                }
+                .encode_to_vec(),
+                proof_height: Height {
+                    // TODO(benluelo): Figure out revision number
+                    revision_number: 0,
+                    revision_height: query_result.height.value(),
+                },
+            }
+        }
+    }
+
     fn query_latest_height(&self) -> impl Future<Output = Height> + '_ {
         async move {
             let height = self
@@ -446,6 +487,25 @@ impl LightClient for Ethereum {
                 // revision_number: 0,
                 revision_height: height,
             }
+        }
+    }
+
+    fn query_client_state(
+        &self,
+        client_id: String,
+    ) -> impl Future<Output = Self::ClientState> + '_ {
+        async move {
+            client_v1::query_client::QueryClient::connect("http://0.0.0.0:9090")
+                .await
+                .unwrap()
+                .client_state(client_v1::QueryClientStateRequest { client_id })
+                .await
+                .unwrap()
+                .into_inner()
+                .client_state
+                .unwrap()
+                .try_into()
+                .unwrap()
         }
     }
 }
@@ -566,13 +626,26 @@ impl Connect<Cometbls> for Ethereum {
         }
     }
 
-    fn channel_open_try(&self, msg: MsgChannelOpenTry) -> impl futures::Future<Output = ()> + '_ {
+    fn channel_open_try(
+        &self,
+        msg: MsgChannelOpenTry,
+    ) -> impl futures::Future<Output = String> + '_ {
         async move {
             self.broadcast_tx_commit([google::protobuf::Any {
                 type_url: "/ibc.channel.v1.MsgChannelOpenTry".to_string(),
                 value: msg.into_proto_with_signer(&self.signer).encode_to_vec(),
             }])
-            .await;
+            .await
+            .deliver_tx
+            .events
+            .into_iter()
+            .find(|event| event.kind == "channel_open_try")
+            .unwrap()
+            .attributes
+            .into_iter()
+            .find(|attr| attr.key == "channel_id")
+            .unwrap()
+            .value
         }
     }
 
@@ -1163,6 +1236,9 @@ into_proto! {
     ethereum::ConsensusState => ethereum_v1::ConsensusState;
     ["/union.ibc.lightclients.ethereum.v1.Header"]
     ethereum::Header => ethereum_v1::Header;
+
+    ["/ibc.core.channel.v1.Channel"]
+    Channel => channel_v1::Channel;
 }
 
 // impl<T> IntoProto for T
