@@ -42,7 +42,7 @@ pub fn validate_light_client_update<C: LightClientContext>(
     let store_period = compute_sync_committee_period_at_slot(ctx.finalized_slot());
     let update_signature_period = compute_sync_committee_period_at_slot(update.signature_slot);
 
-    if update.next_sync_committee.is_some() {
+    if ctx.next_sync_committee().is_some() {
         if update_signature_period != store_period && update_signature_period != store_period + 1 {
             return Err(Error::InvalidSignaturePeriod);
         }
@@ -75,7 +75,7 @@ pub fn validate_light_client_update<C: LightClientContext>(
     )?;
 
     // Verify that the `next_sync_committee`, if present, actually is the next sync committee saved in the
-    // state of the `attested_header`
+    // state of the `attested_header` if the store period is equal to the attested period
     if let Some(next_sync_committee) = &update.next_sync_committee {
         if let Some(current_next_sync_committee) = ctx.next_sync_committee() {
             if update_attested_period == store_period

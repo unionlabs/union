@@ -279,42 +279,65 @@ mod test {
         save_wasm_consensus_state(
             deps.as_mut(),
             &wasm_consensus_state,
-            &Height::new(0, 14144).unwrap(),
+            &Height::new(0, 1328).unwrap(),
         );
 
-        let updates: [RawEthHeader; 3] = [
-            serde_json::from_str(include_str!("./test/valid_light_client_update_1.json")).unwrap(),
-            serde_json::from_str(include_str!("./test/valid_light_client_update_2.json")).unwrap(),
-            serde_json::from_str(include_str!("./test/valid_light_client_update_3.json")).unwrap(),
+        let updates: &[RawEthHeader] = &[
+            serde_json::from_str(include_str!("./test/sync_committee_update_1.json")).unwrap(),
+            serde_json::from_str(include_str!("./test/finality_update_1.json")).unwrap(),
+            serde_json::from_str(include_str!("./test/sync_committee_update_2.json")).unwrap(),
+            serde_json::from_str(include_str!("./test/finality_update_2.json")).unwrap(),
+            serde_json::from_str(include_str!("./test/finality_update_3.json")).unwrap(),
+            serde_json::from_str(include_str!("./test/finality_update_4.json")).unwrap(),
         ];
 
         for update in updates {
-            let update: EthHeader = update.try_into().unwrap();
+            let update: EthHeader = update.clone().try_into().unwrap();
             update_header(deps.as_mut(), update.clone()).unwrap();
             // Consensus state is saved to the updated height.
-            let (_, consensus_state) = read_consensus_state(
-                deps.as_ref(),
-                Height::new(0, update.consensus_update.finalized_header.beacon.slot).unwrap(),
-            )
-            .unwrap()
-            .unwrap();
-            // Slot is updated.
-            assert_eq!(
-                consensus_state.slot,
-                update.consensus_update.finalized_header.beacon.slot
-            );
-            // Storage root is updated.
-            assert_eq!(
-                consensus_state.storage_root.as_bytes(),
-                update.account_update.proofs[0].storage_hash,
-            );
-            // TODO(aeryz): Add cases for `store_period == update_period` and `update_period == store_period + 1`
-            let (_, client_state) = read_client_state(deps.as_ref()).unwrap();
-            // Latest slot is updated.
-            assert_eq!(
-                client_state.latest_slot,
-                update.consensus_update.finalized_header.beacon.slot
-            );
+            if update.consensus_update.finalized_header.beacon.slot
+                > update.trusted_sync_committee.height.revision_height()
+            {
+                // It's a finality update
+                let (_, consensus_state) = read_consensus_state(
+                    deps.as_ref(),
+                    Height::new(0, update.consensus_update.finalized_header.beacon.slot).unwrap(),
+                )
+                .unwrap()
+                .unwrap();
+                // Slot is updated.
+                assert_eq!(
+                    consensus_state.slot,
+                    update.consensus_update.finalized_header.beacon.slot
+                );
+                // Storage root is updated.
+                assert_eq!(
+                    consensus_state.storage_root.as_bytes(),
+                    update.account_update.proofs[0].storage_hash,
+                );
+                // Latest slot is updated.
+                // TODO(aeryz): Add cases for `store_period == update_period` and `update_period == store_period + 1`
+                let (_, client_state) = read_client_state(deps.as_ref()).unwrap();
+                assert_eq!(
+                    client_state.latest_slot,
+                    update.consensus_update.finalized_header.beacon.slot
+                );
+            } else {
+                // It's a sync committee update
+                let (_, consensus_state) =
+                    read_consensus_state(deps.as_ref(), update.trusted_sync_committee.height)
+                        .unwrap()
+                        .unwrap();
+
+                assert_eq!(
+                    consensus_state.next_sync_committee.unwrap(),
+                    update
+                        .consensus_update
+                        .next_sync_committee
+                        .unwrap()
+                        .aggregate_public_key
+                );
+            }
         }
     }
 
@@ -334,11 +357,11 @@ mod test {
         save_wasm_consensus_state(
             deps.as_mut(),
             &wasm_consensus_state,
-            &Height::new(0, 14144).unwrap(),
+            &Height::new(0, 1328).unwrap(),
         );
 
         let update: EthHeader = serde_json::from_str::<RawEthHeader>(include_str!(
-            "./test/valid_light_client_update_1.json"
+            "./test/sync_committee_update_1.json"
         ))
         .unwrap()
         .try_into()
