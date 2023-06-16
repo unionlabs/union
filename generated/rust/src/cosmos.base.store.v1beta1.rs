@@ -12,6 +12,8 @@ pub struct CommitInfo {
     pub version: i64,
     #[prost(message, repeated, tag = "2")]
     pub store_infos: ::prost::alloc::vec::Vec<StoreInfo>,
+    #[prost(message, optional, tag = "3")]
+    pub timestamp: ::core::option::Option<super::super::super::super::google::protobuf::Timestamp>,
 }
 /// StoreInfo defines store-specific commit information. It contains a reference
 /// between a store name and the commit ID.

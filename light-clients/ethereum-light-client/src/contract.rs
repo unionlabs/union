@@ -12,6 +12,7 @@ use cosmwasm_std::{
     entry_point, to_binary, Binary, Deps, DepsMut, Env, MessageInfo, QueryResponse, Response,
     StdError, StdResult,
 };
+use ethabi::ethereum_types::U256 as ethabi_U256;
 use ethereum_verifier::{
     primitives::{ExecutionAddress, Hash32, Slot},
     validate_light_client_update, verify_account_storage_root, verify_storage_proof,
@@ -149,26 +150,15 @@ pub fn do_verify_membership(
     }
 
     // We store the hash of the data, not the data itself to the commitments map.
-    let value_hash = sha3::Keccak256::new()
-        .chain_update(value)
-        .finalize()
-        .to_vec();
+    let expected_value_hash = sha3::Keccak256::new().chain_update(value).finalize();
 
-    // We have to get rid of the leading zero bytes because it is wiped in ethereum side.
-    let mut index_to_split = 0;
-    for i in &value_hash {
-        if *i == 0 {
-            index_to_split += 1;
-        } else {
-            break;
-        }
-    }
+    let expected_value = ethabi_U256::from_big_endian(&expected_value_hash);
 
-    let expected_value = &value_hash[index_to_split..];
+    let proof_value = ethabi_U256::from_big_endian(storage_proof.value.as_slice());
 
-    if expected_value != storage_proof.value {
+    if expected_value != proof_value {
         return Err(Error::stored_value_mismatch(
-            expected_value,
+            expected_value_hash,
             storage_proof.value.as_slice(),
         ));
     }
@@ -176,7 +166,7 @@ pub fn do_verify_membership(
     verify_storage_proof(
         storage_root,
         &storage_proof.key,
-        &rlp::encode(&expected_value),
+        &rlp::encode(&storage_proof.value.as_slice()),
         &storage_proof.proof,
     )
     .map_err(|e| Error::Verification(e.to_string()))
@@ -389,7 +379,8 @@ mod test {
                 // It's a finality update
                 let (_, consensus_state) = read_consensus_state(
                     deps.as_ref(),
-                    IbcHeight::new(0, update.consensus_update.finalized_header.beacon.slot).unwrap(),
+                    IbcHeight::new(0, update.consensus_update.finalized_header.beacon.slot)
+                        .unwrap(),
                 )
                 .unwrap()
                 .unwrap();

@@ -54,6 +54,7 @@ pub struct ClientState {
     pub trust_level: ::core::option::Option<Fraction>,
     #[prost(uint64, tag = "9")]
     pub trusting_period: u64,
+    /// FIXME: isn't it already defined in ibc.lightclients.wasm.v1?
     #[prost(uint64, tag = "10")]
     pub latest_slot: u64,
     #[prost(message, optional, tag = "11")]
@@ -74,6 +75,7 @@ pub struct ConsensusState {
     pub slot: u64,
     #[prost(bytes = "vec", tag = "2")]
     pub storage_root: ::prost::alloc::vec::Vec<u8>,
+    /// FIXME: isn't it already defined in ibc.lightclients.wasm.v1?
     #[prost(uint64, tag = "3")]
     pub timestamp: u64,
     #[prost(bytes = "vec", tag = "4")]
