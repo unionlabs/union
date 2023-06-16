@@ -11,7 +11,7 @@
   "caseSensitive": false,
   "dictionaries": ["en_US", "companies", "softwareTerms", "go", "union"],
   "ignorePaths": [
-    "light-clients/ethereum-light-client/src/test/valid_light_client_update_*.json",
+    "light-clients/ethereum-light-client/src/test/*.json",
     "generated/**",
     "lib/ethereum-consensus",
     "lib/ethereum-verifier",

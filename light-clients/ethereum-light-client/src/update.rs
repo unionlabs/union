@@ -36,7 +36,7 @@ pub fn apply_light_client_update<C: LightClientContext>(
                 .next_sync_committee
                 .map(|c| c.aggregate_public_key);
         }
-        _ => return Err(Error::FuturePeriod),
+        _ => {}
     }
 
     if consensus_update.finalized_header.beacon.slot > consensus_state.slot {
