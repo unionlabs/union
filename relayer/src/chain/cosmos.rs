@@ -1,20 +1,40 @@
 use bip32::XPrv;
+use contracts::{
+    glue::{
+        GoogleProtobufTimestampData, TendermintTypesBlockIDData, TendermintTypesCommitData,
+        TendermintTypesHeaderData, TendermintTypesPartSetHeaderData,
+        TendermintTypesSignedHeaderData, TendermintVersionConsensusData,
+        UnionIbcLightclientsCometblsV1HeaderData,
+    },
+    shared_types::IbcCoreClientV1HeightData,
+};
 use ethers::types::H256;
 use futures::{Future, FutureExt};
 use k256::{ecdsa::Signature, schnorr::signature::Signer};
+use num_bigint::BigUint;
 use prost::Message;
 use protos::{
-    cosmos::{ics23::v1 as ics23_v1, staking, tx},
+    cosmos::{
+        ics23::v1 as ics23_v1,
+        staking::{self, v1beta1::BondStatus},
+        tx,
+    },
     google,
     ibc::{
         core::{
-            channel::v1 as channel_v1, client::v1 as client_v1, commitment::v1 as commitment_v1,
+            channel::v1 as channel_v1,
+            client::v1::{self as client_v1, QueryClientStateRequest},
+            commitment::v1 as commitment_v1,
             connection::v1 as connection_v1,
         },
         lightclients::wasm::v1 as wasm_v1,
     },
-    union::ibc::lightclients::{cometbls::v1 as cometbls_v1, ethereum::v1 as ethereum_v1},
+    union::{
+        ibc::lightclients::{cometbls::v1 as cometbls_v1, ethereum::v1 as ethereum_v1},
+        prover::api::v1::{union_prover_api_client, ProveRequest},
+    },
 };
+use sha2::Digest;
 use strum::ParseError;
 use tendermint_rpc::{Client, WebSocketClient};
 use tokio::task::JoinHandle;
@@ -52,7 +72,7 @@ use super::msgs::ethereum::{
 /// The 08-wasm light client running on the union chain.
 pub struct Ethereum {
     signer: XPrv,
-    tm_client: WebSocketClient,
+    pub tm_client: WebSocketClient,
     driver_handle: JoinHandle<Result<(), tendermint_rpc::Error>>,
     wasm_code_id: H256,
 }
@@ -119,7 +139,7 @@ impl Ethereum {
                         denom: "stake".to_string(),
                         amount: "1".to_string(),
                     }],
-                    gas_limit: 5_000_000,
+                    gas_limit: 5_000_000_000,
                     payer: "".to_string(),
                     granter: "".to_string(),
                 }),
@@ -142,10 +162,26 @@ impl Ethereum {
             signatures: [alice_signature].to_vec(),
         };
 
-        self.tm_client
+        let response = self
+            .tm_client
             .broadcast_tx_commit(tx_raw.encode_to_vec())
             .await
-            .unwrap()
+            .unwrap();
+
+        dbg!(&response);
+
+        tracing::info!(check_tx_code = ?response.check_tx.code, check_tx_log = %response.check_tx.log);
+        tracing::info!(deliver_tx_code = ?response.deliver_tx.code, deliver_tx_log = %response.deliver_tx.log);
+
+        if let tendermint::abci::Code::Err(code) = response.check_tx.code {
+            panic!("check_tx failed: {code}")
+        };
+
+        if let tendermint::abci::Code::Err(code) = response.deliver_tx.code {
+            panic!("deliver_tx failed: {code}")
+        };
+
+        response
     }
 }
 
@@ -205,16 +241,50 @@ impl LightClient for Ethereum {
         msg: Self::UpdateClientMessage,
     ) -> impl futures::Future<Output = ()> + '_ {
         async move {
+            let mut query_client =
+                client_v1::query_client::QueryClient::connect("http://0.0.0.0:9090")
+                    .await
+                    .unwrap();
+
+            // dbg!(&msg.data.consensus_update.finalized_header.beacon.slot);
+
+            // let cs_before: Self::ClientState = query_client
+            //     .client_state(QueryClientStateRequest {
+            //         client_id: client_id.clone(),
+            //     })
+            //     .await
+            //     .unwrap()
+            //     .into_inner()
+            //     .client_state
+            //     .unwrap()
+            //     .try_into()
+            //     .unwrap();
+
             self.broadcast_tx_commit([google::protobuf::Any {
-                type_url: "/ibc.core.client.v1.MsgCreateClient".into(),
+                type_url: "/ibc.core.client.v1.MsgUpdateClient".into(),
                 value: client_v1::MsgUpdateClient {
-                    client_id,
+                    client_id: client_id.clone(),
                     client_message: Some(Any(msg).into_proto()),
                     signer: signer_from_sk(&self.signer),
                 }
                 .encode_to_vec(),
             }])
             .await;
+
+            // let cs_after: Self::ClientState = query_client
+            //     .client_state(QueryClientStateRequest {
+            //         client_id: client_id.clone(),
+            //     })
+            //     .await
+            //     .unwrap()
+            //     .into_inner()
+            //     .client_state
+            //     .unwrap()
+            //     .try_into()
+            //     .unwrap();
+
+            // dbg!(cs_before);
+            // dbg!(cs_after);
         }
     }
 
@@ -224,7 +294,45 @@ impl LightClient for Ethereum {
         counterparty_height: Height,
         self_height: Height,
     ) -> impl Future<Output = StateProof<Self::ConsensusState>> + '_ {
-        async move { todo!() }
+        async move {
+            let path = format!(
+                "clients/{client_id}/consensusStates/{}-{}",
+                counterparty_height.revision_number, counterparty_height.revision_height
+            );
+
+            let query_result = self
+                .tm_client
+                .abci_query(
+                    Some("store/ibc/key".to_string()),
+                    path,
+                    Some(self_height.revision_height.try_into().unwrap()),
+                    true,
+                )
+                .await
+                .unwrap();
+
+            StateProof {
+                state: google::protobuf::Any::decode(&*query_result.value)
+                    .unwrap()
+                    .try_into()
+                    .unwrap(),
+                proof: commitment_v1::MerkleProof {
+                    proofs: query_result
+                        .proof
+                        .unwrap()
+                        .ops
+                        .into_iter()
+                        .map(|op| ics23_v1::CommitmentProof::decode(op.data.as_slice()).unwrap())
+                        .collect::<Vec<_>>(),
+                }
+                .encode_to_vec(),
+                proof_height: Height {
+                    // TODO(benluelo): Figure out revision number
+                    revision_number: 0,
+                    revision_height: query_result.height.value(),
+                },
+            }
+        }
     }
 
     fn client_state_proof(
@@ -241,7 +349,7 @@ impl LightClient for Ethereum {
                     Some("store/ibc/key".to_string()),
                     path,
                     // TODO(benluelo): Pass height as parameter
-                    Some(self_height.revision_number.try_into().unwrap()),
+                    Some(self_height.revision_height.try_into().unwrap()),
                     true,
                 )
                 .await
@@ -276,7 +384,47 @@ impl LightClient for Ethereum {
         connection_id: String,
         self_height: Height,
     ) -> impl Future<Output = StateProof<ConnectionEnd>> + '_ {
-        async move { todo!() }
+        async move {
+            let path = format!("connections/{connection_id}");
+
+            let query_result = self
+                .tm_client
+                .abci_query(
+                    Some("store/ibc/key".to_string()),
+                    path,
+                    // TODO(benluelo): Pass height as parameter
+                    Some(self_height.revision_height.try_into().unwrap()),
+                    true,
+                )
+                .await
+                .unwrap();
+
+            println!("{:#?}", query_result);
+
+            let connection_end =
+                connection_v1::ConnectionEnd::decode(&*query_result.value).unwrap();
+
+            dbg!(&connection_end);
+
+            StateProof {
+                state: connection_end.try_into().unwrap(),
+                proof: commitment_v1::MerkleProof {
+                    proofs: query_result
+                        .proof
+                        .unwrap()
+                        .ops
+                        .into_iter()
+                        .map(|op| ics23_v1::CommitmentProof::decode(op.data.as_slice()).unwrap())
+                        .collect::<Vec<_>>(),
+                }
+                .encode_to_vec(),
+                proof_height: Height {
+                    // TODO(benluelo): Figure out revision number
+                    revision_number: 0,
+                    revision_height: query_result.height.value(),
+                },
+            }
+        }
     }
 
     fn query_latest_height(&self) -> impl Future<Output = Height> + '_ {
@@ -352,12 +500,10 @@ impl Connect<Cometbls> for Ethereum {
     ) -> impl futures::Future<Output = String> + '_ {
         self.broadcast_tx_commit([google::protobuf::Any {
             type_url: "/ibc.core.connection.v1.MsgConnectionOpenTry".to_string(),
-            value: dbg!(msg)
-                .into_proto_with_signer(&self.signer)
-                .encode_to_vec(),
+            value: msg.into_proto_with_signer(&self.signer).encode_to_vec(),
         }])
         .map(|response| {
-            response
+            dbg!(response)
                 .deliver_tx
                 .events
                 .into_iter()
@@ -579,11 +725,336 @@ impl Connect<Cometbls> for Ethereum {
         }
     }
 
-    fn generate_counterparty_update_client_message(
-        &self,
-        trusted_height: Height,
-    ) -> impl Future<Output = <Cometbls as LightClient>::UpdateClientMessage> + '_ {
-        async move { todo!() }
+    fn update_counterparty_client<'a>(
+        &'a self,
+        counterparty: &'a Cometbls,
+        counterparty_client_id: String,
+        update_from: Height,
+        update_to: Height,
+    ) -> impl Future<Output = Height> + '_ {
+        async move {
+            let commit = self
+                .tm_client
+                .commit(
+                    TryInto::<tendermint::block::Height>::try_into(update_to.revision_height)
+                        .unwrap(),
+                )
+                .await
+                .unwrap();
+
+            println!("New block {:?}", commit.signed_header.header.height);
+
+            // todo: add to self
+            let mut staking_client =
+                staking::v1beta1::query_client::QueryClient::connect("http://0.0.0.0:9090")
+                    .await
+                    .unwrap();
+
+            println!("Query validators...");
+            let mut validators = staking_client
+                .validators(staking::v1beta1::QueryValidatorsRequest {
+                    // How to use BondStatus???
+                    status: BondStatus::Bonded.as_str_name().to_string(),
+                    pagination: None,
+                })
+                .await
+                .unwrap()
+                .into_inner()
+                .validators;
+
+            // Validators must be sorted to match the root, by token then address
+            validators.sort_by(|a, b| {
+                let a_tokens = str::parse::<u128>(&a.tokens).unwrap();
+                let b_tokens = str::parse::<u128>(&b.tokens).unwrap();
+                if a_tokens == b_tokens {
+                    let a_key = protos::cosmos::crypto::bn254::PubKey::decode::<&[u8]>(
+                        &a.consensus_pubkey.clone().unwrap().value,
+                    )
+                    .unwrap()
+                    .key;
+                    let b_key = protos::cosmos::crypto::bn254::PubKey::decode::<&[u8]>(
+                        &b.consensus_pubkey.clone().unwrap().value,
+                    )
+                    .unwrap()
+                    .key;
+                    // Tendermint address are sha256(pubkey)[0:20]
+                    let a_address = sha2::Sha256::new()
+                        .chain_update(a_key)
+                        .finalize()
+                        .into_iter()
+                        .take(20)
+                        .collect::<Vec<_>>();
+                    let b_address = sha2::Sha256::new()
+                        .chain_update(b_key)
+                        .finalize()
+                        .into_iter()
+                        .take(20)
+                        .collect::<Vec<_>>();
+                    a_address.cmp(&b_address)
+                } else {
+                    a_tokens.cmp(&b_tokens)
+                }
+            });
+
+            let simple_validators = validators
+                .iter()
+                .map(|v| {
+                    protos::tendermint::types::SimpleValidator {
+                        // Couldn't find a less ugly way
+                        pub_key: v.consensus_pubkey.as_ref().map(|pk| {
+                            protos::tendermint::crypto::PublicKey {
+                                sum: Some(protos::tendermint::crypto::public_key::Sum::Bn254(
+                                    protos::cosmos::crypto::bn254::PubKey::decode::<&[u8]>(
+                                        &pk.value.clone(),
+                                    )
+                                    .unwrap()
+                                    .key,
+                                )),
+                            }
+                        }),
+                        // Equivalent of sdk.TokensToConsensusPower(sdk.NewIntFromBigInt(tokens), sdk.DefaultPowerReduction)
+                        voting_power: (str::parse::<u128>(&v.tokens).unwrap() / 1000000u128) as _,
+                    }
+                })
+                .collect::<Vec<_>>();
+
+            let mut bitmap = BigUint::default();
+            let mut signatures =
+                Vec::<Vec<u8>>::with_capacity(commit.signed_header.commit.signatures.len());
+            // NOTE: we assume that the signatures are correctly ordered. i.e. they follow the validator set order as the index is used to aggregate validator pks.
+            for (i, sig) in commit.signed_header.commit.signatures.iter().enumerate() {
+                match sig {
+                    tendermint::block::CommitSig::BlockIdFlagAbsent => {}
+                    tendermint::block::CommitSig::BlockIdFlagCommit {
+                        signature,
+                        validator_address,
+                        ..
+                    } => {
+                        bitmap.set_bit(i as _, true);
+                        signatures.push(signature.clone().unwrap().into_bytes());
+                        println!("Validator {:?} signed", validator_address);
+                    }
+                    // TODO: not sure about this case
+                    tendermint::block::CommitSig::BlockIdFlagNil { .. } => {
+                        println!("Nul flag???");
+                    }
+                }
+            }
+
+            let trusted_commit = Some(protos::union::prover::api::v1::ValidatorSetCommit {
+                validators: simple_validators,
+                signatures,
+                bitmap: bitmap.to_bytes_be(),
+            });
+
+            // The untrusted commit is the same as we only deal with adjacent verification for now.
+            let untrusted_commit = trusted_commit.clone();
+
+            println!("Generate ZKP...");
+            let mut prover_client = union_prover_api_client::UnionProverApiClient::connect(
+                "https://prover.cryptware.io:443",
+            )
+            .await
+            .unwrap();
+            let prove_res = prover_client
+                .prove(ProveRequest {
+                    vote: Some(protos::tendermint::types::CanonicalVote {
+                        r#type: protos::tendermint::types::SignedMsgType::Precommit.into(),
+                        height: commit.signed_header.commit.height.into(),
+                        round: u32::from(commit.signed_header.commit.round) as _,
+                        block_id: Some(protos::tendermint::types::CanonicalBlockId {
+                            hash: commit
+                                .signed_header
+                                .commit
+                                .block_id
+                                .hash
+                                .as_bytes()
+                                .to_vec(),
+                            part_set_header: Some(
+                                protos::tendermint::types::CanonicalPartSetHeader {
+                                    total: commit
+                                        .signed_header
+                                        .commit
+                                        .block_id
+                                        .part_set_header
+                                        .total,
+                                    hash: commit
+                                        .signed_header
+                                        .commit
+                                        .block_id
+                                        .part_set_header
+                                        .hash
+                                        .as_bytes()
+                                        .to_vec(),
+                                },
+                            ),
+                        }),
+                        chain_id: commit.signed_header.header.chain_id.clone().into(),
+                    }),
+                    trusted_commit,
+                    untrusted_commit,
+                })
+                .await
+                .unwrap()
+                .into_inner();
+
+            let header_timestamp = tendermint_proto::google::protobuf::Timestamp::from(
+                commit.signed_header.header.time,
+            );
+            let client_message = UnionIbcLightclientsCometblsV1HeaderData {
+                signed_header: TendermintTypesSignedHeaderData {
+                    header: TendermintTypesHeaderData {
+                        version: TendermintVersionConsensusData {
+                            block: commit.signed_header.header.version.block,
+                            app: commit.signed_header.header.version.app,
+                        },
+                        chain_id: commit.signed_header.header.chain_id.into(),
+                        height: commit.signed_header.header.height.into(),
+                        time: GoogleProtobufTimestampData {
+                            secs: header_timestamp.seconds,
+                            nanos: header_timestamp.nanos.into(),
+                        },
+                        last_block_id: TendermintTypesBlockIDData {
+                            hash: commit
+                                .signed_header
+                                .header
+                                .last_block_id
+                                .unwrap()
+                                .hash
+                                .as_bytes()
+                                .to_vec()
+                                .into(),
+                            part_set_header: TendermintTypesPartSetHeaderData {
+                                total: commit
+                                    .signed_header
+                                    .header
+                                    .last_block_id
+                                    .unwrap()
+                                    .part_set_header
+                                    .total,
+                                hash: commit
+                                    .signed_header
+                                    .header
+                                    .last_block_id
+                                    .unwrap()
+                                    .part_set_header
+                                    .hash
+                                    .as_bytes()
+                                    .to_vec()
+                                    .into(),
+                            },
+                        },
+                        last_commit_hash: commit
+                            .signed_header
+                            .header
+                            .last_commit_hash
+                            .unwrap()
+                            .as_bytes()
+                            .to_vec()
+                            .into(),
+                        data_hash: commit
+                            .signed_header
+                            .header
+                            .data_hash
+                            .unwrap()
+                            .as_bytes()
+                            .to_vec()
+                            .into(),
+                        validators_hash: commit
+                            .signed_header
+                            .header
+                            .validators_hash
+                            .as_bytes()
+                            .to_vec()
+                            .into(),
+                        next_validators_hash: commit
+                            .signed_header
+                            .header
+                            .next_validators_hash
+                            .as_bytes()
+                            .to_vec()
+                            .into(),
+                        consensus_hash: commit
+                            .signed_header
+                            .header
+                            .consensus_hash
+                            .as_bytes()
+                            .to_vec()
+                            .into(),
+                        app_hash: commit
+                            .signed_header
+                            .header
+                            .app_hash
+                            .as_bytes()
+                            .to_vec()
+                            .into(),
+                        last_results_hash: commit
+                            .signed_header
+                            .header
+                            .last_results_hash
+                            .unwrap()
+                            .as_bytes()
+                            .to_vec()
+                            .into(),
+                        evidence_hash: commit
+                            .signed_header
+                            .header
+                            .evidence_hash
+                            .unwrap()
+                            .as_bytes()
+                            .to_vec()
+                            .into(),
+                        proposer_address: commit
+                            .signed_header
+                            .header
+                            .proposer_address
+                            .as_bytes()
+                            .to_vec()
+                            .into(),
+                    },
+                    commit: TendermintTypesCommitData {
+                        height: commit.signed_header.commit.height.into(),
+                        round: commit.signed_header.commit.round.into(),
+                        block_id: TendermintTypesBlockIDData {
+                            hash: commit
+                                .signed_header
+                                .commit
+                                .block_id
+                                .hash
+                                .as_bytes()
+                                .to_vec()
+                                .into(),
+                            part_set_header: TendermintTypesPartSetHeaderData {
+                                total: commit.signed_header.commit.block_id.part_set_header.total,
+                                hash: commit
+                                    .signed_header
+                                    .commit
+                                    .block_id
+                                    .part_set_header
+                                    .hash
+                                    .as_bytes()
+                                    .to_vec()
+                                    .into(),
+                            },
+                        },
+                        // NOTE: We don't need the signatures are they are part of the ZKP
+                        signatures: vec![],
+                    },
+                },
+                untrusted_validator_set_root: prove_res.untrusted_validator_set_root.into(),
+                trusted_height: update_from.into(),
+                zero_knowledge_proof: prove_res.proof.unwrap().evm_proof.into(),
+            };
+
+            println!("Client message {:?}", client_message);
+
+            println!("Updating client...");
+            counterparty
+                .update_client(counterparty_client_id.clone(), client_message)
+                .await;
+
+            update_to
+        }
     }
 }
 
@@ -1109,7 +1580,7 @@ impl From<ethereum::ClientState> for ethereum_v1::ClientState {
             trust_level: Some(value.trust_level.into()),
             trusting_period: value.trusting_period,
             latest_slot: value.latest_slot,
-            frozen_height: Some(value.frozen_height.into()),
+            frozen_height: value.frozen_height.map(Into::into),
             counterparty_commitment_slot: value.counterparty_commitment_slot,
         }
     }
@@ -1145,17 +1616,32 @@ impl TryFrom<ethereum_v1::ClientState> for ethereum::ClientState {
             trust_level: value.trust_level.ok_or(MissingField("trust_level"))?.into(),
             trusting_period: value.trusting_period,
             latest_slot: value.latest_slot,
-            frozen_height: value
-                .frozen_height
-                .ok_or(MissingField("frozen_height"))?
-                .into(),
+            frozen_height: value.frozen_height.map(Into::into),
             counterparty_commitment_slot: value.counterparty_commitment_slot,
+        })
+    }
+}
+
+impl TryFrom<ethereum_v1::ConsensusState> for ethereum::ConsensusState {
+    type Error = MissingField;
+
+    fn try_from(value: ethereum_v1::ConsensusState) -> Result<Self, Self::Error> {
+        Ok(Self {
+            slot: value.slot,
+            storage_root: value.storage_root,
+            timestamp: value.timestamp,
+            current_sync_committee: value.current_sync_committee,
+            next_sync_committee: value.next_sync_committee,
         })
     }
 }
 
 impl TryFromProto for ethereum::ClientState {
     type Proto = ethereum_v1::ClientState;
+}
+
+impl TryFromProto for ethereum::ConsensusState {
+    type Proto = ethereum_v1::ConsensusState;
 }
 
 impl From<Fraction> for ethereum_v1::Fraction {
@@ -1418,6 +1904,7 @@ where
 //     }
 // }
 
+#[derive(Debug)]
 pub enum TryFromConnnectionEndError {
     ParseError(ParseError),
     UnknownEnumVariant(UnknownEnumVariant<i32>),
@@ -1691,4 +2178,30 @@ impl From<SyncAggregate> for ethereum_v1::SyncAggregate {
             sync_committee_signature: value.sync_committee_signature,
         }
     }
+}
+
+#[test]
+fn test_proto_height() {
+    use prost::Message;
+
+    let height = Height {
+        revision_number: 0,
+        revision_height: 0,
+    };
+
+    let tsc = TrustedSyncCommittee {
+        trusted_height: height,
+        sync_committee: Default::default(),
+        is_next: true,
+    };
+
+    let before = ethereum_v1::TrustedSyncCommittee::from(tsc);
+
+    let encoded = before.encode_to_vec();
+    dbg!(&before);
+
+    let after = ethereum_v1::TrustedSyncCommittee::decode(&*encoded).unwrap();
+    dbg!(&after);
+
+    assert_eq!(before, after);
 }

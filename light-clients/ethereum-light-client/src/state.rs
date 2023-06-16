@@ -110,8 +110,15 @@ pub fn update_client_state(
     mut wasm_client_state: WasmClientState,
     client_state: ClientState,
 ) {
+    let latest_revision_height = client_state.latest_slot;
     let raw_client_state = Into::<RawClientState>::into(client_state).encode_to_vec();
+
     wasm_client_state.data = raw_client_state;
+    wasm_client_state.latest_height = Some(protos::ibc::core::client::v1::Height {
+        revision_number: 0,
+        revision_height: latest_revision_height,
+    });
+
     save_wasm_client_state(deps, &wasm_client_state);
 }
 

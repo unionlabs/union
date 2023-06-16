@@ -123,10 +123,13 @@ where
         height: msgs::Height,
     ) -> impl Future<Output = C::ConsensusState> + '_;
 
-    fn generate_counterparty_update_client_message(
-        &self,
-        trusted_height: msgs::Height,
-    ) -> impl Future<Output = C::UpdateClientMessage> + '_;
+    fn update_counterparty_client<'a>(
+        &'a self,
+        counterparty: &'a C,
+        counterparty_client_id: String,
+        update_from: msgs::Height,
+        update_to: msgs::Height,
+    ) -> impl Future<Output = msgs::Height> + 'a;
 }
 
 trait ChainSource {
@@ -145,14 +148,14 @@ pub mod msgs {
         pub revision_height: u64,
     }
 
-    impl Height {
-        pub fn increment(self) -> Self {
-            Self {
-                revision_number: self.revision_number,
-                revision_height: self.revision_height + 1,
-            }
-        }
-    }
+    // impl Height {
+    //     pub fn increment(self) -> Self {
+    //         Self {
+    //             revision_number: self.revision_number,
+    //             revision_height: self.revision_height + 1,
+    //         }
+    //     }
+    // }
 
     #[derive(Debug, Clone)]
     pub struct UnknownEnumVariant<T>(T);
@@ -342,7 +345,7 @@ pub mod msgs {
             pub trusting_period: u64,
             pub latest_slot: u64,
             // #[proto(required, into)]
-            pub frozen_height: super::Height,
+            pub frozen_height: Option<super::Height>,
             pub counterparty_commitment_slot: u64,
         }
 
@@ -411,6 +414,7 @@ pub mod msgs {
             pub next_sync_committee: Vec<u8>,
         }
 
+        #[derive(Debug)]
         pub struct Header {
             pub trusted_sync_committee: TrustedSyncCommittee,
             pub consensus_update: LightClientUpdate,
@@ -418,12 +422,12 @@ pub mod msgs {
             pub timestamp: u64,
         }
 
-        #[derive(Clone, PartialEq)]
+        #[derive(Debug, Clone, PartialEq)]
         pub struct AccountUpdate {
             pub proofs: Vec<Proof>,
         }
 
-        #[derive(Clone, PartialEq)]
+        #[derive(Debug, Clone, PartialEq)]
         pub struct Proof {
             // #[cfg_attr(feature = "std", serde(with = "::serde_utils::base64"))]
             pub key: Vec<u8>,
@@ -433,7 +437,7 @@ pub mod msgs {
             pub proof: Vec<Vec<u8>>,
         }
 
-        #[derive(Clone, PartialEq)]
+        #[derive(Debug, Clone, PartialEq)]
         pub struct SyncAggregate {
             // #[cfg_attr(feature = "std", serde(with = "::serde_utils::base64"))]
             pub sync_committee_bits: Vec<u8>,
@@ -441,18 +445,20 @@ pub mod msgs {
             pub sync_committee_signature: Vec<u8>,
         }
 
+        #[derive(Debug)]
         pub struct TrustedSyncCommittee {
             pub trusted_height: super::Height,
             pub sync_committee: SyncCommittee,
             pub is_next: bool,
         }
 
-        #[derive(Default)]
+        #[derive(Debug, Default)]
         pub struct SyncCommittee {
             pub pubkeys: Vec<Vec<u8>>,
             pub aggregate_pubkey: Vec<u8>,
         }
 
+        #[derive(Debug)]
         pub struct LightClientUpdate {
             pub attested_header: LightClientHeader,
             pub next_sync_committee: SyncCommittee,
@@ -464,7 +470,7 @@ pub mod msgs {
             pub signature_slot: u64,
         }
 
-        #[derive(Clone, PartialEq)]
+        #[derive(Debug, Clone, PartialEq)]
         pub struct LightClientHeader {
             pub beacon: BeaconBlockHeader,
             pub execution: ExecutionPayloadHeader,
@@ -472,7 +478,7 @@ pub mod msgs {
             pub execution_branch: Vec<Vec<u8>>,
         }
 
-        #[derive(Clone, PartialEq)]
+        #[derive(Debug, Clone, PartialEq)]
         pub struct ExecutionPayloadHeader {
             // #[cfg_attr(feature = "std", serde(with = "::serde_utils::base64"))]
             pub parent_hash: Vec<u8>,
@@ -503,7 +509,7 @@ pub mod msgs {
             pub withdrawals_root: Vec<u8>,
         }
 
-        #[derive(Clone, PartialEq)]
+        #[derive(Debug, Clone, PartialEq)]
         pub struct BeaconBlockHeader {
             pub slot: u64,
             pub proposer_index: u64,

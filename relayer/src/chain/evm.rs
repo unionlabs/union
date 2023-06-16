@@ -1,3 +1,4 @@
+use std::ops::{Div, Rem};
 use std::{
     fmt::Debug,
     sync::Arc,
@@ -29,7 +30,7 @@ use ethers::{
 };
 use futures::Future;
 use lodestar_rpc::types::{
-    BeaconHeaderResponse, LightClientBootstrapResponse, LightClientFinalityUpdateData,
+    BeaconHeaderResponse, LightClientBootstrapResponse, LightClientUpdateData,
 };
 use prost::Message;
 use protos::{google, union::ibc::lightclients::ethereum::v1 as ethereum_v1};
@@ -166,7 +167,7 @@ impl LightClient for Cometbls {
 
             assert!(is_found);
 
-            dbg!(consensus_state.to_string());
+            // dbg!(consensus_state.to_string());
 
             client_id
         }
@@ -639,10 +640,7 @@ impl Connect<Ethereum> for Cometbls {
                         numerator: 1,
                         denominator: 3,
                     },
-                    frozen_height: Height {
-                        revision_number: 0,
-                        revision_height: 0,
-                    },
+                    frozen_height: None,
                     counterparty_commitment_slot: 0,
                 },
                 code_id: self.wasm_code_id.to_fixed_bytes().to_vec(),
@@ -657,9 +655,7 @@ impl Connect<Ethereum> for Cometbls {
     ) -> impl Future<Output = <Ethereum as LightClient>::ConsensusState> + '_ {
         async move {
             let trusted_header = lodestar_rpc::client::RPCClient::new(ETH_BEACON_RPC_API)
-                .get_beacon_header_by_slot(dbg!(ethereum_consensus::types::U64(
-                    height.revision_height
-                )))
+                .get_beacon_header_by_slot(ethereum_consensus::types::U64(height.revision_height))
                 .await
                 .unwrap()
                 .data;
@@ -675,6 +671,27 @@ impl Connect<Ethereum> for Cometbls {
             .unwrap()
             .data;
 
+            let light_client_update = {
+                let current_period = height.revision_height.div(64);
+
+                let light_client_updates: lodestar_rpc::types::LightClientUpdatesResponse<32, 256, 32> =
+                serde_json::from_value(
+                    reqwest::get(format!(
+                        "http://0.0.0.0:9596/eth/v1/beacon/light_client/updates?start_period={current_period}&count=1",
+                    ))
+                    .await
+                    .unwrap()
+                    .json()
+                    .await
+                    .unwrap(),
+                )
+                .unwrap();
+
+                let [light_client_update] = &*light_client_updates.0 else { panic!() };
+
+                light_client_update.data.clone()
+            };
+
             Any(wasm::ConsensusState {
                 data: ethereum::ConsensusState {
                     slot: bootstrap.header.beacon.slot.0,
@@ -684,7 +701,12 @@ impl Connect<Ethereum> for Cometbls {
                         .current_sync_committee
                         .aggregate_pubkey
                         .to_vec(),
-                    next_sync_committee: vec![],
+                    next_sync_committee: light_client_update
+                        .next_sync_committee
+                        .aggregate_pubkey
+                        .iter()
+                        .copied()
+                        .collect(),
                 },
                 timestamp: SystemTime::now()
                     .duration_since(UNIX_EPOCH)
@@ -694,13 +716,192 @@ impl Connect<Ethereum> for Cometbls {
         }
     }
 
-    fn generate_counterparty_update_client_message(
-        &self,
-        latest_self_height_trusted_by_counterparty: Height,
-    ) -> impl Future<Output = <Ethereum as LightClient>::UpdateClientMessage> + '_ {
+    /// Returns the actual height updated to (>= update_to)
+    fn update_counterparty_client<'a>(
+        &'a self,
+        counterparty: &'a Ethereum,
+        counterparty_client_id: String,
+        update_from: Height,
+        update_to: Height,
+    ) -> impl Future<Output = Height> + 'a {
         async move {
-            // self.wait_for_block(trusted_height).await;
+            self.wait_for_block(update_to).await;
 
+            const PERIOD: u64 = 64;
+
+            // FIXME: what if update_to and update_from are in different sync_committee periods?
+
+            let update_to_period = update_to.revision_height.div(PERIOD);
+
+            let slot_in_period = update_from.revision_height.rem(PERIOD);
+
+            let current_period = update_from.revision_height.div(PERIOD);
+
+            let trusted_block = reqwest::get(format!(
+                "http://0.0.0.0:9596/eth/v1/beacon/headers/{}",
+                update_from.revision_height
+            ))
+            .await
+            .unwrap()
+            .json::<BeaconHeaderResponse>()
+            .await
+            .unwrap();
+
+            // bootstrap contains the current sync committee for the given height
+            let bootstrap: LightClientBootstrapResponse<32, 256, 32> = serde_json::from_value(
+                reqwest::get(format!(
+                    "http://0.0.0.0:9596/eth/v1/beacon/light_client/bootstrap/0x{}",
+                    trusted_block.data.root
+                ))
+                .await
+                .unwrap()
+                .json::<serde_json::Value>()
+                // .json::<LightClientBootstrapResponse<32, 256, 32>>()
+                .await
+                .unwrap(),
+            )
+            .unwrap();
+
+            // contains the sync committee update for the current period
+            let light_client_update = {
+                let light_client_updates: lodestar_rpc::types::LightClientUpdatesResponse<32, 256, 32> =
+                serde_json::from_value(
+                    reqwest::get(format!(
+                        "http://0.0.0.0:9596/eth/v1/beacon/light_client/updates?start_period={current_period}&count=1",
+                    ))
+                    .await
+                    .unwrap()
+                    .json()
+                    .await
+                    .unwrap(),
+                )
+                .unwrap();
+
+                let [light_client_update] = &*light_client_updates.0 else { panic!() };
+
+                light_client_update.clone()
+            };
+
+            // send the sync committee update if we are at the beginning of the period
+            if slot_in_period == 0 || update_to_period > current_period {
+                tracing::info!("at the beginning of the period, updating sync committee");
+
+                let account_update = self
+                    .provider
+                    .get_proof(
+                        self.ibc_handler.address(),
+                        vec![],
+                        Some(
+                            light_client_update
+                                .data
+                                .finalized_header
+                                .beacon
+                                .slot
+                                .0
+                                .into(),
+                        ),
+                    )
+                    .await
+                    .unwrap();
+
+                let header = wasm::Header {
+                    data: ethereum::Header {
+                        trusted_sync_committee: TrustedSyncCommittee {
+                            trusted_height: Height {
+                                revision_number: 0,
+                                // NOTE: should be the same as trusted height passed in to this function
+                                revision_height: bootstrap.data.header.beacon.slot.0,
+                            },
+                            sync_committee: SyncCommittee {
+                                pubkeys: bootstrap
+                                    .data
+                                    .current_sync_committee
+                                    .pubkeys
+                                    .iter()
+                                    .map(|x| x.0.iter().copied().collect())
+                                    .collect(),
+                                aggregate_pubkey: bootstrap
+                                    .data
+                                    .current_sync_committee
+                                    .aggregate_pubkey
+                                    .iter()
+                                    .copied()
+                                    .collect(),
+                            },
+                            is_next: false,
+                        },
+                        consensus_update: {
+                            let LightClientUpdateData {
+                                attested_header,
+                                finalized_header,
+                                finality_branch,
+                                sync_aggregate,
+                                signature_slot,
+                                next_sync_committee,
+                                next_sync_committee_branch,
+                            } = light_client_update.clone().data;
+
+                            LightClientUpdate {
+                                attested_header: translate_header(attested_header),
+                                next_sync_committee: SyncCommittee {
+                                    pubkeys: next_sync_committee
+                                        .pubkeys
+                                        .iter()
+                                        .map(|x| x.0.to_vec())
+                                        .collect(),
+                                    aggregate_pubkey: next_sync_committee.aggregate_pubkey.to_vec(),
+                                },
+                                next_sync_committee_branch: next_sync_committee_branch
+                                    .to_vec()
+                                    .iter()
+                                    .map(|x| x.as_bytes().to_vec())
+                                    .collect(),
+                                finalized_header: translate_header(finalized_header),
+                                finality_branch: finality_branch
+                                    .iter()
+                                    .map(|x| x.as_bytes().to_vec())
+                                    .collect(),
+                                sync_aggregate: SyncAggregate {
+                                    sync_committee_bits: sync_aggregate
+                                        .sync_committee_bits
+                                        .as_bitslice()
+                                        .to_bitvec()
+                                        .into_vec(),
+                                    sync_committee_signature: sync_aggregate
+                                        .sync_committee_signature
+                                        .iter()
+                                        .copied()
+                                        .collect(),
+                                },
+                                signature_slot: signature_slot.0,
+                            }
+                        },
+                        account_update: AccountUpdate {
+                            proofs: [Proof {
+                                key: self.ibc_handler.address().as_bytes().to_vec(),
+                                value: account_update.storage_hash.as_bytes().to_vec(),
+                                proof: account_update
+                                    .account_proof
+                                    .into_iter()
+                                    .map(|x| x.to_vec())
+                                    .collect(),
+                            }]
+                            .to_vec(),
+                        },
+                        timestamp: SystemTime::now()
+                            .duration_since(UNIX_EPOCH)
+                            .unwrap()
+                            .as_secs(),
+                    },
+                    height: update_to,
+                };
+
+                counterparty
+                    .update_client(counterparty_client_id.clone(), header)
+                    .await;
+            }
+
+            // wait until the execution height is >= the latest trusted height
             let finality_update = loop {
                 let finality_update =
                     reqwest::get("http://0.0.0.0:9596/eth/v1/beacon/light_client/finality_update")
@@ -712,153 +913,113 @@ impl Connect<Ethereum> for Cometbls {
 
                 let block_number = finality_update.data.finalized_header.execution.block_number;
 
-                tracing::info!("latest trusted: {latest_self_height_trusted_by_counterparty:#?} current: {block_number}");
+                tracing::info!(
+                    update_from = ?update_from,
+                    update_to = ?update_to,
+                    current = ?block_number
+                );
 
-                if block_number.0 > latest_self_height_trusted_by_counterparty.revision_height {
-                    break finality_update;
+                if block_number.0 >= update_to.revision_height {
+                    break finality_update.data;
                 }
 
                 tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
             };
 
-            dbg!(&finality_update);
+            let actual_udpated_height = Height {
+                revision_number: 0,
+                revision_height: finality_update.finalized_header.execution.block_number.0,
+            };
 
-            // let light_client_updates: lodestar_rpc::types::LightClientUpdatesResponse<32, 356, 32> =
-            //     serde_json::from_value(
-            //         dbg!(reqwest::get(format!(
-            //             "http://0.0.0.0:9596/eth/v1/beacon/light_client/updates?start_period={}&count={}",
-            //             latest_self_height_trusted_by_counterparty.revision_height,
-            //             finality_update.data.finalized_header.beacon.slot.0
-            //                 - latest_self_height_trusted_by_counterparty.revision_height,
-            //         ))
-            //         .await
-            //         .unwrap()
-            //         .json()
-            //         .await
-            //         .unwrap()),
-            //     )
-            //     .unwrap();
+            // send the finality update
 
-            // assert_eq!(light_client_updates.0.len(), 1);
+            // whether the sync committee signature is to be checked against the current or next sync committee
+            let is_next = finality_update.finalized_header.beacon.slot.0 % PERIOD == 0;
 
-            // let [light_client_update] = &*light_client_updates.0 else { panic!() };
-
-            let trusted_block = reqwest::get(format!(
-                "http://0.0.0.0:9596/eth/v1/beacon/headers/{}",
-                latest_self_height_trusted_by_counterparty.revision_height
-            ))
-            .await
-            .unwrap()
-            .json::<BeaconHeaderResponse>()
-            .await
-            .unwrap();
-
-            let bootstrap: LightClientBootstrapResponse<32, 256, 32> = serde_json::from_value(
-                dbg!(
-                    reqwest::get(dbg!(format!(
-                        "http://0.0.0.0:9596/eth/v1/beacon/light_client/bootstrap/0x{}",
-                        trusted_block.data.root
-                    )))
-                    .await
-                    .unwrap()
-                    .json::<serde_json::Value>()
-                    // .json::<LightClientBootstrapResponse<32, 256, 32>>()
-                    .await
-                )
-                .unwrap(),
-            )
-            .unwrap();
-
-            // dbg!(&bootstrap);
+            let trusted_sync_committee = if is_next {
+                TrustedSyncCommittee {
+                    trusted_height: update_from,
+                    sync_committee: SyncCommittee {
+                        pubkeys: light_client_update
+                            .data
+                            .next_sync_committee
+                            .pubkeys
+                            .iter()
+                            .map(|x| x.0.iter().copied().collect())
+                            .collect(),
+                        aggregate_pubkey: light_client_update
+                            .data
+                            .next_sync_committee
+                            .aggregate_pubkey
+                            .iter()
+                            .copied()
+                            .collect(),
+                    },
+                    is_next,
+                }
+            } else {
+                TrustedSyncCommittee {
+                    trusted_height: update_from,
+                    sync_committee: SyncCommittee {
+                        pubkeys: bootstrap
+                            .data
+                            .current_sync_committee
+                            .pubkeys
+                            .iter()
+                            .map(|x| x.0.iter().copied().collect())
+                            .collect(),
+                        aggregate_pubkey: bootstrap
+                            .data
+                            .current_sync_committee
+                            .aggregate_pubkey
+                            .iter()
+                            .copied()
+                            .collect(),
+                    },
+                    is_next,
+                }
+            };
 
             let account_update = self
                 .provider
                 .get_proof(
                     self.ibc_handler.address(),
                     vec![],
-                    Some(finality_update.data.finalized_header.beacon.slot.0.into()),
+                    Some(finality_update.finalized_header.beacon.slot.0.into()),
                 )
                 .await
                 .unwrap();
 
-            let wasm_header = wasm::Header {
+            let header = wasm::Header {
+                height: actual_udpated_height,
                 data: ethereum::Header {
-                    trusted_sync_committee: TrustedSyncCommittee {
-                        trusted_height: Height {
-                            revision_number: 0,
-                            revision_height: bootstrap.data.header.beacon.slot.0,
-                        },
-                        sync_committee: SyncCommittee {
-                            pubkeys: bootstrap
-                                .data
-                                .current_sync_committee
-                                .pubkeys
-                                .iter()
-                                .map(|x| x.0.iter().copied().collect())
-                                .collect(),
-                            aggregate_pubkey: bootstrap
-                                .data
-                                .current_sync_committee
-                                .aggregate_pubkey
+                    trusted_sync_committee,
+                    consensus_update: LightClientUpdate {
+                        attested_header: translate_header(finality_update.attested_header),
+                        // TODO(benluelo): make into Option
+                        next_sync_committee: SyncCommittee::default(),
+                        next_sync_committee_branch: Default::default(),
+                        finalized_header: translate_header(finality_update.finalized_header),
+                        finality_branch: finality_update
+                            .finality_branch
+                            .iter()
+                            .map(|x| x.as_bytes().to_vec())
+                            .collect(),
+                        sync_aggregate: SyncAggregate {
+                            sync_committee_bits: finality_update
+                                .sync_aggregate
+                                .sync_committee_bits
+                                .as_bitslice()
+                                .to_bitvec()
+                                .into_vec(),
+                            sync_committee_signature: finality_update
+                                .sync_aggregate
+                                .sync_committee_signature
                                 .iter()
                                 .copied()
                                 .collect(),
                         },
-                        is_next: false,
-                    },
-                    consensus_update: {
-                        let LightClientFinalityUpdateData {
-                            attested_header,
-                            finalized_header,
-                            finality_branch,
-                            sync_aggregate,
-                            signature_slot,
-                        } = finality_update.data;
-
-                        LightClientUpdate {
-                            attested_header: translate_header(attested_header),
-                            // next_sync_committee: SyncCommittee {
-                            //     pubkeys: light_client_update
-                            //         .data
-                            //         .next_sync_committee
-                            //         .pubkeys
-                            //         .iter()
-                            //         .map(|x| x.0.to_vec())
-                            //         .collect(),
-                            //     aggregate_pubkey: light_client_update
-                            //         .data
-                            //         .next_sync_committee
-                            //         .aggregate_pubkey
-                            //         .to_vec(),
-                            // },
-                            // next_sync_committee_branch: light_client_update
-                            //     .data
-                            //     .next_sync_committee_branch
-                            //     .to_vec()
-                            //     .iter()
-                            //     .map(|x| x.as_bytes().to_vec())
-                            //     .collect(),
-                            next_sync_committee: SyncCommittee::default(),
-                            next_sync_committee_branch: Default::default(),
-                            finalized_header: translate_header(finalized_header),
-                            finality_branch: finality_branch
-                                .iter()
-                                .map(|x| x.as_bytes().to_vec())
-                                .collect(),
-                            sync_aggregate: SyncAggregate {
-                                sync_committee_bits: sync_aggregate
-                                    .sync_committee_bits
-                                    .as_bitslice()
-                                    .to_bitvec()
-                                    .into_vec(),
-                                sync_committee_signature: sync_aggregate
-                                    .sync_committee_signature
-                                    .iter()
-                                    .copied()
-                                    .collect(),
-                            },
-                            signature_slot: signature_slot.0,
-                        }
+                        signature_slot: finality_update.signature_slot.0,
                     },
                     account_update: AccountUpdate {
                         proofs: [Proof {
@@ -877,37 +1038,14 @@ impl Connect<Ethereum> for Cometbls {
                         .unwrap()
                         .as_secs(),
                 },
-                height: Height {
-                    revision_number: 0,
-                    revision_height: 10_000,
-                },
             };
 
-            wasm_header
+            tracing::info!("submitting finality update");
+            counterparty
+                .update_client(counterparty_client_id, header)
+                .await;
 
-            // todo!();
-
-            // let alice = get_wallet();
-
-            // let alice_pk = alice.public_key().public_key().to_bytes().to_vec();
-
-            // dbg!(&alice_pk);
-
-            // let messages = [Any {
-            //     type_url: "/ibc.core.client.v1.MsgUpdateClient".to_string(),
-            //     value: MsgUpdateClient {
-            //         client_id: WASM_CLIENT_ID.to_string(),
-            //         client_message: Some(protos::google::protobuf::Any {
-            //             type_url: "/ibc.lightclients.wasm.v1.Header".to_string(),
-            //             value: wasm_header.encode_to_vec(),
-            //         }),
-            //         signer: signer_from_pk(&alice_pk),
-            //     }
-            //     .encode_to_vec(),
-            // }]
-            // .to_vec();
-
-            //     // broadcast_tx_commit(messages).await;
+            actual_udpated_height
         }
     }
 }
@@ -1464,3 +1602,6 @@ pub fn translate_header(
 // ICS20Bank => 0x774667629726ec1FaBEbCEc0D9139bD1C8f72a23
 // Deploying ICS20TransferBank...
 // ICS20TransferBank => 0x83428c7db9815f482a39a1715684dCF755021997
+
+// 50216813883093446115790550889475408280769462667188799275008
+// 50216813883093446115919139012454251028917341108522774102713

@@ -35,7 +35,7 @@ use ethers::{
     providers::Middleware,
     types::{Address, H256},
 };
-use futures::{FutureExt, StreamExt};
+use futures::StreamExt;
 use prost::Message;
 use protos::{
     cosmos::{
@@ -193,6 +193,46 @@ async fn do_main(args: Args) {
 
     let ethereum = Ethereum::new(get_wallet(), args.wasm_code_id).await;
 
+    // let mut query_client = client_v1::query_client::QueryClient::connect("http://0.0.0.0:9090")
+    //     .await
+    //     .unwrap();
+
+    // let cs_after: <Ethereum as LightClient>::ConsensusState = query_client
+    //     .consensus_state(client_v1::QueryConsensusStateRequest {
+    //         client_id: "08-wasm-11".to_string(),
+    //         revision_number: 0,
+    //         revision_height: 1960,
+    //         latest_height: true,
+    //     })
+    //     .await
+    //     .unwrap()
+    //     .into_inner()
+    //     .consensus_state
+    //     .unwrap()
+    //     .try_into()
+    //     .unwrap();
+
+    // dbg!(cs_after);
+
+    // panic!();
+
+    // let query_result = ethereum
+    //     .tm_client
+    //     .abci_query(
+    //         Some("store/ibc/key".to_string()),
+    //         "connections/connection-2",
+    //         None,
+    //         true,
+    //     )
+    //     .await
+    //     .unwrap();
+
+    // let decoded = connection_v1::ConnectionEnd::decode(&*query_result.value).unwrap();
+
+    // let canonical_type = chain::msgs::ConnectionEnd::try_from(decoded);
+
+    // dbg!(canonical_type);
+
     poignee_de_main(cometbls, ethereum).await;
 }
 
@@ -246,6 +286,7 @@ where
     Chain1: LightClient + Connect<Chain2>,
     Chain2: LightClient + Connect<Chain1>,
     <Chain1 as LightClient>::ClientState: std::fmt::Debug,
+    <Chain2 as LightClient>::ClientState: std::fmt::Debug,
 {
     let cometbls_id = cometbls.chain_id().await;
     let ethereum_id = ethereum.chain_id().await;
@@ -317,11 +358,16 @@ where
         })
         .await;
 
-    let cometbls_latest_height = cometbls.query_latest_height().await;
+    let cometbls_update_from = cometbls_latest_height;
+    let cometbls_update_to = cometbls.query_latest_height().await;
 
-    cometbls
-        .generate_counterparty_update_client_message(cometbls_latest_height)
-        .then(|update| ethereum.update_client(ethereum_client_id.clone(), update))
+    let cometbls_latest_height = cometbls
+        .update_counterparty_client(
+            &ethereum,
+            ethereum_client_id.clone(),
+            cometbls_update_from,
+            cometbls_update_to,
+        )
         .await;
 
     tracing::info!(
@@ -366,19 +412,29 @@ where
         })
         .await;
 
+    let ethereum_update_from = ethereum_latest_height;
+    let ethereum_update_to = ethereum.query_latest_height().await;
+
+    let ethereum_latest_height = ethereum
+        .update_counterparty_client(
+            &cometbls,
+            cometbls_client_id.clone(),
+            ethereum_update_from,
+            ethereum_update_to,
+        )
+        .await;
+
     let ethereum_connection_state_proof = ethereum
         .connection_state_proof(ethereum_connection_id.clone(), ethereum_latest_height)
         .await;
-
     let ethereum_client_state_proof = ethereum
         .client_state_proof(ethereum_client_id.clone(), ethereum_latest_height)
         .await;
-
     let ethereum_consensus_state_proof = ethereum
         .consensus_state_proof(
             ethereum_client_id.clone(),
             cometbls_latest_height,
-            ethereum_latest_height.increment(),
+            ethereum_latest_height,
         )
         .await;
 
@@ -404,20 +460,37 @@ where
         })
         .await;
 
-    let cometbls_connection_state_proof = cometbls
-        .connection_state_proof(
-            cometbls_connection_id.clone(),
-            cometbls_latest_height.increment(),
+    let cometbls_update_from = cometbls_latest_height;
+    let cometbls_update_to = cometbls.query_latest_height().await;
+
+    let cometbls_latest_height = cometbls
+        .update_counterparty_client(
+            &ethereum,
+            ethereum_client_id.clone(),
+            cometbls_update_from,
+            cometbls_update_to,
         )
+        .await;
+
+    let cometbls_connection_state_proof = cometbls
+        .connection_state_proof(cometbls_connection_id.clone(), cometbls_latest_height)
         .await;
 
     ethereum
         .connection_open_confirm(MsgConnectionOpenConfirm {
-            connection_id: ethereum_connection_id,
+            connection_id: ethereum_connection_id.clone(),
             proof_ack: cometbls_connection_state_proof.proof,
             proof_height: cometbls_connection_state_proof.proof_height,
         })
         .await;
+
+    tracing::info!(
+        cometbls_connection_id,
+        cometbls_client_id,
+        ethereum_connection_id,
+        ethereum_client_id,
+        "connection opened"
+    );
 }
 
 #[allow(
