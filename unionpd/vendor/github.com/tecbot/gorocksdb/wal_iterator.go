@@ -41,8 +41,7 @@ func (iter *WalIterator) Destroy() {
 
 // C.rocksdb_wal_iter_get_batch in the official rocksdb c wrapper has memory leak
 // see https://github.com/facebook/rocksdb/pull/5515
-//
-//	https://github.com/facebook/rocksdb/issues/5536
+//     https://github.com/facebook/rocksdb/issues/5536
 func (iter *WalIterator) GetBatch() (*WriteBatch, uint64) {
 	var cSeq C.uint64_t
 	cB := C.rocksdb_wal_iter_get_batch(iter.c, &cSeq)

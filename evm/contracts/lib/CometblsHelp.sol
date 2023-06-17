@@ -28,8 +28,8 @@ struct ProcessedMoment {
 library CometblsHelp {
     using BytesLib for bytes;
 
-    string constant WASM_CLIENT_STATE_URL = "/ibc.lightsclients.wasm.v1.ClientState";
-    string constant WASM_CONSENSUS_STATE_URL = "/ibc.lightsclients.wasm.v1.ConsensusState";
+    string constant WASM_CLIENT_STATE_URL = "/ibc.lightclients.wasm.v1.ClientState";
+    string constant WASM_CONSENSUS_STATE_URL = "/ibc.lightclients.wasm.v1.ConsensusState";
 
     uint256 constant PRIME_R = 21888242871839275222246405745257275088548364400416034343698204186575808495617;
     uint256 constant PRIME_R_MINUS_ONE = PRIME_R - 1;

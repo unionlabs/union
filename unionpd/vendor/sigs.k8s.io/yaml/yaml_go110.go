@@ -1,6 +1,5 @@
 // This file contains changes that are only compatible with go 1.10 and onwards.
 
-//go:build go1.10
 // +build go1.10
 
 package yaml

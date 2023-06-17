@@ -1,4 +1,3 @@
-//go:build !amd64
 // +build !amd64
 
 /*
@@ -21,7 +20,7 @@ package simd
 
 // Search uses the Clever search to find the correct key.
 func Search(xs []uint64, k uint64) int16 {
-	if len(xs) < 8 || (len(xs)%8 != 0) {
+	if len(xs) < 8 || (len(xs) % 8 != 0) {
 		return Naive(xs, k)
 	}
 	var twos, pk [4]uint64

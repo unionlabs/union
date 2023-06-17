@@ -10,9 +10,8 @@ import "flag"
 // the respective key for flag.Flag.Name.
 //
 // It's use is recommended with command line arguments as in:
-//
-//	flag.Parse()
-//	p.MustFlag(flag.CommandLine)
+// 	flag.Parse()
+// 	p.MustFlag(flag.CommandLine)
 func (p *Properties) MustFlag(dst *flag.FlagSet) {
 	m := make(map[string]*flag.Flag)
 	dst.VisitAll(func(f *flag.Flag) {

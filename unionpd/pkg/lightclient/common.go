@@ -26,6 +26,12 @@ const ValProtoPKX = 4
 const ValProtoPowerMeta = 4 + 32
 const ValProtoPower = 4 + 32 + 1
 
+/* [10, 34, 26, 32,
+195, 219, 47, 93, 175, 207, 17, 53, 249, 199, 195, 220, 162, 241, 238, 159, 218, 217, 73, 232, 88, 243, 210, 203, 63, 164, 253, 6, 23, 62, 229, 73,
+ 16,
+ 128, 128, 154, 166, 234, 175, 227, 1]
+
+*/
 // Max number of validators this lc can handle
 const MaxVal = 16
 
@@ -86,7 +92,6 @@ func Repack(api frontend.API, unpacked []frontend.Variable, sizeOfInput int, siz
 func (lc *TendermintLightClientAPI) Verify(message *gadget.G2Affine, expectedValRoot [2]frontend.Variable, powerNumerator frontend.Variable, powerDenominator frontend.Variable) error {
 	lc.api.AssertIsLessOrEqual(lc.input.NbOfVal, MaxVal)
 	lc.api.AssertIsLessOrEqual(lc.input.NbOfSignature, lc.input.NbOfVal)
-
 	bitmap := lc.api.ToBinary(lc.input.Bitmap, MaxVal)
 
 	// Facility to iterate over the validators in the lc, this function will do the necessary decoding/marshalling for the caller.
@@ -157,14 +162,13 @@ func (lc *TendermintLightClientAPI) Verify(message *gadget.G2Affine, expectedVal
 		currentVotingPower = lc.api.Add(currentVotingPower, lc.api.Select(signed, power, 0))
 		// Avoid issue with null point, emulatedG1 is never used because only reference in the !signed branch
 		toAggregate := curveArithmetic.Select(signed, PK, &emulatedG1)
-
 		// Optionally aggregated public key if validator at index signed
 		firstPK := lc.api.And(signed, lc.api.IsZero(aggregatedKeys))
-		aggregateNext := curveArithmetic.Select(firstPK, PK, curveArithmetic.Add(&aggregatedPublicKey, toAggregate))
+		aggregated := curveArithmetic.Add(&aggregatedPublicKey, toAggregate)
+		aggregateNext := curveArithmetic.Select(firstPK, PK, aggregated)
 		aggregatedPublicKey =
 			*curveArithmetic.Select(signed, aggregateNext, &aggregatedPublicKey)
 		aggregatedKeys = lc.api.Add(aggregatedKeys, lc.api.Select(signed, 1, 0))
-
 		leafHashes[i] = merkle.LeafHash(rawProto[:], protoSize)
 	})
 

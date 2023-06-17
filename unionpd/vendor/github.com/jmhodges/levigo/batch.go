@@ -32,6 +32,7 @@ func (w *WriteBatch) Close() {
 //
 // Both the key and value byte slices may be reused as WriteBatch takes a copy
 // of them before returning.
+//
 func (w *WriteBatch) Put(key, value []byte) {
 	// leveldb_writebatch_put, and _delete call memcpy() (by way of
 	// Memtable::Add) when called, so we do not need to worry about these

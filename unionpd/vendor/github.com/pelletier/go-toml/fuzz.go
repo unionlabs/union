@@ -1,4 +1,3 @@
-//go:build gofuzz
 // +build gofuzz
 
 package toml

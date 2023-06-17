@@ -10,7 +10,8 @@ hence reducing both write amplification and the size of the LSM tree. This
 allows LSM tree to be served entirely from RAM, while the values are served
 from SSD.
 
-# Usage
+
+Usage
 
 Badger has the following main types: DB, Txn, Item and Iterator. DB contains
 keys that are associated with values. It must be opened with the appropriate

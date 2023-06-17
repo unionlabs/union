@@ -247,9 +247,8 @@ func (u *CopyOnWriteFs) OpenFile(name string, flag int, perm os.FileMode) (File,
 
 // This function handles the 9 different possibilities caused
 // by the union which are the intersection of the following...
-//
-//	layer: doesn't exist, exists as a file, and exists as a directory
-//	base:  doesn't exist, exists as a file, and exists as a directory
+//  layer: doesn't exist, exists as a file, and exists as a directory
+//  base:  doesn't exist, exists as a file, and exists as a directory
 func (u *CopyOnWriteFs) Open(name string) (File, error) {
 	// Since the overlay overrides the base we check that first
 	b, err := u.isBaseFile(name)

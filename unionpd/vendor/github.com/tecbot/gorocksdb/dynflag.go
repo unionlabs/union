@@ -1,4 +1,3 @@
-//go:build !linux || !static
 // +build !linux !static
 
 package gorocksdb

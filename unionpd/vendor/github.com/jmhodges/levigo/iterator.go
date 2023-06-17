@@ -30,16 +30,16 @@ func (e IteratorError) Error() string {
 //
 // A typical use looks like:
 //
-//	db := levigo.Open(...)
+// 	db := levigo.Open(...)
 //
-//	it := db.NewIterator(readOpts)
-//	defer it.Close()
-//	for it.Seek(mykey); it.Valid(); it.Next() {
-//		useKeyAndValue(it.Key(), it.Value())
-//	}
-//	if err := it.GetError() {
-//		...
-//	}
+// 	it := db.NewIterator(readOpts)
+// 	defer it.Close()
+// 	for it.Seek(mykey); it.Valid(); it.Next() {
+// 		useKeyAndValue(it.Key(), it.Value())
+// 	}
+// 	if err := it.GetError() {
+// 		...
+// 	}
 //
 // To prevent memory leaks, an Iterator must have Close called on it when it
 // is no longer needed by the program.
