@@ -1,4 +1,3 @@
-//go:build !windows && !darwin && !plan9
 // +build !windows,!darwin,!plan9
 
 /*

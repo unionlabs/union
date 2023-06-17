@@ -1,4 +1,3 @@
-//go:build static
 // +build static
 
 package gorocksdb

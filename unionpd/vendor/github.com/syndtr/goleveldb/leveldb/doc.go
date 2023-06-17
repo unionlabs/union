@@ -40,7 +40,6 @@
 //	...
 //
 // Iterate over subset of database content with a particular prefix:
-//
 //	iter := db.NewIterator(util.BytesPrefix([]byte("foo-")), nil)
 //	for iter.Next() {
 //		// Use key/value.
@@ -52,25 +51,25 @@
 //
 // Seek-then-Iterate:
 //
-//	iter := db.NewIterator(nil, nil)
-//	for ok := iter.Seek(key); ok; ok = iter.Next() {
-//		// Use key/value.
-//		...
-//	}
-//	iter.Release()
-//	err = iter.Error()
-//	...
+// 	iter := db.NewIterator(nil, nil)
+// 	for ok := iter.Seek(key); ok; ok = iter.Next() {
+// 		// Use key/value.
+// 		...
+// 	}
+// 	iter.Release()
+// 	err = iter.Error()
+// 	...
 //
 // Iterate over subset of database content:
 //
-//	iter := db.NewIterator(&util.Range{Start: []byte("foo"), Limit: []byte("xoo")}, nil)
-//	for iter.Next() {
-//		// Use key/value.
-//		...
-//	}
-//	iter.Release()
-//	err = iter.Error()
-//	...
+// 	iter := db.NewIterator(&util.Range{Start: []byte("foo"), Limit: []byte("xoo")}, nil)
+// 	for iter.Next() {
+// 		// Use key/value.
+// 		...
+// 	}
+// 	iter.Release()
+// 	err = iter.Error()
+// 	...
 //
 // Batch writes:
 //

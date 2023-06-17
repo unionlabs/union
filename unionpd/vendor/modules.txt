@@ -85,6 +85,22 @@ github.com/consensys/gnark/backend/groth16/bls24-317
 github.com/consensys/gnark/backend/groth16/bn254
 github.com/consensys/gnark/backend/groth16/bw6-633
 github.com/consensys/gnark/backend/groth16/bw6-761
+github.com/consensys/gnark/backend/plonk
+github.com/consensys/gnark/backend/plonk/bls12-377
+github.com/consensys/gnark/backend/plonk/bls12-381
+github.com/consensys/gnark/backend/plonk/bls24-315
+github.com/consensys/gnark/backend/plonk/bls24-317
+github.com/consensys/gnark/backend/plonk/bn254
+github.com/consensys/gnark/backend/plonk/bw6-633
+github.com/consensys/gnark/backend/plonk/bw6-761
+github.com/consensys/gnark/backend/plonkfri
+github.com/consensys/gnark/backend/plonkfri/bls12-377
+github.com/consensys/gnark/backend/plonkfri/bls12-381
+github.com/consensys/gnark/backend/plonkfri/bls24-315
+github.com/consensys/gnark/backend/plonkfri/bls24-317
+github.com/consensys/gnark/backend/plonkfri/bn254
+github.com/consensys/gnark/backend/plonkfri/bw6-633
+github.com/consensys/gnark/backend/plonkfri/bw6-761
 github.com/consensys/gnark/backend/witness
 github.com/consensys/gnark/constraint
 github.com/consensys/gnark/constraint/bls12-377
@@ -100,6 +116,7 @@ github.com/consensys/gnark/debug
 github.com/consensys/gnark/frontend
 github.com/consensys/gnark/frontend/cs
 github.com/consensys/gnark/frontend/cs/r1cs
+github.com/consensys/gnark/frontend/cs/scs
 github.com/consensys/gnark/frontend/internal/expr
 github.com/consensys/gnark/frontend/schema
 github.com/consensys/gnark/frontend/schema/internal/reflectwalk
@@ -123,20 +140,33 @@ github.com/consensys/gnark/std/internal/multicommit
 github.com/consensys/gnark/std/math/bits
 github.com/consensys/gnark/std/math/emulated
 github.com/consensys/gnark/std/rangecheck
+github.com/consensys/gnark/test
 # github.com/consensys/gnark-crypto v0.9.2-0.20230329155745-a57dcc3b53de => github.com/hussein-aitlahcen/gnark-crypto v0.0.0-20230419121058-59d3a8050fda
 ## explicit; go 1.18
+github.com/consensys/gnark-crypto/accumulator/merkletree
 github.com/consensys/gnark-crypto/ecc
 github.com/consensys/gnark-crypto/ecc/bls12-377
 github.com/consensys/gnark-crypto/ecc/bls12-377/fp
 github.com/consensys/gnark-crypto/ecc/bls12-377/fr
 github.com/consensys/gnark-crypto/ecc/bls12-377/fr/fft
+github.com/consensys/gnark-crypto/ecc/bls12-377/fr/fri
+github.com/consensys/gnark-crypto/ecc/bls12-377/fr/iop
+github.com/consensys/gnark-crypto/ecc/bls12-377/fr/kzg
 github.com/consensys/gnark-crypto/ecc/bls12-377/fr/mimc
 github.com/consensys/gnark-crypto/ecc/bls12-377/fr/pedersen
 github.com/consensys/gnark-crypto/ecc/bls12-377/internal/fptower
+github.com/consensys/gnark-crypto/ecc/bls12-378
+github.com/consensys/gnark-crypto/ecc/bls12-378/fp
+github.com/consensys/gnark-crypto/ecc/bls12-378/fr
+github.com/consensys/gnark-crypto/ecc/bls12-378/fr/kzg
+github.com/consensys/gnark-crypto/ecc/bls12-378/internal/fptower
 github.com/consensys/gnark-crypto/ecc/bls12-381
 github.com/consensys/gnark-crypto/ecc/bls12-381/fp
 github.com/consensys/gnark-crypto/ecc/bls12-381/fr
 github.com/consensys/gnark-crypto/ecc/bls12-381/fr/fft
+github.com/consensys/gnark-crypto/ecc/bls12-381/fr/fri
+github.com/consensys/gnark-crypto/ecc/bls12-381/fr/iop
+github.com/consensys/gnark-crypto/ecc/bls12-381/fr/kzg
 github.com/consensys/gnark-crypto/ecc/bls12-381/fr/mimc
 github.com/consensys/gnark-crypto/ecc/bls12-381/fr/pedersen
 github.com/consensys/gnark-crypto/ecc/bls12-381/internal/fptower
@@ -144,6 +174,9 @@ github.com/consensys/gnark-crypto/ecc/bls24-315
 github.com/consensys/gnark-crypto/ecc/bls24-315/fp
 github.com/consensys/gnark-crypto/ecc/bls24-315/fr
 github.com/consensys/gnark-crypto/ecc/bls24-315/fr/fft
+github.com/consensys/gnark-crypto/ecc/bls24-315/fr/fri
+github.com/consensys/gnark-crypto/ecc/bls24-315/fr/iop
+github.com/consensys/gnark-crypto/ecc/bls24-315/fr/kzg
 github.com/consensys/gnark-crypto/ecc/bls24-315/fr/mimc
 github.com/consensys/gnark-crypto/ecc/bls24-315/fr/pedersen
 github.com/consensys/gnark-crypto/ecc/bls24-315/internal/fptower
@@ -151,6 +184,9 @@ github.com/consensys/gnark-crypto/ecc/bls24-317
 github.com/consensys/gnark-crypto/ecc/bls24-317/fp
 github.com/consensys/gnark-crypto/ecc/bls24-317/fr
 github.com/consensys/gnark-crypto/ecc/bls24-317/fr/fft
+github.com/consensys/gnark-crypto/ecc/bls24-317/fr/fri
+github.com/consensys/gnark-crypto/ecc/bls24-317/fr/iop
+github.com/consensys/gnark-crypto/ecc/bls24-317/fr/kzg
 github.com/consensys/gnark-crypto/ecc/bls24-317/fr/mimc
 github.com/consensys/gnark-crypto/ecc/bls24-317/fr/pedersen
 github.com/consensys/gnark-crypto/ecc/bls24-317/internal/fptower
@@ -158,6 +194,9 @@ github.com/consensys/gnark-crypto/ecc/bn254
 github.com/consensys/gnark-crypto/ecc/bn254/fp
 github.com/consensys/gnark-crypto/ecc/bn254/fr
 github.com/consensys/gnark-crypto/ecc/bn254/fr/fft
+github.com/consensys/gnark-crypto/ecc/bn254/fr/fri
+github.com/consensys/gnark-crypto/ecc/bn254/fr/iop
+github.com/consensys/gnark-crypto/ecc/bn254/fr/kzg
 github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc
 github.com/consensys/gnark-crypto/ecc/bn254/fr/pedersen
 github.com/consensys/gnark-crypto/ecc/bn254/internal/fptower
@@ -166,25 +205,38 @@ github.com/consensys/gnark-crypto/ecc/bw6-633
 github.com/consensys/gnark-crypto/ecc/bw6-633/fp
 github.com/consensys/gnark-crypto/ecc/bw6-633/fr
 github.com/consensys/gnark-crypto/ecc/bw6-633/fr/fft
+github.com/consensys/gnark-crypto/ecc/bw6-633/fr/fri
+github.com/consensys/gnark-crypto/ecc/bw6-633/fr/iop
+github.com/consensys/gnark-crypto/ecc/bw6-633/fr/kzg
 github.com/consensys/gnark-crypto/ecc/bw6-633/fr/mimc
 github.com/consensys/gnark-crypto/ecc/bw6-633/fr/pedersen
 github.com/consensys/gnark-crypto/ecc/bw6-633/internal/fptower
+github.com/consensys/gnark-crypto/ecc/bw6-756
+github.com/consensys/gnark-crypto/ecc/bw6-756/fp
+github.com/consensys/gnark-crypto/ecc/bw6-756/fr
+github.com/consensys/gnark-crypto/ecc/bw6-756/fr/kzg
+github.com/consensys/gnark-crypto/ecc/bw6-756/internal/fptower
 github.com/consensys/gnark-crypto/ecc/bw6-761
 github.com/consensys/gnark-crypto/ecc/bw6-761/fp
 github.com/consensys/gnark-crypto/ecc/bw6-761/fr
 github.com/consensys/gnark-crypto/ecc/bw6-761/fr/fft
+github.com/consensys/gnark-crypto/ecc/bw6-761/fr/fri
+github.com/consensys/gnark-crypto/ecc/bw6-761/fr/iop
+github.com/consensys/gnark-crypto/ecc/bw6-761/fr/kzg
 github.com/consensys/gnark-crypto/ecc/bw6-761/fr/mimc
 github.com/consensys/gnark-crypto/ecc/bw6-761/fr/pedersen
 github.com/consensys/gnark-crypto/ecc/bw6-761/internal/fptower
 github.com/consensys/gnark-crypto/ecc/secp256k1
 github.com/consensys/gnark-crypto/ecc/secp256k1/fp
 github.com/consensys/gnark-crypto/ecc/secp256k1/fr
+github.com/consensys/gnark-crypto/fiat-shamir
 github.com/consensys/gnark-crypto/field/generator/config
 github.com/consensys/gnark-crypto/field/generator/internal/addchain
 github.com/consensys/gnark-crypto/field/hash
 github.com/consensys/gnark-crypto/field/pool
 github.com/consensys/gnark-crypto/internal/generator/config
 github.com/consensys/gnark-crypto/internal/parallel
+github.com/consensys/gnark-crypto/kzg
 github.com/consensys/gnark-crypto/signature
 # github.com/cosmos/btcutil v1.0.5
 ## explicit; go 1.19
@@ -397,6 +449,9 @@ github.com/petermattis/goid
 # github.com/pkg/errors v0.9.1
 ## explicit
 github.com/pkg/errors
+# github.com/pmezard/go-difflib v1.0.0
+## explicit
+github.com/pmezard/go-difflib/difflib
 # github.com/prometheus/client_golang v1.14.0
 ## explicit; go 1.17
 github.com/prometheus/client_golang/prometheus
@@ -450,6 +505,10 @@ github.com/spf13/viper/internal/encoding/javaproperties
 github.com/spf13/viper/internal/encoding/json
 github.com/spf13/viper/internal/encoding/toml
 github.com/spf13/viper/internal/encoding/yaml
+# github.com/stretchr/testify v1.8.2
+## explicit; go 1.13
+github.com/stretchr/testify/assert
+github.com/stretchr/testify/require
 # github.com/subosito/gotenv v1.4.1
 ## explicit; go 1.18
 github.com/subosito/gotenv

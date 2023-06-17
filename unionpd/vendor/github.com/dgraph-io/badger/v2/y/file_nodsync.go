@@ -1,4 +1,3 @@
-//go:build dragonfly || freebsd || windows || plan9
 // +build dragonfly freebsd windows plan9
 
 /*

@@ -1,5 +1,6 @@
-//go:build !appengine && gc && !purego
-// +build !appengine,gc,!purego
+// +build !appengine
+// +build gc
+// +build !purego
 
 package xxhash
 

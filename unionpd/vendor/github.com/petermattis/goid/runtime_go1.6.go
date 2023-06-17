@@ -1,4 +1,3 @@
-//go:build gc && go1.6 && !go1.9
 // +build gc,go1.6,!go1.9
 
 package goid

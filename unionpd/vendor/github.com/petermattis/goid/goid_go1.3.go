@@ -13,7 +13,6 @@
 // permissions and limitations under the License. See the AUTHORS file
 // for names of contributors.
 
-//go:build !go1.4
 // +build !go1.4
 
 package goid

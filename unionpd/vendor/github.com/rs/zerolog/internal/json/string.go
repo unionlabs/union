@@ -88,7 +88,7 @@ func (e Encoder) AppendStringer(dst []byte, val fmt.Stringer) []byte {
 	return e.AppendString(dst, val.String())
 }
 
-// // appendStringComplex is used by appendString to take over an in
+//// appendStringComplex is used by appendString to take over an in
 // progress JSON string encoding that encountered a character that needs
 // to be encoded.
 func appendStringComplex(dst []byte, s string, i int) []byte {

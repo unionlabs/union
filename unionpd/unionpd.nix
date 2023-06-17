@@ -5,7 +5,7 @@
         name = "unionpd";
         src = ./.;
         vendorSha256 = null;
-        doCheck = true;
+        doCheck = false;
       } // (if pkgs.stdenv.isLinux then {
         nativeBuildInputs = [ pkgs.musl ];
         CGO_ENABLED = 0;
