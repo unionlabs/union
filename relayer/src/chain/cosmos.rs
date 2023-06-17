@@ -11,6 +11,7 @@ use num_bigint::BigUint;
 use prost::Message;
 use protos::{
     cosmos::{
+        auth,
         ics23::v1 as ics23_v1,
         staking::{self, v1beta1::BondStatus},
         tx,
@@ -37,27 +38,22 @@ use super::msgs::ethereum::{
     AccountUpdate, BeaconBlockHeader, ExecutionPayloadHeader, LightClientHeader, LightClientUpdate,
     Proof, SyncAggregate, SyncCommittee, TrustedSyncCommittee,
 };
-use crate::{
-    account_info_of_signer,
-    chain::{
-        evm::Cometbls,
-        msgs::{
-            channel::{
-                Channel, Counterparty as ChannelCounterparty, MsgChannelOpenAck,
-                MsgChannelOpenConfirm, MsgChannelOpenInit, MsgChannelOpenTry, MsgRecvPacket,
-                Packet,
-            },
-            cometbls,
-            connection::{
-                Counterparty as ConnectionCounterparty, MsgConnectionOpenAck,
-                MsgConnectionOpenConfirm, MsgConnectionOpenInit, MsgConnectionOpenTry,
-                State as ConnectionState, Version,
-            },
-            ethereum, wasm, ConnectionEnd, Duration, Fraction, Height, MerklePrefix, MerkleRoot,
-            StateProof, Timestamp, UnknownEnumVariant,
+use crate::chain::{
+    evm::Cometbls,
+    msgs::{
+        channel::{
+            Channel, Counterparty as ChannelCounterparty, MsgChannelOpenAck, MsgChannelOpenConfirm,
+            MsgChannelOpenInit, MsgChannelOpenTry, MsgRecvPacket, Packet,
         },
-        Connect, LightClient,
+        cometbls,
+        connection::{
+            Counterparty as ConnectionCounterparty, MsgConnectionOpenAck, MsgConnectionOpenConfirm,
+            MsgConnectionOpenInit, MsgConnectionOpenTry, State as ConnectionState, Version,
+        },
+        ethereum, wasm, ConnectionEnd, Duration, Fraction, Height, MerklePrefix, MerkleRoot,
+        StateProof, Timestamp, UnknownEnumVariant,
     },
+    Connect, LightClient,
 };
 
 /// The 08-wasm light client running on the union chain.
@@ -87,11 +83,29 @@ impl Ethereum {
         }
     }
 
+    async fn account_info_of_signer(signer: &XPrv) -> auth::v1beta1::BaseAccount {
+        let account = auth::v1beta1::query_client::QueryClient::connect("http://0.0.0.0:9090")
+            .await
+            .unwrap()
+            .account(auth::v1beta1::QueryAccountRequest {
+                address: signer_from_pk(&signer.public_key().public_key().to_bytes().to_vec()),
+            })
+            .await
+            .unwrap()
+            .into_inner()
+            .account
+            .unwrap();
+
+        assert!(account.type_url == "/cosmos.auth.v1beta1.BaseAccount");
+
+        auth::v1beta1::BaseAccount::decode(&*account.value).unwrap()
+    }
+
     pub async fn broadcast_tx_commit(
         &self,
         messages: impl IntoIterator<Item = google::protobuf::Any>,
     ) -> tendermint_rpc::endpoint::broadcast::tx_commit::Response {
-        let account = account_info_of_signer(&self.signer).await;
+        let account = Self::account_info_of_signer(&self.signer).await;
 
         let sign_doc = tx::v1beta1::SignDoc {
             body_bytes: tx::v1beta1::TxBody {
