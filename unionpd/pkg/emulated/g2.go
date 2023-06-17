@@ -292,30 +292,63 @@ func Select(ba *fields_bn254.Ext2, b frontend.Variable, p, q *gadget.G2Affine) *
 	}
 }
 
-// Add adds p and q and returns it. It doesn't modify p nor q.
-// It uses incomplete formulas in affine coordinates.
-// The points p and q should be different and nonzero (neutral element).
-func Add(ba *fields_bn254.Ext2, p, q *gadget.G2Affine) *gadget.G2Affine {
-	// compute λ = (q.y-p.y)/(q.x-p.x)
-	qypy := ba.Sub(&q.Y, &p.Y)
-	qxpx := ba.Sub(&q.X, &p.X)
-	λ := ba.DivUnchecked(qypy, qxpx)
+// AddUnified adds p and q and returns it. It doesn't modify p nor q.
+//
+// ✅ p can be equal to q, and either or both can be (0,0).
+// (0,0) is not on the curve but we conventionally take it as the
+// neutral/infinity point as per the [EVM].
+//
+// It uses the unified formulas of Brier and Joye ([[BriJoy02]] (Corollary 1)).
+//
+// [BriJoy02]: https://link.springer.com/content/pdf/10.1007/3-540-45664-3_24.pdf
+// [EVM]: https://ethereum.github.io/yellowpaper/paper.pdf
+func AddUnified(api frontend.API, ba *fields_bn254.Ext2, p, q *gadget.G2Affine) *gadget.G2Affine {
 
-	// xr = λ²-p.x-q.x
-	λλ := ba.Square(λ)
-	qxpx = ba.Add(&p.X, &q.X)
-	xr := ba.Sub(λλ, qxpx)
+	// selector1 = 1 when p is (0,0) and 0 otherwise
+	selector1 := api.And(ba.IsZero(&p.X), ba.IsZero(&p.Y))
+	// selector2 = 1 when q is (0,0) and 0 otherwise
+	selector2 := api.And(ba.IsZero(&q.X), ba.IsZero(&q.Y))
 
-	// p.y = λ(p.x-r.x) - p.y
-	pxrx := ba.Sub(&p.X, xr)
-	λpxrx := ba.Mul(λ, pxrx)
-	yr := ba.Sub(λpxrx, &p.Y)
+	// λ = ((p.x+q.x)² - p.x*q.x + a)/(p.y + q.y)
+	pxqx := ba.Mul(&p.X, &q.X)
+	pxplusqx := ba.Add(&p.X, &q.X)
+	num := ba.Mul(pxplusqx, pxplusqx)
+	num = ba.Sub(num, pxqx)
+	// BN254 specialization
+	// if c.addA {
+	// 	num = ba.Add(num, &c.a)
+	// }
+	denum := ba.Add(&p.Y, &q.Y)
+	// if p.y + q.y = 0, assign dummy 1 to denum and continue
+	selector3 := ba.IsZero(denum)
+	denum = ba.Select(selector3, ba.One(), denum)
+	λ := ba.DivUnchecked(num, denum)
 
-	return &gadget.G2Affine{
+	// x = λ^2 - p.x - q.x
+	xr := ba.Mul(λ, λ)
+	xr = ba.Sub(xr, pxplusqx)
+
+	// y = λ(p.x - xr) - p.y
+	yr := ba.Sub(&p.X, xr)
+	yr = ba.Mul(yr, λ)
+	yr = ba.Sub(yr, &p.Y)
+	result := gadget.G2Affine{
 		X: *xr,
 		Y: *yr,
 	}
+
+	zero := ba.Zero()
+	infinity := gadget.G2Affine{X: *zero, Y: *zero}
+	// if p=(0,0)
+	result = *Select(ba, selector1, q, &result)
+	// if q=(0,0) return p
+	result = *Select(ba, selector2, p, &result)
+	// if p.y + q.y = 0, return (0, 0)
+	result = *Select(ba, selector3, &infinity, &result)
+
+	return &result
 }
+
 
 // DoubleAndAdd computes 2p+q as (p+q)+p. It follows [ELM03] (Section 3.1)
 // Saves the computation of the y coordinate of p+q as it is used only in the computation of λ2,
@@ -423,7 +456,7 @@ func Triple(ba *fields_bn254.Ext2, p *gadget.G2Affine) *gadget.G2Affine {
 	}
 }
 
-func ScalarMul(sa *emulated.Field[emulated.BN254Fr], ba *fields_bn254.Ext2, p *gadget.G2Affine, s *emulated.Element[emulated.BN254Fr]) *gadget.G2Affine {
+func ScalarMul(api frontend.API, sa *emulated.Field[emulated.BN254Fr], ba *fields_bn254.Ext2, p *gadget.G2Affine, s *emulated.Element[emulated.BN254Fr]) *gadget.G2Affine {
 	var st emulated.BN254Fr
 	sr := sa.Reduce(s)
 	sBits := sa.ToBits(sr)
@@ -432,16 +465,16 @@ func ScalarMul(sa *emulated.Field[emulated.BN254Fr], ba *fields_bn254.Ext2, p *g
 	// i = 1
 	tmp := Triple(ba, p)
 	res := Select(ba, sBits[1], tmp, p)
-	acc := Add(ba, tmp, p)
+	acc := AddUnified(api, ba, tmp, p)
 
 	for i := 2; i <= n-3; i++ {
-		tmp := Add(ba, res, acc)
+		tmp := AddUnified(api, ba, res, acc)
 		res = Select(ba, sBits[i], tmp, res)
 		acc = Double(ba, acc)
 	}
 
 	// i = n-2
-	tmp = Add(ba, res, acc)
+	tmp = AddUnified(api, ba, res, acc)
 	res = Select(ba, sBits[n-2], tmp, res)
 
 	// i = n-1
@@ -449,7 +482,7 @@ func ScalarMul(sa *emulated.Field[emulated.BN254Fr], ba *fields_bn254.Ext2, p *g
 	res = Select(ba, sBits[n-1], tmp, res)
 
 	// i = 0
-	tmp = Add(ba, res, Neg(ba, p))
+	tmp = AddUnified(api, ba, res, Neg(ba, p))
 	res = Select(ba, sBits[0], res, tmp)
 
 	return res
@@ -470,9 +503,9 @@ func ClearCofactor(api frontend.API, p *gadget.G2Affine) *gadget.G2Affine {
 	rh := emulated.ValueOf[emulated.BN254Fr](rightH)
 
 	// Please find a way to optimize
-	l := ScalarMul(sa, ba, p, &lh)
-	r := ScalarMul(sa, ba, p, &rh)
-	return Add(ba, l, r)
+	l := ScalarMul(api, sa, ba, p, &lh)
+	r := ScalarMul(api, sa, ba, p, &rh)
+	return AddUnified(api, ba, l, r)
 
 }
 
