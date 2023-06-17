@@ -1,5 +1,6 @@
 // *almost* stable, more than safe enough to use imo https://github.com/rust-lang/rfcs/pull/3425
 #![feature(return_position_impl_trait_in_trait)]
+// #![warn(clippy::pedantic)]
 #![allow(clippy::manual_async_fn)]
 
 // nix run .# -- tx wasm instantiate 1 '{"default_timeout":10000,"gov_contract":"union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2","allowlist":[]}' --label blah --from alice --gas auto --keyring-backend test --gas-adjustment 1.3 --amount 100stake --no-admin --chain-id union-devnet-1
@@ -146,7 +147,7 @@ async fn main() {
 
     let args = AppArgs::parse();
 
-    do_main(args).await
+    do_main(args).await;
 }
 
 async fn do_main(args: AppArgs) {
@@ -459,7 +460,8 @@ async fn channel_handshake<Chain1, Chain2>(
                 ordering: channel::Order::Unordered,
                 counterparty: channel::Counterparty {
                     port_id: ethereum_port_id.to_string(),
-                    channel_id: "".to_string(),
+                    // TODO(benluelo): Make a struct without this field?
+                    channel_id: String::new(),
                 },
                 connection_hops: vec![cometbls_connection_info.connection_id.clone()],
                 version: CHANNEL_VERSION.to_string(),

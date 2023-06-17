@@ -111,7 +111,7 @@ impl Ethereum {
             body_bytes: tx::v1beta1::TxBody {
                 messages: messages.into_iter().collect(),
                 // TODO(benluelo): What do we want to use as our memo?
-                memo: "".into(),
+                memo: String::new(),
                 timeout_height: 123_123_123,
                 extension_options: vec![],
                 non_critical_extension_options: vec![],
@@ -145,14 +145,13 @@ impl Ethereum {
                         amount: "1".to_string(),
                     }],
                     gas_limit: 5_000_000_000,
-                    payer: "".to_string(),
-                    granter: "".to_string(),
+                    payer: String::new(),
+                    granter: String::new(),
                 }),
                 tip: None,
             }
             .encode_to_vec(),
-            // TODO(benluelo): Pass this in somehow
-            chain_id: "union-devnet-1".to_string(),
+            chain_id: self.chain_id().await,
             account_number: account.account_number,
         };
 
@@ -897,7 +896,9 @@ impl Connect<Cometbls> for Ethereum {
                             }
                         }),
                         // Equivalent of sdk.TokensToConsensusPower(sdk.NewIntFromBigInt(tokens), sdk.DefaultPowerReduction)
-                        voting_power: (str::parse::<u128>(&v.tokens).unwrap() / 1000000u128) as _,
+                        voting_power: (str::parse::<u128>(&v.tokens).unwrap() / 1_000_000_u128)
+                            .try_into()
+                            .unwrap(),
                     }
                 })
                 .collect::<Vec<_>>();
@@ -953,7 +954,7 @@ impl Connect<Cometbls> for Ethereum {
                     vote: Some(protos::tendermint::types::CanonicalVote {
                         r#type: protos::tendermint::types::SignedMsgType::Precommit.into(),
                         height: commit.signed_header.commit.height.into(),
-                        round: u32::from(commit.signed_header.commit.round) as _,
+                        round: i64::from(u32::from(commit.signed_header.commit.round)),
                         block_id: Some(protos::tendermint::types::CanonicalBlockId {
                             hash: commit
                                 .signed_header
@@ -1197,17 +1198,17 @@ where
     type Error = TryFromAnyError<T>;
 
     fn try_from(value: google::protobuf::Any) -> Result<Self, Self::Error> {
-        if value.type_url != T::Proto::TYPE_URL {
-            Err(TryFromAnyError::IncorrectTypeUrl {
-                found: value.type_url,
-                expected: T::Proto::TYPE_URL,
-            })
-        } else {
+        if value.type_url == T::Proto::TYPE_URL {
             T::Proto::decode(&*value.value)
                 .map_err(TryFromAnyError::Prost)?
                 .try_into()
                 .map_err(TryFromAnyError::TryFromProto)
                 .map(Any)
+        } else {
+            Err(TryFromAnyError::IncorrectTypeUrl {
+                found: value.type_url,
+                expected: T::Proto::TYPE_URL,
+            })
         }
     }
 }
@@ -1379,7 +1380,7 @@ where
         #[allow(deprecated)]
         connection_v1::MsgConnectionOpenTry {
             client_id: self.client_id,
-            previous_connection_id: "".to_string(),
+            previous_connection_id: String::new(),
             client_state: Some(self.client_state.into_proto()),
             counterparty: Some(self.counterparty.into()),
             delay_period: self.delay_period,
@@ -1459,7 +1460,7 @@ impl MsgIntoProto for MsgChannelOpenTry {
             counterparty_version: self.counterparty_version,
             proof_init: self.proof_init,
             proof_height: Some(self.proof_height.into()),
-            previous_channel_id: "".to_string(),
+            previous_channel_id: String::new(),
             signer: signer_from_sk(signer),
         }
     }
@@ -2035,7 +2036,7 @@ impl From<ConnectionEnd> for connection_v1::ConnectionEnd {
     fn from(val: ConnectionEnd) -> Self {
         Self {
             client_id: val.client_id,
-            versions: val.versions.into_iter().map(|x| x.into()).collect(),
+            versions: val.versions.into_iter().map(Into::into).collect(),
             state: val.state as i32,
             counterparty: Some(val.counterparty.into()),
             delay_period: val.delay_period,
@@ -2172,7 +2173,7 @@ impl From<ethereum::Header> for ethereum_v1::Header {
 impl From<AccountUpdate> for ethereum_v1::AccountUpdate {
     fn from(value: AccountUpdate) -> Self {
         Self {
-            proofs: value.proofs.into_iter().map(|x| x.into()).collect(),
+            proofs: value.proofs.into_iter().map(Into::into).collect(),
         }
     }
 }

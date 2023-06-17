@@ -142,7 +142,7 @@ impl LightClient for Cometbls {
                 tx_rcp
                     .logs
                     .into_iter()
-                    .map(|l| l.into())
+                    .map(Into::into)
                     .collect::<Vec<_>>()
                     .as_ref(),
             )
@@ -435,11 +435,12 @@ impl Connect<Ethereum> for Cometbls {
                 .unwrap()
                 .unwrap();
 
+            // TODO(benluelo): Better way to get logs
             let connection_id = decode_logs::<IBCHandlerEvents>(
                 tx_rcp
                     .logs
                     .into_iter()
-                    .map(|l| l.into())
+                    .map(Into::into)
                     .collect::<Vec<_>>()
                     .as_ref(),
             )
@@ -492,7 +493,7 @@ impl Connect<Ethereum> for Cometbls {
                 tx_rcp
                     .logs
                     .into_iter()
-                    .map(|l| l.into())
+                    .map(Into::into)
                     .collect::<Vec<_>>()
                     .as_ref(),
             )
@@ -568,7 +569,7 @@ impl Connect<Ethereum> for Cometbls {
                 tx_rcp
                     .logs
                     .into_iter()
-                    .map(|l| l.into())
+                    .map(Into::into)
                     .collect::<Vec<_>>()
                     .as_ref(),
             )
@@ -608,7 +609,7 @@ impl Connect<Ethereum> for Cometbls {
                 tx_rcp
                     .logs
                     .into_iter()
-                    .map(|l| l.into())
+                    .map(Into::into)
                     .collect::<Vec<_>>()
                     .as_ref(),
             )
@@ -702,7 +703,7 @@ impl Connect<Ethereum> for Cometbls {
                     seconds_per_slot: 6,
                     slots_per_epoch: 8,
                     epochs_per_sync_committee_period: 8,
-                    trusting_period: 100000000,
+                    trusting_period: 100_000_000,
                     latest_slot: height.revision_height,
                     min_sync_committee_participants: 0,
                     trust_level: Fraction {
@@ -785,7 +786,7 @@ impl Connect<Ethereum> for Cometbls {
         }
     }
 
-    /// Returns the actual height updated to (>= update_to)
+    /// Returns the actual height updated to (>= `update_to`)
     fn update_counterparty_client<'a>(
         &'a self,
         counterparty: &'a Ethereum,
@@ -1350,10 +1351,10 @@ impl Cometbls {
 
             if current_block.revision_height >= requested_height.revision_height {
                 break;
-            } else {
-                tracing::debug!("requested height not yet reached");
-                tokio::time::sleep(std::time::Duration::from_secs(1)).await;
             }
+
+            tracing::debug!("requested height not yet reached");
+            tokio::time::sleep(std::time::Duration::from_secs(1)).await;
         }
     }
 }

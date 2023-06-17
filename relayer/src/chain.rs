@@ -1,14 +1,10 @@
 use futures::Future;
 
-use self::{
-    evm::Cometbls,
-    msgs::{
-        connection::{
-            MsgConnectionOpenAck, MsgConnectionOpenConfirm, MsgConnectionOpenInit,
-            MsgConnectionOpenTry,
-        },
-        StateProof,
+use crate::chain::msgs::{
+    connection::{
+        MsgConnectionOpenAck, MsgConnectionOpenConfirm, MsgConnectionOpenInit, MsgConnectionOpenTry,
     },
+    StateProof,
 };
 
 pub mod cosmos;
@@ -879,11 +875,4 @@ where
     fn height(&self) -> msgs::Height {
         self.0.height()
     }
-}
-
-enum ConnectionHandshake<Client: LightClient> {
-    Init(MsgConnectionOpenInit),
-    Try(MsgConnectionOpenTry<<Client as LightClient>::ClientState>),
-    Ack(MsgConnectionOpenAck<<Client as LightClient>::ClientState>),
-    Confirm(MsgConnectionOpenConfirm),
 }
