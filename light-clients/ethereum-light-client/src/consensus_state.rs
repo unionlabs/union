@@ -99,7 +99,6 @@ pub fn tendermint_to_cometbls_consensus_state(
     state: RawTmConsensusState,
 ) -> RawCometConsensusState {
     RawCometConsensusState {
-        timestamp: state.timestamp,
         root: state.root,
         next_validators_hash: state.next_validators_hash,
     }

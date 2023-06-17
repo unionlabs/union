@@ -63,8 +63,8 @@ pub enum Error {
     #[error("Invalid membership value")]
     InvalidValue,
 
-    #[error("Invalid commitment key")]
-    InvalidCommitmentKey,
+    #[error("Invalid commitment key. Expected {0}, got {1}.")]
+    InvalidCommitmentKey(String, String),
 
     #[error("Missing field in the protobuf encoded data")]
     MissingProtoField,
@@ -72,13 +72,30 @@ pub enum Error {
     #[error("Client's store period must be equal to update's finalized period")]
     StorePeriodMustBeEqualToFinalizedPeriod,
 
-    #[error("Proof is empty.")]
+    #[error("Proof is empty")]
     EmptyProof,
+
+    #[error("Batching proofs are not supported")]
+    BatchingProofsNotSupported,
+
+    #[error("Expected value: '{0}' and stored value '{1}' doesn't match")]
+    ExpectedAndStoredValueMismatch(String, String),
 }
 
 impl Error {
     pub fn decode<S: Into<String>>(s: S) -> Error {
         Error::DecodeError(s.into())
+    }
+
+    pub fn invalid_commitment_key<B1: AsRef<[u8]>, B2: AsRef<[u8]>>(
+        expected: B1,
+        got: B2,
+    ) -> Error {
+        Error::InvalidCommitmentKey(hex::encode(expected), hex::encode(got))
+    }
+
+    pub fn stored_value_mismatch<B1: AsRef<[u8]>, B2: AsRef<[u8]>>(expected: B1, got: B2) -> Error {
+        Error::ExpectedAndStoredValueMismatch(hex::encode(expected), hex::encode(got))
     }
 }
 

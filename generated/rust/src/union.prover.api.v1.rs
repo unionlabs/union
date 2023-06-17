@@ -19,8 +19,10 @@ pub struct ZeroKnowledgeProof {
     #[prost(bytes = "vec", tag = "1")]
     pub content: ::prost::alloc::vec::Vec<u8>,
     #[prost(bytes = "vec", tag = "2")]
-    pub evm_proof: ::prost::alloc::vec::Vec<u8>,
+    pub compressed_content: ::prost::alloc::vec::Vec<u8>,
     #[prost(bytes = "vec", tag = "3")]
+    pub evm_proof: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes = "vec", tag = "4")]
     pub public_inputs: ::prost::alloc::vec::Vec<u8>,
 }
 #[cfg_attr(

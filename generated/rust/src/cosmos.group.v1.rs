@@ -803,6 +803,37 @@ pub struct QueryTallyResultResponse {
     #[prost(message, optional, tag = "1")]
     pub tally: ::core::option::Option<TallyResult>,
 }
+/// QueryGroupsRequest is the Query/Groups request type.
+///
+/// Since: cosmos-sdk 0.47.1
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryGroupsRequest {
+    /// pagination defines an optional pagination for the request.
+    #[prost(message, optional, tag = "2")]
+    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageRequest>,
+}
+/// QueryGroupsResponse is the Query/Groups response type.
+///
+/// Since: cosmos-sdk 0.47.1
+#[cfg_attr(
+    feature = "ethers",
+    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
+)]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryGroupsResponse {
+    /// `groups` is all the groups present in state.
+    #[prost(message, repeated, tag = "1")]
+    pub groups: ::prost::alloc::vec::Vec<GroupInfo>,
+    /// pagination defines the pagination in the response.
+    #[prost(message, optional, tag = "2")]
+    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageResponse>,
+}
 /// EventCreateGroup is an event emitted when a group is created.
 #[cfg_attr(
     feature = "ethers",

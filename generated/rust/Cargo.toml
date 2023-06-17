@@ -151,7 +151,7 @@ proto_full = [
 "cosmos+base+reflection+v1beta1" = []
 "cosmos+base+reflection+v2alpha1" = []
 "cosmos+base+snapshots+v1beta1" = []
-"cosmos+base+store+v1beta1" = ["tendermint+abci"]
+"cosmos+base+store+v1beta1" = ["google+protobuf", "tendermint+abci"]
 "cosmos+base+tendermint+v1beta1" = [
   "cosmos+base+query+v1beta1",
   "google+protobuf",

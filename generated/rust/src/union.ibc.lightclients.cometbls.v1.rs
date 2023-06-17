@@ -1,4 +1,5 @@
 // @generated
+/// NOTE: the `latest_height` is living in the ibc.lightclients.wasm.v1 wrapper
 #[cfg_attr(
     feature = "ethers",
     derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
@@ -27,11 +28,8 @@ pub struct ClientState {
     #[prost(message, optional, tag = "6")]
     pub frozen_height:
         ::core::option::Option<super::super::super::super::super::ibc::core::client::v1::Height>,
-    /// Latest height the client was updated to
-    #[prost(message, optional, tag = "7")]
-    pub latest_height:
-        ::core::option::Option<super::super::super::super::super::ibc::core::client::v1::Height>,
 }
+/// NOTE: the `timestamp` is living in the ibc.lightclients.wasm.v1 wrapper
 #[cfg_attr(
     feature = "ethers",
     derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
@@ -39,11 +37,6 @@ pub struct ClientState {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ConsensusState {
-    /// timestamp that corresponds to the block height in which the ConsensusState
-    /// was stored.
-    #[prost(message, optional, tag = "1")]
-    pub timestamp:
-        ::core::option::Option<super::super::super::super::super::google::protobuf::Timestamp>,
     /// commitment root (i.e app hash)
     #[prost(message, optional, tag = "2")]
     pub root: ::core::option::Option<

@@ -3,12 +3,7 @@ use ethereum_verifier::{
     primitives::{Epoch, Root, Slot, Version},
     ForkParameters,
 };
-use ibc::{
-    core::ics02_client::{
-        client_state::ClientState as Ics2ClientState, client_type::ClientType, error::ClientError,
-    },
-    Height,
-};
+use ibc::Height;
 use prost::Message;
 use protos::{
     google::protobuf::Any,
@@ -222,7 +217,6 @@ pub fn tendermint_to_cometbls_client_state(state: RawTmClientState) -> RawCometC
         unbonding_period: state.unbonding_period,
         max_clock_drift: state.max_clock_drift,
         frozen_height: state.frozen_height,
-        latest_height: state.latest_height,
     }
 }
 
@@ -242,25 +236,4 @@ pub fn decode_any_to_tendermint_client_state(state: &[u8]) -> Result<RawTmClient
     RawTmClientState::decode(any_state.value.as_slice()).map_err(|_| {
         Error::decode("when decoding any state to tm client state in `verify_membership`")
     })
-}
-
-impl TryFrom<Any> for ClientState {
-    type Error = Error;
-
-    fn try_from(raw: Any) -> Result<Self, Self::Error> {
-        match raw.type_url.as_str() {
-            Self::TYPE_URL => RawClientState::decode(raw.value.as_slice())
-                .map_err(|_| Error::decode("during parsing `RawClientState` from `Any`"))?
-                .try_into(),
-            _ => Err(Error::UnknownTypeUrl),
-        }
-    }
-}
-
-pub fn downcast_eth_client_state(cs: &dyn Ics2ClientState) -> Result<&ClientState, ClientError> {
-    cs.as_any()
-        .downcast_ref::<ClientState>()
-        .ok_or_else(|| ClientError::ClientArgsTypeMismatch {
-            client_type: ClientType::new("08-wasm".into()),
-        })
 }
