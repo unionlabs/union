@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"log"
 	"os"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
@@ -22,8 +24,20 @@ func GenContract() *cobra.Command {
 		Use:  "gen-contract [uri]",
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			tlsEnabled, err := cmd.Flags().GetString(flagTLS)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			var creds credentials.TransportCredentials
+			if tlsEnabled == "yes" {
+				creds = credentials.NewTLS(&tls.Config{})
+			} else {
+				creds = insecure.NewCredentials()
+			}
+
 			uri := args[0]
-			conn, err := grpc.Dial(uri, grpc.WithTransportCredentials(insecure.NewCredentials()))
+			conn, err := grpc.Dial(uri, grpc.WithTransportCredentials(creds))
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -55,5 +69,6 @@ func GenContract() *cobra.Command {
 		},
 	}
 	cmd.Flags().String(flagPath, "", "Path were to write the file. If empty, dump to stdout.")
+	cmd.Flags().String(flagTLS, "", "Wether the gRPC endpoint expect TLS.")
 	return cmd
 }
