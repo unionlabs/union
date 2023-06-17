@@ -27,6 +27,7 @@ Hasher
 IAVL
 Infima
 Interchain
+Joye
 KEYPAIR
 Karel
 Keybase
@@ -163,6 +164,7 @@ datadir
 delegators
 dels
 denoms
+denum
 devnet
 devshell
 dirchange
@@ -377,6 +379,8 @@ prysmctl
 pubkey
 pubkey's
 pubkeys
+pxplusqx
+pxqx
 pxrx
 qxpx
 qxrx
@@ -542,5 +546,6 @@ xqxp
 ypyp
 yqyp
 zedxv
+zerolog
 zkps
 λpxrx

@@ -25,6 +25,7 @@ const ValProtoPKMeta = 0
 const ValProtoPKX = 4
 const ValProtoPowerMeta = 4 + 32
 const ValProtoPower = 4 + 32 + 1
+
 /* [10, 34, 26, 32,
 195, 219, 47, 93, 175, 207, 17, 53, 249, 199, 195, 220, 162, 241, 238, 159, 218, 217, 73, 232, 88, 243, 210, 203, 63, 164, 253, 6, 23, 62, 229, 73,
  16,

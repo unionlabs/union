@@ -349,7 +349,6 @@ func AddUnified(api frontend.API, ba *fields_bn254.Ext2, p, q *gadget.G2Affine) 
 	return &result
 }
 
-
 // DoubleAndAdd computes 2p+q as (p+q)+p. It follows [ELM03] (Section 3.1)
 // Saves the computation of the y coordinate of p+q as it is used only in the computation of λ2,
 // which can be computed as
