@@ -23,8 +23,9 @@ import (
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr"
 	backend "github.com/consensys/gnark/backend/groth16"
 	backend_bn254 "github.com/consensys/gnark/backend/groth16/bn254"
+	"github.com/consensys/gnark/logger"
+	"github.com/rs/zerolog"
 
-	// "github.com/consensys/gnark/backend/witness"
 	"github.com/consensys/gnark/constraint"
 	"github.com/consensys/gnark/frontend"
 	"github.com/consensys/gnark/frontend/cs/r1cs"
@@ -168,12 +169,12 @@ func (p *proverServer) Prove(ctx context.Context, req *ProveRequest) (*ProveResp
 
 			merkleTree[i] = protoEncoding
 
-			TmPK, err := ce.PubKeyFromProto(*val.PubKey)
+			tmPK, err := ce.PubKeyFromProto(*val.PubKey)
 			if err != nil {
 				return validatorsProto, nil, err
 			}
 
-			compressedPK := TmPK.Bytes()
+			compressedPK := tmPK.Bytes()
 
 			var PK curve.G1Affine
 			_, err = PK.SetBytes(compressedPK)
@@ -267,6 +268,9 @@ func (p *proverServer) Prove(ctx context.Context, req *ProveRequest) (*ProveResp
 	if err != nil {
 		return nil, err
 	}
+
+	logger.SetOutput(os.Stdout)
+	logger.Logger().Level(zerolog.TraceLevel)
 
 	log.Println("Proving...")
 	proof, err := backend.Prove(p.cs, p.pk, privateWitness)
