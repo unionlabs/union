@@ -43,7 +43,7 @@ use ripemd::Digest;
 use serde_json::{json, Value};
 use tendermint_rpc::Client;
 
-use crate::{account_info_of_signer, get_wallet, ETH_BEACON_RPC_API, WASM_CLIENT_ID};
+use crate::{account_info_of_signer, get_wallet, ETH_BEACON_RPC_API};
 
 pub async fn get_genesis() -> lodestar_rpc::types::GenesisData {
     let client = lodestar_rpc::client::RPCClient::new(ETH_BEACON_RPC_API);
@@ -205,66 +205,66 @@ pub async fn create_wasm_client() -> tendermint_rpc::endpoint::broadcast::tx_com
     broadcast_tx_commit([msg].to_vec()).await
 }
 
-// ethereum::v1::ClientState
-pub async fn get_wasm_code() -> u64 {
-    // let msg_client = MsgClient::connect("").await.unwrap();
+// // ethereum::v1::ClientState
+// pub async fn get_wasm_code() -> u64 {
+//     // let msg_client = MsgClient::connect("").await.unwrap();
 
-    // msg_client.store_code(request)
+//     // msg_client.store_code(request)
 
-    let mut client =
-        protos::ibc::core::client::v1::query_client::QueryClient::connect("tcp://0.0.0.0:9090")
-            .await
-            .unwrap();
+//     let mut client =
+//         protos::ibc::core::client::v1::query_client::QueryClient::connect("tcp://0.0.0.0:9090")
+//             .await
+//             .unwrap();
 
-    let QueryClientStateResponse {
-        client_state: Some(client_state),
-        proof: _,
-        proof_height: _,
-    } = client
-        .client_state(QueryClientStateRequest {
-            client_id: WASM_CLIENT_ID.into(),
-        })
-        .await
-        .unwrap()
-        .into_inner()
-    else {
-        panic!()
-    };
+//     let QueryClientStateResponse {
+//         client_state: Some(client_state),
+//         proof: _,
+//         proof_height: _,
+//     } = client
+//         .client_state(QueryClientStateRequest {
+//             client_id: WASM_CLIENT_ID.into(),
+//         })
+//         .await
+//         .unwrap()
+//         .into_inner()
+//     else {
+//         panic!()
+//     };
 
-    assert_eq!(
-        client_state.type_url,
-        "/ibc.lightclients.wasm.v1.ClientState"
-    );
+//     assert_eq!(
+//         client_state.type_url,
+//         "/ibc.lightclients.wasm.v1.ClientState"
+//     );
 
-    let wasm_client_state = wasm::v1::ClientState::decode(&*client_state.value).unwrap();
+//     let wasm_client_state = wasm::v1::ClientState::decode(&*client_state.value).unwrap();
 
-    // let eth_client_state = ethereum::v1::ClientState::decode(&*wasm_client_state.data).unwrap();
+//     // let eth_client_state = ethereum::v1::ClientState::decode(&*wasm_client_state.data).unwrap();
 
-    dbg!(wasm_client_state)
-        .latest_height
-        .unwrap()
-        .revision_height
+//     dbg!(wasm_client_state)
+//         .latest_height
+//         .unwrap()
+//         .revision_height
 
-    // (height, dbg!(eth_client_state))
+//     // (height, dbg!(eth_client_state))
 
-    // let mut query_client = QueryClient::connect("").await.unwrap();
+//     // let mut query_client = QueryClient::connect("").await.unwrap();
 
-    // let code_ids = query_client
-    //     .code_ids(QueryCodeIdsRequest { pagination: None })
-    //     .await
-    //     .unwrap()
-    //     .into_inner()
-    //     .code_ids;
+//     // let code_ids = query_client
+//     //     .code_ids(QueryCodeIdsRequest { pagination: None })
+//     //     .await
+//     //     .unwrap()
+//     //     .into_inner()
+//     //     .code_ids;
 
-    // query_client
-    //     .code(QueryCodeRequest {
-    //         code_id: code_ids[0],
-    //     })
-    //     .await
-    //     .unwrap()
-    //     .into_inner()
-    //     .code;
-}
+//     // query_client
+//     //     .code(QueryCodeRequest {
+//     //         code_id: code_ids[0],
+//     //     })
+//     //     .await
+//     //     .unwrap()
+//     //     .into_inner()
+//     //     .code;
+// }
 
 async fn wasm_client() -> wasm::v1::query_client::QueryClient<tonic::transport::Channel> {
     wasm::v1::query_client::QueryClient::connect("tcp://0.0.0.0:9090")
@@ -272,178 +272,178 @@ async fn wasm_client() -> wasm::v1::query_client::QueryClient<tonic::transport::
         .unwrap()
 }
 
-pub async fn query_for_wasm_light_client() -> QueryClientStateResponse {
-    protos::ibc::core::client::v1::query_client::QueryClient::connect("tcp://0.0.0.0:9090")
-        .await
-        .unwrap()
-        .client_state(QueryClientStateRequest {
-            client_id: WASM_CLIENT_ID.into(),
-        })
-        .await
-        .unwrap()
-        .into_inner()
-}
+// pub async fn query_for_wasm_light_client() -> QueryClientStateResponse {
+//     protos::ibc::core::client::v1::query_client::QueryClient::connect("tcp://0.0.0.0:9090")
+//         .await
+//         .unwrap()
+//         .client_state(QueryClientStateRequest {
+//             client_id: WASM_CLIENT_ID.into(),
+//         })
+//         .await
+//         .unwrap()
+//         .into_inner()
+// }
 
 #[allow(clippy::upper_case_acronyms)]
 pub type LCFUR = LightClientFinalityUpdateResponse<32, 256, 32>;
 
-pub async fn update_wasm_client(sequence: u64) {
-    let wasm_client_state = query_for_wasm_light_client().await;
+// pub async fn update_wasm_client(sequence: u64) {
+//     let wasm_client_state = query_for_wasm_light_client().await;
 
-    let trusted_slot = ethereum::v1::ClientState::decode(
-        &*wasm::v1::ClientState::decode(&*wasm_client_state.client_state.unwrap().value)
-            .unwrap()
-            .data,
-    )
-    .unwrap()
-    .latest_slot;
+//     let trusted_slot = ethereum::v1::ClientState::decode(
+//         &*wasm::v1::ClientState::decode(&*wasm_client_state.client_state.unwrap().value)
+//             .unwrap()
+//             .data,
+//     )
+//     .unwrap()
+//     .latest_slot;
 
-    let finality_update = loop {
-        let finality_update =
-            reqwest::get("http://0.0.0.0:9596/eth/v1/beacon/light_client/finality_update")
-                .await
-                .unwrap()
-                .json::<LCFUR>()
-                .await
-                .unwrap();
+//     let finality_update = loop {
+//         let finality_update =
+//             reqwest::get("http://0.0.0.0:9596/eth/v1/beacon/light_client/finality_update")
+//                 .await
+//                 .unwrap()
+//                 .json::<LCFUR>()
+//                 .await
+//                 .unwrap();
 
-        let slot = finality_update.data.finalized_header.beacon.slot.0;
+//         let slot = finality_update.data.finalized_header.beacon.slot.0;
 
-        eprintln!(">>>>>>>>>>> current: {trusted_slot} Update to: {slot}");
+//         eprintln!(">>>>>>>>>>> current: {trusted_slot} Update to: {slot}");
 
-        if slot > trusted_slot {
-            break finality_update;
-        }
+//         if slot > trusted_slot {
+//             break finality_update;
+//         }
 
-        tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
-    };
+//         tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
+//     };
 
-    // dbg!(&finality_update);
+//     // dbg!(&finality_update);
 
-    let trusted_block = reqwest::get(format!(
-        "http://0.0.0.0:9596/eth/v1/beacon/headers/{trusted_slot}",
-    ))
-    .await
-    .unwrap()
-    .json::<BeaconHeaderResponse>()
-    .await
-    .unwrap();
+//     let trusted_block = reqwest::get(format!(
+//         "http://0.0.0.0:9596/eth/v1/beacon/headers/{trusted_slot}",
+//     ))
+//     .await
+//     .unwrap()
+//     .json::<BeaconHeaderResponse>()
+//     .await
+//     .unwrap();
 
-    let bootstrap: LightClientBootstrapResponse<32, 256, 32> = serde_json::from_value(
-        dbg!(
-            reqwest::get(dbg!(format!(
-                "http://0.0.0.0:9596/eth/v1/beacon/light_client/bootstrap/0x{}",
-                trusted_block.data.root
-            )))
-            .await
-            .unwrap()
-            .json::<Value>()
-            // .json::<LightClientBootstrapResponse<32, 256, 32>>()
-            .await
-        )
-        .unwrap(),
-    )
-    .unwrap();
+//     let bootstrap: LightClientBootstrapResponse<32, 256, 32> = serde_json::from_value(
+//         dbg!(
+//             reqwest::get(dbg!(format!(
+//                 "http://0.0.0.0:9596/eth/v1/beacon/light_client/bootstrap/0x{}",
+//                 trusted_block.data.root
+//             )))
+//             .await
+//             .unwrap()
+//             .json::<Value>()
+//             // .json::<LightClientBootstrapResponse<32, 256, 32>>()
+//             .await
+//         )
+//         .unwrap(),
+//     )
+//     .unwrap();
 
-    // dbg!(&bootstrap);
+//     // dbg!(&bootstrap);
 
-    // arbitrary data
-    let account_update = AccountUpdate { proofs: vec![] };
+//     // arbitrary data
+//     let account_update = AccountUpdate { proofs: vec![] };
 
-    let wasm_header = wasm::v1::Header {
-        data: ethereum::v1::Header {
-            trusted_sync_committee: Some(TrustedSyncCommittee {
-                trusted_height: Some(Height {
-                    revision_number: 0,
-                    revision_height: bootstrap.data.header.beacon.slot.0,
-                }),
-                sync_committee: Some(ethereum::v1::SyncCommittee {
-                    pubkeys: bootstrap
-                        .data
-                        .current_sync_committee
-                        .pubkeys
-                        .iter()
-                        .map(|x| x.0.iter().copied().collect())
-                        .collect(),
-                    aggregate_pubkey: bootstrap
-                        .data
-                        .current_sync_committee
-                        .aggregate_pubkey
-                        .iter()
-                        .copied()
-                        .collect(),
-                }),
-                is_next: false,
-            }),
-            consensus_update: Some({
-                let LightClientFinalityUpdateData {
-                    attested_header,
-                    finalized_header,
-                    finality_branch,
-                    sync_aggregate,
-                    signature_slot,
-                } = finality_update.data;
+//     let wasm_header = wasm::v1::Header {
+//         data: ethereum::v1::Header {
+//             trusted_sync_committee: Some(TrustedSyncCommittee {
+//                 trusted_height: Some(Height {
+//                     revision_number: 0,
+//                     revision_height: bootstrap.data.header.beacon.slot.0,
+//                 }),
+//                 sync_committee: Some(ethereum::v1::SyncCommittee {
+//                     pubkeys: bootstrap
+//                         .data
+//                         .current_sync_committee
+//                         .pubkeys
+//                         .iter()
+//                         .map(|x| x.0.iter().copied().collect())
+//                         .collect(),
+//                     aggregate_pubkey: bootstrap
+//                         .data
+//                         .current_sync_committee
+//                         .aggregate_pubkey
+//                         .iter()
+//                         .copied()
+//                         .collect(),
+//                 }),
+//                 is_next: false,
+//             }),
+//             consensus_update: Some({
+//                 let LightClientFinalityUpdateData {
+//                     attested_header,
+//                     finalized_header,
+//                     finality_branch,
+//                     sync_aggregate,
+//                     signature_slot,
+//                 } = finality_update.data;
 
-                ethereum::v1::LightClientUpdate {
-                    attested_header: Some(translate_header(attested_header)),
-                    next_sync_committee: None,
-                    next_sync_committee_branch: vec![],
-                    finalized_header: Some(translate_header(finalized_header)),
-                    finality_branch: finality_branch
-                        .iter()
-                        .map(|x| x.as_bytes().to_vec())
-                        .collect(),
-                    sync_aggregate: Some(SyncAggregate {
-                        sync_committee_bits: sync_aggregate
-                            .sync_committee_bits
-                            .deref()
-                            .as_bitslice()
-                            .to_bitvec()
-                            .into_vec(),
-                        sync_committee_signature: sync_aggregate
-                            .sync_committee_signature
-                            .iter()
-                            .copied()
-                            .collect(),
-                    }),
-                    signature_slot: signature_slot.0,
-                }
-            }),
-            account_update: Some(account_update),
-            timestamp: SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .unwrap()
-                .as_secs(),
-        }
-        .encode_to_vec(),
-        height: Some(Height {
-            revision_number: 0,
-            revision_height: 10_000,
-        }),
-    };
+//                 ethereum::v1::LightClientUpdate {
+//                     attested_header: Some(translate_header(attested_header)),
+//                     next_sync_committee: None,
+//                     next_sync_committee_branch: vec![],
+//                     finalized_header: Some(translate_header(finalized_header)),
+//                     finality_branch: finality_branch
+//                         .iter()
+//                         .map(|x| x.as_bytes().to_vec())
+//                         .collect(),
+//                     sync_aggregate: Some(SyncAggregate {
+//                         sync_committee_bits: sync_aggregate
+//                             .sync_committee_bits
+//                             .deref()
+//                             .as_bitslice()
+//                             .to_bitvec()
+//                             .into_vec(),
+//                         sync_committee_signature: sync_aggregate
+//                             .sync_committee_signature
+//                             .iter()
+//                             .copied()
+//                             .collect(),
+//                     }),
+//                     signature_slot: signature_slot.0,
+//                 }
+//             }),
+//             account_update: Some(account_update),
+//             timestamp: SystemTime::now()
+//                 .duration_since(UNIX_EPOCH)
+//                 .unwrap()
+//                 .as_secs(),
+//         }
+//         .encode_to_vec(),
+//         height: Some(Height {
+//             revision_number: 0,
+//             revision_height: 10_000,
+//         }),
+//     };
 
-    let alice = get_wallet();
+//     let alice = get_wallet();
 
-    let alice_pk = alice.public_key().public_key().to_bytes().to_vec();
+//     let alice_pk = alice.public_key().public_key().to_bytes().to_vec();
 
-    dbg!(&alice_pk);
+//     dbg!(&alice_pk);
 
-    let messages = [Any {
-        type_url: "/ibc.core.client.v1.MsgUpdateClient".to_string(),
-        value: MsgUpdateClient {
-            client_id: WASM_CLIENT_ID.to_string(),
-            client_message: Some(protos::google::protobuf::Any {
-                type_url: "/ibc.lightclients.wasm.v1.Header".to_string(),
-                value: wasm_header.encode_to_vec(),
-            }),
-            signer: signer_from_pk(&alice_pk),
-        }
-        .encode_to_vec(),
-    }]
-    .to_vec();
+//     let messages = [Any {
+//         type_url: "/ibc.core.client.v1.MsgUpdateClient".to_string(),
+//         value: MsgUpdateClient {
+//             client_id: WASM_CLIENT_ID.to_string(),
+//             client_message: Some(protos::google::protobuf::Any {
+//                 type_url: "/ibc.lightclients.wasm.v1.Header".to_string(),
+//                 value: wasm_header.encode_to_vec(),
+//             }),
+//             signer: signer_from_pk(&alice_pk),
+//         }
+//         .encode_to_vec(),
+//     }]
+//     .to_vec();
 
-    broadcast_tx_commit(messages).await;
-}
+//     broadcast_tx_commit(messages).await;
+// }
 
 pub async fn broadcast_tx_commit(
     messages: Vec<Any>,

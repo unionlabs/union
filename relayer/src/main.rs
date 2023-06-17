@@ -43,7 +43,7 @@ use crate::chain::{
     evm::Cometbls,
     msgs::{
         self,
-        channel::{MsgChannelOpenAck, MsgChannelOpenTry},
+        channel::{MsgChannelOpenAck, MsgChannelOpenConfirm, MsgChannelOpenTry},
         connection::{
             MsgConnectionOpenAck, MsgConnectionOpenConfirm, MsgConnectionOpenInit,
             MsgConnectionOpenTry,
@@ -250,6 +250,7 @@ async fn do_main(args: AppArgs) {
             let cometbls = Cometbls::new(
                 args.cometbls.cometbls_client_address,
                 args.cometbls.ibc_handler_address,
+                args.cometbls.ics20_module_address,
                 args.ethereum.wasm_code_id,
             )
             .await;
@@ -266,13 +267,14 @@ async fn do_main(args: AppArgs) {
             let cometbls_lc = Cometbls::new(
                 args.cometbls.cometbls_client_address,
                 args.cometbls.ibc_handler_address,
+                args.cometbls.ics20_module_address,
                 args.ethereum.wasm_code_id,
             )
             .await;
 
             let ethereum_lc = Ethereum::new(get_wallet(), args.ethereum.wasm_code_id).await;
 
-            channel_handshake(cometbls_lc, ethereum_lc, cometbls, ethereum);
+            channel_handshake(cometbls_lc, ethereum_lc, cometbls, ethereum).await;
         }
     }
 
@@ -558,14 +560,14 @@ async fn channel_handshake<Chain1, Chain2>(
                     port_id: TRANSFER_PORT_ID.to_string(),
                     channel_id: "".to_string(),
                 },
-                connection_hops: vec![ethereum_connection_info.connection_id.clone()],
+                connection_hops: vec![cometbls_connection_info.connection_id.clone()],
                 version: CHANNEL_VERSION.to_string(),
             },
         })
         .await;
 
     let ethereum_latest_trusted_height = ethereum
-        .query_client_state(ethereum_connection_info.client_id)
+        .query_client_state(ethereum_connection_info.client_id.clone())
         .await
         .height();
 
@@ -574,7 +576,7 @@ async fn channel_handshake<Chain1, Chain2>(
     let cometbls_latest_height = cometbls
         .update_counterparty_client(
             &ethereum,
-            ethereum_connection_info.connection_id,
+            ethereum_connection_info.client_id.clone(),
             ethereum_latest_trusted_height,
             cometbls_latest_height,
         )
@@ -596,7 +598,7 @@ async fn channel_handshake<Chain1, Chain2>(
                 ordering: channel::Order::Unordered,
                 counterparty: channel::Counterparty {
                     port_id: TRANSFER_PORT_ID.to_string(),
-                    channel_id: cometbls_channel_id,
+                    channel_id: cometbls_channel_id.clone(),
                 },
                 connection_hops: vec![cometbls_connection_info.connection_id.clone()],
                 version: CHANNEL_VERSION.to_string(),
@@ -614,7 +616,7 @@ async fn channel_handshake<Chain1, Chain2>(
 
     let ethereum_latest_height = ethereum.query_latest_height().await;
 
-    ethereum
+    let ethereum_latest_height = ethereum
         .update_counterparty_client(
             &cometbls,
             cometbls_connection_info.client_id.clone(),
@@ -623,14 +625,65 @@ async fn channel_handshake<Chain1, Chain2>(
         )
         .await;
 
-    // cometbls.channel_open_ack(MsgChannelOpenAck {
-    //     port_id: todo!(),
-    //     channel_id: todo!(),
-    //     counterparty_channel_id: todo!(),
-    //     counterparty_version: todo!(),
-    //     proof_try: todo!(),
-    //     proof_height: todo!(),
-    // });
+    let proof = ethereum
+        .channel_state_proof(
+            ethereum_channel_id.clone(),
+            TRANSFER_PORT_ID.to_string(),
+            ethereum_latest_height,
+        )
+        .await;
+
+    cometbls.channel_open_ack(MsgChannelOpenAck {
+        port_id: TRANSFER_PORT_ID.to_string(),
+        channel_id: cometbls_channel_id.clone(),
+        counterparty_channel_id: ethereum_channel_id.clone(),
+        counterparty_version: CHANNEL_VERSION.to_string(),
+        proof_try: proof.proof,
+        proof_height: proof.proof_height,
+    });
+
+    let ethereum_latest_trusted_height = ethereum
+        .query_client_state(ethereum_connection_info.client_id.clone())
+        .await
+        .height();
+
+    let cometbls_latest_height = cometbls.query_latest_height().await;
+
+    let cometbls_latest_height = cometbls
+        .update_counterparty_client(
+            &ethereum,
+            ethereum_connection_info.client_id.clone(),
+            ethereum_latest_trusted_height,
+            cometbls_latest_height,
+        )
+        .await;
+
+    let proof = cometbls
+        .channel_state_proof(
+            cometbls_channel_id.clone(),
+            TRANSFER_PORT_ID.to_string(),
+            cometbls_latest_height,
+        )
+        .await;
+
+    ethereum
+        .channel_open_confirm(MsgChannelOpenConfirm {
+            port_id: TRANSFER_PORT_ID.to_string(),
+            channel_id: ethereum_channel_id.clone(),
+            proof_ack: proof.proof,
+            proof_height: proof.proof_height,
+        })
+        .await;
+
+    tracing::info!(
+        cometbls_connection_info.connection_id,
+        cometbls_connection_info.client_id,
+        cometbls_channel_id,
+        ethereum_connection_info.connection_id,
+        ethereum_connection_info.client_id,
+        ethereum_channel_id,
+        "channel opened"
+    );
 }
 
 // #[allow(

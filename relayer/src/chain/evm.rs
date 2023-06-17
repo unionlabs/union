@@ -72,6 +72,7 @@ pub struct Cometbls {
     ibc_handler: IBCHandler<SignerMiddleware<Provider<Http>, Wallet<ecdsa::SigningKey>>>,
     pub provider: Provider<Http>,
     cometbls_client_address: H160,
+    ics20_transfer_address: H160,
     wasm_code_id: H256,
 }
 
@@ -333,7 +334,7 @@ impl LightClient for Cometbls {
 
             let (channel, is_found): (IbcCoreChannelV1ChannelData, bool) = self
                 .ibc_handler
-                .get_channel(channel_id.clone(), port_id.clone())
+                .get_channel(port_id.clone(), channel_id.clone())
                 .block(self_height.revision_height)
                 .await
                 .unwrap();
@@ -540,6 +541,15 @@ impl Connect<Ethereum> for Cometbls {
 
     fn channel_open_init(&self, msg: MsgChannelOpenInit) -> impl Future<Output = String> + '_ {
         async move {
+            // self.ibc_handler
+            //     .bind_port("transfer".to_string(), self.ics20_transfer_address)
+            //     .send()
+            //     .await
+            //     .unwrap()
+            //     .await
+            //     .unwrap()
+            //     .unwrap();
+
             let tx_rcp = self
                 .ibc_handler
                 .channel_open_init(msg.into())
@@ -550,7 +560,7 @@ impl Connect<Ethereum> for Cometbls {
                 .unwrap()
                 .unwrap();
 
-            decode_logs::<IBCHandlerEvents>(
+            let channel_id = decode_logs::<IBCHandlerEvents>(
                 tx_rcp
                     .logs
                     .into_iter()
@@ -566,7 +576,15 @@ impl Connect<Ethereum> for Cometbls {
                 }
                 _ => None,
             })
-            .unwrap()
+            .unwrap();
+
+            self.wait_for_block(Height {
+                revision_number: 0,
+                revision_height: tx_rcp.block_number.unwrap().0[0],
+            })
+            .await;
+
+            channel_id
         }
     }
 
@@ -767,7 +785,7 @@ impl Connect<Ethereum> for Cometbls {
         &'a self,
         counterparty: &'a Ethereum,
         counterparty_client_id: String,
-        update_from: Height,
+        mut update_from: Height,
         update_to: Height,
     ) -> impl Future<Output = Height> + 'a {
         async move {
@@ -775,15 +793,11 @@ impl Connect<Ethereum> for Cometbls {
 
             const PERIOD: u64 = 64;
 
-            // FIXME: what if update_to and update_from are in different sync_committee periods?
-
             let update_to_period = update_to.revision_height.div(PERIOD);
-
-            let slot_in_period = update_from.revision_height.rem(PERIOD);
 
             let current_period = update_from.revision_height.div(PERIOD);
 
-            let trusted_block = reqwest::get(format!(
+            let mut trusted_block = reqwest::get(format!(
                 "http://0.0.0.0:9596/eth/v1/beacon/headers/{}",
                 update_from.revision_height
             ))
@@ -793,25 +807,16 @@ impl Connect<Ethereum> for Cometbls {
             .await
             .unwrap();
 
-            // bootstrap contains the current sync committee for the given height
-            let bootstrap: LightClientBootstrapResponse<32, 256, 32> = serde_json::from_value(
+            // +1 here because we want to update to the `update_to_period`'s period.
+            let periods_to_update = update_to_period - current_period + 1;
+
+            dbg!(update_to_period, current_period);
+
+            // We are looping here because some of the updates might not be available yet. We understand that when
+            // we see the finalized header's slot as 0.
+            let light_client_updates = 'here: loop {
+                let updates = 
                 reqwest::get(format!(
-                    "http://0.0.0.0:9596/eth/v1/beacon/light_client/bootstrap/0x{}",
-                    trusted_block.data.root
-                ))
-                .await
-                .unwrap()
-                .json::<serde_json::Value>()
-                // .json::<LightClientBootstrapResponse<32, 256, 32>>()
-                .await
-                .unwrap(),
-            )
-            .unwrap();
-
-            let periods_to_update = (update_to_period - current_period).clamp(1, u64::MAX);
-
-            // contains the sync committee update for the current period
-            let light_client_updates = reqwest::get(format!(
                     "http://0.0.0.0:9596/eth/v1/beacon/light_client/updates?start_period={current_period}&count={}",
                     periods_to_update
                 ))
@@ -822,13 +827,40 @@ impl Connect<Ethereum> for Cometbls {
                 .unwrap()
                 .0;
 
-            let light_client_update = light_client_updates.first().unwrap().clone();
+                for update in &updates {
+                    if update.data.finalized_header.beacon.slot.0 == 0 {
+                        tracing::debug!("seems like the update is not ready yet. will try in a sec.");
+                        tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+                        continue 'here;
+                    }
+                }
+
+                break updates;               
+            };
+
+            let mut light_client_update = light_client_updates.last().unwrap().clone();
 
             // don't do sync commmittee updates if the sync committee period is the same
             if update_to_period != current_period {
                 // send the sync committee update if we are at the beginning of the period
-                for light_client_update in light_client_updates {
+                for light_client_update in &light_client_updates[1..] {
                     tracing::info!("applying light client update");
+
+                    // bootstrap contains the current sync committee for the given height
+                    let bootstrap: LightClientBootstrapResponse<32, 256, 32> =
+                        serde_json::from_value(
+                            reqwest::get(format!(
+                                "http://0.0.0.0:9596/eth/v1/beacon/light_client/bootstrap/0x{}",
+                                trusted_block.data.root
+                            ))
+                            .await
+                            .unwrap()
+                            .json::<serde_json::Value>()
+                            // .json::<LightClientBootstrapResponse<32, 256, 32>>()
+                            .await
+                            .unwrap(),
+                        )
+                        .unwrap();
 
                     let account_update = self
                         .provider
@@ -872,7 +904,7 @@ impl Connect<Ethereum> for Cometbls {
                                         .copied()
                                         .collect(),
                                 },
-                                is_next: false,
+                                is_next: true,
                             },
                             consensus_update: {
                                 let LightClientUpdateData {
@@ -942,10 +974,49 @@ impl Connect<Ethereum> for Cometbls {
                         height: update_to,
                     };
 
+                    tracing::debug!(
+                        message = "Checking if updated height > update from revision height",
+                        finalized_slot = header.data.consensus_update.finalized_header.beacon.slot,
+                        update_from = ?update_from
+                    );
+
+                    // If we update, we also need to advance `update_from`
+                    if header.data.consensus_update.finalized_header.beacon.slot
+                        > update_from.revision_height
+                    {
+                        trusted_block = reqwest::get(format!(
+                            "http://0.0.0.0:9596/eth/v1/beacon/headers/{}",
+                            light_client_update.data.finalized_header.beacon.slot
+                        ))
+                        .await
+                        .unwrap()
+                        .json::<BeaconHeaderResponse>()
+                        .await
+                        .unwrap();
+
+                        update_from = Height {
+                            revision_number: 0,
+                            revision_height: header
+                                .data
+                                .consensus_update
+                                .finalized_header
+                                .beacon
+                                .slot,
+                        };
+                    }
+
                     counterparty
                         .update_client(counterparty_client_id.clone(), header)
                         .await;
                 }
+            }
+
+            // We might be already updated to the height that we want, no need to proceed.
+            if update_to == update_from {
+                tracing::info!(
+                    "looks like we already updated the height that we want, not proceeding"
+                );
+                return update_to;
             }
 
             // wait until the execution height is >= the latest trusted height
@@ -973,7 +1044,7 @@ impl Connect<Ethereum> for Cometbls {
                 tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
             };
 
-            let actual_udpated_height = Height {
+            let actual_updated_height = Height {
                 revision_number: 0,
                 revision_height: finality_update.finalized_header.execution.block_number.0,
             };
@@ -982,6 +1053,20 @@ impl Connect<Ethereum> for Cometbls {
 
             // whether the sync committee signature is to be checked against the current or next sync committee
             let is_next = finality_update.finalized_header.beacon.slot.0 % PERIOD == 0;
+
+            let bootstrap: LightClientBootstrapResponse<32, 256, 32> = serde_json::from_value(
+                reqwest::get(format!(
+                    "http://0.0.0.0:9596/eth/v1/beacon/light_client/bootstrap/0x{}",
+                    trusted_block.data.root
+                ))
+                .await
+                .unwrap()
+                .json::<serde_json::Value>()
+                // .json::<LightClientBootstrapResponse<32, 256, 32>>()
+                .await
+                .unwrap(),
+            )
+            .unwrap();
 
             let trusted_sync_committee = if is_next {
                 TrustedSyncCommittee {
@@ -1037,15 +1122,63 @@ impl Connect<Ethereum> for Cometbls {
                 .await
                 .unwrap();
 
+            // Even we make sure that we update until the latest period with sync committee updates, there is stil a
+            // chance that the store period can increment while we wait for `update_to` to be finalized. This happens
+            // when `update_to` is very close to the next period. When that's the case, the block that we'll update to
+            // will be in the next period, so we combine the sync committee update with finality update.
+            if is_next {
+                tracing::info!("will try finality update with is_next=true");
+                let update_period = finality_update.finalized_header.beacon.slot.0.div(PERIOD);
+                let light_client_updates = reqwest::get(format!(
+                    "http://0.0.0.0:9596/eth/v1/beacon/light_client/updates?start_period={update_period}&count={}",
+                    1
+                ))
+                .await
+                .unwrap()
+                .json::<lodestar_rpc::types::LightClientUpdatesResponse<32, 256, 32>>()
+                .await
+                .unwrap()
+                .0;
+
+                light_client_update = light_client_updates.last().unwrap().clone();
+            }
+
             let header = wasm::Header {
-                height: actual_udpated_height,
+                height: actual_updated_height,
                 data: ethereum::Header {
                     trusted_sync_committee,
                     consensus_update: LightClientUpdate {
                         attested_header: translate_header(finality_update.attested_header),
                         // TODO(benluelo): make into Option
-                        next_sync_committee: SyncCommittee::default(),
-                        next_sync_committee_branch: Default::default(),
+                        next_sync_committee: if is_next {
+                            SyncCommittee {
+                                pubkeys: light_client_update
+                                    .data
+                                    .next_sync_committee
+                                    .pubkeys
+                                    .iter()
+                                    .map(|x| x.0.to_vec())
+                                    .collect(),
+                                aggregate_pubkey: light_client_update
+                                    .data
+                                    .next_sync_committee
+                                    .aggregate_pubkey
+                                    .to_vec(),
+                            }
+                        } else {
+                            Default::default()
+                        },
+                        next_sync_committee_branch: if is_next {
+                            light_client_update
+                                .data
+                                .next_sync_committee_branch
+                                .to_vec()
+                                .iter()
+                                .map(|x| x.as_bytes().to_vec())
+                                .collect()
+                        } else {
+                            Default::default()
+                        },
                         finalized_header: translate_header(finality_update.finalized_header),
                         finality_branch: finality_update
                             .finality_branch
@@ -1092,7 +1225,7 @@ impl Connect<Ethereum> for Cometbls {
                 .update_client(counterparty_client_id, header)
                 .await;
 
-            actual_udpated_height
+            actual_updated_height
         }
     }
 }
@@ -1101,6 +1234,7 @@ impl Cometbls {
     pub async fn new(
         cometbls_client_address: H160,
         ibc_handler_address: H160,
+        ics20_transfer_address: H160,
         wasm_code_id: H256,
     ) -> Self {
         let provider = Provider::<Http>::try_from(ETH_RPC_API).unwrap();
@@ -1119,6 +1253,7 @@ impl Cometbls {
             ibc_handler,
             provider,
             cometbls_client_address,
+            ics20_transfer_address,
             wasm_code_id,
         }
     }

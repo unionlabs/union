@@ -158,7 +158,7 @@ trait ChainSource {
 
 // TODO(benluelo): Flatten this module
 pub mod msgs {
-    #[derive(Debug, Clone, Copy)]
+    #[derive(Debug, Clone, Copy, PartialEq)]
     pub struct Height {
         pub revision_number: u64,
         pub revision_height: u64,
@@ -698,7 +698,7 @@ pub mod msgs {
                     1 => Ok(State::Init),
                     2 => Ok(State::Tryopen),
                     3 => Ok(State::Open),
-                    3 => Ok(State::Closed),
+                    4 => Ok(State::Closed),
                     state => Err(UnknownEnumVariant(state)),
                 }
             }
@@ -723,6 +723,8 @@ pub mod msgs {
             Debug, PartialEq, Eq, Hash, strum::EnumString, strum::IntoStaticStr, Clone, Copy,
         )]
         pub enum Order {
+            #[strum(serialize = "ORDER_UNSPECIFIED")]
+            Unspecified,
             #[strum(serialize = "ORDER_UNORDERED")]
             Unordered,
             #[strum(serialize = "ORDER_ORDERED")]
@@ -734,8 +736,22 @@ pub mod msgs {
 
             fn try_from(value: u8) -> Result<Self, Self::Error> {
                 match value {
-                    1 => Ok(Order::Ordered),
-                    2 => Ok(Order::Unordered),
+                    0 => Ok(Order::Unspecified),
+                    1 => Ok(Order::Unordered),
+                    2 => Ok(Order::Ordered),
+                    state => Err(UnknownEnumVariant(state)),
+                }
+            }
+        }
+
+        impl TryFrom<i32> for Order {
+            type Error = UnknownEnumVariant<i32>;
+
+            fn try_from(value: i32) -> Result<Self, Self::Error> {
+                match value {
+                    0 => Ok(Order::Unspecified),
+                    1 => Ok(Order::Unordered),
+                    2 => Ok(Order::Ordered),
                     state => Err(UnknownEnumVariant(state)),
                 }
             }

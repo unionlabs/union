@@ -609,7 +609,7 @@ impl Connect<Cometbls> for Ethereum {
     ) -> impl futures::Future<Output = String> + '_ {
         async move {
             self.broadcast_tx_commit([google::protobuf::Any {
-                type_url: "/ibc.channel.v1.MsgChannelOpenInit".to_string(),
+                type_url: "/ibc.core.channel.v1.MsgChannelOpenInit".to_string(),
                 value: msg.into_proto_with_signer(&self.signer).encode_to_vec(),
             }])
             .await
@@ -632,7 +632,7 @@ impl Connect<Cometbls> for Ethereum {
     ) -> impl futures::Future<Output = String> + '_ {
         async move {
             self.broadcast_tx_commit([google::protobuf::Any {
-                type_url: "/ibc.channel.v1.MsgChannelOpenTry".to_string(),
+                type_url: "/ibc.core.channel.v1.MsgChannelOpenTry".to_string(),
                 value: msg.into_proto_with_signer(&self.signer).encode_to_vec(),
             }])
             .await
@@ -652,7 +652,7 @@ impl Connect<Cometbls> for Ethereum {
     fn channel_open_ack(&self, msg: MsgChannelOpenAck) -> impl futures::Future<Output = ()> + '_ {
         async move {
             self.broadcast_tx_commit([google::protobuf::Any {
-                type_url: "/ibc.channel.v1.MsgchannelOpenAck".to_string(),
+                type_url: "/ibc.core.channel.v1.MsgchannelOpenAck".to_string(),
                 value: msg.into_proto_with_signer(&self.signer).encode_to_vec(),
             }])
             .await;
@@ -665,7 +665,7 @@ impl Connect<Cometbls> for Ethereum {
     ) -> impl futures::Future<Output = ()> + '_ {
         async move {
             self.broadcast_tx_commit([google::protobuf::Any {
-                type_url: "/ibc.channel.v1.MsgChannelOpenConfirm".to_string(),
+                type_url: "/ibc.core.channel.v1.MsgChannelOpenConfirm".to_string(),
                 value: msg.into_proto_with_signer(&self.signer).encode_to_vec(),
             }])
             .await;
@@ -1629,10 +1629,8 @@ impl TryFrom<channel_v1::Channel> for Channel {
 
     fn try_from(proto: channel_v1::Channel) -> Result<Self, Self::Error> {
         Ok(Channel {
-            // state: super::msgs::connection::State::from_i32(proto.state),
-            // ordering: super::msgs::channel::Order::from_i32(proto.ordering),
-            state: todo!(),
-            ordering: todo!(),
+            state: super::msgs::channel::State::try_from(proto.state).unwrap(),
+            ordering: super::msgs::channel::Order::try_from(proto.ordering).unwrap(),
             counterparty: proto
                 .counterparty
                 .ok_or(MissingField("counterparty"))?
