@@ -1,4 +1,4 @@
-use std::ops::{Div, Rem};
+use std::ops::Div;
 use std::{
     fmt::Debug,
     sync::Arc,
@@ -21,7 +21,7 @@ use contracts::{
     shared_types::IbcCoreClientV1HeightData,
 };
 use ethers::{
-    abi::{AbiDecode, AbiEncode},
+    abi::AbiEncode,
     prelude::{decode_logs, k256::ecdsa, SignerMiddleware},
     providers::{Http, Middleware, Provider},
     signers::{LocalWallet, Signer, Wallet},
@@ -42,12 +42,9 @@ use crate::{
         cosmos::IntoProto,
         msgs::ethereum::{AccountUpdate, LightClientUpdate, SyncCommittee, TrustedSyncCommittee},
     },
-    cosmos_to_eth::COMETBLS_CLIENT_TYPE,
-    eth_to_cosmos::LCFUR,
     ETH_BEACON_RPC_API, ETH_RPC_API,
 };
-
-use super::{
+use crate::chain::{
     cosmos::{Any, Ethereum},
     msgs::{
         channel::{
@@ -65,6 +62,11 @@ use super::{
     },
     Connect, LightClient,
 };
+
+#[allow(clippy::upper_case_acronyms)]
+pub type LCFUR = lodestar_rpc::types::LightClientFinalityUpdateResponse<32, 256, 32>;
+
+pub const COMETBLS_CLIENT_TYPE: &str = "cometbls";
 
 /// The solidity light client, tracking the state of the 08-wasm light client on union.
 // TODO(benluelo): Generic over middleware?
@@ -89,16 +91,16 @@ fn encode_dynamic_singleton_tuple(t: impl AbiEncode) -> Vec<u8> {
 // need to be exposed through the glue contract (EDIT: The mock contract returns Any, but the
 // actual cometbls client returns the bytes it recieves on creation, which is the dynamic singleton
 // tuple encoded struct)
-fn decode_dynamic_singleton_tuple<T: AbiDecode>(bs: &[u8]) -> T {
-    let tuple_idx_bytes = U256::from(32).encode().len();
+// fn decode_dynamic_singleton_tuple<T: AbiDecode>(bs: &[u8]) -> T {
+//     let tuple_idx_bytes = U256::from(32).encode().len();
 
-    T::decode(&bs[tuple_idx_bytes..]).unwrap()
-}
+//     T::decode(&bs[tuple_idx_bytes..]).unwrap()
+// }
 
 impl LightClient for Cometbls {
     type ClientState = Any<wasm::ClientState<cometbls::ClientState>>;
     type ConsensusState = Any<wasm::ConsensusState<cometbls::ConsensusState>>;
-    // TODO(benluelo): Wrap this in wasm?
+    // TODO(benluelo): Better type for this
     type UpdateClientMessage = UnionIbcLightclientsCometblsV1HeaderData;
 
     fn chain_id(&self) -> impl Future<Output = String> + '_ {
@@ -541,14 +543,16 @@ impl Connect<Ethereum> for Cometbls {
 
     fn channel_open_init(&self, msg: MsgChannelOpenInit) -> impl Future<Output = String> + '_ {
         async move {
-            // self.ibc_handler
-            //     .bind_port("transfer".to_string(), self.ics20_transfer_address)
-            //     .send()
-            //     .await
-            //     .unwrap()
-            //     .await
-            //     .unwrap()
-            //     .unwrap();
+            // TODO: Make sure this is done in both init and try
+            let bind_port_result = self.ibc_handler
+                .bind_port("transfer".to_string(), self.ics20_transfer_address);
+
+            match bind_port_result.send().await {
+                Ok(ok) => {
+                    ok.await.unwrap().unwrap();
+                }
+                Err(why) => tracing::info!(why = ?why.decode_revert::<String>()),
+            }
 
             let tx_rcp = self
                 .ibc_handler
@@ -652,6 +656,7 @@ impl Connect<Ethereum> for Cometbls {
                 .recv_packet(packet.into())
                 .send()
                 .await
+                .map_err(|err| err.decode_revert::<String>())
                 .unwrap()
                 .await
                 .unwrap()
@@ -1807,6 +1812,10 @@ pub fn translate_header(
 // ICS20Bank => 0x774667629726ec1FaBEbCEc0D9139bD1C8f72a23
 // Deploying ICS20TransferBank...
 // ICS20TransferBank => 0x83428c7db9815f482a39a1715684dCF755021997
+// --ibc-handler-address 0xFc97A6197dc90bef6bbEFD672742Ed75E9768553 --cometbls-client-address 0x87d1f7fdfEe7f651FaBc8bFCB6E086C278b77A7d --ics20-module-address 0x83428c7db9815f482a39a1715684dCF755021997 --code-id 69d880e7c0eb5293320d1d9512099f6f5b55c261604efd7828dccbf9426265b2
 
-// 50216813883093446115790550889475408280769462667188799275008
-// 50216813883093446115919139012454251028917341108522774102713
+// 2023-06-17T16:01:43.150619Z  INFO relayer: connection opened cometbls_connection_id="connection-1" cometbls_client_id="cometbls-1" ethereum_connection_id="connection-0" ethereum_client_id="08-wasm-1"
+
+// λ
+
+// 2023-06-17T16:19:59.418096Z  INFO relayer: channel opened cometbls_connection_info.connection_id="connection-1" cometbls_connection_info.client_id="cometbls-1" cometbls_channel_id="channel-1" ethereum_connection_info.connection_id="connection-0" ethereum_connection_info.client_id="08-wasm-1" ethereum_channel_id="channel-0"

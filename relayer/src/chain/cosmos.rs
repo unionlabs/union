@@ -54,8 +54,6 @@ use crate::{
         },
         Connect, LightClient,
     },
-    cosmos_to_eth::CHAIN_ID,
-    eth_to_cosmos::{broadcast_tx_commit, signer_from_pk, signer_from_sk},
 };
 
 use super::msgs::ethereum::{
@@ -67,7 +65,7 @@ use super::msgs::ethereum::{
 pub struct Ethereum {
     signer: XPrv,
     pub tm_client: WebSocketClient,
-    driver_handle: JoinHandle<Result<(), tendermint_rpc::Error>>,
+    pub driver_handle: JoinHandle<Result<(), tendermint_rpc::Error>>,
     wasm_code_id: H256,
 }
 
@@ -214,7 +212,7 @@ impl LightClient for Ethereum {
                 .encode_to_vec(),
             };
 
-            broadcast_tx_commit([msg].to_vec())
+            self.broadcast_tx_commit([msg])
                 .await
                 .deliver_tx
                 .events
@@ -720,7 +718,7 @@ impl Connect<Cometbls> for Ethereum {
             Any(wasm::ClientState {
                 data: cometbls::ClientState {
                     // TODO(benluelo): Pass this in somehow
-                    chain_id: CHAIN_ID.into(),
+                    chain_id: self.chain_id().await,
                     // https://github.com/cometbft/cometbft/blob/da0e55604b075bac9e1d5866cb2e62eaae386dd9/light/verifier.go#L16
                     trust_level: Fraction {
                         numerator: 1,
@@ -924,11 +922,19 @@ impl Connect<Cometbls> for Ethereum {
             let untrusted_commit = trusted_commit.clone();
 
             println!("Generate ZKP...");
+
+            const PROVER_ENDPOINT: &str = "https://prover.cryptware.io:443";
+            // const PROVER_ENDPOINT: &str = "http://localhost:8080";
+
+            // .http2_keep_alive_interval(std::time::Duration::from_secs(10))
+            // .keep_alive_while_idle(true),
+
             let mut prover_client = union_prover_api_client::UnionProverApiClient::connect(
-                "https://prover.cryptware.io:443",
+                tonic::transport::Endpoint::from_static(PROVER_ENDPOINT),
             )
             .await
             .unwrap();
+
             let prove_res = prover_client
                 .prove(ProveRequest {
                     vote: Some(protos::tendermint::types::CanonicalVote {
@@ -2278,4 +2284,26 @@ fn test_proto_height() {
     dbg!(&after);
 
     assert_eq!(before, after);
+}
+
+fn signer_from_pk(alice_pk: &Vec<u8>) -> String {
+    subtle_encoding::bech32::encode(
+        "union",
+        ripemd::Ripemd160::new()
+            .chain_update(sha2::Sha256::new().chain_update(alice_pk).finalize())
+            .finalize(),
+    )
+}
+
+fn signer_from_sk(sk: &XPrv) -> String {
+    subtle_encoding::bech32::encode(
+        "union",
+        ripemd::Ripemd160::new()
+            .chain_update(
+                sha2::Sha256::new()
+                    .chain_update(sk.public_key().public_key().to_bytes())
+                    .finalize(),
+            )
+            .finalize(),
+    )
 }

@@ -1,6 +1,15 @@
 use futures::Future;
 
-use self::msgs::StateProof;
+use self::{
+    evm::Cometbls,
+    msgs::{
+        connection::{
+            MsgConnectionOpenAck, MsgConnectionOpenConfirm, MsgConnectionOpenInit,
+            MsgConnectionOpenTry,
+        },
+        StateProof,
+    },
+};
 
 pub mod cosmos;
 pub mod evm;
@@ -79,25 +88,20 @@ where
 
     // CONNECTION HANDSHAKE
 
-    fn connection_open_init(
-        &self,
-        _: msgs::connection::MsgConnectionOpenInit,
-    ) -> impl Future<Output = String> + '_;
+    fn connection_open_init(&self, _: MsgConnectionOpenInit) -> impl Future<Output = String> + '_;
 
     fn connection_open_try(
         &self,
-        _: msgs::connection::MsgConnectionOpenTry<C::ClientState>,
+        _: MsgConnectionOpenTry<C::ClientState>,
     ) -> impl Future<Output = String> + '_;
 
     fn connection_open_ack(
         &self,
-        _: msgs::connection::MsgConnectionOpenAck<C::ClientState>,
+        _: MsgConnectionOpenAck<C::ClientState>,
     ) -> impl Future<Output = ()> + '_;
 
-    fn connection_open_confirm(
-        &self,
-        _: msgs::connection::MsgConnectionOpenConfirm,
-    ) -> impl Future<Output = ()> + '_;
+    fn connection_open_confirm(&self, _: MsgConnectionOpenConfirm)
+        -> impl Future<Output = ()> + '_;
 
     // CHANNEL HANDSHAKE
 
@@ -158,6 +162,10 @@ trait ChainSource {
 
 // TODO(benluelo): Flatten this module
 pub mod msgs {
+    trait Msg {
+        type NextMsg: Msg;
+    }
+
     #[derive(Debug, Clone, Copy, PartialEq)]
     pub struct Height {
         pub revision_number: u64,
@@ -666,6 +674,10 @@ pub mod msgs {
             pub proof_ack: Vec<u8>,
             pub proof_height: super::Height,
         }
+
+        // impl<T> super::Msg for MsgConnectionOpenInit {
+        //     type NextMsg = MsgConnectionOpenTry<T>;
+        // }
     }
 
     pub mod channel {
@@ -867,4 +879,11 @@ where
     fn height(&self) -> msgs::Height {
         self.0.height()
     }
+}
+
+enum ConnectionHandshake<Client: LightClient> {
+    Init(MsgConnectionOpenInit),
+    Try(MsgConnectionOpenTry<<Client as LightClient>::ClientState>),
+    Ack(MsgConnectionOpenAck<<Client as LightClient>::ClientState>),
+    Confirm(MsgConnectionOpenConfirm),
 }
