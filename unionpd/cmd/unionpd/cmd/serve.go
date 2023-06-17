@@ -3,11 +3,13 @@ package cmd
 import (
 	"log"
 	"net"
+	"time"
 	provergrpc "unionp/grpc/api/v1"
 
 	"github.com/spf13/cobra"
 	"golang.org/x/net/netutil"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/keepalive"
 )
 
 const (
@@ -48,8 +50,13 @@ func ServeCmd() *cobra.Command {
 				return err
 			}
 			limitedLis := netutil.LimitListener(lis, maxConn)
-			var opts []grpc.ServerOption
-			grpcServer := grpc.NewServer(opts...)
+			grpcServer := grpc.NewServer(grpc.KeepaliveParams(keepalive.ServerParameters{
+				MaxConnectionIdle:     10 * time.Second,
+				MaxConnectionAge:      5 * time.Minute,
+				MaxConnectionAgeGrace: time.Second,
+				Time:                  5 * time.Second,
+				Timeout:               20 * time.Second,
+			}))
 			provergrpc.RegisterUnionProverAPIServer(grpcServer, server)
 			log.Println("Serving...")
 			return grpcServer.Serve(limitedLis)
