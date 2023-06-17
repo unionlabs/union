@@ -9,6 +9,14 @@ import (
 	gadget "github.com/consensys/gnark/std/algebra/emulated/sw_bn254"
 )
 
+const (
+	TrustedRatioNum = 1
+	TrustedRatioDen = 3
+
+	UntrustedRatioNum = 2
+	UntrustedRatioDen = 3
+)
+
 type TendermintNonAdjacentLightClientInput struct {
 	Sig             gadget.G2Affine
 	ProtoValidators [lightclient.MaxVal][4]frontend.Variable
@@ -37,7 +45,7 @@ func (circuit *Circuit) Define(api frontend.API) error {
 		NbOfSignature:   circuit.TrustedInput.NbOfSignature,
 		Bitmap:          circuit.TrustedInput.Bitmap,
 	})
-	res := lc.Verify(messagePoint, circuit.ExpectedTrustedValRoot, 1, 3)
+	res := lc.Verify(messagePoint, circuit.ExpectedTrustedValRoot, TrustedRatioNum, TrustedRatioDen)
 	if res != nil {
 		return res
 	}
@@ -48,5 +56,5 @@ func (circuit *Circuit) Define(api frontend.API) error {
 		NbOfSignature:   circuit.UntrustedInput.NbOfSignature,
 		Bitmap:          circuit.UntrustedInput.Bitmap,
 	})
-	return lc.Verify(messagePoint, circuit.ExpectedUntrustedValRoot, 2, 3)
+	return lc.Verify(messagePoint, circuit.ExpectedUntrustedValRoot, UntrustedRatioNum, UntrustedRatioDen)
 }
