@@ -1,6 +1,6 @@
-use std::ops::Div;
 use std::{
     fmt::Debug,
+    ops::Div,
     sync::Arc,
     time::{SystemTime, UNIX_EPOCH},
 };
@@ -36,31 +36,30 @@ use prost::Message;
 use protos::{google, union::ibc::lightclients::ethereum::v1 as ethereum_v1};
 use strum::ParseError;
 
-use crate::chain::{evm::ethereum::SyncAggregate, msgs::ethereum::Proof};
 use crate::{
     chain::{
-        cosmos::IntoProto,
-        msgs::ethereum::{AccountUpdate, LightClientUpdate, SyncCommittee, TrustedSyncCommittee},
+        cosmos::{Any, Ethereum, IntoProto},
+        evm::ethereum::SyncAggregate,
+        msgs::{
+            channel::{
+                self, Channel, MsgChannelOpenAck, MsgChannelOpenConfirm, MsgChannelOpenInit,
+                MsgChannelOpenTry, MsgRecvPacket, Packet,
+            },
+            cometbls,
+            connection::{
+                self, MsgConnectionOpenAck, MsgConnectionOpenConfirm, MsgConnectionOpenInit,
+                MsgConnectionOpenTry,
+            },
+            ethereum::{
+                self, AccountUpdate, BeaconBlockHeader, ExecutionPayloadHeader, LightClientUpdate,
+                Proof, SyncCommittee, TrustedSyncCommittee,
+            },
+            wasm, ConnectionEnd, Duration, Fraction, Height, MerklePrefix, MerkleRoot, StateProof,
+            Timestamp, UnknownEnumVariant,
+        },
+        Connect, LightClient,
     },
     ETH_BEACON_RPC_API, ETH_RPC_API,
-};
-use crate::chain::{
-    cosmos::{Any, Ethereum},
-    msgs::{
-        channel::{
-            self, Channel, MsgChannelOpenAck, MsgChannelOpenConfirm, MsgChannelOpenInit,
-            MsgChannelOpenTry, MsgRecvPacket, Packet,
-        },
-        cometbls,
-        connection::{
-            self, MsgConnectionOpenAck, MsgConnectionOpenConfirm, MsgConnectionOpenInit,
-            MsgConnectionOpenTry,
-        },
-        ethereum::{self, BeaconBlockHeader, ExecutionPayloadHeader},
-        wasm, ConnectionEnd, Duration, Fraction, Height, MerklePrefix, MerkleRoot, StateProof,
-        Timestamp, UnknownEnumVariant,
-    },
-    Connect, LightClient,
 };
 
 #[allow(clippy::upper_case_acronyms)]
@@ -544,7 +543,8 @@ impl Connect<Ethereum> for Cometbls {
     fn channel_open_init(&self, msg: MsgChannelOpenInit) -> impl Future<Output = String> + '_ {
         async move {
             // TODO: Make sure this is done in both init and try
-            let bind_port_result = self.ibc_handler
+            let bind_port_result = self
+                .ibc_handler
                 .bind_port("transfer".to_string(), self.ics20_transfer_address);
 
             match bind_port_result.send().await {
@@ -834,13 +834,15 @@ impl Connect<Ethereum> for Cometbls {
 
                 for update in &updates {
                     if update.data.finalized_header.beacon.slot.0 == 0 {
-                        tracing::debug!("seems like the update is not ready yet. will try in a sec.");
+                        tracing::debug!(
+                            "seems like the update is not ready yet. will try in a sec."
+                        );
                         tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
                         continue 'here;
                     }
                 }
 
-                break updates;               
+                break updates;
             };
 
             let mut light_client_update = light_client_updates.last().unwrap().clone();

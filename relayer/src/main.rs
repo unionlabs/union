@@ -35,24 +35,24 @@ use tendermint_rpc::{
     event::EventData, query::EventType, SubscriptionClient, WebSocketClient, WebSocketClientUrl,
 };
 
-use crate::chain::{
-    cosmos::Ethereum,
-    evm::Cometbls,
-    msgs::{
-        self,
-        channel::{
-            MsgChannelOpenAck, MsgChannelOpenConfirm, MsgChannelOpenTry, MsgRecvPacket, Packet,
-        },
-        connection::{
-            MsgConnectionOpenAck, MsgConnectionOpenConfirm, MsgConnectionOpenInit,
-            MsgConnectionOpenTry,
-        },
-        Height, MerklePrefix,
-    },
-    ClientState, Connect, LightClient,
-};
 use crate::{
-    chain::msgs::channel::{self, Channel, MsgChannelOpenInit},
+    chain::{
+        cosmos::Ethereum,
+        evm::Cometbls,
+        msgs::{
+            self,
+            channel::{
+                self, Channel, MsgChannelOpenAck, MsgChannelOpenConfirm, MsgChannelOpenInit,
+                MsgChannelOpenTry, MsgRecvPacket, Packet,
+            },
+            connection::{
+                MsgConnectionOpenAck, MsgConnectionOpenConfirm, MsgConnectionOpenInit,
+                MsgConnectionOpenTry,
+            },
+            Height, MerklePrefix,
+        },
+        ClientState, Connect, LightClient,
+    },
     cosmos_to_eth::PORT_ID,
     eth_to_cosmos::{broadcast_tx_commit, signer_from_pk},
 };

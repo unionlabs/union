@@ -1,14 +1,12 @@
+use std::{str::FromStr, sync::Arc, time::Duration};
+
 use contracts::{glue::*, ibc_handler::*, shared_types::IbcCoreClientV1HeightData};
 use ethers::{
     abi::AbiEncode,
     prelude::{decode_logs, k256::ecdsa, SignerMiddleware},
-    providers::{Middleware, StreamExt},
+    providers::{Http, Middleware, Provider, StreamExt},
     signers::{LocalWallet, Signer, Wallet},
-    types::U256,
-};
-use ethers::{
-    providers::{Http, Provider},
-    types::Address,
+    types::{Address, U256},
 };
 use num_bigint::BigUint;
 use prost::Message;
@@ -26,7 +24,6 @@ use protos::{
     union::prover::api::v1::{union_prover_api_client, ProveRequest, ValidatorSetCommit},
 };
 use sha2::{Digest, Sha256};
-use std::{str::FromStr, sync::Arc, time::Duration};
 use tendermint_rpc::{
     endpoint::commit, query::EventType, Client, HttpClient, SubscriptionClient, WebSocketClient,
     WebSocketClientUrl,

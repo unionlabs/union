@@ -33,6 +33,10 @@ use strum::ParseError;
 use tendermint_rpc::{Client, WebSocketClient};
 use tokio::task::JoinHandle;
 
+use super::msgs::ethereum::{
+    AccountUpdate, BeaconBlockHeader, ExecutionPayloadHeader, LightClientHeader, LightClientUpdate,
+    Proof, SyncAggregate, SyncCommittee, TrustedSyncCommittee,
+};
 use crate::{
     account_info_of_signer,
     chain::{
@@ -54,11 +58,6 @@ use crate::{
         },
         Connect, LightClient,
     },
-};
-
-use super::msgs::ethereum::{
-    AccountUpdate, BeaconBlockHeader, ExecutionPayloadHeader, LightClientHeader, LightClientUpdate,
-    Proof, SyncAggregate, SyncCommittee, TrustedSyncCommittee,
 };
 
 /// The 08-wasm light client running on the union chain.

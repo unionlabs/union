@@ -6,7 +6,6 @@ use std::{
 use base64::{prelude::BASE64_STANDARD, Engine};
 use bip32::XPrv;
 use k256::{ecdsa::Signature, schnorr::signature::Signer};
-
 // use ethers::providers::{Http, Provider};
 use lodestar_rpc::types::{
     BeaconHeaderResponse, LightClientBootstrapResponse, LightClientFinalityUpdateData,
