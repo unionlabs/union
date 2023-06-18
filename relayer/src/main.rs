@@ -10,6 +10,7 @@ use std::{collections::HashMap, str::FromStr};
 use bip32::{DerivationPath, Language, XPrv};
 use clap::{Args, Parser, Subcommand};
 use ethers::abi::AbiDecode;
+use ethers::types::H160;
 use ethers::{
     prelude::{EthAbiCodec, EthAbiType},
     types::{Address, H256},
@@ -139,7 +140,10 @@ pub struct CometblsClientArgs {
     pub cometbls_client_address: Address,
     /// ICS20TransferBank => address
     #[arg(long)]
-    pub ics20_module_address: Address,
+    pub ics20_transfer_address: Address,
+    /// ICS20Bank => address
+    #[arg(long)]
+    pub ics20_bank_address: Address,
 }
 
 #[derive(Debug, Args)]
@@ -188,7 +192,8 @@ async fn do_main(args: AppArgs) {
             let cometbls = Cometbls::new(
                 args.cometbls.cometbls_client_address,
                 args.cometbls.ibc_handler_address,
-                args.cometbls.ics20_module_address,
+                args.cometbls.ics20_transfer_address,
+                args.cometbls.ics20_bank_address,
                 args.ethereum.wasm_code_id,
             )
             .await;
@@ -207,7 +212,8 @@ async fn do_main(args: AppArgs) {
             let cometbls_lc = Cometbls::new(
                 args.cometbls.cometbls_client_address,
                 args.cometbls.ibc_handler_address,
-                args.cometbls.ics20_module_address,
+                args.cometbls.ics20_transfer_address,
+                args.cometbls.ics20_bank_address,
                 args.ethereum.wasm_code_id,
             )
             .await;
@@ -233,7 +239,8 @@ async fn do_main(args: AppArgs) {
             let cometbls_lc = Cometbls::new(
                 args.cometbls.cometbls_client_address,
                 args.cometbls.ibc_handler_address,
-                args.cometbls.ics20_module_address,
+                args.cometbls.ics20_transfer_address,
+                args.cometbls.ics20_bank_address,
                 args.ethereum.wasm_code_id,
             )
             .await;
@@ -254,6 +261,16 @@ async fn do_main(args: AppArgs) {
             let ethereum_lc = Ethereum::new(get_wallet(), args.ethereum.wasm_code_id).await;
 
             // ICS20Transfer.sol -> onRecvPacket -> replace body with `return _newAcknowledgement(true);`
+
+            // let balance = cometbls_lc
+            //     .ics20_bank
+            //     .balance_of(
+            //         H160::from(b"aaaaa55555aaaaa55555"),
+            //         format!("{}/channel-0/stake", cometbls_port_id.clone().unwrap()),
+            //     )
+            //     .await
+            //     .unwrap();
+            // dbg!(balance);
 
             if open_channel {
                 let (
@@ -886,3 +903,21 @@ async fn relay_packets(cometbls: Cometbls, ethereum: Ethereum) {
 // 2023-06-17T20:49:01.879223Z  INFO relayer: channel opened cometbls_connection_info.connection_id="connection-0" cometbls_connection_info.client_id="cometbls-0" cometbls_channel_id="channel-0" ethereum_connection_info.connection_id="connection-8" ethereum_connection_info.client_id="08-wasm-8" ethereum_channel_id="channel-0"
 
 // {"transfer": {"channel": "channel-0", "remote_address": "union1nrv37pqfcqul73v7d2e8y0jhjyeuhg57m3eqdt"}}
+// Deploying IBCClient...
+// IBCClient => 0x3fD5289eD1dC27A857A4CdEdec9Bf2c96D6C1EB3
+// Deploying IBCConnection...
+// IBCConnection => 0xf9FE9712A91fb3da09852a544F5A344E4EF333Aa
+// Deploying IBCChannelHandshake...
+// IBCChannelHandshake => 0x57b85f23f022d88b61515bF91bFE5238fCedbBD6
+// Deploying IBCPacket...
+// IBCPacket => 0x6744135DAA742c32e3c15619173095fC7E51dda3
+// Deploying OwnableIBCHandler...
+// OwnableIBCHandler => 0x7e37dA319C3008374379c7755a6C9A7CE65e1517
+// Deploying TestnetVerifier...
+// TestnetVerifier => 0x2C045082c6cA9a17031DA0Ca28b9Ca2617a2338A
+// Deploying CometblsClient...
+// CometblsClient => 0x176298b5aabE45Efa36b04452d4BB5b7bB615f1C
+// Deploying ICS20Bank...
+// ICS20Bank => 0xa8Ab1e8afDa14A4d0538520057EA0f9515C7D610
+// Deploying ICS20TransferBank...
+// ICS20TransferBank => 0x7A1d42bAe222eF8E7ED935ac5Ee5Fc6d89fB63bC

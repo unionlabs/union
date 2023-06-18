@@ -18,7 +18,7 @@ use contracts::{
         IbcCoreCommitmentV1MerklePrefixData, IbcCoreConnectionV1ConnectionEndData,
         IbcCoreConnectionV1CounterpartyData, IbcCoreConnectionV1VersionData,
     },
-    shared_types::IbcCoreClientV1HeightData,
+    shared_types::IbcCoreClientV1HeightData, ics20_bank::ICS20Bank,
 };
 use ethers::{
     abi::AbiEncode,
@@ -65,12 +65,13 @@ use crate::{
 #[allow(clippy::upper_case_acronyms)]
 pub type LCFUR = lodestar_rpc::types::LightClientFinalityUpdateResponse<32, 256, 32>;
 
-pub const COMETBLS_CLIENT_TYPE: &str = "cometbls";
+pub const COMETBLS_CLIENT_TYPE: &str = "cometbls-new";
 
 /// The solidity light client, tracking the state of the 08-wasm light client on union.
 // TODO(benluelo): Generic over middleware?
 pub struct Cometbls {
     pub ibc_handler: IBCHandler<SignerMiddleware<Provider<Http>, Wallet<ecdsa::SigningKey>>>,
+    pub ics20_bank: ICS20Bank<SignerMiddleware<Provider<Http>, Wallet<ecdsa::SigningKey>>>,
     pub provider: Provider<Http>,
     cometbls_client_address: H160,
     ics20_transfer_address: H160,
@@ -123,6 +124,8 @@ impl LightClient for Cometbls {
                 }
                 Err(why) => eprintln!("{}", why.decode_revert::<String>().unwrap()),
             }
+
+            tracing::info!(ibc_handler_address = ?self.ibc_handler.address());
 
             let tx_rcp = self
                 .ibc_handler
@@ -653,7 +656,8 @@ impl Connect<Ethereum> for Cometbls {
 
     fn recv_packet(&self, packet: MsgRecvPacket) -> impl Future<Output = ()> + '_ {
         async move {
-            let tx_rcp = self.ibc_handler
+            let tx_rcp = self
+                .ibc_handler
                 .recv_packet(packet.into())
                 .send()
                 .await
@@ -663,7 +667,7 @@ impl Connect<Ethereum> for Cometbls {
                 .unwrap()
                 .unwrap();
 
-             let events = decode_logs::<IBCHandlerEvents>(
+            let events = decode_logs::<IBCHandlerEvents>(
                 tx_rcp
                     .logs
                     .into_iter()
@@ -671,7 +675,7 @@ impl Connect<Ethereum> for Cometbls {
                     .collect::<Vec<_>>()
                     .as_ref(),
             )
-            .unwrap();           
+            .unwrap();
 
             dbg!(events);
         }
@@ -1255,6 +1259,7 @@ impl Cometbls {
         cometbls_client_address: H160,
         ibc_handler_address: H160,
         ics20_transfer_address: H160,
+        ics20_bank_address: H160,
         wasm_code_id: H256,
     ) -> Self {
         let provider = Provider::<Http>::try_from(ETH_RPC_API).unwrap();
@@ -1265,9 +1270,13 @@ impl Cometbls {
             .unwrap()
             .with_chain_id(chain_id.as_u64());
 
-        let signer_middleware = Arc::new(SignerMiddleware::new(provider.clone(), wallet));
+        let signer_middleware = Arc::new(SignerMiddleware::new(provider.clone(), wallet.clone()));
 
-        let ibc_handler = ibc_handler::IBCHandler::new(ibc_handler_address, signer_middleware);
+        let ibc_handler = ibc_handler::IBCHandler::new(ibc_handler_address, signer_middleware.clone());
+
+        let ics20_bank = ICS20Bank::new(ics20_bank_address, signer_middleware);
+
+        ics20_bank.set_operator(ics20_transfer_address).send().await.unwrap().await.unwrap().unwrap();
 
         Self {
             ibc_handler,
@@ -1275,6 +1284,7 @@ impl Cometbls {
             cometbls_client_address,
             ics20_transfer_address,
             wasm_code_id,
+            ics20_bank,
         }
     }
 
