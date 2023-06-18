@@ -9,8 +9,13 @@ use std::{collections::HashMap, str::FromStr};
 
 use bip32::{DerivationPath, Language, XPrv};
 use clap::{Args, Parser, Subcommand};
-use ethers::types::{Address, H256};
+use ethers::abi::AbiDecode;
+use ethers::{
+    prelude::{EthAbiCodec, EthAbiType},
+    types::{Address, H256},
+};
 use futures::StreamExt;
+use hex_literal::hex;
 use protos::ibc::core::channel::v1 as channel_v1;
 use tendermint_rpc::{event::EventData, query::EventType, SubscriptionClient};
 
@@ -78,6 +83,14 @@ pub struct OpenChannelArgs {
 pub struct RelayPacketsArgs {
     #[command(flatten)]
     args: ClientArgs,
+
+    #[arg(long)]
+    open_channel: bool,
+
+    #[arg(long)]
+    cometbls_port_id: Option<String>,
+    #[arg(long)]
+    ethereum_port_id: Option<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -150,7 +163,26 @@ async fn main() {
     do_main(args).await;
 }
 
+#[derive(Debug, EthAbiCodec, EthAbiType)]
+pub struct Ics20Packet {
+    /// amount of tokens to transfer is encoded as a string, but limited to u64 max
+    pub amount: u64,
+    /// the token denomination to be transferred
+    pub denom: String,
+    /// the recipient address on the destination chain
+    pub receiver: String,
+    /// the sender address
+    pub sender: String,
+}
+
 async fn do_main(args: AppArgs) {
+    // let packet_hex = hex!("0000000000000000000000000000000000000000000000000000000000000064000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000c0000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000057374616b6500000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000146161616161353535353561616161613535353535000000000000000000000000000000000000000000000000000000000000000000000000000000000000002c756e696f6e316a6b397073796876676b72743263756d7a386579746c6c323234346d326e6e7a3479743267320000000000000000000000000000000000000000");
+
+    // dbg!(Ics20Packet::decode(left).unwrap());
+    // dbg!(Ics20Packet::decode(right).unwrap());
+
+    // panic!();
+
     match args.command {
         Command::OpenConnection(OpenConnectionArgs { args }) => {
             let cometbls = Cometbls::new(
@@ -163,7 +195,7 @@ async fn do_main(args: AppArgs) {
 
             let ethereum = Ethereum::new(get_wallet(), args.ethereum.wasm_code_id).await;
 
-            connection_handshake(cometbls, ethereum).await;
+            connection_handshake(&cometbls, &ethereum).await;
         }
         Command::OpenChannel(OpenChannelArgs {
             args,
@@ -183,8 +215,8 @@ async fn do_main(args: AppArgs) {
             let ethereum_lc = Ethereum::new(get_wallet(), args.ethereum.wasm_code_id).await;
 
             channel_handshake(
-                cometbls_lc,
-                ethereum_lc,
+                &cometbls_lc,
+                &ethereum_lc,
                 cometbls,
                 ethereum,
                 cometbls_port_id,
@@ -192,7 +224,12 @@ async fn do_main(args: AppArgs) {
             )
             .await;
         }
-        Command::RelayPackets(RelayPacketsArgs { args }) => {
+        Command::RelayPackets(RelayPacketsArgs {
+            args,
+            open_channel,
+            cometbls_port_id,
+            ethereum_port_id,
+        }) => {
             let cometbls_lc = Cometbls::new(
                 args.cometbls.cometbls_client_address,
                 args.cometbls.ibc_handler_address,
@@ -201,7 +238,47 @@ async fn do_main(args: AppArgs) {
             )
             .await;
 
+            // let channel: Channel = cometbls_lc
+            //     .ibc_handler
+            //     .get_channel("transfer".to_string(), "channel-2".to_string())
+            //     .await
+            //     .unwrap()
+            //     .0
+            //     .try_into()
+            //     .unwrap();
+
+            // dbg!(channel);
+
+            // panic!();
+
             let ethereum_lc = Ethereum::new(get_wallet(), args.ethereum.wasm_code_id).await;
+
+            // ICS20Transfer.sol -> onRecvPacket -> replace body with `return _newAcknowledgement(true);`
+
+            if open_channel {
+                let (
+                    cometbls_client_id,
+                    ethereum_client_id,
+                    cometbls_connection_id,
+                    ethereum_connection_id,
+                ) = connection_handshake(&cometbls_lc, &ethereum_lc).await;
+
+                let (cometbls_channel_id, ethereum_channel_id) = channel_handshake(
+                    &cometbls_lc,
+                    &ethereum_lc,
+                    ConnectionEndInfo {
+                        client_id: cometbls_client_id,
+                        connection_id: cometbls_connection_id,
+                    },
+                    ConnectionEndInfo {
+                        client_id: ethereum_client_id,
+                        connection_id: ethereum_connection_id,
+                    },
+                    cometbls_port_id.unwrap(),
+                    ethereum_port_id.unwrap(),
+                )
+                .await;
+            }
 
             relay_packets(cometbls_lc, ethereum_lc).await;
         }
@@ -228,7 +305,11 @@ fn get_wallet() -> XPrv {
     alice
 }
 
-async fn connection_handshake<Chain1, Chain2>(cometbls: Chain1, ethereum: Chain2)
+/// Returns (c1 client id, c2 client id, c1 conn id, c2 conn id)
+async fn connection_handshake<Chain1, Chain2>(
+    cometbls: &Chain1,
+    ethereum: &Chain2,
+) -> (String, String, String, String)
 where
     Chain1: LightClient + Connect<Chain2>,
     Chain2: LightClient + Connect<Chain1>,
@@ -432,16 +513,24 @@ where
         ethereum_client_id,
         "connection opened"
     );
+
+    (
+        cometbls_client_id,
+        ethereum_client_id,
+        cometbls_connection_id,
+        ethereum_connection_id,
+    )
 }
 
 async fn channel_handshake<Chain1, Chain2>(
-    cometbls: Chain1,
-    ethereum: Chain2,
+    cometbls: &Chain1,
+    ethereum: &Chain2,
     cometbls_connection_info: ConnectionEndInfo,
     ethereum_connection_info: ConnectionEndInfo,
     cometbls_port_id: String,
     ethereum_port_id: String,
-) where
+) -> (String, String)
+where
     Chain1: LightClient + Connect<Chain2>,
     Chain2: LightClient + Connect<Chain1>,
     <Chain1 as LightClient>::ClientState: std::fmt::Debug + ClientState,
@@ -536,14 +625,16 @@ async fn channel_handshake<Chain1, Chain2>(
         )
         .await;
 
-    cometbls.channel_open_ack(MsgChannelOpenAck {
-        port_id: cometbls_port_id.clone(),
-        channel_id: cometbls_channel_id.clone(),
-        counterparty_channel_id: ethereum_channel_id.clone(),
-        counterparty_version: CHANNEL_VERSION.to_string(),
-        proof_try: proof.proof,
-        proof_height: proof.proof_height,
-    });
+    cometbls
+        .channel_open_ack(MsgChannelOpenAck {
+            port_id: cometbls_port_id.clone(),
+            channel_id: cometbls_channel_id.clone(),
+            counterparty_channel_id: ethereum_channel_id.clone(),
+            counterparty_version: CHANNEL_VERSION.to_string(),
+            proof_try: proof.proof,
+            proof_height: proof.proof_height,
+        })
+        .await;
 
     let ethereum_latest_trusted_height = ethereum
         .query_client_state(ethereum_connection_info.client_id.clone())
@@ -587,6 +678,8 @@ async fn channel_handshake<Chain1, Chain2>(
         ethereum_channel_id,
         "channel opened"
     );
+
+    (cometbls_channel_id, ethereum_channel_id)
 }
 
 async fn relay_packets(cometbls: Cometbls, ethereum: Ethereum) {
@@ -646,6 +739,13 @@ async fn relay_packets(cometbls: Cometbls, ethereum: Ethereum) {
                                 .unwrap()
                                 .into_inner();
 
+                        // NOTE: `packet_data` is deprecated and invalid!!! this assertion will fail!
+                        // assert_eq!(
+                        //     send_packet_event["packet_data"].clone().into_bytes(),
+                        //     ethers::utils::hex::decode(&send_packet_event["packet_data_hex"])
+                        //         .unwrap()
+                        // );
+
                         let rcp = cometbls
                             .recv_packet(MsgRecvPacket {
                                 packet: Packet {
@@ -655,7 +755,10 @@ async fn relay_packets(cometbls: Cometbls, ethereum: Ethereum) {
                                     destination_port: send_packet_event["packet_dst_port"].clone(),
                                     destination_channel: send_packet_event["packet_dst_channel"]
                                         .clone(),
-                                    data: send_packet_event["packet_data"].clone().into_bytes(),
+                                    data: ethers::utils::hex::decode(
+                                        &send_packet_event["packet_data_hex"],
+                                    )
+                                    .unwrap(),
                                     timeout_height: {
                                         let (revision, height) = send_packet_event
                                             ["packet_timeout_height"]

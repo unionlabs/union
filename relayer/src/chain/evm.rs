@@ -70,7 +70,7 @@ pub const COMETBLS_CLIENT_TYPE: &str = "cometbls";
 /// The solidity light client, tracking the state of the 08-wasm light client on union.
 // TODO(benluelo): Generic over middleware?
 pub struct Cometbls {
-    ibc_handler: IBCHandler<SignerMiddleware<Provider<Http>, Wallet<ecdsa::SigningKey>>>,
+    pub ibc_handler: IBCHandler<SignerMiddleware<Provider<Http>, Wallet<ecdsa::SigningKey>>>,
     pub provider: Provider<Http>,
     cometbls_client_address: H160,
     ics20_transfer_address: H160,
@@ -653,15 +653,27 @@ impl Connect<Ethereum> for Cometbls {
 
     fn recv_packet(&self, packet: MsgRecvPacket) -> impl Future<Output = ()> + '_ {
         async move {
-            self.ibc_handler
+            let tx_rcp = self.ibc_handler
                 .recv_packet(packet.into())
                 .send()
                 .await
-                .map_err(|err| err.decode_revert::<String>())
+                // .map_err(|err| err.decode_revert::<String>())
                 .unwrap()
                 .await
                 .unwrap()
                 .unwrap();
+
+             let events = decode_logs::<IBCHandlerEvents>(
+                tx_rcp
+                    .logs
+                    .into_iter()
+                    .map(Into::into)
+                    .collect::<Vec<_>>()
+                    .as_ref(),
+            )
+            .unwrap();           
+
+            dbg!(events);
         }
     }
 
