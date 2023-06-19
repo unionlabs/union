@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   build:
-    uses: unionfi/workflows/.github/workflows/build.yml@c68be2bd55af66c08beb001defb94e359d9e5cd8
+    uses: unionfi/workflows/.github/workflows/build.yml@103d30cf73c0471862429c9a14fe1183c67caf3c
     secrets:
       nixbuild_token: ${{ secrets.nixbuild_token }}
       access-tokens: github.com=${{ secrets.GITHUB_TOKEN }}
