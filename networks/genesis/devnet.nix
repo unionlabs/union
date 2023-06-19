@@ -193,6 +193,10 @@
         { name = "dev-jwt.prv"; path = "${./devnet-evm/dev-jwt.prv}"; }
       ];
 
+      packages.testnet-evm-config = pkgs.linkFarm "testnet-evm-config" [
+        { name = "dev-jwt.prv"; path = "${./devnet-evm/dev-jwt.prv}"; }
+      ];
+
       checks = { };
     };
 }

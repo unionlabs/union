@@ -78,11 +78,13 @@
         ./tools/e2e/e2e.nix
         ./tools/docgen/docgen.nix
         ./networks/devnet.nix
+        ./networks/testnet.nix
         ./networks/genesis/devnet.nix
         ./testnet-validator.nix
         ./e2e/all-tests.nix
         treefmt-nix.flakeModule
         pre-commit-hooks.flakeModule
+        flake-parts.flakeModules.easyOverlay
       ];
 
       perSystem = { config, self', inputs', pkgs, treefmt, rust, crane, system, lib, ... }:
