@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 ABCI
 Accs
 Acknowledgemets
