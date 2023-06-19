@@ -9,14 +9,11 @@ use std::{collections::HashMap, str::FromStr};
 
 use bip32::{DerivationPath, Language, XPrv};
 use clap::{Args, Parser, Subcommand};
-use ethers::abi::AbiDecode;
-use ethers::types::H160;
 use ethers::{
     prelude::{EthAbiCodec, EthAbiType},
     types::{Address, H256},
 };
 use futures::StreamExt;
-use hex_literal::hex;
 use protos::ibc::core::channel::v1 as channel_v1;
 use tendermint_rpc::{event::EventData, query::EventType, SubscriptionClient};
 
@@ -280,7 +277,7 @@ async fn do_main(args: AppArgs) {
                     ethereum_connection_id,
                 ) = connection_handshake(&cometbls_lc, &ethereum_lc).await;
 
-                let (cometbls_channel_id, ethereum_channel_id) = channel_handshake(
+                let (_cometbls_channel_id, _ethereum_channel_id) = channel_handshake(
                     &cometbls_lc,
                     &ethereum_lc,
                     ConnectionEndInfo {
@@ -405,7 +402,7 @@ where
 
     let cometbls_latest_height = cometbls
         .update_counterparty_client(
-            &ethereum,
+            ethereum,
             ethereum_client_id.clone(),
             cometbls_update_from,
             cometbls_update_to,
@@ -459,7 +456,7 @@ where
 
     let ethereum_latest_height = ethereum
         .update_counterparty_client(
-            &cometbls,
+            cometbls,
             cometbls_client_id.clone(),
             ethereum_update_from,
             ethereum_update_to,
@@ -504,7 +501,7 @@ where
 
     let cometbls_latest_height = cometbls
         .update_counterparty_client(
-            &ethereum,
+            ethereum,
             ethereum_client_id.clone(),
             cometbls_update_from,
             cometbls_update_to,
@@ -584,7 +581,7 @@ where
 
     let cometbls_latest_height = cometbls
         .update_counterparty_client(
-            &ethereum,
+            ethereum,
             ethereum_connection_info.client_id.clone(),
             ethereum_latest_trusted_height,
             cometbls_latest_height,
@@ -627,7 +624,7 @@ where
 
     let ethereum_latest_height = ethereum
         .update_counterparty_client(
-            &cometbls,
+            cometbls,
             cometbls_connection_info.client_id.clone(),
             cometbls_latest_trusted_height,
             ethereum_latest_height,
@@ -662,7 +659,7 @@ where
 
     let cometbls_latest_height = cometbls
         .update_counterparty_client(
-            &ethereum,
+            ethereum,
             ethereum_connection_info.client_id.clone(),
             ethereum_latest_trusted_height,
             cometbls_latest_height,

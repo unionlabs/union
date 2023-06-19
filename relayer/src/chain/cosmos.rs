@@ -682,7 +682,7 @@ impl Connect<Cometbls> for Ethereum {
         }
     }
 
-    fn recv_packet(&self, msg: MsgRecvPacket) -> impl futures::Future<Output = ()> + '_ {
+    fn recv_packet(&self, _msg: MsgRecvPacket) -> impl futures::Future<Output = ()> + '_ {
         async move { todo!() }
     }
 
