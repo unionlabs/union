@@ -52,7 +52,7 @@ abstract contract ICS20Transfer is IBCAppBase {
         onlyIBC
     {
         if (!_isSuccessAcknowledgement(acknowledgement)) {
-            _refundTokens(IbcApplicationsTransferV2FungibleTokenPacketData.decode(packet.data), packet.source_port, packet.source_channel);
+            _refundTokens(TransferPacketHelp.decode(packet.data), packet.source_port, packet.source_channel);
         }
     }
 
@@ -142,15 +142,15 @@ abstract contract ICS20Transfer is IBCAppBase {
     }
 
     function _refundTokens(
-        IbcApplicationsTransferV2FungibleTokenPacketData.Data memory data,
+        TransferPacket memory data,
         string memory sourcePort,
         string memory sourceChannel
     ) internal virtual {
         if (!data.denom.toSlice().startsWith(_makeDenomPrefix(sourcePort, sourceChannel))) {
             // sender was source chain
-            require(_transferFrom(_getEscrowAddress(sourceChannel), bytes(data.sender).toAddress(0), data.denom, bytes(data.amount).toUint256(0)));
+            require(_transferFrom(_getEscrowAddress(sourceChannel), bytes(data.sender).toAddress(0), data.denom, data.amount));
         } else {
-            require(_mint(bytes(data.sender).toAddress(0), data.denom, bytes(data.amount).toUint256(0)));
+            require(_mint(bytes(data.sender).toAddress(0), data.denom, data.amount));
         }
     }
 
