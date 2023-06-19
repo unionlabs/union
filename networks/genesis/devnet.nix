@@ -159,8 +159,6 @@
 
         export HOME=$(pwd)
 
-        echo HI
-
         # Copy the read-only genesis we used to build the genesis file as the collect-gentxs command will overwrite it
         cp --no-preserve=mode -r ${genesisHome}/* .
 
