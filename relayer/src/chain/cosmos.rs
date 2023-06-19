@@ -352,7 +352,6 @@ impl LightClient for Ethereum {
                 .abci_query(
                     Some("store/ibc/key".to_string()),
                     path,
-                    // TODO(benluelo): Pass height as parameter
                     Some(self_height.revision_height.try_into().unwrap()),
                     true,
                 )
@@ -396,7 +395,6 @@ impl LightClient for Ethereum {
                 .abci_query(
                     Some("store/ibc/key".to_string()),
                     path,
-                    // TODO(benluelo): Pass height as parameter
                     Some(self_height.revision_height.try_into().unwrap()),
                     true,
                 )
@@ -662,7 +660,7 @@ impl Connect<Cometbls> for Ethereum {
     fn channel_open_ack(&self, msg: MsgChannelOpenAck) -> impl futures::Future<Output = ()> + '_ {
         async move {
             self.broadcast_tx_commit([google::protobuf::Any {
-                type_url: "/ibc.core.channel.v1.MsgchannelOpenAck".to_string(),
+                type_url: "/ibc.core.channel.v1.MsgChannelOpenAck".to_string(),
                 value: msg.into_proto_with_signer(&self.signer).encode_to_vec(),
             }])
             .await;
@@ -729,7 +727,6 @@ impl Connect<Cometbls> for Ethereum {
 
             Any(wasm::ClientState {
                 data: cometbls::ClientState {
-                    // TODO(benluelo): Pass this in somehow
                     chain_id: self.chain_id().await,
                     // https://github.com/cometbft/cometbft/blob/da0e55604b075bac9e1d5866cb2e62eaae386dd9/light/verifier.go#L16
                     trust_level: Fraction {
@@ -1999,14 +1996,14 @@ where
 // }
 
 #[derive(Debug)]
-pub enum TryFromConnnectionEndError {
+pub enum TryFromConnectionEndError {
     ParseError(ParseError),
     UnknownEnumVariant(UnknownEnumVariant<i32>),
     MissingField(MissingField),
 }
 
 impl TryFrom<connection_v1::ConnectionEnd> for ConnectionEnd {
-    type Error = TryFromConnnectionEndError;
+    type Error = TryFromConnectionEndError;
 
     fn try_from(val: connection_v1::ConnectionEnd) -> Result<Self, Self::Error> {
         Ok(Self {
@@ -2014,19 +2011,19 @@ impl TryFrom<connection_v1::ConnectionEnd> for ConnectionEnd {
             versions: val
                 .versions
                 .into_iter()
-                .map(|x| x.try_into().map_err(TryFromConnnectionEndError::ParseError))
+                .map(|x| x.try_into().map_err(TryFromConnectionEndError::ParseError))
                 .collect::<Result<_, _>>()?,
             state: val
                 .state
                 .try_into()
-                .map_err(TryFromConnnectionEndError::UnknownEnumVariant)?,
+                .map_err(TryFromConnectionEndError::UnknownEnumVariant)?,
             counterparty: val
                 .counterparty
-                .ok_or(TryFromConnnectionEndError::MissingField(MissingField(
+                .ok_or(TryFromConnectionEndError::MissingField(MissingField(
                     "counterparty",
                 )))?
                 .try_into()
-                .map_err(TryFromConnnectionEndError::MissingField)?,
+                .map_err(TryFromConnectionEndError::MissingField)?,
             delay_period: val.delay_period,
         })
     }

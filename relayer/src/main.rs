@@ -708,8 +708,6 @@ async fn relay_packets(cometbls: Cometbls, ethereum: Ethereum) {
             while let Some(res) = subs.next().await {
                 let ev = res.unwrap();
 
-                // ibc_transfer { sender, reciever, amount, denom, memo? }
-
                 tracing::info!(event = ?ev.events, "new event");
 
                 match ev.data {

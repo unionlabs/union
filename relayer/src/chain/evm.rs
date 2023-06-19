@@ -18,7 +18,8 @@ use contracts::{
         IbcCoreCommitmentV1MerklePrefixData, IbcCoreConnectionV1ConnectionEndData,
         IbcCoreConnectionV1CounterpartyData, IbcCoreConnectionV1VersionData,
     },
-    shared_types::IbcCoreClientV1HeightData, ics20_bank::ICS20Bank,
+    ics20_bank::ICS20Bank,
+    shared_types::IbcCoreClientV1HeightData,
 };
 use ethers::{
     abi::AbiEncode,
@@ -89,7 +90,7 @@ fn encode_dynamic_singleton_tuple(t: impl AbiEncode) -> Vec<u8> {
 // TODO(benluelo): Return result instead of unwrap
 // REVIEW(benluelo): The contract returns an Any, perhaps we need to decode to that type? It will
 // need to be exposed through the glue contract (EDIT: The mock contract returns Any, but the
-// actual cometbls client returns the bytes it recieves on creation, which is the dynamic singleton
+// actual cometbls client returns the bytes it receives on creation, which is the dynamic singleton
 // tuple encoded struct)
 // fn decode_dynamic_singleton_tuple<T: AbiDecode>(bs: &[u8]) -> T {
 //     let tuple_idx_bytes = U256::from(32).encode().len();
@@ -837,17 +838,17 @@ impl Connect<Ethereum> for Cometbls {
             // We are looping here because some of the updates might not be available yet. We understand that when
             // we see the finalized header's slot as 0.
             let light_client_updates = 'here: loop {
-                let updates = 
-                reqwest::get(format!(
-                    "http://0.0.0.0:9596/eth/v1/beacon/light_client/updates?start_period={current_period}&count={}",
-                    periods_to_update
-                ))
-                .await
-                .unwrap()
-                .json::<lodestar_rpc::types::LightClientUpdatesResponse<32, 256, 32>>()
-                .await
-                .unwrap()
-                .0;
+                let updates =
+                    reqwest::get(format!(
+                        "http://0.0.0.0:9596/eth/v1/beacon/light_client/updates?start_period={current_period}&count={}",
+                        periods_to_update
+                    ))
+                    .await
+                    .unwrap()
+                    .json::<lodestar_rpc::types::LightClientUpdatesResponse<32, 256, 32>>()
+                    .await
+                    .unwrap()
+                    .0;
 
                 for update in &updates {
                     if update.data.finalized_header.beacon.slot.0 == 0 {
@@ -864,7 +865,7 @@ impl Connect<Ethereum> for Cometbls {
 
             let mut light_client_update = light_client_updates.last().unwrap().clone();
 
-            // don't do sync commmittee updates if the sync committee period is the same
+            // don't do sync committee updates if the sync committee period is the same
             if update_to_period != current_period {
                 // send the sync committee update if we are at the beginning of the period
                 for light_client_update in &light_client_updates[1..] {
@@ -1146,7 +1147,7 @@ impl Connect<Ethereum> for Cometbls {
                 .await
                 .unwrap();
 
-            // Even we make sure that we update until the latest period with sync committee updates, there is stil a
+            // Even we make sure that we update until the latest period with sync committee updates, there is still a
             // chance that the store period can increment while we wait for `update_to` to be finalized. This happens
             // when `update_to` is very close to the next period. When that's the case, the block that we'll update to
             // will be in the next period, so we combine the sync committee update with finality update.
@@ -1272,11 +1273,19 @@ impl Cometbls {
 
         let signer_middleware = Arc::new(SignerMiddleware::new(provider.clone(), wallet.clone()));
 
-        let ibc_handler = ibc_handler::IBCHandler::new(ibc_handler_address, signer_middleware.clone());
+        let ibc_handler =
+            ibc_handler::IBCHandler::new(ibc_handler_address, signer_middleware.clone());
 
         let ics20_bank = ICS20Bank::new(ics20_bank_address, signer_middleware);
 
-        ics20_bank.set_operator(ics20_transfer_address).send().await.unwrap().await.unwrap().unwrap();
+        ics20_bank
+            .set_operator(ics20_transfer_address)
+            .send()
+            .await
+            .unwrap()
+            .await
+            .unwrap()
+            .unwrap();
 
         Self {
             ibc_handler,
@@ -1668,13 +1677,13 @@ impl From<IbcCoreChannelV1CounterpartyData> for channel::Counterparty {
 }
 
 #[derive(Debug)]
-pub enum TryFromConnnectionEndError {
+pub enum TryFromConnectionEndError {
     ParseError(ParseError),
     UnknownEnumVariant(UnknownEnumVariant<u8>),
 }
 
 impl TryFrom<IbcCoreConnectionV1ConnectionEndData> for ConnectionEnd {
-    type Error = TryFromConnnectionEndError;
+    type Error = TryFromConnectionEndError;
 
     fn try_from(val: IbcCoreConnectionV1ConnectionEndData) -> Result<Self, Self::Error> {
         Ok(Self {
@@ -1682,12 +1691,12 @@ impl TryFrom<IbcCoreConnectionV1ConnectionEndData> for ConnectionEnd {
             versions: val
                 .versions
                 .into_iter()
-                .map(|x| x.try_into().map_err(TryFromConnnectionEndError::ParseError))
+                .map(|x| x.try_into().map_err(TryFromConnectionEndError::ParseError))
                 .collect::<Result<_, _>>()?,
             state: val
                 .state
                 .try_into()
-                .map_err(TryFromConnnectionEndError::UnknownEnumVariant)?,
+                .map_err(TryFromConnectionEndError::UnknownEnumVariant)?,
             counterparty: val.counterparty.into(),
             delay_period: val.delay_period,
         })
