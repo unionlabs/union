@@ -1,10 +1,6 @@
 // @generated
 /// Capability defines an implementation of an object capability. The index
 /// provided to a Capability must be globally unique.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Capability {
@@ -13,10 +9,6 @@ pub struct Capability {
 }
 /// Owner defines a single capability owner. An owner is defined by the name of
 /// capability and the module name.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Owner {
@@ -27,10 +19,6 @@ pub struct Owner {
 }
 /// CapabilityOwners defines a set of owners of a single Capability. The set of
 /// owners must be unique.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct CapabilityOwners {
@@ -38,10 +26,6 @@ pub struct CapabilityOwners {
     pub owners: ::prost::alloc::vec::Vec<Owner>,
 }
 /// GenesisOwners defines the capability owners with their corresponding index.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GenesisOwners {
@@ -53,10 +37,6 @@ pub struct GenesisOwners {
     pub index_owners: ::core::option::Option<CapabilityOwners>,
 }
 /// GenesisState defines the capability module's genesis state.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GenesisState {

@@ -21,6 +21,8 @@
           CHECKSUM=`sha256sum ${self'.packages.wasm-ethereum-lc}/lib/union_ethereum_lc.wasm | cut -f1 -d " "`
           CODE_ID=`echo -ne codeId/$CHECKSUM | base64 -w0`
 
+          echo "$CHECKSUM" > $out/CODE_ID
+
           cat $out/config/genesis.json | \
              ${pkgs.jq}/bin/jq --arg code_id $CODE_ID --rawfile encoded_file $out/encoded.txt '.app_state."08-wasm".contracts'='[ { "code_id_key": $code_id, "contract_code": $encoded_file }  ]' \
           > $out/tmp-genesis.json

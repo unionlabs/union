@@ -1,36 +1,4 @@
 // @generated
-/// PublicKey defines the keys available for use with Validators
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct PublicKey {
-    #[prost(oneof = "public_key::Sum", tags = "1, 2, 3")]
-    pub sum: ::core::option::Option<public_key::Sum>,
-}
-/// Nested message and enum types in `PublicKey`.
-pub mod public_key {
-    #[cfg_attr(
-        feature = "ethers",
-        derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-    )]
-    #[allow(clippy::derive_partial_eq_without_eq)]
-    #[derive(Clone, PartialEq, ::prost::Oneof)]
-    pub enum Sum {
-        #[prost(bytes, tag = "1")]
-        Ed25519(::prost::alloc::vec::Vec<u8>),
-        #[prost(bytes, tag = "2")]
-        Secp256k1(::prost::alloc::vec::Vec<u8>),
-        #[prost(bytes, tag = "3")]
-        Bn254(::prost::alloc::vec::Vec<u8>),
-    }
-}
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Proof {
@@ -43,10 +11,6 @@ pub struct Proof {
     #[prost(bytes = "vec", repeated, tag = "4")]
     pub aunts: ::prost::alloc::vec::Vec<::prost::alloc::vec::Vec<u8>>,
 }
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ValueOp {
@@ -57,10 +21,6 @@ pub struct ValueOp {
     #[prost(message, optional, tag = "2")]
     pub proof: ::core::option::Option<Proof>,
 }
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct DominoOp {
@@ -74,10 +34,6 @@ pub struct DominoOp {
 /// ProofOp defines an operation used for calculating Merkle root
 /// The data could be arbitrary format, providing nessecary data
 /// for example neighbouring node hash
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ProofOp {
@@ -89,14 +45,30 @@ pub struct ProofOp {
     pub data: ::prost::alloc::vec::Vec<u8>,
 }
 /// ProofOps is Merkle proof defined by the list of ProofOps
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ProofOps {
     #[prost(message, repeated, tag = "1")]
     pub ops: ::prost::alloc::vec::Vec<ProofOp>,
+}
+/// PublicKey defines the keys available for use with Validators
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct PublicKey {
+    #[prost(oneof = "public_key::Sum", tags = "1, 2, 3")]
+    pub sum: ::core::option::Option<public_key::Sum>,
+}
+/// Nested message and enum types in `PublicKey`.
+pub mod public_key {
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Oneof)]
+    pub enum Sum {
+        #[prost(bytes, tag = "1")]
+        Ed25519(::prost::alloc::vec::Vec<u8>),
+        #[prost(bytes, tag = "2")]
+        Secp256k1(::prost::alloc::vec::Vec<u8>),
+        #[prost(bytes, tag = "3")]
+        Bn254(::prost::alloc::vec::Vec<u8>),
+    }
 }
 // @@protoc_insertion_point(module)

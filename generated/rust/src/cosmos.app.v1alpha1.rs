@@ -1,9 +1,5 @@
 // @generated
 /// ModuleDescriptor describes an app module.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ModuleDescriptor {
@@ -29,10 +25,6 @@ pub struct ModuleDescriptor {
     pub can_migrate_from: ::prost::alloc::vec::Vec<MigrateFromInfo>,
 }
 /// PackageReference is a reference to a protobuf package used by a module.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PackageReference {
@@ -79,10 +71,6 @@ pub struct PackageReference {
 }
 /// MigrateFromInfo is information on a module version that a newer module
 /// can migrate from.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MigrateFromInfo {
@@ -98,10 +86,6 @@ pub struct MigrateFromInfo {
 /// allow a mixture of declarative and imperative app wiring, however, apps
 /// that strive for the maximum ease of maintainability should be able to describe
 /// their state machine with a config object alone.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Config {
@@ -115,10 +99,6 @@ pub struct Config {
     pub golang_bindings: ::prost::alloc::vec::Vec<GolangBinding>,
 }
 /// ModuleConfig is a module configuration for an app.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ModuleConfig {
@@ -145,10 +125,6 @@ pub struct ModuleConfig {
     pub golang_bindings: ::prost::alloc::vec::Vec<GolangBinding>,
 }
 /// GolangBinding is an explicit interface type to implementing type binding for dependency injection.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GolangBinding {
@@ -160,18 +136,10 @@ pub struct GolangBinding {
     pub implementation: ::prost::alloc::string::String,
 }
 /// QueryConfigRequest is the Query/Config request type.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryConfigRequest {}
 /// QueryConfigRequest is the Query/Config response type.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryConfigResponse {

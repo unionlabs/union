@@ -126,7 +126,7 @@
                 cometbls = builtins.fetchGit {
                   name = "cometbls";
                   url = "git@github.com:UnionFi/cometbls";
-                  rev = "f19ae296cf176b343ea214967810ba735813e73f";
+                  rev = "20834775a066a30a2115c914213229d3f5033e5e";
                 };
                 cosmossdk = builtins.fetchGit {
                   name = "cosmos-sdk";

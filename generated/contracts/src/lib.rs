@@ -5,4 +5,5 @@
 //! These files may be overwritten by the codegen system at any time.
 pub mod glue;
 pub mod ibc_handler;
+pub mod ics20_bank;
 pub mod shared_types;

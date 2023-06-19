@@ -1,218 +1,305 @@
-use std::str::FromStr;
+// *almost* stable, more than safe enough to use imo https://github.com/rust-lang/rfcs/pull/3425
+#![feature(return_position_impl_trait_in_trait)]
+// #![warn(clippy::pedantic)]
+#![allow(clippy::manual_async_fn)]
+
+// nix run .# -- tx wasm instantiate 1 '{"default_timeout":10000,"gov_contract":"union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2","allowlist":[]}' --label blah --from alice --gas auto --keyring-backend test --gas-adjustment 1.3 --amount 100stake --no-admin --chain-id union-devnet-1
+
+use std::{collections::HashMap, str::FromStr};
 
 use bip32::{DerivationPath, Language, XPrv};
-use contracts::{
-    glue::UnionIbcLightclientsCometblsV1ClientStateData,
-    ibc_handler::{
-        IBCHandler, IBCHandlerEvents, IbcCoreChannelV1ChannelData,
-        IbcCoreChannelV1CounterpartyData, IbcCoreCommitmentV1MerklePrefixData,
-        IbcCoreConnectionV1CounterpartyData, IbcCoreConnectionV1VersionData,
-    },
-    shared_types::IbcCoreClientV1HeightData,
-};
-use cosmos_to_eth::create_ibc_handler_client;
+use clap::{Args, Parser, Subcommand};
 use ethers::{
-    abi::AbiDecode, prelude::decode_logs, providers::Middleware, types::TransactionReceipt,
+    prelude::{EthAbiCodec, EthAbiType},
+    types::{Address, H256},
 };
-use prost::Message;
-use protos::{
-    cosmos::{
-        self,
-        auth::v1beta1::{BaseAccount, QueryAccountRequest},
-        ics23::v1::{HashOp, InnerSpec, LeafOp, LengthOp, ProofSpec},
-        staking,
-    },
-    google::protobuf,
-    ibc::{
-        core::{
-            channel::{
-                self,
-                v1::{MsgChannelOpenAck, MsgChannelOpenInit, Order, QueryChannelRequest},
-            },
-            client::{
-                self,
-                v1::{
-                    Height, QueryClientStateRequest, QueryConsensusStateHeightsRequest,
-                    QueryConsensusStateRequest,
-                },
-            },
-            commitment::v1::MerklePrefix,
-            connection::{
-                self,
-                v1::{MsgConnectionOpenAck, MsgConnectionOpenInit, QueryConnectionRequest},
-            },
-        },
-        lightclients::{
-            tendermint::{self, v1::Fraction},
-            wasm,
-        },
-    },
-};
-use tendermint_rpc::{endpoint::commit, Client, WebSocketClient, WebSocketClientUrl};
+use futures::StreamExt;
+use protos::ibc::core::channel::v1 as channel_v1;
+use tendermint_rpc::{event::EventData, query::EventType, SubscriptionClient};
 
-use crate::{
-    cosmos_to_eth::{create_client, CHAIN_ID, COMETBLS_CLIENT_TYPE, PORT_ID},
-    eth_to_cosmos::{broadcast_tx_commit, create_wasm_client, signer_from_pk},
+use crate::chain::{
+    cosmos::Ethereum,
+    evm::Cometbls,
+    msgs::{
+        channel::{
+            self, Channel, MsgChannelOpenAck, MsgChannelOpenConfirm, MsgChannelOpenInit,
+            MsgChannelOpenTry, MsgRecvPacket, Packet,
+        },
+        connection::{
+            self, MsgConnectionOpenAck, MsgConnectionOpenConfirm, MsgConnectionOpenInit,
+            MsgConnectionOpenTry,
+        },
+        Height, MerklePrefix,
+    },
+    ClientState, Connect, LightClient,
 };
-// use cosmrs::crypto::secp256k1::SigningKey;
 
-mod cosmos_to_eth;
-mod eth_to_cosmos;
+pub mod chain;
 
 const ETH_BEACON_RPC_API: &str = "http://localhost:9596";
-
 const ETH_RPC_API: &str = "http://localhost:8545";
+const CHANNEL_VERSION: &str = "ics20-1";
 
-const WASM_CLIENT_ID: &str = "08-wasm-0";
+#[derive(Debug, Parser)]
+pub struct AppArgs {
+    #[command(subcommand)]
+    command: Command,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum Command {
+    OpenConnection(OpenConnectionArgs),
+    OpenChannel(OpenChannelArgs),
+    RelayPackets(RelayPacketsArgs),
+}
+
+#[derive(Debug, Parser)]
+pub struct OpenConnectionArgs {
+    #[command(flatten)]
+    args: ClientArgs,
+}
+
+#[derive(Debug, Parser)]
+pub struct OpenChannelArgs {
+    #[command(flatten)]
+    args: ClientArgs,
+
+    #[arg(long)]
+    cometbls_port_id: String,
+    #[arg(long)]
+    ethereum_port_id: String,
+
+    /// format is client_id/connection_id
+    #[arg(long)]
+    cometbls: ConnectionEndInfo,
+    /// format is client_id/connection_id
+    #[arg(long)]
+    ethereum: ConnectionEndInfo,
+}
+
+#[derive(Debug, Parser)]
+pub struct RelayPacketsArgs {
+    #[command(flatten)]
+    args: ClientArgs,
+
+    #[arg(long)]
+    open_channel: bool,
+
+    #[arg(long)]
+    cometbls_port_id: Option<String>,
+    #[arg(long)]
+    ethereum_port_id: Option<String>,
+}
+
+#[derive(Debug, Clone)]
+pub struct ConnectionEndInfo {
+    client_id: String,
+    connection_id: String,
+}
+
+impl FromStr for ConnectionEndInfo {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let mut split = s.split('/');
+
+        let client_id = split.next().ok_or("client id missing".to_string())?;
+        let connection_id = split.next().ok_or("connection id missing".to_string())?;
+
+        let extra = split.collect::<Vec<_>>().join("");
+
+        if extra.is_empty() {
+            Ok(Self {
+                client_id: client_id.to_string(),
+                connection_id: connection_id.to_string(),
+            })
+        } else {
+            Err(format!("erroneous extra data: {extra}"))
+        }
+    }
+}
+
+#[derive(Debug, Parser)]
+pub struct ClientArgs {
+    #[command(flatten)]
+    cometbls: CometblsClientArgs,
+    #[command(flatten)]
+    ethereum: EthereumClientArgs,
+}
+
+#[derive(Debug, Args)]
+pub struct CometblsClientArgs {
+    /// OwnableIBCHandler => address
+    #[arg(long)]
+    pub ibc_handler_address: Address,
+    /// CometblsClient => address
+    #[arg(long)]
+    pub cometbls_client_address: Address,
+    /// ICS20TransferBank => address
+    #[arg(long)]
+    pub ics20_transfer_address: Address,
+    /// ICS20Bank => address
+    #[arg(long)]
+    pub ics20_bank_address: Address,
+}
+
+#[derive(Debug, Args)]
+pub struct EthereumClientArgs {
+    #[arg(long = "code-id")]
+    pub wasm_code_id: H256,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum CreateClientArgs {
+    Cometbls { ibc_handler_address: Address },
+    Ethereum { wasm_code_id: H256 },
+}
 
 #[tokio::main]
 async fn main() {
     tracing_subscriber::fmt::init();
 
-    // dbg!(get_wallet());
+    let args = AppArgs::parse();
+
+    do_main(args).await;
+}
+
+#[derive(Debug, EthAbiCodec, EthAbiType)]
+pub struct Ics20Packet {
+    /// amount of tokens to transfer is encoded as a string, but limited to u64 max
+    pub amount: u64,
+    /// the token denomination to be transferred
+    pub denom: String,
+    /// the recipient address on the destination chain
+    pub receiver: String,
+    /// the sender address
+    pub sender: String,
+}
+
+async fn do_main(args: AppArgs) {
+    // let packet_hex = hex!("0000000000000000000000000000000000000000000000000000000000000064000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000c0000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000057374616b6500000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000146161616161353535353561616161613535353535000000000000000000000000000000000000000000000000000000000000000000000000000000000000002c756e696f6e316a6b397073796876676b72743263756d7a386579746c6c323234346d326e6e7a3479743267320000000000000000000000000000000000000000");
+
+    // dbg!(Ics20Packet::decode(left).unwrap());
+    // dbg!(Ics20Packet::decode(right).unwrap());
 
     // panic!();
 
-    // cosmos::get_wasm_code().await
+    match args.command {
+        Command::OpenConnection(OpenConnectionArgs { args }) => {
+            let cometbls = Cometbls::new(
+                args.cometbls.cometbls_client_address,
+                args.cometbls.ibc_handler_address,
+                args.cometbls.ics20_transfer_address,
+                args.cometbls.ics20_bank_address,
+                args.ethereum.wasm_code_id,
+            )
+            .await;
 
-    // let mut sequence = 0;
+            let ethereum = Ethereum::new(get_wallet(), args.ethereum.wasm_code_id).await;
 
-    // eth_to_cosmos::create_wasm_client(sequence).await;
+            connection_handshake(&cometbls, &ethereum).await;
+        }
+        Command::OpenChannel(OpenChannelArgs {
+            args,
+            cometbls,
+            ethereum,
+            cometbls_port_id,
+            ethereum_port_id,
+        }) => {
+            let cometbls_lc = Cometbls::new(
+                args.cometbls.cometbls_client_address,
+                args.cometbls.ibc_handler_address,
+                args.cometbls.ics20_transfer_address,
+                args.cometbls.ics20_bank_address,
+                args.ethereum.wasm_code_id,
+            )
+            .await;
 
-    // sequence += 1;
+            let ethereum_lc = Ethereum::new(get_wallet(), args.ethereum.wasm_code_id).await;
 
-    // // dbg!(cosmos::query_for_wasm_light_client().await);
+            channel_handshake(
+                &cometbls_lc,
+                &ethereum_lc,
+                cometbls,
+                ethereum,
+                cometbls_port_id,
+                ethereum_port_id,
+            )
+            .await;
+        }
+        Command::RelayPackets(RelayPacketsArgs {
+            args,
+            open_channel,
+            cometbls_port_id,
+            ethereum_port_id,
+        }) => {
+            let cometbls_lc = Cometbls::new(
+                args.cometbls.cometbls_client_address,
+                args.cometbls.ibc_handler_address,
+                args.cometbls.ics20_transfer_address,
+                args.cometbls.ics20_bank_address,
+                args.ethereum.wasm_code_id,
+            )
+            .await;
 
-    // eth_to_cosmos::update_wasm_client(sequence).await;
+            // let channel: Channel = cometbls_lc
+            //     .ibc_handler
+            //     .get_channel("transfer".to_string(), "channel-2".to_string())
+            //     .await
+            //     .unwrap()
+            //     .0
+            //     .try_into()
+            //     .unwrap();
 
-    // cosmos_to_eth::update_contract().await;
+            // dbg!(channel);
 
-    let sequence = get_sequence().await;
+            // panic!();
 
-    // let mut sequence = 3;
+            let ethereum_lc = Ethereum::new(get_wallet(), args.ethereum.wasm_code_id).await;
 
-    let ibc_handler = create_ibc_handler_client().await;
+            // ICS20Transfer.sol -> onRecvPacket -> replace body with `return _newAcknowledgement(true);`
 
-    let bind_rcp: TransactionReceipt = ibc_handler
-        .bind_port(PORT_ID.into(), ICS20_MODULE_ADDRESS.parse().unwrap())
-        .send()
-        .await
-        .unwrap()
-        .await
-        .unwrap()
-        .unwrap();
+            // let balance = cometbls_lc
+            //     .ics20_bank
+            //     .balance_of(
+            //         H160::from(b"aaaaa55555aaaaa55555"),
+            //         format!("{}/channel-0/stake", cometbls_port_id.clone().unwrap()),
+            //     )
+            //     .await
+            //     .unwrap();
+            // dbg!(balance);
 
-    let connection_id = handshake(ibc_handler.clone()).await;
+            if open_channel {
+                let (
+                    cometbls_client_id,
+                    ethereum_client_id,
+                    cometbls_connection_id,
+                    ethereum_connection_id,
+                ) = connection_handshake(&cometbls_lc, &ethereum_lc).await;
 
-    // "connection-0".to_string()
-    channel_handshake(ibc_handler, connection_id).await;
-}
+                let (_cometbls_channel_id, _ethereum_channel_id) = channel_handshake(
+                    &cometbls_lc,
+                    &ethereum_lc,
+                    ConnectionEndInfo {
+                        client_id: cometbls_client_id,
+                        connection_id: cometbls_connection_id,
+                    },
+                    ConnectionEndInfo {
+                        client_id: ethereum_client_id,
+                        connection_id: ethereum_connection_id,
+                    },
+                    cometbls_port_id.unwrap(),
+                    ethereum_port_id.unwrap(),
+                )
+                .await;
+            }
 
-async fn get_sequence() -> u64 {
-    let account = cosmos::auth::v1beta1::query_client::QueryClient::connect("http://0.0.0.0:9090")
-        .await
-        .unwrap()
-        .account(QueryAccountRequest {
-            address: signer_from_pk(&get_wallet().public_key().public_key().to_bytes().to_vec()),
-        })
-        .await
-        .unwrap()
-        .into_inner()
-        .account
-        .unwrap();
-
-    assert!(account.type_url == "/cosmos.auth.v1beta1.BaseAccount");
-
-    let sequence = BaseAccount::decode(&*account.value).unwrap().sequence;
-
-    println!("sequence is {sequence}");
-
-    sequence
-}
-
-// nix run .#evm-devnet-deploy -L
-// OwnableIBCHandler => address
-const IBC_HANDLER_ADDRESS: &str = "0x0baE8645095583bc7fFC9a806743C3bA1B9ea0ec";
-// CometblsClient => address
-const COMETBLS_CLIENT_ADDRESS: &str = "0xD583F49C022ccc912A907C892F494fd04A1A9935";
-// ICS20TransferBank => address
-const ICS20_MODULE_ADDRESS: &str = "0x341aA165C8bC3719c28Fb8c6A150E95a1342D081";
-
-const API_URL: &str = "http://127.0.0.1:27444";
-
-// const TM_CLIENT_ID: &str = "08-wasm-0";
-// const ETH_CLIENT_ID: &str = "10-eth-0";
-
-// const CONNECTION_ID: &str = "connection-0";
-
-// fn main() {
-//     println!("Hello, world!");
-
-//     let counterparty_of_eth = Counterparty {
-//         client_id: TM_CLIENT_ID.to_owned(),
-//         connection_id: CONNECTION_ID.to_owned(),
-//         prefix: Some(default_merkle_prefix()),
-//     };
-
-//     let eth_connection_end = ConnectionEnd {
-//         // versions: vec![Version {
-//         //     identifier: todo!(),
-//         //     features: todo!(),
-//         // }],
-//         versions: vec![],
-//         state: State::Init as _,
-//         counterparty: Some(counterparty_of_eth),
-//         delay_period: 0,
-//         client_id: ETH_CLIENT_ID.to_owned(),
-//     };
-// }
-
-fn default_merkle_prefix() -> MerklePrefix {
-    MerklePrefix {
-        key_prefix: b"ibc".to_vec(),
+            relay_packets(cometbls_lc, ethereum_lc).await;
+        }
     }
 }
 
-// async fn eth_get_proof() -> EIP1186ProofResponse {
-//     let contract_address: H160 = std::fs::read_to_string("address.txt")
-//         .unwrap()
-//         .parse()
-//         .unwrap();
-
-//     dbg!(contract_address);
-
-//     let provider = Provider::<Http>::try_from("http://localhost:8545").unwrap();
-
-//     let block = provider
-//         .get_block(BlockNumber::Safe)
-//         .await
-//         .unwrap()
-//         .unwrap();
-
-//     let block_number = block.number.unwrap();
-
-//     dbg!(&block_number);
-
-//     provider
-//         .get_proof(
-//             H160::from(contract_address),
-//             vec![
-//                 H256(hex!(
-//                     "0000000000000000000000000000000000000000000000000000000000000000"
-//                 )),
-//                 H256(hex!(
-//                     "0000000000000000000000000000000000000000000000000000000000000001"
-//                 )),
-//                 H256(hex!(
-//                     "0000000000000000000000000000000000000000000000000000000000000002"
-//                 )),
-//             ],
-//             Some(BlockId::Number(BlockNumber::Number(block_number))),
-//         )
-//         .await
-//         .unwrap()
-// }
-
+// TODO(benluelo): Pass this in as as command line argument
 fn get_wallet() -> XPrv {
     const MNEMONIC: &str = "wine parrot nominee girl exchange element pudding grow area twenty next junior come render shadow evidence sentence start rough debate feed all limb real";
     // const DERIVATION_PATH: &str = "m/44'/1337'/0'/0/0";
@@ -230,859 +317,602 @@ fn get_wallet() -> XPrv {
     .unwrap();
 
     alice
-
-    // cosmrs::AccountId::new("union", &alice.public_key().to_bytes()).unwrap()
-
-    // subtle_encoding::bech32::encode("cosmos", public_key.to_bytes())
 }
 
-// async fn msg_connection_open_init() {
-//     let wallet = get_wallet();
-//     let alice = wallet;
+/// Returns (c1 client id, c2 client id, c1 conn id, c2 conn id)
+async fn connection_handshake<Chain1, Chain2>(
+    cometbls: &Chain1,
+    ethereum: &Chain2,
+) -> (String, String, String, String)
+where
+    Chain1: LightClient + Connect<Chain2>,
+    Chain2: LightClient + Connect<Chain1>,
+    <Chain1 as LightClient>::ClientState: std::fmt::Debug,
+    <Chain2 as LightClient>::ClientState: std::fmt::Debug,
+{
+    let cometbls_id = cometbls.chain_id().await;
+    let ethereum_id = ethereum.chain_id().await;
 
-//     let default_connection_version = default_connection_version();
+    tracing::info!(cometbls_id, ethereum_id);
 
-//     let msg_connection_open_init = MsgConnectionOpenInit {
-//         client_id: TM_CLIENT_ID.into(),
-//         counterparty: Some(Counterparty {
-//             client_id: "07-tendermint-0".into(),
-//             // TODO(benluelo): cosmjs leaves this undefined, figure out what to put here
-//             connection_id: "".into(),
-//             prefix: Some(MerklePrefix {
-//                 key_prefix: b"ibc".to_vec(),
-//             }),
-//         }),
-//         version: Some(default_connection_version),
-//         delay_period: 0,
-//         signer: AccountId::new("cosmos", &alice.public_key().to_bytes())
-//             .unwrap()
-//             .to_string(),
-//     };
+    let (cometbls_client_id, ethereum_latest_height) = {
+        let latest_height = ethereum.query_latest_height().await;
 
-//     let any = Any {
-//         type_url: "/ibc.core.connection.v1.MsgConnectionOpenInit".into(),
-//         value: msg_connection_open_init.encode_to_vec(),
-//     };
+        tracing::trace!("generating client state...");
+        let client_state = ethereum
+            .generate_counterparty_client_state(latest_height)
+            .await;
+        tracing::trace!("generating consensus state...");
+        let consensus_state = ethereum
+            .generate_counterparty_consensus_state(latest_height)
+            .await;
 
-//     let tx = Tx {
-//         body: {
-//             TxBody {
-//                 messages: [any].to_vec(),
-//                 memo: "".into(),
-//                 timeout_height: 0_u8.into(),
-//                 extension_options: Default::default(),
-//                 non_critical_extension_options: Default::default(),
-//             }
-//         }
-//         .into(),
-//         auth_info: Some(AuthInfo {
-//             signer_infos: [SignerInfo {
-//                 public_key: None,
-//                 // public_key: Some(SignerPublicKey::Single(alice.public_key())),
-//                 mode_info: None,
-//                 // mode_info: ModeInfo::single(SignMode::Direct),
-//                 sequence: 0,
-//             }]
-//             .to_vec(),
-//             fee: Some(Fee {
-//                 amount: [Coin {
-//                     denom: "uno".into(),
-//                     amount: "123123123".into(),
-//                 }]
-//                 .to_vec(),
-//                 gas_limit: todo!(),
-//                 payer: "".into(),
-//                 granter: "".into(),
-//             }),
-//             tip: None,
-//         }),
-//         signatures: [alice
-//             .sign(&msg_connection_open_init.encode_to_vec())
-//             .unwrap()
-//             .to_vec()]
-//         .to_vec(),
-//     };
+        let client_id = cometbls.create_client(client_state, consensus_state).await;
 
-//     let response = connection::v1::msg_client::MsgClient::connect(API_URL)
-//         .await
-//         .unwrap()
-//         .connection_open_init(msg_connection_open_init)
-//         .await
-//         .unwrap()
-//         .into_inner();
-// }
+        tracing::info!(chain_id = cometbls_id, client_id);
 
-fn default_connection_version() -> connection::v1::Version {
-    let default_connection_version = connection::v1::Version {
-        identifier: "1".into(),
-        features: [
-            Order::Unordered.as_str_name().into(),
-            Order::Ordered.as_str_name().into(),
-        ]
-        .to_vec(),
+        (client_id, latest_height)
     };
-    default_connection_version
+
+    let (ethereum_client_id, cometbls_latest_height) = {
+        let latest_height = cometbls.query_latest_height().await;
+
+        tracing::trace!("generating client state...");
+        let client_state = cometbls
+            .generate_counterparty_client_state(latest_height)
+            .await;
+        tracing::trace!("generating consensus state...");
+        let consensus_state = cometbls
+            .generate_counterparty_consensus_state(latest_height)
+            .await;
+
+        let client_id = ethereum.create_client(client_state, consensus_state).await;
+
+        tracing::info!(chain_id = ethereum_id, client_id);
+
+        (client_id, latest_height)
+    };
+
+    tracing::info!(?cometbls_latest_height);
+    tracing::info!(?ethereum_latest_height);
+
+    let cometbls_connection_id = cometbls
+        .connection_open_init(MsgConnectionOpenInit {
+            client_id: cometbls_client_id.clone(),
+            counterparty: connection::Counterparty {
+                client_id: ethereum_client_id.clone(),
+                // TODO(benluelo): Create a new struct with this field omitted as it's unused for open init
+                connection_id: "".to_string(),
+                prefix: MerklePrefix {
+                    key_prefix: b"ibc".to_vec(),
+                },
+            },
+            version: connection::Version {
+                identifier: "1".into(),
+                features: [channel::Order::Unordered, channel::Order::Ordered]
+                    .into_iter()
+                    .collect(),
+            },
+            delay_period: 6,
+        })
+        .await;
+
+    let cometbls_update_from = cometbls_latest_height;
+    let cometbls_update_to = cometbls.query_latest_height().await;
+
+    let cometbls_latest_height = cometbls
+        .update_counterparty_client(
+            ethereum,
+            ethereum_client_id.clone(),
+            cometbls_update_from,
+            cometbls_update_to,
+        )
+        .await;
+
+    tracing::info!(
+        chain_id = cometbls_id,
+        connection_id = cometbls_connection_id
+    );
+
+    // generate state proofs
+
+    let cometbls_client_state_proof = cometbls
+        .client_state_proof(cometbls_client_id.clone(), cometbls_latest_height)
+        .await;
+    let cometbls_consensus_state_proof = cometbls
+        .consensus_state_proof(
+            cometbls_client_id.clone(),
+            ethereum_latest_height,
+            cometbls_latest_height,
+        )
+        .await;
+    let cometbls_connection_state_proof = cometbls
+        .connection_state_proof(cometbls_connection_id.clone(), cometbls_latest_height)
+        .await;
+
+    let ethereum_connection_id = ethereum
+        .connection_open_try(MsgConnectionOpenTry {
+            client_id: ethereum_client_id.clone(),
+            counterparty: connection::Counterparty {
+                client_id: cometbls_client_id.clone(),
+                connection_id: cometbls_connection_id.clone(),
+                prefix: MerklePrefix {
+                    key_prefix: b"ibc".to_vec(),
+                },
+            },
+            delay_period: 6,
+            client_state: cometbls_client_state_proof.state,
+            counterparty_versions: cometbls_connection_state_proof.state.versions,
+            proof_height: cometbls_consensus_state_proof.proof_height,
+            proof_init: cometbls_connection_state_proof.proof,
+            proof_client: cometbls_client_state_proof.proof,
+            proof_consensus: cometbls_consensus_state_proof.proof,
+            consensus_height: ethereum_latest_height,
+        })
+        .await;
+
+    let ethereum_update_from = ethereum_latest_height;
+    let ethereum_update_to = ethereum.query_latest_height().await;
+
+    let ethereum_latest_height = ethereum
+        .update_counterparty_client(
+            cometbls,
+            cometbls_client_id.clone(),
+            ethereum_update_from,
+            ethereum_update_to,
+        )
+        .await;
+
+    let ethereum_connection_state_proof = ethereum
+        .connection_state_proof(ethereum_connection_id.clone(), ethereum_latest_height)
+        .await;
+    let ethereum_client_state_proof = ethereum
+        .client_state_proof(ethereum_client_id.clone(), ethereum_latest_height)
+        .await;
+    let ethereum_consensus_state_proof = ethereum
+        .consensus_state_proof(
+            ethereum_client_id.clone(),
+            cometbls_latest_height,
+            ethereum_latest_height,
+        )
+        .await;
+
+    cometbls
+        .connection_open_ack(MsgConnectionOpenAck {
+            connection_id: cometbls_connection_id.clone(),
+            counterparty_connection_id: ethereum_connection_id.clone(),
+            version: connection::Version {
+                identifier: "1".into(),
+                features: [channel::Order::Unordered, channel::Order::Ordered]
+                    .into_iter()
+                    .collect(),
+            },
+            client_state: ethereum_client_state_proof.state,
+            proof_height: ethereum_connection_state_proof.proof_height,
+            proof_try: ethereum_connection_state_proof.proof,
+            proof_client: ethereum_client_state_proof.proof,
+            proof_consensus: ethereum_consensus_state_proof.proof,
+            consensus_height: ethereum_consensus_state_proof.proof_height,
+        })
+        .await;
+
+    let cometbls_update_from = cometbls_latest_height;
+    let cometbls_update_to = cometbls.query_latest_height().await;
+
+    let cometbls_latest_height = cometbls
+        .update_counterparty_client(
+            ethereum,
+            ethereum_client_id.clone(),
+            cometbls_update_from,
+            cometbls_update_to,
+        )
+        .await;
+
+    let cometbls_connection_state_proof = cometbls
+        .connection_state_proof(cometbls_connection_id.clone(), cometbls_latest_height)
+        .await;
+
+    ethereum
+        .connection_open_confirm(MsgConnectionOpenConfirm {
+            connection_id: ethereum_connection_id.clone(),
+            proof_ack: cometbls_connection_state_proof.proof,
+            proof_height: cometbls_connection_state_proof.proof_height,
+        })
+        .await;
+
+    tracing::info!(
+        cometbls_connection_id,
+        cometbls_client_id,
+        ethereum_connection_id,
+        ethereum_client_id,
+        "connection opened"
+    );
+
+    (
+        cometbls_client_id,
+        ethereum_client_id,
+        cometbls_connection_id,
+        ethereum_connection_id,
+    )
 }
 
-// async fn msg_connection_open_try() {
-//     let alice = get_wallet();
+async fn channel_handshake<Chain1, Chain2>(
+    cometbls: &Chain1,
+    ethereum: &Chain2,
+    cometbls_connection_info: ConnectionEndInfo,
+    ethereum_connection_info: ConnectionEndInfo,
+    cometbls_port_id: String,
+    ethereum_port_id: String,
+) -> (String, String)
+where
+    Chain1: LightClient + Connect<Chain2>,
+    Chain2: LightClient + Connect<Chain1>,
+    <Chain1 as LightClient>::ClientState: std::fmt::Debug + ClientState,
+    <Chain2 as LightClient>::ClientState: std::fmt::Debug + ClientState,
+{
+    let cometbls_id = cometbls.chain_id().await;
+    let ethereum_id = ethereum.chain_id().await;
 
-//     let any = Any {
-//         type_url: "/ibc.lightclients.tendermint.v1.ClientState".into(),
-//         value: get_tm_client_state().encode_to_vec(),
-//     };
+    tracing::info!(cometbls_id, ethereum_id);
 
-//     let wasm_client_state = wasm::v1::ClientState {
-//         data: any.encode_to_vec(),
-//         code_id: get_last_wasm_client().await,
-//         latest_height: Some(Height {
-//             revision_number: 0,
-//             revision_height: 6,
-//         }),
-//     };
+    let cometbls_channel_id = cometbls
+        .channel_open_init(MsgChannelOpenInit {
+            port_id: cometbls_port_id.to_string(),
+            channel: Channel {
+                state: channel::State::Init,
+                ordering: channel::Order::Unordered,
+                counterparty: channel::Counterparty {
+                    port_id: ethereum_port_id.to_string(),
+                    // TODO(benluelo): Make a struct without this field?
+                    channel_id: String::new(),
+                },
+                connection_hops: vec![cometbls_connection_info.connection_id.clone()],
+                version: CHANNEL_VERSION.to_string(),
+            },
+        })
+        .await;
 
-//     let msg = MsgConnectionOpenTry {
-//         client_id: "08-wasm-0".into(),
-//         previous_connection_id: "".into(),
-//         client_state: Some(Any {
-//             type_url: "/ibc.core.connection.v1.MsgConnectionOpenTry".into(),
-//             value: wasm_client_state.encode_to_vec(),
-//         }),
-//         counterparty: Some(Counterparty {
-//             client_id: "07-tendermint-0".into(),
-//             connection_id: "connection-0".into(),
-//             prefix: Some(default_merkle_prefix()),
-//         }),
-//         delay_period: 0,
-//         counterparty_versions: vec![default_connection_version()],
-//         proof_height: Some(Height {
-//             revision_number: 0,
-//             revision_height: 0,
-//         }),
-//         proof_init: vec![1, 2],
-//         proof_client: vec![1, 2],
-//         proof_consensus: vec![1, 2],
-//         consensus_height: Some(Height {
-//             revision_number: 0,
-//             revision_height: 1,
-//         }),
-//         signer: AccountId::new("cosmos", &alice.public_key().to_bytes())
-//             .unwrap()
-//             .to_string(),
-//         host_consensus_state_proof: vec![],
-//     };
+    let ethereum_latest_trusted_height = ethereum
+        .query_client_state(ethereum_connection_info.client_id.clone())
+        .await
+        .height();
+
+    let cometbls_latest_height = cometbls.query_latest_height().await;
+
+    let cometbls_latest_height = cometbls
+        .update_counterparty_client(
+            ethereum,
+            ethereum_connection_info.client_id.clone(),
+            ethereum_latest_trusted_height,
+            cometbls_latest_height,
+        )
+        .await;
+
+    let proof = cometbls
+        .channel_state_proof(
+            cometbls_channel_id.clone(),
+            cometbls_port_id.to_string(),
+            cometbls_latest_height,
+        )
+        .await;
+
+    let ethereum_channel_id = ethereum
+        .channel_open_try(MsgChannelOpenTry {
+            port_id: ethereum_port_id.clone(),
+            channel: Channel {
+                state: channel::State::Tryopen,
+                ordering: channel::Order::Unordered,
+                counterparty: channel::Counterparty {
+                    port_id: cometbls_port_id.clone(),
+                    channel_id: cometbls_channel_id.clone(),
+                },
+                connection_hops: vec![ethereum_connection_info.connection_id.clone()],
+                version: CHANNEL_VERSION.to_string(),
+            },
+            counterparty_version: CHANNEL_VERSION.to_string(),
+            proof_init: proof.proof,
+            proof_height: proof.proof_height,
+        })
+        .await;
+
+    let cometbls_latest_trusted_height = cometbls
+        .query_client_state(cometbls_connection_info.client_id.clone())
+        .await
+        .height();
+
+    let ethereum_latest_height = ethereum.query_latest_height().await;
+
+    let ethereum_latest_height = ethereum
+        .update_counterparty_client(
+            cometbls,
+            cometbls_connection_info.client_id.clone(),
+            cometbls_latest_trusted_height,
+            ethereum_latest_height,
+        )
+        .await;
+
+    let proof = ethereum
+        .channel_state_proof(
+            ethereum_channel_id.clone(),
+            ethereum_port_id.clone(),
+            ethereum_latest_height,
+        )
+        .await;
+
+    cometbls
+        .channel_open_ack(MsgChannelOpenAck {
+            port_id: cometbls_port_id.clone(),
+            channel_id: cometbls_channel_id.clone(),
+            counterparty_channel_id: ethereum_channel_id.clone(),
+            counterparty_version: CHANNEL_VERSION.to_string(),
+            proof_try: proof.proof,
+            proof_height: proof.proof_height,
+        })
+        .await;
+
+    let ethereum_latest_trusted_height = ethereum
+        .query_client_state(ethereum_connection_info.client_id.clone())
+        .await
+        .height();
+
+    let cometbls_latest_height = cometbls.query_latest_height().await;
+
+    let cometbls_latest_height = cometbls
+        .update_counterparty_client(
+            ethereum,
+            ethereum_connection_info.client_id.clone(),
+            ethereum_latest_trusted_height,
+            cometbls_latest_height,
+        )
+        .await;
+
+    let proof = cometbls
+        .channel_state_proof(
+            cometbls_channel_id.clone(),
+            cometbls_port_id.clone(),
+            cometbls_latest_height,
+        )
+        .await;
+
+    ethereum
+        .channel_open_confirm(MsgChannelOpenConfirm {
+            port_id: ethereum_port_id.clone(),
+            channel_id: ethereum_channel_id.clone(),
+            proof_ack: proof.proof,
+            proof_height: proof.proof_height,
+        })
+        .await;
+
+    tracing::info!(
+        cometbls_connection_info.connection_id,
+        cometbls_connection_info.client_id,
+        cometbls_channel_id,
+        ethereum_connection_info.connection_id,
+        ethereum_connection_info.client_id,
+        ethereum_channel_id,
+        "channel opened"
+    );
+
+    (cometbls_channel_id, ethereum_channel_id)
+}
+
+async fn relay_packets(cometbls: Cometbls, ethereum: Ethereum) {
+    let listen_handle = tokio::spawn(async move {
+        loop {
+            let mut subs = ethereum
+                .tm_client
+                .subscribe(EventType::Tx.into())
+                .await
+                .unwrap();
+
+            while let Some(res) = subs.next().await {
+                let ev = res.unwrap();
+
+                tracing::info!(event = ?ev.events, "new event");
+
+                match ev.data {
+                    EventData::NewBlock {
+                        block: _,
+                        result_begin_block: _,
+                        result_end_block: _,
+                    } => {
+                        // dbg!(result_begin_block, result_end_block);
+
+                        // client.block(block.unwrap().header.height).await.unwrap();
+                    }
+                    EventData::Tx { tx_result } => {
+                        let send_packet_event = tx_result.result.events.into_iter().find_map(|e| {
+                            (e.kind == "send_packet").then(|| {
+                                e.attributes
+                                    .into_iter()
+                                    .map(|attr| (attr.key, attr.value))
+                                    .collect::<HashMap<_, _>>()
+                            })
+                        });
+
+                        let Some(send_packet_event) = send_packet_event else {
+                            continue;
+                        };
+
+                        tracing::info!(?send_packet_event);
+
+                        let sequence = send_packet_event["packet_sequence"].parse().unwrap();
+
+                        let packet_commitment =
+                            channel_v1::query_client::QueryClient::connect("http://0.0.0.0:9090")
+                                .await
+                                .unwrap()
+                                .packet_commitment(channel_v1::QueryPacketCommitmentRequest {
+                                    port_id: send_packet_event["packet_src_port"].clone(),
+                                    channel_id: send_packet_event["packet_src_channel"].clone(),
+                                    sequence,
+                                })
+                                .await
+                                .unwrap()
+                                .into_inner();
+
+                        // NOTE: `packet_data` is deprecated and invalid!!! this assertion will fail!
+                        // assert_eq!(
+                        //     send_packet_event["packet_data"].clone().into_bytes(),
+                        //     ethers::utils::hex::decode(&send_packet_event["packet_data_hex"])
+                        //         .unwrap()
+                        // );
+
+                        let rcp = cometbls
+                            .recv_packet(MsgRecvPacket {
+                                packet: Packet {
+                                    sequence,
+                                    source_port: send_packet_event["packet_src_port"].clone(),
+                                    source_channel: send_packet_event["packet_src_channel"].clone(),
+                                    destination_port: send_packet_event["packet_dst_port"].clone(),
+                                    destination_channel: send_packet_event["packet_dst_channel"]
+                                        .clone(),
+                                    data: ethers::utils::hex::decode(
+                                        &send_packet_event["packet_data_hex"],
+                                    )
+                                    .unwrap(),
+                                    timeout_height: {
+                                        let (revision, height) = send_packet_event
+                                            ["packet_timeout_height"]
+                                            .split_once('-')
+                                            .unwrap();
+
+                                        Height {
+                                            revision_number: revision.parse().unwrap(),
+                                            revision_height: height.parse().unwrap(),
+                                        }
+                                    },
+                                    timeout_timestamp: send_packet_event
+                                        ["packet_timeout_timestamp"]
+                                        .parse()
+                                        .unwrap(),
+                                },
+                                proof_height: packet_commitment.proof_height.unwrap().into(),
+                                proof_commitment: packet_commitment.commitment,
+                            })
+                            .await;
+
+                        dbg!(rcp);
+                    }
+                    EventData::GenericJsonEvent(_) => todo!(),
+                };
+            }
+        }
+    });
+
+    // let send_handle = tokio::spawn(async move {
+    //     tokio::time::sleep(Duration::from_secs(20)).await;
+
+    //     let msg = transfer_v1::MsgTransfer {
+    //         source_port: PORT_ID.to_string(),
+    //         source_channel: "channel-0".to_string(),
+    //         token: Some(Coin {
+    //             denom: "stake".to_string(),
+    //             amount: "1".to_string(),
+    //         }),
+    //         sender: signer_from_pk(&get_wallet().public_key().public_key().to_bytes().to_vec()),
+    //         receiver: "union1nrv37pqfcqul73v7d2e8y0jhjyeuhg57m3eqdt".to_string(),
+    //         timeout_height: Some(client_v1::Height {
+    //             revision_number: 1,
+    //             revision_height: 12_345_678_765,
+    //         }),
+    //         timeout_timestamp: Default::default(),
+    //         memo: Default::default(),
+    //     };
+
+    //     broadcast_tx_commit(
+    //         [Any {
+    //             type_url: "/ibc.applications.transfer.v1.MsgTransfer".to_string(),
+    //             value: msg.encode_to_vec(),
+    //         }]
+    //         .to_vec(),
+    //     )
+    //     .await;
+    // });
+
+    // let (listen, send) = tokio::join!(listen_handle, send_handle);
+
+    listen_handle.await.unwrap();
+
+    // listen.unwrap();
+    // send.unwrap();
+}
+
+// trait Msg<Client, Counterparty>: Sized
+// where
+//     Client: LightClient + Connect<Counterparty>,
+//     Counterparty: LightClient + Connect<Client>,
+// {
+//     type Response;
+
+//     type Previous: Msg<Counterparty, Client>;
+
+//     type RequiredProofs;
+
+//     fn construct(
+//         previous_response: <Self::Previous as Msg<Counterparty, Client>>::Response,
+//         proofs: Self::RequiredProofs,
+//     ) -> Self;
 // }
 
-// async fn get_last_wasm_client() -> Vec<u8> {
-//     let mut wasm_client =
-//         wasm::v1::query_client::QueryClient::connect(tonic::transport::Endpoint::from_static(""))
-//             .await
-//             .unwrap();
+// impl<Client, Counterparty> Msg<Client, Counterparty> for MsgConnectionOpenInit
+// where
+//     Client: LightClient + Connect<Counterparty>,
+//     Counterparty: LightClient + Connect<Client>,
+// {
+//     type Response = String;
 
-//     let code_ids = wasm_client
-//         .code_ids(QueryCodeIdsRequest { pagination: None })
-//         .await
-//         .unwrap();
+//     type Previous = ();
 
-//     let code_id = code_ids.into_inner().code_ids.pop().unwrap();
+//     type RequiredProofs = ();
 
-//     hex::decode(code_id).unwrap()
-// }
-
-// fn get_tm_client_state() -> tendermint::v1::ClientState {
-//     tendermint::v1::ClientState {
-//         chain_id: "ibc-0".into(),
-//         trust_level: Some(Fraction {
-//             numerator: 1,
-//             denominator: 3,
-//         }),
-//         trusting_period: Some(Duration::from_secs(1814400).into()),
-//         unbonding_period: Some(Duration::from_secs(1814400).into()),
-//         max_clock_drift: Some(Duration::from_secs(40).into()),
-//         frozen_height: Some(Height {
-//             revision_number: 0,
-//             revision_height: 0,
-//         }),
-//         latest_height: Some(Height {
-//             revision_number: 0,
-//             revision_height: 5,
-//         }),
-//         proof_specs: [
-//             ProofSpec {
-//                 leaf_spec: Some(LeafOp {
-//                     hash: HashOp::Sha256 as _,
-//                     prehash_key: HashOp::NoHash as _,
-//                     prehash_value: HashOp::Sha256 as _,
-//                     length: LengthOp::VarProto as _,
-//                     prefix: b"AA==".to_vec(),
-//                 }),
-//                 inner_spec: Some(InnerSpec {
-//                     child_order: vec![0, 1],
-//                     child_size: 33,
-//                     min_prefix_length: 4,
-//                     max_prefix_length: 12,
-//                     empty_child: vec![],
-//                     hash: HashOp::Sha256 as _,
-//                 }),
-//                 max_depth: 0,
-//                 min_depth: 0,
-//             },
-//             ProofSpec {
-//                 leaf_spec: Some(LeafOp {
-//                     hash: HashOp::Sha256 as _,
-//                     prehash_key: HashOp::NoHash as _,
-//                     prehash_value: HashOp::Sha256 as _,
-//                     length: LengthOp::VarProto as _,
-//                     prefix: b"AA==".to_vec(),
-//                 }),
-//                 inner_spec: Some(InnerSpec {
-//                     child_order: vec![0, 1],
-//                     child_size: 32,
-//                     min_prefix_length: 1,
-//                     max_prefix_length: 1,
-//                     empty_child: vec![],
-//                     hash: HashOp::Sha256 as _,
-//                 }),
-//                 max_depth: 0,
-//                 min_depth: 0,
-//             },
-//         ]
-//         .to_vec(),
-//         upgrade_path: ["upgrade".into(), "upgradedIBCState".into()].to_vec(),
-//         allow_update_after_expiry: true,
-//         allow_update_after_misbehaviour: true,
+//     fn construct(
+//         previous_response: <Self::Previous as Msg<Counterparty, Client>>::Response,
+//         proofs: Self::RequiredProofs,
+//     ) -> Self {
+//         MsgConnectionOpenInit {
+//             client_id: todo!(),
+//             counterparty: todo!(),
+//             version: todo!(),
+//             delay_period: todo!(),
+//         }
 //     }
 // }
 
-// trait IbcEndpoint {
-//     fn send_message();
+// impl<Client, Counterparty> Msg<Client, Counterparty> for ()
+// where
+//     Client: LightClient + Connect<Counterparty>,
+//     Counterparty: LightClient + Connect<Client>,
+// {
+//     type Response = ();
+//     type Previous = ();
+//     type RequiredProofs = ();
+
+//     fn construct(
+//         previous_response: <Self::Previous as Msg<Counterparty, Client>>::Response,
+//         proofs: Self::RequiredProofs,
+//     ) -> Self {
+//     }
 // }
 
-// async fn handshake() {
-//     const CLIENT_A_ID: &str = "client-a";
-//     const CLIENT_B_ID: &str = "client-b";
-
-//     // }
-
-async fn handshake<M>(ibc_handler: IBCHandler<M>) -> String
-where
-    M: Middleware + 'static,
-{
-    const COMETBLS_CLIENT_ID: &str = "cometbls-0";
-
-    // let wasm_client_update = client::v1::MsgUpdateClient {
-    //     client_id: WASM_CLIENT_ID.to_string(),
-    //     client_message: todo!(),
-    //     signer: todo!(),
-    // };
-
-    // let a_end = connection::v1::ConnectionEnd {
-    //     client_id: CLIENT_A_ID.to_string(),
-    //     versions: vec![default_connection_version()],
-    //     state: connection::v1::State::Init.into(),
-    //     counterparty: Some(connection::v1::Counterparty {
-    //         client_id: CLIENT_B_ID.to_string(),
-    //         connection_id: "connection-1".to_string(),
-    //         prefix: Some(default_merkle_prefix()),
-    //     }),
-    //     delay_period: 0,
-    // };
-
-    let (tm_client, tm_driver) = WebSocketClient::builder(
-        WebSocketClientUrl::from_str("ws://0.0.0.0:26657/websocket").unwrap(),
-    )
-    .compat_mode(tendermint_rpc::client::CompatMode::V0_37)
-    .build()
-    .await
-    .unwrap();
-
-    // let (rx, tx) = tendermint_rpc::client::sync::unbounded();
-
-    let _ = tokio::spawn(async move { tm_driver.run().await });
-
-    let mut staking_client =
-        staking::v1beta1::query_client::QueryClient::connect("http://0.0.0.0:9090")
-            .await
-            .unwrap();
-
-    let staking_params = staking_client
-        .params(staking::v1beta1::QueryParamsRequest {})
-        .await
-        .unwrap()
-        .into_inner()
-        .params
-        .unwrap();
-
-    let commit: commit::Response = tm_client.latest_commit().await.unwrap();
-
-    let handler = create_ibc_handler_client().await;
-
-    handler
-        .register_client(
-            COMETBLS_CLIENT_TYPE.into(),
-            COMETBLS_CLIENT_ADDRESS.parse().unwrap(),
-        )
-        .send()
-        .await
-        .unwrap()
-        .await
-        .unwrap();
-
-    println!("Creating client...");
-
-    let eth_client_id = create_client(&handler, &commit, &staking_params).await;
-
-    let create_wasm_client_response = create_wasm_client(get_sequence().await).await;
-
-    dbg!(create_wasm_client_response);
-
-    let alice = get_wallet();
-    let alice_pk = alice.public_key().public_key().to_bytes().to_vec();
-
-    let msg = protos::google::protobuf::Any {
-        type_url: "/ibc.core.connection.v1.MsgConnectionOpenInit".into(),
-        value: MsgConnectionOpenInit {
-            client_id: WASM_CLIENT_ID.to_string(),
-            counterparty: Some(connection::v1::Counterparty {
-                client_id: eth_client_id.clone(),
-                connection_id: "".to_string(),
-                prefix: Some(default_merkle_prefix()),
-            }),
-            version: Some(default_connection_version()),
-            delay_period: 0,
-            signer: signer_from_pk(&alice_pk),
-        }
-        .encode_to_vec(),
-    };
-
-    let response = broadcast_tx_commit(
-        [msg].to_vec(),
-        alice_pk.clone(),
-        get_wallet(),
-        get_sequence().await,
-    )
-    .await;
-
-    dbg!(&response);
-
-    let connection_id = response
-        .deliver_tx
-        .events
-        .into_iter()
-        .find(|event| event.kind == "connection_open_init")
-        .unwrap()
-        .attributes
-        .into_iter()
-        .find(|attr| attr.key == "connection_id")
-        .unwrap()
-        .value;
-
-    let mut connection_query_client =
-        connection::v1::query_client::QueryClient::connect("http://0.0.0.0:9090")
-            .await
-            .unwrap();
-
-    let connection_proof = connection_query_client
-        .connection(QueryConnectionRequest {
-            connection_id: connection_id.clone(),
-        })
-        .await
-        .unwrap()
-        .into_inner();
-
-    let mut client_query_client =
-        client::v1::query_client::QueryClient::connect("http://0.0.0.0:9090")
-            .await
-            .unwrap();
-
-    let client_state_proof = client_query_client
-        .client_state(QueryClientStateRequest {
-            client_id: WASM_CLIENT_ID.to_string(),
-        })
-        .await
-        .unwrap()
-        .into_inner();
-
-    let consensus_state_proof = client_query_client
-        .consensus_state(QueryConsensusStateRequest {
-            client_id: WASM_CLIENT_ID.to_string(),
-            revision_number: connection_proof
-                .proof_height
-                .clone()
-                .unwrap()
-                .revision_number,
-            revision_height: 0,
-            latest_height: true,
-        })
-        .await
-        .unwrap()
-        .into_inner();
-
-    dbg!(std::time::SystemTime::now());
-
-    let try_response = ibc_handler
-        .connection_open_try(contracts::ibc_handler::MsgConnectionOpenTry {
-            counterparty: IbcCoreConnectionV1CounterpartyData {
-                client_id: WASM_CLIENT_ID.to_string(),
-                connection_id: connection_id.clone(),
-                prefix: IbcCoreCommitmentV1MerklePrefixData {
-                    key_prefix: default_merkle_prefix().key_prefix.into(),
-                },
-            },
-            delay_period: 0,
-            client_id: COMETBLS_CLIENT_ID.to_string(),
-            client_state_bytes: Default::default(),
-            counterparty_versions: [IbcCoreConnectionV1VersionData {
-                identifier: default_connection_version().identifier,
-                features: default_connection_version().features,
-            }]
-            .to_vec(),
-            proof_init: connection_proof.proof.into(),
-            proof_client: client_state_proof.proof.into(),
-            proof_consensus: consensus_state_proof.proof.into(),
-            proof_height: IbcCoreClientV1HeightData {
-                revision_number: connection_proof
-                    .proof_height
-                    .clone()
-                    .unwrap()
-                    .revision_number,
-                revision_height: connection_proof.proof_height.unwrap().revision_height,
-            },
-            consensus_height: IbcCoreClientV1HeightData {
-                revision_number: consensus_state_proof
-                    .proof_height
-                    .clone()
-                    .unwrap()
-                    .revision_number,
-                revision_height: consensus_state_proof
-                    .proof_height
-                    .clone()
-                    .unwrap()
-                    .revision_height,
-            },
-        })
-        .send()
-        .await
-        .unwrap()
-        .await
-        .unwrap()
-        .unwrap();
-
-    dbg!(std::time::SystemTime::now());
-
-    dbg!(try_response);
-
-    let (cometbls_client_state_bytes, is_found) = ibc_handler
-        .get_client_state(COMETBLS_CLIENT_ID.to_string())
-        .await
-        .unwrap();
-
-    assert!(is_found);
-
-    let cometbls_client_state: UnionIbcLightclientsCometblsV1ClientStateData =
-        AbiDecode::decode(cometbls_client_state_bytes).unwrap();
-
-    dbg!(&cometbls_client_state);
-
-    let wasm_client_state =
-        wasm::v1::ClientState::decode(&*client_state_proof.client_state.unwrap().value).unwrap();
-
-    dbg!(&wasm_client_state);
-
-    let msg = protos::google::protobuf::Any {
-        type_url: "/ibc.core.connection.v1.MsgConnectionOpenAck".into(),
-        value: MsgConnectionOpenAck {
-            connection_id: connection_id.clone(),
-            counterparty_connection_id: connection_id.clone(),
-            version: Some(default_connection_version()),
-            client_state: Some(protos::google::protobuf::Any {
-                type_url: "/ibc.lightclients.wasm.v1.ClientState".to_string(),
-                value: wasm::v1::ClientState {
-                    data: protos::google::protobuf::Any {
-                        type_url: "/ibc.lightclients.tendermint.v1.ClientState".to_string(),
-                        value: tendermint::v1::ClientState {
-                            chain_id: CHAIN_ID.to_string(),
-                            trust_level: Some(Fraction {
-                                // numerator: cometbls_client_state.trust_level.numerator,
-                                // denominator: cometbls_client_state.trust_level.denominator,
-                                numerator: 1,
-                                denominator: 3,
-                            }),
-                            trusting_period: Some(protobuf::Duration {
-                                // seconds: cometbls_client_state.trusting_period.seconds,
-                                // nanos: cometbls_client_state.trusting_period.nanos,
-                                seconds: 1814400,
-                                nanos: 0,
-                            }),
-                            unbonding_period: Some(protobuf::Duration {
-                                // seconds: cometbls_client_state.unbonding_period.seconds,
-                                // nanos: cometbls_client_state.unbonding_period.nanos,
-                                seconds: 1814400,
-                                nanos: 0,
-                            }),
-                            max_clock_drift: Some(protobuf::Duration {
-                                // seconds: cometbls_client_state.max_clock_drift.seconds,
-                                // nanos: cometbls_client_state.max_clock_drift.nanos,
-                                seconds: 40,
-                                nanos: 0,
-                            }),
-                            frozen_height: Some(Height {
-                                revision_number: cometbls_client_state
-                                    .frozen_height
-                                    .revision_number,
-                                revision_height: cometbls_client_state
-                                    .frozen_height
-                                    .revision_height,
-                            }),
-                            latest_height: Some(Height {
-                                // revision_number: cometbls_client_state
-                                //     .latest_height
-                                //     .revision_number,
-                                revision_number: 1,
-                                revision_height: cometbls_client_state
-                                    .latest_height
-                                    .revision_height,
-                            }),
-                            proof_specs: [
-                                ProofSpec {
-                                    leaf_spec: Some(LeafOp {
-                                        hash: HashOp::Sha256 as _,
-                                        prehash_key: HashOp::NoHash as _,
-                                        prehash_value: HashOp::Sha256 as _,
-                                        length: LengthOp::VarProto as _,
-                                        prefix: [0].to_vec(),
-                                    }),
-                                    inner_spec: Some(InnerSpec {
-                                        child_order: vec![0, 1],
-                                        child_size: 33,
-                                        min_prefix_length: 4,
-                                        max_prefix_length: 12,
-                                        empty_child: vec![],
-                                        hash: HashOp::Sha256 as _,
-                                    }),
-                                    max_depth: 0,
-                                    min_depth: 0,
-                                },
-                                ProofSpec {
-                                    leaf_spec: Some(LeafOp {
-                                        hash: HashOp::Sha256 as _,
-                                        prehash_key: HashOp::NoHash as _,
-                                        prehash_value: HashOp::Sha256 as _,
-                                        length: LengthOp::VarProto as _,
-                                        prefix: [0].to_vec(),
-                                    }),
-                                    inner_spec: Some(InnerSpec {
-                                        child_order: vec![0, 1],
-                                        child_size: 32,
-                                        min_prefix_length: 1,
-                                        max_prefix_length: 1,
-                                        empty_child: vec![],
-                                        hash: HashOp::Sha256 as _,
-                                    }),
-                                    max_depth: 0,
-                                    min_depth: 0,
-                                },
-                            ]
-                            .to_vec(),
-                            upgrade_path: ["upgrade".to_string(), "upgradedIBCState".to_string()]
-                                .to_vec(),
-                            // TODO: figure out where to get these values from
-                            allow_update_after_expiry: true,
-                            allow_update_after_misbehaviour: true,
-                        }
-                        .encode_to_vec(),
-                    }
-                    .encode_to_vec(),
-                    code_id: wasm_client_state.code_id,
-                    latest_height: Some(Height {
-                        revision_number: 1,
-                        revision_height: wasm_client_state
-                            .latest_height
-                            .clone()
-                            .unwrap()
-                            .revision_height,
-                    }),
-                }
-                .encode_to_vec(),
-            }),
-            proof_height: wasm_client_state.latest_height.clone(),
-            proof_try: vec![1, 2, 3],
-            proof_client: vec![1, 2, 3],
-            proof_consensus: vec![1, 2, 3],
-            consensus_height: consensus_state_proof.proof_height.clone(),
-            signer: signer_from_pk(&alice_pk),
-            host_consensus_state_proof: vec![],
-        }
-        .encode_to_vec(),
-    };
-
-    let ack_response =
-        broadcast_tx_commit([msg].to_vec(), alice_pk, get_wallet(), get_sequence().await).await;
-
-    dbg!(ack_response);
-
-    let connection_proof = connection_query_client
-        .connection(QueryConnectionRequest {
-            connection_id: connection_id.clone(),
-        })
-        .await
-        .unwrap()
-        .into_inner();
-
-    dbg!(&connection_proof);
-
-    ibc_handler
-        .connection_open_confirm(contracts::ibc_handler::MsgConnectionOpenConfirm {
-            connection_id: connection_id.clone(),
-            proof_ack: connection_proof.proof.into(),
-            proof_height: IbcCoreClientV1HeightData {
-                revision_number: connection_proof
-                    .proof_height
-                    .clone()
-                    .unwrap()
-                    .revision_number,
-                revision_height: connection_proof.proof_height.unwrap().revision_height,
-            },
-        })
-        .send()
-        .await
-        .unwrap()
-        .await
-        .unwrap()
-        .unwrap();
-
-    connection_id
-}
-
-async fn channel_handshake<M>(ibc_handler: IBCHandler<M>, connection_id: String)
-where
-    M: Middleware + 'static,
-{
-    const CHANNEL_VERSION: &str = "ics20-1";
-    const COMETBLS_CLIENT_ID: &str = "cometbls-0";
-
-    // let wasm_client_update = client::v1::MsgUpdateClient {
-    //     client_id: WASM_CLIENT_ID.to_string(),
-    //     client_message: todo!(),
-    //     signer: todo!(),
-    // };
-
-    // let a_end = connection::v1::ChannelEnd {
-    //     client_id: CLIENT_A_ID.to_string(),
-    //     versions: vec![default_connection_version()],
-    //     state: connection::v1::State::Init.into(),
-    //     counterparty: Some(connection::v1::Counterparty {
-    //         client_id: CLIENT_B_ID.to_string(),
-    //         connection_id: "connection-1".to_string(),
-    //         prefix: Some(default_merkle_prefix()),
-    //     }),
-    //     delay_period: 0,
-    // };
-
-    let (tm_client, tm_driver) = WebSocketClient::builder(
-        WebSocketClientUrl::from_str("ws://0.0.0.0:26657/websocket").unwrap(),
-    )
-    .compat_mode(tendermint_rpc::client::CompatMode::V0_37)
-    .build()
-    .await
-    .unwrap();
-
-    // let (rx, tx) = tendermint_rpc::client::sync::unbounded();
-
-    let _ = tokio::spawn(async move { tm_driver.run().await });
-
-    let alice = get_wallet();
-    let alice_pk = alice.public_key().public_key().to_bytes().to_vec();
-
-    let msg = protos::google::protobuf::Any {
-        type_url: "/ibc.core.channel.v1.MsgChannelOpenInit".into(),
-        value: MsgChannelOpenInit {
-            signer: signer_from_pk(&alice_pk),
-            port_id: PORT_ID.to_string(),
-            channel: Some(channel::v1::Channel {
-                state: channel::v1::State::Init as i32,
-                ordering: Order::Unordered as i32,
-                counterparty: Some(channel::v1::Counterparty {
-                    port_id: PORT_ID.to_string(),
-                    channel_id: "".to_string(),
-                }),
-                connection_hops: vec![connection_id.clone()],
-                version: CHANNEL_VERSION.to_string(),
-            }),
-        }
-        .encode_to_vec(),
-    };
-
-    let response = broadcast_tx_commit(
-        [msg].to_vec(),
-        alice_pk.clone(),
-        get_wallet(),
-        get_sequence().await,
-    )
-    .await;
-
-    dbg!(&response);
-
-    let cosmos_channel_id = response
-        .deliver_tx
-        .events
-        .into_iter()
-        .find(|event| event.kind == "channel_open_init")
-        .unwrap()
-        .attributes
-        .into_iter()
-        .find(|attr| attr.key == "channel_id")
-        .unwrap()
-        .value;
-
-    let mut channel_query_client =
-        channel::v1::query_client::QueryClient::connect("http://0.0.0.0:9090")
-            .await
-            .unwrap();
-
-    let channel_proof = channel_query_client
-        .channel(QueryChannelRequest {
-            port_id: PORT_ID.to_string(),
-            channel_id: cosmos_channel_id.clone(),
-        })
-        .await
-        .unwrap()
-        .into_inner();
-
-    let channel_open_try_receipt = ibc_handler
-        .channel_open_try(contracts::ibc_handler::MsgChannelOpenTry {
-            proof_init: channel_proof.proof.clone().into(),
-            proof_height: IbcCoreClientV1HeightData {
-                revision_number: channel_proof.proof_height.clone().unwrap().revision_number,
-                revision_height: channel_proof.proof_height.clone().unwrap().revision_height,
-            },
-            port_id: PORT_ID.to_string(),
-            channel: IbcCoreChannelV1ChannelData {
-                state: channel::v1::State::Tryopen as u8,
-                ordering: channel::v1::Order::Ordered as u8,
-                counterparty: IbcCoreChannelV1CounterpartyData {
-                    port_id: PORT_ID.to_string(),
-                    channel_id: cosmos_channel_id.clone(),
-                },
-                connection_hops: vec![connection_id],
-                version: CHANNEL_VERSION.to_string(),
-            },
-            counterparty_version: CHANNEL_VERSION.to_string(),
-        })
-        .send()
-        .await
-        .unwrap()
-        .await
-        .unwrap()
-        .unwrap();
-
-    let eth_channel_id = decode_logs::<IBCHandlerEvents>(
-        channel_open_try_receipt
-            .logs
-            .into_iter()
-            .map(|l| l.into())
-            .collect::<Vec<_>>()
-            .as_ref(),
-    )
-    .unwrap()
-    .into_iter()
-    .find_map(|l| match l {
-        IBCHandlerEvents::GeneratedChannelIdentifierFilter(channel_id) => Some(channel_id.0),
-        _ => None,
-    })
-    .unwrap();
-
-    dbg!(&eth_channel_id);
-
-    let (cometbls_client_state_bytes, is_found) = ibc_handler
-        .get_client_state(COMETBLS_CLIENT_ID.to_string())
-        .await
-        .unwrap();
-
-    assert!(is_found);
-
-    let cometbls_client_state: UnionIbcLightclientsCometblsV1ClientStateData =
-        AbiDecode::decode(cometbls_client_state_bytes).unwrap();
-
-    dbg!(&cometbls_client_state);
-
-    let mut client_query_client =
-        client::v1::query_client::QueryClient::connect("http://0.0.0.0:9090")
-            .await
-            .unwrap();
-
-    let consensus_state_proof = client_query_client
-        .consensus_state(QueryConsensusStateRequest {
-            client_id: WASM_CLIENT_ID.to_string(),
-            revision_number: channel_proof.proof_height.clone().unwrap().revision_number,
-            revision_height: 0,
-            latest_height: true,
-        })
-        .await
-        .unwrap()
-        .into_inner();
-
-    dbg!(&consensus_state_proof);
-
-    let height = client_query_client
-        .consensus_state_heights(QueryConsensusStateHeightsRequest {
-            client_id: WASM_CLIENT_ID.to_string(),
-            pagination: None,
-        })
-        .await
-        .unwrap()
-        .into_inner()
-        .consensus_state_heights
-        .into_iter()
-        .max()
-        .unwrap();
-
-    let msg = protos::google::protobuf::Any {
-        type_url: "/ibc.core.channel.v1.MsgChannelOpenAck".into(),
-        value: MsgChannelOpenAck {
-            proof_height: Some(height),
-            proof_try: vec![1, 2, 3],
-            signer: signer_from_pk(&alice_pk),
-            port_id: PORT_ID.to_string(),
-            channel_id: cosmos_channel_id.clone(),
-            counterparty_channel_id: eth_channel_id.clone(),
-            counterparty_version: CHANNEL_VERSION.to_string(),
-        }
-        .encode_to_vec(),
-    };
-
-    let ack_response =
-        broadcast_tx_commit([msg].to_vec(), alice_pk, get_wallet(), get_sequence().await).await;
-
-    dbg!(ack_response);
-
-    let channel_proof = channel_query_client
-        .channel(QueryChannelRequest {
-            port_id: PORT_ID.to_string(),
-            channel_id: cosmos_channel_id.clone(),
-        })
-        .await
-        .unwrap()
-        .into_inner();
-
-    dbg!(&channel_proof);
-
-    ibc_handler
-        .channel_open_confirm(contracts::ibc_handler::MsgChannelOpenConfirm {
-            port_id: PORT_ID.to_string(),
-            channel_id: eth_channel_id.clone(),
-            proof_ack: channel_proof.proof.into(),
-            proof_height: IbcCoreClientV1HeightData {
-                revision_number: channel_proof.proof_height.clone().unwrap().revision_number,
-                revision_height: channel_proof.proof_height.unwrap().revision_height,
-            },
-        })
-        .send()
-        .await
-        .unwrap()
-        .await
-        .unwrap()
-        .unwrap();
-
-    println!("successfully opened channel");
-}
+// 2023-06-17T20:49:01.879223Z  INFO relayer: channel opened cometbls_connection_info.connection_id="connection-0" cometbls_connection_info.client_id="cometbls-0" cometbls_channel_id="channel-0" ethereum_connection_info.connection_id="connection-8" ethereum_connection_info.client_id="08-wasm-8" ethereum_channel_id="channel-0"
+
+// {"transfer": {"channel": "channel-0", "remote_address": "union1nrv37pqfcqul73v7d2e8y0jhjyeuhg57m3eqdt"}}
+// Deploying IBCClient...
+// IBCClient => 0x3fD5289eD1dC27A857A4CdEdec9Bf2c96D6C1EB3
+// Deploying IBCConnection...
+// IBCConnection => 0xf9FE9712A91fb3da09852a544F5A344E4EF333Aa
+// Deploying IBCChannelHandshake...
+// IBCChannelHandshake => 0x57b85f23f022d88b61515bF91bFE5238fCedbBD6
+// Deploying IBCPacket...
+// IBCPacket => 0x6744135DAA742c32e3c15619173095fC7E51dda3
+// Deploying OwnableIBCHandler...
+// OwnableIBCHandler => 0x7e37dA319C3008374379c7755a6C9A7CE65e1517
+// Deploying TestnetVerifier...
+// TestnetVerifier => 0x2C045082c6cA9a17031DA0Ca28b9Ca2617a2338A
+// Deploying CometblsClient...
+// CometblsClient => 0x176298b5aabE45Efa36b04452d4BB5b7bB615f1C
+// Deploying ICS20Bank...
+// ICS20Bank => 0xa8Ab1e8afDa14A4d0538520057EA0f9515C7D610
+// Deploying ICS20TransferBank...
+// ICS20TransferBank => 0x7A1d42bAe222eF8E7ED935ac5Ee5Fc6d89fB63bC

@@ -1,66 +1,5 @@
 // @generated
-/// EventSend is emitted on Msg/Send
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct EventSend {
-    /// class_id associated with the nft
-    #[prost(string, tag = "1")]
-    pub class_id: ::prost::alloc::string::String,
-    /// id is a unique identifier of the nft
-    #[prost(string, tag = "2")]
-    pub id: ::prost::alloc::string::String,
-    /// sender is the address of the owner of nft
-    #[prost(string, tag = "3")]
-    pub sender: ::prost::alloc::string::String,
-    /// receiver is the receiver address of nft
-    #[prost(string, tag = "4")]
-    pub receiver: ::prost::alloc::string::String,
-}
-/// EventMint is emitted on Mint
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct EventMint {
-    /// class_id associated with the nft
-    #[prost(string, tag = "1")]
-    pub class_id: ::prost::alloc::string::String,
-    /// id is a unique identifier of the nft
-    #[prost(string, tag = "2")]
-    pub id: ::prost::alloc::string::String,
-    /// owner is the owner address of the nft
-    #[prost(string, tag = "3")]
-    pub owner: ::prost::alloc::string::String,
-}
-/// EventBurn is emitted on Burn
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct EventBurn {
-    /// class_id associated with the nft
-    #[prost(string, tag = "1")]
-    pub class_id: ::prost::alloc::string::String,
-    /// id is a unique identifier of the nft
-    #[prost(string, tag = "2")]
-    pub id: ::prost::alloc::string::String,
-    /// owner is the owner address of the nft
-    #[prost(string, tag = "3")]
-    pub owner: ::prost::alloc::string::String,
-}
 /// Class defines the class of the nft type.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Class {
@@ -87,10 +26,6 @@ pub struct Class {
     pub data: ::core::option::Option<super::super::super::google::protobuf::Any>,
 }
 /// NFT defines the NFT.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Nft {
@@ -111,10 +46,6 @@ pub struct Nft {
     pub data: ::core::option::Option<super::super::super::google::protobuf::Any>,
 }
 /// QueryBalanceRequest is the request type for the Query/Balance RPC method
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryBalanceRequest {
@@ -126,10 +57,6 @@ pub struct QueryBalanceRequest {
     pub owner: ::prost::alloc::string::String,
 }
 /// QueryBalanceResponse is the response type for the Query/Balance RPC method
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryBalanceResponse {
@@ -138,10 +65,6 @@ pub struct QueryBalanceResponse {
     pub amount: u64,
 }
 /// QueryOwnerRequest is the request type for the Query/Owner RPC method
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryOwnerRequest {
@@ -153,10 +76,6 @@ pub struct QueryOwnerRequest {
     pub id: ::prost::alloc::string::String,
 }
 /// QueryOwnerResponse is the response type for the Query/Owner RPC method
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryOwnerResponse {
@@ -165,10 +84,6 @@ pub struct QueryOwnerResponse {
     pub owner: ::prost::alloc::string::String,
 }
 /// QuerySupplyRequest is the request type for the Query/Supply RPC method
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QuerySupplyRequest {
@@ -177,10 +92,6 @@ pub struct QuerySupplyRequest {
     pub class_id: ::prost::alloc::string::String,
 }
 /// QuerySupplyResponse is the response type for the Query/Supply RPC method
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QuerySupplyResponse {
@@ -189,10 +100,6 @@ pub struct QuerySupplyResponse {
     pub amount: u64,
 }
 /// QueryNFTstRequest is the request type for the Query/NFTs RPC method
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryNfTsRequest {
@@ -207,10 +114,6 @@ pub struct QueryNfTsRequest {
     pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageRequest>,
 }
 /// QueryNFTsResponse is the response type for the Query/NFTs RPC methods
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryNfTsResponse {
@@ -222,10 +125,6 @@ pub struct QueryNfTsResponse {
     pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageResponse>,
 }
 /// QueryNFTRequest is the request type for the Query/NFT RPC method
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryNftRequest {
@@ -237,10 +136,6 @@ pub struct QueryNftRequest {
     pub id: ::prost::alloc::string::String,
 }
 /// QueryNFTResponse is the response type for the Query/NFT RPC method
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryNftResponse {
@@ -249,10 +144,6 @@ pub struct QueryNftResponse {
     pub nft: ::core::option::Option<Nft>,
 }
 /// QueryClassRequest is the request type for the Query/Class RPC method
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryClassRequest {
@@ -261,10 +152,6 @@ pub struct QueryClassRequest {
     pub class_id: ::prost::alloc::string::String,
 }
 /// QueryClassResponse is the response type for the Query/Class RPC method
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryClassResponse {
@@ -273,10 +160,6 @@ pub struct QueryClassResponse {
     pub class: ::core::option::Option<Class>,
 }
 /// QueryClassesRequest is the request type for the Query/Classes RPC method
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryClassesRequest {
@@ -285,10 +168,6 @@ pub struct QueryClassesRequest {
     pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageRequest>,
 }
 /// QueryClassesResponse is the response type for the Query/Classes RPC method
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryClassesResponse {
@@ -300,10 +179,6 @@ pub struct QueryClassesResponse {
     pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageResponse>,
 }
 /// MsgSend represents a message to send a nft from one account to another account.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgSend {
@@ -321,18 +196,10 @@ pub struct MsgSend {
     pub receiver: ::prost::alloc::string::String,
 }
 /// MsgSendResponse defines the Msg/Send response type.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgSendResponse {}
 /// GenesisState defines the nft module's genesis state.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GenesisState {
@@ -344,10 +211,6 @@ pub struct GenesisState {
     pub entries: ::prost::alloc::vec::Vec<Entry>,
 }
 /// Entry Defines all nft owned by a person
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Entry {
@@ -357,6 +220,51 @@ pub struct Entry {
     /// nfts is a group of nfts of the same owner
     #[prost(message, repeated, tag = "2")]
     pub nfts: ::prost::alloc::vec::Vec<Nft>,
+}
+/// EventSend is emitted on Msg/Send
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventSend {
+    /// class_id associated with the nft
+    #[prost(string, tag = "1")]
+    pub class_id: ::prost::alloc::string::String,
+    /// id is a unique identifier of the nft
+    #[prost(string, tag = "2")]
+    pub id: ::prost::alloc::string::String,
+    /// sender is the address of the owner of nft
+    #[prost(string, tag = "3")]
+    pub sender: ::prost::alloc::string::String,
+    /// receiver is the receiver address of nft
+    #[prost(string, tag = "4")]
+    pub receiver: ::prost::alloc::string::String,
+}
+/// EventMint is emitted on Mint
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventMint {
+    /// class_id associated with the nft
+    #[prost(string, tag = "1")]
+    pub class_id: ::prost::alloc::string::String,
+    /// id is a unique identifier of the nft
+    #[prost(string, tag = "2")]
+    pub id: ::prost::alloc::string::String,
+    /// owner is the owner address of the nft
+    #[prost(string, tag = "3")]
+    pub owner: ::prost::alloc::string::String,
+}
+/// EventBurn is emitted on Burn
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventBurn {
+    /// class_id associated with the nft
+    #[prost(string, tag = "1")]
+    pub class_id: ::prost::alloc::string::String,
+    /// id is a unique identifier of the nft
+    #[prost(string, tag = "2")]
+    pub id: ::prost::alloc::string::String,
+    /// owner is the owner address of the nft
+    #[prost(string, tag = "3")]
+    pub owner: ::prost::alloc::string::String,
 }
 include!("cosmos.nft.v1beta1.tonic.rs");
 // @@protoc_insertion_point(module)

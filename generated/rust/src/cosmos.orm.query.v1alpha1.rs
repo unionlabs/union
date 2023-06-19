@@ -1,9 +1,5 @@
 // @generated
 /// GetRequest is the Query/Get request type.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GetRequest {
@@ -22,10 +18,6 @@ pub struct GetRequest {
     pub values: ::prost::alloc::vec::Vec<IndexValue>,
 }
 /// GetResponse is the Query/Get response type.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GetResponse {
@@ -35,10 +27,6 @@ pub struct GetResponse {
     pub result: ::core::option::Option<super::super::super::super::google::protobuf::Any>,
 }
 /// ListRequest is the Query/List request type.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ListRequest {
@@ -61,10 +49,6 @@ pub struct ListRequest {
 /// Nested message and enum types in `ListRequest`.
 pub mod list_request {
     /// Prefix specifies the arguments to a prefix query.
-    #[cfg_attr(
-        feature = "ethers",
-        derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-    )]
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Prefix {
@@ -75,10 +59,6 @@ pub mod list_request {
         pub values: ::prost::alloc::vec::Vec<super::IndexValue>,
     }
     /// Range specifies the arguments to a range query.
-    #[cfg_attr(
-        feature = "ethers",
-        derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-    )]
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Range {
@@ -96,10 +76,6 @@ pub mod list_request {
     /// query is the query expression corresponding to the provided index. If
     /// neither prefix nor range is specified, the query will list all the fields
     /// in the index.
-    #[cfg_attr(
-        feature = "ethers",
-        derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-    )]
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum Query {
@@ -112,10 +88,6 @@ pub mod list_request {
     }
 }
 /// ListResponse is the Query/List response type.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ListResponse {
@@ -127,10 +99,6 @@ pub struct ListResponse {
     pub pagination: ::core::option::Option<super::super::super::base::query::v1beta1::PageResponse>,
 }
 /// IndexValue represents the value of a field in an ORM index expression.
-#[cfg_attr(
-    feature = "ethers",
-    derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct IndexValue {
@@ -141,10 +109,6 @@ pub struct IndexValue {
 /// Nested message and enum types in `IndexValue`.
 pub mod index_value {
     /// value specifies the index value
-    #[cfg_attr(
-        feature = "ethers",
-        derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)
-    )]
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum Value {

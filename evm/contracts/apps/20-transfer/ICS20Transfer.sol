@@ -122,7 +122,7 @@ abstract contract ICS20Transfer is IBCAppBase {
 
     function _getEscrowAddress(string memory sourceChannel) internal view virtual returns (address) {
         address escrow = channelEscrowAddresses[sourceChannel];
-        require(escrow != address(0));
+        require(escrow != address(0), "escrow address must exist");
         return escrow;
     }
 
@@ -137,7 +137,7 @@ abstract contract ICS20Transfer is IBCAppBase {
     }
 
     function _isSuccessAcknowledgement(bytes memory acknowledgement) internal pure virtual returns (bool) {
-        require(acknowledgement.length == 1);
+        require(acknowledgement.length == 1, "acknowledgement must be a single byte");
         return acknowledgement[0] == 0x01;
     }
 
