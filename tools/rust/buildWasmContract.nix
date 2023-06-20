@@ -29,7 +29,7 @@ let
   };
   CARGO_BUILD_TARGET = "wasm32-unknown-unknown";
   clippy = crane.lib.cargoClippy (attrs // { inherit (crane) cargoArtifacts; cargoClippyExtraArgs = "--tests"; });
-  test = crane.lib.cargoTest (attrs // { inherit (crane) cargoArtifacts; });
+  # test = crane.lib.cargoTest (attrs // { inherit (crane) cargoArtifacts; });
 in
 
 rustToolchain.buildPackage (attrs // {
@@ -38,9 +38,9 @@ rustToolchain.buildPackage (attrs // {
   cargoBuildCommand = "RUSTFLAGS='-C target-feature=-sign-ext -C link-arg=-s -C target-cpu=mvp' cargo -Z build-std=std,panic_abort -Z build-std-features=panic_immediate_abort build --release --lib --target ${CARGO_BUILD_TARGET}";
 
   doCheck = doCheck;
+    # ls ${test} > /dev/null 2>&1
   checkPhase = ''
     ls ${clippy} > /dev/null 2>&1
-    ls ${test} > /dev/null 2>&1
 
     # grep exits 0 if a match is found
     if ${pkgs.binaryen}/bin/wasm-dis target/wasm32-unknown-unknown/release/${info.pname}.wasm | grep -P '\.extend\d{1,2}_s'

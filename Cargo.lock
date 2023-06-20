@@ -3544,6 +3544,7 @@ dependencies = [
  "clap",
  "contracts",
  "ethereum-consensus",
+ "ethereum-verifier",
  "ethers",
  "futures",
  "hex-literal",

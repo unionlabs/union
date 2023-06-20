@@ -148,12 +148,6 @@ where
     ) -> impl Future<Output = Height> + 'a;
 }
 
-// trait ChainSource {
-//     fn chain_id(&self) -> impl Future<Output = String> + '_;
-
-//     fn query_latest_block(&self) -> impl Future<Output = msgs::Height>;
-// }
-
 pub trait ClientState {
     fn height(&self) -> Height;
 }

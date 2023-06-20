@@ -8,9 +8,11 @@
 use std::{collections::HashMap, str::FromStr};
 
 use bip32::{DerivationPath, Language, XPrv};
+use chain::evm::CometblsConfig;
 use clap::{Args, Parser, Subcommand};
 use ethers::{
     prelude::{EthAbiCodec, EthAbiType},
+    signers::LocalWallet,
     types::{Address, H256},
 };
 use futures::StreamExt;
@@ -31,14 +33,15 @@ use ibc_types::core::{
     },
 };
 use protos::ibc::core::channel::v1 as channel_v1;
+use reqwest::Url;
 use tendermint_rpc::{event::EventData, query::EventType, SubscriptionClient};
 
 use crate::chain::{cosmos::Ethereum, evm::Cometbls, ClientState, Connect, LightClient};
 
 pub mod chain;
 
-const ETH_BEACON_RPC_API: &str = "http://localhost:9596";
-const ETH_RPC_API: &str = "http://localhost:8545";
+// const ETH_BEACON_RPC_API: &str = "http://localhost:9596";
+// const ETH_RPC_API: &str = "http://localhost:8545";
 const CHANNEL_VERSION: &str = "ics20-1";
 
 #[derive(Debug, Parser)]
@@ -142,6 +145,15 @@ pub struct CometblsClientArgs {
     /// ICS20Bank => address
     #[arg(long)]
     pub ics20_bank_address: Address,
+
+    #[arg(long)]
+    pub wallet: LocalWallet,
+
+    #[arg(long)]
+    pub eth_rpc_api: Url,
+
+    #[arg(long)]
+    pub eth_beacon_rpc_api: String,
 }
 
 #[derive(Debug, Args)]
@@ -187,13 +199,16 @@ async fn do_main(args: AppArgs) {
 
     match args.command {
         Command::OpenConnection(OpenConnectionArgs { args }) => {
-            let cometbls = Cometbls::new(
-                args.cometbls.cometbls_client_address,
-                args.cometbls.ibc_handler_address,
-                args.cometbls.ics20_transfer_address,
-                args.cometbls.ics20_bank_address,
-                args.ethereum.wasm_code_id,
-            )
+            let cometbls = Cometbls::new(CometblsConfig {
+                cometbls_client_address: args.cometbls.cometbls_client_address,
+                ibc_handler_address: args.cometbls.ibc_handler_address,
+                ics20_transfer_address: args.cometbls.ics20_transfer_address,
+                ics20_bank_address: args.cometbls.ics20_bank_address,
+                wasm_code_id: args.ethereum.wasm_code_id,
+                wallet: args.cometbls.wallet,
+                eth_rpc_api: args.cometbls.eth_rpc_api,
+                eth_beacon_rpc_api: args.cometbls.eth_beacon_rpc_api,
+            })
             .await;
 
             let ethereum = Ethereum::new(get_wallet(), args.ethereum.wasm_code_id).await;
@@ -207,13 +222,16 @@ async fn do_main(args: AppArgs) {
             cometbls_port_id,
             ethereum_port_id,
         }) => {
-            let cometbls_lc = Cometbls::new(
-                args.cometbls.cometbls_client_address,
-                args.cometbls.ibc_handler_address,
-                args.cometbls.ics20_transfer_address,
-                args.cometbls.ics20_bank_address,
-                args.ethereum.wasm_code_id,
-            )
+            let cometbls_lc = Cometbls::new(CometblsConfig {
+                cometbls_client_address: args.cometbls.cometbls_client_address,
+                ibc_handler_address: args.cometbls.ibc_handler_address,
+                ics20_transfer_address: args.cometbls.ics20_transfer_address,
+                ics20_bank_address: args.cometbls.ics20_bank_address,
+                wasm_code_id: args.ethereum.wasm_code_id,
+                wallet: args.cometbls.wallet,
+                eth_rpc_api: args.cometbls.eth_rpc_api,
+                eth_beacon_rpc_api: args.cometbls.eth_beacon_rpc_api,
+            })
             .await;
 
             let ethereum_lc = Ethereum::new(get_wallet(), args.ethereum.wasm_code_id).await;
@@ -234,13 +252,16 @@ async fn do_main(args: AppArgs) {
             cometbls_port_id,
             ethereum_port_id,
         }) => {
-            let cometbls_lc = Cometbls::new(
-                args.cometbls.cometbls_client_address,
-                args.cometbls.ibc_handler_address,
-                args.cometbls.ics20_transfer_address,
-                args.cometbls.ics20_bank_address,
-                args.ethereum.wasm_code_id,
-            )
+            let cometbls_lc = Cometbls::new(CometblsConfig {
+                cometbls_client_address: args.cometbls.cometbls_client_address,
+                ibc_handler_address: args.cometbls.ibc_handler_address,
+                ics20_transfer_address: args.cometbls.ics20_transfer_address,
+                ics20_bank_address: args.cometbls.ics20_bank_address,
+                wasm_code_id: args.ethereum.wasm_code_id,
+                wallet: args.cometbls.wallet,
+                eth_rpc_api: args.cometbls.eth_rpc_api,
+                eth_beacon_rpc_api: args.cometbls.eth_beacon_rpc_api,
+            })
             .await;
 
             // let channel: Channel = cometbls_lc
