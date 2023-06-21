@@ -9,13 +9,13 @@ use crate::{
     update::apply_light_client_update,
 };
 use cosmwasm_std::{
-    entry_point, to_binary, Binary, Deps, DepsMut, Env, MessageInfo, QueryResponse, Response,
-    StdError, StdResult,
+    entry_point, to_binary, Binary, Deps, DepsMut, Env, MessageInfo, QueryRequest, QueryResponse,
+    Response, StdError, StdResult,
 };
 use ethabi::ethereum_types::U256 as ethabi_U256;
 use ethereum_verifier::{
     primitives::{ExecutionAddress, Hash32, Slot},
-    validate_light_client_update, verify_account_storage_root, verify_storage_proof,
+    validate_light_client_update, verify_account_storage_root, verify_storage_proof, BlsVerify,
 };
 use ibc::core::ics24_host::Path;
 use prost::Message;
@@ -39,7 +39,7 @@ pub fn instantiate(
 
 #[entry_point]
 pub fn execute(
-    deps: DepsMut,
+    deps: DepsMut<CustomQuery>,
     _env: Env,
     _info: MessageInfo,
     msg: ExecuteMsg,
@@ -85,7 +85,7 @@ pub fn execute(
 
 /// Verifies if the `value` is committed at `path` in the counterparty light client.
 pub fn verify_membership(
-    deps: Deps,
+    deps: Deps<CustomQuery>,
     height: Height,
     _delay_time_period: u64,
     _delay_block_period: u64,
@@ -176,7 +176,48 @@ pub fn do_verify_membership(
     .map_err(|e| Error::Verification(e.to_string()))
 }
 
-pub fn update_header(mut deps: DepsMut, header: EthHeader) -> Result<ContractResult, Error> {
+impl<'a> cosmwasm_std::CustomQuery for CustomQuery<'a> {}
+
+struct VerificationContext<'a> {
+    deps: Deps<'a, CustomQuery<'a>>,
+}
+
+#[derive(serde::Serialize, Clone)]
+pub enum CustomQuery<'a> {
+    AggregateVerify {
+        public_keys: &'a [&'a [u8]],
+        msg: &'a [u8],
+        signature: &'a [u8],
+    },
+}
+
+impl<'a> BlsVerify for VerificationContext<'a> {
+    fn fast_aggregate_verify(
+        &self,
+        public_keys: &[&[u8]],
+        msg: &[u8],
+        signature: &[u8],
+    ) -> Result<(), ethereum_verifier::Error> {
+        let request: QueryRequest<CustomQuery> =
+            QueryRequest::Custom(CustomQuery::AggregateVerify {
+                public_keys,
+                msg,
+                signature,
+            });
+        let is_valid: bool = self
+            .deps
+            .querier
+            .query(&request)
+            .map_err(|_| ethereum_verifier::Error::InvalidSignature)?;
+
+        Ok(())
+    }
+}
+
+pub fn update_header(
+    mut deps: DepsMut<CustomQuery>,
+    header: EthHeader,
+) -> Result<ContractResult, Error> {
     let trusted_sync_committee = header.trusted_sync_committee;
     let (wasm_consensus_state, mut consensus_state) =
         read_consensus_state(deps.as_ref(), trusted_sync_committee.height)?.ok_or(
@@ -201,7 +242,7 @@ pub fn update_header(mut deps: DepsMut, header: EthHeader) -> Result<ContractRes
 
     let ctx = LightClientContext::new(&client_state, trusted_consensus_state);
 
-    validate_light_client_update::<LightClientContext>(
+    validate_light_client_update::<LightClientContext, VerificationContext>(
         &ctx,
         consensus_update.clone(),
         (timestamp
@@ -212,6 +253,9 @@ pub fn update_header(mut deps: DepsMut, header: EthHeader) -> Result<ContractRes
             / client_state.seconds_per_slot
             + client_state.fork_parameters.genesis_slot,
         client_state.genesis_validators_root,
+        VerificationContext {
+            deps: deps.as_ref(),
+        },
     )
     .map_err(|e| Error::Verification(e.to_string()))?;
 

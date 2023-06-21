@@ -1,4 +1,7 @@
-use crate::{client_state::ClientState, consensus_state::ConsensusState, errors::Error};
+use crate::{
+    client_state::ClientState, consensus_state::ConsensusState, contract::CustomQuery,
+    errors::Error,
+};
 use cosmwasm_std::{Deps, DepsMut};
 use ibc::Height;
 use prost::Message;
@@ -36,7 +39,7 @@ fn consensus_db_key(height: &Height) -> String {
 ///     - code_id: Code ID of this contract's code
 ///     - latest_height: Latest height that the state is updated
 ///     - data: Contract defined raw bytes, which we use as protobuf encoded ethereum client state.
-pub fn read_client_state(deps: Deps) -> Result<(WasmClientState, ClientState), Error> {
+pub fn read_client_state(deps: Deps<CustomQuery>) -> Result<(WasmClientState, ClientState), Error> {
     let any_state = deps
         .storage
         .get(HOST_CLIENT_STATE_KEY.as_bytes())
@@ -68,7 +71,7 @@ pub fn read_client_state(deps: Deps) -> Result<(WasmClientState, ClientState), E
 ///     - timestamp: Time of this consensus state.
 ///     - data: Contract defined raw bytes, which we use as protobuf encoded ethereum consensus state.
 pub fn read_consensus_state(
-    deps: Deps,
+    deps: Deps<CustomQuery>,
     height: Height,
 ) -> Result<Option<(WasmConsensusState, ConsensusState)>, Error> {
     let any_state = if let Some(state) = deps.storage.get(consensus_db_key(&height).as_bytes()) {
@@ -93,7 +96,7 @@ pub fn read_consensus_state(
     ConsensusState::try_from(raw_client_state).map(|cs| Some((wasm_consensus_state, cs)))
 }
 
-pub fn save_wasm_client_state(deps: DepsMut, wasm_client_state: &WasmClientState) {
+pub fn save_wasm_client_state(deps: DepsMut<CustomQuery>, wasm_client_state: &WasmClientState) {
     let any_state = Any {
         type_url: WASM_CLIENT_STATE_TYPE_URL.into(),
         value: wasm_client_state.encode_to_vec(),
@@ -106,7 +109,7 @@ pub fn save_wasm_client_state(deps: DepsMut, wasm_client_state: &WasmClientState
 
 /// Update the client state on the host store.
 pub fn update_client_state(
-    deps: DepsMut,
+    deps: DepsMut<CustomQuery>,
     mut wasm_client_state: WasmClientState,
     client_state: ClientState,
 ) {
@@ -123,7 +126,7 @@ pub fn update_client_state(
 }
 
 pub fn save_wasm_consensus_state(
-    deps: DepsMut,
+    deps: DepsMut<CustomQuery>,
     wasm_consensus_state: &WasmConsensusState,
     height: &Height,
 ) {
@@ -139,7 +142,7 @@ pub fn save_wasm_consensus_state(
 
 /// Save new consensus state at height `consensus_state.slot` to the host store.
 pub fn save_consensus_state(
-    deps: DepsMut,
+    deps: DepsMut<CustomQuery>,
     mut wasm_consensus_state: WasmConsensusState,
     consensus_state: ConsensusState,
 ) -> Result<(), Error> {
