@@ -1,6 +1,5 @@
 use crate::{
     capella::{LightClientHeader, LightClientUpdate, NEXT_SYNC_COMMITTEE_INDEX_FLOOR_LOG_2},
-    crypto::BlsPublicKey,
     primitives::{Account, DomainType, ExecutionAddress, Hash32, Root, Slot},
     rlp_node_codec::{keccak_256, EthLayout, KeccakHasher},
     utils::*,
@@ -17,9 +16,9 @@ use trie_db::{Trie, TrieDBBuilder};
 pub trait BlsVerify {
     fn fast_aggregate_verify(
         &self,
-        public_keys: &[&[u8]],
-        msg: &[u8],
-        signature: &[u8],
+        public_keys: Vec<Vec<u8>>,
+        msg: Vec<u8>,
+        signature: Vec<u8>,
     ) -> Result<(), Error>;
 }
 
@@ -113,13 +112,13 @@ pub fn validate_light_client_update<C: LightClientContext, V: BlsVerify>(
             .ok_or(Error::ExpectedNextSyncCommittee)?
     };
 
-    let participant_pubkeys: Vec<&[u8]> = update
+    let participant_pubkeys: Vec<Vec<u8>> = update
         .sync_aggregate
         .sync_committee_bits
         .iter()
         .zip(sync_committee.public_keys.iter())
         .filter(|it| *it.0)
-        .map(|(_, pubkey)| pubkey.as_slice())
+        .map(|(_, pubkey)| pubkey.as_slice().to_owned())
         .collect();
     let fork_version_slot = std::cmp::max(update.signature_slot, 1) - 1;
     let fork_version = compute_fork_version(ctx, compute_epoch_at_slot(fork_version_slot));
@@ -132,9 +131,12 @@ pub fn validate_light_client_update<C: LightClientContext, V: BlsVerify>(
     let signing_root = compute_signing_root(&mut update.attested_header.beacon, domain)?;
 
     bls_verifier.fast_aggregate_verify(
-        participant_pubkeys.as_slice(),
-        signing_root.as_ref(),
-        &sync_aggregate.sync_committee_signature,
+        participant_pubkeys,
+        signing_root.as_ref().to_owned(),
+        sync_aggregate
+            .sync_committee_signature
+            .as_slice()
+            .to_owned(),
     )?;
 
     Ok(())

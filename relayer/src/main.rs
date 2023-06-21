@@ -357,54 +357,54 @@ where
 
     tracing::info!(cometbls_id, ethereum_id);
 
-    // let (cometbls_client_id, ethereum_latest_height) = {
-    //     let latest_height = ethereum.query_latest_height().await;
+    let (cometbls_client_id, ethereum_latest_height) = {
+        let latest_height = ethereum.query_latest_height().await;
 
-    //     tracing::trace!("generating client state...");
-    //     let client_state = ethereum
-    //         .generate_counterparty_client_state(latest_height)
-    //         .await;
-    //     tracing::trace!("generating consensus state...");
-    //     let consensus_state = ethereum
-    //         .generate_counterparty_consensus_state(latest_height)
-    //         .await;
+        tracing::trace!("generating client state...");
+        let client_state = ethereum
+            .generate_counterparty_client_state(latest_height)
+            .await;
+        tracing::trace!("generating consensus state...");
+        let consensus_state = ethereum
+            .generate_counterparty_consensus_state(latest_height)
+            .await;
 
-    //     let client_id = cometbls.create_client(client_state, consensus_state).await;
+        let client_id = cometbls.create_client(client_state, consensus_state).await;
 
-    //     tracing::info!(chain_id = cometbls_id, client_id);
+        tracing::info!(chain_id = cometbls_id, client_id);
 
-    //     (client_id, latest_height)
-    // };
-
-    // let (ethereum_client_id, cometbls_latest_height) = {
-    //     let latest_height = cometbls.query_latest_height().await;
-
-    //     tracing::trace!("generating client state...");
-    //     let client_state = cometbls
-    //         .generate_counterparty_client_state(latest_height)
-    //         .await;
-    //     tracing::trace!("generating consensus state...");
-    //     let consensus_state = cometbls
-    //         .generate_counterparty_consensus_state(latest_height)
-    //         .await;
-
-    //     let client_id = ethereum.create_client(client_state, consensus_state).await;
-
-    //     tracing::info!(chain_id = ethereum_id, client_id);
-
-    //     (client_id, latest_height)
-    // };
-
-    let ethereum_client_id = "08-wasm-6".to_string();
-    let cometbls_client_id = "cometbls-new-30".to_string();
-    let cometbls_latest_height = Height {
-        revision_number: 0,
-        revision_height: 2635040,
+        (client_id, latest_height)
     };
-    let ethereum_latest_height = Height {
-        revision_number: 1,
-        revision_height: 649,
+
+    let (ethereum_client_id, cometbls_latest_height) = {
+        let latest_height = cometbls.query_latest_height().await;
+
+        tracing::trace!("generating client state...");
+        let client_state = cometbls
+            .generate_counterparty_client_state(latest_height)
+            .await;
+        tracing::trace!("generating consensus state...");
+        let consensus_state = cometbls
+            .generate_counterparty_consensus_state(latest_height)
+            .await;
+
+        let client_id = ethereum.create_client(client_state, consensus_state).await;
+
+        tracing::info!(chain_id = ethereum_id, client_id);
+
+        (client_id, latest_height)
     };
+
+    // let ethereum_client_id = "08-wasm-6".to_string();
+    // let cometbls_client_id = "cometbls-new-30".to_string();
+    // let cometbls_latest_height = Height {
+    //     revision_number: 0,
+    //     revision_height: 2635040,
+    // };
+    // let ethereum_latest_height = Height {
+    //     revision_number: 1,
+    //     revision_height: 649,
+    // };
     tracing::info!(?cometbls_latest_height);
     tracing::info!(?ethereum_latest_height);
 
