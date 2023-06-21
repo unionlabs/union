@@ -25,12 +25,13 @@
         pkgs.pkgsStatic.buildGoModule
       else
         pkgs.buildGoModule) ({
-          name = "uniond";
-          src = ./.;
-          vendorSha256 = null;
-          doCheck = true;
-          meta.mainProgram = "uniond";
-        } // (let libwasmvm = self'.packages.libwasmvm;
+        name = "uniond";
+        src = ./.;
+        vendorSha256 = null;
+        doCheck = true;
+        meta.mainProgram = "uniond";
+      } // (
+        let libwasmvm = self'.packages.libwasmvm;
         in if pkgs.stdenv.isLinux then {
           # Statically link if we're on linux
           nativeBuildInputs = [ pkgs.musl libwasmvm ];
@@ -49,7 +50,8 @@
             --set DYLD_LIBRARY_PATH ${(pkgs.lib.makeLibraryPath [ libwasmvm ])};
           '';
         } else
-          { }));
+          { }
+      ));
 
       uniond-image = pkgs.dockerTools.buildImage {
         name = "uniond";
