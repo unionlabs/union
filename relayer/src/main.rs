@@ -431,7 +431,8 @@ where
 
     tracing::info!(
         chain_id = cometbls_id,
-        connection_id = cometbls_connection_id
+        connection_id = cometbls_connection_id,
+        latest_height = ?cometbls_latest_height
     );
 
     // generate state proofs

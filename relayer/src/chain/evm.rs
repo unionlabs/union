@@ -56,9 +56,7 @@ use ibc_types::{
     },
     IntoProto,
 };
-use lodestar_rpc::types::{
-    BeaconHeaderResponse
-};
+use lodestar_rpc::types::BeaconHeaderResponse;
 use prost::Message;
 use protos::{google, union::ibc::lightclients::ethereum::v1 as ethereum_v1};
 
@@ -188,6 +186,11 @@ impl LightClient for Cometbls {
             })
             .unwrap();
 
+            tracing::info!(block_number = ?tx_rcp.block_number);
+
+            self.wait_for_execution_block(tx_rcp.block_number.unwrap())
+                .await;
+
             // let (consensus_state, is_found) = self
             //     .ibc_handler
             //     .get_consensus_state(
@@ -281,11 +284,14 @@ impl LightClient for Cometbls {
         self_height: Height,
     ) -> impl Future<Output = StateProof<Self::ClientState>> + '_ {
         async move {
-            tracing::info!(?self_height);
-            self.wait_for_beacon_block(self_height).await;
+            // tracing::info!(?self_height);
+            // self.wait_for_beacon_block(self_height).await;
+            let self_height = self.execution_height(self_height).await;
+            self.wait_for_execution_block(self_height.revision_height.into())
+                .await;
 
             let block_number = self.provider.get_block_number().await.unwrap();
-            tracing::info!(?block_number);
+            tracing::info!(?block_number, ?self_height);
 
             let (client_state_bytes, is_found) = self
                 .ibc_handler
@@ -480,6 +486,7 @@ impl Connect<Ethereum> for Cometbls {
             })
             .unwrap();
 
+            tracing::info!("in conninit, waiting for execution block to be finalized");
             self.wait_for_execution_block(tx_rcp.block_number.unwrap())
                 .await;
 
@@ -696,7 +703,7 @@ impl Connect<Ethereum> for Cometbls {
 
     fn generate_counterparty_client_state(
         &self,
-        height: Height,
+        beacon_height: Height,
     ) -> impl Future<Output = <Ethereum as LightClient>::ClientState> + '_ {
         async move {
             let genesis = lodestar_rpc::client::RPCClient::new(self.eth_beacon_rpc_api.clone())
@@ -704,6 +711,8 @@ impl Connect<Ethereum> for Cometbls {
                 .await
                 .unwrap()
                 .data;
+
+            let execution_height = self.execution_height(beacon_height).await;
 
             Any(wasm::client_state::ClientState {
                 data: ethereum::client_state::ClientState {
@@ -733,7 +742,7 @@ impl Connect<Ethereum> for Cometbls {
                     slots_per_epoch: 8,
                     epochs_per_sync_committee_period: 8,
                     trusting_period: 100_000_000,
-                    latest_slot: height.revision_height,
+                    latest_slot: beacon_height.revision_height,
                     min_sync_committee_participants: 0,
                     trust_level: Fraction {
                         numerator: 1,
@@ -743,14 +752,14 @@ impl Connect<Ethereum> for Cometbls {
                     counterparty_commitment_slot: 0,
                 },
                 code_id: self.wasm_code_id.to_fixed_bytes().to_vec(),
-                latest_height: height,
+                latest_height: execution_height,
             })
         }
     }
 
     fn generate_counterparty_consensus_state(
         &self,
-        height: Height,
+        beacon_height: Height,
     ) -> impl Future<Output = <Ethereum as LightClient>::ConsensusState> + '_ {
         async move {
             let trusted_header =
@@ -773,7 +782,7 @@ impl Connect<Ethereum> for Cometbls {
             .data;
 
             let light_client_update = {
-                let current_period = height.revision_height.div(PERIOD);
+                let current_period = beacon_height.revision_height.div(PERIOD);
 
                 tracing::info!(%current_period);
 
@@ -933,19 +942,19 @@ impl Connect<Ethereum> for Cometbls {
                         .await
                         .unwrap();
 
+                    let execution_height = self
+                        .execution_height(Height {
+                            revision_number: 0,
+                            revision_height: bootstrap.data.header.beacon.slot.0,
+                        })
+                        .await;
+
                     let header = wasm::header::Header {
                         data: ethereum::header::Header {
                             trusted_sync_committee: TrustedSyncCommittee {
-                                trusted_height: Height {
-                                    revision_number: 0,
+                                trusted_height:
                                     // NOTE: should be the same as trusted height passed in to this function
-                                    revision_height: bootstrap
-                                        .data
-                                        .header // REVIEW: Do we want execution.block_number here?
-                                        .beacon
-                                        .slot
-                                        .0,
-                                },
+                                    execution_height,
                                 sync_committee: SyncCommittee {
                                     pubkeys: bootstrap
                                         .data
@@ -1127,9 +1136,11 @@ impl Connect<Ethereum> for Cometbls {
             .await
             .unwrap();
 
+            let execution_height = self.execution_height(update_from).await;
+
             let trusted_sync_committee = if is_next {
                 TrustedSyncCommittee {
-                    trusted_height: update_from,
+                    trusted_height: execution_height,
                     sync_committee: SyncCommittee {
                         pubkeys: light_client_update
                             .data
@@ -1150,7 +1161,7 @@ impl Connect<Ethereum> for Cometbls {
                 }
             } else {
                 TrustedSyncCommittee {
-                    trusted_height: update_from,
+                    trusted_height: execution_height,
                     sync_committee: SyncCommittee {
                         pubkeys: bootstrap
                             .data
@@ -1328,14 +1339,14 @@ impl Cometbls {
 
         let ics20_bank = ICS20Bank::new(config.ics20_bank_address, signer_middleware);
 
-        ics20_bank
-            .set_operator(config.ics20_transfer_address)
-            .send()
-            .await
-            .unwrap()
-            .await
-            .unwrap()
-            .unwrap();
+        // ics20_bank
+        //     .set_operator(config.ics20_transfer_address)
+        //     .send()
+        //     .await
+        //     .unwrap()
+        //     .await
+        //     .unwrap()
+        //     .unwrap();
 
         Self {
             ibc_handler,
@@ -1411,6 +1422,28 @@ impl Cometbls {
         }
     }
 
+    async fn execution_height(&self, beacon_height: Height) -> Height {
+        let height = reqwest::get(format!(
+            "{eth_beacon_rpc_api}/eth/v2/debug/beacon/states/{slot}",
+            eth_beacon_rpc_api = self.eth_beacon_rpc_api,
+            slot = beacon_height.revision_height
+        ))
+        .await
+        .unwrap()
+        .json::<serde_json::Value>()
+        .await
+        .unwrap()["data"]["latest_execution_payload_header"]["block_number"]
+            .as_str()
+            .unwrap()
+            .parse()
+            .unwrap();
+
+        Height {
+            revision_number: 0,
+            revision_height: height,
+        }
+    }
+
     async fn wait_for_beacon_block(&self, requested_height: Height) {
         loop {
             let current_block = self.query_latest_height().await;
@@ -1430,7 +1463,7 @@ impl Cometbls {
         loop {
             let latest_finalized_block_number = self
                 .provider
-                .get_block(BlockNumber::Latest)
+                .get_block(BlockNumber::Finalized)
                 .await
                 .unwrap()
                 .unwrap()

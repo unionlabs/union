@@ -38,7 +38,7 @@ rustToolchain.buildPackage (attrs // {
   cargoBuildCommand = "RUSTFLAGS='-C target-feature=-sign-ext -C link-arg=-s -C target-cpu=mvp' cargo -Z build-std=std,panic_abort -Z build-std-features=panic_immediate_abort build --release --lib --target ${CARGO_BUILD_TARGET}";
 
   doCheck = doCheck;
-    # ls ${test} > /dev/null 2>&1
+  # ls ${test} > /dev/null 2>&1
   checkPhase = ''
     ls ${clippy} > /dev/null 2>&1
 
