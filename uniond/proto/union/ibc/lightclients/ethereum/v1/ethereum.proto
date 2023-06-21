@@ -3,6 +3,7 @@ package union.ibc.lightclients.ethereum.v1;
 
 option go_package = "union/ibc/lightclients/ethereum";
 import "ibc/core/client/v1/client.proto";
+import "ibc/lightclients/tendermint/v1/tendermint.proto";
 
 message StorageProof {
   repeated Proof proofs = 1;
@@ -23,7 +24,7 @@ message ClientState {
   uint64 slots_per_epoch = 6;
   uint64 epochs_per_sync_committee_period = 7;
 
-  Fraction trust_level = 8;
+  .ibc.lightclients.tendermint.v1.Fraction trust_level = 8;
   uint64 trusting_period = 9;
 
   // FIXME: isn't it already defined in ibc.lightclients.wasm.v1?
@@ -64,11 +65,6 @@ message ForkParameters {
   Fork bellatrix = 4;
   Fork capella = 5;
   Fork eip4844 = 6;
-}
-
-message Fraction {
-  uint64 numerator = 1;
-  uint64 denominator = 2;
 }
 
 message Fork {

@@ -331,9 +331,13 @@ proto_full = [
   "google+protobuf",
   "ibc+core+client+v1",
   "ibc+core+commitment+v1",
+  "ibc+lightclients+tendermint+v1",
   "tendermint+types",
 ]
-"union+ibc+lightclients+ethereum+v1" = ["ibc+core+client+v1"]
+"union+ibc+lightclients+ethereum+v1" = [
+  "ibc+core+client+v1",
+  "ibc+lightclients+tendermint+v1",
+]
 "union+prover+api+v1" = ["tendermint+types"]
 "union+union" = []
 ## @@protoc_insertion_point(features)

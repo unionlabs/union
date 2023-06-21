@@ -6,12 +6,13 @@ import "tendermint/types/types.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
 import "ibc/core/client/v1/client.proto";
+import "ibc/lightclients/tendermint/v1/tendermint.proto";
 import "ibc/core/commitment/v1/commitment.proto";
 
 // NOTE: the `latest_height` is living in the ibc.lightclients.wasm.v1 wrapper
 message ClientState {
   string   chain_id    = 1;
-  Fraction trust_level = 2;
+  .ibc.lightclients.tendermint.v1.Fraction trust_level = 2;
   // duration of the period since the LastestTimestamp during which the
   // submitted headers are valid for upgrade
   google.protobuf.Duration trusting_period = 3;
@@ -40,9 +41,4 @@ message Header {
   bytes                             untrusted_validator_set_root = 2;
   .ibc.core.client.v1.Height        trusted_height               = 3;
   bytes                             zero_knowledge_proof         = 4;
-}
-
-message Fraction {
-  uint64 numerator   = 1;
-  uint64 denominator = 2;
 }

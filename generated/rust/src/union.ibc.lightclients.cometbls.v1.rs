@@ -6,7 +6,9 @@ pub struct ClientState {
     #[prost(string, tag = "1")]
     pub chain_id: ::prost::alloc::string::String,
     #[prost(message, optional, tag = "2")]
-    pub trust_level: ::core::option::Option<Fraction>,
+    pub trust_level: ::core::option::Option<
+        super::super::super::super::super::ibc::lightclients::tendermint::v1::Fraction,
+    >,
     /// duration of the period since the LastestTimestamp during which the
     /// submitted headers are valid for upgrade
     #[prost(message, optional, tag = "3")]
@@ -58,13 +60,5 @@ pub struct Header {
         ::core::option::Option<super::super::super::super::super::ibc::core::client::v1::Height>,
     #[prost(bytes = "vec", tag = "4")]
     pub zero_knowledge_proof: ::prost::alloc::vec::Vec<u8>,
-}
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct Fraction {
-    #[prost(uint64, tag = "1")]
-    pub numerator: u64,
-    #[prost(uint64, tag = "2")]
-    pub denominator: u64,
 }
 // @@protoc_insertion_point(module)

@@ -294,8 +294,9 @@ mod test {
             commitment::v1::MerklePrefix,
             connection::v1::{Counterparty, Version},
         },
+        ibc::lightclients::tendermint::v1::Fraction,
         union::ibc::lightclients::cometbls::v1::{
-            ClientState as CometClientState, ConsensusState as CometConsensusState, Fraction,
+            ClientState as CometClientState, ConsensusState as CometConsensusState,
         },
     };
 

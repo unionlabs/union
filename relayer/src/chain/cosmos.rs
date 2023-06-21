@@ -22,7 +22,7 @@ use protos::{
             channel::v1 as channel_v1, client::v1 as client_v1, commitment::v1 as commitment_v1,
             connection::v1 as connection_v1,
         },
-        lightclients::wasm::v1 as wasm_v1,
+        lightclients::{tendermint::v1 as tendermint_v1, wasm::v1 as wasm_v1},
     },
     union::{
         ibc::lightclients::{cometbls::v1 as cometbls_v1, ethereum::v1 as ethereum_v1},
@@ -1735,7 +1735,7 @@ impl TryFromProto for ethereum::ConsensusState {
     type Proto = ethereum_v1::ConsensusState;
 }
 
-impl From<Fraction> for ethereum_v1::Fraction {
+impl From<Fraction> for tendermint_v1::Fraction {
     fn from(value: Fraction) -> Self {
         Self {
             numerator: value.numerator,
@@ -1744,26 +1744,8 @@ impl From<Fraction> for ethereum_v1::Fraction {
     }
 }
 
-impl From<Fraction> for cometbls_v1::Fraction {
-    fn from(value: Fraction) -> Self {
-        Self {
-            numerator: value.numerator,
-            denominator: value.denominator,
-        }
-    }
-}
-
-// impl From<super::msgs::Fraction> for lightclients::tendermint_v1::Fraction {
-//     fn from(value: super::msgs::Fraction) -> Self {
-//         Self {
-//             numerator: value.numerator,
-//             denominator: value.denominator,
-//         }
-//     }
-// }
-
-impl From<cometbls_v1::Fraction> for Fraction {
-    fn from(value: cometbls_v1::Fraction) -> Self {
+impl From<tendermint_v1::Fraction> for Fraction {
+    fn from(value: tendermint_v1::Fraction) -> Self {
         Self {
             numerator: value.numerator,
             denominator: value.denominator,
@@ -1785,15 +1767,6 @@ impl From<google::protobuf::Duration> for Duration {
         Self {
             seconds: value.seconds,
             nanos: value.nanos,
-        }
-    }
-}
-
-impl From<ethereum_v1::Fraction> for Fraction {
-    fn from(proto: ethereum_v1::Fraction) -> Self {
-        Self {
-            numerator: proto.numerator,
-            denominator: proto.denominator,
         }
     }
 }
