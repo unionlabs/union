@@ -746,6 +746,11 @@ github.com/dvsekhvalnov/jose2go/compact
 github.com/dvsekhvalnov/jose2go/kdf
 github.com/dvsekhvalnov/jose2go/keys/ecc
 github.com/dvsekhvalnov/jose2go/padding
+# github.com/ethereum/go-ethereum v1.11.3
+## explicit; go 1.19
+github.com/ethereum/go-ethereum/common
+github.com/ethereum/go-ethereum/common/hexutil
+github.com/ethereum/go-ethereum/params
 # github.com/felixge/httpsnoop v1.0.2
 ## explicit; go 1.13
 github.com/felixge/httpsnoop
@@ -771,8 +776,6 @@ github.com/go-kit/log/term
 # github.com/go-logfmt/logfmt v0.6.0
 ## explicit; go 1.17
 github.com/go-logfmt/logfmt
-# github.com/go-playground/validator/v10 v10.11.1
-## explicit; go 1.13
 # github.com/goccy/go-json v0.9.11
 ## explicit; go 1.12
 # github.com/godbus/dbus v0.0.0-20190726142602-4481cbc300e2
@@ -935,6 +938,9 @@ github.com/hashicorp/hcl/json/token
 # github.com/hdevalence/ed25519consensus v0.1.0
 ## explicit; go 1.19
 github.com/hdevalence/ed25519consensus
+# github.com/herumi/bls-eth-go-binary v0.0.0-20210917013441-d37c07cfda4e
+## explicit; go 1.12
+github.com/herumi/bls-eth-go-binary/bls
 # github.com/holiman/uint256 v1.2.2
 ## explicit; go 1.18
 github.com/holiman/uint256
@@ -953,7 +959,7 @@ github.com/jmespath/go-jmespath
 # github.com/jmhodges/levigo v1.0.0
 ## explicit
 github.com/jmhodges/levigo
-# github.com/klauspost/compress v1.16.3
+# github.com/klauspost/compress v1.16.4
 ## explicit; go 1.18
 github.com/klauspost/compress
 github.com/klauspost/compress/flate
@@ -963,6 +969,9 @@ github.com/klauspost/compress/internal/cpuinfo
 github.com/klauspost/compress/internal/snapref
 github.com/klauspost/compress/zstd
 github.com/klauspost/compress/zstd/internal/xxhash
+# github.com/klauspost/cpuid/v2 v2.2.4
+## explicit; go 1.15
+github.com/klauspost/cpuid/v2
 # github.com/lib/pq v1.10.7
 ## explicit; go 1.13
 github.com/lib/pq
@@ -979,7 +988,7 @@ github.com/magiconair/properties
 github.com/manifoldco/promptui
 github.com/manifoldco/promptui/list
 github.com/manifoldco/promptui/screenbuf
-# github.com/mattn/go-isatty v0.0.17
+# github.com/mattn/go-isatty v0.0.18
 ## explicit; go 1.15
 github.com/mattn/go-isatty
 # github.com/matttproud/golang_protobuf_extensions v1.0.4
@@ -991,6 +1000,9 @@ github.com/mimoo/StrobeGo/strobe
 # github.com/minio/highwayhash v1.0.2
 ## explicit; go 1.15
 github.com/minio/highwayhash
+# github.com/minio/sha256-simd v1.0.0
+## explicit; go 1.13
+github.com/minio/sha256-simd
 # github.com/mitchellh/go-homedir v1.1.0
 ## explicit
 github.com/mitchellh/go-homedir
@@ -1024,6 +1036,9 @@ github.com/mmcloughlin/addchain/internal/container/heap
 github.com/mmcloughlin/addchain/internal/errutil
 github.com/mmcloughlin/addchain/internal/print
 github.com/mmcloughlin/addchain/meta
+# github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826
+## explicit
+github.com/mohae/deepcopy
 # github.com/mtibben/percent v0.2.1
 ## explicit; go 1.14
 github.com/mtibben/percent
@@ -1065,6 +1080,25 @@ github.com/prometheus/common/model
 github.com/prometheus/procfs
 github.com/prometheus/procfs/internal/fs
 github.com/prometheus/procfs/internal/util
+# github.com/prysmaticlabs/fastssz v0.0.0-20220628121656-93dfe28febab
+## explicit; go 1.18
+github.com/prysmaticlabs/fastssz
+# github.com/prysmaticlabs/gohashtree v0.0.3-alpha
+## explicit; go 1.17
+github.com/prysmaticlabs/gohashtree
+# github.com/prysmaticlabs/prysm/v4 v4.0.6
+## explicit; go 1.20
+github.com/prysmaticlabs/prysm/v4/cache/lru
+github.com/prysmaticlabs/prysm/v4/config/fieldparams
+github.com/prysmaticlabs/prysm/v4/config/params
+github.com/prysmaticlabs/prysm/v4/consensus-types/primitives
+github.com/prysmaticlabs/prysm/v4/crypto/bls
+github.com/prysmaticlabs/prysm/v4/crypto/bls/blst
+github.com/prysmaticlabs/prysm/v4/crypto/bls/common
+github.com/prysmaticlabs/prysm/v4/crypto/bls/herumi
+github.com/prysmaticlabs/prysm/v4/crypto/rand
+github.com/prysmaticlabs/prysm/v4/encoding/bytesutil
+github.com/prysmaticlabs/prysm/v4/math
 # github.com/rakyll/statik v0.1.7
 ## explicit; go 1.12
 github.com/rakyll/statik/fs
@@ -1077,6 +1111,9 @@ github.com/rs/cors
 # github.com/sasha-s/go-deadlock v0.3.1
 ## explicit
 github.com/sasha-s/go-deadlock
+# github.com/sirupsen/logrus v1.9.0
+## explicit; go 1.13
+github.com/sirupsen/logrus
 # github.com/spf13/afero v1.9.3
 ## explicit; go 1.16
 github.com/spf13/afero
@@ -1112,6 +1149,9 @@ github.com/stretchr/testify/require
 # github.com/subosito/gotenv v1.4.2
 ## explicit; go 1.18
 github.com/subosito/gotenv
+# github.com/supranational/blst v0.3.8-0.20220526154634-513d2456b344
+## explicit; go 1.11
+github.com/supranational/blst/bindings/go
 # github.com/syndtr/goleveldb v1.0.1-0.20220721030215-126854af5e6d => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
 ## explicit; go 1.14
 github.com/syndtr/goleveldb/leveldb
@@ -1132,6 +1172,10 @@ github.com/tecbot/gorocksdb
 # github.com/tendermint/go-amino v0.16.0
 ## explicit; go 1.12
 github.com/tendermint/go-amino
+# github.com/thomaso-mirodin/intmath v0.0.0-20160323211736-5dc6d854e46e
+## explicit
+github.com/thomaso-mirodin/intmath/constants/c64
+github.com/thomaso-mirodin/intmath/u64
 # github.com/tidwall/btree v1.6.0
 ## explicit; go 1.19
 github.com/tidwall/btree
@@ -1405,7 +1449,7 @@ gopkg.in/yaml.v2
 # gopkg.in/yaml.v3 v3.0.1
 ## explicit
 gopkg.in/yaml.v3
-# nhooyr.io/websocket v1.8.6
+# nhooyr.io/websocket v1.8.7
 ## explicit; go 1.13
 nhooyr.io/websocket
 nhooyr.io/websocket/internal/bpool

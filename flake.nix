@@ -30,6 +30,10 @@
       url = "github:ipetkov/crane";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    iohk-nix = {
+      url = "github:input-output-hk/iohk-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     ibc-go = {
       url = "github:strangelove-ventures/ibc-go?rev=f8081a1828e47e11791b036659dd6d0e7be5473b";
       flake = false;
@@ -55,7 +59,7 @@
     v0_6_0.url = "git+https://github.com/unionfi/union?ref=release-v0.6.0";
     v0_7_0.url = "git+https://github.com/unionfi/union?ref=release-v0.7.0";
   };
-  outputs = inputs@{ self, nixpkgs, flake-parts, nix-filter, crane, foundry, treefmt-nix, pre-commit-hooks, ibc-go, ics23, cosmosproto, gogoproto, googleapis, ... }:
+  outputs = inputs@{ self, nixpkgs, flake-parts, nix-filter, crane, foundry, treefmt-nix, pre-commit-hooks, iohk-nix, ibc-go, ics23, cosmosproto, gogoproto, googleapis, ... }:
     flake-parts.lib.mkFlake { inherit inputs; } {
       systems =
         [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" "x86_64-darwin" ];
@@ -98,6 +102,7 @@
                 inherit system;
                 overlays = with inputs; [
                   rust-overlay.overlays.default
+                  iohk-nix.overlays.crypto
                 ];
               };
 

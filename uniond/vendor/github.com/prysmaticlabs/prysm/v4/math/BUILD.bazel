@@ -1,0 +1,19 @@
+load("@prysm//tools/go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["math_helper.go"],
+    importpath = "github.com/prysmaticlabs/prysm/v4/math",
+    visibility = ["//visibility:public"],
+    deps = ["@com_github_thomaso_mirodin_intmath//u64:go_default_library"],
+)
+
+go_test(
+    name = "go_default_test",
+    size = "small",
+    srcs = ["math_helper_test.go"],
+    deps = [
+        ":go_default_library",
+        "//testing/require:go_default_library",
+    ],
+)

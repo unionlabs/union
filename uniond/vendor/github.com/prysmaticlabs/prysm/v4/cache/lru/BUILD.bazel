@@ -1,0 +1,16 @@
+load("@prysm//tools/go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["lru_wrpr.go"],
+    importpath = "github.com/prysmaticlabs/prysm/v4/cache/lru",
+    visibility = ["//visibility:public"],
+    deps = ["@com_github_hashicorp_golang_lru//:go_default_library"],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = ["lru_wrpr_test.go"],
+    embed = [":go_default_library"],
+    deps = ["@com_github_stretchr_testify//assert:go_default_library"],
+)

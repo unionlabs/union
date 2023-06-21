@@ -1,0 +1,15 @@
+load("@prysm//tools/go:def.bzl", "go_library")
+
+# gazelle:resolve go github.com/herumi/bls-eth-go-binary/bls @herumi_bls_eth_go_binary//:go_default_library
+
+go_library(
+    name = "go_default_library",
+    srcs = ["init.go"],
+    importpath = "github.com/prysmaticlabs/prysm/v4/crypto/bls/herumi",
+    visibility = [
+        "//crypto/bls:__pkg__",
+    ],
+    deps = [
+        "@herumi_bls_eth_go_binary//:go_default_library",
+    ],
+)

@@ -123,6 +123,7 @@ import (
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 
+	unioncustomquery "union/app/custom_query"
 	unionmodule "union/x/union"
 	unionmodulekeeper "union/x/union/keeper"
 	unionmoduletypes "union/x/union/types"
@@ -611,7 +612,7 @@ func New(
 		wasmConfig,
 		availableCapabilities,
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
-		wasmOpts...,
+		append(wasmOpts, wasmkeeper.WithQueryHandler(&unioncustomquery.UnionCustomQueryHandler{}))...,
 	)
 
 	if len(enabledProposals) != 0 {

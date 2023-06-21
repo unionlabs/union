@@ -236,9 +236,12 @@ func (s *sequenceDecs) decodeSync(hist []byte) error {
 		maxBlockSize = s.windowSize
 	}
 
+	if debugDecoder {
+		println("decodeSync: decoding", seqs, "sequences", br.remain(), "bits remain on stream")
+	}
 	for i := seqs - 1; i >= 0; i-- {
 		if br.overread() {
-			printf("reading sequence %d, exceeded available data\n", seqs-i)
+			printf("reading sequence %d, exceeded available data. Overread by %d\n", seqs-i, -br.remain())
 			return io.ErrUnexpectedEOF
 		}
 		var ll, mo, ml int

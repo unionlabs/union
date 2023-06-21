@@ -39,7 +39,7 @@ func (o *encoderOptions) setDefault() {
 		blockSize:     maxCompressedBlockSize,
 		windowSize:    8 << 20,
 		level:         SpeedDefault,
-		allLitEntropy: true,
+		allLitEntropy: false,
 		lowMem:        false,
 	}
 }
@@ -238,7 +238,7 @@ func WithEncoderLevel(l EncoderLevel) EOption {
 			}
 		}
 		if !o.customALEntropy {
-			o.allLitEntropy = l > SpeedFastest
+			o.allLitEntropy = l > SpeedDefault
 		}
 
 		return nil

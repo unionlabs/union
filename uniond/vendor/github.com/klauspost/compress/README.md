@@ -615,6 +615,8 @@ Here are other packages of good quality and pure Go (no cgo wrappers or autoconv
 * [github.com/pierrec/lz4](https://github.com/pierrec/lz4) - strong multithreaded LZ4 compression.
 * [github.com/cosnicolaou/pbzip2](https://github.com/cosnicolaou/pbzip2) - multithreaded bzip2 decompression.
 * [github.com/dsnet/compress](https://github.com/dsnet/compress) - brotli decompression, bzip2 writer.
+* [github.com/ronanh/intcomp](https://github.com/ronanh/intcomp) - Integer compression.
+* [github.com/spenczar/fpc](https://github.com/spenczar/fpc) - Float compression.
 
 # license
 
