@@ -77,6 +77,11 @@ pub trait LightClient {
 
     fn query_client_state(&self, client_id: String)
         -> impl Future<Output = Self::ClientState> + '_;
+
+    fn process_height_for_counterparty(
+        &self,
+        height: msgs::Height,
+    ) -> impl Future<Output = msgs::Height> + '_;
 }
 
 #[derive(Debug)]

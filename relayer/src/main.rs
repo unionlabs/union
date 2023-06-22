@@ -395,15 +395,15 @@ where
         (client_id, latest_height)
     };
 
-    // let ethereum_client_id = "08-wasm-6".to_string();
-    // let cometbls_client_id = "cometbls-new-30".to_string();
+    // let ethereum_client_id = "08-wasm-0".to_string();
+    // let cometbls_client_id = "cometbls-new-32".to_string();
     // let cometbls_latest_height = Height {
     //     revision_number: 0,
-    //     revision_height: 2635040,
+    //     revision_height: 2643648,
     // };
     // let ethereum_latest_height = Height {
     //     revision_number: 1,
-    //     revision_height: 649,
+    //     revision_height: 8,
     // };
     tracing::info!(?cometbls_latest_height);
     tracing::info!(?ethereum_latest_height);
@@ -427,6 +427,17 @@ where
         })
         .await;
 
+    tracing::info!(
+        cometbls_connection_id,
+        ?cometbls_latest_height,
+        ?ethereum_latest_height,
+        cometbls_client_id,
+        ethereum_client_id,
+        "right after connection init"
+    );
+
+    // let cometbls_connection_id = "connection-30".to_string();
+
     let cometbls_update_from = cometbls_latest_height;
     let cometbls_update_to = cometbls.query_latest_height().await;
 
@@ -442,7 +453,8 @@ where
     tracing::info!(
         chain_id = cometbls_id,
         connection_id = cometbls_connection_id,
-        latest_height = ?cometbls_latest_height
+        latest_height = ?cometbls_latest_height,
+        "right after updating cosmos"
     );
 
     // generate state proofs
@@ -503,7 +515,9 @@ where
     let ethereum_consensus_state_proof = ethereum
         .consensus_state_proof(
             ethereum_client_id.clone(),
-            cometbls_latest_height,
+            cometbls
+                .process_height_for_counterparty(cometbls_latest_height)
+                .await,
             ethereum_latest_height,
         )
         .await;

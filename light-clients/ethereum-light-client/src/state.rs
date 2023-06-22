@@ -112,14 +112,14 @@ pub fn update_client_state(
     deps: DepsMut<CustomQuery>,
     mut wasm_client_state: WasmClientState,
     client_state: ClientState,
+    latest_execution_height: u64,
 ) {
-    let latest_revision_height = client_state.latest_slot;
     let raw_client_state = Into::<RawClientState>::into(client_state).encode_to_vec();
 
     wasm_client_state.data = raw_client_state;
     wasm_client_state.latest_height = Some(protos::ibc::core::client::v1::Height {
         revision_number: 0,
-        revision_height: latest_revision_height,
+        revision_height: latest_execution_height,
     });
 
     save_wasm_client_state(deps, &wasm_client_state);
@@ -145,8 +145,9 @@ pub fn save_consensus_state(
     deps: DepsMut<CustomQuery>,
     mut wasm_consensus_state: WasmConsensusState,
     consensus_state: ConsensusState,
+    execution_height: u64,
 ) -> Result<(), Error> {
-    let height = Height::new(0, consensus_state.slot).map_err(|_| Error::InvalidHeight)?;
+    let height = Height::new(0, execution_height).map_err(|_| Error::InvalidHeight)?;
     let timestamp = consensus_state.timestamp;
     let raw_consensus_state = Into::<RawConsensusState>::into(consensus_state).encode_to_vec();
     wasm_consensus_state.data = raw_consensus_state;

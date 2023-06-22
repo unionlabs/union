@@ -310,6 +310,8 @@ pub fn update_header(
     )
     .map_err(|e| Error::Verification(e.to_string()))?;
 
+    let updated_execution_height = consensus_update.attested_header.execution.block_number;
+
     apply_light_client_update::<LightClientContext>(
         &mut client_state,
         &mut consensus_state,
@@ -317,8 +319,18 @@ pub fn update_header(
         storage_root,
     )?;
 
-    update_client_state(deps.branch(), wasm_client_state, client_state);
-    save_consensus_state(deps, wasm_consensus_state, consensus_state)?;
+    update_client_state(
+        deps.branch(),
+        wasm_client_state,
+        client_state,
+        updated_execution_height,
+    );
+    save_consensus_state(
+        deps,
+        wasm_consensus_state,
+        consensus_state,
+        updated_execution_height,
+    )?;
 
     Ok(ContractResult::valid(None))
 }

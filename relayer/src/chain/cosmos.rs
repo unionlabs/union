@@ -503,6 +503,13 @@ impl LightClient for Ethereum {
                 .unwrap()
         }
     }
+
+    fn process_height_for_counterparty(
+        &self,
+        height: super::msgs::Height,
+    ) -> impl Future<Output = super::msgs::Height> + '_ {
+        async move { height }
+    }
 }
 
 impl Connect<Cometbls> for Ethereum {

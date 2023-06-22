@@ -39,8 +39,8 @@ pub fn apply_light_client_update<C: LightClientContext>(
         _ => {}
     }
 
-    if consensus_update.finalized_header.beacon.slot > consensus_state.slot {
-        consensus_state.slot = consensus_update.finalized_header.beacon.slot;
+    if consensus_update.attested_header.beacon.slot > consensus_state.slot {
+        consensus_state.slot = consensus_update.attested_header.beacon.slot;
         // NOTE(aeryz): we don't use `optimistic_header`
     }
 

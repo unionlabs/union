@@ -18,7 +18,7 @@ pub const ETHEREUM_CONSENSUS_STATE_TYPE_URL: &str = "/ibc.lightclients.ethereum.
 
 #[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct ConsensusState {
-    /// finalized header's slot
+    /// trusted header's slot
     pub slot: Slot,
     /// the storage root of the IBC contract
     pub storage_root: CommitmentRoot,
