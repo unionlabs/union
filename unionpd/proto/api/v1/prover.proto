@@ -54,9 +54,43 @@ message GenerateContractResponse {
   bytes content = 1;
 }
 
+message QueryStatsRequest {}
+
+message VariableStats {
+  uint32 nb_internal_variables = 1;
+  uint32 nb_secret_variables = 2;
+  uint32 nb_public_variables = 3;
+  uint32 nb_constraints = 4;
+  uint32 nb_coefficients = 5;
+}
+
+message ProvingKeyStats {
+  uint32 nb_g1 = 1;
+  uint32 nb_g2 = 2;
+}
+
+message VerifyingKeyStats {
+  uint32 nb_g1 = 1;
+  uint32 nb_g2 = 2;
+  uint32 nb_public_witness = 3;
+}
+
+message CommitmentStats {
+  uint32 nb_public_committed = 1;
+  uint32 nb_private_committed = 2;
+}
+
+message QueryStatsResponse {
+  VariableStats variable_stats = 1;
+  ProvingKeyStats proving_key_stats = 2;
+  VerifyingKeyStats verifying_key_stats = 3;
+  CommitmentStats commitment_stats = 4;
+}
+
 service UnionProverAPI {
   rpc Prove(ProveRequest) returns (ProveResponse);
   rpc Verify(VerifyRequest) returns (VerifyResponse);
   rpc GenerateContract(GenerateContractRequest) returns (GenerateContractResponse);
+  rpc QueryStats(QueryStatsRequest) returns (QueryStatsResponse);
 }
 
