@@ -1,0 +1,14 @@
+[package]
+name = "ibc-types"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+protos = { path = "../../generated/rust" }
+contracts = { path = "../../generated/contracts" }
+prost = { version = "0.11.9", default-features = false, features = ["std"] }
+# FIXME: Update to 0.5
+bip32 = { version = "0.4", default-features = false, features = ["secp256k1"] }
+subtle-encoding = { version = "0.5.1", default-features = false, features = ["bech32-preview"] }
+ripemd = { version = "0.1.3", default-features = false }
+sha2 = { version = "0.10.7", default-features = false }

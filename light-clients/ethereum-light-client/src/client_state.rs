@@ -8,11 +8,11 @@ use prost::Message;
 use protos::{
     google::protobuf::Any,
     ibc::lightclients::{
-        tendermint::v1::ClientState as RawTmClientState,
+        tendermint::v1::{ClientState as RawTmClientState, Fraction as RawFraction},
         wasm::v1::ClientState as RawWasmClientState,
     },
     union::ibc::lightclients::{
-        cometbls::v1::{ClientState as RawCometClientState, Fraction as RawCometFraction},
+        cometbls::v1::ClientState as RawCometClientState,
         ethereum::v1::{ClientState as RawClientState, Fork},
     },
 };
@@ -147,9 +147,8 @@ impl TryFrom<RawClientState> for ClientState {
 impl From<ClientState> for RawClientState {
     fn from(value: ClientState) -> Self {
         use protos::ibc::core::client::v1::Height as ProtoHeight;
-        use protos::union::ibc::lightclients::ethereum::v1::{
-            ForkParameters as ProtoForkParameters, Fraction as ProtoFraction,
-        };
+        use protos::ibc::lightclients::tendermint::v1::Fraction as ProtoFraction;
+        use protos::union::ibc::lightclients::ethereum::v1::ForkParameters as ProtoForkParameters;
 
         fn make_fork(version: Version, epoch: u64) -> Fork {
             Fork {
@@ -209,7 +208,7 @@ impl From<ClientState> for RawClientState {
 pub fn tendermint_to_cometbls_client_state(state: RawTmClientState) -> RawCometClientState {
     RawCometClientState {
         chain_id: state.chain_id,
-        trust_level: state.trust_level.map(|tl| RawCometFraction {
+        trust_level: state.trust_level.map(|tl| RawFraction {
             numerator: tl.numerator,
             denominator: tl.denominator,
         }),

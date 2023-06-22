@@ -39,7 +39,9 @@ pub struct ClientState {
     #[prost(uint64, tag = "7")]
     pub epochs_per_sync_committee_period: u64,
     #[prost(message, optional, tag = "8")]
-    pub trust_level: ::core::option::Option<Fraction>,
+    pub trust_level: ::core::option::Option<
+        super::super::super::super::super::ibc::lightclients::tendermint::v1::Fraction,
+    >,
     #[prost(uint64, tag = "9")]
     pub trusting_period: u64,
     /// FIXME: isn't it already defined in ibc.lightclients.wasm.v1?
@@ -108,15 +110,6 @@ pub struct ForkParameters {
     pub capella: ::core::option::Option<Fork>,
     #[prost(message, optional, tag = "6")]
     pub eip4844: ::core::option::Option<Fork>,
-}
-#[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct Fraction {
-    #[prost(uint64, tag = "1")]
-    pub numerator: u64,
-    #[prost(uint64, tag = "2")]
-    pub denominator: u64,
 }
 #[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]

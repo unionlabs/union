@@ -168,6 +168,7 @@
             ".ibc.applications.interchain_accounts.v1" = [ serde ];
             ".ibc.applications.interchain_accounts.controller.v1" = [ serde ];
             ".ibc.lightclients.wasm.v1" = [ serde ];
+            ".ibc.lightclients.tendermint.v1.Fraction" = [ serde ];
             ".union.ibc.lightclients.ethereum.v1" = [ serde ];
             ".cosmos.ics23.v1" = [ serde ];
             ".cosmos.ics23.v1.LeafOp" = [ jsonschema eq ];
