@@ -190,6 +190,10 @@ pub enum CustomQuery {
         message: Binary,
         signature: Binary,
     },
+
+    Aggregate {
+        public_keys: Vec<Binary>,
+    },
 }
 
 impl<'a> BlsVerify for VerificationContext<'a> {
@@ -210,12 +214,14 @@ impl<'a> BlsVerify for VerificationContext<'a> {
             .deps
             .querier
             .query(&request)
-            .map_err(|_| ethereum_verifier::Error::InvalidSignature)?;
+            .map_err(|e| ethereum_verifier::Error::CustomError(e.to_string()))?;
 
         if is_valid {
             Ok(())
         } else {
-            Err(ethereum_verifier::Error::InvalidSignature)
+            Err(ethereum_verifier::Error::CustomError(
+                "returned false".to_string(),
+            ))
         }
     }
 }
@@ -233,9 +239,31 @@ pub fn update_header(
             ),
         )?;
 
+    let aggregate_public_key = {
+        let request: QueryRequest<CustomQuery> = QueryRequest::Custom(CustomQuery::Aggregate {
+            public_keys: trusted_sync_committee
+                .sync_committee
+                .public_keys
+                .iter()
+                .map(|pk| pk.as_ref().clone().into())
+                .collect(),
+        });
+
+        let response: Binary = deps
+            .querier
+            .query(&request)
+            .map_err(|e| Error::custom_query(e.to_string()))?;
+
+        response.0
+    };
+
     let trusted_consensus_state = TrustedConsensusState::new(
         consensus_state.clone(),
         trusted_sync_committee.sync_committee,
+        aggregate_public_key
+            .as_slice()
+            .try_into()
+            .map_err(|_| Error::custom_query("Invalid public key type"))?,
         trusted_sync_committee.is_next,
     )?;
 

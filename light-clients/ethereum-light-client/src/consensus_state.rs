@@ -115,12 +115,10 @@ impl TrustedConsensusState {
     pub fn new(
         consensus_state: ConsensusState,
         sync_committee: SyncCommittee,
+        aggregate_public_key: BlsPublicKey,
         is_next: bool,
     ) -> Result<Self, Error> {
-        if eth_aggregate_public_keys(&sync_committee.public_keys)
-            .map_err(|_| Error::InvalidSyncCommittee)?
-            != sync_committee.aggregate_public_key
-        {
+        if aggregate_public_key != sync_committee.aggregate_public_key {
             return Err(Error::InvalidSyncCommittee);
         }
 

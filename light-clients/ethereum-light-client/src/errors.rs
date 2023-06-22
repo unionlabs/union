@@ -80,6 +80,9 @@ pub enum Error {
 
     #[error("Expected value: '{0}' and stored value '{1}' doesn't match")]
     ExpectedAndStoredValueMismatch(String, String),
+
+    #[error("Custom query: {0}")]
+    CustomQuery(String),
 }
 
 impl Error {
@@ -96,6 +99,10 @@ impl Error {
 
     pub fn stored_value_mismatch<B1: AsRef<[u8]>, B2: AsRef<[u8]>>(expected: B1, got: B2) -> Error {
         Error::ExpectedAndStoredValueMismatch(hex::encode(expected), hex::encode(got))
+    }
+
+    pub fn custom_query<S: Into<String>>(s: S) -> Error {
+        Error::CustomQuery(s.into())
     }
 }
 
