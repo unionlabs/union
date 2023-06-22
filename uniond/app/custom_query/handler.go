@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 
 	wasmvmtypes "github.com/CosmWasm/wasmvm/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 const (
@@ -30,7 +29,13 @@ type QueryAggregateVerify struct {
 
 type UnionCustomQueryHandler struct{}
 
-func (h *UnionCustomQueryHandler) HandleQuery(ctx sdk.Context, caller sdk.AccAddress, request wasmvmtypes.QueryRequest) ([]byte, error) {
+func (h *UnionCustomQueryHandler) GasConsumed() uint64 {
+	return 0
+}
+
+// TODO: /!\ verify gasLimit <= the gas we wanna consume and update GasConsumed()
+func (h *UnionCustomQueryHandler) Query(request wasmvmtypes.QueryRequest, gasLimit uint64) ([]byte, error) {
+
 	var customQuery CustomQuery
 	err := json.Unmarshal([]byte(request.Custom), &customQuery)
 

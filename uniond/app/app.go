@@ -482,7 +482,7 @@ func New(
 		groupConfig,
 	)
 
-	app.WasmClientKeeper = ibcwasmkeeper.NewKeeper(appCodec, keys[ibcwasmtypes.StoreKey])
+	app.WasmClientKeeper = ibcwasmkeeper.NewKeeper(appCodec, keys[ibcwasmtypes.StoreKey], &unioncustomquery.UnionCustomQueryHandler{})
 
 	app.UpgradeKeeper = upgradekeeper.NewKeeper(
 		skipUpgradeHeights,
@@ -612,7 +612,7 @@ func New(
 		wasmConfig,
 		availableCapabilities,
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
-		append(wasmOpts, wasmkeeper.WithQueryHandler(&unioncustomquery.UnionCustomQueryHandler{}))...,
+		wasmOpts...,
 	)
 
 	if len(enabledProposals) != 0 {

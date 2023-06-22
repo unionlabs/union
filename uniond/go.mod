@@ -191,7 +191,7 @@ replace (
 	// Fork of gnark crypto until https://github.com/ConsenSys/gnark-crypto/pull/314 is merged
 	github.com/consensys/gnark-crypto => github.com/unionfi/gnark-crypto v0.0.0-20230409222230-5346db050fea
 	github.com/cosmos/cosmos-sdk => github.com/unionfi/cosmos-sdk v0.0.0-20230606111321-dbdb28960bff
-	github.com/cosmos/ibc-go/v7 => github.com/hussein-aitlahcen/ibc-go/v7 v7.0.0-20230605143907-7795f755632c
+	github.com/cosmos/ibc-go/v7 => github.com/hussein-aitlahcen/ibc-go/v7 v7.0.0-20230622093418-f1bf9b990248
 
 	github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
 )

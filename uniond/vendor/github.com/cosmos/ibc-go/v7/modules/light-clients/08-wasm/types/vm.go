@@ -9,6 +9,7 @@ import (
 )
 
 var (
+	Querier       cosmwasm.Querier
 	WasmVM        *cosmwasm.VM
 	VMGasRegister = NewDefaultWasmGasRegister()
 )
@@ -71,7 +72,7 @@ func initContract(codeID []byte, ctx sdk.Context, clientStore sdk.KVStore) (*was
 
 	initMsg := []byte("{}")
 	ctx.GasMeter().ConsumeGas(VMGasRegister.NewContractInstanceCosts(len(initMsg)), "Loading CosmWasm module: instantiate")
-	response, gasUsed, err := WasmVM.Instantiate(codeID, env, msgInfo, initMsg, newStoreAdapter(clientStore), cosmwasm.GoAPI{}, nil, multipliedGasMeter, gasLimit, costJSONDeserialization)
+	response, gasUsed, err := WasmVM.Instantiate(codeID, env, msgInfo, initMsg, newStoreAdapter(clientStore), cosmwasm.GoAPI{}, Querier, multipliedGasMeter, gasLimit, costJSONDeserialization)
 	VMGasRegister.consumeRuntimeGas(ctx, gasUsed)
 	return response, err
 }
@@ -107,7 +108,7 @@ func callContract(codeID []byte, ctx sdk.Context, clientStore sdk.KVStore, msg [
 		Funds:  nil,
 	}
 	ctx.GasMeter().ConsumeGas(VMGasRegister.InstantiateContractCosts(len(msg)), "Loading CosmWasm module: execute")
-	resp, gasUsed, err := WasmVM.Execute(codeID, env, msgInfo, msg, newStoreAdapter(clientStore), cosmwasm.GoAPI{}, nil, multipliedGasMeter, gasLimit, costJSONDeserialization)
+	resp, gasUsed, err := WasmVM.Execute(codeID, env, msgInfo, msg, newStoreAdapter(clientStore), cosmwasm.GoAPI{}, Querier, multipliedGasMeter, gasLimit, costJSONDeserialization)
 	VMGasRegister.consumeRuntimeGas(ctx, gasUsed)
 	return resp, err
 }
@@ -138,7 +139,7 @@ func queryContractWithStore(ctx sdk.Context, clientStore sdk.KVStore, codeID cos
 		},
 	}
 	ctx.GasMeter().ConsumeGas(VMGasRegister.InstantiateContractCosts(len(msg)), "Loading CosmWasm module: query")
-	resp, gasUsed, err := WasmVM.Query(codeID, env, msg, newStoreAdapter(clientStore), cosmwasm.GoAPI{}, nil, multipliedGasMeter, gasLimit, costJSONDeserialization)
+	resp, gasUsed, err := WasmVM.Query(codeID, env, msg, newStoreAdapter(clientStore), cosmwasm.GoAPI{}, Querier, multipliedGasMeter, gasLimit, costJSONDeserialization)
 	VMGasRegister.consumeRuntimeGas(ctx, gasUsed)
 	return resp, err
 }
