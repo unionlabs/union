@@ -2,13 +2,11 @@ package cmd
 
 import (
 	"context"
-	"crypto/tls"
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
 	"log"
 	"math/big"
-	"time"
 	provergrpc "unionp/grpc/api/v1"
 
 	cometbn254 "github.com/cometbft/cometbft/crypto/bn254"
@@ -16,13 +14,6 @@ import (
 	"github.com/cometbft/cometbft/proto/tendermint/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/spf13/cobra"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
-	"google.golang.org/grpc/credentials/insecure"
-)
-
-const (
-	flagTLS = "tls"
 )
 
 // Example call to the prover `Prove` endpoint using hardcoded values dumped from a local devnet.
@@ -31,30 +22,7 @@ func ExampleProveCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:  "example-prove [uri]",
 		Args: cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-
-			tlsEnabled, err := cmd.Flags().GetString(flagTLS)
-			if err != nil {
-				log.Fatal(err)
-			}
-
-			var creds credentials.TransportCredentials
-			if tlsEnabled == "yes" {
-				creds = credentials.NewTLS(&tls.Config{})
-			} else {
-				creds = insecure.NewCredentials()
-			}
-
-			uri := args[0]
-			conn, err := grpc.Dial(uri, grpc.WithTransportCredentials(creds))
-			if err != nil {
-				log.Fatal(err)
-			}
-			defer conn.Close()
-			client := provergrpc.NewUnionProverAPIClient(conn)
-			ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
-			defer cancel()
-
+		RunE: MakeCobra(func(ctx context.Context, client provergrpc.UnionProverAPIClient, cmd *cobra.Command, args []string) error {
 			decodeB64 := func(s string) []byte {
 				bz, err := base64.StdEncoding.DecodeString(s)
 				if err != nil {
@@ -374,7 +342,7 @@ func ExampleProveCmd() *cobra.Command {
 			fmt.Printf("EVM compatible ZKP: %X\n", res.Proof.EvmProof)
 
 			return nil
-		},
+		}),
 	}
 	cmd.Flags().String(flagTLS, "", "Wether the gRPC endpoint expect TLS.")
 	return cmd

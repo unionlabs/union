@@ -140,6 +140,32 @@ func (p *proverServer) GenerateContract(ctx context.Context, req *GenerateContra
 	}, nil
 }
 
+func (p *proverServer) QueryStats(ctx context.Context, req *QueryStatsRequest) (*QueryStatsResponse, error) {
+	log.Println("Querying stats...")
+	return &QueryStatsResponse{
+		VariableStats: &VariableStats{
+			NbInternalVariables: uint32(p.cs.GetNbInternalVariables()),
+			NbSecretVariables:   uint32(p.cs.GetNbSecretVariables()),
+			NbPublicVariables:   uint32(p.cs.GetNbPublicVariables()),
+			NbConstraints:       uint32(p.cs.GetNbConstraints()),
+			NbCoefficients:      uint32(p.cs.GetNbCoefficients()),
+		},
+		ProvingKeyStats: &ProvingKeyStats{
+			NbG1: uint32(p.pk.NbG1()),
+			NbG2: uint32(p.pk.NbG2()),
+		},
+		VerifyingKeyStats: &VerifyingKeyStats{
+			NbG1:            uint32(p.vk.NbG1()),
+			NbG2:            uint32(p.vk.NbG2()),
+			NbPublicWitness: uint32(p.vk.NbPublicWitness()),
+		},
+		CommitmentStats: &CommitmentStats{
+			NbPublicCommitted:  uint32(p.commitment.NbPublicCommitted()),
+			NbPrivateCommitted: uint32(p.commitment.NbPrivateCommitted),
+		},
+	}, nil
+}
+
 func (p *proverServer) Prove(ctx context.Context, req *ProveRequest) (*ProveResponse, error) {
 	log.Println("Proving...")
 
