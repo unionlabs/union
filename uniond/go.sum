@@ -656,8 +656,6 @@ github.com/huandu/skiplist v1.2.0/go.mod h1:7v3iFjLcSAzO4fN5B8dvebvo/qsfumiLiDXM
 github.com/hudl/fargo v1.3.0/go.mod h1:y3CKSmjA+wD2gak7sUSXTAoopbhU08POFhmITJgmKTg=
 github.com/hussein-aitlahcen/gnark-crypto v0.0.0-20230409222230-5346db050fea h1:4eiyQRMNL9fLFUkFHYoJ10jJKRpHH72lcnrzw8b2JwM=
 github.com/hussein-aitlahcen/gnark-crypto v0.0.0-20230409222230-5346db050fea/go.mod h1:Iq/P3HHl0ElSjsg2E1gsMwhAyxnxoKK5nVyZKd+/KhU=
-github.com/hussein-aitlahcen/ibc-go/v7 v7.0.0-20230622093418-f1bf9b990248 h1:0NWxD/jyU/zZx2tuIA0vnfEFsAFlkvRKS11hdgFHQF4=
-github.com/hussein-aitlahcen/ibc-go/v7 v7.0.0-20230622093418-f1bf9b990248/go.mod h1:vrQ2K99Xm+YR0hRhKIpnhelZztdIkDisLiE9ungIviY=
 github.com/ianlancetaylor/demangle v0.0.0-20181102032728-5e5cf60278f6/go.mod h1:aSSvb/t6k1mPoxDqO4vJh6VOCGPwU4O0C2/Eqndh1Sc=
 github.com/ianlancetaylor/demangle v0.0.0-20200824232613-28f6c0f3b639/go.mod h1:aSSvb/t6k1mPoxDqO4vJh6VOCGPwU4O0C2/Eqndh1Sc=
 github.com/improbable-eng/grpc-web v0.15.0 h1:BN+7z6uNXZ1tQGcNAuaU1YjsLTApzkjt2tzCixLaUPQ=
@@ -974,6 +972,8 @@ github.com/unionfi/cosmos-sdk v0.0.0-20230606111321-dbdb28960bff h1:JGvdFB/4eU08
 github.com/unionfi/cosmos-sdk v0.0.0-20230606111321-dbdb28960bff/go.mod h1:RT1BlAihYON6rPlX3yYfT7GmBIs8fZor/ZhGBg5Irzc=
 github.com/unionfi/gnark-crypto v0.0.0-20230409222230-5346db050fea h1:cV81XNby3jV3oScKf23LzmwgoKKsmc4ukmM35Uf0ii4=
 github.com/unionfi/gnark-crypto v0.0.0-20230409222230-5346db050fea/go.mod h1:Iq/P3HHl0ElSjsg2E1gsMwhAyxnxoKK5nVyZKd+/KhU=
+github.com/unionfi/ibc-go/v7 v7.0.0-20230622093418-f1bf9b990248 h1:YR4Vu55/XtgKfSY8o/++HZyEcHZXHRfqLMVc0vOupUk=
+github.com/unionfi/ibc-go/v7 v7.0.0-20230622093418-f1bf9b990248/go.mod h1:vrQ2K99Xm+YR0hRhKIpnhelZztdIkDisLiE9ungIviY=
 github.com/urfave/cli v1.20.0/go.mod h1:70zkFmudgCuE/ngEzBv17Jvp/497gISqfk5gWijbERA=
 github.com/urfave/cli v1.22.1/go.mod h1:Gos4lmkARVdJ6EkW0WaNv/tZAAMe9V7XWyB60NtXRu0=
 github.com/xiang90/probing v0.0.0-20190116061207-43a291ad63a2/go.mod h1:UETIi67q53MR2AWcXfiuqkDkRtnGDLqkBTpCHuJHxtU=
