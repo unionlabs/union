@@ -24,7 +24,7 @@ type QueryAggregate struct {
 type QueryAggregateVerify struct {
 	PublicKeys [][]byte `json:"public_keys"`
 	Signature  []byte   `json:"signature"`
-	Message    []byte   `json:"msg"`
+	Message    []byte   `json:"message"`
 }
 
 type UnionCustomQueryHandler struct{}
@@ -35,7 +35,6 @@ func (h *UnionCustomQueryHandler) GasConsumed() uint64 {
 
 // TODO: /!\ verify gasLimit <= the gas we wanna consume and update GasConsumed()
 func (h *UnionCustomQueryHandler) Query(request wasmvmtypes.QueryRequest, gasLimit uint64) ([]byte, error) {
-
 	var customQuery CustomQuery
 	err := json.Unmarshal([]byte(request.Custom), &customQuery)
 
@@ -48,10 +47,10 @@ func (h *UnionCustomQueryHandler) Query(request wasmvmtypes.QueryRequest, gasLim
 		if err != nil {
 			return nil, fmt.Errorf("Failed to aggregate public keys %v", err)
 		}
-		return aggregatedPublicKeys.Marshal(), nil
+		return json.Marshal(aggregatedPublicKeys.Marshal())
 	} else if customQuery.AggregateVerify != nil {
 		if len(customQuery.AggregateVerify.Message) != MessageSize {
-			return nil, fmt.Errorf("Invalid message length, must be a 32bytes hash")
+			return nil, fmt.Errorf("Invalid message length, must be a 32bytes hash", customQuery.AggregateVerify.Message)
 		}
 		msg := [MessageSize]byte{}
 		for i := 0; i < MessageSize; i++ {
@@ -62,9 +61,9 @@ func (h *UnionCustomQueryHandler) Query(request wasmvmtypes.QueryRequest, gasLim
 			return nil, fmt.Errorf("Failed to verify signature %v", err)
 		}
 		if result {
-			return []byte{1}, nil
+			return json.Marshal(true)
 		} else {
-			return []byte{0}, nil
+			return json.Marshal(false)
 		}
 	} else {
 		return nil, fmt.Errorf("unknown custom query %v", request)
