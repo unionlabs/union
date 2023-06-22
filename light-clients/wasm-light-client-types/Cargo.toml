@@ -10,6 +10,6 @@ license = "BSL-1.1"
 cosmwasm-std = "1.2.0"
 ibc = { version = "0.37.0", default-features = false, features = [ "serde" ] }
 prost = { version = "0.11", default-features = false }
-protos = { path = "../../generated/rust", default-features = false, features = ["proto_full", "std"] }
+protos = { workspace = true, default-features = false, features = ["proto_full", "std"] }
 serde = { version = "1.0", default-features = false, features = ["derive"] }
-unionlabs = { path = "../../lib/unionlabs", default-features = false }
+unionlabs = { workspace = true, default-features = false }

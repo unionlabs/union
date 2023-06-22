@@ -17,7 +17,7 @@ features = ["derive"]
 optional = true
 version = "1.0"
 [dependencies.serde-utils]
-path = "../../lib/serde-utils"
+workspace = true
 [dependencies.tonic]
 features = ["gzip"]
 optional = true
@@ -347,7 +347,6 @@ client = ["tonic"]
 default = ["proto_full", "std"]
 eth-abi = ["ethers", "std"]
 json-schema = ["schemars"]
-server = ["tonic"]
 std = ["prost/std", "serde/std"]
 
 [lib]

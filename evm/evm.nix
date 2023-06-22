@@ -1,5 +1,5 @@
 { ... }: {
-  perSystem = { self', inputs', pkgs, proto, nix-filter, ... }:
+  perSystem = { self', pkgs, proto, nix-filter, ... }:
     let
       solidity-stringutils = pkgs.fetchFromGitHub {
         owner = "Arachnid";
