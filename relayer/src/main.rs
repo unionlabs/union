@@ -14,25 +14,26 @@ use ethers::{
     types::{Address, H256},
 };
 use futures::StreamExt;
+use ibc_types::core::{
+    channel::{
+        self, channel::Channel, msg_channel_open_ack::MsgChannelOpenAck,
+        msg_channel_open_confirm::MsgChannelOpenConfirm, msg_channel_open_init::MsgChannelOpenInit,
+        msg_channel_open_try::MsgChannelOpenTry, msg_recv_packet::MsgRecvPacket, order::Order,
+        packet::Packet,
+    },
+    client::height::Height,
+    commitment::merkle_prefix::MerklePrefix,
+    connection::{
+        self, msg_channel_open_ack::MsgConnectionOpenAck,
+        msg_channel_open_confirm::MsgConnectionOpenConfirm,
+        msg_channel_open_init::MsgConnectionOpenInit, msg_channel_open_try::MsgConnectionOpenTry,
+        version::Version,
+    },
+};
 use protos::ibc::core::channel::v1 as channel_v1;
 use tendermint_rpc::{event::EventData, query::EventType, SubscriptionClient};
 
-use crate::chain::{
-    cosmos::Ethereum,
-    evm::Cometbls,
-    msgs::{
-        channel::{
-            self, Channel, MsgChannelOpenAck, MsgChannelOpenConfirm, MsgChannelOpenInit,
-            MsgChannelOpenTry, MsgRecvPacket, Packet,
-        },
-        connection::{
-            self, MsgConnectionOpenAck, MsgConnectionOpenConfirm, MsgConnectionOpenInit,
-            MsgConnectionOpenTry,
-        },
-        Height, MerklePrefix,
-    },
-    ClientState, Connect, LightClient,
-};
+use crate::chain::{cosmos::Ethereum, evm::Cometbls, ClientState, Connect, LightClient};
 
 pub mod chain;
 
@@ -379,7 +380,7 @@ where
     let cometbls_connection_id = cometbls
         .connection_open_init(MsgConnectionOpenInit {
             client_id: cometbls_client_id.clone(),
-            counterparty: connection::Counterparty {
+            counterparty: connection::counterparty::Counterparty {
                 client_id: ethereum_client_id.clone(),
                 // TODO(benluelo): Create a new struct with this field omitted as it's unused for open init
                 connection_id: "".to_string(),
@@ -387,11 +388,9 @@ where
                     key_prefix: b"ibc".to_vec(),
                 },
             },
-            version: connection::Version {
+            version: Version {
                 identifier: "1".into(),
-                features: [channel::Order::Unordered, channel::Order::Ordered]
-                    .into_iter()
-                    .collect(),
+                features: [Order::Unordered, Order::Ordered].into_iter().collect(),
             },
             delay_period: 6,
         })
@@ -433,7 +432,7 @@ where
     let ethereum_connection_id = ethereum
         .connection_open_try(MsgConnectionOpenTry {
             client_id: ethereum_client_id.clone(),
-            counterparty: connection::Counterparty {
+            counterparty: connection::counterparty::Counterparty {
                 client_id: cometbls_client_id.clone(),
                 connection_id: cometbls_connection_id.clone(),
                 prefix: MerklePrefix {
@@ -481,11 +480,9 @@ where
         .connection_open_ack(MsgConnectionOpenAck {
             connection_id: cometbls_connection_id.clone(),
             counterparty_connection_id: ethereum_connection_id.clone(),
-            version: connection::Version {
+            version: Version {
                 identifier: "1".into(),
-                features: [channel::Order::Unordered, channel::Order::Ordered]
-                    .into_iter()
-                    .collect(),
+                features: [Order::Unordered, Order::Ordered].into_iter().collect(),
             },
             client_state: ethereum_client_state_proof.state,
             proof_height: ethereum_connection_state_proof.proof_height,
@@ -559,9 +556,9 @@ where
         .channel_open_init(MsgChannelOpenInit {
             port_id: cometbls_port_id.to_string(),
             channel: Channel {
-                state: channel::State::Init,
-                ordering: channel::Order::Unordered,
-                counterparty: channel::Counterparty {
+                state: channel::state::State::Init,
+                ordering: Order::Unordered,
+                counterparty: channel::counterparty::Counterparty {
                     port_id: ethereum_port_id.to_string(),
                     // TODO(benluelo): Make a struct without this field?
                     channel_id: String::new(),
@@ -600,9 +597,9 @@ where
         .channel_open_try(MsgChannelOpenTry {
             port_id: ethereum_port_id.clone(),
             channel: Channel {
-                state: channel::State::Tryopen,
-                ordering: channel::Order::Unordered,
-                counterparty: channel::Counterparty {
+                state: channel::state::State::Tryopen,
+                ordering: Order::Unordered,
+                counterparty: channel::counterparty::Counterparty {
                     port_id: cometbls_port_id.clone(),
                     channel_id: cometbls_channel_id.clone(),
                 },

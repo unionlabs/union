@@ -6,20 +6,12 @@ use std::{
 };
 
 use contracts::{
-    glue::{
-        GoogleProtobufDurationData, GoogleProtobufTimestampData, IbcCoreCommitmentV1MerkleRootData,
-        UnionIbcLightclientsCometblsV1ClientStateData,
-        UnionIbcLightclientsCometblsV1ConsensusStateData,
-        UnionIbcLightclientsCometblsV1FractionData, UnionIbcLightclientsCometblsV1HeaderData,
-    },
+    glue::UnionIbcLightclientsCometblsV1HeaderData,
     ibc_handler::{
         self, GeneratedConnectionIdentifierFilter, IBCHandler, IBCHandlerEvents,
-        IbcCoreChannelV1ChannelData, IbcCoreChannelV1CounterpartyData, IbcCoreChannelV1PacketData,
-        IbcCoreCommitmentV1MerklePrefixData, IbcCoreConnectionV1ConnectionEndData,
-        IbcCoreConnectionV1CounterpartyData, IbcCoreConnectionV1VersionData,
+        IbcCoreChannelV1ChannelData, IbcCoreConnectionV1ConnectionEndData,
     },
     ics20_bank::ICS20Bank,
-    shared_types::IbcCoreClientV1HeightData,
 };
 use ethers::{
     abi::AbiEncode,
@@ -30,36 +22,45 @@ use ethers::{
     utils::keccak256,
 };
 use futures::Future;
+use ibc_types::{
+    core::{
+        channel::{
+            channel::Channel, msg_channel_open_ack::MsgChannelOpenAck,
+            msg_channel_open_confirm::MsgChannelOpenConfirm,
+            msg_channel_open_init::MsgChannelOpenInit, msg_channel_open_try::MsgChannelOpenTry,
+            msg_recv_packet::MsgRecvPacket,
+        },
+        client::height::Height,
+        connection::{
+            connection_end::ConnectionEnd, msg_channel_open_ack::MsgConnectionOpenAck,
+            msg_channel_open_confirm::MsgConnectionOpenConfirm,
+            msg_channel_open_init::MsgConnectionOpenInit,
+            msg_channel_open_try::MsgConnectionOpenTry,
+        },
+    },
+    google::protobuf::any::Any,
+    lightclients::{
+        cometbls,
+        ethereum::{
+            self, account_update::AccountUpdate, beacon_block_header::BeaconBlockHeader,
+            execution_payload_header::ExecutionPayloadHeader, fork::Fork,
+            fork_parameters::ForkParameters, light_client_header::LightClientHeader,
+            light_client_update::LightClientUpdate, proof::Proof, sync_aggregate::SyncAggregate,
+            sync_committee::SyncCommittee, trusted_sync_committee::TrustedSyncCommittee,
+        },
+        tendermint::fraction::Fraction,
+        wasm,
+    },
+    IntoProto,
+};
 use lodestar_rpc::types::{
     BeaconHeaderResponse, LightClientBootstrapResponse, LightClientUpdateData,
 };
 use prost::Message;
 use protos::{google, union::ibc::lightclients::ethereum::v1 as ethereum_v1};
-use strum::ParseError;
 
 use crate::{
-    chain::{
-        cosmos::{Any, Ethereum, IntoProto},
-        evm::ethereum::SyncAggregate,
-        msgs::{
-            channel::{
-                self, Channel, MsgChannelOpenAck, MsgChannelOpenConfirm, MsgChannelOpenInit,
-                MsgChannelOpenTry, MsgRecvPacket, Packet,
-            },
-            cometbls,
-            connection::{
-                self, MsgConnectionOpenAck, MsgConnectionOpenConfirm, MsgConnectionOpenInit,
-                MsgConnectionOpenTry,
-            },
-            ethereum::{
-                self, AccountUpdate, BeaconBlockHeader, ExecutionPayloadHeader, LightClientUpdate,
-                Proof, SyncCommittee, TrustedSyncCommittee,
-            },
-            wasm, ConnectionEnd, Duration, Fraction, Height, MerklePrefix, MerkleRoot, StateProof,
-            Timestamp, UnknownEnumVariant,
-        },
-        Connect, LightClient,
-    },
+    chain::{cosmos::Ethereum, Connect, LightClient, StateProof},
     ETH_BEACON_RPC_API, ETH_RPC_API,
 };
 
@@ -99,8 +100,9 @@ fn encode_dynamic_singleton_tuple(t: impl AbiEncode) -> Vec<u8> {
 // }
 
 impl LightClient for Cometbls {
-    type ClientState = Any<wasm::ClientState<cometbls::ClientState>>;
-    type ConsensusState = Any<wasm::ConsensusState<cometbls::ConsensusState>>;
+    type ClientState = Any<wasm::client_state::ClientState<cometbls::client_state::ClientState>>;
+    type ConsensusState =
+        Any<wasm::consensus_state::ConsensusState<cometbls::consensus_state::ConsensusState>>;
     // TODO(benluelo): Better type for this
     type UpdateClientMessage = UnionIbcLightclientsCometblsV1HeaderData;
 
@@ -331,8 +333,8 @@ impl LightClient for Cometbls {
         &self,
         channel_id: String,
         port_id: String,
-        self_height: super::msgs::Height,
-    ) -> impl Future<Output = StateProof<super::msgs::channel::Channel>> + '_ {
+        self_height: Height,
+    ) -> impl Future<Output = StateProof<Channel>> + '_ {
         async move {
             tracing::info!(?self_height);
             self.wait_for_block(self_height).await;
@@ -348,7 +350,7 @@ impl LightClient for Cometbls {
 
             assert!(is_found);
 
-            let canonical_channel: super::msgs::channel::Channel = channel.try_into().unwrap();
+            let canonical_channel: Channel = channel.try_into().unwrap();
 
             self.get_proof(
                 format!("channelEnds/ports/{port_id}/channels/{channel_id}"),
@@ -693,26 +695,26 @@ impl Connect<Ethereum> for Cometbls {
                 .unwrap()
                 .data;
 
-            Any(wasm::ClientState {
-                data: ethereum::ClientState {
+            Any(wasm::client_state::ClientState {
+                data: ethereum::client_state::ClientState {
                     genesis_validators_root: genesis.genesis_validators_root.as_bytes().to_vec(),
                     genesis_time: genesis.genesis_time.0,
-                    fork_parameters: ethereum::ForkParameters {
+                    fork_parameters: ForkParameters {
                         genesis_fork_version: vec![0, 0, 0, 1],
                         genesis_slot: 0,
-                        altair: ethereum::Fork {
+                        altair: Fork {
                             version: vec![1, 0, 0, 1],
                             epoch: 0,
                         },
-                        bellatrix: ethereum::Fork {
+                        bellatrix: Fork {
                             version: vec![2, 0, 0, 1],
                             epoch: 0,
                         },
-                        capella: ethereum::Fork {
+                        capella: Fork {
                             version: vec![3, 0, 0, 1],
                             epoch: 0,
                         },
-                        eip4844: ethereum::Fork {
+                        eip4844: Fork {
                             version: vec![4, 0, 0, 0],
                             epoch: u64::MAX,
                         },
@@ -779,8 +781,8 @@ impl Connect<Ethereum> for Cometbls {
                 light_client_update.data.clone()
             };
 
-            Any(wasm::ConsensusState {
-                data: ethereum::ConsensusState {
+            Any(wasm::consensus_state::ConsensusState {
+                data: ethereum::consensus_state::ConsensusState {
                     slot: bootstrap.header.beacon.slot.0,
                     storage_root: vec![1, 2, 3],
                     timestamp: bootstrap.header.execution.timestamp.0,
@@ -905,8 +907,8 @@ impl Connect<Ethereum> for Cometbls {
                         .await
                         .unwrap();
 
-                    let header = wasm::Header {
-                        data: ethereum::Header {
+                    let header = wasm::header::Header {
+                        data: ethereum::header::Header {
                             trusted_sync_committee: TrustedSyncCommittee {
                                 trusted_height: Height {
                                     revision_number: 0,
@@ -1168,9 +1170,9 @@ impl Connect<Ethereum> for Cometbls {
                 light_client_update = light_client_updates.last().unwrap().clone();
             }
 
-            let header = wasm::Header {
+            let header = wasm::header::Header {
                 height: actual_updated_height,
-                data: ethereum::Header {
+                data: ethereum::header::Header {
                     trusted_sync_committee,
                     consensus_update: LightClientUpdate {
                         attested_header: translate_header(finality_update.attested_header),
@@ -1398,404 +1400,10 @@ pub trait IntoEthAbi: Into<Self::EthAbi> {
     }
 }
 
-macro_rules! into_eth_abi {
-    ($($from:ty => $to:ty),+) => {
-        $(
-            impl IntoEthAbi for $from {
-                type EthAbi = $to;
-            }
-        )+
-    };
-}
-
-into_eth_abi! {
-    super::msgs::cometbls::ClientState => UnionIbcLightclientsCometblsV1ClientStateData,
-    super::msgs::cometbls::ConsensusState => UnionIbcLightclientsCometblsV1ConsensusStateData
-}
-
-impl From<MsgConnectionOpenInit> for ibc_handler::MsgConnectionOpenInit {
-    fn from(msg: MsgConnectionOpenInit) -> ibc_handler::MsgConnectionOpenInit {
-        ibc_handler::MsgConnectionOpenInit {
-            client_id: msg.client_id,
-            counterparty: IbcCoreConnectionV1CounterpartyData {
-                client_id: msg.counterparty.client_id,
-                connection_id: msg.counterparty.connection_id,
-                prefix: IbcCoreCommitmentV1MerklePrefixData {
-                    key_prefix: msg.counterparty.prefix.key_prefix.into(),
-                },
-            },
-            delay_period: msg.delay_period,
-        }
-    }
-}
-
-impl<ClientState> From<MsgConnectionOpenTry<ClientState>> for ibc_handler::MsgConnectionOpenTry {
-    fn from(msg: MsgConnectionOpenTry<ClientState>) -> ibc_handler::MsgConnectionOpenTry {
-        ibc_handler::MsgConnectionOpenTry {
-            counterparty: msg.counterparty.into(),
-            delay_period: msg.delay_period,
-            client_id: msg.client_id,
-            // client_state_bytes: msg.client_state.value.into(),
-            // TODO(benluelo): Figure out what this is expected to be (i.e. eth abi or proto)
-            client_state_bytes: Default::default(),
-            counterparty_versions: msg
-                .counterparty_versions
-                .into_iter()
-                .map(Into::into)
-                .collect(),
-            proof_init: msg.proof_init.into(),
-            proof_client: msg.proof_client.into(),
-            proof_consensus: msg.proof_consensus.into(),
-            proof_height: msg.proof_height.into(),
-            consensus_height: msg.consensus_height.into(),
-        }
-    }
-}
-
-impl<ClientState> From<MsgConnectionOpenAck<ClientState>> for ibc_handler::MsgConnectionOpenAck {
-    fn from(msg: MsgConnectionOpenAck<ClientState>) -> ibc_handler::MsgConnectionOpenAck {
-        ibc_handler::MsgConnectionOpenAck {
-            connection_id: msg.connection_id,
-            counterparty_connection_id: msg.counterparty_connection_id,
-            version: msg.version.into(),
-            // client_state_bytes: msg.client_state.value.into(),
-            // TODO(benluelo): Figure out what this is expected to be (i.e. eth abi or proto)
-            client_state_bytes: Default::default(),
-            proof_height: msg.proof_height.into(),
-            proof_try: msg.proof_try.into(),
-            proof_client: msg.proof_client.into(),
-            proof_consensus: msg.proof_consensus.into(),
-            consensus_height: msg.consensus_height.into(),
-        }
-    }
-}
-
-impl From<MsgConnectionOpenConfirm> for ibc_handler::MsgConnectionOpenConfirm {
-    fn from(msg: MsgConnectionOpenConfirm) -> ibc_handler::MsgConnectionOpenConfirm {
-        ibc_handler::MsgConnectionOpenConfirm {
-            connection_id: msg.connection_id,
-            proof_ack: msg.proof_ack.into(),
-            proof_height: msg.proof_height.into(),
-        }
-    }
-}
-
-impl From<MsgChannelOpenInit> for ibc_handler::MsgChannelOpenInit {
-    fn from(msg: MsgChannelOpenInit) -> ibc_handler::MsgChannelOpenInit {
-        ibc_handler::MsgChannelOpenInit {
-            port_id: msg.port_id,
-            channel: msg.channel.into(),
-        }
-    }
-}
-
-impl From<MsgChannelOpenTry> for ibc_handler::MsgChannelOpenTry {
-    fn from(msg: MsgChannelOpenTry) -> ibc_handler::MsgChannelOpenTry {
-        ibc_handler::MsgChannelOpenTry {
-            port_id: msg.port_id,
-            channel: msg.channel.into(),
-            counterparty_version: msg.counterparty_version,
-            proof_init: msg.proof_init.into(),
-            proof_height: msg.proof_height.into(),
-        }
-    }
-}
-
-impl From<MsgChannelOpenAck> for ibc_handler::MsgChannelOpenAck {
-    fn from(msg: MsgChannelOpenAck) -> ibc_handler::MsgChannelOpenAck {
-        ibc_handler::MsgChannelOpenAck {
-            port_id: msg.port_id,
-            channel_id: msg.channel_id,
-            counterparty_version: msg.counterparty_version,
-            counterparty_channel_id: msg.counterparty_channel_id,
-            proof_try: msg.proof_try.into(),
-            proof_height: msg.proof_height.into(),
-        }
-    }
-}
-
-impl From<MsgChannelOpenConfirm> for ibc_handler::MsgChannelOpenConfirm {
-    fn from(msg: MsgChannelOpenConfirm) -> ibc_handler::MsgChannelOpenConfirm {
-        ibc_handler::MsgChannelOpenConfirm {
-            port_id: msg.port_id,
-            channel_id: msg.channel_id,
-            proof_ack: msg.proof_ack.into(),
-            proof_height: msg.proof_height.into(),
-        }
-    }
-}
-
-impl From<Height> for IbcCoreClientV1HeightData {
-    fn from(value: Height) -> Self {
-        Self {
-            revision_number: value.revision_number,
-            revision_height: value.revision_height,
-        }
-    }
-}
-
-impl From<IbcCoreClientV1HeightData> for Height {
-    fn from(value: IbcCoreClientV1HeightData) -> Self {
-        Self {
-            revision_number: value.revision_number,
-            revision_height: value.revision_height,
-        }
-    }
-}
-
-impl From<connection::Counterparty> for IbcCoreConnectionV1CounterpartyData {
-    fn from(value: connection::Counterparty) -> Self {
-        Self {
-            client_id: value.client_id,
-            connection_id: value.connection_id,
-            prefix: value.prefix.into(),
-        }
-    }
-}
-
-impl From<IbcCoreConnectionV1CounterpartyData> for connection::Counterparty {
-    fn from(value: IbcCoreConnectionV1CounterpartyData) -> Self {
-        Self {
-            client_id: value.client_id,
-            connection_id: value.connection_id,
-            prefix: value.prefix.into(),
-        }
-    }
-}
-
-impl From<connection::Version> for IbcCoreConnectionV1VersionData {
-    fn from(value: connection::Version) -> Self {
-        Self {
-            identifier: value.identifier,
-            features: value
-                .features
-                .into_iter()
-                .map(|order| <&'static str>::from(order).to_string())
-                .collect(),
-        }
-    }
-}
-
-impl TryFrom<IbcCoreConnectionV1VersionData> for connection::Version {
-    type Error = ParseError;
-
-    fn try_from(value: IbcCoreConnectionV1VersionData) -> Result<Self, Self::Error> {
-        Ok(Self {
-            identifier: value.identifier,
-            features: value
-                .features
-                .into_iter()
-                .map(|order| order.parse())
-                .collect::<Result<_, _>>()?,
-        })
-    }
-}
-
-impl From<MerklePrefix> for IbcCoreCommitmentV1MerklePrefixData {
-    fn from(value: MerklePrefix) -> Self {
-        Self {
-            key_prefix: value.key_prefix.into(),
-        }
-    }
-}
-
-impl From<IbcCoreCommitmentV1MerklePrefixData> for MerklePrefix {
-    fn from(value: IbcCoreCommitmentV1MerklePrefixData) -> Self {
-        Self {
-            key_prefix: value.key_prefix.to_vec(),
-        }
-    }
-}
-
-impl From<MsgRecvPacket> for ibc_handler::MsgPacketRecv {
-    fn from(value: MsgRecvPacket) -> Self {
-        Self {
-            packet: value.packet.into(),
-            proof: value.proof_commitment.into(),
-            proof_height: value.proof_height.into(),
-        }
-    }
-}
-
-impl From<Packet> for IbcCoreChannelV1PacketData {
-    fn from(value: Packet) -> Self {
-        Self {
-            sequence: value.sequence,
-            source_port: value.source_port,
-            source_channel: value.source_channel,
-            destination_port: value.destination_port,
-            destination_channel: value.destination_channel,
-            data: value.data.into(),
-            timeout_height: value.timeout_height.into(),
-            timeout_timestamp: value.timeout_timestamp,
-        }
-    }
-}
-
-impl From<Channel> for IbcCoreChannelV1ChannelData {
-    fn from(value: Channel) -> Self {
-        Self {
-            state: value.state as u8,
-            ordering: value.ordering as u8,
-            counterparty: value.counterparty.into(),
-            connection_hops: value.connection_hops,
-            version: value.version,
-        }
-    }
-}
-
-impl TryFrom<IbcCoreChannelV1ChannelData> for Channel {
-    type Error = UnknownEnumVariant<u8>;
-
-    fn try_from(value: IbcCoreChannelV1ChannelData) -> Result<Self, Self::Error> {
-        Ok(Self {
-            state: value.state.try_into()?,
-            ordering: value.ordering.try_into()?,
-            counterparty: value.counterparty.into(),
-            connection_hops: value.connection_hops,
-            version: value.version,
-        })
-    }
-}
-
-impl From<channel::Counterparty> for IbcCoreChannelV1CounterpartyData {
-    fn from(value: channel::Counterparty) -> Self {
-        Self {
-            port_id: value.port_id,
-            channel_id: value.channel_id,
-        }
-    }
-}
-
-impl From<IbcCoreChannelV1CounterpartyData> for channel::Counterparty {
-    fn from(value: IbcCoreChannelV1CounterpartyData) -> Self {
-        Self {
-            port_id: value.port_id,
-            channel_id: value.channel_id,
-        }
-    }
-}
-
-#[derive(Debug)]
-pub enum TryFromConnectionEndError {
-    ParseError(ParseError),
-    UnknownEnumVariant(UnknownEnumVariant<u8>),
-}
-
-impl TryFrom<IbcCoreConnectionV1ConnectionEndData> for ConnectionEnd {
-    type Error = TryFromConnectionEndError;
-
-    fn try_from(val: IbcCoreConnectionV1ConnectionEndData) -> Result<Self, Self::Error> {
-        Ok(Self {
-            client_id: val.client_id,
-            versions: val
-                .versions
-                .into_iter()
-                .map(|x| x.try_into().map_err(TryFromConnectionEndError::ParseError))
-                .collect::<Result<_, _>>()?,
-            state: val
-                .state
-                .try_into()
-                .map_err(TryFromConnectionEndError::UnknownEnumVariant)?,
-            counterparty: val.counterparty.into(),
-            delay_period: val.delay_period,
-        })
-    }
-}
-
-impl From<cometbls::ClientState> for UnionIbcLightclientsCometblsV1ClientStateData {
-    fn from(value: cometbls::ClientState) -> Self {
-        Self {
-            chain_id: value.chain_id,
-            trust_level: value.trust_level.into(),
-            trusting_period: value.trusting_period.into(),
-            unbonding_period: value.unbonding_period.into(),
-            max_clock_drift: value.max_clock_drift.into(),
-            frozen_height: value.frozen_height.into(),
-        }
-    }
-}
-
-impl From<UnionIbcLightclientsCometblsV1ClientStateData> for cometbls::ClientState {
-    fn from(value: UnionIbcLightclientsCometblsV1ClientStateData) -> Self {
-        Self {
-            chain_id: value.chain_id,
-            trust_level: value.trust_level.into(),
-            trusting_period: value.trusting_period.into(),
-            unbonding_period: value.unbonding_period.into(),
-            max_clock_drift: value.max_clock_drift.into(),
-            frozen_height: value.frozen_height.into(),
-        }
-    }
-}
-
-impl From<cometbls::ConsensusState> for UnionIbcLightclientsCometblsV1ConsensusStateData {
-    fn from(value: cometbls::ConsensusState) -> Self {
-        Self {
-            root: value.root.into(),
-            next_validators_hash: value.next_validators_hash.into(),
-        }
-    }
-}
-
-impl From<Timestamp> for GoogleProtobufTimestampData {
-    fn from(value: Timestamp) -> Self {
-        Self {
-            secs: value.seconds,
-            // REVIEW(benluelo): Is this conversion *actually* fallible?
-            nanos: value.nanos.try_into().unwrap(),
-        }
-    }
-}
-
-impl From<Duration> for GoogleProtobufDurationData {
-    fn from(value: Duration) -> Self {
-        Self {
-            seconds: value.seconds,
-            nanos: value.nanos,
-        }
-    }
-}
-
-impl From<GoogleProtobufDurationData> for Duration {
-    fn from(value: GoogleProtobufDurationData) -> Self {
-        Self {
-            seconds: value.seconds,
-            nanos: value.nanos,
-        }
-    }
-}
-
-impl From<MerkleRoot> for IbcCoreCommitmentV1MerkleRootData {
-    fn from(value: MerkleRoot) -> Self {
-        Self {
-            hash: value.hash.into(),
-        }
-    }
-}
-
-impl From<Fraction> for UnionIbcLightclientsCometblsV1FractionData {
-    fn from(value: Fraction) -> Self {
-        Self {
-            numerator: value.numerator,
-            denominator: value.denominator,
-        }
-    }
-}
-
-impl From<UnionIbcLightclientsCometblsV1FractionData> for Fraction {
-    fn from(value: UnionIbcLightclientsCometblsV1FractionData) -> Self {
-        Self {
-            numerator: value.numerator,
-            denominator: value.denominator,
-        }
-    }
-}
-
 pub fn translate_header(
     header: ethereum_consensus::capella::LightClientHeader<256, 32>,
-) -> ethereum::LightClientHeader {
-    ethereum::LightClientHeader {
+) -> LightClientHeader {
+    LightClientHeader {
         beacon: BeaconBlockHeader {
             slot: header.beacon.slot.0,
             proposer_index: header.beacon.proposer_index.0,
@@ -1827,29 +1435,3 @@ pub fn translate_header(
             .collect(),
     }
 }
-
-// Deploying IBCClient...
-// IBCClient => 0x86D9aC0Bab011917f57B9E9607833b4340F9D4F8
-// Deploying IBCConnection...
-// IBCConnection => 0xD184c103F7acc340847eEE82a0B909E3358bc28d
-// Deploying IBCChannelHandshake...
-// IBCChannelHandshake => 0x992B9df075935E522EC7950F37eC8557e86f6fdb
-// Deploying IBCPacket...
-// IBCPacket => 0x2ffA5ecdBe006d30397c7636d3e015EEE251369F
-// Deploying OwnableIBCHandler...
-// OwnableIBCHandler => 0xFc97A6197dc90bef6bbEFD672742Ed75E9768553
-// Deploying TestnetVerifier...
-// TestnetVerifier => 0xEDa338E4dC46038493b885327842fD3E301CaB39
-// Deploying CometblsClient...
-// CometblsClient => 0x87d1f7fdfEe7f651FaBc8bFCB6E086C278b77A7d
-// Deploying ICS20Bank...
-// ICS20Bank => 0x774667629726ec1FaBEbCEc0D9139bD1C8f72a23
-// Deploying ICS20TransferBank...
-// ICS20TransferBank => 0x83428c7db9815f482a39a1715684dCF755021997
-// --ibc-handler-address 0xFc97A6197dc90bef6bbEFD672742Ed75E9768553 --cometbls-client-address 0x87d1f7fdfEe7f651FaBc8bFCB6E086C278b77A7d --ics20-module-address 0x83428c7db9815f482a39a1715684dCF755021997 --code-id 69d880e7c0eb5293320d1d9512099f6f5b55c261604efd7828dccbf9426265b2
-
-// 2023-06-17T16:01:43.150619Z  INFO relayer: connection opened cometbls_connection_id="connection-1" cometbls_client_id="cometbls-1" ethereum_connection_id="connection-0" ethereum_client_id="08-wasm-1"
-
-// λ
-
-// 2023-06-17T16:19:59.418096Z  INFO relayer: channel opened cometbls_connection_info.connection_id="connection-1" cometbls_connection_info.client_id="cometbls-1" cometbls_channel_id="channel-1" ethereum_connection_info.connection_id="connection-0" ethereum_connection_info.client_id="08-wasm-1" ethereum_channel_id="channel-0"
