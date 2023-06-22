@@ -17,7 +17,7 @@ pub struct MsgConnectionOpenInit {
     pub delay_period: u64,
 }
 
-// REVIEW(benluelo): Is it possible to get this on ethereum? Or atleast construct it somehow?
+// REVIEW(benluelo): Is it possible to get this on ethereum? Or at least construct it somehow?
 pub struct MsgConnectionOpenInitResponse {
     pub connection_id: String,
     pub inclusion_height: Height,
