@@ -284,12 +284,13 @@ async fn do_main(args: AppArgs) {
             // let balance = cometbls_lc
             //     .ics20_bank
             //     .balance_of(
-            //         H160::from(b"aaaaa55555aaaaa55555"),
-            //         format!("{}/channel-0/stake", cometbls_port_id.clone().unwrap()),
+            //         ethers::types::H160::from(b"aaaaa55555aaaaa44444"),
+            //         format!("{}/channel-11/stake", cometbls_port_id.clone().unwrap()),
             //     )
             //     .await
             //     .unwrap();
             // dbg!(balance);
+            // panic!();
 
             if open_channel {
                 let (
@@ -693,19 +694,14 @@ where
         })
         .await;
 
-    let ethereum_latest_trusted_height = ethereum
-        .query_client_state(ethereum_connection_info.client_id.clone())
-        .await
-        .height();
-
-    let cometbls_latest_height = cometbls.query_latest_height().await;
+    let update_to = cometbls.query_latest_height().await;
 
     let cometbls_latest_height = cometbls
         .update_counterparty_client(
             ethereum,
             ethereum_connection_info.client_id.clone(),
-            ethereum_latest_trusted_height,
             cometbls_latest_height,
+            update_to,
         )
         .await;
 

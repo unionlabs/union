@@ -658,7 +658,7 @@ impl Connect<Ethereum> for Cometbls {
                 .unwrap()
                 .unwrap();
 
-            decode_logs::<IBCHandlerEvents>(
+            let channel_id = decode_logs::<IBCHandlerEvents>(
                 tx_rcp
                     .logs
                     .into_iter()
@@ -674,13 +674,18 @@ impl Connect<Ethereum> for Cometbls {
                 }
                 _ => None,
             })
-            .unwrap()
+            .unwrap();
+
+            self.wait_for_execution_block(tx_rcp.block_number.unwrap())
+                .await;
+
+            channel_id
         }
     }
 
     fn channel_open_ack(&self, msg: MsgChannelOpenAck) -> impl Future<Output = ()> + '_ {
         async move {
-            self.ibc_handler
+            let tx_rcp = self.ibc_handler
                 .channel_open_ack(msg.into())
                 .send()
                 .await
@@ -688,12 +693,15 @@ impl Connect<Ethereum> for Cometbls {
                 .await
                 .unwrap()
                 .unwrap();
+
+            self.wait_for_execution_block(tx_rcp.block_number.unwrap())
+                .await;
         }
     }
 
     fn channel_open_confirm(&self, msg: MsgChannelOpenConfirm) -> impl Future<Output = ()> + '_ {
         async move {
-            self.ibc_handler
+            let tx_rcp  = self.ibc_handler
                 .channel_open_confirm(msg.into())
                 .send()
                 .await
@@ -701,6 +709,9 @@ impl Connect<Ethereum> for Cometbls {
                 .await
                 .unwrap()
                 .unwrap();
+
+            self.wait_for_execution_block(tx_rcp.block_number.unwrap())
+                .await;
         }
     }
 
@@ -1436,7 +1447,7 @@ impl Cometbls {
 
     async fn execution_height(&self, beacon_height: Height) -> Height {
         let height = reqwest::get(format!(
-            "{eth_beacon_rpc_api}/eth/v2/debug/beacon/states/{slot}",
+            "{eth_beacon_rpc_api}/eth/v2/beacon/blocks/{slot}",
             eth_beacon_rpc_api = self.eth_beacon_rpc_api,
             slot = beacon_height.revision_height
         ))
@@ -1444,7 +1455,7 @@ impl Cometbls {
         .unwrap()
         .json::<serde_json::Value>()
         .await
-        .unwrap()["data"]["latest_execution_payload_header"]["block_number"]
+        .unwrap()["data"]["message"]["body"]["execution_payload"]["block_number"]
             .as_str()
             .unwrap()
             .parse()
