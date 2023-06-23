@@ -16,24 +16,44 @@ import (
 	bls254 "github.com/consensys/gnark-crypto/ecc/bn254/signature/bls"
 
 	"github.com/cometbft/cometbft/crypto"
-	cmtjson "github.com/cometbft/cometbft/libs/json"
+	cjson "github.com/cometbft/cometbft/libs/json"
 	"github.com/holiman/uint256"
 )
 
 const (
-	PrivKeyName    = "tendermint/PrivKeyBn254"
-	PubKeyName     = "tendermint/PubKeyBn254"
-	KeyType        = "bn254"
 	PubKeySize     = sizePublicKey
 	PrivKeySize    = sizePrivateKey
 	sizeFr         = fr.Bytes
 	sizeFp         = fp.Bytes
 	sizePublicKey  = sizeFp
 	sizePrivateKey = sizeFr + sizePublicKey
-
 	XHashToScalarFieldPrefix = 0
 	YHashToScalarFieldPrefix = 1
+	PrivKeyName    = "tendermint/PrivKeyBn254"
+	PubKeyName     = "tendermint/PubKeyBn254"
+	KeyType        = "bn254"
 )
+
+var G1Gen bn254.G1Affine
+var G2Gen bn254.G2Affine
+var G2Cofactor big.Int
+
+var Hash = sha3.NewLegacyKeccak256
+
+func init() {
+	cjson.RegisterType(PubKey{}, PubKeyName)
+	cjson.RegisterType(PrivKey{}, PrivKeyName)
+
+	_, _, G1Gen, G2Gen = bn254.Generators()
+
+	// BN254 cofactor
+	value, err := new(big.Int).SetString("30644e72e131a029b85045b68181585e06ceecda572a2489345f2299c0f9fa8d", 16)
+	if !err {
+		panic("Cannot build cofactor")
+	}
+
+	G2Cofactor.Set(value)
+}
 
 var _ crypto.PrivKey = PrivKey{}
 
@@ -45,13 +65,12 @@ func (privKey PrivKey) Bytes() []byte {
 	return []byte(privKey)
 }
 
-// Signature is compressed!
 func (privKey PrivKey) Sign(msg []byte) ([]byte, error) {
 	s := new(big.Int)
 	s = s.SetBytes(privKey)
-	point := HashToG2(msg)
+	hm := HashToG2(msg)
 	var p bn254.G2Affine
-	p.ScalarMultiplication(&point, s)
+	p.ScalarMultiplication(&hm, s)
 	compressedSig := p.Bytes()
 	return compressedSig[:], nil
 }
@@ -60,7 +79,7 @@ func (privKey PrivKey) PubKey() crypto.PubKey {
 	s := new(big.Int)
 	s.SetBytes(privKey)
 	var pk bn254.G1Affine
-	pk.ScalarMultiplication(&G1Base, s)
+	pk.ScalarMultiplication(&G1Gen, s)
 	pkBytes := pk.Bytes()
 	return PubKey(pkBytes[:])
 }
@@ -82,12 +101,10 @@ type PubKey []byte
 
 func (PubKey) TypeTag() string { return PubKeyName }
 
-// Raw public key
 func (pubKey PubKey) Address() crypto.Address {
 	return crypto.AddressHash(pubKey[:])
 }
 
-// Bytes returns the PubKey byte format.
 func (pubKey PubKey) Bytes() []byte {
 	return pubKey
 }
@@ -113,7 +130,7 @@ func (pubKey PubKey) VerifySignature(msg []byte, sig []byte) bool {
 	}
 
 	var G1BaseNeg bn254.G1Affine
-	G1BaseNeg.Neg(&G1Base)
+	G1BaseNeg.Neg(&G1Gen)
 
 	valid, err := bn254.PairingCheck([]bn254.G1Affine{G1BaseNeg, public}, []bn254.G2Affine{signature, hashedMessage})
 	if err != nil {
@@ -140,31 +157,12 @@ func (pubKey PubKey) Equals(other crypto.PubKey) bool {
 func GenPrivKey() PrivKey {
 	secret, err := bls254.GenerateKey(rand.Reader)
 	if err != nil {
-		panic("bro")
+		panic(err)
 	}
 	return PrivKey(secret.Bytes())
 }
 
-var G1Base bn254.G1Affine
-var G2Base bn254.G2Affine
-var G2Cofactor big.Int
-
-var Hash = sha3.NewLegacyKeccak256
-
-func init() {
-	cmtjson.RegisterType(PubKey{}, PubKeyName)
-	cmtjson.RegisterType(PrivKey{}, PrivKeyName)
-
-	_, _, G1Base, G2Base = bn254.Generators()
-
-	value, err := new(big.Int).SetString("30644e72e131a029b85045b68181585e06ceecda572a2489345f2299c0f9fa8d", 16)
-	if !err {
-		panic("Cannot build cofactor")
-	}
-	G2Cofactor.Set(value)
-}
-
-// TODO: remove when https://github.com/ConsenSys/gnark-crypto/issues/373 is fixed
+// TODO: remove when https://github.com/ConsenSys/gnark-crypto/issues/373 and https://github.com/ConsenSys/gnark-crypto/pull/314 are merged
 func mapToCurve2(u *bn254.E2) bn254.G2Affine {
 
 	var tv1, tv2, tv3, tv4 bn254.E2
@@ -302,7 +300,7 @@ func g2Sgn0(z *bn254.E2) uint64 {
 
 }
 
-// Naive scalar multiplication used for cofactor clearing
+// Naive scalar multiplication used for cofactor clearing, basic double-and-add
 func nativeNaiveScalarMul(p bn254.G2Affine, s *big.Int) bn254.G2Affine {
 	// initialize result point to infinity
 	var result bn254.G2Affine
@@ -320,7 +318,7 @@ func nativeNaiveScalarMul(p bn254.G2Affine, s *big.Int) bn254.G2Affine {
 	return result
 }
 
-// Custom function: (hmac_keccak(msg) mod (p - 1)) + 1
+// TODO: link union whitepaper 4.1.1, equation (1), H_p
 func HashToField(msg []byte) fr.Element {
 	hmac := hmac.New(Hash, []byte("CometBLS"))
 	hmac.Write(msg)
@@ -341,18 +339,21 @@ func HashToField(msg []byte) fr.Element {
 	return element
 }
 
+// TODO: link union whitepaper 4.1.1, H_{p^2}
 func HashToField2(msg []byte) (fr.Element, fr.Element) {
 	x := HashToField(append([]byte{XHashToScalarFieldPrefix}, msg...))
 	y := HashToField(append([]byte{YHashToScalarFieldPrefix}, msg...))
 	return x, y
 }
 
+// TODO: link union whitepaper 4.1.1, M
 func HashToG2(msg []byte) bn254.G2Affine {
 	x, y := HashToField2(msg)
 	point := nativeNaiveScalarMul(mapToCurve2(&bn254.E2{
 		A0: *new(fp.Element).SetBigInt(x.BigInt(new(big.Int))),
 		A1: *new(fp.Element).SetBigInt(y.BigInt(new(big.Int))),
 	}), &G2Cofactor)
+	// Any of the following case are impossible and should break consensus
 	if !point.IsOnCurve() {
 		panic("Point is not on the curve")
 	}

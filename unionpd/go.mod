@@ -97,8 +97,8 @@ require (
 )
 
 replace (
-	github.com/cometbft/cometbft => github.com/unionfi/cometbls v0.0.0-20230512064939-963390dd5d1e
-	github.com/consensys/gnark => github.com/hussein-aitlahcen/gnark v0.0.0-20230513134152-dd41e4b5e252
-	github.com/consensys/gnark-crypto => github.com/hussein-aitlahcen/gnark-crypto v0.0.0-20230419121058-59d3a8050fda
+	github.com/cometbft/cometbft => github.com/unionfi/cometbls v0.0.0-20230606200400-20834775a066
+	github.com/consensys/gnark => github.com/unionfi/gnark v0.0.0-20230513134152-dd41e4b5e252
+	github.com/consensys/gnark-crypto => github.com/unionfi/gnark-crypto v0.0.0-20230419121058-59d3a8050fda
 	github.com/cosmos/cosmos-sdk => github.com/unionfi/cosmos-sdk v0.0.0-20230512065059-fd36c0d536f8
 )

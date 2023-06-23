@@ -652,8 +652,6 @@ github.com/huandu/go-assert v1.1.5/go.mod h1:yOLvuqZwmcHIC5rIzrBhT7D3Q9c3GFnd0Jr
 github.com/huandu/skiplist v1.2.0 h1:gox56QD77HzSC0w+Ws3MH3iie755GBJU1OER3h5VsYw=
 github.com/huandu/skiplist v1.2.0/go.mod h1:7v3iFjLcSAzO4fN5B8dvebvo/qsfumiLiDXMrPiHF9w=
 github.com/hudl/fargo v1.3.0/go.mod h1:y3CKSmjA+wD2gak7sUSXTAoopbhU08POFhmITJgmKTg=
-github.com/hussein-aitlahcen/gnark-crypto v0.0.0-20230409222230-5346db050fea h1:4eiyQRMNL9fLFUkFHYoJ10jJKRpHH72lcnrzw8b2JwM=
-github.com/hussein-aitlahcen/gnark-crypto v0.0.0-20230409222230-5346db050fea/go.mod h1:Iq/P3HHl0ElSjsg2E1gsMwhAyxnxoKK5nVyZKd+/KhU=
 github.com/hussein-aitlahcen/ibc-go/v7 v7.0.0-20230605143907-7795f755632c h1:bxvL7rDPZKtKwDT1iXCT++nxwzJkBaFoZ4XRK09XROM=
 github.com/hussein-aitlahcen/ibc-go/v7 v7.0.0-20230605143907-7795f755632c/go.mod h1:vrQ2K99Xm+YR0hRhKIpnhelZztdIkDisLiE9ungIviY=
 github.com/ianlancetaylor/demangle v0.0.0-20181102032728-5e5cf60278f6/go.mod h1:aSSvb/t6k1mPoxDqO4vJh6VOCGPwU4O0C2/Eqndh1Sc=
@@ -959,6 +957,8 @@ github.com/unionfi/cometbls v0.0.0-20230606200400-20834775a066 h1:h3xbEvrUMpdLaN
 github.com/unionfi/cometbls v0.0.0-20230606200400-20834775a066/go.mod h1:DQBrLANmGK8o6LQPxaH03I3prPrLy3gecQ2Nf2NvD6I=
 github.com/unionfi/cosmos-sdk v0.0.0-20230606111321-dbdb28960bff h1:JGvdFB/4eU082q/VzVNeuuUL4MrYkA6aB9gKkJWroRk=
 github.com/unionfi/cosmos-sdk v0.0.0-20230606111321-dbdb28960bff/go.mod h1:RT1BlAihYON6rPlX3yYfT7GmBIs8fZor/ZhGBg5Irzc=
+github.com/unionfi/gnark-crypto v0.0.0-20230409222230-5346db050fea h1:cV81XNby3jV3oScKf23LzmwgoKKsmc4ukmM35Uf0ii4=
+github.com/unionfi/gnark-crypto v0.0.0-20230409222230-5346db050fea/go.mod h1:Iq/P3HHl0ElSjsg2E1gsMwhAyxnxoKK5nVyZKd+/KhU=
 github.com/urfave/cli v1.20.0/go.mod h1:70zkFmudgCuE/ngEzBv17Jvp/497gISqfk5gWijbERA=
 github.com/urfave/cli v1.22.1/go.mod h1:Gos4lmkARVdJ6EkW0WaNv/tZAAMe9V7XWyB60NtXRu0=
 github.com/xiang90/probing v0.0.0-20190116061207-43a291ad63a2/go.mod h1:UETIi67q53MR2AWcXfiuqkDkRtnGDLqkBTpCHuJHxtU=
