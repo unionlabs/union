@@ -265,10 +265,6 @@ github.com/holiman/uint256 v1.2.2 h1:TXKcSGc2WaxPD2+bmzAsVthL4+pEN0YwXcL5qED83vk
 github.com/holiman/uint256 v1.2.2/go.mod h1:SC8Ryt4n+UBbPbIBKaG9zbbDlp4jOru9xFZmPzLUTxw=
 github.com/hpcloud/tail v1.0.0/go.mod h1:ab1qPbhIpdTxEkNHXyeSf5vhxWSCs/tWer42PpOxQnU=
 github.com/huandu/skiplist v1.2.0 h1:gox56QD77HzSC0w+Ws3MH3iie755GBJU1OER3h5VsYw=
-github.com/hussein-aitlahcen/gnark v0.0.0-20230513134152-dd41e4b5e252 h1:enl16YpBEc/2fUiS9AbKrSxSkR0tjBeFRqZTYcT5/XI=
-github.com/hussein-aitlahcen/gnark v0.0.0-20230513134152-dd41e4b5e252/go.mod h1:TAuRTdK+tMu6nIGAAaBCNO7NgUcRUyU981trdNaryfk=
-github.com/hussein-aitlahcen/gnark-crypto v0.0.0-20230419121058-59d3a8050fda h1:ekkc24EqFEN4IdLQHySmREQlHN6H9xtmzACZxBku52c=
-github.com/hussein-aitlahcen/gnark-crypto v0.0.0-20230419121058-59d3a8050fda/go.mod h1:Iq/P3HHl0ElSjsg2E1gsMwhAyxnxoKK5nVyZKd+/KhU=
 github.com/ianlancetaylor/demangle v0.0.0-20181102032728-5e5cf60278f6/go.mod h1:aSSvb/t6k1mPoxDqO4vJh6VOCGPwU4O0C2/Eqndh1Sc=
 github.com/ianlancetaylor/demangle v0.0.0-20200824232613-28f6c0f3b639/go.mod h1:aSSvb/t6k1mPoxDqO4vJh6VOCGPwU4O0C2/Eqndh1Sc=
 github.com/inconshreveable/mousetrap v1.0.0/go.mod h1:PxqpIevigyE2G7u3NXJIT2ANytuPF1OarO4DADm73n8=
@@ -438,10 +434,14 @@ github.com/tendermint/go-amino v0.16.0 h1:GyhmgQKvqF82e2oZeuMSp9JTN0N09emoSZlb2l
 github.com/tendermint/go-amino v0.16.0/go.mod h1:TQU0M1i/ImAo+tYpZi73AU3V/dKeCoMC9Sphe2ZwGME=
 github.com/tidwall/btree v1.6.0 h1:LDZfKfQIBHGHWSwckhXI0RPSXzlo+KYdjK7FWSqOzzg=
 github.com/ugorji/go/codec v0.0.0-20181204163529-d75b2dcb6bc8/go.mod h1:VFNgLljTbGfSG7qAOspJ7OScBnGdDN/yBr0sguwnwf0=
-github.com/unionfi/cometbls v0.0.0-20230512064939-963390dd5d1e h1:OBk9Iw1vWWieH6+a9ZGWhkFdjogkbWbhcV4U0i/In5w=
-github.com/unionfi/cometbls v0.0.0-20230512064939-963390dd5d1e/go.mod h1:DQBrLANmGK8o6LQPxaH03I3prPrLy3gecQ2Nf2NvD6I=
+github.com/unionfi/cometbls v0.0.0-20230606200400-20834775a066 h1:h3xbEvrUMpdLaNDviZcLOisk1cT1mxx3eR1c9ICmjNk=
+github.com/unionfi/cometbls v0.0.0-20230606200400-20834775a066/go.mod h1:DQBrLANmGK8o6LQPxaH03I3prPrLy3gecQ2Nf2NvD6I=
 github.com/unionfi/cosmos-sdk v0.0.0-20230512065059-fd36c0d536f8 h1:bIOf5ek0t6Yaj6hLoGhcqG/teAGb1dr/RJ4fbDkqkek=
 github.com/unionfi/cosmos-sdk v0.0.0-20230512065059-fd36c0d536f8/go.mod h1:KRO/bFablzixOdk/TkYuE+n1uM6fsrX/AW+RckqC9Lc=
+github.com/unionfi/gnark v0.0.0-20230513134152-dd41e4b5e252 h1:u8I/HbXdwrZvnXwJXQGGjjBq5JHgRT/01MrtfzRuB5I=
+github.com/unionfi/gnark v0.0.0-20230513134152-dd41e4b5e252/go.mod h1:TAuRTdK+tMu6nIGAAaBCNO7NgUcRUyU981trdNaryfk=
+github.com/unionfi/gnark-crypto v0.0.0-20230419121058-59d3a8050fda h1:svRAQMnpb3QhO6EsqLQBDLVNCWLveNe/UrN8ajpF8Pc=
+github.com/unionfi/gnark-crypto v0.0.0-20230419121058-59d3a8050fda/go.mod h1:Iq/P3HHl0ElSjsg2E1gsMwhAyxnxoKK5nVyZKd+/KhU=
 github.com/x448/float16 v0.8.4 h1:qLwI1I70+NjRFUR3zs1JPUCgaCXSh3SW62uAKT1mSBM=
 github.com/x448/float16 v0.8.4/go.mod h1:14CWIYCyZA/cWjXOioeEpHeN/83MdbZDRQHoFcYsOfg=
 github.com/xordataexchange/crypt v0.0.3-0.20170626215501-b2862e3d0a77/go.mod h1:aYKd//L2LvnjZzWKhF00oedf4jCCReLcmhLdhm1A27Q=

@@ -306,7 +306,7 @@ github.com/confio/ics23/go
 # github.com/consensys/bavard v0.1.13
 ## explicit; go 1.15
 github.com/consensys/bavard
-# github.com/consensys/gnark-crypto v0.9.1-0.20230127122953-83736ef21d69 => github.com/hussein-aitlahcen/gnark-crypto v0.0.0-20230409222230-5346db050fea
+# github.com/consensys/gnark-crypto v0.9.1-0.20230127122953-83736ef21d69 => github.com/unionfi/gnark-crypto v0.0.0-20230409222230-5346db050fea
 ## explicit; go 1.18
 github.com/consensys/gnark-crypto/ecc
 github.com/consensys/gnark-crypto/ecc/bn254
@@ -1423,7 +1423,7 @@ rsc.io/tmplfunc/internal/parse
 ## explicit; go 1.12
 sigs.k8s.io/yaml
 # github.com/cometbft/cometbft => github.com/unionfi/cometbls v0.0.0-20230606200400-20834775a066
-# github.com/consensys/gnark-crypto => github.com/hussein-aitlahcen/gnark-crypto v0.0.0-20230409222230-5346db050fea
+# github.com/consensys/gnark-crypto => github.com/unionfi/gnark-crypto v0.0.0-20230409222230-5346db050fea
 # github.com/cosmos/cosmos-sdk => github.com/unionfi/cosmos-sdk v0.0.0-20230606111321-dbdb28960bff
 # github.com/cosmos/ibc-go/v7 => github.com/hussein-aitlahcen/ibc-go/v7 v7.0.0-20230605143907-7795f755632c
 # github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
