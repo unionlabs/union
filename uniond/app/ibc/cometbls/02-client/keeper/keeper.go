@@ -6,7 +6,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/errors"
 	clientkeeper "github.com/cosmos/ibc-go/v7/modules/core/02-client/keeper"
-	"github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	connectiontypes "github.com/cosmos/ibc-go/v7/modules/core/03-connection/types"
 	commitmenttypes "github.com/cosmos/ibc-go/v7/modules/core/23-commitment/types"
 	"github.com/cosmos/ibc-go/v7/modules/core/exported"
@@ -14,14 +14,16 @@ import (
 )
 
 type Keeper struct {
-	clientKeeper  connectiontypes.ClientKeeper
-	stakingKeeper types.StakingKeeper
 	cdc           codec.BinaryCodec
+	clientKeeper  connectiontypes.ClientKeeper
+	stakingKeeper clienttypes.StakingKeeper
 }
 
-func NewKeeper(clientKeeper clientkeeper.Keeper) connectiontypes.ClientKeeper {
+func NewKeeper(cdc codec.BinaryCodec, clientKeeper clientkeeper.Keeper, stakingKeeper clienttypes.StakingKeeper) connectiontypes.ClientKeeper {
 	return Keeper{
-		clientKeeper: clientKeeper,
+		cdc:           cdc,
+		clientKeeper:  clientKeeper,
+		stakingKeeper: stakingKeeper,
 	}
 }
 
@@ -38,15 +40,16 @@ func (k Keeper) GetSelfConsensusState(ctx sdk.Context, height exported.Height, c
 		return k.clientKeeper.GetSelfConsensusState(ctx, height, clientType)
 	}
 
-	selfHeight, ok := height.(types.Height)
+	selfHeight, ok := height.(clienttypes.Height)
 	if !ok {
-		return nil, errorsmod.Wrapf(types.ErrInvalidHeight, "expected %T, got %T", types.Height{}, height)
+		return nil, errorsmod.Wrapf(clienttypes.ErrInvalidHeight, "expected %T, got %T", clienttypes.Height{}, height)
 	}
 	// check that height revision matches chainID revision
-	revision := types.ParseChainID(ctx.ChainID())
+	revision := clienttypes.ParseChainID(ctx.ChainID())
 	if revision != height.GetRevisionNumber() {
-		return nil, errorsmod.Wrapf(types.ErrInvalidHeight, "chainID revision number does not match height revision number: expected %d, got %d", revision, height.GetRevisionNumber())
+		return nil, errorsmod.Wrapf(clienttypes.ErrInvalidHeight, "chainID revision number does not match height revision number: expected %d, got %d", revision, height.GetRevisionNumber())
 	}
+
 	histInfo, found := k.stakingKeeper.GetHistoricalInfo(ctx, int64(selfHeight.RevisionHeight))
 	if !found {
 		return nil, errorsmod.Wrapf(errors.ErrNotFound, "no historical info found at height %d", selfHeight.RevisionHeight)
