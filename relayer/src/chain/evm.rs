@@ -1353,7 +1353,7 @@ impl Cometbls {
 
         let wallet = config.wallet.with_chain_id(chain_id.as_u64());
 
-        let signer_middleware = Arc::new(SignerMiddleware::new(provider.clone(), wallet.clone()));
+        let signer_middleware = Arc::new(SignerMiddleware::new(provider.clone(), wallet));
 
         let ibc_handler =
             ibc_handler::IBCHandler::new(config.ibc_handler_address, signer_middleware.clone());
