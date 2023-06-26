@@ -509,7 +509,7 @@ func New(
 	 client state to tendermint client state by default. This was blocking
 	 the ConnectionOpenTry to succeed.
 	*/
-	ibcCometblsClient := ibccometblsclient.NewKeeper(appCodec, ibcKeeper.ClientKeeper, app.StakingKeeper, interfaceRegistry)
+	ibcCometblsClient := ibccometblsclient.NewKeeper(appCodec, ibcKeeper.ClientKeeper, app.StakingKeeper)
 	ibcKeeper.ConnectionKeeper = ibcconnectionkeeper.NewKeeper(
 		appCodec,
 		keys[ibcexported.StoreKey],

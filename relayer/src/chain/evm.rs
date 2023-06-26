@@ -498,7 +498,7 @@ impl Connect<Ethereum> for Cometbls {
             })
             .unwrap();
 
-            tracing::info!("in conninit, waiting for execution block to be finalized");
+            tracing::info!("in connection open init, waiting for execution block to be finalized");
             self.wait_for_execution_block(tx_rcp.block_number.unwrap())
                 .await;
 

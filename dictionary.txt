@@ -9,6 +9,7 @@ Bitvector
 Blcok
 Boneh
 CCTP
+CFLAGS
 CMOV
 Chainer
 Coeff
@@ -68,6 +69,7 @@ Unjail
 Unmarshal
 Verkle
 Woestijne
+Wrapf
 aarch
 abci
 abigen
@@ -124,6 +126,7 @@ chainid
 chainsafe
 chevdor
 clientkeeper
+clienttypes
 clippy
 clsx
 cmov
@@ -231,6 +234,7 @@ groupkeeper
 groupmodule
 hasher
 healthcheck
+herumi
 holiman
 horcrux
 horiz
@@ -272,6 +276,7 @@ infima
 interchain
 interchainaccounts
 interfacetype
+iohk
 ipetkov
 journalctl
 jsonschema
@@ -289,6 +294,8 @@ lcfur
 lcgadget
 ldflags
 legendres
+libblst
+libcxx
 libiconv
 libmuslc
 libwasmvm
@@ -316,6 +323,7 @@ monniker
 multistep
 muslc
 nanos
+nasm
 neighbouring
 neoeinstein
 neofetch
@@ -329,6 +337,7 @@ nixpkgs
 nodeservice
 nodetime
 nodiscover
+noexecstack
 nolint
 numtide
 omit
@@ -376,6 +385,7 @@ provercmd
 provergrpc
 pruningtypes
 prysm
+prysmaticlabs
 prysmctl
 pubkey
 pubkey's
@@ -494,6 +504,7 @@ unbonding
 undelegate
 undelegations
 unionbundle
+unioncustomquery
 uniond
 unionfi
 unionmodule
@@ -540,6 +551,7 @@ wasmkeeper
 wasmtypes
 wasmvm
 wasmvmstatic
+wasmvmtypes
 wctx
 webpki
 woestijne

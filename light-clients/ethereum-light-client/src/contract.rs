@@ -531,7 +531,7 @@ mod test {
     //         api: MockApi::default(),
     //         querier: MockQuerier::<CustomQuery> {
     //             bank: BankQuerier::default(),
-    //             wasm: WasmQuer,
+    //             wasm: WasmQuery,
     //             ibc: todo!(),
     //             custom_handler: todo!(),
     //         },
