@@ -112,6 +112,7 @@ bitvec
 bitvector
 blcok
 blocksync
+blst
 boneh
 builtins
 cachix

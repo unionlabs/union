@@ -139,7 +139,7 @@
 
               echo "vendoring uniond..."
               cd uniond
-              ${doVendor [ "github.com/supranational/blst" ]}
+              ${doVendor [ "github.com/supranational/blst" "github.com/herumi/bls-eth-go-binary" ]}
 
               echo "vendoring unionpd..."
               cd ../unionpd
@@ -154,6 +154,7 @@
           buildInputs = [ pkgs.go ];
           src = ./.;
           doCheck = true;
+          inherit CGO_CFLAGS;
           checkPhase = ''
             # Go will try to create a .cache/ dir in $HOME.
             # We avoid this by setting $HOME to the builder directory
@@ -187,6 +188,7 @@
           buildInputs = [ pkgs.go pkgs.go-tools ];
           src = ./.;
           doCheck = true;
+          inherit CGO_CFLAGS;
           checkPhase = ''
             # Go will try to create a .cache/ dir in $HOME.
             # We avoid this by setting $HOME to the builder directory

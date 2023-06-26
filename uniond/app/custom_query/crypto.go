@@ -13,7 +13,7 @@ func AggregatePublicKeys(publicKeys [][]byte) (bls.PublicKey, error) {
 func VerifySignature(signature []byte, message [32]byte, publicKeys [][]byte) (bool, error) {
 	aggregatedPublicKey, err := AggregatePublicKeys(publicKeys)
 	if err != nil {
-		return false, fmt.Errorf("Failed to aggregate public keys %v", err)
+		return false, fmt.Errorf("failed to aggregate public keys %v", err)
 	}
 	return bls.VerifySignature(signature, message, aggregatedPublicKey)
 }

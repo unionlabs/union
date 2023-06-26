@@ -39,18 +39,18 @@ func (h *UnionCustomQueryHandler) Query(request wasmvmtypes.QueryRequest, gasLim
 	err := json.Unmarshal([]byte(request.Custom), &customQuery)
 
 	if err != nil {
-		return nil, fmt.Errorf("Failed to parse custom query %v", err)
+		return nil, fmt.Errorf("failed to parse custom query %v", err)
 	}
 
 	if customQuery.Aggregate != nil {
 		aggregatedPublicKeys, err := AggregatePublicKeys(customQuery.Aggregate.PublicKeys)
 		if err != nil {
-			return nil, fmt.Errorf("Failed to aggregate public keys %v", err)
+			return nil, fmt.Errorf("failed to aggregate public keys %v", err)
 		}
 		return json.Marshal(aggregatedPublicKeys.Marshal())
 	} else if customQuery.AggregateVerify != nil {
 		if len(customQuery.AggregateVerify.Message) != MessageSize {
-			return nil, fmt.Errorf("Invalid message length, must be a 32bytes hash: %x", customQuery.AggregateVerify.Message)
+			return nil, fmt.Errorf("invalid message length, must be a 32bytes hash: %x", customQuery.AggregateVerify.Message)
 		}
 		msg := [MessageSize]byte{}
 		for i := 0; i < MessageSize; i++ {
@@ -58,7 +58,7 @@ func (h *UnionCustomQueryHandler) Query(request wasmvmtypes.QueryRequest, gasLim
 		}
 		result, err := VerifySignature(customQuery.AggregateVerify.Signature, msg, customQuery.AggregateVerify.PublicKeys)
 		if err != nil {
-			return nil, fmt.Errorf("Failed to verify signature %v", err)
+			return nil, fmt.Errorf("failed to verify signature %v", err)
 		}
 		if result {
 			return json.Marshal(true)
