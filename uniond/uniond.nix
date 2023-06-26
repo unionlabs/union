@@ -1,5 +1,5 @@
 { ... }: {
-  perSystem = { pkgs, self', crane, system, ... }: {
+  perSystem = { pkgs, self', crane, system, ensureAtRepositoryRoot, ... }: {
     packages = {
       bls-eth =
         let
@@ -71,6 +71,36 @@
           Env = [ "SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt" ];
         };
       };
+
+      go-vendor =
+        let
+          vend = pkgs.buildGoModule {
+            pname = "vend";
+            version = "0.0.0";
+            src = pkgs.fetchFromGitHub {
+              owner = "nomad-software";
+              repo = "vend";
+              rev = "a1ea6c775ac230bb1a1428bb96e4306044aa944b";
+              sha256 = "sha256-7AdE5qps4OMjaubt9Af6ATaqrV3n73ZuI7zTz7Kgm6w=";
+            };
+            vendorSha256 = null;
+          };
+        in
+        pkgs.writeShellApplication {
+          name = "go-vendor";
+          runtimeInputs = [ pkgs.go vend ];
+          text = ''
+            ${ensureAtRepositoryRoot}
+
+            echo "vendoring uniond..."
+            cd uniond
+            vend
+
+            echo "vendoring unionpd..."
+            cd ../unionpd
+            vend
+          '';
+        };
     };
 
     checks = {

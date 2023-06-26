@@ -5,7 +5,7 @@
 # - https://github.com/cosmos/cosmos-sdk/blob/bf17fec0e7b83f98be8eba220f1800bd2d7d5011/scripts/protocgen.sh
 #
 { ... }: {
-  perSystem = { pkgs, self', inputs', proto, ibc-go, ... }: {
+  perSystem = { pkgs, self', inputs', proto, ibc-go, ensureAtRepositoryRoot, ... }: {
     packages =
       let
         grpc-gateway = pkgs.buildGoModule {
@@ -96,14 +96,7 @@
           text = ''
             set -eo pipefail
 
-            # If the current directory contains flake.nix, then we are at the repository root
-            if [[ -f flake.nix ]]
-            then
-              echo "We are at the repository root. Starting generation..."
-            else
-              echo "We are NOT at the repository root. Please cd to the repository root and try again."
-              exit 1
-            fi
+            ${ensureAtRepositoryRoot}
 
             cd uniond
 

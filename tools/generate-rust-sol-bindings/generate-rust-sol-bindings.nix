@@ -1,5 +1,5 @@
 { ... }: {
-  perSystem = { self', pkgs, system, config, inputs', crane, stdenv, ... }:
+  perSystem = { self', pkgs, system, config, inputs', crane, stdenv, ensureAtRepositoryRoot, ... }:
     let
       attrs = {
         src = crane.lib.cleanCargoSource ./.;
@@ -59,14 +59,7 @@
           name = "generate-rust-sol-bindings";
           runtimeInputs = [ rust-sol-bindings ];
           text = ''
-            # If the current directory contains flake.nix, then we are at the repository root
-            if [[ -f flake.nix ]]
-            then
-              echo "We are at the repository root. Starting generation..."
-            else
-              echo "We are NOT at the repository root. Please cd to the repository root and try again."
-              exit 1
-            fi
+            ${ensureAtRepositoryRoot}
 
             outdir="generated/contracts"
 

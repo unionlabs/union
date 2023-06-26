@@ -1,5 +1,5 @@
 { ... }: {
-  perSystem = { self', pkgs, proto, crane, system, inputs', config, ... }:
+  perSystem = { self', pkgs, proto, crane, system, inputs', config, ensureAtRepositoryRoot, ... }:
     let
       protoc-gen-tonic = crane.lib.buildPackage {
         pname = "protoc-gen-tonic";
@@ -322,14 +322,7 @@
         name = "generate-rust-proto";
         runtimeInputs = [ rust-proto ];
         text = ''
-          # If the current directory contains flake.nix, then we are at the repository root
-          if [[ -f flake.nix ]]
-          then
-            echo "We are at the repository root. Starting generation..."
-          else
-            echo "We are NOT at the repository root. Please cd to the repository root and try again."
-            exit 1
-          fi
+          ${ensureAtRepositoryRoot}
 
           outdir="generated/rust"
 

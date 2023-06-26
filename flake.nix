@@ -106,6 +106,17 @@
                 ];
               };
 
+              ensureAtRepositoryRoot = ''
+                # If the current directory contains flake.nix, then we are at the repository root
+                if [[ -f flake.nix ]]
+                then
+                  echo "We are at the repository root. Running script..."
+                else
+                  echo "We are NOT at the repository root. Please cd to the repository root and try again."
+                  exit 1
+                fi
+              '';
+
               devnetConfig = {
                 validatorCount = 4;
                 ethereum = {
