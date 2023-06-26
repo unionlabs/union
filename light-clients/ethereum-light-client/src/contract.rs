@@ -9,8 +9,8 @@ use crate::{
     update::apply_light_client_update,
 };
 use cosmwasm_std::{
-    entry_point, to_binary, BankQuery, Binary, Deps, DepsMut, Env, MessageInfo, QueryRequest,
-    QueryResponse, Response, StdError, StdResult, WasmQuery,
+    entry_point, to_binary, Binary, Deps, DepsMut, Env, MessageInfo, QueryRequest, QueryResponse,
+    Response, StdError, StdResult,
 };
 use ethabi::ethereum_types::U256 as ethabi_U256;
 use ethereum_verifier::{
@@ -54,14 +54,14 @@ pub fn execute(
             value,
         } => {
             // verify_membership(
-            //         deps.as_ref(),
-            //         height,
-            //         delay_time_period,
-            //         delay_block_period,
-            //         proof,
-            //         path,
-            //         value,
-            //     )
+            //     deps.as_ref(),
+            //     height,
+            //     delay_time_period,
+            //     delay_block_period,
+            //     proof,
+            //     path,
+            //     value,
+            // )
 
             Ok(ContractResult::valid(None))
         }
@@ -300,7 +300,7 @@ pub fn update_header(
 
     verify_account_storage_root(
         consensus_update
-            .finalized_header
+            .attested_header
             .execution
             .state_root
             .clone(),

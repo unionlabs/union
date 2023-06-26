@@ -22,7 +22,7 @@ use ethers::{
     prelude::{decode_logs, k256::ecdsa, SignerMiddleware},
     providers::{Http, Middleware, Provider},
     signers::{LocalWallet, Signer, Wallet},
-    types::{BlockNumber, H160, H256, U256, U64},
+    types::{H160, H256, U256, U64},
     utils::keccak256,
 };
 use futures::Future;
@@ -60,11 +60,9 @@ use ibc_types::{
 use lodestar_rpc::types::BeaconHeaderResponse;
 use prost::Message;
 use protos::{google, union::ibc::lightclients::ethereum::v1 as ethereum_v1};
+use reqwest::Url;
 
-use crate::{
-    chain::{cosmos::Ethereum, Connect, LightClient, StateProof},
-    ETH_BEACON_RPC_API, ETH_RPC_API,
-};
+use crate::chain::{cosmos::Ethereum, Connect, LightClient, StateProof};
 
 pub type LightClientFinalityUpdateResponse = lodestar_rpc::types::LightClientFinalityUpdateResponse<
     { ethereum_verifier::SYNC_COMMITTEE_SIZE },
@@ -449,10 +447,7 @@ impl LightClient for Cometbls {
         }
     }
 
-    fn process_height_for_counterparty(
-        &self,
-        height: super::msgs::Height,
-    ) -> impl Future<Output = super::msgs::Height> + '_ {
+    fn process_height_for_counterparty(&self, height: Height) -> impl Future<Output = Height> + '_ {
         self.execution_height(height)
     }
 }
@@ -685,7 +680,8 @@ impl Connect<Ethereum> for Cometbls {
 
     fn channel_open_ack(&self, msg: MsgChannelOpenAck) -> impl Future<Output = ()> + '_ {
         async move {
-            let tx_rcp = self.ibc_handler
+            let tx_rcp = self
+                .ibc_handler
                 .channel_open_ack(msg.into())
                 .send()
                 .await
@@ -701,7 +697,8 @@ impl Connect<Ethereum> for Cometbls {
 
     fn channel_open_confirm(&self, msg: MsgChannelOpenConfirm) -> impl Future<Output = ()> + '_ {
         async move {
-            let tx_rcp  = self.ibc_handler
+            let tx_rcp = self
+                .ibc_handler
                 .channel_open_confirm(msg.into())
                 .send()
                 .await
@@ -760,6 +757,7 @@ impl Connect<Ethereum> for Cometbls {
                     genesis_validators_root: genesis.genesis_validators_root.as_bytes().to_vec(),
                     genesis_time: genesis.genesis_time.0,
                     fork_parameters: ForkParameters {
+                        // TODO(aeryz): These will be dynamic based on the configuration
                         genesis_fork_version: vec![144, 0, 0, 105],
                         genesis_slot: 0,
                         altair: Fork {
@@ -1213,7 +1211,7 @@ impl Connect<Ethereum> for Cometbls {
                     Some(
                         // REVIEW: Do we want finalized_header.beacon.slot here?
                         finality_update
-                            .finalized_header
+                            .attested_header
                             .execution
                             .block_number
                             .0

@@ -65,9 +65,14 @@ impl TryFrom<ProtoTrustedSyncCommittee> for TrustedSyncCommittee {
                     .into_iter()
                     .map(|v| BlsPublicKey::try_from(v.as_slice()))
                     .collect::<Result<Vec<BlsPublicKey>, _>>()
-                    .map_err(|_| Error::InvalidPublicKey)?
+                    .map_err(Error::invalid_public_key)?
                     .try_into()
-                    .map_err(|_| Error::InvalidPublicKey)?,
+                    .map_err(|e| {
+                        Error::invalid_public_key(format!(
+                            "during parsing public keys in `RawTrustedSyncCommittee` {:?}",
+                            e
+                        ))
+                    })?,
                 aggregate_public_key: BlsPublicKey::try_from(
                     value
                         .sync_committee
@@ -77,7 +82,7 @@ impl TryFrom<ProtoTrustedSyncCommittee> for TrustedSyncCommittee {
                         .aggregate_pubkey
                         .as_slice(),
                 )
-                .map_err(|_| Error::InvalidPublicKey)?,
+                .map_err(Error::invalid_public_key)?,
             },
             is_next: value.is_next,
         })
@@ -405,9 +410,13 @@ pub(crate) fn convert_proto_to_consensus_update(
                     .into_iter()
                     .map(|v| BlsPublicKey::try_from(v.as_slice()))
                     .collect::<Result<Vec<BlsPublicKey>, _>>()
-                    .map_err(|_| Error::InvalidPublicKey)?
+                    .map_err(Error::invalid_public_key)?
                     .try_into()
-                    .map_err(|_| Error::InvalidPublicKey)?,
+                    .map_err(|_| {
+                        Error::invalid_public_key(
+                            "during parsing sync committee in consensus update",
+                        )
+                    })?,
                 aggregate_public_key: BlsPublicKey::try_from(
                     consensus_update
                         .next_sync_committee
@@ -417,7 +426,7 @@ pub(crate) fn convert_proto_to_consensus_update(
                         .aggregate_pubkey
                         .as_slice(),
                 )
-                .map_err(|_| Error::InvalidPublicKey)?,
+                .map_err(Error::invalid_public_key)?,
             })
         },
         next_sync_committee_branch: if consensus_update.next_sync_committee_branch.is_empty() {

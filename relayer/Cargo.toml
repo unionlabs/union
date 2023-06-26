@@ -34,4 +34,4 @@ clap = { version = "4.3.0", features = ["derive"] }
 tracing = "0.1.37"
 tracing-forest = "0.1.5"
 ibc-types = { path = "../lib/ibc-types" }
-ethereum-verifier = { path = "../lib/ethereum-verifier"}
+ethereum-verifier = { path = "../lib/ethereum-verifier" }

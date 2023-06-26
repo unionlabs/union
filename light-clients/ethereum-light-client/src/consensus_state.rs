@@ -51,7 +51,7 @@ impl TryFrom<RawConsensusState> for ConsensusState {
         } else {
             Some(
                 BlsPublicKey::try_from(value.next_sync_committee.as_slice())
-                    .map_err(|_| Error::InvalidPublicKey)?,
+                    .map_err(Error::invalid_public_key)?,
             )
         };
         Ok(Self {
@@ -59,7 +59,7 @@ impl TryFrom<RawConsensusState> for ConsensusState {
             storage_root: value.storage_root.into(),
             timestamp: value.timestamp,
             current_sync_committee: BlsPublicKey::try_from(value.current_sync_committee.as_slice())
-                .map_err(|_| Error::InvalidPublicKey)?,
+                .map_err(Error::invalid_public_key)?,
             next_sync_committee,
         })
     }

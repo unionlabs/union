@@ -24,8 +24,8 @@ pub enum Error {
     #[error("Invalid client id")]
     InvalidClientId,
 
-    #[error("Invalid client id")]
-    InvalidPublicKey,
+    #[error("Invalid public key: {0}")]
+    InvalidPublicKey(String),
 
     #[error("Invalid height")]
     InvalidHeight,
@@ -88,6 +88,10 @@ pub enum Error {
 impl Error {
     pub fn decode<S: Into<String>>(s: S) -> Error {
         Error::DecodeError(s.into())
+    }
+
+    pub fn invalid_public_key<S: ToString>(s: S) -> Error {
+        Error::InvalidPublicKey(s.to_string())
     }
 
     pub fn invalid_commitment_key<B1: AsRef<[u8]>, B2: AsRef<[u8]>>(
