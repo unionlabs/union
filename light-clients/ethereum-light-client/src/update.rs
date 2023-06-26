@@ -19,7 +19,7 @@ pub fn apply_light_client_update<C: LightClientContext>(
 ) -> Result<(), Error> {
     let store_period = compute_sync_committee_period_at_slot(consensus_state.slot);
     let update_finalized_period =
-        compute_sync_committee_period_at_slot(consensus_update.finalized_header.beacon.slot);
+        compute_sync_committee_period_at_slot(consensus_update.attested_header.beacon.slot);
 
     match consensus_state.next_sync_committee {
         None if update_finalized_period != store_period => {
@@ -39,8 +39,8 @@ pub fn apply_light_client_update<C: LightClientContext>(
         _ => {}
     }
 
-    if consensus_update.finalized_header.beacon.slot > consensus_state.slot {
-        consensus_state.slot = consensus_update.finalized_header.beacon.slot;
+    if consensus_update.attested_header.beacon.slot > consensus_state.slot {
+        consensus_state.slot = consensus_update.attested_header.beacon.slot;
         // NOTE(aeryz): we don't use `optimistic_header`
     }
 
@@ -52,8 +52,8 @@ pub fn apply_light_client_update<C: LightClientContext>(
         consensus_update.finalized_header.beacon.slot,
     );
 
-    if client_state.latest_slot < consensus_update.finalized_header.beacon.slot {
-        client_state.latest_slot = consensus_update.finalized_header.beacon.slot;
+    if client_state.latest_slot < consensus_update.attested_header.beacon.slot {
+        client_state.latest_slot = consensus_update.attested_header.beacon.slot;
     }
 
     Ok(())

@@ -1,8 +1,5 @@
 use crate::{errors::Error, eth_types::SyncCommittee};
-use ethereum_verifier::{
-    crypto::{eth_aggregate_public_keys, BlsPublicKey},
-    primitives::Slot,
-};
+use ethereum_verifier::{crypto::BlsPublicKey, primitives::Slot};
 use ibc::core::ics23_commitment::commitment::CommitmentRoot;
 use prost::Message;
 use protos::{
@@ -18,7 +15,7 @@ pub const ETHEREUM_CONSENSUS_STATE_TYPE_URL: &str = "/ibc.lightclients.ethereum.
 
 #[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct ConsensusState {
-    /// finalized header's slot
+    /// trusted header's slot
     pub slot: Slot,
     /// the storage root of the IBC contract
     pub storage_root: CommitmentRoot,
@@ -51,7 +48,7 @@ impl TryFrom<RawConsensusState> for ConsensusState {
         } else {
             Some(
                 BlsPublicKey::try_from(value.next_sync_committee.as_slice())
-                    .map_err(|_| Error::InvalidPublicKey)?,
+                    .map_err(Error::invalid_public_key)?,
             )
         };
         Ok(Self {
@@ -59,7 +56,7 @@ impl TryFrom<RawConsensusState> for ConsensusState {
             storage_root: value.storage_root.into(),
             timestamp: value.timestamp,
             current_sync_committee: BlsPublicKey::try_from(value.current_sync_committee.as_slice())
-                .map_err(|_| Error::InvalidPublicKey)?,
+                .map_err(Error::invalid_public_key)?,
             next_sync_committee,
         })
     }
@@ -115,12 +112,10 @@ impl TrustedConsensusState {
     pub fn new(
         consensus_state: ConsensusState,
         sync_committee: SyncCommittee,
+        aggregate_public_key: BlsPublicKey,
         is_next: bool,
     ) -> Result<Self, Error> {
-        if eth_aggregate_public_keys(&sync_committee.public_keys)
-            .map_err(|_| Error::InvalidSyncCommittee)?
-            != sync_committee.aggregate_public_key
-        {
+        if aggregate_public_key != sync_committee.aggregate_public_key {
             return Err(Error::InvalidSyncCommittee);
         }
 

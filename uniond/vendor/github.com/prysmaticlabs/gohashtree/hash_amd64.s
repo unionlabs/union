@@ -1,0 +1,3808 @@
+/*
+MIT License
+
+Copyright (c) 2021 Prysmatic Labs
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+This code is based on Intel's implementation found in
+	https://github.com/intel/intel-ipsec-mb
+Copied parts are
+	Copyright (c) 2012-2021, Intel Corporation
+*/
+
+#include "textflag.h"
+
+// AVX x1 definitions
+
+#define OUTPUT_PTR	DI
+#define DATA_PTR	SI
+#define NUM_BLKS	DX
+#define TBL		CX
+
+#define RAL AX
+#define RBL BX
+#define RCL BP
+#define RDL R8
+#define REL R9
+#define RFL R10
+#define RGL R11
+#define RHL R12
+
+#define XTMP0 X4
+#define XTMP1 X5
+#define XTMP2 X6
+#define XTMP3 X7
+#define XTMP4 X8
+#define XTMP5 X11
+#define XFER X9
+
+#define y0 R13
+#define y1 R14
+#define y2 R15
+
+#define _SHUF_00BA X10
+#define _SHUF_DC00 X12
+#define _BYTE_FLIP_MASK X13
+
+#define COPY_XMM_AND_BSWAP(dst,src,msk) \
+	VMOVDQU		src, dst; \
+	VPSHUFB		msk, dst, dst
+
+#define FOUR_ROUNDS_AND_SCHEDA(a, b, c, d, e, f, g, h, X0_, X1_, X2_, X3_) \
+	RORXL	$(25-11), e, y0; \
+		VPALIGNR	$4, X2_, X3_, XTMP0; \
+	RORXL	$(22-13), a, y1; \
+	XORL	e, y0; \
+	MOVL	f, y2; \
+	RORXL	$(11-6), y0, y0; \
+	XORL	a, y1; \
+	XORL	g, y2; \
+		VPADDD	X0_, XTMP0, XTMP0; \
+	XORL	e, y0; \
+	ANDL	e, y2; \
+	RORXL	$(13-2), y1, y1; \ 
+		VPALIGNR	$4, X0_, X1_, XTMP1; \
+	XORL	a, y1; \
+	RORXL	$6, y0, y0; \ 
+	XORL	g, y2; \
+	RORXL	$2, y1, y1; \
+	ADDL	y0, y2; \
+	ADDL	(0*4)(SP), y2; \
+	MOVL	a, y0; \
+	ADDL	y2, h; \
+	MOVL	a, y2; \
+		VPSRLD	$7, XTMP1, XTMP2; \
+	ORL	c, y0; \
+	ADDL	h, d; \
+	ANDL	c, y2; \
+		VPSLLD	$(32-7), XTMP1, XTMP3; \
+	ANDL	b, y0; \
+	ADDL	y1, h; \
+		VPOR	XTMP2, XTMP3, XTMP3; \
+	ORL	y2, y0; \
+	ADDL	y0, h
+
+#define FOUR_ROUNDS_AND_SCHEDB(a, b, c, d, e, f, g, h, X0_, X1_, X2_, X3_) \
+	RORXL	$(25-11), e, y0; \
+	RORXL	$(22-13), a, y1; \
+	XORL	e, y0; \
+		VPSRLD	$18, XTMP1, XTMP2; \
+	MOVL	f, y2; \
+	RORXL	$(11-6), y0, y0; \
+	XORL	a, y1; \
+	XORL	g, y2; \
+		VPSRLD	$3, XTMP1, XTMP4; \
+	XORL	e, y0; \
+	ANDL	e, y2; \
+	RORXL	$(13-2), y1, y1; \
+	XORL	a, y1; \
+	RORXL	$6, y0, y0; \
+		VPSLLD	$(32-18), XTMP1, XTMP1; \
+	XORL	g, y2; \
+	RORXL	$2, y1, y1; \
+		VPXOR	XTMP1, XTMP3, XTMP3; \
+	ADDL	y0, y2; \
+	ADDL	(1*4)(SP), y2; \
+	MOVL	a, y0; \
+		VPXOR	XTMP2, XTMP3, XTMP3; \
+	ADDL	y2, h; \
+	MOVL	a, y2; \
+	ORL	c, y0; \
+		VPXOR	XTMP4, XTMP3, XTMP1; \
+	ADDL	h, d; \
+	ANDL	c, y2; \
+		VPSHUFD $0xFA, X3_, XTMP2; \
+	ANDL	b, y0; \
+	ADDL	y1, h; \
+		VPADDD	XTMP1, XTMP0, XTMP0; \
+	ORL	y2, y0; \
+	ADDL	y0, h
+
+
+#define FOUR_ROUNDS_AND_SCHEDC(a, b, c, d, e, f, g, h, X0_, X1_, X2_, X3_) \
+	RORXL	$(25-11), e, y0; \
+	RORXL	$(22-13), a, y1; \
+	XORL	e, y0; \
+		VPSRLD	$10, XTMP2, XTMP4; \
+	MOVL	f, y2; \
+	RORXL	$(11-6), y0, y0; \
+	XORL	a, y1; \
+		VPSRLQ	$19, XTMP2, XTMP3; \
+	XORL	g, y2; \
+	XORL	e, y0; \
+	ANDL	e, y2; \
+		VPSRLQ	$17, XTMP2, XTMP2; \
+	RORXL	$(13-2), y1, y1; \
+	XORL	a, y1; \
+	RORXL	$6, y0, y0; \
+		VPXOR	XTMP3, XTMP2, XTMP2; \
+	XORL	g, y2; \
+	RORXL	$2, y1, y1; \
+	ADDL	y0, y2; \
+		VPXOR	XTMP2, XTMP4, XTMP4; \
+	ADDL	(2*4)(SP), y2; \
+	MOVL	a, y0; \
+	ADDL	y2, h; \
+		VPSHUFB	 _SHUF_00BA, XTMP4, XTMP4; \
+	MOVL	a, y2; \
+	ORL	c, y0; \
+	ADDL	h, d; \
+		VPADDD	XTMP4, XTMP0, XTMP0; \
+	ANDL	c, y2; \
+	ANDL	b, y0; \
+		VPSHUFD $0x50, XTMP0, XTMP2; \
+	ADDL	y1, h; \
+	ORL	y2, y0; \
+	ADDL	y0, h
+
+#define FOUR_ROUNDS_AND_SCHEDD(a, b, c, d, e, f, g, h, X0_, X1_, X2_, X3_) \
+	RORXL	$(25-11), e, y0; \
+	RORXL	$(22-13), a, y1; \
+		VPSRLD	$10, XTMP2, XTMP5; \
+	XORL	e, y0; \
+	MOVL	f, y2; \
+	RORXL	$(11-6), y0, y0; \
+		VPSRLQ  $19, XTMP2, XTMP3; \
+	XORL	a, y1; \
+	XORL	g, y2; \
+	XORL	e, y0; \
+		VPSRLQ $17, XTMP2, XTMP2; \
+	ANDL	e, y2; \
+	RORXL	$(13-2), y1, y1; \
+	XORL	a, y1; \
+		VPXOR	XTMP3, XTMP2, XTMP2; \
+	RORXL	$6, y0, y0; \
+	XORL	g, y2; \
+	RORXL	$2, y1, y1; \
+		VPXOR	XTMP2, XTMP5, XTMP5; \
+	ADDL	y0, y2; \
+	ADDL	(3*4)(SP), y2; \
+	MOVL	a, y0; \
+	ADDL	y2, h; \
+	MOVL	a, y2; \
+		VPSHUFB	 _SHUF_DC00, XTMP5, XTMP5; \
+	ORL	c, y0; \
+	ADDL	h, d; \
+	ANDL	c, y2; \
+		VPADDD	XTMP0, XTMP5, X0_; \
+	ANDL	b, y0; \
+	ADDL	y1, h; \
+	ORL	y2, y0; \
+	ADDL	y0, h
+
+#define FOUR_ROUNDS_AND_SCHED(a, b, c, d, e, f, g, h, X0_, X1_, X2_, X3_) \
+	FOUR_ROUNDS_AND_SCHEDA(a, b, c, d, e, f, g, h, X0_, X1_, X2_, X3_); \
+	FOUR_ROUNDS_AND_SCHEDB(h, a, b, c, d, e, f, g, X0_, X1_, X2_, X3_); \
+	FOUR_ROUNDS_AND_SCHEDC(g, h, a, b, c, d, e, f, X0_, X1_, X2_, X3_); \
+	FOUR_ROUNDS_AND_SCHEDD(f, g, h, a, b, c, d, e, X0_, X1_, X2_, X3_)
+
+#define DO_ROUND(base, offset, a, b, c, d, e, f, g, h) \
+	RORXL	$(25-11), e, y0; \
+	RORXL	$(22-13), a, y1; \
+	XORL	e, y0; \
+	MOVL	f, y2; \
+	RORXL	$(11-6), y0, y0; \
+	XORL	a, y1; \
+	XORL	g, y2; \
+	XORL	e, y0; \
+	ANDL	e, y2; \
+	RORXL	$(13-2), y1, y1; \
+	XORL	a, y1; \
+	RORXL	$6, y0, y0; \
+	XORL	g, y2; \
+	RORXL	$2, y1, y1; \
+	ADDL	y0, y2; \
+	ADDL	(offset)(base), y2; \
+	MOVL	a, y0; \
+	ADDL	y2, h; \
+	MOVL	a, y2; \
+	ORL	c, y0; \
+	ADDL	h, d; \
+	ANDL	c, y2; \
+	ANDL	b, y0; \
+	ADDL	y1, h; \
+	ORL	y2, y0; \
+	ADDL	y0, h
+
+// AVX x4 definitions
+
+#define XA0	X8
+#define XA1	X9
+#define XA2	X10
+
+#define XT0	X14
+#define XT1	X13
+#define XT2	X12
+#define XT3	X11
+#define XT4	X10
+#define XT5	X9
+#define TMP4	X15 
+
+#define TRANSPOSE_4_U32(r0, r1, r2, r3, t0, t1) \
+	VSHUFPS $0x44, r1, r0, t0; \
+	VSHUFPS $0xEE, r1, r0, r0; \
+	VSHUFPS $0x44, r3, r2, t1; \
+	VSHUFPS $0xEE, r3, r2, r2; \
+	VSHUFPS $0xDD, t1, t0, r1; \
+	VSHUFPS $0xDD, r2, r0, r3; \
+	VSHUFPS $0x88, r2, r0, r0; \
+	VSHUFPS $0x88, t1, t0, t0
+
+#define PRORD4(src, imm) \
+	VPSLLD	$(32 - imm), src, TMP4; \
+	VPSRLD  $imm, src, src; \
+	VPOR	TMP4, src, src
+
+#define PRORD4_nd(dst, src, amt) \
+	VPSLLD $(32 - amt), src, TMP4; \
+	VPSRLD $amt, src, dst; \
+	VPOR   TMP4, dst, dst
+
+#define ROUND4_00_15_PADD(a, b, c, d, e, f, g, h, T1, i) \
+	PRORD4_nd(XA0, e, 5); \
+	VPXOR	g, f, XA2; \
+	VPAND	e, XA2, XA2; \
+	VPXOR	g, XA2, XA2; \
+	PRORD4_nd(XA1, e, 25); \
+	VMOVDQU	(64*i)(TBL), T1; \
+	VPXOR	e, XA0, XA0; \
+	PRORD4(XA0, 6); \
+	VPADDD	XA2, h, h; \
+	PRORD4_nd(XA2, a, 11); \
+	VPADDD	T1, h, h; \
+	VPXOR	XA1, XA0, XA0; \
+	PRORD4_nd(XA1, a, 22); \
+	VPXOR	c, a, T1; \
+	VPAND	b, T1, T1; \
+	VPADDD	XA0, h, h; \
+	VPADDD	h, d, d; \
+	VPXOR	a, XA2, XA2; \
+	PRORD4(XA2, 2); \
+	VPXOR	XA1, XA2, XA2; \
+	VPAND	c, a, XA1; \
+	VPOR	T1, XA1, XA1; \
+	VPADDD	XA1, h, h; \
+	VPADDD	XA2, h, h
+
+#define ROUND4_00_15(a, b, c, d, e, f, g, h, T1, i) \
+	PRORD4_nd(XA0, e, 5); \
+	VPXOR	g, f, XA2; \
+	VPAND	e, XA2, XA2; \
+	VPXOR	g, XA2, XA2; \
+	PRORD4_nd(XA1, e, 25); \
+	VMOVDQU	T1, (16*(i&0xf))(SP); \
+	VPADDD	(64*i)(TBL), T1, T1; \
+	VPXOR	e, XA0, XA0; \
+	PRORD4(XA0, 6); \
+	VPADDD	XA2, h, h; \
+	PRORD4_nd(XA2, a, 11); \
+	VPADDD	T1, h, h; \
+	VPXOR	XA1, XA0, XA0; \
+	PRORD4_nd(XA1, a, 22); \
+	VPXOR	c, a, T1; \
+	VPAND	b, T1, T1; \
+	VPADDD	XA0, h, h; \
+	VPADDD	h, d, d; \
+	VPXOR	a, XA2, XA2; \
+	PRORD4(XA2, 2); \
+	VPXOR	XA1, XA2, XA2; \
+	VPAND	c, a, XA1; \
+	VPOR	T1, XA1, XA1; \
+	VPADDD	XA1, h, h; \
+	VPADDD	XA2, h, h
+
+#define ROUND4_16_XX(a, b, c, d, e, f, g, h, T1, i) \
+	VMOVDQU	(16*((i-15)&0x0f))(SP), T1; \
+	VMOVDQU	(16*((i-2)&0x0f))(SP), XA1; \
+	VMOVDQA	T1, XA0; \
+	PRORD4(T1, 11); \
+	VMOVDQA	XA1, XA2; \
+	PRORD4(XA1, 2); \
+	VPXOR	XA0, T1, T1; \
+	PRORD4(T1, 7); \
+	VPXOR	XA2, XA1, XA1; \
+	PRORD4(XA1, 17); \
+	VPSRLD	$3, XA0, XA0; \
+	VPXOR	XA0, T1, T1; \
+	VPSRLD	$10, XA2, XA2; \
+	VPXOR	XA2, XA1, XA1; \
+	VPADDD	(16*((i-16)&0x0f))(SP), T1, T1; \
+	VPADDD	(16*((i-7)&0x0f))(SP), XA1, XA1; \
+	VPADDD	XA1, T1, T1; \
+	ROUND4_00_15(a, b, c, d, e, f, g, h, T1, i)
+
+
+// AVX2 x8 definitions
+
+#define a0 Y12
+#define a1 Y13
+#define a2 Y14
+#define TMP Y15
+#define TMP0 Y6
+#define TMP1 Y7
+#define TT0 Y8
+#define TT1 Y9
+#define TT2 Y10
+#define TT3 Y11
+#define TT4 Y12
+#define TT5 Y13
+#define TT6 Y14
+#define TT7 Y15
+
+#define _DIGEST	512
+#define _YTMP	768
+
+#define YTMP0	_YTMP + 0*32
+#define YTMP1	_YTMP + 1*32
+#define YTMP2	_YTMP + 2*32
+#define YTMP3	_YTMP + 3*32
+
+#define TRANSPOSE8_U32_LOAD8(offset) \
+	VMOVUPS	(offset + 0*64)(DATA_PTR), TT0; \
+	VMOVUPS	(offset + 1*64)(DATA_PTR), TT1; \
+	VMOVUPS	(offset + 2*64)(DATA_PTR), TT2; \
+	VMOVUPS	(offset + 3*64)(DATA_PTR), TT3; \
+	VMOVUPS	(offset + 0*64+16)(DATA_PTR), TT4; \
+	VMOVUPS	(offset + 1*64+16)(DATA_PTR), TT5; \
+	VMOVUPS	(offset + 2*64+16)(DATA_PTR), TT6; \
+	VMOVUPS	(offset + 3*64+16)(DATA_PTR), TT7; \
+	VINSERTI128 $0x01, (offset + 4*64)(DATA_PTR), TT0, TT0; \
+	VINSERTI128 $0x01, (offset + 5*64)(DATA_PTR), TT1, TT1; \
+	VINSERTI128 $0x01, (offset + 6*64)(DATA_PTR), TT2, TT2; \
+	VINSERTI128 $0x01, (offset + 7*64)(DATA_PTR), TT3, TT3; \
+	VINSERTI128 $0x01, (offset + 4*64+16)(DATA_PTR), TT4, TT4; \
+	VINSERTI128 $0x01, (offset + 5*64+16)(DATA_PTR), TT5, TT5; \
+	VINSERTI128 $0x01, (offset + 6*64+16)(DATA_PTR), TT6, TT6; \
+	VINSERTI128 $0x01, (offset + 7*64+16)(DATA_PTR), TT7, TT7
+
+#define TRANSPOSE8_U32_PRELOADED \
+	VSHUFPS $0x44, TT1, TT0, TMP0; \
+	VSHUFPS $0xEE, TT1, TT0, TT0; \
+	VSHUFPS $0x44, TT3, TT2, TMP1; \
+	VSHUFPS $0xEE, TT3, TT2, TT2; \
+	VSHUFPS $0xDD, TMP1, TMP0, TT1; \
+	VSHUFPS $0xDD, TT2, TT0, TT3; \
+	VSHUFPS $0x88, TT2, TT0, TT2; \
+	VSHUFPS $0x88, TMP1, TMP0, TT0; \
+	VSHUFPS $0x44, TT5, TT4, TMP0; \
+	VSHUFPS $0xEE, TT5, TT4, TT4; \
+	VSHUFPS $0x44, TT7, TT6, TMP1; \
+	VSHUFPS $0xEE, TT7, TT6, TT6; \
+	VSHUFPS $0xDD, TMP1, TMP0, TT5; \
+	VSHUFPS $0xDD, TT6, TT4, TT7; \
+	VSHUFPS $0x88, TT6, TT4, TT6; \
+	VSHUFPS $0x88, TMP1, TMP0, TT4
+
+#define TRANSPOSE8_U32 \
+       VSHUFPS $0x44, Y1, Y0, TT0; \
+       VSHUFPS $0xEE, Y1, Y0, Y0; \
+       VSHUFPS $0x44, Y3, Y2, TT1; \
+       VSHUFPS $0xEE, Y3, Y2, Y2; \
+       VSHUFPS $0xDD, TT1, TT0, Y3; \
+       VSHUFPS $0x88, Y2, Y0, Y1; \
+       VSHUFPS $0xDD, Y2, Y0, Y0; \
+       VSHUFPS $0x88, TT1, TT0, TT0; \
+       VSHUFPS $0x44, Y5, Y4, Y2; \
+       VSHUFPS $0xEE, Y5, Y4, Y4; \
+       VSHUFPS $0x44, Y7, Y6, TT1; \
+       VSHUFPS $0xEE, Y7, Y6, Y6; \
+       VSHUFPS $0xDD, TT1, Y2, Y7; \
+       VSHUFPS $0x88, Y6, Y4, Y5; \
+       VSHUFPS $0xDD, Y6, Y4, Y4; \
+       VSHUFPS $0x88, TT1, Y2, TT1; \
+       VPERM2F128 $0x13, Y1, Y5, Y6; \
+       VPERM2F128 $0x02, Y1, Y5, Y2; \
+       VPERM2F128 $0x13, Y3, Y7, Y5; \
+       VPERM2F128 $0x02, Y3, Y7, Y1; \
+       VPERM2F128 $0x13, Y0, Y4, Y7; \
+       VPERM2F128 $0x02, Y0, Y4, Y3; \
+       VPERM2F128 $0x13, TT0, TT1, Y4; \
+       VPERM2F128 $0x02, TT0, TT1, Y0
+
+#define PRORD(src, imm) \
+	VPSLLD	$(32 - imm), src, TMP; \
+	VPSRLD  $imm, src, src; \
+	VPOR	TMP, src, src
+
+#define PRORD_nd(dst, src, amt) \
+	VPSLLD $(32 - amt), src, TMP; \
+	VPSRLD $amt, src, dst; \
+	VPOR   TMP, dst, dst
+
+#define ROUND_00_15_PADD(a, b, c, d, e, f, g, h, T1, i) \
+	PRORD_nd(a0, e, 5); \
+	VPXOR	g, f, a2; \
+	VPAND	e, a2, a2; \
+	VPXOR	g, a2, a2; \
+	PRORD_nd(a1, e, 25); \
+	VMOVDQU	(64*i)(TBL), T1; \
+	VPXOR	e, a0, a0; \
+	PRORD(a0, 6); \
+	VPADDD	a2, h, h; \
+	PRORD_nd(a2, a, 11); \
+	VPADDD	T1, h, h; \
+	VPXOR	a1, a0, a0; \
+	PRORD_nd(a1, a, 22); \
+	VPXOR	c, a, T1; \
+	VPAND	b, T1, T1; \
+	VPADDD	a0, h, h; \
+	VPADDD	h, d, d; \
+	VPXOR	a, a2, a2; \
+	PRORD(a2, 2); \
+	VPXOR	a1, a2, a2; \
+	VPAND	c, a, a1; \
+	VPOR	T1, a1, a1; \
+	VPADDD	a1, h, h; \
+	VPADDD	a2, h, h
+
+
+#define ROUND_00_15(a, b, c, d, e, f, g, h, T1, i) \
+	PRORD_nd(a0, e, 5); \
+	VPXOR	g, f, a2; \
+	VPAND	e, a2, a2; \
+	VPXOR	g, a2, a2; \
+	PRORD_nd(a1, e, 25); \
+	VMOVDQU	T1, (32*(i&0xf))(SP); \
+	VPADDD	(64*i)(TBL), T1, T1; \
+	VPXOR	e, a0, a0; \
+	PRORD(a0, 6); \
+	VPADDD	a2, h, h; \
+	PRORD_nd(a2, a, 11); \
+	VPADDD	T1, h, h; \
+	VPXOR	a1, a0, a0; \
+	PRORD_nd(a1, a, 22); \
+	VPXOR	c, a, T1; \
+	VPAND	b, T1, T1; \
+	VPADDD	a0, h, h; \
+	VPADDD	h, d, d; \
+	VPXOR	a, a2, a2; \
+	PRORD(a2, 2); \
+	VPXOR	a1, a2, a2; \
+	VPAND	c, a, a1; \
+	VPOR	T1, a1, a1; \
+	VPADDD	a1, h, h; \
+	VPADDD	a2, h, h
+
+#define ROUND_16_XX(a, b, c, d, e, f, g, h, T1, i) \
+	VMOVDQU	(32*((i-15)&0x0f))(SP), T1; \
+	VMOVDQU	(32*((i-2)&0x0f))(SP), a1; \
+	VMOVDQA	T1, a0; \
+	PRORD(T1, 11); \
+	VMOVDQA	a1, a2; \
+	PRORD(a1, 2); \
+	VPXOR	a0, T1, T1; \
+	PRORD(T1, 7); \
+	VPXOR	a2, a1, a1; \
+	PRORD(a1, 17); \
+	VPSRLD	$3, a0, a0; \
+	VPXOR	a0, T1, T1; \
+	VPSRLD	$10, a2, a2; \
+	VPXOR	a2, a1, a1; \
+	VPADDD	(32*((i-16)&0x0f))(SP), T1, T1; \
+	VPADDD	(32*((i-7)&0x0f))(SP), a1, a1; \
+	VPADDD	a1, T1, T1; \
+	ROUND_00_15(a, b, c, d, e, f, g, h, T1, i)
+
+// AVX x16 definitions
+#define PADDINGAVX512   R8
+#define DIGESTAVX512    R11
+
+#define ZT1	Z8
+#define ZTMP0	Z9
+#define ZTMP1	Z10
+#define ZTMP2	Z11
+#define ZTMP3	Z12
+#define ZTMP4	Z13
+#define ZTMP5	Z14
+#define ZTMP6	Z15
+
+#define YW0	Y16
+#define YW1	Y17
+#define YW2	Y18
+#define YW3	Y19
+#define YW4	Y20
+#define YW5	Y21
+#define YW6	Y22
+#define YW7	Y23
+#define YW8	Y24
+#define YW9	Y25
+#define YW10	Y26
+#define YW11	Y27
+#define YW12	Y28
+#define YW13	Y29
+#define YW14	Y30
+#define YW15	Y31
+
+#define W0	Z16
+#define W1	Z17
+#define W2	Z18
+#define W3	Z19
+#define W4	Z20
+#define W5	Z21
+#define W6	Z22
+#define W7	Z23
+#define W8	Z24
+#define W9	Z25
+#define W10	Z26
+#define W11	Z27
+#define W12	Z28
+#define W13	Z29
+#define W14	Z30
+#define W15	Z31
+
+#define TRANSPOSE_8x16_U32 \
+	VMOVDQA32	ZTMP5, ZTMP0; \
+	VMOVDQA32	ZTMP5, ZTMP1; \
+	VPERMI2D	Z4, Z0, ZTMP0; \
+	VPERMI2D	Z5, Z1, ZTMP1; \
+	VMOVDQA32	ZTMP6, ZTMP2; \
+	VMOVDQA32	ZTMP6, ZTMP3; \
+	VPERMI2D	Z4, Z0, ZTMP2; \
+	VPERMI2D	Z5, Z1, ZTMP3; \
+	VMOVDQA32	ZTMP5, Z0; \
+	VMOVDQA32	ZTMP5, Z1; \
+	VPERMI2D	Z6, Z2, Z0; \
+	VPERMI2D	Z7, Z3, Z1; \
+	VMOVDQA32	ZTMP6, Z4; \
+	VMOVDQA32	ZTMP6, Z5; \
+	VPERMI2D	Z6, Z2, Z4; \
+	VPERMI2D	Z7, Z3, Z5; \
+	VSHUFPS		$0x88, ZTMP1, ZTMP0, Z6; \
+	VSHUFPS		$0xDD, ZTMP1, ZTMP0, Z7; \
+	VSHUFPS		$0x88, ZTMP3, ZTMP2, ZTMP1; \
+	VSHUFPS		$0xDD, ZTMP3, ZTMP2, ZTMP0; \
+	VSHUFPS		$0x88, Z5, Z4, ZTMP2; \
+	VSHUFPS		$0xDD, Z5, Z4, ZTMP3; \
+	VSHUFPS		$0x88, Z1, Z0, Z4; \
+	VSHUFPS		$0xDD, Z1, Z0, Z5; \
+	VMOVDQA32	ZTMP5, Z0; \
+	VMOVDQA32	ZTMP5, Z1; \
+	VPERMI2D	Z4, Z6, Z0; \
+	VPERMI2D	Z5, Z7, Z1; \
+	VMOVDQA32	ZTMP6, Z2; \
+	VMOVDQA32	ZTMP6, Z3; \
+	VPERMI2D	Z4, Z6, Z2; \
+	VPERMI2D	Z5, Z7, Z3; \
+	VMOVDQA32	ZTMP5, Z4; \
+	VMOVDQA32	ZTMP5, Z5; \
+	VPERMI2D	ZTMP2, ZTMP1, Z4; \
+	VPERMI2D	ZTMP3, ZTMP0, Z5; \
+	VMOVDQA32	ZTMP6, Z6; \
+	VMOVDQA32	ZTMP6, Z7; \
+	VPERMI2D	ZTMP2, ZTMP1, Z6; \
+	VPERMI2D	ZTMP3, ZTMP0, Z7
+
+#define TRANSPOSE16_U32_PRELOADED \
+	VSHUFPS		$0x44, W1, W0, ZTMP0; \
+	VSHUFPS		$0xEE, W1, W0, W0; \
+	VSHUFPS		$0x44, W3, W2, ZTMP1; \
+	VSHUFPS		$0xEE, W3, W2, W2; \
+	VSHUFPS		$0xDD, ZTMP1, ZTMP0, W3; \
+	VSHUFPS		$0x88, W2, W0, W1; \
+	VSHUFPS		$0xDD, W2, W0, W0; \
+	VSHUFPS		$0x88, ZTMP1, ZTMP0, ZTMP0; \
+	VMOVDQU64	_PSHUFFLE_TRANSPOSE_MASK1<>(SB), ZTMP4; \
+	VMOVDQU64	_PSHUFFLE_TRANSPOSE_MASK2<>(SB), ZTMP5; \
+	VSHUFPS		$0x44, W5, W4, W2; \
+	VSHUFPS		$0xEE, W5, W4, W4; \
+	VSHUFPS		$0x44, W7, W6, ZTMP1; \
+	VSHUFPS		$0xEE, W7, W6, W6; \
+	VSHUFPS		$0xDD, ZTMP1, W2, W7; \
+	VSHUFPS		$0x88, W6, W4, W5; \
+	VSHUFPS		$0xDD, W6, W4, W4; \
+	VSHUFPS		$0x88, ZTMP1, W2, W2; \
+	VSHUFPS		$0x44, W9, W8, W6; \
+	VSHUFPS		$0xEE, W9, W8, W8; \
+	VSHUFPS		$0x44, W11, W10, ZTMP1; \
+	VSHUFPS		$0xEE, W11, W10, W10; \
+	VSHUFPS		$0xDD, ZTMP1, W6, W11; \
+	VSHUFPS		$0x88, W10, W8, W9; \
+	VSHUFPS		$0xDD, W10, W8, W8; \
+	VSHUFPS		$0x88, ZTMP1, W6, W6; \
+	VSHUFPS		$0x44, W13, W12, W10; \
+	VSHUFPS		$0xEE, W13, W12, W12; \
+	VSHUFPS		$0x44, W15, W14, ZTMP1; \
+	VSHUFPS		$0xEE, W15, W14, W14; \
+	VSHUFPS		$0xDD, ZTMP1, W10, W15; \
+	VSHUFPS		$0x88, W14, W12, W13; \
+	VSHUFPS		$0xDD, W14, W12, W12; \
+	VSHUFPS		$0x88, ZTMP1, W10, W10; \
+	VMOVDQU32	ZTMP4, ZTMP1; \
+	VPERMI2Q	W13, W9, ZTMP1; \
+	VMOVDQU32	ZTMP5, W14; \
+	VPERMI2Q	W13, W9, W14; \
+	VMOVDQU32	ZTMP4, W9; \
+	VPERMI2Q	W15, W11, W9; \
+	VMOVDQU32	ZTMP5, W13; \
+	VPERMI2Q	W15, W11, W13; \
+	VMOVDQU32	ZTMP4, W11; \
+	VPERMI2Q	W12, W8, W11; \
+	VMOVDQU32	ZTMP5, W15; \
+	VPERMI2Q	W12, W8, W15; \
+	VMOVDQU32	ZTMP4, W8; \
+	VPERMI2Q	W10, W6, W8; \
+	VMOVDQU32	ZTMP5, W12; \
+	VPERMI2Q	W10, W6, W12; \
+	VMOVDQU32	ZTMP1, W10; \
+	VMOVDQU32	ZTMP4, ZTMP1; \
+	VPERMI2Q	W5, W1, ZTMP1; \
+	VMOVDQU32	ZTMP5, W6; \
+	VPERMI2Q	W5, W1, W6; \
+	VMOVDQU32	ZTMP4, W1; \
+	VPERMI2Q	W7, W3, W1; \
+	VMOVDQU32	ZTMP5, W5; \
+	VPERMI2Q	W7, W3, W5; \
+	VMOVDQU32	ZTMP4, W3; \
+	VPERMI2Q	W4, W0, W3; \
+	VMOVDQU32	ZTMP5, W7; \
+	VPERMI2Q	W4, W0, W7; \
+	VMOVDQU32	ZTMP4, W0; \
+	VPERMI2Q	W2, ZTMP0, W0; \
+	VMOVDQU32	ZTMP5, W4; \
+	VPERMI2Q	W2, ZTMP0, W4; \
+	VMOVDQU32	ZTMP1, W2
+
+#define PROCESS_LOOP_AVX512__(A, B, C, D, E, F, G, H, reg, WT) \
+	VMOVDQA32	E, ZTMP0; \
+	VPRORD		$6, E, ZTMP1; \
+	VPRORD		$11, E, ZTMP2; \
+	VPRORD		$25, E, ZTMP3; \
+	VPTERNLOGD	$0xCA, G, F, ZTMP0; \
+	VPADDD		WT, reg, ZT1; \
+	VPTERNLOGD	$0x96, ZTMP3, ZTMP2, ZTMP1; \
+	VPADDD		ZTMP0, ZT1, ZT1; \
+	VPADDD		ZTMP1, ZT1, ZT1; \
+	VPADDD		ZT1, D, D; \
+	VPRORD		$2, A, H; \
+	VPRORD		$13, A, ZTMP2; \
+	VPRORD		$22, A, ZTMP3; \
+	VMOVDQA32	A, ZTMP0; \
+	VPTERNLOGD	$0xE8, C, B, ZTMP0; \
+	VPTERNLOGD	$0x96, ZTMP3, ZTMP2, H; \
+	VPADDD		ZTMP0, H, H; \
+	VPADDD		ZT1, H, H
+
+#define PROCESS_LOOP_AVX512(A, B, C, D, E, F, G, H, WT) \
+	VPADDD	ZTMP3, H, ZT1; \
+	PROCESS_LOOP_AVX512__(A, B, C, D, E, F, G, H, ZT1, WT)
+
+#define PROCESS_LOOP_PADDING_AVX512(A, B, C, D, E, F, G, H, WT) \
+	PROCESS_LOOP_AVX512__(A, B, C, D, E, F, G, H, H, WT)
+
+#define MSG_SCHED_ROUND_16_63_AVX512(WT, WTp1, WTp9, WTp14) \
+	VPRORD		$17, WTp14, ZTMP4; \
+	VPRORD		$19, WTp14, ZTMP5; \
+	VPSRLD		$10, WTp14, ZTMP6; \
+	VPTERNLOGD	$0x96, ZTMP6, ZTMP5, ZTMP4; \
+	VPADDD		ZTMP4, WT, WT; \
+	VPADDD		WTp9, WT, WT; \
+	VPRORD		$7, WTp1, ZTMP4; \
+	VPRORD		$18, WTp1, ZTMP5; \
+	VPSRLD		$3, WTp1, ZTMP6; \
+	VPTERNLOGD	$0x96, ZTMP6, ZTMP5, ZTMP4; \
+	VPADDD		ZTMP4, WT, WT
+
+
+
+// Sha-ni definitions
+#define SAVE_SP		R8
+#define SHA256PADDING   CX
+#define SHA256CONSTANTS	AX
+#define MSG		X0
+#define STATE0		X1
+#define STATE1		X2
+#define MSGTMP0		X3
+#define MSGTMP1		X4
+#define MSGTMP2		X5
+#define MSGTMP3		X6
+#define MSGTMP4		X7
+#define SHUF_MASK	X8
+#define ABEF_SAVE	X9
+#define CDGH_SAVE	X10
+#define STATE0b         X9
+#define STATE1b         X10
+#define MSGTMP0b	X11
+#define MSGTMP1b	X12
+#define MSGTMP2b	X13
+#define MSGTMP3b	X14
+#define MSGTMP4b	X15
+
+#define ROUNDS_16_XX_SHA(T0, T1, T3, T4, S0, S1, i) \
+	VMOVDQA		T0, MSG; \
+		PADDD		(i*16)(SHA256CONSTANTS), MSG; \
+		SHA256RNDS2	X0, S0, S1; \
+	VMOVDQA		T0, T4; \
+	PALIGNR	$4, T3, T4; \
+	PADDD		T4, T1; \
+	SHA256MSG2	T0, T1; \
+		VPSHUFD 	$0x0E, MSG, MSG; \
+		SHA256RNDS2	X0, S1, S0; \
+	SHA256MSG1	T0, T3
+
+#define ROUND_PADD_SHA_x1(i) \
+	VMOVDQU		(i*16)(SHA256PADDING), MSG; \
+		SHA256RNDS2	MSG, STATE0, STATE1; \
+		PSHUFD 		$0x0E, MSG, MSG; \
+		SHA256RNDS2	MSG, STATE1, STATE0
+
+#define ROUND_PADD_SHA(i) \
+	VMOVDQU		(i*16)(SHA256PADDING), MSG; \
+		SHA256RNDS2	MSG, STATE0, STATE1; \
+		SHA256RNDS2	MSG, STATE0b, STATE1b; \
+		PSHUFD 		$0x0E, MSG, MSG; \
+		SHA256RNDS2	MSG, STATE1, STATE0; \
+		SHA256RNDS2	MSG, STATE1b, STATE0b
+
+
+
+TEXT ·_hash(SB), 0, $928-36
+	CMPB ·hasShani(SB), $1
+	JE shani
+
+	CMPB ·hasAVX512(SB), $1
+	JE avx512 
+	
+	CMPB ·hasAVX2(SB), $1
+	JE   avx2
+
+	MOVQ digests+0(FP), OUTPUT_PTR // digests *[][32]byte
+	MOVQ p_base+8(FP), DATA_PTR  // p [][32]byte
+	MOVL count+32(FP), NUM_BLKS  // NUM_BLKS uint32
+
+avx1:
+	CMPL	NUM_BLKS, $4
+	JB	avx1_x1
+	
+	// Load pre-transposed digest
+	MOVQ	$_DIGEST_16<>(SB), TBL
+	VMOVDQU (0*64)(TBL), X0
+	VMOVDQU (1*64)(TBL), X1
+	VMOVDQU (2*64)(TBL), X2
+	VMOVDQU (3*64)(TBL), X3
+	VMOVDQU (4*64)(TBL), X4
+	VMOVDQU (5*64)(TBL), X5
+	VMOVDQU (6*64)(TBL), X6
+	VMOVDQU (7*64)(TBL), X7
+
+	MOVQ	$_K256_16<>(SB), TBL
+
+	// First 16 rounds
+	VMOVDQU		_PSHUFFLE_BYTE_FLIP_MASK_16<>(SB), TMP4
+	VMOVUPS		(0*64 + 0*16)(DATA_PTR), XT2
+	VMOVUPS		(1*64 + 0*16)(DATA_PTR), XT1
+	VMOVUPS		(2*64 + 0*16)(DATA_PTR), XT4
+	VMOVUPS		(3*64 + 0*16)(DATA_PTR), XT3
+	TRANSPOSE_4_U32(XT2, XT1, XT4, XT3, XT0, XT5)
+	VPSHUFB		TMP4, XT0, XT0
+	VPSHUFB		TMP4, XT1, XT1
+	VPSHUFB		TMP4, XT2, XT2
+	VPSHUFB		TMP4, XT3, XT3
+
+	ROUND4_00_15(X0, X1, X2, X3, X4, X5, X6, X7, XT0, 0x0)
+	ROUND4_00_15(X7, X0, X1, X2, X3, X4, X5, X6, XT1, 0x1)
+	ROUND4_00_15(X6, X7, X0, X1, X2, X3, X4, X5, XT2, 0x2)
+	ROUND4_00_15(X5, X6, X7, X0, X1, X2, X3, X4, XT3, 0x3)
+
+	VMOVDQU		_PSHUFFLE_BYTE_FLIP_MASK_16<>(SB), TMP4
+	VMOVUPS		(0*64 + 1*16)(DATA_PTR), XT2
+	VMOVUPS		(1*64 + 1*16)(DATA_PTR), XT1
+	VMOVUPS		(2*64 + 1*16)(DATA_PTR), XT4
+	VMOVUPS		(3*64 + 1*16)(DATA_PTR), XT3
+	TRANSPOSE_4_U32(XT2, XT1, XT4, XT3, XT0, XT5)
+	VPSHUFB		TMP4, XT0, XT0
+	VPSHUFB		TMP4, XT1, XT1
+	VPSHUFB		TMP4, XT2, XT2
+	VPSHUFB		TMP4, XT3, XT3
+	ROUND4_00_15(X4, X5, X6, X7, X0, X1, X2, X3, XT0, 0x4)
+	ROUND4_00_15(X3, X4, X5, X6, X7, X0, X1, X2, XT1, 0x5)
+	ROUND4_00_15(X2, X3, X4, X5, X6, X7, X0, X1, XT2, 0x6)
+	ROUND4_00_15(X1, X2, X3, X4, X5, X6, X7, X0, XT3, 0x7)
+
+	VMOVDQU		_PSHUFFLE_BYTE_FLIP_MASK_16<>(SB), TMP4
+	VMOVUPS		(0*64 + 2*16)(DATA_PTR), XT2
+	VMOVUPS		(1*64 + 2*16)(DATA_PTR), XT1
+	VMOVUPS		(2*64 + 2*16)(DATA_PTR), XT4
+	VMOVUPS		(3*64 + 2*16)(DATA_PTR), XT3
+	TRANSPOSE_4_U32(XT2, XT1, XT4, XT3, XT0, XT5)
+	VPSHUFB		TMP4, XT0, XT0
+	VPSHUFB		TMP4, XT1, XT1
+	VPSHUFB		TMP4, XT2, XT2
+	VPSHUFB		TMP4, XT3, XT3
+
+	ROUND4_00_15(X0, X1, X2, X3, X4, X5, X6, X7, XT0, 0x8)
+	ROUND4_00_15(X7, X0, X1, X2, X3, X4, X5, X6, XT1, 0x9)
+	ROUND4_00_15(X6, X7, X0, X1, X2, X3, X4, X5, XT2, 0xa)
+	ROUND4_00_15(X5, X6, X7, X0, X1, X2, X3, X4, XT3, 0xb)
+
+	VMOVDQU		_PSHUFFLE_BYTE_FLIP_MASK_16<>(SB), TMP4
+	VMOVUPS		(0*64 + 3*16)(DATA_PTR), XT2
+	VMOVUPS		(1*64 + 3*16)(DATA_PTR), XT1
+	VMOVUPS		(2*64 + 3*16)(DATA_PTR), XT4
+	VMOVUPS		(3*64 + 3*16)(DATA_PTR), XT3
+	TRANSPOSE_4_U32(XT2, XT1, XT4, XT3, XT0, XT5)
+	VPSHUFB		TMP4, XT0, XT0
+	VPSHUFB		TMP4, XT1, XT1
+	VPSHUFB		TMP4, XT2, XT2
+	VPSHUFB		TMP4, XT3, XT3
+	ROUND4_00_15(X4, X5, X6, X7, X0, X1, X2, X3, XT0, 0xc)
+	ROUND4_00_15(X3, X4, X5, X6, X7, X0, X1, X2, XT1, 0xd)
+	ROUND4_00_15(X2, X3, X4, X5, X6, X7, X0, X1, XT2, 0xe)
+	ROUND4_00_15(X1, X2, X3, X4, X5, X6, X7, X0, XT3, 0xf)
+
+	// Rounds 16-31
+	ROUND4_16_XX(X0, X1, X2, X3, X4, X5, X6, X7, XT0, 0x10)
+	ROUND4_16_XX(X7, X0, X1, X2, X3, X4, X5, X6, XT0, 0x11)
+	ROUND4_16_XX(X6, X7, X0, X1, X2, X3, X4, X5, XT0, 0x12)
+	ROUND4_16_XX(X5, X6, X7, X0, X1, X2, X3, X4, XT0, 0x13)
+	ROUND4_16_XX(X4, X5, X6, X7, X0, X1, X2, X3, XT0, 0x14)
+	ROUND4_16_XX(X3, X4, X5, X6, X7, X0, X1, X2, XT0, 0x15)
+	ROUND4_16_XX(X2, X3, X4, X5, X6, X7, X0, X1, XT0, 0x16)
+	ROUND4_16_XX(X1, X2, X3, X4, X5, X6, X7, X0, XT0, 0x17)
+	ROUND4_16_XX(X0, X1, X2, X3, X4, X5, X6, X7, XT0, 0x18)
+	ROUND4_16_XX(X7, X0, X1, X2, X3, X4, X5, X6, XT0, 0x19)
+	ROUND4_16_XX(X6, X7, X0, X1, X2, X3, X4, X5, XT0, 0x1a)
+	ROUND4_16_XX(X5, X6, X7, X0, X1, X2, X3, X4, XT0, 0x1b)
+	ROUND4_16_XX(X4, X5, X6, X7, X0, X1, X2, X3, XT0, 0x1c)
+	ROUND4_16_XX(X3, X4, X5, X6, X7, X0, X1, X2, XT0, 0x1d)
+	ROUND4_16_XX(X2, X3, X4, X5, X6, X7, X0, X1, XT0, 0x1e)
+	ROUND4_16_XX(X1, X2, X3, X4, X5, X6, X7, X0, XT0, 0x1f)
+
+	// Rounds 32--47
+	ROUND4_16_XX(X0, X1, X2, X3, X4, X5, X6, X7, XT0, 0x20)
+	ROUND4_16_XX(X7, X0, X1, X2, X3, X4, X5, X6, XT0, 0x21)
+	ROUND4_16_XX(X6, X7, X0, X1, X2, X3, X4, X5, XT0, 0x22)
+	ROUND4_16_XX(X5, X6, X7, X0, X1, X2, X3, X4, XT0, 0x23)
+	ROUND4_16_XX(X4, X5, X6, X7, X0, X1, X2, X3, XT0, 0x24)
+	ROUND4_16_XX(X3, X4, X5, X6, X7, X0, X1, X2, XT0, 0x25)
+	ROUND4_16_XX(X2, X3, X4, X5, X6, X7, X0, X1, XT0, 0x26)
+	ROUND4_16_XX(X1, X2, X3, X4, X5, X6, X7, X0, XT0, 0x27)
+	ROUND4_16_XX(X0, X1, X2, X3, X4, X5, X6, X7, XT0, 0x28)
+	ROUND4_16_XX(X7, X0, X1, X2, X3, X4, X5, X6, XT0, 0x29)
+	ROUND4_16_XX(X6, X7, X0, X1, X2, X3, X4, X5, XT0, 0x2a)
+	ROUND4_16_XX(X5, X6, X7, X0, X1, X2, X3, X4, XT0, 0x2b)
+	ROUND4_16_XX(X4, X5, X6, X7, X0, X1, X2, X3, XT0, 0x2c)
+	ROUND4_16_XX(X3, X4, X5, X6, X7, X0, X1, X2, XT0, 0x2d)
+	ROUND4_16_XX(X2, X3, X4, X5, X6, X7, X0, X1, XT0, 0x2e)
+	ROUND4_16_XX(X1, X2, X3, X4, X5, X6, X7, X0, XT0, 0x2f)
+
+	// Rounds 48--64
+	ROUND4_16_XX(X0, X1, X2, X3, X4, X5, X6, X7, XT0, 0x30)
+	ROUND4_16_XX(X7, X0, X1, X2, X3, X4, X5, X6, XT0, 0x31)
+	ROUND4_16_XX(X6, X7, X0, X1, X2, X3, X4, X5, XT0, 0x32)
+	ROUND4_16_XX(X5, X6, X7, X0, X1, X2, X3, X4, XT0, 0x33)
+	ROUND4_16_XX(X4, X5, X6, X7, X0, X1, X2, X3, XT0, 0x34)
+	ROUND4_16_XX(X3, X4, X5, X6, X7, X0, X1, X2, XT0, 0x35)
+	ROUND4_16_XX(X2, X3, X4, X5, X6, X7, X0, X1, XT0, 0x36)
+	ROUND4_16_XX(X1, X2, X3, X4, X5, X6, X7, X0, XT0, 0x37)
+	ROUND4_16_XX(X0, X1, X2, X3, X4, X5, X6, X7, XT0, 0x38)
+	ROUND4_16_XX(X7, X0, X1, X2, X3, X4, X5, X6, XT0, 0x39)
+	ROUND4_16_XX(X6, X7, X0, X1, X2, X3, X4, X5, XT0, 0x3a)
+	ROUND4_16_XX(X5, X6, X7, X0, X1, X2, X3, X4, XT0, 0x3b)
+	ROUND4_16_XX(X4, X5, X6, X7, X0, X1, X2, X3, XT0, 0x3c)
+	ROUND4_16_XX(X3, X4, X5, X6, X7, X0, X1, X2, XT0, 0x3d)
+	ROUND4_16_XX(X2, X3, X4, X5, X6, X7, X0, X1, XT0, 0x3e)
+	ROUND4_16_XX(X1, X2, X3, X4, X5, X6, X7, X0, XT0, 0x3f)
+
+	// add old digest
+	MOVQ	$_DIGEST_16<>(SB), TBL
+	VPADDD  (0*64)(TBL), X0, X0
+	VPADDD  (1*64)(TBL), X1, X1
+	VPADDD  (2*64)(TBL), X2, X2
+	VPADDD  (3*64)(TBL), X3, X3
+	VPADDD  (4*64)(TBL), X4, X4
+	VPADDD  (5*64)(TBL), X5, X5
+	VPADDD  (6*64)(TBL), X6, X6
+	VPADDD  (7*64)(TBL), X7, X7
+
+	// rounds with padding
+	// save old digest
+	VMOVDQU X0, (_DIGEST + 0*16)(SP)
+	VMOVDQU X1, (_DIGEST + 1*16)(SP)
+	VMOVDQU X2, (_DIGEST + 2*16)(SP)
+	VMOVDQU X3, (_DIGEST + 3*16)(SP)
+	VMOVDQU X4, (_DIGEST + 4*16)(SP)
+	VMOVDQU X5, (_DIGEST + 5*16)(SP)
+	VMOVDQU X6, (_DIGEST + 6*16)(SP)
+	VMOVDQU X7, (_DIGEST + 7*16)(SP)
+
+	MOVQ	$_PADDING_16<>(SB), TBL
+
+	ROUND4_00_15_PADD(X0, X1, X2, X3, X4, X5, X6, X7, XT0, 0x00)
+	ROUND4_00_15_PADD(X7, X0, X1, X2, X3, X4, X5, X6, XT0, 0x01)
+	ROUND4_00_15_PADD(X6, X7, X0, X1, X2, X3, X4, X5, XT0, 0x02)
+	ROUND4_00_15_PADD(X5, X6, X7, X0, X1, X2, X3, X4, XT0, 0x03)
+	ROUND4_00_15_PADD(X4, X5, X6, X7, X0, X1, X2, X3, XT0, 0x04)
+	ROUND4_00_15_PADD(X3, X4, X5, X6, X7, X0, X1, X2, XT0, 0x05)
+	ROUND4_00_15_PADD(X2, X3, X4, X5, X6, X7, X0, X1, XT0, 0x06)
+	ROUND4_00_15_PADD(X1, X2, X3, X4, X5, X6, X7, X0, XT0, 0x07)
+	ROUND4_00_15_PADD(X0, X1, X2, X3, X4, X5, X6, X7, XT0, 0x08)
+	ROUND4_00_15_PADD(X7, X0, X1, X2, X3, X4, X5, X6, XT0, 0x09)
+	ROUND4_00_15_PADD(X6, X7, X0, X1, X2, X3, X4, X5, XT0, 0x0a)
+	ROUND4_00_15_PADD(X5, X6, X7, X0, X1, X2, X3, X4, XT0, 0x0b)
+	ROUND4_00_15_PADD(X4, X5, X6, X7, X0, X1, X2, X3, XT0, 0x0c)
+	ROUND4_00_15_PADD(X3, X4, X5, X6, X7, X0, X1, X2, XT0, 0x0d)
+	ROUND4_00_15_PADD(X2, X3, X4, X5, X6, X7, X0, X1, XT0, 0x0e)
+	ROUND4_00_15_PADD(X1, X2, X3, X4, X5, X6, X7, X0, XT0, 0x0f)
+
+	ROUND4_00_15_PADD(X0, X1, X2, X3, X4, X5, X6, X7, XT0, 0x10)
+	ROUND4_00_15_PADD(X7, X0, X1, X2, X3, X4, X5, X6, XT0, 0x11)
+	ROUND4_00_15_PADD(X6, X7, X0, X1, X2, X3, X4, X5, XT0, 0x12)
+	ROUND4_00_15_PADD(X5, X6, X7, X0, X1, X2, X3, X4, XT0, 0x13)
+	ROUND4_00_15_PADD(X4, X5, X6, X7, X0, X1, X2, X3, XT0, 0x14)
+	ROUND4_00_15_PADD(X3, X4, X5, X6, X7, X0, X1, X2, XT0, 0x15)
+	ROUND4_00_15_PADD(X2, X3, X4, X5, X6, X7, X0, X1, XT0, 0x16)
+	ROUND4_00_15_PADD(X1, X2, X3, X4, X5, X6, X7, X0, XT0, 0x17)
+	ROUND4_00_15_PADD(X0, X1, X2, X3, X4, X5, X6, X7, XT0, 0x18)
+	ROUND4_00_15_PADD(X7, X0, X1, X2, X3, X4, X5, X6, XT0, 0x19)
+	ROUND4_00_15_PADD(X6, X7, X0, X1, X2, X3, X4, X5, XT0, 0x1a)
+	ROUND4_00_15_PADD(X5, X6, X7, X0, X1, X2, X3, X4, XT0, 0x1b)
+	ROUND4_00_15_PADD(X4, X5, X6, X7, X0, X1, X2, X3, XT0, 0x1c)
+	ROUND4_00_15_PADD(X3, X4, X5, X6, X7, X0, X1, X2, XT0, 0x1d)
+	ROUND4_00_15_PADD(X2, X3, X4, X5, X6, X7, X0, X1, XT0, 0x1e)
+	ROUND4_00_15_PADD(X1, X2, X3, X4, X5, X6, X7, X0, XT0, 0x1f)
+
+	ROUND4_00_15_PADD(X0, X1, X2, X3, X4, X5, X6, X7, XT0, 0x20)
+	ROUND4_00_15_PADD(X7, X0, X1, X2, X3, X4, X5, X6, XT0, 0x21)
+	ROUND4_00_15_PADD(X6, X7, X0, X1, X2, X3, X4, X5, XT0, 0x22)
+	ROUND4_00_15_PADD(X5, X6, X7, X0, X1, X2, X3, X4, XT0, 0x23)
+	ROUND4_00_15_PADD(X4, X5, X6, X7, X0, X1, X2, X3, XT0, 0x24)
+	ROUND4_00_15_PADD(X3, X4, X5, X6, X7, X0, X1, X2, XT0, 0x25)
+	ROUND4_00_15_PADD(X2, X3, X4, X5, X6, X7, X0, X1, XT0, 0x26)
+	ROUND4_00_15_PADD(X1, X2, X3, X4, X5, X6, X7, X0, XT0, 0x27)
+	ROUND4_00_15_PADD(X0, X1, X2, X3, X4, X5, X6, X7, XT0, 0x28)
+	ROUND4_00_15_PADD(X7, X0, X1, X2, X3, X4, X5, X6, XT0, 0x29)
+	ROUND4_00_15_PADD(X6, X7, X0, X1, X2, X3, X4, X5, XT0, 0x2a)
+	ROUND4_00_15_PADD(X5, X6, X7, X0, X1, X2, X3, X4, XT0, 0x2b)
+	ROUND4_00_15_PADD(X4, X5, X6, X7, X0, X1, X2, X3, XT0, 0x2c)
+	ROUND4_00_15_PADD(X3, X4, X5, X6, X7, X0, X1, X2, XT0, 0x2d)
+	ROUND4_00_15_PADD(X2, X3, X4, X5, X6, X7, X0, X1, XT0, 0x2e)
+	ROUND4_00_15_PADD(X1, X2, X3, X4, X5, X6, X7, X0, XT0, 0x2f)
+
+	ROUND4_00_15_PADD(X0, X1, X2, X3, X4, X5, X6, X7, XT0, 0x30)
+	ROUND4_00_15_PADD(X7, X0, X1, X2, X3, X4, X5, X6, XT0, 0x31)
+	ROUND4_00_15_PADD(X6, X7, X0, X1, X2, X3, X4, X5, XT0, 0x32)
+	ROUND4_00_15_PADD(X5, X6, X7, X0, X1, X2, X3, X4, XT0, 0x33)
+	ROUND4_00_15_PADD(X4, X5, X6, X7, X0, X1, X2, X3, XT0, 0x34)
+	ROUND4_00_15_PADD(X3, X4, X5, X6, X7, X0, X1, X2, XT0, 0x35)
+	ROUND4_00_15_PADD(X2, X3, X4, X5, X6, X7, X0, X1, XT0, 0x36)
+	ROUND4_00_15_PADD(X1, X2, X3, X4, X5, X6, X7, X0, XT0, 0x37)
+	ROUND4_00_15_PADD(X0, X1, X2, X3, X4, X5, X6, X7, XT0, 0x38)
+	ROUND4_00_15_PADD(X7, X0, X1, X2, X3, X4, X5, X6, XT0, 0x39)
+	ROUND4_00_15_PADD(X6, X7, X0, X1, X2, X3, X4, X5, XT0, 0x3a)
+	ROUND4_00_15_PADD(X5, X6, X7, X0, X1, X2, X3, X4, XT0, 0x3b)
+	ROUND4_00_15_PADD(X4, X5, X6, X7, X0, X1, X2, X3, XT0, 0x3c)
+	ROUND4_00_15_PADD(X3, X4, X5, X6, X7, X0, X1, X2, XT0, 0x3d)
+	ROUND4_00_15_PADD(X2, X3, X4, X5, X6, X7, X0, X1, XT0, 0x3e)
+	ROUND4_00_15_PADD(X1, X2, X3, X4, X5, X6, X7, X0, XT0, 0x3f)
+
+	// add previous digest
+	VPADDD	(_DIGEST + 0*16)(SP), X0, X0
+	VPADDD	(_DIGEST + 1*16)(SP), X1, X1
+	VPADDD	(_DIGEST + 2*16)(SP), X2, X2
+	VPADDD	(_DIGEST + 3*16)(SP), X3, X3
+	VPADDD	(_DIGEST + 4*16)(SP), X4, X4
+	VPADDD	(_DIGEST + 5*16)(SP), X5, X5
+	VPADDD	(_DIGEST + 6*16)(SP), X6, X6
+	VPADDD	(_DIGEST + 7*16)(SP), X7, X7
+
+	// transpose the digest and convert to little endian
+	TRANSPOSE_4_U32(X0, X1, X2, X3, XT0, XT1)
+	TRANSPOSE_4_U32(X4, X5, X6, X7, XT2, XT1)
+	VMOVDQU	_PSHUFFLE_BYTE_FLIP_MASK_16<>(SB), TMP4
+	VPSHUFB TMP4, XT0, XT0
+	VPSHUFB TMP4, XT2, XT2
+	VPSHUFB TMP4, X1, X1
+	VPSHUFB TMP4, X5, X5
+	VPSHUFB TMP4, X0, X0
+	VPSHUFB TMP4, X4, X4
+	VPSHUFB TMP4, X3, X3
+	VPSHUFB TMP4, X7, X7
+
+	// write to output
+
+	VMOVDQU XT0, (0*16)(OUTPUT_PTR)
+	VMOVDQU XT2, (1*16)(OUTPUT_PTR)
+	VMOVDQU X1, (2*16)(OUTPUT_PTR)
+	VMOVDQU X5, (3*16)(OUTPUT_PTR)
+	VMOVDQU X0, (4*16)(OUTPUT_PTR)
+	VMOVDQU X4, (5*16)(OUTPUT_PTR)
+	VMOVDQU X3, (6*16)(OUTPUT_PTR)
+	VMOVDQU X7, (7*16)(OUTPUT_PTR)
+
+	// update pointers and loop
+
+        ADDQ 	$256, DATA_PTR
+	ADDQ 	$128, OUTPUT_PTR
+	SUBL 	$4, NUM_BLKS
+
+	JMP	avx1
+
+avx1_x1:
+        SHLQ         $5, NUM_BLKS
+        ADDQ         OUTPUT_PTR, NUM_BLKS
+
+	VMOVDQU		_PSHUFFLE_BYTE_FLIP_MASK_16<>(SB), _BYTE_FLIP_MASK
+	VMOVDQU 	PSHUF_00BA<>(SB), _SHUF_00BA
+	VMOVDQU		PSHUF_DC00<>(SB), _SHUF_DC00 
+
+sha256_avx_1_loop:
+        CMPQ     OUTPUT_PTR, NUM_BLKS
+        JEQ      sha256_1_avx_epilog
+
+	// load initial digest
+	MOVL $0x6A09E667, RAL  // a = H0
+	MOVL $0xBB67AE85, RBL  // b = H1
+	MOVL $0x3C6EF372, RCL // c = H2
+	MOVL $0xA54FF53A, RDL // d = H3
+	MOVL $0x510E527F, REL // e = H4
+	MOVL $0x9B05688C, RFL // f = H5
+	MOVL $0x1F83D9AB, RGL // g = H6
+	MOVL $0x5BE0CD19, RHL // h = H7
+
+	MOVQ	$K256<>(SB), TBL
+
+	// byte swap first 16 dwords
+	COPY_XMM_AND_BSWAP(X0, 0*16(DATA_PTR), _BYTE_FLIP_MASK)
+	COPY_XMM_AND_BSWAP(X1, 1*16(DATA_PTR), _BYTE_FLIP_MASK)
+	COPY_XMM_AND_BSWAP(X2, 2*16(DATA_PTR), _BYTE_FLIP_MASK)
+	COPY_XMM_AND_BSWAP(X3, 3*16(DATA_PTR), _BYTE_FLIP_MASK)
+
+	// schedule 48 input dwords, by doing 3 rounds of 16 each
+	VPADDD	0*16(TBL), X0, XFER
+	VMOVDQU	XFER, (SP)
+	FOUR_ROUNDS_AND_SCHED(RAL, RBL, RCL, RDL, REL, RFL, RGL, RHL, X0, X1, X2, X3)
+
+	VPADDD	1*16(TBL), X1, XFER
+	VMOVDQU	XFER, (SP)
+	FOUR_ROUNDS_AND_SCHED(REL, RFL, RGL, RHL, RAL, RBL, RCL, RDL, X1, X2, X3, X0)
+
+	VPADDD	2*16(TBL), X2, XFER
+	VMOVDQU	XFER, (SP)
+	FOUR_ROUNDS_AND_SCHED(RAL, RBL, RCL, RDL, REL, RFL, RGL, RHL, X2, X3, X0, X1)
+
+	VPADDD	3*16(TBL), X3, XFER
+	VMOVDQU	XFER, (SP)
+	ADDQ	$(4*16), TBL
+	FOUR_ROUNDS_AND_SCHED(REL, RFL, RGL, RHL, RAL, RBL, RCL, RDL, X3, X0, X1, X2)
+	
+	VPADDD	0*16(TBL), X0, XFER
+	VMOVDQU	XFER, (SP)
+	FOUR_ROUNDS_AND_SCHED(RAL, RBL, RCL, RDL, REL, RFL, RGL, RHL, X0, X1, X2, X3)
+
+	VPADDD	1*16(TBL), X1, XFER
+	VMOVDQU	XFER, (SP)
+	FOUR_ROUNDS_AND_SCHED(REL, RFL, RGL, RHL, RAL, RBL, RCL, RDL, X1, X2, X3, X0)
+
+	VPADDD	2*16(TBL), X2, XFER
+	VMOVDQU	XFER, (SP)
+	FOUR_ROUNDS_AND_SCHED(RAL, RBL, RCL, RDL, REL, RFL, RGL, RHL, X2, X3, X0, X1)
+
+	VPADDD	3*16(TBL), X3, XFER
+	VMOVDQU	XFER, (SP)
+	ADDQ	$(4*16), TBL
+	FOUR_ROUNDS_AND_SCHED(REL, RFL, RGL, RHL, RAL, RBL, RCL, RDL, X3, X0, X1, X2)
+
+	VPADDD	0*16(TBL), X0, XFER
+	VMOVDQU	XFER, (SP)
+	FOUR_ROUNDS_AND_SCHED(RAL, RBL, RCL, RDL, REL, RFL, RGL, RHL, X0, X1, X2, X3)
+
+	VPADDD	1*16(TBL), X1, XFER
+	VMOVDQU	XFER, (SP)
+	FOUR_ROUNDS_AND_SCHED(REL, RFL, RGL, RHL, RAL, RBL, RCL, RDL, X1, X2, X3, X0)
+
+	VPADDD	2*16(TBL), X2, XFER
+	VMOVDQU	XFER, (SP)
+	FOUR_ROUNDS_AND_SCHED(RAL, RBL, RCL, RDL, REL, RFL, RGL, RHL, X2, X3, X0, X1)
+
+	VPADDD	3*16(TBL), X3, XFER
+	VMOVDQU	XFER, (SP)
+	ADDQ	$(4*16), TBL
+	FOUR_ROUNDS_AND_SCHED(REL, RFL, RGL, RHL, RAL, RBL, RCL, RDL, X3, X0, X1, X2)
+
+	// Final 16 rounds 
+	VPADDD	0*16(TBL), X0, XFER 
+	VMOVDQU	XFER, (SP)
+	DO_ROUND(SP, 0, RAL, RBL, RCL, RDL, REL, RFL, RGL, RHL)
+	DO_ROUND(SP, 4, RHL, RAL, RBL, RCL, RDL, REL, RFL, RGL)
+	DO_ROUND(SP, 8, RGL, RHL, RAL, RBL, RCL, RDL, REL, RFL)
+	DO_ROUND(SP, 12, RFL, RGL, RHL, RAL, RBL, RCL, RDL, REL)
+
+	VPADDD	1*16(TBL), X1, XFER 
+	VMOVDQU	XFER, (SP)
+	ADDQ	$(2*16), TBL
+	DO_ROUND(SP, 0, REL, RFL, RGL, RHL, RAL, RBL, RCL, RDL)
+	DO_ROUND(SP, 4, RDL, REL, RFL, RGL, RHL, RAL, RBL, RCL)
+	DO_ROUND(SP, 8, RCL, RDL, REL, RFL, RGL, RHL, RAL, RBL)
+	DO_ROUND(SP, 12, RBL, RCL, RDL, REL, RFL, RGL, RHL, RAL)
+
+	VMOVDQA	X2, X0
+	VMOVDQA	X3, X1
+
+	VPADDD	0*16(TBL), X0, XFER 
+	VMOVDQU	XFER, (SP)
+	DO_ROUND(SP, 0*4, RAL, RBL, RCL, RDL, REL, RFL, RGL, RHL)
+	DO_ROUND(SP, 1*4, RHL, RAL, RBL, RCL, RDL, REL, RFL, RGL)
+	DO_ROUND(SP, 2*4, RGL, RHL, RAL, RBL, RCL, RDL, REL, RFL)
+	DO_ROUND(SP, 3*4, RFL, RGL, RHL, RAL, RBL, RCL, RDL, REL)
+
+	VPADDD	1*16(TBL), X1, XFER 
+	VMOVDQU	XFER, (SP)
+	DO_ROUND(SP, 0, REL, RFL, RGL, RHL, RAL, RBL, RCL, RDL)
+	DO_ROUND(SP, 4, RDL, REL, RFL, RGL, RHL, RAL, RBL, RCL)
+	DO_ROUND(SP, 8, RCL, RDL, REL, RFL, RGL, RHL, RAL, RBL)
+	DO_ROUND(SP, 12, RBL, RCL, RDL, REL, RFL, RGL, RHL, RAL)
+
+	// Add initial digest and save it
+	ADDL $0x6A09E667, RAL  // H0 = a + H0
+	ADDL $0xBB67AE85, RBL  // H1 = b + H1
+	ADDL $0x3C6EF372, RCL // H2 = c + H2
+	ADDL $0xA54FF53A, RDL // H3 = d + H3
+	ADDL $0x510E527F, REL // H4 = e + H4
+	ADDL $0x9B05688C, RFL // H5 = f + H5
+	ADDL $0x1F83D9AB, RGL // H6 = g + H6
+	ADDL $0x5BE0CD19, RHL // H7 = h + H7
+
+
+	MOVL RAL, tmpdig-(0*4)(SP)
+	MOVL RBL, tmpdig-(1*4)(SP)
+	MOVL RCL, tmpdig-(2*4)(SP)
+	MOVL RDL, tmpdig-(3*4)(SP)
+	MOVL REL, tmpdig-(4*4)(SP)
+	MOVL RFL, tmpdig-(5*4)(SP)
+	MOVL RGL, tmpdig-(6*4)(SP)
+	MOVL RHL, tmpdig-(7*4)(SP)
+
+	MOVQ	$PADDING<>(SB), TBL
+
+	DO_ROUND(TBL, 0, RAL, RBL, RCL, RDL, REL, RFL, RGL, RHL)
+	DO_ROUND(TBL, 4, RHL, RAL, RBL, RCL, RDL, REL, RFL, RGL)
+	DO_ROUND(TBL, 8, RGL, RHL, RAL, RBL, RCL, RDL, REL, RFL)
+	DO_ROUND(TBL, 12, RFL, RGL, RHL, RAL, RBL, RCL, RDL, REL)
+	DO_ROUND(TBL, 16, REL, RFL, RGL, RHL, RAL, RBL, RCL, RDL)
+	DO_ROUND(TBL, 20, RDL, REL, RFL, RGL, RHL, RAL, RBL, RCL)
+	DO_ROUND(TBL, 24, RCL, RDL, REL, RFL, RGL, RHL, RAL, RBL)
+	DO_ROUND(TBL, 28, RBL, RCL, RDL, REL, RFL, RGL, RHL, RAL)
+	ADDQ	$32, TBL
+
+	DO_ROUND(TBL, 0, RAL, RBL, RCL, RDL, REL, RFL, RGL, RHL)
+	DO_ROUND(TBL, 4, RHL, RAL, RBL, RCL, RDL, REL, RFL, RGL)
+	DO_ROUND(TBL, 8, RGL, RHL, RAL, RBL, RCL, RDL, REL, RFL)
+	DO_ROUND(TBL, 12, RFL, RGL, RHL, RAL, RBL, RCL, RDL, REL)
+	DO_ROUND(TBL, 16, REL, RFL, RGL, RHL, RAL, RBL, RCL, RDL)
+	DO_ROUND(TBL, 20, RDL, REL, RFL, RGL, RHL, RAL, RBL, RCL)
+	DO_ROUND(TBL, 24, RCL, RDL, REL, RFL, RGL, RHL, RAL, RBL)
+	DO_ROUND(TBL, 28, RBL, RCL, RDL, REL, RFL, RGL, RHL, RAL)
+	ADDQ	$32, TBL
+
+
+	DO_ROUND(TBL, 0, RAL, RBL, RCL, RDL, REL, RFL, RGL, RHL)
+	DO_ROUND(TBL, 4, RHL, RAL, RBL, RCL, RDL, REL, RFL, RGL)
+	DO_ROUND(TBL, 8, RGL, RHL, RAL, RBL, RCL, RDL, REL, RFL)
+	DO_ROUND(TBL, 12, RFL, RGL, RHL, RAL, RBL, RCL, RDL, REL)
+	DO_ROUND(TBL, 16, REL, RFL, RGL, RHL, RAL, RBL, RCL, RDL)
+	DO_ROUND(TBL, 20, RDL, REL, RFL, RGL, RHL, RAL, RBL, RCL)
+	DO_ROUND(TBL, 24, RCL, RDL, REL, RFL, RGL, RHL, RAL, RBL)
+	DO_ROUND(TBL, 28, RBL, RCL, RDL, REL, RFL, RGL, RHL, RAL)
+	ADDQ	$32, TBL
+
+
+	DO_ROUND(TBL, 0, RAL, RBL, RCL, RDL, REL, RFL, RGL, RHL)
+	DO_ROUND(TBL, 4, RHL, RAL, RBL, RCL, RDL, REL, RFL, RGL)
+	DO_ROUND(TBL, 8, RGL, RHL, RAL, RBL, RCL, RDL, REL, RFL)
+	DO_ROUND(TBL, 12, RFL, RGL, RHL, RAL, RBL, RCL, RDL, REL)
+	DO_ROUND(TBL, 16, REL, RFL, RGL, RHL, RAL, RBL, RCL, RDL)
+	DO_ROUND(TBL, 20, RDL, REL, RFL, RGL, RHL, RAL, RBL, RCL)
+	DO_ROUND(TBL, 24, RCL, RDL, REL, RFL, RGL, RHL, RAL, RBL)
+	DO_ROUND(TBL, 28, RBL, RCL, RDL, REL, RFL, RGL, RHL, RAL)
+	ADDQ	$32, TBL
+
+
+	DO_ROUND(TBL, 0, RAL, RBL, RCL, RDL, REL, RFL, RGL, RHL)
+	DO_ROUND(TBL, 4, RHL, RAL, RBL, RCL, RDL, REL, RFL, RGL)
+	DO_ROUND(TBL, 8, RGL, RHL, RAL, RBL, RCL, RDL, REL, RFL)
+	DO_ROUND(TBL, 12, RFL, RGL, RHL, RAL, RBL, RCL, RDL, REL)
+	DO_ROUND(TBL, 16, REL, RFL, RGL, RHL, RAL, RBL, RCL, RDL)
+	DO_ROUND(TBL, 20, RDL, REL, RFL, RGL, RHL, RAL, RBL, RCL)
+	DO_ROUND(TBL, 24, RCL, RDL, REL, RFL, RGL, RHL, RAL, RBL)
+	DO_ROUND(TBL, 28, RBL, RCL, RDL, REL, RFL, RGL, RHL, RAL)
+	ADDQ	$32, TBL
+
+
+	DO_ROUND(TBL, 0, RAL, RBL, RCL, RDL, REL, RFL, RGL, RHL)
+	DO_ROUND(TBL, 4, RHL, RAL, RBL, RCL, RDL, REL, RFL, RGL)
+	DO_ROUND(TBL, 8, RGL, RHL, RAL, RBL, RCL, RDL, REL, RFL)
+	DO_ROUND(TBL, 12, RFL, RGL, RHL, RAL, RBL, RCL, RDL, REL)
+	DO_ROUND(TBL, 16, REL, RFL, RGL, RHL, RAL, RBL, RCL, RDL)
+	DO_ROUND(TBL, 20, RDL, REL, RFL, RGL, RHL, RAL, RBL, RCL)
+	DO_ROUND(TBL, 24, RCL, RDL, REL, RFL, RGL, RHL, RAL, RBL)
+	DO_ROUND(TBL, 28, RBL, RCL, RDL, REL, RFL, RGL, RHL, RAL)
+	ADDQ	$32, TBL
+
+
+	DO_ROUND(TBL, 0, RAL, RBL, RCL, RDL, REL, RFL, RGL, RHL)
+	DO_ROUND(TBL, 4, RHL, RAL, RBL, RCL, RDL, REL, RFL, RGL)
+	DO_ROUND(TBL, 8, RGL, RHL, RAL, RBL, RCL, RDL, REL, RFL)
+	DO_ROUND(TBL, 12, RFL, RGL, RHL, RAL, RBL, RCL, RDL, REL)
+	DO_ROUND(TBL, 16, REL, RFL, RGL, RHL, RAL, RBL, RCL, RDL)
+	DO_ROUND(TBL, 20, RDL, REL, RFL, RGL, RHL, RAL, RBL, RCL)
+	DO_ROUND(TBL, 24, RCL, RDL, REL, RFL, RGL, RHL, RAL, RBL)
+	DO_ROUND(TBL, 28, RBL, RCL, RDL, REL, RFL, RGL, RHL, RAL)
+	ADDQ	$32, TBL
+
+
+	DO_ROUND(TBL, 0, RAL, RBL, RCL, RDL, REL, RFL, RGL, RHL)
+	DO_ROUND(TBL, 4, RHL, RAL, RBL, RCL, RDL, REL, RFL, RGL)
+	DO_ROUND(TBL, 8, RGL, RHL, RAL, RBL, RCL, RDL, REL, RFL)
+	DO_ROUND(TBL, 12, RFL, RGL, RHL, RAL, RBL, RCL, RDL, REL)
+	DO_ROUND(TBL, 16, REL, RFL, RGL, RHL, RAL, RBL, RCL, RDL)
+	DO_ROUND(TBL, 20, RDL, REL, RFL, RGL, RHL, RAL, RBL, RCL)
+	DO_ROUND(TBL, 24, RCL, RDL, REL, RFL, RGL, RHL, RAL, RBL)
+	DO_ROUND(TBL, 28, RBL, RCL, RDL, REL, RFL, RGL, RHL, RAL)
+
+	// add the previous digest
+
+	ADDL tmpdig-(0*4)(SP), RAL
+	ADDL tmpdig-(1*4)(SP), RBL
+	ADDL tmpdig-(2*4)(SP), RCL
+	ADDL tmpdig-(3*4)(SP), RDL
+	ADDL tmpdig-(4*4)(SP), REL
+	ADDL tmpdig-(5*4)(SP), RFL
+	ADDL tmpdig-(6*4)(SP), RGL
+	ADDL tmpdig-(7*4)(SP), RHL
+
+	BSWAPL	RAL
+	BSWAPL	RBL
+	BSWAPL	RCL
+	BSWAPL	RDL
+	BSWAPL	REL
+	BSWAPL	RFL
+	BSWAPL	RGL
+	BSWAPL	RHL
+
+	MOVL	RAL, (0*4)(OUTPUT_PTR)
+	MOVL	RBL, (1*4)(OUTPUT_PTR)
+	MOVL	RCL, (2*4)(OUTPUT_PTR)
+	MOVL	RDL, (3*4)(OUTPUT_PTR)
+	MOVL	REL, (4*4)(OUTPUT_PTR)
+	MOVL	RFL, (5*4)(OUTPUT_PTR)
+	MOVL	RGL, (6*4)(OUTPUT_PTR)
+	MOVL	RHL, (7*4)(OUTPUT_PTR)
+
+	ADDQ $64, DATA_PTR
+	ADDQ $32, OUTPUT_PTR
+	JMP sha256_avx_1_loop
+
+sha256_1_avx_epilog:
+	RET
+
+// 8 blocks at a time with AVX2
+avx2:
+	MOVL count+32(FP), NUM_BLKS  // NUMBLKS uint32
+	MOVQ digests+0(FP), OUTPUT_PTR // digests *[][32]byte
+	MOVQ p_base+8(FP), DATA_PTR  // p [][32]byte
+
+sha256_8_avx2_loop:
+	CMPL NUM_BLKS, $8
+	JB   avx1
+
+	MOVQ	$_DIGEST_16<>(SB), TBL
+	VMOVDQU (0*64)(TBL), Y0
+	VMOVDQU (1*64)(TBL), Y1
+	VMOVDQU (2*64)(TBL), Y2
+	VMOVDQU (3*64)(TBL), Y3
+	VMOVDQU (4*64)(TBL), Y4
+	VMOVDQU (5*64)(TBL), Y5
+	VMOVDQU (6*64)(TBL), Y6
+	VMOVDQU (7*64)(TBL), Y7
+
+	MOVQ	$_K256_16<>(SB), TBL
+
+	// First 16 rounds
+	TRANSPOSE8_U32_LOAD8(0)
+	VMOVDQU	Y6, (YTMP0)(SP)
+	VMOVDQU	Y7, (YTMP1)(SP)
+	TRANSPOSE8_U32_PRELOADED
+	VMOVDQU	_PSHUFFLE_BYTE_FLIP_MASK_16<>(SB), TMP1
+	VMOVDQU	(YTMP0)(SP), Y6
+	VPSHUFB	TMP1, TT0, TT0
+	VPSHUFB	TMP1, TT1, TT1
+	VPSHUFB	TMP1, TT2, TT2
+	VPSHUFB	TMP1, TT3, TT3
+	VPSHUFB	TMP1, TT4, TT4
+	VPSHUFB	TMP1, TT5, TT5
+	VPSHUFB	TMP1, TT6, TT6
+	VPSHUFB	TMP1, TT7, TT7
+	VMOVDQU	(YTMP1)(SP), Y7
+	VMOVDQU	TT4, (YTMP0)(SP)
+	VMOVDQU	TT5, (YTMP1)(SP)
+	VMOVDQU	TT6, (YTMP2)(SP)
+	VMOVDQU	TT7, (YTMP3)(SP)
+
+	ROUND_00_15(Y0, Y1, Y2, Y3, Y4, Y5, Y6, Y7, TT0, 0)
+	VMOVDQU	(YTMP0)(SP), TT0
+	ROUND_00_15(Y7, Y0, Y1, Y2, Y3, Y4, Y5, Y6, TT1, 1)
+	VMOVDQU	(YTMP1)(SP), TT1
+	ROUND_00_15(Y6, Y7, Y0, Y1, Y2, Y3, Y4, Y5, TT2, 2)
+	VMOVDQU	(YTMP2)(SP), TT2
+	ROUND_00_15(Y5, Y6, Y7, Y0, Y1, Y2, Y3, Y4, TT3, 3)
+	VMOVDQU	(YTMP3)(SP), TT3
+	ROUND_00_15(Y4, Y5, Y6, Y7, Y0, Y1, Y2, Y3, TT0, 4)
+	ROUND_00_15(Y3, Y4, Y5, Y6, Y7, Y0, Y1, Y2, TT1, 5)
+	ROUND_00_15(Y2, Y3, Y4, Y5, Y6, Y7, Y0, Y1, TT2, 6)
+	ROUND_00_15(Y1, Y2, Y3, Y4, Y5, Y6, Y7, Y0, TT3, 7)
+
+	TRANSPOSE8_U32_LOAD8(32)
+	VMOVDQU	Y6, (YTMP0)(SP)
+	VMOVDQU	Y7, (YTMP1)(SP)
+	TRANSPOSE8_U32_PRELOADED
+	VMOVDQU	_PSHUFFLE_BYTE_FLIP_MASK_16<>(SB), TMP1
+	VMOVDQU	(YTMP0)(SP), Y6
+	VPSHUFB	TMP1, TT0, TT0
+	VPSHUFB	TMP1, TT1, TT1
+	VPSHUFB	TMP1, TT2, TT2
+	VPSHUFB	TMP1, TT3, TT3
+	VPSHUFB	TMP1, TT4, TT4
+	VPSHUFB	TMP1, TT5, TT5
+	VPSHUFB	TMP1, TT6, TT6
+	VPSHUFB	TMP1, TT7, TT7
+	VMOVDQU	(YTMP1)(SP), Y7
+	VMOVDQU	TT4, (YTMP0)(SP)
+	VMOVDQU	TT5, (YTMP1)(SP)
+	VMOVDQU	TT6, (YTMP2)(SP)
+	VMOVDQU	TT7, (YTMP3)(SP)
+	ROUND_00_15(Y0, Y1, Y2, Y3, Y4, Y5, Y6, Y7, TT0, 8)
+	VMOVDQU	(YTMP0)(SP), TT0
+	ROUND_00_15(Y7, Y0, Y1, Y2, Y3, Y4, Y5, Y6, TT1, 9)
+	VMOVDQU	(YTMP1)(SP), TT1
+	ROUND_00_15(Y6, Y7, Y0, Y1, Y2, Y3, Y4, Y5, TT2, 10)
+	VMOVDQU	(YTMP2)(SP), TT2
+	ROUND_00_15(Y5, Y6, Y7, Y0, Y1, Y2, Y3, Y4, TT3, 11)
+	VMOVDQU	(YTMP3)(SP), TT3
+	ROUND_00_15(Y4, Y5, Y6, Y7, Y0, Y1, Y2, Y3, TT0, 12)
+	ROUND_00_15(Y3, Y4, Y5, Y6, Y7, Y0, Y1, Y2, TT1, 13)
+	ROUND_00_15(Y2, Y3, Y4, Y5, Y6, Y7, Y0, Y1, TT2, 14)
+	ROUND_00_15(Y1, Y2, Y3, Y4, Y5, Y6, Y7, Y0, TT3, 15)
+
+	// Rounds 16-31
+	ROUND_16_XX(Y0, Y1, Y2, Y3, Y4, Y5, Y6, Y7, TT0, 0x10)
+	ROUND_16_XX(Y7, Y0, Y1, Y2, Y3, Y4, Y5, Y6, TT0, 0x11)
+	ROUND_16_XX(Y6, Y7, Y0, Y1, Y2, Y3, Y4, Y5, TT0, 0x12)
+	ROUND_16_XX(Y5, Y6, Y7, Y0, Y1, Y2, Y3, Y4, TT0, 0x13)
+	ROUND_16_XX(Y4, Y5, Y6, Y7, Y0, Y1, Y2, Y3, TT0, 0x14)
+	ROUND_16_XX(Y3, Y4, Y5, Y6, Y7, Y0, Y1, Y2, TT0, 0x15)
+	ROUND_16_XX(Y2, Y3, Y4, Y5, Y6, Y7, Y0, Y1, TT0, 0x16)
+	ROUND_16_XX(Y1, Y2, Y3, Y4, Y5, Y6, Y7, Y0, TT0, 0x17)
+	ROUND_16_XX(Y0, Y1, Y2, Y3, Y4, Y5, Y6, Y7, TT0, 0x18)
+	ROUND_16_XX(Y7, Y0, Y1, Y2, Y3, Y4, Y5, Y6, TT0, 0x19)
+	ROUND_16_XX(Y6, Y7, Y0, Y1, Y2, Y3, Y4, Y5, TT0, 0x1a)
+	ROUND_16_XX(Y5, Y6, Y7, Y0, Y1, Y2, Y3, Y4, TT0, 0x1b)
+	ROUND_16_XX(Y4, Y5, Y6, Y7, Y0, Y1, Y2, Y3, TT0, 0x1c)
+	ROUND_16_XX(Y3, Y4, Y5, Y6, Y7, Y0, Y1, Y2, TT0, 0x1d)
+	ROUND_16_XX(Y2, Y3, Y4, Y5, Y6, Y7, Y0, Y1, TT0, 0x1e)
+	ROUND_16_XX(Y1, Y2, Y3, Y4, Y5, Y6, Y7, Y0, TT0, 0x1f)
+
+	// Rounds 32--47
+	ROUND_16_XX(Y0, Y1, Y2, Y3, Y4, Y5, Y6, Y7, TT0, 0x20)
+	ROUND_16_XX(Y7, Y0, Y1, Y2, Y3, Y4, Y5, Y6, TT0, 0x21)
+	ROUND_16_XX(Y6, Y7, Y0, Y1, Y2, Y3, Y4, Y5, TT0, 0x22)
+	ROUND_16_XX(Y5, Y6, Y7, Y0, Y1, Y2, Y3, Y4, TT0, 0x23)
+	ROUND_16_XX(Y4, Y5, Y6, Y7, Y0, Y1, Y2, Y3, TT0, 0x24)
+	ROUND_16_XX(Y3, Y4, Y5, Y6, Y7, Y0, Y1, Y2, TT0, 0x25)
+	ROUND_16_XX(Y2, Y3, Y4, Y5, Y6, Y7, Y0, Y1, TT0, 0x26)
+	ROUND_16_XX(Y1, Y2, Y3, Y4, Y5, Y6, Y7, Y0, TT0, 0x27)
+	ROUND_16_XX(Y0, Y1, Y2, Y3, Y4, Y5, Y6, Y7, TT0, 0x28)
+	ROUND_16_XX(Y7, Y0, Y1, Y2, Y3, Y4, Y5, Y6, TT0, 0x29)
+	ROUND_16_XX(Y6, Y7, Y0, Y1, Y2, Y3, Y4, Y5, TT0, 0x2a)
+	ROUND_16_XX(Y5, Y6, Y7, Y0, Y1, Y2, Y3, Y4, TT0, 0x2b)
+	ROUND_16_XX(Y4, Y5, Y6, Y7, Y0, Y1, Y2, Y3, TT0, 0x2c)
+	ROUND_16_XX(Y3, Y4, Y5, Y6, Y7, Y0, Y1, Y2, TT0, 0x2d)
+	ROUND_16_XX(Y2, Y3, Y4, Y5, Y6, Y7, Y0, Y1, TT0, 0x2e)
+	ROUND_16_XX(Y1, Y2, Y3, Y4, Y5, Y6, Y7, Y0, TT0, 0x2f)
+
+	// Rounds 48--64
+	ROUND_16_XX(Y0, Y1, Y2, Y3, Y4, Y5, Y6, Y7, TT0, 0x30)
+	ROUND_16_XX(Y7, Y0, Y1, Y2, Y3, Y4, Y5, Y6, TT0, 0x31)
+	ROUND_16_XX(Y6, Y7, Y0, Y1, Y2, Y3, Y4, Y5, TT0, 0x32)
+	ROUND_16_XX(Y5, Y6, Y7, Y0, Y1, Y2, Y3, Y4, TT0, 0x33)
+	ROUND_16_XX(Y4, Y5, Y6, Y7, Y0, Y1, Y2, Y3, TT0, 0x34)
+	ROUND_16_XX(Y3, Y4, Y5, Y6, Y7, Y0, Y1, Y2, TT0, 0x35)
+	ROUND_16_XX(Y2, Y3, Y4, Y5, Y6, Y7, Y0, Y1, TT0, 0x36)
+	ROUND_16_XX(Y1, Y2, Y3, Y4, Y5, Y6, Y7, Y0, TT0, 0x37)
+	ROUND_16_XX(Y0, Y1, Y2, Y3, Y4, Y5, Y6, Y7, TT0, 0x38)
+	ROUND_16_XX(Y7, Y0, Y1, Y2, Y3, Y4, Y5, Y6, TT0, 0x39)
+	ROUND_16_XX(Y6, Y7, Y0, Y1, Y2, Y3, Y4, Y5, TT0, 0x3a)
+	ROUND_16_XX(Y5, Y6, Y7, Y0, Y1, Y2, Y3, Y4, TT0, 0x3b)
+	ROUND_16_XX(Y4, Y5, Y6, Y7, Y0, Y1, Y2, Y3, TT0, 0x3c)
+	ROUND_16_XX(Y3, Y4, Y5, Y6, Y7, Y0, Y1, Y2, TT0, 0x3d)
+	ROUND_16_XX(Y2, Y3, Y4, Y5, Y6, Y7, Y0, Y1, TT0, 0x3e)
+	ROUND_16_XX(Y1, Y2, Y3, Y4, Y5, Y6, Y7, Y0, TT0, 0x3f)
+
+	// add old digest
+	MOVQ	$_DIGEST_16<>(SB), TBL
+	VPADDD  (0*64)(TBL), Y0, Y0
+	VPADDD  (1*64)(TBL), Y1, Y1
+	VPADDD  (2*64)(TBL), Y2, Y2
+	VPADDD  (3*64)(TBL), Y3, Y3
+	VPADDD  (4*64)(TBL), Y4, Y4
+	VPADDD  (5*64)(TBL), Y5, Y5
+	VPADDD  (6*64)(TBL), Y6, Y6
+	VPADDD  (7*64)(TBL), Y7, Y7
+
+	// rounds with padding
+	// save old digest
+	VMOVDQU Y0, (_DIGEST + 0*32)(SP)
+	VMOVDQU Y1, (_DIGEST + 1*32)(SP)
+	VMOVDQU Y2, (_DIGEST + 2*32)(SP)
+	VMOVDQU Y3, (_DIGEST + 3*32)(SP)
+	VMOVDQU Y4, (_DIGEST + 4*32)(SP)
+	VMOVDQU Y5, (_DIGEST + 5*32)(SP)
+	VMOVDQU Y6, (_DIGEST + 6*32)(SP)
+	VMOVDQU Y7, (_DIGEST + 7*32)(SP)
+
+	MOVQ	$_PADDING_16<>(SB), TBL
+
+	ROUND_00_15_PADD(Y0, Y1, Y2, Y3, Y4, Y5, Y6, Y7, TT0, 0x00)
+	ROUND_00_15_PADD(Y7, Y0, Y1, Y2, Y3, Y4, Y5, Y6, TT0, 0x01)
+	ROUND_00_15_PADD(Y6, Y7, Y0, Y1, Y2, Y3, Y4, Y5, TT0, 0x02)
+	ROUND_00_15_PADD(Y5, Y6, Y7, Y0, Y1, Y2, Y3, Y4, TT0, 0x03)
+	ROUND_00_15_PADD(Y4, Y5, Y6, Y7, Y0, Y1, Y2, Y3, TT0, 0x04)
+	ROUND_00_15_PADD(Y3, Y4, Y5, Y6, Y7, Y0, Y1, Y2, TT0, 0x05)
+	ROUND_00_15_PADD(Y2, Y3, Y4, Y5, Y6, Y7, Y0, Y1, TT0, 0x06)
+	ROUND_00_15_PADD(Y1, Y2, Y3, Y4, Y5, Y6, Y7, Y0, TT0, 0x07)
+	ROUND_00_15_PADD(Y0, Y1, Y2, Y3, Y4, Y5, Y6, Y7, TT0, 0x08)
+	ROUND_00_15_PADD(Y7, Y0, Y1, Y2, Y3, Y4, Y5, Y6, TT0, 0x09)
+	ROUND_00_15_PADD(Y6, Y7, Y0, Y1, Y2, Y3, Y4, Y5, TT0, 0x0a)
+	ROUND_00_15_PADD(Y5, Y6, Y7, Y0, Y1, Y2, Y3, Y4, TT0, 0x0b)
+	ROUND_00_15_PADD(Y4, Y5, Y6, Y7, Y0, Y1, Y2, Y3, TT0, 0x0c)
+	ROUND_00_15_PADD(Y3, Y4, Y5, Y6, Y7, Y0, Y1, Y2, TT0, 0x0d)
+	ROUND_00_15_PADD(Y2, Y3, Y4, Y5, Y6, Y7, Y0, Y1, TT0, 0x0e)
+	ROUND_00_15_PADD(Y1, Y2, Y3, Y4, Y5, Y6, Y7, Y0, TT0, 0x0f)
+
+	ROUND_00_15_PADD(Y0, Y1, Y2, Y3, Y4, Y5, Y6, Y7, TT0, 0x10)
+	ROUND_00_15_PADD(Y7, Y0, Y1, Y2, Y3, Y4, Y5, Y6, TT0, 0x11)
+	ROUND_00_15_PADD(Y6, Y7, Y0, Y1, Y2, Y3, Y4, Y5, TT0, 0x12)
+	ROUND_00_15_PADD(Y5, Y6, Y7, Y0, Y1, Y2, Y3, Y4, TT0, 0x13)
+	ROUND_00_15_PADD(Y4, Y5, Y6, Y7, Y0, Y1, Y2, Y3, TT0, 0x14)
+	ROUND_00_15_PADD(Y3, Y4, Y5, Y6, Y7, Y0, Y1, Y2, TT0, 0x15)
+	ROUND_00_15_PADD(Y2, Y3, Y4, Y5, Y6, Y7, Y0, Y1, TT0, 0x16)
+	ROUND_00_15_PADD(Y1, Y2, Y3, Y4, Y5, Y6, Y7, Y0, TT0, 0x17)
+	ROUND_00_15_PADD(Y0, Y1, Y2, Y3, Y4, Y5, Y6, Y7, TT0, 0x18)
+	ROUND_00_15_PADD(Y7, Y0, Y1, Y2, Y3, Y4, Y5, Y6, TT0, 0x19)
+	ROUND_00_15_PADD(Y6, Y7, Y0, Y1, Y2, Y3, Y4, Y5, TT0, 0x1a)
+	ROUND_00_15_PADD(Y5, Y6, Y7, Y0, Y1, Y2, Y3, Y4, TT0, 0x1b)
+	ROUND_00_15_PADD(Y4, Y5, Y6, Y7, Y0, Y1, Y2, Y3, TT0, 0x1c)
+	ROUND_00_15_PADD(Y3, Y4, Y5, Y6, Y7, Y0, Y1, Y2, TT0, 0x1d)
+	ROUND_00_15_PADD(Y2, Y3, Y4, Y5, Y6, Y7, Y0, Y1, TT0, 0x1e)
+	ROUND_00_15_PADD(Y1, Y2, Y3, Y4, Y5, Y6, Y7, Y0, TT0, 0x1f)
+
+	ROUND_00_15_PADD(Y0, Y1, Y2, Y3, Y4, Y5, Y6, Y7, TT0, 0x20)
+	ROUND_00_15_PADD(Y7, Y0, Y1, Y2, Y3, Y4, Y5, Y6, TT0, 0x21)
+	ROUND_00_15_PADD(Y6, Y7, Y0, Y1, Y2, Y3, Y4, Y5, TT0, 0x22)
+	ROUND_00_15_PADD(Y5, Y6, Y7, Y0, Y1, Y2, Y3, Y4, TT0, 0x23)
+	ROUND_00_15_PADD(Y4, Y5, Y6, Y7, Y0, Y1, Y2, Y3, TT0, 0x24)
+	ROUND_00_15_PADD(Y3, Y4, Y5, Y6, Y7, Y0, Y1, Y2, TT0, 0x25)
+	ROUND_00_15_PADD(Y2, Y3, Y4, Y5, Y6, Y7, Y0, Y1, TT0, 0x26)
+	ROUND_00_15_PADD(Y1, Y2, Y3, Y4, Y5, Y6, Y7, Y0, TT0, 0x27)
+	ROUND_00_15_PADD(Y0, Y1, Y2, Y3, Y4, Y5, Y6, Y7, TT0, 0x28)
+	ROUND_00_15_PADD(Y7, Y0, Y1, Y2, Y3, Y4, Y5, Y6, TT0, 0x29)
+	ROUND_00_15_PADD(Y6, Y7, Y0, Y1, Y2, Y3, Y4, Y5, TT0, 0x2a)
+	ROUND_00_15_PADD(Y5, Y6, Y7, Y0, Y1, Y2, Y3, Y4, TT0, 0x2b)
+	ROUND_00_15_PADD(Y4, Y5, Y6, Y7, Y0, Y1, Y2, Y3, TT0, 0x2c)
+	ROUND_00_15_PADD(Y3, Y4, Y5, Y6, Y7, Y0, Y1, Y2, TT0, 0x2d)
+	ROUND_00_15_PADD(Y2, Y3, Y4, Y5, Y6, Y7, Y0, Y1, TT0, 0x2e)
+	ROUND_00_15_PADD(Y1, Y2, Y3, Y4, Y5, Y6, Y7, Y0, TT0, 0x2f)
+
+	ROUND_00_15_PADD(Y0, Y1, Y2, Y3, Y4, Y5, Y6, Y7, TT0, 0x30)
+	ROUND_00_15_PADD(Y7, Y0, Y1, Y2, Y3, Y4, Y5, Y6, TT0, 0x31)
+	ROUND_00_15_PADD(Y6, Y7, Y0, Y1, Y2, Y3, Y4, Y5, TT0, 0x32)
+	ROUND_00_15_PADD(Y5, Y6, Y7, Y0, Y1, Y2, Y3, Y4, TT0, 0x33)
+	ROUND_00_15_PADD(Y4, Y5, Y6, Y7, Y0, Y1, Y2, Y3, TT0, 0x34)
+	ROUND_00_15_PADD(Y3, Y4, Y5, Y6, Y7, Y0, Y1, Y2, TT0, 0x35)
+	ROUND_00_15_PADD(Y2, Y3, Y4, Y5, Y6, Y7, Y0, Y1, TT0, 0x36)
+	ROUND_00_15_PADD(Y1, Y2, Y3, Y4, Y5, Y6, Y7, Y0, TT0, 0x37)
+	ROUND_00_15_PADD(Y0, Y1, Y2, Y3, Y4, Y5, Y6, Y7, TT0, 0x38)
+	ROUND_00_15_PADD(Y7, Y0, Y1, Y2, Y3, Y4, Y5, Y6, TT0, 0x39)
+	ROUND_00_15_PADD(Y6, Y7, Y0, Y1, Y2, Y3, Y4, Y5, TT0, 0x3a)
+	ROUND_00_15_PADD(Y5, Y6, Y7, Y0, Y1, Y2, Y3, Y4, TT0, 0x3b)
+	ROUND_00_15_PADD(Y4, Y5, Y6, Y7, Y0, Y1, Y2, Y3, TT0, 0x3c)
+	ROUND_00_15_PADD(Y3, Y4, Y5, Y6, Y7, Y0, Y1, Y2, TT0, 0x3d)
+	ROUND_00_15_PADD(Y2, Y3, Y4, Y5, Y6, Y7, Y0, Y1, TT0, 0x3e)
+	ROUND_00_15_PADD(Y1, Y2, Y3, Y4, Y5, Y6, Y7, Y0, TT0, 0x3f)
+
+	// add previous digest
+	VPADDD	(_DIGEST + 0*32)(SP), Y0, Y0
+	VPADDD	(_DIGEST + 1*32)(SP), Y1, Y1
+	VPADDD	(_DIGEST + 2*32)(SP), Y2, Y2
+	VPADDD	(_DIGEST + 3*32)(SP), Y3, Y3
+	VPADDD	(_DIGEST + 4*32)(SP), Y4, Y4
+	VPADDD	(_DIGEST + 5*32)(SP), Y5, Y5
+	VPADDD	(_DIGEST + 6*32)(SP), Y6, Y6
+	VPADDD	(_DIGEST + 7*32)(SP), Y7, Y7
+
+	// transpose the digest and convert to little endian to get the registers correctly
+
+	TRANSPOSE8_U32
+	VMOVDQU	_PSHUFFLE_BYTE_FLIP_MASK_16<>(SB), TT0
+	VPSHUFB TT0, Y0, Y0
+	VPSHUFB TT0, Y1, Y1
+	VPSHUFB TT0, Y2, Y2
+	VPSHUFB TT0, Y3, Y3
+	VPSHUFB TT0, Y4, Y4
+	VPSHUFB TT0, Y5, Y5
+	VPSHUFB TT0, Y6, Y6
+	VPSHUFB TT0, Y7, Y7
+
+	// write to output
+
+	VMOVDQU Y0, (0*32)(OUTPUT_PTR)
+	VMOVDQU Y1, (1*32)(OUTPUT_PTR)
+	VMOVDQU Y2, (2*32)(OUTPUT_PTR)
+	VMOVDQU Y3, (3*32)(OUTPUT_PTR)
+	VMOVDQU Y4, (4*32)(OUTPUT_PTR)
+	VMOVDQU Y5, (5*32)(OUTPUT_PTR)
+	VMOVDQU Y6, (6*32)(OUTPUT_PTR)
+	VMOVDQU Y7, (7*32)(OUTPUT_PTR)
+
+	// update pointers and loop
+
+        ADDQ 	$512, DATA_PTR
+	ADDQ 	$256, OUTPUT_PTR
+	SUBL 	$8, NUM_BLKS
+
+	JMP    sha256_8_avx2_loop
+
+// AVX 512 section
+avx512:
+	MOVQ digests+0(FP), OUTPUT_PTR
+	MOVQ p_base+8(FP), DATA_PTR
+	MOVL count+32(FP), NUM_BLKS
+
+	MOVQ	$_DIGEST_16<>(SB), DIGESTAVX512
+	MOVQ    $_PADDING_16<>(SB), PADDINGAVX512
+	MOVQ	$_K256_16<>(SB), TBL
+
+avx512_loop:
+	CMPL	NUM_BLKS, $16
+	JB	sha256_8_avx2_loop
+
+	// Load digest
+	VMOVDQU32 (0*64)(DIGESTAVX512), Z0
+	VMOVDQU32 (1*64)(DIGESTAVX512), Z1
+	VMOVDQU32 (2*64)(DIGESTAVX512), Z2
+	VMOVDQU32 (3*64)(DIGESTAVX512), Z3
+	VMOVDQU32 (4*64)(DIGESTAVX512), Z4
+	VMOVDQU32 (5*64)(DIGESTAVX512), Z5
+	VMOVDQU32 (6*64)(DIGESTAVX512), Z6
+	VMOVDQU32 (7*64)(DIGESTAVX512), Z7
+
+	// Load incoming blocks 16 at a time
+	VMOVUPS	(0*64)(DATA_PTR), YW0
+	VMOVUPS	(1*64)(DATA_PTR), YW1
+	VMOVUPS	(2*64)(DATA_PTR), YW2
+	VMOVUPS	(3*64)(DATA_PTR), YW3
+	VMOVUPS	(4*64)(DATA_PTR), YW4
+	VMOVUPS	(5*64)(DATA_PTR), YW5
+	VMOVUPS	(6*64)(DATA_PTR), YW6
+	VMOVUPS	(7*64)(DATA_PTR), YW7
+	VMOVUPS	(0*64+32)(DATA_PTR), YW8
+	VMOVUPS	(1*64+32)(DATA_PTR), YW9
+	VMOVUPS	(2*64+32)(DATA_PTR), YW10
+	VMOVUPS	(3*64+32)(DATA_PTR), YW11
+	VMOVUPS	(4*64+32)(DATA_PTR), YW12
+	VMOVUPS	(5*64+32)(DATA_PTR), YW13
+	VMOVUPS	(6*64+32)(DATA_PTR), YW14
+	VMOVUPS	(7*64+32)(DATA_PTR), YW15
+	VINSERTI64X4 $0x01, (8*64)(DATA_PTR), W0, W0
+	VINSERTI64X4 $0x01, (9*64)(DATA_PTR), W1, W1
+	VINSERTI64X4 $0x01, (10*64)(DATA_PTR), W2, W2
+	VINSERTI64X4 $0x01, (11*64)(DATA_PTR), W3, W3
+	VINSERTI64X4 $0x01, (12*64)(DATA_PTR), W4, W4
+	VINSERTI64X4 $0x01, (13*64)(DATA_PTR), W5, W5
+	VINSERTI64X4 $0x01, (14*64)(DATA_PTR), W6, W6
+	VINSERTI64X4 $0x01, (15*64)(DATA_PTR), W7, W7
+	VINSERTI64X4 $0x01, (8*64+32)(DATA_PTR), W8, W8
+	VINSERTI64X4 $0x01, (9*64+32)(DATA_PTR), W9, W9
+	VINSERTI64X4 $0x01, (10*64+32)(DATA_PTR), W10, W10
+	VINSERTI64X4 $0x01, (11*64+32)(DATA_PTR), W11, W11
+	VINSERTI64X4 $0x01, (12*64+32)(DATA_PTR), W12, W12
+	VINSERTI64X4 $0x01, (13*64+32)(DATA_PTR), W13, W13
+	VINSERTI64X4 $0x01, (14*64+32)(DATA_PTR), W14, W14
+	VINSERTI64X4 $0x01, (15*64+32)(DATA_PTR), W15, W15
+
+	VMOVDQU32	_PSHUFFLE_BYTE_FLIP_MASK_16<>(SB), ZTMP2
+	VMOVDQU32	(TBL), ZTMP3
+	TRANSPOSE16_U32_PRELOADED
+
+	VPSHUFB		ZTMP2, W0, W0
+	VPSHUFB		ZTMP2, W1, W1
+	VPSHUFB		ZTMP2, W2, W2
+	VPSHUFB		ZTMP2, W3, W3
+	VPSHUFB		ZTMP2, W4, W4
+	VPSHUFB		ZTMP2, W5, W5
+	VPSHUFB		ZTMP2, W6, W6
+	VPSHUFB		ZTMP2, W7, W7
+	VPSHUFB		ZTMP2, W8, W8
+	VPSHUFB		ZTMP2, W9, W9
+	VPSHUFB		ZTMP2, W10, W10
+	VPSHUFB		ZTMP2, W11, W11
+	VPSHUFB		ZTMP2, W12, W12
+	VPSHUFB		ZTMP2, W13, W13
+	VPSHUFB		ZTMP2, W14, W14
+	VPSHUFB		ZTMP2, W15, W15
+
+	PROCESS_LOOP_AVX512(Z0, Z1, Z2, Z3, Z4, Z5, Z6, Z7, W0)
+	VMOVDQU32	(0x40*0x01)(TBL), ZTMP3
+	MSG_SCHED_ROUND_16_63_AVX512(W0, W1, W9, W14)
+	PROCESS_LOOP_AVX512(Z7, Z0, Z1, Z2, Z3, Z4, Z5, Z6, W1)
+	VMOVDQU32	(0x40*0x02)(TBL), ZTMP3
+	MSG_SCHED_ROUND_16_63_AVX512(W1, W2, W10, W15)
+	PROCESS_LOOP_AVX512(Z6, Z7, Z0, Z1, Z2, Z3, Z4, Z5, W2)
+	VMOVDQU32	(0x40*0x03)(TBL), ZTMP3
+	MSG_SCHED_ROUND_16_63_AVX512(W2, W3, W11, W0)
+	PROCESS_LOOP_AVX512(Z5, Z6, Z7, Z0, Z1, Z2, Z3, Z4, W3)
+	VMOVDQU32	(0x40*0x04)(TBL), ZTMP3
+	MSG_SCHED_ROUND_16_63_AVX512(W3, W4, W12, W1)
+	PROCESS_LOOP_AVX512(Z4, Z5, Z6, Z7, Z0, Z1, Z2, Z3, W4)
+	VMOVDQU32	(0x40*0x05)(TBL), ZTMP3
+	MSG_SCHED_ROUND_16_63_AVX512(W4, W5, W13, W2)
+	PROCESS_LOOP_AVX512(Z3, Z4, Z5, Z6, Z7, Z0, Z1, Z2, W5)
+	VMOVDQU32	(0x40*0x06)(TBL), ZTMP3
+	MSG_SCHED_ROUND_16_63_AVX512(W5, W6, W14, W3)
+	PROCESS_LOOP_AVX512(Z2, Z3, Z4, Z5, Z6, Z7, Z0, Z1, W6)
+	VMOVDQU32	(0x40*0x07)(TBL), ZTMP3
+	MSG_SCHED_ROUND_16_63_AVX512(W6, W7, W15, W4)
+	PROCESS_LOOP_AVX512(Z1, Z2, Z3, Z4, Z5, Z6, Z7, Z0, W7)
+	VMOVDQU32	(0x40*0x08)(TBL), ZTMP3
+	MSG_SCHED_ROUND_16_63_AVX512(W7, W8, W0, W5)
+	PROCESS_LOOP_AVX512(Z0, Z1, Z2, Z3, Z4, Z5, Z6, Z7, W8)
+	VMOVDQU32	(0x40*0x09)(TBL), ZTMP3
+	MSG_SCHED_ROUND_16_63_AVX512(W8, W9, W1, W6)
+	PROCESS_LOOP_AVX512(Z7, Z0, Z1, Z2, Z3, Z4, Z5, Z6, W9)
+	VMOVDQU32	(0x40*0x0a)(TBL), ZTMP3
+	MSG_SCHED_ROUND_16_63_AVX512(W9, W10, W2, W7)
+	PROCESS_LOOP_AVX512(Z6, Z7, Z0, Z1, Z2, Z3, Z4, Z5, W10)
+	VMOVDQU32	(0x40*0x0b)(TBL), ZTMP3
+	MSG_SCHED_ROUND_16_63_AVX512(W10, W11, W3, W8)
+	PROCESS_LOOP_AVX512(Z5, Z6, Z7, Z0, Z1, Z2, Z3, Z4, W11)
+	VMOVDQU32	(0x40*0x0c)(TBL), ZTMP3
+	MSG_SCHED_ROUND_16_63_AVX512(W11, W12, W4, W9)
+	PROCESS_LOOP_AVX512(Z4, Z5, Z6, Z7, Z0, Z1, Z2, Z3, W12)
+	VMOVDQU32	(0x40*0x0d)(TBL), ZTMP3
+	MSG_SCHED_ROUND_16_63_AVX512(W12, W13, W5, W10)
+	PROCESS_LOOP_AVX512(Z3, Z4, Z5, Z6, Z7, Z0, Z1, Z2, W13)
+	VMOVDQU32	(0x40*0x0e)(TBL), ZTMP3
+	MSG_SCHED_ROUND_16_63_AVX512(W13, W14, W6, W11)
+	PROCESS_LOOP_AVX512(Z2, Z3, Z4, Z5, Z6, Z7, Z0, Z1, W14)
+	VMOVDQU32	(0x40*0x0f)(TBL), ZTMP3
+	MSG_SCHED_ROUND_16_63_AVX512(W14, W15, W7, W12)
+	PROCESS_LOOP_AVX512(Z1, Z2, Z3, Z4, Z5, Z6, Z7, Z0, W15)
+	VMOVDQU32	(0x40*0x10)(TBL), ZTMP3
+	MSG_SCHED_ROUND_16_63_AVX512(W15, W0, W8, W13)
+
+	PROCESS_LOOP_AVX512(Z0, Z1, Z2, Z3, Z4, Z5, Z6, Z7, W0)
+	VMOVDQU32	(0x40*0x11)(TBL), ZTMP3
+	MSG_SCHED_ROUND_16_63_AVX512(W0, W1, W9, W14)
+	PROCESS_LOOP_AVX512(Z7, Z0, Z1, Z2, Z3, Z4, Z5, Z6, W1)
+	VMOVDQU32	(0x40*0x12)(TBL), ZTMP3
+	MSG_SCHED_ROUND_16_63_AVX512(W1, W2, W10, W15)
+	PROCESS_LOOP_AVX512(Z6, Z7, Z0, Z1, Z2, Z3, Z4, Z5, W2)
+	VMOVDQU32	(0x40*0x13)(TBL), ZTMP3
+	MSG_SCHED_ROUND_16_63_AVX512(W2, W3, W11, W0)
+	PROCESS_LOOP_AVX512(Z5, Z6, Z7, Z0, Z1, Z2, Z3, Z4, W3)
+	VMOVDQU32	(0x40*0x14)(TBL), ZTMP3
+	MSG_SCHED_ROUND_16_63_AVX512(W3, W4, W12, W1)
+	PROCESS_LOOP_AVX512(Z4, Z5, Z6, Z7, Z0, Z1, Z2, Z3, W4)
+	VMOVDQU32	(0x40*0x15)(TBL), ZTMP3
+	MSG_SCHED_ROUND_16_63_AVX512(W4, W5, W13, W2)
+	PROCESS_LOOP_AVX512(Z3, Z4, Z5, Z6, Z7, Z0, Z1, Z2, W5)
+	VMOVDQU32	(0x40*0x16)(TBL), ZTMP3
+	MSG_SCHED_ROUND_16_63_AVX512(W5, W6, W14, W3)
+	PROCESS_LOOP_AVX512(Z2, Z3, Z4, Z5, Z6, Z7, Z0, Z1, W6)
+	VMOVDQU32	(0x40*0x17)(TBL), ZTMP3
+	MSG_SCHED_ROUND_16_63_AVX512(W6, W7, W15, W4)
+	PROCESS_LOOP_AVX512(Z1, Z2, Z3, Z4, Z5, Z6, Z7, Z0, W7)
+	VMOVDQU32	(0x40*0x18)(TBL), ZTMP3
+	MSG_SCHED_ROUND_16_63_AVX512(W7, W8, W0, W5)
+	PROCESS_LOOP_AVX512(Z0, Z1, Z2, Z3, Z4, Z5, Z6, Z7, W8)
+	VMOVDQU32	(0x40*0x19)(TBL), ZTMP3
+	MSG_SCHED_ROUND_16_63_AVX512(W8, W9, W1, W6)
+	PROCESS_LOOP_AVX512(Z7, Z0, Z1, Z2, Z3, Z4, Z5, Z6, W9)
+	VMOVDQU32	(0x40*0x1a)(TBL), ZTMP3
+	MSG_SCHED_ROUND_16_63_AVX512(W9, W10, W2, W7)
+	PROCESS_LOOP_AVX512(Z6, Z7, Z0, Z1, Z2, Z3, Z4, Z5, W10)
+	VMOVDQU32	(0x40*0x1b)(TBL), ZTMP3
+	MSG_SCHED_ROUND_16_63_AVX512(W10, W11, W3, W8)
+	PROCESS_LOOP_AVX512(Z5, Z6, Z7, Z0, Z1, Z2, Z3, Z4, W11)
+	VMOVDQU32	(0x40*0x1c)(TBL), ZTMP3
+	MSG_SCHED_ROUND_16_63_AVX512(W11, W12, W4, W9)
+	PROCESS_LOOP_AVX512(Z4, Z5, Z6, Z7, Z0, Z1, Z2, Z3, W12)
+	VMOVDQU32	(0x40*0x1d)(TBL), ZTMP3
+	MSG_SCHED_ROUND_16_63_AVX512(W12, W13, W5, W10)
+	PROCESS_LOOP_AVX512(Z3, Z4, Z5, Z6, Z7, Z0, Z1, Z2, W13)
+	VMOVDQU32	(0x40*0x1e)(TBL), ZTMP3
+	MSG_SCHED_ROUND_16_63_AVX512(W13, W14, W6, W11)
+	PROCESS_LOOP_AVX512(Z2, Z3, Z4, Z5, Z6, Z7, Z0, Z1, W14)
+	VMOVDQU32	(0x40*0x1f)(TBL), ZTMP3
+	MSG_SCHED_ROUND_16_63_AVX512(W14, W15, W7, W12)
+	PROCESS_LOOP_AVX512(Z1, Z2, Z3, Z4, Z5, Z6, Z7, Z0, W15)
+	VMOVDQU32	(0x40*0x20)(TBL), ZTMP3
+	MSG_SCHED_ROUND_16_63_AVX512(W15, W0, W8, W13)
+
+	PROCESS_LOOP_AVX512(Z0, Z1, Z2, Z3, Z4, Z5, Z6, Z7, W0)
+	VMOVDQU32	(0x40*0x21)(TBL), ZTMP3
+	MSG_SCHED_ROUND_16_63_AVX512(W0, W1, W9, W14)
+	PROCESS_LOOP_AVX512(Z7, Z0, Z1, Z2, Z3, Z4, Z5, Z6, W1)
+	VMOVDQU32	(0x40*0x22)(TBL), ZTMP3
+	MSG_SCHED_ROUND_16_63_AVX512(W1, W2, W10, W15)
+	PROCESS_LOOP_AVX512(Z6, Z7, Z0, Z1, Z2, Z3, Z4, Z5, W2)
+	VMOVDQU32	(0x40*0x23)(TBL), ZTMP3
+	MSG_SCHED_ROUND_16_63_AVX512(W2, W3, W11, W0)
+	PROCESS_LOOP_AVX512(Z5, Z6, Z7, Z0, Z1, Z2, Z3, Z4, W3)
+	VMOVDQU32	(0x40*0x24)(TBL), ZTMP3
+	MSG_SCHED_ROUND_16_63_AVX512(W3, W4, W12, W1)
+	PROCESS_LOOP_AVX512(Z4, Z5, Z6, Z7, Z0, Z1, Z2, Z3, W4)
+	VMOVDQU32	(0x40*0x25)(TBL), ZTMP3
+	MSG_SCHED_ROUND_16_63_AVX512(W4, W5, W13, W2)
+	PROCESS_LOOP_AVX512(Z3, Z4, Z5, Z6, Z7, Z0, Z1, Z2, W5)
+	VMOVDQU32	(0x40*0x26)(TBL), ZTMP3
+	MSG_SCHED_ROUND_16_63_AVX512(W5, W6, W14, W3)
+	PROCESS_LOOP_AVX512(Z2, Z3, Z4, Z5, Z6, Z7, Z0, Z1, W6)
+	VMOVDQU32	(0x40*0x27)(TBL), ZTMP3
+	MSG_SCHED_ROUND_16_63_AVX512(W6, W7, W15, W4)
+	PROCESS_LOOP_AVX512(Z1, Z2, Z3, Z4, Z5, Z6, Z7, Z0, W7)
+	VMOVDQU32	(0x40*0x28)(TBL), ZTMP3
+	MSG_SCHED_ROUND_16_63_AVX512(W7, W8, W0, W5)
+	PROCESS_LOOP_AVX512(Z0, Z1, Z2, Z3, Z4, Z5, Z6, Z7, W8)
+	VMOVDQU32	(0x40*0x29)(TBL), ZTMP3
+	MSG_SCHED_ROUND_16_63_AVX512(W8, W9, W1, W6)
+	PROCESS_LOOP_AVX512(Z7, Z0, Z1, Z2, Z3, Z4, Z5, Z6, W9)
+	VMOVDQU32	(0x40*0x2a)(TBL), ZTMP3
+	MSG_SCHED_ROUND_16_63_AVX512(W9, W10, W2, W7)
+	PROCESS_LOOP_AVX512(Z6, Z7, Z0, Z1, Z2, Z3, Z4, Z5, W10)
+	VMOVDQU32	(0x40*0x2b)(TBL), ZTMP3
+	MSG_SCHED_ROUND_16_63_AVX512(W10, W11, W3, W8)
+	PROCESS_LOOP_AVX512(Z5, Z6, Z7, Z0, Z1, Z2, Z3, Z4, W11)
+	VMOVDQU32	(0x40*0x2c)(TBL), ZTMP3
+	MSG_SCHED_ROUND_16_63_AVX512(W11, W12, W4, W9)
+	PROCESS_LOOP_AVX512(Z4, Z5, Z6, Z7, Z0, Z1, Z2, Z3, W12)
+	VMOVDQU32	(0x40*0x2d)(TBL), ZTMP3
+	MSG_SCHED_ROUND_16_63_AVX512(W12, W13, W5, W10)
+	PROCESS_LOOP_AVX512(Z3, Z4, Z5, Z6, Z7, Z0, Z1, Z2, W13)
+	VMOVDQU32	(0x40*0x2e)(TBL), ZTMP3
+	MSG_SCHED_ROUND_16_63_AVX512(W13, W14, W6, W11)
+	PROCESS_LOOP_AVX512(Z2, Z3, Z4, Z5, Z6, Z7, Z0, Z1, W14)
+	VMOVDQU32	(0x40*0x2f)(TBL), ZTMP3
+	MSG_SCHED_ROUND_16_63_AVX512(W14, W15, W7, W12)
+	PROCESS_LOOP_AVX512(Z1, Z2, Z3, Z4, Z5, Z6, Z7, Z0, W15)
+	VMOVDQU32	(0x40*0x30)(TBL), ZTMP3
+	MSG_SCHED_ROUND_16_63_AVX512(W15, W0, W8, W13)
+
+	PROCESS_LOOP_AVX512(Z0, Z1, Z2, Z3, Z4, Z5, Z6, Z7, W0)
+	VMOVDQU32	(0x40*0x31)(TBL), ZTMP3
+	PROCESS_LOOP_AVX512(Z7, Z0, Z1, Z2, Z3, Z4, Z5, Z6, W1)
+	VMOVDQU32	(0x40*0x32)(TBL), ZTMP3
+	PROCESS_LOOP_AVX512(Z6, Z7, Z0, Z1, Z2, Z3, Z4, Z5, W2)
+	VMOVDQU32	(0x40*0x33)(TBL), ZTMP3
+	PROCESS_LOOP_AVX512(Z5, Z6, Z7, Z0, Z1, Z2, Z3, Z4, W3)
+	VMOVDQU32	(0x40*0x34)(TBL), ZTMP3
+	PROCESS_LOOP_AVX512(Z4, Z5, Z6, Z7, Z0, Z1, Z2, Z3, W4)
+	VMOVDQU32	(0x40*0x35)(TBL), ZTMP3
+	PROCESS_LOOP_AVX512(Z3, Z4, Z5, Z6, Z7, Z0, Z1, Z2, W5)
+	VMOVDQU32	(0x40*0x36)(TBL), ZTMP3
+	PROCESS_LOOP_AVX512(Z2, Z3, Z4, Z5, Z6, Z7, Z0, Z1, W6)
+	VMOVDQU32	(0x40*0x37)(TBL), ZTMP3
+	PROCESS_LOOP_AVX512(Z1, Z2, Z3, Z4, Z5, Z6, Z7, Z0, W7)
+	VMOVDQU32	(0x40*0x38)(TBL), ZTMP3
+	PROCESS_LOOP_AVX512(Z0, Z1, Z2, Z3, Z4, Z5, Z6, Z7, W8)
+	VMOVDQU32	(0x40*0x39)(TBL), ZTMP3
+	PROCESS_LOOP_AVX512(Z7, Z0, Z1, Z2, Z3, Z4, Z5, Z6, W9)
+	VMOVDQU32	(0x40*0x3a)(TBL), ZTMP3
+	PROCESS_LOOP_AVX512(Z6, Z7, Z0, Z1, Z2, Z3, Z4, Z5, W10)
+	VMOVDQU32	(0x40*0x3b)(TBL), ZTMP3
+	PROCESS_LOOP_AVX512(Z5, Z6, Z7, Z0, Z1, Z2, Z3, Z4, W11)
+	VMOVDQU32	(0x40*0x3c)(TBL), ZTMP3
+	PROCESS_LOOP_AVX512(Z4, Z5, Z6, Z7, Z0, Z1, Z2, Z3, W12)
+	VMOVDQU32	(0x40*0x3d)(TBL), ZTMP3
+	PROCESS_LOOP_AVX512(Z3, Z4, Z5, Z6, Z7, Z0, Z1, Z2, W13)
+	VMOVDQU32	(0x40*0x3e)(TBL), ZTMP3
+	PROCESS_LOOP_AVX512(Z2, Z3, Z4, Z5, Z6, Z7, Z0, Z1, W14)
+	VMOVDQU32	(0x40*0x3f)(TBL), ZTMP3
+	PROCESS_LOOP_AVX512(Z1, Z2, Z3, Z4, Z5, Z6, Z7, Z0, W15)
+
+	// add old digest
+	VPADDD  (0*64)(DIGESTAVX512), Z0, Z0
+	VPADDD  (1*64)(DIGESTAVX512), Z1, Z1
+	VPADDD  (2*64)(DIGESTAVX512), Z2, Z2
+	VPADDD  (3*64)(DIGESTAVX512), Z3, Z3
+	VPADDD  (4*64)(DIGESTAVX512), Z4, Z4
+	VPADDD  (5*64)(DIGESTAVX512), Z5, Z5
+	VPADDD  (6*64)(DIGESTAVX512), Z6, Z6
+	VPADDD  (7*64)(DIGESTAVX512), Z7, Z7
+
+	// Save digest for later processing
+	VMOVDQA32	Z0, W0
+	VMOVDQA32	Z1, W1
+	VMOVDQA32	Z2, W2
+	VMOVDQA32	Z3, W3
+	VMOVDQA32	Z4, W4
+	VMOVDQA32	Z5, W5
+	VMOVDQA32	Z6, W6
+	VMOVDQA32	Z7, W7
+
+	// Load transposing masks
+	VMOVDQU32	_PSHUFFLE_TRANSPOSE_MASK3<>(SB), ZTMP5
+	VMOVDQU32	_PSHUFFLE_TRANSPOSE_MASK4<>(SB), ZTMP6
+
+	// Rounds with padding
+
+	VMOVDQU32	(0x40*0x00)(PADDINGAVX512), ZTMP4
+	PROCESS_LOOP_PADDING_AVX512(Z0, Z1, Z2, Z3, Z4, Z5, Z6, Z7, ZTMP4)
+	VMOVDQU32	(0x40*0x01)(PADDINGAVX512), ZTMP4
+	PROCESS_LOOP_PADDING_AVX512(Z7, Z0, Z1, Z2, Z3, Z4, Z5, Z6, ZTMP4)
+	VMOVDQU32	(0x40*0x02)(PADDINGAVX512), ZTMP4
+	PROCESS_LOOP_PADDING_AVX512(Z6, Z7, Z0, Z1, Z2, Z3, Z4, Z5, ZTMP4)
+	VMOVDQU32	(0x40*0x03)(PADDINGAVX512), ZTMP4
+	PROCESS_LOOP_PADDING_AVX512(Z5, Z6, Z7, Z0, Z1, Z2, Z3, Z4, ZTMP4)
+	VMOVDQU32	(0x40*0x04)(PADDINGAVX512), ZTMP4
+	PROCESS_LOOP_PADDING_AVX512(Z4, Z5, Z6, Z7, Z0, Z1, Z2, Z3, ZTMP4)
+	VMOVDQU32	(0x40*0x05)(PADDINGAVX512), ZTMP4
+	PROCESS_LOOP_PADDING_AVX512(Z3, Z4, Z5, Z6, Z7, Z0, Z1, Z2, ZTMP4)
+	VMOVDQU32	(0x40*0x06)(PADDINGAVX512), ZTMP4
+	PROCESS_LOOP_PADDING_AVX512(Z2, Z3, Z4, Z5, Z6, Z7, Z0, Z1, ZTMP4)
+	VMOVDQU32	(0x40*0x07)(PADDINGAVX512), ZTMP4
+	PROCESS_LOOP_PADDING_AVX512(Z1, Z2, Z3, Z4, Z5, Z6, Z7, Z0, ZTMP4)
+	VMOVDQU32	(0x40*0x08)(PADDINGAVX512), ZTMP4
+	PROCESS_LOOP_PADDING_AVX512(Z0, Z1, Z2, Z3, Z4, Z5, Z6, Z7, ZTMP4)
+	VMOVDQU32	(0x40*0x09)(PADDINGAVX512), ZTMP4
+	PROCESS_LOOP_PADDING_AVX512(Z7, Z0, Z1, Z2, Z3, Z4, Z5, Z6, ZTMP4)
+	VMOVDQU32	(0x40*0x0a)(PADDINGAVX512), ZTMP4
+	PROCESS_LOOP_PADDING_AVX512(Z6, Z7, Z0, Z1, Z2, Z3, Z4, Z5, ZTMP4)
+	VMOVDQU32	(0x40*0x0b)(PADDINGAVX512), ZTMP4
+	PROCESS_LOOP_PADDING_AVX512(Z5, Z6, Z7, Z0, Z1, Z2, Z3, Z4, ZTMP4)
+	VMOVDQU32	(0x40*0x0c)(PADDINGAVX512), ZTMP4
+	PROCESS_LOOP_PADDING_AVX512(Z4, Z5, Z6, Z7, Z0, Z1, Z2, Z3, ZTMP4)
+	VMOVDQU32	(0x40*0x0d)(PADDINGAVX512), ZTMP4
+	PROCESS_LOOP_PADDING_AVX512(Z3, Z4, Z5, Z6, Z7, Z0, Z1, Z2, ZTMP4)
+	VMOVDQU32	(0x40*0x0e)(PADDINGAVX512), ZTMP4
+	PROCESS_LOOP_PADDING_AVX512(Z2, Z3, Z4, Z5, Z6, Z7, Z0, Z1, ZTMP4)
+	VMOVDQU32	(0x40*0x0f)(PADDINGAVX512), ZTMP4
+	PROCESS_LOOP_PADDING_AVX512(Z1, Z2, Z3, Z4, Z5, Z6, Z7, Z0, ZTMP4)
+
+	VMOVDQU32	(0x40*0x10)(PADDINGAVX512), ZTMP4
+	PROCESS_LOOP_PADDING_AVX512(Z0, Z1, Z2, Z3, Z4, Z5, Z6, Z7, ZTMP4)
+	VMOVDQU32	(0x40*0x11)(PADDINGAVX512), ZTMP4
+	PROCESS_LOOP_PADDING_AVX512(Z7, Z0, Z1, Z2, Z3, Z4, Z5, Z6, ZTMP4)
+	VMOVDQU32	(0x40*0x12)(PADDINGAVX512), ZTMP4
+	PROCESS_LOOP_PADDING_AVX512(Z6, Z7, Z0, Z1, Z2, Z3, Z4, Z5, ZTMP4)
+	VMOVDQU32	(0x40*0x13)(PADDINGAVX512), ZTMP4
+	PROCESS_LOOP_PADDING_AVX512(Z5, Z6, Z7, Z0, Z1, Z2, Z3, Z4, ZTMP4)
+	VMOVDQU32	(0x40*0x14)(PADDINGAVX512), ZTMP4
+	PROCESS_LOOP_PADDING_AVX512(Z4, Z5, Z6, Z7, Z0, Z1, Z2, Z3, ZTMP4)
+	VMOVDQU32	(0x40*0x15)(PADDINGAVX512), ZTMP4
+	PROCESS_LOOP_PADDING_AVX512(Z3, Z4, Z5, Z6, Z7, Z0, Z1, Z2, ZTMP4)
+	VMOVDQU32	(0x40*0x16)(PADDINGAVX512), ZTMP4
+	PROCESS_LOOP_PADDING_AVX512(Z2, Z3, Z4, Z5, Z6, Z7, Z0, Z1, ZTMP4)
+	VMOVDQU32	(0x40*0x17)(PADDINGAVX512), ZTMP4
+	PROCESS_LOOP_PADDING_AVX512(Z1, Z2, Z3, Z4, Z5, Z6, Z7, Z0, ZTMP4)
+	VMOVDQU32	(0x40*0x18)(PADDINGAVX512), ZTMP4
+	PROCESS_LOOP_PADDING_AVX512(Z0, Z1, Z2, Z3, Z4, Z5, Z6, Z7, ZTMP4)
+	VMOVDQU32	(0x40*0x19)(PADDINGAVX512), ZTMP4
+	PROCESS_LOOP_PADDING_AVX512(Z7, Z0, Z1, Z2, Z3, Z4, Z5, Z6, ZTMP4)
+	VMOVDQU32	(0x40*0x1a)(PADDINGAVX512), ZTMP4
+	PROCESS_LOOP_PADDING_AVX512(Z6, Z7, Z0, Z1, Z2, Z3, Z4, Z5, ZTMP4)
+	VMOVDQU32	(0x40*0x1b)(PADDINGAVX512), ZTMP4
+	PROCESS_LOOP_PADDING_AVX512(Z5, Z6, Z7, Z0, Z1, Z2, Z3, Z4, ZTMP4)
+	VMOVDQU32	(0x40*0x1c)(PADDINGAVX512), ZTMP4
+	PROCESS_LOOP_PADDING_AVX512(Z4, Z5, Z6, Z7, Z0, Z1, Z2, Z3, ZTMP4)
+	VMOVDQU32	(0x40*0x1d)(PADDINGAVX512), ZTMP4
+	PROCESS_LOOP_PADDING_AVX512(Z3, Z4, Z5, Z6, Z7, Z0, Z1, Z2, ZTMP4)
+	VMOVDQU32	(0x40*0x1e)(PADDINGAVX512), ZTMP4
+	PROCESS_LOOP_PADDING_AVX512(Z2, Z3, Z4, Z5, Z6, Z7, Z0, Z1, ZTMP4)
+	VMOVDQU32	(0x40*0x1f)(PADDINGAVX512), ZTMP4
+	PROCESS_LOOP_PADDING_AVX512(Z1, Z2, Z3, Z4, Z5, Z6, Z7, Z0, ZTMP4)
+
+	VMOVDQU32	(0x40*0x20)(PADDINGAVX512), ZTMP4
+	PROCESS_LOOP_PADDING_AVX512(Z0, Z1, Z2, Z3, Z4, Z5, Z6, Z7, ZTMP4)
+	VMOVDQU32	(0x40*0x21)(PADDINGAVX512), ZTMP4
+	PROCESS_LOOP_PADDING_AVX512(Z7, Z0, Z1, Z2, Z3, Z4, Z5, Z6, ZTMP4)
+	VMOVDQU32	(0x40*0x22)(PADDINGAVX512), ZTMP4
+	PROCESS_LOOP_PADDING_AVX512(Z6, Z7, Z0, Z1, Z2, Z3, Z4, Z5, ZTMP4)
+	VMOVDQU32	(0x40*0x23)(PADDINGAVX512), ZTMP4
+	PROCESS_LOOP_PADDING_AVX512(Z5, Z6, Z7, Z0, Z1, Z2, Z3, Z4, ZTMP4)
+	VMOVDQU32	(0x40*0x24)(PADDINGAVX512), ZTMP4
+	PROCESS_LOOP_PADDING_AVX512(Z4, Z5, Z6, Z7, Z0, Z1, Z2, Z3, ZTMP4)
+	VMOVDQU32	(0x40*0x25)(PADDINGAVX512), ZTMP4
+	PROCESS_LOOP_PADDING_AVX512(Z3, Z4, Z5, Z6, Z7, Z0, Z1, Z2, ZTMP4)
+	VMOVDQU32	(0x40*0x26)(PADDINGAVX512), ZTMP4
+	PROCESS_LOOP_PADDING_AVX512(Z2, Z3, Z4, Z5, Z6, Z7, Z0, Z1, ZTMP4)
+	VMOVDQU32	(0x40*0x27)(PADDINGAVX512), ZTMP4
+	PROCESS_LOOP_PADDING_AVX512(Z1, Z2, Z3, Z4, Z5, Z6, Z7, Z0, ZTMP4)
+	VMOVDQU32	(0x40*0x28)(PADDINGAVX512), ZTMP4
+	PROCESS_LOOP_PADDING_AVX512(Z0, Z1, Z2, Z3, Z4, Z5, Z6, Z7, ZTMP4)
+	VMOVDQU32	(0x40*0x29)(PADDINGAVX512), ZTMP4
+	PROCESS_LOOP_PADDING_AVX512(Z7, Z0, Z1, Z2, Z3, Z4, Z5, Z6, ZTMP4)
+	VMOVDQU32	(0x40*0x2a)(PADDINGAVX512), ZTMP4
+	PROCESS_LOOP_PADDING_AVX512(Z6, Z7, Z0, Z1, Z2, Z3, Z4, Z5, ZTMP4)
+	VMOVDQU32	(0x40*0x2b)(PADDINGAVX512), ZTMP4
+	PROCESS_LOOP_PADDING_AVX512(Z5, Z6, Z7, Z0, Z1, Z2, Z3, Z4, ZTMP4)
+	VMOVDQU32	(0x40*0x2c)(PADDINGAVX512), ZTMP4
+	PROCESS_LOOP_PADDING_AVX512(Z4, Z5, Z6, Z7, Z0, Z1, Z2, Z3, ZTMP4)
+	VMOVDQU32	(0x40*0x2d)(PADDINGAVX512), ZTMP4
+	PROCESS_LOOP_PADDING_AVX512(Z3, Z4, Z5, Z6, Z7, Z0, Z1, Z2, ZTMP4)
+	VMOVDQU32	(0x40*0x2e)(PADDINGAVX512), ZTMP4
+	PROCESS_LOOP_PADDING_AVX512(Z2, Z3, Z4, Z5, Z6, Z7, Z0, Z1, ZTMP4)
+	VMOVDQU32	(0x40*0x2f)(PADDINGAVX512), ZTMP4
+	PROCESS_LOOP_PADDING_AVX512(Z1, Z2, Z3, Z4, Z5, Z6, Z7, Z0, ZTMP4)
+
+	VMOVDQU32	(0x40*0x30)(PADDINGAVX512), ZTMP4
+	PROCESS_LOOP_PADDING_AVX512(Z0, Z1, Z2, Z3, Z4, Z5, Z6, Z7, ZTMP4)
+	VMOVDQU32	(0x40*0x31)(PADDINGAVX512), ZTMP4
+	PROCESS_LOOP_PADDING_AVX512(Z7, Z0, Z1, Z2, Z3, Z4, Z5, Z6, ZTMP4)
+	VMOVDQU32	(0x40*0x32)(PADDINGAVX512), ZTMP4
+	PROCESS_LOOP_PADDING_AVX512(Z6, Z7, Z0, Z1, Z2, Z3, Z4, Z5, ZTMP4)
+	VMOVDQU32	(0x40*0x33)(PADDINGAVX512), ZTMP4
+	PROCESS_LOOP_PADDING_AVX512(Z5, Z6, Z7, Z0, Z1, Z2, Z3, Z4, ZTMP4)
+	VMOVDQU32	(0x40*0x34)(PADDINGAVX512), ZTMP4
+	PROCESS_LOOP_PADDING_AVX512(Z4, Z5, Z6, Z7, Z0, Z1, Z2, Z3, ZTMP4)
+	VMOVDQU32	(0x40*0x35)(PADDINGAVX512), ZTMP4
+	PROCESS_LOOP_PADDING_AVX512(Z3, Z4, Z5, Z6, Z7, Z0, Z1, Z2, ZTMP4)
+	VMOVDQU32	(0x40*0x36)(PADDINGAVX512), ZTMP4
+	PROCESS_LOOP_PADDING_AVX512(Z2, Z3, Z4, Z5, Z6, Z7, Z0, Z1, ZTMP4)
+	VMOVDQU32	(0x40*0x37)(PADDINGAVX512), ZTMP4
+	PROCESS_LOOP_PADDING_AVX512(Z1, Z2, Z3, Z4, Z5, Z6, Z7, Z0, ZTMP4)
+	VMOVDQU32	(0x40*0x38)(PADDINGAVX512), ZTMP4
+	PROCESS_LOOP_PADDING_AVX512(Z0, Z1, Z2, Z3, Z4, Z5, Z6, Z7, ZTMP4)
+	VMOVDQU32	(0x40*0x39)(PADDINGAVX512), ZTMP4
+	PROCESS_LOOP_PADDING_AVX512(Z7, Z0, Z1, Z2, Z3, Z4, Z5, Z6, ZTMP4)
+	VMOVDQU32	(0x40*0x3a)(PADDINGAVX512), ZTMP4
+	PROCESS_LOOP_PADDING_AVX512(Z6, Z7, Z0, Z1, Z2, Z3, Z4, Z5, ZTMP4)
+	VMOVDQU32	(0x40*0x3b)(PADDINGAVX512), ZTMP4
+	PROCESS_LOOP_PADDING_AVX512(Z5, Z6, Z7, Z0, Z1, Z2, Z3, Z4, ZTMP4)
+	VMOVDQU32	(0x40*0x3c)(PADDINGAVX512), ZTMP4
+	PROCESS_LOOP_PADDING_AVX512(Z4, Z5, Z6, Z7, Z0, Z1, Z2, Z3, ZTMP4)
+	VMOVDQU32	(0x40*0x3d)(PADDINGAVX512), ZTMP4
+	PROCESS_LOOP_PADDING_AVX512(Z3, Z4, Z5, Z6, Z7, Z0, Z1, Z2, ZTMP4)
+	VMOVDQU32	(0x40*0x3e)(PADDINGAVX512), ZTMP4
+	PROCESS_LOOP_PADDING_AVX512(Z2, Z3, Z4, Z5, Z6, Z7, Z0, Z1, ZTMP4)
+	VMOVDQU32	(0x40*0x3f)(PADDINGAVX512), ZTMP4
+	PROCESS_LOOP_PADDING_AVX512(Z1, Z2, Z3, Z4, Z5, Z6, Z7, Z0, ZTMP4)
+
+	VMOVDQU32	_PSHUFFLE_BYTE_FLIP_MASK_16<>(SB), W8
+
+	// add old digest
+	VPADDD		W0, Z0, Z0
+	VPADDD		W1, Z1, Z1
+	VPADDD		W2, Z2, Z2
+	VPADDD		W3, Z3, Z3
+	VPADDD		W4, Z4, Z4
+	VPADDD		W5, Z5, Z5
+	VPADDD		W6, Z6, Z6
+	VPADDD		W7, Z7, Z7
+
+	TRANSPOSE_8x16_U32 
+
+	VPSHUFB		W8, Z0, Z0
+	VPSHUFB		W8, Z1, Z1
+	VPSHUFB		W8, Z2, Z2
+	VPSHUFB		W8, Z3, Z3
+	VPSHUFB		W8, Z4, Z4
+	VPSHUFB		W8, Z5, Z5
+	VPSHUFB		W8, Z6, Z6
+	VPSHUFB		W8, Z7, Z7
+
+	VMOVDQU32 Z0, (0*64)(OUTPUT_PTR)
+	VMOVDQU32 Z1, (1*64)(OUTPUT_PTR)
+	VMOVDQU32 Z2, (2*64)(OUTPUT_PTR)
+	VMOVDQU32 Z3, (3*64)(OUTPUT_PTR)
+	VMOVDQU32 Z4, (4*64)(OUTPUT_PTR)
+	VMOVDQU32 Z5, (5*64)(OUTPUT_PTR)
+	VMOVDQU32 Z6, (6*64)(OUTPUT_PTR)
+	VMOVDQU32 Z7, (7*64)(OUTPUT_PTR)
+
+	// update pointers and loop
+
+        ADDQ 	$1024, DATA_PTR
+	ADDQ 	$512, OUTPUT_PTR
+	SUBL 	$16, NUM_BLKS
+
+	JMP    avx512_loop
+
+// SHA-ni section
+shani:
+	MOVQ digests+0(FP), OUTPUT_PTR // digests *[][32]byte
+	MOVQ p_base+8(FP), DATA_PTR  // p [][32]byte
+	MOVL count+32(FP), NUM_BLKS  // NUM_BLKS uint32
+
+	// Golang assembly does not guarantee stack aligned at 16 bytes
+	MOVQ SP, SAVE_SP
+	ANDQ $~0xf, SP
+
+	VMOVDQU	_PSHUFFLE_BYTE_FLIP_MASK_16<>(SB), SHUF_MASK
+	MOVQ	$PADDING<>(SB), SHA256PADDING
+	MOVQ	$K256<>(SB), SHA256CONSTANTS
+
+shani_loop:
+	CMPL	NUM_BLKS, $2
+	JB	shani_x1
+
+	VMOVDQU	 _DIGEST_1<>(SB), STATE0
+	VMOVDQU	 _DIGEST_1<>+0x10(SB), STATE1
+	VMOVDQU	 _DIGEST_1<>(SB), STATE0b
+	VMOVDQU	 _DIGEST_1<>+0x10(SB), STATE1b
+
+	// Rounds 0-3
+	VMOVDQU		(16*0)(DATA_PTR), MSG
+	PSHUFB		SHUF_MASK, MSG
+	VMOVDQA		MSG, MSGTMP0
+		PADDD		(0*16)(SHA256CONSTANTS), MSG
+		SHA256RNDS2	X0, STATE0, STATE1
+		VPSHUFD 	$0x0E, MSG, MSG
+		SHA256RNDS2	X0, STATE1, STATE0
+	VMOVDQU		(16*(0+4))(DATA_PTR), MSG
+	PSHUFB		SHUF_MASK, MSG
+	VMOVDQA		MSG, MSGTMP0b
+		PADDD		(16*0)(SHA256CONSTANTS), MSG
+		SHA256RNDS2	X0, STATE0b, STATE1b
+		VPSHUFD 		$0x0E, MSG, MSG
+		SHA256RNDS2	X0, STATE1b, STATE0b
+
+	// Rounds 4--7
+	VMOVDQU		(1*16)(DATA_PTR), MSG
+	PSHUFB		SHUF_MASK, MSG
+	VMOVDQA		MSG, MSGTMP1
+		PADDD		(1*16)(SHA256CONSTANTS), MSG
+		SHA256RNDS2	X0, STATE0, STATE1
+		VPSHUFD 	$0x0E, MSG, MSG
+		SHA256RNDS2	X0, STATE1, STATE0
+	SHA256MSG1	MSGTMP1, MSGTMP0
+	VMOVDQU		(5*16)(DATA_PTR), MSG
+	PSHUFB		SHUF_MASK, MSG  
+	VMOVDQA		MSG, MSGTMP1b 
+		PADDD		(1*16)(SHA256CONSTANTS), MSG
+		SHA256RNDS2	X0, STATE0b, STATE1b
+		VPSHUFD 	$0x0E, MSG, MSG
+		SHA256RNDS2	X0, STATE1b, STATE0b
+	SHA256MSG1	MSGTMP1b, MSGTMP0b
+
+	// Rounds 8--11
+	VMOVDQU		(2*16)(DATA_PTR), MSG
+	PSHUFB		SHUF_MASK, MSG
+	VMOVDQA		MSG, MSGTMP2
+		PADDD		(2*16)(SHA256CONSTANTS), MSG
+		SHA256RNDS2	X0, STATE0, STATE1
+		VPSHUFD 	$0x0E, MSG, MSG
+		SHA256RNDS2	X0, STATE1, STATE0
+	SHA256MSG1	MSGTMP2, MSGTMP1
+	VMOVDQU		(6*16)(DATA_PTR), MSG
+	PSHUFB		SHUF_MASK, MSG  
+	VMOVDQA		MSG, MSGTMP2b 
+		PADDD		(2*16)(SHA256CONSTANTS), MSG
+		SHA256RNDS2	X0, STATE0b, STATE1b
+		VPSHUFD 	$0x0E, MSG, MSG
+		SHA256RNDS2	X0, STATE1b, STATE0b
+	SHA256MSG1	MSGTMP2b, MSGTMP1b
+
+	// Rounds 12 -- 15
+	VMOVDQU		(3*16)(DATA_PTR), MSG
+	PSHUFB		SHUF_MASK, MSG
+	VMOVDQA		MSG, MSGTMP3
+		PADDD		(3*16)(SHA256CONSTANTS), MSG
+		SHA256RNDS2	X0, STATE0, STATE1
+	VMOVDQA		MSGTMP3, MSGTMP4
+	PALIGNR	$0x4, MSGTMP2, MSGTMP4
+	PADDD		MSGTMP4, MSGTMP0
+	SHA256MSG2	MSGTMP3, MSGTMP0
+		VPSHUFD 	$0x0E, MSG, MSG
+		SHA256RNDS2	X0, STATE1, STATE0
+	SHA256MSG1	MSGTMP3, MSGTMP2
+	VMOVDQU		(7*16)(DATA_PTR), MSG
+	PSHUFB		SHUF_MASK, MSG  
+	VMOVDQA		MSG, MSGTMP3b 
+		PADDD		(3*16)(SHA256CONSTANTS), MSG
+		SHA256RNDS2	X0, STATE0b, STATE1b
+	VMOVDQA		MSGTMP3b, MSGTMP4b
+	PALIGNR	$0x4, MSGTMP2b, MSGTMP4b
+	PADDD		MSGTMP4b, MSGTMP0b
+	SHA256MSG2	MSGTMP3b, MSGTMP0b
+		VPSHUFD 	$0x0E, MSG, MSG
+		SHA256RNDS2	X0, STATE1b, STATE0b
+	SHA256MSG1	MSGTMP3b, MSGTMP2b
+
+
+	// Rounds 16-51
+	ROUNDS_16_XX_SHA(MSGTMP0, MSGTMP1, MSGTMP3, MSGTMP4, STATE0, STATE1, 4)
+	ROUNDS_16_XX_SHA(MSGTMP0b, MSGTMP1b, MSGTMP3b, MSGTMP4b, STATE0b, STATE1b, 4)
+	ROUNDS_16_XX_SHA(MSGTMP1, MSGTMP2, MSGTMP0, MSGTMP4, STATE0, STATE1, 5)
+	ROUNDS_16_XX_SHA(MSGTMP1b, MSGTMP2b, MSGTMP0b, MSGTMP4b, STATE0b, STATE1b, 5)
+	ROUNDS_16_XX_SHA(MSGTMP2, MSGTMP3, MSGTMP1, MSGTMP4, STATE0, STATE1, 6)
+	ROUNDS_16_XX_SHA(MSGTMP2b, MSGTMP3b, MSGTMP1b, MSGTMP4b, STATE0b, STATE1b, 6)
+	ROUNDS_16_XX_SHA(MSGTMP3, MSGTMP0, MSGTMP2, MSGTMP4, STATE0, STATE1, 7)
+	ROUNDS_16_XX_SHA(MSGTMP3b, MSGTMP0b, MSGTMP2b, MSGTMP4b, STATE0b, STATE1b, 7)
+	ROUNDS_16_XX_SHA(MSGTMP0, MSGTMP1, MSGTMP3, MSGTMP4, STATE0, STATE1, 8)
+	ROUNDS_16_XX_SHA(MSGTMP0b, MSGTMP1b, MSGTMP3b, MSGTMP4b, STATE0b, STATE1b, 8)
+	ROUNDS_16_XX_SHA(MSGTMP1, MSGTMP2, MSGTMP0, MSGTMP4, STATE0, STATE1, 9)
+	ROUNDS_16_XX_SHA(MSGTMP1b, MSGTMP2b, MSGTMP0b, MSGTMP4b, STATE0b, STATE1b, 9)
+	ROUNDS_16_XX_SHA(MSGTMP2, MSGTMP3, MSGTMP1, MSGTMP4, STATE0, STATE1, 10)
+	ROUNDS_16_XX_SHA(MSGTMP2b, MSGTMP3b, MSGTMP1b, MSGTMP4b, STATE0b, STATE1b, 10)
+	ROUNDS_16_XX_SHA(MSGTMP3, MSGTMP0, MSGTMP2, MSGTMP4, STATE0, STATE1, 11)
+	ROUNDS_16_XX_SHA(MSGTMP3b, MSGTMP0b, MSGTMP2b, MSGTMP4b, STATE0b, STATE1b, 11)
+	ROUNDS_16_XX_SHA(MSGTMP0, MSGTMP1, MSGTMP3, MSGTMP4, STATE0, STATE1, 12)
+	ROUNDS_16_XX_SHA(MSGTMP0b, MSGTMP1b, MSGTMP3b, MSGTMP4b, STATE0b, STATE1b, 12)
+
+
+	// Rounds 52--55
+	VMOVDQA		MSGTMP1, MSG
+		PADDD		(13*16)(SHA256CONSTANTS), MSG
+		SHA256RNDS2	X0, STATE0, STATE1
+	VMOVDQA		MSGTMP1, MSGTMP4
+	PALIGNR	$4, MSGTMP0, MSGTMP4
+	PADDD		MSGTMP4, MSGTMP2
+	SHA256MSG2	MSGTMP1, MSGTMP2
+		VPSHUFD 	$0x0E, MSG, MSG
+		SHA256RNDS2	X0, STATE1, STATE0
+	VMOVDQA		MSGTMP1b, MSG
+		PADDD		(13*16)(SHA256CONSTANTS), MSG
+		SHA256RNDS2	X0, STATE0b, STATE1b
+	VMOVDQA		MSGTMP1b, MSGTMP4b
+	PALIGNR	$4, MSGTMP0b, MSGTMP4b
+	PADDD		MSGTMP4b, MSGTMP2b
+	SHA256MSG2	MSGTMP1b, MSGTMP2b
+		VPSHUFD 	$0x0E, MSG, MSG
+		SHA256RNDS2	X0, STATE1b, STATE0b
+
+	// Rounds 56-59
+	VMOVDQA		MSGTMP2, MSG
+		PADDD		(14*16)(SHA256CONSTANTS), MSG
+		SHA256RNDS2	X0, STATE0, STATE1
+	VMOVDQA		MSGTMP2, MSGTMP4
+	PALIGNR	$4, MSGTMP1, MSGTMP4
+	PADDD		MSGTMP4, MSGTMP3
+	SHA256MSG2	MSGTMP2, MSGTMP3
+		VPSHUFD 	$0x0E, MSG, MSG
+		SHA256RNDS2	X0, STATE1, STATE0
+	VMOVDQA		MSGTMP2b, MSG
+		PADDD		(14*16)(SHA256CONSTANTS), MSG
+		SHA256RNDS2	X0, STATE0b, STATE1b
+	VMOVDQA		MSGTMP2b, MSGTMP4b
+	PALIGNR	$4, MSGTMP1b, MSGTMP4b
+	PADDD		MSGTMP4b, MSGTMP3b
+	SHA256MSG2	MSGTMP2b, MSGTMP3b
+		VPSHUFD 	$0x0E, MSG, MSG
+		SHA256RNDS2	X0, STATE1b, STATE0b
+
+	// Rounds 60--63
+	VMOVDQA		MSGTMP3, MSG
+		PADDD		(15*16)(SHA256CONSTANTS), MSG
+		SHA256RNDS2	X0, STATE0, STATE1
+		VPSHUFD 	$0x0E, MSG, MSG
+		SHA256RNDS2	X0, STATE1, STATE0
+	VMOVDQA		MSGTMP3b, MSG
+		PADDD		(15*16)(SHA256CONSTANTS), MSG
+		SHA256RNDS2	X0, STATE0b, STATE1b
+		VPSHUFD 	$0x0E, MSG, MSG
+		SHA256RNDS2	X0, STATE1b, STATE0b
+
+
+	// Add previous digests
+	PADDD  _DIGEST_1<>(SB), STATE0
+	PADDD  _DIGEST_1<>+16(SB), STATE1
+	PADDD  _DIGEST_1<>(SB), STATE0b
+	PADDD  _DIGEST_1<>+16(SB), STATE1b
+
+	// Rounds with padding
+
+	// Save previous digest
+	VMOVDQU		STATE0, ( _DIGEST + 0*16)(SP)
+	VMOVDQU		STATE1, ( _DIGEST + 1*16)(SP)
+	VMOVDQU		STATE0b, ( _DIGEST + 2*16)(SP)
+	VMOVDQU		STATE1b, ( _DIGEST + 3*16)(SP)
+	
+	ROUND_PADD_SHA(0x0)
+	ROUND_PADD_SHA(0x1)
+	ROUND_PADD_SHA(0x2)
+	ROUND_PADD_SHA(0x3)
+	ROUND_PADD_SHA(0x4)
+	ROUND_PADD_SHA(0x5)
+	ROUND_PADD_SHA(0x6)
+	ROUND_PADD_SHA(0x7)
+	ROUND_PADD_SHA(0x8)
+	ROUND_PADD_SHA(0x9)
+	ROUND_PADD_SHA(0xa)
+	ROUND_PADD_SHA(0xb)
+	ROUND_PADD_SHA(0xc)
+	ROUND_PADD_SHA(0xd)
+	ROUND_PADD_SHA(0xe)
+	ROUND_PADD_SHA(0xf)
+
+	PADDD		( _DIGEST + 0*16 )(SP), STATE0
+	PADDD		( _DIGEST + 1*16 )(SP), STATE1
+	PADDD		( _DIGEST + 2*16 )(SP), STATE0b
+	PADDD		( _DIGEST + 3*16 )(SP), STATE1b
+
+	// Write hash values back in the correct order
+	PSHUFD		$0x1B, STATE0,  STATE0
+	PSHUFD		$0xB1, STATE1,  STATE1
+	PSHUFD		$0x1B, STATE0b,  STATE0b
+	PSHUFD		$0xB1, STATE1b,  STATE1b
+	VMOVDQA		STATE0, MSGTMP4
+	VMOVDQA		STATE0b, MSGTMP4b
+	PBLENDW		$0xF0, STATE1,  STATE0
+	PBLENDW		$0xF0, STATE1b,  STATE0b
+	PALIGNR		$0x8, MSGTMP4, STATE1
+	PALIGNR		$0x8, MSGTMP4b, STATE1b
+
+        PSHUFB          SHUF_MASK, STATE0
+        PSHUFB          SHUF_MASK, STATE0b
+        PSHUFB          SHUF_MASK, STATE1
+        PSHUFB          SHUF_MASK, STATE1b
+
+
+	VMOVDQU		STATE0, (0*16)(OUTPUT_PTR)
+	VMOVDQU		STATE1, (1*16)(OUTPUT_PTR)
+	VMOVDQU		STATE0b, (2*16)(OUTPUT_PTR)
+	VMOVDQU		STATE1b, (3*16)(OUTPUT_PTR)
+
+	// Increment data pointer and loop if more to process
+
+	ADDQ 	$128, DATA_PTR
+	ADDQ 	$64, OUTPUT_PTR
+	SUBL 	$2, NUM_BLKS
+
+	JMP	shani_loop
+
+shani_x1:
+	TESTL	NUM_BLKS, NUM_BLKS
+	JZ	shani_epilog
+
+	VMOVDQU	 _DIGEST_1<>(SB), STATE0
+	VMOVDQU	 _DIGEST_1<>+0x10(SB), STATE1
+
+	// Save hash values for addition after rounds
+	VMOVDQA		STATE0, ABEF_SAVE
+	VMOVDQA		STATE1,	CDGH_SAVE
+
+	// Rounds 0-3
+	VMOVDQU		(16*0)(DATA_PTR), MSG
+	PSHUFB		SHUF_MASK, MSG
+	VMOVDQA		MSG, MSGTMP0
+		PADDD		(0*16)(SHA256CONSTANTS), MSG
+		SHA256RNDS2	X0, STATE0, STATE1
+		VPSHUFD 	$0x0E, MSG, MSG
+		SHA256RNDS2	X0, STATE1, STATE0
+
+	// Rounds 4--7
+	VMOVDQU		(1*16)(DATA_PTR), MSG
+	PSHUFB		SHUF_MASK, MSG
+	VMOVDQA		MSG, MSGTMP1
+		PADDD		(1*16)(SHA256CONSTANTS), MSG
+		SHA256RNDS2	X0, STATE0, STATE1
+		VPSHUFD 	$0x0E, MSG, MSG
+		SHA256RNDS2	X0, STATE1, STATE0
+	SHA256MSG1	MSGTMP1, MSGTMP0
+
+	// Rounds 8--11
+	VMOVDQU		(2*16)(DATA_PTR), MSG
+	PSHUFB		SHUF_MASK, MSG
+	VMOVDQA		MSG, MSGTMP2
+		PADDD		(2*16)(SHA256CONSTANTS), MSG
+		SHA256RNDS2	X0, STATE0, STATE1
+		VPSHUFD 	$0x0E, MSG, MSG
+		SHA256RNDS2	X0, STATE1, STATE0
+	SHA256MSG1	MSGTMP2, MSGTMP1
+
+	// Rounds 12 -- 15
+	VMOVDQU		(3*16)(DATA_PTR), MSG
+	PSHUFB		SHUF_MASK, MSG
+	VMOVDQA		MSG, MSGTMP3
+		PADDD		(3*16)(SHA256CONSTANTS), MSG
+		SHA256RNDS2	X0, STATE0, STATE1
+	VMOVDQA		MSGTMP3, MSGTMP4
+	PALIGNR	$0x4, MSGTMP2, MSGTMP4
+	PADDD		MSGTMP4, MSGTMP0
+	SHA256MSG2	MSGTMP3, MSGTMP0
+		VPSHUFD 	$0x0E, MSG, MSG
+		SHA256RNDS2	X0, STATE1, STATE0
+	SHA256MSG1	MSGTMP3, MSGTMP2
+
+	// Rounds 16-51
+	ROUNDS_16_XX_SHA(MSGTMP0, MSGTMP1, MSGTMP3, MSGTMP4, STATE0, STATE1, 4)
+	ROUNDS_16_XX_SHA(MSGTMP1, MSGTMP2, MSGTMP0, MSGTMP4, STATE0, STATE1, 5)
+	ROUNDS_16_XX_SHA(MSGTMP2, MSGTMP3, MSGTMP1, MSGTMP4, STATE0, STATE1, 6)
+	ROUNDS_16_XX_SHA(MSGTMP3, MSGTMP0, MSGTMP2, MSGTMP4, STATE0, STATE1, 7)
+	ROUNDS_16_XX_SHA(MSGTMP0, MSGTMP1, MSGTMP3, MSGTMP4, STATE0, STATE1, 8)
+	ROUNDS_16_XX_SHA(MSGTMP1, MSGTMP2, MSGTMP0, MSGTMP4, STATE0, STATE1, 9)
+	ROUNDS_16_XX_SHA(MSGTMP2, MSGTMP3, MSGTMP1, MSGTMP4, STATE0, STATE1, 10)
+	ROUNDS_16_XX_SHA(MSGTMP3, MSGTMP0, MSGTMP2, MSGTMP4, STATE0, STATE1, 11)
+	ROUNDS_16_XX_SHA(MSGTMP0, MSGTMP1, MSGTMP3, MSGTMP4, STATE0, STATE1, 12)
+
+	// Rounds 52--55
+	VMOVDQA		MSGTMP1, MSG
+		PADDD		(13*16)(SHA256CONSTANTS), MSG
+		SHA256RNDS2	X0, STATE0, STATE1
+	VMOVDQA		MSGTMP1, MSGTMP4
+	PALIGNR	$4, MSGTMP0, MSGTMP4
+	PADDD		MSGTMP4, MSGTMP2
+	SHA256MSG2	MSGTMP1, MSGTMP2
+		VPSHUFD 	$0x0E, MSG, MSG
+		SHA256RNDS2	X0, STATE1, STATE0
+
+	// Rounds 56-59
+	VMOVDQA		MSGTMP2, MSG
+		PADDD		(14*16)(SHA256CONSTANTS), MSG
+		SHA256RNDS2	X0, STATE0, STATE1
+	VMOVDQA		MSGTMP2, MSGTMP4
+	PALIGNR	$4, MSGTMP1, MSGTMP4
+	PADDD		MSGTMP4, MSGTMP3
+	SHA256MSG2	MSGTMP2, MSGTMP3
+		VPSHUFD 	$0x0E, MSG, MSG
+		SHA256RNDS2	X0, STATE1, STATE0
+
+	// Rounds 60--63
+	VMOVDQA		MSGTMP3, MSG
+		PADDD		(15*16)(SHA256CONSTANTS), MSG
+		SHA256RNDS2	X0, STATE0, STATE1
+		VPSHUFD 	$0x0E, MSG, MSG
+		SHA256RNDS2	X0, STATE1, STATE0
+
+	// Add current hash values with previously saved
+	PADDD		ABEF_SAVE, STATE0 
+	PADDD		CDGH_SAVE, STATE1
+
+        // Rounds with PADDING
+	// Save hash values for addition after rounds
+	VMOVDQA		STATE0, ABEF_SAVE
+	VMOVDQA		STATE1, CDGH_SAVE
+
+	ROUND_PADD_SHA_x1(0x0)
+	ROUND_PADD_SHA_x1(0x1)
+	ROUND_PADD_SHA_x1(0x2)
+	ROUND_PADD_SHA_x1(0x3)
+	ROUND_PADD_SHA_x1(0x4)
+	ROUND_PADD_SHA_x1(0x5)
+	ROUND_PADD_SHA_x1(0x6)
+	ROUND_PADD_SHA_x1(0x7)
+	ROUND_PADD_SHA_x1(0x8)
+	ROUND_PADD_SHA_x1(0x9)
+	ROUND_PADD_SHA_x1(0xa)
+	ROUND_PADD_SHA_x1(0xb)
+	ROUND_PADD_SHA_x1(0xc)
+	ROUND_PADD_SHA_x1(0xd)
+	ROUND_PADD_SHA_x1(0xe)
+	ROUND_PADD_SHA_x1(0xf)
+
+	// Add current hash values with previously saved
+	PADDD		ABEF_SAVE, STATE0
+	PADDD		CDGH_SAVE, STATE1
+
+	// Write hash values back in the correct order
+	PSHUFD		$0x1B, STATE0,  STATE0
+	PSHUFD		$0xB1, STATE1,  STATE1
+	VMOVDQA		STATE0, MSGTMP4
+	PBLENDW		$0xF0, STATE1,  STATE0
+	PALIGNR		$0x8, MSGTMP4, STATE1
+
+        PSHUFB          SHUF_MASK, STATE0
+        PSHUFB          SHUF_MASK, STATE1
+
+
+	VMOVDQU		STATE0, (0*16)(OUTPUT_PTR)
+	VMOVDQU		STATE1, (1*16)(OUTPUT_PTR)
+
+shani_epilog:
+	MOVQ	SAVE_SP, SP
+	RET
+
+
+
+// Data section
+DATA K256<>+0x00(SB)/4, 	$0x428a2f98
+DATA K256<>+0x04(SB)/4, 	$0x71374491
+DATA K256<>+0x08(SB)/4, 	$0xb5c0fbcf
+DATA K256<>+0x0c(SB)/4, 	$0xe9b5dba5
+DATA K256<>+0x10(SB)/4, 	$0x3956c25b
+DATA K256<>+0x14(SB)/4, 	$0x59f111f1
+DATA K256<>+0x18(SB)/4, 	$0x923f82a4
+DATA K256<>+0x1c(SB)/4, 	$0xab1c5ed5
+DATA K256<>+0x20(SB)/4, 	$0xd807aa98
+DATA K256<>+0x24(SB)/4, 	$0x12835b01
+DATA K256<>+0x28(SB)/4, 	$0x243185be
+DATA K256<>+0x2c(SB)/4, 	$0x550c7dc3
+DATA K256<>+0x30(SB)/4, 	$0x72be5d74
+DATA K256<>+0x34(SB)/4, 	$0x80deb1fe
+DATA K256<>+0x38(SB)/4, 	$0x9bdc06a7
+DATA K256<>+0x3c(SB)/4, 	$0xc19bf174
+DATA K256<>+0x40(SB)/4, 	$0xe49b69c1
+DATA K256<>+0x44(SB)/4, 	$0xefbe4786
+DATA K256<>+0x48(SB)/4, 	$0x0fc19dc6
+DATA K256<>+0x4c(SB)/4, 	$0x240ca1cc
+DATA K256<>+0x50(SB)/4, 	$0x2de92c6f
+DATA K256<>+0x54(SB)/4, 	$0x4a7484aa
+DATA K256<>+0x58(SB)/4, 	$0x5cb0a9dc
+DATA K256<>+0x5c(SB)/4, 	$0x76f988da
+DATA K256<>+0x60(SB)/4, 	$0x983e5152
+DATA K256<>+0x64(SB)/4, 	$0xa831c66d
+DATA K256<>+0x68(SB)/4, 	$0xb00327c8
+DATA K256<>+0x6c(SB)/4, 	$0xbf597fc7
+DATA K256<>+0x70(SB)/4, 	$0xc6e00bf3
+DATA K256<>+0x74(SB)/4, 	$0xd5a79147
+DATA K256<>+0x78(SB)/4, 	$0x06ca6351
+DATA K256<>+0x7c(SB)/4, 	$0x14292967
+DATA K256<>+0x80(SB)/4, 	$0x27b70a85
+DATA K256<>+0x84(SB)/4, 	$0x2e1b2138
+DATA K256<>+0x88(SB)/4, 	$0x4d2c6dfc
+DATA K256<>+0x8c(SB)/4, 	$0x53380d13
+DATA K256<>+0x90(SB)/4, 	$0x650a7354
+DATA K256<>+0x94(SB)/4, 	$0x766a0abb
+DATA K256<>+0x98(SB)/4, 	$0x81c2c92e
+DATA K256<>+0x9c(SB)/4, 	$0x92722c85
+DATA K256<>+0xa0(SB)/4, 	$0xa2bfe8a1
+DATA K256<>+0xa4(SB)/4, 	$0xa81a664b
+DATA K256<>+0xa8(SB)/4, 	$0xc24b8b70
+DATA K256<>+0xac(SB)/4, 	$0xc76c51a3
+DATA K256<>+0xb0(SB)/4, 	$0xd192e819
+DATA K256<>+0xb4(SB)/4, 	$0xd6990624
+DATA K256<>+0xb8(SB)/4, 	$0xf40e3585
+DATA K256<>+0xbc(SB)/4, 	$0x106aa070
+DATA K256<>+0xc0(SB)/4, 	$0x19a4c116
+DATA K256<>+0xc4(SB)/4, 	$0x1e376c08
+DATA K256<>+0xc8(SB)/4, 	$0x2748774c
+DATA K256<>+0xcc(SB)/4, 	$0x34b0bcb5
+DATA K256<>+0xd0(SB)/4, 	$0x391c0cb3
+DATA K256<>+0xd4(SB)/4, 	$0x4ed8aa4a
+DATA K256<>+0xd8(SB)/4, 	$0x5b9cca4f
+DATA K256<>+0xdc(SB)/4, 	$0x682e6ff3
+DATA K256<>+0xe0(SB)/4, 	$0x748f82ee
+DATA K256<>+0xe4(SB)/4, 	$0x78a5636f
+DATA K256<>+0xe8(SB)/4, 	$0x84c87814
+DATA K256<>+0xec(SB)/4, 	$0x8cc70208
+DATA K256<>+0xf0(SB)/4, 	$0x90befffa
+DATA K256<>+0xf4(SB)/4, 	$0xa4506ceb
+DATA K256<>+0xf8(SB)/4, 	$0xbef9a3f7
+DATA K256<>+0xfc(SB)/4, 	$0xc67178f2
+GLOBL K256<>(SB),(NOPTR+RODATA),$256
+
+DATA PADDING<>+0x00(SB)/4, $0xc28a2f98
+DATA PADDING<>+0x04(SB)/4, $0x71374491
+DATA PADDING<>+0x08(SB)/4, $0xb5c0fbcf
+DATA PADDING<>+0x0c(SB)/4, $0xe9b5dba5
+DATA PADDING<>+0x10(SB)/4, $0x3956c25b
+DATA PADDING<>+0x14(SB)/4, $0x59f111f1
+DATA PADDING<>+0x18(SB)/4, $0x923f82a4
+DATA PADDING<>+0x1c(SB)/4, $0xab1c5ed5
+DATA PADDING<>+0x20(SB)/4, $0xd807aa98
+DATA PADDING<>+0x24(SB)/4, $0x12835b01
+DATA PADDING<>+0x28(SB)/4, $0x243185be
+DATA PADDING<>+0x2c(SB)/4, $0x550c7dc3
+DATA PADDING<>+0x30(SB)/4, $0x72be5d74
+DATA PADDING<>+0x34(SB)/4, $0x80deb1fe
+DATA PADDING<>+0x38(SB)/4, $0x9bdc06a7
+DATA PADDING<>+0x3c(SB)/4, $0xc19bf374
+DATA PADDING<>+0x40(SB)/4, $0x649b69c1
+DATA PADDING<>+0x44(SB)/4, $0xf0fe4786
+DATA PADDING<>+0x48(SB)/4, $0x0fe1edc6
+DATA PADDING<>+0x4c(SB)/4, $0x240cf254
+DATA PADDING<>+0x50(SB)/4, $0x4fe9346f
+DATA PADDING<>+0x54(SB)/4, $0x6cc984be
+DATA PADDING<>+0x58(SB)/4, $0x61b9411e
+DATA PADDING<>+0x5c(SB)/4, $0x16f988fa
+DATA PADDING<>+0x60(SB)/4, $0xf2c65152
+DATA PADDING<>+0x64(SB)/4, $0xa88e5a6d
+DATA PADDING<>+0x68(SB)/4, $0xb019fc65
+DATA PADDING<>+0x6c(SB)/4, $0xb9d99ec7
+DATA PADDING<>+0x70(SB)/4, $0x9a1231c3
+DATA PADDING<>+0x74(SB)/4, $0xe70eeaa0
+DATA PADDING<>+0x78(SB)/4, $0xfdb1232b
+DATA PADDING<>+0x7c(SB)/4, $0xc7353eb0
+DATA PADDING<>+0x80(SB)/4, $0x3069bad5
+DATA PADDING<>+0x84(SB)/4, $0xcb976d5f
+DATA PADDING<>+0x88(SB)/4, $0x5a0f118f
+DATA PADDING<>+0x8c(SB)/4, $0xdc1eeefd
+DATA PADDING<>+0x90(SB)/4, $0x0a35b689
+DATA PADDING<>+0x94(SB)/4, $0xde0b7a04
+DATA PADDING<>+0x98(SB)/4, $0x58f4ca9d
+DATA PADDING<>+0x9c(SB)/4, $0xe15d5b16
+DATA PADDING<>+0xa0(SB)/4, $0x007f3e86
+DATA PADDING<>+0xa4(SB)/4, $0x37088980
+DATA PADDING<>+0xa8(SB)/4, $0xa507ea32
+DATA PADDING<>+0xac(SB)/4, $0x6fab9537
+DATA PADDING<>+0xb0(SB)/4, $0x17406110
+DATA PADDING<>+0xb4(SB)/4, $0x0d8cd6f1
+DATA PADDING<>+0xb8(SB)/4, $0xcdaa3b6d
+DATA PADDING<>+0xbc(SB)/4, $0xc0bbbe37
+DATA PADDING<>+0xc0(SB)/4, $0x83613bda
+DATA PADDING<>+0xc4(SB)/4, $0xdb48a363
+DATA PADDING<>+0xc8(SB)/4, $0x0b02e931
+DATA PADDING<>+0xcc(SB)/4, $0x6fd15ca7
+DATA PADDING<>+0xd0(SB)/4, $0x521afaca
+DATA PADDING<>+0xd4(SB)/4, $0x31338431
+DATA PADDING<>+0xd8(SB)/4, $0x6ed41a95
+DATA PADDING<>+0xdc(SB)/4, $0x6d437890
+DATA PADDING<>+0xe0(SB)/4, $0xc39c91f2
+DATA PADDING<>+0xe4(SB)/4, $0x9eccabbd
+DATA PADDING<>+0xe8(SB)/4, $0xb5c9a0e6
+DATA PADDING<>+0xec(SB)/4, $0x532fb63c
+DATA PADDING<>+0xf0(SB)/4, $0xd2c741c6
+DATA PADDING<>+0xf4(SB)/4, $0x07237ea3
+DATA PADDING<>+0xf8(SB)/4, $0xa4954b68
+DATA PADDING<>+0xfc(SB)/4, $0x4c191d76
+GLOBL PADDING<>(SB),(NOPTR+RODATA),$256
+
+DATA _DIGEST_1<>+0x00(SB)/8, $0x510e527f9b05688c
+DATA _DIGEST_1<>+0x08(SB)/8, $0x6a09e667bb67ae85
+DATA _DIGEST_1<>+0x10(SB)/8, $0x1f83d9ab5be0cd19
+DATA _DIGEST_1<>+0x18(SB)/8, $0x3c6ef372a54ff53a
+GLOBL _DIGEST_1<>(SB),(NOPTR+RODATA),$32
+
+
+DATA PSHUF_00BA<>+0x00(SB)/8, $0x0b0a090803020100
+DATA PSHUF_00BA<>+0x08(SB)/8, $0xFFFFFFFFFFFFFFFF
+GLOBL PSHUF_00BA<>(SB),(NOPTR+RODATA),$16
+
+DATA PSHUF_DC00<>+0x00(SB)/8, $0xFFFFFFFFFFFFFFFF
+DATA PSHUF_DC00<>+0x08(SB)/8, $0x0b0a090803020100
+GLOBL PSHUF_DC00<>(SB),(NOPTR+RODATA),$16
+
+// Data section AVX2 x8
+DATA _K256_16<>+0(SB)/8, $0x428a2f98428a2f98
+DATA _K256_16<>+8(SB)/8, $0x428a2f98428a2f98
+DATA _K256_16<>+16(SB)/8, $0x428a2f98428a2f98
+DATA _K256_16<>+24(SB)/8, $0x428a2f98428a2f98
+DATA _K256_16<>+32(SB)/8, $0x428a2f98428a2f98
+DATA _K256_16<>+40(SB)/8, $0x428a2f98428a2f98
+DATA _K256_16<>+48(SB)/8, $0x428a2f98428a2f98
+DATA _K256_16<>+56(SB)/8, $0x428a2f98428a2f98
+DATA _K256_16<>+64(SB)/8, $0x7137449171374491
+DATA _K256_16<>+72(SB)/8, $0x7137449171374491
+DATA _K256_16<>+80(SB)/8, $0x7137449171374491
+DATA _K256_16<>+88(SB)/8, $0x7137449171374491
+DATA _K256_16<>+96(SB)/8, $0x7137449171374491
+DATA _K256_16<>+104(SB)/8, $0x7137449171374491
+DATA _K256_16<>+112(SB)/8, $0x7137449171374491
+DATA _K256_16<>+120(SB)/8, $0x7137449171374491
+DATA _K256_16<>+128(SB)/8, $0xb5c0fbcfb5c0fbcf
+DATA _K256_16<>+136(SB)/8, $0xb5c0fbcfb5c0fbcf
+DATA _K256_16<>+144(SB)/8, $0xb5c0fbcfb5c0fbcf
+DATA _K256_16<>+152(SB)/8, $0xb5c0fbcfb5c0fbcf
+DATA _K256_16<>+160(SB)/8, $0xb5c0fbcfb5c0fbcf
+DATA _K256_16<>+168(SB)/8, $0xb5c0fbcfb5c0fbcf
+DATA _K256_16<>+176(SB)/8, $0xb5c0fbcfb5c0fbcf
+DATA _K256_16<>+184(SB)/8, $0xb5c0fbcfb5c0fbcf
+DATA _K256_16<>+192(SB)/8, $0xe9b5dba5e9b5dba5
+DATA _K256_16<>+200(SB)/8, $0xe9b5dba5e9b5dba5
+DATA _K256_16<>+208(SB)/8, $0xe9b5dba5e9b5dba5
+DATA _K256_16<>+216(SB)/8, $0xe9b5dba5e9b5dba5
+DATA _K256_16<>+224(SB)/8, $0xe9b5dba5e9b5dba5
+DATA _K256_16<>+232(SB)/8, $0xe9b5dba5e9b5dba5
+DATA _K256_16<>+240(SB)/8, $0xe9b5dba5e9b5dba5
+DATA _K256_16<>+248(SB)/8, $0xe9b5dba5e9b5dba5
+DATA _K256_16<>+256(SB)/8, $0x3956c25b3956c25b
+DATA _K256_16<>+264(SB)/8, $0x3956c25b3956c25b
+DATA _K256_16<>+272(SB)/8, $0x3956c25b3956c25b
+DATA _K256_16<>+280(SB)/8, $0x3956c25b3956c25b
+DATA _K256_16<>+288(SB)/8, $0x3956c25b3956c25b
+DATA _K256_16<>+296(SB)/8, $0x3956c25b3956c25b
+DATA _K256_16<>+304(SB)/8, $0x3956c25b3956c25b
+DATA _K256_16<>+312(SB)/8, $0x3956c25b3956c25b
+DATA _K256_16<>+320(SB)/8, $0x59f111f159f111f1
+DATA _K256_16<>+328(SB)/8, $0x59f111f159f111f1
+DATA _K256_16<>+336(SB)/8, $0x59f111f159f111f1
+DATA _K256_16<>+344(SB)/8, $0x59f111f159f111f1
+DATA _K256_16<>+352(SB)/8, $0x59f111f159f111f1
+DATA _K256_16<>+360(SB)/8, $0x59f111f159f111f1
+DATA _K256_16<>+368(SB)/8, $0x59f111f159f111f1
+DATA _K256_16<>+376(SB)/8, $0x59f111f159f111f1
+DATA _K256_16<>+384(SB)/8, $0x923f82a4923f82a4
+DATA _K256_16<>+392(SB)/8, $0x923f82a4923f82a4
+DATA _K256_16<>+400(SB)/8, $0x923f82a4923f82a4
+DATA _K256_16<>+408(SB)/8, $0x923f82a4923f82a4
+DATA _K256_16<>+416(SB)/8, $0x923f82a4923f82a4
+DATA _K256_16<>+424(SB)/8, $0x923f82a4923f82a4
+DATA _K256_16<>+432(SB)/8, $0x923f82a4923f82a4
+DATA _K256_16<>+440(SB)/8, $0x923f82a4923f82a4
+DATA _K256_16<>+448(SB)/8, $0xab1c5ed5ab1c5ed5
+DATA _K256_16<>+456(SB)/8, $0xab1c5ed5ab1c5ed5
+DATA _K256_16<>+464(SB)/8, $0xab1c5ed5ab1c5ed5
+DATA _K256_16<>+472(SB)/8, $0xab1c5ed5ab1c5ed5
+DATA _K256_16<>+480(SB)/8, $0xab1c5ed5ab1c5ed5
+DATA _K256_16<>+488(SB)/8, $0xab1c5ed5ab1c5ed5
+DATA _K256_16<>+496(SB)/8, $0xab1c5ed5ab1c5ed5
+DATA _K256_16<>+504(SB)/8, $0xab1c5ed5ab1c5ed5
+DATA _K256_16<>+512(SB)/8, $0xd807aa98d807aa98
+DATA _K256_16<>+520(SB)/8, $0xd807aa98d807aa98
+DATA _K256_16<>+528(SB)/8, $0xd807aa98d807aa98
+DATA _K256_16<>+536(SB)/8, $0xd807aa98d807aa98
+DATA _K256_16<>+544(SB)/8, $0xd807aa98d807aa98
+DATA _K256_16<>+552(SB)/8, $0xd807aa98d807aa98
+DATA _K256_16<>+560(SB)/8, $0xd807aa98d807aa98
+DATA _K256_16<>+568(SB)/8, $0xd807aa98d807aa98
+DATA _K256_16<>+576(SB)/8, $0x12835b0112835b01
+DATA _K256_16<>+584(SB)/8, $0x12835b0112835b01
+DATA _K256_16<>+592(SB)/8, $0x12835b0112835b01
+DATA _K256_16<>+600(SB)/8, $0x12835b0112835b01
+DATA _K256_16<>+608(SB)/8, $0x12835b0112835b01
+DATA _K256_16<>+616(SB)/8, $0x12835b0112835b01
+DATA _K256_16<>+624(SB)/8, $0x12835b0112835b01
+DATA _K256_16<>+632(SB)/8, $0x12835b0112835b01
+DATA _K256_16<>+640(SB)/8, $0x243185be243185be
+DATA _K256_16<>+648(SB)/8, $0x243185be243185be
+DATA _K256_16<>+656(SB)/8, $0x243185be243185be
+DATA _K256_16<>+664(SB)/8, $0x243185be243185be
+DATA _K256_16<>+672(SB)/8, $0x243185be243185be
+DATA _K256_16<>+680(SB)/8, $0x243185be243185be
+DATA _K256_16<>+688(SB)/8, $0x243185be243185be
+DATA _K256_16<>+696(SB)/8, $0x243185be243185be
+DATA _K256_16<>+704(SB)/8, $0x550c7dc3550c7dc3
+DATA _K256_16<>+712(SB)/8, $0x550c7dc3550c7dc3
+DATA _K256_16<>+720(SB)/8, $0x550c7dc3550c7dc3
+DATA _K256_16<>+728(SB)/8, $0x550c7dc3550c7dc3
+DATA _K256_16<>+736(SB)/8, $0x550c7dc3550c7dc3
+DATA _K256_16<>+744(SB)/8, $0x550c7dc3550c7dc3
+DATA _K256_16<>+752(SB)/8, $0x550c7dc3550c7dc3
+DATA _K256_16<>+760(SB)/8, $0x550c7dc3550c7dc3
+DATA _K256_16<>+768(SB)/8, $0x72be5d7472be5d74
+DATA _K256_16<>+776(SB)/8, $0x72be5d7472be5d74
+DATA _K256_16<>+784(SB)/8, $0x72be5d7472be5d74
+DATA _K256_16<>+792(SB)/8, $0x72be5d7472be5d74
+DATA _K256_16<>+800(SB)/8, $0x72be5d7472be5d74
+DATA _K256_16<>+808(SB)/8, $0x72be5d7472be5d74
+DATA _K256_16<>+816(SB)/8, $0x72be5d7472be5d74
+DATA _K256_16<>+824(SB)/8, $0x72be5d7472be5d74
+DATA _K256_16<>+832(SB)/8, $0x80deb1fe80deb1fe
+DATA _K256_16<>+840(SB)/8, $0x80deb1fe80deb1fe
+DATA _K256_16<>+848(SB)/8, $0x80deb1fe80deb1fe
+DATA _K256_16<>+856(SB)/8, $0x80deb1fe80deb1fe
+DATA _K256_16<>+864(SB)/8, $0x80deb1fe80deb1fe
+DATA _K256_16<>+872(SB)/8, $0x80deb1fe80deb1fe
+DATA _K256_16<>+880(SB)/8, $0x80deb1fe80deb1fe
+DATA _K256_16<>+888(SB)/8, $0x80deb1fe80deb1fe
+DATA _K256_16<>+896(SB)/8, $0x9bdc06a79bdc06a7
+DATA _K256_16<>+904(SB)/8, $0x9bdc06a79bdc06a7
+DATA _K256_16<>+912(SB)/8, $0x9bdc06a79bdc06a7
+DATA _K256_16<>+920(SB)/8, $0x9bdc06a79bdc06a7
+DATA _K256_16<>+928(SB)/8, $0x9bdc06a79bdc06a7
+DATA _K256_16<>+936(SB)/8, $0x9bdc06a79bdc06a7
+DATA _K256_16<>+944(SB)/8, $0x9bdc06a79bdc06a7
+DATA _K256_16<>+952(SB)/8, $0x9bdc06a79bdc06a7
+DATA _K256_16<>+960(SB)/8, $0xc19bf174c19bf174
+DATA _K256_16<>+968(SB)/8, $0xc19bf174c19bf174
+DATA _K256_16<>+976(SB)/8, $0xc19bf174c19bf174
+DATA _K256_16<>+984(SB)/8, $0xc19bf174c19bf174
+DATA _K256_16<>+992(SB)/8, $0xc19bf174c19bf174
+DATA _K256_16<>+1000(SB)/8, $0xc19bf174c19bf174
+DATA _K256_16<>+1008(SB)/8, $0xc19bf174c19bf174
+DATA _K256_16<>+1016(SB)/8, $0xc19bf174c19bf174
+DATA _K256_16<>+1024(SB)/8, $0xe49b69c1e49b69c1
+DATA _K256_16<>+1032(SB)/8, $0xe49b69c1e49b69c1
+DATA _K256_16<>+1040(SB)/8, $0xe49b69c1e49b69c1
+DATA _K256_16<>+1048(SB)/8, $0xe49b69c1e49b69c1
+DATA _K256_16<>+1056(SB)/8, $0xe49b69c1e49b69c1
+DATA _K256_16<>+1064(SB)/8, $0xe49b69c1e49b69c1
+DATA _K256_16<>+1072(SB)/8, $0xe49b69c1e49b69c1
+DATA _K256_16<>+1080(SB)/8, $0xe49b69c1e49b69c1
+DATA _K256_16<>+1088(SB)/8, $0xefbe4786efbe4786
+DATA _K256_16<>+1096(SB)/8, $0xefbe4786efbe4786
+DATA _K256_16<>+1104(SB)/8, $0xefbe4786efbe4786
+DATA _K256_16<>+1112(SB)/8, $0xefbe4786efbe4786
+DATA _K256_16<>+1120(SB)/8, $0xefbe4786efbe4786
+DATA _K256_16<>+1128(SB)/8, $0xefbe4786efbe4786
+DATA _K256_16<>+1136(SB)/8, $0xefbe4786efbe4786
+DATA _K256_16<>+1144(SB)/8, $0xefbe4786efbe4786
+DATA _K256_16<>+1152(SB)/8, $0x0fc19dc60fc19dc6
+DATA _K256_16<>+1160(SB)/8, $0x0fc19dc60fc19dc6
+DATA _K256_16<>+1168(SB)/8, $0x0fc19dc60fc19dc6
+DATA _K256_16<>+1176(SB)/8, $0x0fc19dc60fc19dc6
+DATA _K256_16<>+1184(SB)/8, $0x0fc19dc60fc19dc6
+DATA _K256_16<>+1192(SB)/8, $0x0fc19dc60fc19dc6
+DATA _K256_16<>+1200(SB)/8, $0x0fc19dc60fc19dc6
+DATA _K256_16<>+1208(SB)/8, $0x0fc19dc60fc19dc6
+DATA _K256_16<>+1216(SB)/8, $0x240ca1cc240ca1cc
+DATA _K256_16<>+1224(SB)/8, $0x240ca1cc240ca1cc
+DATA _K256_16<>+1232(SB)/8, $0x240ca1cc240ca1cc
+DATA _K256_16<>+1240(SB)/8, $0x240ca1cc240ca1cc
+DATA _K256_16<>+1248(SB)/8, $0x240ca1cc240ca1cc
+DATA _K256_16<>+1256(SB)/8, $0x240ca1cc240ca1cc
+DATA _K256_16<>+1264(SB)/8, $0x240ca1cc240ca1cc
+DATA _K256_16<>+1272(SB)/8, $0x240ca1cc240ca1cc
+DATA _K256_16<>+1280(SB)/8, $0x2de92c6f2de92c6f
+DATA _K256_16<>+1288(SB)/8, $0x2de92c6f2de92c6f
+DATA _K256_16<>+1296(SB)/8, $0x2de92c6f2de92c6f
+DATA _K256_16<>+1304(SB)/8, $0x2de92c6f2de92c6f
+DATA _K256_16<>+1312(SB)/8, $0x2de92c6f2de92c6f
+DATA _K256_16<>+1320(SB)/8, $0x2de92c6f2de92c6f
+DATA _K256_16<>+1328(SB)/8, $0x2de92c6f2de92c6f
+DATA _K256_16<>+1336(SB)/8, $0x2de92c6f2de92c6f
+DATA _K256_16<>+1344(SB)/8, $0x4a7484aa4a7484aa
+DATA _K256_16<>+1352(SB)/8, $0x4a7484aa4a7484aa
+DATA _K256_16<>+1360(SB)/8, $0x4a7484aa4a7484aa
+DATA _K256_16<>+1368(SB)/8, $0x4a7484aa4a7484aa
+DATA _K256_16<>+1376(SB)/8, $0x4a7484aa4a7484aa
+DATA _K256_16<>+1384(SB)/8, $0x4a7484aa4a7484aa
+DATA _K256_16<>+1392(SB)/8, $0x4a7484aa4a7484aa
+DATA _K256_16<>+1400(SB)/8, $0x4a7484aa4a7484aa
+DATA _K256_16<>+1408(SB)/8, $0x5cb0a9dc5cb0a9dc
+DATA _K256_16<>+1416(SB)/8, $0x5cb0a9dc5cb0a9dc
+DATA _K256_16<>+1424(SB)/8, $0x5cb0a9dc5cb0a9dc
+DATA _K256_16<>+1432(SB)/8, $0x5cb0a9dc5cb0a9dc
+DATA _K256_16<>+1440(SB)/8, $0x5cb0a9dc5cb0a9dc
+DATA _K256_16<>+1448(SB)/8, $0x5cb0a9dc5cb0a9dc
+DATA _K256_16<>+1456(SB)/8, $0x5cb0a9dc5cb0a9dc
+DATA _K256_16<>+1464(SB)/8, $0x5cb0a9dc5cb0a9dc
+DATA _K256_16<>+1472(SB)/8, $0x76f988da76f988da
+DATA _K256_16<>+1480(SB)/8, $0x76f988da76f988da
+DATA _K256_16<>+1488(SB)/8, $0x76f988da76f988da
+DATA _K256_16<>+1496(SB)/8, $0x76f988da76f988da
+DATA _K256_16<>+1504(SB)/8, $0x76f988da76f988da
+DATA _K256_16<>+1512(SB)/8, $0x76f988da76f988da
+DATA _K256_16<>+1520(SB)/8, $0x76f988da76f988da
+DATA _K256_16<>+1528(SB)/8, $0x76f988da76f988da
+DATA _K256_16<>+1536(SB)/8, $0x983e5152983e5152
+DATA _K256_16<>+1544(SB)/8, $0x983e5152983e5152
+DATA _K256_16<>+1552(SB)/8, $0x983e5152983e5152
+DATA _K256_16<>+1560(SB)/8, $0x983e5152983e5152
+DATA _K256_16<>+1568(SB)/8, $0x983e5152983e5152
+DATA _K256_16<>+1576(SB)/8, $0x983e5152983e5152
+DATA _K256_16<>+1584(SB)/8, $0x983e5152983e5152
+DATA _K256_16<>+1592(SB)/8, $0x983e5152983e5152
+DATA _K256_16<>+1600(SB)/8, $0xa831c66da831c66d
+DATA _K256_16<>+1608(SB)/8, $0xa831c66da831c66d
+DATA _K256_16<>+1616(SB)/8, $0xa831c66da831c66d
+DATA _K256_16<>+1624(SB)/8, $0xa831c66da831c66d
+DATA _K256_16<>+1632(SB)/8, $0xa831c66da831c66d
+DATA _K256_16<>+1640(SB)/8, $0xa831c66da831c66d
+DATA _K256_16<>+1648(SB)/8, $0xa831c66da831c66d
+DATA _K256_16<>+1656(SB)/8, $0xa831c66da831c66d
+DATA _K256_16<>+1664(SB)/8, $0xb00327c8b00327c8
+DATA _K256_16<>+1672(SB)/8, $0xb00327c8b00327c8
+DATA _K256_16<>+1680(SB)/8, $0xb00327c8b00327c8
+DATA _K256_16<>+1688(SB)/8, $0xb00327c8b00327c8
+DATA _K256_16<>+1696(SB)/8, $0xb00327c8b00327c8
+DATA _K256_16<>+1704(SB)/8, $0xb00327c8b00327c8
+DATA _K256_16<>+1712(SB)/8, $0xb00327c8b00327c8
+DATA _K256_16<>+1720(SB)/8, $0xb00327c8b00327c8
+DATA _K256_16<>+1728(SB)/8, $0xbf597fc7bf597fc7
+DATA _K256_16<>+1736(SB)/8, $0xbf597fc7bf597fc7
+DATA _K256_16<>+1744(SB)/8, $0xbf597fc7bf597fc7
+DATA _K256_16<>+1752(SB)/8, $0xbf597fc7bf597fc7
+DATA _K256_16<>+1760(SB)/8, $0xbf597fc7bf597fc7
+DATA _K256_16<>+1768(SB)/8, $0xbf597fc7bf597fc7
+DATA _K256_16<>+1776(SB)/8, $0xbf597fc7bf597fc7
+DATA _K256_16<>+1784(SB)/8, $0xbf597fc7bf597fc7
+DATA _K256_16<>+1792(SB)/8, $0xc6e00bf3c6e00bf3
+DATA _K256_16<>+1800(SB)/8, $0xc6e00bf3c6e00bf3
+DATA _K256_16<>+1808(SB)/8, $0xc6e00bf3c6e00bf3
+DATA _K256_16<>+1816(SB)/8, $0xc6e00bf3c6e00bf3
+DATA _K256_16<>+1824(SB)/8, $0xc6e00bf3c6e00bf3
+DATA _K256_16<>+1832(SB)/8, $0xc6e00bf3c6e00bf3
+DATA _K256_16<>+1840(SB)/8, $0xc6e00bf3c6e00bf3
+DATA _K256_16<>+1848(SB)/8, $0xc6e00bf3c6e00bf3
+DATA _K256_16<>+1856(SB)/8, $0xd5a79147d5a79147
+DATA _K256_16<>+1864(SB)/8, $0xd5a79147d5a79147
+DATA _K256_16<>+1872(SB)/8, $0xd5a79147d5a79147
+DATA _K256_16<>+1880(SB)/8, $0xd5a79147d5a79147
+DATA _K256_16<>+1888(SB)/8, $0xd5a79147d5a79147
+DATA _K256_16<>+1896(SB)/8, $0xd5a79147d5a79147
+DATA _K256_16<>+1904(SB)/8, $0xd5a79147d5a79147
+DATA _K256_16<>+1912(SB)/8, $0xd5a79147d5a79147
+DATA _K256_16<>+1920(SB)/8, $0x06ca635106ca6351
+DATA _K256_16<>+1928(SB)/8, $0x06ca635106ca6351
+DATA _K256_16<>+1936(SB)/8, $0x06ca635106ca6351
+DATA _K256_16<>+1944(SB)/8, $0x06ca635106ca6351
+DATA _K256_16<>+1952(SB)/8, $0x06ca635106ca6351
+DATA _K256_16<>+1960(SB)/8, $0x06ca635106ca6351
+DATA _K256_16<>+1968(SB)/8, $0x06ca635106ca6351
+DATA _K256_16<>+1976(SB)/8, $0x06ca635106ca6351
+DATA _K256_16<>+1984(SB)/8, $0x1429296714292967
+DATA _K256_16<>+1992(SB)/8, $0x1429296714292967
+DATA _K256_16<>+2000(SB)/8, $0x1429296714292967
+DATA _K256_16<>+2008(SB)/8, $0x1429296714292967
+DATA _K256_16<>+2016(SB)/8, $0x1429296714292967
+DATA _K256_16<>+2024(SB)/8, $0x1429296714292967
+DATA _K256_16<>+2032(SB)/8, $0x1429296714292967
+DATA _K256_16<>+2040(SB)/8, $0x1429296714292967
+DATA _K256_16<>+2048(SB)/8, $0x27b70a8527b70a85
+DATA _K256_16<>+2056(SB)/8, $0x27b70a8527b70a85
+DATA _K256_16<>+2064(SB)/8, $0x27b70a8527b70a85
+DATA _K256_16<>+2072(SB)/8, $0x27b70a8527b70a85
+DATA _K256_16<>+2080(SB)/8, $0x27b70a8527b70a85
+DATA _K256_16<>+2088(SB)/8, $0x27b70a8527b70a85
+DATA _K256_16<>+2096(SB)/8, $0x27b70a8527b70a85
+DATA _K256_16<>+2104(SB)/8, $0x27b70a8527b70a85
+DATA _K256_16<>+2112(SB)/8, $0x2e1b21382e1b2138
+DATA _K256_16<>+2120(SB)/8, $0x2e1b21382e1b2138
+DATA _K256_16<>+2128(SB)/8, $0x2e1b21382e1b2138
+DATA _K256_16<>+2136(SB)/8, $0x2e1b21382e1b2138
+DATA _K256_16<>+2144(SB)/8, $0x2e1b21382e1b2138
+DATA _K256_16<>+2152(SB)/8, $0x2e1b21382e1b2138
+DATA _K256_16<>+2160(SB)/8, $0x2e1b21382e1b2138
+DATA _K256_16<>+2168(SB)/8, $0x2e1b21382e1b2138
+DATA _K256_16<>+2176(SB)/8, $0x4d2c6dfc4d2c6dfc
+DATA _K256_16<>+2184(SB)/8, $0x4d2c6dfc4d2c6dfc
+DATA _K256_16<>+2192(SB)/8, $0x4d2c6dfc4d2c6dfc
+DATA _K256_16<>+2200(SB)/8, $0x4d2c6dfc4d2c6dfc
+DATA _K256_16<>+2208(SB)/8, $0x4d2c6dfc4d2c6dfc
+DATA _K256_16<>+2216(SB)/8, $0x4d2c6dfc4d2c6dfc
+DATA _K256_16<>+2224(SB)/8, $0x4d2c6dfc4d2c6dfc
+DATA _K256_16<>+2232(SB)/8, $0x4d2c6dfc4d2c6dfc
+DATA _K256_16<>+2240(SB)/8, $0x53380d1353380d13
+DATA _K256_16<>+2248(SB)/8, $0x53380d1353380d13
+DATA _K256_16<>+2256(SB)/8, $0x53380d1353380d13
+DATA _K256_16<>+2264(SB)/8, $0x53380d1353380d13
+DATA _K256_16<>+2272(SB)/8, $0x53380d1353380d13
+DATA _K256_16<>+2280(SB)/8, $0x53380d1353380d13
+DATA _K256_16<>+2288(SB)/8, $0x53380d1353380d13
+DATA _K256_16<>+2296(SB)/8, $0x53380d1353380d13
+DATA _K256_16<>+2304(SB)/8, $0x650a7354650a7354
+DATA _K256_16<>+2312(SB)/8, $0x650a7354650a7354
+DATA _K256_16<>+2320(SB)/8, $0x650a7354650a7354
+DATA _K256_16<>+2328(SB)/8, $0x650a7354650a7354
+DATA _K256_16<>+2336(SB)/8, $0x650a7354650a7354
+DATA _K256_16<>+2344(SB)/8, $0x650a7354650a7354
+DATA _K256_16<>+2352(SB)/8, $0x650a7354650a7354
+DATA _K256_16<>+2360(SB)/8, $0x650a7354650a7354
+DATA _K256_16<>+2368(SB)/8, $0x766a0abb766a0abb
+DATA _K256_16<>+2376(SB)/8, $0x766a0abb766a0abb
+DATA _K256_16<>+2384(SB)/8, $0x766a0abb766a0abb
+DATA _K256_16<>+2392(SB)/8, $0x766a0abb766a0abb
+DATA _K256_16<>+2400(SB)/8, $0x766a0abb766a0abb
+DATA _K256_16<>+2408(SB)/8, $0x766a0abb766a0abb
+DATA _K256_16<>+2416(SB)/8, $0x766a0abb766a0abb
+DATA _K256_16<>+2424(SB)/8, $0x766a0abb766a0abb
+DATA _K256_16<>+2432(SB)/8, $0x81c2c92e81c2c92e
+DATA _K256_16<>+2440(SB)/8, $0x81c2c92e81c2c92e
+DATA _K256_16<>+2448(SB)/8, $0x81c2c92e81c2c92e
+DATA _K256_16<>+2456(SB)/8, $0x81c2c92e81c2c92e
+DATA _K256_16<>+2464(SB)/8, $0x81c2c92e81c2c92e
+DATA _K256_16<>+2472(SB)/8, $0x81c2c92e81c2c92e
+DATA _K256_16<>+2480(SB)/8, $0x81c2c92e81c2c92e
+DATA _K256_16<>+2488(SB)/8, $0x81c2c92e81c2c92e
+DATA _K256_16<>+2496(SB)/8, $0x92722c8592722c85
+DATA _K256_16<>+2504(SB)/8, $0x92722c8592722c85
+DATA _K256_16<>+2512(SB)/8, $0x92722c8592722c85
+DATA _K256_16<>+2520(SB)/8, $0x92722c8592722c85
+DATA _K256_16<>+2528(SB)/8, $0x92722c8592722c85
+DATA _K256_16<>+2536(SB)/8, $0x92722c8592722c85
+DATA _K256_16<>+2544(SB)/8, $0x92722c8592722c85
+DATA _K256_16<>+2552(SB)/8, $0x92722c8592722c85
+DATA _K256_16<>+2560(SB)/8, $0xa2bfe8a1a2bfe8a1
+DATA _K256_16<>+2568(SB)/8, $0xa2bfe8a1a2bfe8a1
+DATA _K256_16<>+2576(SB)/8, $0xa2bfe8a1a2bfe8a1
+DATA _K256_16<>+2584(SB)/8, $0xa2bfe8a1a2bfe8a1
+DATA _K256_16<>+2592(SB)/8, $0xa2bfe8a1a2bfe8a1
+DATA _K256_16<>+2600(SB)/8, $0xa2bfe8a1a2bfe8a1
+DATA _K256_16<>+2608(SB)/8, $0xa2bfe8a1a2bfe8a1
+DATA _K256_16<>+2616(SB)/8, $0xa2bfe8a1a2bfe8a1
+DATA _K256_16<>+2624(SB)/8, $0xa81a664ba81a664b
+DATA _K256_16<>+2632(SB)/8, $0xa81a664ba81a664b
+DATA _K256_16<>+2640(SB)/8, $0xa81a664ba81a664b
+DATA _K256_16<>+2648(SB)/8, $0xa81a664ba81a664b
+DATA _K256_16<>+2656(SB)/8, $0xa81a664ba81a664b
+DATA _K256_16<>+2664(SB)/8, $0xa81a664ba81a664b
+DATA _K256_16<>+2672(SB)/8, $0xa81a664ba81a664b
+DATA _K256_16<>+2680(SB)/8, $0xa81a664ba81a664b
+DATA _K256_16<>+2688(SB)/8, $0xc24b8b70c24b8b70
+DATA _K256_16<>+2696(SB)/8, $0xc24b8b70c24b8b70
+DATA _K256_16<>+2704(SB)/8, $0xc24b8b70c24b8b70
+DATA _K256_16<>+2712(SB)/8, $0xc24b8b70c24b8b70
+DATA _K256_16<>+2720(SB)/8, $0xc24b8b70c24b8b70
+DATA _K256_16<>+2728(SB)/8, $0xc24b8b70c24b8b70
+DATA _K256_16<>+2736(SB)/8, $0xc24b8b70c24b8b70
+DATA _K256_16<>+2744(SB)/8, $0xc24b8b70c24b8b70
+DATA _K256_16<>+2752(SB)/8, $0xc76c51a3c76c51a3
+DATA _K256_16<>+2760(SB)/8, $0xc76c51a3c76c51a3
+DATA _K256_16<>+2768(SB)/8, $0xc76c51a3c76c51a3
+DATA _K256_16<>+2776(SB)/8, $0xc76c51a3c76c51a3
+DATA _K256_16<>+2784(SB)/8, $0xc76c51a3c76c51a3
+DATA _K256_16<>+2792(SB)/8, $0xc76c51a3c76c51a3
+DATA _K256_16<>+2800(SB)/8, $0xc76c51a3c76c51a3
+DATA _K256_16<>+2808(SB)/8, $0xc76c51a3c76c51a3
+DATA _K256_16<>+2816(SB)/8, $0xd192e819d192e819
+DATA _K256_16<>+2824(SB)/8, $0xd192e819d192e819
+DATA _K256_16<>+2832(SB)/8, $0xd192e819d192e819
+DATA _K256_16<>+2840(SB)/8, $0xd192e819d192e819
+DATA _K256_16<>+2848(SB)/8, $0xd192e819d192e819
+DATA _K256_16<>+2856(SB)/8, $0xd192e819d192e819
+DATA _K256_16<>+2864(SB)/8, $0xd192e819d192e819
+DATA _K256_16<>+2872(SB)/8, $0xd192e819d192e819
+DATA _K256_16<>+2880(SB)/8, $0xd6990624d6990624
+DATA _K256_16<>+2888(SB)/8, $0xd6990624d6990624
+DATA _K256_16<>+2896(SB)/8, $0xd6990624d6990624
+DATA _K256_16<>+2904(SB)/8, $0xd6990624d6990624
+DATA _K256_16<>+2912(SB)/8, $0xd6990624d6990624
+DATA _K256_16<>+2920(SB)/8, $0xd6990624d6990624
+DATA _K256_16<>+2928(SB)/8, $0xd6990624d6990624
+DATA _K256_16<>+2936(SB)/8, $0xd6990624d6990624
+DATA _K256_16<>+2944(SB)/8, $0xf40e3585f40e3585
+DATA _K256_16<>+2952(SB)/8, $0xf40e3585f40e3585
+DATA _K256_16<>+2960(SB)/8, $0xf40e3585f40e3585
+DATA _K256_16<>+2968(SB)/8, $0xf40e3585f40e3585
+DATA _K256_16<>+2976(SB)/8, $0xf40e3585f40e3585
+DATA _K256_16<>+2984(SB)/8, $0xf40e3585f40e3585
+DATA _K256_16<>+2992(SB)/8, $0xf40e3585f40e3585
+DATA _K256_16<>+3000(SB)/8, $0xf40e3585f40e3585
+DATA _K256_16<>+3008(SB)/8, $0x106aa070106aa070
+DATA _K256_16<>+3016(SB)/8, $0x106aa070106aa070
+DATA _K256_16<>+3024(SB)/8, $0x106aa070106aa070
+DATA _K256_16<>+3032(SB)/8, $0x106aa070106aa070
+DATA _K256_16<>+3040(SB)/8, $0x106aa070106aa070
+DATA _K256_16<>+3048(SB)/8, $0x106aa070106aa070
+DATA _K256_16<>+3056(SB)/8, $0x106aa070106aa070
+DATA _K256_16<>+3064(SB)/8, $0x106aa070106aa070
+DATA _K256_16<>+3072(SB)/8, $0x19a4c11619a4c116
+DATA _K256_16<>+3080(SB)/8, $0x19a4c11619a4c116
+DATA _K256_16<>+3088(SB)/8, $0x19a4c11619a4c116
+DATA _K256_16<>+3096(SB)/8, $0x19a4c11619a4c116
+DATA _K256_16<>+3104(SB)/8, $0x19a4c11619a4c116
+DATA _K256_16<>+3112(SB)/8, $0x19a4c11619a4c116
+DATA _K256_16<>+3120(SB)/8, $0x19a4c11619a4c116
+DATA _K256_16<>+3128(SB)/8, $0x19a4c11619a4c116
+DATA _K256_16<>+3136(SB)/8, $0x1e376c081e376c08
+DATA _K256_16<>+3144(SB)/8, $0x1e376c081e376c08
+DATA _K256_16<>+3152(SB)/8, $0x1e376c081e376c08
+DATA _K256_16<>+3160(SB)/8, $0x1e376c081e376c08
+DATA _K256_16<>+3168(SB)/8, $0x1e376c081e376c08
+DATA _K256_16<>+3176(SB)/8, $0x1e376c081e376c08
+DATA _K256_16<>+3184(SB)/8, $0x1e376c081e376c08
+DATA _K256_16<>+3192(SB)/8, $0x1e376c081e376c08
+DATA _K256_16<>+3200(SB)/8, $0x2748774c2748774c
+DATA _K256_16<>+3208(SB)/8, $0x2748774c2748774c
+DATA _K256_16<>+3216(SB)/8, $0x2748774c2748774c
+DATA _K256_16<>+3224(SB)/8, $0x2748774c2748774c
+DATA _K256_16<>+3232(SB)/8, $0x2748774c2748774c
+DATA _K256_16<>+3240(SB)/8, $0x2748774c2748774c
+DATA _K256_16<>+3248(SB)/8, $0x2748774c2748774c
+DATA _K256_16<>+3256(SB)/8, $0x2748774c2748774c
+DATA _K256_16<>+3264(SB)/8, $0x34b0bcb534b0bcb5
+DATA _K256_16<>+3272(SB)/8, $0x34b0bcb534b0bcb5
+DATA _K256_16<>+3280(SB)/8, $0x34b0bcb534b0bcb5
+DATA _K256_16<>+3288(SB)/8, $0x34b0bcb534b0bcb5
+DATA _K256_16<>+3296(SB)/8, $0x34b0bcb534b0bcb5
+DATA _K256_16<>+3304(SB)/8, $0x34b0bcb534b0bcb5
+DATA _K256_16<>+3312(SB)/8, $0x34b0bcb534b0bcb5
+DATA _K256_16<>+3320(SB)/8, $0x34b0bcb534b0bcb5
+DATA _K256_16<>+3328(SB)/8, $0x391c0cb3391c0cb3
+DATA _K256_16<>+3336(SB)/8, $0x391c0cb3391c0cb3
+DATA _K256_16<>+3344(SB)/8, $0x391c0cb3391c0cb3
+DATA _K256_16<>+3352(SB)/8, $0x391c0cb3391c0cb3
+DATA _K256_16<>+3360(SB)/8, $0x391c0cb3391c0cb3
+DATA _K256_16<>+3368(SB)/8, $0x391c0cb3391c0cb3
+DATA _K256_16<>+3376(SB)/8, $0x391c0cb3391c0cb3
+DATA _K256_16<>+3384(SB)/8, $0x391c0cb3391c0cb3
+DATA _K256_16<>+3392(SB)/8, $0x4ed8aa4a4ed8aa4a
+DATA _K256_16<>+3400(SB)/8, $0x4ed8aa4a4ed8aa4a
+DATA _K256_16<>+3408(SB)/8, $0x4ed8aa4a4ed8aa4a
+DATA _K256_16<>+3416(SB)/8, $0x4ed8aa4a4ed8aa4a
+DATA _K256_16<>+3424(SB)/8, $0x4ed8aa4a4ed8aa4a
+DATA _K256_16<>+3432(SB)/8, $0x4ed8aa4a4ed8aa4a
+DATA _K256_16<>+3440(SB)/8, $0x4ed8aa4a4ed8aa4a
+DATA _K256_16<>+3448(SB)/8, $0x4ed8aa4a4ed8aa4a
+DATA _K256_16<>+3456(SB)/8, $0x5b9cca4f5b9cca4f
+DATA _K256_16<>+3464(SB)/8, $0x5b9cca4f5b9cca4f
+DATA _K256_16<>+3472(SB)/8, $0x5b9cca4f5b9cca4f
+DATA _K256_16<>+3480(SB)/8, $0x5b9cca4f5b9cca4f
+DATA _K256_16<>+3488(SB)/8, $0x5b9cca4f5b9cca4f
+DATA _K256_16<>+3496(SB)/8, $0x5b9cca4f5b9cca4f
+DATA _K256_16<>+3504(SB)/8, $0x5b9cca4f5b9cca4f
+DATA _K256_16<>+3512(SB)/8, $0x5b9cca4f5b9cca4f
+DATA _K256_16<>+3520(SB)/8, $0x682e6ff3682e6ff3
+DATA _K256_16<>+3528(SB)/8, $0x682e6ff3682e6ff3
+DATA _K256_16<>+3536(SB)/8, $0x682e6ff3682e6ff3
+DATA _K256_16<>+3544(SB)/8, $0x682e6ff3682e6ff3
+DATA _K256_16<>+3552(SB)/8, $0x682e6ff3682e6ff3
+DATA _K256_16<>+3560(SB)/8, $0x682e6ff3682e6ff3
+DATA _K256_16<>+3568(SB)/8, $0x682e6ff3682e6ff3
+DATA _K256_16<>+3576(SB)/8, $0x682e6ff3682e6ff3
+DATA _K256_16<>+3584(SB)/8, $0x748f82ee748f82ee
+DATA _K256_16<>+3592(SB)/8, $0x748f82ee748f82ee
+DATA _K256_16<>+3600(SB)/8, $0x748f82ee748f82ee
+DATA _K256_16<>+3608(SB)/8, $0x748f82ee748f82ee
+DATA _K256_16<>+3616(SB)/8, $0x748f82ee748f82ee
+DATA _K256_16<>+3624(SB)/8, $0x748f82ee748f82ee
+DATA _K256_16<>+3632(SB)/8, $0x748f82ee748f82ee
+DATA _K256_16<>+3640(SB)/8, $0x748f82ee748f82ee
+DATA _K256_16<>+3648(SB)/8, $0x78a5636f78a5636f
+DATA _K256_16<>+3656(SB)/8, $0x78a5636f78a5636f
+DATA _K256_16<>+3664(SB)/8, $0x78a5636f78a5636f
+DATA _K256_16<>+3672(SB)/8, $0x78a5636f78a5636f
+DATA _K256_16<>+3680(SB)/8, $0x78a5636f78a5636f
+DATA _K256_16<>+3688(SB)/8, $0x78a5636f78a5636f
+DATA _K256_16<>+3696(SB)/8, $0x78a5636f78a5636f
+DATA _K256_16<>+3704(SB)/8, $0x78a5636f78a5636f
+DATA _K256_16<>+3712(SB)/8, $0x84c8781484c87814
+DATA _K256_16<>+3720(SB)/8, $0x84c8781484c87814
+DATA _K256_16<>+3728(SB)/8, $0x84c8781484c87814
+DATA _K256_16<>+3736(SB)/8, $0x84c8781484c87814
+DATA _K256_16<>+3744(SB)/8, $0x84c8781484c87814
+DATA _K256_16<>+3752(SB)/8, $0x84c8781484c87814
+DATA _K256_16<>+3760(SB)/8, $0x84c8781484c87814
+DATA _K256_16<>+3768(SB)/8, $0x84c8781484c87814
+DATA _K256_16<>+3776(SB)/8, $0x8cc702088cc70208
+DATA _K256_16<>+3784(SB)/8, $0x8cc702088cc70208
+DATA _K256_16<>+3792(SB)/8, $0x8cc702088cc70208
+DATA _K256_16<>+3800(SB)/8, $0x8cc702088cc70208
+DATA _K256_16<>+3808(SB)/8, $0x8cc702088cc70208
+DATA _K256_16<>+3816(SB)/8, $0x8cc702088cc70208
+DATA _K256_16<>+3824(SB)/8, $0x8cc702088cc70208
+DATA _K256_16<>+3832(SB)/8, $0x8cc702088cc70208
+DATA _K256_16<>+3840(SB)/8, $0x90befffa90befffa
+DATA _K256_16<>+3848(SB)/8, $0x90befffa90befffa
+DATA _K256_16<>+3856(SB)/8, $0x90befffa90befffa
+DATA _K256_16<>+3864(SB)/8, $0x90befffa90befffa
+DATA _K256_16<>+3872(SB)/8, $0x90befffa90befffa
+DATA _K256_16<>+3880(SB)/8, $0x90befffa90befffa
+DATA _K256_16<>+3888(SB)/8, $0x90befffa90befffa
+DATA _K256_16<>+3896(SB)/8, $0x90befffa90befffa
+DATA _K256_16<>+3904(SB)/8, $0xa4506ceba4506ceb
+DATA _K256_16<>+3912(SB)/8, $0xa4506ceba4506ceb
+DATA _K256_16<>+3920(SB)/8, $0xa4506ceba4506ceb
+DATA _K256_16<>+3928(SB)/8, $0xa4506ceba4506ceb
+DATA _K256_16<>+3936(SB)/8, $0xa4506ceba4506ceb
+DATA _K256_16<>+3944(SB)/8, $0xa4506ceba4506ceb
+DATA _K256_16<>+3952(SB)/8, $0xa4506ceba4506ceb
+DATA _K256_16<>+3960(SB)/8, $0xa4506ceba4506ceb
+DATA _K256_16<>+3968(SB)/8, $0xbef9a3f7bef9a3f7
+DATA _K256_16<>+3976(SB)/8, $0xbef9a3f7bef9a3f7
+DATA _K256_16<>+3984(SB)/8, $0xbef9a3f7bef9a3f7
+DATA _K256_16<>+3992(SB)/8, $0xbef9a3f7bef9a3f7
+DATA _K256_16<>+4000(SB)/8, $0xbef9a3f7bef9a3f7
+DATA _K256_16<>+4008(SB)/8, $0xbef9a3f7bef9a3f7
+DATA _K256_16<>+4016(SB)/8, $0xbef9a3f7bef9a3f7
+DATA _K256_16<>+4024(SB)/8, $0xbef9a3f7bef9a3f7
+DATA _K256_16<>+4032(SB)/8, $0xc67178f2c67178f2
+DATA _K256_16<>+4040(SB)/8, $0xc67178f2c67178f2
+DATA _K256_16<>+4048(SB)/8, $0xc67178f2c67178f2
+DATA _K256_16<>+4056(SB)/8, $0xc67178f2c67178f2
+DATA _K256_16<>+4064(SB)/8, $0xc67178f2c67178f2
+DATA _K256_16<>+4072(SB)/8, $0xc67178f2c67178f2
+DATA _K256_16<>+4080(SB)/8, $0xc67178f2c67178f2
+DATA _K256_16<>+4088(SB)/8, $0xc67178f2c67178f2
+GLOBL _K256_16<>(SB),(NOPTR+RODATA),$4096
+
+DATA _PSHUFFLE_BYTE_FLIP_MASK_16<>+0(SB)/8, $0x0405060700010203
+DATA _PSHUFFLE_BYTE_FLIP_MASK_16<>+8(SB)/8, $0x0c0d0e0f08090a0b
+DATA _PSHUFFLE_BYTE_FLIP_MASK_16<>+16(SB)/8, $0x0405060700010203
+DATA _PSHUFFLE_BYTE_FLIP_MASK_16<>+24(SB)/8, $0x0c0d0e0f08090a0b
+DATA _PSHUFFLE_BYTE_FLIP_MASK_16<>+32(SB)/8, $0x0405060700010203
+DATA _PSHUFFLE_BYTE_FLIP_MASK_16<>+40(SB)/8, $0x0c0d0e0f08090a0b
+DATA _PSHUFFLE_BYTE_FLIP_MASK_16<>+48(SB)/8, $0x0405060700010203
+DATA _PSHUFFLE_BYTE_FLIP_MASK_16<>+56(SB)/8, $0x0c0d0e0f08090a0b
+GLOBL _PSHUFFLE_BYTE_FLIP_MASK_16<>(SB),(NOPTR+RODATA),$64
+
+DATA _PADDING_16<>+0(SB)/8, $0xc28a2f98c28a2f98
+DATA _PADDING_16<>+8(SB)/8, $0xc28a2f98c28a2f98
+DATA _PADDING_16<>+16(SB)/8, $0xc28a2f98c28a2f98
+DATA _PADDING_16<>+24(SB)/8, $0xc28a2f98c28a2f98
+DATA _PADDING_16<>+32(SB)/8, $0xc28a2f98c28a2f98
+DATA _PADDING_16<>+40(SB)/8, $0xc28a2f98c28a2f98
+DATA _PADDING_16<>+48(SB)/8, $0xc28a2f98c28a2f98
+DATA _PADDING_16<>+56(SB)/8, $0xc28a2f98c28a2f98
+DATA _PADDING_16<>+64(SB)/8, $0x7137449171374491
+DATA _PADDING_16<>+72(SB)/8, $0x7137449171374491
+DATA _PADDING_16<>+80(SB)/8, $0x7137449171374491
+DATA _PADDING_16<>+88(SB)/8, $0x7137449171374491
+DATA _PADDING_16<>+96(SB)/8, $0x7137449171374491
+DATA _PADDING_16<>+104(SB)/8, $0x7137449171374491
+DATA _PADDING_16<>+112(SB)/8, $0x7137449171374491
+DATA _PADDING_16<>+120(SB)/8, $0x7137449171374491
+DATA _PADDING_16<>+128(SB)/8, $0xb5c0fbcfb5c0fbcf
+DATA _PADDING_16<>+136(SB)/8, $0xb5c0fbcfb5c0fbcf
+DATA _PADDING_16<>+144(SB)/8, $0xb5c0fbcfb5c0fbcf
+DATA _PADDING_16<>+152(SB)/8, $0xb5c0fbcfb5c0fbcf
+DATA _PADDING_16<>+160(SB)/8, $0xb5c0fbcfb5c0fbcf
+DATA _PADDING_16<>+168(SB)/8, $0xb5c0fbcfb5c0fbcf
+DATA _PADDING_16<>+176(SB)/8, $0xb5c0fbcfb5c0fbcf
+DATA _PADDING_16<>+184(SB)/8, $0xb5c0fbcfb5c0fbcf
+DATA _PADDING_16<>+192(SB)/8, $0xe9b5dba5e9b5dba5
+DATA _PADDING_16<>+200(SB)/8, $0xe9b5dba5e9b5dba5
+DATA _PADDING_16<>+208(SB)/8, $0xe9b5dba5e9b5dba5
+DATA _PADDING_16<>+216(SB)/8, $0xe9b5dba5e9b5dba5
+DATA _PADDING_16<>+224(SB)/8, $0xe9b5dba5e9b5dba5
+DATA _PADDING_16<>+232(SB)/8, $0xe9b5dba5e9b5dba5
+DATA _PADDING_16<>+240(SB)/8, $0xe9b5dba5e9b5dba5
+DATA _PADDING_16<>+248(SB)/8, $0xe9b5dba5e9b5dba5
+DATA _PADDING_16<>+256(SB)/8, $0x3956c25b3956c25b
+DATA _PADDING_16<>+264(SB)/8, $0x3956c25b3956c25b
+DATA _PADDING_16<>+272(SB)/8, $0x3956c25b3956c25b
+DATA _PADDING_16<>+280(SB)/8, $0x3956c25b3956c25b
+DATA _PADDING_16<>+288(SB)/8, $0x3956c25b3956c25b
+DATA _PADDING_16<>+296(SB)/8, $0x3956c25b3956c25b
+DATA _PADDING_16<>+304(SB)/8, $0x3956c25b3956c25b
+DATA _PADDING_16<>+312(SB)/8, $0x3956c25b3956c25b
+DATA _PADDING_16<>+320(SB)/8, $0x59f111f159f111f1
+DATA _PADDING_16<>+328(SB)/8, $0x59f111f159f111f1
+DATA _PADDING_16<>+336(SB)/8, $0x59f111f159f111f1
+DATA _PADDING_16<>+344(SB)/8, $0x59f111f159f111f1
+DATA _PADDING_16<>+352(SB)/8, $0x59f111f159f111f1
+DATA _PADDING_16<>+360(SB)/8, $0x59f111f159f111f1
+DATA _PADDING_16<>+368(SB)/8, $0x59f111f159f111f1
+DATA _PADDING_16<>+376(SB)/8, $0x59f111f159f111f1
+DATA _PADDING_16<>+384(SB)/8, $0x923f82a4923f82a4
+DATA _PADDING_16<>+392(SB)/8, $0x923f82a4923f82a4
+DATA _PADDING_16<>+400(SB)/8, $0x923f82a4923f82a4
+DATA _PADDING_16<>+408(SB)/8, $0x923f82a4923f82a4
+DATA _PADDING_16<>+416(SB)/8, $0x923f82a4923f82a4
+DATA _PADDING_16<>+424(SB)/8, $0x923f82a4923f82a4
+DATA _PADDING_16<>+432(SB)/8, $0x923f82a4923f82a4
+DATA _PADDING_16<>+440(SB)/8, $0x923f82a4923f82a4
+DATA _PADDING_16<>+448(SB)/8, $0xab1c5ed5ab1c5ed5
+DATA _PADDING_16<>+456(SB)/8, $0xab1c5ed5ab1c5ed5
+DATA _PADDING_16<>+464(SB)/8, $0xab1c5ed5ab1c5ed5
+DATA _PADDING_16<>+472(SB)/8, $0xab1c5ed5ab1c5ed5
+DATA _PADDING_16<>+480(SB)/8, $0xab1c5ed5ab1c5ed5
+DATA _PADDING_16<>+488(SB)/8, $0xab1c5ed5ab1c5ed5
+DATA _PADDING_16<>+496(SB)/8, $0xab1c5ed5ab1c5ed5
+DATA _PADDING_16<>+504(SB)/8, $0xab1c5ed5ab1c5ed5
+DATA _PADDING_16<>+512(SB)/8, $0xd807aa98d807aa98
+DATA _PADDING_16<>+520(SB)/8, $0xd807aa98d807aa98
+DATA _PADDING_16<>+528(SB)/8, $0xd807aa98d807aa98
+DATA _PADDING_16<>+536(SB)/8, $0xd807aa98d807aa98
+DATA _PADDING_16<>+544(SB)/8, $0xd807aa98d807aa98
+DATA _PADDING_16<>+552(SB)/8, $0xd807aa98d807aa98
+DATA _PADDING_16<>+560(SB)/8, $0xd807aa98d807aa98
+DATA _PADDING_16<>+568(SB)/8, $0xd807aa98d807aa98
+DATA _PADDING_16<>+576(SB)/8, $0x12835b0112835b01
+DATA _PADDING_16<>+584(SB)/8, $0x12835b0112835b01
+DATA _PADDING_16<>+592(SB)/8, $0x12835b0112835b01
+DATA _PADDING_16<>+600(SB)/8, $0x12835b0112835b01
+DATA _PADDING_16<>+608(SB)/8, $0x12835b0112835b01
+DATA _PADDING_16<>+616(SB)/8, $0x12835b0112835b01
+DATA _PADDING_16<>+624(SB)/8, $0x12835b0112835b01
+DATA _PADDING_16<>+632(SB)/8, $0x12835b0112835b01
+DATA _PADDING_16<>+640(SB)/8, $0x243185be243185be
+DATA _PADDING_16<>+648(SB)/8, $0x243185be243185be
+DATA _PADDING_16<>+656(SB)/8, $0x243185be243185be
+DATA _PADDING_16<>+664(SB)/8, $0x243185be243185be
+DATA _PADDING_16<>+672(SB)/8, $0x243185be243185be
+DATA _PADDING_16<>+680(SB)/8, $0x243185be243185be
+DATA _PADDING_16<>+688(SB)/8, $0x243185be243185be
+DATA _PADDING_16<>+696(SB)/8, $0x243185be243185be
+DATA _PADDING_16<>+704(SB)/8, $0x550c7dc3550c7dc3
+DATA _PADDING_16<>+712(SB)/8, $0x550c7dc3550c7dc3
+DATA _PADDING_16<>+720(SB)/8, $0x550c7dc3550c7dc3
+DATA _PADDING_16<>+728(SB)/8, $0x550c7dc3550c7dc3
+DATA _PADDING_16<>+736(SB)/8, $0x550c7dc3550c7dc3
+DATA _PADDING_16<>+744(SB)/8, $0x550c7dc3550c7dc3
+DATA _PADDING_16<>+752(SB)/8, $0x550c7dc3550c7dc3
+DATA _PADDING_16<>+760(SB)/8, $0x550c7dc3550c7dc3
+DATA _PADDING_16<>+768(SB)/8, $0x72be5d7472be5d74
+DATA _PADDING_16<>+776(SB)/8, $0x72be5d7472be5d74
+DATA _PADDING_16<>+784(SB)/8, $0x72be5d7472be5d74
+DATA _PADDING_16<>+792(SB)/8, $0x72be5d7472be5d74
+DATA _PADDING_16<>+800(SB)/8, $0x72be5d7472be5d74
+DATA _PADDING_16<>+808(SB)/8, $0x72be5d7472be5d74
+DATA _PADDING_16<>+816(SB)/8, $0x72be5d7472be5d74
+DATA _PADDING_16<>+824(SB)/8, $0x72be5d7472be5d74
+DATA _PADDING_16<>+832(SB)/8, $0x80deb1fe80deb1fe
+DATA _PADDING_16<>+840(SB)/8, $0x80deb1fe80deb1fe
+DATA _PADDING_16<>+848(SB)/8, $0x80deb1fe80deb1fe
+DATA _PADDING_16<>+856(SB)/8, $0x80deb1fe80deb1fe
+DATA _PADDING_16<>+864(SB)/8, $0x80deb1fe80deb1fe
+DATA _PADDING_16<>+872(SB)/8, $0x80deb1fe80deb1fe
+DATA _PADDING_16<>+880(SB)/8, $0x80deb1fe80deb1fe
+DATA _PADDING_16<>+888(SB)/8, $0x80deb1fe80deb1fe
+DATA _PADDING_16<>+896(SB)/8, $0x9bdc06a79bdc06a7
+DATA _PADDING_16<>+904(SB)/8, $0x9bdc06a79bdc06a7
+DATA _PADDING_16<>+912(SB)/8, $0x9bdc06a79bdc06a7
+DATA _PADDING_16<>+920(SB)/8, $0x9bdc06a79bdc06a7
+DATA _PADDING_16<>+928(SB)/8, $0x9bdc06a79bdc06a7
+DATA _PADDING_16<>+936(SB)/8, $0x9bdc06a79bdc06a7
+DATA _PADDING_16<>+944(SB)/8, $0x9bdc06a79bdc06a7
+DATA _PADDING_16<>+952(SB)/8, $0x9bdc06a79bdc06a7
+DATA _PADDING_16<>+960(SB)/8, $0xc19bf374c19bf374
+DATA _PADDING_16<>+968(SB)/8, $0xc19bf374c19bf374
+DATA _PADDING_16<>+976(SB)/8, $0xc19bf374c19bf374
+DATA _PADDING_16<>+984(SB)/8, $0xc19bf374c19bf374
+DATA _PADDING_16<>+992(SB)/8, $0xc19bf374c19bf374
+DATA _PADDING_16<>+1000(SB)/8, $0xc19bf374c19bf374
+DATA _PADDING_16<>+1008(SB)/8, $0xc19bf374c19bf374
+DATA _PADDING_16<>+1016(SB)/8, $0xc19bf374c19bf374
+DATA _PADDING_16<>+1024(SB)/8, $0x649b69c1649b69c1
+DATA _PADDING_16<>+1032(SB)/8, $0x649b69c1649b69c1
+DATA _PADDING_16<>+1040(SB)/8, $0x649b69c1649b69c1
+DATA _PADDING_16<>+1048(SB)/8, $0x649b69c1649b69c1
+DATA _PADDING_16<>+1056(SB)/8, $0x649b69c1649b69c1
+DATA _PADDING_16<>+1064(SB)/8, $0x649b69c1649b69c1
+DATA _PADDING_16<>+1072(SB)/8, $0x649b69c1649b69c1
+DATA _PADDING_16<>+1080(SB)/8, $0x649b69c1649b69c1
+DATA _PADDING_16<>+1088(SB)/8, $0xf0fe4786f0fe4786
+DATA _PADDING_16<>+1096(SB)/8, $0xf0fe4786f0fe4786
+DATA _PADDING_16<>+1104(SB)/8, $0xf0fe4786f0fe4786
+DATA _PADDING_16<>+1112(SB)/8, $0xf0fe4786f0fe4786
+DATA _PADDING_16<>+1120(SB)/8, $0xf0fe4786f0fe4786
+DATA _PADDING_16<>+1128(SB)/8, $0xf0fe4786f0fe4786
+DATA _PADDING_16<>+1136(SB)/8, $0xf0fe4786f0fe4786
+DATA _PADDING_16<>+1144(SB)/8, $0xf0fe4786f0fe4786
+DATA _PADDING_16<>+1152(SB)/8, $0x0fe1edc60fe1edc6
+DATA _PADDING_16<>+1160(SB)/8, $0x0fe1edc60fe1edc6
+DATA _PADDING_16<>+1168(SB)/8, $0x0fe1edc60fe1edc6
+DATA _PADDING_16<>+1176(SB)/8, $0x0fe1edc60fe1edc6
+DATA _PADDING_16<>+1184(SB)/8, $0x0fe1edc60fe1edc6
+DATA _PADDING_16<>+1192(SB)/8, $0x0fe1edc60fe1edc6
+DATA _PADDING_16<>+1200(SB)/8, $0x0fe1edc60fe1edc6
+DATA _PADDING_16<>+1208(SB)/8, $0x0fe1edc60fe1edc6
+DATA _PADDING_16<>+1216(SB)/8, $0x240cf254240cf254
+DATA _PADDING_16<>+1224(SB)/8, $0x240cf254240cf254
+DATA _PADDING_16<>+1232(SB)/8, $0x240cf254240cf254
+DATA _PADDING_16<>+1240(SB)/8, $0x240cf254240cf254
+DATA _PADDING_16<>+1248(SB)/8, $0x240cf254240cf254
+DATA _PADDING_16<>+1256(SB)/8, $0x240cf254240cf254
+DATA _PADDING_16<>+1264(SB)/8, $0x240cf254240cf254
+DATA _PADDING_16<>+1272(SB)/8, $0x240cf254240cf254
+DATA _PADDING_16<>+1280(SB)/8, $0x4fe9346f4fe9346f
+DATA _PADDING_16<>+1288(SB)/8, $0x4fe9346f4fe9346f
+DATA _PADDING_16<>+1296(SB)/8, $0x4fe9346f4fe9346f
+DATA _PADDING_16<>+1304(SB)/8, $0x4fe9346f4fe9346f
+DATA _PADDING_16<>+1312(SB)/8, $0x4fe9346f4fe9346f
+DATA _PADDING_16<>+1320(SB)/8, $0x4fe9346f4fe9346f
+DATA _PADDING_16<>+1328(SB)/8, $0x4fe9346f4fe9346f
+DATA _PADDING_16<>+1336(SB)/8, $0x4fe9346f4fe9346f
+DATA _PADDING_16<>+1344(SB)/8, $0x6cc984be6cc984be
+DATA _PADDING_16<>+1352(SB)/8, $0x6cc984be6cc984be
+DATA _PADDING_16<>+1360(SB)/8, $0x6cc984be6cc984be
+DATA _PADDING_16<>+1368(SB)/8, $0x6cc984be6cc984be
+DATA _PADDING_16<>+1376(SB)/8, $0x6cc984be6cc984be
+DATA _PADDING_16<>+1384(SB)/8, $0x6cc984be6cc984be
+DATA _PADDING_16<>+1392(SB)/8, $0x6cc984be6cc984be
+DATA _PADDING_16<>+1400(SB)/8, $0x6cc984be6cc984be
+DATA _PADDING_16<>+1408(SB)/8, $0x61b9411e61b9411e
+DATA _PADDING_16<>+1416(SB)/8, $0x61b9411e61b9411e
+DATA _PADDING_16<>+1424(SB)/8, $0x61b9411e61b9411e
+DATA _PADDING_16<>+1432(SB)/8, $0x61b9411e61b9411e
+DATA _PADDING_16<>+1440(SB)/8, $0x61b9411e61b9411e
+DATA _PADDING_16<>+1448(SB)/8, $0x61b9411e61b9411e
+DATA _PADDING_16<>+1456(SB)/8, $0x61b9411e61b9411e
+DATA _PADDING_16<>+1464(SB)/8, $0x61b9411e61b9411e
+DATA _PADDING_16<>+1472(SB)/8, $0x16f988fa16f988fa
+DATA _PADDING_16<>+1480(SB)/8, $0x16f988fa16f988fa
+DATA _PADDING_16<>+1488(SB)/8, $0x16f988fa16f988fa
+DATA _PADDING_16<>+1496(SB)/8, $0x16f988fa16f988fa
+DATA _PADDING_16<>+1504(SB)/8, $0x16f988fa16f988fa
+DATA _PADDING_16<>+1512(SB)/8, $0x16f988fa16f988fa
+DATA _PADDING_16<>+1520(SB)/8, $0x16f988fa16f988fa
+DATA _PADDING_16<>+1528(SB)/8, $0x16f988fa16f988fa
+DATA _PADDING_16<>+1536(SB)/8, $0xf2c65152f2c65152
+DATA _PADDING_16<>+1544(SB)/8, $0xf2c65152f2c65152
+DATA _PADDING_16<>+1552(SB)/8, $0xf2c65152f2c65152
+DATA _PADDING_16<>+1560(SB)/8, $0xf2c65152f2c65152
+DATA _PADDING_16<>+1568(SB)/8, $0xf2c65152f2c65152
+DATA _PADDING_16<>+1576(SB)/8, $0xf2c65152f2c65152
+DATA _PADDING_16<>+1584(SB)/8, $0xf2c65152f2c65152
+DATA _PADDING_16<>+1592(SB)/8, $0xf2c65152f2c65152
+DATA _PADDING_16<>+1600(SB)/8, $0xa88e5a6da88e5a6d
+DATA _PADDING_16<>+1608(SB)/8, $0xa88e5a6da88e5a6d
+DATA _PADDING_16<>+1616(SB)/8, $0xa88e5a6da88e5a6d
+DATA _PADDING_16<>+1624(SB)/8, $0xa88e5a6da88e5a6d
+DATA _PADDING_16<>+1632(SB)/8, $0xa88e5a6da88e5a6d
+DATA _PADDING_16<>+1640(SB)/8, $0xa88e5a6da88e5a6d
+DATA _PADDING_16<>+1648(SB)/8, $0xa88e5a6da88e5a6d
+DATA _PADDING_16<>+1656(SB)/8, $0xa88e5a6da88e5a6d
+DATA _PADDING_16<>+1664(SB)/8, $0xb019fc65b019fc65
+DATA _PADDING_16<>+1672(SB)/8, $0xb019fc65b019fc65
+DATA _PADDING_16<>+1680(SB)/8, $0xb019fc65b019fc65
+DATA _PADDING_16<>+1688(SB)/8, $0xb019fc65b019fc65
+DATA _PADDING_16<>+1696(SB)/8, $0xb019fc65b019fc65
+DATA _PADDING_16<>+1704(SB)/8, $0xb019fc65b019fc65
+DATA _PADDING_16<>+1712(SB)/8, $0xb019fc65b019fc65
+DATA _PADDING_16<>+1720(SB)/8, $0xb019fc65b019fc65
+DATA _PADDING_16<>+1728(SB)/8, $0xb9d99ec7b9d99ec7
+DATA _PADDING_16<>+1736(SB)/8, $0xb9d99ec7b9d99ec7
+DATA _PADDING_16<>+1744(SB)/8, $0xb9d99ec7b9d99ec7
+DATA _PADDING_16<>+1752(SB)/8, $0xb9d99ec7b9d99ec7
+DATA _PADDING_16<>+1760(SB)/8, $0xb9d99ec7b9d99ec7
+DATA _PADDING_16<>+1768(SB)/8, $0xb9d99ec7b9d99ec7
+DATA _PADDING_16<>+1776(SB)/8, $0xb9d99ec7b9d99ec7
+DATA _PADDING_16<>+1784(SB)/8, $0xb9d99ec7b9d99ec7
+DATA _PADDING_16<>+1792(SB)/8, $0x9a1231c39a1231c3
+DATA _PADDING_16<>+1800(SB)/8, $0x9a1231c39a1231c3
+DATA _PADDING_16<>+1808(SB)/8, $0x9a1231c39a1231c3
+DATA _PADDING_16<>+1816(SB)/8, $0x9a1231c39a1231c3
+DATA _PADDING_16<>+1824(SB)/8, $0x9a1231c39a1231c3
+DATA _PADDING_16<>+1832(SB)/8, $0x9a1231c39a1231c3
+DATA _PADDING_16<>+1840(SB)/8, $0x9a1231c39a1231c3
+DATA _PADDING_16<>+1848(SB)/8, $0x9a1231c39a1231c3
+DATA _PADDING_16<>+1856(SB)/8, $0xe70eeaa0e70eeaa0
+DATA _PADDING_16<>+1864(SB)/8, $0xe70eeaa0e70eeaa0
+DATA _PADDING_16<>+1872(SB)/8, $0xe70eeaa0e70eeaa0
+DATA _PADDING_16<>+1880(SB)/8, $0xe70eeaa0e70eeaa0
+DATA _PADDING_16<>+1888(SB)/8, $0xe70eeaa0e70eeaa0
+DATA _PADDING_16<>+1896(SB)/8, $0xe70eeaa0e70eeaa0
+DATA _PADDING_16<>+1904(SB)/8, $0xe70eeaa0e70eeaa0
+DATA _PADDING_16<>+1912(SB)/8, $0xe70eeaa0e70eeaa0
+DATA _PADDING_16<>+1920(SB)/8, $0xfdb1232bfdb1232b
+DATA _PADDING_16<>+1928(SB)/8, $0xfdb1232bfdb1232b
+DATA _PADDING_16<>+1936(SB)/8, $0xfdb1232bfdb1232b
+DATA _PADDING_16<>+1944(SB)/8, $0xfdb1232bfdb1232b
+DATA _PADDING_16<>+1952(SB)/8, $0xfdb1232bfdb1232b
+DATA _PADDING_16<>+1960(SB)/8, $0xfdb1232bfdb1232b
+DATA _PADDING_16<>+1968(SB)/8, $0xfdb1232bfdb1232b
+DATA _PADDING_16<>+1976(SB)/8, $0xfdb1232bfdb1232b
+DATA _PADDING_16<>+1984(SB)/8, $0xc7353eb0c7353eb0
+DATA _PADDING_16<>+1992(SB)/8, $0xc7353eb0c7353eb0
+DATA _PADDING_16<>+2000(SB)/8, $0xc7353eb0c7353eb0
+DATA _PADDING_16<>+2008(SB)/8, $0xc7353eb0c7353eb0
+DATA _PADDING_16<>+2016(SB)/8, $0xc7353eb0c7353eb0
+DATA _PADDING_16<>+2024(SB)/8, $0xc7353eb0c7353eb0
+DATA _PADDING_16<>+2032(SB)/8, $0xc7353eb0c7353eb0
+DATA _PADDING_16<>+2040(SB)/8, $0xc7353eb0c7353eb0
+DATA _PADDING_16<>+2048(SB)/8, $0x3069bad53069bad5
+DATA _PADDING_16<>+2056(SB)/8, $0x3069bad53069bad5
+DATA _PADDING_16<>+2064(SB)/8, $0x3069bad53069bad5
+DATA _PADDING_16<>+2072(SB)/8, $0x3069bad53069bad5
+DATA _PADDING_16<>+2080(SB)/8, $0x3069bad53069bad5
+DATA _PADDING_16<>+2088(SB)/8, $0x3069bad53069bad5
+DATA _PADDING_16<>+2096(SB)/8, $0x3069bad53069bad5
+DATA _PADDING_16<>+2104(SB)/8, $0x3069bad53069bad5
+DATA _PADDING_16<>+2112(SB)/8, $0xcb976d5fcb976d5f
+DATA _PADDING_16<>+2120(SB)/8, $0xcb976d5fcb976d5f
+DATA _PADDING_16<>+2128(SB)/8, $0xcb976d5fcb976d5f
+DATA _PADDING_16<>+2136(SB)/8, $0xcb976d5fcb976d5f
+DATA _PADDING_16<>+2144(SB)/8, $0xcb976d5fcb976d5f
+DATA _PADDING_16<>+2152(SB)/8, $0xcb976d5fcb976d5f
+DATA _PADDING_16<>+2160(SB)/8, $0xcb976d5fcb976d5f
+DATA _PADDING_16<>+2168(SB)/8, $0xcb976d5fcb976d5f
+DATA _PADDING_16<>+2176(SB)/8, $0x5a0f118f5a0f118f
+DATA _PADDING_16<>+2184(SB)/8, $0x5a0f118f5a0f118f
+DATA _PADDING_16<>+2192(SB)/8, $0x5a0f118f5a0f118f
+DATA _PADDING_16<>+2200(SB)/8, $0x5a0f118f5a0f118f
+DATA _PADDING_16<>+2208(SB)/8, $0x5a0f118f5a0f118f
+DATA _PADDING_16<>+2216(SB)/8, $0x5a0f118f5a0f118f
+DATA _PADDING_16<>+2224(SB)/8, $0x5a0f118f5a0f118f
+DATA _PADDING_16<>+2232(SB)/8, $0x5a0f118f5a0f118f
+DATA _PADDING_16<>+2240(SB)/8, $0xdc1eeefddc1eeefd
+DATA _PADDING_16<>+2248(SB)/8, $0xdc1eeefddc1eeefd
+DATA _PADDING_16<>+2256(SB)/8, $0xdc1eeefddc1eeefd
+DATA _PADDING_16<>+2264(SB)/8, $0xdc1eeefddc1eeefd
+DATA _PADDING_16<>+2272(SB)/8, $0xdc1eeefddc1eeefd
+DATA _PADDING_16<>+2280(SB)/8, $0xdc1eeefddc1eeefd
+DATA _PADDING_16<>+2288(SB)/8, $0xdc1eeefddc1eeefd
+DATA _PADDING_16<>+2296(SB)/8, $0xdc1eeefddc1eeefd
+DATA _PADDING_16<>+2304(SB)/8, $0x0a35b6890a35b689
+DATA _PADDING_16<>+2312(SB)/8, $0x0a35b6890a35b689
+DATA _PADDING_16<>+2320(SB)/8, $0x0a35b6890a35b689
+DATA _PADDING_16<>+2328(SB)/8, $0x0a35b6890a35b689
+DATA _PADDING_16<>+2336(SB)/8, $0x0a35b6890a35b689
+DATA _PADDING_16<>+2344(SB)/8, $0x0a35b6890a35b689
+DATA _PADDING_16<>+2352(SB)/8, $0x0a35b6890a35b689
+DATA _PADDING_16<>+2360(SB)/8, $0x0a35b6890a35b689
+DATA _PADDING_16<>+2368(SB)/8, $0xde0b7a04de0b7a04
+DATA _PADDING_16<>+2376(SB)/8, $0xde0b7a04de0b7a04
+DATA _PADDING_16<>+2384(SB)/8, $0xde0b7a04de0b7a04
+DATA _PADDING_16<>+2392(SB)/8, $0xde0b7a04de0b7a04
+DATA _PADDING_16<>+2400(SB)/8, $0xde0b7a04de0b7a04
+DATA _PADDING_16<>+2408(SB)/8, $0xde0b7a04de0b7a04
+DATA _PADDING_16<>+2416(SB)/8, $0xde0b7a04de0b7a04
+DATA _PADDING_16<>+2424(SB)/8, $0xde0b7a04de0b7a04
+DATA _PADDING_16<>+2432(SB)/8, $0x58f4ca9d58f4ca9d
+DATA _PADDING_16<>+2440(SB)/8, $0x58f4ca9d58f4ca9d
+DATA _PADDING_16<>+2448(SB)/8, $0x58f4ca9d58f4ca9d
+DATA _PADDING_16<>+2456(SB)/8, $0x58f4ca9d58f4ca9d
+DATA _PADDING_16<>+2464(SB)/8, $0x58f4ca9d58f4ca9d
+DATA _PADDING_16<>+2472(SB)/8, $0x58f4ca9d58f4ca9d
+DATA _PADDING_16<>+2480(SB)/8, $0x58f4ca9d58f4ca9d
+DATA _PADDING_16<>+2488(SB)/8, $0x58f4ca9d58f4ca9d
+DATA _PADDING_16<>+2496(SB)/8, $0xe15d5b16e15d5b16
+DATA _PADDING_16<>+2504(SB)/8, $0xe15d5b16e15d5b16
+DATA _PADDING_16<>+2512(SB)/8, $0xe15d5b16e15d5b16
+DATA _PADDING_16<>+2520(SB)/8, $0xe15d5b16e15d5b16
+DATA _PADDING_16<>+2528(SB)/8, $0xe15d5b16e15d5b16
+DATA _PADDING_16<>+2536(SB)/8, $0xe15d5b16e15d5b16
+DATA _PADDING_16<>+2544(SB)/8, $0xe15d5b16e15d5b16
+DATA _PADDING_16<>+2552(SB)/8, $0xe15d5b16e15d5b16
+DATA _PADDING_16<>+2560(SB)/8, $0x007f3e86007f3e86
+DATA _PADDING_16<>+2568(SB)/8, $0x007f3e86007f3e86
+DATA _PADDING_16<>+2576(SB)/8, $0x007f3e86007f3e86
+DATA _PADDING_16<>+2584(SB)/8, $0x007f3e86007f3e86
+DATA _PADDING_16<>+2592(SB)/8, $0x007f3e86007f3e86
+DATA _PADDING_16<>+2600(SB)/8, $0x007f3e86007f3e86
+DATA _PADDING_16<>+2608(SB)/8, $0x007f3e86007f3e86
+DATA _PADDING_16<>+2616(SB)/8, $0x007f3e86007f3e86
+DATA _PADDING_16<>+2624(SB)/8, $0x3708898037088980
+DATA _PADDING_16<>+2632(SB)/8, $0x3708898037088980
+DATA _PADDING_16<>+2640(SB)/8, $0x3708898037088980
+DATA _PADDING_16<>+2648(SB)/8, $0x3708898037088980
+DATA _PADDING_16<>+2656(SB)/8, $0x3708898037088980
+DATA _PADDING_16<>+2664(SB)/8, $0x3708898037088980
+DATA _PADDING_16<>+2672(SB)/8, $0x3708898037088980
+DATA _PADDING_16<>+2680(SB)/8, $0x3708898037088980
+DATA _PADDING_16<>+2688(SB)/8, $0xa507ea32a507ea32
+DATA _PADDING_16<>+2696(SB)/8, $0xa507ea32a507ea32
+DATA _PADDING_16<>+2704(SB)/8, $0xa507ea32a507ea32
+DATA _PADDING_16<>+2712(SB)/8, $0xa507ea32a507ea32
+DATA _PADDING_16<>+2720(SB)/8, $0xa507ea32a507ea32
+DATA _PADDING_16<>+2728(SB)/8, $0xa507ea32a507ea32
+DATA _PADDING_16<>+2736(SB)/8, $0xa507ea32a507ea32
+DATA _PADDING_16<>+2744(SB)/8, $0xa507ea32a507ea32
+DATA _PADDING_16<>+2752(SB)/8, $0x6fab95376fab9537
+DATA _PADDING_16<>+2760(SB)/8, $0x6fab95376fab9537
+DATA _PADDING_16<>+2768(SB)/8, $0x6fab95376fab9537
+DATA _PADDING_16<>+2776(SB)/8, $0x6fab95376fab9537
+DATA _PADDING_16<>+2784(SB)/8, $0x6fab95376fab9537
+DATA _PADDING_16<>+2792(SB)/8, $0x6fab95376fab9537
+DATA _PADDING_16<>+2800(SB)/8, $0x6fab95376fab9537
+DATA _PADDING_16<>+2808(SB)/8, $0x6fab95376fab9537
+DATA _PADDING_16<>+2816(SB)/8, $0x1740611017406110
+DATA _PADDING_16<>+2824(SB)/8, $0x1740611017406110
+DATA _PADDING_16<>+2832(SB)/8, $0x1740611017406110
+DATA _PADDING_16<>+2840(SB)/8, $0x1740611017406110
+DATA _PADDING_16<>+2848(SB)/8, $0x1740611017406110
+DATA _PADDING_16<>+2856(SB)/8, $0x1740611017406110
+DATA _PADDING_16<>+2864(SB)/8, $0x1740611017406110
+DATA _PADDING_16<>+2872(SB)/8, $0x1740611017406110
+DATA _PADDING_16<>+2880(SB)/8, $0x0d8cd6f10d8cd6f1
+DATA _PADDING_16<>+2888(SB)/8, $0x0d8cd6f10d8cd6f1
+DATA _PADDING_16<>+2896(SB)/8, $0x0d8cd6f10d8cd6f1
+DATA _PADDING_16<>+2904(SB)/8, $0x0d8cd6f10d8cd6f1
+DATA _PADDING_16<>+2912(SB)/8, $0x0d8cd6f10d8cd6f1
+DATA _PADDING_16<>+2920(SB)/8, $0x0d8cd6f10d8cd6f1
+DATA _PADDING_16<>+2928(SB)/8, $0x0d8cd6f10d8cd6f1
+DATA _PADDING_16<>+2936(SB)/8, $0x0d8cd6f10d8cd6f1
+DATA _PADDING_16<>+2944(SB)/8, $0xcdaa3b6dcdaa3b6d
+DATA _PADDING_16<>+2952(SB)/8, $0xcdaa3b6dcdaa3b6d
+DATA _PADDING_16<>+2960(SB)/8, $0xcdaa3b6dcdaa3b6d
+DATA _PADDING_16<>+2968(SB)/8, $0xcdaa3b6dcdaa3b6d
+DATA _PADDING_16<>+2976(SB)/8, $0xcdaa3b6dcdaa3b6d
+DATA _PADDING_16<>+2984(SB)/8, $0xcdaa3b6dcdaa3b6d
+DATA _PADDING_16<>+2992(SB)/8, $0xcdaa3b6dcdaa3b6d
+DATA _PADDING_16<>+3000(SB)/8, $0xcdaa3b6dcdaa3b6d
+DATA _PADDING_16<>+3008(SB)/8, $0xc0bbbe37c0bbbe37
+DATA _PADDING_16<>+3016(SB)/8, $0xc0bbbe37c0bbbe37
+DATA _PADDING_16<>+3024(SB)/8, $0xc0bbbe37c0bbbe37
+DATA _PADDING_16<>+3032(SB)/8, $0xc0bbbe37c0bbbe37
+DATA _PADDING_16<>+3040(SB)/8, $0xc0bbbe37c0bbbe37
+DATA _PADDING_16<>+3048(SB)/8, $0xc0bbbe37c0bbbe37
+DATA _PADDING_16<>+3056(SB)/8, $0xc0bbbe37c0bbbe37
+DATA _PADDING_16<>+3064(SB)/8, $0xc0bbbe37c0bbbe37
+DATA _PADDING_16<>+3072(SB)/8, $0x83613bda83613bda
+DATA _PADDING_16<>+3080(SB)/8, $0x83613bda83613bda
+DATA _PADDING_16<>+3088(SB)/8, $0x83613bda83613bda
+DATA _PADDING_16<>+3096(SB)/8, $0x83613bda83613bda
+DATA _PADDING_16<>+3104(SB)/8, $0x83613bda83613bda
+DATA _PADDING_16<>+3112(SB)/8, $0x83613bda83613bda
+DATA _PADDING_16<>+3120(SB)/8, $0x83613bda83613bda
+DATA _PADDING_16<>+3128(SB)/8, $0x83613bda83613bda
+DATA _PADDING_16<>+3136(SB)/8, $0xdb48a363db48a363
+DATA _PADDING_16<>+3144(SB)/8, $0xdb48a363db48a363
+DATA _PADDING_16<>+3152(SB)/8, $0xdb48a363db48a363
+DATA _PADDING_16<>+3160(SB)/8, $0xdb48a363db48a363
+DATA _PADDING_16<>+3168(SB)/8, $0xdb48a363db48a363
+DATA _PADDING_16<>+3176(SB)/8, $0xdb48a363db48a363
+DATA _PADDING_16<>+3184(SB)/8, $0xdb48a363db48a363
+DATA _PADDING_16<>+3192(SB)/8, $0xdb48a363db48a363
+DATA _PADDING_16<>+3200(SB)/8, $0x0b02e9310b02e931
+DATA _PADDING_16<>+3208(SB)/8, $0x0b02e9310b02e931
+DATA _PADDING_16<>+3216(SB)/8, $0x0b02e9310b02e931
+DATA _PADDING_16<>+3224(SB)/8, $0x0b02e9310b02e931
+DATA _PADDING_16<>+3232(SB)/8, $0x0b02e9310b02e931
+DATA _PADDING_16<>+3240(SB)/8, $0x0b02e9310b02e931
+DATA _PADDING_16<>+3248(SB)/8, $0x0b02e9310b02e931
+DATA _PADDING_16<>+3256(SB)/8, $0x0b02e9310b02e931
+DATA _PADDING_16<>+3264(SB)/8, $0x6fd15ca76fd15ca7
+DATA _PADDING_16<>+3272(SB)/8, $0x6fd15ca76fd15ca7
+DATA _PADDING_16<>+3280(SB)/8, $0x6fd15ca76fd15ca7
+DATA _PADDING_16<>+3288(SB)/8, $0x6fd15ca76fd15ca7
+DATA _PADDING_16<>+3296(SB)/8, $0x6fd15ca76fd15ca7
+DATA _PADDING_16<>+3304(SB)/8, $0x6fd15ca76fd15ca7
+DATA _PADDING_16<>+3312(SB)/8, $0x6fd15ca76fd15ca7
+DATA _PADDING_16<>+3320(SB)/8, $0x6fd15ca76fd15ca7
+DATA _PADDING_16<>+3328(SB)/8, $0x521afaca521afaca
+DATA _PADDING_16<>+3336(SB)/8, $0x521afaca521afaca
+DATA _PADDING_16<>+3344(SB)/8, $0x521afaca521afaca
+DATA _PADDING_16<>+3352(SB)/8, $0x521afaca521afaca
+DATA _PADDING_16<>+3360(SB)/8, $0x521afaca521afaca
+DATA _PADDING_16<>+3368(SB)/8, $0x521afaca521afaca
+DATA _PADDING_16<>+3376(SB)/8, $0x521afaca521afaca
+DATA _PADDING_16<>+3384(SB)/8, $0x521afaca521afaca
+DATA _PADDING_16<>+3392(SB)/8, $0x3133843131338431
+DATA _PADDING_16<>+3400(SB)/8, $0x3133843131338431
+DATA _PADDING_16<>+3408(SB)/8, $0x3133843131338431
+DATA _PADDING_16<>+3416(SB)/8, $0x3133843131338431
+DATA _PADDING_16<>+3424(SB)/8, $0x3133843131338431
+DATA _PADDING_16<>+3432(SB)/8, $0x3133843131338431
+DATA _PADDING_16<>+3440(SB)/8, $0x3133843131338431
+DATA _PADDING_16<>+3448(SB)/8, $0x3133843131338431
+DATA _PADDING_16<>+3456(SB)/8, $0x6ed41a956ed41a95
+DATA _PADDING_16<>+3464(SB)/8, $0x6ed41a956ed41a95
+DATA _PADDING_16<>+3472(SB)/8, $0x6ed41a956ed41a95
+DATA _PADDING_16<>+3480(SB)/8, $0x6ed41a956ed41a95
+DATA _PADDING_16<>+3488(SB)/8, $0x6ed41a956ed41a95
+DATA _PADDING_16<>+3496(SB)/8, $0x6ed41a956ed41a95
+DATA _PADDING_16<>+3504(SB)/8, $0x6ed41a956ed41a95
+DATA _PADDING_16<>+3512(SB)/8, $0x6ed41a956ed41a95
+DATA _PADDING_16<>+3520(SB)/8, $0x6d4378906d437890
+DATA _PADDING_16<>+3528(SB)/8, $0x6d4378906d437890
+DATA _PADDING_16<>+3536(SB)/8, $0x6d4378906d437890
+DATA _PADDING_16<>+3544(SB)/8, $0x6d4378906d437890
+DATA _PADDING_16<>+3552(SB)/8, $0x6d4378906d437890
+DATA _PADDING_16<>+3560(SB)/8, $0x6d4378906d437890
+DATA _PADDING_16<>+3568(SB)/8, $0x6d4378906d437890
+DATA _PADDING_16<>+3576(SB)/8, $0x6d4378906d437890
+DATA _PADDING_16<>+3584(SB)/8, $0xc39c91f2c39c91f2
+DATA _PADDING_16<>+3592(SB)/8, $0xc39c91f2c39c91f2
+DATA _PADDING_16<>+3600(SB)/8, $0xc39c91f2c39c91f2
+DATA _PADDING_16<>+3608(SB)/8, $0xc39c91f2c39c91f2
+DATA _PADDING_16<>+3616(SB)/8, $0xc39c91f2c39c91f2
+DATA _PADDING_16<>+3624(SB)/8, $0xc39c91f2c39c91f2
+DATA _PADDING_16<>+3632(SB)/8, $0xc39c91f2c39c91f2
+DATA _PADDING_16<>+3640(SB)/8, $0xc39c91f2c39c91f2
+DATA _PADDING_16<>+3648(SB)/8, $0x9eccabbd9eccabbd
+DATA _PADDING_16<>+3656(SB)/8, $0x9eccabbd9eccabbd
+DATA _PADDING_16<>+3664(SB)/8, $0x9eccabbd9eccabbd
+DATA _PADDING_16<>+3672(SB)/8, $0x9eccabbd9eccabbd
+DATA _PADDING_16<>+3680(SB)/8, $0x9eccabbd9eccabbd
+DATA _PADDING_16<>+3688(SB)/8, $0x9eccabbd9eccabbd
+DATA _PADDING_16<>+3696(SB)/8, $0x9eccabbd9eccabbd
+DATA _PADDING_16<>+3704(SB)/8, $0x9eccabbd9eccabbd
+DATA _PADDING_16<>+3712(SB)/8, $0xb5c9a0e6b5c9a0e6
+DATA _PADDING_16<>+3720(SB)/8, $0xb5c9a0e6b5c9a0e6
+DATA _PADDING_16<>+3728(SB)/8, $0xb5c9a0e6b5c9a0e6
+DATA _PADDING_16<>+3736(SB)/8, $0xb5c9a0e6b5c9a0e6
+DATA _PADDING_16<>+3744(SB)/8, $0xb5c9a0e6b5c9a0e6
+DATA _PADDING_16<>+3752(SB)/8, $0xb5c9a0e6b5c9a0e6
+DATA _PADDING_16<>+3760(SB)/8, $0xb5c9a0e6b5c9a0e6
+DATA _PADDING_16<>+3768(SB)/8, $0xb5c9a0e6b5c9a0e6
+DATA _PADDING_16<>+3776(SB)/8, $0x532fb63c532fb63c
+DATA _PADDING_16<>+3784(SB)/8, $0x532fb63c532fb63c
+DATA _PADDING_16<>+3792(SB)/8, $0x532fb63c532fb63c
+DATA _PADDING_16<>+3800(SB)/8, $0x532fb63c532fb63c
+DATA _PADDING_16<>+3808(SB)/8, $0x532fb63c532fb63c
+DATA _PADDING_16<>+3816(SB)/8, $0x532fb63c532fb63c
+DATA _PADDING_16<>+3824(SB)/8, $0x532fb63c532fb63c
+DATA _PADDING_16<>+3832(SB)/8, $0x532fb63c532fb63c
+DATA _PADDING_16<>+3840(SB)/8, $0xd2c741c6d2c741c6
+DATA _PADDING_16<>+3848(SB)/8, $0xd2c741c6d2c741c6
+DATA _PADDING_16<>+3856(SB)/8, $0xd2c741c6d2c741c6
+DATA _PADDING_16<>+3864(SB)/8, $0xd2c741c6d2c741c6
+DATA _PADDING_16<>+3872(SB)/8, $0xd2c741c6d2c741c6
+DATA _PADDING_16<>+3880(SB)/8, $0xd2c741c6d2c741c6
+DATA _PADDING_16<>+3888(SB)/8, $0xd2c741c6d2c741c6
+DATA _PADDING_16<>+3896(SB)/8, $0xd2c741c6d2c741c6
+DATA _PADDING_16<>+3904(SB)/8, $0x07237ea307237ea3
+DATA _PADDING_16<>+3912(SB)/8, $0x07237ea307237ea3
+DATA _PADDING_16<>+3920(SB)/8, $0x07237ea307237ea3
+DATA _PADDING_16<>+3928(SB)/8, $0x07237ea307237ea3
+DATA _PADDING_16<>+3936(SB)/8, $0x07237ea307237ea3
+DATA _PADDING_16<>+3944(SB)/8, $0x07237ea307237ea3
+DATA _PADDING_16<>+3952(SB)/8, $0x07237ea307237ea3
+DATA _PADDING_16<>+3960(SB)/8, $0x07237ea307237ea3
+DATA _PADDING_16<>+3968(SB)/8, $0xa4954b68a4954b68
+DATA _PADDING_16<>+3976(SB)/8, $0xa4954b68a4954b68
+DATA _PADDING_16<>+3984(SB)/8, $0xa4954b68a4954b68
+DATA _PADDING_16<>+3992(SB)/8, $0xa4954b68a4954b68
+DATA _PADDING_16<>+4000(SB)/8, $0xa4954b68a4954b68
+DATA _PADDING_16<>+4008(SB)/8, $0xa4954b68a4954b68
+DATA _PADDING_16<>+4016(SB)/8, $0xa4954b68a4954b68
+DATA _PADDING_16<>+4024(SB)/8, $0xa4954b68a4954b68
+DATA _PADDING_16<>+4032(SB)/8, $0x4c191d764c191d76
+DATA _PADDING_16<>+4040(SB)/8, $0x4c191d764c191d76
+DATA _PADDING_16<>+4048(SB)/8, $0x4c191d764c191d76
+DATA _PADDING_16<>+4056(SB)/8, $0x4c191d764c191d76
+DATA _PADDING_16<>+4064(SB)/8, $0x4c191d764c191d76
+DATA _PADDING_16<>+4072(SB)/8, $0x4c191d764c191d76
+DATA _PADDING_16<>+4080(SB)/8, $0x4c191d764c191d76
+DATA _PADDING_16<>+4088(SB)/8, $0x4c191d764c191d76
+GLOBL _PADDING_16<>(SB),(NOPTR+RODATA),$4096
+
+DATA _DIGEST_16<>+0(SB)/4, $0x6a09e667
+DATA _DIGEST_16<>+4(SB)/4, $0x6a09e667
+DATA _DIGEST_16<>+8(SB)/4, $0x6a09e667
+DATA _DIGEST_16<>+12(SB)/4, $0x6a09e667
+DATA _DIGEST_16<>+16(SB)/4, $0x6a09e667
+DATA _DIGEST_16<>+20(SB)/4, $0x6a09e667
+DATA _DIGEST_16<>+24(SB)/4, $0x6a09e667
+DATA _DIGEST_16<>+28(SB)/4, $0x6a09e667
+DATA _DIGEST_16<>+32(SB)/4, $0x6a09e667
+DATA _DIGEST_16<>+36(SB)/4, $0x6a09e667
+DATA _DIGEST_16<>+40(SB)/4, $0x6a09e667
+DATA _DIGEST_16<>+44(SB)/4, $0x6a09e667
+DATA _DIGEST_16<>+48(SB)/4, $0x6a09e667
+DATA _DIGEST_16<>+52(SB)/4, $0x6a09e667
+DATA _DIGEST_16<>+56(SB)/4, $0x6a09e667
+DATA _DIGEST_16<>+60(SB)/4, $0x6a09e667
+DATA _DIGEST_16<>+64(SB)/4, $0xbb67ae85
+DATA _DIGEST_16<>+68(SB)/4, $0xbb67ae85
+DATA _DIGEST_16<>+72(SB)/4, $0xbb67ae85
+DATA _DIGEST_16<>+76(SB)/4, $0xbb67ae85 
+DATA _DIGEST_16<>+80(SB)/4, $0xbb67ae85
+DATA _DIGEST_16<>+84(SB)/4, $0xbb67ae85
+DATA _DIGEST_16<>+88(SB)/4, $0xbb67ae85
+DATA _DIGEST_16<>+92(SB)/4, $0xbb67ae85 
+DATA _DIGEST_16<>+96(SB)/4, $0xbb67ae85
+DATA _DIGEST_16<>+100(SB)/4, $0xbb67ae85
+DATA _DIGEST_16<>+104(SB)/4, $0xbb67ae85
+DATA _DIGEST_16<>+108(SB)/4, $0xbb67ae85 
+DATA _DIGEST_16<>+112(SB)/4, $0xbb67ae85
+DATA _DIGEST_16<>+116(SB)/4, $0xbb67ae85
+DATA _DIGEST_16<>+120(SB)/4, $0xbb67ae85
+DATA _DIGEST_16<>+124(SB)/4, $0xbb67ae85 
+DATA _DIGEST_16<>+128(SB)/4, $0x3c6ef372
+DATA _DIGEST_16<>+132(SB)/4, $0x3c6ef372
+DATA _DIGEST_16<>+136(SB)/4, $0x3c6ef372
+DATA _DIGEST_16<>+140(SB)/4, $0x3c6ef372 
+DATA _DIGEST_16<>+144(SB)/4, $0x3c6ef372
+DATA _DIGEST_16<>+148(SB)/4, $0x3c6ef372
+DATA _DIGEST_16<>+152(SB)/4, $0x3c6ef372
+DATA _DIGEST_16<>+156(SB)/4, $0x3c6ef372 
+DATA _DIGEST_16<>+160(SB)/4, $0x3c6ef372
+DATA _DIGEST_16<>+164(SB)/4, $0x3c6ef372
+DATA _DIGEST_16<>+168(SB)/4, $0x3c6ef372
+DATA _DIGEST_16<>+172(SB)/4, $0x3c6ef372 
+DATA _DIGEST_16<>+176(SB)/4, $0x3c6ef372
+DATA _DIGEST_16<>+180(SB)/4, $0x3c6ef372
+DATA _DIGEST_16<>+184(SB)/4, $0x3c6ef372
+DATA _DIGEST_16<>+188(SB)/4, $0x3c6ef372 
+DATA _DIGEST_16<>+192(SB)/4, $0xa54ff53a
+DATA _DIGEST_16<>+196(SB)/4, $0xa54ff53a
+DATA _DIGEST_16<>+200(SB)/4, $0xa54ff53a
+DATA _DIGEST_16<>+204(SB)/4, $0xa54ff53a 
+DATA _DIGEST_16<>+208(SB)/4, $0xa54ff53a
+DATA _DIGEST_16<>+212(SB)/4, $0xa54ff53a
+DATA _DIGEST_16<>+216(SB)/4, $0xa54ff53a
+DATA _DIGEST_16<>+220(SB)/4, $0xa54ff53a 
+DATA _DIGEST_16<>+224(SB)/4, $0xa54ff53a
+DATA _DIGEST_16<>+228(SB)/4, $0xa54ff53a
+DATA _DIGEST_16<>+232(SB)/4, $0xa54ff53a
+DATA _DIGEST_16<>+236(SB)/4, $0xa54ff53a 
+DATA _DIGEST_16<>+240(SB)/4, $0xa54ff53a
+DATA _DIGEST_16<>+244(SB)/4, $0xa54ff53a
+DATA _DIGEST_16<>+248(SB)/4, $0xa54ff53a
+DATA _DIGEST_16<>+252(SB)/4, $0xa54ff53a 
+DATA _DIGEST_16<>+256(SB)/4, $0x510e527f
+DATA _DIGEST_16<>+260(SB)/4, $0x510e527f
+DATA _DIGEST_16<>+264(SB)/4, $0x510e527f
+DATA _DIGEST_16<>+268(SB)/4, $0x510e527f
+DATA _DIGEST_16<>+272(SB)/4, $0x510e527f
+DATA _DIGEST_16<>+276(SB)/4, $0x510e527f
+DATA _DIGEST_16<>+280(SB)/4, $0x510e527f
+DATA _DIGEST_16<>+284(SB)/4, $0x510e527f
+DATA _DIGEST_16<>+288(SB)/4, $0x510e527f
+DATA _DIGEST_16<>+292(SB)/4, $0x510e527f
+DATA _DIGEST_16<>+296(SB)/4, $0x510e527f
+DATA _DIGEST_16<>+300(SB)/4, $0x510e527f
+DATA _DIGEST_16<>+304(SB)/4, $0x510e527f
+DATA _DIGEST_16<>+308(SB)/4, $0x510e527f
+DATA _DIGEST_16<>+312(SB)/4, $0x510e527f
+DATA _DIGEST_16<>+316(SB)/4, $0x510e527f
+DATA _DIGEST_16<>+320(SB)/4, $0x9b05688c
+DATA _DIGEST_16<>+324(SB)/4, $0x9b05688c
+DATA _DIGEST_16<>+328(SB)/4, $0x9b05688c
+DATA _DIGEST_16<>+332(SB)/4, $0x9b05688c 
+DATA _DIGEST_16<>+336(SB)/4, $0x9b05688c
+DATA _DIGEST_16<>+340(SB)/4, $0x9b05688c
+DATA _DIGEST_16<>+344(SB)/4, $0x9b05688c
+DATA _DIGEST_16<>+348(SB)/4, $0x9b05688c 
+DATA _DIGEST_16<>+352(SB)/4, $0x9b05688c
+DATA _DIGEST_16<>+356(SB)/4, $0x9b05688c
+DATA _DIGEST_16<>+360(SB)/4, $0x9b05688c
+DATA _DIGEST_16<>+364(SB)/4, $0x9b05688c 
+DATA _DIGEST_16<>+368(SB)/4, $0x9b05688c
+DATA _DIGEST_16<>+372(SB)/4, $0x9b05688c
+DATA _DIGEST_16<>+376(SB)/4, $0x9b05688c
+DATA _DIGEST_16<>+380(SB)/4, $0x9b05688c 
+DATA _DIGEST_16<>+384(SB)/4, $0x1f83d9ab
+DATA _DIGEST_16<>+388(SB)/4, $0x1f83d9ab
+DATA _DIGEST_16<>+392(SB)/4, $0x1f83d9ab
+DATA _DIGEST_16<>+396(SB)/4, $0x1f83d9ab
+DATA _DIGEST_16<>+400(SB)/4, $0x1f83d9ab
+DATA _DIGEST_16<>+404(SB)/4, $0x1f83d9ab
+DATA _DIGEST_16<>+408(SB)/4, $0x1f83d9ab
+DATA _DIGEST_16<>+412(SB)/4, $0x1f83d9ab
+DATA _DIGEST_16<>+416(SB)/4, $0x1f83d9ab
+DATA _DIGEST_16<>+420(SB)/4, $0x1f83d9ab
+DATA _DIGEST_16<>+424(SB)/4, $0x1f83d9ab
+DATA _DIGEST_16<>+428(SB)/4, $0x1f83d9ab
+DATA _DIGEST_16<>+432(SB)/4, $0x1f83d9ab
+DATA _DIGEST_16<>+436(SB)/4, $0x1f83d9ab
+DATA _DIGEST_16<>+440(SB)/4, $0x1f83d9ab
+DATA _DIGEST_16<>+444(SB)/4, $0x1f83d9ab
+DATA _DIGEST_16<>+448(SB)/4, $0x5be0cd19
+DATA _DIGEST_16<>+452(SB)/4, $0x5be0cd19
+DATA _DIGEST_16<>+456(SB)/4, $0x5be0cd19
+DATA _DIGEST_16<>+460(SB)/4, $0x5be0cd19
+DATA _DIGEST_16<>+464(SB)/4, $0x5be0cd19
+DATA _DIGEST_16<>+468(SB)/4, $0x5be0cd19
+DATA _DIGEST_16<>+472(SB)/4, $0x5be0cd19
+DATA _DIGEST_16<>+476(SB)/4, $0x5be0cd19
+DATA _DIGEST_16<>+480(SB)/4, $0x5be0cd19
+DATA _DIGEST_16<>+484(SB)/4, $0x5be0cd19
+DATA _DIGEST_16<>+488(SB)/4, $0x5be0cd19
+DATA _DIGEST_16<>+492(SB)/4, $0x5be0cd19
+DATA _DIGEST_16<>+496(SB)/4, $0x5be0cd19
+DATA _DIGEST_16<>+500(SB)/4, $0x5be0cd19
+DATA _DIGEST_16<>+504(SB)/4, $0x5be0cd19
+DATA _DIGEST_16<>+508(SB)/4, $0x5be0cd19
+GLOBL _DIGEST_16<>(SB),(NOPTR+RODATA),$512
+
+
+DATA _PSHUFFLE_TRANSPOSE_MASK1<>+0(SB)/8, $0x0000000000000000
+DATA _PSHUFFLE_TRANSPOSE_MASK1<>+8(SB)/8, $0x0000000000000001
+DATA _PSHUFFLE_TRANSPOSE_MASK1<>+16(SB)/8, $0x0000000000000008
+DATA _PSHUFFLE_TRANSPOSE_MASK1<>+24(SB)/8, $0x0000000000000009
+DATA _PSHUFFLE_TRANSPOSE_MASK1<>+32(SB)/8, $0x0000000000000004
+DATA _PSHUFFLE_TRANSPOSE_MASK1<>+40(SB)/8, $0x0000000000000005
+DATA _PSHUFFLE_TRANSPOSE_MASK1<>+48(SB)/8, $0x000000000000000C
+DATA _PSHUFFLE_TRANSPOSE_MASK1<>+56(SB)/8, $0x000000000000000D
+GLOBL _PSHUFFLE_TRANSPOSE_MASK1<>(SB),(NOPTR+RODATA),$64
+
+
+DATA _PSHUFFLE_TRANSPOSE_MASK2<>+0(SB)/8, $0x0000000000000002
+DATA _PSHUFFLE_TRANSPOSE_MASK2<>+8(SB)/8, $0x0000000000000003
+DATA _PSHUFFLE_TRANSPOSE_MASK2<>+16(SB)/8, $0x000000000000000A
+DATA _PSHUFFLE_TRANSPOSE_MASK2<>+24(SB)/8, $0x000000000000000B
+DATA _PSHUFFLE_TRANSPOSE_MASK2<>+32(SB)/8, $0x0000000000000006
+DATA _PSHUFFLE_TRANSPOSE_MASK2<>+40(SB)/8, $0x0000000000000007
+DATA _PSHUFFLE_TRANSPOSE_MASK2<>+48(SB)/8, $0x000000000000000E
+DATA _PSHUFFLE_TRANSPOSE_MASK2<>+56(SB)/8, $0x000000000000000F
+GLOBL _PSHUFFLE_TRANSPOSE_MASK2<>(SB),(NOPTR+RODATA),$64
+
+DATA _PSHUFFLE_TRANSPOSE_MASK3<>+0(SB)/4, $0x00000000
+DATA _PSHUFFLE_TRANSPOSE_MASK3<>+4(SB)/4, $0x00000002
+DATA _PSHUFFLE_TRANSPOSE_MASK3<>+8(SB)/4, $0x00000010
+DATA _PSHUFFLE_TRANSPOSE_MASK3<>+12(SB)/4, $0x00000012
+DATA _PSHUFFLE_TRANSPOSE_MASK3<>+16(SB)/4, $0x00000001
+DATA _PSHUFFLE_TRANSPOSE_MASK3<>+20(SB)/4, $0x00000003
+DATA _PSHUFFLE_TRANSPOSE_MASK3<>+24(SB)/4, $0x00000011
+DATA _PSHUFFLE_TRANSPOSE_MASK3<>+28(SB)/4, $0x00000013
+DATA _PSHUFFLE_TRANSPOSE_MASK3<>+32(SB)/4, $0x00000004
+DATA _PSHUFFLE_TRANSPOSE_MASK3<>+36(SB)/4, $0x00000006
+DATA _PSHUFFLE_TRANSPOSE_MASK3<>+40(SB)/4, $0x00000014
+DATA _PSHUFFLE_TRANSPOSE_MASK3<>+44(SB)/4, $0x00000016
+DATA _PSHUFFLE_TRANSPOSE_MASK3<>+48(SB)/4, $0x00000005
+DATA _PSHUFFLE_TRANSPOSE_MASK3<>+52(SB)/4, $0x00000007
+DATA _PSHUFFLE_TRANSPOSE_MASK3<>+56(SB)/4, $0x00000015
+DATA _PSHUFFLE_TRANSPOSE_MASK3<>+60(SB)/4, $0x00000017
+GLOBL _PSHUFFLE_TRANSPOSE_MASK3<>(SB),(NOPTR+RODATA),$64
+
+
+DATA _PSHUFFLE_TRANSPOSE_MASK4<>+0(SB)/4, $0x00000008
+DATA _PSHUFFLE_TRANSPOSE_MASK4<>+4(SB)/4, $0x0000000a
+DATA _PSHUFFLE_TRANSPOSE_MASK4<>+8(SB)/4, $0x00000018
+DATA _PSHUFFLE_TRANSPOSE_MASK4<>+12(SB)/4, $0x0000001a
+DATA _PSHUFFLE_TRANSPOSE_MASK4<>+16(SB)/4, $0x00000009
+DATA _PSHUFFLE_TRANSPOSE_MASK4<>+20(SB)/4, $0x0000000b
+DATA _PSHUFFLE_TRANSPOSE_MASK4<>+24(SB)/4, $0x00000019
+DATA _PSHUFFLE_TRANSPOSE_MASK4<>+28(SB)/4, $0x0000001b
+DATA _PSHUFFLE_TRANSPOSE_MASK4<>+32(SB)/4, $0x0000000c
+DATA _PSHUFFLE_TRANSPOSE_MASK4<>+36(SB)/4, $0x0000000e
+DATA _PSHUFFLE_TRANSPOSE_MASK4<>+40(SB)/4, $0x0000001c
+DATA _PSHUFFLE_TRANSPOSE_MASK4<>+44(SB)/4, $0x0000001e
+DATA _PSHUFFLE_TRANSPOSE_MASK4<>+48(SB)/4, $0x0000000d
+DATA _PSHUFFLE_TRANSPOSE_MASK4<>+52(SB)/4, $0x0000000f
+DATA _PSHUFFLE_TRANSPOSE_MASK4<>+56(SB)/4, $0x0000001d
+DATA _PSHUFFLE_TRANSPOSE_MASK4<>+60(SB)/4, $0x0000001f
+GLOBL _PSHUFFLE_TRANSPOSE_MASK4<>(SB),(NOPTR+RODATA),$64

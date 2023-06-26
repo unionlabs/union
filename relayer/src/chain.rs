@@ -77,6 +77,8 @@ pub trait LightClient {
 
     fn query_client_state(&self, client_id: String)
         -> impl Future<Output = Self::ClientState> + '_;
+
+    fn process_height_for_counterparty(&self, height: Height) -> impl Future<Output = Height> + '_;
 }
 
 #[derive(Debug)]
@@ -147,12 +149,6 @@ where
         update_to: Height,
     ) -> impl Future<Output = Height> + 'a;
 }
-
-// trait ChainSource {
-//     fn chain_id(&self) -> impl Future<Output = String> + '_;
-
-//     fn query_latest_block(&self) -> impl Future<Output = msgs::Height>;
-// }
 
 pub trait ClientState {
     fn height(&self) -> Height;

@@ -123,6 +123,7 @@ import (
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 
+	unioncustomquery "union/app/custom_query"
 	unionmodule "union/x/union"
 	unionmodulekeeper "union/x/union/keeper"
 	unionmoduletypes "union/x/union/types"
@@ -481,7 +482,7 @@ func New(
 		groupConfig,
 	)
 
-	app.WasmClientKeeper = ibcwasmkeeper.NewKeeper(appCodec, keys[ibcwasmtypes.StoreKey])
+	app.WasmClientKeeper = ibcwasmkeeper.NewKeeper(appCodec, keys[ibcwasmtypes.StoreKey], &unioncustomquery.UnionCustomQueryHandler{})
 
 	app.UpgradeKeeper = upgradekeeper.NewKeeper(
 		skipUpgradeHeights,
@@ -508,7 +509,7 @@ func New(
 	 client state to tendermint client state by default. This was blocking
 	 the ConnectionOpenTry to succeed.
 	*/
-	ibcCometblsClient := ibccometblsclient.NewKeeper(ibcKeeper.ClientKeeper)
+	ibcCometblsClient := ibccometblsclient.NewKeeper(appCodec, ibcKeeper.ClientKeeper, app.StakingKeeper)
 	ibcKeeper.ConnectionKeeper = ibcconnectionkeeper.NewKeeper(
 		appCodec,
 		keys[ibcexported.StoreKey],

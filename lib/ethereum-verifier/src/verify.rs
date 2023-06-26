@@ -1,6 +1,5 @@
 use crate::{
     capella::{LightClientHeader, LightClientUpdate, NEXT_SYNC_COMMITTEE_INDEX_FLOOR_LOG_2},
-    crypto::{fast_aggregate_verify, BlsPublicKey},
     primitives::{Account, DomainType, ExecutionAddress, Hash32, Root, Slot},
     rlp_node_codec::{keccak_256, EthLayout, KeccakHasher},
     utils::*,
@@ -14,12 +13,22 @@ use memory_db::{HashKey, MemoryDB};
 use ssz_rs::prelude::*;
 use trie_db::{Trie, TrieDBBuilder};
 
+pub trait BlsVerify {
+    fn fast_aggregate_verify(
+        &self,
+        public_keys: Vec<Vec<u8>>,
+        msg: Vec<u8>,
+        signature: Vec<u8>,
+    ) -> Result<(), Error>;
+}
+
 /// https://github.com/ethereum/consensus-specs/blob/dev/specs/altair/light-client/sync-protocol.md#validate_light_client_update
-pub fn validate_light_client_update<C: LightClientContext>(
+pub fn validate_light_client_update<C: LightClientContext, V: BlsVerify>(
     ctx: &C,
     mut update: LightClientUpdate<SYNC_COMMITTEE_SIZE, BYTES_PER_LOGS_BLOOM, MAX_EXTRA_DATA_BYTES>,
     current_slot: Slot,
     genesis_validators_root: Root,
+    bls_verifier: V,
 ) -> Result<(), Error> {
     // Verify sync committee has sufficient participants
     let sync_aggregate = &update.sync_aggregate;
@@ -103,13 +112,13 @@ pub fn validate_light_client_update<C: LightClientContext>(
             .ok_or(Error::ExpectedNextSyncCommittee)?
     };
 
-    let participant_pubkeys: Vec<&BlsPublicKey> = update
+    let participant_pubkeys: Vec<Vec<u8>> = update
         .sync_aggregate
         .sync_committee_bits
         .iter()
         .zip(sync_committee.public_keys.iter())
         .filter(|it| *it.0)
-        .map(|(_, pubkey)| pubkey)
+        .map(|(_, pubkey)| pubkey.as_slice().to_owned())
         .collect();
     let fork_version_slot = std::cmp::max(update.signature_slot, 1) - 1;
     let fork_version = compute_fork_version(ctx, compute_epoch_at_slot(fork_version_slot));
@@ -121,10 +130,13 @@ pub fn validate_light_client_update<C: LightClientContext>(
     )?;
     let signing_root = compute_signing_root(&mut update.attested_header.beacon, domain)?;
 
-    fast_aggregate_verify(
-        participant_pubkeys.as_slice(),
-        signing_root.as_ref(),
-        &sync_aggregate.sync_committee_signature,
+    bls_verifier.fast_aggregate_verify(
+        participant_pubkeys,
+        signing_root.as_ref().to_owned(),
+        sync_aggregate
+            .sync_committee_signature
+            .as_slice()
+            .to_owned(),
     )?;
 
     Ok(())

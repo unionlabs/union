@@ -1,0 +1,685 @@
+func PairingAggregatePkInG1(ctx Pairing, PK *P1Affine, pkValidate bool,
+                            sig *P2Affine, sigGroupcheck bool, msg []byte,
+                            optional ...[]byte) int { // aug
+    var aug []byte
+    var uaug *C.byte
+    if len(optional) > 0 {
+        aug = optional[0]
+        if len(aug) > 0 {
+            uaug = (*C.byte)(&aug[0])
+        }
+    }
+    var umsg *C.byte
+    if len(msg) > 0 {
+        umsg = (*C.byte)(&msg[0])
+    }
+
+    r := C.blst_pairing_chk_n_aggr_pk_in_g1(&ctx[0],
+                                            PK, C.bool(pkValidate),
+                                            sig, C.bool(sigGroupcheck),
+                                            umsg, C.size_t(len(msg)),
+                                            uaug, C.size_t(len(aug)))
+
+    return int(r)
+}
+
+func PairingMulNAggregatePkInG1(ctx Pairing, PK *P1Affine, pkValidate bool,
+                                sig *P2Affine, sigGroupcheck bool,
+                                rand *Scalar, randBits int, msg []byte,
+                                optional ...[]byte) int { // aug
+    var aug []byte
+    var uaug *C.byte
+    if len(optional) > 0 {
+        aug = optional[0]
+        if len(aug) > 0 {
+            uaug = (*C.byte)(&aug[0])
+        }
+    }
+    var umsg *C.byte
+    if len(msg) > 0 {
+        umsg = (*C.byte)(&msg[0])
+    }
+
+    r := C.blst_pairing_chk_n_mul_n_aggr_pk_in_g1(&ctx[0],
+                                                  PK, C.bool(pkValidate),
+                                                  sig, C.bool(sigGroupcheck),
+                                                  &rand.b[0], C.size_t(randBits),
+                                                  umsg, C.size_t(len(msg)),
+                                                  uaug, C.size_t(len(aug)))
+
+    return int(r)
+}
+
+//
+// Serialization/Deserialization.
+//
+
+// P1 Serdes
+func (p1 *P1Affine) Serialize() []byte {
+    var out [BLST_P1_SERIALIZE_BYTES]byte
+    C.blst_p1_affine_serialize((*C.byte)(&out[0]), p1)
+    return out[:]
+}
+
+func (p1 *P1Affine) Deserialize(in []byte) *P1Affine {
+    if len(in) != BLST_P1_SERIALIZE_BYTES {
+        return nil
+    }
+    if C.blst_p1_deserialize(p1, (*C.byte)(&in[0])) != C.BLST_SUCCESS {
+        return nil
+    }
+    return p1
+}
+func (p1 *P1Affine) Compress() []byte {
+    var out [BLST_P1_COMPRESS_BYTES]byte
+    C.blst_p1_affine_compress((*C.byte)(&out[0]), p1)
+    return out[:]
+}
+
+func (p1 *P1Affine) Uncompress(in []byte) *P1Affine {
+    if len(in) != BLST_P1_COMPRESS_BYTES {
+        return nil
+    }
+    if C.blst_p1_uncompress(p1, (*C.byte)(&in[0])) != C.BLST_SUCCESS {
+        return nil
+    }
+    return p1
+}
+
+func (p1 *P1Affine) InG1() bool {
+  return bool(C.blst_p1_affine_in_g1(p1))
+}
+
+func (dummy *P1Affine) BatchUncompress(in [][]byte) []*P1Affine {
+    // Allocate space for all of the resulting points. Later we'll save pointers
+    // and return those so that the result could be used in other functions,
+    // such as MultipleAggregateVerify.
+    n := len(in)
+    points := make([]P1Affine, n)
+    pointsPtrs := make([]*P1Affine, n)
+
+    numCores := runtime.GOMAXPROCS(0)
+    numThreads := maxProcs
+    if numThreads > numCores {
+        numThreads = numCores
+    }
+    if numThreads > n {
+        numThreads = n
+    }
+    // Each thread will determine next message to process by atomically
+    // incrementing curItem, process corresponding point, and
+    // repeat until n is exceeded. Each thread will send a result (true for
+    // success, false for failure) into the channel when complete.
+    resCh := make(chan bool, numThreads)
+    valid := int32(1)
+    curItem := uint32(0)
+    for tid := 0; tid < numThreads; tid++ {
+        go func() {
+            for atomic.LoadInt32(&valid) > 0 {
+                // Get a work item
+                work := atomic.AddUint32(&curItem, 1) - 1
+                if work >= uint32(n) {
+                    break
+                }
+                if points[work].Uncompress(in[work]) == nil {
+                    atomic.StoreInt32(&valid, 0)
+                    break
+                }
+                pointsPtrs[work] = &points[work]
+            }
+            if atomic.LoadInt32(&valid) > 0 {
+                resCh <- true
+            } else {
+                resCh <- false
+            }
+        }()
+    }
+
+    // Collect the threads
+    result := true
+    for i := 0; i < numThreads; i++ {
+        if ! <-resCh {
+            result = false
+        }
+    }
+    if atomic.LoadInt32(&valid) == 0 || result == false {
+        return nil
+    }
+    return pointsPtrs
+}
+
+func (p1 *P1) Serialize() []byte {
+    var out [BLST_P1_SERIALIZE_BYTES]byte
+    C.blst_p1_serialize((*C.byte)(&out[0]), p1)
+    return out[:]
+}
+func (p1 *P1) Compress() []byte {
+    var out [BLST_P1_COMPRESS_BYTES]byte
+    C.blst_p1_compress((*C.byte)(&out[0]), p1)
+    return out[:]
+}
+
+func (p1 *P1) MultAssign(scalarIf interface{}, optional ...int) *P1 {
+    var nbits int
+    var scalar *C.byte
+    switch val := scalarIf.(type) {
+    case []byte:
+        scalar = (*C.byte)(&val[0])
+        nbits = len(val)*8
+    case *Scalar:
+        scalar = &val.b[0]
+        nbits = 255
+    default:
+        panic(fmt.Sprintf("unsupported type %T", val))
+    }
+    if len(optional) > 0 {
+        nbits = optional[0]
+    }
+    C.blst_p1_mult(p1, p1, scalar, C.size_t(nbits))
+    return p1
+}
+
+func (p1 *P1) Mult(scalarIf interface{}, optional ...int) *P1 {
+    ret := *p1
+    return ret.MultAssign(scalarIf, optional...)
+}
+
+func (p1 *P1) AddAssign(pointIf interface{}) *P1 {
+    switch val := pointIf.(type) {
+    case *P1:
+        C.blst_p1_add_or_double(p1, p1, val)
+    case *P1Affine:
+        C.blst_p1_add_or_double_affine(p1, p1, val)
+    default:
+        panic(fmt.Sprintf("unsupported type %T", val))
+    }
+    return p1
+}
+
+func (p1 *P1) Add(pointIf interface{}) *P1 {
+    ret := *p1
+    return ret.AddAssign(pointIf)
+}
+
+func P1Generator() *P1 {
+    return C.blst_p1_generator()
+}
+
+// 'acc += point * scalar', passing 'nil' for 'point' means "use the
+//                          group generator point"
+func (acc *P1) MultNAccumulate(pointIf interface{}, scalarIf interface{},
+                               optional ...int) *P1 {
+    var x *Fp
+    var affine C.bool
+    if pointIf != nil {
+        switch val := pointIf.(type) {
+        case *P1:
+            x = &val.x
+            affine = false
+        case *P1Affine:
+            x = &val.x
+            affine = true
+        default:
+            panic(fmt.Sprintf("unsupported type %T", val))
+        }
+    }
+    var nbits int
+    var scalar *C.byte
+    switch val := scalarIf.(type) {
+    case []byte:
+        scalar = (*C.byte)(&val[0])
+        nbits = len(val)*8
+    case *Scalar:
+        scalar = &val.b[0]
+        nbits = 255
+    default:
+        panic(fmt.Sprintf("unsupported type %T", val))
+    }
+    if len(optional) > 0 {
+        nbits = optional[0]
+    }
+    C.go_p1_mult_n_acc(acc, x, affine, scalar, C.size_t(nbits))
+    return acc
+}
+
+//
+// Affine
+//
+
+func (p *P1) ToAffine() *P1Affine {
+    var pa P1Affine
+    C.blst_p1_to_affine(&pa, p)
+    return &pa
+}
+
+func (p *P1) FromAffine(pa *P1Affine) {
+    C.blst_p1_from_affine(p, pa)
+}
+
+//
+// Hash
+//
+func HashToG1(msg []byte, dst []byte,
+        optional ...[]byte) *P1 { // aug
+    var q P1
+
+    // Handle zero length message
+    var msgC *C.byte
+    if len(msg) > 0 {
+        msgC = (*C.byte)(&msg[0])
+    }
+
+    var dstC *C.byte
+    if len(dst) > 0 {
+        dstC = (*C.byte)(&dst[0])
+    }
+
+    var aug []byte
+    var augC *C.byte
+    if len(optional) > 0 {
+        aug = optional[0]
+        if len(aug) > 0 {
+            augC = (*C.byte)(&aug[0])
+        }
+    }
+
+    C.blst_hash_to_g1(&q, msgC, C.size_t(len(msg)),
+                          dstC, C.size_t(len(dst)),
+                          augC, C.size_t(len(aug)))
+    return &q
+}
+
+func EncodeToG1(msg []byte, dst []byte,
+        optional ...[]byte) *P1 { // aug
+    var q P1
+
+    // Handle zero length message
+    var msgC *C.byte
+    if len(msg) > 0 {
+        msgC = (*C.byte)(&msg[0])
+    }
+
+    var dstC *C.byte
+    if len(dst) > 0 {
+        dstC = (*C.byte)(&dst[0])
+    }
+
+    var aug []byte
+    var augC *C.byte
+    if len(optional) > 0 {
+        aug = optional[0]
+        if len(aug) > 0 {
+            augC = (*C.byte)(&aug[0])
+        }
+    }
+
+    C.blst_encode_to_g1(&q, msgC, C.size_t(len(msg)),
+                            dstC, C.size_t(len(dst)),
+                            augC, C.size_t(len(aug)))
+    return &q
+}
+
+//
+// Multi-point/scalar operations
+//
+
+func P1sToAffine(points []*P1, optional ...int) P1Affines {
+    var npoints int
+    if len(optional) > 0 {
+        npoints = optional[0]
+    } else {
+        npoints = len(points)
+    }
+    ret := make([]P1Affine, npoints)
+    _cgoCheckPointer := func(...interface{}) {}
+    C.blst_p1s_to_affine(&ret[0], &points[0], C.size_t(npoints))
+    return ret
+}
+
+func (points P1s) ToAffine(optional ...P1Affines) P1Affines {
+    npoints := len(points)
+    var ret P1Affines
+
+    if len(optional) > 0 {  // used in benchmark
+        ret = optional[0]
+        if len(ret) < npoints {
+            panic("npoints mismatch")
+        }
+    } else {
+        ret = make([]P1Affine, npoints)
+    }
+
+    if maxProcs < 2 || npoints < 768 {
+        C.go_p1slice_to_affine(&ret[0], &points[0], C.size_t(npoints))
+        return ret
+    }
+
+    nslices := (npoints + 511) / 512
+    if nslices > maxProcs {
+        nslices = maxProcs
+    }
+    delta, rem := npoints/nslices + 1, npoints%nslices
+
+    var wg sync.WaitGroup
+    wg.Add(nslices)
+    for x := 0; x < npoints; x += delta {
+        if rem == 0 {
+            delta -= 1
+        }
+        rem -= 1
+        go func(out *P1Affine, inp *P1, delta int) {
+            C.go_p1slice_to_affine(out, inp, C.size_t(delta))
+            wg.Done()
+        }(&ret[x], &points[x], delta)
+    }
+    wg.Wait()
+
+    return ret
+}
+
+//
+// Batch addition
+//
+
+func P1AffinesAdd(points []*P1Affine, optional ...int) *P1 {
+    var npoints int
+    if len(optional) > 0 {
+        npoints = optional[0]
+    } else {
+        npoints = len(points)
+    }
+    var ret P1
+    _cgoCheckPointer := func(...interface{}) {}
+    C.blst_p1s_add(&ret, &points[0], C.size_t(npoints))
+    return &ret
+}
+
+func (points P1Affines) Add() *P1 {
+    npoints := len(points)
+    if maxProcs < 2 || npoints < 768 {
+        var ret P1
+        C.go_p1slice_add(&ret, &points[0], C.size_t(npoints))
+        return &ret
+    }
+
+    nslices := (npoints + 511) / 512
+    if nslices > maxProcs {
+        nslices = maxProcs
+    }
+    delta, rem := npoints/nslices + 1, npoints%nslices
+
+    msgs := make(chan P1, nslices)
+    for x := 0; x < npoints; x += delta {
+        if rem == 0 {
+            delta -= 1
+        }
+        rem -= 1
+        go func(points *P1Affine, delta int) {
+            var ret P1
+            C.go_p1slice_add(&ret, points, C.size_t(delta))
+            msgs <- ret
+        }(&points[x], delta)
+    }
+
+    ret := <- msgs
+    for i := 1; i < nslices; i++ {
+        msg := <- msgs
+        C.blst_p1_add_or_double(&ret, &ret, &msg)
+    }
+    return &ret
+}
+
+func (points P1s) Add() *P1 {
+    return points.ToAffine().Add()
+}
+
+//
+// Multi-scalar multiplication
+//
+
+func P1AffinesMult(pointsIf interface{}, scalarsIf interface{}, nbits int) *P1 {
+    var npoints int
+    switch val := pointsIf.(type) {
+    case []*P1Affine:
+        npoints = len(val)
+    case []P1Affine:
+        npoints = len(val)
+    case P1Affines:
+        npoints = len(val)
+    default:
+        panic(fmt.Sprintf("unsupported type %T", val))
+    }
+
+    nbytes := (nbits+7)/8
+    var scalars []*C.byte
+    switch val := scalarsIf.(type) {
+    case []byte:
+        if len(val) < npoints*nbytes {
+            return nil
+        }
+    case [][]byte:
+        if len(val) < npoints {
+            return nil
+        }
+        scalars = make([]*C.byte, npoints)
+        for i := range scalars {
+            scalars[i] = (*C.byte)(&val[i][0])
+        }
+    case []Scalar:
+        if len(val) < npoints {
+            return nil
+        }
+        if nbits <= 248 {
+            scalars = make([]*C.byte, npoints)
+            for i := range scalars {
+                scalars[i] = &val[i].b[0]
+            }
+        }
+    case []*Scalar:
+        if len(val) < npoints {
+            return nil
+        }
+        scalars = make([]*C.byte, npoints)
+        for i := range scalars {
+            scalars[i] = &val[i].b[0]
+        }
+    default:
+        panic(fmt.Sprintf("unsupported type %T",val))
+    }
+
+    numThreads := maxProcs
+    numCores := runtime.GOMAXPROCS(0)
+    if numCores < maxProcs {
+        numThreads = numCores
+    }
+
+    if numThreads < 2 || npoints < 32 {
+        sz := int(C.blst_p1s_mult_pippenger_scratch_sizeof(C.size_t(npoints)))/8
+        scratch := make([]uint64, sz)
+
+        pointsBySlice := [2]*P1Affine{nil, nil}
+        var p_points **P1Affine
+        switch val := pointsIf.(type) {
+        case []*P1Affine:
+            p_points = &val[0]
+        case []P1Affine:
+            pointsBySlice[0] = &val[0]
+            p_points = &pointsBySlice[0]
+        case P1Affines:
+            pointsBySlice[0] = &val[0]
+            p_points = &pointsBySlice[0]
+        }
+
+        scalarsBySlice := [2]*C.byte{nil, nil}
+        var p_scalars **C.byte
+        switch val := scalarsIf.(type) {
+        case []byte:
+            scalarsBySlice[0] = (*C.byte)(&val[0])
+            p_scalars = &scalarsBySlice[0]
+        case [][]byte:
+            p_scalars = &scalars[0]
+        case []Scalar:
+            if nbits > 248 {
+                scalarsBySlice[0] = (*C.byte)(&val[0].b[0])
+                p_scalars = &scalarsBySlice[0]
+            } else {
+                p_scalars = &scalars[0]
+            }
+        case []*Scalar:
+            p_scalars = &scalars[0]
+        }
+
+        var ret P1
+        _cgoCheckPointer := func(...interface{}) {}
+        C.blst_p1s_mult_pippenger(&ret, p_points, C.size_t(npoints),
+                                        p_scalars, C.size_t(nbits),
+                                        (*C.limb_t)(&scratch[0]))
+
+        for i := range(scalars) {
+            scalars[i] = nil
+        }
+
+        return &ret
+    }
+
+    // this is sizeof(scratch[0])
+    sz := int(C.blst_p1s_mult_pippenger_scratch_sizeof(0))/8
+
+    nx, ny, window := breakdown(nbits, pippenger_window_size(npoints),
+                                numThreads)
+
+    // |grid[]| holds "coordinates" and place for result
+    grid := make([]struct { x, dx, y, dy int
+                            point P1 }, nx*ny)
+
+    dx := npoints/nx
+    y := window*(ny-1)
+    total := 0
+    for ; total < nx; total++ {
+        grid[total].x = total*dx
+        grid[total].dx = dx
+        grid[total].y = y
+        grid[total].dy = nbits - y
+    }
+    grid[total-1].dx = npoints - grid[total-1].x
+
+    for y > 0 {
+        y -= window
+        for i := 0; i < nx; i++ {
+            grid[total].x = grid[i].x
+            grid[total].dx = grid[i].dx
+            grid[total].y = y
+            grid[total].dy = window
+            total++
+        }
+    }
+
+    if numThreads > total {
+        numThreads = total
+    }
+
+    msgsCh := make(chan int, ny)
+    rowSync := make([]int32, ny)    // count up to |nx|
+    curItem := int32(0)
+    for tid := 0; tid < numThreads; tid++ {
+        go func() {
+            scratch := make([]uint64, sz << uint(window-1))
+            pointsBySlice := [2]*P1Affine{nil, nil}
+            scalarsBySlice := [2]*C.byte{nil, nil}
+            _cgoCheckPointer := func(...interface{}) {}
+
+            for {
+                workItem := atomic.AddInt32(&curItem, 1) - 1
+                if int(workItem) >= total {
+                    break
+                }
+
+                x := grid[workItem].x
+                y := grid[workItem].y
+
+                var p_points **P1Affine
+                switch val := pointsIf.(type) {
+                case []*P1Affine:
+                    p_points = &val[x]
+                case []P1Affine:
+                    pointsBySlice[0] = &val[x]
+                    p_points = &pointsBySlice[0]
+                case P1Affines:
+                    pointsBySlice[0] = &val[x]
+                    p_points = &pointsBySlice[0]
+                }
+
+                var p_scalars **C.byte
+                switch val := scalarsIf.(type) {
+                case []byte:
+                    scalarsBySlice[0] = (*C.byte)(&val[x*nbytes])
+                    p_scalars = &scalarsBySlice[0]
+                case [][]byte:
+                    p_scalars = &scalars[x]
+                case []Scalar:
+                    if nbits > 248 {
+                        scalarsBySlice[0] = (*C.byte)(&val[x].b[0])
+                        p_scalars = &scalarsBySlice[0]
+                    } else {
+                        p_scalars = &scalars[x]
+                    }
+                case []*Scalar:
+                    p_scalars = &scalars[x]
+                }
+
+                C.blst_p1s_tile_pippenger(&grid[workItem].point,
+                                          p_points, C.size_t(grid[workItem].dx),
+                                          p_scalars, C.size_t(nbits),
+                                          (*C.limb_t)(&scratch[0]),
+                                          C.size_t(y), C.size_t(window));
+
+                if atomic.AddInt32(&rowSync[y/window], 1) == int32(nx) {
+                    msgsCh <- y     // "row" is done
+                } else {
+                    runtime.Gosched()   // be nice to the application
+                }
+            }
+
+            pointsBySlice[0] = nil
+            scalarsBySlice[0] = nil
+        }()
+    }
+
+    var ret P1
+    rows := make([]bool, ny)
+    row := 0                        // actually index in |grid[]|
+    for i := 0; i < ny; i++ {       // we expect |ny| messages, one per "row"
+        y := <- msgsCh
+        rows[y/window] = true       // mark the "row"
+        for grid[row].y == y {      // if it's current "row", process it
+            for row < total && grid[row].y == y {
+                C.blst_p1_add_or_double(&ret, &ret, &grid[row].point)
+                row++
+            }
+            if y == 0 {
+                break               // one can as well 'return &ret' here
+            }
+            for j := 0; j < window; j++ {
+                C.blst_p1_double(&ret, &ret)
+            }
+            y -= window
+            if !rows[y/window] {    // see if next "row" was marked already
+                break
+            }
+        }
+    }
+
+    for i := range(scalars) {
+        scalars[i] = nil
+    }
+
+    return &ret
+}
+
+func (points P1Affines) Mult(scalarsIf interface{}, nbits int) *P1 {
+    return P1AffinesMult(points, scalarsIf, nbits)
+}
+
+func (points P1s) Mult(scalarsIf interface{}, nbits int) *P1 {
+    return points.ToAffine().Mult(scalarsIf, nbits)
+}

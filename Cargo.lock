@@ -3544,6 +3544,7 @@ dependencies = [
  "clap",
  "contracts",
  "ethereum-consensus",
+ "ethereum-verifier",
  "ethers",
  "futures",
  "hex-literal",
@@ -4319,7 +4320,7 @@ dependencies = [
 [[package]]
 name = "ssz_rs"
 version = "0.8.0"
-source = "git+https://github.com/aeryz/ssz-rs?rev=657972fca78fb8bbb68ad25aee91166d62fe6e85#657972fca78fb8bbb68ad25aee91166d62fe6e85"
+source = "git+https://github.com/unionfi/ssz-rs?rev=657972fca78fb8bbb68ad25aee91166d62fe6e85#657972fca78fb8bbb68ad25aee91166d62fe6e85"
 dependencies = [
  "bitvec 1.0.1",
  "hex",
@@ -4332,7 +4333,7 @@ dependencies = [
 [[package]]
 name = "ssz_rs_derive"
 version = "0.8.0"
-source = "git+https://github.com/aeryz/ssz-rs?rev=657972fca78fb8bbb68ad25aee91166d62fe6e85#657972fca78fb8bbb68ad25aee91166d62fe6e85"
+source = "git+https://github.com/unionfi/ssz-rs?rev=657972fca78fb8bbb68ad25aee91166d62fe6e85#657972fca78fb8bbb68ad25aee91166d62fe6e85"
 dependencies = [
  "proc-macro2",
  "quote",

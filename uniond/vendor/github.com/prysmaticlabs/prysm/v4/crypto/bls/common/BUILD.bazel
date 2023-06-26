@@ -1,0 +1,13 @@
+load("@prysm//tools/go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "constants.go",
+        "error.go",
+        "interface.go",
+    ],
+    importpath = "github.com/prysmaticlabs/prysm/v4/crypto/bls/common",
+    visibility = ["//visibility:public"],
+    deps = ["//config/fieldparams:go_default_library"],
+)

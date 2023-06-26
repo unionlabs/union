@@ -1,0 +1,34 @@
+load("@prysm//tools/go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "bls.go",
+        "constants.go",
+        "error.go",
+        "interface.go",
+        "signature_batch.go",
+    ],
+    importpath = "github.com/prysmaticlabs/prysm/v4/crypto/bls",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//crypto/bls/blst:go_default_library",
+        "//crypto/bls/common:go_default_library",
+        "//crypto/bls/herumi:go_default_library",
+        "@com_github_pkg_errors//:go_default_library",
+    ],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = [
+        "bls_test.go",
+        "signature_batch_test.go",
+    ],
+    embed = [":go_default_library"],
+    deps = [
+        "//crypto/bls/common:go_default_library",
+        "//testing/assert:go_default_library",
+        "//testing/require:go_default_library",
+    ],
+)

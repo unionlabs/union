@@ -8,9 +8,11 @@
 use std::{collections::HashMap, str::FromStr};
 
 use bip32::{DerivationPath, Language, XPrv};
+use chain::evm::CometblsConfig;
 use clap::{Args, Parser, Subcommand};
 use ethers::{
     prelude::{EthAbiCodec, EthAbiType},
+    signers::LocalWallet,
     types::{Address, H256},
 };
 use futures::StreamExt;
@@ -31,14 +33,15 @@ use ibc_types::core::{
     },
 };
 use protos::ibc::core::channel::v1 as channel_v1;
+use reqwest::Url;
 use tendermint_rpc::{event::EventData, query::EventType, SubscriptionClient};
 
 use crate::chain::{cosmos::Ethereum, evm::Cometbls, ClientState, Connect, LightClient};
 
 pub mod chain;
 
-const ETH_BEACON_RPC_API: &str = "http://localhost:9596";
-const ETH_RPC_API: &str = "http://localhost:8545";
+// const ETH_BEACON_RPC_API: &str = "http://localhost:9596";
+// const ETH_RPC_API: &str = "http://localhost:8545";
 const CHANNEL_VERSION: &str = "ics20-1";
 
 #[derive(Debug, Parser)]
@@ -142,6 +145,15 @@ pub struct CometblsClientArgs {
     /// ICS20Bank => address
     #[arg(long)]
     pub ics20_bank_address: Address,
+
+    #[arg(long)]
+    pub wallet: LocalWallet,
+
+    #[arg(long)]
+    pub eth_rpc_api: Url,
+
+    #[arg(long)]
+    pub eth_beacon_rpc_api: String,
 }
 
 #[derive(Debug, Args)]
@@ -187,13 +199,16 @@ async fn do_main(args: AppArgs) {
 
     match args.command {
         Command::OpenConnection(OpenConnectionArgs { args }) => {
-            let cometbls = Cometbls::new(
-                args.cometbls.cometbls_client_address,
-                args.cometbls.ibc_handler_address,
-                args.cometbls.ics20_transfer_address,
-                args.cometbls.ics20_bank_address,
-                args.ethereum.wasm_code_id,
-            )
+            let cometbls = Cometbls::new(CometblsConfig {
+                cometbls_client_address: args.cometbls.cometbls_client_address,
+                ibc_handler_address: args.cometbls.ibc_handler_address,
+                ics20_transfer_address: args.cometbls.ics20_transfer_address,
+                ics20_bank_address: args.cometbls.ics20_bank_address,
+                wasm_code_id: args.ethereum.wasm_code_id,
+                wallet: args.cometbls.wallet,
+                eth_rpc_api: args.cometbls.eth_rpc_api,
+                eth_beacon_rpc_api: args.cometbls.eth_beacon_rpc_api,
+            })
             .await;
 
             let ethereum = Ethereum::new(get_wallet(), args.ethereum.wasm_code_id).await;
@@ -207,13 +222,16 @@ async fn do_main(args: AppArgs) {
             cometbls_port_id,
             ethereum_port_id,
         }) => {
-            let cometbls_lc = Cometbls::new(
-                args.cometbls.cometbls_client_address,
-                args.cometbls.ibc_handler_address,
-                args.cometbls.ics20_transfer_address,
-                args.cometbls.ics20_bank_address,
-                args.ethereum.wasm_code_id,
-            )
+            let cometbls_lc = Cometbls::new(CometblsConfig {
+                cometbls_client_address: args.cometbls.cometbls_client_address,
+                ibc_handler_address: args.cometbls.ibc_handler_address,
+                ics20_transfer_address: args.cometbls.ics20_transfer_address,
+                ics20_bank_address: args.cometbls.ics20_bank_address,
+                wasm_code_id: args.ethereum.wasm_code_id,
+                wallet: args.cometbls.wallet,
+                eth_rpc_api: args.cometbls.eth_rpc_api,
+                eth_beacon_rpc_api: args.cometbls.eth_beacon_rpc_api,
+            })
             .await;
 
             let ethereum_lc = Ethereum::new(get_wallet(), args.ethereum.wasm_code_id).await;
@@ -234,13 +252,16 @@ async fn do_main(args: AppArgs) {
             cometbls_port_id,
             ethereum_port_id,
         }) => {
-            let cometbls_lc = Cometbls::new(
-                args.cometbls.cometbls_client_address,
-                args.cometbls.ibc_handler_address,
-                args.cometbls.ics20_transfer_address,
-                args.cometbls.ics20_bank_address,
-                args.ethereum.wasm_code_id,
-            )
+            let cometbls_lc = Cometbls::new(CometblsConfig {
+                cometbls_client_address: args.cometbls.cometbls_client_address,
+                ibc_handler_address: args.cometbls.ibc_handler_address,
+                ics20_transfer_address: args.cometbls.ics20_transfer_address,
+                ics20_bank_address: args.cometbls.ics20_bank_address,
+                wasm_code_id: args.ethereum.wasm_code_id,
+                wallet: args.cometbls.wallet,
+                eth_rpc_api: args.cometbls.eth_rpc_api,
+                eth_beacon_rpc_api: args.cometbls.eth_beacon_rpc_api,
+            })
             .await;
 
             // let channel: Channel = cometbls_lc
@@ -263,12 +284,13 @@ async fn do_main(args: AppArgs) {
             // let balance = cometbls_lc
             //     .ics20_bank
             //     .balance_of(
-            //         H160::from(b"aaaaa55555aaaaa55555"),
-            //         format!("{}/channel-0/stake", cometbls_port_id.clone().unwrap()),
+            //         ethers::types::H160::from(b"aaaaa55555aaaaa44444"),
+            //         format!("{}/channel-11/stake", cometbls_port_id.clone().unwrap()),
             //     )
             //     .await
             //     .unwrap();
             // dbg!(balance);
+            // panic!();
 
             if open_channel {
                 let (
@@ -374,6 +396,16 @@ where
         (client_id, latest_height)
     };
 
+    // let ethereum_client_id = "08-wasm-0".to_string();
+    // let cometbls_client_id = "cometbls-new-32".to_string();
+    // let cometbls_latest_height = Height {
+    //     revision_number: 0,
+    //     revision_height: 2643648,
+    // };
+    // let ethereum_latest_height = Height {
+    //     revision_number: 1,
+    //     revision_height: 8,
+    // };
     tracing::info!(?cometbls_latest_height);
     tracing::info!(?ethereum_latest_height);
 
@@ -396,6 +428,17 @@ where
         })
         .await;
 
+    tracing::info!(
+        cometbls_connection_id,
+        ?cometbls_latest_height,
+        ?ethereum_latest_height,
+        cometbls_client_id,
+        ethereum_client_id,
+        "right after connection init"
+    );
+
+    // let cometbls_connection_id = "connection-30".to_string();
+
     let cometbls_update_from = cometbls_latest_height;
     let cometbls_update_to = cometbls.query_latest_height().await;
 
@@ -410,7 +453,9 @@ where
 
     tracing::info!(
         chain_id = cometbls_id,
-        connection_id = cometbls_connection_id
+        connection_id = cometbls_connection_id,
+        latest_height = ?cometbls_latest_height,
+        "right after updating cosmos"
     );
 
     // generate state proofs
@@ -471,7 +516,9 @@ where
     let ethereum_consensus_state_proof = ethereum
         .consensus_state_proof(
             ethereum_client_id.clone(),
-            cometbls_latest_height,
+            cometbls
+                .process_height_for_counterparty(cometbls_latest_height)
+                .await,
             ethereum_latest_height,
         )
         .await;
@@ -647,19 +694,14 @@ where
         })
         .await;
 
-    let ethereum_latest_trusted_height = ethereum
-        .query_client_state(ethereum_connection_info.client_id.clone())
-        .await
-        .height();
-
-    let cometbls_latest_height = cometbls.query_latest_height().await;
+    let update_to = cometbls.query_latest_height().await;
 
     let cometbls_latest_height = cometbls
         .update_counterparty_client(
             ethereum,
             ethereum_connection_info.client_id.clone(),
-            ethereum_latest_trusted_height,
             cometbls_latest_height,
+            update_to,
         )
         .await;
 

@@ -8,7 +8,6 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/base64"
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -74,7 +73,17 @@ func dial(ctx context.Context, urls string, opts *DialOptions, rand io.Reader) (
 	opts = &*opts
 	if opts.HTTPClient == nil {
 		opts.HTTPClient = http.DefaultClient
+	} else if opts.HTTPClient.Timeout > 0 {
+		var cancel context.CancelFunc
+
+		ctx, cancel = context.WithTimeout(ctx, opts.HTTPClient.Timeout)
+		defer cancel()
+
+		newClient := *opts.HTTPClient
+		newClient.Timeout = 0
+		opts.HTTPClient = &newClient
 	}
+
 	if opts.HTTPHeader == nil {
 		opts.HTTPHeader = http.Header{}
 	}
@@ -133,10 +142,6 @@ func dial(ctx context.Context, urls string, opts *DialOptions, rand io.Reader) (
 }
 
 func handshakeRequest(ctx context.Context, urls string, opts *DialOptions, copts *compressionOptions, secWebSocketKey string) (*http.Response, error) {
-	if opts.HTTPClient.Timeout > 0 {
-		return nil, errors.New("use context for cancellation instead of http.Client.Timeout; see https://github.com/nhooyr/websocket/issues/67")
-	}
-
 	u, err := url.Parse(urls)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse url: %w", err)
@@ -189,11 +194,11 @@ func verifyServerResponse(opts *DialOptions, copts *compressionOptions, secWebSo
 		return nil, fmt.Errorf("expected handshake response status code %v but got %v", http.StatusSwitchingProtocols, resp.StatusCode)
 	}
 
-	if !headerContainsToken(resp.Header, "Connection", "Upgrade") {
+	if !headerContainsTokenIgnoreCase(resp.Header, "Connection", "Upgrade") {
 		return nil, fmt.Errorf("WebSocket protocol violation: Connection header %q does not contain Upgrade", resp.Header.Get("Connection"))
 	}
 
-	if !headerContainsToken(resp.Header, "Upgrade", "WebSocket") {
+	if !headerContainsTokenIgnoreCase(resp.Header, "Upgrade", "WebSocket") {
 		return nil, fmt.Errorf("WebSocket protocol violation: Upgrade header %q does not contain websocket", resp.Header.Get("Upgrade"))
 	}
 

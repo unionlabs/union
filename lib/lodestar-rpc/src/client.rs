@@ -31,6 +31,11 @@ impl RPCClient {
             .await
     }
 
+    pub async fn get_block_header(&self, slot: String) -> Result<BeaconHeaderResponse> {
+        self.request_get(format!("/eth/v1/beacon/headers/{}", slot))
+            .await
+    }
+
     pub async fn get_bootstrap<
         const SYNC_COMMITTEE_SIZE: usize,
         const BYTES_PER_LOGS_BLOOM: usize,

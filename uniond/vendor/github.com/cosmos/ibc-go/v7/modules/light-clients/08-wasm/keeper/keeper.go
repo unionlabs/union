@@ -27,7 +27,7 @@ type Keeper struct {
 	authority string
 }
 
-func NewKeeper(cdc codec.BinaryCodec, key storetypes.StoreKey) Keeper {
+func NewKeeper(cdc codec.BinaryCodec, key storetypes.StoreKey, querier cosmwasm.Querier) Keeper {
 	// Wasm VM
 	wasmDataDir := "ibc_08-wasm_client_data"
 	wasmSupportedFeatures := strings.Join([]string{"storage", "iterator"}, ",")
@@ -40,6 +40,7 @@ func NewKeeper(cdc codec.BinaryCodec, key storetypes.StoreKey) Keeper {
 		panic(err)
 	}
 	types.WasmVM = vm
+	types.Querier = querier
 
 	// governance authority
 	authority := authtypes.NewModuleAddress(govtypes.ModuleName)

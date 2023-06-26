@@ -23,6 +23,7 @@ pub enum Error {
     Trie(Box<TrieError<primitive_types::H256, rlp::DecoderError>>),
     RlpDecode,
     InvalidHash,
+    CustomError(String),
 }
 
 impl core::fmt::Display for Error {
@@ -55,6 +56,7 @@ impl core::fmt::Display for Error {
             Error::Trie(e) => write!(f, "Trie error: {e:?}"),
             Error::RlpDecode => write!(f, "Rlp decoding failed."),
             Error::InvalidHash => write!(f, "Invalid hash."),
+            Error::CustomError(e) => write!(f, "Custom query error: {}", e),
         }
     }
 }

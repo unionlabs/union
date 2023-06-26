@@ -503,6 +503,10 @@ impl LightClient for Ethereum {
                 .unwrap()
         }
     }
+
+    fn process_height_for_counterparty(&self, height: Height) -> impl Future<Output = Height> + '_ {
+        async move { height }
+    }
 }
 
 impl Connect<Cometbls> for Ethereum {
@@ -769,18 +773,20 @@ impl Connect<Cometbls> for Ethereum {
                 .await
                 .unwrap();
 
-            Any(wasm::consensus_state::ConsensusState {
-                data: cometbls::consensus_state::ConsensusState {
-                    root: MerkleRoot {
-                        hash: commit.signed_header.header.app_hash.as_bytes().to_vec(),
-                    },
-                    next_validators_hash: commit
-                        .signed_header
-                        .header
-                        .next_validators_hash
-                        .as_bytes()
-                        .to_vec(),
+            let state = cometbls::consensus_state::ConsensusState {
+                root: MerkleRoot {
+                    hash: commit.signed_header.header.app_hash.as_bytes().to_vec(),
                 },
+                next_validators_hash: commit
+                    .signed_header
+                    .header
+                    .next_validators_hash
+                    .as_bytes()
+                    .to_vec(),
+            };
+
+            Any(wasm::consensus_state::ConsensusState {
+                data: state,
                 timestamp: commit
                     .signed_header
                     .header
