@@ -1,28 +1,29 @@
 { ... }: {
   perSystem = { pkgs, self', crane, system, ... }: {
     packages = {
-      bls-eth = let
-        isAarch64 = ((builtins.head (pkgs.lib.splitString "-" system)) == "aarch64");
-      in
-      pkgs.pkgsStatic.stdenv.mkDerivation {
-        pname = "bls-eth";
-        version = "1.31.0";
-        src = pkgs.fetchFromGitHub {
-          owner = "herumi";
-          repo = "bls-eth-go-binary";
-          rev = "f61456b875d2649d0a9c58ed5f269c82d549672a";
-          hash = "sha256-pjPTrYxoKQ7CWuscMWCE0tD/Rd0xUrP4ypuGP8yezis=";
-          fetchSubmodules = true;
+      bls-eth =
+        let
+          isAarch64 = ((builtins.head (pkgs.lib.splitString "-" system)) == "aarch64");
+        in
+        pkgs.pkgsStatic.stdenv.mkDerivation {
+          pname = "bls-eth";
+          version = "1.31.0";
+          src = pkgs.fetchFromGitHub {
+            owner = "herumi";
+            repo = "bls-eth-go-binary";
+            rev = "f61456b875d2649d0a9c58ed5f269c82d549672a";
+            hash = "sha256-pjPTrYxoKQ7CWuscMWCE0tD/Rd0xUrP4ypuGP8yezis=";
+            fetchSubmodules = true;
+          };
+          nativeBuildInputs = [ pkgs.pkgsStatic.nasm ] ++ (pkgs.lib.optionals isAarch64 [ pkgs.llvmPackages_9.libcxxClang ]);
+          installPhase = ''
+            mkdir -p $out/lib
+            ls -al bls/lib/linux/
+            mv bls/lib/linux/${if isAarch64 then "arm64" else "amd64"}/*.a $out/lib
+          '';
+          enableParallelBuilding = true;
+          doCheck = true;
         };
-        nativeBuildInputs = [ pkgs.pkgsStatic.nasm ] ++ (pkgs.lib.optionals isAarch64 [ pkgs.llvmPackages_9.libcxxClang ]);
-        installPhase = ''
-          mkdir -p $out/lib
-          ls -al bls/lib/linux/
-          mv bls/lib/linux/${if isAarch64 then "arm64" else "amd64"}/*.a $out/lib
-        '';
-        enableParallelBuilding = true;
-        doCheck = true;
-      };
 
       # Statically link on Linux using `pkgsStatic`, dynamically link on Darwin using normal `pkgs`.
       uniond = (if pkgs.stdenv.isLinux then
