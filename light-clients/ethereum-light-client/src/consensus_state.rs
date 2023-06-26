@@ -1,8 +1,5 @@
 use crate::{errors::Error, eth_types::SyncCommittee};
-use ethereum_verifier::{
-    crypto::{eth_aggregate_public_keys, BlsPublicKey},
-    primitives::Slot,
-};
+use ethereum_verifier::{crypto::BlsPublicKey, primitives::Slot};
 use ibc::core::ics23_commitment::commitment::CommitmentRoot;
 use prost::Message;
 use protos::{

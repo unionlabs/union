@@ -504,10 +504,7 @@ impl LightClient for Ethereum {
         }
     }
 
-    fn process_height_for_counterparty(
-        &self,
-        height: super::msgs::Height,
-    ) -> impl Future<Output = super::msgs::Height> + '_ {
+    fn process_height_for_counterparty(&self, height: Height) -> impl Future<Output = Height> + '_ {
         async move { height }
     }
 }
@@ -788,7 +785,7 @@ impl Connect<Cometbls> for Ethereum {
                     .to_vec(),
             };
 
-            Any(wasm::ConsensusState {
+            Any(wasm::consensus_state::ConsensusState {
                 data: state,
                 timestamp: commit
                     .signed_header
