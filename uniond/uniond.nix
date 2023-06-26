@@ -1,5 +1,9 @@
 { ... }: {
-  perSystem = { pkgs, self', crane, system, ensureAtRepositoryRoot, ... }: {
+  perSystem = { pkgs, self', crane, system, ensureAtRepositoryRoot, ... }: 
+  let
+    CGO_CFLAGS = "-I${pkgs.libblst}/include -I${pkgs.libblst.src}/src -I${pkgs.libblst.src}/build -I${self'.packages.bls-eth.src}/bls/include";
+  in
+  {
     packages = {
       bls-eth =
         let
@@ -38,14 +42,13 @@
       } // (
         let libwasmvm = self'.packages.libwasmvm;
         in if pkgs.stdenv.isLinux then {
+          inherit CGO_CFLAGS;
           # Statically link if we're on linux
           nativeBuildInputs = [ pkgs.musl libwasmvm ];
           ldflags = [
             "-linkmode external"
             "-extldflags '-z noexecstack -static -L${pkgs.musl}/lib -L${libwasmvm}/lib -L${self'.packages.bls-eth}/lib'"
           ];
-          CGO_CFLAGS =
-            "-I${pkgs.libblst}/include -I${pkgs.libblst.src}/src -I${pkgs.libblst.src}/build -I${self'.packages.bls-eth.src}/bls/include";
         } else if pkgs.stdenv.isDarwin then {
           # Dynamically link if we're on darwin by wrapping the program
           # such that the DYLD_LIBRARY_PATH includes libwasmvm 
@@ -85,6 +88,48 @@
             };
             vendorSha256 = null;
           };
+
+          # must be run from a directory with vendor/
+          doVendor = repos:
+            if repos == [ ]
+            then ''
+              echo "no repositories were requested to be fully vendored, only running 'go mod vendor'"
+              go mod vendor
+              go mod tidy
+            ''
+            else ''
+              TMP=$(mktemp -d)
+
+              # vendor to a tmp dir, since vend doesn't have an output option
+              go mod vendor -o "$TMP"
+
+              # outputs to ./vendor
+              vend
+
+              # overwrite the chosen repos with their fully vendored versions
+              ${
+                pkgs.lib.concatMapStrings
+                  (repo:
+                  ''
+                    echo "fully vendoring ${repo}"
+
+                    # https://askubuntu.com/questions/269775/mv-directory-not-empty
+                    rm -r "$TMP/${repo}"/*
+                    mv -fv vendor/${repo}/* "$TMP/${repo}"
+                  '')
+                  repos
+              }
+
+              # clear vendor, to ensure that no unwanted files are kept
+              rm -r vendor/*
+
+              # move vendor back
+              mv -fv "$TMP"/* vendor
+
+              # rm -r "$TMP"
+
+              go mod tidy
+            '';
         in
         pkgs.writeShellApplication {
           name = "go-vendor";
@@ -94,11 +139,11 @@
 
             echo "vendoring uniond..."
             cd uniond
-            vend
+            ${doVendor [ "github.com/supranational/blst" ]}
 
             echo "vendoring unionpd..."
             cd ../unionpd
-            vend
+            ${doVendor [ ]}
           '';
         };
     };
@@ -125,6 +170,7 @@
         buildInputs = [ pkgs.go ];
         src = ./.;
         doCheck = true;
+        inherit CGO_CFLAGS;
         checkPhase = ''
           # Go will try to create a .cache/ dir in $HOME.
           # We avoid this by setting $HOME to the builder directory

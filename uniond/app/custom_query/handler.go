@@ -50,7 +50,7 @@ func (h *UnionCustomQueryHandler) Query(request wasmvmtypes.QueryRequest, gasLim
 		return json.Marshal(aggregatedPublicKeys.Marshal())
 	} else if customQuery.AggregateVerify != nil {
 		if len(customQuery.AggregateVerify.Message) != MessageSize {
-			return nil, fmt.Errorf("Invalid message length, must be a 32bytes hash", customQuery.AggregateVerify.Message)
+			return nil, fmt.Errorf("Invalid message length, must be a 32bytes hash: %x", customQuery.AggregateVerify.Message)
 		}
 		msg := [MessageSize]byte{}
 		for i := 0; i < MessageSize; i++ {
