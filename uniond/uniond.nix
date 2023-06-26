@@ -1,7 +1,10 @@
 { ... }: {
   perSystem = { pkgs, self', crane, system, ... }: {
     packages = {
-      bls-eth = pkgs.pkgsStatic.stdenv.mkDerivation rec {
+      bls-eth = let
+        isAarch64 = ((builtins.head (pkgs.lib.splitString "-" system)) == "aarch64");
+      in
+      pkgs.pkgsStatic.stdenv.mkDerivation {
         pname = "bls-eth";
         version = "1.31.0";
         src = pkgs.fetchFromGitHub {
@@ -11,10 +14,11 @@
           hash = "sha256-pjPTrYxoKQ7CWuscMWCE0tD/Rd0xUrP4ypuGP8yezis=";
           fetchSubmodules = true;
         };
-        nativeBuildInputs = [ pkgs.pkgsStatic.nasm ];
+        nativeBuildInputs = [ pkgs.pkgsStatic.nasm ] ++ (pkgs.lib.optionals isAarch64 [ pkgs.llvmPackages_9.libcxxClang ]);
         installPhase = ''
           mkdir -p $out/lib
-          mv bls/lib/linux/amd64/*.a $out/lib
+          ls -al bls/lib/linux/
+          mv bls/lib/linux/${if isAarch64 then "arm64" else "amd64"}/*.a $out/lib
         '';
         enableParallelBuilding = true;
         doCheck = true;
