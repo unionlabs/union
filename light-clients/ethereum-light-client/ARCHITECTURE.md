@@ -8,7 +8,7 @@ To see how this is integrated within `uniond`, see [uniond/ARCHITECTURE.md](../.
    update validation, etc. This makes the implementation very clean and we don't have to implement any boilerplate code at all.
 3. This generic client implementation can be easily adapted into different ecosystems that support wasm smart contracts.
 
-We also implemented [ethereum-verifier](https://github.com/unionfi/union/tree/main/lib/ethereum-verifier) to verify updates and commitments in the Ethereum side. We closely followed the [official consensus specs](https://github.com/ethereum/consensus-specs) from
+We also implemented [ethereum-verifier](https://github.com/unionlabs/union/tree/main/lib/ethereum-verifier) to verify updates and commitments in the Ethereum side. We closely followed the [official consensus specs](https://github.com/ethereum/consensus-specs) from
 Ethereum.
 
 ## Light Client Update

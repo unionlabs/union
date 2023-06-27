@@ -11,7 +11,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     treefmt-nix = {
-      url = "github:unionfi/treefmt-nix";
+      url = "github:unionlabs/treefmt-nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     pre-commit-hooks = {
@@ -56,8 +56,8 @@
     };
     nix-filter.url = "github:numtide/nix-filter";
     # uniond versions
-    v0_6_0.url = "git+https://github.com/unionfi/union?ref=release-v0.6.0";
-    v0_7_0.url = "git+https://github.com/unionfi/union?ref=release-v0.7.0";
+    v0_6_0.url = "git+https://github.com/unionlabs/union?ref=release-v0.6.0";
+    v0_7_0.url = "git+https://github.com/unionlabs/union?ref=release-v0.7.0";
   };
   outputs = inputs@{ self, nixpkgs, flake-parts, nix-filter, crane, foundry, treefmt-nix, pre-commit-hooks, iohk-nix, ibc-go, ics23, cosmosproto, gogoproto, googleapis, ... }:
     flake-parts.lib.mkFlake { inherit inputs; } {
@@ -141,12 +141,12 @@
                 };
                 cometbls = builtins.fetchGit {
                   name = "cometbls";
-                  url = "git@github.com:UnionFi/cometbls";
+                  url = "git@github.com:unionlabs/cometbls";
                   rev = "20834775a066a30a2115c914213229d3f5033e5e";
                 };
                 cosmossdk = builtins.fetchGit {
                   name = "cosmos-sdk";
-                  url = "git@github.com:UnionFi/cosmos-sdk";
+                  url = "git@github.com:unionlabs/cosmos-sdk";
                   rev = "b437ae728cc04212eb815975cef4fa4de53ffdbf";
                 };
                 ibcgo = mkUnpack {
@@ -254,7 +254,7 @@
                 nativeBuildInputs = [
                   config.treefmt.build.wrapper
                 ] ++ lib.attrsets.attrValues config.treefmt.build.programs;
-                GOPRIVATE = "github.com/unionfi/*";
+                GOPRIVATE = "github.com/unionlabs/*";
               };
             in
             {

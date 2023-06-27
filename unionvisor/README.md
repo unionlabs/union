@@ -12,7 +12,7 @@ An example flake.nix configuration can be found in [`usage.nix`](./usage.nix):
 {
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    union.url = "git+ssh://git@github.com/unionfi/union";
+    union.url = "git+ssh://git@github.com/unionlabs/union";
   };
   outputs = { self, nixpkgs, union, ... }:
     {

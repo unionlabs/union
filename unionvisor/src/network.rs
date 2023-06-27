@@ -44,7 +44,7 @@ impl Network {
     #[allow(clippy::unused_self)]
     pub fn genesis_url(&self) -> &str {
         // We use a secret gist for the genesis.json until testnet is public
-        // "https://raw.githubusercontent.com/unionfi/genesis/main/union-testnet-1/genesis.json"
+        // "https://raw.githubusercontent.com/unionlabs/genesis/main/union-testnet-1/genesis.json"
         "https://gist.githubusercontent.com/cor/ffb8ec1a35a28fc1b3aad89f3fb466d4/raw/434b9f88a0ee6099cbbabafcd144f958a03ce655/union-testnet-2-gentx.json"
     }
 }

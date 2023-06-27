@@ -40,4 +40,4 @@ To vote use the `uniond tx gov vote` command providing the proposal ID and `yes`
 
 Finally, you will need to wait until the upgrade height and migrate your node binaries and restart your service. Once this is done, validators will begin producing blocks again after enough have finished the upgrade.
 
-For help in migrating your node, see our [unionvisor](https://github.com/unionfi/union/tree/3aa2d2ff5e72ba3b4b3a83d898715202c500ea52/unionvisor).
+For help in migrating your node, see our [unionvisor](https://github.com/unionlabs/union/tree/3aa2d2ff5e72ba3b4b3a83d898715202c500ea52/unionvisor).

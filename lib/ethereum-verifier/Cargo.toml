@@ -18,5 +18,5 @@ rlp = { version = "0.5.2", default-features = false }
 serde = { version = "1.0.103", default-features = false, features = ["derive", "alloc"] }
 sha2 = { version = "0.10", default-features = false }
 sha3 = { version = "0.10", default-features = false }
-ssz-rs = { package = "ssz_rs", git = "https://github.com/unionfi/ssz-rs", rev = "657972fca78fb8bbb68ad25aee91166d62fe6e85", default-features = false, features = [ "serde" ] }
+ssz-rs = { package = "ssz_rs", git = "https://github.com/unionlabs/ssz-rs", rev = "657972fca78fb8bbb68ad25aee91166d62fe6e85", default-features = false, features = [ "serde" ] }
 trie-db = { version = "0.27.1", default-features = false }
