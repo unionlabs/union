@@ -8,10 +8,10 @@ Validators are the backbone of the network. Becoming one requires significant to
 
 ## Obtaining uniond
 
-You can obtain `uniond` from a recent [release](https://github.com/unionfi/union/releases/latest).
+You can obtain `uniond` from a recent [release](https://github.com/unionlabs/union/releases/latest).
 
 ```sh
-curl -L -o uniond https://github.com/unionfi/union/releases/download/v0.5.0-rc1/uniond-x86_64-linux
+curl -L -o uniond https://github.com/unionlabs/union/releases/download/v0.5.0-rc1/uniond-x86_64-linux
 ```
 
 Verify that the binary works on your server by running:
@@ -28,10 +28,10 @@ mv ./uniond /usr/bin/
 
 ### Using Docker
 
-We also provide containers in our [package registry](https://github.com/unionfi/union/pkgs/container/uniond).
+We also provide containers in our [package registry](https://github.com/unionlabs/union/pkgs/container/uniond).
 
 ```sh
-docker pull ghcr.io/unionfi/uniond:v0.5.0-rc1
+docker pull ghcr.io/unionlabs/uniond:v0.5.0-rc1
 ```
 
 When running the container, make sure to map a volume to the path passed in `--home` options to ensure data persistence. From here on the guide assumes the usage of a regular binary. The [docker-compose](./docker-compose) section is more suited for docker users.
@@ -42,7 +42,7 @@ When running the container, make sure to map a volume to the path passed in `--h
 
 ## Initialization
 
-We'll need to set up a few configuration files and obtain the [genesis.json](https://raw.githubusercontent.com/unionfi/genesis/main/union-testnet-1/genesis.json) before we can run the node.
+We'll need to set up a few configuration files and obtain the [genesis.json](https://raw.githubusercontent.com/unionlabs/genesis/main/union-testnet-1/genesis.json) before we can run the node.
 
 First, set some environment variables, which are used throughout initialization.
 
@@ -50,7 +50,7 @@ First, set some environment variables, which are used throughout initialization.
 export CHAIN_ID=union-testnet-1 # or union-1
 export MONIKER="Unionized Goblin"
 export KEY_NAME=alice
-export GENESIS_URL="https://raw.githubusercontent.com/unionfi/genesis/main/union-testnet-1/genesis.json"
+export GENESIS_URL="https://raw.githubusercontent.com/unionlabs/genesis/main/union-testnet-1/genesis.json"
 ```
 
 Then we'll have `uniond` initialize our data and configuration directories. By default `/User/{USER}/.uniond` is used.
@@ -73,7 +73,7 @@ seeds = "c649931f0ef98bc3e086bbfbcf3b04896a9ec7de@uniontestnet.poisonphang.com:2
 
 ### Genesis Configuration
 
-Download the [genesis.json](https://raw.githubusercontent.com/unionfi/genesis/main/union-testnet-1/genesis.json) and copy it to your `uniond` home directory.
+Download the [genesis.json](https://raw.githubusercontent.com/unionlabs/genesis/main/union-testnet-1/genesis.json) and copy it to your `uniond` home directory.
 
 ```
 curl $GENESIS_URL > ~/.union/config/genesis.json

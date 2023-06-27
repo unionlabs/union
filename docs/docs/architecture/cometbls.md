@@ -20,7 +20,7 @@ Boneh–Lynn–Shacham (BLS) signatures form the foundation of CometBLS. They ar
 
 - Zkp verification is much more efficient.
 
-Note that the Union validators do not produce zkps directly. This function is performed by [galois](./galois.md). Relayers can produce proofs themselves, or use Union as a distributed sequencing layer through the use of [proof claims](https://github.com/unionfi/union/discussions/41).
+Note that the Union validators do not produce zkps directly. This function is performed by [galois](./galois.md). Relayers can produce proofs themselves, or use Union as a distributed sequencing layer through the use of [proof claims](https://github.com/unionlabs/union/discussions/41).
 
 Under CometBLS, the Union network can scale to over a hundred validators without impacting performance or bridging latency.
 
@@ -38,7 +38,7 @@ CometBLS V2 will support improvements focussed on reducing proving times and pro
 
 ### Epoch-based Validator Rotation
 
-Reducing the number of light client updates required for the secure operation of the bridge is crucial to relayer profitability, which in turn reduces fees for regular users. [Epoch Staking](https://github.com/unionfi/union/discussions/14) is our current effort to minimize 'useless' light client updates and proof generation. It combines designs from Polkadot consensus with Cosmos' governance and security models.
+Reducing the number of light client updates required for the secure operation of the bridge is crucial to relayer profitability, which in turn reduces fees for regular users. [Epoch Staking](https://github.com/unionlabs/union/discussions/14) is our current effort to minimize 'useless' light client updates and proof generation. It combines designs from Polkadot consensus with Cosmos' governance and security models.
 
 ### MiMC Hashing
 

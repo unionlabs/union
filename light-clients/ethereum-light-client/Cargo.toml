@@ -1,7 +1,7 @@
 [package]
 name = "union-ethereum-lc"
 version = "0.1.0"
-authors = ["UnionFi Developers"]
+authors = ["Union Labs"]
 edition = "2021"
 publish = false
 license = "BSL-1.1"
@@ -28,7 +28,7 @@ schemars = { version = "0.8.3", default-features = false }
 serde = { version = "1.0.103", default-features = false, features = ["derive"] }
 serde-json-wasm = { version = "*", default-features = false }
 sha3 = { version = "0.10.8", default-features = false }
-ssz-rs = { package = "ssz_rs", git = "https://github.com/unionfi/ssz-rs", rev = "657972fca78fb8bbb68ad25aee91166d62fe6e85", default-features = false, features = [ "serde" ] }
+ssz-rs = { package = "ssz_rs", git = "https://github.com/unionlabs/ssz-rs", rev = "657972fca78fb8bbb68ad25aee91166d62fe6e85", default-features = false, features = [ "serde" ] }
 thiserror = { version = "1.0.26", default-features = false }
 tiny-keccak = { version = "2.0.2", default-features = false, features = ["keccak"] }
 wasm-light-client-types = { path = "../wasm-light-client-types" }

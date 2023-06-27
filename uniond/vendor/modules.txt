@@ -198,7 +198,7 @@ github.com/cockroachdb/apd/v2
 # github.com/coinbase/rosetta-sdk-go/types v1.0.0
 ## explicit; go 1.18
 github.com/coinbase/rosetta-sdk-go/types
-# github.com/cometbft/cometbft v0.37.1 => github.com/unionfi/cometbls v0.0.0-20230606200400-20834775a066
+# github.com/cometbft/cometbft v0.37.1 => github.com/unionlabs/cometbls v0.0.0-20230606200400-20834775a066
 ## explicit; go 1.20
 github.com/cometbft/cometbft/abci/client
 github.com/cometbft/cometbft/abci/example/code
@@ -306,7 +306,7 @@ github.com/confio/ics23/go
 # github.com/consensys/bavard v0.1.13
 ## explicit; go 1.15
 github.com/consensys/bavard
-# github.com/consensys/gnark-crypto v0.9.1-0.20230127122953-83736ef21d69 => github.com/unionfi/gnark-crypto v0.0.0-20230409222230-5346db050fea
+# github.com/consensys/gnark-crypto v0.9.1-0.20230127122953-83736ef21d69 => github.com/unionlabs/gnark-crypto v0.0.0-20230409222230-5346db050fea
 ## explicit; go 1.18
 github.com/consensys/gnark-crypto/ecc
 github.com/consensys/gnark-crypto/ecc/bn254
@@ -329,7 +329,7 @@ github.com/cosmos/btcutil/bech32
 github.com/cosmos/cosmos-proto
 github.com/cosmos/cosmos-proto/any
 github.com/cosmos/cosmos-proto/runtime
-# github.com/cosmos/cosmos-sdk v0.47.2 => github.com/unionfi/cosmos-sdk v0.0.0-20230606111321-dbdb28960bff
+# github.com/cosmos/cosmos-sdk v0.47.2 => github.com/unionlabs/cosmos-sdk v0.0.0-20230606111321-dbdb28960bff
 ## explicit; go 1.19
 github.com/cosmos/cosmos-sdk/baseapp
 github.com/cosmos/cosmos-sdk/client
@@ -620,7 +620,7 @@ github.com/cosmos/iavl/internal/bytes
 github.com/cosmos/iavl/internal/encoding
 github.com/cosmos/iavl/internal/logger
 github.com/cosmos/iavl/keyformat
-# github.com/cosmos/ibc-go/v7 v7.0.1 => github.com/unionfi/ibc-go/v7 v7.0.0-20230622093418-f1bf9b990248
+# github.com/cosmos/ibc-go/v7 v7.0.1 => github.com/unionlabs/ibc-go/v7 v7.0.0-20230622093418-f1bf9b990248
 ## explicit; go 1.19
 github.com/cosmos/ibc-go/v7/internal/errors
 github.com/cosmos/ibc-go/v7/internal/logging
@@ -1466,8 +1466,8 @@ rsc.io/tmplfunc/internal/parse
 # sigs.k8s.io/yaml v1.3.0
 ## explicit; go 1.12
 sigs.k8s.io/yaml
-# github.com/cometbft/cometbft => github.com/unionfi/cometbls v0.0.0-20230606200400-20834775a066
-# github.com/consensys/gnark-crypto => github.com/unionfi/gnark-crypto v0.0.0-20230409222230-5346db050fea
-# github.com/cosmos/cosmos-sdk => github.com/unionfi/cosmos-sdk v0.0.0-20230606111321-dbdb28960bff
-# github.com/cosmos/ibc-go/v7 => github.com/unionfi/ibc-go/v7 v7.0.0-20230622093418-f1bf9b990248
+# github.com/cometbft/cometbft => github.com/unionlabs/cometbls v0.0.0-20230606200400-20834775a066
+# github.com/consensys/gnark-crypto => github.com/unionlabs/gnark-crypto v0.0.0-20230409222230-5346db050fea
+# github.com/cosmos/cosmos-sdk => github.com/unionlabs/cosmos-sdk v0.0.0-20230606111321-dbdb28960bff
+# github.com/cosmos/ibc-go/v7 => github.com/unionlabs/ibc-go/v7 v7.0.0-20230622093418-f1bf9b990248
 # github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7

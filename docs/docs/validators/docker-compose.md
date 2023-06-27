@@ -15,7 +15,7 @@ version: "3.5"
 
 services:
   node:
-    image: ghcr.io/unionfi/uniond:latest
+    image: ghcr.io/unionlabs/uniond:latest
     volumes: ~/.uniond:/root/.uniond
     ports:
       - "127.0.0.1:26657:26657"

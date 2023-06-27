@@ -5471,13 +5471,13 @@
       "locked": {
         "lastModified": 1686662213,
         "narHash": "sha256-hl+7v7PG8Z3l2boNV0dUpX913mVz/pPO+VkLrh61y/o=",
-        "owner": "unionfi",
+        "owner": "unionlabs",
         "repo": "treefmt-nix",
         "rev": "41bf2c558cd29903d79efae08f19d8078b76388e",
         "type": "github"
       },
       "original": {
-        "owner": "unionfi",
+        "owner": "unionlabs",
         "repo": "treefmt-nix",
         "type": "github"
       }
@@ -5821,13 +5821,13 @@
       "locked": {
         "lastModified": 1686226538,
         "narHash": "sha256-zUNdAxDAswPVzYBIcyswojR2B/wDJTzAueyASPD054k=",
-        "owner": "unionfi",
+        "owner": "unionlabs",
         "repo": "treefmt-nix",
         "rev": "2424cb862928ca98fe634789eca4ff125d648602",
         "type": "github"
       },
       "original": {
-        "owner": "unionfi",
+        "owner": "unionlabs",
         "repo": "treefmt-nix",
         "type": "github"
       }
@@ -5848,12 +5848,12 @@
         "rev": "e6f0e521030957b91b6642eeab0b33d728c096d6",
         "revCount": 205,
         "type": "git",
-        "url": "https://github.com/unionfi/union"
+        "url": "https://github.com/unionlabs/union"
       },
       "original": {
         "ref": "v0.0.2",
         "type": "git",
-        "url": "https://github.com/unionfi/union"
+        "url": "https://github.com/unionlabs/union"
       }
     },
     "v0.0.2_2": {
@@ -5872,12 +5872,12 @@
         "rev": "e6f0e521030957b91b6642eeab0b33d728c096d6",
         "revCount": 205,
         "type": "git",
-        "url": "https://github.com/unionfi/union"
+        "url": "https://github.com/unionlabs/union"
       },
       "original": {
         "ref": "v0.0.2",
         "type": "git",
-        "url": "https://github.com/unionfi/union"
+        "url": "https://github.com/unionlabs/union"
       }
     },
     "v0.2.0": {
@@ -5895,12 +5895,12 @@
         "rev": "8b2d62abf1795a5e7531b4af7a4e1b995d482206",
         "revCount": 207,
         "type": "git",
-        "url": "https://github.com/unionfi/union"
+        "url": "https://github.com/unionlabs/union"
       },
       "original": {
         "rev": "8b2d62abf1795a5e7531b4af7a4e1b995d482206",
         "type": "git",
-        "url": "https://github.com/unionfi/union"
+        "url": "https://github.com/unionlabs/union"
       }
     },
     "v0.2.0_2": {
@@ -5918,12 +5918,12 @@
         "rev": "8b2d62abf1795a5e7531b4af7a4e1b995d482206",
         "revCount": 207,
         "type": "git",
-        "url": "https://github.com/unionfi/union"
+        "url": "https://github.com/unionlabs/union"
       },
       "original": {
         "rev": "8b2d62abf1795a5e7531b4af7a4e1b995d482206",
         "type": "git",
-        "url": "https://github.com/unionfi/union"
+        "url": "https://github.com/unionlabs/union"
       }
     },
     "v0.3.0": {
@@ -5942,12 +5942,12 @@
         "rev": "f6cb3286a8a9352e5b85667363a75b3548443d28",
         "revCount": 225,
         "type": "git",
-        "url": "https://github.com/unionfi/union"
+        "url": "https://github.com/unionlabs/union"
       },
       "original": {
         "ref": "v0.3.0",
         "type": "git",
-        "url": "https://github.com/unionfi/union"
+        "url": "https://github.com/unionlabs/union"
       }
     },
     "v0.3.0_2": {
@@ -5966,12 +5966,12 @@
         "rev": "f6cb3286a8a9352e5b85667363a75b3548443d28",
         "revCount": 225,
         "type": "git",
-        "url": "https://github.com/unionfi/union"
+        "url": "https://github.com/unionlabs/union"
       },
       "original": {
         "ref": "v0.3.0",
         "type": "git",
-        "url": "https://github.com/unionfi/union"
+        "url": "https://github.com/unionlabs/union"
       }
     },
     "v0.4.2": {
@@ -5990,12 +5990,12 @@
         "rev": "b6834c5afcc0d87f7964657f151b15e66e9d48ac",
         "revCount": 306,
         "type": "git",
-        "url": "https://github.com/unionfi/union"
+        "url": "https://github.com/unionlabs/union"
       },
       "original": {
         "ref": "release-v0.4.2",
         "type": "git",
-        "url": "https://github.com/unionfi/union"
+        "url": "https://github.com/unionlabs/union"
       }
     },
     "v0.4.2_2": {
@@ -6014,12 +6014,12 @@
         "rev": "b6834c5afcc0d87f7964657f151b15e66e9d48ac",
         "revCount": 306,
         "type": "git",
-        "url": "https://github.com/unionfi/union"
+        "url": "https://github.com/unionlabs/union"
       },
       "original": {
         "ref": "release-v0.4.2",
         "type": "git",
-        "url": "https://github.com/unionfi/union"
+        "url": "https://github.com/unionlabs/union"
       }
     },
     "v0.5.0": {
@@ -6043,12 +6043,12 @@
         "rev": "15c60427490c0c9ca1bf47a9d409842a940c3653",
         "revCount": 530,
         "type": "git",
-        "url": "https://github.com/unionfi/union"
+        "url": "https://github.com/unionlabs/union"
       },
       "original": {
         "ref": "release-v0.5.0",
         "type": "git",
-        "url": "https://github.com/unionfi/union"
+        "url": "https://github.com/unionlabs/union"
       }
     },
     "v0.5.0_2": {
@@ -6072,12 +6072,12 @@
         "rev": "15c60427490c0c9ca1bf47a9d409842a940c3653",
         "revCount": 530,
         "type": "git",
-        "url": "https://github.com/unionfi/union"
+        "url": "https://github.com/unionlabs/union"
       },
       "original": {
         "ref": "release-v0.5.0",
         "type": "git",
-        "url": "https://github.com/unionfi/union"
+        "url": "https://github.com/unionlabs/union"
       }
     },
     "v0.6.0": {
@@ -6101,12 +6101,12 @@
         "rev": "82ad5ef76b42e76a18617a614c1cdcd41d1fbe93",
         "revCount": 664,
         "type": "git",
-        "url": "https://github.com/unionfi/union"
+        "url": "https://github.com/unionlabs/union"
       },
       "original": {
         "ref": "release-v0.6.0",
         "type": "git",
-        "url": "https://github.com/unionfi/union"
+        "url": "https://github.com/unionlabs/union"
       }
     },
     "v0.6.0_2": {
@@ -6129,12 +6129,12 @@
         "rev": "84b8333c2699670ef87a6b515efa36c32050b4db",
         "revCount": 665,
         "type": "git",
-        "url": "https://github.com/unionfi/union"
+        "url": "https://github.com/unionlabs/union"
       },
       "original": {
         "ref": "release-v0.6.0",
         "type": "git",
-        "url": "https://github.com/unionfi/union"
+        "url": "https://github.com/unionlabs/union"
       }
     },
     "v0.6.0_3": {
@@ -6158,12 +6158,12 @@
         "rev": "82ad5ef76b42e76a18617a614c1cdcd41d1fbe93",
         "revCount": 664,
         "type": "git",
-        "url": "https://github.com/unionfi/union"
+        "url": "https://github.com/unionlabs/union"
       },
       "original": {
         "ref": "release-v0.6.0",
         "type": "git",
-        "url": "https://github.com/unionfi/union"
+        "url": "https://github.com/unionlabs/union"
       }
     },
     "v0_6_0": {
@@ -6186,12 +6186,12 @@
         "rev": "84b8333c2699670ef87a6b515efa36c32050b4db",
         "revCount": 665,
         "type": "git",
-        "url": "https://github.com/unionfi/union"
+        "url": "https://github.com/unionlabs/union"
       },
       "original": {
         "ref": "release-v0.6.0",
         "type": "git",
-        "url": "https://github.com/unionfi/union"
+        "url": "https://github.com/unionlabs/union"
       }
     },
     "v0_7_0": {
@@ -6214,12 +6214,12 @@
         "rev": "3aa2d2ff5e72ba3b4b3a83d898715202c500ea52",
         "revCount": 810,
         "type": "git",
-        "url": "https://github.com/unionfi/union"
+        "url": "https://github.com/unionlabs/union"
       },
       "original": {
         "ref": "release-v0.7.0",
         "type": "git",
-        "url": "https://github.com/unionfi/union"
+        "url": "https://github.com/unionlabs/union"
       }
     }
   },

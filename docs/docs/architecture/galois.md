@@ -7,7 +7,7 @@ title: "Galois"
 Galois is the umbrella term of Union's ZK efforts. It currently has one purpose: [consensus verification](../research/consensus-verification). We've built Galois around three fundamental principles:
 
 1. Fast execution: fast proving times equate to fast bridging and good user experience.
-2. Low-cost: zero-knowledge provers are computationally expensive to operate, and often require large machine clusters. [Galoisd](https://github.com/unionfi/union/blob/main/uniond/README.md) can run on a single machine and still outperform other zk bridges.
+2. Low-cost: zero-knowledge provers are computationally expensive to operate, and often require large machine clusters. [Galoisd](https://github.com/unionlabs/union/blob/main/uniond/README.md) can run on a single machine and still outperform other zk bridges.
 3. Decentralized: infrastructure operators do not need complex cloud architecture to operate a relayer and prover. Anyone can participate in the system.
 
 ## Architecture
@@ -22,7 +22,7 @@ sequenceDiagram
     Relayer->>Counterparty: Submit zkp for packet processing
 ```
 
-[Proof caching](https://github.com/unionfi/union/discussions/41) is currently in the pre-RFC stage. It ensures that the network does not perform redundant work and incentivizes decentralized proving, effectively using Union as a decentralized sequencers orchestration layer.
+[Proof caching](https://github.com/unionlabs/union/discussions/41) is currently in the pre-RFC stage. It ensures that the network does not perform redundant work and incentivizes decentralized proving, effectively using Union as a decentralized sequencers orchestration layer.
 
 ### Technologies
 

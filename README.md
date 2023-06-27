@@ -1,6 +1,6 @@
 # Union
 
-[![Build](https://github.com/UnionFi/union/actions/workflows/build.yml/badge.svg)](https://github.com/UnionFi/union/actions/workflows/build.yml)
+[![Build](https://github.com/unionlabs/union/actions/workflows/build.yml/badge.svg)](https://github.com/unionlabs/union/actions/workflows/build.yml)
 [![Docs](https://img.shields.io/badge/docs-main-blue)](https://docs-plum-one.vercel.app)
 
 Union is a trust-minimized, zero-knowledge bridging protocol, designed for censorship resistance, extremely high security, and usage in decentralized finance. It implements [IBC](https://github.com/cosmos/ibc) for compatibility with Cosmos chains and connects to Ethereum.
@@ -15,11 +15,11 @@ Union is designed to be completely decentralized. The upgradability of contracts
 
 This repository hosts a few core components of Union.
 
-- [`uniond`](./uniond): The node implementation, using [`CometBLS`](https://github.com/unionfi/cometbls).
+- [`uniond`](./uniond): The node implementation, using [`CometBLS`](https://github.com/unionlabs/cometbls).
 - [`unionpd`](./unionpd/): The zero-knowledge prover implementation.
 - [`unionvisor`](./unionvisor): A node supervisor intended for production usage.
 
-You can find these components in the [releases](https://github.com/unionfi/union/releases).
+You can find these components in the [releases](https://github.com/unionlabs/union/releases).
 
 ## Documentation
 

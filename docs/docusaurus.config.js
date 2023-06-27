@@ -18,7 +18,7 @@ const config = {
 
   baseUrl: "/",
 
-  organizationName: "unionfi",
+  organizationName: "unionlabs",
   projectName: "union",
 
   onBrokenLinks: "throw",
@@ -39,7 +39,7 @@ const config = {
           sidebarPath: require.resolve("./sidebars.js"),
           editUrl:
             // TODO(aeryz): point this to docs
-            "https://github.com/UnionFi/union",
+            "https://github.com/unionlabs/union",
         },
         blog: false,
         theme: {
@@ -79,7 +79,7 @@ const config = {
             items: [
               {
                 label: "GitHub",
-                href: "https://github.com/UnionFi/union",
+                href: "https://github.com/unionlabs/union",
               },
             ],
           },
