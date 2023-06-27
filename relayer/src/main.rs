@@ -422,7 +422,7 @@ where
             },
             version: Version {
                 identifier: "1".into(),
-                features: [Order::Unordered, Order::Ordered].into_iter().collect(),
+                features: [Order::Ordered, Order::Unordered].into_iter().collect(),
             },
             delay_period: 6,
         })
@@ -529,7 +529,7 @@ where
             counterparty_connection_id: ethereum_connection_id.clone(),
             version: Version {
                 identifier: "1".into(),
-                features: [Order::Unordered, Order::Ordered].into_iter().collect(),
+                features: [Order::Ordered, Order::Unordered].into_iter().collect(),
             },
             client_state: ethereum_client_state_proof.state,
             proof_height: ethereum_connection_state_proof.proof_height,

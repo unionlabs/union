@@ -67,7 +67,7 @@ func (k Keeper) GetSelfConsensusState(ctx sdk.Context, height exported.Height, c
 
 	consensusState := &wasmtypes.ConsensusState{
 		Data:      wasmData,
-		Timestamp: uint64(histInfo.Header.Time.Second()),
+		Timestamp: uint64(histInfo.Header.Time.Unix()),
 	}
 
 	return consensusState, nil
