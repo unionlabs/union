@@ -14,6 +14,7 @@ import "solidity-bytes-utils/BytesLib.sol";
 import "../lib/CometblsHelp.sol";
 import "../lib/ICS23.sol";
 import "../core/IZKVerifier.sol";
+import "../core/IMembershipVerifier.sol";
 
 contract CometblsClient is ILightClient {
     using BytesLib for bytes;
@@ -34,11 +35,13 @@ contract CometblsClient is ILightClient {
     mapping(bytes32 => ProcessedMoment) internal processedMoments;
 
     address internal ibcHandler;
-    IZKVerifier internal verifier;
+    IZKVerifier internal zkVerifier;
+    IMembershipVerifier internal membershipVerifier;
 
-    constructor(address ibcHandler_, IZKVerifier verifier_) {
+    constructor(address ibcHandler_, IZKVerifier zkVerifier_, IMembershipVerifier membershipVerifier_) {
         ibcHandler = ibcHandler_;
-        verifier = verifier_;
+        zkVerifier = zkVerifier_;
+        membershipVerifier = membershipVerifier_;
     }
 
     function stateIndex(string calldata clientId, uint128 height) internal pure returns (bytes32) {
@@ -164,7 +167,7 @@ contract CometblsClient is ILightClient {
             header.signed_header.commit.toCanonicalVote(clientState.chain_id, expectedBlockHash);
         bytes memory signedVote = Encoder.encodeDelim(TendermintTypesCanonicalVote.encode(vote));
 
-        ok = verifier.verifyZKP(
+        ok = zkVerifier.verifyZKP(
             trustedValidatorsHash,
             untrustedValidatorsHash,
             signedVote,
@@ -214,10 +217,18 @@ contract CometblsClient is ILightClient {
         uint64 delayBlockPeriod,
         bytes calldata proof,
         bytes memory prefix,
-        bytes calldata path,
+        bytes[] calldata path,
         bytes calldata value
     ) external view override returns (bool) {
-        return true;
+        OptimizedConsensusState memory consensusState =
+            consensusStates[stateIndex(clientId, height.toUint128())];
+        return membershipVerifier.verifyMembership(
+            abi.encodePacked(consensusState.root),
+            proof,
+            prefix,
+            path,
+            value
+        );
     }
 
     function verifyNonMembership(
@@ -227,7 +238,7 @@ contract CometblsClient is ILightClient {
         uint64 delayBlockPeriod,
         bytes calldata proof,
         bytes calldata prefix,
-        bytes calldata path
+        bytes[] calldata path
     ) external returns (bool) {
         return true;
     }

@@ -141,7 +141,7 @@ contract MockClient is ILightClient {
         uint64,
         bytes calldata proof,
         bytes memory,
-        bytes memory,
+        bytes[] memory,
         bytes calldata value
     ) external view override returns (bool) {
         require(consensusStates[clientId][height.toUint128()].timestamp != 0, "consensus state not found");
@@ -159,8 +159,8 @@ contract MockClient is ILightClient {
         uint64,
         bytes calldata proof,
         bytes memory,
-        bytes memory
-    ) external view override returns (bool) {
+        bytes[] memory
+    ) external view returns (bool) {
         require(consensusStates[clientId][height.toUint128()].timestamp != 0, "consensus state not found");
         return proof.length == 0;
     }

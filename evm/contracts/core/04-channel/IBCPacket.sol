@@ -100,7 +100,7 @@ contract IBCPacket is IBCStore, IIBCPacket {
                 connection,
                 msg_.proofHeight,
                 msg_.proof,
-                IBCCommitment.packetCommitmentPath(
+                IBCCommitment.packetCommitmentPathMerkle(
                     msg_.packet.source_port, msg_.packet.source_channel, msg_.packet.sequence
                 ),
                 sha256(
@@ -204,7 +204,7 @@ contract IBCPacket is IBCStore, IIBCPacket {
                 connection,
                 msg_.proofHeight,
                 msg_.proof,
-                IBCCommitment.packetAcknowledgementCommitmentPath(
+                IBCCommitment.packetAcknowledgementCommitmentPathMerkle(
                     msg_.packet.destination_port, msg_.packet.destination_channel, msg_.packet.sequence
                 ),
                 sha256(msg_.acknowledgement)
@@ -233,7 +233,7 @@ contract IBCPacket is IBCStore, IIBCPacket {
         IbcCoreConnectionV1ConnectionEnd.Data storage connection,
         IbcCoreClientV1Height.Data calldata height,
         bytes calldata proof,
-        bytes memory path,
+        bytes[] memory path,
         bytes32 commitmentBytes
     ) private returns (bool) {
         return getClient(connection.client_id).verifyMembership(
@@ -252,7 +252,7 @@ contract IBCPacket is IBCStore, IIBCPacket {
         IbcCoreConnectionV1ConnectionEnd.Data storage connection,
         IbcCoreClientV1Height.Data calldata height,
         bytes calldata proof,
-        bytes memory path,
+        bytes[] memory path,
         bytes32 acknowledgementCommitmentBytes
     ) private returns (bool) {
         return getClient(connection.client_id).verifyMembership(

@@ -9,6 +9,14 @@ library IBCCommitment {
         return abi.encodePacked("clients/", clientId, "/clientState");
     }
 
+    function clientStatePathMerkle(string memory clientId) internal pure returns (bytes[] memory) {
+        bytes[] memory path = new bytes[](3);
+        path[0] = bytes("clients");
+        path[1] = bytes(clientId);
+        path[2] = bytes("clientState");
+        return path;
+    }
+
     function consensusStatePath(string memory clientId, uint64 revisionNumber, uint64 revisionHeight)
         internal
         pure
@@ -24,12 +32,42 @@ library IBCCommitment {
         );
     }
 
+    function consensusStatePathMerkle(string memory clientId, uint64 revisionNumber, uint64 revisionHeight)
+        internal
+        pure
+        returns (bytes[] memory)
+    {
+        bytes[] memory path = new bytes[](4);
+        path[0] = bytes("clients");
+        path[1] = bytes(clientId);
+        path[2] = bytes("consensusStates");
+        path[3] = bytes(abi.encodePacked(LibString.toString(revisionNumber), "-", LibString.toString(revisionHeight)));
+        return path;
+    }
+
     function connectionPath(string memory connectionId) internal pure returns (bytes memory) {
         return abi.encodePacked("connections/", connectionId);
     }
 
+    function connectionPathMerkle(string memory connectionId) internal pure returns (bytes[] memory) {
+        bytes[] memory path = new bytes[](2);
+        path[0] = bytes("connections");
+        path[1] = bytes(connectionId);
+        return path;
+    }
+
     function channelPath(string memory portId, string memory channelId) internal pure returns (bytes memory) {
         return abi.encodePacked("channelEnds/ports/", portId, "/channels/", channelId);
+    }
+
+    function channelPathMerkle(string memory portId, string memory channelId) internal pure returns (bytes[] memory) {
+        bytes[] memory path = new bytes[](5);
+        path[0] = bytes("channelEnds");
+        path[1] = bytes("ports");
+        path[2] = bytes(portId);
+        path[3] = bytes("channels");
+        path[4] = bytes(channelId);
+        return path;
     }
 
     function packetCommitmentPath(string memory portId, string memory channelId, uint64 sequence)
@@ -42,6 +80,22 @@ library IBCCommitment {
         );
     }
 
+    function packetCommitmentPathMerkle(string memory portId, string memory channelId, uint64 sequence)
+        internal
+        pure
+        returns (bytes[] memory)
+    {
+        bytes[] memory path = new bytes[](7);
+        path[0] = bytes("commitments");
+        path[1] = bytes("ports");
+        path[2] = bytes(portId);
+        path[3] = bytes("channels");
+        path[4] = bytes(channelId);
+        path[5] = bytes("sequences");
+        path[6] = bytes(LibString.toString(sequence));
+        return path;
+    }
+
     function packetAcknowledgementCommitmentPath(string memory portId, string memory channelId, uint64 sequence)
         internal
         pure
@@ -49,6 +103,22 @@ library IBCCommitment {
     {
         return
             abi.encodePacked("acks/ports/", portId, "/channels/", channelId, "/sequences/", LibString.toString(sequence));
+    }
+
+    function packetAcknowledgementCommitmentPathMerkle(string memory portId, string memory channelId, uint64 sequence)
+        internal
+        pure
+        returns (bytes[] memory)
+    {
+        bytes[] memory path = new bytes[](7);
+        path[0] = bytes("acks");
+        path[1] = bytes("ports");
+        path[2] = bytes(portId);
+        path[3] = bytes("channels");
+        path[4] = bytes(channelId);
+        path[5] = bytes("sequences");
+        path[6] = bytes(LibString.toString(sequence));
+        return path;
     }
 
     function packetReceiptCommitmentPath(string memory portId, string memory channelId, uint64 sequence)

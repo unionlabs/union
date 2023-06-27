@@ -76,7 +76,7 @@ contract IBCConnection is IBCStore, IIBCConnectionHandshake {
             verifyClientState(
                 connection,
                 msg_.proofHeight,
-                IBCCommitment.clientStatePath(connection.counterparty.client_id),
+                IBCCommitment.clientStatePathMerkle(connection.counterparty.client_id),
                 msg_.proofClient,
                 msg_.clientStateBytes
             ),
@@ -127,7 +127,7 @@ contract IBCConnection is IBCStore, IIBCConnectionHandshake {
             verifyClientState(
                 connection,
                 msg_.proofHeight,
-                IBCCommitment.clientStatePath(connection.counterparty.client_id),
+                IBCCommitment.clientStatePathMerkle(connection.counterparty.client_id),
                 msg_.proofClient,
                 msg_.clientStateBytes
             ),
@@ -184,7 +184,7 @@ contract IBCConnection is IBCStore, IIBCConnectionHandshake {
     function verifyClientState(
         IbcCoreConnectionV1ConnectionEnd.Data storage connection,
         IbcCoreClientV1Height.Data memory height,
-        bytes memory path,
+        bytes[] memory path,
         bytes memory proof,
         bytes memory clientStateBytes
     ) private returns (bool) {
@@ -207,7 +207,7 @@ contract IBCConnection is IBCStore, IIBCConnectionHandshake {
             0,
             proof,
             connection.counterparty.prefix.key_prefix,
-            IBCCommitment.consensusStatePath(
+            IBCCommitment.consensusStatePathMerkle(
                 connection.counterparty.client_id, consensusHeight.revision_number, consensusHeight.revision_height
             ),
             consensusStateBytes
@@ -228,7 +228,7 @@ contract IBCConnection is IBCStore, IIBCConnectionHandshake {
             0,
             proof,
             connection.counterparty.prefix.key_prefix,
-            IBCCommitment.connectionPath(connectionId),
+            IBCCommitment.connectionPathMerkle(connectionId),
             IbcCoreConnectionV1ConnectionEnd.encode(counterpartyConnection)
         );
     }

@@ -16,6 +16,7 @@ import "../../contracts/lib/CometblsHelp.sol";
 import "../../contracts/lib/Encoder.sol";
 import "../../contracts/clients/TestnetVerifier.sol";
 import "../../contracts/clients/CometblsClient.sol";
+import "../../contracts/clients/ICS23MembershipVerifier.sol";
 import "./TestableIBCHandler.t.sol";
 
 contract IBCFullTest is Test {
@@ -48,7 +49,7 @@ contract IBCFullTest is Test {
         address ibcChannelHandshake = address(new IBCChannelHandshake());
         address ibcPacket = address(new IBCPacket());
         handler = new TestableIBCHandler(ibcClient, ibcConnection, ibcChannelHandshake, ibcPacket);
-        handler.registerClient(CLIENT_TYPE, new CometblsClient(address(handler), new TestnetVerifier()));
+        handler.registerClient(CLIENT_TYPE, new CometblsClient(address(handler), new TestnetVerifier(), new ICS23MembershipVerifier()));
         setUpClient();
         setUpConnection();
         setUpChannel();
