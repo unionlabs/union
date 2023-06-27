@@ -1,6 +1,7 @@
 use crate::{
     consensus_state::TrustedConsensusState,
     context::LightClientContext,
+    custom_query::{query_aggregate_public_keys, CustomQuery, VerificationContext},
     errors::Error,
     eth_encoding::generate_commitment_key,
     header::Header as EthHeader,
@@ -9,13 +10,13 @@ use crate::{
     update::apply_light_client_update,
 };
 use cosmwasm_std::{
-    entry_point, to_binary, Binary, Deps, DepsMut, Env, MessageInfo, QueryRequest, QueryResponse,
-    Response, StdError, StdResult,
+    entry_point, to_binary, Binary, Deps, DepsMut, Env, MessageInfo, QueryResponse, Response,
+    StdError, StdResult,
 };
 use ethabi::ethereum_types::U256 as ethabi_U256;
 use ethereum_verifier::{
     primitives::{ExecutionAddress, Hash32, Slot},
-    validate_light_client_update, verify_account_storage_root, verify_storage_proof, BlsVerify,
+    validate_light_client_update, verify_account_storage_root, verify_storage_proof,
 };
 use ibc::core::ics24_host::Path;
 use prost::Message;
@@ -172,56 +173,6 @@ pub fn do_verify_membership(
     .map_err(|e| Error::Verification(e.to_string()))
 }
 
-impl cosmwasm_std::CustomQuery for CustomQuery {}
-
-struct VerificationContext<'a> {
-    deps: Deps<'a, CustomQuery>,
-}
-
-#[derive(serde::Serialize, serde::Deserialize, Clone)]
-#[serde(rename_all = "snake_case")]
-pub enum CustomQuery {
-    AggregateVerify {
-        public_keys: Vec<Binary>,
-        message: Binary,
-        signature: Binary,
-    },
-
-    Aggregate {
-        public_keys: Vec<Binary>,
-    },
-}
-
-impl<'a> BlsVerify for VerificationContext<'a> {
-    fn fast_aggregate_verify(
-        &self,
-        public_keys: Vec<Vec<u8>>,
-        msg: Vec<u8>,
-        signature: Vec<u8>,
-    ) -> Result<(), ethereum_verifier::Error> {
-        let request: QueryRequest<CustomQuery> =
-            QueryRequest::Custom(CustomQuery::AggregateVerify {
-                public_keys: public_keys.into_iter().map(Into::into).collect(),
-                message: msg.into(),
-                signature: signature.into(),
-            });
-
-        let is_valid: bool = self
-            .deps
-            .querier
-            .query(&request)
-            .map_err(|e| ethereum_verifier::Error::CustomError(e.to_string()))?;
-
-        if is_valid {
-            Ok(())
-        } else {
-            Err(ethereum_verifier::Error::CustomError(
-                "returned false".to_string(),
-            ))
-        }
-    }
-}
-
 pub fn update_header(
     mut deps: DepsMut<CustomQuery>,
     header: EthHeader,
@@ -235,31 +186,20 @@ pub fn update_header(
             ),
         )?;
 
-    let aggregate_public_key = {
-        let request: QueryRequest<CustomQuery> = QueryRequest::Custom(CustomQuery::Aggregate {
-            public_keys: trusted_sync_committee
-                .sync_committee
-                .public_keys
-                .iter()
-                .map(|pk| pk.as_ref().clone().into())
-                .collect(),
-        });
-
-        let response: Binary = deps
-            .querier
-            .query(&request)
-            .map_err(|e| Error::custom_query(e.to_string()))?;
-
-        response.0
-    };
+    let aggregate_public_key = query_aggregate_public_keys(
+        deps.as_ref(),
+        trusted_sync_committee
+            .sync_committee
+            .public_keys
+            .iter()
+            .map(|pk| pk.as_ref().clone().into())
+            .collect(),
+    )?;
 
     let trusted_consensus_state = TrustedConsensusState::new(
         consensus_state.clone(),
         trusted_sync_committee.sync_committee,
-        aggregate_public_key
-            .as_slice()
-            .try_into()
-            .map_err(|_| Error::custom_query("Invalid public key type"))?,
+        aggregate_public_key,
         trusted_sync_committee.is_next,
     )?;
 
@@ -353,10 +293,13 @@ mod test {
     use super::*;
     use crate::state::{save_wasm_client_state, save_wasm_consensus_state};
     use cosmwasm_std::{
-        testing::{mock_dependencies, BankQuerier, MockApi, MockQuerier, MockStorage},
+        testing::{
+            mock_dependencies, BankQuerier, MockApi, MockQuerier, MockQuerierCustomHandlerResult,
+            MockStorage,
+        },
         Empty, OwnedDeps,
     };
-    use ethereum_verifier::crypto::BlsPublicKey;
+    use ethereum_verifier::crypto::{fast_aggregate_verify, BlsPublicKey};
     use ibc::{
         core::{
             ics02_client::client_type::ClientType,
@@ -518,6 +461,19 @@ mod test {
     //     }
     // }
 
+    // fn custom_query_handler(query: CustomQuery) -> MockQuerierCustomHandlerResult {
+    //     match query {
+    //         CustomQuery::AggregateVerify {
+    //             public_keys,
+    //             message,
+    //             signature,
+    //         } => {
+    //             fast_aggregate_verify(public_keys.iter().map(Into::into).collect(), msg, signature)
+    //         }
+    //         CustomQuery::Aggregate { public_keys } => todo!(),
+    //     }
+    // }
+
     // fn prepare_for_fail_tests() -> (
     //     OwnedDeps<MockStorage, MockApi, MockQuerier<CustomQuery>, CustomQuery>,
     //     EthHeader,
@@ -525,12 +481,7 @@ mod test {
     //     let mut deps = OwnedDeps::<_, _, _, CustomQuery> {
     //         storage: MockStorage::default(),
     //         api: MockApi::default(),
-    //         querier: MockQuerier::<CustomQuery> {
-    //             bank: BankQuerier::default(),
-    //             wasm: WasmQuery,
-    //             ibc: todo!(),
-    //             custom_handler: todo!(),
-    //         },
+    //         querier: MockQuerier::<CustomQuery>::new(&[]).with_custom_handler(Cust),
     //         custom_query_type: PhantomData,
     //     };
 
