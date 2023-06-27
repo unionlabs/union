@@ -18,7 +18,7 @@ contract ICS23MembershipVerifier is IMembershipVerifier {
     ) external view override returns (bool) {
         bytes[] memory fullPath = new bytes[](1 + path.length);
         fullPath[0] = prefix;
-        for(uint256 i = 0; i < path.length; i++) {
+        for (uint256 i = 0; i < path.length; i++) {
             fullPath[i + 1] = path[i];
         }
         // This call reverts if any verification issue happen

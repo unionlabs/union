@@ -13,15 +13,14 @@ import "./lib/CometblsHelp.sol";
 
 contract Glue {
     function typesTelescope(
-      UnionIbcLightclientsCometblsV1ClientState.Data memory,
-      UnionIbcLightclientsCometblsV1ConsensusState.Data memory,
-      UnionIbcLightclientsCometblsV1Header.Data memory,
-      TendermintTypesHeader.Data memory,
-      TendermintTypesCommit.Data memory,
-      IbcCoreClientV1Height.Data memory,
-      OptimizedConsensusState memory,
-      ProcessedMoment memory,
-      TendermintTypesCanonicalVote.Data memory
-    ) public pure {
-    }
+        UnionIbcLightclientsCometblsV1ClientState.Data memory,
+        UnionIbcLightclientsCometblsV1ConsensusState.Data memory,
+        UnionIbcLightclientsCometblsV1Header.Data memory,
+        TendermintTypesHeader.Data memory,
+        TendermintTypesCommit.Data memory,
+        IbcCoreClientV1Height.Data memory,
+        OptimizedConsensusState memory,
+        ProcessedMoment memory,
+        TendermintTypesCanonicalVote.Data memory
+    ) public pure {}
 }

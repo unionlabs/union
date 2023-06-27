@@ -1,19 +1,16 @@
 pragma solidity ^0.8.18;
 
 library MerkleTree {
-
     uint8 constant LEAF_PREFIX = 0x00;
     uint8 constant INNER_PREFIX = 0x01;
 
-   function hashFromByteSlices(bytes[] memory data)
-        internal
-        pure
-        returns (bytes32)
-   {
-       return merkleRootHash(data, 0, data.length);
-   }
+    function hashFromByteSlices(
+        bytes[] memory data
+    ) internal pure returns (bytes32) {
+        return merkleRootHash(data, 0, data.length);
+    }
 
-  /**
+    /**
      * @dev returns empty hash
      */
     function emptyHash() internal pure returns (bytes32) {
@@ -31,7 +28,10 @@ library MerkleTree {
     /**
      * @dev returns tmhash(0x01 || left || right)
      */
-    function innerHash(bytes32 leaf, bytes32 right) internal pure returns (bytes32) {
+    function innerHash(
+        bytes32 leaf,
+        bytes32 right
+    ) internal pure returns (bytes32) {
         return sha256(abi.encodePacked(INNER_PREFIX, leaf, right));
     }
 
@@ -58,20 +58,26 @@ library MerkleTree {
      * @dev computes a Merkle tree where the leaves are the byte slice in the provided order
      * Follows RFC-696
      */
-    function merkleRootHash(bytes[] memory data, uint start, uint total) internal pure returns (bytes32) {
+    function merkleRootHash(
+        bytes[] memory data,
+        uint start,
+        uint total
+    ) internal pure returns (bytes32) {
         if (total == 0) {
             return emptyHash();
         } else if (total == 1) {
             return leafHash(data[start]);
-        }  else {
+        } else {
             uint k = getSplitPoint(total);
             bytes32 left = merkleRootHash(data, start, k); // validators[:k]
-            bytes32 right = merkleRootHash(data, start+k, total-k); // validators[k:]
+            bytes32 right = merkleRootHash(data, start + k, total - k); // validators[k:]
             return innerHash(left, right);
         }
     }
 
-    function optimizedBlockRoot(bytes32[14] memory data) internal pure returns (bytes32) {
+    function optimizedBlockRoot(
+        bytes32[14] memory data
+    ) internal pure returns (bytes32) {
         bytes32 x0 = innerHash(data[0], data[1]);
         bytes32 x1 = innerHash(data[2], data[3]);
         bytes32 x2 = innerHash(data[4], data[5]);

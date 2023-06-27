@@ -24,7 +24,10 @@ abstract contract IBCAppBase is Context, IIBCModule {
      * @dev Throws if the sender is not the IBC contract.
      */
     function _checkIBC() internal view virtual {
-        require(ibcAddress() == _msgSender(), "_checkIBC: caller is not the IBC contract");
+        require(
+            ibcAddress() == _msgSender(),
+            "_checkIBC: caller is not the IBC contract"
+        );
     }
 
     /**
@@ -61,40 +64,51 @@ abstract contract IBCAppBase is Context, IIBCModule {
      *
      * NOTE: You should apply an `onlyIBC` modifier to the function if a derived contract overrides it.
      */
-    function onChanOpenAck(string calldata portId, string calldata channelId, string calldata counterpartyVersion)
-        external
-        virtual
-        override
-        onlyIBC
-    {}
+    function onChanOpenAck(
+        string calldata portId,
+        string calldata channelId,
+        string calldata counterpartyVersion
+    ) external virtual override onlyIBC {}
 
     /**
      * @dev See IIBCModule-onChanOpenConfirm
      *
      * NOTE: You should apply an `onlyIBC` modifier to the function if a derived contract overrides it.
      */
-    function onChanOpenConfirm(string calldata portId, string calldata channelId) external virtual override onlyIBC {}
+    function onChanOpenConfirm(
+        string calldata portId,
+        string calldata channelId
+    ) external virtual override onlyIBC {}
 
     /**
      * @dev See IIBCModule-onChanCloseInit
      *
      * NOTE: You should apply an `onlyIBC` modifier to the function if a derived contract overrides it.
      */
-    function onChanCloseInit(string calldata portId, string calldata channelId) external virtual override onlyIBC {}
+    function onChanCloseInit(
+        string calldata portId,
+        string calldata channelId
+    ) external virtual override onlyIBC {}
 
     /**
      * @dev See IIBCModule-onChanCloseConfirm
      *
      * NOTE: You should apply an `onlyIBC` modifier to the function if a derived contract overrides it.
      */
-    function onChanCloseConfirm(string calldata portId, string calldata channelId) external virtual override onlyIBC {}
+    function onChanCloseConfirm(
+        string calldata portId,
+        string calldata channelId
+    ) external virtual override onlyIBC {}
 
     /**
      * @dev See IIBCModule-onRecvPacket
      *
      * NOTE: You should apply an `onlyIBC` modifier to the function if a derived contract overrides it.
      */
-    function onRecvPacket(IbcCoreChannelV1Packet.Data calldata, address)
+    function onRecvPacket(
+        IbcCoreChannelV1Packet.Data calldata,
+        address
+    )
         external
         virtual
         override
@@ -107,5 +121,9 @@ abstract contract IBCAppBase is Context, IIBCModule {
      *
      * NOTE: You should apply an `onlyIBC` modifier to the function if a derived contract overrides it.
      */
-    function onAcknowledgementPacket(IbcCoreChannelV1Packet.Data calldata, bytes calldata, address) external virtual override onlyIBC {}
+    function onAcknowledgementPacket(
+        IbcCoreChannelV1Packet.Data calldata,
+        bytes calldata,
+        address
+    ) external virtual override onlyIBC {}
 }

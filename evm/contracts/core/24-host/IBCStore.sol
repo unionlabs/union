@@ -13,12 +13,15 @@ abstract contract IBCStore {
     mapping(string => address) internal clientRegistry; // clientType => clientImpl
     mapping(string => string) internal clientTypes; // clientID => clientType
     mapping(string => address) internal clientImpls; // clientID => clientImpl
-    mapping(string => IbcCoreConnectionV1ConnectionEnd.Data) internal connections;
-    mapping(string => mapping(string => IbcCoreChannelV1Channel.Data)) internal channels;
+    mapping(string => IbcCoreConnectionV1ConnectionEnd.Data)
+        internal connections;
+    mapping(string => mapping(string => IbcCoreChannelV1Channel.Data))
+        internal channels;
     mapping(string => mapping(string => uint64)) internal nextSequenceSends;
     mapping(string => mapping(string => uint64)) internal nextSequenceRecvs;
     mapping(string => mapping(string => uint64)) internal nextSequenceAcks;
-    mapping(string => mapping(string => mapping(uint64 => uint8))) internal packetReceipts;
+    mapping(string => mapping(string => mapping(uint64 => uint8)))
+        internal packetReceipts;
     mapping(bytes => address[]) internal capabilities;
 
     // Host parameters
@@ -30,7 +33,9 @@ abstract contract IBCStore {
     uint64 internal nextChannelSequence;
 
     // Storage accessors
-    function getClient(string memory clientId) internal view returns (ILightClient) {
+    function getClient(
+        string memory clientId
+    ) internal view returns (ILightClient) {
         address clientImpl = clientImpls[clientId];
         require(clientImpl != address(0), "IBCStore: client not found");
         return ILightClient(clientImpl);

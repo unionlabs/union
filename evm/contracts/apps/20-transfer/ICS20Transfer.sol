@@ -17,42 +17,58 @@ abstract contract ICS20Transfer is IBCAppBase {
 
     mapping(string => address) channelEscrowAddresses;
 
-    function onRecvPacket(IbcCoreChannelV1Packet.Data calldata packet, address relayer)
-        external
-        virtual
-        override
-        onlyIBC
-        returns (bytes memory acknowledgement)
-    {
-        TransferPacket memory transferPacket = TransferPacketHelp.decode(packet.data);
+    function onRecvPacket(
+        IbcCoreChannelV1Packet.Data calldata packet,
+        address relayer
+    ) external virtual override onlyIBC returns (bytes memory acknowledgement) {
+        TransferPacket memory transferPacket = TransferPacketHelp.decode(
+            packet.data
+        );
         strings.slice memory denom = transferPacket.denom.toSlice();
-        strings.slice memory trimedDenom =
-            transferPacket.denom.toSlice().beyond(_makeDenomPrefix(packet.source_port, packet.source_channel));
+        strings.slice memory trimedDenom = transferPacket
+            .denom
+            .toSlice()
+            .beyond(
+                _makeDenomPrefix(packet.source_port, packet.source_channel)
+            );
         if (!denom.equals(trimedDenom)) {
             // receiver is source chain
-            return _newAcknowledgement(
-                _transferFrom(
-                    _getEscrowAddress(packet.destination_channel),
-                    bytes(transferPacket.receiver).toAddress(0),
-                    trimedDenom.toString(),
-                    transferPacket.amount
-                )
-            );
+            return
+                _newAcknowledgement(
+                    _transferFrom(
+                        _getEscrowAddress(packet.destination_channel),
+                        bytes(transferPacket.receiver).toAddress(0),
+                        trimedDenom.toString(),
+                        transferPacket.amount
+                    )
+                );
         } else {
-            string memory prefixedDenom =
-                _makeDenomPrefix(packet.destination_port, packet.destination_channel).concat(denom);
-            return _newAcknowledgement(_mint(bytes(transferPacket.receiver).toAddress(0), prefixedDenom, transferPacket.amount));
+            string memory prefixedDenom = _makeDenomPrefix(
+                packet.destination_port,
+                packet.destination_channel
+            ).concat(denom);
+            return
+                _newAcknowledgement(
+                    _mint(
+                        bytes(transferPacket.receiver).toAddress(0),
+                        prefixedDenom,
+                        transferPacket.amount
+                    )
+                );
         }
     }
 
-    function onAcknowledgementPacket(IbcCoreChannelV1Packet.Data calldata packet, bytes calldata acknowledgement, address relayer)
-        external
-        virtual
-        override
-        onlyIBC
-    {
+    function onAcknowledgementPacket(
+        IbcCoreChannelV1Packet.Data calldata packet,
+        bytes calldata acknowledgement,
+        address relayer
+    ) external virtual override onlyIBC {
         if (!_isSuccessAcknowledgement(acknowledgement)) {
-            _refundTokens(TransferPacketHelp.decode(packet.data), packet.source_port, packet.source_channel);
+            _refundTokens(
+                TransferPacketHelp.decode(packet.data),
+                packet.source_port,
+                packet.source_channel
+            );
         }
     }
 
@@ -81,29 +97,47 @@ abstract contract ICS20Transfer is IBCAppBase {
         channelEscrowAddresses[channelId] = address(this);
     }
 
-    function onChanOpenAck(string calldata portId, string calldata channelId, string calldata counterpartyVersion)
-        external
-        virtual
-        override
-        onlyIBC
-    {}
+    function onChanOpenAck(
+        string calldata portId,
+        string calldata channelId,
+        string calldata counterpartyVersion
+    ) external virtual override onlyIBC {}
 
-    function onChanOpenConfirm(string calldata portId, string calldata channelId) external virtual override onlyIBC {}
+    function onChanOpenConfirm(
+        string calldata portId,
+        string calldata channelId
+    ) external virtual override onlyIBC {}
 
-    function onChanCloseInit(string calldata portId, string calldata channelId) external virtual override onlyIBC {}
+    function onChanCloseInit(
+        string calldata portId,
+        string calldata channelId
+    ) external virtual override onlyIBC {}
 
-    function onChanCloseConfirm(string calldata portId, string calldata channelId) external virtual override onlyIBC {}
+    function onChanCloseConfirm(
+        string calldata portId,
+        string calldata channelId
+    ) external virtual override onlyIBC {}
 
     /// Internal functions ///
 
-    function _transferFrom(address sender, address receiver, string memory denom, uint256 amount)
-        internal
-        virtual
-        returns (bool);
+    function _transferFrom(
+        address sender,
+        address receiver,
+        string memory denom,
+        uint256 amount
+    ) internal virtual returns (bool);
 
-    function _mint(address account, string memory denom, uint256 amount) internal virtual returns (bool);
+    function _mint(
+        address account,
+        string memory denom,
+        uint256 amount
+    ) internal virtual returns (bool);
 
-    function _burn(address account, string memory denom, uint256 amount) internal virtual returns (bool);
+    function _burn(
+        address account,
+        string memory denom,
+        uint256 amount
+    ) internal virtual returns (bool);
 
     function _sendPacket(
         TransferPacket memory packet,
@@ -114,19 +148,26 @@ abstract contract ICS20Transfer is IBCAppBase {
         IBCHandler(ibcAddress()).sendPacket(
             sourcePort,
             sourceChannel,
-            IbcCoreClientV1Height.Data({revision_number: 0, revision_height: timeoutHeight}),
+            IbcCoreClientV1Height.Data({
+                revision_number: 0,
+                revision_height: timeoutHeight
+            }),
             0,
             TransferPacketHelp.encode(packet)
         );
     }
 
-    function _getEscrowAddress(string memory sourceChannel) internal view virtual returns (address) {
+    function _getEscrowAddress(
+        string memory sourceChannel
+    ) internal view virtual returns (address) {
         address escrow = channelEscrowAddresses[sourceChannel];
         require(escrow != address(0), "escrow address must exist");
         return escrow;
     }
 
-    function _newAcknowledgement(bool success) internal pure virtual returns (bytes memory) {
+    function _newAcknowledgement(
+        bool success
+    ) internal pure virtual returns (bytes memory) {
         bytes memory acknowledgement = new bytes(1);
         if (success) {
             acknowledgement[0] = 0x01;
@@ -136,8 +177,13 @@ abstract contract ICS20Transfer is IBCAppBase {
         return acknowledgement;
     }
 
-    function _isSuccessAcknowledgement(bytes memory acknowledgement) internal pure virtual returns (bool) {
-        require(acknowledgement.length == 1, "acknowledgement must be a single byte");
+    function _isSuccessAcknowledgement(
+        bytes memory acknowledgement
+    ) internal pure virtual returns (bool) {
+        require(
+            acknowledgement.length == 1,
+            "acknowledgement must be a single byte"
+        );
         return acknowledgement[0] == 0x01;
     }
 
@@ -146,23 +192,41 @@ abstract contract ICS20Transfer is IBCAppBase {
         string memory sourcePort,
         string memory sourceChannel
     ) internal virtual {
-        if (!data.denom.toSlice().startsWith(_makeDenomPrefix(sourcePort, sourceChannel))) {
+        if (
+            !data.denom.toSlice().startsWith(
+                _makeDenomPrefix(sourcePort, sourceChannel)
+            )
+        ) {
             // sender was source chain
-            require(_transferFrom(_getEscrowAddress(sourceChannel), bytes(data.sender).toAddress(0), data.denom, data.amount));
+            require(
+                _transferFrom(
+                    _getEscrowAddress(sourceChannel),
+                    bytes(data.sender).toAddress(0),
+                    data.denom,
+                    data.amount
+                )
+            );
         } else {
-            require(_mint(bytes(data.sender).toAddress(0), data.denom, data.amount));
+            require(
+                _mint(bytes(data.sender).toAddress(0), data.denom, data.amount)
+            );
         }
     }
 
     /// Helper functions ///
 
-    function _makeDenomPrefix(string memory port, string memory channel)
-        internal
-        pure
-        virtual
-        returns (strings.slice memory)
-    {
-        return port.toSlice().concat("/".toSlice()).toSlice().concat(channel.toSlice()).toSlice().concat("/".toSlice())
-            .toSlice();
+    function _makeDenomPrefix(
+        string memory port,
+        string memory channel
+    ) internal pure virtual returns (strings.slice memory) {
+        return
+            port
+                .toSlice()
+                .concat("/".toSlice())
+                .toSlice()
+                .concat(channel.toSlice())
+                .toSlice()
+                .concat("/".toSlice())
+                .toSlice();
     }
 }

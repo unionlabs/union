@@ -44,22 +44,41 @@ interface IIBCModule {
 
     // OnChanOpenAck will error if the counterparty selected version string
     // is invalid to abort the handshake. It may also perform custom ACK logic.
-    function onChanOpenAck(string calldata portId, string calldata channelId, string calldata counterpartyVersion)
-        external;
+    function onChanOpenAck(
+        string calldata portId,
+        string calldata channelId,
+        string calldata counterpartyVersion
+    ) external;
 
     // OnChanOpenConfirm will perform custom CONFIRM logic and may error to abort the handshake.
-    function onChanOpenConfirm(string calldata portId, string calldata channelId) external;
+    function onChanOpenConfirm(
+        string calldata portId,
+        string calldata channelId
+    ) external;
 
-    function onChanCloseInit(string calldata portId, string calldata channelId) external;
+    function onChanCloseInit(
+        string calldata portId,
+        string calldata channelId
+    ) external;
 
-    function onChanCloseConfirm(string calldata portId, string calldata channelId) external;
+    function onChanCloseConfirm(
+        string calldata portId,
+        string calldata channelId
+    ) external;
 
     // OnRecvPacket must return an acknowledgement that implements the Acknowledgement interface.
     // In the case of an asynchronous acknowledgement, nil should be returned.
     // If the acknowledgement returned is successful, the state changes on callback are written,
     // otherwise the application state changes are discarded. In either case the packet is received
     // and the acknowledgement is written (in synchronous cases).
-    function onRecvPacket(IbcCoreChannelV1Packet.Data calldata, address relayer) external returns (bytes memory);
+    function onRecvPacket(
+        IbcCoreChannelV1Packet.Data calldata,
+        address relayer
+    ) external returns (bytes memory);
 
-    function onAcknowledgementPacket(IbcCoreChannelV1Packet.Data calldata, bytes calldata acknowledgement, address relayer) external;
+    function onAcknowledgementPacket(
+        IbcCoreChannelV1Packet.Data calldata,
+        bytes calldata acknowledgement,
+        address relayer
+    ) external;
 }

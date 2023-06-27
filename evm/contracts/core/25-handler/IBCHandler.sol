@@ -25,7 +25,12 @@ abstract contract IBCHandler is
      * @param ibcChannel is the address of a contract that implements `IIBCChannelHandshake`.
      * @param ibcPacket is the address of a contract that implements `IIBCPacket`.
      */
-    constructor(address ibcClient, address ibcConnection, address ibcChannel, address ibcPacket)
+    constructor(
+        address ibcClient,
+        address ibcConnection,
+        address ibcChannel,
+        address ibcPacket
+    )
         IBCClientHandler(ibcClient)
         IBCConnectionHandler(ibcConnection)
         IBCChannelHandler(ibcChannel)

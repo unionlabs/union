@@ -11,16 +11,19 @@ contract MockApp is IIBCModule {
 
     /// Module callbacks ///
 
-    function onRecvPacket(IbcCoreChannelV1Packet.Data calldata, address) external virtual override returns (bytes memory) {
+    function onRecvPacket(
+        IbcCoreChannelV1Packet.Data calldata,
+        address
+    ) external virtual override returns (bytes memory) {
         emit MockRecv(true);
         return bytes("1");
     }
 
-    function onAcknowledgementPacket(IbcCoreChannelV1Packet.Data calldata packet, bytes calldata acknowledgement, address relayer)
-        external
-        virtual
-        override
-    {}
+    function onAcknowledgementPacket(
+        IbcCoreChannelV1Packet.Data calldata packet,
+        bytes calldata acknowledgement,
+        address relayer
+    ) external virtual override {}
 
     function onChanOpenInit(
         IbcCoreChannelV1GlobalEnums.Order,
@@ -41,15 +44,24 @@ contract MockApp is IIBCModule {
         string calldata
     ) external virtual override {}
 
-    function onChanOpenAck(string calldata portId, string calldata channelId, string calldata counterpartyVersion)
-        external
-        virtual
-        override
-    {}
+    function onChanOpenAck(
+        string calldata portId,
+        string calldata channelId,
+        string calldata counterpartyVersion
+    ) external virtual override {}
 
-    function onChanOpenConfirm(string calldata portId, string calldata channelId) external virtual override {}
+    function onChanOpenConfirm(
+        string calldata portId,
+        string calldata channelId
+    ) external virtual override {}
 
-    function onChanCloseInit(string calldata portId, string calldata channelId) external virtual override {}
+    function onChanCloseInit(
+        string calldata portId,
+        string calldata channelId
+    ) external virtual override {}
 
-    function onChanCloseConfirm(string calldata portId, string calldata channelId) external virtual override {}
+    function onChanCloseConfirm(
+        string calldata portId,
+        string calldata channelId
+    ) external virtual override {}
 }

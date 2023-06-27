@@ -40,16 +40,30 @@ contract IBCFullTest is Test {
     string constant CHANNEL_VERSION = "1";
     bytes constant MERKLE_PREFIX = "ibc";
 
-    bytes32 constant GENESIS_APP_ROOT = hex"03B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B850";
-    bytes32 constant GENESIS_VALIDATOR_ROOT = hex"811594B875D1BF0C7992459AE166367C094CB7EAD07DF3F849F4D01EBFBF9A07";
+    bytes32 constant GENESIS_APP_ROOT =
+        hex"03B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B850";
+    bytes32 constant GENESIS_VALIDATOR_ROOT =
+        hex"811594B875D1BF0C7992459AE166367C094CB7EAD07DF3F849F4D01EBFBF9A07";
 
     function setUp() public {
         address ibcClient = address(new IBCClient());
         address ibcConnection = address(new IBCConnection());
         address ibcChannelHandshake = address(new IBCChannelHandshake());
         address ibcPacket = address(new IBCPacket());
-        handler = new TestableIBCHandler(ibcClient, ibcConnection, ibcChannelHandshake, ibcPacket);
-        handler.registerClient(CLIENT_TYPE, new CometblsClient(address(handler), new TestnetVerifier(), new ICS23MembershipVerifier()));
+        handler = new TestableIBCHandler(
+            ibcClient,
+            ibcConnection,
+            ibcChannelHandshake,
+            ibcPacket
+        );
+        handler.registerClient(
+            CLIENT_TYPE,
+            new CometblsClient(
+                address(handler),
+                new TestnetVerifier(),
+                new ICS23MembershipVerifier()
+            )
+        );
         setUpClient();
         setUpConnection();
         setUpChannel();
@@ -59,17 +73,27 @@ contract IBCFullTest is Test {
         createClient(0, GENESIS_VALIDATOR_ROOT, GENESIS_APP_ROOT);
     }
 
-    function getConnectionVersions() internal pure returns (IbcCoreConnectionV1Version.Data[] memory) {
-        IbcCoreConnectionV1Version.Data[] memory versions = new IbcCoreConnectionV1Version.Data[](1);
+    function getConnectionVersions()
+        internal
+        pure
+        returns (IbcCoreConnectionV1Version.Data[] memory)
+    {
+        IbcCoreConnectionV1Version.Data[]
+            memory versions = new IbcCoreConnectionV1Version.Data[](1);
         string[] memory features = new string[](2);
         features[0] = "ORDER_ORDERED";
         features[1] = "ORDER_UNORDERED";
-        versions[0] = IbcCoreConnectionV1Version.Data({identifier: "1", features: features});
+        versions[0] = IbcCoreConnectionV1Version.Data({
+            identifier: "1",
+            features: features
+        });
         return versions;
     }
 
     function setUpConnection() internal {
-        handler.setConnection(CONNECTION_ID, IbcCoreConnectionV1ConnectionEnd.Data({
+        handler.setConnection(
+            CONNECTION_ID,
+            IbcCoreConnectionV1ConnectionEnd.Data({
                 client_id: CLIENT_ID,
                 versions: getConnectionVersions(),
                 state: IbcCoreConnectionV1GlobalEnums.State.STATE_OPEN,
@@ -79,68 +103,79 @@ contract IBCFullTest is Test {
                     connection_id: CONNECTION_ID,
                     prefix: IbcCoreCommitmentV1MerklePrefix.Data({
                         key_prefix: MERKLE_PREFIX
-                        })
                     })
-                }));
+                })
+            })
+        );
         handler.setNextConnectionSequence(1);
     }
 
     function setUpChannel() internal {
         string[] memory hops = new string[](1);
         hops[0] = CONNECTION_ID;
-        handler.setChannel(PORT_ID, CHANNEL_ID, IbcCoreChannelV1Channel.Data({
+        handler.setChannel(
+            PORT_ID,
+            CHANNEL_ID,
+            IbcCoreChannelV1Channel.Data({
                 state: IbcCoreChannelV1GlobalEnums.State.STATE_OPEN,
                 ordering: IbcCoreChannelV1GlobalEnums.Order.ORDER_UNORDERED,
                 counterparty: IbcCoreChannelV1Counterparty.Data({
                     port_id: PORT_ID,
                     channel_id: CHANNEL_ID
-                    }),
+                }),
                 connection_hops: hops,
                 version: CHANNEL_VERSION
-                }));
+            })
+        );
         handler.setNextChannelSequence(1);
         handler.setNextSequenceSend(PORT_ID, CHANNEL_ID, 1);
         handler.setNextSequenceRecv(PORT_ID, CHANNEL_ID, 1);
         handler.setNextSequenceAck(PORT_ID, CHANNEL_ID, 1);
     }
 
-    function createClient(uint64 height, bytes32 nextValidatorsHash, bytes32 rootHash) internal {
+    function createClient(
+        uint64 height,
+        bytes32 nextValidatorsHash,
+        bytes32 rootHash
+    ) internal {
         handler.createClient(
             IBCMsgs.MsgCreateClient({
                 clientType: CLIENT_TYPE,
-                clientStateBytes: UnionIbcLightclientsCometblsV1ClientState.Data({
+                clientStateBytes: UnionIbcLightclientsCometblsV1ClientState
+                    .Data({
                         chain_id: CHAIN_ID,
-                        trust_level: UnionIbcLightclientsCometblsV1Fraction.Data({
-                            numerator: 1,
-                            denominator: 3
-                            }),
+                        trust_level: UnionIbcLightclientsCometblsV1Fraction
+                            .Data({numerator: 1, denominator: 3}),
                         trusting_period: GoogleProtobufDuration.Data({
                             Seconds: 300,
                             nanos: 0
-                            }),
+                        }),
                         unbonding_period: GoogleProtobufDuration.Data({
                             Seconds: 300,
                             nanos: 0
-                            }),
+                        }),
                         max_clock_drift: GoogleProtobufDuration.Data({
                             Seconds: 3600,
                             nanos: 0
-                            }),
+                        }),
                         frozen_height: IbcCoreClientV1Height.Data({
                             revision_number: 0,
                             revision_height: 0
-                            })
-                    }).marshalToProto(IbcCoreClientV1Height.Data({
-                        revision_number: 0,
-                        revision_height: height
-                    }), hex"CAFEBABE")
-                ,
+                        })
+                    })
+                    .marshalToProto(
+                        IbcCoreClientV1Height.Data({
+                            revision_number: 0,
+                            revision_height: height
+                        }),
+                        hex"CAFEBABE"
+                    ),
                 consensusStateBytes: OptimizedConsensusState({
-                        root: rootHash,
-                        nextValidatorsHash: nextValidatorsHash,
-                        timestamp: 1682000000
-                    }).marshalToProto()
-                })
+                    root: rootHash,
+                    nextValidatorsHash: nextValidatorsHash,
+                    timestamp: 1682000000
+                }).marshalToProto()
+            })
         );
     }
 
@@ -153,14 +188,12 @@ contract IBCFullTest is Test {
         );
     }
 
-
     function testCreateClient() public {
         createClient(0, GENESIS_VALIDATOR_ROOT, GENESIS_APP_ROOT);
     }
 
     function testUpdateClient() public {
         // FIXME, data outdated as of the circuit upgrade
-
         /* bytes memory partSetHeaderHash = hex"39C604A64DDBDA8F2E0F31F0DF30315CE4B8E65DB91F74F29A5ED6926C70A03F"; */
         /* TendermintTypesHeader.Data memory header = TendermintTypesHeader.Data({ */
         /*     version: TendermintVersionConsensus.Data({ */
