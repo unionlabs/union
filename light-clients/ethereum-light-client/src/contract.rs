@@ -297,9 +297,11 @@ mod test {
             mock_dependencies, BankQuerier, MockApi, MockQuerier, MockQuerierCustomHandlerResult,
             MockStorage,
         },
-        Empty, OwnedDeps,
+        Empty, OwnedDeps, SystemResult,
     };
-    use ethereum_verifier::crypto::{fast_aggregate_verify, BlsPublicKey};
+    use ethereum_verifier::crypto::{
+        eth_aggregate_public_keys, fast_aggregate_verify, BlsPublicKey,
+    };
     use ibc::{
         core::{
             ics02_client::client_type::ClientType,
@@ -379,165 +381,193 @@ mod test {
     const ETHEREUM_CLIENT_ID_PREFIX: &str = "10-ethereum";
     const IBC_KEY_PREFIX: &str = "ibc";
 
-    // #[test]
-    // fn update_works_with_good_data() {
-    //     let mut deps = OwnedDeps::<_, _, _, CustomQuery> {
-    //         storage: MockStorage::default(),
-    //         api: MockApi::default(),
-    //         querier: MockQuerier::default(),
-    //         custom_query_type: PhantomData,
-    //     };
+    #[test]
+    fn update_works_with_good_data() {
+        let mut deps = OwnedDeps::<_, _, _, CustomQuery> {
+            storage: MockStorage::default(),
+            api: MockApi::default(),
+            querier: MockQuerier::<CustomQuery>::new(&[]).with_custom_handler(custom_query_handler),
+            custom_query_type: PhantomData,
+        };
 
-    //     let wasm_client_state: WasmClientState =
-    //         serde_json::from_str(include_str!("./test/client_state.json")).unwrap();
+        let wasm_client_state: WasmClientState =
+            serde_json::from_str(include_str!("./test/client_state.json")).unwrap();
 
-    //     let wasm_consensus_state: WasmConsensusState =
-    //         serde_json::from_str(include_str!("./test/consensus_state.json")).unwrap();
+        let wasm_consensus_state: WasmConsensusState =
+            serde_json::from_str(include_str!("./test/consensus_state.json")).unwrap();
 
-    //     save_wasm_client_state(deps.as_mut(), &wasm_client_state);
-    //     save_wasm_consensus_state(
-    //         deps.as_mut(),
-    //         &wasm_consensus_state,
-    //         &IbcHeight::new(0, 1328).unwrap(),
-    //     );
+        save_wasm_client_state(deps.as_mut(), &wasm_client_state);
+        save_wasm_consensus_state(
+            deps.as_mut(),
+            &wasm_consensus_state,
+            &IbcHeight::new(0, 1328).unwrap(),
+        );
 
-    //     let updates: &[RawEthHeader] = &[
-    //         serde_json::from_str(include_str!("./test/sync_committee_update_1.json")).unwrap(),
-    //         serde_json::from_str(include_str!("./test/finality_update_1.json")).unwrap(),
-    //         serde_json::from_str(include_str!("./test/sync_committee_update_2.json")).unwrap(),
-    //         serde_json::from_str(include_str!("./test/finality_update_2.json")).unwrap(),
-    //         serde_json::from_str(include_str!("./test/finality_update_3.json")).unwrap(),
-    //         serde_json::from_str(include_str!("./test/finality_update_4.json")).unwrap(),
-    //     ];
+        let updates: &[RawEthHeader] = &[
+            serde_json::from_str(include_str!("./test/sync_committee_update_1.json")).unwrap(),
+            serde_json::from_str(include_str!("./test/finality_update_1.json")).unwrap(),
+            serde_json::from_str(include_str!("./test/sync_committee_update_2.json")).unwrap(),
+            serde_json::from_str(include_str!("./test/finality_update_2.json")).unwrap(),
+            serde_json::from_str(include_str!("./test/finality_update_3.json")).unwrap(),
+            serde_json::from_str(include_str!("./test/finality_update_4.json")).unwrap(),
+        ];
 
-    //     for update in updates {
-    //         let update: EthHeader = update.clone().try_into().unwrap();
-    //         update_header(deps.as_mut(), update.clone()).unwrap();
-    //         // Consensus state is saved to the updated height.
-    //         if update.consensus_update.finalized_header.beacon.slot
-    //             > update.trusted_sync_committee.height.revision_height()
-    //         {
-    //             // It's a finality update
-    //             let (_, consensus_state) = read_consensus_state(
-    //                 deps.as_ref(),
-    //                 IbcHeight::new(0, update.consensus_update.finalized_header.beacon.slot)
-    //                     .unwrap(),
-    //             )
-    //             .unwrap()
-    //             .unwrap();
-    //             // Slot is updated.
-    //             assert_eq!(
-    //                 consensus_state.slot,
-    //                 update.consensus_update.finalized_header.beacon.slot
-    //             );
-    //             // Storage root is updated.
-    //             assert_eq!(
-    //                 consensus_state.storage_root.as_bytes(),
-    //                 update.account_update.proofs[0].storage_hash,
-    //             );
-    //             // Latest slot is updated.
-    //             // TODO(aeryz): Add cases for `store_period == update_period` and `update_period == store_period + 1`
-    //             let (_, client_state) = read_client_state(deps.as_ref()).unwrap();
-    //             assert_eq!(
-    //                 client_state.latest_slot,
-    //                 update.consensus_update.finalized_header.beacon.slot
-    //             );
-    //         } else {
-    //             // It's a sync committee update
-    //             let (_, consensus_state) =
-    //                 read_consensus_state(deps.as_ref(), update.trusted_sync_committee.height)
-    //                     .unwrap()
-    //                     .unwrap();
+        for update in updates {
+            let update: EthHeader = update.clone().try_into().unwrap();
+            update_header(deps.as_mut(), update.clone()).unwrap();
+            // Consensus state is saved to the updated height.
+            if update.consensus_update.finalized_header.beacon.slot
+                > update.trusted_sync_committee.height.revision_height()
+            {
+                // It's a finality update
+                let (_, consensus_state) = read_consensus_state(
+                    deps.as_ref(),
+                    IbcHeight::new(0, update.consensus_update.finalized_header.beacon.slot)
+                        .unwrap(),
+                )
+                .unwrap()
+                .unwrap();
+                // Slot is updated.
+                assert_eq!(
+                    consensus_state.slot,
+                    update.consensus_update.finalized_header.beacon.slot
+                );
+                // Storage root is updated.
+                assert_eq!(
+                    consensus_state.storage_root.as_bytes(),
+                    update.account_update.proofs[0].storage_hash,
+                );
+                // Latest slot is updated.
+                // TODO(aeryz): Add cases for `store_period == update_period` and `update_period == store_period + 1`
+                let (_, client_state) = read_client_state(deps.as_ref()).unwrap();
+                assert_eq!(
+                    client_state.latest_slot,
+                    update.consensus_update.finalized_header.beacon.slot
+                );
+            } else {
+                // It's a sync committee update
+                let (_, consensus_state) = read_consensus_state(
+                    deps.as_ref(),
+                    IbcHeight::new(0, update.consensus_update.attested_header.beacon.slot).unwrap(),
+                )
+                .unwrap()
+                .unwrap();
 
-    //             assert_eq!(
-    //                 consensus_state.next_sync_committee.unwrap(),
-    //                 update
-    //                     .consensus_update
-    //                     .next_sync_committee
-    //                     .unwrap()
-    //                     .aggregate_public_key
-    //             );
-    //         }
-    //     }
-    // }
+                assert_eq!(
+                    consensus_state.next_sync_committee.unwrap(),
+                    update
+                        .consensus_update
+                        .next_sync_committee
+                        .unwrap()
+                        .aggregate_public_key
+                );
+            }
+        }
+    }
 
-    // fn custom_query_handler(query: CustomQuery) -> MockQuerierCustomHandlerResult {
-    //     match query {
-    //         CustomQuery::AggregateVerify {
-    //             public_keys,
-    //             message,
-    //             signature,
-    //         } => {
-    //             fast_aggregate_verify(public_keys.iter().map(Into::into).collect(), msg, signature)
-    //         }
-    //         CustomQuery::Aggregate { public_keys } => todo!(),
-    //     }
-    // }
+    fn custom_query_handler(query: &CustomQuery) -> MockQuerierCustomHandlerResult {
+        match query {
+            CustomQuery::AggregateVerify {
+                public_keys,
+                message,
+                signature,
+            } => {
+                let pubkeys: Vec<BlsPublicKey> = public_keys
+                    .iter()
+                    .map(|pk| pk.as_ref().try_into().unwrap())
+                    .collect();
 
-    // fn prepare_for_fail_tests() -> (
-    //     OwnedDeps<MockStorage, MockApi, MockQuerier<CustomQuery>, CustomQuery>,
-    //     EthHeader,
-    // ) {
-    //     let mut deps = OwnedDeps::<_, _, _, CustomQuery> {
-    //         storage: MockStorage::default(),
-    //         api: MockApi::default(),
-    //         querier: MockQuerier::<CustomQuery>::new(&[]).with_custom_handler(Cust),
-    //         custom_query_type: PhantomData,
-    //     };
+                let res = fast_aggregate_verify(
+                    pubkeys.iter().collect::<Vec<&BlsPublicKey>>().as_slice(),
+                    message.as_ref(),
+                    &signature.as_ref().try_into().unwrap(),
+                );
 
-    //     let wasm_client_state: WasmClientState =
-    //         serde_json::from_str(include_str!("./test/client_state.json")).unwrap();
+                SystemResult::Ok(cosmwasm_std::ContractResult::Ok::<Binary>(
+                    serde_json::to_vec(&res.is_ok()).unwrap().into(),
+                ))
+            }
+            CustomQuery::Aggregate { public_keys } => {
+                let pubkey = eth_aggregate_public_keys(
+                    public_keys
+                        .iter()
+                        .map(|pk| pk.as_ref().try_into().unwrap())
+                        .collect::<Vec<BlsPublicKey>>()
+                        .as_slice(),
+                )
+                .unwrap();
 
-    //     let wasm_consensus_state: WasmConsensusState =
-    //         serde_json::from_str(include_str!("./test/consensus_state.json")).unwrap();
+                SystemResult::Ok(cosmwasm_std::ContractResult::Ok::<Binary>(
+                    serde_json::to_vec(&Binary(pubkey.to_vec())).unwrap().into(),
+                ))
+            }
+        }
+    }
 
-    //     save_wasm_client_state(deps.as_mut(), &wasm_client_state);
-    //     save_wasm_consensus_state(
-    //         deps.as_mut(),
-    //         &wasm_consensus_state,
-    //         &IbcHeight::new(0, 1328).unwrap(),
-    //     );
+    fn prepare_for_fail_tests() -> (
+        OwnedDeps<MockStorage, MockApi, MockQuerier<CustomQuery>, CustomQuery>,
+        EthHeader,
+    ) {
+        let mut deps = OwnedDeps::<_, _, _, CustomQuery> {
+            storage: MockStorage::default(),
+            api: MockApi::default(),
+            querier: MockQuerier::<CustomQuery>::new(&[]).with_custom_handler(custom_query_handler),
+            custom_query_type: PhantomData,
+        };
 
-    //     let update: EthHeader = serde_json::from_str::<RawEthHeader>(include_str!(
-    //         "./test/sync_committee_update_1.json"
-    //     ))
-    //     .unwrap()
-    //     .try_into()
-    //     .unwrap();
+        let wasm_client_state: WasmClientState =
+            serde_json::from_str(include_str!("./test/client_state.json")).unwrap();
 
-    //     (deps, update)
-    // }
+        let wasm_consensus_state: WasmConsensusState =
+            serde_json::from_str(include_str!("./test/consensus_state.json")).unwrap();
 
-    // #[test]
-    // fn update_fails_when_sync_committee_aggregate_pubkey_is_incorrect() {
-    //     let (mut deps, mut update) = prepare_for_fail_tests();
+        save_wasm_client_state(deps.as_mut(), &wasm_client_state);
+        save_wasm_consensus_state(
+            deps.as_mut(),
+            &wasm_consensus_state,
+            &IbcHeight::new(0, 1328).unwrap(),
+        );
 
-    //     let mut pubkey: BlsPublicKey = update
-    //         .trusted_sync_committee
-    //         .sync_committee
-    //         .aggregate_public_key
-    //         .clone();
-    //     pubkey[0] += 1;
-    //     update
-    //         .trusted_sync_committee
-    //         .sync_committee
-    //         .aggregate_public_key = pubkey;
-    //     assert!(update_header(deps.as_mut(), update).is_err());
-    // }
+        let update: EthHeader = serde_json::from_str::<RawEthHeader>(include_str!(
+            "./test/sync_committee_update_1.json"
+        ))
+        .unwrap()
+        .try_into()
+        .unwrap();
 
-    // #[test]
-    // fn update_fails_when_finalized_header_execution_branch_merkle_is_invalid() {
-    //     let (mut deps, mut update) = prepare_for_fail_tests();
-    //     update.consensus_update.finalized_header.execution_branch[0][0] += 1;
-    //     assert!(update_header(deps.as_mut(), update).is_err());
-    // }
+        (deps, update)
+    }
 
-    // #[test]
-    // fn update_fails_when_finality_branch_merkle_is_invalid() {
-    //     let (mut deps, mut update) = prepare_for_fail_tests();
-    //     update.consensus_update.finality_branch[0][0] += 1;
-    //     assert!(update_header(deps.as_mut(), update).is_err());
-    // }
+    #[test]
+    fn update_fails_when_sync_committee_aggregate_pubkey_is_incorrect() {
+        let (mut deps, mut update) = prepare_for_fail_tests();
+
+        let mut pubkey: BlsPublicKey = update
+            .trusted_sync_committee
+            .sync_committee
+            .aggregate_public_key
+            .clone();
+        pubkey[0] += 1;
+        update
+            .trusted_sync_committee
+            .sync_committee
+            .aggregate_public_key = pubkey;
+        assert!(update_header(deps.as_mut(), update).is_err());
+    }
+
+    #[test]
+    fn update_fails_when_finalized_header_execution_branch_merkle_is_invalid() {
+        let (mut deps, mut update) = prepare_for_fail_tests();
+        update.consensus_update.finalized_header.execution_branch[0][0] += 1;
+        assert!(update_header(deps.as_mut(), update).is_err());
+    }
+
+    #[test]
+    fn update_fails_when_finality_branch_merkle_is_invalid() {
+        let (mut deps, mut update) = prepare_for_fail_tests();
+        update.consensus_update.finality_branch[0][0] += 1;
+        assert!(update_header(deps.as_mut(), update).is_err());
+    }
 
     // #[test]
     // fn membership_verification_works_for_client_state() {
