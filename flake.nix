@@ -56,8 +56,7 @@
     };
     nix-filter.url = "github:numtide/nix-filter";
     # uniond versions
-    v0_6_0.url = "git+https://github.com/unionlabs/union?ref=release-v0.6.0";
-    v0_7_0.url = "git+https://github.com/unionlabs/union?ref=release-v0.7.0";
+    v0_8_0.url = "git+https://github.com/unionlabs/union?ref=release-v0.8.0";
   };
   outputs = inputs@{ self, nixpkgs, flake-parts, nix-filter, crane, foundry, treefmt-nix, pre-commit-hooks, iohk-nix, ibc-go, ics23, cosmosproto, gogoproto, googleapis, ... }:
     flake-parts.lib.mkFlake { inherit inputs; } {
