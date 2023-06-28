@@ -1,29 +1,11 @@
 use cosmwasm_std::{to_binary, Binary, StdResult};
+use ibc_types::ibc::core::client::height::Height;
 use protos::ibc::{
     core::client::v1::GenesisMetadata,
     lightclients::wasm::v1::{ClientState, ConsensusState, Header, Misbehaviour},
 };
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
-
-#[derive(Debug, Serialize, Deserialize, Copy, Clone, PartialEq, Eq, Hash)]
-pub struct Height {
-    /// Previously known as "epoch"
-    #[serde(default)]
-    pub revision_number: u64,
-
-    /// The height of a block
-    #[serde(default)]
-    pub revision_height: u64,
-}
-
-impl TryInto<ibc::Height> for Height {
-    type Error = ();
-
-    fn try_into(self) -> Result<ibc::Height, Self::Error> {
-        ibc::Height::new(self.revision_number, self.revision_height).map_err(|_| ())
-    }
-}
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct MerklePath {

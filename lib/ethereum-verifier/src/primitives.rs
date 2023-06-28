@@ -1,10 +1,6 @@
-use crate::byte_vector::ByteVector;
 use crate::error::Error;
-use ssz_rs::prelude::*;
 
-pub use ssz_rs::prelude::U256;
-
-pub type Root = Node;
+pub type Root = [u8; 32];
 pub type Slot = u64;
 pub type Epoch = u64;
 
@@ -14,23 +10,19 @@ pub type WithdrawalIndex = usize;
 pub type Gwei = u64;
 pub type Hash32 = Bytes32;
 
-pub type Version = [u8; 4];
-pub type ForkDigest = [u8; 4];
-pub type Domain = [u8; 32];
-
-pub type ExecutionAddress = ByteVector<20>;
+pub type ExecutionAddress = [u8; 20];
 
 pub type ChainId = usize;
 pub type NetworkId = usize;
 
-pub type Bytes32 = ByteVector<32>;
+pub type Bytes32 = [u8; 32];
 
 pub type ParticipationFlags = u8;
 
 // Coordinate refers to a unique location in the block tree
 #[derive(serde::Serialize, serde::Deserialize)]
 pub struct Coordinate {
-    #[serde(with = "crate::serde::as_string")]
+    #[serde(with = "serde_utils::string")]
     slot: Slot,
     root: Root,
 }
@@ -42,39 +34,11 @@ pub const FAR_FUTURE_EPOCH: Epoch = Epoch::MAX;
 pub const BLS_WITHDRAWAL_PREFIX: u8 = 0x00;
 pub const ETH1_ADDRESS_WITHDRAWAL_PREFIX: u8 = 0x01;
 
-#[derive(Clone, Copy)]
-pub enum DomainType {
-    BeaconProposer,
-    BeaconAttester,
-    Randao,
-    Deposit,
-    VoluntaryExit,
-    SelectionProof,
-    AggregateAndProof,
-    SyncCommittee,
-    SyncCommitteeSelectionProof,
-    ContributionAndProof,
-    BlsToExecutionChange,
-    ApplicationMask,
-    ApplicationBuilder,
-}
-
-impl DomainType {
-    pub fn as_bytes(&self) -> [u8; 4] {
-        match self {
-            Self::ApplicationMask => [0, 0, 0, 1],
-            Self::ApplicationBuilder => [0, 0, 0, 1],
-            _ => {
-                let data = *self as u32;
-                data.to_le_bytes()
-            }
-        }
-    }
-}
-
+// TODO: Derive RlpDecodable instead of implementing it manually
 #[derive(Debug, Clone, Default)]
 pub struct Account {
     pub nonce: u64,
+    // REVIEW: Is this arbitrary bytes? Or a U256?
     pub balance: Vec<u8>,
     pub storage_root: Hash32,
     pub code_hash: Hash32,

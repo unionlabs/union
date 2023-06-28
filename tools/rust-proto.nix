@@ -25,7 +25,7 @@
             dependencies = {
               prost = { version = "0.11.0"; default-features = false; features = ["prost-derive"]; };
               ethers = { version = "2.0.4"; optional = true; };
-              serde = { version = "1.0"; default-features = false; features = ["derive"]; };
+              serde = { version = "1.0"; default-features = false; features = ["derive"]; optional = true; };
               tonic = { version = "0.8"; features = [ "gzip" ]; optional = true; };
               schemars = { version = "0.8.3"; default-features = false; optional = true; };
               serde-utils = { path = "../../lib/serde-utils"; };
@@ -135,10 +135,10 @@
 
             # eth_abi = ''#[cfg_attr(feature = "ethers", derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec))]'';
 
-            serde = ''#[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]'';
-            serde_default = ''#[cfg_attr(feature = "std", serde(default))]'';
-            serde_base64 = ''#[cfg_attr(feature = "std", serde(with = "::serde_utils::base64"))]'';
-            serde_inner_base64 = ''#[serde(with = "::serde_utils::inner_base64")]'';
+            serde = ''#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]'';
+            serde_default = ''#[cfg_attr(feature = "serde", serde(default))]'';
+            serde_base64 = ''#[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))]'';
+            serde_inner_base64 = ''#[cfg_attr(feature = "serde", serde(with = "::serde_utils::inner_base64"))]'';
 
             jsonschema = ''#[cfg_attr(all(feature = "json-schema", feature = "std"), derive(::schemars::JsonSchema))]'';
             jsonschema_str = ''#[cfg_attr(all(feature = "json-schema", feature = "std"), schemars(with = "String"))]'';

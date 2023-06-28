@@ -77,5 +77,60 @@ pub struct GenerateContractResponse {
     #[prost(bytes = "vec", tag = "1")]
     pub content: ::prost::alloc::vec::Vec<u8>,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryStatsRequest {}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct VariableStats {
+    #[prost(uint32, tag = "1")]
+    pub nb_internal_variables: u32,
+    #[prost(uint32, tag = "2")]
+    pub nb_secret_variables: u32,
+    #[prost(uint32, tag = "3")]
+    pub nb_public_variables: u32,
+    #[prost(uint32, tag = "4")]
+    pub nb_constraints: u32,
+    #[prost(uint32, tag = "5")]
+    pub nb_coefficients: u32,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ProvingKeyStats {
+    #[prost(uint32, tag = "1")]
+    pub nb_g1: u32,
+    #[prost(uint32, tag = "2")]
+    pub nb_g2: u32,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct VerifyingKeyStats {
+    #[prost(uint32, tag = "1")]
+    pub nb_g1: u32,
+    #[prost(uint32, tag = "2")]
+    pub nb_g2: u32,
+    #[prost(uint32, tag = "3")]
+    pub nb_public_witness: u32,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct CommitmentStats {
+    #[prost(uint32, tag = "1")]
+    pub nb_public_committed: u32,
+    #[prost(uint32, tag = "2")]
+    pub nb_private_committed: u32,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryStatsResponse {
+    #[prost(message, optional, tag = "1")]
+    pub variable_stats: ::core::option::Option<VariableStats>,
+    #[prost(message, optional, tag = "2")]
+    pub proving_key_stats: ::core::option::Option<ProvingKeyStats>,
+    #[prost(message, optional, tag = "3")]
+    pub verifying_key_stats: ::core::option::Option<VerifyingKeyStats>,
+    #[prost(message, optional, tag = "4")]
+    pub commitment_stats: ::core::option::Option<CommitmentStats>,
+}
 include!("union.prover.api.v1.tonic.rs");
 // @@protoc_insertion_point(module)

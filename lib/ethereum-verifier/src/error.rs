@@ -1,15 +1,12 @@
 use milagro_bls::AmclError;
-use ssz_rs::MerkleizationError;
 use trie_db::TrieError;
 
 #[derive(Debug)]
 pub enum Error {
     InvalidMerkleBranch,
-    Merkleization(MerkleizationError),
     InvalidChainVersion,
     Crypto,
     ExpectedCurrentSyncCommittee,
-    EmptyAggregate,
     ExpectedNextSyncCommittee,
     IrrelevantUpdate,
     InvalidSlots,
@@ -17,7 +14,7 @@ pub enum Error {
     InvalidSignaturePeriod,
     InvalidPublicKey,
     NextSyncCommitteeMismatch,
-    InsufficientSyncCommitteeParticipents,
+    InsufficientSyncCommitteeParticipants,
     Bls(AmclError),
     ValueMismatch,
     Trie(Box<TrieError<primitive_types::H256, rlp::DecoderError>>),
@@ -30,7 +27,6 @@ impl core::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Error::InvalidMerkleBranch => write!(f, "Invalid merkle branch."),
-            Error::Merkleization(e) => write!(f, "Merkleization error: {e}"),
             Error::InvalidChainVersion => write!(f, "Invalid chain conversion."),
             Error::Crypto => write!(f, "Crypto error."),
             Error::ExpectedCurrentSyncCommittee => write!(f, "Expected current sync committee."),
@@ -45,11 +41,10 @@ impl core::fmt::Display for Error {
                 f,
                 "Next sync committee does not match with the one in the current state."
             ),
-            Error::InsufficientSyncCommitteeParticipents => {
+            Error::InsufficientSyncCommitteeParticipants => {
                 write!(f, "Insufficient number of sync committee participants.")
             }
             Error::Bls(e) => write!(f, "Bls error: {e:?}"),
-            Error::EmptyAggregate => write!(f, "Item list to be aggregated is empty."),
             Error::InvalidSignature => write!(f, "Signature is not valid."),
             Error::InvalidPublicKey => write!(f, "Invalid public key."),
             Error::ValueMismatch => write!(f, "Proof is invalid. Value mismatch."),
@@ -61,9 +56,9 @@ impl core::fmt::Display for Error {
     }
 }
 
-impl From<MerkleizationError> for Error {
-    fn from(e: MerkleizationError) -> Self {
-        Error::Merkleization(e)
+impl From<AmclError> for Error {
+    fn from(e: AmclError) -> Self {
+        Error::Bls(e)
     }
 }
 

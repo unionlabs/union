@@ -1,5 +1,6 @@
 use cosmwasm_std::{Binary, Deps, QueryRequest};
-use ethereum_verifier::{crypto::BlsPublicKey, BlsVerify};
+use ethereum_verifier::BlsVerify;
+use ibc_types::bls::{BlsPublicKey, BlsSignature};
 
 use crate::errors::Error;
 
@@ -24,17 +25,20 @@ pub struct VerificationContext<'a> {
 }
 
 impl<'a> BlsVerify for VerificationContext<'a> {
-    fn fast_aggregate_verify(
+    fn fast_aggregate_verify<'pk>(
         &self,
-        public_keys: Vec<Vec<u8>>,
+        public_keys: impl IntoIterator<Item = &'pk BlsPublicKey>,
         msg: Vec<u8>,
-        signature: Vec<u8>,
+        signature: BlsSignature,
     ) -> Result<(), ethereum_verifier::Error> {
         let is_valid = query_fast_aggregate_verify(
             self.deps,
-            public_keys.into_iter().map(Into::into).collect(),
+            public_keys
+                .into_iter()
+                .map(|x| Binary(x.clone().into()))
+                .collect(),
             msg.into(),
-            signature.into(),
+            Binary(signature.into()),
         )
         .map_err(|e| ethereum_verifier::Error::CustomError(e.to_string()))?;
 
@@ -65,10 +69,11 @@ pub fn query_fast_aggregate_verify(
 
 pub fn query_aggregate_public_keys(
     deps: Deps<CustomQuery>,
-    public_keys: Vec<Binary>,
+    public_keys: Vec<BlsPublicKey>,
 ) -> Result<BlsPublicKey, Error> {
-    let request: QueryRequest<CustomQuery> =
-        QueryRequest::Custom(CustomQuery::Aggregate { public_keys });
+    let request: QueryRequest<CustomQuery> = QueryRequest::Custom(CustomQuery::Aggregate {
+        public_keys: public_keys.into_iter().map(|x| Binary(x.into())).collect(),
+    });
 
     let response: Binary = deps.querier.query(&request).map_err(Error::custom_query)?;
 

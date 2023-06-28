@@ -26,3 +26,16 @@ codegen-units = 1
 panic = "abort"
 incremental = false
 overflow-checks = true
+
+[workspace.dependencies]
+
+# ssz
+# cspell:disable-next-line (isnt)
+ssz = { package = "ethereum_ssz", git = "https://github.com/unionlabs/ethereum_ssz", branch = "vec-isnt-valid-ssz", default-features = false }
+ssz_types = { git = "https://github.com/unionlabs/ssz_types", branch = "try-from-instead-of-from", default-features = false }
+tree_hash = { git = "https://github.com/unionlabs/tree_hash", branch = "use-unionlabs-ssz", default-features = false }
+
+milagro_bls = { git = "https://github.com/datachainlab/milagro_bls", rev = "bc2b5b5e8d48b7e2e1bfaa56dc2d93e13cb32095", default-features = false }
+
+[patch.crates-io]
+typenum = { git = "https://github.com/benluelo/typenum", branch = "ben/192-const-generic-32-bit" }

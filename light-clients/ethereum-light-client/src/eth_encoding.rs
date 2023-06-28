@@ -1,8 +1,4 @@
-use crate::errors::Error;
 use ethabi::ethereum_types::{Address, U256};
-use protos::union::ibc::lightclients::cometbls::v1::{
-    ClientState as RawCometClientState, ConsensusState as RawCometConsensusState,
-};
 use sha3::Digest;
 
 pub struct TakeLastXBytes(pub usize);
@@ -35,97 +31,97 @@ pub fn generate_commitment_key<S: Into<U256>>(path: String, slot: S) -> Vec<u8> 
         .to_vec()
 }
 
-pub fn encode_cometbls_consensus_state(data: RawCometConsensusState) -> Result<Vec<u8>, Error> {
-    Ok(ethabi::encode(&[ethabi::Token::Tuple(vec![
-        ethabi::Token::FixedBytes(data.root.clone().ok_or(Error::MissingProtoField)?.hash),
-        ethabi::Token::FixedBytes(data.next_validators_hash),
-    ])]))
-}
+// pub fn encode_cometbls_consensus_state(data: RawCometConsensusState) -> Result<Vec<u8>, Error> {
+//     Ok(ethabi::encode(&[ethabi::Token::Tuple(vec![
+//         ethabi::Token::FixedBytes(data.root.clone().ok_or(Error::MissingProtoField)?.hash),
+//         ethabi::Token::FixedBytes(data.next_validators_hash),
+//     ])]))
+// }
 
-pub fn encode_cometbls_client_state(data: RawCometClientState) -> Result<Vec<u8>, Error> {
-    Ok(ethabi::encode(&[ethabi::Token::Tuple(vec![
-        ethabi::Token::String(data.chain_id.clone()),
-        ethabi::Token::Tuple(vec![
-            ethabi::Token::Int(
-                data.trust_level
-                    .clone()
-                    .ok_or(Error::MissingProtoField)?
-                    .numerator
-                    .into(),
-            ),
-            ethabi::Token::Int(
-                data.trust_level
-                    .clone()
-                    .ok_or(Error::MissingProtoField)?
-                    .denominator
-                    .into(),
-            ),
-        ]),
-        ethabi::Token::Tuple(vec![
-            ethabi::Token::Int(
-                data.trusting_period
-                    .clone()
-                    .ok_or(Error::MissingProtoField)?
-                    .seconds
-                    .into(),
-            ),
-            ethabi::Token::Int(
-                data.trusting_period
-                    .clone()
-                    .ok_or(Error::MissingProtoField)?
-                    .nanos
-                    .into(),
-            ),
-        ]),
-        ethabi::Token::Tuple(vec![
-            ethabi::Token::Int(
-                data.unbonding_period
-                    .clone()
-                    .ok_or(Error::MissingProtoField)?
-                    .seconds
-                    .into(),
-            ),
-            ethabi::Token::Int(
-                data.unbonding_period
-                    .clone()
-                    .ok_or(Error::MissingProtoField)?
-                    .nanos
-                    .into(),
-            ),
-        ]),
-        ethabi::Token::Tuple(vec![
-            ethabi::Token::Int(
-                data.max_clock_drift
-                    .clone()
-                    .ok_or(Error::MissingProtoField)?
-                    .seconds
-                    .into(),
-            ),
-            ethabi::Token::Int(
-                data.max_clock_drift
-                    .clone()
-                    .ok_or(Error::MissingProtoField)?
-                    .nanos
-                    .into(),
-            ),
-        ]),
-        ethabi::Token::Tuple(vec![
-            ethabi::Token::Int(
-                data.frozen_height
-                    .clone()
-                    .ok_or(Error::MissingProtoField)?
-                    .revision_number
-                    .into(),
-            ),
-            ethabi::Token::Int(
-                data.frozen_height
-                    .ok_or(Error::MissingProtoField)?
-                    .revision_height
-                    .into(),
-            ),
-        ]),
-    ])]))
-}
+// pub fn encode_cometbls_client_state(data: RawCometClientState) -> Result<Vec<u8>, Error> {
+//     Ok(ethabi::encode(&[ethabi::Token::Tuple(vec![
+//         ethabi::Token::String(data.chain_id.clone()),
+//         ethabi::Token::Tuple(vec![
+//             ethabi::Token::Int(
+//                 data.trust_level
+//                     .clone()
+//                     .ok_or(Error::MissingProtoField)?
+//                     .numerator
+//                     .into(),
+//             ),
+//             ethabi::Token::Int(
+//                 data.trust_level
+//                     .clone()
+//                     .ok_or(Error::MissingProtoField)?
+//                     .denominator
+//                     .into(),
+//             ),
+//         ]),
+//         ethabi::Token::Tuple(vec![
+//             ethabi::Token::Int(
+//                 data.trusting_period
+//                     .clone()
+//                     .ok_or(Error::MissingProtoField)?
+//                     .seconds
+//                     .into(),
+//             ),
+//             ethabi::Token::Int(
+//                 data.trusting_period
+//                     .clone()
+//                     .ok_or(Error::MissingProtoField)?
+//                     .nanos
+//                     .into(),
+//             ),
+//         ]),
+//         ethabi::Token::Tuple(vec![
+//             ethabi::Token::Int(
+//                 data.unbonding_period
+//                     .clone()
+//                     .ok_or(Error::MissingProtoField)?
+//                     .seconds
+//                     .into(),
+//             ),
+//             ethabi::Token::Int(
+//                 data.unbonding_period
+//                     .clone()
+//                     .ok_or(Error::MissingProtoField)?
+//                     .nanos
+//                     .into(),
+//             ),
+//         ]),
+//         ethabi::Token::Tuple(vec![
+//             ethabi::Token::Int(
+//                 data.max_clock_drift
+//                     .clone()
+//                     .ok_or(Error::MissingProtoField)?
+//                     .seconds
+//                     .into(),
+//             ),
+//             ethabi::Token::Int(
+//                 data.max_clock_drift
+//                     .clone()
+//                     .ok_or(Error::MissingProtoField)?
+//                     .nanos
+//                     .into(),
+//             ),
+//         ]),
+//         ethabi::Token::Tuple(vec![
+//             ethabi::Token::Int(
+//                 data.frozen_height
+//                     .clone()
+//                     .ok_or(Error::MissingProtoField)?
+//                     .revision_number
+//                     .into(),
+//             ),
+//             ethabi::Token::Int(
+//                 data.frozen_height
+//                     .ok_or(Error::MissingProtoField)?
+//                     .revision_height
+//                     .into(),
+//             ),
+//         ]),
+//     ])]))
+// }
 
 pub mod abi {
     use super::SolidityDataType;

@@ -37,6 +37,7 @@ pub enum Error {
     NoNextSyncCommittee,
 
     #[error("Consensus state not found for {0}-{1}")]
+    // REVIEW: Why not just use `Height` directly?
     ConsensusStateNotFound(u64, u64),
 
     #[error("Timestamp not set")]

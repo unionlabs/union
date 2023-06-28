@@ -12,3 +12,4 @@ ibc = { version = "0.37.0", default-features = false, features = [ "serde" ] }
 prost = { version = "0.11", default-features = false }
 protos = { path = "../../generated/rust", default-features = false, features = ["proto_full", "std"] }
 serde = { version = "1.0", default-features = false, features = ["derive"] }
+ibc-types = { path = "../../lib/ibc-types", default-features = false }

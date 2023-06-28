@@ -324,6 +324,6 @@ mod tests {
         )
         .unwrap_err();
 
-        assert!(matches!(dbg!(err), RuntimeError::EarlyExit { .. }))
+        assert!(matches!(dbg!(err), RuntimeError::EarlyExit { .. }));
     }
 }

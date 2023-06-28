@@ -15,7 +15,8 @@ use ethers::{
 };
 use futures::StreamExt;
 use ibc_types::{
-    core::{
+    ethereum_consts_traits::{ChainSpec, Mainnet, Minimal},
+    ibc::core::{
         channel::{
             self, channel::Channel, msg_channel_open_ack::MsgChannelOpenAck,
             msg_channel_open_confirm::MsgChannelOpenConfirm,
@@ -177,7 +178,7 @@ async fn main() {
 
     let args = AppArgs::parse();
 
-    do_main(args).await;
+    do_main::<Minimal>(args).await;
 }
 
 #[derive(Debug, EthAbiCodec, EthAbiType)]
@@ -192,7 +193,7 @@ pub struct Ics20Packet {
     pub sender: String,
 }
 
-async fn do_main(args: AppArgs) {
+async fn do_main<C: ChainSpec>(args: AppArgs) {
     // let packet_hex = hex!("0000000000000000000000000000000000000000000000000000000000000064000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000c0000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000057374616b6500000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000146161616161353535353561616161613535353535000000000000000000000000000000000000000000000000000000000000000000000000000000000000002c756e696f6e316a6b397073796876676b72743263756d7a386579746c6c323234346d326e6e7a3479743267320000000000000000000000000000000000000000");
 
     // dbg!(Ics20Packet::decode(left).unwrap());
@@ -202,7 +203,7 @@ async fn do_main(args: AppArgs) {
 
     match args.command {
         Command::OpenConnection(OpenConnectionArgs { args }) => {
-            let cometbls = Cometbls::new(CometblsConfig {
+            let cometbls = Cometbls::<C>::new(CometblsConfig {
                 cometbls_client_address: args.cometbls.cometbls_client_address,
                 ibc_handler_address: args.cometbls.ibc_handler_address,
                 ics20_transfer_address: args.cometbls.ics20_transfer_address,
@@ -225,7 +226,7 @@ async fn do_main(args: AppArgs) {
             cometbls_port_id,
             ethereum_port_id,
         }) => {
-            let cometbls_lc = Cometbls::new(CometblsConfig {
+            let cometbls_lc = Cometbls::<C>::new(CometblsConfig {
                 cometbls_client_address: args.cometbls.cometbls_client_address,
                 ibc_handler_address: args.cometbls.ibc_handler_address,
                 ics20_transfer_address: args.cometbls.ics20_transfer_address,
@@ -237,7 +238,7 @@ async fn do_main(args: AppArgs) {
             })
             .await;
 
-            let ethereum_lc = Ethereum::new(get_wallet(), args.ethereum.wasm_code_id).await;
+            let ethereum_lc = Ethereum::<C>::new(get_wallet(), args.ethereum.wasm_code_id).await;
 
             channel_handshake(
                 &cometbls_lc,
@@ -255,7 +256,7 @@ async fn do_main(args: AppArgs) {
             cometbls_port_id,
             ethereum_port_id,
         }) => {
-            let cometbls_lc = Cometbls::new(CometblsConfig {
+            let cometbls_lc = Cometbls::<C>::new(CometblsConfig {
                 cometbls_client_address: args.cometbls.cometbls_client_address,
                 ibc_handler_address: args.cometbls.ibc_handler_address,
                 ics20_transfer_address: args.cometbls.ics20_transfer_address,
@@ -280,7 +281,7 @@ async fn do_main(args: AppArgs) {
 
             // panic!();
 
-            let ethereum_lc = Ethereum::new(get_wallet(), args.ethereum.wasm_code_id).await;
+            let ethereum_lc = Ethereum::<C>::new(get_wallet(), args.ethereum.wasm_code_id).await;
 
             // ICS20Transfer.sol -> onRecvPacket -> replace body with `return _newAcknowledgement(true);`
 
@@ -785,7 +786,7 @@ where
     (cometbls_channel_id, ethereum_channel_id)
 }
 
-async fn relay_packets(cometbls: Cometbls, ethereum: Ethereum) {
+async fn relay_packets<C: ChainSpec>(cometbls: Cometbls<C>, ethereum: Ethereum<C>) {
     let listen_handle = tokio::spawn(async move {
         loop {
             let mut subs = ethereum

@@ -1,0 +1,20 @@
+[package]
+name = "beacon-api"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+hex = { version = "0.4.3", default-features = false, features = ["alloc", "serde"] }
+reqwest = { version = "0.11.13", features = ["json"] }
+serde = { version = "1.0", default-features = false, features = ["alloc", "derive"] }
+serde_json = "1.0.91"
+tokio = { version = "1.24.1", default-features = false, features = ["rt-multi-thread", "macros"] }
+tracing = "0.1.37"
+
+ibc-types = { path = "../ibc-types" }
+
+[features]
+default = []
+
+[dev-dependencies]
+tracing-subscriber = "0.3.17"
