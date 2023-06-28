@@ -31,10 +31,10 @@
       packages = {
         inherit unionvisor;
 
-        bundle-testnet = mkBundle "testnet" [ "v0.6.0" "v0.7.0" ] {
+        bundle-testnet = mkBundle "testnet" [ "v0.8.0" ] {
           binary_name = "uniond";
           versions_directory = "versions";
-          fallback_version = "v0.6.0";
+          fallback_version = "v0.8.0";
         };
       };
 
