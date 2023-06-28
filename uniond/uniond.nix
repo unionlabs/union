@@ -1,7 +1,7 @@
 { ... }: {
   perSystem = { pkgs, self', crane, system, ensureAtRepositoryRoot, ... }:
     let
-      CGO_CFLAGS = "-I${pkgs.libblst}/include -I${pkgs.libblst.src}/src -I${pkgs.libblst.src}/build -I${self'.packages.bls-eth.src}/bls/include";
+      CGO_CFLAGS = "-I${pkgs.libblst}/include -I${pkgs.libblst.src}/src -I${pkgs.libblst.src}/build -I${self'.packages.bls-eth.src}/bls/include -O -D__BLST_PORTABLE__";
     in
     {
       packages = {
@@ -51,7 +51,7 @@
             ];
           } else if pkgs.stdenv.isDarwin then {
             # Dynamically link if we're on darwin by wrapping the program
-            # such that the DYLD_LIBRARY_PATH includes libwasmvm 
+            # such that the DYLD_LIBRARY_PATH includes libwasmvm
             buildInputs = [ pkgs.makeWrapper libwasmvm pkgs.libblst ];
             postFixup = ''
               wrapProgram $out/bin/uniond \
