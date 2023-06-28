@@ -6974,11 +6974,11 @@
         "v0_7_0": "v0_7_0"
       },
       "locked": {
-        "lastModified": 1687903820,
-        "narHash": "sha256-xSCBrN+ITXNEOg6QZs3po+zG33eqWeKokM9yS+VpRi4=",
+        "lastModified": 1687961406,
+        "narHash": "sha256-wgSzotO2Xv3L8tZJHi8tzd6+Cq6zVMOMKE2uZeVXCTQ=",
         "ref": "release-v0.8.0",
-        "rev": "8c2bf966f0feb9f6b7a28e0caf708752e02314bc",
-        "revCount": 956,
+        "rev": "2cd32b62b8e9fcd28bf7ee6e1e35f9f6aadf1fcf",
+        "revCount": 957,
         "type": "git",
         "url": "https://github.com/unionlabs/union"
       },
