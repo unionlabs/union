@@ -13,14 +13,12 @@ contract ICS23MembershipVerifier is IMembershipVerifier {
         bytes memory root,
         bytes calldata proof,
         bytes memory prefix,
-        bytes[] calldata path,
+        bytes calldata path,
         bytes calldata value
     ) external view override returns (bool) {
-        bytes[] memory fullPath = new bytes[](1 + path.length);
+        bytes[] memory fullPath = new bytes[](2);
         fullPath[0] = prefix;
-        for (uint256 i = 0; i < path.length; i++) {
-            fullPath[i + 1] = path[i];
-        }
+        fullPath[1] = path;
         // This call reverts if any verification issue happen
         Ics23.verifyChainedMembership(
             IbcCoreCommitmentV1MerkleProof.decode(proof),
@@ -35,7 +33,7 @@ contract ICS23MembershipVerifier is IMembershipVerifier {
         bytes memory root,
         bytes calldata proof,
         bytes calldata prefix,
-        bytes[] calldata path
+        bytes calldata path
     ) external view override returns (bool) {
         revert("not implemented yet");
     }

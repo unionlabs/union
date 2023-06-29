@@ -266,7 +266,7 @@ contract CometblsClient is ILightClient {
         uint64 delayBlockPeriod,
         bytes calldata proof,
         bytes memory prefix,
-        bytes[] calldata path,
+        bytes calldata path,
         bytes calldata value
     ) external view override returns (bool) {
         OptimizedConsensusState memory consensusState = consensusStates[
@@ -289,7 +289,7 @@ contract CometblsClient is ILightClient {
         uint64 delayBlockPeriod,
         bytes calldata proof,
         bytes calldata prefix,
-        bytes[] calldata path
+        bytes calldata path
     ) external returns (bool) {
         return true;
     }

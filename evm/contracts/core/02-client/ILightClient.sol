@@ -79,7 +79,7 @@ interface ILightClient {
         uint64 delayBlockPeriod,
         bytes calldata proof,
         bytes calldata prefix,
-        bytes[] calldata path,
+        bytes calldata path,
         bytes calldata value
     ) external returns (bool);
 
@@ -94,7 +94,7 @@ interface ILightClient {
         uint64 delayBlockPeriod,
         bytes calldata proof,
         bytes calldata prefix,
-        bytes[] calldata path
+        bytes calldata path
     ) external returns (bool);
 
     /**

@@ -325,7 +325,7 @@ contract IBCChannelHandshake is IBCStore, IIBCChannelHandshake {
                 0,
                 proof,
                 connection.counterparty.prefix.key_prefix,
-                IBCCommitment.channelPathMerkle(portId, channelId),
+                IBCCommitment.channelPath(portId, channelId),
                 channelBytes
             );
     }

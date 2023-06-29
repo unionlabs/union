@@ -137,7 +137,7 @@ contract IBCPacket is IBCStore, IIBCPacket {
                 connection,
                 msg_.proofHeight,
                 msg_.proof,
-                IBCCommitment.packetCommitmentPathMerkle(
+                IBCCommitment.packetCommitmentPath(
                     msg_.packet.source_port,
                     msg_.packet.source_channel,
                     msg_.packet.sequence
@@ -293,7 +293,7 @@ contract IBCPacket is IBCStore, IIBCPacket {
                 connection,
                 msg_.proofHeight,
                 msg_.proof,
-                IBCCommitment.packetAcknowledgementCommitmentPathMerkle(
+                IBCCommitment.packetAcknowledgementCommitmentPath(
                     msg_.packet.destination_port,
                     msg_.packet.destination_channel,
                     msg_.packet.sequence
@@ -331,7 +331,7 @@ contract IBCPacket is IBCStore, IIBCPacket {
         IbcCoreConnectionV1ConnectionEnd.Data storage connection,
         IbcCoreClientV1Height.Data calldata height,
         bytes calldata proof,
-        bytes[] memory path,
+        bytes memory path,
         bytes32 commitmentBytes
     ) private returns (bool) {
         return
@@ -351,7 +351,7 @@ contract IBCPacket is IBCStore, IIBCPacket {
         IbcCoreConnectionV1ConnectionEnd.Data storage connection,
         IbcCoreClientV1Height.Data calldata height,
         bytes calldata proof,
-        bytes[] memory path,
+        bytes memory path,
         bytes32 acknowledgementCommitmentBytes
     ) private returns (bool) {
         return

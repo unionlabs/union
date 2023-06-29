@@ -7,7 +7,7 @@ interface IMembershipVerifier {
         bytes memory root,
         bytes calldata proof,
         bytes memory prefix,
-        bytes[] calldata path,
+        bytes calldata path,
         bytes calldata value
     ) external view returns (bool);
 
@@ -15,6 +15,6 @@ interface IMembershipVerifier {
         bytes memory root,
         bytes calldata proof,
         bytes calldata prefix,
-        bytes[] calldata path
+        bytes calldata path
     ) external view returns (bool);
 }
