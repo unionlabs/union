@@ -148,6 +148,8 @@
             ${deploy { path = "apps/20-transfer/ICS20Bank.sol"; name = "ICS20Bank"; }}
             ${deploy { path = "apps/20-transfer/ICS20TransferBank.sol"; name = "ICS20TransferBank";  args = ''--constructor-args "$OWNABLEIBCHANDLER" "$ICS20BANK"''; }}
 
+            echo "--ibc-handler-address $OWNABLEIBCHANDLER --cometbls-client-address $COMETBLSCLIENT --ics20-transfer-address $ICS20TRANSFERBANK --ics20-bank-address $ICS20BANK"
+
             rm -rf "$OUT"
           '';
         };
