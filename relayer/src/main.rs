@@ -409,7 +409,9 @@ where
     tracing::info!(?cometbls_latest_height);
     tracing::info!(?ethereum_latest_height);
 
-    let cometbls_connection_id = cometbls
+    let delay_period = 6;
+
+    let (cometbls_connection_id, connection_init_height) = cometbls
         .connection_open_init(MsgConnectionOpenInit {
             client_id: cometbls_client_id.clone(),
             counterparty: connection::counterparty::Counterparty {
@@ -424,7 +426,7 @@ where
                 identifier: "1".into(),
                 features: [Order::Ordered, Order::Unordered].into_iter().collect(),
             },
-            delay_period: 6,
+            delay_period,
         })
         .await;
 
@@ -474,7 +476,7 @@ where
         .connection_state_proof(cometbls_connection_id.clone(), cometbls_latest_height)
         .await;
 
-    let ethereum_connection_id = ethereum
+    let (ethereum_connection_id, connection_try_height) = ethereum
         .connection_open_try(MsgConnectionOpenTry {
             client_id: ethereum_client_id.clone(),
             counterparty: connection::counterparty::Counterparty {
@@ -484,7 +486,7 @@ where
                     key_prefix: b"ibc".to_vec(),
                 },
             },
-            delay_period: 6,
+            delay_period,
             client_state: cometbls_client_state_proof.state,
             counterparty_versions: cometbls_connection_state_proof.state.versions,
             proof_height: cometbls_consensus_state_proof.proof_height,
@@ -495,8 +497,17 @@ where
         })
         .await;
 
+    tracing::info!("Connection open try executed at {:?}", connection_try_height);
+
     let ethereum_update_from = ethereum_latest_height;
-    let ethereum_update_to = ethereum.query_latest_height().await;
+    let ethereum_update_to = loop {
+        let height = ethereum.query_latest_height().await;
+        if height.revision_height >= connection_try_height.revision_height + 1 {
+            break height;
+        }
+    };
+
+    tracing::info!("Querying proof at {:?}", ethereum_update_to);
 
     let ethereum_latest_height = ethereum
         .update_counterparty_client(
@@ -508,10 +519,10 @@ where
         .await;
 
     let ethereum_connection_state_proof = ethereum
-        .connection_state_proof(ethereum_connection_id.clone(), ethereum_latest_height)
+        .connection_state_proof(ethereum_connection_id.clone(), ethereum_update_to)
         .await;
     let ethereum_client_state_proof = ethereum
-        .client_state_proof(ethereum_client_id.clone(), ethereum_latest_height)
+        .client_state_proof(ethereum_client_id.clone(), ethereum_update_to)
         .await;
     let ethereum_consensus_state_proof = ethereum
         .consensus_state_proof(
@@ -519,7 +530,7 @@ where
             cometbls
                 .process_height_for_counterparty(cometbls_latest_height)
                 .await,
-            ethereum_latest_height,
+            ethereum_update_to,
         )
         .await;
 
@@ -599,7 +610,7 @@ where
 
     tracing::info!(cometbls_id, ethereum_id);
 
-    let cometbls_channel_id = cometbls
+    let (cometbls_channel_id, channel_init_height) = cometbls
         .channel_open_init(MsgChannelOpenInit {
             port_id: cometbls_port_id.to_string(),
             channel: Channel {
@@ -640,7 +651,7 @@ where
         )
         .await;
 
-    let ethereum_channel_id = ethereum
+    let (ethereum_channel_id, channel_try_height) = ethereum
         .channel_open_try(MsgChannelOpenTry {
             port_id: ethereum_port_id.clone(),
             channel: Channel {

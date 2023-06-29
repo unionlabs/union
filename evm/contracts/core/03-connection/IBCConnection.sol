@@ -12,7 +12,7 @@ import "../03-connection/IIBCConnection.sol";
  * @dev IBCConnection is a contract that implements [ICS-3](https://github.com/cosmos/ibc/tree/main/spec/core/ics-003-connection-semantics).
  */
 contract IBCConnection is IBCStore, IIBCConnectionHandshake {
-    string private constant commitmentPrefix = "ibc";
+    string private constant COMMITMENT_PREFIX = "ibc";
 
     /* Handshake functions */
 
@@ -86,7 +86,7 @@ contract IBCConnection is IBCStore, IIBCConnectionHandshake {
                     client_id: msg_.clientId,
                     connection_id: "",
                     prefix: IbcCoreCommitmentV1MerklePrefix.Data({
-                        key_prefix: bytes(commitmentPrefix)
+                        key_prefix: bytes(COMMITMENT_PREFIX)
                     })
                 })
             });
@@ -150,7 +150,7 @@ contract IBCConnection is IBCStore, IIBCConnectionHandshake {
                 client_id: connection.client_id,
                 connection_id: msg_.connectionId,
                 prefix: IbcCoreCommitmentV1MerklePrefix.Data({
-                    key_prefix: bytes(commitmentPrefix)
+                    key_prefix: bytes(COMMITMENT_PREFIX)
                 })
             });
 
@@ -214,7 +214,7 @@ contract IBCConnection is IBCStore, IIBCConnectionHandshake {
                 client_id: connection.client_id,
                 connection_id: msg_.connectionId,
                 prefix: IbcCoreCommitmentV1MerklePrefix.Data({
-                    key_prefix: bytes(commitmentPrefix)
+                    key_prefix: bytes(COMMITMENT_PREFIX)
                 })
             });
 
@@ -357,8 +357,8 @@ contract IBCConnection is IBCStore, IIBCConnectionHandshake {
             })
         );
         IbcCoreConnectionV1Version.Data storage version = versions[0];
-        version.features[0] = "ORDER_ORDERED";
-        version.features[1] = "ORDER_UNORDERED";
+        version.features[0] = "ORDER_UNORDERED";
+        version.features[1] = "ORDER_ORDERED";
     }
 
     // TODO implements

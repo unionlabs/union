@@ -110,10 +110,20 @@ library Ics23 {
                 key,
                 value
             );
-            require(
-                vCode == Proof.VerifyExistenceError.None,
-                "verifyChainedMembership: membership verification failed"
-            );
+            if(vCode != Proof.VerifyExistenceError.None) {
+                if(vCode == Proof.VerifyExistenceError.KeyNotMatching) {
+                    revert("verifyChainedMembership: key don't match");
+                } else if(vCode == Proof.VerifyExistenceError.ValueNotMatching) {
+                    revert("verifyChainedMembership: value don't match");
+                } else if(vCode == Proof.VerifyExistenceError.CheckSpec) {
+                    revert("verifyChainedMembership: invalid spec");
+                } else if(vCode == Proof.VerifyExistenceError.CalculateRoot) {
+                    revert("verifyChainedMembership: calculate root failed");
+                } else if(vCode == Proof.VerifyExistenceError.RootNotMatching) {
+                    revert("verifyChainedMembership: intermediate root not matching");
+                }
+                revert("verifyChainedMembership: failed to verify intermediate proof");
+            }
             value = subroot;
         }
         require(

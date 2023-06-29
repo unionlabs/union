@@ -185,7 +185,7 @@ impl LightClient for Cometbls {
             })
             .unwrap();
 
-            tracing::info!(block_number = ?tx_rcp.block_number);
+            tracing::info!(block_number = ?self.make_height(tx_rcp.block_number.unwrap().as_u64()));
 
             self.wait_for_execution_block(tx_rcp.block_number.unwrap())
                 .await;
@@ -406,7 +406,7 @@ impl LightClient for Cometbls {
 
     fn query_latest_height(&self) -> impl Future<Output = Height> + '_ {
         async move {
-            let height = reqwest::get(format!(
+            let height: u64 = reqwest::get(format!(
                 "{eth_beacon_rpc_api}/eth/v1/beacon/light_client/finality_update",
                 eth_beacon_rpc_api = self.eth_beacon_rpc_api
             ))
@@ -420,10 +420,7 @@ impl LightClient for Cometbls {
                 .parse()
                 .unwrap();
 
-            Height {
-                revision_number: 0,
-                revision_height: height,
-            }
+            self.make_height(height)
         }
     }
 
@@ -463,7 +460,7 @@ impl Connect<Ethereum> for Cometbls {
     fn connection_open_init(
         &self,
         msg: MsgConnectionOpenInit,
-    ) -> impl Future<Output = String> + '_ {
+    ) -> impl Future<Output = (String, Height)> + '_ {
         async move {
             let tx_rcp = self
                 .ibc_handler
@@ -502,14 +499,17 @@ impl Connect<Ethereum> for Cometbls {
             self.wait_for_execution_block(tx_rcp.block_number.unwrap())
                 .await;
 
-            connection_id
+            (
+                connection_id,
+                self.make_height(tx_rcp.block_number.unwrap().as_u64()),
+            )
         }
     }
 
     fn connection_open_try(
         &self,
         msg: MsgConnectionOpenTry<<Ethereum as LightClient>::ClientState>,
-    ) -> impl Future<Output = String> + '_ {
+    ) -> impl Future<Output = (String, Height)> + '_ {
         async move {
             let tx_rcp = self
                 .ibc_handler
@@ -548,14 +548,17 @@ impl Connect<Ethereum> for Cometbls {
             self.wait_for_execution_block(tx_rcp.block_number.unwrap())
                 .await;
 
-            connection_id
+            (
+                connection_id,
+                self.make_height(tx_rcp.block_number.unwrap().as_u64()),
+            )
         }
     }
 
     fn connection_open_ack(
         &self,
         msg: MsgConnectionOpenAck<<Ethereum as LightClient>::ClientState>,
-    ) -> impl Future<Output = ()> + '_ {
+    ) -> impl Future<Output = Height> + '_ {
         async move {
             let tx_rcp = self
                 .ibc_handler
@@ -569,13 +572,15 @@ impl Connect<Ethereum> for Cometbls {
 
             self.wait_for_execution_block(tx_rcp.block_number.unwrap())
                 .await;
+
+            self.make_height(tx_rcp.block_number.unwrap().as_u64())
         }
     }
 
     fn connection_open_confirm(
         &self,
         msg: MsgConnectionOpenConfirm,
-    ) -> impl Future<Output = ()> + '_ {
+    ) -> impl Future<Output = Height> + '_ {
         async move {
             let tx_rcp = self
                 .ibc_handler
@@ -589,10 +594,15 @@ impl Connect<Ethereum> for Cometbls {
 
             self.wait_for_execution_block(tx_rcp.block_number.unwrap())
                 .await;
+
+            self.make_height(tx_rcp.block_number.unwrap().as_u64())
         }
     }
 
-    fn channel_open_init(&self, msg: MsgChannelOpenInit) -> impl Future<Output = String> + '_ {
+    fn channel_open_init(
+        &self,
+        msg: MsgChannelOpenInit,
+    ) -> impl Future<Output = (String, Height)> + '_ {
         async move {
             // TODO: Make sure this is done in both init and try
             let bind_port_result = self
@@ -637,11 +647,17 @@ impl Connect<Ethereum> for Cometbls {
             self.wait_for_execution_block(tx_rcp.block_number.unwrap())
                 .await;
 
-            channel_id
+            (
+                channel_id,
+                self.make_height(tx_rcp.block_number.unwrap().as_u64()),
+            )
         }
     }
 
-    fn channel_open_try(&self, msg: MsgChannelOpenTry) -> impl Future<Output = String> + '_ {
+    fn channel_open_try(
+        &self,
+        msg: MsgChannelOpenTry,
+    ) -> impl Future<Output = (String, Height)> + '_ {
         async move {
             let tx_rcp = self
                 .ibc_handler
@@ -674,11 +690,14 @@ impl Connect<Ethereum> for Cometbls {
             self.wait_for_execution_block(tx_rcp.block_number.unwrap())
                 .await;
 
-            channel_id
+            (
+                channel_id,
+                self.make_height(tx_rcp.block_number.unwrap().as_u64()),
+            )
         }
     }
 
-    fn channel_open_ack(&self, msg: MsgChannelOpenAck) -> impl Future<Output = ()> + '_ {
+    fn channel_open_ack(&self, msg: MsgChannelOpenAck) -> impl Future<Output = Height> + '_ {
         async move {
             let tx_rcp = self
                 .ibc_handler
@@ -692,10 +711,15 @@ impl Connect<Ethereum> for Cometbls {
 
             self.wait_for_execution_block(tx_rcp.block_number.unwrap())
                 .await;
+
+            self.make_height(tx_rcp.block_number.unwrap().as_u64())
         }
     }
 
-    fn channel_open_confirm(&self, msg: MsgChannelOpenConfirm) -> impl Future<Output = ()> + '_ {
+    fn channel_open_confirm(
+        &self,
+        msg: MsgChannelOpenConfirm,
+    ) -> impl Future<Output = Height> + '_ {
         async move {
             let tx_rcp = self
                 .ibc_handler
@@ -709,6 +733,8 @@ impl Connect<Ethereum> for Cometbls {
 
             self.wait_for_execution_block(tx_rcp.block_number.unwrap())
                 .await;
+
+            self.make_height(tx_rcp.block_number.unwrap().as_u64())
         }
     }
 
@@ -1508,6 +1534,13 @@ impl Cometbls {
 
             tracing::debug!("requested height not yet reached");
             tokio::time::sleep(std::time::Duration::from_secs(3)).await;
+        }
+    }
+
+    fn make_height(&self, height: impl Into<u64>) -> Height {
+        Height {
+            revision_number: 0,
+            revision_height: height.into(),
         }
     }
 }
