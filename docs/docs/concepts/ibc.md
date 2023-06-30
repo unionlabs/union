@@ -14,4 +14,4 @@ Currently, there is only one standard that correctly handles these cases, in the
 
 ## Union's Philosophy
 
-The fundamental base layer of infrastructure must be efficient, secure, and cheap to operate before DeFi can compete with CeFi. Web3 requires a standard protocol, upon which we can build value-capturing integrations, such as intents, coincidence-of-wants, and cross-domain MEV. 
+The fundamental base layer of infrastructure must be efficient, secure, and cheap to operate before DeFi can compete with CeFi. Web3 requires a standard protocol, upon which we can build value-capturing integrations, such as intents, coincidence-of-wants, and cross-domain MEV.

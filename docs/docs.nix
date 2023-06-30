@@ -31,7 +31,7 @@
             patchShebangs node_modules/
           '';
 
-          postBuild = "yarn workspace docs --offline build";
+          postBuild = "yarn workspace docs --offline --no-progress build";
 
           installPhase = ''
             mkdir -p $out
