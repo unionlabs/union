@@ -6,11 +6,15 @@ module.exports = {
     "intro",
     {
       type: "category",
-      label: "Research",
+      label: "Concepts",
       items: [
         {
           type: "doc",
-          id: "research/consensus-verification",
+          id: "concepts/consensus-verification",
+        },
+        {
+          type: "doc",
+          id: "concepts/ibc",
         },
       ],
     },
