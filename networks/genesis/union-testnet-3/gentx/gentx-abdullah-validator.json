@@ -20,7 +20,7 @@
         "validator_address": "unionvaloper1ml67yhc5kp8qrxssfnqz8pxqvjyln5fup5xqpl",
         "pubkey": {
           "@type": "/cosmos.crypto.bn254.PubKey",
-          "key": "juuDdjE4DWCdeeowEEuTeVHpRt25Sgk/hDu0FjBsfRE="
+          "key": "7GxLlszSjjflvgAQKS7S6HdCz+MHcdLXUtNeJuuJUBE="
         },
         "value": {
           "denom": "muno",
@@ -57,6 +57,6 @@
     "tip": null
   },
   "signatures": [
-    "33GJkcBLHB9YLHvEU4Er1AhCVQdsfq/gsSQ1DIDyu+4rPV/rtJUQuMtzF2LEfh78BqorM553/XKSeJXKksLXGw=="
+    "Amykotc2MCfFOLtMjh3inUD0hucEK0BkZdRxUjUaGBR/cRIvGVShPdVZc37FF1FyViI9nrJfLZWv+qSEZbQXEA=="
   ]
 }
