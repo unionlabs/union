@@ -67,7 +67,7 @@
         },
         {
           "@type": "/cosmos.auth.v1beta1.BaseAccount",
-          "account_number": "1",
+          "account_number": "4",
           "address": "union1g9fqjzcvjhy53mwyq7v42c87a49fm7q7rdeh8c",
           "pub_key": null,
           "sequence": "0"
