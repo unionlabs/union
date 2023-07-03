@@ -196,6 +196,8 @@ pub fn update_header(
             .collect(),
     )?;
 
+    let trusted_height = trusted_sync_committee.height;
+
     let trusted_consensus_state = TrustedConsensusState::new(
         consensus_state.clone(),
         trusted_sync_committee.sync_committee,
@@ -246,7 +248,12 @@ pub fn update_header(
     )
     .map_err(|e| Error::Verification(e.to_string()))?;
 
-    let updated_execution_height = consensus_update.attested_header.execution.block_number;
+    // Some updates can be only for updating the sync committee, therefore the execution number can be
+    // smaller. We don't want to save a new state if this is the case.
+    let updated_execution_height = core::cmp::max(
+        trusted_height.revision_height(),
+        consensus_update.attested_header.execution.block_number,
+    );
 
     apply_light_client_update::<LightClientContext>(
         &mut client_state,
@@ -293,11 +300,8 @@ mod test {
     use super::*;
     use crate::state::{save_wasm_client_state, save_wasm_consensus_state};
     use cosmwasm_std::{
-        testing::{
-            mock_dependencies, BankQuerier, MockApi, MockQuerier, MockQuerierCustomHandlerResult,
-            MockStorage,
-        },
-        Empty, OwnedDeps, SystemResult,
+        testing::{MockApi, MockQuerier, MockQuerierCustomHandlerResult, MockStorage},
+        OwnedDeps, SystemResult,
     };
     use ethereum_verifier::crypto::{
         eth_aggregate_public_keys, fast_aggregate_verify, BlsPublicKey,
@@ -416,21 +420,20 @@ mod test {
             let update: EthHeader = update.clone().try_into().unwrap();
             update_header(deps.as_mut(), update.clone()).unwrap();
             // Consensus state is saved to the updated height.
-            if update.consensus_update.finalized_header.beacon.slot
+            if update.consensus_update.attested_header.beacon.slot
                 > update.trusted_sync_committee.height.revision_height()
             {
                 // It's a finality update
                 let (_, consensus_state) = read_consensus_state(
                     deps.as_ref(),
-                    IbcHeight::new(0, update.consensus_update.finalized_header.beacon.slot)
-                        .unwrap(),
+                    IbcHeight::new(0, update.consensus_update.attested_header.beacon.slot).unwrap(),
                 )
                 .unwrap()
                 .unwrap();
                 // Slot is updated.
                 assert_eq!(
                     consensus_state.slot,
-                    update.consensus_update.finalized_header.beacon.slot
+                    update.consensus_update.attested_header.beacon.slot
                 );
                 // Storage root is updated.
                 assert_eq!(
@@ -442,16 +445,17 @@ mod test {
                 let (_, client_state) = read_client_state(deps.as_ref()).unwrap();
                 assert_eq!(
                     client_state.latest_slot,
-                    update.consensus_update.finalized_header.beacon.slot
+                    update.consensus_update.attested_header.beacon.slot
                 );
             } else {
                 // It's a sync committee update
-                let (_, consensus_state) = read_consensus_state(
-                    deps.as_ref(),
+                let updated_height = core::cmp::max(
+                    update.trusted_sync_committee.height,
                     IbcHeight::new(0, update.consensus_update.attested_header.beacon.slot).unwrap(),
-                )
-                .unwrap()
-                .unwrap();
+                );
+                let (_, consensus_state) = read_consensus_state(deps.as_ref(), updated_height)
+                    .unwrap()
+                    .unwrap();
 
                 assert_eq!(
                     consensus_state.next_sync_committee.unwrap(),
@@ -569,222 +573,222 @@ mod test {
         assert!(update_header(deps.as_mut(), update).is_err());
     }
 
-    // #[test]
-    // fn membership_verification_works_for_client_state() {
-    //     let proof = Proof {
-    //         key: hex::decode(CLIENT_STATE_PROOF_KEY).unwrap(),
-    //         value: hex::decode(CLIENT_STATE_PROOF_VALUE).unwrap(),
-    //         proof: CLIENT_STATE_PROOF
-    //             .iter()
-    //             .map(|p| hex::decode(p).unwrap())
-    //             .collect(),
-    //     };
+    #[test]
+    fn membership_verification_works_for_client_state() {
+        let proof = Proof {
+            key: hex::decode(CLIENT_STATE_PROOF_KEY).unwrap(),
+            value: hex::decode(CLIENT_STATE_PROOF_VALUE).unwrap(),
+            proof: CLIENT_STATE_PROOF
+                .iter()
+                .map(|p| hex::decode(p).unwrap())
+                .collect(),
+        };
 
-    //     let storage_root = hex::decode(CLIENT_STATE_STORAGE_ROOT).unwrap();
+        let storage_root = hex::decode(CLIENT_STATE_STORAGE_ROOT).unwrap();
 
-    //     let client_state = CometClientState {
-    //         chain_id: "ibc-0".to_string(),
-    //         trust_level: Some(Fraction {
-    //             numerator: 1,
-    //             denominator: 3,
-    //         }),
-    //         trusting_period: Some(Duration {
-    //             seconds: 1814400,
-    //             nanos: 0,
-    //         }),
-    //         unbonding_period: Some(Duration {
-    //             seconds: 1814400,
-    //             nanos: 0,
-    //         }),
-    //         max_clock_drift: Some(Duration {
-    //             seconds: 40,
-    //             nanos: 0,
-    //         }),
-    //         frozen_height: Some(ProtoHeight {
-    //             revision_number: 0,
-    //             revision_height: 0,
-    //         }),
-    //     };
+        let client_state = CometClientState {
+            chain_id: "ibc-0".to_string(),
+            trust_level: Some(Fraction {
+                numerator: 1,
+                denominator: 3,
+            }),
+            trusting_period: Some(Duration {
+                seconds: 1814400,
+                nanos: 0,
+            }),
+            unbonding_period: Some(Duration {
+                seconds: 1814400,
+                nanos: 0,
+            }),
+            max_clock_drift: Some(Duration {
+                seconds: 40,
+                nanos: 0,
+            }),
+            frozen_height: Some(ProtoHeight {
+                revision_number: 0,
+                revision_height: 0,
+            }),
+        };
 
-    //     let wasm_client_state = WasmClientState {
-    //         data: client_state.encode_to_vec(),
-    //         code_id: hex::decode(CLIENT_STATE_WASM_CODE_ID).unwrap(),
-    //         latest_height: Some(ProtoHeight {
-    //             revision_number: 0,
-    //             revision_height: 1,
-    //         }),
-    //     };
+        let wasm_client_state = WasmClientState {
+            data: client_state.encode_to_vec(),
+            code_id: hex::decode(CLIENT_STATE_WASM_CODE_ID).unwrap(),
+            latest_height: Some(ProtoHeight {
+                revision_number: 0,
+                revision_height: 1,
+            }),
+        };
 
-    //     let any_client_state = Any {
-    //         type_url: "/ibc.lightclients.wasm.v1.ClientState".into(),
-    //         value: wasm_client_state.encode_to_vec(),
-    //     };
+        let any_client_state = Any {
+            type_url: "/ibc.lightclients.wasm.v1.ClientState".into(),
+            value: wasm_client_state.encode_to_vec(),
+        };
 
-    //     do_verify_membership(
-    //         ClientStatePath::new(
-    //             &ClientId::new(ClientType::new(ETHEREUM_CLIENT_ID_PREFIX.into()), 0).unwrap(),
-    //         )
-    //         .into(),
-    //         Hash32::try_from(storage_root.as_slice()).unwrap(),
-    //         3,
-    //         proof,
-    //         any_client_state.encode_to_vec().into(),
-    //     )
-    //     .expect("Membership verification of client state failed");
-    // }
+        do_verify_membership(
+            ClientStatePath::new(
+                &ClientId::new(ClientType::new(ETHEREUM_CLIENT_ID_PREFIX.into()), 0).unwrap(),
+            )
+            .into(),
+            Hash32::try_from(storage_root.as_slice()).unwrap(),
+            3,
+            proof,
+            any_client_state.encode_to_vec().into(),
+        )
+        .expect("Membership verification of client state failed");
+    }
 
-    // #[test]
-    // fn membership_verification_works_for_consensus_state() {
-    //     let proof = Proof {
-    //         key: hex::decode(CONSENSUS_STATE_PROOF_KEY).unwrap(),
-    //         value: hex::decode(CONSENSUS_STATE_PROOF_VALUE).unwrap(),
-    //         proof: CONSENSUS_STATE_PROOF
-    //             .iter()
-    //             .map(|p| hex::decode(p).unwrap())
-    //             .collect(),
-    //     };
+    #[test]
+    fn membership_verification_works_for_consensus_state() {
+        let proof = Proof {
+            key: hex::decode(CONSENSUS_STATE_PROOF_KEY).unwrap(),
+            value: hex::decode(CONSENSUS_STATE_PROOF_VALUE).unwrap(),
+            proof: CONSENSUS_STATE_PROOF
+                .iter()
+                .map(|p| hex::decode(p).unwrap())
+                .collect(),
+        };
 
-    //     let storage_root = hex::decode(CONSENSUS_STATE_STORAGE_ROOT).unwrap();
+        let storage_root = hex::decode(CONSENSUS_STATE_STORAGE_ROOT).unwrap();
 
-    //     let consensus_state = CometConsensusState {
-    //         root: Some(MerkleRoot {
-    //             hash: hex::decode(CONSENSUS_STATE_CONTRACT_MERKLE_ROOT).unwrap(),
-    //         }),
-    //         next_validators_hash: hex::decode(CONSENSUS_STATE_NEXT_VALIDATORS_HASH).unwrap(),
-    //     };
+        let consensus_state = CometConsensusState {
+            root: Some(MerkleRoot {
+                hash: hex::decode(CONSENSUS_STATE_CONTRACT_MERKLE_ROOT).unwrap(),
+            }),
+            next_validators_hash: hex::decode(CONSENSUS_STATE_NEXT_VALIDATORS_HASH).unwrap(),
+        };
 
-    //     let wasm_consensus_state = WasmConsensusState {
-    //         data: consensus_state.encode_to_vec(),
-    //         timestamp: 1684400046,
-    //     };
+        let wasm_consensus_state = WasmConsensusState {
+            data: consensus_state.encode_to_vec(),
+            timestamp: 1684400046,
+        };
 
-    //     let any_consensus_state = Any {
-    //         type_url: "/ibc.lightclients.wasm.v1.ConsensusState".into(),
-    //         value: wasm_consensus_state.encode_to_vec(),
-    //     };
+        let any_consensus_state = Any {
+            type_url: "/ibc.lightclients.wasm.v1.ConsensusState".into(),
+            value: wasm_consensus_state.encode_to_vec(),
+        };
 
-    //     do_verify_membership(
-    //         ClientConsensusStatePath::new(
-    //             &ClientId::new(ClientType::new(ETHEREUM_CLIENT_ID_PREFIX.into()), 0).unwrap(),
-    //             &IbcHeight::new(0, 1).unwrap(),
-    //         )
-    //         .into(),
-    //         Hash32::try_from(storage_root.as_slice()).unwrap(),
-    //         3,
-    //         proof,
-    //         any_consensus_state.encode_to_vec().into(),
-    //     )
-    //     .expect("Membership verification of consensus state failed");
-    // }
+        do_verify_membership(
+            ClientConsensusStatePath::new(
+                &ClientId::new(ClientType::new(ETHEREUM_CLIENT_ID_PREFIX.into()), 0).unwrap(),
+                &IbcHeight::new(0, 1).unwrap(),
+            )
+            .into(),
+            Hash32::try_from(storage_root.as_slice()).unwrap(),
+            3,
+            proof,
+            any_consensus_state.encode_to_vec().into(),
+        )
+        .expect("Membership verification of consensus state failed");
+    }
 
-    // fn prepare_connection_end() -> (Proof, Vec<u8>, ConnectionEnd) {
-    //     let proof = Proof {
-    //         key: hex::decode(CONNECTION_END_PROOF_KEY).unwrap(),
-    //         value: hex::decode(CONNECTION_END_PROOF_VALUE).unwrap(),
-    //         proof: CONNECTION_END_PROOF
-    //             .iter()
-    //             .map(|p| hex::decode(p).unwrap())
-    //             .collect(),
-    //     };
+    fn prepare_connection_end() -> (Proof, Vec<u8>, ConnectionEnd) {
+        let proof = Proof {
+            key: hex::decode(CONNECTION_END_PROOF_KEY).unwrap(),
+            value: hex::decode(CONNECTION_END_PROOF_VALUE).unwrap(),
+            proof: CONNECTION_END_PROOF
+                .iter()
+                .map(|p| hex::decode(p).unwrap())
+                .collect(),
+        };
 
-    //     let storage_root = hex::decode(CONNECTION_END_STORAGE_ROOT).unwrap();
+        let storage_root = hex::decode(CONNECTION_END_STORAGE_ROOT).unwrap();
 
-    //     let connection_end = ConnectionEnd {
-    //         client_id: format!("{ETHEREUM_CLIENT_ID_PREFIX}-0"),
-    //         versions: vec![Version {
-    //             identifier: "1".into(),
-    //             features: vec!["ORDER_ORDERED".into(), "ORDER_UNORDERED".into()],
-    //         }],
-    //         state: 1,
-    //         counterparty: Some(Counterparty {
-    //             client_id: format!("{WASM_CLIENT_ID_PREFIX}-0"),
-    //             connection_id: Default::default(),
-    //             prefix: Some(MerklePrefix {
-    //                 key_prefix: IBC_KEY_PREFIX.as_bytes().to_vec(),
-    //             }),
-    //         }),
-    //         delay_period: 0,
-    //     };
+        let connection_end = ConnectionEnd {
+            client_id: format!("{ETHEREUM_CLIENT_ID_PREFIX}-0"),
+            versions: vec![Version {
+                identifier: "1".into(),
+                features: vec!["ORDER_ORDERED".into(), "ORDER_UNORDERED".into()],
+            }],
+            state: 1,
+            counterparty: Some(Counterparty {
+                client_id: format!("{WASM_CLIENT_ID_PREFIX}-0"),
+                connection_id: Default::default(),
+                prefix: Some(MerklePrefix {
+                    key_prefix: IBC_KEY_PREFIX.as_bytes().to_vec(),
+                }),
+            }),
+            delay_period: 0,
+        };
 
-    //     (proof, storage_root, connection_end)
-    // }
+        (proof, storage_root, connection_end)
+    }
 
-    // #[test]
-    // fn membership_verification_works_for_proto_encoded_data() {
-    //     let (proof, storage_root, connection_end) = prepare_connection_end();
+    #[test]
+    fn membership_verification_works_for_connection_end() {
+        let (proof, storage_root, connection_end) = prepare_connection_end();
 
-    //     do_verify_membership(
-    //         ConnectionPath::new(&ConnectionId::new(0)).into(),
-    //         Hash32::try_from(storage_root.as_slice()).unwrap(),
-    //         3,
-    //         proof,
-    //         connection_end.encode_to_vec().into(),
-    //     )
-    //     .expect("Membership verification of connection end failed");
-    // }
+        do_verify_membership(
+            ConnectionPath::new(&ConnectionId::new(0)).into(),
+            Hash32::try_from(storage_root.as_slice()).unwrap(),
+            3,
+            proof,
+            connection_end.encode_to_vec().into(),
+        )
+        .expect("Membership verification of connection end failed");
+    }
 
-    // #[test]
-    // fn membership_verification_fails_for_incorrect_proofs() {
-    //     let (mut proof, storage_root, connection_end) = prepare_connection_end();
+    #[test]
+    fn membership_verification_fails_for_incorrect_proofs() {
+        let (mut proof, storage_root, connection_end) = prepare_connection_end();
 
-    //     let proofs = vec![
-    //         {
-    //             let mut proof = proof.clone();
-    //             proof.value[10] = u8::MAX - proof.value[10]; // Makes sure that produced value is always valid and different
-    //             proof
-    //         },
-    //         {
-    //             let mut proof = proof.clone();
-    //             proof.key[5] = u8::MAX - proof.key[5];
-    //             proof
-    //         },
-    //         {
-    //             proof.proof[0][10] = u8::MAX - proof.proof[0][10];
-    //             proof
-    //         },
-    //     ];
+        let proofs = vec![
+            {
+                let mut proof = proof.clone();
+                proof.value[10] = u8::MAX - proof.value[10]; // Makes sure that produced value is always valid and different
+                proof
+            },
+            {
+                let mut proof = proof.clone();
+                proof.key[5] = u8::MAX - proof.key[5];
+                proof
+            },
+            {
+                proof.proof[0][10] = u8::MAX - proof.proof[0][10];
+                proof
+            },
+        ];
 
-    //     for proof in proofs {
-    //         assert!(do_verify_membership(
-    //             ConnectionPath::new(&ConnectionId::new(0)).into(),
-    //             Hash32::try_from(storage_root.as_slice()).unwrap(),
-    //             3,
-    //             proof,
-    //             connection_end.encode_to_vec().into(),
-    //         )
-    //         .is_err());
-    //     }
-    // }
+        for proof in proofs {
+            assert!(do_verify_membership(
+                ConnectionPath::new(&ConnectionId::new(0)).into(),
+                Hash32::try_from(storage_root.as_slice()).unwrap(),
+                3,
+                proof,
+                connection_end.encode_to_vec().into(),
+            )
+            .is_err());
+        }
+    }
 
-    // #[test]
-    // fn membership_verification_fails_for_incorrect_storage_root() {
-    //     let (proof, mut storage_root, connection_end) = prepare_connection_end();
+    #[test]
+    fn membership_verification_fails_for_incorrect_storage_root() {
+        let (proof, mut storage_root, connection_end) = prepare_connection_end();
 
-    //     storage_root[10] = u8::MAX - storage_root[10];
+        storage_root[10] = u8::MAX - storage_root[10];
 
-    //     assert!(do_verify_membership(
-    //         ConnectionPath::new(&ConnectionId::new(0)).into(),
-    //         Hash32::try_from(storage_root.as_slice()).unwrap(),
-    //         3,
-    //         proof,
-    //         connection_end.encode_to_vec().into(),
-    //     )
-    //     .is_err());
-    // }
+        assert!(do_verify_membership(
+            ConnectionPath::new(&ConnectionId::new(0)).into(),
+            Hash32::try_from(storage_root.as_slice()).unwrap(),
+            3,
+            proof,
+            connection_end.encode_to_vec().into(),
+        )
+        .is_err());
+    }
 
-    // #[test]
-    // fn membership_verification_fails_for_incorrect_data() {
-    //     let (proof, storage_root, mut connection_end) = prepare_connection_end();
+    #[test]
+    fn membership_verification_fails_for_incorrect_data() {
+        let (proof, storage_root, mut connection_end) = prepare_connection_end();
 
-    //     connection_end.client_id = "incorrect-client-id".into();
+        connection_end.client_id = "incorrect-client-id".into();
 
-    //     assert!(do_verify_membership(
-    //         ConnectionPath::new(&ConnectionId::new(0)).into(),
-    //         Hash32::try_from(storage_root.as_slice()).unwrap(),
-    //         3,
-    //         proof,
-    //         connection_end.encode_to_vec().into(),
-    //     )
-    //     .is_err());
-    // }
+        assert!(do_verify_membership(
+            ConnectionPath::new(&ConnectionId::new(0)).into(),
+            Hash32::try_from(storage_root.as_slice()).unwrap(),
+            3,
+            proof,
+            connection_end.encode_to_vec().into(),
+        )
+        .is_err());
+    }
 }

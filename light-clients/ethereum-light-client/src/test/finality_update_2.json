@@ -2,7 +2,7 @@
   "trusted_sync_committee": {
     "trusted_height": {
       "revision_number": 0,
-      "revision_height": 1344
+      "revision_height": 1360
     },
     "sync_committee": {
       "pubkeys": [
