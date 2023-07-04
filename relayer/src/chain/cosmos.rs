@@ -354,7 +354,7 @@ impl LightClient for Ethereum {
 
             tracing::debug!(
                 "Client state serialized {:?}",
-                String::from_utf8_lossy(&subtle_encoding::hex::encode(&query_result.value))
+                ethers::utils::hex::encode(&query_result.value)
             );
 
             StateProof {
@@ -418,10 +418,7 @@ impl LightClient for Ethereum {
             };
 
             tracing::debug!("Proof height {}", query_result.height.value());
-            tracing::debug!(
-                "Proof {}",
-                String::from_utf8_lossy(&subtle_encoding::hex::encode(proof.proof.clone()))
-            );
+            tracing::debug!("Proof {}", ethers::utils::hex::encode(proof.proof.clone()));
 
             proof
         }
