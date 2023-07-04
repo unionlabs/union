@@ -558,9 +558,18 @@ where
         ethers::utils::hex::encode(cl.into_proto().encode_to_vec())
     );
 
-    tracing::debug!("Proof Connection {:?}", ethers::utils::hex::encode(&ethereum_connection_state_proof.proof));
-    tracing::debug!("Proof Client {:?}", ethers::utils::hex::encode(&ethereum_client_state_proof.proof));
-    tracing::debug!("Proof Consensus {:?}", ethers::utils::hex::encode(&ethereum_consensus_state_proof.proof));
+    tracing::debug!(
+        "Proof Connection {:?}",
+        ethers::utils::hex::encode(&ethereum_connection_state_proof.proof)
+    );
+    tracing::debug!(
+        "Proof Client {:?}",
+        ethers::utils::hex::encode(&ethereum_client_state_proof.proof)
+    );
+    tracing::debug!(
+        "Proof Consensus {:?}",
+        ethers::utils::hex::encode(&ethereum_consensus_state_proof.proof)
+    );
 
     cometbls
         .connection_open_ack(MsgConnectionOpenAck {

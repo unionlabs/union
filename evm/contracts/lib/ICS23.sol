@@ -104,19 +104,27 @@ library Ics23 {
                 key,
                 value
             );
-            if(vCode != Proof.VerifyExistenceError.None) {
-                if(vCode == Proof.VerifyExistenceError.KeyNotMatching) {
+            if (vCode != Proof.VerifyExistenceError.None) {
+                if (vCode == Proof.VerifyExistenceError.KeyNotMatching) {
                     revert("verifyChainedMembership: key don't match");
-                } else if(vCode == Proof.VerifyExistenceError.ValueNotMatching) {
+                } else if (
+                    vCode == Proof.VerifyExistenceError.ValueNotMatching
+                ) {
                     revert("verifyChainedMembership: value don't match");
-                } else if(vCode == Proof.VerifyExistenceError.CheckSpec) {
+                } else if (vCode == Proof.VerifyExistenceError.CheckSpec) {
                     revert("verifyChainedMembership: invalid spec");
-                } else if(vCode == Proof.VerifyExistenceError.CalculateRoot) {
+                } else if (vCode == Proof.VerifyExistenceError.CalculateRoot) {
                     revert("verifyChainedMembership: calculate root failed");
-                } else if(vCode == Proof.VerifyExistenceError.RootNotMatching) {
-                    revert("verifyChainedMembership: intermediate root not matching");
+                } else if (
+                    vCode == Proof.VerifyExistenceError.RootNotMatching
+                ) {
+                    revert(
+                        "verifyChainedMembership: intermediate root not matching"
+                    );
                 }
-                revert("verifyChainedMembership: generically failed to verify intermediate proof");
+                revert(
+                    "verifyChainedMembership: generically failed to verify intermediate proof"
+                );
             }
             value = subroot;
         }

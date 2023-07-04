@@ -98,7 +98,10 @@ where
 
     // CONNECTION HANDSHAKE
 
-    fn connection_open_init(&self, _: MsgConnectionOpenInit) -> impl Future<Output = (String, Height)> + '_;
+    fn connection_open_init(
+        &self,
+        _: MsgConnectionOpenInit,
+    ) -> impl Future<Output = (String, Height)> + '_;
 
     fn connection_open_try(
         &self,
@@ -110,14 +113,20 @@ where
         _: MsgConnectionOpenAck<C::ClientState>,
     ) -> impl Future<Output = Height> + '_;
 
-    fn connection_open_confirm(&self, _: MsgConnectionOpenConfirm)
-        -> impl Future<Output = Height> + '_;
+    fn connection_open_confirm(
+        &self,
+        _: MsgConnectionOpenConfirm,
+    ) -> impl Future<Output = Height> + '_;
 
     // CHANNEL HANDSHAKE
 
-    fn channel_open_init(&self, _: MsgChannelOpenInit) -> impl Future<Output = (String, Height)> + '_;
+    fn channel_open_init(
+        &self,
+        _: MsgChannelOpenInit,
+    ) -> impl Future<Output = (String, Height)> + '_;
 
-    fn channel_open_try(&self, _: MsgChannelOpenTry) -> impl Future<Output = (String, Height)> + '_;
+    fn channel_open_try(&self, _: MsgChannelOpenTry)
+        -> impl Future<Output = (String, Height)> + '_;
 
     fn channel_open_ack(&self, _: MsgChannelOpenAck) -> impl Future<Output = Height> + '_;
 
