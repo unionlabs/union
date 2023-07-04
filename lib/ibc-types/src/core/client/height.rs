@@ -8,7 +8,7 @@ pub struct Height {
 
 impl Height {
     pub fn increment(mut self) -> Self {
-        self.revision_height = self.revision_height + 1;
+        self.revision_height += 1;
         self
     }
 }

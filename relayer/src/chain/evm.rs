@@ -539,7 +539,7 @@ impl Connect<Ethereum> for Cometbls {
         async move {
             tracing::debug!(
                 "Client state: {}",
-                ethers::utils::hex::encode(&msg.client_state.clone().into_proto().encode_to_vec())
+                ethers::utils::hex::encode(msg.client_state.clone().into_proto().encode_to_vec())
             );
 
             let msg: contracts::ibc_handler::MsgConnectionOpenAck = msg.into();

@@ -414,7 +414,7 @@ where
 
     let delay_period = 6;
 
-    let (cometbls_connection_id, connection_init_height) = cometbls
+    let (cometbls_connection_id, _) = cometbls
         .connection_open_init(MsgConnectionOpenInit {
             client_id: cometbls_client_id.clone(),
             counterparty: connection::counterparty::Counterparty {
@@ -508,14 +508,14 @@ where
     let ethereum_update_from = ethereum_latest_height;
     let ethereum_update_to = loop {
         let height = ethereum.query_latest_height().await;
-        if height.revision_height >= connection_try_height.revision_height + 1 {
+        if height >= connection_try_height.increment() {
             break connection_try_height.increment();
         }
     };
 
     tracing::info!("Querying proof at {:?}", connection_try_height);
 
-    let ethereum_latest_height = ethereum
+    let _ = ethereum
         .update_counterparty_client(
             cometbls,
             cometbls_client_id.clone(),
@@ -649,7 +649,7 @@ where
 
     tracing::debug!("ChannelOpenInit");
 
-    let (cometbls_channel_id, channel_init_height) = cometbls
+    let (cometbls_channel_id, _) = cometbls
         .channel_open_init(MsgChannelOpenInit {
             port_id: cometbls_port_id.to_string(),
             channel: Channel {
@@ -724,7 +724,7 @@ where
 
     tracing::info!("Querying proof at {:?}", channel_try_height);
 
-    let ethereum_latest_height = ethereum
+    let _ = ethereum
         .update_counterparty_client(
             cometbls,
             cometbls_connection_info.client_id.clone(),
