@@ -12,7 +12,6 @@ use cosmwasm_std::{
     IbcReceiveResponse, Reply, Response, SubMsg, SubMsgResult, Uint128, WasmMsg,
 };
 use cw20::Cw20ExecuteMsg;
-use cw_utils::ParseReplyError;
 use ethabi::{ParamType, Token};
 
 pub const ICS20_VERSION: &str = "ics20-1";
