@@ -29,6 +29,7 @@ let
           --password=/dev/null \
           --nodiscover \
           --syncmode=full \
+          --gcmode=archive \
           --nat=none
       '';
     };

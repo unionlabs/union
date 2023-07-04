@@ -912,23 +912,32 @@ impl Connect<Ethereum> for Cometbls {
                 let trusted_period = self.sync_committee_period(trusted_slot);
 
                 if trusted_period + 1 < target_period {
+                    tracing::debug!(
+                        "Will update multiple sync committees from period {}, to {}",
+                        trusted_period,
+                        target_period
+                    );
                     // Eth chain is more than 1 signature period ahead of us. We need to light client
                     // updates to catch up.
                     (
                         self.apply_sync_committee_updates(
                             counterparty,
                             &counterparty_client_id,
-                            target_slot,
                             trusted_slot,
+                            target_slot,
                         )
                         .await,
                         false,
                     )
                 } else if trusted_period + 1 == target_period {
+                    tracing::debug!(
+                        "Only one signature ahead, will do a finality update with is_next true"
+                    );
                     // Eth chain is only 1 signature period ahead of us, we only need a single
                     // finality update and include next sync committee.
                     (trusted_slot, true)
                 } else if trusted_period == target_period {
+                    tracing::debug!("On the same period, only do a finality update");
                     // We are at the same signature period, this is a finality update with no next sync committee.
                     (trusted_slot, false)
                 } else {
@@ -936,6 +945,12 @@ impl Connect<Ethereum> for Cometbls {
                     panic!("Chain's current signature period cannot be behind of the saved state, something is wrong!");
                 }
             };
+
+            // Target slot might be the same slot of the sync committee period and sync committee updates might already
+            // reached this height.
+            if trusted_slot >= target_slot {
+                return trusted_slot;
+            }
 
             let trusted_period = self.sync_committee_period(trusted_slot);
             let execution_height = self.execution_height(trusted_slot).await;
@@ -1072,7 +1087,7 @@ impl Cometbls {
 
         let light_client_updates = loop {
             let updates = self
-                .light_client_updates(trusted_period + 1, target_period - trusted_period + 1)
+                .light_client_updates(trusted_period + 1, target_period - trusted_period)
                 .await;
 
             if updates
@@ -1089,7 +1104,7 @@ impl Cometbls {
 
         let mut trusted_block = self.beacon_header(trusted_slot.revision_height).await;
 
-        for light_client_update in &light_client_updates[1..] {
+        for light_client_update in light_client_updates {
             tracing::info!("applying light client update");
 
             // bootstrap contains the current sync committee for the given height

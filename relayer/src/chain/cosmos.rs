@@ -251,7 +251,7 @@ impl LightClient for Ethereum {
             // dbg!(&msg.data.consensus_update.finalized_header.beacon.slot);
 
             // let cs_before: Self::ClientState = query_client
-            //     .client_state(QueryClientStateRequest {
+            //     .client_state(client_v1::QueryClientStateRequest {
             //         client_id: client_id.clone(),
             //     })
             //     .await
@@ -274,7 +274,7 @@ impl LightClient for Ethereum {
             .await;
 
             // let cs_after: Self::ClientState = query_client
-            //     .client_state(QueryClientStateRequest {
+            //     .client_state(client_v1::QueryClientStateRequest {
             //         client_id: client_id.clone(),
             //     })
             //     .await
