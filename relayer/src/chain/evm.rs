@@ -304,21 +304,11 @@ impl LightClient for Cometbls {
 
             assert!(is_found);
 
-            dbg!(client_state_bytes.to_string());
-
-            // let cometbls_client_state = decode_dynamic_singleton_tuple::<
-            //     UnionIbcLightclientsCometblsV1ClientStateData,
-            // >(&client_state_bytes);
-
             let cometbls_client_state: Self::ClientState =
                 google::protobuf::Any::decode(&*client_state_bytes)
                     .unwrap()
                     .try_into()
                     .unwrap();
-
-            // tracing::info!(?cometbls_client_state);
-
-            // tokio::time::sleep(std::time::Duration::from_secs(30)).await;
 
             let block_number = self.provider.get_block_number().await.unwrap();
             tracing::info!(?block_number);
@@ -450,13 +440,6 @@ impl LightClient for Cometbls {
 }
 
 impl Connect<Ethereum> for Cometbls {
-    // fn generate_counterparty_handshake_client_state(
-    //     &self,
-    //     counterparty_state: <Ethereum as LightClient>::ClientState,
-    // ) -> impl Future<Output = Self::HandshakeClientState> + '_ {
-    //     async move { todo!() }
-    // }
-
     fn connection_open_init(
         &self,
         msg: MsgConnectionOpenInit,
@@ -521,12 +504,6 @@ impl Connect<Ethereum> for Cometbls {
                 .unwrap()
                 .unwrap();
 
-            // self.wait_for_beacon_block(Height {
-            //     revision_number: 0,
-            //     revision_height: tx_rcp.block_number.unwrap().0[0],
-            // })
-            // .await;
-
             let connection_id = decode_logs::<IBCHandlerEvents>(
                 tx_rcp
                     .logs
@@ -560,9 +537,23 @@ impl Connect<Ethereum> for Cometbls {
         msg: MsgConnectionOpenAck<<Ethereum as LightClient>::ClientState>,
     ) -> impl Future<Output = Height> + '_ {
         async move {
+            tracing::debug!(
+                "Client state: {}",
+                String::from_utf8_lossy(&subtle_encoding::hex::encode(
+                    &msg.client_state.clone().into_proto().encode_to_vec()
+                ))
+            );
+
+            let msg: contracts::ibc_handler::MsgConnectionOpenAck = msg.into();
+
+            tracing::debug!(
+                "Client state bytes {}",
+                ethers::utils::hex::encode(&msg.client_state_bytes)
+            );
+
             let tx_rcp = self
                 .ibc_handler
-                .connection_open_ack(msg.into())
+                .connection_open_ack(msg)
                 .send()
                 .await
                 .unwrap()
@@ -745,7 +736,6 @@ impl Connect<Ethereum> for Cometbls {
                 .recv_packet(packet.into())
                 .send()
                 .await
-                // .map_err(|err| err.decode_revert::<String>())
                 .unwrap()
                 .await
                 .unwrap()

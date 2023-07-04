@@ -352,6 +352,11 @@ impl LightClient for Ethereum {
                 .await
                 .unwrap();
 
+            tracing::debug!(
+                "Client state serialized {:?}",
+                String::from_utf8_lossy(&subtle_encoding::hex::encode(&query_result.value))
+            );
+
             StateProof {
                 state: google::protobuf::Any::decode(&*query_result.value)
                     .unwrap()

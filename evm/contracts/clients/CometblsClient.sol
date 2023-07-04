@@ -272,6 +272,7 @@ contract CometblsClient is ILightClient {
         OptimizedConsensusState memory consensusState = consensusStates[
             stateIndex(clientId, height.toUint128())
         ];
+        require(consensusState.timestamp != 0, "LC: verifyMembership: consensusState does not exist");
         return
             membershipVerifier.verifyMembership(
                 abi.encodePacked(consensusState.root),

@@ -5,8 +5,6 @@
 
 // nix run .# -- tx wasm instantiate 1 '{"default_timeout":10000,"gov_contract":"union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2","allowlist":[]}' --label blah --from alice --gas auto --keyring-backend test --gas-adjustment 1.3 --amount 100stake --no-admin --chain-id union-devnet-1
 
-use std::{collections::HashMap, str::FromStr};
-
 use bip32::{DerivationPath, Language, XPrv};
 use chain::evm::CometblsConfig;
 use clap::{Args, Parser, Subcommand};
@@ -16,24 +14,29 @@ use ethers::{
     types::{Address, H256},
 };
 use futures::StreamExt;
-use ibc_types::core::{
-    channel::{
-        self, channel::Channel, msg_channel_open_ack::MsgChannelOpenAck,
-        msg_channel_open_confirm::MsgChannelOpenConfirm, msg_channel_open_init::MsgChannelOpenInit,
-        msg_channel_open_try::MsgChannelOpenTry, msg_recv_packet::MsgRecvPacket, order::Order,
-        packet::Packet,
+use ibc_types::{
+    core::{
+        channel::{
+            self, channel::Channel, msg_channel_open_ack::MsgChannelOpenAck,
+            msg_channel_open_confirm::MsgChannelOpenConfirm,
+            msg_channel_open_init::MsgChannelOpenInit, msg_channel_open_try::MsgChannelOpenTry,
+            msg_recv_packet::MsgRecvPacket, order::Order, packet::Packet,
+        },
+        client::height::Height,
+        commitment::merkle_prefix::MerklePrefix,
+        connection::{
+            self, msg_channel_open_ack::MsgConnectionOpenAck,
+            msg_channel_open_confirm::MsgConnectionOpenConfirm,
+            msg_channel_open_init::MsgConnectionOpenInit,
+            msg_channel_open_try::MsgConnectionOpenTry, version::Version,
+        },
     },
-    client::height::Height,
-    commitment::merkle_prefix::MerklePrefix,
-    connection::{
-        self, msg_channel_open_ack::MsgConnectionOpenAck,
-        msg_channel_open_confirm::MsgConnectionOpenConfirm,
-        msg_channel_open_init::MsgConnectionOpenInit, msg_channel_open_try::MsgConnectionOpenTry,
-        version::Version,
-    },
+    IntoProto,
 };
+use prost::Message;
 use protos::ibc::core::channel::v1 as channel_v1;
 use reqwest::Url;
+use std::{collections::HashMap, str::FromStr};
 use tendermint_rpc::{event::EventData, query::EventType, SubscriptionClient};
 
 use crate::chain::{cosmos::Ethereum, evm::Cometbls, ClientState, Connect, LightClient};
@@ -350,8 +353,8 @@ async fn connection_handshake<Chain1, Chain2>(
 where
     Chain1: LightClient + Connect<Chain2>,
     Chain2: LightClient + Connect<Chain1>,
-    <Chain1 as LightClient>::ClientState: std::fmt::Debug,
-    <Chain2 as LightClient>::ClientState: std::fmt::Debug,
+    <Chain1 as LightClient>::ClientState: std::fmt::Debug + IntoProto,
+    <Chain2 as LightClient>::ClientState: std::fmt::Debug + IntoProto,
 {
     let cometbls_id = cometbls.chain_id().await;
     let ethereum_id = ethereum.chain_id().await;
@@ -497,17 +500,20 @@ where
         })
         .await;
 
-    tracing::info!("Connection open try executed at {:?}", connection_try_height);
+    tracing::info!(
+        "Connection open try executed at {:?}",
+        connection_try_height
+    );
 
     let ethereum_update_from = ethereum_latest_height;
     let ethereum_update_to = loop {
         let height = ethereum.query_latest_height().await;
         if height.revision_height >= connection_try_height.revision_height + 1 {
-            break height;
+            break connection_try_height.increment();
         }
     };
 
-    tracing::info!("Querying proof at {:?}", ethereum_update_to);
+    tracing::info!("Querying proof at {:?}", connection_try_height);
 
     let ethereum_latest_height = ethereum
         .update_counterparty_client(
@@ -519,10 +525,10 @@ where
         .await;
 
     let ethereum_connection_state_proof = ethereum
-        .connection_state_proof(ethereum_connection_id.clone(), ethereum_update_to)
+        .connection_state_proof(ethereum_connection_id.clone(), connection_try_height)
         .await;
     let ethereum_client_state_proof = ethereum
-        .client_state_proof(ethereum_client_id.clone(), ethereum_update_to)
+        .client_state_proof(ethereum_client_id.clone(), connection_try_height)
         .await;
     let ethereum_consensus_state_proof = ethereum
         .consensus_state_proof(
@@ -530,9 +536,31 @@ where
             cometbls
                 .process_height_for_counterparty(cometbls_latest_height)
                 .await,
-            ethereum_update_to,
+            connection_try_height,
         )
         .await;
+
+    let cl = cometbls
+        .query_client_state(cometbls_client_id.clone())
+        .await;
+
+    tracing::debug!(
+        "Cometbls client state {:?}",
+        ethers::utils::hex::encode(cl.into_proto().encode_to_vec())
+    );
+
+    let cl = ethereum
+        .query_client_state(ethereum_client_id.clone())
+        .await;
+
+    tracing::debug!(
+        "Evm client state {:?}",
+        ethers::utils::hex::encode(cl.into_proto().encode_to_vec())
+    );
+
+    tracing::debug!("Proof Connection {:?}", ethers::utils::hex::encode(&ethereum_connection_state_proof.proof));
+    tracing::debug!("Proof Client {:?}", ethers::utils::hex::encode(&ethereum_client_state_proof.proof));
+    tracing::debug!("Proof Consensus {:?}", ethers::utils::hex::encode(&ethereum_consensus_state_proof.proof));
 
     cometbls
         .connection_open_ack(MsgConnectionOpenAck {
@@ -543,7 +571,7 @@ where
                 features: [Order::Ordered, Order::Unordered].into_iter().collect(),
             },
             client_state: ethereum_client_state_proof.state,
-            proof_height: ethereum_connection_state_proof.proof_height,
+            proof_height: ethereum_update_to,
             proof_try: ethereum_connection_state_proof.proof,
             proof_client: ethereum_client_state_proof.proof,
             proof_consensus: ethereum_consensus_state_proof.proof,
@@ -610,6 +638,8 @@ where
 
     tracing::info!(cometbls_id, ethereum_id);
 
+    tracing::debug!("ChannelOpenInit");
+
     let (cometbls_channel_id, channel_init_height) = cometbls
         .channel_open_init(MsgChannelOpenInit {
             port_id: cometbls_port_id.to_string(),
@@ -651,6 +681,8 @@ where
         )
         .await;
 
+    tracing::debug!("ChannelOpenTry");
+
     let (ethereum_channel_id, channel_try_height) = ethereum
         .channel_open_try(MsgChannelOpenTry {
             port_id: ethereum_port_id.clone(),
@@ -670,19 +702,23 @@ where
         })
         .await;
 
-    let cometbls_latest_trusted_height = cometbls
-        .query_client_state(cometbls_connection_info.client_id.clone())
-        .await
-        .height();
-
     let ethereum_latest_height = ethereum.query_latest_height().await;
+    let ethereum_update_from = ethereum_latest_height;
+    let ethereum_update_to = loop {
+        let height = ethereum.query_latest_height().await;
+        if height.revision_height >= channel_try_height.revision_height + 1 {
+            break channel_try_height.increment();
+        }
+    };
+
+    tracing::info!("Querying proof at {:?}", channel_try_height);
 
     let ethereum_latest_height = ethereum
         .update_counterparty_client(
             cometbls,
             cometbls_connection_info.client_id.clone(),
-            cometbls_latest_trusted_height,
-            ethereum_latest_height,
+            ethereum_update_from,
+            ethereum_update_to,
         )
         .await;
 
@@ -693,6 +729,8 @@ where
             ethereum_latest_height,
         )
         .await;
+
+    tracing::debug!("ChannelOpenAck");
 
     cometbls
         .channel_open_ack(MsgChannelOpenAck {
@@ -723,6 +761,8 @@ where
             cometbls_latest_height,
         )
         .await;
+
+    tracing::debug!("ChannelOpenConfirm");
 
     ethereum
         .channel_open_confirm(MsgChannelOpenConfirm {

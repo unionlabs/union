@@ -357,8 +357,8 @@ contract IBCConnection is IBCStore, IIBCConnectionHandshake {
             })
         );
         IbcCoreConnectionV1Version.Data storage version = versions[0];
-        version.features[0] = "ORDER_UNORDERED";
-        version.features[1] = "ORDER_ORDERED";
+        version.features[0] = "ORDER_ORDERED";
+        version.features[1] = "ORDER_UNORDERED";
     }
 
     // TODO implements

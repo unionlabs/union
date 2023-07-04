@@ -66,12 +66,6 @@ library Ics23 {
         });
     }
 
-    enum VerifyMembershipError {
-        None,
-        ExistenceProofIsNil,
-        ProofVerify
-    }
-
     function verifyChainedMembership(
         IbcCoreCommitmentV1MerkleProof.Data memory merkleProof,
         bytes memory root,
@@ -122,7 +116,7 @@ library Ics23 {
                 } else if(vCode == Proof.VerifyExistenceError.RootNotMatching) {
                     revert("verifyChainedMembership: intermediate root not matching");
                 }
-                revert("verifyChainedMembership: failed to verify intermediate proof");
+                revert("verifyChainedMembership: generically failed to verify intermediate proof");
             }
             value = subroot;
         }
@@ -130,6 +124,12 @@ library Ics23 {
             keccak256(root) == keccak256(subroot),
             "verifyChainedMembership: proof did not commit to expected root"
         );
+    }
+
+    enum VerifyMembershipError {
+        None,
+        ExistenceProofIsNil,
+        ProofVerify
     }
 
     // verifyMembership, throws an exception in case anything goes wrong
