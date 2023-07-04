@@ -16,7 +16,7 @@ use ibc_types::{
         },
     },
     google::protobuf::any::Any,
-    lightclients::wasm,
+    lightclients::{cometbls, ethereum, wasm},
 };
 
 pub mod cosmos;
@@ -150,13 +150,32 @@ where
     ) -> impl Future<Output = Height> + 'a;
 }
 
+pub trait InnerClientState {
+    fn height(&self) -> Option<Height>;
+}
+
 pub trait ClientState {
     fn height(&self) -> Height;
 }
 
-impl<Data> ClientState for wasm::client_state::ClientState<Data> {
+impl InnerClientState for ethereum::client_state::ClientState {
+    fn height(&self) -> Option<Height> {
+        Some(Height {
+            revision_number: 0,
+            revision_height: self.latest_slot,
+        })
+    }
+}
+
+impl InnerClientState for cometbls::client_state::ClientState {
+    fn height(&self) -> Option<Height> {
+        None
+    }
+}
+
+impl<Data: InnerClientState> ClientState for wasm::client_state::ClientState<Data> {
     fn height(&self) -> Height {
-        self.latest_height
+        self.data.height().unwrap_or(self.latest_height)
     }
 }
 
