@@ -27,3 +27,4 @@ pub const FINALIZED_ROOT_DEPTH: usize = 6;
 pub const EXECUTION_PAYLOAD_INDEX: usize = 25;
 pub const EXECUTION_PAYLOAD_DEPTH: usize = 4;
 pub const NEXT_SYNC_COMMITTEE_SUBTREE_INDEX: usize = 23;
+pub const NEXT_SYNC_COMMITTEE_DEPTH: usize = 5;

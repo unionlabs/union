@@ -13,6 +13,7 @@ use contracts::{
     },
     ics20_bank::ICS20Bank,
 };
+use ethereum_consensus::beacon::Root;
 use ethereum_verifier::{
     BYTES_PER_LOGS_BLOOM, EPOCHS_PER_SYNC_COMMITTEE_PERIOD, MAX_EXTRA_DATA_BYTES, SECONDS_PER_SLOT,
     SLOTS_PER_EPOCH,
@@ -22,7 +23,7 @@ use ethers::{
     prelude::{decode_logs, k256::ecdsa, SignerMiddleware},
     providers::{Http, Middleware, Provider},
     signers::{LocalWallet, Signer, Wallet},
-    types::{H160, H256, U256, U64},
+    types::{EIP1186ProofResponse, H160, H256, U256, U64},
     utils::keccak256,
 };
 use futures::Future;
@@ -57,7 +58,7 @@ use ibc_types::{
     },
     IntoProto,
 };
-use lodestar_rpc::types::BeaconHeaderResponse;
+use lodestar_rpc::types::{BeaconHeaderData, BeaconHeaderResponse};
 use prost::Message;
 use protos::{google, union::ibc::lightclients::ethereum::v1 as ethereum_v1};
 use reqwest::Url;
@@ -71,6 +72,18 @@ pub type LightClientFinalityUpdateResponse = lodestar_rpc::types::LightClientFin
 >;
 
 pub type LightClientBootstrapResponse = lodestar_rpc::types::LightClientBootstrapResponse<
+    { ethereum_verifier::SYNC_COMMITTEE_SIZE },
+    { ethereum_verifier::BYTES_PER_LOGS_BLOOM },
+    { ethereum_verifier::MAX_EXTRA_DATA_BYTES },
+>;
+
+pub type LightClientBootstrapData = lodestar_rpc::types::LightClientBootstrapData<
+    { ethereum_verifier::SYNC_COMMITTEE_SIZE },
+    { ethereum_verifier::BYTES_PER_LOGS_BLOOM },
+    { ethereum_verifier::MAX_EXTRA_DATA_BYTES },
+>;
+
+pub type LightClientUpdateResponse = lodestar_rpc::types::LightClientUpdateResponse<
     { ethereum_verifier::SYNC_COMMITTEE_SIZE },
     { ethereum_verifier::BYTES_PER_LOGS_BLOOM },
     { ethereum_verifier::MAX_EXTRA_DATA_BYTES },
@@ -783,8 +796,8 @@ impl Connect<Ethereum> for Cometbls {
                             epoch: 0,
                         },
                         capella: Fork {
-                            version: vec![144, 0, 0, 114],
-                            // version: vec![3, 0, 0, 1],
+                            // version: vec![144, 0, 0, 114],
+                            version: vec![3, 0, 0, 1],
                             epoch: 0,
                         },
                         eip4844: Fork {
@@ -879,343 +892,93 @@ impl Connect<Ethereum> for Cometbls {
         }
     }
 
-    /// Returns the actual height updated to (>= `update_to`)
     fn update_counterparty_client<'a>(
         &'a self,
         counterparty: &'a Ethereum,
         counterparty_client_id: String,
-        mut update_from: Height,
-        update_to: Height,
+        trusted_slot: Height,
+        target_slot: Height,
     ) -> impl Future<Output = Height> + 'a {
         async move {
-            assert!(
-                update_to >= update_from,
-                "cannot update to block in the past: {update_to} >= {update_from}"
-            );
+            // We need to wait until the target slot is attested, because the update
+            // won't be available otherwise.
+            self.wait_for_beacon_block(target_slot).await;
 
-            self.wait_for_beacon_block(update_to).await;
+            let finality_update = self.light_client_finality_update().await;
 
-            let update_to_period = update_to.revision_height.div(PERIOD);
-            let current_period = update_from.revision_height.div(PERIOD);
+            let (trusted_slot, is_next) = {
+                let target_period =
+                    self.sync_committee_period(finality_update.data.attested_header.beacon.slot);
+                let trusted_period = self.sync_committee_period(trusted_slot);
 
-            tracing::info!(%current_period);
-
-            let mut trusted_block = reqwest::get(format!(
-                "{eth_beacon_rpc_api}/eth/v1/beacon/headers/{height}",
-                eth_beacon_rpc_api = self.eth_beacon_rpc_api,
-                height = update_from.revision_height
-            ))
-            .await
-            .unwrap()
-            .json::<BeaconHeaderResponse>()
-            .await
-            .unwrap()
-            .data;
-
-            // +1 here because we want to update to the `update_to_period`'s period.
-            let periods_to_update = update_to_period - current_period + 1;
-
-            tracing::debug!(update_to_period, current_period);
-
-            // We are looping here because some of the updates might not be available yet. We understand that when
-            // we see the finalized header's slot as 0.
-            let light_client_updates = loop {
-                let updates =
-                    reqwest::get(format!(
-                        "{eth_beacon_rpc_api}/eth/v1/beacon/light_client/updates?start_period={current_period}&count={count}",
-                        eth_beacon_rpc_api = self.eth_beacon_rpc_api,
-                        count = periods_to_update,
-                    ))
-                    .await
-                    .unwrap()
-                    .json::<LightClientUpdatesResponse>()
-                    .await
-                    .unwrap()
-                    .0;
-
-                if updates
-                    .iter()
-                    .any(|update| update.data.finalized_header.beacon.slot.0 == 0)
-                {
-                    tracing::debug!("lightclient update not available yet; retrying in 3 seconds");
-
-                    tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
-
-                    continue;
-                }
-
-                break updates;
-            };
-
-            // REVIEW(benluelo): Is there a way to make this not have to be mutable?
-            let mut light_client_update = light_client_updates.last().unwrap().clone();
-
-            // don't do sync committee updates if the sync committee period is the same
-            if update_to_period != current_period {
-                // send the sync committee update if we are at the beginning of the period
-                for light_client_update in &light_client_updates[1..] {
-                    tracing::info!("applying light client update");
-
-                    // bootstrap contains the current sync committee for the given height
-                    let bootstrap = reqwest::get(format!(
-                        "{eth_beacon_rpc_api}/eth/v1/beacon/light_client/bootstrap/0x{root}",
-                        eth_beacon_rpc_api = self.eth_beacon_rpc_api,
-                        root = trusted_block.root,
-                    ))
-                    .await
-                    .unwrap()
-                    .json::<LightClientBootstrapResponse>()
-                    .await
-                    .unwrap();
-
-                    let account_update = self
-                        .provider
-                        .get_proof(
-                            self.ibc_handler.address(),
-                            vec![],
-                            Some(
-                                light_client_update
-                                    .data
-                                    .attested_header
-                                    .execution
-                                    .block_number
-                                    .0
-                                    .into(),
-                            ),
+                if trusted_period + 1 < target_period {
+                    // Eth chain is more than 1 signature period ahead of us. We need to light client
+                    // updates to catch up.
+                    (
+                        self.apply_sync_committee_updates(
+                            counterparty,
+                            &counterparty_client_id,
+                            target_slot,
+                            trusted_slot,
                         )
-                        .await
-                        .unwrap();
+                        .await,
+                        false,
+                    )
+                } else if trusted_period + 1 == target_period {
+                    // Eth chain is only 1 signature period ahead of us, we only need a single
+                    // finality update and include next sync committee.
+                    (trusted_slot, true)
+                } else if trusted_period == target_period {
+                    // We are at the same signature period, this is a finality update with no next sync committee.
+                    (trusted_slot, false)
+                } else {
+                    // Something is wrong
+                    panic!("Chain's current signature period cannot be behind of the saved state, something is wrong!");
+                }
+            };
 
-                    let execution_height = self
-                        .execution_height(Height {
-                            revision_number: 0,
-                            revision_height: bootstrap.data.header.beacon.slot.0,
-                        })
-                        .await;
+            let trusted_period = self.sync_committee_period(trusted_slot);
+            let execution_height = self.execution_height(trusted_slot).await;
 
-                    let header = wasm::header::Header {
-                        data: ethereum::header::Header {
-                            trusted_sync_committee: TrustedSyncCommittee {
-                                trusted_height:
-                                    // NOTE: should be the same as trusted height passed in to this function
-                                    execution_height,
-                                sync_committee: SyncCommittee {
-                                    pubkeys: bootstrap
-                                        .data
-                                        .current_sync_committee
-                                        .pubkeys
-                                        .iter()
-                                        .map(|x| x.0.iter().copied().collect())
-                                        .collect(),
-                                    aggregate_pubkey: bootstrap
-                                        .data
-                                        .current_sync_committee
-                                        .aggregate_pubkey
-                                        .iter()
-                                        .copied()
-                                        .collect(),
-                                },
-                                is_next: true,
-                            },
-                            consensus_update: {
-                                let LightClientUpdateData {
-                                    attested_header,
-                                    finalized_header,
-                                    finality_branch,
-                                    sync_aggregate,
-                                    signature_slot,
-                                    next_sync_committee,
-                                    next_sync_committee_branch,
-                                } = light_client_update.clone().data;
-
-                                LightClientUpdate {
-                                    attested_header: translate_header(attested_header),
-                                    next_sync_committee: SyncCommittee {
-                                        pubkeys: next_sync_committee
-                                            .pubkeys
-                                            .iter()
-                                            .map(|x| x.0.to_vec())
-                                            .collect(),
-                                        aggregate_pubkey: next_sync_committee
-                                            .aggregate_pubkey
-                                            .to_vec(),
-                                    },
-                                    next_sync_committee_branch: next_sync_committee_branch
-                                        .to_vec()
-                                        .iter()
-                                        .map(|x| x.as_bytes().to_vec())
-                                        .collect(),
-                                    finalized_header: translate_header(finalized_header),
-                                    finality_branch: finality_branch
-                                        .iter()
-                                        .map(|x| x.as_bytes().to_vec())
-                                        .collect(),
-                                    sync_aggregate: SyncAggregate {
-                                        sync_committee_bits: sync_aggregate
-                                            .sync_committee_bits
-                                            .as_bitslice()
-                                            .to_bitvec()
-                                            .into_vec(),
-                                        sync_committee_signature: sync_aggregate
-                                            .sync_committee_signature
-                                            .iter()
-                                            .copied()
-                                            .collect(),
-                                    },
-                                    signature_slot: signature_slot.0,
-                                }
-                            },
-                            account_update: AccountUpdate {
-                                proofs: [Proof {
-                                    key: self.ibc_handler.address().as_bytes().to_vec(),
-                                    value: account_update.storage_hash.as_bytes().to_vec(),
-                                    proof: account_update
-                                        .account_proof
-                                        .into_iter()
-                                        .map(|x| x.to_vec())
-                                        .collect(),
-                                }]
-                                .to_vec(),
-                            },
-                            timestamp: SystemTime::now()
-                                .duration_since(UNIX_EPOCH)
-                                .unwrap()
-                                .as_secs(),
+            let (trusted_sync_committee, next_sync_committee, next_sync_committee_branch) =
+                if is_next {
+                    let light_client_update = self.light_client_updates(trusted_period, 2).await;
+                    (
+                        TrustedSyncCommittee {
+                            trusted_height: execution_height,
+                            sync_committee: translate_sync_committee(
+                                &light_client_update[0].data.next_sync_committee,
+                            ),
+                            is_next,
                         },
-                        height: update_to,
-                    };
+                        translate_sync_committee(&light_client_update[1].data.next_sync_committee),
+                        translate_merkle_branch(
+                            &light_client_update[1].data.next_sync_committee_branch,
+                        ),
+                    )
+                } else {
+                    let block_root = self.beacon_header(trusted_slot).await.root;
+                    let bootstrap = self.light_client_bootstrap(&block_root).await;
 
-                    tracing::debug!(
-                        message = "Checking if updated height > update from revision height",
-                        finalized_slot = header.data.consensus_update.finalized_header.beacon.slot,
-                        update_from = %update_from
-                    );
+                    (
+                        TrustedSyncCommittee {
+                            trusted_height: execution_height,
+                            sync_committee: translate_sync_committee(
+                                &bootstrap.data.current_sync_committee,
+                            ),
+                            is_next,
+                        },
+                        Default::default(),
+                        Default::default(),
+                    )
+                };
 
-                    // If we update, we also need to advance `update_from`
-                    if header.data.consensus_update.attested_header.beacon.slot
-                        > update_from.revision_height
-                    {
-                        trusted_block = reqwest::get(format!(
-                            "{eth_beacon_rpc_api}/eth/v1/beacon/headers/{slot}",
-                            eth_beacon_rpc_api = self.eth_beacon_rpc_api,
-                            slot = light_client_update.data.attested_header.beacon.slot.0
-                        ))
-                        .await
-                        .unwrap()
-                        .json::<BeaconHeaderResponse>()
-                        .await
-                        .unwrap()
-                        .data;
-
-                        update_from = Height {
-                            revision_number: 0,
-                            revision_height: header
-                                .data
-                                .consensus_update
-                                .attested_header
-                                .beacon
-                                .slot,
-                        };
-                    }
-
-                    counterparty
-                        .update_client(counterparty_client_id.clone(), header)
-                        .await;
-                }
-            }
-
-            // We might be already updated to the height that we want, no need to proceed.
-            if update_to == update_from {
-                tracing::info!(%update_from, "requested height {update_to} already reached");
-
-                return update_to;
-            }
-
-            // wait until the beacon (execution?) height is >= the latest trusted height
-            self.wait_for_execution_block(
-                self.execution_height(update_to)
-                    .await
-                    .revision_height
-                    .into(),
-            )
-            .await;
-            let finality_update = reqwest::get(format!(
-                "{eth_beacon_rpc_api}/eth/v1/beacon/light_client/finality_update",
-                eth_beacon_rpc_api = self.eth_beacon_rpc_api,
-            ))
-            .await
-            .unwrap()
-            .json::<LightClientFinalityUpdateResponse>()
-            .await
-            .unwrap()
-            .data;
-
-            let actual_updated_height = Height {
-                revision_number: 0,
-                revision_height: finality_update.attested_header.beacon.slot.0,
-            };
-
-            // send the finality update
-
-            // whether the sync committee signature is to be checked against the current or next sync committee
-            let is_next = finality_update.finalized_header.beacon.slot.0 % PERIOD == 0;
-
-            let bootstrap = reqwest::get(format!(
-                "{eth_beacon_rpc_api}/eth/v1/beacon/light_client/bootstrap/0x{root}",
-                eth_beacon_rpc_api = self.eth_beacon_rpc_api,
-                root = trusted_block.root,
-            ))
-            .await
-            .unwrap()
-            .json::<LightClientBootstrapResponse>()
-            .await
-            .unwrap();
-
-            let execution_height = self.execution_height(update_from).await;
-
-            let trusted_sync_committee = if is_next {
-                TrustedSyncCommittee {
-                    trusted_height: execution_height,
-                    sync_committee: SyncCommittee {
-                        pubkeys: light_client_update
-                            .data
-                            .next_sync_committee
-                            .pubkeys
-                            .iter()
-                            .map(|x| x.0.iter().copied().collect())
-                            .collect(),
-                        aggregate_pubkey: light_client_update
-                            .data
-                            .next_sync_committee
-                            .aggregate_pubkey
-                            .iter()
-                            .copied()
-                            .collect(),
-                    },
-                    is_next,
-                }
-            } else {
-                TrustedSyncCommittee {
-                    trusted_height: execution_height,
-                    sync_committee: SyncCommittee {
-                        pubkeys: bootstrap
-                            .data
-                            .current_sync_committee
-                            .pubkeys
-                            .iter()
-                            .map(|x| x.0.iter().copied().collect())
-                            .collect(),
-                        aggregate_pubkey: bootstrap
-                            .data
-                            .current_sync_committee
-                            .aggregate_pubkey
-                            .iter()
-                            .copied()
-                            .collect(),
-                    },
-                    is_next,
-                }
-            };
+            let execution_block_number = finality_update
+                .data
+                .attested_header
+                .execution
+                .block_number
+                .0;
 
             let account_update = self
                 .provider
@@ -1224,97 +987,34 @@ impl Connect<Ethereum> for Cometbls {
                     vec![],
                     Some(
                         // REVIEW: Do we want finalized_header.beacon.slot here?
-                        finality_update
-                            .attested_header
-                            .execution
-                            .block_number
-                            .0
-                            .into(),
+                        execution_block_number.into(),
                     ),
                 )
                 .await
                 .unwrap();
 
-            // Even we make sure that we update until the latest period with sync committee updates, there is still a
-            // chance that the store period can increment while we wait for `update_to` to be finalized. This happens
-            // when `update_to` is very close to the next period. When that's the case, the block that we'll update to
-            // will be in the next period, so we combine the sync committee update with finality update.
-            if is_next {
-                tracing::info!("will try finality update with is_next=true");
-                let update_period = finality_update.finalized_header.beacon.slot.0.div(PERIOD);
-                let light_client_updates = reqwest::get(format!(
-                    "{eth_beacon_rpc_api}/eth/v1/beacon/light_client/updates?start_period={update_period}&count={count}",
-                    eth_beacon_rpc_api = self.eth_beacon_rpc_api,
-                    count = 1,
-                ))
-                .await
-                .unwrap()
-                .json::<LightClientUpdatesResponse>()
-                .await
-                .unwrap()
-                .0;
-
-                light_client_update = light_client_updates.last().unwrap().clone();
-            }
+            let updated_height = Height {
+                revision_height: execution_block_number,
+                revision_number: 0,
+            };
 
             let header = wasm::header::Header {
-                height: self.execution_height(actual_updated_height).await,
+                height: updated_height,
                 data: ethereum::header::Header {
-                    trusted_sync_committee,
                     consensus_update: LightClientUpdate {
-                        attested_header: translate_header(finality_update.attested_header),
-                        // TODO(benluelo): make into Option
-                        next_sync_committee: if is_next {
-                            SyncCommittee {
-                                pubkeys: light_client_update
-                                    .data
-                                    .next_sync_committee
-                                    .pubkeys
-                                    .iter()
-                                    .map(|x| x.0.to_vec())
-                                    .collect(),
-                                aggregate_pubkey: light_client_update
-                                    .data
-                                    .next_sync_committee
-                                    .aggregate_pubkey
-                                    .to_vec(),
-                            }
-                        } else {
-                            Default::default()
-                        },
-                        next_sync_committee_branch: if is_next {
-                            light_client_update
-                                .data
-                                .next_sync_committee_branch
-                                .to_vec()
-                                .iter()
-                                .map(|x| x.as_bytes().to_vec())
-                                .collect()
-                        } else {
-                            Default::default()
-                        },
-                        finalized_header: translate_header(finality_update.finalized_header),
-                        finality_branch: finality_update
-                            .finality_branch
-                            .iter()
-                            .map(|x| x.as_bytes().to_vec())
-                            .collect(),
-                        sync_aggregate: SyncAggregate {
-                            sync_committee_bits: finality_update
-                                .sync_aggregate
-                                .sync_committee_bits
-                                .as_bitslice()
-                                .to_bitvec()
-                                .into_vec(),
-                            sync_committee_signature: finality_update
-                                .sync_aggregate
-                                .sync_committee_signature
-                                .iter()
-                                .copied()
-                                .collect(),
-                        },
-                        signature_slot: finality_update.signature_slot.0,
+                        attested_header: translate_header(finality_update.data.attested_header),
+                        next_sync_committee,
+                        next_sync_committee_branch,
+                        finalized_header: translate_header(finality_update.data.finalized_header),
+                        finality_branch: translate_merkle_branch(
+                            &finality_update.data.finality_branch,
+                        ),
+                        sync_aggregate: translate_sync_aggregate(
+                            &finality_update.data.sync_aggregate,
+                        ),
+                        signature_slot: finality_update.data.signature_slot.0,
                     },
+                    trusted_sync_committee,
                     account_update: AccountUpdate {
                         proofs: [Proof {
                             key: self.ibc_handler.address().as_bytes().to_vec(),
@@ -1339,7 +1039,7 @@ impl Connect<Ethereum> for Cometbls {
                 .update_client(counterparty_client_id, header)
                 .await;
 
-            actual_updated_height
+            updated_height
         }
     }
 }
@@ -1360,6 +1060,103 @@ pub struct CometblsConfig {
 }
 
 impl Cometbls {
+    async fn apply_sync_committee_updates(
+        &self,
+        counterparty: &Ethereum,
+        counterparty_client_id: &str,
+        mut trusted_slot: Height,
+        target_slot: Height,
+    ) -> Height {
+        let target_period = self.sync_committee_period(target_slot);
+        let trusted_period = self.sync_committee_period(trusted_slot);
+
+        let light_client_updates = loop {
+            let updates = self
+                .light_client_updates(trusted_period + 1, target_period - trusted_period + 1)
+                .await;
+
+            if updates
+                .iter()
+                .any(|update| update.data.finalized_header.beacon.slot.0 == 0)
+            {
+                tracing::debug!("lightclient update not available yet; retrying in 3 seconds");
+                tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
+                continue;
+            }
+
+            break updates;
+        };
+
+        let mut trusted_block = self.beacon_header(trusted_slot.revision_height).await;
+
+        for light_client_update in &light_client_updates[1..] {
+            tracing::info!("applying light client update");
+
+            // bootstrap contains the current sync committee for the given height
+            let bootstrap = self.light_client_bootstrap(&trusted_block.root).await;
+
+            let account_update = self
+                .provider
+                .get_proof(
+                    self.ibc_handler.address(),
+                    vec![],
+                    Some(
+                        light_client_update
+                            .data
+                            .attested_header
+                            .execution
+                            .block_number
+                            .0
+                            .into(),
+                    ),
+                )
+                .await
+                .unwrap();
+
+            let execution_height = self
+                .execution_height(Height {
+                    revision_number: 0,
+                    revision_height: bootstrap.data.header.beacon.slot.0,
+                })
+                .await;
+
+            let header = self
+                .construct_sync_committee_update(
+                    execution_height,
+                    bootstrap.clone().data,
+                    light_client_update.clone().data,
+                    account_update,
+                )
+                .await;
+
+            tracing::debug!(
+                message = "Checking if updated height > update from revision height",
+                finalized_slot = header.data.consensus_update.finalized_header.beacon.slot,
+                update_from = %trusted_slot
+            );
+
+            // If we update, we also need to advance `update_from`
+            if header.data.consensus_update.attested_header.beacon.slot
+                > trusted_slot.revision_height
+            {
+                trusted_block = self
+                    .beacon_header(light_client_update.data.attested_header.beacon.slot.0)
+                    .await;
+
+                trusted_slot = Height {
+                    revision_number: 0,
+                    revision_height: header.data.consensus_update.attested_header.beacon.slot,
+                };
+            }
+
+            counterparty
+                .update_client(counterparty_client_id.into(), header)
+                .await;
+        }
+
+        trusted_slot
+    }
+
     pub async fn new(config: CometblsConfig) -> Self {
         let provider = Provider::new(Http::new(config.eth_rpc_api));
 
@@ -1457,11 +1254,11 @@ impl Cometbls {
         }
     }
 
-    async fn execution_height(&self, beacon_height: Height) -> Height {
+    async fn execution_height<H: Into<u64>>(&self, beacon_height: H) -> Height {
         let height = reqwest::get(format!(
             "{eth_beacon_rpc_api}/eth/v2/beacon/blocks/{slot}",
             eth_beacon_rpc_api = self.eth_beacon_rpc_api,
-            slot = beacon_height.revision_height
+            slot = beacon_height.into()
         ))
         .await
         .unwrap()
@@ -1477,6 +1274,136 @@ impl Cometbls {
             revision_number: 0,
             revision_height: height,
         }
+    }
+
+    /// Returns the beacon block header at slot
+    async fn beacon_header<H: Into<u64>>(&self, slot: H) -> BeaconHeaderData {
+        reqwest::get(format!(
+            "{eth_beacon_rpc_api}/eth/v1/beacon/headers/{slot}",
+            eth_beacon_rpc_api = self.eth_beacon_rpc_api,
+            slot = slot.into()
+        ))
+        .await
+        .unwrap()
+        .json::<BeaconHeaderResponse>()
+        .await
+        .unwrap()
+        .data
+    }
+
+    async fn construct_sync_committee_update(
+        &self,
+        trusted_height: Height,
+        bootstrap: LightClientBootstrapData,
+        update: LightClientUpdateData,
+        account_update: EIP1186ProofResponse,
+    ) -> wasm::header::Header<ethereum::header::Header> {
+        let update_to = update.attested_header.execution.block_number.0;
+        wasm::header::Header {
+            data: ethereum::header::Header {
+                trusted_sync_committee: TrustedSyncCommittee {
+                    // NOTE: should be the same as trusted height passed in to this function
+                    trusted_height,
+                    sync_committee: translate_sync_committee(&bootstrap.current_sync_committee),
+                    is_next: true,
+                },
+                consensus_update: {
+                    LightClientUpdate {
+                        attested_header: translate_header(update.attested_header),
+                        next_sync_committee: translate_sync_committee(&update.next_sync_committee),
+                        next_sync_committee_branch: translate_merkle_branch(
+                            &update.next_sync_committee_branch,
+                        ),
+                        finalized_header: translate_header(update.finalized_header),
+                        finality_branch: update
+                            .finality_branch
+                            .iter()
+                            .map(|x| x.as_bytes().to_vec())
+                            .collect(),
+                        sync_aggregate: SyncAggregate {
+                            sync_committee_bits: update
+                                .sync_aggregate
+                                .sync_committee_bits
+                                .as_bitslice()
+                                .to_bitvec()
+                                .into_vec(),
+                            sync_committee_signature: update
+                                .sync_aggregate
+                                .sync_committee_signature
+                                .iter()
+                                .copied()
+                                .collect(),
+                        },
+                        signature_slot: update.signature_slot.0,
+                    }
+                },
+                account_update: AccountUpdate {
+                    proofs: [Proof {
+                        key: self.ibc_handler.address().as_bytes().to_vec(),
+                        value: account_update.storage_hash.as_bytes().to_vec(),
+                        proof: account_update
+                            .account_proof
+                            .into_iter()
+                            .map(|x| x.to_vec())
+                            .collect(),
+                    }]
+                    .to_vec(),
+                },
+                timestamp: SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .unwrap()
+                    .as_secs(),
+            },
+            height: Height {
+                revision_number: 0,
+                revision_height: update_to,
+            },
+        }
+    }
+
+    async fn light_client_bootstrap(&self, root: &Root) -> LightClientBootstrapResponse {
+        reqwest::get(format!(
+            "{eth_beacon_rpc_api}/eth/v1/beacon/light_client/bootstrap/0x{root}",
+            eth_beacon_rpc_api = self.eth_beacon_rpc_api,
+        ))
+        .await
+        .unwrap()
+        .json::<LightClientBootstrapResponse>()
+        .await
+        .unwrap()
+    }
+
+    async fn light_client_finality_update(&self) -> LightClientFinalityUpdateResponse {
+        reqwest::get(format!(
+            "{eth_beacon_rpc_api}/eth/v1/beacon/light_client/finality_update",
+            eth_beacon_rpc_api = self.eth_beacon_rpc_api,
+        ))
+        .await
+        .unwrap()
+        .json::<LightClientFinalityUpdateResponse>()
+        .await
+        .unwrap()
+    }
+
+    async fn light_client_updates(
+        &self,
+        start_period: u64,
+        count: u64,
+    ) -> Vec<LightClientUpdateResponse> {
+        reqwest::get(format!(
+            "{eth_beacon_rpc_api}/eth/v1/beacon/light_client/updates?start_period={start_period}&count={count}",
+            eth_beacon_rpc_api = self.eth_beacon_rpc_api,
+        ))
+        .await
+        .unwrap()
+        .json::<LightClientUpdatesResponse>()
+        .await
+        .unwrap()
+        .0
+    }
+
+    fn sync_committee_period<H: Into<u64>>(&self, height: H) -> u64 {
+        height.into().div(PERIOD)
     }
 
     async fn wait_for_beacon_block(&self, requested_height: Height) {
@@ -1538,6 +1465,48 @@ pub trait IntoEthAbi: Into<Self::EthAbi> {
 
     fn into_eth_abi(self) -> Self::EthAbi {
         self.into()
+    }
+}
+
+pub fn translate_sync_committee(
+    sync_committee: &ethereum_consensus::sync_protocol::SyncCommittee<
+        { ethereum_verifier::SYNC_COMMITTEE_SIZE },
+    >,
+) -> SyncCommittee {
+    SyncCommittee {
+        pubkeys: sync_committee
+            .pubkeys
+            .iter()
+            .map(|x| x.0.iter().copied().collect())
+            .collect(),
+        aggregate_pubkey: sync_committee.aggregate_pubkey.iter().copied().collect(),
+    }
+}
+
+pub fn translate_merkle_branch(merkle_branch: &[ethereum_consensus::types::H256]) -> Vec<Vec<u8>> {
+    merkle_branch
+        .to_vec()
+        .iter()
+        .map(|x| x.as_bytes().to_vec())
+        .collect()
+}
+
+pub fn translate_sync_aggregate(
+    sync_aggregate: &ethereum_consensus::sync_protocol::SyncAggregate<
+        { ethereum_verifier::SYNC_COMMITTEE_SIZE },
+    >,
+) -> SyncAggregate {
+    SyncAggregate {
+        sync_committee_bits: sync_aggregate
+            .sync_committee_bits
+            .as_bitslice()
+            .to_bitvec()
+            .into_vec(),
+        sync_committee_signature: sync_aggregate
+            .sync_committee_signature
+            .iter()
+            .copied()
+            .collect(),
     }
 }
 
