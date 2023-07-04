@@ -702,11 +702,13 @@ where
         })
         .await;
 
-    let ethereum_latest_height = ethereum.query_latest_height().await;
-    let ethereum_update_from = ethereum_latest_height;
+    let cometbls_latest_trusted_height = cometbls
+        .query_client_state(cometbls_connection_info.client_id.clone())
+        .await
+        .height();
     let ethereum_update_to = loop {
         let height = ethereum.query_latest_height().await;
-        if height.revision_height >= channel_try_height.revision_height + 1 {
+        if height >= channel_try_height.increment() {
             break channel_try_height.increment();
         }
     };
@@ -717,7 +719,7 @@ where
         .update_counterparty_client(
             cometbls,
             cometbls_connection_info.client_id.clone(),
-            ethereum_update_from,
+            cometbls_latest_trusted_height,
             ethereum_update_to,
         )
         .await;
@@ -726,7 +728,7 @@ where
         .channel_state_proof(
             ethereum_channel_id.clone(),
             ethereum_port_id.clone(),
-            ethereum_latest_height,
+            channel_try_height,
         )
         .await;
 
@@ -739,7 +741,7 @@ where
             counterparty_channel_id: ethereum_channel_id.clone(),
             counterparty_version: CHANNEL_VERSION.to_string(),
             proof_try: proof.proof,
-            proof_height: proof.proof_height,
+            proof_height: ethereum_update_to,
         })
         .await;
 
