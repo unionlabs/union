@@ -796,8 +796,8 @@ impl Connect<Ethereum> for Cometbls {
                             epoch: 0,
                         },
                         capella: Fork {
-                            // version: vec![144, 0, 0, 114],
-                            version: vec![3, 0, 0, 1],
+                            version: vec![144, 0, 0, 114],
+                            // version: vec![3, 0, 0, 1],
                             epoch: 0,
                         },
                         eip4844: Fork {
