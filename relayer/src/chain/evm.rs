@@ -23,7 +23,7 @@ use ethers::{
     prelude::{decode_logs, k256::ecdsa, SignerMiddleware},
     providers::{Http, Middleware, Provider},
     signers::{LocalWallet, Signer, Wallet},
-    types::{EIP1186ProofResponse, H160, H256, U256, U64},
+    types::{H160, H256, U256, U64},
     utils::keccak256,
 };
 use futures::Future;
@@ -933,7 +933,7 @@ impl Connect<Ethereum> for Cometbls {
                             counterparty,
                             &counterparty_client_id,
                             trusted_slot,
-                            target_slot.decrement(),
+                            target_period - 1,
                         )
                         .await,
                         true,
@@ -1002,18 +1002,10 @@ impl Connect<Ethereum> for Cometbls {
                     )
                 };
 
-            let updated_height = Height::new(
-                0,
-                finality_update
-                    .data
-                    .attested_header
-                    .execution
-                    .block_number
-                    .0,
-            );
+            let updated_height = Height::new(0, finality_update.data.attested_header.beacon.slot.0);
 
             let header = self
-                .make_update(
+                .make_finality_update(
                     finality_update.data,
                     trusted_sync_committee,
                     next_sync_committee,
@@ -1052,9 +1044,8 @@ impl Cometbls {
         counterparty: &Ethereum,
         counterparty_client_id: &str,
         mut trusted_slot: Height,
-        target_slot: Height,
+        target_period: u64,
     ) -> Height {
-        let target_period = self.sync_committee_period(target_slot);
         let trusted_period = self.sync_committee_period(trusted_slot);
 
         let light_client_updates = loop {
@@ -1082,37 +1073,10 @@ impl Cometbls {
             // bootstrap contains the current sync committee for the given height
             let bootstrap = self.light_client_bootstrap(&trusted_block.root).await;
 
-            let account_update = self
-                .provider
-                .get_proof(
-                    self.ibc_handler.address(),
-                    vec![],
-                    Some(
-                        light_client_update
-                            .data
-                            .attested_header
-                            .execution
-                            .block_number
-                            .0
-                            .into(),
-                    ),
-                )
-                .await
-                .unwrap();
-
-            let execution_height = self
-                .execution_height(Height {
-                    revision_number: 0,
-                    revision_height: bootstrap.data.header.beacon.slot.0,
-                })
-                .await;
-
             let header = self
-                .construct_sync_committee_update(
-                    execution_height,
+                .make_sync_committee_update(
                     bootstrap.clone().data,
                     light_client_update.clone().data,
-                    account_update,
                 )
                 .await;
 
@@ -1278,74 +1242,30 @@ impl Cometbls {
         .data
     }
 
-    async fn construct_sync_committee_update(
+    async fn make_sync_committee_update(
         &self,
-        trusted_height: Height,
         bootstrap: LightClientBootstrapData,
         update: LightClientUpdateData,
-        account_update: EIP1186ProofResponse,
     ) -> wasm::header::Header<ethereum::header::Header> {
-        let update_to = update.attested_header.execution.block_number.0;
-        wasm::header::Header {
-            data: ethereum::header::Header {
-                trusted_sync_committee: TrustedSyncCommittee {
-                    // NOTE: should be the same as trusted height passed in to this function
-                    trusted_height,
-                    sync_committee: translate_sync_committee(&bootstrap.current_sync_committee),
-                    is_next: true,
-                },
-                consensus_update: {
-                    LightClientUpdate {
-                        attested_header: translate_header(update.attested_header),
-                        next_sync_committee: translate_sync_committee(&update.next_sync_committee),
-                        next_sync_committee_branch: translate_merkle_branch(
-                            &update.next_sync_committee_branch,
-                        ),
-                        finalized_header: translate_header(update.finalized_header),
-                        finality_branch: update
-                            .finality_branch
-                            .iter()
-                            .map(|x| x.as_bytes().to_vec())
-                            .collect(),
-                        sync_aggregate: SyncAggregate {
-                            sync_committee_bits: update
-                                .sync_aggregate
-                                .sync_committee_bits
-                                .as_bitslice()
-                                .to_bitvec()
-                                .into_vec(),
-                            sync_committee_signature: update
-                                .sync_aggregate
-                                .sync_committee_signature
-                                .iter()
-                                .copied()
-                                .collect(),
-                        },
-                        signature_slot: update.signature_slot.0,
-                    }
-                },
-                account_update: AccountUpdate {
-                    proofs: [Proof {
-                        key: self.ibc_handler.address().as_bytes().to_vec(),
-                        value: account_update.storage_hash.as_bytes().to_vec(),
-                        proof: account_update
-                            .account_proof
-                            .into_iter()
-                            .map(|x| x.to_vec())
-                            .collect(),
-                    }]
-                    .to_vec(),
-                },
-                timestamp: SystemTime::now()
-                    .duration_since(UNIX_EPOCH)
-                    .unwrap()
-                    .as_secs(),
+        self.make_update(
+            LightClientUpdate {
+                attested_header: translate_header(update.attested_header),
+                next_sync_committee: translate_sync_committee(&update.next_sync_committee),
+                next_sync_committee_branch: translate_merkle_branch(
+                    &update.next_sync_committee_branch,
+                ),
+                finalized_header: translate_header(update.finalized_header),
+                finality_branch: translate_merkle_branch(&update.finality_branch),
+                sync_aggregate: translate_sync_aggregate(&update.sync_aggregate),
+                signature_slot: update.signature_slot.0,
             },
-            height: Height {
-                revision_number: 0,
-                revision_height: update_to,
+            TrustedSyncCommittee {
+                trusted_height: self.execution_height(bootstrap.header.beacon.slot).await,
+                sync_committee: translate_sync_committee(&bootstrap.current_sync_committee),
+                is_next: true,
             },
-        }
+        )
+        .await
     }
 
     async fn light_client_bootstrap(&self, root: &Root) -> LightClientBootstrapResponse {
@@ -1443,16 +1363,15 @@ impl Cometbls {
         Height {
             revision_number: 0,
             revision_height: height.into(),
+        }
     }
 
-    pub async fn make_update(
+    async fn make_update(
         &self,
-        finality_update: LightClientFinalityUpdateData,
+        light_client_update: LightClientUpdate,
         trusted_sync_committee: TrustedSyncCommittee,
-        next_sync_committee: SyncCommittee,
-        next_sync_committee_branch: Vec<Vec<u8>>,
     ) -> wasm::header::Header<ethereum::header::Header> {
-        let execution_block_number = finality_update.attested_header.execution.block_number.0;
+        let execution_block_number = light_client_update.attested_header.execution.block_number;
         let updated_height = Height::new(0, execution_block_number);
 
         let account_update = self
@@ -1469,15 +1388,7 @@ impl Cometbls {
         wasm::header::Header {
             height: updated_height,
             data: ethereum::header::Header {
-                consensus_update: LightClientUpdate {
-                    attested_header: translate_header(finality_update.attested_header),
-                    next_sync_committee,
-                    next_sync_committee_branch,
-                    finalized_header: translate_header(finality_update.finalized_header),
-                    finality_branch: translate_merkle_branch(&finality_update.finality_branch),
-                    sync_aggregate: translate_sync_aggregate(&finality_update.sync_aggregate),
-                    signature_slot: finality_update.signature_slot.0,
-                },
+                consensus_update: light_client_update,
                 trusted_sync_committee,
                 account_update: AccountUpdate {
                     proofs: [Proof {
@@ -1497,6 +1408,28 @@ impl Cometbls {
                     .as_secs(),
             },
         }
+    }
+
+    async fn make_finality_update(
+        &self,
+        finality_update: LightClientFinalityUpdateData,
+        trusted_sync_committee: TrustedSyncCommittee,
+        next_sync_committee: SyncCommittee,
+        next_sync_committee_branch: Vec<Vec<u8>>,
+    ) -> wasm::header::Header<ethereum::header::Header> {
+        self.make_update(
+            LightClientUpdate {
+                attested_header: translate_header(finality_update.attested_header),
+                next_sync_committee,
+                next_sync_committee_branch,
+                finalized_header: translate_header(finality_update.finalized_header),
+                finality_branch: translate_merkle_branch(&finality_update.finality_branch),
+                sync_aggregate: translate_sync_aggregate(&finality_update.sync_aggregate),
+                signature_slot: finality_update.signature_slot.0,
+            },
+            trusted_sync_committee,
+        )
+        .await
     }
 }
 
