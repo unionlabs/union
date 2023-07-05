@@ -71,6 +71,12 @@ pub type LightClientFinalityUpdateResponse = lodestar_rpc::types::LightClientFin
     { ethereum_verifier::MAX_EXTRA_DATA_BYTES },
 >;
 
+pub type LightClientFinalityUpdateData = lodestar_rpc::types::LightClientFinalityUpdateData<
+    { ethereum_verifier::SYNC_COMMITTEE_SIZE },
+    { ethereum_verifier::BYTES_PER_LOGS_BLOOM },
+    { ethereum_verifier::MAX_EXTRA_DATA_BYTES },
+>;
+
 pub type LightClientBootstrapResponse = lodestar_rpc::types::LightClientBootstrapResponse<
     { ethereum_verifier::SYNC_COMMITTEE_SIZE },
     { ethereum_verifier::BYTES_PER_LOGS_BLOOM },
@@ -911,34 +917,39 @@ impl Connect<Ethereum> for Cometbls {
                     self.sync_committee_period(finality_update.data.attested_header.beacon.slot);
                 let trusted_period = self.sync_committee_period(trusted_slot);
 
+                // Eth chain is more than 1 signature period ahead of us. We need to do sync committee
+                // updates until we catch reach the `target_period - 1`. We aim to update until `target_period - 1`,
+                // not `target_period` because we can do a finality update with `is_next = true` when we are at
+                // `target_period - 1`. Otherwise, we would have to do an additional finality update after we reach
+                // the target period.
                 if trusted_period + 1 < target_period {
                     tracing::debug!(
                         "Will update multiple sync committees from period {}, to {}",
                         trusted_period,
                         target_period
                     );
-                    // Eth chain is more than 1 signature period ahead of us. We need to light client
-                    // updates to catch up.
                     (
                         self.apply_sync_committee_updates(
                             counterparty,
                             &counterparty_client_id,
                             trusted_slot,
-                            target_slot,
+                            target_slot.decrement(),
                         )
                         .await,
-                        false,
+                        true,
                     )
-                } else if trusted_period + 1 == target_period {
+                }
+                // Eth chain is only 1 signature period ahead of us, we only to combine finality update and
+                // sync committee update.
+                else if trusted_period + 1 == target_period {
                     tracing::debug!(
                         "Only one signature ahead, will do a finality update with is_next true"
                     );
-                    // Eth chain is only 1 signature period ahead of us, we only need a single
-                    // finality update and include next sync committee.
                     (trusted_slot, true)
-                } else if trusted_period == target_period {
+                }
+                // We are at the same signature period, this is a finality update with no next sync committee change.
+                else if trusted_period == target_period {
                     tracing::debug!("On the same period, only do a finality update");
-                    // We are at the same signature period, this is a finality update with no next sync committee.
                     (trusted_slot, false)
                 } else {
                     // Something is wrong
@@ -946,35 +957,38 @@ impl Connect<Ethereum> for Cometbls {
                 }
             };
 
-            // Target slot might be the same slot of the sync committee period and sync committee updates might already
-            // reached this height.
-            if trusted_slot >= target_slot {
-                return trusted_slot;
-            }
-
             let trusted_period = self.sync_committee_period(trusted_slot);
             let execution_height = self.execution_height(trusted_slot).await;
 
             let (trusted_sync_committee, next_sync_committee, next_sync_committee_branch) =
                 if is_next {
+                    // Here, `trusted_period` is `target_period - 1`. Which means `light_client_update[0].next_sync_committee`,
+                    // will be the trusted next sync committee, and `light_client_update[1].next_sync_committee` is the next sync
+                    // committee that we want to update to.
                     let light_client_update = self.light_client_updates(trusted_period, 2).await;
                     (
                         TrustedSyncCommittee {
                             trusted_height: execution_height,
+                            // Sync committee's aggregate public key is saved in light client to optimize storage. We supply
+                            // the whole sync committee for it to be able to verify the update.
                             sync_committee: translate_sync_committee(
                                 &light_client_update[0].data.next_sync_committee,
                             ),
+                            // `is_next` here means `sync_committee` that we gave is either the next sync committee or the current
+                            // sync committee.
                             is_next,
                         },
+                        // This sync committee will be saved as the new next sync committee after update.
                         translate_sync_committee(&light_client_update[1].data.next_sync_committee),
                         translate_merkle_branch(
                             &light_client_update[1].data.next_sync_committee_branch,
                         ),
                     )
                 } else {
+                    // No signature period change happened here, so we'll only need to provide the current sync committee
+                    // and no new next sync committee's because it is also not changed yet.
                     let block_root = self.beacon_header(trusted_slot).await.root;
                     let bootstrap = self.light_client_bootstrap(&block_root).await;
-
                     (
                         TrustedSyncCommittee {
                             trusted_height: execution_height,
@@ -988,66 +1002,24 @@ impl Connect<Ethereum> for Cometbls {
                     )
                 };
 
-            let execution_block_number = finality_update
-                .data
-                .attested_header
-                .execution
-                .block_number
-                .0;
+            let updated_height = Height::new(
+                0,
+                finality_update
+                    .data
+                    .attested_header
+                    .execution
+                    .block_number
+                    .0,
+            );
 
-            let account_update = self
-                .provider
-                .get_proof(
-                    self.ibc_handler.address(),
-                    vec![],
-                    Some(
-                        // REVIEW: Do we want finalized_header.beacon.slot here?
-                        execution_block_number.into(),
-                    ),
-                )
-                .await
-                .unwrap();
-
-            let updated_height = Height {
-                revision_height: execution_block_number,
-                revision_number: 0,
-            };
-
-            let header = wasm::header::Header {
-                height: updated_height,
-                data: ethereum::header::Header {
-                    consensus_update: LightClientUpdate {
-                        attested_header: translate_header(finality_update.data.attested_header),
-                        next_sync_committee,
-                        next_sync_committee_branch,
-                        finalized_header: translate_header(finality_update.data.finalized_header),
-                        finality_branch: translate_merkle_branch(
-                            &finality_update.data.finality_branch,
-                        ),
-                        sync_aggregate: translate_sync_aggregate(
-                            &finality_update.data.sync_aggregate,
-                        ),
-                        signature_slot: finality_update.data.signature_slot.0,
-                    },
+            let header = self
+                .make_update(
+                    finality_update.data,
                     trusted_sync_committee,
-                    account_update: AccountUpdate {
-                        proofs: [Proof {
-                            key: self.ibc_handler.address().as_bytes().to_vec(),
-                            value: account_update.storage_hash.as_bytes().to_vec(),
-                            proof: account_update
-                                .account_proof
-                                .into_iter()
-                                .map(|x| x.to_vec())
-                                .collect(),
-                        }]
-                        .to_vec(),
-                    },
-                    timestamp: SystemTime::now()
-                        .duration_since(UNIX_EPOCH)
-                        .unwrap()
-                        .as_secs(),
-                },
-            };
+                    next_sync_committee,
+                    next_sync_committee_branch,
+                )
+                .await;
 
             tracing::info!("submitting finality update");
             counterparty
@@ -1471,6 +1443,59 @@ impl Cometbls {
         Height {
             revision_number: 0,
             revision_height: height.into(),
+    }
+
+    pub async fn make_update(
+        &self,
+        finality_update: LightClientFinalityUpdateData,
+        trusted_sync_committee: TrustedSyncCommittee,
+        next_sync_committee: SyncCommittee,
+        next_sync_committee_branch: Vec<Vec<u8>>,
+    ) -> wasm::header::Header<ethereum::header::Header> {
+        let execution_block_number = finality_update.attested_header.execution.block_number.0;
+        let updated_height = Height::new(0, execution_block_number);
+
+        let account_update = self
+            .provider
+            .get_proof(
+                self.ibc_handler.address(),
+                vec![],
+                // Proofs are get from the execution layer, so we use execution height, not beacon slot.
+                Some(execution_block_number.into()),
+            )
+            .await
+            .unwrap();
+
+        wasm::header::Header {
+            height: updated_height,
+            data: ethereum::header::Header {
+                consensus_update: LightClientUpdate {
+                    attested_header: translate_header(finality_update.attested_header),
+                    next_sync_committee,
+                    next_sync_committee_branch,
+                    finalized_header: translate_header(finality_update.finalized_header),
+                    finality_branch: translate_merkle_branch(&finality_update.finality_branch),
+                    sync_aggregate: translate_sync_aggregate(&finality_update.sync_aggregate),
+                    signature_slot: finality_update.signature_slot.0,
+                },
+                trusted_sync_committee,
+                account_update: AccountUpdate {
+                    proofs: [Proof {
+                        key: self.ibc_handler.address().as_bytes().to_vec(),
+                        value: account_update.storage_hash.as_bytes().to_vec(),
+                        proof: account_update
+                            .account_proof
+                            .into_iter()
+                            .map(|x| x.to_vec())
+                            .collect(),
+                    }]
+                    .to_vec(),
+                },
+                timestamp: SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .unwrap()
+                    .as_secs(),
+            },
         }
     }
 }
