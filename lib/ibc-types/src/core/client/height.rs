@@ -38,12 +38,6 @@ impl From<Height> for protos::ibc::core::client::v1::Height {
     }
 }
 
-impl From<Height> for u64 {
-    fn from(value: Height) -> Self {
-        value.revision_height
-    }
-}
-
 // REVIEW(benluelo): ordering for heights with different revision numbers?
 impl PartialOrd for Height {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
