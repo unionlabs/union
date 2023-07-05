@@ -134,6 +134,7 @@
             OUT="$(mktemp -d)"
             cd "$OUT"
             cp --no-preserve=mode -r ${self'.packages.evm-contracts}/* .
+
             ${deploy { path = "core/02-client/IBCClient.sol"; name = "IBCClient"; }}
             ${deploy { path = "core/03-connection/IBCConnection.sol"; name = "IBCConnection"; }}
             ${deploy { path = "core/04-channel/IBCChannelHandshake.sol"; name = "IBCChannelHandshake"; }}
@@ -141,10 +142,13 @@
             ${deploy { path = "core/OwnableIBCHandler.sol"; name = "OwnableIBCHandler"; args = ''--constructor-args "$IBCCLIENT" "$IBCCONNECTION" "$IBCCHANNELHANDSHAKE" "$IBCPACKET"''; }}
 
             ${deploy { path = "clients/TestnetVerifier.sol"; name = "TestnetVerifier"; }}
-            ${deploy { path = "clients/CometblsClient.sol"; name = "CometblsClient"; args = ''--constructor-args "$OWNABLEIBCHANDLER" "$TESTNETVERIFIER"''; }}
+            ${deploy { path = "clients/ICS23MembershipVerifier.sol"; name = "ICS23MembershipVerifier"; }}
+            ${deploy { path = "clients/CometblsClient.sol"; name = "CometblsClient"; args = ''--constructor-args "$OWNABLEIBCHANDLER" "$TESTNETVERIFIER" "$ICS23MEMBERSHIPVERIFIER"''; }}
 
             ${deploy { path = "apps/20-transfer/ICS20Bank.sol"; name = "ICS20Bank"; }}
             ${deploy { path = "apps/20-transfer/ICS20TransferBank.sol"; name = "ICS20TransferBank";  args = ''--constructor-args "$OWNABLEIBCHANDLER" "$ICS20BANK"''; }}
+
+            echo "--ibc-handler-address $OWNABLEIBCHANDLER --cometbls-client-address $COMETBLSCLIENT --ics20-transfer-address $ICS20TRANSFERBANK --ics20-bank-address $ICS20BANK"
 
             rm -rf "$OUT"
           '';

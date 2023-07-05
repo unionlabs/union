@@ -1,8 +1,8 @@
 pragma solidity ^0.8.18;
 
 library Pairing {
-
-    uint256 constant PRIME_Q = 21888242871839275222246405745257275088696311157297823662689037894645226208583;
+    uint256 constant PRIME_Q =
+        21888242871839275222246405745257275088696311157297823662689037894645226208583;
 
     struct G1Point {
         uint256 X;
@@ -19,7 +19,6 @@ library Pairing {
      * @return The negation of p, i.e. p.plus(p.negate()) should be zero.
      */
     function negate(G1Point memory p) internal pure returns (G1Point memory) {
-
         // The prime q in the base field F_q for G1
         if (p.X == 0 && p.Y == 0) {
             return G1Point(0, 0);
@@ -35,7 +34,6 @@ library Pairing {
         G1Point memory p1,
         G1Point memory p2
     ) internal view returns (G1Point memory r) {
-
         uint256[4] memory input;
         input[0] = p1.X;
         input[1] = p1.Y;
@@ -47,12 +45,14 @@ library Pairing {
         assembly {
             success := staticcall(sub(gas(), 2000), 6, input, 0xc0, r, 0x60)
             // Use "invalid" to make gas estimation work
-            switch success case 0 { invalid() }
+            switch success
+            case 0 {
+                invalid()
+            }
         }
 
-        require(success,"pairing-add-failed");
+        require(success, "pairing-add-failed");
     }
-
 
     /*
      * Same as plus but accepts raw input instead of struct
@@ -65,7 +65,10 @@ library Pairing {
         assembly {
             success := staticcall(sub(gas(), 2000), 6, input, 0xc0, r, 0x60)
             // Use "invalid" to make gas estimation work
-            switch success case 0 {invalid()}
+            switch success
+            case 0 {
+                invalid()
+            }
         }
 
         require(success, "pairing-add-failed");
@@ -76,8 +79,10 @@ library Pairing {
      *         p == p.scalar_mul(1) and p.plus(p) == p.scalar_mul(2) for all
      *         points p.
      */
-    function scalar_mul(G1Point memory p, uint256 s) internal view returns (G1Point memory r) {
-
+    function scalar_mul(
+        G1Point memory p,
+        uint256 s
+    ) internal view returns (G1Point memory r) {
         uint256[3] memory input;
         input[0] = p.X;
         input[1] = p.Y;
@@ -87,24 +92,32 @@ library Pairing {
         assembly {
             success := staticcall(sub(gas(), 2000), 7, input, 0x80, r, 0x60)
             // Use "invalid" to make gas estimation work
-            switch success case 0 { invalid() }
+            switch success
+            case 0 {
+                invalid()
+            }
         }
-        require (success,"pairing-mul-failed");
+        require(success, "pairing-mul-failed");
     }
-
 
     /*
      * Same as scalar_mul but accepts raw input instead of struct,
      * Which avoid extra allocation. provided input can be allocated outside and re-used multiple times
      */
-    function scalar_mul_raw(uint256[3] memory input, G1Point memory r) internal view {
+    function scalar_mul_raw(
+        uint256[3] memory input,
+        G1Point memory r
+    ) internal view {
         bool success;
 
         // solium-disable-next-line security/no-inline-assembly
         assembly {
             success := staticcall(sub(gas(), 2000), 7, input, 0x80, r, 0x60)
             // Use "invalid" to make gas estimation work
-            switch success case 0 {invalid()}
+            switch success
+            case 0 {
+                invalid()
+            }
         }
         require(success, "pairing-mul-failed");
     }
@@ -124,7 +137,6 @@ library Pairing {
         G1Point memory d1,
         G2Point memory d2
     ) internal view returns (bool) {
-
         G1Point[4] memory p1 = [a1, b1, c1, d1];
         G2Point[4] memory p2 = [a2, b2, c2, d2];
         uint256 inputSize = 24;
@@ -145,12 +157,22 @@ library Pairing {
 
         // solium-disable-next-line security/no-inline-assembly
         assembly {
-            success := staticcall(sub(gas(), 2000), 8, add(input, 0x20), mul(inputSize, 0x20), out, 0x20)
+            success := staticcall(
+                sub(gas(), 2000),
+                8,
+                add(input, 0x20),
+                mul(inputSize, 0x20),
+                out,
+                0x20
+            )
             // Use "invalid" to make gas estimation work
-            switch success case 0 { invalid() }
+            switch success
+            case 0 {
+                invalid()
+            }
         }
 
-        require(success,"pairing-opcode-failed");
+        require(success, "pairing-opcode-failed");
 
         return out[0] != 0;
     }

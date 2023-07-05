@@ -19,9 +19,16 @@ abstract contract IBCClientHandler {
     /**
      * @dev registerClient registers a new client type into the client registry
      */
-    function registerClient(string calldata clientType, ILightClient client) public virtual {
+    function registerClient(
+        string calldata clientType,
+        ILightClient client
+    ) public virtual {
         (bool success, bytes memory res) = ibcClientAddress.delegatecall(
-            abi.encodeWithSelector(IIBCClient.registerClient.selector, clientType, client)
+            abi.encodeWithSelector(
+                IIBCClient.registerClient.selector,
+                clientType,
+                client
+            )
         );
         if (!success) {
             revert(_getRevertMsg(res));
@@ -31,9 +38,12 @@ abstract contract IBCClientHandler {
     /**
      * @dev createClient creates a new client state and populates it with a given consensus state
      */
-    function createClient(IBCMsgs.MsgCreateClient calldata msg_) external returns (string memory clientId) {
-        (bool success, bytes memory res) =
-            ibcClientAddress.delegatecall(abi.encodeWithSelector(IIBCClient.createClient.selector, msg_));
+    function createClient(
+        IBCMsgs.MsgCreateClient calldata msg_
+    ) external returns (string memory clientId) {
+        (bool success, bytes memory res) = ibcClientAddress.delegatecall(
+            abi.encodeWithSelector(IIBCClient.createClient.selector, msg_)
+        );
         if (!success) {
             revert(_getRevertMsg(res));
         }
@@ -46,7 +56,9 @@ abstract contract IBCClientHandler {
      * @dev updateClient updates the consensus state and the state root from a provided header
      */
     function updateClient(IBCMsgs.MsgUpdateClient calldata msg_) external {
-        (bool success, bytes memory res) = ibcClientAddress.delegatecall(abi.encodeWithSelector(IIBCClient.updateClient.selector, msg_));
+        (bool success, bytes memory res) = ibcClientAddress.delegatecall(
+            abi.encodeWithSelector(IIBCClient.updateClient.selector, msg_)
+        );
         if (!success) {
             revert(_getRevertMsg(res));
         }

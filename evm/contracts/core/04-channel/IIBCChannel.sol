@@ -6,12 +6,16 @@ interface IIBCChannelHandshake {
     /**
      * @dev channelOpenInit is called by a module to initiate a channel opening handshake with a module on another chain.
      */
-    function channelOpenInit(IBCMsgs.MsgChannelOpenInit calldata msg_) external returns (string memory channelId);
+    function channelOpenInit(
+        IBCMsgs.MsgChannelOpenInit calldata msg_
+    ) external returns (string memory channelId);
 
     /**
      * @dev channelOpenTry is called by a module to accept the first step of a channel opening handshake initiated by a module on another chain.
      */
-    function channelOpenTry(IBCMsgs.MsgChannelOpenTry calldata msg_) external returns (string memory channelId);
+    function channelOpenTry(
+        IBCMsgs.MsgChannelOpenTry calldata msg_
+    ) external returns (string memory channelId);
 
     /**
      * @dev channelOpenAck is called by the handshake-originating module to acknowledge the acceptance of the initial request by the counterparty module on the other chain.
@@ -21,18 +25,24 @@ interface IIBCChannelHandshake {
     /**
      * @dev channelOpenConfirm is called by the counterparty module to close their end of the channel, since the other end has been closed.
      */
-    function channelOpenConfirm(IBCMsgs.MsgChannelOpenConfirm calldata msg_) external;
+    function channelOpenConfirm(
+        IBCMsgs.MsgChannelOpenConfirm calldata msg_
+    ) external;
 
     /**
      * @dev channelCloseInit is called by either module to close their end of the channel. Once closed, channels cannot be reopened.
      */
-    function channelCloseInit(IBCMsgs.MsgChannelCloseInit calldata msg_) external;
+    function channelCloseInit(
+        IBCMsgs.MsgChannelCloseInit calldata msg_
+    ) external;
 
     /**
      * @dev channelCloseConfirm is called by the counterparty module to close their end of the
      * channel, since the other end has been closed.
      */
-    function channelCloseConfirm(IBCMsgs.MsgChannelCloseConfirm calldata msg_) external;
+    function channelCloseConfirm(
+        IBCMsgs.MsgChannelCloseConfirm calldata msg_
+    ) external;
 }
 
 interface IIBCPacket {
@@ -42,11 +52,11 @@ interface IIBCPacket {
      * is returned if one occurs.
      */
     function sendPacket(
-                        string calldata sourcePort,
-                        string calldata sourceChannel,
-                        IbcCoreClientV1Height.Data calldata timeoutHeight,
-                        uint64 timeoutTimestamp,
-                        bytes calldata data
+        string calldata sourcePort,
+        string calldata sourceChannel,
+        IbcCoreClientV1Height.Data calldata timeoutHeight,
+        uint64 timeoutTimestamp,
+        bytes calldata data
     ) external returns (uint64);
 
     /**
@@ -74,5 +84,7 @@ interface IIBCPacket {
      * which is no longer necessary since the packet has been received and acted upon.
      * It will also increment NextSequenceAck in case of ORDERED channels.
      */
-    function acknowledgePacket(IBCMsgs.MsgPacketAcknowledgement calldata msg_) external;
+    function acknowledgePacket(
+        IBCMsgs.MsgPacketAcknowledgement calldata msg_
+    ) external;
 }

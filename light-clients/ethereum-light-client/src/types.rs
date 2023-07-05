@@ -69,7 +69,7 @@ impl TryFrom<ProtoTrustedSyncCommittee> for TrustedSyncCommittee {
                     .try_into()
                     .map_err(|e| {
                         Error::invalid_public_key(format!(
-                            "during parsing public keys in `RawTrustedSyncCommittee` {:?}",
+                            "invalid number of public keys in `RawTrustedSyncCommittee` {:?}",
                             e
                         ))
                     })?,

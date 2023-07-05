@@ -14,28 +14,39 @@ contract OwnableIBCHandler is IBCHandler, Ownable {
      * @param ibcChannel is the address of a contract that implements `IIBCChannelHandshake`.
      * @param ibcPacket is the address of a contract that implements `IIBCPacket`.
      */
-    constructor(address ibcClient, address ibcConnection, address ibcChannel, address ibcPacket)
-        IBCHandler(ibcClient, ibcConnection, ibcChannel, ibcPacket)
-    {}
+    constructor(
+        address ibcClient,
+        address ibcConnection,
+        address ibcChannel,
+        address ibcPacket
+    ) IBCHandler(ibcClient, ibcConnection, ibcChannel, ibcPacket) {}
 
     /**
      * @dev registerClient registers a new client type into the client registry
      */
-    function registerClient(string calldata clientType, ILightClient client) public override onlyOwner {
+    function registerClient(
+        string calldata clientType,
+        ILightClient client
+    ) public override onlyOwner {
         super.registerClient(clientType, client);
     }
 
     /**
      * @dev bindPort binds to an unallocated port, failing if the port has already been allocated.
      */
-    function bindPort(string calldata portId, address moduleAddress) public override onlyOwner {
+    function bindPort(
+        string calldata portId,
+        address moduleAddress
+    ) public override onlyOwner {
         super.bindPort(portId, moduleAddress);
     }
 
     /**
      * @dev setExpectedTimePerBlock sets expected time per block.
      */
-    function setExpectedTimePerBlock(uint64 expectedTimePerBlock_) public override onlyOwner {
+    function setExpectedTimePerBlock(
+        uint64 expectedTimePerBlock_
+    ) public override onlyOwner {
         super.setExpectedTimePerBlock(expectedTimePerBlock_);
     }
 }

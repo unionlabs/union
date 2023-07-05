@@ -17,12 +17,14 @@ abstract contract IBCConnectionHandler {
         ibcConnectionAddress = ibcConnection;
     }
 
-    function connectionOpenInit(IBCMsgs.MsgConnectionOpenInit calldata msg_)
-        external
-        returns (string memory connectionId)
-    {
+    function connectionOpenInit(
+        IBCMsgs.MsgConnectionOpenInit calldata msg_
+    ) external returns (string memory connectionId) {
         (bool success, bytes memory res) = ibcConnectionAddress.delegatecall(
-            abi.encodeWithSelector(IIBCConnectionHandshake.connectionOpenInit.selector, msg_)
+            abi.encodeWithSelector(
+                IIBCConnectionHandshake.connectionOpenInit.selector,
+                msg_
+            )
         );
         if (!success) {
             revert(_getRevertMsg(res));
@@ -32,12 +34,14 @@ abstract contract IBCConnectionHandler {
         return connectionId;
     }
 
-    function connectionOpenTry(IBCMsgs.MsgConnectionOpenTry calldata msg_)
-        external
-        returns (string memory connectionId)
-    {
+    function connectionOpenTry(
+        IBCMsgs.MsgConnectionOpenTry calldata msg_
+    ) external returns (string memory connectionId) {
         (bool success, bytes memory res) = ibcConnectionAddress.delegatecall(
-            abi.encodeWithSelector(IIBCConnectionHandshake.connectionOpenTry.selector, msg_)
+            abi.encodeWithSelector(
+                IIBCConnectionHandshake.connectionOpenTry.selector,
+                msg_
+            )
         );
         if (!success) {
             revert(_getRevertMsg(res));
@@ -47,18 +51,28 @@ abstract contract IBCConnectionHandler {
         return connectionId;
     }
 
-    function connectionOpenAck(IBCMsgs.MsgConnectionOpenAck calldata msg_) external {
+    function connectionOpenAck(
+        IBCMsgs.MsgConnectionOpenAck calldata msg_
+    ) external {
         (bool success, bytes memory res) = ibcConnectionAddress.delegatecall(
-            abi.encodeWithSelector(IIBCConnectionHandshake.connectionOpenAck.selector, msg_)
+            abi.encodeWithSelector(
+                IIBCConnectionHandshake.connectionOpenAck.selector,
+                msg_
+            )
         );
         if (!success) {
             revert(_getRevertMsg(res));
         }
     }
 
-    function connectionOpenConfirm(IBCMsgs.MsgConnectionOpenConfirm calldata msg_) external {
+    function connectionOpenConfirm(
+        IBCMsgs.MsgConnectionOpenConfirm calldata msg_
+    ) external {
         (bool success, bytes memory res) = ibcConnectionAddress.delegatecall(
-            abi.encodeWithSelector(IIBCConnectionHandshake.connectionOpenConfirm.selector, msg_)
+            abi.encodeWithSelector(
+                IIBCConnectionHandshake.connectionOpenConfirm.selector,
+                msg_
+            )
         );
         if (!success) {
             revert(_getRevertMsg(res));

@@ -3,11 +3,24 @@ pragma solidity ^0.8.18;
 import "../../contracts/core/OwnableIBCHandler.sol";
 
 contract TestableIBCHandler is OwnableIBCHandler {
-    constructor(address ibcClient, address ibcConnection, address ibcChannelHandshake, address ibcPacket)
-        OwnableIBCHandler(ibcClient, ibcConnection, ibcChannelHandshake, ibcPacket)
+    constructor(
+        address ibcClient,
+        address ibcConnection,
+        address ibcChannelHandshake,
+        address ibcPacket
+    )
+        OwnableIBCHandler(
+            ibcClient,
+            ibcConnection,
+            ibcChannelHandshake,
+            ibcPacket
+        )
     {}
 
-    function setConnection(string memory connectionId, IbcCoreConnectionV1ConnectionEnd.Data memory connection) external {
+    function setConnection(
+        string memory connectionId,
+        IbcCoreConnectionV1ConnectionEnd.Data memory connection
+    ) external {
         connections[connectionId].client_id = connection.client_id;
         connections[connectionId].state = connection.state;
         connections[connectionId].delay_period = connection.delay_period;
@@ -16,25 +29,48 @@ contract TestableIBCHandler is OwnableIBCHandler {
             connections[connectionId].versions.push(connection.versions[i]);
         }
         connections[connectionId].counterparty = connection.counterparty;
-        commitments[keccak256(IBCCommitment.connectionPath(connectionId))] = keccak256(IbcCoreConnectionV1ConnectionEnd.encode(connection));
+        commitments[
+            keccak256(IBCCommitment.connectionPath(connectionId))
+        ] = keccak256(IbcCoreConnectionV1ConnectionEnd.encode(connection));
     }
 
-    function setChannel(string memory portId, string memory channelId, IbcCoreChannelV1Channel.Data memory channel) external {
+    function setChannel(
+        string memory portId,
+        string memory channelId,
+        IbcCoreChannelV1Channel.Data memory channel
+    ) external {
         channels[portId][channelId] = channel;
-        commitments[keccak256(IBCCommitment.channelPath(portId, channelId))] = keccak256(IbcCoreChannelV1Channel.encode(channel));
+        commitments[
+            keccak256(IBCCommitment.channelPath(portId, channelId))
+        ] = keccak256(IbcCoreChannelV1Channel.encode(channel));
     }
 
-    function setNextSequenceSend(string calldata portId, string calldata channelId, uint64 sequence) external {
+    function setNextSequenceSend(
+        string calldata portId,
+        string calldata channelId,
+        uint64 sequence
+    ) external {
         nextSequenceSends[portId][channelId] = sequence;
     }
 
-    function setNextSequenceRecv(string calldata portId, string calldata channelId, uint64 sequence) external {
+    function setNextSequenceRecv(
+        string calldata portId,
+        string calldata channelId,
+        uint64 sequence
+    ) external {
         nextSequenceRecvs[portId][channelId] = sequence;
-        commitments[keccak256(IBCCommitment.nextSequenceRecvCommitmentPath(portId, channelId))] =
-            keccak256(abi.encodePacked(sequence));
+        commitments[
+            keccak256(
+                IBCCommitment.nextSequenceRecvCommitmentPath(portId, channelId)
+            )
+        ] = keccak256(abi.encodePacked(sequence));
     }
 
-    function setNextSequenceAck(string calldata portId, string calldata channelId, uint64 sequence) external {
+    function setNextSequenceAck(
+        string calldata portId,
+        string calldata channelId,
+        uint64 sequence
+    ) external {
         nextSequenceAcks[portId][channelId] = sequence;
     }
 
@@ -50,7 +86,10 @@ contract TestableIBCHandler is OwnableIBCHandler {
         nextChannelSequence = sequence;
     }
 
-    function claimCapabilityDirectly(bytes calldata name, address addr) external {
+    function claimCapabilityDirectly(
+        bytes calldata name,
+        address addr
+    ) external {
         for (uint32 i = 0; i < capabilities[name].length; i++) {
             require(capabilities[name][i] != addr);
         }

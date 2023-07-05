@@ -6,6 +6,13 @@ pub struct Height {
     pub revision_height: u64,
 }
 
+impl Height {
+    pub fn increment(mut self) -> Self {
+        self.revision_height += 1;
+        self
+    }
+}
+
 impl From<protos::ibc::core::client::v1::Height> for Height {
     fn from(proto: protos::ibc::core::client::v1::Height) -> Self {
         Self {

@@ -18,22 +18,32 @@ interface ILightClient {
      * @dev createClient creates a new client with the given state.
      * If succeeded, it returns a commitment for the initial state.
      */
-    function createClient(string calldata clientId, bytes calldata clientStateBytes, bytes calldata consensusStateBytes)
+    function createClient(
+        string calldata clientId,
+        bytes calldata clientStateBytes,
+        bytes calldata consensusStateBytes
+    )
         external
-        returns (bytes32 clientStateCommitment, ConsensusStateUpdate memory update, bool ok);
+        returns (
+            bytes32 clientStateCommitment,
+            ConsensusStateUpdate memory update,
+            bool ok
+        );
 
     /**
      * @dev getTimestampAtHeight returns the timestamp of the consensus state at the given height.
      */
-    function getTimestampAtHeight(string calldata clientId, IbcCoreClientV1Height.Data calldata height)
-        external
-        view
-        returns (uint64, bool);
+    function getTimestampAtHeight(
+        string calldata clientId,
+        IbcCoreClientV1Height.Data calldata height
+    ) external view returns (uint64, bool);
 
     /**
      * @dev getLatestHeight returns the latest height of the client state corresponding to `clientId`.
      */
-    function getLatestHeight(string calldata clientId) external view returns (IbcCoreClientV1Height.Data memory, bool);
+    function getLatestHeight(
+        string calldata clientId
+    ) external view returns (IbcCoreClientV1Height.Data memory, bool);
 
     /**
      * @dev updateClient updates the client corresponding to `clientId`.
@@ -47,9 +57,16 @@ interface ILightClient {
      * 4. update state(s) with the client message
      * 5. persist the state(s) on the host
      */
-    function updateClient(string calldata clientId, bytes calldata clientMessageBytes)
+    function updateClient(
+        string calldata clientId,
+        bytes calldata clientMessageBytes
+    )
         external
-        returns (bytes32 clientStateCommitment, ConsensusStateUpdate[] memory updates, bool ok);
+        returns (
+            bytes32 clientStateCommitment,
+            ConsensusStateUpdate[] memory updates,
+            bool ok
+        );
 
     /**
      * @dev verifyMembership is a generic proof verification method which verifies a proof of the existence of a value at a given CommitmentPath at the specified height.
@@ -84,14 +101,16 @@ interface ILightClient {
      * @dev getClientState returns the clientState corresponding to `clientId`.
      *      If it's not found, the function returns false.
      */
-    function getClientState(string calldata clientId) external view returns (bytes memory, bool);
+    function getClientState(
+        string calldata clientId
+    ) external view returns (bytes memory, bool);
 
     /**
      * @dev getConsensusState returns the consensusState corresponding to `clientId` and `height`.
      *      If it's not found, the function returns false.
      */
-    function getConsensusState(string calldata clientId, IbcCoreClientV1Height.Data calldata height)
-        external
-        view
-        returns (bytes memory, bool);
+    function getConsensusState(
+        string calldata clientId,
+        IbcCoreClientV1Height.Data calldata height
+    ) external view returns (bytes memory, bool);
 }

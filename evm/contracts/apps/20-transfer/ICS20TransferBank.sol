@@ -24,9 +24,20 @@ contract ICS20TransferBank is ICS20Transfer {
         string calldata sourceChannel,
         uint64 timeoutHeight
     ) external {
-        if (!denom.toSlice().startsWith(_makeDenomPrefix(sourcePort, sourceChannel))) {
+        if (
+            !denom.toSlice().startsWith(
+                _makeDenomPrefix(sourcePort, sourceChannel)
+            )
+        ) {
             // sender is source chain
-            require(_transferFrom(_msgSender(), _getEscrowAddress(sourceChannel), denom, amount));
+            require(
+                _transferFrom(
+                    _msgSender(),
+                    _getEscrowAddress(sourceChannel),
+                    denom,
+                    amount
+                )
+            );
         } else {
             require(_burn(_msgSender(), denom, amount));
         }
@@ -44,11 +55,12 @@ contract ICS20TransferBank is ICS20Transfer {
         );
     }
 
-    function _transferFrom(address sender, address receiver, string memory denom, uint256 amount)
-        internal
-        override
-        returns (bool)
-    {
+    function _transferFrom(
+        address sender,
+        address receiver,
+        string memory denom,
+        uint256 amount
+    ) internal override returns (bool) {
         try bank.transferFrom(sender, receiver, denom, amount) {
             return true;
         } catch (bytes memory) {
@@ -56,7 +68,11 @@ contract ICS20TransferBank is ICS20Transfer {
         }
     }
 
-    function _mint(address account, string memory denom, uint256 amount) internal override returns (bool) {
+    function _mint(
+        address account,
+        string memory denom,
+        uint256 amount
+    ) internal override returns (bool) {
         try bank.mint(account, denom, amount) {
             return true;
         } catch (bytes memory) {
@@ -64,7 +80,11 @@ contract ICS20TransferBank is ICS20Transfer {
         }
     }
 
-    function _burn(address account, string memory denom, uint256 amount) internal override returns (bool) {
+    function _burn(
+        address account,
+        string memory denom,
+        uint256 amount
+    ) internal override returns (bool) {
         try bank.burn(account, denom, amount) {
             return true;
         } catch (bytes memory) {

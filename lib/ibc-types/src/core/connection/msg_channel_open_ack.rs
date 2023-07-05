@@ -1,8 +1,11 @@
+use prost::Message;
+
 use crate::{
     core::{client::height::Height, connection::version::Version},
     CosmosAccountId, IntoProto, MsgIntoProto,
 };
 
+#[derive(Debug)]
 pub struct MsgConnectionOpenAck<ClientState> {
     pub connection_id: String,
     pub counterparty_connection_id: String,
@@ -41,6 +44,8 @@ where
 
 impl<ClientState> From<MsgConnectionOpenAck<ClientState>>
     for contracts::ibc_handler::MsgConnectionOpenAck
+where
+    ClientState: IntoProto<Proto = protos::google::protobuf::Any>,
 {
     fn from(msg: MsgConnectionOpenAck<ClientState>) -> Self {
         Self {
@@ -48,8 +53,7 @@ impl<ClientState> From<MsgConnectionOpenAck<ClientState>>
             counterparty_connection_id: msg.counterparty_connection_id,
             version: msg.version.into(),
             // client_state_bytes: msg.client_state.value.into(),
-            // TODO(benluelo): Figure out what this is expected to be (i.e. eth abi or proto)
-            client_state_bytes: Default::default(),
+            client_state_bytes: msg.client_state.into_proto().encode_to_vec().into(),
             proof_height: msg.proof_height.into(),
             proof_try: msg.proof_try.into(),
             proof_client: msg.proof_client.into(),
