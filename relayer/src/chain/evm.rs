@@ -939,7 +939,7 @@ impl Connect<Ethereum> for Cometbls {
                         true,
                     )
                 }
-                // Eth chain is only 1 signature period ahead of us, we only to combine finality update and
+                // Eth chain is only 1 signature period ahead of us, we'll combine finality update and
                 // sync committee update.
                 else if trusted_period + 1 == target_period {
                     tracing::debug!(
@@ -962,7 +962,7 @@ impl Connect<Ethereum> for Cometbls {
 
             let (trusted_sync_committee, next_sync_committee, next_sync_committee_branch) =
                 if is_next {
-                    // Here, `trusted_period` is `target_period - 1`. Which means `light_client_update[0].next_sync_committee`,
+                    // Here, `trusted_period` is `target_period - 1`. Which means `light_client_update[0].next_sync_committee`
                     // will be the trusted next sync committee, and `light_client_update[1].next_sync_committee` is the next sync
                     // committee that we want to update to.
                     let light_client_update = self.light_client_updates(trusted_period, 2).await;
@@ -986,7 +986,7 @@ impl Connect<Ethereum> for Cometbls {
                     )
                 } else {
                     // No signature period change happened here, so we'll only need to provide the current sync committee
-                    // and no new next sync committee's because it is also not changed yet.
+                    // and no new next sync committee because it is also not changed yet.
                     let block_root = self.beacon_header(trusted_slot.revision_height).await.root;
                     let bootstrap = self.light_client_bootstrap(&block_root).await;
                     (
