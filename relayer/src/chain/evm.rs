@@ -918,10 +918,7 @@ impl Connect<Ethereum> for Cometbls {
                 let trusted_period = self.sync_committee_period(trusted_slot.revision_height);
 
                 // Eth chain is more than 1 signature period ahead of us. We need to do sync committee
-                // updates until we catch reach the `target_period - 1`. We aim to update until `target_period - 1`,
-                // not `target_period` because we can do a finality update with `is_next = true` when we are at
-                // `target_period - 1`. Otherwise, we would have to do an additional finality update after we reach
-                // the target period.
+                // updates until we reach the `target_period - 1`.
                 if trusted_period + 1 < target_period {
                     tracing::debug!(
                         "Will update multiple sync committees from period {}, to {}",
@@ -929,6 +926,9 @@ impl Connect<Ethereum> for Cometbls {
                         target_period
                     );
                     (
+                        // We update until `target_period - 1`, not `target_period` because we can do a finality
+                        // update with `is_next = true` when we are at `target_period - 1`. Otherwise, we would
+                        // have to do an additional finality update after we reach the target period.
                         self.apply_sync_committee_updates(
                             counterparty,
                             &counterparty_client_id,
