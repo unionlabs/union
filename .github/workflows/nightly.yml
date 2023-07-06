@@ -14,6 +14,8 @@ jobs:
       filter_builds: '((.top_attr == "checks") and (.system == "x86_64-linux" or .system == "aarch64-linux") and (.attr == "virtualisation-works"))'
   create-issue:
     if: failure()
-    uses: JasonEtco/create-an-issue@v2
-    with:
-      filename: .github/templates/nightly-issue-template.md
+    steps:
+      - uses: actions/checkout@v3
+      - uses: JasonEtco/create-an-issue@v2
+        with:
+          filename: .github/templates/nightly-issue-template.md
