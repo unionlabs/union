@@ -38,6 +38,7 @@ Merkle
 Mgoogle
 Misbehaviour
 NIXBUILDNET
+PINGPONG
 PRECOMMIT
 PREVOTE
 PROTOC
@@ -362,6 +363,7 @@ passthru
 patchelf
 pflag
 phang
+pingpong
 pipefail
 pkgconfig
 pkgs
