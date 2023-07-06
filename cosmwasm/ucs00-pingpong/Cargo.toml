@@ -1,0 +1,21 @@
+[package]
+name = "ucs00-pingpong"
+version = "1.0.0"
+authors = ["Hussein Ait Lahcen <hussein.aitlahcen@gmail.com>"]
+edition = "2021"
+description = "IBC Enabled contracts example"
+license = "Apache-2.0"
+repository = "https://github.com/unionlabs/union"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+library = []
+
+[dependencies]
+ethabi = { version = "18.0.0", default-features = false }
+cosmwasm-schema = { version = "1.2" }
+cosmwasm-std = { version = "1.2", features = ["stargate"] }
+serde = { version = "1.0", default-features = false, features = ["derive"] }
+thiserror = { version = "1.0" }
