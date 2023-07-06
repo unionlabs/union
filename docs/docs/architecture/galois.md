@@ -4,7 +4,7 @@ title: "Galois"
 
 # Galois
 
-Galois is the umbrella term of Union's ZK efforts. It currently has one purpose: [consensus verification](../research/consensus-verification). We've built Galois around three fundamental principles:
+Galois is the umbrella term of Union's ZK efforts. It currently has one purpose: [consensus verification](../concepts/consensus-verification). We've built Galois around three fundamental principles:
 
 1. Fast execution: fast proving times equate to fast bridging and good user experience.
 2. Low-cost: zero-knowledge provers are computationally expensive to operate, and often require large machine clusters. [Galoisd](https://github.com/unionlabs/union/blob/main/uniond/README.md) can run on a single machine and still outperform other zk bridges.
