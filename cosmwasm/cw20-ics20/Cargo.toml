@@ -5,9 +5,7 @@ authors = ["Ethan Frey <ethanfrey@users.noreply.github.com>", "Hussein Ait Lahce
 edition = "2021"
 description = "IBC Enabled contracts that receives CW20 tokens and sends them over ICS20 to a remote chain"
 license = "Apache-2.0"
-repository = "https://github.com/CosmWasm/cw-plus"
-homepage = "https://cosmwasm.com"
-documentation = "https://docs.cosmwasm.com"
+repository = "https://github.com/unionlabs/union"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
@@ -17,14 +15,14 @@ library = []
 
 [dependencies]
 ethabi = { version = "18.0.0", default-features = false }
-cosmwasm-schema = { version = "1.1.0" }
+cosmwasm-schema = { version = "1.2" }
 cw-utils = { git = "https://github.com/CosmWasm/cw-utils", rev = "477fdbeea8b2e50a7bf3e55be8d3b195ad6d5041" }
 cw2 = { git = "https://github.com/CosmWasm/cw-plus", rev = "de1fb0b9836e56e5640575d246274d882509d714" }
 cw20 = { git = "https://github.com/CosmWasm/cw-plus", rev = "de1fb0b9836e56e5640575d246274d882509d714" }
 cw-controllers = { git = "https://github.com/CosmWasm/cw-plus", rev = "de1fb0b9836e56e5640575d246274d882509d714" }
 cw-storage-plus = { git = "https://github.com/CosmWasm/cw-storage-plus", rev = "3822f951ab33ad289e2b1333b6373a55b30906c7" }
-cosmwasm-std = { version = "1.1.0", features = ["stargate"] }
+cosmwasm-std = { version = "1.2", features = ["stargate"] }
 schemars = "0.8.1"
 semver = "1"
-serde = { version = "1.0.103", default-features = false, features = ["derive"] }
-thiserror = { version = "1.0.23" }
+serde = { version = "1.0", default-features = false, features = ["derive"] }
+thiserror = { version = "1.0" }
