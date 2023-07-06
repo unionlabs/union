@@ -4,10 +4,6 @@ on:
   schedule:
     - cron: '0 4 * * *'
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
-  cancel-in-progress: true
-
 jobs:
   build:
     uses: unionlabs/workflows/.github/workflows/build.yml@679907725e8f8e800a31677bad1b0d0decc9399f
