@@ -6,7 +6,7 @@ on:
 
 jobs:
   build:
-    uses: nixbuild/nixbuild-action/.github/workflows/ci-workflow.yml@v16
+    uses: nixbuild/nixbuild-action/.github/workflows/ci-workflow.yml@master
     secrets:
       nixbuild_token: ${{ secrets.nixbuild_token }}
     with:
@@ -25,7 +25,7 @@ jobs:
         with:
           name: packages.${{ matrix.system }}.${{ matrix.package }}-image
       - uses: nixbuild/nix-quick-install-action@v22
-      - uses: nixbuild/nixbuild-action@v17
+      - uses: nixbuild/nixbuild-action@master
         with:
           nixbuild_token: ${{ secrets.nixbuild_token }}
       - run: mkdir ${{ matrix.system }}
@@ -49,7 +49,7 @@ jobs:
         with:
           name: packages.${{ matrix.system }}.${{ matrix.package }}
       - uses: nixbuild/nix-quick-install-action@v22
-      - uses: nixbuild/nixbuild-action@v17
+      - uses: nixbuild/nixbuild-action@master
         with:
           nixbuild_token: ${{ secrets.nixbuild_token }}
       - run: mkdir ${{ matrix.system }}
