@@ -902,7 +902,7 @@ impl Connect<Ethereum> for Cometbls {
         &'a self,
         counterparty: &'a Ethereum,
         counterparty_client_id: String,
-        trusted_slot: Height,
+        mut trusted_slot: Height,
         target_slot: Height,
     ) -> impl Future<Output = Height> + 'a {
         async move {
@@ -911,106 +911,54 @@ impl Connect<Ethereum> for Cometbls {
             self.wait_for_beacon_block(target_slot).await;
 
             let finality_update = self.light_client_finality_update().await;
-
-            let (trusted_slot, is_next) = {
-                let target_period =
-                    self.sync_committee_period(finality_update.data.attested_header.beacon.slot);
-                let trusted_period = self.sync_committee_period(trusted_slot.revision_height);
-
-                // Eth chain is more than 1 signature period ahead of us. We need to do sync committee
-                // updates until we reach the `target_period - 1`.
-                if trusted_period + 1 < target_period {
-                    tracing::debug!(
-                        "Will update multiple sync committees from period {}, to {}",
-                        trusted_period,
-                        target_period
-                    );
-                    (
-                        // We update until `target_period - 1`, not `target_period` because we can do a finality
-                        // update with `is_next = true` when we are at `target_period - 1`. Otherwise, we would
-                        // have to do an additional finality update after we reach the target period.
-                        self.apply_sync_committee_updates(
-                            counterparty,
-                            &counterparty_client_id,
-                            trusted_slot,
-                            target_period - 1,
-                        )
-                        .await,
-                        true,
-                    )
-                }
-                // Eth chain is only 1 signature period ahead of us, we'll combine finality update and
-                // sync committee update.
-                else if trusted_period + 1 == target_period {
-                    tracing::debug!(
-                        "Only one signature ahead, will do a finality update with is_next true"
-                    );
-                    (trusted_slot, true)
-                }
-                // We are at the same signature period, this is a finality update with no next sync committee change.
-                else if trusted_period == target_period {
-                    tracing::debug!("On the same period, only do a finality update");
-                    (trusted_slot, false)
-                } else {
-                    // Something is wrong
-                    panic!("Chain's current signature period cannot be behind of the saved state, something is wrong!");
-                }
-            };
-
+            let target_period =
+                self.sync_committee_period(finality_update.data.attested_header.beacon.slot);
             let trusted_period = self.sync_committee_period(trusted_slot.revision_height);
-            let execution_height = self.execution_height(trusted_slot.revision_height).await;
 
-            let (trusted_sync_committee, next_sync_committee, next_sync_committee_branch) =
-                if is_next {
-                    // Here, `trusted_period` is `target_period - 1`. Which means `light_client_update[0].next_sync_committee`
-                    // will be the trusted next sync committee, and `light_client_update[1].next_sync_committee` is the next sync
-                    // committee that we want to update to.
-                    let light_client_update = self.light_client_updates(trusted_period, 2).await;
-                    (
-                        TrustedSyncCommittee {
-                            trusted_height: execution_height,
-                            // Sync committee's aggregate public key is saved in light client to optimize storage. We supply
-                            // the whole sync committee for it to be able to verify the update.
-                            sync_committee: translate_sync_committee(
-                                &light_client_update[0].data.next_sync_committee,
-                            ),
-                            // `is_next` here means `sync_committee` that we gave is either the next sync committee or the current
-                            // sync committee.
-                            is_next,
-                        },
-                        // This sync committee will be saved as the new next sync committee after update.
-                        translate_sync_committee(&light_client_update[1].data.next_sync_committee),
-                        translate_merkle_branch(
-                            &light_client_update[1].data.next_sync_committee_branch,
-                        ),
+            assert!(trusted_period <= target_period, "Chain's current signature period cannot be behind of the saved state, something is wrong!");
+
+            // Eth chain is more than 1 signature period ahead of us. We need to do sync committee
+            // updates until we reach the `target_period - 1`.
+            if trusted_period < target_period {
+                tracing::debug!(
+                    "Will update multiple sync committees from period {}, to {}",
+                    trusted_period,
+                    target_period
+                );
+                trusted_slot = self
+                    .apply_sync_committee_updates(
+                        counterparty,
+                        &counterparty_client_id,
+                        trusted_slot,
+                        target_period,
                     )
-                } else {
-                    // No signature period change happened here, so we'll only need to provide the current sync committee
-                    // and no new next sync committee because it is also not changed yet.
-                    let block_root = self.beacon_header(trusted_slot.revision_height).await.root;
-                    let bootstrap = self.light_client_bootstrap(&block_root).await;
-                    (
-                        TrustedSyncCommittee {
-                            trusted_height: execution_height,
-                            sync_committee: translate_sync_committee(
-                                &bootstrap.data.current_sync_committee,
-                            ),
-                            is_next,
-                        },
-                        Default::default(),
-                        Default::default(),
-                    )
-                };
+                    .await;
+            }
+
+            if trusted_slot >= target_slot {
+                return trusted_slot;
+            }
+
+            let execution_height = self.execution_height(trusted_slot.revision_height).await;
 
             let updated_height =
                 self.make_height(finality_update.data.attested_header.beacon.slot.0);
 
+            let block_root = self.beacon_header(trusted_slot.revision_height).await.root;
+            let bootstrap = self.light_client_bootstrap(&block_root).await;
+
             let header = self
                 .make_finality_update(
                     finality_update.data,
-                    trusted_sync_committee,
-                    next_sync_committee,
-                    next_sync_committee_branch,
+                    TrustedSyncCommittee {
+                        trusted_height: execution_height,
+                        sync_committee: translate_sync_committee(
+                            &bootstrap.data.current_sync_committee,
+                        ),
+                        is_next: false,
+                    },
+                    Default::default(),
+                    Default::default(),
                 )
                 .await;
 
