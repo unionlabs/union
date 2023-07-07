@@ -97,6 +97,12 @@ pub struct RelayPacketsArgs {
     open_channel: bool,
 
     #[arg(long)]
+    cometbls_client_id: String,
+
+    #[arg(long)]
+    ethereum_client_id: String,
+
+    #[arg(long)]
     cometbls_port_id: Option<String>,
     #[arg(long)]
     ethereum_port_id: Option<String>,
@@ -273,6 +279,8 @@ async fn do_main<C: ChainSpec>(args: AppArgs) {
             open_channel,
             cometbls_port_id,
             ethereum_port_id,
+            cometbls_client_id,
+            ethereum_client_id,
         }) => {
             let cometbls_lc = Cometbls::<C>::new(CometblsConfig {
                 cometbls_client_address: args.cometbls.cometbls_client_address,
@@ -339,7 +347,13 @@ async fn do_main<C: ChainSpec>(args: AppArgs) {
                 .await;
             }
 
-            relay_packets(cometbls_lc, ethereum_lc).await;
+            relay_packets(
+                cometbls_lc,
+                ethereum_lc,
+                cometbls_client_id,
+                ethereum_client_id,
+            )
+            .await;
         }
         Command::Transfer(TransferArgs {
             ics20_transfer_address,
@@ -881,16 +895,25 @@ where
     (cometbls_channel_id, ethereum_channel_id)
 }
 
-async fn relay_packets(cometbls: Cometbls, ethereum: Ethereum) {
+async fn relay_packets(
+    cometbls: Cometbls,
+    ethereum: Ethereum,
+    cometbls_client_id: String,
+    ethereum_client_id: String,
+) {
     let cometbls = Arc::new(cometbls);
     let ethereum = Arc::new(ethereum);
 
     let cosmos_to_eth_handle = tokio::spawn(relay_packets_from_cosmos_to_ethereum(
         cometbls.clone(),
         ethereum.clone(),
+        cometbls_client_id,
     ));
-    let eth_to_cosmos_handle =
-        tokio::spawn(relay_packets_from_ethereum_to_cosmos(cometbls, ethereum));
+    let eth_to_cosmos_handle = tokio::spawn(relay_packets_from_ethereum_to_cosmos(
+        cometbls,
+        ethereum,
+        ethereum_client_id,
+    ));
 
     let (h1, h2) = tokio::join!(cosmos_to_eth_handle, eth_to_cosmos_handle);
 
@@ -898,7 +921,11 @@ async fn relay_packets(cometbls: Cometbls, ethereum: Ethereum) {
     h2.unwrap();
 }
 
-async fn relay_packets_from_cosmos_to_ethereum(cometbls: Arc<Cometbls>, ethereum: Arc<Ethereum>) {
+async fn relay_packets_from_cosmos_to_ethereum(
+    cometbls: Arc<Cometbls>,
+    ethereum: Arc<Ethereum>,
+    cometbls_client_id: String,
+) {
     let mut subs = ethereum
         .tm_client
         .subscribe(EventType::Tx.into())
@@ -946,7 +973,7 @@ async fn relay_packets_from_cosmos_to_ethereum(cometbls: Arc<Cometbls>, ethereum
                 // );
 
                 let latest_height = cometbls
-                    .query_client_state("cometbls-new-0".into())
+                    .query_client_state(cometbls_client_id.clone())
                     .await
                     .height();
 
@@ -962,7 +989,7 @@ async fn relay_packets_from_cosmos_to_ethereum(cometbls: Arc<Cometbls>, ethereum
                 let _ = ethereum
                     .update_counterparty_client(
                         &cometbls,
-                        "cometbls-new-0".into(),
+                        cometbls_client_id.clone(),
                         latest_height,
                         ethereum_update_to,
                     )
@@ -1013,7 +1040,11 @@ async fn relay_packets_from_cosmos_to_ethereum(cometbls: Arc<Cometbls>, ethereum
     }
 }
 
-async fn relay_packets_from_ethereum_to_cosmos(cometbls: Arc<Cometbls>, ethereum: Arc<Ethereum>) {
+async fn relay_packets_from_ethereum_to_cosmos(
+    cometbls: Arc<Cometbls>,
+    ethereum: Arc<Ethereum>,
+    ethereum_client_id: String,
+) {
     let event = cometbls.ibc_handler.send_packet_filter();
     let mut event_stream = event.stream_with_meta().await.unwrap();
 
@@ -1028,14 +1059,14 @@ async fn relay_packets_from_ethereum_to_cosmos(cometbls: Arc<Cometbls>, ethereum
             .await;
 
         let latest_height = ethereum
-            .query_client_state("08-wasm-3".into())
+            .query_client_state(ethereum_client_id.clone())
             .await
             .height();
 
         let updated_height = cometbls
             .update_counterparty_client(
                 &ethereum,
-                "08-wasm-3".into(),
+                ethereum_client_id.clone(),
                 latest_height,
                 cometbls.query_latest_height().await,
             )
@@ -1085,137 +1116,6 @@ async fn relay_packets_from_ethereum_to_cosmos(cometbls: Arc<Cometbls>, ethereum
 
         tracing::info!(rcp = ?rcp, "received packet");
     }
-
-    panic!("something is wrong");
-
-    let mut subs = ethereum
-        .tm_client
-        .subscribe(EventType::Tx.into())
-        .await
-        .unwrap();
-
-    while let Some(res) = subs.next().await {
-        let ev = res.unwrap();
-
-        tracing::info!(event = ?ev.events, "new event");
-
-        match ev.data {
-            EventData::NewBlock {
-                block: _,
-                result_begin_block: _,
-                result_end_block: _,
-            } => {
-                // dbg!(result_begin_block, result_end_block);
-
-                // client.block(block.unwrap().header.height).await.unwrap();
-            }
-            EventData::Tx { tx_result } => {
-                let send_packet_event = tx_result.result.events.into_iter().find_map(|e| {
-                    (e.kind == "send_packet").then(|| {
-                        e.attributes
-                            .into_iter()
-                            .map(|attr| (attr.key, attr.value))
-                            .collect::<HashMap<_, _>>()
-                    })
-                });
-
-                let Some(send_packet_event) = send_packet_event else {
-                            continue;
-                        };
-
-                tracing::info!(?send_packet_event);
-
-                let sequence = send_packet_event["packet_sequence"].parse().unwrap();
-
-                let packet_commitment =
-                    channel_v1::query_client::QueryClient::connect("http://0.0.0.0:9090")
-                        .await
-                        .unwrap()
-                        .packet_commitment(channel_v1::QueryPacketCommitmentRequest {
-                            port_id: send_packet_event["packet_src_port"].clone(),
-                            channel_id: send_packet_event["packet_src_channel"].clone(),
-                            sequence,
-                        })
-                        .await
-                        .unwrap()
-                        .into_inner();
-
-                // NOTE: `packet_data` is deprecated and invalid!!! this assertion will fail!
-                // assert_eq!(
-                //     send_packet_event["packet_data"].clone().into_bytes(),
-                //     ethers::utils::hex::decode(&send_packet_event["packet_data_hex"])
-                //         .unwrap()
-                // );
-
-                let rcp = cometbls
-                    .recv_packet(MsgRecvPacket {
-                        packet: Packet {
-                            sequence,
-                            source_port: send_packet_event["packet_src_port"].clone(),
-                            source_channel: send_packet_event["packet_src_channel"].clone(),
-                            destination_port: send_packet_event["packet_dst_port"].clone(),
-                            destination_channel: send_packet_event["packet_dst_channel"].clone(),
-                            data: ethers::utils::hex::decode(&send_packet_event["packet_data_hex"])
-                                .unwrap(),
-                            timeout_height: {
-                                let (revision, height) = send_packet_event["packet_timeout_height"]
-                                    .split_once('-')
-                                    .unwrap();
-
-                                Height {
-                                    revision_number: revision.parse().unwrap(),
-                                    revision_height: height.parse().unwrap(),
-                                }
-                            },
-                            timeout_timestamp: send_packet_event["packet_timeout_timestamp"]
-                                .parse()
-                                .unwrap(),
-                        },
-                        proof_height: packet_commitment.proof_height.unwrap().into(),
-                        proof_commitment: packet_commitment.commitment,
-                    })
-                    .await;
-
-                dbg!(rcp);
-            }
-            EventData::GenericJsonEvent(_) => todo!(),
-        };
-    }
-
-    // let send_handle = tokio::spawn(async move {
-    //     tokio::time::sleep(Duration::from_secs(20)).await;
-
-    //     let msg = transfer_v1::MsgTransfer {
-    //         source_port: PORT_ID.to_string(),
-    //         source_channel: "channel-0".to_string(),
-    //         token: Some(Coin {
-    //             denom: "stake".to_string(),
-    //             amount: "1".to_string(),
-    //         }),
-    //         sender: signer_from_pk(&get_wallet().public_key().public_key().to_bytes().to_vec()),
-    //         receiver: "union1nrv37pqfcqul73v7d2e8y0jhjyeuhg57m3eqdt".to_string(),
-    //         timeout_height: Some(client_v1::Height {
-    //             revision_number: 1,
-    //             revision_height: 12_345_678_765,
-    //         }),
-    //         timeout_timestamp: Default::default(),
-    //         memo: Default::default(),
-    //     };
-
-    //     broadcast_tx_commit(
-    //         [Any {
-    //             type_url: "/ibc.applications.transfer.v1.MsgTransfer".to_string(),
-    //             value: msg.encode_to_vec(),
-    //         }]
-    //         .to_vec(),
-    //     )
-    //     .await;
-    // });
-
-    // let (listen, send) = tokio::join!(listen_handle, send_handle);
-
-    // listen.unwrap();
-    // send.unwrap();
 }
 // trait Msg<Client, Counterparty>: Sized
 // where
