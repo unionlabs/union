@@ -11,6 +11,13 @@ impl Height {
         self.revision_height += 1;
         self
     }
+
+    pub fn new(revision_number: u64, revision_height: u64) -> Self {
+        Height {
+            revision_number,
+            revision_height,
+        }
+    }
 }
 
 impl From<protos::ibc::core::client::v1::Height> for Height {
