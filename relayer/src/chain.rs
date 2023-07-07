@@ -73,6 +73,14 @@ pub trait LightClient {
         self_height: Height,
     ) -> impl Future<Output = StateProof<Channel>> + '_;
 
+    fn packet_commitment_proof(
+        &self,
+        port_id: String,
+        channel_id: String,
+        sequence: u64,
+        self_height: Height,
+    ) -> impl Future<Output = StateProof<Vec<u8>>> + '_;
+
     fn query_latest_height(&self) -> impl Future<Output = Height> + '_;
 
     fn query_client_state(&self, client_id: String)

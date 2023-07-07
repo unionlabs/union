@@ -19,10 +19,11 @@ contract ICS20TransferBank is ICS20Transfer {
     function sendTransfer(
         string calldata denom,
         uint64 amount,
-        address receiver,
+        string calldata receiver,
         string calldata sourcePort,
         string calldata sourceChannel,
-        uint64 timeoutHeight
+        uint64 timeoutRevisionNumber,
+        uint64 timeoutRevisionHeight
     ) external {
         if (
             !denom.toSlice().startsWith(
@@ -47,11 +48,13 @@ contract ICS20TransferBank is ICS20Transfer {
                 denom: denom,
                 amount: amount,
                 sender: string(abi.encodePacked(_msgSender())),
-                receiver: string(abi.encodePacked(receiver))
+                receiver: receiver
+                // receiver: string(abi.encodePacked(receiver))
             }),
             sourcePort,
             sourceChannel,
-            timeoutHeight
+            timeoutRevisionNumber,
+            timeoutRevisionHeight
         );
     }
 

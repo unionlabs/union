@@ -510,6 +510,51 @@ impl<C: ChainSpec> LightClient for Ethereum<C> {
     fn process_height_for_counterparty(&self, height: Height) -> impl Future<Output = Height> + '_ {
         async move { height }
     }
+
+    fn packet_commitment_proof(
+        &self,
+        port_id: String,
+        channel_id: String,
+        sequence: u64,
+        self_height: Height,
+    ) -> impl Future<Output = StateProof<Vec<u8>>> + '_ {
+        async move {
+            let path =
+                format!("commitments/ports/{port_id}/channels/{channel_id}/sequences/{sequence}");
+
+            let query_result = self
+                .tm_client
+                .abci_query(
+                    Some("store/ibc/key".to_string()),
+                    path,
+                    Some(self_height.revision_height.try_into().unwrap()),
+                    true,
+                )
+                .await
+                .unwrap();
+
+            println!("QUERY RESILTY: {:?}", query_result);
+
+            StateProof {
+                state: query_result.value,
+                // state: google::protobuf::Any::decode(&*query_result.value)
+                //     .unwrap()
+                //     .try_into()
+                //     .unwrap(),
+                proof: commitment_v1::MerkleProof {
+                    proofs: query_result
+                        .proof
+                        .unwrap()
+                        .ops
+                        .into_iter()
+                        .map(|op| ics23_v1::CommitmentProof::decode(op.data.as_slice()).unwrap())
+                        .collect::<Vec<_>>(),
+                }
+                .encode_to_vec(),
+                proof_height: self.make_height(query_result.height.value()),
+            }
+        }
+    }
 }
 
 impl<C: ChainSpec> Connect<Cometbls<C>> for Ethereum<C> {
@@ -707,8 +752,18 @@ impl<C: ChainSpec> Connect<Cometbls<C>> for Ethereum<C> {
         }
     }
 
-    fn recv_packet(&self, _msg: MsgRecvPacket) -> impl futures::Future<Output = ()> + '_ {
-        async move { todo!() }
+    fn recv_packet(&self, msg: MsgRecvPacket) -> impl futures::Future<Output = ()> + '_ {
+        async move {
+            let response = self
+                .broadcast_tx_commit([google::protobuf::Any {
+                    type_url: "/ibc.core.channel.v1.MsgRecvPacket".to_string(),
+                    value: msg.into_proto_with_signer(&self.signer).encode_to_vec(),
+                }])
+                .await;
+
+            tracing::info!(check_tx_code = ?response.check_tx.code, check_tx_log = %response.check_tx.log);
+            tracing::info!(deliver_tx_code = ?response.deliver_tx.code, deliver_tx_log = %response.deliver_tx.log);
+        }
     }
 
     fn generate_counterparty_client_state(

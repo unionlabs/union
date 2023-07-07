@@ -3642,6 +3642,7 @@ dependencies = [
  "ethereum-verifier",
  "ethers",
  "futures",
+ "hex",
  "hex-literal",
  "ibc-types",
  "k256 0.11.6",

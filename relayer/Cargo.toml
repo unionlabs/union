@@ -4,6 +4,10 @@ version = "0.1.0"
 edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[features]
+eth-minimal = [ "ethereum-verifier/config-minimal" ]
+default = [ "eth-minimal" ] # TODO(aeryz): remove this before merge
+
 [dependencies]
 base64 = "0.21.0"
 bech32 = "0.9.1"
