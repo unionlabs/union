@@ -105,8 +105,8 @@ impl Error {
         Error::ExpectedAndStoredValueMismatch(hex::encode(expected), hex::encode(got))
     }
 
-    pub fn custom_query<S: Into<String>>(s: S) -> Error {
-        Error::CustomQuery(s.into())
+    pub fn custom_query<S: ToString>(s: S) -> Error {
+        Error::CustomQuery(s.to_string())
     }
 }
 

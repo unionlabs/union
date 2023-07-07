@@ -2,6 +2,7 @@ pub mod client_state;
 pub mod consensus_state;
 pub mod context;
 pub mod contract;
+pub mod custom_query;
 pub mod errors;
 pub mod eth_encoding;
 pub mod header;

@@ -1,5 +1,5 @@
 use crate::{
-    client_state::ClientState, consensus_state::ConsensusState, contract::CustomQuery,
+    client_state::ClientState, consensus_state::ConsensusState, custom_query::CustomQuery,
     errors::Error,
 };
 use cosmwasm_std::{Deps, DepsMut};
