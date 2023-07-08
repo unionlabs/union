@@ -47,8 +47,9 @@ use ibc_types::{
             cometbls,
             ethereum::{
                 self,
-                account_update::{AccountProof, AccountUpdate},
+                account_update::AccountUpdate,
                 light_client_update::{LightClientUpdate, NextSyncCommitteeBranch},
+                proof::Proof,
                 sync_committee::SyncCommittee,
                 trusted_sync_committee::TrustedSyncCommittee,
             },
@@ -1219,9 +1220,9 @@ impl<C: ChainSpec> Cometbls<C> {
                 consensus_update: light_client_update,
                 trusted_sync_committee,
                 account_update: AccountUpdate {
-                    proofs: [AccountProof {
-                        address: self.ibc_handler.address().as_bytes().to_vec(),
-                        storage_hash: account_update.storage_hash.as_bytes().to_vec(),
+                    proofs: [Proof {
+                        key: self.ibc_handler.address().as_bytes().to_vec(),
+                        value: account_update.storage_hash.as_bytes().to_vec(),
                         proof: account_update
                             .account_proof
                             .into_iter()

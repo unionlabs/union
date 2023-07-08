@@ -227,8 +227,8 @@ pub fn update_header<C: ChainSpec>(
 
     let proof_data = account_update.proofs.get(0).ok_or(Error::EmptyProof)?;
 
-    let address: ExecutionAddress = proof_data.address.as_slice().try_into().unwrap();
-    let storage_root = proof_data.storage_hash.as_slice().try_into().unwrap();
+    let address: ExecutionAddress = proof_data.key.as_slice().try_into().unwrap();
+    let storage_root = proof_data.value.as_slice().try_into().unwrap();
 
     verify_account_storage_root(
         consensus_update
@@ -447,7 +447,7 @@ mod test {
                 // Storage root is updated.
                 assert_eq!(
                     wasm_consensus_state.data.storage_root.into_bytes(),
-                    update.account_update.proofs[0].storage_hash,
+                    update.account_update.proofs[0].value,
                 );
                 // Latest slot is updated.
                 // TODO(aeryz): Add cases for `store_period == update_period` and `update_period == store_period + 1`

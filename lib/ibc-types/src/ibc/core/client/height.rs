@@ -4,6 +4,7 @@ use tree_hash::TreeHash;
 
 #[derive(Clone, Copy, Debug, PartialEq, Encode, Decode, TreeHash, Serialize, Deserialize)]
 pub struct Height {
+    #[serde(default)]
     pub revision_number: u64,
     pub revision_height: u64,
 }
