@@ -24,10 +24,7 @@ use ethers::{
 };
 use futures::Future;
 use ibc_types::{
-    ethereum::{
-        beacon::{LightClientBootstrap, LightClientFinalityUpdate},
-        Version,
-    },
+    ethereum::beacon::{LightClientBootstrap, LightClientFinalityUpdate},
     ethereum_consts_traits::ChainSpec,
     ibc::{
         core::{
@@ -51,8 +48,6 @@ use ibc_types::{
             ethereum::{
                 self,
                 account_update::{AccountProof, AccountUpdate},
-                fork::Fork,
-                fork_parameters::ForkParameters,
                 light_client_update::{LightClientUpdate, NextSyncCommitteeBranch},
                 sync_committee::SyncCommittee,
                 trusted_sync_committee::TrustedSyncCommittee,
@@ -748,28 +743,14 @@ impl<C: ChainSpec> Connect<Ethereum<C>> for Cometbls<C> {
                 data: ethereum::client_state::ClientState {
                     genesis_validators_root: genesis.genesis_validators_root,
                     genesis_time: genesis.genesis_time,
-                    // TODO: Get these from https://sepolia.cryptware.io/eth/v1/config/spec
-                    fork_parameters: ForkParameters {
-                        // TODO(aeryz): These will be dynamic based on the configuration
-                        genesis_fork_version: Version([144, 0, 0, 105]),
-                        genesis_slot: 0,
-                        altair: Fork {
-                            version: Version([144, 0, 0, 112]),
-                            epoch: 0,
-                        },
-                        bellatrix: Fork {
-                            version: Version([144, 0, 0, 113]),
-                            epoch: 0,
-                        },
-                        capella: Fork {
-                            version: Version([144, 0, 0, 114]),
-                            epoch: 0,
-                        },
-                        eip4844: Fork {
-                            version: Version([4, 0, 0, 0]),
-                            epoch: u64::MAX,
-                        },
-                    },
+                    fork_parameters: self
+                        .beacon_api_client
+                        .spec()
+                        .await
+                        .unwrap()
+                        .data
+                        .into_fork_parameters(),
+                    // REVIEW: Is this a preset config param? Or a per-chain config?
                     seconds_per_slot: C::SECONDS_PER_SLOT::U64,
                     slots_per_epoch: C::SLOTS_PER_EPOCH::U64,
                     epochs_per_sync_committee_period: C::EPOCHS_PER_SYNC_COMMITTEE_PERIOD::U64,
@@ -910,7 +891,10 @@ impl<C: ChainSpec> Connect<Ethereum<C>> for Cometbls<C> {
                 )
                 .await;
 
-            tracing::info!("submitting finality update");
+            let header_json = serde_json::to_string(&header).unwrap();
+
+            tracing::info!(%header_json, "submitting finality update");
+
             counterparty
                 .update_client(counterparty_client_id, header)
                 .await;
@@ -1050,7 +1034,7 @@ impl<C: ChainSpec> Cometbls<C> {
             cometbls_client_address: config.cometbls_client_address,
             ics20_transfer_address: config.ics20_transfer_address,
             wasm_code_id: config.wasm_code_id,
-            beacon_api_client: BeaconApiClient::new(config.eth_beacon_rpc_api),
+            beacon_api_client: BeaconApiClient::new(config.eth_beacon_rpc_api).await,
         }
     }
 

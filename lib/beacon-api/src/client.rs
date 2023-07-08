@@ -14,7 +14,7 @@ use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
 use crate::{
     errors::{Error, InternalServerError},
-    types::{BeaconHeaderData, LightClientUpdatesResponse},
+    types::{BeaconHeaderData, LightClientUpdatesResponse, Spec},
 };
 
 type Result<T> = core::result::Result<T, Error>;
@@ -26,12 +26,22 @@ pub struct BeaconApiClient<C: ChainSpec> {
 }
 
 impl<C: ChainSpec> BeaconApiClient<C> {
-    pub fn new(base_url: String) -> Self {
-        Self {
+    pub async fn new(base_url: String) -> Self {
+        let this = Self {
             client: reqwest::Client::new(),
             base_url,
             _marker: PhantomData,
-        }
+        };
+
+        let spec = this.spec().await.unwrap();
+
+        assert_eq!(spec.data.preset_base, C::PRESET_BASE_KIND);
+
+        this
+    }
+
+    pub async fn spec(&self) -> Result<Response<Spec>> {
+        self.get_json("/eth/v1/config/spec").await
     }
 
     pub async fn finality_update(&self) -> Result<Response<LightClientFinalityUpdate<C>, Version>> {
@@ -60,7 +70,7 @@ impl<C: ChainSpec> BeaconApiClient<C> {
         finalized_root: H256,
     ) -> Result<Response<LightClientBootstrap<C>>> {
         self.get_json(format!(
-            "/eth/v1/beacon/light_client/bootstrap/0x{finalized_root}"
+            "/eth/v1/beacon/light_client/bootstrap/{finalized_root}"
         ))
         .await
     }

@@ -36,6 +36,7 @@ pub struct LightClientUpdate<C: SYNC_COMMITTEE_SIZE + BYTES_PER_LOGS_BLOOM + MAX
     /// Sync committee aggregate signature
     pub sync_aggregate: SyncAggregate<C>,
     /// Slot at which the aggregate signature was created (untrusted)
+    #[serde(with = "::serde_utils::string")]
     pub signature_slot: u64,
 }
 

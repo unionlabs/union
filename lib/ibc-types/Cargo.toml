@@ -26,6 +26,7 @@ primitive-types = { version = "0.12.1", default-features = false, features = ["s
 hex = { version = "0.4.3", default-features = false }
 typenum = { version = "1.16.0", default-features = false, features = ["const-generics", "no_std"] }
 hex-literal = "0.4.1"
+generic-array = "0.14.7"
 
 [dev-dependencies]
 serde_json = "1.0.96"

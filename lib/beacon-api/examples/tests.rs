@@ -3,13 +3,13 @@ use ibc_types::ethereum_consts_traits::Minimal;
 
 #[tokio::main]
 async fn main() {
-    // tracing_subscriber::fmt::init();
+    tracing_subscriber::fmt::init();
 
     do_main().await
 }
 
 async fn do_main() {
-    let client = BeaconApiClient::<Minimal>::new("http://localhost:9596".to_string());
+    let client = BeaconApiClient::<Minimal>::new("http://localhost:9596".to_string()).await;
 
     // genesis
     client.block(BlockId::Genesis).await.unwrap();

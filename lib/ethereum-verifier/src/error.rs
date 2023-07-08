@@ -1,9 +1,19 @@
+use ibc_types::ethereum::H256;
 use milagro_bls::AmclError;
 use trie_db::TrieError;
 
 #[derive(Debug)]
+pub struct InvalidMerkleBranch {
+    pub leaf: H256,
+    pub branch: Vec<H256>,
+    pub depth: usize,
+    pub index: u64,
+    pub root: H256,
+}
+
+#[derive(Debug)]
 pub enum Error {
-    InvalidMerkleBranch,
+    InvalidMerkleBranch(InvalidMerkleBranch),
     InvalidChainVersion,
     Crypto,
     ExpectedCurrentSyncCommittee,
@@ -26,7 +36,7 @@ pub enum Error {
 impl core::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Error::InvalidMerkleBranch => write!(f, "Invalid merkle branch."),
+            Error::InvalidMerkleBranch(err) => write!(f, "Invalid merkle branch: {err:#?}"),
             Error::InvalidChainVersion => write!(f, "Invalid chain conversion."),
             Error::Crypto => write!(f, "Crypto error."),
             Error::ExpectedCurrentSyncCommittee => write!(f, "Expected current sync committee."),

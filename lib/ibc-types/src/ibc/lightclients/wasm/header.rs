@@ -1,8 +1,9 @@
 use prost::Message;
+use serde::{Deserialize, Serialize};
 
 use crate::{ibc::core::client::height::Height, IntoProto, TypeUrl};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Header<Data> {
     pub data: Data,
     pub height: Height,

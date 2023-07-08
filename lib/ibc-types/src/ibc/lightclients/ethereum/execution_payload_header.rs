@@ -32,7 +32,6 @@ pub struct ExecutionPayloadHeader<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES
     pub timestamp: u64,
     #[serde(with = "::serde_utils::hex_string")]
     pub extra_data: VariableList<u8, C::MAX_EXTRA_DATA_BYTES>,
-    // REVIEW: Hex?
     pub base_fee_per_gas: U256,
     pub block_hash: H256,
     #[serde(default)]
@@ -57,13 +56,12 @@ impl<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> From<ExecutionPayloadHeader
             gas_used: value.gas_used,
             timestamp: value.timestamp,
             extra_data: value.extra_data.into(),
-            base_fee_per_gas: value
-                .base_fee_per_gas
-                .0
-                .into_iter()
-                // U256 is little endian
-                .flat_map(u64::to_le_bytes)
-                .collect(),
+            // base_fee_per_gas: <[u8; 32]>::from(value.base_fee_per_gas).into(),
+            base_fee_per_gas: {
+                let mut slice = [0_u8; 32];
+                value.base_fee_per_gas.to_little_endian(&mut slice);
+                slice.into()
+            },
             block_hash: value.block_hash.into(),
             transactions_root: value.transactions_root.into(),
             withdrawals_root: value.withdrawals_root.into(),
@@ -129,9 +127,11 @@ impl<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES>
                 .extra_data
                 .try_into()
                 .map_err(TryFromExecutionPayloadHeaderError::ExtraData)?,
-            base_fee_per_gas: <[u8; 32]>::try_from(value.base_fee_per_gas)
-                .map_err(TryFromExecutionPayloadHeaderError::BaseFeePerGas)?
-                .into(),
+            // .into_iter().rev().collect::<Vec<_>>()
+            base_fee_per_gas: U256::from_little_endian(
+                &<[u8; 32]>::try_from(value.base_fee_per_gas)
+                    .map_err(TryFromExecutionPayloadHeaderError::BaseFeePerGas)?,
+            ),
             block_hash: value
                 .block_hash
                 .try_into()

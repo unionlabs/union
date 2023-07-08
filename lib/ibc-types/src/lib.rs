@@ -130,6 +130,27 @@ pub trait TypeUrl: Message {
     const TYPE_URL: &'static str;
 }
 
+#[cfg(test)]
+fn assert_proto_roundtrip<T>(t: &T)
+where
+    T: IntoProto<Proto = <T as TryFromProto>::Proto> + TryFromProto + Debug + Clone + PartialEq,
+    TryFromProtoErrorOf<T>: Debug,
+{
+    let try_from_proto = T::try_from_proto(t.clone().into_proto()).unwrap();
+
+    assert_eq!(t, &try_from_proto, "proto roundtrip failed");
+}
+
+#[cfg(test)]
+fn assert_json_roundtrip<T>(t: &T)
+where
+    T: serde::Serialize + for<'a> serde::Deserialize<'a> + Debug + PartialEq,
+{
+    let from_json = serde_json::from_str::<T>(&serde_json::to_string(&t).unwrap()).unwrap();
+
+    assert_eq!(t, &from_json, "json roundtrip failed");
+}
+
 /// The various `msg` types for cosmos have an extra `signer` field that
 /// the solidity equivalents don't have; this trait is required to allow
 /// the signer to be passed in.

@@ -1,10 +1,12 @@
 use core::fmt::Display;
 
+use generic_array::GenericArray;
 use hex_literal::hex;
 use serde::{Deserialize, Serialize};
 use ssz::{Decode, Encode};
-use ssz_types::{typenum::U, BitList, FixedVector, VariableList};
+use ssz_types::{BitList, FixedVector, VariableList};
 use tree_hash::TreeHash;
+use typenum::U;
 
 use crate::{
     bls::{BlsPublicKey, BlsSignature},
@@ -24,7 +26,7 @@ pub mod beacon;
 // REVIEW: Is this needed? Currently unused
 pub const BLOCK_BODY_EXECUTION_PAYLOAD_INDEX: usize = 9;
 
-macro_rules! array_wrapper {
+macro_rules! hex_string_array_wrapper {
     (
         $(
             pub struct $Struct:ident(pub [u8; $N:literal]);
@@ -112,11 +114,17 @@ macro_rules! array_wrapper {
                     FixedVector::<u8, U<$N>>::tree_hash_root(&self.0.into())
                 }
             }
+
+            impl From<GenericArray<u8, U<$N>>> for $Struct {
+                fn from(arr: GenericArray<u8, U<$N>>) -> Self {
+                    Self(arr.to_vec().try_into().expect("GenericArray has the correct length; qed;"))
+                }
+            }
         )+
     };
 }
 
-array_wrapper! {
+hex_string_array_wrapper! {
     pub struct Version(pub [u8; 4]);
     pub struct DomainType(pub [u8; 4]);
     pub struct ForkDigest(pub [u8; 4]);
@@ -294,13 +302,13 @@ impl H256 {
 
 impl From<H256> for primitive_types::H256 {
     fn from(value: H256) -> Self {
-        value.into()
+        Self(value.0)
     }
 }
 
 impl From<primitive_types::H256> for H256 {
     fn from(value: primitive_types::H256) -> Self {
-        value.into()
+        Self(value.0)
     }
 }
 

@@ -1,5 +1,6 @@
 use core::fmt::Debug;
 
+use serde::{Deserialize, Serialize};
 use typenum::Unsigned;
 
 use crate::{
@@ -7,12 +8,20 @@ use crate::{
     ibc::lightclients::ethereum::{fork::Fork, fork_parameters::ForkParameters},
 };
 
-/// Minimal config, used for devnet.
+/// Minimal config.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Minimal;
+
 /// Mainnet config.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Mainnet;
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum PresetBaseKind {
+    Mainnet,
+    Minimal,
+}
 
 macro_rules! consts_traits {
     ($($CONST:ident $(,)?),+) => {
@@ -35,10 +44,14 @@ macro_rules! consts_traits {
         )+
 
         pub trait ChainSpec: 'static + Debug + Clone + PartialEq + Send + Sync + $($CONST+)+ {
+            const PRESET_BASE_KIND: PresetBaseKind;
+
             type PERIOD: 'static + Unsigned;
         }
 
         impl ChainSpec for Minimal {
+            const PRESET_BASE_KIND: PresetBaseKind = PresetBaseKind::Minimal;
+
             type PERIOD = typenum::Prod<
                 <Self as EPOCHS_PER_SYNC_COMMITTEE_PERIOD>::EPOCHS_PER_SYNC_COMMITTEE_PERIOD,
                 <Self as SLOTS_PER_EPOCH>::SLOTS_PER_EPOCH,
@@ -46,6 +59,8 @@ macro_rules! consts_traits {
         }
 
         impl ChainSpec for Mainnet {
+            const PRESET_BASE_KIND: PresetBaseKind = PresetBaseKind::Mainnet;
+
             type PERIOD = typenum::Prod<
                 <Self as EPOCHS_PER_SYNC_COMMITTEE_PERIOD>::EPOCHS_PER_SYNC_COMMITTEE_PERIOD,
                 <Self as SLOTS_PER_EPOCH>::SLOTS_PER_EPOCH,

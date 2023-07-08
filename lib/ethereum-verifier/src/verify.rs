@@ -219,7 +219,7 @@ pub fn is_valid_light_client_header<Ctx: LightClientContext>(
     }
 
     validate_merkle_branch(
-        &header.execution.tree_hash_root().into(),
+        &H256::from(header.execution.tree_hash_root()),
         &header.execution_branch,
         floorlog2(EXECUTION_PAYLOAD_INDEX),
         EXECUTION_PAYLOAD_INDEX,

@@ -94,6 +94,12 @@ impl TryFrom<Vec<u8>> for BlsPublicKey {
     }
 }
 
+impl AsRef<[u8]> for BlsPublicKey {
+    fn as_ref(&self) -> &[u8] {
+        &self.0
+    }
+}
+
 impl TryFrom<&[u8]> for BlsPublicKey {
     type Error = InvalidLength;
 

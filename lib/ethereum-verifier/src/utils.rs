@@ -8,7 +8,7 @@ use tree_hash::TreeHash;
 use typenum::Unsigned;
 
 use crate::primitives::{Epoch, Root, Slot, GENESIS_SLOT};
-use crate::{Error, LightClientContext};
+use crate::{Error, InvalidMerkleBranch, LightClientContext};
 
 pub fn compute_fork_version<Ctx: LightClientContext>(ctx: &Ctx, epoch: Epoch) -> Version {
     let fork_parameters = ctx.fork_parameters();
@@ -96,9 +96,45 @@ pub fn validate_merkle_branch<'a>(
     index: u64,
     root: &H256,
 ) -> Result<(), Error> {
-    is_valid_merkle_branch(leaf, branch, depth, index, root)
-        .then_some(())
-        .ok_or(Error::InvalidMerkleBranch)
+    let branch = branch.into_iter().cloned().collect::<Vec<_>>();
+
+    'block: {
+        let mut value = leaf.clone();
+
+        println!("{leaf:#?}");
+        println!("{branch:#?}");
+        println!("{depth:#?}");
+        println!("{index:#?}");
+        println!("{root:#?}");
+
+        // TODO: This is just a fold
+        // NB: zip ends when either iterator ends
+        for (b, i) in branch.iter().zip(0..depth) {
+            if let Some(v) = 2u64.checked_pow(i as u32) {
+                value = Sha256::digest(
+                    if index / v % 2 == 1 {
+                        [b.0, value.0]
+                    } else {
+                        [value.0, b.0]
+                    }
+                    .concat(),
+                )
+                .into();
+            } else {
+                break 'block false;
+            }
+        }
+
+        value == *root
+    }
+    .then_some(())
+    .ok_or(Error::InvalidMerkleBranch(InvalidMerkleBranch {
+        leaf: leaf.clone(),
+        branch,
+        depth,
+        index,
+        root: root.clone(),
+    }))
 }
 
 /// https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#is_valid_merkle_branch
@@ -111,26 +147,31 @@ pub fn is_valid_merkle_branch<'a>(
 ) -> bool {
     let mut value = leaf.clone();
 
+    let branch = branch.into_iter().collect::<Vec<_>>();
+
+    println!("{leaf:#?}");
+    println!("{branch:#?}");
+    println!("{depth:#?}");
+    println!("{index:#?}");
+    println!("{root:#?}");
+
     // TODO: This is just a fold
-    // NB: zip ends when either iterator end
+    // NB: zip ends when either iterator ends
     for (b, i) in branch.into_iter().zip(0..depth) {
         if let Some(v) = 2u64.checked_pow(i as u32) {
-            if index / v % 2 == 1 {
-                value = hash([b.0, value.0].concat());
-            } else {
-                value = hash([value.0, b.0].concat());
-            }
+            value = Sha256::digest(
+                if index / v % 2 == 1 {
+                    [b.0, value.0]
+                } else {
+                    [value.0, b.0]
+                }
+                .concat(),
+            )
+            .into();
         } else {
             return false;
         }
     }
 
-    &value == root
-}
-
-// NB: This is used because Sha256::digest returns a GenericArray
-fn hash(bz: Vec<u8>) -> H256 {
-    let mut output = H256::default();
-    output.0.copy_from_slice(Sha256::digest(bz).as_slice());
-    output
+    value == *root
 }

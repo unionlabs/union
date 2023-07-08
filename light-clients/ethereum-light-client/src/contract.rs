@@ -308,38 +308,17 @@ mod test {
         },
         Height as IbcHeight,
     };
-
     use ibc_types::{
         bls::BlsPublicKey,
         ethereum_consts_traits::Minimal,
         ibc::{
             core::commitment::merkle_root::MerkleRoot,
             google::protobuf::duration::Duration,
-            lightclients::{cometbls, ethereum, tendermint::fraction::Fraction, wasm},
+            lightclients::{cometbls, ethereum, tendermint::fraction::Fraction},
         },
         IntoProto,
     };
     use prost::Message;
-    // use protos::{
-    //     google::protobuf::{Any, Duration},
-    //     ibc::{
-    //         core::{commitment::v1::MerkleRoot, connection::v1::ConnectionEnd},
-    //         lightclients::wasm::v1::{
-    //             ClientState as WasmClientState, ConsensusState as WasmConsensusState,
-    //         },
-    //     },
-    // };
-    // use protos::{
-    //     ibc::core::{
-    //         client::v1::Height as ProtoHeight,
-    //         commitment::v1::MerklePrefix,
-    //         connection::v1::{Counterparty, Version},
-    //     },
-    //     ibc::lightclients::tendermint::v1::Fraction,
-    //     union::ibc::lightclients::cometbls::v1::{
-    //         ClientState as CometClientState, ConsensusState as CometConsensusState,
-    //     },
-    // };
 
     /// These values are obtained by uploading a dummy contract with the necessary types to the devnet and
     /// reading the values by `eth_getProof` RPC call.
@@ -398,31 +377,50 @@ mod test {
             custom_query_type: PhantomData,
         };
 
-        let wasm_client_state: wasm::client_state::ClientState<
-            ethereum::client_state::ClientState,
-        > = serde_json::from_str(include_str!("./test/client_state.json")).unwrap();
+        let wasm_client_state =
+            serde_json::from_str(include_str!("./test/client_state.json")).unwrap();
 
-        let wasm_consensus_state: wasm::consensus_state::ConsensusState<
-            ethereum::consensus_state::ConsensusState,
-        > = serde_json::from_str(include_str!("./test/consensus_state.json")).unwrap();
+        let wasm_consensus_state =
+            serde_json::from_str(include_str!("./test/consensus_state.json")).unwrap();
 
-        save_wasm_client_state(deps.as_mut(), wasm_client_state);
+        save_wasm_client_state(
+            deps.as_mut(),
+            <_>::try_from_proto(wasm_client_state).unwrap(),
+        );
         save_wasm_consensus_state(
             deps.as_mut(),
-            wasm_consensus_state,
+            <_>::try_from_proto(wasm_consensus_state).unwrap(),
             &Height {
                 revision_number: 0,
                 revision_height: 1328,
             },
         );
 
-        let updates: &[ethereum::header::Header<Minimal>] = &[
-            serde_json::from_str(include_str!("./test/sync_committee_update_1.json")).unwrap(),
-            serde_json::from_str(include_str!("./test/finality_update_1.json")).unwrap(),
-            serde_json::from_str(include_str!("./test/sync_committee_update_2.json")).unwrap(),
-            serde_json::from_str(include_str!("./test/finality_update_2.json")).unwrap(),
-            serde_json::from_str(include_str!("./test/finality_update_3.json")).unwrap(),
-            serde_json::from_str(include_str!("./test/finality_update_4.json")).unwrap(),
+        let updates = &[
+            ethereum::header::Header::<Minimal>::try_from_proto(
+                serde_json::from_str(include_str!("./test/sync_committee_update_1.json")).unwrap(),
+            )
+            .unwrap(),
+            ethereum::header::Header::<Minimal>::try_from_proto(
+                serde_json::from_str(include_str!("./test/finality_update_1.json")).unwrap(),
+            )
+            .unwrap(),
+            ethereum::header::Header::<Minimal>::try_from_proto(
+                serde_json::from_str(include_str!("./test/sync_committee_update_2.json")).unwrap(),
+            )
+            .unwrap(),
+            ethereum::header::Header::<Minimal>::try_from_proto(
+                serde_json::from_str(include_str!("./test/finality_update_2.json")).unwrap(),
+            )
+            .unwrap(),
+            ethereum::header::Header::<Minimal>::try_from_proto(
+                serde_json::from_str(include_str!("./test/finality_update_3.json")).unwrap(),
+            )
+            .unwrap(),
+            ethereum::header::Header::<Minimal>::try_from_proto(
+                serde_json::from_str(include_str!("./test/finality_update_4.json")).unwrap(),
+            )
+            .unwrap(),
         ];
 
         for update in updates {
@@ -537,28 +535,29 @@ mod test {
             custom_query_type: PhantomData,
         };
 
-        let wasm_client_state =
+        let wasm_client_state: protos::ibc::lightclients::wasm::v1::ClientState =
             serde_json::from_str(include_str!("./test/client_state.json")).unwrap();
 
-        let wasm_consensus_state =
+        let wasm_consensus_state: protos::ibc::lightclients::wasm::v1::ConsensusState =
             serde_json::from_str(include_str!("./test/consensus_state.json")).unwrap();
 
-        save_wasm_client_state(deps.as_mut(), wasm_client_state);
+        save_wasm_client_state(deps.as_mut(), wasm_client_state.try_into().unwrap());
         save_wasm_consensus_state(
             deps.as_mut(),
-            wasm_consensus_state,
+            wasm_consensus_state.try_into().unwrap(),
             &Height {
                 revision_number: 0,
                 revision_height: 1328,
             },
         );
 
-        let update = serde_json::from_str::<ethereum::header::Header<Minimal>>(include_str!(
-            "./test/sync_committee_update_1.json"
-        ))
-        .unwrap();
+        let update =
+            serde_json::from_str::<protos::union::ibc::lightclients::ethereum::v1::Header>(
+                include_str!("./test/sync_committee_update_1.json"),
+            )
+            .unwrap();
 
-        (deps, update)
+        (deps, update.try_into().unwrap())
     }
 
     #[test]

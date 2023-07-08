@@ -11,7 +11,9 @@ use crate::{
 #[derive(Clone, Debug, PartialEq, Encode, Decode, TreeHash, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""))]
 pub struct SyncCommittee<C: SYNC_COMMITTEE_SIZE> {
+    #[serde(with = "::serde_utils::hex_string_list")]
     pub pubkeys: FixedVector<BlsPublicKey, C::SYNC_COMMITTEE_SIZE>,
+    #[serde(with = "::serde_utils::hex_string")]
     pub aggregate_pubkey: BlsPublicKey,
 }
 

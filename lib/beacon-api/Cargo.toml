@@ -12,6 +12,7 @@ tokio = { version = "1.24.1", default-features = false, features = ["rt-multi-th
 tracing = "0.1.37"
 
 ibc-types = { path = "../ibc-types" }
+serde-utils = { path = "../serde-utils" }
 
 [features]
 default = []

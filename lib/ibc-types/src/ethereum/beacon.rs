@@ -244,7 +244,7 @@ pub struct GenesisData {
 
 #[cfg(test)]
 mod tests {
-    use crate::ethereum_consts_traits::Minimal;
+    use crate::{assert_json_roundtrip, assert_proto_roundtrip, ethereum_consts_traits::Minimal};
 
     use super::*;
 
@@ -330,7 +330,21 @@ mod tests {
   "signature_slot": "281"
 }"#;
 
-        serde_json::from_str::<LightClientFinalityUpdate<Minimal>>(JSON).unwrap();
+        let finality_update =
+            serde_json::from_str::<LightClientFinalityUpdate<Minimal>>(JSON).unwrap();
+
+        assert_json_roundtrip(&finality_update.attested_header);
+
+        assert_proto_roundtrip(&finality_update.attested_header);
+
+        assert_eq!(
+            finality_update
+                .finalized_header
+                .execution
+                .base_fee_per_gas
+                .as_u128(),
+            7
+        );
 
         serde_json::from_str::<SyncAggregate<Minimal>>(r#"{"sync_committee_bits":"0xffffffff","sync_committee_signature":"0xb13181bcd13a1e9450452290926985eea1b005a11310c69487f646980f84b3597fbd09d9406093f0cf918e2d6304291406330abb3e90b0d4406e1f902cc49e2faea2df7f6311069d438b4fc23466fe3436bf53caa39461e18fb0b236d446c5a0"}"#).unwrap();
     }
