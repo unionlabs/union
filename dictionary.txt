@@ -164,6 +164,7 @@ cosmossdk
 cosmrs
 cosmwasm
 counterparty
+cpufeatures
 cratedir
 crisiskeeper
 crisistypes
@@ -187,6 +188,7 @@ dylib
 elems
 emptively
 endfor
+endianness
 endraw
 errorsmod
 esac
@@ -566,6 +568,8 @@ wasmvmstatic
 wasmvmtypes
 wctx
 webpki
+whistleblower
+withdrawability
 woestijne
 xprv
 xqxp
