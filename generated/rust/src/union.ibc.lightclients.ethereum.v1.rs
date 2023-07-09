@@ -1,26 +1,26 @@
 // @generated
-#[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct StorageProof {
     #[prost(message, repeated, tag = "1")]
     pub proofs: ::prost::alloc::vec::Vec<Proof>,
 }
-#[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Proof {
     #[prost(bytes = "vec", tag = "1")]
-    #[cfg_attr(feature = "std", serde(with = "::serde_utils::base64"))]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))]
     pub key: ::prost::alloc::vec::Vec<u8>,
     #[prost(bytes = "vec", tag = "2")]
-    #[cfg_attr(feature = "std", serde(with = "::serde_utils::base64"))]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))]
     pub value: ::prost::alloc::vec::Vec<u8>,
     #[prost(bytes = "vec", repeated, tag = "3")]
-    #[serde(with = "::serde_utils::inner_base64")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::inner_base64"))]
     pub proof: ::prost::alloc::vec::Vec<::prost::alloc::vec::Vec<u8>>,
 }
-#[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ClientState {
@@ -53,7 +53,7 @@ pub struct ClientState {
     #[prost(uint64, tag = "12")]
     pub counterparty_commitment_slot: u64,
 }
-#[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ConsensusState {
@@ -69,7 +69,7 @@ pub struct ConsensusState {
     #[prost(bytes = "vec", tag = "5")]
     pub next_sync_committee: ::prost::alloc::vec::Vec<u8>,
 }
-#[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Header {
@@ -82,7 +82,7 @@ pub struct Header {
     #[prost(uint64, tag = "4")]
     pub timestamp: u64,
 }
-#[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TrustedSyncCommittee {
@@ -94,7 +94,7 @@ pub struct TrustedSyncCommittee {
     #[prost(bool, tag = "3")]
     pub is_next: bool,
 }
-#[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ForkParameters {
@@ -111,7 +111,7 @@ pub struct ForkParameters {
     #[prost(message, optional, tag = "6")]
     pub eip4844: ::core::option::Option<Fork>,
 }
-#[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Fork {
@@ -120,7 +120,7 @@ pub struct Fork {
     #[prost(uint64, tag = "2")]
     pub epoch: u64,
 }
-#[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct LightClientUpdate {
@@ -129,41 +129,41 @@ pub struct LightClientUpdate {
     #[prost(message, optional, tag = "2")]
     pub next_sync_committee: ::core::option::Option<SyncCommittee>,
     #[prost(bytes = "vec", repeated, tag = "3")]
-    #[serde(with = "::serde_utils::inner_base64")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::inner_base64"))]
     pub next_sync_committee_branch: ::prost::alloc::vec::Vec<::prost::alloc::vec::Vec<u8>>,
     #[prost(message, optional, tag = "4")]
     pub finalized_header: ::core::option::Option<LightClientHeader>,
     #[prost(bytes = "vec", repeated, tag = "5")]
-    #[serde(with = "::serde_utils::inner_base64")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::inner_base64"))]
     pub finality_branch: ::prost::alloc::vec::Vec<::prost::alloc::vec::Vec<u8>>,
     #[prost(message, optional, tag = "8")]
     pub sync_aggregate: ::core::option::Option<SyncAggregate>,
     #[prost(uint64, tag = "9")]
     pub signature_slot: u64,
 }
-#[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SyncCommittee {
     #[prost(bytes = "vec", repeated, tag = "1")]
-    #[serde(with = "::serde_utils::inner_base64")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::inner_base64"))]
     pub pubkeys: ::prost::alloc::vec::Vec<::prost::alloc::vec::Vec<u8>>,
     #[prost(bytes = "vec", tag = "2")]
-    #[cfg_attr(feature = "std", serde(with = "::serde_utils::base64"))]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))]
     pub aggregate_pubkey: ::prost::alloc::vec::Vec<u8>,
 }
-#[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SyncAggregate {
     #[prost(bytes = "vec", tag = "1")]
-    #[cfg_attr(feature = "std", serde(with = "::serde_utils::base64"))]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))]
     pub sync_committee_bits: ::prost::alloc::vec::Vec<u8>,
     #[prost(bytes = "vec", tag = "2")]
-    #[cfg_attr(feature = "std", serde(with = "::serde_utils::base64"))]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))]
     pub sync_committee_signature: ::prost::alloc::vec::Vec<u8>,
 }
-#[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ExecutionUpdate {
@@ -176,14 +176,14 @@ pub struct ExecutionUpdate {
     #[prost(bytes = "vec", repeated, tag = "4")]
     pub block_number_branch: ::prost::alloc::vec::Vec<::prost::alloc::vec::Vec<u8>>,
 }
-#[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AccountUpdate {
     #[prost(message, repeated, tag = "1")]
     pub proofs: ::prost::alloc::vec::Vec<Proof>,
 }
-#[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct LightClientHeader {
@@ -192,30 +192,30 @@ pub struct LightClientHeader {
     #[prost(message, optional, tag = "2")]
     pub execution: ::core::option::Option<ExecutionPayloadHeader>,
     #[prost(bytes = "vec", repeated, tag = "3")]
-    #[serde(with = "::serde_utils::inner_base64")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::inner_base64"))]
     pub execution_branch: ::prost::alloc::vec::Vec<::prost::alloc::vec::Vec<u8>>,
 }
-#[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ExecutionPayloadHeader {
     #[prost(bytes = "vec", tag = "1")]
-    #[cfg_attr(feature = "std", serde(with = "::serde_utils::base64"))]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))]
     pub parent_hash: ::prost::alloc::vec::Vec<u8>,
     #[prost(bytes = "vec", tag = "2")]
-    #[cfg_attr(feature = "std", serde(with = "::serde_utils::base64"))]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))]
     pub fee_recipient: ::prost::alloc::vec::Vec<u8>,
     #[prost(bytes = "vec", tag = "3")]
-    #[cfg_attr(feature = "std", serde(with = "::serde_utils::base64"))]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))]
     pub state_root: ::prost::alloc::vec::Vec<u8>,
     #[prost(bytes = "vec", tag = "4")]
-    #[cfg_attr(feature = "std", serde(with = "::serde_utils::base64"))]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))]
     pub receipts_root: ::prost::alloc::vec::Vec<u8>,
     #[prost(bytes = "vec", tag = "5")]
-    #[cfg_attr(feature = "std", serde(with = "::serde_utils::base64"))]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))]
     pub logs_bloom: ::prost::alloc::vec::Vec<u8>,
     #[prost(bytes = "vec", tag = "6")]
-    #[cfg_attr(feature = "std", serde(with = "::serde_utils::base64"))]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))]
     pub prev_randao: ::prost::alloc::vec::Vec<u8>,
     #[prost(uint64, tag = "7")]
     pub block_number: u64,
@@ -226,23 +226,23 @@ pub struct ExecutionPayloadHeader {
     #[prost(uint64, tag = "10")]
     pub timestamp: u64,
     #[prost(bytes = "vec", tag = "11")]
-    #[cfg_attr(feature = "std", serde(with = "::serde_utils::base64"))]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))]
     pub extra_data: ::prost::alloc::vec::Vec<u8>,
     /// TODO(aeryz): U256
     #[prost(bytes = "vec", tag = "12")]
-    #[cfg_attr(feature = "std", serde(with = "::serde_utils::base64"))]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))]
     pub base_fee_per_gas: ::prost::alloc::vec::Vec<u8>,
     #[prost(bytes = "vec", tag = "13")]
-    #[cfg_attr(feature = "std", serde(with = "::serde_utils::base64"))]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))]
     pub block_hash: ::prost::alloc::vec::Vec<u8>,
     #[prost(bytes = "vec", tag = "14")]
-    #[cfg_attr(feature = "std", serde(with = "::serde_utils::base64"))]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))]
     pub transactions_root: ::prost::alloc::vec::Vec<u8>,
     #[prost(bytes = "vec", tag = "15")]
-    #[cfg_attr(feature = "std", serde(with = "::serde_utils::base64"))]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))]
     pub withdrawals_root: ::prost::alloc::vec::Vec<u8>,
 }
-#[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct BeaconBlockHeader {
@@ -251,16 +251,16 @@ pub struct BeaconBlockHeader {
     #[prost(uint64, tag = "2")]
     pub proposer_index: u64,
     #[prost(bytes = "vec", tag = "3")]
-    #[cfg_attr(feature = "std", serde(with = "::serde_utils::base64"))]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))]
     pub parent_root: ::prost::alloc::vec::Vec<u8>,
     #[prost(bytes = "vec", tag = "4")]
-    #[cfg_attr(feature = "std", serde(with = "::serde_utils::base64"))]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))]
     pub state_root: ::prost::alloc::vec::Vec<u8>,
     #[prost(bytes = "vec", tag = "5")]
-    #[cfg_attr(feature = "std", serde(with = "::serde_utils::base64"))]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))]
     pub body_root: ::prost::alloc::vec::Vec<u8>,
 }
-#[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct FinalizedHeaderMisbehaviour {
@@ -273,7 +273,7 @@ pub struct FinalizedHeaderMisbehaviour {
     #[prost(message, optional, tag = "4")]
     pub consensus_update_2: ::core::option::Option<LightClientUpdate>,
 }
-#[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct NextSyncCommitteeMisbehaviour {

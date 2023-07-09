@@ -13,6 +13,7 @@ version = "0.8.3"
 [dependencies.serde]
 default-features = false
 features = ["derive"]
+optional = true
 version = "1.0"
 [dependencies.serde-utils]
 path = "../../lib/serde-utils"

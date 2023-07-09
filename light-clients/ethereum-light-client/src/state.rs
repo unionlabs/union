@@ -1,22 +1,13 @@
-use crate::{
-    client_state::ClientState, consensus_state::ConsensusState, custom_query::CustomQuery,
-    errors::Error,
-};
+use crate::{custom_query::CustomQuery, errors::Error};
 use cosmwasm_std::{Deps, DepsMut};
-use ibc::Height;
-use prost::Message;
-use protos::{
-    google::protobuf::Any,
-    ibc::lightclients::wasm::v1::{
-        ClientState as WasmClientState, ConsensusState as WasmConsensusState,
+use ibc_types::{
+    ibc::{
+        core::client::height::Height,
+        google::protobuf::any::Any,
+        lightclients::{ethereum, wasm},
     },
-    union::ibc::lightclients::ethereum::v1::{
-        ClientState as RawClientState, ConsensusState as RawConsensusState,
-    },
+    IntoProto, TryFromProto,
 };
-
-pub const WASM_CLIENT_STATE_TYPE_URL: &str = "/ibc.lightclients.wasm.v1.ClientState";
-pub const WASM_CONSENSUS_STATE_TYPE_URL: &str = "/ibc.lightclients.wasm.v1.ConsensusState";
 
 // Client state that is stored by the host
 pub const HOST_CLIENT_STATE_KEY: &str = "clientState";
@@ -25,9 +16,7 @@ pub const HOST_CONSENSUS_STATES_KEY: &str = "consensusStates";
 fn consensus_db_key(height: &Height) -> String {
     format!(
         "{}/{}-{}",
-        HOST_CONSENSUS_STATES_KEY,
-        height.revision_number(),
-        height.revision_height()
+        HOST_CONSENSUS_STATES_KEY, height.revision_number, height.revision_height
     )
 }
 
@@ -39,27 +28,21 @@ fn consensus_db_key(height: &Height) -> String {
 ///     - code_id: Code ID of this contract's code
 ///     - latest_height: Latest height that the state is updated
 ///     - data: Contract defined raw bytes, which we use as protobuf encoded ethereum client state.
-pub fn read_client_state(deps: Deps<CustomQuery>) -> Result<(WasmClientState, ClientState), Error> {
+pub fn read_client_state(
+    deps: Deps<CustomQuery>,
+) -> Result<wasm::client_state::ClientState<ethereum::client_state::ClientState>, Error> {
     let any_state = deps
         .storage
         .get(HOST_CLIENT_STATE_KEY.as_bytes())
         .ok_or(Error::ClientStateNotFound)?;
 
-    let any_state = Any::decode(any_state.as_slice())
-        .map_err(|_| Error::decode("when decoding raw bytes to any in `read_client_state`"))?;
-
-    let wasm_client_state = WasmClientState::decode(any_state.value.as_slice()).map_err(|_| {
-        Error::decode("when decoding any value to wasm client state in `read_client_state`")
-    })?;
-
-    let raw_client_state =
-        RawClientState::decode(wasm_client_state.data.as_slice()).map_err(|_| {
-            Error::decode(
-                "when decoding wasm client state to eth client state in `read_client_state`",
-            )
-        })?;
-
-    ClientState::try_from(raw_client_state).map(|cs| (wasm_client_state, cs))
+    Any::try_from_proto_bytes(any_state.as_slice())
+        .map(|any| any.0)
+        .map_err(|err| {
+            Error::decode(format!(
+                "when decoding raw bytes to any in `read_client_state`: {err:#?}"
+            ))
+        })
 }
 
 /// Reads the consensus state at a specific height from the host.
@@ -72,86 +55,74 @@ pub fn read_client_state(deps: Deps<CustomQuery>) -> Result<(WasmClientState, Cl
 ///     - data: Contract defined raw bytes, which we use as protobuf encoded ethereum consensus state.
 pub fn read_consensus_state(
     deps: Deps<CustomQuery>,
-    height: Height,
-) -> Result<Option<(WasmConsensusState, ConsensusState)>, Error> {
-    let any_state = if let Some(state) = deps.storage.get(consensus_db_key(&height).as_bytes()) {
-        state
-    } else {
-        return Ok(None);
-    };
-
-    let any_state = Any::decode(any_state.as_slice())
-        .map_err(|_| Error::decode("when decoding raw bytes to any in `read_consensus_state`"))?;
-
-    let wasm_consensus_state =
-        WasmConsensusState::decode(any_state.value.as_slice()).map_err(|_| {
-            Error::decode(
-                "when decoding any value to wasm consensus state in `read_consensus_state`",
-            )
-        })?;
-
-    let raw_client_state = RawConsensusState::decode(wasm_consensus_state.data.as_slice())
-        .map_err(|_| Error::decode("when decoding wasm consensus state to eth consensus state in `read_consensus_state`"))?;
-
-    ConsensusState::try_from(raw_client_state).map(|cs| Some((wasm_consensus_state, cs)))
+    height: &Height,
+) -> Result<
+    Option<wasm::consensus_state::ConsensusState<ethereum::consensus_state::ConsensusState>>,
+    Error,
+> {
+    deps.storage
+        .get(consensus_db_key(height).as_bytes())
+        .map(|bytes| Any::try_from_proto_bytes(&bytes).map(|any| any.0))
+        .transpose()
+        .map_err(|err| Error::decode(format!("error reading consensus state: {err:#?}")))
 }
 
-pub fn save_wasm_client_state(deps: DepsMut<CustomQuery>, wasm_client_state: &WasmClientState) {
-    let any_state = Any {
-        type_url: WASM_CLIENT_STATE_TYPE_URL.into(),
-        value: wasm_client_state.encode_to_vec(),
-    };
+pub fn save_wasm_client_state(
+    deps: DepsMut<CustomQuery>,
+    wasm_client_state: wasm::client_state::ClientState<ethereum::client_state::ClientState>,
+) {
+    let any_state = Any(wasm_client_state);
     deps.storage.set(
         HOST_CLIENT_STATE_KEY.as_bytes(),
-        any_state.encode_to_vec().as_slice(),
+        any_state.into_proto_bytes().as_slice(),
     );
 }
 
 /// Update the client state on the host store.
 pub fn update_client_state(
     deps: DepsMut<CustomQuery>,
-    mut wasm_client_state: WasmClientState,
-    client_state: ClientState,
+    mut wasm_client_state: wasm::client_state::ClientState<ethereum::client_state::ClientState>,
+    // new_client_state: ethereum::client_state::ClientState,
     latest_execution_height: u64,
 ) {
-    let raw_client_state = Into::<RawClientState>::into(client_state).encode_to_vec();
-
-    wasm_client_state.data = raw_client_state;
-    wasm_client_state.latest_height = Some(protos::ibc::core::client::v1::Height {
+    // wasm_client_state.data = new_client_state;
+    wasm_client_state.latest_height = Height {
         revision_number: 0,
         revision_height: latest_execution_height,
-    });
+    };
 
-    save_wasm_client_state(deps, &wasm_client_state);
+    save_wasm_client_state(deps, wasm_client_state);
 }
 
 pub fn save_wasm_consensus_state(
     deps: DepsMut<CustomQuery>,
-    wasm_consensus_state: &WasmConsensusState,
+    wasm_consensus_state: wasm::consensus_state::ConsensusState<
+        ethereum::consensus_state::ConsensusState,
+    >,
     height: &Height,
 ) {
-    let any_state = Any {
-        type_url: WASM_CONSENSUS_STATE_TYPE_URL.into(),
-        value: wasm_consensus_state.encode_to_vec(),
-    };
     deps.storage.set(
         consensus_db_key(height).as_bytes(),
-        any_state.encode_to_vec().as_slice(),
+        &Any(wasm_consensus_state).into_proto_bytes(),
     );
 }
 
 /// Save new consensus state at height `consensus_state.slot` to the host store.
 pub fn save_consensus_state(
     deps: DepsMut<CustomQuery>,
-    mut wasm_consensus_state: WasmConsensusState,
-    consensus_state: ConsensusState,
+    wasm_consensus_state: wasm::consensus_state::ConsensusState<
+        ethereum::consensus_state::ConsensusState,
+    >,
+    // new_consensus_state: ethereum::consensus_state::ConsensusState,
     execution_height: u64,
 ) -> Result<(), Error> {
-    let height = Height::new(0, execution_height).map_err(|_| Error::InvalidHeight)?;
-    let timestamp = consensus_state.timestamp;
-    let raw_consensus_state = Into::<RawConsensusState>::into(consensus_state).encode_to_vec();
-    wasm_consensus_state.data = raw_consensus_state;
-    wasm_consensus_state.timestamp = timestamp;
-    save_wasm_consensus_state(deps, &wasm_consensus_state, &height);
+    let height = Height {
+        revision_number: 0,
+        revision_height: execution_height,
+    };
+    // REVIEW: Is the timestamp set properly somewhere else?
+    // wasm_consensus_state.timestamp = new_consensus_state.timestamp;
+    // wasm_consensus_state.data = new_consensus_state;
+    save_wasm_consensus_state(deps, wasm_consensus_state, &height);
     Ok(())
 }

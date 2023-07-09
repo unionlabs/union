@@ -2,7 +2,7 @@
 /// FungibleTokenPacketData defines a struct for the packet payload
 /// See FungibleTokenPacketData spec:
 /// <https://github.com/cosmos/ibc/tree/master/spec/app/ics-020-fungible-token-transfer#data-structures>
-#[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct FungibleTokenPacketData {

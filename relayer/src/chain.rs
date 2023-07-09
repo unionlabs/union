@@ -1,5 +1,5 @@
 use futures::Future;
-use ibc_types::{
+use ibc_types::ibc::{
     core::{
         channel::{
             channel::Channel, msg_channel_open_ack::MsgChannelOpenAck,

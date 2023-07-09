@@ -1,35 +1,16 @@
-use crate::capella::SyncCommittee;
-use crate::primitives::{Epoch, Slot, Version};
-
-#[cfg(not(feature = "config-minimal"))]
-pub use crate::capella::mainnet::*;
-#[cfg(feature = "config-minimal")]
-pub use crate::capella::minimal::*;
+use ibc_types::{
+    ethereum_consts_traits::ChainSpec,
+    ibc::lightclients::ethereum::{fork_parameters::ForkParameters, sync_committee::SyncCommittee},
+};
 
 pub trait LightClientContext {
-    fn finalized_slot(&self) -> Slot;
+    type ChainSpec: ChainSpec;
 
-    fn current_sync_committee(&self) -> Option<&SyncCommittee<SYNC_COMMITTEE_SIZE>>;
+    fn finalized_slot(&self) -> u64;
 
-    fn next_sync_committee(&self) -> Option<&SyncCommittee<SYNC_COMMITTEE_SIZE>>;
+    fn current_sync_committee(&self) -> Option<&SyncCommittee<Self::ChainSpec>>;
+
+    fn next_sync_committee(&self) -> Option<&SyncCommittee<Self::ChainSpec>>;
 
     fn fork_parameters(&self) -> &ForkParameters;
-}
-
-#[derive(Debug, Default, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
-pub struct ForkParameters {
-    pub genesis_fork_version: Version,
-    pub genesis_slot: Slot,
-
-    pub altair_fork_version: Version,
-    pub altair_fork_epoch: Epoch,
-
-    pub bellatrix_fork_version: Version,
-    pub bellatrix_fork_epoch: Epoch,
-
-    pub capella_fork_version: Version,
-    pub capella_fork_epoch: Epoch,
-
-    pub eip4844_fork_version: Version,
-    pub eip4844_fork_epoch: Epoch,
 }

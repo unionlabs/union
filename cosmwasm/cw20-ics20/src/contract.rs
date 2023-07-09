@@ -145,7 +145,7 @@ pub fn execute_transfer(
         .add_attribute("sender", &packet.sender)
         .add_attribute("receiver", &packet.receiver)
         .add_attribute("denom", &packet.denom)
-        .add_attribute("amount", &packet.amount.to_string());
+        .add_attribute("amount", packet.amount.to_string());
 
     // prepare ibc message
     let msg = IbcMsg::SendPacket {

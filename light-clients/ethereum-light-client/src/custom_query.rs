@@ -1,5 +1,6 @@
 use cosmwasm_std::{Binary, Deps, QueryRequest};
-use ethereum_verifier::{crypto::BlsPublicKey, BlsVerify};
+use ethereum_verifier::BlsVerify;
+use ibc_types::bls::{BlsPublicKey, BlsSignature};
 
 use crate::errors::Error;
 
@@ -24,26 +25,33 @@ pub struct VerificationContext<'a> {
 }
 
 impl<'a> BlsVerify for VerificationContext<'a> {
-    fn fast_aggregate_verify(
+    fn fast_aggregate_verify<'pk>(
         &self,
-        public_keys: Vec<Vec<u8>>,
+        public_keys: impl IntoIterator<Item = &'pk BlsPublicKey>,
         msg: Vec<u8>,
-        signature: Vec<u8>,
+        signature: BlsSignature,
     ) -> Result<(), ethereum_verifier::Error> {
+        let public_keys_: Vec<_> = public_keys.into_iter().cloned().collect();
+
         let is_valid = query_fast_aggregate_verify(
             self.deps,
-            public_keys.into_iter().map(Into::into).collect(),
-            msg.into(),
-            signature.into(),
+            public_keys_
+                .clone()
+                .into_iter()
+                .map(|x| Binary(x.into()))
+                .collect(),
+            msg.clone().into(),
+            Binary(signature.clone().into()),
         )
         .map_err(|e| ethereum_verifier::Error::CustomError(e.to_string()))?;
 
         if is_valid {
             Ok(())
         } else {
-            Err(ethereum_verifier::Error::CustomError(
-                "signature cannot be verified".to_string(),
-            ))
+            Err(ethereum_verifier::Error::CustomError(format!(
+                "signature cannot be verified: public_keys: {:#?}, msg: {:#?}, signature: {}",
+                public_keys_, msg, signature
+            )))
         }
     }
 }
@@ -65,10 +73,11 @@ pub fn query_fast_aggregate_verify(
 
 pub fn query_aggregate_public_keys(
     deps: Deps<CustomQuery>,
-    public_keys: Vec<Binary>,
+    public_keys: Vec<BlsPublicKey>,
 ) -> Result<BlsPublicKey, Error> {
-    let request: QueryRequest<CustomQuery> =
-        QueryRequest::Custom(CustomQuery::Aggregate { public_keys });
+    let request: QueryRequest<CustomQuery> = QueryRequest::Custom(CustomQuery::Aggregate {
+        public_keys: public_keys.into_iter().map(|x| Binary(x.into())).collect(),
+    });
 
     let response: Binary = deps.querier.query(&request).map_err(Error::custom_query)?;
 

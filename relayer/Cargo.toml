@@ -9,11 +9,10 @@ base64 = "0.21.0"
 bech32 = "0.9.1"
 bip32 = { version = "0.4.0", features = ["secp256k1"] }
 contracts = { path = "../generated/contracts" }
-ethereum-consensus = { path = "../lib/ethereum-consensus" }
 ethers = { version = "2.0.4", features = ["rustls"] }
 futures = "0.3.28"
 hex-literal = "0.4.1"
-lodestar-rpc = { path = "../lib/lodestar-rpc", default-features = false }
+beacon-api = { path = "../lib/beacon-api", default-features = false }
 num-bigint = "0.4"
 k256 = "0.11"
 prost = "*"
@@ -35,3 +34,4 @@ tracing = "0.1.37"
 tracing-forest = "0.1.5"
 ibc-types = { path = "../lib/ibc-types" }
 ethereum-verifier = { path = "../lib/ethereum-verifier" }
+typenum = "1.16.0"

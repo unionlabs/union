@@ -1,3 +1,5 @@
+use std::marker::PhantomData;
+
 use bip32::XPrv;
 use contracts::glue::{
     GoogleProtobufTimestampData, TendermintTypesBlockIDData, TendermintTypesCommitData,
@@ -7,24 +9,27 @@ use contracts::glue::{
 use ethers::types::H256;
 use futures::{Future, FutureExt};
 use ibc_types::{
-    core::{
-        channel::{
-            channel::Channel, msg_channel_open_ack::MsgChannelOpenAck,
-            msg_channel_open_confirm::MsgChannelOpenConfirm,
-            msg_channel_open_init::MsgChannelOpenInit, msg_channel_open_try::MsgChannelOpenTry,
-            msg_recv_packet::MsgRecvPacket,
+    ethereum_consts_traits::ChainSpec,
+    ibc::{
+        core::{
+            channel::{
+                channel::Channel, msg_channel_open_ack::MsgChannelOpenAck,
+                msg_channel_open_confirm::MsgChannelOpenConfirm,
+                msg_channel_open_init::MsgChannelOpenInit, msg_channel_open_try::MsgChannelOpenTry,
+                msg_recv_packet::MsgRecvPacket,
+            },
+            client::height::Height,
+            commitment::merkle_root::MerkleRoot,
+            connection::{
+                connection_end::ConnectionEnd, msg_channel_open_ack::MsgConnectionOpenAck,
+                msg_channel_open_confirm::MsgConnectionOpenConfirm,
+                msg_channel_open_init::MsgConnectionOpenInit,
+                msg_channel_open_try::MsgConnectionOpenTry,
+            },
         },
-        client::height::Height,
-        commitment::merkle_root::MerkleRoot,
-        connection::{
-            connection_end::ConnectionEnd, msg_channel_open_ack::MsgConnectionOpenAck,
-            msg_channel_open_confirm::MsgConnectionOpenConfirm,
-            msg_channel_open_init::MsgConnectionOpenInit,
-            msg_channel_open_try::MsgConnectionOpenTry,
-        },
+        google::protobuf::{any::Any, duration::Duration},
+        lightclients::{cometbls, ethereum, tendermint::fraction::Fraction, wasm},
     },
-    google::protobuf::{any::Any, duration::Duration},
-    lightclients::{cometbls, ethereum, tendermint::fraction::Fraction, wasm},
     CosmosAccountId, IntoProto, MsgIntoProto,
 };
 use num_bigint::BigUint;
@@ -50,16 +55,17 @@ use tokio::task::JoinHandle;
 use crate::chain::{evm::Cometbls, Connect, LightClient, StateProof};
 
 /// The 08-wasm light client running on the union chain.
-pub struct Ethereum {
+pub struct Ethereum<C: ChainSpec> {
     signer: CosmosAccountId,
     pub tm_client: WebSocketClient,
     pub driver_handle: JoinHandle<Result<(), tendermint_rpc::Error>>,
     wasm_code_id: H256,
     pub chain_id: String,
     pub chain_revision: u64,
+    _marker: PhantomData<C>,
 }
 
-impl Ethereum {
+impl<C: ChainSpec> Ethereum<C> {
     pub async fn new(signer: XPrv, wasm_code_id: H256) -> Self {
         let (tm_client, driver) =
             WebSocketClient::builder("ws://127.0.0.1:26657/websocket".parse().unwrap())
@@ -87,6 +93,7 @@ impl Ethereum {
             wasm_code_id,
             chain_id,
             chain_revision,
+            _marker: PhantomData,
         }
     }
 
@@ -158,7 +165,7 @@ impl Ethereum {
 
         let alice_signature = self
             .signer
-            .try_sign(sign_doc.encode_to_vec())
+            .try_sign(&sign_doc.encode_to_vec())
             .unwrap()
             .to_vec();
 
@@ -196,11 +203,11 @@ impl Ethereum {
     }
 }
 
-impl LightClient for Ethereum {
+impl<C: ChainSpec> LightClient for Ethereum<C> {
     type ClientState = Any<wasm::client_state::ClientState<ethereum::client_state::ClientState>>;
     type ConsensusState =
         Any<wasm::consensus_state::ConsensusState<ethereum::consensus_state::ConsensusState>>;
-    type UpdateClientMessage = wasm::header::Header<ethereum::header::Header>;
+    type UpdateClientMessage = wasm::header::Header<ethereum::header::Header<C>>;
 
     fn chain_id(&self) -> impl Future<Output = String> + '_ {
         async move { self.chain_id.clone() }
@@ -505,7 +512,7 @@ impl LightClient for Ethereum {
     }
 }
 
-impl Connect<Cometbls> for Ethereum {
+impl<C: ChainSpec> Connect<Cometbls<C>> for Ethereum<C> {
     // fn generate_counterparty_handshake_client_state(
     //     &self,
     //     counterparty_state: <Cometbls as LightClient>::ClientState,
@@ -554,7 +561,7 @@ impl Connect<Cometbls> for Ethereum {
 
     fn connection_open_try(
         &self,
-        msg: MsgConnectionOpenTry<<Cometbls as LightClient>::ClientState>,
+        msg: MsgConnectionOpenTry<<Cometbls<C> as LightClient>::ClientState>,
     ) -> impl futures::Future<Output = (String, Height)> + '_ {
         self.broadcast_tx_commit([google::protobuf::Any {
             type_url: "/ibc.core.connection.v1.MsgConnectionOpenTry".to_string(),
@@ -580,7 +587,7 @@ impl Connect<Cometbls> for Ethereum {
 
     fn connection_open_ack(
         &self,
-        msg: MsgConnectionOpenAck<<Cometbls as LightClient>::ClientState>,
+        msg: MsgConnectionOpenAck<<Cometbls<C> as LightClient>::ClientState>,
     ) -> impl futures::Future<Output = Height> + '_ {
         async move {
             self.make_height(
@@ -707,7 +714,7 @@ impl Connect<Cometbls> for Ethereum {
     fn generate_counterparty_client_state(
         &self,
         height: Height,
-    ) -> impl Future<Output = <Cometbls as LightClient>::ClientState> + '_ {
+    ) -> impl Future<Output = <Cometbls<C> as LightClient>::ClientState> + '_ {
         async move {
             let params =
                 staking::v1beta1::query_client::QueryClient::connect("http://0.0.0.0:9090")
@@ -794,7 +801,7 @@ impl Connect<Cometbls> for Ethereum {
     fn generate_counterparty_consensus_state(
         &self,
         height: Height,
-    ) -> impl Future<Output = <Cometbls as LightClient>::ConsensusState> + '_ {
+    ) -> impl Future<Output = <Cometbls<C> as LightClient>::ConsensusState> + '_ {
         async move {
             let commit = self
                 .tm_client
@@ -829,7 +836,7 @@ impl Connect<Cometbls> for Ethereum {
 
     fn update_counterparty_client<'a>(
         &'a self,
-        counterparty: &'a Cometbls,
+        counterparty: &'a Cometbls<C>,
         counterparty_client_id: String,
         update_from: Height,
         update_to: Height,
