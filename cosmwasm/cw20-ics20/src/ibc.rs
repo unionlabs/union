@@ -56,29 +56,26 @@ impl TryFrom<&Binary> for Ics20Packet {
     type Error = ContractError;
     fn try_from(value: &Binary) -> Result<Self, Self::Error> {
         let values = ethabi::decode(
-            &[ParamType::Tuple(vec![
+            &[
                 ParamType::Uint(256),
                 ParamType::String,
                 ParamType::String,
                 ParamType::String,
-            ])],
+            ],
             &value.0,
         )
         .map_err(|_| ContractError::EthAbiDecoding)?;
         match &values[..] {
-            [Token::Tuple(values)] => match &values[..] {
-                [Token::Uint(amount), Token::String(denom), Token::String(receiver), Token::String(sender)] => {
-                    Ok(Ics20Packet {
-                        denom: denom.clone(),
-                        amount: (*amount)
-                            .try_into()
-                            .map_err(|_| ContractError::AmountOverflow {})?,
-                        sender: sender.clone(),
-                        receiver: receiver.clone(),
-                    })
-                }
-                _ => Err(ContractError::EthAbiDecoding),
-            },
+            [Token::Uint(amount), Token::String(denom), Token::String(receiver), Token::String(sender)] => {
+                Ok(Ics20Packet {
+                    denom: denom.clone(),
+                    amount: (*amount)
+                        .try_into()
+                        .map_err(|_| ContractError::AmountOverflow {})?,
+                    sender: sender.clone(),
+                    receiver: receiver.clone(),
+                })
+            }
             _ => Err(ContractError::EthAbiDecoding),
         }
     }

@@ -1,6 +1,7 @@
 pragma solidity ^0.8.18;
 
 import "forge-std/Test.sol";
+import "../../contracts/apps/20-transfer/TransferPacket.sol";
 import "../../contracts/core/25-handler/IBCHandler.sol";
 import "../../contracts/core/02-client/IBCClient.sol";
 import "../../contracts/core/03-connection/IBCConnection.sol";
@@ -288,5 +289,18 @@ contract IBCTest is Test {
                     sha256(packet.data)
                 )
             );
+    }
+
+    function testTransferPacketRoundtrip() public {
+        TransferPacketHelp.decode(
+            TransferPacketHelp.encode(
+                TransferPacket({
+                    amount: 0xDEAD_BEEF,
+                    denom: "denom",
+                    receiver: "receiver",
+                    sender: "sender"
+                })
+            )
+        );
     }
 }

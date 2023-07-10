@@ -490,14 +490,14 @@ async fn do_main<C: ChainSpec>(args: AppArgs) {
             let ics20_bank =
                 ics20_bank::ICS20Bank::new(ics20_bank_address, signer_middleware.clone());
 
-            let stripped_denom = denom.split('/').last().unwrap().to_string();
+            // let stripped_denom = denom.split('/').last().unwrap().to_string();
 
-            let balance = ics20_bank
+            let balance: U256 = ics20_bank
                 .balance_of(wallet.address(), denom.clone())
                 .await
                 .unwrap();
 
-            println!("0x{:x}: {balance}{stripped_denom}", wallet.address());
+            println!("{balance}");
         }
     }
 }
@@ -1054,4 +1054,31 @@ async fn relay_packets_inner<L1, L2>(
             }
         })
         .await
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use ethers::abi::AbiDecode;
+
+    #[test]
+    fn packet_decode() {
+        let data = hex_literal::hex!("08c379a000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000023414249206465636f64696e673a20737472756374206461746120746f6f2073686f72740000000000000000000000000000000000000000000000000000000000");
+
+        dbg!(Ics20Packet::decode(data));
+    }
+
+    #[test]
+    fn u256_str_roundtrip() {
+        let zero = U256::zero();
+
+        println!("{zero}");
+
+        let string = zero.to_string();
+
+        dbg!(&string);
+
+        dbg!(string.parse::<U256>().unwrap());
+    }
 }

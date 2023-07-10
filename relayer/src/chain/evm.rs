@@ -1159,14 +1159,14 @@ impl<C: ChainSpec> Cometbls<C> {
 
         let ics20_bank = ICS20Bank::new(config.ics20_bank_address, signer_middleware);
 
-        // ics20_bank
-        //     .set_operator(config.ics20_transfer_address)
-        //     .send()
-        //     .await
-        //     .unwrap()
-        //     .await
-        //     .unwrap()
-        //     .unwrap();
+        ics20_bank
+            .set_operator(config.ics20_transfer_address)
+            .send()
+            .await
+            .unwrap()
+            .await
+            .unwrap()
+            .unwrap();
 
         Self {
             ibc_handler,
