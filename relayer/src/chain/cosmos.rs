@@ -532,14 +532,8 @@ impl<C: ChainSpec> LightClient for Ethereum<C> {
                 .await
                 .unwrap();
 
-            println!("QUERY RESILTY: {:?}", query_result);
-
             StateProof {
                 state: query_result.value,
-                // state: google::protobuf::Any::decode(&*query_result.value)
-                //     .unwrap()
-                //     .try_into()
-                //     .unwrap(),
                 proof: commitment_v1::MerkleProof {
                     proofs: query_result
                         .proof

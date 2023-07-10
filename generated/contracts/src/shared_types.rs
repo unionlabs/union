@@ -7,7 +7,7 @@
     Debug,
     PartialEq,
     Eq,
-    Hash
+    Hash,
 )]
 pub struct IbcCoreChannelV1CounterpartyData {
     pub port_id: ::std::string::String,
@@ -22,7 +22,7 @@ pub struct IbcCoreChannelV1CounterpartyData {
     Debug,
     PartialEq,
     Eq,
-    Hash
+    Hash,
 )]
 pub struct IbcCoreChannelV1PacketData {
     pub sequence: u64,
@@ -43,7 +43,7 @@ pub struct IbcCoreChannelV1PacketData {
     Debug,
     PartialEq,
     Eq,
-    Hash
+    Hash,
 )]
 pub struct IbcCoreClientV1HeightData {
     pub revision_number: u64,
