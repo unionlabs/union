@@ -1,11 +1,11 @@
-use futures::Future;
+use futures::{Future, Stream};
 use ibc_types::ibc::{
     core::{
         channel::{
             channel::Channel, msg_channel_open_ack::MsgChannelOpenAck,
             msg_channel_open_confirm::MsgChannelOpenConfirm,
             msg_channel_open_init::MsgChannelOpenInit, msg_channel_open_try::MsgChannelOpenTry,
-            msg_recv_packet::MsgRecvPacket,
+            msg_recv_packet::MsgRecvPacket, packet::Packet,
         },
         client::height::Height,
         connection::{
@@ -22,11 +22,11 @@ use ibc_types::ibc::{
 pub mod cosmos;
 pub mod evm;
 
-pub trait LightClient {
+pub trait LightClient: Send + Sync {
     // type SourceChain;
 
     /// The client state type that this light client stores about the counterparty.
-    type ClientState;
+    type ClientState: ClientState;
 
     /// The consensus state type that this light client stores about the counterparty.
     type ConsensusState;
@@ -87,6 +87,9 @@ pub trait LightClient {
         -> impl Future<Output = Self::ClientState> + '_;
 
     fn process_height_for_counterparty(&self, height: Height) -> impl Future<Output = Height> + '_;
+
+    fn packet_stream(&self)
+        -> impl Future<Output = impl Stream<Item = (Height, Packet)> + '_> + '_;
 }
 
 #[derive(Debug)]
@@ -142,7 +145,7 @@ where
 
     // PACKETS
 
-    fn recv_packet(&self, _: MsgRecvPacket) -> impl Future<Output = ()> + '_;
+    fn recv_packet(&self, _: MsgRecvPacket) -> impl Future<Output = ()> + Send + '_;
 
     // OTHER STUFF
 

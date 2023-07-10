@@ -1763,6 +1763,7 @@ dependencies = [
  "bytes",
  "enr",
  "ethers-core",
+ "futures-channel",
  "futures-core",
  "futures-timer",
  "futures-util",

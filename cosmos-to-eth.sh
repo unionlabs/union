@@ -1,0 +1,1 @@
+nix run .# -- tx wasm execute union1suhgf5svhu4usrurvxzlgn54ksxmn8gljarjtxqnapv8kjnp4nrswvfu3r '{"transfer":{"channel":"channel-1","remote_address":"be68fc2d8249eb60bfcf0e71d5a0d2f2e292c4ed"}}' --amount 18446744073709551615stake --from alice --keyring-backend test --chain-id union-devnet-1 --gas 10000000 -y

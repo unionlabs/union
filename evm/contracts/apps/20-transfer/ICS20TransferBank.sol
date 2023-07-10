@@ -37,10 +37,11 @@ contract ICS20TransferBank is ICS20Transfer {
                     _getEscrowAddress(sourceChannel),
                     denom,
                     amount
-                )
+                ),
+                "_transferFrom failed"
             );
         } else {
-            require(_burn(_msgSender(), denom, amount));
+            require(_burn(_msgSender(), denom, amount), "_burn failed");
         }
 
         _sendPacket(
@@ -64,11 +65,8 @@ contract ICS20TransferBank is ICS20Transfer {
         string memory denom,
         uint256 amount
     ) internal override returns (bool) {
-        try bank.transferFrom(sender, receiver, denom, amount) {
-            return true;
-        } catch (bytes memory) {
-            return false;
-        }
+        bank.transferFrom(sender, receiver, denom, amount);
+        return true;
     }
 
     function _mint(
@@ -76,11 +74,8 @@ contract ICS20TransferBank is ICS20Transfer {
         string memory denom,
         uint256 amount
     ) internal override returns (bool) {
-        try bank.mint(account, denom, amount) {
-            return true;
-        } catch (bytes memory) {
-            return false;
-        }
+        bank.mint(account, denom, amount);
+        return true;
     }
 
     function _burn(
@@ -88,11 +83,8 @@ contract ICS20TransferBank is ICS20Transfer {
         string memory denom,
         uint256 amount
     ) internal override returns (bool) {
-        try bank.burn(account, denom, amount) {
-            return true;
-        } catch (bytes memory) {
-            return false;
-        }
+        bank.burn(account, denom, amount);
+        return true;
     }
 
     function ibcAddress() public view virtual override returns (address) {
