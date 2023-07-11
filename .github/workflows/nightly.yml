@@ -11,11 +11,15 @@ jobs:
       nixbuild_token: ${{ secrets.nixbuild_token }}
       access-tokens: github.com=${{ secrets.GITHUB_TOKEN }}
     with:
-      filter_builds: '((.top_attr == "checks") and (.system == "x86_64-linux" or .system == "aarch64-linux") and (.attr == "virtualisation-works"))'
+      filter_builds: '((.top_attr == "checks") and (.system == "x86_64-linux") and (.attr == "virtualisation-works"))'
   create-issue:
+    runs-on: ubuntu-latest
+    needs: [ build ]
     if: failure()
     steps:
       - uses: actions/checkout@v3
       - uses: JasonEtco/create-an-issue@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           filename: .github/templates/nightly-issue-template.md
