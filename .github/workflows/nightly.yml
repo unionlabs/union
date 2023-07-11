@@ -1,8 +1,9 @@
 name: Nightly
 
 on:
-  schedule:
-    - cron: '0 4 * * *'
+  push:
+  # schedule:
+  #   - cron: '0 4 * * *'
 
 jobs:
   build:
@@ -13,6 +14,7 @@ jobs:
     with:
       filter_builds: '((.top_attr == "checks") and (.system == "x86_64-linux" or .system == "aarch64-linux") and (.attr == "virtualisation-works"))'
   create-issue:
+    runs-on: ubuntu-latest
     if: failure()
     steps:
       - uses: actions/checkout@v3
