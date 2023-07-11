@@ -142,7 +142,7 @@ pub fn validate_light_client_update<Ctx: LightClientContext, V: BlsVerify>(
 
     let fork_version_slot = std::cmp::max(update.signature_slot, 1) - 1;
     let fork_version = compute_fork_version(
-        ctx,
+        ctx.fork_parameters(),
         compute_epoch_at_slot::<Ctx::ChainSpec>(fork_version_slot),
     );
 

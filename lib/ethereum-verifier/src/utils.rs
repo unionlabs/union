@@ -1,3 +1,4 @@
+use ibc_types::ibc::lightclients::ethereum::fork_parameters::ForkParameters;
 use ibc_types::{
     ethereum::{Domain, DomainType, ForkData, Version, H256},
     ethereum_consts_traits::{EPOCHS_PER_SYNC_COMMITTEE_PERIOD, SECONDS_PER_SLOT, SLOTS_PER_EPOCH},
@@ -9,11 +10,10 @@ use typenum::Unsigned;
 
 use crate::{
     primitives::{Epoch, Root, Slot, GENESIS_SLOT},
-    Error, InvalidMerkleBranch, LightClientContext,
+    Error, InvalidMerkleBranch,
 };
 
-pub fn compute_fork_version<Ctx: LightClientContext>(ctx: &Ctx, epoch: Epoch) -> Version {
-    let fork_parameters = ctx.fork_parameters();
+pub fn compute_fork_version(fork_parameters: &ForkParameters, epoch: Epoch) -> Version {
     if epoch >= fork_parameters.eip4844.epoch {
         fork_parameters.eip4844.version.clone()
     } else if epoch >= fork_parameters.capella.epoch {
@@ -139,11 +139,72 @@ mod tests {
     use ibc_types::{
         ethereum_consts_traits::{
             consts::{floorlog2, EXECUTION_PAYLOAD_INDEX},
-            Minimal,
+            Minimal, SECONDS_PER_SLOT, SEPOLIA,
         },
         ibc::lightclients::ethereum::header::Header,
         TryFromProto,
     };
+
+    pub const SAMPLE_SLOT: u64 = 1235232;
+    pub const SAMPLE_EPOCH: u64 = 10000;
+
+    #[test]
+    fn compute_fork_version_works() {
+        let fork_parameters = SEPOLIA.fork_parameters;
+        assert_eq!(
+            compute_fork_version(&fork_parameters, fork_parameters.eip4844.epoch),
+            fork_parameters.eip4844.version
+        );
+        assert_eq!(
+            compute_fork_version(&fork_parameters, fork_parameters.capella.epoch),
+            fork_parameters.capella.version
+        );
+        assert_eq!(
+            compute_fork_version(&fork_parameters, fork_parameters.bellatrix.epoch),
+            fork_parameters.bellatrix.version
+        );
+        assert_eq!(
+            compute_fork_version(&fork_parameters, fork_parameters.altair.epoch),
+            fork_parameters.altair.version
+        );
+        assert_eq!(
+            compute_fork_version(&fork_parameters, 0),
+            fork_parameters.genesis_fork_version
+        );
+    }
+
+    #[test]
+    fn compute_sync_committee_period_at_slot_works() {
+        assert_eq!(
+            compute_sync_committee_period_at_slot::<Minimal>(SAMPLE_SLOT),
+            SAMPLE_SLOT / <Minimal as SLOTS_PER_EPOCH>::SLOTS_PER_EPOCH::U64
+                / <Minimal as EPOCHS_PER_SYNC_COMMITTEE_PERIOD>::EPOCHS_PER_SYNC_COMMITTEE_PERIOD::U64
+        )
+    }
+
+    #[test]
+    fn compute_epoch_at_slot_works() {
+        assert_eq!(
+            compute_epoch_at_slot::<Minimal>(SAMPLE_SLOT),
+            SAMPLE_SLOT / <Minimal as SLOTS_PER_EPOCH>::SLOTS_PER_EPOCH::U64
+        );
+    }
+
+    #[test]
+    fn compute_sync_committee_period_works() {
+        assert_eq!(
+            compute_sync_committee_period::<Minimal>(SAMPLE_EPOCH),
+            SAMPLE_EPOCH / <Minimal as EPOCHS_PER_SYNC_COMMITTEE_PERIOD>::EPOCHS_PER_SYNC_COMMITTEE_PERIOD::U64,
+        );
+    }
+
+    #[test]
+    fn compute_timestamp_at_slot_works() {
+        assert_eq!(
+            compute_timestamp_at_slot::<Minimal>(0, 150),
+            150 * <Minimal as SECONDS_PER_SLOT>::SECONDS_PER_SLOT::U64
+        );
+    }
 
     #[test]
     fn compute_domain_works() {
