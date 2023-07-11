@@ -3,29 +3,8 @@ use crate::error::Error;
 pub type Root = [u8; 32];
 pub type Slot = u64;
 pub type Epoch = u64;
-
-pub type CommitteeIndex = usize;
-pub type ValidatorIndex = usize;
-pub type WithdrawalIndex = usize;
-pub type Gwei = u64;
-pub type Hash32 = Bytes32;
-
+pub type Hash32 = [u8; 32];
 pub type ExecutionAddress = [u8; 20];
-
-pub type ChainId = usize;
-pub type NetworkId = usize;
-
-pub type Bytes32 = [u8; 32];
-
-pub type ParticipationFlags = u8;
-
-// Coordinate refers to a unique location in the block tree
-#[derive(serde::Serialize, serde::Deserialize)]
-pub struct Coordinate {
-    #[serde(with = "serde_utils::string")]
-    slot: Slot,
-    root: Root,
-}
 
 pub const GENESIS_SLOT: Slot = 0;
 pub const GENESIS_EPOCH: Epoch = 0;
