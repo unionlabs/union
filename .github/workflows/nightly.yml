@@ -15,6 +15,7 @@ jobs:
       filter_builds: '((.top_attr == "checks") and (.system == "x86_64-linux" or .system == "aarch64-linux") and (.attr == "virtualisation-works"))'
   create-issue:
     runs-on: ubuntu-latest
+    needs: [ build ]
     if: failure()
     steps:
       - uses: actions/checkout@v3
