@@ -1566,6 +1566,7 @@ dependencies = [
  "rlp",
  "serde",
  "serde-utils",
+ "serde_json",
  "sha2 0.10.7",
  "sha3",
  "ssz_types",
