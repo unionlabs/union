@@ -20,6 +20,9 @@ let
           --http.api=eth,debug,net,web3,admin,engine \
           --http.addr=0.0.0.0 \
           --http.vhosts="*" \
+          --ws \
+          --ws.api=eth,debug,net,web3,admin,engine \
+          --ws.addr=0.0.0.0 \
           --authrpc.vhosts="*" \
           --authrpc.addr=0.0.0.0 \
           --authrpc.jwtsecret=${config}/dev-jwt.prv \
@@ -50,6 +53,8 @@ in
     ports = [
       # Rest HTTP
       "8545:8545"
+      # WS RPC
+      "8546:8546"
       # Auth RPC
       "8551:8551"
     ];

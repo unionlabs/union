@@ -1,11 +1,12 @@
 { ... }: {
-  perSystem = { crane, ... }:
+  perSystem = { crane, lib, ... }:
     {
-      packages = {
-        wasm-ethereum-lc = crane.buildWasmContract {
-          cargoToml = ./ethereum-light-client/Cargo.toml;
-          cargoLock = ../Cargo.lock;
-        };
-      };
+      packages =
+        lib.listToAttrs (map
+          (config: lib.nameValuePair "ethereum-light-client-${config}" (crane.buildWasmContract {
+            cargoToml = ./ethereum-light-client/Cargo.toml;
+            cargoLock = ../Cargo.lock;
+            features = [ config ];
+          })) [ "mainnet" "minimal" ]);
     };
 }

@@ -4,12 +4,14 @@ version = "0.1.0"
 edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[features]
+
 [dependencies]
 base64 = "0.21.0"
 bech32 = "0.9.1"
 bip32 = { version = "0.4.0", features = ["secp256k1"] }
 contracts = { path = "../generated/contracts" }
-ethers = { version = "2.0.4", features = ["rustls"] }
+ethers = { version = "2.0.4", features = ["rustls", "ws"] }
 futures = "0.3.28"
 hex-literal = "0.4.1"
 beacon-api = { path = "../lib/beacon-api", default-features = false }

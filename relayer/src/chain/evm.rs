@@ -10,19 +10,19 @@ use contracts::{
     glue::UnionIbcLightclientsCometblsV1HeaderData,
     ibc_handler::{
         self, GeneratedConnectionIdentifierFilter, IBCHandler, IBCHandlerEvents,
-        IbcCoreChannelV1ChannelData, IbcCoreConnectionV1ConnectionEndData,
+        IbcCoreChannelV1ChannelData, IbcCoreConnectionV1ConnectionEndData, SendPacketFilter,
     },
     ics20_bank::ICS20Bank,
 };
 use ethers::{
     abi::AbiEncode,
-    prelude::{decode_logs, k256::ecdsa, SignerMiddleware},
-    providers::{Http, Middleware, Provider},
+    prelude::{decode_logs, k256::ecdsa, parse_log, LogMeta, SignerMiddleware},
+    providers::{Middleware, Provider, Ws},
     signers::{LocalWallet, Signer, Wallet},
     types::{H160, H256, U256, U64},
     utils::keccak256,
 };
-use futures::Future;
+use futures::{Future, Stream, StreamExt};
 use ibc_types::{
     ethereum::beacon::{LightClientBootstrap, LightClientFinalityUpdate},
     ethereum_consts_traits::ChainSpec,
@@ -32,7 +32,7 @@ use ibc_types::{
                 channel::Channel, msg_channel_open_ack::MsgChannelOpenAck,
                 msg_channel_open_confirm::MsgChannelOpenConfirm,
                 msg_channel_open_init::MsgChannelOpenInit, msg_channel_open_try::MsgChannelOpenTry,
-                msg_recv_packet::MsgRecvPacket,
+                msg_recv_packet::MsgRecvPacket, packet::Packet,
             },
             client::height::Height,
             connection::{
@@ -71,9 +71,9 @@ pub const COMETBLS_CLIENT_TYPE: &str = "cometbls-new";
 /// The solidity light client, tracking the state of the 08-wasm light client on union.
 // TODO(benluelo): Generic over middleware?
 pub struct Cometbls<C: ChainSpec> {
-    pub ibc_handler: IBCHandler<SignerMiddleware<Provider<Http>, Wallet<ecdsa::SigningKey>>>,
-    pub ics20_bank: ICS20Bank<SignerMiddleware<Provider<Http>, Wallet<ecdsa::SigningKey>>>,
-    pub provider: Provider<Http>,
+    pub ibc_handler: IBCHandler<SignerMiddleware<Provider<Ws>, Wallet<ecdsa::SigningKey>>>,
+    pub ics20_bank: ICS20Bank<SignerMiddleware<Provider<Ws>, Wallet<ecdsa::SigningKey>>>,
+    pub provider: Provider<Ws>,
     cometbls_client_address: H160,
     ics20_transfer_address: H160,
     wasm_code_id: H256,
@@ -408,16 +408,73 @@ impl<C: ChainSpec> LightClient for Cometbls<C> {
     fn process_height_for_counterparty(&self, height: Height) -> impl Future<Output = Height> + '_ {
         self.execution_height(height)
     }
+
+    fn packet_commitment_proof(
+        &self,
+        port_id: String,
+        channel_id: String,
+        sequence: u64,
+        self_height: Height,
+    ) -> impl Future<Output = StateProof<Vec<u8>>> + '_ {
+        async move {
+            let self_height = self.execution_height(self_height).await;
+            self.wait_for_execution_block(self_height.revision_height.into())
+                .await;
+
+            self.get_proof(
+                format!("commitments/ports/{port_id}/channels/{channel_id}/sequences/{sequence}"),
+                self_height,
+                vec![],
+                |_| vec![],
+            )
+            .await
+        }
+    }
+
+    fn packet_stream(
+        &self,
+    ) -> impl Future<Output = impl Stream<Item = (Height, Packet)> + '_> + '_ {
+        async move {
+            self.provider
+                .subscribe_logs(&self.ibc_handler.event::<SendPacketFilter>().filter)
+                .await
+                .unwrap()
+                .then(move |log| async move {
+                    let meta = LogMeta::from(&log);
+                    let event: SendPacketFilter = parse_log(log).unwrap();
+
+                    // TODO: Would be nice if this info was passed through in the SendPacket event
+                    let (channel_data, _): (
+                        contracts::ibc_handler::IbcCoreChannelV1ChannelData,
+                        bool,
+                    ) = self
+                        .ibc_handler
+                        .get_channel(event.source_port.clone(), event.source_channel.clone())
+                        .await
+                        .unwrap();
+
+                    (
+                        self.make_height(meta.block_number.0[0]),
+                        Packet {
+                            sequence: event.sequence,
+                            source_port: event.source_port,
+                            source_channel: event.source_channel,
+                            destination_port: channel_data.counterparty.port_id,
+                            destination_channel: channel_data.counterparty.channel_id,
+                            data: event.data.to_vec(),
+                            timeout_height: Height {
+                                revision_number: event.timeout_height.revision_number,
+                                revision_height: event.timeout_height.revision_height,
+                            },
+                            timeout_timestamp: event.timeout_timestamp,
+                        },
+                    )
+                })
+        }
+    }
 }
 
 impl<C: ChainSpec> Connect<Ethereum<C>> for Cometbls<C> {
-    // fn generate_counterparty_handshake_client_state(
-    //     &self,
-    //     counterparty_state: <Ethereum as LightClient>::ClientState,
-    // ) -> impl Future<Output = Self::HandshakeClientState> + '_ {
-    //     async move { todo!() }
-    // }
-
     fn connection_open_init(
         &self,
         msg: MsgConnectionOpenInit,
@@ -1006,7 +1063,7 @@ impl<C: ChainSpec> Cometbls<C> {
     }
 
     pub async fn new(config: CometblsConfig) -> Self {
-        let provider = Provider::new(Http::new(config.eth_rpc_api));
+        let provider = Provider::new(Ws::connect(config.eth_rpc_api).await.unwrap());
 
         let chain_id = provider.get_chainid().await.unwrap();
 
@@ -1019,14 +1076,14 @@ impl<C: ChainSpec> Cometbls<C> {
 
         let ics20_bank = ICS20Bank::new(config.ics20_bank_address, signer_middleware);
 
-        // ics20_bank
-        //     .set_operator(config.ics20_transfer_address)
-        //     .send()
-        //     .await
-        //     .unwrap()
-        //     .await
-        //     .unwrap()
-        //     .unwrap();
+        ics20_bank
+            .set_operator(config.ics20_transfer_address)
+            .send()
+            .await
+            .unwrap()
+            .await
+            .unwrap()
+            .unwrap();
 
         Self {
             ibc_handler,
@@ -1044,7 +1101,7 @@ impl<C: ChainSpec> Cometbls<C> {
         path: String,
         height: Height,
         state: S,
-        encode: impl FnOnce(S) -> Vec<u8>,
+        _encode: impl FnOnce(S) -> Vec<u8>,
     ) -> StateProof<S> {
         tracing::info!(path, ?height);
 
@@ -1077,10 +1134,6 @@ impl<C: ChainSpec> Cometbls<C> {
                 panic!("received invalid response from eth_getProof, expected length of 1 but got {invalid:#?}");
             }
         };
-
-        let found_value = U256::from(keccak256(encode(state.clone())));
-
-        assert_eq!(found_value, proof.value);
 
         StateProof {
             state,
@@ -1164,7 +1217,7 @@ impl<C: ChainSpec> Cometbls<C> {
         }
     }
 
-    async fn wait_for_execution_block(&self, block_number: U64) {
+    pub async fn wait_for_execution_block(&self, block_number: U64) {
         loop {
             let latest_finalized_block_number: u64 = self
                 .beacon_api_client

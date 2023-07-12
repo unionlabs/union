@@ -11,7 +11,13 @@ library TransferPacketHelp {
     function encode(
         TransferPacket memory packet
     ) internal pure returns (bytes memory) {
-        return abi.encode(packet);
+        return
+            abi.encode(
+                packet.amount,
+                packet.denom,
+                packet.receiver,
+                packet.sender
+            );
     }
 
     function decode(

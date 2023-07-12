@@ -6,14 +6,15 @@
 // nix run .# -- tx wasm instantiate 1 '{"default_timeout":10000,"gov_contract":"union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2","allowlist":[]}' --label blah --from alice --gas auto --keyring-backend test --gas-adjustment 1.3 --amount 100stake --no-admin --chain-id union-devnet-1
 
 use bip32::{DerivationPath, Language, XPrv};
-use chain::evm::CometblsConfig;
 use clap::{Args, Parser, Subcommand};
+use contracts::{ics20_bank::ics20_bank, ics20_transfer_bank::ics20_transfer_bank};
 use ethers::{
-    prelude::{EthAbiCodec, EthAbiType},
-    signers::LocalWallet,
-    types::{Address, H256},
+    prelude::{EthAbiCodec, EthAbiType, SignerMiddleware},
+    providers::{Http, Middleware, Provider, Ws},
+    signers::{LocalWallet, Signer},
+    types::{Address, H256, U256},
 };
-use futures::StreamExt;
+use futures::{future::join, Stream, StreamExt};
 use ibc_types::{
     ethereum_consts_traits::{ChainSpec, Minimal},
     ibc::core::{
@@ -35,12 +36,14 @@ use ibc_types::{
     IntoProto,
 };
 use prost::Message;
-use protos::ibc::core::channel::v1 as channel_v1;
 use reqwest::Url;
-use std::{collections::HashMap, str::FromStr};
-use tendermint_rpc::{event::EventData, query::EventType, SubscriptionClient};
+use std::{str::FromStr, sync::Arc};
 
-use crate::chain::{cosmos::Ethereum, evm::Cometbls, ClientState, Connect, LightClient};
+use crate::chain::{
+    cosmos::Ethereum,
+    evm::{Cometbls, CometblsConfig},
+    ClientState, Connect, LightClient,
+};
 
 pub mod chain;
 
@@ -59,6 +62,17 @@ pub enum Command {
     OpenConnection(OpenConnectionArgs),
     OpenChannel(OpenChannelArgs),
     RelayPackets(RelayPacketsArgs),
+    Transfer(TransferArgs),
+    QueryBalances {
+        #[arg(long)]
+        wallet: LocalWallet,
+        #[arg(long)]
+        denom: String,
+        #[arg(long)]
+        eth_rpc_api: Url,
+        #[arg(long)]
+        ics20_bank_address: Address,
+    },
 }
 
 #[derive(Debug, Parser)]
@@ -94,9 +108,37 @@ pub struct RelayPacketsArgs {
     open_channel: bool,
 
     #[arg(long)]
+    cometbls_client_id: String,
+
+    #[arg(long)]
+    ethereum_client_id: String,
+
+    #[arg(long)]
     cometbls_port_id: Option<String>,
     #[arg(long)]
     ethereum_port_id: Option<String>,
+}
+
+#[derive(Debug, Parser)]
+pub struct TransferArgs {
+    #[arg(long)]
+    ics20_transfer_address: Address,
+    #[arg(long)]
+    ics20_bank_address: Address,
+    #[arg(long)]
+    denom: String,
+    #[arg(long)]
+    amount: u64,
+    #[arg(long)]
+    receiver: String,
+    #[arg(long)]
+    wallet: LocalWallet,
+    #[arg(long)]
+    source_port: String,
+    #[arg(long)]
+    source_channel: String,
+    #[arg(long)]
+    eth_rpc_api: Url,
 }
 
 #[derive(Debug, Clone)]
@@ -248,6 +290,8 @@ async fn do_main<C: ChainSpec>(args: AppArgs) {
             open_channel,
             cometbls_port_id,
             ethereum_port_id,
+            cometbls_client_id,
+            ethereum_client_id,
         }) => {
             let cometbls_lc = Cometbls::<C>::new(CometblsConfig {
                 cometbls_client_address: args.cometbls.cometbls_client_address,
@@ -289,7 +333,9 @@ async fn do_main<C: ChainSpec>(args: AppArgs) {
             // dbg!(balance);
             // panic!();
 
-            if open_channel {
+            let (cometbls_client_id, ethereum_client_id) = if open_channel {
+                tracing::info!("opening_channel");
+
                 let (
                     cometbls_client_id,
                     ethereum_client_id,
@@ -301,20 +347,157 @@ async fn do_main<C: ChainSpec>(args: AppArgs) {
                     &cometbls_lc,
                     &ethereum_lc,
                     ConnectionEndInfo {
-                        client_id: cometbls_client_id,
+                        client_id: cometbls_client_id.clone(),
                         connection_id: cometbls_connection_id,
                     },
                     ConnectionEndInfo {
-                        client_id: ethereum_client_id,
+                        client_id: ethereum_client_id.clone(),
                         connection_id: ethereum_connection_id,
                     },
                     cometbls_port_id.unwrap(),
                     ethereum_port_id.unwrap(),
                 )
                 .await;
-            }
 
-            relay_packets(cometbls_lc, ethereum_lc).await;
+                (cometbls_client_id, ethereum_client_id)
+            } else {
+                (cometbls_client_id, ethereum_client_id)
+            };
+
+            relay_packets(
+                cometbls_lc,
+                ethereum_lc,
+                cometbls_client_id,
+                ethereum_client_id,
+            )
+            .await;
+        }
+        Command::Transfer(TransferArgs {
+            ics20_transfer_address,
+            ics20_bank_address,
+            denom,
+            amount,
+            receiver,
+            wallet,
+            source_port,
+            source_channel,
+            eth_rpc_api,
+        }) => {
+            let provider = Provider::new(Ws::connect(eth_rpc_api).await.unwrap());
+
+            let chain_id = provider.get_chainid().await.unwrap();
+
+            tracing::info!(chain_id = chain_id.to_string());
+
+            let wallet = wallet.with_chain_id(chain_id.as_u64());
+
+            let signer_middleware = Arc::new(SignerMiddleware::new(provider.clone(), wallet));
+
+            let ics20_transfer_bank = ics20_transfer_bank::ICS20TransferBank::new(
+                ics20_transfer_address,
+                signer_middleware.clone(),
+            );
+
+            let ics20_bank =
+                ics20_bank::ICS20Bank::new(ics20_bank_address, signer_middleware.clone());
+
+            // ics20_bank
+            //     .grant_role([0; 32], signer_middleware.address())
+            //     .send()
+            //     .await
+            //     .unwrap()
+            //     .await
+            //     .unwrap()
+            //     .unwrap();
+
+            // let has_role = ics20_bank
+            //     .has_role(
+            //         ics20_bank.admin_role().await.unwrap(),
+            //         signer_middleware.address(),
+            //     )
+            //     .await
+            //     .unwrap();
+
+            // tracing::info!(has_role);
+
+            tracing::info!("Setting the account as operator");
+
+            ics20_bank
+                .set_operator(ics20_transfer_address)
+                .send()
+                .await
+                .unwrap()
+                .await
+                .unwrap()
+                .unwrap();
+
+            // tracing::info!("Minting 1000000000 tokens");
+
+            // ics20_bank
+            //     .mint(
+            //         signer_middleware.address(),
+            //         denom.clone(),
+            //         1000000000.into(),
+            //     )
+            //     .send()
+            //     .await
+            //     .unwrap()
+            //     .await
+            //     .unwrap()
+            //     .unwrap();
+
+            let balance = ics20_bank
+                .balance_of(signer_middleware.address(), denom.clone())
+                .await
+                .unwrap();
+
+            tracing::info!(balance_before = %balance, %denom);
+
+            ics20_transfer_bank
+                .send_transfer(
+                    denom.clone(),
+                    amount,
+                    receiver,
+                    source_port,
+                    source_channel,
+                    1,
+                    u64::MAX,
+                )
+                .send()
+                .await
+                .unwrap()
+                .await
+                .unwrap()
+                .unwrap();
+
+            let balance: U256 = ics20_bank
+                .balance_of(signer_middleware.address(), denom.clone())
+                .await
+                .unwrap();
+
+            tracing::info!(balance_after = %balance, %denom);
+        }
+        Command::QueryBalances {
+            wallet,
+            denom,
+            eth_rpc_api,
+            ics20_bank_address,
+        } => {
+            let provider = Provider::new(Http::new(eth_rpc_api));
+            let wallet = wallet.with_chain_id(provider.get_chainid().await.unwrap().as_u64());
+            let signer_middleware = Arc::new(SignerMiddleware::new(provider, wallet.clone()));
+
+            let ics20_bank =
+                ics20_bank::ICS20Bank::new(ics20_bank_address, signer_middleware.clone());
+
+            // let stripped_denom = denom.split('/').last().unwrap().to_string();
+
+            let balance: U256 = ics20_bank
+                .balance_of(wallet.address(), denom.clone())
+                .await
+                .unwrap();
+
+            println!("{balance}");
         }
     }
 }
@@ -493,6 +676,7 @@ where
         if height >= connection_try_height.increment() {
             break connection_try_height.increment();
         }
+        tokio::time::sleep(std::time::Duration::from_secs(2)).await;
     };
 
     tracing::info!("Querying proof at {:?}", connection_try_height);
@@ -702,6 +886,7 @@ where
         if height >= channel_try_height.increment() {
             break channel_try_height.increment();
         }
+        tokio::time::sleep(std::time::Duration::from_secs(2)).await;
     };
 
     tracing::info!("Querying proof at {:?}", channel_try_height);
@@ -779,223 +964,94 @@ where
     (cometbls_channel_id, ethereum_channel_id)
 }
 
-async fn relay_packets<C: ChainSpec>(cometbls: Cometbls<C>, ethereum: Ethereum<C>) {
-    let listen_handle = tokio::spawn(async move {
-        loop {
-            let mut subs = ethereum
-                .tm_client
-                .subscribe(EventType::Tx.into())
-                .await
-                .unwrap();
+async fn relay_packets<C: ChainSpec>(
+    cometbls: Cometbls<C>,
+    ethereum: Ethereum<C>,
+    cometbls_client_id: String,
+    ethereum_client_id: String,
+) {
+    let cometbls_packet_stream = cometbls.packet_stream().await;
+    let ethereum_packet_stream = ethereum.packet_stream().await;
 
-            while let Some(res) = subs.next().await {
-                let ev = res.unwrap();
-
-                tracing::info!(event = ?ev.events, "new event");
-
-                match ev.data {
-                    EventData::NewBlock {
-                        block: _,
-                        result_begin_block: _,
-                        result_end_block: _,
-                    } => {
-                        // dbg!(result_begin_block, result_end_block);
-
-                        // client.block(block.unwrap().header.height).await.unwrap();
-                    }
-                    EventData::Tx { tx_result } => {
-                        let send_packet_event = tx_result.result.events.into_iter().find_map(|e| {
-                            (e.kind == "send_packet").then(|| {
-                                e.attributes
-                                    .into_iter()
-                                    .map(|attr| (attr.key, attr.value))
-                                    .collect::<HashMap<_, _>>()
-                            })
-                        });
-
-                        let Some(send_packet_event) = send_packet_event else {
-                            continue;
-                        };
-
-                        tracing::info!(?send_packet_event);
-
-                        let sequence = send_packet_event["packet_sequence"].parse().unwrap();
-
-                        let packet_commitment =
-                            channel_v1::query_client::QueryClient::connect("http://0.0.0.0:9090")
-                                .await
-                                .unwrap()
-                                .packet_commitment(channel_v1::QueryPacketCommitmentRequest {
-                                    port_id: send_packet_event["packet_src_port"].clone(),
-                                    channel_id: send_packet_event["packet_src_channel"].clone(),
-                                    sequence,
-                                })
-                                .await
-                                .unwrap()
-                                .into_inner();
-
-                        // NOTE: `packet_data` is deprecated and invalid!!! this assertion will fail!
-                        // assert_eq!(
-                        //     send_packet_event["packet_data"].clone().into_bytes(),
-                        //     ethers::utils::hex::decode(&send_packet_event["packet_data_hex"])
-                        //         .unwrap()
-                        // );
-
-                        let rcp = cometbls
-                            .recv_packet(MsgRecvPacket {
-                                packet: Packet {
-                                    sequence,
-                                    source_port: send_packet_event["packet_src_port"].clone(),
-                                    source_channel: send_packet_event["packet_src_channel"].clone(),
-                                    destination_port: send_packet_event["packet_dst_port"].clone(),
-                                    destination_channel: send_packet_event["packet_dst_channel"]
-                                        .clone(),
-                                    data: ethers::utils::hex::decode(
-                                        &send_packet_event["packet_data_hex"],
-                                    )
-                                    .unwrap(),
-                                    timeout_height: {
-                                        let (revision, height) = send_packet_event
-                                            ["packet_timeout_height"]
-                                            .split_once('-')
-                                            .unwrap();
-
-                                        Height {
-                                            revision_number: revision.parse().unwrap(),
-                                            revision_height: height.parse().unwrap(),
-                                        }
-                                    },
-                                    timeout_timestamp: send_packet_event
-                                        ["packet_timeout_timestamp"]
-                                        .parse()
-                                        .unwrap(),
-                                },
-                                proof_height: packet_commitment.proof_height.unwrap().into(),
-                                proof_commitment: packet_commitment.commitment,
-                            })
-                            .await;
-
-                        dbg!(rcp);
-                    }
-                    EventData::GenericJsonEvent(_) => todo!(),
-                };
-            }
-        }
-    });
-
-    // let send_handle = tokio::spawn(async move {
-    //     tokio::time::sleep(Duration::from_secs(20)).await;
-
-    //     let msg = transfer_v1::MsgTransfer {
-    //         source_port: PORT_ID.to_string(),
-    //         source_channel: "channel-0".to_string(),
-    //         token: Some(Coin {
-    //             denom: "stake".to_string(),
-    //             amount: "1".to_string(),
-    //         }),
-    //         sender: signer_from_pk(&get_wallet().public_key().public_key().to_bytes().to_vec()),
-    //         receiver: "union1nrv37pqfcqul73v7d2e8y0jhjyeuhg57m3eqdt".to_string(),
-    //         timeout_height: Some(client_v1::Height {
-    //             revision_number: 1,
-    //             revision_height: 12_345_678_765,
-    //         }),
-    //         timeout_timestamp: Default::default(),
-    //         memo: Default::default(),
-    //     };
-
-    //     broadcast_tx_commit(
-    //         [Any {
-    //             type_url: "/ibc.applications.transfer.v1.MsgTransfer".to_string(),
-    //             value: msg.encode_to_vec(),
-    //         }]
-    //         .to_vec(),
-    //     )
-    //     .await;
-    // });
-
-    // let (listen, send) = tokio::join!(listen_handle, send_handle);
-
-    listen_handle.await.unwrap();
-
-    // listen.unwrap();
-    // send.unwrap();
+    join(
+        relay_packets_inner(
+            &ethereum,
+            ethereum_packet_stream,
+            &cometbls,
+            cometbls_client_id,
+        ),
+        relay_packets_inner(
+            &cometbls,
+            cometbls_packet_stream,
+            &ethereum,
+            ethereum_client_id,
+        ),
+    )
+    .await;
 }
 
-// trait Msg<Client, Counterparty>: Sized
-// where
-//     Client: LightClient + Connect<Counterparty>,
-//     Counterparty: LightClient + Connect<Client>,
-// {
-//     type Response;
+async fn relay_packets_inner<L1, L2>(
+    lc1: &L2,
+    lc1_event_stream: impl Stream<Item = (Height, Packet)>,
+    lc2: &L1,
+    lc2_event_stream: String,
+) where
+    L1: LightClient + Connect<L2>,
+    L2: LightClient + Connect<L1>,
+{
+    lc1_event_stream
+        .for_each(move |(event_height, packet)| {
+            let lc2_event_stream = lc2_event_stream.clone();
+            async move {
+                let sequence = packet.sequence;
 
-//     type Previous: Msg<Counterparty, Client>;
+                let latest_height = lc2
+                    .query_client_state(lc2_event_stream.clone())
+                    .await
+                    .height();
 
-//     type RequiredProofs;
+                dbg!(&latest_height);
 
-//     fn construct(
-//         previous_response: <Self::Previous as Msg<Counterparty, Client>>::Response,
-//         proofs: Self::RequiredProofs,
-//     ) -> Self;
-// }
+                let lc1_update_to = loop {
+                    let height = lc1.query_latest_height().await;
+                    if height >= event_height.increment() {
+                        break event_height.increment();
+                    }
+                    tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+                };
 
-// impl<Client, Counterparty> Msg<Client, Counterparty> for MsgConnectionOpenInit
-// where
-//     Client: LightClient + Connect<Counterparty>,
-//     Counterparty: LightClient + Connect<Client>,
-// {
-//     type Response = String;
+                // REVIEW: Should we use the returned height?
+                // let ethereum_update_to = lc1
+                let lc1_update_to = lc1
+                    .update_counterparty_client(
+                        lc2,
+                        lc2_event_stream.clone(),
+                        latest_height,
+                        lc1_update_to,
+                    )
+                    .await;
 
-//     type Previous = ();
+                dbg!(&lc1_update_to);
 
-//     type RequiredProofs = ();
+                let commitment_proof = lc1
+                    .packet_commitment_proof(
+                        packet.source_port.clone(),
+                        packet.source_channel.clone(),
+                        sequence,
+                        event_height,
+                    )
+                    .await;
 
-//     fn construct(
-//         previous_response: <Self::Previous as Msg<Counterparty, Client>>::Response,
-//         proofs: Self::RequiredProofs,
-//     ) -> Self {
-//         MsgConnectionOpenInit {
-//             client_id: todo!(),
-//             counterparty: todo!(),
-//             version: todo!(),
-//             delay_period: todo!(),
-//         }
-//     }
-// }
+                let rcp = lc2
+                    .recv_packet(MsgRecvPacket {
+                        packet,
+                        proof_height: lc1_update_to,
+                        proof_commitment: commitment_proof.proof,
+                    })
+                    .await;
 
-// impl<Client, Counterparty> Msg<Client, Counterparty> for ()
-// where
-//     Client: LightClient + Connect<Counterparty>,
-//     Counterparty: LightClient + Connect<Client>,
-// {
-//     type Response = ();
-//     type Previous = ();
-//     type RequiredProofs = ();
-
-//     fn construct(
-//         previous_response: <Self::Previous as Msg<Counterparty, Client>>::Response,
-//         proofs: Self::RequiredProofs,
-//     ) -> Self {
-//     }
-// }
-
-// 2023-06-17T20:49:01.879223Z  INFO relayer: channel opened cometbls_connection_info.connection_id="connection-0" cometbls_connection_info.client_id="cometbls-0" cometbls_channel_id="channel-0" ethereum_connection_info.connection_id="connection-8" ethereum_connection_info.client_id="08-wasm-8" ethereum_channel_id="channel-0"
-
-// {"transfer": {"channel": "channel-0", "remote_address": "union1nrv37pqfcqul73v7d2e8y0jhjyeuhg57m3eqdt"}}
-// Deploying IBCClient...
-// IBCClient => 0x3fD5289eD1dC27A857A4CdEdec9Bf2c96D6C1EB3
-// Deploying IBCConnection...
-// IBCConnection => 0xf9FE9712A91fb3da09852a544F5A344E4EF333Aa
-// Deploying IBCChannelHandshake...
-// IBCChannelHandshake => 0x57b85f23f022d88b61515bF91bFE5238fCedbBD6
-// Deploying IBCPacket...
-// IBCPacket => 0x6744135DAA742c32e3c15619173095fC7E51dda3
-// Deploying OwnableIBCHandler...
-// OwnableIBCHandler => 0x7e37dA319C3008374379c7755a6C9A7CE65e1517
-// Deploying TestnetVerifier...
-// TestnetVerifier => 0x2C045082c6cA9a17031DA0Ca28b9Ca2617a2338A
-// Deploying CometblsClient...
-// CometblsClient => 0x176298b5aabE45Efa36b04452d4BB5b7bB615f1C
-// Deploying ICS20Bank...
-// ICS20Bank => 0xa8Ab1e8afDa14A4d0538520057EA0f9515C7D610
-// Deploying ICS20TransferBank...
-// ICS20TransferBank => 0x7A1d42bAe222eF8E7ED935ac5Ee5Fc6d89fB63bC
+                dbg!(rcp);
+            }
+        })
+        .await
+}
