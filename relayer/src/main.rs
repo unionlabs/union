@@ -461,7 +461,7 @@ async fn do_main<C: ChainSpec>(args: AppArgs) {
                     source_port,
                     source_channel,
                     1,
-                    1000000000,
+                    u64::MAX,
                 )
                 .send()
                 .await
