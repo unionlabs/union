@@ -330,6 +330,7 @@ misbehiavor
 mktemp
 monitonically
 monniker
+moreutils
 multistep
 muslc
 nanos
