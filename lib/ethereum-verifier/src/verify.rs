@@ -37,7 +37,14 @@ pub trait BlsVerify {
     ) -> Result<(), Error>;
 }
 
-/// https://github.com/ethereum/consensus-specs/blob/dev/specs/altair/light-client/sync-protocol.md#validate_light_client_update
+/// Verifies if the light client `update` is valid.
+///
+/// * `update`: The light client update we want to verify.
+/// * `current_slot`: The slot number at when the light client update is created.
+/// * `genesis_validators_root`: The latest `genesis_validators_root` that is saved by the light client.
+/// * `bls_verifier`: BLS verification implementation.
+///
+/// [See in consensus-spec](https://github.com/ethereum/consensus-specs/blob/dev/specs/altair/light-client/sync-protocol.md#validate_light_client_update)
 pub fn validate_light_client_update<Ctx: LightClientContext, V: BlsVerify>(
     ctx: &Ctx,
     update: LightClientUpdate<Ctx::ChainSpec>,
@@ -174,6 +181,14 @@ fn verify_state(root: H256, key: &[u8], proof: &[Vec<u8>]) -> Result<Option<Vec<
     Ok(trie.get(&keccak_256(key))?)
 }
 
+/// Verifies if the `storage_root` of a contract can be verified against the state `root`.
+///
+/// * `root`: Light client update's (attested/finalized) execution block's state root.
+/// * `address`: Address of the contract.
+/// * `proof`: Proof of storage.
+/// * `storage_root`: Storage root of the contract.
+///
+/// NOTE: You must not trust the `root` unless you verified it by calling [`validate_light_client_update`].
 pub fn verify_account_storage_root(
     root: H256,
     address: &ExecutionAddress,
@@ -193,6 +208,14 @@ pub fn verify_account_storage_root(
     }
 }
 
+/// Verifies against `root`, if the `expected_value` is stored at `key` by using `proof`.
+///
+/// * `root`: Storage root of a contract.
+/// * `key`: Padded slot number that the `expected_value` should be stored at.
+/// * `expected_value`: Expected stored value.
+/// * `proof`: Proof that is generated to prove the storage.
+///
+/// NOTE: You must not trust the `root` unless you verified it by calling [`verify_account_storage_root`].
 pub fn verify_storage_proof(
     root: H256,
     key: &[u8],
@@ -205,7 +228,10 @@ pub fn verify_storage_proof(
     }
 }
 
-/// https://github.com/ethereum/consensus-specs/blob/82d6267951ad47cffa1b7b4179eab97b25a99b91/specs/capella/light-client/sync-protocol.md#modified-is_valid_light_client_header
+/// Validates a light client header.
+///
+/// NOTE: This implementation is based on capella.
+/// [See in consensus-spec](https://github.com/ethereum/consensus-specs/blob/dev/specs/capella/light-client/sync-protocol.md#modified-is_valid_light_client_header)
 pub fn is_valid_light_client_header<Ctx: LightClientContext>(
     ctx: &Ctx,
     header: &LightClientHeader<Ctx::ChainSpec>,
