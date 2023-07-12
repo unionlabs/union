@@ -254,6 +254,8 @@ pub fn is_valid_light_client_header<CS: ChainSpec>(
 // TODO(aeryz): Don't forget to add negative cases.
 #[cfg(test)]
 mod tests {
+    use std::assert_matches::assert_matches;
+
     use ibc_types::{
         ethereum_consts_traits::{Minimal, MINIMAL},
         ibc::lightclients::ethereum::{header::Header, sync_committee::SyncCommittee},
@@ -341,47 +343,186 @@ mod tests {
         .into()
     }
 
-    #[test]
-    fn validate_light_client_update_works() {
-        let valid_header_data = read_valid_header_data();
-
+    fn do_validate_light_client_update(header: Header<Minimal>) -> Result<(), Error> {
         let genesis_validators_root: H256 = hex::decode(GENESIS_VALIDATORS_ROOT)
             .unwrap()
             .try_into()
             .unwrap();
 
+        let sync_committee = header.trusted_sync_committee.sync_committee;
+        let finalized_slot = header.trusted_sync_committee.trusted_height.revision_height;
+
+        let ctx = if header.trusted_sync_committee.is_next {
+            Context {
+                finalized_slot,
+                current_sync_committee: None,
+                next_sync_committee: Some(sync_committee),
+            }
+        } else {
+            Context {
+                finalized_slot,
+                current_sync_committee: Some(sync_committee),
+                next_sync_committee: None,
+            }
+        };
+
+        validate_light_client_update(
+            &ctx,
+            header.consensus_update,
+            (header.timestamp - GENESIS_TIME) / MINIMAL.preset.SECONDS_PER_SLOT as u64,
+            genesis_validators_root,
+            BlsVerifier,
+        )
+    }
+
+    #[test]
+    fn validate_light_client_update_works() {
+        let valid_header_data = read_valid_header_data();
+
         for header in valid_header_data {
             let header =
                 <Header<Minimal>>::try_from_proto(serde_json::from_str(header).unwrap()).unwrap();
 
-            let sync_committee = header.trusted_sync_committee.sync_committee;
-            let finalized_slot = header.trusted_sync_committee.trusted_height.revision_height;
-
-            let ctx = if header.trusted_sync_committee.is_next {
-                Context {
-                    finalized_slot,
-                    current_sync_committee: None,
-                    next_sync_committee: Some(sync_committee),
-                }
-            } else {
-                Context {
-                    finalized_slot,
-                    current_sync_committee: Some(sync_committee),
-                    next_sync_committee: None,
-                }
-            };
-
-            assert_eq!(
-                validate_light_client_update(
-                    &ctx,
-                    header.consensus_update,
-                    (header.timestamp - GENESIS_TIME) / MINIMAL.preset.SECONDS_PER_SLOT as u64,
-                    genesis_validators_root.clone(),
-                    BlsVerifier,
-                ),
-                Ok(())
-            );
+            assert_eq!(do_validate_light_client_update(header), Ok(()));
         }
+    }
+
+    #[test]
+    fn validate_light_client_update_fails_when_insufficiant_sync_committee_participants() {
+        let mut header = <Header<Minimal>>::try_from_proto(
+            serde_json::from_str(include_str!(
+            "../../../light-clients/ethereum-light-client/src/test/sync_committee_update_1.json"
+        ))
+            .unwrap(),
+        )
+        .unwrap();
+
+        // Setting the sync committee bits to zero will result in no participants.
+        header.consensus_update.sync_aggregate.sync_committee_bits = Default::default();
+
+        assert_eq!(
+            do_validate_light_client_update(header),
+            Err(Error::InsufficientSyncCommitteeParticipants)
+        );
+    }
+
+    #[test]
+    fn validate_light_client_update_fails_when_invalid_attested_header() {
+        let mut header = <Header<Minimal>>::try_from_proto(
+            serde_json::from_str(include_str!(
+            "../../../light-clients/ethereum-light-client/src/test/sync_committee_update_1.json"
+        ))
+            .unwrap(),
+        )
+        .unwrap();
+
+        header.consensus_update.attested_header.execution.timestamp += 1;
+
+        assert_matches!(
+            do_validate_light_client_update(header),
+            Err(Error::InvalidMerkleBranch(_))
+        );
+    }
+
+    #[test]
+    fn validate_light_client_update_fails_when_incorrect_slot_order() {
+        let correct_header = <Header<Minimal>>::try_from_proto(
+            serde_json::from_str(include_str!(
+            "../../../light-clients/ethereum-light-client/src/test/sync_committee_update_1.json"
+        ))
+            .unwrap(),
+        )
+        .unwrap();
+
+        // signature slot can't be bigger than the current slot
+        let mut header = correct_header.clone();
+        header.consensus_update.signature_slot = u64::MAX;
+
+        assert_matches!(
+            do_validate_light_client_update(header),
+            Err(Error::InvalidSlots)
+        );
+
+        // attested slot can't be bigger than the signature slot
+        let mut header = correct_header.clone();
+        header.consensus_update.attested_header.beacon.slot = u64::MAX;
+
+        assert_matches!(
+            do_validate_light_client_update(header),
+            Err(Error::InvalidSlots)
+        );
+
+        // finalized slot can't be bigger than the attested slot
+        let mut header = correct_header;
+        header.consensus_update.finalized_header.beacon.slot = u64::MAX;
+
+        assert_matches!(
+            do_validate_light_client_update(header),
+            Err(Error::InvalidSlots)
+        );
+    }
+
+    #[test]
+    fn validate_light_client_update_fails_when_invalid_signature_period() {
+        let mut header = <Header<Minimal>>::try_from_proto(
+            serde_json::from_str(include_str!(
+            "../../../light-clients/ethereum-light-client/src/test/sync_committee_update_1.json"
+        ))
+            .unwrap(),
+        )
+        .unwrap();
+
+        header.trusted_sync_committee.trusted_height.revision_height = u64::MAX;
+
+        assert_matches!(
+            do_validate_light_client_update(header),
+            Err(Error::InvalidSignaturePeriod)
+        );
+
+        // We do again here because we are expecting it to fail for both `is_next = true` and `is_next = false`
+        let mut header = <Header<Minimal>>::try_from_proto(
+            serde_json::from_str(include_str!(
+                "../../../light-clients/ethereum-light-client/src/test/finality_update_1.json"
+            ))
+            .unwrap(),
+        )
+        .unwrap();
+
+        header.trusted_sync_committee.trusted_height.revision_height = u64::MAX;
+
+        assert_matches!(
+            do_validate_light_client_update(header),
+            Err(Error::InvalidSignaturePeriod)
+        );
+    }
+
+    #[test]
+    fn validate_light_client_update_fails_when_irrelevant_update() {
+        let correct_header = <Header<Minimal>>::try_from_proto(
+            serde_json::from_str(include_str!(
+            "../../../light-clients/ethereum-light-client/src/test/sync_committee_update_1.json"
+        ))
+            .unwrap(),
+        )
+        .unwrap();
+
+        // Expected next sync committee since attested slot is not bigger than the stored slot.
+        let mut header = correct_header.clone();
+        header.consensus_update.next_sync_committee = None;
+
+        assert_matches!(
+            do_validate_light_client_update(header),
+            Err(Error::IrrelevantUpdate)
+        );
+
+        // Expected stored next sync committee to be None.
+        let mut header = correct_header;
+        header.trusted_sync_committee.is_next = true;
+
+        assert_matches!(
+            do_validate_light_client_update(header),
+            Err(Error::IrrelevantUpdate)
+        );
     }
 
     #[test]

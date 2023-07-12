@@ -1,3 +1,5 @@
+#![feature(assert_matches)]
+
 extern crate alloc;
 
 mod context;
