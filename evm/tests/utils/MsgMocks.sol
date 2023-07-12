@@ -77,16 +77,39 @@ library MsgMocks {
 
     /// Builds a MsgConnectionOpenTry
     /// TODO: should we fuzz over version.identifier?
-    function connectionOpenTry(string memory clientId, string memory connId)
+    function connectionOpenTry(string memory clientId, uint64 proofHeight)
         internal
         view
         returns (IBCMsgs.MsgConnectionOpenTry memory m)
     {
         m.clientId = clientId;
-        m.counterparty.client_id = clientId;
-        m.counterparty.connection_id = connId;
+        m.counterparty.client_id = "counterparty-client-id";
+        m.counterparty.connection_id = "";
         m.counterpartyVersions = new ConnectionVersion.Data[](1);
         m.counterpartyVersions[0] = ConnectionVersion.Data({identifier: "1", features: new string[](0)});
+
+        // mocking connection data
+        ConnectionEnd.Data memory connection = ConnectionEnd.Data({
+            client_id: "counterparty-client-id",
+            versions: m.counterpartyVersions,
+            state: ConnectionEnums.State.STATE_INIT,
+            delay_period: 0,
+            counterparty: ConnectionCounterparty.Data({
+                client_id: clientId,
+                connection_id: "",
+                prefix: CommitmentMerklePrefix.Data({key_prefix: bytes(commitment_prefix())})
+            })
+        });
+
+        bytes memory encodedConnection = ConnectionEnd.encode(connection);
+        m.proofInit = abi.encodePacked(sha256(encodedConnection));
+        console.logBytes(m.proofInit);
+
+        // for MockClient, it seems this value doesn't matter
+        // it just checks sha256(clientStateBytes) == proofClient
+        m.clientStateBytes = abi.encodePacked(bytes32(uint256(0x1)));
+        m.proofClient = abi.encodePacked(sha256(m.clientStateBytes));
+        m.proofHeight.revision_height = proofHeight;
     }
 
     /// Builds a MsgConnectionOpenAck
@@ -100,7 +123,7 @@ library MsgMocks {
     {
         m.connectionId = connId;
         m.version = ConnectionVersion.Data({identifier: "1", features: new string[](0)});
-        m.proofHeight.revision_height = proofHeight;
+        m.counterpartyConnectionID = "counterparty-conn-id";
 
         // mocking connection data
         ConnectionEnd.Data memory connection = ConnectionEnd.Data({
@@ -117,13 +140,40 @@ library MsgMocks {
         connection.versions[0] = m.version;
 
         bytes memory encodedConnection = ConnectionEnd.encode(connection);
-        m.proofTry = abi.encodePacked(sha256(encodedConnection));
 
         // for MockClient, it seems this value doesn't matter
         // it just checks sha256(clientStateBytes) == proofClient
         m.clientStateBytes = abi.encodePacked(bytes32(uint256(0x1)));
         m.proofClient = abi.encodePacked(sha256(m.clientStateBytes));
-        m.counterpartyConnectionID = "counterparty-conn-id";
+        m.proofTry = abi.encodePacked(sha256(encodedConnection));
+        m.proofHeight.revision_height = proofHeight;
+    }
+
+    /// Builds a MsgConnectionOpenConfirm
+    function connectionOpenConfirm(string memory clientId, string memory connId, uint64 proofHeight)
+        internal
+        view
+        returns (IBCMsgs.MsgConnectionOpenConfirm memory m)
+    {
+        m.connectionId = connId;
+
+        // mocking connection data
+        ConnectionEnd.Data memory connection = ConnectionEnd.Data({
+            client_id: "counterparty-client-id",
+            versions: new ConnectionVersion.Data[](1),
+            state: ConnectionEnums.State.STATE_TRYOPEN,
+            delay_period: 0,
+            counterparty: ConnectionCounterparty.Data({
+                client_id: clientId,
+                connection_id: connId,
+                prefix: CommitmentMerklePrefix.Data({key_prefix: bytes(commitment_prefix())})
+            })
+        });
+        connection.versions[0] = ConnectionVersion.Data({identifier: "1", features: new string[](0)});
+
+        bytes memory encodedConnection = ConnectionEnd.encode(connection);
+        m.proofAck = abi.encodePacked(sha256(encodedConnection));
+        m.proofHeight.revision_height = proofHeight;
     }
 
     /// Builds a MsgChannelOpenInit
