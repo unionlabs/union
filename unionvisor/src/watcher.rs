@@ -1,11 +1,12 @@
-use color_eyre::Result;
-use serde::Deserialize;
 use std::{
     fs::File,
     io::{self, Read},
     path::PathBuf,
     time::Duration,
 };
+
+use color_eyre::Result;
+use serde::Deserialize;
 use tracing::error;
 
 /// `UpgradeInfo` is set by the node periodically when a chain upgrade is required.
@@ -94,9 +95,10 @@ impl FileReader {
 
 #[cfg(test)]
 mod tests {
+    use tracing_test::traced_test;
+
     use super::*;
     use crate::testdata;
-    use tracing_test::traced_test;
 
     #[test]
     fn test_read_upgrade_info() {

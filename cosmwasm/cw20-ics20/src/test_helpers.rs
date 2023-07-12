@@ -1,16 +1,16 @@
 #![cfg(test)]
 
-use crate::contract::instantiate;
-use crate::ibc::{ibc_channel_connect, ibc_channel_open, ICS20_ORDERING, ICS20_VERSION};
-use crate::state::ChannelInfo;
-use cosmwasm_std::testing::{
-    mock_dependencies, mock_env, mock_info, MockApi, MockQuerier, MockStorage,
-};
 use cosmwasm_std::{
+    testing::{mock_dependencies, mock_env, mock_info, MockApi, MockQuerier, MockStorage},
     DepsMut, IbcChannel, IbcChannelConnectMsg, IbcChannelOpenMsg, IbcEndpoint, OwnedDeps,
 };
 
-use crate::msg::{AllowMsg, InitMsg};
+use crate::{
+    contract::instantiate,
+    ibc::{ibc_channel_connect, ibc_channel_open, ICS20_ORDERING, ICS20_VERSION},
+    msg::{AllowMsg, InitMsg},
+    state::ChannelInfo,
+};
 
 pub const DEFAULT_TIMEOUT: u64 = 3600; // 1 hour,
 pub const CONTRACT_PORT: &str = "ibc:wasm1234567890abcdef";

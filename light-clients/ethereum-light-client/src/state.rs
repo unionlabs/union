@@ -1,4 +1,3 @@
-use crate::{custom_query::CustomQuery, errors::Error};
 use cosmwasm_std::{Deps, DepsMut};
 use ibc_types::{
     ibc::{
@@ -8,6 +7,8 @@ use ibc_types::{
     },
     IntoProto, TryFromProto,
 };
+
+use crate::{custom_query::CustomQuery, errors::Error};
 
 // Client state that is stored by the host
 pub const HOST_CLIENT_STATE_KEY: &str = "clientState";

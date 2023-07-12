@@ -1,17 +1,22 @@
-use crate::{
-    bundle::Bundle, init, logging::LogFormat, network::Network, supervisor, symlinker::Symlinker,
-};
-use clap::Parser;
-use color_eyre::{eyre::bail, eyre::eyre, Result};
 use core::time::Duration;
+use std::{ffi::OsString, io::Read, path::PathBuf, process::Stdio};
+
+use clap::Parser;
+use color_eyre::{
+    eyre::{bail, eyre},
+    Result,
+};
 use figment::{
     providers::{Data, Format as FigmentFormat, Json, Toml},
     Figment,
 };
 use serde::de::DeserializeOwned;
-use std::{ffi::OsString, io::Read, path::PathBuf, process::Stdio};
 use tracing::{debug, field::display as as_display};
 use tracing_subscriber::filter::LevelFilter;
+
+use crate::{
+    bundle::Bundle, init, logging::LogFormat, network::Network, supervisor, symlinker::Symlinker,
+};
 
 #[derive(Parser, Clone)]
 #[command(about = "unionvisor is a process supervisor for uniond.", long_about = None)]
@@ -313,9 +318,10 @@ impl CallCmd {
 
 #[cfg(test)]
 mod tests {
+    use tracing_test::traced_test;
+
     use super::*;
     use crate::testdata;
-    use tracing_test::traced_test;
 
     #[test]
     fn test_write_to_file() {
