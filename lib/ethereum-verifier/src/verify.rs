@@ -61,7 +61,7 @@ pub fn validate_light_client_update<Ctx: LightClientContext, V: BlsVerify>(
     }
 
     // Verify update does not skip a sync committee period
-    is_valid_light_client_header(ctx, &update.attested_header)?;
+    is_valid_light_client_header(ctx.fork_parameters(), &update.attested_header)?;
     let update_attested_slot = update.attested_header.beacon.slot;
     let update_finalized_slot = update.finalized_header.beacon.slot;
 
@@ -99,7 +99,7 @@ pub fn validate_light_client_update<Ctx: LightClientContext, V: BlsVerify>(
 
     // Verify that the `finality_branch`, if present, confirms `finalized_header`
     // to match the finalized checkpoint root saved in the state of `attested_header`.
-    is_valid_light_client_header(ctx, &update.finalized_header)?;
+    is_valid_light_client_header(ctx.fork_parameters(), &update.finalized_header)?;
     let finalized_root = update.finalized_header.beacon.tree_hash_root();
 
     validate_merkle_branch(
@@ -232,13 +232,13 @@ pub fn verify_storage_proof(
 ///
 /// NOTE: This implementation is based on capella.
 /// [See in consensus-spec](https://github.com/ethereum/consensus-specs/blob/dev/specs/capella/light-client/sync-protocol.md#modified-is_valid_light_client_header)
-pub fn is_valid_light_client_header<Ctx: LightClientContext>(
-    ctx: &Ctx,
-    header: &LightClientHeader<Ctx::ChainSpec>,
+pub fn is_valid_light_client_header<CS: ChainSpec>(
+    fork_parameters: &ForkParameters,
+    header: &LightClientHeader<CS>,
 ) -> Result<(), Error> {
-    let epoch = compute_epoch_at_slot::<Ctx::ChainSpec>(header.beacon.slot);
+    let epoch = compute_epoch_at_slot::<CS>(header.beacon.slot);
 
-    if epoch < ctx.fork_parameters().capella.epoch {
+    if epoch < fork_parameters.capella.epoch {
         return Err(Error::InvalidChainVersion);
     }
 
@@ -249,4 +249,173 @@ pub fn is_valid_light_client_header<Ctx: LightClientContext>(
         EXECUTION_PAYLOAD_INDEX,
         &header.beacon.body_root,
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use ibc_types::{
+        ethereum_consts_traits::{Minimal, MINIMAL},
+        ibc::lightclients::ethereum::{header::Header, sync_committee::SyncCommittee},
+        TryFromProto,
+    };
+
+    use super::*;
+
+    struct Context {
+        finalized_slot: u64,
+        current_sync_committee: Option<SyncCommittee<Minimal>>,
+        next_sync_committee: Option<SyncCommittee<Minimal>>,
+    }
+
+    impl LightClientContext for Context {
+        type ChainSpec = Minimal;
+
+        fn finalized_slot(&self) -> u64 {
+            self.finalized_slot
+        }
+
+        fn current_sync_committee(&self) -> Option<&SyncCommittee<Self::ChainSpec>> {
+            self.current_sync_committee.as_ref()
+        }
+
+        fn next_sync_committee(&self) -> Option<&SyncCommittee<Self::ChainSpec>> {
+            self.next_sync_committee.as_ref()
+        }
+
+        fn fork_parameters(&self) -> &ForkParameters {
+            &MINIMAL.fork_parameters
+        }
+    }
+
+    struct BlsVerifier;
+
+    impl BlsVerify for BlsVerifier {
+        fn fast_aggregate_verify<'pk>(
+            &self,
+            public_keys: impl IntoIterator<Item = &'pk BlsPublicKey>,
+            msg: Vec<u8>,
+            signature: BlsSignature,
+        ) -> Result<(), Error> {
+            let res = crate::crypto::fast_aggregate_verify(
+                public_keys.into_iter().collect::<Vec<_>>().as_slice(),
+                msg.as_slice(),
+                &signature,
+            )
+            .unwrap();
+
+            if res {
+                Ok(())
+            } else {
+                Err(Error::Crypto)
+            }
+        }
+    }
+
+    fn read_valid_header_data() -> Vec<&'static str> {
+        // TODO(aeryz): move test data to ibc types
+        [
+            include_str!(
+                "../../../light-clients/ethereum-light-client/src/test/finality_update_1.json"
+            ),
+            include_str!(
+                "../../../light-clients/ethereum-light-client/src/test/finality_update_2.json"
+            ),
+            include_str!(
+                "../../../light-clients/ethereum-light-client/src/test/finality_update_3.json"
+            ),
+            include_str!(
+                "../../../light-clients/ethereum-light-client/src/test/finality_update_4.json"
+            ),
+        ]
+        .into()
+    }
+
+    #[test]
+    fn validate_light_client_update_works() {
+        let valid_header_data = read_valid_header_data();
+
+        for header in valid_header_data {
+            let header =
+                <Header<Minimal>>::try_from_proto(serde_json::from_str(header).unwrap()).unwrap();
+
+            // TODO(aeryz): Dynamic context based on the update
+            let ctx = Context {
+                finalized_slot: 1,
+                current_sync_committee: None,
+                next_sync_committee: None,
+            };
+
+            assert_eq!(
+                validate_light_client_update(
+                    &ctx,
+                    header.consensus_update,
+                    0,
+                    Default::default(),
+                    BlsVerifier,
+                ),
+                Ok(())
+            );
+        }
+    }
+
+    #[test]
+    fn verify_state_works() {
+        // TODO(aeryz): We already define this test in the light client, extract out the helper functions for
+        // the test so that we don't have to define everything twice.
+    }
+
+    #[test]
+    fn verify_account_storage_root_works() {
+        let valid_header_data = read_valid_header_data();
+
+        for header in valid_header_data {
+            let header =
+                <Header<Minimal>>::try_from_proto(serde_json::from_str(header).unwrap()).unwrap();
+
+            let proof_data = header.account_update.proofs[0].clone();
+
+            assert_eq!(
+                verify_account_storage_root(
+                    header.consensus_update.attested_header.execution.state_root,
+                    &proof_data.key.as_slice().try_into().unwrap(),
+                    &proof_data.proof,
+                    &proof_data.value.as_slice().try_into().unwrap()
+                ),
+                Ok(())
+            );
+        }
+    }
+
+    #[test]
+    fn verify_storage_proof_works() {
+        // TODO(aeryz): We already define this test in the light client, extract out the helper functions for
+        // the test so that we don't have to define everything twice.
+    }
+
+    #[test]
+    fn is_valid_light_client_header_works() {
+        let valid_header_data = read_valid_header_data();
+
+        for header in valid_header_data {
+            let header =
+                <Header<Minimal>>::try_from_proto(serde_json::from_str(header).unwrap()).unwrap();
+
+            // Both finalized and attested headers should be verifyable
+            assert_eq!(
+                is_valid_light_client_header(
+                    &MINIMAL.fork_parameters,
+                    &header.consensus_update.attested_header,
+                ),
+                Ok(())
+            );
+
+            assert_eq!(
+                is_valid_light_client_header(
+                    &MINIMAL.fork_parameters,
+                    &header.consensus_update.finalized_header,
+                ),
+                Ok(())
+            );
+        }
+    }
 }
