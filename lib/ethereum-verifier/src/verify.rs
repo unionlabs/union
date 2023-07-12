@@ -251,6 +251,7 @@ pub fn is_valid_light_client_header<CS: ChainSpec>(
     )
 }
 
+// TODO(aeryz): Don't forget to add negative cases.
 #[cfg(test)]
 mod tests {
     use ibc_types::{
@@ -260,6 +261,10 @@ mod tests {
     };
 
     use super::*;
+
+    const GENESIS_VALIDATORS_ROOT: &str =
+        "270d43e74ce340de4bca2b1936beca0f4f5408d9e78aec4850920baf659d5b69";
+    const GENESIS_TIME: u64 = 1686903632;
 
     struct Context {
         finalized_slot: u64,
@@ -315,7 +320,13 @@ mod tests {
         // TODO(aeryz): move test data to ibc types
         [
             include_str!(
+                "../../../light-clients/ethereum-light-client/src/test/sync_committee_update_1.json"
+            ),
+            include_str!(
                 "../../../light-clients/ethereum-light-client/src/test/finality_update_1.json"
+            ),
+            include_str!(
+                "../../../light-clients/ethereum-light-client/src/test/sync_committee_update_2.json"
             ),
             include_str!(
                 "../../../light-clients/ethereum-light-client/src/test/finality_update_2.json"
@@ -334,23 +345,38 @@ mod tests {
     fn validate_light_client_update_works() {
         let valid_header_data = read_valid_header_data();
 
+        let genesis_validators_root: H256 = hex::decode(GENESIS_VALIDATORS_ROOT)
+            .unwrap()
+            .try_into()
+            .unwrap();
+
         for header in valid_header_data {
             let header =
                 <Header<Minimal>>::try_from_proto(serde_json::from_str(header).unwrap()).unwrap();
 
-            // TODO(aeryz): Dynamic context based on the update
-            let ctx = Context {
-                finalized_slot: 1,
-                current_sync_committee: None,
-                next_sync_committee: None,
+            let sync_committee = header.trusted_sync_committee.sync_committee;
+            let finalized_slot = header.trusted_sync_committee.trusted_height.revision_height;
+
+            let ctx = if header.trusted_sync_committee.is_next {
+                Context {
+                    finalized_slot,
+                    current_sync_committee: None,
+                    next_sync_committee: Some(sync_committee),
+                }
+            } else {
+                Context {
+                    finalized_slot,
+                    current_sync_committee: Some(sync_committee),
+                    next_sync_committee: None,
+                }
             };
 
             assert_eq!(
                 validate_light_client_update(
                     &ctx,
                     header.consensus_update,
-                    0,
-                    Default::default(),
+                    (header.timestamp - GENESIS_TIME) / MINIMAL.preset.SECONDS_PER_SLOT as u64,
+                    genesis_validators_root.clone(),
                     BlsVerifier,
                 ),
                 Ok(())
