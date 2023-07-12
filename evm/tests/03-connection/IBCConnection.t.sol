@@ -3,18 +3,20 @@ pragma solidity ^0.8.18;
 import {IBCMsgs} from "contracts/core/25-handler/IBCMsgs.sol";
 import {MockClient} from "contracts/clients/MockClient.sol";
 import {
-    IbcCoreConnectionV1ConnectionEnd,
-    IbcCoreConnectionV1Counterparty,
-    IbcCoreConnectionV1GlobalEnums
+    IbcCoreConnectionV1ConnectionEnd as ConnectionEnd,
+    IbcCoreConnectionV1Counterparty as ConnectionCounterparty,
+    IbcCoreConnectionV1GlobalEnums as ConnectionEnums
 } from "contracts/proto/ibc/core/connection/v1/connection.sol";
 import {ILightClient} from "contracts/core/02-client/ILightClient.sol";
 import {MockClient} from "contracts/clients/MockClient.sol";
+import {IbcCoreCommitmentV1MerklePrefix as CommitmentMerklePrefix} from
+    "contracts/proto/ibc/core/commitment/v1/commitment.sol";
 
 import "tests/TestPlus.sol";
 import {IBCHandler_Testable} from "tests/utils/IBCHandler_Testable.sol";
 
 contract IBCConnectionTest is TestPlus {
-    using IbcCoreConnectionV1Counterparty for IbcCoreConnectionV1Counterparty.Data;
+    using ConnectionCounterparty for ConnectionCounterparty.Data;
 
     IBCHandler_Testable handler;
     ILightClient client;
@@ -26,6 +28,7 @@ contract IBCConnectionTest is TestPlus {
         handler.registerClient(CLIENT_TYPE, client);
     }
 
+    /// tests a full connection creation handshake, from the perspective of chain A
     function test_openingHandshake_chainA(string memory connId, uint64 proofHeight) public {
         vm.assume(proofHeight > 0);
 
@@ -37,23 +40,37 @@ contract IBCConnectionTest is TestPlus {
         IBCMsgs.MsgConnectionOpenInit memory msg_init = MsgMocks.connectionOpenInit(clientId);
         string memory id = handler.connectionOpenInit(msg_init);
 
-        (IbcCoreConnectionV1ConnectionEnd.Data memory connection,) = handler.getConnection(id);
-        assertStrEq(connection.client_id, clientId);
+        (ConnectionEnd.Data memory connection,) = handler.getConnection(id);
+        assertEq(connection.client_id, clientId, "clientId mismatch");
+        assertEq(connection.delay_period, msg_init.delayPeriod, "delayPeriod mismatch");
+        assertEq(connection.counterparty.encode(), msg_init.counterparty.encode(), "counterparty mismatch");
+        assert(connection.state == ConnectionEnums.State.STATE_INIT);
         assertEq(connection.versions.length, 1);
-        assertStrEq(connection.versions[0].identifier, "1");
         assertEq(connection.versions[0].features.length, 2);
-        assertStrEq(connection.versions[0].features[0], "ORDER_ORDERED");
-        assertStrEq(connection.versions[0].features[1], "ORDER_UNORDERED");
-        assertEq(connection.delay_period, msg_init.delayPeriod);
-        assertEq(connection.counterparty.encode(), msg_init.counterparty.encode());
-        assert(connection.state == IbcCoreConnectionV1GlobalEnums.State.STATE_INIT);
+        assertEq(connection.versions[0].identifier, "1");
+        assertEq(connection.versions[0].features[0], "ORDER_ORDERED");
+        assertEq(connection.versions[0].features[1], "ORDER_UNORDERED");
 
         // 2. ConnOpenAck
         IBCMsgs.MsgConnectionOpenAck memory msg_ack = MsgMocks.connectionOpenAck(clientId, id, proofHeight);
         handler.connectionOpenAck(msg_ack);
-        // 1
+
+        ConnectionCounterparty.Data memory expectedCounterparty = msg_init.counterparty;
+        expectedCounterparty.connection_id = msg_ack.counterpartyConnectionID;
+
+        (connection,) = handler.getConnection(id);
+        assertEq(connection.client_id, clientId, "clientId mismatch");
+        assertEq(connection.delay_period, msg_init.delayPeriod, "delayPeriod mismatch");
+        assertEq(connection.counterparty.encode(), expectedCounterparty.encode(), "counterparty mismatch");
+        assert(connection.state == ConnectionEnums.State.STATE_OPEN);
+        assertEq(connection.versions.length, 1);
+        assertEq(connection.versions[0].features.length, 2);
+        assertEq(connection.versions[0].identifier, "1");
+        assertEq(connection.versions[0].features[0], "ORDER_ORDERED");
+        assertEq(connection.versions[0].features[1], "ORDER_UNORDERED");
     }
 
+    /// tests a full connection creation handshake, from the perspective of chain B
     function test_openingHandshake_chainB(string memory clientId, string memory connId) public {
         // 1. ConnOpenTry
         // 2. ConnOpenConfirm

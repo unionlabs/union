@@ -123,6 +123,7 @@ library MsgMocks {
         // it just checks sha256(clientStateBytes) == proofClient
         m.clientStateBytes = abi.encodePacked(bytes32(uint256(0x1)));
         m.proofClient = abi.encodePacked(sha256(m.clientStateBytes));
+        m.counterpartyConnectionID = "counterparty-conn-id";
     }
 
     /// Builds a MsgChannelOpenInit
@@ -146,6 +147,10 @@ library MsgMocks {
             version: "v1"
         });
     }
+
+    function commitment_prefix() internal pure returns (string memory) {
+        return "ibc";
+    }
 }
 
 function wrapAnyMockHeader(MockHeader.Data memory header) pure returns (bytes memory) {
@@ -167,8 +172,4 @@ function wrapAnyMockConsensusState(MockConsensusState.Data memory consensusState
     anyConsensusState.type_url = "/ibc.lightclients.mock.v1.ConsensusState";
     anyConsensusState.value = MockConsensusState.encode(consensusState);
     return Any.encode(anyConsensusState);
-}
-
-function commitment_prefix() pure returns (string memory) {
-    return "ibc";
 }
