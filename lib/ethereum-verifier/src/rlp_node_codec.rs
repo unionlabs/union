@@ -16,13 +16,12 @@
 
 //! `NodeCodec` implementation for Rlp
 
+use std::{borrow::Borrow, marker::PhantomData, ops::Range};
+
 use hash_db::Hasher;
 use primitive_types::H256;
 use rlp::{DecoderError, Prototype, Rlp, RlpStream};
 use sha3::{Digest, Keccak256};
-use std::borrow::Borrow;
-use std::marker::PhantomData;
-use std::ops::Range;
 use trie_db::{
     node::{NibbleSlicePlan, NodeHandlePlan, NodePlan, Value, ValuePlan},
     ChildReference, NodeCodec, TrieLayout,

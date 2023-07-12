@@ -1,4 +1,3 @@
-use crate::{msg::UCS00PingPong, ContractError};
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
     attr, entry_point, from_binary, to_binary, Binary, DepsMut, Env, IbcBasicResponse, IbcChannel,
@@ -6,6 +5,8 @@ use cosmwasm_std::{
     IbcPacketAckMsg, IbcPacketReceiveMsg, IbcPacketTimeoutMsg, IbcReceiveResponse, IbcTimeout,
     IbcTimeoutBlock, Reply, Response,
 };
+
+use crate::{msg::UCS00PingPong, ContractError};
 
 pub const PINGPONG_VERSION: &str = "ucs00-pingpong-1";
 pub const PINGPONG_ORDERING: IbcOrder = IbcOrder::Unordered;

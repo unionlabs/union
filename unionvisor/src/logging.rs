@@ -1,5 +1,6 @@
-use color_eyre::eyre::bail;
 use std::str::FromStr;
+
+use color_eyre::eyre::bail;
 use tracing_subscriber::filter::LevelFilter;
 
 pub fn init(log_format: LogFormat, level: LevelFilter) {

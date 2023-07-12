@@ -1,7 +1,9 @@
 use prost::Message;
 use protos::{
-    google::protobuf::Any, ibc::lightclients::wasm::v1::ClientState as RawWasmClientState,
-    ibc::lightclients::wasm::v1::ConsensusState as RawWasmConsensusState,
+    google::protobuf::Any,
+    ibc::lightclients::wasm::v1::{
+        ClientState as RawWasmClientState, ConsensusState as RawWasmConsensusState,
+    },
 };
 
 pub mod msg;

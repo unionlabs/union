@@ -15,11 +15,14 @@ pub mod v1 {
 
 // v2 format is anything older than 0.13.1 when we only updated the internal balances on success ack
 pub mod v2 {
-    use crate::amount::Amount;
-    use crate::state::{ChannelState, CHANNEL_INFO, CHANNEL_STATE};
-    use crate::ContractError;
     use cosmwasm_std::{to_binary, Addr, DepsMut, Env, Order, StdResult, WasmQuery};
     use cw20::{BalanceResponse, Cw20QueryMsg};
+
+    use crate::{
+        amount::Amount,
+        state::{ChannelState, CHANNEL_INFO, CHANNEL_STATE},
+        ContractError,
+    };
 
     pub fn update_balances(mut deps: DepsMut, env: &Env) -> Result<(), ContractError> {
         let channels = CHANNEL_INFO

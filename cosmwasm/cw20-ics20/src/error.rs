@@ -1,8 +1,8 @@
+use std::{num::TryFromIntError, string::FromUtf8Error};
+
 use cosmwasm_std::StdError;
 use cw_controllers::AdminError;
 use cw_utils::PaymentError;
-use std::num::TryFromIntError;
-use std::string::FromUtf8Error;
 use thiserror::Error;
 
 /// Never is a placeholder to ensure we don't return any errors

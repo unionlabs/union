@@ -1,9 +1,9 @@
-use std::{fs, path::PathBuf};
+use std::{ffi::OsString, fs, path::PathBuf};
+
+use color_eyre::{eyre::eyre, Result};
+use tracing::debug;
 
 use crate::bundle::{Bundle, UnvalidatedVersionPath, ValidVersionPath};
-use color_eyre::{eyre::eyre, Result};
-use std::ffi::OsString;
-use tracing::debug;
 
 /// Symlinker maintains a symlink `root/current` to a binary at a [`Bundle`]'s [`ValidVersionPath`]
 #[derive(Clone)]
@@ -89,9 +89,8 @@ impl Symlinker {
 
 #[cfg(test)]
 mod tests {
-    use crate::testdata;
-
     use super::*;
+    use crate::testdata;
 
     #[test]
     fn test_swap() {

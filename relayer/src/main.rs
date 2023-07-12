@@ -5,6 +5,8 @@
 
 // nix run .# -- tx wasm instantiate 1 '{"default_timeout":10000,"gov_contract":"union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2","allowlist":[]}' --label blah --from alice --gas auto --keyring-backend test --gas-adjustment 1.3 --amount 100stake --no-admin --chain-id union-devnet-1
 
+use std::{str::FromStr, sync::Arc};
+
 use bip32::{DerivationPath, Language, XPrv};
 use clap::{Args, Parser, Subcommand};
 use contracts::{ics20_bank::ics20_bank, ics20_transfer_bank::ics20_transfer_bank};
@@ -37,7 +39,6 @@ use ibc_types::{
 };
 use prost::Message;
 use reqwest::Url;
-use std::{str::FromStr, sync::Arc};
 
 use crate::chain::{
     cosmos::Ethereum,

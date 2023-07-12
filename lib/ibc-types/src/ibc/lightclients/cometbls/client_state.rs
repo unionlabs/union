@@ -1,6 +1,9 @@
 use crate::{
-    errors::MissingField, ibc::core::client::height::Height,
-    ibc::google::protobuf::duration::Duration, ibc::lightclients::tendermint::fraction::Fraction,
+    errors::MissingField,
+    ibc::{
+        core::client::height::Height, google::protobuf::duration::Duration,
+        lightclients::tendermint::fraction::Fraction,
+    },
     IntoProto, TryFromProto, TypeUrl,
 };
 

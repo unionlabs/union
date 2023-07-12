@@ -3,9 +3,9 @@ use serde::{Deserialize, Serialize};
 use crate::{
     errors::{InvalidLength, MissingField},
     ethereum::H256,
-    ibc::core::client::height::Height,
-    ibc::lightclients::{
-        ethereum::fork_parameters::ForkParameters, tendermint::fraction::Fraction,
+    ibc::{
+        core::client::height::Height,
+        lightclients::{ethereum::fork_parameters::ForkParameters, tendermint::fraction::Fraction},
     },
     IntoProto, TryFromProto, TryFromProtoErrorOf, TypeUrl,
 };

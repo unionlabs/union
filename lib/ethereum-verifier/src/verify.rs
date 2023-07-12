@@ -1,19 +1,7 @@
-use crate::{
-    primitives::{Account, ExecutionAddress, Hash32, Slot},
-    rlp_node_codec::{keccak_256, EthLayout, KeccakHasher},
-    utils::{
-        compute_domain, compute_epoch_at_slot, compute_fork_version, compute_signing_root,
-        compute_sync_committee_period_at_slot, validate_merkle_branch,
-    },
-    Error, LightClientContext,
-};
 use hash_db::HashDB;
 use ibc_types::{
     bls::{BlsPublicKey, BlsSignature},
-    ethereum::H256,
-};
-use ibc_types::{
-    ethereum::DomainType,
+    ethereum::{DomainType, H256},
     ethereum_consts_traits::{
         consts::{
             floorlog2, get_subtree_index, EXECUTION_PAYLOAD_INDEX, FINALIZED_ROOT_INDEX,
@@ -29,6 +17,16 @@ use memory_db::{HashKey, MemoryDB};
 use tree_hash::TreeHash;
 use trie_db::{Trie, TrieDBBuilder};
 use typenum::Unsigned;
+
+use crate::{
+    primitives::{Account, ExecutionAddress, Hash32, Slot},
+    rlp_node_codec::{keccak_256, EthLayout, KeccakHasher},
+    utils::{
+        compute_domain, compute_epoch_at_slot, compute_fork_version, compute_signing_root,
+        compute_sync_committee_period_at_slot, validate_merkle_branch,
+    },
+    Error, LightClientContext,
+};
 
 pub trait BlsVerify {
     fn fast_aggregate_verify<'pk>(

@@ -1,14 +1,16 @@
-use ibc_types::ethereum::{Domain, DomainType, ForkData, Version, H256};
-use ibc_types::ethereum_consts_traits::{
-    EPOCHS_PER_SYNC_COMMITTEE_PERIOD, SECONDS_PER_SLOT, SLOTS_PER_EPOCH,
+use ibc_types::{
+    ethereum::{Domain, DomainType, ForkData, Version, H256},
+    ethereum_consts_traits::{EPOCHS_PER_SYNC_COMMITTEE_PERIOD, SECONDS_PER_SLOT, SLOTS_PER_EPOCH},
 };
 use sha2::{Digest, Sha256};
 use ssz::Encode;
 use tree_hash::TreeHash;
 use typenum::Unsigned;
 
-use crate::primitives::{Epoch, Root, Slot, GENESIS_SLOT};
-use crate::{Error, InvalidMerkleBranch, LightClientContext};
+use crate::{
+    primitives::{Epoch, Root, Slot, GENESIS_SLOT},
+    Error, InvalidMerkleBranch, LightClientContext,
+};
 
 pub fn compute_fork_version<Ctx: LightClientContext>(ctx: &Ctx, epoch: Epoch) -> Version {
     let fork_parameters = ctx.fork_parameters();
