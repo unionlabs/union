@@ -5,8 +5,7 @@ import {MockClient} from "contracts/clients/MockClient.sol";
 import {IBCMsgs} from "contracts/core/25-handler/IBCMsgs.sol";
 import {IBCCommitment} from "contracts/core/24-host/IBCCommitment.sol";
 
-import "forge-std/Test.sol";
-import {TestPlus, MsgMocks} from "tests/utils/TestUtils.sol";
+import "tests/TestPlus.sol";
 import {IBCHandler_Testable} from "tests/utils/IBCHandler_Testable.sol";
 
 contract IBCClientTest is TestPlus {

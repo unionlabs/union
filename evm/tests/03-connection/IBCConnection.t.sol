@@ -10,8 +10,7 @@ import {
 import {ILightClient} from "contracts/core/02-client/ILightClient.sol";
 import {MockClient} from "contracts/clients/MockClient.sol";
 
-import "forge-std/Test.sol";
-import {TestPlus, MsgMocks} from "tests/utils/TestUtils.sol";
+import "tests/TestPlus.sol";
 import {IBCHandler_Testable} from "tests/utils/IBCHandler_Testable.sol";
 
 contract IBCConnectionTest is TestPlus {
