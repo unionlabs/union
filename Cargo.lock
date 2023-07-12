@@ -1510,6 +1510,32 @@ dependencies = [
 ]
 
 [[package]]
+name = "ethereum-light-client"
+version = "0.1.0"
+dependencies = [
+ "base64 0.21.2",
+ "bytes",
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "ethabi",
+ "ethereum-verifier",
+ "hex",
+ "ibc",
+ "ibc-types",
+ "prost",
+ "protos",
+ "rlp",
+ "schemars",
+ "serde",
+ "serde-json-wasm",
+ "serde_json",
+ "sha3",
+ "thiserror",
+ "tiny-keccak",
+ "wasm-light-client-types",
+]
+
+[[package]]
 name = "ethereum-types"
 version = "0.14.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5317,32 +5343,6 @@ name = "unicode-xid"
 version = "0.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f962df74c8c05a667b5ee8bcf162993134c104e96440b663c8daa176dc772d8c"
-
-[[package]]
-name = "union-ethereum-lc"
-version = "0.1.0"
-dependencies = [
- "base64 0.21.2",
- "bytes",
- "cosmwasm-schema",
- "cosmwasm-std",
- "ethabi",
- "ethereum-verifier",
- "hex",
- "ibc",
- "ibc-types",
- "prost",
- "protos",
- "rlp",
- "schemars",
- "serde",
- "serde-json-wasm",
- "serde_json",
- "sha3",
- "thiserror",
- "tiny-keccak",
- "wasm-light-client-types",
-]
 
 [[package]]
 name = "unionvisor"

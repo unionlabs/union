@@ -12,9 +12,10 @@
 let
   rustToolchain = crane.withBuildTarget CARGO_BUILD_TARGET;
   info = (crane.lib.crateNameFromCargoToml { cargoToml = cargoToml; });
-  artifact = builtins.replaceStrings [ "-" ] [ "_" ] info.pname;
+  artifact = (builtins.replaceStrings [ "-" ] [ "_" ] info.pname);
+  featuresString = (lib.concatMapStrings (feature: "_${feature}") features);
   fts = if features != [ ] then lib.concatStringsSep " " ([ "--features" ] ++ features) else "";
-  cargoExtraArgs = "-p ${info.pname} ${fts}";
+  cargoExtraArgs = "-p ${info.pname} --no-default-features ${fts}";
   attrs = info
     // {
     cargoExtraArgs = cargoExtraArgs;
@@ -34,6 +35,8 @@ in
 
 rustToolchain.buildPackage (attrs // {
   inherit CARGO_BUILD_TARGET;
+
+  pnameSuffix = featuresString;
 
   cargoBuildCommand = "RUSTFLAGS='-C target-feature=-sign-ext -C link-arg=-s -C target-cpu=mvp' cargo -Z build-std=std,panic_abort -Z build-std-features=panic_immediate_abort build --release --lib --target ${CARGO_BUILD_TARGET}";
 
@@ -55,9 +58,9 @@ rustToolchain.buildPackage (attrs // {
   installPhase = ''
     mkdir -p $out/lib
     # Optimize the binary size a little bit more
-    mv target/wasm32-unknown-unknown/release/${artifact}.wasm $out/lib/${artifact}.wasm
+    mv target/wasm32-unknown-unknown/release/${artifact}.wasm $out/lib/${artifact}${featuresString}.wasm
     # ${pkgs.binaryen}/bin/wasm-opt -Os target/wasm32-unknown-unknown/release/${artifact}.wasm -o $out/lib/${artifact}.wasm
     # We also zip the binary since it is smaller
-    gzip -fk $out/lib/${artifact}.wasm
+    gzip -fk $out/lib/${artifact}${featuresString}.wasm
   '';
 })

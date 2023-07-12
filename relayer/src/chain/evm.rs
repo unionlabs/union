@@ -417,8 +417,6 @@ impl<C: ChainSpec> LightClient for Cometbls<C> {
         self_height: Height,
     ) -> impl Future<Output = StateProof<Vec<u8>>> + '_ {
         async move {
-            // tracing::info!(?self_height);
-            // self.wait_for_beacon_block(self_height).await;
             let self_height = self.execution_height(self_height).await;
             self.wait_for_execution_block(self_height.revision_height.into())
                 .await;
@@ -445,18 +443,13 @@ impl<C: ChainSpec> LightClient for Cometbls<C> {
                     let meta = LogMeta::from(&log);
                     let event: SendPacketFilter = parse_log(log).unwrap();
 
+                    // TODO: Would be nice if this info was passed through in the SendPacket event
                     let (channel_data, _): (
                         contracts::ibc_handler::IbcCoreChannelV1ChannelData,
                         bool,
                     ) = self
                         .ibc_handler
                         .get_channel(event.source_port.clone(), event.source_channel.clone())
-                        // .block(
-                        //     self
-                        //         .process_height_for_counterparty(updated_height)
-                        //         .await
-                        //         .revision_height,
-                        // )
                         .await
                         .unwrap();
 
@@ -477,87 +470,11 @@ impl<C: ChainSpec> LightClient for Cometbls<C> {
                         },
                     )
                 })
-
-            // while let Some(Ok((event, meta))) = event_stream.next().await {
-            //     let event: contracts::ibc_handler::SendPacketFilter = event;
-
-            //     tracing::info!(event = ?event, "new event");
-            //     println!("EVENT DATA: {:?}", event.data.to_vec());
-
-            //     cometbls
-            //         .wait_for_execution_block(meta.block_number.as_u64().into())
-            //         .await;
-
-            //     let latest_height = ethereum
-            //         .query_client_state(ethereum_client_id.clone())
-            //         .await
-            //         .height();
-
-            //     let updated_height = cometbls
-            //         .update_counterparty_client(
-            //             &ethereum,
-            //             ethereum_client_id.clone(),
-            //             latest_height,
-            //             cometbls.query_latest_height().await,
-            //         )
-            //         .await;
-
-            //     let commitment_proof = cometbls
-            //         .packet_commitment_proof(
-            //             event.source_port.clone(),
-            //             event.source_channel.clone(),
-            //             event.sequence,
-            //             updated_height,
-            //         )
-            //         .await;
-
-            //     let (channel_data, _): (contracts::ibc_handler::IbcCoreChannelV1ChannelData, bool) =
-            //         cometbls
-            //             .ibc_handler
-            //             .get_channel(event.source_port.clone(), event.source_channel.clone())
-            //             .block(
-            //                 cometbls
-            //                     .process_height_for_counterparty(updated_height)
-            //                     .await
-            //                     .revision_height,
-            //             )
-            //             .await
-            //             .unwrap();
-
-            //     let rcp = ethereum
-            //         .recv_packet(MsgRecvPacket {
-            //             packet: Packet {
-            //                 sequence: event.sequence,
-            //                 source_port: event.source_port,
-            //                 source_channel: event.source_channel,
-            //                 destination_port: channel_data.counterparty.port_id,
-            //                 destination_channel: channel_data.counterparty.channel_id,
-            //                 data: event.data.to_vec(),
-            //                 timeout_height: Height::new(
-            //                     event.timeout_height.revision_number,
-            //                     event.timeout_height.revision_height,
-            //                 ),
-            //                 timeout_timestamp: event.timeout_timestamp,
-            //             },
-            //             proof_commitment: commitment_proof.proof,
-            //             proof_height: commitment_proof.proof_height,
-            //         })
-            //         .await;
-
-            //     tracing::info!(rcp = ?rcp, "received packet");
-            // }
         }
     }
 }
 
 impl<C: ChainSpec> Connect<Ethereum<C>> for Cometbls<C> {
-    // fn generate_counterparty_handshake_client_state(
-    //     &self,
-    //     counterparty_state: <Ethereum as LightClient>::ClientState,
-    // ) -> impl Future<Output = Self::HandshakeClientState> + '_ {
-    //     async move { todo!() }
-    // }
-
     fn connection_open_init(
         &self,
         msg: MsgConnectionOpenInit,
@@ -1217,10 +1134,6 @@ impl<C: ChainSpec> Cometbls<C> {
                 panic!("received invalid response from eth_getProof, expected length of 1 but got {invalid:#?}");
             }
         };
-
-        // let found_value = U256::from(keccak256(encode(state.clone())));
-
-        // assert_eq!(found_value, proof.value);
 
         StateProof {
             state,

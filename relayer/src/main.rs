@@ -1055,30 +1055,3 @@ async fn relay_packets_inner<L1, L2>(
         })
         .await
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    use ethers::abi::AbiDecode;
-
-    #[test]
-    fn packet_decode() {
-        let data = hex_literal::hex!("08c379a000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000023414249206465636f64696e673a20737472756374206461746120746f6f2073686f72740000000000000000000000000000000000000000000000000000000000");
-
-        dbg!(Ics20Packet::decode(data));
-    }
-
-    #[test]
-    fn u256_str_roundtrip() {
-        let zero = U256::zero();
-
-        println!("{zero}");
-
-        let string = zero.to_string();
-
-        dbg!(&string);
-
-        dbg!(string.parse::<U256>().unwrap());
-    }
-}
