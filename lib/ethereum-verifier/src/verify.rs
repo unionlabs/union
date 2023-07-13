@@ -267,6 +267,16 @@ mod tests {
     const GENESIS_VALIDATORS_ROOT: &str =
         "270d43e74ce340de4bca2b1936beca0f4f5408d9e78aec4850920baf659d5b69";
     const GENESIS_TIME: u64 = 1686903632;
+    const VALID_STORAGE_ROOT: &str =
+        "5634f342b966b609cdd8d2f7ed43bb94702c9e83d4e974b08a3c2b8205fd85e3";
+    const VALID_PROOF_KEY: &str =
+        "b35cad2b263a62faaae30d8b3f51201fea5501d2df17d59a3eef2751403e684f";
+    const VALID_RLP_ENCODED_PROOF_VALUE: &str =
+        "9f272c7c82ac0f0adbfe4ae30614165bf3b94d49754ce8c1955cc255dcc829b5";
+    const VALID_PROOF: [&str; 2] = [
+        "f871808080a0b9f6e8d11cf768b8034f04b8b2ab45bb5ca792e1c6e3929cf8222a885631ffac808080808080808080a0f7202a06e8dc011d3123f907597f51546fe03542551af2c9c54d21ba0fbafc7280a0d1797d071b81705da736e39e75f1186c8e529ba339f7a7d12a9b4fafe33e43cc80",
+        "f842a03a8c7f353aebdcd6b56a67cd1b5829681a3c6e1695282161ab3faa6c3666d4c3a09f272c7c82ac0f0adbfe4ae30614165bf3b94d49754ce8c1955cc255dcc829b5"
+    ];
 
     struct Context {
         finalized_slot: u64,
@@ -375,6 +385,18 @@ mod tests {
         )
     }
 
+    fn parse_proofs() -> (H256, Vec<u8>, Vec<Vec<u8>>, Vec<u8>) {
+        (
+            hex::decode(VALID_STORAGE_ROOT).unwrap().try_into().unwrap(),
+            hex::decode(VALID_PROOF_KEY).unwrap(),
+            VALID_PROOF
+                .iter()
+                .map(|p| hex::decode(p).unwrap())
+                .collect::<Vec<_>>(),
+            hex::decode(VALID_RLP_ENCODED_PROOF_VALUE).unwrap(),
+        )
+    }
+
     #[test]
     fn validate_light_client_update_works() {
         let valid_header_data = read_valid_header_data();
@@ -407,8 +429,8 @@ mod tests {
     }
 
     #[test]
-    fn validate_light_client_update_fails_when_invalid_attested_header() {
-        let mut header = <Header<Minimal>>::try_from_proto(
+    fn validate_light_client_update_fails_when_invalid_header() {
+        let correct_header = <Header<Minimal>>::try_from_proto(
             serde_json::from_str(include_str!(
             "../../../light-clients/ethereum-light-client/src/test/sync_committee_update_1.json"
         ))
@@ -416,7 +438,16 @@ mod tests {
         )
         .unwrap();
 
+        let mut header = correct_header.clone();
         header.consensus_update.attested_header.execution.timestamp += 1;
+
+        assert_matches!(
+            do_validate_light_client_update(header),
+            Err(Error::InvalidMerkleBranch(_))
+        );
+
+        let mut header = correct_header;
+        header.consensus_update.finalized_header.execution.timestamp += 1;
 
         assert_matches!(
             do_validate_light_client_update(header),
@@ -526,9 +557,83 @@ mod tests {
     }
 
     #[test]
+    fn validate_light_client_update_fails_when_invalid_finality_branch() {
+        let mut header = <Header<Minimal>>::try_from_proto(
+            serde_json::from_str(include_str!(
+            "../../../light-clients/ethereum-light-client/src/test/sync_committee_update_1.json"
+        ))
+            .unwrap(),
+        )
+        .unwrap();
+
+        header.consensus_update.finality_branch[0] = Default::default();
+
+        assert_matches!(
+            do_validate_light_client_update(header),
+            Err(Error::InvalidMerkleBranch(_))
+        );
+    }
+
+    #[test]
+    fn validate_light_client_update_fails_when_invalid_next_sync_committee_branch() {
+        let mut header = <Header<Minimal>>::try_from_proto(
+            serde_json::from_str(include_str!(
+            "../../../light-clients/ethereum-light-client/src/test/sync_committee_update_1.json"
+        ))
+            .unwrap(),
+        )
+        .unwrap();
+
+        header.consensus_update.next_sync_committee_branch = Some(Default::default());
+
+        assert_matches!(
+            do_validate_light_client_update(header),
+            Err(Error::InvalidMerkleBranch(_))
+        );
+    }
+
+    #[test]
     fn verify_state_works() {
-        // TODO(aeryz): We already define this test in the light client, extract out the helper functions for
-        // the test so that we don't have to define everything twice.
+        let (storage_root, proof_key, proof, proof_value) = parse_proofs();
+
+        assert_eq!(
+            verify_state(storage_root, &proof_key, &proof,),
+            Ok(Some(proof_value))
+        );
+    }
+
+    #[test]
+    fn verify_state_fails_when_invalid_root() {
+        let (storage_root, proof_key, proof, _) = parse_proofs();
+        let storage_root = {
+            let mut root = storage_root.into_bytes();
+            root[0] = u8::MAX - root[0];
+            root.try_into().unwrap()
+        };
+
+        assert_matches!(
+            verify_state(storage_root, &proof_key, &proof,),
+            Err(Error::Trie(_))
+        );
+    }
+
+    #[test]
+    fn verify_state_returns_none_when_invalid_key() {
+        let (storage_root, mut proof_key, proof, _) = parse_proofs();
+        proof_key[0] = u8::MAX - proof_key[0];
+
+        assert_eq!(verify_state(storage_root, &proof_key, &proof,), Ok(None));
+    }
+
+    #[test]
+    fn verify_state_fails_when_invalid_proof() {
+        let (storage_root, proof_key, mut proof, _) = parse_proofs();
+        proof[0][0] = u8::MAX - proof[0][0];
+
+        assert_matches!(
+            verify_state(storage_root, &proof_key, &proof,),
+            Err(Error::Trie(_))
+        );
     }
 
     #[test]
@@ -555,8 +660,21 @@ mod tests {
 
     #[test]
     fn verify_storage_proof_works() {
-        // TODO(aeryz): We already define this test in the light client, extract out the helper functions for
-        // the test so that we don't have to define everything twice.
+        let (storage_root, proof_key, proof, proof_value) = parse_proofs();
+        assert_eq!(
+            verify_storage_proof(storage_root, &proof_key, &proof_value, &proof),
+            Ok(())
+        );
+    }
+
+    #[test]
+    fn verify_storage_proof_fails_when_incorrect_value() {
+        let (storage_root, proof_key, proof, mut proof_value) = parse_proofs();
+        proof_value[0] = u8::MAX - proof_value[0];
+        assert_eq!(
+            verify_storage_proof(storage_root, &proof_key, &proof_value, &proof),
+            Err(Error::ValueMismatch)
+        );
     }
 
     #[test]
