@@ -7,10 +7,11 @@ use ibc_types::{
             floorlog2, get_subtree_index, EXECUTION_PAYLOAD_INDEX, FINALIZED_ROOT_INDEX,
             NEXT_SYNC_COMMITTEE_INDEX,
         },
-        MIN_SYNC_COMMITTEE_PARTICIPANTS,
+        ChainSpec, MIN_SYNC_COMMITTEE_PARTICIPANTS,
     },
     ibc::lightclients::ethereum::{
-        light_client_header::LightClientHeader, light_client_update::LightClientUpdate,
+        fork_parameters::ForkParameters, light_client_header::LightClientHeader,
+        light_client_update::LightClientUpdate,
     },
 };
 use memory_db::{HashKey, MemoryDB};

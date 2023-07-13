@@ -8,7 +8,7 @@ use tree_hash::TreeHash;
 use typenum::Unsigned;
 
 use crate::{
-    primitives::{Epoch, Root, Slot, GENESIS_SLOT},
+    primitives::{Epoch, Slot, GENESIS_SLOT},
     Error, InvalidMerkleBranch,
 };
 
