@@ -103,7 +103,6 @@ library MsgMocks {
 
         bytes memory encodedConnection = ConnectionEnd.encode(connection);
         m.proofInit = abi.encodePacked(sha256(encodedConnection));
-        console.logBytes(m.proofInit);
 
         // for MockClient, it seems this value doesn't matter
         // it just checks sha256(clientStateBytes) == proofClient
@@ -161,7 +160,7 @@ library MsgMocks {
         ConnectionEnd.Data memory connection = ConnectionEnd.Data({
             client_id: "counterparty-client-id",
             versions: new ConnectionVersion.Data[](1),
-            state: ConnectionEnums.State.STATE_TRYOPEN,
+            state: ConnectionEnums.State.STATE_OPEN,
             delay_period: 0,
             counterparty: ConnectionCounterparty.Data({
                 client_id: clientId,
@@ -169,7 +168,9 @@ library MsgMocks {
                 prefix: CommitmentMerklePrefix.Data({key_prefix: bytes(commitment_prefix())})
             })
         });
-        connection.versions[0] = ConnectionVersion.Data({identifier: "1", features: new string[](0)});
+        connection.versions[0] = ConnectionVersion.Data({identifier: "1", features: new string[](2)});
+        connection.versions[0].features[0] = "ORDER_ORDERED";
+        connection.versions[0].features[1] = "ORDER_UNORDERED";
 
         bytes memory encodedConnection = ConnectionEnd.encode(connection);
         m.proofAck = abi.encodePacked(sha256(encodedConnection));

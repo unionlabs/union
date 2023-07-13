@@ -99,7 +99,16 @@ contract IBCConnectionTest is TestPlus {
             MsgMocks.connectionOpenConfirm(clientId, connId, proofHeight);
         handler.connectionOpenConfirm(msg_confirm);
 
-        //(connection,) = handler.getConnection(connId);
+        (connection,) = handler.getConnection(connId);
+        assertEq(connection.client_id, clientId, "clientId mismatch");
+        assertEq(connection.delay_period, msg_try.delayPeriod, "delayPeriod mismatch");
+        assertEq(connection.counterparty.encode(), msg_try.counterparty.encode(), "counterparty mismatch");
+        assert(connection.state == ConnectionEnums.State.STATE_OPEN);
+        assertEq(connection.versions.length, 1);
+        assertEq(connection.versions[0].features.length, 2);
+        assertEq(connection.versions[0].identifier, "1");
+        assertEq(connection.versions[0].features[0], "ORDER_ORDERED");
+        assertEq(connection.versions[0].features[1], "ORDER_UNORDERED");
     }
 
     function test_openingHandshake_chainA_duplicateIds() public {

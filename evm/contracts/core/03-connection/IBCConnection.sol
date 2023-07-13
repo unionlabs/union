@@ -1,6 +1,5 @@
 pragma solidity ^0.8.18;
 
-import "forge-std/console.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "../../proto/ibc/core/client/v1/client.sol";
 import "../../proto/ibc/core/connection/v1/connection.sol";
@@ -76,14 +75,12 @@ contract IBCConnection is IBCStore, IIBCConnectionHandshake {
             })
         });
 
-        console.log("verifyConnectionState");
         require(
             verifyConnectionState(
                 connection, msg_.proofHeight, msg_.proofInit, msg_.counterparty.connection_id, expectedConnection
             ),
             "connectionOpenTry: failed to verify connection state"
         );
-        console.log("verifyClientState");
         require(
             verifyClientState(
                 connection,
@@ -236,9 +233,6 @@ contract IBCConnection is IBCStore, IIBCConnectionHandshake {
         string memory connectionId,
         IbcCoreConnectionV1ConnectionEnd.Data memory counterpartyConnection
     ) private returns (bool) {
-        console.log("verifyConnectionState");
-        console.logBytes(IbcCoreConnectionV1ConnectionEnd.encode(counterpartyConnection));
-        console.logBytes(proof);
         return getClient(connection.client_id).verifyMembership(
             connection.client_id,
             height,
