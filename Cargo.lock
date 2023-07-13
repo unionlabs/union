@@ -1561,6 +1561,7 @@ dependencies = [
  "hash256-std-hasher",
  "hex",
  "ibc-types",
+ "lazy_static",
  "memory-db",
  "milagro_bls",
  "primitive-types",

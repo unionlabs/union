@@ -28,7 +28,7 @@ pub struct Account {
 #[derive(Debug, Default, RlpDecodable)]
 struct RawAccount {
     nonce: u64,
-    balance: Bytes,
+    balance: U256,
     storage_root: Bytes,
     code_hash: Bytes,
 }
@@ -40,11 +40,7 @@ impl Account {
 
         Ok(Account {
             nonce: raw_account.nonce,
-            balance: raw_account
-                .balance
-                .as_ref()
-                .try_into()
-                .map_err(|_| Error::RlpDecode)?,
+            balance: raw_account.balance,
             storage_root: raw_account
                 .storage_root
                 .to_vec()
