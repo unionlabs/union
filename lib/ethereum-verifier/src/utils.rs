@@ -155,7 +155,6 @@ pub fn validate_merkle_branch<'a>(
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use ibc_types::{
         ethereum_consts_traits::{
             consts::{floorlog2, EXECUTION_PAYLOAD_INDEX},
@@ -164,6 +163,8 @@ mod tests {
         ibc::lightclients::ethereum::header::Header,
         TryFromProto,
     };
+
+    use super::*;
 
     pub const SAMPLE_SLOT: u64 = 1235232;
     pub const SAMPLE_EPOCH: u64 = 10000;

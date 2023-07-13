@@ -401,7 +401,7 @@ mod tests {
     }
 
     #[test]
-    fn validate_light_client_update_fails_when_insufficiant_sync_committee_participants() {
+    fn validate_light_client_update_fails_when_insufficient_sync_committee_participants() {
         let mut header = <Header<Minimal>>::try_from_proto(
             serde_json::from_str(include_str!(
             "../../../light-clients/ethereum-light-client/src/test/sync_committee_update_1.json"
@@ -686,7 +686,7 @@ mod tests {
             let header =
                 <Header<Minimal>>::try_from_proto(serde_json::from_str(header).unwrap()).unwrap();
 
-            // Both finalized and attested headers should be verifyable
+            // Both finalized and attested headers should be verifiable
             assert_eq!(
                 is_valid_light_client_header(
                     &MINIMAL.fork_parameters,
