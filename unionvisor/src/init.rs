@@ -1,7 +1,9 @@
-use crate::network::Network;
-use color_eyre::Result;
 use std::{fs, io, path::Path};
+
+use color_eyre::Result;
 use tracing::{debug, field::display as as_display};
+
+use crate::network::Network;
 
 pub fn set_seeds(network: Network, file: impl AsRef<Path>) -> Result<()> {
     let file = file.as_ref();

@@ -53,8 +53,7 @@ where
 
 // REVIEW: Are these base64 helpers necessary anymore, since we rarely use the proto types directly?
 pub mod base64 {
-    use alloc::string::String;
-    use alloc::vec::Vec;
+    use alloc::{string::String, vec::Vec};
 
     use base64::prelude::*;
     use serde::{Deserialize, Deserializer, Serialize, Serializer};
@@ -75,8 +74,7 @@ pub mod base64 {
 }
 
 pub mod inner_base64 {
-    use alloc::string::String;
-    use alloc::vec::Vec;
+    use alloc::{string::String, vec::Vec};
 
     use base64::prelude::*;
     use serde::{Deserialize, Deserializer, Serialize, Serializer};
@@ -187,10 +185,8 @@ pub mod hex_string {
 }
 
 pub mod hex_string_list {
+    use alloc::{string::String, vec::Vec};
     use std::fmt::Debug;
-
-    use alloc::string::String;
-    use alloc::vec::Vec;
 
     use serde::{de, Deserialize, Deserializer, Serializer};
 
@@ -225,9 +221,9 @@ pub mod hex_string_list {
 }
 
 pub mod string {
+    use std::{fmt, str::FromStr};
+
     use serde::de::Deserialize;
-    use std::fmt;
-    use std::str::FromStr;
 
     pub fn serialize<S, T>(data: T, serializer: S) -> Result<S::Ok, S::Error>
     where

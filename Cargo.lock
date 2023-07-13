@@ -1510,6 +1510,32 @@ dependencies = [
 ]
 
 [[package]]
+name = "ethereum-light-client"
+version = "0.1.0"
+dependencies = [
+ "base64 0.21.2",
+ "bytes",
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "ethabi",
+ "ethereum-verifier",
+ "hex",
+ "ibc",
+ "ibc-types",
+ "prost",
+ "protos",
+ "rlp",
+ "schemars",
+ "serde",
+ "serde-json-wasm",
+ "serde_json",
+ "sha3",
+ "thiserror",
+ "tiny-keccak",
+ "wasm-light-client-types",
+]
+
+[[package]]
 name = "ethereum-types"
 version = "0.14.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1529,17 +1555,20 @@ dependencies = [
 name = "ethereum-verifier"
 version = "0.1.0"
 dependencies = [
+ "bytes",
  "ethereum_ssz",
  "hash-db",
  "hash256-std-hasher",
  "hex",
  "ibc-types",
+ "lazy_static",
  "memory-db",
  "milagro_bls",
  "primitive-types",
  "rlp",
  "serde",
  "serde-utils",
+ "serde_json",
  "sha2 0.10.7",
  "sha3",
  "ssz_types",
@@ -1763,6 +1792,7 @@ dependencies = [
  "bytes",
  "enr",
  "ethers-core",
+ "futures-channel",
  "futures-core",
  "futures-timer",
  "futures-util",
@@ -5316,32 +5346,6 @@ name = "unicode-xid"
 version = "0.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f962df74c8c05a667b5ee8bcf162993134c104e96440b663c8daa176dc772d8c"
-
-[[package]]
-name = "union-ethereum-lc"
-version = "0.1.0"
-dependencies = [
- "base64 0.21.2",
- "bytes",
- "cosmwasm-schema",
- "cosmwasm-std",
- "ethabi",
- "ethereum-verifier",
- "hex",
- "ibc",
- "ibc-types",
- "prost",
- "protos",
- "rlp",
- "schemars",
- "serde",
- "serde-json-wasm",
- "serde_json",
- "sha3",
- "thiserror",
- "tiny-keccak",
- "wasm-light-client-types",
-]
 
 [[package]]
 name = "unionvisor"

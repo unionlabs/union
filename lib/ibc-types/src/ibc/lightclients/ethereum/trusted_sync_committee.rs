@@ -2,14 +2,11 @@ use serde::{Deserialize, Serialize};
 use ssz::{Decode, Encode};
 use tree_hash::TreeHash;
 
-use crate::IntoProto;
-use crate::TryFromProto;
-use crate::TypeUrl;
 use crate::{
     errors::MissingField,
     ethereum_consts_traits::SYNC_COMMITTEE_SIZE,
     ibc::{core::client::height::Height, lightclients::ethereum::sync_committee::SyncCommittee},
-    TryFromProtoErrorOf,
+    IntoProto, TryFromProto, TryFromProtoErrorOf, TypeUrl,
 };
 
 #[derive(Clone, Debug, PartialEq, Encode, Decode, TreeHash, Serialize, Deserialize)]

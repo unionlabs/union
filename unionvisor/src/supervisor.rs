@@ -1,9 +1,3 @@
-use crate::{
-    logging::LogFormat,
-    symlinker::Symlinker,
-    watcher::{FileReader, FileReaderError},
-};
-use color_eyre::Result;
 use std::{
     ffi::{OsStr, OsString},
     fs::create_dir_all,
@@ -11,7 +5,15 @@ use std::{
     process::{Child, ExitStatus},
     time::Duration,
 };
+
+use color_eyre::Result;
 use tracing::{debug, error, field::display as as_display, info, warn};
+
+use crate::{
+    logging::LogFormat,
+    symlinker::Symlinker,
+    watcher::{FileReader, FileReaderError},
+};
 
 /// A process supervisor for the uniond binary, which can start, gracefully exit and backup uniond data.
 pub struct Supervisor {
@@ -216,10 +218,12 @@ pub fn run_and_upgrade<S: AsRef<OsStr>, I: IntoIterator<Item = S> + Clone>(
 
 #[cfg(test)]
 mod tests {
+    use std::fs;
+
+    use tracing_test::traced_test;
+
     use super::*;
     use crate::{bundle::Bundle, testdata};
-    use std::fs;
-    use tracing_test::traced_test;
 
     #[test]
     #[traced_test]

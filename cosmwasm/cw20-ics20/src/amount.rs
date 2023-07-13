@@ -1,8 +1,10 @@
-use crate::error::ContractError;
+use std::convert::TryInto;
+
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Coin, Uint128};
 use cw20::Cw20Coin;
-use std::convert::TryInto;
+
+use crate::error::ContractError;
 
 const CW20_DENOM_PREFIX: &str = "cw20:";
 

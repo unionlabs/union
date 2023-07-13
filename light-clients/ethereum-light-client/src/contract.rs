@@ -1,14 +1,5 @@
-use crate::{
-    consensus_state::TrustedConsensusState,
-    context::LightClientContext,
-    custom_query::{query_aggregate_public_keys, CustomQuery, VerificationContext},
-    errors::Error,
-    eth_encoding::generate_commitment_key,
-    msg::{ExecuteMsg, InstantiateMsg, QueryMsg},
-    state::{read_client_state, read_consensus_state, save_consensus_state, update_client_state},
-    update::apply_light_client_update,
-    Config,
-};
+use std::str::FromStr;
+
 use cosmwasm_std::{
     entry_point, to_binary, Binary, Deps, DepsMut, Env, MessageInfo, QueryResponse, Response,
     StdError, StdResult,
@@ -29,9 +20,20 @@ use ibc_types::{
     TryFromProto,
 };
 use sha3::Digest;
-use std::str::FromStr;
 use wasm_light_client_types::msg::{
     ClientMessage, ContractResult, MerklePath, Status, StatusResponse,
+};
+
+use crate::{
+    consensus_state::TrustedConsensusState,
+    context::LightClientContext,
+    custom_query::{query_aggregate_public_keys, CustomQuery, VerificationContext},
+    errors::Error,
+    eth_encoding::generate_commitment_key,
+    msg::{ExecuteMsg, InstantiateMsg, QueryMsg},
+    state::{read_client_state, read_consensus_state, save_consensus_state, update_client_state},
+    update::apply_light_client_update,
+    Config,
 };
 
 #[entry_point]
@@ -208,9 +210,7 @@ pub fn update_header<C: ChainSpec>(
     let timestamp = header.timestamp;
 
     let mut wasm_client_state = read_client_state(deps.as_ref())?;
-
     let genesis_validators_root = wasm_client_state.data.genesis_validators_root.clone();
-
     let ctx = LightClientContext::new(&wasm_client_state.data, trusted_consensus_state);
 
     validate_light_client_update::<LightClientContext<C>, VerificationContext>(
@@ -291,8 +291,6 @@ fn query_status() -> StatusResponse {
 mod test {
     use std::marker::PhantomData;
 
-    use super::*;
-    use crate::state::{save_wasm_client_state, save_wasm_consensus_state};
     use cosmwasm_std::{
         testing::{MockApi, MockQuerier, MockQuerierCustomHandlerResult, MockStorage},
         OwnedDeps, SystemResult,
@@ -319,6 +317,9 @@ mod test {
         IntoProto,
     };
     use prost::Message;
+
+    use super::*;
+    use crate::state::{save_wasm_client_state, save_wasm_consensus_state};
 
     /// These values are obtained by uploading a dummy contract with the necessary types to the devnet and
     /// reading the values by `eth_getProof` RPC call.

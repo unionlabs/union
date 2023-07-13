@@ -117,7 +117,7 @@ impl<C: ChainSpec> BeaconApiClient<C> {
     async fn get_json<T: DeserializeOwned>(&self, path: impl Into<String>) -> Result<T> {
         let url = format!("{}{}", self.base_url, path.into());
 
-        tracing::debug!("request_get: url={}", url);
+        tracing::debug!("get_json: url={}", url);
 
         let res = self.client.get(url).send().await?;
 
@@ -125,7 +125,7 @@ impl<C: ChainSpec> BeaconApiClient<C> {
             StatusCode::OK => {
                 let bytes = res.bytes().await?;
 
-                tracing::debug!("request_get: response={}", String::from_utf8_lossy(&bytes));
+                tracing::trace!("get_json: response={}", String::from_utf8_lossy(&bytes));
 
                 Ok(serde_json::from_slice(&bytes).map_err(Error::Json)?)
             }

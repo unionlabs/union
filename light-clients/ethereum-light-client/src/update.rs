@@ -1,4 +1,3 @@
-use crate::errors::Error;
 use ethereum_verifier::{
     compute_sync_committee_period_at_slot, compute_timestamp_at_slot, primitives::Hash32,
     LightClientContext,
@@ -7,6 +6,8 @@ use ibc_types::ibc::lightclients::{
     ethereum::{self, light_client_update::LightClientUpdate},
     wasm,
 };
+
+use crate::errors::Error;
 
 // TODO(aeryz): This is an ethereum spec implementation. Although implementing this in here is more performant, we might also
 // consider moving this to `ethereum-verifier`, and calling it here, so that all spec related updates/verifications will be at

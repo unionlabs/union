@@ -1,4 +1,4 @@
-use std::marker::PhantomData;
+use std::{collections::BTreeMap, marker::PhantomData};
 
 use bip32::XPrv;
 use contracts::glue::{
@@ -7,7 +7,7 @@ use contracts::glue::{
     TendermintVersionConsensusData, UnionIbcLightclientsCometblsV1HeaderData,
 };
 use ethers::types::H256;
-use futures::{Future, FutureExt};
+use futures::{Future, FutureExt, Stream, StreamExt};
 use ibc_types::{
     ethereum_consts_traits::ChainSpec,
     ibc::{
@@ -16,7 +16,7 @@ use ibc_types::{
                 channel::Channel, msg_channel_open_ack::MsgChannelOpenAck,
                 msg_channel_open_confirm::MsgChannelOpenConfirm,
                 msg_channel_open_init::MsgChannelOpenInit, msg_channel_open_try::MsgChannelOpenTry,
-                msg_recv_packet::MsgRecvPacket,
+                msg_recv_packet::MsgRecvPacket, packet::Packet,
             },
             client::height::Height,
             commitment::merkle_root::MerkleRoot,
@@ -49,16 +49,16 @@ use protos::{
     union::prover::api::v1::{union_prover_api_client, ProveRequest},
 };
 use sha2::Digest;
-use tendermint_rpc::{Client, WebSocketClient};
-use tokio::task::JoinHandle;
+use tendermint_rpc::{
+    event::EventData, query::EventType, Client, SubscriptionClient, WebSocketClient,
+};
 
 use crate::chain::{evm::Cometbls, Connect, LightClient, StateProof};
 
 /// The 08-wasm light client running on the union chain.
 pub struct Ethereum<C: ChainSpec> {
-    signer: CosmosAccountId,
+    pub signer: CosmosAccountId,
     pub tm_client: WebSocketClient,
-    pub driver_handle: JoinHandle<Result<(), tendermint_rpc::Error>>,
     wasm_code_id: H256,
     pub chain_id: String,
     pub chain_revision: u64,
@@ -74,7 +74,7 @@ impl<C: ChainSpec> Ethereum<C> {
                 .await
                 .unwrap();
 
-        let driver_handle = tokio::spawn(async move { driver.run().await });
+        tokio::spawn(async move { driver.run().await });
 
         let chain_id = tm_client
             .status()
@@ -89,7 +89,6 @@ impl<C: ChainSpec> Ethereum<C> {
         Self {
             signer: CosmosAccountId::new(signer, "union".to_string()),
             tm_client,
-            driver_handle,
             wasm_code_id,
             chain_id,
             chain_revision,
@@ -195,7 +194,7 @@ impl<C: ChainSpec> Ethereum<C> {
         response
     }
 
-    fn make_height(&self, height: u64) -> Height {
+    pub fn make_height(&self, height: u64) -> Height {
         Height {
             revision_number: self.chain_revision,
             revision_height: height,
@@ -510,6 +509,120 @@ impl<C: ChainSpec> LightClient for Ethereum<C> {
     fn process_height_for_counterparty(&self, height: Height) -> impl Future<Output = Height> + '_ {
         async move { height }
     }
+
+    fn packet_commitment_proof(
+        &self,
+        port_id: String,
+        channel_id: String,
+        sequence: u64,
+        self_height: Height,
+    ) -> impl Future<Output = StateProof<Vec<u8>>> + '_ {
+        async move {
+            let path =
+                format!("commitments/ports/{port_id}/channels/{channel_id}/sequences/{sequence}");
+
+            let query_result = self
+                .tm_client
+                .abci_query(
+                    Some("store/ibc/key".to_string()),
+                    path,
+                    Some(self_height.revision_height.try_into().unwrap()),
+                    true,
+                )
+                .await
+                .unwrap();
+
+            StateProof {
+                state: query_result.value,
+                proof: commitment_v1::MerkleProof {
+                    proofs: query_result
+                        .proof
+                        .unwrap()
+                        .ops
+                        .into_iter()
+                        .map(|op| ics23_v1::CommitmentProof::decode(op.data.as_slice()).unwrap())
+                        .collect::<Vec<_>>(),
+                }
+                .encode_to_vec(),
+                proof_height: self.make_height(query_result.height.value()),
+            }
+        }
+    }
+
+    fn packet_stream(
+        &self,
+    ) -> impl Future<Output = impl Stream<Item = (Height, Packet)> + '_> + '_ {
+        async move {
+            self.tm_client
+                .subscribe(EventType::Tx.into())
+                .await
+                .unwrap()
+                .filter_map(move |event| async move {
+                    let event = event.unwrap();
+                    tracing::info!(?event.data);
+                    match event.data {
+                        EventData::Tx { tx_result } => {
+                            tx_result.result.events.into_iter().find_map(|e| {
+                                (e.kind == "send_packet")
+                                    .then(|| {
+                                        e.attributes
+                                            .into_iter()
+                                            .map(|attr| (attr.key, attr.value))
+                                            .collect::<BTreeMap<_, _>>()
+                                    })
+                                    .map(|send_packet_event| {
+                                        (
+                                            Height {
+                                                revision_number: self.chain_revision,
+                                                revision_height: tx_result
+                                                    .height
+                                                    .try_into()
+                                                    .unwrap(),
+                                            },
+                                            Packet {
+                                                sequence: send_packet_event["packet_sequence"]
+                                                    .parse()
+                                                    .unwrap(),
+                                                source_port: send_packet_event["packet_src_port"]
+                                                    .clone(),
+                                                source_channel: send_packet_event
+                                                    ["packet_src_channel"]
+                                                    .clone(),
+                                                destination_port: send_packet_event
+                                                    ["packet_dst_port"]
+                                                    .clone(),
+                                                destination_channel: send_packet_event
+                                                    ["packet_dst_channel"]
+                                                    .clone(),
+                                                data: ethers::utils::hex::decode(
+                                                    &send_packet_event["packet_data_hex"],
+                                                )
+                                                .unwrap(),
+                                                timeout_height: {
+                                                    let (revision, height) = send_packet_event
+                                                        ["packet_timeout_height"]
+                                                        .split_once('-')
+                                                        .unwrap();
+
+                                                    Height {
+                                                        revision_number: revision.parse().unwrap(),
+                                                        revision_height: height.parse().unwrap(),
+                                                    }
+                                                },
+                                                timeout_timestamp: send_packet_event
+                                                    ["packet_timeout_timestamp"]
+                                                    .parse()
+                                                    .unwrap(),
+                                            },
+                                        )
+                                    })
+                            })
+                        }
+                        _ => None,
+                    }
+                })
+        }
+    }
 }
 
 impl<C: ChainSpec> Connect<Cometbls<C>> for Ethereum<C> {
@@ -707,8 +820,14 @@ impl<C: ChainSpec> Connect<Cometbls<C>> for Ethereum<C> {
         }
     }
 
-    fn recv_packet(&self, _msg: MsgRecvPacket) -> impl futures::Future<Output = ()> + '_ {
-        async move { todo!() }
+    fn recv_packet(&self, msg: MsgRecvPacket) -> impl futures::Future<Output = ()> + '_ {
+        async move {
+            self.broadcast_tx_commit([google::protobuf::Any {
+                type_url: "/ibc.core.channel.v1.MsgRecvPacket".to_string(),
+                value: msg.into_proto_with_signer(&self.signer).encode_to_vec(),
+            }])
+            .await;
+        }
     }
 
     fn generate_counterparty_client_state(

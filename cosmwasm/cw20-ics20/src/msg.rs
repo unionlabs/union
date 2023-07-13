@@ -1,7 +1,7 @@
-use crate::amount::Amount;
-use crate::state::ChannelInfo;
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cw20::Cw20ReceiveMsg;
+
+use crate::{amount::Amount, state::ChannelInfo};
 
 #[cw_serde]
 pub struct InitMsg {

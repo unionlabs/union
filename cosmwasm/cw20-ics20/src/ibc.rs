@@ -1,9 +1,3 @@
-use crate::amount::Amount;
-use crate::error::{ContractError, Never};
-use crate::state::{
-    reduce_channel_balance, undo_reduce_channel_balance, ChannelInfo, ReplyArgs, ALLOW_LIST,
-    CHANNEL_INFO, CONFIG, REPLY_ARGS,
-};
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
     attr, entry_point, from_binary, to_binary, BankMsg, Binary, CosmosMsg, Deps, DepsMut, Env,
@@ -13,6 +7,15 @@ use cosmwasm_std::{
 };
 use cw20::Cw20ExecuteMsg;
 use ethabi::{ParamType, Token};
+
+use crate::{
+    amount::Amount,
+    error::{ContractError, Never},
+    state::{
+        reduce_channel_balance, undo_reduce_channel_balance, ChannelInfo, ReplyArgs, ALLOW_LIST,
+        CHANNEL_INFO, CONFIG, REPLY_ARGS,
+    },
+};
 
 pub const ICS20_VERSION: &str = "ics20-1";
 pub const ICS20_ORDERING: IbcOrder = IbcOrder::Unordered;
@@ -414,13 +417,19 @@ fn send_amount(amount: Amount, recipient: String) -> CosmosMsg {
 
 #[cfg(test)]
 mod test {
-    use super::*;
-    use crate::contract::{execute, migrate, query_channel};
-    use crate::msg::{ExecuteMsg, MigrateMsg, TransferMsg};
-    use crate::test_helpers::*;
-    use cosmwasm_std::testing::{mock_env, mock_info};
-    use cosmwasm_std::{coins, to_vec, IbcEndpoint, IbcMsg, IbcTimeout, Timestamp};
+    use cosmwasm_std::{
+        coins,
+        testing::{mock_env, mock_info},
+        to_vec, IbcEndpoint, IbcMsg, IbcTimeout, Timestamp,
+    };
     use cw20::Cw20ReceiveMsg;
+
+    use super::*;
+    use crate::{
+        contract::{execute, migrate, query_channel},
+        msg::{ExecuteMsg, MigrateMsg, TransferMsg},
+        test_helpers::*,
+    };
 
     #[test]
     fn check_ack_json() {

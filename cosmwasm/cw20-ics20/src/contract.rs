@@ -1,15 +1,3 @@
-use crate::amount::Amount;
-use crate::error::ContractError;
-use crate::ibc::Ics20Packet;
-use crate::migrations::{v1, v2};
-use crate::msg::{
-    AllowMsg, AllowedInfo, AllowedResponse, ChannelResponse, ConfigResponse, ExecuteMsg, InitMsg,
-    ListAllowedResponse, ListChannelsResponse, MigrateMsg, PortResponse, QueryMsg, TransferMsg,
-};
-use crate::state::{
-    increase_channel_balance, AllowInfo, Config, ADMIN, ALLOW_LIST, CHANNEL_INFO, CHANNEL_STATE,
-    CONFIG,
-};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
@@ -21,6 +9,22 @@ use cw20::{Cw20Coin, Cw20ReceiveMsg};
 use cw_storage_plus::Bound;
 use cw_utils::{maybe_addr, nonpayable, one_coin};
 use semver::Version;
+
+use crate::{
+    amount::Amount,
+    error::ContractError,
+    ibc::Ics20Packet,
+    migrations::{v1, v2},
+    msg::{
+        AllowMsg, AllowedInfo, AllowedResponse, ChannelResponse, ConfigResponse, ExecuteMsg,
+        InitMsg, ListAllowedResponse, ListChannelsResponse, MigrateMsg, PortResponse, QueryMsg,
+        TransferMsg,
+    },
+    state::{
+        increase_channel_balance, AllowInfo, Config, ADMIN, ALLOW_LIST, CHANNEL_INFO,
+        CHANNEL_STATE, CONFIG,
+    },
+};
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:cw20-ics20";
@@ -375,12 +379,15 @@ fn list_allowed(
 
 #[cfg(test)]
 mod test {
-    use super::*;
-    use crate::state::ChannelState;
-    use crate::test_helpers::*;
-    use cosmwasm_std::testing::{mock_env, mock_info, MOCK_CONTRACT_ADDR};
-    use cosmwasm_std::{coin, coins, CosmosMsg, IbcMsg, StdError, Uint128};
+    use cosmwasm_std::{
+        coin, coins,
+        testing::{mock_env, mock_info, MOCK_CONTRACT_ADDR},
+        CosmosMsg, IbcMsg, StdError, Uint128,
+    };
     use cw_utils::PaymentError;
+
+    use super::*;
+    use crate::{state::ChannelState, test_helpers::*};
 
     #[test]
     fn setup_and_query() {

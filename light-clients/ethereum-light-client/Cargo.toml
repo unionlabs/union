@@ -1,5 +1,5 @@
 [package]
-name = "union-ethereum-lc"
+name = "ethereum-light-client"
 version = "0.1.0"
 authors = ["Union Labs"]
 edition = "2021"
