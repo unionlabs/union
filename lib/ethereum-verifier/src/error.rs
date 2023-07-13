@@ -2,7 +2,7 @@ use ibc_types::ethereum::H256;
 use milagro_bls::AmclError;
 use trie_db::TrieError;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct InvalidMerkleBranch {
     pub leaf: H256,
     pub branch: Vec<H256>,
@@ -11,7 +11,7 @@ pub struct InvalidMerkleBranch {
     pub root: H256,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Error {
     InvalidMerkleBranch(InvalidMerkleBranch),
     InvalidChainVersion,

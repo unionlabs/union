@@ -1555,17 +1555,20 @@ dependencies = [
 name = "ethereum-verifier"
 version = "0.1.0"
 dependencies = [
+ "bytes",
  "ethereum_ssz",
  "hash-db",
  "hash256-std-hasher",
  "hex",
  "ibc-types",
+ "lazy_static",
  "memory-db",
  "milagro_bls",
  "primitive-types",
  "rlp",
  "serde",
  "serde-utils",
+ "serde_json",
  "sha2 0.10.7",
  "sha3",
  "ssz_types",

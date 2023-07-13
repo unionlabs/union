@@ -210,9 +210,7 @@ pub fn update_header<C: ChainSpec>(
     let timestamp = header.timestamp;
 
     let mut wasm_client_state = read_client_state(deps.as_ref())?;
-
     let genesis_validators_root = wasm_client_state.data.genesis_validators_root.clone();
-
     let ctx = LightClientContext::new(&wasm_client_state.data, trusted_consensus_state);
 
     validate_light_client_update::<LightClientContext<C>, VerificationContext>(
