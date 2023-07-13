@@ -1,3 +1,7 @@
+use bytes::Bytes;
+use primitive_types::U256;
+use rlp::{Decodable, RlpDecodable};
+
 use crate::error::Error;
 
 pub type Root = [u8; 32];
@@ -13,34 +17,44 @@ pub const FAR_FUTURE_EPOCH: Epoch = Epoch::MAX;
 pub const BLS_WITHDRAWAL_PREFIX: u8 = 0x00;
 pub const ETH1_ADDRESS_WITHDRAWAL_PREFIX: u8 = 0x01;
 
-// TODO: Derive RlpDecodable instead of implementing it manually
 #[derive(Debug, Clone, Default)]
 pub struct Account {
     pub nonce: u64,
-    // REVIEW: Is this arbitrary bytes? Or a U256?
-    pub balance: Vec<u8>,
+    pub balance: U256,
     pub storage_root: Hash32,
     pub code_hash: Hash32,
+}
+
+#[derive(Debug, Default, RlpDecodable)]
+struct RawAccount {
+    nonce: u64,
+    balance: Bytes,
+    storage_root: Bytes,
+    code_hash: Bytes,
 }
 
 impl Account {
     pub fn from_rlp_bytes(bz: &[u8]) -> Result<Account, Error> {
         let r = rlp::Rlp::new(bz);
+        let raw_account = RawAccount::decode(&r).map_err(|_| Error::RlpDecode)?;
+
         Ok(Account {
-            nonce: r.val_at::<u64>(0).map_err(|_| Error::RlpDecode)?,
-            balance: r.val_at::<Vec<u8>>(1).map_err(|_| Error::RlpDecode)?,
-            storage_root: Hash32::try_from(
-                r.val_at::<Vec<u8>>(2)
-                    .map_err(|_| Error::RlpDecode)?
-                    .as_slice(),
-            )
-            .map_err(|_| Error::InvalidHash)?,
-            code_hash: Hash32::try_from(
-                r.val_at::<Vec<u8>>(3)
-                    .map_err(|_| Error::RlpDecode)?
-                    .as_slice(),
-            )
-            .map_err(|_| Error::InvalidHash)?,
+            nonce: raw_account.nonce,
+            balance: raw_account
+                .balance
+                .as_ref()
+                .try_into()
+                .map_err(|_| Error::RlpDecode)?,
+            storage_root: raw_account
+                .storage_root
+                .to_vec()
+                .try_into()
+                .map_err(|_| Error::RlpDecode)?,
+            code_hash: raw_account
+                .code_hash
+                .to_vec()
+                .try_into()
+                .map_err(|_| Error::RlpDecode)?,
         })
     }
 }

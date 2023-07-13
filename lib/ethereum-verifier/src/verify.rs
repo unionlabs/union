@@ -198,7 +198,7 @@ pub fn verify_account_storage_root(
 ) -> Result<(), Error> {
     match verify_state(root, address.as_ref(), proof)? {
         Some(account) => {
-            let account = Account::from_rlp_bytes(account.as_ref()).unwrap();
+            let account = Account::from_rlp_bytes(account.as_ref())?;
             if account.storage_root == *storage_root {
                 Ok(())
             } else {

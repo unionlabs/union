@@ -1555,6 +1555,7 @@ dependencies = [
 name = "ethereum-verifier"
 version = "0.1.0"
 dependencies = [
+ "bytes",
  "ethereum_ssz",
  "hash-db",
  "hash256-std-hasher",
