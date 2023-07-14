@@ -1,7 +1,7 @@
 use crate::{
     errors::{MissingField, UnknownEnumVariant},
     ibc::core::connection::{counterparty::Counterparty, state::State, version::Version},
-    IntoProto, TypeUrl,
+    IntoProto, TryFromProto, TypeUrl,
 };
 
 #[derive(Debug, Clone)]
@@ -56,6 +56,10 @@ impl IntoProto for ConnectionEnd {
     type Proto = protos::ibc::core::connection::v1::ConnectionEnd;
 }
 
+impl TryFromProto for ConnectionEnd {
+    type Proto = protos::ibc::core::connection::v1::ConnectionEnd;
+}
+
 impl TypeUrl for protos::ibc::core::connection::v1::ConnectionEnd {
     const TYPE_URL: &'static str = "/ibc.core.connection.v1.ConnectionEnd";
 }
@@ -102,5 +106,18 @@ impl TryFrom<contracts::ibc_handler::IbcCoreConnectionV1ConnectionEndData> for C
             counterparty: val.counterparty.into(),
             delay_period: val.delay_period,
         })
+    }
+}
+
+#[cfg(feature = "ethabi")]
+impl From<ConnectionEnd> for contracts::ibc_handler::IbcCoreConnectionV1ConnectionEndData {
+    fn from(val: ConnectionEnd) -> Self {
+        Self {
+            client_id: val.client_id,
+            versions: val.versions.into_iter().map(Into::into).collect(),
+            state: val.state as u8,
+            counterparty: val.counterparty.into(),
+            delay_period: val.delay_period,
+        }
     }
 }

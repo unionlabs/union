@@ -1,5 +1,4 @@
 use std::{
-    fmt::Debug,
     ops::Div,
     sync::Arc,
     time::{SystemTime, UNIX_EPOCH},
@@ -9,17 +8,20 @@ use beacon_api::client::BeaconApiClient;
 use contracts::{
     glue::UnionIbcLightclientsCometblsV1HeaderData,
     ibc_handler::{
-        self, GeneratedConnectionIdentifierFilter, IBCHandler, IBCHandlerEvents,
-        IbcCoreChannelV1ChannelData, IbcCoreConnectionV1ConnectionEndData, SendPacketFilter,
+        self, GeneratedConnectionIdentifierFilter, GetChannelCall, GetChannelReturn,
+        GetClientStateCall, GetClientStateReturn, GetConnectionCall, GetConnectionReturn,
+        GetConsensusStateCall, GetConsensusStateReturn, GetHashedPacketCommitmentCall,
+        GetHashedPacketCommitmentReturn, IBCHandler, IBCHandlerEvents, SendPacketFilter,
     },
     ics20_bank::ICS20Bank,
 };
 use ethers::{
-    abi::AbiEncode,
+    abi::{AbiEncode, Tokenizable},
+    contract::EthCall,
     prelude::{decode_logs, k256::ecdsa, parse_log, LogMeta, SignerMiddleware},
     providers::{Middleware, Provider, Ws},
     signers::{LocalWallet, Signer, Wallet},
-    types::{H160, H256, U256, U64},
+    types::{Bytes, H160, H256, U256, U64},
     utils::keccak256,
 };
 use futures::{Future, Stream, StreamExt};
@@ -29,14 +31,14 @@ use ibc_types::{
     ibc::{
         core::{
             channel::{
-                channel::Channel, msg_channel_open_ack::MsgChannelOpenAck,
+                msg_channel_open_ack::MsgChannelOpenAck,
                 msg_channel_open_confirm::MsgChannelOpenConfirm,
                 msg_channel_open_init::MsgChannelOpenInit, msg_channel_open_try::MsgChannelOpenTry,
                 msg_recv_packet::MsgRecvPacket, packet::Packet,
             },
             client::height::Height,
             connection::{
-                connection_end::ConnectionEnd, msg_channel_open_ack::MsgConnectionOpenAck,
+                msg_channel_open_ack::MsgConnectionOpenAck,
                 msg_channel_open_confirm::MsgConnectionOpenConfirm,
                 msg_channel_open_init::MsgConnectionOpenInit,
                 msg_channel_open_try::MsgConnectionOpenTry,
@@ -57,22 +59,31 @@ use ibc_types::{
             wasm,
         },
     },
-    IntoProto,
+    IntoProto, TryFromProto,
 };
 use prost::Message;
 use protos::{google, union::ibc::lightclients::ethereum::v1 as ethereum_v1};
 use reqwest::Url;
 use typenum::Unsigned;
 
-use crate::chain::{cosmos::Ethereum, Connect, LightClient, StateProof};
+use crate::chain::{
+    cosmos::Ethereum,
+    proof::{
+        ChannelEndPath, ClientConsensusStatePath, ClientStatePath, CommitmentPath, ConnectionPath,
+        IbcPath,
+    },
+    Connect, IbcStateRead, LightClient, StateProof,
+};
 
 pub const COMETBLS_CLIENT_TYPE: &str = "cometbls-new";
+
+type CometblsMiddleware = SignerMiddleware<Provider<Ws>, Wallet<ecdsa::SigningKey>>;
 
 /// The solidity light client, tracking the state of the 08-wasm light client on union.
 // TODO(benluelo): Generic over middleware?
 pub struct Cometbls<C: ChainSpec> {
-    pub ibc_handler: IBCHandler<SignerMiddleware<Provider<Ws>, Wallet<ecdsa::SigningKey>>>,
-    pub ics20_bank: ICS20Bank<SignerMiddleware<Provider<Ws>, Wallet<ecdsa::SigningKey>>>,
+    pub ibc_handler: IBCHandler<CometblsMiddleware>,
+    pub ics20_bank: ICS20Bank<CometblsMiddleware>,
     pub provider: Provider<Ws>,
     cometbls_client_address: H160,
     ics20_transfer_address: H160,
@@ -105,6 +116,8 @@ impl<C: ChainSpec> LightClient for Cometbls<C> {
         Any<wasm::consensus_state::ConsensusState<cometbls::consensus_state::ConsensusState>>;
     // TODO(benluelo): Better type for this
     type UpdateClientMessage = UnionIbcLightclientsCometblsV1HeaderData;
+
+    type IbcStateRead = EthStateRead;
 
     fn chain_id(&self) -> impl Future<Output = String> + '_ {
         async move { self.provider.get_chainid().await.unwrap().to_string() }
@@ -206,169 +219,6 @@ impl<C: ChainSpec> LightClient for Cometbls<C> {
         }
     }
 
-    fn consensus_state_proof(
-        &self,
-        client_id: String,
-        counterparty_height: Height,
-        self_height: Height,
-    ) -> impl Future<Output = StateProof<Self::ConsensusState>> + '_ {
-        async move {
-            // tracing::info!(?self_height);
-            // self.wait_for_beacon_block(self_height).await;
-            let self_height = self.execution_height(self_height).await;
-            self.wait_for_execution_block(self_height.revision_height.into())
-                .await;
-
-            let (consensus_state_bytes, is_found) = self
-                .ibc_handler
-                .get_consensus_state(client_id.clone(), counterparty_height.into())
-                .block(self_height.revision_height)
-                .await
-                .unwrap();
-
-            assert!(is_found);
-
-            dbg!(&consensus_state_bytes.to_string());
-
-            // let optimized_consensus_state =
-            //     OptimizedConsensusState::decode(&consensus_state_bytes).unwrap();
-
-            let cometbls_consensus_state: Self::ConsensusState =
-                google::protobuf::Any::decode(&*consensus_state_bytes)
-                    .unwrap()
-                    .try_into()
-                    .unwrap();
-
-            tracing::info!(?cometbls_consensus_state);
-
-            self.get_proof(
-                format!(
-                    "clients/{client_id}/consensusStates/{}-{}",
-                    counterparty_height.revision_number, counterparty_height.revision_height
-                ),
-                self_height,
-                cometbls_consensus_state.clone(),
-                // AbiEncode::encode,
-                |x| x.into_proto().encode_to_vec(),
-            )
-            .await
-        }
-    }
-
-    fn client_state_proof(
-        &self,
-        client_id: String,
-        self_height: Height,
-    ) -> impl Future<Output = StateProof<Self::ClientState>> + '_ {
-        async move {
-            // tracing::info!(?self_height);
-            // self.wait_for_beacon_block(self_height).await;
-            let self_height = self.execution_height(self_height).await;
-            self.wait_for_execution_block(self_height.revision_height.into())
-                .await;
-
-            let block_number = self.provider.get_block_number().await.unwrap();
-            tracing::info!(?block_number, ?self_height);
-
-            let (client_state_bytes, is_found) = self
-                .ibc_handler
-                .get_client_state(client_id.clone())
-                .block(self_height.revision_height)
-                .await
-                .unwrap();
-
-            assert!(is_found);
-
-            let cometbls_client_state: Self::ClientState =
-                google::protobuf::Any::decode(&*client_state_bytes)
-                    .unwrap()
-                    .try_into()
-                    .unwrap();
-
-            let block_number = self.provider.get_block_number().await.unwrap();
-            tracing::info!(?block_number);
-
-            self.get_proof(
-                format!("clients/{client_id}/clientState"),
-                self_height,
-                cometbls_client_state,
-                |x| x.into_proto().encode_to_vec(),
-            )
-            .await
-        }
-    }
-
-    fn connection_state_proof(
-        &self,
-        connection_id: String,
-        self_height: Height,
-    ) -> impl Future<Output = StateProof<ConnectionEnd>> + '_ {
-        async move {
-            // tracing::info!(?self_height);
-            // self.wait_for_beacon_block(self_height).await;
-            let self_height = self.execution_height(self_height).await;
-            self.wait_for_execution_block(self_height.revision_height.into())
-                .await;
-
-            let (connection_end, is_found): (IbcCoreConnectionV1ConnectionEndData, bool) = self
-                .ibc_handler
-                .get_connection(connection_id.clone())
-                .block(self_height.revision_height)
-                .await
-                .unwrap();
-
-            tracing::info!(?connection_end);
-
-            assert!(is_found);
-
-            let canonical_connection_end: ConnectionEnd = connection_end.try_into().unwrap();
-
-            self.get_proof(
-                format!("connections/{connection_id}"),
-                self_height,
-                canonical_connection_end,
-                |x| x.into_proto().encode_to_vec(),
-            )
-            .await
-        }
-    }
-
-    fn channel_state_proof(
-        &self,
-        channel_id: String,
-        port_id: String,
-        self_height: Height,
-    ) -> impl Future<Output = StateProof<Channel>> + '_ {
-        async move {
-            // tracing::info!(?self_height);
-            // self.wait_for_beacon_block(self_height).await;
-            let self_height = self.execution_height(self_height).await;
-            self.wait_for_execution_block(self_height.revision_height.into())
-                .await;
-
-            let (channel, is_found): (IbcCoreChannelV1ChannelData, bool) = self
-                .ibc_handler
-                .get_channel(port_id.clone(), channel_id.clone())
-                .block(self_height.revision_height)
-                .await
-                .unwrap();
-
-            tracing::info!(?channel);
-
-            assert!(is_found);
-
-            let canonical_channel: Channel = channel.try_into().unwrap();
-
-            self.get_proof(
-                format!("channelEnds/ports/{port_id}/channels/{channel_id}"),
-                self_height,
-                canonical_channel,
-                |x| x.into_proto().encode_to_vec(),
-            )
-            .await
-        }
-    }
-
     fn query_latest_height(&self) -> impl Future<Output = Height> + '_ {
         async move {
             let height = self
@@ -407,28 +257,6 @@ impl<C: ChainSpec> LightClient for Cometbls<C> {
 
     fn process_height_for_counterparty(&self, height: Height) -> impl Future<Output = Height> + '_ {
         self.execution_height(height)
-    }
-
-    fn packet_commitment_proof(
-        &self,
-        port_id: String,
-        channel_id: String,
-        sequence: u64,
-        self_height: Height,
-    ) -> impl Future<Output = StateProof<Vec<u8>>> + '_ {
-        async move {
-            let self_height = self.execution_height(self_height).await;
-            self.wait_for_execution_block(self_height.revision_height.into())
-                .await;
-
-            self.get_proof(
-                format!("commitments/ports/{port_id}/channels/{channel_id}/sequences/{sequence}"),
-                self_height,
-                vec![],
-                |_| vec![],
-            )
-            .await
-        }
     }
 
     fn packet_stream(
@@ -1096,65 +924,6 @@ impl<C: ChainSpec> Cometbls<C> {
         }
     }
 
-    async fn get_proof<S: Clone + Debug>(
-        &self,
-        path: String,
-        height: Height,
-        state: S,
-        _encode: impl FnOnce(S) -> Vec<u8>,
-    ) -> StateProof<S> {
-        tracing::info!(path, ?height);
-
-        let u256 = U256::from(0).encode();
-
-        assert_eq!(u256.len(), 32);
-
-        let location = keccak256(
-            keccak256(path.as_bytes())
-                .into_iter()
-                .chain(u256)
-                .collect::<Vec<_>>(),
-        );
-
-        let proof = self
-            .provider
-            .get_proof(
-                self.ibc_handler.address(),
-                vec![location.into()],
-                Some(height.revision_height.into()),
-            )
-            .await
-            .unwrap();
-
-        tracing::info!(?proof);
-
-        let proof = match <[_; 1]>::try_from(proof.storage_proof) {
-            Ok([proof]) => proof,
-            Err(invalid) => {
-                panic!("received invalid response from eth_getProof, expected length of 1 but got {invalid:#?}");
-            }
-        };
-
-        StateProof {
-            state,
-            proof: ethereum_v1::StorageProof {
-                proofs: [ethereum_v1::Proof {
-                    key: proof.key.to_fixed_bytes().to_vec(),
-                    // REVIEW(benluelo): Make sure this encoding works
-                    value: proof.value.encode(),
-                    proof: proof
-                        .proof
-                        .into_iter()
-                        .map(|bytes| bytes.to_vec())
-                        .collect(),
-                }]
-                .to_vec(),
-            }
-            .encode_to_vec(),
-            proof_height: height,
-        }
-    }
-
     async fn execution_height(&self, beacon_height: Height) -> Height {
         let height = self
             .beacon_api_client
@@ -1313,12 +1082,282 @@ impl<C: ChainSpec> Cometbls<C> {
         )
         .await
     }
+
+    // async fn generic_contract_call<T: EthStateRead<C>>(
+    //     &self,
+    //     call: T::Call,
+    //     self_height: Height,
+    // ) -> Option<<T as IbcPath<Self>>::Output> {
+    //     self.ibc_handler
+    //         .method_hash::<_, T::ReturnTuple>(T::Call::selector(), call)
+    //         .expect("valid contract selector")
+    //         .block(self_height.revision_height)
+    //         .call()
+    //         .await
+    //         .map(T::tuple_to_option)
+    //         .unwrap()
+    // }
+
+    // async fn state_proof<P: Path + IntoEthCall>(
+    //     &self,
+    //     path: P,
+    //     self_height: Height,
+    // ) -> StateProof<P::Output<Self>>
+    // where
+    //     <P::EthCall as EthCallExt>::Return: TupleToOption<P>,
+    // {
+    //     let ret = self
+    //         .ibc_handler
+    //         .method_hash::<P::EthCall, <P::EthCall as EthCallExt>::Return>(
+    //             P::EthCall::selector(),
+    //             path.clone().into(),
+    //         )
+    //         .expect("valid contract selector")
+    //         .block(self_height.revision_height)
+    //         .call()
+    //         .await
+    //         .map(<P::EthCall as EthCallExt>::Return::tuple_to_option)
+    //         .unwrap()
+    //         .unwrap();
+
+    //     // let block_number = self.provider.get_block_number().await.unwrap();
+    //     // tracing::info!(?block_number);
+
+    //     let path = path.to_string();
+
+    //     tracing::info!(path, ?self_height);
+
+    //     let location = keccak256(
+    //         keccak256(path.as_bytes())
+    //             .into_iter()
+    //             .chain(U256::from(0).encode())
+    //             .collect::<Vec<_>>(),
+    //     );
+
+    //     let proof = self
+    //         .provider
+    //         .get_proof(
+    //             self.ibc_handler.address(),
+    //             vec![location.into()],
+    //             Some(self_height.revision_height.into()),
+    //         )
+    //         .await
+    //         .unwrap();
+
+    //     tracing::info!(?proof);
+
+    //     let proof = match <[_; 1]>::try_from(proof.storage_proof) {
+    //         Ok([proof]) => proof,
+    //         Err(invalid) => {
+    //             panic!("received invalid response from eth_getProof, expected length of 1 but got {invalid:#?}");
+    //         }
+    //     };
+
+    //     StateProof {
+    //         state: ret,
+    //         proof: ethereum_v1::StorageProof {
+    //             proofs: [ethereum_v1::Proof {
+    //                 key: proof.key.to_fixed_bytes().to_vec(),
+    //                 // REVIEW(benluelo): Make sure this encoding works
+    //                 value: proof.value.encode(),
+    //                 proof: proof
+    //                     .proof
+    //                     .into_iter()
+    //                     .map(|bytes| bytes.to_vec())
+    //                     .collect(),
+    //             }]
+    //             .to_vec(),
+    //         }
+    //         .encode_to_vec(),
+    //         proof_height: self_height,
+    //     }
+    // }
 }
 
-pub trait IntoEthAbi: Into<Self::EthAbi> {
-    type EthAbi;
+// pub trait IntoEthAbi: Into<Self::EthAbi> {
+//     type EthAbi;
 
-    fn into_eth_abi(self) -> Self::EthAbi {
-        self.into()
+//     fn into_eth_abi(self) -> Self::EthAbi {
+//         self.into()
+//     }
+// }
+
+trait TupleToOption<P>
+where
+    P: IbcPath + IntoEthCall,
+    <P as IntoEthCall>::EthCall: EthCallExt<Return = Self>,
+{
+    fn tuple_to_option<C: ChainSpec>(
+        ret: <P::EthCall as EthCallExt>::Return,
+    ) -> Option<P::Output<Cometbls<C>>>;
+}
+
+macro_rules! impl_eth_state_read {
+    ($($Path:ident { $($field:ident),+ } -> $Call:ident $(-> $parse:expr)?;)+) => {
+        $(
+            impl From<$Path> for $Call {
+                fn from($Path {
+                    $($field),+
+                }: $Path) -> Self {
+                    Self {
+                        $($field),+
+                    }
+                }
+            }
+
+            impl IntoEthCall for $Path {
+                type EthCall = $Call;
+            }
+
+            impl TupleToOption<$Path> for <<$Path as IntoEthCall>::EthCall as EthCallExt>::Return {
+                fn tuple_to_option<C: ChainSpec>(ret: <<$Path as IntoEthCall>::EthCall as EthCallExt>::Return) -> Option<<$Path as IbcPath>::Output<Cometbls<C>>> {
+                    #[allow(clippy::redundant_closure_call)]
+                    ret.1.then_some($(($parse))?(ret.0))
+                }
+            }
+        )+
     }
+}
+
+// struct EthStateRead<C: ChainSpec, P: IbcPath<Cometbls<C>>>(PhantomData<(P, C)>);
+pub struct EthStateRead;
+
+impl<C: ChainSpec, P: 'static + IbcPath> IbcStateRead<Cometbls<C>, P> for EthStateRead
+where
+    P: IntoEthCall,
+    <<P as IntoEthCall>::EthCall as EthCallExt>::Return: TupleToOption<P>,
+{
+    fn state_proof(
+        light_client: &Cometbls<C>,
+        path: P,
+        at: Height,
+    ) -> impl Future<Output = StateProof<P::Output<Cometbls<C>>>> + '_ {
+        async move {
+            let ret = light_client
+                .ibc_handler
+                .method_hash::<P::EthCall, <P::EthCall as EthCallExt>::Return>(
+                    P::EthCall::selector(),
+                    path.clone().into(),
+                )
+                .expect("valid contract selector")
+                .block(at.revision_height)
+                .call()
+                .await
+                .map(<P::EthCall as EthCallExt>::Return::tuple_to_option)
+                .unwrap()
+                .unwrap();
+
+            // let block_number = self.provider.get_block_number().await.unwrap();
+            // tracing::info!(?block_number);
+
+            let path = path.to_string();
+
+            tracing::info!(path, ?at);
+
+            let location = keccak256(
+                keccak256(path.as_bytes())
+                    .into_iter()
+                    .chain(U256::from(0).encode())
+                    .collect::<Vec<_>>(),
+            );
+
+            let proof = light_client
+                .provider
+                .get_proof(
+                    light_client.ibc_handler.address(),
+                    vec![location.into()],
+                    Some(at.revision_height.into()),
+                )
+                .await
+                .unwrap();
+
+            tracing::info!(?proof);
+
+            let proof = match <[_; 1]>::try_from(proof.storage_proof) {
+                Ok([proof]) => proof,
+                Err(invalid) => {
+                    panic!("received invalid response from eth_getProof, expected length of 1 but got {invalid:#?}");
+                }
+            };
+
+            StateProof {
+                state: ret,
+                proof: ethereum_v1::StorageProof {
+                    proofs: [ethereum_v1::Proof {
+                        key: proof.key.to_fixed_bytes().to_vec(),
+                        // REVIEW(benluelo): Make sure this encoding works
+                        value: proof.value.encode(),
+                        proof: proof
+                            .proof
+                            .into_iter()
+                            .map(|bytes| bytes.to_vec())
+                            .collect(),
+                    }]
+                    .to_vec(),
+                }
+                .encode_to_vec(),
+                proof_height: at,
+            }
+        }
+    }
+}
+
+impl_eth_state_read! {
+    ClientStatePath { client_id } -> GetClientStateCall -> |x: Bytes| TryFromProto::try_from_proto_bytes(&x).unwrap();
+    ConnectionPath { connection_id } -> GetConnectionCall -> |x| <ConnectionPath as IbcPath>::Output::<Cometbls<C>>::try_from(x).unwrap();
+    ChannelEndPath { port_id, channel_id } -> GetChannelCall -> |x| <ChannelEndPath as IbcPath>::Output::<Cometbls<C>>::try_from(x).unwrap();
+    CommitmentPath { port_id, channel_id, sequence } -> GetHashedPacketCommitmentCall;
+}
+
+// NOTE: Implemented this one manually since it's a bit different than the others
+impl From<ClientConsensusStatePath> for GetConsensusStateCall {
+    fn from(value: ClientConsensusStatePath) -> Self {
+        Self {
+            client_id: value.client_id,
+            height: value.height.into(),
+        }
+    }
+}
+
+impl IntoEthCall for ClientConsensusStatePath {
+    type EthCall = GetConsensusStateCall;
+}
+
+impl TupleToOption<ClientConsensusStatePath>
+    for <<ClientConsensusStatePath as IntoEthCall>::EthCall as EthCallExt>::Return
+{
+    fn tuple_to_option<C: ChainSpec>(
+        ret: <<ClientConsensusStatePath as IntoEthCall>::EthCall as EthCallExt>::Return,
+    ) -> Option<<ClientConsensusStatePath as super::proof::IbcPath>::Output<Cometbls<C>>> {
+        ret.p1
+            .then(|| TryFromProto::try_from_proto_bytes(&ret.consensus_state_bytes).unwrap())
+    }
+}
+
+/// Wrapper trait for a contract call's signature, to map the input type to the return type.
+/// `ethers` generates both of these types, but doesn't correlate them.
+pub trait EthCallExt: EthCall {
+    type Return: Tokenizable;
+}
+
+macro_rules! impl_eth_call_ext {
+    ($($Call:ident -> $Return:ident;)+) => {
+        $(
+            impl EthCallExt for $Call {
+                type Return = $Return;
+            }
+        )+
+    }
+}
+
+impl_eth_call_ext! {
+    GetClientStateCall -> GetClientStateReturn;
+    GetConsensusStateCall -> GetConsensusStateReturn;
+    GetConnectionCall -> GetConnectionReturn;
+    GetChannelCall -> GetChannelReturn;
+    GetHashedPacketCommitmentCall -> GetHashedPacketCommitmentReturn;
+}
+
+pub trait IntoEthCall: Into<Self::EthCall> {
+    type EthCall: EthCallExt;
 }

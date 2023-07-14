@@ -1,7 +1,7 @@
 use crate::{
     errors::MissingField,
     ibc::core::channel::{counterparty::Counterparty, order::Order, state::State},
-    IntoProto, TypeUrl,
+    IntoProto, TryFromProto, TypeUrl,
 };
 
 #[derive(Debug, Clone)]
@@ -44,6 +44,10 @@ impl TryFrom<protos::ibc::core::channel::v1::Channel> for Channel {
 }
 
 impl IntoProto for Channel {
+    type Proto = protos::ibc::core::channel::v1::Channel;
+}
+
+impl TryFromProto for Channel {
     type Proto = protos::ibc::core::channel::v1::Channel;
 }
 
