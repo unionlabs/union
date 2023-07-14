@@ -8,3 +8,4 @@
 
 **/vendor/** linguist-vendored
 **/generated/** linguist-generated
+evm/contracts/proto/** linguist-generated
