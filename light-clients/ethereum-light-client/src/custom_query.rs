@@ -43,12 +43,12 @@ impl<'a> BlsVerify for VerificationContext<'a> {
             msg.clone().into(),
             Binary(signature.clone().into()),
         )
-        .map_err(|e| ethereum_verifier::Error::CustomError(e.to_string()))?;
+        .map_err(ethereum_verifier::Error::external)?;
 
         if is_valid {
             Ok(())
         } else {
-            Err(ethereum_verifier::Error::CustomError(format!(
+            Err(ethereum_verifier::Error::external(format!(
                 "signature cannot be verified: public_keys: {:#?}, msg: {:#?}, signature: {}",
                 public_keys_, msg, signature
             )))

@@ -58,7 +58,10 @@ pub fn validate_light_client_update<Ctx: LightClientContext, V: BlsVerify>(
     if sync_aggregate.sync_committee_bits.num_set_bits()
         < <Ctx::ChainSpec as MIN_SYNC_COMMITTEE_PARTICIPANTS>::MIN_SYNC_COMMITTEE_PARTICIPANTS::USIZE
     {
-        return Err(Error::InsufficientSyncCommitteeParticipants);
+        return Err(Error::insufficient_sync_committee_participants(
+            <Ctx::ChainSpec as MIN_SYNC_COMMITTEE_PARTICIPANTS>::MIN_SYNC_COMMITTEE_PARTICIPANTS::USIZE,
+            sync_aggregate.sync_committee_bits.num_set_bits()
+        ));
     }
 
     // Verify update does not skip a sync committee period
@@ -70,7 +73,12 @@ pub fn validate_light_client_update<Ctx: LightClientContext, V: BlsVerify>(
         && update.signature_slot > update_attested_slot
         && update_attested_slot >= update_finalized_slot)
     {
-        return Err(Error::InvalidSlots);
+        return Err(Error::invalid_slots(
+            current_slot,
+            update.signature_slot,
+            update_attested_slot,
+            update_finalized_slot,
+        ));
     }
 
     let store_period =
@@ -80,10 +88,16 @@ pub fn validate_light_client_update<Ctx: LightClientContext, V: BlsVerify>(
 
     if ctx.next_sync_committee().is_some() {
         if update_signature_period != store_period && update_signature_period != store_period + 1 {
-            return Err(Error::InvalidSignaturePeriod);
+            return Err(Error::invalid_next_sync_committee_period(
+                update_signature_period,
+                store_period,
+            ));
         }
     } else if update_signature_period != store_period {
-        return Err(Error::InvalidSignaturePeriod);
+        return Err(Error::invalid_current_sync_committee_period(
+            update_signature_period,
+            store_period,
+        ));
     }
 
     // Verify update is relevant
@@ -118,7 +132,10 @@ pub fn validate_light_client_update<Ctx: LightClientContext, V: BlsVerify>(
             if update_attested_period == store_period
                 && next_sync_committee != current_next_sync_committee
             {
-                return Err(Error::NextSyncCommitteeMismatch);
+                return Err(Error::next_sync_committee_mismatch(
+                    next_sync_committee.aggregate_pubkey.clone(),
+                    current_next_sync_committee.aggregate_pubkey.clone(),
+                ));
             }
         }
 
@@ -202,10 +219,10 @@ pub fn verify_account_storage_root(
             if account.storage_root == *storage_root {
                 Ok(())
             } else {
-                Err(Error::ValueMismatch)
+                Err(Error::proof_mismatch(account.storage_root, *storage_root))
             }
         }
-        None => Err(Error::ValueMismatch),
+        None => Err(Error::ProofNotFound),
     }
 }
 
@@ -225,7 +242,8 @@ pub fn verify_storage_proof(
 ) -> Result<(), Error> {
     match verify_state(root, key, proof)? {
         Some(value) if value == expected_value => Ok(()),
-        _ => Err(Error::ValueMismatch),
+        Some(value) if value != expected_value => Err(Error::proof_mismatch(value, expected_value)),
+        _ => Err(Error::ProofNotFound),
     }
 }
 
@@ -240,7 +258,7 @@ pub fn is_valid_light_client_header<C: ChainSpec>(
     let epoch = compute_epoch_at_slot::<C>(header.beacon.slot);
 
     if epoch < fork_parameters.capella.epoch {
-        return Err(Error::InvalidChainVersion);
+        return Err(Error::InvalidChainVersion(epoch));
     }
 
     validate_merkle_branch(
@@ -413,10 +431,10 @@ mod tests {
         // Setting the sync committee bits to zero will result in no participants.
         header.consensus_update.sync_aggregate.sync_committee_bits = Default::default();
 
-        assert_eq!(
+        assert!(matches!(
             do_validate_light_client_update(header),
-            Err(Error::InsufficientSyncCommitteeParticipants)
-        );
+            Err(Error::InsufficientSyncCommitteeParticipants { .. })
+        ));
     }
 
     #[test]
@@ -460,28 +478,28 @@ mod tests {
         let mut header = correct_header.clone();
         header.consensus_update.signature_slot = u64::MAX;
 
-        assert_eq!(
+        assert!(matches!(
             do_validate_light_client_update(header),
-            Err(Error::InvalidSlots)
-        );
+            Err(Error::InvalidSlots { .. })
+        ));
 
         // attested slot can't be bigger than the signature slot
         let mut header = correct_header.clone();
         header.consensus_update.attested_header.beacon.slot = u64::MAX;
 
-        assert_eq!(
+        assert!(matches!(
             do_validate_light_client_update(header),
-            Err(Error::InvalidSlots)
-        );
+            Err(Error::InvalidSlots { .. })
+        ));
 
         // finalized slot can't be bigger than the attested slot
         let mut header = correct_header;
         header.consensus_update.finalized_header.beacon.slot = u64::MAX;
 
-        assert_eq!(
+        assert!(matches!(
             do_validate_light_client_update(header),
-            Err(Error::InvalidSlots)
-        );
+            Err(Error::InvalidSlots { .. })
+        ));
     }
 
     #[test]
@@ -496,10 +514,10 @@ mod tests {
 
         header.trusted_sync_committee.trusted_height.revision_height = u64::MAX;
 
-        assert_eq!(
+        assert!(matches!(
             do_validate_light_client_update(header),
-            Err(Error::InvalidSignaturePeriod)
-        );
+            Err(Error::InvalidCurrentSyncCommitteePeriod { .. })
+        ));
 
         // We do again here because we are expecting it to fail for both `is_next = true` and `is_next = false`
         let mut header = <Header<Minimal>>::try_from_proto(
@@ -512,10 +530,10 @@ mod tests {
 
         header.trusted_sync_committee.trusted_height.revision_height = u64::MAX;
 
-        assert_eq!(
+        assert!(matches!(
             do_validate_light_client_update(header),
-            Err(Error::InvalidSignaturePeriod)
-        );
+            Err(Error::InvalidNextSyncCommitteePeriod { .. })
+        ));
     }
 
     #[test]
@@ -667,15 +685,15 @@ mod tests {
         let mut proof_value = VALID_RLP_ENCODED_PROOF_VALUE.clone();
         proof_value[0] = u8::MAX - proof_value[0];
 
-        assert_eq!(
+        assert!(matches!(
             verify_storage_proof(
                 VALID_STORAGE_ROOT.clone(),
                 &VALID_PROOF_KEY,
                 &proof_value,
                 &VALID_PROOF
             ),
-            Err(Error::ValueMismatch)
-        );
+            Err(Error::ProofMismatch { .. })
+        ));
     }
 
     #[test]

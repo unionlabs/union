@@ -101,17 +101,16 @@ pub fn verify_membership(
     path: MerklePath,
     value: Binary,
 ) -> Result<ContractResult, Error> {
-    let consensus_state = read_consensus_state(deps, &height)?.ok_or(
-        Error::ConsensusStateNotFound(height.revision_number, height.revision_height),
-    )?;
+    let consensus_state =
+        read_consensus_state(deps, &height)?.ok_or(Error::ConsensusStateNotFound(height))?;
     let client_state = read_client_state(deps)?;
 
     let path = Path::from_str(
         path.key_path
             .last()
-            .ok_or(Error::InvalidPath("path is empty".into()))?,
+            .ok_or(Error::invalid_path("path is empty"))?,
     )
-    .map_err(|e| Error::InvalidPath(e.to_string()))?;
+    .map_err(Error::invalid_path)?;
 
     // This storage root is verified during the header update, so we don't need to verify it again.
     let storage_root = consensus_state.data.storage_root;
@@ -185,10 +184,7 @@ pub fn update_header<C: ChainSpec>(
     let trusted_sync_committee = header.trusted_sync_committee;
     let mut wasm_consensus_state =
         read_consensus_state(deps.as_ref(), &trusted_sync_committee.trusted_height)?.ok_or(
-            Error::ConsensusStateNotFound(
-                trusted_sync_committee.trusted_height.revision_number,
-                trusted_sync_committee.trusted_height.revision_height,
-            ),
+            Error::ConsensusStateNotFound(trusted_sync_committee.trusted_height),
         )?;
 
     let aggregate_public_key = query_aggregate_public_keys(

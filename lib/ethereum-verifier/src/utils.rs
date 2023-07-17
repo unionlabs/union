@@ -355,7 +355,7 @@ mod tests {
         .is_err());
 
         let invalid_branch = {
-            let mut header = header.clone();
+            let mut header = header;
             header.execution_branch[0] = Default::default();
             header.execution_branch
         };
