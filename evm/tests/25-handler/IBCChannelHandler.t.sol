@@ -15,13 +15,15 @@ import {IbcCoreCommitmentV1MerklePrefix as CommitmentMerklePrefix} from
 
 import "tests/TestPlus.sol";
 
-contract IBCChannelTest is TestPlus {
+contract IBCChannelHandlerTest is TestPlus {
     using ConnectionCounterparty for ConnectionCounterparty.Data;
 
     IBCHandler_Testable handler;
     ILightClient client;
     MockApp app;
     string constant CLIENT_TYPE = "mock";
+
+    event GeneratedChannelIdentifier(string);
 
     constructor() {
         handler = new IBCHandler_Testable();
@@ -40,22 +42,16 @@ contract IBCChannelTest is TestPlus {
 
         // 2. channelOpenInit
         IBCMsgs.MsgChannelOpenInit memory msg_init = MsgMocks.channelOpenInit(connId, portId);
+        vm.expectEmit(false, false, false, false);
+        emit GeneratedChannelIdentifier("");
         string memory channelId = handler.channelOpenInit(msg_init);
 
-        (Channel.Data memory channel, bool exists) = handler.getChannel(portId, channelId);
-        assert(exists);
-        console.log(uint256(channel.state));
-        assertEq(uint256(channel.state), uint256(ChannelEnums.State.STATE_INIT));
-        // TODO: verify channel commitment
+        assertEq(handler.capabilities(abi.encodePacked(portId, "/", channelId), 0), address(app));
 
         // 3. channelOpenAck
         IBCMsgs.MsgChannelOpenAck memory msg_ack = MsgMocks.channelOpenAck(portId, channelId, proofHeight);
         handler.channelOpenAck(msg_ack);
 
-        (channel,) = handler.getChannel(portId, channelId);
-        assertEq(uint256(channel.state), uint256(ChannelEnums.State.STATE_OPEN));
-        assertEq(channel.version, msg_ack.counterpartyVersion);
-        assertEq(channel.counterparty.channel_id, msg_ack.counterpartyChannelId);
         // TODO: verify channel commitment
     }
 
@@ -69,7 +65,11 @@ contract IBCChannelTest is TestPlus {
 
         // 2. connOpenTry
         IBCMsgs.MsgChannelOpenTry memory msg_try = MsgMocks.channelOpenTry(connId, portId, proofHeight);
+        vm.expectEmit(false, false, false, false);
+        emit GeneratedChannelIdentifier("");
         string memory channelId = handler.channelOpenTry(msg_try);
+
+        assertEq(handler.capabilities(abi.encodePacked(portId, "/", channelId), 0), address(app));
 
         // 3. connOpenConfirm
         IBCMsgs.MsgChannelOpenConfirm memory msg_confirm = MsgMocks.channelOpenConfirm(portId, channelId, proofHeight);

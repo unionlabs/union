@@ -13,7 +13,7 @@ import {Context} from "@openzeppelin/contracts/utils/Context.sol";
 contract MockApp is IIBCModule {
     event MockPacketRecv();
     event MockPacketAck();
-    event MockChannelOpenInit();
+    event MockChannelOpenInit(string portId, string channelId);
     event MockChannelOpenTry();
     event MockChannelOpenAck();
     event MockChannelOpenConfirm();
@@ -36,12 +36,12 @@ contract MockApp is IIBCModule {
     function onChanOpenInit(
         ChannelEnums.Order,
         string[] calldata,
-        string calldata,
+        string calldata portId,
         string calldata channelId,
         ChannelCounterparty.Data calldata,
         string calldata
     ) external virtual override {
-        emit MockChannelOpenInit();
+        emit MockChannelOpenInit(portId, channelId);
     }
 
     function onChanOpenTry(

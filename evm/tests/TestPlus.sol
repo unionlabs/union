@@ -5,7 +5,7 @@ import "./utils/MsgMocks.sol";
 import "./utils/MockApp.sol";
 import "./utils/IBCHandler_Testable.sol";
 
-contract TestPlus is Test {
+abstract contract TestPlus is Test {
     function assertStrEq(string memory a, string memory b) internal pure {
         require(keccak256(abi.encodePacked(a)) == keccak256(abi.encodePacked(b)), "strings not equal");
     }
