@@ -2,84 +2,86 @@
   flake.checks = lib.genAttrs [ "x86_64-linux" "aarch64-linux" ]
     (lib.flip withSystem ({ e2e, networks, pkgs, nixpkgs, crane, ... }:
       let
-        e2e = crane.lib.buildPackage ({
+        ensure-blocks = pkgs.lib.meta.getExe (crane.lib.buildPackage {
+          inherit (crane.lib.crateNameFromCargoToml { cargoToml = ../tools/e2e/ensure-blocks/Cargo.toml; }) pname version;
           buildInputs = [ pkgs.pkg-config pkgs.openssl ];
           PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
-          src = crane.lib.cleanCargoSource ../tools/e2e/e2e;
+          src = crane.lib.cleanCargoSource ../tools/e2e/ensure-blocks;
           doCheck = false;
-          cargoVendorDir = crane.lib.vendorCargoDeps { cargoLock = ../tools/e2e/e2e/Cargo.lock; };
-        } // (crane.lib.crateNameFromCargoToml { cargoToml = ../tools/e2e/e2e/Cargo.toml; }));
+          cargoVendorDir = crane.lib.vendorCargoDeps { cargoLock = ../tools/e2e/ensure-blocks/Cargo.lock; };
+        });
+
+        sepoliaNode = _: {
+          imports = [
+            inputs.arion.nixosModules.arion
+          ];
+          virtualisation = {
+            diskSize = 4 * 1024;
+            arion = {
+              backend = "docker";
+              projects.sepolia.settings = networks.sepolia;
+            };
+          };
+        };
+
+        unionNode = _: {
+          imports = [
+            inputs.arion.nixosModules.arion
+          ];
+          virtualisation = {
+            diskSize = 2048;
+            arion = {
+              backend = "docker";
+              projects.union.settings = networks.union;
+            };
+          };
+        };
       in
       {
-        virtualisation-works = let name = "devnet"; in e2e.mkTest {
-          inherit name;
-          network = networks.devnet;
+        virtualisation-works = e2e.mkTest {
+          name = "devnet";
+          nodes = {
+            devnet = _: {
+              imports = [
+                inputs.arion.nixosModules.arion
+              ];
+              virtualisation = {
+                diskSize = 4 * 1024;
+                arion = {
+                  backend = "docker";
+                  projects.devnet.settings = networks.devnet;
+                };
+              };
+            };
+          };
           testScript = ''
-            ${name}.wait_for_unit("arion-${networks.devnet.project.name}")
+            devnet.wait_for_unit("arion-${networks.devnet.project.name}")
           '';
         };
-        relayer-e2e =
-          let
-            name = "relayer-e2e";
-            nixos-lib = import "${nixpkgs}/nixos/lib" { };
+        ensure-blocks = e2e.mkTest {
+          name = "relayer-e2e";
 
-            test = nixos-lib.runTest {
-              inherit name;
+          testScript = ''
+            start_all()
 
-              testScript = ''
-                start_all()
+            # match non-zero blocks
+            union.wait_for_console_text("height=[1-9][0-9]*")
+            sepolia.wait_for_console_text("Synced - slot: [1-9][0-9]*")
 
-                # match non-zero blocks
-                union.wait_for_console_text("height=[1-9][0-9]*")
-                sepolia.wait_for_console_text("Synced - slot: [1-9][0-9]*")
+            union.wait_for_open_port(26657)
+            sepolia.wait_for_open_port(8546)
 
-                union.wait_for_open_port(26657)
-                sepolia.wait_for_open_port(8546)
+            with open("output.log", "w") as file:
+              output = client.succeed("RUST_LOG=debug ${ensure-blocks} ws://union:26657/websocket ws://sepolia:8546 2>&1")
+              file.write(output)
+          '';
 
-                with open("output.log", "w") as file:
-                  output = client.succeed("RUST_LOG=debug ${pkgs.lib.meta.getExe e2e} ws://union:26657/websocket ws://sepolia:8546 2>&1")
-                  file.write(output)
-              '';
-
-              nodes = {
-                union =
-                  { pkgs, lib, ... }:
-                  {
-                    imports = [
-                      inputs.arion.nixosModules.arion
-                    ];
-                    virtualisation = {
-                      diskSize = 2048;
-                      arion = {
-                        backend = "docker";
-                        projects.union.settings = networks.union;
-                      };
-                    };
-                  };
-
-                sepolia =
-                  { pkgs, lib, ... }:
-                  {
-                    imports = [
-                      inputs.arion.nixosModules.arion
-                    ];
-                    virtualisation = {
-                      diskSize = 4 * 1024;
-                      arion = {
-                        backend = "docker";
-                        projects.sepolia.settings = networks.sepolia;
-                      };
-                    };
-                  };
-
-                client =
-                  { pkgs, lib, ... }:
-                  { };
-              };
-              hostPkgs = pkgs; # the Nixpkgs package set used outside the VMs
-            };
-          in
-          test;
+          nodes = {
+            union = unionNode;
+            sepolia = sepoliaNode;
+            # empty node used to communicate with the other nodes
+            client = _: { };
+          };
+        };
       }));
 }
-

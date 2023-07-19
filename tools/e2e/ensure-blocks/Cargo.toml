@@ -1,9 +1,8 @@
 [package]
-name = "e2e"
-version = "0.1.0"
+name = "ensure-blocks"
+version = "0.0.0"
+description = "A small command line utility to ensure that blocks are produced on both sepolia and union."
 edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 clap = { version = "4.3.12", features = ["derive"] }
