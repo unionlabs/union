@@ -12,7 +12,6 @@ members = [
 
 exclude = [
   "tools/generate-rust-sol-bindings",
-  "tools/e2e/e2e"
 ]
 
 resolver = "2"
