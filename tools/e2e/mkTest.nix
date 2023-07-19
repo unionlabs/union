@@ -8,7 +8,6 @@ let
 in
 { name
 , testScript
-  # { arion }: nodes
 , nodes
 }:
 nixos-lib.runTest {
