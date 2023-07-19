@@ -392,6 +392,10 @@ mod test {
     const WASM_CLIENT_ID_PREFIX: &str = "08-wasm";
     const ETHEREUM_CLIENT_ID_PREFIX: &str = "10-ethereum";
     const IBC_KEY_PREFIX: &str = "ibc";
+    const INITIAL_CONSENSUS_STATE_HEIGHT: Height = Height {
+        revision_number: 0,
+        revision_height: 1328,
+    };
 
     #[test]
     fn query_status_returns_active() {
@@ -416,10 +420,7 @@ mod test {
         save_wasm_consensus_state(
             deps.as_mut(),
             <_>::try_from_proto(wasm_consensus_state).unwrap(),
-            &Height {
-                revision_number: 0,
-                revision_height: 1328,
-            },
+            &INITIAL_CONSENSUS_STATE_HEIGHT,
         );
 
         let mut env = mock_env();
@@ -489,10 +490,7 @@ mod test {
         save_wasm_consensus_state(
             deps.as_mut(),
             wasm_consensus_state.clone(),
-            &Height {
-                revision_number: 0,
-                revision_height: 1328,
-            },
+            &INITIAL_CONSENSUS_STATE_HEIGHT,
         );
 
         wasm_client_state.data.trusting_period = 10;
@@ -535,10 +533,7 @@ mod test {
         save_wasm_consensus_state(
             deps.as_mut(),
             <_>::try_from_proto(wasm_consensus_state).unwrap(),
-            &Height {
-                revision_number: 0,
-                revision_height: 1328,
-            },
+            &INITIAL_CONSENSUS_STATE_HEIGHT,
         );
 
         let updates = &[
@@ -690,10 +685,7 @@ mod test {
         save_wasm_consensus_state(
             deps.as_mut(),
             wasm_consensus_state.try_into().unwrap(),
-            &Height {
-                revision_number: 0,
-                revision_height: 1328,
-            },
+            &INITIAL_CONSENSUS_STATE_HEIGHT,
         );
 
         let update =
