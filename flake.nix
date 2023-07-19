@@ -67,6 +67,7 @@
         ./unionpd/unionpd.nix
         ./unionvisor/unionvisor.nix
         ./relayer/relayer.nix
+        ./lib/ethereum-verifier/ethereum-verifier.nix
         ./uniond/proto.nix
         ./docs/docs.nix
         ./light-clients/ethereum-light-client.nix
