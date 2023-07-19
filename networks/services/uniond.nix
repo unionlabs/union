@@ -24,8 +24,8 @@ in
     ];
   };
   service = {
+    tty = true;
     stop_signal = "SIGINT";
-    networks = [ "union-devnet" ];
     ports = [
       # CometBLS JSONRPC 26657
       "${toString (26657 + id)}:26657"

@@ -63,8 +63,9 @@ in
     });
   };
   service = {
+    tty = true;
     stop_signal = "SIGINT";
-    networks = [ "union-devnet" ];
+    restart = "always";
     ports = [
       # Beacon node rest API
       "9596:9596"
