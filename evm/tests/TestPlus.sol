@@ -2,6 +2,8 @@ pragma solidity ^0.8.18;
 
 import "forge-std/Test.sol";
 import "./utils/MsgMocks.sol";
+import "./utils/MockApp.sol";
+import "./utils/IBCHandler_Testable.sol";
 
 contract TestPlus is Test {
     function assertStrEq(string memory a, string memory b) internal pure {

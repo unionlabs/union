@@ -12,7 +12,8 @@ import {GoogleProtobufAny as Any} from "contracts/proto/GoogleProtobufAny.sol";
 import {
     IbcCoreChannelV1Counterparty as ChannelCounterparty,
     IbcCoreChannelV1Channel as Channel,
-    IbcCoreChannelV1GlobalEnums as ChannelEnums
+    IbcCoreChannelV1GlobalEnums as ChannelEnums,
+    IbcCoreChannelV1Counterparty as ChannelCounterparty
 } from "contracts/proto/ibc/core/channel/v1/channel.sol";
 import {
     IbcCoreConnectionV1Counterparty as ConnectionCounterparty,
@@ -84,7 +85,7 @@ library MsgMocks {
     {
         m.clientId = clientId;
         m.counterparty.client_id = "counterparty-client-id";
-        m.counterparty.connection_id = "";
+        m.counterparty.connection_id = "counterparty-conn-id";
         m.counterpartyVersions = new ConnectionVersion.Data[](1);
         m.counterpartyVersions[0] = ConnectionVersion.Data({identifier: "1", features: new string[](0)});
 
@@ -178,7 +179,7 @@ library MsgMocks {
     }
 
     /// Builds a MsgChannelOpenInit
-    function channelOpenInit(string memory portId, uint64 revisionHeight)
+    function channelOpenInit(string memory connId, string memory portId)
         internal
         view
         returns (IBCMsgs.MsgChannelOpenInit memory m)
@@ -187,20 +188,94 @@ library MsgMocks {
         counterparty.port_id = "1";
         counterparty.channel_id = "1";
         string[] memory hops = new string[](1);
-        hops[0] = "hop-1";
+        hops[0] = connId;
 
+        m.channel.state = ChannelEnums.State.STATE_INIT;
+        m.channel.counterparty = counterparty;
+        m.channel.connection_hops = hops;
         m.portId = portId;
-        m.channel = Channel.Data({
-            state: ChannelEnums.State.STATE_UNINITIALIZED_UNSPECIFIED,
+    }
+
+    function channelOpenAck(string memory portId, string memory channelId, uint64 proofHeight)
+        internal
+        view
+        returns (IBCMsgs.MsgChannelOpenAck memory m)
+    {
+        m.portId = portId;
+        m.channelId = channelId;
+        m.counterpartyVersion = "counterparty-version";
+        m.counterpartyChannelId = "counterparty-channel-id";
+
+        // mocking channel data
+        Channel.Data memory channel = Channel.Data({
+            state: ChannelEnums.State.STATE_TRYOPEN,
             ordering: ChannelEnums.Order.ORDER_NONE_UNSPECIFIED,
-            counterparty: counterparty,
-            connection_hops: hops,
-            version: "v1"
+            counterparty: ChannelCounterparty.Data({port_id: portId, channel_id: channelId}),
+            connection_hops: new string[](1),
+            version: m.counterpartyVersion
         });
+        channel.connection_hops[0] = "counterparty-conn-id";
+
+        bytes memory encodedChannel = Channel.encode(channel);
+        m.proofTry = abi.encodePacked(sha256(encodedChannel));
+        m.proofHeight.revision_height = proofHeight;
     }
 
     function commitment_prefix() internal pure returns (string memory) {
         return "ibc";
+    }
+
+    function channelOpenTry(string memory connId, string memory portId, uint64 proofHeight)
+        internal
+        view
+        returns (IBCMsgs.MsgChannelOpenTry memory m)
+    {
+        m.portId = portId;
+        m.counterpartyVersion = "counterparty-version";
+        m.channel = Channel.Data({
+            state: ChannelEnums.State.STATE_TRYOPEN,
+            ordering: ChannelEnums.Order.ORDER_NONE_UNSPECIFIED,
+            counterparty: ChannelCounterparty.Data({port_id: portId, channel_id: ""}),
+            connection_hops: new string[](1),
+            version: m.counterpartyVersion
+        });
+        m.channel.connection_hops[0] = connId;
+
+        // expected channel
+        Channel.Data memory expectedChannel = Channel.Data({
+            state: ChannelEnums.State.STATE_INIT,
+            ordering: ChannelEnums.Order.ORDER_NONE_UNSPECIFIED,
+            counterparty: ChannelCounterparty.Data({port_id: portId, channel_id: ""}),
+            connection_hops: new string[](1),
+            version: m.counterpartyVersion
+        });
+        expectedChannel.connection_hops[0] = "counterparty-conn-id";
+
+        bytes memory encodedChannel = Channel.encode(expectedChannel);
+        m.proofInit = abi.encodePacked(sha256(encodedChannel));
+        m.proofHeight.revision_height = proofHeight;
+    }
+
+    function channelOpenConfirm(string memory portId, string memory channelId, uint64 proofHeight)
+        internal
+        view
+        returns (IBCMsgs.MsgChannelOpenConfirm memory m)
+    {
+        m.portId = portId;
+        m.channelId = channelId;
+
+        Channel.Data memory expectedChannel = Channel.Data({
+            state: ChannelEnums.State.STATE_OPEN,
+            ordering: ChannelEnums.Order.ORDER_NONE_UNSPECIFIED,
+            counterparty: ChannelCounterparty.Data({port_id: portId, channel_id: channelId}),
+            connection_hops: new string[](1),
+            version: "counterparty-version"
+        });
+        expectedChannel.connection_hops[0] = "counterparty-conn-id";
+
+        bytes memory encodedChannel = Channel.encode(expectedChannel);
+        m.proofAck = abi.encodePacked(sha256(encodedChannel));
+        m.proofHeight.revision_height = proofHeight;
     }
 }
 
