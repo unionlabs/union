@@ -2,14 +2,14 @@ use futures::{Future, Stream};
 use ibc_types::ibc::{
     core::{
         channel::{
-            channel::Channel, msg_channel_open_ack::MsgChannelOpenAck,
+            msg_channel_open_ack::MsgChannelOpenAck,
             msg_channel_open_confirm::MsgChannelOpenConfirm,
             msg_channel_open_init::MsgChannelOpenInit, msg_channel_open_try::MsgChannelOpenTry,
             msg_recv_packet::MsgRecvPacket, packet::Packet,
         },
         client::height::Height,
         connection::{
-            connection_end::ConnectionEnd, msg_channel_open_ack::MsgConnectionOpenAck,
+            msg_channel_open_ack::MsgConnectionOpenAck,
             msg_channel_open_confirm::MsgConnectionOpenConfirm,
             msg_channel_open_init::MsgConnectionOpenInit,
             msg_channel_open_try::MsgConnectionOpenTry,
@@ -19,12 +19,154 @@ use ibc_types::ibc::{
     lightclients::{cometbls, ethereum, wasm},
 };
 
+use crate::chain::proof::{IbcStateRead, IbcStateReadPaths};
+
 pub mod cosmos;
 pub mod evm;
 
-pub trait LightClient: Send + Sync {
-    // type SourceChain;
+pub mod proof {
+    use std::fmt::Display;
 
+    use futures::Future;
+    use ibc_types::ibc::core::{
+        channel::channel::Channel, client::height::Height,
+        connection::connection_end::ConnectionEnd,
+    };
+
+    use crate::chain::{LightClient, StateProof};
+
+    pub trait IbcStateRead<L: LightClient, P: IbcPath> {
+        fn state_proof(
+            light_client: &L,
+            path: P,
+            at: Height,
+        ) -> impl Future<Output = StateProof<P::Output<L>>> + '_;
+    }
+
+    /// `IbcPath` represents the path to a light client's ibc storage. The values stored at each path
+    /// are strongly typed, i.e. `connections/{connection_id}` always stores a [`ConnectionEnd`].
+    pub trait IbcPath: Display + Clone + Sized {
+        type Output<L: LightClient>;
+    }
+
+    type ClientId = String;
+    type ChannelId = String;
+    type ConnectionId = String;
+    type PortId = String;
+
+    macro_rules! ibc_paths (
+        (
+            $(
+                #[display($fmt:literal)]
+                #[output($Output:ty)]
+                pub struct $Struct:ident {
+                    $(pub $field:ident: $field_ty:ty,)+
+                }
+            )+
+        ) => {
+            $(
+                #[derive(Debug, Clone, PartialEq)]
+                pub struct $Struct {
+                    $(pub $field: $field_ty,)+
+                }
+
+                impl Display for $Struct {
+                    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        let Self { $($field,)+ } = self;
+                        write!(f, $fmt)
+                    }
+                }
+
+                impl IbcPath for $Struct {
+                    type Output<L: LightClient> = $Output;
+                }
+            )+
+
+            pub trait IbcStateReadPaths<L: LightClient>: $(IbcStateRead<L, $Struct>+)+ {}
+            impl<T, L: LightClient> IbcStateReadPaths<L> for T where T: $(IbcStateRead<L, $Struct>+)+ {}
+        }
+    );
+
+    ibc_paths! {
+        #[display("clients/{client_id}/clientState")]
+        #[output(L::ClientState)]
+        pub struct ClientStatePath {
+            pub client_id: ClientId,
+        }
+
+        #[display("clients/{client_id}/consensusStates/{height}")]
+        #[output(L::ConsensusState)]
+        pub struct ClientConsensusStatePath {
+            pub client_id: ClientId,
+            pub height: Height,
+        }
+
+        // #[display("clients/{client_id}/connections")]
+        // pub struct ClientConnectionPath {
+        //     pub client_id: ClientId,
+        // }
+
+        #[display("connections/{connection_id}")]
+        #[output(ConnectionEnd)]
+        pub struct ConnectionPath {
+            pub connection_id: ConnectionId,
+        }
+
+        // #[display("ports/{port_id}")]
+        // pub struct PortPath {
+        //     pub port_id: PortId,
+        // }
+
+        #[display("channelEnds/ports/{port_id}/channels/{channel_id}")]
+        #[output(Channel)]
+        pub struct ChannelEndPath {
+            pub port_id: PortId,
+            pub channel_id: ChannelId,
+        }
+
+        // #[display("nextSequenceSend/ports/{_0}/channels/{_1}")]
+        // pub struct SeqSendPath {
+        //     pub port_id: PortId,
+        //     pub channel_id: ChannelId,
+        // }
+
+        // #[display("nextSequenceRecv/ports/{_0}/channels/{_1}")]
+        // pub struct SeqRecvPath {
+        //     pub port_id: PortId,
+        //     pub channel_id: ChannelId,
+        // }
+
+        // #[display("nextSequenceAck/ports/{_0}/channels/{_1}")]
+        // pub struct SeqAckPath {
+        //     pub port_id: PortId,
+        //     pub channel_id: ChannelId,
+        // }
+
+        #[display("commitments/ports/{port_id}/channels/{channel_id}/sequences/{sequence}")]
+        #[output([u8; 32])]
+        pub struct CommitmentPath {
+            pub port_id: PortId,
+            pub channel_id: ChannelId,
+            pub sequence: u64,
+        }
+
+        // #[display("acks/ports/{port_id}/channels/{channel_id}/sequences/{sequence}")]
+        // pub struct AckPath {
+        //     pub port_id: PortId,
+        //     pub channel_id: ChannelId,
+        //     pub sequence: Sequence,
+        // }
+
+        // #[display("receipts/ports/{port_id}/channels/{channel_id}/sequences/{sequence}")]
+        // pub struct ReceiptPath {
+        //     pub port_id: PortId,
+        //     pub channel_id: ChannelId,
+        //     pub sequence: Sequence,
+        // }
+    }
+}
+
+pub trait LightClient: Send + Sync + Sized {
     /// The client state type that this light client stores about the counterparty.
     type ClientState: ClientState;
 
@@ -32,6 +174,8 @@ pub trait LightClient: Send + Sync {
     type ConsensusState;
 
     type UpdateClientMessage;
+
+    type IbcStateRead: IbcStateReadPaths<Self>;
 
     fn chain_id(&self) -> impl Future<Output = String> + '_;
 
@@ -47,39 +191,19 @@ pub trait LightClient: Send + Sync {
         _: Self::UpdateClientMessage,
     ) -> impl Future<Output = ()> + '_;
 
-    fn consensus_state_proof(
+    fn state_proof<P: proof::IbcPath + 'static>(
         &self,
-        client_id: String,
-        counterparty_height: Height,
+        path: P,
         self_height: Height,
-    ) -> impl Future<Output = StateProof<Self::ConsensusState>> + '_;
-
-    fn client_state_proof(
-        &self,
-        client_id: String,
-        self_height: Height,
-    ) -> impl Future<Output = StateProof<Self::ClientState>> + '_;
-
-    fn connection_state_proof(
-        &self,
-        connection_id: String,
-        self_height: Height,
-    ) -> impl Future<Output = StateProof<ConnectionEnd>> + '_;
-
-    fn channel_state_proof(
-        &self,
-        channel_id: String,
-        port_id: String,
-        self_height: Height,
-    ) -> impl Future<Output = StateProof<Channel>> + '_;
-
-    fn packet_commitment_proof(
-        &self,
-        port_id: String,
-        channel_id: String,
-        sequence: u64,
-        self_height: Height,
-    ) -> impl Future<Output = StateProof<Vec<u8>>> + '_;
+    ) -> impl Future<Output = StateProof<P::Output<Self>>> + '_
+    where
+        Self::IbcStateRead: IbcStateRead<Self, P>,
+    {
+        async move {
+            <Self::IbcStateRead as IbcStateRead<Self, P>>::state_proof(self, path, self_height)
+                .await
+        }
+    }
 
     fn query_latest_height(&self) -> impl Future<Output = Height> + '_;
 
@@ -98,9 +222,9 @@ pub enum QueryHeight {
     Specific(Height),
 }
 
-pub trait Connect<C>: LightClient
+pub trait Connect<L>: LightClient
 where
-    C: LightClient,
+    L: LightClient,
 {
     // fn generate_counterparty_handshake_client_state(
     //     &self,
@@ -116,12 +240,12 @@ where
 
     fn connection_open_try(
         &self,
-        _: MsgConnectionOpenTry<C::ClientState>,
+        _: MsgConnectionOpenTry<L::ClientState>,
     ) -> impl Future<Output = (String, Height)> + '_;
 
     fn connection_open_ack(
         &self,
-        _: MsgConnectionOpenAck<C::ClientState>,
+        _: MsgConnectionOpenAck<L::ClientState>,
     ) -> impl Future<Output = Height> + '_;
 
     fn connection_open_confirm(
@@ -153,17 +277,17 @@ where
     fn generate_counterparty_client_state(
         &self,
         height: Height,
-    ) -> impl Future<Output = C::ClientState> + '_;
+    ) -> impl Future<Output = L::ClientState> + '_;
 
     /// Generates the latest consensus state for the counterparty chain.
     fn generate_counterparty_consensus_state(
         &self,
         height: Height,
-    ) -> impl Future<Output = C::ConsensusState> + '_;
+    ) -> impl Future<Output = L::ConsensusState> + '_;
 
     fn update_counterparty_client<'a>(
         &'a self,
-        counterparty: &'a C,
+        counterparty: &'a L,
         counterparty_client_id: String,
         update_from: Height,
         update_to: Height,

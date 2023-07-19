@@ -13,7 +13,7 @@ use ibc_types::{
     ibc::{
         core::{
             channel::{
-                channel::Channel, msg_channel_open_ack::MsgChannelOpenAck,
+                msg_channel_open_ack::MsgChannelOpenAck,
                 msg_channel_open_confirm::MsgChannelOpenConfirm,
                 msg_channel_open_init::MsgChannelOpenInit, msg_channel_open_try::MsgChannelOpenTry,
                 msg_recv_packet::MsgRecvPacket, packet::Packet,
@@ -21,7 +21,7 @@ use ibc_types::{
             client::height::Height,
             commitment::merkle_root::MerkleRoot,
             connection::{
-                connection_end::ConnectionEnd, msg_channel_open_ack::MsgConnectionOpenAck,
+                msg_channel_open_ack::MsgConnectionOpenAck,
                 msg_channel_open_confirm::MsgConnectionOpenConfirm,
                 msg_channel_open_init::MsgConnectionOpenInit,
                 msg_channel_open_try::MsgConnectionOpenTry,
@@ -30,22 +30,20 @@ use ibc_types::{
         google::protobuf::{any::Any, duration::Duration},
         lightclients::{cometbls, ethereum, tendermint::fraction::Fraction, wasm},
     },
-    CosmosAccountId, IntoProto, MsgIntoProto,
+    CosmosAccountId, IntoProto, MsgIntoProto, TryFromProto,
 };
 use num_bigint::BigUint;
 use prost::Message;
 use protos::{
     cosmos::{
         auth,
+        base::tendermint::v1beta1::AbciQueryRequest,
         ics23::v1 as ics23_v1,
         staking::{self, v1beta1::BondStatus},
         tx,
     },
     google,
-    ibc::core::{
-        channel::v1 as channel_v1, client::v1 as client_v1, commitment::v1 as commitment_v1,
-        connection::v1 as connection_v1,
-    },
+    ibc::core::{client::v1 as client_v1, commitment::v1 as commitment_v1},
     union::prover::api::v1::{union_prover_api_client, ProveRequest},
 };
 use sha2::Digest;
@@ -53,7 +51,14 @@ use tendermint_rpc::{
     event::EventData, query::EventType, Client, SubscriptionClient, WebSocketClient,
 };
 
-use crate::chain::{evm::Cometbls, Connect, LightClient, StateProof};
+use crate::chain::{
+    evm::Cometbls,
+    proof::{
+        ChannelEndPath, ClientConsensusStatePath, ClientStatePath, CommitmentPath, ConnectionPath,
+        IbcPath,
+    },
+    Connect, IbcStateRead, LightClient, StateProof,
+};
 
 /// The 08-wasm light client running on the union chain.
 pub struct Ethereum<C: ChainSpec> {
@@ -208,6 +213,8 @@ impl<C: ChainSpec> LightClient for Ethereum<C> {
         Any<wasm::consensus_state::ConsensusState<ethereum::consensus_state::ConsensusState>>;
     type UpdateClientMessage = wasm::header::Header<ethereum::header::Header<C>>;
 
+    type IbcStateRead = EthereumStateRead;
+
     fn chain_id(&self) -> impl Future<Output = String> + '_ {
         async move { self.chain_id.clone() }
     }
@@ -249,25 +256,6 @@ impl<C: ChainSpec> LightClient for Ethereum<C> {
         msg: Self::UpdateClientMessage,
     ) -> impl futures::Future<Output = ()> + '_ {
         async move {
-            // let mut query_client =
-            //     client_v1::query_client::QueryClient::connect("http://0.0.0.0:9090")
-            //         .await
-            //         .unwrap();
-
-            // dbg!(&msg.data.consensus_update.finalized_header.beacon.slot);
-
-            // let cs_before: Self::ClientState = query_client
-            //     .client_state(client_v1::QueryClientStateRequest {
-            //         client_id: client_id.clone(),
-            //     })
-            //     .await
-            //     .unwrap()
-            //     .into_inner()
-            //     .client_state
-            //     .unwrap()
-            //     .try_into()
-            //     .unwrap();
-
             self.broadcast_tx_commit([google::protobuf::Any {
                 type_url: "/ibc.core.client.v1.MsgUpdateClient".into(),
                 value: client_v1::MsgUpdateClient {
@@ -278,196 +266,6 @@ impl<C: ChainSpec> LightClient for Ethereum<C> {
                 .encode_to_vec(),
             }])
             .await;
-
-            // let cs_after: Self::ClientState = query_client
-            //     .client_state(client_v1::QueryClientStateRequest {
-            //         client_id: client_id.clone(),
-            //     })
-            //     .await
-            //     .unwrap()
-            //     .into_inner()
-            //     .client_state
-            //     .unwrap()
-            //     .try_into()
-            //     .unwrap();
-
-            // dbg!(cs_before);
-            // dbg!(cs_after);
-        }
-    }
-
-    fn consensus_state_proof(
-        &self,
-        client_id: String,
-        counterparty_height: Height,
-        self_height: Height,
-    ) -> impl Future<Output = StateProof<Self::ConsensusState>> + '_ {
-        async move {
-            let path = format!(
-                "clients/{client_id}/consensusStates/{}-{}",
-                counterparty_height.revision_number, counterparty_height.revision_height
-            );
-
-            let query_result = self
-                .tm_client
-                .abci_query(
-                    Some("store/ibc/key".to_string()),
-                    path,
-                    Some(self_height.revision_height.try_into().unwrap()),
-                    true,
-                )
-                .await
-                .unwrap();
-
-            StateProof {
-                state: google::protobuf::Any::decode(&*query_result.value)
-                    .unwrap()
-                    .try_into()
-                    .unwrap(),
-                proof: commitment_v1::MerkleProof {
-                    proofs: query_result
-                        .proof
-                        .unwrap()
-                        .ops
-                        .into_iter()
-                        .map(|op| ics23_v1::CommitmentProof::decode(op.data.as_slice()).unwrap())
-                        .collect::<Vec<_>>(),
-                }
-                .encode_to_vec(),
-                proof_height: self.make_height(query_result.height.value()),
-            }
-        }
-    }
-
-    fn client_state_proof(
-        &self,
-        client_id: String,
-        self_height: Height,
-    ) -> impl Future<Output = StateProof<Self::ClientState>> + '_ {
-        async move {
-            let path = format!("clients/{client_id}/clientState");
-
-            let query_result = self
-                .tm_client
-                .abci_query(
-                    Some("store/ibc/key".to_string()),
-                    path,
-                    Some(self_height.revision_height.try_into().unwrap()),
-                    true,
-                )
-                .await
-                .unwrap();
-
-            tracing::debug!(
-                "Client state serialized {:?}",
-                ethers::utils::hex::encode(&query_result.value)
-            );
-
-            StateProof {
-                state: google::protobuf::Any::decode(&*query_result.value)
-                    .unwrap()
-                    .try_into()
-                    .unwrap(),
-                proof: commitment_v1::MerkleProof {
-                    proofs: query_result
-                        .proof
-                        .unwrap()
-                        .ops
-                        .into_iter()
-                        .map(|op| ics23_v1::CommitmentProof::decode(op.data.as_slice()).unwrap())
-                        .collect::<Vec<_>>(),
-                }
-                .encode_to_vec(),
-                proof_height: self.make_height(query_result.height.value()),
-            }
-        }
-    }
-
-    fn connection_state_proof(
-        &self,
-        connection_id: String,
-        self_height: Height,
-    ) -> impl Future<Output = StateProof<ConnectionEnd>> + '_ {
-        async move {
-            let path = format!("connections/{connection_id}");
-
-            let query_result = self
-                .tm_client
-                .abci_query(
-                    Some("store/ibc/key".to_string()),
-                    path,
-                    Some(self_height.revision_height.try_into().unwrap()),
-                    true,
-                )
-                .await
-                .unwrap();
-
-            let connection_end =
-                connection_v1::ConnectionEnd::decode(&*query_result.value).unwrap();
-
-            tracing::debug!("Connection ID: {:?}", connection_id);
-            tracing::debug!("Connection End: {:?}", connection_end);
-
-            let proof = StateProof {
-                state: connection_end.try_into().unwrap(),
-                proof: commitment_v1::MerkleProof {
-                    proofs: query_result
-                        .proof
-                        .unwrap()
-                        .ops
-                        .into_iter()
-                        .map(|op| ics23_v1::CommitmentProof::decode(op.data.as_slice()).unwrap())
-                        .collect::<Vec<_>>(),
-                }
-                .encode_to_vec(),
-                proof_height: self.make_height(query_result.height.value()),
-            };
-
-            tracing::debug!("Proof height {}", query_result.height.value());
-            tracing::debug!("Proof {}", ethers::utils::hex::encode(proof.proof.clone()));
-
-            proof
-        }
-    }
-
-    fn channel_state_proof(
-        &self,
-        channel_id: String,
-        port_id: String,
-        self_height: Height,
-    ) -> impl Future<Output = StateProof<Channel>> + '_ {
-        async move {
-            let path = format!("channelEnds/ports/{port_id}/channels/{channel_id}");
-
-            let query_result = self
-                .tm_client
-                .abci_query(
-                    Some("store/ibc/key".to_string()),
-                    path,
-                    Some(self_height.revision_height.try_into().unwrap()),
-                    true,
-                )
-                .await
-                .unwrap();
-
-            let connection_end = channel_v1::Channel::decode(&*query_result.value).unwrap();
-
-            tracing::debug!("{:?}", connection_end);
-
-            StateProof {
-                state: connection_end.try_into().unwrap(),
-                proof: commitment_v1::MerkleProof {
-                    proofs: query_result
-                        .proof
-                        .unwrap()
-                        .ops
-                        .into_iter()
-                        .map(|op| ics23_v1::CommitmentProof::decode(op.data.as_slice()).unwrap())
-                        .collect::<Vec<_>>(),
-                }
-                .encode_to_vec(),
-                proof_height: self.make_height(query_result.height.value()),
-            }
         }
     }
 
@@ -508,45 +306,6 @@ impl<C: ChainSpec> LightClient for Ethereum<C> {
 
     fn process_height_for_counterparty(&self, height: Height) -> impl Future<Output = Height> + '_ {
         async move { height }
-    }
-
-    fn packet_commitment_proof(
-        &self,
-        port_id: String,
-        channel_id: String,
-        sequence: u64,
-        self_height: Height,
-    ) -> impl Future<Output = StateProof<Vec<u8>>> + '_ {
-        async move {
-            let path =
-                format!("commitments/ports/{port_id}/channels/{channel_id}/sequences/{sequence}");
-
-            let query_result = self
-                .tm_client
-                .abci_query(
-                    Some("store/ibc/key".to_string()),
-                    path,
-                    Some(self_height.revision_height.try_into().unwrap()),
-                    true,
-                )
-                .await
-                .unwrap();
-
-            StateProof {
-                state: query_result.value,
-                proof: commitment_v1::MerkleProof {
-                    proofs: query_result
-                        .proof
-                        .unwrap()
-                        .ops
-                        .into_iter()
-                        .map(|op| ics23_v1::CommitmentProof::decode(op.data.as_slice()).unwrap())
-                        .collect::<Vec<_>>(),
-                }
-                .encode_to_vec(),
-                proof_height: self.make_height(query_result.height.value()),
-            }
-        }
     }
 
     fn packet_stream(
@@ -1295,6 +1054,92 @@ impl<C: ChainSpec> Connect<Cometbls<C>> for Ethereum<C> {
             tracing::debug!("Updated client.");
 
             update_to
+        }
+    }
+}
+
+trait AbciStateRead<C: ChainSpec>: IbcPath {
+    fn from_abci_bytes(bytes: Vec<u8>) -> Self::Output<Ethereum<C>>;
+}
+
+impl<C: ChainSpec> AbciStateRead<C> for ClientStatePath {
+    fn from_abci_bytes(bytes: Vec<u8>) -> Self::Output<Ethereum<C>> {
+        Self::Output::<Ethereum<C>>::try_from_proto_bytes(&bytes).unwrap()
+    }
+}
+
+impl<C: ChainSpec> AbciStateRead<C> for ClientConsensusStatePath {
+    fn from_abci_bytes(bytes: Vec<u8>) -> Self::Output<Ethereum<C>> {
+        Self::Output::<Ethereum<C>>::try_from_proto_bytes(&bytes).unwrap()
+    }
+}
+
+impl<C: ChainSpec> AbciStateRead<C> for ConnectionPath {
+    fn from_abci_bytes(bytes: Vec<u8>) -> Self::Output<Ethereum<C>> {
+        Self::Output::<Ethereum<C>>::try_from_proto_bytes(&bytes).unwrap()
+    }
+}
+
+impl<C: ChainSpec> AbciStateRead<C> for ChannelEndPath {
+    fn from_abci_bytes(bytes: Vec<u8>) -> Self::Output<Ethereum<C>> {
+        Self::Output::<Ethereum<C>>::try_from_proto_bytes(&bytes).unwrap()
+    }
+}
+
+impl<C: ChainSpec> AbciStateRead<C> for CommitmentPath {
+    fn from_abci_bytes(bytes: Vec<u8>) -> Self::Output<Ethereum<C>> {
+        bytes.try_into().unwrap()
+    }
+}
+
+pub struct EthereumStateRead;
+
+impl<C, P> IbcStateRead<Ethereum<C>, P> for EthereumStateRead
+where
+    C: ChainSpec,
+    P: IbcPath + AbciStateRead<C> + 'static,
+{
+    fn state_proof(
+        light_client: &Ethereum<C>,
+        path: P,
+        at: Height,
+    ) -> impl Future<Output = StateProof<P::Output<Ethereum<C>>>> + '_ {
+        async move {
+            let mut client =
+                protos::cosmos::base::tendermint::v1beta1::service_client::ServiceClient::connect(
+                    "http://127.0.0.1:26657",
+                )
+                .await
+                .unwrap();
+
+            let query_result = client
+                .abci_query(AbciQueryRequest {
+                    data: "store/ibc/key".to_string().into_bytes(),
+                    path: path.to_string(),
+                    height: at.revision_height.try_into().unwrap(),
+                    prove: true,
+                })
+                .await
+                .unwrap()
+                .into_inner();
+
+            // tracing::debug!("Proof height {}", query_result.height.value());
+            // tracing::debug!("Proof {}", ethers::utils::hex::encode(proof.proof.clone()));
+
+            StateProof {
+                state: P::from_abci_bytes(query_result.value),
+                proof: commitment_v1::MerkleProof {
+                    proofs: query_result
+                        .proof_ops
+                        .unwrap()
+                        .ops
+                        .into_iter()
+                        .map(|op| ics23_v1::CommitmentProof::decode(op.data.as_slice()).unwrap())
+                        .collect::<Vec<_>>(),
+                }
+                .encode_to_vec(),
+                proof_height: light_client.make_height(query_result.height.try_into().unwrap()),
+            }
         }
     }
 }

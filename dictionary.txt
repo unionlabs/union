@@ -501,6 +501,7 @@ tmproto
 tmrand
 tmservice
 tmtypes
+tokenizable
 tokenz
 tombstoned
 treefmt
