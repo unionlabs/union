@@ -31,33 +31,33 @@ contract IBCChannelTest is TestPlus {
     }
 
     /// tests a full channel creation handshake, from the perspective of chain A
-    // function test_openingHandshake_chainA(uint64 proofHeight, string memory portId) public {
-    //     vm.assume(proofHeight > 0);
-    //     (string memory clientId,string memory connId) = setupConnection_chainA(proofHeight);
-    //
-    //     // 1. bindPort
-    //     handler.bindPort(portId, address(app));
-    //
-    //     // 2. channelOpenInit
-    //     IBCMsgs.MsgChannelOpenInit memory msg_init = MsgMocks.channelOpenInit(connId, portId);
-    //     string memory channelId = handler.channelOpenInit(msg_init);
-    //
-    //     (Channel.Data memory channel, bool exists) = handler.getChannel(portId, channelId);
-    //     assert(exists);
-    //     console.log(uint256(channel.state));
-    //     assertEq(uint256(channel.state), uint256(ChannelEnums.State.STATE_INIT));
-    //     // TODO: verify channel commitment
-    //
-    //     // 3. channelOpenAck
-    //     IBCMsgs.MsgChannelOpenAck memory msg_ack = MsgMocks.channelOpenAck(portId, channelId, proofHeight);
-    //     handler.channelOpenAck(msg_ack);
-    //
-    //     (channel,) = handler.getChannel(portId, channelId);
-    //     assertEq(uint256(channel.state), uint256(ChannelEnums.State.STATE_OPEN));
-    //     assertEq(channel.version, msg_ack.counterpartyVersion);
-    //     assertEq(channel.counterparty.channel_id, msg_ack.counterpartyChannelId);
-    //     // TODO: verify channel commitment
-    // }
+    function test_openingHandshake_chainA(uint64 proofHeight, string memory portId) public {
+        vm.assume(proofHeight > 0);
+        (string memory clientId,string memory connId) = setupConnection_chainA(proofHeight);
+
+        // 1. bindPort
+        handler.bindPort(portId, address(app));
+
+        // 2. channelOpenInit
+        IBCMsgs.MsgChannelOpenInit memory msg_init = MsgMocks.channelOpenInit(connId, portId);
+        string memory channelId = handler.channelOpenInit(msg_init);
+
+        (Channel.Data memory channel, bool exists) = handler.getChannel(portId, channelId);
+        assert(exists);
+        console.log(uint256(channel.state));
+        assertEq(uint256(channel.state), uint256(ChannelEnums.State.STATE_INIT));
+        // TODO: verify channel commitment
+
+        // 3. channelOpenAck
+        IBCMsgs.MsgChannelOpenAck memory msg_ack = MsgMocks.channelOpenAck(portId, channelId, proofHeight);
+        handler.channelOpenAck(msg_ack);
+
+        (channel,) = handler.getChannel(portId, channelId);
+        assertEq(uint256(channel.state), uint256(ChannelEnums.State.STATE_OPEN));
+        assertEq(channel.version, msg_ack.counterpartyVersion);
+        assertEq(channel.counterparty.channel_id, msg_ack.counterpartyChannelId);
+        // TODO: verify channel commitment
+    }
 
     // TODO:
     /// tests a full connection creation handshake, from the perspective of chain B
