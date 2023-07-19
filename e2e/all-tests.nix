@@ -78,22 +78,6 @@
               hostPkgs = pkgs; # the Nixpkgs package set used outside the VMs
             };
           in
-          # (pkgs.stdenv.mkDerivation
-          #   {
-          #     pname = name;
-          #     version = "1.2.3";
-          #     buildInputs = [ test ];
-          #     src = ./.;
-          #     doCheck = true;
-          #     checkPhase = ''
-          #       ls ${test}
-          #     '';
-          #     buildPhase = ''
-
-          #       touch $out
-          #     '';
-          #     requiredSystemFeatures = [ "kvm" "nixos-test" ];
-          #   }).driver;
           test;
       }));
 }
