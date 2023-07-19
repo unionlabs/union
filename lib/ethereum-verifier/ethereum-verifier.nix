@@ -7,7 +7,6 @@
       } // (crane.lib.crateNameFromCargoToml { cargoToml = ./Cargo.toml; });
     in
     {
-      packages.ethereum-verifier = crane.lib.buildPackage attrs;
 
       checks = crane.mkChecks "ethereum-verifier" {
         clippy = crane.lib.cargoClippy (attrs // {
