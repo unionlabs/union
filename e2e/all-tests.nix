@@ -49,11 +49,12 @@
                       inputs.arion.nixosModules.arion
                     ];
                     virtualisation = {
-                    diskSize = 2048;
-                    arion = {
-                      backend = "docker";
-                      projects.union.settings = networks.union;
-                    };};
+                      diskSize = 2048;
+                      arion = {
+                        backend = "docker";
+                        projects.union.settings = networks.union;
+                      };
+                    };
                   };
 
                 sepolia =
