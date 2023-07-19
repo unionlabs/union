@@ -1,0 +1,15 @@
+[package]
+name = "e2e"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+clap = { version = "4.3.12", features = ["derive"] }
+ethers = { version = "2.0.8", features = ["ws"] }
+reqwest = "0.11.18"
+tendermint-rpc = { git = "https://github.com/benluelo/tendermint-rs", branch = "bn254", features = ["http-client", "websocket-client"] }
+tokio = { version = "1.29.1", features = ["full"] }
+tracing = "0.1.37"
+tracing-subscriber = "0.3.17"
