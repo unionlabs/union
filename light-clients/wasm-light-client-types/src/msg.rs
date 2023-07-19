@@ -116,12 +116,25 @@ pub struct StatusResponse {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub enum Status {
     Active,
+    Frozen,
+    Expired,
 }
 
 impl Display for Status {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Status::Active => write!(f, "Active"),
+            Status::Frozen => write!(f, "Frozen"),
+            Status::Expired => write!(f, "Expired"),
+        }
+    }
+}
+
+impl From<Status> for StatusResponse {
+    fn from(value: Status) -> Self {
+        StatusResponse {
+            status: value.to_string(),
+            genesis_metadata: Vec::new(),
         }
     }
 }
