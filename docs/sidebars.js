@@ -16,6 +16,10 @@ module.exports = {
           type: "doc",
           id: "concepts/ibc",
         },
+        {
+          type: "doc",
+          id: "concepts/permissionless-vs-trustless",
+        },
       ],
     },
     {
