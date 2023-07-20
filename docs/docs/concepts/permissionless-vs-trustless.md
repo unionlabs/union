@@ -14,7 +14,8 @@ You can easily verify if a bridge can be censored by looking at the token contra
 - [Kava](https://github.com/Kava-Labs/kava-bridge/blob/3d88653f6c196a06d5b6f8abd5d03a679e0e030a/contract/contracts/Bridge.sol#L69)
 - [Layerzero](https://github.com/LayerZero-Labs/wrapped-asset-bridge/blob/13c8582fc6492ff78966647c6ebd5913c192d602/contracts/WrappedTokenBridge.sol#L81)
 - [Axelar](https://github.com/axelarnetwork/axelar-cgp-solidity/blob/9c7a260c848011f27d6e7ecb1cba88de79206ccc/contracts/AxelarGateway.sol#L103)
-  :::
+
+:::
 
 Most infrastructure providers require permission to deploy on a new chain or rollup, you need to work with them to get contracts deployed and services operational; as well as that you are subject to being shut down at any moment. This is often the case for trusted protocols because the bridging provider takes a centralized role of authority.
 
