@@ -5,7 +5,7 @@
 
 // nix run .# -- tx wasm instantiate 1 '{"default_timeout":10000,"gov_contract":"union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2","allowlist":[]}' --label blah --from alice --gas auto --keyring-backend test --gas-adjustment 1.3 --amount 100stake --no-admin --chain-id union-devnet-1
 
-use std::{str::FromStr, sync::Arc};
+use std::{fmt::Debug, str::FromStr, sync::Arc};
 
 use bip32::{DerivationPath, Language, XPrv};
 use clap::{Args, Parser, Subcommand};
@@ -43,6 +43,9 @@ use reqwest::Url;
 use crate::chain::{
     cosmos::Ethereum,
     evm::{Cometbls, CometblsConfig},
+    proof::{
+        ChannelEndPath, ClientConsensusStatePath, ClientStatePath, CommitmentPath, ConnectionPath,
+    },
     ClientState, Connect, LightClient,
 };
 
@@ -523,16 +526,18 @@ fn get_wallet() -> XPrv {
     alice
 }
 
+// trait Connection<L1, L2> =
+
 /// Returns (c1 client id, c2 client id, c1 conn id, c2 conn id)
-async fn connection_handshake<Chain1, Chain2>(
-    cometbls: &Chain1,
-    ethereum: &Chain2,
+async fn connection_handshake<L2, L1>(
+    cometbls: &L2,
+    ethereum: &L1,
 ) -> (String, String, String, String)
 where
-    Chain1: LightClient + Connect<Chain2>,
-    Chain2: LightClient + Connect<Chain1>,
-    <Chain1 as LightClient>::ClientState: std::fmt::Debug + IntoProto,
-    <Chain2 as LightClient>::ClientState: std::fmt::Debug + IntoProto,
+    L2: LightClient + Connect<L1>,
+    L1: LightClient + Connect<L2>,
+    <L2 as LightClient>::ClientState: Debug + IntoProto,
+    <L1 as LightClient>::ClientState: Debug + IntoProto,
 {
     let cometbls_id = cometbls.chain_id().await;
     let ethereum_id = ethereum.chain_id().await;
@@ -632,17 +637,29 @@ where
     // generate state proofs
 
     let cometbls_client_state_proof = cometbls
-        .client_state_proof(cometbls_client_id.clone(), cometbls_latest_height)
+        .state_proof(
+            ClientStatePath {
+                client_id: cometbls_client_id.clone(),
+            },
+            cometbls_latest_height,
+        )
         .await;
     let cometbls_consensus_state_proof = cometbls
-        .consensus_state_proof(
-            cometbls_client_id.clone(),
-            ethereum_latest_height,
+        .state_proof(
+            ClientConsensusStatePath {
+                client_id: cometbls_client_id.clone(),
+                height: ethereum_latest_height,
+            },
             cometbls_latest_height,
         )
         .await;
     let cometbls_connection_state_proof = cometbls
-        .connection_state_proof(cometbls_connection_id.clone(), cometbls_latest_height)
+        .state_proof(
+            ConnectionPath {
+                connection_id: cometbls_connection_id.clone(),
+            },
+            cometbls_latest_height,
+        )
         .await;
 
     let (ethereum_connection_id, connection_try_height) = ethereum
@@ -692,17 +709,29 @@ where
         .await;
 
     let ethereum_connection_state_proof = ethereum
-        .connection_state_proof(ethereum_connection_id.clone(), connection_try_height)
+        .state_proof(
+            ConnectionPath {
+                connection_id: ethereum_connection_id.clone(),
+            },
+            connection_try_height,
+        )
         .await;
     let ethereum_client_state_proof = ethereum
-        .client_state_proof(ethereum_client_id.clone(), connection_try_height)
+        .state_proof(
+            ClientStatePath {
+                client_id: ethereum_client_id.clone(),
+            },
+            connection_try_height,
+        )
         .await;
     let ethereum_consensus_state_proof = ethereum
-        .consensus_state_proof(
-            ethereum_client_id.clone(),
-            cometbls
-                .process_height_for_counterparty(cometbls_latest_height)
-                .await,
+        .state_proof(
+            ClientConsensusStatePath {
+                client_id: ethereum_client_id.clone(),
+                height: cometbls
+                    .process_height_for_counterparty(cometbls_latest_height)
+                    .await,
+            },
             connection_try_height,
         )
         .await;
@@ -768,7 +797,12 @@ where
         .await;
 
     let cometbls_connection_state_proof = cometbls
-        .connection_state_proof(cometbls_connection_id.clone(), cometbls_latest_height)
+        .state_proof(
+            ConnectionPath {
+                connection_id: cometbls_connection_id.clone(),
+            },
+            cometbls_latest_height,
+        )
         .await;
 
     ethereum
@@ -795,19 +829,19 @@ where
     )
 }
 
-async fn channel_handshake<Chain1, Chain2>(
-    cometbls: &Chain1,
-    ethereum: &Chain2,
+async fn channel_handshake<L2, L1>(
+    cometbls: &L2,
+    ethereum: &L1,
     cometbls_connection_info: ConnectionEndInfo,
     ethereum_connection_info: ConnectionEndInfo,
     cometbls_port_id: String,
     ethereum_port_id: String,
 ) -> (String, String)
 where
-    Chain1: LightClient + Connect<Chain2>,
-    Chain2: LightClient + Connect<Chain1>,
-    <Chain1 as LightClient>::ClientState: std::fmt::Debug + ClientState,
-    <Chain2 as LightClient>::ClientState: std::fmt::Debug + ClientState,
+    L2: LightClient + Connect<L1>,
+    L1: LightClient + Connect<L2>,
+    <L2 as LightClient>::ClientState: Debug + ClientState,
+    <L1 as LightClient>::ClientState: Debug + ClientState,
 {
     let cometbls_id = cometbls.chain_id().await;
     let ethereum_id = ethereum.chain_id().await;
@@ -850,9 +884,11 @@ where
         .await;
 
     let proof = cometbls
-        .channel_state_proof(
-            cometbls_channel_id.clone(),
-            cometbls_port_id.to_string(),
+        .state_proof(
+            ChannelEndPath {
+                port_id: cometbls_port_id.to_string(),
+                channel_id: cometbls_channel_id.clone(),
+            },
             cometbls_latest_height,
         )
         .await;
@@ -902,9 +938,11 @@ where
         .await;
 
     let proof = ethereum
-        .channel_state_proof(
-            ethereum_channel_id.clone(),
-            ethereum_port_id.clone(),
+        .state_proof(
+            ChannelEndPath {
+                port_id: ethereum_port_id.clone(),
+                channel_id: ethereum_channel_id.clone(),
+            },
             channel_try_height,
         )
         .await;
@@ -934,9 +972,11 @@ where
         .await;
 
     let proof = cometbls
-        .channel_state_proof(
-            cometbls_channel_id.clone(),
-            cometbls_port_id.clone(),
+        .state_proof(
+            ChannelEndPath {
+                port_id: cometbls_port_id.clone(),
+                channel_id: cometbls_channel_id.clone(),
+            },
             cometbls_latest_height,
         )
         .await;
@@ -1035,10 +1075,12 @@ async fn relay_packets_inner<L1, L2>(
                 dbg!(&lc1_update_to);
 
                 let commitment_proof = lc1
-                    .packet_commitment_proof(
-                        packet.source_port.clone(),
-                        packet.source_channel.clone(),
-                        sequence,
+                    .state_proof(
+                        CommitmentPath {
+                            port_id: packet.source_port.clone(),
+                            channel_id: packet.source_channel.clone(),
+                            sequence,
+                        },
                         event_height,
                     )
                     .await;

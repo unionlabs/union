@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use cosmwasm_std::{
     entry_point, to_binary, Binary, Deps, DepsMut, Env, MessageInfo, QueryResponse, Response,
-    StdError, StdResult,
+    StdError,
 };
 use ethabi::ethereum_types::U256 as ethabi_U256;
 use ethereum_verifier::{
@@ -273,18 +273,42 @@ pub fn update_header<C: ChainSpec>(
 }
 
 #[entry_point]
-pub fn query(_deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<QueryResponse> {
-    match msg {
-        QueryMsg::Status {} => to_binary(&query_status()),
-    }
+pub fn query(deps: Deps<CustomQuery>, env: Env, msg: QueryMsg) -> Result<QueryResponse, Error> {
+    let response = match msg {
+        QueryMsg::Status {} => query_status(deps, &env)?,
+    };
+
+    to_binary(&response).map_err(Into::into)
 }
 
-// TODO(aeryz): Status needs to be stored and fetched
-fn query_status() -> StatusResponse {
-    StatusResponse {
-        status: Status::Active.to_string(),
-        genesis_metadata: vec![],
+fn query_status(deps: Deps<CustomQuery>, env: &Env) -> Result<StatusResponse, Error> {
+    let client_state = read_client_state(deps)?;
+
+    if client_state.data.frozen_height.is_some() {
+        return Ok(Status::Frozen.into());
     }
+
+    let Some(consensus_state) = read_consensus_state(deps, &client_state.latest_height)? else {
+        return Ok(Status::Expired.into());
+    };
+
+    if is_client_expired(
+        consensus_state.timestamp,
+        client_state.data.trusting_period,
+        env.block.time.seconds(),
+    ) {
+        return Ok(Status::Expired.into());
+    }
+
+    Ok(Status::Active.into())
+}
+
+fn is_client_expired(
+    consensus_state_timestamp: u64,
+    trusting_period: u64,
+    current_block_time: u64,
+) -> bool {
+    consensus_state_timestamp + trusting_period < current_block_time
 }
 
 #[cfg(test)]
@@ -292,8 +316,8 @@ mod test {
     use std::marker::PhantomData;
 
     use cosmwasm_std::{
-        testing::{MockApi, MockQuerier, MockQuerierCustomHandlerResult, MockStorage},
-        OwnedDeps, SystemResult,
+        testing::{mock_env, MockApi, MockQuerier, MockQuerierCustomHandlerResult, MockStorage},
+        OwnedDeps, SystemResult, Timestamp,
     };
     use ethereum_verifier::crypto::{eth_aggregate_public_keys, fast_aggregate_verify};
     use ibc::{
@@ -312,7 +336,7 @@ mod test {
         ibc::{
             core::commitment::merkle_root::MerkleRoot,
             google::protobuf::duration::Duration,
-            lightclients::{cometbls, ethereum, tendermint::fraction::Fraction},
+            lightclients::{cometbls, ethereum, tendermint::fraction::Fraction, wasm},
         },
         IntoProto,
     };
@@ -368,6 +392,124 @@ mod test {
     const WASM_CLIENT_ID_PREFIX: &str = "08-wasm";
     const ETHEREUM_CLIENT_ID_PREFIX: &str = "10-ethereum";
     const IBC_KEY_PREFIX: &str = "ibc";
+    const INITIAL_CONSENSUS_STATE_HEIGHT: Height = Height {
+        revision_number: 0,
+        revision_height: 1328,
+    };
+
+    #[test]
+    fn query_status_returns_active() {
+        let mut deps = OwnedDeps::<_, _, _, CustomQuery> {
+            storage: MockStorage::default(),
+            api: MockApi::default(),
+            querier: MockQuerier::<CustomQuery>::new(&[]).with_custom_handler(custom_query_handler),
+            custom_query_type: PhantomData,
+        };
+
+        let wasm_client_state =
+            serde_json::from_str(include_str!("./test/client_state.json")).unwrap();
+
+        let wasm_consensus_state =
+            serde_json::from_str(include_str!("./test/consensus_state.json")).unwrap();
+
+        save_wasm_client_state(
+            deps.as_mut(),
+            <_>::try_from_proto(wasm_client_state).unwrap(),
+        );
+
+        save_wasm_consensus_state(
+            deps.as_mut(),
+            <_>::try_from_proto(wasm_consensus_state).unwrap(),
+            &INITIAL_CONSENSUS_STATE_HEIGHT,
+        );
+
+        let mut env = mock_env();
+        env.block.time = Timestamp::from_seconds(0);
+
+        assert_eq!(query_status(deps.as_ref(), &env), Ok(Status::Active.into()));
+    }
+
+    #[test]
+    fn query_status_returns_frozen() {
+        let mut deps = OwnedDeps::<_, _, _, CustomQuery> {
+            storage: MockStorage::default(),
+            api: MockApi::default(),
+            querier: MockQuerier::<CustomQuery>::new(&[]).with_custom_handler(custom_query_handler),
+            custom_query_type: PhantomData,
+        };
+
+        let mut wasm_client_state =
+            <wasm::client_state::ClientState<ethereum::client_state::ClientState>>::try_from_proto(
+                serde_json::from_str(include_str!("./test/client_state.json")).unwrap(),
+            )
+            .unwrap();
+
+        wasm_client_state.data.frozen_height = Some(Height {
+            revision_number: 1,
+            revision_height: 1,
+        });
+
+        save_wasm_client_state(deps.as_mut(), wasm_client_state);
+
+        assert_eq!(
+            query_status(deps.as_ref(), &mock_env()),
+            Ok(Status::Frozen.into())
+        );
+    }
+
+    #[test]
+    fn query_status_returns_expired() {
+        let mut deps = OwnedDeps::<_, _, _, CustomQuery> {
+            storage: MockStorage::default(),
+            api: MockApi::default(),
+            querier: MockQuerier::<CustomQuery>::new(&[]).with_custom_handler(custom_query_handler),
+            custom_query_type: PhantomData,
+        };
+
+        let mut wasm_client_state =
+            <wasm::client_state::ClientState<ethereum::client_state::ClientState>>::try_from_proto(
+                serde_json::from_str(include_str!("./test/client_state.json")).unwrap(),
+            )
+            .unwrap();
+
+        save_wasm_client_state(deps.as_mut(), wasm_client_state.clone());
+
+        // Client returns expired here because it cannot find the consensus state
+        assert_eq!(
+            query_status(deps.as_ref(), &mock_env()),
+            Ok(Status::Expired.into())
+        );
+
+        let wasm_consensus_state = <wasm::consensus_state::ConsensusState<
+            ethereum::consensus_state::ConsensusState,
+        >>::try_from_proto(
+            serde_json::from_str(include_str!("./test/consensus_state.json")).unwrap(),
+        )
+        .unwrap();
+
+        save_wasm_consensus_state(
+            deps.as_mut(),
+            wasm_consensus_state.clone(),
+            &INITIAL_CONSENSUS_STATE_HEIGHT,
+        );
+
+        wasm_client_state.data.trusting_period = 10;
+        save_wasm_client_state(deps.as_mut(), wasm_client_state.clone());
+        let mut env = mock_env();
+
+        env.block.time = Timestamp::from_seconds(
+            wasm_client_state.data.trusting_period + wasm_consensus_state.timestamp + 1,
+        );
+        assert_eq!(
+            query_status(deps.as_ref(), &env),
+            Ok(Status::Expired.into())
+        );
+
+        env.block.time = Timestamp::from_seconds(
+            wasm_client_state.data.trusting_period + wasm_consensus_state.timestamp,
+        );
+        assert_eq!(query_status(deps.as_ref(), &env), Ok(Status::Active.into()))
+    }
 
     #[test]
     fn update_works_with_good_data() {
@@ -391,10 +533,7 @@ mod test {
         save_wasm_consensus_state(
             deps.as_mut(),
             <_>::try_from_proto(wasm_consensus_state).unwrap(),
-            &Height {
-                revision_number: 0,
-                revision_height: 1328,
-            },
+            &INITIAL_CONSENSUS_STATE_HEIGHT,
         );
 
         let updates = &[
@@ -546,10 +685,7 @@ mod test {
         save_wasm_consensus_state(
             deps.as_mut(),
             wasm_consensus_state.try_into().unwrap(),
-            &Height {
-                revision_number: 0,
-                revision_height: 1328,
-            },
+            &INITIAL_CONSENSUS_STATE_HEIGHT,
         );
 
         let update =

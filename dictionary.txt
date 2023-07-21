@@ -25,6 +25,7 @@ GOPATH
 GOPRIVATE
 Getenv
 Hasher
+Hyperlane
 IAVL
 Infima
 Interchain
@@ -34,6 +35,7 @@ Karel
 Keybase
 LCFUR
 Lahcen
+Layerzero
 Merkle
 Mgoogle
 Misbehaviour
@@ -370,6 +372,8 @@ paramtypes
 partset
 passthru
 patchelf
+permissioned
+permissionless
 pflag
 phang
 pingpong
@@ -501,6 +505,7 @@ tmproto
 tmrand
 tmservice
 tmtypes
+tokenizable
 tokenz
 tombstoned
 treefmt

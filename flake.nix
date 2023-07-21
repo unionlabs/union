@@ -67,9 +67,10 @@
         ./unionpd/unionpd.nix
         ./unionvisor/unionvisor.nix
         ./relayer/relayer.nix
+        ./lib/ethereum-verifier/ethereum-verifier.nix
         ./uniond/proto.nix
         ./docs/docs.nix
-        ./light-clients/ethereum-light-client.nix
+        ./light-clients/ethereum-light-client/ethereum-light-client.nix
         ./cosmwasm/cosmwasm.nix
         ./evm/evm.nix
         ./tools/rust-proto.nix

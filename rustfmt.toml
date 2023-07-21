@@ -1,3 +1,5 @@
 group_imports = "StdExternalCrate"
 reorder_imports = true
 imports_granularity = "Crate"
+# wrap_comments = true
+# comment_width = 100
