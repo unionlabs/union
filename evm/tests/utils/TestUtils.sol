@@ -83,12 +83,6 @@ library MsgMocks {
         bytes32 proof = sha256(encodedConnection);
         m.proofTry = abi.encodePacked(proof);
 
-        console.log(" ");
-        console.log("actual connection");
-        console.log(expectedConnection.client_id);
-        console.logBytes(IbcCoreConnectionV1ConnectionEnd.encode(expectedConnection));
-        console.log(" ");
-
         // m.proofClient = ...;
         // m.clientStateBytes = ...;
 

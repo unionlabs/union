@@ -185,14 +185,17 @@ library MsgMocks {
         returns (IBCMsgs.MsgChannelOpenInit memory m)
     {
         ChannelCounterparty.Data memory counterparty;
-        counterparty.port_id = "1";
-        counterparty.channel_id = "1";
+        counterparty.port_id = "counterparty-port-id";
+        counterparty.channel_id = "counterparty-channel-id";
         string[] memory hops = new string[](1);
         hops[0] = connId;
 
         m.channel.state = ChannelEnums.State.STATE_INIT;
         m.channel.counterparty = counterparty;
         m.channel.connection_hops = hops;
+        // TODO: apparently channel creation works without setting this field, but later recvPacket fails because channel ordering is unspecified (IBCPacket.sol:138)
+        // is this a bug or some behaviour I'm not understanding?
+        m.channel.ordering = ChannelEnums.Order.ORDER_ORDERED;
         m.portId = portId;
     }
 
@@ -209,7 +212,7 @@ library MsgMocks {
         // mocking channel data
         Channel.Data memory channel = Channel.Data({
             state: ChannelEnums.State.STATE_TRYOPEN,
-            ordering: ChannelEnums.Order.ORDER_NONE_UNSPECIFIED,
+            ordering: ChannelEnums.Order.ORDER_ORDERED,
             counterparty: ChannelCounterparty.Data({port_id: portId, channel_id: channelId}),
             connection_hops: new string[](1),
             version: m.counterpartyVersion
@@ -276,6 +279,30 @@ library MsgMocks {
         bytes memory encodedChannel = Channel.encode(expectedChannel);
         m.proofAck = abi.encodePacked(sha256(encodedChannel));
         m.proofHeight.revision_height = proofHeight;
+    }
+
+    function packetRecv(string memory portId, string memory channelId, uint64 proofHeight)
+        internal
+        view
+        returns (IBCMsgs.MsgPacketRecv memory m)
+    {
+        m.packet.destination_port = portId;
+        m.packet.destination_channel = channelId;
+        m.packet.source_port = "counterparty-port-id";
+        m.packet.source_channel = "counterparty-channel-id";
+        m.packet.data = hex"12345678";
+        m.packet.sequence = 1;
+
+        m.proofHeight.revision_height = proofHeight;
+        bytes32 commitmentBytes = sha256(
+            abi.encodePacked(
+                m.packet.timeout_timestamp,
+                m.packet.timeout_height.revision_number,
+                m.packet.timeout_height.revision_height,
+                sha256(m.packet.data)
+            )
+        );
+        m.proof = abi.encodePacked(sha256(abi.encodePacked(commitmentBytes)));
     }
 }
 

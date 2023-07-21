@@ -13,6 +13,7 @@ import {ILightClient} from "contracts/core/02-client/ILightClient.sol";
 import {MockClient} from "contracts/clients/MockClient.sol";
 import {IbcCoreCommitmentV1MerklePrefix as CommitmentMerklePrefix} from
     "contracts/proto/ibc/core/commitment/v1/commitment.sol";
+import {IBCCommitment} from "contracts/core/24-host/IBCCommitment.sol";
 
 import "tests/TestPlus.sol";
 
@@ -52,23 +53,35 @@ contract IBCPacketTest is TestPlus {
         ClientHeight.Data memory timeoutHeight =
             ClientHeight.Data({revision_number: 0, revision_height: type(uint64).max});
         uint64 timeoutTimestamp = type(uint64).max;
+
         vm.prank(address(app));
         vm.expectEmit(false, false, false, false);
         emit SendPacket(0, "", "", timeoutHeight, 0, hex"");
-        handler.sendPacket(portId, channelId, timeoutHeight, timeoutTimestamp, hex"00");
+        handler.sendPacket(portId, channelId, timeoutHeight, timeoutTimestamp, hex"12345678");
+
+        assertEq(handler.nextSequenceSends(portId, channelId), 2);
+        assert(handler.commitments(IBCCommitment.packetCommitmentKey(portId, channelId, 1)) != bytes32(0));
+    }
+
+    function test_sendPacket_notApp() public {}
+
+    function test_sendPacket_channelNotOpen() public {
+        require(false, "TODO");
+    }
+
+    function test_sendPacket_invalidConsensusState() public {
+        require(false, "TODO");
     }
 
     function test_recvPacket() public {
-        IBCMsgs.MsgPacketRecv memory m;
-        m.packet.source_port = "1";
-        m.packet.source_channel = "counterparty-channel-id";
-        m.packet.destination_port = portId;
-        m.packet.destination_channel = channelId;
+        IBCMsgs.MsgPacketRecv memory msg_recv = MsgMocks.packetRecv(portId, channelId, proofHeight);
 
         // TODO: need to update client state here
 
         vm.prank(address(app));
-        handler.recvPacket(m);
+        handler.recvPacket(msg_recv);
+
+        //handler.recvPacket(m);
     }
 
     /// sets up an IBC Connection from the perspective of chain A
