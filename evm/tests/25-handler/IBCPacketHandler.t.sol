@@ -17,7 +17,7 @@ import {IBCCommitment} from "contracts/core/24-host/IBCCommitment.sol";
 
 import "tests/TestPlus.sol";
 
-contract IBCPacketTest is TestPlus {
+contract IBCPacketHandlerTest is TestPlus {
     using ConnectionCounterparty for ConnectionCounterparty.Data;
 
     IBCHandler_Testable handler;
@@ -30,6 +30,15 @@ contract IBCPacketTest is TestPlus {
     string connId;
     string portId;
     string channelId;
+
+    event SendPacket(
+        uint64 sequence,
+        string sourcePort,
+        string sourceChannel,
+        ClientHeight.Data timeoutHeight,
+        uint64 timeoutTimestamp,
+        bytes data
+    );
 
     constructor() {
         handler = new IBCHandler_Testable();
@@ -46,34 +55,13 @@ contract IBCPacketTest is TestPlus {
         uint64 timeoutTimestamp = type(uint64).max;
 
         vm.prank(address(app));
+        vm.expectEmit(false, false, false, false);
+        emit SendPacket(0, "", "", timeoutHeight, 0, hex"");
         handler.sendPacket(portId, channelId, timeoutHeight, timeoutTimestamp, hex"12345678");
-
-        assertEq(handler.nextSequenceSends(portId, channelId), 2);
-        assert(handler.commitments(IBCCommitment.packetCommitmentKey(portId, channelId, 1)) != bytes32(0));
-    }
-
-    function test_sendPacket_notApp() public {}
-
-    function test_sendPacket_channelNotOpen() public {
-        require(false, "TODO");
-    }
-
-    function test_sendPacket_invalidConsensusState() public {
-        require(false, "TODO");
     }
 
     function test_recvPacket() public {
-        IBCMsgs.MsgPacketRecv memory msg_recv = MsgMocks.packetRecv(portId, channelId, proofHeight);
-
-        // TODO: this shouldn't work. we're recving a msg that was never committed to state
-        // not sure if we're not constructing the mock correctly,
-        // or if it's just the MockClient skipping important validations
-        vm.prank(address(app));
-        handler.recvPacket(msg_recv);
-    }
-
-    function test_recvPacket_nonExistingPacket() public {
-        // TODO: read the test above. currently impossible to test this scenario
+        // TODO: read the TODO notes on IBCPacket.t.sol
     }
 
     /// sets up an IBC Connection from the perspective of chain A
