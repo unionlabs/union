@@ -49,8 +49,31 @@ func TestVerifyFailsToVerifyWhenIncorrectPublicKey(t *testing.T) {
 		msg := [32]byte{}
 		copy(msg[:], verify.Message[:])
 
-		// We copy a valid public key so that unmarshalling would still work
+		// We copy a valid public key so that parsing would still work
 		verify.PublicKeys[0] = verify.PublicKeys[1]
+
+		result, err := custom_query.VerifySignature(verify.Signature, msg, verify.PublicKeys)
+		assert.NoError(t, err)
+
+		assert.Equal(t, false, result)
+	}
+}
+
+func TestVerifyFailsToVerifyWhenMissingOnePublicKey(t *testing.T) {
+	entries, err := os.ReadDir(CORRECT_DATA_DIR)
+	assert.NoError(t, err)
+	for _, entry := range entries {
+		content, err := os.ReadFile(fmt.Sprintf(CORRECT_DATA_DIR_FORMAT, entry.Name()))
+		assert.NoError(t, err)
+
+		var verify custom_query.QueryAggregateVerify
+		err = json.Unmarshal(content, &verify)
+		assert.NoError(t, err)
+
+		msg := [32]byte{}
+		copy(msg[:], verify.Message[:])
+
+		verify.PublicKeys = verify.PublicKeys[:(len(verify.PublicKeys) - 1)]
 
 		result, err := custom_query.VerifySignature(verify.Signature, msg, verify.PublicKeys)
 		assert.NoError(t, err)
