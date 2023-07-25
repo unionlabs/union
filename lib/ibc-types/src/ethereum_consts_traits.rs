@@ -1,4 +1,5 @@
 use core::fmt::Debug;
+use std::str::FromStr;
 
 use serde::{Deserialize, Serialize};
 use typenum::Unsigned;
@@ -16,11 +17,23 @@ pub struct Minimal;
 #[derive(Debug, Clone, PartialEq)]
 pub struct Mainnet;
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum PresetBaseKind {
     Mainnet,
     Minimal,
+}
+
+impl FromStr for PresetBaseKind {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "minimal" => Ok(Self::Minimal),
+            "mainnet" => Ok(Self::Mainnet),
+            _ => Err(s.to_string()),
+        }
+    }
 }
 
 macro_rules! consts_traits {

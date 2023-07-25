@@ -62,6 +62,7 @@ pub fn validate_light_client_update<Ctx: LightClientContext, V: BlsVerify>(
     }
 
     // Verify update does not skip a sync committee period
+    println!("validating attested header");
     is_valid_light_client_header(ctx.fork_parameters(), &update.attested_header)?;
     let update_attested_slot = update.attested_header.beacon.slot;
     let update_finalized_slot = update.finalized_header.beacon.slot;
@@ -100,6 +101,7 @@ pub fn validate_light_client_update<Ctx: LightClientContext, V: BlsVerify>(
 
     // Verify that the `finality_branch`, if present, confirms `finalized_header`
     // to match the finalized checkpoint root saved in the state of `attested_header`.
+    println!("validating finalized header");
     is_valid_light_client_header(ctx.fork_parameters(), &update.finalized_header)?;
     let finalized_root = update.finalized_header.beacon.tree_hash_root();
 
@@ -198,7 +200,7 @@ pub fn verify_account_storage_root(
 ) -> Result<(), Error> {
     match verify_state(root, address.as_ref(), proof)? {
         Some(account) => {
-            let account = Account::from_rlp_bytes(account.as_ref())?;
+            let account = dbg!(Account::from_rlp_bytes(account.as_ref()))?;
             if account.storage_root == *storage_root {
                 Ok(())
             } else {
@@ -242,6 +244,8 @@ pub fn is_valid_light_client_header<C: ChainSpec>(
     if epoch < fork_parameters.capella.epoch {
         return Err(Error::InvalidChainVersion);
     }
+
+    // println!("header.execution = {:#?}", header.execution);
 
     validate_merkle_branch(
         &H256::from(header.execution.tree_hash_root()),
@@ -334,23 +338,26 @@ mod tests {
     fn read_valid_header_data() -> Vec<&'static str> {
         // TODO(aeryz): move test data to ibc types
         [
+            // include_str!(
+            //     "../../../light-clients/ethereum-light-client/src/test/sync_committee_update_1.json"
+            // ),
+            // include_str!(
+            //     "../../../light-clients/ethereum-light-client/src/test/finality_update_1.json"
+            // ),
+            // include_str!(
+            //     "../../../light-clients/ethereum-light-client/src/test/sync_committee_update_2.json"
+            // ),
+            // include_str!(
+            //     "../../../light-clients/ethereum-light-client/src/test/finality_update_2.json"
+            // ),
+            // include_str!(
+            //     "../../../light-clients/ethereum-light-client/src/test/finality_update_3.json"
+            // ),
+            // include_str!(
+            //     "../../../light-clients/ethereum-light-client/src/test/finality_update_4.json"
+            // ),
             include_str!(
-                "../../../light-clients/ethereum-light-client/src/test/sync_committee_update_1.json"
-            ),
-            include_str!(
-                "../../../light-clients/ethereum-light-client/src/test/finality_update_1.json"
-            ),
-            include_str!(
-                "../../../light-clients/ethereum-light-client/src/test/sync_committee_update_2.json"
-            ),
-            include_str!(
-                "../../../light-clients/ethereum-light-client/src/test/finality_update_2.json"
-            ),
-            include_str!(
-                "../../../light-clients/ethereum-light-client/src/test/finality_update_3.json"
-            ),
-            include_str!(
-                "../../../light-clients/ethereum-light-client/src/test/finality_update_4.json"
+                "../../../light-clients/ethereum-light-client/src/test/invalid_header_update.json"
             ),
         ]
         .into()
@@ -632,10 +639,11 @@ mod tests {
         let valid_header_data = read_valid_header_data();
 
         for header in valid_header_data {
-            let header =
-                <Header<Minimal>>::try_from_proto(serde_json::from_str(header).unwrap()).unwrap();
+            let header = serde_json::from_str::<Header<Minimal>>(header).unwrap();
 
             let proof_data = header.account_update.proofs[0].clone();
+
+            // dbg!(&proof_data);
 
             assert_eq!(
                 verify_account_storage_root(
@@ -683,8 +691,26 @@ mod tests {
         let valid_header_data = read_valid_header_data();
 
         for header in valid_header_data {
-            let header =
-                <Header<Minimal>>::try_from_proto(serde_json::from_str(header).unwrap()).unwrap();
+            // let header =
+            //     <Header<Minimal>>::try_from_proto(serde_json::from_str(header).unwrap()).unwrap();
+            let header = serde_json::from_str::<Header<Minimal>>(header).unwrap();
+
+            println!(
+                "finalized: {}",
+                header
+                    .consensus_update
+                    .finalized_header
+                    .execution
+                    .base_fee_per_gas
+            );
+            println!(
+                "attested: {}",
+                header
+                    .consensus_update
+                    .attested_header
+                    .execution
+                    .base_fee_per_gas
+            );
 
             // Both finalized and attested headers should be verifiable
             assert_eq!(
@@ -692,7 +718,8 @@ mod tests {
                     &MINIMAL.fork_parameters,
                     &header.consensus_update.attested_header,
                 ),
-                Ok(())
+                Ok(()),
+                "invalid attested header"
             );
 
             assert_eq!(
@@ -700,7 +727,8 @@ mod tests {
                     &MINIMAL.fork_parameters,
                     &header.consensus_update.finalized_header,
                 ),
-                Ok(())
+                Ok(()),
+                "invalid finalized header"
             );
         }
     }

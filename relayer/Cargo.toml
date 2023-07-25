@@ -9,17 +9,16 @@ edition = "2021"
 [dependencies]
 base64 = "0.21.0"
 bech32 = "0.9.1"
-bip32 = { version = "0.4.0", features = ["secp256k1"] }
+bip32 = { version = "0.5.0", features = ["secp256k1"] }
 contracts = { path = "../generated/contracts" }
 ethers = { version = "2.0.4", features = ["rustls", "ws"] }
 futures = "0.3.28"
 hex-literal = "0.4.1"
 beacon-api = { path = "../lib/beacon-api", default-features = false }
 num-bigint = "0.4"
-k256 = "0.11"
 prost = "*"
 protos = { path = "../generated/rust", features = ["proto_full", "client"] }
-reqwest = { version = "0.11.17", default-features = false, features = ["tokio-rustls"] }
+reqwest = { version = "0.11.17", default-features = false, features = ["rustls-tls"] }
 ripemd = "0.1.3"
 serde_json = "1.0.96"
 sha2 = "0.10.6"
@@ -31,9 +30,12 @@ tokio = { version = "1.27.0", features = ["macros"] }
 tonic = { version = "0.8", features = ["transport","tls","tls-roots","tls-webpki-roots"] }
 tower = { version = "*", features = ["log"] }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-clap = { version = "4.3.0", features = ["derive"] }
+clap = { version = "4.3.0", features = ["derive", "env", "error-context"] }
 tracing = "0.1.37"
 tracing-forest = "0.1.5"
 ibc-types = { path = "../lib/ibc-types" }
 ethereum-verifier = { path = "../lib/ethereum-verifier" }
 typenum = "1.16.0"
+serde = { version = "1.0.173", features = ["derive"] }
+serde-utils = { path = "../lib/serde-utils" }
+anyhow = "1.0.72"

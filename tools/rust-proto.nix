@@ -24,7 +24,7 @@
             lib = { doctest = false; };
             dependencies = {
               prost = { version = "0.11.0"; default-features = false; features = ["prost-derive"]; };
-              ethers = { version = "2.0.4"; optional = true; };
+              ethers = { version = "2.0.4"; optional = true; features = ["rustls"]; };
               serde = { version = "1.0"; default-features = false; features = ["derive"]; optional = true; };
               tonic = { version = "0.8"; features = [ "gzip" ]; optional = true; };
               schemars = { version = "0.8.3"; default-features = false; optional = true; };

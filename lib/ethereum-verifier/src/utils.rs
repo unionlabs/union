@@ -141,6 +141,9 @@ pub fn validate_merkle_branch<'a>(
             }
         }
 
+        dbg!(&value);
+        dbg!(&root);
+
         value == *root
     }
     .then_some(())
@@ -155,6 +158,8 @@ pub fn validate_merkle_branch<'a>(
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::redundant_clone)]
+
     use ibc_types::{
         ethereum_consts_traits::{
             consts::{floorlog2, EXECUTION_PAYLOAD_INDEX},

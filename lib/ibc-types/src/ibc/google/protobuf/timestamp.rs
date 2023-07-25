@@ -13,6 +13,15 @@ impl From<Timestamp> for protos::google::protobuf::Timestamp {
     }
 }
 
+impl From<protos::google::protobuf::Timestamp> for Timestamp {
+    fn from(value: protos::google::protobuf::Timestamp) -> Self {
+        Self {
+            seconds: value.seconds,
+            nanos: value.nanos,
+        }
+    }
+}
+
 #[cfg(feature = "ethabi")]
 impl From<Timestamp> for contracts::glue::GoogleProtobufTimestampData {
     fn from(value: Timestamp) -> Self {

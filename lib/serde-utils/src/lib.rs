@@ -3,14 +3,25 @@ extern crate alloc;
 use std::fmt::Debug;
 
 use hex::FromHexError;
-use serde::de;
 
 const HEX_ENCODING_PREFIX: &str = "0x";
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum FromHexStringError {
     Hex(FromHexError),
     MissingPrefix(String),
+    // NOTE: Contains the stringified error
+    TryFromBytes(String),
+}
+
+impl std::error::Error for FromHexStringError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            FromHexStringError::Hex(hex) => Some(hex),
+            FromHexStringError::MissingPrefix(_) => None,
+            FromHexStringError::TryFromBytes(_) => None,
+        }
+    }
 }
 
 impl core::fmt::Display for FromHexStringError {
@@ -19,36 +30,36 @@ impl core::fmt::Display for FromHexStringError {
             FromHexStringError::Hex(e) => write!(f, "{e}"),
             FromHexStringError::MissingPrefix(data) => write!(
                 f,
-                "missing prefix `{HEX_ENCODING_PREFIX}` when deserializing hex data {data}",
+                "missing prefix `{HEX_ENCODING_PREFIX}` when deserializing hex data '{data}'",
             ),
+            FromHexStringError::TryFromBytes(err) => {
+                write!(f, "unable to convert from bytes: {err:?}")
+            }
         }
     }
 }
 
-fn to_hex<T: AsRef<[u8]>>(data: T) -> String {
+pub fn to_hex<T: AsRef<[u8]>>(data: T) -> String {
     format!(
         "{HEX_ENCODING_PREFIX}{encoding}",
         encoding = hex::encode(data.as_ref())
     )
 }
 
-fn parse_hex<'de, D, T>(string: String) -> Result<T, D::Error>
+pub fn parse_hex<T>(string: impl AsRef<[u8]>) -> Result<T, FromHexStringError>
 where
-    D: serde::Deserializer<'de>,
     T: TryFrom<Vec<u8>>,
-    <T as TryFrom<Vec<u8>>>::Error: Debug,
+    <T as TryFrom<Vec<u8>>>::Error: Debug + 'static,
 {
-    match string.strip_prefix(HEX_ENCODING_PREFIX) {
-        Some(maybe_hex) => hex::decode(maybe_hex).map_err(FromHexStringError::Hex),
-        None => Err(FromHexStringError::MissingPrefix(string)),
+    match string.as_ref().strip_prefix(HEX_ENCODING_PREFIX.as_bytes()) {
+        Some(maybe_hex) => hex::decode(maybe_hex)
+            .map_err(FromHexStringError::Hex)?
+            .try_into()
+            .map_err(|err| FromHexStringError::TryFromBytes(format!("{err:?}"))),
+        None => Err(FromHexStringError::MissingPrefix(
+            String::from_utf8_lossy(string.as_ref()).into_owned(),
+        )),
     }
-    .map_err(de::Error::custom)?
-    .try_into()
-    .map_err(|err| {
-        de::Error::custom(format!(
-            "type failed to parse bytes from hex data: {err:#?}"
-        ))
-    })
 }
 
 // REVIEW: Are these base64 helpers necessary anymore, since we rarely use the proto types directly?
@@ -165,22 +176,24 @@ pub mod fixed_size_array {
 pub mod hex_string {
     use std::fmt::Debug;
 
-    use serde::Deserialize;
+    use serde::{de, Deserialize};
+
+    use crate::{parse_hex, to_hex};
 
     pub fn serialize<S, T: AsRef<[u8]>>(data: T, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
     {
-        serializer.serialize_str(&crate::to_hex(data))
+        serializer.serialize_str(&to_hex(data))
     }
 
     pub fn deserialize<'de, D, T>(deserializer: D) -> Result<T, D::Error>
     where
         D: serde::Deserializer<'de>,
         T: TryFrom<Vec<u8>>,
-        <T as TryFrom<Vec<u8>>>::Error: Debug,
+        <T as TryFrom<Vec<u8>>>::Error: Debug + 'static,
     {
-        String::deserialize(deserializer).and_then(crate::parse_hex::<D, T>)
+        String::deserialize(deserializer).and_then(|x| parse_hex::<T>(x).map_err(de::Error::custom))
     }
 }
 
@@ -189,6 +202,8 @@ pub mod hex_string_list {
     use std::fmt::Debug;
 
     use serde::{de, Deserialize, Deserializer, Serializer};
+
+    use crate::parse_hex;
 
     pub fn serialize<S, T, C>(list: &C, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -203,20 +218,16 @@ pub mod hex_string_list {
     where
         D: Deserializer<'de>,
         T: TryFrom<Vec<u8>>,
-        <T as TryFrom<Vec<u8>>>::Error: Debug,
+        <T as TryFrom<Vec<u8>>>::Error: Debug + 'static,
         C: TryFrom<Vec<T>>,
         <C as TryFrom<Vec<T>>>::Error: Debug,
     {
-        Vec::<String>::deserialize(deserializer)
-            .and_then(|x| {
-                x.into_iter()
-                    .map(crate::parse_hex::<D, T>)
-                    .collect::<Result<Vec<_>, _>>()
-            })
-            .and_then(|vec| {
-                vec.try_into()
-                    .map_err(|err| de::Error::custom(format!("failed to collect list: {err:#?}")))
-            })
+        Vec::<String>::deserialize(deserializer)?
+            .into_iter()
+            .map(|x| parse_hex::<T>(x).map_err(de::Error::custom))
+            .collect::<Result<Vec<_>, D::Error>>()?
+            .try_into()
+            .map_err(|err| de::Error::custom(format!("failed to collect list: {err:#?}")))
     }
 }
 

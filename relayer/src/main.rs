@@ -1,24 +1,22 @@
 // *almost* stable, more than safe enough to use imo https://github.com/rust-lang/rfcs/pull/3425
 #![feature(return_position_impl_trait_in_trait)]
 // #![warn(clippy::pedantic)]
-#![allow(clippy::manual_async_fn)]
+#![allow(
+     // required due to return_position_impl_trait_in_trait false positives
+    clippy::manual_async_fn,
+    clippy::module_name_repetitions
+)]
 
 // nix run .# -- tx wasm instantiate 1 '{"default_timeout":10000,"gov_contract":"union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2","allowlist":[]}' --label blah --from alice --gas auto --keyring-backend test --gas-adjustment 1.3 --amount 100stake --no-admin --chain-id union-devnet-1
 
-use std::{fmt::Debug, str::FromStr, sync::Arc};
+use std::{collections::btree_map::Entry, fmt::Debug, fs::read_to_string};
 
-use bip32::{DerivationPath, Language, XPrv};
-use clap::{Args, Parser, Subcommand};
-use contracts::{ics20_bank::ics20_bank, ics20_transfer_bank::ics20_transfer_bank};
-use ethers::{
-    prelude::{EthAbiCodec, EthAbiType, SignerMiddleware},
-    providers::{Http, Middleware, Provider, Ws},
-    signers::{LocalWallet, Signer},
-    types::{Address, H256, U256},
-};
-use futures::{future::join, Stream, StreamExt};
+use anyhow::bail;
+use clap::Parser;
+use ethers::{signers::Signer, types::U256};
+use futures::{future::join, FutureExt, Stream, StreamExt};
 use ibc_types::{
-    ethereum_consts_traits::{ChainSpec, Minimal},
+    ethereum_consts_traits::{Mainnet, Minimal, PresetBaseKind},
     ibc::core::{
         channel::{
             self, channel::Channel, msg_channel_open_ack::MsgChannelOpenAck,
@@ -38,554 +36,451 @@ use ibc_types::{
     IntoProto,
 };
 use prost::Message;
-use reqwest::Url;
 
-use crate::chain::{
-    cosmos::Ethereum,
-    evm::{Cometbls, CometblsConfig},
-    proof::{
-        ChannelEndPath, ClientConsensusStatePath, ClientStatePath, CommitmentPath, ConnectionPath,
+use crate::{
+    chain::{
+        cosmos::{Ethereum, Union},
+        evm::Evm,
+        proof::{
+            ChannelEndPath, ClientConsensusStatePath, ClientStatePath, CommitmentPath,
+            ConnectionPath,
+        },
+        AnyChain, Chain, ChainConnection, ClientState, ClientStateOf, Connect, CreateClient,
+        LightClient,
     },
-    ClientState, Connect, LightClient,
+    cli::{
+        AppArgs, ChainAddCmd, ChainCmd, ChannelCmd, ClientCmd, ClientCreateCmd, CometblsClientType,
+        CommandV2, EvmClientType, QueryCmd, SubmitPacketCmd,
+    },
+    config::{ChainConfig, Config, EvmChainConfig},
 };
 
+pub mod cli;
+pub mod config;
+
 pub mod chain;
+
+#[tokio::main]
+async fn main() -> Result<(), anyhow::Error> {
+    tracing_subscriber::fmt::init();
+
+    let args = AppArgs::parse();
+
+    do_main(args).await
+}
 
 // const ETH_BEACON_RPC_API: &str = "http://localhost:9596";
 // const ETH_RPC_API: &str = "http://localhost:8545";
 const CHANNEL_VERSION: &str = "ics20-1";
 
-#[derive(Debug, Parser)]
-pub struct AppArgs {
-    #[command(subcommand)]
-    command: Command,
-}
+#[allow(clippy::too_many_lines)]
+async fn do_main(args: cli::AppArgs) -> Result<(), anyhow::Error> {
+    let mut relayer_config = read_to_string(&args.config_file_path)
+        .map_or(Config::default(), |s| {
+            serde_json::from_str::<Config>(&s).unwrap()
+        });
 
-#[derive(Debug, Subcommand)]
-pub enum Command {
-    OpenConnection(OpenConnectionArgs),
-    OpenChannel(OpenChannelArgs),
-    RelayPackets(RelayPacketsArgs),
-    Transfer(TransferArgs),
-    QueryBalances {
-        #[arg(long)]
-        wallet: LocalWallet,
-        #[arg(long)]
-        denom: String,
-        #[arg(long)]
-        eth_rpc_api: Url,
-        #[arg(long)]
-        ics20_bank_address: Address,
-    },
-}
-
-#[derive(Debug, Parser)]
-pub struct OpenConnectionArgs {
-    #[command(flatten)]
-    args: ClientArgs,
-}
-
-#[derive(Debug, Parser)]
-pub struct OpenChannelArgs {
-    #[command(flatten)]
-    args: ClientArgs,
-
-    #[arg(long)]
-    cometbls_port_id: String,
-    #[arg(long)]
-    ethereum_port_id: String,
-
-    /// format is client_id/connection_id
-    #[arg(long)]
-    cometbls: ConnectionEndInfo,
-    /// format is client_id/connection_id
-    #[arg(long)]
-    ethereum: ConnectionEndInfo,
-}
-
-#[derive(Debug, Parser)]
-pub struct RelayPacketsArgs {
-    #[command(flatten)]
-    args: ClientArgs,
-
-    #[arg(long)]
-    open_channel: bool,
-
-    #[arg(long)]
-    cometbls_client_id: String,
-
-    #[arg(long)]
-    ethereum_client_id: String,
-
-    #[arg(long)]
-    cometbls_port_id: Option<String>,
-    #[arg(long)]
-    ethereum_port_id: Option<String>,
-}
-
-#[derive(Debug, Parser)]
-pub struct TransferArgs {
-    #[arg(long)]
-    ics20_transfer_address: Address,
-    #[arg(long)]
-    ics20_bank_address: Address,
-    #[arg(long)]
-    denom: String,
-    #[arg(long)]
-    amount: u64,
-    #[arg(long)]
-    receiver: String,
-    #[arg(long)]
-    wallet: LocalWallet,
-    #[arg(long)]
-    source_port: String,
-    #[arg(long)]
-    source_channel: String,
-    #[arg(long)]
-    eth_rpc_api: Url,
-}
-
-#[derive(Debug, Clone)]
-pub struct ConnectionEndInfo {
-    client_id: String,
-    connection_id: String,
-}
-
-impl FromStr for ConnectionEndInfo {
-    type Err = String;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mut split = s.split('/');
-
-        let client_id = split.next().ok_or("client id missing".to_string())?;
-        let connection_id = split.next().ok_or("connection id missing".to_string())?;
-
-        let extra = split.collect::<Vec<_>>().join("");
-
-        if extra.is_empty() {
-            Ok(Self {
-                client_id: client_id.to_string(),
-                connection_id: connection_id.to_string(),
-            })
-        } else {
-            Err(format!("erroneous extra data: {extra}"))
-        }
-    }
-}
-
-#[derive(Debug, Parser)]
-pub struct ClientArgs {
-    #[command(flatten)]
-    cometbls: CometblsClientArgs,
-    #[command(flatten)]
-    ethereum: EthereumClientArgs,
-}
-
-#[derive(Debug, Args)]
-pub struct CometblsClientArgs {
-    /// OwnableIBCHandler => address
-    #[arg(long)]
-    pub ibc_handler_address: Address,
-    /// CometblsClient => address
-    #[arg(long)]
-    pub cometbls_client_address: Address,
-    /// ICS20TransferBank => address
-    #[arg(long)]
-    pub ics20_transfer_address: Address,
-    /// ICS20Bank => address
-    #[arg(long)]
-    pub ics20_bank_address: Address,
-
-    #[arg(long)]
-    pub wallet: LocalWallet,
-
-    #[arg(long)]
-    pub eth_rpc_api: Url,
-
-    #[arg(long)]
-    pub eth_beacon_rpc_api: String,
-}
-
-#[derive(Debug, Args)]
-pub struct EthereumClientArgs {
-    #[arg(long = "code-id")]
-    pub wasm_code_id: H256,
-}
-
-#[derive(Debug, Subcommand)]
-pub enum CreateClientArgs {
-    Cometbls { ibc_handler_address: Address },
-    Ethereum { wasm_code_id: H256 },
-}
-
-#[tokio::main]
-async fn main() {
-    tracing_subscriber::fmt::init();
-
-    let args = AppArgs::parse();
-
-    do_main::<Minimal>(args).await;
-}
-
-#[derive(Debug, EthAbiCodec, EthAbiType)]
-pub struct Ics20Packet {
-    /// amount of tokens to transfer is encoded as a string, but limited to u64 max
-    pub amount: u64,
-    /// the token denomination to be transferred
-    pub denom: String,
-    /// the recipient address on the destination chain
-    pub receiver: String,
-    /// the sender address
-    pub sender: String,
-}
-
-async fn do_main<C: ChainSpec>(args: AppArgs) {
     match args.command {
-        Command::OpenConnection(OpenConnectionArgs { args }) => {
-            let cometbls = Cometbls::<C>::new(CometblsConfig {
-                cometbls_client_address: args.cometbls.cometbls_client_address,
-                ibc_handler_address: args.cometbls.ibc_handler_address,
-                ics20_transfer_address: args.cometbls.ics20_transfer_address,
-                ics20_bank_address: args.cometbls.ics20_bank_address,
-                wasm_code_id: args.ethereum.wasm_code_id,
-                wallet: args.cometbls.wallet,
-                eth_rpc_api: args.cometbls.eth_rpc_api,
-                eth_beacon_rpc_api: args.cometbls.eth_beacon_rpc_api,
-            })
-            .await;
-
-            let ethereum = Ethereum::new(get_wallet(), args.ethereum.wasm_code_id).await;
-
-            connection_handshake(&cometbls, &ethereum).await;
+        CommandV2::PrintConfig => {
+            println!("{}", serde_json::to_string_pretty(&relayer_config).unwrap());
         }
-        Command::OpenChannel(OpenChannelArgs {
-            args,
-            cometbls,
-            ethereum,
-            cometbls_port_id,
-            ethereum_port_id,
-        }) => {
-            let cometbls_lc = Cometbls::<C>::new(CometblsConfig {
-                cometbls_client_address: args.cometbls.cometbls_client_address,
-                ibc_handler_address: args.cometbls.ibc_handler_address,
-                ics20_transfer_address: args.cometbls.ics20_transfer_address,
-                ics20_bank_address: args.cometbls.ics20_bank_address,
-                wasm_code_id: args.ethereum.wasm_code_id,
-                wallet: args.cometbls.wallet,
-                eth_rpc_api: args.cometbls.eth_rpc_api,
-                eth_beacon_rpc_api: args.cometbls.eth_beacon_rpc_api,
-            })
-            .await;
+        CommandV2::Chain(chain) => match chain {
+            ChainCmd::Add(add) => {
+                let (name, cfg, overwrite) = match add {
+                    ChainAddCmd::Evm {
+                        name,
+                        config,
+                        overwrite,
+                        preset_base,
+                    } => (
+                        name,
+                        config::ChainConfig::Evm(match preset_base {
+                            PresetBaseKind::Mainnet => config::EvmChainConfig::Mainnet(config),
+                            PresetBaseKind::Minimal => config::EvmChainConfig::Minimal(config),
+                        }),
+                        overwrite,
+                    ),
+                    ChainAddCmd::Union {
+                        name,
+                        config,
+                        overwrite,
+                    } => (name, config::ChainConfig::Union(config), overwrite),
+                };
 
-            let ethereum_lc = Ethereum::<C>::new(get_wallet(), args.ethereum.wasm_code_id).await;
+                match relayer_config.chain.entry(name) {
+                    Entry::Vacant(vacant) => {
+                        vacant.insert(cfg);
+                    }
+                    Entry::Occupied(mut occupied) => {
+                        if overwrite {
+                            occupied.insert(cfg)
+                        } else {
+                            bail!("Not overwriting existing config file entry 'chain.{}'. Pass --overwrite if this is desired.", occupied.key())
+                        };
+                    }
+                };
+            }
+        },
+        CommandV2::Client(client) => match client {
+            ClientCmd::Query(query) => {
+                let json = match relayer_config.chain[&query.on].clone() {
+                    ChainConfig::Evm(EvmChainConfig::Mainnet(evm)) => {
+                        let evm = Evm::<Mainnet>::new(evm).await;
 
-            channel_handshake(
-                &cometbls_lc,
-                &ethereum_lc,
-                cometbls,
-                ethereum,
-                cometbls_port_id,
-                ethereum_port_id,
-            )
-            .await;
+                        let cometbls = evm.light_client();
+
+                        serde_json::to_string_pretty(
+                            &cometbls.query_client_state(query.client_id).await,
+                        )
+                        .unwrap()
+                    }
+                    ChainConfig::Evm(EvmChainConfig::Minimal(evm)) => {
+                        let evm = Evm::<Minimal>::new(evm).await;
+
+                        let cometbls = evm.light_client();
+
+                        serde_json::to_string_pretty(
+                            &cometbls.query_client_state(query.client_id).await,
+                        )
+                        .unwrap()
+                    }
+                    ChainConfig::Union(union) => {
+                        let union = Union::new(union).await;
+
+                        let ethereum: Ethereum<Mainnet> = union.light_client();
+
+                        serde_json::to_string_pretty(
+                            &ethereum.query_client_state(query.client_id).await,
+                        )
+                        .unwrap()
+                    }
+                };
+
+                println!("{json}");
+            }
+            ClientCmd::Create(create) => match create {
+                ClientCreateCmd::Evm(ty) => match ty {
+                    EvmClientType::Cometbls {
+                        on,
+                        counterparty,
+                        config: cometbls_config,
+                    } => {
+                        match (
+                            relayer_config.get_chain(&on).await.unwrap(),
+                            relayer_config.get_chain(&counterparty).await.unwrap(),
+                        ) {
+                            (AnyChain::EvmMainnet(evm), AnyChain::Union(union)) => {
+                                let (client_id, _) =
+                                    evm.create_client(cometbls_config, union).await;
+                                println!("{}", client_id);
+                            }
+                            (AnyChain::EvmMinimal(evm), AnyChain::Union(union)) => {
+                                let (client_id, _) =
+                                    evm.create_client(cometbls_config, union).await;
+                                println!("{}", client_id);
+                            }
+                            _ => {
+                                panic!("invalid chain config")
+                            }
+                        }
+                    }
+                },
+                ClientCreateCmd::Union(ty) => match ty {
+                    CometblsClientType::Ethereum08Wasm {
+                        config: ethereum_config,
+                        on,
+                        counterparty,
+                    } => {
+                        match (
+                            relayer_config.get_chain(&on).await.unwrap(),
+                            relayer_config.get_chain(&counterparty).await.unwrap(),
+                        ) {
+                            (AnyChain::Union(union), AnyChain::EvmMainnet(evm)) => {
+                                let (client_id, _) =
+                                    union.create_client(ethereum_config, evm).await;
+                                println!("{}", client_id);
+                            }
+                            (AnyChain::Union(union), AnyChain::EvmMinimal(evm)) => {
+                                let (client_id, _) =
+                                    union.create_client(ethereum_config, evm).await;
+                                println!("{}", client_id);
+                            }
+                            _ => {
+                                panic!("invalid chain config")
+                            }
+                        }
+                    }
+                },
+            },
+        },
+        CommandV2::Connection(connection) => match connection {
+            cli::ConnectionCmd::Open {
+                from_chain: from_chain_name,
+                from_client,
+                to_chain: to_chain_name,
+                to_client,
+            } => {
+                let from_chain = relayer_config.get_chain(&from_chain_name).await.unwrap();
+                let to_chain = relayer_config.get_chain(&to_chain_name).await.unwrap();
+
+                match (from_chain, to_chain) {
+                    // union -> evm
+                    (AnyChain::Union(union), AnyChain::EvmMainnet(evm)) => {
+                        connection_handshake(&union, from_client, &evm, to_client).await?;
+                    }
+                    (AnyChain::Union(union), AnyChain::EvmMinimal(evm)) => {
+                        connection_handshake(&union, from_client, &evm, to_client).await?;
+                    }
+
+                    // evm -> union
+                    (AnyChain::EvmMainnet(evm), AnyChain::Union(union)) => {
+                        connection_handshake(&evm, from_client, &union, to_client).await?;
+                    }
+                    (AnyChain::EvmMinimal(evm), AnyChain::Union(union)) => {
+                        connection_handshake(&evm, from_client, &union, to_client).await?;
+                    }
+
+                    _ => {
+                        bail!("Cannot connect from '{from_chain_name}' to '{to_chain_name}'")
+                    }
+                }
+            }
+        },
+        CommandV2::Channel(channel) => match channel {
+            ChannelCmd::Open {
+                from_chain: from_chain_name,
+                from_connection,
+                from_port,
+                to_chain: to_chain_name,
+                to_connection,
+                to_port,
+            } => {
+                let from_chain = relayer_config.get_chain(&from_chain_name).await.unwrap();
+                let to_chain = relayer_config.get_chain(&to_chain_name).await.unwrap();
+
+                match (from_chain, to_chain) {
+                    // union -> evm
+                    (AnyChain::Union(union), AnyChain::EvmMainnet(evm)) => {
+                        channel_handshake(
+                            &union,
+                            from_connection,
+                            from_port,
+                            &evm,
+                            to_connection,
+                            to_port,
+                        )
+                        .await?;
+                    }
+                    (AnyChain::Union(union), AnyChain::EvmMinimal(evm)) => {
+                        channel_handshake(
+                            &union,
+                            from_connection,
+                            from_port,
+                            &evm,
+                            to_connection,
+                            to_port,
+                        )
+                        .await?;
+                    }
+
+                    // evm -> union
+                    (AnyChain::EvmMainnet(evm), AnyChain::Union(union)) => {
+                        channel_handshake(
+                            &evm,
+                            from_connection,
+                            from_port,
+                            &union,
+                            to_connection,
+                            to_port,
+                        )
+                        .await?;
+                    }
+                    (AnyChain::EvmMinimal(evm), AnyChain::Union(union)) => {
+                        channel_handshake(
+                            &evm,
+                            from_connection,
+                            from_port,
+                            &union,
+                            to_connection,
+                            to_port,
+                        )
+                        .await?;
+                    }
+
+                    _ => {
+                        bail!("Cannot connect from '{from_chain_name}' to '{to_chain_name}'")
+                    }
+                }
+            }
+        },
+        CommandV2::Relay(relay) => {
+            for cli::Between(a, b) in relay.between {
+                let a_chain = relayer_config.get_chain(&a).await.unwrap();
+                let b_chain = relayer_config.get_chain(&b).await.unwrap();
+
+                match (a_chain, b_chain) {
+                    // union -> evm
+                    (AnyChain::Union(union), AnyChain::EvmMainnet(evm)) => {
+                        relay_packets(&union, &evm).await;
+                    }
+                    (AnyChain::Union(union), AnyChain::EvmMinimal(evm)) => {
+                        relay_packets(&union, &evm).await;
+                    }
+
+                    // evm -> union
+                    (AnyChain::EvmMainnet(evm), AnyChain::Union(union)) => {
+                        relay_packets(&evm, &union).await;
+                    }
+                    (AnyChain::EvmMinimal(evm), AnyChain::Union(union)) => {
+                        relay_packets(&evm, &union).await;
+                    }
+
+                    _ => {
+                        bail!("Cannot relay between '{a}' and '{b}'")
+                    }
+                }
+            }
         }
-        Command::RelayPackets(RelayPacketsArgs {
-            args,
-            open_channel,
-            cometbls_port_id,
-            ethereum_port_id,
-            cometbls_client_id,
-            ethereum_client_id,
-        }) => {
-            let cometbls_lc = Cometbls::<C>::new(CometblsConfig {
-                cometbls_client_address: args.cometbls.cometbls_client_address,
-                ibc_handler_address: args.cometbls.ibc_handler_address,
-                ics20_transfer_address: args.cometbls.ics20_transfer_address,
-                ics20_bank_address: args.cometbls.ics20_bank_address,
-                wasm_code_id: args.ethereum.wasm_code_id,
-                wallet: args.cometbls.wallet,
-                eth_rpc_api: args.cometbls.eth_rpc_api,
-                eth_beacon_rpc_api: args.cometbls.eth_beacon_rpc_api,
-            })
-            .await;
-
-            // let channel: Channel = cometbls_lc
-            //     .ibc_handler
-            //     .get_channel("transfer".to_string(), "channel-2".to_string())
-            //     .await
-            //     .unwrap()
-            //     .0
-            //     .try_into()
-            //     .unwrap();
-
-            // dbg!(channel);
-
-            // panic!();
-
-            let ethereum_lc = Ethereum::<C>::new(get_wallet(), args.ethereum.wasm_code_id).await;
-
-            // ICS20Transfer.sol -> onRecvPacket -> replace body with `return _newAcknowledgement(true);`
-
-            // let balance = cometbls_lc
-            //     .ics20_bank
-            //     .balance_of(
-            //         ethers::types::H160::from(b"aaaaa55555aaaaa44444"),
-            //         format!("{}/channel-11/stake", cometbls_port_id.clone().unwrap()),
-            //     )
-            //     .await
-            //     .unwrap();
-            // dbg!(balance);
-            // panic!();
-
-            let (cometbls_client_id, ethereum_client_id) = if open_channel {
-                tracing::info!("opening_channel");
-
-                let (
-                    cometbls_client_id,
-                    ethereum_client_id,
-                    cometbls_connection_id,
-                    ethereum_connection_id,
-                ) = connection_handshake(&cometbls_lc, &ethereum_lc).await;
-
-                let (_cometbls_channel_id, _ethereum_channel_id) = channel_handshake(
-                    &cometbls_lc,
-                    &ethereum_lc,
-                    ConnectionEndInfo {
-                        client_id: cometbls_client_id.clone(),
-                        connection_id: cometbls_connection_id,
-                    },
-                    ConnectionEndInfo {
-                        client_id: ethereum_client_id.clone(),
-                        connection_id: ethereum_connection_id,
-                    },
-                    cometbls_port_id.unwrap(),
-                    ethereum_port_id.unwrap(),
-                )
-                .await;
-
-                (cometbls_client_id, ethereum_client_id)
-            } else {
-                (cometbls_client_id, ethereum_client_id)
-            };
-
-            relay_packets(
-                cometbls_lc,
-                ethereum_lc,
-                cometbls_client_id,
-                ethereum_client_id,
-            )
-            .await;
-        }
-        Command::Transfer(TransferArgs {
-            ics20_transfer_address,
-            ics20_bank_address,
+        CommandV2::SubmitPacket(SubmitPacketCmd::Transfer {
             denom,
             amount,
             receiver,
-            wallet,
             source_port,
             source_channel,
-            eth_rpc_api,
+            on,
         }) => {
-            let provider = Provider::new(Ws::connect(eth_rpc_api).await.unwrap());
+            let chain = relayer_config.get_chain(&on).await.unwrap();
 
-            let chain_id = provider.get_chainid().await.unwrap();
-
-            tracing::info!(chain_id = chain_id.to_string());
-
-            let wallet = wallet.with_chain_id(chain_id.as_u64());
-
-            let signer_middleware = Arc::new(SignerMiddleware::new(provider.clone(), wallet));
-
-            let ics20_transfer_bank = ics20_transfer_bank::ICS20TransferBank::new(
-                ics20_transfer_address,
-                signer_middleware.clone(),
-            );
-
-            let ics20_bank =
-                ics20_bank::ICS20Bank::new(ics20_bank_address, signer_middleware.clone());
-
-            // ics20_bank
-            //     .grant_role([0; 32], signer_middleware.address())
-            //     .send()
-            //     .await
-            //     .unwrap()
-            //     .await
-            //     .unwrap()
-            //     .unwrap();
-
-            // let has_role = ics20_bank
-            //     .has_role(
-            //         ics20_bank.admin_role().await.unwrap(),
-            //         signer_middleware.address(),
-            //     )
-            //     .await
-            //     .unwrap();
-
-            // tracing::info!(has_role);
-
-            tracing::info!("Setting the account as operator");
-
-            ics20_bank
-                .set_operator(ics20_transfer_address)
-                .send()
-                .await
-                .unwrap()
-                .await
-                .unwrap()
-                .unwrap();
-
-            // tracing::info!("Minting 1000000000 tokens");
-
-            // ics20_bank
-            //     .mint(
-            //         signer_middleware.address(),
-            //         denom.clone(),
-            //         1000000000.into(),
-            //     )
-            //     .send()
-            //     .await
-            //     .unwrap()
-            //     .await
-            //     .unwrap()
-            //     .unwrap();
-
-            let balance = ics20_bank
-                .balance_of(signer_middleware.address(), denom.clone())
-                .await
-                .unwrap();
-
-            tracing::info!(balance_before = %balance, %denom);
-
-            ics20_transfer_bank
-                .send_transfer(
-                    denom.clone(),
-                    amount,
-                    receiver,
-                    source_port,
-                    source_channel,
-                    1,
-                    u64::MAX,
-                )
-                .send()
-                .await
-                .unwrap()
-                .await
-                .unwrap()
-                .unwrap();
-
-            let balance: U256 = ics20_bank
-                .balance_of(signer_middleware.address(), denom.clone())
-                .await
-                .unwrap();
-
-            tracing::info!(balance_after = %balance, %denom);
+            match chain {
+                AnyChain::Union(_union) => {
+                    bail!("not currently supported");
+                }
+                // evm -> union
+                AnyChain::EvmMainnet(evm) => {
+                    evm.transfer(denom, amount, receiver, source_port, source_channel)
+                        .await;
+                }
+                AnyChain::EvmMinimal(evm) => {
+                    evm.transfer(denom, amount, receiver, source_port, source_channel)
+                        .await;
+                }
+            }
         }
-        Command::QueryBalances {
-            wallet,
-            denom,
-            eth_rpc_api,
-            ics20_bank_address,
-        } => {
-            let provider = Provider::new(Http::new(eth_rpc_api));
-            let wallet = wallet.with_chain_id(provider.get_chainid().await.unwrap().as_u64());
-            let signer_middleware = Arc::new(SignerMiddleware::new(provider, wallet.clone()));
+        CommandV2::Query(query) => match query {
+            QueryCmd::Balances { on, denom } => {
+                let chain = relayer_config.get_chain(&on).await.unwrap();
 
-            let ics20_bank =
-                ics20_bank::ICS20Bank::new(ics20_bank_address, signer_middleware.clone());
+                match chain {
+                    AnyChain::Union(_) => bail!("not currently supported"),
+                    AnyChain::EvmMainnet(evm) => {
+                        let balance: U256 = evm
+                            .ics20_bank
+                            .balance_of(evm.wallet.address(), denom.clone())
+                            .await
+                            .unwrap();
 
-            // let stripped_denom = denom.split('/').last().unwrap().to_string();
+                        println!("{balance}");
+                    }
+                    AnyChain::EvmMinimal(evm) => {
+                        let balance: U256 = evm
+                            .ics20_bank
+                            .balance_of(evm.wallet.address(), denom.clone())
+                            .await
+                            .unwrap();
 
-            let balance: U256 = ics20_bank
-                .balance_of(wallet.address(), denom.clone())
-                .await
-                .unwrap();
-
-            println!("{balance}");
-        }
+                        println!("{balance}");
+                    }
+                }
+            }
+        },
     }
-}
 
-// TODO(benluelo): Pass this in as as command line argument
-fn get_wallet() -> XPrv {
-    const MNEMONIC: &str = "wine parrot nominee girl exchange element pudding grow area twenty next junior come render shadow evidence sentence start rough debate feed all limb real";
-    // const DERIVATION_PATH: &str = "m/44'/1337'/0'/0/0";
-    const DERIVATION_PATH: &str = "m/44'/118'/0'/0/0";
-    const PASSWORD: &str = "";
-
-    let mnemonic = bip32::Mnemonic::new(MNEMONIC, Language::English);
-
-    let derivation_path = DerivationPath::from_str(DERIVATION_PATH).unwrap();
-
-    let alice = XPrv::derive_from_path(
-        mnemonic.unwrap().to_seed(PASSWORD).as_bytes(),
-        &derivation_path,
+    std::fs::write(
+        args.config_file_path,
+        serde_json::to_string_pretty(&relayer_config).unwrap(),
     )
     .unwrap();
 
-    alice
+    Ok(())
 }
 
-// trait Connection<L1, L2> =
-
-/// Returns (c1 client id, c2 client id, c1 conn id, c2 conn id)
-async fn connection_handshake<L2, L1>(
-    cometbls: &L2,
-    ethereum: &L1,
-) -> (String, String, String, String)
+async fn connection_handshake<FromChain, ToChain>(
+    from: &FromChain,
+    from_client_id: String,
+    to: &ToChain,
+    to_client_id: String,
+) -> Result<(String, String), anyhow::Error>
 where
-    L2: LightClient + Connect<L1>,
-    L1: LightClient + Connect<L2>,
-    <L2 as LightClient>::ClientState: Debug + IntoProto,
-    <L1 as LightClient>::ClientState: Debug + IntoProto,
+    FromChain: ChainConnection<ToChain>,
+    ToChain: ChainConnection<FromChain>,
+    ClientStateOf<FromChain>: IntoProto,
+    ClientStateOf<ToChain>: IntoProto,
 {
-    let cometbls_id = cometbls.chain_id().await;
-    let ethereum_id = ethereum.chain_id().await;
+    // let from_chain_id = from.chain_id().await;
+    let from = from.light_client();
+    // .new_with_id(from_client_id.clone())
+    // .await
+    // .with_context(|| format!("client {from_client_id} does not exist on {from_chain_id}",))?;
+
+    // let to_chain_id = to.chain_id().await;
+    let to = to.light_client();
+    // .new_with_id(to_client_id.clone())
+    // .await
+    // .with_context(|| format!("client {to_client_id} does not exist on {to_chain_id}",))?;
+
+    Ok(do_connection_handshake((from_client_id, from), (to_client_id, to)).await)
+}
+
+/// Returns (c1 conn id, c2 conn id)
+async fn do_connection_handshake<L2, L1>(
+    (cometbls_client_id, cometbls): (String, L2),
+    (ethereum_client_id, ethereum): (String, L1),
+) -> (String, String)
+where
+    L2: Connect<L1>,
+    L1: Connect<L2>,
+    ClientStateOf<<L2 as LightClient>::CounterpartyChain>: Debug + ClientState + IntoProto,
+    ClientStateOf<<L1 as LightClient>::CounterpartyChain>: Debug + ClientState + IntoProto,
+{
+    const DELAY_PERIOD: u64 = 6;
+
+    let cometbls_id = cometbls.chain().chain_id().await;
+    let ethereum_id = ethereum.chain().chain_id().await;
 
     tracing::info!(cometbls_id, ethereum_id);
 
-    let (cometbls_client_id, ethereum_latest_height) = {
-        let latest_height = ethereum.query_latest_height().await;
+    let cometbls_latest_height = cometbls.chain().query_latest_height().await;
+    let ethereum_latest_height = ethereum.chain().query_latest_height().await;
 
-        tracing::trace!("generating client state...");
-        let client_state = ethereum
-            .generate_counterparty_client_state(latest_height)
-            .await;
-        tracing::trace!("generating consensus state...");
-        let consensus_state = ethereum
-            .generate_counterparty_consensus_state(latest_height)
-            .await;
+    let cometbls_latest_trusted_height = ethereum
+        .query_client_state(ethereum_client_id.clone())
+        .await
+        .height();
+    let ethereum_latest_trusted_height = cometbls
+        .query_client_state(cometbls_client_id.clone())
+        .await
+        .height();
 
-        let client_id = cometbls.create_client(client_state, consensus_state).await;
+    tracing::info!(%cometbls_latest_trusted_height, %cometbls_latest_height);
+    tracing::info!(%ethereum_latest_trusted_height, %ethereum_latest_height);
 
-        tracing::info!(chain_id = cometbls_id, client_id);
+    let cometbls_latest_height = cometbls
+        .update_counterparty_client(
+            &ethereum,
+            ethereum_client_id.clone(),
+            cometbls_latest_trusted_height,
+            cometbls_latest_height,
+        )
+        .await;
 
-        (client_id, latest_height)
-    };
-
-    let (ethereum_client_id, cometbls_latest_height) = {
-        let latest_height = cometbls.query_latest_height().await;
-
-        tracing::trace!("generating client state...");
-        let client_state = cometbls
-            .generate_counterparty_client_state(latest_height)
-            .await;
-        tracing::trace!("generating consensus state...");
-        let consensus_state = cometbls
-            .generate_counterparty_consensus_state(latest_height)
-            .await;
-
-        let client_id = ethereum.create_client(client_state, consensus_state).await;
-
-        tracing::info!(chain_id = ethereum_id, client_id);
-
-        (client_id, latest_height)
-    };
-
-    tracing::info!(?cometbls_latest_height);
-    tracing::info!(?ethereum_latest_height);
-
-    let delay_period = 6;
+    let ethereum_latest_height = ethereum
+        .update_counterparty_client(
+            &cometbls,
+            cometbls_client_id.clone(),
+            ethereum_latest_trusted_height,
+            ethereum_latest_height,
+        )
+        .await;
 
     let (cometbls_connection_id, _) = cometbls
         .connection_open_init(MsgConnectionOpenInit {
@@ -593,7 +488,7 @@ where
             counterparty: connection::counterparty::Counterparty {
                 client_id: ethereum_client_id.clone(),
                 // TODO(benluelo): Create a new struct with this field omitted as it's unused for open init
-                connection_id: "".to_string(),
+                connection_id: String::new(),
                 prefix: MerklePrefix {
                     key_prefix: b"ibc".to_vec(),
                 },
@@ -602,25 +497,25 @@ where
                 identifier: "1".into(),
                 features: [Order::Ordered, Order::Unordered].into_iter().collect(),
             },
-            delay_period,
+            delay_period: DELAY_PERIOD,
         })
         .await;
 
     tracing::info!(
         cometbls_connection_id,
-        ?cometbls_latest_height,
-        ?ethereum_latest_height,
+        %cometbls_latest_height,
+        %ethereum_latest_height,
         cometbls_client_id,
         ethereum_client_id,
         "right after connection init"
     );
 
     let cometbls_update_from = cometbls_latest_height;
-    let cometbls_update_to = cometbls.query_latest_height().await;
+    let cometbls_update_to = cometbls.chain().query_latest_height().await;
 
     let cometbls_latest_height = cometbls
         .update_counterparty_client(
-            ethereum,
+            &ethereum,
             ethereum_client_id.clone(),
             cometbls_update_from,
             cometbls_update_to,
@@ -672,7 +567,7 @@ where
                     key_prefix: b"ibc".to_vec(),
                 },
             },
-            delay_period,
+            delay_period: DELAY_PERIOD,
             client_state: cometbls_client_state_proof.state,
             counterparty_versions: cometbls_connection_state_proof.state.versions,
             proof_height: cometbls_consensus_state_proof.proof_height,
@@ -690,7 +585,7 @@ where
 
     let ethereum_update_from = ethereum_latest_height;
     let ethereum_update_to = loop {
-        let height = ethereum.query_latest_height().await;
+        let height = ethereum.chain().query_latest_height().await;
         if height >= connection_try_height.increment() {
             break connection_try_height.increment();
         }
@@ -701,7 +596,7 @@ where
 
     let _ = ethereum
         .update_counterparty_client(
-            cometbls,
+            &cometbls,
             cometbls_client_id.clone(),
             ethereum_update_from,
             ethereum_update_to,
@@ -785,11 +680,11 @@ where
         .await;
 
     let cometbls_update_from = cometbls_latest_height;
-    let cometbls_update_to = cometbls.query_latest_height().await;
+    let cometbls_update_to = cometbls.chain().query_latest_height().await;
 
     let cometbls_latest_height = cometbls
         .update_counterparty_client(
-            ethereum,
+            &ethereum,
             ethereum_client_id.clone(),
             cometbls_update_from,
             cometbls_update_to,
@@ -821,30 +716,76 @@ where
         "connection opened"
     );
 
-    (
-        cometbls_client_id,
-        ethereum_client_id,
-        cometbls_connection_id,
-        ethereum_connection_id,
-    )
+    (cometbls_connection_id, ethereum_connection_id)
 }
 
-async fn channel_handshake<L2, L1>(
+#[allow(clippy::too_many_arguments)] // fight me clippy
+async fn channel_handshake<FromChain, ToChain>(
+    from: &FromChain,
+    from_connection_id: String,
+    from_port_id: String,
+    to: &ToChain,
+    to_connection_id: String,
+    to_port_id: String,
+) -> Result<(String, String), anyhow::Error>
+where
+    FromChain: ChainConnection<ToChain>,
+    ToChain: ChainConnection<FromChain>,
+    ClientStateOf<FromChain>: IntoProto,
+    ClientStateOf<ToChain>: IntoProto,
+{
+    let from = from.light_client();
+    let to = to.light_client();
+
+    Ok(do_channel_handshake(
+        &from,
+        &to,
+        from_connection_id,
+        to_connection_id,
+        from_port_id,
+        to_port_id,
+    )
+    .await)
+}
+
+async fn do_channel_handshake<L2, L1>(
     cometbls: &L2,
     ethereum: &L1,
-    cometbls_connection_info: ConnectionEndInfo,
-    ethereum_connection_info: ConnectionEndInfo,
+    cometbls_connection_id: String,
+    ethereum_connection_id: String,
     cometbls_port_id: String,
     ethereum_port_id: String,
 ) -> (String, String)
 where
-    L2: LightClient + Connect<L1>,
-    L1: LightClient + Connect<L2>,
-    <L2 as LightClient>::ClientState: Debug + ClientState,
-    <L1 as LightClient>::ClientState: Debug + ClientState,
+    L2: Connect<L1>,
+    L1: Connect<L2>,
+    ClientStateOf<<L2 as LightClient>::CounterpartyChain>: Debug + ClientState,
+    ClientStateOf<<L1 as LightClient>::CounterpartyChain>: Debug + ClientState,
 {
-    let cometbls_id = cometbls.chain_id().await;
-    let ethereum_id = ethereum.chain_id().await;
+    let cometbls_id = cometbls.chain().chain_id().await;
+    let ethereum_id = ethereum.chain().chain_id().await;
+
+    let ethereum_client_id = ethereum
+        .state_proof(
+            ConnectionPath {
+                connection_id: ethereum_connection_id.clone(),
+            },
+            ethereum.chain().query_latest_height().await,
+        )
+        .await
+        .state
+        .client_id;
+
+    let cometbls_client_id = cometbls
+        .state_proof(
+            ConnectionPath {
+                connection_id: cometbls_connection_id.clone(),
+            },
+            cometbls.chain().query_latest_height().await,
+        )
+        .await
+        .state
+        .client_id;
 
     tracing::info!(cometbls_id, ethereum_id);
 
@@ -861,23 +802,23 @@ where
                     // TODO(benluelo): Make a struct without this field?
                     channel_id: String::new(),
                 },
-                connection_hops: vec![cometbls_connection_info.connection_id.clone()],
+                connection_hops: vec![cometbls_connection_id.clone()],
                 version: CHANNEL_VERSION.to_string(),
             },
         })
         .await;
 
     let ethereum_latest_trusted_height = ethereum
-        .query_client_state(ethereum_connection_info.client_id.clone())
+        .query_client_state(ethereum_client_id.clone())
         .await
         .height();
 
-    let cometbls_latest_height = cometbls.query_latest_height().await;
+    let cometbls_latest_height = cometbls.chain().query_latest_height().await;
 
     let cometbls_latest_height = cometbls
         .update_counterparty_client(
             ethereum,
-            ethereum_connection_info.client_id.clone(),
+            ethereum_client_id.clone(),
             ethereum_latest_trusted_height,
             cometbls_latest_height,
         )
@@ -905,7 +846,7 @@ where
                     port_id: cometbls_port_id.clone(),
                     channel_id: cometbls_channel_id.clone(),
                 },
-                connection_hops: vec![ethereum_connection_info.connection_id.clone()],
+                connection_hops: vec![ethereum_connection_id.clone()],
                 version: CHANNEL_VERSION.to_string(),
             },
             counterparty_version: CHANNEL_VERSION.to_string(),
@@ -915,11 +856,11 @@ where
         .await;
 
     let cometbls_latest_trusted_height = cometbls
-        .query_client_state(cometbls_connection_info.client_id.clone())
+        .query_client_state(cometbls_client_id.clone())
         .await
         .height();
     let ethereum_update_to = loop {
-        let height = ethereum.query_latest_height().await;
+        let height = ethereum.chain().query_latest_height().await;
         if height >= channel_try_height.increment() {
             break channel_try_height.increment();
         }
@@ -931,7 +872,7 @@ where
     let _ = ethereum
         .update_counterparty_client(
             cometbls,
-            cometbls_connection_info.client_id.clone(),
+            cometbls_client_id.clone(),
             cometbls_latest_trusted_height,
             ethereum_update_to,
         )
@@ -960,12 +901,12 @@ where
         })
         .await;
 
-    let update_to = cometbls.query_latest_height().await;
+    let update_to = cometbls.chain().query_latest_height().await;
 
     let cometbls_latest_height = cometbls
         .update_counterparty_client(
             ethereum,
-            ethereum_connection_info.client_id.clone(),
+            ethereum_client_id.clone(),
             cometbls_latest_height,
             update_to,
         )
@@ -993,11 +934,11 @@ where
         .await;
 
     tracing::info!(
-        cometbls_connection_info.connection_id,
-        cometbls_connection_info.client_id,
+        cometbls_connection_id,
+        cometbls_client_id,
         cometbls_channel_id,
-        ethereum_connection_info.connection_id,
-        ethereum_connection_info.client_id,
+        ethereum_connection_id,
+        ethereum_client_id,
         ethereum_channel_id,
         "channel opened"
     );
@@ -1005,71 +946,60 @@ where
     (cometbls_channel_id, ethereum_channel_id)
 }
 
-async fn relay_packets<C: ChainSpec>(
-    cometbls: Cometbls<C>,
-    ethereum: Ethereum<C>,
-    cometbls_client_id: String,
-    ethereum_client_id: String,
-) {
-    let cometbls_packet_stream = cometbls.packet_stream().await;
-    let ethereum_packet_stream = ethereum.packet_stream().await;
-
-    join(
-        relay_packets_inner(
-            &ethereum,
-            ethereum_packet_stream,
-            &cometbls,
-            cometbls_client_id,
-        ),
-        relay_packets_inner(
-            &cometbls,
-            cometbls_packet_stream,
-            &ethereum,
-            ethereum_client_id,
-        ),
-    )
-    .await;
-}
-
-async fn relay_packets_inner<L1, L2>(
-    lc1: &L2,
-    lc1_event_stream: impl Stream<Item = (Height, Packet)>,
-    lc2: &L1,
-    lc2_event_stream: String,
-) where
-    L1: LightClient + Connect<L2>,
-    L2: LightClient + Connect<L1>,
+async fn relay_packets<FromChain, ToChain>(from: &FromChain, to: &ToChain)
+where
+    FromChain: ChainConnection<ToChain>,
+    ToChain: ChainConnection<FromChain>,
+    ClientStateOf<FromChain>: IntoProto,
+    ClientStateOf<ToChain>: IntoProto,
 {
-    lc1_event_stream
-        .for_each(move |(event_height, packet)| {
-            let lc2_event_stream = lc2_event_stream.clone();
-            async move {
+    async fn relay_packets_inner<L1, L2>(
+        lc1: &L2,
+        lc1_event_stream: impl Stream<Item = (Height, Packet)>,
+        lc2: &L1,
+    ) where
+        L1: Connect<L2>,
+        L2: Connect<L1>,
+    {
+        lc1_event_stream
+            .for_each(move |(event_height, packet)| async move {
                 let sequence = packet.sequence;
 
-                let latest_height = lc2
-                    .query_client_state(lc2_event_stream.clone())
-                    .await
-                    .height();
+                let lc2_client_id = lc1
+                    .state_proof(
+                        ChannelEndPath {
+                            channel_id: packet.source_channel.clone(),
+                            port_id: packet.source_port.clone(),
+                        },
+                        event_height,
+                    )
+                    .then(|channel| {
+                        lc1.state_proof(
+                            ConnectionPath {
+                                connection_id: channel.state.connection_hops[0].clone(),
+                            },
+                            event_height,
+                        )
+                        .map(|connection| connection.state.counterparty.client_id)
+                    })
+                    .await;
+
+                dbg!(&lc2_client_id);
+
+                let latest_height = lc2.query_client_state(lc2_client_id.clone()).await.height();
 
                 dbg!(&latest_height);
 
                 let lc1_update_to = loop {
-                    let height = lc1.query_latest_height().await;
+                    let height = lc1.chain().query_latest_height().await;
                     if height >= event_height.increment() {
                         break event_height.increment();
                     }
                     tokio::time::sleep(std::time::Duration::from_secs(2)).await;
                 };
 
-                // REVIEW: Should we use the returned height?
-                // let ethereum_update_to = lc1
                 let lc1_update_to = lc1
-                    .update_counterparty_client(
-                        lc2,
-                        lc2_event_stream.clone(),
-                        latest_height,
-                        lc1_update_to,
-                    )
+                    .update_counterparty_client(lc2, lc2_client_id, latest_height, lc1_update_to)
                     .await;
 
                 dbg!(&lc1_update_to);
@@ -1094,7 +1024,19 @@ async fn relay_packets_inner<L1, L2>(
                     .await;
 
                 dbg!(rcp);
-            }
-        })
-        .await
+            })
+            .await;
+    }
+
+    let l1 = from.light_client();
+    let l2 = to.light_client();
+
+    let l1_packet_stream = from.packet_stream().await;
+    let l2_packet_stream = to.packet_stream().await;
+
+    join(
+        relay_packets_inner(&l2, l2_packet_stream, &l1),
+        relay_packets_inner(&l1, l1_packet_stream, &l2),
+    )
+    .await;
 }

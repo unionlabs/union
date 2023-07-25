@@ -1,3 +1,5 @@
+use serde::{Deserialize, Serialize};
+
 use crate::{
     errors::MissingField,
     ibc::{
@@ -7,7 +9,7 @@ use crate::{
     IntoProto, TryFromProto, TypeUrl,
 };
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ClientState {
     pub chain_id: String,
     pub trust_level: Fraction,

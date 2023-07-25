@@ -37,6 +37,14 @@ macro_rules! hex_string_array_wrapper {
             #[ssz(struct_behaviour = "transparent")]
             pub struct $Struct(#[serde(with = "::serde_utils::hex_string")] pub [u8; $N]);
 
+            impl std::str::FromStr for $Struct {
+                type Err = serde_utils::FromHexStringError;
+
+                fn from_str(s: &str) -> Result<Self, Self::Err> {
+                    serde_utils::parse_hex(s)
+                }
+            }
+
             impl TryFrom<Vec<u8>> for $Struct {
                 type Error = crate::errors::InvalidLength;
 
@@ -129,6 +137,8 @@ hex_string_array_wrapper! {
     pub struct DomainType(pub [u8; 4]);
     pub struct ForkDigest(pub [u8; 4]);
     pub struct Domain(pub [u8; 32]);
+
+    // TODO: These aren't used for only ethereum, they should be moved out of this module
     pub struct Address(pub [u8; 20]);
     pub struct H256(pub [u8; 32]);
 }
@@ -308,6 +318,18 @@ impl From<H256> for primitive_types::H256 {
 
 impl From<primitive_types::H256> for H256 {
     fn from(value: primitive_types::H256) -> Self {
+        Self(value.0)
+    }
+}
+
+impl From<Address> for primitive_types::H160 {
+    fn from(value: Address) -> Self {
+        Self(value.0)
+    }
+}
+
+impl From<primitive_types::H160> for Address {
+    fn from(value: primitive_types::H160) -> Self {
         Self(value.0)
     }
 }
