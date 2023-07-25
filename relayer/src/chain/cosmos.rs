@@ -1107,15 +1107,15 @@ where
         async move {
             let mut client =
                 protos::cosmos::base::tendermint::v1beta1::service_client::ServiceClient::connect(
-                    "http://127.0.0.1:26657",
+                    "http://0.0.0.0:9090",
                 )
                 .await
                 .unwrap();
 
             let query_result = client
                 .abci_query(AbciQueryRequest {
-                    data: "store/ibc/key".to_string().into_bytes(),
-                    path: path.to_string(),
+                    data: path.to_string().into_bytes(),
+                    path: "store/ibc/key".to_string(),
                     height: at.revision_height.try_into().unwrap(),
                     prove: true,
                 })
