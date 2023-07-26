@@ -36,9 +36,9 @@ jobs:
         id: publish-preview
         working-directory: docs
         run: |
-            vercel pull --yes --environment=preview --token=${{secrets.VERCEL_TOKEN}}
-            vercel build --token=${{secrets.VERCEL_TOKEN}}
-            PREVIEW_URL=$(vercel deploy --prebuilt --token=${{secrets.VERCEL_TOKEN}})
+            vercel pull --scope=unionbuild --yes --environment=preview --token=${{secrets.VERCEL_TOKEN}}
+            vercel build --scope=unionbuild --token=${{secrets.VERCEL_TOKEN}}
+            PREVIEW_URL=$(vercel deploy --scope=unionbuild --prebuilt --token=${{secrets.VERCEL_TOKEN}})
             echo "preview-url=${PREVIEW_URL}" >> "$GITHUB_OUTPUT"
       - name: Create Preview Comment
         if: github.event_name == 'pull_request'

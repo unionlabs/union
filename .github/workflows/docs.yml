@@ -31,6 +31,6 @@ jobs:
       - name: "Publish to Vercel"
         working-directory: docs
         run: |
-          vercel pull --yes --environment=production --token=${{secrets.VERCEL_TOKEN}}
-          vercel build --prod --token=${{secrets.VERCEL_TOKEN}}
-          vercel deploy --prod --prebuilt --token=${{secrets.VERCEL_TOKEN}}
+          vercel pull --scope=unionbuild --yes --environment=production --token=${{secrets.VERCEL_TOKEN}}
+          vercel build --scope=unionbuild --prod --token=${{secrets.VERCEL_TOKEN}}
+          vercel deploy --scope=unionbuild --prod --prebuilt --token=${{secrets.VERCEL_TOKEN}}
