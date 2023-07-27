@@ -6,6 +6,10 @@ import "./utils/MockApp.sol";
 import "./utils/IBCHandler_Testable.sol";
 
 abstract contract TestPlus is Test {
+    function assertStrEq(bytes memory a, string memory b) internal pure {
+        require(keccak256(abi.encodePacked(a)) == keccak256(abi.encodePacked(b)), "strings not equal");
+    }
+
     function assertStrEq(string memory a, string memory b) internal pure {
         require(keccak256(abi.encodePacked(a)) == keccak256(abi.encodePacked(b)), "strings not equal");
     }
