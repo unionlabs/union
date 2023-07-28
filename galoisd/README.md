@@ -8,10 +8,10 @@ Call `galoisd --help` to see an up-to-date overview of functions. The CLI is sel
 
 ## Production Deployments
 
-For production deployments, use the [docker image](https://github.com/unionlabs/union/pkgs/container/unionpd) provided in our package registry.
+For production deployments, use the [docker image](https://github.com/unionlabs/union/pkgs/container/galoisd) provided in our package registry.
 
 ```sh
-docker pull ghcr.io/unionlabs/unionpd:v0.6.0
+docker pull ghcr.io/unionlabs/galoisd:v0.6.0
 ```
 
 > **Warning**

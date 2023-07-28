@@ -4,10 +4,10 @@ This document describes the high-level architecture of Union and associated pack
 
 ## Repository Structure
 
-At the root of the repository, you'll find directories such as `uniond`, `unionvisor`, and `unionpd`, which are binaries necessary to run the network. To see how to build one of these binaries, check the `flake.nix` file. These binaries can be built by running
+At the root of the repository, you'll find directories such as `uniond`, `unionvisor`, and `galoisd`, which are binaries necessary to run the network. To see how to build one of these binaries, check the `flake.nix` file. These binaries can be built by running
 
 ```nix
-nix build .\#uniond # or unionvisor or unionpd
+nix build .\#uniond # or unionvisor or galoisd
 ```
 
 To see all packages/apps that we define, run `nix flake show`. To see how these are built, check out `flake.nix`. Here we import all [`flake-parts`](https://flake.parts), such as `uniond/uniond.nix`.
@@ -32,7 +32,7 @@ We refrain from separating docs and links from the actual code, as refactors can
 
 `uniond` is the network node, which is run by validators to produce blocks.
 `unionvisor` is a supervisor of `uniond`, which makes deployments easier and more resilient. It is not required for node operations but is recommended.
-`unionpd` is the ZK prover. Validators do not need to run it, but IBC relayers and MEV searchers will need to process transactions and capture value.
+`galoisd` is the ZK prover. Validators do not need to run it, but IBC relayers and MEV searchers will need to process transactions and capture value.
 
 ### Support
 

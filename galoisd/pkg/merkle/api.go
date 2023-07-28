@@ -1,9 +1,9 @@
 package merkle
 
 import (
+	"galois/pkg/sha256"
 	"github.com/consensys/gnark/frontend"
 	"math"
-	"unionp/pkg/sha256"
 )
 
 const (

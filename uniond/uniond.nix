@@ -141,8 +141,8 @@
               cd uniond
               ${doVendor [ "github.com/supranational/blst" "github.com/herumi/bls-eth-go-binary" ]}
 
-              echo "vendoring unionpd..."
-              cd ../unionpd
+              echo "vendoring galoisd..."
+              cd ../galoisd
               ${doVendor [ ]}
             '';
           };

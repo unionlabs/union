@@ -1,8 +1,8 @@
 package adjacent
 
 import (
-	g2 "unionp/pkg/emulated"
-	"unionp/pkg/lightclient"
+	g2 "galois/pkg/emulated"
+	"galois/pkg/lightclient"
 
 	"github.com/consensys/gnark/frontend"
 	"github.com/consensys/gnark/std/algebra/emulated/fields_bn254"

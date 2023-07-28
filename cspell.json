@@ -19,7 +19,7 @@
     "uniond/vendor",
     "uniond/x/union/types",
     "uniond/proto",
-    "unionpd/vendor",
+    "galoisd/vendor",
     "**/go.mod",
     "**/go.sum",
     "evm",

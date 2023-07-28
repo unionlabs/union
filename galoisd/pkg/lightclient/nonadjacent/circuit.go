@@ -1,8 +1,8 @@
 package nonadjacent
 
 import (
-	"unionp/pkg/emulated"
-	"unionp/pkg/lightclient"
+	"galois/pkg/emulated"
+	"galois/pkg/lightclient"
 
 	"github.com/consensys/gnark/frontend"
 	"github.com/consensys/gnark/std/algebra/emulated/fields_bn254"

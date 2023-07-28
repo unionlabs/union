@@ -3,9 +3,9 @@ package nonadjacent
 import (
 	"encoding/base64"
 	"encoding/hex"
+	"galois/pkg/lightclient"
 	"log"
 	"math/big"
-	"unionp/pkg/lightclient"
 
 	cometbn254 "github.com/cometbft/cometbft/crypto/bn254"
 	"github.com/cometbft/cometbft/proto/tendermint/types"
