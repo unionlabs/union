@@ -2,7 +2,6 @@ name: Release
 
 on:
   push:
-    tags: ['v[0-9]+\.[0-9]+\.[0-9]+\-rc[0-9]+', 'v[0-9]+\.[0-9]+\.[0-9]+']
 
 jobs:
   build:
@@ -10,7 +9,7 @@ jobs:
     secrets:
       nixbuild_token: ${{ secrets.nixbuild_token }}
     with:
-      filter_builds: '(.top_attr == "packages") and (.system == "x86_64-linux" or .system == "aarch64-linux") and (.attr == "uniond" or .attr == "unionpd" or .attr == "uniond-image" or .attr == "unionpd-image")' # ensure to append this list if you want to release more artifacts
+      filter_builds: '(.top_attr == "packages") and (.system == "x86_64-linux" or .system == "aarch64-linux") and (.attr == "uniond" or .attr == "galoisd-devnet" or .attr == "galoisd-testnet" or .attr == "galoisd-mainnet" or .attr == "uniond-image" or .attr == "galoisd-devnet-image" or .attr == "galoisd-testnet-image" or .attr == "galoisd-mainnet-image")' # ensure to append this list if you want to release more artifacts
 
   dl-images:
     runs-on: ubuntu-latest
@@ -18,7 +17,7 @@ jobs:
     permissions: write-all
     strategy:
       matrix:
-        package: [ uniond, unionpd ]
+        package: [ uniond, galoisd-devnet, galoisd-testnet, galoisd-mainnet ]
         system: [ aarch64-linux, x86_64-linux ]
     steps: 
       - uses: actions/download-artifact@v3
@@ -43,7 +42,7 @@ jobs:
     strategy:
       matrix:
         system: [ aarch64-linux, x86_64-linux ]
-        package: [ uniond, unionpd ]
+        package: [ uniond, galoisd-devnet, galoisd-testnet, galoisd-mainnet ]
     steps: 
       - uses: actions/download-artifact@v3
         with:
@@ -80,7 +79,7 @@ jobs:
     permissions: write-all
     strategy:
       matrix:
-        package: [ uniond, unionpd ]
+        package: [ uniond, galoisd-devnet, galoisd-testnet, galoisd-mainnet ]
     services:
       registry:
         image: registry:2
@@ -187,8 +186,12 @@ jobs:
           files: |
             **/uniond-aarch64-linux
             **/uniond-x86_64-linux
-            **/unionpd-aarch64-linux
-            **/unionpd-x86_64-linux
+            **/galoisd-devnet-aarch64-linux
+            **/galoisd-devnet-x86_64-linux
+            **/galoisd-testnet-aarch64-linux
+            **/galoisd-testnet-x86_64-linux
+            **/galoisd-mainnet-aarch64-linux
+            **/galoisd-mainnet-x86_64-linux
       - if: "!contains(github.ref_name, 'rc')"
         name: 'Create Release'
         uses: softprops/action-gh-release@v1
@@ -200,5 +203,9 @@ jobs:
           files: |
             **/uniond-aarch64-linux
             **/uniond-x86_64-linux
-            **/unionpd-aarch64-linux
-            **/unionpd-x86_64-linux
+            **/galoisd-devnet-aarch64-linux
+            **/galoisd-devnet-x86_64-linux
+            **/galoisd-testnet-aarch64-linux
+            **/galoisd-testnet-x86_64-linux
+            **/galoisd-mainnet-aarch64-linux
+            **/galoisd-mainnet-x86_64-linux
