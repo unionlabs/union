@@ -37,8 +37,7 @@ const config = {
         docs: {
           routeBasePath: "/",
           sidebarPath: require.resolve("./sidebars.js"),
-          editUrl:
-            "https://github.com/unionlabs/union/edit/main/docs",
+          editUrl: "https://github.com/unionlabs/union/edit/main/docs",
         },
         blog: false,
         theme: {
@@ -52,8 +51,8 @@ const config = {
     /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
     ({
       colorMode: {
-        defaultMode: 'dark',
-        respectPrefersColorScheme: true
+        defaultMode: "dark",
+        respectPrefersColorScheme: true,
       },
       // Replace with your project's social card
       // image: 'img/docusaurus-social-card.jpg',
