@@ -15,7 +15,8 @@ use anyhow::bail;
 use clap::Parser;
 use ethers::{signers::Signer, types::U256};
 use futures::{future::join, FutureExt, Stream, StreamExt};
-use ibc_types::{
+use prost::Message;
+use unionlabs::{
     ethereum_consts_traits::{Mainnet, Minimal, PresetBaseKind},
     ibc::core::{
         channel::{
@@ -35,7 +36,6 @@ use ibc_types::{
     },
     IntoProto,
 };
-use prost::Message;
 
 use crate::{
     chain::{

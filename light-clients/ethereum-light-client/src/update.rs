@@ -2,7 +2,7 @@ use ethereum_verifier::{
     compute_sync_committee_period_at_slot, compute_timestamp_at_slot, primitives::Hash32,
     LightClientContext,
 };
-use ibc_types::ibc::lightclients::{
+use unionlabs::ibc::lightclients::{
     ethereum::{self, light_client_update::LightClientUpdate},
     wasm,
 };

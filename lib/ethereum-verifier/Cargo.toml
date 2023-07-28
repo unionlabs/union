@@ -10,7 +10,7 @@ ssz_types = { workspace = true }
 tree_hash = { workspace = true }
 
 serde-utils = { path = "../serde-utils" }
-ibc-types = { path = "../ibc-types", default-features = false }
+unionlabs = { path = "../unionlabs", default-features = false }
 
 bytes = { version = "1.4.0", default-features = false }
 hash-db = { version = "0.16.0", default-features = false }

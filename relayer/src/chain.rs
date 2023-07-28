@@ -1,7 +1,7 @@
 use std::fmt::Debug;
 
 use futures::{Future, Stream};
-use ibc_types::{
+use unionlabs::{
     ethereum_consts_traits::{Mainnet, Minimal},
     ibc::{
         core::{

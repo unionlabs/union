@@ -1,5 +1,9 @@
 use hash_db::HashDB;
-use ibc_types::{
+use memory_db::{HashKey, MemoryDB};
+use tree_hash::TreeHash;
+use trie_db::{Trie, TrieDBBuilder};
+use typenum::Unsigned;
+use unionlabs::{
     bls::{BlsPublicKey, BlsSignature},
     ethereum::{DomainType, H256},
     ethereum_consts_traits::{
@@ -14,10 +18,6 @@ use ibc_types::{
         light_client_update::LightClientUpdate,
     },
 };
-use memory_db::{HashKey, MemoryDB};
-use tree_hash::TreeHash;
-use trie_db::{Trie, TrieDBBuilder};
-use typenum::Unsigned;
 
 use crate::{
     primitives::{Account, ExecutionAddress, Hash32, Slot},
@@ -255,7 +255,7 @@ pub fn is_valid_light_client_header<C: ChainSpec>(
 // TODO(aeryz): Don't forget to add negative cases.
 #[cfg(test)]
 mod tests {
-    use ibc_types::{
+    use unionlabs::{
         ethereum_consts_traits::{Minimal, MINIMAL},
         ibc::lightclients::ethereum::{header::Header, sync_committee::SyncCommittee},
         TryFromProto,

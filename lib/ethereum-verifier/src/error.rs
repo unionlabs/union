@@ -1,6 +1,6 @@
-use ibc_types::ethereum::H256;
 use milagro_bls::AmclError;
 use trie_db::TrieError;
+use unionlabs::ethereum::H256;
 
 #[derive(Debug, PartialEq)]
 pub struct InvalidMerkleBranch {

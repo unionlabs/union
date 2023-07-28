@@ -1,11 +1,11 @@
-use ibc_types::{
+use sha2::{Digest, Sha256};
+use tree_hash::TreeHash;
+use typenum::Unsigned;
+use unionlabs::{
     ethereum::{Domain, DomainType, ForkData, SigningData, Version, H256},
     ethereum_consts_traits::{EPOCHS_PER_SYNC_COMMITTEE_PERIOD, SECONDS_PER_SLOT, SLOTS_PER_EPOCH},
     ibc::lightclients::ethereum::fork_parameters::ForkParameters,
 };
-use sha2::{Digest, Sha256};
-use tree_hash::TreeHash;
-use typenum::Unsigned;
 
 use crate::{
     primitives::{Epoch, Slot, GENESIS_SLOT},
@@ -157,7 +157,7 @@ pub fn validate_merkle_branch<'a>(
 mod tests {
     #![allow(clippy::redundant_clone)]
 
-    use ibc_types::{
+    use unionlabs::{
         ethereum_consts_traits::{
             consts::{floorlog2, EXECUTION_PAYLOAD_INDEX},
             Minimal, SECONDS_PER_SLOT, SEPOLIA,

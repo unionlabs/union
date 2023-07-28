@@ -1,4 +1,4 @@
-use ibc_types::{
+use unionlabs::{
     ethereum_consts_traits::ChainSpec,
     ibc::lightclients::ethereum::{fork_parameters::ForkParameters, sync_committee::SyncCommittee},
 };

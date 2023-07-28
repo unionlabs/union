@@ -27,7 +27,10 @@ use ethers::{
     utils::{keccak256, secret_key_to_address},
 };
 use futures::{Future, Stream, StreamExt};
-use ibc_types::{
+use prost::Message;
+use protos::{google, union::ibc::lightclients::ethereum::v1 as ethereum_v1};
+use typenum::Unsigned;
+use unionlabs::{
     ethereum::{beacon::LightClientFinalityUpdate, Address, H256},
     ethereum_consts_traits::ChainSpec,
     ibc::{
@@ -62,9 +65,6 @@ use ibc_types::{
     },
     IntoProto, TryFromProto,
 };
-use prost::Message;
-use protos::{google, union::ibc::lightclients::ethereum::v1 as ethereum_v1};
-use typenum::Unsigned;
 
 use crate::{
     chain::{

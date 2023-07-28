@@ -26,7 +26,7 @@ thiserror = { version = "1.0.26", default-features = false }
 tiny-keccak = { version = "2.0.2", default-features = false, features = ["keccak"] }
 
 wasm-light-client-types = { path = "../wasm-light-client-types" }
-ibc-types = { path = "../../lib/ibc-types", default-features = false }
+unionlabs = { path = "../../lib/unionlabs", default-features = false }
 ethereum-verifier = { path = "../../lib/ethereum-verifier", default-features = false }
 
 [dev-dependencies]

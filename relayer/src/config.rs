@@ -4,9 +4,9 @@ use clap::{
     builder::{StringValueParser, TypedValueParser},
     Args,
 };
-use ibc_types::ethereum::{Address, H256};
 use serde::{Deserialize, Serialize};
 use tendermint_rpc::WebSocketClientUrl;
+use unionlabs::ethereum::{Address, H256};
 
 use crate::{
     chain::AnyChain,
