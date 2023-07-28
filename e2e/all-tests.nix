@@ -59,7 +59,7 @@
           '';
         };
         ensure-blocks = e2e.mkTest {
-          name = "relayer-e2e";
+          name = "ensure-blocks";
 
           testScript = ''
             start_all()

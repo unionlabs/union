@@ -50,7 +50,7 @@ async fn fetch_blocks<T: Debug>(chain: &'static str, blocks: impl StreamExt<Item
         .take(BLOCKS_TO_WAIT_FOR)
         .enumerate()
         .map(|(n, block)| {
-            println!("{chain}: {n}");
+            println!("{chain}: block {}", n + 1);
             block
         })
         .collect::<Vec<_>>()
