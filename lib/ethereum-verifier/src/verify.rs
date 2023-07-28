@@ -338,26 +338,23 @@ mod tests {
     fn read_valid_header_data() -> Vec<&'static str> {
         // TODO(aeryz): move test data to ibc types
         [
-            // include_str!(
-            //     "../../../light-clients/ethereum-light-client/src/test/sync_committee_update_1.json"
-            // ),
-            // include_str!(
-            //     "../../../light-clients/ethereum-light-client/src/test/finality_update_1.json"
-            // ),
-            // include_str!(
-            //     "../../../light-clients/ethereum-light-client/src/test/sync_committee_update_2.json"
-            // ),
-            // include_str!(
-            //     "../../../light-clients/ethereum-light-client/src/test/finality_update_2.json"
-            // ),
-            // include_str!(
-            //     "../../../light-clients/ethereum-light-client/src/test/finality_update_3.json"
-            // ),
-            // include_str!(
-            //     "../../../light-clients/ethereum-light-client/src/test/finality_update_4.json"
-            // ),
             include_str!(
-                "../../../light-clients/ethereum-light-client/src/test/invalid_header_update.json"
+                "../../../light-clients/ethereum-light-client/src/test/sync_committee_update_1.json"
+            ),
+            include_str!(
+                "../../../light-clients/ethereum-light-client/src/test/finality_update_1.json"
+            ),
+            include_str!(
+                "../../../light-clients/ethereum-light-client/src/test/sync_committee_update_2.json"
+            ),
+            include_str!(
+                "../../../light-clients/ethereum-light-client/src/test/finality_update_2.json"
+            ),
+            include_str!(
+                "../../../light-clients/ethereum-light-client/src/test/finality_update_3.json"
+            ),
+            include_str!(
+                "../../../light-clients/ethereum-light-client/src/test/finality_update_4.json"
             ),
         ]
         .into()
@@ -639,7 +636,8 @@ mod tests {
         let valid_header_data = read_valid_header_data();
 
         for header in valid_header_data {
-            let header = serde_json::from_str::<Header<Minimal>>(header).unwrap();
+            let header =
+                <Header<Minimal>>::try_from_proto(serde_json::from_str(header).unwrap()).unwrap();
 
             let proof_data = header.account_update.proofs[0].clone();
 
@@ -689,26 +687,8 @@ mod tests {
         let valid_header_data = read_valid_header_data();
 
         for header in valid_header_data {
-            // let header =
-            //     <Header<Minimal>>::try_from_proto(serde_json::from_str(header).unwrap()).unwrap();
-            let header = serde_json::from_str::<Header<Minimal>>(header).unwrap();
-
-            println!(
-                "finalized: {}",
-                header
-                    .consensus_update
-                    .finalized_header
-                    .execution
-                    .base_fee_per_gas
-            );
-            println!(
-                "attested: {}",
-                header
-                    .consensus_update
-                    .attested_header
-                    .execution
-                    .base_fee_per_gas
-            );
+            let header =
+                <Header<Minimal>>::try_from_proto(serde_json::from_str(header).unwrap()).unwrap();
 
             // Both finalized and attested headers should be verifiable
             assert_eq!(
