@@ -229,9 +229,9 @@
           name = "show-evm-coverage";
           runtimeInputs = [ wrappedForge ];
           text = ''
-             xdg-open ${self'.packages.evm-coverage}/index.html
+            xdg-open ${self'.packages.evm-coverage}/index.html
           '';
-          };
+        };
       } //
       builtins.listToAttrs (
         builtins.map
