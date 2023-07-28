@@ -329,7 +329,6 @@ name = "beacon-api"
 version = "0.1.0"
 dependencies = [
  "hex",
- "ibc-types",
  "reqwest",
  "serde",
  "serde-utils",
@@ -337,6 +336,7 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber 0.3.17",
+ "unionlabs",
 ]
 
 [[package]]
@@ -1530,7 +1530,6 @@ dependencies = [
  "ethereum-verifier",
  "hex",
  "ibc",
- "ibc-types",
  "prost",
  "protos",
  "rlp",
@@ -1541,6 +1540,7 @@ dependencies = [
  "sha3",
  "thiserror",
  "tiny-keccak",
+ "unionlabs",
  "wasm-light-client-types",
 ]
 
@@ -1569,7 +1569,6 @@ dependencies = [
  "hash-db",
  "hash256-std-hasher",
  "hex",
- "ibc-types",
  "lazy_static",
  "memory-db",
  "milagro_bls",
@@ -1584,6 +1583,7 @@ dependencies = [
  "tree_hash",
  "trie-db",
  "typenum",
+ "unionlabs",
 ]
 
 [[package]]
@@ -2502,32 +2502,6 @@ dependencies = [
  "serde",
  "subtle-encoding",
  "tendermint-proto 0.29.1",
-]
-
-[[package]]
-name = "ibc-types"
-version = "0.1.0"
-dependencies = [
- "bip32",
- "contracts",
- "ethereum_ssz",
- "generic-array",
- "hex",
- "hex-literal",
- "k256 0.13.1",
- "milagro_bls",
- "primitive-types",
- "prost",
- "protos",
- "ripemd",
- "serde",
- "serde-utils",
- "serde_json",
- "sha2 0.10.7",
- "ssz_types",
- "subtle-encoding",
- "tree_hash",
- "typenum",
 ]
 
 [[package]]
@@ -3598,7 +3572,6 @@ dependencies = [
  "ethers",
  "futures",
  "hex-literal",
- "ibc-types",
  "num-bigint",
  "prost",
  "protos",
@@ -3619,6 +3592,7 @@ dependencies = [
  "tracing-forest",
  "tracing-subscriber 0.3.17",
  "typenum",
+ "unionlabs",
 ]
 
 [[package]]
@@ -5261,6 +5235,32 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f962df74c8c05a667b5ee8bcf162993134c104e96440b663c8daa176dc772d8c"
 
 [[package]]
+name = "unionlabs"
+version = "0.1.0"
+dependencies = [
+ "bip32",
+ "contracts",
+ "ethereum_ssz",
+ "generic-array",
+ "hex",
+ "hex-literal",
+ "k256 0.13.1",
+ "milagro_bls",
+ "primitive-types",
+ "prost",
+ "protos",
+ "ripemd",
+ "serde",
+ "serde-utils",
+ "serde_json",
+ "sha2 0.10.7",
+ "ssz_types",
+ "subtle-encoding",
+ "tree_hash",
+ "typenum",
+]
+
+[[package]]
 name = "unionvisor"
 version = "0.1.0"
 dependencies = [
@@ -5427,10 +5427,10 @@ version = "0.1.0"
 dependencies = [
  "cosmwasm-std",
  "ibc",
- "ibc-types",
  "prost",
  "protos",
  "serde",
+ "unionlabs",
 ]
 
 [[package]]

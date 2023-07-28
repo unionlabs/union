@@ -12,9 +12,9 @@ pub mod types;
 pub mod update;
 
 #[cfg(feature = "mainnet")]
-pub use ibc_types::ethereum_consts_traits::Mainnet as Config;
+pub use unionlabs::ethereum_consts_traits::Mainnet as Config;
 #[cfg(feature = "minimal")]
-pub use ibc_types::ethereum_consts_traits::Minimal as Config;
+pub use unionlabs::ethereum_consts_traits::Minimal as Config;
 
 #[cfg(all(feature = "minimal", feature = "mainnet"))]
 compile_error!(r#"cannot enable both "minimal" and "mainnet""#);

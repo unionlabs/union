@@ -8,8 +8,8 @@ use ethers::{
     signers::LocalWallet,
     types::{Address, H256},
 };
-use ibc_types::ethereum_consts_traits::PresetBaseKind;
 use reqwest::Url;
+use unionlabs::ethereum_consts_traits::PresetBaseKind;
 
 use crate::chain::{cosmos::EthereumConfig, evm::CometblsConfig};
 

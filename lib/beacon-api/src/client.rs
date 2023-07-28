@@ -2,15 +2,15 @@
 
 use std::{fmt::Display, marker::PhantomData};
 
-use ibc_types::{
+use reqwest::{Client, StatusCode};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use unionlabs::{
     ethereum::{
         beacon::{GenesisData, LightClientBootstrap, LightClientFinalityUpdate},
         SignedBeaconBlock, H256,
     },
     ethereum_consts_traits::ChainSpec,
 };
-use reqwest::{Client, StatusCode};
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
 use crate::{
     errors::{Error, InternalServerError},

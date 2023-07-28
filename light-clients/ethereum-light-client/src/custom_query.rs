@@ -1,6 +1,6 @@
 use cosmwasm_std::{Binary, Deps, QueryRequest};
 use ethereum_verifier::BlsVerify;
-use ibc_types::bls::{BlsPublicKey, BlsSignature};
+use unionlabs::bls::{BlsPublicKey, BlsSignature};
 
 use crate::errors::Error;
 

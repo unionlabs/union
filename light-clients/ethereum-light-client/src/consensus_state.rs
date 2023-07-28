@@ -1,4 +1,4 @@
-use ibc_types::{
+use unionlabs::{
     bls::BlsPublicKey,
     ethereum_consts_traits::ChainSpec,
     ibc::lightclients::ethereum::{consensus_state::ConsensusState, sync_committee::SyncCommittee},

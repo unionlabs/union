@@ -1,5 +1,5 @@
 use cosmwasm_std::{Deps, DepsMut};
-use ibc_types::{
+use unionlabs::{
     ibc::{
         core::client::height::Height,
         google::protobuf::any::Any,

@@ -33,7 +33,7 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 clap = { version = "4.3.0", features = ["derive", "env", "error-context"] }
 tracing = "0.1.37"
 tracing-forest = "0.1.5"
-ibc-types = { path = "../lib/ibc-types" }
+unionlabs = { path = "../lib/unionlabs" }
 ethereum-verifier = { path = "../lib/ethereum-verifier" }
 typenum = "1.16.0"
 serde = { version = "1.0.173", features = ["derive"] }

@@ -10,7 +10,8 @@ use ethereum_verifier::{
     validate_light_client_update, verify_account_storage_root, verify_storage_proof,
 };
 use ibc::core::ics24_host::Path;
-use ibc_types::{
+use sha3::Digest;
+use unionlabs::{
     ethereum::H256,
     ethereum_consts_traits::ChainSpec,
     ibc::{
@@ -19,7 +20,6 @@ use ibc_types::{
     },
     TryFromProto,
 };
-use sha3::Digest;
 use wasm_light_client_types::msg::{
     ClientMessage, ContractResult, MerklePath, Status, StatusResponse,
 };
@@ -330,7 +330,8 @@ mod test {
         },
         Height as IbcHeight,
     };
-    use ibc_types::{
+    use prost::Message;
+    use unionlabs::{
         bls::BlsPublicKey,
         ethereum_consts_traits::Minimal,
         ibc::{
@@ -340,7 +341,6 @@ mod test {
         },
         IntoProto,
     };
-    use prost::Message;
 
     use super::*;
     use crate::state::{save_wasm_client_state, save_wasm_consensus_state};

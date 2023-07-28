@@ -1,7 +1,7 @@
 use std::fmt::{Debug, Display};
 
 use futures::Future;
-use ibc_types::ibc::core::{
+use unionlabs::ibc::core::{
     channel::channel::Channel, client::height::Height, connection::connection_end::ConnectionEnd,
 };
 

@@ -133,7 +133,8 @@ pub struct BeaconHeaderSignature {
 //     }
 // }
 
-use ibc_types::{
+use serde::{Deserialize, Serialize};
+use unionlabs::{
     bls::BlsSignature,
     ethereum::{Version, H256},
     ethereum_consts_traits::{ChainSpec, PresetBaseKind},
@@ -142,7 +143,6 @@ use ibc_types::{
         light_client_update::LightClientUpdate,
     },
 };
-use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""))]

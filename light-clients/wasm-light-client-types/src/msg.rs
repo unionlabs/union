@@ -1,12 +1,12 @@
 use std::fmt::Display;
 
 use cosmwasm_std::{to_binary, Binary, StdResult};
-use ibc_types::ibc::core::client::height::Height;
 use protos::ibc::{
     core::client::v1::GenesisMetadata,
     lightclients::wasm::v1::{ClientState, ConsensusState, Header, Misbehaviour},
 };
 use serde::{Deserialize, Serialize};
+use unionlabs::ibc::core::client::height::Height;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct MerklePath {

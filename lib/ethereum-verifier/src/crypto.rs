@@ -1,4 +1,4 @@
-use ibc_types::bls::{BlsPublicKey, BlsSignature};
+use unionlabs::bls::{BlsPublicKey, BlsSignature};
 
 use crate::Error;
 
