@@ -14,7 +14,7 @@ const config = {
   },
   themes: ["@docusaurus/theme-mermaid"],
   // Set the production url of your site here
-  url: "https://union.fi",
+  url: "https://docs.union.build",
 
   baseUrl: "/",
 
@@ -38,8 +38,7 @@ const config = {
           routeBasePath: "/",
           sidebarPath: require.resolve("./sidebars.js"),
           editUrl:
-            // TODO(aeryz): point this to docs
-            "https://github.com/unionlabs/union",
+            "https://github.com/unionlabs/union/edit/main/docs",
         },
         blog: false,
         theme: {
