@@ -99,13 +99,13 @@ fn encode_dynamic_singleton_tuple(t: impl AbiEncode) -> Vec<u8> {
 
 #[derive(Debug, Clone)]
 pub struct Evm<C: ChainSpec> {
-    // NOTE: pub temporarilly, should be private
+    // NOTE: pub temporarily, should be private
     pub wallet: LocalWallet,
     ibc_handler: IBCHandler<CometblsMiddleware>,
     provider: Provider<Ws>,
     beacon_api_client: BeaconApiClient<C>,
 
-    // NOTE: pub temporarilly, should be private
+    // NOTE: pub temporarily, should be private
     pub ics20_bank: ICS20Bank<CometblsMiddleware>,
     cometbls_client_address: Address,
     ics20_transfer_bank: ICS20TransferBank<CometblsMiddleware>,
