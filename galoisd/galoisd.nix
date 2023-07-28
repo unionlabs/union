@@ -92,8 +92,7 @@
               fi
               case $1 in
                 devnet)
-                  echo "Devnet circuit has not been uploaded yet"
-                  exit 1
+                  url="https://devnet.union.cryptware.io"
                   ;;
                 testnet)
                   url="https://testnet.union.cryptware.io"
@@ -107,7 +106,7 @@
                   exit 1
                   ;;
               esac
-              rclone --progress --no-traverse --http-url "$url" copy :http:/ ./ --files-from=${files}
+              rclone --progress --no-traverse --http-url "$url" copy :http:/ "$2" --files-from=${files}
             '';
           };
       };
