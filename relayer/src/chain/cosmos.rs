@@ -1,15 +1,15 @@
 use std::{collections::BTreeMap, marker::PhantomData};
 
-use bip32::XPrv;
+use clap::Args;
 use contracts::glue::{
     GoogleProtobufTimestampData, TendermintTypesBlockIDData, TendermintTypesCommitData,
     TendermintTypesHeaderData, TendermintTypesPartSetHeaderData, TendermintTypesSignedHeaderData,
     TendermintVersionConsensusData, UnionIbcLightclientsCometblsV1HeaderData,
 };
-use ethers::types::H256;
 use futures::{Future, FutureExt, Stream, StreamExt};
 use ibc_types::{
-    ethereum_consts_traits::ChainSpec,
+    ethereum::H256,
+    ethereum_consts_traits::{ChainSpec, PresetBaseKind},
     ibc::{
         core::{
             channel::{
@@ -18,7 +18,7 @@ use ibc_types::{
                 msg_channel_open_init::MsgChannelOpenInit, msg_channel_open_try::MsgChannelOpenTry,
                 msg_recv_packet::MsgRecvPacket, packet::Packet,
             },
-            client::height::Height,
+            client::{height::Height, msg_create_client::MsgCreateClient},
             commitment::merkle_root::MerkleRoot,
             connection::{
                 msg_channel_open_ack::MsgConnectionOpenAck,
@@ -51,27 +51,96 @@ use tendermint_rpc::{
     event::EventData, query::EventType, Client, SubscriptionClient, WebSocketClient,
 };
 
-use crate::chain::{
-    evm::Cometbls,
-    proof::{
-        ChannelEndPath, ClientConsensusStatePath, ClientStatePath, CommitmentPath, ConnectionPath,
-        IbcPath,
+use crate::{
+    chain::{
+        evm::{Cometbls, Evm},
+        proof::{
+            ChannelEndPath, ClientConsensusStatePath, ClientStatePath, CommitmentPath,
+            ConnectionPath, IbcPath, StateProof,
+        },
+        Chain, ChainConnection, ClientStateOf, Connect, CreateClient, IbcStateRead, LightClient,
     },
-    Connect, IbcStateRead, LightClient, StateProof,
+    config::UnionChainConfig,
 };
 
 /// The 08-wasm light client running on the union chain.
 pub struct Ethereum<C: ChainSpec> {
-    pub signer: CosmosAccountId,
-    pub tm_client: WebSocketClient,
-    wasm_code_id: H256,
-    pub chain_id: String,
-    pub chain_revision: u64,
+    chain: <Self as LightClient>::HostChain,
     _marker: PhantomData<C>,
 }
 
-impl<C: ChainSpec> Ethereum<C> {
-    pub async fn new(signer: XPrv, wasm_code_id: H256) -> Self {
+#[derive(Debug, Clone, Args)]
+pub struct EthereumConfig {
+    #[arg(long)]
+    pub evm_preset: PresetBaseKind,
+}
+
+#[derive(Debug, Clone)]
+pub struct Union {
+    pub signer: CosmosAccountId,
+    tm_client: WebSocketClient,
+    chain_id: String,
+    chain_revision: u64,
+    // TODO: Move this field back into `Ethereum` once the cometbls states are unwrapped out of the wasm states
+    wasm_code_id: H256,
+}
+
+impl<C: ChainSpec> ChainConnection<Evm<C>> for Union {
+    type LightClient = Ethereum<C>;
+
+    fn light_client(&self) -> Self::LightClient {
+        Ethereum {
+            chain: self.clone(),
+            _marker: PhantomData,
+        }
+    }
+}
+
+impl<C: ChainSpec> CreateClient<Ethereum<C>> for Union {
+    fn create_client(
+        &self,
+        _config: <Ethereum<C> as LightClient>::Config,
+        counterparty_chain: <Ethereum<C> as LightClient>::CounterpartyChain,
+    ) -> impl Future<Output = (String, Ethereum<C>)> + '_ {
+        async move {
+            let latest_height = counterparty_chain.query_latest_height().await;
+
+            let client_state = counterparty_chain.self_client_state(latest_height).await;
+            let consensus_state = counterparty_chain.self_consensus_state(latest_height).await;
+
+            let msg = Any(MsgCreateClient {
+                client_state,
+                consensus_state,
+            })
+            .into_proto_with_signer(&self.signer);
+
+            let client_id = self
+                .broadcast_tx_commit([msg])
+                .await
+                .deliver_tx
+                .events
+                .into_iter()
+                .find(|event| event.kind == "create_client")
+                .unwrap()
+                .attributes
+                .into_iter()
+                .find(|attr| attr.key == "client_id")
+                .unwrap()
+                .value;
+
+            (
+                client_id,
+                Ethereum {
+                    chain: self.clone(),
+                    _marker: PhantomData,
+                },
+            )
+        }
+    }
+}
+
+impl Union {
+    pub async fn new(config: UnionChainConfig) -> Self {
         let (tm_client, driver) =
             WebSocketClient::builder("ws://127.0.0.1:26657/websocket".parse().unwrap())
                 .compat_mode(tendermint_rpc::client::CompatMode::V0_37)
@@ -92,38 +161,19 @@ impl<C: ChainSpec> Ethereum<C> {
         let chain_revision = chain_id.split('-').last().unwrap().parse().unwrap();
 
         Self {
-            signer: CosmosAccountId::new(signer, "union".to_string()),
+            signer: CosmosAccountId::new(config.signer.value(), "union".to_string()),
+            wasm_code_id: config.wasm_code_id,
             tm_client,
-            wasm_code_id,
             chain_id,
             chain_revision,
-            _marker: PhantomData,
         }
-    }
-
-    async fn account_info_of_signer(signer: &CosmosAccountId) -> auth::v1beta1::BaseAccount {
-        let account = auth::v1beta1::query_client::QueryClient::connect("http://0.0.0.0:9090")
-            .await
-            .unwrap()
-            .account(auth::v1beta1::QueryAccountRequest {
-                address: signer.to_string(),
-            })
-            .await
-            .unwrap()
-            .into_inner()
-            .account
-            .unwrap();
-
-        assert!(account.type_url == "/cosmos.auth.v1beta1.BaseAccount");
-
-        auth::v1beta1::BaseAccount::decode(&*account.value).unwrap()
     }
 
     pub async fn broadcast_tx_commit(
         &self,
         messages: impl IntoIterator<Item = google::protobuf::Any>,
     ) -> tendermint_rpc::endpoint::broadcast::tx_commit::Response {
-        let account = Self::account_info_of_signer(&self.signer).await;
+        let account = account_info_of_signer(&self.signer).await;
 
         let sign_doc = tx::v1beta1::SignDoc {
             body_bytes: tx::v1beta1::TxBody {
@@ -199,6 +249,7 @@ impl<C: ChainSpec> Ethereum<C> {
         response
     }
 
+    #[must_use]
     pub fn make_height(&self, height: u64) -> Height {
         Height {
             revision_number: self.chain_revision,
@@ -207,66 +258,14 @@ impl<C: ChainSpec> Ethereum<C> {
     }
 }
 
-impl<C: ChainSpec> LightClient for Ethereum<C> {
-    type ClientState = Any<wasm::client_state::ClientState<ethereum::client_state::ClientState>>;
-    type ConsensusState =
-        Any<wasm::consensus_state::ConsensusState<ethereum::consensus_state::ConsensusState>>;
-    type UpdateClientMessage = wasm::header::Header<ethereum::header::Header<C>>;
-
-    type IbcStateRead = EthereumStateRead;
+impl Chain for Union {
+    type SelfClientState =
+        Any<wasm::client_state::ClientState<cometbls::client_state::ClientState>>;
+    type SelfConsensusState =
+        Any<wasm::consensus_state::ConsensusState<cometbls::consensus_state::ConsensusState>>;
 
     fn chain_id(&self) -> impl Future<Output = String> + '_ {
         async move { self.chain_id.clone() }
-    }
-
-    fn create_client(
-        &self,
-        client_state: Self::ClientState,
-        consensus_state: Self::ConsensusState,
-    ) -> impl futures::Future<Output = String> + '_ {
-        async move {
-            let msg = google::protobuf::Any {
-                type_url: "/ibc.core.client.v1.MsgCreateClient".into(),
-                value: client_v1::MsgCreateClient {
-                    signer: self.signer.to_string(),
-                    client_state: Some(client_state.into_proto()),
-                    consensus_state: Some(consensus_state.into_proto()),
-                }
-                .encode_to_vec(),
-            };
-
-            self.broadcast_tx_commit([msg])
-                .await
-                .deliver_tx
-                .events
-                .into_iter()
-                .find(|event| event.kind == "create_client")
-                .unwrap()
-                .attributes
-                .into_iter()
-                .find(|attr| attr.key == "client_id")
-                .unwrap()
-                .value
-        }
-    }
-
-    fn update_client(
-        &self,
-        client_id: String,
-        msg: Self::UpdateClientMessage,
-    ) -> impl futures::Future<Output = ()> + '_ {
-        async move {
-            self.broadcast_tx_commit([google::protobuf::Any {
-                type_url: "/ibc.core.client.v1.MsgUpdateClient".into(),
-                value: client_v1::MsgUpdateClient {
-                    client_id: client_id.clone(),
-                    client_message: Some(Any(msg).into_proto()),
-                    signer: self.signer.to_string(),
-                }
-                .encode_to_vec(),
-            }])
-            .await;
-        }
     }
 
     fn query_latest_height(&self) -> impl Future<Output = Height> + '_ {
@@ -285,27 +284,127 @@ impl<C: ChainSpec> LightClient for Ethereum<C> {
         }
     }
 
-    fn query_client_state(
+    fn self_client_state(
         &self,
-        client_id: String,
-    ) -> impl Future<Output = Self::ClientState> + '_ {
+        height: Height,
+    ) -> impl Future<Output = Self::SelfClientState> + '_ {
         async move {
-            client_v1::query_client::QueryClient::connect("http://0.0.0.0:9090")
+            let params =
+                staking::v1beta1::query_client::QueryClient::connect("http://0.0.0.0:9090")
+                    .await
+                    .unwrap()
+                    .params(staking::v1beta1::QueryParamsRequest {})
+                    .await
+                    .unwrap()
+                    .into_inner()
+                    .params
+                    .unwrap();
+
+            let commit = self
+                .tm_client
+                .commit(tendermint::block::Height::try_from(height.revision_height).unwrap())
                 .await
-                .unwrap()
-                .client_state(client_v1::QueryClientStateRequest { client_id })
-                .await
-                .unwrap()
-                .into_inner()
-                .client_state
-                .unwrap()
-                .try_into()
-                .unwrap()
+                .unwrap();
+
+            let height = commit.signed_header.header.height;
+
+            let unbonding_period = std::time::Duration::new(
+                params
+                    .unbonding_time
+                    .clone()
+                    .unwrap()
+                    .seconds
+                    .try_into()
+                    .unwrap(),
+                params
+                    .unbonding_time
+                    .clone()
+                    .unwrap()
+                    .nanos
+                    .try_into()
+                    .unwrap(),
+            );
+
+            Any(wasm::client_state::ClientState {
+                data: cometbls::client_state::ClientState {
+                    chain_id: self.chain_id().await,
+                    // https://github.com/cometbft/cometbft/blob/da0e55604b075bac9e1d5866cb2e62eaae386dd9/light/verifier.go#L16
+                    trust_level: Fraction {
+                        numerator: 1,
+                        denominator: 3,
+                    },
+                    // https://github.com/cosmos/relayer/blob/23d1e5c864b35d133cad6a0ef06970a2b1e1b03f/relayer/chains/cosmos/provider.go#L177
+                    trusting_period: Duration {
+                        seconds: (unbonding_period * 85 / 100).as_secs().try_into().unwrap(),
+                        nanos: (unbonding_period * 85 / 100)
+                            .subsec_nanos()
+                            .try_into()
+                            .unwrap(),
+                    },
+                    unbonding_period: Duration {
+                        seconds: unbonding_period.as_secs().try_into().unwrap(),
+                        nanos: unbonding_period.subsec_nanos().try_into().unwrap(),
+                    },
+                    // https://github.com/cosmos/relayer/blob/23d1e5c864b35d133cad6a0ef06970a2b1e1b03f/relayer/chains/cosmos/provider.go#L177
+                    max_clock_drift: Duration {
+                        seconds: 60 * 10,
+                        nanos: 0,
+                    },
+                    frozen_height: Height {
+                        revision_number: 0,
+                        revision_height: 0,
+                    },
+                },
+                code_id: self.wasm_code_id.clone(),
+                latest_height: Height {
+                    revision_number: self
+                        .chain_id()
+                        .await
+                        .split('-')
+                        .last()
+                        .unwrap()
+                        .parse()
+                        .unwrap(),
+                    revision_height: height.value(),
+                },
+            })
         }
     }
 
-    fn process_height_for_counterparty(&self, height: Height) -> impl Future<Output = Height> + '_ {
-        async move { height }
+    fn self_consensus_state(
+        &self,
+        height: Height,
+    ) -> impl Future<Output = Self::SelfConsensusState> + '_ {
+        async move {
+            let commit = self
+                .tm_client
+                .commit(tendermint::block::Height::try_from(height.revision_height).unwrap())
+                .await
+                .unwrap();
+
+            let state = cometbls::consensus_state::ConsensusState {
+                root: MerkleRoot {
+                    hash: commit.signed_header.header.app_hash.as_bytes().to_vec(),
+                },
+                next_validators_hash: commit
+                    .signed_header
+                    .header
+                    .next_validators_hash
+                    .as_bytes()
+                    .to_vec(),
+            };
+
+            Any(wasm::consensus_state::ConsensusState {
+                data: state,
+                timestamp: commit
+                    .signed_header
+                    .header
+                    .time
+                    .unix_timestamp()
+                    .try_into()
+                    .unwrap(),
+            })
+        }
     }
 
     fn packet_stream(
@@ -384,6 +483,70 @@ impl<C: ChainSpec> LightClient for Ethereum<C> {
     }
 }
 
+impl<C: ChainSpec> LightClient for Ethereum<C> {
+    // type CounterpartyClientState =
+    //     Any<wasm::client_state::ClientState<ethereum::client_state::ClientState>>;
+    // type CounterpartyConsensusState =
+    //     Any<wasm::consensus_state::ConsensusState<ethereum::consensus_state::ConsensusState>>;
+
+    type UpdateClientMessage = wasm::header::Header<ethereum::header::Header<C>>;
+
+    type IbcStateRead = EthereumStateRead;
+
+    type HostChain = Union;
+
+    type CounterpartyChain = Evm<C>;
+
+    type Config = EthereumConfig;
+
+    fn chain(&self) -> &Self::HostChain {
+        &self.chain
+    }
+
+    fn update_client(
+        &self,
+        client_id: String,
+        msg: Self::UpdateClientMessage,
+    ) -> impl futures::Future<Output = ()> + '_ {
+        async move {
+            self.chain
+                .broadcast_tx_commit([google::protobuf::Any {
+                    type_url: "/ibc.core.client.v1.MsgUpdateClient".into(),
+                    value: client_v1::MsgUpdateClient {
+                        client_id: client_id.clone(),
+                        client_message: Some(Any(msg).into_proto()),
+                        signer: self.chain.signer.to_string(),
+                    }
+                    .encode_to_vec(),
+                }])
+                .await;
+        }
+    }
+
+    fn query_client_state(
+        &self,
+        client_id: String,
+    ) -> impl Future<Output = ClientStateOf<Self::CounterpartyChain>> + '_ {
+        async move {
+            client_v1::query_client::QueryClient::connect("http://0.0.0.0:9090")
+                .await
+                .unwrap()
+                .client_state(client_v1::QueryClientStateRequest { client_id })
+                .await
+                .unwrap()
+                .into_inner()
+                .client_state
+                .unwrap()
+                .try_into()
+                .unwrap()
+        }
+    }
+
+    fn process_height_for_counterparty(&self, height: Height) -> impl Future<Output = Height> + '_ {
+        async move { height }
+    }
+}
+
 impl<C: ChainSpec> Connect<Cometbls<C>> for Ethereum<C> {
     // fn generate_counterparty_handshake_client_state(
     //     &self,
@@ -409,67 +572,76 @@ impl<C: ChainSpec> Connect<Cometbls<C>> for Ethereum<C> {
         &self,
         msg: MsgConnectionOpenInit,
     ) -> impl futures::Future<Output = (String, Height)> + '_ {
-        self.broadcast_tx_commit([google::protobuf::Any {
-            type_url: "/ibc.core.connection.v1.MsgConnectionOpenInit".to_string(),
-            value: msg.into_proto_with_signer(&self.signer).encode_to_vec(),
-        }])
-        .map(|response| {
-            (
-                response
-                    .deliver_tx
-                    .events
-                    .into_iter()
-                    .find(|event| event.kind == "connection_open_init")
-                    .unwrap()
-                    .attributes
-                    .into_iter()
-                    .find(|attr| attr.key == "connection_id")
-                    .unwrap()
-                    .value,
-                self.make_height(response.height.value()),
-            )
-        })
+        self.chain
+            .broadcast_tx_commit([google::protobuf::Any {
+                type_url: "/ibc.core.connection.v1.MsgConnectionOpenInit".to_string(),
+                value: msg
+                    .into_proto_with_signer(&self.chain.signer)
+                    .encode_to_vec(),
+            }])
+            .map(|response| {
+                (
+                    response
+                        .deliver_tx
+                        .events
+                        .into_iter()
+                        .find(|event| event.kind == "connection_open_init")
+                        .unwrap()
+                        .attributes
+                        .into_iter()
+                        .find(|attr| attr.key == "connection_id")
+                        .unwrap()
+                        .value,
+                    self.chain.make_height(response.height.value()),
+                )
+            })
     }
 
     fn connection_open_try(
         &self,
-        msg: MsgConnectionOpenTry<<Cometbls<C> as LightClient>::ClientState>,
+        msg: MsgConnectionOpenTry<ClientStateOf<<Cometbls<C> as LightClient>::CounterpartyChain>>,
     ) -> impl futures::Future<Output = (String, Height)> + '_ {
-        self.broadcast_tx_commit([google::protobuf::Any {
-            type_url: "/ibc.core.connection.v1.MsgConnectionOpenTry".to_string(),
-            value: msg.into_proto_with_signer(&self.signer).encode_to_vec(),
-        }])
-        .map(|response| {
-            (
-                response
-                    .deliver_tx
-                    .events
-                    .into_iter()
-                    .find(|event| dbg!(event).kind == "connection_open_try")
-                    .unwrap()
-                    .attributes
-                    .into_iter()
-                    .find(|attr| attr.key == "connection_id")
-                    .unwrap()
-                    .value,
-                self.make_height(response.height.value()),
-            )
-        })
+        self.chain
+            .broadcast_tx_commit([google::protobuf::Any {
+                type_url: "/ibc.core.connection.v1.MsgConnectionOpenTry".to_string(),
+                value: msg
+                    .into_proto_with_signer(&self.chain.signer)
+                    .encode_to_vec(),
+            }])
+            .map(|response| {
+                (
+                    response
+                        .deliver_tx
+                        .events
+                        .into_iter()
+                        .find(|event| event.kind == "connection_open_try")
+                        .unwrap()
+                        .attributes
+                        .into_iter()
+                        .find(|attr| attr.key == "connection_id")
+                        .unwrap()
+                        .value,
+                    self.chain.make_height(response.height.value()),
+                )
+            })
     }
 
     fn connection_open_ack(
         &self,
-        msg: MsgConnectionOpenAck<<Cometbls<C> as LightClient>::ClientState>,
+        msg: MsgConnectionOpenAck<ClientStateOf<<Cometbls<C> as LightClient>::CounterpartyChain>>,
     ) -> impl futures::Future<Output = Height> + '_ {
         async move {
-            self.make_height(
-                self.broadcast_tx_commit([google::protobuf::Any {
-                    type_url: "/ibc.core.connection.v1.MsgConnectionOpenAck".to_string(),
-                    value: msg.into_proto_with_signer(&self.signer).encode_to_vec(),
-                }])
-                .await
-                .height
-                .value(),
+            self.chain.make_height(
+                self.chain
+                    .broadcast_tx_commit([google::protobuf::Any {
+                        type_url: "/ibc.core.connection.v1.MsgConnectionOpenAck".to_string(),
+                        value: msg
+                            .into_proto_with_signer(&self.chain.signer)
+                            .encode_to_vec(),
+                    }])
+                    .await
+                    .height
+                    .value(),
             )
         }
     }
@@ -479,14 +651,17 @@ impl<C: ChainSpec> Connect<Cometbls<C>> for Ethereum<C> {
         msg: MsgConnectionOpenConfirm,
     ) -> impl futures::Future<Output = Height> + '_ {
         async move {
-            self.make_height(
-                self.broadcast_tx_commit([google::protobuf::Any {
-                    type_url: "/ibc.core.connection.v1.MsgConnectionOpenConfirm".to_string(),
-                    value: msg.into_proto_with_signer(&self.signer).encode_to_vec(),
-                }])
-                .await
-                .height
-                .value(),
+            self.chain.make_height(
+                self.chain
+                    .broadcast_tx_commit([google::protobuf::Any {
+                        type_url: "/ibc.core.connection.v1.MsgConnectionOpenConfirm".to_string(),
+                        value: msg
+                            .into_proto_with_signer(&self.chain.signer)
+                            .encode_to_vec(),
+                    }])
+                    .await
+                    .height
+                    .value(),
             )
         }
     }
@@ -497,9 +672,12 @@ impl<C: ChainSpec> Connect<Cometbls<C>> for Ethereum<C> {
     ) -> impl futures::Future<Output = (String, Height)> + '_ {
         async move {
             let tx = self
+                .chain
                 .broadcast_tx_commit([google::protobuf::Any {
                     type_url: "/ibc.core.channel.v1.MsgChannelOpenInit".to_string(),
-                    value: msg.into_proto_with_signer(&self.signer).encode_to_vec(),
+                    value: msg
+                        .into_proto_with_signer(&self.chain.signer)
+                        .encode_to_vec(),
                 }])
                 .await;
             (
@@ -513,7 +691,7 @@ impl<C: ChainSpec> Connect<Cometbls<C>> for Ethereum<C> {
                     .find(|attr| attr.key == "channel_id")
                     .unwrap()
                     .value,
-                self.make_height(tx.height.value()),
+                self.chain.make_height(tx.height.value()),
             )
         }
     }
@@ -524,9 +702,12 @@ impl<C: ChainSpec> Connect<Cometbls<C>> for Ethereum<C> {
     ) -> impl futures::Future<Output = (String, Height)> + '_ {
         async move {
             let tx = self
+                .chain
                 .broadcast_tx_commit([google::protobuf::Any {
                     type_url: "/ibc.core.channel.v1.MsgChannelOpenTry".to_string(),
-                    value: msg.into_proto_with_signer(&self.signer).encode_to_vec(),
+                    value: msg
+                        .into_proto_with_signer(&self.chain.signer)
+                        .encode_to_vec(),
                 }])
                 .await;
             (
@@ -540,7 +721,7 @@ impl<C: ChainSpec> Connect<Cometbls<C>> for Ethereum<C> {
                     .find(|attr| attr.key == "channel_id")
                     .unwrap()
                     .value,
-                self.make_height(tx.height.value()),
+                self.chain.make_height(tx.height.value()),
             )
         }
     }
@@ -550,14 +731,17 @@ impl<C: ChainSpec> Connect<Cometbls<C>> for Ethereum<C> {
         msg: MsgChannelOpenAck,
     ) -> impl futures::Future<Output = Height> + '_ {
         async move {
-            self.make_height(
-                self.broadcast_tx_commit([google::protobuf::Any {
-                    type_url: "/ibc.core.channel.v1.MsgChannelOpenAck".to_string(),
-                    value: msg.into_proto_with_signer(&self.signer).encode_to_vec(),
-                }])
-                .await
-                .height
-                .value(),
+            self.chain.make_height(
+                self.chain
+                    .broadcast_tx_commit([google::protobuf::Any {
+                        type_url: "/ibc.core.channel.v1.MsgChannelOpenAck".to_string(),
+                        value: msg
+                            .into_proto_with_signer(&self.chain.signer)
+                            .encode_to_vec(),
+                    }])
+                    .await
+                    .height
+                    .value(),
             )
         }
     }
@@ -567,148 +751,31 @@ impl<C: ChainSpec> Connect<Cometbls<C>> for Ethereum<C> {
         msg: MsgChannelOpenConfirm,
     ) -> impl futures::Future<Output = Height> + '_ {
         async move {
-            self.make_height(
-                self.broadcast_tx_commit([google::protobuf::Any {
-                    type_url: "/ibc.core.channel.v1.MsgChannelOpenConfirm".to_string(),
-                    value: msg.into_proto_with_signer(&self.signer).encode_to_vec(),
-                }])
-                .await
-                .height
-                .value(),
+            self.chain.make_height(
+                self.chain
+                    .broadcast_tx_commit([google::protobuf::Any {
+                        type_url: "/ibc.core.channel.v1.MsgChannelOpenConfirm".to_string(),
+                        value: msg
+                            .into_proto_with_signer(&self.chain.signer)
+                            .encode_to_vec(),
+                    }])
+                    .await
+                    .height
+                    .value(),
             )
         }
     }
 
     fn recv_packet(&self, msg: MsgRecvPacket) -> impl futures::Future<Output = ()> + '_ {
         async move {
-            self.broadcast_tx_commit([google::protobuf::Any {
-                type_url: "/ibc.core.channel.v1.MsgRecvPacket".to_string(),
-                value: msg.into_proto_with_signer(&self.signer).encode_to_vec(),
-            }])
-            .await;
-        }
-    }
-
-    fn generate_counterparty_client_state(
-        &self,
-        height: Height,
-    ) -> impl Future<Output = <Cometbls<C> as LightClient>::ClientState> + '_ {
-        async move {
-            let params =
-                staking::v1beta1::query_client::QueryClient::connect("http://0.0.0.0:9090")
-                    .await
-                    .unwrap()
-                    .params(staking::v1beta1::QueryParamsRequest {})
-                    .await
-                    .unwrap()
-                    .into_inner()
-                    .params
-                    .unwrap();
-
-            let commit = self
-                .tm_client
-                .commit(tendermint::block::Height::try_from(height.revision_height).unwrap())
-                .await
-                .unwrap();
-
-            let height = commit.signed_header.header.height;
-
-            let unbonding_period = std::time::Duration::new(
-                params
-                    .unbonding_time
-                    .clone()
-                    .unwrap()
-                    .seconds
-                    .try_into()
-                    .unwrap(),
-                params
-                    .unbonding_time
-                    .clone()
-                    .unwrap()
-                    .nanos
-                    .try_into()
-                    .unwrap(),
-            );
-
-            Any(wasm::client_state::ClientState {
-                data: cometbls::client_state::ClientState {
-                    chain_id: self.chain_id().await,
-                    // https://github.com/cometbft/cometbft/blob/da0e55604b075bac9e1d5866cb2e62eaae386dd9/light/verifier.go#L16
-                    trust_level: Fraction {
-                        numerator: 1,
-                        denominator: 3,
-                    },
-                    // https://github.com/cosmos/relayer/blob/23d1e5c864b35d133cad6a0ef06970a2b1e1b03f/relayer/chains/cosmos/provider.go#L177
-                    trusting_period: Duration {
-                        seconds: (unbonding_period * 85 / 100).as_secs().try_into().unwrap(),
-                        nanos: (unbonding_period * 85 / 100)
-                            .subsec_nanos()
-                            .try_into()
-                            .unwrap(),
-                    },
-                    unbonding_period: Duration {
-                        seconds: unbonding_period.as_secs().try_into().unwrap(),
-                        nanos: unbonding_period.subsec_nanos().try_into().unwrap(),
-                    },
-                    // https://github.com/cosmos/relayer/blob/23d1e5c864b35d133cad6a0ef06970a2b1e1b03f/relayer/chains/cosmos/provider.go#L177
-                    max_clock_drift: Duration {
-                        seconds: 60 * 10,
-                        nanos: 0,
-                    },
-                    frozen_height: Height {
-                        revision_number: 0,
-                        revision_height: 0,
-                    },
-                },
-                code_id: self.wasm_code_id.to_fixed_bytes().to_vec(),
-                latest_height: Height {
-                    revision_number: self
-                        .chain_id()
-                        .await
-                        .split('-')
-                        .last()
-                        .unwrap()
-                        .parse()
-                        .unwrap(),
-                    revision_height: height.value(),
-                },
-            })
-        }
-    }
-
-    fn generate_counterparty_consensus_state(
-        &self,
-        height: Height,
-    ) -> impl Future<Output = <Cometbls<C> as LightClient>::ConsensusState> + '_ {
-        async move {
-            let commit = self
-                .tm_client
-                .commit(tendermint::block::Height::try_from(height.revision_height).unwrap())
-                .await
-                .unwrap();
-
-            let state = cometbls::consensus_state::ConsensusState {
-                root: MerkleRoot {
-                    hash: commit.signed_header.header.app_hash.as_bytes().to_vec(),
-                },
-                next_validators_hash: commit
-                    .signed_header
-                    .header
-                    .next_validators_hash
-                    .as_bytes()
-                    .to_vec(),
-            };
-
-            Any(wasm::consensus_state::ConsensusState {
-                data: state,
-                timestamp: commit
-                    .signed_header
-                    .header
-                    .time
-                    .unix_timestamp()
-                    .try_into()
-                    .unwrap(),
-            })
+            self.chain
+                .broadcast_tx_commit([google::protobuf::Any {
+                    type_url: "/ibc.core.channel.v1.MsgRecvPacket".to_string(),
+                    value: msg
+                        .into_proto_with_signer(&self.chain.signer)
+                        .encode_to_vec(),
+                }])
+                .await;
         }
     }
 
@@ -721,6 +788,7 @@ impl<C: ChainSpec> Connect<Cometbls<C>> for Ethereum<C> {
     ) -> impl Future<Output = Height> + '_ {
         async move {
             let commit = self
+                .chain
                 .tm_client
                 .commit(
                     TryInto::<tendermint::block::Height>::try_into(update_to.revision_height)
@@ -731,7 +799,7 @@ impl<C: ChainSpec> Connect<Cometbls<C>> for Ethereum<C> {
 
             tracing::debug!("New block {:?}", commit.signed_header.header.height);
 
-            // todo: add to self
+            // TODO: Add to self
             let mut staking_client =
                 staking::v1beta1::query_client::QueryClient::connect("http://0.0.0.0:9090")
                     .await
@@ -740,7 +808,6 @@ impl<C: ChainSpec> Connect<Cometbls<C>> for Ethereum<C> {
             tracing::debug!("Query validators...");
             let mut validators = staking_client
                 .validators(staking::v1beta1::QueryValidatorsRequest {
-                    // How to use BondStatus???
                     status: BondStatus::Bonded.as_str_name().to_string(),
                     pagination: None,
                 })
@@ -841,6 +908,7 @@ impl<C: ChainSpec> Connect<Cometbls<C>> for Ethereum<C> {
 
             tracing::debug!("Generate ZKP...");
 
+            // TODO: Extract into the chain config
             const PROVER_ENDPOINT: &str = "https://prover.cryptware.io:443";
             // const PROVER_ENDPOINT: &str = "http://localhost:8080";
 
@@ -1123,9 +1191,6 @@ where
                 .unwrap()
                 .into_inner();
 
-            // tracing::debug!("Proof height {}", query_result.height.value());
-            // tracing::debug!("Proof {}", ethers::utils::hex::encode(proof.proof.clone()));
-
             StateProof {
                 state: P::from_abci_bytes(query_result.value),
                 proof: commitment_v1::MerkleProof {
@@ -1138,8 +1203,29 @@ where
                         .collect::<Vec<_>>(),
                 }
                 .encode_to_vec(),
-                proof_height: light_client.make_height(query_result.height.try_into().unwrap()),
+                proof_height: light_client
+                    .chain
+                    .make_height(query_result.height.try_into().unwrap()),
             }
         }
     }
+}
+
+// TODO: This should be an instance method on `Union`
+async fn account_info_of_signer(signer: &CosmosAccountId) -> auth::v1beta1::BaseAccount {
+    let account = auth::v1beta1::query_client::QueryClient::connect("http://0.0.0.0:9090")
+        .await
+        .unwrap()
+        .account(auth::v1beta1::QueryAccountRequest {
+            address: signer.to_string(),
+        })
+        .await
+        .unwrap()
+        .into_inner()
+        .account
+        .unwrap();
+
+    assert!(account.type_url == "/cosmos.auth.v1beta1.BaseAccount");
+
+    auth::v1beta1::BaseAccount::decode(&*account.value).unwrap()
 }

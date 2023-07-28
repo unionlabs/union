@@ -19,6 +19,7 @@ use crate::{
 
 type Result<T> = core::result::Result<T, Error>;
 
+#[derive(Debug, Clone)]
 pub struct BeaconApiClient<C: ChainSpec> {
     client: Client,
     base_url: String,
@@ -117,7 +118,7 @@ impl<C: ChainSpec> BeaconApiClient<C> {
     async fn get_json<T: DeserializeOwned>(&self, path: impl Into<String>) -> Result<T> {
         let url = format!("{}{}", self.base_url, path.into());
 
-        tracing::debug!("get_json: url={}", url);
+        tracing::debug!(%url, "get_json");
 
         let res = self.client.get(url).send().await?;
 
@@ -125,7 +126,7 @@ impl<C: ChainSpec> BeaconApiClient<C> {
             StatusCode::OK => {
                 let bytes = res.bytes().await?;
 
-                tracing::trace!("get_json: response={}", String::from_utf8_lossy(&bytes));
+                tracing::trace!(response = %String::from_utf8_lossy(&bytes), "get_json");
 
                 Ok(serde_json::from_slice(&bytes).map_err(Error::Json)?)
             }

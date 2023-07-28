@@ -199,7 +199,7 @@ pub fn verify_account_storage_root(
     match verify_state(root, address.as_ref(), proof)? {
         Some(account) => {
             let account = Account::from_rlp_bytes(account.as_ref())?;
-            if account.storage_root == *storage_root {
+            if &account.storage_root == storage_root {
                 Ok(())
             } else {
                 Err(Error::ValueMismatch)
@@ -692,7 +692,8 @@ mod tests {
                     &MINIMAL.fork_parameters,
                     &header.consensus_update.attested_header,
                 ),
-                Ok(())
+                Ok(()),
+                "invalid attested header"
             );
 
             assert_eq!(
@@ -700,7 +701,8 @@ mod tests {
                     &MINIMAL.fork_parameters,
                     &header.consensus_update.finalized_header,
                 ),
-                Ok(())
+                Ok(()),
+                "invalid finalized header"
             );
         }
     }

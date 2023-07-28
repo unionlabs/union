@@ -3,9 +3,12 @@
 
 use std::fmt::{Debug, Display};
 
-use bip32::secp256k1::{
-    ecdsa::{self, Signature},
-    schnorr::signature::Signer,
+use bip32::{
+    secp256k1::{
+        ecdsa::{self, Signature},
+        schnorr::signature::Signer,
+    },
+    PrivateKey, PublicKey,
 };
 use prost::Message;
 use sha2::Digest;
@@ -14,6 +17,9 @@ use crate::{errors::TryFromBranchError, ethereum::H256};
 
 /// Defines types that wrap the IBC specification, matching the proto module structure.
 pub mod ibc;
+
+/// Defines types that wrap the tendermint specification, matching the proto module structure.
+pub mod tendermint;
 
 /// Various ethereum types. Types that have an IBC counterpart are defined in [`ibc`].
 pub mod ethereum;
@@ -34,6 +40,17 @@ pub mod errors {
     /// A protobuf field was none unexpectedly.
     #[derive(Debug)]
     pub struct MissingField(pub &'static str);
+
+    macro_rules! required {
+        ($struct_var:ident.$field:ident, $Error:ident) => {
+            $struct_var
+                .$field
+                .ok_or($Error::MissingField(MissingField(stringify!($field))))
+        };
+    }
+
+    // https://stackoverflow.com/questions/26731243/how-do-i-use-a-macro-across-module-files
+    pub(crate) use required;
 
     // Expected one length, but found another.
     #[derive(Debug, PartialEq, Eq)]
@@ -161,20 +178,24 @@ pub trait MsgIntoProto {
 }
 
 /// A simple wrapper around a cosmos account, easily representable as a bech32 string.
+#[derive(Debug, Clone)]
 pub struct CosmosAccountId {
-    xprv: bip32::XPrv,
+    signing_key: k256::ecdsa::SigningKey,
     prefix: String,
 }
 
 impl CosmosAccountId {
     #[must_use]
-    pub fn new(xprv: bip32::XPrv, prefix: String) -> Self {
-        Self { xprv, prefix }
+    pub fn new(signing_key: k256::ecdsa::SigningKey, prefix: String) -> Self {
+        Self {
+            signing_key,
+            prefix,
+        }
     }
 
     #[must_use]
     pub fn public_key(&self) -> Vec<u8> {
-        self.xprv.public_key().public_key().to_bytes().to_vec()
+        self.signing_key.public_key().to_bytes().to_vec()
     }
 
     /// Attempt to sign the given bytes.
@@ -183,7 +204,7 @@ impl CosmosAccountId {
     ///
     /// See [`Signer::try_sign`].
     pub fn try_sign(&self, bytes: &[u8]) -> Result<Signature, ecdsa::Error> {
-        Signer::<Signature>::try_sign(self.xprv.private_key(), bytes)
+        Signer::<Signature>::try_sign(&self.signing_key, bytes)
     }
 }
 
@@ -196,7 +217,7 @@ impl Display for CosmosAccountId {
             ripemd::Ripemd160::new()
                 .chain_update(
                     sha2::Sha256::new()
-                        .chain_update(self.xprv.public_key().public_key().to_bytes())
+                        .chain_update(self.signing_key.public_key().to_bytes())
                         .finalize(),
                 )
                 .finalize(),

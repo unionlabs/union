@@ -4,13 +4,14 @@ use prost::Message;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    ibc::core::client::height::Height, IntoProto, TryFromProto, TryFromProtoErrorOf, TypeUrl,
+    errors::InvalidLength, ethereum::H256, ibc::core::client::height::Height, IntoProto,
+    TryFromProto, TryFromProtoErrorOf, TypeUrl,
 };
 
-#[derive(Debug, Serialize, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ClientState<Data> {
     pub data: Data,
-    pub code_id: Vec<u8>,
+    pub code_id: H256,
     pub latest_height: Height,
 }
 
@@ -31,7 +32,7 @@ where
     fn from(val: ClientState<Data>) -> Self {
         Self {
             data: val.data.into_proto().encode_to_vec(),
-            code_id: val.code_id,
+            code_id: val.code_id.into_bytes(),
             latest_height: Some(val.latest_height.into()),
         }
     }
@@ -45,6 +46,7 @@ impl<Data: IntoProto> IntoProto for ClientState<Data> {
 pub enum TryFromWasmClientStateError<Err> {
     TryFromProto(Err),
     Prost(prost::DecodeError),
+    CodeId(InvalidLength),
 }
 
 impl<Data> TryFrom<protos::ibc::lightclients::wasm::v1::ClientState> for ClientState<Data>
@@ -65,7 +67,10 @@ where
                     .map_err(TryFromWasmClientStateError::Prost)?,
             )
             .map_err(TryFromWasmClientStateError::TryFromProto)?,
-            code_id: value.code_id,
+            code_id: value
+                .code_id
+                .try_into()
+                .map_err(TryFromWasmClientStateError::CodeId)?,
             latest_height: value.latest_height.unwrap().into(),
         })
     }
