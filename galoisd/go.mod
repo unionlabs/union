@@ -1,4 +1,4 @@
-module unionp
+module galois
 
 go 1.20
 

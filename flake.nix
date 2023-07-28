@@ -64,7 +64,7 @@
         [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" "x86_64-darwin" ];
       imports = [
         ./uniond/uniond.nix
-        ./unionpd/unionpd.nix
+        ./galoisd/galoisd.nix
         ./unionvisor/unionvisor.nix
         ./relayer/relayer.nix
         ./lib/ethereum-verifier/ethereum-verifier.nix
@@ -135,9 +135,9 @@
                   name = "uniond-proto";
                   path = ./uniond/proto;
                 };
-                unionpd = builtins.path {
-                  name = "unionpd-proto";
-                  path = ./unionpd/proto;
+                galoisd = builtins.path {
+                  name = "galoisd-proto";
+                  path = ./galoisd/proto;
                 };
                 cometbls = builtins.fetchGit {
                   name = "cometbls";

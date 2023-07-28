@@ -5,9 +5,9 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
+	provergrpc "galois/grpc/api/v1"
 	"log"
 	"math/big"
-	provergrpc "unionp/grpc/api/v1"
 
 	cometbft_bn254 "github.com/cometbft/cometbft/crypto/bn254"
 	cometbn254 "github.com/cometbft/cometbft/crypto/bn254"

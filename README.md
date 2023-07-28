@@ -17,7 +17,7 @@ Union is designed to be completely decentralized. The upgradability of contracts
 This repository hosts a few core components of Union.
 
 - [`uniond`](./uniond): The node implementation, using [`CometBLS`](https://github.com/unionlabs/cometbls).
-- [`unionpd`](./unionpd/): The zero-knowledge prover implementation.
+- [`galoisd`](./galoisd/): The zero-knowledge prover implementation.
 - [`unionvisor`](./unionvisor): A node supervisor intended for production usage.
 
 You can find these components in the [releases](https://github.com/unionlabs/union/releases).

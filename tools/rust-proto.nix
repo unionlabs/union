@@ -60,8 +60,8 @@
             src
           ];
         };
-        unionpd = rec {
-          src = "${proto.unionpd}";
+        galoisd = rec {
+          src = "${proto.galoisd}";
           proto-deps = [
             src
           ];

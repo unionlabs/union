@@ -1,8 +1,8 @@
 { ... }: {
   perSystem = { self', pkgs, proto, ... }: {
     packages = {
-      unionpd = pkgs.buildGoModule ({
-        name = "unionpd";
+      galoisd = pkgs.buildGoModule ({
+        name = "galoisd";
         src = ./.;
         vendorSha256 = null;
         doCheck = false;
@@ -15,9 +15,8 @@
         ];
       } else { }));
 
-
-      unionpd-image = pkgs.dockerTools.buildImage {
-        name = "unionpd";
+      galoisd-image = pkgs.dockerTools.buildImage {
+        name = "galoisd";
 
         copyToRoot = pkgs.buildEnv {
           name = "image-root";
@@ -25,7 +24,7 @@
           pathsToLink = [ "/bin" ];
         };
         config = {
-          Entrypoint = [ (pkgs.lib.getExe self'.packages.unionpd) ];
+          Entrypoint = [ (pkgs.lib.getExe self'.packages.galoisd) ];
           Env = [ "SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt" ];
         };
       };
@@ -35,13 +34,13 @@
         runtimeInputs =
           [ pkgs.protobuf pkgs.protoc-gen-go pkgs.protoc-gen-go-grpc ];
         text = ''
-          find ${proto.unionpd} -type f -regex ".*proto" |\
+          find ${proto.galoisd} -type f -regex ".*proto" |\
           while read -r file; do
             echo "Generating $file"
             protoc \
                -I"${proto.cometbls}/proto" \
                -I"${proto.gogoproto}" \
-               -I"${proto.unionpd}" \
+               -I"${proto.galoisd}" \
               --go_out=./grpc --go_opt=paths=source_relative \
               --go-grpc_out=./grpc --go-grpc_opt=paths=source_relative \
               "$file"

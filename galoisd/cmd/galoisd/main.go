@@ -1,12 +1,12 @@
 package main
 
 import (
+	"galois/cmd/galoisd/cmd"
 	"github.com/spf13/cobra"
-	"unionp/cmd/unionpd/cmd"
 )
 
 func main() {
-	var rootCmd = &cobra.Command{Use: "unionpd"}
+	var rootCmd = &cobra.Command{Use: "galoisd"}
 	rootCmd.AddCommand(cmd.ServeCmd())
 	rootCmd.AddCommand(cmd.GenContract())
 	rootCmd.AddCommand(cmd.ExampleProveCmd())
