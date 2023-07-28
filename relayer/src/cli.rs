@@ -23,12 +23,12 @@ pub struct AppArgs {
     )]
     pub config_file_path: OsString,
     #[command(subcommand)]
-    pub command: CommandV2,
+    pub command: Command,
 }
 
 #[derive(Debug, Subcommand)]
 #[allow(clippy::large_enum_variant)]
-pub enum CommandV2 {
+pub enum Command {
     PrintConfig,
     #[command(subcommand)]
     Chain(ChainCmd),
@@ -65,6 +65,14 @@ pub enum SubmitPacketCmd {
 
 #[derive(Debug, Subcommand)]
 pub enum QueryCmd {
+    Client {
+        #[arg(long)]
+        on: String,
+        #[arg(long)]
+        client_id: String,
+    },
+    Connection {},
+    Channel {},
     Balances {
         #[arg(long)]
         on: String,
@@ -103,7 +111,6 @@ pub enum ChainAddCmd {
 
 #[derive(Debug, Subcommand)]
 pub enum ClientCmd {
-    Query(ClientQueryCmd),
     #[command(subcommand)]
     Create(ClientCreateCmd),
 }

@@ -50,7 +50,7 @@ use crate::{
     },
     cli::{
         AppArgs, ChainAddCmd, ChainCmd, ChannelCmd, ClientCmd, ClientCreateCmd, CometblsClientType,
-        CommandV2, EvmClientType, QueryCmd, SubmitPacketCmd,
+        Command, EvmClientType, QueryCmd, SubmitPacketCmd,
     },
     config::{ChainConfig, Config, EvmChainConfig},
 };
@@ -81,10 +81,10 @@ async fn do_main(args: cli::AppArgs) -> Result<(), anyhow::Error> {
         });
 
     match args.command {
-        CommandV2::PrintConfig => {
+        Command::PrintConfig => {
             println!("{}", serde_json::to_string_pretty(&relayer_config).unwrap());
         }
-        CommandV2::Chain(chain) => match chain {
+        Command::Chain(chain) => match chain {
             ChainCmd::Add(add) => {
                 let (name, cfg, overwrite) = match add {
                     ChainAddCmd::Evm {
@@ -121,45 +121,7 @@ async fn do_main(args: cli::AppArgs) -> Result<(), anyhow::Error> {
                 };
             }
         },
-        CommandV2::Client(client) => match client {
-            // TODO: Generalize this to all IbcPath types
-            // REVIEW: Move `connection query` and `channel query` here?
-            ClientCmd::Query(query) => {
-                let json = match relayer_config.chain[&query.on].clone() {
-                    ChainConfig::Evm(EvmChainConfig::Mainnet(evm)) => {
-                        let evm = Evm::<Mainnet>::new(evm).await;
-
-                        let cometbls = evm.light_client();
-
-                        serde_json::to_string_pretty(
-                            &cometbls.query_client_state(query.client_id).await,
-                        )
-                        .unwrap()
-                    }
-                    ChainConfig::Evm(EvmChainConfig::Minimal(evm)) => {
-                        let evm = Evm::<Minimal>::new(evm).await;
-
-                        let cometbls = evm.light_client();
-
-                        serde_json::to_string_pretty(
-                            &cometbls.query_client_state(query.client_id).await,
-                        )
-                        .unwrap()
-                    }
-                    ChainConfig::Union(union) => {
-                        let union = Union::new(union).await;
-
-                        let ethereum: Ethereum<Mainnet> = union.light_client();
-
-                        serde_json::to_string_pretty(
-                            &ethereum.query_client_state(query.client_id).await,
-                        )
-                        .unwrap()
-                    }
-                };
-
-                println!("{json}");
-            }
+        Command::Client(client) => match client {
             ClientCmd::Create(create) => match create {
                 ClientCreateCmd::Evm(ty) => match ty {
                     EvmClientType::Cometbls {
@@ -215,7 +177,7 @@ async fn do_main(args: cli::AppArgs) -> Result<(), anyhow::Error> {
                 },
             },
         },
-        CommandV2::Connection(connection) => match connection {
+        Command::Connection(connection) => match connection {
             cli::ConnectionCmd::Open {
                 from_chain: from_chain_name,
                 from_client,
@@ -248,7 +210,7 @@ async fn do_main(args: cli::AppArgs) -> Result<(), anyhow::Error> {
                 }
             }
         },
-        CommandV2::Channel(channel) => match channel {
+        Command::Channel(channel) => match channel {
             ChannelCmd::Open {
                 from_chain: from_chain_name,
                 from_connection,
@@ -315,7 +277,7 @@ async fn do_main(args: cli::AppArgs) -> Result<(), anyhow::Error> {
                 }
             }
         },
-        CommandV2::Relay(relay) => {
+        Command::Relay(relay) => {
             for cli::Between(a, b) in relay.between {
                 let a_chain = relayer_config.get_chain(&a).await.unwrap();
                 let b_chain = relayer_config.get_chain(&b).await.unwrap();
@@ -343,7 +305,7 @@ async fn do_main(args: cli::AppArgs) -> Result<(), anyhow::Error> {
                 }
             }
         }
-        CommandV2::SubmitPacket(SubmitPacketCmd::Transfer {
+        Command::SubmitPacket(SubmitPacketCmd::Transfer {
             denom,
             amount,
             receiver,
@@ -368,7 +330,7 @@ async fn do_main(args: cli::AppArgs) -> Result<(), anyhow::Error> {
                 }
             }
         }
-        CommandV2::Query(query) => match query {
+        Command::Query(query) => match query {
             QueryCmd::Balances { on, denom } => {
                 let chain = relayer_config.get_chain(&on).await.unwrap();
 
@@ -394,6 +356,38 @@ async fn do_main(args: cli::AppArgs) -> Result<(), anyhow::Error> {
                     }
                 }
             }
+            QueryCmd::Client { on, client_id } => {
+                let json = match relayer_config.chain[&on].clone() {
+                    ChainConfig::Evm(EvmChainConfig::Mainnet(evm)) => {
+                        let evm = Evm::<Mainnet>::new(evm).await;
+
+                        let cometbls = evm.light_client();
+
+                        serde_json::to_string_pretty(&cometbls.query_client_state(client_id).await)
+                            .unwrap()
+                    }
+                    ChainConfig::Evm(EvmChainConfig::Minimal(evm)) => {
+                        let evm = Evm::<Minimal>::new(evm).await;
+
+                        let cometbls = evm.light_client();
+
+                        serde_json::to_string_pretty(&cometbls.query_client_state(client_id).await)
+                            .unwrap()
+                    }
+                    ChainConfig::Union(union) => {
+                        let union = Union::new(union).await;
+
+                        let ethereum: Ethereum<Mainnet> = union.light_client();
+
+                        serde_json::to_string_pretty(&ethereum.query_client_state(client_id).await)
+                            .unwrap()
+                    }
+                };
+
+                println!("{json}");
+            }
+            QueryCmd::Connection {} => todo!(),
+            QueryCmd::Channel {} => todo!(),
         },
     }
 
