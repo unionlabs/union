@@ -984,11 +984,14 @@ where
                     })
                     .await;
 
-                dbg!(&lc2_client_id);
+                tracing::info!("relaying packet to {lc2_client_id}");
 
-                let latest_height = lc2.query_client_state(lc2_client_id.clone()).await.height();
+                let lc2_latest_trusted_height =
+                    lc2.query_client_state(lc2_client_id.clone()).await.height();
 
-                dbg!(&latest_height);
+                tracing::info!(
+                    "latest trusted height on {lc2_client_id} is {lc2_latest_trusted_height}"
+                );
 
                 let lc1_update_to = loop {
                     let height = lc1.chain().query_latest_height().await;
@@ -998,11 +1001,16 @@ where
                     tokio::time::sleep(std::time::Duration::from_secs(2)).await;
                 };
 
-                let lc1_update_to = lc1
-                    .update_counterparty_client(lc2, lc2_client_id, latest_height, lc1_update_to)
+                let lc1_updated_to = lc1
+                    .update_counterparty_client(
+                        lc2,
+                        lc2_client_id.clone(),
+                        lc2_latest_trusted_height,
+                        lc1_update_to,
+                    )
                     .await;
 
-                dbg!(&lc1_update_to);
+                tracing::info!("updated {lc2_client_id} to {lc1_updated_to}");
 
                 let commitment_proof = lc1
                     .state_proof(
@@ -1018,7 +1026,7 @@ where
                 let rcp = lc2
                     .recv_packet(MsgRecvPacket {
                         packet,
-                        proof_height: lc1_update_to,
+                        proof_height: lc1_updated_to,
                         proof_commitment: commitment_proof.proof,
                     })
                     .await;

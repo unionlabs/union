@@ -141,9 +141,6 @@ pub fn validate_merkle_branch<'a>(
             }
         }
 
-        dbg!(&value);
-        dbg!(&root);
-
         value == *root
     }
     .then_some(())

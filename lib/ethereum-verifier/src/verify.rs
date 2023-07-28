@@ -643,8 +643,6 @@ mod tests {
 
             let proof_data = header.account_update.proofs[0].clone();
 
-            // dbg!(&proof_data);
-
             assert_eq!(
                 verify_account_storage_root(
                     header.consensus_update.attested_header.execution.state_root,
