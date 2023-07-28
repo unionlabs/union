@@ -62,7 +62,6 @@ pub fn validate_light_client_update<Ctx: LightClientContext, V: BlsVerify>(
     }
 
     // Verify update does not skip a sync committee period
-    println!("validating attested header");
     is_valid_light_client_header(ctx.fork_parameters(), &update.attested_header)?;
     let update_attested_slot = update.attested_header.beacon.slot;
     let update_finalized_slot = update.finalized_header.beacon.slot;
@@ -101,7 +100,6 @@ pub fn validate_light_client_update<Ctx: LightClientContext, V: BlsVerify>(
 
     // Verify that the `finality_branch`, if present, confirms `finalized_header`
     // to match the finalized checkpoint root saved in the state of `attested_header`.
-    println!("validating finalized header");
     is_valid_light_client_header(ctx.fork_parameters(), &update.finalized_header)?;
     let finalized_root = update.finalized_header.beacon.tree_hash_root();
 
@@ -244,8 +242,6 @@ pub fn is_valid_light_client_header<C: ChainSpec>(
     if epoch < fork_parameters.capella.epoch {
         return Err(Error::InvalidChainVersion);
     }
-
-    // println!("header.execution = {:#?}", header.execution);
 
     validate_merkle_branch(
         &H256::from(header.execution.tree_hash_root()),
