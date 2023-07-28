@@ -67,7 +67,12 @@ jobs:
 
           echo "Restore the package from the NAR_URL archive"
           cat ${{ matrix.system }}/${NAR_URL} | xz -dc | nix-store --restore ${{ matrix.system }}.${{ matrix.package }}
-          mv ${{ matrix.system }}.${{ matrix.package }}/bin/${{ matrix.package }} ${{ matrix.package }}-${{ matrix.system }}
+          if [[ ${{ matrix.package }} =~ galoisd-.* ]]
+          then
+            mv ${{ matrix.system }}.${{ matrix.package }}/bin/galoisd ${{ matrix.package }}-${{ matrix.system }}
+          else
+            mv ${{ matrix.system }}.${{ matrix.package }}/bin/${{ matrix.package }} ${{ matrix.package }}-${{ matrix.system }}
+          fi
 
       - uses: actions/upload-artifact@v3
         with:
@@ -105,15 +110,21 @@ jobs:
 
       - name: Tag Docker Images
         run: |
-          docker images uniond --format "{{.ID}}:{{.Tag}}"
+          echo $(ls)
+          echo $(docker images ${{ matrix.package }} --format "{{.ID}}:{{.Tag}}")
+          echo "Entering for loop"
           for arch in 'aarch64-linux' 'x86_64-linux'
           do
+            echo "Tagging ${{matrix.package}} for $arch"
             dockerstring=$(docker load < $arch.${{ matrix.package }}-image)
             dockerstring=$(echo ${dockerstring##*':'})
 
+            echo "Getting image ID for $dockerstring"
+            echo $(docker images ${{ matrix.package }} --format "{{.ID}}:{{.Tag}}")
             imageid=$(docker images ${{ matrix.package }} --format "{{.ID}}:{{.Tag}}" | grep $dockerstring)
             imageid=$(echo ${imageid%%':'*})
 
+            echo "Tagging image"
             docker tag $imageid localhost:5000/unionlabs/${{ matrix.package }}:${{ github.ref_name }}-$arch
 
 
