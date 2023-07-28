@@ -95,7 +95,7 @@
         '';
       };
 
-      do-deploy = { where, rpc-url, private-key }:
+      do-deploy = { network, rpc-url, private-key }:
         let
           deploy = { path, name, args ? "" }: ''
             echo "Deploying ${name}..."
@@ -107,9 +107,15 @@
                      ${evmSources}/contracts/${path}:${name} ${args} | jq --raw-output .deployedTo)
             echo "${name} => ''$${pkgs.lib.toUpper name}"
           '';
+          # Upper first char of network
+          verifierPrefix =
+            pkgs.lib.strings.concatStrings (
+              pkgs.lib.lists.imap0
+                (i: c: if i == 0 then pkgs.lib.strings.toUpper c else c)
+                (pkgs.lib.strings.stringToCharacters network));
         in
         pkgs.writeShellApplication {
-          name = "evm-${where}-deploy";
+          name = "evm-${network}-deploy";
           runtimeInputs = [ pkgs.jq wrappedForge ];
           # Sadly, forge is trying to write back the cache file even if no change is needed :).
           # For this reason we copy the artifacts in a temp folder and work from there.
@@ -124,9 +130,9 @@
             ${deploy { path = "core/04-channel/IBCPacket.sol"; name = "IBCPacket"; }}
             ${deploy { path = "core/OwnableIBCHandler.sol"; name = "OwnableIBCHandler"; args = ''--constructor-args "$IBCCLIENT" "$IBCCONNECTION" "$IBCCHANNELHANDSHAKE" "$IBCPACKET"''; }}
 
-            ${deploy { path = "clients/TestnetVerifier.sol"; name = "TestnetVerifier"; }}
+            ${deploy { path = "clients/${verifierPrefix}Verifier.sol"; name = "${verifierPrefix}Verifier"; }}
             ${deploy { path = "clients/ICS23MembershipVerifier.sol"; name = "ICS23MembershipVerifier"; }}
-            ${deploy { path = "clients/CometblsClient.sol"; name = "CometblsClient"; args = ''--constructor-args "$OWNABLEIBCHANDLER" "$TESTNETVERIFIER" "$ICS23MEMBERSHIPVERIFIER"''; }}
+            ${deploy { path = "clients/CometblsClient.sol"; name = "CometblsClient"; args = ''--constructor-args "$OWNABLEIBCHANDLER" "''$${pkgs.lib.strings.toUpper network}VERIFIER" "$ICS23MEMBERSHIPVERIFIER"''; }}
 
             ${deploy { path = "apps/20-transfer/ICS20Bank.sol"; name = "ICS20Bank"; }}
             ${deploy { path = "apps/20-transfer/ICS20TransferBank.sol"; name = "ICS20TransferBank";  args = ''--constructor-args "$OWNABLEIBCHANDLER" "$ICS20BANK"''; }}
@@ -235,15 +241,15 @@
       } //
       builtins.listToAttrs (
         builtins.map
-          (args: { name = "evm-${args.where}-deploy"; value = do-deploy args; })
+          (args: { name = "evm-${args.network}-deploy"; value = do-deploy args; })
           [
             {
-              where = "devnet";
+              network = "devnet";
               rpc-url = "http://localhost:8545";
               private-key = builtins.readFile ./../networks/genesis/devnet-evm/dev-key0.prv;
             }
             {
-              where = "sepolia";
+              network = "testnet";
               rpc-url = "https://rpc.sepolia.org/";
               private-key = ''"$1"'';
             }
