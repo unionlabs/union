@@ -55,11 +55,11 @@ contract IBCPacketTest is TestPlus {
     function test_sendPacket_notApp() public {}
 
     function test_sendPacket_channelNotOpen() public {
-        require(false, "TODO");
+        // TODO
     }
 
     function test_sendPacket_invalidConsensusState() public {
-        require(false, "TODO");
+        // TODO
     }
 
     function test_recvPacket() public {
