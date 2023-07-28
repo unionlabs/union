@@ -1,5 +1,5 @@
 { ... }: {
-  perSystem = { self', inputs', pkgs, proto, forge, nix-filter, ... }:
+  perSystem = { self', inputs', pkgs, proto, nix-filter, ... }:
     let
       solidity-stringutils = pkgs.fetchFromGitHub {
         owner = "Arachnid";
@@ -84,7 +84,7 @@
       };
       wrappedForge = pkgs.symlinkJoin {
         name = "forge";
-        paths = [ forge ];
+        paths = [ pkgs.foundry-bin ];
         buildInputs = [ pkgs.makeWrapper ];
         postBuild = ''
           wrapProgram $out/bin/forge \
@@ -92,23 +92,6 @@
             --set PATH ${pkgs.lib.makeBinPath [ pkgs.solc ]} \
             --set SSL_CERT_FILE "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt" \
              ${pkgs.lib.foldlAttrs (acc: name: value: "${acc} --set-default ${name} '${value}'") "" foundryEnv}
-        '';
-      };
-      mkEvmContracts = pkgs.stdenv.mkDerivation {
-        name = "evm-contracts";
-        src = evmSources;
-        buildInputs = [ wrappedForge ];
-        buildPhase = ''
-          forge build --revert-strings debug
-        '';
-        doCheck = true;
-        checkPhase = ''
-          forge test --revert-strings debug -vvv --gas-report
-        '';
-        installPhase = ''
-          mkdir -p $out
-          mv out $out
-          mv cache $out
         '';
       };
 
@@ -217,7 +200,38 @@
             '';
         };
 
-        evm-contracts = mkEvmContracts;
+        evm-contracts = pkgs.stdenv.mkDerivation {
+          name = "evm-contracts";
+          src = evmSources;
+          buildInputs = [ wrappedForge ];
+          buildPhase = ''
+            forge build --revert-strings debug
+          '';
+          doCheck = true;
+          checkPhase = ''
+            forge --version
+            forge test --revert-strings debug -vvv --gas-report
+          '';
+          installPhase = ''
+            mkdir -p $out
+            mv out $out
+            mv cache $out
+          '';
+        };
+
+        evm-coverage =
+          pkgs.runCommand "evm-coverage.log"
+            {
+              buildInputs = [ wrappedForge pkgs.lcov ];
+            } "forge coverage --ir-minimum --report lcov && genhtml lcov.info -o $out --branch-coverage";
+
+        show-evm-coverage = pkgs.writeShellApplication {
+          name = "show-evm-coverage";
+          runtimeInputs = [ wrappedForge ];
+          text = ''
+            xdg-open ${self'.packages.evm-coverage}/index.html
+          '';
+        };
       } //
       builtins.listToAttrs (
         builtins.map

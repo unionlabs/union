@@ -19,7 +19,8 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     foundry = {
-      url = "github:shazow/foundry.nix/monthly";
+      # Move back to monthly branch after 08 2023 as they fixed a coverage issue between 07-08
+      url = "github:shazow/foundry.nix/main";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     rust-overlay = {
@@ -103,6 +104,7 @@
                 overlays = with inputs; [
                   rust-overlay.overlays.default
                   iohk-nix.overlays.crypto
+                  foundry.overlay
                 ];
               };
 
@@ -125,8 +127,6 @@
                   };
                 };
               };
-
-              forge = foundry.defaultPackage.${system};
 
               nix-filter = nix-filter.lib;
 
@@ -264,8 +264,8 @@
               });
               evm = pkgs.mkShell (baseShell // {
                 buildInputs = baseShell.buildInputs ++ [
-                  foundry.defaultPackage.${system}
                   pkgs.solc
+                  pkgs.foundry-bin
                   pkgs.go-ethereum
                 ];
               });

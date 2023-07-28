@@ -1,7 +1,7 @@
 pragma solidity ^0.8.18;
 
-import "../Base.sol";
-import "../../core/25-handler/IBCHandler.sol";
+import "../../Base.sol";
+import "../../../core/25-handler/IBCHandler.sol";
 
 contract PingPong is IBCAppBase {
     IBCHandler private ibcHandler;
