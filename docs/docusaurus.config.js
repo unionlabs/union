@@ -68,26 +68,29 @@ const config = {
       footer: {
         style: "dark",
         links: [
+          // {
+          //   title: "Community",
+          //   items: [
+          //     {
+          //       label: "Twitter",
+          //       href: "https://twitter.com/unionfin",
+          //     },
+          //   ],
+          // },
           {
-            title: "Community",
             items: [
               {
-                label: "Twitter",
-                href: "https://twitter.com/unionfin",
+                label: "Website",
+                href: "https://union.build",
               },
-            ],
-          },
-          {
-            title: "More",
-            items: [
               {
                 label: "GitHub",
-                href: "https://github.com/unionlabs/union",
+                href: "https://github.com/unionlabs",
               },
             ],
           },
         ],
-        copyright: `Copyright © ${new Date().getFullYear()} Union. Built with Docusaurus.`,
+        copyright: `Copyright © ${new Date().getFullYear()} Union.fi Labs, Inc.`,
       },
       prism: {
         theme: lightCodeTheme,
