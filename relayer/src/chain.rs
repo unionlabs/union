@@ -65,6 +65,7 @@ pub enum AnyLightClient {
     EvmCometblsMinimal(Cometbls<Minimal>),
 }
 
+/// The IBC interface on a [`Chain`] that knows how to connect to a counterparty.
 pub trait LightClient: Send + Sync + Sized {
     // /// The client state type that this light client stores about the counterparty.
     // type CounterpartyClientState: ClientState;
@@ -84,8 +85,6 @@ pub trait LightClient: Send + Sync + Sized {
 
     /// The config required to construct this light client.
     type Config;
-
-    // fn new(chain: Self::HostChain, config: Self::Config) -> impl Future<Output = Self>;
 
     /// Get the underlying [`Self::HostChain`] that this client is on.
     fn chain(&self) -> &Self::HostChain;
@@ -111,7 +110,11 @@ pub trait LightClient: Send + Sync + Sized {
                 <Self::IbcStateRead as IbcStateRead<Self, P>>::state_proof(self, path, self_height)
                     .await;
 
-            tracing::info!(?state_proof);
+            tracing::info!(
+                state = ?state_proof.state,
+                proof = %serde_utils::to_hex(&state_proof.proof),
+                proof_height = %state_proof.proof_height
+            );
 
             state_proof
         }
@@ -129,6 +132,8 @@ pub trait LightClient: Send + Sync + Sized {
 pub type ClientStateOf<C> = <C as Chain>::SelfClientState;
 pub type ConsensusStateOf<C> = <C as Chain>::SelfConsensusState;
 
+/// Represents a block chain. One [`Chain`] may have many related [`LightClient`]s for connecting to
+/// various chains, all sharing a common config.
 pub trait Chain {
     type SelfClientState: ClientState + Debug;
     type SelfConsensusState: Debug;
@@ -164,22 +169,6 @@ pub enum QueryHeight {
     Latest,
     Specific(Height),
 }
-
-// pub trait LightClientConnection<L1, L2>
-// where
-//     L1: LightClient + Connect<L2>,
-//     L2: LightClient<HostChain = L1::CounterpartyChain, CounterpartyChain = L1::HostChain>
-//         + Connect<L1>,
-// {
-// }
-
-// impl<L1, L2> LightClientConnection<L1, L2> for (L1, L2)
-// where
-//     L1: LightClient + Connect<L2>,
-//     L2: LightClient<HostChain = L1::CounterpartyChain, CounterpartyChain = L1::HostChain>
-//         + Connect<L1>,
-// {
-// }
 
 pub trait Connect<L>: LightClient
 where
@@ -245,7 +234,9 @@ pub trait ChainConnection<To: ChainConnection<Self>>:
     fn light_client(&self) -> Self::LightClient;
 }
 
-// Some hackery to work around wrapping in wasm::ClientState
+// some hackery to work around wrapping in wasm::ClientState
+//
+// avert your eyes
 
 pub trait InnerClientState {
     fn height(&self) -> Option<Height>;

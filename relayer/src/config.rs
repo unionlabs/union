@@ -21,8 +21,6 @@ pub struct Config {
 
 impl Config {
     pub async fn get_chain(&self, name: &str) -> Option<AnyChain> {
-        tracing::info!("looking for chain '{name}'...");
-
         match self.chain.get(name) {
             Some(config) => Some(AnyChain::try_from_config(config.clone()).await),
             None => None,

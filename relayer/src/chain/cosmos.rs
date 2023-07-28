@@ -97,37 +97,6 @@ impl<C: ChainSpec> ChainConnection<Evm<C>> for Union {
 }
 
 impl<C: ChainSpec> CreateClient<Ethereum<C>> for Union {
-    // fn new(&self) -> impl Future<Output = Ethereum<C>> + '_ {
-    //     async move {
-    //         Ethereum {
-    //             chain: self.clone(),
-    //             _marker: PhantomData,
-    //         }
-    //     }
-    // }
-
-    // fn new_with_id(&self, client_id: String) -> impl Future<Output = Option<Ethereum<C>>> + '_ {
-    //     async move {
-    //         let status = protos::ibc::core::client::v1::query_client::QueryClient::connect(
-    //             "http://0.0.0.0:9090",
-    //         )
-    //         .await
-    //         .unwrap()
-    //         .client_status(QueryClientStatusRequest {
-    //             client_id: client_id.clone(),
-    //         })
-    //         .await
-    //         .unwrap()
-    //         .into_inner()
-    //         .status;
-
-    //         (status == "Active").then(|| Ethereum {
-    //             chain: self.clone(),
-    //             _marker: PhantomData,
-    //         })
-    //     }
-    // }
-
     fn create_client(
         &self,
         _config: <Ethereum<C> as LightClient>::Config,

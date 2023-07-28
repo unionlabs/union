@@ -122,6 +122,8 @@ async fn do_main(args: cli::AppArgs) -> Result<(), anyhow::Error> {
             }
         },
         CommandV2::Client(client) => match client {
+            // TODO: Generalize this to all IbcPath types
+            // REVIEW: Move `connection query` and `channel query` here?
             ClientCmd::Query(query) => {
                 let json = match relayer_config.chain[&query.on].clone() {
                     ChainConfig::Evm(EvmChainConfig::Mainnet(evm)) => {
