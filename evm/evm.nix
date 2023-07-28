@@ -218,6 +218,12 @@
             mv cache $out
           '';
         };
+
+        evm-coverage =
+          pkgs.runCommand "evm-coverage.log"
+            {
+              buildInputs = [ wrappedForge pkgs.lcov ];
+            } "forge coverage --ir-minimum --report lcov && genhtml lcov.info -o $out --branch-coverage";
       } //
       builtins.listToAttrs (
         builtins.map
