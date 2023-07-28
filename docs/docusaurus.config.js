@@ -58,7 +58,7 @@ const config = {
         title: "Union",
         logo: {
           alt: "Logo",
-          src: "img/U-cyberpunk-logo.png",
+          src: "img/union-logo.svg",
         },
         items: [],
       },
