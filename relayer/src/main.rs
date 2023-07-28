@@ -1023,15 +1023,12 @@ where
                     )
                     .await;
 
-                let rcp = lc2
-                    .recv_packet(MsgRecvPacket {
-                        packet,
-                        proof_height: lc1_updated_to,
-                        proof_commitment: commitment_proof.proof,
-                    })
-                    .await;
-
-                dbg!(rcp);
+                lc2.recv_packet(MsgRecvPacket {
+                    packet,
+                    proof_height: lc1_updated_to,
+                    proof_commitment: commitment_proof.proof,
+                })
+                .await;
             })
             .await;
     }

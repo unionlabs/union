@@ -645,7 +645,7 @@ impl<C: ChainSpec> Connect<Cometbls<C>> for Ethereum<C> {
                         .deliver_tx
                         .events
                         .into_iter()
-                        .find(|event| dbg!(event).kind == "connection_open_try")
+                        .find(|event| event.kind == "connection_open_try")
                         .unwrap()
                         .attributes
                         .into_iter()

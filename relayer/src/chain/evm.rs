@@ -938,7 +938,7 @@ impl<C: ChainSpec> Connect<Ethereum<C>> for Cometbls<C> {
                 .unwrap()
                 .unwrap();
 
-            let events = decode_logs::<IBCHandlerEvents>(
+            decode_logs::<IBCHandlerEvents>(
                 tx_rcp
                     .logs
                     .into_iter()
@@ -947,22 +947,8 @@ impl<C: ChainSpec> Connect<Ethereum<C>> for Cometbls<C> {
                     .as_ref(),
             )
             .unwrap();
-
-            dbg!(events);
         }
     }
-
-    // fn generate_counterparty_client_state(
-    //     &self,
-    //     beacon_height: Height,
-    // ) -> impl Future<Output = <Ethereum<C> as LightClient>::ClientState> + '_ {
-    // }
-
-    // fn generate_counterparty_consensus_state(
-    //     &self,
-    //     beacon_height: Height,
-    // ) -> impl Future<Output = <Ethereum<C> as LightClient>::ConsensusState> + '_ {
-    // }
 
     fn update_counterparty_client<'a>(
         &'a self,
