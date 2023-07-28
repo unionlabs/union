@@ -14,7 +14,7 @@
         name = "relayer-round-trip";
         runtimeInputs = [ relayer ];
         text = ''
-          RUST_LOG=relayer=debug,tendermint=debug,info
+          export RUST_LOG=relayer=debug,tendermint=debug,info
 
           relayer client create union ethereum08-wasm --counterparty ethereum-devnet --on union-devnet --evm-preset minimal
 
