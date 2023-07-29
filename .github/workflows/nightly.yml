@@ -14,6 +14,8 @@ jobs:
       filter_builds: '((.top_attr == "checks") and (.system == "x86_64-linux") and (.attr == "virtualisation-works"))'
   create-issue:
     runs-on: ubuntu-latest
+    permissions:
+      issues: write
     needs: [ build ]
     if: failure()
     steps:
