@@ -5,10 +5,9 @@ on:
 
 jobs:
   build:
-    uses: unionlabs/workflows/.github/workflows/build.yml@2c94f6f3acb2d7d9222f8fa05f43eb8c3ed2e758
+    uses: nixbuild/nixbuild-action/.github/workflows/ci-workflow.yml@master
     secrets:
       nixbuild_token: ${{ secrets.nixbuild_token }}
-      access-tokens: github.com=${{ secrets.GITHUB_TOKEN }}
     with:
       filter_builds: '(.top_attr == "packages") and (.system == "x86_64-linux" or .system == "aarch64-linux") and (.attr == "uniond" or .attr == "galoisd-devnet" or .attr == "galoisd-testnet" or .attr == "galoisd-mainnet" or .attr == "uniond-image" or .attr == "galoisd-devnet-image" or .attr == "galoisd-testnet-image" or .attr == "galoisd-mainnet-image")' # ensure to append this list if you want to release more artifacts
 
