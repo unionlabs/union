@@ -43,6 +43,24 @@ pub enum Command {
     SubmitPacket(SubmitPacketCmd),
     #[command(subcommand)]
     Query(QueryCmd),
+    #[command(subcommand)]
+    Setup(SetupCmd),
+}
+
+#[derive(Debug, Subcommand)]
+pub enum SetupCmd {
+    InitialChannel {
+        #[arg(long)]
+        wallet: LocalWallet,
+        #[arg(long)]
+        eth_rpc_api: Url,
+        #[arg(long)]
+        ibc_handler_address: Address,
+        #[arg(long)]
+        ics20_transfer_address: Address,
+        #[arg(long)]
+        counterparty_port_id: String,
+    },
 }
 
 #[derive(Debug, Subcommand)]

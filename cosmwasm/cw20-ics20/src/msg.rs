@@ -1,4 +1,5 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
+use cosmwasm_std::IbcChannel;
 use cw20::Cw20ReceiveMsg;
 
 use crate::{amount::Amount, state::ChannelInfo};
@@ -14,6 +15,8 @@ pub struct InitMsg {
     /// If set, contracts off the allowlist will run with this gas limit.
     /// If unset, will refuse to accept any contract off the allow list.
     pub default_gas_limit: Option<u64>,
+    /// If set, contract will setup the channel
+    pub channel: Option<IbcChannel>,
 }
 
 #[cw_serde]

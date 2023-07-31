@@ -82,6 +82,7 @@
         ./tools/tera/tera.nix
         ./tools/e2e/e2e.nix
         ./tools/docgen/docgen.nix
+        ./networks/demo.nix
         ./networks/devnet.nix
         ./networks/genesis/devnet.nix
         ./testnet-validator.nix

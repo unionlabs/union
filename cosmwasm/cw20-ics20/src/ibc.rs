@@ -177,7 +177,7 @@ pub fn ibc_channel_connect(
     Ok(IbcBasicResponse::default())
 }
 
-fn enforce_order_and_version(
+pub(crate) fn enforce_order_and_version(
     channel: &IbcChannel,
     counterparty_version: Option<&str>,
 ) -> Result<(), ContractError> {

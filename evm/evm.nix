@@ -107,6 +107,16 @@
                      ${evmSources}/contracts/${path}:${name} ${args} | jq --raw-output .deployedTo)
             echo "${name} => ''$${pkgs.lib.toUpper name}"
           '';
+          deploy-optimized = { path, name, args ? "" }: ''
+            echo "Deploying ${name}..."
+            ${pkgs.lib.toUpper name}=$(forge create \
+                     --optimize \
+                     --json \
+                     --rpc-url ${rpc-url} \
+                     --private-key ${private-key} \
+                     ${evmSources}/contracts/${path}:${name} ${args} | jq --raw-output .deployedTo)
+            echo "${name} => ''$${pkgs.lib.toUpper name}"
+          '';
           # Upper first char of network
           verifierPrefix =
             pkgs.lib.strings.concatStrings (
@@ -128,16 +138,16 @@
             ${deploy { path = "core/03-connection/IBCConnection.sol"; name = "IBCConnection"; }}
             ${deploy { path = "core/04-channel/IBCChannelHandshake.sol"; name = "IBCChannelHandshake"; }}
             ${deploy { path = "core/04-channel/IBCPacket.sol"; name = "IBCPacket"; }}
-            ${deploy { path = "core/OwnableIBCHandler.sol"; name = "OwnableIBCHandler"; args = ''--constructor-args "$IBCCLIENT" "$IBCCONNECTION" "$IBCCHANNELHANDSHAKE" "$IBCPACKET"''; }}
+            ${deploy-optimized { path = "core/DevnetOwnableIBCHandler.sol"; name = "DevnetOwnableIBCHandler"; args = ''--constructor-args "$IBCCLIENT" "$IBCCONNECTION" "$IBCCHANNELHANDSHAKE" "$IBCPACKET"''; }}
 
             ${deploy { path = "clients/${verifierPrefix}Verifier.sol"; name = "${verifierPrefix}Verifier"; }}
             ${deploy { path = "clients/ICS23MembershipVerifier.sol"; name = "ICS23MembershipVerifier"; }}
-            ${deploy { path = "clients/CometblsClient.sol"; name = "CometblsClient"; args = ''--constructor-args "$OWNABLEIBCHANDLER" "''$${pkgs.lib.strings.toUpper network}VERIFIER" "$ICS23MEMBERSHIPVERIFIER"''; }}
+            ${deploy { path = "clients/CometblsClient.sol"; name = "CometblsClient"; args = ''--constructor-args "$DEVNETOWNABLEIBCHANDLER" "''$${pkgs.lib.strings.toUpper network}VERIFIER" "$ICS23MEMBERSHIPVERIFIER"''; }}
 
             ${deploy { path = "apps/20-transfer/ICS20Bank.sol"; name = "ICS20Bank"; }}
-            ${deploy { path = "apps/20-transfer/ICS20TransferBank.sol"; name = "ICS20TransferBank";  args = ''--constructor-args "$OWNABLEIBCHANDLER" "$ICS20BANK"''; }}
+            ${deploy { path = "apps/20-transfer/ICS20TransferBank.sol"; name = "ICS20TransferBank";  args = ''--constructor-args "$DEVNETOWNABLEIBCHANDLER" "$ICS20BANK"''; }}
 
-            echo "--ibc-handler-address $OWNABLEIBCHANDLER --cometbls-client-address $COMETBLSCLIENT --ics20-transfer-address $ICS20TRANSFERBANK --ics20-bank-address $ICS20BANK"
+            echo "{\"ibc_handler_address\": \"$DEVNETOWNABLEIBCHANDLER\", \"cometbls_client_address\": \"$COMETBLSCLIENT\", \"ics20_transfer_bank_address\": \"$ICS20TRANSFERBANK\", \"ics20_bank_address\": \"$ICS20BANK\" }"
 
             rm -rf "$OUT"
           '';
@@ -238,6 +248,7 @@
             xdg-open ${self'.packages.evm-coverage}/index.html
           '';
         };
+        forge = wrappedForge;
       } //
       builtins.listToAttrs (
         builtins.map
@@ -257,4 +268,15 @@
       );
     };
 }
+
+    # SetupInitialChannel {
+    #     #[arg(long)]
+    #     wallet: LocalWallet,
+    #     #[arg(long)]
+    #     eth_rpc_api: Url,
+    #     #[arg(long)]
+    #     ibc_handler_address: Address,
+    #     #[arg(long)]
+    #     ics20_transfer_address: Address,
+    # },
 
