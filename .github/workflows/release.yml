@@ -155,9 +155,22 @@ jobs:
 
           echo "downloaded & installed regctl"
 
+          if [[ ${{ matrix.package }} =~ galoisd-.*  ]]
+          then
+            package="galoisd"
+          else
+            package=${{ matrix.package }}
+          fi
+
           regctl registry set --tls disabled localhost:5000
-          regctl image mod localhost:5000/unionlabs/${{ matrix.package }}:${{ github.ref_name }} --to-oci --create ${{ github.ref_name }} --annotation org.opencontainers.image.description="$(cat $GITHUB_WORKSPACE/.github/container-descriptions/${{ matrix.package }}.txt)"
+          regctl image mod localhost:5000/unionlabs/${{ matrix.package }}:${{ github.ref_name }} --to-oci --create ${{ github.ref_name }} --annotation org.opencontainers.image.description="$(cat $GITHUB_WORKSPACE/.github/container-descriptions/$package.txt)"
          
+      - uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Copy Manifest to GHCR
         run: |
           wget https://github.com/rapidsai/skopeo/releases/download/v1.12/skopeo-linux-amd64 -O ./skopeo
