@@ -120,7 +120,8 @@ jobs:
             dockerstring=$(echo ${dockerstring##*':'})
 
             echo "Getting image ID for $dockerstring"
-            echo $(docker images ${{ matrix.package }} --format "{{.ID}}:{{.Tag}}")
+            echo "Filtered: $(docker images ${{ matrix.package }} --format "{{.ID}}:{{.Tag}}")"
+            echo "Full: $(docker images --format "{{.ID}}:{{.Tag}}")"
             imageid=$(docker images ${{ matrix.package }} --format "{{.ID}}:{{.Tag}}" | grep $dockerstring)
             imageid=$(echo ${imageid%%':'*})
 
