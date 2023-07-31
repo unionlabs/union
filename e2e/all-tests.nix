@@ -83,5 +83,21 @@
             client = _: { };
           };
         };
+        sepolia-runs = e2e.mkTest {
+          name = "sepolia-runs";
+
+          testScript = ''
+            start_all()
+
+            # match non-zero blocks
+            sepolia.wait_for_console_text("Synced - slot: [1-9][0-9]*")
+
+            sepolia.wait_for_open_port(8546)
+          '';
+
+          nodes = {
+            sepolia = sepoliaNode;
+          };
+        };
       }));
 }
