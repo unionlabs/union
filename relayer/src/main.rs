@@ -46,11 +46,11 @@ use crate::{
             ConnectionPath,
         },
         AnyChain, Chain, ChainConnection, ClientState, ClientStateOf, Connect, CreateClient,
-        LightClient,
+        LightClient, QueryHeight,
     },
     cli::{
         AppArgs, ChainAddCmd, ChainCmd, ChannelCmd, ClientCmd, ClientCreateCmd, CometblsClientType,
-        Command, EvmClientType, QueryCmd, SubmitPacketCmd,
+        Command, EvmClientType, IbcCmd, IbcQueryCmd, QueryCmd, SubmitPacketCmd,
     },
     config::{ChainConfig, Config, EvmChainConfig},
 };
@@ -386,7 +386,13 @@ async fn do_main(args: cli::AppArgs) -> Result<(), anyhow::Error> {
 
                 println!("{json}");
             }
-            QueryCmd::Connection {} => todo!(),
+            QueryCmd::Connection {
+                on,
+                client_id,
+                connection_id,
+            } => {
+                todo!();
+            }
             QueryCmd::Channel {} => todo!(),
         },
         Command::Setup(cmd) => match cmd {
@@ -413,6 +419,36 @@ async fn do_main(args: cli::AppArgs) -> Result<(), anyhow::Error> {
                 }
             }
         },
+        Command::Ibc(IbcCmd::Query {
+            on,
+            cmd: IbcQueryCmd::Path(path),
+        }) => {
+            let json = match relayer_config.chain[&on].clone() {
+                ChainConfig::Evm(EvmChainConfig::Mainnet(evm)) => {
+                    let evm = Evm::<Mainnet>::new(evm).await;
+
+                    path.any_state_proof_to_json(&evm.light_client(), QueryHeight::Latest)
+                        .await
+                }
+                ChainConfig::Evm(EvmChainConfig::Minimal(evm)) => {
+                    let evm = Evm::<Minimal>::new(evm).await;
+
+                    path.any_state_proof_to_json(&evm.light_client(), QueryHeight::Latest)
+                        .await
+                }
+                ChainConfig::Union(union) => {
+                    let union = Union::new(union).await;
+
+                    // Config is arbitrary
+                    let light_client: Ethereum<Mainnet> = union.light_client();
+
+                    path.any_state_proof_to_json(&light_client, QueryHeight::Latest)
+                        .await
+                }
+            };
+
+            println!("{json}");
+        }
     }
 
     std::fs::write(
@@ -545,7 +581,7 @@ where
     tracing::info!(
         chain_id = cometbls_id,
         connection_id = cometbls_connection_id,
-        latest_height = ?cometbls_latest_height,
+        latest_height = %cometbls_latest_height,
         "right after updating cosmos"
     );
 
@@ -612,7 +648,7 @@ where
         tokio::time::sleep(std::time::Duration::from_secs(2)).await;
     };
 
-    tracing::info!("Querying proof at {:?}", connection_try_height);
+    tracing::info!("Querying proof at {}", connection_try_height);
 
     let _ = ethereum
         .update_counterparty_client(
@@ -691,7 +727,7 @@ where
                 features: [Order::Ordered, Order::Unordered].into_iter().collect(),
             },
             client_state: ethereum_client_state_proof.state,
-            proof_height: ethereum_update_to,
+            proof_height: ethereum_connection_state_proof.proof_height,
             proof_try: ethereum_connection_state_proof.proof,
             proof_client: ethereum_client_state_proof.proof,
             proof_consensus: ethereum_consensus_state_proof.proof,
@@ -1039,6 +1075,7 @@ where
                             channel_id: packet.source_channel.clone(),
                             sequence,
                         },
+                        // REVIEW: yse lc1_updated_to?
                         event_height,
                     )
                     .await;
@@ -1065,3 +1102,33 @@ where
     )
     .await;
 }
+
+// /// The idea is that the relayer would be split in three different algorithms:
+// ///
+// ///     one that takes chain events in and produce instructions
+// ///     one that takes the stream of instructions and optimize them
+// ///     one that takes the optimized stream and execute them
+// ///
+// /// By doing so:
+// ///
+// ///     you can easily test the relayer because the 1. only produce a declarative sequence of instructions it want to execute (semantic of the relayer can be easily checked without side effects in pure tests)
+// ///     you can aggressively optimize the relayers operations on 2. like saying you flush insutrctions every 10 minutes and combine some of them if possible (like an optimization pass over what needs to be executed)
+// ///     all the effects are concentrated in 3. and doing the retry on error for instructions is easy (very tx successfull etc)
+// ///
+// enum Msg<L: LightClient> {
+//     ConnectionOpenInit(MsgConnectionOpenInit),
+//     ConnectionOpenTry(MsgConnectionOpenTry<ClientStateOf<L::CounterpartyChain>>),
+//     ConnectionOpenAck(MsgConnectionOpenAck<ClientStateOf<L::CounterpartyChain>>),
+//     ConnectionOpenConfirm(MsgConnectionOpenConfirm),
+//     ChannelOpenInit(MsgChannelOpenInit),
+//     ChannelOpenTry(MsgChannelOpenTry),
+//     ChannelOpenAck(MsgChannelOpenAck),
+//     ChannelOpenConfirm(MsgChannelOpenConfirm),
+//     RecvPacket(MsgRecvPacket),
+// }
+
+// async fn optimize_msgs<L: LightClient>(
+//     msgs: impl Stream<Item = Msg<L>>,
+// ) -> impl Stream<Item = Msg<L>> {
+//     todo!()
+// }

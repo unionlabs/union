@@ -66,7 +66,7 @@ use crate::{
 
 /// The 08-wasm light client running on the union chain.
 pub struct Ethereum<C: ChainSpec> {
-    chain: <Self as LightClient>::HostChain,
+    chain: Union,
     dumper: Dumper,
     _marker: PhantomData<C>,
 }
@@ -302,6 +302,8 @@ impl Chain for Union {
                 {
                     break;
                 }
+
+                tokio::time::sleep(std::time::Duration::from_secs(2)).await;
             }
 
             self.make_height(height)
@@ -605,9 +607,7 @@ impl<C: ChainSpec> Connect<Cometbls<C>> for Ethereum<C> {
             }])
             .map(|response| {
                 (
-                    response
-                        .deliver_tx
-                        .events
+                    write_to_file(response.deliver_tx.events, "connection_open_init")
                         .into_iter()
                         .find(|event| event.kind == "connection_open_init")
                         .unwrap()
@@ -634,9 +634,7 @@ impl<C: ChainSpec> Connect<Cometbls<C>> for Ethereum<C> {
             }])
             .map(|response| {
                 (
-                    response
-                        .deliver_tx
-                        .events
+                    write_to_file(response.deliver_tx.events, "connection_open_try")
                         .into_iter()
                         .find(|event| event.kind == "connection_open_try")
                         .unwrap()
@@ -655,18 +653,19 @@ impl<C: ChainSpec> Connect<Cometbls<C>> for Ethereum<C> {
         msg: MsgConnectionOpenAck<ClientStateOf<<Cometbls<C> as LightClient>::CounterpartyChain>>,
     ) -> impl futures::Future<Output = Height> + '_ {
         async move {
-            self.chain.make_height(
-                self.chain
-                    .broadcast_tx_commit([google::protobuf::Any {
-                        type_url: "/ibc.core.connection.v1.MsgConnectionOpenAck".to_string(),
-                        value: msg
-                            .into_proto_with_signer(&self.chain.signer)
-                            .encode_to_vec(),
-                    }])
-                    .await
-                    .height
-                    .value(),
-            )
+            let response = self
+                .chain
+                .broadcast_tx_commit([google::protobuf::Any {
+                    type_url: "/ibc.core.connection.v1.MsgConnectionOpenAck".to_string(),
+                    value: msg
+                        .into_proto_with_signer(&self.chain.signer)
+                        .encode_to_vec(),
+                }])
+                .await;
+
+            write_to_file(response.deliver_tx.events, "connection_open_ack");
+
+            self.chain.make_height(response.height.value())
         }
     }
 
@@ -675,18 +674,19 @@ impl<C: ChainSpec> Connect<Cometbls<C>> for Ethereum<C> {
         msg: MsgConnectionOpenConfirm,
     ) -> impl futures::Future<Output = Height> + '_ {
         async move {
-            self.chain.make_height(
-                self.chain
-                    .broadcast_tx_commit([google::protobuf::Any {
-                        type_url: "/ibc.core.connection.v1.MsgConnectionOpenConfirm".to_string(),
-                        value: msg
-                            .into_proto_with_signer(&self.chain.signer)
-                            .encode_to_vec(),
-                    }])
-                    .await
-                    .height
-                    .value(),
-            )
+            let response = self
+                .chain
+                .broadcast_tx_commit([google::protobuf::Any {
+                    type_url: "/ibc.core.connection.v1.MsgConnectionOpenConfirm".to_string(),
+                    value: msg
+                        .into_proto_with_signer(&self.chain.signer)
+                        .encode_to_vec(),
+                }])
+                .await;
+
+            write_to_file(response.deliver_tx.events, "connection_open_confirm");
+
+            self.chain.make_height(response.height.value())
         }
     }
 
@@ -705,8 +705,7 @@ impl<C: ChainSpec> Connect<Cometbls<C>> for Ethereum<C> {
                 }])
                 .await;
             (
-                tx.deliver_tx
-                    .events
+                write_to_file(tx.deliver_tx.events, "channel_open_init")
                     .into_iter()
                     .find(|event| event.kind == "channel_open_init")
                     .unwrap()
@@ -735,8 +734,7 @@ impl<C: ChainSpec> Connect<Cometbls<C>> for Ethereum<C> {
                 }])
                 .await;
             (
-                tx.deliver_tx
-                    .events
+                write_to_file(tx.deliver_tx.events, "channel_open_try")
                     .into_iter()
                     .find(|event| event.kind == "channel_open_try")
                     .unwrap()
@@ -755,18 +753,19 @@ impl<C: ChainSpec> Connect<Cometbls<C>> for Ethereum<C> {
         msg: MsgChannelOpenAck,
     ) -> impl futures::Future<Output = Height> + '_ {
         async move {
-            self.chain.make_height(
-                self.chain
-                    .broadcast_tx_commit([google::protobuf::Any {
-                        type_url: "/ibc.core.channel.v1.MsgChannelOpenAck".to_string(),
-                        value: msg
-                            .into_proto_with_signer(&self.chain.signer)
-                            .encode_to_vec(),
-                    }])
-                    .await
-                    .height
-                    .value(),
-            )
+            let response = self
+                .chain
+                .broadcast_tx_commit([google::protobuf::Any {
+                    type_url: "/ibc.core.channel.v1.MsgChannelOpenAck".to_string(),
+                    value: msg
+                        .into_proto_with_signer(&self.chain.signer)
+                        .encode_to_vec(),
+                }])
+                .await;
+
+            write_to_file(response.deliver_tx.events, "channel_open_ack");
+
+            self.chain.make_height(response.height.value())
         }
     }
 
@@ -775,18 +774,19 @@ impl<C: ChainSpec> Connect<Cometbls<C>> for Ethereum<C> {
         msg: MsgChannelOpenConfirm,
     ) -> impl futures::Future<Output = Height> + '_ {
         async move {
-            self.chain.make_height(
-                self.chain
-                    .broadcast_tx_commit([google::protobuf::Any {
-                        type_url: "/ibc.core.channel.v1.MsgChannelOpenConfirm".to_string(),
-                        value: msg
-                            .into_proto_with_signer(&self.chain.signer)
-                            .encode_to_vec(),
-                    }])
-                    .await
-                    .height
-                    .value(),
-            )
+            let response = self
+                .chain
+                .broadcast_tx_commit([google::protobuf::Any {
+                    type_url: "/ibc.core.channel.v1.MsgChannelOpenConfirm".to_string(),
+                    value: msg
+                        .into_proto_with_signer(&self.chain.signer)
+                        .encode_to_vec(),
+                }])
+                .await;
+
+            write_to_file(response.deliver_tx.events, "channel_open_confirm");
+
+            self.chain.make_height(response.height.value())
         }
     }
 
@@ -963,11 +963,6 @@ impl<C: ChainSpec> Connect<Cometbls<C>> for Ethereum<C> {
             let validators_untrusted_commit = validators_trusted_commit.clone();
 
             tracing::debug!("Generate ZKP...");
-
-            // TODO: Extract into the chain config
-
-            // .http2_keep_alive_interval(std::time::Duration::from_secs(10))
-            // .keep_alive_while_idle(true),
 
             let mut prover_client = union_prover_api_client::UnionProverApiClient::connect(
                 tonic::transport::Endpoint::from_shared(self.chain.prover_endpoint.clone())
@@ -1258,9 +1253,13 @@ where
                 .await
                 .unwrap();
 
+            let path = path.to_string();
+
+            tracing::debug!(path);
+
             let query_result = client
                 .abci_query(AbciQueryRequest {
-                    data: path.to_string().into_bytes(),
+                    data: path.into_bytes(),
                     path: "store/ibc/key".to_string(),
                     height: at.revision_height.try_into().unwrap(),
                     prove: true,
@@ -1268,6 +1267,11 @@ where
                 .await
                 .unwrap()
                 .into_inner();
+
+            assert!(
+                !query_result.value.is_empty(),
+                "abci query returned empty bytes"
+            );
 
             StateProof {
                 state: P::from_abci_bytes(query_result.value),
@@ -1306,4 +1310,14 @@ async fn account_info_of_signer(signer: &CosmosAccountId) -> auth::v1beta1::Base
     assert!(account.type_url == "/cosmos.auth.v1beta1.BaseAccount");
 
     auth::v1beta1::BaseAccount::decode(&*account.value).unwrap()
+}
+
+fn write_to_file<T: serde::Serialize>(data: T, filename: &'static str) -> T {
+    std::fs::write(
+        format!("cosmos-events/{filename}"),
+        serde_json::to_string_pretty(&data).unwrap(),
+    )
+    .unwrap();
+
+    data
 }

@@ -1,8 +1,10 @@
 #[cfg(feature = "ethabi")]
 use contracts::glue::IbcCoreCommitmentV1MerkleRootData;
+use serde::Serialize;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct MerkleRoot {
+    // REVIEW: Should this be H256?
     pub hash: Vec<u8>,
 }
 

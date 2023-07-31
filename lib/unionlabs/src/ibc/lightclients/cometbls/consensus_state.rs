@@ -1,6 +1,8 @@
+use serde::Serialize;
+
 use crate::{errors::MissingField, ibc::core::commitment::merkle_root::MerkleRoot, Proto, TypeUrl};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct ConsensusState {
     pub root: MerkleRoot,
     pub next_validators_hash: Vec<u8>,

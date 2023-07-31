@@ -1,6 +1,7 @@
 use std::fmt::Debug;
 
 use futures::{Future, Stream};
+use serde::Serialize;
 use unionlabs::{
     ethereum_consts_traits::{Mainnet, Minimal},
     ibc::{
@@ -128,6 +129,11 @@ pub trait LightClient: Send + Sync + Sized {
     ) -> impl Future<Output = ClientStateOf<Self::CounterpartyChain>> + '_;
 
     fn process_height_for_counterparty(&self, height: Height) -> impl Future<Output = Height> + '_;
+
+    // fn msg_stream(&self)
+    //     -> impl Future<Output = impl Stream<Item = (Height, Msg<Self>)> + '_> + '_;
+
+    // fn execute(msgs: impl Stream<Item = (Height, Msg<Self>)>) -> impl Future;
 }
 
 pub type ClientStateOf<C> = <C as Chain>::SelfClientState;
@@ -136,8 +142,8 @@ pub type ConsensusStateOf<C> = <C as Chain>::SelfConsensusState;
 /// Represents a block chain. One [`Chain`] may have many related [`LightClient`]s for connecting to
 /// various chains, all sharing a common config.
 pub trait Chain {
-    type SelfClientState: ClientState + Debug;
-    type SelfConsensusState: Debug;
+    type SelfClientState: ClientState + Debug + Serialize;
+    type SelfConsensusState: Debug + Serialize;
 
     fn chain_id(&self) -> impl Future<Output = String> + '_;
 

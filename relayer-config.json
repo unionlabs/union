@@ -3,16 +3,16 @@
     "ethereum-devnet": {
       "chain_type": "evm",
       "preset_base": "minimal",
-      "cometbls_client_address": "0x774667629726ec1fabebcec0d9139bd1c8f72a23",
-      "ibc_handler_address": "0xfc97a6197dc90bef6bbefd672742ed75e9768553",
-      "ics20_transfer_bank_address": "0xf8f7758fbcefd546eaeff7de24aff666b6228e73",
-      "ics20_bank_address": "0x83428c7db9815f482a39a1715684dcf755021997",
+      "cometbls_client_address": "0x068bf9b2a8fd8081d93a9c5e1cc857a422e54e94",
+      "ibc_handler_address": "0xb88bcbbd404506fd59ede387bc84e913c808237a",
+      "ics20_transfer_bank_address": "0x18fbdf6cbd175015ee3bc3cceff19060d8dcb4a4",
+      "ics20_bank_address": "0x94527451ed5147d1c5f65513d2c21f113cd413e0",
       "signer": {
         "raw": "0x4e9444a6efd6d42725a250b650a781da2737ea308c839eaccb0f7f3dbd2fea77"
       },
       "eth_rpc_api": "ws://localhost:8546",
       "eth_beacon_rpc_api": "http://localhost:9596",
-      "wasm_code_id": "0x44ab11c49e3aa40301679bff45818117158d6cc8c326a5bafa69089709c3d13e"
+      "wasm_code_id": "0x48f5a72319741e9c011c79ab593a3eb0f3d448e00dd0df9db2ff49e0a7f51a13"
     },
     "union-devnet": {
       "chain_type": "union",
@@ -20,7 +20,9 @@
         "raw": "0xaa820fa947beb242032a41b6dc9a8b9c37d8f5fbcda0966b1ec80335b10a7d6f"
       },
       "ws_url": "ws://127.0.0.1:26657/websocket",
-      "wasm_code_id": "0x44ab11c49e3aa40301679bff45818117158d6cc8c326a5bafa69089709c3d13e"
+      "prover_endpoint": "http://localhost:8080",
+      "dump_path": "/home/ben/projects/union/union/dump",
+      "wasm_code_id": "0x48f5a72319741e9c011c79ab593a3eb0f3d448e00dd0df9db2ff49e0a7f51a13"
     }
   }
 }

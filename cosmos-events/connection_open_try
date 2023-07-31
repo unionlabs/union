@@ -1,0 +1,147 @@
+[
+  {
+    "kind": "coin_spent",
+    "attributes": [
+      {
+        "key": "spender",
+        "value": "union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2",
+        "index": true
+      },
+      {
+        "key": "amount",
+        "value": "1stake",
+        "index": true
+      }
+    ]
+  },
+  {
+    "kind": "coin_received",
+    "attributes": [
+      {
+        "key": "receiver",
+        "value": "union17xpfvakm2amg962yls6f84z3kell8c5l6wzg9v",
+        "index": true
+      },
+      {
+        "key": "amount",
+        "value": "1stake",
+        "index": true
+      }
+    ]
+  },
+  {
+    "kind": "transfer",
+    "attributes": [
+      {
+        "key": "recipient",
+        "value": "union17xpfvakm2amg962yls6f84z3kell8c5l6wzg9v",
+        "index": true
+      },
+      {
+        "key": "sender",
+        "value": "union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2",
+        "index": true
+      },
+      {
+        "key": "amount",
+        "value": "1stake",
+        "index": true
+      }
+    ]
+  },
+  {
+    "kind": "message",
+    "attributes": [
+      {
+        "key": "sender",
+        "value": "union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2",
+        "index": true
+      }
+    ]
+  },
+  {
+    "kind": "tx",
+    "attributes": [
+      {
+        "key": "fee",
+        "value": "1stake",
+        "index": true
+      },
+      {
+        "key": "fee_payer",
+        "value": "union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2",
+        "index": true
+      }
+    ]
+  },
+  {
+    "kind": "tx",
+    "attributes": [
+      {
+        "key": "acc_seq",
+        "value": "union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2/18",
+        "index": true
+      }
+    ]
+  },
+  {
+    "kind": "tx",
+    "attributes": [
+      {
+        "key": "signature",
+        "value": "ZUqUtTt5QI+biv4aI3szRfkmN4vYgfr69wMwfwDTFMZn5DDGi+PitOJiKS9igmyChukIC2q4Iu7uZO2SwbhssQ==",
+        "index": true
+      }
+    ]
+  },
+  {
+    "kind": "message",
+    "attributes": [
+      {
+        "key": "action",
+        "value": "/ibc.core.connection.v1.MsgConnectionOpenTry",
+        "index": true
+      },
+      {
+        "key": "sender",
+        "value": "union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2",
+        "index": true
+      }
+    ]
+  },
+  {
+    "kind": "connection_open_try",
+    "attributes": [
+      {
+        "key": "connection_id",
+        "value": "connection-5",
+        "index": true
+      },
+      {
+        "key": "client_id",
+        "value": "08-wasm-1",
+        "index": true
+      },
+      {
+        "key": "counterparty_client_id",
+        "value": "cometbls-new-0",
+        "index": true
+      },
+      {
+        "key": "counterparty_connection_id",
+        "value": "connection-0",
+        "index": true
+      }
+    ]
+  },
+  {
+    "kind": "message",
+    "attributes": [
+      {
+        "key": "module",
+        "value": "ibc_connection",
+        "index": true
+      }
+    ]
+  }
+]

@@ -99,7 +99,7 @@ fn encode_dynamic_singleton_tuple(t: impl AbiEncode) -> Vec<u8> {
     U256::from(32)
         .encode()
         .into_iter()
-        .chain(t.encode().into_iter())
+        .chain(t.encode())
         .collect::<Vec<_>>()
 }
 
@@ -442,7 +442,9 @@ impl<C: ChainSpec> Chain for Evm<C> {
                     .await
                     .unwrap();
 
-                let [light_client_update] = &*light_client_updates.0 else { panic!() };
+                let [light_client_update] = &*light_client_updates.0 else {
+                    panic!()
+                };
 
                 light_client_update.data.clone()
             };
@@ -552,12 +554,12 @@ impl<C: ChainSpec> CreateClient<Cometbls<C>> for Evm<C> {
             // TODO(benluelo): Better way to check if client type has already been registered?
             match register_client_result.send().await {
                 Ok(ok) => {
-                    ok.await.unwrap().unwrap();
+                    dbg!(ok.await.unwrap().unwrap());
                 }
                 Err(why) => eprintln!("{}", why.decode_revert::<String>().unwrap()),
             }
 
-            tracing::info!(ibc_handler_address = ?self.ibc_handler.address());
+            tracing::info!(ibc_handler_address = %self.ibc_handler.address());
 
             let latest_height = counterparty_chain.query_latest_height().await;
 
@@ -579,6 +581,8 @@ impl<C: ChainSpec> CreateClient<Cometbls<C>> for Evm<C> {
                 .unwrap()
                 .unwrap();
 
+            dbg!(&tx_rcp);
+
             let client_id = decode_logs::<IBCHandlerEvents>(
                 tx_rcp
                     .logs
@@ -596,7 +600,7 @@ impl<C: ChainSpec> CreateClient<Cometbls<C>> for Evm<C> {
             .unwrap();
 
             tracing::info!(
-                block_number = ?self.make_height(tx_rcp.block_number.unwrap().as_u64()),
+                block_number = %self.make_height(tx_rcp.block_number.unwrap().as_u64()),
                 client_id
             );
 
@@ -674,6 +678,73 @@ impl<C: ChainSpec> LightClient for Cometbls<C> {
     fn process_height_for_counterparty(&self, height: Height) -> impl Future<Output = Height> + '_ {
         self.chain.execution_height(height)
     }
+
+    // fn msg_stream(
+    //     &self,
+    // ) -> impl Future<Output = impl Stream<Item = (Height, crate::Msg<Self>)> + '_> + '_ {
+    //     async move {
+    //         self.chain
+    //             .provider
+    //             .subscribe()
+    //             .subscribe_blocks()
+    //             .await
+    //             .unwrap()
+    //             .then(|block| block)
+    //             .subscribe_logs(&Filter::new().address(self.chain.ibc_handler.address()))
+    //             .await
+    //             .unwrap()
+    //             .then(move |log| async move {
+    //                 let meta = LogMeta::from(&log);
+    //                 let event: IBCHandlerEvents = parse_log(log).unwrap();
+
+    //                 match event {
+    //                     IBCHandlerEvents::AcknowledgePacketFilter(_) => todo!(),
+    //                     IBCHandlerEvents::GeneratedChannelIdentifierFilter(_) => todo!(),
+    //                     IBCHandlerEvents::GeneratedClientIdentifierFilter(_) => todo!(),
+    //                     IBCHandlerEvents::GeneratedConnectionIdentifierFilter(_) => todo!(),
+    //                     IBCHandlerEvents::RecvPacketFilter(_) => todo!(),
+    //                     IBCHandlerEvents::SendPacketFilter(_) => todo!(),
+    //                     IBCHandlerEvents::WriteAcknowledgementFilter(_) => todo!(),
+    //                 }
+
+    //                 // TODO: Would be nice if this info was passed through in the SendPacket event
+    //                 let (channel_data, is_found): (
+    //                     contracts::ibc_handler::IbcCoreChannelV1ChannelData,
+    //                     bool,
+    //                 ) = self
+    //                     .chain
+    //                     .ibc_handler
+    //                     .get_channel(event.source_port.clone(), event.source_channel.clone())
+    //                     .await
+    //                     .unwrap();
+
+    //                 assert!(
+    //                     is_found,
+    //                     "channel not found for port_id {port}, channel_id {channel}",
+    //                     port = event.source_port,
+    //                     channel = event.source_channel
+    //                 );
+
+    //                 (
+    //                     self.chain.make_height(meta.block_number.0[0]),
+    //                     Packet {
+    //                         sequence: event.sequence,
+    //                         source_port: event.source_port,
+    //                         source_channel: event.source_channel,
+    //                         destination_port: channel_data.counterparty.port_id,
+    //                         destination_channel: channel_data.counterparty.channel_id,
+    //                         data: event.data.to_vec(),
+    //                         timeout_height: event.timeout_height.into(),
+    //                         timeout_timestamp: event.timeout_timestamp,
+    //                     },
+    //                 )
+    //             })
+    //     }
+    // }
+
+    // fn execute(msgs: impl Stream<Item = (Height, crate::Msg<Self>)>) -> impl Future {
+    //     todo!()
+    // }
 }
 
 impl<C: ChainSpec> Connect<Ethereum<C>> for Cometbls<C> {

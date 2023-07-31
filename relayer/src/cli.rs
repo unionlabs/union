@@ -11,12 +11,16 @@ use ethers::{
 use reqwest::Url;
 use unionlabs::ethereum_consts_traits::PresetBaseKind;
 
-use crate::chain::{cosmos::EthereumConfig, evm::CometblsConfig};
+use crate::chain::{
+    cosmos::EthereumConfig, evm::CometblsConfig, proof, Chain, LightClient, QueryHeight,
+};
 
 #[derive(Debug, Parser)]
+#[command(arg_required_else_help = true)]
 pub struct AppArgs {
     #[arg(
         long,
+        short = 'c',
         env,
         global = true,
         default_value = "~/.config/relayer/config.json"
@@ -45,6 +49,57 @@ pub enum Command {
     Query(QueryCmd),
     #[command(subcommand)]
     Setup(SetupCmd),
+    #[command(subcommand)]
+    Ibc(IbcCmd),
+}
+
+#[derive(Debug, Subcommand)]
+pub enum IbcCmd {
+    Query {
+        #[arg(long)]
+        on: String,
+        #[command(subcommand)]
+        cmd: IbcQueryCmd,
+    },
+}
+
+#[derive(Debug, Subcommand)]
+pub enum IbcQueryCmd {
+    #[command(subcommand)]
+    Path(IbcQueryPathCmd),
+}
+
+#[derive(Debug, clap::Subcommand)]
+pub enum IbcQueryPathCmd {
+    ClientState(proof::ClientStatePath),
+    ClientConsensusState(proof::ClientConsensusStatePath),
+    Connection(proof::ConnectionPath),
+    ChannelEnd(proof::ChannelEndPath),
+    Commitment(proof::CommitmentPath),
+}
+
+impl IbcQueryPathCmd {
+    pub async fn any_state_proof_to_json<L: LightClient>(
+        self,
+        l: &L,
+        height: QueryHeight,
+    ) -> String {
+        use serde_json::to_string_pretty as json;
+
+        let height = match height {
+            QueryHeight::Latest => l.chain().query_latest_height().await,
+            QueryHeight::Specific(height) => height,
+        };
+
+        match self {
+            Self::ClientState(path) => json(&l.state_proof(path, height).await),
+            Self::ClientConsensusState(path) => json(&l.state_proof(path, height).await),
+            Self::Connection(path) => json(&l.state_proof(path, height).await),
+            Self::ChannelEnd(path) => json(&l.state_proof(path, height).await),
+            Self::Commitment(path) => json(&l.state_proof(path, height).await),
+        }
+        .unwrap()
+    }
 }
 
 #[derive(Debug, Subcommand)]
@@ -89,7 +144,16 @@ pub enum QueryCmd {
         #[arg(long)]
         client_id: String,
     },
-    Connection {},
+    Connection {
+        #[arg(long)]
+        on: String,
+        /// The client to show connections for.
+        #[arg(long)]
+        client_id: String,
+        /// Only show this connection.
+        #[arg(long)]
+        connection_id: Option<String>,
+    },
     Channel {},
     Balances {
         #[arg(long)]
