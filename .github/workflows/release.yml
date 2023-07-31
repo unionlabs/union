@@ -110,8 +110,6 @@ jobs:
 
       - name: Tag Docker Images
         run: |
-          echo $(ls)
-          echo $(docker images ${{ matrix.package }} --format "{{.ID}}:{{.Tag}}")
           echo "Entering for loop"
           for arch in 'aarch64-linux' 'x86_64-linux'
           do
