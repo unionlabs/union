@@ -61,7 +61,7 @@
         "gas_used": "0",
         "timestamp": "1690487637",
         "extra_data": "0xd883010b06846765746888676f312e32302e34856c696e7578",
-        "base_fee_per_gas": "0x9",
+        "base_fee_per_gas": "9",
         "block_hash": "0xeaf61553ffd1ef153b716308f614ce7932868bbe773a1f5389b1e0fdcd828036",
         "transactions_root": "0x7ffe241ea60187fdb0187bfa22de35d1f9bed7ab061d9401fd47e34a54fbede1",
         "withdrawals_root": "0x28ba1834a3a7b657460ce79fa3a1d909ab8828fd557659d4d0554a9bdbc0ec30"
@@ -137,7 +137,7 @@
         "gas_used": "0",
         "timestamp": "1690487541",
         "extra_data": "0xd883010b06846765746888676f312e32302e34856c696e7578",
-        "base_fee_per_gas": "0x52",
+        "base_fee_per_gas": "52",
         "block_hash": "0x6f389c648228cb67deea5e0e75a326a04b989fc2dab884b37c50e0f7c1314002",
         "transactions_root": "0x7ffe241ea60187fdb0187bfa22de35d1f9bed7ab061d9401fd47e34a54fbede1",
         "withdrawals_root": "0x28ba1834a3a7b657460ce79fa3a1d909ab8828fd557659d4d0554a9bdbc0ec30"

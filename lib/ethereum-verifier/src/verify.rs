@@ -706,4 +706,32 @@ mod tests {
             );
         }
     }
+
+    /// https://github.com/unionlabs/union/issues/391
+    #[test]
+    fn multi_digit_base_fee_per_gas() {
+        const JSON: &str = include_str!(
+            "../../../light-clients/ethereum-light-client/src/test/multi_digit_base_fee_per_gas_header_update.json"
+        );
+
+        let header = serde_json::from_str::<Header<Minimal>>(JSON).unwrap();
+
+        assert_eq!(
+            is_valid_light_client_header(
+                &MINIMAL.fork_parameters,
+                &header.consensus_update.attested_header,
+            ),
+            Ok(()),
+            "invalid attested header"
+        );
+
+        assert_eq!(
+            is_valid_light_client_header(
+                &MINIMAL.fork_parameters,
+                &header.consensus_update.finalized_header,
+            ),
+            Ok(()),
+            "invalid finalized header"
+        );
+    }
 }
