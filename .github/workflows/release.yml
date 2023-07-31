@@ -6,11 +6,12 @@ on:
 
 jobs:
   build:
-    uses: nixbuild/nixbuild-action/.github/workflows/ci-workflow.yml@master
+    uses: unionlabs/workflows/.github/workflows/build.yml@2c94f6f3acb2d7d9222f8fa05f43eb8c3ed2e758
     secrets:
       nixbuild_token: ${{ secrets.nixbuild_token }}
+      access-tokens: github.com=${{ secrets.GITHUB_TOKEN }}
     with:
-      filter_builds: '(.top_attr == "packages") and (.system == "x86_64-linux" or .system == "aarch64-linux") and (.attr == "uniond" or .attr == "unionpd" or .attr == "uniond-image" or .attr == "unionpd-image")' # ensure to append this list if you want to release more artifacts
+      filter_builds: '(.top_attr == "packages") and (.system == "x86_64-linux" or .system == "aarch64-linux") and (.attr == "uniond" or .attr == "galoisd-devnet" or .attr == "galoisd-testnet" or .attr == "galoisd-mainnet" or .attr == "uniond-image" or .attr == "galoisd-devnet-image" or .attr == "galoisd-testnet-image" or .attr == "galoisd-mainnet-image")' # ensure to append this list if you want to release more artifacts
 
   dl-images:
     runs-on: ubuntu-latest
@@ -18,7 +19,7 @@ jobs:
     permissions: write-all
     strategy:
       matrix:
-        package: [ uniond, unionpd ]
+        package: [ uniond, galoisd-devnet, galoisd-testnet, galoisd-mainnet ]
         system: [ aarch64-linux, x86_64-linux ]
     steps: 
       - uses: actions/download-artifact@v3
@@ -43,7 +44,7 @@ jobs:
     strategy:
       matrix:
         system: [ aarch64-linux, x86_64-linux ]
-        package: [ uniond, unionpd ]
+        package: [ uniond, galoisd-devnet, galoisd-testnet, galoisd-mainnet ]
     steps: 
       - uses: actions/download-artifact@v3
         with:
@@ -67,7 +68,12 @@ jobs:
 
           echo "Restore the package from the NAR_URL archive"
           cat ${{ matrix.system }}/${NAR_URL} | xz -dc | nix-store --restore ${{ matrix.system }}.${{ matrix.package }}
-          mv ${{ matrix.system }}.${{ matrix.package }}/bin/${{ matrix.package }} ${{ matrix.package }}-${{ matrix.system }}
+          if [[ ${{ matrix.package }} =~ galoisd-.* ]]
+          then
+            mv ${{ matrix.system }}.${{ matrix.package }}/bin/galoisd ${{ matrix.package }}-${{ matrix.system }}
+          else
+            mv ${{ matrix.system }}.${{ matrix.package }}/bin/${{ matrix.package }} ${{ matrix.package }}-${{ matrix.system }}
+          fi
 
       - uses: actions/upload-artifact@v3
         with:
@@ -80,7 +86,7 @@ jobs:
     permissions: write-all
     strategy:
       matrix:
-        package: [ uniond, unionpd ]
+        package: [ uniond, galoisd-devnet, galoisd-testnet, galoisd-mainnet ]
     services:
       registry:
         image: registry:2
@@ -105,15 +111,18 @@ jobs:
 
       - name: Tag Docker Images
         run: |
-          docker images uniond --format "{{.ID}}:{{.Tag}}"
+          echo "Entering for loop"
           for arch in 'aarch64-linux' 'x86_64-linux'
           do
+            echo "Tagging ${{matrix.package}} for $arch"
             dockerstring=$(docker load < $arch.${{ matrix.package }}-image)
             dockerstring=$(echo ${dockerstring##*':'})
 
-            imageid=$(docker images ${{ matrix.package }} --format "{{.ID}}:{{.Tag}}" | grep $dockerstring)
+            echo "Getting image ID for $dockerstring"
+            imageid=$(docker images --format "{{.ID}}:{{.Tag}}" | grep $dockerstring)
             imageid=$(echo ${imageid%%':'*})
 
+            echo "Tagging image"
             docker tag $imageid localhost:5000/unionlabs/${{ matrix.package }}:${{ github.ref_name }}-$arch
 
 
@@ -145,9 +154,22 @@ jobs:
 
           echo "downloaded & installed regctl"
 
+          if [[ ${{ matrix.package }} =~ galoisd-.*  ]]
+          then
+            package="galoisd"
+          else
+            package=${{ matrix.package }}
+          fi
+
           regctl registry set --tls disabled localhost:5000
-          regctl image mod localhost:5000/unionlabs/${{ matrix.package }}:${{ github.ref_name }} --to-oci --create ${{ github.ref_name }} --annotation org.opencontainers.image.description="$(cat $GITHUB_WORKSPACE/.github/container-descriptions/${{ matrix.package }}.txt)"
+          regctl image mod localhost:5000/unionlabs/${{ matrix.package }}:${{ github.ref_name }} --to-oci --create ${{ github.ref_name }} --annotation org.opencontainers.image.description="$(cat $GITHUB_WORKSPACE/.github/container-descriptions/$package.txt)"
          
+      - uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Copy Manifest to GHCR
         run: |
           wget https://github.com/rapidsai/skopeo/releases/download/v1.12/skopeo-linux-amd64 -O ./skopeo
@@ -187,8 +209,12 @@ jobs:
           files: |
             **/uniond-aarch64-linux
             **/uniond-x86_64-linux
-            **/unionpd-aarch64-linux
-            **/unionpd-x86_64-linux
+            **/galoisd-devnet-aarch64-linux
+            **/galoisd-devnet-x86_64-linux
+            **/galoisd-testnet-aarch64-linux
+            **/galoisd-testnet-x86_64-linux
+            **/galoisd-mainnet-aarch64-linux
+            **/galoisd-mainnet-x86_64-linux
       - if: "!contains(github.ref_name, 'rc')"
         name: 'Create Release'
         uses: softprops/action-gh-release@v1
@@ -200,5 +226,9 @@ jobs:
           files: |
             **/uniond-aarch64-linux
             **/uniond-x86_64-linux
-            **/unionpd-aarch64-linux
-            **/unionpd-x86_64-linux
+            **/galoisd-devnet-aarch64-linux
+            **/galoisd-devnet-x86_64-linux
+            **/galoisd-testnet-aarch64-linux
+            **/galoisd-testnet-x86_64-linux
+            **/galoisd-mainnet-aarch64-linux
+            **/galoisd-mainnet-x86_64-linux
