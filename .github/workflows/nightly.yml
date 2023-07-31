@@ -5,8 +5,6 @@ on:
   # schedule:
   #   - cron: '0 4 * * *'
 
-permissions: write-all
-
 jobs:
   # build:
   #   uses: unionlabs/workflows/.github/workflows/build.yml@679907725e8f8e800a31677bad1b0d0decc9399f
@@ -18,13 +16,12 @@ jobs:
   create-issue:
     runs-on: ubuntu-latest
     permissions:
+      contents: read
+      issues: write
     # needs: [ build ]
     # if: failure()
     steps:
       - uses: actions/checkout@v3
-        with:
-          lfs: true
-          fetch-depth: 0
       - uses: JasonEtco/create-an-issue@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
