@@ -32,6 +32,7 @@ pub struct ExecutionPayloadHeader<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES
     pub timestamp: u64,
     #[serde(with = "::serde_utils::hex_string")]
     pub extra_data: VariableList<u8, C::MAX_EXTRA_DATA_BYTES>,
+    #[serde(with = "::serde_utils::u256_from_dec_str")]
     pub base_fee_per_gas: U256,
     pub block_hash: H256,
     #[serde(default)]

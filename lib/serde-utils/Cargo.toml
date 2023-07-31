@@ -8,3 +8,4 @@ edition = "2021"
 base64 = { version = "0.21", default-features = false, features = ["alloc"] }
 serde = { version = "1.0", default-features = false }
 hex = { version = "0.4.3", default-features = false }
+primitive-types = { version = "0.12.1", default-features = false, features = ["serde_no_std"] }

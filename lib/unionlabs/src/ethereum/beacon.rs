@@ -153,6 +153,7 @@ pub struct ExecutionPayload<
     pub gas_used: u64,
     pub timestamp: u64,
     pub extra_data: VariableList<u8, C::MAX_EXTRA_DATA_BYTES>,
+    #[serde(with = "::serde_utils::u256_from_dec_str")]
     pub base_fee_per_gas: U256,
     /// Extra payload fields
     /// Hash of execution block
@@ -270,7 +271,7 @@ mod tests {
       "gas_used": "0",
       "timestamp": "1688708475",
       "extra_data": "0xd883010b06846765746888676f312e32302e34856c696e7578",
-      "base_fee_per_gas": "7",
+      "base_fee_per_gas": "77",
       "block_hash": "0x65d0e7fa05f9e3d67c5ac592271261836de85245ba259d445f79d888767652d9",
       "transactions_root": "0x7ffe241ea60187fdb0187bfa22de35d1f9bed7ab061d9401fd47e34a54fbede1",
       "withdrawals_root": "0x28ba1834a3a7b657460ce79fa3a1d909ab8828fd557659d4d0554a9bdbc0ec30"
@@ -302,7 +303,7 @@ mod tests {
       "gas_used": "0",
       "timestamp": "1688708379",
       "extra_data": "0xd883010b06846765746888676f312e32302e34856c696e7578",
-      "base_fee_per_gas": "7",
+      "base_fee_per_gas": "77",
       "block_hash": "0xe05c99fc9df0c133f10456c3d2d7d7e5841ff6aca907508e72d3c02280413065",
       "transactions_root": "0x7ffe241ea60187fdb0187bfa22de35d1f9bed7ab061d9401fd47e34a54fbede1",
       "withdrawals_root": "0x28ba1834a3a7b657460ce79fa3a1d909ab8828fd557659d4d0554a9bdbc0ec30"
@@ -332,9 +333,13 @@ mod tests {
         let finality_update =
             serde_json::from_str::<LightClientFinalityUpdate<Minimal>>(JSON).unwrap();
 
+        dbg!(&finality_update);
+
         assert_json_roundtrip(&finality_update.attested_header);
 
         assert_proto_roundtrip(&finality_update.attested_header);
+
+        dbg!(U256::from_dec_str("77"));
 
         assert_eq!(
             finality_update
@@ -342,7 +347,7 @@ mod tests {
                 .execution
                 .base_fee_per_gas
                 .as_u128(),
-            7
+            77
         );
 
         serde_json::from_str::<SyncAggregate<Minimal>>(r#"{"sync_committee_bits":"0xffffffff","sync_committee_signature":"0xb13181bcd13a1e9450452290926985eea1b005a11310c69487f646980f84b3597fbd09d9406093f0cf918e2d6304291406330abb3e90b0d4406e1f902cc49e2faea2df7f6311069d438b4fc23466fe3436bf53caa39461e18fb0b236d446c5a0"}"#).unwrap();
