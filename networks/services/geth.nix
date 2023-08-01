@@ -61,7 +61,7 @@ in
     command = [ "${geth-init}/bin/geth-init" ];
     healthcheck = {
       interval = "5s";
-      retries = 2;
+      retries = 15;
       test = [
         "CMD-SHELL"
         ''
