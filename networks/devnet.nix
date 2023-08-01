@@ -61,58 +61,6 @@
       build-evm = arion.build spec-evm;
 
       build-cosmos = arion.build spec-cosmos;
-
-      instantiate-cw20-ics20 =
-        pkgs.writeShellApplication {
-          name = "instantiate-cw20-ics20";
-          runtimeInputs = [];
-          text =
-        ''
-          while ! ${uniond} tx wasm instantiate2 1 \
-            '{
-              "default_timeout":300,
-              "gov_contract":"union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2",
-              "allowlist":[],
-              "channel":{
-                "endpoint":{
-                  "port_id": "",
-                  "channel_id":"channel-0"
-                },
-                "counterparty_endpoint":{
-                  "port_id":"transfer",
-                  "channel_id":"channel-0"
-                },
-                "order":"ORDER_UNORDERED",
-                "version":"ics20-1",
-                "connection_id":"connection-0"
-              }
-            }' \
-            61616161 \
-            --label cw20-ics20-test \
-            --gas=auto \
-            --gas-adjustment=1.3 -y  \
-            --admin union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2 \
-            --keyring-backend test \
-            --from testkey \
-            --chain-id union-devnet-1 \
-            --home ${self'.packages.devnet-genesis}
-          do
-            sleep 1
-          done
-        '';
-        };
-
-      deploy-contracts =
-        pkgs.writeShellApplication {
-          name = "deploy-contracts";
-          runtimeInputs = [];
-          text = ''
-            while ! ${self'.packages.evm-devnet-deploy}/bin/evm-devnet-deploy
-            do
-              sleep 1
-            done 
-          '';
-        };
     in
     {
       packages.devnet =
@@ -139,19 +87,6 @@
           runtimeInputs = [ arion ];
           text = ''
             arion --prebuilt-file ${build-cosmos} up --build --force-recreate -V --always-recreate-deps --remove-orphans
-          '';
-        };
-
-      packages.devnet-demo =
-        pkgs.writeShellApplication {
-          name = "union-devnet-demo";
-          runtimeInputs = [ ];
-          text = ''
-            (trap 'kill 0' SIGINT; \
-              ${self'.packages.devnet}/bin/union-devnet & \
-              ${instantiate-cw20-ics20}/bin/instantiate-cw20-ics20 & \
-              ${deploy-contracts}/bin/deploy-contracts & \
-              wait)
           '';
         };
 

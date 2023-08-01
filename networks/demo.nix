@@ -340,7 +340,7 @@
                 setup initial-channel \
                 --on ethereum-devnet \
                 --module-address "$MODULE_ADDRESS" \
-                --channel-id = "$CHANNEL_ID" \
+                --channel-id "$CHANNEL_ID" \
                 --port-id "$PORT_ID" \
                 --counterparty-port-id "$COUNTERPARTY_PORT_ID"
 

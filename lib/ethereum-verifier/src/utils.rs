@@ -126,29 +126,22 @@ pub fn validate_merkle_branch<'a>(
         // TODO: This is just a fold
         // NB: zip ends when either iterator ends
         for (b, i) in branch.iter().zip(0..depth) {
-            // println!("I: {b:?} {i}");
             if let Some(v) = 2u64.checked_pow(i as u32) {
                 let val = index / v % 2;
-                // println!("VAL IS: {val}");
                 value = Sha256::digest(
                     if val == 1 {
-                        // println!("Val == 1, b.0: {:?} value.0: {:?}", b.0, value.0);
                         [b.0, value.0]
                     } else {
-                        // println!("Val != 1, value.0: {:?}, b.0: {:?}", value.0, b.0);
                         [value.0, b.0]
                     }
                     .concat(),
                 )
                 .into();
             } else {
-                // println!("BREAJ?");
                 break 'block false;
             }
-            // println!("VALUE: {value}");
         }
 
-        // println!("ROOT: {root}, VALUE: {value}");
         value == *root
     }
     .then_some(())
@@ -168,66 +161,16 @@ mod tests {
     use unionlabs::{
         ethereum_consts_traits::{
             consts::{floorlog2, EXECUTION_PAYLOAD_INDEX},
-            Minimal, MINIMAL, SECONDS_PER_SLOT, SEPOLIA,
+            Minimal, SECONDS_PER_SLOT, SEPOLIA,
         },
         ibc::lightclients::ethereum::header::Header,
         TryFromProto,
     };
 
     use super::*;
-    use crate::is_valid_light_client_header;
 
     pub const SAMPLE_SLOT: u64 = 1235232;
     pub const SAMPLE_EPOCH: u64 = 10000;
-
-    #[test]
-    fn omg_merkle_branch() {
-        let header: Header<Minimal> = serde_json::from_str(include_str!(
-            "../../../light-clients/ethereum-light-client/src/test/invalid_header_update.json"
-        ))
-        .unwrap();
-        let mut header = header.consensus_update.finalized_header;
-
-        // let valid_leaf = H256::from(header.execution.tree_hash_root());
-        // let valid_branch = header.execution_branch.clone();
-        // let valid_root = header.beacon.body_root.clone();
-        // let leaf = H256::try_from(
-        //     hex::decode("4dada877297bd12015e0079a344af175d4723aff56a943bf6352ba82c5a11a79")
-        //         .unwrap(),
-        // )
-        // .unwrap();
-        // let branch = [
-        //     H256::try_from(
-        //         hex::decode("4a70114a3239795346eeb79e73c4d7943e92d77aa26d54af11cf32c1c28611d8")
-        //             .unwrap(),
-        //     )
-        //     .unwrap(),
-        //     H256::try_from(
-        //         hex::decode("336488033fe5f3ef4ccc12af07b9370b92e553e35ecb4a337a1b1c0e4afe1e0e")
-        //             .unwrap(),
-        //     )
-        //     .unwrap(),
-        //     H256::try_from(
-        //         hex::decode("db56114e00fdd4c1f85c892bf35ac9a89289aaecb1ebd0a96cde606a748b5d71")
-        //             .unwrap(),
-        //     )
-        //     .unwrap(),
-        //     H256::try_from(
-        //         hex::decode("2fddce0e4a74d84109185421e8a5491b890bf6867427e325e65d9004ff87eb52")
-        //             .unwrap(),
-        //     )
-        //     .unwrap(),
-        // ];
-        // let root = H256::try_from(
-        //     hex::decode("47d469230253d96df51be896911ffaf156e0cf2507ce51d3e1a3fcbb68817e56")
-        //         .unwrap(),
-        // )
-        // .unwrap();
-
-        is_valid_light_client_header(&MINIMAL.fork_parameters, &header).unwrap();
-
-        // validate_merkle_branch(&leaf, &branch, 4, 9, &root).unwrap();
-    }
 
     #[test]
     fn compute_fork_version_works() {
