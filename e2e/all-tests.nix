@@ -18,7 +18,7 @@
           virtualisation = {
             diskSize = 4 * 1024;
             arion = {
-              backend = "docker";
+              backend = "podman-socket";
               projects.sepolia.settings = networks.sepolia;
             };
           };
@@ -31,7 +31,7 @@
           virtualisation = {
             diskSize = 2048;
             arion = {
-              backend = "docker";
+              backend = "podman-socket";
               projects.union.settings = networks.union;
             };
           };
