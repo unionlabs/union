@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	context "context"
+	"encoding/json"
 	"fmt"
 	"galois/pkg/lightclient"
 	lcgadget "galois/pkg/lightclient/nonadjacent"
@@ -45,8 +46,14 @@ func (*proverServer) mustEmbedUnimplementedUnionProverAPIServer() {}
 func (p *proverServer) Verify(ctx context.Context, req *VerifyRequest) (*VerifyResponse, error) {
 	log.Println("Verifying...")
 
+	reqJson, err := json.MarshalIndent(req, "", "    ")
+	if err != nil {
+		return nil, err
+	}
+	log.Println(string(reqJson))
+
 	var proof backend_bn254.Proof
-	_, err := proof.ReadFrom(bytes.NewReader(req.Proof.CompressedContent))
+	_, err = proof.ReadFrom(bytes.NewReader(req.Proof.CompressedContent))
 	if err != nil {
 		return nil, fmt.Errorf("Failed to read compressed proof: %w", err)
 	}
@@ -142,6 +149,7 @@ func (p *proverServer) GenerateContract(ctx context.Context, req *GenerateContra
 
 func (p *proverServer) QueryStats(ctx context.Context, req *QueryStatsRequest) (*QueryStatsResponse, error) {
 	log.Println("Querying stats...")
+
 	return &QueryStatsResponse{
 		VariableStats: &VariableStats{
 			NbInternalVariables: uint32(p.cs.GetNbInternalVariables()),
@@ -168,6 +176,12 @@ func (p *proverServer) QueryStats(ctx context.Context, req *QueryStatsRequest) (
 
 func (p *proverServer) Prove(ctx context.Context, req *ProveRequest) (*ProveResponse, error) {
 	log.Println("Proving...")
+
+	reqJson, err := json.MarshalIndent(req, "", "    ")
+	if err != nil {
+		return nil, err
+	}
+	log.Println(string(reqJson))
 
 	reverseBytes := func(numbers []byte) []byte {
 		newNumbers := make([]byte, 0, len(numbers))
@@ -298,7 +312,7 @@ func (p *proverServer) Prove(ctx context.Context, req *ProveRequest) (*ProveResp
 	logger.SetOutput(os.Stdout)
 	logger.Logger().Level(zerolog.TraceLevel)
 
-	log.Println("Proving...")
+	log.Println("Executing proving backend...")
 	proof, err := backend.Prove(p.cs, p.pk, privateWitness)
 	if err != nil {
 		return nil, err
