@@ -146,8 +146,9 @@
 
             ${deploy { path = "apps/20-transfer/ICS20Bank.sol"; name = "ICS20Bank"; }}
             ${deploy { path = "apps/20-transfer/ICS20TransferBank.sol"; name = "ICS20TransferBank";  args = ''--constructor-args "$DEVNETOWNABLEIBCHANDLER" "$ICS20BANK"''; }}
+            ${deploy { path = "apps/ucs/00-pingpong/PingPong.sol"; name = "PingPong";  args = ''--constructor-args "$DEVNETOWNABLEIBCHANDLER"''; }}
 
-            echo "{\"ibc_handler_address\": \"$DEVNETOWNABLEIBCHANDLER\", \"cometbls_client_address\": \"$COMETBLSCLIENT\", \"ics20_transfer_bank_address\": \"$ICS20TRANSFERBANK\", \"ics20_bank_address\": \"$ICS20BANK\" }"
+            echo "{\"ibc_handler_address\": \"$DEVNETOWNABLEIBCHANDLER\", \"cometbls_client_address\": \"$COMETBLSCLIENT\", \"ics20_transfer_bank_address\": \"$ICS20TRANSFERBANK\", \"ics20_bank_address\": \"$ICS20BANK\", \"ping_pong_address\":\"$PINGPONG\" }"
 
             rm -rf "$OUT"
           '';
@@ -268,15 +269,3 @@
       );
     };
 }
-
-    # SetupInitialChannel {
-    #     #[arg(long)]
-    #     wallet: LocalWallet,
-    #     #[arg(long)]
-    #     eth_rpc_api: Url,
-    #     #[arg(long)]
-    #     ibc_handler_address: Address,
-    #     #[arg(long)]
-    #     ics20_transfer_address: Address,
-    # },
-

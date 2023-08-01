@@ -399,73 +399,35 @@ async fn do_main(args: cli::AppArgs) -> Result<(), anyhow::Error> {
         },
         Command::Setup(cmd) => match cmd {
             cli::SetupCmd::InitialChannel {
-                wallet,
-                eth_rpc_api,
-                ibc_handler_address,
-                ics20_transfer_address,
+                on,
                 counterparty_port_id,
+                module_address,
+                port_id,
+                channel_id,
             } => {
-                let provider =
-                    ethers::providers::Provider::new(ethers::providers::Http::new(eth_rpc_api));
-                let wallet = wallet.with_chain_id(provider.get_chainid().await.unwrap().as_u64());
-                let signer_middleware = Arc::new(ethers::prelude::SignerMiddleware::new(
-                    provider,
-                    wallet.clone(),
-                ));
+                let chain = relayer_config.get_chain(&on).await.unwrap();
 
-                let ibc_handler = devnet_ownable_ibc_handler::DevnetOwnableIBCHandler::new(
-                    ibc_handler_address,
-                    signer_middleware.clone(),
-                );
-
-                ibc_handler
-                    .setup_initial_channel(
-                        "connection-0".into(),
-                        IbcCoreConnectionV1ConnectionEndData {
-                            client_id: "cometbls-new-0".into(),
-                            versions: vec![IbcCoreConnectionV1VersionData {
-                                identifier: "1".into(),
-                                features: vec!["ORDER_ORDERED".into(), "ORDER_UNORDERED".into()],
-                            }],
-                            state: 3,
-                            counterparty: IbcCoreConnectionV1CounterpartyData {
-                                client_id: "08-wasm-0".into(),
-                                connection_id: "connection-0".into(),
-                                prefix: IbcCoreCommitmentV1MerklePrefixData {
-                                    key_prefix: b"ibc".to_vec().into(),
-                                },
-                            },
-                            delay_period: 6,
-                        },
-                        "transfer".into(),
-                        "channel-0".into(),
-                        IbcCoreChannelV1ChannelData {
-                            state: 3,
-                            ordering: 1,
-                            counterparty: IbcCoreChannelV1CounterpartyData {
-                                port_id: counterparty_port_id,
-                                channel_id: "channel-0".into(),
-                            },
-                            connection_hops: vec!["connection-0".into()],
-                            version: "ics20-1".into(),
-                        },
-                        ics20_transfer_address,
-                    )
-                    .send()
-                    .await
-                    .unwrap()
-                    .await
-                    .unwrap()
-                    .unwrap();
+                match chain {
+                    AnyChain::EvmMinimal(evm) => {
+                        evm.setup_initial_channel(
+                            module_address.into(),
+                            channel_id,
+                            port_id,
+                            counterparty_port_id,
+                        )
+                        .await;
+                    }
+                    _ => panic!("Not supported."),
+                }
             }
         },
     }
 
-    // std::fs::write(
-    //     args.config_file_path,
-    //     serde_json::to_string_pretty(&relayer_config).unwrap(),
-    // )
-    // .unwrap();
+    std::fs::write(
+        args.config_file_path,
+        serde_json::to_string_pretty(&relayer_config).unwrap(),
+    )
+    .unwrap();
 
     Ok(())
 }

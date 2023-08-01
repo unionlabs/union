@@ -49,11 +49,29 @@
             --output json \
             | jq '.[] | select(.name == "${genesisAccountName}").address' --raw-output)
 
-          echo ALICE $ALICE_ADDRESS
-
           CODE_HASH=$(sha256sum ${self'.packages.wasm-cw20-ics20}/lib/cw20_ics20.wasm | cut -f1 -d" ")
 
           ${uniond} query wasm build-address $CODE_HASH $ALICE_ADDRESS 61616161 > $out/CW20_ICS20_CONTRACT_ADDRESS
+        '';
+
+      calculatePingPongAddress = home: pkgs.runCommand "calculate-ping-pong-contract-address"
+      {
+        buildInputs = [ pkgs.jq ];
+      }
+        ''
+          export HOME=$(pwd)
+          mkdir -p $out 
+          cp --no-preserve=mode -r ${home}/* $out
+
+          ALICE_ADDRESS=$(${uniond} keys list \
+            --keyring-backend test \
+            --home $out \
+            --output json \
+            | jq '.[] | select(.name == "${genesisAccountName}").address' --raw-output)
+
+          CODE_HASH=$(sha256sum ${self'.packages.wasm-ucs00-pingpong}/lib/ucs00_pingpong.wasm | cut -f1 -d" ")
+
+          ${uniond} query wasm build-address $CODE_HASH $ALICE_ADDRESS 61616161 > $out/PING_PONG_CONTRACT_ADDRESS
         '';
 
       addIbcConnectionToGenesis = home: pkgs.runCommand "add-ibc-connection-to-genesis"
@@ -113,6 +131,9 @@
           CW20_ADDRESS=$(cat ${calculateCw20Ics20ContractAddress home}/CW20_ICS20_CONTRACT_ADDRESS)
           CW20_PORT=wasm.$CW20_ADDRESS
 
+          PING_PONG_ADDRESS=$(cat ${calculatePingPongAddress home}/PING_PONG_CONTRACT_ADDRESS)
+          PING_PONG_PORT=wasm.$PING_PONG_ADDRESS
+
           # TODO(aeryz): get the port id and channel info as parameters
           jq \
            --arg cw20_port $CW20_PORT \
@@ -132,31 +153,64 @@
 
           jq \
            --arg cw20_port $CW20_PORT \
+           --arg ping_pong_port $PING_PONG_PORT \
            '.app_state.ibc.channel_genesis.send_sequences += [{
               "port_id": $cw20_port,
               "channel_id": "channel-0",
+              "sequence": 1
+            }, {
+              "port_id": $ping_pong_port,
+              "channel_id": "channel-1",
               "sequence": 1
             }]' \
             $out/config/genesis.json | sponge $out/config/genesis.json
 
           jq \
-            '.app_state.capability.index = "2"' \
+           --arg ping_pong_port $PING_PONG_PORT \
+           '.app_state.ibc.channel_genesis.channels += [{
+              "state": 3,
+              "ordering": 1,
+              "counterparty": {
+                "port_id": "ping-pong",
+                "channel_id": "channel-1"
+              },
+              "connection_hops": ["connection-0"],
+              "version": "ics20-1",
+              "port_id": $ping_pong_port,
+              "channel_id": "channel-1"
+            }]' \
             $out/config/genesis.json | sponge $out/config/genesis.json
 
-          
           jq \
-           --arg capability capabilities/ports/$CW20_PORT/channels/channel-0 \
+            '.app_state.ibc.channel_genesis.next_channel_sequence = "2"' \
+            $out/config/genesis.json | sponge $out/config/genesis.json
+              
+          jq \
+            '.app_state.capability.index = "3"' \
+            $out/config/genesis.json | sponge $out/config/genesis.json
+                   
+          jq \
+           --arg capability1 capabilities/ports/$CW20_PORT/channels/channel-0 \
+           --arg capability2 capabilities/ports/$PING_PONG_PORT/channels/channel-1 \
             '.app_state.capability.owners += [{
               "index": "1",
               "index_owners": {
                 "owners": [
                   {
                     "module": "ibc",
-                    "name": $capability
+                    "name": $capability1
                   },
                   {
                     "module": "wasm",
-                    "name": $capability
+                    "name": $capability1
+                  },
+                  {
+                    "module": "ibc",
+                    "name": $capability2
+                  },
+                  {
+                    "module": "wasm",
+                    "name": $capability2
                   }
                 ]
               }

@@ -51,13 +51,13 @@ pub enum Command {
 pub enum SetupCmd {
     InitialChannel {
         #[arg(long)]
-        wallet: LocalWallet,
+        on: String,
         #[arg(long)]
-        eth_rpc_api: Url,
+        module_address: Address,
         #[arg(long)]
-        ibc_handler_address: Address,
+        channel_id: String,
         #[arg(long)]
-        ics20_transfer_address: Address,
+        port_id: String,
         #[arg(long)]
         counterparty_port_id: String,
     },
