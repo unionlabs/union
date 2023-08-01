@@ -99,5 +99,20 @@
             sepolia = sepoliaNode;
           };
         };
+        union-runs = e2e.mkTest {
+          name = "sepolia-runs";
+
+          testScript = ''
+            start_all()
+
+            # match non-zero blocks
+            union.wait_for_console_text("height=[1-9][0-9]*")
+            union.wait_for_open_port(26657)
+          '';
+
+          nodes = {
+            union = unionNode;
+          };
+        };
       }));
 }
