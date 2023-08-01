@@ -1,40 +1,35 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{DepsMut, Env, IbcMsg, IbcTimeout, IbcTimeoutBlock, MessageInfo, Response};
+use cosmwasm_std::{DepsMut, Env, MessageInfo, Response};
 
 use crate::{
     msg::{ExecuteMsg, InitMsg},
+    state::CONFIG,
     ContractError,
 };
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
-    _deps: DepsMut,
+    deps: DepsMut,
     _env: Env,
     _info: MessageInfo,
-    _msg: InitMsg,
+    msg: InitMsg,
 ) -> Result<Response, ContractError> {
+    CONFIG.save(deps.storage, &msg.config)?;
     Ok(Response::default())
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn execute(
-    _deps: DepsMut,
-    _env: Env,
+    deps: DepsMut,
+    env: Env,
     _info: MessageInfo,
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
         ExecuteMsg::Initiate { channel_id, packet } => {
-            let ibc_packet = IbcMsg::SendPacket {
-                channel_id,
-                data: packet.into(),
-                timeout: IbcTimeout::with_block(IbcTimeoutBlock {
-                    revision: 0,
-                    height: u64::MAX,
-                }),
-            };
-
+            let config = CONFIG.load(deps.storage)?;
+            let ibc_packet = packet.reverse(&config, env.block.height, channel_id);
             Ok(Response::default().add_message(ibc_packet))
         }
     }

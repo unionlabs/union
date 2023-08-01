@@ -1,6 +1,7 @@
 pub mod contract;
 pub mod ibc;
 pub mod msg;
+mod state;
 use cosmwasm_std::StdError;
 use thiserror::Error;
 

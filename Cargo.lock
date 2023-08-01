@@ -5181,6 +5181,7 @@ version = "1.0.0"
 dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
+ "cw-storage-plus 1.0.1",
  "ethabi",
  "serde",
  "thiserror",

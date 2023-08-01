@@ -17,5 +17,6 @@ library = []
 ethabi = { version = "18.0.0", default-features = false }
 cosmwasm-schema = { version = "1.2" }
 cosmwasm-std = { version = "1.2", features = ["stargate"] }
+cw-storage-plus = { git = "https://github.com/CosmWasm/cw-storage-plus", rev = "3822f951ab33ad289e2b1333b6373a55b30906c7" }
 serde = { version = "1.0", default-features = false, features = ["derive"] }
 thiserror = { version = "1.0" }
