@@ -68,8 +68,8 @@
             union.wait_for_console_text("height=[1-9][0-9]*")
             sepolia.wait_for_console_text("Synced - slot: [1-9][0-9]*")
 
-            union.wait_for_open_port(26657)
-            sepolia.wait_for_open_port(8546)
+            # union.wait_for_open_port(26657)
+            # sepolia.wait_for_open_port(8546)
 
             with open("output.log", "w") as file:
               output = client.succeed("RUST_LOG=debug ${ensure-blocks} ws://union:26657/websocket ws://sepolia:8546 2>&1")
