@@ -1,12 +1,12 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
     attr, entry_point, from_binary, to_binary, Binary, DepsMut, Env, IbcBasicResponse, IbcChannel,
-    IbcChannelCloseMsg, IbcChannelConnectMsg, IbcChannelOpenMsg, IbcMsg, IbcOrder, IbcPacket,
-    IbcPacketAckMsg, IbcPacketReceiveMsg, IbcPacketTimeoutMsg, IbcReceiveResponse, IbcTimeout,
-    IbcTimeoutBlock, Reply, Response,
+    IbcChannelCloseMsg, IbcChannelConnectMsg, IbcChannelOpenMsg, IbcOrder, IbcPacket,
+    IbcPacketAckMsg, IbcPacketReceiveMsg, IbcPacketTimeoutMsg, IbcReceiveResponse, Reply, Response,
+    StdError,
 };
 
-use crate::{msg::UCS00PingPong, ContractError};
+use crate::{msg::UCS00PingPong, state::CONFIG, ContractError};
 
 pub const PINGPONG_VERSION: &str = "ucs00-pingpong-1";
 pub const PINGPONG_ORDERING: IbcOrder = IbcOrder::Unordered;
@@ -80,19 +80,18 @@ pub fn ibc_channel_close(
     _env: Env,
     _channel: IbcChannelCloseMsg,
 ) -> Result<IbcBasicResponse, ContractError> {
-    // We don't allow it.
-    unimplemented!();
+    Err(StdError::generic_err("The game is infinite").into())
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn ibc_packet_receive(
     deps: DepsMut,
-    _env: Env,
+    env: Env,
     msg: IbcPacketReceiveMsg,
 ) -> Result<IbcReceiveResponse, ContractError> {
     let packet = msg.packet;
     let ping_packet: UCS00PingPong = packet.data.try_into()?;
-    do_ibc_packet_receive(deps, packet.dest.channel_id, ping_packet).or_else(|err| {
+    do_ibc_packet_receive(deps, env, packet.dest.channel_id, ping_packet).or_else(|err| {
         Ok(IbcReceiveResponse::new()
             .set_ack(ack_fail(err.to_string()))
             .add_attributes(vec![
@@ -103,23 +102,17 @@ pub fn ibc_packet_receive(
 }
 
 fn do_ibc_packet_receive(
-    _: DepsMut,
+    deps: DepsMut,
+    env: Env,
     dest_channel_id: String,
-    ping_packet: UCS00PingPong,
+    packet: UCS00PingPong,
 ) -> Result<IbcReceiveResponse, ContractError> {
-    let pong_packet = ping_packet.clone().reverse();
-    let ibc_packet = IbcMsg::SendPacket {
-        channel_id: dest_channel_id,
-        data: pong_packet.into(),
-        timeout: IbcTimeout::with_block(IbcTimeoutBlock {
-            revision: 0,
-            height: u64::MAX,
-        }),
-    };
+    let config = CONFIG.load(deps.storage)?;
+    let ibc_packet = packet.reverse(&config, env.block.height, dest_channel_id);
     let res = IbcReceiveResponse::new()
         .set_ack(ack_success())
         .add_message(ibc_packet)
-        .add_attribute("action", if ping_packet.ping { "ping" } else { "pong" })
+        .add_attribute("action", if packet.ping { "ping" } else { "pong" })
         .add_attribute("success", "true");
     Ok(res)
 }
