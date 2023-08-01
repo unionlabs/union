@@ -249,12 +249,33 @@ pub mod string {
         D: serde::Deserializer<'de>,
         T: FromStr,
     {
-        let s: String = <String>::deserialize(deserializer)?;
-        let inner: T = s
-            .parse()
-            // TODO fix error situation
-            // FromStr::Err has no bounds
-            .map_err(|_| serde::de::Error::custom("failure to parse string data"))?;
-        Ok(inner)
+        String::deserialize(deserializer).and_then(|s| {
+            s.parse()
+                // TODO fix error situation
+                // FromStr::Err has no bounds
+                .map_err(|_| serde::de::Error::custom("failure to parse string data"))
+        })
+    }
+}
+
+pub mod u256_from_dec_str {
+    use primitive_types::U256;
+    use serde::de::Deserialize;
+
+    pub fn serialize<S>(data: &U256, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.collect_str(&data)
+    }
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<U256, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        String::deserialize(deserializer).and_then(|s| {
+            U256::from_dec_str(&s)
+                .map_err(|_| serde::de::Error::custom("failure to parse string data"))
+        })
     }
 }
