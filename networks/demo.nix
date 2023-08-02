@@ -64,6 +64,7 @@
         runtimeInputs = [];
         text =
       ''
+        INSTANTIATE_MSG=$1
         # This account will be the governor and admin of the contract that we instantiate
         ACCOUNT_ADDRESS=$(${uniond} keys show ${keyName} \
           --keyring-backend test \
@@ -74,7 +75,7 @@
         # Instantiate cw20 contract with an initial channel. The contract will automatically assign
         # the correct port id to the channel.
         while ! ${uniond} tx wasm instantiate2 2 \
-          '{}' \
+          "$INSTANTIATE_MSG" \
           ${salt} \
           --label ping-pong-test \
           --gas=auto \
@@ -100,39 +101,51 @@
             # Kill all subprocesses the root process dies
             trap "kill 0" EXIT
 
-            GALOIS_URL="http://0.0.0.0:16657"
+            DEFAULT_GALOIS_URL="https://0.0.0.0:16657"
+            DEFAULT_EVM_BEACON_RPC_URL="http://localhost:9596"
+            DEFAULT_EVM_WS_URL="ws://localhost:8546"
+            DEFAULT_UNION_RPC_URL="http://localhost:26657"
+            DEFAULT_UNION_WS_URL="ws://localhost:26657/websocket"
+            DEFAULT_PING_PONG_INSTANTIATE_MSG='{"config": { "number_of_block_before_pong_timeout": 10000, "revision_number": 1 }}'
+
+            GALOIS_URL="$DEFAULT_GALOIS_URL"
             CIRCUIT_PATH=""
-            EVM_BEACON_RPC_URL="http://localhost:9596"
-            EVM_WS_URL="ws://localhost:8546"
-            UNION_RPC_URL="http://localhost:26657"
-            UNION_WS_URL="ws://localhost:26657"
+            EVM_BEACON_RPC_URL="$DEFAULT_EVM_BEACON_RPC_URL"
+            EVM_WS_URL="$DEFAULT_EVM_WS_URL"
+            UNION_RPC_URL="$DEFAULT_UNION_RPC_URL"
+            UNION_WS_URL="$DEFAULT_UNION_WS_URL"
             RELAYER_CONFIG_FILE=""
             NO_DEPLOY_EVM=""
             PING_PONG_MODULE_ADDRESS=""
+            PING_PONG_INSTANTIATE_MSG="$DEFAULT_PING_PONG_INSTANTIATE_MSG"
 
             printHelp() {
               printf " \
                 Usage: nix run .#setup-demo [OPTION]... \n\
                 \n\
                 Options: \n\
-                  -g, --galois-url        Endpoint that serves galois (Default: http://0.0.0.0:16657) \n\
-                  -c, --circuit-path      Path to the circuit files to run galois locally (if not specified, galois won't be run) \n\
-                  --evm-beacon-rpc-url    Rpc endpoint for the evm beacon chain (Default: http://localhost:9596) \n\
-                  --evm-ws-url            Websocket endpoint for the evm execution chain (Default: ws://localhost:8546) \n\
-                  --union-rpc-url         Rpc endpoint for union (Default: http://localhost:26657) \n\
-                  --union-ws-url          Websocket endpoint for union (Default: ws://localhost:26657/websocket) \n\
-                  --relayer-config-file   Path to relayer config file. If not specified and --no-deploy-evm \n\
-                  \t is not given, a temp location will be used. If --no-deploy-evm is enabled, this file is used as the relayer config \n\
-                  --no-deploy-evm         Don't deploy evm contracts \n\
-                  --ping-pong-address     Address of the ping pong app module on EVM \n\
-                  -h, --help            Print help \n\
+                  -g, --galois-url             Endpoint that serves galois. (Default: %s) \n\
+                  -c, --circuit-path           Path to the circuit files to run galois locally (if not specified, galois won't be run). \n\
+                  --evm-beacon-rpc-url         Rpc endpoint for the evm beacon chain. (Default: %s) \n\
+                  --evm-ws-url                 Websocket endpoint for the evm execution chain (Default: %s). \n\
+                  --union-rpc-url              Rpc endpoint for union (Default: %s). \n\
+                  --union-ws-url               Websocket endpoint for union (Default: %s). \n\
+                  --relayer-config-file        Path to relayer config file. If not specified and --no-deploy-evm \n\
+                                                 is not given, a temp location will be used. If --no-deploy-evm is enabled, \n\
+                                                 this file is used as the relayer config. \n\
+                  --no-deploy-evm              Don't deploy evm contracts. \n\
+                  --ping-pong-address          Address of the ping pong app module on EVM. \n\
+                  --ping-pong-instantiate-msg  JSON message to instantiate the ping pong contract on cosmos (Default: \"%s\"). \n\
+                  -h, --help                   Print help. \n\
                 \n\
                 Examples: \n\
                   Use an already running galois: \n\
                     nix run .#setup-demo -- --galois-url http://some-server.com:16657 \n\
                   Start a local galois: \n\
                     nix run .#setup-demo -- --circuit-path ./  \n\
-              "
+                  Use a custom relayer config and don't deploy evm contracts: \n\
+                    nix run .#setup-demo -- --relayer-config-file ~/.config/relayer/config.json --no-deploy-evm
+              " "$DEFAULT_GALOIS_URL" "$DEFAULT_EVM_BEACON_RPC_URL" "$DEFAULT_EVM_WS_URL" "$DEFAULT_UNION_RPC_URL" "$DEFAULT_UNION_WS_URL" "$PING_PONG_INSTANTIATE_MSG"
             }
 
             while [[ $# -gt 0 ]]; do
@@ -178,6 +191,11 @@
                   ;;
                 --ping-pong-address)
                   PING_PONG_MODULE_ADDRESS="$2"
+                  shift
+                  shift
+                  ;;
+                --ping-pong-instantiate-msg)
+                  PING_PONG_INSTANTIATE_MSG="$2"
                   shift
                   shift
                   ;;
@@ -289,7 +307,7 @@
             }
 
             instantiatePingPong() {
-              ${instantiate-ping-pong}/bin/instantiate-ping-pong
+              ${instantiate-ping-pong}/bin/instantiate-ping-pong "$PING_PONG_INSTANTIATE_MSG"
             }
 
             createClients() {
@@ -309,22 +327,12 @@
                 --evm-preset minimal
             }
 
-            startRelaying() {
+            waitForGaloisToBeOnline() {
               while ! ${self'.packages.galoisd-devnet}/bin/galoisd gen-contract "$GALOIS_URL" --tls=1
               do 
                 echo "Waiting for galois to be ready at $GALOIS_URL"
                 sleep 2 
               done
-
-              echo "Starting the relayer.."
-              echo "+ Relayer config path is: $RELAYER_CONFIG_FILE"
-              echo "+ cw20-ics20 port id is: $COUNTERPARTY_PORT_ID"
-              echo "+ Channel and connection ids on both chains are: channel-0 and connection-0"
-
-              RUST_LOG=relayer=info ${self'.packages.relayer}/bin/relayer \
-                --config-file-path "$RELAYER_CONFIG_FILE" \
-                relay \
-                --between union-devnet:ethereum-devnet
             }
 
             setupInitialChannel() {
@@ -342,8 +350,18 @@
                 --channel-id "$CHANNEL_ID" \
                 --port-id "$PORT_ID" \
                 --counterparty-port-id "$COUNTERPARTY_PORT_ID"
-
             }
+
+            printIBCSetupInfo() {
+              echo "+ Module $1(EVM) and $2(Union) is connected at:"
+              echo "    - Address on EVM:   $3"
+              echo "    - Address on Union: $4"
+              echo "    - Connection:       $5"
+              echo "    - Channel:          $6"
+              echo "    - Port on EVM:      $7"
+              echo "    - Port on Union:    $8"
+            }
+
 
             downloadGaloisCircuits
             ethAliveTest
@@ -382,7 +400,18 @@
             setupInitialChannel "$PING_PONG_MODULE_ADDRESS" ping-pong "wasm.$PING_PONG_ADDRESS" channel-1
 
             createClients
-            startRelaying
+            waitForGaloisToBeOnline
+
+                
+            echo "Starting the relayer.."
+            echo "+ Relayer config path is: $RELAYER_CONFIG_FILE"
+            printSetupInfo "ICS20 Transfer" "CW20-ICS20(Union)" "$ICS20_TRANSFER_BANK_ADDRESS" "$CW20_ADDRESS"  "connection-0" "channel-0" "transfer" "wasm.$CW20_ADDRESS"
+            printSetupInfo "PingPong" "PingPong" "$PING_PONG_MODULE_ADDRESS" "$PING_PONG_ADDRESS" "connection-0" "channel-1" "ping-pong" "wasm.$PING_PONG_ADDRESS"
+
+            RUST_LOG=relayer=info ${self'.packages.relayer}/bin/relayer \
+              --config-file-path "$RELAYER_CONFIG_FILE" \
+              relay \
+              --between union-devnet:ethereum-devnet
 
             wait
           '';
