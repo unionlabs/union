@@ -280,8 +280,7 @@
                     "wasm_code_id": "0x'"$WASM_CODE_ID"'",
                     "prover_endpoint": "'"$GALOIS_URL"'"
                   }
-                }
-              }' | jq > "$RELAYER_CONFIG_FILE"
+                }              }' | jq > "$RELAYER_CONFIG_FILE"
 
             }
 
@@ -311,7 +310,7 @@
             }
 
             startRelaying() {
-              while ! ${self'.packages.galoisd-devnet}/bin/galoisd query-stats "$GALOIS_URL"
+              while ! ${self'.packages.galoisd-devnet}/bin/galoisd gen-contract "$GALOIS_URL" --tls=1
               do 
                 echo "Waiting for galois to be ready at $GALOIS_URL"
                 sleep 2 
@@ -358,6 +357,11 @@
             else
               echo "Won't be deploying the evm contracts since --no-deploy-evm is on."
             fi
+
+            # Relayer requires the scheme to be included (http(s)) but galoisd returns an error when
+            # it is run with a scheme in the URL. 
+            # TODO(aeryz): This should not be the case, this should probably be fixed in galois
+            GALOIS_URL=$(echo "$GALOIS_URL" | sed -e "s/^http:\/\///" | sed -e "s/^https:\/\///")
 
             if [[ -n "$CIRCUIT_PATH" ]]; then
               runGalois &

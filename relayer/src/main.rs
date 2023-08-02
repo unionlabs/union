@@ -9,19 +9,11 @@
 
 // nix run .# -- tx wasm instantiate 1 '{"default_timeout":10000,"gov_contract":"union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2","allowlist":[]}' --label blah --from alice --gas auto --keyring-backend test --gas-adjustment 1.3 --amount 100stake --no-admin --chain-id union-devnet-1
 
-use std::{collections::btree_map::Entry, fmt::Debug, fs::read_to_string, sync::Arc};
+use std::{collections::btree_map::Entry, fmt::Debug, fs::read_to_string};
 
 use anyhow::bail;
 use clap::Parser;
-use contracts::{
-    devnet_ownable_ibc_handler::devnet_ownable_ibc_handler,
-    shared_types::{
-        IbcCoreChannelV1ChannelData, IbcCoreChannelV1CounterpartyData,
-        IbcCoreCommitmentV1MerklePrefixData, IbcCoreConnectionV1ConnectionEndData,
-        IbcCoreConnectionV1CounterpartyData, IbcCoreConnectionV1VersionData,
-    },
-};
-use ethers::{providers::Middleware, signers::Signer, types::U256};
+use ethers::{signers::Signer, types::U256};
 use futures::{future::join, FutureExt, Stream, StreamExt};
 use prost::Message;
 use unionlabs::{
