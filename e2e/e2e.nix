@@ -69,8 +69,8 @@
             '';
 
             nodes =
-              (pkgs.lib.throwIf (builtins.hasAttr "union" nodes) "union node already exists; use a differnt name")
-                (pkgs.lib.throwIf (builtins.hasAttr "sepolia" nodes) "sepolia node already exists; use a differnt name")
+              (pkgs.lib.throwIf (builtins.hasAttr "union" nodes) "union node already exists; use a different name")
+                (pkgs.lib.throwIf (builtins.hasAttr "sepolia" nodes) "sepolia node already exists; use a different name")
                 ({
                   union = unionNode.node;
                   sepolia = sepoliaNode.node;
