@@ -106,7 +106,7 @@
             # Kill all subprocesses the root process dies
             trap "kill 0" EXIT
 
-            DEFAULT_GALOIS_URL="https://0.0.0.0:16657"
+            DEFAULT_GALOIS_URL="http://0.0.0.0:16657"
             DEFAULT_EVM_BEACON_RPC_URL="http://localhost:9596"
             DEFAULT_EVM_WS_URL="ws://localhost:8546"
             DEFAULT_UNION_RPC_URL="http://localhost:26657"
