@@ -114,6 +114,7 @@
             DEFAULT_PING_PONG_TIMEOUT=1000
 
             GALOIS_URL="$DEFAULT_GALOIS_URL"
+            GALOIS_TLS=""
             CIRCUIT_PATH=""
             EVM_BEACON_RPC_URL="$DEFAULT_EVM_BEACON_RPC_URL"
             EVM_WS_URL="$DEFAULT_EVM_WS_URL"
@@ -130,6 +131,7 @@
                 \n\
                 Options: \n\
                   -g, --galois-url             Endpoint that serves galois. (Default: %s) \n\
+                  --galois-tls                 Connect to galois using TLS. \n\
                   -c, --circuit-path           Path to the circuit files to run galois locally (if not specified, galois won't be run). \n\
                   --evm-beacon-rpc-url         Rpc endpoint for the evm beacon chain. (Default: %s) \n\
                   --evm-ws-url                 Websocket endpoint for the evm execution chain (Default: %s). \n\
@@ -160,6 +162,10 @@
                 -g|--galois-url)
                   GALOIS_URL="$2"
                   shift
+                  shift
+                  ;;
+                --galois-tls)
+                  GALOIS_TLS="--tls=1"
                   shift
                   ;;
                 -c|--circuit-path)
@@ -347,7 +353,7 @@
             }
 
             waitForGaloisToBeOnline() {
-              while ! ${self'.packages.galoisd-devnet}/bin/galoisd gen-contract "$GALOIS_URL" --tls=1
+              while ! ${self'.packages.galoisd-devnet}/bin/galoisd gen-contract "$GALOIS_URL" "$GALOIS_TLS"
               do 
                 echo "Waiting for galois to be ready at $GALOIS_URL"
                 sleep 2 
