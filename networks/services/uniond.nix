@@ -47,11 +47,11 @@ in
     ];
     healthcheck = {
       interval = "5s";
-      retries = 3;
+      retries = 8;
       test = [
         "CMD-SHELL"
         ''
-          curl http://127.0.0.1:26657/status --fail || exit 1
+          curl http://127.0.0.1:26657/block?height=2 --fail || exit 1
         ''
       ];
     };
