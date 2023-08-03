@@ -55,9 +55,7 @@
             inherit name;
 
             testScript = ''
-
-              start_all()
-
+              # NOTE: Start union first!
               union.wait_for_open_port(${toString unionNode.wait_for_open_port})
               sepolia.wait_for_open_port(${toString sepoliaNode.wait_for_open_port})
 
