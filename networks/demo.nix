@@ -353,10 +353,16 @@
             }
 
             waitForGaloisToBeOnline() {
-              while ! ${self'.packages.galoisd-devnet}/bin/galoisd gen-contract "$GALOIS_URL" "$GALOIS_TLS"
+              COMMAND="${self'.packages.galoisd-devnet}/bin/galoisd gen-contract $GALOIS_URL"
+
+              if [[ -n "$GALOIS_TLS" ]]; then
+                COMMAND="$COMMAND $GALOIS_TLS"
+              fi
+
+              while ! eval "$COMMAND" > /dev/null
               do 
                 echo "Waiting for galois to be ready at $GALOIS_URL"
-                sleep 2 
+                sleep 5
               done
             }
 

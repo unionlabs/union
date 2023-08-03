@@ -203,7 +203,13 @@
                   {
                     "module": "wasm",
                     "name": $capability1
-                  },
+                  }
+                ]
+              }
+            },{
+              "index": "2",
+              "index_owners": {
+                "owners": [
                   {
                     "module": "ibc",
                     "name": $capability2
@@ -214,7 +220,7 @@
                   }
                 ]
               }
-            }]' \
+            } ]' \
             $out/config/genesis.json | sponge $out/config/genesis.json
               
         '';
