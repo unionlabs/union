@@ -3,8 +3,6 @@
     let
       arion = inputs'.arion.packages.default;
 
-      uniond = pkgs.lib.getExe self'.packages.uniond;
-
       uniond-services = (builtins.listToAttrs (builtins.genList
         (id: {
           name = "uniond-${toString id}";

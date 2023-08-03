@@ -94,29 +94,44 @@
              ${pkgs.lib.foldlAttrs (acc: name: value: "${acc} --set-default ${name} '${value}'") "" foundryEnv}
         '';
       };
+      networks = [
+            {
+              network = "devnet";
+              rpc-url = "http://localhost:8545";
+              private-key = builtins.readFile ./../networks/genesis/devnet-evm/dev-key0.prv;
+            }
+            {
+              network = "testnet";
+              rpc-url = "https://rpc.sepolia.org/";
+              private-key = ''"$1"'';
+            }
+          ];
 
-      do-deploy = { network, rpc-url, private-key }:
+      deploy = { rpc-url, private-key, path, name, args ? "", create-args ? "" }: ''
+        echo "Deploying ${name}..."
+        ${pkgs.lib.toUpper name}=$(forge create \
+                 ${create-args} \
+                 --json \
+                 --rpc-url ${rpc-url} \
+                 --private-key ${private-key} \
+                 ${evmSources}/contracts/${path}:${name} ${args} | jq --raw-output .deployedTo)
+        echo "${name} => ''$${pkgs.lib.toUpper name}"
+      '';
+
+      deploy-debug = { rpc-url, private-key, path, name, args ? "" }:
+        deploy { inherit rpc-url private-key path name args; create-args = "--revert-strings debug"; };
+
+      deploy-optimized = { rpc-url, private-key, path, name, args ? "" }:
+        deploy { inherit rpc-url private-key path name args; create-args = "--optimize"; };
+
+      deploy-ibc-contracts = { network, rpc-url, private-key }:
         let
-          deploy = { path, name, args ? "" }: ''
-            echo "Deploying ${name}..."
-            ${pkgs.lib.toUpper name}=$(forge create \
-                     --revert-strings debug \
-                     --json \
-                     --rpc-url ${rpc-url} \
-                     --private-key ${private-key} \
-                     ${evmSources}/contracts/${path}:${name} ${args} | jq --raw-output .deployedTo)
-            echo "${name} => ''$${pkgs.lib.toUpper name}"
-          '';
-          deploy-optimized = { path, name, args ? "" }: ''
-            echo "Deploying ${name}..."
-            ${pkgs.lib.toUpper name}=$(forge create \
-                     --optimize \
-                     --json \
-                     --rpc-url ${rpc-url} \
-                     --private-key ${private-key} \
-                     ${evmSources}/contracts/${path}:${name} ${args} | jq --raw-output .deployedTo)
-            echo "${name} => ''$${pkgs.lib.toUpper name}"
-          '';
+          do-deploy-debug = { path, name, args ? ""  }: 
+            deploy-debug { inherit path name args rpc-url private-key; };
+
+          do-deploy-optimized = { path, name, args ? ""}:
+            deploy-optimized { inherit path name args rpc-url private-key; };
+
           # Upper first char of network
           verifierPrefix =
             pkgs.lib.strings.concatStrings (
@@ -134,25 +149,44 @@
             cd "$OUT"
             cp --no-preserve=mode -r ${self'.packages.evm-contracts}/* .
 
-            ${deploy { path = "core/02-client/IBCClient.sol"; name = "IBCClient"; }}
-            ${deploy { path = "core/03-connection/IBCConnection.sol"; name = "IBCConnection"; }}
-            ${deploy { path = "core/04-channel/IBCChannelHandshake.sol"; name = "IBCChannelHandshake"; }}
-            ${deploy { path = "core/04-channel/IBCPacket.sol"; name = "IBCPacket"; }}
-            ${deploy-optimized { path = "core/DevnetOwnableIBCHandler.sol"; name = "DevnetOwnableIBCHandler"; args = ''--constructor-args "$IBCCLIENT" "$IBCCONNECTION" "$IBCCHANNELHANDSHAKE" "$IBCPACKET"''; }}
+            ${do-deploy-debug { path = "core/02-client/IBCClient.sol"; name = "IBCClient"; }}
+            ${do-deploy-debug { path = "core/03-connection/IBCConnection.sol"; name = "IBCConnection"; }}
+            ${do-deploy-debug { path = "core/04-channel/IBCChannelHandshake.sol"; name = "IBCChannelHandshake"; }}
+            ${do-deploy-debug { path = "core/04-channel/IBCPacket.sol"; name = "IBCPacket"; }}
+            ${do-deploy-optimized { path = "core/DevnetOwnableIBCHandler.sol"; name = "DevnetOwnableIBCHandler"; args = ''--constructor-args "$IBCCLIENT" "$IBCCONNECTION" "$IBCCHANNELHANDSHAKE" "$IBCPACKET"''; }}
 
-            ${deploy { path = "clients/${verifierPrefix}Verifier.sol"; name = "${verifierPrefix}Verifier"; }}
-            ${deploy { path = "clients/ICS23MembershipVerifier.sol"; name = "ICS23MembershipVerifier"; }}
-            ${deploy { path = "clients/CometblsClient.sol"; name = "CometblsClient"; args = ''--constructor-args "$DEVNETOWNABLEIBCHANDLER" "''$${pkgs.lib.strings.toUpper network}VERIFIER" "$ICS23MEMBERSHIPVERIFIER"''; }}
+            ${do-deploy-debug { path = "clients/${verifierPrefix}Verifier.sol"; name = "${verifierPrefix}Verifier"; }}
+            ${do-deploy-debug { path = "clients/ICS23MembershipVerifier.sol"; name = "ICS23MembershipVerifier"; }}
+            ${do-deploy-debug { path = "clients/CometblsClient.sol"; name = "CometblsClient"; args = ''--constructor-args "$DEVNETOWNABLEIBCHANDLER" "''$${pkgs.lib.strings.toUpper network}VERIFIER" "$ICS23MEMBERSHIPVERIFIER"''; }}
 
-            ${deploy { path = "apps/20-transfer/ICS20Bank.sol"; name = "ICS20Bank"; }}
-            ${deploy { path = "apps/20-transfer/ICS20TransferBank.sol"; name = "ICS20TransferBank";  args = ''--constructor-args "$DEVNETOWNABLEIBCHANDLER" "$ICS20BANK"''; }}
-            ${deploy { path = "apps/ucs/00-pingpong/PingPong.sol"; name = "PingPong";  args = ''--constructor-args "$DEVNETOWNABLEIBCHANDLER" 1 1000 ''; }}
+            ${do-deploy-debug { path = "apps/20-transfer/ICS20Bank.sol"; name = "ICS20Bank"; }}
+            ${do-deploy-debug { path = "apps/20-transfer/ICS20TransferBank.sol"; name = "ICS20TransferBank";  args = ''--constructor-args "$DEVNETOWNABLEIBCHANDLER" "$ICS20BANK"''; }}
 
-            echo "{\"ibc_handler_address\": \"$DEVNETOWNABLEIBCHANDLER\", \"cometbls_client_address\": \"$COMETBLSCLIENT\", \"ics20_transfer_bank_address\": \"$ICS20TRANSFERBANK\", \"ics20_bank_address\": \"$ICS20BANK\", \"ping_pong_address\":\"$PINGPONG\" }"
+            echo "{\"ibc_handler_address\": \"$DEVNETOWNABLEIBCHANDLER\", \"cometbls_client_address\": \"$COMETBLSCLIENT\", \"ics20_transfer_bank_address\": \"$ICS20TRANSFERBANK\", \"ics20_bank_address\": \"$ICS20BANK\" }"
 
             rm -rf "$OUT"
           '';
         };
+
+      deploy-ping-pong = { network, rpc-url, private-key }: pkgs.writeShellApplication {
+        name = "evm-${network}-ping-pong-deploy";
+        runtimeInputs = [ pkgs.jq wrappedForge ];
+        text = ''
+            OUT="$(mktemp -d)"
+            cd "$OUT"
+            cp --no-preserve=mode -r ${self'.packages.evm-contracts}/* .
+
+            ${deploy-debug { rpc-url = rpc-url; 
+                             private-key = private-key; 
+                             path = "apps/ucs/00-pingpong/PingPong.sol"; 
+                             name = "PingPong"; 
+                             args = ''--constructor-args "$IBC_HANDLER_ADDRESS" "$REVISION_NUMBER" "$NUM_OF_BLOCK_BEFORE_PONG_TIMEOUT" ''; }}
+
+            echo "{\"ping_pong_address\": \"$PINGPONG\" }"
+
+            rm -rf "$OUT"
+        '';
+      };
     in
     {
       packages = {
@@ -253,19 +287,13 @@
       } //
       builtins.listToAttrs (
         builtins.map
-          (args: { name = "evm-${args.network}-deploy"; value = do-deploy args; })
-          [
-            {
-              network = "devnet";
-              rpc-url = "http://localhost:8545";
-              private-key = builtins.readFile ./../networks/genesis/devnet-evm/dev-key0.prv;
-            }
-            {
-              network = "testnet";
-              rpc-url = "https://rpc.sepolia.org/";
-              private-key = ''"$1"'';
-            }
-          ]
+          (args: { name = "evm-${args.network}-deploy"; value = deploy-ibc-contracts args; })
+            networks
+          ) //
+      builtins.listToAttrs (
+        builtins.map
+          (args: { name = "evm-${args.network}-ping-pong-deploy"; value = deploy-ping-pong args; })
+            networks
       );
     };
 }

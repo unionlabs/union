@@ -64,7 +64,7 @@
         runtimeInputs = [];
         text =
       ''
-        INSTANTIATE_MSG=$1
+        TIMEOUT=$1
         # This account will be the governor and admin of the contract that we instantiate
         ACCOUNT_ADDRESS=$(${uniond} keys show ${keyName} \
           --keyring-backend test \
@@ -75,7 +75,12 @@
         # Instantiate cw20 contract with an initial channel. The contract will automatically assign
         # the correct port id to the channel.
         while ! ${uniond} tx wasm instantiate2 2 \
-          "$INSTANTIATE_MSG" \
+          '{
+            "config": {
+              "number_of_block_before_pong_timeout": '"$TIMEOUT"',
+              "revision_number": 0
+              }
+          }' \
           ${salt} \
           --label ping-pong-test \
           --gas=auto \
@@ -106,7 +111,7 @@
             DEFAULT_EVM_WS_URL="ws://localhost:8546"
             DEFAULT_UNION_RPC_URL="http://localhost:26657"
             DEFAULT_UNION_WS_URL="ws://localhost:26657/websocket"
-            DEFAULT_PING_PONG_INSTANTIATE_MSG='{"config": { "number_of_block_before_pong_timeout": 10000, "revision_number": 1 }}'
+            DEFAULT_PING_PONG_TIMEOUT=1000
 
             GALOIS_URL="$DEFAULT_GALOIS_URL"
             CIRCUIT_PATH=""
@@ -117,7 +122,7 @@
             RELAYER_CONFIG_FILE=""
             NO_DEPLOY_EVM=""
             PING_PONG_MODULE_ADDRESS=""
-            PING_PONG_INSTANTIATE_MSG="$DEFAULT_PING_PONG_INSTANTIATE_MSG"
+            PING_PONG_TIMEOUT="$DEFAULT_PING_PONG_TIMEOUT"
 
             printHelp() {
               printf " \
@@ -134,8 +139,10 @@
                                                  is not given, a temp location will be used. If --no-deploy-evm is enabled, \n\
                                                  this file is used as the relayer config. \n\
                   --no-deploy-evm              Don't deploy evm contracts. \n\
+                  \n\
+                Ping pong options:
                   --ping-pong-address          Address of the ping pong app module on EVM. \n\
-                  --ping-pong-instantiate-msg  JSON message to instantiate the ping pong contract on cosmos (Default: \"%s\"). \n\
+                  --ping-pong-timeout          Number of blocks required for a pong message to timeout (Default: %s). \n\
                   -h, --help                   Print help. \n\
                 \n\
                 Examples: \n\
@@ -145,7 +152,7 @@
                     nix run .#setup-demo -- --circuit-path ./  \n\
                   Use a custom relayer config and don't deploy evm contracts: \n\
                     nix run .#setup-demo -- --relayer-config-file ~/.config/relayer/config.json --no-deploy-evm
-              " "$DEFAULT_GALOIS_URL" "$DEFAULT_EVM_BEACON_RPC_URL" "$DEFAULT_EVM_WS_URL" "$DEFAULT_UNION_RPC_URL" "$DEFAULT_UNION_WS_URL" "$PING_PONG_INSTANTIATE_MSG"
+              " "$DEFAULT_GALOIS_URL" "$DEFAULT_EVM_BEACON_RPC_URL" "$DEFAULT_EVM_WS_URL" "$DEFAULT_UNION_RPC_URL" "$DEFAULT_UNION_WS_URL" "$DEFAULT_PING_PONG_TIMEOUT"
             }
 
             while [[ $# -gt 0 ]]; do
@@ -194,8 +201,8 @@
                   shift
                   shift
                   ;;
-                --ping-pong-instantiate-msg)
-                  PING_PONG_INSTANTIATE_MSG="$2"
+                --ping-pong-timeout)
+                  PING_PONG_TIMEOUT="$2"
                   shift
                   shift
                   ;;
@@ -255,6 +262,18 @@
 
             EVM_CONTRACTS_OUTFILE=$(mktemp)
 
+            deployEVMPingPong() {
+              export IBC_HANDLER_ADDRESS
+              export NUM_OF_BLOCK_BEFORE_PONG_TIMEOUT="$PING_PONG_TIMEOUT"
+              export REVISION_NUMBER=1
+
+              ${self'.packages.evm-devnet-ping-pong-deploy}/bin/evm-devnet-ping-pong-deploy | tee "$EVM_CONTRACTS_OUTFILE"
+              EVM_CONTRACTS_ARG=$(tail -1 < "$EVM_CONTRACTS_OUTFILE")
+              rm "$EVM_CONTRACTS_OUTFILE"
+
+              PING_PONG_MODULE_ADDRESS=$(echo "$EVM_CONTRACTS_ARG" | jq .ping_pong_address -r)
+            }
+
             deployEVMContracts() {
               while ! ${self'.packages.evm-devnet-deploy}/bin/evm-devnet-deploy | tee "$EVM_CONTRACTS_OUTFILE" 
               do
@@ -269,7 +288,6 @@
               IBC_HANDLER_ADDRESS=$(echo "$EVM_CONTRACTS_ARG" | jq .ibc_handler_address -r)
               ICS20_TRANSFER_BANK_ADDRESS=$(echo "$EVM_CONTRACTS_ARG" | jq .ics20_transfer_bank_address -r)
               ICS20_BANK_ADDRESS=$(echo "$EVM_CONTRACTS_ARG" | jq .ics20_bank_address -r)
-              PING_PONG_MODULE_ADDRESS=$(echo "$EVM_CONTRACTS_ARG" | jq .ping_pong_address -r)
               WASM_CODE_ID=$(cat ${self'.packages.devnet-genesis}/code-ids/ethereum_light_client_minimal)
               EVM_WALLET=$(cat ${self'.packages.devnet-evm-config}/dev-key0.prv)
 
@@ -300,6 +318,7 @@
                   }
                 }              }' | jq > "$RELAYER_CONFIG_FILE"
 
+                deployEVMPingPong
             }
 
             instantiateCw20Ics20() {
@@ -307,7 +326,7 @@
             }
 
             instantiatePingPong() {
-              ${instantiate-ping-pong}/bin/instantiate-ping-pong "$PING_PONG_INSTANTIATE_MSG"
+              ${instantiate-ping-pong}/bin/instantiate-ping-pong "$PING_PONG_TIMEOUT"
             }
 
             createClients() {
@@ -405,8 +424,8 @@
                 
             echo "Starting the relayer.."
             echo "+ Relayer config path is: $RELAYER_CONFIG_FILE"
-            printSetupInfo "ICS20 Transfer" "CW20-ICS20(Union)" "$ICS20_TRANSFER_BANK_ADDRESS" "$CW20_ADDRESS"  "connection-0" "channel-0" "transfer" "wasm.$CW20_ADDRESS"
-            printSetupInfo "PingPong" "PingPong" "$PING_PONG_MODULE_ADDRESS" "$PING_PONG_ADDRESS" "connection-0" "channel-1" "ping-pong" "wasm.$PING_PONG_ADDRESS"
+            printIBCSetupInfo "ICS20 Transfer" "CW20-ICS20" "$ICS20_TRANSFER_BANK_ADDRESS" "$CW20_ADDRESS"  "connection-0" "channel-0" "transfer" "wasm.$CW20_ADDRESS"
+            printIBCSetupInfo "PingPong" "PingPong" "$PING_PONG_MODULE_ADDRESS" "$PING_PONG_ADDRESS" "connection-0" "channel-1" "ping-pong" "wasm.$PING_PONG_ADDRESS"
 
             RUST_LOG=relayer=info ${self'.packages.relayer}/bin/relayer \
               --config-file-path "$RELAYER_CONFIG_FILE" \
