@@ -45,6 +45,16 @@ in
         ${uniond}/bin/uniond start --home . ${params} --rpc.laddr tcp://0.0.0.0:26657 --api.address tcp://0.0.0.0:1317 --grpc.address 0.0.0.0:9090
       ''
     ];
+    healthcheck = {
+      interval = "5s";
+      retries = 3;
+      test = [
+        "CMD-SHELL"
+        ''
+          curl http://127.0.0.1:26657/status --fail || exit 1
+        ''
+      ];
+    };
   };
 }
 
