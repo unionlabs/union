@@ -911,8 +911,6 @@ impl<C: ChainSpec> Connect<Cometbls<C>> for Ethereum<C> {
             tracing::debug!("Generate ZKP...");
 
             // TODO: Extract into the chain config
-            const PROVER_ENDPOINT: &str = "https://prover.cryptware.io:443";
-            // const PROVER_ENDPOINT: &str = "http://localhost:8080";
 
             // .http2_keep_alive_interval(std::time::Duration::from_secs(10))
             // .keep_alive_while_idle(true),

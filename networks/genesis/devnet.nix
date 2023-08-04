@@ -166,6 +166,34 @@
             $out/config/genesis.json | sponge $out/config/genesis.json
 
           jq \
+           --arg cw20_port $CW20_PORT \
+           --arg ping_pong_port $PING_PONG_PORT \
+           '.app_state.ibc.channel_genesis.recv_sequences += [{
+              "port_id": $cw20_port,
+              "channel_id": "channel-0",
+              "sequence": 1
+            }, {
+              "port_id": $ping_pong_port,
+              "channel_id": "channel-1",
+              "sequence": 1
+            }]' \
+            $out/config/genesis.json | sponge $out/config/genesis.json
+
+          jq \
+           --arg cw20_port $CW20_PORT \
+           --arg ping_pong_port $PING_PONG_PORT \
+           '.app_state.ibc.channel_genesis.ack_sequences += [{
+              "port_id": $cw20_port,
+              "channel_id": "channel-0",
+              "sequence": 1
+            }, {
+              "port_id": $ping_pong_port,
+              "channel_id": "channel-1",
+              "sequence": 1
+            }]' \
+            $out/config/genesis.json | sponge $out/config/genesis.json
+
+          jq \
            --arg ping_pong_port $PING_PONG_PORT \
            '.app_state.ibc.channel_genesis.channels += [{
               "state": 3,
