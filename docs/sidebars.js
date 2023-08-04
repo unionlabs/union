@@ -105,8 +105,8 @@ module.exports = {
         {
           type: "doc",
           id: "tutorials/demo-setup",
-        }
-      ]
-    }
+        },
+      ],
+    },
   ],
 };

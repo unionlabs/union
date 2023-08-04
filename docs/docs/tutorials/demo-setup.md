@@ -6,7 +6,7 @@ title: "Devnet Demo"
 
 The demo setup is used to run every component there is locally to be able to experiment with IBC between Ethereum and Union. The nice thing about the setup is that, it requires you to run only two commands and it will handle the rest. This document will explain every option to do the setup for your needs.
 
-## Quickstart
+## Quick start
 
 Start with cloning the repository if you haven't already done it:
 
@@ -15,6 +15,7 @@ git clone git@github.com:unionlabs/union.git
 ```
 
 Before running the setup command, we need to start both chains. The following command will start:
+
 1. Union with 4 validators.
 2. Ethereum with the [the minimal preset](https://github.com/ethereum/consensus-specs/blob/v1.3.0/configs/minimal.yaml).
 
@@ -45,11 +46,12 @@ The setup might take some time based on your internet speed and computing power.
 ## What does this setup do exactly
 
 There are plenty of things to make IBC work. To explain it briefly, the steps are:
+
 1. If the prover is being run locally, it will first look for the files under `--circuit-path` and download or update them if necessary.
 2. It checks whether both of the chains are alive.
 3. It instantiates the following IBC apps to Union for you to try:
-	1. `cw20-ics20`: For cross-chain token transfers.
-	2. `ping-pong`: For starting endless ping-pong between Ethereum and Union.
+   1. `cw20-ics20`: For cross-chain token transfers.
+   2. `ping-pong`: For starting endless ping-pong between Ethereum and Union.
 4. It deploys the IBC protocol contracts as well as `ICS20Transfer` contract for cross-chain transfers to Ethereum.
 5. It deploys the ping-pong contract on Ethereum.
 6. It starts the local prover in the background if the `--circuit-path` is provided.
@@ -59,11 +61,12 @@ There are plenty of things to make IBC work. To explain it briefly, the steps ar
 
 ## CLI options to customize the execution
 
-### Using an already running prover:
+### Using an already running prover
 
 This can be very handy because starting the prover locally takes time and memory. One possible use case here is deploying the prover on a remote server, on a computer within the same network or if you have enough memory you could also run the prover locally and run the demo over and over again. But note that deploying Ethereum contracts takes a lot of memory as well so 32 GB might not be enough to run both in parallel.
 
 To run the prover:
+
 ```bash
 nix run ".#galoisd-devnet" -- serve 0.0.0.0:16657
 ```
@@ -71,7 +74,7 @@ nix run ".#galoisd-devnet" -- serve 0.0.0.0:16657
 For using a prover where the TLS is not enabled:
 
 ```bash
-nix run ".#setup-demo" -- --galois-url http://myserver.com:1111 
+nix run ".#setup-demo" -- --galois-url http://myserver.com:1111
 ```
 
 To enable the TLS:
@@ -112,4 +115,3 @@ Our ping-pong contracts have the timeout argument which is the number of blocks 
 ```bash
 nix run ".#setup-demo" -- --ping-pong-timeout 100
 ```
-

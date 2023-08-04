@@ -178,6 +178,7 @@ dels
 denoms
 denum
 devnet
+devnets
 devshell
 dirchange
 distrkeeper
