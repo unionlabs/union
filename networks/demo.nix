@@ -82,7 +82,7 @@
               INIT_MESSAGE='{
                   "config": {
                     "number_of_block_before_pong_timeout": '"$TIMEOUT"',
-                    "revision_number": 0
+                    "revision_number": 1
                     }
                 }'
 
