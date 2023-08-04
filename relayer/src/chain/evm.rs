@@ -991,8 +991,7 @@ impl<C: ChainSpec> Connect<Ethereum<C>> for Cometbls<C> {
 
     fn recv_packet(&self, packet: MsgRecvPacket) -> impl Future<Output = ()> + '_ {
         async move {
-            let tx_rcp = self
-                .chain
+            self.chain
                 .ibc_handler
                 .recv_packet(packet.into())
                 .send()
@@ -1001,16 +1000,6 @@ impl<C: ChainSpec> Connect<Ethereum<C>> for Cometbls<C> {
                 .await
                 .unwrap()
                 .unwrap();
-
-            decode_logs::<IBCHandlerEvents>(
-                tx_rcp
-                    .logs
-                    .into_iter()
-                    .map(Into::into)
-                    .collect::<Vec<_>>()
-                    .as_ref(),
-            )
-            .unwrap();
         }
     }
 

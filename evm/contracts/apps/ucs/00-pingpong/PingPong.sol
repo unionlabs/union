@@ -63,14 +63,21 @@ contract PingPong is IBCAppBase {
         return address(ibcHandler);
     }
 
-    function initiate(PingPongPacket memory packet) public {
-        require(bytes(channelId).length != 0, "channel must be opened");
+    function initiate(
+        PingPongPacket memory packet,
+        uint64 counterpartyTimeoutRevisionNumber,
+        uint64 counterpartyTimeoutRevisionHeight
+    ) public {
+        require(
+            bytes(channelId).length != 0,
+            "pingpong: channel must be opened"
+        );
         ibcHandler.sendPacket(
             portId,
             channelId,
             IbcCoreClientV1Height.Data({
-                revision_number: packet.counterpartyTimeoutRevisionNumber,
-                revision_height: packet.counterpartyTimeoutRevisionHeight
+                revision_number: counterpartyTimeoutRevisionNumber,
+                revision_height: counterpartyTimeoutRevisionHeight
             }),
             0,
             packet.encode()
@@ -83,12 +90,20 @@ contract PingPong is IBCAppBase {
     ) external virtual override onlyIBC returns (bytes memory acknowledgement) {
         PingPongPacket memory packet = PingPongPacketLib.decode(packet.data);
         emit Ring(packet.ping);
+        uint64 counterpartyTimeoutRevisionNumber = packet
+            .counterpartyTimeoutRevisionNumber;
+        uint64 counterpartyTimeoutRevisionHeight = packet
+            .counterpartyTimeoutRevisionHeight;
         packet.ping = !packet.ping;
         packet.counterpartyTimeoutRevisionNumber = revisionNumber;
         packet.counterpartyTimeoutRevisionHeight =
             uint64(block.number) +
             numberOfBlockBeforePongTimeout;
-        initiate(packet);
+        initiate(
+            packet,
+            counterpartyTimeoutRevisionNumber,
+            counterpartyTimeoutRevisionHeight
+        );
         return hex"01";
     }
 
@@ -106,7 +121,10 @@ contract PingPong is IBCAppBase {
         IbcCoreChannelV1Counterparty.Data calldata,
         string calldata
     ) external virtual override onlyIBC {
-        require(bytes(channelId).length == 0, "only one channel can be opened");
+        require(
+            bytes(channelId).length == 0,
+            "pingpong: only one channel can be opened"
+        );
     }
 
     function onChanOpenTry(
@@ -118,7 +136,10 @@ contract PingPong is IBCAppBase {
         string calldata,
         string calldata
     ) external virtual override onlyIBC {
-        require(bytes(channelId).length == 0, "only one channel can be opened");
+        require(
+            bytes(channelId).length == 0,
+            "pingpong: only one channel can be opened"
+        );
     }
 
     function onChanOpenAck(

@@ -35,9 +35,9 @@
         '';
 
       calculateCw20Ics20ContractAddress = home: pkgs.runCommand "calculate-cw20-ics20-contract-address"
-      {
-        buildInputs = [ pkgs.jq ];
-      }
+        {
+          buildInputs = [ pkgs.jq ];
+        }
         ''
           export HOME=$(pwd)
           mkdir -p $out 
@@ -55,9 +55,9 @@
         '';
 
       calculatePingPongAddress = home: pkgs.runCommand "calculate-ping-pong-contract-address"
-      {
-        buildInputs = [ pkgs.jq ];
-      }
+        {
+          buildInputs = [ pkgs.jq ];
+        }
         ''
           export HOME=$(pwd)
           mkdir -p $out 
@@ -357,13 +357,14 @@
             '') genesisAccounts)}
           '';
       mkValidatorKeys = { validatorCount, home }:
-        let knownKeys = [
-              ''{"address":"EFB1D8B3A56D97F2AB24AC5F0B04F48535F74DA9","pub_key":{"type":"tendermint/PubKeyBn254","value":"ht8ttsjmD9S+0ZQKLjKp9iUSnhOlFWAjqfGDnoCjHfg="},"priv_key":{"type":"tendermint/PrivKeyBn254","value":"5HSpb7qsbzmIZKZJ97NaaqXsP0EjG7ddmHRezrdZJFEbCVyh1VhArkenyrEFwa+NNaG6x1EKSbrZ/5No/IDs6A=="}}''
-              ''{"address":"4CE57693C82B50F830731DAB14FA759327762456","pub_key":{"type":"tendermint/PubKeyBn254","value":"7ZAoR4jcMmiqojusF0tkv/Q27wYPXAVieQWEzvUsW9g="},"priv_key":{"type":"tendermint/PrivKeyBn254","value":"wyOxb9YgCWVB2Z/y5xOECtpDb6rZIzGn5ohx3CZDM/4NwR+HcK/aRlazPAGn3+HKvuwZb7XP5+wrOzhGKTiYVA=="}}''
-              ''{"address":"36E1644D94064ED11521041E9138A0D1CCA9C31C","pub_key":{"type":"tendermint/PubKeyBn254","value":"jZiv55ih+4mChYy+Jm3M/u/MA5ZK530uMkgqgBcQnfo="},"priv_key":{"type":"tendermint/PrivKeyBn254","value":"jnw+EPjkwoXGXSzBhYQXX+SXxDH+l9AwD+YkZ1eSRj4qP6SCyDxr75CmldLiqdCfl62ld12XiYrER04rVgunqg=="}}''
-              ''{"address":"196D6009588DA28CF40039C957A53B08104723F9","pub_key":{"type":"tendermint/PubKeyBn254","value":"k/tDqzvtGyDwEI6mUX9qpL+pbP+GeYPpZC5XQiSU12Q="},"priv_key":{"type":"tendermint/PrivKeyBn254","value":"nOVOW+JEBz4zv4ffzIfRg2FE3iq95chGCjvZ99n6Y5cRI3XH08xMGSW8BH416Swp+oU25fWMeRRnqaMCbaW4Fw=="}}''
-            ];
-          in
+        let
+          knownKeys = [
+            ''{"address":"EFB1D8B3A56D97F2AB24AC5F0B04F48535F74DA9","pub_key":{"type":"tendermint/PubKeyBn254","value":"ht8ttsjmD9S+0ZQKLjKp9iUSnhOlFWAjqfGDnoCjHfg="},"priv_key":{"type":"tendermint/PrivKeyBn254","value":"5HSpb7qsbzmIZKZJ97NaaqXsP0EjG7ddmHRezrdZJFEbCVyh1VhArkenyrEFwa+NNaG6x1EKSbrZ/5No/IDs6A=="}}''
+            ''{"address":"4CE57693C82B50F830731DAB14FA759327762456","pub_key":{"type":"tendermint/PubKeyBn254","value":"7ZAoR4jcMmiqojusF0tkv/Q27wYPXAVieQWEzvUsW9g="},"priv_key":{"type":"tendermint/PrivKeyBn254","value":"wyOxb9YgCWVB2Z/y5xOECtpDb6rZIzGn5ohx3CZDM/4NwR+HcK/aRlazPAGn3+HKvuwZb7XP5+wrOzhGKTiYVA=="}}''
+            ''{"address":"36E1644D94064ED11521041E9138A0D1CCA9C31C","pub_key":{"type":"tendermint/PubKeyBn254","value":"jZiv55ih+4mChYy+Jm3M/u/MA5ZK530uMkgqgBcQnfo="},"priv_key":{"type":"tendermint/PrivKeyBn254","value":"jnw+EPjkwoXGXSzBhYQXX+SXxDH+l9AwD+YkZ1eSRj4qP6SCyDxr75CmldLiqdCfl62ld12XiYrER04rVgunqg=="}}''
+            ''{"address":"196D6009588DA28CF40039C957A53B08104723F9","pub_key":{"type":"tendermint/PubKeyBn254","value":"k/tDqzvtGyDwEI6mUX9qpL+pbP+GeYPpZC5XQiSU12Q="},"priv_key":{"type":"tendermint/PrivKeyBn254","value":"nOVOW+JEBz4zv4ffzIfRg2FE3iq95chGCjvZ99n6Y5cRI3XH08xMGSW8BH416Swp+oU25fWMeRRnqaMCbaW4Fw=="}}''
+          ];
+        in
         builtins.genList
           (i:
             pkgs.runCommand "valkey-${toString i}" { } ''

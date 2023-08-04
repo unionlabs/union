@@ -19,8 +19,7 @@ contract DevnetOwnableIBCHandler is OwnableIBCHandler {
         address ibcConnection,
         address ibcChannel,
         address ibcPacket
-    ) OwnableIBCHandler(ibcClient, ibcConnection, ibcChannel, ibcPacket) {
-    }
+    ) OwnableIBCHandler(ibcClient, ibcConnection, ibcChannel, ibcPacket) {}
 
     function setupInitialChannel(
         string calldata connectionId,
@@ -30,7 +29,10 @@ contract DevnetOwnableIBCHandler is OwnableIBCHandler {
         IbcCoreChannelV1Channel.Data calldata channel,
         address moduleAddress
     ) public onlyOwner {
-        // TODO(aeryz): See if we can make this connections[connectionId] = connection 
+        // TODO(aeryz): See if we can make this connections[connectionId] = connection
+        nextSequenceSends[portId][channelId] = 1;
+        nextSequenceRecvs[portId][channelId] = 1;
+        nextSequenceAcks[portId][channelId] = 1;
         connections[connectionId].client_id = connection.client_id;
         connections[connectionId].state = connection.state;
         connections[connectionId].delay_period = connection.delay_period;
@@ -58,6 +60,7 @@ contract DevnetOwnableIBCHandler is OwnableIBCHandler {
             channel.counterparty,
             channel.version
         );
+        module.onChanOpenAck(portId, channelId, channel.version);
         claimCapability(
             channelCapabilityPath(portId, channelId),
             address(module)

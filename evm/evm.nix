@@ -95,17 +95,17 @@
         '';
       };
       networks = [
-            {
-              network = "devnet";
-              rpc-url = "http://localhost:8545";
-              private-key = builtins.readFile ./../networks/genesis/devnet-evm/dev-key0.prv;
-            }
-            {
-              network = "testnet";
-              rpc-url = "https://rpc.sepolia.org/";
-              private-key = ''"$1"'';
-            }
-          ];
+        {
+          network = "devnet";
+          rpc-url = "http://localhost:8545";
+          private-key = builtins.readFile ./../networks/genesis/devnet-evm/dev-key0.prv;
+        }
+        {
+          network = "testnet";
+          rpc-url = "https://rpc.sepolia.org/";
+          private-key = ''"$1"'';
+        }
+      ];
 
       deploy = { rpc-url, private-key, path, name, args ? "", create-args ? "" }: ''
         echo "Deploying ${name}..."
@@ -126,10 +126,10 @@
 
       deploy-ibc-contracts = { network, rpc-url, private-key }:
         let
-          do-deploy-debug = { path, name, args ? ""  }: 
+          do-deploy-debug = { path, name, args ? "" }:
             deploy-debug { inherit path name args rpc-url private-key; };
 
-          do-deploy-optimized = { path, name, args ? ""}:
+          do-deploy-optimized = { path, name, args ? "" }:
             deploy-optimized { inherit path name args rpc-url private-key; };
 
           # Upper first char of network
@@ -172,19 +172,19 @@
         name = "evm-${network}-ping-pong-deploy";
         runtimeInputs = [ pkgs.jq wrappedForge ];
         text = ''
-            OUT="$(mktemp -d)"
-            cd "$OUT"
-            cp --no-preserve=mode -r ${self'.packages.evm-contracts}/* .
+          OUT="$(mktemp -d)"
+          cd "$OUT"
+          cp --no-preserve=mode -r ${self'.packages.evm-contracts}/* .
 
-            ${deploy-debug { rpc-url = rpc-url; 
-                             private-key = private-key; 
-                             path = "apps/ucs/00-pingpong/PingPong.sol"; 
-                             name = "PingPong"; 
-                             args = ''--constructor-args "$IBC_HANDLER_ADDRESS" "$REVISION_NUMBER" "$NUM_OF_BLOCK_BEFORE_PONG_TIMEOUT" ''; }}
+          ${deploy-debug { rpc-url = rpc-url; 
+                           private-key = private-key; 
+                           path = "apps/ucs/00-pingpong/PingPong.sol"; 
+                           name = "PingPong"; 
+                           args = ''--constructor-args "$IBC_HANDLER_ADDRESS" "$REVISION_NUMBER" "$NUM_OF_BLOCK_BEFORE_PONG_TIMEOUT" ''; }}
 
-            echo "{\"ping_pong_address\": \"$PINGPONG\" }"
+          echo "{\"ping_pong_address\": \"$PINGPONG\" }"
 
-            rm -rf "$OUT"
+          rm -rf "$OUT"
         '';
       };
     in
@@ -288,12 +288,12 @@
       builtins.listToAttrs (
         builtins.map
           (args: { name = "evm-${args.network}-deploy"; value = deploy-ibc-contracts args; })
-            networks
-          ) //
+          networks
+      ) //
       builtins.listToAttrs (
         builtins.map
           (args: { name = "evm-${args.network}-ping-pong-deploy"; value = deploy-ping-pong args; })
-            networks
+          networks
       );
     };
 }

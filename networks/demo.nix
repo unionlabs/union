@@ -1,100 +1,100 @@
 { ... }: {
   perSystem = { devnetConfig, pkgs, self', inputs', ... }:
     let
-    uniond = pkgs.lib.getExe self'.packages.uniond;
+      uniond = pkgs.lib.getExe self'.packages.uniond;
 
-    # Name of the account key that we use for the devnet
-    keyName = "testkey";
-    chainId = "union-devnet-1";
-    # This can be any arbitrary hex string which is used when generating contract address
-    salt = "61616161";
+      # Name of the account key that we use for the devnet
+      keyName = "testkey";
+      chainId = "union-devnet-1";
+      # This can be any arbitrary hex string which is used when generating contract address
+      salt = "61616161";
 
-    instantiate-cw20-ics20 =
-      pkgs.writeShellApplication {
-        name = "instantiate-cw20-ics20";
-        runtimeInputs = [];
-        text =
-      ''
-        # This account will be the governor and admin of the contract that we instantiate
-        ACCOUNT_ADDRESS=$(${uniond} keys show ${keyName} \
-          --keyring-backend test \
-          --address \
-          --home ${self'.packages.devnet-genesis})
+      instantiate-cw20-ics20 =
+        pkgs.writeShellApplication {
+          name = "instantiate-cw20-ics20";
+          runtimeInputs = [ ];
+          text =
+            ''
+              # This account will be the governor and admin of the contract that we instantiate
+              ACCOUNT_ADDRESS=$(${uniond} keys show ${keyName} \
+                --keyring-backend test \
+                --address \
+                --home ${self'.packages.devnet-genesis})
 
-        # TODO(aeryz): Read the code_id from genesis setup
-        # Instantiate cw20 contract with an initial channel. The contract will automatically assign
-        # the correct port id to the channel.
-        while ! ${uniond} tx wasm instantiate2 1 \
-          '{
-            "default_timeout":300,
-            "gov_contract": "'"$ACCOUNT_ADDRESS"'",
-            "allowlist":[],
-            "channel":{
-              "endpoint":{
-                "port_id": "",
-                "channel_id":"channel-0"
-              },
-              "counterparty_endpoint":{
-                "port_id":"transfer",
-                "channel_id":"channel-0"
-              },
-              "order":"ORDER_UNORDERED",
-              "version":"ics20-1",
-              "connection_id":"connection-0"
-            }
-          }' \
-          ${salt} \
-          --label cw20-ics20-test \
-          --gas=auto \
-          --gas-adjustment=1.3 -y  \
-          --admin "$ACCOUNT_ADDRESS" \
-          --keyring-backend test \
-          --from ${keyName} \
-          --chain-id ${chainId} \
-          --home ${self'.packages.devnet-genesis}
-        do
-          sleep 1
-        done
-      '';
-      };
+              # TODO(aeryz): Read the code_id from genesis setup
+              # Instantiate cw20 contract with an initial channel. The contract will automatically assign
+              # the correct port id to the channel.
+              while ! ${uniond} tx wasm instantiate2 1 \
+                '{
+                  "default_timeout":300,
+                  "gov_contract": "'"$ACCOUNT_ADDRESS"'",
+                  "allowlist":[],
+                  "channel":{
+                    "endpoint":{
+                      "port_id": "",
+                      "channel_id":"channel-0"
+                    },
+                    "counterparty_endpoint":{
+                      "port_id":"transfer",
+                      "channel_id":"channel-0"
+                    },
+                    "order":"ORDER_UNORDERED",
+                    "version":"ics20-1",
+                    "connection_id":"connection-0"
+                  }
+                }' \
+                ${salt} \
+                --label cw20-ics20-test \
+                --gas=auto \
+                --gas-adjustment=1.3 -y  \
+                --admin "$ACCOUNT_ADDRESS" \
+                --keyring-backend test \
+                --from ${keyName} \
+                --chain-id ${chainId} \
+                --home ${self'.packages.devnet-genesis}
+              do
+                sleep 1
+              done
+            '';
+        };
 
-    instantiate-ping-pong =
-      pkgs.writeShellApplication {
-        name = "instantiate-ping-pong";
-        runtimeInputs = [];
-        text =
-      ''
-        TIMEOUT=$1
-        # This account will be the governor and admin of the contract that we instantiate
-        ACCOUNT_ADDRESS=$(${uniond} keys show ${keyName} \
-          --keyring-backend test \
-          --address \
-          --home ${self'.packages.devnet-genesis})
+      instantiate-ping-pong =
+        pkgs.writeShellApplication {
+          name = "instantiate-ping-pong";
+          runtimeInputs = [ ];
+          text =
+            ''
+              TIMEOUT=$1
+              # This account will be the governor and admin of the contract that we instantiate
+              ACCOUNT_ADDRESS=$(${uniond} keys show ${keyName} \
+                --keyring-backend test \
+                --address \
+                --home ${self'.packages.devnet-genesis})
 
-        # TODO(aeryz): Read the code_id from genesis setup
-        # Instantiate cw20 contract with an initial channel. The contract will automatically assign
-        # the correct port id to the channel.
-        while ! ${uniond} tx wasm instantiate2 2 \
-          '{
-            "config": {
-              "number_of_block_before_pong_timeout": '"$TIMEOUT"',
-              "revision_number": 0
-              }
-          }' \
-          ${salt} \
-          --label ping-pong-test \
-          --gas=auto \
-          --gas-adjustment=1.3 -y  \
-          --admin "$ACCOUNT_ADDRESS" \
-          --keyring-backend test \
-          --from ${keyName} \
-          --chain-id ${chainId} \
-          --home ${self'.packages.devnet-genesis}
-        do
-          sleep 1
-        done
-      '';
-      };
+              # TODO(aeryz): Read the code_id from genesis setup
+              # Instantiate cw20 contract with an initial channel. The contract will automatically assign
+              # the correct port id to the channel.
+              while ! ${uniond} tx wasm instantiate2 2 \
+                '{
+                  "config": {
+                    "number_of_block_before_pong_timeout": '"$TIMEOUT"',
+                    "revision_number": 1
+                    }
+                }' \
+                ${salt} \
+                --label ping-pong-test \
+                --gas=auto \
+                --gas-adjustment=1.3 -y  \
+                --admin "$ACCOUNT_ADDRESS" \
+                --keyring-backend test \
+                --from ${keyName} \
+                --chain-id ${chainId} \
+                --home ${self'.packages.devnet-genesis}
+              do
+                sleep 1
+              done
+            '';
+        };
 
     in
     {
