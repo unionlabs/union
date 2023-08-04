@@ -99,5 +99,14 @@ module.exports = {
         },
       ],
     },
+    {
+      label: "Tutorials",
+      items: [
+        {
+          type: "doc",
+          id: "tutorials/demo-setup",
+        }
+      ]
+    }
   ],
 };
