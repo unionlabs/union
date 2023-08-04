@@ -14,6 +14,8 @@ e2e.mkTestWithDevnetSetup {
   name = "ensure-blocks";
 
   testScript = ''
+    client.wait_until_succeeds("curl http://sepolia:9596/eth/v2/beacon/blocks/1 --fail")
+
     client.succeed("RUST_LOG=info ${ensure-blocks} ws://union:26657/websocket ws://sepolia:8546 |& tee output.txt")
 
     client.copy_from_vm("output.txt", "")
