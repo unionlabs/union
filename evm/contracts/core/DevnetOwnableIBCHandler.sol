@@ -29,10 +29,10 @@ contract DevnetOwnableIBCHandler is OwnableIBCHandler {
         IbcCoreChannelV1Channel.Data calldata channel,
         address moduleAddress
     ) public onlyOwner {
-        // TODO(aeryz): See if we can make this connections[connectionId] = connection
         nextSequenceSends[portId][channelId] = 1;
         nextSequenceRecvs[portId][channelId] = 1;
         nextSequenceAcks[portId][channelId] = 1;
+
         connections[connectionId].client_id = connection.client_id;
         connections[connectionId].state = connection.state;
         connections[connectionId].delay_period = connection.delay_period;

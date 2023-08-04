@@ -1,6 +1,6 @@
 #cspell:ignore abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz
 { ... }: {
-  perSystem = { devnetConfig, system, pkgs, self', inputs', ... }:
+  perSystem = { devnetConfig, system, pkgs, self', inputs', cw-instantiate2-salt, ... }:
     let
       MNEMONIC = "wine parrot nominee girl exchange element pudding grow area twenty next junior come render shadow evidence sentence start rough debate feed all limb real";
       genesisAccountName = "testkey";
@@ -51,7 +51,7 @@
 
           CODE_HASH=$(sha256sum ${self'.packages.wasm-cw20-ics20}/lib/cw20_ics20.wasm | cut -f1 -d" ")
 
-          ${uniond} query wasm build-address $CODE_HASH $ALICE_ADDRESS 61616161 > $out/CW20_ICS20_CONTRACT_ADDRESS
+          ${uniond} query wasm build-address $CODE_HASH $ALICE_ADDRESS ${cw-instantiate2-salt} > $out/CW20_ICS20_CONTRACT_ADDRESS
         '';
 
       calculatePingPongAddress = home: pkgs.runCommand "calculate-ping-pong-contract-address"
@@ -71,7 +71,7 @@
 
           CODE_HASH=$(sha256sum ${self'.packages.wasm-ucs00-pingpong}/lib/ucs00_pingpong.wasm | cut -f1 -d" ")
 
-          ${uniond} query wasm build-address $CODE_HASH $ALICE_ADDRESS 61616161 > $out/PING_PONG_CONTRACT_ADDRESS
+          ${uniond} query wasm build-address $CODE_HASH $ALICE_ADDRESS ${cw-instantiate2-salt} > $out/PING_PONG_CONTRACT_ADDRESS
         '';
 
       addIbcConnectionToGenesis = home: pkgs.runCommand "add-ibc-connection-to-genesis"

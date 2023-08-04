@@ -1,31 +1,55 @@
 { ... }: {
-  perSystem = { devnetConfig, pkgs, self', inputs', ... }:
+  perSystem = { devnetConfig, pkgs, self', inputs', cw-instantiate2-salt, ... }:
     let
       uniond = pkgs.lib.getExe self'.packages.uniond;
 
       # Name of the account key that we use for the devnet
       keyName = "testkey";
       chainId = "union-devnet-1";
-      # This can be any arbitrary hex string which is used when generating contract address
-      salt = "61616161";
 
-      instantiate-cw20-ics20 =
+      accountAddress = ''
+        ${uniond} keys show ${keyName} \
+          --keyring-backend test \
+          --address \
+          --home ${self'.packages.devnet-genesis}
+      '';
+
+      instantiateContract = { code-id, label }:
+        ''
+          ACCOUNT_ADDRESS="$(${accountAddress})"
+
+          echo ------------------------------------
+          echo + Instantiating ${label}:
+          echo     - Message: "$(echo "$INIT_MESSAGE" | jq)"
+          echo ------------------------------------
+
+          while ! ${uniond} tx wasm instantiate2 ${toString code-id} \
+            "$INIT_MESSAGE" \
+            ${cw-instantiate2-salt} \
+            --label ${label} \
+            --gas=auto \
+            --gas-adjustment=1.3 -y  \
+            --admin "$ACCOUNT_ADDRESS" \
+            --keyring-backend test \
+            --from ${keyName} \
+            --chain-id ${chainId} \
+            --home ${self'.packages.devnet-genesis} > /dev/null
+          do
+            echo "Chain doesn't seem to be ready yet. Will retry in 3 seconds."
+            sleep 3
+          done
+        '';
+
+      instantiateCw20Ics20 =
         pkgs.writeShellApplication {
           name = "instantiate-cw20-ics20";
           runtimeInputs = [ ];
           text =
             ''
               # This account will be the governor and admin of the contract that we instantiate
-              ACCOUNT_ADDRESS=$(${uniond} keys show ${keyName} \
-                --keyring-backend test \
-                --address \
-                --home ${self'.packages.devnet-genesis})
+              ACCOUNT_ADDRESS="$(${accountAddress})"
 
-              # TODO(aeryz): Read the code_id from genesis setup
-              # Instantiate cw20 contract with an initial channel. The contract will automatically assign
-              # the correct port id to the channel.
-              while ! ${uniond} tx wasm instantiate2 1 \
-                '{
+              INIT_MESSAGE='{
                   "default_timeout":300,
                   "gov_contract": "'"$ACCOUNT_ADDRESS"'",
                   "allowlist":[],
@@ -42,60 +66,29 @@
                     "version":"ics20-1",
                     "connection_id":"connection-0"
                   }
-                }' \
-                ${salt} \
-                --label cw20-ics20-test \
-                --gas=auto \
-                --gas-adjustment=1.3 -y  \
-                --admin "$ACCOUNT_ADDRESS" \
-                --keyring-backend test \
-                --from ${keyName} \
-                --chain-id ${chainId} \
-                --home ${self'.packages.devnet-genesis}
-              do
-                sleep 1
-              done
+                }'
+
+              ${instantiateContract { code-id = 1; label = "cw20-ics20"; }}
             '';
         };
 
-      instantiate-ping-pong =
+      instantiatePingPong =
         pkgs.writeShellApplication {
           name = "instantiate-ping-pong";
           runtimeInputs = [ ];
           text =
             ''
               TIMEOUT=$1
-              # This account will be the governor and admin of the contract that we instantiate
-              ACCOUNT_ADDRESS=$(${uniond} keys show ${keyName} \
-                --keyring-backend test \
-                --address \
-                --home ${self'.packages.devnet-genesis})
-
-              # TODO(aeryz): Read the code_id from genesis setup
-              # Instantiate cw20 contract with an initial channel. The contract will automatically assign
-              # the correct port id to the channel.
-              while ! ${uniond} tx wasm instantiate2 2 \
-                '{
+              INIT_MESSAGE='{
                   "config": {
                     "number_of_block_before_pong_timeout": '"$TIMEOUT"',
-                    "revision_number": 1
+                    "revision_number": 0
                     }
-                }' \
-                ${salt} \
-                --label ping-pong-test \
-                --gas=auto \
-                --gas-adjustment=1.3 -y  \
-                --admin "$ACCOUNT_ADDRESS" \
-                --keyring-backend test \
-                --from ${keyName} \
-                --chain-id ${chainId} \
-                --home ${self'.packages.devnet-genesis}
-              do
-                sleep 1
-              done
+                }'
+
+              ${instantiateContract { code-id = 2; label = "ping-pong"; }} 
             '';
         };
-
     in
     {
       packages.setup-demo =
@@ -273,7 +266,10 @@
               export NUM_OF_BLOCK_BEFORE_PONG_TIMEOUT="$PING_PONG_TIMEOUT"
               export REVISION_NUMBER=1
 
+              echo ------------------------------------
+              echo + Deploying Ping Pong App..
               ${self'.packages.evm-devnet-ping-pong-deploy}/bin/evm-devnet-ping-pong-deploy | tee "$EVM_CONTRACTS_OUTFILE"
+              echo ------------------------------------
               EVM_CONTRACTS_ARG=$(tail -1 < "$EVM_CONTRACTS_OUTFILE")
               rm "$EVM_CONTRACTS_OUTFILE"
 
@@ -281,10 +277,14 @@
             }
 
             deployEVMContracts() {
+              echo ------------------------------------
+              echo + Deploying IBC Contracts..
               while ! ${self'.packages.evm-devnet-deploy}/bin/evm-devnet-deploy | tee "$EVM_CONTRACTS_OUTFILE" 
               do
-                sleep 1
+                echo "Eth doesn't seem to be ready yet. Will try in 3 seconds."
+                sleep 3
               done
+              echo ------------------------------------
 
               EVM_CONTRACTS_ARG=$(tail -1 < "$EVM_CONTRACTS_OUTFILE")
               rm "$EVM_CONTRACTS_OUTFILE"
@@ -328,28 +328,30 @@
             }
 
             instantiateCw20Ics20() {
-              ${instantiate-cw20-ics20}/bin/instantiate-cw20-ics20
+              ${instantiateCw20Ics20}/bin/instantiate-cw20-ics20
             }
 
             instantiatePingPong() {
-              ${instantiate-ping-pong}/bin/instantiate-ping-pong "$PING_PONG_TIMEOUT"
+              ${instantiatePingPong}/bin/instantiate-ping-pong "$PING_PONG_TIMEOUT"
             }
 
             createClients() {
-              echo "Creating light client on evm."
+              echo ------------------------------------
+              echo "+ Creating light client on evm."
               RUST_LOG=relayer=info ${self'.packages.relayer}/bin/relayer \
                 --config-file-path "$RELAYER_CONFIG_FILE" \
                 client create evm cometbls \
                 --on ethereum-devnet \
                 --counterparty union-devnet
-
-              echo "Creating client on union."
+              echo ------------------------------------
+              echo "+ Creating client on union."
               RUST_LOG=relayer=info ${self'.packages.relayer}/bin/relayer \
                 --config-file-path "$RELAYER_CONFIG_FILE" \
                 client create union ethereum08-wasm \
                 --on union-devnet \
                 --counterparty ethereum-devnet \
                 --evm-preset minimal
+              echo ------------------------------------
             }
 
             waitForGaloisToBeOnline() {
@@ -359,9 +361,9 @@
                 COMMAND="$COMMAND $GALOIS_TLS"
               fi
 
-              while ! eval "$COMMAND" > /dev/null
+              while ! eval "$COMMAND" 1>/dev/null 2>&1
               do 
-                echo "Waiting for galois to be ready at $GALOIS_URL"
+                echo ".. Waiting for galois to be ready at $GALOIS_URL .."
                 sleep 5
               done
             }
@@ -372,7 +374,8 @@
               COUNTERPARTY_PORT_ID=$3
               CHANNEL_ID=$4
 
-              echo "Setting up the initial connection and channels on EVM.."
+              echo ------------------------------------------------------------
+              echo "+ Setting up the initial connection and channels on EVM.."
               ${self'.packages.relayer}/bin/relayer \
                 --config-file-path "$RELAYER_CONFIG_FILE" \
                 setup initial-channel \
@@ -381,9 +384,11 @@
                 --channel-id "$CHANNEL_ID" \
                 --port-id "$PORT_ID" \
                 --counterparty-port-id "$COUNTERPARTY_PORT_ID"
+              echo "+ Initial connection and channels are ready."
             }
 
             printIBCSetupInfo() {
+              echo ---------------------------------------------------
               echo "+ Module $1(EVM) and $2(Union) is connected at:"
               echo "    - Address on EVM:   $3"
               echo "    - Address on Union: $4"
@@ -415,7 +420,7 @@
             if [[ -n "$CIRCUIT_PATH" ]]; then
               runGalois &
             else
-              echo "--circuit-path is empty, will use the galois at $GALOIS_URL"
+              echo "+ --circuit-path is empty, will use the galois at $GALOIS_URL"
             fi
 
             ICS20_TRANSFER_BANK_ADDRESS=$(jq '.chain."ethereum-devnet".ics20_transfer_bank_address' -r < "$RELAYER_CONFIG_FILE")
@@ -434,7 +439,8 @@
             waitForGaloisToBeOnline
 
                 
-            echo "Starting the relayer.."
+            echo "--------------------------------"
+            echo "+ Starting the relayer.."
             echo "+ Relayer config path is: $RELAYER_CONFIG_FILE"
             printIBCSetupInfo "ICS20 Transfer" "CW20-ICS20" "$ICS20_TRANSFER_BANK_ADDRESS" "$CW20_ADDRESS"  "connection-0" "channel-0" "transfer" "wasm.$CW20_ADDRESS"
             printIBCSetupInfo "PingPong" "PingPong" "$PING_PONG_MODULE_ADDRESS" "$PING_PONG_ADDRESS" "connection-0" "channel-1" "ping-pong" "wasm.$PING_PONG_ADDRESS"

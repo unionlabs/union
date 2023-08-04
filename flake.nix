@@ -171,6 +171,9 @@
                   package = googleapis;
                 };
               };
+
+              # Used as the salt when executing `instantiate2` in CosmWasm.
+              cw-instantiate2-salt = "61616161";
             };
           };
 
