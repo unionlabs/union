@@ -1,10 +1,9 @@
-use prost::Message;
 use serde::{Deserialize, Serialize};
 
 use crate::{
     errors::{required, MissingField},
     ibc::core::client::height::Height,
-    IntoProto, TryFromProto, TryFromProtoBytesError, TryFromProtoErrorOf, TypeUrl,
+    IntoProto, Proto, TryFromProto, TryFromProtoBytesError, TryFromProtoErrorOf, TypeUrl,
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -13,14 +12,14 @@ pub struct Header<Data> {
     pub height: Height,
 }
 
-impl<Data: IntoProto> IntoProto for Header<Data> {
+impl<Data: Proto> Proto for Header<Data> {
     type Proto = protos::ibc::lightclients::wasm::v1::Header;
 }
 
 impl<Data: IntoProto> From<Header<Data>> for protos::ibc::lightclients::wasm::v1::Header {
     fn from(value: Header<Data>) -> Self {
         Self {
-            data: value.data.into_proto().encode_to_vec(),
+            data: value.data.into_proto_bytes(),
             height: Some(value.height.into()),
         }
     }
@@ -45,8 +44,4 @@ impl<Data: TryFromProto> TryFrom<protos::ibc::lightclients::wasm::v1::Header> fo
             height: required!(value.height, TryFromHeaderError)?.into(),
         })
     }
-}
-
-impl<Data: TryFromProto> TryFromProto for Header<Data> {
-    type Proto = protos::ibc::lightclients::wasm::v1::Header;
 }

@@ -4,8 +4,8 @@ use ssz_types::BitVector;
 use tree_hash::TreeHash;
 
 use crate::{
-    bls::BlsSignature, errors::InvalidLength, ethereum_consts_traits::SYNC_COMMITTEE_SIZE,
-    IntoProto, TryFromProto, TypeUrl,
+    bls::BlsSignature, errors::InvalidLength, ethereum_consts_traits::SYNC_COMMITTEE_SIZE, Proto,
+    TypeUrl,
 };
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, Encode, Decode, TreeHash)]
@@ -55,10 +55,6 @@ impl TypeUrl for protos::union::ibc::lightclients::ethereum::v1::SyncAggregate {
     const TYPE_URL: &'static str = "/union.ibc.lightclients.ethereum.v1.SyncAggregate";
 }
 
-impl<C: SYNC_COMMITTEE_SIZE> TryFromProto for SyncAggregate<C> {
-    type Proto = protos::union::ibc::lightclients::ethereum::v1::SyncAggregate;
-}
-
-impl<C: SYNC_COMMITTEE_SIZE> IntoProto for SyncAggregate<C> {
+impl<C: SYNC_COMMITTEE_SIZE> Proto for SyncAggregate<C> {
     type Proto = protos::union::ibc::lightclients::ethereum::v1::SyncAggregate;
 }

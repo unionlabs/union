@@ -7,7 +7,7 @@ use crate::{
         core::client::height::Height,
         lightclients::{ethereum::fork_parameters::ForkParameters, tendermint::fraction::Fraction},
     },
-    IntoProto, TryFromProto, TryFromProtoErrorOf, TypeUrl,
+    Proto, TryFromProtoErrorOf, TypeUrl,
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -30,7 +30,7 @@ impl TypeUrl for protos::union::ibc::lightclients::ethereum::v1::ClientState {
     const TYPE_URL: &'static str = "/union.ibc.lightclients.ethereum.v1.ClientState";
 }
 
-impl IntoProto for ClientState {
+impl Proto for ClientState {
     type Proto = protos::union::ibc::lightclients::ethereum::v1::ClientState;
 }
 
@@ -95,8 +95,4 @@ impl TryFrom<protos::union::ibc::lightclients::ethereum::v1::ClientState> for Cl
             counterparty_commitment_slot: value.counterparty_commitment_slot,
         })
     }
-}
-
-impl TryFromProto for ClientState {
-    type Proto = protos::union::ibc::lightclients::ethereum::v1::ClientState;
 }

@@ -7,7 +7,7 @@ use crate::{
         account_update::AccountUpdate, light_client_update::LightClientUpdate,
         trusted_sync_committee::TrustedSyncCommittee,
     },
-    IntoProto, TryFromProto, TryFromProtoErrorOf, TypeUrl,
+    Proto, TryFromProtoErrorOf, TypeUrl,
 };
 
 // trait alias would be nice
@@ -74,13 +74,7 @@ impl<C: SYNC_COMMITTEE_SIZE + BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES>
     }
 }
 
-impl<C: SYNC_COMMITTEE_SIZE + BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> IntoProto for Header<C> {
-    type Proto = protos::union::ibc::lightclients::ethereum::v1::Header;
-}
-
-impl<C: SYNC_COMMITTEE_SIZE + BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> TryFromProto
-    for Header<C>
-{
+impl<C: SYNC_COMMITTEE_SIZE + BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> Proto for Header<C> {
     type Proto = protos::union::ibc::lightclients::ethereum::v1::Header;
 }
 

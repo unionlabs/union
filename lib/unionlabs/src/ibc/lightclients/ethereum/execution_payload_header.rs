@@ -8,7 +8,7 @@ use crate::{
     errors::InvalidLength,
     ethereum::{Address, H256},
     ethereum_consts_traits::{BYTES_PER_LOGS_BLOOM, MAX_EXTRA_DATA_BYTES},
-    IntoProto, TryFromProto, TypeUrl,
+    Proto, TypeUrl,
 };
 
 #[derive(Clone, Debug, PartialEq, Encode, Decode, TreeHash, Serialize, Deserialize)]
@@ -153,10 +153,6 @@ impl TypeUrl for protos::union::ibc::lightclients::ethereum::v1::ExecutionPayloa
     const TYPE_URL: &'static str = "/union.ibc.lightclients.ethereum.v1.ExecutionPayloadHeader";
 }
 
-impl<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> TryFromProto for ExecutionPayloadHeader<C> {
-    type Proto = protos::union::ibc::lightclients::ethereum::v1::ExecutionPayloadHeader;
-}
-
-impl<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> IntoProto for ExecutionPayloadHeader<C> {
+impl<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> Proto for ExecutionPayloadHeader<C> {
     type Proto = protos::union::ibc::lightclients::ethereum::v1::ExecutionPayloadHeader;
 }

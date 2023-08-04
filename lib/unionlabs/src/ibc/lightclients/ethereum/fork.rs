@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use ssz::{Decode, Encode};
 
-use crate::{errors::InvalidLength, ethereum::Version, IntoProto, TryFromProto, TypeUrl};
+use crate::{errors::InvalidLength, ethereum::Version, Proto, TypeUrl};
 
 #[derive(Debug, Clone, PartialEq, Encode, Decode, Serialize, Deserialize)]
 pub struct Fork {
@@ -35,10 +35,6 @@ impl TypeUrl for protos::union::ibc::lightclients::ethereum::v1::Fork {
     const TYPE_URL: &'static str = "/union.ibc.lightclients.ethereum.v1.Fork";
 }
 
-impl IntoProto for Fork {
-    type Proto = protos::union::ibc::lightclients::ethereum::v1::Fork;
-}
-
-impl TryFromProto for Fork {
+impl Proto for Fork {
     type Proto = protos::union::ibc::lightclients::ethereum::v1::Fork;
 }

@@ -1,4 +1,4 @@
-use crate::{errors::InvalidLength, ethereum::H256, IntoProto, TryFromProto, TypeUrl};
+use crate::{errors::InvalidLength, ethereum::H256, Proto, TypeUrl};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct PartSetHeader {
@@ -25,10 +25,6 @@ impl TryFrom<protos::tendermint::types::PartSetHeader> for PartSetHeader {
     }
 }
 
-impl TryFromProto for PartSetHeader {
-    type Proto = protos::tendermint::types::PartSetHeader;
-}
-
 impl From<PartSetHeader> for protos::tendermint::types::PartSetHeader {
     fn from(value: PartSetHeader) -> Self {
         Self {
@@ -38,7 +34,7 @@ impl From<PartSetHeader> for protos::tendermint::types::PartSetHeader {
     }
 }
 
-impl IntoProto for PartSetHeader {
+impl Proto for PartSetHeader {
     type Proto = protos::tendermint::types::PartSetHeader;
 }
 

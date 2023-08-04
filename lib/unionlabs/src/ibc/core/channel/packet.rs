@@ -1,6 +1,4 @@
-use crate::{
-    errors::MissingField, ibc::core::client::height::Height, IntoProto, TryFromProto, TypeUrl,
-};
+use crate::{errors::MissingField, ibc::core::client::height::Height, Proto, TypeUrl};
 
 #[derive(Debug, Clone)]
 pub struct Packet {
@@ -14,11 +12,7 @@ pub struct Packet {
     pub timeout_timestamp: u64,
 }
 
-impl IntoProto for Packet {
-    type Proto = protos::ibc::core::channel::v1::Packet;
-}
-
-impl TryFromProto for Packet {
+impl Proto for Packet {
     type Proto = protos::ibc::core::channel::v1::Packet;
 }
 

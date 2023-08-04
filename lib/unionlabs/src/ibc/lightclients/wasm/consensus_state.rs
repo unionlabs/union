@@ -3,7 +3,7 @@ use std::fmt::Debug;
 use prost::Message;
 use serde::{Deserialize, Serialize};
 
-use crate::{IntoProto, TryFromProto, TryFromProtoErrorOf, TypeUrl};
+use crate::{IntoProto, Proto, TryFromProto, TryFromProtoBytesError, TryFromProtoErrorOf, TypeUrl};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ConsensusState<Data> {
@@ -26,7 +26,7 @@ impl TypeUrl for protos::ibc::lightclients::wasm::v1::ConsensusState {
     const TYPE_URL: &'static str = "/ibc.lightclients.wasm.v1.ConsensusState";
 }
 
-impl<Data: IntoProto> IntoProto for ConsensusState<Data> {
+impl<Data: Proto> Proto for ConsensusState<Data> {
     type Proto = protos::ibc::lightclients::wasm::v1::ConsensusState;
 }
 
@@ -39,31 +39,18 @@ pub enum TryFromWasmConsensusStateError<Err> {
 impl<Data> TryFrom<protos::ibc::lightclients::wasm::v1::ConsensusState> for ConsensusState<Data>
 where
     Data: TryFromProto,
-    <Data as TryFromProto>::Proto: prost::Message + Default,
+    <Data as Proto>::Proto: prost::Message + Default,
     TryFromProtoErrorOf<Data>: Debug,
 {
-    type Error =
-        TryFromWasmConsensusStateError<<Data as TryFrom<<Data as TryFromProto>::Proto>>::Error>;
+    type Error = TryFromWasmConsensusStateError<TryFromProtoBytesError<TryFromProtoErrorOf<Data>>>;
 
     fn try_from(
         value: protos::ibc::lightclients::wasm::v1::ConsensusState,
     ) -> Result<Self, Self::Error> {
         Ok(Self {
-            data: Data::try_from_proto(
-                <Data as TryFromProto>::Proto::decode(&*value.data)
-                    .map_err(TryFromWasmConsensusStateError::Prost)?,
-            )
-            .map_err(TryFromWasmConsensusStateError::TryFromProto)?,
+            data: Data::try_from_proto_bytes(&value.data)
+                .map_err(TryFromWasmConsensusStateError::TryFromProto)?,
             timestamp: value.timestamp,
         })
     }
-}
-
-impl<Data> TryFromProto for ConsensusState<Data>
-where
-    Data: TryFromProto,
-    <Data as TryFromProto>::Proto: prost::Message + Default,
-    TryFromProtoErrorOf<Data>: Debug,
-{
-    type Proto = protos::ibc::lightclients::wasm::v1::ConsensusState;
 }

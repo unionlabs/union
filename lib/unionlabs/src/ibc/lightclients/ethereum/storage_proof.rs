@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{ibc::lightclients::ethereum::proof::Proof, FromProto, IntoProto, TypeUrl};
+use crate::{ibc::lightclients::ethereum::proof::Proof, Proto, TypeUrl};
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct StorageProof {
@@ -23,11 +23,7 @@ impl From<protos::union::ibc::lightclients::ethereum::v1::StorageProof> for Stor
     }
 }
 
-impl IntoProto for StorageProof {
-    type Proto = protos::union::ibc::lightclients::ethereum::v1::StorageProof;
-}
-
-impl FromProto for StorageProof {
+impl Proto for StorageProof {
     type Proto = protos::union::ibc::lightclients::ethereum::v1::StorageProof;
 }
 
