@@ -43,6 +43,24 @@ pub enum Command {
     SubmitPacket(SubmitPacketCmd),
     #[command(subcommand)]
     Query(QueryCmd),
+    #[command(subcommand)]
+    Setup(SetupCmd),
+}
+
+#[derive(Debug, Subcommand)]
+pub enum SetupCmd {
+    InitialChannel {
+        #[arg(long)]
+        on: String,
+        #[arg(long)]
+        module_address: Address,
+        #[arg(long)]
+        channel_id: String,
+        #[arg(long)]
+        port_id: String,
+        #[arg(long)]
+        counterparty_port_id: String,
+    },
 }
 
 #[derive(Debug, Subcommand)]

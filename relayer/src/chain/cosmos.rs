@@ -83,6 +83,7 @@ pub struct Union {
     chain_revision: u64,
     // TODO: Move this field back into `Ethereum` once the cometbls states are unwrapped out of the wasm states
     wasm_code_id: H256,
+    prover_endpoint: String,
 }
 
 impl<C: ChainSpec> ChainConnection<Evm<C>> for Union {
@@ -166,6 +167,7 @@ impl Union {
             tm_client,
             chain_id,
             chain_revision,
+            prover_endpoint: config.prover_endpoint,
         }
     }
 
@@ -909,14 +911,13 @@ impl<C: ChainSpec> Connect<Cometbls<C>> for Ethereum<C> {
             tracing::debug!("Generate ZKP...");
 
             // TODO: Extract into the chain config
-            const PROVER_ENDPOINT: &str = "https://prover.cryptware.io:443";
-            // const PROVER_ENDPOINT: &str = "http://localhost:8080";
 
             // .http2_keep_alive_interval(std::time::Duration::from_secs(10))
             // .keep_alive_while_idle(true),
 
             let mut prover_client = union_prover_api_client::UnionProverApiClient::connect(
-                tonic::transport::Endpoint::from_static(PROVER_ENDPOINT),
+                tonic::transport::Endpoint::from_shared(self.chain.prover_endpoint.clone())
+                    .unwrap(),
             )
             .await
             .unwrap();

@@ -1,8 +1,8 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    from_binary, to_binary, Addr, Binary, Deps, DepsMut, Env, IbcMsg, IbcQuery, MessageInfo, Order,
-    PortIdResponse, Response, StdError, StdResult,
+    from_binary, to_binary, Addr, Binary, Deps, DepsMut, Env, IbcChannel, IbcMsg, IbcQuery,
+    MessageInfo, Order, PortIdResponse, Response, StdError, StdResult,
 };
 use cw2::{get_contract_version, set_contract_version};
 use cw20::{Cw20Coin, Cw20ReceiveMsg};
@@ -13,7 +13,7 @@ use semver::Version;
 use crate::{
     amount::Amount,
     error::ContractError,
-    ibc::Ics20Packet,
+    ibc::{enforce_order_and_version, Ics20Packet},
     migrations::{v1, v2},
     msg::{
         AllowMsg, AllowedInfo, AllowedResponse, ChannelResponse, ConfigResponse, ExecuteMsg,
@@ -21,7 +21,7 @@ use crate::{
         TransferMsg,
     },
     state::{
-        increase_channel_balance, AllowInfo, Config, ADMIN, ALLOW_LIST, CHANNEL_INFO,
+        increase_channel_balance, AllowInfo, ChannelInfo, Config, ADMIN, ALLOW_LIST, CHANNEL_INFO,
         CHANNEL_STATE, CONFIG,
     },
 };
@@ -33,7 +33,7 @@ const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
     mut deps: DepsMut,
-    _env: Env,
+    env: Env,
     _info: MessageInfo,
     msg: InitMsg,
 ) -> Result<Response, ContractError> {
@@ -55,6 +55,20 @@ pub fn instantiate(
         };
         ALLOW_LIST.save(deps.storage, &contract, &info)?;
     }
+
+    if let Some(mut channel) = msg.channel {
+        // We need this to be able to compute the contract address. Otherwise, the contract address
+        // would depend on the contract's address before it's initialization.
+        channel.endpoint.port_id = format!("wasm.{}", env.contract.address);
+        enforce_order_and_version(&channel, None)?;
+        let info = ChannelInfo {
+            id: channel.endpoint.channel_id,
+            counterparty_endpoint: channel.counterparty_endpoint,
+            connection_id: channel.connection_id,
+        };
+        CHANNEL_INFO.save(deps.storage, &info.id, &info)?;
+    }
+
     Ok(Response::default())
 }
 

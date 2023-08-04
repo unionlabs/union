@@ -90,6 +90,8 @@ pub struct UnionChainConfig {
     pub ws_url: WebSocketClientUrl,
     #[arg(long)]
     pub wasm_code_id: H256,
+    #[arg(long)]
+    pub prover_endpoint: String,
 }
 
 pub mod private_key {

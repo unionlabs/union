@@ -7,6 +7,7 @@ use std::{
 use beacon_api::client::BeaconApiClient;
 use clap::Args;
 use contracts::{
+    devnet_ownable_ibc_handler::devnet_ownable_ibc_handler,
     glue::UnionIbcLightclientsCometblsV1HeaderData,
     ibc_handler::{
         self, GeneratedConnectionIdentifierFilter, GetChannelCall, GetChannelReturn,
@@ -16,6 +17,11 @@ use contracts::{
     },
     ics20_bank::ICS20Bank,
     ics20_transfer_bank::ICS20TransferBank,
+    shared_types::{
+        IbcCoreChannelV1ChannelData, IbcCoreChannelV1CounterpartyData,
+        IbcCoreCommitmentV1MerklePrefixData, IbcCoreConnectionV1ConnectionEndData,
+        IbcCoreConnectionV1CounterpartyData, IbcCoreConnectionV1VersionData,
+    },
 };
 use ethers::{
     abi::{AbiEncode, Tokenizable},
@@ -278,6 +284,64 @@ impl<C: ChainSpec> Evm<C> {
             .unwrap();
 
         tracing::info!(balance_after = %balance, %denom);
+    }
+
+    pub async fn setup_initial_channel(
+        &self,
+        module_address: Address,
+        channel_id: String,
+        port_id: String,
+        counterparty_port_id: String,
+    ) {
+        let signer_middleware = Arc::new(SignerMiddleware::new(
+            self.provider.clone(),
+            self.wallet.clone(),
+        ));
+
+        let ibc_handler = devnet_ownable_ibc_handler::DevnetOwnableIBCHandler::new(
+            self.ibc_handler.address(),
+            signer_middleware,
+        );
+
+        ibc_handler
+            .setup_initial_channel(
+                "connection-0".into(),
+                IbcCoreConnectionV1ConnectionEndData {
+                    client_id: "cometbls-new-0".into(),
+                    versions: vec![IbcCoreConnectionV1VersionData {
+                        identifier: "1".into(),
+                        features: vec!["ORDER_ORDERED".into(), "ORDER_UNORDERED".into()],
+                    }],
+                    state: 3,
+                    counterparty: IbcCoreConnectionV1CounterpartyData {
+                        client_id: "08-wasm-0".into(),
+                        connection_id: "connection-0".into(),
+                        prefix: IbcCoreCommitmentV1MerklePrefixData {
+                            key_prefix: b"ibc".to_vec().into(),
+                        },
+                    },
+                    delay_period: 6,
+                },
+                port_id,
+                channel_id.clone(),
+                IbcCoreChannelV1ChannelData {
+                    state: 3,
+                    ordering: 1,
+                    counterparty: IbcCoreChannelV1CounterpartyData {
+                        port_id: counterparty_port_id,
+                        channel_id,
+                    },
+                    connection_hops: vec!["connection-0".into()],
+                    version: "ics20-1".into(),
+                },
+                module_address.into(),
+            )
+            .send()
+            .await
+            .unwrap()
+            .await
+            .unwrap()
+            .unwrap();
     }
 }
 
@@ -927,8 +991,7 @@ impl<C: ChainSpec> Connect<Ethereum<C>> for Cometbls<C> {
 
     fn recv_packet(&self, packet: MsgRecvPacket) -> impl Future<Output = ()> + '_ {
         async move {
-            let tx_rcp = self
-                .chain
+            self.chain
                 .ibc_handler
                 .recv_packet(packet.into())
                 .send()
@@ -937,16 +1000,6 @@ impl<C: ChainSpec> Connect<Ethereum<C>> for Cometbls<C> {
                 .await
                 .unwrap()
                 .unwrap();
-
-            decode_logs::<IBCHandlerEvents>(
-                tx_rcp
-                    .logs
-                    .into_iter()
-                    .map(Into::into)
-                    .collect::<Vec<_>>()
-                    .as_ref(),
-            )
-            .unwrap();
         }
     }
 

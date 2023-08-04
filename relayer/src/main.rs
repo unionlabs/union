@@ -389,6 +389,30 @@ async fn do_main(args: cli::AppArgs) -> Result<(), anyhow::Error> {
             QueryCmd::Connection {} => todo!(),
             QueryCmd::Channel {} => todo!(),
         },
+        Command::Setup(cmd) => match cmd {
+            cli::SetupCmd::InitialChannel {
+                on,
+                counterparty_port_id,
+                module_address,
+                port_id,
+                channel_id,
+            } => {
+                let chain = relayer_config.get_chain(&on).await.unwrap();
+
+                match chain {
+                    AnyChain::EvmMinimal(evm) => {
+                        evm.setup_initial_channel(
+                            module_address.into(),
+                            channel_id,
+                            port_id,
+                            counterparty_port_id,
+                        )
+                        .await;
+                    }
+                    _ => panic!("Not supported."),
+                }
+            }
+        },
     }
 
     std::fs::write(

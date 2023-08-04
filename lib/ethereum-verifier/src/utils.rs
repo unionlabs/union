@@ -127,8 +127,9 @@ pub fn validate_merkle_branch<'a>(
         // NB: zip ends when either iterator ends
         for (b, i) in branch.iter().zip(0..depth) {
             if let Some(v) = 2u64.checked_pow(i as u32) {
+                let val = index / v % 2;
                 value = Sha256::digest(
-                    if index / v % 2 == 1 {
+                    if val == 1 {
                         [b.0, value.0]
                     } else {
                         [value.0, b.0]
