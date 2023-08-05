@@ -5,7 +5,7 @@ use crate::{
     ethereum::{Address, H256},
     ibc::google::protobuf::timestamp::Timestamp,
     tendermint::{types::block_id::BlockId, version::consensus::Consensus},
-    IntoProto, TryFromProto, TryFromProtoErrorOf, TypeUrl,
+    Proto, TryFromProtoErrorOf, TypeUrl,
 };
 
 #[derive(Clone, PartialEq)]
@@ -135,11 +135,7 @@ impl TryFrom<protos::tendermint::types::Header> for Header {
     }
 }
 
-impl IntoProto for Header {
-    type Proto = protos::tendermint::types::Header;
-}
-
-impl TryFromProto for Header {
+impl Proto for Header {
     type Proto = protos::tendermint::types::Header;
 }
 

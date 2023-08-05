@@ -6,7 +6,7 @@ use crate::{
     errors::MissingField,
     ethereum_consts_traits::SYNC_COMMITTEE_SIZE,
     ibc::{core::client::height::Height, lightclients::ethereum::sync_committee::SyncCommittee},
-    IntoProto, TryFromProto, TryFromProtoErrorOf, TypeUrl,
+    Proto, TryFromProtoErrorOf, TypeUrl,
 };
 
 #[derive(Clone, Debug, PartialEq, Encode, Decode, TreeHash, Serialize, Deserialize)]
@@ -67,10 +67,6 @@ impl TypeUrl for protos::union::ibc::lightclients::ethereum::v1::TrustedSyncComm
     const TYPE_URL: &'static str = "/union.ibc.lightclients.ethereum.v1.TrustedSyncCommittee";
 }
 
-impl<C: SYNC_COMMITTEE_SIZE> TryFromProto for TrustedSyncCommittee<C> {
-    type Proto = protos::union::ibc::lightclients::ethereum::v1::TrustedSyncCommittee;
-}
-
-impl<C: SYNC_COMMITTEE_SIZE> IntoProto for TrustedSyncCommittee<C> {
+impl<C: SYNC_COMMITTEE_SIZE> Proto for TrustedSyncCommittee<C> {
     type Proto = protos::union::ibc::lightclients::ethereum::v1::TrustedSyncCommittee;
 }

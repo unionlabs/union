@@ -86,9 +86,12 @@ where
 
 // TODO: Move these traits into `ibc`
 
-pub trait IntoProto: Into<Self::Proto> {
-    type Proto: Message + TypeUrl;
+pub trait Proto: Into<Self::Proto> {
+    // all prost generated code implements Default
+    type Proto: TypeUrl + Default;
+}
 
+pub trait IntoProto: Proto + Into<Self::Proto> {
     fn into_proto(self) -> Self::Proto {
         self.into()
     }
@@ -98,18 +101,22 @@ pub trait IntoProto: Into<Self::Proto> {
     }
 }
 
-/// A type that can be infallibly converted from it's protobuf representation.
-pub trait FromProto: From<Self::Proto> {
-    type Proto: Message;
+impl<T> IntoProto for T where T: Proto + Into<T::Proto> {}
+impl<T> FromProto for T where T: Proto + From<T::Proto> {}
+impl<T> TryFromProto for T where T: Proto + TryFrom<T::Proto> {}
 
+/// A type that can be infallibly converted from it's protobuf representation.
+pub trait FromProto: Proto + From<Self::Proto> {
     fn from_proto(proto: Self::Proto) -> Self {
         proto.into()
     }
+
+    fn from_proto_bytes(bytes: &[u8]) -> Result<Self, prost::DecodeError> {
+        <Self::Proto as Message>::decode(bytes).map(Into::into)
+    }
 }
 
-pub trait TryFromProto: TryFrom<Self::Proto> {
-    type Proto: Message + Default;
-
+pub trait TryFromProto: Proto + TryFrom<Self::Proto> {
     fn try_from_proto(proto: Self::Proto) -> Result<Self, TryFromProtoErrorOf<Self>> {
         proto.try_into()
     }
@@ -133,15 +140,7 @@ pub enum TryFromProtoBytesError<E> {
     Decode(prost::DecodeError),
 }
 
-pub type TryFromProtoErrorOf<T> = <T as TryFrom<<T as TryFromProto>::Proto>>::Error;
-
-impl<T> TryFromProto for T
-where
-    T: FromProto,
-    <T as FromProto>::Proto: Default,
-{
-    type Proto = T::Proto;
-}
+pub type TryFromProtoErrorOf<T> = <T as TryFrom<<T as Proto>::Proto>>::Error;
 
 pub trait TypeUrl: Message {
     const TYPE_URL: &'static str;
@@ -150,7 +149,7 @@ pub trait TypeUrl: Message {
 #[cfg(test)]
 fn assert_proto_roundtrip<T>(t: &T)
 where
-    T: IntoProto<Proto = <T as TryFromProto>::Proto> + TryFromProto + Debug + Clone + PartialEq,
+    T: IntoProto + TryFromProto + Debug + Clone + PartialEq,
     TryFromProtoErrorOf<T>: Debug,
 {
     let try_from_proto = T::try_from_proto(t.clone().into_proto()).unwrap();

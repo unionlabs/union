@@ -4,8 +4,8 @@ use ssz_types::{fixed_vector, FixedVector};
 use tree_hash::TreeHash;
 
 use crate::{
-    bls::BlsPublicKey, errors::InvalidLength, ethereum_consts_traits::SYNC_COMMITTEE_SIZE,
-    IntoProto, TryFromProto, TypeUrl,
+    bls::BlsPublicKey, errors::InvalidLength, ethereum_consts_traits::SYNC_COMMITTEE_SIZE, Proto,
+    TypeUrl,
 };
 
 #[derive(Clone, Debug, PartialEq, Encode, Decode, TreeHash, Serialize, Deserialize)]
@@ -68,10 +68,6 @@ impl TypeUrl for protos::union::ibc::lightclients::ethereum::v1::SyncCommittee {
     const TYPE_URL: &'static str = "/union.ibc.lightclients.ethereum.v1.SyncCommittee";
 }
 
-impl<C: SYNC_COMMITTEE_SIZE> TryFromProto for SyncCommittee<C> {
-    type Proto = protos::union::ibc::lightclients::ethereum::v1::SyncCommittee;
-}
-
-impl<C: SYNC_COMMITTEE_SIZE> IntoProto for SyncCommittee<C> {
+impl<C: SYNC_COMMITTEE_SIZE> Proto for SyncCommittee<C> {
     type Proto = protos::union::ibc::lightclients::ethereum::v1::SyncCommittee;
 }

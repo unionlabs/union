@@ -1,4 +1,4 @@
-use crate::{FromProto, IntoProto, TypeUrl};
+use crate::{Proto, TypeUrl};
 
 #[derive(Clone, PartialEq)]
 pub struct Consensus {
@@ -24,11 +24,7 @@ impl From<Consensus> for protos::tendermint::version::Consensus {
     }
 }
 
-impl FromProto for Consensus {
-    type Proto = protos::tendermint::version::Consensus;
-}
-
-impl IntoProto for Consensus {
+impl Proto for Consensus {
     type Proto = protos::tendermint::version::Consensus;
 }
 

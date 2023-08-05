@@ -5,7 +5,7 @@ use crate::{
     errors::{InvalidLength, MissingField},
     ethereum::Version,
     ibc::lightclients::ethereum::fork::Fork,
-    IntoProto, TryFromProto, TryFromProtoErrorOf, TypeUrl,
+    Proto, TryFromProtoErrorOf, TypeUrl,
 };
 
 #[derive(Debug, Clone, PartialEq, Encode, Decode, Serialize, Deserialize)]
@@ -86,10 +86,6 @@ impl TypeUrl for protos::union::ibc::lightclients::ethereum::v1::ForkParameters 
     const TYPE_URL: &'static str = "/union.ibc.lightclients.ethereum.v1.ForkParameters";
 }
 
-impl IntoProto for ForkParameters {
-    type Proto = protos::union::ibc::lightclients::ethereum::v1::ForkParameters;
-}
-
-impl TryFromProto for ForkParameters {
+impl Proto for ForkParameters {
     type Proto = protos::union::ibc::lightclients::ethereum::v1::ForkParameters;
 }

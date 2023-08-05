@@ -1,7 +1,4 @@
-use crate::{
-    errors::MissingField, ibc::core::commitment::merkle_root::MerkleRoot, IntoProto, TryFromProto,
-    TypeUrl,
-};
+use crate::{errors::MissingField, ibc::core::commitment::merkle_root::MerkleRoot, Proto, TypeUrl};
 
 #[derive(Debug, Clone)]
 pub struct ConsensusState {
@@ -26,11 +23,7 @@ impl TypeUrl for protos::union::ibc::lightclients::cometbls::v1::ConsensusState 
     const TYPE_URL: &'static str = "/union.ibc.lightclients.cometbls.v1.ConsensusState";
 }
 
-impl IntoProto for ConsensusState {
-    type Proto = protos::union::ibc::lightclients::cometbls::v1::ConsensusState;
-}
-
-impl TryFromProto for ConsensusState {
+impl Proto for ConsensusState {
     type Proto = protos::union::ibc::lightclients::cometbls::v1::ConsensusState;
 }
 

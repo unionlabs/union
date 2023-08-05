@@ -7,7 +7,9 @@ use serde::{
     Deserialize, Serialize,
 };
 
-use crate::{CosmosAccountId, IntoProto, MsgIntoProto, TryFromProto, TryFromProtoErrorOf, TypeUrl};
+use crate::{
+    CosmosAccountId, IntoProto, MsgIntoProto, Proto, TryFromProto, TryFromProtoErrorOf, TypeUrl,
+};
 
 /// Wrapper type to indicate that a type is to be serialized as an Any.
 #[derive(Debug, Clone)]
@@ -16,7 +18,6 @@ pub struct Any<T>(pub T);
 impl<'de, T> Deserialize<'de> for Any<T>
 where
     T: Deserialize<'de> + TryFromProto,
-    <T as TryFromProto>::Proto: TypeUrl,
 {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
@@ -27,7 +28,6 @@ where
         impl<'de, T> Visitor<'de> for AnyVisitor<T>
         where
             T: Deserialize<'de> + TryFromProto,
-            <T as TryFromProto>::Proto: TypeUrl,
         {
             type Value = Any<T>;
 
@@ -81,7 +81,6 @@ where
 impl<T> Serialize for Any<T>
 where
     T: Serialize + IntoProto,
-    <T as IntoProto>::Proto: TypeUrl,
 {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -97,20 +96,18 @@ where
 impl<T> From<Any<T>> for protos::google::protobuf::Any
 where
     T: IntoProto,
-    <T as IntoProto>::Proto: TypeUrl,
 {
     fn from(val: Any<T>) -> Self {
         protos::google::protobuf::Any {
-            type_url: <T as IntoProto>::Proto::TYPE_URL.to_string(),
+            type_url: <T as Proto>::Proto::TYPE_URL.to_string(),
             value: val.0.into_proto().encode_to_vec(),
         }
     }
 }
 
-impl<T> IntoProto for Any<T>
+impl<T> Proto for Any<T>
 where
     T: IntoProto,
-    <T as IntoProto>::Proto: TypeUrl,
 {
     type Proto = protos::google::protobuf::Any;
 }
@@ -151,8 +148,8 @@ where
 impl<T> TryFrom<protos::google::protobuf::Any> for Any<T>
 where
     T: TryFromProto,
-    T::Proto: TypeUrl + Default,
-    <T as TryFrom<T::Proto>>::Error: Debug,
+    T::Proto: Default,
+    TryFromProtoErrorOf<T>: Debug,
 {
     type Error = TryFromAnyError<T>;
 
@@ -170,13 +167,4 @@ where
             })
         }
     }
-}
-
-impl<T> TryFromProto for Any<T>
-where
-    T: TryFromProto,
-    T::Proto: TypeUrl + Default,
-    TryFromProtoErrorOf<T>: Debug,
-{
-    type Proto = protos::google::protobuf::Any;
 }

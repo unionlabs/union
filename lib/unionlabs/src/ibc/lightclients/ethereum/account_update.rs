@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{ibc::lightclients::ethereum::proof::Proof, FromProto, IntoProto, TypeUrl};
+use crate::{ibc::lightclients::ethereum::proof::Proof, Proto, TypeUrl};
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct AccountUpdate {
@@ -23,11 +23,7 @@ impl From<protos::union::ibc::lightclients::ethereum::v1::AccountUpdate> for Acc
     }
 }
 
-impl IntoProto for AccountUpdate {
-    type Proto = protos::union::ibc::lightclients::ethereum::v1::AccountUpdate;
-}
-
-impl FromProto for AccountUpdate {
+impl Proto for AccountUpdate {
     type Proto = protos::union::ibc::lightclients::ethereum::v1::AccountUpdate;
 }
 

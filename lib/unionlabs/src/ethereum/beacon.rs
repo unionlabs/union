@@ -339,7 +339,7 @@ mod tests {
 
         assert_proto_roundtrip(&finality_update.attested_header);
 
-        dbg!(U256::from_dec_str("77"));
+        dbg!(U256::from_dec_str("77").unwrap());
 
         assert_eq!(
             finality_update

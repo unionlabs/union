@@ -1,7 +1,7 @@
 use crate::{
     errors::{MissingField, UnknownEnumVariant},
     ibc::core::connection::{counterparty::Counterparty, state::State, version::Version},
-    IntoProto, TryFromProto, TypeUrl,
+    Proto, TypeUrl,
 };
 
 #[derive(Debug, Clone)]
@@ -52,11 +52,7 @@ impl TryFrom<protos::ibc::core::connection::v1::ConnectionEnd> for ConnectionEnd
     }
 }
 
-impl IntoProto for ConnectionEnd {
-    type Proto = protos::ibc::core::connection::v1::ConnectionEnd;
-}
-
-impl TryFromProto for ConnectionEnd {
+impl Proto for ConnectionEnd {
     type Proto = protos::ibc::core::connection::v1::ConnectionEnd;
 }
 

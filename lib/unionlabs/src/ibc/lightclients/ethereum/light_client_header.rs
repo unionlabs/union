@@ -14,7 +14,7 @@ use crate::{
     ibc::lightclients::ethereum::{
         beacon_block_header::BeaconBlockHeader, execution_payload_header::ExecutionPayloadHeader,
     },
-    IntoProto, TryFromProto, TryFromProtoErrorOf, TypeUrl,
+    Proto, TryFromProtoErrorOf, TypeUrl,
 };
 
 #[derive(Clone, Debug, PartialEq, Encode, Decode, TreeHash, Serialize, Deserialize)]
@@ -89,10 +89,6 @@ impl TypeUrl for protos::union::ibc::lightclients::ethereum::v1::LightClientHead
     const TYPE_URL: &'static str = "/union.ibc.lightclients.ethereum.v1.LightClientHeader";
 }
 
-impl<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> TryFromProto for LightClientHeader<C> {
-    type Proto = protos::union::ibc::lightclients::ethereum::v1::LightClientHeader;
-}
-
-impl<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> IntoProto for LightClientHeader<C> {
+impl<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> Proto for LightClientHeader<C> {
     type Proto = protos::union::ibc::lightclients::ethereum::v1::LightClientHeader;
 }

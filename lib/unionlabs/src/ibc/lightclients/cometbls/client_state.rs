@@ -6,7 +6,7 @@ use crate::{
         core::client::height::Height, google::protobuf::duration::Duration,
         lightclients::tendermint::fraction::Fraction,
     },
-    IntoProto, TryFromProto, TypeUrl,
+    Proto, TypeUrl,
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -36,11 +36,7 @@ impl TypeUrl for protos::union::ibc::lightclients::cometbls::v1::ClientState {
     const TYPE_URL: &'static str = "/union.ibc.lightclients.cometbls.v1.ClientState";
 }
 
-impl IntoProto for ClientState {
-    type Proto = protos::union::ibc::lightclients::cometbls::v1::ClientState;
-}
-
-impl TryFromProto for ClientState {
+impl Proto for ClientState {
     type Proto = protos::union::ibc::lightclients::cometbls::v1::ClientState;
 }
 

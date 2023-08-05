@@ -1,8 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    bls::BlsPublicKey, errors::InvalidLength, ethereum::H256, IntoProto, TryFromProto, TypeUrl,
-};
+use crate::{bls::BlsPublicKey, errors::InvalidLength, ethereum::H256, Proto, TypeUrl};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ConsensusState {
@@ -68,14 +66,10 @@ impl TryFrom<protos::union::ibc::lightclients::ethereum::v1::ConsensusState> for
     }
 }
 
-impl IntoProto for ConsensusState {
+impl Proto for ConsensusState {
     type Proto = protos::union::ibc::lightclients::ethereum::v1::ConsensusState;
 }
 
 impl TypeUrl for protos::union::ibc::lightclients::ethereum::v1::ConsensusState {
     const TYPE_URL: &'static str = "/union.ibc.lightclients.ethereum.v1.ConsensusState";
-}
-
-impl TryFromProto for ConsensusState {
-    type Proto = protos::union::ibc::lightclients::ethereum::v1::ConsensusState;
 }

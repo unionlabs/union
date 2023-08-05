@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use ssz::{Decode, Encode};
 use tree_hash::TreeHash;
 
-use crate::{errors::InvalidLength, ethereum::H256, IntoProto, TryFromProto, TypeUrl};
+use crate::{errors::InvalidLength, ethereum::H256, Proto, TypeUrl};
 
 #[derive(Clone, Debug, PartialEq, Encode, Decode, TreeHash, Serialize, Deserialize)]
 pub struct BeaconBlockHeader {
@@ -65,10 +65,6 @@ impl TypeUrl for protos::union::ibc::lightclients::ethereum::v1::BeaconBlockHead
     const TYPE_URL: &'static str = "/union.ibc.lightclients.ethereum.v1.BeaconBlockHeader";
 }
 
-impl TryFromProto for BeaconBlockHeader {
-    type Proto = protos::union::ibc::lightclients::ethereum::v1::BeaconBlockHeader;
-}
-
-impl IntoProto for BeaconBlockHeader {
+impl Proto for BeaconBlockHeader {
     type Proto = protos::union::ibc::lightclients::ethereum::v1::BeaconBlockHeader;
 }

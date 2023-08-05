@@ -12,7 +12,7 @@ use crate::{
         light_client_header::LightClientHeader, sync_aggregate::SyncAggregate,
         sync_committee::SyncCommittee,
     },
-    try_from_proto_branch, IntoProto, TryFromProto, TryFromProtoErrorOf, TypeUrl,
+    try_from_proto_branch, Proto, TryFromProtoErrorOf, TypeUrl,
 };
 
 /// TODO: Move these to a more central location
@@ -136,13 +136,7 @@ impl TypeUrl for protos::union::ibc::lightclients::ethereum::v1::LightClientUpda
     const TYPE_URL: &'static str = "/union.ibc.lightclients.ethereum.v1.LightClientUpdate";
 }
 
-impl<C: SYNC_COMMITTEE_SIZE + BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> TryFromProto
-    for LightClientUpdate<C>
-{
-    type Proto = protos::union::ibc::lightclients::ethereum::v1::LightClientUpdate;
-}
-
-impl<C: SYNC_COMMITTEE_SIZE + BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> IntoProto
+impl<C: SYNC_COMMITTEE_SIZE + BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> Proto
     for LightClientUpdate<C>
 {
     type Proto = protos::union::ibc::lightclients::ethereum::v1::LightClientUpdate;

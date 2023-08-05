@@ -2,7 +2,7 @@ use crate::{
     errors::{InvalidLength, MissingField},
     ethereum::H256,
     tendermint::types::part_set_header::PartSetHeader,
-    IntoProto, TryFromProto, TryFromProtoErrorOf, TypeUrl,
+    Proto, TryFromProtoErrorOf, TypeUrl,
 };
 
 #[derive(Debug, Clone, PartialEq)]
@@ -35,10 +35,6 @@ impl TryFrom<protos::tendermint::types::BlockId> for BlockId {
     }
 }
 
-impl TryFromProto for BlockId {
-    type Proto = protos::tendermint::types::BlockId;
-}
-
 impl From<BlockId> for protos::tendermint::types::BlockId {
     fn from(value: BlockId) -> Self {
         Self {
@@ -48,7 +44,7 @@ impl From<BlockId> for protos::tendermint::types::BlockId {
     }
 }
 
-impl IntoProto for BlockId {
+impl Proto for BlockId {
     type Proto = protos::tendermint::types::BlockId;
 }
 
