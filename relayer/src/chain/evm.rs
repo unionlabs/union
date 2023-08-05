@@ -99,7 +99,7 @@ fn encode_dynamic_singleton_tuple(t: impl AbiEncode) -> Vec<u8> {
     U256::from(32)
         .encode()
         .into_iter()
-        .chain(t.encode().into_iter())
+        .chain(t.encode())
         .collect::<Vec<_>>()
 }
 
@@ -442,7 +442,9 @@ impl<C: ChainSpec> Chain for Evm<C> {
                     .await
                     .unwrap();
 
-                let [light_client_update] = &*light_client_updates.0 else { panic!() };
+                let [light_client_update] = &*light_client_updates.0 else {
+                    panic!()
+                };
 
                 light_client_update.data.clone()
             };

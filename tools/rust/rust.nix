@@ -2,7 +2,7 @@
   perSystem = { pkgs, ... }:
     let
       nightlyConfig = {
-        channel = "nightly-2023-05-16";
+        channel = "nightly-2023-08-05";
         components = [ "rust-src" "rust-analyzer" ];
         profile = "default";
         targets = [ "wasm32-unknown-unknown" ];
