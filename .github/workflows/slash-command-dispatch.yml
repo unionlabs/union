@@ -15,3 +15,6 @@ jobs:
             e2e
           reactions: true
           issue-type: pull-request
+          static-args: |
+            repository=${{ github.repository }}
+            comment-id=${{ github.event.comment.id }}

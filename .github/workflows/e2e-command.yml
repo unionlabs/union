@@ -1,4 +1,4 @@
-name: Nightly
+name: e2e
 
 on:
   workflow_dispatch:
@@ -13,15 +13,21 @@ on:
 jobs:
   build:
     steps:
-      - name: Run nightly workflow
-        uses: ./.github/workflows/nightly.yml
-        static-args: |
-          repository=${{ github.repository }}
-          comment-id=${{ github.event.comment.id }}
-      - name: Add reaction
+      - name: Add reaction before execxution
         uses: peter-evans/create-or-update-comment@v2
         with:
           token: ${{ secrets.PAT }}
           repository: ${{ github.event.inputs.repository }}
           comment-id: ${{ github.event.inputs.comment-id }}
-          reaction-type: hooray
+          reaction-type: eyes
+
+      - name: Run nightly workflow
+        uses: ./.github/workflows/nightly.yml
+
+      - name: Add reaction after completion
+        uses: peter-evans/create-or-update-comment@v2
+        with:
+          token: ${{ secrets.PAT }}
+          repository: ${{ github.event.inputs.repository }}
+          comment-id: ${{ github.event.inputs.comment-id }}
+          reaction-type: '+1'
