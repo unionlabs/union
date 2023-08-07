@@ -13,14 +13,6 @@ on:
 jobs:
   build:
     steps:
-      - name: Add reaction before execxution
-        uses: peter-evans/create-or-update-comment@v2
-        with:
-          token: ${{ secrets.PAT }}
-          repository: ${{ github.event.inputs.repository }}
-          comment-id: ${{ github.event.inputs.comment-id }}
-          reaction-type: eyes
-
       - name: Run nightly workflow
         uses: ./.github/workflows/nightly.yml
 
@@ -30,4 +22,4 @@ jobs:
           token: ${{ secrets.PAT }}
           repository: ${{ github.event.inputs.repository }}
           comment-id: ${{ github.event.inputs.comment-id }}
-          reaction-type: '+1'
+          reaction-type: hooray

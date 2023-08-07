@@ -15,6 +15,7 @@ jobs:
             e2e
           reactions: true
           issue-type: pull-request
+          dispatch-type: workflow
           static-args: |
             repository=${{ github.repository }}
             comment-id=${{ github.event.comment.id }}
