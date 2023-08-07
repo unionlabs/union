@@ -56,25 +56,46 @@ module.exports = {
     },
     {
       type: "category",
-      label: "Tutorials",
-      items: [
-        {
-          type: "doc",
-          id: "tutorials/connect-two-ibc-modules",
-        },
-        {
-          type: "doc",
-          id: "tutorials/relayer-configuration",
-        },
-      ],
-    },
-    {
-      type: "category",
       label: "Configurations",
       items: [
         {
           type: "doc",
           id: "configurations/ibc-parameters",
+        },
+      ],
+    },
+    {
+      type: "category",
+      label: "Builders/Relayers",
+      items: [
+        "builders/intro",
+        {
+          type: "category",
+          label: "Solidity Developers",
+          items: [
+            {
+              type: "doc",
+              id: "builders/solidity/sdk",
+            },
+            {
+              type: "category",
+              label: "Examples",
+              items: [
+                {
+                  type: "doc",
+                  id: "builders/solidity/example/pingpong",
+                },
+              ],
+            },
+          ],
+        },
+        {
+          type: "doc",
+          id: "tutorials/open-a-channel",
+        },
+        {
+          type: "doc",
+          id: "tutorials/relayer-configuration",
         },
       ],
     },

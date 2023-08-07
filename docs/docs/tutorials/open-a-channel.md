@@ -1,5 +1,5 @@
 ---
-title: "Connect IBC Modules"
+title: "Open a channel"
 ---
 
 Creating IBC capable apps on different chains is not enough to make them talk to each other. You first need to create a channel

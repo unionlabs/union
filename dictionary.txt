@@ -27,6 +27,7 @@ Getenv
 Hasher
 Hyperlane
 IAVL
+IIBC
 Infima
 Interchain
 Joye
