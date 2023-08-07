@@ -54,5 +54,29 @@ module.exports = {
         },
       ],
     },
+    {
+      type: "category",
+      label: "Tutorials",
+      items: [
+        {
+          type: "doc",
+          id: "tutorials/connect-two-ibc-modules",
+        },
+        {
+          type: "doc",
+          id: "tutorials/relayer-configuration",
+        },
+      ],
+    },
+    {
+      type: "category",
+      label: "Configurations",
+      items: [
+        {
+          type: "doc",
+          id: "configurations/ibc-parameters",
+        },
+      ],
+    },
   ],
 };
