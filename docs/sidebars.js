@@ -65,7 +65,7 @@ module.exports = {
         {
           type: "doc",
           id: "tutorials/relayer-configuration",
-        }
+        },
       ],
     },
     {

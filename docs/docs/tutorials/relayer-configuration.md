@@ -49,6 +49,7 @@ Here is an example configuration file:
 ## Ethereum configurations
 
 To see the correct values of the following parameters, check out [the IBC configuration parameters documentation](../configurations/ibc-parameters).
+
 - `chain_type`: `evm`
 - `preset_base`: `minimal` or `mainnet` based on the target Ethereum chain.
 - `xxx_address`: Contract addresses that are belong to the IBC module on Ethereum.
@@ -60,6 +61,7 @@ To see the correct values of the following parameters, check out [the IBC config
 ## Union configurations
 
 To see the correct values of the following parameters, check out [the IBC configuration parameters documentation](../configurations/ibc-parameters).
+
 - `chain_type`: `union`
 - `signer.raw`: Private key of the signer of the transactions to Union in hexadecimal format.
 - `ws_url`: Websocket endpoint of Union.

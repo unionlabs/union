@@ -2,7 +2,6 @@
 title: "Connect IBC Modules"
 ---
 
-
 Creating IBC capable apps on different chains is not enough to make them talk to each other. You first need to create a channel
 and optionally, a connection between them. It's optional because you can reuse a connection to open a channel if there is already
 a client on both chains that are already connected to each other. But in this tutorial, we'll guide you through all the steps required
@@ -10,7 +9,7 @@ to make two modules be able to talk to each other through IBC from scratch.
 
 # Creating clients
 
-As per IBC, you need to have a [client](https://github.com/cosmos/ibc/blob/main/spec/core/ics-002-client-semantics/README.md) to verify and track the counterparty chain's state. This client has a key role on verifying whether the IBC module on the counterparty chain committed a package as is. 
+As per IBC, you need to have a [client](https://github.com/cosmos/ibc/blob/main/spec/core/ics-002-client-semantics/README.md) to verify and track the counterparty chain's state. This client has a key role on verifying whether the IBC module on the counterparty chain committed a package as is.
 
 Before creating the client, make sure that you have [configured the relayer](./relayer-configuration).
 
@@ -23,6 +22,7 @@ relayer client create CHAIN-A CLIENT-A --on CHAIN-A-ID --counterparty CHAIN-B-ID
 After a successful execution, the relayer will print the ID of the client on console. Don't lose it, since we are going to use it in later steps.
 
 Note that `--on` and `--counterpary` are the keys that will be used for reading the chain configuration. For example, if we have the following relayer configuration:
+
 ```json
 {
 	"chain": {
@@ -45,7 +45,7 @@ Please run `relayer client create --help` to see all options.
 Now that we have a client on `CHAIN-A` that verifies `CHAIN-B`, we also need to have a client on `CHAIN-B` that verifies `CHAIN-A`:
 
 ```bash
-relayer client create CHAIN-B CLIENT-B --on CHAIN-B-ID --counterparty CHAIN-B-ID ADDITIONAL-ARGS.. 
+relayer client create CHAIN-B CLIENT-B --on CHAIN-B-ID --counterparty CHAIN-B-ID ADDITIONAL-ARGS..
 ```
 
 For example, to create a CometBLS client on `ethereum-devnet` that verifies `union-devnet`, you would run:
@@ -91,4 +91,3 @@ relayer channel open --from-chain union-devnet --from-connection connection-1 --
 ```
 
 After a successful execution, channel id's on both ends will be printed to the console.
-
