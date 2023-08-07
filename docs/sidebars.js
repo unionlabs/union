@@ -56,20 +56,6 @@ module.exports = {
     },
     {
       type: "category",
-      label: "Tutorials",
-      items: [
-        {
-          type: "doc",
-          id: "tutorials/connect-two-ibc-modules",
-        },
-        {
-          type: "doc",
-          id: "tutorials/relayer-configuration",
-        },
-      ],
-    },
-    {
-      type: "category",
       label: "Configurations",
       items: [
         {
@@ -80,12 +66,12 @@ module.exports = {
     },
     {
       type: "category",
-      label: "Builders",
+      label: "Builders/Relayers",
       items: [
         "builders/intro",
         {
           type: "category",
-          label: "Solidity",
+          label: "Solidity Developers",
           items: [
             {
               type: "doc",
@@ -102,6 +88,14 @@ module.exports = {
               ],
             },
           ],
+        },
+        {
+            type: "doc",
+            id: "tutorials/open-a-channel",
+        },
+        {
+            type: "doc",
+            id: "tutorials/relayer-configuration",
         },
       ],
     },
