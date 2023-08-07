@@ -21,7 +21,7 @@ relayer client create CHAIN-A CLIENT-A --on CHAIN-A-ID --counterparty CHAIN-B-ID
 
 After a successful execution, the relayer will print the ID of the client on console. Don't lose it, since we are going to use it in later steps.
 
-Note that `--on` and `--counterpary` are the keys that will be used for reading the chain configuration. For example, if we have the following relayer configuration:
+Note that `--on` and `--counterparty` are the keys that will be used for reading the chain configuration. For example, if we have the following relayer configuration:
 
 ```json
 {
