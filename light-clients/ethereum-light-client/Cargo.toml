@@ -19,7 +19,7 @@ ibc = { version = "0.37.0", default-features = false, features = [ "serde" ] }
 prost = { version = "0.11", default-features = false }
 rlp = { version = "0.5.2", default-features = false }
 schemars = { version = "0.8.3", default-features = false }
-serde = { version = "1.0.103", default-features = false, features = ["derive"] }
+serde = { version = "1.0", default-features = false, features = ["derive"] }
 serde-json-wasm = { version = "*", default-features = false }
 sha3 = { version = "0.10.8", default-features = false }
 thiserror = { version = "1.0.26", default-features = false }

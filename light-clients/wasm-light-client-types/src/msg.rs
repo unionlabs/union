@@ -103,7 +103,6 @@ pub enum ExecuteMsg {
 }
 
 #[cw_serde]
-#[serde(untagged)]
 pub enum QueryMsg {
     Status {},
 }

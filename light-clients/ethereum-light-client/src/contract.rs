@@ -521,6 +521,16 @@ mod test {
     }
 
     #[test]
+    fn query_msg_wasm_json_is_flattened() {
+        let query_message = r#"{ "status": {} }"#;
+
+        assert_eq!(
+            serde_json::from_str::<QueryMsg>(query_message).unwrap(),
+            QueryMsg::LightClientSpecification(WasmQueryMsg::Status {})
+        );
+    }
+
+    #[test]
     fn update_works_with_good_data() {
         let mut deps = OwnedDeps::<_, _, _, CustomQuery> {
             storage: MockStorage::default(),
