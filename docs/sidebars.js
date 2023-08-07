@@ -90,12 +90,12 @@ module.exports = {
           ],
         },
         {
-            type: "doc",
-            id: "tutorials/open-a-channel",
+          type: "doc",
+          id: "tutorials/open-a-channel",
         },
         {
-            type: "doc",
-            id: "tutorials/relayer-configuration",
+          type: "doc",
+          id: "tutorials/relayer-configuration",
         },
       ],
     },
