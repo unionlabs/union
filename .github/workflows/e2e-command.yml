@@ -14,7 +14,10 @@ jobs:
   build:
     steps:
       - name: Run nightly workflow
-        uses: ./.github/workflows/workflow-2.yml
+        uses: ./.github/workflows/nightly.yml
+        static-args: |
+          repository=${{ github.repository }}
+          comment-id=${{ github.event.comment.id }}
       - name: Add reaction
         uses: peter-evans/create-or-update-comment@v2
         with:
