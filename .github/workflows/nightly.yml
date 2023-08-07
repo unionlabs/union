@@ -2,7 +2,7 @@ name: Nightly
 
 on:
   repository_dispatch:
-  types: [e2e-command]
+    types: [e2e-command]
   workflow_dispatch:
   schedule:
     - cron: '0 4 * * *'
