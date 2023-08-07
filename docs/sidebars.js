@@ -100,6 +100,7 @@ module.exports = {
       ],
     },
     {
+      type: "category",
       label: "Tutorials",
       items: [
         {
