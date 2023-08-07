@@ -48,8 +48,8 @@ in
     ];
   };
   service = {
+    tty = true;
     stop_signal = "SIGINT";
-    networks = [ "union-devnet" ];
     ports = [
       # Rest HTTP
       "8545:8545"

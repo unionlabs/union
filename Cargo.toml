@@ -7,11 +7,11 @@ members = [
   "generated/contracts",
   "unionvisor",
   "relayer",
-  "cosmwasm/*"
+  "cosmwasm/*",
 ]
 
 exclude = [
-  "tools/generate-rust-sol-bindings"
+  "tools/generate-rust-sol-bindings",
 ]
 
 resolver = "2"

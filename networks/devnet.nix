@@ -17,7 +17,7 @@
         })
         devnetConfig.validatorCount));
 
-      evm-services = {
+      sepolia-services = {
         geth = import ./services/geth.nix {
           inherit pkgs;
           config = self'.packages.devnet-evm-config;
@@ -30,8 +30,18 @@
       };
 
       devnet = {
-        project.name = "union-devnet";
-        services = uniond-services // evm-services;
+        project.name = "devnet";
+        services = uniond-services // sepolia-services;
+      };
+
+      union = {
+        project.name = "union";
+        services = uniond-services;
+      };
+
+      sepolia = {
+        project.name = "sepolia";
+        services = sepolia-services;
       };
 
       spec = {
@@ -50,7 +60,7 @@
         modules = [{
           project.name = "union-devnet-evm";
           networks.union-devnet = { };
-          services = evm-services;
+          services = sepolia-services;
         }];
       };
 
@@ -89,7 +99,7 @@
         };
 
       _module.args.networks = {
-        inherit devnet;
+        inherit devnet union sepolia;
       };
     };
 }

@@ -19,7 +19,7 @@
     "shanghaiTime": 1684334927,
     "terminalTotalDifficulty": 0,
     "clique": {
-      "period": 5,
+      "period": 1,
       "epoch": 30000
     }
   },
