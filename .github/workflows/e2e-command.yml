@@ -1,0 +1,24 @@
+name: Nightly
+
+on:
+  workflow_dispatch:
+    inputs:
+      repository:
+        description: 'The repository from which the slash command was dispatched'
+        required: true
+      comment-id:
+        description: 'The comment-id of the slash command'
+        required: true
+
+jobs:
+  build:
+    steps:
+      - name: Run nightly workflow
+        uses: ./.github/workflows/workflow-2.yml
+      - name: Add reaction
+        uses: peter-evans/create-or-update-comment@v2
+        with:
+          token: ${{ secrets.PAT }}
+          repository: ${{ github.event.inputs.repository }}
+          comment-id: ${{ github.event.inputs.comment-id }}
+          reaction-type: hooray
