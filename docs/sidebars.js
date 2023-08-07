@@ -78,5 +78,32 @@ module.exports = {
         },
       ],
     },
+    {
+      type: "category",
+      label: "Builders",
+      items: [
+        "builders/intro",
+        {
+          type: "category",
+          label: "Solidity",
+          items: [
+            {
+              type: "doc",
+              id: "builders/solidity/sdk",
+            },
+            {
+              type: "category",
+              label: "Examples",
+              items: [
+                {
+                  type: "doc",
+                  id: "builders/solidity/example/pingpong",
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    },
   ],
 };
