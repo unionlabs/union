@@ -223,6 +223,7 @@ where
 
     // OTHER STUFF
 
+    #[must_use = "returns the actual height the counterparty was updated to, which may differ from `update_to`"]
     fn update_counterparty_client<'a>(
         &'a self,
         counterparty: &'a L,

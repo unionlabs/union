@@ -6,6 +6,7 @@
     clippy::manual_async_fn,
     clippy::module_name_repetitions
 )]
+#![deny(clippy::let_underscore_must_use)]
 
 // nix run .# -- tx wasm instantiate 1 '{"default_timeout":10000,"gov_contract":"union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2","allowlist":[]}' --label blah --from alice --gas auto --keyring-backend test --gas-adjustment 1.3 --amount 100stake --no-admin --chain-id union-devnet-1
 
