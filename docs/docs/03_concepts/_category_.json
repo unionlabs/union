@@ -1,0 +1,13 @@
+{
+  "label": "Concepts",
+  "collapsible": true,
+  "collapsed": true,
+  "className": "red",
+  "link": {
+    "type": "generated-index",
+    "title": "Concepts"
+  },
+  "customProps": {
+    "description": "Important concepts in trustless infrastructure."
+  }
+}

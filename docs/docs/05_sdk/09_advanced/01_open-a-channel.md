@@ -1,5 +1,5 @@
 ---
-title: "Open a channel"
+title: "Opening a channel"
 ---
 
 Creating IBC capable apps on different chains is not enough to make them talk to each other. You first need to create a channel
@@ -10,8 +10,6 @@ to make two modules be able to talk to each other through IBC from scratch.
 # Creating clients
 
 As per IBC, you need to have a [client](https://github.com/cosmos/ibc/blob/main/spec/core/ics-002-client-semantics/README.md) to verify and track the counterparty chain's state. This client has a key role on verifying whether the IBC module on the counterparty chain committed a package as is.
-
-Before creating the client, make sure that you have [configured the relayer](./relayer-configuration).
 
 Run the following to create a client on `CHAIN-A`:
 
@@ -38,7 +36,7 @@ To create an Ethereum client on `union-devnet` that verifies `ethereum-devnet`, 
 relayer client create union ethereum-08-wasm --on union-devnet --counterparty ethereum-devnet --evm-preset minimal
 ```
 
-Note that `--evm-preset` can differ based on which Ethereum chain you are verifying. Please refer to [the relayer configuration documentation](./relayer-configuration) to learn more.
+Note that `--evm-preset` can differ based on which Ethereum chain you are verifying. Please refer to [the relayer configuration documentation](04_infrastructure/02_relayers/relayer.md) to learn more.
 
 Please run `relayer client create --help` to see all options.
 

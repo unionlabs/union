@@ -1,5 +1,5 @@
 ---
-title: "Configuring the Relayer"
+title: "Operating a Relayer"
 ---
 
 Our relayer uses a configuration file so you don't have to type the same parameters on each execution.
@@ -48,8 +48,6 @@ Here is an example configuration file:
 
 ## Ethereum configurations
 
-To see the correct values of the following parameters, check out [the IBC configuration parameters documentation](../configurations/ibc-parameters).
-
 - `chain_type`: `evm`
 - `preset_base`: `minimal` or `mainnet` based on the target Ethereum chain.
 - `xxx_address`: Contract addresses that are belong to the IBC module on Ethereum.
@@ -59,8 +57,6 @@ To see the correct values of the following parameters, check out [the IBC config
 - `wasm_code_id`: Code ID of the Ethereum light client on Union.
 
 ## Union configurations
-
-To see the correct values of the following parameters, check out [the IBC configuration parameters documentation](../configurations/ibc-parameters).
 
 - `chain_type`: `union`
 - `signer.raw`: Private key of the signer of the transactions to Union in hexadecimal format.
