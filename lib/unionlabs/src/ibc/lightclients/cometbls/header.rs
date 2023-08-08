@@ -1,8 +1,8 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    ethereum::H256, ibc::core::client::height::Height,
-    tendermint::types::signed_header::SignedHeader, Proto, TypeUrl,
+    errors::MissingField, ethereum::H256, ibc::core::client::height::Height,
+    tendermint::types::signed_header::SignedHeader, Proto, TryFromProtoErrorOf, TypeUrl,
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -12,14 +12,6 @@ pub struct Header {
     pub trusted_height: Height,
     #[serde(with = "::serde_utils::hex_string")]
     pub zero_knowledge_proof: Vec<u8>,
-}
-
-impl Proto for Header {
-    type Proto = protos::union::ibc::lightclients::cometbls::v1::Header;
-}
-
-impl TypeUrl for protos::union::ibc::lightclients::cometbls::v1::Header {
-    const TYPE_URL: &'static str = "/union.ibc.lightclients.cometbls.v1.Header";
 }
 
 // #[derive(Debug)]
@@ -66,4 +58,50 @@ impl From<Header> for contracts::glue::UnionIbcLightclientsCometblsV1HeaderData 
 #[cfg(feature = "ethabi")]
 impl crate::EthAbi for Header {
     type EthAbi = contracts::glue::UnionIbcLightclientsCometblsV1HeaderData;
+}
+
+#[derive(Debug)]
+pub enum TryFromHeaderError {
+    MissingField(MissingField),
+    SignedHeader(TryFromProtoErrorOf<SignedHeader>),
+    InvalidUntrustedValidatorSetRootSize,
+}
+
+impl TryFrom<protos::union::ibc::lightclients::cometbls::v1::Header> for Header {
+    type Error = TryFromHeaderError;
+
+    fn try_from(
+        value: protos::union::ibc::lightclients::cometbls::v1::Header,
+    ) -> Result<Self, Self::Error> {
+        Ok(Self {
+            signed_header: value
+                .signed_header
+                .ok_or(TryFromHeaderError::MissingField(MissingField(
+                    "signed header",
+                )))?
+                .try_into()
+                .map_err(TryFromHeaderError::SignedHeader)?,
+            untrusted_validator_set_root: H256(
+                value
+                    .untrusted_validator_set_root
+                    .try_into()
+                    .map_err(|_| TryFromHeaderError::InvalidUntrustedValidatorSetRootSize)?,
+            ),
+            trusted_height: value
+                .trusted_height
+                .ok_or(TryFromHeaderError::MissingField(MissingField(
+                    "trusted height",
+                )))?
+                .into(),
+            zero_knowledge_proof: value.zero_knowledge_proof,
+        })
+    }
+}
+
+impl Proto for Header {
+    type Proto = protos::union::ibc::lightclients::cometbls::v1::Header;
+}
+
+impl TypeUrl for protos::union::ibc::lightclients::cometbls::v1::Header {
+    const TYPE_URL: &'static str = "/union.ibc.lightclients.cometbls.v1.Header";
 }

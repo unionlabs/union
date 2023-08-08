@@ -2,7 +2,9 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     bounded_int::{BoundedI32, BoundedI64},
+    errors::MissingField,
     tendermint::types::{block_id::BlockId, commit_sig::CommitSig},
+    Proto, TryFromProtoErrorOf, TypeUrl,
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -66,6 +68,42 @@ impl TryFrom<contracts::glue::TendermintTypesCommitData> for Commit {
     }
 }
 
+#[derive(Debug)]
+pub enum TryFromCommitError {
+    MissingField(MissingField),
+    BlockId(TryFromProtoErrorOf<BlockId>),
+    IntegerOverflow(&'static str),
+    Signatures,
+}
+
+impl TryFrom<protos::tendermint::types::Commit> for Commit {
+    type Error = TryFromCommitError;
+
+    fn try_from(value: protos::tendermint::types::Commit) -> Result<Self, Self::Error> {
+        Ok(Self {
+            height: value
+                .height
+                .try_into()
+                .map_err(|_| TryFromCommitError::IntegerOverflow("height"))?,
+            round: value
+                .round
+                .try_into()
+                .map_err(|_| TryFromCommitError::IntegerOverflow("round"))?,
+            block_id: value
+                .block_id
+                .ok_or(TryFromCommitError::MissingField(MissingField("block_id")))?
+                .try_into()
+                .map_err(TryFromCommitError::BlockId)?,
+            signatures: value
+                .signatures
+                .into_iter()
+                .map(TryInto::try_into)
+                .collect::<Result<Vec<_>, _>>()
+                .map_err(|_| TryFromCommitError::Signatures)?,
+        })
+    }
+}
+
 #[cfg(feature = "ethabi")]
 impl From<Commit> for contracts::glue::TendermintTypesCommitData {
     fn from(value: Commit) -> Self {
@@ -76,4 +114,12 @@ impl From<Commit> for contracts::glue::TendermintTypesCommitData {
             signatures: value.signatures.into_iter().map(Into::into).collect(),
         }
     }
+}
+
+impl TypeUrl for protos::tendermint::types::Commit {
+    const TYPE_URL: &'static str = "/tendermint.types.Commit";
+}
+
+impl Proto for Commit {
+    type Proto = protos::tendermint::types::Commit;
 }
