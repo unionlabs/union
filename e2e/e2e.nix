@@ -63,6 +63,8 @@
               union.wait_for_console_text('${unionNode.wait_for_console_text}')
               sepolia.wait_for_console_text('${sepoliaNode.wait_for_console_text}')
 
+              sepolia.wait_until_succeeds([[ $(curl http://localhost:9596/eth/v2/beacon/blocks/head --fail --silent | jq '.data.message.slot | tonumber > 0') == "true" ]])
+
               ${testScript}
             '';
 

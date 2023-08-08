@@ -1,7 +1,7 @@
 name: Nightly
 
 on:
-  workflow_dispatch:
+  workflow_call:
   schedule:
     - cron: '0 4 * * *'
 
@@ -19,7 +19,8 @@ jobs:
       contents: read
       issues: write
     needs: [ build ]
-    if: failure()
+    # only create an issue if it failed in a scheduled run
+    if: github.event_name == "schedule" && failure()
     steps:
       - uses: actions/checkout@v3
       - uses: JasonEtco/create-an-issue@v2
