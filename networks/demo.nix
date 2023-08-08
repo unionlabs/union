@@ -60,7 +60,7 @@
                     },
                     "counterparty_endpoint":{
                       "port_id":"transfer",
-                      "channel_id":"channel-0"
+                     "channel_id":"channel-0"
                     },
                     "order":"ORDER_UNORDERED",
                     "version":"ics20-1",
@@ -86,7 +86,7 @@
                     }
                 }'
 
-              ${instantiateContract { code-id = 2; label = "ping-pong"; }} 
+              ${instantiateContract { code-id = 2; label = "ping-pong"; }}
             '';
         };
     in
@@ -217,7 +217,7 @@
               printHelp
               exit 1
             fi
-            
+
 
             if [[ -z "$RELAYER_CONFIG_FILE" ]] && [[ -n "$NO_DEPLOY_EVM" ]]; then
               echo "--relayer-config-file must be specified when --no-deploy-evm is enabled."
@@ -254,7 +254,7 @@
               if [ ! -f "$CIRCUIT_PATH/r1cs.bin" ] || [ ! -f "$CIRCUIT_PATH/pk.bin" ] || [ ! -f "$CIRCUIT_PATH/vk.bin" ]; then
                 echo "Some files are still missing. Please re-run the command to download the files.."
                 exit 1
-              fi                  
+              fi
               echo "Starting galois.."
               ${self'.packages.galoisd-devnet}/bin/galoisd serve "$GALOIS_URL"
             }
@@ -279,7 +279,7 @@
             deployEVMContracts() {
               echo ------------------------------------
               echo + Deploying IBC Contracts..
-              while ! ${self'.packages.evm-devnet-deploy}/bin/evm-devnet-deploy | tee "$EVM_CONTRACTS_OUTFILE" 
+              while ! ${self'.packages.evm-devnet-deploy}/bin/evm-devnet-deploy | tee "$EVM_CONTRACTS_OUTFILE"
               do
                 echo "Eth doesn't seem to be ready yet. Will try in 3 seconds."
                 sleep 3
@@ -362,7 +362,7 @@
               fi
 
               while ! eval "$COMMAND" 1>/dev/null 2>&1
-              do 
+              do
                 echo ".. Waiting for galois to be ready at $GALOIS_URL .."
                 sleep 5
               done
@@ -413,7 +413,7 @@
             fi
 
             # Relayer requires the scheme to be included (http(s)) but galoisd returns an error when
-            # it is run with a scheme in the URL. 
+            # it is run with a scheme in the URL.
             # TODO(aeryz): This should not be the case, this should probably be fixed in galois
             GALOIS_URL=$(echo "$GALOIS_URL" | sed -e "s/^http:\/\///" | sed -e "s/^https:\/\///")
 
@@ -438,7 +438,7 @@
             createClients
             waitForGaloisToBeOnline
 
-                
+
             echo "--------------------------------"
             echo "+ Starting the relayer.."
             echo "+ Relayer config path is: $RELAYER_CONFIG_FILE"
