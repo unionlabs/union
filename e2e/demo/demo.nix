@@ -1,5 +1,5 @@
 { ... }: {
-  perSystem = { devnetConfig, pkgs, self', inputs', cw-instantiate2-salt, ... }:
+  perSystem = { e2e, devnetConfig, pkgs, self', inputs', cw-instantiate2-salt, ... }:
     let
       uniond = pkgs.lib.getExe self'.packages.uniond;
 
@@ -90,7 +90,19 @@
             '';
         };
     in
-    {
+    rec {
+      checks.demo = e2e.mkTestWithDevnetSetup {
+        name = "demo";
+
+        testScript = ''
+            client.succeed("${packages.setup-demo}/bin/union-devnet-demo -- --circuit-path ./")
+        '';
+
+        nodes = {
+          # empty node used to communicate with the other nodes
+          client = _: { };
+        };
+      };
       packages.setup-demo =
         pkgs.writeShellApplication {
           name = "union-devnet-demo";

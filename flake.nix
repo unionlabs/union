@@ -81,12 +81,13 @@
         ./tools/rust/crane.nix
         ./tools/tera/tera.nix
         ./tools/docgen/docgen.nix
-        ./networks/demo.nix
         ./networks/devnet.nix
         ./networks/genesis/devnet.nix
         ./testnet-validator.nix
         ./e2e/all-tests.nix
         ./e2e/e2e.nix
+        ./e2e/demo/demo.nix
+
         treefmt-nix.flakeModule
         pre-commit-hooks.flakeModule
       ];
