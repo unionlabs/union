@@ -47,7 +47,7 @@
           type = "app";
           program = pkgs.writeShellApplication {
             name = "docs-dev-server";
-            runtimeInputs = [ pkgs.nodejs pkgs.yarn ];
+            runtimeInputs = [ pkgs.nodejs ];
             text = ''
               yarn install --offline
               yarn workspace docs run start
