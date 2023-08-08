@@ -944,7 +944,7 @@ impl<C: ChainSpec> Connect<Cometbls<C>> for Ethereum<C> {
                     // TODO: not sure about this case
                     tendermint::block::CommitSig::BlockIdFlagNil { .. } => {
                         bitmap.set_bit(i as _, false);
-                        tracing::debug!("Nul flag???");
+                        tracing::warn!("Validator at index {} has a null flag for the signature commit", i);
                     }
                 }
             }
