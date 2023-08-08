@@ -13,7 +13,7 @@
           mv ./config/node_key.json $out/${name}
         '';
 
-      initHome = pkgs.runCommand "genesis-home"
+      initHome = genesisOverwrites: pkgs.runCommand "genesis-home"
         {
           buildInputs = [ pkgs.jq pkgs.moreutils ];
         }
@@ -418,9 +418,9 @@
                 }.json
               '')
           validatorKeys;
-      genesisHome = pkgs.lib.foldl
+      genesisHome = genesisOverwrites: pkgs.lib.foldl
         (home: f: f home)
-        initHome
+        (initHome genesisOverwrites)
         (
           # add light clients
           (builtins.map addLightClientCodeToGenesis [
@@ -446,42 +446,42 @@
           ]
         )
       ;
-      validatorKeys = mkValidatorKeys { inherit (devnetConfig) validatorCount; home = genesisHome; };
-      validatorGentxs = mkValidatorGentx {
-        home = genesisHome;
+      validatorKeys = genesisOverwrites: mkValidatorKeys { inherit (devnetConfig) validatorCount; home = genesisHome genesisOverwrites; };
+      validatorGentxs = genesisOverwrites: mkValidatorGentx {
+        home = genesisHome genesisOverwrites;
         inherit validatorKeys;
       };
       validatorNodeIDs = { validatorCount }: builtins.genList (i: mkNodeID "valnode-${toString i}.json") validatorCount;
     in
     {
-      packages.devnet-genesis = pkgs.runCommand "genesis" { } ''
+      packages.devnet-genesis = genesisOverwrites: pkgs.runCommand "genesis" { } ''
         mkdir $out
         cd $out
 
         export HOME=$(pwd)
 
         # Copy the read-only genesis we used to build the genesis file as the collect-gentxs command will overwrite it
-        cp --no-preserve=mode -r ${genesisHome}/* .
+        cp --no-preserve=mode -r ${genesisHome genesisOverwrites}/* .
 
         mkdir ./config/gentx
         ${builtins.concatStringsSep "\n" (pkgs.lib.lists.imap0 (i: valGentx: ''
           cp ${valGentx}/valgentx-${toString i}.json ./config/gentx/valgentx-${
             toString i
           }.json
-        '') validatorGentxs)}
+        '') (validatorGentxs genesisOverwrites))}
 
         ${uniond} collect-gentxs --home . 2> /dev/null
         ${uniond} validate-genesis --home .
       '';
 
-      packages.devnet-validator-keys = pkgs.symlinkJoin {
+      packages.devnet-validator-keys = genesisOverwrites: pkgs.symlinkJoin {
         name = "validator-keys";
-        paths = validatorKeys;
+        paths = validatorKeys genesisOverwrites;
       };
 
-      packages.devnet-validator-gentxs = pkgs.symlinkJoin {
+      packages.devnet-validator-gentxs = genesisOverwrites: pkgs.symlinkJoin {
         name = "validator-gentxs";
-        paths = validatorGentxs;
+        paths = validatorGentxs genesisOverwrites;
       };
 
       packages.devnet-validator-node-ids = pkgs.symlinkJoin {

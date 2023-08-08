@@ -32,7 +32,7 @@
       unionNode = {
         wait_for_console_text = "height=[1-9][0-9]*";
         wait_for_open_port = 26657;
-        node = _: {
+        node = genesisOverwrites: {
           imports = [
             inputs.arion.nixosModules.arion
           ];
@@ -40,7 +40,7 @@
             diskSize = 2 * 1024;
             arion = {
               backend = "docker";
-              projects.union.settings = networks.union;
+              projects.union.settings = networks.union genesisOverwrites;
             };
           };
         };
@@ -50,7 +50,7 @@
       _module.args.e2e = {
         inherit mkTest unionNode sepoliaNode;
 
-        mkTestWithDevnetSetup = { name, testScript, nodes }:
+        mkTestWithDevnetSetup = { name, testScript, nodes, unionGenesisOverwrites }:
           mkTest {
             inherit name;
 
@@ -70,7 +70,7 @@
               (pkgs.lib.throwIf (builtins.hasAttr "union" nodes) "union node already exists; use a different name")
                 (pkgs.lib.throwIf (builtins.hasAttr "sepolia" nodes) "sepolia node already exists; use a different name")
                 ({
-                  union = unionNode.node;
+                  union = unionNode.node unionGenesisOverwrites;
                   sepolia = sepoliaNode.node;
                 } // nodes);
           };
