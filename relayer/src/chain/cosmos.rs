@@ -282,6 +282,20 @@ impl Chain for Union {
                 .height
                 .value();
 
+            loop {
+                if self
+                    .tm_client
+                    .latest_commit()
+                    .await
+                    .unwrap()
+                    .signed_header
+                    .header
+                    .height
+                    .value() > height {
+                        break;
+                    }
+            }
+
             self.make_height(height)
         }
     }
