@@ -423,19 +423,18 @@ async fn do_main(args: cli::AppArgs) -> Result<(), anyhow::Error> {
         Command::Ibc(IbcCmd::Query {
             on,
             cmd: IbcQueryCmd::Path(path),
+            at,
         }) => {
             let json = match relayer_config.chain[&on].clone() {
                 ChainConfig::Evm(EvmChainConfig::Mainnet(evm)) => {
                     let evm = Evm::<Mainnet>::new(evm).await;
 
-                    path.any_state_proof_to_json(&evm.light_client(), QueryHeight::Latest)
-                        .await
+                    path.any_state_proof_to_json(&evm.light_client(), at).await
                 }
                 ChainConfig::Evm(EvmChainConfig::Minimal(evm)) => {
                     let evm = Evm::<Minimal>::new(evm).await;
 
-                    path.any_state_proof_to_json(&evm.light_client(), QueryHeight::Latest)
-                        .await
+                    path.any_state_proof_to_json(&evm.light_client(), at).await
                 }
                 ChainConfig::Union(union) => {
                     let union = Union::new(union).await;
@@ -443,8 +442,7 @@ async fn do_main(args: cli::AppArgs) -> Result<(), anyhow::Error> {
                     // Config is arbitrary
                     let light_client: Ethereum<Mainnet> = union.light_client();
 
-                    path.any_state_proof_to_json(&light_client, QueryHeight::Latest)
-                        .await
+                    path.any_state_proof_to_json(&light_client, at).await
                 }
             };
 
@@ -635,10 +633,7 @@ where
         })
         .await;
 
-    tracing::info!(
-        "Connection open try executed at {:?}",
-        connection_try_height
-    );
+    tracing::info!("Connection open try executed at {connection_try_height}");
 
     let ethereum_update_from = ethereum_latest_height;
     let ethereum_update_to = loop {
@@ -649,7 +644,7 @@ where
         tokio::time::sleep(std::time::Duration::from_secs(2)).await;
     };
 
-    tracing::info!("Querying proof at {}", connection_try_height);
+    tracing::info!("Querying proof at {connection_try_height}");
 
     let _ = ethereum
         .update_counterparty_client(
@@ -728,7 +723,7 @@ where
                 features: [Order::Ordered, Order::Unordered].into_iter().collect(),
             },
             client_state: ethereum_client_state_proof.state,
-            proof_height: ethereum_connection_state_proof.proof_height,
+            proof_height: ethereum_connection_state_proof.proof_height.increment(),
             proof_try: ethereum_connection_state_proof.proof,
             proof_client: ethereum_client_state_proof.proof,
             proof_consensus: ethereum_consensus_state_proof.proof,

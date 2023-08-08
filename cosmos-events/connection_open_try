@@ -79,7 +79,7 @@
     "attributes": [
       {
         "key": "acc_seq",
-        "value": "union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2/35",
+        "value": "union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2/54",
         "index": true
       }
     ]
@@ -89,7 +89,7 @@
     "attributes": [
       {
         "key": "signature",
-        "value": "nJ18Gsqt91GkutH4/wdCl5U6YKRLeT/5ExDXlPm5pMkC4xlVjAsssXwrvlJKD6g6ofapMaGXbjF/3T9aHqp+JA==",
+        "value": "lxVReM1XC2navO3+fXGLcigMLFSeMDsQ/AD6RB4zLi15FF853wVT3HTQdNrvsonBmyy5OX3Zv+hvg5qtHzM4kw==",
         "index": true
       }
     ]
@@ -114,7 +114,7 @@
     "attributes": [
       {
         "key": "connection_id",
-        "value": "connection-8",
+        "value": "connection-11",
         "index": true
       },
       {
@@ -129,7 +129,7 @@
       },
       {
         "key": "counterparty_connection_id",
-        "value": "connection-3",
+        "value": "connection-6",
         "index": true
       }
     ]

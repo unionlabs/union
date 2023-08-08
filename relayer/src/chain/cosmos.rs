@@ -1255,13 +1255,17 @@ where
 
             let path = path.to_string();
 
-            tracing::debug!(path);
+            tracing::debug!(path, %at);
+
+            // https://github.com/cosmos/relayer/blob/a63cd79b779d603fa89228e1b06fb99fcfb96119/relayer/chains/cosmos/query.go#L406
+            // idk man
+            let height = i64::try_from(at.revision_height).unwrap(); // + 1;
 
             let query_result = client
                 .abci_query(AbciQueryRequest {
                     data: path.into_bytes(),
                     path: "store/ibc/key".to_string(),
-                    height: at.revision_height.try_into().unwrap(),
+                    height,
                     prove: true,
                 })
                 .await
@@ -1270,7 +1274,7 @@ where
 
             assert!(
                 !query_result.value.is_empty(),
-                "abci query returned empty bytes"
+                "abci query returned empty bytes: {query_result:#?}"
             );
 
             StateProof {

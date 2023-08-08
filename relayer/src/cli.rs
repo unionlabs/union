@@ -58,6 +58,8 @@ pub enum IbcCmd {
     Query {
         #[arg(long)]
         on: String,
+        #[arg(long, default_value_t = QueryHeight::Latest)]
+        at: QueryHeight,
         #[command(subcommand)]
         cmd: IbcQueryCmd,
     },
