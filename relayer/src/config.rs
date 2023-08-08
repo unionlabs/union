@@ -92,6 +92,8 @@ pub struct UnionChainConfig {
     pub wasm_code_id: H256,
     #[arg(long)]
     pub prover_endpoint: String,
+    #[arg(long)]
+    pub dump_path: String,
 }
 
 pub mod private_key {

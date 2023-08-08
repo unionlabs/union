@@ -3572,6 +3572,7 @@ dependencies = [
  "ethereum-verifier",
  "ethers",
  "futures",
+ "hex",
  "hex-literal",
  "num-bigint",
  "prost",

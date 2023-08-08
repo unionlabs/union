@@ -114,6 +114,7 @@
             UNION_RPC_URL="$DEFAULT_UNION_RPC_URL"
             UNION_WS_URL="$DEFAULT_UNION_WS_URL"
             RELAYER_CONFIG_FILE=""
+            UNION_DUMP_PATH=""
             NO_DEPLOY_EVM=""
             PING_PONG_MODULE_ADDRESS=""
             PING_PONG_TIMEOUT="$DEFAULT_PING_PONG_TIMEOUT"
@@ -191,6 +192,11 @@
                   shift
                   shift
                   ;;
+                --union-dump-path)
+                  UNION_DUMP_PATH="$2"
+                  shift
+                  shift
+                  ;;
                 --no-deploy-evm)
                   NO_DEPLOY_EVM=1
                   shift
@@ -227,6 +233,10 @@
 
             if [[ -z "$RELAYER_CONFIG_FILE" ]]; then
               RELAYER_CONFIG_FILE="$(mktemp -d)/relayer-config.json"
+            fi
+
+            if [[ -z "$UNION_DUMP_PATH" ]]; then
+              UNION_DUMP_PATH="$(mktemp -d)"
             fi
 
             # Check if union devnet is running
@@ -320,7 +330,8 @@
                     },
                     "ws_url": "'"$UNION_WS_URL"'",
                     "wasm_code_id": "0x'"$WASM_CODE_ID"'",
-                    "prover_endpoint": "'"$GALOIS_URL"'"
+                    "prover_endpoint": "'"$GALOIS_URL"'",
+                    "dump_path": "'"$UNION_DUMP_PATH"'"
                   }
                 }              }' | jq > "$RELAYER_CONFIG_FILE"
 

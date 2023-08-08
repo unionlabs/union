@@ -36,6 +36,7 @@ use crate::{
 pub mod cosmos;
 pub mod evm;
 
+pub mod dumper;
 pub mod proof;
 
 pub enum AnyChain {
