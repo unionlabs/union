@@ -944,7 +944,10 @@ impl<C: ChainSpec> Connect<Cometbls<C>> for Ethereum<C> {
                     // TODO: not sure about this case
                     tendermint::block::CommitSig::BlockIdFlagNil { .. } => {
                         bitmap.set_bit(i as _, false);
-                        tracing::warn!("Validator at index {} has a null flag for the signature commit", i);
+                        tracing::warn!(
+                            "Validator at index {} has a null flag for the signature commit",
+                            i
+                        );
                     }
                 }
             }
@@ -1032,15 +1035,9 @@ impl<C: ChainSpec> Connect<Cometbls<C>> for Ethereum<C> {
                     commit.signed_header.header.height.value()
                 ),
                 &ProofDump {
-                    untrusted_root: prove_res.untrusted_validator_set_root.clone().into(),
-                    evm_zkp: prove_res.proof.as_ref().unwrap().evm_proof.clone().into(),
-                    gnark_zkp: prove_res
-                        .proof
-                        .as_ref()
-                        .unwrap()
-                        .compressed_content
-                        .clone()
-                        .into(),
+                    untrusted_root: prove_res.untrusted_validator_set_root.clone(),
+                    evm_zkp: prove_res.proof.as_ref().unwrap().evm_proof.clone(),
+                    gnark_zkp: prove_res.proof.as_ref().unwrap().compressed_content.clone(),
                 },
             );
 
