@@ -13,7 +13,7 @@
           mv ./config/node_key.json $out/${name}
         '';
 
-      initHome = genesisOverwrites: pkgs.runCommand "genesis-home"
+      initHome = pkgs.runCommand "genesis-home"
         {
           buildInputs = [ pkgs.jq pkgs.moreutils ];
         }
@@ -33,6 +33,19 @@
             --keyring-backend test \
             --home $out
         '';
+
+        applyGenesisOverwrites = home: genesisOverwrites: pkgs.runCommand "apply-genesis-overwrites"
+          {
+            buildInputs = [ pkgs.jq ];
+          }
+          ''
+            cat ${builtins.toJSON genesisOverwrites} > ./overwrite.json
+            merge=$(jq -s '.[0] * .[1]' ${home}/config/genesis.json ./overwrite.json)
+            echo "Out: "
+            echo $(cat $merge | jq .)
+            cp ${home} $out
+            cat $merge > $out/config/genesis.json
+          '';
 
       calculateCw20Ics20ContractAddress = home: pkgs.runCommand "calculate-cw20-ics20-contract-address"
         {
@@ -420,7 +433,7 @@
           validatorKeys;
       genesisHome = genesisOverwrites: pkgs.lib.foldl
         (home: f: f home)
-        (initHome genesisOverwrites)
+        (applyGenesisOverwrites initHome genesisOverwrites)
         (
           # add light clients
           (builtins.map addLightClientCodeToGenesis [
