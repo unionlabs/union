@@ -754,6 +754,29 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "acbf1af155f9b9ef647e42cdc158db4b64a1b61f743629225fde6f3e0be2a7c7"
 
 [[package]]
+name = "cometbls-light-client"
+version = "0.1.0"
+dependencies = [
+ "base64 0.21.2",
+ "bytes",
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "hex",
+ "ibc",
+ "prost",
+ "protos",
+ "schemars",
+ "serde",
+ "serde-json-wasm",
+ "serde_json",
+ "sha3",
+ "thiserror",
+ "tiny-keccak",
+ "unionlabs",
+ "wasm-light-client-types",
+]
+
+[[package]]
 name = "const-oid"
 version = "0.9.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
