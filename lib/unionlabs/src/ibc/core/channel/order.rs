@@ -1,6 +1,8 @@
+use serde::Serialize;
+
 use crate::errors::UnknownEnumVariant;
 
-#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy, Serialize)]
 pub enum Order {
     Unspecified,
     Unordered,

@@ -59,7 +59,7 @@ Then we'll have `uniond` initialize our data and configuration directories. By d
 uniond init $MONIKER "bn254" --chain-id $CHAIN_ID
 ```
 
-The `[key_type]` is `"bn254"`, which most validators haven't encountered before when running Tendermint nodes. That's because it's part of [CometBLS](../architecture/cometbls).
+The `[key_type]` is `"bn254"`, which most validators haven't encountered before when running Tendermint nodes. That's because it's part of [CometBLS](02_architecture/cometbls.md).
 
 ### Seeds
 

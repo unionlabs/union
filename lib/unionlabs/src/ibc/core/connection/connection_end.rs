@@ -1,10 +1,12 @@
+use serde::Serialize;
+
 use crate::{
     errors::{MissingField, UnknownEnumVariant},
     ibc::core::connection::{counterparty::Counterparty, state::State, version::Version},
     Proto, TypeUrl,
 };
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct ConnectionEnd {
     pub client_id: String,
     pub versions: Vec<Version>,

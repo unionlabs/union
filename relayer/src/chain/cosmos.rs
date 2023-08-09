@@ -53,6 +53,7 @@ use unionlabs::{
 
 use crate::{
     chain::{
+        dumper::Dumper,
         evm::{Cometbls, Evm},
         proof::{
             ChannelEndPath, ClientConsensusStatePath, ClientStatePath, CommitmentPath,
@@ -66,6 +67,7 @@ use crate::{
 /// The 08-wasm light client running on the union chain.
 pub struct Ethereum<C: ChainSpec> {
     chain: <Self as LightClient>::HostChain,
+    dumper: Dumper,
     _marker: PhantomData<C>,
 }
 
@@ -84,6 +86,7 @@ pub struct Union {
     // TODO: Move this field back into `Ethereum` once the cometbls states are unwrapped out of the wasm states
     wasm_code_id: H256,
     prover_endpoint: String,
+    dump_path: String,
 }
 
 impl<C: ChainSpec> ChainConnection<Evm<C>> for Union {
@@ -92,6 +95,7 @@ impl<C: ChainSpec> ChainConnection<Evm<C>> for Union {
     fn light_client(&self) -> Self::LightClient {
         Ethereum {
             chain: self.clone(),
+            dumper: Dumper::new(self.dump_path.clone()),
             _marker: PhantomData,
         }
     }
@@ -133,6 +137,7 @@ impl<C: ChainSpec> CreateClient<Ethereum<C>> for Union {
                 client_id,
                 Ethereum {
                     chain: self.clone(),
+                    dumper: Dumper::new(self.dump_path.clone()),
                     _marker: PhantomData,
                 },
             )
@@ -168,6 +173,7 @@ impl Union {
             chain_id,
             chain_revision,
             prover_endpoint: config.prover_endpoint,
+            dump_path: config.dump_path,
         }
     }
 
@@ -281,6 +287,22 @@ impl Chain for Union {
                 .header
                 .height
                 .value();
+
+            loop {
+                if self
+                    .tm_client
+                    .latest_commit()
+                    .await
+                    .unwrap()
+                    .signed_header
+                    .header
+                    .height
+                    .value()
+                    > height
+                {
+                    break;
+                }
+            }
 
             self.make_height(height)
         }
@@ -789,6 +811,24 @@ impl<C: ChainSpec> Connect<Cometbls<C>> for Ethereum<C> {
         update_to: Height,
     ) -> impl Future<Output = Height> + '_ {
         async move {
+            let trusted_commit = self
+                .chain
+                .tm_client
+                .commit(
+                    TryInto::<tendermint::block::Height>::try_into(update_from.revision_height)
+                        .unwrap(),
+                )
+                .await
+                .unwrap();
+
+            self.dumper.dump(
+                format!(
+                    "commit-{:06}",
+                    trusted_commit.signed_header.header.height.value()
+                ),
+                &trusted_commit,
+            );
+
             let commit = self
                 .chain
                 .tm_client
@@ -799,6 +839,11 @@ impl<C: ChainSpec> Connect<Cometbls<C>> for Ethereum<C> {
                 .await
                 .unwrap();
 
+            self.dumper.dump(
+                format!("commit-{:06}", commit.signed_header.header.height.value()),
+                &commit,
+            );
+
             tracing::debug!("New block {:?}", commit.signed_header.header.height);
 
             // TODO: Add to self
@@ -807,6 +852,7 @@ impl<C: ChainSpec> Connect<Cometbls<C>> for Ethereum<C> {
                     .await
                     .unwrap();
 
+            // TODO: the query should be done for a specific block here, namely the trusted and untrusted commit if the valset is drifting
             tracing::debug!("Query validators...");
             let mut validators = staking_client
                 .validators(staking::v1beta1::QueryValidatorsRequest {
@@ -882,7 +928,10 @@ impl<C: ChainSpec> Connect<Cometbls<C>> for Ethereum<C> {
             // NOTE: we assume that the signatures are correctly ordered. i.e. they follow the validator set order as the index is used to aggregate validator pks.
             for (i, sig) in commit.signed_header.commit.signatures.iter().enumerate() {
                 match sig {
-                    tendermint::block::CommitSig::BlockIdFlagAbsent => {}
+                    tendermint::block::CommitSig::BlockIdFlagAbsent => {
+                        bitmap.set_bit(i as _, false);
+                        tracing::debug!("Validator at index {} did not sign", i);
+                    }
                     tendermint::block::CommitSig::BlockIdFlagCommit {
                         signature,
                         validator_address,
@@ -894,19 +943,24 @@ impl<C: ChainSpec> Connect<Cometbls<C>> for Ethereum<C> {
                     }
                     // TODO: not sure about this case
                     tendermint::block::CommitSig::BlockIdFlagNil { .. } => {
-                        tracing::debug!("Nul flag???");
+                        bitmap.set_bit(i as _, false);
+                        tracing::warn!(
+                            "Validator at index {} has a null flag for the signature commit",
+                            i
+                        );
                     }
                 }
             }
 
-            let trusted_commit = Some(protos::union::prover::api::v1::ValidatorSetCommit {
-                validators: simple_validators,
-                signatures,
-                bitmap: bitmap.to_bytes_be(),
-            });
+            let validators_trusted_commit =
+                Some(protos::union::prover::api::v1::ValidatorSetCommit {
+                    validators: simple_validators,
+                    signatures,
+                    bitmap: bitmap.to_bytes_be(),
+                });
 
-            // The untrusted commit is the same as we only deal with adjacent verification for now.
-            let untrusted_commit = trusted_commit.clone();
+            // The untrusted commit is the same as we don't support validator set drift for now.
+            let validators_untrusted_commit = validators_trusted_commit.clone();
 
             tracing::debug!("Generate ZKP...");
 
@@ -957,12 +1011,35 @@ impl<C: ChainSpec> Connect<Cometbls<C>> for Ethereum<C> {
                         }),
                         chain_id: commit.signed_header.header.chain_id.clone().into(),
                     }),
-                    trusted_commit,
-                    untrusted_commit,
+                    trusted_commit: validators_trusted_commit,
+                    untrusted_commit: validators_untrusted_commit,
                 })
                 .await
                 .unwrap()
                 .into_inner();
+
+            #[derive(serde::Serialize)]
+            struct ProofDump {
+                #[serde(with = "hex")]
+                untrusted_root: Vec<u8>,
+                #[serde(with = "hex")]
+                evm_zkp: Vec<u8>,
+                #[serde(with = "hex")]
+                gnark_zkp: Vec<u8>,
+            }
+
+            self.dumper.dump(
+                format!(
+                    "zk-{:06}-{:06}",
+                    trusted_commit.signed_header.header.height.value(),
+                    commit.signed_header.header.height.value()
+                ),
+                &ProofDump {
+                    untrusted_root: prove_res.untrusted_validator_set_root.clone(),
+                    evm_zkp: prove_res.proof.as_ref().unwrap().evm_proof.clone(),
+                    gnark_zkp: prove_res.proof.as_ref().unwrap().compressed_content.clone(),
+                },
+            );
 
             let header_timestamp = tendermint_proto::google::protobuf::Timestamp::from(
                 commit.signed_header.header.time,

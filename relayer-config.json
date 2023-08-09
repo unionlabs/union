@@ -20,7 +20,9 @@
         "raw": "0xaa820fa947beb242032a41b6dc9a8b9c37d8f5fbcda0966b1ec80335b10a7d6f"
       },
       "ws_url": "ws://127.0.0.1:26657/websocket",
-      "wasm_code_id": "0x44ab11c49e3aa40301679bff45818117158d6cc8c326a5bafa69089709c3d13e"
+      "wasm_code_id": "0x44ab11c49e3aa40301679bff45818117158d6cc8c326a5bafa69089709c3d13e",
+      "prover_endpoint": "http://localhost:8080",
+      "dump_path": "dump"
     }
   }
 }

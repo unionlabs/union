@@ -1,0 +1,14 @@
+{
+  "position": 2.5,
+  "label": "Examples",
+  "collapsible": true,
+  "collapsed": false,
+  "className": "red",
+  "link": {
+    "type": "generated-index",
+    "title": "Examples"
+  },
+  "customProps": {
+    "description": "Solidity contracts leveraging Union"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "label": "Infrastructure",
+  "collapsible": true,
+  "collapsed": true,
+  "className": "red",
+  "link": {
+    "type": "generated-index",
+    "title": "Infrastructure"
+  },
+  "customProps": {
+    "description": "Guides for infrastructure providers."
+  }
+}

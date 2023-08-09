@@ -27,6 +27,7 @@ Getenv
 Hasher
 Hyperlane
 IAVL
+IIBC
 Infima
 Interchain
 Joye
@@ -177,6 +178,7 @@ dels
 denoms
 denum
 devnet
+devnets
 devshell
 dirchange
 distrkeeper
@@ -508,6 +510,7 @@ tmtypes
 tokenizable
 tokenz
 tombstoned
+tonumber
 treefmt
 trustlessly
 tryopen
