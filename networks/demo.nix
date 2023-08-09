@@ -274,8 +274,8 @@
             deployEVMPingPong() {
               export IBC_HANDLER_ADDRESS
               export NUM_OF_BLOCK_BEFORE_PONG_TIMEOUT="$PING_PONG_TIMEOUT"
-              export REVISION_NUMBER=1
-
+              export REVISION_NUMBER=1              
+              
               echo ------------------------------------
               echo + Deploying Ping Pong App..
               ${self'.packages.evm-devnet-ping-pong-deploy}/bin/evm-devnet-ping-pong-deploy | tee "$EVM_CONTRACTS_OUTFILE"
