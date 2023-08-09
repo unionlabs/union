@@ -387,5 +387,7 @@ func (h *altsHandshaker) processUntilDone(resp *altspb.HandshakerResp, extra []b
 // Close terminates the Handshaker. It should be called when the caller obtains
 // the secure connection.
 func (h *altsHandshaker) Close() {
-	h.stream.CloseSend()
+	if h.stream != nil {
+		h.stream.CloseSend()
+	}
 }

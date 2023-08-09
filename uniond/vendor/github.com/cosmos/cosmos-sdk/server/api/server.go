@@ -57,7 +57,7 @@ func New(clientCtx client.Context, logger log.Logger) *Server {
 	// Using the gogo/gateway package with the gRPC-Gateway WithMarshaler option fixes the scalar field marshalling issue.
 	marshalerOption := &gateway.JSONPb{
 		EmitDefaults: true,
-		Indent:       "  ",
+		Indent:       "",
 		OrigName:     true,
 		AnyResolver:  clientCtx.InterfaceRegistry,
 	}

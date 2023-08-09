@@ -43,7 +43,7 @@ type version struct {
 
 // newVersion creates a new version with an unique monotonous increasing id.
 func newVersion(s *session) *version {
-	id := atomic.AddInt64(&s.ntVersionId, 1)
+	id := atomic.AddInt64(&s.ntVersionID, 1)
 	nv := &version{s: s, id: id - 1}
 	return nv
 }
@@ -388,7 +388,7 @@ func (v *version) computeCompaction() {
 		}
 
 		statFiles[level] = len(tables)
-		statSizes[level] = shortenb(int(size))
+		statSizes[level] = shortenb(size)
 		statScore[level] = fmt.Sprintf("%.2f", score)
 		statTotSize += size
 	}
@@ -396,7 +396,7 @@ func (v *version) computeCompaction() {
 	v.cLevel = bestLevel
 	v.cScore = bestScore
 
-	v.s.logf("version@stat F·%v S·%s%v Sc·%v", statFiles, shortenb(int(statTotSize)), statSizes, statScore)
+	v.s.logf("version@stat F·%v S·%s%v Sc·%v", statFiles, shortenb(statTotSize), statSizes, statScore)
 }
 
 func (v *version) needCompaction() bool {

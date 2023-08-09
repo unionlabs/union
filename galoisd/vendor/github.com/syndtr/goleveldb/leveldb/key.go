@@ -25,7 +25,7 @@ func (e *ErrInternalKeyCorrupted) Error() string {
 }
 
 func newErrInternalKeyCorrupted(ikey []byte, reason string) error {
-	return errors.NewErrCorrupted(storage.FileDesc{}, &ErrInternalKeyCorrupted{append([]byte{}, ikey...), reason})
+	return errors.NewErrCorrupted(storage.FileDesc{}, &ErrInternalKeyCorrupted{append([]byte(nil), ikey...), reason})
 }
 
 type keyType uint
@@ -90,7 +90,7 @@ func parseInternalKey(ik []byte) (ukey []byte, seq uint64, kt keyType, err error
 		return nil, 0, 0, newErrInternalKeyCorrupted(ik, "invalid length")
 	}
 	num := binary.LittleEndian.Uint64(ik[len(ik)-8:])
-	seq, kt = uint64(num>>8), keyType(num&0xff)
+	seq, kt = num>>8, keyType(num&0xff)
 	if kt > keyTypeVal {
 		return nil, 0, 0, newErrInternalKeyCorrupted(ik, "invalid type")
 	}
@@ -124,7 +124,7 @@ func (ik internalKey) num() uint64 {
 
 func (ik internalKey) parseNum() (seq uint64, kt keyType) {
 	num := ik.num()
-	seq, kt = uint64(num>>8), keyType(num&0xff)
+	seq, kt = num>>8, keyType(num&0xff)
 	if kt > keyTypeVal {
 		panic(fmt.Sprintf("leveldb: internal key %q, len=%d: invalid type %#x", []byte(ik), len(ik), kt))
 	}

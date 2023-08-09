@@ -354,6 +354,8 @@ type Writer struct {
 	// buf[:written] has already been written to w.
 	// written is zero unless Flush has been called.
 	written int
+	// blockNumber is the zero based block number currently held in buf.
+	blockNumber int64
 	// first is whether the current chunk is the first chunk of the journal.
 	first bool
 	// pending is whether a chunk is buffered but not yet written.
@@ -402,6 +404,7 @@ func (w *Writer) writeBlock() {
 	w.i = 0
 	w.j = headerSize
 	w.written = 0
+	w.blockNumber++
 }
 
 // writePending finishes the current journal and writes the buffer to the
@@ -457,6 +460,7 @@ func (w *Writer) Reset(writer io.Writer) (err error) {
 	w.i = 0
 	w.j = 0
 	w.written = 0
+	w.blockNumber = 0
 	w.first = false
 	w.pending = false
 	w.err = nil
@@ -474,7 +478,7 @@ func (w *Writer) Next() (io.Writer, error) {
 		w.fillHeader(true)
 	}
 	w.i = w.j
-	w.j = w.j + headerSize
+	w.j += headerSize
 	// Check if there is room in the block for the header.
 	if w.j > blockSize {
 		// Fill in the rest of the block with zeroes.
@@ -489,6 +493,14 @@ func (w *Writer) Next() (io.Writer, error) {
 	w.first = true
 	w.pending = true
 	return singleWriter{w, w.seq}, nil
+}
+
+// Size returns the current size of the file.
+func (w *Writer) Size() int64 {
+	if w == nil {
+		return 0
+	}
+	return w.blockNumber*blockSize + int64(w.j)
 }
 
 type singleWriter struct {

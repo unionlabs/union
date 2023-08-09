@@ -176,7 +176,7 @@ type GovInputs struct {
 	StakingKeeper govtypes.StakingKeeper
 
 	// LegacySubspace is used solely for migration of x/params managed parameters
-	LegacySubspace govtypes.ParamSubspace
+	LegacySubspace govtypes.ParamSubspace `optional:"true"`
 }
 
 type GovOutputs struct {

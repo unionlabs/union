@@ -88,10 +88,7 @@ func (i *basicArrayIterator) Seek(key []byte) bool {
 		return false
 	}
 	i.pos = i.array.Search(key)
-	if i.pos >= n {
-		return false
-	}
-	return true
+	return i.pos < n
 }
 
 func (i *basicArrayIterator) Next() bool {

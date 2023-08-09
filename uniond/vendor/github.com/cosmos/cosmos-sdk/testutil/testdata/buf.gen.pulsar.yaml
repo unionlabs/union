@@ -11,8 +11,8 @@ managed:
       buf.build/cosmos/cosmos-sdk: cosmossdk.io/api
 plugins:
   - name: go-pulsar
-    out: ../testdata_pulsar
+    out: .
     opt: paths=source_relative
   - name: go-grpc
-    out: ../testdata_pulsar
+    out: .
     opt: paths=source_relative

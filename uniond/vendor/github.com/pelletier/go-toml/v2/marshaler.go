@@ -357,9 +357,9 @@ func (enc *Encoder) encodeKv(b []byte, ctx encoderCtx, options valueOptions, v r
 
 	if !ctx.inline {
 		b = enc.encodeComment(ctx.indent, options.comment, b)
+		b = enc.indent(ctx.indent, b)
 	}
 
-	b = enc.indent(ctx.indent, b)
 	b = enc.encodeKey(b, ctx.key)
 	b = append(b, " = "...)
 

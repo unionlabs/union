@@ -553,7 +553,7 @@ complete solutions exist out there.
 
 ## Versioning
 
-Go-toml follows [Semantic Versioning](http://semver.org/). The supported version
+Go-toml follows [Semantic Versioning](https://semver.org). The supported version
 of [TOML](https://github.com/toml-lang/toml) is indicated at the beginning of
 this document. The last two major versions of Go are supported
 (see [Go Release Policy](https://golang.org/doc/devel/release.html#policy)).

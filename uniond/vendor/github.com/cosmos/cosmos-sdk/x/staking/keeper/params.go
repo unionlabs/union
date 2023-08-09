@@ -49,6 +49,14 @@ func (k Keeper) MinCommissionRate(ctx sdk.Context) math.LegacyDec {
 	return k.GetParams(ctx).MinCommissionRate
 }
 
+func (k Keeper) EpochLength(ctx sdk.Context) int64 {
+	return k.GetParams(ctx).EpochLength
+}
+
+func (k Keeper) JailedValidatorThreshold(ctx sdk.Context) uint32 {
+	return k.GetParams(ctx).JailedValidatorThreshold
+}
+
 // SetParams sets the x/staking module parameters.
 func (k Keeper) SetParams(ctx sdk.Context, params types.Params) error {
 	if err := params.Validate(); err != nil {

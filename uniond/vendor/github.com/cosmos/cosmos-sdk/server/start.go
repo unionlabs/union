@@ -252,6 +252,11 @@ func startStandAlone(ctx *Context, appCreator types.AppCreator) error {
 			fmt.Println(err.Error())
 			os.Exit(1)
 		}
+
+		if err = app.Close(); err != nil {
+			fmt.Println(err.Error())
+			os.Exit(1)
+		}
 	}()
 
 	// Wait for SIGINT or SIGTERM signal
@@ -500,6 +505,7 @@ func startInProcess(ctx *Context, clientCtx client.Context, appCreator types.App
 	defer func() {
 		if tmNode != nil && tmNode.IsRunning() {
 			_ = tmNode.Stop()
+			_ = app.Close()
 		}
 
 		if traceWriterCleanup != nil {

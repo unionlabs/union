@@ -8,6 +8,7 @@ import (
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
@@ -52,6 +53,62 @@ func (k Keeper) mustGetValidatorByConsAddr(ctx sdk.Context, consAddr sdk.ConsAdd
 	}
 
 	return validator
+}
+
+func (k Keeper) ResetNumberofValidatorsInJail(ctx sdk.Context) {
+	store := ctx.KVStore(k.storeKey)
+
+	bz := k.cdc.MustMarshal(&gogotypes.UInt32Value{Value: 0})
+
+	store.Set(types.NumberOfValidatorsInJail, bz)
+}
+
+// Increments the number of jailed validators by one.
+//
+// Will assume a stored value of `nil` should be read as zero and will increment
+// by 1 (will not fail).
+func (k Keeper) IncermentNumberofValidatorsInJail(ctx sdk.Context) {
+	var bz []byte
+	store := ctx.KVStore(k.storeKey)
+
+	if store.Has(types.NumberOfValidatorsInJail) {
+		// value found, increment
+		intV := gogotypes.UInt32Value{}
+		k.cdc.MustUnmarshal(store.Get(types.NumberOfValidatorsInJail), &intV)
+		bz = k.cdc.MustMarshal(&gogotypes.UInt32Value{Value: intV.Value + 1})
+	} else {
+		// no value stored yet, assume it should be zero and add one
+		bz = k.cdc.MustMarshal(&gogotypes.UInt32Value{Value: 1})
+	}
+
+	store.Set(types.NumberOfValidatorsInJail, bz)
+}
+
+// Decrement the number of jailed validators by one.
+//
+// There must be some number of jailed validators greater than zero, otherwise this function will return an error.
+//
+// # Errors
+//
+// - `ErrInvalidRequest` The value stored for `NumberOfJailedValidators` is either `nil` or zero
+func (k Keeper) DecrementNumberofValidatorsInJail(ctx sdk.Context) error {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get(types.NumberOfValidatorsInJail)
+
+	if bz == nil {
+		return sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "No Jailed validators exists")
+	}
+
+	intV := gogotypes.UInt32Value{}
+	k.cdc.MustUnmarshal(bz, &intV)
+
+	if intV.Value == 0 {
+		return sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "No Jailed validators exists")
+	}
+
+	bz = k.cdc.MustMarshal(&gogotypes.UInt32Value{Value: intV.Value - 1})
+
+	return nil
 }
 
 // set the main record holding validator details
@@ -484,4 +541,38 @@ func (k Keeper) IsValidatorJailed(ctx sdk.Context, addr sdk.ConsAddress) bool {
 	}
 
 	return v.Jailed
+}
+
+func (k Keeper) SetNumberOfValidatorsInEpoch(ctx sdk.Context, n uint32) {
+	store := ctx.KVStore(k.storeKey)
+
+	bz := k.cdc.MustMarshal(&gogotypes.UInt32Value{Value: n})
+
+	store.Set(types.NumberOfValidatorsInEpoch, bz)
+}
+
+func (k Keeper) GetNumberOfValidatorsInEpoch(ctx sdk.Context) uint32 {
+	store := ctx.KVStore(k.storeKey)
+
+	if store.Has(types.NumberOfValidatorsInEpoch) {
+		bz := store.Get(types.NumberOfValidatorsInEpoch)
+		intV := gogotypes.UInt32Value{}
+		k.cdc.MustUnmarshal(bz, &intV)
+		return intV.Value
+	} else {
+		return 0
+	}
+}
+
+func (k Keeper) GetNumberOfJailedValidators(ctx sdk.Context) uint32 {
+	store := ctx.KVStore(k.storeKey)
+
+	if store.Has(types.NumberOfValidatorsInJail) {
+		bz := store.Get(types.NumberOfValidatorsInJail)
+		intV := gogotypes.UInt32Value{}
+		k.cdc.MustUnmarshal(bz, &intV)
+		return intV.Value
+	} else {
+		return 0
+	}
 }

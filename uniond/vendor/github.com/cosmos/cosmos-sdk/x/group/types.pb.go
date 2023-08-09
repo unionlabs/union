@@ -642,6 +642,8 @@ type GroupPolicyInfo struct {
 	// admin is the account address of the group admin.
 	Admin string `protobuf:"bytes,3,opt,name=admin,proto3" json:"admin,omitempty"`
 	// metadata is any arbitrary metadata attached to the group policy.
+	// the recommended format of the metadata is to be found here:
+	// https://docs.cosmos.network/v0.47/modules/group#decision-policy-1
 	Metadata string `protobuf:"bytes,4,opt,name=metadata,proto3" json:"metadata,omitempty"`
 	// version is used to track changes to a group's GroupPolicyInfo structure that
 	// would create a different result on a running proposal.
@@ -695,6 +697,8 @@ type Proposal struct {
 	// group_policy_address is the account address of group policy.
 	GroupPolicyAddress string `protobuf:"bytes,2,opt,name=group_policy_address,json=groupPolicyAddress,proto3" json:"group_policy_address,omitempty"`
 	// metadata is any arbitrary metadata attached to the proposal.
+	// the recommended format of the metadata is to be found here:
+	// https://docs.cosmos.network/v0.47/modules/group#proposal-4
 	Metadata string `protobuf:"bytes,3,opt,name=metadata,proto3" json:"metadata,omitempty"`
 	// proposers are the account addresses of the proposers.
 	Proposers []string `protobuf:"bytes,4,rep,name=proposers,proto3" json:"proposers,omitempty"`

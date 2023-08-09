@@ -40,7 +40,7 @@ type blockWriter struct {
 	scratch         []byte
 }
 
-func (w *blockWriter) append(key, value []byte) {
+func (w *blockWriter) append(key, value []byte) (err error) {
 	nShared := 0
 	if w.nEntries%w.restartInterval == 0 {
 		w.restarts = append(w.restarts, uint32(w.buf.Len()))
@@ -50,14 +50,21 @@ func (w *blockWriter) append(key, value []byte) {
 	n := binary.PutUvarint(w.scratch[0:], uint64(nShared))
 	n += binary.PutUvarint(w.scratch[n:], uint64(len(key)-nShared))
 	n += binary.PutUvarint(w.scratch[n:], uint64(len(value)))
-	w.buf.Write(w.scratch[:n])
-	w.buf.Write(key[nShared:])
-	w.buf.Write(value)
+	if _, err = w.buf.Write(w.scratch[:n]); err != nil {
+		return err
+	}
+	if _, err = w.buf.Write(key[nShared:]); err != nil {
+		return err
+	}
+	if _, err = w.buf.Write(value); err != nil {
+		return err
+	}
 	w.prevKey = append(w.prevKey[:0], key...)
 	w.nEntries++
+	return nil
 }
 
-func (w *blockWriter) finish() {
+func (w *blockWriter) finish() error {
 	// Write restarts entry.
 	if w.nEntries == 0 {
 		// Must have at least one restart entry.
@@ -68,6 +75,7 @@ func (w *blockWriter) finish() {
 		buf4 := w.buf.Alloc(4)
 		binary.LittleEndian.PutUint32(buf4, x)
 	}
+	return nil
 }
 
 func (w *blockWriter) reset() {
@@ -109,9 +117,9 @@ func (w *filterWriter) flush(offset uint64) {
 	}
 }
 
-func (w *filterWriter) finish() {
+func (w *filterWriter) finish() error {
 	if w.generator == nil {
-		return
+		return nil
 	}
 	// Generate last keys.
 
@@ -123,7 +131,7 @@ func (w *filterWriter) finish() {
 		buf4 := w.buf.Alloc(4)
 		binary.LittleEndian.PutUint32(buf4, x)
 	}
-	w.buf.WriteByte(byte(w.baseLg))
+	return w.buf.WriteByte(byte(w.baseLg))
 }
 
 func (w *filterWriter) generate() {
@@ -194,9 +202,9 @@ func (w *Writer) writeBlock(buf *util.Buffer, compression opt.Compression) (bh b
 	return
 }
 
-func (w *Writer) flushPendingBH(key []byte) {
+func (w *Writer) flushPendingBH(key []byte) error {
 	if w.pendingBH.length == 0 {
-		return
+		return nil
 	}
 	var separator []byte
 	if len(key) == 0 {
@@ -211,15 +219,20 @@ func (w *Writer) flushPendingBH(key []byte) {
 	}
 	n := encodeBlockHandle(w.scratch[:20], w.pendingBH)
 	// Append the block handle to the index block.
-	w.indexBlock.append(separator, w.scratch[:n])
+	if err := w.indexBlock.append(separator, w.scratch[:n]); err != nil {
+		return err
+	}
 	// Reset prev key of the data block.
 	w.dataBlock.prevKey = w.dataBlock.prevKey[:0]
 	// Clear pending block handle.
 	w.pendingBH = blockHandle{}
+	return nil
 }
 
 func (w *Writer) finishBlock() error {
-	w.dataBlock.finish()
+	if err := w.dataBlock.finish(); err != nil {
+		return err
+	}
 	bh, err := w.writeBlock(&w.dataBlock.buf, w.compression)
 	if err != nil {
 		return err
@@ -245,9 +258,13 @@ func (w *Writer) Append(key, value []byte) error {
 		return w.err
 	}
 
-	w.flushPendingBH(key)
+	if err := w.flushPendingBH(key); err != nil {
+		return err
+	}
 	// Append key/value pair to the data block.
-	w.dataBlock.append(key, value)
+	if err := w.dataBlock.append(key, value); err != nil {
+		return err
+	}
 	// Add key to the filter block.
 	w.filterBlock.add(key)
 
@@ -308,11 +325,15 @@ func (w *Writer) Close() error {
 			return w.err
 		}
 	}
-	w.flushPendingBH(nil)
+	if err := w.flushPendingBH(nil); err != nil {
+		return err
+	}
 
 	// Write the filter block.
 	var filterBH blockHandle
-	w.filterBlock.finish()
+	if err := w.filterBlock.finish(); err != nil {
+		return err
+	}
 	if buf := &w.filterBlock.buf; buf.Len() > 0 {
 		filterBH, w.err = w.writeBlock(buf, opt.NoCompression)
 		if w.err != nil {
@@ -324,9 +345,13 @@ func (w *Writer) Close() error {
 	if filterBH.length > 0 {
 		key := []byte("filter." + w.filter.Name())
 		n := encodeBlockHandle(w.scratch[:20], filterBH)
-		w.dataBlock.append(key, w.scratch[:n])
+		if err := w.dataBlock.append(key, w.scratch[:n]); err != nil {
+			return err
+		}
 	}
-	w.dataBlock.finish()
+	if err := w.dataBlock.finish(); err != nil {
+		return err
+	}
 	metaindexBH, err := w.writeBlock(&w.dataBlock.buf, w.compression)
 	if err != nil {
 		w.err = err
@@ -334,7 +359,9 @@ func (w *Writer) Close() error {
 	}
 
 	// Write the index block.
-	w.indexBlock.finish()
+	if err := w.indexBlock.finish(); err != nil {
+		return err
+	}
 	indexBH, err := w.writeBlock(&w.indexBlock.buf, w.compression)
 	if err != nil {
 		w.err = err

@@ -236,6 +236,10 @@ func (ma ModuleAccount) Validate() error {
 		return errors.New("module account name cannot be blank")
 	}
 
+	if ma.BaseAccount == nil {
+		return errors.New("uninitialized ModuleAccount: BaseAccount is nil")
+	}
+
 	if ma.Address != sdk.AccAddress(crypto.AddressHash([]byte(ma.Name))).String() {
 		return fmt.Errorf("address %s cannot be derived from the module name '%s'", ma.Address, ma.Name)
 	}

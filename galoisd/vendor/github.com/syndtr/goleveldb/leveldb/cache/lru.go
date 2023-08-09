@@ -142,49 +142,12 @@ func (r *lru) Evict(n *Node) {
 		r.mu.Unlock()
 		return
 	}
+	rn.remove()
+	r.used -= n.Size()
 	n.CacheData = nil
 	r.mu.Unlock()
 
 	rn.h.Release()
-}
-
-func (r *lru) EvictNS(ns uint64) {
-	var evicted []*lruNode
-
-	r.mu.Lock()
-	for e := r.recent.prev; e != &r.recent; {
-		rn := e
-		e = e.prev
-		if rn.n.NS() == ns {
-			rn.remove()
-			rn.n.CacheData = nil
-			r.used -= rn.n.Size()
-			evicted = append(evicted, rn)
-		}
-	}
-	r.mu.Unlock()
-
-	for _, rn := range evicted {
-		rn.h.Release()
-	}
-}
-
-func (r *lru) EvictAll() {
-	r.mu.Lock()
-	back := r.recent.prev
-	for rn := back; rn != &r.recent; rn = rn.prev {
-		rn.n.CacheData = nil
-	}
-	r.reset()
-	r.mu.Unlock()
-
-	for rn := back; rn != &r.recent; rn = rn.prev {
-		rn.h.Release()
-	}
-}
-
-func (r *lru) Close() error {
-	return nil
 }
 
 // NewLRU create a new LRU-cache.

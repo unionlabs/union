@@ -60,7 +60,7 @@ func (d *Decoder) DisallowUnknownFields() *Decoder {
 // are ignored. See Decoder.DisallowUnknownFields() to change this behavior.
 //
 // When a TOML local date, time, or date-time is decoded into a time.Time, its
-// value is represented in time.Local timezone. Otherwise the approriate Local*
+// value is represented in time.Local timezone. Otherwise the appropriate Local*
 // structure is used. For time values, precision up to the nanosecond is
 // supported by truncating extra digits.
 //
@@ -746,7 +746,7 @@ func (d *decoder) unmarshalInlineTable(itable *unstable.Node, v reflect.Value) e
 		}
 		return d.unmarshalInlineTable(itable, elem)
 	default:
-		return unstable.NewParserError(itable.Data, "cannot store inline table in Go type %s", v.Kind())
+		return unstable.NewParserError(d.p.Raw(itable.Raw), "cannot store inline table in Go type %s", v.Kind())
 	}
 
 	it := itable.Children()
@@ -887,6 +887,11 @@ func init() {
 }
 
 func (d *decoder) unmarshalInteger(value *unstable.Node, v reflect.Value) error {
+	kind := v.Kind()
+	if kind == reflect.Float32 || kind == reflect.Float64 {
+		return d.unmarshalFloat(value, v)
+	}
+
 	i, err := parseInteger(value.Data)
 	if err != nil {
 		return err
@@ -894,7 +899,7 @@ func (d *decoder) unmarshalInteger(value *unstable.Node, v reflect.Value) error 
 
 	var r reflect.Value
 
-	switch v.Kind() {
+	switch kind {
 	case reflect.Int64:
 		v.SetInt(i)
 		return nil
@@ -1034,15 +1039,9 @@ func (d *decoder) handleKeyValuePart(key unstable.Iterator, value *unstable.Node
 
 		mv := v.MapIndex(mk)
 		set := false
-		if !mv.IsValid() {
+		if !mv.IsValid() || key.IsLast() {
 			set = true
 			mv = reflect.New(v.Type().Elem()).Elem()
-		} else {
-			if key.IsLast() {
-				var x interface{}
-				mv = reflect.ValueOf(&x).Elem()
-				set = true
-			}
 		}
 
 		nv, err := d.handleKeyValueInner(key, value, mv)

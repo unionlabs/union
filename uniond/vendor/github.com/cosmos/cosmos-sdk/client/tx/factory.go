@@ -13,6 +13,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
@@ -41,6 +42,7 @@ type Factory struct {
 	feeGranter         sdk.AccAddress
 	feePayer           sdk.AccAddress
 	gasPrices          sdk.DecCoins
+	extOptions         []*codectypes.Any
 	signMode           signing.SignMode
 	simulateAndExecute bool
 	preprocessTxHook   client.PreprocessTxFn
@@ -279,6 +281,28 @@ func (f Factory) PreprocessTx(keyname string, builder client.TxBuilder) error {
 	return f.preprocessTxHook(f.chainID, key.GetType(), builder)
 }
 
+// WithExtensionOptions returns a Factory with given extension options added to the existing options,
+// Example to add dynamic fee extension options:
+//
+//	extOpt := ethermint.ExtensionOptionDynamicFeeTx{
+//		MaxPriorityPrice: sdk.NewInt(1000000),
+//	}
+//
+//	extBytes, _ := extOpt.Marshal()
+//
+//	extOpts := []*types.Any{
+//		{
+//			TypeUrl: "/ethermint.types.v1.ExtensionOptionDynamicFeeTx",
+//			Value:   extBytes,
+//		},
+//	}
+//
+// txf.WithExtensionOptions(extOpts...)
+func (f Factory) WithExtensionOptions(extOpts ...*codectypes.Any) Factory {
+	f.extOptions = extOpts
+	return f
+}
+
 // BuildUnsignedTx builds a transaction to be signed given a set of messages.
 // Once created, the fee, memo, and messages are set.
 func (f Factory) BuildUnsignedTx(msgs ...sdk.Msg) (client.TxBuilder, error) {
@@ -326,6 +350,10 @@ func (f Factory) BuildUnsignedTx(msgs ...sdk.Msg) (client.TxBuilder, error) {
 	tx.SetFeeGranter(f.feeGranter)
 	tx.SetFeePayer(f.feePayer)
 	tx.SetTimeoutHeight(f.TimeoutHeight())
+
+	if etx, ok := tx.(client.ExtendedTxBuilder); ok {
+		etx.SetExtensionOptions(f.extOptions...)
+	}
 
 	return tx, nil
 }
@@ -430,9 +458,14 @@ func (f Factory) getSimPK() (cryptotypes.PubKey, error) {
 
 // Prepare ensures the account defined by ctx.GetFromAddress() exists and
 // if the account number and/or the account sequence number are zero (not set),
-// they will be queried for and set on the provided Factory. A new Factory with
-// the updated fields will be returned.
+// they will be queried for and set on the provided Factory.
+// A new Factory with the updated fields will be returned.
+// Note: When in offline mode, the Prepare does nothing and returns the original factory.
 func (f Factory) Prepare(clientCtx client.Context) (Factory, error) {
+	if clientCtx.Offline {
+		return f, nil
+	}
+
 	fc := f
 	from := clientCtx.GetFromAddress()
 
@@ -441,14 +474,19 @@ func (f Factory) Prepare(clientCtx client.Context) (Factory, error) {
 	}
 
 	initNum, initSeq := fc.accountNumber, fc.sequence
-	if initNum == 0 && initSeq == 0 {
+	if initNum == 0 || initSeq == 0 {
 		num, seq, err := fc.accountRetriever.GetAccountNumberSequence(clientCtx, from)
 		if err != nil {
 			return fc, err
 		}
 
-		fc = fc.WithAccountNumber(num)
-		fc = fc.WithSequence(seq)
+		if initNum == 0 {
+			fc = fc.WithAccountNumber(num)
+		}
+
+		if initSeq == 0 {
+			fc = fc.WithSequence(seq)
+		}
 	}
 
 	return fc, nil

@@ -1,9 +1,9 @@
 package toml
 
 import (
-	"github.com/pelletier/go-toml/v2/internal/ast"
 	"github.com/pelletier/go-toml/v2/internal/danger"
 	"github.com/pelletier/go-toml/v2/internal/tracker"
+	"github.com/pelletier/go-toml/v2/unstable"
 )
 
 type strict struct {
@@ -12,10 +12,10 @@ type strict struct {
 	// Tracks the current key being processed.
 	key tracker.KeyTracker
 
-	missing []decodeError
+	missing []unstable.ParserError
 }
 
-func (s *strict) EnterTable(node *ast.Node) {
+func (s *strict) EnterTable(node *unstable.Node) {
 	if !s.Enabled {
 		return
 	}
@@ -23,7 +23,7 @@ func (s *strict) EnterTable(node *ast.Node) {
 	s.key.UpdateTable(node)
 }
 
-func (s *strict) EnterArrayTable(node *ast.Node) {
+func (s *strict) EnterArrayTable(node *unstable.Node) {
 	if !s.Enabled {
 		return
 	}
@@ -31,7 +31,7 @@ func (s *strict) EnterArrayTable(node *ast.Node) {
 	s.key.UpdateArrayTable(node)
 }
 
-func (s *strict) EnterKeyValue(node *ast.Node) {
+func (s *strict) EnterKeyValue(node *unstable.Node) {
 	if !s.Enabled {
 		return
 	}
@@ -39,7 +39,7 @@ func (s *strict) EnterKeyValue(node *ast.Node) {
 	s.key.Push(node)
 }
 
-func (s *strict) ExitKeyValue(node *ast.Node) {
+func (s *strict) ExitKeyValue(node *unstable.Node) {
 	if !s.Enabled {
 		return
 	}
@@ -47,27 +47,27 @@ func (s *strict) ExitKeyValue(node *ast.Node) {
 	s.key.Pop(node)
 }
 
-func (s *strict) MissingTable(node *ast.Node) {
+func (s *strict) MissingTable(node *unstable.Node) {
 	if !s.Enabled {
 		return
 	}
 
-	s.missing = append(s.missing, decodeError{
-		highlight: keyLocation(node),
-		message:   "missing table",
-		key:       s.key.Key(),
+	s.missing = append(s.missing, unstable.ParserError{
+		Highlight: keyLocation(node),
+		Message:   "missing table",
+		Key:       s.key.Key(),
 	})
 }
 
-func (s *strict) MissingField(node *ast.Node) {
+func (s *strict) MissingField(node *unstable.Node) {
 	if !s.Enabled {
 		return
 	}
 
-	s.missing = append(s.missing, decodeError{
-		highlight: keyLocation(node),
-		message:   "missing field",
-		key:       s.key.Key(),
+	s.missing = append(s.missing, unstable.ParserError{
+		Highlight: keyLocation(node),
+		Message:   "missing field",
+		Key:       s.key.Key(),
 	})
 }
 
@@ -88,7 +88,7 @@ func (s *strict) Error(doc []byte) error {
 	return err
 }
 
-func keyLocation(node *ast.Node) []byte {
+func keyLocation(node *unstable.Node) []byte {
 	k := node.Key()
 
 	hasOne := k.Next()

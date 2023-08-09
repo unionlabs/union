@@ -5,6 +5,8 @@ import (
 	"math"
 	"strconv"
 	"time"
+
+	"github.com/pelletier/go-toml/v2/unstable"
 )
 
 func parseInteger(b []byte) (int64, error) {
@@ -32,7 +34,7 @@ func parseLocalDate(b []byte) (LocalDate, error) {
 	var date LocalDate
 
 	if len(b) != 10 || b[4] != '-' || b[7] != '-' {
-		return date, newDecodeError(b, "dates are expected to have the format YYYY-MM-DD")
+		return date, unstable.NewParserError(b, "dates are expected to have the format YYYY-MM-DD")
 	}
 
 	var err error
@@ -53,7 +55,7 @@ func parseLocalDate(b []byte) (LocalDate, error) {
 	}
 
 	if !isValidDate(date.Year, date.Month, date.Day) {
-		return LocalDate{}, newDecodeError(b, "impossible date")
+		return LocalDate{}, unstable.NewParserError(b, "impossible date")
 	}
 
 	return date, nil
@@ -64,7 +66,7 @@ func parseDecimalDigits(b []byte) (int, error) {
 
 	for i, c := range b {
 		if c < '0' || c > '9' {
-			return 0, newDecodeError(b[i:i+1], "expected digit (0-9)")
+			return 0, unstable.NewParserError(b[i:i+1], "expected digit (0-9)")
 		}
 		v *= 10
 		v += int(c - '0')
@@ -97,7 +99,7 @@ func parseDateTime(b []byte) (time.Time, error) {
 	} else {
 		const dateTimeByteLen = 6
 		if len(b) != dateTimeByteLen {
-			return time.Time{}, newDecodeError(b, "invalid date-time timezone")
+			return time.Time{}, unstable.NewParserError(b, "invalid date-time timezone")
 		}
 		var direction int
 		switch b[0] {
@@ -106,11 +108,11 @@ func parseDateTime(b []byte) (time.Time, error) {
 		case '+':
 			direction = +1
 		default:
-			return time.Time{}, newDecodeError(b[:1], "invalid timezone offset character")
+			return time.Time{}, unstable.NewParserError(b[:1], "invalid timezone offset character")
 		}
 
 		if b[3] != ':' {
-			return time.Time{}, newDecodeError(b[3:4], "expected a : separator")
+			return time.Time{}, unstable.NewParserError(b[3:4], "expected a : separator")
 		}
 
 		hours, err := parseDecimalDigits(b[1:3])
@@ -118,7 +120,7 @@ func parseDateTime(b []byte) (time.Time, error) {
 			return time.Time{}, err
 		}
 		if hours > 23 {
-			return time.Time{}, newDecodeError(b[:1], "invalid timezone offset hours")
+			return time.Time{}, unstable.NewParserError(b[:1], "invalid timezone offset hours")
 		}
 
 		minutes, err := parseDecimalDigits(b[4:6])
@@ -126,7 +128,7 @@ func parseDateTime(b []byte) (time.Time, error) {
 			return time.Time{}, err
 		}
 		if minutes > 59 {
-			return time.Time{}, newDecodeError(b[:1], "invalid timezone offset minutes")
+			return time.Time{}, unstable.NewParserError(b[:1], "invalid timezone offset minutes")
 		}
 
 		seconds := direction * (hours*3600 + minutes*60)
@@ -139,7 +141,7 @@ func parseDateTime(b []byte) (time.Time, error) {
 	}
 
 	if len(b) > 0 {
-		return time.Time{}, newDecodeError(b, "extra bytes at the end of the timezone")
+		return time.Time{}, unstable.NewParserError(b, "extra bytes at the end of the timezone")
 	}
 
 	t := time.Date(
@@ -160,7 +162,7 @@ func parseLocalDateTime(b []byte) (LocalDateTime, []byte, error) {
 
 	const localDateTimeByteMinLen = 11
 	if len(b) < localDateTimeByteMinLen {
-		return dt, nil, newDecodeError(b, "local datetimes are expected to have the format YYYY-MM-DDTHH:MM:SS[.NNNNNNNNN]")
+		return dt, nil, unstable.NewParserError(b, "local datetimes are expected to have the format YYYY-MM-DDTHH:MM:SS[.NNNNNNNNN]")
 	}
 
 	date, err := parseLocalDate(b[:10])
@@ -171,7 +173,7 @@ func parseLocalDateTime(b []byte) (LocalDateTime, []byte, error) {
 
 	sep := b[10]
 	if sep != 'T' && sep != ' ' && sep != 't' {
-		return dt, nil, newDecodeError(b[10:11], "datetime separator is expected to be T or a space")
+		return dt, nil, unstable.NewParserError(b[10:11], "datetime separator is expected to be T or a space")
 	}
 
 	t, rest, err := parseLocalTime(b[11:])
@@ -195,7 +197,7 @@ func parseLocalTime(b []byte) (LocalTime, []byte, error) {
 	// check if b matches to have expected format HH:MM:SS[.NNNNNN]
 	const localTimeByteLen = 8
 	if len(b) < localTimeByteLen {
-		return t, nil, newDecodeError(b, "times are expected to have the format HH:MM:SS[.NNNNNN]")
+		return t, nil, unstable.NewParserError(b, "times are expected to have the format HH:MM:SS[.NNNNNN]")
 	}
 
 	var err error
@@ -206,10 +208,10 @@ func parseLocalTime(b []byte) (LocalTime, []byte, error) {
 	}
 
 	if t.Hour > 23 {
-		return t, nil, newDecodeError(b[0:2], "hour cannot be greater 23")
+		return t, nil, unstable.NewParserError(b[0:2], "hour cannot be greater 23")
 	}
 	if b[2] != ':' {
-		return t, nil, newDecodeError(b[2:3], "expecting colon between hours and minutes")
+		return t, nil, unstable.NewParserError(b[2:3], "expecting colon between hours and minutes")
 	}
 
 	t.Minute, err = parseDecimalDigits(b[3:5])
@@ -217,10 +219,10 @@ func parseLocalTime(b []byte) (LocalTime, []byte, error) {
 		return t, nil, err
 	}
 	if t.Minute > 59 {
-		return t, nil, newDecodeError(b[3:5], "minutes cannot be greater 59")
+		return t, nil, unstable.NewParserError(b[3:5], "minutes cannot be greater 59")
 	}
 	if b[5] != ':' {
-		return t, nil, newDecodeError(b[5:6], "expecting colon between minutes and seconds")
+		return t, nil, unstable.NewParserError(b[5:6], "expecting colon between minutes and seconds")
 	}
 
 	t.Second, err = parseDecimalDigits(b[6:8])
@@ -229,7 +231,7 @@ func parseLocalTime(b []byte) (LocalTime, []byte, error) {
 	}
 
 	if t.Second > 60 {
-		return t, nil, newDecodeError(b[6:8], "seconds cannot be greater 60")
+		return t, nil, unstable.NewParserError(b[6:8], "seconds cannot be greater 60")
 	}
 
 	b = b[8:]
@@ -242,7 +244,7 @@ func parseLocalTime(b []byte) (LocalTime, []byte, error) {
 		for i, c := range b[1:] {
 			if !isDigit(c) {
 				if i == 0 {
-					return t, nil, newDecodeError(b[0:1], "need at least one digit after fraction point")
+					return t, nil, unstable.NewParserError(b[0:1], "need at least one digit after fraction point")
 				}
 				break
 			}
@@ -266,7 +268,7 @@ func parseLocalTime(b []byte) (LocalTime, []byte, error) {
 		}
 
 		if precision == 0 {
-			return t, nil, newDecodeError(b[:1], "nanoseconds need at least one digit")
+			return t, nil, unstable.NewParserError(b[:1], "nanoseconds need at least one digit")
 		}
 
 		t.Nanosecond = frac * nspow[precision]
@@ -289,24 +291,24 @@ func parseFloat(b []byte) (float64, error) {
 	}
 
 	if cleaned[0] == '.' {
-		return 0, newDecodeError(b, "float cannot start with a dot")
+		return 0, unstable.NewParserError(b, "float cannot start with a dot")
 	}
 
 	if cleaned[len(cleaned)-1] == '.' {
-		return 0, newDecodeError(b, "float cannot end with a dot")
+		return 0, unstable.NewParserError(b, "float cannot end with a dot")
 	}
 
 	dotAlreadySeen := false
 	for i, c := range cleaned {
 		if c == '.' {
 			if dotAlreadySeen {
-				return 0, newDecodeError(b[i:i+1], "float can have at most one decimal point")
+				return 0, unstable.NewParserError(b[i:i+1], "float can have at most one decimal point")
 			}
 			if !isDigit(cleaned[i-1]) {
-				return 0, newDecodeError(b[i-1:i+1], "float decimal point must be preceded by a digit")
+				return 0, unstable.NewParserError(b[i-1:i+1], "float decimal point must be preceded by a digit")
 			}
 			if !isDigit(cleaned[i+1]) {
-				return 0, newDecodeError(b[i:i+2], "float decimal point must be followed by a digit")
+				return 0, unstable.NewParserError(b[i:i+2], "float decimal point must be followed by a digit")
 			}
 			dotAlreadySeen = true
 		}
@@ -317,12 +319,12 @@ func parseFloat(b []byte) (float64, error) {
 		start = 1
 	}
 	if cleaned[start] == '0' && isDigit(cleaned[start+1]) {
-		return 0, newDecodeError(b, "float integer part cannot have leading zeroes")
+		return 0, unstable.NewParserError(b, "float integer part cannot have leading zeroes")
 	}
 
 	f, err := strconv.ParseFloat(string(cleaned), 64)
 	if err != nil {
-		return 0, newDecodeError(b, "unable to parse float: %w", err)
+		return 0, unstable.NewParserError(b, "unable to parse float: %w", err)
 	}
 
 	return f, nil
@@ -336,7 +338,7 @@ func parseIntHex(b []byte) (int64, error) {
 
 	i, err := strconv.ParseInt(string(cleaned), 16, 64)
 	if err != nil {
-		return 0, newDecodeError(b, "couldn't parse hexadecimal number: %w", err)
+		return 0, unstable.NewParserError(b, "couldn't parse hexadecimal number: %w", err)
 	}
 
 	return i, nil
@@ -350,7 +352,7 @@ func parseIntOct(b []byte) (int64, error) {
 
 	i, err := strconv.ParseInt(string(cleaned), 8, 64)
 	if err != nil {
-		return 0, newDecodeError(b, "couldn't parse octal number: %w", err)
+		return 0, unstable.NewParserError(b, "couldn't parse octal number: %w", err)
 	}
 
 	return i, nil
@@ -364,7 +366,7 @@ func parseIntBin(b []byte) (int64, error) {
 
 	i, err := strconv.ParseInt(string(cleaned), 2, 64)
 	if err != nil {
-		return 0, newDecodeError(b, "couldn't parse binary number: %w", err)
+		return 0, unstable.NewParserError(b, "couldn't parse binary number: %w", err)
 	}
 
 	return i, nil
@@ -387,12 +389,12 @@ func parseIntDec(b []byte) (int64, error) {
 	}
 
 	if len(cleaned) > startIdx+1 && cleaned[startIdx] == '0' {
-		return 0, newDecodeError(b, "leading zero not allowed on decimal number")
+		return 0, unstable.NewParserError(b, "leading zero not allowed on decimal number")
 	}
 
 	i, err := strconv.ParseInt(string(cleaned), 10, 64)
 	if err != nil {
-		return 0, newDecodeError(b, "couldn't parse decimal number: %w", err)
+		return 0, unstable.NewParserError(b, "couldn't parse decimal number: %w", err)
 	}
 
 	return i, nil
@@ -409,11 +411,11 @@ func checkAndRemoveUnderscoresIntegers(b []byte) ([]byte, error) {
 	}
 
 	if b[start] == '_' {
-		return nil, newDecodeError(b[start:start+1], "number cannot start with underscore")
+		return nil, unstable.NewParserError(b[start:start+1], "number cannot start with underscore")
 	}
 
 	if b[len(b)-1] == '_' {
-		return nil, newDecodeError(b[len(b)-1:], "number cannot end with underscore")
+		return nil, unstable.NewParserError(b[len(b)-1:], "number cannot end with underscore")
 	}
 
 	// fast path
@@ -435,7 +437,7 @@ func checkAndRemoveUnderscoresIntegers(b []byte) ([]byte, error) {
 		c := b[i]
 		if c == '_' {
 			if !before {
-				return nil, newDecodeError(b[i-1:i+1], "number must have at least one digit between underscores")
+				return nil, unstable.NewParserError(b[i-1:i+1], "number must have at least one digit between underscores")
 			}
 			before = false
 		} else {
@@ -449,11 +451,11 @@ func checkAndRemoveUnderscoresIntegers(b []byte) ([]byte, error) {
 
 func checkAndRemoveUnderscoresFloats(b []byte) ([]byte, error) {
 	if b[0] == '_' {
-		return nil, newDecodeError(b[0:1], "number cannot start with underscore")
+		return nil, unstable.NewParserError(b[0:1], "number cannot start with underscore")
 	}
 
 	if b[len(b)-1] == '_' {
-		return nil, newDecodeError(b[len(b)-1:], "number cannot end with underscore")
+		return nil, unstable.NewParserError(b[len(b)-1:], "number cannot end with underscore")
 	}
 
 	// fast path
@@ -476,10 +478,10 @@ func checkAndRemoveUnderscoresFloats(b []byte) ([]byte, error) {
 		switch c {
 		case '_':
 			if !before {
-				return nil, newDecodeError(b[i-1:i+1], "number must have at least one digit between underscores")
+				return nil, unstable.NewParserError(b[i-1:i+1], "number must have at least one digit between underscores")
 			}
 			if i < len(b)-1 && (b[i+1] == 'e' || b[i+1] == 'E') {
-				return nil, newDecodeError(b[i+1:i+2], "cannot have underscore before exponent")
+				return nil, unstable.NewParserError(b[i+1:i+2], "cannot have underscore before exponent")
 			}
 			before = false
 		case '+', '-':
@@ -488,15 +490,15 @@ func checkAndRemoveUnderscoresFloats(b []byte) ([]byte, error) {
 			before = false
 		case 'e', 'E':
 			if i < len(b)-1 && b[i+1] == '_' {
-				return nil, newDecodeError(b[i+1:i+2], "cannot have underscore after exponent")
+				return nil, unstable.NewParserError(b[i+1:i+2], "cannot have underscore after exponent")
 			}
 			cleaned = append(cleaned, c)
 		case '.':
 			if i < len(b)-1 && b[i+1] == '_' {
-				return nil, newDecodeError(b[i+1:i+2], "cannot have underscore after decimal point")
+				return nil, unstable.NewParserError(b[i+1:i+2], "cannot have underscore after decimal point")
 			}
 			if i > 0 && b[i-1] == '_' {
-				return nil, newDecodeError(b[i-1:i], "cannot have underscore before decimal point")
+				return nil, unstable.NewParserError(b[i-1:i], "cannot have underscore before decimal point")
 			}
 			cleaned = append(cleaned, c)
 		default:
@@ -541,4 +543,8 @@ func daysIn(m int, year int) int {
 
 func isLeap(year int) bool {
 	return year%4 == 0 && (year%100 != 0 || year%400 == 0)
+}
+
+func isDigit(r byte) bool {
+	return r >= '0' && r <= '9'
 }

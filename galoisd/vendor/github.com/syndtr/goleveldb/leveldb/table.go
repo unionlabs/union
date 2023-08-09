@@ -88,18 +88,6 @@ type tFiles []*tFile
 func (tf tFiles) Len() int      { return len(tf) }
 func (tf tFiles) Swap(i, j int) { tf[i], tf[j] = tf[j], tf[i] }
 
-func (tf tFiles) nums() string {
-	x := "[ "
-	for i, f := range tf {
-		if i != 0 {
-			x += ", "
-		}
-		x += fmt.Sprint(f.fd.Num)
-	}
-	x += " ]"
-	return x
-}
-
 // Returns true if i smallest key is less than j.
 // This used for sort by key in ascending order.
 func (tf tFiles) lessByKey(icmp *iComparer, i, j int) bool {
@@ -360,9 +348,9 @@ type tOps struct {
 	s            *session
 	noSync       bool
 	evictRemoved bool
-	cache        *cache.Cache
-	bcache       *cache.Cache
-	bpool        *util.BufferPool
+	fileCache    *cache.Cache
+	blockCache   *cache.Cache
+	blockBuffer  *util.BufferPool
 }
 
 // Creates an empty table and returns table writer.
@@ -376,7 +364,7 @@ func (t *tOps) create(tSize int) (*tWriter, error) {
 		t:  t,
 		fd: fd,
 		w:  fw,
-		tw: table.NewWriter(fw, t.s.o.Options, t.bpool, tSize),
+		tw: table.NewWriter(fw, t.s.o.Options, t.blockBuffer, tSize),
 	}, nil
 }
 
@@ -389,7 +377,9 @@ func (t *tOps) createFrom(src iterator.Iterator) (f *tFile, n int, err error) {
 
 	defer func() {
 		if err != nil {
-			w.drop()
+			if derr := w.drop(); derr != nil {
+				err = fmt.Errorf("error createFrom (%v); error dropping (%v)", err, derr)
+			}
 		}
 	}()
 
@@ -412,22 +402,22 @@ func (t *tOps) createFrom(src iterator.Iterator) (f *tFile, n int, err error) {
 // Opens table. It returns a cache handle, which should
 // be released after use.
 func (t *tOps) open(f *tFile) (ch *cache.Handle, err error) {
-	ch = t.cache.Get(0, uint64(f.fd.Num), func() (size int, value cache.Value) {
+	ch = t.fileCache.Get(0, uint64(f.fd.Num), func() (size int, value cache.Value) {
 		var r storage.Reader
 		r, err = t.s.stor.Open(f.fd)
 		if err != nil {
 			return 0, nil
 		}
 
-		var bcache *cache.NamespaceGetter
-		if t.bcache != nil {
-			bcache = &cache.NamespaceGetter{Cache: t.bcache, NS: uint64(f.fd.Num)}
+		var blockCache *cache.NamespaceGetter
+		if t.blockCache != nil {
+			blockCache = &cache.NamespaceGetter{Cache: t.blockCache, NS: uint64(f.fd.Num)}
 		}
 
 		var tr *table.Reader
-		tr, err = table.NewReader(r, f.size, f.fd, bcache, t.bpool, t.s.o.Options)
+		tr, err = table.NewReader(r, f.size, f.fd, blockCache, t.blockBuffer, t.s.o.Options)
 		if err != nil {
-			r.Close()
+			_ = r.Close()
 			return 0, nil
 		}
 		return 1, tr
@@ -484,14 +474,14 @@ func (t *tOps) newIterator(f *tFile, slice *util.Range, ro *opt.ReadOptions) ite
 // Removes table from persistent storage. It waits until
 // no one use the the table.
 func (t *tOps) remove(fd storage.FileDesc) {
-	t.cache.Delete(0, uint64(fd.Num), func() {
+	t.fileCache.Delete(0, uint64(fd.Num), func() {
 		if err := t.s.stor.Remove(fd); err != nil {
 			t.s.logf("table@remove removing @%d %q", fd.Num, err)
 		} else {
 			t.s.logf("table@remove removed @%d", fd.Num)
 		}
-		if t.evictRemoved && t.bcache != nil {
-			t.bcache.EvictNS(uint64(fd.Num))
+		if t.evictRemoved && t.blockCache != nil {
+			t.blockCache.EvictNS(uint64(fd.Num))
 		}
 		// Try to reuse file num, useful for discarded transaction.
 		t.s.reuseFileNum(fd.Num)
@@ -501,39 +491,39 @@ func (t *tOps) remove(fd storage.FileDesc) {
 // Closes the table ops instance. It will close all tables,
 // regadless still used or not.
 func (t *tOps) close() {
-	t.cache.Close()
-	if t.bcache != nil {
-		t.bcache.CloseWeak()
+	t.fileCache.Close(true)
+	if t.blockCache != nil {
+		t.blockCache.Close(false)
 	}
 }
 
 // Creates new initialized table ops instance.
 func newTableOps(s *session) *tOps {
 	var (
-		cacher cache.Cacher
-		bcache *cache.Cache
-		bpool  *util.BufferPool
+		fileCacher  cache.Cacher
+		blockCache  *cache.Cache
+		blockBuffer *util.BufferPool
 	)
 	if s.o.GetOpenFilesCacheCapacity() > 0 {
-		cacher = s.o.GetOpenFilesCacher().New(s.o.GetOpenFilesCacheCapacity())
+		fileCacher = s.o.GetOpenFilesCacher().New(s.o.GetOpenFilesCacheCapacity())
 	}
 	if !s.o.GetDisableBlockCache() {
-		var bcacher cache.Cacher
+		var blockCacher cache.Cacher
 		if s.o.GetBlockCacheCapacity() > 0 {
-			bcacher = s.o.GetBlockCacher().New(s.o.GetBlockCacheCapacity())
+			blockCacher = s.o.GetBlockCacher().New(s.o.GetBlockCacheCapacity())
 		}
-		bcache = cache.NewCache(bcacher)
+		blockCache = cache.NewCache(blockCacher)
 	}
 	if !s.o.GetDisableBufferPool() {
-		bpool = util.NewBufferPool(s.o.GetBlockSize() + 5)
+		blockBuffer = util.NewBufferPool(s.o.GetBlockSize() + 5)
 	}
 	return &tOps{
 		s:            s,
 		noSync:       s.o.GetNoSync(),
 		evictRemoved: s.o.GetBlockCacheEvictRemoved(),
-		cache:        cache.NewCache(cacher),
-		bcache:       bcache,
-		bpool:        bpool,
+		fileCache:    cache.NewCache(fileCacher),
+		blockCache:   blockCache,
+		blockBuffer:  blockBuffer,
 	}
 }
 
@@ -552,7 +542,7 @@ type tWriter struct {
 // Append key/value pair to the table.
 func (w *tWriter) append(key, value []byte) error {
 	if w.first == nil {
-		w.first = append([]byte{}, key...)
+		w.first = append([]byte(nil), key...)
 	}
 	w.last = append(w.last[:0], key...)
 	return w.tw.Append(key, value)
@@ -564,16 +554,27 @@ func (w *tWriter) empty() bool {
 }
 
 // Closes the storage.Writer.
-func (w *tWriter) close() {
+func (w *tWriter) close() error {
 	if w.w != nil {
-		w.w.Close()
+		if err := w.w.Close(); err != nil {
+			return err
+		}
 		w.w = nil
 	}
+	return nil
 }
 
 // Finalizes the table and returns table file.
 func (w *tWriter) finish() (f *tFile, err error) {
-	defer w.close()
+	defer func() {
+		if cerr := w.close(); cerr != nil {
+			if err == nil {
+				err = cerr
+			} else {
+				err = fmt.Errorf("error opening file (%v); error unlocking file (%v)", err, cerr)
+			}
+		}
+	}()
 	err = w.tw.Close()
 	if err != nil {
 		return
@@ -589,11 +590,16 @@ func (w *tWriter) finish() (f *tFile, err error) {
 }
 
 // Drops the table.
-func (w *tWriter) drop() {
-	w.close()
-	w.t.s.stor.Remove(w.fd)
-	w.t.s.reuseFileNum(w.fd.Num)
+func (w *tWriter) drop() error {
+	if err := w.close(); err != nil {
+		return err
+	}
 	w.tw = nil
 	w.first = nil
 	w.last = nil
+	if err := w.t.s.stor.Remove(w.fd); err != nil {
+		return err
+	}
+	w.t.s.reuseFileNum(w.fd.Num)
+	return nil
 }

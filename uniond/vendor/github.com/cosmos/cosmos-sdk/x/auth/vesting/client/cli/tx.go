@@ -142,7 +142,7 @@ func NewMsgCreatePeriodicVestingAccountCmd() *cobra.Command {
 
 		An array of coin strings and unix epoch times for coins to vest
 { "start_time": 1625204910,
-"period":[
+"periods":[
  {
   "coins": "10test",
   "length_seconds":2592000 //30 days

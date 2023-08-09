@@ -13,13 +13,15 @@
 // permissions and limitations under the License. See the AUTHORS file
 // for names of contributors.
 
-// +build arm
-// +build gc,go1.5
+//go:build (arm || arm64) && gc && go1.5
+// +build arm arm64
+// +build gc
+// +build go1.5
 
 package goid
 
 // Backdoor access to runtime·getg().
-func getg() *g // in goid_go1.5plus.s
+func getg() *g // in goid_go1.5_arm.s or goid_go1.5_arm64.s
 
 func Get() int64 {
 	return getg().goid

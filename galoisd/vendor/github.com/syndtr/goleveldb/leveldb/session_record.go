@@ -201,7 +201,7 @@ func (p *sessionRecord) readUvarintMayEOF(field string, r io.ByteReader, mayEOF 
 	}
 	x, err := binary.ReadUvarint(r)
 	if err != nil {
-		if err == io.ErrUnexpectedEOF || (mayEOF == false && err == io.EOF) {
+		if err == io.ErrUnexpectedEOF || (!mayEOF && err == io.EOF) {
 			p.err = errors.NewErrCorrupted(storage.FileDesc{}, &ErrManifestCorrupted{field, "short read"})
 		} else if strings.HasPrefix(err.Error(), "binary:") {
 			p.err = errors.NewErrCorrupted(storage.FileDesc{}, &ErrManifestCorrupted{field, err.Error()})

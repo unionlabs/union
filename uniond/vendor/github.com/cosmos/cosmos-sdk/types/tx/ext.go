@@ -5,12 +5,12 @@ import (
 )
 
 // TxExtensionOptionI defines the interface for tx extension options
-type ExtensionOptionI interface{}
+type TxExtensionOptionI interface{} //nolint:revive // to avoid breaking change
 
 // unpackTxExtensionOptionsI unpacks Any's to TxExtensionOptionI's.
 func unpackTxExtensionOptionsI(unpacker types.AnyUnpacker, anys []*types.Any) error {
 	for _, any := range anys {
-		var opt ExtensionOptionI
+		var opt TxExtensionOptionI
 		err := unpacker.UnpackAny(any, &opt)
 		if err != nil {
 			return err

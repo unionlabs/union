@@ -28,7 +28,9 @@ var _ AccountRetriever = (*MockAccountRetriever)(nil)
 // MockAccountRetriever defines a no-op basic AccountRetriever that can be used
 // in mocked contexts. Tests or context that need more sophisticated testing
 // state should implement their own mock AccountRetriever.
-type MockAccountRetriever struct{}
+type MockAccountRetriever struct {
+	ReturnAccNum, ReturnAccSeq uint64
+}
 
 func (mar MockAccountRetriever) GetAccount(_ Context, _ sdk.AccAddress) (Account, error) {
 	return nil, nil
@@ -43,5 +45,5 @@ func (mar MockAccountRetriever) EnsureExists(_ Context, _ sdk.AccAddress) error 
 }
 
 func (mar MockAccountRetriever) GetAccountNumberSequence(_ Context, _ sdk.AccAddress) (uint64, uint64, error) {
-	return 0, 0, nil
+	return mar.ReturnAccNum, mar.ReturnAccSeq, nil
 }
