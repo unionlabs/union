@@ -34,7 +34,7 @@
             --home $out
         '';
 
-        applyGenesisOverwrites = home: genesisOverwrites: 
+      applyGenesisOverwrites = home: genesisOverwrites:
         let
           overwrites = builtins.toFile "overwrite.json" (builtins.toJSON genesisOverwrites);
         in
@@ -496,7 +496,7 @@
 
       packages.devnet-validator-gentxs = pkgs.symlinkJoin {
         name = "validator-gentxs";
-        paths = validatorGentxs ;
+        paths = validatorGentxs;
       };
 
       packages.devnet-validator-node-ids = pkgs.symlinkJoin {
