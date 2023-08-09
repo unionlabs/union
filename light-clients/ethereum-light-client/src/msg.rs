@@ -6,13 +6,12 @@ pub use wasm_light_client_types::msg::ExecuteMsg;
 #[cw_serde]
 pub struct InstantiateMsg {}
 
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
+#[cw_serde]
 pub enum QueryMsg {
+    /// Queries that are defined in the wasm client specification
+    LightClientSpecification(wasm_light_client_types::msg::QueryMsg),
     /// Returns the ethereum preset that this contract is compiled for
     EthPreset {},
-    // / Queries that are defined in the wasm client specification
-    #[serde(untagged)]
-    LightClientSpecification(wasm_light_client_types::msg::QueryMsg),
 }
 
 #[derive(Debug, Serialize, Deserialize)]
