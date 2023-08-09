@@ -29,4 +29,3 @@ jobs:
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }} 
         with:
           filename: .github/templates/nightly-issue-template.md
-      - run: 'echo Created issue ${{ steps.create-issue.outputs.number }}'
