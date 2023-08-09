@@ -1,6 +1,5 @@
 use std::fmt::Display;
 
-use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{to_binary, Binary, StdResult};
 use protos::ibc::{
     core::client::v1::GenesisMetadata,
@@ -102,8 +101,8 @@ pub enum ExecuteMsg {
     ExportMetadata {},
 }
 
-#[cw_serde]
-#[serde(untagged)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub enum QueryMsg {
     Status {},
 }
