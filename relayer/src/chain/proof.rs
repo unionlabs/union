@@ -1,6 +1,7 @@
 use std::fmt::{Debug, Display};
 
 use futures::Future;
+use serde::Serialize;
 use unionlabs::ibc::core::{
     channel::channel::Channel, client::height::Height, connection::connection_end::ConnectionEnd,
 };
@@ -9,7 +10,7 @@ use crate::chain::{ClientStateOf, ConsensusStateOf, LightClient};
 
 pub trait IbcStateRead<L: LightClient, P: IbcPath>
 where
-    StateProof<P::Output<L>>: Debug,
+    StateProof<P::Output<L>>: Debug + Serialize,
 {
     fn state_proof(
         light_client: &L,
@@ -21,7 +22,7 @@ where
 /// `IbcPath` represents the path to a light client's ibc storage. The values stored at each path
 /// are strongly typed, i.e. `connections/{connection_id}` always stores a [`ConnectionEnd`].
 pub trait IbcPath: Display + Clone + Sized {
-    type Output<L: LightClient>: Debug;
+    type Output<L: LightClient>: Debug + Serialize;
 }
 
 type ClientId = String;
@@ -29,9 +30,10 @@ type ChannelId = String;
 type ConnectionId = String;
 type PortId = String;
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct StateProof<Data> {
     pub state: Data,
+    #[serde(with = "serde_utils::hex_string")]
     pub proof: Vec<u8>,
     pub proof_height: Height,
 }
@@ -47,7 +49,7 @@ macro_rules! ibc_paths (
         )+
     ) => {
         $(
-            #[derive(Debug, Clone, PartialEq)]
+            #[derive(Debug, Clone, PartialEq, clap::Args)]
             pub struct $Struct {
                 $(pub $field: $field_ty,)+
             }
@@ -65,7 +67,11 @@ macro_rules! ibc_paths (
         )+
 
         pub trait IbcStateReadPaths<L: LightClient>: $(IbcStateRead<L, $Struct>+)+ {}
-        impl<T, L: LightClient> IbcStateReadPaths<L> for T where T: $(IbcStateRead<L, $Struct>+)+ {}
+
+        impl<T, L: LightClient> IbcStateReadPaths<L> for T
+            where
+                T: $(IbcStateRead<L, $Struct>+)+
+        {}
     }
 );
 
