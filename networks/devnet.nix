@@ -3,16 +3,16 @@
     let
       arion = inputs'.arion.packages.default;
 
-      uniond-services = genesisOverwrites: (builtins.listToAttrs (builtins.genList
+      uniond-services = (builtins.listToAttrs (builtins.genList
         (id: {
           name = "uniond-${toString id}";
           value = import ./services/uniond.nix {
             inherit pkgs;
             inherit id;
             uniond = self'.packages.uniond;
-            devnet-genesis = self'.packages.devnet-genesis genesisOverwrites;
-            devnet-validator-keys = self'.packages.devnet-validator-keys genesisOverwrites;
-            devnet-validator-node-ids = self'.packages.devnet-validator-node-ids genesisOverwrites;
+            devnet-genesis = self'.packages.devnet-genesis;
+            devnet-validator-keys = self'.packages.devnet-validator-keys;
+            devnet-validator-node-ids = self'.packages.devnet-validator-node-ids;
           };
         })
         devnetConfig.validatorCount));
@@ -34,9 +34,9 @@
         services = uniond-services // sepolia-services;
       };
 
-      union = genesisOverwrites: {
+      union = {
         project.name = "union";
-        services = uniond-services genesisOverwrites;
+        services = uniond-services;
       };
 
       sepolia = {

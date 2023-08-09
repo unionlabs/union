@@ -34,17 +34,19 @@
             --home $out
         '';
 
-        applyGenesisOverwrites = home: genesisOverwrites: pkgs.runCommand "apply-genesis-overwrites"
+        applyGenesisOverwrites = home: genesisOverwrites: 
+        let
+          overwrites = builtins.toFile "overwrite.json" (builtins.toJSON genesisOverwrites);
+        in
+        pkgs.runCommand "apply-genesis-overwrites"
           {
             buildInputs = [ pkgs.jq ];
           }
           ''
-            cat ${builtins.toJSON genesisOverwrites} > ./overwrite.json
-            merge=$(jq -s '.[0] * .[1]' ${home}/config/genesis.json ./overwrite.json)
-            echo "Out: "
-            echo $(cat $merge | jq .)
-            cp ${home} $out
-            cat $merge > $out/config/genesis.json
+            mkdir -p $out
+            cp --no-preserve=mode -r ${home}/* $out
+            jq -s '.[0] * .[1]' ${home}/config/genesis.json ${overwrites} > merge.json
+            mv merge.json $out/config/genesis.json
           '';
 
       calculateCw20Ics20ContractAddress = home: pkgs.runCommand "calculate-cw20-ics20-contract-address"
@@ -431,9 +433,9 @@
                 }.json
               '')
           validatorKeys;
-      genesisHome = genesisOverwrites: pkgs.lib.foldl
+      genesisHome = pkgs.lib.foldl
         (home: f: f home)
-        (applyGenesisOverwrites initHome genesisOverwrites)
+        (applyGenesisOverwrites initHome devnetConfig.genesisOverwrites)
         (
           # add light clients
           (builtins.map addLightClientCodeToGenesis [
@@ -459,42 +461,42 @@
           ]
         )
       ;
-      validatorKeys = genesisOverwrites: mkValidatorKeys { inherit (devnetConfig) validatorCount; home = genesisHome genesisOverwrites; };
-      validatorGentxs = genesisOverwrites: mkValidatorGentx {
-        home = genesisHome genesisOverwrites;
+      validatorKeys = mkValidatorKeys { inherit (devnetConfig) validatorCount; home = genesisHome; };
+      validatorGentxs = mkValidatorGentx {
+        home = genesisHome;
         inherit validatorKeys;
       };
       validatorNodeIDs = { validatorCount }: builtins.genList (i: mkNodeID "valnode-${toString i}.json") validatorCount;
     in
     {
-      packages.devnet-genesis = genesisOverwrites: pkgs.runCommand "genesis" { } ''
+      packages.devnet-genesis = pkgs.runCommand "genesis" { } ''
         mkdir $out
         cd $out
 
         export HOME=$(pwd)
 
         # Copy the read-only genesis we used to build the genesis file as the collect-gentxs command will overwrite it
-        cp --no-preserve=mode -r ${genesisHome genesisOverwrites}/* .
+        cp --no-preserve=mode -r ${genesisHome}/* .
 
         mkdir ./config/gentx
         ${builtins.concatStringsSep "\n" (pkgs.lib.lists.imap0 (i: valGentx: ''
           cp ${valGentx}/valgentx-${toString i}.json ./config/gentx/valgentx-${
             toString i
           }.json
-        '') (validatorGentxs genesisOverwrites))}
+        '') (validatorGentxs))}
 
         ${uniond} collect-gentxs --home . 2> /dev/null
         ${uniond} validate-genesis --home .
       '';
 
-      packages.devnet-validator-keys = genesisOverwrites: pkgs.symlinkJoin {
+      packages.devnet-validator-keys = pkgs.symlinkJoin {
         name = "validator-keys";
-        paths = validatorKeys genesisOverwrites;
+        paths = validatorKeys;
       };
 
-      packages.devnet-validator-gentxs = genesisOverwrites: pkgs.symlinkJoin {
+      packages.devnet-validator-gentxs = pkgs.symlinkJoin {
         name = "validator-gentxs";
-        paths = validatorGentxs genesisOverwrites;
+        paths = validatorGentxs ;
       };
 
       packages.devnet-validator-node-ids = pkgs.symlinkJoin {

@@ -56,5 +56,21 @@
             union = e2e.unionNode.node;
           };
         };
+
+        epoch-compleates = e2e.mkTest {
+          name = "epoch-compleates";
+
+          testScript = ''
+            start_all()
+
+            union.wait_for_open_port(${toString e2e.unionNode.wait_for_open_port})
+
+            union.wait_for_console_text('${e2e.unionNode.wait_for_console_text}')
+          '';
+
+          nodes = {
+            union = e2e.unionNode.node;
+          };
+        };
       }));
 }

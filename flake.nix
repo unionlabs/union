@@ -121,6 +121,13 @@
               '';
 
               devnetConfig = {
+                genesisOverwrites = {
+                  "\"app_state\"" = {
+                    "\"staking\""."\"params\"" = {
+                      "\"epoch_length\"" = "\"6\"";
+                    };
+                  };
+                };
                 validatorCount = 4;
                 ethereum = {
                   beacon = {
