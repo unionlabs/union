@@ -15,7 +15,7 @@ jobs:
     uses: ./.github/workflows/e2e.yml
     secrets:
       nixbuild_token: ${{ secrets.nixbuild_token }}
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      github-token: ${{ secrets.GITHUB_TOKEN }}
   
   respond:
     runs-on: ubuntu-latest
