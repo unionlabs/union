@@ -26,7 +26,7 @@ jobs:
       - uses: JasonEtco/create-an-issue@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RUN_URL: ${{ steps.step_id.outputs.url_output }} 
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }} 
         with:
           filename: .github/templates/nightly-issue-template.md
       - run: 'echo Created issue ${{ steps.create-issue.outputs.number }}'
