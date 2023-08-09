@@ -57,8 +57,8 @@
           };
         };
 
-        epoch-compleates = e2e.mkTest {
-          name = "epoch-compleates";
+        epoch-completes = e2e.mkTest {
+          name = "epoch-completes";
 
           testScript = ''
             start_all()
