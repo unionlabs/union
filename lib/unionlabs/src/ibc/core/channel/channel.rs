@@ -1,10 +1,12 @@
+use serde::Serialize;
+
 use crate::{
     errors::MissingField,
     ibc::core::channel::{counterparty::Counterparty, order::Order, state::State},
     Proto, TypeUrl,
 };
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct Channel {
     pub state: State,
     pub ordering: Order,

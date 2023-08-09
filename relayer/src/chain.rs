@@ -1,6 +1,10 @@
-use std::fmt::Debug;
+use std::{
+    fmt::{Debug, Display},
+    str::FromStr,
+};
 
 use futures::{Future, Stream};
+use serde::Serialize;
 use unionlabs::{
     ethereum_consts_traits::{Mainnet, Minimal},
     ibc::{
@@ -11,7 +15,7 @@ use unionlabs::{
                 msg_channel_open_init::MsgChannelOpenInit, msg_channel_open_try::MsgChannelOpenTry,
                 msg_recv_packet::MsgRecvPacket, packet::Packet,
             },
-            client::height::Height,
+            client::height::{Height, HeightFromStrError},
             connection::{
                 msg_channel_open_ack::MsgConnectionOpenAck,
                 msg_channel_open_confirm::MsgConnectionOpenConfirm,
@@ -134,10 +138,10 @@ pub type ClientStateOf<C> = <C as Chain>::SelfClientState;
 pub type ConsensusStateOf<C> = <C as Chain>::SelfConsensusState;
 
 /// Represents a block chain. One [`Chain`] may have many related [`LightClient`]s for connecting to
-/// various chains, all sharing a common config.
+/// various other [`Chain`]s, all sharing a common config.
 pub trait Chain {
-    type SelfClientState: ClientState + Debug;
-    type SelfConsensusState: Debug;
+    type SelfClientState: ClientState + Debug + Serialize;
+    type SelfConsensusState: Debug + Serialize;
 
     fn chain_id(&self) -> impl Future<Output = String> + '_;
 
@@ -165,10 +169,33 @@ pub trait CreateClient<L: LightClient>: Chain {
     ) -> impl Future<Output = (String, L)> + '_;
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum QueryHeight {
     Latest,
     Specific(Height),
+}
+
+impl Display for QueryHeight {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            QueryHeight::Latest => f.write_str("latest"),
+            QueryHeight::Specific(height) => f.write_fmt(format_args!("{height}")),
+        }
+    }
+}
+
+impl FromStr for QueryHeight {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "latest" => Ok(Self::Latest),
+            _ => s
+                .parse()
+                .map_err(|x: HeightFromStrError| x.to_string())
+                .map(Self::Specific),
+        }
+    }
 }
 
 pub trait Connect<L>: LightClient

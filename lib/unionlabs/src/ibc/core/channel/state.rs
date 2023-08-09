@@ -1,6 +1,8 @@
+use serde::Serialize;
+
 use crate::errors::UnknownEnumVariant;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub enum State {
     UninitializedUnspecified,
     Init,

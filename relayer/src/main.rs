@@ -50,7 +50,7 @@ use crate::{
     },
     cli::{
         AppArgs, ChainAddCmd, ChainCmd, ChannelCmd, ClientCmd, ClientCreateCmd, CometblsClientType,
-        Command, EvmClientType, QueryCmd, SubmitPacketCmd,
+        Command, EvmClientType, IbcCmd, IbcQueryCmd, QueryCmd, SubmitPacketCmd,
     },
     config::{ChainConfig, Config, EvmChainConfig},
 };
@@ -413,6 +413,34 @@ async fn do_main(args: cli::AppArgs) -> Result<(), anyhow::Error> {
                 }
             }
         },
+        Command::Ibc(IbcCmd::Query {
+            on,
+            at,
+            cmd: IbcQueryCmd::Path(path),
+        }) => {
+            let json = match relayer_config.chain[&on].clone() {
+                ChainConfig::Evm(EvmChainConfig::Mainnet(evm)) => {
+                    let evm = Evm::<Mainnet>::new(evm).await;
+
+                    path.any_state_proof_to_json(&evm.light_client(), at).await
+                }
+                ChainConfig::Evm(EvmChainConfig::Minimal(evm)) => {
+                    let evm = Evm::<Minimal>::new(evm).await;
+
+                    path.any_state_proof_to_json(&evm.light_client(), at).await
+                }
+                ChainConfig::Union(union) => {
+                    let union = Union::new(union).await;
+
+                    // Config is arbitrary
+                    let light_client: Ethereum<Mainnet> = union.light_client();
+
+                    path.any_state_proof_to_json(&light_client, at).await
+                }
+            };
+
+            println!("{json}");
+        }
     }
 
     std::fs::write(

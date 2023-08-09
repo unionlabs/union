@@ -1,6 +1,8 @@
+use serde::Serialize;
+
 use crate::{errors::UnknownEnumVariant, ibc::core::channel::order::Order};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct Version {
     // TODO(benluelo): "The identifier field specifies a unique version identifier. A value of "1" specifies IBC 1.0.0."
     pub identifier: String,
