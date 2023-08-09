@@ -19,11 +19,12 @@ jobs:
       issues: write
     needs: [ build ]
     # only create an issue if it failed in a scheduled run
-    if: github.event_name == "schedule" && failure()
+    if: github.event_name == 'schedule' && failure()
     steps:
       - uses: actions/checkout@v3
       - uses: JasonEtco/create-an-issue@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }} 
         with:
           filename: .github/templates/nightly-issue-template.md
