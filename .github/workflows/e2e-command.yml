@@ -12,6 +12,7 @@ on:
 
 jobs:
   build:
+    runs-on: ubuntu-latest
     steps:
       - name: Run nightly workflow
         uses: ./.github/workflows/nightly.yml
