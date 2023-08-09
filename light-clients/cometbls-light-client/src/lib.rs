@@ -5,3 +5,4 @@ pub mod msg;
 pub mod state;
 pub mod types;
 pub mod update;
+pub mod zkp_verifier;

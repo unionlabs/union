@@ -1,6 +1,6 @@
 use cosmwasm_std::{
     entry_point, to_binary, Binary, Deps, DepsMut, Env, MessageInfo, QueryResponse, Response,
-    StdError,
+    StdError, Uint256,
 };
 use prost::Message;
 use protos::{
@@ -25,6 +25,7 @@ use crate::{
     errors::Error,
     msg::{ExecuteMsg, InstantiateMsg, QueryMsg},
     state::{read_client_state, read_consensus_state},
+    zkp_verifier::verify_zkp,
 };
 
 #[entry_point]
@@ -167,15 +168,6 @@ pub fn update_header(mut deps: DepsMut, env: Env, header: Header) -> Result<Cont
         return Err(Error::InvalidZKP);
     }
 
-    todo!()
-}
-
-fn verify_zkp(
-    _trusted_validators_hash: &[u8],
-    _untrusted_validators_hash: &[u8],
-    _message: &[u8],
-    _zkp: &[u8],
-) -> bool {
     todo!()
 }
 
