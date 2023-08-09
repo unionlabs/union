@@ -1,13 +1,13 @@
 pragma solidity ^0.8.18;
 
-import {ILightClient} from "contracts/core/02-client/ILightClient.sol";
-import {MockClient} from "contracts/clients/MockClient.sol";
-import {IBCMsgs} from "contracts/core/25-handler/IBCMsgs.sol";
-import {IBCCommitment} from "contracts/core/24-host/IBCCommitment.sol";
-import {IBCStore} from "contracts/core/24-host/IBCStore.sol";
+import {ILightClient} from "../../../contracts/core/02-client/ILightClient.sol";
+import {MockClient} from "../../../contracts/clients/MockClient.sol";
+import {IBCMsgs} from "../../../contracts/core/25-handler/IBCMsgs.sol";
+import {IBCCommitment} from "../../../contracts/core/24-host/IBCCommitment.sol";
+import {IBCStore} from "../../../contracts/core/24-host/IBCStore.sol";
 
-import "tests/TestPlus.sol";
-import {IBCHandler_Testable} from "tests/utils/IBCHandler_Testable.sol";
+import "../TestPlus.sol";
+import {IBCHandler_Testable} from "../utils/IBCHandler_Testable.sol";
 
 contract IBCClientHandlerTest is TestPlus {
     // TODO: since IBCClientHandler is just a proxy to IBCClient, it should inherit from IIBCClient interface, but doesn't
@@ -47,7 +47,10 @@ contract IBCClientHandlerTest is TestPlus {
         vm.assume(revisionHeight > 0);
 
         handler.registerClient(CLIENT_TYPE, client);
-        IBCMsgs.MsgCreateClient memory m = MsgMocks.createClient(CLIENT_TYPE, revisionHeight);
+        IBCMsgs.MsgCreateClient memory m = MsgMocks.createClient(
+            CLIENT_TYPE,
+            revisionHeight
+        );
 
         vm.expectEmit(false, false, false, false);
         emit GeneratedClientIdentifier("");
@@ -62,11 +65,17 @@ contract IBCClientHandlerTest is TestPlus {
         vm.assume(nextRevision > revision);
 
         handler.registerClient(CLIENT_TYPE, client);
-        IBCMsgs.MsgCreateClient memory m = MsgMocks.createClient(CLIENT_TYPE, revision);
+        IBCMsgs.MsgCreateClient memory m = MsgMocks.createClient(
+            CLIENT_TYPE,
+            revision
+        );
 
         string memory id = handler.createClient(m);
 
-        IBCMsgs.MsgUpdateClient memory m2 = MsgMocks.updateClient(id, nextRevision);
+        IBCMsgs.MsgUpdateClient memory m2 = MsgMocks.updateClient(
+            id,
+            nextRevision
+        );
         handler.updateClient(m2);
 
         // TODO: no event emitted here?

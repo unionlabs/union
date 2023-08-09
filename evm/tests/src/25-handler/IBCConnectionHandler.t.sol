@@ -1,11 +1,11 @@
 pragma solidity ^0.8.18;
 
-import {ILightClient} from "contracts/core/02-client/ILightClient.sol";
-import {MockClient} from "contracts/clients/MockClient.sol";
-import {IBCMsgs} from "contracts/core/25-handler/IBCMsgs.sol";
+import {ILightClient} from "../../../contracts/core/02-client/ILightClient.sol";
+import {MockClient} from "../../../contracts/clients/MockClient.sol";
+import {IBCMsgs} from "../../../contracts/core/25-handler/IBCMsgs.sol";
 
-import "tests/TestPlus.sol";
-import {IBCHandler_Testable} from "tests/utils/IBCHandler_Testable.sol";
+import "../TestPlus.sol";
+import {IBCHandler_Testable} from "../utils/IBCHandler_Testable.sol";
 
 contract IBCConnectionHandlerTest is TestPlus {
     IBCHandler_Testable handler;
@@ -29,17 +29,22 @@ contract IBCConnectionHandlerTest is TestPlus {
         vm.assume(proofHeight > 0);
 
         // 1. createClient
-        IBCMsgs.MsgCreateClient memory m = MsgMocks.createClient(CLIENT_TYPE, proofHeight);
+        IBCMsgs.MsgCreateClient memory m = MsgMocks.createClient(
+            CLIENT_TYPE,
+            proofHeight
+        );
         string memory clientId = handler.createClient(m);
 
         // 2. ConnOpenInit
-        IBCMsgs.MsgConnectionOpenInit memory msg_init = MsgMocks.connectionOpenInit(clientId);
+        IBCMsgs.MsgConnectionOpenInit memory msg_init = MsgMocks
+            .connectionOpenInit(clientId);
         vm.expectEmit(false, false, false, false);
         emit GeneratedConnectionIdentifier("");
         string memory connId = handler.connectionOpenInit(msg_init);
 
         // 3. ConnOpenAck
-        IBCMsgs.MsgConnectionOpenAck memory msg_ack = MsgMocks.connectionOpenAck(clientId, connId, proofHeight);
+        IBCMsgs.MsgConnectionOpenAck memory msg_ack = MsgMocks
+            .connectionOpenAck(clientId, connId, proofHeight);
         handler.connectionOpenAck(msg_ack);
     }
 
@@ -49,18 +54,22 @@ contract IBCConnectionHandlerTest is TestPlus {
         vm.assume(proofHeight > 0);
 
         // 1. createClient
-        IBCMsgs.MsgCreateClient memory m = MsgMocks.createClient(CLIENT_TYPE, proofHeight);
+        IBCMsgs.MsgCreateClient memory m = MsgMocks.createClient(
+            CLIENT_TYPE,
+            proofHeight
+        );
         string memory clientId = handler.createClient(m);
 
         // 1. ConnOpenTry
-        IBCMsgs.MsgConnectionOpenTry memory msg_try = MsgMocks.connectionOpenTry(clientId, proofHeight);
+        IBCMsgs.MsgConnectionOpenTry memory msg_try = MsgMocks
+            .connectionOpenTry(clientId, proofHeight);
         vm.expectEmit(false, false, false, false);
         emit GeneratedConnectionIdentifier("");
         string memory connId = handler.connectionOpenTry(msg_try);
 
         // 2. ConnOpenConfirm
-        IBCMsgs.MsgConnectionOpenConfirm memory msg_confirm =
-            MsgMocks.connectionOpenConfirm(clientId, connId, proofHeight);
+        IBCMsgs.MsgConnectionOpenConfirm memory msg_confirm = MsgMocks
+            .connectionOpenConfirm(clientId, connId, proofHeight);
         handler.connectionOpenConfirm(msg_confirm);
     }
 }
