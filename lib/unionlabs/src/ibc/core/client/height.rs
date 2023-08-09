@@ -1,3 +1,5 @@
+use std::{fmt::Display, num::ParseIntError, str::FromStr};
+
 use serde::{Deserialize, Serialize};
 use ssz::{Decode, Encode};
 use tree_hash::TreeHash;
@@ -21,6 +23,45 @@ impl Height {
         Height {
             revision_number,
             revision_height,
+        }
+    }
+}
+
+impl FromStr for Height {
+    type Err = HeightFromStrError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        s.split_once('-')
+            .ok_or(HeightFromStrError::Invalid)
+            .and_then(|(n, h)| {
+                Ok(Self {
+                    revision_number: n.parse().map_err(HeightFromStrError::ParseIntError)?,
+                    revision_height: h.parse().map_err(HeightFromStrError::ParseIntError)?,
+                })
+            })
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub enum HeightFromStrError {
+    ParseIntError(ParseIntError),
+    Invalid,
+}
+
+impl Display for HeightFromStrError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            HeightFromStrError::ParseIntError(e) => write!(f, "invalid height string: {e}"),
+            HeightFromStrError::Invalid => write!(f, "invalid height string"),
+        }
+    }
+}
+
+impl std::error::Error for HeightFromStrError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            HeightFromStrError::ParseIntError(e) => Some(e),
+            HeightFromStrError::Invalid => None,
         }
     }
 }
@@ -77,5 +118,48 @@ impl From<contracts::shared_types::IbcCoreClientV1HeightData> for Height {
             revision_number: value.revision_number,
             revision_height: value.revision_height,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn from_str() {
+        assert_eq!(
+            Height::from_str("1-1"),
+            Ok(Height {
+                revision_number: 1,
+                revision_height: 1,
+            })
+        );
+
+        assert_eq!(
+            Height::from_str("0-0"),
+            Ok(Height {
+                revision_number: 0,
+                revision_height: 0,
+            })
+        );
+
+        assert_eq!(
+            Height::from_str(&format!("{0}-{0}", u64::MAX)),
+            Ok(Height {
+                revision_number: u64::MAX,
+                revision_height: u64::MAX,
+            })
+        );
+
+        // will try to parse "2-0" as a u64
+        assert!(matches!(
+            Height::from_str("4-2-0"),
+            Err(HeightFromStrError::ParseIntError(_))
+        ));
+
+        assert_eq!(
+            Height::from_str("gibberish"),
+            Err(HeightFromStrError::Invalid)
+        );
     }
 }
