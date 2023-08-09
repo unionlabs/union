@@ -21,7 +21,7 @@ use unionlabs::{
     TryFromProto,
 };
 use wasm_light_client_types::msg::{
-    ClientMessage, ContractResult, MerklePath, Status, StatusResponse,
+    ClientMessage, ContractResult, MerklePath, QueryMsg as WasmQueryMsg, Status, StatusResponse,
 };
 
 use crate::{
@@ -30,7 +30,7 @@ use crate::{
     custom_query::{query_aggregate_public_keys, CustomQuery, VerificationContext},
     errors::Error,
     eth_encoding::generate_commitment_key,
-    msg::{ExecuteMsg, InstantiateMsg, QueryMsg},
+    msg::{EthPresetResponse, ExecuteMsg, InstantiateMsg, QueryMsg},
     state::{read_client_state, read_consensus_state, save_consensus_state, update_client_state},
     update::apply_light_client_update,
     Config,
@@ -275,10 +275,19 @@ pub fn update_header<C: ChainSpec>(
 #[entry_point]
 pub fn query(deps: Deps<CustomQuery>, env: Env, msg: QueryMsg) -> Result<QueryResponse, Error> {
     let response = match msg {
-        QueryMsg::Status {} => query_status(deps, &env)?,
+        QueryMsg::LightClientSpecification(WasmQueryMsg::Status {}) => {
+            to_binary(&query_status(deps, &env)?)
+        }
+        QueryMsg::EthPreset {} => to_binary(&query_preset()),
     };
 
-    to_binary(&response).map_err(Into::into)
+    response.map_err(Into::into)
+}
+
+fn query_preset() -> EthPresetResponse {
+    EthPresetResponse {
+        preset: <Config as ChainSpec>::PRESET_BASE_KIND,
+    }
 }
 
 fn query_status(deps: Deps<CustomQuery>, env: &Env) -> Result<StatusResponse, Error> {
@@ -509,6 +518,16 @@ mod test {
             wasm_client_state.data.trusting_period + wasm_consensus_state.timestamp,
         );
         assert_eq!(query_status(deps.as_ref(), &env), Ok(Status::Active.into()))
+    }
+
+    #[test]
+    fn query_msg_wasm_json_is_flattened() {
+        let query_message = r#"{ "status": {} }"#;
+
+        assert_eq!(
+            serde_json::from_str::<QueryMsg>(query_message).unwrap(),
+            QueryMsg::LightClientSpecification(WasmQueryMsg::Status {})
+        );
     }
 
     #[test]
