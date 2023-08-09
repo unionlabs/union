@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:    
-    uses: ./.github/workflows/actions/e2e
+    uses: ./.github/workflows/e2e.yml
     secrets:
       nixbuild_token: ${{ secrets.nixbuild_token }}
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
