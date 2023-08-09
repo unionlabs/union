@@ -15,7 +15,7 @@
       sepoliaNode = {
         wait_for_console_text = "Synced - slot: [1-9][0-9]*";
         wait_for_open_port = 8546;
-        node = _: {
+        node = { pkgs, ... }: {
           imports = [
             inputs.arion.nixosModules.arion
           ];
@@ -26,6 +26,8 @@
               projects.sepolia.settings = networks.sepolia;
             };
           };
+
+          environment.systemPackages = with pkgs; [ jq ];
         };
       };
 
@@ -63,7 +65,7 @@
               union.wait_for_console_text('${unionNode.wait_for_console_text}')
               sepolia.wait_for_console_text('${sepoliaNode.wait_for_console_text}')
 
-              sepolia.wait_until_succeeds([[ $(curl http://localhost:9596/eth/v2/beacon/blocks/head --fail --silent | jq '.data.message.slot | tonumber > 0') == "true" ]])
+              sepolia.wait_until_succeeds('[[ $(curl http://localhost:9596/eth/v2/beacon/blocks/head --fail --silent | ${pkgs.lib.meta.getExe pkgs.jq} \'.data.message.slot | tonumber > 0\') == "true" ]]')
 
               ${testScript}
             '';
