@@ -89,6 +89,7 @@ pub struct Union {
     // TODO: Move this field back into `Ethereum` once the cometbls states are unwrapped out of the wasm states
     wasm_code_id: H256,
     prover_endpoint: String,
+    grpc_url: String,
     dump_path: String,
 }
 
@@ -150,12 +151,11 @@ impl<C: ChainSpec> CreateClient<Ethereum<C>> for Union {
 
 impl Union {
     pub async fn new(config: UnionChainConfig) -> Self {
-        let (tm_client, driver) =
-            WebSocketClient::builder("ws://127.0.0.1:26657/websocket".parse().unwrap())
-                .compat_mode(tendermint_rpc::client::CompatMode::V0_37)
-                .build()
-                .await
-                .unwrap();
+        let (tm_client, driver) = WebSocketClient::builder(config.ws_url)
+            .compat_mode(tendermint_rpc::client::CompatMode::V0_37)
+            .build()
+            .await
+            .unwrap();
 
         tokio::spawn(async move { driver.run().await });
 
@@ -177,6 +177,7 @@ impl Union {
             chain_revision,
             prover_endpoint: config.prover_endpoint,
             dump_path: config.dump_path,
+            grpc_url: config.grpc_url,
         }
     }
 
@@ -184,7 +185,7 @@ impl Union {
         &self,
         messages: impl IntoIterator<Item = google::protobuf::Any>,
     ) -> tendermint_rpc::endpoint::broadcast::tx_commit::Response {
-        let account = account_info_of_signer(&self.signer).await;
+        let account = self.account_info_of_signer(&self.signer).await;
 
         let sign_doc = tx::v1beta1::SignDoc {
             body_bytes: tx::v1beta1::TxBody {
@@ -266,6 +267,24 @@ impl Union {
             revision_number: self.chain_revision,
             revision_height: height,
         }
+    }
+
+    async fn account_info_of_signer(&self, signer: &CosmosAccountId) -> auth::v1beta1::BaseAccount {
+        let account = auth::v1beta1::query_client::QueryClient::connect(self.grpc_url.clone())
+            .await
+            .unwrap()
+            .account(auth::v1beta1::QueryAccountRequest {
+                address: signer.to_string(),
+            })
+            .await
+            .unwrap()
+            .into_inner()
+            .account
+            .unwrap();
+
+        assert!(account.type_url == "/cosmos.auth.v1beta1.BaseAccount");
+
+        auth::v1beta1::BaseAccount::decode(&*account.value).unwrap()
     }
 }
 
@@ -557,7 +576,7 @@ impl<C: ChainSpec> LightClient for Ethereum<C> {
         client_id: String,
     ) -> impl Future<Output = ClientStateOf<Self::CounterpartyChain>> + '_ {
         async move {
-            client_v1::query_client::QueryClient::connect("http://0.0.0.0:9090")
+            client_v1::query_client::QueryClient::connect(self.chain.grpc_url.clone())
                 .await
                 .unwrap()
                 .client_state(client_v1::QueryClientStateRequest { client_id })
@@ -792,7 +811,7 @@ impl<C: ChainSpec> Connect<Cometbls<C>> for Ethereum<C> {
 
             // TODO: Add to self
             let mut staking_client =
-                staking::v1beta1::query_client::QueryClient::connect("http://0.0.0.0:9090")
+                staking::v1beta1::query_client::QueryClient::connect(self.chain.grpc_url.clone())
                     .await
                     .unwrap();
 
@@ -1232,7 +1251,7 @@ where
         async move {
             let mut client =
                 protos::cosmos::base::tendermint::v1beta1::service_client::ServiceClient::connect(
-                    "http://0.0.0.0:9090",
+                    light_client.chain.grpc_url.clone(),
                 )
                 .await
                 .unwrap();
@@ -1266,23 +1285,4 @@ where
             }
         }
     }
-}
-
-// TODO: This should be an instance method on `Union`
-async fn account_info_of_signer(signer: &CosmosAccountId) -> auth::v1beta1::BaseAccount {
-    let account = auth::v1beta1::query_client::QueryClient::connect("http://0.0.0.0:9090")
-        .await
-        .unwrap()
-        .account(auth::v1beta1::QueryAccountRequest {
-            address: signer.to_string(),
-        })
-        .await
-        .unwrap()
-        .into_inner()
-        .account
-        .unwrap();
-
-    assert!(account.type_url == "/cosmos.auth.v1beta1.BaseAccount");
-
-    auth::v1beta1::BaseAccount::decode(&*account.value).unwrap()
 }
