@@ -10,7 +10,7 @@ jobs:
         id: refs
         uses: eficode/resolve-pr-refs@main
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.PAT }}
       - name: Slash Command Dispatch
         uses: peter-evans/slash-command-dispatch@v3
         with:
