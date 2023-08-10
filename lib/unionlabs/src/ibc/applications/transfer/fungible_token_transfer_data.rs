@@ -1,7 +1,5 @@
 use std::num::ParseIntError;
 
-#[cfg(feature = "ethabi")]
-use crate::EthAbi;
 use crate::{Proto, TypeUrl};
 
 #[derive(Debug, Clone, PartialEq)]
@@ -62,54 +60,6 @@ impl From<FungibleTokenPacketData>
             sender: value.sender,
             receiver: value.receiver,
             memo: value.memo.unwrap_or_default(),
-        }
-    }
-}
-
-#[cfg(feature = "ethabi")]
-impl EthAbi for FungibleTokenPacketData {
-    type EthAbi = contracts::glue::TransferPacket;
-}
-
-#[cfg(feature = "ethabi")]
-#[derive(Debug)]
-pub enum TryFromTransferPacketError {
-    Amount(&'static str),
-}
-
-#[cfg(feature = "ethabi")]
-impl TryFrom<contracts::glue::TransferPacket> for FungibleTokenPacketData {
-    type Error = TryFromTransferPacketError;
-
-    fn try_from(value: contracts::glue::TransferPacket) -> Result<Self, Self::Error> {
-        Ok(Self {
-            denom: value.denom,
-            amount: value
-                .amount
-                .try_into()
-                .map_err(TryFromTransferPacketError::Amount)?,
-            sender: value.sender,
-            receiver: value.receiver,
-            memo: None,
-        })
-    }
-}
-
-#[cfg(feature = "ethabi")]
-impl From<FungibleTokenPacketData> for contracts::glue::TransferPacket {
-    fn from(value: FungibleTokenPacketData) -> Self {
-        if value.memo.is_some() {
-            tracing::warn!(
-                data = ?value,
-                "memo on FungibleTokenPacketData silently ignored as TransferPacket does not support memo"
-            );
-        }
-
-        Self {
-            amount: value.amount.into(),
-            denom: value.denom,
-            receiver: value.receiver,
-            sender: value.sender,
         }
     }
 }

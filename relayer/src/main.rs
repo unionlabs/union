@@ -16,12 +16,10 @@ use clap::Parser;
 use futures::{future::join, FutureExt, Stream, StreamExt};
 use prost::Message;
 use unionlabs::{
-    cosmos::base::Coin,
+    cosmos::base::coin::Coin,
     ethereum_consts_traits::{Mainnet, Minimal, PresetBaseKind},
     ibc::{
-        applications::transfer::{
-            fungible_token_transfer_data::FungibleTokenPacketData, msg_transfer::MsgTransfer,
-        },
+        applications::transfer::msg_transfer::MsgTransfer,
         core::{
             channel::{
                 self, channel::Channel, msg_channel_open_ack::MsgChannelOpenAck,
@@ -39,7 +37,7 @@ use unionlabs::{
             },
         },
     },
-    IntoProto, TryFromEthAbi,
+    IntoProto,
 };
 
 use crate::{
@@ -73,10 +71,6 @@ async fn main() -> Result<(), anyhow::Error> {
 
     do_main(args).await
 }
-
-// const ETH_BEACON_RPC_API: &str = "http://localhost:9596";
-// const ETH_RPC_API: &str = "http://localhost:8545";
-const CHANNEL_VERSION: &str = "ics20-1";
 
 #[allow(clippy::too_many_lines)]
 async fn do_main(args: cli::AppArgs) -> Result<(), anyhow::Error> {
@@ -861,6 +855,7 @@ where
     .await)
 }
 
+#[allow(clippy::too_many_arguments)] // fight me clippy
 async fn do_channel_handshake<L2, L1>(
     cometbls: &L2,
     ethereum: &L1,
@@ -918,7 +913,7 @@ where
                     channel_id: String::new(),
                 },
                 connection_hops: vec![cometbls_connection_id.clone()],
-                version: cometbls_channel_version.clone()
+                version: cometbls_channel_version.clone(),
             },
         })
         .await;
@@ -1078,11 +1073,7 @@ where
     {
         lc1_event_stream
             .for_each(move |(event_height, packet)| async move {
-                if let Ok(decoded) = FungibleTokenPacketData::try_from_eth_abi_bytes(&packet.data) {
-                    tracing::info!(?decoded, "recieved ics20 transfer packet")
-                } else {
-                    tracing::info!("recieved opaque packet")
-                }
+                tracing::info!("recieved packet");
 
                 let sequence = packet.sequence;
 

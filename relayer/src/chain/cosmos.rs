@@ -523,49 +523,52 @@ impl Chain for Union {
                 futures::future::ready(())
             }));
 
-            let (missed_events_tx, missed_events_rx) = tokio::sync::mpsc::unbounded_channel();
+            // NOTE(benluelo): Commented out for now as this is currently untested. Leaving it here
+            // as I'm pretty sure this is the general flow for querying missed packets, and could be useful down the line.
 
-            let latest_height = self.query_latest_height().await.revision_height;
+            let (_missed_events_tx, missed_events_rx) = tokio::sync::mpsc::unbounded_channel();
 
-            for height in (latest_height.checked_sub(50).unwrap_or(1))..=latest_height {
-                let block_results = self
-                    .tm_client
-                    .block_results(u32::try_from(height).unwrap())
-                    .await
-                    .unwrap();
+            // let latest_height = self.query_latest_height().await.revision_height;
 
-                if let Some(txs_results) = block_results.txs_results {
-                    for tx_result in txs_results {
-                        if let Some(send_packet) =
-                            get_event_from_tx_response::<SendPacket>(tx_result.events)
-                        {
-                            let event_height = self.make_height(height);
+            // for height in (latest_height.checked_sub(50).unwrap_or(1))..=latest_height {
+            //     let block_results = self
+            //         .tm_client
+            //         .block_results(u32::try_from(height).unwrap())
+            //         .await
+            //         .unwrap();
 
-                            missed_events_tx
-                                .send((
-                                    event_height,
-                                    Packet {
-                                        sequence: send_packet.packet_sequence.parse().unwrap(),
-                                        source_port: send_packet.packet_src_port,
-                                        source_channel: send_packet.packet_src_channel,
-                                        destination_port: send_packet.packet_dst_port,
-                                        destination_channel: send_packet.packet_dst_channel,
-                                        data: hex::decode(send_packet.packet_data_hex).unwrap(),
-                                        timeout_height: send_packet
-                                            .packet_timeout_height
-                                            .parse()
-                                            .unwrap(),
-                                        timeout_timestamp: send_packet
-                                            .packet_timeout_timestamp
-                                            .parse()
-                                            .unwrap(),
-                                    },
-                                ))
-                                .unwrap();
-                        }
-                    }
-                }
-            }
+            //     if let Some(txs_results) = block_results.txs_results {
+            //         for tx_result in txs_results {
+            //             if let Some(send_packet) =
+            //                 get_event_from_tx_response::<SendPacket>(tx_result.events)
+            //             {
+            //                 let event_height = self.make_height(height);
+
+            //                 missed_events_tx
+            //                     .send((
+            //                         event_height,
+            //                         Packet {
+            //                             sequence: send_packet.packet_sequence.parse().unwrap(),
+            //                             source_port: send_packet.packet_src_port,
+            //                             source_channel: send_packet.packet_src_channel,
+            //                             destination_port: send_packet.packet_dst_port,
+            //                             destination_channel: send_packet.packet_dst_channel,
+            //                             data: hex::decode(send_packet.packet_data_hex).unwrap(),
+            //                             timeout_height: send_packet
+            //                                 .packet_timeout_height
+            //                                 .parse()
+            //                                 .unwrap(),
+            //                             timeout_timestamp: send_packet
+            //                                 .packet_timeout_timestamp
+            //                                 .parse()
+            //                                 .unwrap(),
+            //                         },
+            //                     ))
+            //                     .unwrap();
+            //             }
+            //         }
+            //     }
+            // }
 
             UnboundedReceiverStream::new(missed_events_rx)
                 .chain(UnboundedReceiverStream::new(events_from_now_rx))
