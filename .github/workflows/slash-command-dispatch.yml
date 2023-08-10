@@ -6,6 +6,11 @@ jobs:
   slashCommandDispatch:
     runs-on: ubuntu-latest
     steps:
+      - name: resolve pr refs
+        id: refs
+        uses: eficode/resolve-pr-refs@main
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
       - name: Slash Command Dispatch
         uses: peter-evans/slash-command-dispatch@v3
         with:
@@ -19,3 +24,4 @@ jobs:
           static-args: |
             repository=${{ github.repository }}
             comment-id=${{ github.event.comment.id }}
+            ref=${{ steps.refs.outputs.head_ref }}
