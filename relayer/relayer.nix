@@ -32,5 +32,48 @@
         tests = crane.lib.cargoNextest attrs;
       };
     };
+
+  flake.nixosModules.relayer = { lib, pkgs, config, ... }:
+    with lib;
+    let
+      cfg = config.services.relayer;
+    in
+    {
+      options.services.relayer = {
+        enable = mkEnableOption "Union relayer service";
+        config_file = mkOption {
+          type = types.attrsOf types.inferred;
+        };
+      };
+
+      config = mkIf cfg.enable {
+        systemd.services.relayer =
+          let
+            relayer-systemd-script = pkgs.writeShellApplication {
+              name = "relayer-systemd";
+              runtimeInputs = [ pkgs.coreutils self.packages.${pkgs.system}.relayer ];
+              text = ''
+                mkdir -p /var/lib/relayer 
+                # for dump output
+                mkdir -p /var/lib/relayer/dump 
+                cd /var/lib/relayer 
+
+                cp ${pkgs.writeText "config.json" (builtins.toJSON cfg.config_file)} /var/lib/relayer/config.json
+
+                relayer --config-file-path /var/lib/relayer/config.json relay --between union-testnet:sepolia
+              '';
+            };
+          in
+          {
+            wantedBy = [ "multi-user.target" ];
+            description = "relayer";
+            serviceConfig = {
+              Type = "simple";
+              ExecStart = pkgs.lib.getExe relayer-systemd-script;
+              Restart = mkForce "always";
+            };
+          };
+      };
+    };
 }
 
