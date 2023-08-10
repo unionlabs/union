@@ -437,16 +437,22 @@
                   --from-chain ethereum-devnet \
                   --from-client cometbls-new-0
 
+                RUST_LOG=relayer=info ${self'.packages.relayer}/bin/relayer \
+                  --config-file-path "$RELAYER_CONFIG_FILE" \
+                  setup bind-port \
+                  --on ethereum-devnet \
+                  --module-address "$PING_PONG_MODULE_ADDRESS" \
+                  --port-id "ping-pong"
                 
                 RUST_LOG=relayer=info ${self'.packages.relayer}/bin/relayer \
                   --config-file-path "$RELAYER_CONFIG_FILE" \
                   channel open \
-                  --from-chain union-devnet \
-                  --from-connection connection-1 \
-                  --from-port "wasm.$PING_PONG_ADDRESS" \
-                  --to-chain ethereum-devnet \
+                  --to-chain union-devnet \
                   --to-connection connection-1 \
-                  --to-port "ping-pong"
+                  --to-port "wasm.$PING_PONG_ADDRESS" \
+                  --from-chain ethereum-devnet \
+                  --from-connection connection-1 \
+                  --from-port "ping-pong"
             }
 
             printIBCSetupInfo() {

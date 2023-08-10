@@ -286,6 +286,17 @@ impl<C: ChainSpec> Evm<C> {
         tracing::info!(balance_after = %balance, %denom);
     }
 
+    pub async fn bind_port(&self, module_address: Address, port_id: String) {
+        let bind_port_result = self.ibc_handler.bind_port(port_id, module_address.into());
+
+        match bind_port_result.send().await {
+            Ok(ok) => {
+                ok.await.unwrap().unwrap();
+            }
+            Err(why) => eprintln!("{:?}", why.decode_revert::<String>()),
+        };
+    }
+
     pub async fn setup_initial_channel(
         &self,
         module_address: Address,

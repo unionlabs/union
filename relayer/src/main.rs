@@ -390,6 +390,24 @@ async fn do_main(args: cli::AppArgs) -> Result<(), anyhow::Error> {
             QueryCmd::Channel {} => todo!(),
         },
         Command::Setup(cmd) => match cmd {
+            // TODO(aeryz): this might go into channel as well, since it's highly coupled with it
+            cli::SetupCmd::BindPort {
+                on,
+                module_address,
+                port_id,
+            } => {
+                let chain = relayer_config.get_chain(&on).await.unwrap();
+
+                match chain {
+                    AnyChain::EvmMinimal(evm) => {
+                        evm.bind_port(module_address.into(), port_id).await
+                    }
+                    AnyChain::EvmMainnet(evm) => {
+                        evm.bind_port(module_address.into(), port_id).await
+                    }
+                    _ => panic!("Not supported"),
+                };
+            }
             cli::SetupCmd::InitialChannel {
                 on,
                 counterparty_port_id,

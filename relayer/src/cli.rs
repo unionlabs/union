@@ -106,6 +106,15 @@ impl IbcQueryPathCmd {
 
 #[derive(Debug, Subcommand)]
 pub enum SetupCmd {
+    BindPort {
+        #[arg(long)]
+        on: String,
+        #[arg(long)]
+        module_address: Address,
+        #[arg(long)]
+        port_id: String,
+    },
+
     InitialChannel {
         #[arg(long)]
         on: String,
