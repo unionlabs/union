@@ -24,4 +24,4 @@ jobs:
           static-args: |
             repository=${{ github.repository }}
             comment-id=${{ github.event.comment.id }}
-            ref=${{ steps.refs.outputs.head_ref }}
+            ref=${{ steps.refs.outputs.head_sha }}
