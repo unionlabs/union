@@ -19,7 +19,7 @@ jobs:
     steps:
       - uses: LouisBrunner/checks-action@v1.6.1
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.PAT }}
           name: e2e
           status: in_progress
 
@@ -40,7 +40,7 @@ jobs:
       - uses: technote-space/workflow-conclusion-action@v3
       - uses: LouisBrunner/checks-action@v1.6.1
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.PAT }}
           name: e2e
           status: completed
           conclusion: ${{ env.WORKFLOW_CONCLUSION }}
