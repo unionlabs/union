@@ -46,14 +46,10 @@
           runtimeInputs = [ ];
           text =
             ''
-              # This account will be the governor and admin of the contract that we instantiate
-              ACCOUNT_ADDRESS="$(${accountAddress})"
-
-              INIT_MESSAGE='{
-                  "default_timeout":300,
-                  "gov_contract": "'"$ACCOUNT_ADDRESS"'",
-                  "allowlist":[],
-                  "channel":{
+              HANDSHAKE=$1
+              if [[ -z "$HANDSHAKE" ]]; then
+                CHANNEL='
+                  , "channel":{
                     "endpoint":{
                       "port_id": "",
                       "channel_id":"channel-0"
@@ -65,8 +61,22 @@
                     "order":"ORDER_UNORDERED",
                     "version":"ics20-1",
                     "connection_id":"connection-0"
-                  }
+                  }'
+              else
+                CHANNEL=""
+              fi
+              
+              # This account will be the governor and admin of the contract that we instantiate
+              ACCOUNT_ADDRESS="$(${accountAddress})"
+
+              INIT_MESSAGE='{
+                  "default_timeout":300,
+                  "gov_contract": "'"$ACCOUNT_ADDRESS"'",
+                  "allowlist":[]
+                  '$CHANNEL'
                 }'
+
+              echo "$INIT_MESSAGE"
 
               ${instantiateContract { code-id = 1; label = "cw20-ics20"; }}
             '';
@@ -106,6 +116,7 @@
             DEFAULT_UNION_WS_URL="ws://localhost:26657/websocket"
             DEFAULT_PING_PONG_TIMEOUT=1000
 
+            HANDSHAKE=""
             GALOIS_URL="$DEFAULT_GALOIS_URL"
             GALOIS_TLS=""
             CIRCUIT_PATH=""
@@ -124,6 +135,7 @@
                 Usage: nix run .#setup-demo [OPTION]... \n\
                 \n\
                 Options: \n\
+                  --handshake                  Do connection/channel handshake for ping pong. \n\
                   -g, --galois-url             Endpoint that serves galois. (Default: %s) \n\
                   --galois-tls                 Connect to galois using TLS. \n\
                   -c, --circuit-path           Path to the circuit files to run galois locally (if not specified, galois won't be run). \n\
@@ -153,6 +165,10 @@
 
             while [[ $# -gt 0 ]]; do
               case $1 in
+                --handshake)
+                  HANDSHAKE=1
+                  shift
+                  ;;
                 -g|--galois-url)
                   GALOIS_URL="$2"
                   shift
@@ -214,6 +230,10 @@
                 -h|--help)
                   printHelp
                   exit 0
+                  ;;
+                *)
+                  printHelp
+                  exit 1
                   ;;
               esac
             done
@@ -339,7 +359,7 @@
             }
 
             instantiateCw20Ics20() {
-              ${instantiateCw20Ics20}/bin/instantiate-cw20-ics20
+              ${instantiateCw20Ics20}/bin/instantiate-cw20-ics20 "$HANDSHAKE"
             }
 
             instantiatePingPong() {
@@ -398,15 +418,51 @@
               echo "+ Initial connection and channels are ready."
             }
 
+            doHandshake() {
+                echo ------------------------------------------------------------
+                echo "+ Doing connection and channel handshakes.."
+                echo RUST_LOG=relayer=info ${self'.packages.relayer}/bin/relayer \
+                --config-file-path "$RELAYER_CONFIG_FILE" \
+                  connection open \
+                  --to-chain union-devnet \
+                  --to-client 08-wasm-0 \
+                  --from-chain ethereum-devnet \
+                  --from-client cometbls-new-0
+
+                RUST_LOG=relayer=info ${self'.packages.relayer}/bin/relayer \
+                --config-file-path "$RELAYER_CONFIG_FILE" \
+                  connection open \
+                  --to-chain union-devnet \
+                  --to-client 08-wasm-0 \
+                  --from-chain ethereum-devnet \
+                  --from-client cometbls-new-0
+
+                
+                RUST_LOG=relayer=info ${self'.packages.relayer}/bin/relayer \
+                  --config-file-path "$RELAYER_CONFIG_FILE" \
+                  channel open \
+                  --from-chain union-devnet \
+                  --from-connection connection-1 \
+                  --from-port "wasm.$PING_PONG_ADDRESS" \
+                  --to-chain ethereum-devnet \
+                  --to-connection connection-1 \
+                  --to-port "ping-pong"
+            }
+
             printIBCSetupInfo() {
+              union_port=$\{10\}
               echo ---------------------------------------------------
               echo "+ Module $1(EVM) and $2(Union) is connected at:"
-              echo "    - Address on EVM:   $3"
-              echo "    - Address on Union: $4"
-              echo "    - Connection:       $5"
-              echo "    - Channel:          $6"
-              echo "    - Port on EVM:      $7"
-              echo "    - Port on Union:    $8"
+              echo "    - EVM:"
+              echo "      - Address:     $3"
+              echo "      - Connection:  $4"
+              echo "      - Channel:     $5"
+              echo "      - Port:        $6"
+              echo "    - Union:"
+              echo "      - Address:     $7"
+              echo "      - Connection:  $8"
+              echo "      - Channel:     $9"
+              echo "      - Port:        $union_port"
             }
 
 
@@ -444,19 +500,51 @@
             fi;
 
             setupInitialChannel "$ICS20_TRANSFER_BANK_ADDRESS" transfer "wasm.$CW20_ADDRESS" channel-0
-            setupInitialChannel "$PING_PONG_MODULE_ADDRESS" ping-pong "wasm.$PING_PONG_ADDRESS" channel-1
+            if [[ -z "$HANDSHAKE" ]]; then
+              PING_PONG_CONNECTION="connection-0"
+              setupInitialChannel "$PING_PONG_MODULE_ADDRESS" ping-pong "wasm.$PING_PONG_ADDRESS" channel-1
+            fi
 
             createClients
             waitForGaloisToBeOnline
 
+            if [[ -n "$HANDSHAKE" ]]; then
+              # Since we already embedded connection-0 to the genesis, if we manually do the handshake,
+              # the connection is going to be connection-1
+              PING_PONG_CONNECTION="connection-1"
+              doHandshake
+            fi
 
             echo "--------------------------------"
-            echo "+ Starting the relayer.."
             echo "+ Relayer config path is: $RELAYER_CONFIG_FILE"
-            printIBCSetupInfo "ICS20 Transfer" "CW20-ICS20" "$ICS20_TRANSFER_BANK_ADDRESS" "$CW20_ADDRESS"  "connection-0" "channel-0" "transfer" "wasm.$CW20_ADDRESS"
-            printIBCSetupInfo "PingPong" "PingPong" "$PING_PONG_MODULE_ADDRESS" "$PING_PONG_ADDRESS" "connection-0" "channel-1" "ping-pong" "wasm.$PING_PONG_ADDRESS"
 
-            RUST_LOG=relayer=info ${self'.packages.relayer}/bin/relayer \
+            printIBCSetupInfo \
+              "ICS20 Transfer" \
+              "CW20-ICS20" \
+              "$ICS20_TRANSFER_BANK_ADDRESS" \
+              "connection-0" \
+              "channel-0" \
+              "transfer" \
+              "$CW20_ADDRESS" \
+              "connection-0" \
+              "channel-0" \
+              "wasm.$CW20_ADDRESS"
+
+            printIBCSetupInfo \
+              "PingPong" \
+              "PingPong" \
+              "$PING_PONG_MODULE_ADDRESS" \
+              "$PING_PONG_CONNECTION" \
+              "channel-1" \
+              "ping-pong" \
+              "$PING_PONG_ADDRESS" \
+              "$PING_PONG_CONNECTION" \
+              "channel-1" \
+              "wasm.$PING_PONG_ADDRESS"
+
+            echo "+ Run the following command for running relaying the packets:"
+
+            echo RUST_LOG=relayer=info ${self'.packages.relayer}/bin/relayer \
               --config-file-path "$RELAYER_CONFIG_FILE" \
               relay \
               --between union-devnet:ethereum-devnet

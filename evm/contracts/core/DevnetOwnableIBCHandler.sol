@@ -32,6 +32,8 @@ contract DevnetOwnableIBCHandler is OwnableIBCHandler {
         nextSequenceSends[portId][channelId] = 1;
         nextSequenceRecvs[portId][channelId] = 1;
         nextSequenceAcks[portId][channelId] = 1;
+        nextConnectionSequence = 1;
+        nextChannelSequence++;
 
         connections[connectionId].client_id = connection.client_id;
         connections[connectionId].state = connection.state;
