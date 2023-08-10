@@ -48,12 +48,15 @@ use unionlabs::{
         google::protobuf::{any::Any, duration::Duration},
         lightclients::{cometbls, ethereum, tendermint::fraction::Fraction, wasm},
     },
+    tendermint::abci::{event::Event, event_attribute::EventAttribute},
     CosmosAccountId, IntoProto, MsgIntoProto, TryFromProto,
 };
 
+use super::events::TryFromTendermintEventError;
 use crate::{
     chain::{
         dumper::Dumper,
+        events::{ChannelOpenInit, ChannelOpenTry, ConnectionOpenInit, ConnectionOpenTry},
         evm::{Cometbls, Evm},
         proof::{
             ChannelEndPath, ClientConsensusStatePath, ClientStatePath, CommitmentPath,
@@ -302,6 +305,8 @@ impl Chain for Union {
                 {
                     break;
                 }
+
+                tokio::time::sleep(std::time::Duration::from_secs(2)).await;
             }
 
             self.make_height(height)
@@ -572,26 +577,6 @@ impl<C: ChainSpec> LightClient for Ethereum<C> {
 }
 
 impl<C: ChainSpec> Connect<Cometbls<C>> for Ethereum<C> {
-    // fn generate_counterparty_handshake_client_state(
-    //     &self,
-    //     counterparty_state: <Cometbls as LightClient>::ClientState,
-    // ) -> impl Future<Output = Self::HandshakeClientState> + '_ {
-    //     async move {
-    //         super::msgs::wasm::ClientState {
-    //             data: Any(super::msgs::cometbls::ClientState {
-    //                 chain_id: todo!(),
-    //                 trust_level: todo!(),
-    //                 trusting_period: todo!(),
-    //                 unbonding_period: todo!(),
-    //                 max_clock_drift: todo!(),
-    //                 frozen_height: todo!(),
-    //             }),
-    //             code_id: todo!(),
-    //             latest_height: todo!(),
-    //         }
-    //     }
-    // }
-
     fn connection_open_init(
         &self,
         msg: MsgConnectionOpenInit,
@@ -605,17 +590,8 @@ impl<C: ChainSpec> Connect<Cometbls<C>> for Ethereum<C> {
             }])
             .map(|response| {
                 (
-                    response
-                        .deliver_tx
-                        .events
-                        .into_iter()
-                        .find(|event| event.kind == "connection_open_init")
-                        .unwrap()
-                        .attributes
-                        .into_iter()
-                        .find(|attr| attr.key == "connection_id")
-                        .unwrap()
-                        .value,
+                    get_event_from_tx_response::<ConnectionOpenInit>(response.deliver_tx.events)
+                        .connection_id,
                     self.chain.make_height(response.height.value()),
                 )
             })
@@ -634,17 +610,8 @@ impl<C: ChainSpec> Connect<Cometbls<C>> for Ethereum<C> {
             }])
             .map(|response| {
                 (
-                    response
-                        .deliver_tx
-                        .events
-                        .into_iter()
-                        .find(|event| event.kind == "connection_open_try")
-                        .unwrap()
-                        .attributes
-                        .into_iter()
-                        .find(|attr| attr.key == "connection_id")
-                        .unwrap()
-                        .value,
+                    get_event_from_tx_response::<ConnectionOpenTry>(response.deliver_tx.events)
+                        .connection_id,
                     self.chain.make_height(response.height.value()),
                 )
             })
@@ -704,19 +671,10 @@ impl<C: ChainSpec> Connect<Cometbls<C>> for Ethereum<C> {
                         .encode_to_vec(),
                 }])
                 .await;
-            (
-                tx.deliver_tx
-                    .events
-                    .into_iter()
-                    .find(|event| event.kind == "channel_open_init")
-                    .unwrap()
-                    .attributes
-                    .into_iter()
-                    .find(|attr| attr.key == "channel_id")
-                    .unwrap()
-                    .value,
-                self.chain.make_height(tx.height.value()),
-            )
+
+            let event = get_event_from_tx_response::<ChannelOpenInit>(tx.deliver_tx.events);
+
+            (event.channel_id, self.chain.make_height(tx.height.value()))
         }
     }
 
@@ -727,26 +685,12 @@ impl<C: ChainSpec> Connect<Cometbls<C>> for Ethereum<C> {
         async move {
             let tx = self
                 .chain
-                .broadcast_tx_commit([google::protobuf::Any {
-                    type_url: "/ibc.core.channel.v1.MsgChannelOpenTry".to_string(),
-                    value: msg
-                        .into_proto_with_signer(&self.chain.signer)
-                        .encode_to_vec(),
-                }])
+                .broadcast_tx_commit([Any(msg).into_proto_with_signer(&self.chain.signer)])
                 .await;
-            (
-                tx.deliver_tx
-                    .events
-                    .into_iter()
-                    .find(|event| event.kind == "channel_open_try")
-                    .unwrap()
-                    .attributes
-                    .into_iter()
-                    .find(|attr| attr.key == "channel_id")
-                    .unwrap()
-                    .value,
-                self.chain.make_height(tx.height.value()),
-            )
+
+            let event = get_event_from_tx_response::<ChannelOpenTry>(tx.deliver_tx.events);
+
+            (event.channel_id, self.chain.make_height(tx.height.value()))
         }
     }
 
@@ -1202,6 +1146,41 @@ impl<C: ChainSpec> Connect<Cometbls<C>> for Ethereum<C> {
             update_to
         }
     }
+}
+
+fn get_event_from_tx_response<T: TryFrom<Event, Error = TryFromTendermintEventError>>(
+    events: Vec<tendermint::abci::Event>,
+) -> T {
+    events
+        .into_iter()
+        .find_map(|event| {
+            let conversion_result = T::try_from(Event {
+                ty: event.kind,
+                attributes: event
+                    .attributes
+                    .into_iter()
+                    .map(|attr| EventAttribute {
+                        key: attr.key,
+                        value: attr.value,
+                        index: attr.index,
+                    })
+                    .collect(),
+            });
+
+            match conversion_result {
+                Ok(ok) => Some(Ok(ok)),
+                // this isn't fatal in this context
+                Err(TryFromTendermintEventError::IncorrectType {
+                    expected: _,
+                    found: _,
+                }) => None,
+                Err(err) => Some(Err(err)),
+            }
+        })
+        // event was found...
+        .unwrap()
+        // ...and there were no errors parsing it
+        .unwrap()
 }
 
 trait AbciStateRead<C: ChainSpec>: IbcPath {

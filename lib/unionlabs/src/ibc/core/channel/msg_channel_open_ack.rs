@@ -1,4 +1,4 @@
-use crate::{ibc::core::client::height::Height, CosmosAccountId, MsgIntoProto};
+use crate::{ibc::core::client::height::Height, CosmosAccountId, MsgIntoProto, TypeUrl};
 
 #[derive(Debug, Clone)]
 pub struct MsgChannelOpenAck {
@@ -8,6 +8,10 @@ pub struct MsgChannelOpenAck {
     pub counterparty_version: String,
     pub proof_try: Vec<u8>,
     pub proof_height: Height,
+}
+
+impl TypeUrl for protos::ibc::core::channel::v1::MsgChannelOpenAck {
+    const TYPE_URL: &'static str = "/ibc.core.channel.v1.MsgChannelOpenAck";
 }
 
 impl MsgIntoProto for MsgChannelOpenAck {
