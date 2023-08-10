@@ -449,7 +449,7 @@ dependencies = [
 [[package]]
 name = "ethers-contract-abigen"
 version = "2.0.4"
-source = "git+https://github.com/benluelo/ethers-rs?rev=907b87deabacd091cc027b4696c67d365017c934#907b87deabacd091cc027b4696c67d365017c934"
+source = "git+https://github.com/unionlabs/ethers-rs?branch=benluelo/fix-name-collisions#907b87deabacd091cc027b4696c67d365017c934"
 dependencies = [
  "Inflector",
  "dunce",
@@ -471,7 +471,7 @@ dependencies = [
 [[package]]
 name = "ethers-core"
 version = "2.0.4"
-source = "git+https://github.com/benluelo/ethers-rs?rev=907b87deabacd091cc027b4696c67d365017c934#907b87deabacd091cc027b4696c67d365017c934"
+source = "git+https://github.com/unionlabs/ethers-rs?branch=benluelo/fix-name-collisions#907b87deabacd091cc027b4696c67d365017c934"
 dependencies = [
  "arrayvec",
  "bytes",
