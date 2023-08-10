@@ -690,10 +690,7 @@ impl<C: ChainSpec> Connect<Cometbls<C>> for Ethereum<C> {
 
             let event = get_event_from_tx_response::<ChannelOpenTry>(tx.deliver_tx.events);
 
-            (
-                event.connection_id,
-                self.chain.make_height(tx.height.value()),
-            )
+            (event.channel_id, self.chain.make_height(tx.height.value()))
         }
     }
 
