@@ -430,6 +430,22 @@ async fn do_main(args: cli::AppArgs) -> Result<(), anyhow::Error> {
                     _ => panic!("Not supported."),
                 }
             }
+            cli::SetupCmd::SetOperator { on } => {
+                let chain = relayer_config.get_chain(&on).await.unwrap();
+
+                match chain {
+                    AnyChain::EvmMinimal(evm) => {
+                        evm.setup_initial_channel(
+                            module_address.into(),
+                            channel_id,
+                            port_id,
+                            counterparty_port_id,
+                        )
+                        .await;
+                    }
+                    _ => panic!("Not supported."),
+                }
+            }
         },
         Command::Ibc(IbcCmd::Query {
             on,
