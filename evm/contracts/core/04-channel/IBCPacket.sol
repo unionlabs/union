@@ -29,14 +29,25 @@ contract IBCPacket is IBCStore, IIBCPacket {
         uint64 timeoutTimestamp,
         bytes calldata data
     ) external returns (uint64) {
-        IbcCoreChannelV1Channel.Data storage channel = channels[sourcePort][sourceChannel];
-        require(channel.state == IbcCoreChannelV1GlobalEnums.State.STATE_OPEN, "sendPacket: channel state must be OPEN");
+        IbcCoreChannelV1Channel.Data storage channel = channels[sourcePort][
+            sourceChannel
+        ];
+        require(
+            channel.state == IbcCoreChannelV1GlobalEnums.State.STATE_OPEN,
+            "sendPacket: channel state must be OPEN"
+        );
 
         {
-            IbcCoreConnectionV1ConnectionEnd.Data storage connection = connections[channel.connection_hops[0]];
-            ILightClient client = ILightClient(clientImpls[connection.client_id]);
+            IbcCoreConnectionV1ConnectionEnd.Data
+                storage connection = connections[channel.connection_hops[0]];
+            ILightClient client = ILightClient(
+                clientImpls[connection.client_id]
+            );
 
-            (IbcCoreClientV1Height.Data memory latestHeight, bool found) = client.getLatestHeight(connection.client_id);
+            (
+                IbcCoreClientV1Height.Data memory latestHeight,
+                bool found
+            ) = client.getLatestHeight(connection.client_id);
             require(
                 timeoutHeight.isZero() || latestHeight.lt(timeoutHeight),
                 "sendPacket: receiving chain block height >= packet timeout height"
@@ -45,7 +56,10 @@ contract IBCPacket is IBCStore, IIBCPacket {
             console.log("latestHeight");
             console.log(connection.client_id);
             console.log(latestHeight.revision_height);
-            (latestTimestamp, found) = client.getTimestampAtHeight(connection.client_id, latestHeight);
+            (latestTimestamp, found) = client.getTimestampAtHeight(
+                connection.client_id,
+                latestHeight
+            );
             require(found, "sendPacket: consensusState not found");
             require(
                 timeoutTimestamp == 0 || latestTimestamp < timeoutTimestamp,
@@ -55,11 +69,20 @@ contract IBCPacket is IBCStore, IIBCPacket {
 
         uint64 packetSequence = nextSequenceSends[sourcePort][sourceChannel];
         nextSequenceSends[sourcePort][sourceChannel] = packetSequence + 1;
-        commitments[IBCCommitment.packetCommitmentKey(sourcePort, sourceChannel, packetSequence)] = keccak256(
+        commitments[
+            IBCCommitment.packetCommitmentKey(
+                sourcePort,
+                sourceChannel,
+                packetSequence
+            )
+        ] = keccak256(
             abi.encodePacked(
                 sha256(
                     abi.encodePacked(
-                        timeoutTimestamp, timeoutHeight.revision_number, timeoutHeight.revision_height, sha256(data)
+                        timeoutTimestamp,
+                        timeoutHeight.revision_number,
+                        timeoutHeight.revision_height,
+                        sha256(data)
                     )
                 )
             )
@@ -72,31 +95,44 @@ contract IBCPacket is IBCStore, IIBCPacket {
      * sent on the corresponding channel end on the counterparty chain.
      */
     function recvPacket(IBCMsgs.MsgPacketRecv calldata msg_) external {
-        IbcCoreChannelV1Channel.Data storage channel =
-            channels[msg_.packet.destination_port][msg_.packet.destination_channel];
-        require(channel.state == IbcCoreChannelV1GlobalEnums.State.STATE_OPEN, "channel state must be OPEN");
+        IbcCoreChannelV1Channel.Data storage channel = channels[
+            msg_.packet.destination_port
+        ][msg_.packet.destination_channel];
+        require(
+            channel.state == IbcCoreChannelV1GlobalEnums.State.STATE_OPEN,
+            "channel state must be OPEN"
+        );
 
         // TODO
         // Authenticate capability to ensure caller has authority to receive packet on this channel
 
         require(
-            hashString(msg_.packet.source_port) == hashString(channel.counterparty.port_id),
+            hashString(msg_.packet.source_port) ==
+                hashString(channel.counterparty.port_id),
             "packet source port doesn't match the counterparty's port"
         );
         require(
-            hashString(msg_.packet.source_channel) == hashString(channel.counterparty.channel_id),
+            hashString(msg_.packet.source_channel) ==
+                hashString(channel.counterparty.channel_id),
             "packet source channel doesn't match the counterparty's channel"
         );
 
-        IbcCoreConnectionV1ConnectionEnd.Data storage connection = connections[channel.connection_hops[0]];
-        require(connection.state == IbcCoreConnectionV1GlobalEnums.State.STATE_OPEN, "connection state is not OPEN");
+        IbcCoreConnectionV1ConnectionEnd.Data storage connection = connections[
+            channel.connection_hops[0]
+        ];
+        require(
+            connection.state == IbcCoreConnectionV1GlobalEnums.State.STATE_OPEN,
+            "connection state is not OPEN"
+        );
 
         require(
-            msg_.packet.timeout_height.revision_height == 0 || block.number < msg_.packet.timeout_height.revision_height,
+            msg_.packet.timeout_height.revision_height == 0 ||
+                block.number < msg_.packet.timeout_height.revision_height,
             "block height >= packet timeout height"
         );
         require(
-            msg_.packet.timeout_timestamp == 0 || block.timestamp < msg_.packet.timeout_timestamp,
+            msg_.packet.timeout_timestamp == 0 ||
+                block.timestamp < msg_.packet.timeout_timestamp,
             "block timestamp >= packet timeout timestamp"
         );
 
@@ -106,7 +142,9 @@ contract IBCPacket is IBCStore, IIBCPacket {
                 msg_.proofHeight,
                 msg_.proof,
                 IBCCommitment.packetCommitmentPath(
-                    msg_.packet.source_port, msg_.packet.source_channel, msg_.packet.sequence
+                    msg_.packet.source_port,
+                    msg_.packet.source_channel,
+                    msg_.packet.sequence
                 ),
                 sha256(
                     abi.encodePacked(
@@ -120,18 +158,31 @@ contract IBCPacket is IBCStore, IIBCPacket {
             "failed to verify packet commitment"
         );
 
-        if (channel.ordering == IbcCoreChannelV1GlobalEnums.Order.ORDER_UNORDERED) {
+        if (
+            channel.ordering ==
+            IbcCoreChannelV1GlobalEnums.Order.ORDER_UNORDERED
+        ) {
             require(
-                packetReceipts[msg_.packet.destination_port][msg_.packet.destination_channel][msg_.packet.sequence] == 0,
+                packetReceipts[msg_.packet.destination_port][
+                    msg_.packet.destination_channel
+                ][msg_.packet.sequence] == 0,
                 "packet sequence already has been received"
             );
-            packetReceipts[msg_.packet.destination_port][msg_.packet.destination_channel][msg_.packet.sequence] = 1;
-        } else if (channel.ordering == IbcCoreChannelV1GlobalEnums.Order.ORDER_ORDERED) {
+            packetReceipts[msg_.packet.destination_port][
+                msg_.packet.destination_channel
+            ][msg_.packet.sequence] = 1;
+        } else if (
+            channel.ordering == IbcCoreChannelV1GlobalEnums.Order.ORDER_ORDERED
+        ) {
             require(
-                nextSequenceRecvs[msg_.packet.destination_port][msg_.packet.destination_channel] == msg_.packet.sequence,
+                nextSequenceRecvs[msg_.packet.destination_port][
+                    msg_.packet.destination_channel
+                ] == msg_.packet.sequence,
                 "packet sequence != next receive sequence"
             );
-            nextSequenceRecvs[msg_.packet.destination_port][msg_.packet.destination_channel]++;
+            nextSequenceRecvs[msg_.packet.destination_port][
+                msg_.packet.destination_channel
+            ]++;
         } else {
             revert("unknown ordering type");
         }
@@ -147,19 +198,33 @@ contract IBCPacket is IBCStore, IIBCPacket {
         uint64 sequence,
         bytes calldata acknowledgement
     ) external {
-        require(acknowledgement.length > 0, "writeAcknowlegement: acknowledgement cannot be empty");
+        require(
+            acknowledgement.length > 0,
+            "writeAcknowlegement: acknowledgement cannot be empty"
+        );
 
-        IbcCoreChannelV1Channel.Data storage channel = channels[destinationPortId][destinationChannel];
+        IbcCoreChannelV1Channel.Data storage channel = channels[
+            destinationPortId
+        ][destinationChannel];
         require(
             channel.state == IbcCoreChannelV1GlobalEnums.State.STATE_OPEN,
             "writeAcknowlegement: channel state must be OPEN"
         );
 
-        bytes32 ackCommitmentKey =
-            IBCCommitment.packetAcknowledgementCommitmentKey(destinationPortId, destinationChannel, sequence);
+        bytes32 ackCommitmentKey = IBCCommitment
+            .packetAcknowledgementCommitmentKey(
+                destinationPortId,
+                destinationChannel,
+                sequence
+            );
         bytes32 ackCommitment = commitments[ackCommitmentKey];
-        require(ackCommitment == bytes32(0), "writeAcknowlegement: acknowledgement for packet already exists");
-        commitments[ackCommitmentKey] = keccak256(abi.encodePacked(sha256(acknowledgement)));
+        require(
+            ackCommitment == bytes32(0),
+            "writeAcknowlegement: acknowledgement for packet already exists"
+        );
+        commitments[ackCommitmentKey] = keccak256(
+            abi.encodePacked(sha256(acknowledgement))
+        );
     }
 
     /**
@@ -170,35 +235,49 @@ contract IBCPacket is IBCStore, IIBCPacket {
      * which is no longer necessary since the packet has been received and acted upon.
      * It will also increment NextSequenceAck in case of ORDERED channels.
      */
-    function acknowledgePacket(IBCMsgs.MsgPacketAcknowledgement calldata msg_) external {
-        IbcCoreChannelV1Channel.Data storage channel = channels[msg_.packet.source_port][msg_.packet.source_channel];
+    function acknowledgePacket(
+        IBCMsgs.MsgPacketAcknowledgement calldata msg_
+    ) external {
+        IbcCoreChannelV1Channel.Data storage channel = channels[
+            msg_.packet.source_port
+        ][msg_.packet.source_channel];
         require(
             channel.state == IbcCoreChannelV1GlobalEnums.State.STATE_OPEN,
             "acknowledgePacket: channel state must be OPEN"
         );
 
         require(
-            hashString(msg_.packet.destination_port) == hashString(channel.counterparty.port_id),
+            hashString(msg_.packet.destination_port) ==
+                hashString(channel.counterparty.port_id),
             "acknowledgePacket: packet destination port doesn't match the counterparty's port"
         );
         require(
-            hashString(msg_.packet.destination_channel) == hashString(channel.counterparty.channel_id),
+            hashString(msg_.packet.destination_channel) ==
+                hashString(channel.counterparty.channel_id),
             "acknowledgePacket: packet destination channel doesn't match the counterparty's channel"
         );
 
-        IbcCoreConnectionV1ConnectionEnd.Data storage connection = connections[channel.connection_hops[0]];
+        IbcCoreConnectionV1ConnectionEnd.Data storage connection = connections[
+            channel.connection_hops[0]
+        ];
         require(
             connection.state == IbcCoreConnectionV1GlobalEnums.State.STATE_OPEN,
             "acknowledgePacket: connection state is not OPEN"
         );
 
-        bytes32 packetCommitmentKey =
-            IBCCommitment.packetCommitmentKey(msg_.packet.source_port, msg_.packet.source_channel, msg_.packet.sequence);
+        bytes32 packetCommitmentKey = IBCCommitment.packetCommitmentKey(
+            msg_.packet.source_port,
+            msg_.packet.source_channel,
+            msg_.packet.sequence
+        );
         bytes32 packetCommitment = commitments[packetCommitmentKey];
-        require(packetCommitment != bytes32(0), "acknowledgePacket: packet commitment not found");
         require(
-            packetCommitment
-                == keccak256(
+            packetCommitment != bytes32(0),
+            "acknowledgePacket: packet commitment not found"
+        );
+        require(
+            packetCommitment ==
+                keccak256(
                     abi.encodePacked(
                         sha256(
                             abi.encodePacked(
@@ -219,19 +298,28 @@ contract IBCPacket is IBCStore, IIBCPacket {
                 msg_.proofHeight,
                 msg_.proof,
                 IBCCommitment.packetAcknowledgementCommitmentPath(
-                    msg_.packet.destination_port, msg_.packet.destination_channel, msg_.packet.sequence
+                    msg_.packet.destination_port,
+                    msg_.packet.destination_channel,
+                    msg_.packet.sequence
                 ),
                 sha256(msg_.acknowledgement)
             ),
             "acknowledgePacket: failed to verify packet acknowledgement commitment"
         );
 
-        if (channel.ordering == IbcCoreChannelV1GlobalEnums.Order.ORDER_ORDERED) {
+        if (
+            channel.ordering == IbcCoreChannelV1GlobalEnums.Order.ORDER_ORDERED
+        ) {
             require(
-                msg_.packet.sequence == nextSequenceAcks[msg_.packet.source_port][msg_.packet.source_channel],
+                msg_.packet.sequence ==
+                    nextSequenceAcks[msg_.packet.source_port][
+                        msg_.packet.source_channel
+                    ],
                 "acknowledgePacket: packet sequence != next ack sequence"
             );
-            nextSequenceAcks[msg_.packet.source_port][msg_.packet.source_channel]++;
+            nextSequenceAcks[msg_.packet.source_port][
+                msg_.packet.source_channel
+            ]++;
         }
 
         delete commitments[packetCommitmentKey];
@@ -250,16 +338,17 @@ contract IBCPacket is IBCStore, IIBCPacket {
         bytes memory path,
         bytes32 commitmentBytes
     ) private returns (bool) {
-        return getClient(connection.client_id).verifyMembership(
-            connection.client_id,
-            height,
-            connection.delay_period,
-            calcBlockDelay(connection.delay_period),
-            proof,
-            connection.counterparty.prefix.key_prefix,
-            path,
-            abi.encodePacked(commitmentBytes)
-        );
+        return
+            getClient(connection.client_id).verifyMembership(
+                connection.client_id,
+                height,
+                connection.delay_period,
+                calcBlockDelay(connection.delay_period),
+                proof,
+                connection.counterparty.prefix.key_prefix,
+                path,
+                abi.encodePacked(commitmentBytes)
+            );
     }
 
     function verifyPacketAcknowledgement(
@@ -269,16 +358,17 @@ contract IBCPacket is IBCStore, IIBCPacket {
         bytes memory path,
         bytes32 acknowledgementCommitmentBytes
     ) private returns (bool) {
-        return getClient(connection.client_id).verifyMembership(
-            connection.client_id,
-            height,
-            connection.delay_period,
-            calcBlockDelay(connection.delay_period),
-            proof,
-            connection.counterparty.prefix.key_prefix,
-            path,
-            abi.encodePacked(acknowledgementCommitmentBytes)
-        );
+        return
+            getClient(connection.client_id).verifyMembership(
+                connection.client_id,
+                height,
+                connection.delay_period,
+                calcBlockDelay(connection.delay_period),
+                proof,
+                connection.counterparty.prefix.key_prefix,
+                path,
+                abi.encodePacked(acknowledgementCommitmentBytes)
+            );
     }
 
     /* Internal functions */
@@ -286,7 +376,9 @@ contract IBCPacket is IBCStore, IIBCPacket {
     function calcBlockDelay(uint64 timeDelay) private view returns (uint64) {
         uint64 blockDelay = 0;
         if (expectedTimePerBlock != 0) {
-            blockDelay = (timeDelay + expectedTimePerBlock - 1) / expectedTimePerBlock;
+            blockDelay =
+                (timeDelay + expectedTimePerBlock - 1) /
+                expectedTimePerBlock;
         }
         return blockDelay;
     }

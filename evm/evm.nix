@@ -82,6 +82,11 @@
         FOUNDRY_LIBS = ''["${libraries}"]'';
         FOUNDRY_GAS_REPORTS = ''["*"]'';
       };
+      # Foundry FS permissions must be explicitly set in the config file
+      foundryConfig = pkgs.writeTextDir "/foundry.toml" ''
+        [profile.default]
+        fs_permissions = [{ access = "read", path = "./"}]
+      '';
       wrappedForge = pkgs.symlinkJoin {
         name = "forge";
         paths = [ pkgs.foundry-bin ];
@@ -195,6 +200,8 @@
     in
     {
       packages = {
+        wrapped-forge = wrappedForge;
+
         # Beware, the generate solidity code is broken and require manual patch. Do not update unless you know that aliens exists.
         generate-evm-proto = pkgs.writeShellApplication {
           name = "generate-evm-proto";
@@ -262,6 +269,7 @@
           src = evmSources;
           buildInputs = [ wrappedForge ];
           buildPhase = ''
+            cp ${foundryConfig}/foundry.toml .
             forge build --revert-strings debug
           '';
           doCheck = true;

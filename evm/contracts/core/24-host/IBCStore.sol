@@ -13,8 +13,7 @@ abstract contract IBCStore {
     mapping(string => address) public clientRegistry; // clientType => clientImpl
     mapping(string => string) public clientTypes; // clientID => clientType
     mapping(string => address) public clientImpls; // clientID => clientImpl
-    mapping(string => IbcCoreConnectionV1ConnectionEnd.Data)
-        public connections;
+    mapping(string => IbcCoreConnectionV1ConnectionEnd.Data) public connections;
     mapping(string => mapping(string => IbcCoreChannelV1Channel.Data))
         public channels;
     mapping(string => mapping(string => uint64)) public nextSequenceSends;

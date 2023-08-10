@@ -80,6 +80,15 @@ contract CometblsClient is ILightClient {
                 memory consensusState,
             uint64 timestamp
         ) = consensusStateBytes.unmarshalConsensusStateFromProto();
+
+        if (
+            latestHeight.revision_number != 0 ||
+            latestHeight.revision_height == 0 ||
+            timestamp == 0
+        ) {
+            return (clientStateCommitment, update, false);
+        }
+
         clientStates[clientId] = clientState;
         latestHeights[clientId] = latestHeight;
         codeIds[clientId] = codeId;
