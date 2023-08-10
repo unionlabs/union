@@ -94,6 +94,8 @@ pub struct UnionChainConfig {
     pub prover_endpoint: String,
     #[arg(long)]
     pub dump_path: String,
+    #[arg(long)]
+    pub grpc_url: String,
 }
 
 pub mod private_key {
