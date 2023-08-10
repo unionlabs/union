@@ -4515,7 +4515,7 @@ dependencies = [
 [[package]]
 name = "tendermint"
 version = "0.32.0"
-source = "git+https://github.com/benluelo/tendermint-rs?branch=bn254#94439e97bfe8fd9ab9d4d591a2673da364595070"
+source = "git+https://github.com/unionlabs/tendermint-rs?branch=bn254#94439e97bfe8fd9ab9d4d591a2673da364595070"
 dependencies = [
  "bytes",
  "digest 0.10.7",
@@ -4543,7 +4543,7 @@ dependencies = [
 [[package]]
 name = "tendermint-config"
 version = "0.32.0"
-source = "git+https://github.com/benluelo/tendermint-rs?branch=bn254#94439e97bfe8fd9ab9d4d591a2673da364595070"
+source = "git+https://github.com/unionlabs/tendermint-rs?branch=bn254#94439e97bfe8fd9ab9d4d591a2673da364595070"
 dependencies = [
  "flex-error",
  "serde",
@@ -4587,7 +4587,7 @@ dependencies = [
 [[package]]
 name = "tendermint-proto"
 version = "0.32.0"
-source = "git+https://github.com/benluelo/tendermint-rs?branch=bn254#94439e97bfe8fd9ab9d4d591a2673da364595070"
+source = "git+https://github.com/unionlabs/tendermint-rs?branch=bn254#94439e97bfe8fd9ab9d4d591a2673da364595070"
 dependencies = [
  "bytes",
  "flex-error",
@@ -4604,7 +4604,7 @@ dependencies = [
 [[package]]
 name = "tendermint-rpc"
 version = "0.32.0"
-source = "git+https://github.com/benluelo/tendermint-rs?branch=bn254#94439e97bfe8fd9ab9d4d591a2673da364595070"
+source = "git+https://github.com/unionlabs/tendermint-rs?branch=bn254#94439e97bfe8fd9ab9d4d591a2673da364595070"
 dependencies = [
  "async-trait",
  "async-tungstenite",
@@ -5176,7 +5176,7 @@ dependencies = [
 [[package]]
 name = "typenum"
 version = "1.16.0"
-source = "git+https://github.com/benluelo/typenum?branch=ben/192-const-generic-32-bit#678f7d0e20d5ca862788c66d6d21dba9b11eeb21"
+source = "git+https://github.com/unionlabs/typenum?branch=ben/192-const-generic-32-bit#678f7d0e20d5ca862788c66d6d21dba9b11eeb21"
 
 [[package]]
 name = "ucs00-pingpong"
