@@ -19,17 +19,6 @@ import {TendermintTypesCommit, TendermintTypesHeader, TendermintTypesSignedHeade
 import "solady/utils/LibString.sol";
 import "solidity-bytes-utils/BytesLib.sol";
 
-struct FixtureCommit {
-    bool canonical;
-    TendermintTypesSignedHeader.Data signed_header;
-}
-
-struct FixtureTransition {
-    bytes evm_zkp;
-    bytes gnark_zkp;
-    bytes untrusted_root;
-}
-
 contract IBCClientTest is TestPlus {
     using BytesLib for bytes;
     using CometblsHelp for *;
@@ -467,6 +456,18 @@ contract IBCClientTest is TestPlus {
     }
 
     // TODO: hardcode the sequence instead of reading because of ABI/JSON being unfriendly in foundry
+
+    /* struct FixtureCommit { */
+    /*     bool canonical; */
+    /*     TendermintTypesSignedHeader.Data signed_header; */
+    /* } */
+
+    /* struct FixtureTransition { */
+    /*     bytes evm_zkp; */
+    /*     bytes gnark_zkp; */
+    /*     bytes untrusted_root; */
+    /* } */
+
     /* function test_updateClient_sequence() public { */
     /*     uint64[7] memory checkpoints = [ */
     /*         uint64(114), */
