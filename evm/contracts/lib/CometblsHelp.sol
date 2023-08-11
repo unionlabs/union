@@ -227,12 +227,9 @@ library CometblsHelp {
     )
         internal
         pure
-        returns (UnionIbcLightclientsCometblsV1Header.Data memory header, bool)
+        returns (UnionIbcLightclientsCometblsV1Header.Data memory header)
     {
-        return (
-            abi.decode(bz, (UnionIbcLightclientsCometblsV1Header.Data)),
-            true
-        );
+        return abi.decode(bz, (UnionIbcLightclientsCometblsV1Header.Data));
     }
 
     function unmarshalClientStateFromProto(
