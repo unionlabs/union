@@ -236,7 +236,7 @@ impl<C: ChainSpec> Evm<C> {
             tracing::warn!("timeout_timestamp is currently not supported by ICS20TransferBank")
         }
 
-        if msg.memo == "" {
+        if !msg.memo.is_empty() {
             tracing::warn!("memo is currently not supported by ICS20TransferBank")
         }
 
@@ -1309,14 +1309,6 @@ impl<C: ChainSpec> Cometbls<C> {
         .await
     }
 }
-
-// pub trait IntoEthAbi: Into<Self::EthAbi> {
-//     type EthAbi;
-
-//     fn into_eth_abi(self) -> Self::EthAbi {
-//         self.into()
-//     }
-// }
 
 trait TupleToOption<P>
 where

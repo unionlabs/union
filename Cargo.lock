@@ -5261,6 +5261,7 @@ dependencies = [
  "sha2 0.10.7",
  "ssz_types",
  "subtle-encoding",
+ "tracing",
  "tree_hash",
  "typenum",
 ]

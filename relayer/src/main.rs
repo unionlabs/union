@@ -17,24 +17,30 @@ use ethers::{signers::Signer, types::U256};
 use futures::{future::join, FutureExt, Stream, StreamExt};
 use prost::Message;
 use unionlabs::{
+    cosmos::base::Coin,
     ethereum_consts_traits::{Mainnet, Minimal, PresetBaseKind},
-    ibc::core::{
-        channel::{
-            self, channel::Channel, msg_channel_open_ack::MsgChannelOpenAck,
-            msg_channel_open_confirm::MsgChannelOpenConfirm,
-            msg_channel_open_init::MsgChannelOpenInit, msg_channel_open_try::MsgChannelOpenTry,
-            msg_recv_packet::MsgRecvPacket, order::Order, packet::Packet,
+    ibc::{
+        applications::transfer::{
+            fungible_token_transfer_data::FungibleTokenPacketData, msg_transfer::MsgTransfer,
         },
-        client::height::Height,
-        commitment::merkle_prefix::MerklePrefix,
-        connection::{
-            self, msg_channel_open_ack::MsgConnectionOpenAck,
-            msg_channel_open_confirm::MsgConnectionOpenConfirm,
-            msg_channel_open_init::MsgConnectionOpenInit,
-            msg_channel_open_try::MsgConnectionOpenTry, version::Version,
+        core::{
+            channel::{
+                self, channel::Channel, msg_channel_open_ack::MsgChannelOpenAck,
+                msg_channel_open_confirm::MsgChannelOpenConfirm,
+                msg_channel_open_init::MsgChannelOpenInit, msg_channel_open_try::MsgChannelOpenTry,
+                msg_recv_packet::MsgRecvPacket, order::Order, packet::Packet,
+            },
+            client::height::Height,
+            commitment::merkle_prefix::MerklePrefix,
+            connection::{
+                self, msg_channel_open_ack::MsgConnectionOpenAck,
+                msg_channel_open_confirm::MsgConnectionOpenConfirm,
+                msg_channel_open_init::MsgConnectionOpenInit,
+                msg_channel_open_try::MsgConnectionOpenTry, version::Version,
+            },
         },
     },
-    IntoProto,
+    FromProto, IntoProto, TryFromEthAbi,
 };
 
 use crate::{
@@ -315,18 +321,33 @@ async fn do_main(args: cli::AppArgs) -> Result<(), anyhow::Error> {
         }) => {
             let chain = relayer_config.get_chain(&on).await.unwrap();
 
+            let msg = MsgTransfer {
+                source_port,
+                source_channel,
+                token: Coin {
+                    denom,
+                    amount: amount.to_string(),
+                },
+                sender: "blah".to_string(),
+                receiver,
+                timeout_height: Height {
+                    revision_number: 1,
+                    revision_height: u64::MAX,
+                },
+                timeout_timestamp: None,
+                memo: None,
+            };
+
             match chain {
                 AnyChain::Union(_union) => {
                     bail!("not currently supported");
                 }
                 // evm -> union
                 AnyChain::EvmMainnet(evm) => {
-                    evm.transfer(denom, amount, receiver, source_port, source_channel)
-                        .await;
+                    evm.transfer(msg).await;
                 }
                 AnyChain::EvmMinimal(evm) => {
-                    evm.transfer(denom, amount, receiver, source_port, source_channel)
-                        .await;
+                    evm.transfer(msg).await;
                 }
             }
         }
@@ -1045,6 +1066,12 @@ where
     {
         lc1_event_stream
             .for_each(move |(event_height, packet)| async move {
+                if let Ok(decoded) = FungibleTokenPacketData::try_from_eth_abi_bytes(&packet.data) {
+                    tracing::info!(?decoded, "recieved ics20 transfer packet")
+                } else {
+                    tracing::info!("recieved opaque packet")
+                }
+
                 let sequence = packet.sequence;
 
                 let lc2_client_id = lc1
@@ -1126,4 +1153,11 @@ where
         relay_packets_inner(&l1, l1_packet_stream, &l2),
     )
     .await;
+}
+
+#[test]
+fn packet_data() {
+    let data = hex::decode("0000000000000000000000000000000000000000000000000000000000000064000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000c0000000000000000000000000000000000000000000000000000000000000012000000000000000000000000000000000000000000000000000000000000000057374616b65000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002862653638666332643832343965623630626663663065373164356130643266326532393263346564000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002c756e696f6e316a6b397073796876676b72743263756d7a386579746c6c323234346d326e6e7a3479743267320000000000000000000000000000000000000000").unwrap();
+
+    dbg!(FungibleTokenPacketData::try_from_eth_abi_bytes(&data).unwrap());
 }

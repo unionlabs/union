@@ -462,7 +462,8 @@ impl Chain for Union {
         &self,
     ) -> impl Future<Output = impl Stream<Item = (Height, Packet)> + '_> + '_ {
         async move {
-            self.tm_client
+            let event_stream = self
+                .tm_client
                 .subscribe(EventType::Tx.into())
                 .await
                 .unwrap()
@@ -471,65 +472,96 @@ impl Chain for Union {
                     tracing::info!(?event.data);
                     match event.data {
                         EventData::Tx { tx_result } => {
-                            tx_result.result.events.into_iter().find_map(|e| {
-                                (e.kind == "send_packet")
-                                    .then(|| {
-                                        e.attributes
+                            tx_result.result.events.into_iter().find_map(
+                                |event| {
+                                    let conversion_result = T::try_from(Event {
+                                        ty: event.kind,
+                                        attributes: event
+                                            .attributes
                                             .into_iter()
-                                            .map(|attr| (attr.key, attr.value))
-                                            .collect::<BTreeMap<_, _>>()
-                                    })
-                                    .map(|send_packet_event| {
-                                        (
-                                            Height {
-                                                revision_number: self.chain_revision,
-                                                revision_height: tx_result
-                                                    .height
-                                                    .try_into()
-                                                    .unwrap(),
-                                            },
-                                            Packet {
-                                                sequence: send_packet_event["packet_sequence"]
-                                                    .parse()
-                                                    .unwrap(),
-                                                source_port: send_packet_event["packet_src_port"]
-                                                    .clone(),
-                                                source_channel: send_packet_event
-                                                    ["packet_src_channel"]
-                                                    .clone(),
-                                                destination_port: send_packet_event
-                                                    ["packet_dst_port"]
-                                                    .clone(),
-                                                destination_channel: send_packet_event
-                                                    ["packet_dst_channel"]
-                                                    .clone(),
-                                                data: ethers::utils::hex::decode(
-                                                    &send_packet_event["packet_data_hex"],
-                                                )
-                                                .unwrap(),
-                                                timeout_height: {
-                                                    let (revision, height) = send_packet_event
-                                                        ["packet_timeout_height"]
-                                                        .split_once('-')
-                                                        .unwrap();
+                                            .map(|attr| EventAttribute {
+                                                key: attr.key,
+                                                value: attr.value,
+                                                index: attr.index,
+                                            })
+                                            .collect(),
+                                    });
 
-                                                    Height {
-                                                        revision_number: revision.parse().unwrap(),
-                                                        revision_height: height.parse().unwrap(),
-                                                    }
-                                                },
-                                                timeout_timestamp: send_packet_event
-                                                    ["packet_timeout_timestamp"]
-                                                    .parse()
-                                                    .unwrap(),
-                                            },
-                                        )
-                                    })
-                            })
+                                    match conversion_result {
+                                        Ok(ok) => Some(Ok(ok)),
+                                        // this isn't fatal in this context
+                                        Err(TryFromTendermintEventError::IncorrectType {
+                                            expected: _,
+                                            found: _,
+                                        }) => None,
+                                        Err(err) => Some(Err(err)),
+                                    }
+                                }, //         |e| {
+                                   //     (e.kind == "send_packet")
+                                   //         .then(|| {
+                                   //             e.attributes
+                                   //                 .into_iter()
+                                   //                 .map(|attr| (attr.key, attr.value))
+                                   //                 .collect::<BTreeMap<_, _>>()
+                                   //         })
+                                   //         .map(|send_packet_event| {
+                                   //             (
+                                   //                 Height {
+                                   //                     revision_number: self.chain_revision,
+                                   //                     revision_height: tx_result
+                                   //                         .height
+                                   //                         .try_into()
+                                   //                         .unwrap(),
+                                   //                 },
+                                   //                 Packet {
+                                   //                     sequence: send_packet_event["packet_sequence"]
+                                   //                         .parse()
+                                   //                         .unwrap(),
+                                   //                     source_port: send_packet_event["packet_src_port"]
+                                   //                         .clone(),
+                                   //                     source_channel: send_packet_event
+                                   //                         ["packet_src_channel"]
+                                   //                         .clone(),
+                                   //                     destination_port: send_packet_event
+                                   //                         ["packet_dst_port"]
+                                   //                         .clone(),
+                                   //                     destination_channel: send_packet_event
+                                   //                         ["packet_dst_channel"]
+                                   //                         .clone(),
+                                   //                     data: ethers::utils::hex::decode(
+                                   //                         &send_packet_event["packet_data_hex"],
+                                   //                     )
+                                   //                     .unwrap(),
+                                   //                     timeout_height: {
+                                   //                         let (revision, height) = send_packet_event
+                                   //                             ["packet_timeout_height"]
+                                   //                             .split_once('-')
+                                   //                             .unwrap();
+
+                                   //                         Height {
+                                   //                             revision_number: revision.parse().unwrap(),
+                                   //                             revision_height: height.parse().unwrap(),
+                                   //                         }
+                                   //                     },
+                                   //                     timeout_timestamp: send_packet_event
+                                   //                         ["packet_timeout_timestamp"]
+                                   //                         .parse()
+                                   //                         .unwrap(),
+                                   //                 },
+                                   //             )
+                                   //         })
+                                   // }
+                            )
                         }
                         _ => None,
                     }
-                })
+                });
+
+            let latest_height = self.query_latest_height().await.revision_height;
+
+            for height in (latest_height - 50)..=latest_height {
+                self.tm_client.block()
+            }
         }
     }
 }
