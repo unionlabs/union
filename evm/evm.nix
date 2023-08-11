@@ -269,12 +269,12 @@
           src = evmSources;
           buildInputs = [ wrappedForge ];
           buildPhase = ''
+            forge --version
             cp ${foundryConfig}/foundry.toml .
             forge build --revert-strings debug
           '';
           doCheck = true;
           checkPhase = ''
-            forge --version
             forge test --revert-strings debug -vvv --gas-report
           '';
           installPhase = ''
