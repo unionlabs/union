@@ -65,7 +65,7 @@
 
             union.wait_for_open_port(${toString e2e.unionNode.wait_for_open_port})
 
-            union.wait_for_console_text('${e2e.unionNode.wait_for_console_text}')
+            union.wait_for_console_text('Rotating validator set due to end of epoch.')
           '';
 
           nodes = {
