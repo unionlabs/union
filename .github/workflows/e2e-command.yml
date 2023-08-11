@@ -66,19 +66,3 @@ jobs:
           name: e2e
           status: completed
           conclusion: ${{ env.WORKFLOW_CONCLUSION }}
-      - name: Add reaction after completion
-        uses: peter-evans/create-or-update-comment@v2
-        if: success()
-        with:
-          token: ${{ secrets.PAT }}
-          repository: ${{ github.event.inputs.repository }}
-          comment-id: ${{ github.event.inputs.comment-id }}
-          reaction-type: hooray
-      - name: Add reaction after completion
-        uses: peter-evans/create-or-update-comment@v2
-        if: failure()
-        with:
-          token: ${{ secrets.PAT }}
-          repository: ${{ github.event.inputs.repository }}
-          comment-id: ${{ github.event.inputs.comment-id }}
-          reaction-type: confused
