@@ -158,6 +158,7 @@ event! {
         pub counterparty_port_id: String,
         pub counterparty_channel_id: String,
         pub connection_id: String,
+        pub version: String,
     }
 
     #[tag("channel_open_ack")]
