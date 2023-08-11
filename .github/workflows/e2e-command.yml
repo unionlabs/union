@@ -9,9 +9,7 @@ on:
       comment-id:
         description: 'The comment-id of the slash command'
         required: true
-  pull_request:
-    branches:
-      - main
+
 jobs:
   start-check:
     runs-on: ubuntu-latest
