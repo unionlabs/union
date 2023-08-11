@@ -304,7 +304,7 @@ contract CometblsClient is ILightClient {
         bytes calldata prefix,
         bytes calldata path
     ) external returns (bool) {
-        return true;
+        return false;
     }
 
     function getClientState(
