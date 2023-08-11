@@ -20,7 +20,7 @@ library Cometbls {
         string memory clientType,
         string memory chainId,
         uint64 revisionHeight,
-        bytes32 rootHash,
+        bytes32 appHash,
         bytes32 nextValidatorsHash,
         uint64 timestamp
     ) internal view returns (IBCMsgs.MsgCreateClient memory m) {
@@ -49,7 +49,7 @@ library Cometbls {
             );
 
         m.consensusStateBytes = CometblsConsensusState({
-            root: rootHash,
+            root: appHash,
             nextValidatorsHash: nextValidatorsHash,
             timestamp: timestamp
         }).marshalToProto();
