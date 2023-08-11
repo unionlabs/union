@@ -66,3 +66,4 @@ jobs:
           name: e2e
           status: completed
           conclusion: ${{ env.WORKFLOW_CONCLUSION }}
+          details_url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
