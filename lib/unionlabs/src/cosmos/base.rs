@@ -1,7 +1,9 @@
 pub mod query;
+use serde::{Deserialize, Serialize};
+
 use crate::{Proto, TypeUrl};
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Coin {
     pub denom: String,
     // NOTE: Exists in range from -(2^256 - 1) to 2^256 - 1

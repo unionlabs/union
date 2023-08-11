@@ -1,8 +1,10 @@
 use std::num::NonZeroU64;
 
+use serde::{Deserialize, Serialize};
+
 use crate::{cosmos::base::Coin, ibc::core::client::height::Height};
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct MsgTransfer {
     /// the port on which the packet will be sent
     pub source_port: String,
