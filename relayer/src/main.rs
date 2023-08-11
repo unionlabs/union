@@ -13,7 +13,6 @@ use std::{collections::btree_map::Entry, fmt::Debug, fs::read_to_string};
 
 use anyhow::bail;
 use clap::Parser;
-use ethers::{signers::Signer, types::U256};
 use futures::{future::join, FutureExt, Stream, StreamExt};
 use prost::Message;
 use unionlabs::{
@@ -40,7 +39,7 @@ use unionlabs::{
             },
         },
     },
-    FromProto, IntoProto, TryFromEthAbi,
+    IntoProto, TryFromEthAbi,
 };
 
 use crate::{
@@ -319,7 +318,7 @@ async fn do_main(args: cli::AppArgs) -> Result<(), anyhow::Error> {
             source_channel,
             on,
         }) => {
-            let chain = relayer_config.get_chain(&on).await.unwrap();
+            let chain_config = relayer_config.chain.get(&on).unwrap();
 
             let msg = MsgTransfer {
                 source_port,
@@ -338,43 +337,40 @@ async fn do_main(args: cli::AppArgs) -> Result<(), anyhow::Error> {
                 memo: None,
             };
 
-            match chain {
-                AnyChain::Union(_union) => {
-                    bail!("not currently supported");
+            match chain_config {
+                ChainConfig::Evm(EvmChainConfig::Minimal(evm_config)) => {
+                    Evm::<Minimal>::new(evm_config.clone())
+                        .await
+                        .transfer(msg, evm_config.ics20_transfer_bank_address.clone())
+                        .await;
                 }
-                // evm -> union
-                AnyChain::EvmMainnet(evm) => {
-                    evm.transfer(msg).await;
+                ChainConfig::Evm(EvmChainConfig::Mainnet(evm_config)) => {
+                    Evm::<Mainnet>::new(evm_config.clone())
+                        .await
+                        .transfer(msg, evm_config.ics20_transfer_bank_address.clone())
+                        .await;
                 }
-                AnyChain::EvmMinimal(evm) => {
-                    evm.transfer(msg).await;
-                }
+                ChainConfig::Union(_) => bail!("not currently supported"),
             }
         }
         Command::Query(query) => match query {
-            QueryCmd::Balances { on, denom } => {
-                let chain = relayer_config.get_chain(&on).await.unwrap();
+            QueryCmd::Balances { on, who, denom } => {
+                let chain_config = relayer_config.chain.get(&on).unwrap();
 
-                match chain {
-                    AnyChain::Union(_) => bail!("not currently supported"),
-                    AnyChain::EvmMainnet(evm) => {
-                        let balance: U256 = evm
-                            .ics20_bank
-                            .balance_of(evm.wallet.address(), denom.clone())
+                match chain_config {
+                    ChainConfig::Evm(EvmChainConfig::Minimal(evm_config)) => {
+                        Evm::<Minimal>::new(evm_config.clone())
                             .await
-                            .unwrap();
-
-                        println!("{balance}");
+                            .balance_of(evm_config.ics20_bank_address.clone(), who.into(), denom)
+                            .await;
                     }
-                    AnyChain::EvmMinimal(evm) => {
-                        let balance: U256 = evm
-                            .ics20_bank
-                            .balance_of(evm.wallet.address(), denom.clone())
+                    ChainConfig::Evm(EvmChainConfig::Mainnet(evm_config)) => {
+                        Evm::<Mainnet>::new(evm_config.clone())
                             .await
-                            .unwrap();
-
-                        println!("{balance}");
+                            .balance_of(evm_config.ics20_bank_address.clone(), who.into(), denom)
+                            .await;
                     }
+                    ChainConfig::Union(_) => bail!("not currently supported"),
                 }
             }
             QueryCmd::Client { on, client_id } => {
@@ -452,17 +448,17 @@ async fn do_main(args: cli::AppArgs) -> Result<(), anyhow::Error> {
                 }
             }
             cli::SetupCmd::SetOperator { on } => {
-                let chain = relayer_config.get_chain(&on).await.unwrap();
+                let chain_config = relayer_config.chain.get(&on).unwrap();
 
-                match chain {
-                    AnyChain::EvmMinimal(evm) => {
-                        evm.setup_initial_channel(
-                            module_address.into(),
-                            channel_id,
-                            port_id,
-                            counterparty_port_id,
-                        )
-                        .await;
+                match chain_config {
+                    ChainConfig::Evm(EvmChainConfig::Minimal(evm_config)) => {
+                        Evm::<Minimal>::new(evm_config.clone())
+                            .await
+                            .ics20_bank_set_operator(
+                                evm_config.ics20_bank_address.clone(),
+                                evm_config.ics20_transfer_bank_address.clone(),
+                            )
+                            .await;
                     }
                     _ => panic!("Not supported."),
                 }
@@ -1153,11 +1149,4 @@ where
         relay_packets_inner(&l1, l1_packet_stream, &l2),
     )
     .await;
-}
-
-#[test]
-fn packet_data() {
-    let data = hex::decode("0000000000000000000000000000000000000000000000000000000000000064000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000c0000000000000000000000000000000000000000000000000000000000000012000000000000000000000000000000000000000000000000000000000000000057374616b65000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002862653638666332643832343965623630626663663065373164356130643266326532393263346564000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002c756e696f6e316a6b397073796876676b72743263756d7a386579746c6c323234346d326e6e7a3479743267320000000000000000000000000000000000000000").unwrap();
-
-    dbg!(FungibleTokenPacketData::try_from_eth_abi_bytes(&data).unwrap());
 }

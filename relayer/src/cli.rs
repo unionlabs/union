@@ -164,6 +164,8 @@ pub enum QueryCmd {
         #[arg(long)]
         on: String,
         #[arg(long)]
+        who: Address,
+        #[arg(long)]
         denom: String,
     },
 }

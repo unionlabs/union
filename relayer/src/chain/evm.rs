@@ -27,7 +27,7 @@ use ethers::{
     contract::EthCall,
     prelude::{decode_logs, k256::ecdsa, parse_log, LogMeta, SignerMiddleware},
     providers::{Middleware, Provider, Ws},
-    signers::{LocalWallet, Signer, Wallet},
+    signers::{LocalWallet, Wallet},
     types::{Bytes, U256},
     utils::{keccak256, secret_key_to_address},
 };
@@ -39,7 +39,7 @@ use unionlabs::{
     ethereum::{beacon::LightClientFinalityUpdate, Address, H256},
     ethereum_consts_traits::ChainSpec,
     ibc::{
-        applications::transfer::MsgTransfer,
+        applications::transfer::msg_transfer::MsgTransfer,
         core::{
             channel::{
                 msg_channel_open_ack::MsgChannelOpenAck,
@@ -236,7 +236,7 @@ impl<C: ChainSpec> Evm<C> {
             tracing::warn!("timeout_timestamp is currently not supported by ICS20TransferBank")
         }
 
-        if !msg.memo.is_empty() {
+        if msg.memo.is_some() {
             tracing::warn!("memo is currently not supported by ICS20TransferBank")
         }
 
@@ -333,7 +333,7 @@ impl<C: ChainSpec> Evm<C> {
             .unwrap();
     }
 
-    async fn ics20_bank_set_operator(
+    pub async fn ics20_bank_set_operator(
         &self,
         ics20_bank_address: Address,
         ics20_transfer_bank_address: Address,
@@ -353,6 +353,22 @@ impl<C: ChainSpec> Evm<C> {
             .await
             .unwrap()
             .unwrap();
+    }
+
+    pub async fn balance_of(
+        &self,
+        ics20_bank_address: Address,
+        who: Address,
+        denom: String,
+    ) -> U256 {
+        let signer_middleware = Arc::new(SignerMiddleware::new(
+            self.provider.clone(),
+            self.wallet.clone(),
+        ));
+
+        let ics20_bank = ICS20Bank::new(ics20_bank_address, signer_middleware);
+
+        ics20_bank.balance_of(who.into(), denom).await.unwrap()
     }
 }
 
