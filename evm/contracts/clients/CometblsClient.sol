@@ -300,7 +300,20 @@ contract CometblsClient is ILightClient {
         bytes calldata prefix,
         bytes calldata path
     ) external returns (bool) {
-        return false;
+        OptimizedConsensusState memory consensusState = consensusStates[
+            stateIndex(clientId, height.toUint128())
+        ];
+        require(
+            consensusState.timestamp != 0,
+            "LC: verifyNonMembership: consensusState does not exist"
+        );
+        return
+            membershipVerifier.verifyNonMembership(
+                abi.encodePacked(consensusState.root),
+                proof,
+                prefix,
+                path
+            );
     }
 
     function getClientState(
