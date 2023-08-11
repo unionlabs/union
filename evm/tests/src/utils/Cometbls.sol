@@ -16,6 +16,22 @@ import {TendermintTypesCommit, TendermintTypesHeader, TendermintTypesSignedHeade
 library Cometbls {
     using CometblsHelp for *;
 
+    uint64 constant HOUR = 3600;
+    uint64 constant DAY = 24 * HOUR;
+    uint64 constant WEEK = 7 * DAY;
+    uint64 constant MONTH = 4 * WEEK;
+    uint64 constant YEAR = 12 * MONTH;
+
+    /*
+     * The max clock drift allow the local chain clock to drift from the counterparty clock
+     */
+    uint64 constant MAX_CLOCK_DRIFT = HOUR;
+
+    /*
+     * The trusting period is the maximum difference in timestamp between two blocks that client will accept to process
+     */
+    uint64 constant TRUSTING_PERIOD = WEEK;
+
     function createClient(
         string memory clientType,
         string memory chainId,
@@ -28,12 +44,18 @@ library Cometbls {
         m.clientStateBytes = CometblsClientState
             .Data({
                 chain_id: chainId,
-                // NOTE: Unused and must be removed from the proto definition as it is hardcoded in the ZK circuit.
+                // TODO: Unused and must be removed from the proto definition as it is hardcoded in the ZK circuit.
                 trust_level: Fraction.Data({numerator: 1, denominator: 3}),
                 // TODO: all this could be fuzzed
-                trusting_period: Duration.Data({Seconds: 300, nanos: 0}),
+                trusting_period: Duration.Data({
+                    Seconds: int64(TRUSTING_PERIOD),
+                    nanos: 0
+                }),
                 unbonding_period: Duration.Data({Seconds: 300, nanos: 0}),
-                max_clock_drift: Duration.Data({Seconds: 3600, nanos: 0}),
+                max_clock_drift: Duration.Data({
+                    Seconds: int64(MAX_CLOCK_DRIFT),
+                    nanos: 0
+                }),
                 frozen_height: ClientHeight.Data({
                     revision_number: 0,
                     revision_height: 0
