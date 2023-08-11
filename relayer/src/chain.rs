@@ -41,6 +41,7 @@ pub mod cosmos;
 pub mod evm;
 
 pub mod dumper;
+pub mod events;
 pub mod proof;
 
 pub enum AnyChain {

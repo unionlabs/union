@@ -48,12 +48,15 @@ use unionlabs::{
         google::protobuf::{any::Any, duration::Duration},
         lightclients::{cometbls, ethereum, tendermint::fraction::Fraction, wasm},
     },
+    tendermint::abci::{event::Event, event_attribute::EventAttribute},
     CosmosAccountId, IntoProto, MsgIntoProto, TryFromProto,
 };
 
+use super::events::TryFromTendermintEventError;
 use crate::{
     chain::{
         dumper::Dumper,
+        events::{ChannelOpenInit, ChannelOpenTry, ConnectionOpenInit, ConnectionOpenTry},
         evm::{Cometbls, Evm},
         proof::{
             ChannelEndPath, ClientConsensusStatePath, ClientStatePath, CommitmentPath,
@@ -86,6 +89,7 @@ pub struct Union {
     // TODO: Move this field back into `Ethereum` once the cometbls states are unwrapped out of the wasm states
     wasm_code_id: H256,
     prover_endpoint: String,
+    grpc_url: String,
     dump_path: String,
 }
 
@@ -147,12 +151,11 @@ impl<C: ChainSpec> CreateClient<Ethereum<C>> for Union {
 
 impl Union {
     pub async fn new(config: UnionChainConfig) -> Self {
-        let (tm_client, driver) =
-            WebSocketClient::builder("ws://127.0.0.1:26657/websocket".parse().unwrap())
-                .compat_mode(tendermint_rpc::client::CompatMode::V0_37)
-                .build()
-                .await
-                .unwrap();
+        let (tm_client, driver) = WebSocketClient::builder(config.ws_url)
+            .compat_mode(tendermint_rpc::client::CompatMode::V0_37)
+            .build()
+            .await
+            .unwrap();
 
         tokio::spawn(async move { driver.run().await });
 
@@ -174,6 +177,7 @@ impl Union {
             chain_revision,
             prover_endpoint: config.prover_endpoint,
             dump_path: config.dump_path,
+            grpc_url: config.grpc_url,
         }
     }
 
@@ -181,7 +185,7 @@ impl Union {
         &self,
         messages: impl IntoIterator<Item = google::protobuf::Any>,
     ) -> tendermint_rpc::endpoint::broadcast::tx_commit::Response {
-        let account = account_info_of_signer(&self.signer).await;
+        let account = self.account_info_of_signer(&self.signer).await;
 
         let sign_doc = tx::v1beta1::SignDoc {
             body_bytes: tx::v1beta1::TxBody {
@@ -264,6 +268,24 @@ impl Union {
             revision_height: height,
         }
     }
+
+    async fn account_info_of_signer(&self, signer: &CosmosAccountId) -> auth::v1beta1::BaseAccount {
+        let account = auth::v1beta1::query_client::QueryClient::connect(self.grpc_url.clone())
+            .await
+            .unwrap()
+            .account(auth::v1beta1::QueryAccountRequest {
+                address: signer.to_string(),
+            })
+            .await
+            .unwrap()
+            .into_inner()
+            .account
+            .unwrap();
+
+        assert!(account.type_url == "/cosmos.auth.v1beta1.BaseAccount");
+
+        auth::v1beta1::BaseAccount::decode(&*account.value).unwrap()
+    }
 }
 
 impl Chain for Union {
@@ -302,6 +324,8 @@ impl Chain for Union {
                 {
                     break;
                 }
+
+                tokio::time::sleep(std::time::Duration::from_secs(2)).await;
             }
 
             self.make_height(height)
@@ -552,7 +576,7 @@ impl<C: ChainSpec> LightClient for Ethereum<C> {
         client_id: String,
     ) -> impl Future<Output = ClientStateOf<Self::CounterpartyChain>> + '_ {
         async move {
-            client_v1::query_client::QueryClient::connect("http://0.0.0.0:9090")
+            client_v1::query_client::QueryClient::connect(self.chain.grpc_url.clone())
                 .await
                 .unwrap()
                 .client_state(client_v1::QueryClientStateRequest { client_id })
@@ -572,26 +596,6 @@ impl<C: ChainSpec> LightClient for Ethereum<C> {
 }
 
 impl<C: ChainSpec> Connect<Cometbls<C>> for Ethereum<C> {
-    // fn generate_counterparty_handshake_client_state(
-    //     &self,
-    //     counterparty_state: <Cometbls as LightClient>::ClientState,
-    // ) -> impl Future<Output = Self::HandshakeClientState> + '_ {
-    //     async move {
-    //         super::msgs::wasm::ClientState {
-    //             data: Any(super::msgs::cometbls::ClientState {
-    //                 chain_id: todo!(),
-    //                 trust_level: todo!(),
-    //                 trusting_period: todo!(),
-    //                 unbonding_period: todo!(),
-    //                 max_clock_drift: todo!(),
-    //                 frozen_height: todo!(),
-    //             }),
-    //             code_id: todo!(),
-    //             latest_height: todo!(),
-    //         }
-    //     }
-    // }
-
     fn connection_open_init(
         &self,
         msg: MsgConnectionOpenInit,
@@ -605,17 +609,8 @@ impl<C: ChainSpec> Connect<Cometbls<C>> for Ethereum<C> {
             }])
             .map(|response| {
                 (
-                    response
-                        .deliver_tx
-                        .events
-                        .into_iter()
-                        .find(|event| event.kind == "connection_open_init")
-                        .unwrap()
-                        .attributes
-                        .into_iter()
-                        .find(|attr| attr.key == "connection_id")
-                        .unwrap()
-                        .value,
+                    get_event_from_tx_response::<ConnectionOpenInit>(response.deliver_tx.events)
+                        .connection_id,
                     self.chain.make_height(response.height.value()),
                 )
             })
@@ -634,17 +629,8 @@ impl<C: ChainSpec> Connect<Cometbls<C>> for Ethereum<C> {
             }])
             .map(|response| {
                 (
-                    response
-                        .deliver_tx
-                        .events
-                        .into_iter()
-                        .find(|event| event.kind == "connection_open_try")
-                        .unwrap()
-                        .attributes
-                        .into_iter()
-                        .find(|attr| attr.key == "connection_id")
-                        .unwrap()
-                        .value,
+                    get_event_from_tx_response::<ConnectionOpenTry>(response.deliver_tx.events)
+                        .connection_id,
                     self.chain.make_height(response.height.value()),
                 )
             })
@@ -704,19 +690,10 @@ impl<C: ChainSpec> Connect<Cometbls<C>> for Ethereum<C> {
                         .encode_to_vec(),
                 }])
                 .await;
-            (
-                tx.deliver_tx
-                    .events
-                    .into_iter()
-                    .find(|event| event.kind == "channel_open_init")
-                    .unwrap()
-                    .attributes
-                    .into_iter()
-                    .find(|attr| attr.key == "channel_id")
-                    .unwrap()
-                    .value,
-                self.chain.make_height(tx.height.value()),
-            )
+
+            let event = get_event_from_tx_response::<ChannelOpenInit>(tx.deliver_tx.events);
+
+            (event.channel_id, self.chain.make_height(tx.height.value()))
         }
     }
 
@@ -727,26 +704,12 @@ impl<C: ChainSpec> Connect<Cometbls<C>> for Ethereum<C> {
         async move {
             let tx = self
                 .chain
-                .broadcast_tx_commit([google::protobuf::Any {
-                    type_url: "/ibc.core.channel.v1.MsgChannelOpenTry".to_string(),
-                    value: msg
-                        .into_proto_with_signer(&self.chain.signer)
-                        .encode_to_vec(),
-                }])
+                .broadcast_tx_commit([Any(msg).into_proto_with_signer(&self.chain.signer)])
                 .await;
-            (
-                tx.deliver_tx
-                    .events
-                    .into_iter()
-                    .find(|event| event.kind == "channel_open_try")
-                    .unwrap()
-                    .attributes
-                    .into_iter()
-                    .find(|attr| attr.key == "channel_id")
-                    .unwrap()
-                    .value,
-                self.chain.make_height(tx.height.value()),
-            )
+
+            let event = get_event_from_tx_response::<ChannelOpenTry>(tx.deliver_tx.events);
+
+            (event.channel_id, self.chain.make_height(tx.height.value()))
         }
     }
 
@@ -848,7 +811,7 @@ impl<C: ChainSpec> Connect<Cometbls<C>> for Ethereum<C> {
 
             // TODO: Add to self
             let mut staking_client =
-                staking::v1beta1::query_client::QueryClient::connect("http://0.0.0.0:9090")
+                staking::v1beta1::query_client::QueryClient::connect(self.chain.grpc_url.clone())
                     .await
                     .unwrap();
 
@@ -1204,6 +1167,41 @@ impl<C: ChainSpec> Connect<Cometbls<C>> for Ethereum<C> {
     }
 }
 
+fn get_event_from_tx_response<T: TryFrom<Event, Error = TryFromTendermintEventError>>(
+    events: Vec<tendermint::abci::Event>,
+) -> T {
+    events
+        .into_iter()
+        .find_map(|event| {
+            let conversion_result = T::try_from(Event {
+                ty: event.kind,
+                attributes: event
+                    .attributes
+                    .into_iter()
+                    .map(|attr| EventAttribute {
+                        key: attr.key,
+                        value: attr.value,
+                        index: attr.index,
+                    })
+                    .collect(),
+            });
+
+            match conversion_result {
+                Ok(ok) => Some(Ok(ok)),
+                // this isn't fatal in this context
+                Err(TryFromTendermintEventError::IncorrectType {
+                    expected: _,
+                    found: _,
+                }) => None,
+                Err(err) => Some(Err(err)),
+            }
+        })
+        // event was found...
+        .unwrap()
+        // ...and there were no errors parsing it
+        .unwrap()
+}
+
 trait AbciStateRead<C: ChainSpec>: IbcPath {
     fn from_abci_bytes(bytes: Vec<u8>) -> Self::Output<Ethereum<C>>;
 }
@@ -1253,7 +1251,7 @@ where
         async move {
             let mut client =
                 protos::cosmos::base::tendermint::v1beta1::service_client::ServiceClient::connect(
-                    "http://0.0.0.0:9090",
+                    light_client.chain.grpc_url.clone(),
                 )
                 .await
                 .unwrap();
@@ -1287,23 +1285,4 @@ where
             }
         }
     }
-}
-
-// TODO: This should be an instance method on `Union`
-async fn account_info_of_signer(signer: &CosmosAccountId) -> auth::v1beta1::BaseAccount {
-    let account = auth::v1beta1::query_client::QueryClient::connect("http://0.0.0.0:9090")
-        .await
-        .unwrap()
-        .account(auth::v1beta1::QueryAccountRequest {
-            address: signer.to_string(),
-        })
-        .await
-        .unwrap()
-        .into_inner()
-        .account
-        .unwrap();
-
-    assert!(account.type_url == "/cosmos.auth.v1beta1.BaseAccount");
-
-    auth::v1beta1::BaseAccount::decode(&*account.value).unwrap()
 }

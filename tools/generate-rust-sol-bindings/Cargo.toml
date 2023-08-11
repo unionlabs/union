@@ -8,4 +8,4 @@ edition = "2021"
 [dependencies]
 clap = { version = "4.3.0", features = ["derive"] }
 # ethers-contract-abigen = { path = "/home/ben/projects/clones/ethers-rs/ethers-contract/ethers-contract-abigen" }
-ethers-contract-abigen = { git = "https://github.com/benluelo/ethers-rs", rev = "907b87deabacd091cc027b4696c67d365017c934" }
+ethers-contract-abigen = { git = "https://github.com/unionlabs/ethers-rs", branch = "benluelo/fix-name-collisions" }
