@@ -19,8 +19,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     foundry = {
-      # Move back to monthly branch after 08 2023 as they fixed a coverage issue between 07-08
-      url = "github:shazow/foundry.nix/main";
+      url = "github:shazow/foundry.nix/monthly";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     rust-overlay = {
