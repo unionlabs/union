@@ -56,6 +56,19 @@ contract CometblsClient is ILightClient {
         return keccak256(abi.encodePacked(clientId, height));
     }
 
+    /// helper struct to avoid "stack too deep" errors in `createClient`
+    struct CreateClientLocals {
+        // client state fields
+        UnionIbcLightclientsCometblsV1ClientState.Data clientState;
+        IbcCoreClientV1Height.Data latestHeight;
+        bytes codeId;
+        // consensus state fields
+        UnionIbcLightclientsCometblsV1ConsensusState.Data consensusState;
+        uint64 timestamp;
+        // optimized consensus state fields
+        OptimizedConsensusState optimizedConsensusState;
+    }
+
     function createClient(
         string calldata clientId,
         bytes calldata clientStateBytes,
@@ -70,30 +83,36 @@ contract CometblsClient is ILightClient {
             bool ok
         )
     {
+        CreateClientLocals memory locals;
+
         (
-            UnionIbcLightclientsCometblsV1ClientState.Data memory clientState,
-            IbcCoreClientV1Height.Data memory latestHeight,
-            bytes memory codeId
+            locals.clientState,
+            locals.latestHeight,
+            locals.codeId
         ) = clientStateBytes.unmarshalClientStateFromProto();
-        (
-            UnionIbcLightclientsCometblsV1ConsensusState.Data
-                memory consensusState,
-            uint64 timestamp
-        ) = consensusStateBytes.unmarshalConsensusStateFromProto();
-        clientStates[clientId] = clientState;
-        latestHeights[clientId] = latestHeight;
-        codeIds[clientId] = codeId;
-        OptimizedConsensusState memory optimizedConsensusState = consensusState
-            .toOptimizedConsensusState(timestamp);
+        (locals.consensusState, locals.timestamp) = consensusStateBytes
+            .unmarshalConsensusStateFromProto();
+        clientStates[clientId] = locals.clientState;
+        latestHeights[clientId] = locals.latestHeight;
+        codeIds[clientId] = locals.codeId;
+
+        locals.optimizedConsensusState = locals
+            .consensusState
+            .toOptimizedConsensusState(locals.timestamp);
         consensusStates[
-            stateIndex(clientId, latestHeight.toUint128())
-        ] = optimizedConsensusState;
+            stateIndex(clientId, locals.latestHeight.toUint128())
+        ] = locals.optimizedConsensusState;
+
         return (
-            clientState.marshalToCommitment(latestHeight, codeId),
+            locals.clientState.marshalToCommitment(
+                locals.latestHeight,
+                locals.codeId
+            ),
             ConsensusStateUpdate({
-                consensusStateCommitment: optimizedConsensusState
+                consensusStateCommitment: locals
+                    .optimizedConsensusState
                     .marshalToCommitment(),
-                height: latestHeight
+                height: locals.latestHeight
             }),
             true
         );
@@ -115,6 +134,24 @@ contract CometblsClient is ILightClient {
         return (latestHeights[clientId], true);
     }
 
+    struct UpdateClientStruct {
+        UnionIbcLightclientsCometblsV1Header.Data header;
+        uint64 untrustedHeightNumber;
+        uint64 trustedHeightNumber;
+        uint64 trustedTimestamp;
+        uint64 untrustedTimestamp;
+        GoogleProtobufDuration.Data currentTime;
+        uint64 maxClockDrift;
+        bytes32 trustedValidatorsHash;
+        bytes32 untrustedValidatorsHash;
+        bool adjacent;
+        bytes32 expectedBlockHash;
+        bytes signedVote;
+        IbcCoreClientV1Height.Data untrustedHeight;
+        IbcCoreClientV1Height.Data latestHeight;
+        uint128 newHeightIdx;
+    }
+
     function updateClient(
         string calldata clientId,
         bytes calldata clientMessageBytes
@@ -124,16 +161,16 @@ contract CometblsClient is ILightClient {
         onlyIBC
         returns (bytes32, ConsensusStateUpdate[] memory, bool)
     {
-        (
-            UnionIbcLightclientsCometblsV1Header.Data memory header,
-            bool ok
-        ) = clientMessageBytes.unmarshalHeaderEthABI();
+        UpdateClientStruct memory locals;
+        bool ok;
+
+        (locals.header, ok) = clientMessageBytes.unmarshalHeaderEthABI();
         require(ok, "LC: invalid block header");
 
         UnionIbcLightclientsCometblsV1ClientState.Data
             storage clientState = clientStates[clientId];
         OptimizedConsensusState storage consensusState = consensusStates[
-            stateIndex(clientId, header.trusted_height.toUint128())
+            stateIndex(clientId, locals.header.trusted_height.toUint128())
         ];
 
         require(
@@ -141,40 +178,45 @@ contract CometblsClient is ILightClient {
             "LC: trusted height does not exists"
         );
 
-        uint64 untrustedHeightNumber = uint64(
-            header.signed_header.commit.height
+        locals.untrustedHeightNumber = uint64(
+            locals.header.signed_header.commit.height
         );
-        uint64 trustedHeightNumber = header.trusted_height.revision_height;
+        locals.trustedHeightNumber = locals
+            .header
+            .trusted_height
+            .revision_height;
         require(
-            untrustedHeightNumber > trustedHeightNumber,
+            locals.untrustedHeightNumber > locals.trustedHeightNumber,
             "LC: header height <= consensus state height"
         );
 
-        uint64 trustedTimestamp = consensusState.timestamp;
-        uint64 untrustedTimestamp = uint64(
-            header.signed_header.header.time.secs
+        locals.trustedTimestamp = consensusState.timestamp;
+        locals.untrustedTimestamp = uint64(
+            locals.header.signed_header.header.time.secs
         );
         require(
-            untrustedTimestamp > trustedTimestamp,
+            locals.untrustedTimestamp > locals.trustedTimestamp,
             "LC: header time <= consensus state time"
         );
 
-        GoogleProtobufDuration.Data memory currentTime = GoogleProtobufDuration
-            .Data({Seconds: int64(uint64(block.timestamp)), nanos: 0});
+        locals.currentTime = GoogleProtobufDuration.Data({
+            Seconds: int64(uint64(block.timestamp)),
+            nanos: 0
+        });
         require(
             !CometblsHelp.isExpired(
-                header.signed_header.header.time,
+                locals.header.signed_header.header.time,
                 clientState.trusting_period,
-                currentTime
+                locals.currentTime
             ),
             "LC: header expired"
         );
 
-        uint64 maxClockDrift = uint64(
-            currentTime.Seconds + clientState.max_clock_drift.Seconds
+        locals.maxClockDrift = uint64(
+            locals.currentTime.Seconds + clientState.max_clock_drift.Seconds
         );
         require(
-            untrustedTimestamp < maxClockDrift,
+            locals.untrustedTimestamp < locals.maxClockDrift,
             "LC: header back to the future"
         );
 
@@ -183,77 +225,101 @@ contract CometblsClient is ILightClient {
          In adjacent verification, trusted vals = untrusted vals.
          In non adjacent verification, untrusted vals are coming from the untrusted header.
          */
-        bytes32 trustedValidatorsHash = consensusState.nextValidatorsHash;
-        bytes32 untrustedValidatorsHash;
-        bool adjacent = untrustedHeightNumber == trustedHeightNumber + 1;
-        if (adjacent) {
-            untrustedValidatorsHash = trustedValidatorsHash;
+        locals.trustedValidatorsHash = consensusState.nextValidatorsHash;
+        locals.untrustedValidatorsHash;
+        locals.adjacent =
+            locals.untrustedHeightNumber == locals.trustedHeightNumber + 1;
+        if (locals.adjacent) {
+            locals.untrustedValidatorsHash = locals.trustedValidatorsHash;
         } else {
-            untrustedValidatorsHash = header
+            locals.untrustedValidatorsHash = locals
+                .header
                 .untrusted_validator_set_root
                 .toBytes32(0);
         }
 
-        bytes32 expectedBlockHash = header.signed_header.header.merkleRoot();
+        locals.expectedBlockHash = locals
+            .header
+            .signed_header
+            .header
+            .merkleRoot();
 
         require(
-            header.signed_header.commit.block_id.hash.toBytes32(0) ==
-                expectedBlockHash,
+            locals.header.signed_header.commit.block_id.hash.toBytes32(0) ==
+                locals.expectedBlockHash,
             "LC: commit.block_id.hash != header.root()"
         );
 
-        TendermintTypesCanonicalVote.Data memory vote = header
-            .signed_header
-            .commit
-            .toCanonicalVote(clientState.chain_id, expectedBlockHash);
-        bytes memory signedVote = Encoder.encodeDelim(
-            TendermintTypesCanonicalVote.encode(vote)
-        );
+        // create a scope to narrow down the `vote` local
+        {
+            TendermintTypesCanonicalVote.Data memory vote = locals
+                .header
+                .signed_header
+                .commit
+                .toCanonicalVote(
+                    clientState.chain_id,
+                    locals.expectedBlockHash
+                );
+            locals.signedVote = Encoder.encodeDelim(
+                TendermintTypesCanonicalVote.encode(vote)
+            );
+        }
 
         ok = zkVerifier.verifyZKP(
-            trustedValidatorsHash,
-            untrustedValidatorsHash,
-            signedVote,
-            header.zero_knowledge_proof
+            locals.trustedValidatorsHash,
+            locals.untrustedValidatorsHash,
+            locals.signedVote,
+            locals.header.zero_knowledge_proof
         );
         require(ok, "LC: invalid ZKP");
 
-        IbcCoreClientV1Height.Data
-            memory untrustedHeight = IbcCoreClientV1Height.Data({
-                revision_number: header.trusted_height.revision_number,
-                revision_height: untrustedHeightNumber
-            });
+        locals.untrustedHeight = IbcCoreClientV1Height.Data({
+            revision_number: locals.header.trusted_height.revision_number,
+            revision_height: locals.untrustedHeightNumber
+        });
 
         // Update states
-        IbcCoreClientV1Height.Data storage latestHeight = latestHeights[
-            clientId
-        ];
-        if (untrustedHeightNumber > latestHeight.revision_height) {
-            latestHeight.revision_height = untrustedHeightNumber;
+        locals.latestHeight = latestHeights[clientId];
+        if (
+            locals.untrustedHeightNumber > locals.latestHeight.revision_height
+        ) {
+            locals.latestHeight.revision_height = locals.untrustedHeightNumber;
         }
 
-        uint128 newHeightIdx = untrustedHeight.toUint128();
+        locals.newHeightIdx = locals.untrustedHeight.toUint128();
 
-        consensusState = consensusStates[stateIndex(clientId, newHeightIdx)];
+        consensusState = consensusStates[
+            stateIndex(clientId, locals.newHeightIdx)
+        ];
         consensusState.timestamp = uint64(
-            header.signed_header.header.time.secs
+            locals.header.signed_header.header.time.secs
         );
-        consensusState.root = header.signed_header.header.app_hash.toBytes32(0);
-        consensusState.nextValidatorsHash = untrustedValidatorsHash;
+        consensusState.root = locals
+            .header
+            .signed_header
+            .header
+            .app_hash
+            .toBytes32(0);
+        consensusState.nextValidatorsHash = locals.untrustedValidatorsHash;
 
         ConsensusStateUpdate[] memory updates = new ConsensusStateUpdate[](1);
         updates[0] = ConsensusStateUpdate({
             consensusStateCommitment: consensusState.marshalToCommitment(),
-            height: untrustedHeight
+            height: locals.untrustedHeight
         });
 
-        processedMoments[stateIndex(clientId, newHeightIdx)] = ProcessedMoment({
+        processedMoments[
+            stateIndex(clientId, locals.newHeightIdx)
+        ] = ProcessedMoment({
             timestamp: uint128(block.timestamp),
             height: uint128(block.number)
         });
 
         return (
-            clientState.marshalToCommitment(latestHeight, codeIds[clientId]),
+            clientState.marshalToCommitment(
+                locals.latestHeight,
+                codeIds[clientId]
+            ),
             updates,
             true
         );
@@ -269,9 +335,8 @@ contract CometblsClient is ILightClient {
         bytes calldata path,
         bytes calldata value
     ) external view override returns (bool) {
-        OptimizedConsensusState memory consensusState = consensusStates[
-            stateIndex(clientId, height.toUint128())
-        ];
+        bytes32 idx = stateIndex(clientId, height.toUint128());
+        OptimizedConsensusState memory consensusState = consensusStates[idx];
         require(
             consensusState.timestamp != 0,
             "LC: verifyMembership: consensusState does not exist"
