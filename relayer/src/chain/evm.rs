@@ -7,8 +7,7 @@ use std::{
 use beacon_api::client::BeaconApiClient;
 use clap::Args;
 use contracts::{
-    devnet_ownable_ibc_handler::devnet_ownable_ibc_handler,
-    glue::UnionIbcLightclientsCometblsV1HeaderData,
+    devnet_ownable_ibc_handler,
     ibc_handler::{
         self, GeneratedConnectionIdentifierFilter, GetChannelCall, GetChannelReturn,
         GetClientStateCall, GetClientStateReturn, GetConnectionCall, GetConnectionReturn,
@@ -57,6 +56,7 @@ use unionlabs::{
         },
         google::protobuf::any::Any,
         lightclients::{
+            cometbls,
             ethereum::{
                 self,
                 account_update::AccountUpdate,
@@ -69,7 +69,7 @@ use unionlabs::{
             wasm,
         },
     },
-    IntoProto, TryFromProto,
+    IntoEthAbi, IntoProto, TryFromProto,
 };
 
 use crate::{
@@ -615,7 +615,7 @@ impl<C: ChainSpec> CreateClient<Cometbls<C>> for Evm<C> {
 
 impl<C: ChainSpec> LightClient for Cometbls<C> {
     // TODO(benluelo): Better type for this
-    type UpdateClientMessage = UnionIbcLightclientsCometblsV1HeaderData;
+    type UpdateClientMessage = cometbls::header::Header;
 
     type IbcStateRead = EthStateRead;
 
@@ -639,7 +639,7 @@ impl<C: ChainSpec> LightClient for Cometbls<C> {
                 .ibc_handler
                 .update_client(ibc_handler::MsgUpdateClient {
                     client_id,
-                    client_message: encode_dynamic_singleton_tuple(msg).into(),
+                    client_message: encode_dynamic_singleton_tuple(msg.into_eth_abi()).into(),
                 })
                 .send()
                 .await

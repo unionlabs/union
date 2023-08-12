@@ -18,7 +18,7 @@ impl TryFrom<protos::ibc::core::connection::v1::Version> for Version {
             features: proto
                 .features
                 .into_iter()
-                .map(Order::try_from_str)
+                .map(|order| order.parse())
                 .collect::<Result<_, _>>()?,
         })
     }
@@ -63,7 +63,7 @@ impl TryFrom<contracts::ibc_handler::IbcCoreConnectionV1VersionData> for Version
             features: value
                 .features
                 .into_iter()
-                .map(Order::try_from_str)
+                .map(|order| order.parse())
                 .collect::<Result<_, _>>()?,
         })
     }

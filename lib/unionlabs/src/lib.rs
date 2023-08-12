@@ -21,6 +21,8 @@ pub mod ibc;
 /// Defines types that wrap the tendermint specification, matching the proto module structure.
 pub mod tendermint;
 
+pub mod cosmos;
+
 /// Various ethereum types. Types that have an IBC counterpart are defined in [`ibc`].
 pub mod ethereum;
 
@@ -28,6 +30,8 @@ pub mod ethereum;
 pub mod bls;
 
 pub mod ethereum_consts_traits;
+
+pub(crate) mod macros;
 
 pub mod errors {
     use std::fmt::Debug;
@@ -41,11 +45,16 @@ pub mod errors {
     #[derive(Debug)]
     pub struct MissingField(pub &'static str);
 
+    /// For fields that are "fake options" from prost, for use in `TryFrom<<Self as Proto>::Proto>`.
+    ///
+    /// `Self::Error` is expected to have a `MissingField(`[`MissingField`]`)` variant.
     macro_rules! required {
-        ($struct_var:ident.$field:ident, $Error:ident) => {
+        ($struct_var:ident.$field:ident) => {
             $struct_var
                 .$field
-                .ok_or($Error::MissingField(MissingField(stringify!($field))))
+                .ok_or(<Self::Error>::MissingField(MissingField(stringify!(
+                    $field
+                ))))
         };
     }
 
@@ -175,6 +184,69 @@ pub trait MsgIntoProto {
 
     fn into_proto_with_signer(self, signer: &CosmosAccountId) -> Self::Proto;
 }
+
+#[cfg(feature = "ethabi")]
+pub trait EthAbi {
+    type EthAbi: ethers_core::abi::AbiEncode + ethers_core::abi::AbiDecode;
+}
+
+#[cfg(feature = "ethabi")]
+pub trait IntoEthAbi: EthAbi + Into<Self::EthAbi> {
+    fn into_eth_abi(self) -> Self::EthAbi {
+        self.into()
+    }
+
+    fn into_eth_abi_bytes(self) -> Vec<u8> {
+        ethers_core::abi::AbiEncode::encode(self.into())
+    }
+}
+
+#[cfg(feature = "ethabi")]
+pub trait FromEthAbi: EthAbi + From<Self::EthAbi> {
+    fn from_eth_abi(proto: Self::EthAbi) -> Self {
+        proto.into()
+    }
+
+    fn from_eth_abi_bytes(bytes: &[u8]) -> Result<Self, ethers_core::abi::AbiError> {
+        <Self::EthAbi as ethers_core::abi::AbiDecode>::decode(bytes).map(Into::into)
+    }
+}
+
+#[cfg(feature = "ethabi")]
+#[derive(Debug)]
+pub enum TryFromEthAbiBytesError<E> {
+    TryFromEthAbi(E),
+    Decode(ethers_core::abi::AbiError),
+}
+
+#[cfg(feature = "ethabi")]
+pub type TryFromEthAbiErrorOf<T> = <T as TryFrom<<T as EthAbi>::EthAbi>>::Error;
+
+#[cfg(feature = "ethabi")]
+pub trait TryFromEthAbi: EthAbi + TryFrom<Self::EthAbi> {
+    fn try_from_eth_abi(proto: Self::EthAbi) -> Result<Self, TryFromEthAbiErrorOf<Self>> {
+        proto.try_into()
+    }
+
+    fn try_from_eth_abi_bytes(
+        bytes: &[u8],
+    ) -> Result<Self, TryFromEthAbiBytesError<TryFromEthAbiErrorOf<Self>>> {
+        <Self::EthAbi as ethers_core::abi::AbiDecode>::decode(bytes)
+            .map_err(TryFromEthAbiBytesError::Decode)
+            .and_then(|proto| {
+                proto
+                    .try_into()
+                    .map_err(TryFromEthAbiBytesError::TryFromEthAbi)
+            })
+    }
+}
+
+#[cfg(feature = "ethabi")]
+impl<T> IntoEthAbi for T where T: EthAbi + Into<T::EthAbi> {}
+#[cfg(feature = "ethabi")]
+impl<T> FromEthAbi for T where T: EthAbi + From<T::EthAbi> {}
+#[cfg(feature = "ethabi")]
+impl<T> TryFromEthAbi for T where T: EthAbi + TryFrom<T::EthAbi> {}
 
 /// A simple wrapper around a cosmos account, easily representable as a bech32 string.
 #[derive(Debug, Clone)]

@@ -5,3 +5,4 @@ pub mod commit_sig;
 pub mod header;
 pub mod part_set_header;
 pub mod signed_header;
+pub mod simple_validator;

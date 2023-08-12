@@ -41,7 +41,7 @@ impl<Data: TryFromProto> TryFrom<protos::ibc::lightclients::wasm::v1::Header> fo
     fn try_from(value: protos::ibc::lightclients::wasm::v1::Header) -> Result<Self, Self::Error> {
         Ok(Self {
             data: Data::try_from_proto_bytes(&value.data).map_err(TryFromHeaderError::Data)?,
-            height: required!(value.height, TryFromHeaderError)?.into(),
+            height: required!(value.height)?.into(),
         })
     }
 }

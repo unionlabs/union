@@ -44,9 +44,17 @@ rustToolchain.buildPackage (attrs // {
   # ls ${test} > /dev/null 2>&1
   checkPhase = ''
     ls ${clippy} > /dev/null 2>&1
+    
+    ls target/wasm32-unknown-unknown/release
+    blob=$(${pkgs.binaryen}/bin/wasm-dis target/wasm32-unknown-unknown/release/${artifact}.wasm)
+    if [ $? -ne 0 ]
+    then
+      echo $blob
+      exit $?
+    fi
 
     # grep exits 0 if a match is found
-    if ${pkgs.binaryen}/bin/wasm-dis target/wasm32-unknown-unknown/release/${info.pname}.wasm | grep -P '\.extend\d{1,2}_s'
+    if echo $blob | grep -P '\.extend\d{1,2}_s'
     then
       echo "wasm binary contains invalid opcodes!"
       exit 1

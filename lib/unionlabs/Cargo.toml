@@ -27,6 +27,7 @@ hex = { version = "0.4.3", default-features = false }
 typenum = { version = "1.16.0", default-features = false, features = ["const-generics", "no_std"] }
 hex-literal = "0.4.1"
 generic-array = "0.14.7"
+ethers-core = { version = "2.0.8", optional = true }
 
 [dev-dependencies]
 serde_json = "1.0.96"
@@ -35,4 +36,4 @@ serde_json = "1.0.96"
 default = ["ethabi", "std"]
 
 std = ["tree_hash/detect-cpufeatures"]
-ethabi = ["contracts"]
+ethabi = ["contracts", "ethers-core"]

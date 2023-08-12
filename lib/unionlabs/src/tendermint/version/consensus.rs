@@ -1,6 +1,8 @@
+use serde::{Deserialize, Serialize};
+
 use crate::{Proto, TypeUrl};
 
-#[derive(Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Consensus {
     pub block: u64,
     pub app: u64,
@@ -30,4 +32,29 @@ impl Proto for Consensus {
 
 impl TypeUrl for protos::tendermint::version::Consensus {
     const TYPE_URL: &'static str = "/tendermint.version.Consensus";
+}
+
+#[cfg(feature = "ethabi")]
+impl From<contracts::glue::TendermintVersionConsensusData> for Consensus {
+    fn from(value: contracts::glue::TendermintVersionConsensusData) -> Self {
+        Self {
+            block: value.block,
+            app: value.app,
+        }
+    }
+}
+
+#[cfg(feature = "ethabi")]
+impl From<Consensus> for contracts::glue::TendermintVersionConsensusData {
+    fn from(value: Consensus) -> Self {
+        Self {
+            block: value.block,
+            app: value.app,
+        }
+    }
+}
+
+#[cfg(feature = "ethabi")]
+impl crate::EthAbi for Consensus {
+    type EthAbi = contracts::glue::TendermintVersionConsensusData;
 }

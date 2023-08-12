@@ -1,5 +1,7 @@
 use std::num::TryFromIntError;
 
+use serde::{Deserialize, Serialize};
+
 use crate::{
     errors::{required, InvalidLength, MissingField},
     ethereum::{Address, H256},
@@ -8,7 +10,7 @@ use crate::{
     Proto, TryFromProtoErrorOf, TypeUrl,
 };
 
-#[derive(Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Header {
     /// basic block info
     pub version: Consensus,
@@ -85,14 +87,14 @@ impl TryFrom<protos::tendermint::types::Header> for Header {
 
     fn try_from(value: protos::tendermint::types::Header) -> Result<Self, Self::Error> {
         Ok(Self {
-            version: required!(value.version, TryFromHeaderError)?.into(),
+            version: required!(value.version)?.into(),
             chain_id: value.chain_id,
             height: value
                 .height
                 .try_into()
                 .map_err(TryFromHeaderError::Height)?,
-            time: required!(value.time, TryFromHeaderError)?.into(),
-            last_block_id: required!(value.last_block_id, TryFromHeaderError)?
+            time: required!(value.time)?.into(),
+            last_block_id: required!(value.last_block_id)?
                 .try_into()
                 .map_err(TryFromHeaderError::LastBlockId)?,
             last_commit_hash: value
@@ -141,4 +143,113 @@ impl Proto for Header {
 
 impl TypeUrl for protos::tendermint::types::Header {
     const TYPE_URL: &'static str = "/tendermint.types.Header";
+}
+
+#[cfg(feature = "ethabi")]
+impl crate::EthAbi for Header {
+    type EthAbi = contracts::glue::TendermintTypesHeaderData;
+}
+
+#[cfg(feature = "ethabi")]
+impl From<Header> for contracts::glue::TendermintTypesHeaderData {
+    fn from(value: Header) -> Self {
+        Self {
+            version: value.version.into(),
+            chain_id: value.chain_id,
+            height: value.height.into(),
+            time: value.time.into(),
+            last_block_id: value.last_block_id.into(),
+            last_commit_hash: value.last_commit_hash.into(),
+            data_hash: value.data_hash.into(),
+            validators_hash: value.validators_hash.into(),
+            next_validators_hash: value.next_validators_hash.into(),
+            consensus_hash: value.consensus_hash.into(),
+            app_hash: value.app_hash.into(),
+            last_results_hash: value.last_results_hash.into(),
+            evidence_hash: value.evidence_hash.into(),
+            proposer_address: value.proposer_address.into(),
+        }
+    }
+}
+
+#[cfg(feature = "ethabi")]
+#[derive(Debug)]
+pub enum TryFromEthAbiHeaderError {
+    LastBlockId(crate::TryFromEthAbiErrorOf<BlockId>),
+    Height(TryFromIntError),
+    LastCommitHash(InvalidLength),
+    DataHash(InvalidLength),
+    ValidatorsHash(InvalidLength),
+    NextValidatorsHash(InvalidLength),
+    ConsensusHash(InvalidLength),
+    AppHash(InvalidLength),
+    LastResultsHash(InvalidLength),
+    EvidenceHash(InvalidLength),
+    ProposerAddress(InvalidLength),
+}
+
+#[cfg(feature = "ethabi")]
+impl TryFrom<contracts::glue::TendermintTypesHeaderData> for Header {
+    type Error = TryFromEthAbiHeaderError;
+
+    fn try_from(value: contracts::glue::TendermintTypesHeaderData) -> Result<Self, Self::Error> {
+        Ok(Self {
+            version: value.version.into(),
+            chain_id: value.chain_id,
+            height: value
+                .height
+                .try_into()
+                .map_err(TryFromEthAbiHeaderError::Height)?,
+            time: value.time.into(),
+            last_block_id: value
+                .last_block_id
+                .try_into()
+                .map_err(TryFromEthAbiHeaderError::LastBlockId)?,
+            last_commit_hash: value
+                .last_commit_hash
+                .to_vec()
+                .try_into()
+                .map_err(TryFromEthAbiHeaderError::LastCommitHash)?,
+            data_hash: value
+                .data_hash
+                .to_vec()
+                .try_into()
+                .map_err(TryFromEthAbiHeaderError::DataHash)?,
+            validators_hash: value
+                .validators_hash
+                .to_vec()
+                .try_into()
+                .map_err(TryFromEthAbiHeaderError::ValidatorsHash)?,
+            next_validators_hash: value
+                .next_validators_hash
+                .to_vec()
+                .try_into()
+                .map_err(TryFromEthAbiHeaderError::NextValidatorsHash)?,
+            consensus_hash: value
+                .consensus_hash
+                .to_vec()
+                .try_into()
+                .map_err(TryFromEthAbiHeaderError::ConsensusHash)?,
+            app_hash: value
+                .app_hash
+                .to_vec()
+                .try_into()
+                .map_err(TryFromEthAbiHeaderError::AppHash)?,
+            last_results_hash: value
+                .last_results_hash
+                .to_vec()
+                .try_into()
+                .map_err(TryFromEthAbiHeaderError::LastResultsHash)?,
+            evidence_hash: value
+                .evidence_hash
+                .to_vec()
+                .try_into()
+                .map_err(TryFromEthAbiHeaderError::EvidenceHash)?,
+            proposer_address: value
+                .proposer_address
+                .to_vec()
+                .try_into()
+                .map_err(TryFromEthAbiHeaderError::ProposerAddress)?,
+        })
+    }
 }
