@@ -1377,6 +1377,8 @@ where
         at: Height,
     ) -> impl Future<Output = StateProof<P::Output<Cometbls<C>>>> + '_ {
         async move {
+            let at = light_client.chain().execution_height(at).await;
+
             let ret = light_client
                 .chain
                 .ibc_handler

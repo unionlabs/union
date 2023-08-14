@@ -46,10 +46,14 @@
           runtimeInputs = [ ];
           text =
             ''
-              HANDSHAKE=$1
-              if [[ -z "$HANDSHAKE" ]]; then
-                CHANNEL='
-                  , "channel":{
+              # This account will be the governor and admin of the contract that we instantiate
+              ACCOUNT_ADDRESS="$(${accountAddress})"
+
+              INIT_MESSAGE='{
+                  "default_timeout":300,
+                  "gov_contract": "'"$ACCOUNT_ADDRESS"'",
+                  "allowlist":[],
+                  "channel":{
                     "endpoint":{
                       "port_id": "",
                       "channel_id":"channel-0"
@@ -61,19 +65,7 @@
                     "order":"ORDER_UNORDERED",
                     "version":"ics20-1",
                     "connection_id":"connection-0"
-                  }'
-              else
-                CHANNEL=""
-              fi
-              
-              # This account will be the governor and admin of the contract that we instantiate
-              ACCOUNT_ADDRESS="$(${accountAddress})"
-
-              INIT_MESSAGE='{
-                  "default_timeout":300,
-                  "gov_contract": "'"$ACCOUNT_ADDRESS"'",
-                  "allowlist":[]
-                  '$CHANNEL'
+                  }
                 }'
 
               echo "$INIT_MESSAGE"
@@ -113,6 +105,7 @@
             DEFAULT_EVM_BEACON_RPC_URL="http://localhost:9596"
             DEFAULT_EVM_WS_URL="ws://localhost:8546"
             DEFAULT_UNION_RPC_URL="http://localhost:26657"
+            DEFAULT_UNION_GRPC_URL="http://localhost:9090"
             DEFAULT_UNION_WS_URL="ws://localhost:26657/websocket"
             DEFAULT_PING_PONG_TIMEOUT=1000
 
@@ -124,9 +117,10 @@
             EVM_WS_URL="$DEFAULT_EVM_WS_URL"
             UNION_RPC_URL="$DEFAULT_UNION_RPC_URL"
             UNION_WS_URL="$DEFAULT_UNION_WS_URL"
+            UNION_GRPC_URL="$DEFAULT_UNION_GRPC_URL"
             RELAYER_CONFIG_FILE=""
             UNION_DUMP_PATH=""
-            NO_DEPLOY_EVM=""
+            NO_DEPLOY_CONTRACTS=""
             PING_PONG_MODULE_ADDRESS=""
             PING_PONG_TIMEOUT="$DEFAULT_PING_PONG_TIMEOUT"
 
@@ -142,6 +136,7 @@
                   --evm-beacon-rpc-url         Rpc endpoint for the evm beacon chain. (Default: %s) \n\
                   --evm-ws-url                 Websocket endpoint for the evm execution chain (Default: %s). \n\
                   --union-rpc-url              Rpc endpoint for union (Default: %s). \n\
+                  --union-grpc-url             gRpc endpoint for union (Default: %s). \n\
                   --union-ws-url               Websocket endpoint for union (Default: %s). \n\
                   --relayer-config-file        Path to relayer config file. If not specified and --no-deploy-evm \n\
                                                  is not given, a temp location will be used. If --no-deploy-evm is enabled, \n\
@@ -160,7 +155,7 @@
                     nix run .#setup-demo -- --circuit-path ./  \n\
                   Use a custom relayer config and don't deploy evm contracts: \n\
                     nix run .#setup-demo -- --relayer-config-file ~/.config/relayer/config.json --no-deploy-evm
-              " "$DEFAULT_GALOIS_URL" "$DEFAULT_EVM_BEACON_RPC_URL" "$DEFAULT_EVM_WS_URL" "$DEFAULT_UNION_RPC_URL" "$DEFAULT_UNION_WS_URL" "$DEFAULT_PING_PONG_TIMEOUT"
+              " "$DEFAULT_GALOIS_URL" "$DEFAULT_EVM_BEACON_RPC_URL" "$DEFAULT_EVM_WS_URL" "$DEFAULT_UNION_RPC_URL" "$DEFAULT_UNION_RPC_URL" "$DEFAULT_UNION_WS_URL" "$DEFAULT_PING_PONG_TIMEOUT"
             }
 
             while [[ $# -gt 0 ]]; do
@@ -198,6 +193,11 @@
                   shift
                   shift
                   ;;
+                --union-grpc-url)
+                  UNION_GRPC_URL="$2"
+                  shift
+                  shift
+                  ;;
                 --union-ws-url)
                   UNION_WS_URL="$2"
                   shift
@@ -213,8 +213,8 @@
                   shift
                   shift
                   ;;
-                --no-deploy-evm)
-                  NO_DEPLOY_EVM=1
+                --no-deploy-contracts)
+                  NO_DEPLOY_CONTRACTS=1
                   shift
                   ;;
                 --ping-pong-address)
@@ -238,14 +238,14 @@
               esac
             done
 
-            if [[ -n "$NO_DEPLOY_EVM" ]] && [[ -z "$PING_PONG_MODULE_ADDRESS" ]]; then
+            if [[ -n "$NO_DEPLOY_CONTRACTS" ]] && [[ -z "$PING_PONG_MODULE_ADDRESS" ]]; then
               echo "--ping-pong-address is required when --no-deploy-evm is enabled."
               printHelp
               exit 1
             fi
 
 
-            if [[ -z "$RELAYER_CONFIG_FILE" ]] && [[ -n "$NO_DEPLOY_EVM" ]]; then
+            if [[ -z "$RELAYER_CONFIG_FILE" ]] && [[ -n "$NO_DEPLOY_CONTRACTS" ]]; then
               echo "--relayer-config-file must be specified when --no-deploy-evm is enabled."
               printHelp
               exit 1
@@ -253,6 +253,7 @@
 
             if [[ -z "$RELAYER_CONFIG_FILE" ]]; then
               RELAYER_CONFIG_FILE="$(mktemp -d)/relayer-config.json"
+              echo "+ Created the relayer configuration file: $RELAYER_CONFIG_FILE"
             fi
 
             if [[ -z "$UNION_DUMP_PATH" ]]; then
@@ -351,7 +352,8 @@
                     "ws_url": "'"$UNION_WS_URL"'",
                     "wasm_code_id": "0x'"$WASM_CODE_ID"'",
                     "prover_endpoint": "'"$GALOIS_URL"'",
-                    "dump_path": "'"$UNION_DUMP_PATH"'"
+                    "dump_path": "'"$UNION_DUMP_PATH"'",
+                    "grpc_url": "'"$UNION_GRPC_URL"'"
                   }
                 }              }' | jq > "$RELAYER_CONFIG_FILE"
 
@@ -359,7 +361,7 @@
             }
 
             instantiateCw20Ics20() {
-              ${instantiateCw20Ics20}/bin/instantiate-cw20-ics20 "$HANDSHAKE"
+              ${instantiateCw20Ics20}/bin/instantiate-cw20-ics20
             }
 
             instantiatePingPong() {
@@ -418,7 +420,20 @@
               echo "+ Initial connection and channels are ready."
             }
 
+            setIcs20Operator() {
+                echo ------------------------------------------------------------
+                echo "+ Setting up the operator contract for ICS20 transfer"
+                RUST_LOG=relayer=info ${self'.packages.relayer}/bin/relayer \
+                  --config-file-path "$RELAYER_CONFIG_FILE" \
+                  setup set-operator \
+                  --on ethereum-devnet
+                echo "+ ICS20 transfer operator is set."
+            }
+ 
             doHandshake() {
+                from_version="$1"
+                to_version="$2"
+
                 echo ------------------------------------------------------------
                 echo "+ Doing connection and channel handshakes.."
                 echo RUST_LOG=relayer=info ${self'.packages.relayer}/bin/relayer \
@@ -450,9 +465,11 @@
                   --to-chain union-devnet \
                   --to-connection connection-1 \
                   --to-port "wasm.$PING_PONG_ADDRESS" \
+                  --to-version "$to_version" \
                   --from-chain ethereum-devnet \
                   --from-connection connection-1 \
-                  --from-port "ping-pong"
+                  --from-port "ping-pong" \
+                  --from-version "$from_version"
             }
 
             printIBCSetupInfo() {
@@ -475,14 +492,14 @@
             downloadGaloisCircuits
             ethAliveTest
             unionAliveTest
-            instantiateCw20Ics20
-            sleep 6
-            instantiatePingPong
 
-            if [[ -z "$NO_DEPLOY_EVM" ]]; then
+            if [[ -z "$NO_DEPLOY_CONTRACTS" ]]; then
+              instantiateCw20Ics20
+              sleep 6
+              instantiatePingPong
               deployEVMContracts
             else
-              echo "Won't be deploying the evm contracts since --no-deploy-evm is on."
+              echo "--no-deploy-contracts is specified, assuming contracts on both sides are ready."
             fi
 
             # Relayer requires the scheme to be included (http(s)) but galoisd returns an error when
@@ -506,6 +523,7 @@
             fi;
 
             setupInitialChannel "$ICS20_TRANSFER_BANK_ADDRESS" transfer "wasm.$CW20_ADDRESS" channel-0
+            setIcs20Operator
             if [[ -z "$HANDSHAKE" ]]; then
               PING_PONG_CONNECTION="connection-0"
               setupInitialChannel "$PING_PONG_MODULE_ADDRESS" ping-pong "wasm.$PING_PONG_ADDRESS" channel-1
@@ -518,7 +536,7 @@
               # Since we already embedded connection-0 to the genesis, if we manually do the handshake,
               # the connection is going to be connection-1
               PING_PONG_CONNECTION="connection-1"
-              doHandshake
+              doHandshake "ucs00-pingpong-1" "ucs00-pingpong-1"
             fi
 
             echo "--------------------------------"
@@ -548,7 +566,8 @@
               "channel-1" \
               "wasm.$PING_PONG_ADDRESS"
 
-            echo "+ Run the following command for running relaying the packets:"
+            echo "----------------------------------------------------------------"
+            echo "+ Run the relayer to relay the packets with the following command:"
 
             echo RUST_LOG=relayer=info ${self'.packages.relayer}/bin/relayer \
               --config-file-path "$RELAYER_CONFIG_FILE" \

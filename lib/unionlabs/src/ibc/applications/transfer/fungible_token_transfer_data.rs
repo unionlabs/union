@@ -1,6 +1,8 @@
 use std::num::ParseIntError;
 
-use crate::{EthAbi, Proto, TypeUrl};
+#[cfg(feature = "ethabi")]
+use crate::EthAbi;
+use crate::{Proto, TypeUrl};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct FungibleTokenPacketData {

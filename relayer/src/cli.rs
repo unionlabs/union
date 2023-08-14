@@ -274,6 +274,8 @@ pub enum ChannelCmd {
         from_connection: String,
         #[arg(long)]
         from_port: String,
+        #[arg(long)]
+        from_version: String,
 
         #[arg(long)]
         to_chain: String,
@@ -281,6 +283,8 @@ pub enum ChannelCmd {
         to_connection: String,
         #[arg(long)]
         to_port: String,
+        #[arg(long)]
+        to_version: String,
     },
 }
 

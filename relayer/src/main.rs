@@ -220,9 +220,11 @@ async fn do_main(args: cli::AppArgs) -> Result<(), anyhow::Error> {
                 from_chain: from_chain_name,
                 from_connection,
                 from_port,
+                from_version,
                 to_chain: to_chain_name,
                 to_connection,
                 to_port,
+                to_version,
             } => {
                 let from_chain = relayer_config.get_chain(&from_chain_name).await.unwrap();
                 let to_chain = relayer_config.get_chain(&to_chain_name).await.unwrap();
@@ -234,9 +236,11 @@ async fn do_main(args: cli::AppArgs) -> Result<(), anyhow::Error> {
                             &union,
                             from_connection,
                             from_port,
+                            from_version,
                             &evm,
                             to_connection,
                             to_port,
+                            to_version,
                         )
                         .await?;
                     }
@@ -245,9 +249,11 @@ async fn do_main(args: cli::AppArgs) -> Result<(), anyhow::Error> {
                             &union,
                             from_connection,
                             from_port,
+                            from_version,
                             &evm,
                             to_connection,
                             to_port,
+                            to_version,
                         )
                         .await?;
                     }
@@ -258,9 +264,11 @@ async fn do_main(args: cli::AppArgs) -> Result<(), anyhow::Error> {
                             &evm,
                             from_connection,
                             from_port,
+                            from_version,
                             &union,
                             to_connection,
                             to_port,
+                            to_version,
                         )
                         .await?;
                     }
@@ -269,9 +277,11 @@ async fn do_main(args: cli::AppArgs) -> Result<(), anyhow::Error> {
                             &evm,
                             from_connection,
                             from_port,
+                            from_version,
                             &union,
                             to_connection,
                             to_port,
+                            to_version,
                         )
                         .await?;
                     }
@@ -823,9 +833,11 @@ async fn channel_handshake<FromChain, ToChain>(
     from: &FromChain,
     from_connection_id: String,
     from_port_id: String,
+    from_version: String,
     to: &ToChain,
     to_connection_id: String,
     to_port_id: String,
+    to_version: String,
 ) -> Result<(String, String), anyhow::Error>
 where
     FromChain: ChainConnection<ToChain>,
@@ -843,6 +855,8 @@ where
         to_connection_id,
         from_port_id,
         to_port_id,
+        from_version,
+        to_version,
     )
     .await)
 }
@@ -854,6 +868,8 @@ async fn do_channel_handshake<L2, L1>(
     ethereum_connection_id: String,
     cometbls_port_id: String,
     ethereum_port_id: String,
+    cometbls_channel_version: String,
+    ethereum_channel_version: String,
 ) -> (String, String)
 where
     L2: Connect<L1>,
@@ -902,7 +918,7 @@ where
                     channel_id: String::new(),
                 },
                 connection_hops: vec![cometbls_connection_id.clone()],
-                version: CHANNEL_VERSION.to_string(),
+                version: cometbls_channel_version.clone()
             },
         })
         .await;
@@ -946,9 +962,9 @@ where
                     channel_id: cometbls_channel_id.clone(),
                 },
                 connection_hops: vec![ethereum_connection_id.clone()],
-                version: CHANNEL_VERSION.to_string(),
+                version: ethereum_channel_version.clone(),
             },
-            counterparty_version: CHANNEL_VERSION.to_string(),
+            counterparty_version: cometbls_channel_version.clone(),
             proof_init: proof.proof,
             proof_height: proof.proof_height,
         })
@@ -994,7 +1010,7 @@ where
             port_id: cometbls_port_id.clone(),
             channel_id: cometbls_channel_id.clone(),
             counterparty_channel_id: ethereum_channel_id.clone(),
-            counterparty_version: CHANNEL_VERSION.to_string(),
+            counterparty_version: ethereum_channel_version.clone(),
             proof_try: proof.proof,
             proof_height: ethereum_update_to,
         })
