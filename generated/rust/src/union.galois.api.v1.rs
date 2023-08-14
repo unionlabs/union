@@ -132,5 +132,5 @@ pub struct QueryStatsResponse {
     #[prost(message, optional, tag = "4")]
     pub commitment_stats: ::core::option::Option<CommitmentStats>,
 }
-include!("union.prover.api.v1.tonic.rs");
+include!("union.galois.api.v1.tonic.rs");
 // @@protoc_insertion_point(module)

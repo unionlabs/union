@@ -81,7 +81,7 @@ pub mod union_prover_api_client {
             })?;
             let codec = tonic::codec::ProstCodec::default();
             let path =
-                http::uri::PathAndQuery::from_static("/union.prover.api.v1.UnionProverAPI/Prove");
+                http::uri::PathAndQuery::from_static("/union.galois.api.v1.UnionProverAPI/Prove");
             self.inner.unary(request.into_request(), path, codec).await
         }
         ///
@@ -97,7 +97,7 @@ pub mod union_prover_api_client {
             })?;
             let codec = tonic::codec::ProstCodec::default();
             let path =
-                http::uri::PathAndQuery::from_static("/union.prover.api.v1.UnionProverAPI/Verify");
+                http::uri::PathAndQuery::from_static("/union.galois.api.v1.UnionProverAPI/Verify");
             self.inner.unary(request.into_request(), path, codec).await
         }
         ///
@@ -113,7 +113,7 @@ pub mod union_prover_api_client {
             })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
-                "/union.prover.api.v1.UnionProverAPI/GenerateContract",
+                "/union.galois.api.v1.UnionProverAPI/GenerateContract",
             );
             self.inner.unary(request.into_request(), path, codec).await
         }
@@ -130,7 +130,7 @@ pub mod union_prover_api_client {
             })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
-                "/union.prover.api.v1.UnionProverAPI/QueryStats",
+                "/union.galois.api.v1.UnionProverAPI/QueryStats",
             );
             self.inner.unary(request.into_request(), path, codec).await
         }
@@ -219,7 +219,7 @@ pub mod union_prover_api_server {
         fn call(&mut self, req: http::Request<B>) -> Self::Future {
             let inner = self.inner.clone();
             match req.uri().path() {
-                "/union.prover.api.v1.UnionProverAPI/Prove" => {
+                "/union.galois.api.v1.UnionProverAPI/Prove" => {
                     #[allow(non_camel_case_types)]
                     struct ProveSvc<T: UnionProverApi>(pub Arc<T>);
                     impl<T: UnionProverApi> tonic::server::UnaryService<super::ProveRequest> for ProveSvc<T> {
@@ -250,7 +250,7 @@ pub mod union_prover_api_server {
                     };
                     Box::pin(fut)
                 }
-                "/union.prover.api.v1.UnionProverAPI/Verify" => {
+                "/union.galois.api.v1.UnionProverAPI/Verify" => {
                     #[allow(non_camel_case_types)]
                     struct VerifySvc<T: UnionProverApi>(pub Arc<T>);
                     impl<T: UnionProverApi> tonic::server::UnaryService<super::VerifyRequest> for VerifySvc<T> {
@@ -281,7 +281,7 @@ pub mod union_prover_api_server {
                     };
                     Box::pin(fut)
                 }
-                "/union.prover.api.v1.UnionProverAPI/GenerateContract" => {
+                "/union.galois.api.v1.UnionProverAPI/GenerateContract" => {
                     #[allow(non_camel_case_types)]
                     struct GenerateContractSvc<T: UnionProverApi>(pub Arc<T>);
                     impl<T: UnionProverApi>
@@ -315,7 +315,7 @@ pub mod union_prover_api_server {
                     };
                     Box::pin(fut)
                 }
-                "/union.prover.api.v1.UnionProverAPI/QueryStats" => {
+                "/union.galois.api.v1.UnionProverAPI/QueryStats" => {
                     #[allow(non_camel_case_types)]
                     struct QueryStatsSvc<T: UnionProverApi>(pub Arc<T>);
                     impl<T: UnionProverApi> tonic::server::UnaryService<super::QueryStatsRequest> for QueryStatsSvc<T> {
@@ -378,6 +378,6 @@ pub mod union_prover_api_server {
         }
     }
     impl<T: UnionProverApi> tonic::server::NamedService for UnionProverApiServer<T> {
-        const NAME: &'static str = "union.prover.api.v1.UnionProverAPI";
+        const NAME: &'static str = "union.galois.api.v1.UnionProverAPI";
     }
 }

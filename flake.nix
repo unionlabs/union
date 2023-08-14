@@ -149,6 +149,7 @@
                   name = "cosmos-sdk";
                   url = "git@github.com:unionlabs/cosmos-sdk";
                   rev = "b437ae728cc04212eb815975cef4fa4de53ffdbf";
+                  allRefs = true;
                 };
                 ibcgo = mkUnpack {
                   name = "ibc-go";

@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.3.0
 // - protoc             v3.21.12
-// source: api/v1/prover.proto
+// source: api/v1/galois.proto
 
 package grpc
 
@@ -19,10 +19,10 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	UnionProverAPI_Prove_FullMethodName            = "/union.prover.api.v1.UnionProverAPI/Prove"
-	UnionProverAPI_Verify_FullMethodName           = "/union.prover.api.v1.UnionProverAPI/Verify"
-	UnionProverAPI_GenerateContract_FullMethodName = "/union.prover.api.v1.UnionProverAPI/GenerateContract"
-	UnionProverAPI_QueryStats_FullMethodName       = "/union.prover.api.v1.UnionProverAPI/QueryStats"
+	UnionProverAPI_Prove_FullMethodName            = "/union.galois.api.v1.UnionProverAPI/Prove"
+	UnionProverAPI_Verify_FullMethodName           = "/union.galois.api.v1.UnionProverAPI/Verify"
+	UnionProverAPI_GenerateContract_FullMethodName = "/union.galois.api.v1.UnionProverAPI/GenerateContract"
+	UnionProverAPI_QueryStats_FullMethodName       = "/union.galois.api.v1.UnionProverAPI/QueryStats"
 )
 
 // UnionProverAPIClient is the client API for UnionProverAPI service.
@@ -195,7 +195,7 @@ func _UnionProverAPI_QueryStats_Handler(srv interface{}, ctx context.Context, de
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var UnionProverAPI_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "union.prover.api.v1.UnionProverAPI",
+	ServiceName: "union.galois.api.v1.UnionProverAPI",
 	HandlerType: (*UnionProverAPIServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
@@ -216,5 +216,5 @@ var UnionProverAPI_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "api/v1/prover.proto",
+	Metadata: "api/v1/galois.proto",
 }
