@@ -61,7 +61,7 @@ use crate::{
     chain::{
         dumper::Dumper,
         events::{
-            ChannelOpenInit, ChannelOpenTry, ConnectionOpenInit, ConnectionOpenTry, RecvPacket,
+            ChannelOpenInit, ChannelOpenTry, ConnectionOpenInit, ConnectionOpenTry, SendPacket,
         },
         evm::{Cometbls, Evm},
         proof::{
@@ -480,8 +480,8 @@ impl Chain for Union {
                     tracing::info!(?event.data);
                     match event.data {
                         EventData::Tx { tx_result } => {
-                            let recv_packet =
-                                get_event_from_tx_response::<RecvPacket>(tx_result.result.events)?;
+                            let send_packet =
+                                get_event_from_tx_response::<SendPacket>(tx_result.result.events)?;
 
                             let event_height = {
                                 let height = tx_result.height.try_into().unwrap();
@@ -494,17 +494,17 @@ impl Chain for Union {
                             Some((
                                 event_height,
                                 Packet {
-                                    sequence: recv_packet.packet_sequence.parse().unwrap(),
-                                    source_port: recv_packet.packet_src_port,
-                                    source_channel: recv_packet.packet_src_channel,
-                                    destination_port: recv_packet.packet_dst_port,
-                                    destination_channel: recv_packet.packet_dst_channel,
-                                    data: hex::decode(recv_packet.packet_data_hex).unwrap(),
-                                    timeout_height: recv_packet
+                                    sequence: send_packet.packet_sequence.parse().unwrap(),
+                                    source_port: send_packet.packet_src_port,
+                                    source_channel: send_packet.packet_src_channel,
+                                    destination_port: send_packet.packet_dst_port,
+                                    destination_channel: send_packet.packet_dst_channel,
+                                    data: hex::decode(send_packet.packet_data_hex).unwrap(),
+                                    timeout_height: send_packet
                                         .packet_timeout_height
                                         .parse()
                                         .unwrap(),
-                                    timeout_timestamp: recv_packet
+                                    timeout_timestamp: send_packet
                                         .packet_timeout_timestamp
                                         .parse()
                                         .unwrap(),
@@ -536,8 +536,8 @@ impl Chain for Union {
 
                 if let Some(txs_results) = block_results.txs_results {
                     for tx_result in txs_results {
-                        if let Some(recv_packet) =
-                            get_event_from_tx_response::<RecvPacket>(tx_result.events)
+                        if let Some(send_packet) =
+                            get_event_from_tx_response::<SendPacket>(tx_result.events)
                         {
                             let event_height = self.make_height(height);
 
@@ -545,17 +545,17 @@ impl Chain for Union {
                                 .send((
                                     event_height,
                                     Packet {
-                                        sequence: recv_packet.packet_sequence.parse().unwrap(),
-                                        source_port: recv_packet.packet_src_port,
-                                        source_channel: recv_packet.packet_src_channel,
-                                        destination_port: recv_packet.packet_dst_port,
-                                        destination_channel: recv_packet.packet_dst_channel,
-                                        data: hex::decode(recv_packet.packet_data_hex).unwrap(),
-                                        timeout_height: recv_packet
+                                        sequence: send_packet.packet_sequence.parse().unwrap(),
+                                        source_port: send_packet.packet_src_port,
+                                        source_channel: send_packet.packet_src_channel,
+                                        destination_port: send_packet.packet_dst_port,
+                                        destination_channel: send_packet.packet_dst_channel,
+                                        data: hex::decode(send_packet.packet_data_hex).unwrap(),
+                                        timeout_height: send_packet
                                             .packet_timeout_height
                                             .parse()
                                             .unwrap(),
-                                        timeout_timestamp: recv_packet
+                                        timeout_timestamp: send_packet
                                             .packet_timeout_timestamp
                                             .parse()
                                             .unwrap(),

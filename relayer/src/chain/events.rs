@@ -218,6 +218,24 @@ event! {
         pub connection_id: String,
     }
 
+    #[tag("send_packet")]
+    pub struct SendPacket {
+        #[deprecated = "this is stringified bytes which may not be valid utf8"]
+        pub packet_data: String,
+        pub packet_data_hex: String,
+        pub packet_timeout_height: String,
+        pub packet_timeout_timestamp: String,
+        pub packet_sequence: String,
+        pub packet_src_port: String,
+        pub packet_src_channel: String,
+        pub packet_dst_port: String,
+        pub packet_dst_channel: String,
+        pub packet_channel_ordering: String,
+        #[deprecated = "use connection_id"]
+        pub packet_connection: String,
+        pub connection_id: String,
+    }
+
     #[tag("acknowledge_packet")]
     pub struct AcknowledgePacket {
         pub packet_timeout_height: String,
