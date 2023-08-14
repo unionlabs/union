@@ -14,7 +14,7 @@ use protos::{
     },
     google,
     ibc::core::{client::v1 as client_v1, commitment::v1 as commitment_v1},
-    union::prover::api::v1::{union_prover_api_client, ProveRequest},
+    union::galois::api::v1::{union_prover_api_client, ProveRequest},
 };
 use sha2::Digest;
 use tendermint_rpc::{
@@ -961,7 +961,7 @@ impl<C: ChainSpec> Connect<Cometbls<C>> for Ethereum<C> {
             }
 
             let validators_trusted_commit =
-                Some(protos::union::prover::api::v1::ValidatorSetCommit {
+                Some(protos::union::galois::api::v1::ValidatorSetCommit {
                     validators: simple_validators.into_iter().map(Into::into).collect(),
                     signatures,
                     bitmap: bitmap.to_bytes_be(),

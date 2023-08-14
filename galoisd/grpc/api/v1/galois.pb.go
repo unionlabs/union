@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.29.1
 // 	protoc        v3.21.12
-// source: api/v1/prover.proto
+// source: api/v1/galois.proto
 
 package grpc
 
@@ -32,7 +32,7 @@ type FrElement struct {
 func (x *FrElement) Reset() {
 	*x = FrElement{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_api_v1_prover_proto_msgTypes[0]
+		mi := &file_api_v1_galois_proto_msgTypes[0]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -45,7 +45,7 @@ func (x *FrElement) String() string {
 func (*FrElement) ProtoMessage() {}
 
 func (x *FrElement) ProtoReflect() protoreflect.Message {
-	mi := &file_api_v1_prover_proto_msgTypes[0]
+	mi := &file_api_v1_galois_proto_msgTypes[0]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -58,7 +58,7 @@ func (x *FrElement) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FrElement.ProtoReflect.Descriptor instead.
 func (*FrElement) Descriptor() ([]byte, []int) {
-	return file_api_v1_prover_proto_rawDescGZIP(), []int{0}
+	return file_api_v1_galois_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *FrElement) GetValue() []byte {
@@ -82,7 +82,7 @@ type ZeroKnowledgeProof struct {
 func (x *ZeroKnowledgeProof) Reset() {
 	*x = ZeroKnowledgeProof{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_api_v1_prover_proto_msgTypes[1]
+		mi := &file_api_v1_galois_proto_msgTypes[1]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -95,7 +95,7 @@ func (x *ZeroKnowledgeProof) String() string {
 func (*ZeroKnowledgeProof) ProtoMessage() {}
 
 func (x *ZeroKnowledgeProof) ProtoReflect() protoreflect.Message {
-	mi := &file_api_v1_prover_proto_msgTypes[1]
+	mi := &file_api_v1_galois_proto_msgTypes[1]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -108,7 +108,7 @@ func (x *ZeroKnowledgeProof) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ZeroKnowledgeProof.ProtoReflect.Descriptor instead.
 func (*ZeroKnowledgeProof) Descriptor() ([]byte, []int) {
-	return file_api_v1_prover_proto_rawDescGZIP(), []int{1}
+	return file_api_v1_galois_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *ZeroKnowledgeProof) GetContent() []byte {
@@ -152,7 +152,7 @@ type ValidatorSetCommit struct {
 func (x *ValidatorSetCommit) Reset() {
 	*x = ValidatorSetCommit{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_api_v1_prover_proto_msgTypes[2]
+		mi := &file_api_v1_galois_proto_msgTypes[2]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -165,7 +165,7 @@ func (x *ValidatorSetCommit) String() string {
 func (*ValidatorSetCommit) ProtoMessage() {}
 
 func (x *ValidatorSetCommit) ProtoReflect() protoreflect.Message {
-	mi := &file_api_v1_prover_proto_msgTypes[2]
+	mi := &file_api_v1_galois_proto_msgTypes[2]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -178,7 +178,7 @@ func (x *ValidatorSetCommit) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ValidatorSetCommit.ProtoReflect.Descriptor instead.
 func (*ValidatorSetCommit) Descriptor() ([]byte, []int) {
-	return file_api_v1_prover_proto_rawDescGZIP(), []int{2}
+	return file_api_v1_galois_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *ValidatorSetCommit) GetValidators() []*types.SimpleValidator {
@@ -215,7 +215,7 @@ type ProveRequest struct {
 func (x *ProveRequest) Reset() {
 	*x = ProveRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_api_v1_prover_proto_msgTypes[3]
+		mi := &file_api_v1_galois_proto_msgTypes[3]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -228,7 +228,7 @@ func (x *ProveRequest) String() string {
 func (*ProveRequest) ProtoMessage() {}
 
 func (x *ProveRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_v1_prover_proto_msgTypes[3]
+	mi := &file_api_v1_galois_proto_msgTypes[3]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -241,7 +241,7 @@ func (x *ProveRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ProveRequest.ProtoReflect.Descriptor instead.
 func (*ProveRequest) Descriptor() ([]byte, []int) {
-	return file_api_v1_prover_proto_rawDescGZIP(), []int{3}
+	return file_api_v1_galois_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *ProveRequest) GetVote() *types.CanonicalVote {
@@ -278,7 +278,7 @@ type ProveResponse struct {
 func (x *ProveResponse) Reset() {
 	*x = ProveResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_api_v1_prover_proto_msgTypes[4]
+		mi := &file_api_v1_galois_proto_msgTypes[4]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -291,7 +291,7 @@ func (x *ProveResponse) String() string {
 func (*ProveResponse) ProtoMessage() {}
 
 func (x *ProveResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_v1_prover_proto_msgTypes[4]
+	mi := &file_api_v1_galois_proto_msgTypes[4]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -304,7 +304,7 @@ func (x *ProveResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ProveResponse.ProtoReflect.Descriptor instead.
 func (*ProveResponse) Descriptor() ([]byte, []int) {
-	return file_api_v1_prover_proto_rawDescGZIP(), []int{4}
+	return file_api_v1_galois_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *ProveResponse) GetProof() *ZeroKnowledgeProof {
@@ -343,7 +343,7 @@ type VerifyRequest struct {
 func (x *VerifyRequest) Reset() {
 	*x = VerifyRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_api_v1_prover_proto_msgTypes[5]
+		mi := &file_api_v1_galois_proto_msgTypes[5]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -356,7 +356,7 @@ func (x *VerifyRequest) String() string {
 func (*VerifyRequest) ProtoMessage() {}
 
 func (x *VerifyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_v1_prover_proto_msgTypes[5]
+	mi := &file_api_v1_galois_proto_msgTypes[5]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -369,7 +369,7 @@ func (x *VerifyRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use VerifyRequest.ProtoReflect.Descriptor instead.
 func (*VerifyRequest) Descriptor() ([]byte, []int) {
-	return file_api_v1_prover_proto_rawDescGZIP(), []int{5}
+	return file_api_v1_galois_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *VerifyRequest) GetProof() *ZeroKnowledgeProof {
@@ -418,7 +418,7 @@ type VerifyResponse struct {
 func (x *VerifyResponse) Reset() {
 	*x = VerifyResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_api_v1_prover_proto_msgTypes[6]
+		mi := &file_api_v1_galois_proto_msgTypes[6]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -431,7 +431,7 @@ func (x *VerifyResponse) String() string {
 func (*VerifyResponse) ProtoMessage() {}
 
 func (x *VerifyResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_v1_prover_proto_msgTypes[6]
+	mi := &file_api_v1_galois_proto_msgTypes[6]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -444,7 +444,7 @@ func (x *VerifyResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use VerifyResponse.ProtoReflect.Descriptor instead.
 func (*VerifyResponse) Descriptor() ([]byte, []int) {
-	return file_api_v1_prover_proto_rawDescGZIP(), []int{6}
+	return file_api_v1_galois_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *VerifyResponse) GetValid() bool {
@@ -463,7 +463,7 @@ type GenerateContractRequest struct {
 func (x *GenerateContractRequest) Reset() {
 	*x = GenerateContractRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_api_v1_prover_proto_msgTypes[7]
+		mi := &file_api_v1_galois_proto_msgTypes[7]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -476,7 +476,7 @@ func (x *GenerateContractRequest) String() string {
 func (*GenerateContractRequest) ProtoMessage() {}
 
 func (x *GenerateContractRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_v1_prover_proto_msgTypes[7]
+	mi := &file_api_v1_galois_proto_msgTypes[7]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -489,7 +489,7 @@ func (x *GenerateContractRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GenerateContractRequest.ProtoReflect.Descriptor instead.
 func (*GenerateContractRequest) Descriptor() ([]byte, []int) {
-	return file_api_v1_prover_proto_rawDescGZIP(), []int{7}
+	return file_api_v1_galois_proto_rawDescGZIP(), []int{7}
 }
 
 type GenerateContractResponse struct {
@@ -503,7 +503,7 @@ type GenerateContractResponse struct {
 func (x *GenerateContractResponse) Reset() {
 	*x = GenerateContractResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_api_v1_prover_proto_msgTypes[8]
+		mi := &file_api_v1_galois_proto_msgTypes[8]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -516,7 +516,7 @@ func (x *GenerateContractResponse) String() string {
 func (*GenerateContractResponse) ProtoMessage() {}
 
 func (x *GenerateContractResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_v1_prover_proto_msgTypes[8]
+	mi := &file_api_v1_galois_proto_msgTypes[8]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -529,7 +529,7 @@ func (x *GenerateContractResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GenerateContractResponse.ProtoReflect.Descriptor instead.
 func (*GenerateContractResponse) Descriptor() ([]byte, []int) {
-	return file_api_v1_prover_proto_rawDescGZIP(), []int{8}
+	return file_api_v1_galois_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *GenerateContractResponse) GetContent() []byte {
@@ -548,7 +548,7 @@ type QueryStatsRequest struct {
 func (x *QueryStatsRequest) Reset() {
 	*x = QueryStatsRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_api_v1_prover_proto_msgTypes[9]
+		mi := &file_api_v1_galois_proto_msgTypes[9]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -561,7 +561,7 @@ func (x *QueryStatsRequest) String() string {
 func (*QueryStatsRequest) ProtoMessage() {}
 
 func (x *QueryStatsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_v1_prover_proto_msgTypes[9]
+	mi := &file_api_v1_galois_proto_msgTypes[9]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -574,7 +574,7 @@ func (x *QueryStatsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use QueryStatsRequest.ProtoReflect.Descriptor instead.
 func (*QueryStatsRequest) Descriptor() ([]byte, []int) {
-	return file_api_v1_prover_proto_rawDescGZIP(), []int{9}
+	return file_api_v1_galois_proto_rawDescGZIP(), []int{9}
 }
 
 type VariableStats struct {
@@ -592,7 +592,7 @@ type VariableStats struct {
 func (x *VariableStats) Reset() {
 	*x = VariableStats{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_api_v1_prover_proto_msgTypes[10]
+		mi := &file_api_v1_galois_proto_msgTypes[10]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -605,7 +605,7 @@ func (x *VariableStats) String() string {
 func (*VariableStats) ProtoMessage() {}
 
 func (x *VariableStats) ProtoReflect() protoreflect.Message {
-	mi := &file_api_v1_prover_proto_msgTypes[10]
+	mi := &file_api_v1_galois_proto_msgTypes[10]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -618,7 +618,7 @@ func (x *VariableStats) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use VariableStats.ProtoReflect.Descriptor instead.
 func (*VariableStats) Descriptor() ([]byte, []int) {
-	return file_api_v1_prover_proto_rawDescGZIP(), []int{10}
+	return file_api_v1_galois_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *VariableStats) GetNbInternalVariables() uint32 {
@@ -668,7 +668,7 @@ type ProvingKeyStats struct {
 func (x *ProvingKeyStats) Reset() {
 	*x = ProvingKeyStats{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_api_v1_prover_proto_msgTypes[11]
+		mi := &file_api_v1_galois_proto_msgTypes[11]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -681,7 +681,7 @@ func (x *ProvingKeyStats) String() string {
 func (*ProvingKeyStats) ProtoMessage() {}
 
 func (x *ProvingKeyStats) ProtoReflect() protoreflect.Message {
-	mi := &file_api_v1_prover_proto_msgTypes[11]
+	mi := &file_api_v1_galois_proto_msgTypes[11]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -694,7 +694,7 @@ func (x *ProvingKeyStats) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ProvingKeyStats.ProtoReflect.Descriptor instead.
 func (*ProvingKeyStats) Descriptor() ([]byte, []int) {
-	return file_api_v1_prover_proto_rawDescGZIP(), []int{11}
+	return file_api_v1_galois_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *ProvingKeyStats) GetNbG1() uint32 {
@@ -724,7 +724,7 @@ type VerifyingKeyStats struct {
 func (x *VerifyingKeyStats) Reset() {
 	*x = VerifyingKeyStats{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_api_v1_prover_proto_msgTypes[12]
+		mi := &file_api_v1_galois_proto_msgTypes[12]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -737,7 +737,7 @@ func (x *VerifyingKeyStats) String() string {
 func (*VerifyingKeyStats) ProtoMessage() {}
 
 func (x *VerifyingKeyStats) ProtoReflect() protoreflect.Message {
-	mi := &file_api_v1_prover_proto_msgTypes[12]
+	mi := &file_api_v1_galois_proto_msgTypes[12]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -750,7 +750,7 @@ func (x *VerifyingKeyStats) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use VerifyingKeyStats.ProtoReflect.Descriptor instead.
 func (*VerifyingKeyStats) Descriptor() ([]byte, []int) {
-	return file_api_v1_prover_proto_rawDescGZIP(), []int{12}
+	return file_api_v1_galois_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *VerifyingKeyStats) GetNbG1() uint32 {
@@ -786,7 +786,7 @@ type CommitmentStats struct {
 func (x *CommitmentStats) Reset() {
 	*x = CommitmentStats{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_api_v1_prover_proto_msgTypes[13]
+		mi := &file_api_v1_galois_proto_msgTypes[13]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -799,7 +799,7 @@ func (x *CommitmentStats) String() string {
 func (*CommitmentStats) ProtoMessage() {}
 
 func (x *CommitmentStats) ProtoReflect() protoreflect.Message {
-	mi := &file_api_v1_prover_proto_msgTypes[13]
+	mi := &file_api_v1_galois_proto_msgTypes[13]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -812,7 +812,7 @@ func (x *CommitmentStats) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CommitmentStats.ProtoReflect.Descriptor instead.
 func (*CommitmentStats) Descriptor() ([]byte, []int) {
-	return file_api_v1_prover_proto_rawDescGZIP(), []int{13}
+	return file_api_v1_galois_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *CommitmentStats) GetNbPublicCommitted() uint32 {
@@ -843,7 +843,7 @@ type QueryStatsResponse struct {
 func (x *QueryStatsResponse) Reset() {
 	*x = QueryStatsResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_api_v1_prover_proto_msgTypes[14]
+		mi := &file_api_v1_galois_proto_msgTypes[14]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -856,7 +856,7 @@ func (x *QueryStatsResponse) String() string {
 func (*QueryStatsResponse) ProtoMessage() {}
 
 func (x *QueryStatsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_v1_prover_proto_msgTypes[14]
+	mi := &file_api_v1_galois_proto_msgTypes[14]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -869,7 +869,7 @@ func (x *QueryStatsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use QueryStatsResponse.ProtoReflect.Descriptor instead.
 func (*QueryStatsResponse) Descriptor() ([]byte, []int) {
-	return file_api_v1_prover_proto_rawDescGZIP(), []int{14}
+	return file_api_v1_galois_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *QueryStatsResponse) GetVariableStats() *VariableStats {
@@ -900,12 +900,12 @@ func (x *QueryStatsResponse) GetCommitmentStats() *CommitmentStats {
 	return nil
 }
 
-var File_api_v1_prover_proto protoreflect.FileDescriptor
+var File_api_v1_galois_proto protoreflect.FileDescriptor
 
-var file_api_v1_prover_proto_rawDesc = []byte{
-	0x0a, 0x13, 0x61, 0x70, 0x69, 0x2f, 0x76, 0x31, 0x2f, 0x70, 0x72, 0x6f, 0x76, 0x65, 0x72, 0x2e,
-	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x12, 0x13, 0x75, 0x6e, 0x69, 0x6f, 0x6e, 0x2e, 0x70, 0x72, 0x6f,
-	0x76, 0x65, 0x72, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x76, 0x31, 0x1a, 0x20, 0x74, 0x65, 0x6e, 0x64,
+var file_api_v1_galois_proto_rawDesc = []byte{
+	0x0a, 0x13, 0x61, 0x70, 0x69, 0x2f, 0x76, 0x31, 0x2f, 0x67, 0x61, 0x6c, 0x6f, 0x69, 0x73, 0x2e,
+	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x12, 0x13, 0x75, 0x6e, 0x69, 0x6f, 0x6e, 0x2e, 0x67, 0x61, 0x6c,
+	0x6f, 0x69, 0x73, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x76, 0x31, 0x1a, 0x20, 0x74, 0x65, 0x6e, 0x64,
 	0x65, 0x72, 0x6d, 0x69, 0x6e, 0x74, 0x2f, 0x74, 0x79, 0x70, 0x65, 0x73, 0x2f, 0x76, 0x61, 0x6c,
 	0x69, 0x64, 0x61, 0x74, 0x6f, 0x72, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x20, 0x74, 0x65,
 	0x6e, 0x64, 0x65, 0x72, 0x6d, 0x69, 0x6e, 0x74, 0x2f, 0x74, 0x79, 0x70, 0x65, 0x73, 0x2f, 0x63,
@@ -937,18 +937,18 @@ var file_api_v1_prover_proto_rawDesc = []byte{
 	0x74, 0x2e, 0x74, 0x79, 0x70, 0x65, 0x73, 0x2e, 0x43, 0x61, 0x6e, 0x6f, 0x6e, 0x69, 0x63, 0x61,
 	0x6c, 0x56, 0x6f, 0x74, 0x65, 0x52, 0x04, 0x76, 0x6f, 0x74, 0x65, 0x12, 0x4e, 0x0a, 0x0e, 0x74,
 	0x72, 0x75, 0x73, 0x74, 0x65, 0x64, 0x5f, 0x63, 0x6f, 0x6d, 0x6d, 0x69, 0x74, 0x18, 0x02, 0x20,
-	0x01, 0x28, 0x0b, 0x32, 0x27, 0x2e, 0x75, 0x6e, 0x69, 0x6f, 0x6e, 0x2e, 0x70, 0x72, 0x6f, 0x76,
-	0x65, 0x72, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x76, 0x31, 0x2e, 0x56, 0x61, 0x6c, 0x69, 0x64, 0x61,
+	0x01, 0x28, 0x0b, 0x32, 0x27, 0x2e, 0x75, 0x6e, 0x69, 0x6f, 0x6e, 0x2e, 0x67, 0x61, 0x6c, 0x6f,
+	0x69, 0x73, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x76, 0x31, 0x2e, 0x56, 0x61, 0x6c, 0x69, 0x64, 0x61,
 	0x74, 0x6f, 0x72, 0x53, 0x65, 0x74, 0x43, 0x6f, 0x6d, 0x6d, 0x69, 0x74, 0x52, 0x0d, 0x74, 0x72,
 	0x75, 0x73, 0x74, 0x65, 0x64, 0x43, 0x6f, 0x6d, 0x6d, 0x69, 0x74, 0x12, 0x52, 0x0a, 0x10, 0x75,
 	0x6e, 0x74, 0x72, 0x75, 0x73, 0x74, 0x65, 0x64, 0x5f, 0x63, 0x6f, 0x6d, 0x6d, 0x69, 0x74, 0x18,
-	0x03, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x27, 0x2e, 0x75, 0x6e, 0x69, 0x6f, 0x6e, 0x2e, 0x70, 0x72,
-	0x6f, 0x76, 0x65, 0x72, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x76, 0x31, 0x2e, 0x56, 0x61, 0x6c, 0x69,
+	0x03, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x27, 0x2e, 0x75, 0x6e, 0x69, 0x6f, 0x6e, 0x2e, 0x67, 0x61,
+	0x6c, 0x6f, 0x69, 0x73, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x76, 0x31, 0x2e, 0x56, 0x61, 0x6c, 0x69,
 	0x64, 0x61, 0x74, 0x6f, 0x72, 0x53, 0x65, 0x74, 0x43, 0x6f, 0x6d, 0x6d, 0x69, 0x74, 0x52, 0x0f,
 	0x75, 0x6e, 0x74, 0x72, 0x75, 0x73, 0x74, 0x65, 0x64, 0x43, 0x6f, 0x6d, 0x6d, 0x69, 0x74, 0x22,
 	0xcc, 0x01, 0x0a, 0x0d, 0x50, 0x72, 0x6f, 0x76, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73,
 	0x65, 0x12, 0x3d, 0x0a, 0x05, 0x70, 0x72, 0x6f, 0x6f, 0x66, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b,
-	0x32, 0x27, 0x2e, 0x75, 0x6e, 0x69, 0x6f, 0x6e, 0x2e, 0x70, 0x72, 0x6f, 0x76, 0x65, 0x72, 0x2e,
+	0x32, 0x27, 0x2e, 0x75, 0x6e, 0x69, 0x6f, 0x6e, 0x2e, 0x67, 0x61, 0x6c, 0x6f, 0x69, 0x73, 0x2e,
 	0x61, 0x70, 0x69, 0x2e, 0x76, 0x31, 0x2e, 0x5a, 0x65, 0x72, 0x6f, 0x4b, 0x6e, 0x6f, 0x77, 0x6c,
 	0x65, 0x64, 0x67, 0x65, 0x50, 0x72, 0x6f, 0x6f, 0x66, 0x52, 0x05, 0x70, 0x72, 0x6f, 0x6f, 0x66,
 	0x12, 0x3b, 0x0a, 0x1a, 0x74, 0x72, 0x75, 0x73, 0x74, 0x65, 0x64, 0x5f, 0x76, 0x61, 0x6c, 0x69,
@@ -961,7 +961,7 @@ var file_api_v1_prover_proto_rawDesc = []byte{
 	0x6c, 0x69, 0x64, 0x61, 0x74, 0x6f, 0x72, 0x53, 0x65, 0x74, 0x52, 0x6f, 0x6f, 0x74, 0x22, 0xd8,
 	0x02, 0x0a, 0x0d, 0x56, 0x65, 0x72, 0x69, 0x66, 0x79, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74,
 	0x12, 0x3d, 0x0a, 0x05, 0x70, 0x72, 0x6f, 0x6f, 0x66, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32,
-	0x27, 0x2e, 0x75, 0x6e, 0x69, 0x6f, 0x6e, 0x2e, 0x70, 0x72, 0x6f, 0x76, 0x65, 0x72, 0x2e, 0x61,
+	0x27, 0x2e, 0x75, 0x6e, 0x69, 0x6f, 0x6e, 0x2e, 0x67, 0x61, 0x6c, 0x6f, 0x69, 0x73, 0x2e, 0x61,
 	0x70, 0x69, 0x2e, 0x76, 0x31, 0x2e, 0x5a, 0x65, 0x72, 0x6f, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65,
 	0x64, 0x67, 0x65, 0x50, 0x72, 0x6f, 0x6f, 0x66, 0x52, 0x05, 0x70, 0x72, 0x6f, 0x6f, 0x66, 0x12,
 	0x3b, 0x0a, 0x1a, 0x74, 0x72, 0x75, 0x73, 0x74, 0x65, 0x64, 0x5f, 0x76, 0x61, 0x6c, 0x69, 0x64,
@@ -973,12 +973,12 @@ var file_api_v1_prover_proto_rawDesc = []byte{
 	0x28, 0x0c, 0x52, 0x19, 0x75, 0x6e, 0x74, 0x72, 0x75, 0x73, 0x74, 0x65, 0x64, 0x56, 0x61, 0x6c,
 	0x69, 0x64, 0x61, 0x74, 0x6f, 0x72, 0x53, 0x65, 0x74, 0x52, 0x6f, 0x6f, 0x74, 0x12, 0x44, 0x0a,
 	0x0e, 0x62, 0x6c, 0x6f, 0x63, 0x6b, 0x5f, 0x68, 0x65, 0x61, 0x64, 0x65, 0x72, 0x5f, 0x78, 0x18,
-	0x04, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1e, 0x2e, 0x75, 0x6e, 0x69, 0x6f, 0x6e, 0x2e, 0x70, 0x72,
-	0x6f, 0x76, 0x65, 0x72, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x76, 0x31, 0x2e, 0x46, 0x72, 0x45, 0x6c,
+	0x04, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1e, 0x2e, 0x75, 0x6e, 0x69, 0x6f, 0x6e, 0x2e, 0x67, 0x61,
+	0x6c, 0x6f, 0x69, 0x73, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x76, 0x31, 0x2e, 0x46, 0x72, 0x45, 0x6c,
 	0x65, 0x6d, 0x65, 0x6e, 0x74, 0x52, 0x0c, 0x62, 0x6c, 0x6f, 0x63, 0x6b, 0x48, 0x65, 0x61, 0x64,
 	0x65, 0x72, 0x58, 0x12, 0x44, 0x0a, 0x0e, 0x62, 0x6c, 0x6f, 0x63, 0x6b, 0x5f, 0x68, 0x65, 0x61,
 	0x64, 0x65, 0x72, 0x5f, 0x79, 0x18, 0x05, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1e, 0x2e, 0x75, 0x6e,
-	0x69, 0x6f, 0x6e, 0x2e, 0x70, 0x72, 0x6f, 0x76, 0x65, 0x72, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x76,
+	0x69, 0x6f, 0x6e, 0x2e, 0x67, 0x61, 0x6c, 0x6f, 0x69, 0x73, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x76,
 	0x31, 0x2e, 0x46, 0x72, 0x45, 0x6c, 0x65, 0x6d, 0x65, 0x6e, 0x74, 0x52, 0x0c, 0x62, 0x6c, 0x6f,
 	0x63, 0x6b, 0x48, 0x65, 0x61, 0x64, 0x65, 0x72, 0x59, 0x22, 0x26, 0x0a, 0x0e, 0x56, 0x65, 0x72,
 	0x69, 0x66, 0x79, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x14, 0x0a, 0x05, 0x76,
@@ -1026,106 +1026,106 @@ var file_api_v1_prover_proto_rawDesc = []byte{
 	0x75, 0x65, 0x72, 0x79, 0x53, 0x74, 0x61, 0x74, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73,
 	0x65, 0x12, 0x49, 0x0a, 0x0e, 0x76, 0x61, 0x72, 0x69, 0x61, 0x62, 0x6c, 0x65, 0x5f, 0x73, 0x74,
 	0x61, 0x74, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x22, 0x2e, 0x75, 0x6e, 0x69, 0x6f,
-	0x6e, 0x2e, 0x70, 0x72, 0x6f, 0x76, 0x65, 0x72, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x76, 0x31, 0x2e,
+	0x6e, 0x2e, 0x67, 0x61, 0x6c, 0x6f, 0x69, 0x73, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x76, 0x31, 0x2e,
 	0x56, 0x61, 0x72, 0x69, 0x61, 0x62, 0x6c, 0x65, 0x53, 0x74, 0x61, 0x74, 0x73, 0x52, 0x0d, 0x76,
 	0x61, 0x72, 0x69, 0x61, 0x62, 0x6c, 0x65, 0x53, 0x74, 0x61, 0x74, 0x73, 0x12, 0x50, 0x0a, 0x11,
 	0x70, 0x72, 0x6f, 0x76, 0x69, 0x6e, 0x67, 0x5f, 0x6b, 0x65, 0x79, 0x5f, 0x73, 0x74, 0x61, 0x74,
 	0x73, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x24, 0x2e, 0x75, 0x6e, 0x69, 0x6f, 0x6e, 0x2e,
-	0x70, 0x72, 0x6f, 0x76, 0x65, 0x72, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x76, 0x31, 0x2e, 0x50, 0x72,
+	0x67, 0x61, 0x6c, 0x6f, 0x69, 0x73, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x76, 0x31, 0x2e, 0x50, 0x72,
 	0x6f, 0x76, 0x69, 0x6e, 0x67, 0x4b, 0x65, 0x79, 0x53, 0x74, 0x61, 0x74, 0x73, 0x52, 0x0f, 0x70,
 	0x72, 0x6f, 0x76, 0x69, 0x6e, 0x67, 0x4b, 0x65, 0x79, 0x53, 0x74, 0x61, 0x74, 0x73, 0x12, 0x56,
 	0x0a, 0x13, 0x76, 0x65, 0x72, 0x69, 0x66, 0x79, 0x69, 0x6e, 0x67, 0x5f, 0x6b, 0x65, 0x79, 0x5f,
 	0x73, 0x74, 0x61, 0x74, 0x73, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x26, 0x2e, 0x75, 0x6e,
-	0x69, 0x6f, 0x6e, 0x2e, 0x70, 0x72, 0x6f, 0x76, 0x65, 0x72, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x76,
+	0x69, 0x6f, 0x6e, 0x2e, 0x67, 0x61, 0x6c, 0x6f, 0x69, 0x73, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x76,
 	0x31, 0x2e, 0x56, 0x65, 0x72, 0x69, 0x66, 0x79, 0x69, 0x6e, 0x67, 0x4b, 0x65, 0x79, 0x53, 0x74,
 	0x61, 0x74, 0x73, 0x52, 0x11, 0x76, 0x65, 0x72, 0x69, 0x66, 0x79, 0x69, 0x6e, 0x67, 0x4b, 0x65,
 	0x79, 0x53, 0x74, 0x61, 0x74, 0x73, 0x12, 0x4f, 0x0a, 0x10, 0x63, 0x6f, 0x6d, 0x6d, 0x69, 0x74,
 	0x6d, 0x65, 0x6e, 0x74, 0x5f, 0x73, 0x74, 0x61, 0x74, 0x73, 0x18, 0x04, 0x20, 0x01, 0x28, 0x0b,
-	0x32, 0x24, 0x2e, 0x75, 0x6e, 0x69, 0x6f, 0x6e, 0x2e, 0x70, 0x72, 0x6f, 0x76, 0x65, 0x72, 0x2e,
+	0x32, 0x24, 0x2e, 0x75, 0x6e, 0x69, 0x6f, 0x6e, 0x2e, 0x67, 0x61, 0x6c, 0x6f, 0x69, 0x73, 0x2e,
 	0x61, 0x70, 0x69, 0x2e, 0x76, 0x31, 0x2e, 0x43, 0x6f, 0x6d, 0x6d, 0x69, 0x74, 0x6d, 0x65, 0x6e,
 	0x74, 0x53, 0x74, 0x61, 0x74, 0x73, 0x52, 0x0f, 0x63, 0x6f, 0x6d, 0x6d, 0x69, 0x74, 0x6d, 0x65,
 	0x6e, 0x74, 0x53, 0x74, 0x61, 0x74, 0x73, 0x32, 0x83, 0x03, 0x0a, 0x0e, 0x55, 0x6e, 0x69, 0x6f,
 	0x6e, 0x50, 0x72, 0x6f, 0x76, 0x65, 0x72, 0x41, 0x50, 0x49, 0x12, 0x4e, 0x0a, 0x05, 0x50, 0x72,
-	0x6f, 0x76, 0x65, 0x12, 0x21, 0x2e, 0x75, 0x6e, 0x69, 0x6f, 0x6e, 0x2e, 0x70, 0x72, 0x6f, 0x76,
-	0x65, 0x72, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x76, 0x31, 0x2e, 0x50, 0x72, 0x6f, 0x76, 0x65, 0x52,
-	0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x22, 0x2e, 0x75, 0x6e, 0x69, 0x6f, 0x6e, 0x2e, 0x70,
-	0x72, 0x6f, 0x76, 0x65, 0x72, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x76, 0x31, 0x2e, 0x50, 0x72, 0x6f,
+	0x6f, 0x76, 0x65, 0x12, 0x21, 0x2e, 0x75, 0x6e, 0x69, 0x6f, 0x6e, 0x2e, 0x67, 0x61, 0x6c, 0x6f,
+	0x69, 0x73, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x76, 0x31, 0x2e, 0x50, 0x72, 0x6f, 0x76, 0x65, 0x52,
+	0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x22, 0x2e, 0x75, 0x6e, 0x69, 0x6f, 0x6e, 0x2e, 0x67,
+	0x61, 0x6c, 0x6f, 0x69, 0x73, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x76, 0x31, 0x2e, 0x50, 0x72, 0x6f,
 	0x76, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x51, 0x0a, 0x06, 0x56, 0x65,
-	0x72, 0x69, 0x66, 0x79, 0x12, 0x22, 0x2e, 0x75, 0x6e, 0x69, 0x6f, 0x6e, 0x2e, 0x70, 0x72, 0x6f,
-	0x76, 0x65, 0x72, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x76, 0x31, 0x2e, 0x56, 0x65, 0x72, 0x69, 0x66,
+	0x72, 0x69, 0x66, 0x79, 0x12, 0x22, 0x2e, 0x75, 0x6e, 0x69, 0x6f, 0x6e, 0x2e, 0x67, 0x61, 0x6c,
+	0x6f, 0x69, 0x73, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x76, 0x31, 0x2e, 0x56, 0x65, 0x72, 0x69, 0x66,
 	0x79, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x23, 0x2e, 0x75, 0x6e, 0x69, 0x6f, 0x6e,
-	0x2e, 0x70, 0x72, 0x6f, 0x76, 0x65, 0x72, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x76, 0x31, 0x2e, 0x56,
+	0x2e, 0x67, 0x61, 0x6c, 0x6f, 0x69, 0x73, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x76, 0x31, 0x2e, 0x56,
 	0x65, 0x72, 0x69, 0x66, 0x79, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x6f, 0x0a,
 	0x10, 0x47, 0x65, 0x6e, 0x65, 0x72, 0x61, 0x74, 0x65, 0x43, 0x6f, 0x6e, 0x74, 0x72, 0x61, 0x63,
-	0x74, 0x12, 0x2c, 0x2e, 0x75, 0x6e, 0x69, 0x6f, 0x6e, 0x2e, 0x70, 0x72, 0x6f, 0x76, 0x65, 0x72,
+	0x74, 0x12, 0x2c, 0x2e, 0x75, 0x6e, 0x69, 0x6f, 0x6e, 0x2e, 0x67, 0x61, 0x6c, 0x6f, 0x69, 0x73,
 	0x2e, 0x61, 0x70, 0x69, 0x2e, 0x76, 0x31, 0x2e, 0x47, 0x65, 0x6e, 0x65, 0x72, 0x61, 0x74, 0x65,
 	0x43, 0x6f, 0x6e, 0x74, 0x72, 0x61, 0x63, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a,
-	0x2d, 0x2e, 0x75, 0x6e, 0x69, 0x6f, 0x6e, 0x2e, 0x70, 0x72, 0x6f, 0x76, 0x65, 0x72, 0x2e, 0x61,
+	0x2d, 0x2e, 0x75, 0x6e, 0x69, 0x6f, 0x6e, 0x2e, 0x67, 0x61, 0x6c, 0x6f, 0x69, 0x73, 0x2e, 0x61,
 	0x70, 0x69, 0x2e, 0x76, 0x31, 0x2e, 0x47, 0x65, 0x6e, 0x65, 0x72, 0x61, 0x74, 0x65, 0x43, 0x6f,
 	0x6e, 0x74, 0x72, 0x61, 0x63, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x5d,
 	0x0a, 0x0a, 0x51, 0x75, 0x65, 0x72, 0x79, 0x53, 0x74, 0x61, 0x74, 0x73, 0x12, 0x26, 0x2e, 0x75,
-	0x6e, 0x69, 0x6f, 0x6e, 0x2e, 0x70, 0x72, 0x6f, 0x76, 0x65, 0x72, 0x2e, 0x61, 0x70, 0x69, 0x2e,
+	0x6e, 0x69, 0x6f, 0x6e, 0x2e, 0x67, 0x61, 0x6c, 0x6f, 0x69, 0x73, 0x2e, 0x61, 0x70, 0x69, 0x2e,
 	0x76, 0x31, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x53, 0x74, 0x61, 0x74, 0x73, 0x52, 0x65, 0x71,
-	0x75, 0x65, 0x73, 0x74, 0x1a, 0x27, 0x2e, 0x75, 0x6e, 0x69, 0x6f, 0x6e, 0x2e, 0x70, 0x72, 0x6f,
-	0x76, 0x65, 0x72, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x76, 0x31, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79,
+	0x75, 0x65, 0x73, 0x74, 0x1a, 0x27, 0x2e, 0x75, 0x6e, 0x69, 0x6f, 0x6e, 0x2e, 0x67, 0x61, 0x6c,
+	0x6f, 0x69, 0x73, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x76, 0x31, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79,
 	0x53, 0x74, 0x61, 0x74, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x42, 0x17, 0x5a,
-	0x15, 0x75, 0x6e, 0x69, 0x6f, 0x6e, 0x2f, 0x70, 0x72, 0x6f, 0x76, 0x65, 0x72, 0x2f, 0x72, 0x70,
+	0x15, 0x75, 0x6e, 0x69, 0x6f, 0x6e, 0x2f, 0x67, 0x61, 0x6c, 0x6f, 0x69, 0x73, 0x2f, 0x72, 0x70,
 	0x63, 0x2f, 0x67, 0x72, 0x70, 0x63, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
-	file_api_v1_prover_proto_rawDescOnce sync.Once
-	file_api_v1_prover_proto_rawDescData = file_api_v1_prover_proto_rawDesc
+	file_api_v1_galois_proto_rawDescOnce sync.Once
+	file_api_v1_galois_proto_rawDescData = file_api_v1_galois_proto_rawDesc
 )
 
-func file_api_v1_prover_proto_rawDescGZIP() []byte {
-	file_api_v1_prover_proto_rawDescOnce.Do(func() {
-		file_api_v1_prover_proto_rawDescData = protoimpl.X.CompressGZIP(file_api_v1_prover_proto_rawDescData)
+func file_api_v1_galois_proto_rawDescGZIP() []byte {
+	file_api_v1_galois_proto_rawDescOnce.Do(func() {
+		file_api_v1_galois_proto_rawDescData = protoimpl.X.CompressGZIP(file_api_v1_galois_proto_rawDescData)
 	})
-	return file_api_v1_prover_proto_rawDescData
+	return file_api_v1_galois_proto_rawDescData
 }
 
-var file_api_v1_prover_proto_msgTypes = make([]protoimpl.MessageInfo, 15)
-var file_api_v1_prover_proto_goTypes = []interface{}{
-	(*FrElement)(nil),                // 0: union.prover.api.v1.FrElement
-	(*ZeroKnowledgeProof)(nil),       // 1: union.prover.api.v1.ZeroKnowledgeProof
-	(*ValidatorSetCommit)(nil),       // 2: union.prover.api.v1.ValidatorSetCommit
-	(*ProveRequest)(nil),             // 3: union.prover.api.v1.ProveRequest
-	(*ProveResponse)(nil),            // 4: union.prover.api.v1.ProveResponse
-	(*VerifyRequest)(nil),            // 5: union.prover.api.v1.VerifyRequest
-	(*VerifyResponse)(nil),           // 6: union.prover.api.v1.VerifyResponse
-	(*GenerateContractRequest)(nil),  // 7: union.prover.api.v1.GenerateContractRequest
-	(*GenerateContractResponse)(nil), // 8: union.prover.api.v1.GenerateContractResponse
-	(*QueryStatsRequest)(nil),        // 9: union.prover.api.v1.QueryStatsRequest
-	(*VariableStats)(nil),            // 10: union.prover.api.v1.VariableStats
-	(*ProvingKeyStats)(nil),          // 11: union.prover.api.v1.ProvingKeyStats
-	(*VerifyingKeyStats)(nil),        // 12: union.prover.api.v1.VerifyingKeyStats
-	(*CommitmentStats)(nil),          // 13: union.prover.api.v1.CommitmentStats
-	(*QueryStatsResponse)(nil),       // 14: union.prover.api.v1.QueryStatsResponse
+var file_api_v1_galois_proto_msgTypes = make([]protoimpl.MessageInfo, 15)
+var file_api_v1_galois_proto_goTypes = []interface{}{
+	(*FrElement)(nil),                // 0: union.galois.api.v1.FrElement
+	(*ZeroKnowledgeProof)(nil),       // 1: union.galois.api.v1.ZeroKnowledgeProof
+	(*ValidatorSetCommit)(nil),       // 2: union.galois.api.v1.ValidatorSetCommit
+	(*ProveRequest)(nil),             // 3: union.galois.api.v1.ProveRequest
+	(*ProveResponse)(nil),            // 4: union.galois.api.v1.ProveResponse
+	(*VerifyRequest)(nil),            // 5: union.galois.api.v1.VerifyRequest
+	(*VerifyResponse)(nil),           // 6: union.galois.api.v1.VerifyResponse
+	(*GenerateContractRequest)(nil),  // 7: union.galois.api.v1.GenerateContractRequest
+	(*GenerateContractResponse)(nil), // 8: union.galois.api.v1.GenerateContractResponse
+	(*QueryStatsRequest)(nil),        // 9: union.galois.api.v1.QueryStatsRequest
+	(*VariableStats)(nil),            // 10: union.galois.api.v1.VariableStats
+	(*ProvingKeyStats)(nil),          // 11: union.galois.api.v1.ProvingKeyStats
+	(*VerifyingKeyStats)(nil),        // 12: union.galois.api.v1.VerifyingKeyStats
+	(*CommitmentStats)(nil),          // 13: union.galois.api.v1.CommitmentStats
+	(*QueryStatsResponse)(nil),       // 14: union.galois.api.v1.QueryStatsResponse
 	(*types.SimpleValidator)(nil),    // 15: tendermint.types.SimpleValidator
 	(*types.CanonicalVote)(nil),      // 16: tendermint.types.CanonicalVote
 }
-var file_api_v1_prover_proto_depIdxs = []int32{
-	15, // 0: union.prover.api.v1.ValidatorSetCommit.validators:type_name -> tendermint.types.SimpleValidator
-	16, // 1: union.prover.api.v1.ProveRequest.vote:type_name -> tendermint.types.CanonicalVote
-	2,  // 2: union.prover.api.v1.ProveRequest.trusted_commit:type_name -> union.prover.api.v1.ValidatorSetCommit
-	2,  // 3: union.prover.api.v1.ProveRequest.untrusted_commit:type_name -> union.prover.api.v1.ValidatorSetCommit
-	1,  // 4: union.prover.api.v1.ProveResponse.proof:type_name -> union.prover.api.v1.ZeroKnowledgeProof
-	1,  // 5: union.prover.api.v1.VerifyRequest.proof:type_name -> union.prover.api.v1.ZeroKnowledgeProof
-	0,  // 6: union.prover.api.v1.VerifyRequest.block_header_x:type_name -> union.prover.api.v1.FrElement
-	0,  // 7: union.prover.api.v1.VerifyRequest.block_header_y:type_name -> union.prover.api.v1.FrElement
-	10, // 8: union.prover.api.v1.QueryStatsResponse.variable_stats:type_name -> union.prover.api.v1.VariableStats
-	11, // 9: union.prover.api.v1.QueryStatsResponse.proving_key_stats:type_name -> union.prover.api.v1.ProvingKeyStats
-	12, // 10: union.prover.api.v1.QueryStatsResponse.verifying_key_stats:type_name -> union.prover.api.v1.VerifyingKeyStats
-	13, // 11: union.prover.api.v1.QueryStatsResponse.commitment_stats:type_name -> union.prover.api.v1.CommitmentStats
-	3,  // 12: union.prover.api.v1.UnionProverAPI.Prove:input_type -> union.prover.api.v1.ProveRequest
-	5,  // 13: union.prover.api.v1.UnionProverAPI.Verify:input_type -> union.prover.api.v1.VerifyRequest
-	7,  // 14: union.prover.api.v1.UnionProverAPI.GenerateContract:input_type -> union.prover.api.v1.GenerateContractRequest
-	9,  // 15: union.prover.api.v1.UnionProverAPI.QueryStats:input_type -> union.prover.api.v1.QueryStatsRequest
-	4,  // 16: union.prover.api.v1.UnionProverAPI.Prove:output_type -> union.prover.api.v1.ProveResponse
-	6,  // 17: union.prover.api.v1.UnionProverAPI.Verify:output_type -> union.prover.api.v1.VerifyResponse
-	8,  // 18: union.prover.api.v1.UnionProverAPI.GenerateContract:output_type -> union.prover.api.v1.GenerateContractResponse
-	14, // 19: union.prover.api.v1.UnionProverAPI.QueryStats:output_type -> union.prover.api.v1.QueryStatsResponse
+var file_api_v1_galois_proto_depIdxs = []int32{
+	15, // 0: union.galois.api.v1.ValidatorSetCommit.validators:type_name -> tendermint.types.SimpleValidator
+	16, // 1: union.galois.api.v1.ProveRequest.vote:type_name -> tendermint.types.CanonicalVote
+	2,  // 2: union.galois.api.v1.ProveRequest.trusted_commit:type_name -> union.galois.api.v1.ValidatorSetCommit
+	2,  // 3: union.galois.api.v1.ProveRequest.untrusted_commit:type_name -> union.galois.api.v1.ValidatorSetCommit
+	1,  // 4: union.galois.api.v1.ProveResponse.proof:type_name -> union.galois.api.v1.ZeroKnowledgeProof
+	1,  // 5: union.galois.api.v1.VerifyRequest.proof:type_name -> union.galois.api.v1.ZeroKnowledgeProof
+	0,  // 6: union.galois.api.v1.VerifyRequest.block_header_x:type_name -> union.galois.api.v1.FrElement
+	0,  // 7: union.galois.api.v1.VerifyRequest.block_header_y:type_name -> union.galois.api.v1.FrElement
+	10, // 8: union.galois.api.v1.QueryStatsResponse.variable_stats:type_name -> union.galois.api.v1.VariableStats
+	11, // 9: union.galois.api.v1.QueryStatsResponse.proving_key_stats:type_name -> union.galois.api.v1.ProvingKeyStats
+	12, // 10: union.galois.api.v1.QueryStatsResponse.verifying_key_stats:type_name -> union.galois.api.v1.VerifyingKeyStats
+	13, // 11: union.galois.api.v1.QueryStatsResponse.commitment_stats:type_name -> union.galois.api.v1.CommitmentStats
+	3,  // 12: union.galois.api.v1.UnionProverAPI.Prove:input_type -> union.galois.api.v1.ProveRequest
+	5,  // 13: union.galois.api.v1.UnionProverAPI.Verify:input_type -> union.galois.api.v1.VerifyRequest
+	7,  // 14: union.galois.api.v1.UnionProverAPI.GenerateContract:input_type -> union.galois.api.v1.GenerateContractRequest
+	9,  // 15: union.galois.api.v1.UnionProverAPI.QueryStats:input_type -> union.galois.api.v1.QueryStatsRequest
+	4,  // 16: union.galois.api.v1.UnionProverAPI.Prove:output_type -> union.galois.api.v1.ProveResponse
+	6,  // 17: union.galois.api.v1.UnionProverAPI.Verify:output_type -> union.galois.api.v1.VerifyResponse
+	8,  // 18: union.galois.api.v1.UnionProverAPI.GenerateContract:output_type -> union.galois.api.v1.GenerateContractResponse
+	14, // 19: union.galois.api.v1.UnionProverAPI.QueryStats:output_type -> union.galois.api.v1.QueryStatsResponse
 	16, // [16:20] is the sub-list for method output_type
 	12, // [12:16] is the sub-list for method input_type
 	12, // [12:12] is the sub-list for extension type_name
@@ -1133,13 +1133,13 @@ var file_api_v1_prover_proto_depIdxs = []int32{
 	0,  // [0:12] is the sub-list for field type_name
 }
 
-func init() { file_api_v1_prover_proto_init() }
-func file_api_v1_prover_proto_init() {
-	if File_api_v1_prover_proto != nil {
+func init() { file_api_v1_galois_proto_init() }
+func file_api_v1_galois_proto_init() {
+	if File_api_v1_galois_proto != nil {
 		return
 	}
 	if !protoimpl.UnsafeEnabled {
-		file_api_v1_prover_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
+		file_api_v1_galois_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*FrElement); i {
 			case 0:
 				return &v.state
@@ -1151,7 +1151,7 @@ func file_api_v1_prover_proto_init() {
 				return nil
 			}
 		}
-		file_api_v1_prover_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
+		file_api_v1_galois_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*ZeroKnowledgeProof); i {
 			case 0:
 				return &v.state
@@ -1163,7 +1163,7 @@ func file_api_v1_prover_proto_init() {
 				return nil
 			}
 		}
-		file_api_v1_prover_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
+		file_api_v1_galois_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*ValidatorSetCommit); i {
 			case 0:
 				return &v.state
@@ -1175,7 +1175,7 @@ func file_api_v1_prover_proto_init() {
 				return nil
 			}
 		}
-		file_api_v1_prover_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
+		file_api_v1_galois_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*ProveRequest); i {
 			case 0:
 				return &v.state
@@ -1187,7 +1187,7 @@ func file_api_v1_prover_proto_init() {
 				return nil
 			}
 		}
-		file_api_v1_prover_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
+		file_api_v1_galois_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*ProveResponse); i {
 			case 0:
 				return &v.state
@@ -1199,7 +1199,7 @@ func file_api_v1_prover_proto_init() {
 				return nil
 			}
 		}
-		file_api_v1_prover_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
+		file_api_v1_galois_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*VerifyRequest); i {
 			case 0:
 				return &v.state
@@ -1211,7 +1211,7 @@ func file_api_v1_prover_proto_init() {
 				return nil
 			}
 		}
-		file_api_v1_prover_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
+		file_api_v1_galois_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*VerifyResponse); i {
 			case 0:
 				return &v.state
@@ -1223,7 +1223,7 @@ func file_api_v1_prover_proto_init() {
 				return nil
 			}
 		}
-		file_api_v1_prover_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
+		file_api_v1_galois_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*GenerateContractRequest); i {
 			case 0:
 				return &v.state
@@ -1235,7 +1235,7 @@ func file_api_v1_prover_proto_init() {
 				return nil
 			}
 		}
-		file_api_v1_prover_proto_msgTypes[8].Exporter = func(v interface{}, i int) interface{} {
+		file_api_v1_galois_proto_msgTypes[8].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*GenerateContractResponse); i {
 			case 0:
 				return &v.state
@@ -1247,7 +1247,7 @@ func file_api_v1_prover_proto_init() {
 				return nil
 			}
 		}
-		file_api_v1_prover_proto_msgTypes[9].Exporter = func(v interface{}, i int) interface{} {
+		file_api_v1_galois_proto_msgTypes[9].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*QueryStatsRequest); i {
 			case 0:
 				return &v.state
@@ -1259,7 +1259,7 @@ func file_api_v1_prover_proto_init() {
 				return nil
 			}
 		}
-		file_api_v1_prover_proto_msgTypes[10].Exporter = func(v interface{}, i int) interface{} {
+		file_api_v1_galois_proto_msgTypes[10].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*VariableStats); i {
 			case 0:
 				return &v.state
@@ -1271,7 +1271,7 @@ func file_api_v1_prover_proto_init() {
 				return nil
 			}
 		}
-		file_api_v1_prover_proto_msgTypes[11].Exporter = func(v interface{}, i int) interface{} {
+		file_api_v1_galois_proto_msgTypes[11].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*ProvingKeyStats); i {
 			case 0:
 				return &v.state
@@ -1283,7 +1283,7 @@ func file_api_v1_prover_proto_init() {
 				return nil
 			}
 		}
-		file_api_v1_prover_proto_msgTypes[12].Exporter = func(v interface{}, i int) interface{} {
+		file_api_v1_galois_proto_msgTypes[12].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*VerifyingKeyStats); i {
 			case 0:
 				return &v.state
@@ -1295,7 +1295,7 @@ func file_api_v1_prover_proto_init() {
 				return nil
 			}
 		}
-		file_api_v1_prover_proto_msgTypes[13].Exporter = func(v interface{}, i int) interface{} {
+		file_api_v1_galois_proto_msgTypes[13].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*CommitmentStats); i {
 			case 0:
 				return &v.state
@@ -1307,7 +1307,7 @@ func file_api_v1_prover_proto_init() {
 				return nil
 			}
 		}
-		file_api_v1_prover_proto_msgTypes[14].Exporter = func(v interface{}, i int) interface{} {
+		file_api_v1_galois_proto_msgTypes[14].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*QueryStatsResponse); i {
 			case 0:
 				return &v.state
@@ -1324,18 +1324,18 @@ func file_api_v1_prover_proto_init() {
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: file_api_v1_prover_proto_rawDesc,
+			RawDescriptor: file_api_v1_galois_proto_rawDesc,
 			NumEnums:      0,
 			NumMessages:   15,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_api_v1_prover_proto_goTypes,
-		DependencyIndexes: file_api_v1_prover_proto_depIdxs,
-		MessageInfos:      file_api_v1_prover_proto_msgTypes,
+		GoTypes:           file_api_v1_galois_proto_goTypes,
+		DependencyIndexes: file_api_v1_galois_proto_depIdxs,
+		MessageInfos:      file_api_v1_galois_proto_msgTypes,
 	}.Build()
-	File_api_v1_prover_proto = out.File
-	file_api_v1_prover_proto_rawDesc = nil
-	file_api_v1_prover_proto_goTypes = nil
-	file_api_v1_prover_proto_depIdxs = nil
+	File_api_v1_galois_proto = out.File
+	file_api_v1_galois_proto_rawDesc = nil
+	file_api_v1_galois_proto_goTypes = nil
+	file_api_v1_galois_proto_depIdxs = nil
 }
