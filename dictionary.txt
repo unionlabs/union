@@ -34,7 +34,6 @@ Joye
 KEYPAIR
 Karel
 Keybase
-LCFUR
 Lahcen
 Layerzero
 Merkle

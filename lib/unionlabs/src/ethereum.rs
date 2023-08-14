@@ -93,7 +93,7 @@ macro_rules! hex_string_array_wrapper {
 
             impl std::fmt::Debug for $Struct {
                 fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-                    write!(f, "H256({self})")
+                    write!(f, "{}({self})", stringify!($Struct))
                 }
             }
 
@@ -126,6 +126,31 @@ macro_rules! hex_string_array_wrapper {
             impl From<GenericArray<u8, U<$N>>> for $Struct {
                 fn from(arr: GenericArray<u8, U<$N>>) -> Self {
                     Self(arr.to_vec().try_into().expect("GenericArray has the correct length; qed;"))
+                }
+            }
+
+            #[cfg(feature = "ethabi")]
+            impl From<$Struct> for ethers_core::types::Bytes {
+                fn from(value: $Struct) -> Self {
+                    ethers_core::types::Bytes::from(value.0)
+                }
+            }
+
+            #[cfg(feature = "ethabi")]
+            impl TryFrom<ethers_core::types::Bytes> for $Struct {
+                type Error = <Self as TryFrom<Vec<u8>>>::Error;
+
+                fn try_from(value: ethers_core::types::Bytes) -> Result<Self, Self::Error> {
+                    Self::try_from(&value.0[..])
+                }
+            }
+
+            #[cfg(feature = "ethabi")]
+            impl TryFrom<&'_ ethers_core::types::Bytes> for $Struct {
+                type Error = <Self as TryFrom<Vec<u8>>>::Error;
+
+                fn try_from(value: &ethers_core::types::Bytes) -> Result<Self, Self::Error> {
+                    Self::try_from(&value.0[..])
                 }
             }
         )+

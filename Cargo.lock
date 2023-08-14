@@ -5245,6 +5245,7 @@ dependencies = [
  "bip32",
  "contracts",
  "ethereum_ssz",
+ "ethers-core",
  "generic-array",
  "hex",
  "hex-literal",
