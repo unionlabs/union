@@ -121,6 +121,7 @@ blst
 boneh
 builtins
 cachix
+canonicalization
 capabilitykeeper
 capabilitytypes
 cargotoml
