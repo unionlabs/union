@@ -1079,7 +1079,7 @@ where
     {
         lc1_event_stream
             .for_each(move |(event_height, packet)| async move {
-                tracing::info!("recieved packet");
+                tracing::info!("received packet");
 
                 let sequence = packet.sequence;
 
