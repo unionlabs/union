@@ -21,6 +21,7 @@ pub mod ibc;
 /// Defines types that wrap the tendermint specification, matching the proto module structure.
 pub mod tendermint;
 
+/// Defines types that wrap the cosmos specification, matching the proto module structure.
 pub mod cosmos;
 
 /// Various ethereum types. Types that have an IBC counterpart are defined in [`ibc`].

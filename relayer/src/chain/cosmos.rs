@@ -1,4 +1,4 @@
-use std::{collections::BTreeMap, marker::PhantomData};
+use std::marker::PhantomData;
 
 use clap::Args;
 use futures::{Future, FutureExt, Stream, StreamExt};
@@ -20,6 +20,7 @@ use sha2::Digest;
 use tendermint_rpc::{
     event::EventData, query::EventType, Client, SubscriptionClient, WebSocketClient,
 };
+use tokio_stream::wrappers::UnboundedReceiverStream;
 use unionlabs::{
     cosmos::staking::query_validators_response::QueryValidatorsResponse,
     ethereum::H256,
@@ -59,7 +60,9 @@ use super::events::TryFromTendermintEventError;
 use crate::{
     chain::{
         dumper::Dumper,
-        events::{ChannelOpenInit, ChannelOpenTry, ConnectionOpenInit, ConnectionOpenTry},
+        events::{
+            ChannelOpenInit, ChannelOpenTry, ConnectionOpenInit, ConnectionOpenTry, SendPacket,
+        },
         evm::{Cometbls, Evm},
         proof::{
             ChannelEndPath, ClientConsensusStatePath, ClientStatePath, CommitmentPath,
@@ -462,7 +465,13 @@ impl Chain for Union {
         &self,
     ) -> impl Future<Output = impl Stream<Item = (Height, Packet)> + '_> + '_ {
         async move {
-            self.tm_client
+            let (events_from_now_tx, events_from_now_rx) = tokio::sync::mpsc::unbounded_channel();
+
+            let chain_revision = self.chain_revision;
+
+            let event_stream = self
+                .tm_client
+                .clone()
                 .subscribe(EventType::Tx.into())
                 .await
                 .unwrap()
@@ -471,65 +480,98 @@ impl Chain for Union {
                     tracing::info!(?event.data);
                     match event.data {
                         EventData::Tx { tx_result } => {
-                            tx_result.result.events.into_iter().find_map(|e| {
-                                (e.kind == "send_packet")
-                                    .then(|| {
-                                        e.attributes
-                                            .into_iter()
-                                            .map(|attr| (attr.key, attr.value))
-                                            .collect::<BTreeMap<_, _>>()
-                                    })
-                                    .map(|send_packet_event| {
-                                        (
-                                            Height {
-                                                revision_number: self.chain_revision,
-                                                revision_height: tx_result
-                                                    .height
-                                                    .try_into()
-                                                    .unwrap(),
-                                            },
-                                            Packet {
-                                                sequence: send_packet_event["packet_sequence"]
-                                                    .parse()
-                                                    .unwrap(),
-                                                source_port: send_packet_event["packet_src_port"]
-                                                    .clone(),
-                                                source_channel: send_packet_event
-                                                    ["packet_src_channel"]
-                                                    .clone(),
-                                                destination_port: send_packet_event
-                                                    ["packet_dst_port"]
-                                                    .clone(),
-                                                destination_channel: send_packet_event
-                                                    ["packet_dst_channel"]
-                                                    .clone(),
-                                                data: ethers::utils::hex::decode(
-                                                    &send_packet_event["packet_data_hex"],
-                                                )
-                                                .unwrap(),
-                                                timeout_height: {
-                                                    let (revision, height) = send_packet_event
-                                                        ["packet_timeout_height"]
-                                                        .split_once('-')
-                                                        .unwrap();
+                            let send_packet =
+                                get_event_from_tx_response::<SendPacket>(tx_result.result.events)?;
 
-                                                    Height {
-                                                        revision_number: revision.parse().unwrap(),
-                                                        revision_height: height.parse().unwrap(),
-                                                    }
-                                                },
-                                                timeout_timestamp: send_packet_event
-                                                    ["packet_timeout_timestamp"]
-                                                    .parse()
-                                                    .unwrap(),
-                                            },
-                                        )
-                                    })
-                            })
+                            let event_height = {
+                                let height = tx_result.height.try_into().unwrap();
+                                Height {
+                                    revision_number: chain_revision,
+                                    revision_height: height,
+                                }
+                            };
+
+                            Some((
+                                event_height,
+                                Packet {
+                                    sequence: send_packet.packet_sequence.parse().unwrap(),
+                                    source_port: send_packet.packet_src_port,
+                                    source_channel: send_packet.packet_src_channel,
+                                    destination_port: send_packet.packet_dst_port,
+                                    destination_channel: send_packet.packet_dst_channel,
+                                    data: hex::decode(send_packet.packet_data_hex).unwrap(),
+                                    timeout_height: send_packet
+                                        .packet_timeout_height
+                                        .parse()
+                                        .unwrap(),
+                                    timeout_timestamp: send_packet
+                                        .packet_timeout_timestamp
+                                        .parse()
+                                        .unwrap(),
+                                },
+                            ))
                         }
                         _ => None,
                     }
-                })
+                });
+
+            tokio::spawn(event_stream.for_each(move |event| {
+                let tx = events_from_now_tx.clone();
+
+                tx.send(event).unwrap();
+
+                futures::future::ready(())
+            }));
+
+            // NOTE(benluelo): Commented out for now as this is currently untested. Leaving it here
+            // as I'm pretty sure this is the general flow for querying missed packets, and could be useful down the line.
+
+            let (_missed_events_tx, missed_events_rx) = tokio::sync::mpsc::unbounded_channel();
+
+            // let latest_height = self.query_latest_height().await.revision_height;
+
+            // for height in (latest_height.checked_sub(50).unwrap_or(1))..=latest_height {
+            //     let block_results = self
+            //         .tm_client
+            //         .block_results(u32::try_from(height).unwrap())
+            //         .await
+            //         .unwrap();
+
+            //     if let Some(txs_results) = block_results.txs_results {
+            //         for tx_result in txs_results {
+            //             if let Some(send_packet) =
+            //                 get_event_from_tx_response::<SendPacket>(tx_result.events)
+            //             {
+            //                 let event_height = self.make_height(height);
+
+            //                 missed_events_tx
+            //                     .send((
+            //                         event_height,
+            //                         Packet {
+            //                             sequence: send_packet.packet_sequence.parse().unwrap(),
+            //                             source_port: send_packet.packet_src_port,
+            //                             source_channel: send_packet.packet_src_channel,
+            //                             destination_port: send_packet.packet_dst_port,
+            //                             destination_channel: send_packet.packet_dst_channel,
+            //                             data: hex::decode(send_packet.packet_data_hex).unwrap(),
+            //                             timeout_height: send_packet
+            //                                 .packet_timeout_height
+            //                                 .parse()
+            //                                 .unwrap(),
+            //                             timeout_timestamp: send_packet
+            //                                 .packet_timeout_timestamp
+            //                                 .parse()
+            //                                 .unwrap(),
+            //                         },
+            //                     ))
+            //                     .unwrap();
+            //             }
+            //         }
+            //     }
+            // }
+
+            UnboundedReceiverStream::new(missed_events_rx)
+                .chain(UnboundedReceiverStream::new(events_from_now_rx))
         }
     }
 }
@@ -608,6 +650,7 @@ impl<C: ChainSpec> Connect<Cometbls<C>> for Ethereum<C> {
             .map(|response| {
                 (
                     get_event_from_tx_response::<ConnectionOpenInit>(response.deliver_tx.events)
+                        .unwrap()
                         .connection_id,
                     self.chain.make_height(response.height.value()),
                 )
@@ -628,6 +671,7 @@ impl<C: ChainSpec> Connect<Cometbls<C>> for Ethereum<C> {
             .map(|response| {
                 (
                     get_event_from_tx_response::<ConnectionOpenTry>(response.deliver_tx.events)
+                        .unwrap()
                         .connection_id,
                     self.chain.make_height(response.height.value()),
                 )
@@ -689,7 +733,8 @@ impl<C: ChainSpec> Connect<Cometbls<C>> for Ethereum<C> {
                 }])
                 .await;
 
-            let event = get_event_from_tx_response::<ChannelOpenInit>(tx.deliver_tx.events);
+            let event =
+                get_event_from_tx_response::<ChannelOpenInit>(tx.deliver_tx.events).unwrap();
 
             (event.channel_id, self.chain.make_height(tx.height.value()))
         }
@@ -705,7 +750,7 @@ impl<C: ChainSpec> Connect<Cometbls<C>> for Ethereum<C> {
                 .broadcast_tx_commit([Any(msg).into_proto_with_signer(&self.chain.signer)])
                 .await;
 
-            let event = get_event_from_tx_response::<ChannelOpenTry>(tx.deliver_tx.events);
+            let event = get_event_from_tx_response::<ChannelOpenTry>(tx.deliver_tx.events).unwrap();
 
             (event.channel_id, self.chain.make_height(tx.height.value()))
         }
@@ -1110,7 +1155,7 @@ impl<C: ChainSpec> Connect<Cometbls<C>> for Ethereum<C> {
 
 fn get_event_from_tx_response<T: TryFrom<Event, Error = TryFromTendermintEventError>>(
     events: Vec<tendermint::abci::Event>,
-) -> T {
+) -> Option<T> {
     events
         .into_iter()
         .find_map(|event| {
@@ -1137,9 +1182,8 @@ fn get_event_from_tx_response<T: TryFrom<Event, Error = TryFromTendermintEventEr
                 Err(err) => Some(Err(err)),
             }
         })
-        // event was found...
-        .unwrap()
-        // ...and there were no errors parsing it
+        .transpose()
+        // there were no errors parsing event if it was found
         .unwrap()
 }
 

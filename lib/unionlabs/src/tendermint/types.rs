@@ -1,3 +1,4 @@
+pub mod block;
 pub mod block_id;
 pub mod block_id_flag;
 pub mod commit;

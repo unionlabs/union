@@ -106,6 +106,18 @@ impl IbcQueryPathCmd {
 
 #[derive(Debug, Subcommand)]
 pub enum SetupCmd {
+    SetOperator {
+        #[arg(long)]
+        on: String,
+    },
+    BindPort {
+        #[arg(long)]
+        on: String,
+        #[arg(long)]
+        module_address: Address,
+        #[arg(long)]
+        port_id: String,
+    },
     InitialChannel {
         #[arg(long)]
         on: String,
@@ -151,6 +163,8 @@ pub enum QueryCmd {
     Balances {
         #[arg(long)]
         on: String,
+        #[arg(long)]
+        who: Address,
         #[arg(long)]
         denom: String,
     },
@@ -260,6 +274,8 @@ pub enum ChannelCmd {
         from_connection: String,
         #[arg(long)]
         from_port: String,
+        #[arg(long)]
+        from_version: String,
 
         #[arg(long)]
         to_chain: String,
@@ -267,6 +283,8 @@ pub enum ChannelCmd {
         to_connection: String,
         #[arg(long)]
         to_port: String,
+        #[arg(long)]
+        to_version: String,
     },
 }
 

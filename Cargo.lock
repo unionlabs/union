@@ -3575,6 +3575,7 @@ dependencies = [
  "hex",
  "hex-literal",
  "num-bigint",
+ "pin-utils",
  "prost",
  "protos",
  "reqwest",
@@ -3588,6 +3589,7 @@ dependencies = [
  "tendermint-proto 0.32.0",
  "tendermint-rpc",
  "tokio",
+ "tokio-stream",
  "tonic",
  "tower",
  "tracing",
@@ -5261,6 +5263,7 @@ dependencies = [
  "sha2 0.10.7",
  "ssz_types",
  "subtle-encoding",
+ "tracing",
  "tree_hash",
  "typenum",
 ]
