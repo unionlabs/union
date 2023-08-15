@@ -869,20 +869,6 @@ impl<C: ChainSpec> Connect<Ethereum<C>> for Cometbls<C> {
         msg: MsgChannelOpenInit,
     ) -> impl Future<Output = (String, Height)> + '_ {
         async move {
-            // // TODO: Make sure this is done in both init and try
-            // let bind_port_result = self.chain.ibc_handler.bind_port(
-            //     // "transfer".to_string(),
-            //     msg.port_id.to_string(),
-            //     self.chain.ics20_transfer_bank.address(),
-            // );
-
-            // match bind_port_result.send().await {
-            //     Ok(ok) => {
-            //         ok.await.unwrap().unwrap();
-            //     }
-            //     Err(why) => tracing::info!(why = ?why.decode_revert::<String>()),
-            // }
-
             let tx_rcp = self
                 .chain
                 .ibc_handler
