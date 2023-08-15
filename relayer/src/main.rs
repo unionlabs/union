@@ -324,14 +324,14 @@ async fn do_main(args: cli::AppArgs) -> Result<(), anyhow::Error> {
         }) => {
             let chain_config = relayer_config.chain.get(&on).unwrap();
 
-            let msg = MsgTransfer {
+            let msg = |sender: String| MsgTransfer {
                 source_port,
                 source_channel,
                 token: Coin {
                     denom,
                     amount: amount.to_string(),
                 },
-                sender: "blah".to_string(),
+                sender,
                 receiver,
                 timeout_height: Height {
                     revision_number: 1,
@@ -345,13 +345,19 @@ async fn do_main(args: cli::AppArgs) -> Result<(), anyhow::Error> {
                 ChainConfig::Evm(EvmChainConfig::Minimal(evm_config)) => {
                     Evm::<Minimal>::new(evm_config.clone())
                         .await
-                        .transfer(msg, evm_config.ics20_transfer_bank_address.clone())
+                        .transfer(
+                            msg(hex::encode(evm_config.signer.clone().value().to_bytes())),
+                            evm_config.ics20_transfer_bank_address.clone(),
+                        )
                         .await;
                 }
                 ChainConfig::Evm(EvmChainConfig::Mainnet(evm_config)) => {
                     Evm::<Mainnet>::new(evm_config.clone())
                         .await
-                        .transfer(msg, evm_config.ics20_transfer_bank_address.clone())
+                        .transfer(
+                            msg(hex::encode(evm_config.signer.clone().value().to_bytes())),
+                            evm_config.ics20_transfer_bank_address.clone(),
+                        )
                         .await;
                 }
                 ChainConfig::Union(_) => bail!("not currently supported"),
