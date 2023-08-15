@@ -93,7 +93,7 @@
         };
     in
     {
-      packages.setup-demo =
+      packages.e2e-setup =
         pkgs.writeShellApplication {
           name = "union-devnet-demo";
           runtimeInputs = [ pkgs.jq ];
@@ -123,10 +123,11 @@
             NO_DEPLOY_CONTRACTS=""
             PING_PONG_MODULE_ADDRESS=""
             PING_PONG_TIMEOUT="$DEFAULT_PING_PONG_TIMEOUT"
+            NO_RUN_RELAYER=""
 
             printHelp() {
               printf " \
-                Usage: nix run .#setup-demo [OPTION]... \n\
+                Usage: e2e-setup [OPTION]... \n\
                 \n\
                 Options: \n\
                   --handshake                  Do connection/channel handshake for ping pong. \n\
@@ -141,7 +142,9 @@
                   --relayer-config-file        Path to relayer config file. If not specified and --no-deploy-evm \n\
                                                  is not given, a temp location will be used. If --no-deploy-evm is enabled, \n\
                                                  this file is used as the relayer config. \n\
-                  --no-deploy-evm              Don't deploy evm contracts. \n\
+                  --handshake                  Do an IBC handshake for ping pong. \n\
+                  --no-deploy-contracts        Don't deploy contracts, the relayer configuration file must be specified in this case. \n\
+                  --no-run-relayer             Don't run the relayer for packet relaying, only print the command. \n\
                   \n\
                 Ping pong options:
                   --ping-pong-address          Address of the ping pong app module on EVM. \n\
@@ -150,11 +153,15 @@
                 \n\
                 Examples: \n\
                   Use an already running galois: \n\
-                    nix run .#setup-demo -- --galois-url http://some-server.com:16657 \n\
+                    e2e-setup --galois-url http://some-server.com:16657 \n\
                   Start a local galois: \n\
-                    nix run .#setup-demo -- --circuit-path ./  \n\
-                  Use a custom relayer config and don't deploy evm contracts: \n\
-                    nix run .#setup-demo -- --relayer-config-file ~/.config/relayer/config.json --no-deploy-evm
+                    e2e-setup --circuit-path ./  \n\
+                  Use a custom relayer config and don't deploy the contracts: \n\
+                    e2e-setup --relayer-config-file ~/.config/relayer/config.json --no-deploy-contracts \n\
+                  Do an IBC handshake for ping pong: \n\
+                    e2e-setup --handshake \n\
+                  Don't run the relayer, only print the command to run it: \n\
+                    e2e-setup --no-run-relayer
               " "$DEFAULT_GALOIS_URL" "$DEFAULT_EVM_BEACON_RPC_URL" "$DEFAULT_EVM_WS_URL" "$DEFAULT_UNION_RPC_URL" "$DEFAULT_UNION_RPC_URL" "$DEFAULT_UNION_WS_URL" "$DEFAULT_PING_PONG_TIMEOUT"
             }
 
@@ -225,6 +232,10 @@
                 --ping-pong-timeout)
                   PING_PONG_TIMEOUT="$2"
                   shift
+                  shift
+                  ;;
+                --no-run-relayer)
+                  NO_RUN_RELAYER=1
                   shift
                   ;;
                 -h|--help)
@@ -473,7 +484,6 @@
             }
 
             printIBCSetupInfo() {
-              union_port=$\{10\}
               echo ---------------------------------------------------
               echo "+ Module $1(EVM) and $2(Union) is connected at:"
               echo "    - EVM:"
@@ -485,7 +495,9 @@
               echo "      - Address:     $7"
               echo "      - Connection:  $8"
               echo "      - Channel:     $9"
-              echo "      - Port:        $union_port"
+
+              shift
+              echo "      - Port:        $9"
             }
 
 
@@ -526,6 +538,7 @@
             setIcs20Operator
             if [[ -z "$HANDSHAKE" ]]; then
               PING_PONG_CONNECTION="connection-0"
+              PING_PONG_CHANNEL="channel-1"
               setupInitialChannel "$PING_PONG_MODULE_ADDRESS" ping-pong "wasm.$PING_PONG_ADDRESS" channel-1
             fi
 
@@ -534,8 +547,9 @@
 
             if [[ -n "$HANDSHAKE" ]]; then
               # Since we already embedded connection-0 to the genesis, if we manually do the handshake,
-              # the connection is going to be connection-1
+              # the connection id is going to be connection-1
               PING_PONG_CONNECTION="connection-1"
+              PING_PONG_CHANNEL="channel-2"
               doHandshake "ucs00-pingpong-1" "ucs00-pingpong-1"
             fi
 
@@ -563,16 +577,22 @@
               "ping-pong" \
               "$PING_PONG_ADDRESS" \
               "$PING_PONG_CONNECTION" \
-              "channel-1" \
+              "$PING_PONG_CHANNEL" \
               "wasm.$PING_PONG_ADDRESS"
 
             echo "----------------------------------------------------------------"
             echo "+ Run the relayer to relay the packets with the following command:"
 
-            echo RUST_LOG=relayer=info ${self'.packages.relayer}/bin/relayer \
-              --config-file-path "$RELAYER_CONFIG_FILE" \
+            RELAYER_CMD='RUST_LOG=relayer=info ${self'.packages.relayer}/bin/relayer \
+              --config-file-path '"$RELAYER_CONFIG_FILE"' \
               relay \
-              --between union-devnet:ethereum-devnet
+              --between union-devnet:ethereum-devnet'
+
+            if [[ -z "$NO_RUN_RELAYER" ]]; then
+              eval "$RELAYER_CMD"
+            else
+              echo "$RELAYER_CMD"
+            fi
 
             wait
           '';

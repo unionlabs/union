@@ -81,7 +81,7 @@
         ./tools/rust/crane.nix
         ./tools/tera/tera.nix
         ./tools/docgen/docgen.nix
-        ./networks/demo.nix
+        ./networks/e2e-setup.nix
         ./networks/devnet.nix
         ./networks/genesis/devnet.nix
         ./testnet-validator.nix
