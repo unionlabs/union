@@ -1,5 +1,8 @@
+use serde::{Deserialize, Serialize};
+
 use crate::{ibc::core::client::height::Height, CosmosAccountId, MsgIntoProto};
 
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct MsgConnectionOpenConfirm {
     pub connection_id: String,
     pub proof_ack: Vec<u8>,

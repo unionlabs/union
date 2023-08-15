@@ -1,6 +1,8 @@
+use serde::{Deserialize, Serialize};
+
 use crate::{ibc::core::client::height::Height, CosmosAccountId, MsgIntoProto, TypeUrl};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct MsgChannelOpenAck {
     pub port_id: String,
     pub channel_id: String,

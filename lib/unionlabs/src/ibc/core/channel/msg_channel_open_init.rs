@@ -1,6 +1,8 @@
+use serde::{Deserialize, Serialize};
+
 use crate::{ibc::core::channel::channel::Channel, CosmosAccountId, MsgIntoProto};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct MsgChannelOpenInit {
     pub port_id: String,
     pub channel: Channel,

@@ -4,7 +4,7 @@ use crate::{
     cosmos::staking::commission_rates::CommissionRates,
     errors::{required, MissingField},
     ibc::google::protobuf::timestamp::Timestamp,
-    Proto, TypeUrl,
+    Proto, TryFromProtoErrorOf, TypeUrl,
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -26,6 +26,7 @@ impl TypeUrl for protos::cosmos::staking::v1beta1::Commission {
 #[derive(Debug)]
 pub enum TryFromCommissionError {
     MissingField(MissingField),
+    Timestamp(TryFromProtoErrorOf<Timestamp>),
 }
 
 impl TryFrom<protos::cosmos::staking::v1beta1::Commission> for Commission {
@@ -34,7 +35,9 @@ impl TryFrom<protos::cosmos::staking::v1beta1::Commission> for Commission {
     fn try_from(value: protos::cosmos::staking::v1beta1::Commission) -> Result<Self, Self::Error> {
         Ok(Self {
             commission_rates: required!(value.commission_rates)?.into(),
-            update_time: required!(value.update_time)?.into(),
+            update_time: required!(value.update_time)?
+                .try_into()
+                .map_err(TryFromCommissionError::Timestamp)?,
         })
     }
 }

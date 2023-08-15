@@ -62,6 +62,7 @@ pub enum TryFromValidatorError {
     BondStatus(UnknownEnumVariant<i32>),
     UnbondingHeight(TryFromIntError),
     Commission(TryFromProtoErrorOf<Commission>),
+    Timestamp(TryFromProtoErrorOf<Timestamp>),
 }
 
 impl TryFrom<protos::cosmos::staking::v1beta1::Validator> for Validator {
@@ -85,7 +86,9 @@ impl TryFrom<protos::cosmos::staking::v1beta1::Validator> for Validator {
                 .unbonding_height
                 .try_into()
                 .map_err(TryFromValidatorError::UnbondingHeight)?,
-            unbonding_time: required!(value.unbonding_time)?.into(),
+            unbonding_time: required!(value.unbonding_time)?
+                .try_into()
+                .map_err(TryFromValidatorError::Timestamp)?,
             commission: required!(value.commission)?
                 .try_into()
                 .map_err(TryFromValidatorError::Commission)?,

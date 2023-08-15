@@ -1,6 +1,8 @@
+use serde::{Deserialize, Serialize};
+
 use crate::{errors::MissingField, ibc::core::client::height::Height, Proto, TypeUrl};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Packet {
     pub sequence: u64,
     pub source_port: String,

@@ -1,8 +1,8 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use crate::{errors::MissingField, ibc::core::commitment::merkle_prefix::MerklePrefix};
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Counterparty {
     pub client_id: String,
     pub connection_id: String,

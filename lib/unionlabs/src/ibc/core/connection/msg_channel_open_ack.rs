@@ -1,12 +1,13 @@
 #[cfg(feature = "ethabi")]
 use prost::Message;
+use serde::{Deserialize, Serialize};
 
 use crate::{
     ibc::core::{client::height::Height, connection::version::Version},
     CosmosAccountId, IntoProto, MsgIntoProto,
 };
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct MsgConnectionOpenAck<ClientState> {
     pub connection_id: String,
     pub counterparty_connection_id: String,

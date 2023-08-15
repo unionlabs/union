@@ -6,7 +6,7 @@ use crate::{
     IntoProto, Proto, TryFromProto, TryFromProtoBytesError, TryFromProtoErrorOf, TypeUrl,
 };
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Header<Data> {
     pub data: Data,
     pub height: Height,

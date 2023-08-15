@@ -9,7 +9,7 @@ use crate::{
     Proto, TypeUrl,
 };
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ClientState {
     pub chain_id: String,
     pub trust_level: Fraction,

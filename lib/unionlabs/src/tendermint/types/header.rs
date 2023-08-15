@@ -1,8 +1,7 @@
-use std::num::TryFromIntError;
-
 use serde::{Deserialize, Serialize};
 
 use crate::{
+    bounded_int::{BoundedI64, BoundedIntError},
     errors::{required, InvalidLength, MissingField},
     ethereum::{Address, H256},
     ibc::google::protobuf::timestamp::Timestamp,
@@ -15,7 +14,7 @@ pub struct Header {
     /// basic block info
     pub version: Consensus,
     pub chain_id: String,
-    pub height: u32,
+    pub height: BoundedI64<0, { i64::MAX }>,
     pub time: Timestamp,
     /// prev block info
     pub last_block_id: BlockId,
@@ -70,7 +69,8 @@ impl From<Header> for protos::tendermint::types::Header {
 pub enum TryFromHeaderError {
     MissingField(MissingField),
     LastBlockId(TryFromProtoErrorOf<BlockId>),
-    Height(TryFromIntError),
+    Height(BoundedIntError<i64>),
+    Timestamp(TryFromProtoErrorOf<Timestamp>),
     LastCommitHash(InvalidLength),
     DataHash(InvalidLength),
     ValidatorsHash(InvalidLength),
@@ -93,7 +93,9 @@ impl TryFrom<protos::tendermint::types::Header> for Header {
                 .height
                 .try_into()
                 .map_err(TryFromHeaderError::Height)?,
-            time: required!(value.time)?.into(),
+            time: required!(value.time)?
+                .try_into()
+                .map_err(TryFromHeaderError::Timestamp)?,
             last_block_id: required!(value.last_block_id)?
                 .try_into()
                 .map_err(TryFromHeaderError::LastBlockId)?,
@@ -176,7 +178,8 @@ impl From<Header> for contracts::glue::TendermintTypesHeaderData {
 #[derive(Debug)]
 pub enum TryFromEthAbiHeaderError {
     LastBlockId(crate::TryFromEthAbiErrorOf<BlockId>),
-    Height(TryFromIntError),
+    Height(BoundedIntError<i64>),
+    Timestamp(crate::TryFromEthAbiErrorOf<Timestamp>),
     LastCommitHash(InvalidLength),
     DataHash(InvalidLength),
     ValidatorsHash(InvalidLength),
@@ -200,7 +203,10 @@ impl TryFrom<contracts::glue::TendermintTypesHeaderData> for Header {
                 .height
                 .try_into()
                 .map_err(TryFromEthAbiHeaderError::Height)?,
-            time: value.time.into(),
+            time: value
+                .time
+                .try_into()
+                .map_err(TryFromEthAbiHeaderError::Timestamp)?,
             last_block_id: value
                 .last_block_id
                 .try_into()
