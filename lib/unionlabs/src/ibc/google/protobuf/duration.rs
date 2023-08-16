@@ -1,9 +1,33 @@
+use core::ops::Add;
+
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+use super::timestamp::Timestamp;
+
+#[derive(Debug, Clone, PartialEq, PartialOrd, Serialize, Deserialize)]
 pub struct Duration {
     pub seconds: i64,
     pub nanos: i32,
+}
+
+impl Add for Duration {
+    type Output = Self;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        Self {
+            seconds: self.seconds + rhs.seconds,
+            nanos: self.nanos + rhs.nanos,
+        }
+    }
+}
+
+impl From<Timestamp> for Duration {
+    fn from(value: Timestamp) -> Self {
+        Self {
+            seconds: value.seconds,
+            nanos: value.nanos,
+        }
+    }
 }
 
 impl From<Duration> for protos::google::protobuf::Duration {

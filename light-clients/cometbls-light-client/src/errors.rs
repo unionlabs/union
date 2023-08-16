@@ -30,6 +30,12 @@ pub enum Error {
     #[error("Invalid height")]
     InvalidHeight,
 
+    #[error("Invalid header: {0}")]
+    InvalidHeader(String),
+
+    #[error("Invalid ZKP")]
+    InvalidZKP,
+
     #[error("Invalid sync committee")]
     InvalidSyncCommittee,
 

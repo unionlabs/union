@@ -22,6 +22,8 @@ serde-json-wasm = { version = "*", default-features = false }
 sha3 = { version = "0.10.8", default-features = false }
 thiserror = { version = "1.0.26", default-features = false }
 tiny-keccak = { version = "2.0.2", default-features = false, features = ["keccak"] }
+rs_merkle = "1.4.1"
+protos = { path = "../../generated/rust", default-features = false, features = ["proto_full", "std"] }
 
 wasm-light-client-types = { path = "../wasm-light-client-types" }
 unionlabs = { path = "../../lib/unionlabs", default-features = false }
@@ -29,6 +31,5 @@ unionlabs = { path = "../../lib/unionlabs", default-features = false }
 [dev-dependencies]
 base64 = "0.21"
 serde_json = "1"
-protos = { path = "../../generated/rust", default-features = false, features = ["proto_full", "std"] }
 
 [features]

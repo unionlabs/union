@@ -8,7 +8,7 @@ use crate::{
 /// See <https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&gist=2a4088bba6218db02520968c4a4aee87>
 const TS_SECONDS_MAX: i64 = 253_402_300_799;
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Timestamp {
     /// As per the proto docs: "Must be from 0001-01-01T00:00:00Z to
     /// 9999-12-31T23:59:59Z inclusive."
@@ -23,6 +23,24 @@ impl Proto for Timestamp {
 
 impl TypeUrl for protos::google::protobuf::Timestamp {
     const TYPE_URL: &'static str = "/google.protobuf.Timestamp";
+}
+
+#[allow(clippy::cast_possible_wrap)]
+#[allow(clippy::cast_possible_truncation)]
+impl From<cosmwasm_std::Timestamp> for Timestamp {
+    fn from(value: cosmwasm_std::Timestamp) -> Self {
+        Self {
+            seconds: value.seconds() as i64,
+            nanos: value.nanos() as i32,
+        }
+    }
+}
+
+#[allow(clippy::cast_sign_loss)]
+impl From<Timestamp> for cosmwasm_std::Timestamp {
+    fn from(value: Timestamp) -> Self {
+        cosmwasm_std::Timestamp::from_seconds(value.seconds as u64).plus_nanos(value.nanos as u64)
+    }
 }
 
 impl From<Timestamp> for protos::google::protobuf::Timestamp {
