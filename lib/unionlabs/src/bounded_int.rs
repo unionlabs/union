@@ -74,17 +74,24 @@ macro_rules! bounded_int {
         }
 
         $(
-            #[doc = concat!(
-                "Extra assertion that [`",
-                stringify!($NonZero),
-                "`]",
-                " is the same as [`",
-                stringify!($Struct),
-                "<0, ",
-                stringify!($ty),
-                ">`]."
-            )]
-            const _: [(); 1] = [(); (<$ty>::MIN.abs_diff(0) == 0) as usize];
+            const _: () = assert!(
+                <$ty>::MIN.abs_diff(0) == 0,
+                concat!(
+                    "Extra assertion that [`",
+                    stringify!($NonZero),
+                    "`]",
+                    " is the same as [`",
+                    stringify!($Struct),
+                    "<1, ",
+                    stringify!($ty),
+                    ">`]."
+                ),
+            );
+
+            const _: $ty = match <$NonZero>::new(1) {
+                Some(n) => n.get(),
+                None => unreachable!(),
+            };
 
             impl From<$NonZero> for $Struct<1, { <$ty>::MAX }> {
                 fn from(value: $NonZero) -> Self {
