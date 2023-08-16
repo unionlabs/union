@@ -15,7 +15,7 @@ use sha2::Digest;
 
 use crate::{errors::TryFromBranchError, ethereum::H256};
 
-/// Defines types that wrap the IBC specification, matching the proto module structure.
+/// Defines types that wrap the IBC specification, matching the proto module structure. This also includes `union` extensions to ibc (i.e. types defined in `union.ibc`).
 pub mod ibc;
 
 /// Defines types that wrap the tendermint specification, matching the proto module structure.
@@ -27,10 +27,15 @@ pub mod cosmos;
 /// Various ethereum types. Types that have an IBC counterpart are defined in [`ibc`].
 pub mod ethereum;
 
+/// Types specific to the union protocol.
+pub mod union;
+
 /// Wrapper types around [`milagro_bls`] types, providing more conversions and a simpler signing interface.
 pub mod bls;
 
 pub mod ethereum_consts_traits;
+
+pub mod bounded_int;
 
 pub(crate) mod macros;
 

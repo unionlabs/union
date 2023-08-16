@@ -1,11 +1,14 @@
 use serde::{Deserialize, Serialize};
 
-use crate::tendermint::types::{block_id::BlockId, commit_sig::CommitSig};
+use crate::{
+    bounded_int::{BoundedI32, BoundedI64},
+    tendermint::types::{block_id::BlockId, commit_sig::CommitSig},
+};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Commit {
-    pub height: u32,
-    pub round: u16,
+    pub height: BoundedI64<0, { i64::MAX }>,
+    pub round: BoundedI32<0, { i32::MAX }>,
     pub block_id: BlockId,
     pub signatures: Vec<CommitSig>,
 }
@@ -18,8 +21,8 @@ impl crate::EthAbi for Commit {
 #[cfg(feature = "ethabi")]
 #[derive(Debug)]
 pub enum TryFromEthAbiCommitError {
-    Height(std::num::TryFromIntError),
-    Round(std::num::TryFromIntError),
+    Height(crate::bounded_int::BoundedIntError<i64>),
+    Round(crate::bounded_int::BoundedIntError<i32>),
     BlockId(crate::TryFromEthAbiErrorOf<BlockId>),
     Signatures(crate::TryFromEthAbiErrorOf<CommitSig>),
 }

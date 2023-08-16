@@ -33,7 +33,7 @@ type PortId = String;
 #[derive(Debug, Serialize)]
 pub struct StateProof<Data> {
     pub state: Data,
-    #[serde(with = "serde_utils::hex_string")]
+    #[serde(with = "::serde_utils::hex_string")]
     pub proof: Vec<u8>,
     pub proof_height: Height,
 }

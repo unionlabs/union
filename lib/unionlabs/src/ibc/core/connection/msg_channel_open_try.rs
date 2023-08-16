@@ -1,3 +1,5 @@
+use serde::{Deserialize, Serialize};
+
 use crate::{
     ibc::core::{
         client::height::Height,
@@ -6,7 +8,7 @@ use crate::{
     CosmosAccountId, IntoProto, MsgIntoProto,
 };
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct MsgConnectionOpenTry<ClientState> {
     pub client_id: String,
     pub client_state: ClientState,

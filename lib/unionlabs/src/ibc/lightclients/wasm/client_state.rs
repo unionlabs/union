@@ -7,7 +7,7 @@ use crate::{
     TryFromProto, TryFromProtoBytesError, TryFromProtoErrorOf, TypeUrl,
 };
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ClientState<Data> {
     pub data: Data,
     pub code_id: H256,

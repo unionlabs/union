@@ -807,9 +807,15 @@ mod test {
 
         let consensus_state = cometbls::consensus_state::ConsensusState {
             root: MerkleRoot {
-                hash: hex::decode(CONSENSUS_STATE_CONTRACT_MERKLE_ROOT).unwrap(),
+                hash: hex::decode(CONSENSUS_STATE_CONTRACT_MERKLE_ROOT)
+                    .unwrap()
+                    .try_into()
+                    .unwrap(),
             },
-            next_validators_hash: hex::decode(CONSENSUS_STATE_NEXT_VALIDATORS_HASH).unwrap(),
+            next_validators_hash: hex::decode(CONSENSUS_STATE_NEXT_VALIDATORS_HASH)
+                .unwrap()
+                .try_into()
+                .unwrap(),
         };
 
         let wasm_consensus_state = protos::ibc::lightclients::wasm::v1::ConsensusState {

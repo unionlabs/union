@@ -13,7 +13,7 @@ use crate::{
 };
 
 /// Wrapper type to indicate that a type is to be serialized as an Any.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Any<T>(pub T);
 
 impl<'de, T> Deserialize<'de> for Any<T>

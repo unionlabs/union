@@ -10,7 +10,7 @@ use crate::{
     Proto, TryFromProtoErrorOf, TypeUrl,
 };
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ClientState {
     pub genesis_validators_root: H256,
     pub min_sync_committee_participants: u64,

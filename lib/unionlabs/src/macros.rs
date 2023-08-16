@@ -1,7 +1,8 @@
 macro_rules! wrapper_enum {
     (
         #[proto($Proto:ty)]
-        $(#[ethabi($EthAbi:ty)])?
+        // NOTE: Currently there are no ethabi generated enums; use this if/when there are any.
+        // $(#[ethabi($EthAbi:ty)])?
         pub enum $Enum:ident {
             $($Variant:ident = $discriminant:literal,)+
         }
@@ -9,6 +10,15 @@ macro_rules! wrapper_enum {
         #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, serde::Serialize, serde::Deserialize)]
         pub enum $Enum {
             $($Variant = $discriminant),+
+        }
+
+        mod ensure_enum_values_are_same_as_proto {
+            $(
+                #[allow(non_upper_case_globals, dead_code)]
+                const $Variant: () = assert!(
+                    super::$Enum::$Variant as i32 == <$Proto>::$Variant as i32,
+                );
+            )+
         }
 
         impl std::str::FromStr for $Enum {

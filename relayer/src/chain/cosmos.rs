@@ -22,6 +22,7 @@ use tendermint_rpc::{
 };
 use tokio_stream::wrappers::UnboundedReceiverStream;
 use unionlabs::{
+    bounded_int::BoundedI64,
     cosmos::staking::query_validators_response::QueryValidatorsResponse,
     ethereum::H256,
     ethereum_consts_traits::{ChainSpec, PresetBaseKind},
@@ -438,14 +439,23 @@ impl Chain for Union {
 
             let state = cometbls::consensus_state::ConsensusState {
                 root: MerkleRoot {
-                    hash: commit.signed_header.header.app_hash.as_bytes().to_vec(),
+                    hash: commit
+                        .signed_header
+                        .header
+                        .app_hash
+                        .as_bytes()
+                        .to_vec()
+                        .try_into()
+                        .unwrap(),
                 },
                 next_validators_hash: commit
                     .signed_header
                     .header
                     .next_validators_hash
                     .as_bytes()
-                    .to_vec(),
+                    .to_vec()
+                    .try_into()
+                    .unwrap(),
             };
 
             Any(wasm::consensus_state::ConsensusState {
@@ -1045,10 +1055,10 @@ impl<C: ChainSpec> Connect<Cometbls<C>> for Ethereum<C> {
                         app: commit.signed_header.header.version.app,
                     },
                     chain_id: commit.signed_header.header.chain_id.into(),
-                    height: tendermint_height_to_u32(commit.signed_header.header.height),
+                    height: tendermint_height_to_bounded_i64(commit.signed_header.header.height),
                     time: Timestamp {
-                        seconds: header_timestamp.seconds,
-                        nanos: header_timestamp.nanos,
+                        seconds: header_timestamp.seconds.try_into().unwrap(),
+                        nanos: header_timestamp.nanos.try_into().unwrap(),
                     },
                     last_block_id: BlockId {
                         hash: tendermint_hash_to_h256(
@@ -1110,7 +1120,7 @@ impl<C: ChainSpec> Connect<Cometbls<C>> for Ethereum<C> {
                         .expect("value is a [u8; 20] internally, this should not fail; qed;"),
                 },
                 commit: Commit {
-                    height: tendermint_height_to_u32(commit.signed_header.commit.height),
+                    height: tendermint_height_to_bounded_i64(commit.signed_header.commit.height),
                     round: i32::from(commit.signed_header.commit.round)
                         .try_into()
                         .unwrap(),
@@ -1279,6 +1289,8 @@ fn tendermint_hash_to_h256(hash: tendermint::Hash) -> H256 {
     }
 }
 
-fn tendermint_height_to_u32(height: tendermint::block::Height) -> u32 {
+fn tendermint_height_to_bounded_i64(
+    height: tendermint::block::Height,
+) -> BoundedI64<0, { i64::MAX }> {
     i64::from(height).try_into().unwrap()
 }

@@ -24,6 +24,7 @@ impl crate::EthAbi for CommitSig {
 pub enum TryFromEthAbiCommitSigError {
     BlockIdFlag(crate::errors::UnknownEnumVariant<u8>),
     ValidatorAddress(crate::errors::InvalidLength),
+    Timestamp(crate::TryFromEthAbiErrorOf<Timestamp>),
 }
 
 #[cfg(feature = "ethabi")]
@@ -40,8 +41,10 @@ impl TryFrom<contracts::glue::TendermintTypesCommitSigData> for CommitSig {
                 .validator_address
                 .try_into()
                 .map_err(TryFromEthAbiCommitSigError::ValidatorAddress)?,
-
-            timestamp: value.timestamp.into(),
+            timestamp: value
+                .timestamp
+                .try_into()
+                .map_err(TryFromEthAbiCommitSigError::Timestamp)?,
             signature: value.signature.to_vec(),
         })
     }
