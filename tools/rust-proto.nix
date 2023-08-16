@@ -320,13 +320,15 @@
 
       packages.generate-rust-proto = pkgs.writeShellApplication {
         name = "generate-rust-proto";
-        runtimeInputs = [ rust-proto ];
+        runtimeInputs = [ rust-proto pkgs.rsync ];
         text = ''
           ${ensureAtRepositoryRoot}
 
-          outdir="generated/rust"
+          outdir="generated/rust/"
 
-          cp -r --no-preserve=mode ${rust-proto}/* $outdir
+          mkdir -p "$outdir"
+
+          rsync -rL --chmod=ugo=rwX --delete ${rust-proto}/ $outdir
 
           echo "Generation successful!"
         '';

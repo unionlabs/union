@@ -1,5 +1,6 @@
 [dependencies]
 [dependencies.ethers]
+features = ["rustls"]
 optional = true
 version = "2.0.4"
 [dependencies.prost]
@@ -130,9 +131,9 @@ proto_full = [
   "tendermint+store",
   "tendermint+types",
   "tendermint+version",
+  "union+galois+api+v1",
   "union+ibc+lightclients+cometbls+v1",
   "union+ibc+lightclients+ethereum+v1",
-  "union+prover+api+v1",
   "union+union",
 ]
 "capability+v1" = []
@@ -328,6 +329,7 @@ proto_full = [
   "tendermint+version",
 ]
 "tendermint+version" = []
+"union+galois+api+v1" = ["tendermint+types"]
 "union+ibc+lightclients+cometbls+v1" = [
   "google+protobuf",
   "ibc+core+client+v1",
@@ -339,7 +341,6 @@ proto_full = [
   "ibc+core+client+v1",
   "ibc+lightclients+tendermint+v1",
 ]
-"union+prover+api+v1" = ["tendermint+types"]
 "union+union" = []
 ## @@protoc_insertion_point(features)
 client = ["tonic"]
