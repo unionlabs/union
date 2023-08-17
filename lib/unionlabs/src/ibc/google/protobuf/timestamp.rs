@@ -1,3 +1,5 @@
+use core::num::TryFromIntError;
+
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -25,17 +27,17 @@ impl TypeUrl for protos::google::protobuf::Timestamp {
     const TYPE_URL: &'static str = "/google.protobuf.Timestamp";
 }
 
-#[allow(clippy::cast_possible_wrap)]
-#[allow(clippy::cast_possible_truncation)]
 impl TryFrom<cosmwasm_std::Timestamp> for Timestamp {
     type Error = TryFromTimestampError;
 
     fn try_from(value: cosmwasm_std::Timestamp) -> Result<Self, Self::Error> {
         Ok(Self {
-            seconds: (value.seconds() as i64)
+            seconds: TryInto::<i64>::try_into(value.seconds())
+                .map_err(TryFromTimestampError::IntCast)?
                 .try_into()
                 .map_err(TryFromTimestampError::Seconds)?,
-            nanos: (value.nanos() as i32)
+            nanos: TryInto::<i32>::try_into(value.nanos())
+                .map_err(TryFromTimestampError::IntCast)?
                 .try_into()
                 .map_err(TryFromTimestampError::Nanos)?,
         })
@@ -63,6 +65,7 @@ impl From<Timestamp> for protos::google::protobuf::Timestamp {
 pub enum TryFromTimestampError {
     Seconds(BoundedIntError<i64>),
     Nanos(BoundedIntError<i32>),
+    IntCast(TryFromIntError),
 }
 
 impl TryFrom<protos::google::protobuf::Timestamp> for Timestamp {

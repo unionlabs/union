@@ -120,7 +120,11 @@ pub fn update_header(mut deps: DepsMut, env: Env, header: Header) -> Result<Cont
         ));
     }
 
-    let current_time: Timestamp = env.block.time.into();
+    let current_time: Timestamp = env
+        .block
+        .time
+        .try_into()
+        .map_err(|_| Error::InvalidHeader("timestamp conversion failed".into()))?;
 
     if Duration::from(header.signed_header.header.time)
         < Duration::from(current_time)
