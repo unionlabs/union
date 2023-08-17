@@ -2,9 +2,9 @@
 
 [![Build](https://github.com/unionlabs/union/actions/workflows/build.yml/badge.svg)](https://github.com/unionlabs/union/actions/workflows/build.yml)
 [![Nightly](https://github.com/unionlabs/union/actions/workflows/nightly.yml/badge.svg)](https://github.com/unionlabs/union/actions/workflows/nightly.yml)
-[![Docs](https://img.shields.io/badge/docs-main-blue)](https://docs.union.build/)
+[![Docs](https://img.shields.io/badge/docs-main-blue)][docs]
 
-Union is a trust-minimized, zero-knowledge bridging protocol, designed for censorship resistance, extremely high security, and usage in decentralized finance. It implements [IBC](https://github.com/cosmos/ibc) for compatibility with Cosmos chains and connects to Ethereum.
+Union is a trust-minimized, zero-knowledge bridging protocol, designed for censorship resistance, extremely high security, and usage in decentralized finance. It implements [IBC] for compatibility with Cosmos chains and connects to Ethereum.
 
 Most bridging protocols use a form of multi-signature verification across validators (Wormhole, Axelar) or even a fully trusted third party like Circle's cross-chain transfer protocol (CCTP). These methods are less secure and more prone to hacks and censorship. Union uses consensus verification based on zero-knowledge proofs, which provides the highest level of security currently known.
 
@@ -24,8 +24,11 @@ You can find these components in the [releases](https://github.com/unionlabs/uni
 
 ## Documentation
 
-The official docs are hosted [here](https://docs.union.build). Each individual component also has accompanying developer documentation for contributors, which you can find in each `README.md`.
+The official docs are hosted [here][docs]. Each individual component also has accompanying developer documentation for contributors, which you can find in each `README.md`.
 
 ## Contributing
 
 The [contributing](./CONTRIBUTING.md) guide explains how to get started working on Union and its components.
+
+[docs]: https://docs.union.build "Official Union Docs"
+[IBC]: https://github.com/cosmos/ibc "cosmso/ibc"
