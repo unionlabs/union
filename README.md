@@ -24,7 +24,7 @@ You can find these components in the [releases](https://github.com/unionlabs/uni
 
 ## Documentation
 
-The official docs are hosted [here](https://docs-plum-one.vercel.app). Each individual component also has accompanying developer documentation for contributors, which you can find in each `README.md`.
+The official docs are hosted [here](https://docs.union.build). Each individual component also has accompanying developer documentation for contributors, which you can find in each `README.md`.
 
 ## Contributing
 
