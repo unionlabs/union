@@ -1,4 +1,5 @@
 use std::{
+    fmt::Debug,
     ops::Div,
     sync::Arc,
     time::{SystemTime, UNIX_EPOCH},
@@ -9,10 +10,11 @@ use clap::Args;
 use contracts::{
     devnet_ownable_ibc_handler,
     ibc_handler::{
-        self, GeneratedConnectionIdentifierFilter, GetChannelCall, GetChannelReturn,
-        GetClientStateCall, GetClientStateReturn, GetConnectionCall, GetConnectionReturn,
-        GetConsensusStateCall, GetConsensusStateReturn, GetHashedPacketCommitmentCall,
-        GetHashedPacketCommitmentReturn, IBCHandler, IBCHandlerEvents, SendPacketFilter,
+        self, GeneratedChannelIdentifierFilter, GeneratedConnectionIdentifierFilter,
+        GetChannelCall, GetChannelReturn, GetClientStateCall, GetClientStateReturn,
+        GetConnectionCall, GetConnectionReturn, GetConsensusStateCall, GetConsensusStateReturn,
+        GetHashedPacketCommitmentCall, GetHashedPacketCommitmentReturn, IBCHandler,
+        IBCHandlerEvents, SendPacketFilter,
     },
     ics20_bank::ICS20Bank,
     ics20_transfer_bank::ICS20TransferBank,
@@ -23,9 +25,9 @@ use contracts::{
     },
 };
 use ethers::{
-    abi::{AbiEncode, Tokenizable},
+    abi::{AbiEncode, RawLog, Tokenizable},
     contract::EthCall,
-    prelude::{decode_logs, k256::ecdsa, parse_log, LogMeta, SignerMiddleware},
+    prelude::{decode_logs, k256::ecdsa, parse_log, EthLogDecode, LogMeta, SignerMiddleware},
     providers::{Middleware, Provider, Ws},
     signers::{LocalWallet, Wallet},
     types::{Bytes, U256},
@@ -76,6 +78,10 @@ use unionlabs::{
 use crate::{
     chain::{
         cosmos::{Ethereum, Union},
+        events::{
+            ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit, ChannelOpenTry, ConnectionOpenAck,
+            ConnectionOpenConfirm, ConnectionOpenInit, ConnectionOpenTry, UpdateClient,
+        },
         proof::{
             ChannelEndPath, ClientConsensusStatePath, ClientStatePath, CommitmentPath,
             ConnectionPath, IbcPath,
@@ -660,13 +666,15 @@ impl<C: ChainSpec> LightClient for Cometbls<C> {
         &self,
         client_id: String,
         msg: Self::UpdateClientMessage,
-    ) -> impl Future<Output = ()> + '_ {
+    ) -> impl Future<Output = (Height, UpdateClient)> + '_ {
         async move {
-            self.chain
+            let tx_rcp = self
+                .chain
                 .ibc_handler
                 .update_client(ibc_handler::MsgUpdateClient {
-                    client_id,
-                    client_message: encode_dynamic_singleton_tuple(msg.into_eth_abi()).into(),
+                    client_id: client_id.clone(),
+                    client_message: encode_dynamic_singleton_tuple(msg.clone().into_eth_abi())
+                        .into(),
                 })
                 .send()
                 .await
@@ -674,6 +682,25 @@ impl<C: ChainSpec> LightClient for Cometbls<C> {
                 .await
                 .unwrap()
                 .unwrap();
+
+            let event_height = self
+                .chain
+                .make_height(tx_rcp.block_number.unwrap().as_u64());
+
+            (
+                self.chain
+                    .make_height(tx_rcp.block_number.unwrap().as_u64()),
+                #[allow(deprecated)]
+                UpdateClient {
+                    client_id,
+                    // TODO: Some way to fetch this from the evm; I don't think it's currently possible to do so
+                    client_type: COMETBLS_CLIENT_TYPE.to_string(),
+                    consensus_height: "".to_string(),
+                    consensus_heights: event_height.to_string(),
+                    // https://github.com/cosmos/ibc-go/blob/0dbd3f811928b216418a45ea164d184eec86cc67/modules/core/02-client/keeper/events.go#L38
+                    header: hex::encode(msg.into_proto_bytes()),
+                },
+            )
         }
     }
 
@@ -691,10 +718,7 @@ impl<C: ChainSpec> LightClient for Cometbls<C> {
 
             assert!(is_found);
 
-            google::protobuf::Any::decode(&*client_state_bytes)
-                .unwrap()
-                .try_into()
-                .unwrap()
+            Any::try_from_proto_bytes(&client_state_bytes).unwrap()
         }
     }
 
@@ -707,12 +731,12 @@ impl<C: ChainSpec> Connect<Ethereum<C>> for Cometbls<C> {
     fn connection_open_init(
         &self,
         msg: MsgConnectionOpenInit,
-    ) -> impl Future<Output = (String, Height)> + '_ {
+    ) -> impl Future<Output = (Height, ConnectionOpenInit)> + '_ {
         async move {
             let tx_rcp = self
                 .chain
                 .ibc_handler
-                .connection_open_init(msg.into())
+                .connection_open_init(msg.clone().into())
                 .send()
                 .await
                 .unwrap()
@@ -720,28 +744,7 @@ impl<C: ChainSpec> Connect<Ethereum<C>> for Cometbls<C> {
                 .unwrap()
                 .unwrap();
 
-            // TODO(benluelo): Better way to get logs
-            let connection_id = decode_logs::<IBCHandlerEvents>(
-                tx_rcp
-                    .logs
-                    .into_iter()
-                    .map(Into::into)
-                    .collect::<Vec<_>>()
-                    .as_ref(),
-            )
-            .unwrap()
-            .into_iter()
-            .find_map(|l| match l {
-                IBCHandlerEvents::GeneratedConnectionIdentifierFilter(
-                    GeneratedConnectionIdentifierFilter(connection_id),
-                ) => {
-                    tracing::info!(connection_id, "created connection");
-
-                    Some(connection_id)
-                }
-                _ => None,
-            })
-            .unwrap();
+            let connection_id = decode_log::<GeneratedConnectionIdentifierFilter>(tx_rcp.logs).0;
 
             tracing::info!("in connection open init, waiting for execution block to be finalized");
             self.chain
@@ -749,9 +752,14 @@ impl<C: ChainSpec> Connect<Ethereum<C>> for Cometbls<C> {
                 .await;
 
             (
-                connection_id,
                 self.chain
                     .make_height(tx_rcp.block_number.unwrap().as_u64()),
+                ConnectionOpenInit {
+                    connection_id,
+                    client_id: msg.client_id,
+                    counterparty_client_id: msg.counterparty.client_id,
+                    counterparty_connection_id: msg.counterparty.connection_id,
+                },
             )
         }
     }
@@ -759,12 +767,12 @@ impl<C: ChainSpec> Connect<Ethereum<C>> for Cometbls<C> {
     fn connection_open_try(
         &self,
         msg: MsgConnectionOpenTry<ClientStateOf<<Ethereum<C> as LightClient>::CounterpartyChain>>,
-    ) -> impl Future<Output = (String, Height)> + '_ {
+    ) -> impl Future<Output = (Height, ConnectionOpenTry)> + '_ {
         async move {
             let tx_rcp = self
                 .chain
                 .ibc_handler
-                .connection_open_try(msg.into())
+                .connection_open_try(msg.clone().into())
                 .send()
                 .await
                 .unwrap()
@@ -772,32 +780,22 @@ impl<C: ChainSpec> Connect<Ethereum<C>> for Cometbls<C> {
                 .unwrap()
                 .unwrap();
 
-            let connection_id = decode_logs::<IBCHandlerEvents>(
-                tx_rcp
-                    .logs
-                    .into_iter()
-                    .map(Into::into)
-                    .collect::<Vec<_>>()
-                    .as_ref(),
-            )
-            .unwrap()
-            .into_iter()
-            .find_map(|l| match l {
-                IBCHandlerEvents::GeneratedConnectionIdentifierFilter(connection_id) => {
-                    Some(connection_id.0)
-                }
-                _ => None,
-            })
-            .unwrap();
+            let connection_id = decode_log::<GeneratedConnectionIdentifierFilter>(tx_rcp.logs).0;
 
+            tracing::info!("in connection open try, waiting for execution block to be finalized");
             self.chain
                 .wait_for_execution_block(tx_rcp.block_number.unwrap())
                 .await;
 
             (
-                connection_id,
                 self.chain
                     .make_height(tx_rcp.block_number.unwrap().as_u64()),
+                ConnectionOpenTry {
+                    connection_id,
+                    client_id: msg.client_id,
+                    counterparty_client_id: msg.counterparty.client_id,
+                    counterparty_connection_id: msg.counterparty.connection_id,
+                },
             )
         }
     }
@@ -805,24 +803,26 @@ impl<C: ChainSpec> Connect<Ethereum<C>> for Cometbls<C> {
     fn connection_open_ack(
         &self,
         msg: MsgConnectionOpenAck<ClientStateOf<<Ethereum<C> as LightClient>::CounterpartyChain>>,
-    ) -> impl Future<Output = Height> + '_ {
+    ) -> impl Future<Output = (Height, ConnectionOpenAck)> + '_ {
         async move {
+            println!("{}", serde_json::to_string_pretty(&msg).unwrap());
+
             tracing::debug!(
                 "Client state: {}",
                 ethers::utils::hex::encode(msg.client_state.clone().into_proto().encode_to_vec())
             );
 
-            let msg: contracts::ibc_handler::MsgConnectionOpenAck = msg.into();
+            let eth_msg: contracts::ibc_handler::MsgConnectionOpenAck = msg.clone().into();
 
             tracing::debug!(
                 "Client state bytes {}",
-                ethers::utils::hex::encode(&msg.client_state_bytes)
+                ethers::utils::hex::encode(&eth_msg.client_state_bytes)
             );
 
             let tx_rcp = self
                 .chain
                 .ibc_handler
-                .connection_open_ack(msg)
+                .connection_open_ack(eth_msg)
                 .send()
                 .await
                 .unwrap()
@@ -834,20 +834,40 @@ impl<C: ChainSpec> Connect<Ethereum<C>> for Cometbls<C> {
                 .wait_for_execution_block(tx_rcp.block_number.unwrap())
                 .await;
 
-            self.chain
-                .make_height(tx_rcp.block_number.unwrap().as_u64())
+            let event_height = self
+                .chain
+                .make_height(tx_rcp.block_number.unwrap().as_u64());
+
+            let connection_end = self
+                .state_proof(
+                    ConnectionPath {
+                        connection_id: msg.connection_id.clone(),
+                    },
+                    event_height,
+                )
+                .await;
+
+            (
+                event_height,
+                ConnectionOpenAck {
+                    connection_id: msg.connection_id,
+                    client_id: connection_end.state.client_id,
+                    counterparty_client_id: connection_end.state.counterparty.client_id,
+                    counterparty_connection_id: msg.counterparty_connection_id,
+                },
+            )
         }
     }
 
     fn connection_open_confirm(
         &self,
         msg: MsgConnectionOpenConfirm,
-    ) -> impl Future<Output = Height> + '_ {
+    ) -> impl Future<Output = (Height, ConnectionOpenConfirm)> + '_ {
         async move {
             let tx_rcp = self
                 .chain
                 .ibc_handler
-                .connection_open_confirm(msg.into())
+                .connection_open_confirm(msg.clone().into())
                 .send()
                 .await
                 .unwrap()
@@ -859,20 +879,40 @@ impl<C: ChainSpec> Connect<Ethereum<C>> for Cometbls<C> {
                 .wait_for_execution_block(tx_rcp.block_number.unwrap())
                 .await;
 
-            self.chain
-                .make_height(tx_rcp.block_number.unwrap().as_u64())
+            let event_height = self
+                .chain
+                .make_height(tx_rcp.block_number.unwrap().as_u64());
+
+            let connection_end = self
+                .state_proof(
+                    ConnectionPath {
+                        connection_id: msg.connection_id.clone(),
+                    },
+                    event_height,
+                )
+                .await;
+
+            (
+                event_height,
+                ConnectionOpenConfirm {
+                    connection_id: msg.connection_id,
+                    client_id: connection_end.state.client_id,
+                    counterparty_client_id: connection_end.state.counterparty.client_id,
+                    counterparty_connection_id: connection_end.state.counterparty.connection_id,
+                },
+            )
         }
     }
 
     fn channel_open_init(
         &self,
         msg: MsgChannelOpenInit,
-    ) -> impl Future<Output = (String, Height)> + '_ {
+    ) -> impl Future<Output = (Height, ChannelOpenInit)> + '_ {
         async move {
             let tx_rcp = self
                 .chain
                 .ibc_handler
-                .channel_open_init(msg.into())
+                .channel_open_init(msg.clone().into())
                 .send()
                 .await
                 .unwrap()
@@ -880,32 +920,35 @@ impl<C: ChainSpec> Connect<Ethereum<C>> for Cometbls<C> {
                 .unwrap()
                 .unwrap();
 
-            let channel_id = decode_logs::<IBCHandlerEvents>(
-                tx_rcp
-                    .logs
-                    .into_iter()
-                    .map(Into::into)
-                    .collect::<Vec<_>>()
-                    .as_ref(),
-            )
-            .unwrap()
-            .into_iter()
-            .find_map(|l| match l {
-                IBCHandlerEvents::GeneratedChannelIdentifierFilter(channel_id) => {
-                    Some(channel_id.0)
-                }
-                _ => None,
-            })
-            .unwrap();
+            let channel_id = decode_log::<GeneratedChannelIdentifierFilter>(tx_rcp.logs).0;
 
             self.chain
                 .wait_for_execution_block(tx_rcp.block_number.unwrap())
                 .await;
 
+            let event_height = self
+                .chain
+                .make_height(tx_rcp.block_number.unwrap().as_u64());
+
+            let channel_end = self
+                .state_proof(
+                    ChannelEndPath {
+                        port_id: msg.port_id.clone(),
+                        channel_id: channel_id.clone(),
+                    },
+                    event_height,
+                )
+                .await;
+
             (
-                channel_id,
-                self.chain
-                    .make_height(tx_rcp.block_number.unwrap().as_u64()),
+                event_height,
+                ChannelOpenInit {
+                    port_id: msg.port_id,
+                    channel_id,
+                    counterparty_port_id: channel_end.state.counterparty.port_id,
+                    // FIXME: This can panic, it would be great to not do that
+                    connection_id: channel_end.state.connection_hops[0].clone(),
+                },
             )
         }
     }
@@ -913,12 +956,12 @@ impl<C: ChainSpec> Connect<Ethereum<C>> for Cometbls<C> {
     fn channel_open_try(
         &self,
         msg: MsgChannelOpenTry,
-    ) -> impl Future<Output = (String, Height)> + '_ {
+    ) -> impl Future<Output = (Height, ChannelOpenTry)> + '_ {
         async move {
             let tx_rcp = self
                 .chain
                 .ibc_handler
-                .channel_open_try(msg.into())
+                .channel_open_try(msg.clone().into())
                 .send()
                 .await
                 .unwrap()
@@ -926,42 +969,50 @@ impl<C: ChainSpec> Connect<Ethereum<C>> for Cometbls<C> {
                 .unwrap()
                 .unwrap();
 
-            let channel_id = decode_logs::<IBCHandlerEvents>(
-                tx_rcp
-                    .logs
-                    .into_iter()
-                    .map(Into::into)
-                    .collect::<Vec<_>>()
-                    .as_ref(),
-            )
-            .unwrap()
-            .into_iter()
-            .find_map(|l| match l {
-                IBCHandlerEvents::GeneratedChannelIdentifierFilter(channel_id) => {
-                    Some(channel_id.0)
-                }
-                _ => None,
-            })
-            .unwrap();
+            let channel_id = decode_log::<GeneratedChannelIdentifierFilter>(tx_rcp.logs).0;
 
             self.chain
                 .wait_for_execution_block(tx_rcp.block_number.unwrap())
                 .await;
 
+            let event_height = self
+                .chain
+                .make_height(tx_rcp.block_number.unwrap().as_u64());
+
+            let channel_end = self
+                .state_proof(
+                    ChannelEndPath {
+                        port_id: msg.port_id.clone(),
+                        channel_id: channel_id.clone(),
+                    },
+                    event_height,
+                )
+                .await;
+
             (
-                channel_id,
-                self.chain
-                    .make_height(tx_rcp.block_number.unwrap().as_u64()),
+                event_height,
+                ChannelOpenTry {
+                    port_id: msg.port_id,
+                    channel_id,
+                    counterparty_port_id: channel_end.state.counterparty.port_id,
+                    // FIXME: This can panic, it would be great to not do that
+                    connection_id: channel_end.state.connection_hops[0].clone(),
+                    counterparty_channel_id: channel_end.state.counterparty.channel_id,
+                    version: channel_end.state.version,
+                },
             )
         }
     }
 
-    fn channel_open_ack(&self, msg: MsgChannelOpenAck) -> impl Future<Output = Height> + '_ {
+    fn channel_open_ack(
+        &self,
+        msg: MsgChannelOpenAck,
+    ) -> impl Future<Output = (Height, ChannelOpenAck)> + '_ {
         async move {
             let tx_rcp = self
                 .chain
                 .ibc_handler
-                .channel_open_ack(msg.into())
+                .channel_open_ack(msg.clone().into())
                 .send()
                 .await
                 .unwrap()
@@ -973,20 +1024,43 @@ impl<C: ChainSpec> Connect<Ethereum<C>> for Cometbls<C> {
                 .wait_for_execution_block(tx_rcp.block_number.unwrap())
                 .await;
 
-            self.chain
-                .make_height(tx_rcp.block_number.unwrap().as_u64())
+            let event_height = self
+                .chain
+                .make_height(tx_rcp.block_number.unwrap().as_u64());
+
+            let channel_end = self
+                .state_proof(
+                    ChannelEndPath {
+                        port_id: msg.port_id.clone(),
+                        channel_id: msg.channel_id.clone(),
+                    },
+                    event_height,
+                )
+                .await;
+
+            (
+                event_height,
+                ChannelOpenAck {
+                    port_id: msg.port_id,
+                    channel_id: msg.channel_id.clone(),
+                    counterparty_port_id: channel_end.state.counterparty.port_id,
+                    // TODO: This can panic, would be great to not do that
+                    connection_id: channel_end.state.connection_hops[0].clone(),
+                    counterparty_channel_id: channel_end.state.counterparty.channel_id,
+                },
+            )
         }
     }
 
     fn channel_open_confirm(
         &self,
         msg: MsgChannelOpenConfirm,
-    ) -> impl Future<Output = Height> + '_ {
+    ) -> impl Future<Output = (Height, ChannelOpenConfirm)> + '_ {
         async move {
             let tx_rcp = self
                 .chain
                 .ibc_handler
-                .channel_open_confirm(msg.into())
+                .channel_open_confirm(msg.clone().into())
                 .send()
                 .await
                 .unwrap()
@@ -998,8 +1072,31 @@ impl<C: ChainSpec> Connect<Ethereum<C>> for Cometbls<C> {
                 .wait_for_execution_block(tx_rcp.block_number.unwrap())
                 .await;
 
-            self.chain
-                .make_height(tx_rcp.block_number.unwrap().as_u64())
+            let event_height = self
+                .chain
+                .make_height(tx_rcp.block_number.unwrap().as_u64());
+
+            let channel_end = self
+                .state_proof(
+                    ChannelEndPath {
+                        port_id: msg.port_id.clone(),
+                        channel_id: msg.channel_id.clone(),
+                    },
+                    event_height,
+                )
+                .await;
+
+            (
+                event_height,
+                ChannelOpenConfirm {
+                    port_id: msg.port_id,
+                    channel_id: msg.channel_id.clone(),
+                    counterparty_port_id: channel_end.state.counterparty.port_id,
+                    // TODO: This can panic, would be great to not do that
+                    connection_id: channel_end.state.connection_hops[0].clone(),
+                    counterparty_channel_id: channel_end.state.counterparty.channel_id,
+                },
+            )
         }
     }
 
@@ -1494,4 +1591,14 @@ impl_eth_call_ext! {
 
 pub trait IntoEthCall: Into<Self::EthCall> {
     type EthCall: EthCallExt;
+}
+
+fn decode_log<T: EthLogDecode + Debug>(logs: impl IntoIterator<Item = impl Into<RawLog>>) -> T {
+    let t = decode_logs::<T>(&logs.into_iter().map(Into::into).collect::<Vec<_>>()).unwrap();
+
+    let [t] = <[T; 1]>::try_from(t)
+        .map_err(|err| format!("invalid events, expected one event but got {err:#?}"))
+        .unwrap();
+
+    t
 }
