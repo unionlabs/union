@@ -8,6 +8,15 @@ pub struct SignedHeader {
     pub commit: Commit,
 }
 
+impl From<SignedHeader> for protos::tendermint::types::SignedHeader {
+    fn from(value: SignedHeader) -> Self {
+        Self {
+            header: Some(value.header.into()),
+            commit: Some(value.commit.into()),
+        }
+    }
+}
+
 #[cfg(feature = "ethabi")]
 #[derive(Debug)]
 pub enum TryFromEthAbiSignedHeaderError {

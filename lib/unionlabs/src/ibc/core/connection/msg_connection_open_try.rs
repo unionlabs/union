@@ -5,7 +5,7 @@ use crate::{
         client::height::Height,
         connection::{counterparty::Counterparty, version::Version},
     },
-    CosmosAccountId, IntoProto, MsgIntoProto,
+    CosmosAccountId, IntoProto, MsgIntoProto, TypeUrl,
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -22,10 +22,13 @@ pub struct MsgConnectionOpenTry<ClientState> {
     pub consensus_height: Height,
 }
 
+impl TypeUrl for protos::ibc::core::connection::v1::MsgConnectionOpenTry {
+    const TYPE_URL: &'static str = "/ibc.core.connection.v1.MsgConnectionOpenTry";
+}
+
 impl<ClientState> MsgIntoProto for MsgConnectionOpenTry<ClientState>
 where
     ClientState: IntoProto<Proto = protos::google::protobuf::Any>,
-    // <ClientState as IntoProto>::Proto: ,
 {
     type Proto = protos::ibc::core::connection::v1::MsgConnectionOpenTry;
 

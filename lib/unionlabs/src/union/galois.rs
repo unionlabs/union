@@ -1,2 +1,2 @@
-mod prove_request;
-mod validator_set_commit;
+pub mod prove_request;
+pub mod validator_set_commit;

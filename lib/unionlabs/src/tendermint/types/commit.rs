@@ -13,6 +13,17 @@ pub struct Commit {
     pub signatures: Vec<CommitSig>,
 }
 
+impl From<Commit> for protos::tendermint::types::Commit {
+    fn from(value: Commit) -> Self {
+        Self {
+            height: value.height.into(),
+            round: value.round.into(),
+            block_id: Some(value.block_id.into()),
+            signatures: value.signatures.into_iter().map(Into::into).collect(),
+        }
+    }
+}
+
 #[cfg(feature = "ethabi")]
 impl crate::EthAbi for Commit {
     type EthAbi = contracts::glue::TendermintTypesCommitData;

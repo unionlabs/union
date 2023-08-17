@@ -3,7 +3,7 @@ pub mod counterparty;
 pub mod state;
 pub mod version;
 
-pub mod msg_channel_open_ack;
-pub mod msg_channel_open_confirm;
-pub mod msg_channel_open_init;
-pub mod msg_channel_open_try;
+pub mod msg_connection_open_ack;
+pub mod msg_connection_open_confirm;
+pub mod msg_connection_open_init;
+pub mod msg_connection_open_try;

@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{ibc::core::client::height::Height, CosmosAccountId, MsgIntoProto};
+use crate::{ibc::core::client::height::Height, CosmosAccountId, MsgIntoProto, TypeUrl};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct MsgChannelOpenConfirm {
@@ -8,6 +8,10 @@ pub struct MsgChannelOpenConfirm {
     pub channel_id: String,
     pub proof_ack: Vec<u8>,
     pub proof_height: Height,
+}
+
+impl TypeUrl for protos::ibc::core::channel::v1::MsgChannelOpenConfirm {
+    const TYPE_URL: &'static str = "/ibc.core.channel.v1.MsgChannelOpenConfirm";
 }
 
 impl MsgIntoProto for MsgChannelOpenConfirm {

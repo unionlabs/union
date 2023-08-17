@@ -24,6 +24,7 @@ Feegrant
 GOPATH
 GOPRIVATE
 Getenv
+HKTs
 Hasher
 Hyperlane
 IAVL
@@ -44,6 +45,7 @@ PINGPONG
 PRECOMMIT
 PREVOTE
 PROTOC
+Parameterizable
 Paramspace
 Partset
 Patchelf
