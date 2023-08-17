@@ -47,6 +47,7 @@ pub struct Header {
 }
 
 impl Header {
+    #[must_use]
     pub fn calculate_merkle_root(&self) -> Option<[u8; 32]> {
         let header: protos::tendermint::types::Header = self.clone().into();
 

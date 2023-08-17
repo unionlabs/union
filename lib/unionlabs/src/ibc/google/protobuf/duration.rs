@@ -1,8 +1,8 @@
-use core::ops::Add;
-
 use serde::{Deserialize, Serialize};
 
 use super::timestamp::Timestamp;
+
+const NANOS_PER_SEC: i32 = 1_000_000_000;
 
 #[derive(Debug, Copy, Clone, PartialEq, PartialOrd, Serialize, Deserialize)]
 pub struct Duration {
@@ -10,13 +10,22 @@ pub struct Duration {
     pub nanos: i32,
 }
 
-impl Add for Duration {
-    type Output = Self;
-
-    fn add(self, rhs: Self) -> Self::Output {
-        Self {
-            seconds: self.seconds + rhs.seconds,
-            nanos: self.nanos + rhs.nanos,
+impl Duration {
+    #[must_use]
+    pub const fn checked_add(self, rhs: Duration) -> Option<Duration> {
+        if let Some(mut seconds) = self.seconds.checked_add(rhs.seconds) {
+            let mut nanos = self.nanos + rhs.nanos;
+            if nanos >= NANOS_PER_SEC {
+                nanos -= NANOS_PER_SEC;
+                if let Some(new_secs) = seconds.checked_add(1) {
+                    seconds = new_secs;
+                } else {
+                    return None;
+                }
+            }
+            Some(Duration { seconds, nanos })
+        } else {
+            None
         }
     }
 }

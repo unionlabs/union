@@ -49,6 +49,9 @@ pub enum Error {
     // REVIEW: Why not just use `Height` directly?
     ConsensusStateNotFound(u64, u64),
 
+    #[error("Overflow happened during summing durations.")]
+    DurationAdditionOverflow,
+
     #[error("Timestamp not set")]
     TimestampNotSet,
 

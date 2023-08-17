@@ -123,7 +123,9 @@ pub fn update_header(mut deps: DepsMut, env: Env, header: Header) -> Result<Cont
     let current_time: Timestamp = env.block.time.into();
 
     if Duration::from(header.signed_header.header.time)
-        < Duration::from(current_time) + client_state.data.trusting_period
+        < Duration::from(current_time)
+            .checked_add(client_state.data.trusting_period)
+            .ok_or(Error::DurationAdditionOverflow)?
     {
         return Err(Error::InvalidHeader("header expired".into()));
     }
