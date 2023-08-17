@@ -44,11 +44,14 @@ impl TryFrom<cosmwasm_std::Timestamp> for Timestamp {
     }
 }
 
-#[allow(clippy::cast_sign_loss)]
 impl From<Timestamp> for cosmwasm_std::Timestamp {
     fn from(value: Timestamp) -> Self {
-        cosmwasm_std::Timestamp::from_seconds(value.seconds.inner() as u64)
-            .plus_nanos(value.nanos.inner() as u64)
+        // REVIEW(aeryz): I always expect timestamp to be non-negative integer, that's
+        // why `unwrap`ping seems like the right way to go, please give me a heads up
+        // if there is an exception and we should convert this implementation to
+        // `TryFrom` instead.
+        cosmwasm_std::Timestamp::from_seconds(value.seconds.inner().try_into().unwrap())
+            .plus_nanos(value.nanos.inner().try_into().unwrap())
     }
 }
 
