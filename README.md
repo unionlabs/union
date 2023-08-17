@@ -31,4 +31,4 @@ The official docs are hosted [here][docs]. Each individual component also has ac
 The [contributing](./CONTRIBUTING.md) guide explains how to get started working on Union and its components.
 
 [docs]: https://docs.union.build "Official Union Docs"
-[IBC]: https://github.com/cosmos/ibc "cosmso/ibc"
+[IBC]: https://github.com/cosmos/ibc "cosmos/ibc"
