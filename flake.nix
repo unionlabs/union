@@ -64,6 +64,7 @@
       systems =
         [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" "x86_64-darwin" ];
       imports = [
+        ./hubble/hubble.nix
         ./uniond/uniond.nix
         ./galoisd/galoisd.nix
         ./unionvisor/unionvisor.nix
@@ -255,6 +256,7 @@
                     solc
                     yarn
                     yq
+                    nodePackages.graphqurl
                   ]);
                 nativeBuildInputs = [
                   config.treefmt.build.wrapper

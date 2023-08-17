@@ -20,12 +20,13 @@
         let
           unionvisor-testdata = path: _type: (builtins.match ".*unionvisor/src/testdata/.*" path) != null;
           jsonFilter = path: _type: (builtins.match ".*json$" path) != null;
-          jsonOrCargo = path: type:
-            (unionvisor-testdata path type) || (jsonFilter path type) || (craneLib.filterCargoSources path type);
+          graphqlFilter = path: _type: (builtins.match ".*graphql$" path) != null;
+          jsonOrGraphqlOrCargo = path: type:
+            (unionvisor-testdata path type) || (jsonFilter path type) || (graphqlFilter path type) || (craneLib.filterCargoSources path type);
         in
         lib.cleanSourceWith {
           src = craneLib.path ../../.;
-          filter = jsonOrCargo;
+          filter = jsonOrGraphqlOrCargo;
         };
 
       commonAttrs = {
