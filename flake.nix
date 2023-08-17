@@ -72,8 +72,9 @@
         ./uniond/proto.nix
         ./docs/docs.nix
         ./light-clients/ethereum-light-client/ethereum-light-client.nix
+        ./light-clients/cometbls-light-client/cometbls-light-client.nix
         ./cosmwasm/cosmwasm.nix
-        ./evm/evm.nix
+        ./evm/evm.nix   
         ./tools/rust-proto.nix
         ./tools/generate-rust-sol-bindings/generate-rust-sol-bindings.nix
         ./tools/libwasmvm/libwasmvm.nix

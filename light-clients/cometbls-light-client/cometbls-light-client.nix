@@ -7,15 +7,14 @@
       } // (crane.lib.crateNameFromCargoToml { cargoToml = ./Cargo.toml; });
     in
     {
-      packages =
-        lib.listToAttrs (map
-          (config: lib.nameValuePair "ethereum-light-client-${config}" (crane.buildWasmContract {
-            cargoToml = ./Cargo.toml;
-            cargoLock = ../../Cargo.lock;
-            features = [ config ];
-          })) [ "mainnet" "minimal" ]);
+      packages = {
+        wasm-cometbls-light-client = crane.buildWasmContract {
+          cargoToml = ./Cargo.toml;
+          cargoLock = ../../Cargo.lock;
+        };
+      };
 
-      checks = crane.mkChecks "ethereum-light-client" {
+      checks = crane.mkChecks "cometbls-light-client" {
         clippy = crane.lib.cargoClippy (attrs // {
           cargoClippyExtraArgs = "-- --deny warnings --no-deps";
         });
