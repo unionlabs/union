@@ -168,16 +168,7 @@ pub fn do_verify_membership(
     storage_proof: Proof,
     value: Binary,
 ) -> Result<(), Error> {
-    let expected_commitment_key =
-        generate_commitment_key(path.to_string(), counterparty_commitment_slot);
-
-    // Data MUST be stored to the commitment path that is defined in ICS23.
-    if expected_commitment_key != storage_proof.key {
-        return Err(Error::invalid_commitment_key(
-            expected_commitment_key,
-            storage_proof.key,
-        ));
-    }
+    check_commitment_key(path, counterparty_commitment_slot, &storage_proof.key)?;
 
     // We store the hash of the data, not the data itself to the commitments map.
     let expected_value_hash = sha3::Keccak256::new().chain_update(value).finalize();
@@ -209,16 +200,7 @@ pub fn do_verify_non_membership(
     counterparty_commitment_slot: Slot,
     storage_proof: Proof,
 ) -> Result<(), Error> {
-    let expected_commitment_key =
-        generate_commitment_key(path.to_string(), counterparty_commitment_slot);
-
-    // Data MUST be stored to the commitment path that is defined in ICS23.
-    if expected_commitment_key != storage_proof.key {
-        return Err(Error::invalid_commitment_key(
-            expected_commitment_key,
-            storage_proof.key,
-        ));
-    }
+    check_commitment_key(path, counterparty_commitment_slot, &storage_proof.key)?;
 
     if verify_storage_absence(storage_root, &storage_proof.key, &storage_proof.proof)
         .map_err(|e| Error::Verification(e.to_string()))?
@@ -226,6 +208,22 @@ pub fn do_verify_non_membership(
         Ok(())
     } else {
         Err(Error::CounterpartyStorageNotNil)
+    }
+}
+
+fn check_commitment_key(
+    path: Path,
+    counterparty_commitment_slot: Slot,
+    key: &[u8],
+) -> Result<(), Error> {
+    let expected_commitment_key =
+        generate_commitment_key(path.to_string(), counterparty_commitment_slot);
+
+    // Data MUST be stored to the commitment path that is defined in ICS23.
+    if expected_commitment_key != key {
+        Err(Error::invalid_commitment_key(expected_commitment_key, key))
+    } else {
+        Ok(())
     }
 }
 
