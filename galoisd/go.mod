@@ -100,5 +100,5 @@ replace (
 	github.com/cometbft/cometbft => github.com/unionlabs/cometbls v0.0.0-20230606200400-20834775a066
 	github.com/consensys/gnark => github.com/unionlabs/gnark v0.0.0-20230513134152-dd41e4b5e252
 	github.com/consensys/gnark-crypto => github.com/unionlabs/gnark-crypto v0.0.0-20230419121058-59d3a8050fda
-	github.com/cosmos/cosmos-sdk => github.com/unionlabs/cosmos-sdk v0.0.0-20230809135445-de88545a074d
+	github.com/cosmos/cosmos-sdk => github.com/unionlabs/cosmos-sdk v0.0.0-20230811204628-91742f9fdc1c
 )
