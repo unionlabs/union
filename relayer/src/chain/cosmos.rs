@@ -34,7 +34,10 @@ use unionlabs::{
                 msg_channel_open_init::MsgChannelOpenInit, msg_channel_open_try::MsgChannelOpenTry,
                 msg_recv_packet::MsgRecvPacket, packet::Packet,
             },
-            client::{height::Height, msg_create_client::MsgCreateClient},
+            client::{
+                height::Height, msg_create_client::MsgCreateClient,
+                msg_update_client::MsgUpdateClient,
+            },
             commitment::merkle_root::MerkleRoot,
             connection::{
                 msg_connection_open_ack::MsgConnectionOpenAck,
@@ -54,7 +57,7 @@ use unionlabs::{
             signed_header::SignedHeader, simple_validator::SimpleValidator,
         },
     },
-    CosmosAccountId, IntoProto, MsgIntoProto, TryFromProto,
+    CosmosAccountId, MsgIntoProto, TryFromProto,
 };
 
 use super::events::TryFromTendermintEventError;
@@ -62,7 +65,8 @@ use crate::{
     chain::{
         dumper::Dumper,
         events::{
-            ChannelOpenInit, ChannelOpenTry, ConnectionOpenInit, ConnectionOpenTry, SendPacket,
+            ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit, ChannelOpenTry, ConnectionOpenAck,
+            ConnectionOpenConfirm, ConnectionOpenInit, ConnectionOpenTry, SendPacket, UpdateClient,
         },
         evm::{Cometbls, Evm},
         proof::{
@@ -605,20 +609,11 @@ impl<C: ChainSpec> LightClient for Ethereum<C> {
         &self,
         client_id: String,
         msg: Self::UpdateClientMessage,
-    ) -> impl futures::Future<Output = ()> + '_ {
-        async move {
-            self.chain
-                .broadcast_tx_commit([google::protobuf::Any {
-                    type_url: "/ibc.core.client.v1.MsgUpdateClient".into(),
-                    value: client_v1::MsgUpdateClient {
-                        client_id: client_id.clone(),
-                        client_message: Some(Any(msg).into_proto()),
-                        signer: self.chain.signer.to_string(),
-                    }
-                    .encode_to_vec(),
-                }])
-                .await;
-        }
+    ) -> impl Future<Output = (Height, UpdateClient)> + '_ {
+        self.send_msg_and_read_event(MsgUpdateClient {
+            client_id,
+            client_message: Any(msg),
+        })
     }
 
     fn query_client_state(
@@ -649,164 +644,60 @@ impl<C: ChainSpec> Connect<Cometbls<C>> for Ethereum<C> {
     fn connection_open_init(
         &self,
         msg: MsgConnectionOpenInit,
-    ) -> impl futures::Future<Output = (String, Height)> + '_ {
-        self.chain
-            .broadcast_tx_commit([google::protobuf::Any {
-                type_url: "/ibc.core.connection.v1.MsgConnectionOpenInit".to_string(),
-                value: msg
-                    .into_proto_with_signer(&self.chain.signer)
-                    .encode_to_vec(),
-            }])
-            .map(|response| {
-                (
-                    get_event_from_tx_response::<ConnectionOpenInit>(response.deliver_tx.events)
-                        .unwrap()
-                        .connection_id,
-                    self.chain.make_height(response.height.value()),
-                )
-            })
+    ) -> impl Future<Output = (Height, ConnectionOpenInit)> + '_ {
+        self.send_msg_and_read_event(msg)
     }
 
     fn connection_open_try(
         &self,
         msg: MsgConnectionOpenTry<ClientStateOf<<Cometbls<C> as LightClient>::CounterpartyChain>>,
-    ) -> impl futures::Future<Output = (String, Height)> + '_ {
-        self.chain
-            .broadcast_tx_commit([google::protobuf::Any {
-                type_url: "/ibc.core.connection.v1.MsgConnectionOpenTry".to_string(),
-                value: msg
-                    .into_proto_with_signer(&self.chain.signer)
-                    .encode_to_vec(),
-            }])
-            .map(|response| {
-                (
-                    get_event_from_tx_response::<ConnectionOpenTry>(response.deliver_tx.events)
-                        .unwrap()
-                        .connection_id,
-                    self.chain.make_height(response.height.value()),
-                )
-            })
+    ) -> impl Future<Output = (Height, ConnectionOpenTry)> + '_ {
+        self.send_msg_and_read_event(msg)
     }
 
     fn connection_open_ack(
         &self,
         msg: MsgConnectionOpenAck<ClientStateOf<<Cometbls<C> as LightClient>::CounterpartyChain>>,
-    ) -> impl futures::Future<Output = Height> + '_ {
-        async move {
-            self.chain.make_height(
-                self.chain
-                    .broadcast_tx_commit([google::protobuf::Any {
-                        type_url: "/ibc.core.connection.v1.MsgConnectionOpenAck".to_string(),
-                        value: msg
-                            .into_proto_with_signer(&self.chain.signer)
-                            .encode_to_vec(),
-                    }])
-                    .await
-                    .height
-                    .value(),
-            )
-        }
+    ) -> impl Future<Output = (Height, ConnectionOpenAck)> + '_ {
+        self.send_msg_and_read_event(msg)
     }
 
     fn connection_open_confirm(
         &self,
         msg: MsgConnectionOpenConfirm,
-    ) -> impl futures::Future<Output = Height> + '_ {
-        async move {
-            self.chain.make_height(
-                self.chain
-                    .broadcast_tx_commit([google::protobuf::Any {
-                        type_url: "/ibc.core.connection.v1.MsgConnectionOpenConfirm".to_string(),
-                        value: msg
-                            .into_proto_with_signer(&self.chain.signer)
-                            .encode_to_vec(),
-                    }])
-                    .await
-                    .height
-                    .value(),
-            )
-        }
+    ) -> impl Future<Output = (Height, ConnectionOpenConfirm)> + '_ {
+        self.send_msg_and_read_event(msg)
     }
 
     fn channel_open_init(
         &self,
         msg: MsgChannelOpenInit,
-    ) -> impl futures::Future<Output = (String, Height)> + '_ {
-        async move {
-            let tx = self
-                .chain
-                .broadcast_tx_commit([google::protobuf::Any {
-                    type_url: "/ibc.core.channel.v1.MsgChannelOpenInit".to_string(),
-                    value: msg
-                        .into_proto_with_signer(&self.chain.signer)
-                        .encode_to_vec(),
-                }])
-                .await;
-
-            let event =
-                get_event_from_tx_response::<ChannelOpenInit>(tx.deliver_tx.events).unwrap();
-
-            (event.channel_id, self.chain.make_height(tx.height.value()))
-        }
+    ) -> impl Future<Output = (Height, ChannelOpenInit)> + '_ {
+        self.send_msg_and_read_event(msg)
     }
 
     fn channel_open_try(
         &self,
         msg: MsgChannelOpenTry,
-    ) -> impl futures::Future<Output = (String, Height)> + '_ {
-        async move {
-            let tx = self
-                .chain
-                .broadcast_tx_commit([Any(msg).into_proto_with_signer(&self.chain.signer)])
-                .await;
-
-            let event = get_event_from_tx_response::<ChannelOpenTry>(tx.deliver_tx.events).unwrap();
-
-            (event.channel_id, self.chain.make_height(tx.height.value()))
-        }
+    ) -> impl Future<Output = (Height, ChannelOpenTry)> + '_ {
+        self.send_msg_and_read_event(msg)
     }
 
     fn channel_open_ack(
         &self,
         msg: MsgChannelOpenAck,
-    ) -> impl futures::Future<Output = Height> + '_ {
-        async move {
-            self.chain.make_height(
-                self.chain
-                    .broadcast_tx_commit([google::protobuf::Any {
-                        type_url: "/ibc.core.channel.v1.MsgChannelOpenAck".to_string(),
-                        value: msg
-                            .into_proto_with_signer(&self.chain.signer)
-                            .encode_to_vec(),
-                    }])
-                    .await
-                    .height
-                    .value(),
-            )
-        }
+    ) -> impl Future<Output = (Height, ChannelOpenAck)> + '_ {
+        self.send_msg_and_read_event(msg)
     }
 
     fn channel_open_confirm(
         &self,
         msg: MsgChannelOpenConfirm,
-    ) -> impl futures::Future<Output = Height> + '_ {
-        async move {
-            self.chain.make_height(
-                self.chain
-                    .broadcast_tx_commit([google::protobuf::Any {
-                        type_url: "/ibc.core.channel.v1.MsgChannelOpenConfirm".to_string(),
-                        value: msg
-                            .into_proto_with_signer(&self.chain.signer)
-                            .encode_to_vec(),
-                    }])
-                    .await
-                    .height
-                    .value(),
-            )
-        }
+    ) -> impl Future<Output = (Height, ChannelOpenConfirm)> + '_ {
+        self.send_msg_and_read_event(msg)
     }
 
-    fn recv_packet(&self, msg: MsgRecvPacket) -> impl futures::Future<Output = ()> + '_ {
+    fn recv_packet(&self, msg: MsgRecvPacket) -> impl Future<Output = ()> + '_ {
         async move {
             self.chain
                 .broadcast_tx_commit([google::protobuf::Any {
@@ -1160,6 +1051,26 @@ impl<C: ChainSpec> Connect<Cometbls<C>> for Ethereum<C> {
 
             update_to
         }
+    }
+}
+
+impl<C: ChainSpec> Ethereum<C> {
+    async fn send_msg_and_read_event<
+        TMsg: MsgIntoProto,
+        TEvent: TryFrom<Event, Error = TryFromTendermintEventError>,
+    >(
+        &self,
+        msg: TMsg,
+    ) -> (Height, TEvent) {
+        self.chain
+            .broadcast_tx_commit([Any(msg).into_proto_with_signer(&self.chain.signer)])
+            .map(|response| {
+                (
+                    self.chain.make_height(response.height.value()),
+                    get_event_from_tx_response(response.deliver_tx.events).unwrap(),
+                )
+            })
+            .await
     }
 }
 

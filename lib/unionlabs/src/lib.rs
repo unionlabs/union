@@ -186,7 +186,7 @@ where
 /// the solidity equivalents don't have; this trait is required to allow
 /// the signer to be passed in.
 pub trait MsgIntoProto {
-    type Proto;
+    type Proto: TypeUrl;
 
     fn into_proto_with_signer(self, signer: &CosmosAccountId) -> Self::Proto;
 }

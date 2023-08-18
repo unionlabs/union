@@ -31,6 +31,10 @@ use unionlabs::{
 use crate::{
     chain::{
         cosmos::{Ethereum, Union},
+        events::{
+            ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit, ChannelOpenTry, ConnectionOpenAck,
+            ConnectionOpenConfirm, ConnectionOpenInit, ConnectionOpenTry, UpdateClient,
+        },
         evm::{Cometbls, Evm},
         proof::{IbcStateRead, IbcStateReadPaths, StateProof},
     },
@@ -99,7 +103,7 @@ pub trait LightClient: Send + Sync + Sized {
         &self,
         client_id: String,
         _: Self::UpdateClientMessage,
-    ) -> impl Future<Output = ()> + '_;
+    ) -> impl Future<Output = (Height, UpdateClient)> + '_;
 
     fn state_proof<P: proof::IbcPath + 'static>(
         &self,
@@ -208,36 +212,44 @@ where
     fn connection_open_init(
         &self,
         _: MsgConnectionOpenInit,
-    ) -> impl Future<Output = (String, Height)> + '_;
+    ) -> impl Future<Output = (Height, ConnectionOpenInit)> + '_;
 
     fn connection_open_try(
         &self,
         _: MsgConnectionOpenTry<ClientStateOf<L::CounterpartyChain>>,
-    ) -> impl Future<Output = (String, Height)> + '_;
+    ) -> impl Future<Output = (Height, ConnectionOpenTry)> + '_;
 
     fn connection_open_ack(
         &self,
         _: MsgConnectionOpenAck<ClientStateOf<L::CounterpartyChain>>,
-    ) -> impl Future<Output = Height> + '_;
+    ) -> impl Future<Output = (Height, ConnectionOpenAck)> + '_;
 
     fn connection_open_confirm(
         &self,
         _: MsgConnectionOpenConfirm,
-    ) -> impl Future<Output = Height> + '_;
+    ) -> impl Future<Output = (Height, ConnectionOpenConfirm)> + '_;
 
     // CHANNEL HANDSHAKE
 
     fn channel_open_init(
         &self,
-        _: MsgChannelOpenInit,
-    ) -> impl Future<Output = (String, Height)> + '_;
+        msg: MsgChannelOpenInit,
+    ) -> impl Future<Output = (Height, ChannelOpenInit)> + '_;
 
-    fn channel_open_try(&self, _: MsgChannelOpenTry)
-        -> impl Future<Output = (String, Height)> + '_;
+    fn channel_open_try(
+        &self,
+        msg: MsgChannelOpenTry,
+    ) -> impl Future<Output = (Height, ChannelOpenTry)> + '_;
 
-    fn channel_open_ack(&self, _: MsgChannelOpenAck) -> impl Future<Output = Height> + '_;
+    fn channel_open_ack(
+        &self,
+        msg: MsgChannelOpenAck,
+    ) -> impl Future<Output = (Height, ChannelOpenAck)> + '_;
 
-    fn channel_open_confirm(&self, _: MsgChannelOpenConfirm) -> impl Future<Output = Height> + '_;
+    fn channel_open_confirm(
+        &self,
+        msg: MsgChannelOpenConfirm,
+    ) -> impl Future<Output = (Height, ChannelOpenConfirm)> + '_;
 
     // PACKETS
 

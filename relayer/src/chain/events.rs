@@ -95,7 +95,9 @@ event! {
     pub struct UpdateClient {
         pub client_id: String,
         pub client_type: String,
+        #[deprecated = "use consensus_heights"]
         pub consensus_height: String,
+        pub consensus_heights: String,
         pub header: String,
     }
 

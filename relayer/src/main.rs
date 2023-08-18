@@ -591,7 +591,7 @@ where
         )
         .await;
 
-    let (cometbls_connection_id, _) = cometbls
+    let (_connection_open_init_height, connection_open_init) = cometbls
         .connection_open_init(MsgConnectionOpenInit {
             client_id: cometbls_client_id.clone(),
             counterparty: connection::counterparty::Counterparty {
@@ -611,7 +611,7 @@ where
         .await;
 
     tracing::info!(
-        cometbls_connection_id,
+        cometbls_connection_id = connection_open_init.connection_id,
         %cometbls_latest_height,
         %ethereum_latest_height,
         cometbls_client_id,
@@ -633,7 +633,7 @@ where
 
     tracing::info!(
         chain_id = cometbls_id,
-        connection_id = cometbls_connection_id,
+        connection_id = connection_open_init.connection_id,
         latest_height = ?cometbls_latest_height,
         "right after updating cosmos"
     );
@@ -660,18 +660,18 @@ where
     let cometbls_connection_state_proof = cometbls
         .state_proof(
             ConnectionPath {
-                connection_id: cometbls_connection_id.clone(),
+                connection_id: connection_open_init.connection_id.clone(),
             },
             cometbls_latest_height,
         )
         .await;
 
-    let (ethereum_connection_id, connection_try_height) = ethereum
+    let (connection_open_try_height, connection_open_try) = ethereum
         .connection_open_try(MsgConnectionOpenTry {
             client_id: ethereum_client_id.clone(),
             counterparty: connection::counterparty::Counterparty {
                 client_id: cometbls_client_id.clone(),
-                connection_id: cometbls_connection_id.clone(),
+                connection_id: connection_open_init.connection_id.clone(),
                 prefix: MerklePrefix {
                     key_prefix: b"ibc".to_vec(),
                 },
@@ -689,19 +689,19 @@ where
 
     tracing::info!(
         "Connection open try executed at {:?}",
-        connection_try_height
+        connection_open_try_height
     );
 
     let ethereum_update_from = ethereum_latest_height;
     let ethereum_update_to = loop {
         let height = ethereum.chain().query_latest_height().await;
-        if height >= connection_try_height.increment() {
-            break connection_try_height.increment();
+        if height >= connection_open_try_height.increment() {
+            break connection_open_try_height.increment();
         }
         tokio::time::sleep(std::time::Duration::from_secs(2)).await;
     };
 
-    tracing::info!("Querying proof at {:?}", connection_try_height);
+    tracing::info!("Querying proof at {:?}", connection_open_try_height);
 
     let _ = ethereum
         .update_counterparty_client(
@@ -715,9 +715,9 @@ where
     let ethereum_connection_state_proof = ethereum
         .state_proof(
             ConnectionPath {
-                connection_id: ethereum_connection_id.clone(),
+                connection_id: connection_open_try.connection_id.clone(),
             },
-            connection_try_height,
+            connection_open_try_height,
         )
         .await;
     let ethereum_client_state_proof = ethereum
@@ -725,7 +725,7 @@ where
             ClientStatePath {
                 client_id: ethereum_client_id.clone(),
             },
-            connection_try_height,
+            connection_open_try_height,
         )
         .await;
     let ethereum_consensus_state_proof = ethereum
@@ -736,7 +736,7 @@ where
                     .process_height_for_counterparty(cometbls_latest_height)
                     .await,
             },
-            connection_try_height,
+            connection_open_try_height,
         )
         .await;
 
@@ -771,10 +771,11 @@ where
         ethers::utils::hex::encode(&ethereum_consensus_state_proof.proof)
     );
 
-    cometbls
+    let (_, connection_open_ack) = cometbls
         .connection_open_ack(MsgConnectionOpenAck {
-            connection_id: cometbls_connection_id.clone(),
-            counterparty_connection_id: ethereum_connection_id.clone(),
+            connection_id: connection_open_try.counterparty_connection_id.clone(),
+            counterparty_connection_id: connection_open_try.connection_id.clone(),
+
             version: Version {
                 identifier: "1".into(),
                 features: [Order::Ordered, Order::Unordered].into_iter().collect(),
@@ -803,29 +804,26 @@ where
     let cometbls_connection_state_proof = cometbls
         .state_proof(
             ConnectionPath {
-                connection_id: cometbls_connection_id.clone(),
+                connection_id: connection_open_ack.connection_id.clone(),
             },
             cometbls_latest_height,
         )
         .await;
 
-    ethereum
+    let (_, connection_open_confirm) = ethereum
         .connection_open_confirm(MsgConnectionOpenConfirm {
-            connection_id: ethereum_connection_id.clone(),
+            connection_id: connection_open_ack.counterparty_connection_id.clone(),
             proof_ack: cometbls_connection_state_proof.proof,
             proof_height: cometbls_connection_state_proof.proof_height,
         })
         .await;
 
-    tracing::info!(
-        cometbls_connection_id,
-        cometbls_client_id,
-        ethereum_connection_id,
-        ethereum_client_id,
-        "connection opened"
-    );
+    tracing::info!(?connection_open_confirm, "connection opened");
 
-    (cometbls_connection_id, ethereum_connection_id)
+    (
+        connection_open_confirm.connection_id,
+        connection_open_confirm.counterparty_connection_id,
+    )
 }
 
 #[allow(clippy::too_many_arguments)] // fight me clippy
@@ -907,7 +905,7 @@ where
 
     tracing::debug!("ChannelOpenInit");
 
-    let (cometbls_channel_id, _) = cometbls
+    let (_channel_open_init_height, channel_open_init) = cometbls
         .channel_open_init(MsgChannelOpenInit {
             port_id: cometbls_port_id.to_string(),
             channel: Channel {
@@ -943,8 +941,8 @@ where
     let proof = cometbls
         .state_proof(
             ChannelEndPath {
-                port_id: cometbls_port_id.to_string(),
-                channel_id: cometbls_channel_id.clone(),
+                port_id: channel_open_init.port_id.clone(),
+                channel_id: channel_open_init.channel_id.clone(),
             },
             cometbls_latest_height,
         )
@@ -952,15 +950,15 @@ where
 
     tracing::debug!("ChannelOpenTry");
 
-    let (ethereum_channel_id, channel_try_height) = ethereum
+    let (channel_open_try_height, channel_open_try) = ethereum
         .channel_open_try(MsgChannelOpenTry {
             port_id: ethereum_port_id.clone(),
             channel: Channel {
                 state: channel::state::State::Tryopen,
                 ordering: Order::Unordered,
                 counterparty: channel::counterparty::Counterparty {
-                    port_id: cometbls_port_id.clone(),
-                    channel_id: cometbls_channel_id.clone(),
+                    port_id: channel_open_init.port_id.clone(),
+                    channel_id: channel_open_init.channel_id.clone(),
                 },
                 connection_hops: vec![ethereum_connection_id.clone()],
                 version: ethereum_channel_version.clone(),
@@ -977,13 +975,13 @@ where
         .height();
     let ethereum_update_to = loop {
         let height = ethereum.chain().query_latest_height().await;
-        if height >= channel_try_height.increment() {
-            break channel_try_height.increment();
+        if height >= channel_open_try_height.increment() {
+            break channel_open_try_height.increment();
         }
         tokio::time::sleep(std::time::Duration::from_secs(2)).await;
     };
 
-    tracing::info!("Querying proof at {:?}", channel_try_height);
+    tracing::info!("Querying proof at {:?}", channel_open_try_height);
 
     let _ = ethereum
         .update_counterparty_client(
@@ -997,21 +995,21 @@ where
     let proof = ethereum
         .state_proof(
             ChannelEndPath {
-                port_id: ethereum_port_id.clone(),
-                channel_id: ethereum_channel_id.clone(),
+                port_id: channel_open_try.port_id.clone(),
+                channel_id: channel_open_try.channel_id.clone(),
             },
-            channel_try_height,
+            channel_open_try_height,
         )
         .await;
 
     tracing::debug!("ChannelOpenAck");
 
-    cometbls
+    let (_channel_open_ack_height, channel_open_ack) = cometbls
         .channel_open_ack(MsgChannelOpenAck {
             port_id: cometbls_port_id.clone(),
-            channel_id: cometbls_channel_id.clone(),
-            counterparty_channel_id: ethereum_channel_id.clone(),
-            counterparty_version: ethereum_channel_version.clone(),
+            channel_id: channel_open_try.counterparty_channel_id.clone(),
+            counterparty_channel_id: channel_open_try.channel_id.clone(),
+            counterparty_version: channel_open_try.version.clone(),
             proof_try: proof.proof,
             proof_height: ethereum_update_to,
         })
@@ -1031,8 +1029,8 @@ where
     let proof = cometbls
         .state_proof(
             ChannelEndPath {
-                port_id: cometbls_port_id.clone(),
-                channel_id: cometbls_channel_id.clone(),
+                port_id: channel_open_ack.port_id.clone(),
+                channel_id: channel_open_ack.channel_id.clone(),
             },
             cometbls_latest_height,
         )
@@ -1040,26 +1038,18 @@ where
 
     tracing::debug!("ChannelOpenConfirm");
 
-    ethereum
+    let (_, confirm) = ethereum
         .channel_open_confirm(MsgChannelOpenConfirm {
-            port_id: ethereum_port_id.clone(),
-            channel_id: ethereum_channel_id.clone(),
+            port_id: channel_open_ack.counterparty_port_id.clone(),
+            channel_id: channel_open_ack.counterparty_channel_id.clone(),
             proof_ack: proof.proof,
             proof_height: proof.proof_height,
         })
         .await;
 
-    tracing::info!(
-        cometbls_connection_id,
-        cometbls_client_id,
-        cometbls_channel_id,
-        ethereum_connection_id,
-        ethereum_client_id,
-        ethereum_channel_id,
-        "channel opened"
-    );
+    tracing::info!(?confirm, "channel opened");
 
-    (cometbls_channel_id, ethereum_channel_id)
+    (confirm.channel_id, confirm.counterparty_channel_id)
 }
 
 async fn relay_packets<FromChain, ToChain>(from: &FromChain, to: &ToChain)

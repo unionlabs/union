@@ -1,6 +1,9 @@
 use serde::{Deserialize, Serialize};
 
-use crate::tendermint::types::{commit::Commit, header::Header};
+use crate::{
+    tendermint::types::{commit::Commit, header::Header},
+    Proto, TypeUrl,
+};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct SignedHeader {
@@ -52,4 +55,12 @@ impl From<SignedHeader> for contracts::glue::TendermintTypesSignedHeaderData {
             commit: value.commit.into(),
         }
     }
+}
+
+impl Proto for SignedHeader {
+    type Proto = protos::tendermint::types::SignedHeader;
+}
+
+impl TypeUrl for protos::tendermint::types::SignedHeader {
+    const TYPE_URL: &'static str = "/tendermint.types.SignedHeader";
 }
