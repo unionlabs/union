@@ -70,7 +70,6 @@ pub enum ExecuteMsg {
         delay_block_period: u64,
         proof: Binary,
         path: MerklePath,
-        value: Binary,
     },
 
     VerifyClientMessage {

@@ -7,7 +7,8 @@ use cosmwasm_std::{
 use ethabi::ethereum_types::U256 as ethabi_U256;
 use ethereum_verifier::{
     primitives::{ExecutionAddress, Slot},
-    validate_light_client_update, verify_account_storage_root, verify_storage_proof,
+    validate_light_client_update, verify_account_storage_root, verify_storage_absence,
+    verify_storage_proof,
 };
 use ibc::core::ics24_host::Path;
 use sha3::Digest;
@@ -68,7 +69,22 @@ pub fn execute(
             delay_block_period,
             proof,
             path,
-            value,
+            Some(value),
+        ),
+        ExecuteMsg::VerifyNonMembership {
+            height,
+            delay_time_period,
+            delay_block_period,
+            proof,
+            path,
+        } => verify_membership(
+            deps.as_ref(),
+            height,
+            delay_time_period,
+            delay_block_period,
+            proof,
+            path,
+            None,
         ),
         ExecuteMsg::UpdateState {
             client_message: ClientMessage { header, .. },
@@ -99,7 +115,7 @@ pub fn verify_membership(
     _delay_block_period: u64,
     proof: Binary,
     path: MerklePath,
-    value: Binary,
+    value: Option<Binary>,
 ) -> Result<ContractResult, Error> {
     let consensus_state = read_consensus_state(deps, &height)?.ok_or(
         Error::ConsensusStateNotFound(height.revision_number, height.revision_height),
@@ -126,13 +142,22 @@ pub fn verify_membership(
         proofs.pop().ok_or(Error::EmptyProof)?
     };
 
-    do_verify_membership(
-        path,
-        storage_root,
-        client_state.data.counterparty_commitment_slot,
-        storage_proof,
-        value,
-    )?;
+    if let Some(value) = value {
+        do_verify_membership(
+            path,
+            storage_root,
+            client_state.data.counterparty_commitment_slot,
+            storage_proof,
+            value,
+        )?;
+    } else {
+        do_verify_non_membership(
+            path,
+            storage_root,
+            client_state.data.counterparty_commitment_slot,
+            storage_proof,
+        )?;
+    }
 
     Ok(ContractResult::valid(None))
 }
@@ -176,6 +201,33 @@ pub fn do_verify_membership(
         &storage_proof.proof,
     )
     .map_err(|e| Error::Verification(e.to_string()))
+}
+
+/// Verifies that no value is committed at `path` in the counterparty light client's storage.
+pub fn do_verify_non_membership(
+    path: Path,
+    storage_root: H256,
+    counterparty_commitment_slot: Slot,
+    storage_proof: Proof,
+) -> Result<(), Error> {
+    let expected_commitment_key =
+        generate_commitment_key(path.to_string(), counterparty_commitment_slot);
+
+    // Data MUST be stored to the commitment path that is defined in ICS23.
+    if expected_commitment_key != storage_proof.key {
+        return Err(Error::invalid_commitment_key(
+            expected_commitment_key,
+            storage_proof.key,
+        ));
+    }
+
+    if verify_storage_absence(storage_root, &storage_proof.key, &storage_proof.proof)
+        .map_err(|e| Error::Verification(e.to_string()))?
+    {
+        Ok(())
+    } else {
+        Err(Error::CounterpartyStorageNotNil)
+    }
 }
 
 pub fn update_header<C: ChainSpec>(
@@ -388,6 +440,14 @@ mod test {
     /// Storage root of the contract at the time that this proof is obtained.
     const CONNECTION_END_STORAGE_ROOT: &str =
         "78c3bf305b31e5f903d623b0b0023bfa764208429d3ecc0f8e61df44b643981d";
+
+    const NON_MEMBERSHIP_STORAGE_ROOT: &str =
+        "9e352a10c5a38c301ee06c22a90f0971b679985b2ca6dd66aca224bd7a9957c1";
+    const NON_MEMBERSHIP_PROOF_KEY: &str =
+        "b35cad2b263a62faaae30d8b3f51201fea5501d2df17d59a3eef2751403e684f";
+    const NON_MEMBERSHIP_PROOF: [&str; 1] = [
+        "f838a120df6966c971051c3d54ec59162606531493a51404a002842f56009d7e5cf4a8c79594be68fc2d8249eb60bfcf0e71d5a0d2f2e292c4ed",
+    ];
 
     const WASM_CLIENT_ID_PREFIX: &str = "08-wasm";
     const ETHEREUM_CLIENT_ID_PREFIX: &str = "10-ethereum";
@@ -955,5 +1015,45 @@ mod test {
             connection_end.encode_to_vec().into(),
         )
         .is_err());
+    }
+
+    #[test]
+    fn non_membership_verification_works() {
+        let proof = Proof {
+            key: hex::decode(NON_MEMBERSHIP_PROOF_KEY).unwrap(),
+            value: vec![0x0],
+            proof: NON_MEMBERSHIP_PROOF
+                .iter()
+                .map(|p| hex::decode(p).unwrap())
+                .collect(),
+        };
+
+        let storage_root = hex::decode(NON_MEMBERSHIP_STORAGE_ROOT).unwrap();
+
+        do_verify_non_membership(
+            ClientStatePath::new(
+                &ClientId::new(ClientType::new(ETHEREUM_CLIENT_ID_PREFIX.into()), 0).unwrap(),
+            )
+            .into(),
+            storage_root.try_into().unwrap(),
+            3,
+            proof,
+        )
+        .expect("Membership verification of client state failed");
+    }
+
+    #[test]
+    fn non_membership_verification_fails_when_value_not_empty() {
+        let (proof, storage_root, _) = prepare_connection_end();
+
+        assert_eq!(
+            do_verify_non_membership(
+                ConnectionPath::new(&ConnectionId::new(0)).into(),
+                storage_root.try_into().unwrap(),
+                3,
+                proof,
+            ),
+            Err(Error::CounterpartyStorageNotNil)
+        );
     }
 }
