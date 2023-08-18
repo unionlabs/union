@@ -34,7 +34,10 @@ use unionlabs::{
                 msg_channel_open_init::MsgChannelOpenInit, msg_channel_open_try::MsgChannelOpenTry,
                 msg_recv_packet::MsgRecvPacket, packet::Packet,
             },
-            client::{height::Height, msg_create_client::MsgCreateClient},
+            client::{
+                height::Height, msg_create_client::MsgCreateClient,
+                msg_update_client::MsgUpdateClient,
+            },
             commitment::merkle_root::MerkleRoot,
             connection::{
                 msg_connection_open_ack::MsgConnectionOpenAck,
@@ -54,7 +57,7 @@ use unionlabs::{
             signed_header::SignedHeader, simple_validator::SimpleValidator,
         },
     },
-    CosmosAccountId, IntoProto, MsgIntoProto, TryFromProto,
+    CosmosAccountId, MsgIntoProto, TryFromProto,
 };
 
 use super::events::TryFromTendermintEventError;
@@ -607,22 +610,10 @@ impl<C: ChainSpec> LightClient for Ethereum<C> {
         client_id: String,
         msg: Self::UpdateClientMessage,
     ) -> impl Future<Output = (Height, UpdateClient)> + '_ {
-        self.chain
-            .broadcast_tx_commit([google::protobuf::Any {
-                type_url: "/ibc.core.client.v1.MsgUpdateClient".into(),
-                value: client_v1::MsgUpdateClient {
-                    client_id,
-                    client_message: Some(Any(msg).into_proto()),
-                    signer: self.chain.signer.to_string(),
-                }
-                .encode_to_vec(),
-            }])
-            .map(|response| {
-                (
-                    self.chain.make_height(response.height.value()),
-                    get_event_from_tx_response::<UpdateClient>(response.deliver_tx.events).unwrap(),
-                )
-            })
+        self.send_msg_and_read_event(MsgUpdateClient {
+            client_id,
+            client_message: Any(msg),
+        })
     }
 
     fn query_client_state(

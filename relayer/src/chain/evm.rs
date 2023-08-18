@@ -688,8 +688,7 @@ impl<C: ChainSpec> LightClient for Cometbls<C> {
                 .make_height(tx_rcp.block_number.unwrap().as_u64());
 
             (
-                self.chain
-                    .make_height(tx_rcp.block_number.unwrap().as_u64()),
+                event_height,
                 #[allow(deprecated)]
                 UpdateClient {
                     client_id,
@@ -1044,7 +1043,7 @@ impl<C: ChainSpec> Connect<Ethereum<C>> for Cometbls<C> {
                     port_id: msg.port_id,
                     channel_id: msg.channel_id.clone(),
                     counterparty_port_id: channel_end.state.counterparty.port_id,
-                    // TODO: This can panic, would be great to not do that
+                    // FIXME: This can panic, it would be great to not do that
                     connection_id: channel_end.state.connection_hops[0].clone(),
                     counterparty_channel_id: channel_end.state.counterparty.channel_id,
                 },
@@ -1092,7 +1091,7 @@ impl<C: ChainSpec> Connect<Ethereum<C>> for Cometbls<C> {
                     port_id: msg.port_id,
                     channel_id: msg.channel_id.clone(),
                     counterparty_port_id: channel_end.state.counterparty.port_id,
-                    // TODO: This can panic, would be great to not do that
+                    // FIXME: This can panic, it would be great to not do that
                     connection_id: channel_end.state.connection_hops[0].clone(),
                     counterparty_channel_id: channel_end.state.counterparty.channel_id,
                 },
