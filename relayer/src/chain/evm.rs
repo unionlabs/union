@@ -35,7 +35,7 @@ use ethers::{
 };
 use futures::{Future, Stream, StreamExt};
 use prost::Message;
-use protos::{google, union::ibc::lightclients::ethereum::v1 as ethereum_v1};
+use protos::union::ibc::lightclients::ethereum::v1 as ethereum_v1;
 use typenum::Unsigned;
 use unionlabs::{
     ethereum::{beacon::LightClientFinalityUpdate, Address, H256},

@@ -591,7 +591,7 @@ where
         )
         .await;
 
-    let (connection_open_init_height, connection_open_init) = cometbls
+    let (_connection_open_init_height, connection_open_init) = cometbls
         .connection_open_init(MsgConnectionOpenInit {
             client_id: cometbls_client_id.clone(),
             counterparty: connection::counterparty::Counterparty {
@@ -905,7 +905,7 @@ where
 
     tracing::debug!("ChannelOpenInit");
 
-    let (channel_open_init_height, channel_open_init) = cometbls
+    let (_channel_open_init_height, channel_open_init) = cometbls
         .channel_open_init(MsgChannelOpenInit {
             port_id: cometbls_port_id.to_string(),
             channel: Channel {
@@ -1004,7 +1004,7 @@ where
 
     tracing::debug!("ChannelOpenAck");
 
-    let (channel_open_ack_height, channel_open_ack) = cometbls
+    let (_channel_open_ack_height, channel_open_ack) = cometbls
         .channel_open_ack(MsgChannelOpenAck {
             port_id: cometbls_port_id.clone(),
             channel_id: channel_open_try.counterparty_channel_id.clone(),
