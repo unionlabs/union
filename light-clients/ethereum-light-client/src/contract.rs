@@ -6,7 +6,7 @@ use cosmwasm_std::{
 };
 use ethabi::ethereum_types::U256 as ethabi_U256;
 use ethereum_verifier::{
-    primitives::{ExecutionAddress, Slot},
+    compute_sync_committee_period_at_slot, compute_timestamp_at_slot, primitives::Slot,
     validate_light_client_update, verify_account_storage_root, verify_storage_absence,
     verify_storage_proof,
 };
@@ -33,7 +33,6 @@ use crate::{
     eth_encoding::generate_commitment_key,
     msg::{ExecuteMsg, InstantiateMsg, QueryMsg, StorageState},
     state::{read_client_state, read_consensus_state, save_consensus_state, update_client_state},
-    update::apply_light_client_update,
     Config,
 };
 
@@ -86,6 +85,21 @@ pub fn execute(
             path,
             StorageState::Empty,
         ),
+        ExecuteMsg::VerifyClientMessage {
+            client_message: ClientMessage { header, .. },
+        } => {
+            if let Some(header) = header {
+                let header =
+                    Header::<Config>::try_from_proto_bytes(&header.data).map_err(|err| {
+                        Error::decode(format!(
+                            "when converting proto header to header in update: {err:#?}"
+                        ))
+                    })?;
+                verify_header(deps.as_ref(), header)
+            } else {
+                Err(StdError::not_found("Not implemented").into())
+            }
+        }
         ExecuteMsg::UpdateState {
             client_message: ClientMessage { header, .. },
         } => {
@@ -232,7 +246,9 @@ pub fn update_header<C: ChainSpec>(
     header: Header<C>,
 ) -> Result<ContractResult, Error> {
     let trusted_sync_committee = header.trusted_sync_committee;
-    let mut wasm_consensus_state =
+    let trusted_height = trusted_sync_committee.trusted_height;
+
+    let mut consensus_state =
         read_consensus_state(deps.as_ref(), &trusted_sync_committee.trusted_height)?.ok_or(
             Error::ConsensusStateNotFound(
                 trusted_sync_committee.trusted_height.revision_number,
@@ -240,56 +256,56 @@ pub fn update_header<C: ChainSpec>(
             ),
         )?;
 
-    let aggregate_public_key = query_aggregate_public_keys(
-        deps.as_ref(),
-        trusted_sync_committee.sync_committee.pubkeys.clone().into(),
-    )?;
-
-    let trusted_height = trusted_sync_committee.trusted_height;
-
-    let trusted_consensus_state = TrustedConsensusState::new(
-        wasm_consensus_state.data.clone(),
-        trusted_sync_committee.sync_committee,
-        aggregate_public_key,
-        trusted_sync_committee.is_next,
-    )?;
-
+    let mut client_state = read_client_state(deps.as_ref())?;
     let consensus_update = header.consensus_update;
     let account_update = header.account_update;
-    let timestamp = header.timestamp;
 
-    let mut wasm_client_state = read_client_state(deps.as_ref())?;
-    let genesis_validators_root = wasm_client_state.data.genesis_validators_root.clone();
-    let ctx = LightClientContext::new(&wasm_client_state.data, trusted_consensus_state);
+    let store_period = compute_sync_committee_period_at_slot::<C>(consensus_state.data.slot);
+    let update_finalized_period =
+        compute_sync_committee_period_at_slot::<C>(consensus_update.attested_header.beacon.slot);
 
-    validate_light_client_update::<LightClientContext<C>, VerificationContext>(
-        &ctx,
-        consensus_update.clone(),
-        (timestamp - wasm_client_state.data.genesis_time) / wasm_client_state.data.seconds_per_slot
-            + wasm_client_state.data.fork_parameters.genesis_slot,
-        genesis_validators_root,
-        VerificationContext {
-            deps: deps.as_ref(),
-        },
-    )
-    .map_err(|e| Error::Verification(e.to_string()))?;
+    match consensus_state.data.next_sync_committee {
+        None if update_finalized_period != store_period => {
+            return Err(Error::StorePeriodMustBeEqualToFinalizedPeriod)
+        }
+        None => {
+            consensus_state.data.next_sync_committee = consensus_update
+                .next_sync_committee
+                .map(|c| c.aggregate_pubkey);
+        }
+        Some(ref next_sync_committee) if update_finalized_period == store_period + 1 => {
+            consensus_state.data.current_sync_committee = next_sync_committee.clone();
+            consensus_state.data.next_sync_committee = consensus_update
+                .next_sync_committee
+                .map(|c| c.aggregate_pubkey);
+        }
+        _ => {}
+    }
 
-    let proof_data = account_update.proofs.get(0).ok_or(Error::EmptyProof)?;
+    if consensus_update.attested_header.beacon.slot > consensus_state.data.slot {
+        consensus_state.data.slot = consensus_update.attested_header.beacon.slot;
+        // NOTE(aeryz): we don't use `optimistic_header`
+    }
 
-    let address: ExecutionAddress = proof_data.key.as_slice().try_into().unwrap();
-    let storage_root = proof_data.value.as_slice().try_into().unwrap();
+    // We implemented the spec until this point. We apply our updates now.
+    let storage_root = account_update
+        .proofs
+        .get(0)
+        .ok_or(Error::EmptyProof)?
+        .value
+        .as_slice()
+        .try_into()
+        .map_err(|_| Error::InvalidProofFormat)?;
+    consensus_state.data.storage_root = storage_root;
 
-    verify_account_storage_root(
-        consensus_update
-            .attested_header
-            .execution
-            .state_root
-            .clone(),
-        &address,
-        &proof_data.proof,
-        &storage_root,
-    )
-    .map_err(|e| Error::Verification(e.to_string()))?;
+    consensus_state.timestamp = compute_timestamp_at_slot::<C>(
+        client_state.data.genesis_time,
+        consensus_update.finalized_header.beacon.slot,
+    );
+
+    if client_state.data.latest_slot < consensus_update.attested_header.beacon.slot {
+        client_state.data.latest_slot = consensus_update.attested_header.beacon.slot;
+    }
 
     // Some updates can be only for updating the sync committee, therefore the execution number can be
     // smaller. We don't want to save a new state if this is the case.
@@ -298,25 +314,80 @@ pub fn update_header<C: ChainSpec>(
         consensus_update.attested_header.execution.block_number,
     );
 
-    apply_light_client_update::<LightClientContext<C>>(
-        &mut wasm_client_state,
-        &mut wasm_consensus_state,
-        consensus_update,
-        storage_root,
-    )?;
-
     update_client_state(
         deps.branch(),
-        wasm_client_state,
+        client_state,
         // wasm_client_state.data,
         updated_execution_height,
     );
     save_consensus_state(
         deps,
-        wasm_consensus_state,
+        consensus_state,
         // wasm_consensus_state.data,
         updated_execution_height,
     )?;
+
+    Ok(ContractResult::valid(None))
+}
+
+pub fn verify_header<C: ChainSpec>(
+    deps: Deps<CustomQuery>,
+    header: Header<C>,
+) -> Result<ContractResult, Error> {
+    let trusted_sync_committee = header.trusted_sync_committee;
+    let wasm_consensus_state = read_consensus_state(deps, &trusted_sync_committee.trusted_height)?
+        .ok_or(Error::ConsensusStateNotFound(
+            trusted_sync_committee.trusted_height.revision_number,
+            trusted_sync_committee.trusted_height.revision_height,
+        ))?;
+
+    let aggregate_public_key = query_aggregate_public_keys(
+        deps,
+        trusted_sync_committee.sync_committee.pubkeys.clone().into(),
+    )?;
+
+    let trusted_consensus_state = TrustedConsensusState::new(
+        wasm_consensus_state.data,
+        trusted_sync_committee.sync_committee,
+        aggregate_public_key,
+        trusted_sync_committee.is_next,
+    )?;
+
+    let wasm_client_state = read_client_state(deps)?;
+    let ctx = LightClientContext::new(&wasm_client_state.data, trusted_consensus_state);
+
+    validate_light_client_update::<LightClientContext<C>, VerificationContext>(
+        &ctx,
+        header.consensus_update.clone(),
+        (header.timestamp - wasm_client_state.data.genesis_time)
+            / wasm_client_state.data.seconds_per_slot
+            + wasm_client_state.data.fork_parameters.genesis_slot,
+        wasm_client_state.data.genesis_validators_root.clone(),
+        VerificationContext { deps },
+    )
+    .map_err(|e| Error::Verification(e.to_string()))?;
+
+    let proof_data = header
+        .account_update
+        .proofs
+        .get(0)
+        .ok_or(Error::EmptyProof)?;
+
+    verify_account_storage_root(
+        header.consensus_update.attested_header.execution.state_root,
+        &proof_data
+            .key
+            .as_slice()
+            .try_into()
+            .map_err(|_| Error::InvalidProofFormat)?,
+        &proof_data.proof,
+        proof_data
+            .value
+            .as_slice()
+            .try_into()
+            .map_err(|_| Error::InvalidProofFormat)?,
+    )
+    .map_err(|e| Error::Verification(e.to_string()))?;
 
     Ok(ContractResult::valid(None))
 }
