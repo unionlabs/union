@@ -229,6 +229,13 @@ pub fn verify_storage_proof(
     }
 }
 
+/// Verifies against `root`, that no value is stored at `key` by using `proof`.
+///
+/// * `root`: Storage root of a contract.
+/// * `key`: Padded slot number that the `expected_value` should be stored at.
+/// * `proof`: Proof that is generated to prove the storage.
+///
+/// NOTE: You must not trust the `root` unless you verified it by calling [`verify_account_storage_root`].
 pub fn verify_storage_absence(root: H256, key: &[u8], proof: &[Vec<u8>]) -> Result<bool, Error> {
     Ok(verify_state(root, key, proof)?.is_none())
 }
@@ -256,7 +263,6 @@ pub fn is_valid_light_client_header<C: ChainSpec>(
     )
 }
 
-// TODO(aeryz): Don't forget to add negative cases.
 #[cfg(test)]
 mod tests {
     use unionlabs::{
