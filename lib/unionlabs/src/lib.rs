@@ -116,10 +116,6 @@ pub trait IntoProto: Proto + Into<Self::Proto> {
     }
 }
 
-impl<T> IntoProto for T where T: Proto + Into<T::Proto> {}
-impl<T> FromProto for T where T: Proto + From<T::Proto> {}
-impl<T> TryFromProto for T where T: Proto + TryFrom<T::Proto> {}
-
 /// A type that can be infallibly converted from it's protobuf representation.
 pub trait FromProto: Proto + From<Self::Proto> {
     fn from_proto(proto: Self::Proto) -> Self {
@@ -148,6 +144,10 @@ pub trait TryFromProto: Proto + TryFrom<Self::Proto> {
             })
     }
 }
+
+impl<T> IntoProto for T where T: Proto + Into<T::Proto> {}
+impl<T> FromProto for T where T: Proto + From<T::Proto> {}
+impl<T> TryFromProto for T where T: Proto + TryFrom<T::Proto> {}
 
 #[derive(Debug)]
 pub enum TryFromProtoBytesError<E> {

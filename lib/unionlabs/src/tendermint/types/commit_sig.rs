@@ -14,6 +14,17 @@ pub struct CommitSig {
     pub signature: Vec<u8>,
 }
 
+impl From<CommitSig> for protos::tendermint::types::CommitSig {
+    fn from(value: CommitSig) -> Self {
+        Self {
+            block_id_flag: value.block_id_flag.into(),
+            validator_address: value.validator_address.into(),
+            timestamp: Some(value.timestamp.into()),
+            signature: value.signature,
+        }
+    }
+}
+
 #[cfg(feature = "ethabi")]
 impl crate::EthAbi for CommitSig {
     type EthAbi = contracts::glue::TendermintTypesCommitSigData;

@@ -1,5 +1,5 @@
 use core::fmt::Debug;
-use std::str::FromStr;
+use std::{fmt, str::FromStr};
 
 use serde::{Deserialize, Serialize};
 use typenum::Unsigned;
@@ -36,14 +36,52 @@ impl FromStr for PresetBaseKind {
     }
 }
 
+/// A way to emulate HKTs in the context of [`ChainSpec`]s.
+///
+/// # Example
+///
+/// ```rs
+/// struct Foo<C: ChainSpec>(PhantomData<C>);
+///
+/// struct AnyFoo;
+///
+/// impl ChainSpecParameterizable for AnyFoo {
+///     type T<C: ChainSpec> = Foo<C>;
+/// }
+///
+/// struct Bar {
+///     foo: AnyChainSpec<AnyFoo>,
+/// }
+/// ```
+pub trait ChainSpecParameterizable {
+    type T<C: ChainSpec>;
+}
+
+pub enum AnyChainSpec<T: ChainSpecParameterizable> {
+    Mainnet(T::T<Mainnet>),
+    Minimal(T::T<Minimal>),
+}
+
+impl<T: ChainSpecParameterizable> Debug for AnyChainSpec<T>
+where
+    T::T<Mainnet>: Debug,
+    T::T<Minimal>: Debug,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            AnyChainSpec::Mainnet(t) => f.debug_tuple("Mainnet").field(t).finish(),
+            AnyChainSpec::Minimal(t) => f.debug_tuple("Minimal").field(t).finish(),
+        }
+    }
+}
+
 macro_rules! consts_traits {
     ($($CONST:ident $(,)?),+) => {
-        // Extra traits are required because the builtin derives bound all generic
-        // types unconditionally
-
         $(
             #[allow(non_camel_case_types)]
             pub trait $CONST: 'static {
+                // Extra traits are required because the builtin derives bound all generic
+                // types unconditionally
                 type $CONST: Unsigned + Debug + Clone + PartialEq + Send + Sync;
             }
 
@@ -57,12 +95,14 @@ macro_rules! consts_traits {
         )+
 
         pub trait ChainSpec: 'static + Debug + Clone + PartialEq + Send + Sync + $($CONST+)+ {
+            const PRESET: preset::Preset;
             const PRESET_BASE_KIND: PresetBaseKind;
 
             type PERIOD: 'static + Unsigned;
         }
 
         impl ChainSpec for Minimal {
+            const PRESET: preset::Preset = preset::MINIMAL;
             const PRESET_BASE_KIND: PresetBaseKind = PresetBaseKind::Minimal;
 
             type PERIOD = typenum::Prod<
@@ -72,6 +112,7 @@ macro_rules! consts_traits {
         }
 
         impl ChainSpec for Mainnet {
+            const PRESET: preset::Preset = preset::MAINNET;
             const PRESET_BASE_KIND: PresetBaseKind = PresetBaseKind::Mainnet;
 
             type PERIOD = typenum::Prod<
