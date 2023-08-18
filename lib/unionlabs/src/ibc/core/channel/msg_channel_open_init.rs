@@ -1,9 +1,15 @@
-use crate::{ibc::core::channel::channel::Channel, CosmosAccountId, MsgIntoProto};
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone)]
+use crate::{ibc::core::channel::channel::Channel, CosmosAccountId, MsgIntoProto, TypeUrl};
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct MsgChannelOpenInit {
     pub port_id: String,
     pub channel: Channel,
+}
+
+impl TypeUrl for protos::ibc::core::channel::v1::MsgChannelOpenInit {
+    const TYPE_URL: &'static str = "/ibc.core.channel.v1.MsgChannelOpenInit";
 }
 
 #[derive(Debug, Clone)]

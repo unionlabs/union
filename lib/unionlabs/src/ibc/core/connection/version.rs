@@ -1,8 +1,8 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use crate::{errors::UnknownEnumVariant, ibc::core::channel::order::Order};
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Version {
     // TODO(benluelo): "The identifier field specifies a unique version identifier. A value of "1" specifies IBC 1.0.0."
     pub identifier: String,
@@ -18,7 +18,7 @@ impl TryFrom<protos::ibc::core::connection::v1::Version> for Version {
             features: proto
                 .features
                 .into_iter()
-                .map(Order::try_from_str)
+                .map(|order| order.parse())
                 .collect::<Result<_, _>>()?,
         })
     }
@@ -63,7 +63,7 @@ impl TryFrom<contracts::ibc_handler::IbcCoreConnectionV1VersionData> for Version
             features: value
                 .features
                 .into_iter()
-                .map(Order::try_from_str)
+                .map(|order| order.parse())
                 .collect::<Result<_, _>>()?,
         })
     }

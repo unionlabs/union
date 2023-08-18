@@ -1,22 +1,39 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
-use crate::{errors::MissingField, ibc::core::commitment::merkle_root::MerkleRoot, Proto, TypeUrl};
+use crate::{
+    errors::{required, InvalidLength, MissingField},
+    ethereum::H256,
+    ibc::core::commitment::merkle_root::MerkleRoot,
+    Proto, TryFromProtoErrorOf, TypeUrl,
+};
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ConsensusState {
     pub root: MerkleRoot,
-    pub next_validators_hash: Vec<u8>,
+    pub next_validators_hash: H256,
+}
+
+#[derive(Debug)]
+pub enum TryFromConsensusStateError {
+    MissingField(MissingField),
+    Root(TryFromProtoErrorOf<MerkleRoot>),
+    NextValidatorsHash(InvalidLength),
 }
 
 impl TryFrom<protos::union::ibc::lightclients::cometbls::v1::ConsensusState> for ConsensusState {
-    type Error = MissingField;
+    type Error = TryFromConsensusStateError;
 
     fn try_from(
         value: protos::union::ibc::lightclients::cometbls::v1::ConsensusState,
     ) -> Result<Self, Self::Error> {
         Ok(Self {
-            root: value.root.ok_or(MissingField("root"))?.into(),
-            next_validators_hash: value.next_validators_hash,
+            root: required!(value.root)?
+                .try_into()
+                .map_err(TryFromConsensusStateError::Root)?,
+            next_validators_hash: value
+                .next_validators_hash
+                .try_into()
+                .map_err(TryFromConsensusStateError::NextValidatorsHash)?,
         })
     }
 }
@@ -33,7 +50,7 @@ impl From<ConsensusState> for protos::union::ibc::lightclients::cometbls::v1::Co
     fn from(value: ConsensusState) -> Self {
         Self {
             root: Some(value.root.into()),
-            next_validators_hash: value.next_validators_hash,
+            next_validators_hash: value.next_validators_hash.into(),
         }
     }
 }

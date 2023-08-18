@@ -13,25 +13,28 @@ use std::{collections::btree_map::Entry, fmt::Debug, fs::read_to_string};
 
 use anyhow::bail;
 use clap::Parser;
-use ethers::{signers::Signer, types::U256};
 use futures::{future::join, FutureExt, Stream, StreamExt};
 use prost::Message;
 use unionlabs::{
+    cosmos::base::coin::Coin,
     ethereum_consts_traits::{Mainnet, Minimal, PresetBaseKind},
-    ibc::core::{
-        channel::{
-            self, channel::Channel, msg_channel_open_ack::MsgChannelOpenAck,
-            msg_channel_open_confirm::MsgChannelOpenConfirm,
-            msg_channel_open_init::MsgChannelOpenInit, msg_channel_open_try::MsgChannelOpenTry,
-            msg_recv_packet::MsgRecvPacket, order::Order, packet::Packet,
-        },
-        client::height::Height,
-        commitment::merkle_prefix::MerklePrefix,
-        connection::{
-            self, msg_channel_open_ack::MsgConnectionOpenAck,
-            msg_channel_open_confirm::MsgConnectionOpenConfirm,
-            msg_channel_open_init::MsgConnectionOpenInit,
-            msg_channel_open_try::MsgConnectionOpenTry, version::Version,
+    ibc::{
+        applications::transfer::msg_transfer::MsgTransfer,
+        core::{
+            channel::{
+                self, channel::Channel, msg_channel_open_ack::MsgChannelOpenAck,
+                msg_channel_open_confirm::MsgChannelOpenConfirm,
+                msg_channel_open_init::MsgChannelOpenInit, msg_channel_open_try::MsgChannelOpenTry,
+                msg_recv_packet::MsgRecvPacket, order::Order, packet::Packet,
+            },
+            client::height::Height,
+            commitment::merkle_prefix::MerklePrefix,
+            connection::{
+                self, msg_connection_open_ack::MsgConnectionOpenAck,
+                msg_connection_open_confirm::MsgConnectionOpenConfirm,
+                msg_connection_open_init::MsgConnectionOpenInit,
+                msg_connection_open_try::MsgConnectionOpenTry, version::Version,
+            },
         },
     },
     IntoProto,
@@ -68,10 +71,6 @@ async fn main() -> Result<(), anyhow::Error> {
 
     do_main(args).await
 }
-
-// const ETH_BEACON_RPC_API: &str = "http://localhost:9596";
-// const ETH_RPC_API: &str = "http://localhost:8545";
-const CHANNEL_VERSION: &str = "ics20-1";
 
 #[allow(clippy::too_many_lines)]
 async fn do_main(args: cli::AppArgs) -> Result<(), anyhow::Error> {
@@ -215,9 +214,11 @@ async fn do_main(args: cli::AppArgs) -> Result<(), anyhow::Error> {
                 from_chain: from_chain_name,
                 from_connection,
                 from_port,
+                from_version,
                 to_chain: to_chain_name,
                 to_connection,
                 to_port,
+                to_version,
             } => {
                 let from_chain = relayer_config.get_chain(&from_chain_name).await.unwrap();
                 let to_chain = relayer_config.get_chain(&to_chain_name).await.unwrap();
@@ -229,9 +230,11 @@ async fn do_main(args: cli::AppArgs) -> Result<(), anyhow::Error> {
                             &union,
                             from_connection,
                             from_port,
+                            from_version,
                             &evm,
                             to_connection,
                             to_port,
+                            to_version,
                         )
                         .await?;
                     }
@@ -240,9 +243,11 @@ async fn do_main(args: cli::AppArgs) -> Result<(), anyhow::Error> {
                             &union,
                             from_connection,
                             from_port,
+                            from_version,
                             &evm,
                             to_connection,
                             to_port,
+                            to_version,
                         )
                         .await?;
                     }
@@ -253,9 +258,11 @@ async fn do_main(args: cli::AppArgs) -> Result<(), anyhow::Error> {
                             &evm,
                             from_connection,
                             from_port,
+                            from_version,
                             &union,
                             to_connection,
                             to_port,
+                            to_version,
                         )
                         .await?;
                     }
@@ -264,9 +271,11 @@ async fn do_main(args: cli::AppArgs) -> Result<(), anyhow::Error> {
                             &evm,
                             from_connection,
                             from_port,
+                            from_version,
                             &union,
                             to_connection,
                             to_port,
+                            to_version,
                         )
                         .await?;
                     }
@@ -313,47 +322,65 @@ async fn do_main(args: cli::AppArgs) -> Result<(), anyhow::Error> {
             source_channel,
             on,
         }) => {
-            let chain = relayer_config.get_chain(&on).await.unwrap();
+            let chain_config = relayer_config.chain.get(&on).unwrap();
 
-            match chain {
-                AnyChain::Union(_union) => {
-                    bail!("not currently supported");
-                }
-                // evm -> union
-                AnyChain::EvmMainnet(evm) => {
-                    evm.transfer(denom, amount, receiver, source_port, source_channel)
+            let msg = |sender: String| MsgTransfer {
+                source_port,
+                source_channel,
+                token: Coin {
+                    denom,
+                    amount: amount.to_string(),
+                },
+                sender,
+                receiver,
+                timeout_height: Height {
+                    revision_number: 1,
+                    revision_height: u64::MAX,
+                },
+                timeout_timestamp: None,
+                memo: None,
+            };
+
+            match chain_config {
+                ChainConfig::Evm(EvmChainConfig::Minimal(evm_config)) => {
+                    Evm::<Minimal>::new(evm_config.clone())
+                        .await
+                        .transfer(
+                            msg(hex::encode(evm_config.signer.clone().value().to_bytes())),
+                            evm_config.ics20_transfer_bank_address.clone(),
+                        )
                         .await;
                 }
-                AnyChain::EvmMinimal(evm) => {
-                    evm.transfer(denom, amount, receiver, source_port, source_channel)
+                ChainConfig::Evm(EvmChainConfig::Mainnet(evm_config)) => {
+                    Evm::<Mainnet>::new(evm_config.clone())
+                        .await
+                        .transfer(
+                            msg(hex::encode(evm_config.signer.clone().value().to_bytes())),
+                            evm_config.ics20_transfer_bank_address.clone(),
+                        )
                         .await;
                 }
+                ChainConfig::Union(_) => bail!("not currently supported"),
             }
         }
         Command::Query(query) => match query {
-            QueryCmd::Balances { on, denom } => {
-                let chain = relayer_config.get_chain(&on).await.unwrap();
+            QueryCmd::Balances { on, who, denom } => {
+                let chain_config = relayer_config.chain.get(&on).unwrap();
 
-                match chain {
-                    AnyChain::Union(_) => bail!("not currently supported"),
-                    AnyChain::EvmMainnet(evm) => {
-                        let balance: U256 = evm
-                            .ics20_bank
-                            .balance_of(evm.wallet.address(), denom.clone())
+                match chain_config {
+                    ChainConfig::Evm(EvmChainConfig::Minimal(evm_config)) => {
+                        Evm::<Minimal>::new(evm_config.clone())
                             .await
-                            .unwrap();
-
-                        println!("{balance}");
+                            .balance_of(evm_config.ics20_bank_address.clone(), who.into(), denom)
+                            .await;
                     }
-                    AnyChain::EvmMinimal(evm) => {
-                        let balance: U256 = evm
-                            .ics20_bank
-                            .balance_of(evm.wallet.address(), denom.clone())
+                    ChainConfig::Evm(EvmChainConfig::Mainnet(evm_config)) => {
+                        Evm::<Mainnet>::new(evm_config.clone())
                             .await
-                            .unwrap();
-
-                        println!("{balance}");
+                            .balance_of(evm_config.ics20_bank_address.clone(), who.into(), denom)
+                            .await;
                     }
+                    ChainConfig::Union(_) => bail!("not currently supported"),
                 }
             }
             QueryCmd::Client { on, client_id } => {
@@ -390,6 +417,24 @@ async fn do_main(args: cli::AppArgs) -> Result<(), anyhow::Error> {
             QueryCmd::Channel {} => todo!(),
         },
         Command::Setup(cmd) => match cmd {
+            // TODO(aeryz): this might go into channel as well, since it's highly coupled with it
+            cli::SetupCmd::BindPort {
+                on,
+                module_address,
+                port_id,
+            } => {
+                let chain = relayer_config.get_chain(&on).await.unwrap();
+
+                match chain {
+                    AnyChain::EvmMinimal(evm) => {
+                        evm.bind_port(module_address.into(), port_id).await
+                    }
+                    AnyChain::EvmMainnet(evm) => {
+                        evm.bind_port(module_address.into(), port_id).await
+                    }
+                    _ => panic!("Not supported"),
+                };
+            }
             cli::SetupCmd::InitialChannel {
                 on,
                 counterparty_port_id,
@@ -408,6 +453,22 @@ async fn do_main(args: cli::AppArgs) -> Result<(), anyhow::Error> {
                             counterparty_port_id,
                         )
                         .await;
+                    }
+                    _ => panic!("Not supported."),
+                }
+            }
+            cli::SetupCmd::SetOperator { on } => {
+                let chain_config = relayer_config.chain.get(&on).unwrap();
+
+                match chain_config {
+                    ChainConfig::Evm(EvmChainConfig::Minimal(evm_config)) => {
+                        Evm::<Minimal>::new(evm_config.clone())
+                            .await
+                            .ics20_bank_set_operator(
+                                evm_config.ics20_bank_address.clone(),
+                                evm_config.ics20_transfer_bank_address.clone(),
+                            )
+                            .await;
                     }
                     _ => panic!("Not supported."),
                 }
@@ -772,9 +833,11 @@ async fn channel_handshake<FromChain, ToChain>(
     from: &FromChain,
     from_connection_id: String,
     from_port_id: String,
+    from_version: String,
     to: &ToChain,
     to_connection_id: String,
     to_port_id: String,
+    to_version: String,
 ) -> Result<(String, String), anyhow::Error>
 where
     FromChain: ChainConnection<ToChain>,
@@ -792,10 +855,13 @@ where
         to_connection_id,
         from_port_id,
         to_port_id,
+        from_version,
+        to_version,
     )
     .await)
 }
 
+#[allow(clippy::too_many_arguments)] // fight me clippy
 async fn do_channel_handshake<L2, L1>(
     cometbls: &L2,
     ethereum: &L1,
@@ -803,6 +869,8 @@ async fn do_channel_handshake<L2, L1>(
     ethereum_connection_id: String,
     cometbls_port_id: String,
     ethereum_port_id: String,
+    cometbls_channel_version: String,
+    ethereum_channel_version: String,
 ) -> (String, String)
 where
     L2: Connect<L1>,
@@ -851,7 +919,7 @@ where
                     channel_id: String::new(),
                 },
                 connection_hops: vec![cometbls_connection_id.clone()],
-                version: CHANNEL_VERSION.to_string(),
+                version: cometbls_channel_version.clone(),
             },
         })
         .await;
@@ -895,9 +963,9 @@ where
                     channel_id: cometbls_channel_id.clone(),
                 },
                 connection_hops: vec![ethereum_connection_id.clone()],
-                version: CHANNEL_VERSION.to_string(),
+                version: ethereum_channel_version.clone(),
             },
-            counterparty_version: CHANNEL_VERSION.to_string(),
+            counterparty_version: cometbls_channel_version.clone(),
             proof_init: proof.proof,
             proof_height: proof.proof_height,
         })
@@ -943,7 +1011,7 @@ where
             port_id: cometbls_port_id.clone(),
             channel_id: cometbls_channel_id.clone(),
             counterparty_channel_id: ethereum_channel_id.clone(),
-            counterparty_version: CHANNEL_VERSION.to_string(),
+            counterparty_version: ethereum_channel_version.clone(),
             proof_try: proof.proof,
             proof_height: ethereum_update_to,
         })
@@ -1011,6 +1079,8 @@ where
     {
         lc1_event_stream
             .for_each(move |(event_height, packet)| async move {
+                tracing::info!("received packet");
+
                 let sequence = packet.sequence;
 
                 let lc2_client_id = lc1

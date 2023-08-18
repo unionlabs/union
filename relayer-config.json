@@ -12,7 +12,7 @@
       },
       "eth_rpc_api": "ws://localhost:8546",
       "eth_beacon_rpc_api": "http://localhost:9596",
-      "wasm_code_id": "0x14eb0f496679044aa69e62687589018642970f52552415b3963d90c7b3ba5d44"
+      "wasm_code_id": "0x3cc50fbe24767a36341032f30a95463ea84a4802299aa26f769493d6a8f23e4a"
     },
     "union-devnet": {
       "chain_type": "union",
@@ -20,8 +20,8 @@
         "raw": "0xaa820fa947beb242032a41b6dc9a8b9c37d8f5fbcda0966b1ec80335b10a7d6f"
       },
       "ws_url": "ws://localhost:26657/websocket",
-      "wasm_code_id": "0x14eb0f496679044aa69e62687589018642970f52552415b3963d90c7b3ba5d44",
-      "prover_endpoint": "http://localhost:8080",
+      "wasm_code_id": "0x3cc50fbe24767a36341032f30a95463ea84a4802299aa26f769493d6a8f23e4a",
+      "prover_endpoint": "http://localhost:16657",
       "dump_path": "dump",
       "grpc_url": "http://localhost:9090"
     }

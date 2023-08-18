@@ -791,6 +791,16 @@ pub mod tendermint {
     }
 }
 pub mod union {
+    pub mod galois {
+        pub mod api {
+            #[cfg(feature = "union+galois+api+v1")]
+            // @@protoc_insertion_point(attribute:union.galois.api.v1)
+            pub mod v1 {
+                include!("union.galois.api.v1.rs");
+                // @@protoc_insertion_point(union.galois.api.v1)
+            }
+        }
+    }
     pub mod ibc {
         pub mod lightclients {
             pub mod cometbls {
@@ -808,16 +818,6 @@ pub mod union {
                     include!("union.ibc.lightclients.ethereum.v1.rs");
                     // @@protoc_insertion_point(union.ibc.lightclients.ethereum.v1)
                 }
-            }
-        }
-    }
-    pub mod prover {
-        pub mod api {
-            #[cfg(feature = "union+prover+api+v1")]
-            // @@protoc_insertion_point(attribute:union.prover.api.v1)
-            pub mod v1 {
-                include!("union.prover.api.v1.rs");
-                // @@protoc_insertion_point(union.prover.api.v1)
             }
         }
     }

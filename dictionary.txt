@@ -24,6 +24,7 @@ Feegrant
 GOPATH
 GOPRIVATE
 Getenv
+HKTs
 Hasher
 Hyperlane
 IAVL
@@ -34,7 +35,6 @@ Joye
 KEYPAIR
 Karel
 Keybase
-LCFUR
 Lahcen
 Layerzero
 Merkle
@@ -45,6 +45,7 @@ PINGPONG
 PRECOMMIT
 PREVOTE
 PROTOC
+Parameterizable
 Paramspace
 Partset
 Patchelf
@@ -122,6 +123,7 @@ blst
 boneh
 builtins
 cachix
+canonicalization
 capabilitykeeper
 capabilitytypes
 cargotoml

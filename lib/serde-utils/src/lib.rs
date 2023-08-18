@@ -62,25 +62,31 @@ where
     }
 }
 
-// REVIEW: Are these base64 helpers necessary anymore, since we rarely use the proto types directly?
 pub mod base64 {
     use alloc::{string::String, vec::Vec};
+    use std::fmt::Debug;
 
     use base64::prelude::*;
-    use serde::{Deserialize, Deserializer, Serialize, Serializer};
+    use serde::{de, Deserialize, Deserializer};
 
-    pub fn serialize<S: Serializer>(bytes: &[u8], serializer: S) -> Result<S::Ok, S::Error> {
-        let encoded = BASE64_STANDARD.encode(bytes);
-        String::serialize(&encoded, serializer)
+    pub fn serialize<S, T: AsRef<[u8]>>(data: T, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_str(&BASE64_STANDARD.encode(data))
     }
 
-    pub fn deserialize<'de, D: Deserializer<'de>>(deserializer: D) -> Result<Vec<u8>, D::Error> {
-        let base64 = String::deserialize(deserializer)?;
-        let bytes = BASE64_STANDARD
-            .decode(base64.as_bytes())
-            .map_err(serde::de::Error::custom)?;
-
-        Ok(bytes)
+    pub fn deserialize<'de, D, T>(deserializer: D) -> Result<T, D::Error>
+    where
+        D: Deserializer<'de>,
+        T: TryFrom<Vec<u8>>,
+        <T as TryFrom<Vec<u8>>>::Error: Debug + 'static,
+    {
+        BASE64_STANDARD
+            .decode(String::deserialize(deserializer)?.as_bytes())
+            .map_err(de::Error::custom)?
+            .try_into()
+            .map_err(|err| de::Error::custom(format!("{err:?}")))
     }
 }
 
@@ -88,25 +94,24 @@ pub mod inner_base64 {
     use alloc::{string::String, vec::Vec};
 
     use base64::prelude::*;
-    use serde::{Deserialize, Deserializer, Serialize, Serializer};
+    use serde::{de, Deserialize, Deserializer, Serializer};
 
     pub fn serialize<S: Serializer>(
         #[allow(clippy::ptr_arg)] // required by serde
         bytes: &Vec<Vec<u8>>,
         serializer: S,
     ) -> Result<S::Ok, S::Error> {
-        let encoded: Vec<String> = bytes.iter().map(|b| BASE64_STANDARD.encode(b)).collect();
-        Vec::serialize(&encoded, serializer)
+        serializer.collect_seq(bytes.iter().map(|b| BASE64_STANDARD.encode(b)))
     }
 
     pub fn deserialize<'de, D: Deserializer<'de>>(
         deserializer: D,
     ) -> Result<Vec<Vec<u8>>, D::Error> {
-        let vec: Vec<String> = Vec::deserialize(deserializer)?;
-        vec.into_iter()
+        Vec::<String>::deserialize(deserializer)?
+            .into_iter()
             .map(|item| BASE64_STANDARD.decode(item))
             .collect::<Result<Vec<_>, _>>()
-            .map_err(serde::de::Error::custom)
+            .map_err(de::Error::custom)
     }
 }
 

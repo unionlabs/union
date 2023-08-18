@@ -757,19 +757,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "56ce8c6da7551ec6c462cbaf3bfbc75131ebbfa1c944aeaa9dab51ca1c5f0c3b"
 
 [[package]]
-name = "e2e"
-version = "0.1.0"
-dependencies = [
- "clap",
- "ethers",
- "reqwest",
- "tendermint-rpc",
- "tokio",
- "tracing",
- "tracing-subscriber",
-]
-
-[[package]]
 name = "ecdsa"
 version = "0.16.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -865,6 +852,19 @@ dependencies = [
  "serde",
  "sha3",
  "zeroize",
+]
+
+[[package]]
+name = "ensure-blocks"
+version = "0.0.0"
+dependencies = [
+ "clap",
+ "ethers",
+ "reqwest",
+ "tendermint-rpc",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
 ]
 
 [[package]]
@@ -3421,7 +3421,7 @@ dependencies = [
 [[package]]
 name = "tendermint"
 version = "0.32.0"
-source = "git+https://github.com/benluelo/tendermint-rs?branch=bn254#94439e97bfe8fd9ab9d4d591a2673da364595070"
+source = "git+https://github.com/unionlabs/tendermint-rs?branch=bn254#6276b8abfa720407e762f9668e05cf53893d1777"
 dependencies = [
  "bytes",
  "digest 0.10.7",
@@ -3449,7 +3449,7 @@ dependencies = [
 [[package]]
 name = "tendermint-config"
 version = "0.32.0"
-source = "git+https://github.com/benluelo/tendermint-rs?branch=bn254#94439e97bfe8fd9ab9d4d591a2673da364595070"
+source = "git+https://github.com/unionlabs/tendermint-rs?branch=bn254#6276b8abfa720407e762f9668e05cf53893d1777"
 dependencies = [
  "flex-error",
  "serde",
@@ -3462,7 +3462,7 @@ dependencies = [
 [[package]]
 name = "tendermint-proto"
 version = "0.32.0"
-source = "git+https://github.com/benluelo/tendermint-rs?branch=bn254#94439e97bfe8fd9ab9d4d591a2673da364595070"
+source = "git+https://github.com/unionlabs/tendermint-rs?branch=bn254#6276b8abfa720407e762f9668e05cf53893d1777"
 dependencies = [
  "bytes",
  "flex-error",
@@ -3479,7 +3479,7 @@ dependencies = [
 [[package]]
 name = "tendermint-rpc"
 version = "0.32.0"
-source = "git+https://github.com/benluelo/tendermint-rs?branch=bn254#94439e97bfe8fd9ab9d4d591a2673da364595070"
+source = "git+https://github.com/unionlabs/tendermint-rs?branch=bn254#6276b8abfa720407e762f9668e05cf53893d1777"
 dependencies = [
  "async-trait",
  "async-tungstenite",

@@ -8,11 +8,12 @@ use serde::{
 };
 
 use crate::{
-    CosmosAccountId, IntoProto, MsgIntoProto, Proto, TryFromProto, TryFromProtoErrorOf, TypeUrl,
+    CosmosAccountId, IntoProto, MsgIntoProto, Proto, TryFromProto, TryFromProtoBytesError,
+    TryFromProtoErrorOf, TypeUrl,
 };
 
 /// Wrapper type to indicate that a type is to be serialized as an Any.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Any<T>(pub T);
 
 impl<'de, T> Deserialize<'de> for Any<T>
@@ -141,8 +142,7 @@ where
         found: String,
         expected: &'static str,
     },
-    Prost(prost::DecodeError),
-    TryFromProto(<T as TryFrom<T::Proto>>::Error),
+    TryFromProto(TryFromProtoBytesError<TryFromProtoErrorOf<T>>),
 }
 
 impl<T> TryFrom<protos::google::protobuf::Any> for Any<T>
@@ -155,9 +155,7 @@ where
 
     fn try_from(value: protos::google::protobuf::Any) -> Result<Self, Self::Error> {
         if value.type_url == T::Proto::TYPE_URL {
-            T::Proto::decode(&*value.value)
-                .map_err(TryFromAnyError::Prost)?
-                .try_into()
+            T::try_from_proto_bytes(&value.value)
                 .map_err(TryFromAnyError::TryFromProto)
                 .map(Any)
         } else {

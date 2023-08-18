@@ -1,11 +1,14 @@
+use serde::{Deserialize, Serialize};
+
 use crate::{
     ibc::core::{
         client::height::Height,
         connection::{counterparty::Counterparty, version::Version},
     },
-    CosmosAccountId, MsgIntoProto,
+    CosmosAccountId, MsgIntoProto, TypeUrl,
 };
 
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct MsgConnectionOpenInit {
     pub client_id: String,
     pub counterparty: Counterparty,
@@ -17,6 +20,10 @@ pub struct MsgConnectionOpenInit {
 pub struct MsgConnectionOpenInitResponse {
     pub connection_id: String,
     pub inclusion_height: Height,
+}
+
+impl TypeUrl for protos::ibc::core::connection::v1::MsgConnectionOpenInit {
+    const TYPE_URL: &'static str = "/ibc.core.connection.v1.MsgConnectionOpenInit";
 }
 
 impl MsgIntoProto for MsgConnectionOpenInit {

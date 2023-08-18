@@ -1,6 +1,8 @@
+use serde::{Deserialize, Serialize};
+
 use crate::{CosmosAccountId, IntoProto, MsgIntoProto, TypeUrl};
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct MsgCreateClient<ClientState, ConsensusState> {
     pub client_state: ClientState,
     pub consensus_state: ConsensusState,

@@ -46,12 +46,10 @@ impl TryFrom<u8> for State {
 impl From<State> for protos::ibc::core::connection::v1::State {
     fn from(value: State) -> Self {
         match value {
-            State::UninitializedUnspecified => {
-                protos::ibc::core::connection::v1::State::UninitializedUnspecified
-            }
-            State::Init => protos::ibc::core::connection::v1::State::Init,
-            State::Tryopen => protos::ibc::core::connection::v1::State::Tryopen,
-            State::Open => protos::ibc::core::connection::v1::State::Open,
+            State::UninitializedUnspecified => Self::UninitializedUnspecified,
+            State::Init => Self::Init,
+            State::Tryopen => Self::Tryopen,
+            State::Open => Self::Open,
         }
     }
 }

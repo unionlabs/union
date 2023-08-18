@@ -226,7 +226,7 @@
 
       tonic-opts = {
         client_mod_attribute = { "." = [ ''#[cfg(feature = "client")]'' ]; };
-        server_mod_attribute = { "." = [ ''#[cfg(feature = "server")]'' ]; };
+        # server_mod_attribute = { "." = [ ''#[cfg(feature = "server")]'' ]; };
       };
 
       proto-inputs = name: { src, additional-filter ? null, ... }:
@@ -287,7 +287,7 @@
             --prost_out=./src \
             --prost_opt=compile_well_known_types=true,${fold-opts prost-opts} \
             --tonic_out=./src \
-            --tonic_opt=compile_well_known_types=true,${fold-opts tonic-opts} \
+            --tonic_opt=compile_well_known_types=true,no_server=true,${fold-opts tonic-opts} \
             --prost-crate_out=. \
             --prost-crate_opt=package_separator="+",gen_crate=${cargo_toml { name = "protos"; }} \
             ${includes}
@@ -320,13 +320,15 @@
 
       packages.generate-rust-proto = pkgs.writeShellApplication {
         name = "generate-rust-proto";
-        runtimeInputs = [ rust-proto ];
+        runtimeInputs = [ rust-proto pkgs.rsync ];
         text = ''
           ${ensureAtRepositoryRoot}
 
-          outdir="generated/rust"
+          outdir="generated/rust/"
 
-          cp -r --no-preserve=mode ${rust-proto}/* $outdir
+          mkdir -p "$outdir"
+
+          rsync -rL --chmod=ugo=rwX --delete ${rust-proto}/ $outdir
 
           echo "Generation successful!"
         '';

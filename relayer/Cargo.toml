@@ -38,3 +38,5 @@ serde = { version = "1.0.173", features = ["derive"] }
 serde-utils = { path = "../lib/serde-utils" }
 hex = { version = "0.4.3", features = [ "serde" ] }
 anyhow = "1.0.72"
+pin-utils = "0.1.0"
+tokio-stream = { version = "0.1.14" }

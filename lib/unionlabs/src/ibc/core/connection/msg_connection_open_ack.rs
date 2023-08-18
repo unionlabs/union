@@ -1,12 +1,13 @@
 #[cfg(feature = "ethabi")]
 use prost::Message;
+use serde::{Deserialize, Serialize};
 
 use crate::{
     ibc::core::{client::height::Height, connection::version::Version},
-    CosmosAccountId, IntoProto, MsgIntoProto,
+    CosmosAccountId, IntoProto, MsgIntoProto, TypeUrl,
 };
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct MsgConnectionOpenAck<ClientState> {
     pub connection_id: String,
     pub counterparty_connection_id: String,
@@ -19,10 +20,13 @@ pub struct MsgConnectionOpenAck<ClientState> {
     pub consensus_height: Height,
 }
 
+impl TypeUrl for protos::ibc::core::connection::v1::MsgConnectionOpenAck {
+    const TYPE_URL: &'static str = "/ibc.core.connection.v1.MsgConnectionOpenAck";
+}
+
 impl<ClientState> MsgIntoProto for MsgConnectionOpenAck<ClientState>
 where
     ClientState: IntoProto<Proto = protos::google::protobuf::Any>,
-    // <ClientState as IntoProto>::Proto: TypeUrl,
 {
     type Proto = protos::ibc::core::connection::v1::MsgConnectionOpenAck;
 

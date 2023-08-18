@@ -1,7 +1,12 @@
 pub mod block_id;
 pub mod block_id_flag;
+pub mod canonical_block_header;
+pub mod canonical_block_id;
+pub mod canonical_vote;
 pub mod commit;
 pub mod commit_sig;
 pub mod header;
 pub mod part_set_header;
 pub mod signed_header;
+pub mod signed_msg_type;
+pub mod simple_validator;

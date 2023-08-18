@@ -1,3 +1,5 @@
+use serde::{Deserialize, Serialize};
+
 use crate::{
     errors::{InvalidLength, MissingField},
     ethereum::H256,
@@ -5,7 +7,7 @@ use crate::{
     Proto, TryFromProtoErrorOf, TypeUrl,
 };
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct BlockId {
     pub hash: H256,
     pub part_set_header: PartSetHeader,
@@ -62,4 +64,45 @@ fn proto_roundtrip() {
             hash: [2; 32].into(),
         },
     });
+}
+
+#[cfg(feature = "ethabi")]
+impl crate::EthAbi for BlockId {
+    type EthAbi = contracts::glue::TendermintTypesBlockIDData;
+}
+
+#[cfg(feature = "ethabi")]
+impl From<BlockId> for contracts::glue::TendermintTypesBlockIDData {
+    fn from(value: BlockId) -> Self {
+        Self {
+            hash: value.hash.into_bytes().into(),
+            part_set_header: value.part_set_header.into(),
+        }
+    }
+}
+
+#[cfg(feature = "ethabi")]
+#[derive(Debug)]
+pub enum TryFromEthAbiBlockIdError {
+    Hash(crate::errors::InvalidLength),
+    PartSetHeader(crate::TryFromEthAbiErrorOf<PartSetHeader>),
+}
+
+#[cfg(feature = "ethabi")]
+impl TryFrom<contracts::glue::TendermintTypesBlockIDData> for BlockId {
+    type Error = TryFromEthAbiBlockIdError;
+
+    fn try_from(value: contracts::glue::TendermintTypesBlockIDData) -> Result<Self, Self::Error> {
+        Ok(Self {
+            hash: value
+                .hash
+                .to_vec()
+                .try_into()
+                .map_err(TryFromEthAbiBlockIdError::Hash)?,
+            part_set_header: value
+                .part_set_header
+                .try_into()
+                .map_err(TryFromEthAbiBlockIdError::PartSetHeader)?,
+        })
+    }
 }

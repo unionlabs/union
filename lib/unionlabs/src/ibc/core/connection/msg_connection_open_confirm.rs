@@ -1,9 +1,16 @@
-use crate::{ibc::core::client::height::Height, CosmosAccountId, MsgIntoProto};
+use serde::{Deserialize, Serialize};
 
+use crate::{ibc::core::client::height::Height, CosmosAccountId, MsgIntoProto, TypeUrl};
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct MsgConnectionOpenConfirm {
     pub connection_id: String,
     pub proof_ack: Vec<u8>,
     pub proof_height: Height,
+}
+
+impl TypeUrl for protos::ibc::core::connection::v1::MsgConnectionOpenConfirm {
+    const TYPE_URL: &'static str = "/ibc.core.connection.v1.MsgConnectionOpenConfirm";
 }
 
 impl MsgIntoProto for MsgConnectionOpenConfirm {

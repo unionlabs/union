@@ -81,7 +81,7 @@
         ./tools/rust/crane.nix
         ./tools/tera/tera.nix
         ./tools/docgen/docgen.nix
-        ./networks/demo.nix
+        ./networks/e2e-setup.nix
         ./networks/devnet.nix
         ./networks/genesis/devnet.nix
         ./testnet-validator.nix
@@ -155,7 +155,8 @@
                 cosmossdk = builtins.fetchGit {
                   name = "cosmos-sdk";
                   url = "git@github.com:unionlabs/cosmos-sdk";
-                  rev = "de88545a074de70242f5da07862ed478d53626ff";
+                  rev = "b437ae728cc04212eb815975cef4fa4de53ffdbf";
+                  allRefs = true;
                 };
                 ibcgo = mkUnpack {
                   name = "ibc-go";

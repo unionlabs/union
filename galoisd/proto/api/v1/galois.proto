@@ -1,11 +1,11 @@
 syntax = "proto3";
 
-package union.prover.api.v1;
+package union.galois.api.v1;
 
 import "tendermint/types/validator.proto";
 import "tendermint/types/canonical.proto";
 
-option go_package = "union/prover/rpc/grpc";
+option go_package = "union/galois/rpc/grpc";
 
 message FrElement {
   bytes value = 1;

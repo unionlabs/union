@@ -126,6 +126,11 @@
                 "paths": ["connection-0"]
             }]' \
             $out/config/genesis.json | sponge $out/config/genesis.json
+
+          # Connection id sequence is advanced to prevent overlapping.
+          jq \
+            '.app_state.ibc.connection_genesis.next_connection_sequence = "1"' \
+            $out/config/genesis.json | sponge $out/config/genesis.json
         '';
 
       addIbcChannelToGenesis = home: pkgs.runCommand "add-ibc-channel-to-genesis"

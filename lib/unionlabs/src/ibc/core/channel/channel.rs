@@ -1,4 +1,4 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use crate::{
     errors::MissingField,
@@ -6,7 +6,7 @@ use crate::{
     Proto, TypeUrl,
 };
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Channel {
     pub state: State,
     pub ordering: Order,

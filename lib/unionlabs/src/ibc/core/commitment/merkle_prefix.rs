@@ -1,8 +1,8 @@
 #[cfg(feature = "ethabi")]
 use contracts::ibc_handler::IbcCoreCommitmentV1MerklePrefixData;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct MerklePrefix {
     pub key_prefix: Vec<u8>,
 }
