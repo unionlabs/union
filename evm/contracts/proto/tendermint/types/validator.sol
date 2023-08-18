@@ -1,7 +1,7 @@
+// SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 import "../../ProtoBufRuntime.sol";
 import "../../GoogleProtobufAny.sol";
-
 import "../crypto/keys.sol";
 
 library TendermintTypesValidatorSet {
@@ -418,7 +418,7 @@ library TendermintTypesValidatorSet {
 library TendermintTypesValidator {
     //struct definition
     struct Data {
-        bytes address_;
+        bytes addr;
         TendermintCryptoPublicKey.Data pub_key;
         int64 voting_power;
         int64 proposer_priority;
@@ -507,7 +507,7 @@ library TendermintTypesValidator {
         Data memory r
     ) internal pure returns (uint) {
         (bytes memory x, uint256 sz) = ProtoBufRuntime._decode_bytes(p, bs);
-        r.address_ = x;
+        r.addr = x;
         return sz;
     }
 
@@ -621,14 +621,14 @@ library TendermintTypesValidator {
         uint256 offset = p;
         uint256 pointer = p;
 
-        if (r.address_.length != 0) {
+        if (r.addr.length != 0) {
             pointer += ProtoBufRuntime._encode_key(
                 1,
                 ProtoBufRuntime.WireType.LengthDelim,
                 pointer,
                 bs
             );
-            pointer += ProtoBufRuntime._encode_bytes(r.address_, pointer, bs);
+            pointer += ProtoBufRuntime._encode_bytes(r.addr, pointer, bs);
         }
 
         pointer += ProtoBufRuntime._encode_key(
@@ -712,7 +712,7 @@ library TendermintTypesValidator {
      */
     function _estimate(Data memory r) internal pure returns (uint) {
         uint256 e;
-        e += 1 + ProtoBufRuntime._sz_lendelim(r.address_.length);
+        e += 1 + ProtoBufRuntime._sz_lendelim(r.addr.length);
         e +=
             1 +
             ProtoBufRuntime._sz_lendelim(
@@ -726,7 +726,7 @@ library TendermintTypesValidator {
     // empty checker
 
     function _empty(Data memory r) internal pure returns (bool) {
-        if (r.address_.length != 0) {
+        if (r.addr.length != 0) {
             return false;
         }
 
@@ -748,7 +748,7 @@ library TendermintTypesValidator {
      * @param output The in-storage struct
      */
     function store(Data memory input, Data storage output) internal {
-        output.address_ = input.address_;
+        output.addr = input.addr;
         TendermintCryptoPublicKey.store(input.pub_key, output.pub_key);
         output.voting_power = input.voting_power;
         output.proposer_priority = input.proposer_priority;

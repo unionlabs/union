@@ -1,7 +1,7 @@
+// SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 import "../../ProtoBufRuntime.sol";
 import "../../GoogleProtobufAny.sol";
-
 import "../crypto/proof.sol";
 import "../version/types.sol";
 import "./validator.sol";
@@ -266,7 +266,7 @@ library TendermintTypesPart {
     //struct definition
     struct Data {
         uint32 index;
-        bytes bytes_;
+        bytes bz;
         TendermintCryptoProof.Data proof;
     }
 
@@ -368,7 +368,7 @@ library TendermintTypesPart {
         Data memory r
     ) internal pure returns (uint) {
         (bytes memory x, uint256 sz) = ProtoBufRuntime._decode_bytes(p, bs);
-        r.bytes_ = x;
+        r.bz = x;
         return sz;
     }
 
@@ -460,14 +460,14 @@ library TendermintTypesPart {
             );
             pointer += ProtoBufRuntime._encode_uint32(r.index, pointer, bs);
         }
-        if (r.bytes_.length != 0) {
+        if (r.bz.length != 0) {
             pointer += ProtoBufRuntime._encode_key(
                 2,
                 ProtoBufRuntime.WireType.LengthDelim,
                 pointer,
                 bs
             );
-            pointer += ProtoBufRuntime._encode_bytes(r.bytes_, pointer, bs);
+            pointer += ProtoBufRuntime._encode_bytes(r.bz, pointer, bs);
         }
 
         pointer += ProtoBufRuntime._encode_key(
@@ -522,7 +522,7 @@ library TendermintTypesPart {
     function _estimate(Data memory r) internal pure returns (uint) {
         uint256 e;
         e += 1 + ProtoBufRuntime._sz_uint32(r.index);
-        e += 1 + ProtoBufRuntime._sz_lendelim(r.bytes_.length);
+        e += 1 + ProtoBufRuntime._sz_lendelim(r.bz.length);
         e +=
             1 +
             ProtoBufRuntime._sz_lendelim(
@@ -538,7 +538,7 @@ library TendermintTypesPart {
             return false;
         }
 
-        if (r.bytes_.length != 0) {
+        if (r.bz.length != 0) {
             return false;
         }
 
@@ -553,7 +553,7 @@ library TendermintTypesPart {
      */
     function store(Data memory input, Data storage output) internal {
         output.index = input.index;
-        output.bytes_ = input.bytes_;
+        output.bz = input.bz;
         TendermintCryptoProof.store(input.proof, output.proof);
     }
 
@@ -1951,7 +1951,7 @@ library TendermintTypesData {
 library TendermintTypesVote {
     //struct definition
     struct Data {
-        TendermintTypesTypesGlobalEnums.SignedMsgType type_;
+        TendermintTypesTypesGlobalEnums.SignedMsgType ty;
         int64 height;
         int32 round;
         TendermintTypesBlockID.Data block_id;
@@ -2054,7 +2054,7 @@ library TendermintTypesVote {
         (int64 tmp, uint256 sz) = ProtoBufRuntime._decode_enum(p, bs);
         TendermintTypesTypesGlobalEnums.SignedMsgType x = TendermintTypesTypesGlobalEnums
                 .decode_SignedMsgType(tmp);
-        r.type_ = x;
+        r.ty = x;
         return sz;
     }
 
@@ -2261,7 +2261,7 @@ library TendermintTypesVote {
         uint256 offset = p;
         uint256 pointer = p;
 
-        if (uint(r.type_) != 0) {
+        if (uint(r.ty) != 0) {
             pointer += ProtoBufRuntime._encode_key(
                 1,
                 ProtoBufRuntime.WireType.Varint,
@@ -2269,7 +2269,7 @@ library TendermintTypesVote {
                 bs
             );
             int32 _enum_type = TendermintTypesTypesGlobalEnums
-                .encode_SignedMsgType(r.type_);
+                .encode_SignedMsgType(r.ty);
             pointer += ProtoBufRuntime._encode_enum(_enum_type, pointer, bs);
         }
         if (r.height != 0) {
@@ -2396,7 +2396,7 @@ library TendermintTypesVote {
         e +=
             1 +
             ProtoBufRuntime._sz_enum(
-                TendermintTypesTypesGlobalEnums.encode_SignedMsgType(r.type_)
+                TendermintTypesTypesGlobalEnums.encode_SignedMsgType(r.ty)
             );
         e += 1 + ProtoBufRuntime._sz_int64(r.height);
         e += 1 + ProtoBufRuntime._sz_int32(r.round);
@@ -2419,7 +2419,7 @@ library TendermintTypesVote {
     // empty checker
 
     function _empty(Data memory r) internal pure returns (bool) {
-        if (uint(r.type_) != 0) {
+        if (uint(r.ty) != 0) {
             return false;
         }
 
@@ -2453,7 +2453,7 @@ library TendermintTypesVote {
      * @param output The in-storage struct
      */
     function store(Data memory input, Data storage output) internal {
-        output.type_ = input.type_;
+        output.ty = input.ty;
         output.height = input.height;
         output.round = input.round;
         TendermintTypesBlockID.store(input.block_id, output.block_id);
@@ -3329,7 +3329,7 @@ library TendermintTypesCommitSig {
 library TendermintTypesProposal {
     //struct definition
     struct Data {
-        TendermintTypesTypesGlobalEnums.SignedMsgType type_;
+        TendermintTypesTypesGlobalEnums.SignedMsgType ty;
         int64 height;
         int32 round;
         int32 pol_round;
@@ -3429,7 +3429,7 @@ library TendermintTypesProposal {
         (int64 tmp, uint256 sz) = ProtoBufRuntime._decode_enum(p, bs);
         TendermintTypesTypesGlobalEnums.SignedMsgType x = TendermintTypesTypesGlobalEnums
                 .decode_SignedMsgType(tmp);
-        r.type_ = x;
+        r.ty = x;
         return sz;
     }
 
@@ -3619,7 +3619,7 @@ library TendermintTypesProposal {
         uint256 offset = p;
         uint256 pointer = p;
 
-        if (uint(r.type_) != 0) {
+        if (uint(r.ty) != 0) {
             pointer += ProtoBufRuntime._encode_key(
                 1,
                 ProtoBufRuntime.WireType.Varint,
@@ -3627,7 +3627,7 @@ library TendermintTypesProposal {
                 bs
             );
             int32 _enum_type = TendermintTypesTypesGlobalEnums
-                .encode_SignedMsgType(r.type_);
+                .encode_SignedMsgType(r.ty);
             pointer += ProtoBufRuntime._encode_enum(_enum_type, pointer, bs);
         }
         if (r.height != 0) {
@@ -3737,7 +3737,7 @@ library TendermintTypesProposal {
         e +=
             1 +
             ProtoBufRuntime._sz_enum(
-                TendermintTypesTypesGlobalEnums.encode_SignedMsgType(r.type_)
+                TendermintTypesTypesGlobalEnums.encode_SignedMsgType(r.ty)
             );
         e += 1 + ProtoBufRuntime._sz_int64(r.height);
         e += 1 + ProtoBufRuntime._sz_int32(r.round);
@@ -3759,7 +3759,7 @@ library TendermintTypesProposal {
     // empty checker
 
     function _empty(Data memory r) internal pure returns (bool) {
-        if (uint(r.type_) != 0) {
+        if (uint(r.ty) != 0) {
             return false;
         }
 
@@ -3789,7 +3789,7 @@ library TendermintTypesProposal {
      * @param output The in-storage struct
      */
     function store(Data memory input, Data storage output) internal {
-        output.type_ = input.type_;
+        output.ty = input.ty;
         output.height = input.height;
         output.round = input.round;
         output.pol_round = input.pol_round;

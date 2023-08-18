@@ -11,6 +11,7 @@ import "../../contracts/proto/ibc/core/connection/v1/connection.sol";
 import "../../contracts/proto/ibc/core/channel/v1/channel.sol";
 import "../../contracts/proto/ibc/lightclients/wasm/v1/wasm.sol";
 import "../../contracts/proto/union/ibc/lightclients/cometbls/v1/cometbls.sol";
+import "../../contracts/proto/ibc/lightclients/tendermint/v1/tendermint.sol";
 import "../../contracts/proto/tendermint/types/canonical.sol";
 import "../../contracts/lib/CometblsHelp.sol";
 import "../../contracts/lib/Encoder.sol";
@@ -144,8 +145,10 @@ contract IBCFullTest is Test {
                 clientStateBytes: UnionIbcLightclientsCometblsV1ClientState
                     .Data({
                         chain_id: CHAIN_ID,
-                        trust_level: UnionIbcLightclientsCometblsV1Fraction
-                            .Data({numerator: 1, denominator: 3}),
+                        trust_level: IbcLightclientsTendermintV1Fraction.Data({
+                            numerator: 1,
+                            denominator: 3
+                        }),
                         trusting_period: GoogleProtobufDuration.Data({
                             Seconds: 300,
                             nanos: 0

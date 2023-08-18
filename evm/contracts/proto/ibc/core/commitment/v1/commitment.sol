@@ -1,7 +1,7 @@
+// SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 import "../../../../ProtoBufRuntime.sol";
 import "../../../../GoogleProtobufAny.sol";
-
 import "../../../../cosmos/ics23/v1/proofs.sol";
 
 library IbcCoreCommitmentV1MerkleRoot {

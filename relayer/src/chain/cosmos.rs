@@ -612,7 +612,7 @@ impl<C: ChainSpec> LightClient for Ethereum<C> {
     ) -> impl Future<Output = (Height, UpdateClient)> + '_ {
         self.send_msg_and_read_event(MsgUpdateClient {
             client_id,
-            client_message: Any(msg),
+            client_message: msg,
         })
     }
 

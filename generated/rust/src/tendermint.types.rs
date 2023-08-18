@@ -291,16 +291,6 @@ impl SignedMsgType {
         }
     }
 }
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct EventDataRoundState {
-    #[prost(int64, tag = "1")]
-    pub height: i64,
-    #[prost(int32, tag = "2")]
-    pub round: i32,
-    #[prost(string, tag = "3")]
-    pub step: ::prost::alloc::string::String,
-}
 /// ConsensusParams contains consensus critical parameters that determine the
 /// validity of blocks.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -379,6 +369,70 @@ pub struct HashedParams {
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
+pub struct CanonicalBlockId {
+    #[prost(bytes = "vec", tag = "1")]
+    pub hash: ::prost::alloc::vec::Vec<u8>,
+    #[prost(message, optional, tag = "2")]
+    pub part_set_header: ::core::option::Option<CanonicalPartSetHeader>,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct CanonicalPartSetHeader {
+    #[prost(uint32, tag = "1")]
+    pub total: u32,
+    #[prost(bytes = "vec", tag = "2")]
+    pub hash: ::prost::alloc::vec::Vec<u8>,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct CanonicalProposal {
+    /// type alias for byte
+    #[prost(enumeration = "SignedMsgType", tag = "1")]
+    pub r#type: i32,
+    /// canonicalization requires fixed size encoding here
+    #[prost(sfixed64, tag = "2")]
+    pub height: i64,
+    /// canonicalization requires fixed size encoding here
+    #[prost(sfixed64, tag = "3")]
+    pub round: i64,
+    #[prost(int64, tag = "4")]
+    pub pol_round: i64,
+    #[prost(message, optional, tag = "5")]
+    pub block_id: ::core::option::Option<CanonicalBlockId>,
+    #[prost(message, optional, tag = "6")]
+    pub timestamp: ::core::option::Option<super::super::google::protobuf::Timestamp>,
+    #[prost(string, tag = "7")]
+    pub chain_id: ::prost::alloc::string::String,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct CanonicalVote {
+    /// type alias for byte
+    #[prost(enumeration = "SignedMsgType", tag = "1")]
+    pub r#type: i32,
+    /// canonicalization requires fixed size encoding here
+    #[prost(sfixed64, tag = "2")]
+    pub height: i64,
+    /// canonicalization requires fixed size encoding here
+    #[prost(sfixed64, tag = "3")]
+    pub round: i64,
+    #[prost(message, optional, tag = "4")]
+    pub block_id: ::core::option::Option<CanonicalBlockId>,
+    #[prost(string, tag = "6")]
+    pub chain_id: ::prost::alloc::string::String,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventDataRoundState {
+    #[prost(int64, tag = "1")]
+    pub height: i64,
+    #[prost(int32, tag = "2")]
+    pub round: i32,
+    #[prost(string, tag = "3")]
+    pub step: ::prost::alloc::string::String,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Evidence {
     #[prost(oneof = "evidence::Sum", tags = "1, 2")]
     pub sum: ::core::option::Option<evidence::Sum>,
@@ -441,59 +495,5 @@ pub struct Block {
     pub evidence: ::core::option::Option<EvidenceList>,
     #[prost(message, optional, tag = "4")]
     pub last_commit: ::core::option::Option<Commit>,
-}
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct CanonicalBlockId {
-    #[prost(bytes = "vec", tag = "1")]
-    pub hash: ::prost::alloc::vec::Vec<u8>,
-    #[prost(message, optional, tag = "2")]
-    pub part_set_header: ::core::option::Option<CanonicalPartSetHeader>,
-}
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct CanonicalPartSetHeader {
-    #[prost(uint32, tag = "1")]
-    pub total: u32,
-    #[prost(bytes = "vec", tag = "2")]
-    pub hash: ::prost::alloc::vec::Vec<u8>,
-}
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct CanonicalProposal {
-    /// type alias for byte
-    #[prost(enumeration = "SignedMsgType", tag = "1")]
-    pub r#type: i32,
-    /// canonicalization requires fixed size encoding here
-    #[prost(sfixed64, tag = "2")]
-    pub height: i64,
-    /// canonicalization requires fixed size encoding here
-    #[prost(sfixed64, tag = "3")]
-    pub round: i64,
-    #[prost(int64, tag = "4")]
-    pub pol_round: i64,
-    #[prost(message, optional, tag = "5")]
-    pub block_id: ::core::option::Option<CanonicalBlockId>,
-    #[prost(message, optional, tag = "6")]
-    pub timestamp: ::core::option::Option<super::super::google::protobuf::Timestamp>,
-    #[prost(string, tag = "7")]
-    pub chain_id: ::prost::alloc::string::String,
-}
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct CanonicalVote {
-    /// type alias for byte
-    #[prost(enumeration = "SignedMsgType", tag = "1")]
-    pub r#type: i32,
-    /// canonicalization requires fixed size encoding here
-    #[prost(sfixed64, tag = "2")]
-    pub height: i64,
-    /// canonicalization requires fixed size encoding here
-    #[prost(sfixed64, tag = "3")]
-    pub round: i64,
-    #[prost(message, optional, tag = "4")]
-    pub block_id: ::core::option::Option<CanonicalBlockId>,
-    #[prost(string, tag = "6")]
-    pub chain_id: ::prost::alloc::string::String,
 }
 // @@protoc_insertion_point(module)

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 import "../ProtoBufRuntime.sol";
 import "../GoogleProtobufAny.sol";
@@ -267,7 +268,7 @@ library Cosmos_protoScalarDescriptor {
     struct Data {
         string name;
         string description;
-        CosmosGlobalEnums.ScalarType[] field_type;
+        CosmosProtoCosmosProtoGlobalEnums.ScalarType[] field_type;
     }
 
     // Decoder section
@@ -346,7 +347,9 @@ library Cosmos_protoScalarDescriptor {
         pointer = offset;
         if (counters[3] > 0) {
             require(r.field_type.length == 0);
-            r.field_type = new CosmosGlobalEnums.ScalarType[](counters[3]);
+            r.field_type = new CosmosProtoCosmosProtoGlobalEnums.ScalarType[](
+                counters[3]
+            );
         }
 
         while (pointer < offset + sz) {
@@ -429,9 +432,8 @@ library Cosmos_protoScalarDescriptor {
          * if `r` is NULL, then only counting the number of fields.
          */
         (int64 tmp, uint256 sz) = ProtoBufRuntime._decode_enum(p, bs);
-        CosmosGlobalEnums.ScalarType x = CosmosGlobalEnums.decode_ScalarType(
-            tmp
-        );
+        CosmosProtoCosmosProtoGlobalEnums.ScalarType x = CosmosProtoCosmosProtoGlobalEnums
+                .decode_ScalarType(tmp);
         if (isNil(r)) {
             counters[3] += 1;
         } else {
@@ -460,11 +462,13 @@ library Cosmos_protoScalarDescriptor {
             len,
             bs
         );
-        r.field_type = new CosmosGlobalEnums.ScalarType[](count);
+        r.field_type = new CosmosProtoCosmosProtoGlobalEnums.ScalarType[](
+            count
+        );
         for (uint256 i = 0; i < count; i++) {
             (int64 tmp, uint256 sz) = ProtoBufRuntime._decode_enum(p, bs);
-            CosmosGlobalEnums.ScalarType x = CosmosGlobalEnums
-                .decode_ScalarType(tmp);
+            CosmosProtoCosmosProtoGlobalEnums.ScalarType x = CosmosProtoCosmosProtoGlobalEnums
+                    .decode_ScalarType(tmp);
             p += sz;
             r.field_type[i] = x;
         }
@@ -534,16 +538,14 @@ library Cosmos_protoScalarDescriptor {
                 bs
             );
             pointer += ProtoBufRuntime._encode_varint(
-                CosmosGlobalEnums.estimate_packed_repeated_ScalarType(
-                    r.field_type
-                ),
+                CosmosProtoCosmosProtoGlobalEnums
+                    .estimate_packed_repeated_ScalarType(r.field_type),
                 pointer,
                 bs
             );
             for (i = 0; i < r.field_type.length; i++) {
-                int32 _enum_field_type = CosmosGlobalEnums.encode_ScalarType(
-                    r.field_type[i]
-                );
+                int32 _enum_field_type = CosmosProtoCosmosProtoGlobalEnums
+                    .encode_ScalarType(r.field_type[i]);
                 pointer += ProtoBufRuntime._encode_enum(
                     _enum_field_type,
                     pointer,
@@ -600,9 +602,8 @@ library Cosmos_protoScalarDescriptor {
         e +=
             1 +
             ProtoBufRuntime._sz_lendelim(
-                CosmosGlobalEnums.estimate_packed_repeated_ScalarType(
-                    r.field_type
-                )
+                CosmosProtoCosmosProtoGlobalEnums
+                    .estimate_packed_repeated_ScalarType(r.field_type)
             );
         return e;
     }
@@ -645,13 +646,13 @@ library Cosmos_protoScalarDescriptor {
      */
     function addFieldType(
         Data memory self,
-        CosmosGlobalEnums.ScalarType value
+        CosmosProtoCosmosProtoGlobalEnums.ScalarType value
     ) internal pure {
         /**
          * First resize the array. Then add the new element to the end.
          */
-        CosmosGlobalEnums.ScalarType[]
-            memory tmp = new CosmosGlobalEnums.ScalarType[](
+        CosmosProtoCosmosProtoGlobalEnums.ScalarType[]
+            memory tmp = new CosmosProtoCosmosProtoGlobalEnums.ScalarType[](
                 self.field_type.length + 1
             );
         for (uint256 i = 0; i < self.field_type.length; i++) {
@@ -686,7 +687,7 @@ library Cosmos_protoScalarDescriptor {
 
 //library Cosmos_protoScalarDescriptor
 
-library CosmosGlobalEnums {
+library CosmosProtoCosmosProtoGlobalEnums {
     //enum definition
     // Solidity enum definitions
     enum ScalarType {
@@ -741,4 +742,4 @@ library CosmosGlobalEnums {
         return e;
     }
 }
-//library CosmosGlobalEnums
+//library CosmosProtoCosmosProtoGlobalEnums
