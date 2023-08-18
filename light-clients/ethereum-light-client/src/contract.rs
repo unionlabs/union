@@ -31,7 +31,7 @@ use crate::{
     custom_query::{query_aggregate_public_keys, CustomQuery, VerificationContext},
     errors::Error,
     eth_encoding::generate_commitment_key,
-    msg::{ExecuteMsg, InstantiateMsg, QueryMsg},
+    msg::{ExecuteMsg, InstantiateMsg, QueryMsg, StorageState},
     state::{read_client_state, read_consensus_state, save_consensus_state, update_client_state},
     update::apply_light_client_update,
     Config,
@@ -69,7 +69,7 @@ pub fn execute(
             delay_block_period,
             proof,
             path,
-            Some(value),
+            StorageState::Vacant(value),
         ),
         ExecuteMsg::VerifyNonMembership {
             height,
@@ -84,7 +84,7 @@ pub fn execute(
             delay_block_period,
             proof,
             path,
-            None,
+            StorageState::Empty,
         ),
         ExecuteMsg::UpdateState {
             client_message: ClientMessage { header, .. },
@@ -115,7 +115,7 @@ pub fn verify_membership(
     _delay_block_period: u64,
     proof: Binary,
     path: MerklePath,
-    value: Option<Binary>,
+    value: StorageState,
 ) -> Result<ContractResult, Error> {
     let consensus_state = read_consensus_state(deps, &height)?.ok_or(
         Error::ConsensusStateNotFound(height.revision_number, height.revision_height),
@@ -142,21 +142,20 @@ pub fn verify_membership(
         proofs.pop().ok_or(Error::EmptyProof)?
     };
 
-    if let Some(value) = value {
-        do_verify_membership(
+    match value {
+        StorageState::Vacant(value) => do_verify_membership(
             path,
             storage_root,
             client_state.data.counterparty_commitment_slot,
             storage_proof,
             value,
-        )?;
-    } else {
-        do_verify_non_membership(
+        )?,
+        StorageState::Empty => do_verify_non_membership(
             path,
             storage_root,
             client_state.data.counterparty_commitment_slot,
             storage_proof,
-        )?;
+        )?,
     }
 
     Ok(ContractResult::valid(None))
