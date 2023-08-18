@@ -1529,6 +1529,7 @@ dependencies = [
  "ethabi",
  "ethereum-verifier",
  "hex",
+ "hex-literal",
  "ibc",
  "prost",
  "protos",

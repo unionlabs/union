@@ -369,6 +369,7 @@ mod test {
         OwnedDeps, SystemResult, Timestamp,
     };
     use ethereum_verifier::crypto::{eth_aggregate_public_keys, fast_aggregate_verify};
+    use hex_literal::hex;
     use ibc::{
         core::{
             ics02_client::client_type::ClientType,
@@ -396,54 +397,60 @@ mod test {
 
     /// These values are obtained by uploading a dummy contract with the necessary types to the devnet and
     /// reading the values by `eth_getProof` RPC call.
-    const CLIENT_STATE_PROOF_KEY: &str =
-        "b35cad2b263a62faaae30d8b3f51201fea5501d2df17d59a3eef2751403e684f";
-    const CLIENT_STATE_PROOF_VALUE: &str =
-        "272c7c82ac0f0adbfe4ae30614165bf3b94d49754ce8c1955cc255dcc829b5";
-    const CLIENT_STATE_PROOF: [&str; 2] = [
-        "f871808080a0b9f6e8d11cf768b8034f04b8b2ab45bb5ca792e1c6e3929cf8222a885631ffac808080808080808080a0f7202a06e8dc011d3123f907597f51546fe03542551af2c9c54d21ba0fbafc7280a0d1797d071b81705da736e39e75f1186c8e529ba339f7a7d12a9b4fafe33e43cc80",
-        "f842a03a8c7f353aebdcd6b56a67cd1b5829681a3c6e1695282161ab3faa6c3666d4c3a09f272c7c82ac0f0adbfe4ae30614165bf3b94d49754ce8c1955cc255dcc829b5"
+    const CLIENT_STATE_PROOF_KEY: &[u8] =
+        &hex!("b35cad2b263a62faaae30d8b3f51201fea5501d2df17d59a3eef2751403e684f");
+    const CLIENT_STATE_PROOF_VALUE: &[u8] =
+        &hex!("272c7c82ac0f0adbfe4ae30614165bf3b94d49754ce8c1955cc255dcc829b5");
+    const CLIENT_STATE_PROOF: [&[u8]; 2] = [
+        &hex!("f871808080a0b9f6e8d11cf768b8034f04b8b2ab45bb5ca792e1c6e3929cf8222a885631ffac808080808080808080a0f7202a06e8dc011d3123f907597f51546fe03542551af2c9c54d21ba0fbafc7280a0d1797d071b81705da736e39e75f1186c8e529ba339f7a7d12a9b4fafe33e43cc80"),
+        &hex!("f842a03a8c7f353aebdcd6b56a67cd1b5829681a3c6e1695282161ab3faa6c3666d4c3a09f272c7c82ac0f0adbfe4ae30614165bf3b94d49754ce8c1955cc255dcc829b5")
     ];
     /// Storage root of the contract at the time that this proof is obtained.
-    const CLIENT_STATE_STORAGE_ROOT: &str =
-        "5634f342b966b609cdd8d2f7ed43bb94702c9e83d4e974b08a3c2b8205fd85e3";
-    const CLIENT_STATE_WASM_CODE_ID: &str =
-        "B41F9EE164A6520C269F8928A1F3264A6F983F27478CB3A2251B77A65E0CEFBF";
+    const CLIENT_STATE_STORAGE_ROOT: H256 = H256(hex!(
+        "5634f342b966b609cdd8d2f7ed43bb94702c9e83d4e974b08a3c2b8205fd85e3"
+    ));
+    const CLIENT_STATE_WASM_CODE_ID: &[u8] =
+        &hex!("B41F9EE164A6520C269F8928A1F3264A6F983F27478CB3A2251B77A65E0CEFBF");
 
-    const CONSENSUS_STATE_PROOF_KEY: &str =
-        "9f22934f38bf5512b9c33ed55f71525c5d129895aad5585a2624f6c756c1c101";
-    const CONSENSUS_STATE_PROOF_VALUE: &str =
-        "504adb89d4e609110eebf79183a10b9a4788a797d973c0ba0504e7a97fc1daa6";
-    const CONSENSUS_STATE_PROOF: [&str; 2] = [
-        "f871808080a0b9f6e8d11cf768b8034f04b8b2ab45bb5ca792e1c6e3929cf8222a885631ffac808080808080808080a0f7202a06e8dc011d3123f907597f51546fe03542551af2c9c54d21ba0fbafc7280a0d1797d071b81705da736e39e75f1186c8e529ba339f7a7d12a9b4fafe33e43cc80",
-        "f843a036210c27d08bc29676360b820acc6de648bb730808a3a7d36a960f6869ac4a3aa1a0504adb89d4e609110eebf79183a10b9a4788a797d973c0ba0504e7a97fc1daa6"
+    const CONSENSUS_STATE_PROOF_KEY: &[u8] =
+        &hex!("9f22934f38bf5512b9c33ed55f71525c5d129895aad5585a2624f6c756c1c101");
+    const CONSENSUS_STATE_PROOF_VALUE: &[u8] =
+        &hex!("504adb89d4e609110eebf79183a10b9a4788a797d973c0ba0504e7a97fc1daa6");
+    const CONSENSUS_STATE_PROOF: [&[u8]; 2] = [
+        &hex!("f871808080a0b9f6e8d11cf768b8034f04b8b2ab45bb5ca792e1c6e3929cf8222a885631ffac808080808080808080a0f7202a06e8dc011d3123f907597f51546fe03542551af2c9c54d21ba0fbafc7280a0d1797d071b81705da736e39e75f1186c8e529ba339f7a7d12a9b4fafe33e43cc80"),
+        &hex!("f843a036210c27d08bc29676360b820acc6de648bb730808a3a7d36a960f6869ac4a3aa1a0504adb89d4e609110eebf79183a10b9a4788a797d973c0ba0504e7a97fc1daa6")
     ];
     /// Storage root of the contract at the time that this proof is obtained.
-    const CONSENSUS_STATE_STORAGE_ROOT: &str =
-        "5634f342b966b609cdd8d2f7ed43bb94702c9e83d4e974b08a3c2b8205fd85e3";
-    const CONSENSUS_STATE_CONTRACT_MERKLE_ROOT: &str =
-        "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
-    const CONSENSUS_STATE_NEXT_VALIDATORS_HASH: &str =
-        "B41F9EE164A6520C269F8928A1F3264A6F983F27478CB3A2251B77A65E0CEFBF";
+    const CONSENSUS_STATE_STORAGE_ROOT: H256 = H256(hex!(
+        "5634f342b966b609cdd8d2f7ed43bb94702c9e83d4e974b08a3c2b8205fd85e3"
+    ));
+    const CONSENSUS_STATE_CONTRACT_MERKLE_ROOT: H256 = H256(hex!(
+        "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    ));
+    const CONSENSUS_STATE_NEXT_VALIDATORS_HASH: H256 = H256(hex!(
+        "B41F9EE164A6520C269F8928A1F3264A6F983F27478CB3A2251B77A65E0CEFBF"
+    ));
 
-    const CONNECTION_END_PROOF_KEY: &str =
-        "8e80b902df24e0c324c454fcd01ae0c92966a3f6fe4d1809e7fb75043b6549db";
-    const CONNECTION_END_PROOF_VALUE: &str =
-        "9ac95d1087518963f797142524b3c6c273bb74297c076c00b02ed129bcb4cfc0";
-    const CONNECTION_END_PROOF: [&str; 2] = [
-        "f871808080a01c44ba4a3ade71a6b527cb53c3f2dd91606f91cd119fd74e85208b1d13096739808080808080808080a0f7202a06e8dc011d3123f907597f51546fe03542551af2c9c54d21ba0fbafc7280a0771904c17414dbc0741f3d1fce0d2709d4f73418020b9b4961e4cb3ec6f46ac280",
-        "f843a0320fddcfabb459601044296253eed7d7cb53d9a8a3e46b1f7db5115be261c419a1a09ac95d1087518963f797142524b3c6c273bb74297c076c00b02ed129bcb4cfc0"
+    const CONNECTION_END_PROOF_KEY: &[u8] =
+        &hex!("8e80b902df24e0c324c454fcd01ae0c92966a3f6fe4d1809e7fb75043b6549db");
+    const CONNECTION_END_PROOF_VALUE: &[u8] =
+        &hex!("9ac95d1087518963f797142524b3c6c273bb74297c076c00b02ed129bcb4cfc0");
+    const CONNECTION_END_PROOF: [&[u8]; 2] = [
+        &hex!("f871808080a01c44ba4a3ade71a6b527cb53c3f2dd91606f91cd119fd74e85208b1d13096739808080808080808080a0f7202a06e8dc011d3123f907597f51546fe03542551af2c9c54d21ba0fbafc7280a0771904c17414dbc0741f3d1fce0d2709d4f73418020b9b4961e4cb3ec6f46ac280"),
+        &hex!("f843a0320fddcfabb459601044296253eed7d7cb53d9a8a3e46b1f7db5115be261c419a1a09ac95d1087518963f797142524b3c6c273bb74297c076c00b02ed129bcb4cfc0")
     ];
     /// Storage root of the contract at the time that this proof is obtained.
-    const CONNECTION_END_STORAGE_ROOT: &str =
-        "78c3bf305b31e5f903d623b0b0023bfa764208429d3ecc0f8e61df44b643981d";
+    const CONNECTION_END_STORAGE_ROOT: H256 = H256(hex!(
+        "78c3bf305b31e5f903d623b0b0023bfa764208429d3ecc0f8e61df44b643981d"
+    ));
 
-    const NON_MEMBERSHIP_STORAGE_ROOT: &str =
-        "9e352a10c5a38c301ee06c22a90f0971b679985b2ca6dd66aca224bd7a9957c1";
-    const NON_MEMBERSHIP_PROOF_KEY: &str =
-        "b35cad2b263a62faaae30d8b3f51201fea5501d2df17d59a3eef2751403e684f";
-    const NON_MEMBERSHIP_PROOF: [&str; 1] = [
-        "f838a120df6966c971051c3d54ec59162606531493a51404a002842f56009d7e5cf4a8c79594be68fc2d8249eb60bfcf0e71d5a0d2f2e292c4ed",
+    const NON_MEMBERSHIP_STORAGE_ROOT: H256 = H256(hex!(
+        "9e352a10c5a38c301ee06c22a90f0971b679985b2ca6dd66aca224bd7a9957c1"
+    ));
+    const NON_MEMBERSHIP_PROOF_KEY: &[u8] =
+        &hex!("b35cad2b263a62faaae30d8b3f51201fea5501d2df17d59a3eef2751403e684f");
+    const NON_MEMBERSHIP_PROOF: [&[u8]; 1] = [
+        &hex!("f838a120df6966c971051c3d54ec59162606531493a51404a002842f56009d7e5cf4a8c79594be68fc2d8249eb60bfcf0e71d5a0d2f2e292c4ed"),
     ];
 
     const WASM_CLIENT_ID_PREFIX: &str = "08-wasm";
@@ -788,15 +795,12 @@ mod test {
     #[test]
     fn membership_verification_works_for_client_state() {
         let proof = Proof {
-            key: hex::decode(CLIENT_STATE_PROOF_KEY).unwrap(),
-            value: hex::decode(CLIENT_STATE_PROOF_VALUE).unwrap(),
-            proof: CLIENT_STATE_PROOF
-                .iter()
-                .map(|p| hex::decode(p).unwrap())
-                .collect(),
+            key: CLIENT_STATE_PROOF_KEY.into(),
+            value: CLIENT_STATE_PROOF_VALUE.into(),
+            proof: CLIENT_STATE_PROOF.into_iter().map(Into::into).collect(),
         };
 
-        let storage_root = hex::decode(CLIENT_STATE_STORAGE_ROOT).unwrap();
+        let storage_root = CLIENT_STATE_STORAGE_ROOT.clone();
 
         let client_state = cometbls::client_state::ClientState {
             chain_id: "ibc-0".to_string(),
@@ -824,7 +828,7 @@ mod test {
 
         let wasm_client_state = protos::ibc::lightclients::wasm::v1::ClientState {
             data: client_state.into_proto_bytes(),
-            code_id: hex::decode(CLIENT_STATE_WASM_CODE_ID).unwrap(),
+            code_id: CLIENT_STATE_WASM_CODE_ID.into(),
             latest_height: Some(protos::ibc::core::client::v1::Height {
                 revision_number: 0,
                 revision_height: 1,
@@ -841,7 +845,7 @@ mod test {
                 &ClientId::new(ClientType::new(ETHEREUM_CLIENT_ID_PREFIX.into()), 0).unwrap(),
             )
             .into(),
-            storage_root.try_into().unwrap(),
+            storage_root,
             3,
             proof,
             any_client_state.encode_to_vec().into(),
@@ -852,27 +856,18 @@ mod test {
     #[test]
     fn membership_verification_works_for_consensus_state() {
         let proof = Proof {
-            key: hex::decode(CONSENSUS_STATE_PROOF_KEY).unwrap(),
-            value: hex::decode(CONSENSUS_STATE_PROOF_VALUE).unwrap(),
-            proof: CONSENSUS_STATE_PROOF
-                .iter()
-                .map(|p| hex::decode(p).unwrap())
-                .collect(),
+            key: CONSENSUS_STATE_PROOF_KEY.into(),
+            value: CONSENSUS_STATE_PROOF_VALUE.into(),
+            proof: CONSENSUS_STATE_PROOF.into_iter().map(Into::into).collect(),
         };
 
-        let storage_root = hex::decode(CONSENSUS_STATE_STORAGE_ROOT).unwrap();
+        let storage_root = CONSENSUS_STATE_STORAGE_ROOT.clone();
 
         let consensus_state = cometbls::consensus_state::ConsensusState {
             root: MerkleRoot {
-                hash: hex::decode(CONSENSUS_STATE_CONTRACT_MERKLE_ROOT)
-                    .unwrap()
-                    .try_into()
-                    .unwrap(),
+                hash: CONSENSUS_STATE_CONTRACT_MERKLE_ROOT.clone(),
             },
-            next_validators_hash: hex::decode(CONSENSUS_STATE_NEXT_VALIDATORS_HASH)
-                .unwrap()
-                .try_into()
-                .unwrap(),
+            next_validators_hash: CONSENSUS_STATE_NEXT_VALIDATORS_HASH.clone(),
         };
 
         let wasm_consensus_state = protos::ibc::lightclients::wasm::v1::ConsensusState {
@@ -891,7 +886,7 @@ mod test {
                 &IbcHeight::new(0, 1).unwrap(),
             )
             .into(),
-            storage_root.try_into().unwrap(),
+            storage_root,
             3,
             proof,
             any_consensus_state.encode_to_vec().into(),
@@ -901,19 +896,16 @@ mod test {
 
     fn prepare_connection_end() -> (
         Proof,
-        Vec<u8>,
+        H256,
         protos::ibc::core::connection::v1::ConnectionEnd,
     ) {
         let proof = Proof {
-            key: hex::decode(CONNECTION_END_PROOF_KEY).unwrap(),
-            value: hex::decode(CONNECTION_END_PROOF_VALUE).unwrap(),
-            proof: CONNECTION_END_PROOF
-                .iter()
-                .map(|p| hex::decode(p).unwrap())
-                .collect(),
+            key: CONNECTION_END_PROOF_KEY.into(),
+            value: CONNECTION_END_PROOF_VALUE.into(),
+            proof: CONNECTION_END_PROOF.into_iter().map(Into::into).collect(),
         };
 
-        let storage_root = hex::decode(CONNECTION_END_STORAGE_ROOT).unwrap();
+        let storage_root = CONNECTION_END_STORAGE_ROOT.clone();
 
         let connection_end = protos::ibc::core::connection::v1::ConnectionEnd {
             client_id: format!("{ETHEREUM_CLIENT_ID_PREFIX}-0"),
@@ -941,7 +933,7 @@ mod test {
 
         do_verify_membership(
             ConnectionPath::new(&ConnectionId::new(0)).into(),
-            storage_root.try_into().unwrap(),
+            storage_root,
             3,
             proof,
             connection_end.encode_to_vec().into(),
@@ -973,7 +965,7 @@ mod test {
         for proof in proofs {
             assert!(do_verify_membership(
                 ConnectionPath::new(&ConnectionId::new(0)).into(),
-                storage_root.clone().try_into().unwrap(),
+                storage_root.clone(),
                 3,
                 proof,
                 connection_end.encode_to_vec().into(),
@@ -986,11 +978,11 @@ mod test {
     fn membership_verification_fails_for_incorrect_storage_root() {
         let (proof, mut storage_root, connection_end) = prepare_connection_end();
 
-        storage_root[10] = u8::MAX - storage_root[10];
+        storage_root.0[10] = u8::MAX - storage_root.0[10];
 
         assert!(do_verify_membership(
             ConnectionPath::new(&ConnectionId::new(0)).into(),
-            storage_root.try_into().unwrap(),
+            storage_root,
             3,
             proof,
             connection_end.encode_to_vec().into(),
@@ -1006,7 +998,7 @@ mod test {
 
         assert!(do_verify_membership(
             ConnectionPath::new(&ConnectionId::new(0)).into(),
-            storage_root.try_into().unwrap(),
+            storage_root,
             3,
             proof,
             connection_end.encode_to_vec().into(),
@@ -1017,22 +1009,19 @@ mod test {
     #[test]
     fn non_membership_verification_works() {
         let proof = Proof {
-            key: hex::decode(NON_MEMBERSHIP_PROOF_KEY).unwrap(),
+            key: NON_MEMBERSHIP_PROOF_KEY.into(),
             value: vec![0x0],
-            proof: NON_MEMBERSHIP_PROOF
-                .iter()
-                .map(|p| hex::decode(p).unwrap())
-                .collect(),
+            proof: NON_MEMBERSHIP_PROOF.into_iter().map(Into::into).collect(),
         };
 
-        let storage_root = hex::decode(NON_MEMBERSHIP_STORAGE_ROOT).unwrap();
+        let storage_root = NON_MEMBERSHIP_STORAGE_ROOT.clone();
 
         do_verify_non_membership(
             ClientStatePath::new(
                 &ClientId::new(ClientType::new(ETHEREUM_CLIENT_ID_PREFIX.into()), 0).unwrap(),
             )
             .into(),
-            storage_root.try_into().unwrap(),
+            storage_root,
             3,
             proof,
         )
@@ -1046,7 +1035,7 @@ mod test {
         assert_eq!(
             do_verify_non_membership(
                 ConnectionPath::new(&ConnectionId::new(0)).into(),
-                storage_root.try_into().unwrap(),
+                storage_root,
                 3,
                 proof,
             ),
