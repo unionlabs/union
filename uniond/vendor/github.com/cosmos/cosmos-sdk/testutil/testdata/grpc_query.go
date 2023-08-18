@@ -83,7 +83,7 @@ func DeterministicIterations[request proto.Message, response proto.Message](
 	for i := 0; i < iterCount; i++ {
 		before := ctx.GasMeter().GasConsumed()
 		res, err := grpcFn(ctx, req)
-		require.Equal(ctx.GasMeter().GasConsumed()-before, gasConsumed)
+		require.Equal(gasConsumed, ctx.GasMeter().GasConsumed()-before)
 		require.NoError(err)
 		require.Equal(res, prevRes)
 	}

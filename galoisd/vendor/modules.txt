@@ -244,7 +244,7 @@ github.com/cosmos/btcutil/bech32
 # github.com/cosmos/cosmos-proto v1.0.0-beta.2
 ## explicit; go 1.18
 github.com/cosmos/cosmos-proto
-# github.com/cosmos/cosmos-sdk v0.47.0 => github.com/unionlabs/cosmos-sdk v0.0.0-20230809135445-de88545a074d
+# github.com/cosmos/cosmos-sdk v0.47.0 => github.com/unionlabs/cosmos-sdk v0.0.0-20230811204628-91742f9fdc1c
 ## explicit; go 1.19
 github.com/cosmos/cosmos-sdk/codec
 github.com/cosmos/cosmos-sdk/codec/types
@@ -691,4 +691,4 @@ sigs.k8s.io/yaml
 # github.com/cometbft/cometbft => github.com/unionlabs/cometbls v0.0.0-20230606200400-20834775a066
 # github.com/consensys/gnark => github.com/unionlabs/gnark v0.0.0-20230513134152-dd41e4b5e252
 # github.com/consensys/gnark-crypto => github.com/unionlabs/gnark-crypto v0.0.0-20230419121058-59d3a8050fda
-# github.com/cosmos/cosmos-sdk => github.com/unionlabs/cosmos-sdk v0.0.0-20230809135445-de88545a074d
+# github.com/cosmos/cosmos-sdk => github.com/unionlabs/cosmos-sdk v0.0.0-20230811204628-91742f9fdc1c
