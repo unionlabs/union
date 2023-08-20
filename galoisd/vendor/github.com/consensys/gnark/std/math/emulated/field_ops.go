@@ -236,8 +236,8 @@ func (f *Field[T]) subNoReduce(a, b *Element[T]) *Element[T] {
 }
 
 func (f *Field[T]) subPreCond(a, b *Element[T]) (nextOverflow uint, err error) {
-	reduceRight := (a.overflow + 1) < (b.overflow + 1)
-	nextOverflow = max(b.overflow+1, a.overflow+1)
+	reduceRight := a.overflow < (b.overflow + 1)
+	nextOverflow = max(b.overflow+1, a.overflow) + 1
 	if nextOverflow > f.maxOverflow() {
 		err = overflowError{op: "sub", nextOverflow: nextOverflow, maxOverflow: f.maxOverflow(), reduceRight: reduceRight}
 	}
