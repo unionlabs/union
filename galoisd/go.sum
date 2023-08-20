@@ -438,8 +438,8 @@ github.com/unionlabs/cometbls v0.0.0-20230606200400-20834775a066 h1:0Swewo4WixAH
 github.com/unionlabs/cometbls v0.0.0-20230606200400-20834775a066/go.mod h1:DQBrLANmGK8o6LQPxaH03I3prPrLy3gecQ2Nf2NvD6I=
 github.com/unionlabs/cosmos-sdk v0.0.0-20230512065059-fd36c0d536f8 h1:wWlTHWetMmTnSdqBS7zOoqKsglQuAoQDnoLd4/Pp7C8=
 github.com/unionlabs/cosmos-sdk v0.0.0-20230512065059-fd36c0d536f8/go.mod h1:KRO/bFablzixOdk/TkYuE+n1uM6fsrX/AW+RckqC9Lc=
-github.com/unionlabs/gnark v0.0.0-20230513134152-dd41e4b5e252 h1:d0pE4rp4JlukpyieQBdl+vbEuZalinBQxYLj0XGHir8=
-github.com/unionlabs/gnark v0.0.0-20230513134152-dd41e4b5e252/go.mod h1:TAuRTdK+tMu6nIGAAaBCNO7NgUcRUyU981trdNaryfk=
+github.com/unionlabs/gnark v0.0.0-20230820185220-9ebfeea2ca75 h1:NIlqgyO86tmD6/KAriKYJht5w/AJGSMd3yNPmpnrUqk=
+github.com/unionlabs/gnark v0.0.0-20230820185220-9ebfeea2ca75/go.mod h1:eWB6H48UXNUN9M1FaxIRBlKvJdNFWAZdg5KMsulJB2w=
 github.com/unionlabs/gnark-crypto v0.0.0-20230419121058-59d3a8050fda h1:zRJnt3/+XdblFTxaOaZUIYnfiVIyqT996v8+kQcYvwI=
 github.com/unionlabs/gnark-crypto v0.0.0-20230419121058-59d3a8050fda/go.mod h1:Iq/P3HHl0ElSjsg2E1gsMwhAyxnxoKK5nVyZKd+/KhU=
 github.com/x448/float16 v0.8.4 h1:qLwI1I70+NjRFUR3zs1JPUCgaCXSh3SW62uAKT1mSBM=
