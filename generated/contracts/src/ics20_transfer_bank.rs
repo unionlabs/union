@@ -7,17 +7,19 @@ pub use ics20_transfer_bank::*;
     clippy::upper_case_acronyms,
     clippy::type_complexity,
     dead_code,
-    non_camel_case_types
+    non_camel_case_types,
 )]
 pub mod ics20_transfer_bank {
     pub use super::super::shared_types::*;
     #[rustfmt::skip]
     const __ABI: &str = "[{\"inputs\":[{\"internalType\":\"contract IBCHandler\",\"name\":\"_ibcHandler\",\"type\":\"address\",\"components\":[]},{\"internalType\":\"contract IICS20Bank\",\"name\":\"_bank\",\"type\":\"address\",\"components\":[]}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\",\"outputs\":[]},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"s\",\"type\":\"string\",\"components\":[]}],\"stateMutability\":\"pure\",\"type\":\"function\",\"name\":\"fromHex\",\"outputs\":[{\"internalType\":\"bytes\",\"name\":\"\",\"type\":\"bytes\",\"components\":[]}]},{\"inputs\":[{\"internalType\":\"uint8\",\"name\":\"c\",\"type\":\"uint8\",\"components\":[]}],\"stateMutability\":\"pure\",\"type\":\"function\",\"name\":\"fromHexChar\",\"outputs\":[{\"internalType\":\"uint8\",\"name\":\"\",\"type\":\"uint8\",\"components\":[]}]},{\"inputs\":[],\"stateMutability\":\"view\",\"type\":\"function\",\"name\":\"ibcAddress\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\",\"components\":[]}]},{\"inputs\":[{\"internalType\":\"struct IbcCoreChannelV1Packet.Data\",\"name\":\"packet\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"uint64\",\"name\":\"sequence\",\"type\":\"uint64\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"source_port\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"source_channel\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"destination_port\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"destination_channel\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"bytes\",\"name\":\"data\",\"type\":\"bytes\",\"components\":[]},{\"internalType\":\"struct IbcCoreClientV1Height.Data\",\"name\":\"timeout_height\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"uint64\",\"name\":\"revision_number\",\"type\":\"uint64\",\"components\":[]},{\"internalType\":\"uint64\",\"name\":\"revision_height\",\"type\":\"uint64\",\"components\":[]}]},{\"internalType\":\"uint64\",\"name\":\"timeout_timestamp\",\"type\":\"uint64\",\"components\":[]}]},{\"internalType\":\"bytes\",\"name\":\"acknowledgement\",\"type\":\"bytes\",\"components\":[]},{\"internalType\":\"address\",\"name\":\"relayer\",\"type\":\"address\",\"components\":[]}],\"stateMutability\":\"nonpayable\",\"type\":\"function\",\"name\":\"onAcknowledgementPacket\",\"outputs\":[]},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"portId\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"channelId\",\"type\":\"string\",\"components\":[]}],\"stateMutability\":\"nonpayable\",\"type\":\"function\",\"name\":\"onChanCloseConfirm\",\"outputs\":[]},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"portId\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"channelId\",\"type\":\"string\",\"components\":[]}],\"stateMutability\":\"nonpayable\",\"type\":\"function\",\"name\":\"onChanCloseInit\",\"outputs\":[]},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"portId\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"channelId\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"counterpartyVersion\",\"type\":\"string\",\"components\":[]}],\"stateMutability\":\"nonpayable\",\"type\":\"function\",\"name\":\"onChanOpenAck\",\"outputs\":[]},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"portId\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"channelId\",\"type\":\"string\",\"components\":[]}],\"stateMutability\":\"nonpayable\",\"type\":\"function\",\"name\":\"onChanOpenConfirm\",\"outputs\":[]},{\"inputs\":[{\"internalType\":\"enum IbcCoreChannelV1GlobalEnums.Order\",\"name\":\"\",\"type\":\"uint8\",\"components\":[]},{\"internalType\":\"string[]\",\"name\":\"\",\"type\":\"string[]\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"channelId\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"struct IbcCoreChannelV1Counterparty.Data\",\"name\":\"\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"string\",\"name\":\"port_id\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"channel_id\",\"type\":\"string\",\"components\":[]}]},{\"internalType\":\"string\",\"name\":\"\",\"type\":\"string\",\"components\":[]}],\"stateMutability\":\"nonpayable\",\"type\":\"function\",\"name\":\"onChanOpenInit\",\"outputs\":[]},{\"inputs\":[{\"internalType\":\"enum IbcCoreChannelV1GlobalEnums.Order\",\"name\":\"\",\"type\":\"uint8\",\"components\":[]},{\"internalType\":\"string[]\",\"name\":\"\",\"type\":\"string[]\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"channelId\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"struct IbcCoreChannelV1Counterparty.Data\",\"name\":\"\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"string\",\"name\":\"port_id\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"channel_id\",\"type\":\"string\",\"components\":[]}]},{\"internalType\":\"string\",\"name\":\"\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"\",\"type\":\"string\",\"components\":[]}],\"stateMutability\":\"nonpayable\",\"type\":\"function\",\"name\":\"onChanOpenTry\",\"outputs\":[]},{\"inputs\":[{\"internalType\":\"struct IbcCoreChannelV1Packet.Data\",\"name\":\"packet\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"uint64\",\"name\":\"sequence\",\"type\":\"uint64\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"source_port\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"source_channel\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"destination_port\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"destination_channel\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"bytes\",\"name\":\"data\",\"type\":\"bytes\",\"components\":[]},{\"internalType\":\"struct IbcCoreClientV1Height.Data\",\"name\":\"timeout_height\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"uint64\",\"name\":\"revision_number\",\"type\":\"uint64\",\"components\":[]},{\"internalType\":\"uint64\",\"name\":\"revision_height\",\"type\":\"uint64\",\"components\":[]}]},{\"internalType\":\"uint64\",\"name\":\"timeout_timestamp\",\"type\":\"uint64\",\"components\":[]}]},{\"internalType\":\"address\",\"name\":\"relayer\",\"type\":\"address\",\"components\":[]}],\"stateMutability\":\"nonpayable\",\"type\":\"function\",\"name\":\"onRecvPacket\",\"outputs\":[{\"internalType\":\"bytes\",\"name\":\"acknowledgement\",\"type\":\"bytes\",\"components\":[]}]},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"denom\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"uint64\",\"name\":\"amount\",\"type\":\"uint64\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"receiver\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"sourcePort\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"sourceChannel\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"uint64\",\"name\":\"timeoutRevisionNumber\",\"type\":\"uint64\",\"components\":[]},{\"internalType\":\"uint64\",\"name\":\"timeoutRevisionHeight\",\"type\":\"uint64\",\"components\":[]}],\"stateMutability\":\"nonpayable\",\"type\":\"function\",\"name\":\"sendTransfer\",\"outputs\":[]}]";
     ///The parsed JSON ABI of the contract.
-    pub static ICS20TRANSFERBANK_ABI: ::ethers::contract::Lazy<::ethers::core::abi::Abi> =
-        ::ethers::contract::Lazy::new(|| {
-            ::ethers::core::utils::__serde_json::from_str(__ABI).expect("ABI is always valid")
-        });
+    pub static ICS20TRANSFERBANK_ABI: ::ethers::contract::Lazy<
+        ::ethers::core::abi::Abi,
+    > = ::ethers::contract::Lazy::new(|| {
+        ::ethers::core::utils::__serde_json::from_str(__ABI)
+            .expect("ABI is always valid")
+    });
     #[rustfmt::skip]
     const __BYTECODE: &[u8] = &[
         96,
@@ -8574,38 +8576,38 @@ pub mod ics20_transfer_bank {
         34,
         18,
         32,
-        1,
-        241,
-        119,
-        255,
-        93,
-        90,
-        2,
-        66,
-        33,
-        91,
-        131,
-        46,
-        220,
-        159,
-        122,
-        62,
-        120,
-        209,
-        121,
-        178,
-        85,
-        86,
-        124,
-        161,
-        71,
-        163,
-        200,
         240,
-        64,
-        1,
-        112,
+        95,
         133,
+        95,
+        223,
+        234,
+        28,
+        164,
+        175,
+        73,
+        83,
+        56,
+        133,
+        69,
+        5,
+        214,
+        255,
+        73,
+        64,
+        122,
+        5,
+        228,
+        97,
+        113,
+        81,
+        239,
+        130,
+        179,
+        61,
+        225,
+        90,
+        249,
         100,
         115,
         111,
@@ -8619,8 +8621,9 @@ pub mod ics20_transfer_bank {
         51,
     ];
     ///The bytecode of the contract.
-    pub static ICS20TRANSFERBANK_BYTECODE: ::ethers::core::types::Bytes =
-        ::ethers::core::types::Bytes::from_static(__BYTECODE);
+    pub static ICS20TRANSFERBANK_BYTECODE: ::ethers::core::types::Bytes = ::ethers::core::types::Bytes::from_static(
+        __BYTECODE,
+    );
     #[rustfmt::skip]
     const __DEPLOYED_BYTECODE: &[u8] = &[
         96,
@@ -16849,38 +16852,38 @@ pub mod ics20_transfer_bank {
         34,
         18,
         32,
-        1,
-        241,
-        119,
-        255,
-        93,
-        90,
-        2,
-        66,
-        33,
-        91,
-        131,
-        46,
-        220,
-        159,
-        122,
-        62,
-        120,
-        209,
-        121,
-        178,
-        85,
-        86,
-        124,
-        161,
-        71,
-        163,
-        200,
         240,
-        64,
-        1,
-        112,
+        95,
         133,
+        95,
+        223,
+        234,
+        28,
+        164,
+        175,
+        73,
+        83,
+        56,
+        133,
+        69,
+        5,
+        214,
+        255,
+        73,
+        64,
+        122,
+        5,
+        228,
+        97,
+        113,
+        81,
+        239,
+        130,
+        179,
+        61,
+        225,
+        90,
+        249,
         100,
         115,
         111,
@@ -16894,8 +16897,9 @@ pub mod ics20_transfer_bank {
         51,
     ];
     ///The deployed bytecode of the contract.
-    pub static ICS20TRANSFERBANK_DEPLOYED_BYTECODE: ::ethers::core::types::Bytes =
-        ::ethers::core::types::Bytes::from_static(__DEPLOYED_BYTECODE);
+    pub static ICS20TRANSFERBANK_DEPLOYED_BYTECODE: ::ethers::core::types::Bytes = ::ethers::core::types::Bytes::from_static(
+        __DEPLOYED_BYTECODE,
+    );
     pub struct ICS20TransferBank<M>(::ethers::contract::Contract<M>);
     impl<M> ::core::clone::Clone for ICS20TransferBank<M> {
         fn clone(&self) -> Self {
@@ -16915,9 +16919,7 @@ pub mod ics20_transfer_bank {
     }
     impl<M> ::core::fmt::Debug for ICS20TransferBank<M> {
         fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
-            f.debug_tuple(stringify!(ICS20TransferBank))
-                .field(&self.address())
-                .finish()
+            f.debug_tuple(stringify!(ICS20TransferBank)).field(&self.address()).finish()
         }
     }
     impl<M: ::ethers::providers::Middleware> ICS20TransferBank<M> {
@@ -16927,11 +16929,13 @@ pub mod ics20_transfer_bank {
             address: T,
             client: ::std::sync::Arc<M>,
         ) -> Self {
-            Self(::ethers::contract::Contract::new(
-                address.into(),
-                ICS20TRANSFERBANK_ABI.clone(),
-                client,
-            ))
+            Self(
+                ::ethers::contract::Contract::new(
+                    address.into(),
+                    ICS20TRANSFERBANK_ABI.clone(),
+                    client,
+                ),
+            )
         }
         /// Constructs the general purpose `Deployer` instance based on the provided constructor arguments and sends it.
         /// Returns a new instance of a deployer that returns an instance of this contract after sending the transaction
@@ -16976,13 +16980,19 @@ pub mod ics20_transfer_bank {
         pub fn from_hex(
             &self,
             s: ::std::string::String,
-        ) -> ::ethers::contract::builders::ContractCall<M, ::ethers::core::types::Bytes> {
+        ) -> ::ethers::contract::builders::ContractCall<
+            M,
+            ::ethers::core::types::Bytes,
+        > {
             self.0
                 .method_hash([142, 126, 52, 215], s)
                 .expect("method not found (this should never happen)")
         }
         ///Calls the contract's `fromHexChar` (0x2ecb20d3) function
-        pub fn from_hex_char(&self, c: u8) -> ::ethers::contract::builders::ContractCall<M, u8> {
+        pub fn from_hex_char(
+            &self,
+            c: u8,
+        ) -> ::ethers::contract::builders::ContractCall<M, u8> {
             self.0
                 .method_hash([46, 203, 32, 211], c)
                 .expect("method not found (this should never happen)")
@@ -16990,7 +17000,10 @@ pub mod ics20_transfer_bank {
         ///Calls the contract's `ibcAddress` (0x696a9bf4) function
         pub fn ibc_address(
             &self,
-        ) -> ::ethers::contract::builders::ContractCall<M, ::ethers::core::types::Address> {
+        ) -> ::ethers::contract::builders::ContractCall<
+            M,
+            ::ethers::core::types::Address,
+        > {
             self.0
                 .method_hash([105, 106, 155, 244], ())
                 .expect("method not found (this should never happen)")
@@ -17057,7 +17070,7 @@ pub mod ics20_transfer_bank {
             p1: ::std::vec::Vec<::std::string::String>,
             p2: ::std::string::String,
             channel_id: ::std::string::String,
-            p4: Data,
+            p4: IbcCoreChannelV1CounterpartyData,
             p5: ::std::string::String,
         ) -> ::ethers::contract::builders::ContractCall<M, ()> {
             self.0
@@ -17071,7 +17084,7 @@ pub mod ics20_transfer_bank {
             p1: ::std::vec::Vec<::std::string::String>,
             p2: ::std::string::String,
             channel_id: ::std::string::String,
-            p4: Data,
+            p4: IbcCoreChannelV1CounterpartyData,
             p5: ::std::string::String,
             p6: ::std::string::String,
         ) -> ::ethers::contract::builders::ContractCall<M, ()> {
@@ -17084,7 +17097,10 @@ pub mod ics20_transfer_bank {
             &self,
             packet: IbcCoreChannelV1PacketData,
             relayer: ::ethers::core::types::Address,
-        ) -> ::ethers::contract::builders::ContractCall<M, ::ethers::core::types::Bytes> {
+        ) -> ::ethers::contract::builders::ContractCall<
+            M,
+            ::ethers::core::types::Bytes,
+        > {
             self.0
                 .method_hash([35, 1, 198, 245], (packet, relayer))
                 .expect("method not found (this should never happen)")
@@ -17117,8 +17133,7 @@ pub mod ics20_transfer_bank {
         }
     }
     impl<M: ::ethers::providers::Middleware> From<::ethers::contract::Contract<M>>
-        for ICS20TransferBank<M>
-    {
+    for ICS20TransferBank<M> {
         fn from(contract: ::ethers::contract::Contract<M>) -> Self {
             Self::new(contract.address(), contract.client())
         }
@@ -17132,7 +17147,7 @@ pub mod ics20_transfer_bank {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     #[ethcall(name = "fromHex", abi = "fromHex(string)")]
     pub struct FromHexCall {
@@ -17147,7 +17162,7 @@ pub mod ics20_transfer_bank {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     #[ethcall(name = "fromHexChar", abi = "fromHexChar(uint8)")]
     pub struct FromHexCharCall {
@@ -17162,7 +17177,7 @@ pub mod ics20_transfer_bank {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     #[ethcall(name = "ibcAddress", abi = "ibcAddress()")]
     pub struct IbcAddressCall;
@@ -17175,7 +17190,7 @@ pub mod ics20_transfer_bank {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     #[ethcall(
         name = "onAcknowledgementPacket",
@@ -17195,7 +17210,7 @@ pub mod ics20_transfer_bank {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     #[ethcall(name = "onChanCloseConfirm", abi = "onChanCloseConfirm(string,string)")]
     pub struct OnChanCloseConfirmCall {
@@ -17211,7 +17226,7 @@ pub mod ics20_transfer_bank {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     #[ethcall(name = "onChanCloseInit", abi = "onChanCloseInit(string,string)")]
     pub struct OnChanCloseInitCall {
@@ -17227,7 +17242,7 @@ pub mod ics20_transfer_bank {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     #[ethcall(name = "onChanOpenAck", abi = "onChanOpenAck(string,string,string)")]
     pub struct OnChanOpenAckCall {
@@ -17244,7 +17259,7 @@ pub mod ics20_transfer_bank {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     #[ethcall(name = "onChanOpenConfirm", abi = "onChanOpenConfirm(string,string)")]
     pub struct OnChanOpenConfirmCall {
@@ -17260,7 +17275,7 @@ pub mod ics20_transfer_bank {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     #[ethcall(
         name = "onChanOpenInit",
@@ -17271,7 +17286,7 @@ pub mod ics20_transfer_bank {
         pub p1: ::std::vec::Vec<::std::string::String>,
         pub p2: ::std::string::String,
         pub channel_id: ::std::string::String,
-        pub p4: Data,
+        pub p4: IbcCoreChannelV1CounterpartyData,
         pub p5: ::std::string::String,
     }
     ///Container type for all input parameters for the `onChanOpenTry` function with signature `onChanOpenTry(uint8,string[],string,string,(string,string),string,string)` and selector `0x981389f2`
@@ -17283,7 +17298,7 @@ pub mod ics20_transfer_bank {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     #[ethcall(
         name = "onChanOpenTry",
@@ -17294,7 +17309,7 @@ pub mod ics20_transfer_bank {
         pub p1: ::std::vec::Vec<::std::string::String>,
         pub p2: ::std::string::String,
         pub channel_id: ::std::string::String,
-        pub p4: Data,
+        pub p4: IbcCoreChannelV1CounterpartyData,
         pub p5: ::std::string::String,
         pub p6: ::std::string::String,
     }
@@ -17307,7 +17322,7 @@ pub mod ics20_transfer_bank {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     #[ethcall(
         name = "onRecvPacket",
@@ -17326,7 +17341,7 @@ pub mod ics20_transfer_bank {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     #[ethcall(
         name = "sendTransfer",
@@ -17362,54 +17377,58 @@ pub mod ics20_transfer_bank {
             data: impl AsRef<[u8]>,
         ) -> ::core::result::Result<Self, ::ethers::core::abi::AbiError> {
             let data = data.as_ref();
-            if let Ok(decoded) = <FromHexCall as ::ethers::core::abi::AbiDecode>::decode(data) {
+            if let Ok(decoded)
+                = <FromHexCall as ::ethers::core::abi::AbiDecode>::decode(data) {
                 return Ok(Self::FromHex(decoded));
             }
-            if let Ok(decoded) = <FromHexCharCall as ::ethers::core::abi::AbiDecode>::decode(data) {
+            if let Ok(decoded)
+                = <FromHexCharCall as ::ethers::core::abi::AbiDecode>::decode(data) {
                 return Ok(Self::FromHexChar(decoded));
             }
-            if let Ok(decoded) = <IbcAddressCall as ::ethers::core::abi::AbiDecode>::decode(data) {
+            if let Ok(decoded)
+                = <IbcAddressCall as ::ethers::core::abi::AbiDecode>::decode(data) {
                 return Ok(Self::IbcAddress(decoded));
             }
-            if let Ok(decoded) =
-                <OnAcknowledgementPacketCall as ::ethers::core::abi::AbiDecode>::decode(data)
-            {
+            if let Ok(decoded)
+                = <OnAcknowledgementPacketCall as ::ethers::core::abi::AbiDecode>::decode(
+                    data,
+                ) {
                 return Ok(Self::OnAcknowledgementPacket(decoded));
             }
-            if let Ok(decoded) =
-                <OnChanCloseConfirmCall as ::ethers::core::abi::AbiDecode>::decode(data)
-            {
+            if let Ok(decoded)
+                = <OnChanCloseConfirmCall as ::ethers::core::abi::AbiDecode>::decode(
+                    data,
+                ) {
                 return Ok(Self::OnChanCloseConfirm(decoded));
             }
-            if let Ok(decoded) =
-                <OnChanCloseInitCall as ::ethers::core::abi::AbiDecode>::decode(data)
-            {
+            if let Ok(decoded)
+                = <OnChanCloseInitCall as ::ethers::core::abi::AbiDecode>::decode(data) {
                 return Ok(Self::OnChanCloseInit(decoded));
             }
-            if let Ok(decoded) = <OnChanOpenAckCall as ::ethers::core::abi::AbiDecode>::decode(data)
-            {
+            if let Ok(decoded)
+                = <OnChanOpenAckCall as ::ethers::core::abi::AbiDecode>::decode(data) {
                 return Ok(Self::OnChanOpenAck(decoded));
             }
-            if let Ok(decoded) =
-                <OnChanOpenConfirmCall as ::ethers::core::abi::AbiDecode>::decode(data)
-            {
+            if let Ok(decoded)
+                = <OnChanOpenConfirmCall as ::ethers::core::abi::AbiDecode>::decode(
+                    data,
+                ) {
                 return Ok(Self::OnChanOpenConfirm(decoded));
             }
-            if let Ok(decoded) =
-                <OnChanOpenInitCall as ::ethers::core::abi::AbiDecode>::decode(data)
-            {
+            if let Ok(decoded)
+                = <OnChanOpenInitCall as ::ethers::core::abi::AbiDecode>::decode(data) {
                 return Ok(Self::OnChanOpenInit(decoded));
             }
-            if let Ok(decoded) = <OnChanOpenTryCall as ::ethers::core::abi::AbiDecode>::decode(data)
-            {
+            if let Ok(decoded)
+                = <OnChanOpenTryCall as ::ethers::core::abi::AbiDecode>::decode(data) {
                 return Ok(Self::OnChanOpenTry(decoded));
             }
-            if let Ok(decoded) = <OnRecvPacketCall as ::ethers::core::abi::AbiDecode>::decode(data)
-            {
+            if let Ok(decoded)
+                = <OnRecvPacketCall as ::ethers::core::abi::AbiDecode>::decode(data) {
                 return Ok(Self::OnRecvPacket(decoded));
             }
-            if let Ok(decoded) = <SendTransferCall as ::ethers::core::abi::AbiDecode>::decode(data)
-            {
+            if let Ok(decoded)
+                = <SendTransferCall as ::ethers::core::abi::AbiDecode>::decode(data) {
                 return Ok(Self::SendTransfer(decoded));
             }
             Err(::ethers::core::abi::Error::InvalidData.into())
@@ -17419,21 +17438,39 @@ pub mod ics20_transfer_bank {
         fn encode(self) -> Vec<u8> {
             match self {
                 Self::FromHex(element) => ::ethers::core::abi::AbiEncode::encode(element),
-                Self::FromHexChar(element) => ::ethers::core::abi::AbiEncode::encode(element),
-                Self::IbcAddress(element) => ::ethers::core::abi::AbiEncode::encode(element),
+                Self::FromHexChar(element) => {
+                    ::ethers::core::abi::AbiEncode::encode(element)
+                }
+                Self::IbcAddress(element) => {
+                    ::ethers::core::abi::AbiEncode::encode(element)
+                }
                 Self::OnAcknowledgementPacket(element) => {
                     ::ethers::core::abi::AbiEncode::encode(element)
                 }
                 Self::OnChanCloseConfirm(element) => {
                     ::ethers::core::abi::AbiEncode::encode(element)
                 }
-                Self::OnChanCloseInit(element) => ::ethers::core::abi::AbiEncode::encode(element),
-                Self::OnChanOpenAck(element) => ::ethers::core::abi::AbiEncode::encode(element),
-                Self::OnChanOpenConfirm(element) => ::ethers::core::abi::AbiEncode::encode(element),
-                Self::OnChanOpenInit(element) => ::ethers::core::abi::AbiEncode::encode(element),
-                Self::OnChanOpenTry(element) => ::ethers::core::abi::AbiEncode::encode(element),
-                Self::OnRecvPacket(element) => ::ethers::core::abi::AbiEncode::encode(element),
-                Self::SendTransfer(element) => ::ethers::core::abi::AbiEncode::encode(element),
+                Self::OnChanCloseInit(element) => {
+                    ::ethers::core::abi::AbiEncode::encode(element)
+                }
+                Self::OnChanOpenAck(element) => {
+                    ::ethers::core::abi::AbiEncode::encode(element)
+                }
+                Self::OnChanOpenConfirm(element) => {
+                    ::ethers::core::abi::AbiEncode::encode(element)
+                }
+                Self::OnChanOpenInit(element) => {
+                    ::ethers::core::abi::AbiEncode::encode(element)
+                }
+                Self::OnChanOpenTry(element) => {
+                    ::ethers::core::abi::AbiEncode::encode(element)
+                }
+                Self::OnRecvPacket(element) => {
+                    ::ethers::core::abi::AbiEncode::encode(element)
+                }
+                Self::SendTransfer(element) => {
+                    ::ethers::core::abi::AbiEncode::encode(element)
+                }
             }
         }
     }
@@ -17443,8 +17480,12 @@ pub mod ics20_transfer_bank {
                 Self::FromHex(element) => ::core::fmt::Display::fmt(element, f),
                 Self::FromHexChar(element) => ::core::fmt::Display::fmt(element, f),
                 Self::IbcAddress(element) => ::core::fmt::Display::fmt(element, f),
-                Self::OnAcknowledgementPacket(element) => ::core::fmt::Display::fmt(element, f),
-                Self::OnChanCloseConfirm(element) => ::core::fmt::Display::fmt(element, f),
+                Self::OnAcknowledgementPacket(element) => {
+                    ::core::fmt::Display::fmt(element, f)
+                }
+                Self::OnChanCloseConfirm(element) => {
+                    ::core::fmt::Display::fmt(element, f)
+                }
                 Self::OnChanCloseInit(element) => ::core::fmt::Display::fmt(element, f),
                 Self::OnChanOpenAck(element) => ::core::fmt::Display::fmt(element, f),
                 Self::OnChanOpenConfirm(element) => ::core::fmt::Display::fmt(element, f),
@@ -17524,7 +17565,7 @@ pub mod ics20_transfer_bank {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     pub struct FromHexReturn(pub ::ethers::core::types::Bytes);
     ///Container type for all return fields from the `fromHexChar` function with signature `fromHexChar(uint8)` and selector `0x2ecb20d3`
@@ -17536,7 +17577,7 @@ pub mod ics20_transfer_bank {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     pub struct FromHexCharReturn(pub u8);
     ///Container type for all return fields from the `ibcAddress` function with signature `ibcAddress()` and selector `0x696a9bf4`
@@ -17548,7 +17589,7 @@ pub mod ics20_transfer_bank {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     pub struct IbcAddressReturn(pub ::ethers::core::types::Address);
     ///Container type for all return fields from the `onRecvPacket` function with signature `onRecvPacket((uint64,string,string,string,string,bytes,(uint64,uint64),uint64),address)` and selector `0x2301c6f5`
@@ -17560,7 +17601,7 @@ pub mod ics20_transfer_bank {
         Debug,
         PartialEq,
         Eq,
-        Hash,
+        Hash
     )]
     pub struct OnRecvPacketReturn {
         pub acknowledgement: ::ethers::core::types::Bytes,

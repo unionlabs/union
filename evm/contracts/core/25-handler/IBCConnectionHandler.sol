@@ -13,10 +13,10 @@ abstract contract IBCConnectionHandler {
 
     event GeneratedConnectionIdentifier(string);
 
-    event ConnectionOpenInit(string indexed connectionId);
-    event ConnectionOpenTry(string indexed connectionId);
-    event ConnectionOpenAck(string indexed connectionId);
-    event ConnectionOpenConfirm(string indexed connectionId);
+    event ConnectionOpenInit(string connectionId);
+    event ConnectionOpenTry(string connectionId);
+    event ConnectionOpenAck(string connectionId);
+    event ConnectionOpenConfirm(string connectionId);
 
     constructor(address ibcConnection) {
         ibcConnectionAddress = ibcConnection;

@@ -14,27 +14,27 @@ abstract contract IBCChannelHandler is ModuleManager {
     address immutable ibcChannelAddress;
 
     event ChannelOpenInit(
-        string indexed channelId,
-        string indexed connectionId,
-        string indexed portId,
+        string channelId,
+        string connectionId,
+        string portId,
         string counterpartyPortId
     );
 
     event ChannelOpenTry(
-        string indexed channelId,
-        string indexed connectionId,
-        string indexed portId,
+        string channelId,
+        string connectionId,
+        string portId,
         string counterpartyPortId,
         string version
     );
 
-    event ChannelOpenAck(string indexed channelId, string indexed portId);
+    event ChannelOpenAck(string channelId, string portId);
 
-    event ChannelOpenConfirm(string indexed channelId, string indexed portId);
+    event ChannelOpenConfirm(string channelId, string portId);
 
-    event ChannelCloseInit(string indexed channelId, string indexed portId);
+    event ChannelCloseInit(string channelId, string portId);
 
-    event ChannelCloseConfirm(string indexed channelId, string indexed portId);
+    event ChannelCloseConfirm(string channelId, string portId);
 
     constructor(address ibcChannel) {
         ibcChannelAddress = ibcChannel;
