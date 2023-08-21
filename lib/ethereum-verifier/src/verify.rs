@@ -171,10 +171,14 @@ pub fn validate_light_client_update<Ctx: LightClientContext, V: BlsVerify>(
     Ok(())
 }
 
-fn verify_state(root: H256, key: &[u8], proof: &[Vec<u8>]) -> Result<Option<Vec<u8>>, Error> {
+fn verify_state(
+    root: H256,
+    key: &[u8],
+    proof: impl IntoIterator<Item = impl AsRef<[u8]>>,
+) -> Result<Option<Vec<u8>>, Error> {
     let mut db = MemoryDB::<KeccakHasher, HashKey<_>, Vec<u8>>::default();
-    proof.iter().for_each(|n| {
-        db.insert(hash_db::EMPTY_PREFIX, n);
+    proof.into_iter().for_each(|n| {
+        db.insert(hash_db::EMPTY_PREFIX, n.as_ref());
     });
 
     let root: primitive_types::H256 = root.into();
@@ -193,7 +197,7 @@ fn verify_state(root: H256, key: &[u8], proof: &[Vec<u8>]) -> Result<Option<Vec<
 pub fn verify_account_storage_root(
     root: H256,
     address: &ExecutionAddress,
-    proof: &[Vec<u8>],
+    proof: impl IntoIterator<Item = impl AsRef<[u8]>>,
     storage_root: &Hash32,
 ) -> Result<(), Error> {
     match verify_state(root, address.as_ref(), proof)? {
@@ -221,7 +225,7 @@ pub fn verify_storage_proof(
     root: H256,
     key: &[u8],
     expected_value: &[u8],
-    proof: &[Vec<u8>],
+    proof: impl IntoIterator<Item = impl AsRef<[u8]>>,
 ) -> Result<(), Error> {
     match verify_state(root, key, proof)? {
         Some(value) if value == expected_value => Ok(()),
@@ -236,7 +240,11 @@ pub fn verify_storage_proof(
 /// * `proof`: Proof that is generated to prove the storage.
 ///
 /// NOTE: You must not trust the `root` unless you verified it by calling [`verify_account_storage_root`].
-pub fn verify_storage_absence(root: H256, key: &[u8], proof: &[Vec<u8>]) -> Result<bool, Error> {
+pub fn verify_storage_absence(
+    root: H256,
+    key: &[u8],
+    proof: impl IntoIterator<Item = impl AsRef<[u8]>>,
+) -> Result<bool, Error> {
     Ok(verify_state(root, key, proof)?.is_none())
 }
 
@@ -604,7 +612,11 @@ mod tests {
     #[test]
     fn verify_state_works() {
         assert_eq!(
-            verify_state(VALID_STORAGE_ROOT.clone(), &VALID_PROOF_KEY, &VALID_PROOF),
+            verify_state(
+                VALID_STORAGE_ROOT.clone(),
+                &VALID_PROOF_KEY,
+                VALID_PROOF.iter()
+            ),
             Ok(Some(VALID_RLP_ENCODED_PROOF_VALUE.clone()))
         );
     }
@@ -618,7 +630,7 @@ mod tests {
         };
 
         assert!(matches!(
-            verify_state(storage_root, &VALID_PROOF_KEY, &VALID_PROOF),
+            verify_state(storage_root, &VALID_PROOF_KEY, VALID_PROOF.iter()),
             Err(Error::Trie(_))
         ));
     }
@@ -629,7 +641,7 @@ mod tests {
         proof_key[0] = u8::MAX - proof_key[0];
 
         assert_eq!(
-            verify_state(VALID_STORAGE_ROOT.clone(), &proof_key, &VALID_PROOF),
+            verify_state(VALID_STORAGE_ROOT.clone(), &proof_key, VALID_PROOF.iter()),
             Ok(None)
         );
     }
@@ -651,7 +663,7 @@ mod tests {
             verify_storage_absence(
                 ABSENT_STORAGE_ROOT.clone(),
                 &ABSENT_PROOF_KEY,
-                &ABSENT_PROOF
+                ABSENT_PROOF.iter()
             ),
             Ok(true)
         )
@@ -660,7 +672,11 @@ mod tests {
     #[test]
     fn verify_absent_storage_returns_false_when_storage_exists() {
         assert_eq!(
-            verify_storage_absence(VALID_STORAGE_ROOT.clone(), &VALID_PROOF_KEY, &VALID_PROOF),
+            verify_storage_absence(
+                VALID_STORAGE_ROOT.clone(),
+                &VALID_PROOF_KEY,
+                VALID_PROOF.iter()
+            ),
             Ok(false)
         );
     }
@@ -694,7 +710,7 @@ mod tests {
                 VALID_STORAGE_ROOT.clone(),
                 &VALID_PROOF_KEY,
                 &VALID_RLP_ENCODED_PROOF_VALUE,
-                &VALID_PROOF
+                VALID_PROOF.iter()
             ),
             Ok(())
         );
@@ -710,7 +726,7 @@ mod tests {
                 VALID_STORAGE_ROOT.clone(),
                 &VALID_PROOF_KEY,
                 &proof_value,
-                &VALID_PROOF
+                VALID_PROOF.iter()
             ),
             Err(Error::ValueMismatch)
         );
