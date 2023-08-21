@@ -6,6 +6,6 @@ pub use wasm_light_client_types::msg::{ExecuteMsg, QueryMsg};
 pub struct InstantiateMsg {}
 
 pub enum StorageState {
-    Vacant(Binary),
+    Occupied(Binary),
     Empty,
 }

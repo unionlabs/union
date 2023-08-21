@@ -69,7 +69,7 @@ pub fn execute(
             delay_block_period,
             proof,
             path,
-            StorageState::Vacant(value),
+            StorageState::Occupied(value),
         ),
         ExecuteMsg::VerifyNonMembership {
             height,
@@ -143,7 +143,7 @@ pub fn verify_membership(
     };
 
     match value {
-        StorageState::Vacant(value) => do_verify_membership(
+        StorageState::Occupied(value) => do_verify_membership(
             path,
             storage_root,
             client_state.data.counterparty_commitment_slot,
