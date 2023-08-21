@@ -69,7 +69,7 @@ pub fn execute(
             delay_block_period,
             proof,
             path,
-            StorageState::Occupied(value),
+            StorageState::Occupied(value.0),
         ),
         ExecuteMsg::VerifyNonMembership {
             height,
@@ -166,7 +166,7 @@ pub fn do_verify_membership(
     storage_root: H256,
     counterparty_commitment_slot: Slot,
     storage_proof: Proof,
-    value: Binary,
+    value: Vec<u8>,
 ) -> Result<(), Error> {
     check_commitment_key(path, counterparty_commitment_slot, &storage_proof.key)?;
 
@@ -848,7 +848,7 @@ mod test {
             storage_root,
             3,
             proof,
-            any_client_state.encode_to_vec().into(),
+            any_client_state.encode_to_vec(),
         )
         .expect("Membership verification of client state failed");
     }
@@ -889,7 +889,7 @@ mod test {
             storage_root,
             3,
             proof,
-            any_consensus_state.encode_to_vec().into(),
+            any_consensus_state.encode_to_vec(),
         )
         .expect("Membership verification of consensus state failed");
     }
@@ -936,7 +936,7 @@ mod test {
             storage_root,
             3,
             proof,
-            connection_end.encode_to_vec().into(),
+            connection_end.encode_to_vec(),
         )
         .expect("Membership verification of connection end failed");
     }
@@ -968,7 +968,7 @@ mod test {
                 storage_root.clone(),
                 3,
                 proof,
-                connection_end.encode_to_vec().into(),
+                connection_end.encode_to_vec(),
             )
             .is_err());
         }
@@ -985,7 +985,7 @@ mod test {
             storage_root,
             3,
             proof,
-            connection_end.encode_to_vec().into(),
+            connection_end.encode_to_vec(),
         )
         .is_err());
     }
@@ -1001,7 +1001,7 @@ mod test {
             storage_root,
             3,
             proof,
-            connection_end.encode_to_vec().into(),
+            connection_end.encode_to_vec(),
         )
         .is_err());
     }
