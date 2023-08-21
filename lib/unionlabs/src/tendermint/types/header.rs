@@ -6,7 +6,7 @@ use crate::{
     bounded_int::{BoundedI64, BoundedIntError},
     errors::{required, InvalidLength, MissingField},
     ethereum::{Address, H256},
-    ibc::{google::protobuf::timestamp::Timestamp, lightclients::cometbls::cdc_encode::CdcEncode},
+    ibc::google::protobuf::timestamp::Timestamp,
     tendermint::{types::block_id::BlockId, version::consensus::Consensus},
     Proto, TryFromProtoErrorOf, TypeUrl,
 };
@@ -47,32 +47,27 @@ pub struct Header {
 }
 
 impl Header {
-    #[allow(clippy::cast_lossless)]
     pub fn calculate_merkle_root(&self) -> Option<[u8; 32]> {
-        let proto_version: protos::tendermint::version::Consensus = self.version.into();
-        let proto_time: protos::google::protobuf::Timestamp = self.time.into();
-        let proto_block_id: protos::tendermint::types::BlockId = self.last_block_id.clone().into();
+        let header: protos::tendermint::types::Header = self.clone().into();
 
         let leaves = [
-            Sha256::hash(proto_version.encode_to_vec().as_slice()),
-            Sha256::hash(&self.chain_id.clone().cdc_encode()),
-            Sha256::hash(&self.height.inner().cdc_encode()),
-            Sha256::hash(&proto_time.encode_to_vec()),
-            Sha256::hash(&proto_block_id.encode_to_vec()),
-            Sha256::hash(&self.last_commit_hash.0.to_vec().cdc_encode()),
-            Sha256::hash(&self.data_hash.0.to_vec().cdc_encode()),
-            Sha256::hash(&self.validators_hash.0.to_vec().cdc_encode()),
-            Sha256::hash(&self.next_validators_hash.0.to_vec().cdc_encode()),
-            Sha256::hash(&self.consensus_hash.0.to_vec().cdc_encode()),
-            Sha256::hash(&self.app_hash.0.to_vec().cdc_encode()),
-            Sha256::hash(&self.last_results_hash.0.to_vec().cdc_encode()),
-            Sha256::hash(&self.evidence_hash.0.to_vec().cdc_encode()),
-            Sha256::hash(&self.proposer_address.0.to_vec().cdc_encode()),
+            Sha256::hash(&header.version?.encode_to_vec()),
+            Sha256::hash(&header.chain_id.encode_to_vec()),
+            Sha256::hash(&header.height.encode_to_vec()),
+            Sha256::hash(&header.time?.encode_to_vec()),
+            Sha256::hash(&header.last_block_id?.encode_to_vec()),
+            Sha256::hash(&header.last_commit_hash.encode_to_vec()),
+            Sha256::hash(&header.data_hash.encode_to_vec()),
+            Sha256::hash(&header.validators_hash.encode_to_vec()),
+            Sha256::hash(&header.next_validators_hash.encode_to_vec()),
+            Sha256::hash(&header.consensus_hash.encode_to_vec()),
+            Sha256::hash(&header.app_hash.encode_to_vec()),
+            Sha256::hash(&header.last_results_hash.encode_to_vec()),
+            Sha256::hash(&header.evidence_hash.encode_to_vec()),
+            Sha256::hash(&header.proposer_address.encode_to_vec()),
         ];
 
-        let merkle_tree: MerkleTree<Sha256> = MerkleTree::from_leaves(&leaves);
-
-        merkle_tree.root()
+        MerkleTree::<Sha256>::from_leaves(&leaves).root()
     }
 }
 
