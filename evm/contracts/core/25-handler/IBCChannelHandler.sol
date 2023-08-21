@@ -13,7 +13,28 @@ abstract contract IBCChannelHandler is ModuleManager {
     // IBC Channel contract address
     address immutable ibcChannelAddress;
 
-    event GeneratedChannelIdentifier(string);
+    event ChannelOpenInit(
+        string channelId,
+        string connectionId,
+        string portId,
+        string counterpartyPortId
+    );
+
+    event ChannelOpenTry(
+        string channelId,
+        string connectionId,
+        string portId,
+        string counterpartyPortId,
+        string version
+    );
+
+    event ChannelOpenAck(string channelId, string portId);
+
+    event ChannelOpenConfirm(string channelId, string portId);
+
+    event ChannelCloseInit(string channelId, string portId);
+
+    event ChannelCloseConfirm(string channelId, string portId);
 
     constructor(address ibcChannel) {
         ibcChannelAddress = ibcChannel;
@@ -46,7 +67,16 @@ abstract contract IBCChannelHandler is ModuleManager {
             channelCapabilityPath(msg_.portId, channelId),
             address(module)
         );
-        emit GeneratedChannelIdentifier(channelId);
+
+        string memory connectionId = msg_.channel.connection_hops[0];
+
+        emit ChannelOpenInit(
+            channelId,
+            connectionId,
+            msg_.portId,
+            msg_.channel.counterparty.port_id
+        );
+
         return channelId;
     }
 
@@ -77,7 +107,17 @@ abstract contract IBCChannelHandler is ModuleManager {
             channelCapabilityPath(msg_.portId, channelId),
             address(module)
         );
-        emit GeneratedChannelIdentifier(channelId);
+
+        string memory connectionId = msg_.channel.connection_hops[0];
+
+        emit ChannelOpenTry(
+            channelId,
+            connectionId,
+            msg_.portId,
+            msg_.channel.counterparty.port_id,
+            msg_.counterpartyVersion
+        );
+
         return channelId;
     }
 
@@ -96,6 +136,8 @@ abstract contract IBCChannelHandler is ModuleManager {
             msg_.channelId,
             msg_.counterpartyVersion
         );
+
+        emit ChannelOpenAck(msg_.channelId, msg_.portId);
     }
 
     function channelOpenConfirm(
@@ -114,6 +156,8 @@ abstract contract IBCChannelHandler is ModuleManager {
             msg_.portId,
             msg_.channelId
         );
+
+        emit ChannelOpenConfirm(msg_.channelId, msg_.portId);
     }
 
     function channelCloseInit(
@@ -132,6 +176,8 @@ abstract contract IBCChannelHandler is ModuleManager {
             msg_.portId,
             msg_.channelId
         );
+
+        emit ChannelCloseInit(msg_.channelId, msg_.portId);
     }
 
     function channelCloseConfirm(
@@ -150,5 +196,7 @@ abstract contract IBCChannelHandler is ModuleManager {
             msg_.portId,
             msg_.channelId
         );
+
+        emit ChannelCloseConfirm(msg_.channelId, msg_.portId);
     }
 }

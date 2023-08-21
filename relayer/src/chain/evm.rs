@@ -10,11 +10,11 @@ use clap::Args;
 use contracts::{
     devnet_ownable_ibc_handler,
     ibc_handler::{
-        self, GeneratedChannelIdentifierFilter, GeneratedConnectionIdentifierFilter,
-        GetChannelCall, GetChannelReturn, GetClientStateCall, GetClientStateReturn,
-        GetConnectionCall, GetConnectionReturn, GetConsensusStateCall, GetConsensusStateReturn,
-        GetHashedPacketCommitmentCall, GetHashedPacketCommitmentReturn, IBCHandler,
-        IBCHandlerEvents, SendPacketFilter,
+        self, ChannelOpenInitFilter, ChannelOpenTryFilter, ConnectionOpenInitFilter,
+        ConnectionOpenTryFilter, GetChannelCall, GetChannelReturn, GetClientStateCall,
+        GetClientStateReturn, GetConnectionCall, GetConnectionReturn, GetConsensusStateCall,
+        GetConsensusStateReturn, GetHashedPacketCommitmentCall, GetHashedPacketCommitmentReturn,
+        IBCHandler, IBCHandlerEvents, SendPacketFilter,
     },
     ics20_bank::ICS20Bank,
     ics20_transfer_bank::ICS20TransferBank,
@@ -743,7 +743,7 @@ impl<C: ChainSpec> Connect<Ethereum<C>> for Cometbls<C> {
                 .unwrap()
                 .unwrap();
 
-            let connection_id = decode_log::<GeneratedConnectionIdentifierFilter>(tx_rcp.logs).0;
+            let connection_id = decode_log::<ConnectionOpenInitFilter>(tx_rcp.logs).connection_id;
 
             tracing::info!("in connection open init, waiting for execution block to be finalized");
             self.chain
@@ -779,7 +779,7 @@ impl<C: ChainSpec> Connect<Ethereum<C>> for Cometbls<C> {
                 .unwrap()
                 .unwrap();
 
-            let connection_id = decode_log::<GeneratedConnectionIdentifierFilter>(tx_rcp.logs).0;
+            let connection_id = decode_log::<ConnectionOpenTryFilter>(tx_rcp.logs).connection_id;
 
             tracing::info!("in connection open try, waiting for execution block to be finalized");
             self.chain
@@ -919,7 +919,7 @@ impl<C: ChainSpec> Connect<Ethereum<C>> for Cometbls<C> {
                 .unwrap()
                 .unwrap();
 
-            let channel_id = decode_log::<GeneratedChannelIdentifierFilter>(tx_rcp.logs).0;
+            let channel_id = decode_log::<ChannelOpenInitFilter>(tx_rcp.logs).channel_id;
 
             self.chain
                 .wait_for_execution_block(tx_rcp.block_number.unwrap())
@@ -968,7 +968,7 @@ impl<C: ChainSpec> Connect<Ethereum<C>> for Cometbls<C> {
                 .unwrap()
                 .unwrap();
 
-            let channel_id = decode_log::<GeneratedChannelIdentifierFilter>(tx_rcp.logs).0;
+            let channel_id = decode_log::<ChannelOpenTryFilter>(tx_rcp.logs).channel_id;
 
             self.chain
                 .wait_for_execution_block(tx_rcp.block_number.unwrap())
