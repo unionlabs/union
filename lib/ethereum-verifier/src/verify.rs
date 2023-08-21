@@ -171,10 +171,14 @@ pub fn validate_light_client_update<Ctx: LightClientContext, V: BlsVerify>(
     Ok(())
 }
 
-fn verify_state(root: H256, key: &[u8], proof: &[Vec<u8>]) -> Result<Option<Vec<u8>>, Error> {
+fn verify_state(
+    root: H256,
+    key: &[u8],
+    proof: impl IntoIterator<Item = impl AsRef<[u8]>>,
+) -> Result<Option<Vec<u8>>, Error> {
     let mut db = MemoryDB::<KeccakHasher, HashKey<_>, Vec<u8>>::default();
-    proof.iter().for_each(|n| {
-        db.insert(hash_db::EMPTY_PREFIX, n);
+    proof.into_iter().for_each(|n| {
+        db.insert(hash_db::EMPTY_PREFIX, n.as_ref());
     });
 
     let root: primitive_types::H256 = root.into();
@@ -193,7 +197,7 @@ fn verify_state(root: H256, key: &[u8], proof: &[Vec<u8>]) -> Result<Option<Vec<
 pub fn verify_account_storage_root(
     root: H256,
     address: &ExecutionAddress,
-    proof: &[Vec<u8>],
+    proof: impl IntoIterator<Item = impl AsRef<[u8]>>,
     storage_root: &Hash32,
 ) -> Result<(), Error> {
     match verify_state(root, address.as_ref(), proof)? {
@@ -221,12 +225,27 @@ pub fn verify_storage_proof(
     root: H256,
     key: &[u8],
     expected_value: &[u8],
-    proof: &[Vec<u8>],
+    proof: impl IntoIterator<Item = impl AsRef<[u8]>>,
 ) -> Result<(), Error> {
     match verify_state(root, key, proof)? {
         Some(value) if value == expected_value => Ok(()),
         _ => Err(Error::ValueMismatch),
     }
+}
+
+/// Verifies against `root`, that no value is stored at `key` by using `proof`.
+///
+/// * `root`: Storage root of a contract.
+/// * `key`: Padded slot number that the `expected_value` should be stored at.
+/// * `proof`: Proof that is generated to prove the storage.
+///
+/// NOTE: You must not trust the `root` unless you verified it by calling [`verify_account_storage_root`].
+pub fn verify_storage_absence(
+    root: H256,
+    key: &[u8],
+    proof: impl IntoIterator<Item = impl AsRef<[u8]>>,
+) -> Result<bool, Error> {
+    Ok(verify_state(root, key, proof)?.is_none())
 }
 
 /// Validates a light client header.
@@ -252,7 +271,6 @@ pub fn is_valid_light_client_header<C: ChainSpec>(
     )
 }
 
-// TODO(aeryz): Don't forget to add negative cases.
 #[cfg(test)]
 mod tests {
     use unionlabs::{
@@ -279,6 +297,14 @@ mod tests {
             "f871808080a0b9f6e8d11cf768b8034f04b8b2ab45bb5ca792e1c6e3929cf8222a885631ffac808080808080808080a0f7202a06e8dc011d3123f907597f51546fe03542551af2c9c54d21ba0fbafc7280a0d1797d071b81705da736e39e75f1186c8e529ba339f7a7d12a9b4fafe33e43cc80",
             "f842a03a8c7f353aebdcd6b56a67cd1b5829681a3c6e1695282161ab3faa6c3666d4c3a09f272c7c82ac0f0adbfe4ae30614165bf3b94d49754ce8c1955cc255dcc829b5"
         ].into_iter().map(|x| hex::decode(x).unwrap()).collect();
+
+        static ref ABSENT_STORAGE_ROOT: H256 =
+            hex::decode("9e352a10c5a38c301ee06c22a90f0971b679985b2ca6dd66aca224bd7a9957c1").unwrap().try_into().unwrap();
+        static ref ABSENT_PROOF_KEY: Vec<u8> =
+            hex::decode("aae81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b420").unwrap();
+        static ref ABSENT_PROOF: Vec<Vec<u8>> = [
+            hex::decode("f838a120df6966c971051c3d54ec59162606531493a51404a002842f56009d7e5cf4a8c79594be68fc2d8249eb60bfcf0e71d5a0d2f2e292c4ed").unwrap(),
+        ].into();
     }
 
     struct Context {
@@ -586,7 +612,11 @@ mod tests {
     #[test]
     fn verify_state_works() {
         assert_eq!(
-            verify_state(VALID_STORAGE_ROOT.clone(), &VALID_PROOF_KEY, &VALID_PROOF),
+            verify_state(
+                VALID_STORAGE_ROOT.clone(),
+                &VALID_PROOF_KEY,
+                VALID_PROOF.iter()
+            ),
             Ok(Some(VALID_RLP_ENCODED_PROOF_VALUE.clone()))
         );
     }
@@ -600,7 +630,7 @@ mod tests {
         };
 
         assert!(matches!(
-            verify_state(storage_root, &VALID_PROOF_KEY, &VALID_PROOF),
+            verify_state(storage_root, &VALID_PROOF_KEY, VALID_PROOF.iter()),
             Err(Error::Trie(_))
         ));
     }
@@ -611,7 +641,7 @@ mod tests {
         proof_key[0] = u8::MAX - proof_key[0];
 
         assert_eq!(
-            verify_state(VALID_STORAGE_ROOT.clone(), &proof_key, &VALID_PROOF),
+            verify_state(VALID_STORAGE_ROOT.clone(), &proof_key, VALID_PROOF.iter()),
             Ok(None)
         );
     }
@@ -625,6 +655,30 @@ mod tests {
             verify_state(VALID_STORAGE_ROOT.clone(), &VALID_PROOF_KEY, &proof),
             Err(Error::Trie(_))
         ));
+    }
+
+    #[test]
+    fn verify_absent_storage_works() {
+        assert_eq!(
+            verify_storage_absence(
+                ABSENT_STORAGE_ROOT.clone(),
+                &ABSENT_PROOF_KEY,
+                ABSENT_PROOF.iter()
+            ),
+            Ok(true)
+        )
+    }
+
+    #[test]
+    fn verify_absent_storage_returns_false_when_storage_exists() {
+        assert_eq!(
+            verify_storage_absence(
+                VALID_STORAGE_ROOT.clone(),
+                &VALID_PROOF_KEY,
+                VALID_PROOF.iter()
+            ),
+            Ok(false)
+        );
     }
 
     #[test]
@@ -656,7 +710,7 @@ mod tests {
                 VALID_STORAGE_ROOT.clone(),
                 &VALID_PROOF_KEY,
                 &VALID_RLP_ENCODED_PROOF_VALUE,
-                &VALID_PROOF
+                VALID_PROOF.iter()
             ),
             Ok(())
         );
@@ -672,7 +726,7 @@ mod tests {
                 VALID_STORAGE_ROOT.clone(),
                 &VALID_PROOF_KEY,
                 &proof_value,
-                &VALID_PROOF
+                VALID_PROOF.iter()
             ),
             Err(Error::ValueMismatch)
         );

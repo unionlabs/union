@@ -33,6 +33,7 @@ ethereum-verifier = { path = "../../lib/ethereum-verifier", default-features = f
 base64 = "0.21"
 serde_json = "1"
 protos = { path = "../../generated/rust", default-features = false, features = ["proto_full", "std"] }
+hex-literal = "0.4.1"
 
 [features]
 default = ["minimal"]

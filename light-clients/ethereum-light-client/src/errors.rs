@@ -76,6 +76,9 @@ pub enum Error {
     #[error("Proof is empty")]
     EmptyProof,
 
+    #[error("Counterparty storage not nil")]
+    CounterpartyStorageNotNil,
+
     #[error("Batching proofs are not supported")]
     BatchingProofsNotSupported,
 
