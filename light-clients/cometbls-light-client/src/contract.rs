@@ -102,7 +102,7 @@ pub fn update_header(mut deps: DepsMut, env: Env, header: Header) -> Result<Cont
         ),
     )?;
 
-    let untrusted_height_number = header.signed_header.commit.height as u64;
+    let untrusted_height_number = header.signed_header.commit.height.inner() as u64;
     let trusted_height_number = header.trusted_height.revision_number;
 
     if untrusted_height_number <= trusted_height_number {
@@ -114,7 +114,7 @@ pub fn update_header(mut deps: DepsMut, env: Env, header: Header) -> Result<Cont
     let trusted_timestamp = consensus_state.timestamp;
     let untrusted_timestamp = header.signed_header.header.time.seconds;
 
-    if untrusted_timestamp as u64 <= trusted_timestamp {
+    if untrusted_timestamp.inner() as u64 <= trusted_timestamp {
         return Err(Error::InvalidHeader(
             "header time <= consensus state time".into(),
         ));
@@ -134,9 +134,9 @@ pub fn update_header(mut deps: DepsMut, env: Env, header: Header) -> Result<Cont
         return Err(Error::InvalidHeader("header expired".into()));
     }
 
-    let max_clock_drift = current_time.seconds + client_state.data.max_clock_drift.seconds;
+    let max_clock_drift = current_time.seconds.inner() + client_state.data.max_clock_drift.seconds;
 
-    if untrusted_timestamp >= max_clock_drift {
+    if untrusted_timestamp.inner() >= max_clock_drift {
         return Err(Error::InvalidHeader("header back to the future".into()));
     }
 
@@ -145,7 +145,7 @@ pub fn update_header(mut deps: DepsMut, env: Env, header: Header) -> Result<Cont
     let untrusted_validators_hash = if untrusted_height_number == trusted_height_number + 1 {
         trusted_validators_hash.clone()
     } else {
-        header.untrusted_validator_set_root.0.to_vec()
+        header.untrusted_validator_set_root
     };
 
     let expected_block_hash = header
@@ -168,8 +168,8 @@ pub fn update_header(mut deps: DepsMut, env: Env, header: Header) -> Result<Cont
     .encode_length_delimited_to_vec();
 
     if !verify_zkp(
-        &trusted_validators_hash,
-        &untrusted_validators_hash,
+        &trusted_validators_hash.0,
+        &untrusted_validators_hash.0,
         &signed_vote,
         &header.zero_knowledge_proof,
     ) {
@@ -178,7 +178,7 @@ pub fn update_header(mut deps: DepsMut, env: Env, header: Header) -> Result<Cont
 
     let untrusted_height = Height::new(
         header.trusted_height.revision_number,
-        header.signed_header.commit.height as u64,
+        header.signed_header.commit.height.inner() as u64,
     );
 
     if untrusted_height > client_state.latest_height {
@@ -186,11 +186,11 @@ pub fn update_header(mut deps: DepsMut, env: Env, header: Header) -> Result<Cont
     }
 
     consensus_state.data.root = MerkleRoot {
-        hash: header.signed_header.header.app_hash.0.to_vec(),
+        hash: header.signed_header.header.app_hash,
     };
 
     consensus_state.data.next_validators_hash = untrusted_validators_hash;
-    consensus_state.timestamp = header.signed_header.header.time.seconds as u64;
+    consensus_state.timestamp = header.signed_header.header.time.seconds.inner() as u64;
 
     save_wasm_client_state(deps.branch(), client_state);
     save_consensus_state(deps, consensus_state, untrusted_height)?;
@@ -205,8 +205,8 @@ fn canonical_vote(
 ) -> protos::tendermint::types::CanonicalVote {
     protos::tendermint::types::CanonicalVote {
         r#type: SignedMsgType::Precommit as i32,
-        height: commit.height as i64,
-        round: commit.round as i64,
+        height: commit.height.inner(),
+        round: commit.round.inner() as i64,
         // TODO(aeryz): Implement BlockId to proto::CanonicalBlockId
         block_id: Some(CanonicalBlockId {
             hash: expected_block_hash.to_vec(),
