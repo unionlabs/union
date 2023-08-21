@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use super::timestamp::Timestamp;
 
-#[derive(Debug, Clone, PartialEq, PartialOrd, Serialize, Deserialize)]
+#[derive(Debug, Copy, Clone, PartialEq, PartialOrd, Serialize, Deserialize)]
 pub struct Duration {
     pub seconds: i64,
     pub nanos: i32,
@@ -24,8 +24,8 @@ impl Add for Duration {
 impl From<Timestamp> for Duration {
     fn from(value: Timestamp) -> Self {
         Self {
-            seconds: value.seconds,
-            nanos: value.nanos,
+            seconds: value.seconds.inner(),
+            nanos: value.nanos.inner(),
         }
     }
 }

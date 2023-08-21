@@ -114,16 +114,8 @@ pub fn save_consensus_state(
     wasm_consensus_state: wasm::consensus_state::ConsensusState<
         cometbls::consensus_state::ConsensusState,
     >,
-    // new_consensus_state: ethereum::consensus_state::ConsensusState,
-    execution_height: u64,
+    height: Height,
 ) -> Result<(), Error> {
-    let height = Height {
-        revision_number: 0,
-        revision_height: execution_height,
-    };
-    // REVIEW: Is the timestamp set properly somewhere else?
-    // wasm_consensus_state.timestamp = new_consensus_state.timestamp;
-    // wasm_consensus_state.data = new_consensus_state;
     save_wasm_consensus_state(deps, wasm_consensus_state, &height);
     Ok(())
 }

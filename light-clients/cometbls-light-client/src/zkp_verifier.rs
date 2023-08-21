@@ -89,7 +89,7 @@ pub fn verify_zkp(
     true
 }
 
-fn verify_proof(a: [U256; 2], b: [[U256; 2]; 2], c: [U256; 2], input: [U256; 9]) -> bool {
+fn verify_proof(_a: [U256; 2], _b: [[U256; 2]; 2], _c: [U256; 2], _input: [U256; 9]) -> bool {
     todo!()
 }
 

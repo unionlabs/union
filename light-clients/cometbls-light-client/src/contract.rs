@@ -1,16 +1,12 @@
 use cosmwasm_std::{
     entry_point, to_binary, Binary, Deps, DepsMut, Env, MessageInfo, QueryResponse, Response,
-    StdError, Uint256,
+    StdError,
 };
 use prost::Message;
-use protos::{
-    google::protobuf::StringValue,
-    tendermint::types::{CanonicalBlockId, CanonicalPartSetHeader, SignedMsgType},
-};
-use rs_merkle::{algorithms::Sha256, Hasher, MerkleTree};
+use protos::tendermint::types::{CanonicalBlockId, CanonicalPartSetHeader, SignedMsgType};
 use unionlabs::{
     ibc::{
-        core::client::height::Height,
+        core::{client::height::Height, commitment::merkle_root::MerkleRoot},
         google::protobuf::{duration::Duration, timestamp::Timestamp},
         lightclients::cometbls::header::Header,
     },
@@ -24,7 +20,9 @@ use wasm_light_client_types::msg::{
 use crate::{
     errors::Error,
     msg::{ExecuteMsg, InstantiateMsg, QueryMsg},
-    state::{read_client_state, read_consensus_state},
+    state::{
+        read_client_state, read_consensus_state, save_consensus_state, save_wasm_client_state,
+    },
     zkp_verifier::verify_zkp,
 };
 
@@ -96,8 +94,8 @@ pub fn verify_membership(
 }
 
 pub fn update_header(mut deps: DepsMut, env: Env, header: Header) -> Result<ContractResult, Error> {
-    let client_state = read_client_state(deps.as_ref())?;
-    let consensus_state = read_consensus_state(deps.as_ref(), &header.trusted_height)?.ok_or(
+    let mut client_state = read_client_state(deps.as_ref())?;
+    let mut consensus_state = read_consensus_state(deps.as_ref(), &header.trusted_height)?.ok_or(
         Error::ConsensusStateNotFound(
             header.trusted_height.revision_number,
             header.trusted_height.revision_height,
@@ -136,7 +134,7 @@ pub fn update_header(mut deps: DepsMut, env: Env, header: Header) -> Result<Cont
         return Err(Error::InvalidHeader("header back to the future".into()));
     }
 
-    let trusted_validators_hash = consensus_state.data.next_validators_hash;
+    let trusted_validators_hash = consensus_state.data.next_validators_hash.clone();
 
     let untrusted_validators_hash = if untrusted_height_number == trusted_height_number + 1 {
         trusted_validators_hash.clone()
@@ -144,7 +142,11 @@ pub fn update_header(mut deps: DepsMut, env: Env, header: Header) -> Result<Cont
         header.untrusted_validator_set_root.0.to_vec()
     };
 
-    let expected_block_hash = calculate_merkle_root(&header.signed_header.header);
+    let expected_block_hash = header
+        .signed_header
+        .header
+        .calculate_merkle_root()
+        .ok_or(Error::UnableToCalculateMerkleRoot)?;
 
     if header.signed_header.commit.block_id.hash.0.as_slice() != expected_block_hash {
         return Err(Error::InvalidHeader(
@@ -153,8 +155,8 @@ pub fn update_header(mut deps: DepsMut, env: Env, header: Header) -> Result<Cont
     }
 
     let signed_vote = canonical_vote(
-        header.signed_header.commit,
-        header.signed_header.header.chain_id,
+        &header.signed_header.commit,
+        header.signed_header.header.chain_id.clone(),
         expected_block_hash,
     )
     .encode_length_delimited_to_vec();
@@ -168,12 +170,30 @@ pub fn update_header(mut deps: DepsMut, env: Env, header: Header) -> Result<Cont
         return Err(Error::InvalidZKP);
     }
 
-    todo!()
+    let untrusted_height = Height::new(
+        header.trusted_height.revision_number,
+        header.signed_header.commit.height as u64,
+    );
+
+    if untrusted_height > client_state.latest_height {
+        client_state.latest_height = untrusted_height;
+    }
+
+    consensus_state.data.root = MerkleRoot {
+        hash: header.signed_header.header.app_hash.0.to_vec(),
+    };
+
+    consensus_state.data.next_validators_hash = untrusted_validators_hash;
+    consensus_state.timestamp = header.signed_header.header.time.seconds as u64;
+
+    save_wasm_client_state(deps.branch(), client_state);
+    save_consensus_state(deps, consensus_state, untrusted_height)?;
+
+    Ok(ContractResult::valid(None))
 }
 
-// TODO(aeryz): Move this to `unionlabs`
 fn canonical_vote(
-    commit: Commit,
+    commit: &Commit,
     chain_id: String,
     expected_block_hash: [u8; 32],
 ) -> protos::tendermint::types::CanonicalVote {
@@ -191,57 +211,6 @@ fn canonical_vote(
         }),
         chain_id,
     }
-}
-
-// TODO(aeryz): Move to `unionlabs`? Or utils mod in this crate?
-trait CdcEncode {
-    fn cdc_encode(self) -> Vec<u8>;
-}
-
-impl CdcEncode for String {
-    fn cdc_encode(self) -> Vec<u8> {
-        protos::google::protobuf::StringValue { value: self }.encode_to_vec()
-    }
-}
-
-impl CdcEncode for i64 {
-    fn cdc_encode(self) -> Vec<u8> {
-        protos::google::protobuf::Int64Value { value: self }.encode_to_vec()
-    }
-}
-
-impl CdcEncode for Vec<u8> {
-    fn cdc_encode(self) -> Vec<u8> {
-        protos::google::protobuf::BytesValue { value: self }.encode_to_vec()
-    }
-}
-
-// TODO(aeryz): Move to `unionlabs` or `utils`?
-fn calculate_merkle_root(header: &unionlabs::tendermint::types::header::Header) -> [u8; 32] {
-    let proto_version: protos::tendermint::version::Consensus = header.version.into();
-    let proto_time: protos::google::protobuf::Timestamp = header.time.into();
-    let proto_block_id: protos::tendermint::types::BlockId = header.last_block_id.clone().into();
-
-    let leaves = [
-        Sha256::hash(proto_version.encode_to_vec().as_slice()),
-        Sha256::hash(&header.chain_id.clone().cdc_encode()),
-        Sha256::hash(&(header.height as i64).cdc_encode()),
-        Sha256::hash(&proto_time.encode_to_vec()),
-        Sha256::hash(&proto_block_id.encode_to_vec()),
-        Sha256::hash(&header.last_commit_hash.0.to_vec().cdc_encode()),
-        Sha256::hash(&header.data_hash.0.to_vec().cdc_encode()),
-        Sha256::hash(&header.validators_hash.0.to_vec().cdc_encode()),
-        Sha256::hash(&header.next_validators_hash.0.to_vec().cdc_encode()),
-        Sha256::hash(&header.consensus_hash.0.to_vec().cdc_encode()),
-        Sha256::hash(&header.app_hash.0.to_vec().cdc_encode()),
-        Sha256::hash(&header.last_results_hash.0.to_vec().cdc_encode()),
-        Sha256::hash(&header.evidence_hash.0.to_vec().cdc_encode()),
-        Sha256::hash(&header.proposer_address.0.to_vec().cdc_encode()),
-    ];
-
-    let merkle_tree: MerkleTree<Sha256> = MerkleTree::from_leaves(&leaves);
-
-    merkle_tree.root().unwrap()
 }
 
 #[entry_point]

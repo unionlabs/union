@@ -22,7 +22,6 @@ serde-json-wasm = { version = "*", default-features = false }
 sha3 = { version = "0.10.8", default-features = false }
 thiserror = { version = "1.0.26", default-features = false }
 tiny-keccak = { version = "2.0.2", default-features = false, features = ["keccak"] }
-rs_merkle = "1.4.1"
 protos = { path = "../../generated/rust", default-features = false, features = ["proto_full", "std"] }
 ethabi = { version = "18.0.0", default-features = false }
 lazy_static = "1.4.0"

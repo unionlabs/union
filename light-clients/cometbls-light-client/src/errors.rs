@@ -39,6 +39,9 @@ pub enum Error {
     #[error("Invalid sync committee")]
     InvalidSyncCommittee,
 
+    #[error("Merkle root cannot be calculated")]
+    UnableToCalculateMerkleRoot,
+
     #[error("No next sync committee")]
     NoNextSyncCommittee,
 

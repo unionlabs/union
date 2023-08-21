@@ -27,19 +27,26 @@ impl TypeUrl for protos::google::protobuf::Timestamp {
 
 #[allow(clippy::cast_possible_wrap)]
 #[allow(clippy::cast_possible_truncation)]
-impl From<cosmwasm_std::Timestamp> for Timestamp {
-    fn from(value: cosmwasm_std::Timestamp) -> Self {
-        Self {
-            seconds: value.seconds() as i64,
-            nanos: value.nanos() as i32,
-        }
+impl TryFrom<cosmwasm_std::Timestamp> for Timestamp {
+    type Error = TryFromTimestampError;
+
+    fn try_from(value: cosmwasm_std::Timestamp) -> Result<Self, Self::Error> {
+        Ok(Self {
+            seconds: (value.seconds() as i64)
+                .try_into()
+                .map_err(TryFromTimestampError::Seconds)?,
+            nanos: (value.nanos() as i32)
+                .try_into()
+                .map_err(TryFromTimestampError::Nanos)?,
+        })
     }
 }
 
 #[allow(clippy::cast_sign_loss)]
 impl From<Timestamp> for cosmwasm_std::Timestamp {
     fn from(value: Timestamp) -> Self {
-        cosmwasm_std::Timestamp::from_seconds(value.seconds as u64).plus_nanos(value.nanos as u64)
+        cosmwasm_std::Timestamp::from_seconds(value.seconds.inner() as u64)
+            .plus_nanos(value.nanos.inner() as u64)
     }
 }
 
