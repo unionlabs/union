@@ -23,13 +23,16 @@ abstract contract IBCPacketHandler is Context, ModuleManager {
         uint64 timeoutTimestamp,
         bytes data
     );
+
     event RecvPacket(IbcCoreChannelV1Packet.Data packet);
+
     event WriteAcknowledgement(
         string destinationPortId,
         string destinationChannel,
         uint64 sequence,
         bytes acknowledgement
     );
+
     event AcknowledgePacket(
         IbcCoreChannelV1Packet.Data packet,
         bytes acknowledgement

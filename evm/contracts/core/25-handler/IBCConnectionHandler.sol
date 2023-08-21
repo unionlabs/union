@@ -13,6 +13,11 @@ abstract contract IBCConnectionHandler {
 
     event GeneratedConnectionIdentifier(string);
 
+    event ConnectionOpenInit(string indexed connectionId);
+    event ConnectionOpenTry(string indexed connectionId);
+    event ConnectionOpenAck(string indexed connectionId);
+    event ConnectionOpenConfirm(string indexed connectionId);
+
     constructor(address ibcConnection) {
         ibcConnectionAddress = ibcConnection;
     }
@@ -30,7 +35,9 @@ abstract contract IBCConnectionHandler {
             revert(_getRevertMsg(res));
         }
         connectionId = abi.decode(res, (string));
-        emit GeneratedConnectionIdentifier(connectionId);
+
+        emit ConnectionOpenInit(connectionId);
+
         return connectionId;
     }
 
@@ -47,7 +54,9 @@ abstract contract IBCConnectionHandler {
             revert(_getRevertMsg(res));
         }
         connectionId = abi.decode(res, (string));
-        emit GeneratedConnectionIdentifier(connectionId);
+
+        emit ConnectionOpenTry(connectionId);
+
         return connectionId;
     }
 
@@ -63,6 +72,8 @@ abstract contract IBCConnectionHandler {
         if (!success) {
             revert(_getRevertMsg(res));
         }
+
+        emit ConnectionOpenAck(msg_.connectionId);
     }
 
     function connectionOpenConfirm(
@@ -77,5 +88,7 @@ abstract contract IBCConnectionHandler {
         if (!success) {
             revert(_getRevertMsg(res));
         }
+
+        emit ConnectionOpenConfirm(msg_.connectionId);
     }
 }
