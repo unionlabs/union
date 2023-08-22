@@ -9,8 +9,8 @@ ssz = { workspace = true }
 ssz_types = { workspace = true }
 tree_hash = { workspace = true }
 
-serde-utils = { path = "../serde-utils" }
-unionlabs = { path = "../unionlabs", default-features = false }
+serde-utils.workspace = true
+unionlabs = { workspace = true, default-features = false }
 
 bytes = { version = "1.4.0", default-features = false }
 hash-db = { version = "0.16.0", default-features = false }

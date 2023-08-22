@@ -1,15 +1,21 @@
 { self, ... }: {
   perSystem = { self', pkgs, system, config, inputs', crane, stdenv, ... }:
     let
-      attrs = crane.commonAttrs // {
-        inherit (crane) cargoArtifacts;
-        cargoExtraArgs = "-p unionvisor";
-      } // (crane.lib.crateNameFromCargoToml { cargoToml = ./Cargo.toml; });
-
-      unionvisor = crane.lib.buildPackage attrs;
-
-
       swapDotsWithUnderscores = pkgs.lib.replaceStrings [ "." ] [ "_" ];
+
+      unionvisorAll = crane.buildWorkspaceMember {
+        crateDirFromRoot = "unionvisor";
+        additionalTestSrcFilter = path: _type: pkgs.lib.hasPrefix "unionvisor/src/testdata/" path;
+        cargoTestExtraAttrs = {
+          partitions = 1;
+          partitionType = "count";
+          preConfigureHooks = [
+            "cp -r ${self'.packages.uniond}/bin/uniond $PWD/unionvisor/src/testdata/test_init_cmd/bundle/bins/genesis\n"
+            "echo 'patching testdata'\n"
+            "patchShebangs $PWD/unionvisor/src/testdata\n"
+          ];
+        };
+      };
 
       mkBundle = name: versions: meta: pkgs.linkFarm "union-bundle-${name}" ([
         {
@@ -18,7 +24,7 @@
         }
         {
           name = "unionvisor";
-          path = "${unionvisor}/bin/unionvisor";
+          path = "${unionvisorAll.packages.unionvisor}/bin/unionvisor";
         }
       ] ++ map
         (version: {
@@ -28,38 +34,15 @@
         versions);
     in
     {
+      inherit (unionvisorAll) checks;
       packages = {
-        inherit unionvisor;
+        inherit (unionvisorAll.packages) unionvisor;
 
         bundle-testnet = mkBundle "testnet" [ "v0.8.0" ] {
           binary_name = "uniond";
           versions_directory = "versions";
           fallback_version = "v0.8.0";
         };
-      };
-
-      checks = crane.mkChecks "unionvisor" {
-        clippy = crane.lib.cargoClippy ((builtins.trace attrs attrs) // {
-          cargoClippyExtraArgs = "-- --deny warnings --no-deps";
-        });
-
-        tests = crane.lib.cargoNextest (attrs // {
-          inherit (crane) cargoArtifacts;
-          partitions = 1;
-          partitionType = "count";
-          preConfigureHooks = [
-            ''cp ${self'.packages.uniond}/bin/uniond $PWD/unionvisor/src/testdata/test_init_cmd/bundle/bins/genesis && \
-             echo "patching testdata" && \
-             source ${pkgs.stdenv}/setup && patchShebangs $PWD/unionvisor/src/testdata
-            ''
-          ];
-          buildPhase = ''
-            cargo nextest run -p unionvisor
-          '';
-          installPhase = ''
-            mkdir -p $out
-          '';
-        });
       };
     };
 

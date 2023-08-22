@@ -1,26 +1,19 @@
 { ... }: {
-  perSystem = { crane, lib, ... }:
+  perSystem = { crane, lib, dbg, ... }:
     let
-      attrs = crane.commonAttrs // {
-        inherit (crane) cargoArtifacts;
-        cargoExtraArgs = "-p ethereum-light-client --features minimal";
-      } // (crane.lib.crateNameFromCargoToml { cargoToml = ./Cargo.toml; });
+      mkEthLc = chain-spec: crane.buildWasmContract {
+        crateDirFromRoot = "light-clients/ethereum-light-client";
+        features = [ chain-spec ];
+        additionalTestSrcFilter = path: _:
+          (lib.hasPrefix "light-clients/ethereum-light-client/src/test" path)
+          && (lib.strings.hasSuffix ".json" path);
+      };
+
+      minimal = mkEthLc "minimal";
+      mainnet = mkEthLc "mainnet";
     in
     {
-      packages =
-        lib.listToAttrs (map
-          (config: lib.nameValuePair "ethereum-light-client-${config}" (crane.buildWasmContract {
-            cargoToml = ./Cargo.toml;
-            cargoLock = ../../Cargo.lock;
-            features = [ config ];
-          })) [ "mainnet" "minimal" ]);
-
-      checks = crane.mkChecks "ethereum-light-client" {
-        clippy = crane.lib.cargoClippy (attrs // {
-          cargoClippyExtraArgs = "-- --deny warnings --no-deps";
-        });
-
-        tests = crane.lib.cargoNextest attrs;
-      };
+      packages = minimal.packages // mainnet.packages;
+      checks = minimal.checks // mainnet.checks;
     };
 }

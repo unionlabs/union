@@ -5,7 +5,7 @@
 # - https://github.com/cosmos/cosmos-sdk/blob/bf17fec0e7b83f98be8eba220f1800bd2d7d5011/scripts/protocgen.sh
 #
 { ... }: {
-  perSystem = { pkgs, self', inputs', proto, ibc-go, ensureAtRepositoryRoot, ... }: {
+  perSystem = { pkgs, self', proto, ibc-go, ensureAtRepositoryRoot, ... }: {
     packages =
       let
         grpc-gateway = pkgs.buildGoModule {

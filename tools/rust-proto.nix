@@ -1,5 +1,5 @@
 { ... }: {
-  perSystem = { self', pkgs, proto, crane, system, inputs', config, ensureAtRepositoryRoot, ... }:
+  perSystem = { self', pkgs, proto, crane, system, config, ensureAtRepositoryRoot, ... }:
     let
       protoc-gen-tonic = crane.lib.buildPackage {
         pname = "protoc-gen-tonic";
@@ -28,14 +28,13 @@
               serde = { version = "1.0"; default-features = false; features = ["derive"]; optional = true; };
               tonic = { version = "0.8"; features = [ "gzip" ]; optional = true; };
               schemars = { version = "0.8.3"; default-features = false; optional = true; };
-              serde-utils = { path = "../../lib/serde-utils"; };
+              serde-utils = { workspace = true; };
             };
             features = {
               default = [ "proto_full" "std" ];
               std = [ "prost/std" "serde/std" ];
               eth-abi = [ "ethers" "std" ];
               client = [ "tonic" ];
-              server = [ "tonic" ];
               json-schema = ["schemars"];
               # nix attrsets don't preserve order, use this to replace with the insertion point (see command below)
               PROTOC_INSERTION_POINT = 1;
@@ -266,8 +265,6 @@
             )
             all-protos-to-build
         ));
-
-      # dbg = value: builtins.trace (pkgs.lib.generators.toPretty { } value) value;
 
       rust-proto = pkgs.stdenv.mkDerivation {
         name = "rust-proto";

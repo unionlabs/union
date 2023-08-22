@@ -95,11 +95,13 @@
       perSystem = { config, self', inputs', pkgs, treefmt, rust, crane, system, lib, ... }:
         let
           mkUnpack = import ./tools/mkUnpack.nix { inherit pkgs; };
+
+          dbg = value: builtins.trace (pkgs.lib.generators.toPretty { } value) value;
         in
         {
           _module = {
             args = {
-              inherit nixpkgs;
+              inherit nixpkgs dbg;
 
               pkgs = import nixpkgs {
                 inherit system;
@@ -236,27 +238,25 @@
           devShells =
             let
               baseShell = {
-                buildInputs = [ rust.nightly ] ++
-                  (with pkgs; [
-                    buf
-                    bacon
-                    cargo-nextest
-                    go_1_20
-                    gopls
-                    go-tools
-                    gotools
-                    jq
-                    marksman
-                    nil
-                    nixfmt
-                    nodejs
-                    openssl
-                    pkg-config
-                    protobuf
-                    solc
-                    yarn
-                    yq
-                  ]);
+                buildInputs = [ rust.toolchains.dev ] ++ (with pkgs; [
+                  bacon
+                  cargo-nextest
+                  go_1_20
+                  gopls
+                  go-tools
+                  gotools
+                  jq
+                  marksman
+                  nil
+                  nixfmt
+                  nodejs
+                  openssl
+                  pkg-config
+                  protobuf
+                  solc
+                  yarn
+                  yq
+                ]);
                 nativeBuildInputs = [
                   config.treefmt.build.wrapper
                 ] ++ lib.attrsets.attrValues config.treefmt.build.programs;
@@ -299,7 +299,7 @@
               programs.gofmt.enable = true;
               programs.rustfmt = {
                 enable = true;
-                package = rust.nightly;
+                package = rust.toolchains.dev;
               };
               programs.sort = {
                 enable = true;
