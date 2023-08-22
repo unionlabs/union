@@ -24,33 +24,34 @@ pub struct Proof {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ClientState {
-    #[prost(bytes = "vec", tag = "1")]
+    #[prost(string, tag = "1")]
+    pub chain_id: ::prost::alloc::string::String,
+    #[prost(bytes = "vec", tag = "2")]
     pub genesis_validators_root: ::prost::alloc::vec::Vec<u8>,
-    #[prost(uint64, tag = "2")]
-    pub min_sync_committee_participants: u64,
     #[prost(uint64, tag = "3")]
+    pub min_sync_committee_participants: u64,
+    #[prost(uint64, tag = "4")]
     pub genesis_time: u64,
-    #[prost(message, optional, tag = "4")]
+    #[prost(message, optional, tag = "5")]
     pub fork_parameters: ::core::option::Option<ForkParameters>,
-    #[prost(uint64, tag = "5")]
-    pub seconds_per_slot: u64,
     #[prost(uint64, tag = "6")]
-    pub slots_per_epoch: u64,
+    pub seconds_per_slot: u64,
     #[prost(uint64, tag = "7")]
+    pub slots_per_epoch: u64,
+    #[prost(uint64, tag = "8")]
     pub epochs_per_sync_committee_period: u64,
-    #[prost(message, optional, tag = "8")]
+    #[prost(message, optional, tag = "9")]
     pub trust_level: ::core::option::Option<
         super::super::super::super::super::ibc::lightclients::tendermint::v1::Fraction,
     >,
-    #[prost(uint64, tag = "9")]
-    pub trusting_period: u64,
-    /// FIXME: isn't it already defined in ibc.lightclients.wasm.v1?
     #[prost(uint64, tag = "10")]
+    pub trusting_period: u64,
+    #[prost(uint64, tag = "11")]
     pub latest_slot: u64,
-    #[prost(message, optional, tag = "11")]
+    #[prost(message, optional, tag = "12")]
     pub frozen_height:
         ::core::option::Option<super::super::super::super::super::ibc::core::client::v1::Height>,
-    #[prost(uint64, tag = "12")]
+    #[prost(uint64, tag = "13")]
     pub counterparty_commitment_slot: u64,
 }
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]

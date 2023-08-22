@@ -1,5 +1,5 @@
 { ... }: {
-  perSystem = { self', inputs', pkgs, proto, nix-filter, ... }:
+  perSystem = { self', pkgs, proto, nix-filter, ... }:
     let
       solidity-stringutils = pkgs.fetchFromGitHub {
         owner = "Arachnid";
@@ -222,26 +222,27 @@
             in
             ''
               plugindir="${solidity-protobuf}/protobuf-solidity/src/protoc"
-              find ${proto.ibcgo}/proto -name "$1" |\
-              while read -r file; do
-                echo "Generating $file"
-                protoc \
-                  ${protoIncludes} \
-                 -I"$plugindir/include" \
-                 --plugin="protoc-gen-sol=$plugindir/plugin/gen_sol.py" \
-                 --sol_out=gen_runtime="ProtoBufRuntime.sol&solc_version=0.8.18:$2" \
-                  "$file"
-              done
-              find ${proto.cometbls}/proto -type f -regex ".*canonical.proto" |\
-              while read -r file; do
-                echo "Generating $file"
-                protoc \
-                  ${protoIncludes} \
-                 -I"$plugindir/include" \
-                 --plugin="protoc-gen-sol=$plugindir/plugin/gen_sol.py" \
-                 --sol_out=gen_runtime="ProtoBufRuntime.sol&solc_version=0.8.18:$2" \
-                  "$file"
-              done
+              # find ${proto.ibcgo}/proto -name "$1" |\
+              # while read -r file; do
+              #   echo "Generating $file"
+              #   protoc \
+              #     ${protoIncludes} \
+              #    -I"$plugindir/include" \
+              #    --plugin="protoc-gen-sol=$plugindir/plugin/gen_sol.py" \
+              #    --sol_out=gen_runtime="ProtoBufRuntime.sol&solc_version=0.8.18:$2" \
+              #     "$file"
+              # done
+              # find ${proto.cometbls}/proto -type f -regex ".*canonical.proto" |\
+              # while read -r file; do
+              #   echo "Generating $file"
+              #   protoc \
+              #     ${protoIncludes} \
+              #    -I"$plugindir/include" \
+              #    --plugin="protoc-gen-sol=$plugindir/plugin/gen_sol.py" \
+              #    --sol_out=gen_runtime="ProtoBufRuntime.sol&solc_version=0.8.18:$2" \
+              #     "$file"
+              # done
+
               find ${proto.uniond} -type f -regex ".*ibc.*cometbls.*proto" |\
               while read -r file; do
                 echo "Generating $file"

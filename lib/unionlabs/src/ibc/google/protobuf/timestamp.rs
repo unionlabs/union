@@ -1,3 +1,5 @@
+use core::num::TryFromIntError;
+
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -8,7 +10,7 @@ use crate::{
 /// See <https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&gist=2a4088bba6218db02520968c4a4aee87>
 const TS_SECONDS_MAX: i64 = 253_402_300_799;
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Timestamp {
     /// As per the proto docs: "Must be from 0001-01-01T00:00:00Z to
     /// 9999-12-31T23:59:59Z inclusive."
@@ -23,6 +25,53 @@ impl Proto for Timestamp {
 
 impl TypeUrl for protos::google::protobuf::Timestamp {
     const TYPE_URL: &'static str = "/google.protobuf.Timestamp";
+}
+
+#[derive(Debug)]
+pub enum TryFromCosmwasmTimestampError {
+    Seconds(BoundedIntError<i64>),
+    Nanos(BoundedIntError<i32>),
+    IntCast(TryFromIntError),
+}
+
+impl TryFrom<cosmwasm_std::Timestamp> for Timestamp {
+    type Error = TryFromCosmwasmTimestampError;
+
+    fn try_from(value: cosmwasm_std::Timestamp) -> Result<Self, Self::Error> {
+        Ok(Self {
+            seconds: TryInto::<i64>::try_into(value.seconds())
+                .map_err(TryFromCosmwasmTimestampError::IntCast)?
+                .try_into()
+                .map_err(TryFromCosmwasmTimestampError::Seconds)?,
+            nanos: TryInto::<i32>::try_into(value.nanos())
+                .map_err(TryFromCosmwasmTimestampError::IntCast)?
+                .try_into()
+                .map_err(TryFromCosmwasmTimestampError::Nanos)?,
+        })
+    }
+}
+
+impl From<Timestamp> for cosmwasm_std::Timestamp {
+    fn from(value: Timestamp) -> Self {
+        // REVIEW(aeryz): I always expect timestamp to be non-negative integer, that's
+        // why `unwrap`ping seems like the right way to go, please give me a heads up
+        // if there is an exception and we should convert this implementation to
+        // `TryFrom` instead.
+        cosmwasm_std::Timestamp::from_seconds(
+            value
+                .seconds
+                .inner()
+                .try_into()
+                .expect("impossible since this is always inbounds"),
+        )
+        .plus_nanos(
+            value
+                .nanos
+                .inner()
+                .try_into()
+                .expect("impossible since this is always inbounds"),
+        )
+    }
 }
 
 impl From<Timestamp> for protos::google::protobuf::Timestamp {

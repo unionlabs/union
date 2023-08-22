@@ -1,6 +1,10 @@
 use serde::{Deserialize, Serialize};
 
-use crate::tendermint::types::{commit::Commit, header::Header};
+use crate::{
+    errors::MissingField,
+    tendermint::types::{commit::Commit, header::Header},
+    Proto, TryFromProtoErrorOf, TypeUrl,
+};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct SignedHeader {
@@ -44,6 +48,36 @@ impl TryFrom<contracts::glue::TendermintTypesSignedHeaderData> for SignedHeader 
     }
 }
 
+#[derive(Debug)]
+pub enum TryFromSignedHeaderError {
+    MissingField(MissingField),
+    Header(TryFromProtoErrorOf<Header>),
+    Commit(TryFromProtoErrorOf<Commit>),
+}
+
+impl TryFrom<protos::tendermint::types::SignedHeader> for SignedHeader {
+    type Error = TryFromSignedHeaderError;
+
+    fn try_from(value: protos::tendermint::types::SignedHeader) -> Result<Self, Self::Error> {
+        Ok(Self {
+            header: value
+                .header
+                .ok_or(TryFromSignedHeaderError::MissingField(MissingField(
+                    "header",
+                )))?
+                .try_into()
+                .map_err(TryFromSignedHeaderError::Header)?,
+            commit: value
+                .commit
+                .ok_or(TryFromSignedHeaderError::MissingField(MissingField(
+                    "commit",
+                )))?
+                .try_into()
+                .map_err(TryFromSignedHeaderError::Commit)?,
+        })
+    }
+}
+
 #[cfg(feature = "ethabi")]
 impl From<SignedHeader> for contracts::glue::TendermintTypesSignedHeaderData {
     fn from(value: SignedHeader) -> Self {
@@ -52,4 +86,12 @@ impl From<SignedHeader> for contracts::glue::TendermintTypesSignedHeaderData {
             commit: value.commit.into(),
         }
     }
+}
+
+impl Proto for SignedHeader {
+    type Proto = protos::tendermint::types::SignedHeader;
+}
+
+impl TypeUrl for protos::tendermint::types::SignedHeader {
+    const TYPE_URL: &'static str = "/tendermint.types.SignedHeader";
 }

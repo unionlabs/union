@@ -1,5 +1,5 @@
 { ... }: {
-  perSystem = { devnetConfig, pkgs, self', inputs', cw-instantiate2-salt, ... }:
+  perSystem = { devnetConfig, pkgs, self', cw-instantiate2-salt, ... }:
     let
       uniond = pkgs.lib.getExe self'.packages.uniond;
 

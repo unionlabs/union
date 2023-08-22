@@ -14,8 +14,11 @@ pub struct MsgConnectionOpenAck<ClientState> {
     pub version: Version,
     pub client_state: ClientState,
     pub proof_height: Height,
+    #[serde(with = "::serde_utils::hex_string")]
     pub proof_try: Vec<u8>,
+    #[serde(with = "::serde_utils::hex_string")]
     pub proof_client: Vec<u8>,
+    #[serde(with = "::serde_utils::hex_string")]
     pub proof_consensus: Vec<u8>,
     pub consensus_height: Height,
 }

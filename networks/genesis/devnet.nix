@@ -1,6 +1,6 @@
 #cspell:ignore abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz
 { ... }: {
-  perSystem = { devnetConfig, system, pkgs, self', inputs', cw-instantiate2-salt, ... }:
+  perSystem = { devnetConfig, system, pkgs, self', inputs', cw-instantiate2-salt, dbg, ... }:
     let
       MNEMONIC = "wine parrot nominee girl exchange element pudding grow area twenty next junior come render shadow evidence sentence start rough debate feed all limb real";
       genesisAccountName = "testkey";
@@ -64,7 +64,7 @@
             --output json \
             | jq '.[] | select(.name == "${genesisAccountName}").address' --raw-output)
 
-          CODE_HASH=$(sha256sum ${self'.packages.wasm-cw20-ics20}/lib/cw20_ics20.wasm | cut -f1 -d" ")
+          CODE_HASH=$(sha256sum ${self'.packages.cw20-ics20}/lib/cw20_ics20.wasm | cut -f1 -d" ")
 
           ${uniond} query wasm build-address $CODE_HASH $ALICE_ADDRESS ${cw-instantiate2-salt} > $out/CW20_ICS20_CONTRACT_ADDRESS
         '';
@@ -84,7 +84,7 @@
             --output json \
             | jq '.[] | select(.name == "${genesisAccountName}").address' --raw-output)
 
-          CODE_HASH=$(sha256sum ${self'.packages.wasm-ucs00-pingpong}/lib/ucs00_pingpong.wasm | cut -f1 -d" ")
+          CODE_HASH=$(sha256sum ${self'.packages.ucs00-pingpong}/lib/ucs00_pingpong.wasm | cut -f1 -d" ")
 
           ${uniond} query wasm build-address $CODE_HASH $ALICE_ADDRESS ${cw-instantiate2-salt} > $out/PING_PONG_CONTRACT_ADDRESS
         '';
@@ -454,8 +454,8 @@
           # add ibc contracts
           ++ [
             (addIbcContractCodesToGenesis [
-              self'.packages.wasm-cw20-ics20
-              self'.packages.wasm-ucs00-pingpong
+              self'.packages.cw20-ics20
+              self'.packages.ucs00-pingpong
             ])
           ]
           # add ibc connection

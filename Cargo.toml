@@ -2,6 +2,7 @@
 members = [
   "lib/*",
   "light-clients/ethereum-light-client",
+  "light-clients/cometbls-light-client",
   "light-clients/wasm-light-client-types",
   "generated/rust",
   "generated/contracts",
@@ -37,6 +38,14 @@ ssz_types = { git = "https://github.com/unionlabs/ssz_types", branch = "try-from
 tree_hash = { git = "https://github.com/unionlabs/tree_hash", branch = "use-unionlabs-ssz", default-features = false }
 
 milagro_bls = { git = "https://github.com/datachainlab/milagro_bls", rev = "bc2b5b5e8d48b7e2e1bfaa56dc2d93e13cb32095", default-features = false }
+
+contracts = { path = "generated/contracts", default-features = false }
+serde-utils = { path = "lib/serde-utils", default-features = false }
+ethereum-verifier = { path = "lib/ethereum-verifier", default-features = false }
+wasm-light-client-types = { path = "light-clients/wasm-light-client-types", default-features = false }
+protos = { path = "generated/rust", default-features = false }
+unionlabs = { path = "lib/unionlabs", default-features = false }
+beacon-api = { path = "lib/beacon-api", default-features = false }
 
 [patch.crates-io]
 typenum = { git = "https://github.com/unionlabs/typenum", branch = "ben/192-const-generic-32-bit" }

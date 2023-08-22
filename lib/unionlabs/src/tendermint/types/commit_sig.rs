@@ -1,8 +1,11 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    ethereum::Address, ibc::google::protobuf::timestamp::Timestamp,
+    errors::{required, InvalidLength, MissingField},
+    ethereum::Address,
+    ibc::google::protobuf::timestamp::Timestamp,
     tendermint::types::block_id_flag::BlockIdFlag,
+    Proto, TypeUrl,
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -61,6 +64,35 @@ impl TryFrom<contracts::glue::TendermintTypesCommitSigData> for CommitSig {
     }
 }
 
+#[derive(Debug)]
+pub enum TryFromCommitSigError {
+    MissingField(MissingField),
+    ValidatorAddress(InvalidLength),
+    BlockIdFlag(crate::errors::UnknownEnumVariant<i32>),
+    Timestamp(crate::ibc::google::protobuf::timestamp::TryFromTimestampError),
+}
+
+impl TryFrom<protos::tendermint::types::CommitSig> for CommitSig {
+    type Error = TryFromCommitSigError;
+
+    fn try_from(value: protos::tendermint::types::CommitSig) -> Result<Self, Self::Error> {
+        Ok(Self {
+            block_id_flag: value
+                .block_id_flag
+                .try_into()
+                .map_err(TryFromCommitSigError::BlockIdFlag)?,
+            validator_address: value
+                .validator_address
+                .try_into()
+                .map_err(TryFromCommitSigError::ValidatorAddress)?,
+            timestamp: required!(value.timestamp)?
+                .try_into()
+                .map_err(TryFromCommitSigError::Timestamp)?,
+            signature: value.signature,
+        })
+    }
+}
+
 #[cfg(feature = "ethabi")]
 impl From<CommitSig> for contracts::glue::TendermintTypesCommitSigData {
     fn from(value: CommitSig) -> Self {
@@ -71,4 +103,12 @@ impl From<CommitSig> for contracts::glue::TendermintTypesCommitSigData {
             signature: value.signature.into(),
         }
     }
+}
+
+impl TypeUrl for protos::tendermint::types::CommitSig {
+    const TYPE_URL: &'static str = "/tendermint.types.CommitSig";
+}
+
+impl Proto for CommitSig {
+    type Proto = protos::tendermint::types::CommitSig;
 }

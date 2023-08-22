@@ -1,6 +1,8 @@
 { ... }: {
-  perSystem = { pkgs, self', crane, system, ... }:
+  perSystem = { pkgs, self', crane, rust, system, ... }:
     let
+      throwBadSystem = throw "libwasmvm cannot be built on system `${system}`";
+
       CARGO_BUILD_TARGET =
         if system == "aarch64-linux" then "aarch64-unknown-linux-musl"
         else if system == "x86_64-linux" then "x86_64-unknown-linux-musl"
@@ -8,7 +10,7 @@
         else if system == "x86_64-darwin" then "x86_64-apple-darwin"
         else throwBadSystem;
 
-      throwBadSystem = throw "libwasmvm cannot be built on system ${system}";
+      craneLib = crane.lib.overrideToolchain (rust.mkNightly { target = CARGO_BUILD_TARGET; });
 
       wasmvm = pkgs.fetchFromGitHub {
         owner = "CosmWasm";
@@ -19,7 +21,7 @@
     in
     {
       packages.libwasmvm =
-        (crane.withBuildTarget CARGO_BUILD_TARGET).buildPackage (
+        (craneLib).buildPackage (
           {
             name = "libwasmvm";
             version = "1.2.3";

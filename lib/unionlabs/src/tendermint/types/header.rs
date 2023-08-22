@@ -1,3 +1,5 @@
+use prost::Message;
+use rs_merkle::{algorithms::Sha256, Hasher, MerkleTree};
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -42,6 +44,32 @@ pub struct Header {
     pub evidence_hash: H256,
     /// original proposer of the block
     pub proposer_address: Address,
+}
+
+impl Header {
+    #[must_use]
+    pub fn calculate_merkle_root(&self) -> Option<[u8; 32]> {
+        let header: protos::tendermint::types::Header = self.clone().into();
+
+        let leaves = [
+            Sha256::hash(&header.version?.encode_to_vec()),
+            Sha256::hash(&header.chain_id.encode_to_vec()),
+            Sha256::hash(&header.height.encode_to_vec()),
+            Sha256::hash(&header.time?.encode_to_vec()),
+            Sha256::hash(&header.last_block_id?.encode_to_vec()),
+            Sha256::hash(&header.last_commit_hash.encode_to_vec()),
+            Sha256::hash(&header.data_hash.encode_to_vec()),
+            Sha256::hash(&header.validators_hash.encode_to_vec()),
+            Sha256::hash(&header.next_validators_hash.encode_to_vec()),
+            Sha256::hash(&header.consensus_hash.encode_to_vec()),
+            Sha256::hash(&header.app_hash.encode_to_vec()),
+            Sha256::hash(&header.last_results_hash.encode_to_vec()),
+            Sha256::hash(&header.evidence_hash.encode_to_vec()),
+            Sha256::hash(&header.proposer_address.encode_to_vec()),
+        ];
+
+        MerkleTree::<Sha256>::from_leaves(&leaves).root()
+    }
 }
 
 impl From<Header> for protos::tendermint::types::Header {

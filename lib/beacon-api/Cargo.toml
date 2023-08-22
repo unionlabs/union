@@ -11,8 +11,8 @@ serde_json = "1.0.91"
 tokio = { version = "1.24.1", default-features = false, features = ["rt-multi-thread", "macros"] }
 tracing = "0.1.37"
 
-unionlabs = { path = "../unionlabs" }
-serde-utils = { path = "../serde-utils" }
+unionlabs.workspace = true
+serde-utils.workspace = true
 
 [features]
 default = []

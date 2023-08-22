@@ -1,12 +1,12 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    errors::MissingField,
+    errors::{required, MissingField},
     ibc::{
         core::client::height::Height, google::protobuf::duration::Duration,
         lightclients::tendermint::fraction::Fraction,
     },
-    Proto, TypeUrl,
+    Proto, TryFromProtoErrorOf, TypeUrl,
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -40,31 +40,33 @@ impl Proto for ClientState {
     type Proto = protos::union::ibc::lightclients::cometbls::v1::ClientState;
 }
 
+#[derive(Debug)]
+pub enum TryFromClientStateError {
+    MissingField(MissingField),
+    TrustingPeriod(TryFromProtoErrorOf<Duration>),
+    UnbondingPeriod(TryFromProtoErrorOf<Duration>),
+    MaxClockDrift(TryFromProtoErrorOf<Duration>),
+}
+
 impl TryFrom<protos::union::ibc::lightclients::cometbls::v1::ClientState> for ClientState {
-    type Error = MissingField;
+    type Error = TryFromClientStateError;
 
     fn try_from(
         value: protos::union::ibc::lightclients::cometbls::v1::ClientState,
     ) -> Result<Self, Self::Error> {
         Ok(Self {
             chain_id: value.chain_id,
-            trust_level: value.trust_level.ok_or(MissingField("trust_level"))?.into(),
-            trusting_period: value
-                .trusting_period
-                .ok_or(MissingField("trusting_period"))?
-                .into(),
-            unbonding_period: value
-                .unbonding_period
-                .ok_or(MissingField("unbonding_period"))?
-                .into(),
-            max_clock_drift: value
-                .max_clock_drift
-                .ok_or(MissingField("max_clock_drift"))?
-                .into(),
-            frozen_height: value
-                .frozen_height
-                .ok_or(MissingField("frozen_height"))?
-                .into(),
+            trust_level: required!(value.trust_level)?.into(),
+            trusting_period: required!(value.trusting_period)?
+                .try_into()
+                .map_err(TryFromClientStateError::TrustingPeriod)?,
+            unbonding_period: required!(value.unbonding_period)?
+                .try_into()
+                .map_err(TryFromClientStateError::TrustingPeriod)?,
+            max_clock_drift: required!(value.max_clock_drift)?
+                .try_into()
+                .map_err(TryFromClientStateError::TrustingPeriod)?,
+            frozen_height: required!(value.frozen_height)?.into(),
         })
     }
 }
@@ -84,15 +86,28 @@ impl From<ClientState> for contracts::glue::UnionIbcLightclientsCometblsV1Client
 }
 
 #[cfg(feature = "ethabi")]
-impl From<contracts::glue::UnionIbcLightclientsCometblsV1ClientStateData> for ClientState {
-    fn from(value: contracts::glue::UnionIbcLightclientsCometblsV1ClientStateData) -> Self {
-        Self {
+impl TryFrom<contracts::glue::UnionIbcLightclientsCometblsV1ClientStateData> for ClientState {
+    type Error = TryFromClientStateError;
+
+    fn try_from(
+        value: contracts::glue::UnionIbcLightclientsCometblsV1ClientStateData,
+    ) -> Result<Self, Self::Error> {
+        Ok(Self {
             chain_id: value.chain_id,
             trust_level: value.trust_level.into(),
-            trusting_period: value.trusting_period.into(),
-            unbonding_period: value.unbonding_period.into(),
-            max_clock_drift: value.max_clock_drift.into(),
+            trusting_period: value
+                .trusting_period
+                .try_into()
+                .map_err(TryFromClientStateError::TrustingPeriod)?,
+            unbonding_period: value
+                .unbonding_period
+                .try_into()
+                .map_err(TryFromClientStateError::TrustingPeriod)?,
+            max_clock_drift: value
+                .max_clock_drift
+                .try_into()
+                .map_err(TryFromClientStateError::TrustingPeriod)?,
             frozen_height: value.frozen_height.into(),
-        }
+        })
     }
 }
