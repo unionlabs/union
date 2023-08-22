@@ -6,7 +6,6 @@
       });
     in
     {
-      packages = workspace.packages;
-      checks = workspace.checks;
+      inherit (workspace) packages checks;
     };
 }
