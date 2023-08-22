@@ -135,7 +135,8 @@ pub fn update_header(mut deps: DepsMut, env: Env, header: Header) -> Result<Cont
         return Err(Error::InvalidHeader("header expired".into()));
     }
 
-    let max_clock_drift = current_time.seconds.inner() + client_state.data.max_clock_drift.seconds;
+    let max_clock_drift =
+        current_time.seconds.inner() + client_state.data.max_clock_drift.seconds.inner();
 
     if untrusted_timestamp.inner() >= max_clock_drift {
         return Err(Error::InvalidHeader("header back to the future".into()));
@@ -243,7 +244,7 @@ fn query_status(deps: Deps, env: &Env) -> Result<StatusResponse, Error> {
 
     if is_client_expired(
         consensus_state.timestamp,
-        client_state.data.trusting_period.seconds as u64,
+        client_state.data.trusting_period.seconds.inner() as u64,
         env.block.time.seconds(),
     ) {
         return Ok(Status::Expired.into());
