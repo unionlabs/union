@@ -144,11 +144,11 @@
                 path' = removeRootStorePath path;
               in
               # first filter down to just the cargo source, and any additional files as specified by
-              # additional[Test]SrcFilter
+                # additional[Test]SrcFilter
               ((craneLib.filterCargoSources path type)
-                || (additionalSrcFilter path' type)
-                # TODO: only include this filter for tests; maybe by adding to preConfigureHooks?
-                || (additionalTestSrcFilter path' type))
+              || (additionalSrcFilter path' type)
+              # TODO: only include this filter for tests; maybe by adding to preConfigureHooks?
+              || (additionalTestSrcFilter path' type))
               && (
                 path' == "Cargo.toml"
                 || path' == "Cargo.lock"
@@ -177,7 +177,7 @@
                 (lib.recursiveUpdate workspaceCargoToml { workspace.members = workspaceDepsForCrate; });
             in
             # REVIEW: This can maybe be a runCommand?
-            # I'm not touching it though
+              # I'm not touching it though
             pkgs.stdenv.mkDerivation {
               name = "${cratePname}-patched-workspace-cargo-toml";
               src = crateSrc;
