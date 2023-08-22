@@ -42,6 +42,7 @@ milagro_bls = { git = "https://github.com/datachainlab/milagro_bls", rev = "bc2b
 contracts = { path = "generated/contracts", default-features = false }
 serde-utils = { path = "lib/serde-utils", default-features = false }
 ethereum-verifier = { path = "lib/ethereum-verifier", default-features = false }
+cometbls-groth16-verifier = { path = "lib/cometbls-groth16-verifier", default-features = false }
 wasm-light-client-types = { path = "light-clients/wasm-light-client-types", default-features = false }
 protos = { path = "generated/rust", default-features = false }
 unionlabs = { path = "lib/unionlabs", default-features = false }
