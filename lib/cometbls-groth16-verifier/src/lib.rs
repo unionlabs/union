@@ -440,7 +440,10 @@ fn verify_generic_zkp<P: Pairing>(
     // Gnark specific, we need to aggregate the proof commitment
     // See https://github.com/ConsenSys/gnark/issues/652
     g_ic.add_assign(proof_commitment);
-    for (i, b) in public_inputs.iter().zip(vk.gamma_abc_g1.iter().skip(1)) {
+    for (i, b) in public_inputs
+        .into_iter()
+        .zip(vk.gamma_abc_g1.iter().skip(1))
+    {
         g_ic.add_assign(&b.mul_bigint(i.into_bigint()));
     }
 
