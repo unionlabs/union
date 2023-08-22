@@ -647,7 +647,7 @@ mod test {
     }
 
     #[test]
-    fn update_works_with_good_data() {
+    fn verify_and_update_header_works_with_good_data() {
         let mut deps = OwnedDeps::<_, _, _, CustomQuery> {
             storage: MockStorage::default(),
             api: MockApi::default(),
@@ -699,6 +699,7 @@ mod test {
         ];
 
         for update in updates {
+            verify_header(deps.as_ref(), update.clone()).unwrap();
             update_header(deps.as_mut(), update.clone()).unwrap();
             // Consensus state is saved to the updated height.
             if update.consensus_update.attested_header.beacon.slot
@@ -833,8 +834,8 @@ mod test {
     }
 
     #[test]
-    fn update_fails_when_sync_committee_aggregate_pubkey_is_incorrect() {
-        let (mut deps, mut update) = prepare_for_fail_tests();
+    fn verify_header_fails_when_sync_committee_aggregate_pubkey_is_incorrect() {
+        let (deps, mut update) = prepare_for_fail_tests();
 
         let mut pubkey = update
             .trusted_sync_committee
@@ -846,21 +847,21 @@ mod test {
             .trusted_sync_committee
             .sync_committee
             .aggregate_pubkey = pubkey;
-        assert!(update_header(deps.as_mut(), update).is_err());
+        assert!(verify_header(deps.as_ref(), update).is_err());
     }
 
     #[test]
-    fn update_fails_when_finalized_header_execution_branch_merkle_is_invalid() {
-        let (mut deps, mut update) = prepare_for_fail_tests();
+    fn verify_header_fails_when_finalized_header_execution_branch_merkle_is_invalid() {
+        let (deps, mut update) = prepare_for_fail_tests();
         update.consensus_update.finalized_header.execution_branch[0].0[0] += 1;
-        assert!(update_header(deps.as_mut(), update).is_err());
+        assert!(verify_header(deps.as_ref(), update).is_err());
     }
 
     #[test]
-    fn update_fails_when_finality_branch_merkle_is_invalid() {
-        let (mut deps, mut update) = prepare_for_fail_tests();
+    fn verify_header_fails_when_finality_branch_merkle_is_invalid() {
+        let (deps, mut update) = prepare_for_fail_tests();
         update.consensus_update.finality_branch[0].0[0] += 1;
-        assert!(update_header(deps.as_mut(), update).is_err());
+        assert!(verify_header(deps.as_ref(), update).is_err());
     }
 
     #[test]
