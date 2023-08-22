@@ -10,9 +10,8 @@ ark-ff = { version = "0.4", default-features = false }
 ark-bn254 = { version = "0.4", default-features = false, features = [ "curve" ] }
 ark-serialize = { version = "0.4", default-features = false }
 ethabi = { version = "18.0", default-features = false }
-hex = { version = "0.4", default-features = false }
-lazy_static = "1.4"
 sha3 = { version = "0.10", default-features = false }
+hex-literal = { version = "0.4", default-features = false }
 
 [features]
 default = []

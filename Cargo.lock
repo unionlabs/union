@@ -951,8 +951,7 @@ dependencies = [
  "ark-groth16",
  "ark-serialize",
  "ethabi",
- "hex",
- "lazy_static",
+ "hex-literal",
  "sha3",
 ]
 
