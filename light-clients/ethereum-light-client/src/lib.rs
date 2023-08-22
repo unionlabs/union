@@ -7,8 +7,6 @@ pub mod eth_encoding;
 pub mod header;
 pub mod msg;
 pub mod state;
-pub mod types;
-pub mod update;
 
 #[cfg(feature = "mainnet")]
 pub use unionlabs::ethereum_consts_traits::Mainnet as Config;
