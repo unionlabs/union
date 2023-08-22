@@ -90,7 +90,8 @@ pub fn verify_membership(
     _path: MerklePath,
     _value: Binary,
 ) -> Result<ContractResult, Error> {
-    unimplemented!()
+    // TODO: #514
+    Ok(ContractResult::valid(None))
 }
 
 pub fn update_header(mut deps: DepsMut, env: Env, header: Header) -> Result<ContractResult, Error> {
