@@ -122,13 +122,17 @@
 
               devnetConfig = {
                 genesisOverwrites = {
-                  "\"app_state\"" = {
-                    "\"staking\""."\"params\"" = {
-                      "\"epoch_length\"" = "\"6\"";
+                  app_state = {
+                    staking.params = {
+                      epoch_length = "8";
+                      jailed_validator_threshold = 10;
+                    };
+                    slashing.params = {
+                      signed_blocks_window = 10;
                     };
                   };
                 };
-                validatorCount = 4;
+                validatorCount = 8;
                 ethereum = {
                   beacon = {
                     validatorCount = 8;
