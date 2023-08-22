@@ -26,6 +26,8 @@ GOPRIVATE
 Getenv
 HKTs
 Hasher
+HMAC
+hmac
 Hyperlane
 IAVL
 IIBC
