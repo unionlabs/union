@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 import "../../ProtoBufRuntime.sol";
 import "../../GoogleProtobufAny.sol";
@@ -977,7 +978,7 @@ library TendermintCryptoDominoOp {
 library TendermintCryptoProofOp {
     //struct definition
     struct Data {
-        string type_;
+        string ty;
         bytes key;
         bytes data;
     }
@@ -1063,7 +1064,7 @@ library TendermintCryptoProofOp {
         Data memory r
     ) internal pure returns (uint) {
         (string memory x, uint256 sz) = ProtoBufRuntime._decode_string(p, bs);
-        r.type_ = x;
+        r.ty = x;
         return sz;
     }
 
@@ -1134,14 +1135,14 @@ library TendermintCryptoProofOp {
         uint256 offset = p;
         uint256 pointer = p;
 
-        if (bytes(r.type_).length != 0) {
+        if (bytes(r.ty).length != 0) {
             pointer += ProtoBufRuntime._encode_key(
                 1,
                 ProtoBufRuntime.WireType.LengthDelim,
                 pointer,
                 bs
             );
-            pointer += ProtoBufRuntime._encode_string(r.type_, pointer, bs);
+            pointer += ProtoBufRuntime._encode_string(r.ty, pointer, bs);
         }
         if (r.key.length != 0) {
             pointer += ProtoBufRuntime._encode_key(
@@ -1204,7 +1205,7 @@ library TendermintCryptoProofOp {
      */
     function _estimate(Data memory r) internal pure returns (uint) {
         uint256 e;
-        e += 1 + ProtoBufRuntime._sz_lendelim(bytes(r.type_).length);
+        e += 1 + ProtoBufRuntime._sz_lendelim(bytes(r.ty).length);
         e += 1 + ProtoBufRuntime._sz_lendelim(r.key.length);
         e += 1 + ProtoBufRuntime._sz_lendelim(r.data.length);
         return e;
@@ -1213,7 +1214,7 @@ library TendermintCryptoProofOp {
     // empty checker
 
     function _empty(Data memory r) internal pure returns (bool) {
-        if (bytes(r.type_).length != 0) {
+        if (bytes(r.ty).length != 0) {
             return false;
         }
 
@@ -1235,7 +1236,7 @@ library TendermintCryptoProofOp {
      * @param output The in-storage struct
      */
     function store(Data memory input, Data storage output) internal {
-        output.type_ = input.type_;
+        output.ty = input.ty;
         output.key = input.key;
         output.data = input.data;
     }

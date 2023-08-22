@@ -12,6 +12,7 @@ use crate::{
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ClientState {
+    pub chain_id: String,
     pub genesis_validators_root: H256,
     pub min_sync_committee_participants: u64,
     pub genesis_time: u64,
@@ -37,6 +38,7 @@ impl Proto for ClientState {
 impl From<ClientState> for protos::union::ibc::lightclients::ethereum::v1::ClientState {
     fn from(value: ClientState) -> Self {
         Self {
+            chain_id: value.chain_id,
             genesis_validators_root: value.genesis_validators_root.into(),
             min_sync_committee_participants: value.min_sync_committee_participants,
             genesis_time: value.genesis_time,
@@ -67,6 +69,7 @@ impl TryFrom<protos::union::ibc::lightclients::ethereum::v1::ClientState> for Cl
         value: protos::union::ibc::lightclients::ethereum::v1::ClientState,
     ) -> Result<Self, Self::Error> {
         Ok(Self {
+            chain_id: value.chain_id,
             genesis_validators_root: value
                 .genesis_validators_root
                 .try_into()

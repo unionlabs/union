@@ -112,6 +112,7 @@ fn encode_dynamic_singleton_tuple(t: impl AbiEncode) -> Vec<u8> {
 
 #[derive(Debug, Clone)]
 pub struct Evm<C: ChainSpec> {
+    chain_id: String,
     // NOTE: pub temporarily, should be private
     pub wallet: LocalWallet,
     ibc_handler: IBCHandler<CometblsMiddleware>,
@@ -148,6 +149,7 @@ impl<C: ChainSpec> Evm<C> {
         let signer_middleware = Arc::new(SignerMiddleware::new(provider.clone(), wallet.clone()));
 
         Self {
+            chain_id: chain_id.to_string(),
             ibc_handler: IBCHandler::new(config.ibc_handler_address, signer_middleware.clone()),
             provider,
             beacon_api_client: BeaconApiClient::new(config.eth_beacon_rpc_api).await,
@@ -416,6 +418,7 @@ impl<C: ChainSpec> Chain for Evm<C> {
 
             Any(wasm::client_state::ClientState {
                 data: ethereum::client_state::ClientState {
+                    chain_id: self.chain_id.clone(),
                     genesis_validators_root: genesis.genesis_validators_root,
                     genesis_time: genesis.genesis_time,
                     fork_parameters: self

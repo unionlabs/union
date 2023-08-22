@@ -63,6 +63,14 @@ pub struct MsgSubmitEvidenceResponse {
     #[prost(bytes = "vec", tag = "4")]
     pub hash: ::prost::alloc::vec::Vec<u8>,
 }
+/// GenesisState defines the evidence module's genesis state.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GenesisState {
+    /// evidence defines all the evidence at genesis.
+    #[prost(message, repeated, tag = "1")]
+    pub evidence: ::prost::alloc::vec::Vec<super::super::super::google::protobuf::Any>,
+}
 /// Equivocation implements the Evidence interface and defines evidence of double
 /// signing misbehavior.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -80,14 +88,6 @@ pub struct Equivocation {
     /// consensus_address is the equivocation validator consensus address.
     #[prost(string, tag = "4")]
     pub consensus_address: ::prost::alloc::string::String,
-}
-/// GenesisState defines the evidence module's genesis state.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct GenesisState {
-    /// evidence defines all the evidence at genesis.
-    #[prost(message, repeated, tag = "1")]
-    pub evidence: ::prost::alloc::vec::Vec<super::super::super::google::protobuf::Any>,
 }
 include!("cosmos.evidence.v1beta1.tonic.rs");
 // @@protoc_insertion_point(module)
