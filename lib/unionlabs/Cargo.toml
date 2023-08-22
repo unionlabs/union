@@ -13,12 +13,14 @@ ssz_types = { workspace = true, default-features = false }
 tree_hash = { workspace = true, default-features = false }
 milagro_bls = { workspace = true, default-features = false }
 
+cosmwasm-std = { version = "1.3", default-features = false }
 prost = { version = "0.11.9", default-features = false, features = ["std"] }
 bip32 = { version = "0.5.0", default-features = false, features = ["secp256k1"] }
 # needs to be brought in explicitly since bip32 doesn't expose k256/schnorr
 k256 = { version = "0.13.1", default-features = false, features = ["schnorr"] }
 subtle-encoding = { version = "0.5.1", default-features = false, features = ["bech32-preview"] }
 ripemd = { version = "0.1.3", default-features = false }
+rs_merkle = "1.4.1"
 sha2 = { version = "0.10.7", default-features = false }
 serde = { version = "1.0.164", default-features = false, features = ["derive"] }
 primitive-types = { version = "0.12.1", default-features = false, features = ["serde_no_std"] }

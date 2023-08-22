@@ -1,8 +1,9 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
+    errors::MissingField,
     tendermint::types::{commit::Commit, header::Header},
-    Proto, TypeUrl,
+    Proto, TryFromProtoErrorOf, TypeUrl,
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -43,6 +44,36 @@ impl TryFrom<contracts::glue::TendermintTypesSignedHeaderData> for SignedHeader 
                 .commit
                 .try_into()
                 .map_err(TryFromEthAbiSignedHeaderError::Commit)?,
+        })
+    }
+}
+
+#[derive(Debug)]
+pub enum TryFromSignedHeaderError {
+    MissingField(MissingField),
+    Header(TryFromProtoErrorOf<Header>),
+    Commit(TryFromProtoErrorOf<Commit>),
+}
+
+impl TryFrom<protos::tendermint::types::SignedHeader> for SignedHeader {
+    type Error = TryFromSignedHeaderError;
+
+    fn try_from(value: protos::tendermint::types::SignedHeader) -> Result<Self, Self::Error> {
+        Ok(Self {
+            header: value
+                .header
+                .ok_or(TryFromSignedHeaderError::MissingField(MissingField(
+                    "header",
+                )))?
+                .try_into()
+                .map_err(TryFromSignedHeaderError::Header)?,
+            commit: value
+                .commit
+                .ok_or(TryFromSignedHeaderError::MissingField(MissingField(
+                    "commit",
+                )))?
+                .try_into()
+                .map_err(TryFromSignedHeaderError::Commit)?,
         })
     }
 }

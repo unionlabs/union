@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{Proto, TypeUrl};
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Consensus {
     pub block: u64,
     pub app: u64,

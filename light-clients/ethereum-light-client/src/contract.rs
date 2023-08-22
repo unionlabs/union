@@ -809,16 +809,16 @@ mod test {
                 denominator: 3,
             },
             trusting_period: Duration {
-                seconds: 1814400,
-                nanos: 0,
+                seconds: 1814400.try_into().unwrap(),
+                nanos: 0.try_into().unwrap(),
             },
             unbonding_period: Duration {
-                seconds: 1814400,
-                nanos: 0,
+                seconds: 1814400.try_into().unwrap(),
+                nanos: 0.try_into().unwrap(),
             },
             max_clock_drift: Duration {
-                seconds: 40,
-                nanos: 0,
+                seconds: 40.try_into().unwrap(),
+                nanos: 0.try_into().unwrap(),
             },
             frozen_height: Height {
                 revision_number: 0,

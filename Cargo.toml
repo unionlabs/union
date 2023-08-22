@@ -2,6 +2,7 @@
 members = [
   "lib/*",
   "light-clients/ethereum-light-client",
+  "light-clients/cometbls-light-client",
   "light-clients/wasm-light-client-types",
   "generated/rust",
   "generated/contracts",
