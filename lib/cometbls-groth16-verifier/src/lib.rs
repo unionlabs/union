@@ -263,8 +263,8 @@ fn hmac_keccak(message: &[u8]) -> [u8; 32] {
     let mut hasher = sha3::Keccak256::new();
     hasher.update(
         HMAC_I
-            .to_vec()
-            .into_iter()
+            .iter()
+            .copied()
             .chain(message.to_vec())
             .into_iter()
             .collect::<Vec<_>>(),
@@ -274,8 +274,8 @@ fn hmac_keccak(message: &[u8]) -> [u8; 32] {
     let mut hasher = sha3::Keccak256::new();
     hasher.update(
         HMAC_O
-            .to_vec()
-            .into_iter()
+            .iter()
+            .copied()
             .chain(inner_hash.to_vec())
             .into_iter()
             .collect::<Vec<_>>(),
