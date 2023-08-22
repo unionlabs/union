@@ -1,8 +1,11 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    errors::MissingField, ethereum::Address, ibc::google::protobuf::timestamp::Timestamp,
-    tendermint::types::block_id_flag::BlockIdFlag, Proto, TypeUrl,
+    errors::{required, InvalidLength, MissingField},
+    ethereum::Address,
+    ibc::google::protobuf::timestamp::Timestamp,
+    tendermint::types::block_id_flag::BlockIdFlag,
+    Proto, TypeUrl,
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -64,8 +67,7 @@ impl TryFrom<contracts::glue::TendermintTypesCommitSigData> for CommitSig {
 #[derive(Debug)]
 pub enum TryFromCommitSigError {
     MissingField(MissingField),
-    WrongValidatorAddressSize,
-    // TODO(aeryz): add context
+    ValidatorAddress(InvalidLength),
     BlockIdFlag(crate::errors::UnknownEnumVariant<i32>),
     Timestamp(crate::ibc::google::protobuf::timestamp::TryFromTimestampError),
 }
@@ -79,17 +81,11 @@ impl TryFrom<protos::tendermint::types::CommitSig> for CommitSig {
                 .block_id_flag
                 .try_into()
                 .map_err(TryFromCommitSigError::BlockIdFlag)?,
-            validator_address: Address(
-                value
-                    .validator_address
-                    .try_into()
-                    .map_err(|_| TryFromCommitSigError::WrongValidatorAddressSize)?,
-            ),
-            timestamp: value
-                .timestamp
-                .ok_or(TryFromCommitSigError::MissingField(MissingField(
-                    "timestamp",
-                )))?
+            validator_address: value
+                .validator_address
+                .try_into()
+                .map_err(TryFromCommitSigError::ValidatorAddress)?,
+            timestamp: required!(value.timestamp)?
                 .try_into()
                 .map_err(TryFromCommitSigError::Timestamp)?,
             signature: value.signature,

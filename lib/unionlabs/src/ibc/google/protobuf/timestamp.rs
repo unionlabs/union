@@ -27,19 +27,26 @@ impl TypeUrl for protos::google::protobuf::Timestamp {
     const TYPE_URL: &'static str = "/google.protobuf.Timestamp";
 }
 
+#[derive(Debug)]
+pub enum TryFromCosmwasmTimestampError {
+    Seconds(BoundedIntError<i64>),
+    Nanos(BoundedIntError<i32>),
+    IntCast(TryFromIntError),
+}
+
 impl TryFrom<cosmwasm_std::Timestamp> for Timestamp {
-    type Error = TryFromTimestampError;
+    type Error = TryFromCosmwasmTimestampError;
 
     fn try_from(value: cosmwasm_std::Timestamp) -> Result<Self, Self::Error> {
         Ok(Self {
             seconds: TryInto::<i64>::try_into(value.seconds())
-                .map_err(TryFromTimestampError::IntCast)?
+                .map_err(TryFromCosmwasmTimestampError::IntCast)?
                 .try_into()
-                .map_err(TryFromTimestampError::Seconds)?,
+                .map_err(TryFromCosmwasmTimestampError::Seconds)?,
             nanos: TryInto::<i32>::try_into(value.nanos())
-                .map_err(TryFromTimestampError::IntCast)?
+                .map_err(TryFromCosmwasmTimestampError::IntCast)?
                 .try_into()
-                .map_err(TryFromTimestampError::Nanos)?,
+                .map_err(TryFromCosmwasmTimestampError::Nanos)?,
         })
     }
 }
@@ -50,8 +57,20 @@ impl From<Timestamp> for cosmwasm_std::Timestamp {
         // why `unwrap`ping seems like the right way to go, please give me a heads up
         // if there is an exception and we should convert this implementation to
         // `TryFrom` instead.
-        cosmwasm_std::Timestamp::from_seconds(value.seconds.inner().try_into().unwrap())
-            .plus_nanos(value.nanos.inner().try_into().unwrap())
+        cosmwasm_std::Timestamp::from_seconds(
+            value
+                .seconds
+                .inner()
+                .try_into()
+                .expect("impossible since this is always inbounds"),
+        )
+        .plus_nanos(
+            value
+                .nanos
+                .inner()
+                .try_into()
+                .expect("impossible since this is always inbounds"),
+        )
     }
 }
 
@@ -68,7 +87,6 @@ impl From<Timestamp> for protos::google::protobuf::Timestamp {
 pub enum TryFromTimestampError {
     Seconds(BoundedIntError<i64>),
     Nanos(BoundedIntError<i32>),
-    IntCast(TryFromIntError),
 }
 
 impl TryFrom<protos::google::protobuf::Timestamp> for Timestamp {

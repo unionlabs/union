@@ -1,8 +1,11 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    errors::MissingField, ethereum::H256, ibc::core::client::height::Height,
-    tendermint::types::signed_header::SignedHeader, Proto, TryFromProtoErrorOf, TypeUrl,
+    errors::{InvalidLength, MissingField},
+    ethereum::H256,
+    ibc::core::client::height::Height,
+    tendermint::types::signed_header::SignedHeader,
+    Proto, TryFromProtoErrorOf, TypeUrl,
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -64,7 +67,7 @@ impl crate::EthAbi for Header {
 pub enum TryFromHeaderError {
     MissingField(MissingField),
     SignedHeader(TryFromProtoErrorOf<SignedHeader>),
-    InvalidUntrustedValidatorSetRootSize,
+    UntrustedValidatorSetRoot(InvalidLength),
 }
 
 impl TryFrom<protos::union::ibc::lightclients::cometbls::v1::Header> for Header {
@@ -81,12 +84,10 @@ impl TryFrom<protos::union::ibc::lightclients::cometbls::v1::Header> for Header 
                 )))?
                 .try_into()
                 .map_err(TryFromHeaderError::SignedHeader)?,
-            untrusted_validator_set_root: H256(
-                value
-                    .untrusted_validator_set_root
-                    .try_into()
-                    .map_err(|_| TryFromHeaderError::InvalidUntrustedValidatorSetRootSize)?,
-            ),
+            untrusted_validator_set_root: value
+                .untrusted_validator_set_root
+                .try_into()
+                .map_err(TryFromHeaderError::UntrustedValidatorSetRoot)?,
             trusted_height: value
                 .trusted_height
                 .ok_or(TryFromHeaderError::MissingField(MissingField(

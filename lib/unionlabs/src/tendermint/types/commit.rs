@@ -1,8 +1,8 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    bounded_int::{BoundedI32, BoundedI64},
-    errors::MissingField,
+    bounded_int::{BoundedI32, BoundedI64, BoundedIntError},
+    errors::{required, MissingField},
     tendermint::types::{block_id::BlockId, commit_sig::CommitSig},
     Proto, TryFromProtoErrorOf, TypeUrl,
 };
@@ -70,9 +70,10 @@ impl TryFrom<contracts::glue::TendermintTypesCommitData> for Commit {
 
 #[derive(Debug)]
 pub enum TryFromCommitError {
+    Height(BoundedIntError<i64>),
+    Round(BoundedIntError<i32>),
     MissingField(MissingField),
     BlockId(TryFromProtoErrorOf<BlockId>),
-    IntegerOverflow(&'static str),
     Signatures,
 }
 
@@ -84,14 +85,9 @@ impl TryFrom<protos::tendermint::types::Commit> for Commit {
             height: value
                 .height
                 .try_into()
-                .map_err(|_| TryFromCommitError::IntegerOverflow("height"))?,
-            round: value
-                .round
-                .try_into()
-                .map_err(|_| TryFromCommitError::IntegerOverflow("round"))?,
-            block_id: value
-                .block_id
-                .ok_or(TryFromCommitError::MissingField(MissingField("block_id")))?
+                .map_err(TryFromCommitError::Height)?,
+            round: value.round.try_into().map_err(TryFromCommitError::Round)?,
+            block_id: required!(value.block_id)?
                 .try_into()
                 .map_err(TryFromCommitError::BlockId)?,
             signatures: value
