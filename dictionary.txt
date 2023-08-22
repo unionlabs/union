@@ -135,6 +135,7 @@ chainer
 chainid
 chainsafe
 chevdor
+chrono
 clientkeeper
 clienttypes
 clippy
@@ -176,6 +177,7 @@ crisiskeeper
 crisistypes
 ctypes
 datadir
+datetime
 delegators
 dels
 denoms

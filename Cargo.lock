@@ -5483,6 +5483,7 @@ name = "unionlabs"
 version = "0.1.0"
 dependencies = [
  "bip32",
+ "chrono",
  "contracts",
  "cosmwasm-std",
  "ethereum_ssz",

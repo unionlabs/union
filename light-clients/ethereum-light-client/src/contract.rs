@@ -880,18 +880,9 @@ mod test {
                 numerator: 1,
                 denominator: 3,
             },
-            trusting_period: Duration {
-                seconds: 1814400.try_into().unwrap(),
-                nanos: 0.try_into().unwrap(),
-            },
-            unbonding_period: Duration {
-                seconds: 1814400.try_into().unwrap(),
-                nanos: 0.try_into().unwrap(),
-            },
-            max_clock_drift: Duration {
-                seconds: 40.try_into().unwrap(),
-                nanos: 0.try_into().unwrap(),
-            },
+            trusting_period: Duration::new(1814400, 0).unwrap(),
+            unbonding_period: Duration::new(1814400, 0).unwrap(),
+            max_clock_drift: Duration::new(40, 0).unwrap(),
             frozen_height: Height {
                 revision_number: 0,
                 revision_height: 0,

@@ -7,7 +7,7 @@ use protos::tendermint::types::{CanonicalBlockId, CanonicalPartSetHeader, Signed
 use unionlabs::{
     ibc::{
         core::{client::height::Height, commitment::merkle_root::MerkleRoot},
-        google::protobuf::{duration::Duration, timestamp::Timestamp},
+        google::protobuf::timestamp::Timestamp,
         lightclients::cometbls::header::Header,
     },
     tendermint::types::commit::Commit,
@@ -127,16 +127,16 @@ pub fn update_header(mut deps: DepsMut, env: Env, header: Header) -> Result<Cont
         .try_into()
         .map_err(|_| Error::InvalidHeader("timestamp conversion failed".into()))?;
 
-    if Duration::from(header.signed_header.header.time)
-        < Duration::from(current_time)
-            .checked_add(client_state.data.trusting_period)
-            .ok_or(Error::DurationAdditionOverflow)?
+    if current_time
+        .duration_since(&header.signed_header.header.time)
+        .ok_or(Error::DurationAdditionOverflow)?
+        > client_state.data.trusting_period
     {
         return Err(Error::InvalidHeader("header expired".into()));
     }
 
     let max_clock_drift =
-        current_time.seconds.inner() + client_state.data.max_clock_drift.seconds.inner();
+        current_time.seconds.inner() + client_state.data.max_clock_drift.seconds();
 
     if untrusted_timestamp.inner() >= max_clock_drift {
         return Err(Error::InvalidHeader("header back to the future".into()));
@@ -244,7 +244,12 @@ fn query_status(deps: Deps, env: &Env) -> Result<StatusResponse, Error> {
 
     if is_client_expired(
         consensus_state.timestamp,
-        client_state.data.trusting_period.seconds.inner() as u64,
+        client_state
+            .data
+            .trusting_period
+            .seconds()
+            .try_into()
+            .unwrap_or_default(),
         env.block.time.seconds(),
     ) {
         return Ok(Status::Expired.into());

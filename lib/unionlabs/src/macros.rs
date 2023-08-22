@@ -110,4 +110,27 @@ macro_rules! wrapper_enum {
     };
 }
 
+// Useful in const contexts in place of `?`
+// macro_rules! option_try {
+//     ($expr:expr) => {
+//         match $expr {
+//             Some(some) => some,
+//             None => return None,
+//         }
+//     };
+// }
+
+// pub(crate) use option_try;
+
+// macro_rules! result_try {
+//     ($expr:expr) => {
+//         match $expr {
+//             Ok(ok) => ok,
+//             Err(err) => return Err(err),
+//         }
+//     };
+// }
+
+// pub(crate) use result_try;
+
 pub(crate) use wrapper_enum;

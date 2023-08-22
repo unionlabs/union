@@ -1,112 +1,112 @@
 macro_rules! bounded_int {
-($(
-    $(#[non_zero($NonZero:ty)])?
-    pub $Struct:ident($ty:ty);
-)+) => {
-    $(
-        #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-        pub struct $Struct<const MIN: $ty, const MAX: $ty = { <$ty>::MAX }>($ty);
-
-        impl<const MIN: $ty, const MAX: $ty> $Struct<MIN, MAX> {
-            #[must_use]
-            pub fn inner(self) -> $ty {
-                self.0
-            }
-        }
-
-        impl<const MIN: $ty, const MAX: $ty> std::fmt::Debug for $Struct<MIN, MAX> {
-            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                f.write_fmt(format_args!("{}<{MIN}, {MAX}>(self)", stringify!($Struct)))
-            }
-        }
-
-        impl<const MIN: $ty, const MAX: $ty> serde::Serialize for $Struct<MIN, MAX> {
-            fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-            where
-                S: serde::Serializer,
-            {
-                self.0.serialize(serializer)
-            }
-        }
-
-        impl<'de, const MIN: $ty, const MAX: $ty> serde::Deserialize<'de> for $Struct<MIN, MAX> {
-            fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-            where
-                D: serde::Deserializer<'de>,
-            {
-                <$ty>::deserialize(deserializer)
-                    .map(Self::new)?
-                    .map_err(|err| {
-                        serde::de::Error::invalid_value(
-                            serde::de::Unexpected::Other(&format!("{}_{}", err.found, stringify!($ty))),
-                            &format!("a `{}` between {}..={}", stringify!($ty), err.min, err.max).as_str()
-                                as &dyn serde::de::Expected,
-                        )
-                    })
-            }
-        }
-
-        impl<const MIN: $ty, const MAX: $ty> TryFrom<$ty> for $Struct<MIN, MAX> {
-            type Error = BoundedIntError<$ty>;
-
-            fn try_from(n: $ty) -> Result<Self, Self::Error> {
-                Self::new(n)
-            }
-        }
-
-        impl<const MIN: $ty, const MAX: $ty> From<$Struct<MIN, MAX>> for $ty {
-            fn from(value: $Struct<MIN, MAX>) -> Self {
-                value.0
-            }
-        }
-
-        impl<const MIN: $ty, const MAX: $ty> $Struct<MIN, MAX> {
-            pub fn new(n: $ty) -> Result<Self, BoundedIntError<$ty>> {
-                (MIN..=MAX)
-                    .contains(&n)
-                    .then_some(Self(n))
-                    .ok_or(BoundedIntError {
-                        max: MAX,
-                        min: MIN,
-                        found: n,
-                    })
-            }
-        }
-
+    ($(
+        $(#[non_zero($NonZero:ty)])?
+        pub $Struct:ident($ty:ty);
+    )+) => {
         $(
-            const _: () = assert!(
-                <$ty>::MIN.abs_diff(0) == 0,
-                concat!(
-                    "Extra assertion that [`",
-                    stringify!($NonZero),
-                    "`]",
-                    " is the same as [`",
-                    stringify!($Struct),
-                    "<1, ",
-                    stringify!($ty),
-                    ">`]."
-                ),
-            );
+            #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+            pub struct $Struct<const MIN: $ty, const MAX: $ty = { <$ty>::MAX }>($ty);
 
-            const _: $ty = match <$NonZero>::new(1) {
-                Some(n) => n.get(),
-                None => unreachable!(),
-            };
-
-            impl From<$NonZero> for $Struct<1, { <$ty>::MAX }> {
-                fn from(value: $NonZero) -> Self {
-                    Self(value.get())
+            impl<const MIN: $ty, const MAX: $ty> $Struct<MIN, MAX> {
+                #[must_use]
+                pub const fn inner(self) -> $ty {
+                    self.0
                 }
             }
 
-            impl From<$Struct<1, { <$ty>::MAX }>> for $NonZero {
-                fn from(value: $Struct<1, { <$ty>::MAX }>) -> Self {
-                    Self::new(value.inner()).expect("value is > 0 as per const bounds; qed;")
+            impl<const MIN: $ty, const MAX: $ty> std::fmt::Debug for $Struct<MIN, MAX> {
+                fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                    f.write_fmt(format_args!("{}<{MIN}, {MAX}>({})", stringify!($Struct), self.0))
                 }
             }
-        )?
-    )+
-}
+
+            impl<const MIN: $ty, const MAX: $ty> serde::Serialize for $Struct<MIN, MAX> {
+                fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+                where
+                    S: serde::Serializer,
+                {
+                    self.0.serialize(serializer)
+                }
+            }
+
+            impl<'de, const MIN: $ty, const MAX: $ty> serde::Deserialize<'de> for $Struct<MIN, MAX> {
+                fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+                where
+                    D: serde::Deserializer<'de>,
+                {
+                    <$ty>::deserialize(deserializer)
+                        .map(Self::new)?
+                        .map_err(|err| {
+                            serde::de::Error::invalid_value(
+                                serde::de::Unexpected::Other(&format!("{}_{}", err.found, stringify!($ty))),
+                                &format!("a `{}` between {}..={}", stringify!($ty), err.min, err.max).as_str()
+                                    as &dyn serde::de::Expected,
+                            )
+                        })
+                }
+            }
+
+            impl<const MIN: $ty, const MAX: $ty> TryFrom<$ty> for $Struct<MIN, MAX> {
+                type Error = BoundedIntError<$ty>;
+
+                fn try_from(n: $ty) -> Result<Self, Self::Error> {
+                    Self::new(n)
+                }
+            }
+
+            impl<const MIN: $ty, const MAX: $ty> From<$Struct<MIN, MAX>> for $ty {
+                fn from(value: $Struct<MIN, MAX>) -> Self {
+                    value.0
+                }
+            }
+
+            impl<const MIN: $ty, const MAX: $ty> $Struct<MIN, MAX> {
+                pub fn new(n: $ty) -> Result<Self, BoundedIntError<$ty>> {
+                    (MIN..=MAX)
+                        .contains(&n)
+                        .then_some(Self(n))
+                        .ok_or(BoundedIntError {
+                            max: MAX,
+                            min: MIN,
+                            found: n,
+                        })
+                }
+            }
+
+            $(
+                const _: () = assert!(
+                    <$ty>::MIN.abs_diff(0) == 0,
+                    concat!(
+                        "Extra assertion that [`",
+                        stringify!($NonZero),
+                        "`]",
+                        " is the same as [`",
+                        stringify!($Struct),
+                        "<1, ",
+                        stringify!($ty),
+                        ">`]."
+                    ),
+                );
+
+                const _: $ty = match <$NonZero>::new(1) {
+                    Some(n) => n.get(),
+                    None => unreachable!(),
+                };
+
+                impl From<$NonZero> for $Struct<1, { <$ty>::MAX }> {
+                    fn from(value: $NonZero) -> Self {
+                        Self(value.get())
+                    }
+                }
+
+                impl From<$Struct<1, { <$ty>::MAX }>> for $NonZero {
+                    fn from(value: $Struct<1, { <$ty>::MAX }>) -> Self {
+                        Self::new(value.inner()).expect("value is > 0 as per const bounds; qed;")
+                    }
+                }
+            )?
+        )+
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
