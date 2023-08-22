@@ -7,15 +7,17 @@ pub use glue::*;
     clippy::upper_case_acronyms,
     clippy::type_complexity,
     dead_code,
-    non_camel_case_types,
+    non_camel_case_types
 )]
 pub mod glue {
     pub use super::super::shared_types::*;
     #[rustfmt::skip]
     const __ABI: &str = "[{\"inputs\":[{\"internalType\":\"struct UnionIbcLightclientsCometblsV1ClientState.Data\",\"name\":\"\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"string\",\"name\":\"chain_id\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"struct IbcLightclientsTendermintV1Fraction.Data\",\"name\":\"trust_level\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"uint64\",\"name\":\"numerator\",\"type\":\"uint64\",\"components\":[]},{\"internalType\":\"uint64\",\"name\":\"denominator\",\"type\":\"uint64\",\"components\":[]}]},{\"internalType\":\"struct GoogleProtobufDuration.Data\",\"name\":\"trusting_period\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"int64\",\"name\":\"Seconds\",\"type\":\"int64\",\"components\":[]},{\"internalType\":\"int32\",\"name\":\"nanos\",\"type\":\"int32\",\"components\":[]}]},{\"internalType\":\"struct GoogleProtobufDuration.Data\",\"name\":\"unbonding_period\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"int64\",\"name\":\"Seconds\",\"type\":\"int64\",\"components\":[]},{\"internalType\":\"int32\",\"name\":\"nanos\",\"type\":\"int32\",\"components\":[]}]},{\"internalType\":\"struct GoogleProtobufDuration.Data\",\"name\":\"max_clock_drift\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"int64\",\"name\":\"Seconds\",\"type\":\"int64\",\"components\":[]},{\"internalType\":\"int32\",\"name\":\"nanos\",\"type\":\"int32\",\"components\":[]}]},{\"internalType\":\"struct IbcCoreClientV1Height.Data\",\"name\":\"frozen_height\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"uint64\",\"name\":\"revision_number\",\"type\":\"uint64\",\"components\":[]},{\"internalType\":\"uint64\",\"name\":\"revision_height\",\"type\":\"uint64\",\"components\":[]}]}]},{\"internalType\":\"struct UnionIbcLightclientsCometblsV1ConsensusState.Data\",\"name\":\"\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"struct IbcCoreCommitmentV1MerkleRoot.Data\",\"name\":\"root\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"bytes\",\"name\":\"hash\",\"type\":\"bytes\",\"components\":[]}]},{\"internalType\":\"bytes\",\"name\":\"next_validators_hash\",\"type\":\"bytes\",\"components\":[]}]},{\"internalType\":\"struct UnionIbcLightclientsCometblsV1Header.Data\",\"name\":\"\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"struct TendermintTypesSignedHeader.Data\",\"name\":\"signed_header\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"struct TendermintTypesHeader.Data\",\"name\":\"header\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"struct TendermintVersionConsensus.Data\",\"name\":\"version\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"uint64\",\"name\":\"block\",\"type\":\"uint64\",\"components\":[]},{\"internalType\":\"uint64\",\"name\":\"app\",\"type\":\"uint64\",\"components\":[]}]},{\"internalType\":\"string\",\"name\":\"chain_id\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"int64\",\"name\":\"height\",\"type\":\"int64\",\"components\":[]},{\"internalType\":\"struct GoogleProtobufTimestamp.Data\",\"name\":\"time\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"int64\",\"name\":\"secs\",\"type\":\"int64\",\"components\":[]},{\"internalType\":\"int64\",\"name\":\"nanos\",\"type\":\"int64\",\"components\":[]}]},{\"internalType\":\"struct TendermintTypesBlockID.Data\",\"name\":\"last_block_id\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"bytes\",\"name\":\"hash\",\"type\":\"bytes\",\"components\":[]},{\"internalType\":\"struct TendermintTypesPartSetHeader.Data\",\"name\":\"part_set_header\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"uint32\",\"name\":\"total\",\"type\":\"uint32\",\"components\":[]},{\"internalType\":\"bytes\",\"name\":\"hash\",\"type\":\"bytes\",\"components\":[]}]}]},{\"internalType\":\"bytes\",\"name\":\"last_commit_hash\",\"type\":\"bytes\",\"components\":[]},{\"internalType\":\"bytes\",\"name\":\"data_hash\",\"type\":\"bytes\",\"components\":[]},{\"internalType\":\"bytes\",\"name\":\"validators_hash\",\"type\":\"bytes\",\"components\":[]},{\"internalType\":\"bytes\",\"name\":\"next_validators_hash\",\"type\":\"bytes\",\"components\":[]},{\"internalType\":\"bytes\",\"name\":\"consensus_hash\",\"type\":\"bytes\",\"components\":[]},{\"internalType\":\"bytes\",\"name\":\"app_hash\",\"type\":\"bytes\",\"components\":[]},{\"internalType\":\"bytes\",\"name\":\"last_results_hash\",\"type\":\"bytes\",\"components\":[]},{\"internalType\":\"bytes\",\"name\":\"evidence_hash\",\"type\":\"bytes\",\"components\":[]},{\"internalType\":\"bytes\",\"name\":\"proposer_address\",\"type\":\"bytes\",\"components\":[]}]},{\"internalType\":\"struct TendermintTypesCommit.Data\",\"name\":\"commit\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"int64\",\"name\":\"height\",\"type\":\"int64\",\"components\":[]},{\"internalType\":\"int32\",\"name\":\"round\",\"type\":\"int32\",\"components\":[]},{\"internalType\":\"struct TendermintTypesBlockID.Data\",\"name\":\"block_id\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"bytes\",\"name\":\"hash\",\"type\":\"bytes\",\"components\":[]},{\"internalType\":\"struct TendermintTypesPartSetHeader.Data\",\"name\":\"part_set_header\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"uint32\",\"name\":\"total\",\"type\":\"uint32\",\"components\":[]},{\"internalType\":\"bytes\",\"name\":\"hash\",\"type\":\"bytes\",\"components\":[]}]}]},{\"internalType\":\"struct TendermintTypesCommitSig.Data[]\",\"name\":\"signatures\",\"type\":\"tuple[]\",\"components\":[{\"internalType\":\"enum TendermintTypesTypesGlobalEnums.BlockIDFlag\",\"name\":\"block_id_flag\",\"type\":\"uint8\",\"components\":[]},{\"internalType\":\"bytes\",\"name\":\"validator_address\",\"type\":\"bytes\",\"components\":[]},{\"internalType\":\"struct GoogleProtobufTimestamp.Data\",\"name\":\"timestamp\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"int64\",\"name\":\"secs\",\"type\":\"int64\",\"components\":[]},{\"internalType\":\"int64\",\"name\":\"nanos\",\"type\":\"int64\",\"components\":[]}]},{\"internalType\":\"bytes\",\"name\":\"signature\",\"type\":\"bytes\",\"components\":[]}]}]}]},{\"internalType\":\"bytes\",\"name\":\"untrusted_validator_set_root\",\"type\":\"bytes\",\"components\":[]},{\"internalType\":\"struct IbcCoreClientV1Height.Data\",\"name\":\"trusted_height\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"uint64\",\"name\":\"revision_number\",\"type\":\"uint64\",\"components\":[]},{\"internalType\":\"uint64\",\"name\":\"revision_height\",\"type\":\"uint64\",\"components\":[]}]},{\"internalType\":\"bytes\",\"name\":\"zero_knowledge_proof\",\"type\":\"bytes\",\"components\":[]}]},{\"internalType\":\"struct TendermintTypesHeader.Data\",\"name\":\"\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"struct TendermintVersionConsensus.Data\",\"name\":\"version\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"uint64\",\"name\":\"block\",\"type\":\"uint64\",\"components\":[]},{\"internalType\":\"uint64\",\"name\":\"app\",\"type\":\"uint64\",\"components\":[]}]},{\"internalType\":\"string\",\"name\":\"chain_id\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"int64\",\"name\":\"height\",\"type\":\"int64\",\"components\":[]},{\"internalType\":\"struct GoogleProtobufTimestamp.Data\",\"name\":\"time\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"int64\",\"name\":\"secs\",\"type\":\"int64\",\"components\":[]},{\"internalType\":\"int64\",\"name\":\"nanos\",\"type\":\"int64\",\"components\":[]}]},{\"internalType\":\"struct TendermintTypesBlockID.Data\",\"name\":\"last_block_id\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"bytes\",\"name\":\"hash\",\"type\":\"bytes\",\"components\":[]},{\"internalType\":\"struct TendermintTypesPartSetHeader.Data\",\"name\":\"part_set_header\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"uint32\",\"name\":\"total\",\"type\":\"uint32\",\"components\":[]},{\"internalType\":\"bytes\",\"name\":\"hash\",\"type\":\"bytes\",\"components\":[]}]}]},{\"internalType\":\"bytes\",\"name\":\"last_commit_hash\",\"type\":\"bytes\",\"components\":[]},{\"internalType\":\"bytes\",\"name\":\"data_hash\",\"type\":\"bytes\",\"components\":[]},{\"internalType\":\"bytes\",\"name\":\"validators_hash\",\"type\":\"bytes\",\"components\":[]},{\"internalType\":\"bytes\",\"name\":\"next_validators_hash\",\"type\":\"bytes\",\"components\":[]},{\"internalType\":\"bytes\",\"name\":\"consensus_hash\",\"type\":\"bytes\",\"components\":[]},{\"internalType\":\"bytes\",\"name\":\"app_hash\",\"type\":\"bytes\",\"components\":[]},{\"internalType\":\"bytes\",\"name\":\"last_results_hash\",\"type\":\"bytes\",\"components\":[]},{\"internalType\":\"bytes\",\"name\":\"evidence_hash\",\"type\":\"bytes\",\"components\":[]},{\"internalType\":\"bytes\",\"name\":\"proposer_address\",\"type\":\"bytes\",\"components\":[]}]},{\"internalType\":\"struct TendermintTypesCommit.Data\",\"name\":\"\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"int64\",\"name\":\"height\",\"type\":\"int64\",\"components\":[]},{\"internalType\":\"int32\",\"name\":\"round\",\"type\":\"int32\",\"components\":[]},{\"internalType\":\"struct TendermintTypesBlockID.Data\",\"name\":\"block_id\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"bytes\",\"name\":\"hash\",\"type\":\"bytes\",\"components\":[]},{\"internalType\":\"struct TendermintTypesPartSetHeader.Data\",\"name\":\"part_set_header\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"uint32\",\"name\":\"total\",\"type\":\"uint32\",\"components\":[]},{\"internalType\":\"bytes\",\"name\":\"hash\",\"type\":\"bytes\",\"components\":[]}]}]},{\"internalType\":\"struct TendermintTypesCommitSig.Data[]\",\"name\":\"signatures\",\"type\":\"tuple[]\",\"components\":[{\"internalType\":\"enum TendermintTypesTypesGlobalEnums.BlockIDFlag\",\"name\":\"block_id_flag\",\"type\":\"uint8\",\"components\":[]},{\"internalType\":\"bytes\",\"name\":\"validator_address\",\"type\":\"bytes\",\"components\":[]},{\"internalType\":\"struct GoogleProtobufTimestamp.Data\",\"name\":\"timestamp\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"int64\",\"name\":\"secs\",\"type\":\"int64\",\"components\":[]},{\"internalType\":\"int64\",\"name\":\"nanos\",\"type\":\"int64\",\"components\":[]}]},{\"internalType\":\"bytes\",\"name\":\"signature\",\"type\":\"bytes\",\"components\":[]}]}]},{\"internalType\":\"struct IbcCoreClientV1Height.Data\",\"name\":\"\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"uint64\",\"name\":\"revision_number\",\"type\":\"uint64\",\"components\":[]},{\"internalType\":\"uint64\",\"name\":\"revision_height\",\"type\":\"uint64\",\"components\":[]}]},{\"internalType\":\"struct OptimizedConsensusState\",\"name\":\"\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"bytes32\",\"name\":\"root\",\"type\":\"bytes32\",\"components\":[]},{\"internalType\":\"bytes32\",\"name\":\"nextValidatorsHash\",\"type\":\"bytes32\",\"components\":[]},{\"internalType\":\"uint64\",\"name\":\"timestamp\",\"type\":\"uint64\",\"components\":[]}]},{\"internalType\":\"struct ProcessedMoment\",\"name\":\"\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"uint128\",\"name\":\"timestamp\",\"type\":\"uint128\",\"components\":[]},{\"internalType\":\"uint128\",\"name\":\"height\",\"type\":\"uint128\",\"components\":[]}]},{\"internalType\":\"struct TendermintTypesCanonicalVote.Data\",\"name\":\"\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"enum TendermintTypesTypesGlobalEnums.SignedMsgType\",\"name\":\"type_\",\"type\":\"uint8\",\"components\":[]},{\"internalType\":\"int64\",\"name\":\"height\",\"type\":\"int64\",\"components\":[]},{\"internalType\":\"int64\",\"name\":\"round\",\"type\":\"int64\",\"components\":[]},{\"internalType\":\"struct TendermintTypesCanonicalBlockID.Data\",\"name\":\"block_id\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"bytes\",\"name\":\"hash\",\"type\":\"bytes\",\"components\":[]},{\"internalType\":\"struct TendermintTypesCanonicalPartSetHeader.Data\",\"name\":\"part_set_header\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"uint32\",\"name\":\"total\",\"type\":\"uint32\",\"components\":[]},{\"internalType\":\"bytes\",\"name\":\"hash\",\"type\":\"bytes\",\"components\":[]}]}]},{\"internalType\":\"string\",\"name\":\"chain_id\",\"type\":\"string\",\"components\":[]}]},{\"internalType\":\"struct TransferPacket\",\"name\":\"\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"denom\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"receiver\",\"type\":\"string\",\"components\":[]},{\"internalType\":\"string\",\"name\":\"sender\",\"type\":\"string\",\"components\":[]}]}],\"stateMutability\":\"pure\",\"type\":\"function\",\"name\":\"typesTelescope\",\"outputs\":[]}]";
     ///The parsed JSON ABI of the contract.
-    pub static GLUE_ABI: ::ethers::contract::Lazy<::ethers::core::abi::Abi> = ::ethers::contract::Lazy::new(||
-    ::ethers::core::utils::__serde_json::from_str(__ABI).expect("ABI is always valid"));
+    pub static GLUE_ABI: ::ethers::contract::Lazy<::ethers::core::abi::Abi> =
+        ::ethers::contract::Lazy::new(|| {
+            ::ethers::core::utils::__serde_json::from_str(__ABI).expect("ABI is always valid")
+        });
     #[rustfmt::skip]
     const __BYTECODE: &[u8] = &[
         96,
@@ -4121,9 +4123,8 @@ pub mod glue {
         51,
     ];
     ///The bytecode of the contract.
-    pub static GLUE_BYTECODE: ::ethers::core::types::Bytes = ::ethers::core::types::Bytes::from_static(
-        __BYTECODE,
-    );
+    pub static GLUE_BYTECODE: ::ethers::core::types::Bytes =
+        ::ethers::core::types::Bytes::from_static(__BYTECODE);
     #[rustfmt::skip]
     const __DEPLOYED_BYTECODE: &[u8] = &[
         96,
@@ -8126,9 +8127,8 @@ pub mod glue {
         51,
     ];
     ///The deployed bytecode of the contract.
-    pub static GLUE_DEPLOYED_BYTECODE: ::ethers::core::types::Bytes = ::ethers::core::types::Bytes::from_static(
-        __DEPLOYED_BYTECODE,
-    );
+    pub static GLUE_DEPLOYED_BYTECODE: ::ethers::core::types::Bytes =
+        ::ethers::core::types::Bytes::from_static(__DEPLOYED_BYTECODE);
     pub struct Glue<M>(::ethers::contract::Contract<M>);
     impl<M> ::core::clone::Clone for Glue<M> {
         fn clone(&self) -> Self {
@@ -8148,7 +8148,9 @@ pub mod glue {
     }
     impl<M> ::core::fmt::Debug for Glue<M> {
         fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
-            f.debug_tuple(stringify!(Glue)).field(&self.address()).finish()
+            f.debug_tuple(stringify!(Glue))
+                .field(&self.address())
+                .finish()
         }
     }
     impl<M: ::ethers::providers::Middleware> Glue<M> {
@@ -8158,13 +8160,11 @@ pub mod glue {
             address: T,
             client: ::std::sync::Arc<M>,
         ) -> Self {
-            Self(
-                ::ethers::contract::Contract::new(
-                    address.into(),
-                    GLUE_ABI.clone(),
-                    client,
-                ),
-            )
+            Self(::ethers::contract::Contract::new(
+                address.into(),
+                GLUE_ABI.clone(),
+                client,
+            ))
         }
         /// Constructs the general purpose `Deployer` instance based on the provided constructor arguments and sends it.
         /// Returns a new instance of a deployer that returns an instance of this contract after sending the transaction
@@ -8220,15 +8220,11 @@ pub mod glue {
             p9: TransferPacket,
         ) -> ::ethers::contract::builders::ContractCall<M, ()> {
             self.0
-                .method_hash(
-                    [154, 12, 183, 55],
-                    (p0, p1, p2, p3, p4, p5, p6, p7, p8, p9),
-                )
+                .method_hash([154, 12, 183, 55], (p0, p1, p2, p3, p4, p5, p6, p7, p8, p9))
                 .expect("method not found (this should never happen)")
         }
     }
-    impl<M: ::ethers::providers::Middleware> From<::ethers::contract::Contract<M>>
-    for Glue<M> {
+    impl<M: ::ethers::providers::Middleware> From<::ethers::contract::Contract<M>> for Glue<M> {
         fn from(contract: ::ethers::contract::Contract<M>) -> Self {
             Self::new(contract.address(), contract.client())
         }
@@ -8260,7 +8256,7 @@ pub mod glue {
         Debug,
         PartialEq,
         Eq,
-        Hash
+        Hash,
     )]
     pub struct GoogleProtobufDurationData {
         pub seconds: i64,
@@ -8275,7 +8271,7 @@ pub mod glue {
         Debug,
         PartialEq,
         Eq,
-        Hash
+        Hash,
     )]
     pub struct GoogleProtobufTimestampData {
         pub secs: i64,
@@ -8290,7 +8286,7 @@ pub mod glue {
         Debug,
         PartialEq,
         Eq,
-        Hash
+        Hash,
     )]
     pub struct IbcCoreCommitmentV1MerkleRootData {
         pub hash: ::ethers::core::types::Bytes,
@@ -8304,7 +8300,7 @@ pub mod glue {
         Debug,
         PartialEq,
         Eq,
-        Hash
+        Hash,
     )]
     pub struct IbcLightclientsTendermintV1FractionData {
         pub numerator: u64,
@@ -8319,7 +8315,7 @@ pub mod glue {
         Debug,
         PartialEq,
         Eq,
-        Hash
+        Hash,
     )]
     pub struct OptimizedConsensusState {
         pub root: [u8; 32],
@@ -8335,7 +8331,7 @@ pub mod glue {
         Debug,
         PartialEq,
         Eq,
-        Hash
+        Hash,
     )]
     pub struct ProcessedMoment {
         pub timestamp: u128,
@@ -8350,7 +8346,7 @@ pub mod glue {
         Debug,
         PartialEq,
         Eq,
-        Hash
+        Hash,
     )]
     pub struct TendermintTypesBlockIDData {
         pub hash: ::ethers::core::types::Bytes,
@@ -8365,7 +8361,7 @@ pub mod glue {
         Debug,
         PartialEq,
         Eq,
-        Hash
+        Hash,
     )]
     pub struct TendermintTypesCanonicalBlockIDData {
         pub hash: ::ethers::core::types::Bytes,
@@ -8380,7 +8376,7 @@ pub mod glue {
         Debug,
         PartialEq,
         Eq,
-        Hash
+        Hash,
     )]
     pub struct TendermintTypesCanonicalPartSetHeaderData {
         pub total: u32,
@@ -8395,7 +8391,7 @@ pub mod glue {
         Debug,
         PartialEq,
         Eq,
-        Hash
+        Hash,
     )]
     pub struct TendermintTypesCanonicalVoteData {
         pub type_: u8,
@@ -8413,7 +8409,7 @@ pub mod glue {
         Debug,
         PartialEq,
         Eq,
-        Hash
+        Hash,
     )]
     pub struct TendermintTypesCommitData {
         pub height: i64,
@@ -8430,7 +8426,7 @@ pub mod glue {
         Debug,
         PartialEq,
         Eq,
-        Hash
+        Hash,
     )]
     pub struct TendermintTypesCommitSigData {
         pub block_id_flag: u8,
@@ -8447,7 +8443,7 @@ pub mod glue {
         Debug,
         PartialEq,
         Eq,
-        Hash
+        Hash,
     )]
     pub struct TendermintTypesHeaderData {
         pub version: TendermintVersionConsensusData,
@@ -8474,7 +8470,7 @@ pub mod glue {
         Debug,
         PartialEq,
         Eq,
-        Hash
+        Hash,
     )]
     pub struct TendermintTypesPartSetHeaderData {
         pub total: u32,
@@ -8489,7 +8485,7 @@ pub mod glue {
         Debug,
         PartialEq,
         Eq,
-        Hash
+        Hash,
     )]
     pub struct TendermintTypesSignedHeaderData {
         pub header: TendermintTypesHeaderData,
@@ -8504,7 +8500,7 @@ pub mod glue {
         Debug,
         PartialEq,
         Eq,
-        Hash
+        Hash,
     )]
     pub struct TendermintVersionConsensusData {
         pub block: u64,
@@ -8519,7 +8515,7 @@ pub mod glue {
         Debug,
         PartialEq,
         Eq,
-        Hash
+        Hash,
     )]
     pub struct TransferPacket {
         pub amount: ::ethers::core::types::U256,
@@ -8536,7 +8532,7 @@ pub mod glue {
         Debug,
         PartialEq,
         Eq,
-        Hash
+        Hash,
     )]
     pub struct UnionIbcLightclientsCometblsV1ClientStateData {
         pub chain_id: ::std::string::String,
@@ -8555,7 +8551,7 @@ pub mod glue {
         Debug,
         PartialEq,
         Eq,
-        Hash
+        Hash,
     )]
     pub struct UnionIbcLightclientsCometblsV1ConsensusStateData {
         pub root: IbcCoreCommitmentV1MerkleRootData,
@@ -8570,7 +8566,7 @@ pub mod glue {
         Debug,
         PartialEq,
         Eq,
-        Hash
+        Hash,
     )]
     pub struct UnionIbcLightclientsCometblsV1HeaderData {
         pub signed_header: TendermintTypesSignedHeaderData,
