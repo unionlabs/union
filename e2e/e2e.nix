@@ -34,7 +34,7 @@
       unionNode = {
         wait_for_console_text = "height=[1-9][0-9]*";
         wait_for_open_port = 26657;
-        node = {
+        node = _: {
           imports = [
             inputs.arion.nixosModules.arion
           ];

@@ -496,8 +496,6 @@
 
         ${uniond} collect-gentxs --home . 2> /dev/null
         ${uniond} validate-genesis --home .
-
-        echo $(cat $out/config/genesis.json)
       '';
 
       packages.devnet-validator-keys = pkgs.symlinkJoin {
