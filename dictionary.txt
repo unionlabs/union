@@ -25,9 +25,8 @@ GOPATH
 GOPRIVATE
 Getenv
 HKTs
-Hasher
 HMAC
-hmac
+Hasher
 Hyperlane
 IAVL
 IIBC
@@ -251,6 +250,7 @@ groupmodule
 hasher
 healthcheck
 herumi
+hmac
 holiman
 horcrux
 horiz
