@@ -21,6 +21,24 @@
       # read the Cargo.toml from the given crate directory into a nix value.
       crateCargoToml = dir: assert builtins.isString dir; lib.trivial.importTOML ../../${dir}/Cargo.toml;
 
+      # For use in source filtering; ensures that a directory and all of it's contents are included
+      # in the new filtered source.
+      ensureDirectoryIncluded = { path', pathToInclude }:
+        # check if the path to include is prefixed with the path, to catch files in sub-folders
+        # that we have included:
+        # pathToInclude = some/dir
+        #    sourcePath = some/dir/file.ext     true
+        #    sourcePath = some/dir/sub/file.ext true
+        #    sourcePath = some/dir.ext          false
+        lib.hasPrefix (pathToInclude + "/") path'
+        # check if the path is prefixed with the path to include, to ensure that folders aren't
+        # preemptively filtered out:
+        # pathToInclude = some/dir/sub
+        #    sourcePath = some             true
+        #    sourcePath = some/dir         true
+        #    sourcePath = some/dir/sub/dir false
+        || lib.hasPrefix path' pathToInclude;
+
       buildWorkspaceMember =
         {
           # the directory that contains the Cargo.toml and src/ for the crate,
@@ -115,47 +133,41 @@
 
           workspaceDepsForCrate = getWorkspaceDeps (lib.throwIfNot
             (builtins.isString crateDirFromRoot)
-            "expected crateDir to be a string, but it was a ${builtins.typeOf crateDirFromRoot}: ${crateDirFromRoot}"
+            "expected crateDirFromRoot to be a string, but it was a ${builtins.typeOf crateDirFromRoot}: ${crateDirFromRoot}"
             crateDirFromRoot);
 
           crateSrc = lib.sources.trace (lib.cleanSourceWith {
             name = "${cratePname}-source";
 
-            # first filter down to just the cargo source, and any additional files as specified by
-            # additional[Test]SrcFilter
             src = root;
 
             filter = path: type:
               let
                 path' = removeRootStorePath path;
               in
-              (
-                (craneLib.filterCargoSources path type)
-                || (additionalSrcFilter path' type)
-                # TODO: only include this filter for tests; maybe by adding to preConfigureHooks?
-                || (additionalTestSrcFilter path' type)
-              )
+              # first filter down to just the cargo source, and any additional files as specified by
+                # additional[Test]SrcFilter
+              ((craneLib.filterCargoSources path type)
+              || (additionalSrcFilter path' type)
+              # TODO: only include this filter for tests; maybe by adding to preConfigureHooks?
+              || (additionalTestSrcFilter path' type))
               && (
                 path' == "Cargo.toml"
                 || path' == "Cargo.lock"
-                || (builtins.any
-                  (depPath:
-                    # check if the local dependency is prefixed with the path, to catch files in sub-folders
-                    # that we have included:
-                    #   depPath = some/dir
-                    #   path'   = some/dir/file.ext     true
-                    #   path'   = some/dir/sub/file.ext true
-                    #   path'   = some/dir.ext          false
-                    lib.hasPrefix (depPath + "/") path'
-                    # check if the path is prefixed with the local dependency, to ensure that folders aren't
-                    # preemptively filtered out:
-                    #   depPath = some/dir/sub
-                    #   path'   = some             true
-                    #   path'   = some/dir         true
-                    #   path'   = some/dir/sub/dir false
-                    || lib.hasPrefix path' depPath)
-                  workspaceDepsForCrate
+                || (
+                  builtins.any
+                    (depPath: ensureDirectoryIncluded {
+                      inherit path';
+                      pathToInclude = depPath;
+                    })
+                    workspaceDepsForCrate
                 )
+                # Yes, this does need to be filtered twice - once in the original filter so it's included
+                # in the cargo sources, and once again so it's included when filtering down to workspace
+                # dependencies
+                || (additionalSrcFilter path' type)
+                # TODO: Only include this filter for tests; maybe by adding to preConfigureHooks?
+                || (additionalTestSrcFilter path' type)
               );
           });
 
@@ -270,7 +282,7 @@
       _module.args = {
         crane = {
           lib = craneLib;
-          inherit buildWorkspaceMember;
+          inherit buildWorkspaceMember ensureDirectoryIncluded;
           buildWasmContract = import ./buildWasmContract.nix {
             inherit buildWorkspaceMember crateCargoToml pkgs lib;
           };

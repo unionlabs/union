@@ -6,7 +6,7 @@ edition = "2021"
 [dependencies]
 serde-utils.workspace = true
 contracts = { workspace = true, optional = true }
-protos = { workspace = true, default-features = false, features = ["proto_full"] }
+protos = { workspace = true, default-features = false, features = ["proto_full", "serde"] }
 
 ssz = { workspace = true, default-features = false }
 ssz_types = { workspace = true, default-features = false }

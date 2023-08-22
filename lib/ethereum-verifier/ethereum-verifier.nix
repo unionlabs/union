@@ -1,20 +1,15 @@
 { ... }: {
-  perSystem = { self', pkgs, system, config, crane, stdenv, ... }:
-    { };
-  # let
-  #   attrs = crane.commonAttrs // {
-  #     inherit (crane) cargoArtifacts;
-  #     cargoExtraArgs = "-p ethereum-verifier";
-  #   } // (crane.lib.crateNameFromCargoToml { cargoToml = ./Cargo.toml; });
-  # in
-  # {
-
-  #   checks = crane.mkChecks "ethereum-verifier" {
-  #     clippy = crane.lib.cargoClippy (attrs // {
-  #       cargoClippyExtraArgs = "-- --deny warnings --no-deps";
-  #     });
-
-  #     tests = crane.lib.cargoNextest attrs;
-  #   };
-  # };
+  perSystem = { self', pkgs, system, config, crane, stdenv, dbg, ... }:
+    let
+      ethereum-verifier-all = (crane.buildWorkspaceMember {
+        crateDirFromRoot = "lib/ethereum-verifier";
+        additionalTestSrcFilter = path: _: crane.ensureDirectoryIncluded {
+          path' = path;
+          pathToInclude = "light-clients/ethereum-light-client/src/test";
+        };
+      });
+    in
+    {
+      inherit (ethereum-verifier-all) packages checks;
+    };
 }
