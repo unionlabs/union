@@ -953,7 +953,7 @@ dependencies = [
  "ethabi",
  "hex",
  "lazy_static",
- "tiny-keccak",
+ "sha3",
 ]
 
 [[package]]

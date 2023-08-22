@@ -8,7 +8,7 @@ use ark_ff::{vec, vec::Vec, BigInt, Field, PrimeField, QuadExtField};
 use ark_groth16::VerifyingKey;
 use ark_serialize::CanonicalDeserialize;
 use ethabi::{ethereum_types::U256, ParamType, Token};
-use tiny_keccak::Hasher;
+use sha3::Digest;
 
 // TODO: link whitepaper equation (hmac)
 lazy_static::lazy_static! {
@@ -260,33 +260,28 @@ pub fn testnet_vk() -> VerifyingKey<ark_bn254::Bn254> {
 // TODO: optimize?
 // TODO: link whitepaper equation
 fn hmac_keccak(message: &[u8]) -> [u8; 32] {
-    let mut inner_hash = [0u8; 32];
-    let mut hasher = tiny_keccak::Keccak::v256();
+    let mut hasher = sha3::Keccak256::new();
     hasher.update(
         HMAC_I
             .to_vec()
             .into_iter()
             .chain(message.to_vec())
             .into_iter()
-            .collect::<Vec<_>>()
-            .as_ref(),
+            .collect::<Vec<_>>(),
     );
-    hasher.finalize(&mut inner_hash);
+    let inner_hash = hasher.finalize();
 
-    let mut outer_hash = [0u8; 32];
-    let mut hasher = tiny_keccak::Keccak::v256();
+    let mut hasher = sha3::Keccak256::new();
     hasher.update(
         HMAC_O
             .to_vec()
             .into_iter()
             .chain(inner_hash.to_vec())
             .into_iter()
-            .collect::<Vec<_>>()
-            .as_ref(),
+            .collect::<Vec<_>>(),
     );
-    hasher.finalize(&mut outer_hash);
 
-    outer_hash
+    hasher.finalize().into()
 }
 
 // TODO: optimize
