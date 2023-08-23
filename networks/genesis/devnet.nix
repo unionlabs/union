@@ -492,7 +492,7 @@
           cp ${valGentx}/valgentx-${toString i}.json ./config/gentx/valgentx-${
             toString i
           }.json
-        '') (validatorGentxs))}
+        '') validatorGentxs)}
 
         ${uniond} collect-gentxs --home . 2> /dev/null
         ${uniond} validate-genesis --home .
