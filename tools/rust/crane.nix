@@ -69,9 +69,9 @@
         , # rustflags to be passed to cargo build.
           rustflags ? ""
         , # checkPhase to be passed to the cargo build derivation.
-          cargoBuildCheckPhase ? ""
+          cargoBuildCheckPhase ? null
         , # installPhase to be passed to the cargo build derivation.
-          cargoBuildInstallPhase ? ""
+          cargoBuildInstallPhase ? null
         , # a suffix to add to the package name.
           pnameSuffix ? ""
         }:
@@ -221,7 +221,7 @@
               ]));
             };
 
-            doCheck = false;
+            doCheck = cargoBuildCheckPhase != null;
             PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
           };
 
@@ -254,12 +254,17 @@
         {
           packages.${cratePname} = cargoBuild.buildPackage (
             crateAttrs // {
+              inherit pnameSuffix;
               cargoExtraArgs = "${packageFilterArg} ${cargoBuildExtraArgs}" + (pkgs.lib.optionalString
                 (buildStdTarget != null)
                 # the leading space is important here!
                 " -Z build-std=std,panic_abort -Z build-std-features=panic_immediate_abort --target ${buildStdTarget}");
               RUSTFLAGS = rustflags;
-            } // (
+            } // (pkgs.lib.optionalAttrs (cargoBuildCheckPhase != null) ({
+              installPhaseCommand = cargoBuildInstallPhase;
+            })) // (pkgs.lib.optionalAttrs (cargoBuildCheckPhase != null) ({
+              checkPhase = cargoBuildCheckPhase;
+            })) // (
               if (buildStdTarget == null)
               # if we're not building std, then use the same artifacts as clippy & tests
               then { cargoArtifacts = artifacts; }
