@@ -1,8 +1,15 @@
 { lib, withSystem, inputs, ... }: {
   flake.checks = lib.genAttrs [ "x86_64-linux" "aarch64-linux" ]
     (lib.flip withSystem ({ e2e, networks, pkgs, nixpkgs, crane, ... }:
+      let
+        epoch-staking = import ./epoch-staking.nix { inherit e2e pkgs; };
+      in
       {
         ensure-blocks = import ./ensure-blocks/ensure-blocks.nix { inherit e2e networks pkgs nixpkgs crane; };
+
+        # Tests from ./epoch-staking.nix
+        epoch-completes = epoch-staking.epoch-completes;
+        forced-set-rotation = epoch-staking.forced-set-rotation;
 
         virtualisation-works = e2e.mkTest {
           name = "devnet";
@@ -51,46 +58,6 @@
 
             # Ensure the union network commits more than one block
             union.wait_until_succeeds('[[ $(curl "http://localhost:26660/block" --fail --silent | ${pkgs.lib.meta.getExe pkgs.jq} ".result.block.header.height | tonumber > 1") == "true" ]]')
-          '';
-
-          nodes = {
-            union = e2e.unionNode.node;
-          };
-        };
-
-        epoch-completes = e2e.mkTest {
-          name = "epoch-completes";
-
-          testScript = ''
-            union.wait_for_open_port(${toString e2e.unionNode.wait_for_open_port})
-
-            union.wait_until_succeeds('[[ $(curl "http://localhost:26660/block" --fail --silent | ${pkgs.lib.meta.getExe pkgs.jq} ".result.block.header.height | tonumber > 1") == "true" ]]')
-
-            # Ensure we get through one epoch
-            union.wait_for_console_text('Rotating validator set due to end of epoch.')
-          '';
-
-          nodes = {
-            union = e2e.unionNode.node;
-          };
-        };
-
-        forced-set-rotation = e2e.mkTest {
-          name = "forced-set-rotation";
-
-          testScript = ''
-            union.wait_for_open_port(${toString e2e.unionNode.wait_for_open_port})
-
-            union.wait_until_succeeds('[[ $(curl "http://localhost:26660/block" --fail --silent | ${pkgs.lib.meta.getExe pkgs.jq} ".result.block.header.height | tonumber > 1") == "true" ]]')
-
-            union.wait_for_console_text('Rotating validator set due to end of epoch.')
-
-            # Ensure validators exist in docker
-            union.wait_until_succeeds('docker container ls | grep union')
-            # Stop docker nodes
-            union.wait_until_succeeds('docker stop union-uniond-2-1')
-
-            union.wait_for_console_text('Rotating validator set due to exceeding the threshold of jailed validators.')
           '';
 
           nodes = {
