@@ -1,12 +1,14 @@
 pragma solidity ^0.8.18;
 
-// import "@openzeppelin/contracts/access/Ownable.sol";
 import "./OwnableIBCHandler.sol";
+import "./DevnetIBCHandlerInit.sol";
 
 /**
  * @dev DevnetOwnableIBCHandler is a contract that implements [ICS-25](https://github.com/cosmos/ibc/tree/main/spec/core/ics-025-handler-interface).
  */
 contract DevnetOwnableIBCHandler is OwnableIBCHandler {
+    address ibcHandlerInit;
+
     /**
      * @dev The arguments of constructor must satisfy the followings:
      * @param ibcClient is the address of a contract that implements `IIBCClient`.
@@ -18,8 +20,11 @@ contract DevnetOwnableIBCHandler is OwnableIBCHandler {
         address ibcClient,
         address ibcConnection,
         address ibcChannel,
-        address ibcPacket
-    ) OwnableIBCHandler(ibcClient, ibcConnection, ibcChannel, ibcPacket) {}
+        address ibcPacket,
+        address ibcHandlerInit_
+    ) OwnableIBCHandler(ibcClient, ibcConnection, ibcChannel, ibcPacket) {
+        ibcHandlerInit = ibcHandlerInit_;
+    }
 
     function setupInitialChannel(
         string calldata connectionId,
@@ -29,43 +34,19 @@ contract DevnetOwnableIBCHandler is OwnableIBCHandler {
         IbcCoreChannelV1Channel.Data calldata channel,
         address moduleAddress
     ) public onlyOwner {
-        nextSequenceSends[portId][channelId] = 1;
-        nextSequenceRecvs[portId][channelId] = 1;
-        nextSequenceAcks[portId][channelId] = 1;
-        nextConnectionSequence = 1;
-        nextChannelSequence++;
-
-        connections[connectionId].client_id = connection.client_id;
-        connections[connectionId].state = connection.state;
-        connections[connectionId].delay_period = connection.delay_period;
-        delete connections[connectionId].versions;
-        for (uint8 i = 0; i < connection.versions.length; i++) {
-            connections[connectionId].versions.push(connection.versions[i]);
+        (bool success, bytes memory res) = ibcHandlerInit.delegatecall(
+            abi.encodeWithSelector(
+                DevnetIBCHandlerInit.setupInitialChannel.selector,
+                connectionId,
+                connection,
+                portId,
+                channelId,
+                channel,
+                moduleAddress
+            )
+        );
+        if (!success) {
+            revert(_getRevertMsg(res));
         }
-        connections[connectionId].counterparty = connection.counterparty;
-        commitments[
-            keccak256(IBCCommitment.connectionPath(connectionId))
-        ] = keccak256(IbcCoreConnectionV1ConnectionEnd.encode(connection));
-
-        channels[portId][channelId] = channel;
-        commitments[
-            keccak256(IBCCommitment.channelPath(portId, channelId))
-        ] = keccak256(IbcCoreChannelV1Channel.encode(channel));
-
-        bindPort(portId, moduleAddress);
-        IIBCModule module = lookupModuleByPort(portId);
-        module.onChanOpenInit(
-            channel.ordering,
-            channel.connection_hops,
-            portId,
-            channelId,
-            channel.counterparty,
-            channel.version
-        );
-        module.onChanOpenAck(portId, channelId, channel.version);
-        claimCapability(
-            channelCapabilityPath(portId, channelId),
-            address(module)
-        );
     }
 }

@@ -156,14 +156,15 @@
               { path = "core/03-connection/IBCConnection.sol"; name = "IBCConnection"; }
               { path = "core/04-channel/IBCChannelHandshake.sol"; name = "IBCChannelHandshake"; }
               { path = "core/04-channel/IBCPacket.sol"; name = "IBCPacket"; }
-              { path = "core/DevnetOwnableIBCHandler.sol"; name = "DevnetOwnableIBCHandler"; args = ''--constructor-args "$IBCCLIENT" "$IBCCONNECTION" "$IBCCHANNELHANDSHAKE" "$IBCPACKET"''; optimize = true; }
+              { path = "core/DevnetIBCHandlerInit.sol"; name = "DevnetIBCHandlerInit"; optimize = true; }
+              { path = "core/DevnetOwnableIBCHandler.sol"; name = "DevnetOwnableIBCHandler"; args = ''--constructor-args "$IBCCLIENT" "$IBCCONNECTION" "$IBCCHANNELHANDSHAKE" "$IBCPACKET" "$DEVNETIBCHANDLERINIT"''; optimize = true; }
 
               { path = "clients/${verifierPrefix}Verifier.sol"; name = "${verifierPrefix}Verifier"; }
               { path = "clients/ICS23MembershipVerifier.sol"; name = "ICS23MembershipVerifier"; }
               { path = "clients/CometblsClient.sol"; name = "CometblsClient"; args = ''--constructor-args "$DEVNETOWNABLEIBCHANDLER" "''$${pkgs.lib.strings.toUpper network}VERIFIER" "$ICS23MEMBERSHIPVERIFIER"''; }
 
               { path = "apps/20-transfer/ICS20Bank.sol"; name = "ICS20Bank"; }
-              { path = "apps/20-transfer/ICS20TransferBank.sol"; name = "ICS20TransferBank";  args = ''--constructor-args "$DEVNETOWNABLEIBCHANDLER" "$ICS20BANK"''; }              
+              { path = "apps/20-transfer/ICS20TransferBank.sol"; name = "ICS20TransferBank";  args = ''--constructor-args "$DEVNETOWNABLEIBCHANDLER" "$ICS20BANK"''; }
             ]}
 
             echo "{\"ibc_handler_address\": \"$DEVNETOWNABLEIBCHANDLER\", \"cometbls_client_address\": \"$COMETBLSCLIENT\", \"ics20_transfer_bank_address\": \"$ICS20TRANSFERBANK\", \"ics20_bank_address\": \"$ICS20BANK\" }"
@@ -180,10 +181,10 @@
           cd "$OUT"
           cp --no-preserve=mode -r ${self'.packages.evm-contracts}/* .
 
-          ${deploy-contracts { rpc-url = rpc-url; 
+          ${deploy-contracts { rpc-url = rpc-url;
                            private-key = private-key; } [{
-                           path = "apps/ucs/00-pingpong/PingPong.sol"; 
-                           name = "PingPong"; 
+                           path = "apps/ucs/00-pingpong/PingPong.sol";
+                           name = "PingPong";
                            args = ''--constructor-args "$IBC_HANDLER_ADDRESS" "$REVISION_NUMBER" "$NUM_OF_BLOCK_BEFORE_PONG_TIMEOUT" ''; }]}
 
           echo "{\"ping_pong_address\": \"$PINGPONG\" }"
