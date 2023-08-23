@@ -1,16 +1,20 @@
-{ buildWorkspaceMember, crateCargoToml, pkgs, lib }:
+{ buildWorkspaceMember
+, crateCargoToml
+, pkgs
+, lib
+}:
 { crateDirFromRoot
 , features ? null
 , additionalSrcFilter ? _: _: false
 , additionalTestSrcFilter ? _: _: false
 }:
 let
-  dbg = value: builtins.trace (pkgs.lib.generators.toPretty { } value) value;
-
   CARGO_BUILD_TARGET = "wasm32-unknown-unknown";
 
+  dashesToUnderscores = builtins.replaceStrings [ "-" ] [ "_" ];
+
   contractFileNameWithoutExt =
-    builtins.replaceStrings [ "-" ] [ "_" ] (crateCargoToml crateDirFromRoot).package.name;
+    dashesToUnderscores (crateCargoToml crateDirFromRoot).package.name;
 
   featuresString = if features == null then "" else (lib.concatMapStrings (feature: "-${feature}") features);
 
@@ -44,13 +48,13 @@ let
 
       cargoBuildInstallPhase = ''
         mkdir -p $out/lib
-        mv target/wasm32-unknown-unknown/release/${contractFileNameWithoutExt}.wasm $out/lib/${contractFileNameWithoutExt}${dbg featuresString}.wasm
+        mv target/wasm32-unknown-unknown/release/${contractFileNameWithoutExt}.wasm $out/lib/${contractFileNameWithoutExt}${dashesToUnderscores featuresString}.wasm
         # TODO: Re-enable this?
         # Optimize the binary size a little bit more
         # ${pkgs.binaryen}/bin/wasm-opt -Os target/wasm32-unknown-unknown/release/${contractFileNameWithoutExt}.wasm -o $out/lib/${contractFileNameWithoutExt}.wasm
 
         # gzip the binary to ensure it's not too large to upload
-        gzip -fk $out/lib/${contractFileNameWithoutExt}${featuresString}.wasm
+        gzip -fk $out/lib/${contractFileNameWithoutExt}${dashesToUnderscores featuresString}.wasm
         # TODO: check that the size isn't over the max size allowed to be uploaded?
       '';
 
