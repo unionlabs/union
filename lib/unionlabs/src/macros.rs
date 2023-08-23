@@ -122,15 +122,31 @@ macro_rules! wrapper_enum {
 
 // pub(crate) use option_try;
 
-// macro_rules! result_try {
-//     ($expr:expr) => {
-//         match $expr {
-//             Ok(ok) => ok,
-//             Err(err) => return Err(err),
-//         }
-//     };
-// }
+macro_rules! result_try {
+    ($expr:expr$(, $map_err:expr)?) => {
+        match $expr {
+            Ok(ok) => ok,
+            Err(err) => return Err($($map_err)?(err)),
+        }
+    };
+}
 
-// pub(crate) use result_try;
+pub(crate) use result_try;
 
+macro_rules! result_unwrap {
+    ($expr:expr) => {{
+        // assign to a const here so this can't be called in non-const contexts
+        const _: () = match $expr {
+            Ok(_) => {}
+            Err(_) => panic!("called `Result::unwrap()` on an `Err` value"),
+        };
+
+        match $expr {
+            Ok(ok) => ok,
+            Err(err) => panic!("called `Result::unwrap()` on an `Err` value: {err:?}"),
+        }
+    }};
+}
+
+pub(crate) use result_unwrap;
 pub(crate) use wrapper_enum;

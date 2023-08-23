@@ -1,5 +1,5 @@
 { ... }: {
-  perSystem = { pkgs, system, ... }:
+  perSystem = { pkgs, system, dbg, ... }:
     let
       nightlyVersion = "2023-05-16";
       channel = "nightly-${nightlyVersion}";
@@ -16,6 +16,7 @@
         rust-analyzer = "rust-analyzer";
         clippy = "clippy";
         rust-src = "rust-src";
+        llvm-tools-preview = "llvm-tools-preview";
       };
 
       mkToolchain =
@@ -58,10 +59,10 @@
           nightly = mkNightly { };
 
           # for use in the devShell
-          dev = (pkgs.rust-bin.nightly.${nightlyVersion}.default.override {
+          dev = dbg ((pkgs.rust-bin.nightly.${nightlyVersion}.default.override {
             extensions = builtins.attrValues availableComponents;
             targets = [ "wasm32-unknown-unknown" ];
-          });
+          }));
         };
       };
     };

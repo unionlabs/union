@@ -1,8 +1,11 @@
 use core::num::TryFromIntError;
-use std::{cmp::Ordering, fmt::Display, ops::Neg};
+use std::{cmp::Ordering, fmt::Display, ops::Neg, str::FromStr};
 
-use chrono::{DateTime, NaiveDateTime, SecondsFormat, Utc};
-use serde::{Deserialize, Serialize};
+use chrono::{DateTime, NaiveDateTime, SecondsFormat, TimeZone, Utc};
+use serde::{
+    de::{self, Unexpected},
+    Deserialize, Serialize,
+};
 
 use crate::{
     bounded_int::{BoundedI32, BoundedI64, BoundedIntError},
@@ -14,7 +17,8 @@ use crate::{
 pub const TIMESTAMP_SECONDS_MAX: i64 = 253_402_300_799;
 pub const TIMESTAMP_SECONDS_MIN: i64 = -62_135_596_800;
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct Timestamp {
     /// As per the proto docs: "Must be from 0001-01-01T00:00:00Z to
     /// 9999-12-31T23:59:59Z inclusive."
@@ -34,6 +38,28 @@ impl Ord for Timestamp {
 impl PartialOrd for Timestamp {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
+    }
+}
+
+impl<'de> Deserialize<'de> for Timestamp {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        String::deserialize(deserializer).and_then(|str| {
+            str.parse().map_err(|_| {
+                de::Error::invalid_value(Unexpected::Str(&str), &"a valid RFC 3339 string")
+            })
+        })
+    }
+}
+
+impl Serialize for Timestamp {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.collect_str(self)
     }
 }
 
@@ -95,10 +121,10 @@ pub enum TryFromDateTimeError {
     Seconds(BoundedIntError<i64>),
 }
 
-impl TryFrom<DateTime<Utc>> for Timestamp {
+impl<Tz: TimeZone> TryFrom<DateTime<Tz>> for Timestamp {
     type Error = TryFromDateTimeError;
 
-    fn try_from(value: DateTime<Utc>) -> Result<Self, Self::Error> {
+    fn try_from(value: DateTime<Tz>) -> Result<Self, Self::Error> {
         let mut seconds = value.timestamp();
         let mut nanos: i32 = value.timestamp_subsec_nanos().try_into().expect(
             "timestamp_subsec_nanos returns a value in 0..=1_999_999_999, which is in range of i32; qed;",
@@ -109,6 +135,12 @@ impl TryFrom<DateTime<Utc>> for Timestamp {
 
             debug_assert!(NaiveDateTime::MAX.timestamp() < i64::MAX);
 
+            // REVIEW: is this expected behaviour for leap seconds? The proto docs
+            // mention [smear](https://developers.google.com/time/smear) but I'm
+            // not sure what to do with potential leap seconds in this context,
+            // espeically since chrono doesn't make any guarantees about when or
+            // where they will fall (i.e. any value in 0..=1_999_999_999 is a valid
+            // nanos value).
             seconds += 1;
         }
 
@@ -118,6 +150,22 @@ impl TryFrom<DateTime<Utc>> for Timestamp {
                 .try_into()
                 .expect("nanos is within 0..=999_999_999; qed;"),
         })
+    }
+}
+
+#[derive(Debug)]
+pub enum TimestampFromStrError {
+    Parse(chrono::ParseError),
+    OutOfRange(TryFromDateTimeError),
+}
+
+impl FromStr for Timestamp {
+    type Err = TimestampFromStrError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        DateTime::parse_from_rfc3339(s)
+            .map_err(TimestampFromStrError::Parse)
+            .and_then(|dt| dt.try_into().map_err(TimestampFromStrError::OutOfRange))
     }
 }
 
@@ -259,6 +307,7 @@ impl crate::EthAbi for Timestamp {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::test_utils::assert_string_roundtrip;
 
     macro_rules! ts {
         ($s:literal, $n:literal) => {
@@ -297,5 +346,12 @@ mod tests {
             ts!(2, 100_000_000).duration_since(&ts!(1, 000_000_000)),
             Some(dur!(1, 100_000_000))
         );
+    }
+
+    #[test]
+    fn parse() {
+        Timestamp::from_str("2017-01-15T01:30:15.03441Z").unwrap();
+
+        assert_string_roundtrip(&ts!(12345, 6789));
     }
 }

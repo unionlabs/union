@@ -161,25 +161,44 @@ pub trait TypeUrl: Message {
     const TYPE_URL: &'static str;
 }
 
-#[cfg(test)]
-fn assert_proto_roundtrip<T>(t: &T)
-where
-    T: IntoProto + TryFromProto + Debug + Clone + PartialEq,
-    TryFromProtoErrorOf<T>: Debug,
-{
-    let try_from_proto = T::try_from_proto(t.clone().into_proto()).unwrap();
+#[cfg(any(fuzzing, test))]
+#[allow(clippy::missing_panics_doc)]
+pub mod test_utils {
+    use std::{
+        fmt::{Debug, Display},
+        str::FromStr,
+    };
 
-    assert_eq!(t, &try_from_proto, "proto roundtrip failed");
-}
+    use super::{IntoProto, TryFromProto, TryFromProtoErrorOf};
 
-#[cfg(test)]
-fn assert_json_roundtrip<T>(t: &T)
-where
-    T: serde::Serialize + for<'a> serde::Deserialize<'a> + Debug + PartialEq,
-{
-    let from_json = serde_json::from_str::<T>(&serde_json::to_string(&t).unwrap()).unwrap();
+    pub fn assert_proto_roundtrip<T>(t: &T)
+    where
+        T: IntoProto + TryFromProto + Debug + Clone + PartialEq,
+        TryFromProtoErrorOf<T>: Debug,
+    {
+        let try_from_proto = T::try_from_proto(t.clone().into_proto()).unwrap();
 
-    assert_eq!(t, &from_json, "json roundtrip failed");
+        assert_eq!(t, &try_from_proto, "proto roundtrip failed");
+    }
+
+    pub fn assert_json_roundtrip<T>(t: &T)
+    where
+        T: serde::Serialize + for<'a> serde::Deserialize<'a> + Debug + PartialEq,
+    {
+        let from_json = serde_json::from_str::<T>(&serde_json::to_string(&t).unwrap()).unwrap();
+
+        assert_eq!(t, &from_json, "json roundtrip failed");
+    }
+
+    pub fn assert_string_roundtrip<T>(t: &T)
+    where
+        T: Display + FromStr + Debug + PartialEq,
+        <T as FromStr>::Err: Debug,
+    {
+        let from_str = t.to_string().parse::<T>().unwrap();
+
+        assert_eq!(t, &from_str, "string roundtrip failed");
+    }
 }
 
 /// The various `msg` types for cosmos have an extra `signer` field that

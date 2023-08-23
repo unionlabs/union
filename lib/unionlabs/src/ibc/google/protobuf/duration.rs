@@ -1,7 +1,7 @@
 use std::{
     fmt::{self, Debug, Display},
     num::ParseIntError,
-    ops::Neg,
+    ops::{Mul, Neg},
     str::FromStr,
 };
 
@@ -11,16 +11,49 @@ use serde::{
 };
 
 use crate::{
-    bounded_int::{BoundedI32, BoundedI64, BoundedIntError},
+    bounded_int::{BoundedI128, BoundedI32, BoundedI64, BoundedIntError},
+    macros::result_try,
     Proto, TypeUrl,
 };
 
 pub const NANOS_PER_SECOND: i32 = 1_000_000_000;
-pub const DURATION_MAX_SECONDS: i64 = 315_576_000_000;
-pub const DURATION_MAX_NANOS: i32 = 999_999_999;
 
-#[derive(Copy, Clone, PartialEq, Eq)]
-pub struct Duration(DurationImpl);
+pub const DURATION_MAX_SECONDS: i64 = 315_576_000_000;
+pub const DURATION_MIN_SECONDS: i64 = -DURATION_MAX_SECONDS;
+
+pub const DURATION_MAX_NANOS: i32 = 999_999_999;
+pub const DURATION_MIN_NANOS: i32 = -DURATION_MAX_NANOS;
+
+type SubZeroNanos = BoundedI32<DURATION_MIN_NANOS, DURATION_MAX_NANOS>;
+
+type NegativeSeconds = BoundedI64<DURATION_MIN_SECONDS, -1>;
+type NegativeNanos = BoundedI32<DURATION_MIN_NANOS, 0>;
+
+type PositiveSeconds = BoundedI64<1, DURATION_MAX_SECONDS>;
+type PositiveNanos = BoundedI32<0, DURATION_MAX_NANOS>;
+
+/// # Seconds
+///
+/// > Signed seconds of the span of time. Must be from -315,576,000,000
+///   to +315,576,000,000 inclusive. Note: these bounds are computed from:
+///   60 sec/min * 60 min/hr * 24 hr/day * 365.25 days/year * 10000 years
+///
+/// # Nanos
+///
+/// > Signed fractions of a second at nanosecond resolution of the span
+///   of time. Durations less than one second are represented with a 0
+///   `seconds` field and a positive or negative `nanos` field. For durations
+///   of one second or more, a non-zero value for the `nanos` field must be
+///   of the same sign as the `seconds` field. Must be from -999,999,999
+///   to +999,999,999 inclusive.
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+pub struct Duration(
+    BoundedI128<
+        { (DURATION_MIN_SECONDS as i128 * NANOS_PER_SECOND as i128) + DURATION_MIN_NANOS as i128 },
+        { (DURATION_MAX_SECONDS as i128 * NANOS_PER_SECOND as i128) + DURATION_MAX_NANOS as i128 },
+    >,
+);
 
 impl Debug for Duration {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -32,7 +65,12 @@ impl Neg for Duration {
     type Output = Self;
 
     fn neg(self) -> Self::Output {
-        Self::new(-self.seconds(), -self.nanos()).expect("lower bound == neg(upper bound); qed;")
+        self.0
+            .inner()
+            .neg()
+            .try_into()
+            .map(Self)
+            .expect("lower bound == neg(upper bound); qed;")
     }
 }
 
@@ -61,13 +99,16 @@ impl Serialize for Duration {
     }
 }
 
+#[derive(Debug)]
 pub enum DurationFromStrError {
     /// The `s` suffix was missing.
     MissingSecondsSuffix,
     /// Either the seconds or nanos values couldn't be parsed as numbers.
     ParseInt(ParseIntError),
-    /// The string was in the expected format, but the values were out of bounds.
-    OutOfBounds(DurationError),
+    /// The seconds value was out of bounds.
+    Seconds(BoundedIntError<i64>),
+    /// Too many nanos were present (max precision is 9 decimal places).
+    TooManyNanos,
 }
 
 impl FromStr for Duration {
@@ -75,32 +116,86 @@ impl FromStr for Duration {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         // seconds, nanos
-        s.strip_suffix('s')
-            .ok_or(DurationFromStrError::MissingSecondsSuffix)
-            .and_then(|s| {
-                match s.split_once('.') {
-                    Some((seconds, nanos)) => Self::new(
-                        seconds.parse().map_err(DurationFromStrError::ParseInt)?,
-                        nanos.parse().map_err(DurationFromStrError::ParseInt)?,
-                    ),
-                    // no nanos
-                    None => Self::new(s.parse().map_err(DurationFromStrError::ParseInt)?, 0),
+        let s = s
+            .strip_suffix('s')
+            .ok_or(DurationFromStrError::MissingSecondsSuffix)?;
+
+        match s.split_once('.') {
+            Some((seconds, nanos)) => {
+                const NANOS_EXPECT_MSG: &str = "value is within i32 bounds as length is bounded at 9 digits; max is 999_999_999; qed;";
+
+                let seconds = seconds
+                    .parse::<i64>()
+                    .map_err(DurationFromStrError::ParseInt)?;
+
+                let nanos_power_of_10 = 9_u32
+                    .checked_sub(
+                        nanos
+                            .len()
+                            .try_into()
+                            .map_err(|_| DurationFromStrError::TooManyNanos)?,
+                    )
+                    .ok_or(DurationFromStrError::TooManyNanos)?;
+
+                // can't use seconds.is_negative() since "-0" parses as 0
+                let is_positive = !s.starts_with('-');
+
+                // only parse "positive" nanos as the sign is determined by the seconds
+                let nanos: i32 = nanos
+                    .parse::<u32>()
+                    .map_err(DurationFromStrError::ParseInt)?
+                    .mul(10_u32.pow(nanos_power_of_10))
+                    .try_into()
+                    .expect(NANOS_EXPECT_MSG);
+
+                if seconds == 0 {
+                    let nanos: SubZeroNanos = (if is_positive { nanos } else { -nanos })
+                        .try_into()
+                        .expect(NANOS_EXPECT_MSG);
+
+                    Ok(Self::new_private(0, nanos.inner()))
+                } else {
+                    #[allow(clippy::collapsible_else_if)] // makes the semantics more clear
+                    if is_positive {
+                        let seconds: PositiveSeconds =
+                            seconds.try_into().map_err(DurationFromStrError::Seconds)?;
+                        let nanos: PositiveNanos = nanos.try_into().expect(NANOS_EXPECT_MSG);
+
+                        Ok(Self::new_private(seconds.inner(), nanos.inner()))
+                    } else {
+                        let seconds: NegativeSeconds =
+                            seconds.try_into().map_err(DurationFromStrError::Seconds)?;
+                        let nanos: NegativeNanos = nanos.neg().try_into().expect(NANOS_EXPECT_MSG);
+
+                        Ok(Self::new_private(seconds.inner(), nanos.inner()))
+                    }
                 }
-                .map_err(DurationFromStrError::OutOfBounds)
-            })
+            }
+            // no nanos
+            None => s
+                .parse::<i64>()
+                .map_err(DurationFromStrError::ParseInt)?
+                .try_into()
+                .map(
+                    |seconds: BoundedI64<DURATION_MIN_SECONDS, DURATION_MAX_SECONDS>| {
+                        Self::new_private(seconds.inner(), 0)
+                    },
+                )
+                .map_err(DurationFromStrError::Seconds),
+        }
     }
 }
 
 impl Display for Duration {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let seconds = self.seconds();
-        let nanos = self.nanos();
+        let seconds = self.seconds().inner();
+        let nanos = self.nanos().inner();
         let nanos_str = if nanos == 0 {
             String::new()
         } else {
             // SAFETY: .abs() is safe to call here since self.nanos()
             // will never be i32::MIN
-            format!(".{:09}", self.nanos().abs())
+            format!(".{:09}", nanos.abs())
         };
 
         let sign = if seconds == 0 && nanos.is_negative() {
@@ -117,43 +212,82 @@ impl Display for Duration {
 }
 
 impl Duration {
-    // NOTE: This unfortunately can't be const yet without becoming incredibly complicated
-    pub fn new(seconds: i64, nanos: i32) -> Result<Self, DurationError> {
-        use std::cmp::Ordering::{Equal, Greater, Less};
+    pub const fn new(seconds: i64, nanos: i32) -> Result<Self, DurationError> {
+        match (seconds, nanos) {
+            (0, _) => {
+                let nanos = result_try!(SubZeroNanos::new(nanos), DurationError::Nanos);
 
-        Ok(Self(match (seconds.cmp(&0), nanos.cmp(&0)) {
-            (Equal, _) => DurationImpl::ZeroSeconds {
-                nanos: nanos.try_into().map_err(DurationError::Nanos)?,
-            },
-            // negative seconds, negative nanos
-            (Less, Less | Equal) => DurationImpl::Negative {
-                seconds: seconds.try_into().map_err(DurationError::Seconds)?,
-                nanos: nanos.try_into().map_err(DurationError::Nanos)?,
-            },
+                Ok(Self::new_private(0, nanos.inner()))
+            }
+            // negative seconds, negative or zero nanos
+            (..=-1, ..=0) => {
+                let seconds = result_try!(NegativeSeconds::new(seconds), DurationError::Seconds);
+                let nanos = result_try!(NegativeNanos::new(nanos), DurationError::Nanos);
+
+                Ok(Self::new_private(seconds.inner(), nanos.inner()))
+            }
+            // positive seconds, positive or zero nanos
+            (1.., 0..) => {
+                let seconds = result_try!(PositiveSeconds::new(seconds), DurationError::Seconds);
+                let nanos = result_try!(PositiveNanos::new(nanos), DurationError::Nanos);
+
+                Ok(Self::new_private(seconds.inner(), nanos.inner()))
+            }
             // negative seconds, positive nanos
-            (Less, Greater) | (Greater, Less) => return Err(DurationError::Sign),
-            (Greater, Greater | Equal) => DurationImpl::Positive {
-                seconds: seconds.try_into().map_err(DurationError::Seconds)?,
-                nanos: nanos.try_into().map_err(DurationError::Nanos)?,
-            },
-        }))
+            (1.., ..=-1) | (..=-1, 1..) => Err(DurationError::Sign),
+        }
     }
 
-    #[must_use]
-    pub fn seconds(&self) -> i64 {
-        match self.0 {
-            DurationImpl::ZeroSeconds { nanos: _ } => 0,
-            DurationImpl::Positive { seconds, nanos: _ } => seconds.inner(),
-            DurationImpl::Negative { seconds, nanos: _ } => seconds.inner(),
+    /// Expects that the values passed in are a valid Duration representation.
+    const fn new_private(seconds: i64, nanos: i32) -> Self {
+        let inner = (seconds as i128 * NANOS_PER_SECOND as i128) + nanos as i128;
+
+        // false positive (fixed in newer versions)
+        // https://github.com/rust-lang/rust-clippy/pull/10811
+        #[allow(clippy::match_wild_err_arm)]
+        match BoundedI128::new(inner) {
+            Ok(ok) => Self(ok),
+            Err(_) => {
+                unreachable!()
+            }
         }
     }
 
     #[must_use]
-    pub fn nanos(&self) -> i32 {
-        match self.0 {
-            DurationImpl::ZeroSeconds { nanos } => nanos.inner(),
-            DurationImpl::Positive { seconds: _, nanos } => nanos.inner(),
-            DurationImpl::Negative { seconds: _, nanos } => nanos.inner(),
+    pub const fn seconds(&self) -> BoundedI64<DURATION_MIN_SECONDS, DURATION_MAX_SECONDS> {
+        let value = self.0.inner() / NANOS_PER_SECOND as i128;
+
+        debug_assert!(
+            value >= DURATION_MIN_SECONDS as i128 && value <= DURATION_MAX_SECONDS as i128
+        );
+
+        // false positive (fixed in newer versions)
+        // https://github.com/rust-lang/rust-clippy/pull/10811
+        #[allow(clippy::match_wild_err_arm)]
+        #[allow(clippy::cast_possible_truncation)] // invariant checked above
+        match BoundedI64::new(value as i64) {
+            Ok(ok) => ok,
+            Err(_) => {
+                unreachable!()
+            }
+        }
+    }
+
+    #[must_use]
+    pub const fn nanos(&self) -> BoundedI32<DURATION_MIN_NANOS, DURATION_MAX_NANOS> {
+        let value = self.0.inner() % NANOS_PER_SECOND as i128;
+
+        debug_assert!(value >= DURATION_MIN_NANOS as i128 && value <= DURATION_MAX_NANOS as i128);
+
+        // false positive (fixed in newer versions)
+        // https://github.com/rust-lang/rust-clippy/pull/10811
+        #[allow(clippy::match_wild_err_arm)]
+        #[allow(clippy::cast_possible_truncation)] // invariant checked above
+        match BoundedI32::new(value as i32) {
+            Ok(ok) => ok,
+            Err(_) => {
+                unreachable!()
+            }
         }
     }
 }
@@ -166,50 +300,6 @@ pub enum DurationError {
     Sign,
 }
 
-/// # Seconds:
-///
-/// > Signed seconds of the span of time. Must be from -315,576,000,000
-///   to +315,576,000,000 inclusive. Note: these bounds are computed from:
-///   60 sec/min * 60 min/hr * 24 hr/day * 365.25 days/year * 10000 years
-///
-/// # Nanos:
-///
-/// > Signed fractions of a second at nanosecond resolution of the span
-///   of time. Durations less than one second are represented with a 0
-///   `seconds` field and a positive or negative `nanos` field. For durations
-///   of one second or more, a non-zero value for the `nanos` field must be
-///   of the same sign as the `seconds` field. Must be from -999,999,999
-///   to +999,999,999 inclusive.
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-enum DurationImpl {
-    ZeroSeconds {
-        // NOTE: `seconds` is zero here
-        nanos: BoundedI32<{ -DURATION_MAX_NANOS }, DURATION_MAX_NANOS>,
-    },
-    Positive {
-        seconds: BoundedI64<1, DURATION_MAX_SECONDS>,
-        nanos: BoundedI32<0, DURATION_MAX_NANOS>,
-    },
-    Negative {
-        seconds: BoundedI64<{ -DURATION_MAX_SECONDS }, -1>,
-        nanos: BoundedI32<{ -DURATION_MAX_NANOS }, 0>,
-    },
-}
-
-impl Ord for Duration {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.seconds()
-            .cmp(&other.seconds())
-            .then_with(|| self.nanos().cmp(&other.nanos()))
-    }
-}
-
-impl PartialOrd for Duration {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
 impl Proto for Duration {
     type Proto = protos::google::protobuf::Duration;
 }
@@ -220,43 +310,17 @@ impl TypeUrl for protos::google::protobuf::Duration {
 
 impl Duration {
     #[must_use]
+    #[allow(clippy::too_many_lines)]
     pub fn checked_add(self, rhs: Duration) -> Option<Duration> {
-        const _: () = assert!(DURATION_MAX_SECONDS
-            .checked_add(DURATION_MAX_SECONDS)
-            .is_some());
-
-        // No need to do checked_add here since 2 * DURATION_MAX_SECONDS doesn't overflow, see above
-        let mut seconds = self.seconds() + rhs.seconds();
-        let mut nanos = self.nanos() + rhs.nanos();
-
-        if nanos >= NANOS_PER_SECOND {
-            nanos -= NANOS_PER_SECOND;
-            seconds += 1;
-        }
-
-        if seconds > DURATION_MAX_SECONDS {
-            return None;
-        }
-
-        Some(Duration::new(seconds, nanos).expect("values are within bounds; qed;"))
+        (self.0.inner() + rhs.0.inner()).try_into().map(Self).ok()
     }
 }
 
 impl From<Duration> for protos::google::protobuf::Duration {
     fn from(value: Duration) -> Self {
-        match value.0 {
-            DurationImpl::ZeroSeconds { nanos } => Self {
-                seconds: 0,
-                nanos: nanos.inner(),
-            },
-            DurationImpl::Positive { seconds, nanos } => Self {
-                seconds: seconds.inner(),
-                nanos: nanos.inner(),
-            },
-            DurationImpl::Negative { seconds, nanos } => Self {
-                seconds: seconds.inner(),
-                nanos: nanos.inner(),
-            },
+        Self {
+            seconds: value.seconds().inner(),
+            nanos: value.nanos().inner(),
         }
     }
 }
@@ -273,8 +337,8 @@ impl TryFrom<protos::google::protobuf::Duration> for Duration {
 impl From<Duration> for contracts::glue::GoogleProtobufDurationData {
     fn from(value: Duration) -> Self {
         Self {
-            seconds: value.seconds(),
-            nanos: value.nanos(),
+            seconds: value.seconds().inner(),
+            nanos: value.nanos().inner(),
         }
     }
 }
@@ -293,6 +357,7 @@ mod tests {
     use std::cmp::Ordering;
 
     use super::*;
+    use crate::test_utils::{assert_json_roundtrip, assert_proto_roundtrip};
 
     #[test]
     fn ord() {
@@ -331,5 +396,48 @@ mod tests {
         let a = Duration::new(1, 1).unwrap();
         let b = Duration::new(-1, -1).unwrap();
         assert_eq!(a.cmp(&b), Ordering::Greater);
+    }
+
+    #[test]
+    fn string_roundtrip() {
+        "-315576000000.999999999s".parse::<Duration>().unwrap();
+        "-315576000000.9999s".parse::<Duration>().unwrap();
+        "-0.999999999s".parse::<Duration>().unwrap();
+    }
+
+    #[test]
+    fn serde_roundtrip() {
+        assert_json_roundtrip(&Duration::new(123, 456).unwrap());
+    }
+
+    #[test]
+    fn proto_roundtrip() {
+        assert_proto_roundtrip(&Duration::new(-789, -101_112).unwrap());
+    }
+
+    #[test]
+    fn checked_add() {
+        let ensure_commutative = |a: Duration, b: Duration| {
+            let ab = a.checked_add(b).unwrap();
+            let ba = b.checked_add(a).unwrap();
+            let n_ab = -((-a).checked_add(-b).unwrap());
+            let n_ba = -((-b).checked_add(-a).unwrap());
+
+            // ensure commutativity
+            assert_eq!(ab, ba);
+            assert_eq!(ab, n_ab);
+            assert_eq!(n_ab, n_ba);
+            assert_eq!(n_ab, ba);
+        };
+
+        ensure_commutative(
+            Duration::from_str("1s").unwrap(),
+            Duration::from_str("-0.999999999s").unwrap(),
+        );
+
+        ensure_commutative(
+            Duration::from_str("-0.253480778s").unwrap(),
+            Duration::from_str("0.25766784s").unwrap(),
+        );
     }
 }

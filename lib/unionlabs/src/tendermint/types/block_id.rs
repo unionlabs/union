@@ -57,7 +57,7 @@ impl TypeUrl for protos::tendermint::types::BlockId {
 #[test]
 #[cfg(test)]
 fn proto_roundtrip() {
-    crate::assert_proto_roundtrip(&BlockId {
+    crate::test_utils::assert_proto_roundtrip(&BlockId {
         hash: [1; 32].into(),
         part_set_header: PartSetHeader {
             total: 1,

@@ -61,17 +61,30 @@ macro_rules! bounded_int {
             }
 
             impl<const MIN: $ty, const MAX: $ty> $Struct<MIN, MAX> {
-                pub fn new(n: $ty) -> Result<Self, BoundedIntError<$ty>> {
-                    (MIN..=MAX)
-                        .contains(&n)
-                        .then_some(Self(n))
-                        .ok_or(BoundedIntError {
+                pub const fn new(n: $ty) -> Result<Self, BoundedIntError<$ty>> {
+                    if n >= MIN && n <= MAX {
+                        Ok(Self(n))
+                    } else {
+                        Err(BoundedIntError {
                             max: MAX,
                             min: MIN,
                             found: n,
                         })
+                    }
                 }
             }
+
+            #[cfg(feature = "arbitrary")]
+            impl<'a, const MIN: $ty, const MAX: $ty> arbitrary::Arbitrary<'a> for $Struct<MIN, MAX> {
+                fn arbitrary(u: &mut arbitrary::Unstructured<'a>) -> arbitrary::Result<Self> {
+
+                    let inner: $ty = u.int_in_range(MIN..=MAX)?;
+
+                    Ok(Self::new(inner).expect("value is within bounds"))
+
+                }
+            }
+
 
             $(
                 const _: () = assert!(
@@ -140,7 +153,7 @@ mod tests {
     use serde_json::json;
 
     use super::*;
-    use crate::assert_json_roundtrip;
+    use crate::test_utils::assert_json_roundtrip;
 
     #[test]
     fn serde() {
