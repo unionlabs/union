@@ -306,8 +306,8 @@
             deployEVMPingPong() {
               export IBC_HANDLER_ADDRESS
               export NUM_OF_BLOCK_BEFORE_PONG_TIMEOUT="$PING_PONG_TIMEOUT"
-              export REVISION_NUMBER=1              
-              
+              export REVISION_NUMBER=1
+
               echo ------------------------------------
               echo + Deploying Ping Pong App..
               ${self'.packages.evm-devnet-ping-pong-deploy}/bin/evm-devnet-ping-pong-deploy | tee "$EVM_CONTRACTS_OUTFILE"
@@ -440,7 +440,7 @@
                   --on ethereum-devnet
                 echo "+ ICS20 transfer operator is set."
             }
- 
+
             doHandshake() {
                 from_version="$1"
                 to_version="$2"
@@ -469,7 +469,7 @@
                   --on ethereum-devnet \
                   --module-address "$PING_PONG_MODULE_ADDRESS" \
                   --port-id "ping-pong"
-                
+
                 RUST_LOG=relayer=info ${self'.packages.relayer}/bin/relayer \
                   --config-file-path "$RELAYER_CONFIG_FILE" \
                   channel open \
