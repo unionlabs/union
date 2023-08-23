@@ -260,7 +260,6 @@ pub fn testnet_vk() -> VerifyingKey<ark_bn254::Bn254> {
     }
 }
 
-// TODO: optimize?
 // TODO: link whitepaper equation
 fn hmac_keccak(message: &[u8]) -> [u8; 32] {
     let mut hasher = sha3::Keccak256::new();
@@ -268,7 +267,7 @@ fn hmac_keccak(message: &[u8]) -> [u8; 32] {
         HMAC_I
             .iter()
             .copied()
-            .chain(message.to_vec())
+            .chain(message.iter().copied())
             .into_iter()
             .collect::<Vec<_>>(),
     );
@@ -279,7 +278,7 @@ fn hmac_keccak(message: &[u8]) -> [u8; 32] {
         HMAC_O
             .iter()
             .copied()
-            .chain(inner_hash.to_vec())
+            .chain(inner_hash)
             .into_iter()
             .collect::<Vec<_>>(),
     );
@@ -287,22 +286,18 @@ fn hmac_keccak(message: &[u8]) -> [u8; 32] {
     hasher.finalize().into()
 }
 
-// TODO: optimize
 // TODO: link whitepaper equation
-fn hash_to_field2(message: &[u8]) -> (U256, U256) {
+fn hash_to_field2(message: impl Iterator<Item = u8> + Clone) -> (U256, U256) {
     (
         hash_to_field(
-            vec![0]
-                .into_iter()
-                .chain(message.to_vec())
-                .into_iter()
+            [0].into_iter()
+                .chain(message.clone())
                 .collect::<Vec<_>>()
                 .as_ref(),
         ),
         hash_to_field(
-            vec![1]
-                .into_iter()
-                .chain(message.to_vec())
+            [1].into_iter()
+                .chain(message)
                 .into_iter()
                 .collect::<Vec<_>>()
                 .as_ref(),
@@ -416,15 +411,13 @@ fn verify_generic_zkp<P: Pairing>(
         <P::ScalarField as PrimeField>::from_le_bytes_mod_order(&buffer_scalar)
     };
 
-    let mut trusted_validators_hash_high = trusted_validators_hash;
-    trusted_validators_hash_high >>= 128;
+    let trusted_validators_hash_high = trusted_validators_hash >> 128;
     let trusted_validators_hash_low = trusted_validators_hash.low_u128().into();
 
-    let mut untrusted_validators_hash_high = untrusted_validators_hash;
-    untrusted_validators_hash_high >>= 128;
+    let untrusted_validators_hash_high = untrusted_validators_hash >> 128;
     let untrusted_validators_hash_low = untrusted_validators_hash.low_u128().into();
 
-    let (message_x, message_y) = hash_to_field2(message);
+    let (message_x, message_y) = hash_to_field2(message.iter().copied());
 
     let public_inputs: [P::ScalarField; 7] = [
         decode_scalar(trusted_validators_hash_high),
