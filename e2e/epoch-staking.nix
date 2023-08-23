@@ -6,6 +6,7 @@
     testScript = ''
       union.wait_for_open_port(${toString e2e.unionNode.wait_for_open_port})
 
+      print("I don't fail!")
       union.wait_until_succeeds('[[ $(curl "http://localhost:26660/block" --fail --silent | ${pkgs.lib.meta.getExe pkgs.jq} ".result.block.header.height | tonumber > 1") == "true" ]]')
 
       # Ensure we get through one epoch
@@ -23,6 +24,7 @@
     testScript = ''
       union.wait_for_open_port(${toString e2e.unionNode.wait_for_open_port})
 
+      print("I don't fail!")
       union.wait_until_succeeds('[[ $(curl "http://localhost:26660/block" --fail --silent | ${pkgs.lib.meta.getExe pkgs.jq} ".result.block.header.height | tonumber > 1") == "true" ]]')
 
       union.wait_for_console_text('Rotating validator set due to end of epoch.')

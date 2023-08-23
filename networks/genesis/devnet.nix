@@ -44,8 +44,6 @@
           }
           ''
             mkdir -p $out
-            echo "Overwrites being applied:"
-            echo $(cat ${overwrites} | jq .)
             cp --no-preserve=mode -r ${home}/* $out
             jq -s '.[0] * .[1]' ${home}/config/genesis.json ${overwrites} > merge.json
             mv merge.json $out/config/genesis.json
