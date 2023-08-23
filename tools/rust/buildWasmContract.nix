@@ -5,6 +5,8 @@
 , additionalTestSrcFilter ? _: _: false
 }:
 let
+  dbg = value: builtins.trace (pkgs.lib.generators.toPretty { } value) value;
+
   CARGO_BUILD_TARGET = "wasm32-unknown-unknown";
 
   contractFileNameWithoutExt =
@@ -42,7 +44,7 @@ let
 
       cargoBuildInstallPhase = ''
         mkdir -p $out/lib
-        mv target/wasm32-unknown-unknown/release/${contractFileNameWithoutExt}.wasm $out/lib/${contractFileNameWithoutExt}${featuresString}.wasm
+        mv target/wasm32-unknown-unknown/release/${contractFileNameWithoutExt}.wasm $out/lib/${contractFileNameWithoutExt}${dbg featuresString}.wasm
         # TODO: Re-enable this?
         # Optimize the binary size a little bit more
         # ${pkgs.binaryen}/bin/wasm-opt -Os target/wasm32-unknown-unknown/release/${contractFileNameWithoutExt}.wasm -o $out/lib/${contractFileNameWithoutExt}.wasm

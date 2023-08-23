@@ -221,7 +221,7 @@
               ]));
             };
 
-            doCheck = false;
+            doCheck = cargoBuildCheckPhase != "";
             PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
           };
 
@@ -254,6 +254,9 @@
         {
           packages.${cratePname} = cargoBuild.buildPackage (
             crateAttrs // {
+              inherit pnameSuffix;
+              checkPhase = cargoBuildCheckPhase;
+              installPhaseCommand = cargoBuildInstallPhase;
               cargoExtraArgs = "${packageFilterArg} ${cargoBuildExtraArgs}" + (pkgs.lib.optionalString
                 (buildStdTarget != null)
                 # the leading space is important here!
