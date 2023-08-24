@@ -38,7 +38,7 @@
       packages = {
         inherit (unionvisorAll.packages) unionvisor;
 
-        bundle-testnet = mkBundle "testnet" [ "v0.8.0" ] {
+        bundle-testnet = mkBundle "testnet" [ "v0.8.0" "v0.9.0" ] {
           binary_name = "uniond";
           versions_directory = "versions";
           fallback_version = "v0.8.0";
