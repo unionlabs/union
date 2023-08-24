@@ -50,7 +50,7 @@ First, set some environment variables, which are used throughout initialization.
 export CHAIN_ID=union-testnet-3 # or union-1
 export MONIKER="Unionized Goblin" # Only for example
 export KEY_NAME=alice # Only for example
-export GENESIS_URL="https://raw.githubusercontent.com/unionlabs/union/ec72f8a1d1b349485ee9155163375019ad25d6b2/networks/genesis/union-testnet-3/genesis.json"
+export GENESIS_URL="https://raw.githubusercontent.com/unionlabs/union/e1f9a3e3b84a8c39faf7046931159eda3e95fdb2/networks/genesis/union-testnet-3/genesis.json"
 ```
 
 Then we'll have `uniond` initialize our data and configuration directories. By default `/User/{USER}/.uniond` is used.
@@ -140,4 +140,4 @@ It's then recommended to back up these files from `~/.union/config` in a secure 
 - `priv_validator_key.json`
 - `node_key.json`
 
-[genesis.json] https://raw.githubusercontent.com/unionlabs/union/ec72f8a1d1b349485ee9155163375019ad25d6b2/networks/genesis/union-testnet-3/genesis.json
+[genesis.json] https://raw.githubusercontent.com/unionlabs/union/e1f9a3e3b84a8c39faf7046931159eda3e95fdb2/networks/genesis/union-testnet-3/genesis.json
