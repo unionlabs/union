@@ -16,7 +16,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/server/api"
 	"github.com/cosmos/cosmos-sdk/server/config"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/snapshots"
+	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 )
 
 // ServerStartTime defines the time duration that the server need to stay running after startup
@@ -58,7 +59,13 @@ type (
 		RegisterNodeService(client.Context)
 
 		// CommitMultiStore return the multistore instance
-		CommitMultiStore() sdk.CommitMultiStore
+		CommitMultiStore() storetypes.CommitMultiStore
+
+		// Return the snapshot manager
+		SnapshotManager() *snapshots.Manager
+
+		// Close is called in start cmd to gracefully cleanup resources.
+		Close() error
 	}
 
 	// AppCreator is a function that allows us to lazily initialize an

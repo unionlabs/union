@@ -50,8 +50,10 @@ var (
 	RedelegationQueueKey = []byte{0x42} // prefix for the timestamps in redelegations queue
 	ValidatorQueueKey    = []byte{0x43} // prefix for the timestamps in validator queue
 
-	HistoricalInfoKey   = []byte{0x50} // prefix for the historical info
-	ValidatorUpdatesKey = []byte{0x61} // prefix for the end block validator updates key
+	HistoricalInfoKey         = []byte{0x50} // prefix for the historical info
+	ValidatorUpdatesKey       = []byte{0x61} // prefix for the end block validator updates key
+	NumberOfValidatorsInEpoch = []byte{0x71} // prefix for the number of validators in the active set at the start of the current epoch
+	NumberOfValidatorsInJail  = []byte{0x72} // prefix for the number of validators, from the current epoch validator set, in jail
 
 	ParamsKey = []byte{0x51} // prefix for parameters for module x/staking
 )

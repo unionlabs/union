@@ -1,8 +1,6 @@
 package tracker
 
-import (
-	"github.com/pelletier/go-toml/v2/internal/ast"
-)
+import "github.com/pelletier/go-toml/v2/unstable"
 
 // KeyTracker is a tracker that keeps track of the current Key as the AST is
 // walked.
@@ -11,19 +9,19 @@ type KeyTracker struct {
 }
 
 // UpdateTable sets the state of the tracker with the AST table node.
-func (t *KeyTracker) UpdateTable(node *ast.Node) {
+func (t *KeyTracker) UpdateTable(node *unstable.Node) {
 	t.reset()
 	t.Push(node)
 }
 
 // UpdateArrayTable sets the state of the tracker with the AST array table node.
-func (t *KeyTracker) UpdateArrayTable(node *ast.Node) {
+func (t *KeyTracker) UpdateArrayTable(node *unstable.Node) {
 	t.reset()
 	t.Push(node)
 }
 
 // Push the given key on the stack.
-func (t *KeyTracker) Push(node *ast.Node) {
+func (t *KeyTracker) Push(node *unstable.Node) {
 	it := node.Key()
 	for it.Next() {
 		t.k = append(t.k, string(it.Node().Data))
@@ -31,7 +29,7 @@ func (t *KeyTracker) Push(node *ast.Node) {
 }
 
 // Pop key from stack.
-func (t *KeyTracker) Pop(node *ast.Node) {
+func (t *KeyTracker) Pop(node *unstable.Node) {
 	it := node.Key()
 	for it.Next() {
 		t.k = t.k[:len(t.k)-1]

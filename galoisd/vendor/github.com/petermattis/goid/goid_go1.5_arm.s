@@ -14,10 +14,11 @@
 // for names of contributors.
 
 // Assembly to mimic runtime.getg.
-// This should work on arm64 as well, but it hasn't been tested.
 
+//go:build arm && gc && go1.5
 // +build arm
-// +build gc,go1.5
+// +build gc
+// +build go1.5
 
 #include "textflag.h"
 

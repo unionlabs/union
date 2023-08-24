@@ -26,10 +26,9 @@ type indexedIterator struct {
 	index  IteratorIndexer
 	strict bool
 
-	data   Iterator
-	err    error
-	errf   func(err error)
-	closed bool
+	data Iterator
+	err  error
+	errf func(err error)
 }
 
 func (i *indexedIterator) setData() {

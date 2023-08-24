@@ -15,8 +15,10 @@
 
 // Assembly to mimic runtime.getg.
 
+//go:build (amd64 || amd64p32) && gc && go1.5
 // +build amd64 amd64p32
-// +build gc,go1.5
+// +build gc
+// +build go1.5
 
 #include "go_asm.h"
 #include "textflag.h"

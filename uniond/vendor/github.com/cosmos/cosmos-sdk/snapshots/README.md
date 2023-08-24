@@ -55,16 +55,16 @@ Snapshot settings are optional. However, if set, they have an effect on how prun
 persisting the heights that are multiples of `state-sync.snapshot-interval` until after the snapshot is complete.
 
 If pruning is enabled (not `pruning = "nothing"`), we avoid pruning heights that are multiples of
-`state-sync.snapshot-interval` in the regular logic determined by the 
-pruning settings and applied after every `Commit()`. This is done to prevent a 
-height from being removed before a snapshot is complete. Therefore, we keep 
-such heights until after a snapshot is done. At this point, the height is sent to 
+`state-sync.snapshot-interval` in the regular logic determined by the
+pruning settings and applied after every `Commit()`. This is done to prevent a
+height from being removed before a snapshot is complete. Therefore, we keep
+such heights until after a snapshot is done. At this point, the height is sent to
 the `pruning.Manager` to be pruned according to the pruning settings after the next `Commit()`.
 
 To illustrate, assume that we are currently at height 960 with `pruning-keep-recent = 50`,
 `pruning-interval = 10`, and `state-sync.snapshot-interval = 100`. Let's assume that
 the snapshot that was triggered at height `900` **just finishes**. Then, we can prune height
-`900` right away (that is, when we call `Commit()` at height 960 because 900 is less than `960 - 50 = 910`.
+`900` right away (that is, when we call `Commit()` at height 960 because 900 is less than `960 - 50 = 910`).
 
 Let's now assume that all conditions stay the same but the snapshot at height 900 is **not complete yet**.
 Then, we cannot prune it to avoid deleting a height that is still being snapshotted. Therefore, we keep track
@@ -78,23 +78,22 @@ Note that in both examples, if we let current height = C, and previous height P 
 
 P - `pruning-keep-recent` - `pruning-interval` <= h <= P - `pruning-keep-recent`
 
-we can prune height h. In our first example, all heights 899 - 909 fall in this range and are pruned at height 960 as long as 
+we can prune height h. In our first example, all heights 899 - 909 fall in this range and are pruned at height 960 as long as
 h is not a snapshot height (E.g. 900).
 
 That is, we always use current height to determine at which height to prune (960) while we use previous
 to determine which heights are to be pruned (959 - 50 - 10 = 899-909 = 959 - 50).
 
-
 ## Configuration
 
 * `state-sync.snapshot-interval`
-    * the interval at which to take snapshots.
-    * the value of 0 disables snapshots.
-    * if pruning is enabled, it is done after a snapshot is complete for the heights that are multiples of this interval.
+  * the interval at which to take snapshots.
+  * the value of 0 disables snapshots.
+  * if pruning is enabled, it is done after a snapshot is complete for the heights that are multiples of this interval.
 
 * `state-sync.snapshot-keep-recent`:
-    * the number of recent snapshots to keep.
-    * 0 means keep all.
+  * the number of recent snapshots to keep.
+  * 0 means keep all.
 
 ## Snapshot Metadata
 

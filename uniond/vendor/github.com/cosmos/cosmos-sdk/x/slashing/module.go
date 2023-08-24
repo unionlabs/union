@@ -223,7 +223,7 @@ type SlashingInputs struct {
 	StakingKeeper types.StakingKeeper
 
 	// LegacySubspace is used solely for migration of x/params managed parameters
-	LegacySubspace exported.Subspace
+	LegacySubspace exported.Subspace `optional:"true"`
 }
 
 type SlashingOutputs struct {

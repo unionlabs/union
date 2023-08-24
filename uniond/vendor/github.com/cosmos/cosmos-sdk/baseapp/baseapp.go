@@ -226,6 +226,15 @@ func (app *BaseApp) SetMsgServiceRouter(msgServiceRouter *MsgServiceRouter) {
 	app.msgServiceRouter = msgServiceRouter
 }
 
+// SetCircuitBreaker sets the circuit breaker for the BaseApp.
+// The circuit breaker is checked on every message execution to verify if a transaction should be executed or not.
+func (app *BaseApp) SetCircuitBreaker(cb CircuitBreaker) {
+	if app.msgServiceRouter == nil {
+		panic("must be called after message server is set")
+	}
+	app.msgServiceRouter.SetCircuit(cb)
+}
+
 // MountStores mounts all IAVL or DB stores to the provided keys in the BaseApp
 // multistore.
 func (app *BaseApp) MountStores(keys ...storetypes.StoreKey) {
@@ -942,7 +951,7 @@ func NewDefaultProposalHandler(mp mempool.Mempool, txVerifier ProposalTxVerifier
 // FIFO order.
 func (h DefaultProposalHandler) PrepareProposalHandler() sdk.PrepareProposalHandler {
 	return func(ctx sdk.Context, req abci.RequestPrepareProposal) abci.ResponsePrepareProposal {
-		// If the mempool is nil or a no-op mempool, we simply return the transactions
+		// If the mempool is nil or NoOp we simply return the transactions
 		// requested from CometBFT, which, by default, should be in FIFO order.
 		_, isNoOp := h.mempool.(mempool.NoOpMempool)
 		if h.mempool == nil || isNoOp {
@@ -999,6 +1008,13 @@ func (h DefaultProposalHandler) PrepareProposalHandler() sdk.PrepareProposalHand
 // is used in both steps, and applications must ensure that this is the case in
 // non-default handlers.
 func (h DefaultProposalHandler) ProcessProposalHandler() sdk.ProcessProposalHandler {
+	// If the mempool is nil or NoOp we simply return ACCEPT,
+	// because PrepareProposal may have included txs that could fail verification.
+	_, isNoOp := h.mempool.(mempool.NoOpMempool)
+	if h.mempool == nil || isNoOp {
+		return NoOpProcessProposal()
+	}
+
 	return func(ctx sdk.Context, req abci.RequestProcessProposal) abci.ResponseProcessProposal {
 		for _, txBytes := range req.Txs {
 			_, err := h.txVerifier.ProcessProposalVerifyTx(txBytes)
@@ -1025,4 +1041,9 @@ func NoOpProcessProposal() sdk.ProcessProposalHandler {
 	return func(_ sdk.Context, _ abci.RequestProcessProposal) abci.ResponseProcessProposal {
 		return abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_ACCEPT}
 	}
+}
+
+// Close is called in start cmd to gracefully cleanup resources.
+func (app *BaseApp) Close() error {
+	return nil
 }

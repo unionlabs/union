@@ -59,8 +59,9 @@ func isCorrupted(err error) bool {
 	switch err.(type) {
 	case *ErrCorrupted:
 		return true
+	default:
+		return false
 	}
-	return false
 }
 
 func (e *ErrCorrupted) Error() string {

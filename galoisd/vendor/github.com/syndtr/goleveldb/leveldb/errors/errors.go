@@ -73,6 +73,7 @@ func SetFd(err error, fd storage.FileDesc) error {
 	case *ErrCorrupted:
 		x.Fd = fd
 		return x
+	default:
+		return err
 	}
-	return err
 }

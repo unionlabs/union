@@ -1,8 +1,15 @@
 { lib, withSystem, inputs, ... }: {
   flake.checks = lib.genAttrs [ "x86_64-linux" "aarch64-linux" ]
     (lib.flip withSystem ({ e2e, networks, pkgs, nixpkgs, crane, ... }:
+      let
+        epoch-staking = import ./epoch-staking.nix { inherit e2e pkgs; };
+      in
       {
         ensure-blocks = import ./ensure-blocks/ensure-blocks.nix { inherit e2e networks pkgs nixpkgs crane; };
+
+        # Tests from ./epoch-staking.nix
+        epoch-completes = epoch-staking.epoch-completes;
+        forced-set-rotation = epoch-staking.forced-set-rotation;
 
         virtualisation-works = e2e.mkTest {
           name = "devnet";
@@ -49,7 +56,8 @@
 
             union.wait_for_open_port(${toString e2e.unionNode.wait_for_open_port})
 
-            union.wait_for_console_text('${e2e.unionNode.wait_for_console_text}')
+            # Ensure the union network commits more than one block
+            union.wait_until_succeeds('[[ $(curl "http://localhost:26660/block" --fail --silent | ${pkgs.lib.meta.getExe pkgs.jq} ".result.block.header.height | tonumber > 1") == "true" ]]')
           '';
 
           nodes = {

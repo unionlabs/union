@@ -68,6 +68,12 @@ func Migrate(
 			return fmt.Errorf("failed to create new group policy account: %w", err)
 		}
 
+		// set account number
+		err = baseAccount.SetAccountNumber(oldAcc.GetAccountNumber())
+		if err != nil {
+			return err
+		}
+
 		// NOTE: we do not call NewAccount because we do not want to bump the account number
 
 		// set new account

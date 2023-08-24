@@ -124,7 +124,18 @@
               '';
 
               devnetConfig = {
-                validatorCount = 4;
+                genesisOverwrites = {
+                  app_state = {
+                    staking.params = {
+                      epoch_length = "8";
+                      jailed_validator_threshold = 10;
+                    };
+                    slashing.params = {
+                      signed_blocks_window = 10;
+                    };
+                  };
+                };
+                validatorCount = 8;
                 ethereum = {
                   beacon = {
                     validatorCount = 8;
@@ -151,7 +162,7 @@
                 cosmossdk = builtins.fetchGit {
                   name = "cosmos-sdk";
                   url = "git@github.com:unionlabs/cosmos-sdk";
-                  rev = "b437ae728cc04212eb815975cef4fa4de53ffdbf";
+                  rev = "91742f9fdc1c5c4efa02667389f3ec16ef0933d1";
                   allRefs = true;
                 };
                 ibcgo = mkUnpack {

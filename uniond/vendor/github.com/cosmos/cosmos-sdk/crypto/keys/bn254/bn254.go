@@ -18,13 +18,15 @@ import (
 const (
 	PrivKeyName = bn254.PrivKeyName
 	PubKeyName  = bn254.PubKeyName
-	PubKeySize = bn254.PubKeySize
+	PubKeySize  = bn254.PubKeySize
 	PrivKeySize = bn254.PrivKeySize
-	KeyType = bn254.KeyType
+	KeyType     = bn254.KeyType
 )
 
-var _ cryptotypes.PrivKey = &PrivKey{}
-var _ codec.AminoMarshaler = &PrivKey{}
+var (
+	_ cryptotypes.PrivKey  = &PrivKey{}
+	_ codec.AminoMarshaler = &PrivKey{}
+)
 
 // Bytes returns the privkey byte format.
 func (privKey *PrivKey) Bytes() []byte {
@@ -47,7 +49,7 @@ func (privKey *PrivKey) Sign(msg []byte) ([]byte, error) {
 // Panics if the private key is not initialized.
 func (privKey *PrivKey) PubKey() cryptotypes.PubKey {
 	pk := privKey.Key.PubKey().Bytes()
-	return &PubKey { Key: pk }
+	return &PubKey{Key: pk}
 }
 
 // Equals - you probably don't need to use this.
@@ -92,8 +94,10 @@ func (privKey *PrivKey) UnmarshalAminoJSON(bz []byte) error {
 
 //-------------------------------------
 
-var _ cryptotypes.PubKey = &PubKey{}
-var _ codec.AminoMarshaler = &PubKey{}
+var (
+	_ cryptotypes.PubKey   = &PubKey{}
+	_ codec.AminoMarshaler = &PubKey{}
+)
 
 const TruncatedSize = 20
 

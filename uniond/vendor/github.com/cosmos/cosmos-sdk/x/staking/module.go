@@ -210,7 +210,7 @@ type StakingInputs struct {
 	Key           *store.KVStoreKey
 
 	// LegacySubspace is used solely for migration of x/params managed parameters
-	LegacySubspace exported.Subspace
+	LegacySubspace exported.Subspace `optional:"true"`
 }
 
 // Dependency Injection Outputs

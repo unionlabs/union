@@ -34,6 +34,21 @@
             --home $out
         '';
 
+      applyGenesisOverwrites = home: genesisOverwrites:
+        let
+          overwrites = builtins.toFile "overwrite.json" (builtins.toJSON genesisOverwrites);
+        in
+        pkgs.runCommand "apply-genesis-overwrites"
+          {
+            buildInputs = [ pkgs.jq ];
+          }
+          ''
+            mkdir -p $out
+            cp --no-preserve=mode -r ${home}/* $out
+            jq -s '.[0] * .[1]' ${home}/config/genesis.json ${overwrites} > merge.json
+            mv merge.json $out/config/genesis.json
+          '';
+
       calculateCw20Ics20ContractAddress = home: pkgs.runCommand "calculate-cw20-ics20-contract-address"
         {
           buildInputs = [ pkgs.jq ];
@@ -396,6 +411,10 @@
             ''{"address":"4CE57693C82B50F830731DAB14FA759327762456","pub_key":{"type":"tendermint/PubKeyBn254","value":"7ZAoR4jcMmiqojusF0tkv/Q27wYPXAVieQWEzvUsW9g="},"priv_key":{"type":"tendermint/PrivKeyBn254","value":"wyOxb9YgCWVB2Z/y5xOECtpDb6rZIzGn5ohx3CZDM/4NwR+HcK/aRlazPAGn3+HKvuwZb7XP5+wrOzhGKTiYVA=="}}''
             ''{"address":"36E1644D94064ED11521041E9138A0D1CCA9C31C","pub_key":{"type":"tendermint/PubKeyBn254","value":"jZiv55ih+4mChYy+Jm3M/u/MA5ZK530uMkgqgBcQnfo="},"priv_key":{"type":"tendermint/PrivKeyBn254","value":"jnw+EPjkwoXGXSzBhYQXX+SXxDH+l9AwD+YkZ1eSRj4qP6SCyDxr75CmldLiqdCfl62ld12XiYrER04rVgunqg=="}}''
             ''{"address":"196D6009588DA28CF40039C957A53B08104723F9","pub_key":{"type":"tendermint/PubKeyBn254","value":"k/tDqzvtGyDwEI6mUX9qpL+pbP+GeYPpZC5XQiSU12Q="},"priv_key":{"type":"tendermint/PrivKeyBn254","value":"nOVOW+JEBz4zv4ffzIfRg2FE3iq95chGCjvZ99n6Y5cRI3XH08xMGSW8BH416Swp+oU25fWMeRRnqaMCbaW4Fw=="}}''
+            ''{"address":"C5AFE5C76192ACD502AB9D9D88CBC9C75597C411","pub_key":{"type":"tendermint/PubKeyBn254","value":"nI931rYm57np2qqZLxwGLZYQkrXiMUPckaxneyZss98="},"priv_key":{"type":"tendermint/PrivKeyBn254","value":"7tKq4oTOHRxIZTiAJhUmlt3dSSuAaFeLmr2gEOWp3OMYdIiXiCk0FGPcsqT0m5ETpr0i9yqq02gcjpg7F4Yd1A=="}}''
+            ''{"address":"2DCE4E05E127F97B23F8099E4D1DBDEB7587DC8B","pub_key":{"type":"tendermint/PubKeyBn254","value":"mMjsEy9PZLJLGURHF1KXRlpgdS38eCbztA/wYUUuO+w="},"priv_key":{"type":"tendermint/PrivKeyBn254","value":"3+Xec6VtBROuaEjTm6iv2t6gFdfNPaSdK/0L+Qv0a40BIY55SXbyzEOvXa/FZrXI4LhoTpX3g1Gg72O/lWrIhg=="}}''
+            ''{"address":"19963640A11B2EC4F08E5B5000CD30D8641AA569","pub_key":{"type":"tendermint/PubKeyBn254","value":"p7jGEk8mMgsCp1KPonEoJoo48AHxIj7csAU61OlEEhs="},"priv_key":{"type":"tendermint/PrivKeyBn254","value":"2t30BrZyq0nKp3DDUaasR7KyI8etiZw/Jp7hOHlpNssB/VEtzcUckBRimwwYbUFM3x1z4LwuRKDKOLxt0M1kRA=="}}''
+            ''{"address":"F3A5615BEB78B0D297FE37254433D7C0C367158A","pub_key":{"type":"tendermint/PubKeyBn254","value":"rW4uEup6ZPtH6RHeCBltigC7P6y+mTF0XSkAu8zfXnk="},"priv_key":{"type":"tendermint/PrivKeyBn254","value":"iyZVrpbqgM+Yg6a01BdK4NxKUMRg4oK7AE6zj05wlNcwNJ2mRfhznKxx9CzKgrx6+v8fnhTuTPlocFyQM+I4EA=="}}''
           ];
         in
         builtins.genList
@@ -425,7 +444,7 @@
           validatorKeys;
       genesisHome = pkgs.lib.foldl
         (home: f: f home)
-        initHome
+        (applyGenesisOverwrites initHome devnetConfig.genesisOverwrites)
         (
           # add light clients
           (builtins.map addLightClientCodeToGenesis [

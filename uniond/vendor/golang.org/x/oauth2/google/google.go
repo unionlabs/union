@@ -26,6 +26,9 @@ var Endpoint = oauth2.Endpoint{
 	AuthStyle: oauth2.AuthStyleInParams,
 }
 
+// MTLSTokenURL is Google's OAuth 2.0 default mTLS endpoint.
+const MTLSTokenURL = "https://oauth2.mtls.googleapis.com/token"
+
 // JWTTokenURL is Google's OAuth 2.0 token URL to use with the JWT flow.
 const JWTTokenURL = "https://oauth2.googleapis.com/token"
 
@@ -172,7 +175,11 @@ func (f *credentialsFile) tokenSource(ctx context.Context, params CredentialsPar
 			cfg.Endpoint.AuthURL = Endpoint.AuthURL
 		}
 		if cfg.Endpoint.TokenURL == "" {
-			cfg.Endpoint.TokenURL = Endpoint.TokenURL
+			if params.TokenURL != "" {
+				cfg.Endpoint.TokenURL = params.TokenURL
+			} else {
+				cfg.Endpoint.TokenURL = Endpoint.TokenURL
+			}
 		}
 		tok := &oauth2.Token{RefreshToken: f.RefreshToken}
 		return cfg.TokenSource(ctx, tok), nil

@@ -202,7 +202,7 @@ type CrisisInputs struct {
 	BankKeeper types.SupplyKeeper
 
 	// LegacySubspace is used solely for migration of x/params managed parameters
-	LegacySubspace exported.Subspace
+	LegacySubspace exported.Subspace `optional:"true"`
 }
 
 type CrisisOutputs struct {

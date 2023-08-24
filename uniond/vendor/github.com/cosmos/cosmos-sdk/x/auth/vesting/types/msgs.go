@@ -182,6 +182,14 @@ func (msg MsgCreatePeriodicVestingAccount) ValidateBasic() error {
 	}
 
 	for i, period := range msg.VestingPeriods {
+		if !period.Amount.IsValid() {
+			return sdkerrors.ErrInvalidCoins.Wrap(period.Amount.String())
+		}
+
+		if !period.Amount.IsAllPositive() {
+			return sdkerrors.ErrInvalidCoins.Wrap(period.Amount.String())
+		}
+
 		if period.Length < 1 {
 			return fmt.Errorf("invalid period length of %d in period %d, length must be greater than 0", period.Length, i)
 		}

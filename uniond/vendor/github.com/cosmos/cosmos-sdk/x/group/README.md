@@ -49,6 +49,7 @@ This module allows the creation and management of on-chain multisig accounts and
     * [EventVote](#eventvote)
     * [EventExec](#eventexec)
     * [EventLeaveGroup](#eventleavegroup)
+    * [EventProposalPruned](#eventproposalpruned)
 * [Client](#client)
     * [CLI](#cli)
     * [gRPC](#grpc)
@@ -577,6 +578,15 @@ The group module emits the following events:
 | message                         | action        | /cosmos.group.v1.Msg/LeaveGroup |
 | cosmos.group.v1.EventLeaveGroup | proposal_id   | {proposalId}                    |
 | cosmos.group.v1.EventLeaveGroup | address       | {address}                       |
+
+### EventProposalPruned
+
+| Type                                | Attribute Key | Attribute Value                 |
+|-------------------------------------|---------------|---------------------------------|
+| message                             | action        | /cosmos.group.v1.Msg/LeaveGroup |
+| cosmos.group.v1.EventProposalPruned | proposal_id   | {proposalId}                    |
+| cosmos.group.v1.EventProposalPruned | status        | {ProposalStatus}                |
+| cosmos.group.v1.EventProposalPruned | tally_result  | {TallyResult}                   |
 
 
 ## Client

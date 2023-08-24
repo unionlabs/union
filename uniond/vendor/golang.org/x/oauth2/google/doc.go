@@ -57,6 +57,11 @@
 // executable-sourced credentials), please check out:
 // https://cloud.google.com/iam/docs/using-workload-identity-federation#oidc
 //
+// Note that this library does not perform any validation on the token_url, token_info_url,
+// or service_account_impersonation_url fields of the credential configuration.
+// It is not recommended to use a credential configuration that you did not generate with
+// the gcloud CLI unless you verify that the URL fields point to a googleapis.com domain.
+//
 // # Credentials
 //
 // The Credentials type represents Google credentials, including Application Default
@@ -81,4 +86,5 @@
 // same as the one obtained from the oauth2.Config returned from ConfigFromJSON or
 // JWTConfigFromJSON, but the Credentials may contain additional information
 // that is useful is some circumstances.
+//
 package google // import "golang.org/x/oauth2/google"

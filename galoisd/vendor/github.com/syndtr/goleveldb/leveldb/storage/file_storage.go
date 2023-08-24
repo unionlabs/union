@@ -111,7 +111,9 @@ func OpenFile(path string, readOnly bool) (Storage, error) {
 
 	defer func() {
 		if err != nil {
-			flock.release()
+			if ferr := flock.release(); ferr != nil {
+				err = fmt.Errorf("error opening file (%v); error unlocking file (%v)", err, ferr)
+			}
 		}
 	}()
 
@@ -175,12 +177,13 @@ func itoa(buf []byte, i int, wid int) []byte {
 	return append(buf, b[bp:]...)
 }
 
-func (fs *fileStorage) printDay(t time.Time) {
+func (fs *fileStorage) printDay(t time.Time) error {
 	if fs.day == t.Day() {
-		return
+		return nil
 	}
 	fs.day = t.Day()
-	fs.logw.Write([]byte("=============== " + t.Format("Jan 2, 2006 (MST)") + " ===============\n"))
+	_, err := fs.logw.Write([]byte("=============== " + t.Format("Jan 2, 2006 (MST)") + " ===============\n"))
+	return err
 }
 
 func (fs *fileStorage) doLog(t time.Time, str string) {
@@ -189,7 +192,9 @@ func (fs *fileStorage) doLog(t time.Time, str string) {
 		fs.logw.Close()
 		fs.logw = nil
 		fs.logSize = 0
-		rename(filepath.Join(fs.path, "LOG"), filepath.Join(fs.path, "LOG.old"))
+		if err := rename(filepath.Join(fs.path, "LOG"), filepath.Join(fs.path, "LOG.old")); err != nil {
+			return
+		}
 	}
 	if fs.logw == nil {
 		var err error
@@ -200,7 +205,9 @@ func (fs *fileStorage) doLog(t time.Time, str string) {
 		// Force printDay on new log file.
 		fs.day = 0
 	}
-	fs.printDay(t)
+	if err := fs.printDay(t); err != nil {
+		return
+	}
 	hour, min, sec := t.Clock()
 	msec := t.Nanosecond() / 1e3
 	// time
@@ -634,8 +641,9 @@ func fsGenOldName(fd FileDesc) string {
 	switch fd.Type {
 	case TypeTable:
 		return fmt.Sprintf("%06d.sst", fd.Num)
+	default:
+		return fsGenName(fd)
 	}
-	return fsGenName(fd)
 }
 
 func fsParseName(name string) (fd FileDesc, ok bool) {

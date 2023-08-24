@@ -30,20 +30,28 @@ const (
 	// value by not adding the staking module to the application module manager's
 	// SetOrderBeginBlockers.
 	DefaultHistoricalEntries uint32 = 10000
+
+	// Default threshold of jailed validators before triggering a forced validator set rotation. Processed as a percentage (50 => 50%)
+	DefaultJailedValidorThreshold uint32 = 50
+
+	// Default number of blocks between normal validator set rotations
+	DefaultEpochLength int64 = 1
 )
 
 // DefaultMinCommissionRate is set to 0%
 var DefaultMinCommissionRate = math.LegacyZeroDec()
 
 // NewParams creates a new Params instance
-func NewParams(unbondingTime time.Duration, maxValidators, maxEntries, historicalEntries uint32, bondDenom string, minCommissionRate sdk.Dec) Params {
+func NewParams(unbondingTime time.Duration, maxValidators, maxEntries, historicalEntries uint32, bondDenom string, minCommissionRate sdk.Dec, jailedValidatorThreshold uint32, epochLength int64) Params {
 	return Params{
-		UnbondingTime:     unbondingTime,
-		MaxValidators:     maxValidators,
-		MaxEntries:        maxEntries,
-		HistoricalEntries: historicalEntries,
-		BondDenom:         bondDenom,
-		MinCommissionRate: minCommissionRate,
+		UnbondingTime:            unbondingTime,
+		MaxValidators:            maxValidators,
+		MaxEntries:               maxEntries,
+		HistoricalEntries:        historicalEntries,
+		BondDenom:                bondDenom,
+		MinCommissionRate:        minCommissionRate,
+		JailedValidatorThreshold: jailedValidatorThreshold,
+		EpochLength:              epochLength,
 	}
 }
 
@@ -56,6 +64,8 @@ func DefaultParams() Params {
 		DefaultHistoricalEntries,
 		sdk.DefaultBondDenom,
 		DefaultMinCommissionRate,
+		DefaultJailedValidorThreshold,
+		DefaultEpochLength,
 	)
 }
 

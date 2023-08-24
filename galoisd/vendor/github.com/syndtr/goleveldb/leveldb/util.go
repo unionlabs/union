@@ -22,7 +22,7 @@ func shorten(str string) string {
 
 var bunits = [...]string{"", "Ki", "Mi", "Gi", "Ti"}
 
-func shortenb(bytes int) string {
+func shortenb(bytes int64) string {
 	i := 0
 	for ; bytes > 1024 && i < 4; i++ {
 		bytes /= 1024
@@ -30,7 +30,7 @@ func shortenb(bytes int) string {
 	return fmt.Sprintf("%d%sB", bytes, bunits[i])
 }
 
-func sshortenb(bytes int) string {
+func sshortenb(bytes int64) string {
 	if bytes == 0 {
 		return "~"
 	}
@@ -56,13 +56,6 @@ func sint(x int) string {
 		x *= -1
 	}
 	return fmt.Sprintf("%s%d", sign, x)
-}
-
-func minInt(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
 }
 
 func maxInt(a, b int) int {

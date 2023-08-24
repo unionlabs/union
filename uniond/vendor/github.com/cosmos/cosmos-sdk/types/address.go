@@ -370,7 +370,7 @@ func (va ValAddress) Equals(va2 Address) bool {
 	return bytes.Equal(va.Bytes(), va2.Bytes())
 }
 
-// Returns boolean for whether an AccAddress is empty
+// Returns boolean for whether an ValAddress is empty
 func (va ValAddress) Empty() bool {
 	return len(va) == 0
 }

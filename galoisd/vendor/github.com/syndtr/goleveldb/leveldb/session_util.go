@@ -24,7 +24,7 @@ type dropper struct {
 
 func (d dropper) Drop(err error) {
 	if e, ok := err.(*journal.ErrCorrupted); ok {
-		d.s.logf("journal@drop %s-%d S·%s %q", d.fd.Type, d.fd.Num, shortenb(e.Size), e.Reason)
+		d.s.logf("journal@drop %s-%d S·%s %q", d.fd.Type, d.fd.Num, shortenb(int64(e.Size)), e.Reason)
 	} else {
 		d.s.logf("journal@drop %s-%d %q", d.fd.Type, d.fd.Num, err)
 	}
@@ -130,7 +130,7 @@ func (s *session) refLoop() {
 		for {
 			// Skip any abandoned version number to prevent blocking processing.
 			if skipAbandoned() {
-				next += 1
+				next++
 				continue
 			}
 			// Don't bother the version that has been released.
@@ -162,13 +162,13 @@ func (s *session) refLoop() {
 			referenced[next] = struct{}{}
 			delete(ref, next)
 			delete(deltas, next)
-			next += 1
+			next++
 		}
 
 		// Use delta information to process all released versions.
 		for {
 			if skipAbandoned() {
-				next += 1
+				next++
 				continue
 			}
 			if d, exist := released[next]; exist {
@@ -176,7 +176,7 @@ func (s *session) refLoop() {
 					applyDelta(d)
 				}
 				delete(released, next)
-				next += 1
+				next++
 				continue
 			}
 			return
@@ -396,7 +396,7 @@ func (s *session) recordCommited(rec *sessionRecord) {
 	}
 
 	for _, r := range rec.compPtrs {
-		s.setCompPtr(r.level, internalKey(r.ikey))
+		s.setCompPtr(r.level, r.ikey)
 	}
 }
 
@@ -429,14 +429,16 @@ func (s *session) newManifest(rec *sessionRecord, v *version) (err error) {
 				s.manifestWriter.Close()
 			}
 			if !s.manifestFd.Zero() {
-				s.stor.Remove(s.manifestFd)
+				err = s.stor.Remove(s.manifestFd)
 			}
 			s.manifestFd = fd
 			s.manifestWriter = writer
 			s.manifest = jw
 		} else {
 			writer.Close()
-			s.stor.Remove(fd)
+			if rerr := s.stor.Remove(fd); err != nil {
+				err = fmt.Errorf("newManifest error: %v, cleanup error (%v)", err, rerr)
+			}
 			s.reuseFileNum(fd.Num)
 		}
 	}()

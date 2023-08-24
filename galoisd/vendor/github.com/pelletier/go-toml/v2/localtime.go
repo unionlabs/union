@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/pelletier/go-toml/v2/unstable"
 )
 
 // LocalDate represents a calendar day in no specific timezone.
@@ -75,7 +77,7 @@ func (d LocalTime) MarshalText() ([]byte, error) {
 func (d *LocalTime) UnmarshalText(b []byte) error {
 	res, left, err := parseLocalTime(b)
 	if err == nil && len(left) != 0 {
-		err = newDecodeError(left, "extra characters")
+		err = unstable.NewParserError(left, "extra characters")
 	}
 	if err != nil {
 		return err
@@ -109,7 +111,7 @@ func (d LocalDateTime) MarshalText() ([]byte, error) {
 func (d *LocalDateTime) UnmarshalText(data []byte) error {
 	res, left, err := parseLocalDateTime(data)
 	if err == nil && len(left) != 0 {
-		err = newDecodeError(left, "extra characters")
+		err = unstable.NewParserError(left, "extra characters")
 	}
 	if err != nil {
 		return err

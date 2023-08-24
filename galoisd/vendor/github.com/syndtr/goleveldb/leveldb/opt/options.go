@@ -41,6 +41,7 @@ var (
 	DefaultWriteL0PauseTrigger           = 12
 	DefaultWriteL0SlowdownTrigger        = 8
 	DefaultFilterBaseLg                  = 11
+	DefaultMaxManifestFileSize           = int64(64 * MiB)
 )
 
 // Cacher is a caching algorithm.
@@ -48,23 +49,60 @@ type Cacher interface {
 	New(capacity int) cache.Cacher
 }
 
-type CacherFunc struct {
+type cacherFunc struct {
 	NewFunc func(capacity int) cache.Cacher
 }
 
-func (f *CacherFunc) New(capacity int) cache.Cacher {
+func (f *cacherFunc) New(capacity int) cache.Cacher {
 	if f != nil && f.NewFunc != nil {
 		return f.NewFunc(capacity)
 	}
 	return nil
 }
 
+func CacherFunc(f func(capacity int) cache.Cacher) Cacher {
+	return &cacherFunc{f}
+}
+
+type passthroughCacher struct {
+	Cacher cache.Cacher
+}
+
+func (p *passthroughCacher) New(capacity int) cache.Cacher {
+	return p.Cacher
+}
+
+// PassthroughCacher can be used to passthrough pre-initialized
+// 'cacher instance'. This is useful for sharing cache over multiple
+// DB instances.
+//
+// Shared cache example:
+//
+//     fileCache := opt.NewLRU(500)
+//     blockCache := opt.NewLRU(8 * opt.MiB)
+// 	   options := &opt.Options{
+//         OpenFilesCacher: fileCache,
+//         BlockCacher: blockCache,
+//     }
+//     db1, err1 := leveldb.OpenFile("path/to/db1", options)
+//     ...
+//     db2, err2 := leveldb.OpenFile("path/to/db2", options)
+//     ...
+func PassthroughCacher(x cache.Cacher) Cacher {
+	return &passthroughCacher{x}
+}
+
+// NewLRU creates LRU 'passthrough cacher'.
+func NewLRU(capacity int) Cacher {
+	return PassthroughCacher(cache.NewLRU(capacity))
+}
+
 var (
 	// LRUCacher is the LRU-cache algorithm.
-	LRUCacher = &CacherFunc{cache.NewLRU}
+	LRUCacher = CacherFunc(cache.NewLRU)
 
 	// NoCacher is the value to disable caching algorithm.
-	NoCacher = &CacherFunc{}
+	NoCacher = CacherFunc(nil)
 )
 
 // Compression is the 'sorted table' block compression algorithm to use.
@@ -376,6 +414,13 @@ type Options struct {
 	//
 	// The default value is 11(as well as 2KB)
 	FilterBaseLg int
+
+	// MaxManifestFileSize is the maximum size limit of the MANIFEST-****** file.
+	// When the MANIFEST-****** file grows beyond this size, LevelDB will create
+	// a new MANIFEST file.
+	//
+	// The default value is 64 MiB.
+	MaxManifestFileSize int64
 }
 
 func (o *Options) GetAltFilters() []filter.Filter {
@@ -715,7 +760,13 @@ func (wo *WriteOptions) GetSync() bool {
 func GetStrict(o *Options, ro *ReadOptions, strict Strict) bool {
 	if ro.GetStrict(StrictOverride) {
 		return ro.GetStrict(strict)
-	} else {
-		return o.GetStrict(strict) || ro.GetStrict(strict)
 	}
+	return o.GetStrict(strict) || ro.GetStrict(strict)
+}
+
+func (o *Options) GetMaxManifestFileSize() int64 {
+	if o == nil || o.MaxManifestFileSize <= 0 {
+		return DefaultMaxManifestFileSize
+	}
+	return o.MaxManifestFileSize
 }
