@@ -21,7 +21,7 @@ jobs:
       access-tokens: github.com=${{ secrets.GITHUB_TOKEN }}
     with:
       filter_builds: |
-        '(
+        (
           (.top_attr == "checks" or .top_attr == "packages" or .top_attr == "devShells") and
           (.system == "x86_64-linux" or .system == "aarch64-linux") and 
           ( 
@@ -54,4 +54,4 @@ jobs:
           (.attr == "devnet" and .system == "x86_64-linux") or 
           (.attr == "devnet-cosmos" and .system == "x86_64-linux") or 
           (.attr == "devnet-evm" and .system == "x86_64-linux")
-        )'
+        )
