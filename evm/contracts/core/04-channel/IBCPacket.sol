@@ -1,6 +1,5 @@
 pragma solidity ^0.8.18;
 
-import "forge-std/console.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "../../proto/ibc/core/channel/v1/channel.sol";
 import "../25-handler/IBCMsgs.sol";
@@ -53,9 +52,6 @@ contract IBCPacket is IBCStore, IIBCPacket {
                 "sendPacket: receiving chain block height >= packet timeout height"
             );
             uint64 latestTimestamp;
-            console.log("latestHeight");
-            console.log(connection.client_id);
-            console.log(latestHeight.revision_height);
             (latestTimestamp, found) = client.getTimestampAtHeight(
                 connection.client_id,
                 latestHeight
