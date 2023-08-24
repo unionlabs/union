@@ -2,9 +2,10 @@ package app
 
 import (
 	"fmt"
-	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 	"union/app/upgrades"
 	"union/app/upgrades/v0_9_0"
+
+	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 )
 
 var Upgrades = []upgrades.Upgrade{v0_9_0.Upgrade}
@@ -34,6 +35,9 @@ func (app *UnionApp) setupUpgradeHandlers() {
 			upgrade.CreateUpgradeHandler(
 				app.mm,
 				app.configurator,
+				&upgrades.AppKeepers{
+					StakingKeeper: app.StakingKeeper,
+				},
 			),
 		)
 	}
