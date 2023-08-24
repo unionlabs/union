@@ -37,7 +37,7 @@ impl Network {
     // `self` will be used later on to determine which URL to use based on the network
     #[allow(clippy::unused_self)]
     pub fn seeds(&self) -> &str {
-        "6a2d3a6f846792b99c4cfa3ccb40f80073bac30d@union-testnet.cor.systems:26656,7139b86ff37752437cf01a4970bf2b26c45c53e0@uniontestnet.poisonphang.com:26656"
+        ""
     }
 
     // `self` will be used later on to determine which URL to use based on the network
@@ -45,6 +45,6 @@ impl Network {
     pub fn genesis_url(&self) -> &str {
         // We use a secret gist for the genesis.json until testnet is public
         // "https://raw.githubusercontent.com/unionlabs/genesis/main/union-testnet-1/genesis.json"
-        "https://gist.githubusercontent.com/cor/ffb8ec1a35a28fc1b3aad89f3fb466d4/raw/434b9f88a0ee6099cbbabafcd144f958a03ce655/union-testnet-2-gentx.json"
+        "https://gist.githubusercontent.com/cor/5cab203f0f41549a2e04e48fc10bf889/raw/0bb5a9d3c02f38b6a34f85314dff04100f3605bc/union-testnet-3-genesis.json"
     }
 }
