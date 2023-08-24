@@ -14134,11 +14134,11 @@
         "v0_8_0": "v0_8_0_2"
       },
       "locked": {
-        "lastModified": 1692885584,
-        "narHash": "sha256-zPxTjgWEtwiG54ma4Jz5KW3f4UcQFpKBA998u8hxceg=",
+        "lastModified": 1692899099,
+        "narHash": "sha256-JgvbTkT4IlzjKTFZN1SJ660LHOxJ4y5qnjY6q0+/o8c=",
         "ref": "release-v0.9.0",
-        "rev": "749100f710421d49dfa5bfff4bacf83bfa99d36c",
-        "revCount": 1355,
+        "rev": "20022919cfc8d73b8cd151fdede3582345fc3173",
+        "revCount": 1359,
         "type": "git",
         "url": "https://github.com/unionlabs/union"
       },
