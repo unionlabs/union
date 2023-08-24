@@ -4,11 +4,10 @@ import (
 	"fmt"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 	"union/app/upgrades"
-	"union/app/upgrades/v0_3_0"
-	"union/app/upgrades/v0_7_0"
+	"union/app/upgrades/v0_9_0"
 )
 
-var Upgrades = []upgrades.Upgrade{v0_3_0.Upgrade, v0_7_0.Upgrade}
+var Upgrades = []upgrades.Upgrade{v0_9_0.Upgrade}
 
 // configure store loader that checks if version == upgradeHeight and applies store upgrades
 func (app *UnionApp) setupUpgradeStoreLoaders() {
