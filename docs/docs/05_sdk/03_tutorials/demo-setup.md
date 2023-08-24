@@ -36,7 +36,7 @@ nix run ".#devnet-cosmos"
 Now that we are ready, we can run the setup:
 
 ```bash
-nix run ".#setup-demo" -- --circuit-path ./
+nix run ".#e2e-setup" -- --circuit-path ./
 ```
 
 `--circuit-path` is passed for the prover to look for and download the files that it needs.
@@ -74,13 +74,13 @@ nix run ".#galoisd-devnet" -- serve 0.0.0.0:16657
 For using a prover where the TLS is not enabled:
 
 ```bash
-nix run ".#setup-demo" -- --galois-url http://myserver.com:1111
+nix run ".#e2e-setup" -- --galois-url http://myserver.com:1111
 ```
 
 To enable the TLS:
 
 ```bash
-nix run ".#setup-demo" -- --galois-url http://myserver.com:1111 --galois-tls
+nix run ".#e2e-setup" -- --galois-url http://myserver.com:1111 --galois-tls
 ```
 
 Note that even if you want to run Galois locally but on a different endpoint, you can provide a local endpoint and `--circuit-path`. The `--circuit-path` parameter is the decision point on whether to run Galois locally or not.
@@ -105,7 +105,7 @@ Our relayer uses a configuration file for the IBC contracts that are deployed, c
 To change this relayer configuration path, run:
 
 ```bash
-nix run ".#setup-demo" -- --relayer-config-file /path/to/config.json
+nix run ".#e2e-setup" -- --relayer-config-file /path/to/config.json
 ```
 
 ### Customize ping-pong setup
@@ -113,5 +113,5 @@ nix run ".#setup-demo" -- --relayer-config-file /path/to/config.json
 Our ping-pong contracts have the timeout argument which is the number of blocks before `ping` message times out. By default, this is `1000`. To change this, run:
 
 ```bash
-nix run ".#setup-demo" -- --ping-pong-timeout 100
+nix run ".#e2e-setup" -- --ping-pong-timeout 100
 ```
