@@ -14,7 +14,10 @@ contract IBCConnectionHandlerTest is TestPlus {
     ILightClient client;
     ILightClient client2;
 
-    event GeneratedConnectionIdentifier(string);
+    event ConnectionOpenInit(string connectionId);
+    event ConnectionOpenTry(string connectionId);
+    event ConnectionOpenAck(string connectionId);
+    event ConnectionOpenConfirm(string connectionId);
 
     constructor() {
         vm.warp(1);
@@ -39,7 +42,7 @@ contract IBCConnectionHandlerTest is TestPlus {
         IBCMsgs.MsgConnectionOpenInit memory msg_init = MsgMocks
             .connectionOpenInit(clientId);
         vm.expectEmit(false, false, false, false);
-        emit GeneratedConnectionIdentifier("");
+        emit ConnectionOpenInit("");
         string memory connId = handler.connectionOpenInit(msg_init);
 
         // 3. ConnOpenAck
@@ -64,7 +67,7 @@ contract IBCConnectionHandlerTest is TestPlus {
         IBCMsgs.MsgConnectionOpenTry memory msg_try = MsgMocks
             .connectionOpenTry(clientId, proofHeight);
         vm.expectEmit(false, false, false, false);
-        emit GeneratedConnectionIdentifier("");
+        emit ConnectionOpenTry("");
         string memory connId = handler.connectionOpenTry(msg_try);
 
         // 2. ConnOpenConfirm

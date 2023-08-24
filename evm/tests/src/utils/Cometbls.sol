@@ -9,9 +9,10 @@ import {IbcCoreChannelV1Counterparty as ChannelCounterparty, IbcCoreChannelV1Cha
 import {IbcCoreConnectionV1Counterparty as ConnectionCounterparty, IbcCoreConnectionV1Version as ConnectionVersion, IbcCoreConnectionV1ConnectionEnd as ConnectionEnd, IbcCoreConnectionV1GlobalEnums as ConnectionEnums} from "../../../contracts/proto/ibc/core/connection/v1/connection.sol";
 import {IbcCoreCommitmentV1MerklePrefix as CommitmentMerklePrefix} from "../../../contracts/proto/ibc/core/commitment/v1/commitment.sol";
 import {CometblsHelp, OptimizedConsensusState as CometblsConsensusState} from "../../../contracts/lib/CometblsHelp.sol";
-import {UnionIbcLightclientsCometblsV1ClientState as CometblsClientState, UnionIbcLightclientsCometblsV1Header as CometblsHeader, UnionIbcLightclientsCometblsV1Fraction as Fraction, UnionIbcLightclientsCometblsV1Header as CometblsHeader} from "../../../contracts/proto/union/ibc/lightclients/cometbls/v1/cometbls.sol";
+import {UnionIbcLightclientsCometblsV1ClientState as CometblsClientState, UnionIbcLightclientsCometblsV1Header as CometblsHeader, UnionIbcLightclientsCometblsV1Header as CometblsHeader} from "../../../contracts/proto/union/ibc/lightclients/cometbls/v1/cometbls.sol";
 import {IbcLightclientsWasmV1ClientState as WasmClientState} from "../../../contracts/proto/ibc/lightclients/wasm/v1/wasm.sol";
 import {TendermintTypesCommit, TendermintTypesHeader, TendermintTypesSignedHeader, TendermintVersionConsensus} from "../../../contracts/proto/tendermint/types/types.sol";
+import {IbcLightclientsTendermintV1Fraction as Fraction} from "../../../contracts/proto/ibc/lightclients/tendermint/v1/tendermint.sol";
 
 library Cometbls {
     using CometblsHelp for *;

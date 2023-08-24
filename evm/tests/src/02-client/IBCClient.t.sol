@@ -4,7 +4,7 @@ import {ILightClient} from "../../../contracts/core/02-client/ILightClient.sol";
 import {MockClient} from "../../../contracts/clients/MockClient.sol";
 import {IZKVerifier} from "../../../contracts/core/IZKVerifier.sol";
 import {CometblsClient} from "../../../contracts/clients/CometblsClient.sol";
-import {DevnetVerifier} from "../../../contracts/clients/DevnetVerifier.sol";
+import {TestVerifier} from "../../../contracts/clients/TestVerifier.sol";
 import {IBCMsgs} from "../../../contracts/core/25-handler/IBCMsgs.sol";
 import {IBCCommitment} from "../../../contracts/core/24-host/IBCCommitment.sol";
 import {CometblsHelp} from "../../../contracts/lib/CometblsHelp.sol";
@@ -40,7 +40,7 @@ contract IBCClientTest is TestPlus {
 
         mockClient = new MockClient(address(handler));
 
-        IZKVerifier devnetVerifier = new DevnetVerifier();
+        IZKVerifier devnetVerifier = new TestVerifier();
 
         client = new CometblsClient(
             address(handler),

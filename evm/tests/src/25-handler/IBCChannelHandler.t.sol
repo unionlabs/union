@@ -18,7 +18,20 @@ contract IBCChannelHandlerTest is TestPlus {
     MockApp app;
     string constant CLIENT_TYPE = "mock";
 
-    event GeneratedChannelIdentifier(string);
+    event ChannelOpenInit(
+        string channelId,
+        string connectionId,
+        string portId,
+        string counterpartyPortId
+    );
+
+    event ChannelOpenTry(
+        string channelId,
+        string connectionId,
+        string portId,
+        string counterpartyPortId,
+        string version
+    );
 
     constructor() {
         handler = new IBCHandler_Testable();
@@ -46,7 +59,7 @@ contract IBCChannelHandlerTest is TestPlus {
             portId
         );
         vm.expectEmit(false, false, false, false);
-        emit GeneratedChannelIdentifier("");
+        emit ChannelOpenInit("", "", "", "");
         string memory channelId = handler.channelOpenInit(msg_init);
 
         assertEq(
@@ -85,7 +98,7 @@ contract IBCChannelHandlerTest is TestPlus {
             proofHeight
         );
         vm.expectEmit(false, false, false, false);
-        emit GeneratedChannelIdentifier("");
+        emit ChannelOpenTry("", "", "", "", "");
         string memory channelId = handler.channelOpenTry(msg_try);
 
         assertEq(
