@@ -441,8 +441,8 @@
             "amount": "10000000"
           }
         ],
-        "max_deposit_period": "172800s",
-        "voting_period": "172800s",
+        "max_deposit_period": "600s",
+        "voting_period": "600s",
         "quorum": "0.334000000000000000",
         "threshold": "0.500000000000000000",
         "veto_threshold": "0.334000000000000000",
