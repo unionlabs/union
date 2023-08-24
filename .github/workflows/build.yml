@@ -25,7 +25,6 @@ jobs:
           (.top_attr == "checks" or .top_attr == "packages" or .top_attr == "devShells") and
           (.system == "x86_64-linux" or .system == "aarch64-linux") and 
           ( 
-            # .attr is not one of
             [.attr] | inside(
               [
                 "bundle-mainnet", 
