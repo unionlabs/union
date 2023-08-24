@@ -3,8 +3,13 @@ package upgrades
 import (
 	store "github.com/cosmos/cosmos-sdk/store/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
+	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 )
+
+type AppKeepers struct {
+	StakingKeeper *stakingkeeper.Keeper
+}
 
 // source: https://github.com/osmosis-labs/osmosis/blob/c783ef52af8617d3ec613d9ce9035386ba8d4a49/app/upgrades/types.go#L24
 
@@ -17,7 +22,7 @@ type Upgrade struct {
 	UpgradeName string
 
 	// CreateUpgradeHandler defines the function that creates an upgrade handler
-	CreateUpgradeHandler func(*module.Manager, module.Configurator) upgradetypes.UpgradeHandler
+	CreateUpgradeHandler func(*module.Manager, module.Configurator, *AppKeepers) upgradetypes.UpgradeHandler
 
 	// Store upgrades, should be used for any new modules introduced, new modules deleted, or store names renamed.
 	StoreUpgrades store.StoreUpgrades

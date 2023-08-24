@@ -1,9 +1,8 @@
 package v0_9_0
 
 import (
-	"union/app/upgrades"
-
 	store "github.com/cosmos/cosmos-sdk/store/types"
+	"union/app/upgrades"
 )
 
 const UpgradeName = "v0.9.0"
