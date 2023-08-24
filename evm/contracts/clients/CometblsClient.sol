@@ -80,6 +80,15 @@ contract CometblsClient is ILightClient {
                 memory consensusState,
             uint64 timestamp
         ) = consensusStateBytes.unmarshalConsensusStateFromProto();
+
+        if (
+            latestHeight.revision_number != 0 ||
+            latestHeight.revision_height == 0 ||
+            timestamp == 0
+        ) {
+            return (clientStateCommitment, update, false);
+        }
+
         clientStates[clientId] = clientState;
         latestHeights[clientId] = latestHeight;
         codeIds[clientId] = codeId;
@@ -124,12 +133,8 @@ contract CometblsClient is ILightClient {
         onlyIBC
         returns (bytes32, ConsensusStateUpdate[] memory, bool)
     {
-        (
-            UnionIbcLightclientsCometblsV1Header.Data memory header,
-            bool ok
-        ) = clientMessageBytes.unmarshalHeaderEthABI();
-        require(ok, "LC: invalid block header");
-
+        UnionIbcLightclientsCometblsV1Header.Data
+            memory header = clientMessageBytes.unmarshalHeaderEthABI();
         UnionIbcLightclientsCometblsV1ClientState.Data
             storage clientState = clientStates[clientId];
         OptimizedConsensusState storage consensusState = consensusStates[
@@ -210,7 +215,7 @@ contract CometblsClient is ILightClient {
             TendermintTypesCanonicalVote.encode(vote)
         );
 
-        ok = zkVerifier.verifyZKP(
+        bool ok = zkVerifier.verifyZKP(
             trustedValidatorsHash,
             untrustedValidatorsHash,
             signedVote,
@@ -295,7 +300,20 @@ contract CometblsClient is ILightClient {
         bytes calldata prefix,
         bytes calldata path
     ) external returns (bool) {
-        return true;
+        OptimizedConsensusState memory consensusState = consensusStates[
+            stateIndex(clientId, height.toUint128())
+        ];
+        require(
+            consensusState.timestamp != 0,
+            "LC: verifyNonMembership: consensusState does not exist"
+        );
+        return
+            membershipVerifier.verifyNonMembership(
+                abi.encodePacked(consensusState.root),
+                proof,
+                prefix,
+                path
+            );
     }
 
     function getClientState(

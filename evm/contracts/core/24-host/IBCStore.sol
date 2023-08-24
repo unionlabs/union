@@ -7,25 +7,24 @@ import "../02-client/ILightClient.sol";
 abstract contract IBCStore {
     // Commitments
     // keccak256(IBC-compatible-store-path) => keccak256(IBC-compatible-commitment)
-    mapping(bytes32 => bytes32) internal commitments;
+    mapping(bytes32 => bytes32) public commitments;
 
     // Store
-    mapping(string => address) internal clientRegistry; // clientType => clientImpl
-    mapping(string => string) internal clientTypes; // clientID => clientType
-    mapping(string => address) internal clientImpls; // clientID => clientImpl
-    mapping(string => IbcCoreConnectionV1ConnectionEnd.Data)
-        internal connections;
+    mapping(string => address) public clientRegistry; // clientType => clientImpl
+    mapping(string => string) public clientTypes; // clientID => clientType
+    mapping(string => address) public clientImpls; // clientID => clientImpl
+    mapping(string => IbcCoreConnectionV1ConnectionEnd.Data) public connections;
     mapping(string => mapping(string => IbcCoreChannelV1Channel.Data))
-        internal channels;
-    mapping(string => mapping(string => uint64)) internal nextSequenceSends;
-    mapping(string => mapping(string => uint64)) internal nextSequenceRecvs;
-    mapping(string => mapping(string => uint64)) internal nextSequenceAcks;
+        public channels;
+    mapping(string => mapping(string => uint64)) public nextSequenceSends;
+    mapping(string => mapping(string => uint64)) public nextSequenceRecvs;
+    mapping(string => mapping(string => uint64)) public nextSequenceAcks;
     mapping(string => mapping(string => mapping(uint64 => uint8)))
-        internal packetReceipts;
-    mapping(bytes => address[]) internal capabilities;
+        public packetReceipts;
+    mapping(bytes => address[]) public capabilities;
 
     // Host parameters
-    uint64 internal expectedTimePerBlock;
+    uint64 public expectedTimePerBlock;
 
     // Sequences for identifier
     uint64 internal nextClientSequence;

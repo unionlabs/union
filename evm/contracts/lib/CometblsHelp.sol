@@ -152,30 +152,31 @@ library CometblsHelp {
     function merkleRoot(
         TendermintTypesHeader.Data memory h
     ) internal view returns (bytes32) {
-        require(
-            h.validators_hash.length > 0,
-            "Tendermint: hash can't be empty"
-        );
-        bytes memory hbz = TendermintVersionConsensus.encode(h.version);
-        bytes memory pbt = GoogleProtobufTimestamp.encode(h.time);
-        bytes memory bzbi = TendermintTypesBlockID.encode(h.last_block_id);
-        bytes32[14] memory normalizedHeader = [
-            MerkleTree.leafHash(hbz),
-            MerkleTree.leafHash(Encoder.cdcEncode(h.chain_id)),
-            MerkleTree.leafHash(Encoder.cdcEncode(h.height)),
-            MerkleTree.leafHash(pbt),
-            MerkleTree.leafHash(bzbi),
-            MerkleTree.leafHash(Encoder.cdcEncode(h.last_commit_hash)),
-            MerkleTree.leafHash(Encoder.cdcEncode(h.data_hash)),
-            MerkleTree.leafHash(Encoder.cdcEncode(h.validators_hash)),
-            MerkleTree.leafHash(Encoder.cdcEncode(h.next_validators_hash)),
-            MerkleTree.leafHash(Encoder.cdcEncode(h.consensus_hash)),
-            MerkleTree.leafHash(Encoder.cdcEncode(h.app_hash)),
-            MerkleTree.leafHash(Encoder.cdcEncode(h.last_results_hash)),
-            MerkleTree.leafHash(Encoder.cdcEncode(h.evidence_hash)),
-            MerkleTree.leafHash(Encoder.cdcEncode(h.proposer_address))
-        ];
-        return MerkleTree.optimizedBlockRoot(normalizedHeader);
+        return
+            MerkleTree.optimizedBlockRoot(
+                [
+                    MerkleTree.leafHash(
+                        TendermintVersionConsensus.encode(h.version)
+                    ),
+                    MerkleTree.leafHash(Encoder.cdcEncode(h.chain_id)),
+                    MerkleTree.leafHash(Encoder.cdcEncode(h.height)),
+                    MerkleTree.leafHash(GoogleProtobufTimestamp.encode(h.time)),
+                    MerkleTree.leafHash(
+                        TendermintTypesBlockID.encode(h.last_block_id)
+                    ),
+                    MerkleTree.leafHash(Encoder.cdcEncode(h.last_commit_hash)),
+                    MerkleTree.leafHash(Encoder.cdcEncode(h.data_hash)),
+                    MerkleTree.leafHash(Encoder.cdcEncode(h.validators_hash)),
+                    MerkleTree.leafHash(
+                        Encoder.cdcEncode(h.next_validators_hash)
+                    ),
+                    MerkleTree.leafHash(Encoder.cdcEncode(h.consensus_hash)),
+                    MerkleTree.leafHash(Encoder.cdcEncode(h.app_hash)),
+                    MerkleTree.leafHash(Encoder.cdcEncode(h.last_results_hash)),
+                    MerkleTree.leafHash(Encoder.cdcEncode(h.evidence_hash)),
+                    MerkleTree.leafHash(Encoder.cdcEncode(h.proposer_address))
+                ]
+            );
     }
 
     function toOptimizedConsensusState(
@@ -227,12 +228,9 @@ library CometblsHelp {
     )
         internal
         pure
-        returns (UnionIbcLightclientsCometblsV1Header.Data memory header, bool)
+        returns (UnionIbcLightclientsCometblsV1Header.Data memory header)
     {
-        return (
-            abi.decode(bz, (UnionIbcLightclientsCometblsV1Header.Data)),
-            true
-        );
+        return abi.decode(bz, (UnionIbcLightclientsCometblsV1Header.Data));
     }
 
     function unmarshalClientStateFromProto(

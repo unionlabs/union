@@ -1,0 +1,67 @@
+{
+  "signed_header": {
+    "header": {
+      "version": {
+        "block": "11",
+        "app": "0"
+      },
+      "chain_id": "union-devnet-1",
+      "height": "114",
+      "time": "2023-08-08T12:10:38.260810367Z",
+      "last_block_id": {
+        "hash": "0BB215438B153A32687771DEB8769C9C05826A5E5FFCE8C3773D466B68D2EAF9",
+        "parts": {
+          "total": 1,
+          "hash": "26647CD48836C79D021BD468D49883DBDFC694AB5FB6ADD60E03691B47EFFEC5"
+        }
+      },
+      "last_commit_hash": "6DF46D0201F30D9FB792D5A35EBA295FEF723B0096311C86EF4F5A89E932E0D7",
+      "data_hash": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "validators_hash": "F09E25471B41514B2F8B08B5F4C9093C5D6ED134E107FF491CED2374B947DF60",
+      "next_validators_hash": "F09E25471B41514B2F8B08B5F4C9093C5D6ED134E107FF491CED2374B947DF60",
+      "consensus_hash": "048091BC7DDC283F77BFBF91D73C44DA58C3DF8A9CBC867405D8B7F3DAADA22F",
+      "app_hash": "A8158610DD6858F3D26149CC0DB3339ABD580EA217DE0A151C9C451DED418E35",
+      "last_results_hash": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "evidence_hash": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "proposer_address": "36E1644D94064ED11521041E9138A0D1CCA9C31C"
+    },
+    "commit": {
+      "height": "114",
+      "round": 0,
+      "block_id": {
+        "hash": "746F178D143C99102445C3C6D990C61C9CC3B8FB665CF4F90206777B335A2DC9",
+        "parts": {
+          "total": 1,
+          "hash": "F9A503AC6A6E51C4D86B4202220BD011DDA34F2ED95E3D5CA7C90E6CDAA6491F"
+        }
+      },
+      "signatures": [
+        {
+          "block_id_flag": 2,
+          "validator_address": "196D6009588DA28CF40039C957A53B08104723F9",
+          "timestamp": "2023-08-08T12:10:43.919143345Z",
+          "signature": "35yMHuCwES3q9oy45p2Ig39Bv3/F46tmUmQv57toPJ8kXE8ok1dV0nqiIz1q/ESqf3BSiRcOZ5bdeTaF78k3hQ=="
+        },
+        {
+          "block_id_flag": 2,
+          "validator_address": "36E1644D94064ED11521041E9138A0D1CCA9C31C",
+          "timestamp": "2023-08-08T12:10:44.114676103Z",
+          "signature": "m2jgfDlRz6VYo2hTeqVaAGL5I7EighaK6COv9P6TeiMRN8vrUOBD64ucz6TM+tj2JHKtbtV+thDZqlUXdwUOXA=="
+        },
+        {
+          "block_id_flag": 2,
+          "validator_address": "4CE57693C82B50F830731DAB14FA759327762456",
+          "timestamp": "2023-08-08T12:10:43.904337562Z",
+          "signature": "1pS2n9noCnfM8uobK5Li3f5CE3puzxJGnPizPz7++gkJDXS0BJaBPNQDzTr7/peoraAkMVIwl21lnupBMRb1tA=="
+        },
+        {
+          "block_id_flag": 2,
+          "validator_address": "EFB1D8B3A56D97F2AB24AC5F0B04F48535F74DA9",
+          "timestamp": "2023-08-08T12:10:44.005073873Z",
+          "signature": "jxfe1EafbG6O3auE6JsRFTkBvZY2SIxcOxe2M8QkIYwTqRWklvmpTnO9C9uSoGVY9NC2Io56j1/OHq8nNcFEGw=="
+        }
+      ]
+    }
+  },
+  "canonical": true
+}
