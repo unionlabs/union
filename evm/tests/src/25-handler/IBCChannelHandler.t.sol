@@ -76,9 +76,9 @@ contract IBCChannelHandlerTest is TestPlus {
         handler.channelOpenAck(msg_ack);
 
         // TODO: verify channel commitment
+        // #526
     }
 
-    // TODO:
     /// tests a full connection creation handshake, from the perspective of chain B
     function test_openingHandshake_chainB(
         uint64 proofHeight,
@@ -113,6 +113,7 @@ contract IBCChannelHandlerTest is TestPlus {
     }
 
     // TODO: test other failure paths
+    // #526
 
     /// sets up an IBC Connection from the perspective of chain A
     function setupConnection_chainA(

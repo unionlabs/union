@@ -59,14 +59,19 @@ contract IBCPacketTest is TestPlus {
         );
     }
 
-    function test_sendPacket_notApp() public {}
+    function test_sendPacket_notApp() public {
+        // TODO
+        // #526
+    }
 
     function test_sendPacket_channelNotOpen() public {
         // TODO
+        // #526
     }
 
     function test_sendPacket_invalidConsensusState() public {
         // TODO
+        // #526
     }
 
     function test_recvPacket() public {
@@ -85,6 +90,7 @@ contract IBCPacketTest is TestPlus {
 
     function test_recvPacket_nonExistingPacket() public {
         // TODO: read the test above. currently impossible to test this scenario
+        // #526
     }
 
     /// sets up an IBC Connection from the perspective of chain A

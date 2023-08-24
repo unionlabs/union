@@ -163,4 +163,5 @@ contract IBCConnectionTest is TestPlus {
     }
 
     // TODO: test other failure paths
+    // #526
 }

@@ -38,6 +38,7 @@ contract IBCClientHandlerTest is TestPlus {
         assertEq(handler.clientRegistry("other"), address(client2));
 
         // TODO: no event emitted here?
+        // #527
     }
 
     //
@@ -79,5 +80,6 @@ contract IBCClientHandlerTest is TestPlus {
         handler.updateClient(m2);
 
         // TODO: no event emitted here?
+        // #527
     }
 }

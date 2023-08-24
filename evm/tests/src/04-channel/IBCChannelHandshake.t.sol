@@ -56,6 +56,7 @@ contract IBCChannelTest is TestPlus {
             uint256(ChannelEnums.State.STATE_INIT)
         );
         // TODO: verify channel commitment
+        // #526
 
         // 3. channelOpenAck
         IBCMsgs.MsgChannelOpenAck memory msg_ack = MsgMocks.channelOpenAck(
@@ -76,9 +77,9 @@ contract IBCChannelTest is TestPlus {
             msg_ack.counterpartyChannelId
         );
         // TODO: verify channel commitment
+        // #526
     }
 
-    // TODO:
     /// tests a full connection creation handshake, from the perspective of chain B
     function test_openingHandshake_chainB(
         uint64 proofHeight,
@@ -106,6 +107,7 @@ contract IBCChannelTest is TestPlus {
     }
 
     // TODO: test other failure paths
+    // #526
 
     /// sets up an IBC Connection from the perspective of chain A
     function setupConnection_chainA(
