@@ -43,7 +43,7 @@ impl TryFrom<cosmwasm_std::Timestamp> for Timestamp {
                 .map_err(TryFromCosmwasmTimestampError::IntCast)?
                 .try_into()
                 .map_err(TryFromCosmwasmTimestampError::Seconds)?,
-            nanos: TryInto::<i32>::try_into(value.nanos())
+            nanos: TryInto::<i32>::try_into(value.subsec_nanos())
                 .map_err(TryFromCosmwasmTimestampError::IntCast)?
                 .try_into()
                 .map_err(TryFromCosmwasmTimestampError::Nanos)?,

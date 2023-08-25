@@ -13,6 +13,7 @@ use std::{collections::btree_map::Entry, fmt::Debug, fs::read_to_string};
 
 use anyhow::bail;
 use clap::Parser;
+use cli::TendermintClientType;
 use futures::{future::join, FutureExt, Stream, StreamExt};
 use prost::Message;
 use unionlabs::{
@@ -207,6 +208,26 @@ async fn do_main(args: cli::AppArgs) -> Result<(), anyhow::Error> {
                         }
                     }
                 },
+                ClientCreateCmd::Cosmos(TendermintClientType::Cometbls { on, counterparty }) => {
+                    match (
+                        relayer_config.get_chain(&on).await.unwrap(),
+                        relayer_config.get_chain(&counterparty).await.unwrap(),
+                    ) {
+                        (AnyChain::Cosmos(cosmos), AnyChain::Union(union)) => {
+                            let (client_id, _) =
+                                CreateClient::<crate::chain::cosmos::Cometbls>::create_client(
+                                    &cosmos,
+                                    (),
+                                    union,
+                                )
+                                .await;
+                            println!("{}", client_id);
+                        }
+                        _ => {
+                            panic!("invalid chain config")
+                        }
+                    }
+                }
             },
         },
         Command::Connection(connection) => match connection {

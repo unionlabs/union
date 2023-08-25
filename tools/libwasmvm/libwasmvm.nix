@@ -52,7 +52,7 @@
         );
 
       packages.libwasmvm_1_3_0 =
-        (crane.withBuildTarget CARGO_BUILD_TARGET).buildPackage (
+        (craneLib).buildPackage (
           {
             name = "libwasmvm";
             version = "1.3.0";
@@ -74,6 +74,5 @@
             '';
           } else throwBadSystem)
         );
-
     };
 }

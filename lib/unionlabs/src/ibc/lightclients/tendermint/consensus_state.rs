@@ -44,7 +44,7 @@ impl TryFrom<protos::ibc::lightclients::tendermint::v1::ConsensusState> for Cons
 }
 
 impl TypeUrl for protos::ibc::lightclients::tendermint::v1::ConsensusState {
-    const TYPE_URL: &'static str = "/cosmos.ibc.lightclients.tendermint.v1.ConsensusState";
+    const TYPE_URL: &'static str = "/ibc.lightclients.tendermint.v1.ConsensusState";
 }
 
 impl Proto for ConsensusState {

@@ -218,6 +218,8 @@ pub enum ClientCreateCmd {
     Evm(EvmClientType),
     #[command(subcommand)]
     Union(CometblsClientType),
+    #[command(subcommand)]
+    Cosmos(TendermintClientType),
 }
 
 #[derive(Debug, Args)]
@@ -255,6 +257,18 @@ pub enum CometblsClientType {
         config: EthereumConfig,
     },
     Tendermint {
+        /// The name of the chain to create the client on, as specified in the config file.
+        #[arg(long)]
+        on: String,
+        /// The name of the chain that the client will connect to, as specified in the config file.
+        #[arg(long)]
+        counterparty: String,
+    },
+}
+
+#[derive(Debug, Subcommand)]
+pub enum TendermintClientType {
+    Cometbls {
         /// The name of the chain to create the client on, as specified in the config file.
         #[arg(long)]
         on: String,

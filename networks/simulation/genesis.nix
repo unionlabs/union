@@ -4,7 +4,7 @@
       MNEMONIC = "wine parrot nominee girl exchange element pudding grow area twenty next junior come render shadow evidence sentence start rough debate feed all limb real";
       genesisAccountName = "testkey";
       wasmd = pkgs.lib.getExe self'.packages.wasmd;
-      chainId = "union-devnet-1";
+      chainId = "wasm-devnet-1";
       mkNodeID = name:
         pkgs.runCommand "node-id" { } ''
           ${wasmd} init testnet --chain-id ${chainId} --home .
@@ -204,23 +204,23 @@
         (
           # add light clients
           (builtins.map addLightClientCodeToGenesis [
-            self'.packages.wasm-cometbls-light-client
+            self'.packages.cometbls-light-client
           ])
           # add ibc contracts
           ++ [
             (addIbcContractCodesToGenesis [
-              self'.packages.wasm-cw20-ics20
-              self'.packages.wasm-ucs00-pingpong
+              self'.packages.cw20-ics20
+              self'.packages.ucs00-pingpong
             ])
           ]
           ++ [
             (mkHome {
-              genesisAccounts = builtins.genList (i: "val-${toString i}") devnetConfig.validatorCount;
+              genesisAccounts = builtins.genList (i: "val-${toString i}") 4;
             })
           ]
         )
       ;
-      validatorKeys = mkValidatorKeys { inherit (devnetConfig) validatorCount; home = genesisHome; };
+      validatorKeys = mkValidatorKeys { validatorCount = 4; home = genesisHome; };
       validatorGentxs = mkValidatorGentx {
         home = genesisHome;
         inherit validatorKeys;
@@ -260,7 +260,7 @@
 
       packages.wasmd-validator-node-ids = pkgs.symlinkJoin {
         name = "validator-node-ids";
-        paths = validatorNodeIDs { inherit (devnetConfig) validatorCount; };
+        paths = validatorNodeIDs { validatorCount = 4; };
       };
     
       checks = { };

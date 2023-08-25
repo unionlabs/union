@@ -138,7 +138,7 @@
                     };
                   };
                 };
-                validatorCount = 8;
+                validatorCount = 4;
                 ethereum = {
                   beacon = {
                     validatorCount = 8;

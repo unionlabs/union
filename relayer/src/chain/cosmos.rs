@@ -123,7 +123,8 @@ impl Cosmos {
         let chain_revision = chain_id.split('-').last().unwrap().parse().unwrap();
 
         Self {
-            signer: CosmosAccountId::new(config.signer.value(), "cosmos".to_string()),
+            // TODO(aeryz): this prefix should be configurable
+            signer: CosmosAccountId::new(config.signer.value(), "wasm".to_string()),
             wasm_code_id: config.wasm_code_id,
             tm_client,
             chain_id,

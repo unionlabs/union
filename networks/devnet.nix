@@ -29,7 +29,7 @@
             devnet-validator-node-ids = self'.packages.wasmd-validator-node-ids;
           };
         })
-        devnetConfig.validatorCount));
+        4));
 
       sepolia-services = {
         geth = import ./services/geth.nix {

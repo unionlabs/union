@@ -5,7 +5,7 @@ pub fn verify_zkp(
     zkp: &[u8],
 ) -> bool {
     cometbls_groth16_verifier::verify_zkp(
-        cometbls_groth16_verifier::testnet_vk(),
+        cometbls_groth16_verifier::devnet_vk(),
         trusted_validators_hash.into(),
         untrusted_validators_hash.into(),
         message,

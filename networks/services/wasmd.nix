@@ -10,7 +10,7 @@ let
 
   seedNode = builtins.readFile (getNodeID "valnode-0.json");
   # All nodes connect to node 0
-  params = if id == 0 then "" else "--p2p.persistent_peers ${seedNode}@uniond-0:26656";
+  params = if id == 0 then "" else "--p2p.persistent_peers ${seedNode}@wasmd-0:26656";
 in
 {
   image = {

@@ -45,7 +45,7 @@ impl From<ClientState> for protos::ibc::lightclients::tendermint::v1::ClientStat
 }
 
 impl TypeUrl for protos::ibc::lightclients::tendermint::v1::ClientState {
-    const TYPE_URL: &'static str = "/union.ibc.lightclients.tendermint.v1.ClientState";
+    const TYPE_URL: &'static str = "/ibc.lightclients.tendermint.v1.ClientState";
 }
 
 impl Proto for ClientState {
