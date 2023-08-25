@@ -315,6 +315,7 @@ ldflags
 legendres
 libblst
 libcxx
+libfuzzer
 libiconv
 libmuslc
 libwasmvm
@@ -400,6 +401,7 @@ preprocessors
 prevote
 println
 privval
+profdata
 prost
 proto
 protobuf
@@ -441,6 +443,7 @@ rollups
 rpath
 runtimeservices
 rustc
+rustfilt
 rustflags
 rustfmt
 rustlib

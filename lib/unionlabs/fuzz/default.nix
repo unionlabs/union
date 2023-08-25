@@ -18,6 +18,7 @@
         version = "0.2.2-alpha.0";
         doCheck = false;
         src = pkgs.fetchFromGitHub {
+          # cspell:ignore luser
           owner = "luser";
           repo = "rustfilt";
           rev = "8cf08c0680ebd17e7c1ae5c67227fa7026129af6";
@@ -69,6 +70,7 @@
           #
           # Perhaps build the whole crate with the required llvm arguments?
           # https://llvm.org/docs/CommandGuide/llvm-cov.html
+          # cspell:ignore Xdemangler
           ${rust.toolchains.dev}/lib/rustlib/${rustTarget}/bin/llvm-cov \
             show \
             -Xdemangler=${rustfilt}/bin/rustfilt \

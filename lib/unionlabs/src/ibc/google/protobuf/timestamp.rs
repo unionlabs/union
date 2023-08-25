@@ -138,7 +138,7 @@ impl<Tz: TimeZone> TryFrom<DateTime<Tz>> for Timestamp {
             // REVIEW: is this expected behaviour for leap seconds? The proto docs
             // mention [smear](https://developers.google.com/time/smear) but I'm
             // not sure what to do with potential leap seconds in this context,
-            // espeically since chrono doesn't make any guarantees about when or
+            // especially since chrono doesn't make any guarantees about when or
             // where they will fall (i.e. any value in 0..=1_999_999_999 is a valid
             // nanos value).
             seconds += 1;

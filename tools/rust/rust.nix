@@ -59,10 +59,10 @@
           nightly = mkNightly { };
 
           # for use in the devShell
-          dev = dbg ((pkgs.rust-bin.nightly.${nightlyVersion}.default.override {
+          dev = (pkgs.rust-bin.nightly.${nightlyVersion}.default.override {
             extensions = builtins.attrValues availableComponents;
             targets = [ "wasm32-unknown-unknown" ];
-          }));
+          });
         };
       };
     };
