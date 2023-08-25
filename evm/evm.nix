@@ -117,20 +117,13 @@
           deploy {
             inherit rpc-url private-key;
             inherit (contract) path name;
-            create-args =
-              if contract ? "optimize" then
-                if contract.optimize then
-                  "--optimize"
-                else
-                  ""
-              else "--revert-strings debug";
             args = if contract ? "args" then contract.args else "";
           }));
 
-      deploy = { rpc-url, private-key, path, name, args ? "", create-args ? "" }: ''
+      deploy = { rpc-url, private-key, path, name, args ? "" }: ''
         echo "Deploying ${name}..."
         ${pkgs.lib.toUpper name}=$(forge create \
-                 ${create-args} --json \
+                 --json \
                  --rpc-url ${rpc-url} \
                  --private-key ${private-key} \
                  ${evmSources}/contracts/${path}:${name} ${args} | jq --raw-output .deployedTo)
@@ -161,8 +154,8 @@
               { path = "core/03-connection/IBCConnection.sol"; name = "IBCConnection"; }
               { path = "core/04-channel/IBCChannelHandshake.sol"; name = "IBCChannelHandshake"; }
               { path = "core/04-channel/IBCPacket.sol"; name = "IBCPacket"; }
-              { path = "core/DevnetIBCHandlerInit.sol"; name = "DevnetIBCHandlerInit"; optimize = true; }
-              { path = "core/DevnetOwnableIBCHandler.sol"; name = "DevnetOwnableIBCHandler"; args = ''--constructor-args "$IBCCLIENT" "$IBCCONNECTION" "$IBCCHANNELHANDSHAKE" "$IBCPACKET" "$DEVNETIBCHANDLERINIT"''; optimize = true; }
+              { path = "core/DevnetIBCHandlerInit.sol"; name = "DevnetIBCHandlerInit"; }
+              { path = "core/DevnetOwnableIBCHandler.sol"; name = "DevnetOwnableIBCHandler"; args = ''--constructor-args "$IBCCLIENT" "$IBCCONNECTION" "$IBCCHANNELHANDSHAKE" "$IBCPACKET" "$DEVNETIBCHANDLERINIT"''; }
 
               { path = "clients/${verifierPrefix}Verifier.sol"; name = "${verifierPrefix}Verifier"; }
               { path = "clients/ICS23MembershipVerifier.sol"; name = "ICS23MembershipVerifier"; }
