@@ -22,39 +22,28 @@ jobs:
     with:
       filter_builds: |
         (
-          (.top_attr == "checks" or .top_attr == "packages" or .top_attr == "devShells") and
+          (.top_attr == "packages" or .top_attr == "devShells") and
           (.system == "x86_64-linux" or .system == "aarch64-linux") and 
           ( 
             (
               # Do not run on both systems
               [.attr] | inside(
                 [
-                  "bundle-mainnet", 
-                  "bundle-testnet", 
-                  "generate-evm-proto", 
-                  "generate-prover-proto", 
-                  "gen-proto", 
-                  "pre-commit-check", 
-                  "pre-commit", 
-                  "devnet", 
-                  "devnet-cosmos", 
-                  "devnet-evm", 
-                  "rust-proto", 
-                  "generate-rust-proto", 
-                  "go-vendor", 
-                  "evm-contracts", 
-                  "virtualisation-works", 
-                  "ensure-blocks", 
-                  "union-runs", 
-                  "sepolia-runs", 
-                  "epoch-completes",
-                  "forced-set-rotation",
-                  "download-circuit",
+                  "bundle-testnet",
+                  "devnet",
+                  "devnet-cosmos",
+                  "devnet-evm",
                   "docgen",
+                  "download-circuit",
+                  "evm",
+                  "evm-contracts",
+                  "gen-proto",
+                  "generate-evm-proto",
+                  "generate-prover-proto",
+                  "generate-rust-proto",
                   "githook",
-                  "treefmt",
-                  "nil",
-                  "spellcheck"
+                  "go-vendor",
+                  "rust-proto"
                 ]
               )
             ) or 
@@ -67,15 +56,42 @@ jobs:
             (
               [.attr] | inside(
                 [
-                  "evm-contracts",
                   "devnet",
                   "devnet-cosmos",
                   "devnet-evm",
-                  "treefmt",
-                  "nil",
-                  "spellcheck"
+                  "evm",
+                  "evm-contracts"
                 ]
               )
             )
+          )
+        )
+  check:
+    needs: [ build ]
+    uses: unionlabs/workflows/.github/workflows/build.yml@2c94f6f3acb2d7d9222f8fa05f43eb8c3ed2e758
+    secrets:
+      nixbuild_token: ${{ secrets.nixbuild_token }}
+      access-tokens: github.com=${{ secrets.GITHUB_TOKEN }}
+    with:
+      filter_builds: |
+        (
+          (.top_attr == "checks") and
+          (.system == "x86_64-linux") and 
+          ( 
+            (
+              # Do not run on both systems
+              [.attr] | inside(
+                [
+                  "ensure-blocks",
+                  "epoch-completes",
+                  "forced-set-rotation",
+                  "pre-commit",
+                  "pre-commit-check",
+                  "sepolia-runs",
+                  "union-runs",
+                  "virtualisation-works"
+                ]
+              )
+            ) | not
           )
         )
