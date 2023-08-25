@@ -58,7 +58,7 @@ pub struct EvmChainConfigFields {
     #[arg(long)]
     pub ics20_bank_address: Address,
 
-    /// The signer that will be used to submit transactions by the relayer.
+    /// The signer that will be used to submit transactions by voyager.
     #[arg(
         long,
         value_parser = StringValueParser::new()

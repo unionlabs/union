@@ -118,12 +118,12 @@
             UNION_RPC_URL="$DEFAULT_UNION_RPC_URL"
             UNION_WS_URL="$DEFAULT_UNION_WS_URL"
             UNION_GRPC_URL="$DEFAULT_UNION_GRPC_URL"
-            RELAYER_CONFIG_FILE=""
+            VOYAGER_CONFIG_FILE=""
             UNION_DUMP_PATH=""
             NO_DEPLOY_CONTRACTS=""
             PING_PONG_MODULE_ADDRESS=""
             PING_PONG_TIMEOUT="$DEFAULT_PING_PONG_TIMEOUT"
-            NO_RUN_RELAYER=""
+            NO_RUN_VOYAGER=""
 
             printHelp() {
               printf " \
@@ -139,12 +139,12 @@
                   --union-rpc-url              Rpc endpoint for union (Default: %s). \n\
                   --union-grpc-url             gRpc endpoint for union (Default: %s). \n\
                   --union-ws-url               Websocket endpoint for union (Default: %s). \n\
-                  --relayer-config-file        Path to relayer config file. If not specified and --no-deploy-evm \n\
+                  --voyager-config-file        Path to voyager config file. If not specified and --no-deploy-evm \n\
                                                  is not given, a temp location will be used. If --no-deploy-evm is enabled, \n\
-                                                 this file is used as the relayer config. \n\
+                                                 this file is used as the voyager config. \n\
                   --handshake                  Do an IBC handshake for ping pong. \n\
-                  --no-deploy-contracts        Don't deploy contracts, the relayer configuration file must be specified in this case. \n\
-                  --no-run-relayer             Don't run the relayer for packet relaying, only print the command. \n\
+                  --no-deploy-contracts        Don't deploy contracts, the voyager configuration file must be specified in this case. \n\
+                  --no-run-voyager             Don't run voyager for packet relaying, only print the command. \n\
                   \n\
                 Ping pong options:
                   --ping-pong-address          Address of the ping pong app module on EVM. \n\
@@ -156,12 +156,12 @@
                     e2e-setup --galois-url http://some-server.com:16657 \n\
                   Start a local galois: \n\
                     e2e-setup --circuit-path ./  \n\
-                  Use a custom relayer config and don't deploy the contracts: \n\
-                    e2e-setup --relayer-config-file ~/.config/relayer/config.json --no-deploy-contracts \n\
+                  Use a custom voyager config and don't deploy the contracts: \n\
+                    e2e-setup --voyager-config-file ~/.config/voyager/config.json --no-deploy-contracts \n\
                   Do an IBC handshake for ping pong: \n\
                     e2e-setup --handshake \n\
-                  Don't run the relayer, only print the command to run it: \n\
-                    e2e-setup --no-run-relayer
+                  Don't run the voyager, only print the command to run it: \n\
+                    e2e-setup --no-run-voyager
               " "$DEFAULT_GALOIS_URL" "$DEFAULT_EVM_BEACON_RPC_URL" "$DEFAULT_EVM_WS_URL" "$DEFAULT_UNION_RPC_URL" "$DEFAULT_UNION_RPC_URL" "$DEFAULT_UNION_WS_URL" "$DEFAULT_PING_PONG_TIMEOUT"
             }
 
@@ -210,8 +210,8 @@
                   shift
                   shift
                   ;;
-                --relayer-config-file)
-                  RELAYER_CONFIG_FILE="$2"
+                --voyager-config-file)
+                  VOYAGER_CONFIG_FILE="$2"
                   shift
                   shift
                   ;;
@@ -234,8 +234,8 @@
                   shift
                   shift
                   ;;
-                --no-run-relayer)
-                  NO_RUN_RELAYER=1
+                --no-run-voyager)
+                  NO_RUN_VOYAGER=1
                   shift
                   ;;
                 -h|--help)
@@ -256,15 +256,15 @@
             fi
 
 
-            if [[ -z "$RELAYER_CONFIG_FILE" ]] && [[ -n "$NO_DEPLOY_CONTRACTS" ]]; then
-              echo "--relayer-config-file must be specified when --no-deploy-evm is enabled."
+            if [[ -z "$VOYAGER_CONFIG_FILE" ]] && [[ -n "$NO_DEPLOY_CONTRACTS" ]]; then
+              echo "--voyager-config-file must be specified when --no-deploy-evm is enabled."
               printHelp
               exit 1
             fi
 
-            if [[ -z "$RELAYER_CONFIG_FILE" ]]; then
-              RELAYER_CONFIG_FILE="$(mktemp -d)/relayer-config.json"
-              echo "+ Created the relayer configuration file: $RELAYER_CONFIG_FILE"
+            if [[ -z "$VOYAGER_CONFIG_FILE" ]]; then
+              VOYAGER_CONFIG_FILE="$(mktemp -d)/voyager-config.json"
+              echo "+ Created the voyager configuration file: $VOYAGER_CONFIG_FILE"
             fi
 
             if [[ -z "$UNION_DUMP_PATH" ]]; then
@@ -366,7 +366,7 @@
                     "dump_path": "'"$UNION_DUMP_PATH"'",
                     "grpc_url": "'"$UNION_GRPC_URL"'"
                   }
-                }              }' | jq > "$RELAYER_CONFIG_FILE"
+                }              }' | jq > "$VOYAGER_CONFIG_FILE"
 
                 deployEVMPingPong
             }
@@ -382,15 +382,15 @@
             createClients() {
               echo ------------------------------------
               echo "+ Creating light client on evm."
-              RUST_LOG=relayer=info ${self'.packages.relayer}/bin/relayer \
-                --config-file-path "$RELAYER_CONFIG_FILE" \
+              RUST_LOG=voyager=info ${self'.packages.voyager}/bin/voyager \
+                --config-file-path "$VOYAGER_CONFIG_FILE" \
                 client create evm cometbls \
                 --on ethereum-devnet \
                 --counterparty union-devnet
               echo ------------------------------------
               echo "+ Creating client on union."
-              RUST_LOG=relayer=info ${self'.packages.relayer}/bin/relayer \
-                --config-file-path "$RELAYER_CONFIG_FILE" \
+              RUST_LOG=voyager=info ${self'.packages.voyager}/bin/voyager \
+                --config-file-path "$VOYAGER_CONFIG_FILE" \
                 client create union ethereum08-wasm \
                 --on union-devnet \
                 --counterparty ethereum-devnet \
@@ -420,8 +420,8 @@
 
               echo ------------------------------------------------------------
               echo "+ Setting up the initial connection and channels on EVM.."
-              ${self'.packages.relayer}/bin/relayer \
-                --config-file-path "$RELAYER_CONFIG_FILE" \
+              ${self'.packages.voyager}/bin/voyager \
+                --config-file-path "$VOYAGER_CONFIG_FILE" \
                 setup initial-channel \
                 --on ethereum-devnet \
                 --module-address "$MODULE_ADDRESS" \
@@ -434,8 +434,8 @@
             setIcs20Operator() {
                 echo ------------------------------------------------------------
                 echo "+ Setting up the operator contract for ICS20 transfer"
-                RUST_LOG=relayer=info ${self'.packages.relayer}/bin/relayer \
-                  --config-file-path "$RELAYER_CONFIG_FILE" \
+                RUST_LOG=voyager=info ${self'.packages.voyager}/bin/voyager \
+                  --config-file-path "$VOYAGER_CONFIG_FILE" \
                   setup set-operator \
                   --on ethereum-devnet
                 echo "+ ICS20 transfer operator is set."
@@ -447,31 +447,31 @@
 
                 echo ------------------------------------------------------------
                 echo "+ Doing connection and channel handshakes.."
-                echo RUST_LOG=relayer=info ${self'.packages.relayer}/bin/relayer \
-                --config-file-path "$RELAYER_CONFIG_FILE" \
+                echo RUST_LOG=voyager=info ${self'.packages.voyager}/bin/voyager \
+                --config-file-path "$VOYAGER_CONFIG_FILE" \
                   connection open \
                   --to-chain union-devnet \
                   --to-client 08-wasm-0 \
                   --from-chain ethereum-devnet \
                   --from-client cometbls-new-0
 
-                RUST_LOG=relayer=info ${self'.packages.relayer}/bin/relayer \
-                --config-file-path "$RELAYER_CONFIG_FILE" \
+                RUST_LOG=voyager=info ${self'.packages.voyager}/bin/voyager \
+                --config-file-path "$VOYAGER_CONFIG_FILE" \
                   connection open \
                   --to-chain union-devnet \
                   --to-client 08-wasm-0 \
                   --from-chain ethereum-devnet \
                   --from-client cometbls-new-0
 
-                RUST_LOG=relayer=info ${self'.packages.relayer}/bin/relayer \
-                  --config-file-path "$RELAYER_CONFIG_FILE" \
+                RUST_LOG=voyager=info ${self'.packages.voyager}/bin/voyager \
+                  --config-file-path "$VOYAGER_CONFIG_FILE" \
                   setup bind-port \
                   --on ethereum-devnet \
                   --module-address "$PING_PONG_MODULE_ADDRESS" \
                   --port-id "ping-pong"
 
-                RUST_LOG=relayer=info ${self'.packages.relayer}/bin/relayer \
-                  --config-file-path "$RELAYER_CONFIG_FILE" \
+                RUST_LOG=voyager=info ${self'.packages.voyager}/bin/voyager \
+                  --config-file-path "$VOYAGER_CONFIG_FILE" \
                   channel open \
                   --to-chain union-devnet \
                   --to-connection connection-1 \
@@ -514,7 +514,7 @@
               echo "--no-deploy-contracts is specified, assuming contracts on both sides are ready."
             fi
 
-            # Relayer requires the scheme to be included (http(s)) but galoisd returns an error when
+            # Voyager requires the scheme to be included (http(s)) but galoisd returns an error when
             # it is run with a scheme in the URL.
             # TODO(aeryz): This should not be the case, this should probably be fixed in galois
             GALOIS_URL=$(echo "$GALOIS_URL" | sed -e "s/^http:\/\///" | sed -e "s/^https:\/\///")
@@ -525,7 +525,7 @@
               echo "+ --circuit-path is empty, will use the galois at $GALOIS_URL"
             fi
 
-            ICS20_TRANSFER_BANK_ADDRESS=$(jq '.chain."ethereum-devnet".ics20_transfer_bank_address' -r < "$RELAYER_CONFIG_FILE")
+            ICS20_TRANSFER_BANK_ADDRESS=$(jq '.chain."ethereum-devnet".ics20_transfer_bank_address' -r < "$VOYAGER_CONFIG_FILE")
             CW20_ADDRESS=$(${uniond} query wasm list-contract-by-code 1  --output json | jq '.contracts[0]' -r)
             PING_PONG_ADDRESS=$(${uniond} query wasm list-contract-by-code 2  --output json | jq '.contracts[0]' -r)
 
@@ -554,7 +554,7 @@
             fi
 
             echo "--------------------------------"
-            echo "+ Relayer config path is: $RELAYER_CONFIG_FILE"
+            echo "+ Voyager config path is: $VOYAGER_CONFIG_FILE"
 
             printIBCSetupInfo \
               "ICS20 Transfer" \
@@ -581,17 +581,17 @@
               "wasm.$PING_PONG_ADDRESS"
 
             echo "----------------------------------------------------------------"
-            echo "+ Run the relayer to relay the packets with the following command:"
+            echo "+ Run voyager to relay the packets with the following command:"
 
-            RELAYER_CMD='RUST_LOG=relayer=info ${self'.packages.relayer}/bin/relayer \
-              --config-file-path '"$RELAYER_CONFIG_FILE"' \
+            VOYAGER_CMD='RUST_LOG=voyager=info ${self'.packages.voyager}/bin/voyager \
+              --config-file-path '"$VOYAGER_CONFIG_FILE"' \
               relay \
               --between union-devnet:ethereum-devnet'
 
-            if [[ -z "$NO_RUN_RELAYER" ]]; then
-              eval "$RELAYER_CMD"
+            if [[ -z "$NO_RUN_VOYAGER" ]]; then
+              eval "$VOYAGER_CMD"
             else
-              echo "$RELAYER_CMD"
+              echo "$VOYAGER_CMD"
             fi
 
             wait

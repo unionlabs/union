@@ -13,11 +13,11 @@ Ethereum.
 
 ## Light Client Update
 
-This diagram roughly describes the light client state update process, starting from our [Relayer](../../relayer/ARCHITECTURE.md)
+This diagram roughly describes the light client state update process, starting from our [Voyager](../../voyager/ARCHITECTURE.md)
 
 ```mermaid
 sequenceDiagram
-    Relayer->>Uniond: MsgUpdateClient
+    Voyager->>Uniond: MsgUpdateClient
     Uniond->>WasmClient: UpdateState
     WasmClient->>EthereumVerifier: validate_light_client_update
     WasmClient->>WasmClient: UpdateState
@@ -30,7 +30,7 @@ client committed the necessary data.
 
 ```mermaid
 sequenceDiagram
-    Relayer->>Uniond: MsgConnectionOpenTry
+    Voyager->>Uniond: MsgConnectionOpenTry
     Uniond->>WasmClient: VerifyMembership
     WasmClient->>EthereumVerifier: verify_storage_proof
 ```

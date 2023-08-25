@@ -23,7 +23,7 @@ pub struct AppArgs {
         short = 'c',
         env,
         global = true,
-        default_value = "~/.config/relayer/config.json"
+        default_value = "~/.config/voyager/config.json"
     )]
     pub config_file_path: OsString,
     #[command(subcommand)]
