@@ -1,4 +1,4 @@
-# Relayer Architecture
+# Voyager Architecture
 
 ```mermaid
 classDiagram
@@ -30,44 +30,44 @@ classDiagram
 ```mermaid
 sequenceDiagram
     participant Cosmos
-    participant Relayer
+    participant Voyager
     participant Evm
 
     par Create WASM Client
-        Relayer->>+Cosmos: create_client
-        Cosmos-->>-Relayer: client_id
+        Voyager->>+Cosmos: create_client
+        Cosmos-->>-Voyager: client_id
     and Create IBC Handler Instance
-        Relayer->>+Evm: create_client
-        Evm-->>-Relayer: client_id
+        Voyager->>+Evm: create_client
+        Evm-->>-Voyager: client_id
     end
 
 		note over Cosmos, Evm: connection handshake
 
-    Relayer->>+Evm: MsgConnectionOpenInit
-    Evm-->>-Relayer: connection_id
+    Voyager->>+Evm: MsgConnectionOpenInit
+    Evm-->>-Voyager: connection_id
 
-    Relayer->>+Cosmos: MsgConnectionOpenTry
-    Cosmos-->>-Relayer: <<success>>
+    Voyager->>+Cosmos: MsgConnectionOpenTry
+    Cosmos-->>-Voyager: <<success>>
 
-    Relayer->>+Evm: MsgConnectionOpenAck
-    Evm-->>-Relayer: <<success>>
+    Voyager->>+Evm: MsgConnectionOpenAck
+    Evm-->>-Voyager: <<success>>
 
-    Relayer->>+Cosmos: MsgConnectionOpenConfirm
-    Cosmos-->>-Relayer: <<success>>
+    Voyager->>+Cosmos: MsgConnectionOpenConfirm
+    Cosmos-->>-Voyager: <<success>>
 
 		note over Cosmos, Evm: channel handshake
 
-    Relayer->>+Evm: MsgChannelOpenInit
-    Evm-->>-Relayer: channel_id
+    Voyager->>+Evm: MsgChannelOpenInit
+    Evm-->>-Voyager: channel_id
 
-    Relayer->>+Cosmos: MsgChannelOpenTry
-    Cosmos-->>-Relayer: <<success>>
+    Voyager->>+Cosmos: MsgChannelOpenTry
+    Cosmos-->>-Voyager: <<success>>
 
-    Relayer->>+Evm: MsgChannelOpenAck
-    Evm-->>-Relayer: <<success>>
+    Voyager->>+Evm: MsgChannelOpenAck
+    Evm-->>-Voyager: <<success>>
 
-    Relayer->>+Cosmos: MsgChannelOpenConfirm
-    Cosmos-->>-Relayer: <<success>>
+    Voyager->>+Cosmos: MsgChannelOpenConfirm
+    Cosmos-->>-Voyager: <<success>>
 ```
 
 ## Main loop

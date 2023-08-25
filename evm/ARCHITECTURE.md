@@ -7,7 +7,7 @@ This is where all of our EVM smart contracts live. The basis of this IBC in Soli
 title: Components
 ---
 flowchart BT
-    relayer(Relayer)
+    voyager(Voyager)
 
     subgraph EVM chain with BN254 precompile
         client(ICS-002 client)
@@ -19,7 +19,7 @@ flowchart BT
     handler -- CometBLS client --> client
     handler --> connection
     handler --> channel
-    relayer --> handler
+    voyager --> handler
 
 ```
 
@@ -30,15 +30,15 @@ Note that all of the component upgrades are initiated from our Union chain throu
 title: Setup Sequence
 ---
 sequenceDiagram
-    Relayer->>Handler: Register CometBLS client type
+    Voyager->>Handler: Register CometBLS client type
     Handler->>ICS-002 Client: Register CometBLS client type
-    Relayer->>Handler: Create CometBLS client instance
+    Voyager->>Handler: Create CometBLS client instance
     Handler->>ICS-002 Client: Create CometBLS client instance
 
-    Relayer->>Handler: Create connection
+    Voyager->>Handler: Create connection
     Handler->>ICS-003 Connection: Create connection
 
-    Relayer->>Handler: Create channel
+    Voyager->>Handler: Create channel
     Handler->>ICS-004 Channel: Create channel
 
 ```

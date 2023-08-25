@@ -8,7 +8,7 @@ members = [
   "generated/rust",
   "generated/contracts",
   "unionvisor",
-  "relayer",
+  "voyager",
   "cosmwasm/*",
 ]
 

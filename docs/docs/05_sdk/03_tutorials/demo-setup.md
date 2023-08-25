@@ -57,7 +57,7 @@ There are plenty of things to make IBC work. To explain it briefly, the steps ar
 6. It starts the local prover in the background if the `--circuit-path` is provided.
 7. It sets up the initial channels for both `ICS20Transfer` and `PingPong` on Ethereum. Note that this is not being done in Union since this is handled at the genesis configuration.
 8. It creates light clients on both chains.
-9. It waits for the prover to be online, and then it starts the relayer to relay packets.
+9. It waits for the prover to be online, and then it starts Voyager to relay packets.
 
 ## CLI options to customize the execution
 
@@ -98,14 +98,14 @@ You might be running the devnet on a remote server, you can change the following
 
 Run `--help` to see the description for yourself.
 
-### Using a custom relayer configuration file
+### Using a custom Voyager configuration file
 
-Our relayer uses a configuration file for the IBC contracts that are deployed, chain endpoints, etc. In a normal execution, a config file is created for you in a temporary location and this location is printed to the console after the setup is complete, so that you can use the relayer manually if you want.
+Our relayer Voyager uses a configuration file for the IBC contracts that are deployed, chain endpoints, etc. In a normal execution, a config file is created for you in a temporary location and this location is printed to the console after the setup is complete, so that you can use Voyager manually if you want.
 
-To change this relayer configuration path, run:
+To change this configuration path, run:
 
 ```bash
-nix run ".#e2e-setup" -- --relayer-config-file /path/to/config.json
+nix run ".#e2e-setup" -- --voyager-config-file /path/to/config.json
 ```
 
 ### Customize ping-pong setup

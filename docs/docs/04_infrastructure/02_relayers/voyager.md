@@ -1,17 +1,17 @@
 ---
-title: "Operating a Relayer"
+title: "Operating Voyager"
 ---
 
-Our relayer uses a configuration file so you don't have to type the same parameters on each execution.
-By default, the relayer uses `~/.config/relayer/config.json`. You can use `--config-file-path` to use a location of your choice.
+Voyager uses a configuration file so you don't have to type the same parameters on each execution.
+By default, Voyager uses `~/.config/voyager/config.json`. You can use `--config-file-path` to use a location of your choice.
 
-# Creating the relayer configuration
+# Creating the configuration
 
-You can download the example configuration file from [here](https://github.com/unionlabs/union/blob/main/relayer-config.json),
+You can download the example configuration file from [here](https://github.com/unionlabs/union/blob/main/voyager-config.json),
 or use the following command to download it:
 
 ```bash
-wget https://raw.githubusercontent.com/unionlabs/union/main/relayer-config.json
+wget https://raw.githubusercontent.com/unionlabs/union/main/voyager-config.json
 ```
 
 Here is an example configuration file:

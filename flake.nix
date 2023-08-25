@@ -67,7 +67,7 @@
         ./uniond/uniond.nix
         ./galoisd/galoisd.nix
         ./unionvisor/unionvisor.nix
-        ./relayer/relayer.nix
+        ./voyager/voyager.nix
         ./lib/ethereum-verifier/ethereum-verifier.nix
         ./uniond/proto.nix
         ./docs/docs.nix

@@ -74,14 +74,14 @@ async fn main() -> Result<(), anyhow::Error> {
 
 #[allow(clippy::too_many_lines)]
 async fn do_main(args: cli::AppArgs) -> Result<(), anyhow::Error> {
-    let mut relayer_config = read_to_string(&args.config_file_path)
+    let mut voyager_config = read_to_string(&args.config_file_path)
         .map_or(Config::default(), |s| {
             serde_json::from_str::<Config>(&s).unwrap()
         });
 
     match args.command {
         Command::PrintConfig => {
-            println!("{}", serde_json::to_string_pretty(&relayer_config).unwrap());
+            println!("{}", serde_json::to_string_pretty(&voyager_config).unwrap());
         }
         Command::Chain(chain) => match chain {
             ChainCmd::Add(add) => {
@@ -106,7 +106,7 @@ async fn do_main(args: cli::AppArgs) -> Result<(), anyhow::Error> {
                     } => (name, config::ChainConfig::Union(config), overwrite),
                 };
 
-                match relayer_config.chain.entry(name) {
+                match voyager_config.chain.entry(name) {
                     Entry::Vacant(vacant) => {
                         vacant.insert(cfg);
                     }
@@ -129,8 +129,8 @@ async fn do_main(args: cli::AppArgs) -> Result<(), anyhow::Error> {
                         config: cometbls_config,
                     } => {
                         match (
-                            relayer_config.get_chain(&on).await.unwrap(),
-                            relayer_config.get_chain(&counterparty).await.unwrap(),
+                            voyager_config.get_chain(&on).await.unwrap(),
+                            voyager_config.get_chain(&counterparty).await.unwrap(),
                         ) {
                             (AnyChain::EvmMainnet(evm), AnyChain::Union(union)) => {
                                 let (client_id, _) =
@@ -155,8 +155,8 @@ async fn do_main(args: cli::AppArgs) -> Result<(), anyhow::Error> {
                         counterparty,
                     } => {
                         match (
-                            relayer_config.get_chain(&on).await.unwrap(),
-                            relayer_config.get_chain(&counterparty).await.unwrap(),
+                            voyager_config.get_chain(&on).await.unwrap(),
+                            voyager_config.get_chain(&counterparty).await.unwrap(),
                         ) {
                             (AnyChain::Union(union), AnyChain::EvmMainnet(evm)) => {
                                 let (client_id, _) =
@@ -183,8 +183,8 @@ async fn do_main(args: cli::AppArgs) -> Result<(), anyhow::Error> {
                 to_chain: to_chain_name,
                 to_client,
             } => {
-                let from_chain = relayer_config.get_chain(&from_chain_name).await.unwrap();
-                let to_chain = relayer_config.get_chain(&to_chain_name).await.unwrap();
+                let from_chain = voyager_config.get_chain(&from_chain_name).await.unwrap();
+                let to_chain = voyager_config.get_chain(&to_chain_name).await.unwrap();
 
                 match (from_chain, to_chain) {
                     // union -> evm
@@ -220,8 +220,8 @@ async fn do_main(args: cli::AppArgs) -> Result<(), anyhow::Error> {
                 to_port,
                 to_version,
             } => {
-                let from_chain = relayer_config.get_chain(&from_chain_name).await.unwrap();
-                let to_chain = relayer_config.get_chain(&to_chain_name).await.unwrap();
+                let from_chain = voyager_config.get_chain(&from_chain_name).await.unwrap();
+                let to_chain = voyager_config.get_chain(&to_chain_name).await.unwrap();
 
                 match (from_chain, to_chain) {
                     // union -> evm
@@ -288,8 +288,8 @@ async fn do_main(args: cli::AppArgs) -> Result<(), anyhow::Error> {
         },
         Command::Relay(relay) => {
             for cli::Between(a, b) in relay.between {
-                let a_chain = relayer_config.get_chain(&a).await.unwrap();
-                let b_chain = relayer_config.get_chain(&b).await.unwrap();
+                let a_chain = voyager_config.get_chain(&a).await.unwrap();
+                let b_chain = voyager_config.get_chain(&b).await.unwrap();
 
                 match (a_chain, b_chain) {
                     // union -> evm
@@ -322,7 +322,7 @@ async fn do_main(args: cli::AppArgs) -> Result<(), anyhow::Error> {
             source_channel,
             on,
         }) => {
-            let chain_config = relayer_config.chain.get(&on).unwrap();
+            let chain_config = voyager_config.chain.get(&on).unwrap();
 
             let msg = |sender: String| MsgTransfer {
                 source_port,
@@ -365,7 +365,7 @@ async fn do_main(args: cli::AppArgs) -> Result<(), anyhow::Error> {
         }
         Command::Query(query) => match query {
             QueryCmd::Balances { on, who, denom } => {
-                let chain_config = relayer_config.chain.get(&on).unwrap();
+                let chain_config = voyager_config.chain.get(&on).unwrap();
 
                 match chain_config {
                     ChainConfig::Evm(EvmChainConfig::Minimal(evm_config)) => {
@@ -384,7 +384,7 @@ async fn do_main(args: cli::AppArgs) -> Result<(), anyhow::Error> {
                 }
             }
             QueryCmd::Client { on, client_id } => {
-                let json = match relayer_config.chain[&on].clone() {
+                let json = match voyager_config.chain[&on].clone() {
                     ChainConfig::Evm(EvmChainConfig::Mainnet(evm)) => {
                         let evm = Evm::<Mainnet>::new(evm).await;
 
@@ -423,7 +423,7 @@ async fn do_main(args: cli::AppArgs) -> Result<(), anyhow::Error> {
                 module_address,
                 port_id,
             } => {
-                let chain = relayer_config.get_chain(&on).await.unwrap();
+                let chain = voyager_config.get_chain(&on).await.unwrap();
 
                 match chain {
                     AnyChain::EvmMinimal(evm) => {
@@ -442,7 +442,7 @@ async fn do_main(args: cli::AppArgs) -> Result<(), anyhow::Error> {
                 port_id,
                 channel_id,
             } => {
-                let chain = relayer_config.get_chain(&on).await.unwrap();
+                let chain = voyager_config.get_chain(&on).await.unwrap();
 
                 match chain {
                     AnyChain::EvmMinimal(evm) => {
@@ -458,7 +458,7 @@ async fn do_main(args: cli::AppArgs) -> Result<(), anyhow::Error> {
                 }
             }
             cli::SetupCmd::SetOperator { on } => {
-                let chain_config = relayer_config.chain.get(&on).unwrap();
+                let chain_config = voyager_config.chain.get(&on).unwrap();
 
                 match chain_config {
                     ChainConfig::Evm(EvmChainConfig::Minimal(evm_config)) => {
@@ -479,7 +479,7 @@ async fn do_main(args: cli::AppArgs) -> Result<(), anyhow::Error> {
             at,
             cmd: IbcQueryCmd::Path(path),
         }) => {
-            let json = match relayer_config.chain[&on].clone() {
+            let json = match voyager_config.chain[&on].clone() {
                 ChainConfig::Evm(EvmChainConfig::Mainnet(evm)) => {
                     let evm = Evm::<Mainnet>::new(evm).await;
 
@@ -506,7 +506,7 @@ async fn do_main(args: cli::AppArgs) -> Result<(), anyhow::Error> {
 
     std::fs::write(
         args.config_file_path,
-        serde_json::to_string_pretty(&relayer_config).unwrap(),
+        serde_json::to_string_pretty(&voyager_config).unwrap(),
     )
     .unwrap();
 

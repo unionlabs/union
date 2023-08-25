@@ -3819,47 +3819,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2ab07dc67230e4a4718e70fd5c20055a4334b121f1f9db8fe63ef39ce9b8c846"
 
 [[package]]
-name = "relayer"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "base64 0.21.2",
- "beacon-api",
- "bech32 0.9.1",
- "bip32",
- "clap",
- "contracts",
- "ethereum-verifier",
- "ethers",
- "futures",
- "hex",
- "hex-literal",
- "num-bigint",
- "pin-utils",
- "prost",
- "protos",
- "reqwest",
- "ripemd",
- "serde",
- "serde-utils",
- "serde_json",
- "sha2 0.10.7",
- "subtle-encoding",
- "tendermint 0.32.0",
- "tendermint-proto 0.32.0",
- "tendermint-rpc",
- "tokio",
- "tokio-stream",
- "tonic",
- "tower",
- "tracing",
- "tracing-forest",
- "tracing-subscriber 0.3.17",
- "typenum",
- "unionlabs",
-]
-
-[[package]]
 name = "reqwest"
 version = "0.11.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5619,6 +5578,47 @@ name = "version_check"
 version = "0.9.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f"
+
+[[package]]
+name = "voyager"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "base64 0.21.2",
+ "beacon-api",
+ "bech32 0.9.1",
+ "bip32",
+ "clap",
+ "contracts",
+ "ethereum-verifier",
+ "ethers",
+ "futures",
+ "hex",
+ "hex-literal",
+ "num-bigint",
+ "pin-utils",
+ "prost",
+ "protos",
+ "reqwest",
+ "ripemd",
+ "serde",
+ "serde-utils",
+ "serde_json",
+ "sha2 0.10.7",
+ "subtle-encoding",
+ "tendermint 0.32.0",
+ "tendermint-proto 0.32.0",
+ "tendermint-rpc",
+ "tokio",
+ "tokio-stream",
+ "tonic",
+ "tower",
+ "tracing",
+ "tracing-forest",
+ "tracing-subscriber 0.3.17",
+ "typenum",
+ "unionlabs",
+]
 
 [[package]]
 name = "walkdir"
