@@ -25,32 +25,38 @@ jobs:
           (.top_attr == "checks" or .top_attr == "packages" or .top_attr == "devShells") and
           (.system == "x86_64-linux" or .system == "aarch64-linux") and 
           ( 
-            # Do not run on both systems
-            [.attr] | inside(
-              [
-                "fuzz",
-                "bundle-mainnet", 
-                "bundle-testnet", 
-                "generate-evm-proto", 
-                "generate-prover-proto", 
-                "gen-proto", 
-                "pre-commit-check", 
-                "pre-commit", 
-                "devnet", 
-                "devnet-cosmos", 
-                "devnet-evm", 
-                "rust-proto", 
-                "generate-rust-proto", 
-                "go-vendor", 
-                "evm-contracts", 
-                "virtualisation-works", 
-                "ensure-blocks", 
-                "union-runs", 
-                "sepolia-runs", 
-                "epoch-completes",
-                "forced-set-rotation"
-              ]
-            ) | not
+            (
+              # Do not run on both systems
+              [.attr] | inside(
+                [
+                  "bundle-mainnet", 
+                  "bundle-testnet", 
+                  "generate-evm-proto", 
+                  "generate-prover-proto", 
+                  "gen-proto", 
+                  "pre-commit-check", 
+                  "pre-commit", 
+                  "devnet", 
+                  "devnet-cosmos", 
+                  "devnet-evm", 
+                  "rust-proto", 
+                  "generate-rust-proto", 
+                  "go-vendor", 
+                  "evm-contracts", 
+                  "virtualisation-works", 
+                  "ensure-blocks", 
+                  "union-runs", 
+                  "sepolia-runs", 
+                  "epoch-completes",
+                  "forced-set-rotation",
+                  "download-circuit",
+                  "docgen",
+                  "githook"
+                ]
+              )
+            ) or 
+            (.attr | test("evm-.*-deploy")) | 
+            not
           ) or 
           ( 
             # x86_64 only
