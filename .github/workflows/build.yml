@@ -25,6 +25,7 @@ jobs:
           (.top_attr == "checks" or .top_attr == "packages" or .top_attr == "devShells") and
           (.system == "x86_64-linux" or .system == "aarch64-linux") and 
           ( 
+            # Do not run on both systems
             [.attr] | inside(
               [
                 "bundle-mainnet", 
@@ -50,8 +51,18 @@ jobs:
               ]
             ) | not
           ) or 
-          (.attr == "evm-contracts" and .system == "x86_64-linux") or 
-          (.attr == "devnet" and .system == "x86_64-linux") or 
-          (.attr == "devnet-cosmos" and .system == "x86_64-linux") or 
-          (.attr == "devnet-evm" and .system == "x86_64-linux")
+          ( 
+            # x86_64 only
+            .system == "x86_64-linux" and 
+            (
+              [.attr] | inside(
+                [
+                  "evm-contracts"
+                  "devnet"
+                  "devnet-cosmos"
+                  "devnet-evm"
+                ]
+              )
+            )
+          )
         )
