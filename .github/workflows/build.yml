@@ -51,7 +51,10 @@ jobs:
                   "forced-set-rotation",
                   "download-circuit",
                   "docgen",
-                  "githook"
+                  "githook",
+                  "treefmt",
+                  "nil",
+                  "spellcheck"
                 ]
               )
             ) or 
@@ -67,7 +70,10 @@ jobs:
                   "evm-contracts",
                   "devnet",
                   "devnet-cosmos",
-                  "devnet-evm"
+                  "devnet-evm",
+                  "treefmt",
+                  "nil",
+                  "spellcheck"
                 ]
               )
             )
