@@ -1,10 +1,10 @@
-{ pkgs, uniond, devnet-genesis, devnet-validator-keys, devnet-validator-node-ids, id }:
+{ pkgs, wasmd, devnet-genesis, devnet-validator-keys, devnet-validator-node-ids, id }:
 let
   getNodeID = nodeFile:
     pkgs.runCommand "get-node-id" { buildInputs = [ pkgs.musl ]; } ''
-      ${uniond}/bin/uniond init testnet bn254 --home .
+      ${wasmd}/bin/wasmd init testnet --home .
       cp ${devnet-validator-node-ids}/${nodeFile} ./config/node_key.json
-      NODE_ID=$(${uniond}/bin/uniond tendermint show-node-id --home .)
+      NODE_ID=$(${wasmd}/bin/wasmd tendermint show-node-id --home .)
       echo -n $NODE_ID > $out
     '';
 
@@ -18,7 +18,7 @@ in
     contents = [
       pkgs.coreutils
       devnet-genesis
-      uniond
+      wasmd
       devnet-validator-keys
       devnet-validator-node-ids
     ];
@@ -28,11 +28,11 @@ in
     stop_signal = "SIGINT";
     ports = [
       # CometBLS JSONRPC 26657
-      "${toString (26657 + id)}:26657"
+      "${toString (25657 + id)}:26657"
       # Cosmos SDK GRPC 9090
-      "${toString (9090 + id)}:9090"
+      "${toString (9190 + id)}:9090"
       # Cosmos SDK REST 1317
-      "${toString (1317 + id)}:1317"
+      "${toString (1417 + id)}:1317"
     ];
     command = [
       "sh"
@@ -42,7 +42,7 @@ in
         cp ${devnet-validator-keys}/valkey-${toString id}.json ./config/priv_validator_key.json
         cp ${devnet-validator-node-ids}/valnode-${toString id}.json ./config/node_key.json
         echo ${params}
-        ${uniond}/bin/uniond start --home . ${params} --rpc.laddr tcp://0.0.0.0:26657 --api.address tcp://0.0.0.0:1317 --grpc.address 0.0.0.0:9090
+        ${wasmd}/bin/wasmd start --home . ${params} --rpc.laddr tcp://0.0.0.0:26657 --api.address tcp://0.0.0.0:1317 --grpc.address 0.0.0.0:9090
       ''
     ];
     healthcheck = {

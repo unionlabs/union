@@ -65,6 +65,8 @@
         [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" "x86_64-darwin" ];
       imports = [
         ./uniond/uniond.nix
+        ./networks/simulation/wasmd.nix
+        ./networks/simulation/genesis.nix
         ./galoisd/galoisd.nix
         ./unionvisor/unionvisor.nix
         ./relayer/relayer.nix
