@@ -77,7 +77,6 @@ use unionlabs::{
 
 use crate::{
     chain::{
-        cosmos::{Ethereum, Union},
         events::{
             ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit, ChannelOpenTry, ConnectionOpenAck,
             ConnectionOpenConfirm, ConnectionOpenInit, ConnectionOpenTry, UpdateClient,
@@ -86,6 +85,7 @@ use crate::{
             ChannelEndPath, ClientConsensusStatePath, ClientStatePath, CommitmentPath,
             ConnectionPath, IbcPath,
         },
+        union::{Ethereum, Union},
         Chain, ChainConnection, ClientStateOf, Connect, CreateClient, IbcStateRead, LightClient,
         StateProof,
     },

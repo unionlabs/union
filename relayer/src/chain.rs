@@ -30,19 +30,21 @@ use unionlabs::{
 
 use crate::{
     chain::{
-        cosmos::{Ethereum, Union},
+        cosmos::Cosmos,
         events::{
             ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit, ChannelOpenTry, ConnectionOpenAck,
             ConnectionOpenConfirm, ConnectionOpenInit, ConnectionOpenTry, UpdateClient,
         },
         evm::{Cometbls, Evm},
         proof::{IbcStateRead, IbcStateReadPaths, StateProof},
+        union::{Ethereum, Union},
     },
     config::{ChainConfig, EvmChainConfig},
 };
 
 pub mod cosmos;
 pub mod evm;
+pub mod union;
 
 pub mod dumper;
 pub mod events;
@@ -50,6 +52,7 @@ pub mod proof;
 
 pub enum AnyChain {
     Union(Union),
+    Cosmos(Cosmos),
     EvmMainnet(Evm<Mainnet>),
     EvmMinimal(Evm<Minimal>),
 }
@@ -64,6 +67,7 @@ impl AnyChain {
                 Self::EvmMinimal(Evm::<Minimal>::new(evm).await)
             }
             ChainConfig::Union(union) => Self::Union(Union::new(union).await),
+            ChainConfig::Cosmos(cosmos) => Self::Cosmos(Cosmos::new(cosmos).await),
         }
     }
 }
@@ -314,5 +318,11 @@ where
 {
     fn height(&self) -> Height {
         self.0.height()
+    }
+}
+
+impl ClientState for unionlabs::ibc::lightclients::tendermint::client_state::ClientState {
+    fn height(&self) -> Height {
+        self.latest_height
     }
 }

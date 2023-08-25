@@ -33,6 +33,7 @@ impl Config {
 pub enum ChainConfig {
     Evm(EvmChainConfig),
     Union(UnionChainConfig),
+    Cosmos(UnionChainConfig),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

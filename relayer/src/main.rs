@@ -42,12 +42,12 @@ use unionlabs::{
 
 use crate::{
     chain::{
-        cosmos::{Ethereum, Union},
         evm::Evm,
         proof::{
             ChannelEndPath, ClientConsensusStatePath, ClientStatePath, CommitmentPath,
             ConnectionPath,
         },
+        union::{self, Ethereum, Union},
         AnyChain, Chain, ChainConnection, ClientState, ClientStateOf, Connect, CreateClient,
         LightClient,
     },
@@ -104,6 +104,11 @@ async fn do_main(args: cli::AppArgs) -> Result<(), anyhow::Error> {
                         config,
                         overwrite,
                     } => (name, config::ChainConfig::Union(config), overwrite),
+                    ChainAddCmd::Cosmos {
+                        overwrite,
+                        name,
+                        config,
+                    } => (name, config::ChainConfig::Union(config), overwrite),
                 };
 
                 match relayer_config.chain.entry(name) {
@@ -159,13 +164,41 @@ async fn do_main(args: cli::AppArgs) -> Result<(), anyhow::Error> {
                             relayer_config.get_chain(&counterparty).await.unwrap(),
                         ) {
                             (AnyChain::Union(union), AnyChain::EvmMainnet(evm)) => {
-                                let (client_id, _) =
-                                    union.create_client(ethereum_config, evm).await;
+                                let (client_id, _) = CreateClient::<crate::chain::union::Ethereum<_>>::create_client(
+                                    &union,
+                                    ethereum_config,
+                                    evm,
+                                )
+                                .await;
                                 println!("{}", client_id);
                             }
                             (AnyChain::Union(union), AnyChain::EvmMinimal(evm)) => {
+                                let (client_id, _) = CreateClient::<crate::chain::union::Ethereum<_>>::create_client(
+                                    &union,
+                                    ethereum_config,
+                                    evm,
+                                )
+                                .await;
+                                println!("{}", client_id);
+                            }
+                            _ => {
+                                panic!("invalid chain config")
+                            }
+                        }
+                    }
+                    CometblsClientType::Tendermint { on, counterparty } => {
+                        match (
+                            relayer_config.get_chain(&on).await.unwrap(),
+                            relayer_config.get_chain(&counterparty).await.unwrap(),
+                        ) {
+                            (AnyChain::Union(union), AnyChain::Cosmos(cosmos)) => {
                                 let (client_id, _) =
-                                    union.create_client(ethereum_config, evm).await;
+                                    CreateClient::<union::Tendermint>::create_client(
+                                        &union,
+                                        (),
+                                        cosmos,
+                                    )
+                                    .await;
                                 println!("{}", client_id);
                             }
                             _ => {
@@ -201,6 +234,11 @@ async fn do_main(args: cli::AppArgs) -> Result<(), anyhow::Error> {
                     }
                     (AnyChain::EvmMinimal(evm), AnyChain::Union(union)) => {
                         connection_handshake(&evm, from_client, &union, to_client).await?;
+                    }
+
+                    // union -> cosmos
+                    (AnyChain::Union(union), AnyChain::Cosmos(cosmos)) => {
+                        connection_handshake(&union, from_client, &cosmos, to_client).await?;
                     }
 
                     _ => {
@@ -360,7 +398,7 @@ async fn do_main(args: cli::AppArgs) -> Result<(), anyhow::Error> {
                         )
                         .await;
                 }
-                ChainConfig::Union(_) => bail!("not currently supported"),
+                _ => bail!("not currently supported"),
             }
         }
         Command::Query(query) => match query {
@@ -380,7 +418,7 @@ async fn do_main(args: cli::AppArgs) -> Result<(), anyhow::Error> {
                             .balance_of(evm_config.ics20_bank_address.clone(), who.into(), denom)
                             .await;
                     }
-                    ChainConfig::Union(_) => bail!("not currently supported"),
+                    _ => bail!("not currently supported"),
                 }
             }
             QueryCmd::Client { on, client_id } => {
@@ -404,9 +442,21 @@ async fn do_main(args: cli::AppArgs) -> Result<(), anyhow::Error> {
                     ChainConfig::Union(union) => {
                         let union = Union::new(union).await;
 
-                        let ethereum: Ethereum<Mainnet> = union.light_client();
+                        let ethereum: Ethereum<Mainnet> =
+                            ChainConnection::<Evm<_>>::light_client(&union);
 
                         serde_json::to_string_pretty(&ethereum.query_client_state(client_id).await)
+                            .unwrap()
+
+                        // TODO(aeryz): we now have 2 different clients running on union
+                    }
+                    ChainConfig::Cosmos(cosmos) => {
+                        let cosmos = chain::cosmos::Cosmos::new(cosmos).await;
+
+                        let cometbls: chain::cosmos::Cometbls =
+                            ChainConnection::<_>::light_client(&cosmos);
+
+                        serde_json::to_string_pretty(&cometbls.query_client_state(client_id).await)
                             .unwrap()
                     }
                 };
@@ -494,10 +544,12 @@ async fn do_main(args: cli::AppArgs) -> Result<(), anyhow::Error> {
                     let union = Union::new(union).await;
 
                     // Config is arbitrary
-                    let light_client: Ethereum<Mainnet> = union.light_client();
+                    let light_client: Ethereum<Mainnet> =
+                        ChainConnection::<Evm<_>>::light_client(&union);
 
                     path.any_state_proof_to_json(&light_client, at).await
                 }
+                ChainConfig::Cosmos(_) => bail!("not implemented"),
             };
 
             println!("{json}");

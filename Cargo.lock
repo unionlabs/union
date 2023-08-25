@@ -964,8 +964,6 @@ dependencies = [
  "cometbls-groth16-verifier",
  "cosmwasm-schema",
  "cosmwasm-std",
- "ethabi",
- "ethers",
  "hex",
  "ibc",
  "lazy_static",

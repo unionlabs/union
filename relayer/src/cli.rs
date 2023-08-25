@@ -12,7 +12,7 @@ use reqwest::Url;
 use unionlabs::ethereum_consts_traits::PresetBaseKind;
 
 use crate::chain::{
-    cosmos::EthereumConfig, evm::CometblsConfig, proof, Chain, LightClient, QueryHeight,
+    evm::CometblsConfig, proof, union::EthereumConfig, Chain, LightClient, QueryHeight,
 };
 
 #[derive(Debug, Parser)]
@@ -196,6 +196,14 @@ pub enum ChainAddCmd {
         #[command(flatten)]
         config: crate::config::UnionChainConfig,
     },
+    Cosmos {
+        #[arg(long)]
+        overwrite: bool,
+        #[arg(long)]
+        name: String,
+        #[command(flatten)]
+        config: crate::config::UnionChainConfig,
+    },
 }
 
 #[derive(Debug, Subcommand)]
@@ -245,6 +253,14 @@ pub enum CometblsClientType {
         counterparty: String,
         #[command(flatten)]
         config: EthereumConfig,
+    },
+    Tendermint {
+        /// The name of the chain to create the client on, as specified in the config file.
+        #[arg(long)]
+        on: String,
+        /// The name of the chain that the client will connect to, as specified in the config file.
+        #[arg(long)]
+        counterparty: String,
     },
 }
 
