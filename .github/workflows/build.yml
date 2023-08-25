@@ -28,6 +28,7 @@ jobs:
             # Do not run on both systems
             [.attr] | inside(
               [
+                "fuzz",
                 "bundle-mainnet", 
                 "bundle-testnet", 
                 "generate-evm-proto", 

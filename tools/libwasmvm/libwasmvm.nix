@@ -21,7 +21,7 @@
     in
     {
       packages.libwasmvm =
-        (craneLib).buildPackage (
+        craneLib.buildPackage (
           {
             name = "libwasmvm";
             version = "1.2.3";

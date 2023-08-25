@@ -89,6 +89,7 @@
         ./testnet-validator.nix
         ./e2e/all-tests.nix
         ./e2e/e2e.nix
+        ./lib/unionlabs/fuzz/default.nix
         treefmt-nix.flakeModule
         pre-commit-hooks.flakeModule
       ];

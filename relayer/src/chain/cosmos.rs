@@ -393,23 +393,18 @@ impl Chain for Union {
                         denominator: 3,
                     },
                     // https://github.com/cosmos/relayer/blob/23d1e5c864b35d133cad6a0ef06970a2b1e1b03f/relayer/chains/cosmos/provider.go#L177
-                    trusting_period: Duration {
-                        seconds: ((unbonding_period * 85 / 100).as_secs() as i64)
-                            .try_into()
-                            .unwrap(),
-                        nanos: ((unbonding_period * 85 / 100).subsec_nanos() as i32)
-                            .try_into()
-                            .unwrap(),
-                    },
-                    unbonding_period: Duration {
-                        seconds: (unbonding_period.as_secs() as i64).try_into().unwrap(),
-                        nanos: (unbonding_period.subsec_nanos() as i32).try_into().unwrap(),
-                    },
+                    trusting_period: Duration::new(
+                        (unbonding_period * 85 / 100).as_secs() as i64,
+                        (unbonding_period * 85 / 100).subsec_nanos() as i32,
+                    )
+                    .unwrap(),
+                    unbonding_period: Duration::new(
+                        unbonding_period.as_secs() as i64,
+                        unbonding_period.subsec_nanos() as i32,
+                    )
+                    .unwrap(),
                     // https://github.com/cosmos/relayer/blob/23d1e5c864b35d133cad6a0ef06970a2b1e1b03f/relayer/chains/cosmos/provider.go#L177
-                    max_clock_drift: Duration {
-                        seconds: (60 * 10).try_into().unwrap(),
-                        nanos: 0.try_into().unwrap(),
-                    },
+                    max_clock_drift: Duration::new(60 * 10, 0).unwrap(),
                     frozen_height: Height {
                         revision_number: 0,
                         revision_height: 0,

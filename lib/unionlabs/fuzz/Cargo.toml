@@ -1,0 +1,36 @@
+[package]
+name = "unionlabs-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2021"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+unionlabs = { workspace = true, features = ["arbitrary"] }
+
+[[bin]]
+name = "duration_roundtrip"
+path = "fuzz_targets/duration/roundtrip.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "duration_from_str"
+path = "fuzz_targets/duration/from_str.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "duration_checked_add"
+path = "fuzz_targets/duration/checked_add.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "timestamp_roundtrip"
+path = "fuzz_targets/timestamp/roundtrip.rs"
+test = false
+doc = false

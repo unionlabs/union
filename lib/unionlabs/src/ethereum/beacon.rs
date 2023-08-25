@@ -246,7 +246,10 @@ pub struct GenesisData {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{assert_json_roundtrip, assert_proto_roundtrip, ethereum_consts_traits::Minimal};
+    use crate::{
+        ethereum_consts_traits::Minimal,
+        test_utils::{assert_json_roundtrip, assert_proto_roundtrip},
+    };
 
     #[test]
     fn finality_update_json() {

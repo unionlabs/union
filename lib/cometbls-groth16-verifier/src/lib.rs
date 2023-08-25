@@ -264,20 +264,12 @@ fn hmac_keccak(message: &[u8]) -> [u8; 32] {
             .iter()
             .copied()
             .chain(message.iter().copied())
-            .into_iter()
             .collect::<Vec<_>>(),
     );
     let inner_hash = hasher.finalize();
 
     let mut hasher = sha3::Keccak256::new();
-    hasher.update(
-        HMAC_O
-            .iter()
-            .copied()
-            .chain(inner_hash)
-            .into_iter()
-            .collect::<Vec<_>>(),
-    );
+    hasher.update(HMAC_O.iter().copied().chain(inner_hash).collect::<Vec<_>>());
 
     hasher.finalize().into()
 }
@@ -291,13 +283,7 @@ fn hash_to_field2(message: impl Iterator<Item = u8> + Clone) -> (U256, U256) {
                 .collect::<Vec<_>>()
                 .as_ref(),
         ),
-        hash_to_field(
-            [1].into_iter()
-                .chain(message)
-                .into_iter()
-                .collect::<Vec<_>>()
-                .as_ref(),
-        ),
+        hash_to_field([1].into_iter().chain(message).collect::<Vec<_>>().as_ref()),
     )
 }
 

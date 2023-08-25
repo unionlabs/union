@@ -38,3 +38,5 @@ out
 .vscode
 
 dump
+
+fuzzing-code-coverage
