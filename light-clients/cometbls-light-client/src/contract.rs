@@ -136,7 +136,7 @@ pub fn update_header(mut deps: DepsMut, env: Env, header: Header) -> Result<Cont
     }
 
     let max_clock_drift =
-        current_time.seconds.inner() + client_state.data.max_clock_drift.seconds();
+        current_time.seconds.inner() + client_state.data.max_clock_drift.seconds().inner();
 
     if untrusted_timestamp.inner() >= max_clock_drift {
         return Err(Error::InvalidHeader("header back to the future".into()));
@@ -248,6 +248,8 @@ fn query_status(deps: Deps, env: &Env) -> Result<StatusResponse, Error> {
             .data
             .trusting_period
             .seconds()
+            .inner()
+            // NOTE: trusting_period *should* be strictly positive; enforce this somehow?
             .try_into()
             .unwrap_or_default(),
         env.block.time.seconds(),
