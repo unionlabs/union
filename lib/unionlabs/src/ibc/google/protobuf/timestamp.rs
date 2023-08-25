@@ -169,13 +169,6 @@ impl FromStr for Timestamp {
     }
 }
 
-// String::deserialize(deserializer).and_then(|str| {
-//     chrono::DateTime::parse_from_rfc3339(&str).map_err(de::Error::invalid_value(
-//         de::Unexpected::Str(&str),
-//         &"an RFC 3339 datetime string",
-//     ))
-// }).map(|dt| dt.naive_utc())
-
 impl Proto for Timestamp {
     type Proto = protos::google::protobuf::Timestamp;
 }
