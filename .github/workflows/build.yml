@@ -57,9 +57,9 @@ jobs:
             (
               [.attr] | inside(
                 [
-                  "evm-contracts"
-                  "devnet"
-                  "devnet-cosmos"
+                  "evm-contracts",
+                  "devnet",
+                  "devnet-cosmos",
                   "devnet-evm"
                 ]
               )
