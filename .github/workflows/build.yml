@@ -37,10 +37,11 @@ jobs:
                   "download-circuit",
                   "evm",
                   "evm-contracts",
-                  "gen-proto",
+                  "fuzz",
                   "generate-evm-proto",
                   "generate-prover-proto",
                   "generate-rust-proto",
+                  "gen-proto",
                   "githook",
                   "go-vendor",
                   "rust-proto"
