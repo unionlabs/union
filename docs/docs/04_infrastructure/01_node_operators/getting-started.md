@@ -105,7 +105,7 @@ uniond tx staking create-validator \
   --commission-max-change-rate "0.1" \
   --commission-max-rate "0.20" \
   --commission-rate "0.1" \
-  --min-self-delegation "1" --node https://rpc.0xc0dejug.uno:443
+  --min-self-delegation "1"
 ```
 
 > **NOTE**
