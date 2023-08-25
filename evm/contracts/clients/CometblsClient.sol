@@ -82,7 +82,6 @@ contract CometblsClient is ILightClient {
         ) = consensusStateBytes.unmarshalConsensusStateFromProto();
 
         if (
-            latestHeight.revision_number != 0 ||
             latestHeight.revision_height == 0 ||
             timestamp == 0
         ) {
