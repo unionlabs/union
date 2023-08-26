@@ -1,4 +1,5 @@
 use prost::Message;
+use protos::google::protobuf::{BytesValue, Int64Value, StringValue};
 use rs_merkle::{algorithms::Sha256, Hasher, MerkleTree};
 use serde::{Deserialize, Serialize};
 
@@ -76,19 +77,74 @@ impl Header {
 
         let mut leaves = [
             leaf_hash(header.version?.encode_to_vec()),
-            leaf_hash(header.chain_id.encode_length_delimited_to_vec()),
-            leaf_hash(header.height.encode_length_delimited_to_vec()),
+            leaf_hash(
+                StringValue {
+                    value: header.chain_id,
+                }
+                .encode_to_vec(),
+            ),
+            leaf_hash(
+                Int64Value {
+                    value: header.height,
+                }
+                .encode_to_vec(),
+            ),
             leaf_hash(header.time?.encode_to_vec()),
             leaf_hash(header.last_block_id?.encode_to_vec()),
-            leaf_hash(header.last_commit_hash.encode_length_delimited_to_vec()),
-            leaf_hash(header.data_hash.encode_length_delimited_to_vec()),
-            leaf_hash(header.validators_hash.encode_length_delimited_to_vec()),
-            leaf_hash(header.next_validators_hash.encode_length_delimited_to_vec()),
-            leaf_hash(header.consensus_hash.encode_length_delimited_to_vec()),
-            leaf_hash(header.app_hash.encode_length_delimited_to_vec()),
-            leaf_hash(header.last_results_hash.encode_length_delimited_to_vec()),
-            leaf_hash(header.evidence_hash.encode_length_delimited_to_vec()),
-            leaf_hash(header.proposer_address.encode_length_delimited_to_vec()),
+            leaf_hash(
+                BytesValue {
+                    value: header.last_commit_hash,
+                }
+                .encode_to_vec(),
+            ),
+            leaf_hash(
+                BytesValue {
+                    value: header.data_hash,
+                }
+                .encode_to_vec(),
+            ),
+            leaf_hash(
+                BytesValue {
+                    value: header.validators_hash,
+                }
+                .encode_to_vec(),
+            ),
+            leaf_hash(
+                BytesValue {
+                    value: header.next_validators_hash,
+                }
+                .encode_to_vec(),
+            ),
+            leaf_hash(
+                BytesValue {
+                    value: header.consensus_hash,
+                }
+                .encode_to_vec(),
+            ),
+            leaf_hash(
+                BytesValue {
+                    value: header.app_hash,
+                }
+                .encode_to_vec(),
+            ),
+            leaf_hash(
+                BytesValue {
+                    value: header.last_results_hash,
+                }
+                .encode_to_vec(),
+            ),
+            leaf_hash(
+                BytesValue {
+                    value: header.evidence_hash,
+                }
+                .encode_to_vec(),
+            ),
+            leaf_hash(
+                BytesValue {
+                    value: header.proposer_address,
+                }
+                .encode_to_vec(),
+            ),
         ];
 
         leaves[0] = inner_hash(&leaves[0], &leaves[1]);
