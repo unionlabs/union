@@ -51,24 +51,65 @@ impl Header {
     pub fn calculate_merkle_root(&self) -> Option<[u8; 32]> {
         let header: protos::tendermint::types::Header = self.clone().into();
 
-        let leaves = [
-            Sha256::hash(&header.version?.encode_to_vec()),
-            Sha256::hash(&header.chain_id.encode_to_vec()),
-            Sha256::hash(&header.height.encode_to_vec()),
-            Sha256::hash(&header.time?.encode_to_vec()),
-            Sha256::hash(&header.last_block_id?.encode_to_vec()),
-            Sha256::hash(&header.last_commit_hash.encode_to_vec()),
-            Sha256::hash(&header.data_hash.encode_to_vec()),
-            Sha256::hash(&header.validators_hash.encode_to_vec()),
-            Sha256::hash(&header.next_validators_hash.encode_to_vec()),
-            Sha256::hash(&header.consensus_hash.encode_to_vec()),
-            Sha256::hash(&header.app_hash.encode_to_vec()),
-            Sha256::hash(&header.last_results_hash.encode_to_vec()),
-            Sha256::hash(&header.evidence_hash.encode_to_vec()),
-            Sha256::hash(&header.proposer_address.encode_to_vec()),
+        let do_hash = |prefix: u8, v: Vec<u8>| {
+            Sha256::hash(
+                &[prefix]
+                    .into_iter()
+                    .chain(v.into_iter())
+                    .collect::<Vec<_>>(),
+            )
+        };
+
+        const LEAF_PREFIX: u8 = 0;
+        const INNER_PREFIX: u8 = 1;
+
+        let leaf_hash = |v: Vec<u8>| do_hash(LEAF_PREFIX, v);
+        let inner_hash = |l: &<Sha256 as Hasher>::Hash, r: &<Sha256 as Hasher>::Hash| {
+            do_hash(
+                INNER_PREFIX,
+                l.iter()
+                    .copied()
+                    .chain(r.iter().copied())
+                    .collect::<Vec<_>>(),
+            )
+        };
+
+        let mut leaves = [
+            leaf_hash(header.version?.encode_to_vec()),
+            leaf_hash(header.chain_id.encode_length_delimited_to_vec()),
+            leaf_hash(header.height.encode_length_delimited_to_vec()),
+            leaf_hash(header.time?.encode_to_vec()),
+            leaf_hash(header.last_block_id?.encode_to_vec()),
+            leaf_hash(header.last_commit_hash.encode_length_delimited_to_vec()),
+            leaf_hash(header.data_hash.encode_length_delimited_to_vec()),
+            leaf_hash(header.validators_hash.encode_length_delimited_to_vec()),
+            leaf_hash(header.next_validators_hash.encode_length_delimited_to_vec()),
+            leaf_hash(header.consensus_hash.encode_length_delimited_to_vec()),
+            leaf_hash(header.app_hash.encode_length_delimited_to_vec()),
+            leaf_hash(header.last_results_hash.encode_length_delimited_to_vec()),
+            leaf_hash(header.evidence_hash.encode_length_delimited_to_vec()),
+            leaf_hash(header.proposer_address.encode_length_delimited_to_vec()),
         ];
 
-        MerkleTree::<Sha256>::from_leaves(&leaves).root()
+        leaves[0] = inner_hash(&leaves[0], &leaves[1]);
+        leaves[1] = inner_hash(&leaves[2], &leaves[3]);
+        leaves[2] = inner_hash(&leaves[4], &leaves[5]);
+        leaves[3] = inner_hash(&leaves[6], &leaves[7]);
+        leaves[4] = inner_hash(&leaves[8], &leaves[9]);
+        leaves[5] = inner_hash(&leaves[10], &leaves[11]);
+        leaves[6] = inner_hash(&leaves[12], &leaves[13]);
+
+        leaves[0] = inner_hash(&leaves[0], &leaves[1]);
+        leaves[1] = inner_hash(&leaves[2], &leaves[3]);
+        leaves[2] = inner_hash(&leaves[4], &leaves[5]);
+        leaves[3] = leaves[6];
+
+        leaves[0] = inner_hash(&leaves[0], &leaves[1]);
+        leaves[1] = inner_hash(&leaves[2], &leaves[3]);
+
+        let root = inner_hash(&leaves[0], &leaves[1]);
+
+        Some(root)
     }
 }
 
