@@ -478,7 +478,9 @@ impl<C: ChainSpec> Chain for Evm<C> {
                     .await
                     .unwrap();
 
-                let [light_client_update] = &*light_client_updates.0 else { panic!() };
+                let [light_client_update] = &*light_client_updates.0 else {
+                    panic!()
+                };
 
                 light_client_update.data.clone()
             };
