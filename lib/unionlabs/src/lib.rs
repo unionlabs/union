@@ -161,7 +161,7 @@ pub trait TypeUrl: Message {
     const TYPE_URL: &'static str;
 }
 
-#[cfg(any(fuzzing, test))]
+#[cfg(any(feature = "fuzzing", test))]
 #[allow(clippy::missing_panics_doc)]
 pub mod test_utils {
     use std::{
