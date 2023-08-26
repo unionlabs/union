@@ -12,8 +12,8 @@
             name = "tera";
             owner = "chevdor";
             repo = "tera-cli";
-            rev = "b805115917127ca5467978b872d031ce1fb734e7";
-            sha256 = "sha256-eOfiKdYU5qPOGRl1K2CjFnlRtQ1gtT5KzKoItBUr3AM=";
+            rev = "fbccb741db347aa6c85a7d14d98bdc83ddc2dedd";
+            sha256 = "sha256-ZBlxikPa92qqKTCyOzFT6pVmNnGxw+0G0XTwzH/ST3w=";
           };
           meta.mainProgram = "tera";
         };

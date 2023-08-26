@@ -233,6 +233,7 @@
               (
                 let
                   crateAttrsWithArtifactsNextest = crateAttrs // {
+                    doNotLinkInheritedArtifacts = true;
                     cargoArtifacts = artifacts;
                     buildPhaseCargoCommand = "cargo nextest run ${packageFilterArg}";
                   };

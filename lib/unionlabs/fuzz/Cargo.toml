@@ -9,7 +9,7 @@ cargo-fuzz = true
 
 [dependencies]
 libfuzzer-sys = "0.4"
-unionlabs = { workspace = true, features = ["arbitrary"] }
+unionlabs = { workspace = true, features = ["fuzzing"] }
 
 [[bin]]
 name = "duration_roundtrip"
