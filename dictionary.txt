@@ -203,6 +203,7 @@ errorsmod
 esac
 ethabi
 ethash
+ethcall
 etherbase
 evidencekeeper
 evidencetypes
