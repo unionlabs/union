@@ -46,7 +46,7 @@ use crate::{
         evm::Evm,
         proof::{
             ChannelEndPath, ClientConsensusStatePath, ClientStatePath, CommitmentPath,
-            ConnectionPath,
+            ConnectionPath, IbcStateRead, IbcStateReadPaths,
         },
         AnyChain, Chain, ChainConnection, ClientState, ClientStateOf, Connect, CreateClient,
         LightClient,
@@ -189,18 +189,34 @@ async fn do_main(args: cli::AppArgs) -> Result<(), anyhow::Error> {
                 match (from_chain, to_chain) {
                     // union -> evm
                     (AnyChain::Union(union), AnyChain::EvmMainnet(evm)) => {
-                        connection_handshake(&union, from_client, &evm, to_client).await?;
+                        do_connection_handshake(
+                            (from_client, union.light_client()),
+                            (to_client, evm.light_client()),
+                        )
+                        .await;
                     }
                     (AnyChain::Union(union), AnyChain::EvmMinimal(evm)) => {
-                        connection_handshake(&union, from_client, &evm, to_client).await?;
+                        do_connection_handshake(
+                            (from_client, union.light_client()),
+                            (to_client, evm.light_client()),
+                        )
+                        .await;
                     }
 
                     // evm -> union
                     (AnyChain::EvmMainnet(evm), AnyChain::Union(union)) => {
-                        connection_handshake(&evm, from_client, &union, to_client).await?;
+                        do_connection_handshake(
+                            (from_client, evm.light_client()),
+                            (to_client, union.light_client()),
+                        )
+                        .await;
                     }
                     (AnyChain::EvmMinimal(evm), AnyChain::Union(union)) => {
-                        connection_handshake(&evm, from_client, &union, to_client).await?;
+                        do_connection_handshake(
+                            (from_client, evm.light_client()),
+                            (to_client, union.light_client()),
+                        )
+                        .await;
                     }
 
                     _ => {
@@ -226,58 +242,58 @@ async fn do_main(args: cli::AppArgs) -> Result<(), anyhow::Error> {
                 match (from_chain, to_chain) {
                     // union -> evm
                     (AnyChain::Union(union), AnyChain::EvmMainnet(evm)) => {
-                        channel_handshake(
-                            &union,
+                        do_channel_handshake(
+                            &union.light_client(),
+                            &evm.light_client(),
                             from_connection,
-                            from_port,
-                            from_version,
-                            &evm,
                             to_connection,
+                            from_port,
                             to_port,
+                            from_version,
                             to_version,
                         )
-                        .await?;
+                        .await;
                     }
                     (AnyChain::Union(union), AnyChain::EvmMinimal(evm)) => {
-                        channel_handshake(
-                            &union,
+                        do_channel_handshake(
+                            &union.light_client(),
+                            &evm.light_client(),
                             from_connection,
-                            from_port,
-                            from_version,
-                            &evm,
                             to_connection,
+                            from_port,
                             to_port,
+                            from_version,
                             to_version,
                         )
-                        .await?;
+                        .await;
                     }
 
                     // evm -> union
                     (AnyChain::EvmMainnet(evm), AnyChain::Union(union)) => {
-                        channel_handshake(
-                            &evm,
+                        do_channel_handshake(
+                            &evm.light_client(),
+                            &union.light_client(),
                             from_connection,
-                            from_port,
-                            from_version,
-                            &union,
                             to_connection,
+                            from_port,
                             to_port,
+                            from_version,
                             to_version,
                         )
-                        .await?;
+                        .await;
                     }
                     (AnyChain::EvmMinimal(evm), AnyChain::Union(union)) => {
-                        channel_handshake(
-                            &evm,
+                        do_channel_handshake(
+                            &evm.light_client(),
+                            &union.light_client(),
                             from_connection,
-                            from_port,
-                            from_version,
-                            &union,
                             to_connection,
+                            from_port,
                             to_port,
+                            from_version,
                             to_version,
                         )
-                        .await?;
+                        .await;
                     }
 
                     _ => {
@@ -483,20 +499,19 @@ async fn do_main(args: cli::AppArgs) -> Result<(), anyhow::Error> {
                 ChainConfig::Evm(EvmChainConfig::Mainnet(evm)) => {
                     let evm = Evm::<Mainnet>::new(evm).await;
 
-                    path.any_state_proof_to_json(&evm.light_client(), at).await
+                    path.any_state_proof_to_json::<Union, _>(evm, at).await
                 }
                 ChainConfig::Evm(EvmChainConfig::Minimal(evm)) => {
                     let evm = Evm::<Minimal>::new(evm).await;
 
-                    path.any_state_proof_to_json(&evm.light_client(), at).await
+                    path.any_state_proof_to_json::<Union, _>(evm, at).await
                 }
                 ChainConfig::Union(union) => {
                     let union = Union::new(union).await;
 
-                    // Config is arbitrary
-                    let light_client: Ethereum<Mainnet> = union.light_client();
-
-                    path.any_state_proof_to_json(&light_client, at).await
+                    // NOTE: ChainSpec is arbitrary
+                    path.any_state_proof_to_json::<Evm<Mainnet>, _>(union, at)
+                        .await
                 }
             };
 
@@ -513,33 +528,6 @@ async fn do_main(args: cli::AppArgs) -> Result<(), anyhow::Error> {
     Ok(())
 }
 
-async fn connection_handshake<FromChain, ToChain>(
-    from: &FromChain,
-    from_client_id: String,
-    to: &ToChain,
-    to_client_id: String,
-) -> Result<(String, String), anyhow::Error>
-where
-    FromChain: ChainConnection<ToChain>,
-    ToChain: ChainConnection<FromChain>,
-    ClientStateOf<FromChain>: IntoProto,
-    ClientStateOf<ToChain>: IntoProto,
-{
-    // let from_chain_id = from.chain_id().await;
-    let from = from.light_client();
-    // .new_with_id(from_client_id.clone())
-    // .await
-    // .with_context(|| format!("client {from_client_id} does not exist on {from_chain_id}",))?;
-
-    // let to_chain_id = to.chain_id().await;
-    let to = to.light_client();
-    // .new_with_id(to_client_id.clone())
-    // .await
-    // .with_context(|| format!("client {to_client_id} does not exist on {to_chain_id}",))?;
-
-    Ok(do_connection_handshake((from_client_id, from), (to_client_id, to)).await)
-}
-
 /// Returns (c1 conn id, c2 conn id)
 async fn do_connection_handshake<L2, L1>(
     (cometbls_client_id, cometbls): (String, L2),
@@ -548,6 +536,8 @@ async fn do_connection_handshake<L2, L1>(
 where
     L2: Connect<L1>,
     L1: Connect<L2>,
+    L2::HostChain: IbcStateReadPaths<L2::CounterpartyChain>,
+    L1::HostChain: IbcStateReadPaths<L1::CounterpartyChain>,
     ClientStateOf<<L2 as LightClient>::CounterpartyChain>: Debug + ClientState + IntoProto,
     ClientStateOf<<L1 as LightClient>::CounterpartyChain>: Debug + ClientState + IntoProto,
 {
@@ -641,6 +631,7 @@ where
     // generate state proofs
 
     let cometbls_client_state_proof = cometbls
+        .chain()
         .state_proof(
             ClientStatePath {
                 client_id: cometbls_client_id.clone(),
@@ -649,6 +640,7 @@ where
         )
         .await;
     let cometbls_consensus_state_proof = cometbls
+        .chain()
         .state_proof(
             ClientConsensusStatePath {
                 client_id: cometbls_client_id.clone(),
@@ -658,6 +650,7 @@ where
         )
         .await;
     let cometbls_connection_state_proof = cometbls
+        .chain()
         .state_proof(
             ConnectionPath {
                 connection_id: connection_open_init.connection_id.clone(),
@@ -713,6 +706,7 @@ where
         .await;
 
     let ethereum_connection_state_proof = ethereum
+        .chain()
         .state_proof(
             ConnectionPath {
                 connection_id: connection_open_try.connection_id.clone(),
@@ -721,6 +715,7 @@ where
         )
         .await;
     let ethereum_client_state_proof = ethereum
+        .chain()
         .state_proof(
             ClientStatePath {
                 client_id: ethereum_client_id.clone(),
@@ -729,6 +724,7 @@ where
         )
         .await;
     let ethereum_consensus_state_proof = ethereum
+        .chain()
         .state_proof(
             ClientConsensusStatePath {
                 client_id: ethereum_client_id.clone(),
@@ -802,6 +798,7 @@ where
         .await;
 
     let cometbls_connection_state_proof = cometbls
+        .chain()
         .state_proof(
             ConnectionPath {
                 connection_id: connection_open_ack.connection_id.clone(),
@@ -827,39 +824,6 @@ where
 }
 
 #[allow(clippy::too_many_arguments)] // fight me clippy
-async fn channel_handshake<FromChain, ToChain>(
-    from: &FromChain,
-    from_connection_id: String,
-    from_port_id: String,
-    from_version: String,
-    to: &ToChain,
-    to_connection_id: String,
-    to_port_id: String,
-    to_version: String,
-) -> Result<(String, String), anyhow::Error>
-where
-    FromChain: ChainConnection<ToChain>,
-    ToChain: ChainConnection<FromChain>,
-    ClientStateOf<FromChain>: IntoProto,
-    ClientStateOf<ToChain>: IntoProto,
-{
-    let from = from.light_client();
-    let to = to.light_client();
-
-    Ok(do_channel_handshake(
-        &from,
-        &to,
-        from_connection_id,
-        to_connection_id,
-        from_port_id,
-        to_port_id,
-        from_version,
-        to_version,
-    )
-    .await)
-}
-
-#[allow(clippy::too_many_arguments)] // fight me clippy
 async fn do_channel_handshake<L2, L1>(
     cometbls: &L2,
     ethereum: &L1,
@@ -873,6 +837,8 @@ async fn do_channel_handshake<L2, L1>(
 where
     L2: Connect<L1>,
     L1: Connect<L2>,
+    L2::HostChain: IbcStateReadPaths<L2::CounterpartyChain>,
+    L1::HostChain: IbcStateReadPaths<L1::CounterpartyChain>,
     ClientStateOf<<L2 as LightClient>::CounterpartyChain>: Debug + ClientState,
     ClientStateOf<<L1 as LightClient>::CounterpartyChain>: Debug + ClientState,
 {
@@ -880,6 +846,7 @@ where
     let ethereum_id = ethereum.chain().chain_id().await;
 
     let ethereum_client_id = ethereum
+        .chain()
         .state_proof(
             ConnectionPath {
                 connection_id: ethereum_connection_id.clone(),
@@ -891,6 +858,7 @@ where
         .client_id;
 
     let cometbls_client_id = cometbls
+        .chain()
         .state_proof(
             ConnectionPath {
                 connection_id: cometbls_connection_id.clone(),
@@ -939,6 +907,7 @@ where
         .await;
 
     let proof = cometbls
+        .chain()
         .state_proof(
             ChannelEndPath {
                 port_id: channel_open_init.port_id.clone(),
@@ -993,6 +962,7 @@ where
         .await;
 
     let proof = ethereum
+        .chain()
         .state_proof(
             ChannelEndPath {
                 port_id: channel_open_try.port_id.clone(),
@@ -1027,6 +997,7 @@ where
         .await;
 
     let proof = cometbls
+        .chain()
         .state_proof(
             ChannelEndPath {
                 port_id: channel_open_ack.port_id.clone(),
@@ -1056,6 +1027,10 @@ async fn relay_packets<FromChain, ToChain>(from: &FromChain, to: &ToChain)
 where
     FromChain: ChainConnection<ToChain>,
     ToChain: ChainConnection<FromChain>,
+    <<FromChain as ChainConnection<ToChain>>::LightClient as LightClient>::HostChain:
+        IbcStateReadPaths<<<FromChain as ChainConnection<ToChain>>::LightClient as LightClient>::CounterpartyChain>,
+    <<ToChain as ChainConnection<FromChain>>::LightClient as LightClient>::HostChain:
+        IbcStateReadPaths<<<ToChain as ChainConnection<FromChain>>::LightClient as LightClient>::CounterpartyChain>,
     ClientStateOf<FromChain>: IntoProto,
     ClientStateOf<ToChain>: IntoProto,
 {
@@ -1066,6 +1041,8 @@ where
     ) where
         L1: Connect<L2>,
         L2: Connect<L1>,
+        L2::HostChain: IbcStateReadPaths<L2::CounterpartyChain>,
+        L1::HostChain: IbcStateReadPaths<L1::CounterpartyChain>,
     {
         lc1_event_stream
             .for_each(move |(event_height, packet)| async move {
@@ -1074,6 +1051,7 @@ where
                 let sequence = packet.sequence;
 
                 let lc2_client_id = lc1
+                    .chain()
                     .state_proof(
                         ChannelEndPath {
                             channel_id: packet.source_channel.clone(),
@@ -1082,13 +1060,14 @@ where
                         event_height,
                     )
                     .then(|channel| {
-                        lc1.state_proof(
-                            ConnectionPath {
-                                connection_id: channel.state.connection_hops[0].clone(),
-                            },
-                            event_height,
-                        )
-                        .map(|connection| connection.state.counterparty.client_id)
+                        lc1.chain()
+                            .state_proof(
+                                ConnectionPath {
+                                    connection_id: channel.state.connection_hops[0].clone(),
+                                },
+                                event_height,
+                            )
+                            .map(|connection| connection.state.counterparty.client_id)
                     })
                     .await;
 
@@ -1121,6 +1100,7 @@ where
                 tracing::info!("updated {lc2_client_id} to {lc1_updated_to}");
 
                 let commitment_proof = lc1
+                    .chain()
                     .state_proof(
                         CommitmentPath {
                             port_id: packet.source_port.clone(),
