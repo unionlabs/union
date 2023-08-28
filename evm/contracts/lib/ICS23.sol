@@ -124,7 +124,7 @@ library Ics23 {
                 } else if (
                     vCode == Proof.VerifyExistenceError.ValueNotMatching
                 ) {
-                    return VerifyChainedMembershipError.KeyMismatch;
+                    return VerifyChainedMembershipError.ValueMismatch;
                 } else if (vCode == Proof.VerifyExistenceError.CheckSpec) {
                     return VerifyChainedMembershipError.InvalidSpec;
                 } else if (vCode == Proof.VerifyExistenceError.CalculateRoot) {
