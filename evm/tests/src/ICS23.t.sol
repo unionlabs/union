@@ -152,11 +152,13 @@ contract ICS23Test is Test {
         bytes[] memory path = new bytes[](2);
         path[0] = "acc";
         path[1] = hex"014152090B0C95C948EDC407995560FEED4A9DF81E";
-        Ics23.verifyChainedMembership(
-            IbcCoreCommitmentV1MerkleProof.decode(proof),
-            root,
-            path,
-            value
+        assert(
+            Ics23.verifyChainedMembership(
+                IbcCoreCommitmentV1MerkleProof.decode(proof),
+                root,
+                path,
+                value
+            ) == Ics23.VerifyChainedMembershipError.None
         );
     }
 
@@ -170,11 +172,13 @@ contract ICS23Test is Test {
         bytes[] memory path = new bytes[](2);
         path[0] = "ibc";
         path[1] = "connections/connection-1";
-        Ics23.verifyChainedMembership(
-            IbcCoreCommitmentV1MerkleProof.decode(proof),
-            root,
-            path,
-            value
+        assert(
+            Ics23.verifyChainedMembership(
+                IbcCoreCommitmentV1MerkleProof.decode(proof),
+                root,
+                path,
+                value
+            ) == Ics23.VerifyChainedMembershipError.None
         );
     }
 
@@ -188,11 +192,73 @@ contract ICS23Test is Test {
         bytes[] memory path = new bytes[](2);
         path[0] = "ibc";
         path[1] = "clients/08-wasm-1/clientState";
-        Ics23.verifyChainedMembership(
-            IbcCoreCommitmentV1MerkleProof.decode(proof),
-            root,
-            path,
-            value
+        assert(
+            Ics23.verifyChainedMembership(
+                IbcCoreCommitmentV1MerkleProof.decode(proof),
+                root,
+                path,
+                value
+            ) == Ics23.VerifyChainedMembershipError.None
+        );
+    }
+
+    function testRootMismatch() public {
+        bytes
+            memory root = hex"971AF378C1F256110B3BA2EFD90325D5B5AFC8185997F2C12A7C4638B906CC22";
+        bytes
+            memory proof = hex"0ab0030aad030a1d636c69656e74732f30382d7761736d2d312f636c69656e74537461746512c7010a252f6962632e6c69676874636c69656e74732e7761736d2e76312e436c69656e745374617465129d010a720a20d8ea171f3c94aea21ebc42a1ed61052acf3f9209c00e4efbaaddac09ed9b807818e0fac1950622310a04900000691a060a049000007022060a04900000712a060a049000007232110a040400000010ffffffffffffffffff01280c30203880024204080110034880c2d72f50a0f4a4011220e8dcc770de5a013041588233812f73ac797ec6078b0011cbcbfe49d474f4c1191a051081f2e7011a0c0801180120012a040002ae06222c080112050204b006201a2120980ab410769397da376376a2756754b225f34cc0eea404b068924f64180abcc4222c080112050408b006201a21209d79cf7fc2f248ea0a56cff266ac54cfbc06687e25ffee99aec2884856d0104f222a080112260610b006203e808c2bc895d44d05d7af6d8b0424fabb1d9ab6f53b10cdb084b2996f75bfa620222c08011205081eb006201a212095bb7de983d8ea1282a2d60e2f6c675bec25f82be86aa874ff0f15827c1ab3ed0afc010af9010a036962631220859b7ac80b1c0ca82504e0d8e9de460d42ca66a03e708cbd09869e5216c73a591a090801180120012a01002225080112210106b99c0d8119ff1edbcbe165d0f19337dbbc080e677c88e57aa2ae767ebf0f0f222708011201011a20aa650406ea0d76e39dd43d2ea6a91e3fdaa1c908fc21a7ca68e5e62cc8115639222508011221016ac3182364d7cdaa1f52a77b6081e070aa29b2d253f3642169693cde336e2bdc22250801122101c9d0a585c82dc572f3fcedc70302d4c3fbbc9e84f0618c6b446a70efa312e8dc222708011201011a20952029410a533cf530124179204303bea59a86f5b4993291c5b8ca406412c5f7";
+        bytes
+            memory value = hex"0a252f6962632e6c69676874636c69656e74732e7761736d2e76312e436c69656e745374617465129d010a720a20d8ea171f3c94aea21ebc42a1ed61052acf3f9209c00e4efbaaddac09ed9b807818e0fac1950622310a04900000691a060a049000007022060a04900000712a060a049000007232110a040400000010ffffffffffffffffff01280c30203880024204080110034880c2d72f50a0f4a4011220e8dcc770de5a013041588233812f73ac797ec6078b0011cbcbfe49d474f4c1191a051081f2e701";
+        bytes[] memory path = new bytes[](2);
+        path[0] = "ibc";
+        path[1] = "clients/08-wasm-1/clientState";
+        assert(
+            Ics23.verifyChainedMembership(
+                IbcCoreCommitmentV1MerkleProof.decode(proof),
+                root,
+                path,
+                value
+            ) == Ics23.VerifyChainedMembershipError.RootMismatch
+        );
+    }
+
+    function testKeyMismatch() public {
+        bytes
+            memory root = hex"971AF378C1F256110B3BA2EFD90325D5B5AFC8185997F2C12A7C4638B906CC2F";
+        bytes
+            memory proof = hex"0ab0030aad030a1d636c69656e74732f30382d7761736d2d312f636c69656e74537461746512c7010a252f6962632e6c69676874636c69656e74732e7761736d2e76312e436c69656e745374617465129d010a720a20d8ea171f3c94aea21ebc42a1ed61052acf3f9209c00e4efbaaddac09ed9b807818e0fac1950622310a04900000691a060a049000007022060a04900000712a060a049000007232110a040400000010ffffffffffffffffff01280c30203880024204080110034880c2d72f50a0f4a4011220e8dcc770de5a013041588233812f73ac797ec6078b0011cbcbfe49d474f4c1191a051081f2e7011a0c0801180120012a040002ae06222c080112050204b006201a2120980ab410769397da376376a2756754b225f34cc0eea404b068924f64180abcc4222c080112050408b006201a21209d79cf7fc2f248ea0a56cff266ac54cfbc06687e25ffee99aec2884856d0104f222a080112260610b006203e808c2bc895d44d05d7af6d8b0424fabb1d9ab6f53b10cdb084b2996f75bfa620222c08011205081eb006201a212095bb7de983d8ea1282a2d60e2f6c675bec25f82be86aa874ff0f15827c1ab3ed0afc010af9010a036962631220859b7ac80b1c0ca82504e0d8e9de460d42ca66a03e708cbd09869e5216c73a591a090801180120012a01002225080112210106b99c0d8119ff1edbcbe165d0f19337dbbc080e677c88e57aa2ae767ebf0f0f222708011201011a20aa650406ea0d76e39dd43d2ea6a91e3fdaa1c908fc21a7ca68e5e62cc8115639222508011221016ac3182364d7cdaa1f52a77b6081e070aa29b2d253f3642169693cde336e2bdc22250801122101c9d0a585c82dc572f3fcedc70302d4c3fbbc9e84f0618c6b446a70efa312e8dc222708011201011a20952029410a533cf530124179204303bea59a86f5b4993291c5b8ca406412c5f7";
+        bytes
+            memory value = hex"0a252f6962632e6c69676874636c69656e74732e7761736d2e76312e436c69656e745374617465129d010a720a20d8ea171f3c94aea21ebc42a1ed61052acf3f9209c00e4efbaaddac09ed9b807818e0fac1950622310a04900000691a060a049000007022060a04900000712a060a049000007232110a040400000010ffffffffffffffffff01280c30203880024204080110034880c2d72f50a0f4a4011220e8dcc770de5a013041588233812f73ac797ec6078b0011cbcbfe49d474f4c1191a051081f2e701";
+        bytes[] memory path = new bytes[](2);
+        path[0] = "ibc";
+        path[1] = "clients/08-wasm-2/clientState";
+        assert(
+            Ics23.verifyChainedMembership(
+                IbcCoreCommitmentV1MerkleProof.decode(proof),
+                root,
+                path,
+                value
+            ) == Ics23.VerifyChainedMembershipError.KeyMismatch
+        );
+    }
+
+    function testValueMismatch() public {
+        bytes
+            memory root = hex"971AF378C1F256110B3BA2EFD90325D5B5AFC8185997F2C12A7C4638B906CC2F";
+        bytes
+            memory proof = hex"0ab0030aad030a1d636c69656e74732f30382d7761736d2d312f636c69656e74537461746512c7010a252f6962632e6c69676874636c69656e74732e7761736d2e76312e436c69656e745374617465129d010a720a20d8ea171f3c94aea21ebc42a1ed61052acf3f9209c00e4efbaaddac09ed9b807818e0fac1950622310a04900000691a060a049000007022060a04900000712a060a049000007232110a040400000010ffffffffffffffffff01280c30203880024204080110034880c2d72f50a0f4a4011220e8dcc770de5a013041588233812f73ac797ec6078b0011cbcbfe49d474f4c1191a051081f2e7011a0c0801180120012a040002ae06222c080112050204b006201a2120980ab410769397da376376a2756754b225f34cc0eea404b068924f64180abcc4222c080112050408b006201a21209d79cf7fc2f248ea0a56cff266ac54cfbc06687e25ffee99aec2884856d0104f222a080112260610b006203e808c2bc895d44d05d7af6d8b0424fabb1d9ab6f53b10cdb084b2996f75bfa620222c08011205081eb006201a212095bb7de983d8ea1282a2d60e2f6c675bec25f82be86aa874ff0f15827c1ab3ed0afc010af9010a036962631220859b7ac80b1c0ca82504e0d8e9de460d42ca66a03e708cbd09869e5216c73a591a090801180120012a01002225080112210106b99c0d8119ff1edbcbe165d0f19337dbbc080e677c88e57aa2ae767ebf0f0f222708011201011a20aa650406ea0d76e39dd43d2ea6a91e3fdaa1c908fc21a7ca68e5e62cc8115639222508011221016ac3182364d7cdaa1f52a77b6081e070aa29b2d253f3642169693cde336e2bdc22250801122101c9d0a585c82dc572f3fcedc70302d4c3fbbc9e84f0618c6b446a70efa312e8dc222708011201011a20952029410a533cf530124179204303bea59a86f5b4993291c5b8ca406412c5f7";
+        bytes
+            memory value = hex"0a252f6962632e6c69676874636c69656e74732e7761736d2e76312e436c69656e745374617465129d010a720a20d8ea171f3c94aea21ebc42a1ed61052acf3f9209c00e4efbaaddac09ed9b807818e0fac1950622310a04900000691a060a049000007022060a04900000712a060a049000007232110a040400000010ffffffffffffffffff01280c30203880024204080110034880c2d72f50a0f4a4011220e8dcc770de5a013041588233812f73ac797ec6078b0011cbcbfe49d474f4c1191a051081f2e700";
+        bytes[] memory path = new bytes[](2);
+        path[0] = "ibc";
+        path[1] = "clients/08-wasm-1/clientState";
+        assert(
+            Ics23.verifyChainedMembership(
+                IbcCoreCommitmentV1MerkleProof.decode(proof),
+                root,
+                path,
+                value
+            ) == Ics23.VerifyChainedMembershipError.ValueMismatch
         );
     }
 }

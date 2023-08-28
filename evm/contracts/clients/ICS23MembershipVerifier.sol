@@ -19,14 +19,13 @@ contract ICS23MembershipVerifier is IMembershipVerifier {
         bytes[] memory fullPath = new bytes[](2);
         fullPath[0] = prefix;
         fullPath[1] = path;
-        // This call reverts if any verification issue happen
-        Ics23.verifyChainedMembership(
-            IbcCoreCommitmentV1MerkleProof.decode(proof),
-            root,
-            fullPath,
-            value
-        );
-        return true;
+        return
+            Ics23.verifyChainedMembership(
+                IbcCoreCommitmentV1MerkleProof.decode(proof),
+                root,
+                fullPath,
+                value
+            ) == Ics23.VerifyChainedMembershipError.None;
     }
 
     function verifyNonMembership(
