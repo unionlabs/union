@@ -30,7 +30,7 @@ use ethers::{
     prelude::{decode_logs, k256::ecdsa, parse_log, EthLogDecode, LogMeta, SignerMiddleware},
     providers::{Middleware, Provider, Ws},
     signers::{LocalWallet, Wallet},
-    types::{Bytes, U256},
+    types::U256,
     utils::{keccak256, secret_key_to_address},
 };
 use futures::{Future, Stream, StreamExt};
@@ -72,7 +72,7 @@ use unionlabs::{
             wasm,
         },
     },
-    IntoEthAbi, IntoProto, TryFromProto,
+    IntoEthAbi, IntoProto, TryFromProto, TryFromProtoErrorOf,
 };
 
 use crate::{
@@ -86,8 +86,8 @@ use crate::{
             ChannelEndPath, ClientConsensusStatePath, ClientStatePath, CommitmentPath,
             ConnectionPath, IbcPath,
         },
-        Chain, ChainConnection, ClientStateOf, Connect, CreateClient, IbcStateRead, LightClient,
-        StateProof,
+        Chain, ChainConnection, ClientStateOf, Connect, ConsensusStateOf, CreateClient,
+        IbcStateRead, LightClient, StateProof,
     },
     config::EvmChainConfigFields,
 };
@@ -106,7 +106,7 @@ fn encode_dynamic_singleton_tuple(t: impl AbiEncode) -> Vec<u8> {
     U256::from(32)
         .encode()
         .into_iter()
-        .chain(t.encode().into_iter())
+        .chain(t.encode())
         .collect::<Vec<_>>()
 }
 
@@ -655,7 +655,7 @@ impl<C: ChainSpec> LightClient for Cometbls<C> {
     // TODO(benluelo): Better type for this
     type UpdateClientMessage = cometbls::header::Header;
 
-    type IbcStateRead = EthStateRead;
+    // type IbcStateRead = EthStateRead;
 
     type HostChain = Evm<C>;
 
@@ -842,14 +842,14 @@ impl<C: ChainSpec> Connect<Ethereum<C>> for Cometbls<C> {
                 .chain
                 .make_height(tx_rcp.block_number.unwrap().as_u64());
 
-            let connection_end = self
-                .state_proof(
-                    ConnectionPath {
-                        connection_id: msg.connection_id.clone(),
-                    },
-                    event_height,
-                )
-                .await;
+            let connection_end = IbcStateRead::<Self::CounterpartyChain, _>::state_proof(
+                self.chain(),
+                ConnectionPath {
+                    connection_id: msg.connection_id.clone(),
+                },
+                event_height,
+            )
+            .await;
 
             (
                 event_height,
@@ -887,14 +887,14 @@ impl<C: ChainSpec> Connect<Ethereum<C>> for Cometbls<C> {
                 .chain
                 .make_height(tx_rcp.block_number.unwrap().as_u64());
 
-            let connection_end = self
-                .state_proof(
-                    ConnectionPath {
-                        connection_id: msg.connection_id.clone(),
-                    },
-                    event_height,
-                )
-                .await;
+            let connection_end = IbcStateRead::<Self::CounterpartyChain, _>::state_proof(
+                self.chain(),
+                ConnectionPath {
+                    connection_id: msg.connection_id.clone(),
+                },
+                event_height,
+            )
+            .await;
 
             (
                 event_height,
@@ -934,15 +934,15 @@ impl<C: ChainSpec> Connect<Ethereum<C>> for Cometbls<C> {
                 .chain
                 .make_height(tx_rcp.block_number.unwrap().as_u64());
 
-            let channel_end = self
-                .state_proof(
-                    ChannelEndPath {
-                        port_id: msg.port_id.clone(),
-                        channel_id: channel_id.clone(),
-                    },
-                    event_height,
-                )
-                .await;
+            let channel_end = IbcStateRead::<Self::CounterpartyChain, _>::state_proof(
+                self.chain(),
+                ChannelEndPath {
+                    port_id: msg.port_id.clone(),
+                    channel_id: channel_id.clone(),
+                },
+                event_height,
+            )
+            .await;
 
             (
                 event_height,
@@ -983,15 +983,15 @@ impl<C: ChainSpec> Connect<Ethereum<C>> for Cometbls<C> {
                 .chain
                 .make_height(tx_rcp.block_number.unwrap().as_u64());
 
-            let channel_end = self
-                .state_proof(
-                    ChannelEndPath {
-                        port_id: msg.port_id.clone(),
-                        channel_id: channel_id.clone(),
-                    },
-                    event_height,
-                )
-                .await;
+            let channel_end = IbcStateRead::<Self::CounterpartyChain, _>::state_proof(
+                self.chain(),
+                ChannelEndPath {
+                    port_id: msg.port_id.clone(),
+                    channel_id: channel_id.clone(),
+                },
+                event_height,
+            )
+            .await;
 
             (
                 event_height,
@@ -1032,15 +1032,15 @@ impl<C: ChainSpec> Connect<Ethereum<C>> for Cometbls<C> {
                 .chain
                 .make_height(tx_rcp.block_number.unwrap().as_u64());
 
-            let channel_end = self
-                .state_proof(
-                    ChannelEndPath {
-                        port_id: msg.port_id.clone(),
-                        channel_id: msg.channel_id.clone(),
-                    },
-                    event_height,
-                )
-                .await;
+            let channel_end = IbcStateRead::<Self::CounterpartyChain, _>::state_proof(
+                self.chain(),
+                ChannelEndPath {
+                    port_id: msg.port_id.clone(),
+                    channel_id: msg.channel_id.clone(),
+                },
+                event_height,
+            )
+            .await;
 
             (
                 event_height,
@@ -1080,15 +1080,15 @@ impl<C: ChainSpec> Connect<Ethereum<C>> for Cometbls<C> {
                 .chain
                 .make_height(tx_rcp.block_number.unwrap().as_u64());
 
-            let channel_end = self
-                .state_proof(
-                    ChannelEndPath {
-                        port_id: msg.port_id.clone(),
-                        channel_id: msg.channel_id.clone(),
-                    },
-                    event_height,
-                )
-                .await;
+            let channel_end = IbcStateRead::<Self::CounterpartyChain, _>::state_proof(
+                self.chain(),
+                ChannelEndPath {
+                    port_id: msg.port_id.clone(),
+                    channel_id: msg.channel_id.clone(),
+                },
+                event_height,
+            )
+            .await;
 
             (
                 event_height,
@@ -1413,61 +1413,31 @@ impl<C: ChainSpec> Cometbls<C> {
     }
 }
 
-trait TupleToOption<P>
+trait TupleToOption<Counterparty, P>
 where
+    Counterparty: Chain,
     P: IbcPath + IntoEthCall,
     <P as IntoEthCall>::EthCall: EthCallExt<Return = Self>,
 {
-    fn tuple_to_option<C: ChainSpec>(
-        ret: <P::EthCall as EthCallExt>::Return,
-    ) -> Option<P::Output<Cometbls<C>>>;
+    fn tuple_to_option(self) -> Option<P::Output<Counterparty>>;
 }
 
-macro_rules! impl_eth_state_read {
-    ($($Path:ident { $($field:ident),+ } -> $Call:ident $(-> $parse:expr)?;)+) => {
-        $(
-            impl From<$Path> for $Call {
-                fn from($Path {
-                    $($field),+
-                }: $Path) -> Self {
-                    Self {
-                        $($field),+
-                    }
-                }
-            }
-
-            impl IntoEthCall for $Path {
-                type EthCall = $Call;
-            }
-
-            impl TupleToOption<$Path> for <<$Path as IntoEthCall>::EthCall as EthCallExt>::Return {
-                fn tuple_to_option<C: ChainSpec>(ret: <<$Path as IntoEthCall>::EthCall as EthCallExt>::Return) -> Option<<$Path as IbcPath>::Output<Cometbls<C>>> {
-                    #[allow(clippy::redundant_closure_call)]
-                    ret.1.then_some($(($parse))?(ret.0))
-                }
-            }
-        )+
-    }
-}
-
-// struct EthStateRead<C: ChainSpec, P: IbcPath<Cometbls<C>>>(PhantomData<(P, C)>);
-pub struct EthStateRead;
-
-impl<C: ChainSpec, P: 'static + IbcPath> IbcStateRead<Cometbls<C>, P> for EthStateRead
+impl<Counterparty, C, P> IbcStateRead<Counterparty, P> for Evm<C>
 where
-    P: IntoEthCall,
-    <<P as IntoEthCall>::EthCall as EthCallExt>::Return: TupleToOption<P>,
+    Counterparty: Chain,
+    C: ChainSpec,
+    P: IntoEthCall + IbcPath + 'static,
+    <<P as IntoEthCall>::EthCall as EthCallExt>::Return: TupleToOption<Counterparty, P>,
 {
     fn state_proof(
-        light_client: &Cometbls<C>,
+        &self,
         path: P,
         at: Height,
-    ) -> impl Future<Output = StateProof<P::Output<Cometbls<C>>>> + '_ {
+    ) -> impl Future<Output = StateProof<P::Output<Counterparty>>> + '_ {
         async move {
-            let at = light_client.chain().execution_height(at).await;
+            let at = self.execution_height(at).await;
 
-            let ret = light_client
-                .chain
+            let ret = self
                 .ibc_handler
                 .method_hash::<P::EthCall, <P::EthCall as EthCallExt>::Return>(
                     P::EthCall::selector(),
@@ -1495,11 +1465,10 @@ where
                     .collect::<Vec<_>>(),
             );
 
-            let proof = light_client
-                .chain
+            let proof = self
                 .provider
                 .get_proof(
-                    light_client.chain.ibc_handler.address(),
+                    self.ibc_handler.address(),
                     vec![location.into()],
                     Some(at.revision_height.into()),
                 )
@@ -1537,35 +1506,50 @@ where
     }
 }
 
-impl_eth_state_read! {
-    ClientStatePath { client_id } -> GetClientStateCall -> |x: Bytes| TryFromProto::try_from_proto_bytes(&x).unwrap();
-    ConnectionPath { connection_id } -> GetConnectionCall -> |x| <ConnectionPath as IbcPath>::Output::<Cometbls<C>>::try_from(x).unwrap();
-    ChannelEndPath { port_id, channel_id } -> GetChannelCall -> |x| <ChannelEndPath as IbcPath>::Output::<Cometbls<C>>::try_from(x).unwrap();
-    CommitmentPath { port_id, channel_id, sequence } -> GetHashedPacketCommitmentCall;
-}
-
-// NOTE: Implemented this one manually since it's a bit different than the others
-impl From<ClientConsensusStatePath> for GetConsensusStateCall {
-    fn from(value: ClientConsensusStatePath) -> Self {
-        Self {
-            client_id: value.client_id,
-            height: value.height.into(),
-        }
+impl<Counterparty: Chain> TupleToOption<Counterparty, ClientStatePath> for GetClientStateReturn
+where
+    ClientStateOf<Counterparty>: TryFromProto,
+    TryFromProtoErrorOf<ClientStateOf<Counterparty>>: Debug,
+{
+    fn tuple_to_option(self) -> Option<<ClientStatePath as IbcPath>::Output<Counterparty>> {
+        self.1
+            .then(|| TryFromProto::try_from_proto_bytes(&self.0).unwrap())
     }
 }
 
-impl IntoEthCall for ClientConsensusStatePath {
-    type EthCall = GetConsensusStateCall;
+impl<Counterparty: Chain> TupleToOption<Counterparty, ClientConsensusStatePath>
+    for GetConsensusStateReturn
+where
+    ConsensusStateOf<Counterparty>: TryFromProto,
+    TryFromProtoErrorOf<ConsensusStateOf<Counterparty>>: Debug,
+{
+    fn tuple_to_option(
+        self,
+    ) -> Option<<ClientConsensusStatePath as IbcPath>::Output<Counterparty>> {
+        self.p1
+            .then(|| TryFromProto::try_from_proto_bytes(&self.consensus_state_bytes).unwrap())
+    }
 }
 
-impl TupleToOption<ClientConsensusStatePath>
-    for <<ClientConsensusStatePath as IntoEthCall>::EthCall as EthCallExt>::Return
+impl<Counterparty: Chain> TupleToOption<Counterparty, ConnectionPath> for GetConnectionReturn {
+    fn tuple_to_option(self) -> Option<<ConnectionPath as IbcPath>::Output<Counterparty>> {
+        self.1.then(|| self.0.try_into().unwrap())
+    }
+}
+
+impl<Counterparty: Chain> TupleToOption<Counterparty, ChannelEndPath>
+    for <<ChannelEndPath as IntoEthCall>::EthCall as EthCallExt>::Return
 {
-    fn tuple_to_option<C: ChainSpec>(
-        ret: <<ClientConsensusStatePath as IntoEthCall>::EthCall as EthCallExt>::Return,
-    ) -> Option<<ClientConsensusStatePath as super::proof::IbcPath>::Output<Cometbls<C>>> {
-        ret.p1
-            .then(|| TryFromProto::try_from_proto_bytes(&ret.consensus_state_bytes).unwrap())
+    fn tuple_to_option(self) -> Option<<ChannelEndPath as IbcPath>::Output<Counterparty>> {
+        self.1.then(|| self.0.try_into().unwrap())
+    }
+}
+
+impl<Counterparty: Chain> TupleToOption<Counterparty, CommitmentPath>
+    for GetHashedPacketCommitmentReturn
+{
+    fn tuple_to_option(self) -> Option<<CommitmentPath as IbcPath>::Output<Counterparty>> {
+        self.1.then_some(self.0)
     }
 }
 
@@ -1586,10 +1570,10 @@ macro_rules! impl_eth_call_ext {
 }
 
 impl_eth_call_ext! {
-    GetClientStateCall -> GetClientStateReturn;
-    GetConsensusStateCall -> GetConsensusStateReturn;
-    GetConnectionCall -> GetConnectionReturn;
-    GetChannelCall -> GetChannelReturn;
+    GetClientStateCall            -> GetClientStateReturn;
+    GetConsensusStateCall         -> GetConsensusStateReturn;
+    GetConnectionCall             -> GetConnectionReturn;
+    GetChannelCall                -> GetChannelReturn;
     GetHashedPacketCommitmentCall -> GetHashedPacketCommitmentReturn;
 }
 

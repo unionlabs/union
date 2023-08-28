@@ -1,28 +1,32 @@
 use std::fmt::{Debug, Display};
 
+use contracts::ibc_handler::{
+    GetChannelCall, GetClientStateCall, GetConnectionCall, GetConsensusStateCall,
+    GetHashedPacketCommitmentCall,
+};
 use futures::Future;
 use serde::Serialize;
 use unionlabs::ibc::core::{
     channel::channel::Channel, client::height::Height, connection::connection_end::ConnectionEnd,
 };
 
-use crate::chain::{ClientStateOf, ConsensusStateOf, LightClient};
+use crate::chain::Chain;
 
-pub trait IbcStateRead<L: LightClient, P: IbcPath>
+pub trait IbcStateRead<Counterparty: Chain, P: IbcPath>: Chain + Sized
 where
-    StateProof<P::Output<L>>: Debug + Serialize,
+    StateProof<P::Output<Counterparty>>: Debug + Serialize,
 {
     fn state_proof(
-        light_client: &L,
+        &self,
         path: P,
         at: Height,
-    ) -> impl Future<Output = StateProof<P::Output<L>>> + '_;
+    ) -> impl Future<Output = StateProof<P::Output<Counterparty>>> + '_;
 }
 
 /// `IbcPath` represents the path to a light client's ibc storage. The values stored at each path
 /// are strongly typed, i.e. `connections/{connection_id}` always stores a [`ConnectionEnd`].
 pub trait IbcPath: Display + Clone + Sized {
-    type Output<L: LightClient>: Debug + Serialize;
+    type Output<C: Chain>: Debug + Serialize;
 }
 
 type ClientId = String;
@@ -43,6 +47,7 @@ macro_rules! ibc_paths (
         $(
             #[display($fmt:literal)]
             #[output($Output:ty)]
+            #[ethcall($EthCall:ty)]
             pub struct $Struct:ident {
                 $(pub $field:ident: $field_ty:ty,)+
             }
@@ -62,28 +67,42 @@ macro_rules! ibc_paths (
             }
 
             impl IbcPath for $Struct {
-                type Output<L: LightClient> = $Output;
+                type Output<C: Chain> = $Output;
+            }
+
+            impl From<$Struct> for $EthCall {
+                fn from(path: $Struct) -> Self {
+                    Self {
+                        $($field: path.$field.into()),+
+                    }
+                }
+            }
+
+            impl crate::chain::evm::IntoEthCall for $Struct {
+                type EthCall = $EthCall;
             }
         )+
 
-        pub trait IbcStateReadPaths<L: LightClient>: $(IbcStateRead<L, $Struct>+)+ {}
+        pub trait IbcStateReadPaths<Counterparty: Chain>: Chain + $(IbcStateRead<Counterparty, $Struct>+)+ {}
 
-        impl<T, L: LightClient> IbcStateReadPaths<L> for T
+        impl<Counterparty: Chain, T: Chain> IbcStateReadPaths<Counterparty> for T
             where
-                T: $(IbcStateRead<L, $Struct>+)+
+                T: $(IbcStateRead<Counterparty, $Struct>+)+
         {}
     }
 );
 
 ibc_paths! {
     #[display("clients/{client_id}/clientState")]
-    #[output(ClientStateOf<L::CounterpartyChain>)]
+    #[output(C::SelfClientState)]
+    #[ethcall(GetClientStateCall)]
     pub struct ClientStatePath {
         pub client_id: ClientId,
     }
 
     #[display("clients/{client_id}/consensusStates/{height}")]
-    #[output(ConsensusStateOf<L::CounterpartyChain>)]
+    #[output(C::SelfConsensusState)]
+    #[ethcall(GetConsensusStateCall)]
     pub struct ClientConsensusStatePath {
         pub client_id: ClientId,
         pub height: Height,
@@ -96,6 +115,7 @@ ibc_paths! {
 
     #[display("connections/{connection_id}")]
     #[output(ConnectionEnd)]
+    #[ethcall(GetConnectionCall)]
     pub struct ConnectionPath {
         pub connection_id: ConnectionId,
     }
@@ -107,6 +127,7 @@ ibc_paths! {
 
     #[display("channelEnds/ports/{port_id}/channels/{channel_id}")]
     #[output(Channel)]
+    #[ethcall(GetChannelCall)]
     pub struct ChannelEndPath {
         pub port_id: PortId,
         pub channel_id: ChannelId,
@@ -132,6 +153,7 @@ ibc_paths! {
 
     #[display("commitments/ports/{port_id}/channels/{channel_id}/sequences/{sequence}")]
     #[output([u8; 32])]
+    #[ethcall(GetHashedPacketCommitmentCall)]
     pub struct CommitmentPath {
         pub port_id: PortId,
         pub channel_id: ChannelId,

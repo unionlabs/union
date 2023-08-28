@@ -36,7 +36,7 @@ use crate::{
             ConnectionOpenConfirm, ConnectionOpenInit, ConnectionOpenTry, UpdateClient,
         },
         evm::{Cometbls, Evm},
-        proof::{IbcStateRead, IbcStateReadPaths, StateProof},
+        proof::{IbcStateRead, StateProof},
     },
     config::{ChainConfig, EvmChainConfig},
 };
@@ -85,7 +85,7 @@ pub trait LightClient: Send + Sync + Sized {
 
     type UpdateClientMessage;
 
-    type IbcStateRead: IbcStateReadPaths<Self>;
+    // type IbcStateRead: IbcStateReadPaths;
 
     /// The chain that this light client is on.
     type HostChain: Chain;
@@ -105,30 +105,30 @@ pub trait LightClient: Send + Sync + Sized {
         _: Self::UpdateClientMessage,
     ) -> impl Future<Output = (Height, UpdateClient)> + '_;
 
-    fn state_proof<P: proof::IbcPath + 'static>(
-        &self,
-        path: P,
-        self_height: Height,
-    ) -> impl Future<Output = StateProof<P::Output<Self>>> + '_
-    where
-        Self::IbcStateRead: IbcStateRead<Self, P>,
-    {
-        async move {
-            tracing::info!(%path, %self_height, chain_id = %self.chain().chain_id().await);
+    // fn state_proof<P: proof::IbcPath + 'static>(
+    //     &self,
+    //     path: P,
+    //     self_height: Height,
+    // ) -> impl Future<Output = StateProof<P::Output<Self>>> + '_
+    // where
+    //     Self::IbcStateRead: IbcStateRead<Self, P>,
+    // {
+    //     async move {
+    //         tracing::info!(%path, %self_height, chain_id = %self.chain().chain_id().await);
 
-            let state_proof =
-                <Self::IbcStateRead as IbcStateRead<Self, P>>::state_proof(self, path, self_height)
-                    .await;
+    //         let state_proof =
+    //             <Self::IbcStateRead as IbcStateRead<Self, P>>::state_proof(self, path, self_height)
+    //                 .await;
 
-            tracing::info!(
-                state = ?state_proof.state,
-                proof = %serde_utils::to_hex(&state_proof.proof),
-                proof_height = %state_proof.proof_height
-            );
+    //         tracing::info!(
+    //             state = ?state_proof.state,
+    //             proof = %serde_utils::to_hex(&state_proof.proof),
+    //             proof_height = %state_proof.proof_height
+    //         );
 
-            state_proof
-        }
-    }
+    //         state_proof
+    //     }
+    // }
 
     // TODO: Use state_proof instead
     fn query_client_state(
@@ -266,11 +266,12 @@ where
     ) -> impl Future<Output = Height> + 'a;
 }
 
-pub trait ChainConnection<To: ChainConnection<Self>>:
-    Chain + CreateClient<Self::LightClient> + Sized
+pub trait ChainConnection<To>: Chain + Sized
+where
+    To: ChainConnection<Self>,
 {
-    type LightClient: LightClient<HostChain = Self>
-        + Connect<To::LightClient, CounterpartyChain = To>;
+    type LightClient: LightClient<HostChain = Self, CounterpartyChain = To>
+        + Connect<To::LightClient>;
 
     fn light_client(&self) -> Self::LightClient;
 }

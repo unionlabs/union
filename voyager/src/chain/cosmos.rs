@@ -1,4 +1,4 @@
-use std::marker::PhantomData;
+use std::{fmt::Debug, marker::PhantomData};
 
 use clap::Args;
 use futures::{Future, FutureExt, Stream, StreamExt};
@@ -57,7 +57,7 @@ use unionlabs::{
             signed_header::SignedHeader, simple_validator::SimpleValidator,
         },
     },
-    CosmosAccountId, MsgIntoProto, TryFromProto,
+    CosmosAccountId, MsgIntoProto, TryFromProto, TryFromProtoErrorOf,
 };
 
 use super::events::TryFromTendermintEventError;
@@ -73,7 +73,8 @@ use crate::{
             ChannelEndPath, ClientConsensusStatePath, ClientStatePath, CommitmentPath,
             ConnectionPath, IbcPath, StateProof,
         },
-        Chain, ChainConnection, ClientStateOf, Connect, CreateClient, IbcStateRead, LightClient,
+        Chain, ChainConnection, ClientStateOf, Connect, ConsensusStateOf, CreateClient,
+        IbcStateRead, LightClient,
     },
     config::UnionChainConfig,
 };
@@ -589,7 +590,7 @@ impl Chain for Union {
 impl<C: ChainSpec> LightClient for Ethereum<C> {
     type UpdateClientMessage = wasm::header::Header<ethereum::header::Header<C>>;
 
-    type IbcStateRead = EthereumStateRead;
+    // type IbcStateRead = EthereumStateRead;
 
     type HostChain = Union;
 
@@ -1104,56 +1105,78 @@ fn get_event_from_tx_response<T: TryFrom<Event, Error = TryFromTendermintEventEr
         .unwrap()
 }
 
-trait AbciStateRead<C: ChainSpec>: IbcPath {
-    fn from_abci_bytes(bytes: Vec<u8>) -> Self::Output<Ethereum<C>>;
+trait AbciStateRead<Counterparty>: IbcPath
+where
+    Counterparty: Chain,
+{
+    fn from_abci_bytes(bytes: Vec<u8>) -> Self::Output<Counterparty>;
 }
 
-impl<C: ChainSpec> AbciStateRead<C> for ClientStatePath {
-    fn from_abci_bytes(bytes: Vec<u8>) -> Self::Output<Ethereum<C>> {
-        Self::Output::<Ethereum<C>>::try_from_proto_bytes(&bytes).unwrap()
+impl<Counterparty> AbciStateRead<Counterparty> for ClientStatePath
+where
+    Counterparty: Chain,
+    ClientStateOf<Counterparty>: TryFromProto,
+    TryFromProtoErrorOf<ClientStateOf<Counterparty>>: Debug,
+{
+    fn from_abci_bytes(bytes: Vec<u8>) -> Self::Output<Counterparty> {
+        Self::Output::<Counterparty>::try_from_proto_bytes(&bytes).unwrap()
     }
 }
 
-impl<C: ChainSpec> AbciStateRead<C> for ClientConsensusStatePath {
-    fn from_abci_bytes(bytes: Vec<u8>) -> Self::Output<Ethereum<C>> {
-        Self::Output::<Ethereum<C>>::try_from_proto_bytes(&bytes).unwrap()
+impl<Counterparty> AbciStateRead<Counterparty> for ClientConsensusStatePath
+where
+    Counterparty: Chain,
+    ConsensusStateOf<Counterparty>: TryFromProto,
+    TryFromProtoErrorOf<ConsensusStateOf<Counterparty>>: Debug,
+{
+    fn from_abci_bytes(bytes: Vec<u8>) -> Self::Output<Counterparty> {
+        Self::Output::<Counterparty>::try_from_proto_bytes(&bytes).unwrap()
     }
 }
 
-impl<C: ChainSpec> AbciStateRead<C> for ConnectionPath {
-    fn from_abci_bytes(bytes: Vec<u8>) -> Self::Output<Ethereum<C>> {
-        Self::Output::<Ethereum<C>>::try_from_proto_bytes(&bytes).unwrap()
+impl<Counterparty> AbciStateRead<Counterparty> for ConnectionPath
+where
+    Counterparty: Chain,
+{
+    fn from_abci_bytes(bytes: Vec<u8>) -> Self::Output<Counterparty> {
+        Self::Output::<Counterparty>::try_from_proto_bytes(&bytes).unwrap()
     }
 }
 
-impl<C: ChainSpec> AbciStateRead<C> for ChannelEndPath {
-    fn from_abci_bytes(bytes: Vec<u8>) -> Self::Output<Ethereum<C>> {
-        Self::Output::<Ethereum<C>>::try_from_proto_bytes(&bytes).unwrap()
+impl<Counterparty> AbciStateRead<Counterparty> for ChannelEndPath
+where
+    Counterparty: Chain,
+{
+    fn from_abci_bytes(bytes: Vec<u8>) -> Self::Output<Counterparty> {
+        Self::Output::<Counterparty>::try_from_proto_bytes(&bytes).unwrap()
     }
 }
 
-impl<C: ChainSpec> AbciStateRead<C> for CommitmentPath {
-    fn from_abci_bytes(bytes: Vec<u8>) -> Self::Output<Ethereum<C>> {
+impl<Counterparty> AbciStateRead<Counterparty> for CommitmentPath
+where
+    Counterparty: Chain,
+{
+    fn from_abci_bytes(bytes: Vec<u8>) -> Self::Output<Counterparty> {
         bytes.try_into().unwrap()
     }
 }
 
-pub struct EthereumStateRead;
-
-impl<C, P> IbcStateRead<Ethereum<C>, P> for EthereumStateRead
+impl<Counterparty, P> IbcStateRead<Counterparty, P> for Union
 where
-    C: ChainSpec,
-    P: IbcPath + AbciStateRead<C> + 'static,
+    Counterparty: Chain,
+    ClientStateOf<Counterparty>: TryFromProto,
+    ConsensusStateOf<Counterparty>: TryFromProto,
+    P: IbcPath + AbciStateRead<Counterparty> + 'static,
 {
     fn state_proof(
-        light_client: &Ethereum<C>,
+        &self,
         path: P,
         at: Height,
-    ) -> impl Future<Output = StateProof<P::Output<Ethereum<C>>>> + '_ {
+    ) -> impl Future<Output = StateProof<P::Output<Counterparty>>> + '_ {
         async move {
             let mut client =
                 protos::cosmos::base::tendermint::v1beta1::service_client::ServiceClient::connect(
-                    light_client.chain.grpc_url.clone(),
+                    self.grpc_url.clone(),
                 )
                 .await
                 .unwrap();
@@ -1181,9 +1204,7 @@ where
                         .collect::<Vec<_>>(),
                 }
                 .encode_to_vec(),
-                proof_height: light_client
-                    .chain
-                    .make_height(query_result.height.try_into().unwrap()),
+                proof_height: self.make_height(query_result.height.try_into().unwrap()),
             }
         }
     }

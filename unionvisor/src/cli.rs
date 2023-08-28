@@ -206,7 +206,7 @@ fn write_to_file(path: impl Into<PathBuf>, contents: &str) -> Result<()> {
             std::fs::remove_file(&tmp)?;
             Err(err)
         })
-        .and_then(|_| std::fs::rename(&tmp, &path))
+        .and_then(|()| std::fs::rename(&tmp, &path))
         .map_err(|err| {
             // Best effort to restore the original file
             let _ = std::fs::rename(&backup, &path);

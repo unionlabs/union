@@ -12,7 +12,10 @@ use reqwest::Url;
 use unionlabs::ethereum_consts_traits::PresetBaseKind;
 
 use crate::chain::{
-    cosmos::EthereumConfig, evm::CometblsConfig, proof, Chain, LightClient, QueryHeight,
+    cosmos::EthereumConfig,
+    evm::CometblsConfig,
+    proof::{self, IbcStateReadPaths},
+    Chain, QueryHeight,
 };
 
 #[derive(Debug, Parser)]
@@ -81,24 +84,27 @@ pub enum IbcQueryPathCmd {
 }
 
 impl IbcQueryPathCmd {
-    pub async fn any_state_proof_to_json<L: LightClient>(
+    pub async fn any_state_proof_to_json<
+        Counterparty: Chain,
+        C: IbcStateReadPaths<Counterparty>,
+    >(
         self,
-        l: &L,
+        c: C,
         height: QueryHeight,
     ) -> String {
         use serde_json::to_string_pretty as json;
 
         let height = match height {
-            QueryHeight::Latest => l.chain().query_latest_height().await,
+            QueryHeight::Latest => c.query_latest_height().await,
             QueryHeight::Specific(height) => height,
         };
 
         match self {
-            Self::ClientState(path) => json(&l.state_proof(path, height).await),
-            Self::ClientConsensusState(path) => json(&l.state_proof(path, height).await),
-            Self::Connection(path) => json(&l.state_proof(path, height).await),
-            Self::ChannelEnd(path) => json(&l.state_proof(path, height).await),
-            Self::Commitment(path) => json(&l.state_proof(path, height).await),
+            Self::ClientState(path) => json(&c.state_proof(path, height).await),
+            Self::ClientConsensusState(path) => json(&c.state_proof(path, height).await),
+            Self::Connection(path) => json(&c.state_proof(path, height).await),
+            Self::ChannelEnd(path) => json(&c.state_proof(path, height).await),
+            Self::Commitment(path) => json(&c.state_proof(path, height).await),
         }
         .unwrap()
     }

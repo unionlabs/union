@@ -17,8 +17,8 @@ pub struct ConnectionEnd {
 
 #[derive(Debug)]
 pub enum TryFromConnectionEndError {
-    UnknownVersion(UnknownEnumVariant<String>),
-    UnknownState(UnknownEnumVariant<i32>),
+    Version(UnknownEnumVariant<String>),
+    State(UnknownEnumVariant<i32>),
     MissingField(MissingField),
 }
 
@@ -33,15 +33,12 @@ impl TryFrom<protos::ibc::core::connection::v1::ConnectionEnd> for ConnectionEnd
             versions: val
                 .versions
                 .into_iter()
-                .map(|x| {
-                    x.try_into()
-                        .map_err(TryFromConnectionEndError::UnknownVersion)
-                })
+                .map(|x| x.try_into().map_err(TryFromConnectionEndError::Version))
                 .collect::<Result<_, _>>()?,
             state: val
                 .state
                 .try_into()
-                .map_err(TryFromConnectionEndError::UnknownState)?,
+                .map_err(TryFromConnectionEndError::State)?,
             counterparty: val
                 .counterparty
                 .ok_or(TryFromConnectionEndError::MissingField(MissingField(
@@ -75,14 +72,14 @@ impl From<ConnectionEnd> for protos::ibc::core::connection::v1::ConnectionEnd {
 }
 
 #[derive(Debug)]
-pub enum TryFromEthConnectionEndError {
-    UnknownVersion(UnknownEnumVariant<String>),
-    UnknownState(UnknownEnumVariant<u8>),
+pub enum TryFromEthAbiConnectionEndError {
+    Version(UnknownEnumVariant<String>),
+    State(UnknownEnumVariant<u8>),
 }
 
 #[cfg(feature = "ethabi")]
 impl TryFrom<contracts::ibc_handler::IbcCoreConnectionV1ConnectionEndData> for ConnectionEnd {
-    type Error = TryFromEthConnectionEndError;
+    type Error = TryFromEthAbiConnectionEndError;
 
     fn try_from(
         val: contracts::ibc_handler::IbcCoreConnectionV1ConnectionEndData,
@@ -94,13 +91,13 @@ impl TryFrom<contracts::ibc_handler::IbcCoreConnectionV1ConnectionEndData> for C
                 .into_iter()
                 .map(|x| {
                     x.try_into()
-                        .map_err(TryFromEthConnectionEndError::UnknownVersion)
+                        .map_err(TryFromEthAbiConnectionEndError::Version)
                 })
                 .collect::<Result<_, _>>()?,
             state: val
                 .state
                 .try_into()
-                .map_err(TryFromEthConnectionEndError::UnknownState)?,
+                .map_err(TryFromEthAbiConnectionEndError::State)?,
             counterparty: val.counterparty.into(),
             delay_period: val.delay_period,
         })
@@ -118,4 +115,9 @@ impl From<ConnectionEnd> for contracts::ibc_handler::IbcCoreConnectionV1Connecti
             delay_period: val.delay_period,
         }
     }
+}
+
+#[cfg(feature = "ethabi")]
+impl crate::EthAbi for ConnectionEnd {
+    type EthAbi = contracts::ibc_handler::IbcCoreConnectionV1ConnectionEndData;
 }
