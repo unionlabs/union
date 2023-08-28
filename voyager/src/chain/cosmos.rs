@@ -590,8 +590,6 @@ impl Chain for Union {
 impl<C: ChainSpec> LightClient for Ethereum<C> {
     type UpdateClientMessage = wasm::header::Header<ethereum::header::Header<C>>;
 
-    // type IbcStateRead = EthereumStateRead;
-
     type HostChain = Union;
 
     type CounterpartyChain = Evm<C>;

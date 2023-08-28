@@ -528,24 +528,6 @@ async fn do_main(args: cli::AppArgs) -> Result<(), anyhow::Error> {
     Ok(())
 }
 
-// async fn connection_handshake<FromChain, ToChain>(
-//     from: &FromChain,
-//     from_client_id: String,
-//     to: &ToChain,
-//     to_client_id: String,
-// ) -> Result<(String, String), anyhow::Error>
-// where
-//     FromChain: ChainConnection<ToChain>,
-//     ToChain: ChainConnection<FromChain>,
-//     ClientStateOf<FromChain>: IntoProto,
-//     ClientStateOf<ToChain>: IntoProto,
-// {
-//     let from = from.light_client();
-//     let to = to.light_client();
-
-//     Ok(do_connection_handshake((from_client_id, from), (to_client_id, to)).await)
-// }
-
 /// Returns (c1 conn id, c2 conn id)
 async fn do_connection_handshake<L2, L1>(
     (cometbls_client_id, cometbls): (String, L2),
@@ -840,39 +822,6 @@ where
         connection_open_confirm.counterparty_connection_id,
     )
 }
-
-// #[allow(clippy::too_many_arguments)] // fight me clippy
-// async fn channel_handshake<FromChain, ToChain>(
-//     from: &FromChain,
-//     from_connection_id: String,
-//     from_port_id: String,
-//     from_version: String,
-//     to: &ToChain,
-//     to_connection_id: String,
-//     to_port_id: String,
-//     to_version: String,
-// ) -> Result<(String, String), anyhow::Error>
-// where
-//     FromChain: ChainConnection<ToChain>,
-//     ToChain: ChainConnection<FromChain>,
-//     ClientStateOf<FromChain>: IntoProto,
-//     ClientStateOf<ToChain>: IntoProto,
-// {
-//     let from = from.light_client();
-//     let to = to.light_client();
-
-//     Ok(do_channel_handshake(
-//         &from,
-//         &to,
-//         from_connection_id,
-//         to_connection_id,
-//         from_port_id,
-//         to_port_id,
-//         from_version,
-//         to_version,
-//     )
-//     .await)
-// }
 
 #[allow(clippy::too_many_arguments)] // fight me clippy
 async fn do_channel_handshake<L2, L1>(

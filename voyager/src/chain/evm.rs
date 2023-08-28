@@ -652,10 +652,7 @@ impl<C: ChainSpec> CreateClient<Cometbls<C>> for Evm<C> {
 }
 
 impl<C: ChainSpec> LightClient for Cometbls<C> {
-    // TODO(benluelo): Better type for this
     type UpdateClientMessage = cometbls::header::Header;
-
-    // type IbcStateRead = EthStateRead;
 
     type HostChain = Evm<C>;
 
