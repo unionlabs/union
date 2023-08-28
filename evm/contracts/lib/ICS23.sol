@@ -66,12 +66,24 @@ library Ics23 {
         });
     }
 
+    enum VerifyChainedMembershipError {
+        None,
+        ExistenceProofIsNil,
+        InvalidProofRoot,
+        KeyMismatch,
+        ValueMismatch,
+        InvalidSpec,
+        InvalidIntermediateProofRoot,
+        IntermateProofRootMismatch,
+        RootMismatch
+    }
+
     function verifyChainedMembership(
         IbcCoreCommitmentV1MerkleProof.Data memory merkleProof,
         bytes memory root,
         bytes[] memory path,
         bytes memory value
-    ) internal pure {
+    ) internal pure returns (VerifyChainedMembershipError) {
         CosmosIcs23V1ProofSpec.Data memory iavlSpec = getIavlProofSpec();
         CosmosIcs23V1ProofSpec.Data
             memory tendermintSpec = getTendermintProofSpec();
@@ -80,58 +92,64 @@ library Ics23 {
             CosmosIcs23V1CommitmentProof.Data memory proof = merkleProof.proofs[
                 i
             ];
+
             CosmosIcs23V1ExistenceProof.Data memory existenceProof = proof
                 .exist;
-            require(
-                !CosmosIcs23V1ExistenceProof.isNil(existenceProof),
-                "verifyChainedMembership: must be an existence proof."
-            );
+
+            if (CosmosIcs23V1ExistenceProof.isNil(existenceProof)) {
+                return VerifyChainedMembershipError.ExistenceProofIsNil;
+            }
+
             Proof.CalculateRootError rCode;
             (subroot, rCode) = Proof.calculateRoot(proof);
-            require(
-                rCode == Proof.CalculateRootError.None,
-                "verifyChainedMembership: unable to compute proof root"
-            );
+            if (rCode != Proof.CalculateRootError.None) {
+                return VerifyChainedMembershipError.InvalidProofRoot;
+            }
+
             /*
-             * Path is provided as /a/b/c, we need to pop
+             * Path is provided as /a/b/c, we need to pop until reaching the root
              */
             bytes memory key = path[path.length - i - 1];
             Proof.VerifyExistenceError vCode = Proof.verify(
                 existenceProof,
-                // TODO: double check that long paths does only have the root with tm spec
                 i == (path.length - 1) ? tendermintSpec : iavlSpec,
                 subroot,
                 key,
                 value
             );
+
             if (vCode != Proof.VerifyExistenceError.None) {
                 if (vCode == Proof.VerifyExistenceError.KeyNotMatching) {
-                    revert("verifyChainedMembership: key don't match");
+                    return VerifyChainedMembershipError.KeyMismatch;
                 } else if (
                     vCode == Proof.VerifyExistenceError.ValueNotMatching
                 ) {
-                    revert("verifyChainedMembership: value don't match");
+                    return VerifyChainedMembershipError.KeyMismatch;
                 } else if (vCode == Proof.VerifyExistenceError.CheckSpec) {
-                    revert("verifyChainedMembership: invalid spec");
+                    return VerifyChainedMembershipError.InvalidSpec;
                 } else if (vCode == Proof.VerifyExistenceError.CalculateRoot) {
-                    revert("verifyChainedMembership: calculate root failed");
+                    return
+                        VerifyChainedMembershipError
+                            .InvalidIntermediateProofRoot;
                 } else if (
                     vCode == Proof.VerifyExistenceError.RootNotMatching
                 ) {
-                    revert(
-                        "verifyChainedMembership: intermediate root not matching"
-                    );
+                    return
+                        VerifyChainedMembershipError.IntermateProofRootMismatch;
                 }
+
                 revert(
-                    "verifyChainedMembership: generically failed to verify intermediate proof"
+                    "verifyChainedMembership: non exhaustive pattern matching on VerifyExistenceError"
                 );
             }
             value = subroot;
         }
-        require(
-            keccak256(root) == keccak256(subroot),
-            "verifyChainedMembership: proof did not commit to expected root"
-        );
+
+        if (keccak256(root) != keccak256(subroot)) {
+            return VerifyChainedMembershipError.RootMismatch;
+        } else {
+            return VerifyChainedMembershipError.None;
+        }
     }
 
     enum VerifyMembershipError {

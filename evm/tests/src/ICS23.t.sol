@@ -152,11 +152,13 @@ contract ICS23Test is Test {
         bytes[] memory path = new bytes[](2);
         path[0] = "acc";
         path[1] = hex"014152090B0C95C948EDC407995560FEED4A9DF81E";
-        Ics23.verifyChainedMembership(
-            IbcCoreCommitmentV1MerkleProof.decode(proof),
-            root,
-            path,
-            value
+        assert(
+            Ics23.verifyChainedMembership(
+                IbcCoreCommitmentV1MerkleProof.decode(proof),
+                root,
+                path,
+                value
+            ) == Ics23.VerifyChainedMembershipError.None
         );
     }
 
@@ -170,11 +172,13 @@ contract ICS23Test is Test {
         bytes[] memory path = new bytes[](2);
         path[0] = "ibc";
         path[1] = "connections/connection-1";
-        Ics23.verifyChainedMembership(
-            IbcCoreCommitmentV1MerkleProof.decode(proof),
-            root,
-            path,
-            value
+        assert(
+            Ics23.verifyChainedMembership(
+                IbcCoreCommitmentV1MerkleProof.decode(proof),
+                root,
+                path,
+                value
+            ) == Ics23.VerifyChainedMembershipError.None
         );
     }
 
@@ -188,11 +192,13 @@ contract ICS23Test is Test {
         bytes[] memory path = new bytes[](2);
         path[0] = "ibc";
         path[1] = "clients/08-wasm-1/clientState";
-        Ics23.verifyChainedMembership(
-            IbcCoreCommitmentV1MerkleProof.decode(proof),
-            root,
-            path,
-            value
+        assert(
+            Ics23.verifyChainedMembership(
+                IbcCoreCommitmentV1MerkleProof.decode(proof),
+                root,
+                path,
+                value
+            ) == Ics23.VerifyChainedMembershipError.None
         );
     }
 }
