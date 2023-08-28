@@ -42,15 +42,15 @@ When running the container, make sure to map a volume to the path passed in `--h
 
 ## Initialization
 
-We'll need to set up a few configuration files and obtain the [genesis.json](https://raw.githubusercontent.com/unionlabs/genesis/main/union-testnet-1/genesis.json) before we can run the node.
+We'll need to set up a few configuration files and obtain the [genesis.json] before we can run the node.
 
 First, set some environment variables, which are used throughout initialization.
 
 ```sh
-export CHAIN_ID=union-testnet-1 # or union-1
-export MONIKER="Unionized Goblin"
-export KEY_NAME=alice
-export GENESIS_URL="https://raw.githubusercontent.com/unionlabs/genesis/main/union-testnet-1/genesis.json"
+export CHAIN_ID=union-testnet-3 # or union-1
+export MONIKER="Unionized Goblin" # Only for example
+export KEY_NAME=alice # Only for example
+export GENESIS_URL="https://raw.githubusercontent.com/unionlabs/union/e1f9a3e3b84a8c39faf7046931159eda3e95fdb2/networks/genesis/union-testnet-3/genesis.json"
 ```
 
 Then we'll have `uniond` initialize our data and configuration directories. By default `/User/{USER}/.uniond` is used.
@@ -65,15 +65,15 @@ The `[key_type]` is `"bn254"`, which most validators haven't encountered before 
 
 Next, edit `~/.union/config/config.toml`. We'll set the seeds to ensure your node can connect to the peer-to-peer network.
 
-For `union-testnet-1` replace `seeds = ""` with:
+For `union-testnet-3` replace `seeds = ""` with:
 
 ```toml
-seeds = "c649931f0ef98bc3e086bbfbcf3b04896a9ec7de@uniontestnet.poisonphang.com:26656"
+seeds = "b4d587b3d3666d52df0cd43962080fd164568fe0@union-testnet.cor.systems:26656,59a9988afe6219ec787929ffe748530fa6109b29@testnet-validator.benluelo.com:26656"
 ```
 
 ### Genesis Configuration
 
-Download the [genesis.json](https://raw.githubusercontent.com/unionlabs/genesis/main/union-testnet-1/genesis.json) and copy it to your `uniond` home directory.
+Download the [genesis.json] and copy it to your `uniond` home directory.
 
 ```
 curl $GENESIS_URL > ~/.union/config/genesis.json
@@ -97,12 +97,19 @@ To submit the registration transaction and become a validator, you must submit a
 
 ```sh
 uniond tx staking create-validator \
-  --amount $STAKE \
-  --pubkey=$(uniond tendermint show-validator) \
+  --amount 1000000muno \
+  --pubkey $(uniond tendermint show-validator) \
   --moniker $MONIKER \
   --chain-id $CHAIN_ID \
-  --from $KEY_NAME
+  --from $KEY_NAME \
+  --commission-max-change-rate "0.1" \
+  --commission-max-rate "0.20" \
+  --commission-rate "0.1" \
+  --min-self-delegation "1"
 ```
+
+> **NOTE**
+> If your own node isn't set up to accept RPC request, you can send them to another node such as `https://rpc.0xc0dejug.uno:443` via the `--node` option.
 
 ## Systemd Service
 
@@ -128,7 +135,9 @@ You should be able to view the node logs by executing
 sudo journalctl -f -u uniond
 ```
 
-It's then recommended to backup these files from `~/.union/config` in a secure location:
+It's then recommended to back up these files from `~/.union/config` in a secure location:
 
 - `priv_validator_key.json`
 - `node_key.json`
+
+[genesis.json] https://raw.githubusercontent.com/unionlabs/union/e1f9a3e3b84a8c39faf7046931159eda3e95fdb2/networks/genesis/union-testnet-3/genesis.json

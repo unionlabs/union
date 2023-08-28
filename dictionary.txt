@@ -344,6 +344,7 @@ monitonically
 monniker
 moreutils
 multistep
+muno
 muslc
 nanos
 nasm
