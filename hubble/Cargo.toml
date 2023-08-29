@@ -1,0 +1,19 @@
+[package]
+name = "hubble"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+graphql_client = { version = "0.13.0",  features = ["reqwest-rustls", "reqwest", "reqwest-blocking"] }
+tendermint-rpc = { git = "https://github.com/unionlabs/tendermint-rs", branch = "bn254", features = ["http", "http-client", "hyper-rustls", "tokio"] }
+tendermint = { git = "https://github.com/unionlabs/tendermint-rs", branch = "bn254" }
+
+tokio = { version = "1", features = ["full"] }
+serde = { version = "1.0", features = ["derive"] }
+reqwest = { version = "^0.11", features = ["json", "blocking"] }
+serde_json = { version = "1.0" }
+color-eyre = "0.6.2"
+clap = { version = "4.4.0", features = ["derive"] }
+url = { version = "2.4.1", features = ["serde"] }
+tracing = "0.1.37"
+tracing-subscriber = "0.3.17"

@@ -1,0 +1,2084 @@
+schema {
+  query: query_root
+  mutation: mutation_root
+  subscription: subscription_root
+}
+
+"""whether this query should be cached (Hasura Cloud only)"""
+directive @cached(
+  """measured in seconds"""
+  ttl: Int! = 60
+
+  """refresh the cache entry"""
+  refresh: Boolean! = false
+) on QUERY
+
+"""
+Boolean expression to compare columns of type "Int". All fields are combined with logical 'AND'.
+"""
+input Int_comparison_exp {
+  _eq: Int
+  _gt: Int
+  _gte: Int
+  _in: [Int!]
+  _is_null: Boolean
+  _lt: Int
+  _lte: Int
+  _neq: Int
+  _nin: [Int!]
+}
+
+"""
+Boolean expression to compare columns of type "String". All fields are combined with logical 'AND'.
+"""
+input String_comparison_exp {
+  _eq: String
+  _gt: String
+  _gte: String
+
+  """does the column match the given case-insensitive pattern"""
+  _ilike: String
+  _in: [String!]
+
+  """
+  does the column match the given POSIX regular expression, case insensitive
+  """
+  _iregex: String
+  _is_null: Boolean
+
+  """does the column match the given pattern"""
+  _like: String
+  _lt: String
+  _lte: String
+  _neq: String
+
+  """does the column NOT match the given case-insensitive pattern"""
+  _nilike: String
+  _nin: [String!]
+
+  """
+  does the column NOT match the given POSIX regular expression, case insensitive
+  """
+  _niregex: String
+
+  """does the column NOT match the given pattern"""
+  _nlike: String
+
+  """
+  does the column NOT match the given POSIX regular expression, case sensitive
+  """
+  _nregex: String
+
+  """does the column NOT match the given SQL regular expression"""
+  _nsimilar: String
+
+  """
+  does the column match the given POSIX regular expression, case sensitive
+  """
+  _regex: String
+
+  """does the column match the given SQL regular expression"""
+  _similar: String
+}
+
+"""
+columns and relationships of "addresses"
+"""
+type addresses {
+  address: String!
+  chain_id: Int!
+  id: Int!
+}
+
+"""
+aggregated selection of "addresses"
+"""
+type addresses_aggregate {
+  aggregate: addresses_aggregate_fields
+  nodes: [addresses!]!
+}
+
+"""
+aggregate fields of "addresses"
+"""
+type addresses_aggregate_fields {
+  avg: addresses_avg_fields
+  count(columns: [addresses_select_column!], distinct: Boolean): Int!
+  max: addresses_max_fields
+  min: addresses_min_fields
+  stddev: addresses_stddev_fields
+  stddev_pop: addresses_stddev_pop_fields
+  stddev_samp: addresses_stddev_samp_fields
+  sum: addresses_sum_fields
+  var_pop: addresses_var_pop_fields
+  var_samp: addresses_var_samp_fields
+  variance: addresses_variance_fields
+}
+
+"""aggregate avg on columns"""
+type addresses_avg_fields {
+  chain_id: Float
+  id: Float
+}
+
+"""
+Boolean expression to filter rows from the table "addresses". All fields are combined with a logical 'AND'.
+"""
+input addresses_bool_exp {
+  _and: [addresses_bool_exp!]
+  _not: addresses_bool_exp
+  _or: [addresses_bool_exp!]
+  address: String_comparison_exp
+  chain_id: Int_comparison_exp
+  id: Int_comparison_exp
+}
+
+"""
+unique or primary key constraints on table "addresses"
+"""
+enum addresses_constraint {
+  """
+  unique or primary key constraint on columns "address", "chain_id"
+  """
+  addresses_address_chain_id_key
+
+  """
+  unique or primary key constraint on columns "id"
+  """
+  addresses_pkey
+}
+
+"""
+input type for incrementing numeric columns in table "addresses"
+"""
+input addresses_inc_input {
+  chain_id: Int
+  id: Int
+}
+
+"""
+input type for inserting data into table "addresses"
+"""
+input addresses_insert_input {
+  address: String
+  chain_id: Int
+  id: Int
+}
+
+"""aggregate max on columns"""
+type addresses_max_fields {
+  address: String
+  chain_id: Int
+  id: Int
+}
+
+"""aggregate min on columns"""
+type addresses_min_fields {
+  address: String
+  chain_id: Int
+  id: Int
+}
+
+"""
+response of any mutation on the table "addresses"
+"""
+type addresses_mutation_response {
+  """number of rows affected by the mutation"""
+  affected_rows: Int!
+
+  """data from the rows affected by the mutation"""
+  returning: [addresses!]!
+}
+
+"""
+on_conflict condition type for table "addresses"
+"""
+input addresses_on_conflict {
+  constraint: addresses_constraint!
+  update_columns: [addresses_update_column!]! = []
+  where: addresses_bool_exp
+}
+
+"""Ordering options when selecting data from "addresses"."""
+input addresses_order_by {
+  address: order_by
+  chain_id: order_by
+  id: order_by
+}
+
+"""primary key columns input for table: addresses"""
+input addresses_pk_columns_input {
+  id: Int!
+}
+
+"""
+select columns of table "addresses"
+"""
+enum addresses_select_column {
+  """column name"""
+  address
+
+  """column name"""
+  chain_id
+
+  """column name"""
+  id
+}
+
+"""
+input type for updating data in table "addresses"
+"""
+input addresses_set_input {
+  address: String
+  chain_id: Int
+  id: Int
+}
+
+"""aggregate stddev on columns"""
+type addresses_stddev_fields {
+  chain_id: Float
+  id: Float
+}
+
+"""aggregate stddev_pop on columns"""
+type addresses_stddev_pop_fields {
+  chain_id: Float
+  id: Float
+}
+
+"""aggregate stddev_samp on columns"""
+type addresses_stddev_samp_fields {
+  chain_id: Float
+  id: Float
+}
+
+"""
+Streaming cursor of the table "addresses"
+"""
+input addresses_stream_cursor_input {
+  """Stream column input with initial value"""
+  initial_value: addresses_stream_cursor_value_input!
+
+  """cursor ordering"""
+  ordering: cursor_ordering
+}
+
+"""Initial value of the column from where the streaming should start"""
+input addresses_stream_cursor_value_input {
+  address: String
+  chain_id: Int
+  id: Int
+}
+
+"""aggregate sum on columns"""
+type addresses_sum_fields {
+  chain_id: Int
+  id: Int
+}
+
+"""
+update columns of table "addresses"
+"""
+enum addresses_update_column {
+  """column name"""
+  address
+
+  """column name"""
+  chain_id
+
+  """column name"""
+  id
+}
+
+input addresses_updates {
+  """increments the numeric columns with given value of the filtered values"""
+  _inc: addresses_inc_input
+
+  """sets the columns of the filtered rows to the given values"""
+  _set: addresses_set_input
+
+  """filter the rows which have to be updated"""
+  where: addresses_bool_exp!
+}
+
+"""aggregate var_pop on columns"""
+type addresses_var_pop_fields {
+  chain_id: Float
+  id: Float
+}
+
+"""aggregate var_samp on columns"""
+type addresses_var_samp_fields {
+  chain_id: Float
+  id: Float
+}
+
+"""aggregate variance on columns"""
+type addresses_variance_fields {
+  chain_id: Float
+  id: Float
+}
+
+"""
+columns and relationships of "blocks"
+"""
+type blocks {
+  """An object relationship"""
+  chain: chains!
+  chain_id: Int!
+
+  """An array relationship"""
+  events(
+    """distinct select on columns"""
+    distinct_on: [events_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [events_order_by!]
+
+    """filter the rows returned"""
+    where: events_bool_exp
+  ): [events!]!
+
+  """An aggregate relationship"""
+  events_aggregate(
+    """distinct select on columns"""
+    distinct_on: [events_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [events_order_by!]
+
+    """filter the rows returned"""
+    where: events_bool_exp
+  ): events_aggregate!
+  hash: String!
+  height: Int!
+  id: Int!
+}
+
+"""
+aggregated selection of "blocks"
+"""
+type blocks_aggregate {
+  aggregate: blocks_aggregate_fields
+  nodes: [blocks!]!
+}
+
+"""
+aggregate fields of "blocks"
+"""
+type blocks_aggregate_fields {
+  avg: blocks_avg_fields
+  count(columns: [blocks_select_column!], distinct: Boolean): Int!
+  max: blocks_max_fields
+  min: blocks_min_fields
+  stddev: blocks_stddev_fields
+  stddev_pop: blocks_stddev_pop_fields
+  stddev_samp: blocks_stddev_samp_fields
+  sum: blocks_sum_fields
+  var_pop: blocks_var_pop_fields
+  var_samp: blocks_var_samp_fields
+  variance: blocks_variance_fields
+}
+
+"""aggregate avg on columns"""
+type blocks_avg_fields {
+  chain_id: Float
+  height: Float
+  id: Float
+}
+
+"""
+Boolean expression to filter rows from the table "blocks". All fields are combined with a logical 'AND'.
+"""
+input blocks_bool_exp {
+  _and: [blocks_bool_exp!]
+  _not: blocks_bool_exp
+  _or: [blocks_bool_exp!]
+  chain: chains_bool_exp
+  chain_id: Int_comparison_exp
+  events: events_bool_exp
+  events_aggregate: events_aggregate_bool_exp
+  hash: String_comparison_exp
+  height: Int_comparison_exp
+  id: Int_comparison_exp
+}
+
+"""
+unique or primary key constraints on table "blocks"
+"""
+enum blocks_constraint {
+  """
+  unique or primary key constraint on columns "id"
+  """
+  blocks_pkey
+}
+
+"""
+input type for incrementing numeric columns in table "blocks"
+"""
+input blocks_inc_input {
+  chain_id: Int
+  height: Int
+  id: Int
+}
+
+"""
+input type for inserting data into table "blocks"
+"""
+input blocks_insert_input {
+  chain: chains_obj_rel_insert_input
+  chain_id: Int
+  events: events_arr_rel_insert_input
+  hash: String
+  height: Int
+  id: Int
+}
+
+"""aggregate max on columns"""
+type blocks_max_fields {
+  chain_id: Int
+  hash: String
+  height: Int
+  id: Int
+}
+
+"""aggregate min on columns"""
+type blocks_min_fields {
+  chain_id: Int
+  hash: String
+  height: Int
+  id: Int
+}
+
+"""
+response of any mutation on the table "blocks"
+"""
+type blocks_mutation_response {
+  """number of rows affected by the mutation"""
+  affected_rows: Int!
+
+  """data from the rows affected by the mutation"""
+  returning: [blocks!]!
+}
+
+"""
+input type for inserting object relation for remote table "blocks"
+"""
+input blocks_obj_rel_insert_input {
+  data: blocks_insert_input!
+
+  """upsert condition"""
+  on_conflict: blocks_on_conflict
+}
+
+"""
+on_conflict condition type for table "blocks"
+"""
+input blocks_on_conflict {
+  constraint: blocks_constraint!
+  update_columns: [blocks_update_column!]! = []
+  where: blocks_bool_exp
+}
+
+"""Ordering options when selecting data from "blocks"."""
+input blocks_order_by {
+  chain: chains_order_by
+  chain_id: order_by
+  events_aggregate: events_aggregate_order_by
+  hash: order_by
+  height: order_by
+  id: order_by
+}
+
+"""primary key columns input for table: blocks"""
+input blocks_pk_columns_input {
+  id: Int!
+}
+
+"""
+select columns of table "blocks"
+"""
+enum blocks_select_column {
+  """column name"""
+  chain_id
+
+  """column name"""
+  hash
+
+  """column name"""
+  height
+
+  """column name"""
+  id
+}
+
+"""
+input type for updating data in table "blocks"
+"""
+input blocks_set_input {
+  chain_id: Int
+  hash: String
+  height: Int
+  id: Int
+}
+
+"""aggregate stddev on columns"""
+type blocks_stddev_fields {
+  chain_id: Float
+  height: Float
+  id: Float
+}
+
+"""aggregate stddev_pop on columns"""
+type blocks_stddev_pop_fields {
+  chain_id: Float
+  height: Float
+  id: Float
+}
+
+"""aggregate stddev_samp on columns"""
+type blocks_stddev_samp_fields {
+  chain_id: Float
+  height: Float
+  id: Float
+}
+
+"""
+Streaming cursor of the table "blocks"
+"""
+input blocks_stream_cursor_input {
+  """Stream column input with initial value"""
+  initial_value: blocks_stream_cursor_value_input!
+
+  """cursor ordering"""
+  ordering: cursor_ordering
+}
+
+"""Initial value of the column from where the streaming should start"""
+input blocks_stream_cursor_value_input {
+  chain_id: Int
+  hash: String
+  height: Int
+  id: Int
+}
+
+"""aggregate sum on columns"""
+type blocks_sum_fields {
+  chain_id: Int
+  height: Int
+  id: Int
+}
+
+"""
+update columns of table "blocks"
+"""
+enum blocks_update_column {
+  """column name"""
+  chain_id
+
+  """column name"""
+  hash
+
+  """column name"""
+  height
+
+  """column name"""
+  id
+}
+
+input blocks_updates {
+  """increments the numeric columns with given value of the filtered values"""
+  _inc: blocks_inc_input
+
+  """sets the columns of the filtered rows to the given values"""
+  _set: blocks_set_input
+
+  """filter the rows which have to be updated"""
+  where: blocks_bool_exp!
+}
+
+"""aggregate var_pop on columns"""
+type blocks_var_pop_fields {
+  chain_id: Float
+  height: Float
+  id: Float
+}
+
+"""aggregate var_samp on columns"""
+type blocks_var_samp_fields {
+  chain_id: Float
+  height: Float
+  id: Float
+}
+
+"""aggregate variance on columns"""
+type blocks_variance_fields {
+  chain_id: Float
+  height: Float
+  id: Float
+}
+
+"""
+columns and relationships of "chains"
+"""
+type chains {
+  chain_id: String!
+  id: Int!
+}
+
+"""
+aggregated selection of "chains"
+"""
+type chains_aggregate {
+  aggregate: chains_aggregate_fields
+  nodes: [chains!]!
+}
+
+"""
+aggregate fields of "chains"
+"""
+type chains_aggregate_fields {
+  avg: chains_avg_fields
+  count(columns: [chains_select_column!], distinct: Boolean): Int!
+  max: chains_max_fields
+  min: chains_min_fields
+  stddev: chains_stddev_fields
+  stddev_pop: chains_stddev_pop_fields
+  stddev_samp: chains_stddev_samp_fields
+  sum: chains_sum_fields
+  var_pop: chains_var_pop_fields
+  var_samp: chains_var_samp_fields
+  variance: chains_variance_fields
+}
+
+"""aggregate avg on columns"""
+type chains_avg_fields {
+  id: Float
+}
+
+"""
+Boolean expression to filter rows from the table "chains". All fields are combined with a logical 'AND'.
+"""
+input chains_bool_exp {
+  _and: [chains_bool_exp!]
+  _not: chains_bool_exp
+  _or: [chains_bool_exp!]
+  chain_id: String_comparison_exp
+  id: Int_comparison_exp
+}
+
+"""
+unique or primary key constraints on table "chains"
+"""
+enum chains_constraint {
+  """
+  unique or primary key constraint on columns "id"
+  """
+  chains_id_key
+
+  """
+  unique or primary key constraint on columns "id", "chain_id"
+  """
+  chains_pkey
+}
+
+"""
+input type for incrementing numeric columns in table "chains"
+"""
+input chains_inc_input {
+  id: Int
+}
+
+"""
+input type for inserting data into table "chains"
+"""
+input chains_insert_input {
+  chain_id: String
+  id: Int
+}
+
+"""aggregate max on columns"""
+type chains_max_fields {
+  chain_id: String
+  id: Int
+}
+
+"""aggregate min on columns"""
+type chains_min_fields {
+  chain_id: String
+  id: Int
+}
+
+"""
+response of any mutation on the table "chains"
+"""
+type chains_mutation_response {
+  """number of rows affected by the mutation"""
+  affected_rows: Int!
+
+  """data from the rows affected by the mutation"""
+  returning: [chains!]!
+}
+
+"""
+input type for inserting object relation for remote table "chains"
+"""
+input chains_obj_rel_insert_input {
+  data: chains_insert_input!
+
+  """upsert condition"""
+  on_conflict: chains_on_conflict
+}
+
+"""
+on_conflict condition type for table "chains"
+"""
+input chains_on_conflict {
+  constraint: chains_constraint!
+  update_columns: [chains_update_column!]! = []
+  where: chains_bool_exp
+}
+
+"""Ordering options when selecting data from "chains"."""
+input chains_order_by {
+  chain_id: order_by
+  id: order_by
+}
+
+"""primary key columns input for table: chains"""
+input chains_pk_columns_input {
+  chain_id: String!
+  id: Int!
+}
+
+"""
+select columns of table "chains"
+"""
+enum chains_select_column {
+  """column name"""
+  chain_id
+
+  """column name"""
+  id
+}
+
+"""
+input type for updating data in table "chains"
+"""
+input chains_set_input {
+  chain_id: String
+  id: Int
+}
+
+"""aggregate stddev on columns"""
+type chains_stddev_fields {
+  id: Float
+}
+
+"""aggregate stddev_pop on columns"""
+type chains_stddev_pop_fields {
+  id: Float
+}
+
+"""aggregate stddev_samp on columns"""
+type chains_stddev_samp_fields {
+  id: Float
+}
+
+"""
+Streaming cursor of the table "chains"
+"""
+input chains_stream_cursor_input {
+  """Stream column input with initial value"""
+  initial_value: chains_stream_cursor_value_input!
+
+  """cursor ordering"""
+  ordering: cursor_ordering
+}
+
+"""Initial value of the column from where the streaming should start"""
+input chains_stream_cursor_value_input {
+  chain_id: String
+  id: Int
+}
+
+"""aggregate sum on columns"""
+type chains_sum_fields {
+  id: Int
+}
+
+"""
+update columns of table "chains"
+"""
+enum chains_update_column {
+  """column name"""
+  chain_id
+
+  """column name"""
+  id
+}
+
+input chains_updates {
+  """increments the numeric columns with given value of the filtered values"""
+  _inc: chains_inc_input
+
+  """sets the columns of the filtered rows to the given values"""
+  _set: chains_set_input
+
+  """filter the rows which have to be updated"""
+  where: chains_bool_exp!
+}
+
+"""aggregate var_pop on columns"""
+type chains_var_pop_fields {
+  id: Float
+}
+
+"""aggregate var_samp on columns"""
+type chains_var_samp_fields {
+  id: Float
+}
+
+"""aggregate variance on columns"""
+type chains_variance_fields {
+  id: Float
+}
+
+"""ordering argument of a cursor"""
+enum cursor_ordering {
+  """ascending ordering of the cursor"""
+  ASC
+
+  """descending ordering of the cursor"""
+  DESC
+}
+
+"""
+columns and relationships of "events"
+"""
+type events {
+  """An object relationship"""
+  block: blocks!
+  block_id: Int!
+  data(
+    """JSON select path"""
+    path: String
+  ): jsonb!
+  id: Int!
+  index: Int!
+}
+
+"""
+aggregated selection of "events"
+"""
+type events_aggregate {
+  aggregate: events_aggregate_fields
+  nodes: [events!]!
+}
+
+input events_aggregate_bool_exp {
+  count: events_aggregate_bool_exp_count
+}
+
+input events_aggregate_bool_exp_count {
+  arguments: [events_select_column!]
+  distinct: Boolean
+  filter: events_bool_exp
+  predicate: Int_comparison_exp!
+}
+
+"""
+aggregate fields of "events"
+"""
+type events_aggregate_fields {
+  avg: events_avg_fields
+  count(columns: [events_select_column!], distinct: Boolean): Int!
+  max: events_max_fields
+  min: events_min_fields
+  stddev: events_stddev_fields
+  stddev_pop: events_stddev_pop_fields
+  stddev_samp: events_stddev_samp_fields
+  sum: events_sum_fields
+  var_pop: events_var_pop_fields
+  var_samp: events_var_samp_fields
+  variance: events_variance_fields
+}
+
+"""
+order by aggregate values of table "events"
+"""
+input events_aggregate_order_by {
+  avg: events_avg_order_by
+  count: order_by
+  max: events_max_order_by
+  min: events_min_order_by
+  stddev: events_stddev_order_by
+  stddev_pop: events_stddev_pop_order_by
+  stddev_samp: events_stddev_samp_order_by
+  sum: events_sum_order_by
+  var_pop: events_var_pop_order_by
+  var_samp: events_var_samp_order_by
+  variance: events_variance_order_by
+}
+
+"""append existing jsonb value of filtered columns with new jsonb value"""
+input events_append_input {
+  data: jsonb
+}
+
+"""
+input type for inserting array relation for remote table "events"
+"""
+input events_arr_rel_insert_input {
+  data: [events_insert_input!]!
+
+  """upsert condition"""
+  on_conflict: events_on_conflict
+}
+
+"""aggregate avg on columns"""
+type events_avg_fields {
+  block_id: Float
+  id: Float
+  index: Float
+}
+
+"""
+order by avg() on columns of table "events"
+"""
+input events_avg_order_by {
+  block_id: order_by
+  id: order_by
+  index: order_by
+}
+
+"""
+Boolean expression to filter rows from the table "events". All fields are combined with a logical 'AND'.
+"""
+input events_bool_exp {
+  _and: [events_bool_exp!]
+  _not: events_bool_exp
+  _or: [events_bool_exp!]
+  block: blocks_bool_exp
+  block_id: Int_comparison_exp
+  data: jsonb_comparison_exp
+  id: Int_comparison_exp
+  index: Int_comparison_exp
+}
+
+"""
+unique or primary key constraints on table "events"
+"""
+enum events_constraint {
+  """
+  unique or primary key constraint on columns "id"
+  """
+  events_pkey
+}
+
+"""
+delete the field or element with specified path (for JSON arrays, negative integers count from the end)
+"""
+input events_delete_at_path_input {
+  data: [String!]
+}
+
+"""
+delete the array element with specified index (negative integers count from the end). throws an error if top level container is not an array
+"""
+input events_delete_elem_input {
+  data: Int
+}
+
+"""
+delete key/value pair or string element. key/value pairs are matched based on their key value
+"""
+input events_delete_key_input {
+  data: String
+}
+
+"""
+input type for incrementing numeric columns in table "events"
+"""
+input events_inc_input {
+  block_id: Int
+  id: Int
+  index: Int
+}
+
+"""
+input type for inserting data into table "events"
+"""
+input events_insert_input {
+  block: blocks_obj_rel_insert_input
+  block_id: Int
+  data: jsonb
+  id: Int
+  index: Int
+}
+
+"""aggregate max on columns"""
+type events_max_fields {
+  block_id: Int
+  id: Int
+  index: Int
+}
+
+"""
+order by max() on columns of table "events"
+"""
+input events_max_order_by {
+  block_id: order_by
+  id: order_by
+  index: order_by
+}
+
+"""aggregate min on columns"""
+type events_min_fields {
+  block_id: Int
+  id: Int
+  index: Int
+}
+
+"""
+order by min() on columns of table "events"
+"""
+input events_min_order_by {
+  block_id: order_by
+  id: order_by
+  index: order_by
+}
+
+"""
+response of any mutation on the table "events"
+"""
+type events_mutation_response {
+  """number of rows affected by the mutation"""
+  affected_rows: Int!
+
+  """data from the rows affected by the mutation"""
+  returning: [events!]!
+}
+
+"""
+on_conflict condition type for table "events"
+"""
+input events_on_conflict {
+  constraint: events_constraint!
+  update_columns: [events_update_column!]! = []
+  where: events_bool_exp
+}
+
+"""Ordering options when selecting data from "events"."""
+input events_order_by {
+  block: blocks_order_by
+  block_id: order_by
+  data: order_by
+  id: order_by
+  index: order_by
+}
+
+"""primary key columns input for table: events"""
+input events_pk_columns_input {
+  id: Int!
+}
+
+"""prepend existing jsonb value of filtered columns with new jsonb value"""
+input events_prepend_input {
+  data: jsonb
+}
+
+"""
+select columns of table "events"
+"""
+enum events_select_column {
+  """column name"""
+  block_id
+
+  """column name"""
+  data
+
+  """column name"""
+  id
+
+  """column name"""
+  index
+}
+
+"""
+input type for updating data in table "events"
+"""
+input events_set_input {
+  block_id: Int
+  data: jsonb
+  id: Int
+  index: Int
+}
+
+"""aggregate stddev on columns"""
+type events_stddev_fields {
+  block_id: Float
+  id: Float
+  index: Float
+}
+
+"""
+order by stddev() on columns of table "events"
+"""
+input events_stddev_order_by {
+  block_id: order_by
+  id: order_by
+  index: order_by
+}
+
+"""aggregate stddev_pop on columns"""
+type events_stddev_pop_fields {
+  block_id: Float
+  id: Float
+  index: Float
+}
+
+"""
+order by stddev_pop() on columns of table "events"
+"""
+input events_stddev_pop_order_by {
+  block_id: order_by
+  id: order_by
+  index: order_by
+}
+
+"""aggregate stddev_samp on columns"""
+type events_stddev_samp_fields {
+  block_id: Float
+  id: Float
+  index: Float
+}
+
+"""
+order by stddev_samp() on columns of table "events"
+"""
+input events_stddev_samp_order_by {
+  block_id: order_by
+  id: order_by
+  index: order_by
+}
+
+"""
+Streaming cursor of the table "events"
+"""
+input events_stream_cursor_input {
+  """Stream column input with initial value"""
+  initial_value: events_stream_cursor_value_input!
+
+  """cursor ordering"""
+  ordering: cursor_ordering
+}
+
+"""Initial value of the column from where the streaming should start"""
+input events_stream_cursor_value_input {
+  block_id: Int
+  data: jsonb
+  id: Int
+  index: Int
+}
+
+"""aggregate sum on columns"""
+type events_sum_fields {
+  block_id: Int
+  id: Int
+  index: Int
+}
+
+"""
+order by sum() on columns of table "events"
+"""
+input events_sum_order_by {
+  block_id: order_by
+  id: order_by
+  index: order_by
+}
+
+"""
+update columns of table "events"
+"""
+enum events_update_column {
+  """column name"""
+  block_id
+
+  """column name"""
+  data
+
+  """column name"""
+  id
+
+  """column name"""
+  index
+}
+
+input events_updates {
+  """append existing jsonb value of filtered columns with new jsonb value"""
+  _append: events_append_input
+
+  """
+  delete the field or element with specified path (for JSON arrays, negative integers count from the end)
+  """
+  _delete_at_path: events_delete_at_path_input
+
+  """
+  delete the array element with specified index (negative integers count from the end). throws an error if top level container is not an array
+  """
+  _delete_elem: events_delete_elem_input
+
+  """
+  delete key/value pair or string element. key/value pairs are matched based on their key value
+  """
+  _delete_key: events_delete_key_input
+
+  """increments the numeric columns with given value of the filtered values"""
+  _inc: events_inc_input
+
+  """prepend existing jsonb value of filtered columns with new jsonb value"""
+  _prepend: events_prepend_input
+
+  """sets the columns of the filtered rows to the given values"""
+  _set: events_set_input
+
+  """filter the rows which have to be updated"""
+  where: events_bool_exp!
+}
+
+"""aggregate var_pop on columns"""
+type events_var_pop_fields {
+  block_id: Float
+  id: Float
+  index: Float
+}
+
+"""
+order by var_pop() on columns of table "events"
+"""
+input events_var_pop_order_by {
+  block_id: order_by
+  id: order_by
+  index: order_by
+}
+
+"""aggregate var_samp on columns"""
+type events_var_samp_fields {
+  block_id: Float
+  id: Float
+  index: Float
+}
+
+"""
+order by var_samp() on columns of table "events"
+"""
+input events_var_samp_order_by {
+  block_id: order_by
+  id: order_by
+  index: order_by
+}
+
+"""aggregate variance on columns"""
+type events_variance_fields {
+  block_id: Float
+  id: Float
+  index: Float
+}
+
+"""
+order by variance() on columns of table "events"
+"""
+input events_variance_order_by {
+  block_id: order_by
+  id: order_by
+  index: order_by
+}
+
+scalar jsonb
+
+input jsonb_cast_exp {
+  String: String_comparison_exp
+}
+
+"""
+Boolean expression to compare columns of type "jsonb". All fields are combined with logical 'AND'.
+"""
+input jsonb_comparison_exp {
+  _cast: jsonb_cast_exp
+
+  """is the column contained in the given json value"""
+  _contained_in: jsonb
+
+  """does the column contain the given json value at the top level"""
+  _contains: jsonb
+  _eq: jsonb
+  _gt: jsonb
+  _gte: jsonb
+
+  """does the string exist as a top-level key in the column"""
+  _has_key: String
+
+  """do all of these strings exist as top-level keys in the column"""
+  _has_keys_all: [String!]
+
+  """do any of these strings exist as top-level keys in the column"""
+  _has_keys_any: [String!]
+  _in: [jsonb!]
+  _is_null: Boolean
+  _lt: jsonb
+  _lte: jsonb
+  _neq: jsonb
+  _nin: [jsonb!]
+}
+
+"""mutation root"""
+type mutation_root {
+  """
+  delete data from the table: "addresses"
+  """
+  delete_addresses(
+    """filter the rows which have to be deleted"""
+    where: addresses_bool_exp!
+  ): addresses_mutation_response
+
+  """
+  delete single row from the table: "addresses"
+  """
+  delete_addresses_by_pk(id: Int!): addresses
+
+  """
+  delete data from the table: "blocks"
+  """
+  delete_blocks(
+    """filter the rows which have to be deleted"""
+    where: blocks_bool_exp!
+  ): blocks_mutation_response
+
+  """
+  delete single row from the table: "blocks"
+  """
+  delete_blocks_by_pk(id: Int!): blocks
+
+  """
+  delete data from the table: "chains"
+  """
+  delete_chains(
+    """filter the rows which have to be deleted"""
+    where: chains_bool_exp!
+  ): chains_mutation_response
+
+  """
+  delete single row from the table: "chains"
+  """
+  delete_chains_by_pk(chain_id: String!, id: Int!): chains
+
+  """
+  delete data from the table: "events"
+  """
+  delete_events(
+    """filter the rows which have to be deleted"""
+    where: events_bool_exp!
+  ): events_mutation_response
+
+  """
+  delete single row from the table: "events"
+  """
+  delete_events_by_pk(id: Int!): events
+
+  """
+  insert data into the table: "addresses"
+  """
+  insert_addresses(
+    """the rows to be inserted"""
+    objects: [addresses_insert_input!]!
+
+    """upsert condition"""
+    on_conflict: addresses_on_conflict
+  ): addresses_mutation_response
+
+  """
+  insert a single row into the table: "addresses"
+  """
+  insert_addresses_one(
+    """the row to be inserted"""
+    object: addresses_insert_input!
+
+    """upsert condition"""
+    on_conflict: addresses_on_conflict
+  ): addresses
+
+  """
+  insert data into the table: "blocks"
+  """
+  insert_blocks(
+    """the rows to be inserted"""
+    objects: [blocks_insert_input!]!
+
+    """upsert condition"""
+    on_conflict: blocks_on_conflict
+  ): blocks_mutation_response
+
+  """
+  insert a single row into the table: "blocks"
+  """
+  insert_blocks_one(
+    """the row to be inserted"""
+    object: blocks_insert_input!
+
+    """upsert condition"""
+    on_conflict: blocks_on_conflict
+  ): blocks
+
+  """
+  insert data into the table: "chains"
+  """
+  insert_chains(
+    """the rows to be inserted"""
+    objects: [chains_insert_input!]!
+
+    """upsert condition"""
+    on_conflict: chains_on_conflict
+  ): chains_mutation_response
+
+  """
+  insert a single row into the table: "chains"
+  """
+  insert_chains_one(
+    """the row to be inserted"""
+    object: chains_insert_input!
+
+    """upsert condition"""
+    on_conflict: chains_on_conflict
+  ): chains
+
+  """
+  insert data into the table: "events"
+  """
+  insert_events(
+    """the rows to be inserted"""
+    objects: [events_insert_input!]!
+
+    """upsert condition"""
+    on_conflict: events_on_conflict
+  ): events_mutation_response
+
+  """
+  insert a single row into the table: "events"
+  """
+  insert_events_one(
+    """the row to be inserted"""
+    object: events_insert_input!
+
+    """upsert condition"""
+    on_conflict: events_on_conflict
+  ): events
+
+  """
+  update data of the table: "addresses"
+  """
+  update_addresses(
+    """increments the numeric columns with given value of the filtered values"""
+    _inc: addresses_inc_input
+
+    """sets the columns of the filtered rows to the given values"""
+    _set: addresses_set_input
+
+    """filter the rows which have to be updated"""
+    where: addresses_bool_exp!
+  ): addresses_mutation_response
+
+  """
+  update single row of the table: "addresses"
+  """
+  update_addresses_by_pk(
+    """increments the numeric columns with given value of the filtered values"""
+    _inc: addresses_inc_input
+
+    """sets the columns of the filtered rows to the given values"""
+    _set: addresses_set_input
+    pk_columns: addresses_pk_columns_input!
+  ): addresses
+
+  """
+  update multiples rows of table: "addresses"
+  """
+  update_addresses_many(
+    """updates to execute, in order"""
+    updates: [addresses_updates!]!
+  ): [addresses_mutation_response]
+
+  """
+  update data of the table: "blocks"
+  """
+  update_blocks(
+    """increments the numeric columns with given value of the filtered values"""
+    _inc: blocks_inc_input
+
+    """sets the columns of the filtered rows to the given values"""
+    _set: blocks_set_input
+
+    """filter the rows which have to be updated"""
+    where: blocks_bool_exp!
+  ): blocks_mutation_response
+
+  """
+  update single row of the table: "blocks"
+  """
+  update_blocks_by_pk(
+    """increments the numeric columns with given value of the filtered values"""
+    _inc: blocks_inc_input
+
+    """sets the columns of the filtered rows to the given values"""
+    _set: blocks_set_input
+    pk_columns: blocks_pk_columns_input!
+  ): blocks
+
+  """
+  update multiples rows of table: "blocks"
+  """
+  update_blocks_many(
+    """updates to execute, in order"""
+    updates: [blocks_updates!]!
+  ): [blocks_mutation_response]
+
+  """
+  update data of the table: "chains"
+  """
+  update_chains(
+    """increments the numeric columns with given value of the filtered values"""
+    _inc: chains_inc_input
+
+    """sets the columns of the filtered rows to the given values"""
+    _set: chains_set_input
+
+    """filter the rows which have to be updated"""
+    where: chains_bool_exp!
+  ): chains_mutation_response
+
+  """
+  update single row of the table: "chains"
+  """
+  update_chains_by_pk(
+    """increments the numeric columns with given value of the filtered values"""
+    _inc: chains_inc_input
+
+    """sets the columns of the filtered rows to the given values"""
+    _set: chains_set_input
+    pk_columns: chains_pk_columns_input!
+  ): chains
+
+  """
+  update multiples rows of table: "chains"
+  """
+  update_chains_many(
+    """updates to execute, in order"""
+    updates: [chains_updates!]!
+  ): [chains_mutation_response]
+
+  """
+  update data of the table: "events"
+  """
+  update_events(
+    """append existing jsonb value of filtered columns with new jsonb value"""
+    _append: events_append_input
+
+    """
+    delete the field or element with specified path (for JSON arrays, negative integers count from the end)
+    """
+    _delete_at_path: events_delete_at_path_input
+
+    """
+    delete the array element with specified index (negative integers count from the end). throws an error if top level container is not an array
+    """
+    _delete_elem: events_delete_elem_input
+
+    """
+    delete key/value pair or string element. key/value pairs are matched based on their key value
+    """
+    _delete_key: events_delete_key_input
+
+    """increments the numeric columns with given value of the filtered values"""
+    _inc: events_inc_input
+
+    """prepend existing jsonb value of filtered columns with new jsonb value"""
+    _prepend: events_prepend_input
+
+    """sets the columns of the filtered rows to the given values"""
+    _set: events_set_input
+
+    """filter the rows which have to be updated"""
+    where: events_bool_exp!
+  ): events_mutation_response
+
+  """
+  update single row of the table: "events"
+  """
+  update_events_by_pk(
+    """append existing jsonb value of filtered columns with new jsonb value"""
+    _append: events_append_input
+
+    """
+    delete the field or element with specified path (for JSON arrays, negative integers count from the end)
+    """
+    _delete_at_path: events_delete_at_path_input
+
+    """
+    delete the array element with specified index (negative integers count from the end). throws an error if top level container is not an array
+    """
+    _delete_elem: events_delete_elem_input
+
+    """
+    delete key/value pair or string element. key/value pairs are matched based on their key value
+    """
+    _delete_key: events_delete_key_input
+
+    """increments the numeric columns with given value of the filtered values"""
+    _inc: events_inc_input
+
+    """prepend existing jsonb value of filtered columns with new jsonb value"""
+    _prepend: events_prepend_input
+
+    """sets the columns of the filtered rows to the given values"""
+    _set: events_set_input
+    pk_columns: events_pk_columns_input!
+  ): events
+
+  """
+  update multiples rows of table: "events"
+  """
+  update_events_many(
+    """updates to execute, in order"""
+    updates: [events_updates!]!
+  ): [events_mutation_response]
+}
+
+"""column ordering options"""
+enum order_by {
+  """in ascending order, nulls last"""
+  asc
+
+  """in ascending order, nulls first"""
+  asc_nulls_first
+
+  """in ascending order, nulls last"""
+  asc_nulls_last
+
+  """in descending order, nulls first"""
+  desc
+
+  """in descending order, nulls first"""
+  desc_nulls_first
+
+  """in descending order, nulls last"""
+  desc_nulls_last
+}
+
+type query_root {
+  """
+  fetch data from the table: "addresses"
+  """
+  addresses(
+    """distinct select on columns"""
+    distinct_on: [addresses_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [addresses_order_by!]
+
+    """filter the rows returned"""
+    where: addresses_bool_exp
+  ): [addresses!]!
+
+  """
+  fetch aggregated fields from the table: "addresses"
+  """
+  addresses_aggregate(
+    """distinct select on columns"""
+    distinct_on: [addresses_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [addresses_order_by!]
+
+    """filter the rows returned"""
+    where: addresses_bool_exp
+  ): addresses_aggregate!
+
+  """fetch data from the table: "addresses" using primary key columns"""
+  addresses_by_pk(id: Int!): addresses
+
+  """
+  fetch data from the table: "blocks"
+  """
+  blocks(
+    """distinct select on columns"""
+    distinct_on: [blocks_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [blocks_order_by!]
+
+    """filter the rows returned"""
+    where: blocks_bool_exp
+  ): [blocks!]!
+
+  """
+  fetch aggregated fields from the table: "blocks"
+  """
+  blocks_aggregate(
+    """distinct select on columns"""
+    distinct_on: [blocks_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [blocks_order_by!]
+
+    """filter the rows returned"""
+    where: blocks_bool_exp
+  ): blocks_aggregate!
+
+  """fetch data from the table: "blocks" using primary key columns"""
+  blocks_by_pk(id: Int!): blocks
+
+  """
+  fetch data from the table: "chains"
+  """
+  chains(
+    """distinct select on columns"""
+    distinct_on: [chains_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [chains_order_by!]
+
+    """filter the rows returned"""
+    where: chains_bool_exp
+  ): [chains!]!
+
+  """
+  fetch aggregated fields from the table: "chains"
+  """
+  chains_aggregate(
+    """distinct select on columns"""
+    distinct_on: [chains_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [chains_order_by!]
+
+    """filter the rows returned"""
+    where: chains_bool_exp
+  ): chains_aggregate!
+
+  """fetch data from the table: "chains" using primary key columns"""
+  chains_by_pk(chain_id: String!, id: Int!): chains
+
+  """An array relationship"""
+  events(
+    """distinct select on columns"""
+    distinct_on: [events_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [events_order_by!]
+
+    """filter the rows returned"""
+    where: events_bool_exp
+  ): [events!]!
+
+  """An aggregate relationship"""
+  events_aggregate(
+    """distinct select on columns"""
+    distinct_on: [events_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [events_order_by!]
+
+    """filter the rows returned"""
+    where: events_bool_exp
+  ): events_aggregate!
+
+  """fetch data from the table: "events" using primary key columns"""
+  events_by_pk(id: Int!): events
+}
+
+type subscription_root {
+  """
+  fetch data from the table: "addresses"
+  """
+  addresses(
+    """distinct select on columns"""
+    distinct_on: [addresses_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [addresses_order_by!]
+
+    """filter the rows returned"""
+    where: addresses_bool_exp
+  ): [addresses!]!
+
+  """
+  fetch aggregated fields from the table: "addresses"
+  """
+  addresses_aggregate(
+    """distinct select on columns"""
+    distinct_on: [addresses_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [addresses_order_by!]
+
+    """filter the rows returned"""
+    where: addresses_bool_exp
+  ): addresses_aggregate!
+
+  """fetch data from the table: "addresses" using primary key columns"""
+  addresses_by_pk(id: Int!): addresses
+
+  """
+  fetch data from the table in a streaming manner: "addresses"
+  """
+  addresses_stream(
+    """maximum number of rows returned in a single batch"""
+    batch_size: Int!
+
+    """cursor to stream the results returned by the query"""
+    cursor: [addresses_stream_cursor_input]!
+
+    """filter the rows returned"""
+    where: addresses_bool_exp
+  ): [addresses!]!
+
+  """
+  fetch data from the table: "blocks"
+  """
+  blocks(
+    """distinct select on columns"""
+    distinct_on: [blocks_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [blocks_order_by!]
+
+    """filter the rows returned"""
+    where: blocks_bool_exp
+  ): [blocks!]!
+
+  """
+  fetch aggregated fields from the table: "blocks"
+  """
+  blocks_aggregate(
+    """distinct select on columns"""
+    distinct_on: [blocks_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [blocks_order_by!]
+
+    """filter the rows returned"""
+    where: blocks_bool_exp
+  ): blocks_aggregate!
+
+  """fetch data from the table: "blocks" using primary key columns"""
+  blocks_by_pk(id: Int!): blocks
+
+  """
+  fetch data from the table in a streaming manner: "blocks"
+  """
+  blocks_stream(
+    """maximum number of rows returned in a single batch"""
+    batch_size: Int!
+
+    """cursor to stream the results returned by the query"""
+    cursor: [blocks_stream_cursor_input]!
+
+    """filter the rows returned"""
+    where: blocks_bool_exp
+  ): [blocks!]!
+
+  """
+  fetch data from the table: "chains"
+  """
+  chains(
+    """distinct select on columns"""
+    distinct_on: [chains_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [chains_order_by!]
+
+    """filter the rows returned"""
+    where: chains_bool_exp
+  ): [chains!]!
+
+  """
+  fetch aggregated fields from the table: "chains"
+  """
+  chains_aggregate(
+    """distinct select on columns"""
+    distinct_on: [chains_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [chains_order_by!]
+
+    """filter the rows returned"""
+    where: chains_bool_exp
+  ): chains_aggregate!
+
+  """fetch data from the table: "chains" using primary key columns"""
+  chains_by_pk(chain_id: String!, id: Int!): chains
+
+  """
+  fetch data from the table in a streaming manner: "chains"
+  """
+  chains_stream(
+    """maximum number of rows returned in a single batch"""
+    batch_size: Int!
+
+    """cursor to stream the results returned by the query"""
+    cursor: [chains_stream_cursor_input]!
+
+    """filter the rows returned"""
+    where: chains_bool_exp
+  ): [chains!]!
+
+  """An array relationship"""
+  events(
+    """distinct select on columns"""
+    distinct_on: [events_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [events_order_by!]
+
+    """filter the rows returned"""
+    where: events_bool_exp
+  ): [events!]!
+
+  """An aggregate relationship"""
+  events_aggregate(
+    """distinct select on columns"""
+    distinct_on: [events_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [events_order_by!]
+
+    """filter the rows returned"""
+    where: events_bool_exp
+  ): events_aggregate!
+
+  """fetch data from the table: "events" using primary key columns"""
+  events_by_pk(id: Int!): events
+
+  """
+  fetch data from the table in a streaming manner: "events"
+  """
+  events_stream(
+    """maximum number of rows returned in a single batch"""
+    batch_size: Int!
+
+    """cursor to stream the results returned by the query"""
+    cursor: [events_stream_cursor_input]!
+
+    """filter the rows returned"""
+    where: events_bool_exp
+  ): [events!]!
+}
+

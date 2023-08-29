@@ -68,6 +68,7 @@
         ./galoisd/galoisd.nix
         ./unionvisor/unionvisor.nix
         ./voyager/voyager.nix
+        ./hubble/hubble.nix
         ./lib/ethereum-verifier/ethereum-verifier.nix
         ./uniond/proto.nix
         ./docs/docs.nix
