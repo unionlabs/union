@@ -14,8 +14,6 @@ Union is designed to be completely decentralized. The upgradability of contracts
 
 ## Components
 
-nanaword
-
 This repository hosts a few core components of Union.
 
 - [`uniond`](./uniond): The node implementation, using [`CometBLS`](https://github.com/unionlabs/cometbls).
