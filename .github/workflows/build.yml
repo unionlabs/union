@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   spell-fmt-check:
-    uses: unionlabs/workflows/.github/workflows/build.yml@8e8f65502d232e61cdf5b18716eacfed61f7dbdb
+    uses: unionlabs/workflows/.github/workflows/build.yml@70a584e882524ef7b117c2ad41894c60881214b9
     secrets:
       nixbuild_token: ${{ secrets.nixbuild_token }}
       access-tokens: github.com=${{ secrets.GITHUB_TOKEN }}
