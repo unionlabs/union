@@ -411,7 +411,12 @@ fn verify_generic_zkp<P: Pairing>(
         decode_scalar(commitment_hash),
     ];
 
-    let mut g_ic = vk.gamma_abc_g1[0].into_group();
+    let mut g_ic = vk
+        .gamma_abc_g1
+        .first()
+        .ok_or(Error::InvalidVerifyingKey)?
+        .into_group();
+
     // Gnark specific, we need to aggregate the proof commitment
     // See https://github.com/ConsenSys/gnark/issues/652
     g_ic.add_assign(proof_commitment);
