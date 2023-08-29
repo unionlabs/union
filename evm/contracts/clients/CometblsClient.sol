@@ -278,7 +278,6 @@ contract CometblsClient is ILightClient {
             "LC: verifyMembership: consensusState does not exist"
         );
         if (
-            (delayTimePeriod != 0 || delayBlockPeriod != 0) &&
             !validateDelayPeriod(
                 clientId,
                 height,
@@ -286,7 +285,7 @@ contract CometblsClient is ILightClient {
                 delayBlockPeriod
             )
         ) {
-            return false;
+            revert("LC: delayPeriod expired");
         }
         return
             membershipVerifier.verifyMembership(
@@ -315,7 +314,6 @@ contract CometblsClient is ILightClient {
             "LC: verifyNonMembership: consensusState does not exist"
         );
         if (
-            (delayTimePeriod != 0 || delayBlockPeriod != 0) &&
             !validateDelayPeriod(
                 clientId,
                 height,
@@ -323,7 +321,7 @@ contract CometblsClient is ILightClient {
                 delayBlockPeriod
             )
         ) {
-            return false;
+            revert("LC: delayPeriod expired");
         }
         return
             membershipVerifier.verifyNonMembership(
@@ -341,17 +339,17 @@ contract CometblsClient is ILightClient {
         uint64 delayPeriodBlocks
     ) public view returns (bool) {
         uint128 heightU128 = height.toUint128();
-        uint64 currentTime = uint64(block.timestamp * 1e9);
+        uint64 currentTime = uint64(block.timestamp);
         ProcessedMoment memory moment = processedMoments[
             stateIndex(clientId, heightU128)
         ];
-        uint64 validTime = uint64(moment.timestamp) * 1e9 + delayPeriodTime;
-        if (currentTime < validTime) {
+        uint64 validTime = uint64(moment.timestamp) + delayPeriodTime;
+        if (delayPeriodTime != 0 && currentTime < validTime) {
             return false;
         }
         uint64 currentHeight = uint64(block.number);
         uint64 validHeight = uint64(moment.height) + delayPeriodBlocks;
-        if (currentHeight < validHeight) {
+        if (delayPeriodBlocks != 0 && currentHeight < validHeight) {
             return false;
         }
         return true;

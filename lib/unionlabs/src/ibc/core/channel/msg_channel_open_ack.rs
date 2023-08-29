@@ -5,6 +5,7 @@ use crate::{ibc::core::client::height::Height, CosmosAccountId, MsgIntoProto, Ty
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct MsgChannelOpenAck {
     pub port_id: String,
+    // TODO: Make ChannelId
     pub channel_id: String,
     pub counterparty_channel_id: String,
     pub counterparty_version: String,

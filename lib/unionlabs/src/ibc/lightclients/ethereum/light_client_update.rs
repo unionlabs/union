@@ -25,7 +25,8 @@ pub struct LightClientUpdate<C: SYNC_COMMITTEE_SIZE + BYTES_PER_LOGS_BLOOM + MAX
     /// Header attested to by the sync committee
     pub attested_header: LightClientHeader<C>,
     /// Next sync committee corresponding to `attested_header.state_root`
-    // TODO: Merge these fields into one
+    // NOTE: These fields aren't actually optional, they are just because of the current structure of the ethereum Header.
+    // TODO: Remove the Option and improve ethereum::header::Header to be an enum, instead of using optional fields and bools.
     #[serde(default)]
     pub next_sync_committee: Option<SyncCommittee<C>>,
     #[serde(default)]

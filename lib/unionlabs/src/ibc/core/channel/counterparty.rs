@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Counterparty {
     pub port_id: String,
+    // TODO: Make into `ChannelId`
     pub channel_id: String,
 }
 

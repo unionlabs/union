@@ -1,6 +1,9 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{errors::InvalidLength, Proto, TypeUrl};
+use crate::{
+    errors::{ExpectedLength, InvalidLength},
+    Proto, TypeUrl,
+};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct PubKey {
@@ -24,8 +27,8 @@ impl TryFrom<protos::cosmos::crypto::ed25519::PubKey> for PubKey {
             key: value
                 .key
                 .try_into()
-                .map_err(|invalid: Vec<u8>| crate::errors::InvalidLength {
-                    expected: 32,
+                .map_err(|invalid: Vec<u8>| InvalidLength {
+                    expected: ExpectedLength::Exact(32),
                     found: invalid.len(),
                 })?,
         })

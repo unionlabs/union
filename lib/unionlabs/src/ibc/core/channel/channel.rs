@@ -1,8 +1,9 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    errors::MissingField,
+    errors::{required, MissingField, UnknownEnumVariant},
     ibc::core::channel::{counterparty::Counterparty, order::Order, state::State},
+    id::{ConnectionId, IdParseError},
     Proto, TypeUrl,
 };
 
@@ -11,7 +12,7 @@ pub struct Channel {
     pub state: State,
     pub ordering: Order,
     pub counterparty: Counterparty,
-    pub connection_hops: Vec<String>,
+    pub connection_hops: Vec<ConnectionId>,
     // REVIEW(benluelo): Make this more strongly typed?
     pub version: String,
 }
@@ -22,24 +23,38 @@ impl From<Channel> for protos::ibc::core::channel::v1::Channel {
             state: value.state as i32,
             ordering: value.ordering as i32,
             counterparty: Some(value.counterparty.into()),
-            connection_hops: value.connection_hops,
+            connection_hops: value
+                .connection_hops
+                .into_iter()
+                .map(|x| x.to_string())
+                .collect(),
             version: value.version,
         }
     }
 }
 
+#[derive(Debug)]
+pub enum TryFromChannelError {
+    MissingField(MissingField),
+    State(UnknownEnumVariant<i32>),
+    Ordering(UnknownEnumVariant<i32>),
+    ConnectionHops(IdParseError),
+}
+
 impl TryFrom<protos::ibc::core::channel::v1::Channel> for Channel {
-    type Error = MissingField;
+    type Error = TryFromChannelError;
 
     fn try_from(proto: protos::ibc::core::channel::v1::Channel) -> Result<Self, Self::Error> {
         Ok(Channel {
-            state: State::try_from(proto.state).unwrap(),
-            ordering: Order::try_from(proto.ordering).unwrap(),
-            counterparty: proto
-                .counterparty
-                .ok_or(MissingField("counterparty"))?
-                .into(),
-            connection_hops: proto.connection_hops,
+            state: State::try_from(proto.state).map_err(TryFromChannelError::State)?,
+            ordering: Order::try_from(proto.ordering).map_err(TryFromChannelError::State)?,
+            counterparty: required!(proto.counterparty)?.into(),
+            connection_hops: proto
+                .connection_hops
+                .into_iter()
+                .map(|x| x.parse())
+                .collect::<Result<_, _>>()
+                .map_err(TryFromChannelError::ConnectionHops)?,
             version: proto.version,
         })
     }
@@ -60,25 +75,53 @@ impl From<Channel> for contracts::ibc_handler::IbcCoreChannelV1ChannelData {
             state: value.state as u8,
             ordering: value.ordering as u8,
             counterparty: value.counterparty.into(),
-            connection_hops: value.connection_hops,
+            connection_hops: value
+                .connection_hops
+                .into_iter()
+                .map(|x| x.to_string())
+                .collect(),
             version: value.version,
         }
     }
 }
 
 #[cfg(feature = "ethabi")]
+#[derive(Debug)]
+pub enum TryFromEthAbiChannelError {
+    State(UnknownEnumVariant<u8>),
+    Ordering(UnknownEnumVariant<u8>),
+    ConnectionHops(IdParseError),
+}
+
+#[cfg(feature = "ethabi")]
 impl TryFrom<contracts::ibc_handler::IbcCoreChannelV1ChannelData> for Channel {
-    type Error = crate::errors::UnknownEnumVariant<u8>;
+    type Error = TryFromEthAbiChannelError;
 
     fn try_from(
         value: contracts::ibc_handler::IbcCoreChannelV1ChannelData,
     ) -> Result<Self, Self::Error> {
         Ok(Self {
-            state: value.state.try_into()?,
-            ordering: value.ordering.try_into()?,
+            state: value
+                .state
+                .try_into()
+                .map_err(TryFromEthAbiChannelError::State)?,
+            ordering: value
+                .ordering
+                .try_into()
+                .map_err(TryFromEthAbiChannelError::Ordering)?,
             counterparty: value.counterparty.into(),
-            connection_hops: value.connection_hops,
+            connection_hops: value
+                .connection_hops
+                .into_iter()
+                .map(|x| x.parse())
+                .collect::<Result<_, _>>()
+                .map_err(TryFromEthAbiChannelError::ConnectionHops)?,
             version: value.version,
         })
     }
+}
+
+#[cfg(feature = "ethabi")]
+impl crate::EthAbi for Channel {
+    type EthAbi = contracts::ibc_handler::IbcCoreChannelV1ChannelData;
 }

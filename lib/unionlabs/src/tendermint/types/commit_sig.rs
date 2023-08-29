@@ -2,10 +2,10 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     errors::{required, InvalidLength, MissingField},
-    ethereum::Address,
+    ethereum::{Address, H512},
     ibc::google::protobuf::timestamp::Timestamp,
     tendermint::types::block_id_flag::BlockIdFlag,
-    Proto, TypeUrl,
+    Proto, TryFromProtoErrorOf, TypeUrl,
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -14,7 +14,7 @@ pub struct CommitSig {
     pub validator_address: Address,
     pub timestamp: Timestamp,
     // REVIEW: Is this a fixed hash? Testing concludes that it's a 64-byte hash (for cometbls at least).
-    pub signature: Vec<u8>,
+    pub signature: H512,
 }
 
 impl From<CommitSig> for protos::tendermint::types::CommitSig {
@@ -23,7 +23,7 @@ impl From<CommitSig> for protos::tendermint::types::CommitSig {
             block_id_flag: value.block_id_flag.into(),
             validator_address: value.validator_address.into(),
             timestamp: Some(value.timestamp.into()),
-            signature: value.signature,
+            signature: value.signature.into(),
         }
     }
 }
@@ -39,6 +39,7 @@ pub enum TryFromEthAbiCommitSigError {
     BlockIdFlag(crate::errors::UnknownEnumVariant<u8>),
     ValidatorAddress(crate::errors::InvalidLength),
     Timestamp(crate::TryFromEthAbiErrorOf<Timestamp>),
+    Signature(InvalidLength),
 }
 
 #[cfg(feature = "ethabi")]
@@ -59,7 +60,11 @@ impl TryFrom<contracts::glue::TendermintTypesCommitSigData> for CommitSig {
                 .timestamp
                 .try_into()
                 .map_err(TryFromEthAbiCommitSigError::Timestamp)?,
-            signature: value.signature.to_vec(),
+            signature: value
+                .signature
+                .to_vec()
+                .try_into()
+                .map_err(TryFromEthAbiCommitSigError::Signature)?,
         })
     }
 }
@@ -69,7 +74,8 @@ pub enum TryFromCommitSigError {
     MissingField(MissingField),
     ValidatorAddress(InvalidLength),
     BlockIdFlag(crate::errors::UnknownEnumVariant<i32>),
-    Timestamp(crate::ibc::google::protobuf::timestamp::TryFromTimestampError),
+    Timestamp(TryFromProtoErrorOf<Timestamp>),
+    Signature(InvalidLength),
 }
 
 impl TryFrom<protos::tendermint::types::CommitSig> for CommitSig {
@@ -88,7 +94,10 @@ impl TryFrom<protos::tendermint::types::CommitSig> for CommitSig {
             timestamp: required!(value.timestamp)?
                 .try_into()
                 .map_err(TryFromCommitSigError::Timestamp)?,
-            signature: value.signature,
+            signature: value
+                .signature
+                .try_into()
+                .map_err(TryFromCommitSigError::Signature)?,
         })
     }
 }

@@ -27,13 +27,13 @@ tower = { version = "*", features = ["log"] }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 clap = { version = "4.3.0", features = ["derive", "env", "error-context"] }
 tracing = "0.1.37"
-tracing-forest = "0.1.5"
 typenum = "1.16.0"
 serde = { version = "1.0.173", features = ["derive"] }
 hex = { version = "0.4.3", features = [ "serde" ] }
 anyhow = "1.0.72"
 pin-utils = "0.1.0"
 tokio-stream = { version = "0.1.14" }
+either = { version = "1.9.0", features = ["serde"] }
 
 beacon-api = { workspace = true, default-features = false }
 contracts.workspace = true
@@ -41,3 +41,12 @@ protos = { workspace = true, features = ["proto_full", "client"] }
 unionlabs = { workspace = true, features = ["ethabi"] }
 ethereum-verifier.workspace = true
 serde-utils.workspace = true
+chain-utils.workspace = true
+axum = { version = "0.6.20", features = ["macros"] }
+frunk = "0.4.2"
+bitvec = "1.0.1"
+displaydoc = { version = "0.2.4", default-features = false }
+frame-support-procedural = "18.0.0"
+
+[features]
+eth-mainnet = [ "unionlabs/eth-mainnet" ]

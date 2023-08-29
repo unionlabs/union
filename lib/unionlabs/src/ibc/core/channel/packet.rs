@@ -1,14 +1,19 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{errors::MissingField, ibc::core::client::height::Height, Proto, TypeUrl};
+use crate::{
+    errors::{required, MissingField},
+    ibc::core::client::height::Height,
+    id::{ChannelId, IdParseError},
+    Proto, TypeUrl,
+};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Packet {
     pub sequence: u64,
     pub source_port: String,
-    pub source_channel: String,
+    pub source_channel: ChannelId,
     pub destination_port: String,
-    pub destination_channel: String,
+    pub destination_channel: ChannelId,
     pub data: Vec<u8>,
     pub timeout_height: Height,
     pub timeout_timestamp: u64,
@@ -27,9 +32,9 @@ impl From<Packet> for protos::ibc::core::channel::v1::Packet {
         Self {
             sequence: value.sequence,
             source_port: value.source_port,
-            source_channel: value.source_channel,
+            source_channel: value.source_channel.to_string(),
             destination_port: value.destination_port,
-            destination_channel: value.destination_channel,
+            destination_channel: value.destination_channel.to_string(),
             data: value.data,
             timeout_height: Some(value.timeout_height.into()),
             timeout_timestamp: value.timeout_timestamp,
@@ -37,24 +42,41 @@ impl From<Packet> for protos::ibc::core::channel::v1::Packet {
     }
 }
 
+#[derive(Debug)]
+pub enum TryFromPacketError {
+    MissingField(MissingField),
+    SourceChannel(IdParseError),
+    DestinationChannel(IdParseError),
+}
+
 impl TryFrom<protos::ibc::core::channel::v1::Packet> for Packet {
-    type Error = MissingField;
+    type Error = TryFromPacketError;
 
     fn try_from(proto: protos::ibc::core::channel::v1::Packet) -> Result<Self, Self::Error> {
         Ok(Packet {
             sequence: proto.sequence,
             source_port: proto.source_port,
-            source_channel: proto.source_channel,
+            source_channel: proto
+                .source_channel
+                .parse()
+                .map_err(TryFromPacketError::SourceChannel)?,
             destination_port: proto.destination_port,
-            destination_channel: proto.destination_channel,
+            destination_channel: proto
+                .destination_channel
+                .parse()
+                .map_err(TryFromPacketError::DestinationChannel)?,
             data: proto.data,
-            timeout_height: proto
-                .timeout_height
-                .ok_or(MissingField("timeout_height"))?
-                .into(),
+            timeout_height: required!(proto.timeout_height)?.into(),
             timeout_timestamp: proto.timeout_timestamp,
         })
     }
+}
+
+#[cfg(feature = "ethabi")]
+#[derive(Debug)]
+pub enum TryFromEthAbiPacketError {
+    SourceChannel(IdParseError),
+    DestinationChannel(IdParseError),
 }
 
 #[cfg(feature = "ethabi")]
@@ -63,9 +85,9 @@ impl From<Packet> for contracts::ibc_handler::IbcCoreChannelV1PacketData {
         Self {
             sequence: value.sequence,
             source_port: value.source_port,
-            source_channel: value.source_channel,
+            source_channel: value.source_channel.to_string(),
             destination_port: value.destination_port,
-            destination_channel: value.destination_channel,
+            destination_channel: value.destination_channel.to_string(),
             data: value.data.into(),
             timeout_height: value.timeout_height.into(),
             timeout_timestamp: value.timeout_timestamp,

@@ -1,11 +1,11 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{errors::InvalidLength, Proto, TypeUrl};
+use crate::{errors::InvalidLength, ethereum::H256, Proto, TypeUrl};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct PubKey {
     #[serde(with = "::serde_utils::base64")]
-    pub key: [u8; 32],
+    pub key: H256,
 }
 
 impl Proto for PubKey {
@@ -21,13 +21,7 @@ impl TryFrom<protos::cosmos::crypto::bn254::PubKey> for PubKey {
 
     fn try_from(value: protos::cosmos::crypto::bn254::PubKey) -> Result<Self, Self::Error> {
         Ok(Self {
-            key: value
-                .key
-                .try_into()
-                .map_err(|invalid: Vec<u8>| crate::errors::InvalidLength {
-                    expected: 32,
-                    found: invalid.len(),
-                })?,
+            key: value.key.try_into()?,
         })
     }
 }

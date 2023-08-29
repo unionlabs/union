@@ -19,14 +19,14 @@
 //     pub data: BeaconHeaderData,
 // }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct BeaconHeaderData {
     pub root: H256,
     pub canonical: bool,
     pub header: BeaconHeaderSignature,
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct BeaconHeaderSignature {
     pub message: BeaconBlockHeader,
     pub signature: BlsSignature,

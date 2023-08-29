@@ -4,6 +4,7 @@ use crate::{bls::BlsPublicKey, errors::InvalidLength, ethereum::H256, Proto, Typ
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ConsensusState {
+    // REVIEW: Remove this field as this height is what is used to query the consensus state?
     pub slot: u64,
     pub storage_root: H256,
     pub timestamp: u64,

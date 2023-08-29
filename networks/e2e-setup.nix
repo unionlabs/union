@@ -82,8 +82,8 @@
               TIMEOUT=$1
               INIT_MESSAGE='{
                   "config": {
-                    "number_of_block_before_pong_timeout": '"$TIMEOUT"',
-                    "revision_number": 1
+                        "number_of_block_before_pong_timeout": '"$TIMEOUT"',
+                        "revision_number": 1
                     }
                 }'
 
@@ -381,6 +381,7 @@
               RUST_LOG=voyager=debug ${self'.packages.voyager}/bin/voyager \
                 --config-file-path "$VOYAGER_CONFIG_FILE" \
                 client create evm cometbls \
+                --cometbls-client-address "$COMETBLS_ADDRESS" \
                 --on ethereum-devnet \
                 --counterparty union-devnet
               echo ------------------------------------
@@ -390,6 +391,7 @@
                 client create union ethereum08-wasm \
                 --on union-devnet \
                 --counterparty ethereum-devnet \
+                --code-id "0x$WASM_CODE_ID" \
                 --evm-preset minimal
               echo ------------------------------------
             }

@@ -1,3 +1,5 @@
+use std::fmt::Debug;
+
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -8,13 +10,30 @@ use crate::{
     Proto, TryFromProtoErrorOf, TypeUrl,
 };
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub struct Header {
     pub signed_header: SignedHeader,
     pub untrusted_validator_set_root: H256,
     pub trusted_height: Height,
     #[serde(with = "::serde_utils::hex_string")]
     pub zero_knowledge_proof: Vec<u8>,
+}
+
+impl Debug for Header {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Header")
+            .field("signed_header", &self.signed_header)
+            .field(
+                "untrusted_validator_set_root",
+                &self.untrusted_validator_set_root,
+            )
+            .field("trusted_height", &self.trusted_height)
+            .field(
+                "zero_knowledge_proof",
+                &serde_utils::to_hex(&self.zero_knowledge_proof),
+            )
+            .finish()
+    }
 }
 
 // #[derive(Debug)]

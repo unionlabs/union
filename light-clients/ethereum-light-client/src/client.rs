@@ -152,13 +152,13 @@ impl IbcClient for EthereumLightClient {
         verify_account_storage_root(
             header.consensus_update.attested_header.execution.state_root,
             &proof_data
-                .address
+                .key
                 .as_slice()
                 .try_into()
                 .map_err(|_| Error::InvalidProofFormat)?,
             &proof_data.proof,
             proof_data
-                .storage_hash
+                .value
                 .as_slice()
                 .try_into()
                 .map_err(|_| Error::InvalidProofFormat)?,
@@ -233,7 +233,7 @@ impl IbcClient for EthereumLightClient {
                 .proofs
                 .get(0)
                 .ok_or(Error::EmptyProof)?
-                .storage_hash
+                .value
                 .as_slice()
                 .try_into()
                 .map_err(|_| Error::InvalidProofFormat)?;
@@ -291,7 +291,7 @@ impl IbcClient for EthereumLightClient {
                 .proofs
                 .get(0)
                 .ok_or(Error::EmptyProof)?
-                .storage_hash
+                .value
                 .as_slice()
                 .try_into()
                 .map_err(|_| Error::InvalidProofFormat)?;
@@ -759,7 +759,7 @@ mod test {
                 // Storage root is updated.
                 assert_eq!(
                     wasm_consensus_state.data.storage_root.into_bytes(),
-                    update.account_update.proofs[0].storage_hash,
+                    update.account_update.proofs[0].value,
                 );
                 // Latest slot is updated.
                 // TODO(aeryz): Add cases for `store_period == update_period` and `update_period == store_period + 1`

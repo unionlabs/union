@@ -1,5 +1,6 @@
 use std::{ffi::OsString, str::FromStr};
 
+use chain_utils::Chain;
 use clap::{
     error::{ContextKind, ContextValue},
     Args, Parser, Subcommand,
@@ -9,13 +10,13 @@ use ethers::{
     types::{Address, H256},
 };
 use reqwest::Url;
-use unionlabs::ethereum_consts_traits::PresetBaseKind;
+use unionlabs::{ethereum_consts_traits::PresetBaseKind, ibc::core::client::height::Height};
 
 use crate::chain::{
-    cosmos::EthereumConfig,
     evm::CometblsConfig,
-    proof::{self, IbcStateReadPaths},
-    Chain, QueryHeight,
+    proof::{self, ClientConsensusStatePath, ClientStatePath, IbcStateReadPaths},
+    union::EthereumConfig,
+    HeightOf, QueryHeight,
 };
 
 #[derive(Debug, Parser)]
@@ -61,8 +62,8 @@ pub enum IbcCmd {
     Query {
         #[arg(long)]
         on: String,
-        #[arg(long, default_value_t = QueryHeight::Latest)]
-        at: QueryHeight,
+        #[arg(long, default_value_t = QueryHeight::<Height>::Latest)]
+        at: QueryHeight<Height>,
         #[command(subcommand)]
         cmd: IbcQueryCmd,
     },
@@ -76,8 +77,8 @@ pub enum IbcQueryCmd {
 
 #[derive(Debug, clap::Subcommand)]
 pub enum IbcQueryPathCmd {
-    ClientState(proof::ClientStatePath),
-    ClientConsensusState(proof::ClientConsensusStatePath),
+    ClientState(proof::ClientStatePath<String>),
+    ClientConsensusState(proof::ClientConsensusStatePath<String, Height>),
     Connection(proof::ConnectionPath),
     ChannelEnd(proof::ChannelEndPath),
     Commitment(proof::CommitmentPath),
@@ -86,11 +87,11 @@ pub enum IbcQueryPathCmd {
 impl IbcQueryPathCmd {
     pub async fn any_state_proof_to_json<
         Counterparty: Chain,
-        C: IbcStateReadPaths<Counterparty>,
+        This: IbcStateReadPaths<Counterparty>,
     >(
         self,
-        c: C,
-        height: QueryHeight,
+        c: This,
+        height: QueryHeight<HeightOf<This>>,
     ) -> String {
         use serde_json::to_string_pretty as json;
 
@@ -100,8 +101,25 @@ impl IbcQueryPathCmd {
         };
 
         match self {
-            Self::ClientState(path) => json(&c.state_proof(path, height).await),
-            Self::ClientConsensusState(path) => json(&c.state_proof(path, height).await),
+            Self::ClientState(path) => json(
+                &c.state_proof(
+                    ClientStatePath {
+                        client_id: path.client_id.parse().unwrap(),
+                    },
+                    height,
+                )
+                .await,
+            ),
+            Self::ClientConsensusState(path) => json(
+                &c.state_proof(
+                    ClientConsensusStatePath {
+                        client_id: path.client_id.parse().unwrap(),
+                        height: path.height.into(),
+                    },
+                    height,
+                )
+                .await,
+            ),
             Self::Connection(path) => json(&c.state_proof(path, height).await),
             Self::ChannelEnd(path) => json(&c.state_proof(path, height).await),
             Self::Commitment(path) => json(&c.state_proof(path, height).await),

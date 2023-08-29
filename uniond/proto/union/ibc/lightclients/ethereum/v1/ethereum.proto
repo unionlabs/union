@@ -41,6 +41,7 @@ message ConsensusState {
   bytes next_sync_committee = 5;
 }
 
+// TODO: This should be an enum containing either sync committee update or finality update.
 message Header {
   TrustedSyncCommittee trusted_sync_committee = 1;
   LightClientUpdate consensus_update = 2;

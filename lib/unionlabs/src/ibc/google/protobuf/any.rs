@@ -19,6 +19,7 @@ pub struct Any<T>(pub T);
 impl<'de, T> Deserialize<'de> for Any<T>
 where
     T: Deserialize<'de> + TryFromProto,
+    <T as Proto>::Proto: TypeUrl,
 {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
@@ -29,6 +30,7 @@ where
         impl<'de, T> Visitor<'de> for AnyVisitor<T>
         where
             T: Deserialize<'de> + TryFromProto,
+            <T as Proto>::Proto: TypeUrl,
         {
             type Value = Any<T>;
 
@@ -82,6 +84,7 @@ where
 impl<T> Serialize for Any<T>
 where
     T: Serialize + IntoProto,
+    <T as Proto>::Proto: TypeUrl,
 {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -97,6 +100,7 @@ where
 impl<T> From<Any<T>> for protos::google::protobuf::Any
 where
     T: IntoProto,
+    <T as Proto>::Proto: TypeUrl,
 {
     fn from(val: Any<T>) -> Self {
         protos::google::protobuf::Any {
@@ -109,6 +113,7 @@ where
 impl<T> Proto for Any<T>
 where
     T: IntoProto,
+    <T as Proto>::Proto: TypeUrl,
 {
     type Proto = protos::google::protobuf::Any;
 }
@@ -136,6 +141,7 @@ impl TypeUrl for protos::google::protobuf::Any {
 pub enum TryFromAnyError<T>
 where
     T: TryFromProto,
+    T::Proto: TypeUrl,
     <T as TryFrom<T::Proto>>::Error: Debug,
 {
     IncorrectTypeUrl {
@@ -148,7 +154,8 @@ where
 impl<T> TryFrom<protos::google::protobuf::Any> for Any<T>
 where
     T: TryFromProto,
-    T::Proto: Default,
+    T::Proto: TypeUrl,
+    // REVIEW: Is this bound required?
     TryFromProtoErrorOf<T>: Debug,
 {
     type Error = TryFromAnyError<T>;
