@@ -14,7 +14,33 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  spell-fmt-check:
+    uses: unionlabs/workflows/.github/workflows/build.yml@2c94f6f3acb2d7d9222f8fa05f43eb8c3ed2e758
+    secrets:
+      nixbuild_token: ${{ secrets.nixbuild_token }}
+      access-tokens: github.com=${{ secrets.GITHUB_TOKEN }}
+    with:
+      filter_builds: |
+        (
+          (.top_attr == "checks") and
+          (.system == "x86_64-linux") and 
+          ( 
+            (
+              # Do not run on both systems
+              [.attr] | inside(
+                [
+                  "spellcheck",
+                  "treefmt-check"
+                ]
+              )
+            )
+          )
+        )
   build:
+    needs: [ spell-fmt-check ]
+    if: |
+      always()
+      && (contains(needs.*.result, 'success') || github.event.pull_request.draft == true)
     uses: unionlabs/workflows/.github/workflows/build.yml@2c94f6f3acb2d7d9222f8fa05f43eb8c3ed2e758
     secrets:
       nixbuild_token: ${{ secrets.nixbuild_token }}
@@ -67,8 +93,11 @@ jobs:
             )
           )
         )
-  check:
+  test:
     needs: [ build ]
+    if: |
+      always()
+      && contains(needs.*.result, 'success')
     uses: unionlabs/workflows/.github/workflows/build.yml@2c94f6f3acb2d7d9222f8fa05f43eb8c3ed2e758
     secrets:
       nixbuild_token: ${{ secrets.nixbuild_token }}
@@ -80,7 +109,7 @@ jobs:
           (.system == "x86_64-linux") and 
           ( 
             (
-              # Do not run on both systems
+              # Do not run
               [.attr] | inside(
                 [
                   "ensure-blocks",
@@ -89,6 +118,8 @@ jobs:
                   "pre-commit",
                   "pre-commit-check",
                   "sepolia-runs",
+                  "spellcheck",
+                  "treefmt-check",
                   "union-runs",
                   "virtualisation-works"
                 ]
