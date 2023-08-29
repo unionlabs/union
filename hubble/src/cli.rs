@@ -3,15 +3,15 @@ use std::str::FromStr;
 use clap::Parser;
 use url::Url;
 
-/// Hubble is statemachine observer.
+/// Hubble is state machine observer.
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 pub struct Args {
     /// The url to the hasura graphql endpoint.
     #[arg(short, long)]
     pub hasura: Url,
-    #[arg(short, long)]
     /// The admin secret used to authenticate with hasura.
+    #[arg(short, long)]
     pub secret: String,
     /// Indexer configurations to start.
     pub indexers: Vec<IndexerConfig>,

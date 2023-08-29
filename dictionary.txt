@@ -251,6 +251,7 @@ groth
 groupkeeper
 groupmodule
 hasher
+hasura
 healthcheck
 herumi
 hmac
@@ -477,6 +478,7 @@ stakingkeeper
 stakingtypes
 stargate
 starport
+statemachine
 statesync
 staticcheck
 staticlib

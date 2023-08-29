@@ -1,5 +1,5 @@
-{ self, ... }: {
-  perSystem = { self', pkgs, system, config, inputs', crane, stdenv, ... }:
+{ ... }: {
+  perSystem = { pkgs, crane, ... }:
     let
       hubble = crane.buildWorkspaceMember {
         crateDirFromRoot = "hubble";
