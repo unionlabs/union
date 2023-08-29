@@ -39,7 +39,7 @@ jobs:
   build:
     needs: [ spell-fmt-check ]
     if: |
-      always()
+      !cancelled()
       && (contains(needs.*.result, 'success') || github.event.pull_request.draft == true)
     uses: unionlabs/workflows/.github/workflows/build.yml@2c94f6f3acb2d7d9222f8fa05f43eb8c3ed2e758
     secrets:
@@ -96,7 +96,7 @@ jobs:
   test:
     needs: [ build ]
     if: |
-      always()
+      !cancelled()
       && contains(needs.*.result, 'success')
     uses: unionlabs/workflows/.github/workflows/build.yml@2c94f6f3acb2d7d9222f8fa05f43eb8c3ed2e758
     secrets:
