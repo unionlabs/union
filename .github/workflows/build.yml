@@ -30,7 +30,7 @@ jobs:
               [.attr] | inside(
                 [
                   "spellcheck",
-                  "treefmt-check",
+                  "treefmt-check"
                 ]
               )
             )
@@ -93,7 +93,7 @@ jobs:
             )
           )
         )
-  check:
+  test:
     needs: [ build ]
     if: |
       always()
@@ -109,7 +109,7 @@ jobs:
           (.system == "x86_64-linux") and 
           ( 
             (
-              # Do not run on both systems
+              # Do not run
               [.attr] | inside(
                 [
                   "ensure-blocks",
@@ -118,6 +118,8 @@ jobs:
                   "pre-commit",
                   "pre-commit-check",
                   "sepolia-runs",
+                  "spellcheck",
+                  "treefmt-check",
                   "union-runs",
                   "virtualisation-works"
                 ]
