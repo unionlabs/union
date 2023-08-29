@@ -349,7 +349,10 @@ event! {
 
 #[cfg(test)]
 mod tests {
-    use unionlabs::tendermint::abci::{event::Event, event_attribute::EventAttribute};
+    use unionlabs::{
+        ibc::core::client::height::HeightFromStrError,
+        tendermint::abci::{event::Event, event_attribute::EventAttribute},
+    };
 
     use super::*;
 
@@ -428,6 +431,38 @@ mod tests {
                     revision_height: 1,
                 }],
                 header: "header".to_string(),
+            })
+        );
+
+        assert_eq!(
+            UpdateClient::try_from(Event {
+                ty: "update_client".to_string(),
+                attributes: vec![
+                    EventAttribute {
+                        key: "client_id".to_string(),
+                        value: "client_id".to_string(),
+                        index: true,
+                    },
+                    EventAttribute {
+                        key: "client_type".to_string(),
+                        value: "client_type".to_string(),
+                        index: true,
+                    },
+                    EventAttribute {
+                        key: "consensus_heights".to_string(),
+                        value: "180cm".to_string(),
+                        index: true,
+                    },
+                    EventAttribute {
+                        key: "header".to_string(),
+                        value: "header".to_string(),
+                        index: true,
+                    },
+                ],
+            }),
+            Err(TryFromTendermintEventError::Parse {
+                field: "consensus_heights",
+                error: HeightFromStrError::Invalid.to_string(),
             })
         );
 
