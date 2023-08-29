@@ -297,6 +297,7 @@ pub enum Error {
     EthAbiDecoding,
     InvalidPoint,
     InvalidProof,
+    InvalidVerifyingKey,
 }
 
 pub fn verify_zkp(
@@ -347,24 +348,24 @@ fn verify_generic_zkp<P: Pairing>(
     )
     .map_err(|_| Error::EthAbiDecoding)?;
 
+    let mut buffer = [0u8; 128];
+
     let (neg_a, b, c, commitment_hash, proof_commitment) = match &values[..] {
         &[Token::Int(a_x), Token::Int(a_y), Token::Int(b_x0), Token::Int(b_x1), Token::Int(b_y0), Token::Int(b_y1), Token::Int(c_x), Token::Int(c_y), Token::Int(commitment_hash), Token::Int(proof_commitment_x), Token::Int(proof_commitment_y)] =>
         {
-            let mut buffer_g1 = [0u8; 64];
             let mut decode_g1 = move |x: U256, y: U256| {
-                x.to_little_endian(&mut buffer_g1[0..32]);
-                y.to_little_endian(&mut buffer_g1[32..64]);
-                <P::G1Affine as CanonicalDeserialize>::deserialize_uncompressed(&buffer_g1[..])
+                x.to_little_endian(&mut buffer[0..32]);
+                y.to_little_endian(&mut buffer[32..64]);
+                <P::G1Affine as CanonicalDeserialize>::deserialize_uncompressed(&buffer[..64])
                     .map_err(|_| Error::InvalidPoint)
             };
 
-            let mut buffer_g2 = [0u8; 128];
             let mut decode_g2 = move |x0: U256, x1: U256, y0: U256, y1: U256| {
-                x1.to_little_endian(&mut buffer_g2[0..32]);
-                x0.to_little_endian(&mut buffer_g2[32..64]);
-                y1.to_little_endian(&mut buffer_g2[64..96]);
-                y0.to_little_endian(&mut buffer_g2[96..128]);
-                <P::G2Affine as CanonicalDeserialize>::deserialize_uncompressed(&buffer_g2[..])
+                x1.to_little_endian(&mut buffer[0..32]);
+                x0.to_little_endian(&mut buffer[32..64]);
+                y1.to_little_endian(&mut buffer[64..96]);
+                y0.to_little_endian(&mut buffer[96..128]);
+                <P::G2Affine as CanonicalDeserialize>::deserialize_uncompressed(&buffer[..])
                     .map_err(|_| Error::InvalidPoint)
             };
 
@@ -384,13 +385,12 @@ fn verify_generic_zkp<P: Pairing>(
         _ => Err(Error::EthAbiDecoding),
     }?;
 
-    let mut buffer_scalar = [0u8; 32];
     let mut decode_scalar = move |x: U256| {
-        x.to_little_endian(&mut buffer_scalar);
+        x.to_little_endian(&mut buffer[..32]);
         // NOTE: This would silently fail if the input do not fit the scalar
         // field, which is unlikely to happen unless the parameters have been
         // tampered. The pairing check would obviously fail in this case.
-        <P::ScalarField as PrimeField>::from_le_bytes_mod_order(&buffer_scalar)
+        <P::ScalarField as PrimeField>::from_le_bytes_mod_order(&buffer[..32])
     };
 
     let trusted_validators_hash_high = trusted_validators_hash >> 128;
