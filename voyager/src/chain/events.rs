@@ -1,20 +1,53 @@
+use std::str::FromStr;
+
+use unionlabs::ibc::core::{channel::order::Order, client::height::Height};
+
 macro_rules! event {
     (
         $(
-            #[tag($tag:literal)]
+            #[event(tag = $tag:literal $(, deprecated($($dep:literal),+)$(,)?)?)]
             pub struct $Struct:ident {
                 $(
-                    $(#[$meta:meta])*
+                    $(#[doc = $doc:literal])*
+                    $(#[parse($parse:expr)])?
                     pub $field:ident: $field_ty:ty,
                 )+
             }
         )+
     ) => {
+        #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+        pub enum IbcEvent {
+            $(
+                $Struct($Struct),
+            )+
+        }
+
+        impl IbcEvent {
+            pub fn try_from_tendermint_event(
+                event: unionlabs::tendermint::abci::event::Event,
+            ) -> Option<Result<Self, TryFromTendermintEventError>> {
+                // to silence unused variable warnings on the last repetition of the following block
+                let _event = event;
+
+                $(
+                    let _event = match $Struct::try_from(_event) {
+                        Ok(ok) => return Some(Ok(Self::$Struct(ok))),
+                        Err(err) => match err {
+                            TryFromTendermintEventError::IncorrectType { expected: _, found } => found,
+                            _ => return Some(Err(err)),
+                        },
+                    };
+                )+
+
+                None
+            }
+        }
+
         $(
-            #[derive(Debug, Clone, PartialEq)]
+            #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
             pub struct $Struct {
                 $(
-                    $(#[$meta])*
+                    $(#[doc = $doc])*
                     pub $field: $field_ty,
                 )+
             }
@@ -23,17 +56,19 @@ macro_rules! event {
             impl TryFrom<unionlabs::tendermint::abci::event::Event> for $Struct {
                 type Error = TryFromTendermintEventError;
 
-                #[allow(deprecated)]
                 fn try_from(value: unionlabs::tendermint::abci::event::Event) -> Result<Self, Self::Error> {
+                    const DEPRECATED: &[&'static str] = &[$($($dep),+)?];
+
                     if value.ty != $tag {
                         return Err(TryFromTendermintEventError::IncorrectType {
                             expected: $tag,
-                            found: value.ty,
+                            found: value,
                         });
                     }
 
                     $(
-                        let mut $field = None;
+                        let mut $field = None::<(usize, _)>;
+                        // let mut $field = None;
                     )+
 
                     for (idx, attr) in value.attributes.into_iter().enumerate() {
@@ -43,14 +78,32 @@ macro_rules! event {
                                     Some(first_occurrence) => {
                                         return Err(TryFromTendermintEventError::DuplicateField {
                                             key: attr.key,
-                                            first_occurrence,
-                                            second_occurrence: (idx, attr.value),
+                                            first_occurrence: first_occurrence.0,
+                                            second_occurrence: idx,
                                         })
                                     }
-                                    None => $field = Some((idx, attr.value)),
+                                    None => $field = Some((
+                                        idx,
+                                        (Ok(attr.value)$(
+                                            .and_then(|value: String| {
+                                                #[allow(clippy::redundant_closure_call)]
+                                                (($parse)(&value))
+                                                .map_err(|err| {
+                                                    TryFromTendermintEventError::Parse {
+                                                        field: stringify!($field),
+                                                        error: err.to_string(),
+                                                    }
+                                                })
+                                            }))?
+                                        )?
+                                    ))
                                 },
                             )+
-                            _ => return Err(TryFromTendermintEventError::UnknownField(attr.key)),
+                            key => {
+                                if !DEPRECATED.contains(&key) {
+                                    return Err(TryFromTendermintEventError::UnknownField(attr.key))
+                                }
+                            },
                         }
                     }
 
@@ -71,49 +124,56 @@ macro_rules! event {
 pub enum TryFromTendermintEventError {
     IncorrectType {
         expected: &'static str,
-        found: String,
+        found: unionlabs::tendermint::abci::event::Event,
     },
     DuplicateField {
         key: String,
-        first_occurrence: (usize, String),
-        second_occurrence: (usize, String),
+        first_occurrence: usize,
+        second_occurrence: usize,
     },
     MissingField(&'static str),
     UnknownField(String),
+    Parse {
+        field: &'static str,
+        /// The stringified parse error.
+        // NOTE: Basically just `Box<dyn Error + Send + Sync>` with `+ Clone + PartialEq`
+        error: String,
+    },
 }
 
 // https://github.com/cosmos/ibc-go/blob/5c7f28634ecf9b6f275bfd5712778fedcf06d80d/docs/ibc/events.md
 event! {
-    #[tag("create_client")]
+    #[event(tag = "create_client")]
     pub struct CreateClient {
         pub client_id: String,
         pub client_type: String,
-        pub consensus_height: String,
+        #[parse(Height::from_str)]
+        pub consensus_height: Height,
     }
 
-    #[tag("update_client")]
+    #[event(tag = "update_client", deprecated("consensus_height"))]
     pub struct UpdateClient {
         pub client_id: String,
         pub client_type: String,
-        #[deprecated = "use consensus_heights"]
-        pub consensus_height: String,
-        pub consensus_heights: String,
+        #[parse(|s: &str| s.split(',').map(Height::from_str).collect::<Result<_, _>>())]
+        pub consensus_heights: Vec<Height>,
         pub header: String,
     }
 
-    #[tag("client_misbehaviour")]
+    #[event(tag = "client_misbehaviour")]
     pub struct ClientMisbehaviour {
         pub client_id: String,
         pub client_type: String,
-        pub consensus_height: String,
+        #[parse(Height::from_str)]
+        pub consensus_height: Height,
     }
 
-    #[tag("submit_evidence")]
+    #[event(tag = "submit_evidence")]
     pub struct SubmitEvidence {
         pub evidence_hash: String,
     }
 
-    #[tag("connection_open_init")]
+    #[event(tag = "connection_open_init")]
     pub struct ConnectionOpenInit {
         pub connection_id: String,
         pub client_id: String,
@@ -122,7 +182,7 @@ event! {
         pub counterparty_connection_id: String,
     }
 
-    #[tag("connection_open_try")]
+    #[event(tag = "connection_open_try")]
     pub struct ConnectionOpenTry {
         pub connection_id: String,
         pub client_id: String,
@@ -130,7 +190,7 @@ event! {
         pub counterparty_connection_id: String,
     }
 
-    #[tag("connection_open_ack")]
+    #[event(tag = "connection_open_ack")]
     pub struct ConnectionOpenAck {
         pub connection_id: String,
         pub client_id: String,
@@ -138,7 +198,7 @@ event! {
         pub counterparty_connection_id: String,
     }
 
-    #[tag("connection_open_confirm")]
+    #[event(tag = "connection_open_confirm")]
     pub struct ConnectionOpenConfirm {
         pub connection_id: String,
         pub client_id: String,
@@ -146,7 +206,7 @@ event! {
         pub counterparty_connection_id: String,
     }
 
-    #[tag("channel_open_init")]
+    #[event(tag = "channel_open_init")]
     pub struct ChannelOpenInit {
         pub port_id: String,
         pub channel_id: String,
@@ -154,7 +214,7 @@ event! {
         pub connection_id: String,
     }
 
-    #[tag("channel_open_try")]
+    #[event(tag = "channel_open_try")]
     pub struct ChannelOpenTry {
         pub port_id: String,
         pub channel_id: String,
@@ -164,7 +224,7 @@ event! {
         pub version: String,
     }
 
-    #[tag("channel_open_ack")]
+    #[event(tag = "channel_open_ack")]
     pub struct ChannelOpenAck {
         pub port_id: String,
         pub channel_id: String,
@@ -173,7 +233,7 @@ event! {
         pub connection_id: String,
     }
 
-    #[tag("channel_open_confirm")]
+    #[event(tag = "channel_open_confirm")]
     pub struct ChannelOpenConfirm {
         pub port_id: String,
         pub channel_id: String,
@@ -182,87 +242,107 @@ event! {
         pub connection_id: String,
     }
 
-    #[tag("write_acknowledgement")]
+    #[event(
+        tag = "write_acknowledgement",
+        deprecated("packet_data", "packet_ack", "packet_connection"),
+    )]
     pub struct WriteAcknowledgement {
-        #[deprecated = "this is stringified bytes which may not be valid utf8"]
-        pub packet_data: String,
-        pub packet_data_hex: String,
-        pub packet_timeout_height: String,
-        pub packet_timeout_timestamp: String,
-        pub packet_sequence: String,
+        #[parse(hex::decode)]
+        pub packet_data_hex: Vec<u8>,
+        #[parse(Height::from_str)]
+        pub packet_timeout_height: Height,
+        #[parse(u64::from_str)]
+        pub packet_timeout_timestamp: u64,
+        #[parse(u64::from_str)]
+        pub packet_sequence: u64,
         pub packet_src_port: String,
         pub packet_src_channel: String,
         pub packet_dst_port: String,
         pub packet_dst_channel: String,
-        #[deprecated = "this is stringified bytes which may not be valid utf8"]
-        pub packet_ack: String,
-        pub packet_ack_hex: String,
-        #[deprecated = "use connection_id"]
-        pub packet_connection: String,
+        #[parse(hex::decode)]
+        pub packet_ack_hex: Vec<u8>,
         pub connection_id: String,
     }
 
-    #[tag("recv_packet")]
+    #[event(
+        tag = "recv_packet",
+        deprecated("packet_data", "packet_connection"),
+    )]
     pub struct RecvPacket {
-        #[deprecated = "this is stringified bytes which may not be valid utf8"]
-        pub packet_data: String,
-        pub packet_data_hex: String,
-        pub packet_timeout_height: String,
-        pub packet_timeout_timestamp: String,
-        pub packet_sequence: String,
+        #[parse(hex::decode)]
+        pub packet_data_hex: Vec<u8>,
+        #[parse(Height::from_str)]
+        pub packet_timeout_height: Height,
+        #[parse(u64::from_str)]
+        pub packet_timeout_timestamp: u64,
+        #[parse(u64::from_str)]
+        pub packet_sequence: u64,
         pub packet_src_port: String,
         pub packet_src_channel: String,
         pub packet_dst_port: String,
         pub packet_dst_channel: String,
-        pub packet_channel_ordering: String,
-        #[deprecated = "use connection_id"]
-        pub packet_connection: String,
+        #[parse(Order::from_str)]
+        pub packet_channel_ordering: Order,
         pub connection_id: String,
     }
 
-    #[tag("send_packet")]
+
+    #[event(
+        tag = "send_packet",
+        deprecated("packet_data", "packet_connection"),
+    )]
     pub struct SendPacket {
-        #[deprecated = "this is stringified bytes which may not be valid utf8"]
-        pub packet_data: String,
-        pub packet_data_hex: String,
-        pub packet_timeout_height: String,
-        pub packet_timeout_timestamp: String,
-        pub packet_sequence: String,
+        #[parse(hex::decode)]
+        pub packet_data_hex: Vec<u8>,
+        #[parse(Height::from_str)]
+        pub packet_timeout_height: Height,
+        #[parse(u64::from_str)]
+        pub packet_timeout_timestamp: u64,
+        #[parse(u64::from_str)]
+        pub packet_sequence: u64,
         pub packet_src_port: String,
         pub packet_src_channel: String,
         pub packet_dst_port: String,
         pub packet_dst_channel: String,
-        pub packet_channel_ordering: String,
-        #[deprecated = "use connection_id"]
-        pub packet_connection: String,
+        #[parse(Order::from_str)]
+        pub packet_channel_ordering: Order,
         pub connection_id: String,
     }
 
-    #[tag("acknowledge_packet")]
+    #[event(
+        tag = "acknowledge_packet",
+        deprecated("packet_connection"),
+    )]
     pub struct AcknowledgePacket {
-        pub packet_timeout_height: String,
-        pub packet_timeout_timestamp: String,
-        pub packet_sequence: String,
+        #[parse(Height::from_str)]
+        pub packet_timeout_height: Height,
+        #[parse(u64::from_str)]
+        pub packet_timeout_timestamp: u64,
+        #[parse(u64::from_str)]
+        pub packet_sequence: u64,
         pub packet_src_port: String,
         pub packet_src_channel: String,
         pub packet_dst_port: String,
         pub packet_dst_channel: String,
-        pub packet_channel_ordering: String,
-        #[deprecated = "use connection_id"]
-        pub packet_connection: String,
+        #[parse(Order::from_str)]
+        pub packet_channel_ordering: Order,
         pub connection_id: String,
     }
 
-    #[tag("timeout_packet")]
+    #[event(tag = "timeout_packet")]
     pub struct TimeoutPacket {
-        pub packet_timeout_height: String,
-        pub packet_timeout_timestamp: String,
-        pub packet_sequence: String,
+        #[parse(Height::from_str)]
+        pub packet_timeout_height: Height,
+        #[parse(u64::from_str)]
+        pub packet_timeout_timestamp: u64,
+        #[parse(u64::from_str)]
+        pub packet_sequence: u64,
         pub packet_src_port: String,
         pub packet_src_channel: String,
         pub packet_dst_port: String,
         pub packet_dst_channel: String,
-        pub packet_channel_ordering: String,
+        #[parse(Order::from_str)]
+        pub packet_channel_ordering: Order,
         pub connection_id: String,
     }
 }
@@ -310,6 +390,48 @@ mod tests {
         );
 
         assert_eq!(
+            UpdateClient::try_from(Event {
+                ty: "update_client".to_string(),
+                attributes: vec![
+                    EventAttribute {
+                        key: "client_id".to_string(),
+                        value: "client_id".to_string(),
+                        index: true,
+                    },
+                    EventAttribute {
+                        key: "client_type".to_string(),
+                        value: "client_type".to_string(),
+                        index: true,
+                    },
+                    EventAttribute {
+                        key: "consensus_heights".to_string(),
+                        value: "1-1".to_string(),
+                        index: true,
+                    },
+                    EventAttribute {
+                        key: "consensus_height".to_string(),
+                        value: "this can be anything because it's ignored anyways".to_string(),
+                        index: true,
+                    },
+                    EventAttribute {
+                        key: "header".to_string(),
+                        value: "header".to_string(),
+                        index: true,
+                    },
+                ],
+            }),
+            Ok(UpdateClient {
+                client_id: "client_id".to_string(),
+                client_type: "client_type".to_string(),
+                consensus_heights: vec![Height {
+                    revision_number: 1,
+                    revision_height: 1,
+                }],
+                header: "header".to_string(),
+            })
+        );
+
+        assert_eq!(
             ConnectionOpenConfirm::try_from(Event {
                 ty: "connection_open_confirm".to_string(),
                 attributes: vec![
@@ -333,14 +455,16 @@ mod tests {
             Err(TryFromTendermintEventError::MissingField("client_id"))
         );
 
+        let event = Event {
+            ty: "really_cool_event".to_string(),
+            attributes: vec![],
+        };
+
         assert_eq!(
-            ConnectionOpenConfirm::try_from(Event {
-                ty: "really_cool_event".to_string(),
-                attributes: vec![],
-            }),
+            ConnectionOpenConfirm::try_from(event.clone()),
             Err(TryFromTendermintEventError::IncorrectType {
                 expected: "connection_open_confirm",
-                found: "really_cool_event".to_string(),
+                found: event,
             })
         );
 

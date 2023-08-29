@@ -696,8 +696,7 @@ impl<C: ChainSpec> LightClient for Cometbls<C> {
                     client_id,
                     // TODO: Some way to fetch this from the evm; I don't think it's currently possible to do so
                     client_type: COMETBLS_CLIENT_TYPE.to_string(),
-                    consensus_height: "".to_string(),
-                    consensus_heights: event_height.to_string(),
+                    consensus_heights: vec![event_height],
                     // https://github.com/cosmos/ibc-go/blob/0dbd3f811928b216418a45ea164d184eec86cc67/modules/core/02-client/keeper/events.go#L38
                     header: hex::encode(msg.into_proto_bytes()),
                 },
