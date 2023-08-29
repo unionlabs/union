@@ -505,20 +505,14 @@ impl Chain for Union {
                             Some((
                                 event_height,
                                 Packet {
-                                    sequence: send_packet.packet_sequence.parse().unwrap(),
+                                    sequence: send_packet.packet_sequence,
                                     source_port: send_packet.packet_src_port,
                                     source_channel: send_packet.packet_src_channel,
                                     destination_port: send_packet.packet_dst_port,
                                     destination_channel: send_packet.packet_dst_channel,
-                                    data: hex::decode(send_packet.packet_data_hex).unwrap(),
-                                    timeout_height: send_packet
-                                        .packet_timeout_height
-                                        .parse()
-                                        .unwrap(),
-                                    timeout_timestamp: send_packet
-                                        .packet_timeout_timestamp
-                                        .parse()
-                                        .unwrap(),
+                                    data: send_packet.packet_data_hex,
+                                    timeout_height: send_packet.packet_timeout_height,
+                                    timeout_timestamp: send_packet.packet_timeout_timestamp,
                                 },
                             ))
                         }

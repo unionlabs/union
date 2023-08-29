@@ -344,7 +344,7 @@ impl<'a, P: Pairing> ZkpDecoder<'a, P> {
         current_slice[0..32].reverse();
         current_slice[32..64].reverse();
         let point =
-            <P::G1Affine as CanonicalDeserialize>::deserialize_uncompressed(current_slice.as_ref())
+            <P::G1Affine as CanonicalDeserialize>::deserialize_uncompressed(&*current_slice)
                 .map_err(|_| Error::InvalidPoint)?;
         self.index += 64;
         Ok(point)
@@ -356,7 +356,7 @@ impl<'a, P: Pairing> ZkpDecoder<'a, P> {
         current_slice[0..64].reverse();
         current_slice[64..128].reverse();
         let point =
-            <P::G2Affine as CanonicalDeserialize>::deserialize_uncompressed(current_slice.as_ref())
+            <P::G2Affine as CanonicalDeserialize>::deserialize_uncompressed(&*current_slice)
                 .map_err(|_| Error::InvalidPoint)?;
         self.index += 128;
         Ok(point)
@@ -369,6 +369,7 @@ impl<'a, P: Pairing> ZkpDecoder<'a, P> {
         Ok(commitment_hash)
     }
 
+    #[allow(clippy::type_complexity)]
     fn decode_full(
         &mut self,
     ) -> Result<

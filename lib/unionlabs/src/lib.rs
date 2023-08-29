@@ -40,12 +40,18 @@ pub mod bounded_int;
 pub(crate) mod macros;
 
 pub mod errors {
-    use std::fmt::Debug;
+    use std::fmt::{Debug, Display};
 
     use crate::ethereum::H256;
 
     #[derive(Debug, Clone)]
     pub struct UnknownEnumVariant<T>(pub T);
+
+    impl<T: Display> Display for UnknownEnumVariant<T> {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            f.write_fmt(format_args!("unknown enum variant: {}", self.0))
+        }
+    }
 
     /// A protobuf field was none unexpectedly.
     #[derive(Debug)]
