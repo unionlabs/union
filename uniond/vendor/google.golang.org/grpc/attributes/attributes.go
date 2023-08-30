@@ -112,19 +112,31 @@ func (a *Attributes) String() string {
 	sb.WriteString("{")
 	first := true
 	for k, v := range a.m {
-		var key, val string
-		if str, ok := k.(interface{ String() string }); ok {
-			key = str.String()
-		}
-		if str, ok := v.(interface{ String() string }); ok {
-			val = str.String()
-		}
 		if !first {
 			sb.WriteString(", ")
 		}
-		sb.WriteString(fmt.Sprintf("%q: %q, ", key, val))
+		sb.WriteString(fmt.Sprintf("%q: %q ", str(k), str(v)))
 		first = false
 	}
 	sb.WriteString("}")
 	return sb.String()
+}
+
+func str(x interface{}) string {
+	if v, ok := x.(fmt.Stringer); ok {
+		return v.String()
+	} else if v, ok := x.(string); ok {
+		return v
+	}
+	return fmt.Sprintf("<%p>", x)
+}
+
+// MarshalJSON helps implement the json.Marshaler interface, thereby rendering
+// the Attributes correctly when printing (via pretty.JSON) structs containing
+// Attributes as fields.
+//
+// Is it impossible to unmarshal attributes from a JSON representation and this
+// method is meant only for debugging purposes.
+func (a *Attributes) MarshalJSON() ([]byte, error) {
+	return []byte(a.String()), nil
 }

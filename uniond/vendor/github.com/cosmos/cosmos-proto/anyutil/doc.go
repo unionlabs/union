@@ -16,4 +16,4 @@
 //
 // This package exposes the `New` and `MarshalFrom` helper functions, which do
 // not prepend any prefix to type URLs.
-package any
+package anyutil

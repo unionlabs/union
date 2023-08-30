@@ -507,7 +507,7 @@ func (a *csAttempt) newStream() error {
 		return toRPCErr(nse.Err)
 	}
 	a.s = s
-	a.p = &parser{r: s}
+	a.p = &parser{r: s, recvBufferPool: a.cs.cc.dopts.recvBufferPool}
 	return nil
 }
 
@@ -1270,7 +1270,7 @@ func newNonRetryClientStream(ctx context.Context, desc *StreamDesc, method strin
 		return nil, err
 	}
 	as.s = s
-	as.p = &parser{r: s}
+	as.p = &parser{r: s, recvBufferPool: ac.dopts.recvBufferPool}
 	ac.incrCallsStarted()
 	if desc != unaryStreamDesc {
 		// Listen on stream context to cleanup when the stream context is

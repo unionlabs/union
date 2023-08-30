@@ -1,0 +1,16 @@
+syntax = "proto3";
+package tokenfactory.v1beta1;
+
+import "gogoproto/gogo.proto";
+
+option go_package = "union/x/tokenfactory/types";
+
+// DenomAuthorityMetadata specifies metadata for addresses that have specific
+// capabilities over a token factory denom. Right now there is only one Admin
+// permission, but is planned to be extended to the future.
+message DenomAuthorityMetadata {
+  option (gogoproto.equal) = true;
+
+  // Can be empty for no admin, or a valid address
+  string admin = 1 [ (gogoproto.moretags) = "yaml:\"admin\"" ];
+}

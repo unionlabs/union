@@ -3,7 +3,6 @@ package keyring
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"time"
@@ -45,7 +44,7 @@ func (k *fileKeyring) resolveDir() (string, error) {
 	stat, err := os.Stat(dir)
 	if os.IsNotExist(err) {
 		err = os.MkdirAll(dir, 0700)
-	} else if err != nil && !stat.IsDir() {
+	} else if err != nil && stat != nil && !stat.IsDir() {
 		err = fmt.Errorf("%s is a file, not a directory", dir)
 	}
 
@@ -75,7 +74,7 @@ func (k *fileKeyring) Get(key string) (Item, error) {
 		return Item{}, err
 	}
 
-	bytes, err := ioutil.ReadFile(filename)
+	bytes, err := os.ReadFile(filename)
 	if os.IsNotExist(err) {
 		return Item{}, ErrKeyNotFound
 	} else if err != nil {
@@ -144,7 +143,7 @@ func (k *fileKeyring) Set(i Item) error {
 	if err != nil {
 		return err
 	}
-	return ioutil.WriteFile(filename, []byte(token), 0600)
+	return os.WriteFile(filename, []byte(token), 0600)
 }
 
 func (k *fileKeyring) filename(key string) (string, error) {
@@ -172,7 +171,7 @@ func (k *fileKeyring) Keys() ([]string, error) {
 	}
 
 	var keys = []string{}
-	files, _ := ioutil.ReadDir(dir)
+	files, _ := os.ReadDir(dir)
 	for _, f := range files {
 		keys = append(keys, filenameUnescape(f.Name()))
 	}

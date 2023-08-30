@@ -35,7 +35,7 @@ type HasServices interface {
 	// The service registrar will figure out which type of service you are
 	// implementing based on the presence (or absence) of protobuf options. You
 	// do not need to specify this in golang code.
-	RegisterServices(grpc.ServiceRegistrar)
+	RegisterServices(grpc.ServiceRegistrar) error
 }
 
 // HasBeginBlocker is the extension interface that modules should implement to run
