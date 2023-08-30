@@ -76,6 +76,7 @@ func parseSoftnet(r io.Reader) ([]SoftnetStat, error) {
 	s := bufio.NewScanner(r)
 
 	var stats []SoftnetStat
+	cpuIndex := 0
 	for s.Scan() {
 		columns := strings.Fields(s.Text())
 		width := len(columns)
@@ -127,9 +128,13 @@ func parseSoftnet(r io.Reader) ([]SoftnetStat, error) {
 
 			softnetStat.SoftnetBacklogLen = us[0]
 			softnetStat.Index = us[1]
+		} else {
+			// For older kernels, create the Index based on the scan line number.
+			softnetStat.Index = uint32(cpuIndex)
 		}
 		softnetStat.Width = width
 		stats = append(stats, softnetStat)
+		cpuIndex++
 	}
 
 	return stats, nil

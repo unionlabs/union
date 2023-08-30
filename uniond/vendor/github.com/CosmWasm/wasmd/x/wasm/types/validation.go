@@ -3,6 +3,7 @@ package types
 import (
 	"fmt"
 	"net/url"
+	"strings"
 
 	errorsmod "cosmossdk.io/errors"
 	"github.com/docker/distribution/reference"
@@ -39,6 +40,9 @@ func ValidateLabel(label string) error {
 	}
 	if len(label) > MaxLabelSize {
 		return ErrLimit.Wrapf("cannot be longer than %d characters", MaxLabelSize)
+	}
+	if label != strings.TrimSpace(label) {
+		return ErrInvalid.Wrap("label must not start/end with whitespaces")
 	}
 	return nil
 }

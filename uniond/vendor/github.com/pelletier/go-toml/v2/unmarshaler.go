@@ -417,7 +417,10 @@ func (d *decoder) handleKeyPart(key unstable.Iterator, v reflect.Value, nextFn h
 		vt := v.Type()
 
 		// Create the key for the map element. Convert to key type.
-		mk := reflect.ValueOf(string(key.Node().Data)).Convert(vt.Key())
+		mk, err := d.keyFromData(vt.Key(), key.Node().Data)
+		if err != nil {
+			return reflect.Value{}, err
+		}
 
 		// If the map does not exist, create it.
 		if v.IsNil() {
@@ -1009,6 +1012,31 @@ func (d *decoder) handleKeyValueInner(key unstable.Iterator, value *unstable.Nod
 	return reflect.Value{}, d.handleValue(value, v)
 }
 
+func (d *decoder) keyFromData(keyType reflect.Type, data []byte) (reflect.Value, error) {
+	switch {
+	case stringType.AssignableTo(keyType):
+		return reflect.ValueOf(string(data)), nil
+
+	case stringType.ConvertibleTo(keyType):
+		return reflect.ValueOf(string(data)).Convert(keyType), nil
+
+	case keyType.Implements(textUnmarshalerType):
+		mk := reflect.New(keyType.Elem())
+		if err := mk.Interface().(encoding.TextUnmarshaler).UnmarshalText(data); err != nil {
+			return reflect.Value{}, fmt.Errorf("toml: error unmarshalling key type %s from text: %w", stringType, err)
+		}
+		return mk, nil
+
+	case reflect.PtrTo(keyType).Implements(textUnmarshalerType):
+		mk := reflect.New(keyType)
+		if err := mk.Interface().(encoding.TextUnmarshaler).UnmarshalText(data); err != nil {
+			return reflect.Value{}, fmt.Errorf("toml: error unmarshalling key type %s from text: %w", stringType, err)
+		}
+		return mk.Elem(), nil
+	}
+	return reflect.Value{}, fmt.Errorf("toml: cannot convert map key of type %s to expected type %s", stringType, keyType)
+}
+
 func (d *decoder) handleKeyValuePart(key unstable.Iterator, value *unstable.Node, v reflect.Value) (reflect.Value, error) {
 	// contains the replacement for v
 	var rv reflect.Value
@@ -1019,16 +1047,9 @@ func (d *decoder) handleKeyValuePart(key unstable.Iterator, value *unstable.Node
 	case reflect.Map:
 		vt := v.Type()
 
-		mk := reflect.ValueOf(string(key.Node().Data))
-		mkt := stringType
-
-		keyType := vt.Key()
-		if !mkt.AssignableTo(keyType) {
-			if !mkt.ConvertibleTo(keyType) {
-				return reflect.Value{}, fmt.Errorf("toml: cannot convert map key of type %s to expected type %s", mkt, keyType)
-			}
-
-			mk = mk.Convert(keyType)
+		mk, err := d.keyFromData(vt.Key(), key.Node().Data)
+		if err != nil {
+			return reflect.Value{}, err
 		}
 
 		// If the map does not exist, create it.
@@ -1071,6 +1092,19 @@ func (d *decoder) handleKeyValuePart(key unstable.Iterator, value *unstable.Node
 		d.errorContext.Field = path
 
 		f := fieldByIndex(v, path)
+
+		if !f.CanSet() {
+			// If the field is not settable, need to take a slower path and make a copy of
+			// the struct itself to a new location.
+			nvp := reflect.New(v.Type())
+			nvp.Elem().Set(v)
+			v = nvp.Elem()
+			_, err := d.handleKeyValuePart(key, value, v)
+			if err != nil {
+				return reflect.Value{}, err
+			}
+			return nvp.Elem(), nil
+		}
 		x, err := d.handleKeyValueInner(key, value, f)
 		if err != nil {
 			return reflect.Value{}, err

@@ -2,6 +2,7 @@
   perSystem = { pkgs, self', crane, system, ensureAtRepositoryRoot, ... }:
     let
       CGO_CFLAGS = "-I${pkgs.libblst}/include -I${pkgs.libblst.src}/src -I${pkgs.libblst.src}/build -I${self'.packages.bls-eth.src}/bls/include -O -D__BLST_PORTABLE__";
+      CGO_LDFLAGS = "-z noexecstack -static -L${pkgs.musl}/lib -L${self'.packages.libwasmvm}/lib -L${self'.packages.bls-eth}/lib";
     in
     {
       packages = {
@@ -11,12 +12,12 @@
           in
           pkgs.pkgsStatic.stdenv.mkDerivation {
             pname = "bls-eth";
-            version = "1.31.0";
+            version = "1.32.0";
             src = pkgs.fetchFromGitHub {
               owner = "herumi";
               repo = "bls-eth-go-binary";
-              rev = "f61456b875d2649d0a9c58ed5f269c82d549672a";
-              hash = "sha256-pjPTrYxoKQ7CWuscMWCE0tD/Rd0xUrP4ypuGP8yezis=";
+              rev = "321cb9bb9abb3359217a69e21cf579c4419aef50";
+              hash = "sha256-jYOvq3hStZjrEj8xGDirZX4ham6WfY2IPi0k+d9KzaQ=";
               fetchSubmodules = true;
             };
             nativeBuildInputs = [ pkgs.pkgsStatic.nasm ] ++ (pkgs.lib.optionals isAarch64 [ pkgs.llvmPackages_9.libcxxClang ]);
@@ -40,22 +41,21 @@
           doCheck = true;
           meta.mainProgram = "uniond";
         } // (
-          let libwasmvm = self'.packages.libwasmvm;
-          in if pkgs.stdenv.isLinux then {
+          if pkgs.stdenv.isLinux then {
             inherit CGO_CFLAGS;
+            inherit CGO_LDFLAGS;
             # Statically link if we're on linux
-            nativeBuildInputs = [ pkgs.musl libwasmvm ];
+            nativeBuildInputs = [ pkgs.musl ];
             ldflags = [
               "-linkmode external"
-              "-extldflags '-z noexecstack -static -L${pkgs.musl}/lib -L${libwasmvm}/lib -L${self'.packages.bls-eth}/lib'"
             ];
           } else if pkgs.stdenv.isDarwin then {
             # Dynamically link if we're on darwin by wrapping the program
             # such that the DYLD_LIBRARY_PATH includes libwasmvm
-            buildInputs = [ pkgs.makeWrapper libwasmvm pkgs.libblst ];
+            buildInputs = [ pkgs.makeWrapper ];
             postFixup = ''
               wrapProgram $out/bin/uniond \
-              --set DYLD_LIBRARY_PATH ${(pkgs.lib.makeLibraryPath [ libwasmvm ])};
+              --set DYLD_LIBRARY_PATH ${(pkgs.lib.makeLibraryPath [ self'.packages.libwasmvm ])};
             '';
           } else
             { }

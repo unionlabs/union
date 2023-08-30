@@ -81,18 +81,21 @@ func ToQuerierResult(response []byte, err error) QuerierResult {
 // QueryRequest is an rust enum and only (exactly) one of the fields should be set
 // Should we do a cleaner approach in Go? (type/data?)
 type QueryRequest struct {
-	Bank     *BankQuery      `json:"bank,omitempty"`
-	Custom   json.RawMessage `json:"custom,omitempty"`
-	IBC      *IBCQuery       `json:"ibc,omitempty"`
-	Staking  *StakingQuery   `json:"staking,omitempty"`
-	Stargate *StargateQuery  `json:"stargate,omitempty"`
-	Wasm     *WasmQuery      `json:"wasm,omitempty"`
+	Bank         *BankQuery         `json:"bank,omitempty"`
+	Custom       json.RawMessage    `json:"custom,omitempty"`
+	IBC          *IBCQuery          `json:"ibc,omitempty"`
+	Staking      *StakingQuery      `json:"staking,omitempty"`
+	Distribution *DistributionQuery `json:"distribution,omitempty"`
+	Stargate     *StargateQuery     `json:"stargate,omitempty"`
+	Wasm         *WasmQuery         `json:"wasm,omitempty"`
 }
 
 type BankQuery struct {
-	Supply      *SupplyQuery      `json:"supply,omitempty"`
-	Balance     *BalanceQuery     `json:"balance,omitempty"`
-	AllBalances *AllBalancesQuery `json:"all_balances,omitempty"`
+	Supply           *SupplyQuery           `json:"supply,omitempty"`
+	Balance          *BalanceQuery          `json:"balance,omitempty"`
+	AllBalances      *AllBalancesQuery      `json:"all_balances,omitempty"`
+	DenomMetadata    *DenomMetadataQuery    `json:"denom_metadata,omitempty"`
+	AllDenomMetadata *AllDenomMetadataQuery `json:"all_denom_metadata,omitempty"`
 }
 
 type SupplyQuery struct {
@@ -121,6 +124,28 @@ type AllBalancesQuery struct {
 // AllBalancesResponse is the expected response to AllBalancesQuery
 type AllBalancesResponse struct {
 	Amount Coins `json:"amount"`
+}
+
+type DenomMetadataQuery struct {
+	Denom string `json:"denom"`
+}
+
+type DenomMetadataResponse struct {
+	Metadata DenomMetadata `json:"metadata"`
+}
+
+type AllDenomMetadataQuery struct {
+	// Pagination is an optional argument.
+	// Default pagination will be used if this is omitted
+	Pagination *PageRequest `json:"pagination,omitempty"`
+}
+
+type AllDenomMetadataResponse struct {
+	Metadata []DenomMetadata `json:"metadata"`
+	// NextKey is the key to be passed to PageRequest.key to
+	// query the next page most efficiently. It will be empty if
+	// there are no more results.
+	NextKey []byte `json:"next_key,omitempty"`
 }
 
 // IBCQuery defines a query request from the contract into the chain.
@@ -317,6 +342,18 @@ type Delegation struct {
 	Delegator string `json:"delegator"`
 	Validator string `json:"validator"`
 	Amount    Coin   `json:"amount"`
+}
+
+type DistributionQuery struct {
+	DelegatorWithdrawAddress *DelegatorWithdrawAddressQuery `json:"delegator_withdraw_address,omitempty"`
+}
+
+type DelegatorWithdrawAddressQuery struct {
+	DelegatorAddress string `json:"delegator_address"`
+}
+
+type DelegatorWithdrawAddressResponse struct {
+	WithdrawAddress string `json:"withdraw_address"`
 }
 
 // DelegationResponse is the expected response to DelegationsQuery

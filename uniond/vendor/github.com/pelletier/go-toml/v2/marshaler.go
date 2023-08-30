@@ -577,11 +577,23 @@ func (enc *Encoder) encodeKey(b []byte, k string) []byte {
 	}
 }
 
-func (enc *Encoder) encodeMap(b []byte, ctx encoderCtx, v reflect.Value) ([]byte, error) {
-	if v.Type().Key().Kind() != reflect.String {
-		return nil, fmt.Errorf("toml: type %s is not supported as a map key", v.Type().Key().Kind())
-	}
+func (enc *Encoder) keyToString(k reflect.Value) (string, error) {
+	keyType := k.Type()
+	switch {
+	case keyType.Kind() == reflect.String:
+		return k.String(), nil
 
+	case keyType.Implements(textMarshalerType):
+		keyB, err := k.Interface().(encoding.TextMarshaler).MarshalText()
+		if err != nil {
+			return "", fmt.Errorf("toml: error marshalling key %v from text: %w", k, err)
+		}
+		return string(keyB), nil
+	}
+	return "", fmt.Errorf("toml: type %s is not supported as a map key", keyType.Kind())
+}
+
+func (enc *Encoder) encodeMap(b []byte, ctx encoderCtx, v reflect.Value) ([]byte, error) {
 	var (
 		t                 table
 		emptyValueOptions valueOptions
@@ -589,11 +601,15 @@ func (enc *Encoder) encodeMap(b []byte, ctx encoderCtx, v reflect.Value) ([]byte
 
 	iter := v.MapRange()
 	for iter.Next() {
-		k := iter.Key().String()
 		v := iter.Value()
 
 		if isNil(v) {
 			continue
+		}
+
+		k, err := enc.keyToString(iter.Key())
+		if err != nil {
+			return nil, err
 		}
 
 		if willConvertToTableOrArrayTable(ctx, v) {

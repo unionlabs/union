@@ -15,6 +15,7 @@ package afero
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -43,7 +44,7 @@ func (m *MemMapFs) getData() map[string]*mem.FileData {
 		// Root should always exist, right?
 		// TODO: what about windows?
 		root := mem.CreateDir(FilePathSeparator)
-		mem.SetMode(root, os.ModeDir|0755)
+		mem.SetMode(root, os.ModeDir|0o755)
 		m.data[FilePathSeparator] = root
 	})
 	return m.data
@@ -96,12 +97,12 @@ func (m *MemMapFs) registerWithParent(f *mem.FileData, perm os.FileMode) {
 		pdir := filepath.Dir(filepath.Clean(f.Name()))
 		err := m.lockfreeMkdir(pdir, perm)
 		if err != nil {
-			//log.Println("Mkdir error:", err)
+			// log.Println("Mkdir error:", err)
 			return
 		}
 		parent, err = m.lockfreeOpen(pdir)
 		if err != nil {
-			//log.Println("Open after Mkdir error:", err)
+			// log.Println("Open after Mkdir error:", err)
 			return
 		}
 	}
@@ -237,7 +238,7 @@ func (m *MemMapFs) OpenFile(name string, flag int, perm os.FileMode) (File, erro
 		file = mem.NewReadOnlyFileHandle(file.(*mem.File).Data())
 	}
 	if flag&os.O_APPEND > 0 {
-		_, err = file.Seek(0, os.SEEK_END)
+		_, err = file.Seek(0, io.SeekEnd)
 		if err != nil {
 			file.Close()
 			return nil, err
@@ -318,6 +319,18 @@ func (m *MemMapFs) Rename(oldname, newname string) error {
 		m.mu.RLock()
 	} else {
 		return &os.PathError{Op: "rename", Path: oldname, Err: ErrFileNotFound}
+	}
+
+	for p, fileData := range m.getData() {
+		if strings.HasPrefix(p, oldname+FilePathSeparator) {
+			m.mu.RUnlock()
+			m.mu.Lock()
+			delete(m.getData(), p)
+			p := strings.Replace(p, oldname, newname, 1)
+			m.getData()[p] = fileData
+			m.mu.Unlock()
+			m.mu.RLock()
+		}
 	}
 	return nil
 }

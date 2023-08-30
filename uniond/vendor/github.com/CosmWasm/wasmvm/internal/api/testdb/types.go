@@ -7,8 +7,6 @@ import (
 )
 
 var (
-	// errBatchClosed is returned when a closed or written batch is used.
-	errBatchClosed = errors.New("batch has been written or closed")
 
 	// errKeyEmpty is returned when attempting to use an empty or nil key.
 	errKeyEmpty = errors.New("key cannot be empty")

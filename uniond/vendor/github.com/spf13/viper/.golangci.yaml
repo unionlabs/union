@@ -16,7 +16,6 @@ linters:
     disable-all: true
     enable:
         - bodyclose
-        - deadcode
         - dogsled
         - dupl
         - durationcheck
@@ -43,14 +42,12 @@ linters:
         - rowserrcheck
         - sqlclosecheck
         - staticcheck
-        - structcheck
         - stylecheck
         - tparallel
         - typecheck
         - unconvert
         - unparam
         - unused
-        - varcheck
         - wastedassign
         - whitespace
 
@@ -82,6 +79,11 @@ linters:
         # - depguard
         # - goheader
         # - gomodguard
+
+        # deprecated
+        # - deadcode
+        # - structcheck
+        # - varcheck
 
         # don't enable:
         # - asciicheck

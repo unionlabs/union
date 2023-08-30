@@ -10,7 +10,6 @@ import (
 // The RegexpFs filters files (not directories) by regular expression. Only
 // files matching the given regexp will be allowed, all others get a ENOENT error (
 // "No such file or directory").
-//
 type RegexpFs struct {
 	re     *regexp.Regexp
 	source Fs

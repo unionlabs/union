@@ -31,6 +31,11 @@ func (pe ConfigParseError) Error() string {
 	return fmt.Sprintf("While parsing config: %s", pe.err.Error())
 }
 
+// Unwrap returns the wrapped error.
+func (pe ConfigParseError) Unwrap() error {
+	return pe.err
+}
+
 // toCaseInsensitiveValue checks if the value is a  map;
 // if so, create a copy and lower-case the keys recursively.
 func toCaseInsensitiveValue(value interface{}) interface{} {

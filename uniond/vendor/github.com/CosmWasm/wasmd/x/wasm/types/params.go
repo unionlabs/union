@@ -13,7 +13,6 @@ import (
 
 var AllAccessTypes = []AccessType{
 	AccessTypeNobody,
-	AccessTypeOnlyAddress,
 	AccessTypeAnyOfAddresses,
 	AccessTypeEverybody,
 }
@@ -22,14 +21,6 @@ func (a AccessType) With(addrs ...sdk.AccAddress) AccessConfig {
 	switch a {
 	case AccessTypeNobody:
 		return AllowNobody
-	case AccessTypeOnlyAddress:
-		if n := len(addrs); n != 1 {
-			panic(fmt.Sprintf("expected exactly 1 address but got %d", n))
-		}
-		if err := sdk.VerifyAddressFormat(addrs[0]); err != nil {
-			panic(err)
-		}
-		return AccessConfig{Permission: AccessTypeOnlyAddress, Address: addrs[0].String()}
 	case AccessTypeEverybody:
 		return AllowEverybody
 	case AccessTypeAnyOfAddresses:
@@ -49,8 +40,6 @@ func (a AccessType) String() string {
 	switch a {
 	case AccessTypeNobody:
 		return "Nobody"
-	case AccessTypeOnlyAddress:
-		return "OnlyAddress"
 	case AccessTypeEverybody:
 		return "Everybody"
 	case AccessTypeAnyOfAddresses:
@@ -83,7 +72,7 @@ func (a *AccessType) UnmarshalJSONPB(_ *jsonpb.Unmarshaler, data []byte) error {
 }
 
 func (a AccessConfig) Equals(o AccessConfig) bool {
-	return a.Permission == o.Permission && a.Address == o.Address
+	return a.Permission == o.Permission
 }
 
 var (
@@ -149,20 +138,8 @@ func (a AccessConfig) ValidateBasic() error {
 	case AccessTypeUnspecified:
 		return errorsmod.Wrap(ErrEmpty, "type")
 	case AccessTypeNobody, AccessTypeEverybody:
-		if len(a.Address) != 0 {
-			return errorsmod.Wrap(ErrInvalid, "address not allowed for this type")
-		}
 		return nil
-	case AccessTypeOnlyAddress:
-		if len(a.Addresses) != 0 {
-			return ErrInvalid.Wrap("addresses field set")
-		}
-		_, err := sdk.AccAddressFromBech32(a.Address)
-		return err
 	case AccessTypeAnyOfAddresses:
-		if a.Address != "" {
-			return ErrInvalid.Wrap("address field set")
-		}
 		return errorsmod.Wrap(assertValidAddresses(a.Addresses), "addresses")
 	}
 	return errorsmod.Wrapf(ErrInvalid, "unknown type: %q", a.Permission)
@@ -193,8 +170,6 @@ func (a AccessConfig) Allowed(actor sdk.AccAddress) bool {
 		return false
 	case AccessTypeEverybody:
 		return true
-	case AccessTypeOnlyAddress:
-		return a.Address == actor.String()
 	case AccessTypeAnyOfAddresses:
 		for _, v := range a.Addresses {
 			if v == actor.String() {

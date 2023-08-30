@@ -20,6 +20,24 @@ import (
 	"github.com/prometheus/common/model"
 )
 
+var labelsPool = &sync.Pool{
+	New: func() interface{} {
+		return make(Labels)
+	},
+}
+
+func getLabelsFromPool() Labels {
+	return labelsPool.Get().(Labels)
+}
+
+func putLabelsToPool(labels Labels) {
+	for k := range labels {
+		delete(labels, k)
+	}
+
+	labelsPool.Put(labels)
+}
+
 // MetricVec is a Collector to bundle metrics of the same name that differ in
 // their label values. MetricVec is not used directly but as a building block
 // for implementations of vectors of a given metric type, like GaugeVec,
@@ -93,6 +111,8 @@ func (m *MetricVec) DeleteLabelValues(lvs ...string) bool {
 // there for pros and cons of the two methods.
 func (m *MetricVec) Delete(labels Labels) bool {
 	labels = constrainLabels(m.desc, labels)
+	defer putLabelsToPool(labels)
+
 	h, err := m.hashLabels(labels)
 	if err != nil {
 		return false
@@ -109,6 +129,8 @@ func (m *MetricVec) Delete(labels Labels) bool {
 // To match curried labels with DeletePartialMatch, it must be called on the base vector.
 func (m *MetricVec) DeletePartialMatch(labels Labels) int {
 	labels = constrainLabels(m.desc, labels)
+	defer putLabelsToPool(labels)
+
 	return m.metricMap.deleteByLabels(labels, m.curry)
 }
 
@@ -229,6 +251,8 @@ func (m *MetricVec) GetMetricWithLabelValues(lvs ...string) (Metric, error) {
 // for example GaugeVec.
 func (m *MetricVec) GetMetricWith(labels Labels) (Metric, error) {
 	labels = constrainLabels(m.desc, labels)
+	defer putLabelsToPool(labels)
+
 	h, err := m.hashLabels(labels)
 	if err != nil {
 		return nil, err
@@ -647,15 +671,16 @@ func inlineLabelValues(lvs []string, curry []curriedLabelValue) []string {
 }
 
 func constrainLabels(desc *Desc, labels Labels) Labels {
-	constrainedValues := make(Labels, len(labels))
+	constrainedLabels := getLabelsFromPool()
 	for l, v := range labels {
 		if i, ok := indexOf(l, desc.variableLabels.labelNames()); ok {
-			constrainedValues[l] = desc.variableLabels[i].Constrain(v)
-			continue
+			v = desc.variableLabels[i].Constrain(v)
 		}
-		constrainedValues[l] = v
+
+		constrainedLabels[l] = v
 	}
-	return constrainedValues
+
+	return constrainedLabels
 }
 
 func constrainLabelValues(desc *Desc, lvs []string, curry []curriedLabelValue) []string {

@@ -18,7 +18,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/prometheus/procfs/internal/fs"
 	"github.com/prometheus/procfs/internal/util"
 )
 
@@ -112,7 +111,7 @@ type ProcStat struct {
 	// Aggregated block I/O delays, measured in clock ticks (centiseconds).
 	DelayAcctBlkIOTicks uint64
 
-	proc fs.FS
+	proc FS
 }
 
 // NewStat returns the current status information of the process.
@@ -210,8 +209,7 @@ func (s ProcStat) ResidentMemory() int {
 
 // StartTime returns the unix timestamp of the process in seconds.
 func (s ProcStat) StartTime() (float64, error) {
-	fs := FS{proc: s.proc}
-	stat, err := fs.Stat()
+	stat, err := s.proc.Stat()
 	if err != nil {
 		return 0, err
 	}

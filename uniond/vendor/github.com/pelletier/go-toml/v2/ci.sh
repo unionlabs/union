@@ -77,7 +77,7 @@ cover() {
 
     pushd "$dir"
     go test -covermode=atomic  -coverpkg=./... -coverprofile=coverage.out.tmp ./...
-    cat coverage.out.tmp | grep -v testsuite | grep -v tomltestgen | grep -v gotoml-test-decoder > coverage.out
+    cat coverage.out.tmp | grep -v fuzz | grep -v testsuite | grep -v tomltestgen | grep -v gotoml-test-decoder > coverage.out
     go tool cover -func=coverage.out
     popd
 

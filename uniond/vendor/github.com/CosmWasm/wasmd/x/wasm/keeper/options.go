@@ -16,6 +16,13 @@ func (f optsFn) apply(keeper *Keeper) {
 	f(keeper)
 }
 
+// option that is applied after keeper is setup with the VM. Used for decorators mainly.
+type postOptsFn func(*Keeper)
+
+func (f postOptsFn) apply(keeper *Keeper) {
+	f(keeper)
+}
+
 // WithWasmEngine is an optional constructor parameter to replace the default wasmVM engine with the
 // given one.
 func WithWasmEngine(x types.WasmerEngine) Option {
@@ -26,7 +33,7 @@ func WithWasmEngine(x types.WasmerEngine) Option {
 
 // WithWasmEngineDecorator is an optional constructor parameter to decorate the default wasmVM engine.
 func WithWasmEngineDecorator(d func(old types.WasmerEngine) types.WasmerEngine) Option {
-	return optsFn(func(k *Keeper) {
+	return postOptsFn(func(k *Keeper) {
 		k.wasmVM = d(k.wasmVM)
 	})
 }
@@ -42,7 +49,7 @@ func WithMessageHandler(x Messenger) Option {
 // WithMessageHandlerDecorator is an optional constructor parameter to decorate the wasm handler for wasmVM messages.
 // This option should not be combined with Option `WithMessageEncoders` or `WithMessageHandler`
 func WithMessageHandlerDecorator(d func(old Messenger) Messenger) Option {
-	return optsFn(func(k *Keeper) {
+	return postOptsFn(func(k *Keeper) {
 		k.messenger = d(k.messenger)
 	})
 }
@@ -58,7 +65,7 @@ func WithQueryHandler(x WasmVMQueryHandler) Option {
 // WithQueryHandlerDecorator is an optional constructor parameter to decorate the default wasm query handler for wasmVM requests.
 // This option should not be combined with Option `WithQueryPlugins` or `WithQueryHandler`
 func WithQueryHandlerDecorator(d func(old WasmVMQueryHandler) WasmVMQueryHandler) Option {
-	return optsFn(func(k *Keeper) {
+	return postOptsFn(func(k *Keeper) {
 		k.wasmVMQueryHandler = d(k.wasmVMQueryHandler)
 	})
 }
@@ -161,6 +168,20 @@ func WithAcceptedAccountTypesOnContractInstantiation(accts ...authtypes.AccountI
 	})
 }
 
+// WitGovSubMsgAuthZPropagated overwrites the default gov authorization policy for sub-messages
+func WitGovSubMsgAuthZPropagated(entries ...types.AuthorizationPolicyAction) Option {
+	x := make(map[types.AuthorizationPolicyAction]struct{}, len(entries))
+	for _, e := range entries {
+		x[e] = struct{}{}
+	}
+	if got, exp := len(x), len(entries); got != exp {
+		panic(fmt.Sprintf("duplicates in %#v", entries))
+	}
+	return optsFn(func(k *Keeper) {
+		k.propagateGovAuthorization = x
+	})
+}
+
 func asTypeMap(accts []authtypes.AccountI) map[reflect.Type]struct{} {
 	m := make(map[reflect.Type]struct{}, len(accts))
 	for _, a := range accts {
@@ -174,4 +195,17 @@ func asTypeMap(accts []authtypes.AccountI) map[reflect.Type]struct{} {
 		m[at] = struct{}{}
 	}
 	return m
+}
+
+// split into pre and post VM operations
+func splitOpts(opts []Option) ([]Option, []Option) {
+	pre, post := make([]Option, 0), make([]Option, 0)
+	for _, o := range opts {
+		if _, ok := o.(postOptsFn); ok {
+			post = append(post, o)
+		} else {
+			pre = append(pre, o)
+		}
+	}
+	return pre, post
 }

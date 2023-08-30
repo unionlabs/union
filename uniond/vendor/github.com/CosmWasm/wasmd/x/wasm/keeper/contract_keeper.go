@@ -10,7 +10,7 @@ var _ types.ContractOpsKeeper = PermissionedKeeper{}
 
 // decoratedKeeper contains a subset of the wasm keeper that are already or can be guarded by an authorization policy in the future
 type decoratedKeeper interface {
-	create(ctx sdk.Context, creator sdk.AccAddress, wasmCode []byte, instantiateAccess *types.AccessConfig, authZ AuthorizationPolicy) (codeID uint64, checksum []byte, err error)
+	create(ctx sdk.Context, creator sdk.AccAddress, wasmCode []byte, instantiateAccess *types.AccessConfig, authZ types.AuthorizationPolicy) (codeID uint64, checksum []byte, err error)
 
 	instantiate(
 		ctx sdk.Context,
@@ -20,26 +20,26 @@ type decoratedKeeper interface {
 		label string,
 		deposit sdk.Coins,
 		addressGenerator AddressGenerator,
-		authZ AuthorizationPolicy,
+		authZ types.AuthorizationPolicy,
 	) (sdk.AccAddress, []byte, error)
 
-	migrate(ctx sdk.Context, contractAddress sdk.AccAddress, caller sdk.AccAddress, newCodeID uint64, msg []byte, authZ AuthorizationPolicy) ([]byte, error)
-	setContractAdmin(ctx sdk.Context, contractAddress, caller, newAdmin sdk.AccAddress, authZ AuthorizationPolicy) error
+	migrate(ctx sdk.Context, contractAddress sdk.AccAddress, caller sdk.AccAddress, newCodeID uint64, msg []byte, authZ types.AuthorizationPolicy) ([]byte, error)
+	setContractAdmin(ctx sdk.Context, contractAddress, caller, newAdmin sdk.AccAddress, authZ types.AuthorizationPolicy) error
 	pinCode(ctx sdk.Context, codeID uint64) error
 	unpinCode(ctx sdk.Context, codeID uint64) error
 	execute(ctx sdk.Context, contractAddress sdk.AccAddress, caller sdk.AccAddress, msg []byte, coins sdk.Coins) ([]byte, error)
 	Sudo(ctx sdk.Context, contractAddress sdk.AccAddress, msg []byte) ([]byte, error)
 	setContractInfoExtension(ctx sdk.Context, contract sdk.AccAddress, extra types.ContractInfoExtension) error
-	setAccessConfig(ctx sdk.Context, codeID uint64, caller sdk.AccAddress, newConfig types.AccessConfig, autz AuthorizationPolicy) error
+	setAccessConfig(ctx sdk.Context, codeID uint64, caller sdk.AccAddress, newConfig types.AccessConfig, autz types.AuthorizationPolicy) error
 	ClassicAddressGenerator() AddressGenerator
 }
 
 type PermissionedKeeper struct {
-	authZPolicy AuthorizationPolicy
+	authZPolicy types.AuthorizationPolicy
 	nested      decoratedKeeper
 }
 
-func NewPermissionedKeeper(nested decoratedKeeper, authZPolicy AuthorizationPolicy) *PermissionedKeeper {
+func NewPermissionedKeeper(nested decoratedKeeper, authZPolicy types.AuthorizationPolicy) *PermissionedKeeper {
 	return &PermissionedKeeper{authZPolicy: authZPolicy, nested: nested}
 }
 
@@ -55,7 +55,7 @@ func (p PermissionedKeeper) Create(ctx sdk.Context, creator sdk.AccAddress, wasm
 	return p.nested.create(ctx, creator, wasmCode, instantiateAccess, p.authZPolicy)
 }
 
-// Instantiate creates an instance of a WASM contract using the classic sequence based address generator
+// AuthZActionInstantiate creates an instance of a WASM contract using the classic sequence based address generator
 func (p PermissionedKeeper) Instantiate(
 	ctx sdk.Context,
 	codeID uint64,

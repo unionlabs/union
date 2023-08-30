@@ -49,7 +49,7 @@ const (
 type AppModuleBasic struct{}
 
 func (b AppModuleBasic) RegisterLegacyAminoCodec(amino *codec.LegacyAmino) {
-	RegisterCodec(amino)
+	types.RegisterLegacyAminoCodec(amino)
 }
 
 func (b AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, serveMux *runtime.ServeMux) {
@@ -61,25 +61,25 @@ func (b AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, serv
 
 // Name returns the wasm module's name.
 func (AppModuleBasic) Name() string {
-	return ModuleName
+	return types.ModuleName
 }
 
 // DefaultGenesis returns default genesis state as raw bytes for the wasm
 // module.
 func (AppModuleBasic) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
-	return cdc.MustMarshalJSON(&GenesisState{
-		Params: DefaultParams(),
+	return cdc.MustMarshalJSON(&types.GenesisState{
+		Params: types.DefaultParams(),
 	})
 }
 
 // ValidateGenesis performs genesis state validation for the wasm module.
 func (b AppModuleBasic) ValidateGenesis(marshaler codec.JSONCodec, _ client.TxEncodingConfig, message json.RawMessage) error {
-	var data GenesisState
+	var data types.GenesisState
 	err := marshaler.UnmarshalJSON(message, &data)
 	if err != nil {
 		return err
 	}
-	return ValidateGenesis(data)
+	return types.ValidateGenesis(data)
 }
 
 // GetTxCmd returns the root tx command for the wasm module.
@@ -104,7 +104,7 @@ var _ appmodule.AppModule = AppModule{}
 type AppModule struct {
 	AppModuleBasic
 	cdc                codec.Codec
-	keeper             *Keeper
+	keeper             *keeper.Keeper
 	validatorSetSource keeper.ValidatorSetSource
 	accountKeeper      types.AccountKeeper // for simulation
 	bankKeeper         simulation.BankKeeper
@@ -116,7 +116,7 @@ type AppModule struct {
 // NewAppModule creates a new AppModule object
 func NewAppModule(
 	cdc codec.Codec,
-	keeper *Keeper,
+	keeper *keeper.Keeper,
 	validatorSetSource keeper.ValidatorSetSource,
 	ak types.AccountKeeper,
 	bk simulation.BankKeeper,
@@ -147,11 +147,11 @@ func (am AppModule) IsAppModule() { // marker
 // module. It should be incremented on each consensus-breaking change
 // introduced by the module. To avoid wrong/empty versions, the initial version
 // should be set to 1.
-func (AppModule) ConsensusVersion() uint64 { return 3 }
+func (AppModule) ConsensusVersion() uint64 { return 4 }
 
 func (am AppModule) RegisterServices(cfg module.Configurator) {
 	types.RegisterMsgServer(cfg.MsgServer(), keeper.NewMsgServerImpl(am.keeper))
-	types.RegisterQueryServer(cfg.QueryServer(), NewQuerier(am.keeper))
+	types.RegisterQueryServer(cfg.QueryServer(), keeper.Querier(am.keeper))
 
 	m := keeper.NewMigrator(*am.keeper, am.legacySubspace)
 	err := cfg.RegisterMigration(types.ModuleName, 1, m.Migrate1to2)
@@ -162,6 +162,10 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 	if err != nil {
 		panic(err)
 	}
+	err = cfg.RegisterMigration(types.ModuleName, 3, m.Migrate3to4)
+	if err != nil {
+		panic(err)
+	}
 }
 
 // RegisterInvariants registers the wasm module invariants.
@@ -169,15 +173,15 @@ func (am AppModule) RegisterInvariants(_ sdk.InvariantRegistry) {}
 
 // QuerierRoute returns the wasm module's querier route name.
 func (AppModule) QuerierRoute() string {
-	return QuerierRoute
+	return types.QuerierRoute
 }
 
 // InitGenesis performs genesis initialization for the wasm module. It returns
 // no validator updates.
 func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.RawMessage) []abci.ValidatorUpdate {
-	var genesisState GenesisState
+	var genesisState types.GenesisState
 	cdc.MustUnmarshalJSON(data, &genesisState)
-	validators, err := InitGenesis(ctx, am.keeper, genesisState)
+	validators, err := keeper.InitGenesis(ctx, am.keeper, genesisState)
 	if err != nil {
 		panic(err)
 	}
@@ -187,7 +191,7 @@ func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.
 // ExportGenesis returns the exported genesis state as raw bytes for the wasm
 // module.
 func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.RawMessage {
-	gs := ExportGenesis(ctx, am.keeper)
+	gs := keeper.ExportGenesis(ctx, am.keeper)
 	return cdc.MustMarshalJSON(gs)
 }
 
@@ -227,7 +231,7 @@ func (am AppModule) WeightedOperations(simState module.SimulationState) []simtyp
 
 // AddModuleInitFlags implements servertypes.ModuleInitFlags interface.
 func AddModuleInitFlags(startCmd *cobra.Command) {
-	defaults := DefaultWasmConfig()
+	defaults := types.DefaultWasmConfig()
 	startCmd.Flags().Uint32(flagWasmMemoryCacheSize, defaults.MemoryCacheSize, "Sets the size in MiB (NOT bytes) of an in-memory cache for Wasm modules. Set to 0 to disable.")
 	startCmd.Flags().Uint64(flagWasmQueryGasLimit, defaults.SmartQueryGasLimit, "Set the max gas that can be spent on executing a query with a Wasm contract")
 	startCmd.Flags().String(flagWasmSimulationGasLimit, "", "Set the max gas that can be spent when executing a simulation TX")
