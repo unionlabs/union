@@ -1,5 +1,3 @@
-#![recursion_limit = "512"]
-
 mod ibc_client;
 mod msg;
 pub mod storage_utils;

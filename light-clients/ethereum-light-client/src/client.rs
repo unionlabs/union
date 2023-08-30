@@ -227,27 +227,24 @@ impl IbcClient for EthereumLightClient {
 
         if consensus_update.attested_header.beacon.slot > consensus_state.data.slot {
             consensus_state.data.slot = consensus_update.attested_header.beacon.slot;
-            // NOTE(aeryz): we don't use `optimistic_header`
-        }
 
-        // We implemented the spec until this point. We apply our updates now.
-        let storage_root = account_update
-            .proofs
-            .get(0)
-            .ok_or(Error::EmptyProof)?
-            .value
-            .as_slice()
-            .try_into()
-            .map_err(|_| Error::InvalidProofFormat)?;
-        consensus_state.data.storage_root = storage_root;
+            let storage_root = account_update
+                .proofs
+                .get(0)
+                .ok_or(Error::EmptyProof)?
+                .value
+                .as_slice()
+                .try_into()
+                .map_err(|_| Error::InvalidProofFormat)?;
+            consensus_state.data.storage_root = storage_root;
 
-        consensus_state.timestamp = compute_timestamp_at_slot::<Config>(
-            client_state.data.genesis_time,
-            consensus_update.finalized_header.beacon.slot,
-        );
-
-        if client_state.data.latest_slot < consensus_update.attested_header.beacon.slot {
-            client_state.data.latest_slot = consensus_update.attested_header.beacon.slot;
+            consensus_state.timestamp = compute_timestamp_at_slot::<Config>(
+                client_state.data.genesis_time,
+                consensus_update.attested_header.beacon.slot,
+            );
+            if client_state.data.latest_slot < consensus_update.attested_header.beacon.slot {
+                client_state.data.latest_slot = consensus_update.attested_header.beacon.slot;
+            }
         }
 
         // Some updates can be only for updating the sync committee, therefore the execution number can be
@@ -283,10 +280,38 @@ impl IbcClient for EthereumLightClient {
         Ok(ContractResult::invalid("Not implemented".to_string()))
     }
     fn check_for_misbehaviour_on_header(
-        _deps: Deps<Self::CustomQuery>,
-        _header: Self::Header,
+        deps: Deps<Self::CustomQuery>,
+        header: Self::Header,
     ) -> Result<ContractResult, Self::Error> {
-        // TODO(aeryz): Leaving this as success for us to be able to update the client. See: #588.
+        let height = Height::new(
+            0,
+            header
+                .consensus_update
+                .attested_header
+                .execution
+                .block_number,
+        );
+        if let Some(consensus_state) =
+            read_consensus_state::<CustomQuery, ConsensusState>(deps, &height)?
+        {
+            // New header is given with the same height but the storage roots don't match.
+            let storage_root = header
+                .account_update
+                .proofs
+                .get(0)
+                .ok_or(Error::EmptyProof)?
+                .value
+                .as_slice()
+                .try_into()
+                .map_err(|_| Error::InvalidProofFormat)?;
+            if consensus_state.data.storage_root != storage_root {
+                return Err(Error::StorageRootMismatch);
+            }
+        }
+
+        // TODO(aeryz): Do we need to check whether this header's timestamp is between
+        // the next and the previous consensus state in terms of height?
+
         Ok(ContractResult::valid(None))
     }
 

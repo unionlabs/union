@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 use core::fmt::Debug;
 
 use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo};
@@ -7,6 +8,11 @@ use unionlabs::{
         lightclients::wasm::{client_state::ClientState, consensus_state::ConsensusState},
     },
     Proto, TryFromProto, TryFromProtoBytesError, TryFromProtoErrorOf,
+=======
+use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo};
+use unionlabs::{
+    ibc::core::client::height::Height, TryFromProto, TryFromProtoBytesError, TryFromProtoErrorOf,
+>>>>>>> 5fe89c24 (feat(ics008): introduce `IBCClient`)
 };
 
 use crate::{
@@ -19,6 +25,7 @@ pub enum StorageState {
     Empty,
 }
 
+<<<<<<< HEAD
 pub trait IbcClient {
     type Error: From<TryFromProtoBytesError<TryFromProtoErrorOf<Self::Header>>> + From<Error>;
     type CustomQuery: cosmwasm_std::CustomQuery;

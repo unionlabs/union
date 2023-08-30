@@ -93,6 +93,9 @@ pub enum Error {
     #[error("Custom query: {0}")]
     CustomQuery(String),
 
+    #[error("Storage root mismatch")]
+    StorageRootMismatch,
+
     #[error("Wasm client error: {0}")]
     Wasm(String),
 }
