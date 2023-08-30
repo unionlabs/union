@@ -13,7 +13,6 @@ use crate::{
 
 #[derive(Clone, Debug, PartialEq, Encode, Decode, TreeHash, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""))]
-// REVIEW: Do we want to use primitive_types here?
 pub struct ExecutionPayloadHeader<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> {
     pub parent_hash: H256,
     pub fee_recipient: Address,
@@ -128,7 +127,6 @@ impl<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES>
                 .extra_data
                 .try_into()
                 .map_err(TryFromExecutionPayloadHeaderError::ExtraData)?,
-            // .into_iter().rev().collect::<Vec<_>>()
             base_fee_per_gas: U256::from_little_endian(
                 &<[u8; 32]>::try_from(value.base_fee_per_gas)
                     .map_err(TryFromExecutionPayloadHeaderError::BaseFeePerGas)?,

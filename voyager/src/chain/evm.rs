@@ -59,7 +59,6 @@ use unionlabs::{
         },
         google::protobuf::any::Any,
         lightclients::{
-            cometbls,
             ethereum::{
                 self,
                 account_update::AccountUpdate,
@@ -86,7 +85,7 @@ use crate::{
             ChannelEndPath, ClientConsensusStatePath, ClientStatePath, CommitmentPath,
             ConnectionPath, IbcPath,
         },
-        Chain, ChainConnection, ClientStateOf, Connect, ConsensusStateOf, CreateClient,
+        Chain, ChainConnection, ClientStateOf, Connect, ConsensusStateOf, CreateClient, HeaderOf,
         IbcStateRead, LightClient, StateProof,
     },
     config::EvmChainConfigFields,
@@ -386,6 +385,8 @@ impl<C: ChainSpec> Chain for Evm<C> {
     type SelfConsensusState =
         Any<wasm::consensus_state::ConsensusState<ethereum::consensus_state::ConsensusState>>;
 
+    type Header = wasm::header::Header<ethereum::header::Header<C>>;
+
     fn chain_id(&self) -> impl Future<Output = String> + '_ {
         // TODO: Cache this in `self`, it only needs to be fetched once
         async move { self.provider.get_chainid().await.unwrap().to_string() }
@@ -652,8 +653,6 @@ impl<C: ChainSpec> CreateClient<Cometbls<C>> for Evm<C> {
 }
 
 impl<C: ChainSpec> LightClient for Cometbls<C> {
-    type UpdateClientMessage = cometbls::header::Header;
-
     type HostChain = Evm<C>;
 
     type CounterpartyChain = Union;
@@ -667,7 +666,7 @@ impl<C: ChainSpec> LightClient for Cometbls<C> {
     fn update_client(
         &self,
         client_id: String,
-        msg: Self::UpdateClientMessage,
+        msg: HeaderOf<Self::CounterpartyChain>,
     ) -> impl Future<Output = (Height, UpdateClient)> + '_ {
         async move {
             let tx_rcp = self

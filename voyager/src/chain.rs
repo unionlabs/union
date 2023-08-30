@@ -77,8 +77,6 @@ pub enum AnyLightClient {
 
 /// The IBC interface on a [`Chain`] that knows how to connect to a counterparty.
 pub trait LightClient: Send + Sync + Sized {
-    type UpdateClientMessage;
-
     /// The chain that this light client is on.
     type HostChain: Chain;
 
@@ -94,7 +92,7 @@ pub trait LightClient: Send + Sync + Sized {
     fn update_client(
         &self,
         client_id: String,
-        _: Self::UpdateClientMessage,
+        header: HeaderOf<Self::CounterpartyChain>,
     ) -> impl Future<Output = (Height, UpdateClient)> + '_;
 
     // TODO: Use state_proof instead
@@ -108,12 +106,14 @@ pub trait LightClient: Send + Sync + Sized {
 
 pub type ClientStateOf<C> = <C as Chain>::SelfClientState;
 pub type ConsensusStateOf<C> = <C as Chain>::SelfConsensusState;
+pub type HeaderOf<C> = <C as Chain>::Header;
 
 /// Represents a block chain. One [`Chain`] may have many related [`LightClient`]s for connecting to
 /// various other [`Chain`]s, all sharing a common config.
 pub trait Chain {
     type SelfClientState: ClientState + Debug + Serialize;
     type SelfConsensusState: Debug + Serialize;
+    type Header;
 
     fn chain_id(&self) -> impl Future<Output = String> + '_;
 

@@ -26,7 +26,7 @@ pub struct LightClientUpdate<C: SYNC_COMMITTEE_SIZE + BYTES_PER_LOGS_BLOOM + MAX
     pub attested_header: LightClientHeader<C>,
     /// Next sync committee corresponding to `attested_header.state_root`
     // TODO: Merge these fields into one
-    #[serde(default = "Option::default")]
+    #[serde(default)]
     pub next_sync_committee: Option<SyncCommittee<C>>,
     #[serde(default)]
     pub next_sync_committee_branch: Option<NextSyncCommitteeBranch>,
