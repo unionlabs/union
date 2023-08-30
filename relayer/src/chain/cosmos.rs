@@ -343,49 +343,23 @@ impl Connect<Tendermint> for Cometbls {
                 .chain
                 .tm_client
                 .commit(
-                    TryInto::<tendermint::block::Height>::try_into(update_from.revision_height)
+                    TryInto::<tendermint::block::Height>::try_into(update_from.revision_height + 1)
                         .unwrap(),
                 )
                 .await
                 .unwrap();
 
             self.dumper.dump(
-                format!(
-                    "commit-{:06}",
-                    trusted_commit.signed_header.header.height.value()
-                ),
+                format!("commit-{:06}", trusted_commit.signed_header.header.height.value()),
                 &trusted_commit,
             );
-
-            let commit = self
-                .chain
-                .tm_client
-                .commit(
-                    TryInto::<tendermint::block::Height>::try_into(update_to.revision_height)
-                        .unwrap(),
-                )
-                .await
-                .unwrap();
-
-            self.dumper.dump(
-                format!("commit-{:06}", commit.signed_header.header.height.value()),
-                &commit,
-            );
-
-            tracing::debug!("New block {:?}", commit.signed_header.header.height);
-
-            // TODO: Add to self
-            let mut staking_client =
-                staking::v1beta1::query_client::QueryClient::connect(self.chain.grpc_url.clone())
-                    .await
-                    .unwrap();
 
             let trusted_valset = {
                 let validators_response = self
                     .chain
                     .tm_client
                     .validators(
-                        TryInto::<tendermint::block::Height>::try_into(update_from.revision_height)
+                        TryInto::<tendermint::block::Height>::try_into(update_from.revision_height + 1)
                             .unwrap(),
                         tendermint_rpc::Paging::All,
                     )
@@ -394,7 +368,7 @@ impl Connect<Tendermint> for Cometbls {
 
                 let mut proposer = None;
                 for val in &validators_response.validators {
-                    if val.address == commit.signed_header.header.proposer_address {
+                    if val.address == trusted_commit.signed_header.header.proposer_address {
                         proposer = Some(val.clone());
                         break;
                     }
@@ -438,6 +412,17 @@ impl Connect<Tendermint> for Cometbls {
                     total_voting_power,
                 }
             };
+
+            let commit = self
+                .chain
+                .tm_client
+                .commit(
+                    TryInto::<tendermint::block::Height>::try_into(update_to.revision_height)
+                        .unwrap(),
+                )
+                .await
+                .unwrap();
+            
 
             let untrusted_valset = {
                 let validators_response = self
@@ -587,20 +572,19 @@ impl Connect<Tendermint> for Cometbls {
                             ),
                         },
                     },
-                    // NOTE: We don't need the signatures are they are part of the ZKP
                     signatures: commit
                         .signed_header
                         .commit
                         .signatures
                         .into_iter()
-                        .filter(|sig| sig.is_commit())
+                        .filter(|sig| !sig.is_absent())
                         .map(|sig| {
-                            if let tendermint::block::CommitSig::BlockIdFlagCommit {
-                                validator_address,
-                                timestamp,
-                                signature,
-                            } = sig
-                            {
+                            let (validator_address, timestamp, signature) = match sig {
+                                tendermint::block::CommitSig::BlockIdFlagCommit { validator_address, timestamp, signature } => (validator_address, timestamp, signature),
+                                tendermint::block::CommitSig::BlockIdFlagNil { validator_address, timestamp, signature } => (validator_address, timestamp, signature),
+                                _ => panic!("Already filtered, impossible.")
+                            };
+
                                 unionlabs::tendermint::types::commit_sig::CommitSig {
                             block_id_flag:
                                 unionlabs::tendermint::types::block_id_flag::BlockIdFlag::Commit,
@@ -618,9 +602,6 @@ impl Connect<Tendermint> for Cometbls {
                             },
                             signature: signature.unwrap().into_bytes(),
                                     }
-                            } else {
-                                panic!("filtered, so impossible");
-                            }
                         })
                         .collect(),
                 },
@@ -629,7 +610,10 @@ impl Connect<Tendermint> for Cometbls {
             let client_message = unionlabs::ibc::lightclients::tendermint::header::Header {
                 signed_header,
                 validator_set: untrusted_valset,
-                trusted_height: update_from,
+                trusted_height: Height {
+                    revision_number: update_from.revision_number,
+                    revision_height: update_from.revision_height,
+                },
                 trusted_validators: trusted_valset,
             };
 
@@ -807,7 +791,7 @@ impl Chain for Cosmos {
                             empty_child: vec![], 
                             hash: unionlabs::cosmos::ics23::hash_op::HashOp::Sha256
                         },
-                        max_depth: 256,
+                        max_depth: 0,
                         min_depth: 0,
                     }
                     ],

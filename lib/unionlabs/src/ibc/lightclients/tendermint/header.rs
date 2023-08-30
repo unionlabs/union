@@ -64,5 +64,5 @@ impl Proto for Header {
 }
 
 impl TypeUrl for protos::ibc::lightclients::tendermint::v1::Header {
-    const TYPE_URL: &'static str = "/union.ibc.lightclients.cometbls.v1.Header";
+    const TYPE_URL: &'static str = "/ibc.lightclients.tendermint.v1.Header";
 }

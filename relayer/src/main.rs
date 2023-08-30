@@ -338,6 +338,32 @@ async fn do_main(args: cli::AppArgs) -> Result<(), anyhow::Error> {
                         )
                         .await?;
                     }
+                    (AnyChain::Union(union), AnyChain::Cosmos(cosmos)) => {
+                        channel_handshake(
+                            &union,
+                            from_connection,
+                            from_port,
+                            from_version,
+                            &cosmos,
+                            to_connection,
+                            to_port,
+                            to_version,
+                        )
+                        .await?;
+                    }
+                    (AnyChain::Cosmos(cosmos), AnyChain::Union(union)) => {
+                        channel_handshake(
+                            &cosmos,
+                            from_connection,
+                            from_port,
+                            from_version,
+                            &union,
+                            to_connection,
+                            to_port,
+                            to_version,
+                        )
+                        .await?;
+                    }
 
                     _ => {
                         bail!("Cannot connect from '{from_chain_name}' to '{to_chain_name}'")
@@ -365,6 +391,16 @@ async fn do_main(args: cli::AppArgs) -> Result<(), anyhow::Error> {
                     }
                     (AnyChain::EvmMinimal(evm), AnyChain::Union(union)) => {
                         relay_packets(&evm, &union).await;
+                    }
+
+                    // union -> cosmos
+                    (AnyChain::Union(union), AnyChain::Cosmos(cosmos)) => {
+                        relay_packets(&union, &cosmos).await;
+                    }
+
+                    // cosmos -> union
+                    (AnyChain::Cosmos(cosmos), AnyChain::Union(union)) => {
+                        relay_packets(&union, &cosmos).await;
                     }
 
                     _ => {
@@ -858,7 +894,7 @@ where
             proof_try: ethereum_connection_state_proof.proof,
             proof_client: ethereum_client_state_proof.proof,
             proof_consensus: ethereum_consensus_state_proof.proof,
-            consensus_height: ethereum_consensus_state_proof.proof_height,
+            consensus_height: cometbls_latest_height,
         })
         .await;
 
@@ -975,6 +1011,7 @@ where
         .client_id;
 
     tracing::info!(cometbls_id, ethereum_id);
+    tracing::info!(cometbls_client_id, ethereum_client_id);
 
     tracing::debug!("ChannelOpenInit");
 
@@ -1204,6 +1241,10 @@ where
                     )
                     .await;
 
+                // NOTE(aeryz): I had to wait here because we were sending `recv_packet` before the
+                // delay period has been reached. This has to be handled dynamically in the restructured
+                // relayer though.
+                tokio::time::sleep(std::time::Duration::from_secs(7)).await;
                 lc2.recv_packet(MsgRecvPacket {
                     packet,
                     proof_height: lc1_updated_to,
