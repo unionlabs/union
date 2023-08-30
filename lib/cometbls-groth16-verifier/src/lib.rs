@@ -1,6 +1,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 extern crate alloc;
+
 use core::{
     marker::PhantomData,
     ops::{AddAssign, Neg},
@@ -301,6 +302,7 @@ pub enum Error {
     InvalidPoint,
     InvalidProof,
     InvalidVerifyingKey,
+    InvalidRawProof,
 }
 
 pub fn verify_zkp(
@@ -319,19 +321,22 @@ pub fn verify_zkp(
     )
 }
 
+// G1 + G2 + G1 + U256 + G1
+const EXPECTED_PROOF_SIZE: usize = 64 + 128 + 64 + 32 + 64;
+
 struct ZkpDecoder<'a, P> {
-    buffer: &'a mut [u8],
+    buffer: &'a mut [u8; EXPECTED_PROOF_SIZE],
     index: usize,
     _marker: PhantomData<P>,
 }
 
 impl<'a, P: Pairing> ZkpDecoder<'a, P> {
-    fn new(buffer: &'a mut [u8]) -> Self {
-        Self {
-            buffer,
+    fn new(buffer: &'a mut [u8]) -> Result<Self, Error> {
+        Ok(Self {
+            buffer: buffer.try_into().map_err(|_| Error::InvalidRawProof)?,
             index: 0,
             _marker: PhantomData,
-        }
+        })
     }
 
     fn current_slice(&mut self) -> &mut [u8] {
@@ -341,6 +346,7 @@ impl<'a, P: Pairing> ZkpDecoder<'a, P> {
     fn decode_g1(&mut self) -> Result<P::G1Affine, Error> {
         // expecting little endian
         let current_slice = self.current_slice();
+        // indexing is safe as we previously checked the proof size
         current_slice[0..32].reverse();
         current_slice[32..64].reverse();
         let point =
@@ -353,6 +359,7 @@ impl<'a, P: Pairing> ZkpDecoder<'a, P> {
     fn decode_g2(&mut self) -> Result<P::G2Affine, Error> {
         // expecting little endian
         let current_slice = self.current_slice();
+        // indexing is safe as we previously checked the proof size
         current_slice[0..64].reverse();
         current_slice[64..128].reverse();
         let point =
@@ -363,6 +370,7 @@ impl<'a, P: Pairing> ZkpDecoder<'a, P> {
     }
 
     fn decode_commitment_hash(&mut self) -> Result<U256, Error> {
+        // indexing is safe as we previously checked the proof size
         let commitment_hash = U256::try_from(self.current_slice()[0..32].as_ref())
             .map_err(|_| Error::InvalidPoint)?;
         self.index += 32;
@@ -405,7 +413,7 @@ fn verify_generic_zkp<P: Pairing>(
     mut zkp: Vec<u8>,
 ) -> Result<(), Error> {
     let (neg_a, b, c, commitment_hash, proof_commitment) =
-        ZkpDecoder::<P>::new(&mut zkp).decode_full()?;
+        ZkpDecoder::<P>::new(&mut zkp)?.decode_full()?;
 
     let mut buffer = [0u8; 32];
     let mut decode_scalar = move |x: U256| {
