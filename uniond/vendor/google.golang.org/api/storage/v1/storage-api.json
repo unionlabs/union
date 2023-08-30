@@ -26,7 +26,7 @@
   "description": "Stores and retrieves potentially large, immutable data objects.",
   "discoveryVersion": "v1",
   "documentationLink": "https://developers.google.com/storage/docs/json_api/",
-  "etag": "\"3134363638303431303535363634343235383633\"",
+  "etag": "\"34333739363230323936363635393736363430\"",
   "icons": {
     "x16": "https://www.google.com/images/icons/product/cloud_storage-16.png",
     "x32": "https://www.google.com/images/icons/product/cloud_storage-32.png"
@@ -2141,6 +2141,11 @@
               "location": "query",
               "type": "boolean"
             },
+            "matchGlob": {
+              "description": "Filter results to objects and prefixes that match this glob pattern.",
+              "location": "query",
+              "type": "string"
+            },
             "maxResults": {
               "default": "1000",
               "description": "Maximum number of items plus prefixes to return in a single page of responses. As duplicate prefixes are omitted, fewer total results may be returned than requested. The service will use this parameter or 1,000 items, whichever is smaller.",
@@ -3005,7 +3010,7 @@
       }
     }
   },
-  "revision": "20220705",
+  "revision": "20230301",
   "rootUrl": "https://storage.googleapis.com/",
   "schemas": {
     "Bucket": {

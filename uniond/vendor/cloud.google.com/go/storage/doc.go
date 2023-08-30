@@ -36,6 +36,9 @@ The client will use your default application credentials. Clients should be
 reused instead of created as needed. The methods of [Client] are safe for
 concurrent use by multiple goroutines.
 
+You may configure the client by passing in options from the [google.golang.org/api/option]
+package. You may also use options defined in this package, such as [WithJSONReads].
+
 If you only wish to access public data, you can create
 an unauthenticated client with
 

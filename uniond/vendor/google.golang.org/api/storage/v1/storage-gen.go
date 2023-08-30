@@ -78,6 +78,7 @@ var _ = errors.New
 var _ = strings.Replace
 var _ = context.Canceled
 var _ = internaloption.WithDefaultEndpoint
+var _ = internal.Version
 
 const apiId = "storage:v1"
 const apiName = "storage"
@@ -10216,6 +10217,13 @@ func (c *ObjectsListCall) IncludeTrailingDelimiter(includeTrailingDelimiter bool
 	return c
 }
 
+// MatchGlob sets the optional parameter "matchGlob": Filter results to
+// objects and prefixes that match this glob pattern.
+func (c *ObjectsListCall) MatchGlob(matchGlob string) *ObjectsListCall {
+	c.urlParams_.Set("matchGlob", matchGlob)
+	return c
+}
+
 // MaxResults sets the optional parameter "maxResults": Maximum number
 // of items plus prefixes to return in a single page of responses. As
 // duplicate prefixes are omitted, fewer total results may be returned
@@ -10403,6 +10411,11 @@ func (c *ObjectsListCall) Do(opts ...googleapi.CallOption) (*Objects, error) {
 	//       "description": "If true, objects that end in exactly one instance of delimiter will have their metadata included in items in addition to prefixes.",
 	//       "location": "query",
 	//       "type": "boolean"
+	//     },
+	//     "matchGlob": {
+	//       "description": "Filter results to objects and prefixes that match this glob pattern.",
+	//       "location": "query",
+	//       "type": "string"
 	//     },
 	//     "maxResults": {
 	//       "default": "1000",

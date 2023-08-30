@@ -16,14 +16,14 @@ on proposals on a 1 token 1 vote basis. Next is a list of features the module
 currently supports:
 
 * **Proposal submission:** Users can submit proposals with a deposit. Once the
-minimum deposit is reached, the proposal enters voting period.
-* **Vote:** Participants can vote on proposals that reached MinDeposit
+minimum deposit is reached, the proposal enters voting period. The minimum deposit can be reached by collecting deposits from different users (including proposer) within deposit period.
+* **Vote:** Participants can vote on proposals that reached MinDeposit and entered voting period.
 * **Inheritance and penalties:** Delegators inherit their validator's vote if
 they don't vote themselves.
 * **Claiming deposit:** Users that deposited on proposals can recover their
-deposits if the proposal was accepted or rejected. If the proposal was vetoed, or never entered voting period, the deposit is burned.
+deposits if the proposal was accepted or rejected. If the proposal was vetoed, or never entered voting period (minimum deposit not reached within deposit period), the deposit is burned.
 
-This module will be used in the Cosmos Hub, the first Hub in the Cosmos network.
+This module is in use on the Cosmos Hub (a.k.a [gaia](https://github.com/cosmos/gaia)).
 Features that may be added in the future are described in [Future Improvements](#future-improvements).
 
 ## Contents

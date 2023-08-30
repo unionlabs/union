@@ -12,6 +12,7 @@ var defaultConfig = Config{
 	Filter:     nil,
 	OutputJSON: false,
 	Color:      true,
+	StackTrace: false,
 	TimeFormat: time.Kitchen,
 }
 
@@ -21,6 +22,7 @@ type Config struct {
 	Filter     FilterFunc
 	OutputJSON bool
 	Color      bool
+	StackTrace bool
 	TimeFormat string
 }
 
@@ -76,5 +78,12 @@ func ColorOption(val bool) Option {
 func TimeFormatOption(format string) Option {
 	return func(cfg *Config) {
 		cfg.TimeFormat = format
+	}
+}
+
+// TraceOption add option to enable/disable print of stacktrace on error log
+func TraceOption(val bool) Option {
+	return func(cfg *Config) {
+		cfg.StackTrace = val
 	}
 }

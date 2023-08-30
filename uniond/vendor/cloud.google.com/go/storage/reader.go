@@ -139,15 +139,23 @@ func uncompressedByServer(res *http.Response) bool {
 		res.Header.Get("Content-Encoding") != "gzip"
 }
 
+// parseCRC32c parses the crc32c hash from the X-Goog-Hash header.
+// It can parse headers in the form [crc32c=xxx md5=xxx] (XML responses) or the
+// form [crc32c=xxx,md5=xxx] (JSON responses). The md5 hash is ignored.
 func parseCRC32c(res *http.Response) (uint32, bool) {
 	const prefix = "crc32c="
 	for _, spec := range res.Header["X-Goog-Hash"] {
-		if strings.HasPrefix(spec, prefix) {
-			c, err := decodeUint32(spec[len(prefix):])
-			if err == nil {
-				return c, true
+		values := strings.Split(spec, ",")
+
+		for _, v := range values {
+			if strings.HasPrefix(v, prefix) {
+				c, err := decodeUint32(v[len(prefix):])
+				if err == nil {
+					return c, true
+				}
 			}
 		}
+
 	}
 	return 0, false
 }

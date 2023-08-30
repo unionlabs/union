@@ -1,6 +1,3 @@
-Cosmos SDK
-License: Apache2.0
-
                                  Apache License
                            Version 2.0, January 2004
                         http://www.apache.org/licenses/
@@ -189,6 +186,7 @@ License: Apache2.0
       same "printed page" as the copyright notice for easier
       identification within third-party archives.
 
+   Copyright Cosmos-SDK Authors
    Copyright 2016 All in Bits, Inc
 
    Licensed under the Apache License, Version 2.0 (the "License");
