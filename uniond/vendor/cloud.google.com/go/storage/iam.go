@@ -18,9 +18,9 @@ import (
 	"context"
 
 	"cloud.google.com/go/iam"
+	"cloud.google.com/go/iam/apiv1/iampb"
 	"cloud.google.com/go/internal/trace"
 	raw "google.golang.org/api/storage/v1"
-	iampb "google.golang.org/genproto/googleapis/iam/v1"
 	"google.golang.org/genproto/googleapis/type/expr"
 )
 

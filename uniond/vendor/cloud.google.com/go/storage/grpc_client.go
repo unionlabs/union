@@ -17,11 +17,13 @@ package storage
 import (
 	"context"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"io"
 	"net/url"
 	"os"
 
+	"cloud.google.com/go/iam/apiv1/iampb"
 	"cloud.google.com/go/internal/trace"
 	gapic "cloud.google.com/go/storage/internal/apiv2"
 	storagepb "cloud.google.com/go/storage/internal/apiv2/stubs"
@@ -29,7 +31,6 @@ import (
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
 	"google.golang.org/api/option/internaloption"
-	iampb "google.golang.org/genproto/googleapis/iam/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -109,6 +110,11 @@ type grpcStorageClient struct {
 func newGRPCStorageClient(ctx context.Context, opts ...storageOption) (storageClient, error) {
 	s := initSettings(opts...)
 	s.clientOption = append(defaultGRPCOptions(), s.clientOption...)
+
+	config := newStorageConfig(s.clientOption...)
+	if config.readAPIWasSet {
+		return nil, errors.New("storage: GRPC is incompatible with any option that specifies an API for reads")
+	}
 
 	g, err := gapic.NewClient(ctx, s.clientOption...)
 	if err != nil {
@@ -855,13 +861,6 @@ func (c *grpcStorageClient) NewRangeReader(ctx context.Context, params *newRange
 		ctx = setUserProjectMetadata(ctx, s.userProject)
 	}
 
-	// A negative length means "read to the end of the object", but the
-	// read_limit field it corresponds to uses zero to mean the same thing. Thus
-	// we coerce the length to 0 to read to the end of the object.
-	if params.length < 0 {
-		params.length = 0
-	}
-
 	b := bucketResourceName(globalProjectAlias, params.bucket)
 	req := &storagepb.ReadObjectRequest{
 		Bucket:                    b,
@@ -884,13 +883,20 @@ func (c *grpcStorageClient) NewRangeReader(ctx context.Context, params *newRange
 
 		cc, cancel := context.WithCancel(ctx)
 
-		start := params.offset + seen
+		req.ReadOffset = params.offset + seen
+
+		// A negative length means "read to the end of the object", but the
+		// read_limit field it corresponds to uses zero to mean the same thing. Thus
+		// we coerce the length to 0 to read to the end of the object.
+		if params.length < 0 {
+			params.length = 0
+		}
+
 		// Only set a ReadLimit if length is greater than zero, because zero
 		// means read it all.
 		if params.length > 0 {
 			req.ReadLimit = params.length - seen
 		}
-		req.ReadOffset = start
 
 		if err := applyCondsProto("gRPCReader.reopen", params.gen, params.conds, req); err != nil {
 			cancel()
@@ -963,7 +969,7 @@ func (c *grpcStorageClient) NewRangeReader(ctx context.Context, params *newRange
 	cr := msg.GetContentRange()
 	if cr != nil {
 		r.Attrs.StartOffset = cr.GetStart()
-		r.remain = cr.GetEnd() - cr.GetStart() + 1
+		r.remain = cr.GetEnd() - cr.GetStart()
 	} else {
 		r.remain = size
 	}
@@ -1254,12 +1260,12 @@ func (c *grpcStorageClient) ListNotifications(ctx context.Context, bucket string
 	if s.userProject != "" {
 		ctx = setUserProjectMetadata(ctx, s.userProject)
 	}
-	req := &storagepb.ListNotificationsRequest{
+	req := &storagepb.ListNotificationConfigsRequest{
 		Parent: bucketResourceName(globalProjectAlias, bucket),
 	}
-	var notifications []*storagepb.Notification
+	var notifications []*storagepb.NotificationConfig
 	err = run(ctx, func() error {
-		gitr := c.raw.ListNotifications(ctx, req, s.gax...)
+		gitr := c.raw.ListNotificationConfigs(ctx, req, s.gax...)
 		for {
 			// PageSize is not set and fallbacks to the API default pageSize of 100.
 			items, nextPageToken, err := gitr.InternalFetch(int(req.GetPageSize()), req.GetPageToken())
@@ -1286,14 +1292,14 @@ func (c *grpcStorageClient) CreateNotification(ctx context.Context, bucket strin
 	defer func() { trace.EndSpan(ctx, err) }()
 
 	s := callSettings(c.settings, opts...)
-	req := &storagepb.CreateNotificationRequest{
-		Parent:       bucketResourceName(globalProjectAlias, bucket),
-		Notification: toProtoNotification(n),
+	req := &storagepb.CreateNotificationConfigRequest{
+		Parent:             bucketResourceName(globalProjectAlias, bucket),
+		NotificationConfig: toProtoNotification(n),
 	}
-	var pbn *storagepb.Notification
+	var pbn *storagepb.NotificationConfig
 	err = run(ctx, func() error {
 		var err error
-		pbn, err = c.raw.CreateNotification(ctx, req, s.gax...)
+		pbn, err = c.raw.CreateNotificationConfig(ctx, req, s.gax...)
 		return err
 	}, s.retry, s.idempotent, setRetryHeaderGRPC(ctx))
 	if err != nil {
@@ -1307,9 +1313,9 @@ func (c *grpcStorageClient) DeleteNotification(ctx context.Context, bucket strin
 	defer func() { trace.EndSpan(ctx, err) }()
 
 	s := callSettings(c.settings, opts...)
-	req := &storagepb.DeleteNotificationRequest{Name: id}
+	req := &storagepb.DeleteNotificationConfigRequest{Name: id}
 	return run(ctx, func() error {
-		return c.raw.DeleteNotification(ctx, req, s.gax...)
+		return c.raw.DeleteNotificationConfig(ctx, req, s.gax...)
 	}, s.retry, s.idempotent, setRetryHeaderGRPC(ctx))
 }
 

@@ -920,7 +920,7 @@ type GeneratedFile struct {
 	packageNames     map[GoImportPath]GoPackageName
 	usedPackageNames map[GoPackageName]bool
 	manualImports    map[GoImportPath]bool
-	annotations      map[string][]Location
+	annotations      map[string][]Annotation
 }
 
 // NewGeneratedFile creates a new generated file with the given filename
@@ -933,7 +933,7 @@ func (gen *Plugin) NewGeneratedFile(filename string, goImportPath GoImportPath) 
 		packageNames:     make(map[GoImportPath]GoPackageName),
 		usedPackageNames: make(map[GoPackageName]bool),
 		manualImports:    make(map[GoImportPath]bool),
-		annotations:      make(map[string][]Location),
+		annotations:      make(map[string][]Annotation),
 	}
 
 	// All predeclared identifiers in Go are already used.
@@ -1012,8 +1012,32 @@ func (g *GeneratedFile) Unskip() {
 // The symbol may refer to a type, constant, variable, function, method, or
 // struct field.  The "T.sel" syntax is used to identify the method or field
 // 'sel' on type 'T'.
+//
+// Deprecated: Use the AnnotateSymbol method instead.
 func (g *GeneratedFile) Annotate(symbol string, loc Location) {
-	g.annotations[symbol] = append(g.annotations[symbol], loc)
+	g.AnnotateSymbol(symbol, Annotation{Location: loc})
+}
+
+// An Annotation provides semantic detail for a generated proto element.
+//
+// See the google.protobuf.GeneratedCodeInfo.Annotation documentation in
+// descriptor.proto for details.
+type Annotation struct {
+	// Location is the source .proto file for the element.
+	Location Location
+
+	// Semantic is the symbol's effect on the element in the original .proto file.
+	Semantic *descriptorpb.GeneratedCodeInfo_Annotation_Semantic
+}
+
+// AnnotateSymbol associates a symbol in a generated Go file with a location
+// in a source .proto file and a semantic type.
+//
+// The symbol may refer to a type, constant, variable, function, method, or
+// struct field.  The "T.sel" syntax is used to identify the method or field
+// 'sel' on type 'T'.
+func (g *GeneratedFile) AnnotateSymbol(symbol string, info Annotation) {
+	g.annotations[symbol] = append(g.annotations[symbol], info)
 }
 
 // Content returns the contents of the generated file.
@@ -1106,25 +1130,24 @@ func (g *GeneratedFile) Content() ([]byte, error) {
 	return out.Bytes(), nil
 }
 
-// metaFile returns the contents of the file's metadata file, which is a
-// text formatted string of the google.protobuf.GeneratedCodeInfo.
-func (g *GeneratedFile) metaFile(content []byte) (string, error) {
+func (g *GeneratedFile) generatedCodeInfo(content []byte) (*descriptorpb.GeneratedCodeInfo, error) {
 	fset := token.NewFileSet()
 	astFile, err := parser.ParseFile(fset, "", content, 0)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	info := &descriptorpb.GeneratedCodeInfo{}
 
 	seenAnnotations := make(map[string]bool)
 	annotate := func(s string, ident *ast.Ident) {
 		seenAnnotations[s] = true
-		for _, loc := range g.annotations[s] {
+		for _, a := range g.annotations[s] {
 			info.Annotation = append(info.Annotation, &descriptorpb.GeneratedCodeInfo_Annotation{
-				SourceFile: proto.String(loc.SourceFile),
-				Path:       loc.Path,
+				SourceFile: proto.String(a.Location.SourceFile),
+				Path:       a.Location.Path,
 				Begin:      proto.Int32(int32(fset.Position(ident.Pos()).Offset)),
 				End:        proto.Int32(int32(fset.Position(ident.End()).Offset)),
+				Semantic:   a.Semantic,
 			})
 		}
 	}
@@ -1171,8 +1194,19 @@ func (g *GeneratedFile) metaFile(content []byte) (string, error) {
 	}
 	for a := range g.annotations {
 		if !seenAnnotations[a] {
-			return "", fmt.Errorf("%v: no symbol matching annotation %q", g.filename, a)
+			return nil, fmt.Errorf("%v: no symbol matching annotation %q", g.filename, a)
 		}
+	}
+
+	return info, nil
+}
+
+// metaFile returns the contents of the file's metadata file, which is a
+// text formatted string of the google.protobuf.GeneratedCodeInfo.
+func (g *GeneratedFile) metaFile(content []byte) (string, error) {
+	info, err := g.generatedCodeInfo(content)
+	if err != nil {
+		return "", err
 	}
 
 	b, err := prototext.Marshal(info)

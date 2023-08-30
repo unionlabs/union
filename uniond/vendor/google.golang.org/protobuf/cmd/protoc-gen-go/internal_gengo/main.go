@@ -614,7 +614,10 @@ func genMessageSetterMethods(g *protogen.GeneratedFile, f *fileInfo, m *messageI
 
 		genNoInterfacePragma(g, m.isTracked)
 
-		g.Annotate(m.GoIdent.GoName+".Set"+field.GoName, field.Location)
+		g.AnnotateSymbol(m.GoIdent.GoName+".Set"+field.GoName, protogen.Annotation{
+			Location: field.Location,
+			Semantic: descriptorpb.GeneratedCodeInfo_Annotation_SET.Enum(),
+		})
 		leadingComments := appendDeprecationSuffix("",
 			field.Desc.ParentFile(),
 			field.Desc.Options().(*descriptorpb.FieldOptions).GetDeprecated())

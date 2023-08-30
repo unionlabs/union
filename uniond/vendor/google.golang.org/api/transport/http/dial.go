@@ -20,10 +20,9 @@ import (
 	"golang.org/x/oauth2"
 	"google.golang.org/api/googleapi/transport"
 	"google.golang.org/api/internal"
+	"google.golang.org/api/internal/cert"
 	"google.golang.org/api/option"
-	"google.golang.org/api/transport/cert"
 	"google.golang.org/api/transport/http/internal/propagation"
-	"google.golang.org/api/transport/internal/dca"
 )
 
 // NewClient returns an HTTP client for use communicating with a Google cloud
@@ -34,7 +33,7 @@ func NewClient(ctx context.Context, opts ...option.ClientOption) (*http.Client, 
 	if err != nil {
 		return nil, "", err
 	}
-	clientCertSource, endpoint, err := dca.GetClientCertificateSourceAndEndpoint(settings)
+	clientCertSource, dialTLSContext, endpoint, err := internal.GetHTTPTransportConfigAndEndpoint(settings)
 	if err != nil {
 		return nil, "", err
 	}
@@ -42,7 +41,8 @@ func NewClient(ctx context.Context, opts ...option.ClientOption) (*http.Client, 
 	if settings.HTTPClient != nil {
 		return settings.HTTPClient, endpoint, nil
 	}
-	trans, err := newTransport(ctx, defaultBaseTransport(ctx, clientCertSource), settings)
+
+	trans, err := newTransport(ctx, defaultBaseTransport(ctx, clientCertSource, dialTLSContext), settings)
 	if err != nil {
 		return nil, "", err
 	}
@@ -66,7 +66,6 @@ func newTransport(ctx context.Context, base http.RoundTripper, settings *interna
 	paramTransport := &parameterTransport{
 		base:          base,
 		userAgent:     settings.UserAgent,
-		quotaProject:  settings.QuotaProject,
 		requestReason: settings.RequestReason,
 	}
 	var trans http.RoundTripper = paramTransport
@@ -75,6 +74,7 @@ func newTransport(ctx context.Context, base http.RoundTripper, settings *interna
 	case settings.NoAuth:
 		// Do nothing.
 	case settings.APIKey != "":
+		paramTransport.quotaProject = internal.GetQuotaProject(nil, settings.QuotaProject)
 		trans = &transport.APIKey{
 			Transport: trans,
 			Key:       settings.APIKey,
@@ -84,10 +84,7 @@ func newTransport(ctx context.Context, base http.RoundTripper, settings *interna
 		if err != nil {
 			return nil, err
 		}
-		if paramTransport.quotaProject == "" {
-			paramTransport.quotaProject = internal.QuotaProjectFromCreds(creds)
-		}
-
+		paramTransport.quotaProject = internal.GetQuotaProject(creds, settings.QuotaProject)
 		ts := creds.TokenSource
 		if settings.ImpersonationConfig == nil && settings.TokenSource != nil {
 			ts = settings.TokenSource
@@ -156,7 +153,7 @@ var appengineUrlfetchHook func(context.Context) http.RoundTripper
 // Otherwise, use a default transport, taking most defaults from
 // http.DefaultTransport.
 // If TLSCertificate is available, set TLSClientConfig as well.
-func defaultBaseTransport(ctx context.Context, clientCertSource cert.Source) http.RoundTripper {
+func defaultBaseTransport(ctx context.Context, clientCertSource cert.Source, dialTLSContext func(context.Context, string, string) (net.Conn, error)) http.RoundTripper {
 	if appengineUrlfetchHook != nil {
 		return appengineUrlfetchHook(ctx)
 	}
@@ -174,6 +171,10 @@ func defaultBaseTransport(ctx context.Context, clientCertSource cert.Source) htt
 		trans.TLSClientConfig = &tls.Config{
 			GetClientCertificate: clientCertSource,
 		}
+	}
+	if dialTLSContext != nil {
+		// If DialTLSContext is set, TLSClientConfig wil be ignored
+		trans.DialTLSContext = dialTLSContext
 	}
 
 	configureHTTP2(trans)

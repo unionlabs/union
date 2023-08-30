@@ -92,7 +92,7 @@ func toNotification(rn *raw.Notification) *Notification {
 	return n
 }
 
-func toNotificationFromProto(pbn *storagepb.Notification) *Notification {
+func toNotificationFromProto(pbn *storagepb.NotificationConfig) *Notification {
 	n := &Notification{
 		ID:               pbn.GetName(),
 		EventTypes:       pbn.GetEventTypes(),
@@ -104,8 +104,8 @@ func toNotificationFromProto(pbn *storagepb.Notification) *Notification {
 	return n
 }
 
-func toProtoNotification(n *Notification) *storagepb.Notification {
-	return &storagepb.Notification{
+func toProtoNotification(n *Notification) *storagepb.NotificationConfig {
+	return &storagepb.NotificationConfig{
 		Name: n.ID,
 		Topic: fmt.Sprintf("//pubsub.googleapis.com/projects/%s/topics/%s",
 			n.TopicProjectID, n.TopicID),
@@ -182,7 +182,7 @@ func notificationsToMap(rns []*raw.Notification) map[string]*Notification {
 	return m
 }
 
-func notificationsToMapFromProto(ns []*storagepb.Notification) map[string]*Notification {
+func notificationsToMapFromProto(ns []*storagepb.NotificationConfig) map[string]*Notification {
 	m := map[string]*Notification{}
 	for _, n := range ns {
 		m[n.Name] = toNotificationFromProto(n)

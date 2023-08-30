@@ -19,9 +19,9 @@ import (
 	"io"
 	"time"
 
+	"cloud.google.com/go/iam/apiv1/iampb"
 	gax "github.com/googleapis/gax-go/v2"
 	"google.golang.org/api/option"
-	iampb "google.golang.org/genproto/googleapis/iam/v1"
 )
 
 // TODO(noahdietz): Move existing factory methods to this file.
