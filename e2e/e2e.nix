@@ -62,7 +62,7 @@
               sepolia.wait_for_open_port(${toString sepoliaNode.wait_for_open_port})
 
               # match non-zero blocks
-              union.wait_for_console_text('${unionNode.wait_for_console_text}')
+              union.wait_until_succeeds('[[ $(curl "http://localhost:26660/block" --fail --silent | ${pkgs.lib.meta.getExe pkgs.jq} ".result.block.header.height | tonumber > 1") == "true" ]]')
               sepolia.wait_for_console_text('${sepoliaNode.wait_for_console_text}')
 
               sepolia.wait_until_succeeds('[[ $(curl http://localhost:9596/eth/v2/beacon/blocks/head --fail --silent | ${pkgs.lib.meta.getExe pkgs.jq} \'.data.message.slot | tonumber > 0\') == "true" ]]')
