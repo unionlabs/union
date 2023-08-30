@@ -216,7 +216,7 @@ var (
 		govtypes.ModuleName:            {authtypes.Burner},
 		ibctransfertypes.ModuleName:    {authtypes.Minter, authtypes.Burner},
 		ibcfeetypes.ModuleName:         nil,
-		wasmtypes.ModuleName:                {authtypes.Burner}, // TODO(aeryz): is this necessary?
+		wasmtypes.ModuleName:           {authtypes.Burner}, // TODO(aeryz): is this necessary?
 		// this line is used by starport scaffolding # stargate/app/maccPerms
 	}
 )
