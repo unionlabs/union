@@ -340,15 +340,21 @@ impl<'a, P: Pairing> ZkpDecoder<'a, P> {
     }
 
     fn current_slice(&mut self) -> &mut [u8] {
-        &mut self.buffer[self.index..]
+        // safe as long as the sequence in `decode_full` is correct
+        // arkworks expect little endian encoding
+        unsafe {
+            self.buffer.get_unchecked_mut(self.index..)
+        }
     }
 
     fn decode_g1(&mut self) -> Result<P::G1Affine, Error> {
-        // expecting little endian
         let current_slice = self.current_slice();
-        // indexing is safe as we previously checked the proof size
-        current_slice[0..32].reverse();
-        current_slice[32..64].reverse();
+        // safe as long as the sequence in `decode_full` is correct
+        // arkworks expect little endian encoding
+        unsafe {
+            current_slice.get_unchecked_mut(0..32).reverse();
+            current_slice.get_unchecked_mut(32..64).reverse();
+        }
         let point =
             <P::G1Affine as CanonicalDeserialize>::deserialize_uncompressed(&*current_slice)
                 .map_err(|_| Error::InvalidPoint)?;
@@ -357,11 +363,13 @@ impl<'a, P: Pairing> ZkpDecoder<'a, P> {
     }
 
     fn decode_g2(&mut self) -> Result<P::G2Affine, Error> {
-        // expecting little endian
         let current_slice = self.current_slice();
-        // indexing is safe as we previously checked the proof size
-        current_slice[0..64].reverse();
-        current_slice[64..128].reverse();
+        // safe as long as the sequence in `decode_full` is correct
+        // arkworks expect little endian encoding
+        unsafe {
+            current_slice.get_unchecked_mut(0..64).reverse();
+            current_slice.get_unchecked_mut(64..128).reverse();
+        }
         let point =
             <P::G2Affine as CanonicalDeserialize>::deserialize_uncompressed(&*current_slice)
                 .map_err(|_| Error::InvalidPoint)?;
@@ -370,9 +378,9 @@ impl<'a, P: Pairing> ZkpDecoder<'a, P> {
     }
 
     fn decode_commitment_hash(&mut self) -> Result<U256, Error> {
-        // indexing is safe as we previously checked the proof size
-        let commitment_hash = U256::try_from(self.current_slice()[0..32].as_ref())
-            .map_err(|_| Error::InvalidPoint)?;
+        // safe as long as the sequence in `decode_full` is correct
+        let current_slice = unsafe { self.current_slice().get_unchecked(0..32) };
+        let commitment_hash = U256::try_from(current_slice).map_err(|_| Error::InvalidPoint)?;
         self.index += 32;
         Ok(commitment_hash)
     }
