@@ -55,11 +55,11 @@ func CanonicalizeProposal(chainID string, proposal *cmtproto.Proposal) cmtproto.
 // not contain ValidatorIndex and ValidatorAddress fields.
 func CanonicalizeVote(chainID string, vote *cmtproto.Vote) cmtproto.CanonicalVote {
 	return cmtproto.CanonicalVote{
-		Type:      vote.Type,
-		Height:    vote.Height,       // encoded as sfixed64
-		Round:     int64(vote.Round), // encoded as sfixed64
-		BlockID:   CanonicalizeBlockID(vote.BlockID),
-		ChainID:   chainID,
+		Type:    vote.Type,
+		Height:  vote.Height,       // encoded as sfixed64
+		Round:   int64(vote.Round), // encoded as sfixed64
+		BlockID: CanonicalizeBlockID(vote.BlockID),
+		ChainID: chainID,
 	}
 }
 
@@ -69,4 +69,17 @@ func CanonicalTime(t time.Time) string {
 	// local time, we need to force UTC here, so the
 	// signatures match
 	return cmttime.Canonical(t).Format(TimeFormat)
+}
+
+// Same as `CanonicalizeVote` but uses `Tendermint/CometBFT`'s `CanonicalVote` instead to
+// be able to be used by the `07-tendermint` light client.
+func CanonicalizeVoteLegacy(chainID string, vote *cmtproto.Vote) cmtproto.LegacyCanonicalVote {
+	return cmtproto.LegacyCanonicalVote{
+		Type:      vote.Type,
+		Height:    vote.Height,       // encoded as sfixed64
+		Round:     int64(vote.Round), // encoded as sfixed64
+		BlockID:   CanonicalizeBlockID(vote.BlockID),
+		Timestamp: vote.Timestamp,
+		ChainID:   chainID,
+	}
 }

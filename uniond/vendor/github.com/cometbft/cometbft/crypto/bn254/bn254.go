@@ -21,17 +21,17 @@ import (
 )
 
 const (
-	PubKeySize     = sizePublicKey
-	PrivKeySize    = sizePrivateKey
-	sizeFr         = fr.Bytes
-	sizeFp         = fp.Bytes
-	sizePublicKey  = sizeFp
-	sizePrivateKey = sizeFr + sizePublicKey
+	PubKeySize               = sizePublicKey
+	PrivKeySize              = sizePrivateKey
+	sizeFr                   = fr.Bytes
+	sizeFp                   = fp.Bytes
+	sizePublicKey            = sizeFp
+	sizePrivateKey           = sizeFr + sizePublicKey
 	XHashToScalarFieldPrefix = 0
 	YHashToScalarFieldPrefix = 1
-	PrivKeyName    = "tendermint/PrivKeyBn254"
-	PubKeyName     = "tendermint/PubKeyBn254"
-	KeyType        = "bn254"
+	PrivKeyName              = "tendermint/PrivKeyBn254"
+	PubKeyName               = "tendermint/PubKeyBn254"
+	KeyType                  = "bn254"
 )
 
 var G1Gen bn254.G1Affine

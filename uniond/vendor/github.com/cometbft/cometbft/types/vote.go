@@ -100,6 +100,19 @@ func VoteSignBytes(chainID string, vote *cmtproto.Vote) []byte {
 	return bz
 }
 
+// Same as `VoteSignBytes` but uses Tendermint/CometBFT's CanonicalVote instead.
+// This function is implemented mainly to be able to support the `07-tendermint`
+// light client.
+func VoteSignBytesLegacy(chainID string, vote *cmtproto.Vote) []byte {
+	pb := CanonicalizeVoteLegacy(chainID, vote)
+	bz, err := protoio.MarshalDelimited(&pb)
+	if err != nil {
+		panic(err)
+	}
+
+	return bz
+}
+
 func (vote *Vote) Copy() *Vote {
 	voteCopy := *vote
 	return &voteCopy

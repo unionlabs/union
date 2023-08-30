@@ -202,7 +202,7 @@ github.com/cockroachdb/apd/v2
 # github.com/coinbase/rosetta-sdk-go/types v1.0.0
 ## explicit; go 1.18
 github.com/coinbase/rosetta-sdk-go/types
-# github.com/cometbft/cometbft v0.37.2 => github.com/unionlabs/cometbls v0.0.0-20230606200400-20834775a066
+# github.com/cometbft/cometbft v0.37.2 => github.com/unionlabs/cometbls v0.0.0-20230829063146-368fe576a2bd
 ## explicit; go 1.20
 github.com/cometbft/cometbft/abci/client
 github.com/cometbft/cometbft/abci/example/code
@@ -625,7 +625,7 @@ github.com/cosmos/iavl/internal/bytes
 github.com/cosmos/iavl/internal/encoding
 github.com/cosmos/iavl/internal/logger
 github.com/cosmos/iavl/keyformat
-# github.com/cosmos/ibc-go/v7 v7.0.1 => github.com/unionlabs/ibc-go/v7 v7.0.0-20230622093418-f1bf9b990248
+# github.com/cosmos/ibc-go/v7 v7.0.1 => github.com/unionlabs/ibc-go/v7 v7.0.0-20230829071836-44baa00ab151
 ## explicit; go 1.19
 github.com/cosmos/ibc-go/v7/internal/errors
 github.com/cosmos/ibc-go/v7/internal/logging
@@ -1479,8 +1479,8 @@ rsc.io/tmplfunc/internal/parse
 # sigs.k8s.io/yaml v1.3.0
 ## explicit; go 1.12
 sigs.k8s.io/yaml
-# github.com/cometbft/cometbft => github.com/unionlabs/cometbls v0.0.0-20230606200400-20834775a066
+# github.com/cometbft/cometbft => github.com/unionlabs/cometbls v0.0.0-20230829063146-368fe576a2bd
 # github.com/consensys/gnark-crypto => github.com/unionlabs/gnark-crypto v0.0.0-20230409222230-5346db050fea
 # github.com/cosmos/cosmos-sdk => github.com/unionlabs/cosmos-sdk v0.0.0-20230811204628-91742f9fdc1c
-# github.com/cosmos/ibc-go/v7 => github.com/unionlabs/ibc-go/v7 v7.0.0-20230622093418-f1bf9b990248
+# github.com/cosmos/ibc-go/v7 => github.com/unionlabs/ibc-go/v7 v7.0.0-20230829071836-44baa00ab151
 # github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
