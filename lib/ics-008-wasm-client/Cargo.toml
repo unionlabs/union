@@ -1,5 +1,5 @@
 [package]
-name = "wasm-light-client-types"
+name = "ics008-wasm-client"
 version = "0.1.0"
 authors = ["Union Labs"]
 edition = "2021"

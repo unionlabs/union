@@ -6,10 +6,14 @@ use protos::{
     },
 };
 
+mod ibc_client;
 pub mod msg;
+
+pub use ibc_client::*;
 
 pub enum Error {
     Decode(String),
+    NotSpecCompilant(String),
 }
 
 impl Error {

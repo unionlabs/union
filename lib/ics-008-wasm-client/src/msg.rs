@@ -104,10 +104,11 @@ pub enum ExecuteMsg {
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub enum QueryMsg {
     Status {},
+    ExportMetadata {},
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
-pub struct StatusResponse {
+pub struct QueryResponse {
     pub status: String,
     pub genesis_metadata: Vec<GenesisMetadata>,
 }
@@ -129,9 +130,9 @@ impl Display for Status {
     }
 }
 
-impl From<Status> for StatusResponse {
+impl From<Status> for QueryResponse {
     fn from(value: Status) -> Self {
-        StatusResponse {
+        QueryResponse {
             status: value.to_string(),
             genesis_metadata: Vec::new(),
         }
