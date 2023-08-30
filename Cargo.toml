@@ -4,7 +4,6 @@ members = [
   "lib/*/fuzz",
   "light-clients/ethereum-light-client",
   "light-clients/cometbls-light-client",
-  "light-clients/wasm-light-client-types",
   "generated/rust",
   "generated/contracts",
   "unionvisor",
@@ -45,7 +44,7 @@ contracts = { path = "generated/contracts", default-features = false }
 serde-utils = { path = "lib/serde-utils", default-features = false }
 ethereum-verifier = { path = "lib/ethereum-verifier", default-features = false }
 cometbls-groth16-verifier = { path = "lib/cometbls-groth16-verifier", default-features = false }
-wasm-light-client-types = { path = "light-clients/wasm-light-client-types", default-features = false }
+ics008-wasm-client = { path = "lib/ics-008-wasm-client", default-features = false }
 protos = { path = "generated/rust", default-features = false }
 unionlabs = { path = "lib/unionlabs", default-features = false }
 beacon-api = { path = "lib/beacon-api", default-features = false }
