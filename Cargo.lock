@@ -959,6 +959,7 @@ dependencies = [
  "ark-ff",
  "ark-groth16",
  "ark-serialize",
+ "byteorder",
  "ethabi",
  "hex-literal",
  "sha3",
