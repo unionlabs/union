@@ -12,6 +12,7 @@ ark-serialize = { version = "0.4", default-features = false }
 ethabi = { version = "18.0", default-features = false }
 sha3 = { version = "0.10", default-features = false }
 hex-literal = { version = "0.4", default-features = false }
+byteorder = { version = "1.4", default-features = false }
 
 [features]
 default = []

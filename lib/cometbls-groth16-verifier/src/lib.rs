@@ -1,6 +1,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 extern crate alloc;
+
 use core::{
     marker::PhantomData,
     ops::{AddAssign, Neg},
@@ -10,6 +11,7 @@ use ark_ec::{pairing::Pairing, AffineRepr, CurveGroup};
 use ark_ff::{vec, vec::Vec, BigInt, Field, PrimeField, QuadExtField};
 use ark_groth16::VerifyingKey;
 use ark_serialize::CanonicalDeserialize;
+use byteorder::{BigEndian, ByteOrder, LittleEndian};
 use ethabi::ethereum_types::U256;
 use hex_literal::hex;
 use sha3::Digest;
@@ -295,12 +297,138 @@ fn hash_to_field(message: &[u8]) -> U256 {
     (U256::from(&hmac_keccak(message)) % PRIME_R_MINUS_ONE) + 1
 }
 
+pub const G1_SIZE: usize = 64;
+pub const G2_SIZE: usize = 2 * G1_SIZE;
+pub const COMMITMENT_HASH_SIZE: usize = 32;
+
+pub struct G1Affine<FromOrder: ByteOrder, P: Pairing>(PhantomData<FromOrder>, P::G1Affine);
+pub type G1AffineBE<P> = G1Affine<BigEndian, P>;
+pub type G1AffineLE<P> = G1Affine<LittleEndian, P>;
+
+impl<P: Pairing> TryFrom<[u8; G1_SIZE]> for G1AffineBE<P> {
+    type Error = Error;
+    fn try_from(mut value: [u8; G1_SIZE]) -> Result<Self, Self::Error> {
+        value[0..32].reverse();
+        value[32..64].reverse();
+        let G1Affine(_, point) = G1Affine::<LittleEndian, P>::try_from(value)?;
+        Ok(G1Affine(PhantomData, point))
+    }
+}
+
+impl<P: Pairing> TryFrom<[u8; G1_SIZE]> for G1AffineLE<P> {
+    type Error = Error;
+    fn try_from(value: [u8; G1_SIZE]) -> Result<Self, Self::Error> {
+        let point = <P::G1Affine as CanonicalDeserialize>::deserialize_uncompressed(value.as_ref())
+            .map_err(|_| Error::InvalidPoint)?;
+        Ok(G1Affine(PhantomData, point))
+    }
+}
+
+pub struct G2Affine<FromOrder, P: Pairing>(PhantomData<FromOrder>, P::G2Affine);
+pub type G2AffineBE<P> = G2Affine<BigEndian, P>;
+pub type G2AffineLE<P> = G2Affine<LittleEndian, P>;
+
+impl<P: Pairing> TryFrom<[u8; G2_SIZE]> for G2AffineBE<P> {
+    type Error = Error;
+    fn try_from(mut value: [u8; G2_SIZE]) -> Result<Self, Self::Error> {
+        value[0..64].reverse();
+        value[64..128].reverse();
+        let G2Affine(_, point) = G2Affine::<LittleEndian, P>::try_from(value)?;
+        Ok(G2Affine(PhantomData, point))
+    }
+}
+
+impl<P: Pairing> TryFrom<[u8; G2_SIZE]> for G2AffineLE<P> {
+    type Error = Error;
+    fn try_from(value: [u8; G2_SIZE]) -> Result<Self, Self::Error> {
+        let point = <P::G2Affine as CanonicalDeserialize>::deserialize_uncompressed(value.as_ref())
+            .map_err(|_| Error::InvalidPoint)?;
+        Ok(G2Affine(PhantomData, point))
+    }
+}
+
+pub struct CommitmentHash<FromOrder>(PhantomData<FromOrder>, U256);
+pub type CommitmentHashBE = CommitmentHash<BigEndian>;
+pub type CommitmentHashLE = CommitmentHash<LittleEndian>;
+
+impl From<[u8; COMMITMENT_HASH_SIZE]> for CommitmentHashBE {
+    fn from(value: [u8; COMMITMENT_HASH_SIZE]) -> Self {
+        CommitmentHash(PhantomData, U256::from_big_endian(&value))
+    }
+}
+
+impl From<[u8; COMMITMENT_HASH_SIZE]> for CommitmentHashLE {
+    fn from(value: [u8; COMMITMENT_HASH_SIZE]) -> Self {
+        CommitmentHash(PhantomData, U256::from_little_endian(&value))
+    }
+}
+
+pub struct ZKP<FromOrder, P: Pairing> {
+    pub neg_a: P::G1Prepared,
+    pub b: P::G2Prepared,
+    pub c: P::G1Prepared,
+    pub commitment_hash: U256,
+    pub proof_commitment: P::G1Affine,
+    pub _marker: PhantomData<FromOrder>,
+}
+
+// G1 + G2 + G1 + U256 + G1
+pub const EXPECTED_PROOF_SIZE: usize = G1_SIZE + G2_SIZE + G1_SIZE + COMMITMENT_HASH_SIZE + G1_SIZE;
+
+// [a ... b ... c ... commitment_hash ... proof_commitment]
+pub type RawZKP = [u8; EXPECTED_PROOF_SIZE];
+
+impl<FromOrder: ByteOrder, P: Pairing> TryFrom<&[u8]> for ZKP<FromOrder, P>
+where
+    G1Affine<FromOrder, P>: TryFrom<[u8; G1_SIZE], Error = Error>,
+    G2Affine<FromOrder, P>: TryFrom<[u8; G2_SIZE], Error = Error>,
+    CommitmentHash<FromOrder>: From<[u8; COMMITMENT_HASH_SIZE]>,
+{
+    type Error = Error;
+    fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
+        let value = RawZKP::try_from(value).map_err(|_| Error::InvalidRawProof)?;
+        // sadly, no const sub-slicing...
+        let G1Affine(_, a) =
+            G1Affine::<FromOrder, P>::try_from(value[0..G1_SIZE].try_into().expect("impossible"))?;
+        let G2Affine(_, b) = G2Affine::<FromOrder, P>::try_from(
+            value[G1_SIZE..G1_SIZE + G2_SIZE]
+                .try_into()
+                .expect("impossible"),
+        )?;
+        let G1Affine(_, c) = G1Affine::<FromOrder, P>::try_from(
+            value[G1_SIZE + G2_SIZE..G1_SIZE + G2_SIZE + G1_SIZE]
+                .try_into()
+                .expect("impossible"),
+        )?;
+        let CommitmentHash(_, commitment_hash) = CommitmentHash::<FromOrder>::from(
+            value[G1_SIZE + G2_SIZE + G1_SIZE..G1_SIZE + G2_SIZE + G1_SIZE + COMMITMENT_HASH_SIZE]
+                .try_into()
+                .expect("impossible"),
+        );
+        let G1Affine(_, proof_commitment) = G1Affine::<FromOrder, P>::try_from(
+            value[G1_SIZE + G2_SIZE + G1_SIZE + COMMITMENT_HASH_SIZE
+                ..G1_SIZE + G2_SIZE + G1_SIZE + COMMITMENT_HASH_SIZE + G1_SIZE]
+                .try_into()
+                .expect("impossible"),
+        )?;
+        Ok(Self {
+            neg_a: P::G1Prepared::from(a.into_group().neg()),
+            b: b.into(),
+            c: c.into(),
+            commitment_hash,
+            proof_commitment,
+            _marker: PhantomData,
+        })
+    }
+}
+
 #[derive(Debug, PartialEq, Eq)]
 pub enum Error {
     EthAbiDecoding,
     InvalidPoint,
     InvalidProof,
     InvalidVerifyingKey,
+    InvalidRawProof,
 }
 
 pub fn verify_zkp(
@@ -315,86 +443,8 @@ pub fn verify_zkp(
         trusted_validators_hash,
         untrusted_validators_hash,
         message,
-        zkp.into(),
+        ZKP::try_from(zkp.into().as_ref())?,
     )
-}
-
-struct ZkpDecoder<'a, P> {
-    buffer: &'a mut [u8],
-    index: usize,
-    _marker: PhantomData<P>,
-}
-
-impl<'a, P: Pairing> ZkpDecoder<'a, P> {
-    fn new(buffer: &'a mut [u8]) -> Self {
-        Self {
-            buffer,
-            index: 0,
-            _marker: PhantomData,
-        }
-    }
-
-    fn current_slice(&mut self) -> &mut [u8] {
-        &mut self.buffer[self.index..]
-    }
-
-    fn decode_g1(&mut self) -> Result<P::G1Affine, Error> {
-        // expecting little endian
-        let current_slice = self.current_slice();
-        current_slice[0..32].reverse();
-        current_slice[32..64].reverse();
-        let point =
-            <P::G1Affine as CanonicalDeserialize>::deserialize_uncompressed(&*current_slice)
-                .map_err(|_| Error::InvalidPoint)?;
-        self.index += 64;
-        Ok(point)
-    }
-
-    fn decode_g2(&mut self) -> Result<P::G2Affine, Error> {
-        // expecting little endian
-        let current_slice = self.current_slice();
-        current_slice[0..64].reverse();
-        current_slice[64..128].reverse();
-        let point =
-            <P::G2Affine as CanonicalDeserialize>::deserialize_uncompressed(&*current_slice)
-                .map_err(|_| Error::InvalidPoint)?;
-        self.index += 128;
-        Ok(point)
-    }
-
-    fn decode_commitment_hash(&mut self) -> Result<U256, Error> {
-        let commitment_hash = U256::try_from(self.current_slice()[0..32].as_ref())
-            .map_err(|_| Error::InvalidPoint)?;
-        self.index += 32;
-        Ok(commitment_hash)
-    }
-
-    #[allow(clippy::type_complexity)]
-    fn decode_full(
-        &mut self,
-    ) -> Result<
-        (
-            P::G1Prepared,
-            P::G2Prepared,
-            P::G1Prepared,
-            U256,
-            P::G1Affine,
-        ),
-        Error,
-    > {
-        let a = self.decode_g1()?;
-        let b = self.decode_g2()?;
-        let c = self.decode_g1()?;
-        let commitment_hash = self.decode_commitment_hash()?;
-        let proof_commitment = self.decode_g1()?;
-        Ok((
-            P::G1Prepared::from(a.into_group().neg()),
-            P::G2Prepared::from(b),
-            P::G1Prepared::from(c),
-            commitment_hash,
-            proof_commitment,
-        ))
-    }
 }
 
 fn verify_generic_zkp<P: Pairing>(
@@ -402,11 +452,8 @@ fn verify_generic_zkp<P: Pairing>(
     trusted_validators_hash: U256,
     untrusted_validators_hash: U256,
     message: &[u8],
-    mut zkp: Vec<u8>,
+    zkp: ZKP<BigEndian, P>,
 ) -> Result<(), Error> {
-    let (neg_a, b, c, commitment_hash, proof_commitment) =
-        ZkpDecoder::<P>::new(&mut zkp).decode_full()?;
-
     let mut buffer = [0u8; 32];
     let mut decode_scalar = move |x: U256| {
         x.to_little_endian(&mut buffer);
@@ -431,7 +478,7 @@ fn verify_generic_zkp<P: Pairing>(
         decode_scalar(untrusted_validators_hash_low),
         decode_scalar(message_x),
         decode_scalar(message_y),
-        decode_scalar(commitment_hash),
+        decode_scalar(zkp.commitment_hash),
     ];
 
     let mut g_ic = vk
@@ -442,7 +489,7 @@ fn verify_generic_zkp<P: Pairing>(
 
     // Gnark specific, we need to aggregate the proof commitment
     // See https://github.com/ConsenSys/gnark/issues/652
-    g_ic.add_assign(proof_commitment);
+    g_ic.add_assign(zkp.proof_commitment);
     for (i, b) in public_inputs
         .into_iter()
         .zip(vk.gamma_abc_g1.iter().skip(1))
@@ -451,8 +498,18 @@ fn verify_generic_zkp<P: Pairing>(
     }
 
     let result = P::multi_pairing(
-        [neg_a, vk.alpha_g1.into(), g_ic.into_affine().into(), c],
-        [b, vk.beta_g2.into(), vk.gamma_g2.into(), vk.delta_g2.into()],
+        [
+            zkp.neg_a,
+            vk.alpha_g1.into(),
+            g_ic.into_affine().into(),
+            zkp.c,
+        ],
+        [
+            zkp.b,
+            vk.beta_g2.into(),
+            vk.gamma_g2.into(),
+            vk.delta_g2.into(),
+        ],
     );
 
     if result.0 == P::TargetField::ONE {
