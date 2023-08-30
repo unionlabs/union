@@ -47,7 +47,7 @@ use unionlabs::{
             },
         },
         google::protobuf::{any::Any, duration::Duration, timestamp::Timestamp},
-        lightclients::{cometbls, ethereum, tendermint::fraction::Fraction, wasm},
+        lightclients::{cometbls, tendermint::fraction::Fraction, wasm},
     },
     tendermint::{
         abci::{event::Event, event_attribute::EventAttribute},
@@ -73,7 +73,7 @@ use crate::{
             ChannelEndPath, ClientConsensusStatePath, ClientStatePath, CommitmentPath,
             ConnectionPath, IbcPath, StateProof,
         },
-        Chain, ChainConnection, ClientStateOf, Connect, ConsensusStateOf, CreateClient,
+        Chain, ChainConnection, ClientStateOf, Connect, ConsensusStateOf, CreateClient, HeaderOf,
         IbcStateRead, LightClient,
     },
     config::UnionChainConfig,
@@ -305,6 +305,8 @@ impl Chain for Union {
         Any<wasm::client_state::ClientState<cometbls::client_state::ClientState>>;
     type SelfConsensusState =
         Any<wasm::consensus_state::ConsensusState<cometbls::consensus_state::ConsensusState>>;
+
+    type Header = cometbls::header::Header;
 
     fn chain_id(&self) -> impl Future<Output = String> + '_ {
         async move { self.chain_id.clone() }
@@ -582,8 +584,6 @@ impl Chain for Union {
 }
 
 impl<C: ChainSpec> LightClient for Ethereum<C> {
-    type UpdateClientMessage = wasm::header::Header<ethereum::header::Header<C>>;
-
     type HostChain = Union;
 
     type CounterpartyChain = Evm<C>;
@@ -597,7 +597,7 @@ impl<C: ChainSpec> LightClient for Ethereum<C> {
     fn update_client(
         &self,
         client_id: String,
-        msg: Self::UpdateClientMessage,
+        msg: HeaderOf<Self::CounterpartyChain>,
     ) -> impl Future<Output = (Height, UpdateClient)> + '_ {
         self.send_msg_and_read_event(MsgUpdateClient {
             client_id,
