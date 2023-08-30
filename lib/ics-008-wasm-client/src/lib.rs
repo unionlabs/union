@@ -8,7 +8,7 @@ pub use msg::*;
 #[derive(Debug)]
 pub enum Error {
     Decode(String),
-    NotSpecCompilant(String),
+    NotSpecCompliant(String),
     ClientStateNotFound,
 }
 

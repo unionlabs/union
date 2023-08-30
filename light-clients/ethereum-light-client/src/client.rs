@@ -51,6 +51,7 @@ impl IBCClient for EthereumLightClient {
 
     type Header = Header<Config>;
 
+    // TODO(aeryz): Change this to appropriate misbehavior type when it is implemented
     type Misbehaviour = Header<Config>;
 
     type ClientState = ClientState;
@@ -114,6 +115,7 @@ impl IBCClient for EthereumLightClient {
 
     fn verify_header(
         deps: Deps<Self::CustomQuery>,
+        _env: Env,
         header: Self::Header,
     ) -> Result<ics008_wasm_client::ContractResult, Self::Error> {
         let trusted_sync_committee = header.trusted_sync_committee;
@@ -185,6 +187,7 @@ impl IBCClient for EthereumLightClient {
 
     fn update_state(
         mut deps: DepsMut<Self::CustomQuery>,
+        _env: Env,
         header: Self::Header,
     ) -> Result<ics008_wasm_client::ContractResult, Self::Error> {
         let trusted_sync_committee = header.trusted_sync_committee;
@@ -277,7 +280,7 @@ impl IBCClient for EthereumLightClient {
         Ok(ContractResult::valid(None))
     }
 
-    fn update_state_on_misbeviour(
+    fn update_state_on_misbehaviour(
         _deps: Deps<Self::CustomQuery>,
         _client_message: ics008_wasm_client::ClientMessage,
     ) -> Result<ics008_wasm_client::ContractResult, Self::Error> {
@@ -686,8 +689,8 @@ mod test {
         ];
 
         for update in updates {
-            EthereumLightClient::verify_header(deps.as_ref(), update.clone()).unwrap();
-            EthereumLightClient::update_state(deps.as_mut(), update.clone()).unwrap();
+            EthereumLightClient::verify_header(deps.as_ref(), mock_env(), update.clone()).unwrap();
+            EthereumLightClient::update_state(deps.as_mut(), mock_env(), update.clone()).unwrap();
             // Consensus state is saved to the updated height.
             if update.consensus_update.attested_header.beacon.slot
                 > update.trusted_sync_committee.trusted_height.revision_height
@@ -840,21 +843,21 @@ mod test {
             .trusted_sync_committee
             .sync_committee
             .aggregate_pubkey = pubkey;
-        assert!(EthereumLightClient::verify_header(deps.as_ref(), update).is_err());
+        assert!(EthereumLightClient::verify_header(deps.as_ref(), mock_env(), update).is_err());
     }
 
     #[test]
     fn verify_header_fails_when_finalized_header_execution_branch_merkle_is_invalid() {
         let (deps, mut update) = prepare_for_fail_tests();
         update.consensus_update.finalized_header.execution_branch[0].0[0] += 1;
-        assert!(EthereumLightClient::verify_header(deps.as_ref(), update).is_err());
+        assert!(EthereumLightClient::verify_header(deps.as_ref(), mock_env(), update).is_err());
     }
 
     #[test]
     fn verify_header_fails_when_finality_branch_merkle_is_invalid() {
         let (deps, mut update) = prepare_for_fail_tests();
         update.consensus_update.finality_branch[0].0[0] += 1;
-        assert!(EthereumLightClient::verify_header(deps.as_ref(), update).is_err());
+        assert!(EthereumLightClient::verify_header(deps.as_ref(), mock_env(), update).is_err());
     }
 
     #[test]

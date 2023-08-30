@@ -25,7 +25,7 @@ pub trait IBCClient {
 
     fn execute(
         deps: DepsMut<Self::CustomQuery>,
-        _env: Env,
+        env: Env,
         _info: MessageInfo,
         msg: ExecuteMsg,
     ) -> Result<ContractResult, Self::Error> {
@@ -70,13 +70,13 @@ pub trait IBCClient {
             } => {
                 if let Some(header) = header {
                     let header = Self::Header::try_from_proto_bytes(&header.data)?;
-                    Self::verify_header(deps.as_ref(), header)
+                    Self::verify_header(deps.as_ref(), env, header)
                 } else if let Some(misbehaviour) = misbehaviour {
                     let misbehaviour =
                         Self::Misbehaviour::try_from_proto_bytes(&misbehaviour.data)?;
                     Self::verify_misbehaviour(deps.as_ref(), misbehaviour)
                 } else {
-                    // Note(aeryz): There is nothing in spec that makes either of the fields to present
+                    // Note(aeryz): Host implementation doesn't count this as error
                     Ok(ContractResult::valid(None))
                 }
             }
@@ -85,9 +85,9 @@ pub trait IBCClient {
             } => {
                 if let Some(header) = header {
                     let header = Self::Header::try_from_proto_bytes(&header.data)?;
-                    Self::update_state(deps, header)
+                    Self::update_state(deps, env, header)
                 } else {
-                    Err(Error::NotSpecCompilant(
+                    Err(Error::NotSpecCompliant(
                         "`UpdateState` is not valid for misbehaviour".to_string(),
                     )
                     .into())
@@ -121,6 +121,7 @@ pub trait IBCClient {
 
     fn verify_header(
         deps: Deps<Self::CustomQuery>,
+        env: Env,
         header: Self::Header,
     ) -> Result<ContractResult, Self::Error>;
 
@@ -131,11 +132,12 @@ pub trait IBCClient {
 
     fn update_state(
         deps: DepsMut<Self::CustomQuery>,
+        env: Env,
         header: Self::Header,
     ) -> Result<ContractResult, Self::Error>;
 
     // TODO(aeryz): make this client message generic over the underlying types
-    fn update_state_on_misbeviour(
+    fn update_state_on_misbehaviour(
         deps: Deps<Self::CustomQuery>,
         client_message: ClientMessage,
     ) -> Result<ContractResult, Self::Error>;

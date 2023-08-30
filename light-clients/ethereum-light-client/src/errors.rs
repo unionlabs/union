@@ -131,9 +131,9 @@ impl From<TryFromProtoBytesError<TryFromProtoErrorOf<Header<Config>>>> for Error
 impl From<ics008_wasm_client::Error> for Error {
     fn from(error: ics008_wasm_client::Error) -> Self {
         match error {
-            ics008_wasm_client::Error::Decode(e) => Error::Wasm(e),
-            ics008_wasm_client::Error::NotSpecCompilant(e) => Error::Wasm(e),
-            ics008_wasm_client::Error::ClientStateNotFound => Error::Wasm(format!("err:#?")),
+            ics008_wasm_client::Error::Decode(e) => Error::DecodeError(e),
+            ics008_wasm_client::Error::NotSpecCompliant(e) => Error::Wasm(e),
+            ics008_wasm_client::Error::ClientStateNotFound => Error::Wasm(format!("{error:#?}")),
         }
     }
 }
