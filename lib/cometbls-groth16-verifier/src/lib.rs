@@ -342,9 +342,7 @@ impl<'a, P: Pairing> ZkpDecoder<'a, P> {
     fn current_slice(&mut self) -> &mut [u8] {
         // safe as long as the sequence in `decode_full` is correct
         // arkworks expect little endian encoding
-        unsafe {
-            self.buffer.get_unchecked_mut(self.index..)
-        }
+        unsafe { self.buffer.get_unchecked_mut(self.index..) }
     }
 
     fn decode_g1(&mut self) -> Result<P::G1Affine, Error> {

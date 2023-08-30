@@ -92,6 +92,7 @@ anypb
 anys
 appparams
 arion
+arkworks
 attrsets
 authcmd
 authkeeper
@@ -123,6 +124,7 @@ blocksync
 blst
 boneh
 builtins
+byteorder
 cachix
 canonicalization
 capabilitykeeper
