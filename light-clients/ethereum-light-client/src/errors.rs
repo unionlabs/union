@@ -1,5 +1,10 @@
 use cosmwasm_std::StdError;
 use thiserror::Error as ThisError;
+use unionlabs::{
+    ibc::lightclients::ethereum::header::Header, TryFromProtoBytesError, TryFromProtoErrorOf,
+};
+
+use crate::Config;
 
 #[derive(ThisError, Debug, PartialEq)]
 pub enum Error {
@@ -87,6 +92,9 @@ pub enum Error {
 
     #[error("Custom query: {0}")]
     CustomQuery(String),
+
+    #[error("Wasm client error: {0}")]
+    Wasm(String),
 }
 
 impl Error {
@@ -114,10 +122,18 @@ impl Error {
     }
 }
 
-impl From<wasm_light_client_types::Error> for Error {
-    fn from(error: wasm_light_client_types::Error) -> Self {
+impl From<TryFromProtoBytesError<TryFromProtoErrorOf<Header<Config>>>> for Error {
+    fn from(value: TryFromProtoBytesError<TryFromProtoErrorOf<Header<Config>>>) -> Self {
+        Self::DecodeError(format!("{:?}", value))
+    }
+}
+
+impl From<ics008_wasm_client::Error> for Error {
+    fn from(error: ics008_wasm_client::Error) -> Self {
         match error {
-            wasm_light_client_types::Error::Decode(e) => Error::DecodeError(e),
+            ics008_wasm_client::Error::Decode(e) => Error::Wasm(e),
+            ics008_wasm_client::Error::NotSpecCompilant(e) => Error::Wasm(e),
+            ics008_wasm_client::Error::ClientStateNotFound => Error::Wasm(format!("err:#?")),
         }
     }
 }

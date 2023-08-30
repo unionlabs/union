@@ -1,12 +1,10 @@
+pub mod client;
 pub mod consensus_state;
 pub mod context;
 pub mod contract;
 pub mod custom_query;
 pub mod errors;
 pub mod eth_encoding;
-pub mod header;
-pub mod msg;
-pub mod state;
 
 #[cfg(feature = "mainnet")]
 pub use unionlabs::ethereum_consts_traits::Mainnet as Config;
