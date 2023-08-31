@@ -28181,16 +28181,16 @@
       "locked": {
         "lastModified": 1693491011,
         "narHash": "sha256-1mXZZbjsfn4ACz30Ul2cPAu8JVIlWBcEUptk4qZt8NQ=",
-        "ref": "release-v0.10.0",
+        "owner": "unionlabs",
+        "repo": "union",
         "rev": "68eec5926d7c50e3c1d78ab87c4af4b09b2806d6",
-        "revCount": 1434,
-        "type": "git",
-        "url": "https://github.com/unionlabs/union"
+        "type": "github"
       },
       "original": {
+        "owner": "unionlabs",
         "ref": "release-v0.10.0",
-        "type": "git",
-        "url": "https://github.com/unionlabs/union"
+        "repo": "union",
+        "type": "github"
       }
     },
     "v0_6_0": {
@@ -28510,16 +28510,16 @@
       "locked": {
         "lastModified": 1687961406,
         "narHash": "sha256-wgSzotO2Xv3L8tZJHi8tzd6+Cq6zVMOMKE2uZeVXCTQ=",
-        "ref": "release-v0.8.0",
+        "owner": "unionlabs",
+        "repo": "union",
         "rev": "2cd32b62b8e9fcd28bf7ee6e1e35f9f6aadf1fcf",
-        "revCount": 957,
-        "type": "git",
-        "url": "https://github.com/unionlabs/union"
+        "type": "github"
       },
       "original": {
+        "owner": "unionlabs",
         "ref": "release-v0.8.0",
-        "type": "git",
-        "url": "https://github.com/unionlabs/union"
+        "repo": "union",
+        "type": "github"
       }
     },
     "v0_8_0_4": {
@@ -28613,16 +28613,16 @@
       "locked": {
         "lastModified": 1692899099,
         "narHash": "sha256-JgvbTkT4IlzjKTFZN1SJ660LHOxJ4y5qnjY6q0+/o8c=",
-        "ref": "release-v0.9.0",
+        "owner": "unionlabs",
+        "repo": "union",
         "rev": "20022919cfc8d73b8cd151fdede3582345fc3173",
-        "revCount": 1359,
-        "type": "git",
-        "url": "https://github.com/unionlabs/union"
+        "type": "github"
       },
       "original": {
+        "owner": "unionlabs",
         "ref": "release-v0.9.0",
-        "type": "git",
-        "url": "https://github.com/unionlabs/union"
+        "repo": "union",
+        "type": "github"
       }
     }
   },
