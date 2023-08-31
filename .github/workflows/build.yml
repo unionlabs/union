@@ -55,7 +55,6 @@ jobs:
               # Do not run on both systems
               [.attr] | inside(
                 [
-                  "bundle-testnet",
                   "devnet",
                   "devnet-cosmos",
                   "devnet-evm",
