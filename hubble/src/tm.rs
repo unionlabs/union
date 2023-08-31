@@ -52,13 +52,15 @@ impl Config {
         let mut height: u32 = if data.blocks.is_empty() {
             0
         } else {
-            TryInto::<u32>::try_into(data.blocks[0].height).unwrap() + 1_u32
+            TryInto::<u32>::try_into(data.blocks[0].height).unwrap()
         };
         debug!("latest stored block height is: {}", &height);
 
         let chain_db_id = data.chains[0].id;
 
         loop {
+            height += 1;
+
             info!("indexing block {}", &height);
             // if we're caught up indexing to the latest height, this will error. In that case,
             // we retry until we obtain the next header.
@@ -140,7 +142,6 @@ impl Config {
             };
 
             do_post::<InsertBlock>(secret, &url, &db, v).await?;
-            height += 1;
         }
     }
 }

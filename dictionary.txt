@@ -369,6 +369,7 @@ noexecstack
 nolint
 numtide
 omit
+omnichain
 openapi
 openapiv
 optimisitic
