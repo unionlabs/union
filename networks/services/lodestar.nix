@@ -6,10 +6,6 @@ let
     text = ''
       ETH_ENDPOINT=http://geth:8545
       EXECUTION_ENDPOINT=http://geth:8551
-      curl "$ETH_ENDPOINT" \
-                        -X POST \
-                        -H 'Content-Type: application/json' \
-                        -d '{"jsonrpc": "2.0", "id": "1", "method": "eth_getBlockByNumber","params": ["0x0", false]}'
       ETH_GENESIS_HASH=$(curl "$ETH_ENDPOINT" \
         -X POST \
         -H 'Content-Type: application/json' \
