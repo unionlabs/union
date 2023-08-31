@@ -19,6 +19,7 @@
     "**/node_modules",
     "uniond/vendor",
     "uniond/x/union/types",
+    "uniond/x/tokenfactory",
     "uniond/proto",
     "galoisd/vendor",
     "**/go.mod",

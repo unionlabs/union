@@ -511,6 +511,10 @@ testdata
 testkeeper
 testkey
 testutil
+tfbindings
+tfkeeper
+tfmodule
+tftypes
 thiserror
 tkey
 tkeys
@@ -523,6 +527,7 @@ tmproto
 tmrand
 tmservice
 tmtypes
+tokenfactory
 tokenizable
 tokenz
 tombstoned
