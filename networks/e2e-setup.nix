@@ -382,14 +382,14 @@
             createClients() {
               echo ------------------------------------
               echo "+ Creating light client on evm."
-              RUST_LOG=voyager=info ${self'.packages.voyager}/bin/voyager \
+              RUST_LOG=voyager=debug ${self'.packages.voyager}/bin/voyager \
                 --config-file-path "$VOYAGER_CONFIG_FILE" \
                 client create evm cometbls \
                 --on ethereum-devnet \
                 --counterparty union-devnet
               echo ------------------------------------
               echo "+ Creating client on union."
-              RUST_LOG=voyager=info ${self'.packages.voyager}/bin/voyager \
+              RUST_LOG=voyager=debug ${self'.packages.voyager}/bin/voyager \
                 --config-file-path "$VOYAGER_CONFIG_FILE" \
                 client create union ethereum08-wasm \
                 --on union-devnet \
@@ -434,7 +434,7 @@
             setIcs20Operator() {
                 echo ------------------------------------------------------------
                 echo "+ Setting up the operator contract for ICS20 transfer"
-                RUST_LOG=voyager=info ${self'.packages.voyager}/bin/voyager \
+                RUST_LOG=voyager=debug ${self'.packages.voyager}/bin/voyager \
                   --config-file-path "$VOYAGER_CONFIG_FILE" \
                   setup set-operator \
                   --on ethereum-devnet
@@ -447,7 +447,7 @@
 
                 echo ------------------------------------------------------------
                 echo "+ Doing connection and channel handshakes.."
-                echo RUST_LOG=voyager=info ${self'.packages.voyager}/bin/voyager \
+                echo RUST_LOG=voyager=debug ${self'.packages.voyager}/bin/voyager \
                 --config-file-path "$VOYAGER_CONFIG_FILE" \
                   connection open \
                   --to-chain union-devnet \
@@ -455,7 +455,7 @@
                   --from-chain ethereum-devnet \
                   --from-client cometbls-new-0
 
-                RUST_LOG=voyager=info ${self'.packages.voyager}/bin/voyager \
+                RUST_LOG=voyager=debug ${self'.packages.voyager}/bin/voyager \
                 --config-file-path "$VOYAGER_CONFIG_FILE" \
                   connection open \
                   --to-chain union-devnet \
@@ -463,14 +463,14 @@
                   --from-chain ethereum-devnet \
                   --from-client cometbls-new-0
 
-                RUST_LOG=voyager=info ${self'.packages.voyager}/bin/voyager \
+                RUST_LOG=voyager=debug ${self'.packages.voyager}/bin/voyager \
                   --config-file-path "$VOYAGER_CONFIG_FILE" \
                   setup bind-port \
                   --on ethereum-devnet \
                   --module-address "$PING_PONG_MODULE_ADDRESS" \
                   --port-id "ping-pong"
 
-                RUST_LOG=voyager=info ${self'.packages.voyager}/bin/voyager \
+                RUST_LOG=voyager=debug ${self'.packages.voyager}/bin/voyager \
                   --config-file-path "$VOYAGER_CONFIG_FILE" \
                   channel open \
                   --to-chain union-devnet \
@@ -583,7 +583,7 @@
             echo "----------------------------------------------------------------"
             echo "+ Run voyager to relay the packets with the following command:"
 
-            VOYAGER_CMD='RUST_LOG=voyager=info ${self'.packages.voyager}/bin/voyager \
+            VOYAGER_CMD='RUST_LOG=voyager=debug ${self'.packages.voyager}/bin/voyager \
               --config-file-path '"$VOYAGER_CONFIG_FILE"' \
               relay \
               --between union-devnet:ethereum-devnet'
