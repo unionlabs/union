@@ -1,6 +1,12 @@
+use core::fmt::Debug;
+
 use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo};
 use unionlabs::{
-    ibc::core::client::height::Height, TryFromProto, TryFromProtoBytesError, TryFromProtoErrorOf,
+    ibc::{
+        core::client::height::Height,
+        lightclients::wasm::{client_state::ClientState, consensus_state::ConsensusState},
+    },
+    Proto, TryFromProto, TryFromProtoBytesError, TryFromProtoErrorOf,
 };
 
 use crate::{
@@ -13,22 +19,30 @@ pub enum StorageState {
     Empty,
 }
 
-pub trait IBCClient {
-    type Error: From<TryFromProtoBytesError<TryFromProtoErrorOf<Self::Header>>>
-        + From<TryFromProtoBytesError<TryFromProtoErrorOf<Self::Misbehaviour>>>
-        + From<Error>;
+pub trait IbcClient {
+    type Error: From<TryFromProtoBytesError<TryFromProtoErrorOf<Self::Header>>> + From<Error>;
     type CustomQuery: cosmwasm_std::CustomQuery;
+    // TODO(aeryz): see #583
     type Header: TryFromProto;
-    type Misbehaviour: TryFromProto;
-    type ClientState;
-    type ConsensusState;
+    // TODO(aeryz): see #583, #588
+    type Misbehaviour;
+    type ClientState: TryFromProto;
+    type ConsensusState: TryFromProto;
 
     fn execute(
         deps: DepsMut<Self::CustomQuery>,
         env: Env,
         _info: MessageInfo,
         msg: ExecuteMsg,
-    ) -> Result<ContractResult, Self::Error> {
+    ) -> Result<ContractResult, Self::Error>
+    where
+        // NOTE(aeryz): unfortunately bounding to `Debug` in associated type creates a
+        // recursion in the compiler, see this issue: https://github.com/rust-lang/rust/issues/87755
+        <Self::ClientState as Proto>::Proto: prost::Message + Default,
+        TryFromProtoErrorOf<Self::ClientState>: Debug,
+        <Self::ConsensusState as Proto>::Proto: prost::Message + Default,
+        TryFromProtoErrorOf<Self::ConsensusState>: Debug,
+    {
         match msg {
             ExecuteMsg::VerifyMembership {
                 height,
@@ -61,39 +75,54 @@ pub trait IBCClient {
                 path,
                 StorageState::Empty,
             ),
-            ExecuteMsg::VerifyClientMessage {
-                client_message:
-                    ClientMessage {
-                        header,
-                        misbehaviour,
-                    },
-            } => {
-                if let Some(header) = header {
+            ExecuteMsg::VerifyClientMessage { client_message } => match client_message {
+                ClientMessage::Header(header) => {
                     let header = Self::Header::try_from_proto_bytes(&header.data)?;
                     Self::verify_header(deps.as_ref(), env, header)
-                } else if let Some(misbehaviour) = misbehaviour {
-                    let misbehaviour =
-                        Self::Misbehaviour::try_from_proto_bytes(&misbehaviour.data)?;
-                    Self::verify_misbehaviour(deps.as_ref(), misbehaviour)
-                } else {
-                    // Note(aeryz): Host implementation doesn't count this as error
-                    Ok(ContractResult::valid(None))
                 }
-            }
-            ExecuteMsg::UpdateState {
-                client_message: ClientMessage { header, .. },
-            } => {
-                if let Some(header) = header {
+                ClientMessage::Misbehaviour(_misbehaviour) => {
+                    Ok(ContractResult::invalid("Not implemented".to_string()))
+                }
+            },
+            ExecuteMsg::UpdateState { client_message } => match client_message {
+                ClientMessage::Header(header) => {
                     let header = Self::Header::try_from_proto_bytes(&header.data)?;
                     Self::update_state(deps, env, header)
-                } else {
-                    Err(Error::NotSpecCompliant(
-                        "`UpdateState` is not valid for misbehaviour".to_string(),
-                    )
-                    .into())
                 }
+                ClientMessage::Misbehaviour(_) => Err(Error::UnexpectedCallDataFromHostModule(
+                    "`UpdateState` cannot be called with `Misbehaviour`".to_string(),
+                )
+                .into()),
+            },
+            ExecuteMsg::UpdateStateOnMisbehaviour { client_message } => {
+                Self::update_state_on_misbehaviour(deps, client_message)
             }
-            _ => Ok(ContractResult::valid(None)),
+            ExecuteMsg::CheckForMisbehaviour { client_message } => match client_message {
+                ClientMessage::Header(header) => {
+                    let header = Self::Header::try_from_proto_bytes(&header.data)?;
+                    Self::verify_header(deps.as_ref(), env, header)
+                }
+                ClientMessage::Misbehaviour(_) => {
+                    Ok(ContractResult::invalid("Not implemented".to_string()))
+                }
+            },
+            ExecuteMsg::VerifyUpgradeAndUpdateState {
+                upgrade_client_state,
+                upgrade_consensus_state,
+                proof_upgrade_client,
+                proof_upgrade_consensus_state,
+            } => Self::verify_upgrade_and_update_state(
+                deps,
+                <_>::try_from_proto(upgrade_client_state)
+                    .map_err(|err| Error::Decode(format!("{err:?}")))?,
+                <_>::try_from_proto(upgrade_consensus_state)
+                    .map_err(|err| Error::Decode(format!("{err:?}")))?,
+                proof_upgrade_client,
+                proof_upgrade_consensus_state,
+            ),
+            ExecuteMsg::CheckSubstituteAndUpdateState {} => {
+                Self::check_substitute_and_update_state(deps.as_ref())
+            }
         }
     }
 
@@ -138,19 +167,24 @@ pub trait IBCClient {
 
     // TODO(aeryz): make this client message generic over the underlying types
     fn update_state_on_misbehaviour(
-        deps: Deps<Self::CustomQuery>,
+        deps: DepsMut<Self::CustomQuery>,
         client_message: ClientMessage,
     ) -> Result<ContractResult, Self::Error>;
 
-    fn check_for_misbehaviour(
+    fn check_for_misbehaviour_on_header(
         deps: Deps<Self::CustomQuery>,
-        client_message: ClientMessage,
+        header: Self::Header,
+    ) -> Result<ContractResult, Self::Error>;
+
+    fn check_for_misbehaviour_on_misbehaviour(
+        deps: Deps<Self::CustomQuery>,
+        misbehaviour: Self::Misbehaviour,
     ) -> Result<ContractResult, Self::Error>;
 
     fn verify_upgrade_and_update_state(
-        deps: Deps<Self::CustomQuery>,
-        upgrade_client_state: Self::ClientState,
-        upgrade_consensus_state: Self::ConsensusState,
+        deps: DepsMut<Self::CustomQuery>,
+        upgrade_client_state: ClientState<Self::ClientState>,
+        upgrade_consensus_state: ConsensusState<Self::ConsensusState>,
         proof_upgrade_client: Binary,
         proof_upgrade_consensus_state: Binary,
     ) -> Result<ContractResult, Self::Error>;

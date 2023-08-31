@@ -1,10 +1,12 @@
 use cosmwasm_std::{
     entry_point, to_binary, Deps, DepsMut, Env, MessageInfo, QueryResponse, Response,
 };
-use ics008_wasm_client::{ExecuteMsg, IBCClient, QueryMsg};
+use ics008_wasm_client::{ExecuteMsg, IbcClient, QueryMsg};
+use serde::{Deserialize, Serialize};
 
 use crate::{client::EthereumLightClient, custom_query::CustomQuery, errors::Error};
 
+#[derive(Debug, Serialize, Deserialize)]
 pub struct InstantiateMsg {}
 
 #[entry_point]

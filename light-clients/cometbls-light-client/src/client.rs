@@ -3,7 +3,7 @@ use ics008_wasm_client::{
     storage_utils::{
         read_client_state, read_consensus_state, save_client_state, save_consensus_state,
     },
-    ContractResult, IBCClient, MerklePath, Status, StorageState,
+    ContractResult, IbcClient, MerklePath, Status, StorageState,
 };
 use prost::Message;
 use unionlabs::{
@@ -25,7 +25,7 @@ type WasmConsensusState =
 
 pub struct CometblsLightClient;
 
-impl IBCClient for CometblsLightClient {
+impl IbcClient for CometblsLightClient {
     type Error = Error;
 
     type CustomQuery = Empty;
@@ -33,7 +33,7 @@ impl IBCClient for CometblsLightClient {
     type Header = Header;
 
     // TODO(aeryz): Change this to appropriate misbehavior type when it is implemented
-    type Misbehaviour = Header;
+    type Misbehaviour = ();
 
     type ClientState = ClientState;
 
@@ -196,33 +196,41 @@ impl IBCClient for CometblsLightClient {
     }
 
     fn update_state_on_misbehaviour(
-        _deps: Deps<Self::CustomQuery>,
+        _deps: DepsMut<Self::CustomQuery>,
         _client_message: ics008_wasm_client::ClientMessage,
     ) -> Result<ContractResult, Self::Error> {
+        Ok(ContractResult::invalid("Not implemented".to_string()))
+    }
+
+    fn check_for_misbehaviour_on_header(
+        _deps: Deps<Self::CustomQuery>,
+        _header: Self::Header,
+    ) -> Result<ContractResult, Self::Error> {
+        // TODO(aeryz): Leaving this as success for us to be able to update the client. See: #588.
         Ok(ContractResult::valid(None))
     }
 
-    fn check_for_misbehaviour(
+    fn check_for_misbehaviour_on_misbehaviour(
         _deps: Deps<Self::CustomQuery>,
-        _client_message: ics008_wasm_client::ClientMessage,
+        _misbehaviour: Self::Misbehaviour,
     ) -> Result<ContractResult, Self::Error> {
-        Ok(ContractResult::valid(None))
+        Ok(ContractResult::invalid("Not implemented".to_string()))
     }
 
     fn verify_upgrade_and_update_state(
-        _deps: Deps<Self::CustomQuery>,
-        _upgrade_client_state: Self::ClientState,
-        _upgrade_consensus_state: Self::ConsensusState,
+        _deps: DepsMut<Self::CustomQuery>,
+        _upgrade_client_state: WasmClientState,
+        _upgrade_consensus_state: WasmConsensusState,
         _proof_upgrade_client: Binary,
         _proof_upgrade_consensus_state: Binary,
     ) -> Result<ContractResult, Self::Error> {
-        Ok(ContractResult::valid(None))
+        Ok(ContractResult::invalid("Not implemented".to_string()))
     }
 
     fn check_substitute_and_update_state(
         _deps: Deps<Self::CustomQuery>,
     ) -> Result<ContractResult, Self::Error> {
-        Ok(ContractResult::valid(None))
+        Ok(ContractResult::invalid("Not implemented".to_string()))
     }
 
     fn status(

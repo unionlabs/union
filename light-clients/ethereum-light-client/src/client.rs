@@ -12,22 +12,16 @@ use ics008_wasm_client::{
     storage_utils::{
         read_client_state, read_consensus_state, save_consensus_state, update_client_state,
     },
-    ContractResult, IBCClient, QueryResponse, Status, StorageState,
+    ContractResult, IbcClient, QueryResponse, Status, StorageState,
 };
 use sha3::Digest;
 use unionlabs::{
     ethereum::H256,
     ibc::{
         core::client::height::Height,
-        lightclients::{
-            ethereum::{
-                client_state::ClientState, consensus_state::ConsensusState, header::Header,
-                proof::Proof, storage_proof::StorageProof,
-            },
-            wasm::{
-                client_state::ClientState as WasmClientState,
-                consensus_state::ConsensusState as WasmConsensusState,
-            },
+        lightclients::ethereum::{
+            client_state::ClientState, consensus_state::ConsensusState, header::Header,
+            proof::Proof, storage_proof::StorageProof,
         },
     },
     TryFromProto,
@@ -42,17 +36,21 @@ use crate::{
     Config,
 };
 
+type WasmClientState = unionlabs::ibc::lightclients::wasm::client_state::ClientState<ClientState>;
+type WasmConsensusState =
+    unionlabs::ibc::lightclients::wasm::consensus_state::ConsensusState<ConsensusState>;
+
 pub struct EthereumLightClient;
 
-impl IBCClient for EthereumLightClient {
+impl IbcClient for EthereumLightClient {
     type Error = Error;
 
     type CustomQuery = CustomQuery;
 
     type Header = Header<Config>;
 
-    // TODO(aeryz): Change this to appropriate misbehavior type when it is implemented
-    type Misbehaviour = Header<Config>;
+    // TODO(aeryz): See #588
+    type Misbehaviour = ();
 
     type ClientState = ClientState;
 
@@ -67,12 +65,10 @@ impl IBCClient for EthereumLightClient {
         path: ics008_wasm_client::MerklePath,
         value: ics008_wasm_client::StorageState,
     ) -> Result<ics008_wasm_client::ContractResult, Self::Error> {
-        let consensus_state: WasmConsensusState<ConsensusState> =
-            read_consensus_state(deps, &height)?.ok_or(Error::ConsensusStateNotFound(
-                height.revision_number,
-                height.revision_height,
-            ))?;
-        let client_state: WasmClientState<ClientState> = read_client_state(deps)?;
+        let consensus_state: WasmConsensusState = read_consensus_state(deps, &height)?.ok_or(
+            Error::ConsensusStateNotFound(height.revision_number, height.revision_height),
+        )?;
+        let client_state: WasmClientState = read_client_state(deps)?;
 
         let path = Path::from_str(
             path.key_path
@@ -182,7 +178,7 @@ impl IBCClient for EthereumLightClient {
         _deps: Deps<Self::CustomQuery>,
         _misbehaviour: Self::Misbehaviour,
     ) -> Result<ics008_wasm_client::ContractResult, Self::Error> {
-        Ok(ContractResult::valid(None))
+        Ok(ContractResult::invalid("Not implemented".to_string()))
     }
 
     fn update_state(
@@ -193,7 +189,7 @@ impl IBCClient for EthereumLightClient {
         let trusted_sync_committee = header.trusted_sync_committee;
         let trusted_height = trusted_sync_committee.trusted_height;
 
-        let mut consensus_state: WasmConsensusState<ConsensusState> =
+        let mut consensus_state: WasmConsensusState =
             read_consensus_state(deps.as_ref(), &trusted_sync_committee.trusted_height)?.ok_or(
                 Error::ConsensusStateNotFound(
                     trusted_sync_committee.trusted_height.revision_number,
@@ -201,7 +197,7 @@ impl IBCClient for EthereumLightClient {
                 ),
             )?;
 
-        let mut client_state: WasmClientState<ClientState> = read_client_state(deps.as_ref())?;
+        let mut client_state: WasmClientState = read_client_state(deps.as_ref())?;
         let consensus_update = header.consensus_update;
         let account_update = header.account_update;
 
@@ -281,37 +277,44 @@ impl IBCClient for EthereumLightClient {
     }
 
     fn update_state_on_misbehaviour(
-        _deps: Deps<Self::CustomQuery>,
+        _deps: DepsMut<Self::CustomQuery>,
         _client_message: ics008_wasm_client::ClientMessage,
     ) -> Result<ics008_wasm_client::ContractResult, Self::Error> {
+        Ok(ContractResult::invalid("Not implemented".to_string()))
+    }
+    fn check_for_misbehaviour_on_header(
+        _deps: Deps<Self::CustomQuery>,
+        _header: Self::Header,
+    ) -> Result<ContractResult, Self::Error> {
+        // TODO(aeryz): Leaving this as success for us to be able to update the client. See: #588.
         Ok(ContractResult::valid(None))
     }
 
-    fn check_for_misbehaviour(
+    fn check_for_misbehaviour_on_misbehaviour(
         _deps: Deps<Self::CustomQuery>,
-        _client_message: ics008_wasm_client::ClientMessage,
-    ) -> Result<ics008_wasm_client::ContractResult, Self::Error> {
-        Ok(ContractResult::valid(None))
+        _misbehaviour: Self::Misbehaviour,
+    ) -> Result<ContractResult, Self::Error> {
+        Ok(ContractResult::invalid("Not implemented".to_string()))
     }
 
     fn verify_upgrade_and_update_state(
-        _deps: Deps<Self::CustomQuery>,
-        _upgrade_client_state: Self::ClientState,
-        _upgrade_consensus_state: Self::ConsensusState,
+        _deps: DepsMut<Self::CustomQuery>,
+        _upgrade_client_state: WasmClientState,
+        _upgrade_consensus_state: WasmConsensusState,
         _proof_upgrade_client: Binary,
         _proof_upgrade_consensus_state: Binary,
-    ) -> Result<ics008_wasm_client::ContractResult, Self::Error> {
-        Ok(ContractResult::valid(None))
+    ) -> Result<ContractResult, Self::Error> {
+        Ok(ContractResult::invalid("Not implemented".to_string()))
     }
 
     fn check_substitute_and_update_state(
         _deps: Deps<Self::CustomQuery>,
     ) -> Result<ics008_wasm_client::ContractResult, Self::Error> {
-        Ok(ContractResult::valid(None))
+        Ok(ContractResult::invalid("Not implemented".to_string()))
     }
 
     fn status(deps: Deps<Self::CustomQuery>, env: &Env) -> Result<QueryResponse, Self::Error> {
-        let client_state: WasmClientState<ClientState> = read_client_state(deps)?;
+        let client_state: WasmClientState = read_client_state(deps)?;
 
         if client_state.data.frozen_height.is_some() {
             return Ok(Status::Frozen.into());
@@ -537,12 +540,12 @@ mod test {
 
         save_client_state(
             deps.as_mut(),
-            <WasmClientState<ClientState>>::try_from_proto(wasm_client_state).unwrap(),
+            <WasmClientState>::try_from_proto(wasm_client_state).unwrap(),
         );
 
         save_consensus_state(
             deps.as_mut(),
-            <WasmConsensusState<ConsensusState>>::try_from_proto(wasm_consensus_state).unwrap(),
+            <WasmConsensusState>::try_from_proto(wasm_consensus_state).unwrap(),
             &INITIAL_CONSENSUS_STATE_HEIGHT,
         );
 
@@ -564,7 +567,7 @@ mod test {
             custom_query_type: PhantomData,
         };
 
-        let mut wasm_client_state = <WasmClientState<ClientState>>::try_from_proto(
+        let mut wasm_client_state = <WasmClientState>::try_from_proto(
             serde_json::from_str(include_str!("./test/client_state.json")).unwrap(),
         )
         .unwrap();
@@ -591,7 +594,7 @@ mod test {
             custom_query_type: PhantomData,
         };
 
-        let mut wasm_client_state = <WasmClientState<ClientState>>::try_from_proto(
+        let mut wasm_client_state = <WasmClientState>::try_from_proto(
             serde_json::from_str(include_str!("./test/client_state.json")).unwrap(),
         )
         .unwrap();
@@ -604,7 +607,7 @@ mod test {
             Ok(Status::Expired.into())
         );
 
-        let wasm_consensus_state = <WasmConsensusState<ConsensusState>>::try_from_proto(
+        let wasm_consensus_state = <WasmConsensusState>::try_from_proto(
             serde_json::from_str(include_str!("./test/consensus_state.json")).unwrap(),
         )
         .unwrap();
@@ -653,11 +656,11 @@ mod test {
 
         save_client_state(
             deps.as_mut(),
-            <WasmClientState<ClientState>>::try_from_proto(wasm_client_state).unwrap(),
+            <WasmClientState>::try_from_proto(wasm_client_state).unwrap(),
         );
         save_consensus_state(
             deps.as_mut(),
-            <WasmConsensusState<ConsensusState>>::try_from_proto(wasm_consensus_state).unwrap(),
+            <WasmConsensusState>::try_from_proto(wasm_consensus_state).unwrap(),
             &INITIAL_CONSENSUS_STATE_HEIGHT,
         );
 
@@ -696,16 +699,15 @@ mod test {
                 > update.trusted_sync_committee.trusted_height.revision_height
             {
                 // It's a finality update
-                let wasm_consensus_state: WasmConsensusState<ConsensusState> =
-                    read_consensus_state(
-                        deps.as_ref(),
-                        &Height {
-                            revision_number: 0,
-                            revision_height: update.consensus_update.attested_header.beacon.slot,
-                        },
-                    )
-                    .unwrap()
-                    .unwrap();
+                let wasm_consensus_state: WasmConsensusState = read_consensus_state(
+                    deps.as_ref(),
+                    &Height {
+                        revision_number: 0,
+                        revision_height: update.consensus_update.attested_header.beacon.slot,
+                    },
+                )
+                .unwrap()
+                .unwrap();
                 // Slot is updated.
                 assert_eq!(
                     wasm_consensus_state.data.slot,
@@ -718,8 +720,7 @@ mod test {
                 );
                 // Latest slot is updated.
                 // TODO(aeryz): Add cases for `store_period == update_period` and `update_period == store_period + 1`
-                let wasm_client_state: WasmClientState<ClientState> =
-                    read_client_state(deps.as_ref()).unwrap();
+                let wasm_client_state: WasmClientState = read_client_state(deps.as_ref()).unwrap();
                 assert_eq!(
                     wasm_client_state.data.latest_slot,
                     update.consensus_update.attested_header.beacon.slot
@@ -730,16 +731,15 @@ mod test {
                     update.trusted_sync_committee.trusted_height.revision_height,
                     update.consensus_update.attested_header.beacon.slot,
                 );
-                let wasm_consensus_state: WasmConsensusState<ConsensusState> =
-                    read_consensus_state(
-                        deps.as_ref(),
-                        &Height {
-                            revision_number: 0,
-                            revision_height: updated_height,
-                        },
-                    )
-                    .unwrap()
-                    .unwrap();
+                let wasm_consensus_state: WasmConsensusState = read_consensus_state(
+                    deps.as_ref(),
+                    &Height {
+                        revision_number: 0,
+                        revision_height: updated_height,
+                    },
+                )
+                .unwrap()
+                .unwrap();
 
                 assert_eq!(
                     wasm_consensus_state.data.next_sync_committee.unwrap(),
@@ -812,11 +812,11 @@ mod test {
 
         save_client_state(
             deps.as_mut(),
-            <WasmClientState<ClientState>>::try_from_proto(wasm_client_state).unwrap(),
+            <WasmClientState>::try_from_proto(wasm_client_state).unwrap(),
         );
         save_consensus_state(
             deps.as_mut(),
-            <WasmConsensusState<ConsensusState>>::try_from_proto(wasm_consensus_state).unwrap(),
+            <WasmConsensusState>::try_from_proto(wasm_consensus_state).unwrap(),
             &INITIAL_CONSENSUS_STATE_HEIGHT,
         );
 

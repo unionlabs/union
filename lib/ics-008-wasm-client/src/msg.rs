@@ -14,9 +14,9 @@ pub struct MerklePath {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
-pub struct ClientMessage {
-    pub header: Option<Header>,
-    pub misbehaviour: Option<Misbehaviour>,
+pub enum ClientMessage {
+    Header(Header),
+    Misbehaviour(Misbehaviour),
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
@@ -96,8 +96,6 @@ pub enum ExecuteMsg {
     },
 
     CheckSubstituteAndUpdateState {},
-
-    ExportMetadata {},
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
