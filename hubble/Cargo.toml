@@ -13,7 +13,8 @@ serde = { version = "1.0", features = ["derive"] }
 reqwest = { version = "^0.11", features = ["json", "blocking"] }
 serde_json = { version = "1.0" }
 color-eyre = "0.6.2"
-clap = { version = "4.4.0", features = ["derive"] }
+clap = { version = "4.4.0", features = ["derive", "env"] }
 url = { version = "2.4.1", features = ["serde"] }
 tracing = "0.1.37"
 tracing-subscriber = "0.3.17"
+futures = "0.3.28"

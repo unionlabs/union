@@ -11,20 +11,16 @@
       };
     in
     {
-      inherit (hubble) checks ;
+      inherit (hubble) checks;
       packages = {
         hubble = hubble.packages.hubble;
 
-        hubble-image = pkgs.dockerTools.buildImage {
+        hubble-image = pkgs.dockerTools.buildLayeredImage {
           name = "hubble";
-
-          copyToRoot = pkgs.buildEnv {
-            name = "image-root";
-            paths = [ pkgs.coreutils-full  hubble ];
-            pathsToLink = [ "/bin" ];
-          };
+          contents = [ pkgs.coreutils-full pkgs.cacert self'.packages.hubble ];
           config = {
-            Entrypoint = [ (pkgs.lib.getExe self'.packages.uniond) ];
+            Entrypoint = [ (pkgs.lib.getExe self'.packages.hubble) ];
+            Env = [ "SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt" ];
           };
         };
       };

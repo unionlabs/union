@@ -8,12 +8,13 @@ use url::Url;
 #[command(author, version, about, long_about = None)]
 pub struct Args {
     /// The url to the hasura graphql endpoint.
-    #[arg(short, long)]
-    pub hasura: Url,
+    #[arg(short, long, env = "HUBBLE_URL")]
+    pub url: Url,
     /// The admin secret used to authenticate with hasura.
-    #[arg(short, long)]
+    #[arg(short, long, env = "HUBBLE_SECRET")]
     pub secret: String,
     /// Indexer configurations to start.
+    #[arg(short, long, env = "HUBBLE_INDEXERS")]
     pub indexers: Vec<IndexerConfig>,
 }
 
