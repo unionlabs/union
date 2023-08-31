@@ -25,7 +25,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -206,6 +205,7 @@ type Viper struct {
 	envKeyReplacer      StringReplacer
 	allowEmptyEnv       bool
 
+	parents        []string
 	config         map[string]interface{}
 	override       map[string]interface{}
 	defaults       map[string]interface{}
@@ -232,6 +232,7 @@ func New() *Viper {
 	v.configPermissions = os.FileMode(0o644)
 	v.fs = afero.NewOsFs()
 	v.config = make(map[string]interface{})
+	v.parents = []string{}
 	v.override = make(map[string]interface{})
 	v.defaults = make(map[string]interface{})
 	v.kvstore = make(map[string]interface{})
@@ -439,13 +440,14 @@ func (v *Viper) WatchConfig() {
 	go func() {
 		watcher, err := newWatcher()
 		if err != nil {
-			log.Fatal(err)
+			v.logger.Error(fmt.Sprintf("failed to create watcher: %s", err))
+			os.Exit(1)
 		}
 		defer watcher.Close()
 		// we have to watch the entire directory to pick up renames/atomic saves in a cross-platform way
 		filename, err := v.getConfigFile()
 		if err != nil {
-			log.Printf("error: %v\n", err)
+			v.logger.Error(fmt.Sprintf("get config file: %s", err))
 			initWG.Done()
 			return
 		}
@@ -474,7 +476,7 @@ func (v *Viper) WatchConfig() {
 						realConfigFile = currentConfigFile
 						err := v.ReadInConfig()
 						if err != nil {
-							log.Printf("error reading config file: %v\n", err)
+							v.logger.Error(fmt.Sprintf("read config file: %s", err))
 						}
 						if v.onConfigChange != nil {
 							v.onConfigChange(event)
@@ -486,7 +488,7 @@ func (v *Viper) WatchConfig() {
 
 				case err, ok := <-watcher.Errors:
 					if ok { // 'Errors' channel is not closed
-						log.Printf("watcher error: %v\n", err)
+						v.logger.Error(fmt.Sprintf("watcher error: %s", err))
 					}
 					eventsWG.Done()
 					return
@@ -928,6 +930,8 @@ func (v *Viper) Get(key string) interface{} {
 			return cast.ToStringSlice(val)
 		case []int:
 			return cast.ToIntSlice(val)
+		case []time.Duration:
+			return cast.ToDurationSlice(val)
 		}
 	}
 
@@ -946,6 +950,10 @@ func (v *Viper) Sub(key string) *Viper {
 	}
 
 	if reflect.TypeOf(data).Kind() == reflect.Map {
+		subv.parents = append(v.parents, strings.ToLower(key))
+		subv.automaticEnvApplied = v.automaticEnvApplied
+		subv.envPrefix = v.envPrefix
+		subv.envKeyReplacer = v.envKeyReplacer
 		subv.config = cast.ToStringMap(data)
 		return subv
 	}
@@ -1099,7 +1107,7 @@ func (v *Viper) Unmarshal(rawVal interface{}, opts ...DecoderConfigOption) error
 	return decode(v.AllSettings(), defaultDecoderConfig(rawVal, opts...))
 }
 
-// defaultDecoderConfig returns default mapsstructure.DecoderConfig with suppot
+// defaultDecoderConfig returns default mapstructure.DecoderConfig with support
 // of time.Duration values & string slices
 func defaultDecoderConfig(output interface{}, opts ...DecoderConfigOption) *mapstructure.DecoderConfig {
 	c := &mapstructure.DecoderConfig{
@@ -1274,8 +1282,15 @@ func (v *Viper) find(lcaseKey string, flagDefault bool) interface{} {
 			s = strings.TrimSuffix(s, "]")
 			res, _ := readAsCSV(s)
 			return cast.ToIntSlice(res)
+		case "durationSlice":
+			s := strings.TrimPrefix(flag.ValueString(), "[")
+			s = strings.TrimSuffix(s, "]")
+			slice := strings.Split(s, ",")
+			return cast.ToDurationSlice(slice)
 		case "stringToString":
 			return stringToStringConv(flag.ValueString())
+		case "stringToInt":
+			return stringToIntConv(flag.ValueString())
 		default:
 			return flag.ValueString()
 		}
@@ -1286,9 +1301,10 @@ func (v *Viper) find(lcaseKey string, flagDefault bool) interface{} {
 
 	// Env override next
 	if v.automaticEnvApplied {
+		envKey := strings.Join(append(v.parents, lcaseKey), ".")
 		// even if it hasn't been registered, if automaticEnv is used,
 		// check any Get request
-		if val, ok := v.getEnv(v.mergeWithEnvPrefix(lcaseKey)); ok {
+		if val, ok := v.getEnv(v.mergeWithEnvPrefix(envKey)); ok {
 			return val
 		}
 		if nested && v.isPathShadowedInAutoEnv(path) != "" {
@@ -1355,6 +1371,13 @@ func (v *Viper) find(lcaseKey string, flagDefault bool) interface{} {
 				return cast.ToIntSlice(res)
 			case "stringToString":
 				return stringToStringConv(flag.ValueString())
+			case "stringToInt":
+				return stringToIntConv(flag.ValueString())
+			case "durationSlice":
+				s := strings.TrimPrefix(flag.ValueString(), "[")
+				s = strings.TrimSuffix(s, "]")
+				slice := strings.Split(s, ",")
+				return cast.ToDurationSlice(slice)
 			default:
 				return flag.ValueString()
 			}
@@ -1394,6 +1417,30 @@ func stringToStringConv(val string) interface{} {
 			return nil
 		}
 		out[kv[0]] = kv[1]
+	}
+	return out
+}
+
+// mostly copied from pflag's implementation of this operation here https://github.com/spf13/pflag/blob/d5e0c0615acee7028e1e2740a11102313be88de1/string_to_int.go#L68
+// alterations are: errors are swallowed, map[string]interface{} is returned in order to enable cast.ToStringMap
+func stringToIntConv(val string) interface{} {
+	val = strings.Trim(val, "[]")
+	// An empty string would cause an empty map
+	if len(val) == 0 {
+		return map[string]interface{}{}
+	}
+	ss := strings.Split(val, ",")
+	out := make(map[string]interface{}, len(ss))
+	for _, pair := range ss {
+		kv := strings.SplitN(pair, "=", 2)
+		if len(kv) != 2 {
+			return nil
+		}
+		var err error
+		out[kv[0]], err = strconv.Atoi(kv[1])
+		if err != nil {
+			return nil
+		}
 	}
 	return out
 }

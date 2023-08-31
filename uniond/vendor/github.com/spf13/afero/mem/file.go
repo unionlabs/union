@@ -245,7 +245,7 @@ func (f *File) Truncate(size int64) error {
 	defer f.fileData.Unlock()
 	if size > int64(len(f.fileData.data)) {
 		diff := size - int64(len(f.fileData.data))
-		f.fileData.data = append(f.fileData.data, bytes.Repeat([]byte{00}, int(diff))...)
+		f.fileData.data = append(f.fileData.data, bytes.Repeat([]byte{0o0}, int(diff))...)
 	} else {
 		f.fileData.data = f.fileData.data[0:size]
 	}
@@ -285,7 +285,7 @@ func (f *File) Write(b []byte) (n int, err error) {
 		tail = f.fileData.data[n+int(cur):]
 	}
 	if diff > 0 {
-		f.fileData.data = append(f.fileData.data, append(bytes.Repeat([]byte{00}, int(diff)), b...)...)
+		f.fileData.data = append(f.fileData.data, append(bytes.Repeat([]byte{0o0}, int(diff)), b...)...)
 		f.fileData.data = append(f.fileData.data, tail...)
 	} else {
 		f.fileData.data = append(f.fileData.data[:cur], b...)
@@ -321,16 +321,19 @@ func (s *FileInfo) Name() string {
 	s.Unlock()
 	return name
 }
+
 func (s *FileInfo) Mode() os.FileMode {
 	s.Lock()
 	defer s.Unlock()
 	return s.mode
 }
+
 func (s *FileInfo) ModTime() time.Time {
 	s.Lock()
 	defer s.Unlock()
 	return s.modtime
 }
+
 func (s *FileInfo) IsDir() bool {
 	s.Lock()
 	defer s.Unlock()

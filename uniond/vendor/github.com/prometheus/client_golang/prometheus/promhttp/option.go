@@ -66,9 +66,9 @@ func WithExtraMethods(methods ...string) Option {
 	})
 }
 
-// WithExemplarFromContext adds allows to put a hook to all counter and histogram metrics.
-// If the hook function returns non-nil labels, exemplars will be added for that request, otherwise metric
-// will get instrumented without exemplar.
+// WithExemplarFromContext allows to inject function that will get exemplar from context that will be put to counter and histogram metrics.
+// If the function returns nil labels or the metric does not support exemplars, no exemplar will be added (noop), but
+// metric will continue to observe/increment.
 func WithExemplarFromContext(getExemplarFn func(requestCtx context.Context) prometheus.Labels) Option {
 	return optionApplyFunc(func(o *options) {
 		o.getExemplarFn = getExemplarFn

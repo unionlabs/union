@@ -40,7 +40,6 @@ func (f *BasePathFile) Name() string {
 func (f *BasePathFile) ReadDir(n int) ([]fs.DirEntry, error) {
 	if rdf, ok := f.File.(fs.ReadDirFile); ok {
 		return rdf.ReadDir(n)
-
 	}
 	return readDirFile{f.File}.ReadDir(n)
 }

@@ -12,6 +12,7 @@ import (
 	host "github.com/cosmos/ibc-go/v7/modules/core/24-host"
 	ibcexported "github.com/cosmos/ibc-go/v7/modules/core/exported"
 
+	"github.com/CosmWasm/wasmd/x/wasm/keeper"
 	"github.com/CosmWasm/wasmd/x/wasm/types"
 )
 
@@ -48,7 +49,7 @@ func (i IBCHandler) OnChanOpenInit(
 	if err := ValidateChannelParams(channelID); err != nil {
 		return "", err
 	}
-	contractAddr, err := ContractFromPortID(portID)
+	contractAddr, err := keeper.ContractFromPortID(portID)
 	if err != nil {
 		return "", errorsmod.Wrapf(err, "contract port id")
 	}
@@ -97,7 +98,7 @@ func (i IBCHandler) OnChanOpenTry(
 		return "", err
 	}
 
-	contractAddr, err := ContractFromPortID(portID)
+	contractAddr, err := keeper.ContractFromPortID(portID)
 	if err != nil {
 		return "", errorsmod.Wrapf(err, "contract port id")
 	}
@@ -145,7 +146,7 @@ func (i IBCHandler) OnChanOpenAck(
 	counterpartyChannelID string,
 	counterpartyVersion string,
 ) error {
-	contractAddr, err := ContractFromPortID(portID)
+	contractAddr, err := keeper.ContractFromPortID(portID)
 	if err != nil {
 		return errorsmod.Wrapf(err, "contract port id")
 	}
@@ -171,7 +172,7 @@ func (i IBCHandler) OnChanOpenAck(
 
 // OnChanOpenConfirm implements the IBCModule interface
 func (i IBCHandler) OnChanOpenConfirm(ctx sdk.Context, portID, channelID string) error {
-	contractAddr, err := ContractFromPortID(portID)
+	contractAddr, err := keeper.ContractFromPortID(portID)
 	if err != nil {
 		return errorsmod.Wrapf(err, "contract port id")
 	}
@@ -193,7 +194,7 @@ func (i IBCHandler) OnChanOpenConfirm(ctx sdk.Context, portID, channelID string)
 
 // OnChanCloseInit implements the IBCModule interface
 func (i IBCHandler) OnChanCloseInit(ctx sdk.Context, portID, channelID string) error {
-	contractAddr, err := ContractFromPortID(portID)
+	contractAddr, err := keeper.ContractFromPortID(portID)
 	if err != nil {
 		return errorsmod.Wrapf(err, "contract port id")
 	}
@@ -221,7 +222,7 @@ func (i IBCHandler) OnChanCloseInit(ctx sdk.Context, portID, channelID string) e
 // OnChanCloseConfirm implements the IBCModule interface
 func (i IBCHandler) OnChanCloseConfirm(ctx sdk.Context, portID, channelID string) error {
 	// counterparty has closed the channel
-	contractAddr, err := ContractFromPortID(portID)
+	contractAddr, err := keeper.ContractFromPortID(portID)
 	if err != nil {
 		return errorsmod.Wrapf(err, "contract port id")
 	}
@@ -262,7 +263,7 @@ func (i IBCHandler) OnRecvPacket(
 	packet channeltypes.Packet,
 	relayer sdk.AccAddress,
 ) ibcexported.Acknowledgement {
-	contractAddr, err := ContractFromPortID(packet.DestinationPort)
+	contractAddr, err := keeper.ContractFromPortID(packet.DestinationPort)
 	if err != nil {
 		// this must not happen as ports were registered before
 		panic(errorsmod.Wrapf(err, "contract port id"))
@@ -290,7 +291,7 @@ func (i IBCHandler) OnAcknowledgementPacket(
 	acknowledgement []byte,
 	relayer sdk.AccAddress,
 ) error {
-	contractAddr, err := ContractFromPortID(packet.SourcePort)
+	contractAddr, err := keeper.ContractFromPortID(packet.SourcePort)
 	if err != nil {
 		return errorsmod.Wrapf(err, "contract port id")
 	}
@@ -308,7 +309,7 @@ func (i IBCHandler) OnAcknowledgementPacket(
 
 // OnTimeoutPacket implements the IBCModule interface
 func (i IBCHandler) OnTimeoutPacket(ctx sdk.Context, packet channeltypes.Packet, relayer sdk.AccAddress) error {
-	contractAddr, err := ContractFromPortID(packet.SourcePort)
+	contractAddr, err := keeper.ContractFromPortID(packet.SourcePort)
 	if err != nil {
 		return errorsmod.Wrapf(err, "contract port id")
 	}

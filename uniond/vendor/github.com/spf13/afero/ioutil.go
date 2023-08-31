@@ -141,8 +141,10 @@ func WriteFile(fs Fs, filename string, data []byte, perm os.FileMode) error {
 // We generate random temporary file names so that there's a good
 // chance the file doesn't exist yet - keeps the number of tries in
 // TempFile to a minimum.
-var randNum uint32
-var randmu sync.Mutex
+var (
+	randNum uint32
+	randmu  sync.Mutex
+)
 
 func reseed() uint32 {
 	return uint32(time.Now().UnixNano() + int64(os.Getpid()))
@@ -190,7 +192,7 @@ func TempFile(fs Fs, dir, pattern string) (f File, err error) {
 	nconflict := 0
 	for i := 0; i < 10000; i++ {
 		name := filepath.Join(dir, prefix+nextRandom()+suffix)
-		f, err = fs.OpenFile(name, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0600)
+		f, err = fs.OpenFile(name, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0o600)
 		if os.IsExist(err) {
 			if nconflict++; nconflict > 10 {
 				randmu.Lock()
@@ -214,6 +216,7 @@ func TempFile(fs Fs, dir, pattern string) (f File, err error) {
 func (a Afero) TempDir(dir, prefix string) (name string, err error) {
 	return TempDir(a.Fs, dir, prefix)
 }
+
 func TempDir(fs Fs, dir, prefix string) (name string, err error) {
 	if dir == "" {
 		dir = os.TempDir()
@@ -222,7 +225,7 @@ func TempDir(fs Fs, dir, prefix string) (name string, err error) {
 	nconflict := 0
 	for i := 0; i < 10000; i++ {
 		try := filepath.Join(dir, prefix+nextRandom())
-		err = fs.Mkdir(try, 0700)
+		err = fs.Mkdir(try, 0o700)
 		if os.IsExist(err) {
 			if nconflict++; nconflict > 10 {
 				randmu.Lock()

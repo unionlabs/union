@@ -186,6 +186,8 @@ type NFSOperationStats struct {
 	CumulativeTotalResponseMilliseconds uint64
 	// Duration from when a request was enqueued to when it was completely handled.
 	CumulativeTotalRequestMilliseconds uint64
+	// The average time from the point the client sends RPC requests until it receives the response.
+	AverageRTTMilliseconds float64
 	// The count of operations that complete with tk_status < 0.  These statuses usually indicate error conditions.
 	Errors uint64
 }
@@ -534,7 +536,6 @@ func parseNFSOperationStats(s *bufio.Scanner) ([]NFSOperationStats, error) {
 
 			ns = append(ns, n)
 		}
-
 		opStats := NFSOperationStats{
 			Operation:                           strings.TrimSuffix(ss[0], ":"),
 			Requests:                            ns[0],
@@ -545,6 +546,9 @@ func parseNFSOperationStats(s *bufio.Scanner) ([]NFSOperationStats, error) {
 			CumulativeQueueMilliseconds:         ns[5],
 			CumulativeTotalResponseMilliseconds: ns[6],
 			CumulativeTotalRequestMilliseconds:  ns[7],
+		}
+		if ns[0] != 0 {
+			opStats.AverageRTTMilliseconds = float64(ns[6]) / float64(ns[0])
 		}
 
 		if len(ns) > 8 {

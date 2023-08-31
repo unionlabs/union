@@ -10,115 +10,215 @@ import (
 )
 
 const (
-	firstCodeID                     = 1
-	ModuleName                      = types.ModuleName
-	StoreKey                        = types.StoreKey
-	TStoreKey                       = types.TStoreKey
-	QuerierRoute                    = types.QuerierRoute
-	RouterKey                       = types.RouterKey
-	WasmModuleEventType             = types.WasmModuleEventType
-	AttributeKeyContractAddr        = types.AttributeKeyContractAddr
-	ProposalTypeStoreCode           = types.ProposalTypeStoreCode
+	// Deprecated: Do not use.
+	ModuleName = types.ModuleName
+	// Deprecated: Do not use.
+	StoreKey = types.StoreKey
+	// Deprecated: Do not use.
+	TStoreKey = types.TStoreKey
+	// Deprecated: Do not use.
+	QuerierRoute = types.QuerierRoute
+	// Deprecated: Do not use.
+	RouterKey = types.RouterKey
+	// Deprecated: Do not use.
+	WasmModuleEventType = types.WasmModuleEventType
+	// Deprecated: Do not use.
+	AttributeKeyContractAddr = types.AttributeKeyContractAddr
+	// Deprecated: Do not use.
+	ProposalTypeStoreCode = types.ProposalTypeStoreCode
+	// Deprecated: Do not use.
 	ProposalTypeInstantiateContract = types.ProposalTypeInstantiateContract
-	ProposalTypeMigrateContract     = types.ProposalTypeMigrateContract
-	ProposalTypeUpdateAdmin         = types.ProposalTypeUpdateAdmin
-	ProposalTypeClearAdmin          = types.ProposalTypeClearAdmin
+	// Deprecated: Do not use.
+	ProposalTypeMigrateContract = types.ProposalTypeMigrateContract
+	// Deprecated: Do not use.
+	ProposalTypeUpdateAdmin = types.ProposalTypeUpdateAdmin
+	// Deprecated: Do not use.
+	ProposalTypeClearAdmin = types.ProposalTypeClearAdmin
 )
 
 var (
 	// functions aliases
-	RegisterCodec             = types.RegisterLegacyAminoCodec
-	RegisterInterfaces        = types.RegisterInterfaces
-	ValidateGenesis           = types.ValidateGenesis
-	ConvertToProposals        = types.ConvertToProposals
-	GetCodeKey                = types.GetCodeKey
-	GetContractAddressKey     = types.GetContractAddressKey
+	// Deprecated: Do not use.
+	RegisterCodec = types.RegisterLegacyAminoCodec
+	// Deprecated: Do not use.
+	RegisterInterfaces = types.RegisterInterfaces
+	// Deprecated: Do not use.
+	ValidateGenesis = types.ValidateGenesis
+	// Deprecated: Do not use.
+	ConvertToProposals = types.ConvertToProposals
+	// Deprecated: Do not use.
+	GetCodeKey = types.GetCodeKey
+	// Deprecated: Do not use.
+	GetContractAddressKey = types.GetContractAddressKey
+	// Deprecated: Do not use.
 	GetContractStorePrefixKey = types.GetContractStorePrefix
-	NewCodeInfo               = types.NewCodeInfo
-	NewAbsoluteTxPosition     = types.NewAbsoluteTxPosition
-	NewContractInfo           = types.NewContractInfo
-	NewEnv                    = types.NewEnv
-	NewWasmCoins              = types.NewWasmCoins
-	DefaultWasmConfig         = types.DefaultWasmConfig
-	DefaultParams             = types.DefaultParams
-	InitGenesis               = keeper.InitGenesis
-	ExportGenesis             = keeper.ExportGenesis
-	NewMessageHandler         = keeper.NewDefaultMessageHandler
-	DefaultEncoders           = keeper.DefaultEncoders
-	EncodeBankMsg             = keeper.EncodeBankMsg
-	NoCustomMsg               = keeper.NoCustomMsg
-	EncodeStakingMsg          = keeper.EncodeStakingMsg
-	EncodeWasmMsg             = keeper.EncodeWasmMsg
-	NewKeeper                 = keeper.NewKeeper
-	DefaultQueryPlugins       = keeper.DefaultQueryPlugins
-	BankQuerier               = keeper.BankQuerier
-	NoCustomQuerier           = keeper.NoCustomQuerier
-	StakingQuerier            = keeper.StakingQuerier
-	WasmQuerier               = keeper.WasmQuerier
-	CreateTestInput           = keeper.CreateTestInput
-	TestHandler               = keeper.TestHandler
-	NewWasmProposalHandler    = keeper.NewWasmProposalHandler //nolint:staticcheck
-	NewQuerier                = keeper.Querier
-	ContractFromPortID        = keeper.ContractFromPortID
-	WithWasmEngine            = keeper.WithWasmEngine
-	NewCountTXDecorator       = keeper.NewCountTXDecorator
+	// Deprecated: Do not use.
+	NewCodeInfo = types.NewCodeInfo
+	// Deprecated: Do not use.
+	NewAbsoluteTxPosition = types.NewAbsoluteTxPosition
+	// Deprecated: Do not use.
+	NewContractInfo = types.NewContractInfo
+	// Deprecated: Do not use.
+	NewEnv = types.NewEnv
+	// Deprecated: Do not use.
+	NewWasmCoins = types.NewWasmCoins
+	// Deprecated: Do not use.
+	DefaultWasmConfig = types.DefaultWasmConfig
+	// Deprecated: Do not use.
+	DefaultParams = types.DefaultParams
+	// Deprecated: Do not use.
+	InitGenesis = keeper.InitGenesis
+	// Deprecated: Do not use.
+	ExportGenesis = keeper.ExportGenesis
+	// Deprecated: Do not use.
+	NewMessageHandler = keeper.NewDefaultMessageHandler
+	// Deprecated: Do not use.
+	DefaultEncoders = keeper.DefaultEncoders
+	// Deprecated: Do not use.
+	EncodeBankMsg = keeper.EncodeBankMsg
+	// Deprecated: Do not use.
+	NoCustomMsg = keeper.NoCustomMsg
+	// Deprecated: Do not use.
+	EncodeStakingMsg = keeper.EncodeStakingMsg
+	// Deprecated: Do not use.
+	EncodeWasmMsg = keeper.EncodeWasmMsg
+	// Deprecated: Do not use.
+	NewKeeper = keeper.NewKeeper
+	// Deprecated: Do not use.
+	DefaultQueryPlugins = keeper.DefaultQueryPlugins
+	// Deprecated: Do not use.
+	BankQuerier = keeper.BankQuerier
+	// Deprecated: Do not use.
+	NoCustomQuerier = keeper.NoCustomQuerier
+	// Deprecated: Do not use.
+	StakingQuerier = keeper.StakingQuerier
+	// Deprecated: Do not use.
+	WasmQuerier = keeper.WasmQuerier
+	// Deprecated: Do not use.
+	CreateTestInput = keeper.CreateTestInput
+	// Deprecated: Do not use.
+	TestHandler = keeper.TestHandler
+	// Deprecated: Do not use.
+	NewWasmProposalHandler = keeper.NewWasmProposalHandler //nolint:staticcheck
+	// Deprecated: Do not use.
+	NewQuerier = keeper.Querier
+	// Deprecated: Do not use.
+	ContractFromPortID = keeper.ContractFromPortID
+	// Deprecated: Do not use.
+	WithWasmEngine = keeper.WithWasmEngine
+	// Deprecated: Do not use.
+	NewCountTXDecorator = keeper.NewCountTXDecorator
 
 	// variable aliases
-	ModuleCdc            = types.ModuleCdc
-	DefaultCodespace     = types.DefaultCodespace
-	ErrCreateFailed      = types.ErrCreateFailed
-	ErrAccountExists     = types.ErrAccountExists
+	// Deprecated: Do not use.
+	ModuleCdc = types.ModuleCdc
+	// Deprecated: Do not use.
+	DefaultCodespace = types.DefaultCodespace
+	// Deprecated: Do not use.
+	ErrCreateFailed = types.ErrCreateFailed
+	// Deprecated: Do not use.
+	ErrAccountExists = types.ErrAccountExists
+	// Deprecated: Do not use.
 	ErrInstantiateFailed = types.ErrInstantiateFailed
-	ErrExecuteFailed     = types.ErrExecuteFailed
-	ErrGasLimit          = types.ErrGasLimit
-	ErrInvalidGenesis    = types.ErrInvalidGenesis
-	ErrNotFound          = types.ErrNotFound
-	ErrQueryFailed       = types.ErrQueryFailed
-	ErrInvalidMsg        = types.ErrInvalidMsg
-	KeyLastCodeID        = types.KeyLastCodeID
-	KeyLastInstanceID    = types.KeyLastInstanceID
-	CodeKeyPrefix        = types.CodeKeyPrefix
-	ContractKeyPrefix    = types.ContractKeyPrefix
-	ContractStorePrefix  = types.ContractStorePrefix
-	EnableAllProposals   = types.EnableAllProposals
-	DisableAllProposals  = types.DisableAllProposals
+	// Deprecated: Do not use.
+	ErrExecuteFailed = types.ErrExecuteFailed
+	// Deprecated: Do not use.
+	ErrGasLimit = types.ErrGasLimit
+	// Deprecated: Do not use.
+	ErrInvalidGenesis = types.ErrInvalidGenesis
+	// Deprecated: Do not use.
+	ErrNotFound = types.ErrNotFound
+	// Deprecated: Do not use.
+	ErrQueryFailed = types.ErrQueryFailed
+	// Deprecated: Do not use.
+	ErrInvalidMsg = types.ErrInvalidMsg
+	// Deprecated: Do not use.
+	KeyLastCodeID = types.KeyLastCodeID
+	// Deprecated: Do not use.
+	KeyLastInstanceID = types.KeyLastInstanceID
+	// Deprecated: Do not use.
+	CodeKeyPrefix = types.CodeKeyPrefix
+	// Deprecated: Do not use.
+	ContractKeyPrefix = types.ContractKeyPrefix
+	// Deprecated: Do not use.
+	ContractStorePrefix = types.ContractStorePrefix
+	// Deprecated: Do not use.
+	EnableAllProposals = types.EnableAllProposals
+	// Deprecated: Do not use.
+	DisableAllProposals = types.DisableAllProposals
 )
 
 type (
-	ProposalType                   = types.ProposalType
-	GenesisState                   = types.GenesisState
-	Code                           = types.Code
-	Contract                       = types.Contract
-	MsgStoreCode                   = types.MsgStoreCode
-	MsgStoreCodeResponse           = types.MsgStoreCodeResponse
-	MsgInstantiateContract         = types.MsgInstantiateContract
-	MsgInstantiateContract2        = types.MsgInstantiateContract2
+	// Deprecated: Do not use.
+	ProposalType = types.ProposalType
+	// Deprecated: Do not use.
+	GenesisState = types.GenesisState
+	// Deprecated: Do not use.
+	Code = types.Code
+	// Deprecated: Do not use.
+	Contract = types.Contract
+	// Deprecated: Do not use.
+	MsgStoreCode = types.MsgStoreCode
+	// Deprecated: Do not use.
+	MsgStoreCodeResponse = types.MsgStoreCodeResponse
+	// Deprecated: Do not use.
+	MsgInstantiateContract = types.MsgInstantiateContract
+	// Deprecated: Do not use.
+	MsgInstantiateContract2 = types.MsgInstantiateContract2
+	// Deprecated: Do not use.
 	MsgInstantiateContractResponse = types.MsgInstantiateContractResponse
-	MsgExecuteContract             = types.MsgExecuteContract
-	MsgExecuteContractResponse     = types.MsgExecuteContractResponse
-	MsgMigrateContract             = types.MsgMigrateContract
-	MsgMigrateContractResponse     = types.MsgMigrateContractResponse
-	MsgUpdateAdmin                 = types.MsgUpdateAdmin
-	MsgUpdateAdminResponse         = types.MsgUpdateAdminResponse
-	MsgClearAdmin                  = types.MsgClearAdmin
-	MsgWasmIBCCall                 = types.MsgIBCSend
-	MsgClearAdminResponse          = types.MsgClearAdminResponse
-	MsgServer                      = types.MsgServer
-	Model                          = types.Model
-	CodeInfo                       = types.CodeInfo
-	ContractInfo                   = types.ContractInfo
-	CreatedAt                      = types.AbsoluteTxPosition
-	Config                         = types.WasmConfig
-	CodeInfoResponse               = types.CodeInfoResponse
-	MessageHandler                 = keeper.SDKMessageHandler
-	BankEncoder                    = keeper.BankEncoder
-	CustomEncoder                  = keeper.CustomEncoder
-	StakingEncoder                 = keeper.StakingEncoder
-	WasmEncoder                    = keeper.WasmEncoder
-	MessageEncoders                = keeper.MessageEncoders
-	Keeper                         = keeper.Keeper
-	QueryHandler                   = keeper.QueryHandler
-	CustomQuerier                  = keeper.CustomQuerier
-	QueryPlugins                   = keeper.QueryPlugins
-	Option                         = keeper.Option
+	// Deprecated: Do not use.
+	MsgExecuteContract = types.MsgExecuteContract
+	// Deprecated: Do not use.
+	MsgExecuteContractResponse = types.MsgExecuteContractResponse
+	// Deprecated: Do not use.
+	MsgMigrateContract = types.MsgMigrateContract
+	// Deprecated: Do not use.
+	MsgMigrateContractResponse = types.MsgMigrateContractResponse
+	// Deprecated: Do not use.
+	MsgUpdateAdmin = types.MsgUpdateAdmin
+	// Deprecated: Do not use.
+	MsgUpdateAdminResponse = types.MsgUpdateAdminResponse
+	// Deprecated: Do not use.
+	MsgClearAdmin = types.MsgClearAdmin
+	// Deprecated: Do not use.
+	MsgWasmIBCCall = types.MsgIBCSend
+	// Deprecated: Do not use.
+	MsgClearAdminResponse = types.MsgClearAdminResponse
+	// Deprecated: Do not use.
+	MsgServer = types.MsgServer
+	// Deprecated: Do not use.
+	Model = types.Model
+	// Deprecated: Do not use.
+	CodeInfo = types.CodeInfo
+	// Deprecated: Do not use.
+	ContractInfo = types.ContractInfo
+	// Deprecated: Do not use.
+	CreatedAt = types.AbsoluteTxPosition
+	// Deprecated: Do not use.
+	Config = types.WasmConfig
+	// Deprecated: Do not use.
+	CodeInfoResponse = types.CodeInfoResponse
+	// Deprecated: Do not use.
+	MessageHandler = keeper.SDKMessageHandler
+	// Deprecated: Do not use.
+	BankEncoder = keeper.BankEncoder
+	// Deprecated: Do not use.
+	CustomEncoder = keeper.CustomEncoder
+	// Deprecated: Do not use.
+	StakingEncoder = keeper.StakingEncoder
+	// Deprecated: Do not use.
+	WasmEncoder = keeper.WasmEncoder
+	// Deprecated: Do not use.
+	MessageEncoders = keeper.MessageEncoders
+	// Deprecated: Do not use.
+	Keeper = keeper.Keeper
+	// Deprecated: Do not use.
+	QueryHandler = keeper.QueryHandler
+	// Deprecated: Do not use.
+	CustomQuerier = keeper.CustomQuerier
+	// Deprecated: Do not use.
+	QueryPlugins = keeper.QueryPlugins
+	// Deprecated: Do not use.
+	Option = keeper.Option
 )

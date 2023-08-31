@@ -2,13 +2,17 @@ package types
 
 import (
 	"bytes"
-	"crypto/sha256"
+	_ "embed"
 	"encoding/hex"
 	"encoding/json"
 	"math/rand"
 
+	wasmvm "github.com/CosmWasm/wasmvm"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
+
+//go:embed testdata/reflect.wasm
+var reflectWasmCode []byte
 
 func GenesisFixture(mutators ...func(*GenesisState)) GenesisState {
 	const (
@@ -45,17 +49,15 @@ func GenesisFixture(mutators ...func(*GenesisState)) GenesisState {
 
 func randBytes(n int) []byte {
 	r := make([]byte, n)
-	rand.Read(r)
+	rand.Read(r) //nolint:staticcheck
 	return r
 }
 
 func CodeFixture(mutators ...func(*Code)) Code {
-	wasmCode := randBytes(100)
-
 	fixture := Code{
 		CodeID:    1,
-		CodeInfo:  CodeInfoFixture(WithSHA256CodeHash(wasmCode)),
-		CodeBytes: wasmCode,
+		CodeInfo:  CodeInfoFixture(WithSHA256CodeHash(reflectWasmCode)),
+		CodeBytes: reflectWasmCode,
 	}
 
 	for _, m := range mutators {
@@ -65,8 +67,10 @@ func CodeFixture(mutators ...func(*Code)) Code {
 }
 
 func CodeInfoFixture(mutators ...func(*CodeInfo)) CodeInfo {
-	wasmCode := bytes.Repeat([]byte{0x1}, 10)
-	codeHash := sha256.Sum256(wasmCode)
+	codeHash, err := wasmvm.CreateChecksum(reflectWasmCode)
+	if err != nil {
+		panic(err)
+	}
 	const anyAddress = "cosmos1qyqszqgpqyqszqgpqyqszqgpqyqszqgpqyqszqgpqyqszqgpqyqs2m6sx4"
 	fixture := CodeInfo{
 		CodeHash:          codeHash[:],
@@ -137,7 +141,10 @@ func ContractCodeHistoryEntryFixture(mutators ...func(*ContractCodeHistoryEntry)
 
 func WithSHA256CodeHash(wasmCode []byte) func(info *CodeInfo) {
 	return func(info *CodeInfo) {
-		codeHash := sha256.Sum256(wasmCode)
+		codeHash, err := wasmvm.CreateChecksum(wasmCode)
+		if err != nil {
+			panic(err)
+		}
 		info.CodeHash = codeHash[:]
 	}
 }

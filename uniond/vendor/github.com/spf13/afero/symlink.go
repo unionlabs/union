@@ -21,9 +21,9 @@ import (
 // filesystems saying so.
 // It indicates support for 3 symlink related interfaces that implement the
 // behaviors of the os methods:
-//    - Lstat
-//    - Symlink, and
-//    - Readlink
+//   - Lstat
+//   - Symlink, and
+//   - Readlink
 type Symlinker interface {
 	Lstater
 	Linker

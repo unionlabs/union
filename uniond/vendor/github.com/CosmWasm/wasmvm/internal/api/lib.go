@@ -62,7 +62,18 @@ func StoreCode(cache Cache, wasm []byte) ([]byte, error) {
 	w := makeView(wasm)
 	defer runtime.KeepAlive(wasm)
 	errmsg := uninitializedUnmanagedVector()
-	checksum, err := C.save_wasm(cache.ptr, w, &errmsg)
+	checksum, err := C.save_wasm(cache.ptr, w, cbool(false), &errmsg)
+	if err != nil {
+		return nil, errorWithMessage(err, errmsg)
+	}
+	return copyAndDestroyUnmanagedVector(checksum), nil
+}
+
+func StoreCodeUnchecked(cache Cache, wasm []byte) ([]byte, error) {
+	w := makeView(wasm)
+	defer runtime.KeepAlive(wasm)
+	errmsg := uninitializedUnmanagedVector()
+	checksum, err := C.save_wasm(cache.ptr, w, cbool(true), &errmsg)
 	if err != nil {
 		return nil, errorWithMessage(err, errmsg)
 	}

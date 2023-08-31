@@ -3,6 +3,12 @@ PACKAGES=$(shell go list ./...)
 INCLUDE = -I=${GOPATH}/src/github.com/cometbft/cometbft-db -I=${GOPATH}/src -I=${GOPATH}/src/github.com/gogo/protobuf/protobuf
 DOCKER_TEST_IMAGE ?= cometbft/cometbft-db-testing
 DOCKER_TEST_IMAGE_VERSION ?= latest
+NON_INTERACTIVE ?= 0
+DOCKER_TEST_INTERACTIVE_FLAGS ?= -it
+
+ifeq (1,$(NON_INTERACTIVE))
+	DOCKER_TEST_INTERACTIVE_FLAGS :=
+endif
 
 export GO111MODULE = on
 
@@ -37,7 +43,7 @@ test-badgerdb:
 
 test-all:
 	@echo "--> Running go test"
-	@go test $(PACKAGES) -tags cleveldb,boltdb,rocksdb,badgerdb -v
+	@go test $(PACKAGES) -tags cleveldb,boltdb,rocksdb,grocksdb_clean_link,badgerdb -v
 .PHONY: test-all
 
 test-all-with-coverage:
@@ -48,7 +54,7 @@ test-all-with-coverage:
 		-race \
 		-coverprofile=coverage.txt \
 		-covermode=atomic \
-		-tags=memdb,goleveldb,cleveldb,boltdb,rocksdb,badgerdb \
+		-tags=memdb,goleveldb,cleveldb,boltdb,rocksdb,grocksdb_clean_link,badgerdb \
 		-v
 .PHONY: test-all-with-coverage
 
@@ -70,9 +76,9 @@ docker-test-image:
 .PHONY: docker-test-image
 
 # Runs the same test as is executed in CI, but locally.
-docker-test: docker-test-image
-	@echo "--> Running all tests with all databases with Docker"
-	@docker run -it --rm --name cometbft-db-test \
+docker-test:
+	@echo "--> Running all tests with all databases with Docker (interactive flags: \"$(DOCKER_TEST_INTERACTIVE_FLAGS)\")"
+	@docker run $(DOCKER_TEST_INTERACTIVE_FLAGS) --rm --name cometbft-db-test \
 		-v `pwd`:/cometbft \
 		-w /cometbft \
 		--entrypoint "" \

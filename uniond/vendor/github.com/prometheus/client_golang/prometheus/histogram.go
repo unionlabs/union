@@ -401,7 +401,7 @@ type HistogramOpts struct {
 	// Histogram by a Prometheus server with that feature enabled (requires
 	// Prometheus v2.40+). Sparse buckets are exponential buckets covering
 	// the whole float64 range (with the exception of the “zero” bucket, see
-	// SparseBucketsZeroThreshold below). From any one bucket to the next,
+	// NativeHistogramZeroThreshold below). From any one bucket to the next,
 	// the width of the bucket grows by a constant
 	// factor. NativeHistogramBucketFactor provides an upper bound for this
 	// factor (exception see below). The smaller
@@ -432,7 +432,7 @@ type HistogramOpts struct {
 	// bucket. For best results, this should be close to a bucket
 	// boundary. This is usually the case if picking a power of two. If
 	// NativeHistogramZeroThreshold is left at zero,
-	// DefSparseBucketsZeroThreshold is used as the threshold. To configure
+	// DefNativeHistogramZeroThreshold is used as the threshold. To configure
 	// a zero bucket with an actual threshold of zero (i.e. only
 	// observations of precisely zero will go into the zero bucket), set
 	// NativeHistogramZeroThreshold to the NativeHistogramZeroThresholdZero
@@ -639,8 +639,8 @@ func (hc *histogramCounts) observe(v float64, bucket int, doSparse bool) {
 			if frac == 0.5 {
 				key--
 			}
-			div := 1 << -schema
-			key = (key + div - 1) / div
+			offset := (1 << -schema) - 1
+			key = (key + offset) >> -schema
 		}
 		if isInf {
 			key++
@@ -817,7 +817,7 @@ func (h *histogram) observe(v float64, bucket int) {
 	}
 }
 
-// limitSparsebuckets applies a strategy to limit the number of populated sparse
+// limitBuckets applies a strategy to limit the number of populated sparse
 // buckets. It's generally best effort, and there are situations where the
 // number can go higher (if even the lowest resolution isn't enough to reduce
 // the number sufficiently, or if the provided counts aren't fully updated yet

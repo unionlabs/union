@@ -18,7 +18,7 @@ recommend depending on this library for new projects.
 
 ### Minimum Go Version
 
-Go 1.18+
+Go 1.19+
 
 ## Supported Database Backends
 
@@ -79,6 +79,7 @@ local machine, use `make test-all` to test them all.
 To test all databases within a Docker container, run:
 
 ```bash
+make docker-test-image
 make docker-test
 ```
 

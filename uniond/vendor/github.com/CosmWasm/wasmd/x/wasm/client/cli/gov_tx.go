@@ -2,12 +2,12 @@ package cli
 
 import (
 	"bytes"
-	"crypto/sha256"
 	"fmt"
 	"net/url"
 	"strconv"
 	"strings"
 
+	wasmvm "github.com/CosmWasm/wasmvm"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
@@ -48,6 +48,8 @@ func SubmitProposalCmd() *cobra.Command {
 		ProposalPinCodesCmd(),
 		ProposalUnpinCodesCmd(),
 		ProposalUpdateInstantiateConfigCmd(),
+		ProposalAddCodeUploadParamsAddresses(),
+		ProposalRemoveCodeUploadParamsAddresses(),
 	)
 	return cmd
 }
@@ -129,11 +131,14 @@ func parseVerificationFlags(gzippedWasm []byte, flags *flag.FlagSet) (string, st
 		// wasm is gzipped in parseStoreCodeArgs
 		// checksum generation will be decoupled here
 		// reference https://github.com/CosmWasm/wasmvm/issues/359
-		raw, err := ioutils.Uncompress(gzippedWasm, uint64(types.MaxWasmSize))
+		raw, err := ioutils.Uncompress(gzippedWasm, int64(types.MaxWasmSize))
 		if err != nil {
 			return "", "", nil, fmt.Errorf("invalid zip: %w", err)
 		}
-		checksum := sha256.Sum256(raw)
+		checksum, err := wasmvm.CreateChecksum(raw)
+		if err != nil {
+			return "", "", nil, fmt.Errorf("checksum: %s", err)
+		}
 		if !bytes.Equal(checksum[:], codeHash) {
 			return "", "", nil, fmt.Errorf("code-hash mismatch: %X, checksum: %X", codeHash, checksum)
 		}
@@ -786,6 +791,90 @@ $ %s tx gov submit-proposal update-instantiate-config 1:nobody 2:everybody 3:%s1
 			}
 
 			proposalMsg, err := v1.NewMsgSubmitProposal(msgs, deposit, clientCtx.GetFromAddress().String(), "", proposalTitle, summary)
+			if err != nil {
+				return err
+			}
+			if err = proposalMsg.ValidateBasic(); err != nil {
+				return err
+			}
+
+			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), proposalMsg)
+		},
+		SilenceUsage: true,
+	}
+	// proposal flags
+	addCommonProposalFlags(cmd)
+	return cmd
+}
+
+func ProposalAddCodeUploadParamsAddresses() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "add-code-upload-params-addresses [addresses] --title [text] --summary [text] --authority [address]",
+		Short: "Submit an add code upload params addresses proposal to add addresses to code upload config params",
+		Args:  cobra.MinimumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, proposalTitle, summary, deposit, err := getProposalInfo(cmd)
+			if err != nil {
+				return err
+			}
+
+			authority, err := cmd.Flags().GetString(flagAuthority)
+			if err != nil {
+				return fmt.Errorf("authority: %s", err)
+			}
+
+			if len(authority) == 0 {
+				return errors.New("authority address is required")
+			}
+
+			msg := types.MsgAddCodeUploadParamsAddresses{
+				Authority: authority,
+				Addresses: args,
+			}
+
+			proposalMsg, err := v1.NewMsgSubmitProposal([]sdk.Msg{&msg}, deposit, clientCtx.GetFromAddress().String(), "", proposalTitle, summary)
+			if err != nil {
+				return err
+			}
+			if err = proposalMsg.ValidateBasic(); err != nil {
+				return err
+			}
+
+			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), proposalMsg)
+		},
+		SilenceUsage: true,
+	}
+	// proposal flags
+	addCommonProposalFlags(cmd)
+	return cmd
+}
+
+func ProposalRemoveCodeUploadParamsAddresses() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "remove-code-upload-params-addresses [addresses] --title [text] --summary [text] --authority [address]",
+		Short: "Submit a remove code upload params addresses proposal to remove addresses from code upload config params",
+		Args:  cobra.MinimumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, proposalTitle, summary, deposit, err := getProposalInfo(cmd)
+			if err != nil {
+				return err
+			}
+
+			authority, err := cmd.Flags().GetString(flagAuthority)
+			if err != nil {
+				return fmt.Errorf("authority: %s", err)
+			}
+
+			if len(authority) == 0 {
+				return errors.New("authority address is required")
+			}
+
+			msg := types.MsgRemoveCodeUploadParamsAddresses{
+				Authority: authority,
+				Addresses: args,
+			}
+
+			proposalMsg, err := v1.NewMsgSubmitProposal([]sdk.Msg{&msg}, deposit, clientCtx.GetFromAddress().String(), "", proposalTitle, summary)
 			if err != nil {
 				return err
 			}

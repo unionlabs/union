@@ -69,11 +69,6 @@ func (msg MsgStoreCode) ValidateBasic() error {
 		if err := msg.InstantiatePermission.ValidateBasic(); err != nil {
 			return errorsmod.Wrap(err, "instantiate permission")
 		}
-		// AccessTypeOnlyAddress is still considered valid as legacy instantiation permission
-		// but not for new contracts
-		if msg.InstantiatePermission.Permission == AccessTypeOnlyAddress {
-			return ErrInvalid.Wrap("unsupported type, use AccessTypeAnyOfAddresses instead")
-		}
 	}
 	return nil
 }
@@ -426,16 +421,6 @@ func (msg MsgUpdateInstantiateConfig) ValidateBasic() error {
 	if err := msg.NewInstantiatePermission.ValidateBasic(); err != nil {
 		return errorsmod.Wrap(err, "instantiate permission")
 	}
-	// AccessTypeOnlyAddress is still considered valid as legacy instantiation permission
-	// but not for new contracts
-	if msg.NewInstantiatePermission.Permission == AccessTypeOnlyAddress {
-		return ErrInvalid.Wrap("unsupported type, use AccessTypeAnyOfAddresses instead")
-	}
-	// AccessTypeOnlyAddress is still considered valid as legacy instantiation permission
-	// but not for new contracts
-	if msg.NewInstantiatePermission.Permission == AccessTypeOnlyAddress {
-		return ErrInvalid.Wrap("unsupported type, use AccessTypeAnyOfAddresses instead")
-	}
 
 	return nil
 }
@@ -627,11 +612,84 @@ func (msg MsgStoreAndInstantiateContract) ValidateBasic() error {
 		if err := msg.InstantiatePermission.ValidateBasic(); err != nil {
 			return errorsmod.Wrap(err, "instantiate permission")
 		}
-		// AccessTypeOnlyAddress is still considered valid as legacy instantiation permission
-		// but not for new contracts
-		if msg.InstantiatePermission.Permission == AccessTypeOnlyAddress {
-			return ErrInvalid.Wrap("unsupported type, use AccessTypeAnyOfAddresses instead")
+	}
+	return nil
+}
+
+func (msg MsgAddCodeUploadParamsAddresses) Route() string {
+	return RouterKey
+}
+
+func (msg MsgAddCodeUploadParamsAddresses) Type() string {
+	return "add-code-upload-params-addresses"
+}
+
+func (msg MsgAddCodeUploadParamsAddresses) GetSigners() []sdk.AccAddress {
+	authority, err := sdk.AccAddressFromBech32(msg.Authority)
+	if err != nil { // should never happen as valid basic rejects invalid addresses
+		panic(err.Error())
+	}
+	return []sdk.AccAddress{authority}
+}
+
+func (msg MsgAddCodeUploadParamsAddresses) GetSignBytes() []byte {
+	return sdk.MustSortJSON(ModuleCdc.MustMarshalJSON(&msg))
+}
+
+func (msg MsgAddCodeUploadParamsAddresses) ValidateBasic() error {
+	if _, err := sdk.AccAddressFromBech32(msg.Authority); err != nil {
+		return errorsmod.Wrap(err, "authority")
+	}
+
+	if len(msg.Addresses) == 0 {
+		return errorsmod.Wrap(ErrEmpty, "addresses")
+	}
+
+	return checkDuplicatedAddresses(msg.Addresses)
+}
+
+func (msg MsgRemoveCodeUploadParamsAddresses) Route() string {
+	return RouterKey
+}
+
+func (msg MsgRemoveCodeUploadParamsAddresses) Type() string {
+	return "remove-code-upload-params-addresses"
+}
+
+func (msg MsgRemoveCodeUploadParamsAddresses) GetSigners() []sdk.AccAddress {
+	authority, err := sdk.AccAddressFromBech32(msg.Authority)
+	if err != nil { // should never happen as valid basic rejects invalid addresses
+		panic(err.Error())
+	}
+	return []sdk.AccAddress{authority}
+}
+
+func (msg MsgRemoveCodeUploadParamsAddresses) GetSignBytes() []byte {
+	return sdk.MustSortJSON(ModuleCdc.MustMarshalJSON(&msg))
+}
+
+func (msg MsgRemoveCodeUploadParamsAddresses) ValidateBasic() error {
+	if _, err := sdk.AccAddressFromBech32(msg.Authority); err != nil {
+		return errorsmod.Wrap(err, "authority")
+	}
+
+	if len(msg.Addresses) == 0 {
+		return errorsmod.Wrap(ErrEmpty, "addresses")
+	}
+
+	return checkDuplicatedAddresses(msg.Addresses)
+}
+
+func checkDuplicatedAddresses(addresses []string) error {
+	index := map[string]struct{}{}
+	for _, addr := range addresses {
+		if _, err := sdk.AccAddressFromBech32(addr); err != nil {
+			return errorsmod.Wrap(err, "addresses")
 		}
+		if _, found := index[addr]; found {
+			return errorsmod.Wrap(ErrInvalid, "duplicate addresses")
+		}
+		index[addr] = struct{}{}
 	}
 	return nil
 }

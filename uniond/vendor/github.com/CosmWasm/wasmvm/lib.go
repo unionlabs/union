@@ -60,6 +60,12 @@ func (vm *VM) StoreCode(code WasmCode) (Checksum, error) {
 	return api.StoreCode(vm.cache, code)
 }
 
+// StoreCodeUnchecked is the same as StoreCode but skips static validation checks.
+// Use this for adding code that was checked before, particularly in the case of state sync.
+func (vm *VM) StoreCodeUnchecked(code WasmCode) (Checksum, error) {
+	return api.StoreCodeUnchecked(vm.cache, code)
+}
+
 func (vm *VM) RemoveCode(checksum Checksum) error {
 	return api.RemoveCode(vm.cache, checksum)
 }

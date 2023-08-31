@@ -248,6 +248,7 @@ type RedelegateMsg struct {
 type DistributionMsg struct {
 	SetWithdrawAddress      *SetWithdrawAddressMsg      `json:"set_withdraw_address,omitempty"`
 	WithdrawDelegatorReward *WithdrawDelegatorRewardMsg `json:"withdraw_delegator_reward,omitempty"`
+	FundCommunityPool       *FundCommunityPoolMsg       `json:"fund_community_pool,omitempty"`
 }
 
 // SetWithdrawAddressMsg is translated to a [MsgSetWithdrawAddress](https://github.com/cosmos/cosmos-sdk/blob/v0.42.4/proto/cosmos/distribution/v1beta1/tx.proto#L29-L37).
@@ -262,6 +263,13 @@ type SetWithdrawAddressMsg struct {
 type WithdrawDelegatorRewardMsg struct {
 	// Validator contains `validator_address` of a MsgWithdrawDelegatorReward
 	Validator string `json:"validator"`
+}
+
+// FundCommunityPoolMsg is translated to a [MsgFundCommunityPool](https://github.com/cosmos/cosmos-sdk/blob/v0.42.4/proto/cosmos/distribution/v1beta1/tx.proto#LL69C1-L76C2).
+// `depositor` is automatically filled with the current contract's address
+type FundCommunityPoolMsg struct {
+	// Amount is the list of coins to be send to the community pool
+	Amount Coins `json:"amount"`
 }
 
 // StargateMsg is encoded the same way as a protobof [Any](https://github.com/protocolbuffers/protobuf/blob/master/src/google/protobuf/any.proto).

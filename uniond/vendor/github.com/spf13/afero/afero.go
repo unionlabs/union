@@ -97,7 +97,7 @@ type Fs interface {
 	// Chown changes the uid and gid of the named file.
 	Chown(name string, uid, gid int) error
 
-	//Chtimes changes the access and modification times of the named file
+	// Chtimes changes the access and modification times of the named file
 	Chtimes(name string, atime time.Time, mtime time.Time) error
 }
 

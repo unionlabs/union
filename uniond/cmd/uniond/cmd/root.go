@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/CosmWasm/wasmd/x/wasm"
+	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	dbm "github.com/cometbft/cometbft-db"
 	tmcfg "github.com/cometbft/cometbft/config"
 	tmcli "github.com/cometbft/cometbft/libs/cli"
@@ -286,7 +286,7 @@ func (a appCreator) newApp(
 		a.encodingConfig,
 		appOpts,
 		app.GetEnabledProposals(),
-		[]wasm.Option{},
+		[]wasmkeeper.Option{},
 		baseapp.SetPruning(pruningOpts),
 		baseapp.SetMinGasPrices(cast.ToString(appOpts.Get(server.FlagMinGasPrices))),
 		baseapp.SetHaltHeight(cast.ToUint64(appOpts.Get(server.FlagHaltHeight))),
@@ -329,7 +329,7 @@ func (a appCreator) appExport(
 		a.encodingConfig,
 		appOpts,
 		app.GetEnabledProposals(),
-		[]wasm.Option{},
+		[]wasmkeeper.Option{},
 	)
 
 	if height != -1 {

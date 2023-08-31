@@ -3,6 +3,7 @@ package keeper
 import (
 	"encoding/hex"
 	"io"
+	"math"
 
 	errorsmod "cosmossdk.io/errors"
 	"github.com/cometbft/cometbft/libs/log"
@@ -99,13 +100,13 @@ func restoreV1(_ sdk.Context, k *Keeper, compressedCode []byte) error {
 	if !ioutils.IsGzip(compressedCode) {
 		return types.ErrInvalid.Wrap("not a gzip")
 	}
-	wasmCode, err := ioutils.Uncompress(compressedCode, uint64(types.MaxWasmSize))
+	wasmCode, err := ioutils.Uncompress(compressedCode, math.MaxInt64)
 	if err != nil {
 		return errorsmod.Wrap(types.ErrCreateFailed, err.Error())
 	}
 
 	// FIXME: check which codeIDs the checksum matches??
-	_, err = k.wasmVM.Create(wasmCode)
+	_, err = k.wasmVM.StoreCodeUnchecked(wasmCode)
 	if err != nil {
 		return errorsmod.Wrap(types.ErrCreateFailed, err.Error())
 	}

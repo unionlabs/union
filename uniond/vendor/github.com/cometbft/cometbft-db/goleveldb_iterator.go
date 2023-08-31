@@ -54,7 +54,6 @@ func (itr *goLevelDBIterator) Domain() ([]byte, []byte) {
 
 // Valid implements Iterator.
 func (itr *goLevelDBIterator) Valid() bool {
-
 	// Once invalid, forever invalid.
 	if itr.isInvalid {
 		return false
@@ -73,9 +72,9 @@ func (itr *goLevelDBIterator) Valid() bool {
 	}
 
 	// If key is end or past it, invalid.
-	var start = itr.start
-	var end = itr.end
-	var key = itr.source.Key()
+	start := itr.start
+	end := itr.end
+	key := itr.source.Key()
 
 	if itr.isReverse {
 		if start != nil && bytes.Compare(key, start) < 0 {

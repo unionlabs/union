@@ -18,12 +18,12 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/prometheus/client_golang/prometheus/internal"
-
 	"github.com/cespare/xxhash/v2"
 	dto "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/model"
 	"google.golang.org/protobuf/proto"
+
+	"github.com/prometheus/client_golang/prometheus/internal"
 )
 
 // Desc is the descriptor used by every Prometheus Metric. It is essentially

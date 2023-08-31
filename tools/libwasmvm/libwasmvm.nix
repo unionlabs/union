@@ -15,8 +15,8 @@
       wasmvm = pkgs.fetchFromGitHub {
         owner = "CosmWasm";
         repo = "wasmvm";
-        rev = "v1.2.3"; # wasmd 0.40
-        hash = "sha256-GscUMJ0Tkg77S9IYA9komyKKoa1AyVXSSaU8hw3ZNwk=";
+        rev = "v1.3.0"; # wasmd 0.41.0
+        hash = "sha256-rsTYvbkYpDkUE4IvILdSL3hXMgAWxz5ltGotJB2t1e4=";
       };
     in
     {
@@ -24,22 +24,22 @@
         craneLib.buildPackage (
           {
             name = "libwasmvm";
-            version = "1.2.3";
+            version = wasmvm.rev;
             src = "${wasmvm}/libwasmvm";
             doCheck = false;
             inherit CARGO_BUILD_TARGET;
           } // (if pkgs.stdenv.isLinux then {
-            cargoBuildCommand = "cargo build --release --example=muslc";
+            cargoBuildCommand = "cargo build --release --example=wasmvmstatic";
             installPhase = ''
               mkdir -p $out/lib
-              mv target/${CARGO_BUILD_TARGET}/release/examples/libmuslc.a $out/lib/libwasmvm.${builtins.head (pkgs.lib.strings.splitString "-" system)}.a
+              mv target/${CARGO_BUILD_TARGET}/release/examples/libwasmvmstatic.a $out/lib/libwasmvm.${builtins.head (pkgs.lib.strings.splitString "-" system)}.a
             '';
           } else if pkgs.stdenv.isDarwin then {
             # non-static dylib build on macOS
             cargoBuildCommand = "cargo build --release";
             installPhase = ''
               mkdir -p $out/lib
-              mv target/${CARGO_BUILD_TARGET}/release/deps/libwasmvm.dylib $out/lib/libwasmvm.dylib 
+              mv target/${CARGO_BUILD_TARGET}/release/deps/libwasmvm.dylib $out/lib/libwasmvm.dylib
             '';
           } else throwBadSystem)
         );

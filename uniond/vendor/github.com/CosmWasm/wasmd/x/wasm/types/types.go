@@ -381,9 +381,9 @@ func (a AccessType) IsSubset(superSet AccessType) bool {
 	case AccessTypeNobody:
 		// Only an exact match is a subset of this
 		return a == AccessTypeNobody
-	case AccessTypeOnlyAddress, AccessTypeAnyOfAddresses:
+	case AccessTypeAnyOfAddresses:
 		// Nobody or address(es)
-		return a == AccessTypeNobody || a == AccessTypeOnlyAddress || a == AccessTypeAnyOfAddresses
+		return a == AccessTypeNobody || a == AccessTypeAnyOfAddresses
 	default:
 		return false
 	}
@@ -393,14 +393,9 @@ func (a AccessType) IsSubset(superSet AccessType) bool {
 // or if the caller is more restrictive than the superset.
 func (a AccessConfig) IsSubset(superSet AccessConfig) bool {
 	switch superSet.Permission {
-	case AccessTypeOnlyAddress:
-		// An exact match or nobody
-		return a.Permission == AccessTypeNobody || (a.Permission == AccessTypeOnlyAddress && a.Address == superSet.Address) ||
-			(a.Permission == AccessTypeAnyOfAddresses && isSubset([]string{superSet.Address}, a.Addresses))
 	case AccessTypeAnyOfAddresses:
 		// An exact match or nobody
-		return a.Permission == AccessTypeNobody || (a.Permission == AccessTypeOnlyAddress && isSubset(superSet.Addresses, []string{a.Address})) ||
-			a.Permission == AccessTypeAnyOfAddresses && isSubset(superSet.Addresses, a.Addresses)
+		return a.Permission == AccessTypeNobody || a.Permission == AccessTypeAnyOfAddresses && isSubset(superSet.Addresses, a.Addresses)
 	case AccessTypeUnspecified:
 		return false
 	default:
@@ -427,11 +422,8 @@ func isSubset(super, sub []string) bool {
 
 // AllAuthorizedAddresses returns the list of authorized addresses. Can be empty.
 func (a AccessConfig) AllAuthorizedAddresses() []string {
-	switch a.Permission {
-	case AccessTypeAnyOfAddresses:
+	if a.Permission == AccessTypeAnyOfAddresses {
 		return a.Addresses
-	case AccessTypeOnlyAddress:
-		return []string{a.Address}
 	}
 	return []string{}
 }
