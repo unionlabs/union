@@ -271,6 +271,7 @@
                   solc
                   yarn
                   yq
+                  hasura-cli
                 ]);
                 nativeBuildInputs = [
                   config.treefmt.build.wrapper

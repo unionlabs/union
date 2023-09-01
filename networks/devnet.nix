@@ -29,9 +29,15 @@
         };
       };
 
+      postgres-services = {
+        postgres = import ./services/postgres.nix { };
+      };
+
+      hasura-services = import ./services/hasura.nix { };
+
       devnet = {
         project.name = "devnet";
-        services = uniond-services // sepolia-services;
+        services = postgres-services // hasura-services;
       };
 
       union = {
