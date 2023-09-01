@@ -7,7 +7,7 @@ publish = false
 license = "BSL-1.1"
 
 [dependencies]
-cosmwasm-std = "1.2.0"
+cosmwasm-std = { version = "1.3.0", default-features = false }
 ibc = { version = "0.37.0", default-features = false, features = [ "serde" ] }
 prost = { version = "0.11", default-features = false }
 protos = { workspace = true, default-features = false, features = ["proto_full", "std"] }
