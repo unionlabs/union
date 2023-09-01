@@ -108,7 +108,7 @@ pub struct CreateDenomResponse {
 
 #[cw_serde]
 pub enum TokenFactoryQuery {
-    // Note: embded enums don't work with QueryResponses currently
+    // Note: embed  enums don't work with QueryResponses currently
     Token(TokenQuery),
 }
 

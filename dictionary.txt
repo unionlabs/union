@@ -64,6 +64,7 @@ Secp
 Shacham
 Shallue
 Snapshotter
+Subdemom
 TRYOPEN
 Tempdirs
 Tendermint
@@ -491,6 +492,8 @@ stretchr
 struct
 structs
 stylesheet
+subdenom
+subdenoms
 submessage
 submsg
 subsec
