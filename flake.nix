@@ -14,10 +14,6 @@
       url = "github:unionlabs/treefmt-nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    pre-commit-hooks = {
-      url = "github:cachix/pre-commit-hooks.nix";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
     foundry = {
       url = "github:shazow/foundry.nix/monthly";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -60,7 +56,7 @@
     v0_9_0.url = "github:unionlabs/union/release-v0.9.0";
     v0_10_0.url = "github:unionlabs/union/release-v0.10.0";
   };
-  outputs = inputs@{ self, nixpkgs, flake-parts, nix-filter, crane, foundry, treefmt-nix, pre-commit-hooks, iohk-nix, ibc-go, ics23, cosmosproto, gogoproto, googleapis, ... }:
+  outputs = inputs@{ self, nixpkgs, flake-parts, nix-filter, crane, foundry, treefmt-nix, iohk-nix, ibc-go, ics23, cosmosproto, gogoproto, googleapis, ... }:
     flake-parts.lib.mkFlake { inherit inputs; } {
       systems =
         [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" "x86_64-darwin" ];
@@ -93,7 +89,6 @@
         ./e2e/e2e.nix
         ./lib/unionlabs/fuzz/default.nix
         treefmt-nix.flakeModule
-        pre-commit-hooks.flakeModule
       ];
 
       perSystem = { config, self', inputs', pkgs, treefmt, rust, crane, system, lib, ... }:
@@ -228,69 +223,36 @@
                 touch $out
               '';
             };
-
-            pre-commit-check = pre-commit-hooks.lib.${system}.run {
-              src = ./.;
-              hooks = {
-                commitizen.enable = true;
-                nil.enable = true;
-                treefmt-nix = {
-                  enable = true;
-                  name = "treefmt";
-                  entry = "nix build .#checks.${system}.treefmt -L";
-                  pass_filenames = false;
-                };
-                spellcheck = {
-                  enable = true;
-                  name = "spellcheck";
-                  entry = "nix build .#checks.${system}.spellcheck -L";
-                  pass_filenames = false;
-                };
-              };
-            };
           };
 
-          devShells =
-            let
-              baseShell = {
-                buildInputs = [ rust.toolchains.dev ] ++ (with pkgs; [
-                  bacon
-                  cargo-nextest
-                  go_1_20
-                  gopls
-                  go-tools
-                  gotools
-                  jq
-                  marksman
-                  nil
-                  nixfmt
-                  nodejs
-                  openssl
-                  pkg-config
-                  protobuf
-                  solc
-                  yarn
-                  yq
-                ]);
-                nativeBuildInputs = [
-                  config.treefmt.build.wrapper
-                ] ++ lib.attrsets.attrValues config.treefmt.build.programs;
-                GOPRIVATE = "github.com/unionlabs/*";
-              };
-            in
-            {
-              default = pkgs.mkShell baseShell;
-              githook = pkgs.mkShell (baseShell // {
-                inherit (self'.checks.pre-commit-check) shellHook;
-              });
-              evm = pkgs.mkShell (baseShell // {
-                buildInputs = baseShell.buildInputs ++ [
-                  pkgs.solc
-                  pkgs.foundry-bin
-                  pkgs.go-ethereum
-                ];
-              });
-            };
+          devShells.default = pkgs.mkShell {
+            name = "union-devShell";
+            buildInputs = [ rust.toolchains.dev ] ++ (with pkgs; [
+              bacon
+              cargo-nextest
+              go_1_20
+              gopls
+              go-tools
+              gotools
+              jq
+              marksman
+              nil
+              nixfmt
+              nodejs
+              openssl
+              pkg-config
+              protobuf
+              solc
+              yarn
+              yq
+              foundry-bin
+              go-ethereum
+            ]);
+            nativeBuildInputs = [
+              config.treefmt.build.wrapper
+            ] ++ lib.attrsets.attrValues config.treefmt.build.programs;
+            GOPRIVATE = "github.com/unionlabs/*";
+          };
 
           treefmt =
             let
