@@ -1,7 +1,60 @@
+use std::future::Future;
+
 use graphql_client::{GraphQLQuery, Response};
-use reqwest::Client;
+use reqwest::{Client, Url};
 
 type Jsonb = serde_json::Value;
+
+pub trait Datastore {
+    fn do_post<Q: GraphQLQuery>(
+        &self,
+        v: Q::Variables,
+    ) -> impl Future<Output = color_eyre::Result<Response<Q::ResponseData>>> + '_
+    where
+        <Q as GraphQLQuery>::Variables: 'static;
+}
+
+#[derive(Clone)]
+pub struct HasuraDataStore {
+    client: Client,
+    url: Url,
+    secret: String,
+}
+
+impl Datastore for HasuraDataStore {
+    #[allow(clippy::manual_async_fn)]
+    fn do_post<Q: GraphQLQuery>(
+        &self,
+        v: Q::Variables,
+    ) -> impl Future<Output = color_eyre::Result<Response<Q::ResponseData>>> + '_
+    where
+        <Q as GraphQLQuery>::Variables: 'static,
+    {
+        async move {
+            let body = Q::build_query(v);
+            let response: Response<Q::ResponseData> = self
+                .client
+                .post(self.url.clone())
+                .json(&body)
+                .header("x-hasura-admin-secret", &self.secret)
+                .send()
+                .await?
+                .json()
+                .await?;
+            Ok(response)
+        }
+    }
+}
+
+impl HasuraDataStore {
+    pub fn new(client: Client, url: Url, secret: String) -> Self {
+        Self {
+            client,
+            url,
+            secret,
+        }
+    }
+}
 
 #[derive(GraphQLQuery)]
 #[graphql(
@@ -22,21 +75,3 @@ pub struct InsertBlock;
     skip_serializing_none
 )]
 pub struct GetLatestBlock;
-
-pub async fn do_post<Q: GraphQLQuery>(
-    auth: &str,
-    url: &str,
-    client: &Client,
-    variables: Q::Variables,
-) -> color_eyre::Result<Response<Q::ResponseData>> {
-    let body = Q::build_query(variables);
-    let response: Response<Q::ResponseData> = client
-        .post(url)
-        .json(&body)
-        .header("x-hasura-admin-secret", auth)
-        .send()
-        .await?
-        .json()
-        .await?;
-    Ok(response)
-}

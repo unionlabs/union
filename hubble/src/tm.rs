@@ -1,10 +1,9 @@
-use reqwest::Client as Reqwest;
 use tendermint::genesis::Genesis;
-use tendermint_rpc::{Error, error::ErrorDetail, Client, HttpClient};
+use tendermint_rpc::{error::ErrorDetail, response_error::Code, Client, Error, HttpClient};
 use tokio::time::{sleep, Duration};
 use tracing::{debug, info};
 use url::Url;
-use tendermint_rpc::response_error::Code;
+
 use crate::{
     hasura::*,
     tm::insert_block::{EventsArrRelInsertInput, EventsInsertInput},
@@ -16,17 +15,9 @@ pub struct Config {
     pub chain_id: Option<String>,
 }
 
-
-
 impl Config {
-    pub async fn index(
-        &self,
-        hasura_url: &Url,
-        secret: &str,
-    ) -> Result<(), color_eyre::eyre::Report> {
+    pub async fn index<D: Datastore>(&self, db: D) -> Result<(), color_eyre::eyre::Report> {
         let client = HttpClient::new(self.url.as_str()).unwrap();
-        let db = Reqwest::new();
-        let url = hasura_url.to_string();
 
         // If there is no chain_id override, we query it from the node. This
         // is the expected default.
@@ -43,9 +34,9 @@ impl Config {
 
         // We query for the last indexed block to not waste resources re-indexing.
         debug!("fetching latest stored block");
-        let latest_stored =
-            do_post::<GetLatestBlock>(secret, &url, &db, get_latest_block::Variables { chain_id })
-                .await?;
+        let latest_stored = db
+            .do_post::<GetLatestBlock>(get_latest_block::Variables { chain_id })
+            .await?;
 
         let data = latest_stored
             .data
@@ -143,20 +134,21 @@ impl Config {
                 finalized: true,
             };
 
-            do_post::<InsertBlock>(secret, &url, &db, v).await?;
+            db.do_post::<InsertBlock>(v).await?;
         }
     }
 }
 
 /// The RPC will return an internal error on queries for blocks exceeding the current height.
-/// `is_height_exceeded_error` unwrangles the error and checks for this case. 
+/// `is_height_exceeded_error` unwrangles the error and checks for this case.
 pub fn is_height_exceeded_error(err: &Error) -> bool {
     let detail = err.detail();
     if let ErrorDetail::Response(err) = detail {
         let inner = &err.source;
         let code = inner.code();
         let message = inner.data().unwrap_or_default();
-        return matches!(code, Code::InternalError) && message.contains("must be less than or equal to")
+        return matches!(code, Code::InternalError)
+            && message.contains("must be less than or equal to");
     }
     false
 }

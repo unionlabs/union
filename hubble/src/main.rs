@@ -1,4 +1,8 @@
+#![feature(return_position_impl_trait_in_trait)]
+
 use clap::Parser;
+use hasura::HasuraDataStore;
+use reqwest::Client;
 use tracing::{error, info};
 mod cli;
 mod hasura;
@@ -11,18 +15,21 @@ async fn main() {
     let args = crate::cli::Args::parse();
     tracing_subscriber::fmt::init();
 
-    let mut handles = vec![];
+    let url = args.url.clone();
+    let secret = args.secret.clone();
+    let client = Client::new();
+    let db = HasuraDataStore::new(client, url, secret);
 
-    for indexer in args.indexers.into_iter() {
-        info!("starting indexer {:?}", indexer);
-        let url = args.url.clone();
-        let secret = args.secret.clone();
-        handles.push(tokio::task::spawn(async move {
+    let handles = args.indexers.into_iter().map(|indexer| {
+        let db = db.clone();
+        async move {
+            info!("starting indexer {:?}", indexer);
+
             // indexer should never return with Ok, thus we log the error.
-            let result = indexer.index(&url, &secret).await;
+            let result = indexer.index(db).await;
             error!("indexer {:?} exited with: {:?}", &indexer, result);
-        }));
-    }
+        }
+    });
 
     futures::future::join_all(handles).await;
 }

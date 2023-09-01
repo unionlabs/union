@@ -3,6 +3,8 @@ use std::str::FromStr;
 use clap::Parser;
 use url::Url;
 
+use crate::hasura::Datastore;
+
 /// Hubble is state machine observer.
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -25,9 +27,9 @@ pub enum IndexerConfig {
 }
 
 impl IndexerConfig {
-    pub async fn index(&self, hasura: &Url, secret: &str) -> Result<(), color_eyre::eyre::Report> {
+    pub async fn index<D: Datastore>(&self, db: D) -> Result<(), color_eyre::eyre::Report> {
         match self {
-            Self::Tm(cfg) => cfg.index(hasura, secret).await,
+            Self::Tm(cfg) => cfg.index(db).await,
         }
     }
 }
