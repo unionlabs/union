@@ -1,1 +1,20 @@
-[]
+- name: default
+  kind: postgres
+  configuration:
+    connection_info:
+      database_url:
+        from_env: PG_DATABASE_URL
+      isolation_level: read-committed
+      use_prepared_statements: false
+  logical_models:
+    - fields:
+        - name: receiver
+          type:
+            nullable: false
+            scalar: text
+        - name: amount
+          type:
+            nullable: true
+            scalar: text
+      name: coin_received
+  tables: "!include default/tables/tables.yaml"

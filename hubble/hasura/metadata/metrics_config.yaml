@@ -1,0 +1,2 @@
+analyze_query_variables: true
+analyze_response_body: true

@@ -1,7 +1,7 @@
-{ ... }:
+{ migrations, ... }:
 {
   hasura.service = {
-    image = "hasura/graphql-engine:v2.33.0";
+    image = "hasura/graphql-engine:v2.33.0.cli-migrations-v3";
     tty = true;
     stop_signal = "SIGINT";
     ports = [
@@ -15,6 +15,11 @@
       HASURA_GRAPHQL_ADMIN_SECRET = "secret";
       HASURA_GRAPHQL_METADATA_DEFAULTS = ''{"backend_configs":{"dataconnector":{"athena":{"uri":"http://data-connector-agent:8081/api/v1/athena"},"mariadb":{"uri":"http://data-connector-agent:8081/api/v1/mariadb"},"mysql8":{"uri":"http://data-connector-agent:8081/api/v1/mysql"},"oracle":{"uri":"http://data-connector-agent:8081/api/v1/oracle"},"snowflake":{"uri":"http://data-connector-agent:8081/api/v1/snowflake"}}}}'';
     };
+    volumes = [ 
+      "${migrations}/metatdata:/hasura-metatdata"
+      "${migrations}/migrations:/hasura-migrations" 
+    ];
+
     depends_on = {
       data-connector-agent = {
         condition = "service_healthy";
