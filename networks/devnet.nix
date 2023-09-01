@@ -1,5 +1,5 @@
 { ... }: {
-  perSystem = { devnetConfig, pkgs, self', inputs', ... }:
+  perSystem = { devnetConfig, pkgs, lib, self', inputs', ... }:
     let
       arion = inputs'.arion.packages.default;
 
@@ -33,16 +33,17 @@
         postgres = import ./services/postgres.nix { };
       };
 
-      hasura-services = import ./services/hasura.nix { migrations = self'.packages.hubble-migrations };
+      hasura-services = import ./services/hasura.nix { migrations = self'.packages.hubble-migrations; };
+      hubble-services = { hubble = import ./services/hubble.nix { inherit lib; image = self'.packages.hubble-image; }; };
 
       devnet = {
         project.name = "devnet";
-        services = postgres-services // hasura-services;
+        services = sepolia-services // uniond-services // postgres-services // hasura-services // hubble-services;
       };
 
       union = {
         project.name = "union";
-        services = uniond-services;
+        services = uniond-services // postgres-services // hasura-services // hubble-services;
       };
 
       sepolia = {
@@ -55,11 +56,7 @@
       };
 
       spec-cosmos = {
-        modules = [{
-          project.name = "union-devnet-cosmos";
-          networks.union-devnet = { };
-          services = uniond-services;
-        }];
+        modules = [ (union // { networks.union-devnet = { }; }) ];
       };
 
       spec-evm = {

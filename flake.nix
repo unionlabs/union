@@ -225,50 +225,36 @@
             };
           };
 
-          devShells =
-            let
-              baseShell = {
-                buildInputs = [ rust.toolchains.dev ] ++ (with pkgs; [
-                  bacon
-                  cargo-nextest
-                  go_1_20
-                  gopls
-                  go-tools
-                  gotools
-                  jq
-                  marksman
-                  nil
-                  nixfmt
-                  nodejs
-                  openssl
-                  pkg-config
-                  protobuf
-                  solc
-                  yarn
-                  yq
-                  foundry-bin
-                  go-ethereum
-                  hasura-cli
-                ]);
-                nativeBuildInputs = [
-                  config.treefmt.build.wrapper
-                ] ++ lib.attrsets.attrValues config.treefmt.build.programs;
-                GOPRIVATE = "github.com/unionlabs/*";
-              };
-            in
-            {
-              default = pkgs.mkShell baseShell;
-              githook = pkgs.mkShell (baseShell // {
-                inherit (self'.checks.pre-commit-check) shellHook;
-              });
-              evm = pkgs.mkShell (baseShell // {
-                buildInputs = baseShell.buildInputs ++ [
-                  pkgs.solc
-                  pkgs.foundry-bin
-                  pkgs.go-ethereum
-                ];
-              });
-            };
+          devShells.default = pkgs.mkShell {
+            name = "union-devShell";
+            buildInputs = [ rust.toolchains.dev ] ++ (with pkgs; [
+              bacon
+              cargo-nextest
+              go_1_20
+              gopls
+              go-tools
+              gotools
+              jq
+              marksman
+              nil
+              nixfmt
+              nodejs
+              openssl
+              pkg-config
+              protobuf
+              solc
+              yarn
+              yq
+              foundry-bin
+              go-ethereum
+              hasura-cli
+            ]);
+            nativeBuildInputs = [
+              config.treefmt.build.wrapper
+            ] ++ lib.attrsets.attrValues config.treefmt.build.programs;
+            GOPRIVATE = "github.com/unionlabs/*";
+          };
+
 
           treefmt =
             let

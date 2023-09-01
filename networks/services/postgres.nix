@@ -9,6 +9,7 @@
     ];
     environment = {
       POSTGRES_PASSWORD = "postgrespassword";
+      POSTGRES_DB = "default";
     };
   };
 }
