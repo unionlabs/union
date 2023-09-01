@@ -1,6 +1,6 @@
 use reqwest::Client as Reqwest;
 use tendermint::genesis::Genesis;
-use tendermint_rpc::{error::ErrorDetail, Client, HttpClient};
+use tendermint_rpc::{error::ErrorDetail, response_error::Code, Client, Error, HttpClient};
 use tokio::time::{sleep, Duration};
 use tracing::{debug, info};
 use url::Url;
@@ -65,9 +65,9 @@ impl Config {
             // if we're caught up indexing to the latest height, this will error. In that case,
             // we retry until we obtain the next header.
             debug!("fetching block header for height: {}", &height);
-            let header = match client.header(height).await {
+            let header = match client.block(height).await {
                 Err(err) => {
-                    if matches!(err.detail(), &ErrorDetail::OutOfRange(_)) {
+                    if is_height_exceeded_error(&err) {
                         debug!("caught up indexing, sleeping for 1 second");
                         sleep(Duration::from_millis(1000)).await;
                         continue;
@@ -75,7 +75,7 @@ impl Config {
                         return Err(err.into());
                     }
                 }
-                Ok(val) => val.header,
+                Ok(val) => val.block.header,
             };
             debug!("fetching block results for height: {}", &height);
             let block = client.block_results(height).await?;
@@ -144,4 +144,18 @@ impl Config {
             do_post::<InsertBlock>(secret, &url, &db, v).await?;
         }
     }
+}
+
+/// The RPC will return an internal error on queries for blocks exceeding the current height.
+/// `is_height_exceeded_error` unwrangles the error and checks for this case.
+pub fn is_height_exceeded_error(err: &Error) -> bool {
+    let detail = err.detail();
+    if let ErrorDetail::Response(err) = detail {
+        let inner = &err.source;
+        let code = inner.code();
+        let message = inner.data().unwrap_or_default();
+        return matches!(code, Code::InternalError)
+            && message.contains("must be less than or equal to");
+    }
+    false
 }

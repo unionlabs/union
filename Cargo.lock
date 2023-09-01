@@ -990,7 +990,7 @@ dependencies = [
  "protos",
  "schemars",
  "serde",
- "serde-json-wasm 0.5.1",
+ "serde-json-wasm 1.0.0",
  "serde_json",
  "sha3",
  "thiserror",
