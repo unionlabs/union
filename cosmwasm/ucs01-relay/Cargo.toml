@@ -1,10 +1,8 @@
 [package]
-name = "cw20-ics20"
+name = "ucs01-relay"
 version = "1.0.1"
-authors = ["Ethan Frey <ethanfrey@users.noreply.github.com>", "Hussein Ait Lahcen <hussein.aitlahcen@gmail.com>"]
+authors = ["Hussein Ait Lahcen <hussein.aitlahcen@gmail.com>"]
 edition = "2021"
-description = "IBC Enabled contracts that receives CW20 tokens and sends them over ICS20 to a remote chain"
-license = "Apache-2.0"
 repository = "https://github.com/unionlabs/union"
 
 [lib]

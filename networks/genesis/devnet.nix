@@ -49,7 +49,7 @@
             mv merge.json $out/config/genesis.json
           '';
 
-      calculateCw20Ics20ContractAddress = home: pkgs.runCommand "calculate-cw20-ics20-contract-address"
+      calculateCw20Ics20ContractAddress = home: pkgs.runCommand "calculate-ucs01-relay-contract-address"
         {
           buildInputs = [ pkgs.jq ];
         }
@@ -64,7 +64,7 @@
             --output json \
             | jq '.[] | select(.name == "${genesisAccountName}").address' --raw-output)
 
-          CODE_HASH=$(sha256sum ${self'.packages.cw20-ics20}/lib/cw20_ics20.wasm | cut -f1 -d" ")
+          CODE_HASH=$(sha256sum ${self'.packages.ucs01-relay}/lib/ucs01_relay.wasm | cut -f1 -d" ")
 
           ${uniond} query wasm build-address $CODE_HASH $ALICE_ADDRESS ${cw-instantiate2-salt} > $out/CW20_ICS20_CONTRACT_ADDRESS
         '';
@@ -454,7 +454,7 @@
           # add ibc contracts
           ++ [
             (addIbcContractCodesToGenesis [
-              self'.packages.cw20-ics20
+              self'.packages.ucs01-relay
               self'.packages.ucs00-pingpong
             ])
           ]

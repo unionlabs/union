@@ -8,7 +8,7 @@ to assets originating on the foreign chain. This is different than the Golang `i
 we properly implement ICS20 and respond with an error message... let's hope the Go side handles this correctly.
 
 For more information on this contract, please check out the
-[README](https://github.com/CosmWasm/cw-plus/blob/main/contracts/cw20-ics20/README.md).
+[README](https://github.com/CosmWasm/cw-plus/blob/main/contracts/ucs01-relay/README.md).
 */
 
 pub mod amount;

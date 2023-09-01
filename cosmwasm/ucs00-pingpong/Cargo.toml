@@ -3,8 +3,6 @@ name = "ucs00-pingpong"
 version = "1.0.0"
 authors = ["Hussein Ait Lahcen <hussein.aitlahcen@gmail.com>"]
 edition = "2021"
-description = "IBC Enabled contracts example"
-license = "Apache-2.0"
 repository = "https://github.com/unionlabs/union"
 
 [lib]

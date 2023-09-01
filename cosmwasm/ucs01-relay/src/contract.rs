@@ -27,7 +27,7 @@ use crate::{
 };
 
 // version info for migration info
-const CONTRACT_NAME: &str = "crates.io:cw20-ics20";
+const CONTRACT_NAME: &str = "crates.io:ucs01-relay";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -434,7 +434,7 @@ mod test {
             },
         )
         .unwrap_err();
-        assert_eq!(err, StdError::not_found("cw20_ics20::state::ChannelInfo"));
+        assert_eq!(err, StdError::not_found("ucs01_relay::state::ChannelInfo"));
     }
 
     #[test]
