@@ -138,7 +138,7 @@ impl<C: ChainSpec> CreateClient<Ethereum<C>> for Union {
             let client_id = self
                 .broadcast_tx_commit([msg])
                 .await
-                .deliver_tx
+                .tx_result
                 .events
                 .into_iter()
                 .find(|event| event.kind == "create_client")
@@ -260,13 +260,13 @@ impl Union {
             .unwrap();
 
         tracing::info!(check_tx_code = ?response.check_tx.code, check_tx_log = %response.check_tx.log);
-        tracing::info!(deliver_tx_code = ?response.deliver_tx.code, deliver_tx_log = %response.deliver_tx.log);
+        tracing::info!(deliver_tx_code = ?response.tx_result.code, deliver_tx_log = %response.tx_result.log);
 
         if let tendermint::abci::Code::Err(code) = response.check_tx.code {
             panic!("check_tx failed: {code}")
         };
 
-        if let tendermint::abci::Code::Err(code) = response.deliver_tx.code {
+        if let tendermint::abci::Code::Err(code) = response.tx_result.code {
             panic!("deliver_tx failed: {code}")
         };
 
@@ -1056,7 +1056,7 @@ impl<C: ChainSpec> Ethereum<C> {
             .map(|response| {
                 (
                     self.chain.make_height(response.height.value()),
-                    get_event_from_tx_response(response.deliver_tx.events).unwrap(),
+                    get_event_from_tx_response(response.tx_result.events).unwrap(),
                 )
             })
             .await
