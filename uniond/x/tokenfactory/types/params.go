@@ -7,7 +7,6 @@ import (
 	appparams "union/app/params"
 )
 
-
 func NewParams(denomCreationFee sdk.Coins) Params {
 	return Params{
 		DenomCreationFee: denomCreationFee,
