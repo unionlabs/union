@@ -1,4 +1,3 @@
-use reqwest::Client as Reqwest;
 use tendermint::genesis::Genesis;
 use tendermint_rpc::{error::ErrorDetail, response_error::Code, Client, Error, HttpClient};
 use tokio::time::{sleep, Duration};
@@ -17,14 +16,8 @@ pub struct Config {
 }
 
 impl Config {
-    pub async fn index(
-        &self,
-        hasura_url: &Url,
-        secret: &str,
-    ) -> Result<(), color_eyre::eyre::Report> {
+    pub async fn index<D: Datastore>(&self, db: D) -> Result<(), color_eyre::eyre::Report> {
         let client = HttpClient::new(self.url.as_str()).unwrap();
-        let db = Reqwest::new();
-        let url = hasura_url.to_string();
 
         // If there is no chain_id override, we query it from the node. This
         // is the expected default.
@@ -41,9 +34,9 @@ impl Config {
 
         // We query for the last indexed block to not waste resources re-indexing.
         debug!("fetching latest stored block");
-        let latest_stored =
-            do_post::<GetLatestBlock>(secret, &url, &db, get_latest_block::Variables { chain_id })
-                .await?;
+        let latest_stored = db
+            .do_post::<GetLatestBlock>(get_latest_block::Variables { chain_id })
+            .await?;
 
         let data = latest_stored
             .data
@@ -141,7 +134,7 @@ impl Config {
                 finalized: true,
             };
 
-            do_post::<InsertBlock>(secret, &url, &db, v).await?;
+            db.do_post::<InsertBlock>(v).await?;
         }
     }
 }
