@@ -24,3 +24,4 @@ schemars = "0.8"
 semver = "1"
 serde = { version = "1.0", default-features = false, features = ["derive"] }
 thiserror = { version = "1.0" }
+token-factory-api = { workspace = true }

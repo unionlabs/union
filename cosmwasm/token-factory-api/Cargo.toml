@@ -1,0 +1,8 @@
+[package]
+name = "token-factory-api"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+cosmwasm-schema = { version = "1.3" }
+cosmwasm-std = { version = "1.3" }
