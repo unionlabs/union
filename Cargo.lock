@@ -2698,7 +2698,7 @@ dependencies = [
  "serde",
  "serde_json",
  "tendermint 0.33.0",
- "tendermint-rpc 0.33.0",
+ "tendermint-rpc",
  "tokio",
  "tracing",
  "tracing-subscriber 0.3.17",
@@ -4917,36 +4917,8 @@ dependencies = [
 
 [[package]]
 name = "tendermint"
-version = "0.32.0"
-source = "git+https://github.com/unionlabs/tendermint-rs?branch=bn254#6276b8abfa720407e762f9668e05cf53893d1777"
-dependencies = [
- "bytes",
- "digest 0.10.7",
- "ed25519 2.2.1",
- "ed25519-consensus",
- "flex-error",
- "futures",
- "num-traits",
- "once_cell",
- "prost",
- "prost-types",
- "serde",
- "serde_bytes",
- "serde_json",
- "serde_repr",
- "sha2 0.10.7",
- "signature 2.1.0",
- "subtle",
- "subtle-encoding",
- "tendermint-proto 0.32.0",
- "time",
- "zeroize",
-]
-
-[[package]]
-name = "tendermint"
 version = "0.33.0"
-source = "git+https://github.com/unionlabs/tendermint-rs?branch=add-proto-bn254#2dcb71b8c88d13d0a40811d36a6f13731510b4c5"
+source = "git+https://github.com/unionlabs/tendermint-rs?branch=bn254#e1f765f109815c180b5783028c002a82a6ddc890"
 dependencies = [
  "bytes",
  "digest 0.10.7",
@@ -4973,21 +4945,8 @@ dependencies = [
 
 [[package]]
 name = "tendermint-config"
-version = "0.32.0"
-source = "git+https://github.com/unionlabs/tendermint-rs?branch=bn254#6276b8abfa720407e762f9668e05cf53893d1777"
-dependencies = [
- "flex-error",
- "serde",
- "serde_json",
- "tendermint 0.32.0",
- "toml 0.5.11",
- "url",
-]
-
-[[package]]
-name = "tendermint-config"
 version = "0.33.0"
-source = "git+https://github.com/unionlabs/tendermint-rs?branch=add-proto-bn254#2dcb71b8c88d13d0a40811d36a6f13731510b4c5"
+source = "git+https://github.com/unionlabs/tendermint-rs?branch=bn254#e1f765f109815c180b5783028c002a82a6ddc890"
 dependencies = [
  "flex-error",
  "serde",
@@ -5030,25 +4989,8 @@ dependencies = [
 
 [[package]]
 name = "tendermint-proto"
-version = "0.32.0"
-source = "git+https://github.com/unionlabs/tendermint-rs?branch=bn254#6276b8abfa720407e762f9668e05cf53893d1777"
-dependencies = [
- "bytes",
- "flex-error",
- "num-derive",
- "num-traits",
- "prost",
- "prost-types",
- "serde",
- "serde_bytes",
- "subtle-encoding",
- "time",
-]
-
-[[package]]
-name = "tendermint-proto"
 version = "0.33.0"
-source = "git+https://github.com/unionlabs/tendermint-rs?branch=add-proto-bn254#2dcb71b8c88d13d0a40811d36a6f13731510b4c5"
+source = "git+https://github.com/unionlabs/tendermint-rs?branch=bn254#e1f765f109815c180b5783028c002a82a6ddc890"
 dependencies = [
  "bytes",
  "flex-error",
@@ -5064,8 +5006,8 @@ dependencies = [
 
 [[package]]
 name = "tendermint-rpc"
-version = "0.32.0"
-source = "git+https://github.com/unionlabs/tendermint-rs?branch=bn254#6276b8abfa720407e762f9668e05cf53893d1777"
+version = "0.33.0"
+source = "git+https://github.com/unionlabs/tendermint-rs?branch=bn254#e1f765f109815c180b5783028c002a82a6ddc890"
 dependencies = [
  "async-trait",
  "async-tungstenite",
@@ -5085,42 +5027,8 @@ dependencies = [
  "serde_json",
  "subtle",
  "subtle-encoding",
- "tendermint 0.32.0",
- "tendermint-config 0.32.0",
- "tendermint-proto 0.32.0",
- "thiserror",
- "time",
- "tokio",
- "tracing",
- "url",
- "uuid",
- "walkdir",
-]
-
-[[package]]
-name = "tendermint-rpc"
-version = "0.33.0"
-source = "git+https://github.com/unionlabs/tendermint-rs?branch=add-proto-bn254#2dcb71b8c88d13d0a40811d36a6f13731510b4c5"
-dependencies = [
- "async-trait",
- "bytes",
- "flex-error",
- "futures",
- "getrandom",
- "http",
- "hyper",
- "hyper-proxy",
- "hyper-rustls 0.22.1",
- "peg",
- "pin-project",
- "semver",
- "serde",
- "serde_bytes",
- "serde_json",
- "subtle",
- "subtle-encoding",
  "tendermint 0.33.0",
- "tendermint-config 0.33.0",
+ "tendermint-config",
  "tendermint-proto 0.33.0",
  "thiserror",
  "time",
@@ -5942,9 +5850,9 @@ dependencies = [
  "serde_json",
  "sha2 0.10.7",
  "subtle-encoding",
- "tendermint 0.32.0",
- "tendermint-proto 0.32.0",
- "tendermint-rpc 0.32.0",
+ "tendermint 0.33.0",
+ "tendermint-proto 0.33.0",
+ "tendermint-rpc",
  "tokio",
  "tokio-stream",
  "tonic",
