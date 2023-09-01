@@ -228,8 +228,9 @@ dependencies = [
 
 [[package]]
 name = "ark-groth16"
-version = "0.3.0"
-source = "git+https://github.com/arkworks-rs/groth16?rev=9bac46fb3b1fbc0d2c88c6bc59b0ba798216bf6f#9bac46fb3b1fbc0d2c88c6bc59b0ba798216bf6f"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "20ceafa83848c3e390f1cbf124bc3193b3e639b3f02009e0e290809a501b95fc"
 dependencies = [
  "ark-crypto-primitives",
  "ark-ec",
@@ -984,16 +985,12 @@ dependencies = [
  "cometbls-groth16-verifier",
  "cosmwasm-schema",
  "cosmwasm-std",
- "ethabi",
- "ethers",
  "hex",
- "ibc",
- "lazy_static",
  "prost",
  "protos",
  "schemars",
  "serde",
- "serde-json-wasm 1.0.0",
+ "serde-json-wasm 0.5.1",
  "serde_json",
  "sha3",
  "thiserror",

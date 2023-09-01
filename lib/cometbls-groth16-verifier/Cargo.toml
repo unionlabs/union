@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-ark-groth16 =  { git = "https://github.com/arkworks-rs/groth16", rev = "9bac46fb3b1fbc0d2c88c6bc59b0ba798216bf6f", default-features = false }
+ark-groth16 =  { version = "0.4", default-features = false }
 ark-ec = { version = "0.4", default-features = false }
 ark-ff = { version = "0.4", default-features = false }
 ark-bn254 = { version = "0.4", default-features = false, features = [ "curve" ] }
