@@ -33,7 +33,7 @@
         postgres = import ./services/postgres.nix { };
       };
 
-      hasura-services = import ./services/hasura.nix { };
+      hasura-services = import ./services/hasura.nix { migrations = self'.packages.hubble-migrations };
 
       devnet = {
         project.name = "devnet";

@@ -1,0 +1,3 @@
+table:
+  name: messages
+  schema: public

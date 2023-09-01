@@ -23,6 +23,17 @@
             Env = [ "SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt" ];
           };
         };
+
+        hubble-migrations = pkgs.stdenv.mkDerivation {
+          name = "hubble-migrations";
+          src = [./hasura ];
+          installPhase = ''
+            mkdir -p $out
+            cp -r $src/metadata $out
+            cp -r $src/migrations $out
+            cp -r $src/seeds $out
+          '';
+        };
       };
     };
 }

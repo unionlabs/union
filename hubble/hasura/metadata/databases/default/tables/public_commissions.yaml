@@ -1,0 +1,3 @@
+table:
+  name: commissions
+  schema: public

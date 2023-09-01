@@ -1,0 +1,11 @@
+table:
+  name: chains
+  schema: public
+array_relationships:
+  - name: blocks
+    using:
+      foreign_key_constraint_on:
+        column: chain_id
+        table:
+          name: blocks
+          schema: public
