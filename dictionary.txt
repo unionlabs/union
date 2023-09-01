@@ -64,6 +64,7 @@ Secp
 Shacham
 Shallue
 Snapshotter
+Subdemom
 TRYOPEN
 Tempdirs
 Tendermint
@@ -492,6 +493,8 @@ stretchr
 struct
 structs
 stylesheet
+subdenom
+subdenoms
 submessage
 submsg
 subsec
@@ -512,6 +515,10 @@ testdata
 testkeeper
 testkey
 testutil
+tfbindings
+tfkeeper
+tfmodule
+tftypes
 thiserror
 tkey
 tkeys
@@ -524,6 +531,7 @@ tmproto
 tmrand
 tmservice
 tmtypes
+tokenfactory
 tokenizable
 tokenz
 tombstoned

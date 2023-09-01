@@ -20,9 +20,7 @@ func (f funcOption) apply(initializer *internal.ModuleInitializer) error {
 // documentation on the dependency injection system.
 func Provide(providers ...interface{}) Option {
 	return funcOption(func(initializer *internal.ModuleInitializer) error {
-		for _, provider := range providers {
-			initializer.Providers = append(initializer.Providers, provider)
-		}
+		initializer.Providers = append(initializer.Providers, providers...)
 		return nil
 	})
 }
@@ -33,9 +31,7 @@ func Provide(providers ...interface{}) Option {
 // invokers impose no additional constraints on the dependency graph. Invoker functions should nil-check all inputs.
 func Invoke(invokers ...interface{}) Option {
 	return funcOption(func(initializer *internal.ModuleInitializer) error {
-		for _, invoker := range invokers {
-			initializer.Invokers = append(initializer.Invokers, invoker)
-		}
+		initializer.Invokers = append(initializer.Invokers, invokers...)
 		return nil
 	})
 }

@@ -227,7 +227,12 @@ func (k *keychain) Remove(key string) error {
 	}
 
 	debugf("Removing keychain item service=%q, account=%q, keychain %q", k.service, key, k.path)
-	return gokeychain.DeleteItem(item)
+	err := gokeychain.DeleteItem(item)
+	if err == gokeychain.ErrorItemNotFound {
+		return ErrKeyNotFound
+	}
+
+	return err
 }
 
 func (k *keychain) Keys() ([]string, error) {

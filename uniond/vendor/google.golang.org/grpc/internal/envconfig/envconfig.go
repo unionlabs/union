@@ -40,6 +40,9 @@ var (
 	// pick_first LB policy, which can be enabled by setting the environment
 	// variable "GRPC_EXPERIMENTAL_PICKFIRST_LB_CONFIG" to "true".
 	PickFirstLBConfig = boolFromEnv("GRPC_EXPERIMENTAL_PICKFIRST_LB_CONFIG", false)
+	// ALTSMaxConcurrentHandshakes is the maximum number of concurrent ALTS
+	// handshakes that can be performed.
+	ALTSMaxConcurrentHandshakes = uint64FromEnv("GRPC_ALTS_MAX_CONCURRENT_HANDSHAKES", 100, 1, 100)
 )
 
 func boolFromEnv(envVar string, def bool) bool {

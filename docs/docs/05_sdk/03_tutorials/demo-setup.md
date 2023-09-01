@@ -50,7 +50,7 @@ There are plenty of things to make IBC work. To explain it briefly, the steps ar
 1. If the prover is being run locally, it will first look for the files under `--circuit-path` and download or update them if necessary.
 2. It checks whether both of the chains are alive.
 3. It instantiates the following IBC apps to Union for you to try:
-   1. `cw20-ics20`: For cross-chain token transfers.
+   1. `ucs01-relay`: For cross-chain token transfers.
    2. `ping-pong`: For starting endless ping-pong between Ethereum and Union.
 4. It deploys the IBC protocol contracts as well as `ICS20Transfer` contract for cross-chain transfers to Ethereum.
 5. It deploys the ping-pong contract on Ethereum.

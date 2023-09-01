@@ -130,7 +130,10 @@ import (
 
 	ibccometblsclient "union/app/ibc/cometbls/02-client/keeper"
 
-	// this line is used by starport scaffolding # stargate/app/moduleImport
+	tfmodule "union/x/tokenfactory"
+	tfbindings "union/x/tokenfactory/bindings"
+	tfkeeper "union/x/tokenfactory/keeper"
+	tftypes "union/x/tokenfactory/types"
 
 	appparams "union/app/params"
 	"union/docs"
@@ -202,7 +205,7 @@ var (
 		unionmodule.AppModuleBasic{},
 		wasm.AppModuleBasic{},
 		ibcfee.AppModuleBasic{},
-		// this line is used by starport scaffolding # stargate/app/moduleBasic
+		tfmodule.AppModuleBasic{},
 	)
 
 	// module account permissions
@@ -217,6 +220,7 @@ var (
 		ibctransfertypes.ModuleName:    {authtypes.Minter, authtypes.Burner},
 		ibcfeetypes.ModuleName:         nil,
 		wasmtypes.ModuleName:           {authtypes.Burner}, // TODO(aeryz): is this necessary?
+		tftypes.ModuleName:             {authtypes.Minter, authtypes.Burner},
 		// this line is used by starport scaffolding # stargate/app/maccPerms
 	}
 )
@@ -292,6 +296,7 @@ type UnionApp struct {
 	GroupKeeper           groupkeeper.Keeper
 	ConsensusParamsKeeper consensusparamkeeper.Keeper
 	WasmKeeper            wasmkeeper.Keeper
+	TfKeeper              tfkeeper.Keeper
 
 	// make scoped keepers public for test purposes
 	ScopedIBCKeeper      capabilitykeeper.ScopedKeeper
@@ -349,11 +354,11 @@ func New(
 		govtypes.StoreKey, paramstypes.StoreKey, ibcexported.StoreKey, upgradetypes.StoreKey,
 		feegrant.StoreKey, evidencetypes.StoreKey, ibctransfertypes.StoreKey, ibcwasmtypes.StoreKey, icahosttypes.StoreKey,
 		capabilitytypes.StoreKey, group.StoreKey, icacontrollertypes.StoreKey, consensusparamtypes.StoreKey,
-		unionmoduletypes.StoreKey, ibcfeetypes.StoreKey, wasmtypes.StoreKey,
+		unionmoduletypes.StoreKey, ibcfeetypes.StoreKey, wasmtypes.StoreKey, tftypes.StoreKey,
 		// this line is used by starport scaffolding # stargate/app/storeKey
 	)
 	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey)
-	memKeys := sdk.NewMemoryStoreKeys(capabilitytypes.MemStoreKey)
+	memKeys := sdk.NewMemoryStoreKeys(capabilitytypes.MemStoreKey, tftypes.MemStoreKey)
 
 	app := &UnionApp{
 		BaseApp:           bApp,
@@ -410,13 +415,15 @@ func New(
 		app.AccountKeeper,
 	)
 
-	app.BankKeeper = bankkeeper.NewBaseKeeper(
+	appBankBaseKeeper := bankkeeper.NewBaseKeeper(
 		appCodec,
 		keys[banktypes.StoreKey],
 		app.AccountKeeper,
 		app.BlockedModuleAccountAddrs(),
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
+
+	app.BankKeeper = appBankBaseKeeper
 
 	app.StakingKeeper = stakingkeeper.NewKeeper(
 		appCodec,
@@ -586,6 +593,21 @@ func New(
 		AddRoute(upgradetypes.RouterKey, upgrade.NewSoftwareUpgradeProposalHandler(app.UpgradeKeeper)).
 		AddRoute(ibcclienttypes.RouterKey, ibcclient.NewClientProposalHandler(app.IBCKeeper.ClientKeeper))
 
+	app.TfKeeper = tfkeeper.NewKeeper(
+		appCodec,
+		keys[tftypes.StoreKey],
+		app.GetSubspace(tftypes.ModuleName),
+		app.AccountKeeper,
+		app.BankKeeper,
+		app.DistrKeeper,
+	)
+	tfModule := tfmodule.NewAppModule(app.TfKeeper,
+		app.AccountKeeper,
+		app.BankKeeper,
+	)
+
+	wasmOpts = append(wasmOpts, tfbindings.RegisterCustomPlugins(&appBankBaseKeeper, &app.TfKeeper)...)
+
 	wasmDir := filepath.Join(homePath, "wasm")
 	wasmConfig, err := wasm.ReadWasmConfig(appOpts)
 	if err != nil {
@@ -715,7 +737,7 @@ func New(
 		wasm.NewAppModule(appCodec, &app.WasmKeeper, app.StakingKeeper, app.AccountKeeper, app.BankKeeper, app.MsgServiceRouter(), app.GetSubspace(wasmtypes.ModuleName)),
 		icaModule,
 		unionModule,
-		// this line is used by starport scaffolding # stargate/app/appModule
+		tfModule,
 	)
 
 	// During begin block slashing happens after distr.BeginBlocker so that
@@ -748,7 +770,7 @@ func New(
 		consensusparamtypes.ModuleName,
 		unionmoduletypes.ModuleName,
 		wasmtypes.ModuleName,
-		// this line is used by starport scaffolding # stargate/app/beginBlockers
+		tftypes.ModuleName,
 	)
 
 	app.mm.SetOrderEndBlockers(
@@ -776,7 +798,7 @@ func New(
 		consensusparamtypes.ModuleName,
 		unionmoduletypes.ModuleName,
 		wasmtypes.ModuleName,
-		// this line is used by starport scaffolding # stargate/app/endBlockers
+		tftypes.ModuleName,
 	)
 
 	// NOTE: The genutils module must occur after staking so that pools are
@@ -809,7 +831,7 @@ func New(
 		consensusparamtypes.ModuleName,
 		unionmoduletypes.ModuleName,
 		wasmtypes.ModuleName,
-		// this line is used by starport scaffolding # stargate/app/initGenesis
+		tftypes.ModuleName,
 	}
 	app.mm.SetOrderInitGenesis(genesisModuleOrder...)
 	app.mm.SetOrderExportGenesis(genesisModuleOrder...)
@@ -1064,7 +1086,7 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(icahosttypes.SubModuleName)
 	paramsKeeper.Subspace(unionmoduletypes.ModuleName)
 	paramsKeeper.Subspace(wasmtypes.ModuleName)
-	// this line is used by starport scaffolding # stargate/app/paramSubspace
+	paramsKeeper.Subspace(tftypes.ModuleName)
 
 	return paramsKeeper
 }
@@ -1081,5 +1103,6 @@ func AllCapabilities() []string {
 		"stargate",
 		"cosmwasm_1_1",
 		"cosmwasm_1_2",
+		"cosmwasm_1_3",
 	}
 }

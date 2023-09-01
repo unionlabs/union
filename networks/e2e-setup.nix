@@ -42,7 +42,7 @@
 
       instantiateCw20Ics20 =
         pkgs.writeShellApplication {
-          name = "instantiate-cw20-ics20";
+          name = "instantiate-ucs01-relay";
           runtimeInputs = [ ];
           text =
             ''
@@ -70,7 +70,7 @@
 
               echo "$INIT_MESSAGE"
 
-              ${instantiateContract { code-id = 1; label = "cw20-ics20"; }}
+              ${instantiateContract { code-id = 1; label = "ucs01-relay"; }}
             '';
         };
 
@@ -372,7 +372,7 @@
             }
 
             instantiateCw20Ics20() {
-              ${instantiateCw20Ics20}/bin/instantiate-cw20-ics20
+              ${instantiateCw20Ics20}/bin/instantiate-ucs01-relay
             }
 
             instantiatePingPong() {
@@ -558,7 +558,7 @@
 
             printIBCSetupInfo \
               "ICS20 Transfer" \
-              "CW20-ICS20" \
+              "UCS01-RELAY" \
               "$ICS20_TRANSFER_BANK_ADDRESS" \
               "connection-0" \
               "channel-0" \
