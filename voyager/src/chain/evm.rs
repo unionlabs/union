@@ -719,6 +719,8 @@ impl<C: ChainSpec> LightClient for Cometbls<C> {
                 .make_height(tx_rcp.block_number.unwrap().as_u64());
 
             (
+                // TODO(aeryz): we are returning the execution height here but since we are not using the height anywhere
+                // or calling this function from the main execution, I didn't touch it.
                 event_height,
                 #[allow(deprecated)]
                 UpdateClient {
@@ -780,10 +782,10 @@ impl<C: ChainSpec> Connect<Ethereum<C>> for Cometbls<C> {
                 .wait_for_execution_block(tx_rcp.block_number.unwrap())
                 .await;
 
-            let event_height = self.chain.query_latest_height().await;
+            let beacon_height = self.chain.query_latest_height().await;
 
             (
-                event_height,
+                beacon_height,
                 ConnectionOpenInit {
                     connection_id,
                     client_id: msg.client_id,
@@ -817,10 +819,10 @@ impl<C: ChainSpec> Connect<Ethereum<C>> for Cometbls<C> {
                 .wait_for_execution_block(tx_rcp.block_number.unwrap())
                 .await;
 
-            let event_height = self.chain.query_latest_height().await;
+            let beacon_height = self.chain.query_latest_height().await;
 
             (
-                event_height,
+                beacon_height,
                 ConnectionOpenTry {
                     connection_id,
                     client_id: msg.client_id,
@@ -865,21 +867,19 @@ impl<C: ChainSpec> Connect<Ethereum<C>> for Cometbls<C> {
                 .wait_for_execution_block(tx_rcp.block_number.unwrap())
                 .await;
 
-            let event_height = self
-                .chain
-                .make_height(tx_rcp.block_number.unwrap().as_u64());
+            let beacon_height = self.chain.query_latest_height().await;
 
             let connection_end = IbcStateRead::<Self::CounterpartyChain, _>::state_proof(
                 self.chain(),
                 ConnectionPath {
                     connection_id: msg.connection_id.clone(),
                 },
-                event_height,
+                beacon_height,
             )
             .await;
 
             (
-                event_height,
+                beacon_height,
                 ConnectionOpenAck {
                     connection_id: msg.connection_id,
                     client_id: connection_end.state.client_id,
@@ -910,21 +910,19 @@ impl<C: ChainSpec> Connect<Ethereum<C>> for Cometbls<C> {
                 .wait_for_execution_block(tx_rcp.block_number.unwrap())
                 .await;
 
-            let event_height = self
-                .chain
-                .make_height(tx_rcp.block_number.unwrap().as_u64());
+            let beacon_height = self.chain.query_latest_height().await;
 
             let connection_end = IbcStateRead::<Self::CounterpartyChain, _>::state_proof(
                 self.chain(),
                 ConnectionPath {
                     connection_id: msg.connection_id.clone(),
                 },
-                event_height,
+                beacon_height,
             )
             .await;
 
             (
-                event_height,
+                beacon_height,
                 ConnectionOpenConfirm {
                     connection_id: msg.connection_id,
                     client_id: connection_end.state.client_id,
@@ -957,7 +955,7 @@ impl<C: ChainSpec> Connect<Ethereum<C>> for Cometbls<C> {
                 .wait_for_execution_block(tx_rcp.block_number.unwrap())
                 .await;
 
-            let event_height = self.chain.query_latest_height().await;
+            let beacon_height = self.chain.query_latest_height().await;
 
             let channel_end = IbcStateRead::<Self::CounterpartyChain, _>::state_proof(
                 self.chain(),
@@ -965,12 +963,12 @@ impl<C: ChainSpec> Connect<Ethereum<C>> for Cometbls<C> {
                     port_id: msg.port_id.clone(),
                     channel_id: channel_id.clone(),
                 },
-                event_height,
+                beacon_height,
             )
             .await;
 
             (
-                event_height,
+                beacon_height,
                 ChannelOpenInit {
                     port_id: msg.port_id,
                     channel_id,
@@ -1004,7 +1002,7 @@ impl<C: ChainSpec> Connect<Ethereum<C>> for Cometbls<C> {
                 .wait_for_execution_block(tx_rcp.block_number.unwrap())
                 .await;
 
-            let event_height = self.chain.query_latest_height().await;
+            let beacon_height = self.chain.query_latest_height().await;
 
             let channel_end = IbcStateRead::<Self::CounterpartyChain, _>::state_proof(
                 self.chain(),
@@ -1012,12 +1010,12 @@ impl<C: ChainSpec> Connect<Ethereum<C>> for Cometbls<C> {
                     port_id: msg.port_id.clone(),
                     channel_id: channel_id.clone(),
                 },
-                event_height,
+                beacon_height,
             )
             .await;
 
             (
-                event_height,
+                beacon_height,
                 ChannelOpenTry {
                     port_id: msg.port_id,
                     channel_id,
@@ -1051,7 +1049,7 @@ impl<C: ChainSpec> Connect<Ethereum<C>> for Cometbls<C> {
                 .wait_for_execution_block(tx_rcp.block_number.unwrap())
                 .await;
 
-            let event_height = self.chain.query_latest_height().await;
+            let beacon_height = self.chain.query_latest_height().await;
 
             let channel_end = IbcStateRead::<Self::CounterpartyChain, _>::state_proof(
                 self.chain(),
@@ -1059,12 +1057,12 @@ impl<C: ChainSpec> Connect<Ethereum<C>> for Cometbls<C> {
                     port_id: msg.port_id.clone(),
                     channel_id: msg.channel_id.clone(),
                 },
-                event_height,
+                beacon_height,
             )
             .await;
 
             (
-                event_height,
+                beacon_height,
                 ChannelOpenAck {
                     port_id: msg.port_id,
                     channel_id: msg.channel_id.clone(),
@@ -1097,7 +1095,7 @@ impl<C: ChainSpec> Connect<Ethereum<C>> for Cometbls<C> {
                 .wait_for_execution_block(tx_rcp.block_number.unwrap())
                 .await;
 
-            let event_height = self.chain.query_latest_height().await;
+            let beacon_height = self.chain.query_latest_height().await;
 
             let channel_end = IbcStateRead::<Self::CounterpartyChain, _>::state_proof(
                 self.chain(),
@@ -1105,12 +1103,12 @@ impl<C: ChainSpec> Connect<Ethereum<C>> for Cometbls<C> {
                     port_id: msg.port_id.clone(),
                     channel_id: msg.channel_id.clone(),
                 },
-                event_height,
+                beacon_height,
             )
             .await;
 
             (
-                event_height,
+                beacon_height,
                 ChannelOpenConfirm {
                     port_id: msg.port_id,
                     channel_id: msg.channel_id.clone(),
@@ -1212,6 +1210,8 @@ impl<C: ChainSpec> Connect<Ethereum<C>> for Cometbls<C> {
                 .make_finality_update(
                     finality_update.data,
                     TrustedSyncCommittee {
+                        // NOTE(aeryz): this has to be the execution height because this height is used for verifying
+                        // the state proofs, which are always taken at the execution height
                         trusted_height: execution_height,
                         sync_committee: bootstrap.data.current_sync_committee,
                         is_next: false,
@@ -1370,7 +1370,7 @@ impl<C: ChainSpec> Cometbls<C> {
         trusted_sync_committee: TrustedSyncCommittee<C>,
     ) -> wasm::header::Header<ethereum::header::Header<C>> {
         let execution_block_number = light_client_update.attested_header.execution.block_number;
-        let updated_height = self.chain.make_height(execution_block_number);
+        let updated_execution_height = self.chain.make_height(execution_block_number);
 
         let account_update = self
             .chain
@@ -1385,7 +1385,7 @@ impl<C: ChainSpec> Cometbls<C> {
             .unwrap();
 
         wasm::header::Header {
-            height: updated_height,
+            height: updated_execution_height,
             data: ethereum::header::Header {
                 consensus_update: light_client_update,
                 trusted_sync_committee,
