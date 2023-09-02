@@ -14,6 +14,7 @@ pub struct MerklePath {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub enum ClientMessage {
     Header(Header),
     Misbehaviour(Misbehaviour),
@@ -134,5 +135,34 @@ impl From<Status> for QueryResponse {
             status: value.to_string(),
             genesis_metadata: Vec::new(),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use protos::ibc::lightclients::wasm::v1::Header;
+
+    use crate::{ClientMessage, ExecuteMsg};
+
+    #[test]
+    fn execute_msg_snake_case_encoded() {
+        let msg = ExecuteMsg::CheckSubstituteAndUpdateState {};
+        assert_eq!(
+            serde_json::to_string(&msg).unwrap(),
+            r#"{"check_substitute_and_update_state":{}}"#
+        )
+    }
+
+    #[test]
+    fn client_msg_snake_case_encoded() {
+        let msg = ClientMessage::Header(Header {
+            data: vec![],
+            height: None,
+        });
+
+        assert_eq!(
+            serde_json::to_string(&msg).unwrap(),
+            r#"{"header":{"data":"","height":null}}"#
+        )
     }
 }

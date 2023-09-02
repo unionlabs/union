@@ -986,6 +986,7 @@ dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
  "hex",
+ "ics008-wasm-client",
  "prost",
  "protos",
  "schemars",
@@ -995,7 +996,6 @@ dependencies = [
  "sha3",
  "thiserror",
  "unionlabs",
- "wasm-light-client-types",
 ]
 
 [[package]]
@@ -1768,6 +1768,7 @@ dependencies = [
  "hex",
  "hex-literal",
  "ibc",
+ "ics008-wasm-client",
  "prost",
  "protos",
  "rlp",
@@ -1779,7 +1780,6 @@ dependencies = [
  "thiserror",
  "tiny-keccak",
  "unionlabs",
- "wasm-light-client-types",
 ]
 
 [[package]]
@@ -2844,6 +2844,19 @@ dependencies = [
  "serde",
  "subtle-encoding",
  "tendermint-proto 0.29.1",
+]
+
+[[package]]
+name = "ics008-wasm-client"
+version = "0.1.0"
+dependencies = [
+ "cosmwasm-std",
+ "ibc",
+ "prost",
+ "protos",
+ "serde",
+ "serde_json",
+ "unionlabs",
 ]
 
 [[package]]
@@ -6000,18 +6013,6 @@ name = "wasm-bindgen-shared"
 version = "0.2.87"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ca6ad05a4870b2bf5fe995117d3728437bd27d7cd5f06f13c17443ef369775a1"
-
-[[package]]
-name = "wasm-light-client-types"
-version = "0.1.0"
-dependencies = [
- "cosmwasm-std",
- "ibc",
- "prost",
- "protos",
- "serde",
- "unionlabs",
-]
 
 [[package]]
 name = "web-sys"
