@@ -780,9 +780,10 @@ impl<C: ChainSpec> Connect<Ethereum<C>> for Cometbls<C> {
                 .wait_for_execution_block(tx_rcp.block_number.unwrap())
                 .await;
 
+            let event_height = self.chain.query_latest_height().await;
+
             (
-                self.chain
-                    .make_height(tx_rcp.block_number.unwrap().as_u64()),
+                event_height,
                 ConnectionOpenInit {
                     connection_id,
                     client_id: msg.client_id,
@@ -816,9 +817,10 @@ impl<C: ChainSpec> Connect<Ethereum<C>> for Cometbls<C> {
                 .wait_for_execution_block(tx_rcp.block_number.unwrap())
                 .await;
 
+            let event_height = self.chain.query_latest_height().await;
+
             (
-                self.chain
-                    .make_height(tx_rcp.block_number.unwrap().as_u64()),
+                event_height,
                 ConnectionOpenTry {
                     connection_id,
                     client_id: msg.client_id,
@@ -955,9 +957,7 @@ impl<C: ChainSpec> Connect<Ethereum<C>> for Cometbls<C> {
                 .wait_for_execution_block(tx_rcp.block_number.unwrap())
                 .await;
 
-            let event_height = self
-                .chain
-                .make_height(tx_rcp.block_number.unwrap().as_u64());
+            let event_height = self.chain.query_latest_height().await;
 
             let channel_end = IbcStateRead::<Self::CounterpartyChain, _>::state_proof(
                 self.chain(),
@@ -1004,9 +1004,7 @@ impl<C: ChainSpec> Connect<Ethereum<C>> for Cometbls<C> {
                 .wait_for_execution_block(tx_rcp.block_number.unwrap())
                 .await;
 
-            let event_height = self
-                .chain
-                .make_height(tx_rcp.block_number.unwrap().as_u64());
+            let event_height = self.chain.query_latest_height().await;
 
             let channel_end = IbcStateRead::<Self::CounterpartyChain, _>::state_proof(
                 self.chain(),
@@ -1053,9 +1051,7 @@ impl<C: ChainSpec> Connect<Ethereum<C>> for Cometbls<C> {
                 .wait_for_execution_block(tx_rcp.block_number.unwrap())
                 .await;
 
-            let event_height = self
-                .chain
-                .make_height(tx_rcp.block_number.unwrap().as_u64());
+            let event_height = self.chain.query_latest_height().await;
 
             let channel_end = IbcStateRead::<Self::CounterpartyChain, _>::state_proof(
                 self.chain(),
@@ -1101,9 +1097,7 @@ impl<C: ChainSpec> Connect<Ethereum<C>> for Cometbls<C> {
                 .wait_for_execution_block(tx_rcp.block_number.unwrap())
                 .await;
 
-            let event_height = self
-                .chain
-                .make_height(tx_rcp.block_number.unwrap().as_u64());
+            let event_height = self.chain.query_latest_height().await;
 
             let channel_end = IbcStateRead::<Self::CounterpartyChain, _>::state_proof(
                 self.chain(),

@@ -1113,7 +1113,7 @@ where
 
                 lc2.recv_packet(MsgRecvPacket {
                     packet,
-                    proof_height: lc1_updated_to,
+                    proof_height: lc1.process_height_for_counterparty(lc1_updated_to).await,
                     proof_commitment: commitment_proof.proof,
                 })
                 .await;
