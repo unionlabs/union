@@ -123,6 +123,7 @@
       deploy = { rpc-url, private-key, path, name, args ? "" }: ''
         echo "Deploying ${name}..."
         ${pkgs.lib.toUpper name}=$(forge create \
+                 --revert-strings debug \
                  --json \
                  --rpc-url ${rpc-url} \
                  --private-key ${private-key} \
