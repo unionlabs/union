@@ -279,6 +279,7 @@ impl IbcClient for EthereumLightClient {
     ) -> Result<ics008_wasm_client::ContractResult, Self::Error> {
         Ok(ContractResult::invalid("Not implemented".to_string()))
     }
+
     fn check_for_misbehaviour_on_header(
         deps: Deps<Self::CustomQuery>,
         header: Self::Header,
@@ -309,7 +310,7 @@ impl IbcClient for EthereumLightClient {
             }
         }
 
-        // TODO(aeryz): Do we need to check whether this header's timestamp is between
+        // TODO(#605): Do we need to check whether this header's timestamp is between
         // the next and the previous consensus state in terms of height?
 
         Ok(ContractResult::valid(None))
