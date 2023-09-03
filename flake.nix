@@ -247,12 +247,14 @@
               yq
               foundry-bin
               go-ethereum
+              hasura-cli
             ]);
             nativeBuildInputs = [
               config.treefmt.build.wrapper
             ] ++ lib.attrsets.attrValues config.treefmt.build.programs;
             GOPRIVATE = "github.com/unionlabs/*";
           };
+
 
           treefmt =
             let

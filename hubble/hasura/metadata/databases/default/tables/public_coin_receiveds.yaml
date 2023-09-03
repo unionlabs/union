@@ -1,0 +1,13 @@
+table:
+  name: coin_receiveds
+  schema: public
+object_relationships:
+  - name: event
+    using:
+      manual_configuration:
+        column_mapping:
+          id: id
+        insertion_order: null
+        remote_table:
+          name: events
+          schema: public

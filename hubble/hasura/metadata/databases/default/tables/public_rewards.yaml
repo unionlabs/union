@@ -1,0 +1,3 @@
+table:
+  name: rewards
+  schema: public

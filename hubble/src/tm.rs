@@ -1,6 +1,7 @@
-use reqwest::Client as Reqwest;
+use std::ops::Range;
+
 use tendermint::genesis::Genesis;
-use tendermint_rpc::{error::ErrorDetail, Client, HttpClient};
+use tendermint_rpc::{error::ErrorDetail, response_error::Code, Client, Error, HttpClient};
 use tokio::time::{sleep, Duration};
 use tracing::{debug, info};
 use url::Url;
@@ -14,17 +15,13 @@ use crate::{
 pub struct Config {
     pub url: Url,
     pub chain_id: Option<String>,
+    pub range: Option<Range<u32>>,
 }
 
 impl Config {
-    pub async fn index(
-        &self,
-        hasura_url: &Url,
-        secret: &str,
-    ) -> Result<(), color_eyre::eyre::Report> {
+    pub async fn index<D: Datastore>(&self, db: D) -> Result<(), color_eyre::eyre::Report> {
         let client = HttpClient::new(self.url.as_str()).unwrap();
-        let db = Reqwest::new();
-        let url = hasura_url.to_string();
+        let range = self.range.as_ref().unwrap_or(&(0..u32::MAX));
 
         // If there is no chain_id override, we query it from the node. This
         // is the expected default.
@@ -39,43 +36,28 @@ impl Config {
             }
         };
 
-        // We query for the last indexed block to not waste resources re-indexing.
-        debug!("fetching latest stored block");
-        let latest_stored =
-            do_post::<GetLatestBlock>(secret, &url, &db, get_latest_block::Variables { chain_id })
-                .await?;
-
-        let data = latest_stored
-            .data
-            .expect("db should be prepared for indexing");
-
-        let mut height: u32 = if data.blocks.is_empty() {
-            0
-        } else {
-            TryInto::<u32>::try_into(data.blocks[0].height).unwrap()
-        };
-        debug!("latest stored block height is: {}", &height);
-
-        let chain_db_id = data.chains[0].id;
-
+        let (mut height, chain_db_id) = get_current_data(&db, chain_id).await?;
+        height += 1;
         loop {
-            height += 1;
+            if !range.contains(&height) {
+                return Ok(());
+            }
 
             info!("indexing block {}", &height);
             // if we're caught up indexing to the latest height, this will error. In that case,
             // we retry until we obtain the next header.
             debug!("fetching block header for height: {}", &height);
-            let header = match client.header(height).await {
+            let header = match client.block(height).await {
                 Err(err) => {
-                    if matches!(err.detail(), &ErrorDetail::OutOfRange(_)) {
-                        debug!("caught up indexing, sleeping for 1 second");
+                    if is_height_exceeded_error(&err) {
+                        debug!("caught up indexing, sleeping for 1 second: {:?}", err);
                         sleep(Duration::from_millis(1000)).await;
                         continue;
                     } else {
                         return Err(err.into());
                     }
                 }
-                Ok(val) => val.header,
+                Ok(val) => val.block.header,
             };
             debug!("fetching block results for height: {}", &height);
             let block = client.block_results(height).await?;
@@ -141,7 +123,59 @@ impl Config {
                 finalized: true,
             };
 
-            do_post::<InsertBlock>(secret, &url, &db, v).await?;
+            db.do_post::<InsertBlock>(v).await?;
+            height += 1;
         }
     }
+}
+
+/// The RPC will return an internal error on queries for blocks exceeding the current height.
+/// `is_height_exceeded_error` untangles the error and checks for this case.
+pub fn is_height_exceeded_error(err: &Error) -> bool {
+    let detail = err.detail();
+    if let ErrorDetail::Response(err) = detail {
+        let inner = &err.source;
+        let code = inner.code();
+        let message = inner.data().unwrap_or_default();
+        return matches!(code, Code::InternalError)
+            && message.contains("must be less than or equal to");
+    }
+    false
+}
+
+/// Obtains the current height and chain_db_id for the chain_id. If the chain_id is not stored yet, an entry is created.
+async fn get_current_data<D: Datastore>(
+    db: &D,
+    chain_id: String,
+) -> Result<(u32, i64), color_eyre::eyre::Report> {
+    // We query for the last indexed block to not waste resources re-indexing.
+    debug!("fetching latest stored block");
+    let latest_stored = db
+        .do_post::<GetLatestBlock>(get_latest_block::Variables {
+            chain_id: chain_id.clone(),
+        })
+        .await?;
+
+    let data = latest_stored
+        .data
+        .expect("db should be prepared for indexing");
+
+    let height: u32 = if data.blocks.is_empty() {
+        0
+    } else {
+        TryInto::<u32>::try_into(data.blocks[0].height).unwrap()
+    };
+    debug!("latest stored block height is: {}", &height);
+
+    let chain_db_id = if let Some(chains) = data.chains.get(0) {
+        chains.id
+    } else {
+        let created = db
+            .do_post::<InsertChain>(insert_chain::Variables { chain_id })
+            .await?;
+
+        created.data.unwrap().insert_chains_one.unwrap().id
+    };
+
+    Ok((height, chain_db_id))
 }

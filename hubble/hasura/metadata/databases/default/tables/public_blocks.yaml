@@ -1,0 +1,28 @@
+table:
+  name: blocks
+  schema: public
+object_relationships:
+  - name: chain
+    using:
+      foreign_key_constraint_on: chain_id
+array_relationships:
+  - name: events
+    using:
+      foreign_key_constraint_on:
+        column: block_id
+        table:
+          name: events
+          schema: public
+select_permissions:
+  - role: user
+    permission:
+      columns:
+        - is_finalized
+        - chain_id
+        - height
+        - id
+        - hash
+      filter: {}
+      limit: 50
+      allow_aggregations: true
+    comment: ""

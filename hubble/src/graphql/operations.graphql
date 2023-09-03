@@ -13,3 +13,9 @@ query GetLatestBlock($chain_id: String!) {
     id
   }
 }
+
+mutation InsertChain($chain_id: String!) {
+  insert_chains_one(object: {chain_id: $chain_id}) {
+    id
+  }
+}

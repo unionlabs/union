@@ -21,6 +21,7 @@ DATADIR
 DYLD
 Denoms
 Feegrant
+GOARCH
 GOPATH
 GOPRIVATE
 Getenv
@@ -151,6 +152,7 @@ codegen
 codespace
 coeff
 cofactor
+coinbases
 cometbft
 cometbls
 cometbn
@@ -163,6 +165,7 @@ consensusparamkeeper
 consensusparamtypes
 consensys
 consts
+conv
 converstion
 coreutils
 corsdomain
@@ -179,6 +182,7 @@ cratedir
 crisiskeeper
 crisistypes
 ctypes
+dataconnector
 datadir
 datetime
 delegators
@@ -215,6 +219,7 @@ feegrant
 feegrantkeeper
 feegrantmodule
 fetchurl
+fkey
 fksmg
 floorlog
 foldl
@@ -292,6 +297,7 @@ icahostkeeper
 icahosttypes
 icatypes
 identifing
+iflag
 ilog
 imap
 impls
@@ -359,6 +365,7 @@ neofetch
 netutil
 networkid
 nextest
+nextval
 nixbuildnet
 nixfmt
 nixos
@@ -368,6 +375,7 @@ nodetime
 nodiscover
 noexecstack
 nolint
+notrunc
 numtide
 omit
 omnichain
@@ -395,11 +403,13 @@ pflag
 phang
 pingpong
 pipefail
+pkey
 pkgconfig
 pkgs
 pname
 poisonphang
 polkadot
+postgrespassword
 posthandler
 precommit
 prehash
@@ -434,12 +444,14 @@ randao
 rawfile
 rclone
 readarray
+receiveds
 redelegate
 redelegating
 redelegation
 redelegations
 reentrancy
 reflectionv
+regclass
 regen
 repr
 reqwest
@@ -476,6 +488,7 @@ slashingtypes
 snapshotter
 snapshottypes
 solomachine
+spents
 splitn
 srcs
 stakingkeeper

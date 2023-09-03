@@ -47,6 +47,7 @@ in
     ];
     healthcheck = {
       interval = "5s";
+      start_period = "20s";
       retries = 8;
       test = [
         "CMD-SHELL"

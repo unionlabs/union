@@ -1,0 +1,3 @@
+table:
+  name: coin_spents
+  schema: public
