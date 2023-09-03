@@ -30,10 +30,10 @@
       };
 
       postgres-services = {
-        postgres = import ./services/postgres.nix { };
+        postgres = import ./services/postgres.nix { inherit pkgs lib; };
       };
 
-      hasura-services = import ./services/hasura.nix { migrations = self'.packages.hubble-migrations; };
+      hasura-services = import ./services/hasura.nix { inherit pkgs lib; };
       hubble-services = { hubble = import ./services/hubble.nix { inherit lib; image = self'.packages.hubble-image; }; };
 
       devnet = {

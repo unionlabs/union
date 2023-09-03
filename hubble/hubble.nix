@@ -12,6 +12,7 @@
     in
     {
       inherit (hubble) checks;
+
       packages = {
         hubble = hubble.packages.hubble;
 

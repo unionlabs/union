@@ -11,6 +11,24 @@
           hostPkgs = pkgs; # the Nixpkgs package set used outside the VMs
         };
 
+      devnetNode = {
+        node = { pkgs, ... }: {
+          imports = [
+            inputs.arion.nixosModules.arion
+          ];
+          virtualisation = {
+            graphics = false;
+            diskSize = 8 * 1024;
+            memorySize = 8 * 1024;
+            arion = {
+              backend = "docker";
+              projects.devnet.settings = networks.devnet;
+            };
+          };
+
+          environment.systemPackages = with pkgs; [ jq ];
+        };
+      };
 
       sepoliaNode = {
         wait_for_console_text = "Synced - slot: [1-9][0-9]*";
@@ -51,6 +69,21 @@
     {
       _module.args.e2e = {
         inherit mkTest unionNode sepoliaNode;
+        mkDevnetTest = { name, testScript, nodes }:
+          mkTest {
+            inherit name;
+
+            testScript = ''
+              start_all()
+              ${testScript}
+            '';
+
+            nodes =
+              (pkgs.lib.throwIf (builtins.hasAttr "devnet" nodes) "devnet node already exists; use a different name")
+                ({
+                  devnet = devnetNode.node;
+                } // nodes);
+          };
 
         mkTestWithDevnetSetup = { name, testScript, nodes }:
           mkTest {
