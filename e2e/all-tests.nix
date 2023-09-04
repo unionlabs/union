@@ -6,7 +6,7 @@
       in
       {
         ensure-blocks = import ./ensure-blocks/ensure-blocks.nix { inherit e2e networks pkgs nixpkgs crane; };
-        hubble-e2e = import ./hubble/e2e.nix { inherit e2e pkgs; };
+        hubble-e2e = import ./hubble/e2e.nix { inherit e2e pkgs networks; };
 
 
         # Tests from ./epoch-staking.nix

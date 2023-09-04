@@ -11,24 +11,6 @@
           hostPkgs = pkgs; # the Nixpkgs package set used outside the VMs
         };
 
-      devnetNode = {
-        node = { pkgs, ... }: {
-          imports = [
-            inputs.arion.nixosModules.arion
-          ];
-          virtualisation = {
-            diskSize = 8 * 1024;
-            memorySize = 4 * 1024;
-            arion = {
-              backend = "docker";
-              projects.devnet.settings = networks.devnet;
-            };
-          };
-
-          environment.systemPackages = with pkgs; [ jq ];
-        };
-      };
-
       sepoliaNode = {
         wait_for_console_text = "Synced - slot: [1-9][0-9]*";
         wait_for_open_port = 8546;
@@ -69,7 +51,7 @@
     {
       _module.args.e2e = {
         inherit mkTest unionNode sepoliaNode;
-        mkDevnetTest = { name, testScript }:
+        mkDevnetTest = { name, testScript, network }:
           mkTest {
             inherit name;
 
@@ -79,7 +61,21 @@
             '';
 
             nodes = {
-              devnet = devnetNode.node;
+              devnet = { pkgs, ... }: {
+                imports = [
+                  inputs.arion.nixosModules.arion
+                ];
+                virtualisation = {
+                  diskSize = 8 * 1024;
+                  memorySize = 4 * 1024;
+                  arion = {
+                    backend = "docker";
+                    projects.devnet.settings = network;
+                  };
+                };
+
+                environment.systemPackages = with pkgs; [ jq ];
+              };
             };
           };
 

@@ -7,10 +7,10 @@
 # - graphql definitions are in sync with migrations.
 # - Hubble is capable of querying nodes.
 # - Hubble progresses against produced nodes.
-{ e2e, ... }:
+{ e2e, networks, ... }:
 e2e.mkDevnetTest {
   name = "hubble-e2e";
-
+  network = networks.union;
   testScript = ''
     devnet.wait_for_console_text("indexing block 2")
   '';
