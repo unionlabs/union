@@ -17,7 +17,6 @@
             inputs.arion.nixosModules.arion
           ];
           virtualisation = {
-            graphics = false;
             diskSize = 8 * 1024;
             memorySize = 8 * 1024;
             arion = {
