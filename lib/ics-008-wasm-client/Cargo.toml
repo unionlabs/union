@@ -1,5 +1,5 @@
 [package]
-name = "wasm-light-client-types"
+name = "ics008-wasm-client"
 version = "0.1.0"
 authors = ["Union Labs"]
 edition = "2021"
@@ -13,3 +13,6 @@ prost = { version = "0.11", default-features = false }
 protos = { workspace = true, default-features = false, features = ["proto_full", "std"] }
 serde = { version = "1.0", default-features = false, features = ["derive"] }
 unionlabs = { workspace = true, default-features = false }
+
+[dev-dependencies]
+serde_json = "1.0.0"
