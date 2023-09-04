@@ -70,11 +70,9 @@ impl IbcClient for EthereumLightClient {
         )?;
         let client_state: WasmClientState = read_client_state(deps)?;
 
-        let path = Path::from_str(
-            path.key_path
-                .last()
-                .ok_or(Error::InvalidPath("path is empty".into()))?,
-        )
+        let path = Path::from_str(path.key_path.last().ok_or(Error::InvalidPath(
+            "path is empty an im hacking you rn".into(),
+        ))?)
         .map_err(|e| Error::InvalidPath(e.to_string()))?;
 
         // This storage root is verified during the header update, so we don't need to verify it again.
