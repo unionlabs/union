@@ -1,5 +1,6 @@
 # Hubble should automatically be indexing and exposing a graphql endpoint of 
-# processed blocks. This tests polls that endpoint for data.
+# processed blocks. This tests checks for console output to ensure the 
+# indexing process is live.
 # 
 # We verify:
 # - migrations work from a clean DB.
