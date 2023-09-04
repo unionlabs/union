@@ -6,6 +6,7 @@ use hasura::HasuraDataStore;
 use reqwest::Client;
 use tokio::task::JoinSet;
 use tracing::{error, info, warn};
+use tracing_subscriber::util::SubscriberInitExt;
 
 mod cli;
 mod hasura;
@@ -16,7 +17,10 @@ async fn main() -> color_eyre::eyre::Result<()> {
     color_eyre::install().unwrap();
 
     let args = crate::cli::Args::parse();
-    tracing_subscriber::fmt::init();
+    tracing_subscriber::fmt::fmt()
+        .with_ansi(false)
+        .finish()
+        .init();
 
     let url = args.url.clone();
     let secret = args.secret.clone();
