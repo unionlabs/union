@@ -18,7 +18,7 @@
           ];
           virtualisation = {
             diskSize = 8 * 1024;
-            memorySize = 8 * 1024;
+            memorySize = 4 * 1024;
             arion = {
               backend = "docker";
               projects.devnet.settings = networks.devnet;
@@ -38,6 +38,7 @@
           ];
           virtualisation = {
             diskSize = 4 * 1024;
+            memorySize = 4 * 1024;
             arion = {
               backend = "docker";
               projects.sepolia.settings = networks.sepolia;
