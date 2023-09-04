@@ -14,9 +14,5 @@ e2e.mkDevnetTest {
   testScript = ''
     devnet.wait_for_console_text("indexing block 2")
   '';
-
-  nodes = {
-    client = _: { };
-  };
 }
 

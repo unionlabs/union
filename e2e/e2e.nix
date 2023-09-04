@@ -68,7 +68,7 @@
     {
       _module.args.e2e = {
         inherit mkTest unionNode sepoliaNode;
-        mkDevnetTest = { name, testScript, nodes }:
+        mkDevnetTest = { name, testScript }:
           mkTest {
             inherit name;
 
@@ -77,11 +77,9 @@
               ${testScript}
             '';
 
-            nodes =
-              (pkgs.lib.throwIf (builtins.hasAttr "devnet" nodes) "devnet node already exists; use a different name")
-                ({
-                  devnet = devnetNode.node;
-                } // nodes);
+            nodes = {
+              devnet = devnetNode.node;
+            };
           };
 
         mkTestWithDevnetSetup = { name, testScript, nodes }:
