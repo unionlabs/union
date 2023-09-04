@@ -30,14 +30,14 @@
             inherit CARGO_BUILD_TARGET;
           } // (if pkgs.stdenv.isLinux then {
             cargoBuildCommand = "cargo build --release --example=wasmvmstatic";
-            installPhase = ''
+            installPhaseCommand = ''
               mkdir -p $out/lib
               mv target/${CARGO_BUILD_TARGET}/release/examples/libwasmvmstatic.a $out/lib/libwasmvm.${builtins.head (pkgs.lib.strings.splitString "-" system)}.a
             '';
           } else if pkgs.stdenv.isDarwin then {
             # non-static dylib build on macOS
             cargoBuildCommand = "cargo build --release";
-            installPhase = ''
+            installPhaseCommand = ''
               mkdir -p $out/lib
               mv target/${CARGO_BUILD_TARGET}/release/deps/libwasmvm.dylib $out/lib/libwasmvm.dylib
             '';
