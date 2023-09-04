@@ -32,3 +32,7 @@ The [contributing](./CONTRIBUTING.md) guide explains how to get started working 
 
 [docs]: https://docs.union.build "Official Union Docs"
 [IBC]: https://github.com/cosmos/ibc "cosmos/ibc"
+
+UNAUTHORIZED
+
+UNAUTHORIZED2
