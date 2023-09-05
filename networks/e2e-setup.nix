@@ -553,8 +553,13 @@
               doHandshake "ucs00-pingpong-1" "ucs00-pingpong-1"
             fi
 
+            # We need the home so that the users can send transactions by using the testkey
+            TX_HOME="$(mktemp -d)"
+            cp -r ${self'.packages.devnet-genesis}/* "$TX_HOME" 
+
             echo "--------------------------------"
             echo "+ Voyager config path is: $VOYAGER_CONFIG_FILE"
+            echo "+ The home path that you can use for union transactions is: $TX_HOME"
 
             printIBCSetupInfo \
               "ICS20 Transfer" \
@@ -568,6 +573,31 @@
               "channel-0" \
               "wasm.$CW20_ADDRESS"
 
+            echo "---------------------------------------------------------------------"
+            echo "+ To run this app on union, run the following command:"
+            echo '${uniond}  \
+              tx wasm execute '"$CW20_ADDRESS"' \
+              "{\"transfer\":{\"channel\":\"channel-0\",\"remote_address\":\"be68fc2d8249eb60bfcf0e71d5a0d2f2e292c4ed\"}}" \
+              --gas-adjustment 1.3 \
+              --gas auto \
+              --from ${keyName} -y \
+              --keyring-backend test \
+              --chain-id ${chainId} \
+              --home '"$TX_HOME"' \
+              --amount 123123stake'
+
+            echo "---------------------------------------------------------------------"
+            echo "+ To send some funds back to union from ethereum, make sure the packet is relayed first and then run the following:"
+            echo 'RUST_LOG=voyager=debug ${self'.packages.voyager}/bin/voyager \
+              --config-file-path '"$VOYAGER_CONFIG_FILE"' \
+              submit-packet transfer \
+              --on ethereum-devnet \
+              --denom transfer/channel-0/stake \
+              --amount 10000 \
+              --source-port transfer \
+              --source-channel channel-0 \
+              --receiver '"$(${accountAddress})"
+
             printIBCSetupInfo \
               "PingPong" \
               "PingPong" \
@@ -580,8 +610,19 @@
               "$PING_PONG_CHANNEL" \
               "wasm.$PING_PONG_ADDRESS"
 
+            echo "---------------------------------------------------------------------"
+            echo "+ To start the ping pong, run the following command:"
+            echo '${uniond}  \
+              tx wasm execute '"$PING_PONG_ADDRESS"' \
+              "{\"initiate\":{\"channel_id\":\"'"$PING_PONG_CHANNEL"'\",\"packet\":{\"ping\":true,\"counterparty_timeout_revision_number\":0,\"counterparty_timeout_revision_height\":1000000}}}" \
+              --gas-adjustment 1.3 \
+              --gas auto \
+              --from ${keyName} -y \
+              --keyring-backend test \ 
+              --chain-id ${chainId} \
+              --home '"$TX_HOME"
+
             echo "----------------------------------------------------------------"
-            echo "+ Run voyager to relay the packets with the following command:"
 
             VOYAGER_CMD='RUST_LOG=voyager=debug ${self'.packages.voyager}/bin/voyager \
               --config-file-path '"$VOYAGER_CONFIG_FILE"' \
@@ -589,8 +630,10 @@
               --between union-devnet:ethereum-devnet'
 
             if [[ -z "$NO_RUN_VOYAGER" ]]; then
+              echo "+ Starting the voyager to relay the packets.."
               eval "$VOYAGER_CMD"
             else
+              echo "+ Run voyager to relay the packets with the following command:"
               echo "$VOYAGER_CMD"
             fi
 
