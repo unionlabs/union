@@ -236,7 +236,6 @@
               gopls
               go-tools
               gotools
-              hasura-cli
               jq
               marksman
               nil
@@ -246,6 +245,7 @@
               openssl
               pkg-config
               protobuf
+              self'.packages.hasura-cli
               solc
               yarn
               yq
