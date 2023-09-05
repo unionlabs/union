@@ -43,7 +43,7 @@
 
       union = {
         project.name = "union";
-        services = uniond-services // postgres-services // hasura-services // hubble-services;
+        services = uniond-services;
       };
 
       sepolia = {
