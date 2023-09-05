@@ -10,7 +10,7 @@
 { e2e, networks, ... }:
 e2e.mkDevnetTest {
   name = "hubble-e2e";
-  network = networks.devnet;
+  network = networks.union-full;
   testScript = ''
     devnet.wait_for_console_text("indexing block 2")
   '';

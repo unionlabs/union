@@ -46,6 +46,11 @@
         services = uniond-services;
       };
 
+      union-full = {
+        project.name = "devnet";
+        services = uniond-services // postgres-services // hasura-services // hubble-services;
+      };
+
       sepolia = {
         project.name = "sepolia";
         services = sepolia-services;
@@ -102,7 +107,7 @@
         };
 
       _module.args.networks = {
-        inherit devnet union sepolia;
+        inherit devnet union sepolia union-full;
       };
     };
 }
