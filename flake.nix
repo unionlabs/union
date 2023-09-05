@@ -230,14 +230,18 @@
             buildInputs = [ rust.toolchains.dev ] ++ (with pkgs; [
               bacon
               cargo-nextest
+              foundry-bin
               go_1_20
+              go-ethereum
               gopls
               go-tools
               gotools
+              hasura-cli
               jq
               marksman
               nil
               nixfmt
+              nix-tree
               nodejs
               openssl
               pkg-config
@@ -245,9 +249,6 @@
               solc
               yarn
               yq
-              foundry-bin
-              go-ethereum
-              hasura-cli
             ]);
             nativeBuildInputs = [
               config.treefmt.build.wrapper
