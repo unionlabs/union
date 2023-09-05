@@ -40,6 +40,7 @@
           ];
           virtualisation = {
             diskSize = 2 * 1024;
+            memorySize = 4 * 1024;
             arion = {
               backend = "docker";
               projects.union.settings = networks.union;
@@ -51,33 +52,6 @@
     {
       _module.args.e2e = {
         inherit mkTest unionNode sepoliaNode;
-        mkDevnetTest = { name, testScript, network }:
-          mkTest {
-            inherit name;
-
-            testScript = ''
-              start_all()
-              ${testScript}
-            '';
-
-            nodes = {
-              devnet = { pkgs, ... }: {
-                imports = [
-                  inputs.arion.nixosModules.arion
-                ];
-                virtualisation = {
-                  diskSize = 8 * 1024;
-                  memorySize = 4 * 1024;
-                  arion = {
-                    backend = "docker";
-                    projects.devnet.settings = network;
-                  };
-                };
-
-                environment.systemPackages = with pkgs; [ jq ];
-              };
-            };
-          };
 
         mkTestWithDevnetSetup = { name, testScript, nodes }:
           mkTest {

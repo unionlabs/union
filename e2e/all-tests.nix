@@ -6,33 +6,12 @@
       in
       {
         ensure-blocks = import ./ensure-blocks/ensure-blocks.nix { inherit e2e networks pkgs nixpkgs crane; };
-        hubble-e2e = import ./hubble/e2e.nix { inherit e2e pkgs networks; };
+        hubble-indexes = import ./hubble/e2e.nix { inherit inputs e2e pkgs networks; };
 
 
         # Tests from ./epoch-staking.nix
         epoch-completes = epoch-staking.epoch-completes;
         forced-set-rotation = epoch-staking.forced-set-rotation;
-
-        virtualisation-works = e2e.mkTest {
-          name = "devnet";
-          nodes = {
-            devnet = _: {
-              imports = [
-                inputs.arion.nixosModules.arion
-              ];
-              virtualisation = {
-                diskSize = 4 * 1024;
-                arion = {
-                  backend = "docker";
-                  projects.devnet.settings = networks.devnet;
-                };
-              };
-            };
-          };
-          testScript = ''
-            devnet.wait_for_unit("arion-${networks.devnet.project.name}")
-          '';
-        };
 
         sepolia-runs = e2e.mkTest {
           name = "sepolia-runs";
