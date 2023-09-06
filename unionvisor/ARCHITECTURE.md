@@ -17,12 +17,12 @@ graph
 
     subgraph "Union Testnet Bundle"
         subgraph "Versions (static binaries)"
-            uniond-v0.6.0[uniond-v0.6.0]
-            uniond-v0.6.1[uniond-v0.6.1]
-            uniond-v0.7.0[uniond-v0.7.0]
+            uniond-v0.8.1[uniond-v0.8.1]
+            uniond-v0.9.1[uniond-v0.9.1]
+            uniond-v0.10.1[uniond-v0.10.1]
         end
         meta.json[meta.json]
     end
 
-    current --> uniond-v0.7.0
+    current --> uniond-v0.10.1
 ```
