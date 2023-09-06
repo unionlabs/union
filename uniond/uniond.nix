@@ -1,5 +1,5 @@
 { ... }: {
-  perSystem = { pkgs, self', crane, system, ensureAtRepositoryRoot, ... }:
+  perSystem = { pkgs, self', crane, system, ensureAtRepositoryRoot, nix-filter, ... }:
     let
       CGO_CFLAGS = "-I${pkgs.libblst}/include -I${pkgs.libblst.src}/src -I${pkgs.libblst.src}/build -I${self'.packages.bls-eth.src}/bls/include -O -D__BLST_PORTABLE__";
     in
@@ -35,7 +35,15 @@
         else
           pkgs.buildGoModule) ({
           name = "uniond";
-          src = ./.;
+          src = nix-filter
+            {
+              name = "uniond-source";
+              root = ./.;
+              exclude = [
+                (nix-filter.matchExt "nix")
+                (nix-filter.matchExt "md")
+              ];
+            };
           vendorSha256 = null;
           doCheck = true;
           meta.mainProgram = "uniond";
