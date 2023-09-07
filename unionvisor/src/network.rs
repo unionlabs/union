@@ -8,6 +8,7 @@ pub enum Network {
     Testnet1,
     #[default]
     Testnet2,
+    DevnetMinimal,
 }
 
 impl Display for Network {
@@ -16,6 +17,7 @@ impl Display for Network {
             Network::Union1 => write!(f, "union-1"),
             Network::Testnet1 => write!(f, "union-testnet-1"),
             Network::Testnet2 => write!(f, "union-testnet-2"),
+            Network::DevnetMinimal => write!(f, "union-minimal-1"),
         }
     }
 }
@@ -28,6 +30,7 @@ impl FromStr for Network {
             "union-1" => Ok(Network::Union1),
             "union-testnet-1" => Ok(Network::Testnet1),
             "union-testnet-2" => Ok(Network::Testnet2),
+            "union-minimal-1" => Ok(Network::DevnetMinimal),
             _ => bail!("unknown network"),
         }
     }

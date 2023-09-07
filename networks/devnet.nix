@@ -23,7 +23,7 @@
         value = import ./services/unionvisor.nix {
           inherit pkgs;
           inherit id;
-          uniond = inputs'.v0_8_0.packages.uniond;
+          uniond = inputs'.v0_8_1.packages.uniond;
           unionvisor = self'.packages.unionvisor;
           devnet-genesis = self'.packages.minimal-genesis;
           devnet-validator-keys = self'.packages.minimal-validator-keys;

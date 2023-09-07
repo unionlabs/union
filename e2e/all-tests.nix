@@ -3,7 +3,7 @@
     (lib.flip withSystem ({ e2e, networks, pkgs, nixpkgs, crane, self', ... }:
       let
         epoch-staking = import ./epoch-staking.nix { inherit e2e pkgs; };
-        upgrades = import ./upgrades.nix {inherit e2e pkgs; unionvisor = self'.packages.unionvisor; };
+        upgrades = import ./upgrades.nix {inherit e2e pkgs; unionvisor = self'.packages.unionvisor; bundle = self'.packages.bundle-testnet; };
       in
       {
         ensure-blocks = import ./ensure-blocks/ensure-blocks.nix { inherit e2e networks pkgs nixpkgs crane; };

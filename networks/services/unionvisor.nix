@@ -23,6 +23,7 @@ in
       devnet-validator-node-ids
       uniond
       unionvisor
+      bundle
     ];
   };
   service = {
@@ -40,12 +41,14 @@ in
       "sh"
       "-c"
       ''
-        cp -R ${devnet-genesis} .
-        cp ${devnet-validator-keys}/valkey-${toString id}.json ./config/priv_validator_key.json
-        cp ${devnet-validator-node-ids}/valnode-${toString id}.json ./config/node_key.json
+        HOME=.
+        mkdir home
+        cp -R ${devnet-genesis}/* ./home
+        cp ${devnet-validator-keys}/valkey-${toString id}.json ./home/config/priv_validator_key.json
+        cp ${devnet-validator-node-ids}/valnode-${toString id}.json ./home/config/node_key.json
         echo ${params}
-        ${unionvisor}/bin/unionvisor init --bundle ${bundle} --moniker val-${id} --network ${network} --allow-dirty
-        ${unionvisor}/bin/unionvisor run --bundle ${bundle} --home . ${params} --rpc.laddr tcp://0.0.0.0:26657 --api.address tcp://0.0.0.0:1317 --grpc.address 0.0.0.0:9090
+        HOME=. ${unionvisor}/bin/unionvisor --root . init --bundle ${bundle} --moniker val-${toString id} --network ${network} --allow-dirty
+        HOME=. ${unionvisor}/bin/unionvisor --root . run --bundle ${bundle} -- --home ./home ${params} --rpc.laddr tcp://0.0.0.0:26657 --api.address tcp://0.0.0.0:1317 --grpc.address 0.0.0.0:9090
       ''
     ];
     healthcheck = {
