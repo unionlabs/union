@@ -1,3 +1,4 @@
+#cspell:ignore abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz
 { ... }: {
   perSystem = { pkgs, inputs', ... }:
     let
@@ -149,7 +150,7 @@
       };
 
       packages.minimal-validator-node-ids = pkgs.symlinkJoin {
-        name = "valdiator-node-ids";
+        name = "validator-node-ids";
         paths = validatorNodeIds VALIDATOR_COUNT;
       };
     };
