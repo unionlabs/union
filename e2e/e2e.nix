@@ -1,5 +1,5 @@
 { inputs, ... }: {
-  perSystem = { pkgs, nixpkgs, system, networks, inputs',... }:
+  perSystem = { pkgs, nixpkgs, system, networks, inputs', ... }:
     let
       mkTest =
         let
