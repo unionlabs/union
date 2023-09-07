@@ -141,13 +141,13 @@ pub trait TransferProtocol {
         // https://github.com/cosmos/ibc-go/blob/5ca37ef6e56a98683cf2b3b1570619dc9b322977/modules/apps/transfer/ibc_module.go#L261
         let ack = Into::<GenericAck>::into(Self::Ack::try_from(raw_ack.clone().into())?);
         let (ack_msgs, ack_attr) = match ack {
-            Ok(_) => (
+            Ok(value) => (
                 self.send_tokens_success(packet.sender(), packet.receiver(), packet.tokens())?,
-                attr("success", "true"),
+                attr("success", value.to_string()),
             ),
             Err(error) => (
                 self.send_tokens_failure(packet.sender(), packet.receiver(), packet.tokens())?,
-                attr("acknowledgement", error.to_string()),
+                attr("error", error.to_string()),
             ),
         };
         Ok(IbcBasicResponse::new()
