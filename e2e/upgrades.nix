@@ -44,7 +44,7 @@ in
       # Ensure the union network commits more than one block
       union.wait_until_succeeds('[[ $(curl "http://localhost:26660/block" --fail --silent | ${pkgs.lib.meta.getExe pkgs.jq} ".result.block.header.height | tonumber > 1") == "true" ]]')
 
-      ${upgradeTo "v0.10.1" 10}
+      ${upgradeTo "v0.9.0" 10}
     '';
 
     nodes = {
