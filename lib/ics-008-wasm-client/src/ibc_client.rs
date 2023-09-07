@@ -1,4 +1,4 @@
-use core::fmt::Debug;
+use core::fmt::{Debug, Display};
 
 use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo};
 use unionlabs::{
@@ -22,7 +22,7 @@ pub enum StorageState {
 pub trait IbcClient {
     type Error: From<TryFromProtoBytesError<TryFromProtoErrorOf<Self::Header>>>
         + From<Error>
-        + ToString;
+        + Display;
     type CustomQuery: cosmwasm_std::CustomQuery;
     // TODO(aeryz): see #583
     type Header: TryFromProto;

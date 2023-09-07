@@ -284,14 +284,8 @@ impl IbcClient for EthereumLightClient {
         deps: Deps<Self::CustomQuery>,
         header: Self::Header,
     ) -> Result<ContractResult, Self::Error> {
-        let height = Height::new(
-            0,
-            header
-                .consensus_update
-                .attested_header
-                .execution
-                .block_number,
-        );
+        let height = Height::new(0, header.consensus_update.attested_header.beacon.slot);
+
         if let Some(consensus_state) =
             read_consensus_state::<CustomQuery, ConsensusState>(deps, &height)?
         {
@@ -308,6 +302,28 @@ impl IbcClient for EthereumLightClient {
             if consensus_state.data.storage_root != storage_root {
                 return Err(Error::StorageRootMismatch);
             }
+
+            if consensus_state.data.slot != header.consensus_update.attested_header.beacon.slot {
+                return Err(Error::SlotCannotBeModified);
+            }
+
+            // Next sync committee for a consensus height can be set if it is not being set
+            // previously, but it cannot be changed or unset after being set.
+            match (
+                consensus_state.data.next_sync_committee,
+                header.consensus_update.next_sync_committee,
+            ) {
+                (Some(_), None) => return Err(Error::NextSyncCommitteeCannotBeModified),
+                (Some(lhs), Some(rhs)) => {
+                    if lhs != rhs.aggregate_pubkey {
+                        return Err(Error::NextSyncCommitteeCannotBeModified);
+                    }
+                }
+                _ => {}
+            }
+
+            // NOTE(aeryz): we don't check the timestamp here since it is calculated based on the
+            // client state and the slot number during update.
         }
 
         // TODO(#605): Do we need to check whether this header's timestamp is between
@@ -718,6 +734,8 @@ mod test {
         ];
 
         for update in updates {
+            EthereumLightClient::check_for_misbehaviour_on_header(deps.as_ref(), update.clone())
+                .unwrap();
             EthereumLightClient::verify_header(deps.as_ref(), mock_env(), update.clone()).unwrap();
             EthereumLightClient::update_state(deps.as_mut(), mock_env(), update.clone()).unwrap();
             // Consensus state is saved to the updated height.
