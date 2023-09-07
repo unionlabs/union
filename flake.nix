@@ -81,6 +81,7 @@
         ./tools/rust/crane.nix
         ./tools/tera/tera.nix
         ./tools/docgen/docgen.nix
+        ./tools/todo-comment.nix
         ./networks/e2e-setup.nix
         ./networks/devnet.nix
         ./networks/genesis/devnet.nix
@@ -246,6 +247,7 @@
               pkg-config
               protobuf
               self'.packages.hasura-cli
+              self'.packages.tdc
               solc
               yarn
               yq
