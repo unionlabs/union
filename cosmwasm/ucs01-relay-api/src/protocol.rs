@@ -37,7 +37,12 @@ pub struct TransferInput {
     pub tokens: Vec<TransferToken>,
 }
 
-// We follow the following module implementation, events and attributes are almost 1:1 with the traditional go implementation.
+// We follow the following module implementation, events and attributes are
+// almost 1:1 with the traditional go implementation. As we generalized the base
+// implementation for multi-tokens transfer, the events are not containing a
+// single ('denom', 'value') and ('amount', 'value') attributes but rather a set
+// of ('denom:x', 'amount_value') attributes for each denom `x` that is
+// transferred. i.e. [('denom:muno', '10'), ('denom:port/channel/weth', '150'), ..]
 // https://github.com/cosmos/ibc-go/blob/7be17857b10457c67cbf66a49e13a9751eb10e8e/modules/apps/transfer/ibc_module.go
 pub trait TransferProtocol {
     /// Must be unique per Protocol

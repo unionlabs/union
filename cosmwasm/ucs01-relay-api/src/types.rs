@@ -27,13 +27,10 @@ pub struct TransferToken {
 }
 
 impl TransferToken {
-    /*
-      If a denom originated from a remote network, it will be in the form:
-        `factory/{contract_address}/{port_id}/{channel_id}/denom`
-
-      In order for the remote module to consider this denom as local, we must
-      strip the `factory/{contract_address}/` prefix.
-    */
+    // If a denom originated from a remote network, it will be in the form:
+    //   `factory/{contract_address}/{port_id}/{channel_id}/denom`
+    // In order for the remote module to consider this denom as local, we must
+    // strip the `factory/{contract_address}/` prefix before sending the tokens.
     pub fn normalize_for_ibc_transfer(
         self,
         contract_address: &str,
@@ -186,24 +183,6 @@ pub struct Ics20Packet {
     pub memo: String,
 }
 
-impl Ics20Packet {
-    pub fn new(
-        sender: String,
-        receiver: String,
-        denom: String,
-        amount: Uint256,
-        memo: String,
-    ) -> Self {
-        Self {
-            sender,
-            receiver,
-            denom,
-            amount,
-            memo,
-        }
-    }
-}
-
 impl TryFrom<Ics20Packet> for Binary {
     type Error = EncodingError;
     fn try_from(value: Ics20Packet) -> Result<Binary, Self::Error> {
@@ -265,10 +244,8 @@ impl TransferPacket for Ucs01TransferPacket {
     }
 }
 
-pub type Memo = String;
-
 impl TransferPacket for Ics20Packet {
-    type Extension = Memo;
+    type Extension = String;
 
     fn tokens(&self) -> Vec<TransferToken> {
         vec![TransferToken {
@@ -376,7 +353,7 @@ impl TryFrom<TransferPacketCommon<NoExtension>> for Ucs01TransferPacket {
     }
 }
 
-impl TryFrom<TransferPacketCommon<Memo>> for Ics20Packet {
+impl TryFrom<TransferPacketCommon<String>> for Ics20Packet {
     type Error = EncodingError;
 
     fn try_from(
@@ -385,13 +362,19 @@ impl TryFrom<TransferPacketCommon<Memo>> for Ics20Packet {
             receiver,
             tokens,
             extension,
-        }: TransferPacketCommon<Memo>,
+        }: TransferPacketCommon<String>,
     ) -> Result<Self, Self::Error> {
         let (denom, amount) = match &tokens[..] {
             [TransferToken { denom, amount }] => Ok((denom.clone(), amount.clone())),
             _ => Err(EncodingError::Ics20OnlyOneCoin),
         }?;
-        Ok(Self::new(sender, receiver, denom, amount.into(), extension))
+        Ok(Self {
+            sender,
+            receiver,
+            denom,
+            amount: amount.into(),
+            memo: extension,
+        })
     }
 }
 
@@ -411,7 +394,7 @@ impl<'a> From<(&'a str, &IbcEndpoint)> for DenomOrigin<'a> {
     fn from((denom, remote_endpoint): (&'a str, &IbcEndpoint)) -> Self {
         // https://github.com/cosmos/ibc/blob/main/spec/app/ics-020-fungible-token-transfer/README.md#data-structures
         // SPEC: {ics20Port}/{ics20Channel}/{denom}
-        // The denom is local IIF we can strip all prefixes
+        // The denom is local IFF we can strip all prefixes
         match denom
             .strip_prefix(&remote_endpoint.port_id)
             .and_then(|denom| denom.strip_prefix("/"))
@@ -453,7 +436,7 @@ mod tests {
         };
         assert_eq!(
             packet,
-            <Binary>::try_from(packet.clone())
+            Binary::try_from(packet.clone())
                 .unwrap()
                 .try_into()
                 .unwrap()
@@ -462,10 +445,14 @@ mod tests {
 
     #[test]
     fn ucs01_ack_encode_decode_iso() {
-        let ack = Ucs01Ack::Success;
-        assert_eq!(ack, <Binary>::try_from(ack).unwrap().try_into().unwrap());
-        let ack = Ucs01Ack::Failure;
-        assert_eq!(ack, <Binary>::try_from(ack).unwrap().try_into().unwrap());
+        assert_eq!(
+            Ok(Ucs01Ack::Success),
+            Binary::try_from(Ucs01Ack::Success).unwrap().try_into()
+        );
+        assert_eq!(
+            Ok(Ucs01Ack::Failure),
+            Binary::try_from(Ucs01Ack::Failure).unwrap().try_into()
+        );
     }
 
     #[test]
@@ -479,7 +466,7 @@ mod tests {
         };
         assert_eq!(
             packet,
-            <Binary>::try_from(packet.clone())
+            Binary::try_from(packet.clone())
                 .unwrap()
                 .try_into()
                 .unwrap()
@@ -488,15 +475,17 @@ mod tests {
 
     #[test]
     fn ics20_ack_encode_decode_iso() {
-        let ack = Ics20Ack::Result(b"blabla".into());
         assert_eq!(
-            ack,
-            <Binary>::try_from(ack.clone()).unwrap().try_into().unwrap()
+            Ok(Ics20Ack::Result(b"blabla".into())),
+            Binary::try_from(Ics20Ack::Result(b"blabla".into()))
+                .unwrap()
+                .try_into()
         );
-        let ack = Ics20Ack::Error("ok".into());
         assert_eq!(
-            ack,
-            <Binary>::try_from(ack.clone()).unwrap().try_into().unwrap()
+            Ok(Ics20Ack::Error("ok".into())),
+            Binary::try_from(Ics20Ack::Error("ok".into()))
+                .unwrap()
+                .try_into()
         );
     }
 

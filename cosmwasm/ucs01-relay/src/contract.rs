@@ -90,8 +90,8 @@ pub fn execute_transfer(
         tokens,
     };
 
-    match channel_info.protocol_version {
-        ref v if v == Ics20Protocol::VERSION => Ics20Protocol {
+    match channel_info.protocol_version.as_str() {
+        Ics20Protocol::VERSION => Ics20Protocol {
             common: ProtocolCommon {
                 deps,
                 env,
@@ -100,7 +100,7 @@ pub fn execute_transfer(
             },
         }
         .send(input, msg.memo),
-        ref v if v == Ucs01Protocol::VERSION => Ucs01Protocol {
+        Ucs01Protocol::VERSION => Ucs01Protocol {
             common: ProtocolCommon {
                 deps,
                 env,
@@ -111,7 +111,7 @@ pub fn execute_transfer(
         .send(input, NoExtension),
         v => Err(ContractError::UnknownProtocol {
             channel_id: msg.channel,
-            protocol_version: v,
+            protocol_version: v.into(),
         }),
     }
 }
@@ -123,8 +123,9 @@ pub fn execute_receive_phase1(
     msg: ReceivePhase1Msg,
 ) -> Result<Response<TokenFactoryMsg>, ContractError> {
     let channel_info = CHANNEL_INFO.load(deps.storage, &msg.channel)?;
-    match channel_info.protocol_version {
-        ref v if v == Ics20Protocol::VERSION => Ics20Protocol {
+
+    match channel_info.protocol_version.as_str() {
+        Ics20Protocol::VERSION => Ics20Protocol {
             common: ProtocolCommon {
                 deps,
                 env,
@@ -133,7 +134,7 @@ pub fn execute_receive_phase1(
             },
         }
         .receive_phase1(msg.raw_packet),
-        ref v if v == Ucs01Protocol::VERSION => Ucs01Protocol {
+        Ucs01Protocol::VERSION => Ucs01Protocol {
             common: ProtocolCommon {
                 deps,
                 env,
@@ -144,7 +145,7 @@ pub fn execute_receive_phase1(
         .receive_phase1(msg.raw_packet),
         v => Err(ContractError::UnknownProtocol {
             channel_id: msg.channel,
-            protocol_version: v,
+            protocol_version: v.into(),
         }),
     }
 }

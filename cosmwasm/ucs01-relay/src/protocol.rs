@@ -19,8 +19,8 @@ use crate::{
 
 pub fn protocol_ordering(version: &str) -> Option<IbcOrder> {
     match version {
-        v if v == Ics20Protocol::VERSION => Some(Ics20Protocol::ORDERING),
-        v if v == Ucs01Protocol::VERSION => Some(Ucs01Protocol::ORDERING),
+        Ics20Protocol::VERSION => Some(Ics20Protocol::ORDERING),
+        Ucs01Protocol::VERSION => Some(Ucs01Protocol::ORDERING),
         _ => None,
     }
 }

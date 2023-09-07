@@ -126,8 +126,8 @@ pub fn ibc_packet_receive(
         funds: Default::default(),
     };
 
-    match channel_info.protocol_version {
-        ref v if v == Ics20Protocol::VERSION => Ok(Ics20Protocol {
+    match channel_info.protocol_version.as_str() {
+        Ics20Protocol::VERSION => Ok(Ics20Protocol {
             common: ProtocolCommon {
                 deps,
                 env,
@@ -136,7 +136,7 @@ pub fn ibc_packet_receive(
             },
         }
         .receive_phase0(msg.packet.data)),
-        ref v if v == Ucs01Protocol::VERSION => Ok(Ucs01Protocol {
+        Ucs01Protocol::VERSION => Ok(Ucs01Protocol {
             common: ProtocolCommon {
                 deps,
                 env,
@@ -147,7 +147,7 @@ pub fn ibc_packet_receive(
         .receive_phase0(msg.packet.data)),
         v => Err(ContractError::UnknownProtocol {
             channel_id: msg.packet.dest.channel_id,
-            protocol_version: v,
+            protocol_version: v.into(),
         }),
     }
 }
@@ -166,8 +166,8 @@ pub fn ibc_packet_ack(
         funds: Default::default(),
     };
 
-    match channel_info.protocol_version {
-        ref v if v == Ics20Protocol::VERSION => Ics20Protocol {
+    match channel_info.protocol_version.as_str() {
+        Ics20Protocol::VERSION => Ics20Protocol {
             common: ProtocolCommon {
                 deps,
                 env,
@@ -176,7 +176,7 @@ pub fn ibc_packet_ack(
             },
         }
         .send_ack(msg.acknowledgement.data, msg.original_packet.data),
-        ref v if v == Ucs01Protocol::VERSION => Ucs01Protocol {
+        Ucs01Protocol::VERSION => Ucs01Protocol {
             common: ProtocolCommon {
                 deps,
                 env,
@@ -187,7 +187,7 @@ pub fn ibc_packet_ack(
         .send_ack(msg.acknowledgement.data, msg.original_packet.data),
         v => Err(ContractError::UnknownProtocol {
             channel_id: msg.original_packet.dest.channel_id,
-            protocol_version: v,
+            protocol_version: v.into(),
         }),
     }
 }
@@ -206,8 +206,8 @@ pub fn ibc_packet_timeout(
         funds: Default::default(),
     };
 
-    match channel_info.protocol_version {
-        ref v if v == Ics20Protocol::VERSION => Ics20Protocol {
+    match channel_info.protocol_version.as_str() {
+        Ics20Protocol::VERSION => Ics20Protocol {
             common: ProtocolCommon {
                 deps,
                 env,
@@ -216,7 +216,7 @@ pub fn ibc_packet_timeout(
             },
         }
         .send_timeout(msg.packet.data),
-        ref v if v == Ucs01Protocol::VERSION => Ucs01Protocol {
+        Ucs01Protocol::VERSION => Ucs01Protocol {
             common: ProtocolCommon {
                 deps,
                 env,
@@ -227,7 +227,7 @@ pub fn ibc_packet_timeout(
         .send_timeout(msg.packet.data),
         v => Err(ContractError::UnknownProtocol {
             channel_id: msg.packet.dest.channel_id,
-            protocol_version: v,
+            protocol_version: v.into(),
         }),
     }
 }
