@@ -17,6 +17,8 @@ in
     enableRecommendedContents = true;
     contents = [
       pkgs.coreutils
+      pkgs.expect
+      pkgs.procps
       devnet-genesis
       uniond
       devnet-validator-keys

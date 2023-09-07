@@ -83,6 +83,7 @@
         ./tools/docgen/docgen.nix
         ./networks/e2e-setup.nix
         ./networks/devnet.nix
+        ./networks/genesis/devnet-minimal.nix
         ./networks/genesis/devnet.nix
         ./testnet-validator.nix
         ./e2e/all-tests.nix

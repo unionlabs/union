@@ -17,6 +17,20 @@
         })
         devnetConfig.validatorCount));
 
+      uniond-testnet-genesis-services = (builtins.listToAttrs (builtins.genList
+      (id: {
+        name = "uniond-${toString id}";
+        value = import ./services/uniond.nix {
+          inherit pkgs;
+          inherit id;
+          uniond = inputs'.v0_8_0.packages.uniond;
+          devnet-genesis = self'.packages.minimal-genesis;
+          devnet-validator-keys = self'.packages.minimal-validator-keys;
+          devnet-validator-node-ids = self'.packages.minimal-validator-node-ids;
+        };
+      })
+      4));
+
       sepolia-services = {
         geth = import ./services/geth.nix {
           inherit pkgs;
@@ -39,6 +53,11 @@
       devnet = {
         project.name = "devnet";
         services = sepolia-services // uniond-services // postgres-services // hasura-services // hubble-services;
+      };
+
+      devnet-minimal = {
+        project.name = "devnet-minimal";
+        services = uniond-testnet-genesis-services;
       };
 
       union = {
@@ -102,7 +121,7 @@
         };
 
       _module.args.networks = {
-        inherit devnet union sepolia;
+        inherit devnet devnet-minimal union sepolia;
       };
     };
 }
