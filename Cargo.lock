@@ -1312,19 +1312,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "cw20"
-version = "1.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "011c45920f8200bd5d32d4fe52502506f64f2f75651ab408054d4cfc75ca3a9b"
-dependencies = [
- "cosmwasm-schema",
- "cosmwasm-std",
- "cw-utils",
- "schemars",
- "serde",
-]
-
-[[package]]
 name = "darling"
 version = "0.13.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5690,13 +5677,23 @@ dependencies = [
  "cosmwasm-std",
  "cw-controllers",
  "cw-storage-plus",
- "cw-utils",
  "cw2",
- "cw20",
  "ethabi",
  "schemars",
  "semver",
  "serde",
+ "thiserror",
+ "token-factory-api",
+ "ucs01-relay-api",
+]
+
+[[package]]
+name = "ucs01-relay-api"
+version = "0.1.0"
+dependencies = [
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "ethabi",
  "thiserror",
  "token-factory-api",
 ]

@@ -1,0 +1,11 @@
+[package]
+name = "ucs01-relay-api"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+ethabi = { version = "18.0.0", default-features = false }
+cosmwasm-std = { version = "1.3", features = ["stargate"] }
+cosmwasm-schema = { version = "1.3" }
+thiserror = { version = "1.0" }
+token-factory-api = { workspace = true }

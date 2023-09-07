@@ -50,6 +50,7 @@ unionlabs = { path = "lib/unionlabs", default-features = false }
 beacon-api = { path = "lib/beacon-api", default-features = false }
 
 token-factory-api = { path = "cosmwasm/token-factory-api", default-features = false }
+ucs01-relay-api = { path = "cosmwasm/ucs01-relay-api", default-features = false }
 
 [patch.crates-io]
 typenum = { git = "https://github.com/unionlabs/typenum", branch = "ben/192-const-generic-32-bit" }
