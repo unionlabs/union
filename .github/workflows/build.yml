@@ -120,6 +120,7 @@ jobs:
                   "spellcheck",
                   "treefmt-check",
                   "union-runs",
+                  "upgrade-from-genesis",
                   "virtualisation-works"
                 ]
               )
