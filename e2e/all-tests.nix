@@ -1,9 +1,9 @@
 { lib, withSystem, inputs, ... }: {
   flake.checks = lib.genAttrs [ "x86_64-linux" "aarch64-linux" ]
-    (lib.flip withSystem ({ e2e, networks, pkgs, nixpkgs, crane, inputs', ... }:
+    (lib.flip withSystem ({ e2e, networks, pkgs, nixpkgs, crane, self', ... }:
       let
         epoch-staking = import ./epoch-staking.nix { inherit e2e pkgs; };
-        upgrades = import ./upgrades.nix {inherit e2e pkgs; inputs = inputs'; };
+        upgrades = import ./upgrades.nix {inherit e2e pkgs; unionvisor = self'.packages.unionvisor; };
       in
       {
         ensure-blocks = import ./ensure-blocks/ensure-blocks.nix { inherit e2e networks pkgs nixpkgs crane; };
