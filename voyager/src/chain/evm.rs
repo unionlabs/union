@@ -61,9 +61,8 @@ use unionlabs::{
         lightclients::{
             ethereum::{
                 self,
-                account_update::AccountUpdate,
+                account_update::{AccountProof, AccountUpdate},
                 light_client_update::{LightClientUpdate, NextSyncCommitteeBranch},
-                proof::Proof,
                 sync_committee::SyncCommittee,
                 trusted_sync_committee::TrustedSyncCommittee,
             },
@@ -1390,9 +1389,9 @@ impl<C: ChainSpec> Cometbls<C> {
                 consensus_update: light_client_update,
                 trusted_sync_committee,
                 account_update: AccountUpdate {
-                    proofs: [Proof {
-                        key: self.chain.ibc_handler.address().as_bytes().to_vec(),
-                        value: account_update.storage_hash.as_bytes().to_vec(),
+                    proofs: [AccountProof {
+                        address: self.chain.ibc_handler.address().as_bytes().to_vec(),
+                        storage_hash: account_update.storage_hash.as_bytes().to_vec(),
                         proof: account_update
                             .account_proof
                             .into_iter()
