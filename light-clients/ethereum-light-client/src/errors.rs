@@ -93,8 +93,17 @@ pub enum Error {
     #[error("Custom query: {0}")]
     CustomQuery(String),
 
+    #[error("Storage root mismatch")]
+    StorageRootMismatch,
+
     #[error("Wasm client error: {0}")]
     Wasm(String),
+
+    #[error("Next sync committee can't be changed after being set.")]
+    NextSyncCommitteeCannotBeModified,
+
+    #[error("The slot number that is saved previously to the consensus state cannot be changed.")]
+    SlotCannotBeModified,
 }
 
 impl Error {

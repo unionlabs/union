@@ -1,4 +1,4 @@
-use core::fmt::Debug;
+use core::fmt::{Debug, Display};
 
 use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo};
 use unionlabs::{
@@ -20,7 +20,9 @@ pub enum StorageState {
 }
 
 pub trait IbcClient {
-    type Error: From<TryFromProtoBytesError<TryFromProtoErrorOf<Self::Header>>> + From<Error>;
+    type Error: From<TryFromProtoBytesError<TryFromProtoErrorOf<Self::Header>>>
+        + From<Error>
+        + Display;
     type CustomQuery: cosmwasm_std::CustomQuery;
     // TODO(aeryz): see #583
     type Header: TryFromProto;
@@ -97,15 +99,23 @@ pub trait IbcClient {
             ExecuteMsg::UpdateStateOnMisbehaviour { client_message } => {
                 Self::update_state_on_misbehaviour(deps, client_message)
             }
-            ExecuteMsg::CheckForMisbehaviour { client_message } => match client_message {
-                ClientMessage::Header(header) => {
-                    let header = Self::Header::try_from_proto_bytes(&header.data)?;
-                    Self::verify_header(deps.as_ref(), env, header)
+            ExecuteMsg::CheckForMisbehaviour { client_message } => {
+                let res = match client_message {
+                    ClientMessage::Header(header) => {
+                        let header = Self::Header::try_from_proto_bytes(&header.data)?;
+                        Self::check_for_misbehaviour_on_header(deps.as_ref(), header)
+                    }
+                    ClientMessage::Misbehaviour(_) => {
+                        Ok(ContractResult::invalid("Not implemented".to_string()))
+                    }
+                };
+
+                if let Err(e) = res {
+                    Ok(ContractResult::found_misbehaviour(e.to_string()))
+                } else {
+                    res
                 }
-                ClientMessage::Misbehaviour(_) => {
-                    Ok(ContractResult::invalid("Not implemented".to_string()))
-                }
-            },
+            }
             ExecuteMsg::VerifyUpgradeAndUpdateState {
                 upgrade_client_state,
                 upgrade_consensus_state,

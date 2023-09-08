@@ -44,6 +44,15 @@ impl ContractResult {
             is_valid: false,
             error_msg,
             data: None,
+            found_misbehaviour: false,
+        }
+    }
+
+    pub fn found_misbehaviour(error_msg: String) -> Self {
+        Self {
+            is_valid: false,
+            error_msg,
+            data: None,
             found_misbehaviour: true,
         }
     }
