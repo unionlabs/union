@@ -97,7 +97,7 @@ pub trait IbcClient {
                 .into()),
             },
             ExecuteMsg::UpdateStateOnMisbehaviour { client_message } => {
-                Self::update_state_on_misbehaviour(deps, client_message)
+                Self::update_state_on_misbehaviour(deps, env, client_message)
             }
             ExecuteMsg::CheckForMisbehaviour { client_message } => {
                 let res = match client_message {
@@ -178,6 +178,7 @@ pub trait IbcClient {
     // TODO(aeryz): make this client message generic over the underlying types
     fn update_state_on_misbehaviour(
         deps: DepsMut<Self::CustomQuery>,
+        env: Env,
         client_message: ClientMessage,
     ) -> Result<ContractResult, Self::Error>;
 
