@@ -1,5 +1,5 @@
 { inputs, ... }: {
-  perSystem = { pkgs, nixpkgs, system, networks, ... }:
+  perSystem = { pkgs, nixpkgs, system, networks, inputs', ... }:
     let
       mkTest =
         let
@@ -31,6 +31,21 @@
         };
       };
 
+      unionTestnetGenesisNode = {
+        node = { pkgs, ... }: {
+          imports = [
+            inputs.arion.nixosModules.arion
+          ];
+          virtualisation = {
+            diskSize = 4 * 1024;
+            arion = {
+              backend = "docker";
+              projects.union-devnet.settings = networks.devnet-minimal;
+            };
+          };
+        };
+      };
+
       unionNode = {
         wait_for_console_text = "height=[1-9][0-9]*";
         wait_for_open_port = 26657;
@@ -50,7 +65,7 @@
     in
     {
       _module.args.e2e = {
-        inherit mkTest unionNode sepoliaNode;
+        inherit mkTest unionNode sepoliaNode unionTestnetGenesisNode;
 
         mkTestWithDevnetSetup = { name, testScript, nodes }:
           mkTest {

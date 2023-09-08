@@ -183,6 +183,7 @@ cratedir
 crisiskeeper
 crisistypes
 ctypes
+dasel
 dataconnector
 datadir
 datetime
@@ -577,6 +578,7 @@ unionmoduletypes
 unionp
 unionsimulation
 unionvisor
+unionvisorbn
 unjail
 unjailed
 unmarshal
