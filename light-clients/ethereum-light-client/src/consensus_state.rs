@@ -1,53 +1,61 @@
+use cosmwasm_std::Deps;
 use unionlabs::{
     bls::BlsPublicKey,
     ethereum_consts_traits::ChainSpec,
-    ibc::lightclients::ethereum::{consensus_state::ConsensusState, sync_committee::SyncCommittee},
+    ibc::lightclients::ethereum::{
+        consensus_state::ConsensusState, trusted_sync_committee::ActiveSyncCommittee,
+    },
 };
 
-use crate::errors::Error;
-
+use crate::{
+    custom_query::{query_aggregate_public_keys, CustomQuery},
+    errors::Error,
+};
 #[derive(Debug, Clone, PartialEq)]
 pub struct TrustedConsensusState<C: ChainSpec> {
     pub state: ConsensusState,
-    pub current_sync_committee: Option<SyncCommittee<C>>,
-    pub next_sync_committee: Option<SyncCommittee<C>>,
+    /// Full sync committee data which corresponds to the aggregate key that we
+    /// store at the client.
+    ///
+    /// This sync committee can either be the current sync committee or the next sync
+    /// committee. That's because the verifier uses next or current sync committee's
+    /// public keys to verify the signature against. It is based on
+    pub sync_committee: ActiveSyncCommittee<C>,
 }
 
 impl<C: ChainSpec> TrustedConsensusState<C> {
     pub fn new(
+        deps: Deps<CustomQuery>,
         consensus_state: ConsensusState,
-        sync_committee: SyncCommittee<C>,
-        aggregate_public_key: BlsPublicKey,
-        is_next: bool,
+        sync_committee: ActiveSyncCommittee<C>,
     ) -> Result<Self, Error> {
-        if aggregate_public_key != sync_committee.aggregate_pubkey {
-            return Err(Error::InvalidSyncCommittee);
-        }
-
-        if !is_next {
-            return if sync_committee.aggregate_pubkey == consensus_state.current_sync_committee {
-                Ok(Self {
-                    state: consensus_state,
-                    current_sync_committee: Some(sync_committee),
-                    next_sync_committee: None,
-                })
-            } else {
-                Err(Error::InvalidSyncCommittee)
-            };
-        }
-
-        if let Some(next_sync_committee) = consensus_state.next_sync_committee.clone() {
-            if sync_committee.aggregate_pubkey == next_sync_committee {
-                Ok(Self {
-                    state: consensus_state,
-                    current_sync_committee: None,
-                    next_sync_committee: Some(sync_committee),
-                })
-            } else {
-                Err(Error::InvalidSyncCommittee)
+        let (active_sync_committee, given_committee) = match &sync_committee {
+            ActiveSyncCommittee::Current(committee) => {
+                (consensus_state.current_sync_committee.clone(), committee)
             }
+            ActiveSyncCommittee::Next(committee) => (
+                consensus_state
+                    .next_sync_committee
+                    .clone()
+                    .ok_or(Error::NoNextSyncCommittee)?,
+                committee,
+            ),
+        };
+
+        let aggregate_public_key =
+            query_aggregate_public_keys(deps, given_committee.pubkeys.clone().into())?;
+
+        // We are making sure that the given trusted sync committee actually matches
+        // the sync committee that we stored
+        if active_sync_committee != given_committee.aggregate_pubkey
+            && given_committee.aggregate_pubkey != aggregate_public_key
+        {
+            Err(Error::InvalidSyncCommittee)
         } else {
-            Err(Error::NoNextSyncCommittee)
+            Ok(TrustedConsensusState {
+                state: consensus_state,
+                sync_committee,
+            })
         }
     }
 

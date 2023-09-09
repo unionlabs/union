@@ -4,7 +4,7 @@
       "revision_number": 0,
       "revision_height": 1328
     },
-    "sync_committee": {
+    "current_sync_committee": {
       "pubkeys": [
         "qZp27XeW974i1bfoXe63xWd+iOUR4LM3YY+MTrYTSbS/LRU/ZJ97UzWf6LlKOORM",
         "mXfxyLcxqNVVgUa/uGyuomQ088WHi1ib8oCkLJFZ5wDp3w5AhilsILAR0ueMJ9Nz",
@@ -40,8 +40,7 @@
         "qNTHwneVpyWWExfvWVOnAy7W2Dc524sOinI1PRuLRDlCf376LInKoDzJ8o+Muris"
       ],
       "aggregate_pubkey": "j+EUdqBXUMUmGN63mRji5nT1bfvxLbzlWuQ4bRCOih6DxjJvWVfi7xkTdYLOJw3G"
-    },
-    "is_next": false
+    }
   },
   "consensus_update": {
     "attested_header": {

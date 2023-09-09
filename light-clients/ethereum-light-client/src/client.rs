@@ -28,7 +28,7 @@ use unionlabs::{
 use crate::{
     consensus_state::TrustedConsensusState,
     context::LightClientContext,
-    custom_query::{query_aggregate_public_keys, CustomQuery, VerificationContext},
+    custom_query::{CustomQuery, VerificationContext},
     errors::Error,
     eth_encoding::generate_commitment_key,
     Config,
@@ -119,16 +119,10 @@ impl IbcClient for EthereumLightClient {
                 ),
             )?;
 
-        let aggregate_public_key = query_aggregate_public_keys(
-            deps,
-            trusted_sync_committee.sync_committee.pubkeys.clone().into(),
-        )?;
-
         let trusted_consensus_state = TrustedConsensusState::new(
+            deps,
             wasm_consensus_state.data,
             trusted_sync_committee.sync_committee,
-            aggregate_public_key,
-            trusted_sync_committee.is_next,
         )?;
 
         let wasm_client_state = read_client_state(deps)?;
@@ -895,12 +889,14 @@ mod test {
         let mut pubkey = update
             .trusted_sync_committee
             .sync_committee
+            .get()
             .aggregate_pubkey
             .clone();
         pubkey.0[0] += 1;
         update
             .trusted_sync_committee
             .sync_committee
+            .get_mut()
             .aggregate_pubkey = pubkey;
         assert!(EthereumLightClient::verify_header(deps.as_ref(), env, update).is_err());
     }

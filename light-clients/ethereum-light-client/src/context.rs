@@ -3,6 +3,7 @@ use unionlabs::{
     ethereum_consts_traits::ChainSpec,
     ibc::lightclients::ethereum::{
         client_state::ClientState, fork_parameters::ForkParameters, sync_committee::SyncCommittee,
+        trusted_sync_committee::ActiveSyncCommittee,
     },
 };
 
@@ -33,11 +34,21 @@ impl<'a, C: ChainSpec> TLightClientContext for LightClientContext<'a, C> {
     }
 
     fn current_sync_committee(&self) -> Option<&SyncCommittee<C>> {
-        self.trusted_consensus_state.current_sync_committee.as_ref()
+        if let ActiveSyncCommittee::Current(committee) =
+            &self.trusted_consensus_state.sync_committee
+        {
+            Some(committee)
+        } else {
+            None
+        }
     }
 
     fn next_sync_committee(&self) -> Option<&SyncCommittee<C>> {
-        self.trusted_consensus_state.next_sync_committee.as_ref()
+        if let ActiveSyncCommittee::Next(committee) = &self.trusted_consensus_state.sync_committee {
+            Some(committee)
+        } else {
+            None
+        }
     }
 
     fn fork_parameters(&self) -> &ForkParameters {

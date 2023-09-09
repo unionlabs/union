@@ -89,9 +89,9 @@ pub struct TrustedSyncCommittee {
     pub trusted_height:
         ::core::option::Option<super::super::super::super::super::ibc::core::client::v1::Height>,
     #[prost(message, optional, tag = "2")]
-    pub sync_committee: ::core::option::Option<SyncCommittee>,
-    #[prost(bool, tag = "3")]
-    pub is_next: bool,
+    pub current_sync_committee: ::core::option::Option<SyncCommittee>,
+    #[prost(message, optional, tag = "3")]
+    pub next_sync_committee: ::core::option::Option<SyncCommittee>,
 }
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
