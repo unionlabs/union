@@ -40,40 +40,6 @@
           done
         '';
 
-      instantiateCw20Ics20 =
-        pkgs.writeShellApplication {
-          name = "instantiate-ucs01-relay";
-          runtimeInputs = [ ];
-          text =
-            ''
-              # This account will be the governor and admin of the contract that we instantiate
-              ACCOUNT_ADDRESS="$(${accountAddress})"
-
-              INIT_MESSAGE='{
-                  "default_timeout":300,
-                  "gov_contract": "'"$ACCOUNT_ADDRESS"'",
-                  "allowlist":[],
-                  "channel":{
-                    "endpoint":{
-                      "port_id": "",
-                      "channel_id":"channel-0"
-                    },
-                    "counterparty_endpoint":{
-                      "port_id":"transfer",
-                     "channel_id":"channel-0"
-                    },
-                    "order":"ORDER_UNORDERED",
-                    "version":"ics20-1",
-                    "connection_id":"connection-0"
-                  }
-                }'
-
-              echo "$INIT_MESSAGE"
-
-              ${instantiateContract { code-id = 1; label = "ucs01-relay"; }}
-            '';
-        };
-
       instantiatePingPong =
         pkgs.writeShellApplication {
           name = "instantiate-ping-pong";
@@ -334,8 +300,6 @@
 
               COMETBLS_ADDRESS=$(echo "$EVM_CONTRACTS_ARG" | jq .cometbls_client_address -r)
               IBC_HANDLER_ADDRESS=$(echo "$EVM_CONTRACTS_ARG" | jq .ibc_handler_address -r)
-              ICS20_TRANSFER_BANK_ADDRESS=$(echo "$EVM_CONTRACTS_ARG" | jq .ics20_transfer_bank_address -r)
-              ICS20_BANK_ADDRESS=$(echo "$EVM_CONTRACTS_ARG" | jq .ics20_bank_address -r)
               WASM_CODE_ID=$(cat ${self'.packages.devnet-genesis}/code-ids/ethereum_light_client_minimal)
               EVM_WALLET=$(cat ${self'.packages.devnet-evm-config}/dev-key0.prv)
 
@@ -346,8 +310,6 @@
                     "preset_base": "minimal",
                     "cometbls_client_address": "'"$COMETBLS_ADDRESS"'",
                     "ibc_handler_address": "'"$IBC_HANDLER_ADDRESS"'",
-                    "ics20_transfer_bank_address": "'"$ICS20_TRANSFER_BANK_ADDRESS"'",
-                    "ics20_bank_address": "'"$ICS20_BANK_ADDRESS"'",
                     "signer": {
                       "raw": "0x'"$EVM_WALLET"'"
                     },
@@ -371,9 +333,6 @@
                 deployEVMPingPong
             }
 
-            instantiateCw20Ics20() {
-              ${instantiateCw20Ics20}/bin/instantiate-ucs01-relay
-            }
 
             instantiatePingPong() {
               ${instantiatePingPong}/bin/instantiate-ping-pong "$PING_PONG_TIMEOUT"
@@ -431,15 +390,6 @@
               echo "+ Initial connection and channels are ready."
             }
 
-            setIcs20Operator() {
-                echo ------------------------------------------------------------
-                echo "+ Setting up the operator contract for ICS20 transfer"
-                RUST_LOG=voyager=debug ${self'.packages.voyager}/bin/voyager \
-                  --config-file-path "$VOYAGER_CONFIG_FILE" \
-                  setup set-operator \
-                  --on ethereum-devnet
-                echo "+ ICS20 transfer operator is set."
-            }
 
             doHandshake() {
                 from_version="$1"
@@ -506,8 +456,6 @@
             unionAliveTest
 
             if [[ -z "$NO_DEPLOY_CONTRACTS" ]]; then
-              instantiateCw20Ics20
-              sleep 6
               instantiatePingPong
               deployEVMContracts
             else
@@ -525,7 +473,6 @@
               echo "+ --circuit-path is empty, will use the galois at $GALOIS_URL"
             fi
 
-            ICS20_TRANSFER_BANK_ADDRESS=$(jq '.chain."ethereum-devnet".ics20_transfer_bank_address' -r < "$VOYAGER_CONFIG_FILE")
             CW20_ADDRESS=$(${uniond} query wasm list-contract-by-code 1  --output json | jq '.contracts[0]' -r)
             PING_PONG_ADDRESS=$(${uniond} query wasm list-contract-by-code 2  --output json | jq '.contracts[0]' -r)
 
@@ -534,8 +481,6 @@
               exit 0
             fi;
 
-            setupInitialChannel "$ICS20_TRANSFER_BANK_ADDRESS" transfer "wasm.$CW20_ADDRESS" channel-0
-            setIcs20Operator
             if [[ -z "$HANDSHAKE" ]]; then
               PING_PONG_CONNECTION="connection-0"
               PING_PONG_CHANNEL="channel-1"
@@ -561,17 +506,6 @@
             echo "+ Voyager config path is: $VOYAGER_CONFIG_FILE"
             echo "+ The home path that you can use for union transactions is: $TX_HOME"
 
-            printIBCSetupInfo \
-              "ICS20 Transfer" \
-              "UCS01-RELAY" \
-              "$ICS20_TRANSFER_BANK_ADDRESS" \
-              "connection-0" \
-              "channel-0" \
-              "transfer" \
-              "$CW20_ADDRESS" \
-              "connection-0" \
-              "channel-0" \
-              "wasm.$CW20_ADDRESS"
 
             echo "---------------------------------------------------------------------"
             echo "+ To run this app on union, run the following command:"

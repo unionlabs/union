@@ -51,12 +51,6 @@ pub struct EvmChainConfigFields {
     /// The address of the `IBCHandler` smart contract.
     #[arg(long)]
     pub ibc_handler_address: Address,
-    /// The address of the `ICS20TransferBank` smart contract.
-    #[arg(long)]
-    pub ics20_transfer_bank_address: Address,
-    /// The address of the `ICS20Bank` smart contract.
-    #[arg(long)]
-    pub ics20_bank_address: Address,
 
     /// The signer that will be used to submit transactions by voyager.
     #[arg(
