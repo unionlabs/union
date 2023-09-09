@@ -74,7 +74,7 @@
 
           copyToRoot = pkgs.buildEnv {
             name = "image-root";
-            paths = [ pkgs.cacert ];
+            paths = [ pkgs.coreutils pkgs.cacert ];
             pathsToLink = [ "/bin" ];
           };
           config = {
