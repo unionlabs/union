@@ -506,15 +506,6 @@
             echo "+ Voyager config path is: $VOYAGER_CONFIG_FILE"
             echo "+ The home path that you can use for union transactions is: $TX_HOME"
 
-            printIBCSetupInfo \
-              "UCS01-RELAY" \
-              "connection-0" \
-              "channel-0" \
-              "transfer" \
-              "$CW20_ADDRESS" \
-              "connection-0" \
-              "channel-0" \
-              "wasm.$CW20_ADDRESS"
 
             echo "---------------------------------------------------------------------"
             echo "+ To run this app on union, run the following command:"
