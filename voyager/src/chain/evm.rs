@@ -1400,10 +1400,6 @@ impl<C: ChainSpec> Cometbls<C> {
                     }]
                     .to_vec(),
                 },
-                timestamp: SystemTime::now()
-                    .duration_since(UNIX_EPOCH)
-                    .unwrap()
-                    .as_secs(),
             },
         }
     }

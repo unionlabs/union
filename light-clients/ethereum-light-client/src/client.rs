@@ -230,7 +230,7 @@ impl IbcClient for EthereumLightClient {
                 .proofs
                 .get(0)
                 .ok_or(Error::EmptyProof)?
-                .value
+                .storage_hash
                 .as_slice()
                 .try_into()
                 .map_err(|_| Error::InvalidProofFormat)?;

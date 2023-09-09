@@ -7,8 +7,8 @@
         src = pkgs.fetchFromGitHub {
           owner = "neoeinstein";
           repo = "protoc-gen-prost";
-          rev = "44d3fc389cd05e4e8060fe296770677d1f066e16";
-          hash = "sha256-NqZdLHRo3tIudGiU9hev4oX8jsoz1aANxw9scBMGCqk=";
+          rev = "1a6d3593622af18b75a4a79f545f8530cdaf444f";
+          hash = "sha256-2DeFm3vE1q4KVMQlskJTHZnD7L5b6S0E50kZFF7ksN0=";
         };
       };
 

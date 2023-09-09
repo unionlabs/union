@@ -45,7 +45,6 @@ message Header {
   TrustedSyncCommittee trusted_sync_committee = 1;
   LightClientUpdate consensus_update = 2;
   AccountUpdate account_update = 3;
-  uint64 timestamp = 4;
 }
 
 message TrustedSyncCommittee {

@@ -80,8 +80,6 @@ pub struct Header {
     pub consensus_update: ::core::option::Option<LightClientUpdate>,
     #[prost(message, optional, tag = "3")]
     pub account_update: ::core::option::Option<AccountUpdate>,
-    #[prost(uint64, tag = "4")]
-    pub timestamp: u64,
 }
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
