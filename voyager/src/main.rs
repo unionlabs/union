@@ -356,49 +356,8 @@ async fn do_main(args: cli::AppArgs) -> Result<(), anyhow::Error> {
                 timeout_timestamp: None,
                 memo: None,
             };
-
-            match chain_config {
-                ChainConfig::Evm(EvmChainConfig::Minimal(evm_config)) => {
-                    Evm::<Minimal>::new(evm_config.clone())
-                        .await
-                        .transfer(
-                            msg(hex::encode(evm_config.signer.clone().value().to_bytes())),
-                            evm_config.ics20_transfer_bank_address.clone(),
-                        )
-                        .await;
-                }
-                ChainConfig::Evm(EvmChainConfig::Mainnet(evm_config)) => {
-                    Evm::<Mainnet>::new(evm_config.clone())
-                        .await
-                        .transfer(
-                            msg(hex::encode(evm_config.signer.clone().value().to_bytes())),
-                            evm_config.ics20_transfer_bank_address.clone(),
-                        )
-                        .await;
-                }
-                ChainConfig::Union(_) => bail!("not currently supported"),
-            }
         }
         Command::Query(query) => match query {
-            QueryCmd::Balances { on, who, denom } => {
-                let chain_config = voyager_config.chain.get(&on).unwrap();
-
-                match chain_config {
-                    ChainConfig::Evm(EvmChainConfig::Minimal(evm_config)) => {
-                        Evm::<Minimal>::new(evm_config.clone())
-                            .await
-                            .balance_of(evm_config.ics20_bank_address.clone(), who.into(), denom)
-                            .await;
-                    }
-                    ChainConfig::Evm(EvmChainConfig::Mainnet(evm_config)) => {
-                        Evm::<Mainnet>::new(evm_config.clone())
-                            .await
-                            .balance_of(evm_config.ics20_bank_address.clone(), who.into(), denom)
-                            .await;
-                    }
-                    ChainConfig::Union(_) => bail!("not currently supported"),
-                }
-            }
             QueryCmd::Client { on, client_id } => {
                 let json = match voyager_config.chain[&on].clone() {
                     ChainConfig::Evm(EvmChainConfig::Mainnet(evm)) => {
@@ -431,6 +390,7 @@ async fn do_main(args: cli::AppArgs) -> Result<(), anyhow::Error> {
             }
             QueryCmd::Connection {} => todo!(),
             QueryCmd::Channel {} => todo!(),
+            QueryCmd::Balances { on, who, denom } => todo!(),
         },
         Command::Setup(cmd) => match cmd {
             // TODO(aeryz): this might go into channel as well, since it's highly coupled with it
@@ -473,22 +433,7 @@ async fn do_main(args: cli::AppArgs) -> Result<(), anyhow::Error> {
                     _ => panic!("Not supported."),
                 }
             }
-            cli::SetupCmd::SetOperator { on } => {
-                let chain_config = voyager_config.chain.get(&on).unwrap();
-
-                match chain_config {
-                    ChainConfig::Evm(EvmChainConfig::Minimal(evm_config)) => {
-                        Evm::<Minimal>::new(evm_config.clone())
-                            .await
-                            .ics20_bank_set_operator(
-                                evm_config.ics20_bank_address.clone(),
-                                evm_config.ics20_transfer_bank_address.clone(),
-                            )
-                            .await;
-                    }
-                    _ => panic!("Not supported."),
-                }
-            }
+            cli::SetupCmd::SetOperator { on } => todo!(),
         },
         Command::Ibc(IbcCmd::Query {
             on,
@@ -517,6 +462,7 @@ async fn do_main(args: cli::AppArgs) -> Result<(), anyhow::Error> {
 
             println!("{json}");
         }
+        _ => bail!("Command not supported"),
     }
 
     std::fs::write(
