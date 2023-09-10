@@ -196,26 +196,25 @@ pub trait TransferProtocol {
             .add_messages(refund_msgs))
     }
 
-    fn make_receive_phase1_execute(
+    fn receive_transfer(
         &mut self,
-        raw_packet: impl Into<Binary>,
-    ) -> Result<CosmosMsg<Self::CustomMsg>, Self::Error>;
+        receiver: &str,
+        tokens: Vec<TransferToken>,
+    ) -> Result<Vec<CosmosMsg<Self::CustomMsg>>, Self::Error>;
 
-    fn receive_phase0(
+    fn receive(
         &mut self,
         raw_packet: impl Into<Binary> + Clone,
     ) -> IbcReceiveResponse<Self::CustomMsg> {
-        let handle = || -> Result<IbcReceiveResponse<Self::CustomMsg>, Self::Error> {
+        let mut handle = || -> Result<IbcReceiveResponse<Self::CustomMsg>, Self::Error> {
             let packet = Self::Packet::try_from(raw_packet.clone().into())?;
 
             // NOTE: The default message ack is always successful and only
             // overwritten if the submessage execution revert via the reply handler.
-            // the caller MUST ENSURE that the reply is threaded through the
-            // protocol.
-            let execute_msg = SubMsg::reply_on_error(
-                self.make_receive_phase1_execute(raw_packet)?,
-                Self::RECEIVE_REPLY_ID,
-            );
+            let transfer_msgs = self
+                .receive_transfer(packet.receiver(), packet.tokens())?
+                .into_iter()
+                .map(|msg| SubMsg::reply_on_error(msg, Self::RECEIVE_REPLY_ID));
 
             Ok(IbcReceiveResponse::new()
                 .set_ack(Self::ack_success().try_into()?)
@@ -232,7 +231,7 @@ pub trait TransferProtocol {
                             |TransferToken { denom, amount }| (format!("denom:{}", denom), amount),
                         )),
                 )
-                .add_submessage(execute_msg))
+                .add_submessages(transfer_msgs))
         };
 
         match handle() {
@@ -240,27 +239,6 @@ pub trait TransferProtocol {
             // NOTE: same branch as if the submessage fails
             Err(err) => Self::receive_error(err),
         }
-    }
-
-    fn receive_phase1_transfer(
-        &mut self,
-        receiver: &str,
-        tokens: Vec<TransferToken>,
-    ) -> Result<Vec<CosmosMsg<Self::CustomMsg>>, Self::Error>;
-
-    fn receive_phase1(
-        &mut self,
-        raw_packet: impl Into<Binary>,
-    ) -> Result<Response<Self::CustomMsg>, Self::Error> {
-        let packet = Self::Packet::try_from(raw_packet.into())?;
-
-        // Only the running contract is allowed to execute this message
-        if self.caller() != self.self_addr() {
-            return Err(ProtocolError::Unauthorized.into());
-        }
-
-        Ok(Response::new()
-            .add_messages(self.receive_phase1_transfer(packet.receiver(), packet.tokens())?))
     }
 
     fn receive_error(error: impl Debug) -> IbcReceiveResponse<Self::CustomMsg> {

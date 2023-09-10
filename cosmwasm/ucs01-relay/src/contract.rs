@@ -13,12 +13,13 @@ use ucs01_relay_api::{
 
 use crate::{
     error::ContractError,
+    ibc::enforce_order_and_version,
     msg::{
         ChannelResponse, ConfigResponse, ExecuteMsg, InitMsg, ListChannelsResponse, MigrateMsg,
-        PortResponse, QueryMsg, ReceivePhase1Msg, TransferMsg,
+        PortResponse, QueryMsg, TransferMsg,
     },
     protocol::{Ics20Protocol, ProtocolCommon, Ucs01Protocol},
-    state::{Config, ADMIN, CHANNEL_INFO, CHANNEL_STATE, CONFIG},
+    state::{ChannelInfo, Config, ADMIN, CHANNEL_INFO, CHANNEL_STATE, CONFIG},
 };
 
 const CONTRACT_NAME: &str = "crates.io:ucs01-relay";
@@ -27,7 +28,7 @@ const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
     mut deps: DepsMut,
-    _env: Env,
+    env: Env,
     _info: MessageInfo,
     msg: InitMsg,
 ) -> Result<Response, ContractError> {
@@ -39,6 +40,20 @@ pub fn instantiate(
 
     let admin = deps.api.addr_validate(&msg.gov_contract)?;
     ADMIN.set(deps.branch(), Some(admin))?;
+
+    if let Some(mut channel) = msg.channel {
+        // We need this to be able to compute the contract address. Otherwise, the contract address
+        // would depend on the contract's address before it's initialization.
+        channel.endpoint.port_id = format!("wasm.{}", env.contract.address);
+        enforce_order_and_version(&channel, None)?;
+        let info = ChannelInfo {
+            endpoint: channel.endpoint,
+            counterparty_endpoint: channel.counterparty_endpoint,
+            connection_id: channel.connection_id,
+            protocol_version: channel.version,
+        };
+        CHANNEL_INFO.save(deps.storage, &info.endpoint.channel_id, &info)?;
+    }
 
     Ok(Response::default())
 }
@@ -56,7 +71,6 @@ pub fn execute(
             let admin = deps.api.addr_validate(&admin)?;
             Ok(ADMIN.execute_update_admin(deps, info, Some(admin))?)
         }
-        ExecuteMsg::ReceivePhase1(msg) => execute_receive_phase1(deps, env, info, msg),
     }
 }
 
@@ -109,40 +123,6 @@ pub fn execute_transfer(
             },
         }
         .send(input, NoExtension),
-        v => Err(ContractError::UnknownProtocol {
-            channel_id: msg.channel,
-            protocol_version: v.into(),
-        }),
-    }
-}
-
-pub fn execute_receive_phase1(
-    deps: DepsMut,
-    env: Env,
-    info: MessageInfo,
-    msg: ReceivePhase1Msg,
-) -> Result<Response<TokenFactoryMsg>, ContractError> {
-    let channel_info = CHANNEL_INFO.load(deps.storage, &msg.channel)?;
-
-    match channel_info.protocol_version.as_str() {
-        Ics20Protocol::VERSION => Ics20Protocol {
-            common: ProtocolCommon {
-                deps,
-                env,
-                info,
-                channel: channel_info,
-            },
-        }
-        .receive_phase1(msg.raw_packet),
-        Ucs01Protocol::VERSION => Ucs01Protocol {
-            common: ProtocolCommon {
-                deps,
-                env,
-                info,
-                channel: channel_info,
-            },
-        }
-        .receive_phase1(msg.raw_packet),
         v => Err(ContractError::UnknownProtocol {
             channel_id: msg.channel,
             protocol_version: v.into(),

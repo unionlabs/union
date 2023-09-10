@@ -1,5 +1,5 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Binary, Uint512};
+use cosmwasm_std::{Uint512, IbcChannel};
 
 use crate::state::ChannelInfo;
 
@@ -9,6 +9,8 @@ pub struct InitMsg {
     pub default_timeout: u64,
     /// who can allow more contracts
     pub gov_contract: String,
+    /// If set, contract will setup the channel
+    pub channel: Option<IbcChannel>,
 }
 
 #[cw_serde]
@@ -20,9 +22,6 @@ pub enum ExecuteMsg {
     Transfer(TransferMsg),
     /// Change the admin (must be called by current admin)
     UpdateAdmin { admin: String },
-    /// Execute the receive phase 1 of the relay protocol. The packet is opaque and
-    /// fully handled by the underlying implementation.
-    ReceivePhase1(ReceivePhase1Msg),
 }
 
 /// This is the message we accept via Receive
@@ -36,12 +35,6 @@ pub struct TransferMsg {
     pub timeout: Option<u64>,
     /// The memo
     pub memo: String,
-}
-
-#[cw_serde]
-pub struct ReceivePhase1Msg {
-    pub channel: String,
-    pub raw_packet: Binary,
 }
 
 #[cw_serde]
