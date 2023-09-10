@@ -1,5 +1,5 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Uint512, IbcChannel};
+use cosmwasm_std::{IbcChannel, Uint512};
 
 use crate::state::ChannelInfo;
 

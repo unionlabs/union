@@ -40,6 +40,39 @@
           done
         '';
 
+      instantiateCw20Ics20 =
+        pkgs.writeShellApplication {
+          name = "instantiate-ucs01-relay";
+          runtimeInputs = [ ];
+          text =
+            ''
+              # This account will be the governor and admin of the contract that we instantiate
+              ACCOUNT_ADDRESS="$(${accountAddress})"
+
+              INIT_MESSAGE='{
+                  "default_timeout":300,
+                  "gov_contract": "'"$ACCOUNT_ADDRESS"'",
+                  "channel":{
+                    "endpoint":{
+                      "port_id": "",
+                      "channel_id":"channel-0"
+                    },
+                    "counterparty_endpoint":{
+                      "port_id":"transfer",
+                     "channel_id":"channel-0"
+                    },
+                    "order":"ORDER_UNORDERED",
+                    "version":"ucs01-0",
+                    "connection_id":"connection-0"
+                  }
+                }'
+
+              echo "$INIT_MESSAGE"
+
+              ${instantiateContract { code-id = 1; label = "ucs01-relay"; }}
+            '';
+        };
+
       instantiatePingPong =
         pkgs.writeShellApplication {
           name = "instantiate-ping-pong";
