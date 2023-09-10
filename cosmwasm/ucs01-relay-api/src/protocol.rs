@@ -116,6 +116,14 @@ pub trait TransferProtocol {
 
         let send_msgs = self.send_tokens(packet.sender(), packet.receiver(), packet.tokens())?;
 
+        let memo = Into::<String>::into(extension);
+
+        let transfer_event = if memo.is_empty() {
+            Event::new(TRANSFER_EVENT)
+        } else {
+            Event::new(TRANSFER_EVENT).add_attribute("memo", &memo)
+        };
+
         Ok(Response::new()
             .add_messages(send_msgs)
             .add_message(IbcMsg::SendPacket {
@@ -124,11 +132,10 @@ pub trait TransferProtocol {
                 timeout: input.current_time.plus_seconds(input.timeout_delta).into(),
             })
             .add_events([
-                Event::new(TRANSFER_EVENT)
+                transfer_event
                     .add_attributes([
                         ("sender", input.sender.as_str()),
                         ("receiver", input.receiver.as_str()),
-                        ("memo", extension.into().as_str()),
                     ])
                     .add_attributes(input.tokens.into_iter().map(
                         |TransferToken { denom, amount }| (format!("denom:{}", denom), amount),
