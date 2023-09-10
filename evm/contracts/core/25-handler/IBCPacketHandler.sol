@@ -77,6 +77,7 @@ abstract contract IBCPacketHandler is Context, ModuleManager {
         );
     }
 
+    // TODO: write packet receipts for timeout
     function recvPacket(IBCMsgs.MsgPacketRecv calldata msg_) external {
         IIBCModule module = lookupModuleByChannel(
             msg_.packet.destination_port,
