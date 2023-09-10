@@ -210,7 +210,10 @@ pub trait TransferProtocol {
             let packet = Self::Packet::try_from(raw_packet.clone().into())?;
 
             // NOTE: The default message ack is always successful and only
-            // overwritten if the submessage execution revert via the reply handler.
+            // overwritten if the submessage execution revert via the reply
+            // handler. The caller must ensure that the protocol is called in
+            // the reply handler via the `receive_error` for the acknowledgement
+            // to be overwritten.
             let transfer_msgs = self
                 .receive_transfer(packet.receiver(), packet.tokens())?
                 .into_iter()
