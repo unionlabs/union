@@ -1,5 +1,6 @@
 {
-  description = "Union is a trust-minimized, zero-knowledge bridging protocol, designed for censorship resistance, extremely high security and usage in decentralized finance.";
+  description =
+    "Union is a trust-minimized, zero-knowledge bridging protocol, designed for censorship resistance, extremely high security and usage in decentralized finance.";
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-parts = {
@@ -31,7 +32,8 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     ibc-go = {
-      url = "github:strangelove-ventures/ibc-go?rev=f8081a1828e47e11791b036659dd6d0e7be5473b";
+      url =
+        "github:strangelove-ventures/ibc-go?rev=f8081a1828e47e11791b036659dd6d0e7be5473b";
       flake = false;
     };
     ics23 = {
@@ -39,25 +41,57 @@
       flake = false;
     };
     cosmosproto = {
-      url = "github:cosmos/cosmos-proto?rev=78e33f25b874e7639f540037599d8ea1d161a62c";
+      url =
+        "github:cosmos/cosmos-proto?rev=78e33f25b874e7639f540037599d8ea1d161a62c";
       flake = false;
     };
     gogoproto = {
-      url = "github:cosmos/gogoproto?rev=b12c8cae0624d2518ab995c775410694dfa5d50e";
+      url =
+        "github:cosmos/gogoproto?rev=b12c8cae0624d2518ab995c775410694dfa5d50e";
       flake = false;
     };
     googleapis = {
-      url = "github:googleapis/googleapis?rev=6774ccbbc3f182f6ae3a32dca29e1da489ad8a8f";
+      url =
+        "github:googleapis/googleapis?rev=6774ccbbc3f182f6ae3a32dca29e1da489ad8a8f";
       flake = false;
     };
     nix-filter.url = "github:numtide/nix-filter";
+    get-flake.url = "github:ursi/get-flake";
     # uniond versions
-    v0_8_0.url = "github:unionlabs/union/release-v0.8.1";
-    v0_9_0.url = "github:unionlabs/union/release-v0.9.1";
-    v0_10_0.url = "github:unionlabs/union/release-v0.10.1";
-    v0_11_0.url = "github:unionlabs/union/release-v0.11.0";
+    v0_8_0 = {
+      url = "github:unionlabs/union/release-v0.8.1";
+      flake = false;
+    };
+    v0_9_0 = {
+      url = "github:unionlabs/union/release-v0.9.1";
+      flake = false;
+    };
+    v0_10_0 = {
+      url = "github:unionlabs/union/release-v0.10.1";
+      flake = false;
+    };
+    v0_11_0 = {
+      url = "github:unionlabs/union/release-v0.11.0";
+      flake = false;
+    };
   };
-  outputs = inputs@{ self, nixpkgs, flake-parts, nix-filter, crane, foundry, treefmt-nix, iohk-nix, ibc-go, ics23, cosmosproto, gogoproto, googleapis, ... }:
+  outputs =
+    inputs@{ self
+    , nixpkgs
+    , flake-parts
+    , nix-filter
+    , crane
+    , foundry
+    , treefmt-nix
+    , iohk-nix
+    , ibc-go
+    , ics23
+    , cosmosproto
+    , gogoproto
+    , googleapis
+    , get-flake
+    , ...
+    }:
     flake-parts.lib.mkFlake { inherit inputs; } {
       systems =
         [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" "x86_64-darwin" ];
@@ -94,22 +128,35 @@
         treefmt-nix.flakeModule
       ];
 
-      perSystem = { config, self', inputs', pkgs, treefmt, rust, crane, system, lib, ... }:
+      perSystem =
+        { config
+        , self'
+        , inputs'
+        , pkgs
+        , treefmt
+        , rust
+        , crane
+        , system
+        , lib
+        , ...
+        }:
         let
           mkUnpack = import ./tools/mkUnpack.nix { inherit pkgs; };
 
-          dbg = value: builtins.trace (pkgs.lib.generators.toPretty { } value) value;
+          dbg = value:
+            builtins.trace (pkgs.lib.generators.toPretty { } value) value;
         in
         {
           _module = {
             args = {
-              inherit nixpkgs dbg;
+              inherit nixpkgs dbg get-flake;
 
-              pkgs = nixpkgs.legacyPackages.${system}.appendOverlays (with inputs; [
-                rust-overlay.overlays.default
-                iohk-nix.overlays.crypto
-                foundry.overlay
-              ]);
+              pkgs = nixpkgs.legacyPackages.${system}.appendOverlays
+                (with inputs; [
+                  rust-overlay.overlays.default
+                  iohk-nix.overlays.crypto
+                  foundry.overlay
+                ]);
 
               ensureAtRepositoryRoot = ''
                 # If the current directory contains flake.nix, then we are at the repository root
@@ -129,17 +176,11 @@
                       epoch_length = "8";
                       jailed_validator_threshold = 10;
                     };
-                    slashing.params = {
-                      signed_blocks_window = 10;
-                    };
+                    slashing.params = { signed_blocks_window = 10; };
                   };
                 };
                 validatorCount = 4;
-                ethereum = {
-                  beacon = {
-                    validatorCount = 8;
-                  };
-                };
+                ethereum = { beacon = { validatorCount = 8; }; };
               };
 
               nix-filter = nix-filter.lib;
@@ -191,9 +232,7 @@
             };
           };
 
-          packages = {
-            default = self'.packages.uniond;
-          };
+          packages = { default = self'.packages.uniond; };
 
           checks = {
             spellcheck = pkgs.stdenv.mkDerivation {
@@ -251,12 +290,10 @@
               yarn
               yq
             ]);
-            nativeBuildInputs = [
-              config.treefmt.build.wrapper
-            ] ++ lib.attrsets.attrValues config.treefmt.build.programs;
+            nativeBuildInputs = [ config.treefmt.build.wrapper ]
+              ++ lib.attrsets.attrValues config.treefmt.build.programs;
             GOPRIVATE = "github.com/unionlabs/*";
           };
-
 
           treefmt =
             let
@@ -271,7 +308,8 @@
                   hash = "sha256-zodOB5hARb7Jrb6d4gqmBKEFKUg0ZNZKbTN7H4vJk2w=";
                 };
                 npmInstallFlags = "--include=dev";
-                npmDepsHash = "sha256-Hzc4j9icNxTJNNaZ3PrmLKcUVR26nu4KqLireP4WmZM=";
+                npmDepsHash =
+                  "sha256-Hzc4j9icNxTJNNaZ3PrmLKcUVR26nu4KqLireP4WmZM=";
               };
             in
             {
@@ -289,7 +327,8 @@
               settings.global.excludes = [ "**/vendor/**" ];
               programs.prettier.enable = true;
               settings.formatter.prettier = {
-                options = [ "--write" "--plugin-search-dir=${prettier-solidity}/lib" ];
+                options =
+                  [ "--write" "--plugin-search-dir=${prettier-solidity}/lib" ];
                 includes = [
                   "*.css"
                   "*.html"
@@ -312,6 +351,7 @@
 
   nixConfig = {
     extra-substituters = [ "https://union.cachix.org/" ];
-    extra-trusted-public-keys = [ "union.cachix.org-1:TV9o8jexzNVbM1VNBOq9fu8NK+hL6ZhOyOh0quATy+M=" ];
+    extra-trusted-public-keys =
+      [ "union.cachix.org-1:TV9o8jexzNVbM1VNBOq9fu8NK+hL6ZhOyOh0quATy+M=" ];
   };
 }

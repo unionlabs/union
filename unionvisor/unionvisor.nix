@@ -1,66 +1,71 @@
-{ self, ... }: {
-  perSystem = { self', pkgs, system, config, inputs', crane, stdenv, ... }:
+{ self, inputs, ... }: {
+  perSystem = { self', pkgs, system, config, inputs', crane, stdenv, get-flake, ... }:
     let
       swapDotsWithUnderscores = pkgs.lib.replaceStrings [ "." ] [ "_" ];
 
       unionvisorAll = crane.buildWorkspaceMember {
         crateDirFromRoot = "unionvisor";
-        additionalTestSrcFilter = path: _type: pkgs.lib.hasPrefix "unionvisor/src/testdata/" path;
+        additionalTestSrcFilter = path: _type:
+          pkgs.lib.hasPrefix "unionvisor/src/testdata/" path;
         cargoTestExtraAttrs = {
           partitions = 1;
           partitionType = "count";
           preConfigureHooks = [
-            "cp -r ${self'.packages.uniond}/bin/uniond $PWD/unionvisor/src/testdata/test_init_cmd/bundle/bins/genesis\n"
-            "echo 'patching testdata'\n"
-            "patchShebangs $PWD/unionvisor/src/testdata\n"
+            ''
+              cp -r ${self'.packages.uniond}/bin/uniond $PWD/unionvisor/src/testdata/test_init_cmd/bundle/bins/genesis
+            ''
+            ''
+              echo 'patching testdata'
+            ''
+            ''
+              patchShebangs $PWD/unionvisor/src/testdata
+            ''
           ];
         };
       };
 
-      mkBundle = name: versions: meta: pkgs.linkFarm "union-bundle-${name}" ([
-        {
-          name = "meta.json";
-          path = pkgs.writeText "meta.json" (builtins.toJSON meta);
-        }
-        {
-          name = "unionvisor";
-          path = "${unionvisorAll.packages.unionvisor}/bin/unionvisor";
-        }
-      ] ++ map
-        (version: {
-          name = "${meta.versions_directory}/${version}/${meta.binary_name}";
-          path = pkgs.lib.getExe inputs'."${swapDotsWithUnderscores version}".packages.uniond;
-        })
-        versions);
+      mkBundle = name: versions: meta:
+        pkgs.linkFarm "union-bundle-${name}" ([
+          {
+            name = "meta.json";
+            path = pkgs.writeText "meta.json" (builtins.toJSON meta);
+          }
+          {
+            name = "unionvisor";
+            path = "${unionvisorAll.packages.unionvisor}/bin/unionvisor";
+          }
+        ] ++ map
+          (version: {
+            name =
+              "${meta.versions_directory}/${version}/${meta.binary_name}";
+            path = pkgs.lib.getExe (get-flake "${inputs."${swapDotsWithUnderscores version}"}").packages.${system}.uniond;
+          })
+          versions);
     in
     {
       inherit (unionvisorAll) checks;
       packages = {
         inherit (unionvisorAll.packages) unionvisor;
-
-        bundle-testnet = mkBundle "testnet" [ "v0.8.0" "v0.9.0" "v0.10.0" "v0.11.0" ] {
-          binary_name = "uniond";
-          versions_directory = "versions";
-          fallback_version = "v0.8.0";
-        };
+        bundle-testnet =
+          mkBundle "testnet" [ "v0.8.0" "v0.9.0" "v0.10.0" "v0.11.0" ] {
+            binary_name = "uniond";
+            versions_directory = "versions";
+            fallback_version = "v0.8.0";
+          };
       };
     };
 
   flake.nixosModules.unionvisor = { lib, pkgs, config, ... }:
     with lib;
-    let
-      cfg = config.services.unionvisor;
-    in
-    {
+    let cfg = config.services.unionvisor;
+    in {
       options.services.unionvisor = {
         enable = mkEnableOption "Unionvisor service";
         bundle = mkOption {
           type = types.package;
           default = self.packages.${pkgs.system}.bundle-testnet;
         };
-        moniker = mkOption {
-          type = types.str;
-        };
+        moniker = mkOption { type = types.str; };
       };
 
       config = mkIf cfg.enable {
@@ -70,9 +75,9 @@
               name = "unionvisor-systemd";
               runtimeInputs = [ pkgs.coreutils cfg.bundle ];
               text = ''
-                ${pkgs.coreutils}/bin/mkdir -p /var/lib/unionvisor 
-                cd /var/lib/unionvisor 
-                HOME=/var/lib/unionvisor ${cfg.bundle}/unionvisor --root /var/lib/unionvisor init --bundle ${cfg.bundle} --moniker ${cfg.moniker} --allow-dirty 
+                ${pkgs.coreutils}/bin/mkdir -p /var/lib/unionvisor
+                cd /var/lib/unionvisor
+                HOME=/var/lib/unionvisor ${cfg.bundle}/unionvisor --root /var/lib/unionvisor init --bundle ${cfg.bundle} --moniker ${cfg.moniker} --allow-dirty
                 HOME=/var/lib/unionvisor ${cfg.bundle}/unionvisor --root /var/lib/unionvisor run --bundle ${cfg.bundle} 
               '';
             };
