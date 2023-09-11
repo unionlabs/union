@@ -589,6 +589,7 @@ upgradability
 upgradeclient
 upgradekeeper
 upgradetypes
+ursi
 utilised
 utilising
 uunionx
