@@ -40,7 +40,7 @@
           done
         '';
 
-      instantiateCw20Ics20 =
+      instantiateCwUCS01 =
         pkgs.writeShellApplication {
           name = "instantiate-ucs01-relay";
           runtimeInputs = [ ];
@@ -333,6 +333,7 @@
 
               COMETBLS_ADDRESS=$(echo "$EVM_CONTRACTS_ARG" | jq .cometbls_client_address -r)
               IBC_HANDLER_ADDRESS=$(echo "$EVM_CONTRACTS_ARG" | jq .ibc_handler_address -r)
+              UCS01RELAY=$(echo "$EVM_CONTRACTS_ARG" | jq .ucs01_relay_address -r)
               WASM_CODE_ID=$(cat ${self'.packages.devnet-genesis}/code-ids/ethereum_light_client_minimal)
               EVM_WALLET=$(cat ${self'.packages.devnet-evm-config}/dev-key0.prv)
 
@@ -366,6 +367,9 @@
                 deployEVMPingPong
             }
 
+            instantiateCwUCS01() {
+              ${instantiateCwUCS01}/bin/instantiate-ucs01-relay
+            }
 
             instantiatePingPong() {
               ${instantiatePingPong}/bin/instantiate-ping-pong "$PING_PONG_TIMEOUT"
@@ -422,7 +426,6 @@
                 --counterparty-port-id "$COUNTERPARTY_PORT_ID"
               echo "+ Initial connection and channels are ready."
             }
-
 
             doHandshake() {
                 from_version="$1"
@@ -489,6 +492,8 @@
             unionAliveTest
 
             if [[ -z "$NO_DEPLOY_CONTRACTS" ]]; then
+              instantiateCwUCS01
+              sleep 6
               instantiatePingPong
               deployEVMContracts
             else
@@ -514,6 +519,7 @@
               exit 0
             fi;
 
+            setupInitialChannel "$UCS01RELAY" transfer "wasm.$CW20_ADDRESS" channel-0
             if [[ -z "$HANDSHAKE" ]]; then
               PING_PONG_CONNECTION="connection-0"
               PING_PONG_CHANNEL="channel-1"
@@ -533,12 +539,23 @@
 
             # We need the home so that the users can send transactions by using the testkey
             TX_HOME="$(mktemp -d)"
-            cp -r ${self'.packages.devnet-genesis}/* "$TX_HOME" 
+            cp -r ${self'.packages.devnet-genesis}/* "$TX_HOME"
 
             echo "--------------------------------"
             echo "+ Voyager config path is: $VOYAGER_CONFIG_FILE"
             echo "+ The home path that you can use for union transactions is: $TX_HOME"
 
+            printIBCSetupInfo \
+              "UCS01 Transfer" \
+              "UCS01-RELAY" \
+              "$UCS01RELAY" \
+              "connection-0" \
+              "channel-0" \
+              "transfer" \
+              "$CW20_ADDRESS" \
+              "connection-0" \
+              "channel-0" \
+              "wasm.$CW20_ADDRESS"
 
             echo "---------------------------------------------------------------------"
             echo "+ To run this app on union, run the following command:"
@@ -585,7 +602,7 @@
               --gas-adjustment 1.3 \
               --gas auto \
               --from ${keyName} -y \
-              --keyring-backend test \ 
+              --keyring-backend test \
               --chain-id ${chainId} \
               --home '"$TX_HOME"
 
