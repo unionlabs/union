@@ -1,5 +1,5 @@
-{ ... }: {
-  perSystem = { devnetConfig, pkgs, lib, self', inputs', ... }:
+{ inputs, ... }: {
+  perSystem = { devnetConfig, pkgs, lib, self', inputs', system, get-flake, ... }:
     let
       arion = inputs'.arion.packages.default;
 
@@ -23,7 +23,7 @@
           value = import ./services/unionvisor.nix {
             inherit pkgs;
             inherit id;
-            uniond = inputs'.v0_8_0.packages.uniond;
+            uniond = (get-flake inputs.v0_8_0).packages.${system}.uniond;
             unionvisor = self'.packages.unionvisor;
             devnet-genesis = self'.packages.minimal-genesis;
             devnet-validator-keys = self'.packages.minimal-validator-keys;
