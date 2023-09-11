@@ -105,14 +105,11 @@
             args = {
               inherit nixpkgs dbg;
 
-              pkgs = import nixpkgs {
-                inherit system;
-                overlays = with inputs; [
-                  rust-overlay.overlays.default
-                  iohk-nix.overlays.crypto
-                  foundry.overlay
-                ];
-              };
+              pkgs = nixpkgs.legacyPackages.${system}.appendOverlays (with inputs; [
+                rust-overlay.overlays.default
+                iohk-nix.overlays.crypto
+                foundry.overlay
+              ]);
 
               ensureAtRepositoryRoot = ''
                 # If the current directory contains flake.nix, then we are at the repository root
