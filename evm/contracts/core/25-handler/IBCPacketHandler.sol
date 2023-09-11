@@ -79,6 +79,12 @@ abstract contract IBCPacketHandler is Context, ModuleManager {
 
     // TODO: write packet receipts for timeout
     function recvPacket(IBCMsgs.MsgPacketRecv calldata msg_) external {
+        (bool success, bytes memory res) = ibcPacket.delegatecall(
+            abi.encodeWithSelector(IIBCPacket.recvPacket.selector, msg_)
+        );
+        if (!success) {
+            revert(_getRevertMsg(res));
+        }
         IIBCModule module = lookupModuleByChannel(
             msg_.packet.destination_port,
             msg_.packet.destination_channel
@@ -87,14 +93,8 @@ abstract contract IBCPacketHandler is Context, ModuleManager {
             msg_.packet,
             _msgSender()
         );
-        (bool success, bytes memory res) = ibcPacket.delegatecall(
-            abi.encodeWithSelector(IIBCPacket.recvPacket.selector, msg_)
-        );
-        if (!success) {
-            revert(_getRevertMsg(res));
-        }
         if (acknowledgement.length > 0) {
-            (success, ) = ibcPacket.delegatecall(
+            (success, res) = ibcPacket.delegatecall(
                 abi.encodeWithSelector(
                     IIBCPacket.writeAcknowledgement.selector,
                     msg_.packet.destination_port,
@@ -103,7 +103,9 @@ abstract contract IBCPacketHandler is Context, ModuleManager {
                     acknowledgement
                 )
             );
-            require(success);
+            if (!success) {
+                revert(_getRevertMsg(res));
+            }
             emit WriteAcknowledgement(
                 msg_.packet.destination_port,
                 msg_.packet.destination_channel,
