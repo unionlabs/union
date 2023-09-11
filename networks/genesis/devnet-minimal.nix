@@ -1,13 +1,13 @@
 #cspell:ignore abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz
-{ ... }: {
-  perSystem = { pkgs, inputs', ... }:
+{ inputs, ... }: {
+  perSystem = { pkgs, inputs', system, get-flake, ... }:
     let
       VALIDATOR_COUNT = 4;
       CHAIN_ID = "union-minimal-1";
       MNEMONIC = "wine parrot nominee girl exchange element pudding grow area twenty next junior come render shadow evidence sentence start rough debate feed all limb real";
       GENESIS_ACCOUNT_NAME = "testkey";
 
-      uniond = pkgs.lib.getExe inputs'.v0_8_0.packages.uniond;
+      uniond = pkgs.lib.getExe (get-flake inputs.v0_8_0).packages.${system}.uniond;
 
       mkNodeId = name:
         pkgs.runCommand "node-id" { } ''
