@@ -70,7 +70,7 @@
                   indexersJson = builtins.toJSON cfg.indexers;
                 in
                 ''
-                  ${pkgs.lib.getExe cfg.package} --url ${cfg.url} ${secretArg} --indexers ${indexersJson}
+                  ${pkgs.lib.getExe cfg.package} --url ${cfg.url} ${secretArg} --indexers '${indexersJson}'
                 '';
             };
           in
