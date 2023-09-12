@@ -116,6 +116,7 @@
         ./tools/rust/crane.nix
         ./tools/tera/tera.nix
         ./tools/docgen/docgen.nix
+        ./tools/hasura-cli/hasura-cli.nix
         ./tools/todo-comment.nix
         ./networks/e2e-setup.nix
         ./networks/devnet.nix
