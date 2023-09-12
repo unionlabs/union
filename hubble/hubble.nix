@@ -25,4 +25,44 @@
         };
       };
     };
+
+  flake.nixosModules.hubble = { lib, pkgs, config, ... }:
+    with lib;
+    let cfg = config.services.hubble;
+    in {
+      options.services.hubble = {
+        enable = mkEnableOption "Hubble service";
+        package = mkOption {
+          type = types.package;
+          default = self.packages.${pkgs.system}.hubble;
+        };
+        url = mkOption {
+          type = types.string;
+          default = "https://graphql.union.build";
+        };
+      };
+
+      config = mkIf cfg.enable {
+        systemd.services.hubble =
+          let
+            hubble-systemd-script = pkgs.writeShellApplication {
+              name = "hubble-systemd";
+              runtimeInputs = [ pkgs.coreutils cfg.package ];
+              text = ''
+                ${lib.getExe cfg.package} --url ${cfg.url}
+              '';
+            };
+          in
+          {
+            wantedBy = [ "multi-user.target" ];
+            description = "Hubble";
+            serviceConfig = {
+              Type = "simple";
+              ExecStart = pkgs.lib.getExe unionvisor-systemd-script;
+              Restart = mkForce "always";
+            };
+          };
+      };
+    };
+
 }
