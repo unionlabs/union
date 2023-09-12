@@ -37,11 +37,11 @@
           default = self.packages.${pkgs.system}.hubble;
         };
         url = mkOption {
-          type = types.string;
+          type = types.str;
           default = "https://graphql.union.build";
         };
         hasura-admin-secret = mkOption {
-          type = types.string;
+          type = types.str;
           default = "";
         };
         indexers = mkOption {
