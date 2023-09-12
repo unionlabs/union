@@ -9,6 +9,7 @@
       HUBBLE_URL = "http://localhost:8080/v1/graphql";
       HUBBLE_INDEXERS = ''{"type": "Tm", "url": "http://localhost:26657"}'';
       HUBBLE_SECRET = "secret";
+      RUST_LOG = "WARN";
     };
     depends_on = {
       hasura = {
