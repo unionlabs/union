@@ -59,7 +59,6 @@ contract UCS01Relay is IBCAppBase {
 
     mapping(string => address) public denomToAddress;
     mapping(address => string) public addressToDenom;
-
     mapping(string => mapping(string => IbcCoreChannelV1Counterparty.Data))
         public counterpartyEndpoints;
 
@@ -140,13 +139,16 @@ contract UCS01Relay is IBCAppBase {
         IbcCoreChannelV1Counterparty.Data
             memory counterparty = counterpartyEndpoints[portId][channelId];
         Token[] memory normalizedTokens = new Token[](tokens.length);
+        // For each token, we transfer them locally then:
+        // - if the token is locally native, keep it escrowed
+        // - if the token is remote native, burn the wrapper
         for (uint256 i = 0; i < tokens.length; i++) {
             LocalToken calldata localToken = tokens[i];
             SafeERC20.safeTransferFrom(
                 IERC20(localToken.denom),
                 msg.sender,
                 address(this),
-                uint256(localToken.amount)
+                localToken.amount
             );
             string memory addressDenom = addressToDenom[localToken.denom];
             if (bytes(addressDenom).length != 0) {
@@ -234,8 +236,8 @@ contract UCS01Relay is IBCAppBase {
         address receiver = hexToAddress(packet.sender);
         for (uint256 i = 0; i < packet.tokens.length; i++) {
             Token memory token = packet.tokens[i];
-            // Either we tried to send back a counterparty native token
-            // which we wrapped, or a locally native token that we escrowed.
+            // Either we tried to send back a remote native token
+            // which we burnt, or a locally native token that we escrowed.
             address denomAddress = denomToAddress[token.denom];
             if (denomAddress != address(0)) {
                 IERC20Denom(denomAddress).mint(receiver, token.amount);
