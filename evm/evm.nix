@@ -161,9 +161,11 @@
               { path = "clients/${verifierPrefix}Verifier.sol"; name = "${verifierPrefix}Verifier"; }
               { path = "clients/ICS23MembershipVerifier.sol"; name = "ICS23MembershipVerifier"; }
               { path = "clients/CometblsClient.sol"; name = "CometblsClient"; args = ''--constructor-args "$DEVNETOWNABLEIBCHANDLER" "''$${pkgs.lib.strings.toUpper network}VERIFIER" "$ICS23MEMBERSHIPVERIFIER"''; }
+
+              { path = "apps/ucs/01-relay/Relay.sol"; name = "UCS01Relay"; args = ''--constructor-args "$DEVNETOWNABLEIBCHANDLER" "1"'';}
             ]}
 
-            echo "{\"ibc_handler_address\": \"$DEVNETOWNABLEIBCHANDLER\", \"cometbls_client_address\": \"$COMETBLSCLIENT\"  }"
+            echo "{\"ibc_handler_address\": \"$DEVNETOWNABLEIBCHANDLER\", \"cometbls_client_address\": \"$COMETBLSCLIENT\", \"ucs01_relay_address\": \"$UCS01RELAY\"  }"
 
             rm -rf "$OUT"
           '';

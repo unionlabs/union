@@ -37,11 +37,11 @@ abstract contract IBCAppBase is Context, IIBCModule {
      */
     function onChanOpenInit(
         IbcCoreChannelV1GlobalEnums.Order,
-        string[] calldata,
-        string calldata,
-        string calldata,
-        IbcCoreChannelV1Counterparty.Data calldata,
-        string calldata
+        string[] calldata connectionHops,
+        string calldata portId,
+        string calldata channelId,
+        IbcCoreChannelV1Counterparty.Data calldata counterpartyEndpoint,
+        string calldata version
     ) external virtual override onlyIBC {}
 
     /**
@@ -51,12 +51,12 @@ abstract contract IBCAppBase is Context, IIBCModule {
      */
     function onChanOpenTry(
         IbcCoreChannelV1GlobalEnums.Order,
-        string[] calldata,
-        string calldata,
-        string calldata,
-        IbcCoreChannelV1Counterparty.Data calldata,
-        string calldata,
-        string calldata
+        string[] calldata connectionHops,
+        string calldata portId,
+        string calldata channelId,
+        IbcCoreChannelV1Counterparty.Data calldata counterpartyEndpoint,
+        string calldata version,
+        string calldata counterpartyVersion
     ) external virtual override onlyIBC {}
 
     /**
@@ -106,8 +106,8 @@ abstract contract IBCAppBase is Context, IIBCModule {
      * NOTE: You should apply an `onlyIBC` modifier to the function if a derived contract overrides it.
      */
     function onRecvPacket(
-        IbcCoreChannelV1Packet.Data calldata,
-        address
+        IbcCoreChannelV1Packet.Data calldata packet,
+        address relayer
     )
         external
         virtual
@@ -122,8 +122,8 @@ abstract contract IBCAppBase is Context, IIBCModule {
      * NOTE: You should apply an `onlyIBC` modifier to the function if a derived contract overrides it.
      */
     function onAcknowledgementPacket(
-        IbcCoreChannelV1Packet.Data calldata,
-        bytes calldata,
-        address
+        IbcCoreChannelV1Packet.Data calldata packet,
+        bytes calldata acknowledgement,
+        address relayer
     ) external virtual override onlyIBC {}
 }

@@ -1,6 +1,6 @@
 use cosmwasm_std::{
-    Addr, BankMsg, Binary, Coin, CosmosMsg, DepsMut, Env, IbcEndpoint, IbcOrder, MessageInfo,
-    StdResult, Uint128,
+    Addr, BankMsg, Coin, CosmosMsg, DepsMut, Env, IbcEndpoint, IbcOrder, MessageInfo, StdResult,
+    Uint128,
 };
 use token_factory_api::{TokenFactoryMsg, TokenMsg};
 use ucs01_relay_api::{
@@ -13,7 +13,6 @@ use ucs01_relay_api::{
 
 use crate::{
     error::ContractError,
-    msg::{ExecuteMsg, ReceivePhase1Msg},
     state::{ChannelInfo, CHANNEL_STATE, FOREIGN_TOKEN_CREATED},
 };
 
@@ -257,22 +256,6 @@ impl<'a> ForTokens for StatefulRefundTokens<'a> {
     }
 }
 
-fn make_phase1_execute(
-    contract_address: String,
-    channel_id: String,
-    raw_packet: Binary,
-) -> Result<CosmosMsg<TokenFactoryMsg>, ContractError> {
-    Ok(cosmwasm_std::wasm_execute(
-        contract_address,
-        &ExecuteMsg::ReceivePhase1(ReceivePhase1Msg {
-            channel: channel_id,
-            raw_packet,
-        }),
-        Default::default(),
-    )?
-    .into())
-}
-
 pub struct ProtocolCommon<'a> {
     pub deps: DepsMut<'a>,
     pub env: Env,
@@ -359,18 +342,7 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
         )
     }
 
-    fn make_receive_phase1_execute(
-        &mut self,
-        raw_packet: impl Into<Binary>,
-    ) -> Result<CosmosMsg<Self::CustomMsg>, Self::Error> {
-        make_phase1_execute(
-            self.common.env.contract.address.clone().into(),
-            self.common.channel.endpoint.channel_id.clone(),
-            raw_packet.into(),
-        )
-    }
-
-    fn receive_phase1_transfer(
+    fn receive_transfer(
         &mut self,
         receiver: &str,
         tokens: Vec<TransferToken>,
@@ -467,18 +439,7 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
         )
     }
 
-    fn make_receive_phase1_execute(
-        &mut self,
-        raw_packet: impl Into<Binary>,
-    ) -> Result<CosmosMsg<Self::CustomMsg>, Self::Error> {
-        make_phase1_execute(
-            self.common.env.contract.address.clone().into(),
-            self.common.channel.endpoint.channel_id.clone(),
-            raw_packet.into(),
-        )
-    }
-
-    fn receive_phase1_transfer(
+    fn receive_transfer(
         &mut self,
         receiver: &str,
         tokens: Vec<TransferToken>,

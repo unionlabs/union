@@ -1,0 +1,310 @@
+pragma solidity ^0.8.18;
+
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "solady/utils/LibString.sol";
+import "solidity-stringutils/strings.sol";
+import "../../../core/25-handler/IBCHandler.sol";
+import "../../Base.sol";
+import "./IERC20Denom.sol";
+import "./ERC20Denom.sol";
+
+struct LocalToken {
+    address denom;
+    uint128 amount;
+}
+
+struct Token {
+    string denom;
+    uint256 amount;
+}
+
+struct RelayPacket {
+    string sender;
+    string receiver;
+    Token[] tokens;
+}
+
+library RelayPacketLib {
+    function encode(
+        RelayPacket memory packet
+    ) internal pure returns (bytes memory) {
+        return abi.encode(packet.sender, packet.receiver, packet.tokens);
+    }
+
+    function decode(
+        bytes memory packet
+    ) internal pure returns (RelayPacket memory) {
+        (
+            string memory sender,
+            string memory receiver,
+            Token[] memory tokens
+        ) = abi.decode(packet, (string, string, Token[]));
+        return
+            RelayPacket({sender: sender, receiver: receiver, tokens: tokens});
+    }
+}
+
+contract UCS01Relay is IBCAppBase {
+    bytes1 constant ACK_SUCCESS = 0x01;
+    bytes1 constant ACK_FAILURE = 0x00;
+
+    using RelayPacketLib for RelayPacket;
+    using LibString for *;
+    using strings for *;
+
+    IBCHandler private ibcHandler;
+    uint64 private revisionNumber;
+
+    mapping(string => address) public denomToAddress;
+    mapping(address => string) public addressToDenom;
+    mapping(string => mapping(string => IbcCoreChannelV1Counterparty.Data))
+        public counterpartyEndpoints;
+
+    event DenomCreated(string denom, address token);
+    event Received(
+        string sender,
+        address receiver,
+        string denom,
+        address token,
+        uint256 amount
+    );
+
+    constructor(IBCHandler _ibcHandler, uint64 _revisionNumber) {
+        ibcHandler = _ibcHandler;
+        revisionNumber = _revisionNumber;
+    }
+
+    function ibcAddress() public view virtual override returns (address) {
+        return address(ibcHandler);
+    }
+
+    // It expect 0x.. prefix
+    function hexToAddress(
+        string memory _a
+    ) internal pure returns (address _parsedAddress) {
+        bytes memory tmp = bytes(_a);
+        uint160 iaddr = 0;
+        uint160 b1;
+        uint160 b2;
+        for (uint256 i = 2; i < 2 + 2 * 20; i += 2) {
+            iaddr *= 256;
+            b1 = uint160(uint8(tmp[i]));
+            b2 = uint160(uint8(tmp[i + 1]));
+            if ((b1 >= 97) && (b1 <= 102)) {
+                b1 -= 87;
+            } else if ((b1 >= 65) && (b1 <= 70)) {
+                b1 -= 55;
+            } else if ((b1 >= 48) && (b1 <= 57)) {
+                b1 -= 48;
+            }
+            if ((b2 >= 97) && (b2 <= 102)) {
+                b2 -= 87;
+            } else if ((b2 >= 65) && (b2 <= 70)) {
+                b2 -= 55;
+            } else if ((b2 >= 48) && (b2 <= 57)) {
+                b2 -= 48;
+            }
+            iaddr += (b1 * 16 + b2);
+        }
+        return address(iaddr);
+    }
+
+    function makeDenomPrefix(
+        string memory portId,
+        string memory channelId
+    ) public view returns (string memory) {
+        return string(abi.encodePacked(portId, "/", channelId, "/"));
+    }
+
+    function makeForeignDenom(
+        string memory portId,
+        string memory channelId,
+        string memory denom
+    ) public view returns (string memory) {
+        return
+            string(abi.encodePacked(makeDenomPrefix(portId, channelId), denom));
+    }
+
+    // NOTE: uint128 limitation from cosmwasm_std Coin type for transfers.
+    function send(
+        string calldata portId,
+        string calldata channelId,
+        string calldata receiver,
+        LocalToken[] calldata tokens,
+        uint64 counterpartyTimeoutRevisionNumber,
+        uint64 counterpartyTimeoutRevisionHeight
+    ) public {
+        IbcCoreChannelV1Counterparty.Data
+            memory counterparty = counterpartyEndpoints[portId][channelId];
+        Token[] memory normalizedTokens = new Token[](tokens.length);
+        // For each token, we transfer them locally then:
+        // - if the token is locally native, keep it escrowed
+        // - if the token is remote native, burn the wrapper
+        for (uint256 i = 0; i < tokens.length; i++) {
+            LocalToken calldata localToken = tokens[i];
+            SafeERC20.safeTransferFrom(
+                IERC20(localToken.denom),
+                msg.sender,
+                address(this),
+                localToken.amount
+            );
+            string memory addressDenom = addressToDenom[localToken.denom];
+            if (bytes(addressDenom).length != 0) {
+                IERC20Denom(localToken.denom).burn(
+                    address(this),
+                    localToken.amount
+                );
+            } else {
+                addressDenom = localToken.denom.toHexString();
+            }
+            normalizedTokens[i].denom = addressDenom;
+            normalizedTokens[i].amount = uint256(localToken.amount);
+        }
+        RelayPacket memory packet = RelayPacket({
+            sender: string(abi.encodePacked(msg.sender)),
+            receiver: receiver,
+            tokens: normalizedTokens
+        });
+        ibcHandler.sendPacket(
+            portId,
+            channelId,
+            IbcCoreClientV1Height.Data({
+                revision_number: counterpartyTimeoutRevisionNumber,
+                revision_height: counterpartyTimeoutRevisionHeight
+            }),
+            0,
+            packet.encode()
+        );
+    }
+
+    function onRecvPacket(
+        IbcCoreChannelV1Packet.Data calldata ibcPacket,
+        address relayer
+    ) external virtual override onlyIBC returns (bytes memory acknowledgement) {
+        // TODO: self call to avoid any error and always yield an ack
+        RelayPacket memory packet = RelayPacketLib.decode(ibcPacket.data);
+        string memory prefix = makeDenomPrefix(
+            ibcPacket.destination_port,
+            ibcPacket.destination_channel
+        );
+        for (uint256 i = 0; i < packet.tokens.length; i++) {
+            Token memory token = packet.tokens[i];
+            strings.slice memory denomSlice = token.denom.toSlice();
+            // This will trim the denom IFF it is prefixed
+            strings.slice memory trimedDenom = denomSlice.beyond(
+                prefix.toSlice()
+            );
+            address receiver = hexToAddress(packet.receiver);
+            address denomAddress;
+            string memory denom;
+            if (!denomSlice.equals(trimedDenom)) {
+                denom = trimedDenom.toString();
+                denomAddress = hexToAddress(denom);
+                IERC20(denomAddress).transfer(receiver, token.amount);
+            } else {
+                denom = makeForeignDenom(
+                    ibcPacket.source_port,
+                    ibcPacket.source_channel,
+                    token.denom
+                );
+                denomAddress = denomToAddress[denom];
+                if (denomAddress == address(0)) {
+                    denomAddress = address(new ERC20Denom(denom));
+                    denomToAddress[denom] = denomAddress;
+                    addressToDenom[denomAddress] = denom;
+                    emit DenomCreated(denom, denomAddress);
+                }
+                IERC20Denom(denomAddress).mint(receiver, token.amount);
+            }
+            emit Received(
+                packet.sender,
+                receiver,
+                denom,
+                denomAddress,
+                token.amount
+            );
+        }
+        return abi.encodePacked(ACK_SUCCESS);
+    }
+
+    // TODO: timeout
+
+    function refundTokens(RelayPacket memory packet) internal {
+        // W're going to refund, the receiver will be the sender.
+        address receiver = hexToAddress(packet.sender);
+        for (uint256 i = 0; i < packet.tokens.length; i++) {
+            Token memory token = packet.tokens[i];
+            // Either we tried to send back a remote native token
+            // which we burnt, or a locally native token that we escrowed.
+            address denomAddress = denomToAddress[token.denom];
+            if (denomAddress != address(0)) {
+                IERC20Denom(denomAddress).mint(receiver, token.amount);
+            } else {
+                // It must be in the form 0x...
+                denomAddress = hexToAddress(token.denom);
+                IERC20(denomAddress).transfer(receiver, token.amount);
+            }
+        }
+    }
+
+    function onAcknowledgementPacket(
+        IbcCoreChannelV1Packet.Data calldata ibcPacket,
+        bytes calldata acknowledgement,
+        address _relayer
+    ) external virtual override onlyIBC {
+        require(acknowledgement.length == 1, "relay: single byte ack");
+        if (acknowledgement[0] == ACK_SUCCESS) {
+            refundTokens(RelayPacketLib.decode(ibcPacket.data));
+        }
+    }
+
+    function onChanOpenInit(
+        IbcCoreChannelV1GlobalEnums.Order _order,
+        string[] calldata _connectionHops,
+        string calldata portId,
+        string calldata channelId,
+        IbcCoreChannelV1Counterparty.Data calldata counterpartyEndpoint,
+        string calldata _version
+    ) external virtual override onlyIBC {
+        counterpartyEndpoints[portId][channelId] = counterpartyEndpoint;
+    }
+
+    function onChanOpenTry(
+        IbcCoreChannelV1GlobalEnums.Order _order,
+        string[] calldata _connectionHops,
+        string calldata portId,
+        string calldata channelId,
+        IbcCoreChannelV1Counterparty.Data calldata counterpartyEndpoint,
+        string calldata _version,
+        string calldata _counterpartyVersion
+    ) external virtual override onlyIBC {
+        counterpartyEndpoints[portId][channelId] = counterpartyEndpoint;
+    }
+
+    function onChanOpenAck(
+        string calldata _portId,
+        string calldata _channelId,
+        string calldata _counterpartyVersion
+    ) external virtual override onlyIBC {}
+
+    function onChanOpenConfirm(
+        string calldata _portId,
+        string calldata _channelId
+    ) external virtual override onlyIBC {}
+
+    function onChanCloseInit(
+        string calldata _portId,
+        string calldata _channelId
+    ) external virtual override onlyIBC {
+        revert("impossible");
+    }
+
+    function onChanCloseConfirm(
+        string calldata _portId,
+        string calldata _channelId
+    ) external virtual override onlyIBC {
+        revert("impossible");
+    }
+}
