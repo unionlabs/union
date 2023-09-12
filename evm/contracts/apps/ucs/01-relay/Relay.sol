@@ -47,6 +47,9 @@ library RelayPacketLib {
 }
 
 contract UCS01Relay is IBCAppBase {
+    bytes1 constant ACK_SUCCESS = 0x01;
+    bytes1 constant ACK_FAILURE = 0x00;
+
     using RelayPacketLib for RelayPacket;
     using LibString for *;
     using strings for *;
@@ -78,6 +81,7 @@ contract UCS01Relay is IBCAppBase {
         return address(ibcHandler);
     }
 
+    // It expect 0x.. prefix
     function hexToAddress(
         string memory _a
     ) internal pure returns (address _parsedAddress) {
@@ -177,6 +181,7 @@ contract UCS01Relay is IBCAppBase {
         IbcCoreChannelV1Packet.Data calldata ibcPacket,
         address relayer
     ) external virtual override onlyIBC returns (bytes memory acknowledgement) {
+        // TODO: self call to avoid any error and always yield an ack
         RelayPacket memory packet = RelayPacketLib.decode(ibcPacket.data);
         string memory prefix = makeDenomPrefix(
             ibcPacket.destination_port,
@@ -185,6 +190,7 @@ contract UCS01Relay is IBCAppBase {
         for (uint256 i = 0; i < packet.tokens.length; i++) {
             Token memory token = packet.tokens[i];
             strings.slice memory denomSlice = token.denom.toSlice();
+            // This will trim the denom IFF it is prefixed
             strings.slice memory trimedDenom = denomSlice.beyond(
                 prefix.toSlice()
             );
@@ -218,16 +224,39 @@ contract UCS01Relay is IBCAppBase {
                 token.amount
             );
         }
-        return hex"01";
+        return abi.encodePacked(ACK_SUCCESS);
     }
 
     // TODO: timeout
 
+    function refundTokens(RelayPacket memory packet) internal {
+        // W're going to refund, the receiver will be the sender.
+        address receiver = hexToAddress(packet.sender);
+        for (uint256 i = 0; i < packet.tokens.length; i++) {
+            Token memory token = packet.tokens[i];
+            // Either we tried to send back a counterparty native token
+            // which we wrapped, or a locally native token that we escrowed.
+            address denomAddress = denomToAddress[token.denom];
+            if (denomAddress != address(0)) {
+                IERC20Denom(denomAddress).mint(receiver, token.amount);
+            } else {
+                // It must be in the form 0x...
+                denomAddress = hexToAddress(token.denom);
+                IERC20(denomAddress).transfer(receiver, token.amount);
+            }
+        }
+    }
+
     function onAcknowledgementPacket(
-        IbcCoreChannelV1Packet.Data calldata _packet,
-        bytes calldata _acknowledgement,
+        IbcCoreChannelV1Packet.Data calldata ibcPacket,
+        bytes calldata acknowledgement,
         address _relayer
-    ) external virtual override onlyIBC {}
+    ) external virtual override onlyIBC {
+        require(acknowledgement.length == 1, "relay: single byte ack");
+        if (acknowledgement[0] == ACK_SUCCESS) {
+            refundTokens(RelayPacketLib.decode(ibcPacket.data));
+        }
+    }
 
     function onChanOpenInit(
         IbcCoreChannelV1GlobalEnums.Order _order,
