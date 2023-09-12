@@ -40,6 +40,21 @@
           type = types.string;
           default = "https://graphql.union.build";
         };
+        hasura-admin-secret = mkOption {
+          type = types.string;
+        };
+        indexers = mkOption {
+          type = types.listOf types.attrset;
+          description = ''
+            Note that example.chain_id is optional.
+          '';
+          example = [
+            {
+              url = "https://rpc.example.com";
+              chain_id = "union-example-devnet";
+            }
+          ];
+        };
       };
 
       config = mkIf cfg.enable {
@@ -48,9 +63,15 @@
             hubble-systemd-script = pkgs.writeShellApplication {
               name = "hubble-systemd";
               runtimeInputs = [ pkgs.coreutils cfg.package ];
-              text = ''
-                ${lib.getExe cfg.package} --url ${cfg.url}
-              '';
+
+              text =
+                let
+                  secretArg = if cfg.hasura-admin-secret then "--secret ${cfg.hasura-admin-secret}" else "";
+                  indexersJson = builtins.toJSON cfg.indexers;
+                in
+                ''
+                  ${lib.getExe cfg.package} --url ${cfg.url} ${secretArg} --indexers ${indexersJson}
+                '';
             };
           in
           {
@@ -58,7 +79,7 @@
             description = "Hubble";
             serviceConfig = {
               Type = "simple";
-              ExecStart = pkgs.lib.getExe unionvisor-systemd-script;
+              ExecStart = pkgs.lib.getExe hubble-systemd-script;
               Restart = mkForce "always";
             };
           };
