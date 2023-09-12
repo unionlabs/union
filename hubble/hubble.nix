@@ -1,4 +1,4 @@
-{ ... }: {
+{ self, ... }: {
   perSystem = { self', pkgs, crane, ... }:
     let
       hubble = crane.buildWorkspaceMember {
