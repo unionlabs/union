@@ -7,7 +7,7 @@ require (
 	github.com/consensys/gnark v0.7.2-0.20230418172633-f83323bdf138
 	github.com/consensys/gnark-crypto v0.9.2-0.20230329155745-a57dcc3b53de
 	github.com/cosmos/cosmos-sdk v0.47.0
-	github.com/rs/zerolog v1.29.1
+	github.com/rs/zerolog v1.30.0
 	github.com/spf13/cobra v1.7.0
 	golang.org/x/net v0.12.0
 	google.golang.org/grpc v1.56.2
@@ -16,7 +16,7 @@ require (
 
 require (
 	cosmossdk.io/errors v1.0.0 // indirect
-	cosmossdk.io/math v1.0.1 // indirect
+	cosmossdk.io/math v1.1.2 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bits-and-blooms/bitset v1.5.0 // indirect
 	github.com/blang/semver/v4 v4.0.0 // indirect
@@ -85,9 +85,9 @@ require (
 	github.com/x448/float16 v0.8.4 // indirect
 	go.etcd.io/bbolt v1.3.7 // indirect
 	golang.org/x/crypto v0.11.0 // indirect
-	golang.org/x/exp v0.0.0-20230515195305-f3d0a9c9a5cc // indirect
-	golang.org/x/sys v0.10.0 // indirect
-	golang.org/x/text v0.11.0 // indirect
+	golang.org/x/exp v0.0.0-20230711153332-06a737ee72cb // indirect
+	golang.org/x/sys v0.11.0 // indirect
+	golang.org/x/text v0.12.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20230711160842-782d3b101e98 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
@@ -100,5 +100,5 @@ replace (
 	github.com/cometbft/cometbft => github.com/unionlabs/cometbls v0.0.0-20230606200400-20834775a066
 	github.com/consensys/gnark => github.com/unionlabs/gnark v0.0.0-20230820185220-9ebfeea2ca75
 	github.com/consensys/gnark-crypto => github.com/unionlabs/gnark-crypto v0.0.0-20230419121058-59d3a8050fda
-	github.com/cosmos/cosmos-sdk => github.com/unionlabs/cosmos-sdk v0.0.0-20230830184222-30e47ad4927b
+	github.com/cosmos/cosmos-sdk => github.com/unionlabs/cosmos-sdk v0.0.0-20230912185853-89f7ea352a8b
 )
