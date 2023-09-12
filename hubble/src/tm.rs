@@ -1,5 +1,6 @@
 use std::ops::Range;
 
+use color_eyre::eyre::bail;
 use tendermint::genesis::Genesis;
 use tendermint_rpc::{error::ErrorDetail, response_error::Code, Client, Error, HttpClient};
 use tokio::time::{sleep, Duration};
@@ -38,6 +39,8 @@ impl Config {
 
         let (mut height, chain_db_id) = get_current_data(&db, chain_id).await?;
         height += 1;
+        let mut retry_count = 0;
+
         loop {
             if !range.contains(&height) {
                 return Ok(());
@@ -51,6 +54,11 @@ impl Config {
                 Err(err) => {
                     if is_height_exceeded_error(&err) {
                         debug!("caught up indexing, sleeping for 1 second: {:?}", err);
+                        retry_count += 1;
+
+                        if retry_count > 30 {
+                            bail!("node has stopped providing new blocks")
+                        }
                         sleep(Duration::from_millis(1000)).await;
                         continue;
                     } else {
@@ -59,6 +67,7 @@ impl Config {
                 }
                 Ok(val) => val.block.header,
             };
+            retry_count = 0;
             debug!("fetching block results for height: {}", &height);
             let block = client.block_results(height).await?;
             let events = {
