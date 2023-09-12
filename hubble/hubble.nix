@@ -45,7 +45,7 @@
           default = "";
         };
         indexers = mkOption {
-          type = types.listOf types.attrset;
+          type = types.listOf types.attrs;
           description = ''
             Note that example.chain_id is optional.
           '';
