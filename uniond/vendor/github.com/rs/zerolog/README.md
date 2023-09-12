@@ -24,7 +24,7 @@ Find out [who uses zerolog](https://github.com/rs/zerolog/wiki/Who-uses-zerolog)
 * [Sampling](#log-sampling)
 * [Hooks](#hooks)
 * [Contextual fields](#contextual-logging)
-* `context.Context` integration
+* [`context.Context` integration](#contextcontext-integration)
 * [Integration with `net/http`](#integration-with-nethttp)
 * [JSON and CBOR encoding formats](#binary-encoding)
 * [Pretty logging for development](#pretty-logging)
@@ -499,7 +499,7 @@ log.Ctx(ctx).Info().Msg("hello world")
 ### Set as standard logger output
 
 ```go
-log := zerolog.New(os.Stdout).With().
+stdlog := zerolog.New(os.Stdout).With().
     Str("foo", "bar").
     Logger()
 
@@ -509,6 +509,58 @@ stdlog.SetOutput(log)
 stdlog.Print("hello world")
 
 // Output: {"foo":"bar","message":"hello world"}
+```
+
+### context.Context integration
+
+Go contexts are commonly passed throughout Go code, and this can help you pass
+your Logger into places it might otherwise be hard to inject.  The `Logger`
+instance may be attached to Go context (`context.Context`) using
+`Logger.WithContext(ctx)` and extracted from it using `zerolog.Ctx(ctx)`.
+For example:
+
+```go
+func f() {
+    logger := zerolog.New(os.Stdout)
+    ctx := context.Background()
+
+    // Attach the Logger to the context.Context
+    ctx = logger.WithContext(ctx)
+    someFunc(ctx)
+}
+
+func someFunc(ctx context.Context) {
+    // Get Logger from the go Context. if it's nil, then
+    // `zerolog.DefaultContextLogger` is returned, if
+    // `DefaultContextLogger` is nil, then a disabled logger is returned.
+    logger := zerolog.Ctx(ctx)
+    logger.Info().Msg("Hello")
+}
+```
+
+A second form of `context.Context` integration allows you to pass the current
+context.Context into the logged event, and retrieve it from hooks.  This can be
+useful to log trace and span IDs or other information stored in the go context,
+and facilitates the unification of logging and tracing in some systems:
+
+```go
+type TracingHook struct{}
+
+func (h TracingHook) Run(e *zerolog.Event, level zerolog.Level, msg string) {
+    ctx := e.Ctx()
+    spanId := getSpanIdFromContext(ctx) // as per your tracing framework
+    e.Str("span-id", spanId)
+}
+
+func f() {
+    // Setup the logger
+    logger := zerolog.New(os.Stdout)
+    logger = logger.Hook(TracingHook{})
+
+    ctx := context.Background()
+    // Use the Ctx function to make the context available to the hook
+    logger.Info().Ctx(ctx).Msg("Hello")
+}
 ```
 
 ### Integration with `net/http`
@@ -703,6 +755,8 @@ Log a static string, without any context or `printf`-style templating:
 
 ## Caveats
 
+### Field duplication
+
 Note that zerolog does no de-duplication of fields. Using the same key multiple times creates multiple keys in final JSON:
 
 ```go
@@ -714,3 +768,19 @@ logger.Info().
 ```
 
 In this case, many consumers will take the last value, but this is not guaranteed; check yours if in doubt.
+
+### Concurrency safety
+
+Be careful when calling UpdateContext. It is not concurrency safe. Use the With method to create a child logger:
+
+```go
+func handler(w http.ResponseWriter, r *http.Request) {
+    // Create a child logger for concurrency safety
+    logger := log.Logger.With().Logger()
+
+    // Add context fields, for example User-Agent from HTTP headers
+    logger.UpdateContext(func(c zerolog.Context) zerolog.Context {
+        ...
+    })
+}
+```

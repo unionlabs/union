@@ -93,3 +93,25 @@ func AppendEmbeddedJSON(dst, s []byte) []byte {
 	}
 	return append(dst, s...)
 }
+
+// AppendEmbeddedCBOR adds a tag and embeds input CBOR as such.
+func AppendEmbeddedCBOR(dst, s []byte) []byte {
+	major := majorTypeTags
+	minor := additionalTypeEmbeddedCBOR
+
+	// Append the TAG to indicate this is Embedded JSON.
+	dst = append(dst, major|additionalTypeIntUint8)
+	dst = append(dst, minor)
+
+	// Append the CBOR Object as Byte String.
+	major = majorTypeByteString
+
+	l := len(s)
+	if l <= additionalMax {
+		lb := byte(l)
+		dst = append(dst, major|lb)
+	} else {
+		dst = appendCborTypePrefix(dst, major, uint64(l))
+	}
+	return append(dst, s...)
+}

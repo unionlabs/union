@@ -59,18 +59,18 @@ cosmossdk.io/api/cosmos/vesting/module/v1
 cosmossdk.io/core/appconfig
 cosmossdk.io/core/appmodule
 cosmossdk.io/core/internal
-# cosmossdk.io/depinject v1.0.0-alpha.3
-## explicit; go 1.18
+# cosmossdk.io/depinject v1.0.0-alpha.4
+## explicit; go 1.20
 cosmossdk.io/depinject
 cosmossdk.io/depinject/internal/graphviz
 cosmossdk.io/depinject/internal/util
 # cosmossdk.io/errors v1.0.0
 ## explicit; go 1.20
 cosmossdk.io/errors
-# cosmossdk.io/log v1.1.1-0.20230704160919-88f2c830b0ca
+# cosmossdk.io/log v1.2.1
 ## explicit; go 1.20
 cosmossdk.io/log
-# cosmossdk.io/math v1.0.1
+# cosmossdk.io/math v1.1.2
 ## explicit; go 1.20
 cosmossdk.io/math
 # cosmossdk.io/tools/rosetta v0.2.1
@@ -200,6 +200,40 @@ github.com/chzyer/readline
 # github.com/cockroachdb/apd/v2 v2.0.2
 ## explicit
 github.com/cockroachdb/apd/v2
+# github.com/cockroachdb/errors v1.10.0
+## explicit; go 1.17
+github.com/cockroachdb/errors
+github.com/cockroachdb/errors/assert
+github.com/cockroachdb/errors/barriers
+github.com/cockroachdb/errors/contexttags
+github.com/cockroachdb/errors/domains
+github.com/cockroachdb/errors/errbase
+github.com/cockroachdb/errors/errorspb
+github.com/cockroachdb/errors/errutil
+github.com/cockroachdb/errors/hintdetail
+github.com/cockroachdb/errors/issuelink
+github.com/cockroachdb/errors/markers
+github.com/cockroachdb/errors/report
+github.com/cockroachdb/errors/safedetails
+github.com/cockroachdb/errors/secondary
+github.com/cockroachdb/errors/stdstrings
+github.com/cockroachdb/errors/telemetrykeys
+github.com/cockroachdb/errors/withstack
+# github.com/cockroachdb/logtags v0.0.0-20230118201751-21c54148d20b
+## explicit; go 1.16
+github.com/cockroachdb/logtags
+# github.com/cockroachdb/redact v1.1.5
+## explicit; go 1.14
+github.com/cockroachdb/redact
+github.com/cockroachdb/redact/builder
+github.com/cockroachdb/redact/interfaces
+github.com/cockroachdb/redact/internal/buffer
+github.com/cockroachdb/redact/internal/escape
+github.com/cockroachdb/redact/internal/fmtforward
+github.com/cockroachdb/redact/internal/markers
+github.com/cockroachdb/redact/internal/redact
+github.com/cockroachdb/redact/internal/rfmt
+github.com/cockroachdb/redact/internal/rfmt/fmtsort
 # github.com/coinbase/rosetta-sdk-go/types v1.0.0
 ## explicit; go 1.18
 github.com/coinbase/rosetta-sdk-go/types
@@ -334,7 +368,7 @@ github.com/cosmos/btcutil/bech32
 github.com/cosmos/cosmos-proto
 github.com/cosmos/cosmos-proto/anyutil
 github.com/cosmos/cosmos-proto/runtime
-# github.com/cosmos/cosmos-sdk v0.47.4 => github.com/unionlabs/cosmos-sdk v0.0.0-20230811204628-91742f9fdc1c
+# github.com/cosmos/cosmos-sdk v0.47.4 => github.com/unionlabs/cosmos-sdk v0.0.0-20230912185853-89f7ea352a8b
 ## explicit; go 1.19
 github.com/cosmos/cosmos-sdk/baseapp
 github.com/cosmos/cosmos-sdk/client
@@ -763,11 +797,17 @@ github.com/felixge/httpsnoop
 # github.com/fsnotify/fsnotify v1.6.0
 ## explicit; go 1.16
 github.com/fsnotify/fsnotify
+# github.com/getsentry/sentry-go v0.23.0
+## explicit; go 1.18
+github.com/getsentry/sentry-go
+github.com/getsentry/sentry-go/internal/debug
+github.com/getsentry/sentry-go/internal/otel/baggage
+github.com/getsentry/sentry-go/internal/otel/baggage/internal/baggage
+github.com/getsentry/sentry-go/internal/ratelimit
+github.com/getsentry/sentry-go/internal/traceparser
 # github.com/ghodss/yaml v1.0.0
 ## explicit
 github.com/ghodss/yaml
-# github.com/gin-gonic/gin v1.8.1
-## explicit; go 1.18
 # github.com/go-kit/kit v0.12.0
 ## explicit; go 1.17
 github.com/go-kit/kit/metrics
@@ -782,8 +822,6 @@ github.com/go-kit/log/term
 # github.com/go-logfmt/logfmt v0.6.0
 ## explicit; go 1.17
 github.com/go-logfmt/logfmt
-# github.com/goccy/go-json v0.9.11
-## explicit; go 1.12
 # github.com/godbus/dbus v0.0.0-20190726142602-4481cbc300e2
 ## explicit; go 1.12
 github.com/godbus/dbus
@@ -792,6 +830,7 @@ github.com/godbus/dbus
 github.com/gogo/googleapis/google/api
 # github.com/gogo/protobuf v1.3.2
 ## explicit; go 1.15
+github.com/gogo/protobuf/gogoproto
 github.com/gogo/protobuf/proto
 github.com/gogo/protobuf/protoc-gen-gogo/descriptor
 github.com/gogo/protobuf/sortkeys
@@ -1000,6 +1039,12 @@ github.com/klauspost/compress/zstd/internal/xxhash
 # github.com/klauspost/cpuid/v2 v2.2.4
 ## explicit; go 1.15
 github.com/klauspost/cpuid/v2
+# github.com/kr/pretty v0.3.1
+## explicit; go 1.12
+github.com/kr/pretty
+# github.com/kr/text v0.2.0
+## explicit
+github.com/kr/text
 # github.com/lib/pq v1.10.7
 ## explicit; go 1.13
 github.com/lib/pq
@@ -1141,10 +1186,13 @@ github.com/rakyll/statik/fs
 # github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475
 ## explicit
 github.com/rcrowley/go-metrics
+# github.com/rogpeppe/go-internal v1.11.0
+## explicit; go 1.19
+github.com/rogpeppe/go-internal/fmtsort
 # github.com/rs/cors v1.8.3
 ## explicit; go 1.13
 github.com/rs/cors
-# github.com/rs/zerolog v1.29.1
+# github.com/rs/zerolog v1.30.0
 ## explicit; go 1.15
 github.com/rs/zerolog
 github.com/rs/zerolog/internal/cbor
@@ -1275,7 +1323,7 @@ golang.org/x/crypto/pbkdf2
 golang.org/x/crypto/ripemd160
 golang.org/x/crypto/salsa20/salsa
 golang.org/x/crypto/sha3
-# golang.org/x/exp v0.0.0-20230515195305-f3d0a9c9a5cc
+# golang.org/x/exp v0.0.0-20230711153332-06a737ee72cb
 ## explicit; go 1.20
 golang.org/x/exp/constraints
 golang.org/x/exp/maps
@@ -1302,9 +1350,10 @@ golang.org/x/oauth2/jwt
 # golang.org/x/sync v0.2.0
 ## explicit
 golang.org/x/sync/semaphore
-# golang.org/x/sys v0.10.0
+# golang.org/x/sys v0.11.0
 ## explicit; go 1.17
 golang.org/x/sys/cpu
+golang.org/x/sys/execabs
 golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/plan9
 golang.org/x/sys/unix
@@ -1312,7 +1361,7 @@ golang.org/x/sys/windows
 # golang.org/x/term v0.10.0
 ## explicit; go 1.17
 golang.org/x/term
-# golang.org/x/text v0.11.0
+# golang.org/x/text v0.12.0
 ## explicit; go 1.17
 golang.org/x/text/cases
 golang.org/x/text/internal
@@ -1516,6 +1565,6 @@ rsc.io/tmplfunc/internal/parse
 sigs.k8s.io/yaml
 # github.com/cometbft/cometbft => github.com/unionlabs/cometbls v0.0.0-20230606200400-20834775a066
 # github.com/consensys/gnark-crypto => github.com/unionlabs/gnark-crypto v0.0.0-20230409222230-5346db050fea
-# github.com/cosmos/cosmos-sdk => github.com/unionlabs/cosmos-sdk v0.0.0-20230811204628-91742f9fdc1c
+# github.com/cosmos/cosmos-sdk => github.com/unionlabs/cosmos-sdk v0.0.0-20230912185853-89f7ea352a8b
 # github.com/cosmos/ibc-go/v7 => github.com/unionlabs/ibc-go/v7 v7.0.0-20230622093418-f1bf9b990248
 # github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7

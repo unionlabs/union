@@ -105,6 +105,7 @@ func NewIntFromUint64(n uint64) Int {
 
 // NewIntFromBigInt constructs Int from big.Int. If the provided big.Int is nil,
 // it returns an empty instance. This function panics if the bit length is > 256.
+// Note, the caller can safely mutate the argument after this function returns.
 func NewIntFromBigInt(i *big.Int) Int {
 	if i == nil {
 		return Int{}
@@ -113,7 +114,8 @@ func NewIntFromBigInt(i *big.Int) Int {
 	if i.BitLen() > MaxBitLen {
 		panic("NewIntFromBigInt() out of bound")
 	}
-	return Int{i}
+
+	return Int{new(big.Int).Set(i)}
 }
 
 // NewIntFromString constructs Int from string
@@ -152,6 +154,11 @@ func ZeroInt() Int { return Int{big.NewInt(0)} }
 
 // OneInt returns Int value with one
 func OneInt() Int { return Int{big.NewInt(1)} }
+
+// ToLegacyDec converts Int to LegacyDec
+func (i Int) ToLegacyDec() LegacyDec {
+	return LegacyNewDecFromInt(i)
+}
 
 // Int64 converts Int to int64
 // Panics if the value is out of range
@@ -432,6 +439,7 @@ func (i *Int) UnmarshalAmino(bz []byte) error { return i.Unmarshal(bz) }
 
 // intended to be used with require/assert:  require.True(IntEq(...))
 func IntEq(t *testing.T, exp, got Int) (*testing.T, bool, string, string, string) {
+	t.Helper()
 	return t, exp.Equal(got), "expected:\t%v\ngot:\t\t%v", exp.String(), got.String()
 }
 
@@ -455,7 +463,7 @@ var stringsBuilderPool = &sync.Pool{
 
 // FormatInt formats an integer (encoded as in protobuf) into a value-rendered
 // string following ADR-050. This function operates with string manipulation
-// (instead of manipulating the int or sdk.Int object).
+// (instead of manipulating the int or math.Int object).
 func FormatInt(v string) (string, error) {
 	if len(v) == 0 {
 		return "", fmt.Errorf("cannot format empty string")

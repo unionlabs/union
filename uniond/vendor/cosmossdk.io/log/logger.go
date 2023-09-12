@@ -1,12 +1,30 @@
 package log
 
 import (
+	"encoding"
+	"encoding/json"
+	"fmt"
 	"io"
 
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/pkgerrors"
 )
+
+func init() {
+	zerolog.InterfaceMarshalFunc = func(i interface{}) ([]byte, error) {
+		switch v := i.(type) {
+		case json.Marshaler:
+			return json.Marshal(i)
+		case encoding.TextMarshaler:
+			return json.Marshal(i)
+		case fmt.Stringer:
+			return json.Marshal(v.String())
+		default:
+			return json.Marshal(i)
+		}
+	}
+}
 
 // ModuleKey defines a module logging key.
 const ModuleKey = "module"

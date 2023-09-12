@@ -1128,18 +1128,18 @@ Example:
 simd tx group update-group-policy-decision-policy cosmos1.. cosmos1.. '{"@type":"/cosmos.group.v1.ThresholdDecisionPolicy", "threshold":"2", "windows": {"voting_period": "120h", "min_execution_period": "0s"}}'
 ```
 
-#### create-proposal
+#### submit-proposal
 
-The `create-proposal` command allows users to submit a new proposal.
+The `submit-proposal` command allows users to submit a new proposal.
 
 ```bash
-simd tx group create-proposal [group-policy-account] [proposer[,proposer]*] [msg_tx_json_file] [metadata] [flags]
+simd tx group submit-proposal [group-policy-account] [proposer[,proposer]*] [msg_tx_json_file] [metadata] [flags]
 ```
 
 Example:
 
 ```bash
-simd tx group create-proposal cosmos1.. cosmos1.. msg_tx.json "AQ=="
+simd tx group submit-proposal cosmos1.. cosmos1.. msg_tx.json "AQ=="
 ```
 
 #### withdraw-proposal
@@ -2109,7 +2109,7 @@ Example Output:
 
 ## Metadata
 
-The group module has four locations for metadata where users can provide further context about the on-chain actions they are taking. By default all metadata fields have a 255 character length field where metadata can be stored in json format, either on-chain or off-chain depending on the amount of data required. Here we provide a recommendation for the json structure and where the data should be stored. There are two important factors in making these recommendations. First, that the group and gov modules are consistent with one another, note the number of proposals made by all groups may be quite large. Second, that client applications such as block explorers and governance interfaces have confidence in the consistency of metadata structure accross chains.
+The group module has four locations for metadata where users can provide further context about the on-chain actions they are taking. By default all metadata fields have a 255 character length field where metadata can be stored in json format, either on-chain or off-chain depending on the amount of data required. Here we provide a recommendation for the json structure and where the data should be stored. There are two important factors in making these recommendations. First, that the group and gov modules are consistent with one another, note the number of proposals made by all groups may be quite large. Second, that client applications such as block explorers and governance interfaces have confidence in the consistency of metadata structure across chains.
 
 ### Proposal
 

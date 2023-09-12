@@ -13,6 +13,7 @@ const (
 	AttributeKeyMissedBlocks = "missed_blocks"
 	AttributeKeyBurnedCoins  = "burned_coins"
 
+	AttributeValueUnspecified      = "unspecified"
 	AttributeValueDoubleSign       = "double_sign"
 	AttributeValueMissingSignature = "missing_signature"
 )

@@ -958,9 +958,15 @@ func (h DefaultProposalHandler) PrepareProposalHandler() sdk.PrepareProposalHand
 			return abci.ResponsePrepareProposal{Txs: req.Txs}
 		}
 
+		var maxBlockGas int64
+		if b := ctx.ConsensusParams().Block; b != nil {
+			maxBlockGas = b.MaxGas
+		}
+
 		var (
 			selectedTxs  [][]byte
 			totalTxBytes int64
+			totalTxGas   uint64
 		)
 
 		iterator := h.mempool.Select(ctx, req.Txs)
@@ -979,12 +985,33 @@ func (h DefaultProposalHandler) PrepareProposalHandler() sdk.PrepareProposalHand
 					panic(err)
 				}
 			} else {
+				var txGasLimit uint64
 				txSize := int64(len(bz))
-				if totalTxBytes += txSize; totalTxBytes <= req.MaxTxBytes {
-					selectedTxs = append(selectedTxs, bz)
-				} else {
-					// We've reached capacity per req.MaxTxBytes so we cannot select any
-					// more transactions.
+
+				gasTx, ok := memTx.(interface{ GetGas() uint64 })
+				if ok {
+					txGasLimit = gasTx.GetGas()
+				}
+
+				// only add the transaction to the proposal if we have enough capacity
+				if (txSize + totalTxBytes) < req.MaxTxBytes {
+					// If there is a max block gas limit, add the tx only if the limit has
+					// not been met.
+					if maxBlockGas > 0 {
+						if (txGasLimit + totalTxGas) <= uint64(maxBlockGas) {
+							totalTxGas += txGasLimit
+							totalTxBytes += txSize
+							selectedTxs = append(selectedTxs, bz)
+						}
+					} else {
+						totalTxBytes += txSize
+						selectedTxs = append(selectedTxs, bz)
+					}
+				}
+
+				// Check if we've reached capacity. If so, we cannot select any more
+				// transactions.
+				if totalTxBytes >= req.MaxTxBytes || (maxBlockGas > 0 && (totalTxGas >= uint64(maxBlockGas))) {
 					break
 				}
 			}

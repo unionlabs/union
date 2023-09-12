@@ -4,9 +4,7 @@ sidebar_position: 1
 
 # `x/auth/tx`
 
-:::note
-
-### Pre-requisite Readings
+:::note Pre-requisite Readings
 
 * [Transactions](https://docs.cosmos.network/main/core/transactions#transaction-generation)
 * [Encoding](https://docs.cosmos.network/main/core/encoding#transaction-encoding)

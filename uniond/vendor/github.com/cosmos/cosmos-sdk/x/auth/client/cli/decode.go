@@ -48,6 +48,7 @@ func GetDecodeCommand() *cobra.Command {
 
 	cmd.Flags().BoolP(flagHex, "x", false, "Treat input as hexadecimal instead of base64")
 	flags.AddTxFlagsToCmd(cmd)
+	_ = cmd.Flags().MarkHidden(flags.FlagOutput) // decoding makes sense to output only json
 
 	return cmd
 }

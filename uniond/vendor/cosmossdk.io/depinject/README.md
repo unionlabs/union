@@ -1,14 +1,38 @@
-# Cosmos SDK Dependency Injection `depinject` Module
+---
+sidebar_position: 1
+---
+
+# Depinject
+
+> **DISCLAIMER**: This is a **beta** package. The SDK team is actively working on this feature and we are looking for feedback from the community. Please try it out and let us know what you think.
 
 ## Overview
 
-`depinject` is a dependency injection framework for the Cosmos SDK. This module together with `core/appconfig` are meant
-to simplify the definition of a blockchain by replacing most of app.go's boilerplate code with a configuration file (YAML or JSON).
+`depinject` is a dependency injection (DI) framework for the Cosmos SDK, designed to streamline the process of building and configuring blockchain applications. It works in conjunction with the `core/appconfig` module to replace the majority of boilerplate code in `app.go` with a configuration file in Go, YAML, or JSON format.
+
+`depinject` is particularly useful for developing blockchain applications:
+
+*   With multiple interdependent components, modules, or services. Helping manage their dependencies effectively.
+*   That require decoupling of these components, making it easier to test, modify, or replace individual parts without affecting the entire system.
+*   That are wanting to simplify the setup and initialisation of modules and their dependencies by reducing boilerplate code and automating dependency management.
+
+By using `depinject`, developers can achieve:
+
+*   Cleaner and more organised code.
+*   Improved modularity and maintainability.
+*   A more maintainable and modular structure for their blockchain applications, ultimately enhancing development velocity and code quality.
+
+* [Go Doc](https://pkg.go.dev/cosmossdk.io/depinject)
 
 ## Usage
 
-`depinject` includes an expressive and composable [Configuration API](https://pkg.go.dev/github.com/cosmos/cosmos-sdk/depinject#Config).
-A core configuration is `Provide`, for example this code snippet
+The `depinject` framework, based on dependency injection concepts, streamlines the management of dependencies within your blockchain application using its Configuration API. This API offers a set of functions and methods to create easy to use configurations, making it simple to define, modify, and access dependencies and their relationships.
+
+A core component of the [Configuration API](https://pkg.go.dev/github.com/cosmos/cosmos-sdk/depinject#Config) is the `Provide` function, which allows you to register provider functions that supply dependencies. Inspired by constructor injection, these provider functions form the basis of the dependency tree, enabling the management and resolution of dependencies in a structured and maintainable manner. Additionally, `depinject` supports interface types as inputs to provider functions, offering flexibility and decoupling between components, similar to interface injection concepts.
+
+By leveraging `depinject` and its Configuration API, you can efficiently handle dependencies in your blockchain application, ensuring a clean, modular, and well-organised codebase.
+
+Example:
 
 ```go
 package main
@@ -40,19 +64,19 @@ func main() {
 }
 ```
 
-demonstrates the registration of free **provider functions** via the `Provide` API.  Provider functions form the basis of the
-dependency tree, they are introspected then their inputs identified as dependencies and outputs as dependants, either for
-another provider function or state stored outside the DI container, as is the case of `&x` and `&y` above.
+In this example, `depinject.Provide` registers two provider functions that return `int` and `AnotherInt` values. The `depinject.Inject` function is then used to inject these values into the variables `x` and `y`.
+
+Provider functions serve as the basis for the dependency tree. They are analysed to identify their inputs as dependencies and their outputs as dependents. These dependents can either be used by another provider function or be stored outside the DI container (e.g., `&x` and `&y` in the example above).
 
 ### Interface type resolution
 
-`depinject` supports interface types as inputs to provider functions.  In the SDK's case this pattern is used to decouple
-`Keeper` dependencies between modules.  For example `x/bank` expects an [AccountKeeper](https://pkg.go.dev/github.com/cosmos/cosmos-sdk/x/bank/types#AccountKeeper) interface as [input to provideModule](https://github.com/cosmos/cosmos-sdk/blob/de343d458aa68c19630177807d6f0e2e6deaf7a9/x/bank/module.go#L224).
-Concretely `SimApp` uses the implementation in `x/auth`, but this design allows for this loose coupling to change.
+`depinject` supports the use of interface types as inputs to provider functions, which helps decouple dependencies between modules. This approach is particularly useful for managing complex systems with multiple modules, such as the Cosmos SDK, where dependencies need to be flexible and maintainable.
 
-Given the following types
+For example, `x/bank` expects an [AccountKeeper](https://pkg.go.dev/github.com/cosmos/cosmos-sdk/x/bank/types#AccountKeeper) interface as [input to ProvideModule](https://github.com/cosmos/cosmos-sdk/blob/v0.47.0-rc1/x/bank/module.go#L208-L260). `SimApp` uses the implementation in `x/auth`, but the modular design allows for easy changes to the implementation if needed.
 
-```golang
+Consider the following example:
+
+```go
 package duck
 
 type Duck interface {
@@ -74,9 +98,9 @@ type Pond struct {
 }
 ```
 
-This usage
+In this example, there's a `Pond` struct that has a `Duck` field of type `AlsoDuck`. The `depinject` framework can automatically resolve the appropriate implementation when there's only one available, as shown below:
 
-```golang
+```go
 var pond Pond
 
 depinject.Inject(
@@ -88,10 +112,11 @@ depinject.Inject(
    &pond)
 ```
 
-results in an *implicit* binding of `Duck` to `Mallard`.  This works because there is only one implementation of `Duck`
-in the container.  However, adding a second provider of `Duck` will result in an error:
+This code snippet results in the `Duck` field of `Pond` being implicitly bound to the `Mallard` implementation because it's the only implementation of the `Duck` interface in the container.
 
-```golang
+However, if there are multiple implementations of the `Duck` interface, as in the following example, you'll encounter an error:
+
+```go
 var pond Pond
 
 depinject.Inject(
@@ -108,9 +133,9 @@ A specific binding preference for `Duck` is required.
 
 #### `BindInterface` API
 
-In the above situation registering a binding for a given interface binding may look like
+In the above situation registering a binding for a given interface binding may look like:
 
-```golang
+```go
 depinject.Inject(
   depinject.Configs(
     depinject.BindInterface(
@@ -129,52 +154,21 @@ Now `depinject` has enough information to provide `Mallard` as an input to `APon
 
 ### Full example in real app
 
-```go
-//go:embed app.yaml
-var appConfigYaml []byte
+:::warning
+When using `depinject.Inject`, the injected types must be pointers.
+:::
 
-var appConfig = appconfig.LoadYAML(appConfigYaml)
-
-func NewSimApp(
-	logger log.Logger,
-	db dbm.DB,
-	traceStore io.Writer,
-	loadLatest bool,
-	appOpts servertypes.AppOptions,
-	baseAppOptions ...func(*baseapp.BaseApp),
-) *SimApp {
-	var (
-		app        = &SimApp{}
-		appBuilder *runtime.AppBuilder
-	)
-
-	err := depinject.Inject(AppConfig,
-		&appBuilder,
-		&app.ParamsKeeper,
-		&app.CapabilityKeeper,
-		&app.appCodec,
-		&app.legacyAmino,
-		&app.interfaceRegistry,
-		&app.AccountKeeper,
-		&app.BankKeeper,
-		&app.FeeGrantKeeper,
-		&app.StakingKeeper,
-	)
-	if err != nil {
-		panic(err)
-	}
-...
+```go reference
+https://github.com/cosmos/cosmos-sdk/blob/v0.47.0-rc1/simapp/app_v2.go#L219-L244
 ```
 
 ## Debugging
 
-Issues with resolving dependencies in the container can be done with logs
-and [Graphviz](https://graphviz.org) renderings of the container tree. By default, whenever there is an error, logs will
-be printed to stderr and a rendering of the dependency graph in Graphviz DOT format will be saved to
-`debug_container.dot`.
+Issues with resolving dependencies in the container can be done with logs and [Graphviz](https://graphviz.org) renderings of the container tree.
+By default, whenever there is an error, logs will be printed to stderr and a rendering of the dependency graph in Graphviz DOT format will be saved to `debug_container.dot`.
 
 Here is an example Graphviz rendering of a successful build of a dependency graph:
-![Graphviz Example](./testdata/example.svg)
+![Graphviz Example](https://raw.githubusercontent.com/cosmos/cosmos-sdk/ff39d243d421442b400befcd959ec3ccd2525154/depinject/testdata/example.svg)
 
 Rectangles represent functions, ovals represent types, rounded rectangles represent modules and the single hexagon
 represents the function which called `Build`. Black-colored shapes mark functions and types that were called/resolved
@@ -182,12 +176,12 @@ without an error. Gray-colored nodes mark functions and types that could have be
 were left unused.
 
 Here is an example Graphviz rendering of a dependency graph build which failed:
-![Graphviz Error Example](./testdata/example_error.svg)
+![Graphviz Error Example](https://raw.githubusercontent.com/cosmos/cosmos-sdk/ff39d243d421442b400befcd959ec3ccd2525154/depinject/testdata/example_error.svg)
 
 Graphviz DOT files can be converted into SVG's for viewing in a web browser using the `dot` command-line tool, ex:
 
 ```txt
-> dot -Tsvg debug_container.dot > debug_container.svg
+dot -Tsvg debug_container.dot > debug_container.svg
 ```
 
 Many other tools including some IDEs support working with DOT files.

@@ -1,0 +1,18 @@
+syntax = "proto3";
+package cockroach.errorspb;
+option go_package = "errorspb";
+
+import "gogoproto/gogo.proto";
+
+// TagsPayload is the error payload for a WithContext
+// marker.
+// See errors/contexttags/withcontext.go and the RFC on
+// error handling for details.
+message TagsPayload {
+   repeated TagPayload tags = 1  [(gogoproto.nullable) = false];
+}
+
+message TagPayload {
+  string tag = 1;
+  string value = 2;
+}

@@ -318,6 +318,22 @@ func (d LegacyDec) MulTruncateMut(d2 LegacyDec) LegacyDec {
 	return d
 }
 
+// multiplication round up at precision end.
+func (d LegacyDec) MulRoundUp(d2 LegacyDec) LegacyDec {
+	return d.ImmutOp(LegacyDec.MulRoundUpMut, d2)
+}
+
+// mutable multiplication with round up at precision end.
+func (d LegacyDec) MulRoundUpMut(d2 LegacyDec) LegacyDec {
+	d.i.Mul(d.i, d2.i)
+	chopPrecisionAndRoundUp(d.i)
+
+	if d.i.BitLen() > maxDecBitLen {
+		panic("Int overflow")
+	}
+	return d
+}
+
 // multiplication
 func (d LegacyDec) MulInt(i Int) LegacyDec {
 	return d.ImmutOpInt(LegacyDec.MulIntMut, i)
@@ -490,7 +506,8 @@ func (d LegacyDec) Power(power uint64) LegacyDec {
 
 func (d LegacyDec) PowerMut(power uint64) LegacyDec {
 	if power == 0 {
-		d.SetInt64(1)
+		// Set to 1 with the correct precision.
+		d.i.Set(precisionReuse)
 		return d
 	}
 	tmp := LegacyOneDec()
@@ -908,10 +925,12 @@ func LegacyMaxDec(d1, d2 LegacyDec) LegacyDec {
 
 // intended to be used with require/assert:  require.True(DecEq(...))
 func LegacyDecEq(t *testing.T, exp, got LegacyDec) (*testing.T, bool, string, string, string) {
+	t.Helper()
 	return t, exp.Equal(got), "expected:\t%v\ngot:\t\t%v", exp.String(), got.String()
 }
 
 func LegacyDecApproxEq(t *testing.T, d1, d2, tol LegacyDec) (*testing.T, bool, string, string, string) {
+	t.Helper()
 	diff := d1.Sub(d2).Abs()
 	return t, diff.LTE(tol), "expected |d1 - d2| <:\t%v\ngot |d1 - d2| = \t\t%v", tol.String(), diff.String()
 }

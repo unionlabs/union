@@ -1,0 +1,14 @@
+syntax = "proto3";
+package cockroach.errorspb;
+option go_package = "errorspb";
+
+import "errorspb/errors.proto";
+import "gogoproto/gogo.proto";
+
+// MarkPayload is the error payload for a forced marker.
+// See errors/markers/markers.go and the RFC on
+// error handling for details.
+message MarkPayload {
+  string msg = 1;
+  repeated ErrorTypeMark types = 2  [(gogoproto.nullable) = false];
+}

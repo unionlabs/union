@@ -26,7 +26,8 @@ const (
 	additionalTypeBreak   byte = 31
 
 	// Tag Sub-types.
-	additionalTypeTimestamp byte = 01
+	additionalTypeTimestamp    byte = 01
+	additionalTypeEmbeddedCBOR byte = 63
 
 	// Extended Tags - from https://www.iana.org/assignments/cbor-tags/cbor-tags.xhtml
 	additionalTypeTagNetworkAddr   uint16 = 260
