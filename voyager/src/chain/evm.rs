@@ -64,7 +64,7 @@ use unionlabs::{
                 account_update::{AccountProof, AccountUpdate},
                 light_client_update::{LightClientUpdate, NextSyncCommitteeBranch},
                 sync_committee::SyncCommittee,
-                trusted_sync_committee::TrustedSyncCommittee,
+                trusted_sync_committee::{ActiveSyncCommittee, TrustedSyncCommittee},
             },
             tendermint::fraction::Fraction,
             wasm,
@@ -577,6 +577,32 @@ impl<C: ChainSpec> Chain for Evm<C> {
                 },
             )
             .flatten()
+        }
+    }
+
+    fn wait_for_block_at_timestamp(
+        &self,
+        timestamp: std::num::NonZeroU64,
+    ) -> impl Future<Output = ()> + '_ {
+        async move {
+            loop {
+                let latest_timestamp: u64 = self
+                    .beacon_api_client
+                    .finality_update()
+                    .await
+                    .unwrap()
+                    .data
+                    .attested_header
+                    .execution
+                    .timestamp;
+
+                if latest_timestamp >= timestamp.get() {
+                    break;
+                }
+
+                tracing::debug!("requested timestamp not yet reached");
+                tokio::time::sleep(std::time::Duration::from_secs(3)).await;
+            }
         }
     }
 }
@@ -1212,8 +1238,9 @@ impl<C: ChainSpec> Connect<Ethereum<C>> for Cometbls<C> {
                         // NOTE(aeryz): this has to be the execution height because this height is used for verifying
                         // the state proofs, which are always taken at the execution height
                         trusted_height: execution_height,
-                        sync_committee: bootstrap.data.current_sync_committee,
-                        is_next: false,
+                        sync_committee: ActiveSyncCommittee::Current(
+                            bootstrap.data.current_sync_committee,
+                        ),
                     },
                     None,
                     None,
@@ -1221,6 +1248,21 @@ impl<C: ChainSpec> Connect<Ethereum<C>> for Cometbls<C> {
                 .await;
 
             let header_json = serde_json::to_string(&header).unwrap();
+
+            // We are waiting for the counterparty chain to reach to the current timestamp of ours.
+            // Because the ethereum consensus spec instructs the light clients to check if the current slot
+            // that is calculated from the current timestamp is greater than the signature slot.
+            counterparty
+                .chain()
+                .wait_for_block_at_timestamp(
+                    SystemTime::now()
+                        .duration_since(UNIX_EPOCH)
+                        .unwrap()
+                        .as_secs()
+                        .try_into()
+                        .unwrap(),
+                )
+                .await;
 
             tracing::info!(%header_json, "submitting finality update");
 
@@ -1307,8 +1349,9 @@ impl<C: ChainSpec> Cometbls<C> {
                             .chain
                             .execution_height(self.chain.make_height(bootstrap.header.beacon.slot))
                             .await,
-                        sync_committee: bootstrap.current_sync_committee.clone(),
-                        is_next: true,
+                        sync_committee: ActiveSyncCommittee::Next(
+                            bootstrap.current_sync_committee.clone(),
+                        ),
                     },
                 )
                 .await;
@@ -1347,6 +1390,21 @@ impl<C: ChainSpec> Cometbls<C> {
 
                 tracing::debug!("updating trusted_slot from {old_trusted_slot} to {trusted_slot}");
             }
+
+            // We are waiting for the counterparty chain to reach to the current timestamp of ours.
+            // Because the ethereum consensus spec instructs the light clients to check if the current slot
+            // that is calculated from the current timestamp is greater than the signature slot.
+            counterparty
+                .chain()
+                .wait_for_block_at_timestamp(
+                    SystemTime::now()
+                        .duration_since(UNIX_EPOCH)
+                        .unwrap()
+                        .as_secs()
+                        .try_into()
+                        .unwrap(),
+                )
+                .await;
 
             tracing::debug!(header = %serde_json::to_string(&header).unwrap());
 

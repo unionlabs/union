@@ -1,5 +1,6 @@
 use std::{
     fmt::{Debug, Display},
+    num::NonZeroU64,
     str::FromStr,
 };
 
@@ -118,6 +119,8 @@ pub trait Chain {
     fn chain_id(&self) -> impl Future<Output = String> + '_;
 
     fn query_latest_height(&self) -> impl Future<Output = Height> + '_;
+
+    fn wait_for_block_at_timestamp(&self, timestamp: NonZeroU64) -> impl Future<Output = ()> + '_;
 
     /// The client state on this chain at the current height.
     fn self_client_state(&self, height: Height)

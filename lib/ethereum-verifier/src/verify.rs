@@ -275,7 +275,10 @@ pub fn is_valid_light_client_header<C: ChainSpec>(
 mod tests {
     use unionlabs::{
         ethereum_consts_traits::{Minimal, MINIMAL},
-        ibc::lightclients::ethereum::{header::Header, sync_committee::SyncCommittee},
+        ibc::lightclients::ethereum::{
+            header::Header, sync_committee::SyncCommittee,
+            trusted_sync_committee::ActiveSyncCommittee,
+        },
         TryFromProto,
     };
 
@@ -283,7 +286,6 @@ mod tests {
 
     const GENESIS_VALIDATORS_ROOT: &str =
         "270d43e74ce340de4bca2b1936beca0f4f5408d9e78aec4850920baf659d5b69";
-    const GENESIS_TIME: u64 = 1686903632;
 
     // These are copied from ethereum light client's tests.
     lazy_static::lazy_static! {
@@ -309,8 +311,7 @@ mod tests {
 
     struct Context {
         finalized_slot: u64,
-        current_sync_committee: Option<SyncCommittee<Minimal>>,
-        next_sync_committee: Option<SyncCommittee<Minimal>>,
+        sync_committee: ActiveSyncCommittee<Minimal>,
     }
 
     impl LightClientContext for Context {
@@ -321,11 +322,19 @@ mod tests {
         }
 
         fn current_sync_committee(&self) -> Option<&SyncCommittee<Self::ChainSpec>> {
-            self.current_sync_committee.as_ref()
+            if let ActiveSyncCommittee::Current(committee) = &self.sync_committee {
+                Some(committee)
+            } else {
+                None
+            }
         }
 
         fn next_sync_committee(&self) -> Option<&SyncCommittee<Self::ChainSpec>> {
-            self.next_sync_committee.as_ref()
+            if let ActiveSyncCommittee::Next(committee) = &self.sync_committee {
+                Some(committee)
+            } else {
+                None
+            }
         }
 
         fn fork_parameters(&self) -> &ForkParameters {
@@ -390,25 +399,20 @@ mod tests {
 
         let sync_committee = header.trusted_sync_committee.sync_committee;
         let finalized_slot = header.trusted_sync_committee.trusted_height.revision_height;
-
-        let ctx = if header.trusted_sync_committee.is_next {
-            Context {
-                finalized_slot,
-                current_sync_committee: None,
-                next_sync_committee: Some(sync_committee),
-            }
-        } else {
-            Context {
-                finalized_slot,
-                current_sync_committee: Some(sync_committee),
-                next_sync_committee: None,
-            }
+        let ctx = Context {
+            finalized_slot,
+            sync_committee,
         };
 
         validate_light_client_update(
             &ctx,
-            header.consensus_update,
-            (header.timestamp - GENESIS_TIME) / MINIMAL.preset.SECONDS_PER_SLOT as u64,
+            header.consensus_update.clone(),
+            header
+                .consensus_update
+                .attested_header
+                .execution
+                .block_number
+                + 32,
             genesis_validators_root,
             BlsVerifier,
         )
@@ -565,7 +569,8 @@ mod tests {
 
         // Expected stored next sync committee to be None.
         let mut header = correct_header;
-        header.trusted_sync_committee.is_next = true;
+        header.trusted_sync_committee.sync_committee =
+            ActiveSyncCommittee::Next(header.trusted_sync_committee.sync_committee.get().clone());
 
         assert_eq!(
             do_validate_light_client_update(header),
@@ -694,9 +699,9 @@ mod tests {
             assert_eq!(
                 verify_account_storage_root(
                     header.consensus_update.attested_header.execution.state_root,
-                    &proof_data.key.as_slice().try_into().unwrap(),
+                    &proof_data.address.as_slice().try_into().unwrap(),
                     &proof_data.proof,
-                    &proof_data.value.as_slice().try_into().unwrap()
+                    &proof_data.storage_hash.as_slice().try_into().unwrap()
                 ),
                 Ok(())
             );

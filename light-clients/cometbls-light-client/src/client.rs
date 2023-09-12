@@ -197,6 +197,7 @@ impl IbcClient for CometblsLightClient {
 
     fn update_state_on_misbehaviour(
         _deps: DepsMut<Self::CustomQuery>,
+        _env: Env,
         _client_message: ics008_wasm_client::ClientMessage,
     ) -> Result<ContractResult, Self::Error> {
         Ok(ContractResult::invalid("Not implemented".to_string()))

@@ -581,6 +581,31 @@ impl Chain for Union {
                 .chain(UnboundedReceiverStream::new(events_from_now_rx))
         }
     }
+
+    fn wait_for_block_at_timestamp(
+        &self,
+        timestamp: std::num::NonZeroU64,
+    ) -> impl Future<Output = ()> + '_ {
+        async move {
+            loop {
+                let latest_block_timestamp = self
+                    .tm_client
+                    .latest_block()
+                    .await
+                    .unwrap()
+                    .block
+                    .header
+                    .time;
+
+                if latest_block_timestamp.unix_timestamp() > timestamp.get() as i64 {
+                    break;
+                }
+
+                tracing::debug!("requested timestamp not yet reached");
+                tokio::time::sleep(std::time::Duration::from_secs(3)).await;
+            }
+        }
+    }
 }
 
 impl<C: ChainSpec> LightClient for Ethereum<C> {

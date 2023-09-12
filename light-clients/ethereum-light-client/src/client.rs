@@ -128,14 +128,16 @@ impl IbcClient for EthereumLightClient {
         let wasm_client_state = read_client_state(deps)?;
         let ctx = LightClientContext::new(&wasm_client_state.data, trusted_consensus_state);
 
+        // NOTE(aeryz): Ethereum consensus-spec says that we should use the slot
+        // at the current timestamp.
+        let current_slot = (env.block.time.seconds() - wasm_client_state.data.genesis_time)
+            / wasm_client_state.data.seconds_per_slot
+            + wasm_client_state.data.fork_parameters.genesis_slot;
+
         validate_light_client_update::<LightClientContext<Config>, VerificationContext>(
             &ctx,
             header.consensus_update.clone(),
-            // NOTE(aeryz): Ethereum consensus-spec says that we should use the slot
-            // at the current timestamp.
-            (env.block.time.seconds() - wasm_client_state.data.genesis_time)
-                / wasm_client_state.data.seconds_per_slot
-                + wasm_client_state.data.fork_parameters.genesis_slot,
+            current_slot,
             wasm_client_state.data.genesis_validators_root.clone(),
             VerificationContext { deps },
         )
