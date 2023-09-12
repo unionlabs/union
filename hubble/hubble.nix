@@ -42,6 +42,7 @@
         };
         hasura-admin-secret = mkOption {
           type = types.string;
+          default = "";
         };
         indexers = mkOption {
           type = types.listOf types.attrset;
@@ -63,10 +64,9 @@
             hubble-systemd-script = pkgs.writeShellApplication {
               name = "hubble-systemd";
               runtimeInputs = [ pkgs.coreutils cfg.package ];
-
               text =
                 let
-                  secretArg = if cfg.hasura-admin-secret then "--secret ${cfg.hasura-admin-secret}" else "";
+                  secretArg = if cfg.hasura-admin-secret != "" then "--secret ${cfg.hasura-admin-secret}" else "";
                   indexersJson = builtins.toJSON cfg.indexers;
                 in
                 ''
