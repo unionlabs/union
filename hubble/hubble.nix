@@ -52,6 +52,7 @@
           example = [
             {
               url = "https://rpc.example.com";
+              type = "Tm";
               chain_id = "union-example-devnet";
             }
           ];
