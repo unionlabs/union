@@ -45,17 +45,14 @@
           default = "";
         };
         indexers = mkOption {
-          type = types.listOf types.attrs;
-          description = ''
-            Note that example.chain_id is optional.
-          '';
-          example = [
-            {
-              url = "https://rpc.example.com";
-              type = "Tm";
-              chain_id = "union-example-devnet";
-            }
-          ];
+          type = types.listOf (types.oneOf [
+            (types.submodule {
+              options.url = mkOption { type = types.str; example = "https://rpc.example.com"; };
+              options.type = mkOption { type = types.enum [ "tendermint" ]; };
+            })
+          ]);
+
+          # attrsOf (submodule { options.url = mkOption { type = types.str; }; options.user = mkOption { type = types.number; };
         };
       };
 

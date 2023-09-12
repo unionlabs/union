@@ -36,6 +36,7 @@ impl IntoIterator for Indexers {
 #[derive(Clone, Debug, serde::Deserialize)]
 #[serde(tag = "type")]
 pub enum IndexerConfig {
+    #[serde(rename = "tendermint")]
     Tm(crate::tm::Config),
 }
 
