@@ -1,6 +1,6 @@
 use std::string::FromUtf8Error;
 
-use cosmwasm_std::{IbcOrder, StdError, SubMsgResult};
+use cosmwasm_std::{IbcOrder, OverflowError, StdError, SubMsgResult};
 use cw_controllers::AdminError;
 use thiserror::Error;
 use ucs01_relay_api::{protocol::ProtocolError, types::EncodingError};
@@ -22,6 +22,12 @@ pub enum ContractError {
 
     #[error("Didn't send any funds")]
     NoFunds,
+
+    #[error("An overflow occurred: {error}")]
+    Overflow {
+        #[from]
+        error: OverflowError,
+    },
 
     #[error("Expected {expected:?} channel ordering but got {actual:?}")]
     InvalidChannelOrdering {
