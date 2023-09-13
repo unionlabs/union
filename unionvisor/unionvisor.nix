@@ -41,6 +41,27 @@
             path = pkgs.lib.getExe (get-flake "${inputs."${swapDotsWithUnderscores version}"}").packages.${system}.uniond;
           })
           versions);
+      mkNextBundle = name: versions: nextVersion: meta:
+        pkgs.linkFarm "union-bundle-${name}" ([
+          {
+            name = "meta.json";
+            path = pkgs.writeText "meta.json" (builtins.toJSON meta);
+          }
+          {
+            name = "unionvisor";
+            path = "${unionvisorAll.packages.unionvisor}/bin/unionvisor";
+          }
+          {
+            name = "${meta.versions_directory}/${nextVersion}/${meta.binary_name}";
+            path = pkgs.lib.getExe self'.packages.uniond;
+          }
+        ] ++ map
+          (version: {
+            name =
+              "${meta.versions_directory}/${version}/${meta.binary_name}";
+            path = pkgs.lib.getExe (get-flake "${inputs."${swapDotsWithUnderscores version}"}").packages.${system}.uniond;
+          })
+          versions);
     in
     {
       inherit (unionvisorAll) checks;
@@ -48,6 +69,12 @@
         inherit (unionvisorAll.packages) unionvisor;
         bundle-testnet =
           mkBundle "testnet" [ "v0.8.0" "v0.9.0" "v0.10.0" "v0.11.0" ] {
+            binary_name = "uniond";
+            versions_directory = "versions";
+            fallback_version = "v0.8.0";
+          };
+        bundle-testnet-next =
+          mkNextBundle "testnet" [ "v0.8.0" "v0.9.0" "v0.10.0" "v0.11.0" ] "v0.12.0" {
             binary_name = "uniond";
             versions_directory = "versions";
             fallback_version = "v0.8.0";
