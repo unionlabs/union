@@ -161,7 +161,7 @@ contract UCS01Relay is IBCAppBase {
         address token,
         uint256 amount
     ) internal {
-        inFlight[portId][channelId][token] = outstanding[portId][channelId][
+        inFlight[portId][channelId][token] = inFlight[portId][channelId][
             token
         ].add(amount);
     }
@@ -172,7 +172,7 @@ contract UCS01Relay is IBCAppBase {
         address token,
         uint256 amount
     ) internal {
-        inFlight[portId][channelId][token] = outstanding[portId][channelId][
+        inFlight[portId][channelId][token] = inFlight[portId][channelId][
             token
         ].sub(amount);
     }
