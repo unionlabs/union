@@ -69,6 +69,7 @@ Subdemom
 TRYOPEN
 Tempdirs
 Tendermint
+Timestamptz
 UNBONDED
 UNBONDING
 Unbonding
@@ -344,6 +345,7 @@ maxdome
 maxpeers
 merkle
 metadatas
+metas
 mgoogle
 milagro
 miminum
@@ -408,6 +410,7 @@ pipefail
 pkey
 pkgconfig
 pkgs
+plpgsql
 pname
 poisonphang
 polkadot

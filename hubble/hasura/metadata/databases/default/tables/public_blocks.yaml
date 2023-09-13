@@ -14,8 +14,9 @@ array_relationships:
           name: events
           schema: public
 select_permissions:
-  - role: user
+  - comment: ""
     permission:
+      allow_aggregations: true
       columns:
         - is_finalized
         - chain_id
@@ -24,5 +25,4 @@ select_permissions:
         - hash
       filter: {}
       limit: 50
-      allow_aggregations: true
-    comment: ""
+    role: user

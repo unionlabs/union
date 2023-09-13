@@ -19,3 +19,9 @@ mutation InsertChain($chain_id: String!) {
     id
   }
 }
+
+mutation InsertBlocksMany($objects: [blocks_insert_input!]!) {
+  insert_blocks(objects: $objects) {
+    affected_rows
+  }
+}

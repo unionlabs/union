@@ -14,6 +14,21 @@ directive @cached(
 ) on QUERY
 
 """
+Boolean expression to compare columns of type "Boolean". All fields are combined with logical 'AND'.
+"""
+input Boolean_comparison_exp {
+  _eq: Boolean
+  _gt: Boolean
+  _gte: Boolean
+  _in: [Boolean!]
+  _is_null: Boolean
+  _lt: Boolean
+  _lte: Boolean
+  _neq: Boolean
+  _nin: [Boolean!]
+}
+
+"""
 Boolean expression to compare columns of type "Int". All fields are combined with logical 'AND'.
 """
 input Int_comparison_exp {
@@ -326,6 +341,7 @@ type blocks {
   """An object relationship"""
   chain: chains!
   chain_id: Int!
+  created_at: timestamptz!
 
   """An array relationship"""
   events(
@@ -365,6 +381,8 @@ type blocks {
   hash: String!
   height: Int!
   id: Int!
+  is_finalized: Boolean
+  updated_at: timestamptz
 }
 
 """
@@ -373,6 +391,33 @@ aggregated selection of "blocks"
 type blocks_aggregate {
   aggregate: blocks_aggregate_fields
   nodes: [blocks!]!
+}
+
+input blocks_aggregate_bool_exp {
+  bool_and: blocks_aggregate_bool_exp_bool_and
+  bool_or: blocks_aggregate_bool_exp_bool_or
+  count: blocks_aggregate_bool_exp_count
+}
+
+input blocks_aggregate_bool_exp_bool_and {
+  arguments: blocks_select_column_blocks_aggregate_bool_exp_bool_and_arguments_columns!
+  distinct: Boolean
+  filter: blocks_bool_exp
+  predicate: Boolean_comparison_exp!
+}
+
+input blocks_aggregate_bool_exp_bool_or {
+  arguments: blocks_select_column_blocks_aggregate_bool_exp_bool_or_arguments_columns!
+  distinct: Boolean
+  filter: blocks_bool_exp
+  predicate: Boolean_comparison_exp!
+}
+
+input blocks_aggregate_bool_exp_count {
+  arguments: [blocks_select_column!]
+  distinct: Boolean
+  filter: blocks_bool_exp
+  predicate: Int_comparison_exp!
 }
 
 """
@@ -392,11 +437,47 @@ type blocks_aggregate_fields {
   variance: blocks_variance_fields
 }
 
+"""
+order by aggregate values of table "blocks"
+"""
+input blocks_aggregate_order_by {
+  avg: blocks_avg_order_by
+  count: order_by
+  max: blocks_max_order_by
+  min: blocks_min_order_by
+  stddev: blocks_stddev_order_by
+  stddev_pop: blocks_stddev_pop_order_by
+  stddev_samp: blocks_stddev_samp_order_by
+  sum: blocks_sum_order_by
+  var_pop: blocks_var_pop_order_by
+  var_samp: blocks_var_samp_order_by
+  variance: blocks_variance_order_by
+}
+
+"""
+input type for inserting array relation for remote table "blocks"
+"""
+input blocks_arr_rel_insert_input {
+  data: [blocks_insert_input!]!
+
+  """upsert condition"""
+  on_conflict: blocks_on_conflict
+}
+
 """aggregate avg on columns"""
 type blocks_avg_fields {
   chain_id: Float
   height: Float
   id: Float
+}
+
+"""
+order by avg() on columns of table "blocks"
+"""
+input blocks_avg_order_by {
+  chain_id: order_by
+  height: order_by
+  id: order_by
 }
 
 """
@@ -408,11 +489,14 @@ input blocks_bool_exp {
   _or: [blocks_bool_exp!]
   chain: chains_bool_exp
   chain_id: Int_comparison_exp
+  created_at: timestamptz_comparison_exp
   events: events_bool_exp
   events_aggregate: events_aggregate_bool_exp
   hash: String_comparison_exp
   height: Int_comparison_exp
   id: Int_comparison_exp
+  is_finalized: Boolean_comparison_exp
+  updated_at: timestamptz_comparison_exp
 }
 
 """
@@ -440,26 +524,57 @@ input type for inserting data into table "blocks"
 input blocks_insert_input {
   chain: chains_obj_rel_insert_input
   chain_id: Int
+  created_at: timestamptz
   events: events_arr_rel_insert_input
   hash: String
   height: Int
   id: Int
+  is_finalized: Boolean
+  updated_at: timestamptz
 }
 
 """aggregate max on columns"""
 type blocks_max_fields {
   chain_id: Int
+  created_at: timestamptz
   hash: String
   height: Int
   id: Int
+  updated_at: timestamptz
+}
+
+"""
+order by max() on columns of table "blocks"
+"""
+input blocks_max_order_by {
+  chain_id: order_by
+  created_at: order_by
+  hash: order_by
+  height: order_by
+  id: order_by
+  updated_at: order_by
 }
 
 """aggregate min on columns"""
 type blocks_min_fields {
   chain_id: Int
+  created_at: timestamptz
   hash: String
   height: Int
   id: Int
+  updated_at: timestamptz
+}
+
+"""
+order by min() on columns of table "blocks"
+"""
+input blocks_min_order_by {
+  chain_id: order_by
+  created_at: order_by
+  hash: order_by
+  height: order_by
+  id: order_by
+  updated_at: order_by
 }
 
 """
@@ -496,10 +611,13 @@ input blocks_on_conflict {
 input blocks_order_by {
   chain: chains_order_by
   chain_id: order_by
+  created_at: order_by
   events_aggregate: events_aggregate_order_by
   hash: order_by
   height: order_by
   id: order_by
+  is_finalized: order_by
+  updated_at: order_by
 }
 
 """primary key columns input for table: blocks"""
@@ -515,6 +633,9 @@ enum blocks_select_column {
   chain_id
 
   """column name"""
+  created_at
+
+  """column name"""
   hash
 
   """column name"""
@@ -522,6 +643,28 @@ enum blocks_select_column {
 
   """column name"""
   id
+
+  """column name"""
+  is_finalized
+
+  """column name"""
+  updated_at
+}
+
+"""
+select "blocks_aggregate_bool_exp_bool_and_arguments_columns" columns of table "blocks"
+"""
+enum blocks_select_column_blocks_aggregate_bool_exp_bool_and_arguments_columns {
+  """column name"""
+  is_finalized
+}
+
+"""
+select "blocks_aggregate_bool_exp_bool_or_arguments_columns" columns of table "blocks"
+"""
+enum blocks_select_column_blocks_aggregate_bool_exp_bool_or_arguments_columns {
+  """column name"""
+  is_finalized
 }
 
 """
@@ -529,9 +672,12 @@ input type for updating data in table "blocks"
 """
 input blocks_set_input {
   chain_id: Int
+  created_at: timestamptz
   hash: String
   height: Int
   id: Int
+  is_finalized: Boolean
+  updated_at: timestamptz
 }
 
 """aggregate stddev on columns"""
@@ -541,6 +687,15 @@ type blocks_stddev_fields {
   id: Float
 }
 
+"""
+order by stddev() on columns of table "blocks"
+"""
+input blocks_stddev_order_by {
+  chain_id: order_by
+  height: order_by
+  id: order_by
+}
+
 """aggregate stddev_pop on columns"""
 type blocks_stddev_pop_fields {
   chain_id: Float
@@ -548,11 +703,29 @@ type blocks_stddev_pop_fields {
   id: Float
 }
 
+"""
+order by stddev_pop() on columns of table "blocks"
+"""
+input blocks_stddev_pop_order_by {
+  chain_id: order_by
+  height: order_by
+  id: order_by
+}
+
 """aggregate stddev_samp on columns"""
 type blocks_stddev_samp_fields {
   chain_id: Float
   height: Float
   id: Float
+}
+
+"""
+order by stddev_samp() on columns of table "blocks"
+"""
+input blocks_stddev_samp_order_by {
+  chain_id: order_by
+  height: order_by
+  id: order_by
 }
 
 """
@@ -569,9 +742,12 @@ input blocks_stream_cursor_input {
 """Initial value of the column from where the streaming should start"""
 input blocks_stream_cursor_value_input {
   chain_id: Int
+  created_at: timestamptz
   hash: String
   height: Int
   id: Int
+  is_finalized: Boolean
+  updated_at: timestamptz
 }
 
 """aggregate sum on columns"""
@@ -582,11 +758,23 @@ type blocks_sum_fields {
 }
 
 """
+order by sum() on columns of table "blocks"
+"""
+input blocks_sum_order_by {
+  chain_id: order_by
+  height: order_by
+  id: order_by
+}
+
+"""
 update columns of table "blocks"
 """
 enum blocks_update_column {
   """column name"""
   chain_id
+
+  """column name"""
+  created_at
 
   """column name"""
   hash
@@ -596,6 +784,12 @@ enum blocks_update_column {
 
   """column name"""
   id
+
+  """column name"""
+  is_finalized
+
+  """column name"""
+  updated_at
 }
 
 input blocks_updates {
@@ -616,11 +810,29 @@ type blocks_var_pop_fields {
   id: Float
 }
 
+"""
+order by var_pop() on columns of table "blocks"
+"""
+input blocks_var_pop_order_by {
+  chain_id: order_by
+  height: order_by
+  id: order_by
+}
+
 """aggregate var_samp on columns"""
 type blocks_var_samp_fields {
   chain_id: Float
   height: Float
   id: Float
+}
+
+"""
+order by var_samp() on columns of table "blocks"
+"""
+input blocks_var_samp_order_by {
+  chain_id: order_by
+  height: order_by
+  id: order_by
 }
 
 """aggregate variance on columns"""
@@ -631,9 +843,53 @@ type blocks_variance_fields {
 }
 
 """
+order by variance() on columns of table "blocks"
+"""
+input blocks_variance_order_by {
+  chain_id: order_by
+  height: order_by
+  id: order_by
+}
+
+"""
 columns and relationships of "chains"
 """
 type chains {
+  """An array relationship"""
+  blocks(
+    """distinct select on columns"""
+    distinct_on: [blocks_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [blocks_order_by!]
+
+    """filter the rows returned"""
+    where: blocks_bool_exp
+  ): [blocks!]!
+
+  """An aggregate relationship"""
+  blocks_aggregate(
+    """distinct select on columns"""
+    distinct_on: [blocks_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [blocks_order_by!]
+
+    """filter the rows returned"""
+    where: blocks_bool_exp
+  ): blocks_aggregate!
   chain_id: String!
   id: Int!
 }
@@ -675,6 +931,8 @@ input chains_bool_exp {
   _and: [chains_bool_exp!]
   _not: chains_bool_exp
   _or: [chains_bool_exp!]
+  blocks: blocks_bool_exp
+  blocks_aggregate: blocks_aggregate_bool_exp
   chain_id: String_comparison_exp
   id: Int_comparison_exp
 }
@@ -705,6 +963,7 @@ input chains_inc_input {
 input type for inserting data into table "chains"
 """
 input chains_insert_input {
+  blocks: blocks_arr_rel_insert_input
   chain_id: String
   id: Int
 }
@@ -753,6 +1012,7 @@ input chains_on_conflict {
 
 """Ordering options when selecting data from "chains"."""
 input chains_order_by {
+  blocks_aggregate: blocks_aggregate_order_by
   chain_id: order_by
   id: order_by
 }
@@ -853,6 +1113,800 @@ type chains_var_samp_fields {
 
 """aggregate variance on columns"""
 type chains_variance_fields {
+  id: Float
+}
+
+"""
+columns and relationships of "coin_receiveds"
+"""
+type coin_receiveds {
+  amount: String
+  denom: String
+
+  """An object relationship"""
+  event: events
+  id: Int
+  receiver: String
+}
+
+"""
+aggregated selection of "coin_receiveds"
+"""
+type coin_receiveds_aggregate {
+  aggregate: coin_receiveds_aggregate_fields
+  nodes: [coin_receiveds!]!
+}
+
+"""
+aggregate fields of "coin_receiveds"
+"""
+type coin_receiveds_aggregate_fields {
+  avg: coin_receiveds_avg_fields
+  count(columns: [coin_receiveds_select_column!], distinct: Boolean): Int!
+  max: coin_receiveds_max_fields
+  min: coin_receiveds_min_fields
+  stddev: coin_receiveds_stddev_fields
+  stddev_pop: coin_receiveds_stddev_pop_fields
+  stddev_samp: coin_receiveds_stddev_samp_fields
+  sum: coin_receiveds_sum_fields
+  var_pop: coin_receiveds_var_pop_fields
+  var_samp: coin_receiveds_var_samp_fields
+  variance: coin_receiveds_variance_fields
+}
+
+"""aggregate avg on columns"""
+type coin_receiveds_avg_fields {
+  id: Float
+}
+
+"""
+Boolean expression to filter rows from the table "coin_receiveds". All fields are combined with a logical 'AND'.
+"""
+input coin_receiveds_bool_exp {
+  _and: [coin_receiveds_bool_exp!]
+  _not: coin_receiveds_bool_exp
+  _or: [coin_receiveds_bool_exp!]
+  amount: String_comparison_exp
+  denom: String_comparison_exp
+  event: events_bool_exp
+  id: Int_comparison_exp
+  receiver: String_comparison_exp
+}
+
+"""
+input type for incrementing numeric columns in table "coin_receiveds"
+"""
+input coin_receiveds_inc_input {
+  id: Int
+}
+
+"""
+input type for inserting data into table "coin_receiveds"
+"""
+input coin_receiveds_insert_input {
+  amount: String
+  denom: String
+  event: events_obj_rel_insert_input
+  id: Int
+  receiver: String
+}
+
+"""aggregate max on columns"""
+type coin_receiveds_max_fields {
+  amount: String
+  denom: String
+  id: Int
+  receiver: String
+}
+
+"""aggregate min on columns"""
+type coin_receiveds_min_fields {
+  amount: String
+  denom: String
+  id: Int
+  receiver: String
+}
+
+"""
+response of any mutation on the table "coin_receiveds"
+"""
+type coin_receiveds_mutation_response {
+  """number of rows affected by the mutation"""
+  affected_rows: Int!
+
+  """data from the rows affected by the mutation"""
+  returning: [coin_receiveds!]!
+}
+
+"""Ordering options when selecting data from "coin_receiveds"."""
+input coin_receiveds_order_by {
+  amount: order_by
+  denom: order_by
+  event: events_order_by
+  id: order_by
+  receiver: order_by
+}
+
+"""
+select columns of table "coin_receiveds"
+"""
+enum coin_receiveds_select_column {
+  """column name"""
+  amount
+
+  """column name"""
+  denom
+
+  """column name"""
+  id
+
+  """column name"""
+  receiver
+}
+
+"""
+input type for updating data in table "coin_receiveds"
+"""
+input coin_receiveds_set_input {
+  amount: String
+  denom: String
+  id: Int
+  receiver: String
+}
+
+"""aggregate stddev on columns"""
+type coin_receiveds_stddev_fields {
+  id: Float
+}
+
+"""aggregate stddev_pop on columns"""
+type coin_receiveds_stddev_pop_fields {
+  id: Float
+}
+
+"""aggregate stddev_samp on columns"""
+type coin_receiveds_stddev_samp_fields {
+  id: Float
+}
+
+"""
+Streaming cursor of the table "coin_receiveds"
+"""
+input coin_receiveds_stream_cursor_input {
+  """Stream column input with initial value"""
+  initial_value: coin_receiveds_stream_cursor_value_input!
+
+  """cursor ordering"""
+  ordering: cursor_ordering
+}
+
+"""Initial value of the column from where the streaming should start"""
+input coin_receiveds_stream_cursor_value_input {
+  amount: String
+  denom: String
+  id: Int
+  receiver: String
+}
+
+"""aggregate sum on columns"""
+type coin_receiveds_sum_fields {
+  id: Int
+}
+
+input coin_receiveds_updates {
+  """increments the numeric columns with given value of the filtered values"""
+  _inc: coin_receiveds_inc_input
+
+  """sets the columns of the filtered rows to the given values"""
+  _set: coin_receiveds_set_input
+
+  """filter the rows which have to be updated"""
+  where: coin_receiveds_bool_exp!
+}
+
+"""aggregate var_pop on columns"""
+type coin_receiveds_var_pop_fields {
+  id: Float
+}
+
+"""aggregate var_samp on columns"""
+type coin_receiveds_var_samp_fields {
+  id: Float
+}
+
+"""aggregate variance on columns"""
+type coin_receiveds_variance_fields {
+  id: Float
+}
+
+"""
+columns and relationships of "coin_spents"
+"""
+type coin_spents {
+  amount: String
+  denom: String
+  id: Int
+  spender: String
+}
+
+"""
+aggregated selection of "coin_spents"
+"""
+type coin_spents_aggregate {
+  aggregate: coin_spents_aggregate_fields
+  nodes: [coin_spents!]!
+}
+
+"""
+aggregate fields of "coin_spents"
+"""
+type coin_spents_aggregate_fields {
+  avg: coin_spents_avg_fields
+  count(columns: [coin_spents_select_column!], distinct: Boolean): Int!
+  max: coin_spents_max_fields
+  min: coin_spents_min_fields
+  stddev: coin_spents_stddev_fields
+  stddev_pop: coin_spents_stddev_pop_fields
+  stddev_samp: coin_spents_stddev_samp_fields
+  sum: coin_spents_sum_fields
+  var_pop: coin_spents_var_pop_fields
+  var_samp: coin_spents_var_samp_fields
+  variance: coin_spents_variance_fields
+}
+
+"""aggregate avg on columns"""
+type coin_spents_avg_fields {
+  id: Float
+}
+
+"""
+Boolean expression to filter rows from the table "coin_spents". All fields are combined with a logical 'AND'.
+"""
+input coin_spents_bool_exp {
+  _and: [coin_spents_bool_exp!]
+  _not: coin_spents_bool_exp
+  _or: [coin_spents_bool_exp!]
+  amount: String_comparison_exp
+  denom: String_comparison_exp
+  id: Int_comparison_exp
+  spender: String_comparison_exp
+}
+
+"""
+input type for incrementing numeric columns in table "coin_spents"
+"""
+input coin_spents_inc_input {
+  id: Int
+}
+
+"""
+input type for inserting data into table "coin_spents"
+"""
+input coin_spents_insert_input {
+  amount: String
+  denom: String
+  id: Int
+  spender: String
+}
+
+"""aggregate max on columns"""
+type coin_spents_max_fields {
+  amount: String
+  denom: String
+  id: Int
+  spender: String
+}
+
+"""aggregate min on columns"""
+type coin_spents_min_fields {
+  amount: String
+  denom: String
+  id: Int
+  spender: String
+}
+
+"""
+response of any mutation on the table "coin_spents"
+"""
+type coin_spents_mutation_response {
+  """number of rows affected by the mutation"""
+  affected_rows: Int!
+
+  """data from the rows affected by the mutation"""
+  returning: [coin_spents!]!
+}
+
+"""Ordering options when selecting data from "coin_spents"."""
+input coin_spents_order_by {
+  amount: order_by
+  denom: order_by
+  id: order_by
+  spender: order_by
+}
+
+"""
+select columns of table "coin_spents"
+"""
+enum coin_spents_select_column {
+  """column name"""
+  amount
+
+  """column name"""
+  denom
+
+  """column name"""
+  id
+
+  """column name"""
+  spender
+}
+
+"""
+input type for updating data in table "coin_spents"
+"""
+input coin_spents_set_input {
+  amount: String
+  denom: String
+  id: Int
+  spender: String
+}
+
+"""aggregate stddev on columns"""
+type coin_spents_stddev_fields {
+  id: Float
+}
+
+"""aggregate stddev_pop on columns"""
+type coin_spents_stddev_pop_fields {
+  id: Float
+}
+
+"""aggregate stddev_samp on columns"""
+type coin_spents_stddev_samp_fields {
+  id: Float
+}
+
+"""
+Streaming cursor of the table "coin_spents"
+"""
+input coin_spents_stream_cursor_input {
+  """Stream column input with initial value"""
+  initial_value: coin_spents_stream_cursor_value_input!
+
+  """cursor ordering"""
+  ordering: cursor_ordering
+}
+
+"""Initial value of the column from where the streaming should start"""
+input coin_spents_stream_cursor_value_input {
+  amount: String
+  denom: String
+  id: Int
+  spender: String
+}
+
+"""aggregate sum on columns"""
+type coin_spents_sum_fields {
+  id: Int
+}
+
+input coin_spents_updates {
+  """increments the numeric columns with given value of the filtered values"""
+  _inc: coin_spents_inc_input
+
+  """sets the columns of the filtered rows to the given values"""
+  _set: coin_spents_set_input
+
+  """filter the rows which have to be updated"""
+  where: coin_spents_bool_exp!
+}
+
+"""aggregate var_pop on columns"""
+type coin_spents_var_pop_fields {
+  id: Float
+}
+
+"""aggregate var_samp on columns"""
+type coin_spents_var_samp_fields {
+  id: Float
+}
+
+"""aggregate variance on columns"""
+type coin_spents_variance_fields {
+  id: Float
+}
+
+"""
+columns and relationships of "coinbases"
+"""
+type coinbases {
+  amount: String
+  denom: String
+  id: Int
+  minter: String
+}
+
+"""
+aggregated selection of "coinbases"
+"""
+type coinbases_aggregate {
+  aggregate: coinbases_aggregate_fields
+  nodes: [coinbases!]!
+}
+
+"""
+aggregate fields of "coinbases"
+"""
+type coinbases_aggregate_fields {
+  avg: coinbases_avg_fields
+  count(columns: [coinbases_select_column!], distinct: Boolean): Int!
+  max: coinbases_max_fields
+  min: coinbases_min_fields
+  stddev: coinbases_stddev_fields
+  stddev_pop: coinbases_stddev_pop_fields
+  stddev_samp: coinbases_stddev_samp_fields
+  sum: coinbases_sum_fields
+  var_pop: coinbases_var_pop_fields
+  var_samp: coinbases_var_samp_fields
+  variance: coinbases_variance_fields
+}
+
+"""aggregate avg on columns"""
+type coinbases_avg_fields {
+  id: Float
+}
+
+"""
+Boolean expression to filter rows from the table "coinbases". All fields are combined with a logical 'AND'.
+"""
+input coinbases_bool_exp {
+  _and: [coinbases_bool_exp!]
+  _not: coinbases_bool_exp
+  _or: [coinbases_bool_exp!]
+  amount: String_comparison_exp
+  denom: String_comparison_exp
+  id: Int_comparison_exp
+  minter: String_comparison_exp
+}
+
+"""
+input type for incrementing numeric columns in table "coinbases"
+"""
+input coinbases_inc_input {
+  id: Int
+}
+
+"""
+input type for inserting data into table "coinbases"
+"""
+input coinbases_insert_input {
+  amount: String
+  denom: String
+  id: Int
+  minter: String
+}
+
+"""aggregate max on columns"""
+type coinbases_max_fields {
+  amount: String
+  denom: String
+  id: Int
+  minter: String
+}
+
+"""aggregate min on columns"""
+type coinbases_min_fields {
+  amount: String
+  denom: String
+  id: Int
+  minter: String
+}
+
+"""
+response of any mutation on the table "coinbases"
+"""
+type coinbases_mutation_response {
+  """number of rows affected by the mutation"""
+  affected_rows: Int!
+
+  """data from the rows affected by the mutation"""
+  returning: [coinbases!]!
+}
+
+"""Ordering options when selecting data from "coinbases"."""
+input coinbases_order_by {
+  amount: order_by
+  denom: order_by
+  id: order_by
+  minter: order_by
+}
+
+"""
+select columns of table "coinbases"
+"""
+enum coinbases_select_column {
+  """column name"""
+  amount
+
+  """column name"""
+  denom
+
+  """column name"""
+  id
+
+  """column name"""
+  minter
+}
+
+"""
+input type for updating data in table "coinbases"
+"""
+input coinbases_set_input {
+  amount: String
+  denom: String
+  id: Int
+  minter: String
+}
+
+"""aggregate stddev on columns"""
+type coinbases_stddev_fields {
+  id: Float
+}
+
+"""aggregate stddev_pop on columns"""
+type coinbases_stddev_pop_fields {
+  id: Float
+}
+
+"""aggregate stddev_samp on columns"""
+type coinbases_stddev_samp_fields {
+  id: Float
+}
+
+"""
+Streaming cursor of the table "coinbases"
+"""
+input coinbases_stream_cursor_input {
+  """Stream column input with initial value"""
+  initial_value: coinbases_stream_cursor_value_input!
+
+  """cursor ordering"""
+  ordering: cursor_ordering
+}
+
+"""Initial value of the column from where the streaming should start"""
+input coinbases_stream_cursor_value_input {
+  amount: String
+  denom: String
+  id: Int
+  minter: String
+}
+
+"""aggregate sum on columns"""
+type coinbases_sum_fields {
+  id: Int
+}
+
+input coinbases_updates {
+  """increments the numeric columns with given value of the filtered values"""
+  _inc: coinbases_inc_input
+
+  """sets the columns of the filtered rows to the given values"""
+  _set: coinbases_set_input
+
+  """filter the rows which have to be updated"""
+  where: coinbases_bool_exp!
+}
+
+"""aggregate var_pop on columns"""
+type coinbases_var_pop_fields {
+  id: Float
+}
+
+"""aggregate var_samp on columns"""
+type coinbases_var_samp_fields {
+  id: Float
+}
+
+"""aggregate variance on columns"""
+type coinbases_variance_fields {
+  id: Float
+}
+
+"""
+columns and relationships of "commissions"
+"""
+type commissions {
+  amount: String
+  denom: String
+  id: Int
+  validator: String
+}
+
+"""
+aggregated selection of "commissions"
+"""
+type commissions_aggregate {
+  aggregate: commissions_aggregate_fields
+  nodes: [commissions!]!
+}
+
+"""
+aggregate fields of "commissions"
+"""
+type commissions_aggregate_fields {
+  avg: commissions_avg_fields
+  count(columns: [commissions_select_column!], distinct: Boolean): Int!
+  max: commissions_max_fields
+  min: commissions_min_fields
+  stddev: commissions_stddev_fields
+  stddev_pop: commissions_stddev_pop_fields
+  stddev_samp: commissions_stddev_samp_fields
+  sum: commissions_sum_fields
+  var_pop: commissions_var_pop_fields
+  var_samp: commissions_var_samp_fields
+  variance: commissions_variance_fields
+}
+
+"""aggregate avg on columns"""
+type commissions_avg_fields {
+  id: Float
+}
+
+"""
+Boolean expression to filter rows from the table "commissions". All fields are combined with a logical 'AND'.
+"""
+input commissions_bool_exp {
+  _and: [commissions_bool_exp!]
+  _not: commissions_bool_exp
+  _or: [commissions_bool_exp!]
+  amount: String_comparison_exp
+  denom: String_comparison_exp
+  id: Int_comparison_exp
+  validator: String_comparison_exp
+}
+
+"""
+input type for incrementing numeric columns in table "commissions"
+"""
+input commissions_inc_input {
+  id: Int
+}
+
+"""
+input type for inserting data into table "commissions"
+"""
+input commissions_insert_input {
+  amount: String
+  denom: String
+  id: Int
+  validator: String
+}
+
+"""aggregate max on columns"""
+type commissions_max_fields {
+  amount: String
+  denom: String
+  id: Int
+  validator: String
+}
+
+"""aggregate min on columns"""
+type commissions_min_fields {
+  amount: String
+  denom: String
+  id: Int
+  validator: String
+}
+
+"""
+response of any mutation on the table "commissions"
+"""
+type commissions_mutation_response {
+  """number of rows affected by the mutation"""
+  affected_rows: Int!
+
+  """data from the rows affected by the mutation"""
+  returning: [commissions!]!
+}
+
+"""Ordering options when selecting data from "commissions"."""
+input commissions_order_by {
+  amount: order_by
+  denom: order_by
+  id: order_by
+  validator: order_by
+}
+
+"""
+select columns of table "commissions"
+"""
+enum commissions_select_column {
+  """column name"""
+  amount
+
+  """column name"""
+  denom
+
+  """column name"""
+  id
+
+  """column name"""
+  validator
+}
+
+"""
+input type for updating data in table "commissions"
+"""
+input commissions_set_input {
+  amount: String
+  denom: String
+  id: Int
+  validator: String
+}
+
+"""aggregate stddev on columns"""
+type commissions_stddev_fields {
+  id: Float
+}
+
+"""aggregate stddev_pop on columns"""
+type commissions_stddev_pop_fields {
+  id: Float
+}
+
+"""aggregate stddev_samp on columns"""
+type commissions_stddev_samp_fields {
+  id: Float
+}
+
+"""
+Streaming cursor of the table "commissions"
+"""
+input commissions_stream_cursor_input {
+  """Stream column input with initial value"""
+  initial_value: commissions_stream_cursor_value_input!
+
+  """cursor ordering"""
+  ordering: cursor_ordering
+}
+
+"""Initial value of the column from where the streaming should start"""
+input commissions_stream_cursor_value_input {
+  amount: String
+  denom: String
+  id: Int
+  validator: String
+}
+
+"""aggregate sum on columns"""
+type commissions_sum_fields {
+  id: Int
+}
+
+input commissions_updates {
+  """increments the numeric columns with given value of the filtered values"""
+  _inc: commissions_inc_input
+
+  """sets the columns of the filtered rows to the given values"""
+  _set: commissions_set_input
+
+  """filter the rows which have to be updated"""
+  where: commissions_bool_exp!
+}
+
+"""aggregate var_pop on columns"""
+type commissions_var_pop_fields {
+  id: Float
+}
+
+"""aggregate var_samp on columns"""
+type commissions_var_samp_fields {
+  id: Float
+}
+
+"""aggregate variance on columns"""
+type commissions_variance_fields {
   id: Float
 }
 
@@ -1070,6 +2124,16 @@ type events_mutation_response {
 
   """data from the rows affected by the mutation"""
   returning: [events!]!
+}
+
+"""
+input type for inserting object relation for remote table "events"
+"""
+input events_obj_rel_insert_input {
+  data: events_insert_input!
+
+  """upsert condition"""
+  on_conflict: events_on_conflict
 }
 
 """
@@ -1344,6 +2408,389 @@ input jsonb_comparison_exp {
   _nin: [jsonb!]
 }
 
+"""
+columns and relationships of "messages"
+"""
+type messages {
+  id: Int
+  sender: String
+}
+
+"""
+aggregated selection of "messages"
+"""
+type messages_aggregate {
+  aggregate: messages_aggregate_fields
+  nodes: [messages!]!
+}
+
+"""
+aggregate fields of "messages"
+"""
+type messages_aggregate_fields {
+  avg: messages_avg_fields
+  count(columns: [messages_select_column!], distinct: Boolean): Int!
+  max: messages_max_fields
+  min: messages_min_fields
+  stddev: messages_stddev_fields
+  stddev_pop: messages_stddev_pop_fields
+  stddev_samp: messages_stddev_samp_fields
+  sum: messages_sum_fields
+  var_pop: messages_var_pop_fields
+  var_samp: messages_var_samp_fields
+  variance: messages_variance_fields
+}
+
+"""aggregate avg on columns"""
+type messages_avg_fields {
+  id: Float
+}
+
+"""
+Boolean expression to filter rows from the table "messages". All fields are combined with a logical 'AND'.
+"""
+input messages_bool_exp {
+  _and: [messages_bool_exp!]
+  _not: messages_bool_exp
+  _or: [messages_bool_exp!]
+  id: Int_comparison_exp
+  sender: String_comparison_exp
+}
+
+"""
+input type for incrementing numeric columns in table "messages"
+"""
+input messages_inc_input {
+  id: Int
+}
+
+"""
+input type for inserting data into table "messages"
+"""
+input messages_insert_input {
+  id: Int
+  sender: String
+}
+
+"""aggregate max on columns"""
+type messages_max_fields {
+  id: Int
+  sender: String
+}
+
+"""aggregate min on columns"""
+type messages_min_fields {
+  id: Int
+  sender: String
+}
+
+"""
+response of any mutation on the table "messages"
+"""
+type messages_mutation_response {
+  """number of rows affected by the mutation"""
+  affected_rows: Int!
+
+  """data from the rows affected by the mutation"""
+  returning: [messages!]!
+}
+
+"""Ordering options when selecting data from "messages"."""
+input messages_order_by {
+  id: order_by
+  sender: order_by
+}
+
+"""
+select columns of table "messages"
+"""
+enum messages_select_column {
+  """column name"""
+  id
+
+  """column name"""
+  sender
+}
+
+"""
+input type for updating data in table "messages"
+"""
+input messages_set_input {
+  id: Int
+  sender: String
+}
+
+"""aggregate stddev on columns"""
+type messages_stddev_fields {
+  id: Float
+}
+
+"""aggregate stddev_pop on columns"""
+type messages_stddev_pop_fields {
+  id: Float
+}
+
+"""aggregate stddev_samp on columns"""
+type messages_stddev_samp_fields {
+  id: Float
+}
+
+"""
+Streaming cursor of the table "messages"
+"""
+input messages_stream_cursor_input {
+  """Stream column input with initial value"""
+  initial_value: messages_stream_cursor_value_input!
+
+  """cursor ordering"""
+  ordering: cursor_ordering
+}
+
+"""Initial value of the column from where the streaming should start"""
+input messages_stream_cursor_value_input {
+  id: Int
+  sender: String
+}
+
+"""aggregate sum on columns"""
+type messages_sum_fields {
+  id: Int
+}
+
+input messages_updates {
+  """increments the numeric columns with given value of the filtered values"""
+  _inc: messages_inc_input
+
+  """sets the columns of the filtered rows to the given values"""
+  _set: messages_set_input
+
+  """filter the rows which have to be updated"""
+  where: messages_bool_exp!
+}
+
+"""aggregate var_pop on columns"""
+type messages_var_pop_fields {
+  id: Float
+}
+
+"""aggregate var_samp on columns"""
+type messages_var_samp_fields {
+  id: Float
+}
+
+"""aggregate variance on columns"""
+type messages_variance_fields {
+  id: Float
+}
+
+"""
+columns and relationships of "mints"
+"""
+type mints {
+  amount: String
+  annual_provisions: String
+  bonded_ratio: String
+  id: Int
+  inflation: String
+}
+
+"""
+aggregated selection of "mints"
+"""
+type mints_aggregate {
+  aggregate: mints_aggregate_fields
+  nodes: [mints!]!
+}
+
+"""
+aggregate fields of "mints"
+"""
+type mints_aggregate_fields {
+  avg: mints_avg_fields
+  count(columns: [mints_select_column!], distinct: Boolean): Int!
+  max: mints_max_fields
+  min: mints_min_fields
+  stddev: mints_stddev_fields
+  stddev_pop: mints_stddev_pop_fields
+  stddev_samp: mints_stddev_samp_fields
+  sum: mints_sum_fields
+  var_pop: mints_var_pop_fields
+  var_samp: mints_var_samp_fields
+  variance: mints_variance_fields
+}
+
+"""aggregate avg on columns"""
+type mints_avg_fields {
+  id: Float
+}
+
+"""
+Boolean expression to filter rows from the table "mints". All fields are combined with a logical 'AND'.
+"""
+input mints_bool_exp {
+  _and: [mints_bool_exp!]
+  _not: mints_bool_exp
+  _or: [mints_bool_exp!]
+  amount: String_comparison_exp
+  annual_provisions: String_comparison_exp
+  bonded_ratio: String_comparison_exp
+  id: Int_comparison_exp
+  inflation: String_comparison_exp
+}
+
+"""
+input type for incrementing numeric columns in table "mints"
+"""
+input mints_inc_input {
+  id: Int
+}
+
+"""
+input type for inserting data into table "mints"
+"""
+input mints_insert_input {
+  amount: String
+  annual_provisions: String
+  bonded_ratio: String
+  id: Int
+  inflation: String
+}
+
+"""aggregate max on columns"""
+type mints_max_fields {
+  amount: String
+  annual_provisions: String
+  bonded_ratio: String
+  id: Int
+  inflation: String
+}
+
+"""aggregate min on columns"""
+type mints_min_fields {
+  amount: String
+  annual_provisions: String
+  bonded_ratio: String
+  id: Int
+  inflation: String
+}
+
+"""
+response of any mutation on the table "mints"
+"""
+type mints_mutation_response {
+  """number of rows affected by the mutation"""
+  affected_rows: Int!
+
+  """data from the rows affected by the mutation"""
+  returning: [mints!]!
+}
+
+"""Ordering options when selecting data from "mints"."""
+input mints_order_by {
+  amount: order_by
+  annual_provisions: order_by
+  bonded_ratio: order_by
+  id: order_by
+  inflation: order_by
+}
+
+"""
+select columns of table "mints"
+"""
+enum mints_select_column {
+  """column name"""
+  amount
+
+  """column name"""
+  annual_provisions
+
+  """column name"""
+  bonded_ratio
+
+  """column name"""
+  id
+
+  """column name"""
+  inflation
+}
+
+"""
+input type for updating data in table "mints"
+"""
+input mints_set_input {
+  amount: String
+  annual_provisions: String
+  bonded_ratio: String
+  id: Int
+  inflation: String
+}
+
+"""aggregate stddev on columns"""
+type mints_stddev_fields {
+  id: Float
+}
+
+"""aggregate stddev_pop on columns"""
+type mints_stddev_pop_fields {
+  id: Float
+}
+
+"""aggregate stddev_samp on columns"""
+type mints_stddev_samp_fields {
+  id: Float
+}
+
+"""
+Streaming cursor of the table "mints"
+"""
+input mints_stream_cursor_input {
+  """Stream column input with initial value"""
+  initial_value: mints_stream_cursor_value_input!
+
+  """cursor ordering"""
+  ordering: cursor_ordering
+}
+
+"""Initial value of the column from where the streaming should start"""
+input mints_stream_cursor_value_input {
+  amount: String
+  annual_provisions: String
+  bonded_ratio: String
+  id: Int
+  inflation: String
+}
+
+"""aggregate sum on columns"""
+type mints_sum_fields {
+  id: Int
+}
+
+input mints_updates {
+  """increments the numeric columns with given value of the filtered values"""
+  _inc: mints_inc_input
+
+  """sets the columns of the filtered rows to the given values"""
+  _set: mints_set_input
+
+  """filter the rows which have to be updated"""
+  where: mints_bool_exp!
+}
+
+"""aggregate var_pop on columns"""
+type mints_var_pop_fields {
+  id: Float
+}
+
+"""aggregate var_samp on columns"""
+type mints_var_samp_fields {
+  id: Float
+}
+
+"""aggregate variance on columns"""
+type mints_variance_fields {
+  id: Float
+}
+
 """mutation root"""
 type mutation_root {
   """
@@ -1386,6 +2833,38 @@ type mutation_root {
   delete_chains_by_pk(chain_id: String!, id: Int!): chains
 
   """
+  delete data from the table: "coin_receiveds"
+  """
+  delete_coin_receiveds(
+    """filter the rows which have to be deleted"""
+    where: coin_receiveds_bool_exp!
+  ): coin_receiveds_mutation_response
+
+  """
+  delete data from the table: "coin_spents"
+  """
+  delete_coin_spents(
+    """filter the rows which have to be deleted"""
+    where: coin_spents_bool_exp!
+  ): coin_spents_mutation_response
+
+  """
+  delete data from the table: "coinbases"
+  """
+  delete_coinbases(
+    """filter the rows which have to be deleted"""
+    where: coinbases_bool_exp!
+  ): coinbases_mutation_response
+
+  """
+  delete data from the table: "commissions"
+  """
+  delete_commissions(
+    """filter the rows which have to be deleted"""
+    where: commissions_bool_exp!
+  ): commissions_mutation_response
+
+  """
   delete data from the table: "events"
   """
   delete_events(
@@ -1397,6 +2876,38 @@ type mutation_root {
   delete single row from the table: "events"
   """
   delete_events_by_pk(id: Int!): events
+
+  """
+  delete data from the table: "messages"
+  """
+  delete_messages(
+    """filter the rows which have to be deleted"""
+    where: messages_bool_exp!
+  ): messages_mutation_response
+
+  """
+  delete data from the table: "mints"
+  """
+  delete_mints(
+    """filter the rows which have to be deleted"""
+    where: mints_bool_exp!
+  ): mints_mutation_response
+
+  """
+  delete data from the table: "rewards"
+  """
+  delete_rewards(
+    """filter the rows which have to be deleted"""
+    where: rewards_bool_exp!
+  ): rewards_mutation_response
+
+  """
+  delete data from the table: "transfers"
+  """
+  delete_transfers(
+    """filter the rows which have to be deleted"""
+    where: transfers_bool_exp!
+  ): transfers_mutation_response
 
   """
   insert data into the table: "addresses"
@@ -1465,6 +2976,70 @@ type mutation_root {
   ): chains
 
   """
+  insert data into the table: "coin_receiveds"
+  """
+  insert_coin_receiveds(
+    """the rows to be inserted"""
+    objects: [coin_receiveds_insert_input!]!
+  ): coin_receiveds_mutation_response
+
+  """
+  insert a single row into the table: "coin_receiveds"
+  """
+  insert_coin_receiveds_one(
+    """the row to be inserted"""
+    object: coin_receiveds_insert_input!
+  ): coin_receiveds
+
+  """
+  insert data into the table: "coin_spents"
+  """
+  insert_coin_spents(
+    """the rows to be inserted"""
+    objects: [coin_spents_insert_input!]!
+  ): coin_spents_mutation_response
+
+  """
+  insert a single row into the table: "coin_spents"
+  """
+  insert_coin_spents_one(
+    """the row to be inserted"""
+    object: coin_spents_insert_input!
+  ): coin_spents
+
+  """
+  insert data into the table: "coinbases"
+  """
+  insert_coinbases(
+    """the rows to be inserted"""
+    objects: [coinbases_insert_input!]!
+  ): coinbases_mutation_response
+
+  """
+  insert a single row into the table: "coinbases"
+  """
+  insert_coinbases_one(
+    """the row to be inserted"""
+    object: coinbases_insert_input!
+  ): coinbases
+
+  """
+  insert data into the table: "commissions"
+  """
+  insert_commissions(
+    """the rows to be inserted"""
+    objects: [commissions_insert_input!]!
+  ): commissions_mutation_response
+
+  """
+  insert a single row into the table: "commissions"
+  """
+  insert_commissions_one(
+    """the row to be inserted"""
+    object: commissions_insert_input!
+  ): commissions
+
+  """
   insert data into the table: "events"
   """
   insert_events(
@@ -1485,6 +3060,70 @@ type mutation_root {
     """upsert condition"""
     on_conflict: events_on_conflict
   ): events
+
+  """
+  insert data into the table: "messages"
+  """
+  insert_messages(
+    """the rows to be inserted"""
+    objects: [messages_insert_input!]!
+  ): messages_mutation_response
+
+  """
+  insert a single row into the table: "messages"
+  """
+  insert_messages_one(
+    """the row to be inserted"""
+    object: messages_insert_input!
+  ): messages
+
+  """
+  insert data into the table: "mints"
+  """
+  insert_mints(
+    """the rows to be inserted"""
+    objects: [mints_insert_input!]!
+  ): mints_mutation_response
+
+  """
+  insert a single row into the table: "mints"
+  """
+  insert_mints_one(
+    """the row to be inserted"""
+    object: mints_insert_input!
+  ): mints
+
+  """
+  insert data into the table: "rewards"
+  """
+  insert_rewards(
+    """the rows to be inserted"""
+    objects: [rewards_insert_input!]!
+  ): rewards_mutation_response
+
+  """
+  insert a single row into the table: "rewards"
+  """
+  insert_rewards_one(
+    """the row to be inserted"""
+    object: rewards_insert_input!
+  ): rewards
+
+  """
+  insert data into the table: "transfers"
+  """
+  insert_transfers(
+    """the rows to be inserted"""
+    objects: [transfers_insert_input!]!
+  ): transfers_mutation_response
+
+  """
+  insert a single row into the table: "transfers"
+  """
+  insert_transfers_one(
+    """the row to be inserted"""
+    object: transfers_insert_input!
+  ): transfers
 
   """
   update data of the table: "addresses"
@@ -1589,6 +3228,94 @@ type mutation_root {
   ): [chains_mutation_response]
 
   """
+  update data of the table: "coin_receiveds"
+  """
+  update_coin_receiveds(
+    """increments the numeric columns with given value of the filtered values"""
+    _inc: coin_receiveds_inc_input
+
+    """sets the columns of the filtered rows to the given values"""
+    _set: coin_receiveds_set_input
+
+    """filter the rows which have to be updated"""
+    where: coin_receiveds_bool_exp!
+  ): coin_receiveds_mutation_response
+
+  """
+  update multiples rows of table: "coin_receiveds"
+  """
+  update_coin_receiveds_many(
+    """updates to execute, in order"""
+    updates: [coin_receiveds_updates!]!
+  ): [coin_receiveds_mutation_response]
+
+  """
+  update data of the table: "coin_spents"
+  """
+  update_coin_spents(
+    """increments the numeric columns with given value of the filtered values"""
+    _inc: coin_spents_inc_input
+
+    """sets the columns of the filtered rows to the given values"""
+    _set: coin_spents_set_input
+
+    """filter the rows which have to be updated"""
+    where: coin_spents_bool_exp!
+  ): coin_spents_mutation_response
+
+  """
+  update multiples rows of table: "coin_spents"
+  """
+  update_coin_spents_many(
+    """updates to execute, in order"""
+    updates: [coin_spents_updates!]!
+  ): [coin_spents_mutation_response]
+
+  """
+  update data of the table: "coinbases"
+  """
+  update_coinbases(
+    """increments the numeric columns with given value of the filtered values"""
+    _inc: coinbases_inc_input
+
+    """sets the columns of the filtered rows to the given values"""
+    _set: coinbases_set_input
+
+    """filter the rows which have to be updated"""
+    where: coinbases_bool_exp!
+  ): coinbases_mutation_response
+
+  """
+  update multiples rows of table: "coinbases"
+  """
+  update_coinbases_many(
+    """updates to execute, in order"""
+    updates: [coinbases_updates!]!
+  ): [coinbases_mutation_response]
+
+  """
+  update data of the table: "commissions"
+  """
+  update_commissions(
+    """increments the numeric columns with given value of the filtered values"""
+    _inc: commissions_inc_input
+
+    """sets the columns of the filtered rows to the given values"""
+    _set: commissions_set_input
+
+    """filter the rows which have to be updated"""
+    where: commissions_bool_exp!
+  ): commissions_mutation_response
+
+  """
+  update multiples rows of table: "commissions"
+  """
+  update_commissions_many(
+    """updates to execute, in order"""
+    updates: [commissions_updates!]!
+  ): [commissions_mutation_response]
+
+  """
   update data of the table: "events"
   """
   update_events(
@@ -1663,6 +3390,94 @@ type mutation_root {
     """updates to execute, in order"""
     updates: [events_updates!]!
   ): [events_mutation_response]
+
+  """
+  update data of the table: "messages"
+  """
+  update_messages(
+    """increments the numeric columns with given value of the filtered values"""
+    _inc: messages_inc_input
+
+    """sets the columns of the filtered rows to the given values"""
+    _set: messages_set_input
+
+    """filter the rows which have to be updated"""
+    where: messages_bool_exp!
+  ): messages_mutation_response
+
+  """
+  update multiples rows of table: "messages"
+  """
+  update_messages_many(
+    """updates to execute, in order"""
+    updates: [messages_updates!]!
+  ): [messages_mutation_response]
+
+  """
+  update data of the table: "mints"
+  """
+  update_mints(
+    """increments the numeric columns with given value of the filtered values"""
+    _inc: mints_inc_input
+
+    """sets the columns of the filtered rows to the given values"""
+    _set: mints_set_input
+
+    """filter the rows which have to be updated"""
+    where: mints_bool_exp!
+  ): mints_mutation_response
+
+  """
+  update multiples rows of table: "mints"
+  """
+  update_mints_many(
+    """updates to execute, in order"""
+    updates: [mints_updates!]!
+  ): [mints_mutation_response]
+
+  """
+  update data of the table: "rewards"
+  """
+  update_rewards(
+    """increments the numeric columns with given value of the filtered values"""
+    _inc: rewards_inc_input
+
+    """sets the columns of the filtered rows to the given values"""
+    _set: rewards_set_input
+
+    """filter the rows which have to be updated"""
+    where: rewards_bool_exp!
+  ): rewards_mutation_response
+
+  """
+  update multiples rows of table: "rewards"
+  """
+  update_rewards_many(
+    """updates to execute, in order"""
+    updates: [rewards_updates!]!
+  ): [rewards_mutation_response]
+
+  """
+  update data of the table: "transfers"
+  """
+  update_transfers(
+    """increments the numeric columns with given value of the filtered values"""
+    _inc: transfers_inc_input
+
+    """sets the columns of the filtered rows to the given values"""
+    _set: transfers_set_input
+
+    """filter the rows which have to be updated"""
+    where: transfers_bool_exp!
+  ): transfers_mutation_response
+
+  """
+  update multiples rows of table: "transfers"
+  """
+  update_transfers_many(
+    """updates to execute, in order"""
+    updates: [transfers_updates!]!
+  ): [transfers_mutation_response]
 }
 
 """column ordering options"""
@@ -1730,9 +3545,7 @@ type query_root {
   """fetch data from the table: "addresses" using primary key columns"""
   addresses_by_pk(id: Int!): addresses
 
-  """
-  fetch data from the table: "blocks"
-  """
+  """An array relationship"""
   blocks(
     """distinct select on columns"""
     distinct_on: [blocks_select_column!]
@@ -1750,9 +3563,7 @@ type query_root {
     where: blocks_bool_exp
   ): [blocks!]!
 
-  """
-  fetch aggregated fields from the table: "blocks"
-  """
+  """An aggregate relationship"""
   blocks_aggregate(
     """distinct select on columns"""
     distinct_on: [blocks_select_column!]
@@ -1816,6 +3627,166 @@ type query_root {
   """fetch data from the table: "chains" using primary key columns"""
   chains_by_pk(chain_id: String!, id: Int!): chains
 
+  """
+  fetch data from the table: "coin_receiveds"
+  """
+  coin_receiveds(
+    """distinct select on columns"""
+    distinct_on: [coin_receiveds_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [coin_receiveds_order_by!]
+
+    """filter the rows returned"""
+    where: coin_receiveds_bool_exp
+  ): [coin_receiveds!]!
+
+  """
+  fetch aggregated fields from the table: "coin_receiveds"
+  """
+  coin_receiveds_aggregate(
+    """distinct select on columns"""
+    distinct_on: [coin_receiveds_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [coin_receiveds_order_by!]
+
+    """filter the rows returned"""
+    where: coin_receiveds_bool_exp
+  ): coin_receiveds_aggregate!
+
+  """
+  fetch data from the table: "coin_spents"
+  """
+  coin_spents(
+    """distinct select on columns"""
+    distinct_on: [coin_spents_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [coin_spents_order_by!]
+
+    """filter the rows returned"""
+    where: coin_spents_bool_exp
+  ): [coin_spents!]!
+
+  """
+  fetch aggregated fields from the table: "coin_spents"
+  """
+  coin_spents_aggregate(
+    """distinct select on columns"""
+    distinct_on: [coin_spents_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [coin_spents_order_by!]
+
+    """filter the rows returned"""
+    where: coin_spents_bool_exp
+  ): coin_spents_aggregate!
+
+  """
+  fetch data from the table: "coinbases"
+  """
+  coinbases(
+    """distinct select on columns"""
+    distinct_on: [coinbases_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [coinbases_order_by!]
+
+    """filter the rows returned"""
+    where: coinbases_bool_exp
+  ): [coinbases!]!
+
+  """
+  fetch aggregated fields from the table: "coinbases"
+  """
+  coinbases_aggregate(
+    """distinct select on columns"""
+    distinct_on: [coinbases_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [coinbases_order_by!]
+
+    """filter the rows returned"""
+    where: coinbases_bool_exp
+  ): coinbases_aggregate!
+
+  """
+  fetch data from the table: "commissions"
+  """
+  commissions(
+    """distinct select on columns"""
+    distinct_on: [commissions_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [commissions_order_by!]
+
+    """filter the rows returned"""
+    where: commissions_bool_exp
+  ): [commissions!]!
+
+  """
+  fetch aggregated fields from the table: "commissions"
+  """
+  commissions_aggregate(
+    """distinct select on columns"""
+    distinct_on: [commissions_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [commissions_order_by!]
+
+    """filter the rows returned"""
+    where: commissions_bool_exp
+  ): commissions_aggregate!
+
   """An array relationship"""
   events(
     """distinct select on columns"""
@@ -1854,6 +3825,363 @@ type query_root {
 
   """fetch data from the table: "events" using primary key columns"""
   events_by_pk(id: Int!): events
+
+  """
+  fetch data from the table: "messages"
+  """
+  messages(
+    """distinct select on columns"""
+    distinct_on: [messages_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [messages_order_by!]
+
+    """filter the rows returned"""
+    where: messages_bool_exp
+  ): [messages!]!
+
+  """
+  fetch aggregated fields from the table: "messages"
+  """
+  messages_aggregate(
+    """distinct select on columns"""
+    distinct_on: [messages_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [messages_order_by!]
+
+    """filter the rows returned"""
+    where: messages_bool_exp
+  ): messages_aggregate!
+
+  """
+  fetch data from the table: "mints"
+  """
+  mints(
+    """distinct select on columns"""
+    distinct_on: [mints_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [mints_order_by!]
+
+    """filter the rows returned"""
+    where: mints_bool_exp
+  ): [mints!]!
+
+  """
+  fetch aggregated fields from the table: "mints"
+  """
+  mints_aggregate(
+    """distinct select on columns"""
+    distinct_on: [mints_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [mints_order_by!]
+
+    """filter the rows returned"""
+    where: mints_bool_exp
+  ): mints_aggregate!
+
+  """
+  fetch data from the table: "rewards"
+  """
+  rewards(
+    """distinct select on columns"""
+    distinct_on: [rewards_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [rewards_order_by!]
+
+    """filter the rows returned"""
+    where: rewards_bool_exp
+  ): [rewards!]!
+
+  """
+  fetch aggregated fields from the table: "rewards"
+  """
+  rewards_aggregate(
+    """distinct select on columns"""
+    distinct_on: [rewards_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [rewards_order_by!]
+
+    """filter the rows returned"""
+    where: rewards_bool_exp
+  ): rewards_aggregate!
+
+  """
+  fetch data from the table: "transfers"
+  """
+  transfers(
+    """distinct select on columns"""
+    distinct_on: [transfers_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [transfers_order_by!]
+
+    """filter the rows returned"""
+    where: transfers_bool_exp
+  ): [transfers!]!
+
+  """
+  fetch aggregated fields from the table: "transfers"
+  """
+  transfers_aggregate(
+    """distinct select on columns"""
+    distinct_on: [transfers_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [transfers_order_by!]
+
+    """filter the rows returned"""
+    where: transfers_bool_exp
+  ): transfers_aggregate!
+}
+
+"""
+columns and relationships of "rewards"
+"""
+type rewards {
+  amount: String
+  denom: String
+  id: Int
+  validator: String
+}
+
+"""
+aggregated selection of "rewards"
+"""
+type rewards_aggregate {
+  aggregate: rewards_aggregate_fields
+  nodes: [rewards!]!
+}
+
+"""
+aggregate fields of "rewards"
+"""
+type rewards_aggregate_fields {
+  avg: rewards_avg_fields
+  count(columns: [rewards_select_column!], distinct: Boolean): Int!
+  max: rewards_max_fields
+  min: rewards_min_fields
+  stddev: rewards_stddev_fields
+  stddev_pop: rewards_stddev_pop_fields
+  stddev_samp: rewards_stddev_samp_fields
+  sum: rewards_sum_fields
+  var_pop: rewards_var_pop_fields
+  var_samp: rewards_var_samp_fields
+  variance: rewards_variance_fields
+}
+
+"""aggregate avg on columns"""
+type rewards_avg_fields {
+  id: Float
+}
+
+"""
+Boolean expression to filter rows from the table "rewards". All fields are combined with a logical 'AND'.
+"""
+input rewards_bool_exp {
+  _and: [rewards_bool_exp!]
+  _not: rewards_bool_exp
+  _or: [rewards_bool_exp!]
+  amount: String_comparison_exp
+  denom: String_comparison_exp
+  id: Int_comparison_exp
+  validator: String_comparison_exp
+}
+
+"""
+input type for incrementing numeric columns in table "rewards"
+"""
+input rewards_inc_input {
+  id: Int
+}
+
+"""
+input type for inserting data into table "rewards"
+"""
+input rewards_insert_input {
+  amount: String
+  denom: String
+  id: Int
+  validator: String
+}
+
+"""aggregate max on columns"""
+type rewards_max_fields {
+  amount: String
+  denom: String
+  id: Int
+  validator: String
+}
+
+"""aggregate min on columns"""
+type rewards_min_fields {
+  amount: String
+  denom: String
+  id: Int
+  validator: String
+}
+
+"""
+response of any mutation on the table "rewards"
+"""
+type rewards_mutation_response {
+  """number of rows affected by the mutation"""
+  affected_rows: Int!
+
+  """data from the rows affected by the mutation"""
+  returning: [rewards!]!
+}
+
+"""Ordering options when selecting data from "rewards"."""
+input rewards_order_by {
+  amount: order_by
+  denom: order_by
+  id: order_by
+  validator: order_by
+}
+
+"""
+select columns of table "rewards"
+"""
+enum rewards_select_column {
+  """column name"""
+  amount
+
+  """column name"""
+  denom
+
+  """column name"""
+  id
+
+  """column name"""
+  validator
+}
+
+"""
+input type for updating data in table "rewards"
+"""
+input rewards_set_input {
+  amount: String
+  denom: String
+  id: Int
+  validator: String
+}
+
+"""aggregate stddev on columns"""
+type rewards_stddev_fields {
+  id: Float
+}
+
+"""aggregate stddev_pop on columns"""
+type rewards_stddev_pop_fields {
+  id: Float
+}
+
+"""aggregate stddev_samp on columns"""
+type rewards_stddev_samp_fields {
+  id: Float
+}
+
+"""
+Streaming cursor of the table "rewards"
+"""
+input rewards_stream_cursor_input {
+  """Stream column input with initial value"""
+  initial_value: rewards_stream_cursor_value_input!
+
+  """cursor ordering"""
+  ordering: cursor_ordering
+}
+
+"""Initial value of the column from where the streaming should start"""
+input rewards_stream_cursor_value_input {
+  amount: String
+  denom: String
+  id: Int
+  validator: String
+}
+
+"""aggregate sum on columns"""
+type rewards_sum_fields {
+  id: Int
+}
+
+input rewards_updates {
+  """increments the numeric columns with given value of the filtered values"""
+  _inc: rewards_inc_input
+
+  """sets the columns of the filtered rows to the given values"""
+  _set: rewards_set_input
+
+  """filter the rows which have to be updated"""
+  where: rewards_bool_exp!
+}
+
+"""aggregate var_pop on columns"""
+type rewards_var_pop_fields {
+  id: Float
+}
+
+"""aggregate var_samp on columns"""
+type rewards_var_samp_fields {
+  id: Float
+}
+
+"""aggregate variance on columns"""
+type rewards_variance_fields {
+  id: Float
 }
 
 type subscription_root {
@@ -1914,9 +4242,7 @@ type subscription_root {
     where: addresses_bool_exp
   ): [addresses!]!
 
-  """
-  fetch data from the table: "blocks"
-  """
+  """An array relationship"""
   blocks(
     """distinct select on columns"""
     distinct_on: [blocks_select_column!]
@@ -1934,9 +4260,7 @@ type subscription_root {
     where: blocks_bool_exp
   ): [blocks!]!
 
-  """
-  fetch aggregated fields from the table: "blocks"
-  """
+  """An aggregate relationship"""
   blocks_aggregate(
     """distinct select on columns"""
     distinct_on: [blocks_select_column!]
@@ -2028,6 +4352,222 @@ type subscription_root {
     where: chains_bool_exp
   ): [chains!]!
 
+  """
+  fetch data from the table: "coin_receiveds"
+  """
+  coin_receiveds(
+    """distinct select on columns"""
+    distinct_on: [coin_receiveds_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [coin_receiveds_order_by!]
+
+    """filter the rows returned"""
+    where: coin_receiveds_bool_exp
+  ): [coin_receiveds!]!
+
+  """
+  fetch aggregated fields from the table: "coin_receiveds"
+  """
+  coin_receiveds_aggregate(
+    """distinct select on columns"""
+    distinct_on: [coin_receiveds_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [coin_receiveds_order_by!]
+
+    """filter the rows returned"""
+    where: coin_receiveds_bool_exp
+  ): coin_receiveds_aggregate!
+
+  """
+  fetch data from the table in a streaming manner: "coin_receiveds"
+  """
+  coin_receiveds_stream(
+    """maximum number of rows returned in a single batch"""
+    batch_size: Int!
+
+    """cursor to stream the results returned by the query"""
+    cursor: [coin_receiveds_stream_cursor_input]!
+
+    """filter the rows returned"""
+    where: coin_receiveds_bool_exp
+  ): [coin_receiveds!]!
+
+  """
+  fetch data from the table: "coin_spents"
+  """
+  coin_spents(
+    """distinct select on columns"""
+    distinct_on: [coin_spents_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [coin_spents_order_by!]
+
+    """filter the rows returned"""
+    where: coin_spents_bool_exp
+  ): [coin_spents!]!
+
+  """
+  fetch aggregated fields from the table: "coin_spents"
+  """
+  coin_spents_aggregate(
+    """distinct select on columns"""
+    distinct_on: [coin_spents_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [coin_spents_order_by!]
+
+    """filter the rows returned"""
+    where: coin_spents_bool_exp
+  ): coin_spents_aggregate!
+
+  """
+  fetch data from the table in a streaming manner: "coin_spents"
+  """
+  coin_spents_stream(
+    """maximum number of rows returned in a single batch"""
+    batch_size: Int!
+
+    """cursor to stream the results returned by the query"""
+    cursor: [coin_spents_stream_cursor_input]!
+
+    """filter the rows returned"""
+    where: coin_spents_bool_exp
+  ): [coin_spents!]!
+
+  """
+  fetch data from the table: "coinbases"
+  """
+  coinbases(
+    """distinct select on columns"""
+    distinct_on: [coinbases_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [coinbases_order_by!]
+
+    """filter the rows returned"""
+    where: coinbases_bool_exp
+  ): [coinbases!]!
+
+  """
+  fetch aggregated fields from the table: "coinbases"
+  """
+  coinbases_aggregate(
+    """distinct select on columns"""
+    distinct_on: [coinbases_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [coinbases_order_by!]
+
+    """filter the rows returned"""
+    where: coinbases_bool_exp
+  ): coinbases_aggregate!
+
+  """
+  fetch data from the table in a streaming manner: "coinbases"
+  """
+  coinbases_stream(
+    """maximum number of rows returned in a single batch"""
+    batch_size: Int!
+
+    """cursor to stream the results returned by the query"""
+    cursor: [coinbases_stream_cursor_input]!
+
+    """filter the rows returned"""
+    where: coinbases_bool_exp
+  ): [coinbases!]!
+
+  """
+  fetch data from the table: "commissions"
+  """
+  commissions(
+    """distinct select on columns"""
+    distinct_on: [commissions_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [commissions_order_by!]
+
+    """filter the rows returned"""
+    where: commissions_bool_exp
+  ): [commissions!]!
+
+  """
+  fetch aggregated fields from the table: "commissions"
+  """
+  commissions_aggregate(
+    """distinct select on columns"""
+    distinct_on: [commissions_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [commissions_order_by!]
+
+    """filter the rows returned"""
+    where: commissions_bool_exp
+  ): commissions_aggregate!
+
+  """
+  fetch data from the table in a streaming manner: "commissions"
+  """
+  commissions_stream(
+    """maximum number of rows returned in a single batch"""
+    batch_size: Int!
+
+    """cursor to stream the results returned by the query"""
+    cursor: [commissions_stream_cursor_input]!
+
+    """filter the rows returned"""
+    where: commissions_bool_exp
+  ): [commissions!]!
+
   """An array relationship"""
   events(
     """distinct select on columns"""
@@ -2080,5 +4620,446 @@ type subscription_root {
     """filter the rows returned"""
     where: events_bool_exp
   ): [events!]!
+
+  """
+  fetch data from the table: "messages"
+  """
+  messages(
+    """distinct select on columns"""
+    distinct_on: [messages_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [messages_order_by!]
+
+    """filter the rows returned"""
+    where: messages_bool_exp
+  ): [messages!]!
+
+  """
+  fetch aggregated fields from the table: "messages"
+  """
+  messages_aggregate(
+    """distinct select on columns"""
+    distinct_on: [messages_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [messages_order_by!]
+
+    """filter the rows returned"""
+    where: messages_bool_exp
+  ): messages_aggregate!
+
+  """
+  fetch data from the table in a streaming manner: "messages"
+  """
+  messages_stream(
+    """maximum number of rows returned in a single batch"""
+    batch_size: Int!
+
+    """cursor to stream the results returned by the query"""
+    cursor: [messages_stream_cursor_input]!
+
+    """filter the rows returned"""
+    where: messages_bool_exp
+  ): [messages!]!
+
+  """
+  fetch data from the table: "mints"
+  """
+  mints(
+    """distinct select on columns"""
+    distinct_on: [mints_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [mints_order_by!]
+
+    """filter the rows returned"""
+    where: mints_bool_exp
+  ): [mints!]!
+
+  """
+  fetch aggregated fields from the table: "mints"
+  """
+  mints_aggregate(
+    """distinct select on columns"""
+    distinct_on: [mints_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [mints_order_by!]
+
+    """filter the rows returned"""
+    where: mints_bool_exp
+  ): mints_aggregate!
+
+  """
+  fetch data from the table in a streaming manner: "mints"
+  """
+  mints_stream(
+    """maximum number of rows returned in a single batch"""
+    batch_size: Int!
+
+    """cursor to stream the results returned by the query"""
+    cursor: [mints_stream_cursor_input]!
+
+    """filter the rows returned"""
+    where: mints_bool_exp
+  ): [mints!]!
+
+  """
+  fetch data from the table: "rewards"
+  """
+  rewards(
+    """distinct select on columns"""
+    distinct_on: [rewards_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [rewards_order_by!]
+
+    """filter the rows returned"""
+    where: rewards_bool_exp
+  ): [rewards!]!
+
+  """
+  fetch aggregated fields from the table: "rewards"
+  """
+  rewards_aggregate(
+    """distinct select on columns"""
+    distinct_on: [rewards_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [rewards_order_by!]
+
+    """filter the rows returned"""
+    where: rewards_bool_exp
+  ): rewards_aggregate!
+
+  """
+  fetch data from the table in a streaming manner: "rewards"
+  """
+  rewards_stream(
+    """maximum number of rows returned in a single batch"""
+    batch_size: Int!
+
+    """cursor to stream the results returned by the query"""
+    cursor: [rewards_stream_cursor_input]!
+
+    """filter the rows returned"""
+    where: rewards_bool_exp
+  ): [rewards!]!
+
+  """
+  fetch data from the table: "transfers"
+  """
+  transfers(
+    """distinct select on columns"""
+    distinct_on: [transfers_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [transfers_order_by!]
+
+    """filter the rows returned"""
+    where: transfers_bool_exp
+  ): [transfers!]!
+
+  """
+  fetch aggregated fields from the table: "transfers"
+  """
+  transfers_aggregate(
+    """distinct select on columns"""
+    distinct_on: [transfers_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [transfers_order_by!]
+
+    """filter the rows returned"""
+    where: transfers_bool_exp
+  ): transfers_aggregate!
+
+  """
+  fetch data from the table in a streaming manner: "transfers"
+  """
+  transfers_stream(
+    """maximum number of rows returned in a single batch"""
+    batch_size: Int!
+
+    """cursor to stream the results returned by the query"""
+    cursor: [transfers_stream_cursor_input]!
+
+    """filter the rows returned"""
+    where: transfers_bool_exp
+  ): [transfers!]!
+}
+
+scalar timestamptz
+
+"""
+Boolean expression to compare columns of type "timestamptz". All fields are combined with logical 'AND'.
+"""
+input timestamptz_comparison_exp {
+  _eq: timestamptz
+  _gt: timestamptz
+  _gte: timestamptz
+  _in: [timestamptz!]
+  _is_null: Boolean
+  _lt: timestamptz
+  _lte: timestamptz
+  _neq: timestamptz
+  _nin: [timestamptz!]
+}
+
+"""
+columns and relationships of "transfers"
+"""
+type transfers {
+  amount: String
+  denom: String
+  id: Int
+  recipient: String
+  sender: String
+}
+
+"""
+aggregated selection of "transfers"
+"""
+type transfers_aggregate {
+  aggregate: transfers_aggregate_fields
+  nodes: [transfers!]!
+}
+
+"""
+aggregate fields of "transfers"
+"""
+type transfers_aggregate_fields {
+  avg: transfers_avg_fields
+  count(columns: [transfers_select_column!], distinct: Boolean): Int!
+  max: transfers_max_fields
+  min: transfers_min_fields
+  stddev: transfers_stddev_fields
+  stddev_pop: transfers_stddev_pop_fields
+  stddev_samp: transfers_stddev_samp_fields
+  sum: transfers_sum_fields
+  var_pop: transfers_var_pop_fields
+  var_samp: transfers_var_samp_fields
+  variance: transfers_variance_fields
+}
+
+"""aggregate avg on columns"""
+type transfers_avg_fields {
+  id: Float
+}
+
+"""
+Boolean expression to filter rows from the table "transfers". All fields are combined with a logical 'AND'.
+"""
+input transfers_bool_exp {
+  _and: [transfers_bool_exp!]
+  _not: transfers_bool_exp
+  _or: [transfers_bool_exp!]
+  amount: String_comparison_exp
+  denom: String_comparison_exp
+  id: Int_comparison_exp
+  recipient: String_comparison_exp
+  sender: String_comparison_exp
+}
+
+"""
+input type for incrementing numeric columns in table "transfers"
+"""
+input transfers_inc_input {
+  id: Int
+}
+
+"""
+input type for inserting data into table "transfers"
+"""
+input transfers_insert_input {
+  amount: String
+  denom: String
+  id: Int
+  recipient: String
+  sender: String
+}
+
+"""aggregate max on columns"""
+type transfers_max_fields {
+  amount: String
+  denom: String
+  id: Int
+  recipient: String
+  sender: String
+}
+
+"""aggregate min on columns"""
+type transfers_min_fields {
+  amount: String
+  denom: String
+  id: Int
+  recipient: String
+  sender: String
+}
+
+"""
+response of any mutation on the table "transfers"
+"""
+type transfers_mutation_response {
+  """number of rows affected by the mutation"""
+  affected_rows: Int!
+
+  """data from the rows affected by the mutation"""
+  returning: [transfers!]!
+}
+
+"""Ordering options when selecting data from "transfers"."""
+input transfers_order_by {
+  amount: order_by
+  denom: order_by
+  id: order_by
+  recipient: order_by
+  sender: order_by
+}
+
+"""
+select columns of table "transfers"
+"""
+enum transfers_select_column {
+  """column name"""
+  amount
+
+  """column name"""
+  denom
+
+  """column name"""
+  id
+
+  """column name"""
+  recipient
+
+  """column name"""
+  sender
+}
+
+"""
+input type for updating data in table "transfers"
+"""
+input transfers_set_input {
+  amount: String
+  denom: String
+  id: Int
+  recipient: String
+  sender: String
+}
+
+"""aggregate stddev on columns"""
+type transfers_stddev_fields {
+  id: Float
+}
+
+"""aggregate stddev_pop on columns"""
+type transfers_stddev_pop_fields {
+  id: Float
+}
+
+"""aggregate stddev_samp on columns"""
+type transfers_stddev_samp_fields {
+  id: Float
+}
+
+"""
+Streaming cursor of the table "transfers"
+"""
+input transfers_stream_cursor_input {
+  """Stream column input with initial value"""
+  initial_value: transfers_stream_cursor_value_input!
+
+  """cursor ordering"""
+  ordering: cursor_ordering
+}
+
+"""Initial value of the column from where the streaming should start"""
+input transfers_stream_cursor_value_input {
+  amount: String
+  denom: String
+  id: Int
+  recipient: String
+  sender: String
+}
+
+"""aggregate sum on columns"""
+type transfers_sum_fields {
+  id: Int
+}
+
+input transfers_updates {
+  """increments the numeric columns with given value of the filtered values"""
+  _inc: transfers_inc_input
+
+  """sets the columns of the filtered rows to the given values"""
+  _set: transfers_set_input
+
+  """filter the rows which have to be updated"""
+  where: transfers_bool_exp!
+}
+
+"""aggregate var_pop on columns"""
+type transfers_var_pop_fields {
+  id: Float
+}
+
+"""aggregate var_samp on columns"""
+type transfers_var_samp_fields {
+  id: Float
+}
+
+"""aggregate variance on columns"""
+type transfers_variance_fields {
+  id: Float
 }
 

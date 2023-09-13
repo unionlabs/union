@@ -1,28 +1,28 @@
-use std::ops::Range;
-
-use color_eyre::eyre::bail;
-use tendermint::genesis::Genesis;
-use tendermint_rpc::{error::ErrorDetail, response_error::Code, Client, Error, HttpClient};
+use color_eyre::eyre::{bail, Report};
+use futures::future::join_all;
+use tendermint::{block::Height, genesis::Genesis};
+use tendermint_rpc::{
+    dialect::v0_37::Event, endpoint::block_results::Response as BlockResponse, error::ErrorDetail,
+    response_error::Code, Client, Error, HttpClient,
+};
 use tokio::time::{sleep, Duration};
 use tracing::{debug, info};
 use url::Url;
 
-use crate::{
-    hasura::*,
-    tm::insert_block::{EventsArrRelInsertInput, EventsInsertInput},
-};
+use crate::{hasura::*, tm::insert_block::EventsArrRelInsertInput};
 
 #[derive(Clone, Debug, serde::Deserialize)]
 pub struct Config {
     pub url: Url,
     pub chain_id: Option<String>,
-    pub range: Option<Range<u32>>,
 }
 
 impl Config {
-    pub async fn index<D: Datastore>(&self, db: D) -> Result<(), color_eyre::eyre::Report> {
+    /// The batch size for the fast sync protocol. This corresponds to the maximum number of headers returned over a node's RPC.
+    pub const BATCH_SIZE: u32 = 20;
+
+    pub async fn index<D: Datastore>(&self, db: D) -> Result<(), Report> {
         let client = HttpClient::new(self.url.as_str()).unwrap();
-        let range = self.range.as_ref().unwrap_or(&(0..u32::MAX));
 
         // If there is no chain_id override, we query it from the node. This
         // is the expected default.
@@ -37,103 +37,41 @@ impl Config {
             }
         };
 
-        let (mut height, chain_db_id) = get_current_data(&db, chain_id).await?;
-        height += 1;
-        let mut retry_count = 0;
+        let (height, chain_db_id) = get_current_data(&db, chain_id).await?;
+        let mut height: Height = (height + 1).into();
 
-        loop {
-            if !range.contains(&height) {
-                return Ok(());
+        // Fast sync protocol. We sync up to latest.height - batch-size + 1
+        while let Some(up_to) = should_fast_sync_up_to(&client, Self::BATCH_SIZE, height).await? {
+            debug!("starting fast sync protocol up to: {}", up_to);
+            loop {
+                height = batch_sync(&client, &db, chain_db_id, Self::BATCH_SIZE, height).await?;
+                if height >= up_to {
+                    debug!("re-evaluating fast sync protocol");
+                    break; // go back to the should_fast_sync_up_to. If this returns None, we continue to slow sync.
+                }
             }
+        }
 
-            info!("indexing block {}", &height);
-            // if we're caught up indexing to the latest height, this will error. In that case,
-            // we retry until we obtain the next header.
-            debug!("fetching block header for height: {}", &height);
-            let header = match client.block(height).await {
-                Err(err) => {
-                    if is_height_exceeded_error(&err) {
-                        debug!("caught up indexing, sleeping for 1 second: {:?}", err);
-                        retry_count += 1;
-
-                        if retry_count > 30 {
-                            bail!("node has stopped providing new blocks")
-                        }
-                        sleep(Duration::from_millis(1000)).await;
-                        continue;
-                    } else {
-                        return Err(err.into());
-                    }
+        let mut retry_count = 0;
+        loop {
+            debug!("starting regular sync protocol");
+            // Regular sync protocol. This fetches blocks one-by-one.
+            retry_count += 1;
+            match sync_next(&client, &db, chain_db_id, height).await? {
+                Some(h) => {
+                    height = h;
+                    retry_count = 0
                 }
-                Ok(val) => val.block.header,
-            };
-            retry_count = 0;
-            debug!("fetching block results for height: {}", &height);
-            let block = client.block_results(height).await?;
-            let events = {
-                let mut events = vec![];
-                let mut i = 0;
-
-                if let Some(begin_block_events) = block.begin_block_events {
-                    for result in begin_block_events {
-                        let event = EventsInsertInput {
-                            data: Some(serde_json::to_value(&result).unwrap()),
-                            index: Some(i),
-                            block: None,
-                            block_id: None,
-                            id: None,
-                        };
-                        events.push(event);
-                        i += 1;
+                None => {
+                    if retry_count > 30 {
+                        bail!("node has stopped providing new blocks")
                     }
+                    retry_count += 1;
+                    debug!("caught up indexing, sleeping for 1 second");
+                    sleep(Duration::from_millis(1000)).await;
+                    continue;
                 }
-
-                if let Some(txs_results) = block.txs_results {
-                    for result in txs_results {
-                        let event = EventsInsertInput {
-                            data: Some(serde_json::to_value(&result).unwrap()),
-                            index: Some(i),
-                            block: None,
-                            block_id: None,
-                            id: None,
-                        };
-                        events.push(event);
-                        i += 1;
-                    }
-                }
-
-                if let Some(end_block_events) = block.end_block_events {
-                    for result in end_block_events {
-                        let event = EventsInsertInput {
-                            data: Some(serde_json::to_value(&result).unwrap()),
-                            index: Some(i),
-                            block: None,
-                            block_id: None,
-                            id: None,
-                        };
-                        events.push(event);
-                        i += 1;
-                    }
-                }
-
-                info!("found {} events for block {}", &i, &height);
-                events
-            };
-
-            debug!("storing events for block {}", &height);
-            let v = insert_block::Variables {
-                chain_id: chain_db_id,
-                hash: header.hash().to_string(),
-                height: block.height.into(),
-                events: Some(EventsArrRelInsertInput {
-                    data: events,
-                    on_conflict: None,
-                }),
-                finalized: true,
-            };
-
-            db.do_post::<InsertBlock>(v).await?;
-            height += 1;
+            }
         }
     }
 }
@@ -165,7 +103,7 @@ async fn get_current_data<D: Datastore>(
         })
         .await?;
 
-    let data = latest_stored
+    let data = dbg!(latest_stored)
         .data
         .expect("db should be prepared for indexing");
 
@@ -182,9 +120,166 @@ async fn get_current_data<D: Datastore>(
         let created = db
             .do_post::<InsertChain>(insert_chain::Variables { chain_id })
             .await?;
-
         created.data.unwrap().insert_chains_one.unwrap().id
     };
 
     Ok((height, chain_db_id))
+}
+
+/// Queries the node and current indexed height and determines if fast sync should be applied.
+///
+/// # Returns
+/// The block up to which to fast sync.
+///
+/// # Errors
+/// On IO errors when communicating with the datastore or the node.
+async fn should_fast_sync_up_to(
+    client: &HttpClient,
+    batch_size: u32,
+    current: Height,
+) -> Result<Option<Height>, Report> {
+    let latest = client.latest_block().await?.block.header.height;
+    if latest.value() - current.value() > batch_size.into() {
+        Ok(Some(latest))
+    } else {
+        Ok(None)
+    }
+}
+
+/// Uses batch processing to fast sync up to the provided height.
+async fn batch_sync<D: Datastore>(
+    client: &HttpClient,
+    db: &D,
+    chain_db_id: i64,
+    batch_size: u32,
+    from: Height,
+) -> Result<Height, Report> {
+    if from.value() == 1 {
+        sync_next(client, db, chain_db_id, from).await?;
+    }
+
+    let headers = client
+        .blockchain(
+            // Tendermint-rs is buggy, it
+            from.value() as u32,
+            (from.value() + batch_size as u64) as u32,
+        )
+        .await?;
+
+    let objects: Result<Vec<_>, Report> =
+        join_all(headers.block_metas.iter().rev().map(|header| async {
+            let block = client.block_results(header.header.height).await?;
+            let events: Vec<_> = block
+                .events()
+                .enumerate()
+                .map(|event| event.into())
+                .collect();
+            Ok(insert_blocks_many::BlocksInsertInput {
+                chain_id: Some(chain_db_id),
+                chain: None,
+                events: Some(insert_blocks_many::EventsArrRelInsertInput {
+                    data: events,
+                    on_conflict: None,
+                }),
+                hash: Some(header.header.hash().to_string()),
+                height: Some(header.header.height.into()),
+                id: None,
+                created_at: None,
+                updated_at: None,
+                is_finalized: Some(true),
+            })
+        }))
+        .await
+        .into_iter()
+        .collect();
+
+    let variables = insert_blocks_many::Variables { objects: objects? };
+    db.do_post::<InsertBlocksMany>(variables).await?;
+    Ok((from.value() as u32 + headers.block_metas.len() as u32).into())
+}
+
+async fn sync_next<D: Datastore>(
+    client: &HttpClient,
+    db: &D,
+    chain_db_id: i64,
+    height: Height,
+) -> Result<Option<Height>, Report> {
+    info!("indexing block {}", &height);
+    // if we're caught up indexing to the latest height, this will error. In that case,
+    // we retry until we obtain the next header.
+    debug!("fetching block header for height: {}", &height);
+    let header = match client.block(height).await {
+        Err(err) => {
+            if is_height_exceeded_error(&err) {
+                return Ok(None);
+            } else {
+                return Err(err.into());
+            }
+        }
+        Ok(val) => val.block.header,
+    };
+    debug!("fetching block results for height: {}", &height);
+    let block = client.block_results(height).await?;
+    let height = block.height;
+    let events: Vec<_> = block.events().enumerate().map(Into::into).collect();
+    info!("found {} events for block {}", &events.len(), &height);
+
+    debug!("storing events for block {}", &height);
+    let v = insert_block::Variables {
+        chain_id: chain_db_id,
+        hash: header.hash().to_string(),
+        height: height.into(),
+        events: Some(EventsArrRelInsertInput {
+            data: events,
+            on_conflict: None,
+        }),
+        finalized: true,
+    };
+
+    db.do_post::<InsertBlock>(v).await?;
+    Ok(Some(height.increment()))
+}
+
+impl From<(usize, Event)> for insert_blocks_many::EventsInsertInput {
+    fn from(value: (usize, Event)) -> Self {
+        Self {
+            id: None,
+            index: Some(value.0 as i64),
+            block: None,
+            block_id: None,
+            data: Some(serde_json::to_value(&value.1).unwrap()),
+        }
+    }
+}
+
+impl From<(usize, Event)> for insert_block::EventsInsertInput {
+    fn from(value: (usize, Event)) -> Self {
+        Self {
+            id: None,
+            index: Some(value.0 as i64),
+            block: None,
+            block_id: None,
+            data: Some(serde_json::to_value(&value.1).unwrap()),
+        }
+    }
+}
+
+pub trait BlockExt {
+    fn events(self) -> impl Iterator<Item = Event>;
+}
+
+impl BlockExt for BlockResponse {
+    fn events(self) -> impl Iterator<Item = Event> {
+        self.begin_block_events
+            .unwrap_or_default()
+            .into_iter()
+            .chain(
+                self.txs_results
+                    .unwrap_or_default()
+                    .into_iter()
+                    .flat_map(|tx| tx.events),
+            )
+            .chain(self.end_block_events.unwrap_or_default())
+            .chain(self.finalize_block_events)
+    }
 }

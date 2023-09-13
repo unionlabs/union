@@ -1,4 +1,15 @@
 SET check_function_bodies = false;
+CREATE FUNCTION public.set_current_timestamp_updated_at() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  _new record;
+BEGIN
+  _new := NEW;
+  _new."updated_at" = NOW();
+  RETURN _new;
+END;
+$$;
 CREATE TABLE public.addresses (
     address text NOT NULL,
     chain_id integer NOT NULL,
@@ -17,7 +28,9 @@ CREATE TABLE public.blocks (
     chain_id integer NOT NULL,
     height integer NOT NULL,
     id integer NOT NULL,
-    is_finalized boolean DEFAULT false
+    is_finalized boolean DEFAULT false,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now()
 );
 CREATE SEQUENCE public.blocks_id_seq
     AS integer
@@ -132,6 +145,8 @@ CREATE INDEX idx_blocks_height_desc ON public.blocks USING btree (height DESC);
 CREATE INDEX idx_chains_chain_id ON public.chains USING btree (chain_id);
 CREATE INDEX idx_events_block_id ON public.events USING btree (block_id);
 CREATE INDEX receiver ON public.events USING gin (((((data -> 'attributes'::text) -> 0) -> 'value'::text))) WHERE ((data ->> 'type'::text) = 'coin_received'::text);
+CREATE TRIGGER set_public_blocks_updated_at BEFORE UPDATE ON public.blocks FOR EACH ROW EXECUTE FUNCTION public.set_current_timestamp_updated_at();
+COMMENT ON TRIGGER set_public_blocks_updated_at ON public.blocks IS 'trigger to set value of column "updated_at" to current timestamp on row update';
 ALTER TABLE ONLY public.blocks
     ADD CONSTRAINT blocks_chain_id_fkey FOREIGN KEY (chain_id) REFERENCES public.chains(id) ON UPDATE CASCADE ON DELETE CASCADE;
 ALTER TABLE ONLY public.events
