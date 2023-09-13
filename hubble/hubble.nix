@@ -45,18 +45,12 @@
           default = "";
         };
         indexers = mkOption {
-          type = types.listOf (types.oneOf [
-            (types.submodule {
+          type = types.listOf (
+            types.submodule {
               options.url = mkOption { type = types.str; example = "https://rpc.example.com"; };
               options.type = mkOption { type = types.enum [ "tendermint" ]; };
-            })
-            (types.submodule {
-              options.user = mkOption { type = types.str; example = "bob"; };
-              options.type = mkOption { type = types.enum [ "ethereum" ]; };
-            })
-          ]);
-
-          # attrsOf (submodule { options.url = mkOption { type = types.str; }; options.user = mkOption { type = types.number; };
+            }
+          );
         };
       };
 
