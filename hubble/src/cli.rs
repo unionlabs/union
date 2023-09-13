@@ -17,12 +17,26 @@ pub struct Args {
     pub secret: String,
     /// Indexer configurations to start.
     #[arg(short, long, env = "HUBBLE_INDEXERS")]
-    pub indexers: Vec<IndexerConfig>,
+    pub indexers: Indexers,
+}
+
+#[derive(Clone, Debug, serde::Deserialize)]
+pub struct Indexers(Vec<IndexerConfig>);
+
+impl IntoIterator for Indexers {
+    type Item = IndexerConfig;
+
+    type IntoIter = std::vec::IntoIter<IndexerConfig>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.into_iter()
+    }
 }
 
 #[derive(Clone, Debug, serde::Deserialize)]
 #[serde(tag = "type")]
 pub enum IndexerConfig {
+    #[serde(rename = "tendermint")]
     Tm(crate::tm::Config),
 }
 
@@ -34,7 +48,7 @@ impl IndexerConfig {
     }
 }
 
-impl FromStr for IndexerConfig {
+impl FromStr for Indexers {
     type Err = color_eyre::eyre::Error;
 
     fn from_str(item: &str) -> Result<Self, <Self as FromStr>::Err> {

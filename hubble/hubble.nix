@@ -1,4 +1,4 @@
-{ ... }: {
+{ self, ... }: {
   perSystem = { self', pkgs, crane, ... }:
     let
       hubble = crane.buildWorkspaceMember {
@@ -25,4 +25,61 @@
         };
       };
     };
+
+  flake.nixosModules.hubble = { lib, pkgs, config, ... }:
+    with lib;
+    let cfg = config.services.hubble;
+    in {
+      options.services.hubble = {
+        enable = mkEnableOption "Hubble service";
+        package = mkOption {
+          type = types.package;
+          default = self.packages.${pkgs.system}.hubble;
+        };
+        url = mkOption {
+          type = types.str;
+          default = "https://graphql.union.build";
+        };
+        hasura-admin-secret = mkOption {
+          type = types.str;
+          default = "";
+        };
+        indexers = mkOption {
+          type = types.listOf (
+            types.submodule {
+              options.url = mkOption { type = types.str; example = "https://rpc.example.com"; };
+              options.type = mkOption { type = types.enum [ "tendermint" ]; };
+            }
+          );
+        };
+      };
+
+      config = mkIf cfg.enable {
+        systemd.services.hubble =
+          let
+            hubble-systemd-script = pkgs.writeShellApplication {
+              name = "hubble-systemd";
+              runtimeInputs = [ pkgs.coreutils cfg.package ];
+              text =
+                let
+                  secretArg = if cfg.hasura-admin-secret != "" then "--secret ${cfg.hasura-admin-secret}" else "";
+                  indexersJson = builtins.toJSON cfg.indexers;
+                in
+                ''
+                  ${pkgs.lib.getExe cfg.package} --url ${cfg.url} ${secretArg} --indexers '${indexersJson}'
+                '';
+            };
+          in
+          {
+            wantedBy = [ "multi-user.target" ];
+            description = "Hubble";
+            serviceConfig = {
+              Type = "simple";
+              ExecStart = pkgs.lib.getExe hubble-systemd-script;
+              Restart = mkForce "always";
+            };
+          };
+      };
+    };
+
 }
