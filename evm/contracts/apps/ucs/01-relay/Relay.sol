@@ -63,9 +63,9 @@ contract UCS01Relay is IBCAppBase {
     mapping(address => string) public addressToDenom;
     mapping(string => mapping(string => IbcCoreChannelV1Counterparty.Data))
         public counterpartyEndpoints;
-    mapping(string => mapping(string => mapping(string => uint256)))
+    mapping(string => mapping(string => mapping(address => uint256)))
         public outstanding;
-    mapping(string => mapping(string => mapping(string => uint256)))
+    mapping(string => mapping(string => mapping(address => uint256)))
         public inFlight;
 
     event DenomCreated(string denom, address token);
@@ -136,44 +136,44 @@ contract UCS01Relay is IBCAppBase {
     function increaseOutstanding(
         string memory portId,
         string memory channelId,
-        string memory denom,
+        address token,
         uint256 amount
     ) internal {
-        outstanding[portId][channelId][denom] = outstanding[portId][channelId][
-            denom
+        outstanding[portId][channelId][token] = outstanding[portId][channelId][
+            token
         ].add(amount);
     }
 
     function decreaseOutstanding(
         string memory portId,
         string memory channelId,
-        string memory denom,
+        address token,
         uint256 amount
     ) internal {
-        outstanding[portId][channelId][denom] = outstanding[portId][channelId][
-            denom
+        outstanding[portId][channelId][token] = outstanding[portId][channelId][
+            token
         ].sub(amount);
     }
 
     function increaseInFlight(
         string memory portId,
         string memory channelId,
-        string memory denom,
+        address token,
         uint256 amount
     ) internal {
-        inFlight[portId][channelId][denom] = outstanding[portId][channelId][
-            denom
+        inFlight[portId][channelId][token] = outstanding[portId][channelId][
+            token
         ].add(amount);
     }
 
     function decreaseInFlight(
         string memory portId,
         string memory channelId,
-        string memory denom,
+        address token,
         uint256 amount
     ) internal {
-        inFlight[portId][channelId][denom] = outstanding[portId][channelId][
-            denom
+        inFlight[portId][channelId][token] = outstanding[portId][channelId][
+            token
         ].sub(amount);
     }
 
@@ -207,8 +207,13 @@ contract UCS01Relay is IBCAppBase {
                     localToken.amount
                 );
             } else {
+                increaseInFlight(
+                    portId,
+                    channelId,
+                    localToken.denom,
+                    localToken.amount
+                );
                 addressDenom = localToken.denom.toHexString();
-                increaseInFlight(portId, channelId, addressDenom, localToken.amount);
             }
             normalizedTokens[i].denom = addressDenom;
             normalizedTokens[i].amount = uint256(localToken.amount);
@@ -252,14 +257,14 @@ contract UCS01Relay is IBCAppBase {
             string memory denom;
             if (!denomSlice.equals(trimedDenom)) {
                 denom = trimedDenom.toString();
+                denomAddress = hexToAddress(denom);
                 // The token must be outstanding.
                 decreaseOutstanding(
                     ibcPacket.destination_port,
                     ibcPacket.destination_channel,
-                    denom,
+                    denomAddress,
                     token.amount
                 );
-                denomAddress = hexToAddress(denom);
                 IERC20(denomAddress).transfer(receiver, token.amount);
             } else {
                 denom = makeForeignDenom(
@@ -304,10 +309,10 @@ contract UCS01Relay is IBCAppBase {
             if (denomAddress != address(0)) {
                 IERC20Denom(denomAddress).mint(receiver, token.amount);
             } else {
-                // The token must be in-flight
-                decreaseInFlight(portId, channelId, token.denom, token.amount);
                 // It must be in the form 0x...
                 denomAddress = hexToAddress(token.denom);
+                // The token must be in-flight
+                decreaseInFlight(portId, channelId, denomAddress, token.amount);
                 IERC20(denomAddress).transfer(receiver, token.amount);
             }
         }
@@ -323,8 +328,14 @@ contract UCS01Relay is IBCAppBase {
             Token memory token = packet.tokens[i];
             // For local tokens only as remote tokens are burnt.
             if (token.denom.toSlice().startsWith("0x".toSlice())) {
-                decreaseInFlight(portId, channelId, token.denom, token.amount);
-                increaseOutstanding(portId, channelId, token.denom, token.amount);
+                address denomAddress = hexToAddress(token.denom);
+                decreaseInFlight(portId, channelId, denomAddress, token.amount);
+                increaseOutstanding(
+                    portId,
+                    channelId,
+                    denomAddress,
+                    token.amount
+                );
             }
         }
     }
