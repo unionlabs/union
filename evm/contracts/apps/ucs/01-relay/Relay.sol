@@ -3,6 +3,7 @@ pragma solidity ^0.8.18;
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "solady/utils/LibString.sol";
 import "solidity-stringutils/strings.sol";
 import "../../../core/25-handler/IBCHandler.sol";
@@ -47,12 +48,13 @@ library RelayPacketLib {
 }
 
 contract UCS01Relay is IBCAppBase {
-    bytes1 constant ACK_SUCCESS = 0x01;
-    bytes1 constant ACK_FAILURE = 0x00;
-
     using RelayPacketLib for RelayPacket;
     using LibString for *;
     using strings for *;
+    using SafeMath for uint256;
+
+    bytes1 constant ACK_SUCCESS = 0x01;
+    bytes1 constant ACK_FAILURE = 0x00;
 
     IBCHandler private ibcHandler;
     uint64 private revisionNumber;
@@ -61,6 +63,10 @@ contract UCS01Relay is IBCAppBase {
     mapping(address => string) public addressToDenom;
     mapping(string => mapping(string => IbcCoreChannelV1Counterparty.Data))
         public counterpartyEndpoints;
+    mapping(string => mapping(string => mapping(address => uint256)))
+        public outstanding;
+    mapping(string => mapping(string => mapping(address => uint256)))
+        public inFlight;
 
     event DenomCreated(string denom, address token);
     event Received(
@@ -127,6 +133,48 @@ contract UCS01Relay is IBCAppBase {
             string(abi.encodePacked(makeDenomPrefix(portId, channelId), denom));
     }
 
+    function increaseOutstanding(
+        string memory portId,
+        string memory channelId,
+        address token,
+        uint256 amount
+    ) internal {
+        outstanding[portId][channelId][token] = outstanding[portId][channelId][
+            token
+        ].add(amount);
+    }
+
+    function decreaseOutstanding(
+        string memory portId,
+        string memory channelId,
+        address token,
+        uint256 amount
+    ) internal {
+        outstanding[portId][channelId][token] = outstanding[portId][channelId][
+            token
+        ].sub(amount);
+    }
+
+    function increaseInFlight(
+        string memory portId,
+        string memory channelId,
+        address token,
+        uint256 amount
+    ) internal {
+        inFlight[portId][channelId][token] = inFlight[portId][channelId][token]
+            .add(amount);
+    }
+
+    function decreaseInFlight(
+        string memory portId,
+        string memory channelId,
+        address token,
+        uint256 amount
+    ) internal {
+        inFlight[portId][channelId][token] = inFlight[portId][channelId][token]
+            .sub(amount);
+    }
+
     // NOTE: uint128 limitation from cosmwasm_std Coin type for transfers.
     function send(
         string calldata portId,
@@ -157,6 +205,12 @@ contract UCS01Relay is IBCAppBase {
                     localToken.amount
                 );
             } else {
+                increaseInFlight(
+                    portId,
+                    channelId,
+                    localToken.denom,
+                    localToken.amount
+                );
                 addressDenom = localToken.denom.toHexString();
             }
             normalizedTokens[i].denom = addressDenom;
@@ -202,6 +256,13 @@ contract UCS01Relay is IBCAppBase {
             if (!denomSlice.equals(trimedDenom)) {
                 denom = trimedDenom.toString();
                 denomAddress = hexToAddress(denom);
+                // The token must be outstanding.
+                decreaseOutstanding(
+                    ibcPacket.destination_port,
+                    ibcPacket.destination_channel,
+                    denomAddress,
+                    token.amount
+                );
                 IERC20(denomAddress).transfer(receiver, token.amount);
             } else {
                 denom = makeForeignDenom(
@@ -231,7 +292,11 @@ contract UCS01Relay is IBCAppBase {
 
     // TODO: timeout
 
-    function refundTokens(RelayPacket memory packet) internal {
+    function refundTokens(
+        string memory portId,
+        string memory channelId,
+        RelayPacket memory packet
+    ) internal {
         // W're going to refund, the receiver will be the sender.
         address receiver = hexToAddress(packet.sender);
         for (uint256 i = 0; i < packet.tokens.length; i++) {
@@ -244,7 +309,31 @@ contract UCS01Relay is IBCAppBase {
             } else {
                 // It must be in the form 0x...
                 denomAddress = hexToAddress(token.denom);
+                // The token must be in-flight
+                decreaseInFlight(portId, channelId, denomAddress, token.amount);
                 IERC20(denomAddress).transfer(receiver, token.amount);
+            }
+        }
+    }
+
+    // We received a successful ack, move tokens from in-flight to outstanding.
+    function tokensLanded(
+        string memory portId,
+        string memory channelId,
+        RelayPacket memory packet
+    ) internal {
+        for (uint256 i = 0; i < packet.tokens.length; i++) {
+            Token memory token = packet.tokens[i];
+            // For local tokens only as remote tokens are burnt.
+            if (token.denom.toSlice().startsWith("0x".toSlice())) {
+                address denomAddress = hexToAddress(token.denom);
+                decreaseInFlight(portId, channelId, denomAddress, token.amount);
+                increaseOutstanding(
+                    portId,
+                    channelId,
+                    denomAddress,
+                    token.amount
+                );
             }
         }
     }
@@ -255,8 +344,19 @@ contract UCS01Relay is IBCAppBase {
         address _relayer
     ) external virtual override onlyIBC {
         require(acknowledgement.length == 1, "relay: single byte ack");
+        RelayPacket memory packet = RelayPacketLib.decode(ibcPacket.data);
         if (acknowledgement[0] == ACK_SUCCESS) {
-            refundTokens(RelayPacketLib.decode(ibcPacket.data));
+            tokensLanded(
+                ibcPacket.source_port,
+                ibcPacket.source_channel,
+                packet
+            );
+        } else {
+            refundTokens(
+                ibcPacket.source_port,
+                ibcPacket.source_channel,
+                packet
+            );
         }
     }
 

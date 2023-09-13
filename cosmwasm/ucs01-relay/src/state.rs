@@ -18,6 +18,7 @@ pub const FOREIGN_TOKEN_CREATED: Map<&str, ()> = Map::new("foreign_tokens");
 #[cw_serde]
 #[derive(Default)]
 pub struct ChannelState {
+    pub in_flight: Uint512,
     pub outstanding: Uint512,
 }
 
