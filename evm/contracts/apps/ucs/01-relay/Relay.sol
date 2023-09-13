@@ -161,9 +161,8 @@ contract UCS01Relay is IBCAppBase {
         address token,
         uint256 amount
     ) internal {
-        inFlight[portId][channelId][token] = inFlight[portId][channelId][
-            token
-        ].add(amount);
+        inFlight[portId][channelId][token] = inFlight[portId][channelId][token]
+            .add(amount);
     }
 
     function decreaseInFlight(
@@ -172,9 +171,8 @@ contract UCS01Relay is IBCAppBase {
         address token,
         uint256 amount
     ) internal {
-        inFlight[portId][channelId][token] = inFlight[portId][channelId][
-            token
-        ].sub(amount);
+        inFlight[portId][channelId][token] = inFlight[portId][channelId][token]
+            .sub(amount);
     }
 
     // NOTE: uint128 limitation from cosmwasm_std Coin type for transfers.
