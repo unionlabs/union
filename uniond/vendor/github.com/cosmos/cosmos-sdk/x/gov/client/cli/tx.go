@@ -106,9 +106,9 @@ Where proposal.json contains:
   ],
   // metadata can be any of base64 encoded, raw text, stringified json, IPFS link to json
   // see below for example metadata
-  "metadata: "4pIMOgIGx1vZGU=",
-  "deposit": "10stake"
-  "title: "My proposal"
+  "metadata": "4pIMOgIGx1vZGU=",
+  "deposit": "10stake",
+  "title": "My proposal",
   "summary": "A short summary of my proposal"
 }
 

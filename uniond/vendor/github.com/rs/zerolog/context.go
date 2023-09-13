@@ -1,6 +1,7 @@
 package zerolog
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"math"
@@ -163,6 +164,15 @@ func (c Context) Errs(key string, errs []error) Context {
 // Err adds the field "error" with serialized err to the logger context.
 func (c Context) Err(err error) Context {
 	return c.AnErr(ErrorFieldName, err)
+}
+
+// Ctx adds the context.Context to the logger context. The context.Context is
+// not rendered in the error message, but is made available for hooks to use.
+// A typical use case is to extract tracing information from the
+// context.Context.
+func (c Context) Ctx(ctx context.Context) Context {
+	c.l.ctx = ctx
+	return c
 }
 
 // Bool adds the field key with val as a bool to the logger context.
@@ -329,8 +339,9 @@ func (ts timestampHook) Run(e *Event, level Level, msg string) {
 
 var th = timestampHook{}
 
-// Timestamp adds the current local time as UNIX timestamp to the logger context with the "time" key.
+// Timestamp adds the current local time to the logger context with the "time" key, formatted using zerolog.TimeFieldFormat.
 // To customize the key name, change zerolog.TimestampFieldName.
+// To customize the time format, change zerolog.TimeFieldFormat.
 //
 // NOTE: It won't dedupe the "time" key if the *Context has one already.
 func (c Context) Timestamp() Context {

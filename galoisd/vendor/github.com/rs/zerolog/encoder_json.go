@@ -6,6 +6,7 @@ package zerolog
 // JSON encoded byte stream.
 
 import (
+	"encoding/base64"
 	"github.com/rs/zerolog/internal/json"
 )
 
@@ -24,6 +25,17 @@ func init() {
 
 func appendJSON(dst []byte, j []byte) []byte {
 	return append(dst, j...)
+}
+func appendCBOR(dst []byte, cbor []byte) []byte {
+	dst = append(dst, []byte("\"data:application/cbor;base64,")...)
+	l := len(dst)
+	enc := base64.StdEncoding
+	n := enc.EncodedLen(len(cbor))
+	for i := 0; i < n; i++ {
+		dst = append(dst, '.')
+	}
+	enc.Encode(dst[l:], cbor)
+	return append(dst, '"')
 }
 
 func decodeIfBinaryToString(in []byte) string {

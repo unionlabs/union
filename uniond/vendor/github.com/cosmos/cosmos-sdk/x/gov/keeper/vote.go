@@ -37,6 +37,7 @@ func (keeper Keeper) AddVote(ctx sdk.Context, proposalID uint64, voterAddr sdk.A
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
 			types.EventTypeProposalVote,
+			sdk.NewAttribute(types.AttributeKeyVoter, voterAddr.String()),
 			sdk.NewAttribute(types.AttributeKeyOption, options.String()),
 			sdk.NewAttribute(types.AttributeKeyProposalID, fmt.Sprintf("%d", proposalID)),
 		),

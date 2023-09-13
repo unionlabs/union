@@ -9,6 +9,7 @@ const (
 	EventTypeActiveProposal   = "active_proposal"
 	EventTypeSignalProposal   = "signal_proposal"
 
+	AttributeKeyVoter              = "voter"
 	AttributeKeyProposalResult     = "proposal_result"
 	AttributeKeyOption             = "option"
 	AttributeKeyProposalID         = "proposal_id"

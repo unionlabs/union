@@ -231,9 +231,14 @@ func (ak AccountKeeper) AccountInfo(goCtx context.Context, req *types.QueryAccou
 		return nil, status.Errorf(codes.NotFound, "account %s not found", req.Address)
 	}
 
-	pkAny, err := codectypes.NewAnyWithValue(account.GetPubKey())
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+	// if there is no public key, avoid serializing the nil value
+	pubKey := account.GetPubKey()
+	var pkAny *codectypes.Any
+	if pubKey != nil {
+		pkAny, err = codectypes.NewAnyWithValue(account.GetPubKey())
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, err.Error())
+		}
 	}
 
 	return &types.QueryAccountInfoResponse{

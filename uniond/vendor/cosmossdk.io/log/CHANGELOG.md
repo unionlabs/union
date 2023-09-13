@@ -11,26 +11,25 @@ Mention whether you follow Semantic Versioning.
 
 Usage:
 
-Change log entries are to be added to the Unreleased section under the
-appropriate stanza (see below). Each entry should ideally include a tag and
-the Github issue reference in the following format:
+Change log entries are to be added to the Unreleased section from newest to oldest.
+Each entry must include the Github issue reference in the following format:
 
-* (<tag>) [#<issue-number>] Changelog message.
+* [#<issue-number>] Changelog message.
 
-Types of changes (Stanzas):
-
-"Features" for new features.
-"Improvements" for changes in existing functionality.
-"Deprecated" for soon-to-be removed features.
-"Bug Fixes" for any bug fixes.
-"API Breaking" for breaking exported APIs used by developers building on SDK.
-Ref: https://keepachangelog.com/en/1.0.0/
 -->
 
 # Changelog
 
 ## [Unreleased]
 
+## [v1.2.1](https://github.com/cosmos/cosmos-sdk/releases/tag/log/v1.2.1) - 2023-08-25
+
+* [#17532](https://github.com/cosmos/cosmos-sdk/pull/17532) Proper marshalling of `fmt.Stringer` (follow-up of [#17205](https://github.com/cosmos/cosmos-sdk/pull/17205)).
+
+## [v1.2.0](https://github.com/cosmos/cosmos-sdk/releases/tag/log/v1.2.0) - 2023-07-31
+
+* [#17194](https://github.com/cosmos/cosmos-sdk/pull/17194) Avoid repeating parse log level in `ParseLogLevel`.
+* [#17205](https://github.com/cosmos/cosmos-sdk/pull/17205) Fix types that do not implement the `json.Marshaler` interface.
 * [#15956](https://github.com/cosmos/cosmos-sdk/pull/15956) Introduce an option for enabling error stack trace.
 
 ## [v1.1.0](https://github.com/cosmos/cosmos-sdk/releases/tag/log/v1.1.0) - 2023-04-27

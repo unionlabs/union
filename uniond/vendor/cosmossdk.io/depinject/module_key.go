@@ -25,8 +25,16 @@ type moduleKey struct {
 	name string
 }
 
+// Name returns the module key's name.
 func (k ModuleKey) Name() string {
 	return k.name
+}
+
+// Equals checks if the module key is equal to another module key. Module keys
+// will be equal only if they have the same name and come from the same
+// ModuleKeyContext.
+func (k ModuleKey) Equals(other ModuleKey) bool {
+	return k.moduleKey == other.moduleKey
 }
 
 var moduleKeyType = reflect.TypeOf(ModuleKey{})
@@ -36,3 +44,35 @@ var moduleKeyType = reflect.TypeOf(ModuleKey{})
 type OwnModuleKey ModuleKey
 
 var ownModuleKeyType = reflect.TypeOf((*OwnModuleKey)(nil)).Elem()
+
+// ModuleKeyContext defines a context for non-forgeable module keys.
+// All module keys with the same name from the same context should be equal
+// and module keys with the same name but from different contexts should be
+// not equal.
+//
+// Usage:
+//
+//	moduleKeyCtx := &ModuleKeyContext{}
+//	fooKey := moduleKeyCtx.For("foo")
+type ModuleKeyContext struct {
+	moduleKeys map[string]*moduleKey
+}
+
+// For returns a new or existing module key for the given name within the context.
+func (c *ModuleKeyContext) For(moduleName string) ModuleKey {
+	return ModuleKey{c.createOrGetModuleKey(moduleName)}
+}
+
+func (c *ModuleKeyContext) createOrGetModuleKey(moduleName string) *moduleKey {
+	if c.moduleKeys == nil {
+		c.moduleKeys = map[string]*moduleKey{}
+	}
+
+	if k, ok := c.moduleKeys[moduleName]; ok {
+		return k
+	}
+
+	k := &moduleKey{moduleName}
+	c.moduleKeys[moduleName] = k
+	return k
+}

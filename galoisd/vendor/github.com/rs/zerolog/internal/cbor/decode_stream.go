@@ -5,6 +5,7 @@ package cbor
 import (
 	"bufio"
 	"bytes"
+	"encoding/base64"
 	"fmt"
 	"io"
 	"math"
@@ -213,6 +214,31 @@ func decodeString(src *bufio.Reader, noQuotes bool) []byte {
 	}
 	return append(result, '"')
 }
+func decodeStringToDataUrl(src *bufio.Reader, mimeType string) []byte {
+	pb := readByte(src)
+	major := pb & maskOutAdditionalType
+	minor := pb & maskOutMajorType
+	if major != majorTypeByteString {
+		panic(fmt.Errorf("Major type is: %d in decodeString", major))
+	}
+	length := decodeIntAdditionalType(src, minor)
+	l := int(length)
+	enc := base64.StdEncoding
+	lEnc := enc.EncodedLen(l)
+	result := make([]byte, len("\"data:;base64,\"")+len(mimeType)+lEnc)
+	dest := result
+	u := copy(dest, "\"data:")
+	dest = dest[u:]
+	u = copy(dest, mimeType)
+	dest = dest[u:]
+	u = copy(dest, ";base64,")
+	dest = dest[u:]
+	pbs := readNBytes(src, l)
+	enc.Encode(dest, pbs)
+	dest = dest[lEnc:]
+	dest[0] = '"'
+	return result
+}
 
 func decodeUTF8String(src *bufio.Reader) []byte {
 	pb := readByte(src)
@@ -349,6 +375,20 @@ func decodeTagData(src *bufio.Reader) []byte {
 	switch minor {
 	case additionalTypeTimestamp:
 		return decodeTimeStamp(src)
+	case additionalTypeIntUint8:
+		val := decodeIntAdditionalType(src, minor)
+		switch byte(val) {
+		case additionalTypeEmbeddedCBOR:
+			pb := readByte(src)
+			dataMajor := pb & maskOutAdditionalType
+			if dataMajor != majorTypeByteString {
+				panic(fmt.Errorf("Unsupported embedded Type: %d in decodeEmbeddedCBOR", dataMajor))
+			}
+			src.UnreadByte()
+			return decodeStringToDataUrl(src, "application/cbor")
+		default:
+			panic(fmt.Errorf("Unsupported Additional Tag Type: %d in decodeTagData", val))
+		}
 
 	// Tag value is larger than 256 (so uint16).
 	case additionalTypeIntUint16:

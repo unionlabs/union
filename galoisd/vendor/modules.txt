@@ -1,7 +1,7 @@
 # cosmossdk.io/errors v1.0.0
 ## explicit; go 1.20
 cosmossdk.io/errors
-# cosmossdk.io/math v1.0.1
+# cosmossdk.io/math v1.1.2
 ## explicit; go 1.20
 cosmossdk.io/math
 # github.com/beorn7/perks v1.0.1
@@ -244,7 +244,7 @@ github.com/cosmos/btcutil/bech32
 # github.com/cosmos/cosmos-proto v1.0.0-beta.2
 ## explicit; go 1.18
 github.com/cosmos/cosmos-proto
-# github.com/cosmos/cosmos-sdk v0.47.0 => github.com/unionlabs/cosmos-sdk v0.0.0-20230830184222-30e47ad4927b
+# github.com/cosmos/cosmos-sdk v0.47.0 => github.com/unionlabs/cosmos-sdk v0.0.0-20230912185853-89f7ea352a8b
 ## explicit; go 1.19
 github.com/cosmos/cosmos-sdk/codec
 github.com/cosmos/cosmos-sdk/codec/types
@@ -470,7 +470,7 @@ github.com/prometheus/common/model
 github.com/prometheus/procfs
 github.com/prometheus/procfs/internal/fs
 github.com/prometheus/procfs/internal/util
-# github.com/rs/zerolog v1.29.1
+# github.com/rs/zerolog v1.30.0
 ## explicit; go 1.15
 github.com/rs/zerolog
 github.com/rs/zerolog/internal/cbor
@@ -555,7 +555,7 @@ golang.org/x/crypto/nacl/secretbox
 golang.org/x/crypto/ripemd160
 golang.org/x/crypto/salsa20/salsa
 golang.org/x/crypto/sha3
-# golang.org/x/exp v0.0.0-20230515195305-f3d0a9c9a5cc
+# golang.org/x/exp v0.0.0-20230711153332-06a737ee72cb
 ## explicit; go 1.20
 golang.org/x/exp/constraints
 golang.org/x/exp/maps
@@ -570,13 +570,13 @@ golang.org/x/net/idna
 golang.org/x/net/internal/timeseries
 golang.org/x/net/netutil
 golang.org/x/net/trace
-# golang.org/x/sys v0.10.0
+# golang.org/x/sys v0.11.0
 ## explicit; go 1.17
 golang.org/x/sys/cpu
 golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/unix
 golang.org/x/sys/windows
-# golang.org/x/text v0.11.0
+# golang.org/x/text v0.12.0
 ## explicit; go 1.17
 golang.org/x/text/runes
 golang.org/x/text/secure/bidirule
@@ -691,4 +691,4 @@ sigs.k8s.io/yaml
 # github.com/cometbft/cometbft => github.com/unionlabs/cometbls v0.0.0-20230606200400-20834775a066
 # github.com/consensys/gnark => github.com/unionlabs/gnark v0.0.0-20230820185220-9ebfeea2ca75
 # github.com/consensys/gnark-crypto => github.com/unionlabs/gnark-crypto v0.0.0-20230419121058-59d3a8050fda
-# github.com/cosmos/cosmos-sdk => github.com/unionlabs/cosmos-sdk v0.0.0-20230830184222-30e47ad4927b
+# github.com/cosmos/cosmos-sdk => github.com/unionlabs/cosmos-sdk v0.0.0-20230912185853-89f7ea352a8b

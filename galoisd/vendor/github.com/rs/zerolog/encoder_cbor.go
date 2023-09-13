@@ -24,6 +24,9 @@ func init() {
 func appendJSON(dst []byte, j []byte) []byte {
 	return cbor.AppendEmbeddedJSON(dst, j)
 }
+func appendCBOR(dst []byte, c []byte) []byte {
+	return cbor.AppendEmbeddedCBOR(dst, c)
+}
 
 // decodeIfBinaryToString - converts a binary formatted log msg to a
 // JSON formatted String Log message.

@@ -12,9 +12,9 @@ import (
 // the effective fee should be deducted later, and the priority should be returned in abci response.
 type TxFeeChecker func(ctx sdk.Context, tx sdk.Tx) (sdk.Coins, int64, error)
 
-// DeductFeeDecorator deducts fees from the first signer of the tx
-// If the first signer does not have the funds to pay for the fees, return with InsufficientFunds error
-// Call next AnteHandler if fees successfully deducted
+// DeductFeeDecorator deducts fees from the fee payer. The fee payer is the fee granter (if specified) or first signer of the tx.
+// If the fee payer does not have the funds to pay for the fees, return an InsufficientFunds error.
+// Call next AnteHandler if fees successfully deducted.
 // CONTRACT: Tx must implement FeeTx interface to use DeductFeeDecorator
 type DeductFeeDecorator struct {
 	accountKeeper  AccountKeeper

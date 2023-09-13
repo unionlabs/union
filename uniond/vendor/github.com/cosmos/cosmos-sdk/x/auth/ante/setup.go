@@ -39,6 +39,14 @@ func (sud SetUpContextDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate
 
 	newCtx = SetGasMeter(simulate, ctx, gasTx.GetGas())
 
+	if cp := ctx.ConsensusParams(); cp != nil && cp.Block != nil {
+		// If there exists a maximum block gas limit, we must ensure that the tx
+		// does not exceed it.
+		if cp.Block.MaxGas > 0 && gasTx.GetGas() > uint64(cp.Block.MaxGas) {
+			return newCtx, sdkerrors.Wrapf(sdkerrors.ErrInvalidGasLimit, "tx gas limit %d exceeds block max gas %d", gasTx.GetGas(), cp.Block.MaxGas)
+		}
+	}
+
 	// Decorator will catch an OutOfGasPanic caused in the next antehandler
 	// AnteHandlers must have their own defer/recover in order for the BaseApp
 	// to know how much gas was used! This is because the GasMeter is created in

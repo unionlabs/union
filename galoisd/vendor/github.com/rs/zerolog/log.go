@@ -82,8 +82,9 @@
 //     log.Warn().Msg("")
 //     // Output: {"level":"warn","severity":"warn"}
 //
+// # Caveats
 //
-// Caveats
+// Field duplication:
 //
 // There is no fields deduplication out-of-the-box.
 // Using the same key multiple times creates new key in final JSON each time.
@@ -96,9 +97,24 @@
 //
 // In this case, many consumers will take the last value,
 // but this is not guaranteed; check yours if in doubt.
+//
+// Concurrency safety:
+//
+// Be careful when calling UpdateContext. It is not concurrency safe. Use the With method to create a child logger:
+//
+//     func handler(w http.ResponseWriter, r *http.Request) {
+//         // Create a child logger for concurrency safety
+//         logger := log.Logger.With().Logger()
+//
+//         // Add context fields, for example User-Agent from HTTP headers
+//         logger.UpdateContext(func(c zerolog.Context) zerolog.Context {
+//             ...
+//         })
+//     }
 package zerolog
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -218,6 +234,7 @@ type Logger struct {
 	context []byte
 	hooks   []Hook
 	stack   bool
+	ctx     context.Context
 }
 
 // New creates a root logger with given output writer. If the output writer implements
@@ -275,7 +292,8 @@ func (l Logger) With() Context {
 
 // UpdateContext updates the internal logger's context.
 //
-// Use this method with caution. If unsure, prefer the With method.
+// Caution: This method is not concurrency safe.
+// Use the With method to create a child logger before modifying the context from concurrent goroutines.
 func (l *Logger) UpdateContext(update func(c Context) Context) {
 	if l == disabledLogger {
 		return
@@ -309,7 +327,9 @@ func (l Logger) Sample(s Sampler) Logger {
 
 // Hook returns a logger with the h Hook.
 func (l Logger) Hook(h Hook) Logger {
-	l.hooks = append(l.hooks, h)
+	newHooks := make([]Hook, len(l.hooks), len(l.hooks)+1)
+	copy(newHooks, l.hooks)
+	l.hooks = append(newHooks, h)
 	return l
 }
 
@@ -453,6 +473,7 @@ func (l *Logger) newEvent(level Level, done func(string)) *Event {
 	e := newEvent(l.w, level)
 	e.done = done
 	e.ch = l.hooks
+	e.ctx = l.ctx
 	if level != NoLevel && LevelFieldName != "" {
 		e.Str(LevelFieldName, LevelFieldMarshalFunc(level))
 	}

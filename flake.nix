@@ -203,7 +203,7 @@
                 cosmossdk = builtins.fetchGit {
                   name = "cosmos-sdk";
                   url = "git@github.com:unionlabs/cosmos-sdk";
-                  rev = "30e47ad4927bc83e40468ca5878965218c4e35c8";
+                  rev = "89f7ea352a8bed79ade8c633345cd94ffb7a82db";
                   allRefs = true;
                 };
                 ibcgo = mkUnpack {
