@@ -520,6 +520,7 @@
             fi;
 
             setupInitialChannel "$UCS01RELAY" transfer "wasm.$CW20_ADDRESS" channel-0
+
             if [[ -z "$HANDSHAKE" ]]; then
               PING_PONG_CONNECTION="connection-0"
               PING_PONG_CHANNEL="channel-1"

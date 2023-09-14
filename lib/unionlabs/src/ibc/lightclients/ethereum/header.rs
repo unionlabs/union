@@ -17,7 +17,6 @@ pub struct Header<C: SYNC_COMMITTEE_SIZE + BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA
     pub trusted_sync_committee: TrustedSyncCommittee<C>,
     pub consensus_update: LightClientUpdate<C>,
     pub account_update: AccountUpdate,
-    pub timestamp: u64,
 }
 
 impl<C: SYNC_COMMITTEE_SIZE + BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> From<Header<C>>
@@ -28,7 +27,6 @@ impl<C: SYNC_COMMITTEE_SIZE + BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> From<
             trusted_sync_committee: Some(value.trusted_sync_committee.into()),
             consensus_update: Some(value.consensus_update.into()),
             account_update: Some(value.account_update.into()),
-            timestamp: value.timestamp,
         }
     }
 }
@@ -69,7 +67,6 @@ impl<C: SYNC_COMMITTEE_SIZE + BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES>
                     "account_update",
                 )))?
                 .into(),
-            timestamp: value.timestamp,
         })
     }
 }

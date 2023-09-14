@@ -1,5 +1,3 @@
-use std::str::FromStr;
-
 use cosmwasm_std::{Binary, Deps, DepsMut, Env};
 use ethabi::ethereum_types::U256 as ethabi_U256;
 use ethereum_verifier::{
@@ -7,10 +5,10 @@ use ethereum_verifier::{
     validate_light_client_update, verify_account_storage_root, verify_storage_absence,
     verify_storage_proof,
 };
-use ibc::core::ics24_host::Path;
 use ics008_wasm_client::{
     storage_utils::{
-        read_client_state, read_consensus_state, save_consensus_state, update_client_state,
+        read_client_state, read_consensus_state, save_client_state, save_consensus_state,
+        update_client_state,
     },
     ContractResult, IbcClient, QueryResponse, Status, StorageState,
 };
@@ -30,7 +28,7 @@ use unionlabs::{
 use crate::{
     consensus_state::TrustedConsensusState,
     context::LightClientContext,
-    custom_query::{query_aggregate_public_keys, CustomQuery, VerificationContext},
+    custom_query::{CustomQuery, VerificationContext},
     errors::Error,
     eth_encoding::generate_commitment_key,
     Config,
@@ -62,7 +60,7 @@ impl IbcClient for EthereumLightClient {
         _delay_time_period: u64,
         _delay_block_period: u64,
         proof: Binary,
-        path: ics008_wasm_client::MerklePath,
+        mut path: ics008_wasm_client::MerklePath,
         value: ics008_wasm_client::StorageState,
     ) -> Result<ics008_wasm_client::ContractResult, Self::Error> {
         let consensus_state: WasmConsensusState = read_consensus_state(deps, &height)?.ok_or(
@@ -70,12 +68,10 @@ impl IbcClient for EthereumLightClient {
         )?;
         let client_state: WasmClientState = read_client_state(deps)?;
 
-        let path = Path::from_str(
-            path.key_path
-                .last()
-                .ok_or(Error::InvalidPath("path is empty".into()))?,
-        )
-        .map_err(|e| Error::InvalidPath(e.to_string()))?;
+        let path = path
+            .key_path
+            .pop()
+            .ok_or(Error::InvalidPath("path is empty".into()))?;
 
         // This storage root is verified during the header update, so we don't need to verify it again.
         let storage_root = consensus_state.data.storage_root;
@@ -111,7 +107,7 @@ impl IbcClient for EthereumLightClient {
 
     fn verify_header(
         deps: Deps<Self::CustomQuery>,
-        _env: Env,
+        env: Env,
         header: Self::Header,
     ) -> Result<ics008_wasm_client::ContractResult, Self::Error> {
         let trusted_sync_committee = header.trusted_sync_committee;
@@ -123,27 +119,25 @@ impl IbcClient for EthereumLightClient {
                 ),
             )?;
 
-        let aggregate_public_key = query_aggregate_public_keys(
-            deps,
-            trusted_sync_committee.sync_committee.pubkeys.clone().into(),
-        )?;
-
         let trusted_consensus_state = TrustedConsensusState::new(
+            deps,
             wasm_consensus_state.data,
             trusted_sync_committee.sync_committee,
-            aggregate_public_key,
-            trusted_sync_committee.is_next,
         )?;
 
         let wasm_client_state = read_client_state(deps)?;
         let ctx = LightClientContext::new(&wasm_client_state.data, trusted_consensus_state);
 
+        // NOTE(aeryz): Ethereum consensus-spec says that we should use the slot
+        // at the current timestamp.
+        let current_slot = (env.block.time.seconds() - wasm_client_state.data.genesis_time)
+            / wasm_client_state.data.seconds_per_slot
+            + wasm_client_state.data.fork_parameters.genesis_slot;
+
         validate_light_client_update::<LightClientContext<Config>, VerificationContext>(
             &ctx,
             header.consensus_update.clone(),
-            (header.timestamp - wasm_client_state.data.genesis_time)
-                / wasm_client_state.data.seconds_per_slot
-                + wasm_client_state.data.fork_parameters.genesis_slot,
+            current_slot,
             wasm_client_state.data.genesis_validators_root.clone(),
             VerificationContext { deps },
         )
@@ -158,13 +152,13 @@ impl IbcClient for EthereumLightClient {
         verify_account_storage_root(
             header.consensus_update.attested_header.execution.state_root,
             &proof_data
-                .key
+                .address
                 .as_slice()
                 .try_into()
                 .map_err(|_| Error::InvalidProofFormat)?,
             &proof_data.proof,
             proof_data
-                .value
+                .storage_hash
                 .as_slice()
                 .try_into()
                 .map_err(|_| Error::InvalidProofFormat)?,
@@ -232,7 +226,7 @@ impl IbcClient for EthereumLightClient {
                 .proofs
                 .get(0)
                 .ok_or(Error::EmptyProof)?
-                .value
+                .storage_hash
                 .as_slice()
                 .try_into()
                 .map_err(|_| Error::InvalidProofFormat)?;
@@ -274,10 +268,18 @@ impl IbcClient for EthereumLightClient {
     }
 
     fn update_state_on_misbehaviour(
-        _deps: DepsMut<Self::CustomQuery>,
+        deps: DepsMut<Self::CustomQuery>,
+        env: Env,
         _client_message: ics008_wasm_client::ClientMessage,
     ) -> Result<ics008_wasm_client::ContractResult, Self::Error> {
-        Ok(ContractResult::invalid("Not implemented".to_string()))
+        let mut client_state: WasmClientState = read_client_state(deps.as_ref())?;
+        client_state.data.frozen_height = Some(Height {
+            revision_number: client_state.latest_height.revision_number,
+            revision_height: env.block.height,
+        });
+        save_client_state(deps, client_state);
+
+        Ok(ContractResult::valid(None))
     }
 
     fn check_for_misbehaviour_on_header(
@@ -295,7 +297,7 @@ impl IbcClient for EthereumLightClient {
                 .proofs
                 .get(0)
                 .ok_or(Error::EmptyProof)?
-                .value
+                .storage_hash
                 .as_slice()
                 .try_into()
                 .map_err(|_| Error::InvalidProofFormat)?;
@@ -391,7 +393,7 @@ impl IbcClient for EthereumLightClient {
 }
 
 fn do_verify_membership(
-    path: Path,
+    path: String,
     storage_root: H256,
     counterparty_commitment_slot: Slot,
     storage_proof: Proof,
@@ -424,7 +426,7 @@ fn do_verify_membership(
 
 /// Verifies that no value is committed at `path` in the counterparty light client's storage.
 fn do_verify_non_membership(
-    path: Path,
+    path: String,
     storage_root: H256,
     counterparty_commitment_slot: Slot,
     storage_proof: Proof,
@@ -441,12 +443,11 @@ fn do_verify_non_membership(
 }
 
 fn check_commitment_key(
-    path: Path,
+    path: String,
     counterparty_commitment_slot: Slot,
     key: &[u8],
 ) -> Result<(), Error> {
-    let expected_commitment_key =
-        generate_commitment_key(path.to_string(), counterparty_commitment_slot);
+    let expected_commitment_key = generate_commitment_key(path, counterparty_commitment_slot);
 
     // Data MUST be stored to the commitment path that is defined in ICS23.
     if expected_commitment_key != key {
@@ -734,10 +735,14 @@ mod test {
         ];
 
         for update in updates {
+            let mut env = mock_env();
+            env.block.time = cosmwasm_std::Timestamp::from_seconds(
+                update.consensus_update.attested_header.execution.timestamp + 60 * 5,
+            );
             EthereumLightClient::check_for_misbehaviour_on_header(deps.as_ref(), update.clone())
                 .unwrap();
-            EthereumLightClient::verify_header(deps.as_ref(), mock_env(), update.clone()).unwrap();
-            EthereumLightClient::update_state(deps.as_mut(), mock_env(), update.clone()).unwrap();
+            EthereumLightClient::verify_header(deps.as_ref(), env.clone(), update.clone()).unwrap();
+            EthereumLightClient::update_state(deps.as_mut(), env, update.clone()).unwrap();
             // Consensus state is saved to the updated height.
             if update.consensus_update.attested_header.beacon.slot
                 > update.trusted_sync_committee.trusted_height.revision_height
@@ -760,7 +765,7 @@ mod test {
                 // Storage root is updated.
                 assert_eq!(
                     wasm_consensus_state.data.storage_root.into_bytes(),
-                    update.account_update.proofs[0].value,
+                    update.account_update.proofs[0].storage_hash,
                 );
                 // Latest slot is updated.
                 // TODO(aeryz): Add cases for `store_period == update_period` and `update_period == store_period + 1`
@@ -837,9 +842,11 @@ mod test {
         }
     }
 
-    fn prepare_for_fail_tests() -> (
+    #[allow(clippy::type_complexity)]
+    fn prepare_test_data() -> (
         OwnedDeps<MockStorage, MockApi, MockQuerier<CustomQuery>, CustomQuery>,
         ethereum::header::Header<Minimal>,
+        Env,
     ) {
         let mut deps = OwnedDeps::<_, _, _, CustomQuery> {
             storage: MockStorage::default(),
@@ -860,7 +867,7 @@ mod test {
         );
         save_consensus_state(
             deps.as_mut(),
-            <WasmConsensusState>::try_from_proto(wasm_consensus_state).unwrap(),
+            <WasmConsensusState>::try_from_proto(wasm_consensus_state.clone()).unwrap(),
             &INITIAL_CONSENSUS_STATE_HEIGHT,
         );
 
@@ -870,38 +877,44 @@ mod test {
             )
             .unwrap();
 
-        (deps, update.try_into().unwrap())
+        let mut env = mock_env();
+        env.block.time =
+            cosmwasm_std::Timestamp::from_seconds(wasm_consensus_state.timestamp + 60 * 5);
+
+        (deps, update.try_into().unwrap(), env)
     }
 
     #[test]
     fn verify_header_fails_when_sync_committee_aggregate_pubkey_is_incorrect() {
-        let (deps, mut update) = prepare_for_fail_tests();
+        let (deps, mut update, env) = prepare_test_data();
 
         let mut pubkey = update
             .trusted_sync_committee
             .sync_committee
+            .get()
             .aggregate_pubkey
             .clone();
         pubkey.0[0] += 1;
         update
             .trusted_sync_committee
             .sync_committee
+            .get_mut()
             .aggregate_pubkey = pubkey;
-        assert!(EthereumLightClient::verify_header(deps.as_ref(), mock_env(), update).is_err());
+        assert!(EthereumLightClient::verify_header(deps.as_ref(), env, update).is_err());
     }
 
     #[test]
     fn verify_header_fails_when_finalized_header_execution_branch_merkle_is_invalid() {
-        let (deps, mut update) = prepare_for_fail_tests();
+        let (deps, mut update, env) = prepare_test_data();
         update.consensus_update.finalized_header.execution_branch[0].0[0] += 1;
-        assert!(EthereumLightClient::verify_header(deps.as_ref(), mock_env(), update).is_err());
+        assert!(EthereumLightClient::verify_header(deps.as_ref(), env, update).is_err());
     }
 
     #[test]
     fn verify_header_fails_when_finality_branch_merkle_is_invalid() {
-        let (deps, mut update) = prepare_for_fail_tests();
+        let (deps, mut update, env) = prepare_test_data();
         update.consensus_update.finality_branch[0].0[0] += 1;
-        assert!(EthereumLightClient::verify_header(deps.as_ref(), mock_env(), update).is_err());
+        assert!(EthereumLightClient::verify_header(deps.as_ref(), env, update).is_err());
     }
 
     #[test]
@@ -947,7 +960,7 @@ mod test {
             ClientStatePath::new(
                 &ClientId::new(ClientType::new(ETHEREUM_CLIENT_ID_PREFIX.into()), 0).unwrap(),
             )
-            .into(),
+            .to_string(),
             storage_root,
             3,
             proof,
@@ -988,7 +1001,7 @@ mod test {
                 &ClientId::new(ClientType::new(ETHEREUM_CLIENT_ID_PREFIX.into()), 0).unwrap(),
                 &IbcHeight::new(0, 1).unwrap(),
             )
-            .into(),
+            .to_string(),
             storage_root,
             3,
             proof,
@@ -1035,7 +1048,7 @@ mod test {
         let (proof, storage_root, connection_end) = prepare_connection_end();
 
         do_verify_membership(
-            ConnectionPath::new(&ConnectionId::new(0)).into(),
+            ConnectionPath::new(&ConnectionId::new(0)).to_string(),
             storage_root,
             3,
             proof,
@@ -1067,7 +1080,7 @@ mod test {
 
         for proof in proofs {
             assert!(do_verify_membership(
-                ConnectionPath::new(&ConnectionId::new(0)).into(),
+                ConnectionPath::new(&ConnectionId::new(0)).to_string(),
                 storage_root.clone(),
                 3,
                 proof,
@@ -1084,7 +1097,7 @@ mod test {
         storage_root.0[10] = u8::MAX - storage_root.0[10];
 
         assert!(do_verify_membership(
-            ConnectionPath::new(&ConnectionId::new(0)).into(),
+            ConnectionPath::new(&ConnectionId::new(0)).to_string(),
             storage_root,
             3,
             proof,
@@ -1100,7 +1113,7 @@ mod test {
         connection_end.client_id = "incorrect-client-id".into();
 
         assert!(do_verify_membership(
-            ConnectionPath::new(&ConnectionId::new(0)).into(),
+            ConnectionPath::new(&ConnectionId::new(0)).to_string(),
             storage_root,
             3,
             proof,
@@ -1123,7 +1136,7 @@ mod test {
             ClientStatePath::new(
                 &ClientId::new(ClientType::new(ETHEREUM_CLIENT_ID_PREFIX.into()), 0).unwrap(),
             )
-            .into(),
+            .to_string(),
             storage_root,
             3,
             proof,
@@ -1137,12 +1150,36 @@ mod test {
 
         assert_eq!(
             do_verify_non_membership(
-                ConnectionPath::new(&ConnectionId::new(0)).into(),
+                ConnectionPath::new(&ConnectionId::new(0)).to_string(),
                 storage_root,
                 3,
                 proof,
             ),
             Err(Error::CounterpartyStorageNotNil)
+        );
+    }
+
+    #[test]
+    fn update_state_on_misbehaviour_works() {
+        let (mut deps, header, env) = prepare_test_data();
+
+        EthereumLightClient::update_state_on_misbehaviour(
+            deps.as_mut(),
+            env.clone(),
+            ics008_wasm_client::ClientMessage::Header(
+                protos::ibc::lightclients::wasm::v1::Header {
+                    data: header.into_proto_bytes(),
+                    height: None,
+                },
+            ),
+        )
+        .unwrap();
+
+        assert_eq!(
+            EthereumLightClient::status(deps.as_ref(), &env)
+                .unwrap()
+                .status,
+            Status::Frozen.to_string()
         );
     }
 }
