@@ -4,7 +4,7 @@ use graphql_client::{GraphQLQuery, Response};
 use reqwest::{Client, Url};
 
 type Jsonb = serde_json::Value;
-
+type Timestamptz = String;
 pub trait Datastore {
     fn do_post<Q: GraphQLQuery>(
         &self,
@@ -60,7 +60,7 @@ impl HasuraDataStore {
 #[graphql(
     schema_path = "src/graphql/schema.graphql",
     query_path = "src/graphql/operations.graphql",
-    response_derives = "Debug",
+    response_derives = "Debug, Default",
     normalization = "rust",
     skip_serializing_none
 )]
@@ -70,7 +70,7 @@ pub struct InsertBlock;
 #[graphql(
     schema_path = "src/graphql/schema.graphql",
     query_path = "src/graphql/operations.graphql",
-    response_derives = "Debug",
+    response_derives = "Debug, Default",
     normalization = "rust",
     skip_serializing_none
 )]
@@ -80,8 +80,18 @@ pub struct GetLatestBlock;
 #[graphql(
     schema_path = "src/graphql/schema.graphql",
     query_path = "src/graphql/operations.graphql",
-    response_derives = "Debug",
+    response_derives = "Debug, Default",
     normalization = "rust",
     skip_serializing_none
 )]
 pub struct InsertChain;
+
+#[derive(GraphQLQuery)]
+#[graphql(
+    schema_path = "src/graphql/schema.graphql",
+    query_path = "src/graphql/operations.graphql",
+    response_derives = "Debug, Default",
+    normalization = "rust",
+    skip_serializing_none
+)]
+pub struct InsertBlocksMany;

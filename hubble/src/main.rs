@@ -29,10 +29,9 @@ async fn main() -> color_eyre::eyre::Result<()> {
         set.spawn(async move {
             info!("starting indexer {:?}", indexer);
             // indexer should never return with Ok, thus we log the error.
-            let result = indexer.index(db).await.inspect_err(|err| {
+            indexer.index(db).await.inspect_err(|err| {
                 warn!("indexer {:?} exited with: {:?}", &indexer, err);
-            });
-            result
+            })
         });
     });
 
