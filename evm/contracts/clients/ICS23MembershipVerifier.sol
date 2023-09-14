@@ -34,6 +34,14 @@ contract ICS23MembershipVerifier is IMembershipVerifier {
         bytes calldata prefix,
         bytes calldata path
     ) external view override returns (bool) {
-        revert("not implemented yet");
+        bytes[] memory fullPath = new bytes[](2);
+        fullPath[0] = prefix;
+        fullPath[1] = path;
+        return
+            Ics23.verifyChainedNonMembership(
+                IbcCoreCommitmentV1MerkleProof.decode(proof),
+                root,
+                fullPath
+            ) == Ics23.VerifyChainedNonMembershipError.None;
     }
 }
