@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"strconv"
 
@@ -74,8 +75,14 @@ func GenStateProof() *cobra.Command {
 				return err
 			}
 
+			proofJson, err := json.Marshal(&merkleProof)
+			if err != nil {
+				return err
+			}
+
 			fmt.Println("Proof for height: ", res.Height)
 			fmt.Println("Proof: ", hex.EncodeToString(proofBz))
+			fmt.Println("Proof JSON: ", string(proofJson))
 			fmt.Println("Key: ", hex.EncodeToString(res.Key))
 			fmt.Println("Value: ", hex.EncodeToString(res.Value))
 

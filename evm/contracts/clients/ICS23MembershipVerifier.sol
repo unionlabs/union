@@ -4,11 +4,8 @@ import "../core/IMembershipVerifier.sol";
 import "../lib/ICS23.sol";
 import "../proto/cosmos/ics23/v1/proofs.sol";
 import "../proto/ibc/core/commitment/v1/commitment.sol";
-import "solady/utils/LibString.sol";
 
 contract ICS23MembershipVerifier is IMembershipVerifier {
-    using LibString for string;
-
     function verifyMembership(
         bytes memory root,
         bytes calldata proof,
@@ -34,6 +31,14 @@ contract ICS23MembershipVerifier is IMembershipVerifier {
         bytes calldata prefix,
         bytes calldata path
     ) external view override returns (bool) {
-        revert("not implemented yet");
+        bytes[] memory fullPath = new bytes[](2);
+        fullPath[0] = prefix;
+        fullPath[1] = path;
+        return
+            Ics23.verifyChainedNonMembership(
+                IbcCoreCommitmentV1MerkleProof.decode(proof),
+                root,
+                fullPath
+            ) == Ics23.VerifyChainedNonMembershipError.None;
     }
 }

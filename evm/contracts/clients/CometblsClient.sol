@@ -277,6 +277,17 @@ contract CometblsClient is ILightClient {
             consensusState.timestamp != 0,
             "LC: verifyMembership: consensusState does not exist"
         );
+        if (
+            (delayTimePeriod != 0 || delayBlockPeriod != 0) &&
+            !validateDelayPeriod(
+                clientId,
+                height,
+                delayTimePeriod,
+                delayBlockPeriod
+            )
+        ) {
+            return false;
+        }
         return
             membershipVerifier.verifyMembership(
                 abi.encodePacked(consensusState.root),
@@ -303,6 +314,17 @@ contract CometblsClient is ILightClient {
             consensusState.timestamp != 0,
             "LC: verifyNonMembership: consensusState does not exist"
         );
+        if (
+            (delayTimePeriod != 0 || delayBlockPeriod != 0) &&
+            !validateDelayPeriod(
+                clientId,
+                height,
+                delayTimePeriod,
+                delayBlockPeriod
+            )
+        ) {
+            return false;
+        }
         return
             membershipVerifier.verifyNonMembership(
                 abi.encodePacked(consensusState.root),
@@ -312,13 +334,40 @@ contract CometblsClient is ILightClient {
             );
     }
 
+    function validateDelayPeriod(
+        string calldata clientId,
+        IbcCoreClientV1Height.Data calldata height,
+        uint64 delayPeriodTime,
+        uint64 delayPeriodBlocks
+    ) public view returns (bool) {
+        uint128 heightU128 = height.toUint128();
+        uint64 currentTime = uint64(block.timestamp * 1e9);
+        ProcessedMoment memory moment = processedMoments[
+            stateIndex(clientId, heightU128)
+        ];
+        uint64 validTime = uint64(moment.timestamp) * 1e9 + delayPeriodTime;
+        if (currentTime < validTime) {
+            return false;
+        }
+        uint64 currentHeight = uint64(block.number);
+        uint64 validHeight = uint64(moment.height) + delayPeriodBlocks;
+        if (currentHeight < validHeight) {
+            return false;
+        }
+        return true;
+    }
+
     function getClientState(
         string calldata clientId
     ) external view returns (bytes memory, bool) {
+        bytes memory codeId = codeIds[clientId];
+        if (codeId.length == 0) {
+            return (bytes(""), false);
+        }
         return (
             clientStates[clientId].marshalToProto(
                 latestHeights[clientId],
-                codeIds[clientId]
+                codeId
             ),
             true
         );
@@ -328,11 +377,13 @@ contract CometblsClient is ILightClient {
         string calldata clientId,
         IbcCoreClientV1Height.Data calldata height
     ) external view returns (bytes memory, bool) {
-        return (
-            consensusStates[stateIndex(clientId, height.toUint128())]
-                .marshalToProto(),
-            true
-        );
+        OptimizedConsensusState memory consensusState = consensusStates[
+            stateIndex(clientId, height.toUint128())
+        ];
+        if (consensusState.timestamp == 0) {
+            return (bytes(""), false);
+        }
+        return (consensusState.marshalToProto(), true);
     }
 
     modifier onlyIBC() {
