@@ -30,7 +30,8 @@ CREATE TABLE public.blocks (
     id integer NOT NULL,
     is_finalized boolean DEFAULT false,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at timestamp with time zone DEFAULT now()
+    updated_at timestamp with time zone DEFAULT now(),
+    extra_data jsonb
 );
 CREATE SEQUENCE public.blocks_id_seq
     AS integer

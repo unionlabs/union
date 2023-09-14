@@ -1,5 +1,6 @@
-mutation InsertBlock($chain_id: Int!, $hash: String!, $height: Int!, $finalized: Boolean!, $events: events_arr_rel_insert_input) {
-  insert_blocks_one(object: {chain_id: $chain_id, hash: $hash, height: $height, is_finalized: $finalized, events: $events}) {
+
+mutation InsertBlock($object: blocks_insert_input!) {
+  insert_blocks_one(object: $object) {
     id
   }
 }
