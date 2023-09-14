@@ -15,7 +15,7 @@
           CGO_ENABLED = 0;
           ldflags = [
             "-linkmode external"
-            "-extldflags '-static -L${pkgs.musl}/lib'"
+            "-extldflags '-static -L${pkgs.musl}/lib -s -w'"
           ];
         } else { }));
 
