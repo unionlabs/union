@@ -4,11 +4,8 @@ import "../core/IMembershipVerifier.sol";
 import "../lib/ICS23.sol";
 import "../proto/cosmos/ics23/v1/proofs.sol";
 import "../proto/ibc/core/commitment/v1/commitment.sol";
-import "solady/utils/LibString.sol";
 
 contract ICS23MembershipVerifier is IMembershipVerifier {
-    using LibString for string;
-
     function verifyMembership(
         bytes memory root,
         bytes calldata proof,
