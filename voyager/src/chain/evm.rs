@@ -559,6 +559,11 @@ impl<C: ChainSpec> Chain for Evm<C> {
                             channel = event.source_channel
                         );
 
+                        tracing::debug!(
+                            "detected evm packets at height {}",
+                            current_execution_height
+                        );
+
                         (
                             self.make_height(current_beacon_height.revision_height),
                             Packet {
@@ -1507,7 +1512,7 @@ where
         at: Height,
     ) -> impl Future<Output = StateProof<P::Output<Counterparty>>> + '_ {
         async move {
-            let at = self.execution_height(at).await;
+            let at_execution = self.execution_height(at).await;
 
             let ret = self
                 .ibc_handler
@@ -1516,7 +1521,7 @@ where
                     path.clone().into(),
                 )
                 .expect("valid contract selector")
-                .block(at.revision_height)
+                .block(at_execution.revision_height)
                 .call()
                 .await
                 .map(<P::EthCall as EthCallExt>::Return::tuple_to_option)
@@ -1542,7 +1547,7 @@ where
                 .get_proof(
                     self.ibc_handler.address(),
                     vec![location.into()],
-                    Some(at.revision_height.into()),
+                    Some(at_execution.revision_height.into()),
                 )
                 .await
                 .unwrap();
