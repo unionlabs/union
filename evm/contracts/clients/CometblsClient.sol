@@ -360,10 +360,14 @@ contract CometblsClient is ILightClient {
     function getClientState(
         string calldata clientId
     ) external view returns (bytes memory, bool) {
+        bytes memory codeId = codeIds[clientId];
+        if (codeId.length == 0) {
+            return (bytes(""), false);
+        }
         return (
             clientStates[clientId].marshalToProto(
                 latestHeights[clientId],
-                codeIds[clientId]
+                codeId
             ),
             true
         );
@@ -373,11 +377,13 @@ contract CometblsClient is ILightClient {
         string calldata clientId,
         IbcCoreClientV1Height.Data calldata height
     ) external view returns (bytes memory, bool) {
-        return (
-            consensusStates[stateIndex(clientId, height.toUint128())]
-                .marshalToProto(),
-            true
-        );
+        OptimizedConsensusState memory consensusState = consensusStates[
+            stateIndex(clientId, height.toUint128())
+        ];
+        if (consensusState.timestamp == 0) {
+            return (bytes(""), false);
+        }
+        return (consensusState.marshalToProto(), true);
     }
 
     modifier onlyIBC() {
