@@ -277,6 +277,17 @@ contract CometblsClient is ILightClient {
             consensusState.timestamp != 0,
             "LC: verifyMembership: consensusState does not exist"
         );
+        if (
+            (delayTimePeriod != 0 || delayBlockPeriod != 0) &&
+            !validateDelayPeriod(
+                clientId,
+                height,
+                delayTimePeriod,
+                delayBlockPeriod
+            )
+        ) {
+            return false;
+        }
         return
             membershipVerifier.verifyMembership(
                 abi.encodePacked(consensusState.root),
@@ -303,6 +314,17 @@ contract CometblsClient is ILightClient {
             consensusState.timestamp != 0,
             "LC: verifyNonMembership: consensusState does not exist"
         );
+        if (
+            (delayTimePeriod != 0 || delayBlockPeriod != 0) &&
+            !validateDelayPeriod(
+                clientId,
+                height,
+                delayTimePeriod,
+                delayBlockPeriod
+            )
+        ) {
+            return false;
+        }
         return
             membershipVerifier.verifyNonMembership(
                 abi.encodePacked(consensusState.root),
@@ -310,6 +332,29 @@ contract CometblsClient is ILightClient {
                 prefix,
                 path
             );
+    }
+
+    function validateDelayPeriod(
+        string calldata clientId,
+        IbcCoreClientV1Height.Data calldata height,
+        uint64 delayPeriodTime,
+        uint64 delayPeriodBlocks
+    ) public view returns (bool) {
+        uint128 heightU128 = height.toUint128();
+        uint64 currentTime = uint64(block.timestamp * 1e9);
+        ProcessedMoment memory moment = processedMoments[
+            stateIndex(clientId, heightU128)
+        ];
+        uint64 validTime = uint64(moment.timestamp) * 1e9 + delayPeriodTime;
+        if (currentTime < validTime) {
+            return false;
+        }
+        uint64 currentHeight = uint64(block.number);
+        uint64 validHeight = uint64(moment.height) + delayPeriodBlocks;
+        if (currentHeight < validHeight) {
+            return false;
+        }
+        return true;
     }
 
     function getClientState(
