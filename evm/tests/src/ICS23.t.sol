@@ -33,13 +33,7 @@ contract ICS23Test is Test {
             key
         );
 
-        if (result == Ics23.VerifyNonMembershipError.NonExistenceProofIsNil) {
-            revert("non existence proof is nil");
-        } else if (result == Ics23.VerifyNonMembershipError.ProofVerify) {
-            revert("proof verify failed");
-        }
-
-        assert(result == Ics23.VerifyNonMembershipError.None);
+        assertEq(uint256(result), uint256(Ics23.VerifyNonMembershipError.None));
     }
 
     // https://github.com/cosmos/ics23/blob/b1abd8678aab07165efd453c96796a179eb3131f/testdata/tendermint/nonexist_left.json
@@ -92,13 +86,7 @@ contract ICS23Test is Test {
             value
         );
 
-        if (result == Ics23.VerifyMembershipError.ExistenceProofIsNil) {
-            revert("existence proof is nil");
-        } else if (result == Ics23.VerifyMembershipError.ProofVerify) {
-            revert("proof verify failed");
-        }
-
-        assert(result == Ics23.VerifyMembershipError.None);
+        assertEq(uint256(result), uint256(Ics23.VerifyMembershipError.None));
     }
 
     // https://github.com/cosmos/ics23/blob/b1abd8678aab07165efd453c96796a179eb3131f/testdata/tendermint/exist_left.json
@@ -152,13 +140,16 @@ contract ICS23Test is Test {
         bytes[] memory path = new bytes[](2);
         path[0] = "acc";
         path[1] = hex"014152090B0C95C948EDC407995560FEED4A9DF81E";
-        assert(
-            Ics23.verifyChainedMembership(
-                IbcCoreCommitmentV1MerkleProof.decode(proof),
-                root,
-                path,
-                value
-            ) == Ics23.VerifyChainedMembershipError.None
+        assertEq(
+            uint256(
+                Ics23.verifyChainedMembership(
+                    IbcCoreCommitmentV1MerkleProof.decode(proof),
+                    root,
+                    path,
+                    value
+                )
+            ),
+            uint256(Ics23.VerifyChainedMembershipError.None)
         );
     }
 
@@ -172,13 +163,16 @@ contract ICS23Test is Test {
         bytes[] memory path = new bytes[](2);
         path[0] = "ibc";
         path[1] = "connections/connection-1";
-        assert(
-            Ics23.verifyChainedMembership(
-                IbcCoreCommitmentV1MerkleProof.decode(proof),
-                root,
-                path,
-                value
-            ) == Ics23.VerifyChainedMembershipError.None
+        assertEq(
+            uint256(
+                Ics23.verifyChainedMembership(
+                    IbcCoreCommitmentV1MerkleProof.decode(proof),
+                    root,
+                    path,
+                    value
+                )
+            ),
+            uint256(Ics23.VerifyChainedMembershipError.None)
         );
     }
 
@@ -192,17 +186,20 @@ contract ICS23Test is Test {
         bytes[] memory path = new bytes[](2);
         path[0] = "ibc";
         path[1] = "clients/08-wasm-1/clientState";
-        assert(
-            Ics23.verifyChainedMembership(
-                IbcCoreCommitmentV1MerkleProof.decode(proof),
-                root,
-                path,
-                value
-            ) == Ics23.VerifyChainedMembershipError.None
+        assertEq(
+            uint256(
+                Ics23.verifyChainedMembership(
+                    IbcCoreCommitmentV1MerkleProof.decode(proof),
+                    root,
+                    path,
+                    value
+                )
+            ),
+            uint256(Ics23.VerifyChainedMembershipError.None)
         );
     }
 
-    function testRootMismatch() public {
+    function testExistenceProofRootMismatch() public {
         bytes
             memory root = hex"971AF378C1F256110B3BA2EFD90325D5B5AFC8185997F2C12A7C4638B906CC22";
         bytes
@@ -212,17 +209,20 @@ contract ICS23Test is Test {
         bytes[] memory path = new bytes[](2);
         path[0] = "ibc";
         path[1] = "clients/08-wasm-1/clientState";
-        assert(
-            Ics23.verifyChainedMembership(
-                IbcCoreCommitmentV1MerkleProof.decode(proof),
-                root,
-                path,
-                value
-            ) == Ics23.VerifyChainedMembershipError.RootMismatch
+        assertEq(
+            uint256(
+                Ics23.verifyChainedMembership(
+                    IbcCoreCommitmentV1MerkleProof.decode(proof),
+                    root,
+                    path,
+                    value
+                )
+            ),
+            uint256(Ics23.VerifyChainedMembershipError.RootMismatch)
         );
     }
 
-    function testKeyMismatch() public {
+    function testExistenceProofKeyMismatch() public {
         bytes
             memory root = hex"971AF378C1F256110B3BA2EFD90325D5B5AFC8185997F2C12A7C4638B906CC2F";
         bytes
@@ -232,17 +232,20 @@ contract ICS23Test is Test {
         bytes[] memory path = new bytes[](2);
         path[0] = "ibc";
         path[1] = "clients/08-wasm-2/clientState";
-        assert(
-            Ics23.verifyChainedMembership(
-                IbcCoreCommitmentV1MerkleProof.decode(proof),
-                root,
-                path,
-                value
-            ) == Ics23.VerifyChainedMembershipError.KeyMismatch
+        assertEq(
+            uint256(
+                Ics23.verifyChainedMembership(
+                    IbcCoreCommitmentV1MerkleProof.decode(proof),
+                    root,
+                    path,
+                    value
+                )
+            ),
+            uint256(Ics23.VerifyChainedMembershipError.KeyMismatch)
         );
     }
 
-    function testValueMismatch() public {
+    function testExistenceProofValueMismatch() public {
         bytes
             memory root = hex"971AF378C1F256110B3BA2EFD90325D5B5AFC8185997F2C12A7C4638B906CC2F";
         bytes
@@ -252,13 +255,36 @@ contract ICS23Test is Test {
         bytes[] memory path = new bytes[](2);
         path[0] = "ibc";
         path[1] = "clients/08-wasm-1/clientState";
-        assert(
-            Ics23.verifyChainedMembership(
-                IbcCoreCommitmentV1MerkleProof.decode(proof),
-                root,
-                path,
-                value
-            ) == Ics23.VerifyChainedMembershipError.ValueMismatch
+        assertEq(
+            uint256(
+                Ics23.verifyChainedMembership(
+                    IbcCoreCommitmentV1MerkleProof.decode(proof),
+                    root,
+                    path,
+                    value
+                )
+            ),
+            uint256(Ics23.VerifyChainedMembershipError.ValueMismatch)
+        );
+    }
+
+    function testAccountNonExistence() public {
+        bytes
+            memory root = hex"C9A25B954FEF48EC601359591A28C9A2FD32A411421AEF2DC16DC8A68B3CFA98";
+        bytes
+            memory proof = hex"0a96061293060a15014152090b0c95c948edc407995560feed4a9df88812fa020a15014152090b0c95c948edc407995560feed4a9df81e129e010a202f636f736d6f732e617574682e763162657461312e426173654163636f756e74127a0a2c756e696f6e31673966716a7a63766a687935336d77797137763432633837613439666d37713772646568386312460a1f2f636f736d6f732e63727970746f2e736563703235366b312e5075624b657912230a2103820c4b94dccd7d74706216c426fe884d9a4404410df69d6421899595c5a9c122180420031a0b0801180120012a0300027822290801122502047820170c890f01b9fa9ab803511bbc7be7c25359309f04d021a72e0a9b93b8ff72c020222c0801120504089601201a21205f282a80f1d186fa1f7b237f81e8bc9a4bb40d5a03cbbdffdd421b1ad4cb16f4222c0801120506109601201a2120e9c65294b7106c7323dcabe4532232c319afc78cd373e338f12df43f8ecfa909222c080112050a309601201a2120a95af7890dba33514ea28a3db7b409f4887b058d6d1e43960c4cd45bb1d9bef81afc020a150143e46d91544517a037a8029b6c7f86f62bab389b129e010a202f636f736d6f732e617574682e763162657461312e426173654163636f756e74127a0a2c756e696f6e3167306a786d79323567357436716461677132646b636c7578376334366b77796d38646563667712460a1f2f636f736d6f732e63727970746f2e736563703235366b312e5075624b657912230a21034611ea6606f6241fdeb0db1854a785eaa2fef5770694237daaf46057cadb3903180320031a0c0801180120012a0400029601222c0801120502049601201a2120532543090d1564b206e953fd6f97000d9b78bd5a8a424f551d483a58b3f54c57222a0801122604089601207e55a1ee8006e9c29c895a8de8ea8cdc6aaddc10e05ea3d3ee8fac786a73c02d20222c0801120506109601201a2120e9c65294b7106c7323dcabe4532232c319afc78cd373e338f12df43f8ecfa909222c080112050a309601201a2120a95af7890dba33514ea28a3db7b409f4887b058d6d1e43960c4cd45bb1d9bef80a80020afd010a0361636312205281c416bf4f80b9d99428a09f91ff311968a3b2adb199342d63c9db20a417e91a090801180120012a010022250801122101ba30cf8122e71a87fea08d0da9499e0373495a64e1648de8f08ca1a73e1fc1a8222708011201011a203489cd05a389a1d165f19003cea0994df9e55a5cb53b3d659417040be528b86d222708011201011a20e5c60ddccacb1c6b0be7957e8d7a86dc0f8bcec91c91d666d39eb1ebedd1bdf1222708011201011a2047a4c9a64496594e8b255443aa979293b2c7120150cf31e0eeeb8a2a987fd7e8222708011201011a2053bca15bed4becbdfd1b4cd0e63bd3845646022a99a2289a6678d8608f092207";
+        bytes[] memory path = new bytes[](2);
+        path[0] = "acc";
+        path[1] = hex"014152090b0c95c948edc407995560feed4a9df888";
+        assertEq(
+            uint256(
+                Ics23.verifyChainedNonMembership(
+                    IbcCoreCommitmentV1MerkleProof.decode(proof),
+                    root,
+                    path
+                )
+            ),
+            uint256(Ics23.VerifyChainedNonMembershipError.None)
         );
     }
 }
