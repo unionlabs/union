@@ -1,6 +1,6 @@
 use color_eyre::eyre::{bail, Report};
 use futures::future::join_all;
-use tendermint::{block::Height, genesis::Genesis};
+use tendermint::{block::Height, consensus::Params, genesis::Genesis, validator::Update};
 use tendermint_rpc::{
     dialect::v0_37::Event, endpoint::block_results::Response as BlockResponse, error::ErrorDetail,
     response_error::Code, Client, Error, HttpClient,
@@ -9,7 +9,7 @@ use tokio::time::{sleep, Duration};
 use tracing::{debug, info};
 use url::Url;
 
-use crate::{hasura::*, tm::insert_block::EventsArrRelInsertInput};
+use crate::hasura::*;
 
 #[derive(Clone, Debug, serde::Deserialize)]
 pub struct Config {
@@ -42,11 +42,11 @@ impl Config {
 
         // Fast sync protocol. We sync up to latest.height - batch-size + 1
         while let Some(up_to) = should_fast_sync_up_to(&client, Self::BATCH_SIZE, height).await? {
-            debug!("starting fast sync protocol up to: {}", up_to);
+            info!("starting fast sync protocol up to: {}", up_to);
             loop {
                 height = batch_sync(&client, &db, chain_db_id, Self::BATCH_SIZE, height).await?;
                 if height >= up_to {
-                    debug!("re-evaluating fast sync protocol");
+                    info!("re-evaluating fast sync protocol");
                     break; // go back to the should_fast_sync_up_to. If this returns None, we continue to slow sync.
                 }
             }
@@ -103,7 +103,7 @@ async fn get_current_data<D: Datastore>(
         })
         .await?;
 
-    let data = dbg!(latest_stored)
+    let data = latest_stored
         .data
         .expect("db should be prepared for indexing");
 
@@ -158,22 +158,31 @@ async fn batch_sync<D: Datastore>(
         sync_next(client, db, chain_db_id, from).await?;
     }
 
+    let min = from.value() as u32;
+    let max = (from.value() + batch_size as u64) as u32;
+    debug!("fetching batch of headers from {} to {}", min, max);
+
     let headers = client
         .blockchain(
             // Tendermint-rs is buggy, it
-            from.value() as u32,
-            (from.value() + batch_size as u64) as u32,
+            min, max,
         )
         .await?;
 
     let objects: Result<Vec<_>, Report> =
         join_all(headers.block_metas.iter().rev().map(|header| async {
+            debug!("fetching block results for height {}", header.header.height);
             let block = client.block_results(header.header.height).await?;
             let events: Vec<_> = block
                 .events()
                 .enumerate()
                 .map(|event| event.into())
                 .collect();
+            debug!(
+                "found {} events for block {}",
+                events.len(),
+                header.header.height
+            );
             Ok(insert_blocks_many::BlocksInsertInput {
                 chain_id: Some(chain_db_id),
                 chain: None,
@@ -187,6 +196,7 @@ async fn batch_sync<D: Datastore>(
                 created_at: None,
                 updated_at: None,
                 is_finalized: Some(true),
+                extra_data: Some(serde_json::to_value(header.clone())?),
             })
         }))
         .await
@@ -194,6 +204,7 @@ async fn batch_sync<D: Datastore>(
         .collect();
 
     let variables = insert_blocks_many::Variables { objects: objects? };
+    debug!("inserting batch of blocks");
     db.do_post::<InsertBlocksMany>(variables).await?;
     Ok((from.value() as u32 + headers.block_metas.len() as u32).into())
 }
@@ -226,22 +237,29 @@ async fn sync_next<D: Datastore>(
 
     debug!("storing events for block {}", &height);
     let v = insert_block::Variables {
-        chain_id: chain_db_id,
-        hash: header.hash().to_string(),
-        height: height.into(),
-        events: Some(EventsArrRelInsertInput {
-            data: events,
-            on_conflict: None,
-        }),
-        finalized: true,
+        object: insert_block::BlocksInsertInput {
+            chain: None,
+            chain_id: Some(chain_db_id),
+            created_at: None,
+            events: Some(insert_block::EventsArrRelInsertInput {
+                data: events,
+                on_conflict: None,
+            }),
+            hash: Some(header.hash().to_string()),
+            extra_data: Some(serde_json::to_value(header.clone())?),
+            height: Some(header.height.into()),
+            id: None,
+            is_finalized: Some(true),
+            updated_at: None,
+        },
     };
 
     db.do_post::<InsertBlock>(v).await?;
     Ok(Some(height.increment()))
 }
 
-impl From<(usize, Event)> for insert_blocks_many::EventsInsertInput {
-    fn from(value: (usize, Event)) -> Self {
+impl From<(usize, StateChange)> for insert_blocks_many::EventsInsertInput {
+    fn from(value: (usize, StateChange)) -> Self {
         Self {
             id: None,
             index: Some(value.0 as i64),
@@ -252,8 +270,8 @@ impl From<(usize, Event)> for insert_blocks_many::EventsInsertInput {
     }
 }
 
-impl From<(usize, Event)> for insert_block::EventsInsertInput {
-    fn from(value: (usize, Event)) -> Self {
+impl From<(usize, StateChange)> for insert_block::EventsInsertInput {
+    fn from(value: (usize, StateChange)) -> Self {
         Self {
             id: None,
             index: Some(value.0 as i64),
@@ -265,11 +283,11 @@ impl From<(usize, Event)> for insert_block::EventsInsertInput {
 }
 
 pub trait BlockExt {
-    fn events(self) -> impl Iterator<Item = Event>;
+    fn events(self) -> impl Iterator<Item = StateChange>;
 }
 
 impl BlockExt for BlockResponse {
-    fn events(self) -> impl Iterator<Item = Event> {
+    fn events(self) -> impl Iterator<Item = StateChange> {
         self.begin_block_events
             .unwrap_or_default()
             .into_iter()
@@ -281,5 +299,110 @@ impl BlockExt for BlockResponse {
             )
             .chain(self.end_block_events.unwrap_or_default())
             .chain(self.finalize_block_events)
+            .map(StateChange::Event)
+            .chain(
+                self.validator_updates
+                    .into_iter()
+                    .map(StateChange::validator_update),
+            )
+            .chain(
+                self.consensus_param_updates
+                    .into_iter()
+                    .map(StateChange::consensus_param_update),
+            )
+    }
+}
+
+#[derive(serde::Serialize)]
+#[serde(untagged)]
+pub enum StateChange {
+    Event(Event),
+    ValidatorUpdate(WithType<Update>),
+    ConsensusUpdate(WithType<Params>),
+}
+
+impl StateChange {
+    fn validator_update(inner: Update) -> Self {
+        StateChange::ValidatorUpdate(WithType::validator_update(inner))
+    }
+
+    fn consensus_param_update(inner: Params) -> Self {
+        StateChange::ConsensusUpdate(WithType::consensus_param_update(inner))
+    }
+}
+
+#[derive(serde::Serialize)]
+pub struct WithType<I> {
+    #[serde(rename = "type")]
+    kind: &'static str,
+    #[serde(flatten)]
+    inner: I,
+}
+
+impl<I> WithType<I> {
+    fn validator_update(inner: I) -> Self {
+        WithType {
+            kind: "validator_update",
+            inner,
+        }
+    }
+
+    fn consensus_param_update(inner: I) -> Self {
+        WithType {
+            kind: "consensus_param_update",
+            inner,
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use serde::Serialize;
+    use tendermint::{abci::EventAttribute, vote::Power};
+
+    use super::*;
+
+    #[test]
+    fn state_change_serializes_correctly() {
+        use serde_json::{json, to_value};
+
+        fn check<T: Serialize>(t: T, json: serde_json::Value) {
+            assert_eq!(to_value(t).unwrap(), json)
+        }
+
+        check(
+            StateChange::Event(Event {
+                kind: "foo".to_string(),
+                attributes: vec![EventAttribute {
+                    index: false,
+                    key: "bar".to_string(),
+                    value: "bax".to_string(),
+                }],
+            }),
+            json!({
+                "type": "foo",
+                "attributes": [
+                    {
+                        "key": "bar",
+                        "index": false,
+                        "value": "bax",
+                    }
+                ]
+            }),
+        );
+        check(
+            StateChange::validator_update(Update {
+                pub_key: tendermint::PublicKey::Bn254(Default::default()),
+                power: Power::from(1_u8),
+            }),
+            json!({
+                "type": "validator_update",
+                "power": "1",
+                "pub_key": {
+                    "type": "tendermint/PubKeyBn254",
+                    "value": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+                }
+            }),
+        );
     }
 }

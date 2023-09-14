@@ -378,6 +378,10 @@ type blocks {
     """filter the rows returned"""
     where: events_bool_exp
   ): events_aggregate!
+  extra_data(
+    """JSON select path"""
+    path: String
+  ): jsonb
   hash: String!
   height: Int!
   id: Int!
@@ -454,6 +458,11 @@ input blocks_aggregate_order_by {
   variance: blocks_variance_order_by
 }
 
+"""append existing jsonb value of filtered columns with new jsonb value"""
+input blocks_append_input {
+  extra_data: jsonb
+}
+
 """
 input type for inserting array relation for remote table "blocks"
 """
@@ -492,6 +501,7 @@ input blocks_bool_exp {
   created_at: timestamptz_comparison_exp
   events: events_bool_exp
   events_aggregate: events_aggregate_bool_exp
+  extra_data: jsonb_comparison_exp
   hash: String_comparison_exp
   height: Int_comparison_exp
   id: Int_comparison_exp
@@ -507,6 +517,27 @@ enum blocks_constraint {
   unique or primary key constraint on columns "id"
   """
   blocks_pkey
+}
+
+"""
+delete the field or element with specified path (for JSON arrays, negative integers count from the end)
+"""
+input blocks_delete_at_path_input {
+  extra_data: [String!]
+}
+
+"""
+delete the array element with specified index (negative integers count from the end). throws an error if top level container is not an array
+"""
+input blocks_delete_elem_input {
+  extra_data: Int
+}
+
+"""
+delete key/value pair or string element. key/value pairs are matched based on their key value
+"""
+input blocks_delete_key_input {
+  extra_data: String
 }
 
 """
@@ -526,6 +557,7 @@ input blocks_insert_input {
   chain_id: Int
   created_at: timestamptz
   events: events_arr_rel_insert_input
+  extra_data: jsonb
   hash: String
   height: Int
   id: Int
@@ -613,6 +645,7 @@ input blocks_order_by {
   chain_id: order_by
   created_at: order_by
   events_aggregate: events_aggregate_order_by
+  extra_data: order_by
   hash: order_by
   height: order_by
   id: order_by
@@ -625,6 +658,11 @@ input blocks_pk_columns_input {
   id: Int!
 }
 
+"""prepend existing jsonb value of filtered columns with new jsonb value"""
+input blocks_prepend_input {
+  extra_data: jsonb
+}
+
 """
 select columns of table "blocks"
 """
@@ -634,6 +672,9 @@ enum blocks_select_column {
 
   """column name"""
   created_at
+
+  """column name"""
+  extra_data
 
   """column name"""
   hash
@@ -673,6 +714,7 @@ input type for updating data in table "blocks"
 input blocks_set_input {
   chain_id: Int
   created_at: timestamptz
+  extra_data: jsonb
   hash: String
   height: Int
   id: Int
@@ -743,6 +785,7 @@ input blocks_stream_cursor_input {
 input blocks_stream_cursor_value_input {
   chain_id: Int
   created_at: timestamptz
+  extra_data: jsonb
   hash: String
   height: Int
   id: Int
@@ -777,6 +820,9 @@ enum blocks_update_column {
   created_at
 
   """column name"""
+  extra_data
+
+  """column name"""
   hash
 
   """column name"""
@@ -793,8 +839,29 @@ enum blocks_update_column {
 }
 
 input blocks_updates {
+  """append existing jsonb value of filtered columns with new jsonb value"""
+  _append: blocks_append_input
+
+  """
+  delete the field or element with specified path (for JSON arrays, negative integers count from the end)
+  """
+  _delete_at_path: blocks_delete_at_path_input
+
+  """
+  delete the array element with specified index (negative integers count from the end). throws an error if top level container is not an array
+  """
+  _delete_elem: blocks_delete_elem_input
+
+  """
+  delete key/value pair or string element. key/value pairs are matched based on their key value
+  """
+  _delete_key: blocks_delete_key_input
+
   """increments the numeric columns with given value of the filtered values"""
   _inc: blocks_inc_input
+
+  """prepend existing jsonb value of filtered columns with new jsonb value"""
+  _prepend: blocks_prepend_input
 
   """sets the columns of the filtered rows to the given values"""
   _set: blocks_set_input
@@ -3163,8 +3230,29 @@ type mutation_root {
   update data of the table: "blocks"
   """
   update_blocks(
+    """append existing jsonb value of filtered columns with new jsonb value"""
+    _append: blocks_append_input
+
+    """
+    delete the field or element with specified path (for JSON arrays, negative integers count from the end)
+    """
+    _delete_at_path: blocks_delete_at_path_input
+
+    """
+    delete the array element with specified index (negative integers count from the end). throws an error if top level container is not an array
+    """
+    _delete_elem: blocks_delete_elem_input
+
+    """
+    delete key/value pair or string element. key/value pairs are matched based on their key value
+    """
+    _delete_key: blocks_delete_key_input
+
     """increments the numeric columns with given value of the filtered values"""
     _inc: blocks_inc_input
+
+    """prepend existing jsonb value of filtered columns with new jsonb value"""
+    _prepend: blocks_prepend_input
 
     """sets the columns of the filtered rows to the given values"""
     _set: blocks_set_input
@@ -3177,8 +3265,29 @@ type mutation_root {
   update single row of the table: "blocks"
   """
   update_blocks_by_pk(
+    """append existing jsonb value of filtered columns with new jsonb value"""
+    _append: blocks_append_input
+
+    """
+    delete the field or element with specified path (for JSON arrays, negative integers count from the end)
+    """
+    _delete_at_path: blocks_delete_at_path_input
+
+    """
+    delete the array element with specified index (negative integers count from the end). throws an error if top level container is not an array
+    """
+    _delete_elem: blocks_delete_elem_input
+
+    """
+    delete key/value pair or string element. key/value pairs are matched based on their key value
+    """
+    _delete_key: blocks_delete_key_input
+
     """increments the numeric columns with given value of the filtered values"""
     _inc: blocks_inc_input
+
+    """prepend existing jsonb value of filtered columns with new jsonb value"""
+    _prepend: blocks_prepend_input
 
     """sets the columns of the filtered rows to the given values"""
     _set: blocks_set_input
