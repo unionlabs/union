@@ -48,6 +48,7 @@ contract PingPong is IBCAppBase {
     uint64 private numberOfBlockBeforePongTimeout;
 
     event Ring(bool ping);
+    event TimedOut();
 
     constructor(
         IBCHandler _ibcHandler,
@@ -112,6 +113,13 @@ contract PingPong is IBCAppBase {
         bytes calldata acknowledgement,
         address relayer
     ) external virtual override onlyIBC {}
+
+    function onTimeoutPacket(
+        IbcCoreChannelV1Packet.Data calldata packet,
+        address relayer
+    ) external virtual override onlyIBC {
+        emit TimedOut();
+    }
 
     function onChanOpenInit(
         IbcCoreChannelV1GlobalEnums.Order,

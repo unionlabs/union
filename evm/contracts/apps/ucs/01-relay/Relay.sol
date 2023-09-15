@@ -76,6 +76,13 @@ contract UCS01Relay is IBCAppBase {
         address token,
         uint256 amount
     );
+    event Sent(
+        address sender,
+        string receiver,
+        string denom,
+        address token,
+        uint256 amount
+    );
 
     constructor(IBCHandler _ibcHandler, uint64 _revisionNumber) {
         ibcHandler = _ibcHandler;
@@ -215,6 +222,13 @@ contract UCS01Relay is IBCAppBase {
             }
             normalizedTokens[i].denom = addressDenom;
             normalizedTokens[i].amount = uint256(localToken.amount);
+            emit Sent(
+                msg.sender,
+                receiver,
+                addressDenom,
+                localToken.denom,
+                uint256(localToken.amount)
+            );
         }
         RelayPacket memory packet = RelayPacket({
             sender: string(abi.encodePacked(msg.sender)),
@@ -358,6 +372,17 @@ contract UCS01Relay is IBCAppBase {
                 packet
             );
         }
+    }
+
+    function onTimeoutPacket(
+        IbcCoreChannelV1Packet.Data calldata ibcPacket,
+        address _relayer
+    ) external virtual override onlyIBC {
+        refundTokens(
+            ibcPacket.source_port,
+            ibcPacket.source_channel,
+            RelayPacketLib.decode(ibcPacket.data)
+        );
     }
 
     function onChanOpenInit(

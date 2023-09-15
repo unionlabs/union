@@ -9,6 +9,7 @@ import {Context} from "@openzeppelin/contracts/utils/Context.sol";
 contract MockApp is IIBCModule {
     event MockPacketRecv();
     event MockPacketAck();
+    event MockPacketTimeout();
     event MockChannelOpenInit(string portId, string channelId);
     event MockChannelOpenTry();
     event MockChannelOpenAck();
@@ -30,6 +31,13 @@ contract MockApp is IIBCModule {
         address relayer
     ) external virtual override {
         emit MockPacketAck();
+    }
+
+    function onTimeoutPacket(
+        Packet.Data calldata packet,
+        address relayer
+    ) external virtual override {
+        emit MockPacketTimeout();
     }
 
     function onChanOpenInit(

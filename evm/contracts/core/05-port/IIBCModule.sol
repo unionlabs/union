@@ -81,4 +81,9 @@ interface IIBCModule {
         bytes calldata acknowledgement,
         address relayer
     ) external;
+
+    function onTimeoutPacket(
+        IbcCoreChannelV1Packet.Data calldata,
+        address relayer
+    ) external;
 }
