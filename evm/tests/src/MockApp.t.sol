@@ -25,6 +25,11 @@ contract MockApp is IIBCModule {
         address relayer
     ) external virtual override {}
 
+    function onTimeoutPacket(
+        IbcCoreChannelV1Packet.Data calldata packet,
+        address relayer
+    ) external virtual override {}
+
     function onChanOpenInit(
         IbcCoreChannelV1GlobalEnums.Order,
         string[] calldata,
