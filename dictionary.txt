@@ -264,6 +264,7 @@ groupmodule
 hasher
 hasura
 healthcheck
+healthz
 herumi
 hmac
 holiman
