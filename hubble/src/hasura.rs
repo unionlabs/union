@@ -90,7 +90,7 @@ pub struct InsertChain;
 #[graphql(
     schema_path = "src/graphql/schema.graphql",
     query_path = "src/graphql/operations.graphql",
-    response_derives = "Debug, Default",
+    response_derives = "Clone, Debug, Default",
     normalization = "rust",
     skip_serializing_none
 )]

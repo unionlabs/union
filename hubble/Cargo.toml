@@ -18,3 +18,6 @@ url = { version = "2.4.1", features = ["serde"] }
 tracing = "0.1.37"
 tracing-subscriber = "0.3.17"
 futures = "0.3.28"
+prometheus = { version = "0.13.3", features = ["process"] }
+lazy_static = "1.4.0"
+axum = { version = "0.6.20", features = ["macros"] }

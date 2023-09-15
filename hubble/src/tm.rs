@@ -9,7 +9,7 @@ use tokio::time::{sleep, Duration};
 use tracing::{debug, info};
 use url::Url;
 
-use crate::hasura::*;
+use crate::{hasura::*, metrics};
 
 #[derive(Clone, Debug, serde::Deserialize)]
 pub struct Config {
@@ -37,14 +37,22 @@ impl Config {
             }
         };
 
-        let (height, chain_db_id) = get_current_data(&db, chain_id).await?;
+        let (height, chain_db_id) = get_current_data(&db, &chain_id).await?;
         let mut height: Height = (height + 1).into();
 
         // Fast sync protocol. We sync up to latest.height - batch-size + 1
         while let Some(up_to) = should_fast_sync_up_to(&client, Self::BATCH_SIZE, height).await? {
             info!("starting fast sync protocol up to: {}", up_to);
             loop {
-                height = batch_sync(&client, &db, chain_db_id, Self::BATCH_SIZE, height).await?;
+                height = batch_sync(
+                    &client,
+                    &db,
+                    &chain_id,
+                    chain_db_id,
+                    Self::BATCH_SIZE,
+                    height,
+                )
+                .await?;
                 if height >= up_to {
                     info!("re-evaluating fast sync protocol");
                     break; // go back to the should_fast_sync_up_to. If this returns None, we continue to slow sync.
@@ -57,7 +65,7 @@ impl Config {
             debug!("starting regular sync protocol");
             // Regular sync protocol. This fetches blocks one-by-one.
             retry_count += 1;
-            match sync_next(&client, &db, chain_db_id, height).await? {
+            match sync_next(&client, &db, &chain_id, chain_db_id, height).await? {
                 Some(h) => {
                     height = h;
                     retry_count = 0
@@ -93,13 +101,13 @@ pub fn is_height_exceeded_error(err: &Error) -> bool {
 /// Obtains the current height and chain_db_id for the chain_id. If the chain_id is not stored yet, an entry is created.
 async fn get_current_data<D: Datastore>(
     db: &D,
-    chain_id: String,
+    chain_id: &str,
 ) -> Result<(u32, i64), color_eyre::eyre::Report> {
     // We query for the last indexed block to not waste resources re-indexing.
     debug!("fetching latest stored block");
     let latest_stored = db
         .do_post::<GetLatestBlock>(get_latest_block::Variables {
-            chain_id: chain_id.clone(),
+            chain_id: chain_id.to_string(),
         })
         .await?;
 
@@ -118,7 +126,9 @@ async fn get_current_data<D: Datastore>(
         chains.id
     } else {
         let created = db
-            .do_post::<InsertChain>(insert_chain::Variables { chain_id })
+            .do_post::<InsertChain>(insert_chain::Variables {
+                chain_id: chain_id.to_string(),
+            })
             .await?;
         created.data.unwrap().insert_chains_one.unwrap().id
     };
@@ -150,12 +160,13 @@ async fn should_fast_sync_up_to(
 async fn batch_sync<D: Datastore>(
     client: &HttpClient,
     db: &D,
+    chain_id: &str,
     chain_db_id: i64,
     batch_size: u32,
     from: Height,
 ) -> Result<Height, Report> {
     if from.value() == 1 {
-        sync_next(client, db, chain_db_id, from).await?;
+        sync_next(client, db, chain_id, chain_db_id, from).await?;
     }
 
     let min = from.value() as u32;
@@ -169,49 +180,63 @@ async fn batch_sync<D: Datastore>(
         )
         .await?;
 
-    let objects: Result<Vec<_>, Report> =
-        join_all(headers.block_metas.iter().rev().map(|header| async {
-            debug!("fetching block results for height {}", header.header.height);
-            let block = client.block_results(header.header.height).await?;
-            let events: Vec<_> = block
-                .events()
-                .enumerate()
-                .map(|event| event.into())
-                .collect();
-            debug!(
-                "found {} events for block {}",
-                events.len(),
-                header.header.height
-            );
-            Ok(insert_blocks_many::BlocksInsertInput {
-                chain_id: Some(chain_db_id),
-                chain: None,
-                events: Some(insert_blocks_many::EventsArrRelInsertInput {
-                    data: events,
-                    on_conflict: None,
-                }),
-                hash: Some(header.header.hash().to_string()),
-                height: Some(header.header.height.into()),
-                id: None,
-                created_at: None,
-                updated_at: None,
-                is_finalized: Some(true),
-                extra_data: Some(serde_json::to_value(header.clone())?),
-            })
-        }))
-        .await
-        .into_iter()
-        .collect();
+    let objects: Vec<_> = join_all(headers.block_metas.iter().rev().map(|header| async {
+        debug!("fetching block results for height {}", header.header.height);
+        let block = client.block_results(header.header.height).await?;
+        let events: Vec<_> = block
+            .events()
+            .enumerate()
+            .map(|event| event.into())
+            .collect();
+        debug!(
+            "found {} events for block {}",
+            events.len(),
+            header.header.height
+        );
+        Ok(insert_blocks_many::BlocksInsertInput {
+            chain_id: Some(chain_db_id),
+            chain: None,
+            events: Some(insert_blocks_many::EventsArrRelInsertInput {
+                data: events,
+                on_conflict: None,
+            }),
+            hash: Some(header.header.hash().to_string()),
+            height: Some(header.header.height.into()),
+            id: None,
+            created_at: None,
+            updated_at: None,
+            is_finalized: Some(true),
+            extra_data: Some(serde_json::to_value(header.clone())?),
+        })
+    }))
+    .await
+    .into_iter()
+    .collect::<Result<Vec<_>, Report>>()?;
 
-    let variables = insert_blocks_many::Variables { objects: objects? };
+    objects.iter().for_each(|block| {
+        let num_events = block
+            .events
+            .as_ref()
+            .map(|input| input.data.len())
+            .unwrap_or_default();
+        metrics::EVENT_COLLECTOR
+            .with_label_values(&[chain_id, block.hash.as_ref().unwrap()])
+            .inc_by(num_events as u64);
+    });
+    metrics::BLOCK_COLLECTOR
+        .with_label_values(&[chain_id])
+        .inc_by(objects.len() as u64);
+    let variables = insert_blocks_many::Variables { objects };
     debug!("inserting batch of blocks");
     db.do_post::<InsertBlocksMany>(variables).await?;
+    metrics::POSTS.with_label_values(&[chain_id]).inc();
     Ok((from.value() as u32 + headers.block_metas.len() as u32).into())
 }
 
 async fn sync_next<D: Datastore>(
     client: &HttpClient,
     db: &D,
+    chain_id: &str,
     chain_db_id: i64,
     height: Height,
 ) -> Result<Option<Height>, Report> {
@@ -236,6 +261,14 @@ async fn sync_next<D: Datastore>(
     info!("found {} events for block {}", &events.len(), &height);
 
     debug!("storing events for block {}", &height);
+
+    metrics::EVENT_COLLECTOR
+        .with_label_values(&[chain_id, &header.hash().to_string()])
+        .inc_by(events.len() as u64);
+
+    metrics::BLOCK_COLLECTOR
+        .with_label_values(&[chain_id])
+        .inc();
     let v = insert_block::Variables {
         object: insert_block::BlocksInsertInput {
             chain: None,
@@ -255,6 +288,7 @@ async fn sync_next<D: Datastore>(
     };
 
     db.do_post::<InsertBlock>(v).await?;
+    metrics::POSTS.with_label_values(&[chain_id]).inc();
     Ok(Some(height.increment()))
 }
 
