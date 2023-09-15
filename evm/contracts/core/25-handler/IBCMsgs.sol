@@ -117,4 +117,11 @@ library IBCMsgs {
         bytes proof;
         IbcCoreClientV1Height.Data proofHeight;
     }
+
+    struct MsgPacketTimeout {
+        IbcCoreChannelV1Packet.Data packet;
+        bytes proof;
+        IbcCoreClientV1Height.Data proofHeight;
+        uint64 nextSequenceRecv;
+    }
 }

@@ -87,4 +87,6 @@ interface IIBCPacket {
     function acknowledgePacket(
         IBCMsgs.MsgPacketAcknowledgement calldata msg_
     ) external;
+
+    function timeoutPacket(IBCMsgs.MsgPacketTimeout calldata msg_) external;
 }

@@ -38,6 +38,8 @@ abstract contract IBCPacketHandler is Context, ModuleManager {
         bytes acknowledgement
     );
 
+    event TimeoutPacket(IbcCoreChannelV1Packet.Data packet);
+
     constructor(address _ibcPacket) {
         ibcPacket = _ibcPacket;
     }
@@ -166,5 +168,20 @@ abstract contract IBCPacketHandler is Context, ModuleManager {
             revert(_getRevertMsg(res));
         }
         emit AcknowledgePacket(msg_.packet, msg_.acknowledgement);
+    }
+
+    function timeoutPacket(IBCMsgs.MsgPacketTimeout calldata msg_) external {
+        IIBCModule module = lookupModuleByChannel(
+            msg_.packet.source_port,
+            msg_.packet.source_channel
+        );
+        module.onTimeoutPacket(msg_.packet, _msgSender());
+        (bool success, bytes memory res) = ibcPacket.delegatecall(
+            abi.encodeWithSelector(IIBCPacket.timeoutPacket.selector, msg_)
+        );
+        if (!success) {
+            revert(_getRevertMsg(res));
+        }
+        emit TimeoutPacket(msg_.packet);
     }
 }
