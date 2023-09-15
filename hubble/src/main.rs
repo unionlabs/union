@@ -27,7 +27,7 @@ async fn main() -> color_eyre::eyre::Result<()> {
     let db = HasuraDataStore::new(client, url, secret);
     let mut set = JoinSet::new();
 
-    if let Some(addr) = args.metrics_port {
+    if let Some(addr) = args.metrics_addr {
         set.spawn(async move {
             let app = Router::new().route("/metrics", get(metrics::handler));
             axum::Server::bind(&addr)

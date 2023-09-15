@@ -229,7 +229,7 @@ async fn batch_sync<D: Datastore>(
     let variables = insert_blocks_many::Variables { objects };
     debug!("inserting batch of blocks");
     db.do_post::<InsertBlocksMany>(variables).await?;
-    metrics::POSTS.with_label_values(&[chain_id]).inc();
+    metrics::POST_COLLECTOR.with_label_values(&[chain_id]).inc();
     Ok((from.value() as u32 + headers.block_metas.len() as u32).into())
 }
 
@@ -288,7 +288,7 @@ async fn sync_next<D: Datastore>(
     };
 
     db.do_post::<InsertBlock>(v).await?;
-    metrics::POSTS.with_label_values(&[chain_id]).inc();
+    metrics::POST_COLLECTOR.with_label_values(&[chain_id]).inc();
     Ok(Some(height.increment()))
 }
 

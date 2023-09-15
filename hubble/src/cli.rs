@@ -21,7 +21,7 @@ pub struct Args {
 
     /// Indexer configurations to start.
     #[arg(short, long, env = "HUBBLE_METRICS_PORT")]
-    pub metrics_port: Option<SocketAddr>,
+    pub metrics_addr: Option<SocketAddr>,
 }
 
 #[derive(Clone, Debug, serde::Deserialize)]

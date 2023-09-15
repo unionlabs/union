@@ -40,6 +40,10 @@
           type = types.str;
           default = "https://graphql.union.build";
         };
+        metrics-addr = mkOption {
+          type = types.str;
+          default = "0.0.0.0:9090";
+        };
         hasura-admin-secret = mkOption {
           type = types.str;
           default = "";
@@ -66,7 +70,10 @@
                   indexersJson = builtins.toJSON cfg.indexers;
                 in
                 ''
-                  ${pkgs.lib.getExe cfg.package} --url ${cfg.url} ${secretArg} --indexers '${indexersJson}'
+                  ${pkgs.lib.getExe cfg.package}  \
+                    --metrics-addr ${cfg.metrics-addr} \
+                    --url ${cfg.url} ${secretArg} \
+                    --indexers '${indexersJson}'
                 '';
             };
           in
