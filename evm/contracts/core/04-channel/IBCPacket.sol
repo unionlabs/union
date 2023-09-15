@@ -98,9 +98,6 @@ contract IBCPacket is IBCStore, IIBCPacket {
             "recvPacket: channel state must be OPEN"
         );
 
-        // TODO
-        // Authenticate capability to ensure caller has authority to receive packet on this channel
-
         require(
             hashString(msg_.packet.source_port) ==
                 hashString(channel.counterparty.port_id),
@@ -334,9 +331,6 @@ contract IBCPacket is IBCStore, IIBCPacket {
             channel.state == IbcCoreChannelV1GlobalEnums.State.STATE_OPEN,
             "timeoutPacket: channel state must be OPEN"
         );
-
-        // TODO
-        // Authenticate capability to ensure caller has authority to receive packet on this channel
 
         require(
             hashString(msg_.packet.destination_port) ==

@@ -79,7 +79,6 @@ abstract contract IBCPacketHandler is Context, ModuleManager {
         );
     }
 
-    // TODO: write packet receipts for timeout
     function recvPacket(IBCMsgs.MsgPacketRecv calldata msg_) external {
         (bool success, bytes memory res) = ibcPacket.delegatecall(
             abi.encodeWithSelector(IIBCPacket.recvPacket.selector, msg_)
