@@ -11,6 +11,7 @@
       modules = [
         self.nixosModules.unionvisor
         {
+
           system.stateVersion = "23.11";
 
           # Base configuration for openstack-based VPSs
@@ -27,6 +28,7 @@
 
           # OPTIONAL: Some useful inspection tools for when you SSH into your validator
           environment.systemPackages = with pkgs; [
+            zellij
             bat
             bottom
             helix
@@ -34,6 +36,24 @@
             neofetch
             tree
           ];
+
+          # OPTIONAL: Settings to improve the Nix experience
+          nix = {
+            settings = {
+              sandbox = "relaxed";
+              substituters = [
+                "https://union.cachix.org/"
+              ];
+              trusted-public-keys = [
+                "union.cachix.org-1:TV9o8jexzNVbM1VNBOq9fu8NK+hL6ZhOyOh0quATy+M="
+              ];
+            };
+            extraOptions = ''
+              experimental-features = nix-command flakes
+              keep-outputs = true
+              keep-derivations = true
+            '';
+          };
         }
       ];
     };
