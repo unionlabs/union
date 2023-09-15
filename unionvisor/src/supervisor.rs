@@ -6,7 +6,6 @@ use std::{
     time::Duration,
 };
 
-use color_eyre::Result;
 use tracing::{debug, error, field::display as as_display, info, warn};
 
 use crate::{

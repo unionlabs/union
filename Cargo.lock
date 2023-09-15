@@ -927,44 +927,17 @@ dependencies = [
 
 [[package]]
 name = "color-eyre"
-version = "0.5.11"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1f1885697ee8a177096d42f158922251a41973117f6d8a234cee94b9509157b7"
-dependencies = [
- "backtrace",
- "color-spantrace 0.1.6",
- "eyre",
- "indenter",
- "once_cell",
- "owo-colors 1.3.0",
- "tracing-error 0.1.2",
-]
-
-[[package]]
-name = "color-eyre"
 version = "0.6.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5a667583cca8c4f8436db8de46ea8233c42a7d9ae424a82d338f2e4675229204"
 dependencies = [
  "backtrace",
- "color-spantrace 0.2.0",
+ "color-spantrace",
  "eyre",
  "indenter",
  "once_cell",
- "owo-colors 3.5.0",
- "tracing-error 0.2.0",
-]
-
-[[package]]
-name = "color-spantrace"
-version = "0.1.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b6eee477a4a8a72f4addd4de416eb56d54bc307b284d6601bafdee1f4ea462d1"
-dependencies = [
- "once_cell",
- "owo-colors 1.3.0",
- "tracing-core",
- "tracing-error 0.1.2",
+ "owo-colors",
+ "tracing-error",
 ]
 
 [[package]]
@@ -974,9 +947,9 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1ba75b3d9449ecdccb27ecbc479fdc0b87fa2dd43d2f8298f9bf0e59aacc8dce"
 dependencies = [
  "once_cell",
- "owo-colors 3.5.0",
+ "owo-colors",
  "tracing-core",
- "tracing-error 0.2.0",
+ "tracing-error",
 ]
 
 [[package]]
@@ -2898,7 +2871,7 @@ version = "0.1.0"
 dependencies = [
  "axum",
  "clap",
- "color-eyre 0.6.2",
+ "color-eyre",
  "futures",
  "graphql_client",
  "lazy_static",
@@ -3715,12 +3688,6 @@ name = "overload"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b15813163c1d831bf4a13c3610c05c0d03b39feb07f7e09fa234dac9b15aaf39"
-
-[[package]]
-name = "owo-colors"
-version = "1.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2386b4ebe91c2f7f51082d4cefa145d030e33a1842a96b12e4885cc3c01f7a55"
 
 [[package]]
 name = "owo-colors"
@@ -5962,16 +5929,6 @@ dependencies = [
 
 [[package]]
 name = "tracing-error"
-version = "0.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b4d7c0b83d4a500748fa5879461652b361edf5c9d51ede2a2ac03875ca185e24"
-dependencies = [
- "tracing",
- "tracing-subscriber 0.2.25",
-]
-
-[[package]]
-name = "tracing-error"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d686ec1c0f384b1277f097b2f279a2ecc11afe8c133c1aabf036a27cb4cd206e"
@@ -6017,8 +5974,6 @@ version = "0.2.25"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0e0d2eaa99c3c2e41547cfa109e910a68ea03823cccad4a0525dcbc9b01e8c71"
 dependencies = [
- "sharded-slab",
- "thread_local",
  "tracing-core",
 ]
 
@@ -6305,7 +6260,6 @@ name = "unionvisor"
 version = "0.1.0"
 dependencies = [
  "clap",
- "color-eyre 0.5.11",
  "figment",
  "fs_extra",
  "reqwest",

@@ -5,7 +5,6 @@ use std::{
     time::Duration,
 };
 
-use color_eyre::Result;
 use serde::Deserialize;
 use tracing::error;
 

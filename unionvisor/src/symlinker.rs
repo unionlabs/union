@@ -1,6 +1,6 @@
-use std::{ffi::OsString, fs, path::PathBuf};
+use std::{ffi::OsString, fs, io, path::PathBuf};
 
-use color_eyre::{eyre::eyre, Result};
+use thiserror::Error;
 use tracing::debug;
 
 use crate::bundle::{Bundle, UnvalidatedVersionPath, ValidVersionPath};
@@ -10,6 +10,14 @@ use crate::bundle::{Bundle, UnvalidatedVersionPath, ValidVersionPath};
 pub struct Symlinker {
     pub root: PathBuf,
     pub bundle: Bundle,
+}
+
+#[derive(Error, Debug)]
+pub enum SymlinkerError {
+    #[error("cannot remove old symlink: {0}")]
+    CantRemoveSymlink(io::Error),
+    #[error("cannot create symlink: {0}")]
+    CantCreateSymlink(io::Error),
 }
 
 impl Symlinker {
@@ -30,18 +38,19 @@ impl Symlinker {
     /// # Arguments
     ///
     /// * `new_version` the new version the symlink should point to
-    pub fn swap(&self, new_version: impl Into<OsString>) -> Result<()> {
+    pub fn swap(&self, new_version: impl Into<OsString>) -> Result<(), SymlinkerError> {
         let new_version = new_version.into();
         let new_path = self.bundle.path_to(new_version).validate()?;
         let current = self.current_path();
 
         if current.exists() {
             debug!(target: "unionvisor", "removing old symlink at {}", &current.display());
-            std::fs::remove_file(&current)?;
+            std::fs::remove_file(&current).map_err(SymlinkerError::CantRemoveSymlink)?;
         }
 
         debug!(target: "unionvisor", "creating symlink from {} to {}", &current.display(), new_path.0.display());
-        std::os::unix::fs::symlink(new_path.0, current)?;
+        std::os::unix::fs::symlink(new_path.0, current)
+            .map_err(SymlinkerError::CantCreateSymlink)?;
 
         Ok(())
     }

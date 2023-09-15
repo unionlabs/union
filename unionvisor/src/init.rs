@@ -1,11 +1,17 @@
 use std::{fs, io, path::Path};
 
-use color_eyre::Result;
+use thiserror::Error;
 use tracing::{debug, field::display as as_display};
 
 use crate::network::Network;
 
-pub fn set_seeds(network: Network, file: impl AsRef<Path>) -> Result<()> {
+#[derive(Error, Debug)]
+pub enum SetSeedsError {
+    #[error("Can't read file contents of config.toml")]
+    CantReadContents(io::Error),
+}
+
+pub fn set_seeds(network: Network, file: impl AsRef<Path>) -> Result<(), SetSeedsError> {
     let file = file.as_ref();
     debug!(target: "unionvisor", "reading config.toml at {} to replace seeds",  as_display(file.display()));
     let contents = fs::read_to_string(file)?;

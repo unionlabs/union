@@ -5,8 +5,8 @@ use std::{
     process::{Command, Stdio},
 };
 
-use color_eyre::{eyre::eyre, Result};
 use serde::{Deserialize, Serialize};
+use thiserror::Error;
 use tracing::{debug, error, field::display as as_display};
 
 /// Bundles should have the following structure on the filesystem:
@@ -30,7 +30,7 @@ use tracing::{debug, error, field::display as as_display};
 /// ```
 ///
 /// Bundle meta information is defined in meta.json, which gets deserialized to [`BundleMeta`]
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Bundle {
     /// The path of the bundle
     pub path: PathBuf,
@@ -54,29 +54,19 @@ impl UnvalidatedVersionPath {
 /// This means that the binary at this path produces valid output when called with --help
 pub struct ValidVersionPath(pub PathBuf);
 
+#[derive(Debug, Error)]
+pub enum ValidateVersionPathError {
+    #[error("version was not found in bundle: {0}")]
+    NotInBundle(PathBuf, #[source] io::Error),
+    #[error("permision denied when executing version in bundle: {0}")]
+    PermisionDenied(PathBuf, #[source] io::Error),
+    #[error("other IO error")]
+    OtherIO(#[source] io::Error),
+}
+
 impl UnvalidatedVersionPath {
     /// Validates a [`UnvalidatedVersionPath`], turning it into a [`ValidVersionPath`] if validation is successful
-    pub fn validate(&self) -> Result<ValidVersionPath> {
-        self.is_available_logged()
-            .map(|_| ValidVersionPath(self.0.clone()))
-    }
-
-    fn is_available_logged(&self) -> Result<BinaryAvailability> {
-        let status = self.is_available()?;
-
-        match status {
-            BinaryAvailability::NotFound => {
-                error!(target: "unionvisor", "could not find binary {} in bundle", as_display(self.0.display()));
-            }
-            BinaryAvailability::PermissionDenied => {
-                error!(target: "unionvisor", "could not execute binary {} in bundle", as_display(self.0.display()));
-            }
-            BinaryAvailability::Ok => (),
-        }
-        Ok(status)
-    }
-
-    fn is_available(&self) -> Result<BinaryAvailability> {
+    pub fn validate(&self) -> Result<ValidVersionPath, ValidateVersionPathError> {
         debug!(
             "testing if binary {} is available by calling --help",
             as_display(self.0.display())
@@ -87,19 +77,24 @@ impl UnvalidatedVersionPath {
             .stdout(Stdio::null())
             .spawn()?;
         debug!(target: "unionvisor", "killing test call of {}", as_display(self.0.display()));
+
         if let Err(err) = child.kill() {
             match err.kind() {
-                io::ErrorKind::NotFound => return Ok(BinaryAvailability::NotFound),
-                io::ErrorKind::PermissionDenied => return Ok(BinaryAvailability::PermissionDenied),
-                _ => return Err(err.into()),
+                io::ErrorKind::NotFound => {
+                    return Err(ValidateVersionPathError::NotInBundle(self.0, err))
+                }
+                io::ErrorKind::PermissionDenied => {
+                    return Err(BinaryAvailability::PermissionDenied(self.0, err))
+                }
+                _ => return Err(ValidateVersionPathError::OtherIO(err)),
             }
         }
-        Ok(BinaryAvailability::Ok)
+        Ok(ValidVersionPath(self.0.clone()))
     }
 }
 
 /// Bundle meta info found in `bundle/meta.json`
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 #[allow(clippy::module_name_repetitions)]
 pub struct BundleMeta {
     /// The name of the binary in `bundle/bins/$VERSION/`
