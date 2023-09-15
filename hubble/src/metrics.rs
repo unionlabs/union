@@ -29,35 +29,19 @@ pub fn register_custom_metrics() {
 
 #[axum::debug_handler]
 pub async fn handler() -> Result<String, StatusCode> {
-    use prometheus::Encoder;
     let encoder = prometheus::TextEncoder::new();
-
-    let mut buffer = Vec::new();
-    encoder
-        .encode(&REGISTRY.gather(), &mut buffer)
+    let mut response = encoder
+        .encode_to_string(&REGISTRY.gather())
         .map_err(|err| {
             tracing::error!("could not gather metrics: {}", err);
             StatusCode::INTERNAL_SERVER_ERROR
         })?;
 
-    let mut res = String::from_utf8(buffer.clone()).map_err(|err| {
-        tracing::error!("could not gather metrics: {}", err);
-        StatusCode::INTERNAL_SERVER_ERROR
-    })?;
-    buffer.clear();
-
-    let mut buffer = Vec::new();
     encoder
-        .encode(&prometheus::gather(), &mut buffer)
+        .encode_utf8(&prometheus::gather(), &mut response)
         .map_err(|err| {
             tracing::error!("could not gather metrics: {}", err);
             StatusCode::INTERNAL_SERVER_ERROR
         })?;
-    let res_custom = String::from_utf8(buffer.clone()).map_err(|err| {
-        tracing::error!("could not gather metrics: {}", err);
-        StatusCode::INTERNAL_SERVER_ERROR
-    })?;
-    buffer.clear();
-    res.push_str(&res_custom);
-    Ok(res)
+    Ok(response)
 }
