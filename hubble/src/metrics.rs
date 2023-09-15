@@ -12,7 +12,7 @@ lazy_static! {
             .expect("register BLOCK_COLLECTOR");
     pub static ref POST_COLLECTOR: IntCounterVec =
         IntCounterVec::new(Opts::new("posts", "Posts to Hasura"), &["chain_id"])
-            .expect("register POSTS");
+            .expect("register POST_COLLECTOR");
 }
 
 pub fn register_custom_metrics() {
@@ -24,7 +24,7 @@ pub fn register_custom_metrics() {
         .expect("BLOCK_COLLECTOR can be registered");
     REGISTRY
         .register(Box::new(POST_COLLECTOR.clone()))
-        .expect("BLOCK_COLLECTOR can be registered");
+        .expect("POST_COLLECTOR can be registered");
 }
 
 #[axum::debug_handler]

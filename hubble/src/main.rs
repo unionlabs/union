@@ -10,6 +10,7 @@ use tracing::{error, info, warn};
 
 mod cli;
 mod hasura;
+mod healthz;
 mod metrics;
 mod tm;
 
@@ -29,7 +30,9 @@ async fn main() -> color_eyre::eyre::Result<()> {
 
     if let Some(addr) = args.metrics_addr {
         set.spawn(async move {
-            let app = Router::new().route("/metrics", get(metrics::handler));
+            let app = Router::new()
+                .route("/metrics", get(metrics::handler))
+                .route("/healthz", get(healthz::handler));
             axum::Server::bind(&addr)
                 .serve(app.into_make_service())
                 .await
@@ -54,6 +57,7 @@ async fn main() -> color_eyre::eyre::Result<()> {
                 "encountered error while indexing: {:?}. shutting down.",
                 err
             );
+            healthz::set_unhealthy();
             set.shutdown().await;
             return Err(err.into());
         }
