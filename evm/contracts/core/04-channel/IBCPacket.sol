@@ -339,14 +339,14 @@ contract IBCPacket is IBCStore, IIBCPacket {
         // Authenticate capability to ensure caller has authority to receive packet on this channel
 
         require(
-            hashString(msg_.packet.source_port) ==
+            hashString(msg_.packet.destination_port) ==
                 hashString(channel.counterparty.port_id),
-            "timeoutPacket: packet source port doesn't match the counterparty's port"
+            "timeoutPacket: packet destination port doesn't match the counterparty's port"
         );
         require(
-            hashString(msg_.packet.source_channel) ==
+            hashString(msg_.packet.destination_channel) ==
                 hashString(channel.counterparty.channel_id),
-            "timeoutPacket: packet source channel doesn't match the counterparty's channel"
+            "timeoutPacket: packet destination channel doesn't match the counterparty's channel"
         );
 
         IbcCoreConnectionV1ConnectionEnd.Data storage connection = connections[
