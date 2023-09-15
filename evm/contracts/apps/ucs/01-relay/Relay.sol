@@ -360,6 +360,17 @@ contract UCS01Relay is IBCAppBase {
         }
     }
 
+    function onTimeoutPacket(
+        IbcCoreChannelV1Packet.Data calldata ibcPacket,
+        address _relayer
+    ) external virtual override onlyIBC {
+        refundTokens(
+            ibcPacket.source_port,
+            ibcPacket.source_channel,
+            RelayPacketLib.decode(ibcPacket.data)
+        );
+    }
+
     function onChanOpenInit(
         IbcCoreChannelV1GlobalEnums.Order _order,
         string[] calldata _connectionHops,
