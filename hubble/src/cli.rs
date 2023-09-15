@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use std::{net::SocketAddr, str::FromStr};
 
 use clap::Parser;
 use url::Url;
@@ -18,6 +18,10 @@ pub struct Args {
     /// Indexer configurations to start.
     #[arg(short, long, env = "HUBBLE_INDEXERS")]
     pub indexers: Indexers,
+
+    /// Indexer configurations to start.
+    #[arg(short, long, env = "HUBBLE_METRICS_PORT")]
+    pub metrics_addr: Option<SocketAddr>,
 }
 
 #[derive(Clone, Debug, serde::Deserialize)]
