@@ -1,0 +1,13 @@
+dataconnector:
+  athena:
+    uri: http://localhost:8081/api/v1/athena
+  mariadb:
+    uri: http://localhost:8081/api/v1/mariadb
+  mongodb:
+    uri: http://localhost:8082
+  mysql8:
+    uri: http://localhost:8081/api/v1/mysql
+  oracle:
+    uri: http://localhost:8081/api/v1/oracle
+  snowflake:
+    uri: http://localhost:8081/api/v1/snowflake
