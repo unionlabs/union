@@ -253,7 +253,7 @@ contract UCS01Relay is IBCAppBase {
         string memory channelId,
         RelayPacket memory packet
     ) internal {
-        // W're going to refund, the receiver will be the sender.
+        // We're going to refund, the receiver will be the sender.
         address receiver = hexToAddress(packet.sender);
         for (uint256 i = 0; i < packet.tokens.length; i++) {
             Token memory token = packet.tokens[i];
@@ -443,13 +443,13 @@ contract UCS01Relay is IBCAppBase {
         string calldata _portId,
         string calldata _channelId
     ) external virtual override onlyIBC {
-        revert("impossible");
+        revert("ucs01-relay: closing a channel is not supported");
     }
 
     function onChanCloseConfirm(
         string calldata _portId,
         string calldata _channelId
     ) external virtual override onlyIBC {
-        revert("impossible");
+        revert("ucs01-relay: closing a channel is not supported");
     }
 }
