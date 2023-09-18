@@ -147,7 +147,7 @@
 
               echo "vendoring uniond..."
               cd uniond
-              ${doVendor [ "github.com/supranational/blst" "github.com/herumi/bls-eth-go-binary" ]}
+              ${doVendor [ "github.com/supranational/blst" "github.com/herumi/bls-eth-go-binary" "github.com/cosmos/cosmos-sdk" ]}
 
               echo "vendoring galoisd..."
               cd ../galoisd
