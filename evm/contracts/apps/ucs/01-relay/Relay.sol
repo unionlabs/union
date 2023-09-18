@@ -11,6 +11,7 @@ import "../../Base.sol";
 import "./IERC20Denom.sol";
 import "./ERC20Denom.sol";
 
+// NOTE: uint128 limitation from cosmwasm_std Coin type for transfers.
 struct LocalToken {
     address denom;
     uint128 amount;
@@ -55,9 +56,10 @@ contract UCS01Relay is IBCAppBase {
 
     bytes1 constant ACK_SUCCESS = 0x01;
     bytes1 constant ACK_FAILURE = 0x00;
+    uint256 constant ACK_LENGTH = 1;
 
-    IBCHandler private ibcHandler;
-    uint64 private revisionNumber;
+    IBCHandler private immutable ibcHandler;
+    uint64 private immutable revisionNumber;
 
     mapping(string => address) public denomToAddress;
     mapping(address => string) public addressToDenom;
@@ -182,7 +184,6 @@ contract UCS01Relay is IBCAppBase {
             .sub(amount);
     }
 
-    // NOTE: uint128 limitation from cosmwasm_std Coin type for transfers.
     function send(
         string calldata portId,
         string calldata channelId,
@@ -247,11 +248,57 @@ contract UCS01Relay is IBCAppBase {
         );
     }
 
-    function onRecvPacket(
+    function refundTokens(
+        string memory portId,
+        string memory channelId,
+        RelayPacket memory packet
+    ) internal {
+        // We're going to refund, the receiver will be the sender.
+        address receiver = hexToAddress(packet.sender);
+        for (uint256 i = 0; i < packet.tokens.length; i++) {
+            Token memory token = packet.tokens[i];
+            // Either we tried to send back a remote native token
+            // which we burnt, or a locally native token that we escrowed.
+            address denomAddress = denomToAddress[token.denom];
+            if (denomAddress != address(0)) {
+                IERC20Denom(denomAddress).mint(receiver, token.amount);
+            } else {
+                // It must be in the form 0x...
+                denomAddress = hexToAddress(token.denom);
+                // The token must be in-flight
+                decreaseInFlight(portId, channelId, denomAddress, token.amount);
+                IERC20(denomAddress).transfer(receiver, token.amount);
+            }
+        }
+    }
+
+    // We received a successful ack, move tokens from in-flight to outstanding.
+    function tokensLanded(
+        string memory portId,
+        string memory channelId,
+        RelayPacket memory packet
+    ) internal {
+        for (uint256 i = 0; i < packet.tokens.length; i++) {
+            Token memory token = packet.tokens[i];
+            // For local tokens only as remote tokens are burnt.
+            if (token.denom.toSlice().startsWith("0x".toSlice())) {
+                address denomAddress = hexToAddress(token.denom);
+                decreaseInFlight(portId, channelId, denomAddress, token.amount);
+                increaseOutstanding(
+                    portId,
+                    channelId,
+                    denomAddress,
+                    token.amount
+                );
+            }
+        }
+    }
+
+    function onRecvPacketProcessing(
         IbcCoreChannelV1Packet.Data calldata ibcPacket,
         address relayer
-    ) external virtual override onlyIBC returns (bytes memory acknowledgement) {
-        // TODO: self call to avoid any error and always yield an ack
+    ) public {
+        require(msg.sender == address(this));
         RelayPacket memory packet = RelayPacketLib.decode(ibcPacket.data);
         string memory prefix = makeDenomPrefix(
             ibcPacket.destination_port,
@@ -301,54 +348,24 @@ contract UCS01Relay is IBCAppBase {
                 token.amount
             );
         }
-        return abi.encodePacked(ACK_SUCCESS);
     }
 
-    // TODO: timeout
-
-    function refundTokens(
-        string memory portId,
-        string memory channelId,
-        RelayPacket memory packet
-    ) internal {
-        // W're going to refund, the receiver will be the sender.
-        address receiver = hexToAddress(packet.sender);
-        for (uint256 i = 0; i < packet.tokens.length; i++) {
-            Token memory token = packet.tokens[i];
-            // Either we tried to send back a remote native token
-            // which we burnt, or a locally native token that we escrowed.
-            address denomAddress = denomToAddress[token.denom];
-            if (denomAddress != address(0)) {
-                IERC20Denom(denomAddress).mint(receiver, token.amount);
-            } else {
-                // It must be in the form 0x...
-                denomAddress = hexToAddress(token.denom);
-                // The token must be in-flight
-                decreaseInFlight(portId, channelId, denomAddress, token.amount);
-                IERC20(denomAddress).transfer(receiver, token.amount);
-            }
-        }
-    }
-
-    // We received a successful ack, move tokens from in-flight to outstanding.
-    function tokensLanded(
-        string memory portId,
-        string memory channelId,
-        RelayPacket memory packet
-    ) internal {
-        for (uint256 i = 0; i < packet.tokens.length; i++) {
-            Token memory token = packet.tokens[i];
-            // For local tokens only as remote tokens are burnt.
-            if (token.denom.toSlice().startsWith("0x".toSlice())) {
-                address denomAddress = hexToAddress(token.denom);
-                decreaseInFlight(portId, channelId, denomAddress, token.amount);
-                increaseOutstanding(
-                    portId,
-                    channelId,
-                    denomAddress,
-                    token.amount
-                );
-            }
+    function onRecvPacket(
+        IbcCoreChannelV1Packet.Data calldata ibcPacket,
+        address relayer
+    ) external virtual override onlyIBC returns (bytes memory acknowledgement) {
+        // TODO: maybe consider threading _res in the failure ack
+        (bool success, bytes memory _res) = address(this).call(
+            abi.encodeWithSelector(
+                this.onRecvPacketProcessing.selector,
+                ibcPacket,
+                relayer
+            )
+        );
+        if (success) {
+            return abi.encodePacked(ACK_SUCCESS);
+        } else {
+            return abi.encodePacked(ACK_FAILURE);
         }
     }
 
@@ -357,7 +374,10 @@ contract UCS01Relay is IBCAppBase {
         bytes calldata acknowledgement,
         address _relayer
     ) external virtual override onlyIBC {
-        require(acknowledgement.length == 1, "relay: single byte ack");
+        require(
+            acknowledgement.length == ACK_LENGTH,
+            "ucs01-relay: single byte ack"
+        );
         RelayPacket memory packet = RelayPacketLib.decode(ibcPacket.data);
         if (acknowledgement[0] == ACK_SUCCESS) {
             tokensLanded(
@@ -423,13 +443,13 @@ contract UCS01Relay is IBCAppBase {
         string calldata _portId,
         string calldata _channelId
     ) external virtual override onlyIBC {
-        revert("impossible");
+        revert("ucs01-relay: closing a channel is not supported");
     }
 
     function onChanCloseConfirm(
         string calldata _portId,
         string calldata _channelId
     ) external virtual override onlyIBC {
-        revert("impossible");
+        revert("ucs01-relay: closing a channel is not supported");
     }
 }
