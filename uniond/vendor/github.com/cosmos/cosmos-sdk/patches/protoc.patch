@@ -1,0 +1,52 @@
+diff --git a/ignite/pkg/cosmosgen/generate_openapi.go b/ignite/pkg/cosmosgen/generate_openapi.go
+index a7ed801f..9dc08b99 100644
+--- a/ignite/pkg/cosmosgen/generate_openapi.go
++++ b/ignite/pkg/cosmosgen/generate_openapi.go
+@@ -151,5 +151,6 @@ func generateOpenAPISpec(g *generator) error {
+ 		return err
+ 	}
+ 
++	println("about to save dir checksum")
+ 	return dirchange.SaveDirChecksum(specCache, out, g.appPath, out)
+ }
+diff --git a/ignite/pkg/dirchange/dirchange.go b/ignite/pkg/dirchange/dirchange.go
+index bf5f26c5..9a8dbef0 100644
+--- a/ignite/pkg/dirchange/dirchange.go
++++ b/ignite/pkg/dirchange/dirchange.go
+@@ -10,7 +10,7 @@ import (
+ 	"github.com/ignite/cli/ignite/pkg/cache"
+ )
+ 
+-var ErrNoFile = errors.New("no file in specified paths")
++var ErrNoFile = errors.New("no file in specified paths goblin")
+ 
+ // SaveDirChecksum saves the md5 checksum of the provided paths (directories or files) in the provided cache.
+ // If checksumSavePath directory doesn't exist, it is created.
+diff --git a/ignite/pkg/nodetime/programs/swagger-combine/swagger-combine.go b/ignite/pkg/nodetime/programs/swagger-combine/swagger-combine.go
+index 77f1b24d..d1657a39 100644
+--- a/ignite/pkg/nodetime/programs/swagger-combine/swagger-combine.go
++++ b/ignite/pkg/nodetime/programs/swagger-combine/swagger-combine.go
+@@ -97,6 +97,9 @@ func Combine(ctx context.Context, c Config, out string) error {
+ 		return err
+ 	}
+ 
++	command = []string{os.Getenv("SWAGGER_BIN")}
++	println("swagger has been patched")
++
+ 	command = append(command, []string{
+ 		f.Name(),
+ 		"-o", out,
+diff --git a/ignite/pkg/protoc/protoc.go b/ignite/pkg/protoc/protoc.go
+index c783cc78..b024a92c 100644
+--- a/ignite/pkg/protoc/protoc.go
++++ b/ignite/pkg/protoc/protoc.go
+@@ -93,6 +93,9 @@ func Command() (command Cmd, cleanup func(), err error) {
+ 		cleanupInclude()
+ 	}
+ 
++	path = os.Getenv("PROTOC")
++	println("protoc has been patched")
++
+ 	command = Cmd{
+ 		command:  []string{path, "-I", include},
+ 		includes: []string{include},

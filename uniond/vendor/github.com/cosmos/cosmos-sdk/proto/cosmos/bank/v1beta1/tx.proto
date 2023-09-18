@@ -1,0 +1,122 @@
+syntax = "proto3";
+package cosmos.bank.v1beta1;
+
+import "gogoproto/gogo.proto";
+import "cosmos/base/v1beta1/coin.proto";
+import "cosmos/bank/v1beta1/bank.proto";
+import "cosmos_proto/cosmos.proto";
+import "cosmos/msg/v1/msg.proto";
+import "amino/amino.proto";
+
+option go_package = "github.com/cosmos/cosmos-sdk/x/bank/types";
+
+// Msg defines the bank Msg service.
+service Msg {
+  option (cosmos.msg.v1.service) = true;
+
+  // Send defines a method for sending coins from one account to another account.
+  rpc Send(MsgSend) returns (MsgSendResponse);
+
+  // MultiSend defines a method for sending coins from some accounts to other accounts.
+  rpc MultiSend(MsgMultiSend) returns (MsgMultiSendResponse);
+
+  // UpdateParams defines a governance operation for updating the x/bank module parameters.
+  // The authority is defined in the keeper.
+  //
+  // Since: cosmos-sdk 0.47
+  rpc UpdateParams(MsgUpdateParams) returns (MsgUpdateParamsResponse);
+
+  // SetSendEnabled is a governance operation for setting the SendEnabled flag
+  // on any number of Denoms. Only the entries to add or update should be
+  // included. Entries that already exist in the store, but that aren't
+  // included in this message, will be left unchanged.
+  //
+  // Since: cosmos-sdk 0.47
+  rpc SetSendEnabled(MsgSetSendEnabled) returns (MsgSetSendEnabledResponse);
+}
+
+// MsgSend represents a message to send coins from one account to another.
+message MsgSend {
+  option (cosmos.msg.v1.signer) = "from_address";
+  option (amino.name)           = "cosmos-sdk/MsgSend";
+
+  option (gogoproto.equal)           = false;
+  option (gogoproto.goproto_getters) = false;
+
+  string   from_address                    = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  string   to_address                      = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  repeated cosmos.base.v1beta1.Coin amount = 3 [
+    (gogoproto.nullable)     = false,
+    (amino.dont_omitempty)   = true,
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"
+  ];
+}
+
+// MsgSendResponse defines the Msg/Send response type.
+message MsgSendResponse {}
+
+// MsgMultiSend represents an arbitrary multi-in, multi-out send message.
+message MsgMultiSend {
+  option (cosmos.msg.v1.signer) = "inputs";
+  option (amino.name)           = "cosmos-sdk/MsgMultiSend";
+
+  option (gogoproto.equal) = false;
+
+  // Inputs, despite being `repeated`, only allows one sender input. This is
+  // checked in MsgMultiSend's ValidateBasic.
+  repeated Input  inputs  = 1 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+  repeated Output outputs = 2 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+}
+
+// MsgMultiSendResponse defines the Msg/MultiSend response type.
+message MsgMultiSendResponse {}
+
+// MsgUpdateParams is the Msg/UpdateParams request type.
+//
+// Since: cosmos-sdk 0.47
+message MsgUpdateParams {
+  option (cosmos.msg.v1.signer) = "authority";
+
+  // authority is the address that controls the module (defaults to x/gov unless overwritten).
+  string authority    = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  option (amino.name) = "cosmos-sdk/x/bank/MsgUpdateParams";
+
+  // params defines the x/bank parameters to update.
+  //
+  // NOTE: All parameters must be supplied.
+  Params params = 2 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+}
+
+// MsgUpdateParamsResponse defines the response structure for executing a
+// MsgUpdateParams message.
+//
+// Since: cosmos-sdk 0.47
+message MsgUpdateParamsResponse {}
+
+// MsgSetSendEnabled is the Msg/SetSendEnabled request type.
+//
+// Only entries to add/update/delete need to be included.
+// Existing SendEnabled entries that are not included in this
+// message are left unchanged.
+//
+// Since: cosmos-sdk 0.47
+message MsgSetSendEnabled {
+  option (cosmos.msg.v1.signer) = "authority";
+  option (amino.name)           = "cosmos-sdk/MsgSetSendEnabled";
+
+  string authority = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+
+  // send_enabled is the list of entries to add or update.
+  repeated SendEnabled send_enabled = 2;
+
+  // use_default_for is a list of denoms that should use the params.default_send_enabled value.
+  // Denoms listed here will have their SendEnabled entries deleted.
+  // If a denom is included that doesn't have a SendEnabled entry,
+  // it will be ignored.
+  repeated string use_default_for = 3;
+}
+
+// MsgSetSendEnabledResponse defines the Msg/SetSendEnabled response type.
+//
+// Since: cosmos-sdk 0.47
+message MsgSetSendEnabledResponse {}

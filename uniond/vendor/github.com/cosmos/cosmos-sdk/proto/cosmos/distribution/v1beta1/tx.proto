@@ -1,0 +1,178 @@
+syntax = "proto3";
+package cosmos.distribution.v1beta1;
+
+option go_package            = "github.com/cosmos/cosmos-sdk/x/distribution/types";
+option (gogoproto.equal_all) = true;
+
+import "gogoproto/gogo.proto";
+import "cosmos/base/v1beta1/coin.proto";
+import "cosmos_proto/cosmos.proto";
+import "cosmos/msg/v1/msg.proto";
+import "amino/amino.proto";
+import "cosmos/distribution/v1beta1/distribution.proto";
+
+// Msg defines the distribution Msg service.
+service Msg {
+  option (cosmos.msg.v1.service) = true;
+
+  // SetWithdrawAddress defines a method to change the withdraw address
+  // for a delegator (or validator self-delegation).
+  rpc SetWithdrawAddress(MsgSetWithdrawAddress) returns (MsgSetWithdrawAddressResponse);
+
+  // WithdrawDelegatorReward defines a method to withdraw rewards of delegator
+  // from a single validator.
+  rpc WithdrawDelegatorReward(MsgWithdrawDelegatorReward) returns (MsgWithdrawDelegatorRewardResponse);
+
+  // WithdrawValidatorCommission defines a method to withdraw the
+  // full commission to the validator address.
+  rpc WithdrawValidatorCommission(MsgWithdrawValidatorCommission) returns (MsgWithdrawValidatorCommissionResponse);
+
+  // FundCommunityPool defines a method to allow an account to directly
+  // fund the community pool.
+  rpc FundCommunityPool(MsgFundCommunityPool) returns (MsgFundCommunityPoolResponse);
+
+  // UpdateParams defines a governance operation for updating the x/distribution
+  // module parameters. The authority is defined in the keeper.
+  //
+  // Since: cosmos-sdk 0.47
+  rpc UpdateParams(MsgUpdateParams) returns (MsgUpdateParamsResponse);
+
+  // CommunityPoolSpend defines a governance operation for sending tokens from
+  // the community pool in the x/distribution module to another account, which
+  // could be the governance module itself. The authority is defined in the
+  // keeper.
+  //
+  // Since: cosmos-sdk 0.47
+  rpc CommunityPoolSpend(MsgCommunityPoolSpend) returns (MsgCommunityPoolSpendResponse);
+}
+
+// MsgSetWithdrawAddress sets the withdraw address for
+// a delegator (or validator self-delegation).
+message MsgSetWithdrawAddress {
+  option (cosmos.msg.v1.signer) = "delegator_address";
+  option (amino.name)           = "cosmos-sdk/MsgModifyWithdrawAddress";
+
+  option (gogoproto.equal)           = false;
+  option (gogoproto.goproto_getters) = false;
+
+  string delegator_address = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  string withdraw_address  = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+}
+
+// MsgSetWithdrawAddressResponse defines the Msg/SetWithdrawAddress response
+// type.
+message MsgSetWithdrawAddressResponse {}
+
+// MsgWithdrawDelegatorReward represents delegation withdrawal to a delegator
+// from a single validator.
+message MsgWithdrawDelegatorReward {
+  option (cosmos.msg.v1.signer) = "delegator_address";
+  option (amino.name)           = "cosmos-sdk/MsgWithdrawDelegationReward";
+
+  option (gogoproto.equal)           = false;
+  option (gogoproto.goproto_getters) = false;
+
+  string delegator_address = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  string validator_address = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+}
+
+// MsgWithdrawDelegatorRewardResponse defines the Msg/WithdrawDelegatorReward
+// response type.
+message MsgWithdrawDelegatorRewardResponse {
+  // Since: cosmos-sdk 0.46
+  repeated cosmos.base.v1beta1.Coin amount = 1 [
+    (gogoproto.nullable)     = false,
+    (amino.dont_omitempty)   = true,
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"
+  ];
+}
+
+// MsgWithdrawValidatorCommission withdraws the full commission to the validator
+// address.
+message MsgWithdrawValidatorCommission {
+  option (cosmos.msg.v1.signer) = "validator_address";
+  option (amino.name)           = "cosmos-sdk/MsgWithdrawValCommission";
+
+  option (gogoproto.equal)           = false;
+  option (gogoproto.goproto_getters) = false;
+
+  string validator_address = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+}
+
+// MsgWithdrawValidatorCommissionResponse defines the
+// Msg/WithdrawValidatorCommission response type.
+message MsgWithdrawValidatorCommissionResponse {
+  // Since: cosmos-sdk 0.46
+  repeated cosmos.base.v1beta1.Coin amount = 1 [
+    (gogoproto.nullable)     = false,
+    (amino.dont_omitempty)   = true,
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"
+  ];
+}
+
+// MsgFundCommunityPool allows an account to directly
+// fund the community pool.
+message MsgFundCommunityPool {
+  option (cosmos.msg.v1.signer) = "depositor";
+  option (amino.name)           = "cosmos-sdk/MsgFundCommunityPool";
+
+  option (gogoproto.equal)           = false;
+  option (gogoproto.goproto_getters) = false;
+
+  repeated cosmos.base.v1beta1.Coin amount = 1 [
+    (gogoproto.nullable)     = false,
+    (amino.dont_omitempty)   = true,
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"
+  ];
+  string depositor = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+}
+
+// MsgFundCommunityPoolResponse defines the Msg/FundCommunityPool response type.
+message MsgFundCommunityPoolResponse {}
+
+// MsgUpdateParams is the Msg/UpdateParams request type.
+//
+// Since: cosmos-sdk 0.47
+message MsgUpdateParams {
+  option (cosmos.msg.v1.signer) = "authority";
+  option (amino.name)           = "cosmos-sdk/distribution/MsgUpdateParams";
+
+  // authority is the address that controls the module (defaults to x/gov unless overwritten).
+  string authority = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+
+  // params defines the x/distribution parameters to update.
+  //
+  // NOTE: All parameters must be supplied.
+  Params params = 2 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+}
+
+// MsgUpdateParamsResponse defines the response structure for executing a
+// MsgUpdateParams message.
+//
+// Since: cosmos-sdk 0.47
+message MsgUpdateParamsResponse {}
+
+// MsgCommunityPoolSpend defines a message for sending tokens from the community
+// pool to another account. This message is typically executed via a governance
+// proposal with the governance module being the executing authority.
+//
+// Since: cosmos-sdk 0.47
+message MsgCommunityPoolSpend {
+  option (cosmos.msg.v1.signer) = "authority";
+  option (amino.name)           = "cosmos-sdk/distr/MsgCommunityPoolSpend";
+
+  // authority is the address that controls the module (defaults to x/gov unless overwritten).
+  string   authority = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  string   recipient = 2;
+  repeated cosmos.base.v1beta1.Coin amount = 3 [
+    (gogoproto.nullable)     = false,
+    (amino.dont_omitempty)   = true,
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"
+  ];
+}
+
+// MsgCommunityPoolSpendResponse defines the response to executing a
+// MsgCommunityPoolSpend message.
+//
+// Since: cosmos-sdk 0.47
+message MsgCommunityPoolSpendResponse {}

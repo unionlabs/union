@@ -1,0 +1,48 @@
+syntax = "proto3";
+package cosmos.nft.v1beta1;
+
+import "google/protobuf/any.proto";
+
+option go_package = "github.com/cosmos/cosmos-sdk/x/nft";
+
+// Class defines the class of the nft type.
+message Class {
+  // id defines the unique identifier of the NFT classification, similar to the contract address of ERC721
+  string id = 1;
+
+  // name defines the human-readable name of the NFT classification. Optional
+  string name = 2;
+
+  // symbol is an abbreviated name for nft classification. Optional
+  string symbol = 3;
+
+  // description is a brief description of nft classification. Optional
+  string description = 4;
+
+  // uri for the class metadata stored off chain. It can define schema for Class and NFT `Data` attributes. Optional
+  string uri = 5;
+
+  // uri_hash is a hash of the document pointed by uri. Optional
+  string uri_hash = 6;
+
+  // data is the app specific metadata of the NFT class. Optional
+  google.protobuf.Any data = 7;
+}
+
+// NFT defines the NFT.
+message NFT {
+  // class_id associated with the NFT, similar to the contract address of ERC721
+  string class_id = 1;
+
+  // id is a unique identifier of the NFT
+  string id = 2;
+
+  // uri for the NFT metadata stored off chain
+  string uri = 3;
+
+  // uri_hash is a hash of the document pointed by uri
+  string uri_hash = 4;
+
+  // data is an app specific data of the NFT. Optional
+  google.protobuf.Any data = 10;
+}

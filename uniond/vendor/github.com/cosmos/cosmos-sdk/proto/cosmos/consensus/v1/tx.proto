@@ -1,0 +1,39 @@
+// Since: cosmos-sdk 0.47
+syntax = "proto3";
+package cosmos.consensus.v1;
+
+import "cosmos_proto/cosmos.proto";
+import "cosmos/msg/v1/msg.proto";
+import "tendermint/types/params.proto";
+
+option go_package = "github.com/cosmos/cosmos-sdk/x/consensus/types";
+
+// Msg defines the bank Msg service.
+service Msg {
+  // UpdateParams defines a governance operation for updating the x/consensus_param module parameters.
+  // The authority is defined in the keeper.
+  //
+  // Since: cosmos-sdk 0.47
+  rpc UpdateParams(MsgUpdateParams) returns (MsgUpdateParamsResponse);
+}
+
+// MsgUpdateParams is the Msg/UpdateParams request type.
+message MsgUpdateParams {
+  option (cosmos.msg.v1.signer) = "authority";
+
+  // authority is the address that controls the module (defaults to x/gov unless overwritten).
+  string authority = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+
+  // params defines the x/consensus parameters to update.
+  // VersionsParams is not included in this Msg because it is tracked
+  // separarately in x/upgrade.
+  //
+  // NOTE: All parameters must be supplied.
+  tendermint.types.BlockParams     block     = 2;
+  tendermint.types.EvidenceParams  evidence  = 3;
+  tendermint.types.ValidatorParams validator = 4;
+}
+
+// MsgUpdateParamsResponse defines the response structure for executing a
+// MsgUpdateParams message.
+message MsgUpdateParamsResponse {}

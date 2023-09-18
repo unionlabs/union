@@ -1,0 +1,252 @@
+syntax = "proto3";
+package cosmos.gov.v1beta1;
+
+import "cosmos/base/v1beta1/coin.proto";
+import "gogoproto/gogo.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/any.proto";
+import "google/protobuf/duration.proto";
+import "cosmos_proto/cosmos.proto";
+import "amino/amino.proto";
+
+option go_package = "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1";
+
+option (gogoproto.goproto_stringer_all) = false;
+option (gogoproto.stringer_all)         = false;
+option (gogoproto.goproto_getters_all)  = false;
+
+// VoteOption enumerates the valid vote options for a given governance proposal.
+enum VoteOption {
+  option (gogoproto.goproto_enum_prefix) = false;
+
+  // VOTE_OPTION_UNSPECIFIED defines a no-op vote option.
+  VOTE_OPTION_UNSPECIFIED = 0 [(gogoproto.enumvalue_customname) = "OptionEmpty"];
+  // VOTE_OPTION_YES defines a yes vote option.
+  VOTE_OPTION_YES = 1 [(gogoproto.enumvalue_customname) = "OptionYes"];
+  // VOTE_OPTION_ABSTAIN defines an abstain vote option.
+  VOTE_OPTION_ABSTAIN = 2 [(gogoproto.enumvalue_customname) = "OptionAbstain"];
+  // VOTE_OPTION_NO defines a no vote option.
+  VOTE_OPTION_NO = 3 [(gogoproto.enumvalue_customname) = "OptionNo"];
+  // VOTE_OPTION_NO_WITH_VETO defines a no with veto vote option.
+  VOTE_OPTION_NO_WITH_VETO = 4 [(gogoproto.enumvalue_customname) = "OptionNoWithVeto"];
+}
+
+// WeightedVoteOption defines a unit of vote for vote split.
+//
+// Since: cosmos-sdk 0.43
+message WeightedVoteOption {
+  // option defines the valid vote options, it must not contain duplicate vote options.
+  VoteOption option = 1;
+
+  // weight is the vote weight associated with the vote option. 
+  string     weight = 2 [
+    (cosmos_proto.scalar)  = "cosmos.Dec",
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable)   = false
+  ];
+}
+
+// TextProposal defines a standard text proposal whose changes need to be
+// manually updated in case of approval.
+message TextProposal {
+  option (cosmos_proto.implements_interface) = "cosmos.gov.v1beta1.Content";
+  option (amino.name)                        = "cosmos-sdk/TextProposal";
+
+  option (gogoproto.equal) = true;
+
+  // title of the proposal.
+  string title       = 1;
+
+  // description associated with the proposal.
+  string description = 2;
+}
+
+// Deposit defines an amount deposited by an account address to an active
+// proposal.
+message Deposit {
+  option (gogoproto.goproto_getters) = false;
+  option (gogoproto.equal)           = false;
+
+  // proposal_id defines the unique id of the proposal.
+  uint64   proposal_id                     = 1;
+  
+  // depositor defines the deposit addresses from the proposals.
+  string   depositor                       = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  
+  // amount to be deposited by depositor.
+  repeated cosmos.base.v1beta1.Coin amount = 3 [
+    (gogoproto.nullable)     = false,
+    (amino.dont_omitempty)   = true,
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"
+  ];
+}
+
+// Proposal defines the core field members of a governance proposal.
+message Proposal {
+  option (gogoproto.equal) = true;
+
+  // proposal_id defines the unique id of the proposal.
+  uint64              proposal_id = 1;
+
+  // content is the proposal's content.
+  google.protobuf.Any content = 2 [(cosmos_proto.accepts_interface) = "cosmos.gov.v1beta1.Content"];
+  // status defines the proposal status.
+  ProposalStatus      status      = 3;
+  
+  // final_tally_result is the final tally result of the proposal. When
+  // querying a proposal via gRPC, this field is not populated until the
+  // proposal's voting period has ended.
+  TallyResult               final_tally_result = 4 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+  
+  // submit_time is the time of proposal submission.
+  google.protobuf.Timestamp submit_time        = 5
+      [(gogoproto.stdtime) = true, (gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+  
+  // deposit_end_time is the end time for deposition.
+  google.protobuf.Timestamp deposit_end_time = 6
+      [(gogoproto.stdtime) = true, (gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+  
+  // total_deposit is the total deposit on the proposal.
+  repeated cosmos.base.v1beta1.Coin total_deposit = 7 [
+    (gogoproto.nullable)     = false,
+    (amino.dont_omitempty)   = true,
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"
+  ];
+
+  // voting_start_time is the starting time to vote on a proposal.
+  google.protobuf.Timestamp voting_start_time = 8
+      [(gogoproto.stdtime) = true, (gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+  
+  // voting_end_time is the end time of voting on a proposal.
+  google.protobuf.Timestamp voting_end_time = 9
+      [(gogoproto.stdtime) = true, (gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+}
+
+// ProposalStatus enumerates the valid statuses of a proposal.
+enum ProposalStatus {
+  option (gogoproto.goproto_enum_prefix) = false;
+
+  // PROPOSAL_STATUS_UNSPECIFIED defines the default proposal status.
+  PROPOSAL_STATUS_UNSPECIFIED = 0 [(gogoproto.enumvalue_customname) = "StatusNil"];
+  // PROPOSAL_STATUS_DEPOSIT_PERIOD defines a proposal status during the deposit
+  // period.
+  PROPOSAL_STATUS_DEPOSIT_PERIOD = 1 [(gogoproto.enumvalue_customname) = "StatusDepositPeriod"];
+  // PROPOSAL_STATUS_VOTING_PERIOD defines a proposal status during the voting
+  // period.
+  PROPOSAL_STATUS_VOTING_PERIOD = 2 [(gogoproto.enumvalue_customname) = "StatusVotingPeriod"];
+  // PROPOSAL_STATUS_PASSED defines a proposal status of a proposal that has
+  // passed.
+  PROPOSAL_STATUS_PASSED = 3 [(gogoproto.enumvalue_customname) = "StatusPassed"];
+  // PROPOSAL_STATUS_REJECTED defines a proposal status of a proposal that has
+  // been rejected.
+  PROPOSAL_STATUS_REJECTED = 4 [(gogoproto.enumvalue_customname) = "StatusRejected"];
+  // PROPOSAL_STATUS_FAILED defines a proposal status of a proposal that has
+  // failed.
+  PROPOSAL_STATUS_FAILED = 5 [(gogoproto.enumvalue_customname) = "StatusFailed"];
+}
+
+// TallyResult defines a standard tally for a governance proposal.
+message TallyResult {
+  option (gogoproto.equal) = true;
+
+  // yes is the number of yes votes on a proposal.
+  string yes = 1 [
+    (cosmos_proto.scalar)  = "cosmos.Int",
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable)   = false
+  ];
+
+  // abstain is the number of abstain votes on a proposal.
+  string abstain = 2 [
+    (cosmos_proto.scalar)  = "cosmos.Int",
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable)   = false
+  ];
+
+  // no is the number of no votes on a proposal.
+  string no = 3 [
+    (cosmos_proto.scalar)  = "cosmos.Int",
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable)   = false
+  ];
+
+  // no_with_veto is the number of no with veto votes on a proposal.
+  string no_with_veto = 4 [
+    (cosmos_proto.scalar)  = "cosmos.Int",
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable)   = false
+  ];
+}
+
+// Vote defines a vote on a governance proposal.
+// A Vote consists of a proposal ID, the voter, and the vote option.
+message Vote {
+  option (gogoproto.goproto_stringer) = false;
+  option (gogoproto.equal)            = false;
+
+  // proposal_id defines the unique id of the proposal.
+  uint64 proposal_id = 1 [(gogoproto.jsontag) = "id", (amino.field_name) = "id", (amino.dont_omitempty) = true];
+  
+  // voter is the voter address of the proposal.
+  string voter       = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  // Deprecated: Prefer to use `options` instead. This field is set in queries
+  // if and only if `len(options) == 1` and that option has weight 1. In all
+  // other cases, this field will default to VOTE_OPTION_UNSPECIFIED.
+  VoteOption option = 3 [deprecated = true];
+  
+  // options is the weighted vote options.
+  //
+  // Since: cosmos-sdk 0.43
+  repeated WeightedVoteOption options = 4 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+}
+
+// DepositParams defines the params for deposits on governance proposals.
+message DepositParams {
+  // Minimum deposit for a proposal to enter voting period.
+  repeated cosmos.base.v1beta1.Coin min_deposit = 1 [
+    (gogoproto.nullable)     = false,
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins",
+    (gogoproto.jsontag)      = "min_deposit,omitempty"
+  ];
+
+  // Maximum period for Atom holders to deposit on a proposal. Initial value: 2
+  // months.
+  google.protobuf.Duration max_deposit_period = 2 [
+    (gogoproto.nullable)    = false,
+    (gogoproto.stdduration) = true,
+    (gogoproto.jsontag)     = "max_deposit_period,omitempty"
+  ];
+}
+
+// VotingParams defines the params for voting on governance proposals.
+message VotingParams {
+  // Duration of the voting period.
+  google.protobuf.Duration voting_period = 1
+      [(gogoproto.nullable) = false, (gogoproto.stdduration) = true, (gogoproto.jsontag) = "voting_period,omitempty"];
+}
+
+// TallyParams defines the params for tallying votes on governance proposals.
+message TallyParams {
+  // Minimum percentage of total stake needed to vote for a result to be
+  // considered valid.
+  bytes quorum = 1 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable)   = false,
+    (gogoproto.jsontag)    = "quorum,omitempty"
+  ];
+
+  // Minimum proportion of Yes votes for proposal to pass. Default value: 0.5.
+  bytes threshold = 2 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable)   = false,
+    (gogoproto.jsontag)    = "threshold,omitempty"
+  ];
+
+  // Minimum value of Veto votes to Total votes ratio for proposal to be
+  // vetoed. Default value: 1/3.
+  bytes veto_threshold = 3 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable)   = false,
+    (gogoproto.jsontag)    = "veto_threshold,omitempty"
+  ];
+}

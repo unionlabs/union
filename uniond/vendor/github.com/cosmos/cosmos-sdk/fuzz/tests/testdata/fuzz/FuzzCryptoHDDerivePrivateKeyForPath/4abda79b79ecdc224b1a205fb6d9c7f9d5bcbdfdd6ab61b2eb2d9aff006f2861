@@ -1,0 +1,2 @@
+go test fuzz v1
+[]byte("carpet cricket disorder cricket cricket artwork carpet cricket disorder cricket cricket artwork*m/44'/0'/0'/0/0\n")

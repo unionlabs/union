@@ -1,0 +1,68 @@
+syntax = "proto3";
+package cosmos.slashing.v1beta1;
+
+option go_package            = "github.com/cosmos/cosmos-sdk/x/slashing/types";
+option (gogoproto.equal_all) = true;
+
+import "gogoproto/gogo.proto";
+import "cosmos/slashing/v1beta1/slashing.proto";
+import "cosmos_proto/cosmos.proto";
+import "cosmos/msg/v1/msg.proto";
+import "amino/amino.proto";
+
+// Msg defines the slashing Msg service.
+service Msg {
+  option (cosmos.msg.v1.service) = true;
+
+  // Unjail defines a method for unjailing a jailed validator, thus returning
+  // them into the bonded validator set, so they can begin receiving provisions
+  // and rewards again.
+  rpc Unjail(MsgUnjail) returns (MsgUnjailResponse);
+
+  // UpdateParams defines a governance operation for updating the x/slashing module
+  // parameters. The authority defaults to the x/gov module account.
+  //
+  // Since: cosmos-sdk 0.47
+  rpc UpdateParams(MsgUpdateParams) returns (MsgUpdateParamsResponse);
+}
+
+// MsgUnjail defines the Msg/Unjail request type
+message MsgUnjail {
+  option (cosmos.msg.v1.signer) = "validator_addr";
+  option (amino.name)           = "cosmos-sdk/MsgUnjail";
+
+  option (gogoproto.goproto_getters)  = false;
+  option (gogoproto.goproto_stringer) = true;
+
+  string validator_addr = 1 [
+    (cosmos_proto.scalar)  = "cosmos.AddressString",
+    (gogoproto.jsontag)    = "address",
+    (amino.field_name)     = "address",
+    (amino.dont_omitempty) = true
+  ];
+}
+
+// MsgUnjailResponse defines the Msg/Unjail response type
+message MsgUnjailResponse {}
+
+// MsgUpdateParams is the Msg/UpdateParams request type.
+//
+// Since: cosmos-sdk 0.47
+message MsgUpdateParams {
+  option (cosmos.msg.v1.signer) = "authority";
+  option (amino.name)           = "cosmos-sdk/x/slashing/MsgUpdateParams";
+
+  // authority is the address that controls the module (defaults to x/gov unless overwritten).
+  string authority = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+
+  // params defines the x/slashing parameters to update.
+  //
+  // NOTE: All parameters must be supplied.
+  Params params = 2 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+}
+
+// MsgUpdateParamsResponse defines the response structure for executing a
+// MsgUpdateParams message.
+//
+// Since: cosmos-sdk 0.47
+message MsgUpdateParamsResponse {}

@@ -1,0 +1,50 @@
+syntax = "proto3";
+
+package cosmos.app.runtime.v1alpha1;
+
+import "cosmos/app/v1alpha1/module.proto";
+
+// Module is the config object for the runtime module.
+message Module {
+  option (cosmos.app.v1alpha1.module) = {
+    go_import: "github.com/cosmos/cosmos-sdk/runtime"
+    use_package: {name: "cosmos.app.v1alpha1"}
+  };
+
+  // app_name is the name of the app.
+  string app_name = 1;
+
+  // begin_blockers specifies the module names of begin blockers
+  // to call in the order in which they should be called. If this is left empty
+  // no begin blocker will be registered.
+  repeated string begin_blockers = 2;
+
+  // end_blockers specifies the module names of the end blockers
+  // to call in the order in which they should be called. If this is left empty
+  // no end blocker will be registered.
+  repeated string end_blockers = 3;
+
+  // init_genesis specifies the module names of init genesis functions
+  // to call in the order in which they should be called. If this is left empty
+  // no init genesis function will be registered.
+  repeated string init_genesis = 4;
+
+  // export_genesis specifies the order in which to export module genesis data.
+  // If this is left empty, the init_genesis order will be used for export genesis
+  // if it is specified.
+  repeated string export_genesis = 5;
+
+  // override_store_keys is an optional list of overrides for the module store keys
+  // to be used in keeper construction.
+  repeated StoreKeyConfig override_store_keys = 6;
+}
+
+// StoreKeyConfig may be supplied to override the default module store key, which
+// is the module name.
+message StoreKeyConfig {
+  // name of the module to override the store key of
+  string module_name = 1;
+
+  // the kv store key to use instead of the module name.
+  string kv_store_key = 2;
+}

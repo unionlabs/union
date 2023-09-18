@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package cosmos.group.module.v1;
+
+import "cosmos/app/v1alpha1/module.proto";
+import "gogoproto/gogo.proto";
+import "google/protobuf/duration.proto";
+import "amino/amino.proto";
+
+// Module is the config object of the group module.
+message Module {
+  option (cosmos.app.v1alpha1.module) = {
+    go_import: "github.com/cosmos/cosmos-sdk/x/group"
+  };
+
+  // max_execution_period defines the max duration after a proposal's voting period ends that members can send a MsgExec
+  // to execute the proposal.
+  google.protobuf.Duration max_execution_period = 1
+      [(gogoproto.stdduration) = true, (gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+
+  // max_metadata_len defines the max length of the metadata bytes field for various entities within the group module.
+  // Defaults to 255 if not explicitly set.
+  uint64 max_metadata_len = 2;
+}

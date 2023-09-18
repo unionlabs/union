@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package cosmos.gov.v1beta1;
+
+import "gogoproto/gogo.proto";
+import "cosmos/gov/v1beta1/gov.proto";
+import "amino/amino.proto";
+
+option go_package = "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1";
+
+// GenesisState defines the gov module's genesis state.
+message GenesisState {
+  // starting_proposal_id is the ID of the starting proposal.
+  uint64 starting_proposal_id = 1;
+  // deposits defines all the deposits present at genesis.
+  repeated Deposit deposits = 2
+      [(gogoproto.castrepeated) = "Deposits", (gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+  // votes defines all the votes present at genesis.
+  repeated Vote votes = 3
+      [(gogoproto.castrepeated) = "Votes", (gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+  // proposals defines all the proposals present at genesis.
+  repeated Proposal proposals = 4
+      [(gogoproto.castrepeated) = "Proposals", (gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+  // params defines all the parameters of related to deposit.
+  DepositParams deposit_params = 5 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+  // params defines all the parameters of related to voting.
+  VotingParams voting_params = 6 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+  // params defines all the parameters of related to tally.
+  TallyParams tally_params = 7 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+}

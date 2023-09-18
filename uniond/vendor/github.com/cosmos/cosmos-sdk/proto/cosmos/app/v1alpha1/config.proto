@@ -1,0 +1,55 @@
+syntax = "proto3";
+
+package cosmos.app.v1alpha1;
+
+import "google/protobuf/any.proto";
+
+// Config represents the configuration for a Cosmos SDK ABCI app.
+// It is intended that all state machine logic including the version of
+// baseapp and tx handlers (and possibly even Tendermint) that an app needs
+// can be described in a config object. For compatibility, the framework should
+// allow a mixture of declarative and imperative app wiring, however, apps
+// that strive for the maximum ease of maintainability should be able to describe
+// their state machine with a config object alone.
+message Config {
+  // modules are the module configurations for the app.
+  repeated ModuleConfig modules = 1;
+
+  // golang_bindings specifies explicit interface to implementation type bindings which
+  // depinject uses to resolve interface inputs to provider functions.  The scope of this
+  // field's configuration is global (not module specific).
+  repeated GolangBinding golang_bindings = 2;
+}
+
+// ModuleConfig is a module configuration for an app.
+message ModuleConfig {
+  // name is the unique name of the module within the app. It should be a name
+  // that persists between different versions of a module so that modules
+  // can be smoothly upgraded to new versions.
+  //
+  // For example, for the module cosmos.bank.module.v1.Module, we may chose
+  // to simply name the module "bank" in the app. When we upgrade to
+  // cosmos.bank.module.v2.Module, the app-specific name "bank" stays the same
+  // and the framework knows that the v2 module should receive all the same state
+  // that the v1 module had. Note: modules should provide info on which versions
+  // they can migrate from in the ModuleDescriptor.can_migration_from field.
+  string name = 1;
+
+  // config is the config object for the module. Module config messages should
+  // define a ModuleDescriptor using the cosmos.app.v1alpha1.is_module extension.
+  google.protobuf.Any config = 2;
+
+  // golang_bindings specifies explicit interface to implementation type bindings which
+  // depinject uses to resolve interface inputs to provider functions.  The scope of this
+  // field's configuration is module specific.
+  repeated GolangBinding golang_bindings = 3;
+}
+
+// GolangBinding is an explicit interface type to implementing type binding for dependency injection.
+message GolangBinding {
+  // interface_type is the interface type which will be bound to a specific implementation type
+  string interface_type = 1;
+
+  // implementation is the implementing type which will be supplied when an input of type interface is requested
+  string implementation = 2;
+}

@@ -1,0 +1,50 @@
+@startuml
+'https://plantuml.com/sequence-diagram
+
+title: Redelegation
+
+msgServer -> keeper : BeginRedelegation(delAddr, valSrcAddr, valDstAddr, sharesAmount)
+participant  "keeper (staking)" as keeper
+keeper -> keeper : get number of sharew
+note left: If the delegator has more shares than the total shares in the validator\n(due to rounding errors), then just withdraw the max number of shares.
+keeper -> keeper : check the redelegation uses correct denom
+
+alt valSrcAddr == valDstAddr
+  keeper --> msgServer : error
+end
+alt transitive redelegation
+  keeper --> msgServer : error
+end
+alt already has max redelegations
+  keeper --> msgServer : error
+  note left : this is the number of redelegations for a specific (del, valSrc, valDst) triple\ndefault : 7
+end
+
+
+keeper -> keeper : Unbond(del, valSrc) returns returnAmount
+...
+note left : See unbonding diagram
+
+alt returnAmount is zero
+keeper -> msgServer : error
+end
+
+keeper -> keeper : Delegate(del, returnAmount, status := valSrc.status, valDst, subtractAccount := false)
+note left : See delegation diagram
+...
+
+alt validator is unbonded
+    keeper -> msgServer : current time
+end
+
+alt unbonding not complete, or just started
+    database store
+    keeper -> store : create redelegation object
+    keeper -> store : insert redelegation in queue, to be processed at the appropriate time
+end
+
+msgServer <-- keeper : completion time of the redelegation
+msgServer -> msgServer : emit event: delegator, valSrc, valSrc,\nsharesAmount, completionTime
+
+@enduml
+

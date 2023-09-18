@@ -1,0 +1,48 @@
+// Since: cosmos-sdk 0.46
+syntax = "proto3";
+package cosmos.crypto.keyring.v1;
+
+import "gogoproto/gogo.proto";
+import "google/protobuf/any.proto";
+import "cosmos/crypto/hd/v1/hd.proto";
+
+option go_package                      = "github.com/cosmos/cosmos-sdk/crypto/keyring";
+option (gogoproto.goproto_getters_all) = false;
+option (gogoproto.gogoproto_import)    = false;
+
+// Record is used for representing a key in the keyring.
+message Record {
+  // name represents a name of Record
+  string name = 1;
+  // pub_key represents a public key in any format
+  google.protobuf.Any pub_key = 2;
+
+  // Record contains one of the following items
+  oneof item {
+    // local stores the private key locally.
+    Local local = 3;
+    // ledger stores the information about a Ledger key.
+    Ledger ledger = 4;
+    // Multi does not store any other information.
+    Multi multi = 5;
+    // Offline does not store any other information.
+    Offline offline = 6;
+  }
+
+  // Item is a keyring item stored in a keyring backend.
+  // Local item
+  message Local {
+    google.protobuf.Any priv_key = 1;
+  }
+
+  // Ledger item
+  message Ledger {
+    hd.v1.BIP44Params path = 1;
+  }
+
+  // Multi item
+  message Multi {}
+
+  // Offline item
+  message Offline {}
+}

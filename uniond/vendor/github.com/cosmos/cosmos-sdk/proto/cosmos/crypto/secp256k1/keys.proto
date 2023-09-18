@@ -1,0 +1,38 @@
+syntax = "proto3";
+package cosmos.crypto.secp256k1;
+
+import "amino/amino.proto";
+import "gogoproto/gogo.proto";
+
+option go_package = "github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1";
+
+// PubKey defines a secp256k1 public key
+// Key is the compressed form of the pubkey. The first byte depends is a 0x02 byte
+// if the y-coordinate is the lexicographically largest of the two associated with
+// the x-coordinate. Otherwise the first byte is a 0x03.
+// This prefix is followed with the x-coordinate.
+message PubKey {
+  option (amino.name) = "tendermint/PubKeySecp256k1";
+  // The Amino encoding is simply the inner bytes field, and not the Amino
+  // encoding of the whole PubKey struct.
+  //
+  // Example (JSON):
+  // s := PubKey{Key: []byte{0x01}}
+  // out := AminoJSONEncoder(s)
+  //
+  // Then we have:
+  // out == `"MQ=="`
+  // out != `{"key":"MQ=="}`
+  option (amino.message_encoding)     = "key_field";
+  option (gogoproto.goproto_stringer) = false;
+
+  bytes key = 1;
+}
+
+// PrivKey defines a secp256k1 private key.
+message PrivKey {
+  option (amino.name)             = "tendermint/PrivKeySecp256k1";
+  option (amino.message_encoding) = "key_field";
+
+  bytes key = 1;
+}

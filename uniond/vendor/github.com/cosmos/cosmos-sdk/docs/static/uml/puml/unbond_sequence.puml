@@ -1,0 +1,51 @@
+@startuml
+'https://plantuml.com/sequence-diagram
+
+title: Undelegate
+
+msgServer -> keeper : Undelegate(delAddr, valAddr, tokenAmount)
+
+keeper -> keeper : calculate number of shares the tokenAmount represents
+
+alt wrong denom
+    msgServer <-- keeper : error
+end
+
+group Unbond(delAddr, valAddr, shares)
+    keeper -> keeper: BeforeDelegationSharesModified hook
+    alt no such delegation
+        keeper --> msgServer : error
+    end
+    alt not enough shares
+        keeper --> msgServer : error
+    end
+    alt delegator is the operator of the validator\nand validator is not already jailed\nand unbonding would put self-delegation under min threshold
+                keeper -> keeper : jail the validator, but proceed with unbonding
+                note left : Default min delegation threshold : 1 share
+    end
+
+    database store
+
+    alt complete unbonding, all shares removed
+        keeper -> store : remove delegation object
+    else there are still shares delegated (not a complete undbonding)
+        keeper -> store : update delegation object
+        keeper -> keeper : AfterDelegationModified hook
+    end
+
+    keeper -> store : update validator power index
+    keeper -> store : update validator information (including token amount)
+
+    alt validator status is "unbonded" and it has no more tokens
+       keeper -> store : delete the validator
+       note right : otherwise, do this in EndBlock once validator is unbonded
+    end
+end
+
+alt validator is bonded
+    keeper -> bankKeeper : send tokens from bonded pool to not bonded pool
+end
+
+msgServer -> msgServer : emit event : EventTypeUnbond(delAddr, valAddr, tokenAmount, completion time)
+
+@enduml

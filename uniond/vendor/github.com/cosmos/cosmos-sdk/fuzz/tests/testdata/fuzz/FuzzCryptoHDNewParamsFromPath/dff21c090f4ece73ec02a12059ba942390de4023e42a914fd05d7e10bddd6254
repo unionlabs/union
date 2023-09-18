@@ -1,0 +1,2 @@
+go test fuzz v1
+[]byte("\x823\t \t\t\t\t\t\t\t\t\t \t\t\t\t\t/")

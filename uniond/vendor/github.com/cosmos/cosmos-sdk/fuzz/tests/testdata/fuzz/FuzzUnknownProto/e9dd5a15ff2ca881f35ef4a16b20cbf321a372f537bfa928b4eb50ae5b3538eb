@@ -1,0 +1,2 @@
+go test fuzz v1
+[]byte("\x8b�(ST3344\x8c�(")

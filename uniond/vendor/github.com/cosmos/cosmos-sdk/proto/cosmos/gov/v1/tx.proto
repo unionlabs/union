@@ -1,0 +1,172 @@
+// Since: cosmos-sdk 0.46
+syntax = "proto3";
+package cosmos.gov.v1;
+
+import "cosmos/base/v1beta1/coin.proto";
+import "cosmos/gov/v1/gov.proto";
+import "gogoproto/gogo.proto";
+import "cosmos_proto/cosmos.proto";
+import "google/protobuf/any.proto";
+import "cosmos/msg/v1/msg.proto";
+import "amino/amino.proto";
+
+option go_package = "github.com/cosmos/cosmos-sdk/x/gov/types/v1";
+
+// Msg defines the gov Msg service.
+service Msg {
+  option (cosmos.msg.v1.service) = true;
+
+  // SubmitProposal defines a method to create new proposal given the messages.
+  rpc SubmitProposal(MsgSubmitProposal) returns (MsgSubmitProposalResponse);
+
+  // ExecLegacyContent defines a Msg to be in included in a MsgSubmitProposal
+  // to execute a legacy content-based proposal.
+  rpc ExecLegacyContent(MsgExecLegacyContent) returns (MsgExecLegacyContentResponse);
+
+  // Vote defines a method to add a vote on a specific proposal.
+  rpc Vote(MsgVote) returns (MsgVoteResponse);
+
+  // VoteWeighted defines a method to add a weighted vote on a specific proposal.
+  rpc VoteWeighted(MsgVoteWeighted) returns (MsgVoteWeightedResponse);
+
+  // Deposit defines a method to add deposit on a specific proposal.
+  rpc Deposit(MsgDeposit) returns (MsgDepositResponse);
+
+  // UpdateParams defines a governance operation for updating the x/gov module
+  // parameters. The authority is defined in the keeper.
+  //
+  // Since: cosmos-sdk 0.47
+  rpc UpdateParams(MsgUpdateParams) returns (MsgUpdateParamsResponse);
+}
+
+// MsgSubmitProposal defines an sdk.Msg type that supports submitting arbitrary
+// proposal Content.
+message MsgSubmitProposal {
+  option (cosmos.msg.v1.signer) = "proposer";
+  option (amino.name)           = "cosmos-sdk/v1/MsgSubmitProposal";
+
+  // messages are the arbitrary messages to be executed if proposal passes.
+  repeated google.protobuf.Any messages             = 1;
+
+  // initial_deposit is the deposit value that must be paid at proposal submission.
+  repeated cosmos.base.v1beta1.Coin initial_deposit = 2 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+  
+  // proposer is the account address of the proposer.
+  string                            proposer        = 3 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  
+  // metadata is any arbitrary metadata attached to the proposal.
+  string metadata = 4;
+
+  // title is the title of the proposal.
+  //
+  // Since: cosmos-sdk 0.47
+  string title = 5;
+
+  // summary is the summary of the proposal
+  //
+  // Since: cosmos-sdk 0.47
+  string summary = 6;
+}
+
+// MsgSubmitProposalResponse defines the Msg/SubmitProposal response type.
+message MsgSubmitProposalResponse {
+  // proposal_id defines the unique id of the proposal.
+  uint64 proposal_id = 1;
+}
+
+// MsgExecLegacyContent is used to wrap the legacy content field into a message.
+// This ensures backwards compatibility with v1beta1.MsgSubmitProposal.
+message MsgExecLegacyContent {
+  option (cosmos.msg.v1.signer) = "authority";
+  option (amino.name)           = "cosmos-sdk/v1/MsgExecLegacyContent";
+
+  // content is the proposal's content.
+  google.protobuf.Any content = 1 [(cosmos_proto.accepts_interface) = "cosmos.gov.v1beta1.Content"];
+  // authority must be the gov module address.
+  string authority = 2;
+}
+
+// MsgExecLegacyContentResponse defines the Msg/ExecLegacyContent response type.
+message MsgExecLegacyContentResponse {}
+
+// MsgVote defines a message to cast a vote.
+message MsgVote {
+  option (cosmos.msg.v1.signer) = "voter";
+  option (amino.name)           = "cosmos-sdk/v1/MsgVote";
+
+  // proposal_id defines the unique id of the proposal.
+  uint64     proposal_id = 1 [(gogoproto.jsontag) = "proposal_id", (amino.dont_omitempty) = true];
+  
+  // voter is the voter address for the proposal.
+  string     voter       = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  
+  // option defines the vote option.
+  VoteOption option      = 3;
+  
+  // metadata is any arbitrary metadata attached to the Vote.
+  string     metadata    = 4;
+}
+
+// MsgVoteResponse defines the Msg/Vote response type.
+message MsgVoteResponse {}
+
+// MsgVoteWeighted defines a message to cast a vote.
+message MsgVoteWeighted {
+  option (cosmos.msg.v1.signer) = "voter";
+  option (amino.name)           = "cosmos-sdk/v1/MsgVoteWeighted";
+
+  // proposal_id defines the unique id of the proposal.
+  uint64                      proposal_id = 1 [(gogoproto.jsontag) = "proposal_id", (amino.dont_omitempty) = true];
+  
+  // voter is the voter address for the proposal.
+  string                      voter       = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  
+  // options defines the weighted vote options.
+  repeated WeightedVoteOption options     = 3;
+
+  // metadata is any arbitrary metadata attached to the VoteWeighted.
+  string                      metadata    = 4;
+}
+
+// MsgVoteWeightedResponse defines the Msg/VoteWeighted response type.
+message MsgVoteWeightedResponse {}
+
+// MsgDeposit defines a message to submit a deposit to an existing proposal.
+message MsgDeposit {
+  option (cosmos.msg.v1.signer) = "depositor";
+  option (amino.name)           = "cosmos-sdk/v1/MsgDeposit";
+
+  // proposal_id defines the unique id of the proposal.
+  uint64   proposal_id                     = 1 [(gogoproto.jsontag) = "proposal_id", (amino.dont_omitempty) = true];
+  
+  // depositor defines the deposit addresses from the proposals.
+  string   depositor                       = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  
+  // amount to be deposited by depositor.
+  repeated cosmos.base.v1beta1.Coin amount = 3 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+}
+
+// MsgDepositResponse defines the Msg/Deposit response type.
+message MsgDepositResponse {}
+
+// MsgUpdateParams is the Msg/UpdateParams request type.
+//
+// Since: cosmos-sdk 0.47
+message MsgUpdateParams {
+  option (cosmos.msg.v1.signer) = "authority";
+  option (amino.name)           = "cosmos-sdk/x/gov/v1/MsgUpdateParams";
+
+  // authority is the address that controls the module (defaults to x/gov unless overwritten).
+  string authority = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+
+  // params defines the x/gov parameters to update.
+  //
+  // NOTE: All parameters must be supplied.
+  Params params = 2 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+}
+
+// MsgUpdateParamsResponse defines the response structure for executing a
+// MsgUpdateParams message.
+//
+// Since: cosmos-sdk 0.47
+message MsgUpdateParamsResponse {}

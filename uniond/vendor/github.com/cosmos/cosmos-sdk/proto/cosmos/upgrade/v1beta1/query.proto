@@ -1,0 +1,122 @@
+syntax = "proto3";
+package cosmos.upgrade.v1beta1;
+
+import "google/api/annotations.proto";
+import "cosmos/upgrade/v1beta1/upgrade.proto";
+
+option go_package = "github.com/cosmos/cosmos-sdk/x/upgrade/types";
+
+// Query defines the gRPC upgrade querier service.
+service Query {
+  // CurrentPlan queries the current upgrade plan.
+  rpc CurrentPlan(QueryCurrentPlanRequest) returns (QueryCurrentPlanResponse) {
+    option (google.api.http).get = "/cosmos/upgrade/v1beta1/current_plan";
+  }
+
+  // AppliedPlan queries a previously applied upgrade plan by its name.
+  rpc AppliedPlan(QueryAppliedPlanRequest) returns (QueryAppliedPlanResponse) {
+    option (google.api.http).get = "/cosmos/upgrade/v1beta1/applied_plan/{name}";
+  }
+
+  // UpgradedConsensusState queries the consensus state that will serve
+  // as a trusted kernel for the next version of this chain. It will only be
+  // stored at the last height of this chain.
+  // UpgradedConsensusState RPC not supported with legacy querier
+  // This rpc is deprecated now that IBC has its own replacement
+  // (https://github.com/cosmos/ibc-go/blob/2c880a22e9f9cc75f62b527ca94aa75ce1106001/proto/ibc/core/client/v1/query.proto#L54)
+  rpc UpgradedConsensusState(QueryUpgradedConsensusStateRequest) returns (QueryUpgradedConsensusStateResponse) {
+    option deprecated            = true;
+    option (google.api.http).get = "/cosmos/upgrade/v1beta1/upgraded_consensus_state/{last_height}";
+  }
+
+  // ModuleVersions queries the list of module versions from state.
+  //
+  // Since: cosmos-sdk 0.43
+  rpc ModuleVersions(QueryModuleVersionsRequest) returns (QueryModuleVersionsResponse) {
+    option (google.api.http).get = "/cosmos/upgrade/v1beta1/module_versions";
+  }
+
+  // Returns the account with authority to conduct upgrades
+  //
+  // Since: cosmos-sdk 0.46
+  rpc Authority(QueryAuthorityRequest) returns (QueryAuthorityResponse) {
+    option (google.api.http).get = "/cosmos/upgrade/v1beta1/authority";
+  }
+}
+
+// QueryCurrentPlanRequest is the request type for the Query/CurrentPlan RPC
+// method.
+message QueryCurrentPlanRequest {}
+
+// QueryCurrentPlanResponse is the response type for the Query/CurrentPlan RPC
+// method.
+message QueryCurrentPlanResponse {
+  // plan is the current upgrade plan.
+  Plan plan = 1;
+}
+
+// QueryCurrentPlanRequest is the request type for the Query/AppliedPlan RPC
+// method.
+message QueryAppliedPlanRequest {
+  // name is the name of the applied plan to query for.
+  string name = 1;
+}
+
+// QueryAppliedPlanResponse is the response type for the Query/AppliedPlan RPC
+// method.
+message QueryAppliedPlanResponse {
+  // height is the block height at which the plan was applied.
+  int64 height = 1;
+}
+
+// QueryUpgradedConsensusStateRequest is the request type for the Query/UpgradedConsensusState
+// RPC method.
+message QueryUpgradedConsensusStateRequest {
+  option deprecated = true;
+
+  // last height of the current chain must be sent in request
+  // as this is the height under which next consensus state is stored
+  int64 last_height = 1;
+}
+
+// QueryUpgradedConsensusStateResponse is the response type for the Query/UpgradedConsensusState
+// RPC method.
+message QueryUpgradedConsensusStateResponse {
+  option deprecated = true;
+  reserved 1;
+
+  // Since: cosmos-sdk 0.43
+  bytes upgraded_consensus_state = 2;
+}
+
+// QueryModuleVersionsRequest is the request type for the Query/ModuleVersions
+// RPC method.
+//
+// Since: cosmos-sdk 0.43
+message QueryModuleVersionsRequest {
+  // module_name is a field to query a specific module
+  // consensus version from state. Leaving this empty will
+  // fetch the full list of module versions from state
+  string module_name = 1;
+}
+
+// QueryModuleVersionsResponse is the response type for the Query/ModuleVersions
+// RPC method.
+//
+// Since: cosmos-sdk 0.43
+message QueryModuleVersionsResponse {
+  // module_versions is a list of module names with their consensus versions.
+  repeated ModuleVersion module_versions = 1;
+}
+
+// QueryAuthorityRequest is the request type for Query/Authority
+//
+// Since: cosmos-sdk 0.46
+message QueryAuthorityRequest {}
+
+// QueryAuthorityResponse is the response type for Query/Authority
+//
+// Since: cosmos-sdk 0.46
+message QueryAuthorityResponse {
+  string address = 1;
+}

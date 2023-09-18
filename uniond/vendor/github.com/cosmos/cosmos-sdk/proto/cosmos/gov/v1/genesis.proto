@@ -1,0 +1,33 @@
+// Since: cosmos-sdk 0.46
+syntax = "proto3";
+
+package cosmos.gov.v1;
+
+import "cosmos/gov/v1/gov.proto";
+
+option go_package = "github.com/cosmos/cosmos-sdk/x/gov/types/v1";
+
+// GenesisState defines the gov module's genesis state.
+message GenesisState {
+  // starting_proposal_id is the ID of the starting proposal.
+  uint64 starting_proposal_id = 1;
+  // deposits defines all the deposits present at genesis.
+  repeated Deposit deposits = 2;
+  // votes defines all the votes present at genesis.
+  repeated Vote votes = 3;
+  // proposals defines all the proposals present at genesis.
+  repeated Proposal proposals = 4;
+  // Deprecated: Prefer to use `params` instead.
+  // deposit_params defines all the paramaters of related to deposit.
+  DepositParams deposit_params = 5 [deprecated = true];
+  // Deprecated: Prefer to use `params` instead.
+  // voting_params defines all the paramaters of related to voting.
+  VotingParams voting_params = 6 [deprecated = true];
+  // Deprecated: Prefer to use `params` instead.
+  // tally_params defines all the paramaters of related to tally.
+  TallyParams tally_params = 7 [deprecated = true];
+  // params defines all the paramaters of x/gov module.
+  //
+  // Since: cosmos-sdk 0.47
+  Params params = 8;
+}

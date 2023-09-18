@@ -1,0 +1,34 @@
+syntax = "proto3";
+package cosmos.base.store.v1beta1;
+
+import "tendermint/abci/types.proto";
+
+option go_package = "github.com/cosmos/cosmos-sdk/store/types";
+
+// StoreKVPair is a KVStore KVPair used for listening to state changes (Sets and Deletes)
+// It optionally includes the StoreKey for the originating KVStore and a Boolean flag to distinguish between Sets and
+// Deletes
+//
+// Since: cosmos-sdk 0.43
+message StoreKVPair {
+  string store_key = 1; // the store key for the KVStore this pair originates from
+  bool delete      = 2; // true indicates a delete operation, false indicates a set operation
+  bytes key        = 3;
+  bytes value      = 4;
+}
+
+// BlockMetadata contains all the abci event data of a block
+// the file streamer dump them into files together with the state changes.
+message BlockMetadata {
+    // DeliverTx encapulate deliver tx request and response.
+    message DeliverTx {
+        tendermint.abci.RequestDeliverTx request = 1;
+        tendermint.abci.ResponseDeliverTx response = 2;
+    }
+    tendermint.abci.RequestBeginBlock request_begin_block = 1;
+    tendermint.abci.ResponseBeginBlock response_begin_block = 2;
+    repeated DeliverTx deliver_txs = 3;
+    tendermint.abci.RequestEndBlock request_end_block = 4;
+    tendermint.abci.ResponseEndBlock response_end_block = 5;
+    tendermint.abci.ResponseCommit response_commit = 6;
+}

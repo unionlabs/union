@@ -1,0 +1,59 @@
+syntax = "proto3";
+package cosmos.mint.v1beta1;
+
+option go_package = "github.com/cosmos/cosmos-sdk/x/mint/types";
+
+import "gogoproto/gogo.proto";
+import "cosmos_proto/cosmos.proto";
+import "amino/amino.proto";
+
+// Minter represents the minting state.
+message Minter {
+  // current annual inflation rate
+  string inflation = 1 [
+    (cosmos_proto.scalar)  = "cosmos.Dec",
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable)   = false
+  ];
+  // current annual expected provisions
+  string annual_provisions = 2 [
+    (cosmos_proto.scalar)  = "cosmos.Dec",
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable)   = false
+  ];
+}
+
+// Params defines the parameters for the x/mint module.
+message Params {
+  option (gogoproto.goproto_stringer) = false;
+  option (amino.name)                 = "cosmos-sdk/x/mint/Params";
+
+  // type of coin to mint
+  string mint_denom = 1;
+  // maximum annual change in inflation rate
+  string inflation_rate_change = 2 [
+    (cosmos_proto.scalar)  = "cosmos.Dec",
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable)   = false
+  ];
+  // maximum inflation rate
+  string inflation_max = 3 [
+    (cosmos_proto.scalar)  = "cosmos.Dec",
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable)   = false
+  ];
+  // minimum inflation rate
+  string inflation_min = 4 [
+    (cosmos_proto.scalar)  = "cosmos.Dec",
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable)   = false
+  ];
+  // goal of percent bonded atoms
+  string goal_bonded = 5 [
+    (cosmos_proto.scalar)  = "cosmos.Dec",
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable)   = false
+  ];
+  // expected blocks per year
+  uint64 blocks_per_year = 6;
+}

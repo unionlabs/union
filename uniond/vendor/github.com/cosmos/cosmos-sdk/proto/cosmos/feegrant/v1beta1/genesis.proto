@@ -1,0 +1,14 @@
+// Since: cosmos-sdk 0.43
+syntax = "proto3";
+package cosmos.feegrant.v1beta1;
+
+import "gogoproto/gogo.proto";
+import "cosmos/feegrant/v1beta1/feegrant.proto";
+import "amino/amino.proto";
+
+option go_package = "github.com/cosmos/cosmos-sdk/x/feegrant";
+
+// GenesisState contains a set of fee allowances, persisted from the store
+message GenesisState {
+  repeated Grant allowances = 1 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+}

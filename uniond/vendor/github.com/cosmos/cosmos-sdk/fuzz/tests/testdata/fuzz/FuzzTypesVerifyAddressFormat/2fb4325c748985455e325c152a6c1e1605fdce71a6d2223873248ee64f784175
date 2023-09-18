@@ -1,0 +1,2 @@
+go test fuzz v1
+[]byte("stal\x1f\x17\xa5e\x0ffile handle")

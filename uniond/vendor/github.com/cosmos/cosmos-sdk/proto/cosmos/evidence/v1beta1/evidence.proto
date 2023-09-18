@@ -1,0 +1,32 @@
+syntax = "proto3";
+package cosmos.evidence.v1beta1;
+
+option go_package            = "github.com/cosmos/cosmos-sdk/x/evidence/types";
+option (gogoproto.equal_all) = true;
+
+import "amino/amino.proto";
+import "gogoproto/gogo.proto";
+import "google/protobuf/timestamp.proto";
+import "cosmos_proto/cosmos.proto";
+
+// Equivocation implements the Evidence interface and defines evidence of double
+// signing misbehavior.
+message Equivocation {
+  option (amino.name)                 = "cosmos-sdk/Equivocation";
+  option (gogoproto.goproto_stringer) = false;
+  option (gogoproto.goproto_getters)  = false;
+  option (gogoproto.equal)            = false;
+
+  // height is the equivocation height.
+  int64                     height = 1;
+
+  // time is the equivocation time.
+  google.protobuf.Timestamp time   = 2
+      [(gogoproto.nullable) = false, (amino.dont_omitempty) = true, (gogoproto.stdtime) = true];
+  
+  // power is the equivocation validator power.
+  int64  power             = 3;
+
+  // consensus_address is the equivocation validator consensus address.
+  string consensus_address = 4 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+}

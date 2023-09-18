@@ -1,0 +1,52 @@
+syntax = "proto3";
+package cosmos.bank.v1beta1;
+
+import "gogoproto/gogo.proto";
+import "cosmos/base/v1beta1/coin.proto";
+import "cosmos/bank/v1beta1/bank.proto";
+import "cosmos_proto/cosmos.proto";
+import "amino/amino.proto";
+
+option go_package = "github.com/cosmos/cosmos-sdk/x/bank/types";
+
+// GenesisState defines the bank module's genesis state.
+message GenesisState {
+  // params defines all the parameters of the module.
+  Params params = 1 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+
+  // balances is an array containing the balances of all the accounts.
+  repeated Balance balances = 2 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+
+  // supply represents the total supply. If it is left empty, then supply will be calculated based on the provided
+  // balances. Otherwise, it will be used to validate that the sum of the balances equals this amount.
+  repeated cosmos.base.v1beta1.Coin supply = 3 [
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins",
+    (gogoproto.nullable)     = false,
+    (amino.dont_omitempty)   = true
+  ];
+
+  // denom_metadata defines the metadata of the different coins.
+  repeated Metadata denom_metadata = 4 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+
+  // send_enabled defines the denoms where send is enabled or disabled.
+  //
+  // Since: cosmos-sdk 0.47
+  repeated SendEnabled send_enabled = 5 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+}
+
+// Balance defines an account address and balance pair used in the bank module's
+// genesis state.
+message Balance {
+  option (gogoproto.equal)           = false;
+  option (gogoproto.goproto_getters) = false;
+
+  // address is the address of the balance holder.
+  string address = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+
+  // coins defines the different coins this balance holds.
+  repeated cosmos.base.v1beta1.Coin coins = 2 [
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins",
+    (gogoproto.nullable)     = false,
+    (amino.dont_omitempty)   = true
+  ];
+}

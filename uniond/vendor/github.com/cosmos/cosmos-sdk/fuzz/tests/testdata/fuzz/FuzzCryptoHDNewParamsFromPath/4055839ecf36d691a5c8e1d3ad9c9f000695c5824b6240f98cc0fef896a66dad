@@ -1,0 +1,2 @@
+go test fuzz v1
+[]byte("\v\v\v\x04كم\x04كى\x04\xd9////")

@@ -1,0 +1,127 @@
+syntax = "proto3";
+
+package cosmos.autocli.v1;
+
+option go_package = "cosmossdk.io/api/cosmos/base/cli/v1;cliv1";
+
+// ModuleOptions describes the CLI options for a Cosmos SDK module.
+message ModuleOptions {
+  // tx describes the tx command for the module.
+  ServiceCommandDescriptor tx = 1;
+
+  // query describes the tx command for the module.
+  ServiceCommandDescriptor query = 2;
+}
+
+// ServiceCommandDescriptor describes a CLI command based on a protobuf service.
+message ServiceCommandDescriptor {
+
+  // service is the fully qualified name of the protobuf service to build
+  // the command from. It can be left empty if sub_commands are used instead
+  // which may be the case if a module provides multiple tx and/or query services.
+  string service = 1;
+
+  // rpc_command_options are options for commands generated from rpc methods.
+  // If no options are specified for a given rpc method on the service, a
+  // command will be generated for that method with the default options.
+  repeated RpcCommandOptions rpc_command_options = 2;
+
+  // sub_commands is a map of optional sub-commands for this command based on
+  // different protobuf services. The map key is used as the name of the
+  // sub-command.
+  map<string, ServiceCommandDescriptor> sub_commands = 3;
+}
+
+// RpcCommandOptions specifies options for commands generated from protobuf
+// rpc methods.
+message RpcCommandOptions {
+  // rpc_method is short name of the protobuf rpc method that this command is
+  // generated from.
+  string rpc_method = 1;
+
+  // use is the one-line usage method. It also allows specifying an alternate
+  // name for the command as the first word of the usage text.
+  //
+  // By default the name of an rpc command is the kebab-case short name of the
+  // rpc method.
+  string use = 2;
+
+  // long is the long message shown in the 'help <this-command>' output.
+  string long = 3;
+
+  // short is the short description shown in the 'help' output.
+  string short = 4;
+
+  // example is examples of how to use the command.
+  string example = 5;
+
+  // alias is an array of aliases that can be used instead of the first word in Use.
+  repeated string alias = 6;
+
+  // suggest_for is an array of command names for which this command will be suggested -
+  // similar to aliases but only suggests.
+  repeated string suggest_for = 7;
+
+  // deprecated defines, if this command is deprecated and should print this string when used.
+  string deprecated = 8;
+
+  // version defines the version for this command. If this value is non-empty and the command does not
+  // define a "version" flag, a "version" boolean flag will be added to the command and, if specified,
+  // will print content of the "Version" variable. A shorthand "v" flag will also be added if the
+  // command does not define one.
+  string version = 9;
+
+  // flag_options are options for flags generated from rpc request fields.
+  // By default all request fields are configured as flags. They can
+  // also be configured as positional args instead using positional_args.
+  map<string, FlagOptions> flag_options = 10;
+
+  // positional_args specifies positional arguments for the command.
+  repeated PositionalArgDescriptor positional_args = 11;
+
+  // skip specifies whether to skip this rpc method when generating commands.
+  bool skip = 12;
+}
+
+// FlagOptions are options for flags generated from rpc request fields.
+// By default, all request fields are configured as flags based on the
+// kebab-case name of the field. Fields can be turned into positional arguments
+// instead by using RpcCommandOptions.positional_args.
+message FlagOptions {
+
+  // name is an alternate name to use for the field flag.
+  string name = 1;
+
+  // shorthand is a one-letter abbreviated flag.
+  string shorthand = 2;
+
+  // usage is the help message.
+  string usage = 3;
+
+  // default_value is the default value as text.
+  string default_value = 4;
+
+  // default value is the default value as text if the flag is used without any value.
+  string no_opt_default_value = 5;
+
+  // deprecated is the usage text to show if this flag is deprecated.
+  string deprecated = 6;
+
+  // shorthand_deprecated is the usage text to show if the shorthand of this flag is deprecated.
+  string shorthand_deprecated = 7;
+
+  // hidden hides the flag from help/usage text
+  bool hidden = 8;
+}
+
+// PositionalArgDescriptor describes a positional argument.
+message PositionalArgDescriptor {
+  // proto_field specifies the proto field to use as the positional arg. Any
+  // fields used as positional args will not have a flag generated.
+  string proto_field = 1;
+
+  // varargs makes a positional parameter a varargs parameter. This can only be
+  // applied to last positional parameter and the proto_field must a repeated
+  // field.
+  bool varargs = 2;
+}

@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package cosmos.autocli.v1;
+
+import "cosmos/autocli/v1/options.proto";
+import "cosmos/query/v1/query.proto";
+
+option go_package = "cosmossdk.io/api/cosmos/base/cli/v1;cliv1";
+
+// RemoteInfoService provides clients with the information they need
+// to build dynamically CLI clients for remote chains.
+service Query {
+  // AppOptions returns the autocli options for all of the modules in an app.
+  rpc AppOptions(AppOptionsRequest) returns (AppOptionsResponse) {
+    // NOTE: autocli options SHOULD NOT be part of consensus and module_query_safe
+    // should be kept as false.
+    option (cosmos.query.v1.module_query_safe) = false;
+  }
+}
+
+// AppOptionsRequest is the RemoteInfoService/AppOptions request type.
+message AppOptionsRequest {}
+
+// AppOptionsResponse is the RemoteInfoService/AppOptions response type.
+message AppOptionsResponse {
+  // module_options is a map of module name to autocli module options.
+  map<string, ModuleOptions> module_options = 1;
+}

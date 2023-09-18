@@ -1,0 +1,66 @@
+syntax = "proto3";
+package cosmos.slashing.v1beta1;
+
+import "cosmos/base/query/v1beta1/pagination.proto";
+import "gogoproto/gogo.proto";
+import "google/api/annotations.proto";
+import "cosmos/slashing/v1beta1/slashing.proto";
+import "cosmos_proto/cosmos.proto";
+import "amino/amino.proto";
+
+option go_package = "github.com/cosmos/cosmos-sdk/x/slashing/types";
+
+// Query provides defines the gRPC querier service
+service Query {
+  // Params queries the parameters of slashing module
+  rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
+    option (google.api.http).get = "/cosmos/slashing/v1beta1/params";
+  }
+
+  // SigningInfo queries the signing info of given cons address
+  rpc SigningInfo(QuerySigningInfoRequest) returns (QuerySigningInfoResponse) {
+    option (google.api.http).get = "/cosmos/slashing/v1beta1/signing_infos/{cons_address}";
+  }
+
+  // SigningInfos queries signing info of all validators
+  rpc SigningInfos(QuerySigningInfosRequest) returns (QuerySigningInfosResponse) {
+    option (google.api.http).get = "/cosmos/slashing/v1beta1/signing_infos";
+  }
+}
+
+// QueryParamsRequest is the request type for the Query/Params RPC method
+message QueryParamsRequest {}
+
+// QueryParamsResponse is the response type for the Query/Params RPC method
+message QueryParamsResponse {
+  Params params = 1 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+}
+
+// QuerySigningInfoRequest is the request type for the Query/SigningInfo RPC
+// method
+message QuerySigningInfoRequest {
+  // cons_address is the address to query signing info of
+  string cons_address = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+}
+
+// QuerySigningInfoResponse is the response type for the Query/SigningInfo RPC
+// method
+message QuerySigningInfoResponse {
+  // val_signing_info is the signing info of requested val cons address
+  ValidatorSigningInfo val_signing_info = 1 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+}
+
+// QuerySigningInfosRequest is the request type for the Query/SigningInfos RPC
+// method
+message QuerySigningInfosRequest {
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+// QuerySigningInfosResponse is the response type for the Query/SigningInfos RPC
+// method
+message QuerySigningInfosResponse {
+  // info is the signing info of all validators
+  repeated cosmos.slashing.v1beta1.ValidatorSigningInfo info = 1
+      [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}

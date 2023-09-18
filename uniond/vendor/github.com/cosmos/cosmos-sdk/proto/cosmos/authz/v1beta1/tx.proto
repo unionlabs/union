@@ -1,0 +1,81 @@
+// Since: cosmos-sdk 0.43
+syntax = "proto3";
+package cosmos.authz.v1beta1;
+
+import "cosmos_proto/cosmos.proto";
+import "gogoproto/gogo.proto";
+import "google/protobuf/any.proto";
+import "cosmos/authz/v1beta1/authz.proto";
+import "cosmos/msg/v1/msg.proto";
+import "amino/amino.proto";
+
+option go_package                      = "github.com/cosmos/cosmos-sdk/x/authz";
+option (gogoproto.goproto_getters_all) = false;
+
+// Msg defines the authz Msg service.
+service Msg {
+  option (cosmos.msg.v1.service) = true;
+
+  // Grant grants the provided authorization to the grantee on the granter's
+  // account with the provided expiration time. If there is already a grant
+  // for the given (granter, grantee, Authorization) triple, then the grant
+  // will be overwritten.
+  rpc Grant(MsgGrant) returns (MsgGrantResponse);
+
+  // Exec attempts to execute the provided messages using
+  // authorizations granted to the grantee. Each message should have only
+  // one signer corresponding to the granter of the authorization.
+  rpc Exec(MsgExec) returns (MsgExecResponse);
+
+  // Revoke revokes any authorization corresponding to the provided method name on the
+  // granter's account that has been granted to the grantee.
+  rpc Revoke(MsgRevoke) returns (MsgRevokeResponse);
+}
+
+// MsgGrant is a request type for Grant method. It declares authorization to the grantee
+// on behalf of the granter with the provided expiration time.
+message MsgGrant {
+  option (cosmos.msg.v1.signer) = "granter";
+  option (amino.name)           = "cosmos-sdk/MsgGrant";
+
+  string granter = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  string grantee = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+
+  cosmos.authz.v1beta1.Grant grant = 3 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+}
+
+// MsgExecResponse defines the Msg/MsgExecResponse response type.
+message MsgExecResponse {
+  repeated bytes results = 1;
+}
+
+// MsgExec attempts to execute the provided messages using
+// authorizations granted to the grantee. Each message should have only
+// one signer corresponding to the granter of the authorization.
+message MsgExec {
+  option (cosmos.msg.v1.signer) = "grantee";
+  option (amino.name)           = "cosmos-sdk/MsgExec";
+
+  string grantee = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  // Execute Msg.
+  // The x/authz will try to find a grant matching (msg.signers[0], grantee, MsgTypeURL(msg))
+  // triple and validate it.
+  repeated google.protobuf.Any msgs = 2 [(cosmos_proto.accepts_interface) = "cosmos.base.v1beta1.Msg"];
+}
+
+// MsgGrantResponse defines the Msg/MsgGrant response type.
+message MsgGrantResponse {}
+
+// MsgRevoke revokes any authorization with the provided sdk.Msg type on the
+// granter's account with that has been granted to the grantee.
+message MsgRevoke {
+  option (cosmos.msg.v1.signer) = "granter";
+  option (amino.name)           = "cosmos-sdk/MsgRevoke";
+
+  string granter      = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  string grantee      = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  string msg_type_url = 3;
+}
+
+// MsgRevokeResponse defines the Msg/MsgRevokeResponse response type.
+message MsgRevokeResponse {}

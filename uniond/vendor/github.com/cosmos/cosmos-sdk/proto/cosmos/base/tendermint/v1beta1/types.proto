@@ -1,0 +1,52 @@
+syntax = "proto3";
+package cosmos.base.tendermint.v1beta1;
+
+import "gogoproto/gogo.proto";
+import "tendermint/types/types.proto";
+import "tendermint/types/evidence.proto";
+import "tendermint/version/types.proto";
+import "google/protobuf/timestamp.proto";
+import "amino/amino.proto";
+
+option go_package = "github.com/cosmos/cosmos-sdk/client/grpc/tmservice";
+
+// Block is tendermint type Block, with the Header proposer address
+// field converted to bech32 string.
+message Block {
+  Header                         header      = 1 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+  .tendermint.types.Data         data        = 2 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+  .tendermint.types.EvidenceList evidence    = 3 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+  .tendermint.types.Commit       last_commit = 4;
+}
+
+// Header defines the structure of a Tendermint block header.
+message Header {
+  // basic block info
+  .tendermint.version.Consensus version  = 1 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+  string                        chain_id = 2 [(gogoproto.customname) = "ChainID"];
+  int64                         height   = 3;
+  google.protobuf.Timestamp     time     = 4
+      [(gogoproto.nullable) = false, (amino.dont_omitempty) = true, (gogoproto.stdtime) = true];
+
+  // prev block info
+  .tendermint.types.BlockID last_block_id = 5 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+
+  // hashes of block data
+  bytes last_commit_hash = 6; // commit from validators from the last block
+  bytes data_hash        = 7; // transactions
+
+  // hashes from the app output from the prev block
+  bytes validators_hash      = 8;  // validators for the current block
+  bytes next_validators_hash = 9;  // validators for the next block
+  bytes consensus_hash       = 10; // consensus params for current block
+  bytes app_hash             = 11; // state after txs from the previous block
+  bytes last_results_hash    = 12; // root hash of all results from the txs from the previous block
+
+  // consensus info
+  bytes evidence_hash = 13; // evidence included in the block
+
+  // proposer_address is the original block proposer address, formatted as a Bech32 string.
+  // In Tendermint, this type is `bytes`, but in the SDK, we convert it to a Bech32 string
+  // for better UX.
+  string proposer_address = 14; // original proposer of the block
+}

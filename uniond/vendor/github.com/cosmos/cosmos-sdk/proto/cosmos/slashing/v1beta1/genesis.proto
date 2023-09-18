@@ -1,0 +1,48 @@
+syntax = "proto3";
+package cosmos.slashing.v1beta1;
+
+option go_package = "github.com/cosmos/cosmos-sdk/x/slashing/types";
+
+import "gogoproto/gogo.proto";
+import "cosmos/slashing/v1beta1/slashing.proto";
+import "cosmos_proto/cosmos.proto";
+import "amino/amino.proto";
+
+// GenesisState defines the slashing module's genesis state.
+message GenesisState {
+  // params defines all the parameters of the module.
+  Params params = 1 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+
+  // signing_infos represents a map between validator addresses and their
+  // signing infos.
+  repeated SigningInfo signing_infos = 2 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+
+  // missed_blocks represents a map between validator addresses and their
+  // missed blocks.
+  repeated ValidatorMissedBlocks missed_blocks = 3 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+}
+
+// SigningInfo stores validator signing info of corresponding address.
+message SigningInfo {
+  // address is the validator address.
+  string address = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  // validator_signing_info represents the signing info of this validator.
+  ValidatorSigningInfo validator_signing_info = 2 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+}
+
+// ValidatorMissedBlocks contains array of missed blocks of corresponding
+// address.
+message ValidatorMissedBlocks {
+  // address is the validator address.
+  string address = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  // missed_blocks is an array of missed blocks by the validator.
+  repeated MissedBlock missed_blocks = 2 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+}
+
+// MissedBlock contains height and missed status as boolean.
+message MissedBlock {
+  // index is the height at which the block was missed.
+  int64 index = 1;
+  // missed is the missed status.
+  bool missed = 2;
+}

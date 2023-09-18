@@ -1,0 +1,15 @@
+syntax = "proto3";
+package cosmos.crisis.v1beta1;
+
+option go_package = "github.com/cosmos/cosmos-sdk/x/crisis/types";
+
+import "gogoproto/gogo.proto";
+import "cosmos/base/v1beta1/coin.proto";
+import "amino/amino.proto";
+
+// GenesisState defines the crisis module's genesis state.
+message GenesisState {
+  // constant_fee is the fee used to verify the invariant in the crisis
+  // module.
+  cosmos.base.v1beta1.Coin constant_fee = 3 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+}

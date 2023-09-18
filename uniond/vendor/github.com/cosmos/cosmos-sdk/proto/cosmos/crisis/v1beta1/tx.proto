@@ -1,0 +1,65 @@
+syntax = "proto3";
+package cosmos.crisis.v1beta1;
+
+option go_package = "github.com/cosmos/cosmos-sdk/x/crisis/types";
+
+import "gogoproto/gogo.proto";
+import "cosmos_proto/cosmos.proto";
+import "cosmos/msg/v1/msg.proto";
+import "amino/amino.proto";
+import "cosmos/base/v1beta1/coin.proto";
+
+// Msg defines the bank Msg service.
+service Msg {
+  option (cosmos.msg.v1.service) = true;
+
+  // VerifyInvariant defines a method to verify a particular invariant.
+  rpc VerifyInvariant(MsgVerifyInvariant) returns (MsgVerifyInvariantResponse);
+
+  // UpdateParams defines a governance operation for updating the x/crisis module
+  // parameters. The authority is defined in the keeper.
+  //
+  // Since: cosmos-sdk 0.47
+  rpc UpdateParams(MsgUpdateParams) returns (MsgUpdateParamsResponse);
+}
+
+// MsgVerifyInvariant represents a message to verify a particular invariance.
+message MsgVerifyInvariant {
+  option (cosmos.msg.v1.signer) = "sender";
+  option (amino.name)           = "cosmos-sdk/MsgVerifyInvariant";
+
+  option (gogoproto.equal)           = false;
+  option (gogoproto.goproto_getters) = false;
+
+  // sender is the account address of private key to send coins to fee collector account.
+  string sender = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+
+  // name of the invariant module.
+  string invariant_module_name = 2;
+
+  // invariant_route is the msg's invariant route.
+  string invariant_route = 3;
+}
+
+// MsgVerifyInvariantResponse defines the Msg/VerifyInvariant response type.
+message MsgVerifyInvariantResponse {}
+
+// MsgUpdateParams is the Msg/UpdateParams request type.
+//
+// Since: cosmos-sdk 0.47
+message MsgUpdateParams {
+  option (cosmos.msg.v1.signer) = "authority";
+  option (amino.name)           = "cosmos-sdk/x/crisis/MsgUpdateParams";
+
+  // authority is the address that controls the module (defaults to x/gov unless overwritten).
+  string authority = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+
+  // constant_fee defines the x/crisis parameter.
+  cosmos.base.v1beta1.Coin constant_fee = 2 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+}
+
+// MsgUpdateParamsResponse defines the response structure for executing a
+// MsgUpdateParams message.
+//
+// Since: cosmos-sdk 0.47
+message MsgUpdateParamsResponse {}

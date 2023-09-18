@@ -1,0 +1,138 @@
+syntax = "proto3";
+package cosmos.gov.v1beta1;
+
+import "cosmos/base/v1beta1/coin.proto";
+import "cosmos/gov/v1beta1/gov.proto";
+import "cosmos_proto/cosmos.proto";
+import "gogoproto/gogo.proto";
+import "google/protobuf/any.proto";
+import "cosmos/msg/v1/msg.proto";
+import "amino/amino.proto";
+
+option go_package = "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1";
+
+// Msg defines the bank Msg service.
+service Msg {
+  option (cosmos.msg.v1.service) = true;
+
+  // SubmitProposal defines a method to create new proposal given a content.
+  rpc SubmitProposal(MsgSubmitProposal) returns (MsgSubmitProposalResponse);
+
+  // Vote defines a method to add a vote on a specific proposal.
+  rpc Vote(MsgVote) returns (MsgVoteResponse);
+
+  // VoteWeighted defines a method to add a weighted vote on a specific proposal.
+  //
+  // Since: cosmos-sdk 0.43
+  rpc VoteWeighted(MsgVoteWeighted) returns (MsgVoteWeightedResponse);
+
+  // Deposit defines a method to add deposit on a specific proposal.
+  rpc Deposit(MsgDeposit) returns (MsgDepositResponse);
+}
+
+// MsgSubmitProposal defines an sdk.Msg type that supports submitting arbitrary
+// proposal Content.
+message MsgSubmitProposal {
+  option (cosmos.msg.v1.signer) = "proposer";
+  option (amino.name)           = "cosmos-sdk/MsgSubmitProposal";
+
+  option (gogoproto.equal)            = false;
+  option (gogoproto.goproto_stringer) = false;
+  option (gogoproto.stringer)         = false;
+  option (gogoproto.goproto_getters)  = false;
+
+  // content is the proposal's content.
+  google.protobuf.Any content = 1 [(cosmos_proto.accepts_interface) = "cosmos.gov.v1beta1.Content"];
+  // initial_deposit is the deposit value that must be paid at proposal submission.
+  repeated cosmos.base.v1beta1.Coin initial_deposit = 2 [
+    (gogoproto.nullable)     = false,
+    (amino.dont_omitempty)   = true,
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"
+  ];
+
+  // proposer is the account address of the proposer.
+  string proposer = 3 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+}
+
+// MsgSubmitProposalResponse defines the Msg/SubmitProposal response type.
+message MsgSubmitProposalResponse {
+  // proposal_id defines the unique id of the proposal.
+  uint64 proposal_id = 1 [(gogoproto.jsontag) = "proposal_id", (amino.dont_omitempty) = true];
+}
+
+// MsgVote defines a message to cast a vote.
+message MsgVote {
+  option (cosmos.msg.v1.signer) = "voter";
+  option (amino.name)           = "cosmos-sdk/MsgVote";
+
+  option (gogoproto.equal)            = false;
+  option (gogoproto.goproto_stringer) = false;
+  option (gogoproto.stringer)         = false;
+  option (gogoproto.goproto_getters)  = false;
+
+  // proposal_id defines the unique id of the proposal.
+  uint64     proposal_id = 1;
+
+  // voter is the voter address for the proposal.
+  string     voter       = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  
+  // option defines the vote option.
+  VoteOption option      = 3;
+}
+
+// MsgVoteResponse defines the Msg/Vote response type.
+message MsgVoteResponse {}
+
+// MsgVoteWeighted defines a message to cast a vote.
+//
+// Since: cosmos-sdk 0.43
+message MsgVoteWeighted {
+  option (cosmos.msg.v1.signer) = "voter";
+  option (amino.name)           = "cosmos-sdk/MsgVoteWeighted";
+
+  option (gogoproto.equal)            = false;
+  option (gogoproto.goproto_stringer) = false;
+  option (gogoproto.stringer)         = false;
+  option (gogoproto.goproto_getters)  = false;
+
+  // proposal_id defines the unique id of the proposal.
+  uint64                      proposal_id = 1 [(gogoproto.jsontag) = "proposal_id", (amino.dont_omitempty) = true];
+
+  // voter is the voter address for the proposal.
+  string                      voter       = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  
+  // options defines the weighted vote options. 
+  repeated WeightedVoteOption options     = 3 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+}
+
+// MsgVoteWeightedResponse defines the Msg/VoteWeighted response type.
+//
+// Since: cosmos-sdk 0.43
+message MsgVoteWeightedResponse {}
+
+// MsgDeposit defines a message to submit a deposit to an existing proposal.
+message MsgDeposit {
+  option (cosmos.msg.v1.signer) = "depositor";
+  option (amino.name)           = "cosmos-sdk/MsgDeposit";
+
+  option (gogoproto.equal)            = false;
+  option (gogoproto.goproto_stringer) = false;
+  option (gogoproto.stringer)         = false;
+  option (gogoproto.goproto_getters)  = false;
+
+  // proposal_id defines the unique id of the proposal.
+  uint64   proposal_id                     = 1 [(gogoproto.jsontag) = "proposal_id", (amino.dont_omitempty) = true];
+  
+  // depositor defines the deposit addresses from the proposals.
+  string   depositor                       = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  
+  // amount to be deposited by depositor.
+  repeated cosmos.base.v1beta1.Coin amount = 3 [
+    (gogoproto.nullable)     = false,
+    (amino.dont_omitempty)   = true,
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"
+  ];
+}
+
+// MsgDepositResponse defines the Msg/Deposit response type.
+message MsgDepositResponse {}

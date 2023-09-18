@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package cosmos.staking.module.v1;
+
+import "cosmos/app/v1alpha1/module.proto";
+
+// Module is the config object of the staking module.
+message Module {
+  option (cosmos.app.v1alpha1.module) = {
+    go_import: "github.com/cosmos/cosmos-sdk/x/staking"
+  };
+
+  // hooks_order specifies the order of staking hooks and should be a list
+  // of module names which provide a staking hooks instance. If no order is
+  // provided, then hooks will be applied in alphabetical order of module names.
+  repeated string hooks_order = 1;
+
+  // authority defines the custom module authority. If not set, defaults to the governance module.
+  string authority = 2;
+}

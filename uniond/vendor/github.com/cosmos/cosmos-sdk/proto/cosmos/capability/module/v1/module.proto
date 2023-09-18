@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package cosmos.capability.module.v1;
+
+import "cosmos/app/v1alpha1/module.proto";
+
+// Module is the config object of the capability module.
+message Module {
+  option (cosmos.app.v1alpha1.module) = {
+    go_import: "github.com/cosmos/cosmos-sdk/x/capability"
+  };
+
+  // seal_keeper defines if keeper.Seal() will run on BeginBlock() to prevent further modules from creating a scoped
+  // keeper. For more details check x/capability/keeper.go.
+  bool seal_keeper = 1;
+}

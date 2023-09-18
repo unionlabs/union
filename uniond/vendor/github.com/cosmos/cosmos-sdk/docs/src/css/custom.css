@@ -1,0 +1,514 @@
+/*
+  Slighlty modified version of https://github.com/ignite/cli/blob/develop/docs/src/css/custom.css
+*/
+
+@import "tailwindcss/base";
+@import "./fonts.css";
+@import "./base.css";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
+
+/* You can override the default Infima variables here. */
+:root {
+  --ifm-color-primary: #5064fb;
+  --ifm-color-primary-dark: theme(colors.gray.1000);
+  --ifm-color-primary-darker: theme(colors.gray.1000);
+  --ifm-color-primary-darkest: theme(colors.gray.1000);
+  --ifm-color-primary-light: theme(colors.gray.1000);
+  --ifm-color-primary-lighter: theme(colors.gray.1000);
+  --ifm-color-primary-lightest: theme(colors.gray.1000);
+  --ifm-code-font-size: 95%;
+  --ifm-breadcrumb-item-background-active: transparent;
+  --ifm-breadcrumb-padding-horizontal: 0;
+  --ifm-list-paragraph-margin: 0;
+  --ifm-spacing-horizontal: theme(spacing.7);
+  --ifm-blockquote-border-color: theme(colors.gray.1000);
+  --ifm-menu-link-padding-vertical: 0.6rem;
+  --ifm-background-color: theme(colors.gray.0);
+  --ifm-footer-link-color: var(--ifm-font-color-base);
+  --ifm-menu-link-sublist-icon: url("~/img/ico-chevron.svg");
+  --docsearch-searchbox-background: #f7f7f7;
+  --docsearch-modal-background: theme(colors.card) !important;
+  --ifm-navbar-height: 5.563rem;
+  --ifm-navbar-sidebar-width: 100vw;
+  --docsearch-highlight-color: theme(colors.fg) !important;
+  --docsearch-searchbox-shadow: inset 0 0 0 1px var(--docsearch-primary-color);
+
+  /* temp: local search bar */
+  --aa-primary-color-rgb: 0, 0, 0;
+
+  @media screen and (prefers-reduced-motion) {
+    transition: ;
+  }
+  --ifm-menu-color-background-active: none;
+  --ifm-menu-color-background-hover: none;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
+}
+
+/* For readability concerns, you should choose a lighter palette in dark mode. */
+html[data-theme="dark"] {
+  --ifm-color-primary: theme(colors.gray.0);
+  --ifm-color-primary-dark: #e6e6e6;
+  --ifm-color-primary-darker: #d9d9d9;
+  --ifm-color-primary-darkest: #b3b3b3;
+  --ifm-color-primary-light: theme(colors.gray.0);
+  --ifm-color-primary-lighter: theme(colors.gray.0);
+  --ifm-color-primary-lightest: theme(colors.gray.0);
+  --ifm-background-color: theme(colors.gray.1000);
+  --docusaurus-highlighted-code-line-bg: theme(colors.inactive);
+  --docsearch-modal-background: theme(colors.gray.1000) !important;
+  --docsearch-highlight-color: theme(colors.inactiveLight) !important;
+  --docsearch-hit-background: theme(colors.lightfg) !important;
+  --docsearch-searchbox-shadow: inset 0 0 0 1px var(--docsearch-primary-color);
+  --docsearch-key-gradient: linear-gradient(
+    -26.5deg,
+    #5d5d5d,
+    #3c3c3c
+  ) !important;
+  --docsearch-key-shadow: inset 0 -2px 0 0 #353535, inset 0 0 1px 1px #7a7a7b,
+    0 2px 2px 0 rgba(45, 45, 45, 0.3) !important;
+}
+
+html {
+  @apply bg-docusaurusBgColor;
+  /* Banner */
+
+  #__docusaurus > div[role="banner"] {
+    @apply bg-gray-30 text-gray-1000 font-normal;
+    a {
+      @apply no-underline w-full text-2;
+    }
+  }
+
+  /* MAINNAV */
+  .navbar {
+    @apply py-2 h-auto border-b border-b-docusaurusColorBorder shadow-none bg-docusaurusBgColor;
+    &__toggle {
+      @apply bg-card rounded-s h-8 w-8 flex justify-center items-center;
+      @media (min-width: 997px) {
+        @apply hidden;
+      }
+    }
+    &__brand {
+      & + * {
+        @apply ml-auto;
+      }
+    }
+    &__link--active {
+      @apply text-muted;
+    }
+    &__items:not(:last-child) {
+      @apply justify-between;
+      @media (min-width: 997px) {
+        @apply justify-start px-3;
+      }
+      button {
+        @apply order-2 mr-0;
+      }
+    }
+    &__items--right > :last-child {
+      @apply right-8.5;
+    }
+  }
+  &[data-theme="dark"] .navbar__item {
+    @apply text-mutedLight;
+  }
+  &[data-theme="dark"] .navbar__toggle {
+    @apply bg-fg;
+  }
+
+  .github-icon {
+    @apply hover:opacity-50;
+  }
+
+  /* SEARCHBAR */
+  /* algolia */
+  .DocSearch {
+    &-Hits mark {
+      @apply text-docusaurusColorBase;
+    }
+    &-Button {
+      @apply text-inactive rounded-sm h-8 w-8 bg-card justify-center mr-3;
+      @media (min-width: 997px) {
+        @apply w-auto justify-between;
+      }
+      .DocSearch-Search-Icon {
+        @apply text-docusaurusColorBase;
+      }
+      .DocSearch-Button-Keys {
+        @apply hidden;
+      }
+      .DocSearch-Button-Placeholder {
+        @apply pr-10;
+      }
+    }
+
+    &-Logo path {
+      @apply fill-docusaurusColorBase;
+    }
+  }
+
+  .navbar-sidebar {
+    @apply w-full;
+    &__brand {
+      @apply px-6 h-auto;
+    }
+    &__item {
+      @apply px-6 w-full;
+    }
+    &__back {
+      @apply px-0 hidden;
+    }
+    &__close {
+      @apply bg-gray-1000 rounded-s h-8 w-8 flex justify-center items-center ml-0;
+      & > svg > g {
+        @apply stroke-gray-0;
+      }
+    }
+  }
+  &[data-theme="dark"] .navbar-sidebar {
+    @apply bg-gray-1000;
+    &__brand {
+      @apply shadow-none relative;
+      &::after {
+        content: "";
+        @apply absolute block h-px  bg-linkHover bottom-0 right-3 left-0 mx-6;
+      }
+    }
+    &__close {
+      @apply bg-gray-0;
+      & > svg > g {
+        @apply stroke-gray-1000;
+      }
+    }
+  }
+  &[data-theme="dark"] .DocSearch-Modal {
+    @apply bg-gray-1000;
+  }
+  &[data-theme="dark"] .DocSearch-Footer {
+    @apply bg-gray-1000;
+  }
+  &[data-theme="dark"] .DocSearch-Button {
+    @apply bg-fg text-inactiveLight;
+  }
+  &[data-theme="dark"] .DocSearch-Button-Key {
+    @apply text-inactiveLight border-inactiveLight;
+  }
+
+  /* BREADCRUMBS */
+  .breadcrumbs__item {
+    &:first-child {
+      & > a {
+        &::after {
+          content: "Docs";
+        }
+        & > svg {
+          @apply hidden;
+        }
+      }
+    }
+    &:not(:last-child)::after {
+      content: ">";
+      @apply bg-none;
+    }
+  }
+  .theme-doc-breadcrumbs {
+    @media (min-width: 997px) {
+      @apply pt-[calc(theme(spacing.7)-1rem)];
+    }
+  }
+  .theme-doc-toc-mobile {
+    @apply bg-card px-6 py-5.5 pb-0 rounded;
+    & > button {
+      @apply p-0 pb-5.5 flex justify-between;
+      &::after {
+        @apply order-last ml-5;
+        background-image: var(--ifm-menu-link-sublist-icon);
+        background-size: 70%;
+      }
+    }
+    & ul li {
+      @apply my-5 mx-0;
+    }
+  }
+  &[data-theme="dark"] .theme-doc-toc-mobile {
+    @apply bg-fg;
+  }
+
+  /* SIDEBAR */
+  .theme-doc-sidebar-container {
+    @media (min-width: 997px) {
+      @apply ml-4 border-r border-r-docusaurusColorBorder;
+    }
+    & > div:first-child > a {
+      @apply m-0;
+    }
+  }
+
+  &[data-theme="dark"] .theme-doc-sidebar-menu .menu__list::before {
+    @apply bg-inactiveLight;
+  }
+  .theme-doc-sidebar-menu {
+    @apply font-normal;
+
+    .menu__list {
+      @apply relative pl-0;
+      &::before {
+        content: "";
+        @apply absolute block left-3 top-0 h-full w-[2px] bg-border;
+      }
+      ul::before {
+        @apply hidden;
+      }
+    }
+
+    .menu__link {
+      @apply pl-0 pr-5;
+      &--active:not(.menu__link--sublist) {
+        @apply text-docusaurusColorBase font-medium;
+      }
+    }
+
+    li li {
+      @apply pl-7;
+      .menu__link--active:not(.menu__link--sublist) {
+        @apply relative text-docusaurusColorBase font-medium;
+        &::before {
+          content: "";
+          @apply absolute block left-0 top-0 h-full w-[2px] bg-docusaurusColorBase;
+          @apply -left-[calc(theme(space.7)-theme(space.3))];
+        }
+      }
+    }
+    li li li {
+      @apply pl-5;
+    }
+    li li li .menu__link--active:not(.menu__link--sublist)::before {
+      @apply -left-[calc(theme(space.5)*1+theme(space.7)-theme(space.3))];
+    }
+    li li li li .menu__link--active:not(.menu__link--sublist)::before {
+      @apply -left-[calc(theme(space.5)*2+theme(space.7)-theme(space.3))];
+    }
+    li li li li li .menu__link--active:not(.menu__link--sublist)::before {
+      @apply -left-[calc(theme(space.5)*3+theme(space.7)-theme(space.3))];
+    }
+    li li li li li li .menu__link--active:not(.menu__link--sublist)::before {
+      @apply -left-[calc(theme(space.5)*4+theme(space.7)-theme(space.3))];
+    }
+    li li li li li li li .menu__link--active:not(.menu__link--sublist)::before {
+      @apply -left-[calc(theme(space.5)*5+theme(space.7)-theme(space.3))];
+    }
+  }
+
+  &[data-theme="dark"] .menu__link {
+    @apply text-mutedLight;
+  }
+  .theme-doc-sidebar-item-link .menu__link[target="_blank"] {
+    &::after {
+      content: "\2197";
+      @apply ml-1;
+    }
+  }
+  .menu__link {
+    @apply text-muted;
+    &:hover {
+      text-shadow: 0.1px 0.1px 0 var(--ifm-font-color-base),
+        -0.1px -0.1px 0 var(--ifm-font-color-base),
+        0.1px -0.1px 0 var(--ifm-font-color-base),
+        -0.1px 0.1px 0 var(--ifm-font-color-base),
+        -0.1px 0 0 var(--ifm-font-color-base),
+        0.1px 0 0 var(--ifm-font-color-base),
+        0 0.1px 0 var(--ifm-font-color-base),
+        0 -0.1px 0 var(--ifm-font-color-base);
+      @apply text-docusaurusColorBase;
+    }
+
+    & > svg {
+      @apply hidden;
+    }
+  }
+
+  .menu__link--sublist-caret {
+    @apply flex;
+    &::after {
+      background-size: 16px;
+      background-repeat: no-repeat;
+      @apply order-first ml-0 mr-4;
+    }
+  }
+  .menu__list-item--collapsed .menu__link--sublist:after,
+  .menu__list-item--collapsed .menu__caret:before {
+    transform: rotateZ(0);
+  }
+  .menu__caret,
+  li li .menu__link--sublist-caret::after {
+    @apply hidden;
+  }
+
+  /* TOC */
+  .table-of-contents__link:hover,
+  .table-of-contents__link--active {
+    text-shadow: 0.1px 0.1px 0 var(--ifm-font-color-base),
+      -0.1px -0.1px 0 var(--ifm-font-color-base),
+      0.1px -0.1px 0 var(--ifm-font-color-base),
+      -0.1px 0.1px 0 var(--ifm-font-color-base),
+      -0.1px 0 0 var(--ifm-font-color-base),
+      0.1px 0 0 var(--ifm-font-color-base), 0 0.1px 0 var(--ifm-font-color-base),
+      0 -0.1px 0 var(--ifm-font-color-base);
+  }
+
+  /* RELATED ARTICLES */
+  &[data-theme="dark"] .pagination-nav > a {
+    @apply bg-fg;
+  }
+  .pagination-nav {
+    @apply pb-7 mt-9;
+    & > a {
+      box-shadow: 0px 0px 80px rgba(0, 0, 0, 0.07);
+      @apply border-transparent rounded pb-8.5 col-span-2 pt-6 px-6 hover:shadow-none;
+
+      @media (min-width: 997px) {
+        @apply col-span-1;
+      }
+    }
+
+    .pagination-nav {
+      &__link--next {
+        @apply text-left;
+        @media (min-width: 997px) {
+          @apply text-right;
+        }
+      }
+      &__sublabel {
+        @apply mb-3.5 text-gray-1000 dark:text-docusaurusColorBase text-3;
+      }
+      &__label {
+        @apply text-4 font-semibold;
+      }
+    }
+  }
+
+  /* FOOTER */
+  .footer {
+    background-color: var(--ifm-background-color);
+    @apply border-t border-t-docusaurusColorBorder pt-10 mb-10;
+    &__link-item {
+      @apply hover:underline;
+    }
+    &__bottom {
+      margin: 0 calc(var(--ifm-spacing-horizontal) * -1);
+    }
+    &__copyright {
+      @apply text-center mt-9 text-2;
+    }
+  }
+  .footer__col:not(:first-child) {
+    @apply basis-1/2;
+    @media (min-width: 997px) {
+      @apply basis-0;
+    }
+  }
+  .footer__col:first-child .footer__title {
+    @apply hidden;
+  }
+  .footer__link-item {
+    & > svg {
+      @apply hidden;
+    }
+  }
+
+  .theme-back-to-top-button {
+    @apply rotate-180;
+    &::after {
+      @apply w-1/2;
+    }
+  }
+
+  /* MARKDOWN */
+  .theme-code-block {
+    @apply font-jetbrain mt-3;
+  }
+
+  .markdown {
+    --ifm-heading-vertical-rhythm-bottom: 1;
+    --ifm-h1-vertical-rhythm-bottom: 1;
+  }
+  .theme-doc-markdown {
+    @apply mt-7 pb-8 border-b border-b-border;
+
+    h1 {
+      @apply text-7 font-bold leading-10 tracking-tight;
+    }
+    h2 {
+      @apply text-6 font-bold leading-9 tracking-tight;
+    }
+    h3 {
+      @apply text-4 font-semibold leading-8 tracking-tight;
+    }
+    h4 {
+      @apply text-3 font-semibold leading-7 tracking-tight;
+    }
+    h5 {
+      @apply text-3 font-semibold leading-6 tracking-wide;
+    }
+    p {
+      @apply leading-relaxed;
+    }
+    p,
+    ul,
+    ol,
+    blockquote {
+      @apply text-[1rem];
+    }
+    code {
+      @apply border-0 px-3;
+    }
+    blockquote {
+      @apply my-7;
+    }
+    a {
+      @apply no-underline hover:underline;
+      color: var(--ifm-color-primary);
+    }
+    ol,
+    ul {
+      @apply my-6;
+    }
+    ul li {
+      @apply relative pl-6 mb-4 before:absolute before:block before:w-[4px] before:h-[4px] before:bg-current before:left-0 before:top-[calc(1em/2)];
+    }
+    ul li li {
+      @apply last:mb-6 before:border before:border-current before:bg-transparent;
+    }
+    li:last-child li {
+      @apply last:mb-0;
+    }
+    ol {
+      list-style-type: none;
+      counter-reset: item;
+      & > li {
+        @apply relative pl-8 mb-5.5;
+        &::before {
+          counter-increment: item;
+          content: counters(item, ".", decimal-leading-zero) ".";
+          @apply absolute flex left-0 top-[.2rem] text-3 font-semibold tracking-tight;
+        }
+      }
+    }
+    ol ol {
+      counter-reset: subitem;
+      & > li {
+        &::before {
+          counter-increment: subitem;
+          content: counters(subitem, ".", decimal-leading-zero) ".";
+        }
+      }
+    }
+    li {
+      & > ul,
+      & > ol {
+        @apply my-5;
+      }
+    }
+  }
+}

@@ -1,0 +1,64 @@
+/*
+
+   FONT FAMILY GROUPS
+
+*/
+
+/*
+  Copied from https://github.com/ignite/cli/blob/develop/docs/src/css/fonts.css
+*/
+
+/* Inter */
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("~/static/fonts/inter/Inter-Regular.woff2?v=3.19") format("woff2"),
+    url("~/static/fonts/inter/Inter-Regular.woff?v=3.19") format("woff");
+}
+
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("~/static/fonts/inter/Inter-Medium.woff2?v=3.19") format("woff2"),
+    url("~/static/fonts/inter/Inter-Medium.woff?v=3.19") format("woff");
+}
+
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("~/static/fonts/inter/Inter-Bold.woff2?v=3.19") format("woff2"),
+    url("~/static/fonts/inter/Inter-Bold.woff?v=3.19") format("woff");
+}
+
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 900;
+  font-display: swap;
+  src: url("~/static/fonts/inter/Inter-Black.woff2?v=3.19") format("woff2"),
+    url("~/static/fonts/inter/Inter-Black.woff?v=3.19") format("woff");
+}
+
+/* Inter var */
+@font-face {
+  font-family: "Inter var";
+  font-weight: 100 900;
+  font-display: swap;
+  font-style: oblique 0deg 10deg;
+  src: url("~/static/fonts/intervar/Inter.var.woff2?v=3.19") format("woff2");
+}
+
+/* JetBrains Mono */
+@font-face {
+  font-family: "JetBrains Mono";
+  font-weight: normal;
+  font-style: normal;
+  src: url("~/static/fonts/jetbrainsmono/JetBrainsMono-Regular.woff2")
+    format("woff2");
+}

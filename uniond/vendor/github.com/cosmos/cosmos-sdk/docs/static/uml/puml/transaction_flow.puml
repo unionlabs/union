@@ -1,0 +1,20 @@
+@startuml
+'https://plantuml.com/sequence-diagram
+
+actor User
+User -> baseApp : Transaction Type<Tx>
+baseApp -> router : Route(ctx, msgRoute)
+router --> baseApp : handler
+baseApp -> handler: Msg<Tx>(Context, Msg(...))
+handler -> msgServer : <Tx>(Context, Msg)
+alt addresses invalid, denominations wrong, etc.
+msgServer --> handler : error
+end
+msgServer -> keeper : perform action, update context
+keeper --> msgServer : results, error code
+msgServer -> Context.EventManager : Emit relevant events
+msgServer -> msgServer : maybe wrap results in more structure
+msgServer --> handler : result, error code
+baseApp <-- handler : results, error code
+
+@enduml

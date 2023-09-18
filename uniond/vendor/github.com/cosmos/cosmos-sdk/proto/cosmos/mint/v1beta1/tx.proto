@@ -1,0 +1,43 @@
+syntax = "proto3";
+package cosmos.mint.v1beta1;
+
+option go_package = "github.com/cosmos/cosmos-sdk/x/mint/types";
+
+import "cosmos/msg/v1/msg.proto";
+import "amino/amino.proto";
+import "cosmos/mint/v1beta1/mint.proto";
+import "gogoproto/gogo.proto";
+import "cosmos_proto/cosmos.proto";
+
+// Msg defines the x/mint Msg service.
+service Msg {
+  option (cosmos.msg.v1.service) = true;
+
+  // UpdateParams defines a governance operation for updating the x/mint module
+  // parameters. The authority is defaults to the x/gov module account.
+  //
+  // Since: cosmos-sdk 0.47
+  rpc UpdateParams(MsgUpdateParams) returns (MsgUpdateParamsResponse);
+}
+
+// MsgUpdateParams is the Msg/UpdateParams request type.
+//
+// Since: cosmos-sdk 0.47
+message MsgUpdateParams {
+  option (cosmos.msg.v1.signer) = "authority";
+  option (amino.name)           = "cosmos-sdk/x/mint/MsgUpdateParams";
+
+  // authority is the address that controls the module (defaults to x/gov unless overwritten).
+  string authority = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+
+  // params defines the x/mint parameters to update.
+  //
+  // NOTE: All parameters must be supplied.
+  Params params = 2 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+}
+
+// MsgUpdateParamsResponse defines the response structure for executing a
+// MsgUpdateParams message.
+//
+// Since: cosmos-sdk 0.47
+message MsgUpdateParamsResponse {}
