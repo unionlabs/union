@@ -382,6 +382,7 @@ github.com/cosmos/cosmos-sdk/client/grpc/tmservice
 github.com/cosmos/cosmos-sdk/client/input
 github.com/cosmos/cosmos-sdk/client/keys
 github.com/cosmos/cosmos-sdk/client/rpc
+github.com/cosmos/cosmos-sdk/client/snapshot
 github.com/cosmos/cosmos-sdk/client/tx
 github.com/cosmos/cosmos-sdk/codec
 github.com/cosmos/cosmos-sdk/codec/legacy
