@@ -72,11 +72,11 @@ protect_breaking_commits = true
 # filter out the commits that are not matched by commit parsers
 filter_commits = false
 # glob pattern for matching git tags
-tag_pattern = "v[0-9]\\.[0-9]\\.[0-9]"
+tag_pattern = "v[0-9]*\\.[0-9]*\\.[0-9]*"
 # regex for skipping tags
 skip_tags = ""
 # regex for ignoring tags
-ignore_tags = "v[0-9]\\.[0-9]\\.[0-9]-rc[0-9]"
+ignore_tags = "v[0-9]*\\.[0-9]*\\.[0-9]*-rc[0-9]*"
 # sort the tags chronologically
 date_order = true
 # sort the commits inside sections by oldest/newest order
