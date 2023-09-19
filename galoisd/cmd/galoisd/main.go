@@ -10,6 +10,7 @@ func main() {
 	rootCmd.AddCommand(cmd.ServeCmd())
 	rootCmd.AddCommand(cmd.GenContract())
 	rootCmd.AddCommand(cmd.ExampleProveCmd())
+	rootCmd.AddCommand(cmd.ExampleProve16Cmd())
 	rootCmd.AddCommand(cmd.ExampleVerifyCmd())
 	rootCmd.AddCommand(cmd.QueryStats())
 	rootCmd.Execute()
