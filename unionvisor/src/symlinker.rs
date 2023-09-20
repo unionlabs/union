@@ -3,7 +3,7 @@ use std::{ffi::OsString, fs, io, path::PathBuf};
 use thiserror::Error;
 use tracing::debug;
 
-use crate::bundle::{Bundle, UnvalidatedVersionPath, ValidVersionPath};
+use crate::bundle::{Bundle, UnvalidatedVersionPath, ValidVersionPath, ValidateVersionPathError};
 
 /// Symlinker maintains a symlink `root/current` to a binary at a [`Bundle`]'s [`ValidVersionPath`]
 #[derive(Clone)]
@@ -75,25 +75,32 @@ impl Symlinker {
     }
 
     /// Returns a [`ValidVersionPath`] if teh `current` symlink is valid.
-    pub fn current_validated(&self) -> Result<ValidVersionPath> {
+    pub fn current_validated(&self) -> Result<ValidVersionPath, ValidateVersionPathError> {
         UnvalidatedVersionPath::new(self.current_path()).validate()
     }
 
     /// Reads the `root/current` link and determines the binary version based on the path.
-    pub fn current_version(&self) -> Result<OsString> {
-        let mut actual =
-            fs::read_link(self.current_path()).map_err(|_| eyre!("Invalid `current` link"))?;
+    pub fn current_version(&self) -> Result<OsString, CurrentVersionError> {
+        use CurrentVersionError::*;
+        let version_in_bundle = fs::read_link(self.current_path()).map_err(ReadLink)?;
+        let mut actual = version_in_bundle.clone();
 
         actual.pop(); // pop meta.binary_name (such as `uniond`) from the path
         let version = actual.file_name();
 
         match version {
-            None => Err(eyre!(
-                "Invalid bundle structure: binary parent directory is not a version"
-            )),
+            None => Err(InvalidBundleStructure(version_in_bundle)),
             Some(v) => Ok(v.to_os_string()),
         }
     }
+}
+
+#[derive(Debug, Error)]
+enum CurrentVersionError {
+    #[error("cannot read current link")]
+    ReadLink(#[source] io::Error),
+    #[error("invalid bundle structure: binary parent directory is not a version {0}")]
+    InvalidBundleStructure(PathBuf),
 }
 
 #[cfg(test)]
