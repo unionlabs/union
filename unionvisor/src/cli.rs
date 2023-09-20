@@ -12,7 +12,12 @@ use tracing::{debug, field::display as as_display};
 use tracing_subscriber::filter::LevelFilter;
 
 use crate::{
-    bundle::Bundle, init, logging::LogFormat, network::Network, supervisor, symlinker::Symlinker,
+    bundle::{Bundle, NewBundleError},
+    init::{self, DownloadGenesisError, SetSeedsError},
+    logging::LogFormat,
+    network::Network,
+    supervisor::{self, RuntimeError},
+    symlinker::Symlinker,
 };
 
 #[derive(Parser, Clone)]
@@ -169,7 +174,7 @@ impl MergeCmd {
         self.merge_to_string(&input)
     }
 
-    fn merge(&self) -> Result<()> {
+    fn merge(&self) -> Result<(), MergError> {
         let output = self.merge_from_reader_or_file(std::io::stdin().lock())?;
         write_to_file(&self.file, &output)?;
         Ok(())
@@ -227,7 +232,8 @@ pub enum InitState {
 }
 
 impl InitCmd {
-    fn init(&self, root: impl Into<PathBuf>) -> Result<InitState> {
+    fn init(&self, root: impl Into<PathBuf>) -> Result<InitState, InitError> {
+        use InitError::*;
         let root = root.into();
         let home = root.join("home");
 
@@ -242,7 +248,7 @@ impl InitCmd {
             if self.allow_dirty {
                 return Ok(InitState::None);
             }
-            bail!("{} already exists, refusing to override", home.display())
+            return Err(HomeExistsAndDirtyIsNotAllowed(home));
         }
 
         let init = CallCmd {
@@ -264,8 +270,18 @@ impl InitCmd {
     }
 }
 
+#[derive(Debug, Error)]
+pub enum InitError {
+    #[error("home {0} already exists, refusing to override")]
+    HomeExistsAndDirtyIsNotAllowed(PathBuf),
+    #[error("download genesis error")]
+    DownloadGenesis(#[from] DownloadGenesisError),
+    #[error("set seeds error")]
+    SetSeeds(#[from] SetSeedsError),
+}
+
 impl RunCmd {
-    fn run(&self, root: impl Into<PathBuf>, logformat: LogFormat) -> Result<()> {
+    fn run(&self, root: impl Into<PathBuf>, logformat: LogFormat) -> Result<(), RunError> {
         let root = root.into();
         let bundle = Bundle::new(self.bundle.clone())?;
         let symlinker = Symlinker::new(root.clone(), bundle);
@@ -278,6 +294,14 @@ impl RunCmd {
         )?;
         Ok(())
     }
+}
+
+#[derive(Debug, Error)]
+pub enum RunError {
+    #[error("new bundle error")]
+    NewBundle(#[from] NewBundleError),
+    #[error("runtime error")]
+    Runtime(#[from] RuntimeError),
 }
 
 impl CallCmd {

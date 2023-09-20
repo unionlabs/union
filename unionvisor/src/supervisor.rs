@@ -6,9 +6,11 @@ use std::{
     time::Duration,
 };
 
+use thiserror::Error;
 use tracing::{debug, error, field::display as as_display, info, warn};
 
 use crate::{
+    bundle::ValidateVersionPathError,
     logging::LogFormat,
     symlinker::Symlinker,
     watcher::{FileReader, FileReaderError},
@@ -105,13 +107,15 @@ impl Supervisor {
 
 #[derive(Debug, thiserror::Error)]
 pub enum RuntimeError {
-    #[error("binary {} unavailable: {}", name, err)]
+    #[error("binary {} unavailable", version)]
     BinaryUnavailable {
         name: String,
-        err: color_eyre::Report,
+        source: ValidateVersionPathError,
     },
-    #[error("early exit detected: {}", code)]
-    EarlyExit { code: ExitStatus },
+    #[error("uniond exited with code: {code}")]
+    UniondExit { code: ExitStatus },
+    #[error("unknown FileReaderError while polling for upgrades")]
+    FileReader(#[from] FileReaderError),
     #[error("{}", 0)]
     Other(#[from] color_eyre::Report),
 }
@@ -122,7 +126,7 @@ pub fn run_and_upgrade<S: AsRef<OsStr>, I: IntoIterator<Item = S> + Clone>(
     symlinker: &Symlinker,
     args: &I,
     pol_interval: Duration,
-) -> color_eyre::Result<(), RuntimeError> {
+) -> Result<(), RuntimeError> {
     let root = root.into();
     let mut supervisor = Supervisor::new(root.clone(), symlinker.clone());
     let home = supervisor.home_dir();
@@ -137,15 +141,13 @@ pub fn run_and_upgrade<S: AsRef<OsStr>, I: IntoIterator<Item = S> + Clone>(
     std::thread::sleep(Duration::from_millis(300));
     loop {
         if let Some(code) = supervisor.try_wait()? {
-            error!(target: "unionvisor", "uniond exited with code: {}", code);
-            return Err(RuntimeError::EarlyExit { code });
+            return Err(RuntimeError::UniondExit { code });
         }
 
         match watcher.poll() {
             Err(FileReaderError::FileNotFound) | Ok(None) => continue,
             Err(err) => {
-                warn!(target: "unionvisor", "unknown error while polling for upgrades: {}", err.to_string());
-                return Err(RuntimeError::Other(err.into()));
+                return Err(RuntimeError::FileReader(err));
             }
             Ok(Some(upgrade)) => {
                 // If the daemon restarts, then upgrade-info.json may be stale. We need to
@@ -177,12 +179,9 @@ pub fn run_and_upgrade<S: AsRef<OsStr>, I: IntoIterator<Item = S> + Clone>(
                     .bundle
                     .path_to(&upgrade_name)
                     .validate()
-                    .map_err(|err| {
-                        error!(target: "unionvisor", "binary {} unavailable", &upgrade.name);
-                        RuntimeError::BinaryUnavailable {
-                            err,
-                            name: upgrade.name.clone(),
-                        }
+                    .map_err(|source| RuntimeError::BinaryUnavailable {
+                        name: upgrade.name.clone(),
+                        source,
                     })?;
 
                 debug!(target: "unionvisor", "killing supervisor process");
