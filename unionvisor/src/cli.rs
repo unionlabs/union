@@ -62,9 +62,8 @@ pub enum Command {
 
     /// Initializes a local directory to join the union network.
     Init(InitCmd),
-
-    /// Merges toml or json configuration files.
-    Merge(MergeCmd),
+    // Merges toml or json configuration files.
+    // Merge(MergeCmd),
 }
 
 #[derive(Clone, Parser)]
@@ -122,7 +121,7 @@ pub struct MergeCmd {
 }
 
 impl Cli {
-    pub fn run(self) -> Result<()> {
+    pub fn run(self) -> Result<(), RunCliError> {
         match &self.command {
             Command::Call(cmd) => {
                 cmd.call(self.root)?;
@@ -135,10 +134,19 @@ impl Cli {
             Command::Init(cmd) => {
                 cmd.init(self.root)?;
                 Ok(())
-            }
-            Command::Merge(cmd) => cmd.merge(),
+            } // Command::Merge(cmd) => cmd.merge(),
         }
     }
+}
+
+#[derive(Debug, Error)]
+enum RunCliError {
+    #[error("call command error")]
+    Call(#[from] CallError),
+    #[error("run command error")]
+    Run(#[from] RunError),
+    #[error("init command error")]
+    Init(#[from] InitError),
 }
 
 pub trait MergeFormat {
@@ -156,78 +164,78 @@ impl MergeFormat for Toml {
     type Format = Self;
 }
 
-impl MergeCmd {
-    fn merge_to_string(&self, input: &str) -> Result<String, MergeError> {
-        let output = &self.file;
-        let ext = output.extension().ok_or(MergeError::NoExtension)?;
-        let base = std::fs::read_to_string(output)?;
-        match ext.to_str().unwrap() {
-            "toml" => Ok(merge_inner::<Toml>(input, &base)?.to_string()),
-            "json" => Ok(merge_inner::<Json>(input, &base)?.to_string()),
-            ext => Err(MergeError::IncorrectExtension(ext.to_owned())),
-        }
-    }
+// impl MergeCmd {
+//     fn merge_to_string(&self, input: &str) -> Result<String, MergeError> {
+//         let output = &self.file;
+//         let ext = output.extension().ok_or(MergeError::NoExtension)?;
+//         let base = std::fs::read_to_string(output)?;
+//         match ext.to_str().unwrap() {
+//             "toml" => Ok(merge_inner::<Toml>(input, &base)?.to_string()),
+//             "json" => Ok(merge_inner::<Json>(input, &base)?.to_string()),
+//             ext => Err(MergeError::IncorrectExtension(ext.to_owned())),
+//         }
+//     }
 
-    fn merge_from_reader_or_file<R: Read>(&self, mut r: R) -> Result<String> {
-        let input = if let Some(file) = &self.from {
-            std::fs::read_to_string(file)?
-        } else {
-            let mut string = String::new();
-            r.read_to_string(&mut string)?;
-            string
-        };
-        self.merge_to_string(&input)
-    }
+//     fn merge_from_reader_or_file<R: Read>(&self, mut r: R) -> Result<String> {
+//         let input = if let Some(file) = &self.from {
+//             std::fs::read_to_string(file)?
+//         } else {
+//             let mut string = String::new();
+//             r.read_to_string(&mut string)?;
+//             string
+//         };
+//         self.merge_to_string(&input)
+//     }
 
-    fn merge(&self) -> Result<(), MergError> {
-        let output = self.merge_from_reader_or_file(std::io::stdin().lock())?;
-        write_to_file(&self.file, &output)?;
-        Ok(())
-    }
-}
+//     fn merge(&self) -> Result<(), MergeError> {
+//         let output = self.merge_from_reader_or_file(std::io::stdin().lock())?;
+//         write_to_file(&self.file, &output)?;
+//         Ok(())
+//     }
+// }
 
-#[derive(Debug, Error)]
-enum MergeError {
-    #[error("file does not have an extension")]
-    NoExtension,
-    #[error("file extension is incorrect: should be json or toml, is {0} instead.")]
-    IncorrectExtension(String),
-}
+// #[derive(Debug, Error)]
+// enum MergeError {
+//     #[error("file does not have an extension")]
+//     NoExtension,
+//     #[error("file extension is incorrect: should be json or toml, is {0} instead.")]
+//     IncorrectExtension(String),
+// }
 
-fn merge_inner<F: MergeFormat>(add: &str, base: &str) -> Result<F::Output> {
-    let value: F::Output = Figment::new()
-        .merge(Data::<<F as MergeFormat>::Format>::string(base))
-        .merge(Data::<<F as MergeFormat>::Format>::string(add))
-        .extract()?;
-    Ok(value)
-}
+// fn merge_inner<F: MergeFormat>(add: &str, base: &str) -> Result<F::Output> {
+//     let value: F::Output = Figment::new()
+//         .merge(Data::<<F as MergeFormat>::Format>::string(base))
+//         .merge(Data::<<F as MergeFormat>::Format>::string(add))
+//         .extract()?;
+//     Ok(value)
+// }
 
-fn write_to_file(path: impl Into<PathBuf>, contents: &str) -> Result<()> {
-    let path = path.into();
-    let mut tmp = path.clone();
-    tmp.set_file_name("__unionvisor.tmp");
-    let mut backup = path.clone();
-    backup.set_file_name("__unionvisor.bak");
-    std::fs::rename(&path, &backup)?;
+// fn write_to_file(path: impl Into<PathBuf>, contents: &str) -> Result<()> {
+//     let path = path.into();
+//     let mut tmp = path.clone();
+//     tmp.set_file_name("__unionvisor.tmp");
+//     let mut backup = path.clone();
+//     backup.set_file_name("__unionvisor.bak");
+//     std::fs::rename(&path, &backup)?;
 
-    // We try writing to the temp file. If that fails, we remove the temp file and rename back the original.
-    // If the write succeeds, we rename the temp file to the original, if that fails we perform the same cleanup.
-    // If cleanup fails, we ignore errors and just show the original
-    std::fs::write(&tmp, contents)
-        .or_else(|err| {
-            std::fs::remove_file(&tmp)?;
-            Err(err)
-        })
-        .and_then(|()| std::fs::rename(&tmp, &path))
-        .map_err(|err| {
-            // Best effort to restore the original file
-            let _ = std::fs::rename(&backup, &path);
-            let _ = std::fs::remove_file(&tmp);
-            err
-        })?;
-    std::fs::remove_file(backup)?;
-    Ok(())
-}
+//     // We try writing to the temp file. If that fails, we remove the temp file and rename back the original.
+//     // If the write succeeds, we rename the temp file to the original, if that fails we perform the same cleanup.
+//     // If cleanup fails, we ignore errors and just show the original
+//     std::fs::write(&tmp, contents)
+//         .or_else(|err| {
+//             std::fs::remove_file(&tmp)?;
+//             Err(err)
+//         })
+//         .and_then(|()| std::fs::rename(&tmp, &path))
+//         .map_err(|err| {
+//             // Best effort to restore the original file
+//             let _ = std::fs::rename(&backup, &path);
+//             let _ = std::fs::remove_file(&tmp);
+//             err
+//         })?;
+//     std::fs::remove_file(backup)?;
+//     Ok(())
+// }
 
 /// The state that the init command left the fs in.
 #[derive(PartialEq, Debug)]

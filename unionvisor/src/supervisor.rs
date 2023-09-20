@@ -107,7 +107,7 @@ impl Supervisor {
 
 #[derive(Debug, thiserror::Error)]
 pub enum RuntimeError {
-    #[error("binary {} unavailable", version)]
+    #[error("binary {} unavailable", name)]
     BinaryUnavailable {
         name: String,
         source: ValidateVersionPathError,

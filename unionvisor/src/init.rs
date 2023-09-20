@@ -17,7 +17,7 @@ pub fn set_seeds(network: Network, file: impl AsRef<Path>) -> Result<(), SetSeed
     Ok(())
 }
 
-#[derive(Error, Debug)]
+#[derive(Debug, Error)]
 pub enum SetSeedsError {
     #[error("cannot read file contents of config.toml")]
     CantReadContents {
