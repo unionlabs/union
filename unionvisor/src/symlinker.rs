@@ -59,12 +59,13 @@ impl Symlinker {
     /// where meta = Symlinker.bundle.meta
     ///
     /// Note that this initial link is unvalidated.
-    pub fn make_fallback_link(&self) -> Result<()> {
+    pub fn make_fallback_link(&self) -> Result<(), MakeFallbackLinkError> {
         let fallback_path = self.bundle.fallback_path()?;
         let current = self.current_path();
 
         debug!(target: "unionvisor", "creating fallback symlink from {} to {}", current.display(), fallback_path.0.display());
-        std::os::unix::fs::symlink(fallback_path.0, current)?;
+        std::os::unix::fs::symlink(fallback_path.0, current)
+            .map_err(MakeFallbackLinkError::Symlink)?;
 
         Ok(())
     }
@@ -101,6 +102,14 @@ enum CurrentVersionError {
     ReadLink(#[source] io::Error),
     #[error("invalid bundle structure: binary parent directory is not a version {0}")]
     InvalidBundleStructure(PathBuf),
+}
+
+#[derive(Debug, Error)]
+enum MakeFallbackLinkError {
+    #[error("error validating version path")]
+    ValidateVersionPath(#[from] ValidateVersionPathError),
+    #[error("error making symlink")]
+    Symlink(#[source] io::Error),
 }
 
 #[cfg(test)]
