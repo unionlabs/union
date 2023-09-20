@@ -1,6 +1,7 @@
 use std::{
     ffi::{OsStr, OsString},
     fs::create_dir_all,
+    io,
     path::{Path, PathBuf},
     process::{Child, ExitStatus},
     time::Duration,
@@ -50,9 +51,9 @@ impl Supervisor {
         &mut self,
         logformat: LogFormat,
         args: I,
-    ) -> Result<()> {
+    ) -> Result<(), SpawnError> {
         let program = self.symlinker.current_validated()?;
-        let handle = std::process::Command::new(program.0)
+        let command = std::process::Command::new(program.0)
             .args(vec!["--log_format", logformat.as_str()])
             .arg("start")
             .args(args)
@@ -61,9 +62,11 @@ impl Supervisor {
                 self.home_dir().into_os_string(),
             ])
             .stderr(std::process::Stdio::inherit())
-            .stdout(std::process::Stdio::inherit())
-            .spawn()?;
-        self.child = Some(handle);
+            .stdout(std::process::Stdio::inherit());
+        let child = command
+            .spawn()
+            .map_err(|source| SpawnError::SpawnChildError { source, command })?;
+        self.child = Some(child);
         Ok(())
     }
 
@@ -105,7 +108,17 @@ impl Supervisor {
     }
 }
 
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug, Error)]
+pub enum SpawnError {
+    #[error("error validating version path")]
+    ValidateVersionPath(#[from] ValidateVersionPathError),
+    #[error("error spawning child with command {command}")]
+    SpawnChildError {
+        source: io::Error,
+        command: std::process::Command,
+    },
+}
+#[derive(Debug, Error)]
 pub enum RuntimeError {
     #[error("binary {} unavailable", name)]
     BinaryUnavailable {
