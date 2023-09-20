@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use color_eyre::eyre::bail;
+use thiserror::Error;
 use tracing_subscriber::filter::LevelFilter;
 
 pub fn init(log_format: LogFormat, level: LevelFilter) {
@@ -27,14 +27,18 @@ pub enum LogFormat {
     Json,
 }
 
+#[derive(Debug, Error)]
+#[error("unknown log format {0}")]
+pub struct UnknownLogFormatError(String);
+
 impl FromStr for LogFormat {
-    type Err = color_eyre::Report;
+    type Err = UnknownLogFormatError;
 
     fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
         match s {
             "plain" => Ok(Self::Plain),
             "json" => Ok(Self::Json),
-            _ => bail!("unknown log format"),
+            s => Err(UnknownLogFormatError(s.to_owned())),
         }
     }
 }

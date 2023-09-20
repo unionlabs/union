@@ -114,19 +114,14 @@ pub enum BinaryAvailability {
 impl Bundle {
     /// Constructs a new [`Bundle`] based on a path.
     /// Will read `bundle/meta.json` and error if invalid.
-    pub fn new(path: impl Into<PathBuf>) -> Result<Self> {
+    pub fn new(path: impl Into<PathBuf>) -> Result<Self, NewBundleError> {
+        use NewBundleError::*;
         let path: PathBuf = path.into();
 
         // Read `bundle/meta.json` and deserialize into `BundleMeta`
         let meta = path.join("meta.json");
-        let meta = fs::read_to_string(meta).map_err(|_| {
-            eyre!("Can't find meta.json in bundle. Please make sure it exists at bundle/meta.json")
-        })?;
-        let meta = serde_json::from_str(&meta).map_err(|_| {
-            eyre!(
-                "Can't deserialize bundle/meta.json. Please ensure that it adheres to the scheme."
-            )
-        })?;
+        let meta = fs::read_to_string(meta).map_err(NoMetaJson)?;
+        let meta = serde_json::from_str(&meta).map_err(DeserializeMeta)?;
 
         let bundle = Bundle { path, meta };
 
@@ -145,8 +140,16 @@ impl Bundle {
     }
 
     /// Construct the path to the fallback verison, based on the [`BundleMeta`]
-    pub fn fallback_path(&self) -> Result<ValidVersionPath> {
+    pub fn fallback_path(&self) -> Result<ValidVersionPath, ValidateVersionPathError> {
         let fallback_version = &self.meta.fallback_version.clone();
         self.path_to(fallback_version).validate()
     }
+}
+
+#[derive(Debug, Error)]
+pub enum NewBundleError {
+    #[error("cannot find meta.json in bundle. Please make sure it exists at bundle/meta.json")]
+    NoMetaJson(#[source] io::Error),
+    #[error("cannot deserialize bundle/meta.json. Please ensure that it adheres to the scheme.")]
+    DeserializeMeta(#[source] dyn serde::de::Error),
 }
