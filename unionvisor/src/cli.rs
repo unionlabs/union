@@ -1,5 +1,10 @@
 use core::time::Duration;
-use std::{ffi::OsString, io::Read, path::PathBuf, process::Stdio};
+use std::{
+    ffi::OsString,
+    io::{self, Read},
+    path::PathBuf,
+    process::Stdio,
+};
 
 use clap::Parser;
 use figment::{
@@ -12,7 +17,7 @@ use tracing::{debug, field::display as as_display};
 use tracing_subscriber::filter::LevelFilter;
 
 use crate::{
-    bundle::{Bundle, NewBundleError},
+    bundle::{Bundle, NewBundleError, ValidateVersionPathError},
     init::{self, DownloadGenesisError, SetSeedsError},
     logging::LogFormat,
     network::Network,
@@ -306,11 +311,11 @@ pub enum RunError {
 
 impl CallCmd {
     /// Executes the logic for the Call variant. Will panic if the enum is not [`Command::Call`].
-    fn call(&self, root: impl Into<PathBuf>) -> Result<()> {
+    fn call(&self, root: impl Into<PathBuf>) -> Result<(), CallError> {
         self.call_inner(root, Stdio::inherit(), Stdio::inherit(), Stdio::inherit())
     }
 
-    fn call_silent(&self, root: impl Into<PathBuf>) -> Result<()> {
+    fn call_silent(&self, root: impl Into<PathBuf>) -> Result<(), CallError> {
         self.call_inner(root, Stdio::null(), Stdio::null(), Stdio::null())
     }
 
@@ -320,7 +325,7 @@ impl CallCmd {
         stdin: impl Into<Stdio>,
         stdout: impl Into<Stdio>,
         stderr: impl Into<Stdio>,
-    ) -> Result<()> {
+    ) -> Result<(), CallError> {
         let root = root.into();
         let bundle = Bundle::new(self.bundle.clone())?;
         let symlinker = Symlinker::new(root.clone(), bundle);
@@ -336,10 +341,23 @@ impl CallCmd {
             .stdin(stdin.into())
             .stderr(stderr.into())
             .stdout(stdout.into())
-            .spawn()?;
-        child.wait()?;
+            .spawn()
+            .map_err(CallError::SpawnChildProcess)?;
+        child.wait().map_err(CallError::ChildExitedWithError)?;
         Ok(())
     }
+}
+
+#[derive(Debug, Error)]
+enum CallError {
+    #[error("cannot init new bundle")]
+    NewBundle(#[from] NewBundleError),
+    #[error("cannot validating version path")]
+    ValidateVersionPath(#[from] ValidateVersionPathError),
+    #[error("cannot spawn child process")]
+    SpawnChildProcess(#[source] io::Error),
+    #[error("child process exited with error")]
+    ChildExitedWithError(#[source] io::Error),
 }
 
 #[cfg(test)]
