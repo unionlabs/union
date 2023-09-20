@@ -2,15 +2,12 @@ use core::time::Duration;
 use std::{ffi::OsString, io::Read, path::PathBuf, process::Stdio};
 
 use clap::Parser;
-use color_eyre::{
-    eyre::{bail, eyre},
-    Result,
-};
 use figment::{
     providers::{Data, Format as FigmentFormat, Json, Toml},
     Figment,
 };
 use serde::de::DeserializeOwned;
+use thiserror::Error;
 use tracing::{debug, field::display as as_display};
 use tracing_subscriber::filter::LevelFilter;
 
@@ -150,18 +147,15 @@ impl MergeFormat for Toml {
 }
 
 impl MergeCmd {
-    fn merge_to_string(&self, input: &str) -> Result<String> {
+    fn merge_to_string(&self, input: &str) -> Result<String, MergeError> {
         let output = &self.file;
-        let ext = output
-            .extension()
-            .ok_or(eyre!("file must have either a .json or .toml extension"))?;
+        let ext = output.extension().ok_or(MergeError::NoExtension)?;
         let base = std::fs::read_to_string(output)?;
-        let data = match ext.to_str().unwrap() {
-            "toml" => merge_inner::<Toml>(input, &base)?.to_string(),
-            "json" => merge_inner::<Json>(input, &base)?.to_string(),
-            _ => bail!("unknown extension: {:?}", ext),
-        };
-        Ok(data)
+        match ext.to_str().unwrap() {
+            "toml" => Ok(merge_inner::<Toml>(input, &base)?.to_string()),
+            "json" => Ok(merge_inner::<Json>(input, &base)?.to_string()),
+            ext => Err(MergeError::IncorrectExtension(ext.to_owned())),
+        }
     }
 
     fn merge_from_reader_or_file<R: Read>(&self, mut r: R) -> Result<String> {
@@ -180,6 +174,14 @@ impl MergeCmd {
         write_to_file(&self.file, &output)?;
         Ok(())
     }
+}
+
+#[derive(Debug, Error)]
+enum MergeError {
+    #[error("file does not have an extension")]
+    NoExtension,
+    #[error("file extension is incorrect: should be json or toml, is {0} instead.")]
+    IncorrectExtension(String),
 }
 
 fn merge_inner<F: MergeFormat>(add: &str, base: &str) -> Result<F::Output> {
