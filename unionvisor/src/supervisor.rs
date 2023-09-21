@@ -92,18 +92,14 @@ impl Supervisor {
         Ok(())
     }
 
-    pub fn try_wait(&mut self) -> Result<Option<ExitStatus>> {
-        if let Some(child) = &mut self.child {
-            Ok(child.try_wait().map_err(|err| {
-                debug!(target: "unionvisor", "unknown error while try_waiting for child: {:?}", err);
-                err
-            })?)
-        } else {
-            unreachable!("try_waiting for a child should only happen after spawn")
+    pub fn try_wait(&mut self) -> Result<Option<ExitStatus>, TryWaitError> {
+        match &mut self.child {
+            Some(child) => Ok(child.try_wait()?),
+            _ => unreachable!("try_waiting for a child should only happen after spawn"),
         }
     }
 
-    pub fn kill(&mut self) -> Result<()> {
+    pub fn kill(&mut self) -> Result<(), KillError> {
         if let Some(ref mut child) = self.child.take() {
             child.kill()?;
         } else {
@@ -112,6 +108,14 @@ impl Supervisor {
         Ok(())
     }
 }
+
+#[derive(Debug, Error)]
+#[error("unknown error while try_waiting for child")]
+struct TryWaitError(#[from] io::Error);
+
+#[derive(Debug, Error)]
+#[error("unknown error while killing a child")]
+struct KillError(#[from] io::Error);
 
 #[derive(Debug, Error)]
 pub enum SpawnError {
@@ -127,11 +131,11 @@ pub enum SpawnError {
 #[derive(Debug, Error)]
 pub enum BackupError {
     #[error("Cannot create backup dir {0}")]
-    CreateDir(Path, #[source] io::Error),
+    CreateDir(Box<Path>, #[source] io::Error),
     #[error("Cannot copy home dir to backup dir")]
     CopyDir {
-        home: Path,
-        backup: Path,
+        home: Box<Path>,
+        backup: Box<Path>,
         source: io::Error,
     },
 }
@@ -147,8 +151,6 @@ pub enum RuntimeError {
     UniondExit { code: ExitStatus },
     #[error("unknown FileReaderError while polling for upgrades")]
     FileReader(#[from] FileReaderError),
-    #[error("{}", 0)]
-    Other(#[from] color_eyre::Report),
 }
 
 pub fn run_and_upgrade<S: AsRef<OsStr>, I: IntoIterator<Item = S> + Clone>(
