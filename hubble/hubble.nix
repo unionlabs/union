@@ -56,6 +56,12 @@
             }
           );
         };
+        log-level = mkOption {
+          type = types.str;
+          default = "info";
+          description = "RUST_LOG passed to hubble";
+          example = "hubble=debug";
+        };
       };
 
       config = mkIf cfg.enable {
@@ -70,7 +76,7 @@
                   indexersJson = builtins.toJSON cfg.indexers;
                 in
                 ''
-                  ${pkgs.lib.getExe cfg.package}  \
+                  RUST_LOG=${cfg.log-level} ${pkgs.lib.getExe cfg.package}  \
                     --metrics-addr ${cfg.metrics-addr} \
                     --url ${cfg.url} ${secretArg} \
                     --indexers '${indexersJson}'
