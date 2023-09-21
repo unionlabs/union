@@ -18,6 +18,8 @@ pub enum SymlinkerError {
     CantRemoveSymlink(io::Error),
     #[error("cannot create symlink: {0}")]
     CantCreateSymlink(io::Error),
+    #[error("cannot validate version path")]
+    ValidateVersionPath(#[from] ValidateVersionPathError),
 }
 
 impl Symlinker {

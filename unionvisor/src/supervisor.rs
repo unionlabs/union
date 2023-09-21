@@ -13,7 +13,7 @@ use tracing::{debug, error, field::display as as_display, info, warn};
 use crate::{
     bundle::ValidateVersionPathError,
     logging::LogFormat,
-    symlinker::Symlinker,
+    symlinker::{CurrentVersionError, Symlinker, SymlinkerError},
     watcher::{FileReader, FileReaderError},
 };
 
@@ -53,7 +53,8 @@ impl Supervisor {
         args: I,
     ) -> Result<(), SpawnError> {
         let program = self.symlinker.current_validated()?;
-        let command = std::process::Command::new(program.0)
+        let mut command = std::process::Command::new(program.0);
+        let command = command
             .args(vec!["--log_format", logformat.as_str()])
             .arg("start")
             .args(args)
@@ -63,6 +64,7 @@ impl Supervisor {
             ])
             .stderr(std::process::Stdio::inherit())
             .stdout(std::process::Stdio::inherit());
+
         let child = command
             .spawn()
             .map_err(|source| SpawnError::SpawnChildError {
@@ -87,7 +89,7 @@ impl Supervisor {
         let home_dir = self.home_dir();
         let options = CopyOptions::new().overwrite(true);
         debug!(target: "unionvisor", "backing up {} to {}",  as_display(home_dir.display()),  as_display(backup_dir.display()));
-        copy(home_dir, backup_dir, &options).map_err(|source| BackupError::CopyDir {
+        copy(&home_dir, backup_dir, &options).map_err(|source| BackupError::CopyDir {
             home: home_dir.to_owned(),
             backup: backup_dir.to_owned(),
             source,
@@ -114,11 +116,11 @@ impl Supervisor {
 
 #[derive(Debug, Error)]
 #[error("unknown error while try_waiting for child")]
-struct TryWaitError(#[from] io::Error);
+pub struct TryWaitError(#[from] io::Error);
 
 #[derive(Debug, Error)]
 #[error("unknown error while killing a child")]
-struct KillError(#[from] io::Error);
+pub struct KillError(#[from] io::Error);
 
 #[derive(Debug, Error)]
 pub enum SpawnError {
@@ -142,6 +144,20 @@ pub enum BackupError {
 
 #[derive(Debug, Error)]
 pub enum RuntimeError {
+    #[error("error spawning uniond")]
+    Spawn(#[from] SpawnError),
+    #[error("error try waiting")]
+    TryWait(#[from] TryWaitError),
+    #[error("cannot get current version")]
+    CurrentVersion(#[from] CurrentVersionError),
+    #[error("cannot kill supervisor")]
+    SupervisorKill(#[from] KillError),
+    #[error("supervisor cannot make backup")]
+    SupervisorBackup(#[from] BackupError),
+    #[error("cannot swap symlink")]
+    Symlinker(#[from] SymlinkerError),
+    #[error("cannot validate new version's path")]
+    ValidateVersionPath(#[from] ValidateVersionPathError),
     #[error("binary {} unavailable", name)]
     BinaryUnavailable {
         name: String,

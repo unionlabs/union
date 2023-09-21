@@ -25,7 +25,7 @@ impl Display for Network {
 
 #[derive(Debug, Error)]
 #[error("unknown network {0}")]
-struct UnknownNetworkError(String);
+pub struct UnknownNetworkError(String);
 
 impl FromStr for Network {
     type Err = UnknownNetworkError;

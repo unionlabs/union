@@ -84,8 +84,10 @@ impl UnvalidatedVersionPath {
 
         if let Err(err) = child.kill() {
             match err.kind() {
-                io::ErrorKind::NotFound => return Err(NotInBundle(self.0, err)),
-                io::ErrorKind::PermissionDenied => return Err(PermissionDenied(self.0, err)),
+                io::ErrorKind::NotFound => return Err(NotInBundle(self.0.clone(), err)),
+                io::ErrorKind::PermissionDenied => {
+                    return Err(PermissionDenied(self.0.clone(), err))
+                }
                 _ => return Err(OtherIO(err)),
             }
         }
@@ -105,11 +107,11 @@ pub struct BundleMeta {
     versions_directory: PathBuf,
 }
 
-pub enum BinaryAvailability {
-    NotFound,
-    PermissionDenied,
-    Ok,
-}
+// pub enum BinaryAvailability {
+//     NotFound,
+//     PermissionDenied,
+//     Ok,
+// }
 
 impl Bundle {
     /// Constructs a new [`Bundle`] based on a path.

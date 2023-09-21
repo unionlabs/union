@@ -1,17 +1,12 @@
 use core::time::Duration;
 use std::{
     ffi::OsString,
-    io::{self, Read},
+    io::{self},
     path::PathBuf,
     process::Stdio,
 };
 
 use clap::Parser;
-use figment::{
-    providers::{Data, Format as FigmentFormat, Json, Toml},
-    Figment,
-};
-use serde::de::DeserializeOwned;
 use thiserror::Error;
 use tracing::{debug, field::display as as_display};
 use tracing_subscriber::filter::LevelFilter;
@@ -140,7 +135,7 @@ impl Cli {
 }
 
 #[derive(Debug, Error)]
-enum RunCliError {
+pub enum RunCliError {
     #[error("call command error")]
     Call(#[from] CallError),
     #[error("run command error")]
@@ -149,20 +144,20 @@ enum RunCliError {
     Init(#[from] InitError),
 }
 
-pub trait MergeFormat {
-    type Output: DeserializeOwned + ToString;
-    type Format: FigmentFormat;
-}
+// pub trait MergeFormat {
+//     type Output: DeserializeOwned + ToString;
+//     type Format: FigmentFormat;
+// }
 
-impl MergeFormat for Json {
-    type Output = serde_json::Value;
-    type Format = Self;
-}
+// impl MergeFormat for Json {
+//     type Output = serde_json::Value;
+//     type Format = Self;
+// }
 
-impl MergeFormat for Toml {
-    type Output = toml::map::Map<String, toml::Value>;
-    type Format = Self;
-}
+// impl MergeFormat for Toml {
+//     type Output = toml::map::Map<String, toml::Value>;
+//     type Format = Self;
+// }
 
 // impl MergeCmd {
 //     fn merge_to_string(&self, input: &str) -> Result<String, MergeError> {
@@ -363,7 +358,7 @@ impl CallCmd {
 }
 
 #[derive(Debug, Error)]
-enum CallError {
+pub enum CallError {
     #[error("cannot init new bundle")]
     NewBundle(#[from] NewBundleError),
     #[error("cannot validating version path")]
