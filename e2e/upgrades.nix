@@ -49,6 +49,7 @@ in
       ${upgradeTo "v0.11.0" 30}
       ${upgradeTo "v0.12.0" 40}
       ${upgradeTo "v0.13.0" 50}
+      ${upgradeTo "v0.14.0" 60}
     '';
 
     nodes = {
