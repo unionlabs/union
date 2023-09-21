@@ -65,7 +65,10 @@ impl Supervisor {
             .stdout(std::process::Stdio::inherit());
         let child = command
             .spawn()
-            .map_err(|source| SpawnError::SpawnChildError { source, command })?;
+            .map_err(|source| SpawnError::SpawnChildError {
+                source,
+                command: format!("{command:?}"),
+            })?;
         self.child = Some(child);
         Ok(())
     }
@@ -122,21 +125,18 @@ pub enum SpawnError {
     #[error("error validating version path")]
     ValidateVersionPath(#[from] ValidateVersionPathError),
     #[error("error spawning child with command {command}")]
-    SpawnChildError {
-        source: io::Error,
-        command: std::process::Command,
-    },
+    SpawnChildError { source: io::Error, command: String },
 }
 
 #[derive(Debug, Error)]
 pub enum BackupError {
     #[error("Cannot create backup dir {0}")]
-    CreateDir(Box<Path>, #[source] io::Error),
+    CreateDir(PathBuf, #[source] io::Error),
     #[error("Cannot copy home dir to backup dir")]
     CopyDir {
-        home: Box<Path>,
-        backup: Box<Path>,
-        source: io::Error,
+        home: PathBuf,
+        backup: PathBuf,
+        source: fs_extra::error::Error,
     },
 }
 

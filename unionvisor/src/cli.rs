@@ -22,7 +22,7 @@ use crate::{
     logging::LogFormat,
     network::Network,
     supervisor::{self, RuntimeError},
-    symlinker::Symlinker,
+    symlinker::{MakeFallbackLinkError, Symlinker},
 };
 
 #[derive(Parser, Clone)]
@@ -285,12 +285,18 @@ impl InitCmd {
 
 #[derive(Debug, Error)]
 pub enum InitError {
+    #[error("cannot create new bundle")]
+    NewBundle(#[from] NewBundleError),
+    #[error("cannot make fallback link")]
+    MakeFallbackLink(#[from] MakeFallbackLinkError),
     #[error("home {0} already exists, refusing to override")]
     HomeExistsAndDirtyIsNotAllowed(PathBuf),
     #[error("download genesis error")]
     DownloadGenesis(#[from] DownloadGenesisError),
     #[error("set seeds error")]
     SetSeeds(#[from] SetSeedsError),
+    #[error("cannot call")]
+    CallError(#[from] CallError),
 }
 
 impl RunCmd {

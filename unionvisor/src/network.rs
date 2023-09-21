@@ -14,10 +14,11 @@ pub enum Network {
 impl Display for Network {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match &self {
-            Network::Union1 => write!(f, "union-1"),
-            Network::Testnet1 => write!(f, "union-testnet-1"),
-            Network::Testnet2 => write!(f, "union-testnet-2"),
-            Network::DevnetMinimal => write!(f, "union-minimal-1"),
+            // Network::Union1 => write!(f, "union-1"),
+            // Network::Testnet1 => write!(f, "union-testnet-1"),
+            // Network::Testnet2 => write!(f, "union-testnet-2"),
+            Network::Testnet3 => write!(f, "union-testnet-3"),
+            // Network::DevnetMinimal => write!(f, "union-minimal-1"),
         }
     }
 }

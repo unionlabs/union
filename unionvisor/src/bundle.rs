@@ -58,8 +58,10 @@ pub struct ValidVersionPath(pub PathBuf);
 pub enum ValidateVersionPathError {
     #[error("version was not found in bundle: {0}")]
     NotInBundle(PathBuf, #[source] io::Error),
-    #[error("permision denied when executing version in bundle: {0}")]
-    PermisionDenied(PathBuf, #[source] io::Error),
+    #[error("calling uniond --help for this version failed")]
+    HelpCallFailed(#[source] io::Error),
+    #[error("permission denied when executing version in bundle: {0}")]
+    PermissionDenied(PathBuf, #[source] io::Error),
     #[error("other IO error")]
     OtherIO(#[source] io::Error),
 }
@@ -67,6 +69,7 @@ pub enum ValidateVersionPathError {
 impl UnvalidatedVersionPath {
     /// Validates a [`UnvalidatedVersionPath`], turning it into a [`ValidVersionPath`] if validation is successful
     pub fn validate(&self) -> Result<ValidVersionPath, ValidateVersionPathError> {
+        use ValidateVersionPathError::*;
         debug!(
             "testing if binary {} is available by calling --help",
             as_display(self.0.display())
@@ -75,18 +78,15 @@ impl UnvalidatedVersionPath {
             .arg("--help")
             .stderr(Stdio::null())
             .stdout(Stdio::null())
-            .spawn()?;
+            .spawn()
+            .map_err(HelpCallFailed)?;
         debug!(target: "unionvisor", "killing test call of {}", as_display(self.0.display()));
 
         if let Err(err) = child.kill() {
             match err.kind() {
-                io::ErrorKind::NotFound => {
-                    return Err(ValidateVersionPathError::NotInBundle(self.0, err))
-                }
-                io::ErrorKind::PermissionDenied => {
-                    return Err(BinaryAvailability::PermissionDenied(self.0, err))
-                }
-                _ => return Err(ValidateVersionPathError::OtherIO(err)),
+                io::ErrorKind::NotFound => return Err(NotInBundle(self.0, err)),
+                io::ErrorKind::PermissionDenied => return Err(PermissionDenied(self.0, err)),
+                _ => return Err(OtherIO(err)),
             }
         }
         Ok(ValidVersionPath(self.0.clone()))
@@ -151,5 +151,5 @@ pub enum NewBundleError {
     #[error("cannot find meta.json in bundle. Please make sure it exists at bundle/meta.json")]
     NoMetaJson(#[source] io::Error),
     #[error("cannot deserialize bundle/meta.json. Please ensure that it adheres to the scheme.")]
-    DeserializeMeta(#[source] dyn serde::de::Error),
+    DeserializeMeta(#[source] serde_json::Error),
 }

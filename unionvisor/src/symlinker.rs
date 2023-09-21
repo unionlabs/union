@@ -97,7 +97,7 @@ impl Symlinker {
 }
 
 #[derive(Debug, Error)]
-enum CurrentVersionError {
+pub enum CurrentVersionError {
     #[error("cannot read current link")]
     ReadLink(#[source] io::Error),
     #[error("invalid bundle structure: binary parent directory is not a version {0}")]
@@ -105,7 +105,7 @@ enum CurrentVersionError {
 }
 
 #[derive(Debug, Error)]
-enum MakeFallbackLinkError {
+pub enum MakeFallbackLinkError {
     #[error("error validating version path")]
     ValidateVersionPath(#[from] ValidateVersionPathError),
     #[error("error making symlink")]
