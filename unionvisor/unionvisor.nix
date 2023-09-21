@@ -74,7 +74,7 @@
             fallback_version = "v0.8.0";
           };
         bundle-testnet-next =
-          mkNextBundle "testnet" [ "v0.8.0" "v0.9.0" "v0.10.0" "v0.11.0" "v0.12.0" ] "v0.13.0" {
+          mkNextBundle "testnet" [ "v0.8.0" "v0.9.0" "v0.10.0" "v0.11.0" "v0.12.0" "v0.13.0" ] "v0.14.0" {
             binary_name = "uniond";
             versions_directory = "versions";
             fallback_version = "v0.8.0";
