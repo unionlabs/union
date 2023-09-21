@@ -81,7 +81,7 @@ pub struct InitCmd {
     moniker: String,
 
     /// The network to create the configuration for (union-1 or union-testnet-1)
-    #[arg(short, long, default_value = "union-testnet-1")]
+    #[arg(short, long, default_value = "union-testnet-3")]
     network: Network,
 
     /// Determines if unionvisor initializes regardless of previous dirty state.
