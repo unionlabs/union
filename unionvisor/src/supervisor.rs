@@ -75,15 +75,20 @@ impl Supervisor {
     }
 
     /// Backup the current uniond home directory to the provided path. The location will be "{dir}/data".
-    pub fn backup(&self, backup_dir: impl AsRef<Path>) -> Result<()> {
+    pub fn backup(&self, backup_dir: impl AsRef<Path>) -> Result<(), BackupError> {
         use fs_extra::dir::{copy, CopyOptions};
         let backup_dir = backup_dir.as_ref();
         debug!(target: "unionvisor", "creating backup dir at {}",  as_display(backup_dir.display()));
-        create_dir_all(backup_dir)?;
+        create_dir_all(backup_dir)
+            .map_err(|source| BackupError::CreateDir(backup_dir.to_owned(), source))?;
         let home_dir = self.home_dir();
         let options = CopyOptions::new().overwrite(true);
         debug!(target: "unionvisor", "backing up {} to {}",  as_display(home_dir.display()),  as_display(backup_dir.display()));
-        copy(home_dir, backup_dir, &options)?;
+        copy(home_dir, backup_dir, &options).map_err(|source| BackupError::CopyDir {
+            home: home_dir.to_owned(),
+            backup: backup_dir.to_owned(),
+            source,
+        })?;
         Ok(())
     }
 
@@ -118,6 +123,19 @@ pub enum SpawnError {
         command: std::process::Command,
     },
 }
+
+#[derive(Debug, Error)]
+pub enum BackupError {
+    #[error("Cannot create backup dir {0}")]
+    CreateDir(Path, #[source] io::Error),
+    #[error("Cannot copy home dir to backup dir")]
+    CopyDir {
+        home: Path,
+        backup: Path,
+        source: io::Error,
+    },
+}
+
 #[derive(Debug, Error)]
 pub enum RuntimeError {
     #[error("binary {} unavailable", name)]
