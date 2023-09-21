@@ -382,6 +382,7 @@
         "v0_10_0": "v0_10_0",
         "v0_11_0": "v0_11_0",
         "v0_12_0": "v0_12_0",
+        "v0_13_0": "v0_13_0",
         "v0_8_0": "v0_8_0",
         "v0_9_0": "v0_9_0"
       }
@@ -563,6 +564,23 @@
       "original": {
         "owner": "unionlabs",
         "ref": "release-v0.12.0",
+        "repo": "union",
+        "type": "github"
+      }
+    },
+    "v0_13_0": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1695303003,
+        "narHash": "sha256-qz40i7QHdjlq2pifCnYMoRu4qg6/cCSFZoTs9FsBVOE=",
+        "owner": "unionlabs",
+        "repo": "union",
+        "rev": "78fc7cdcd253617a7ab643011ef57d6b283d9780",
+        "type": "github"
+      },
+      "original": {
+        "owner": "unionlabs",
+        "ref": "release-v0.13.0",
         "repo": "union",
         "type": "github"
       }
