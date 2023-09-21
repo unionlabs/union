@@ -9,31 +9,22 @@ pub fn set_seeds(network: Network, file: impl AsRef<Path>) -> Result<(), SetSeed
     use SetSeedsError::*;
     let file = file.as_ref();
     debug!(target: "unionvisor", "reading config.toml at {} to replace seeds",  as_display(file.display()));
-    let contents = fs::read_to_string(file).map_err(|source| CantReadContents { source })?;
+    let contents = fs::read_to_string(file).map_err(CantReadContents)?;
     let new = contents.replace(r#"seeds = """#, &format!(r#"seeds="{}""#, network.seeds()));
     debug!(target: "unionvisor", "replacing contents by deleting and writing file");
-    fs::remove_file(file).map_err(|source| CantRemoveFile { source })?;
-    fs::write(file, new).map_err(|source| CantWriteFile { source })?;
+    fs::remove_file(file).map_err(CantRemoveFile)?;
+    fs::write(file, new).map_err(CantWriteFile)?;
     Ok(())
 }
 
-#[derive(Debug, Error)]
+#[derive(Error, Debug)]
 pub enum SetSeedsError {
     #[error("cannot read file contents of config.toml")]
-    CantReadContents {
-        #[backtrace]
-        source: io::Error,
-    },
+    CantReadContents(#[source] io::Error),
     #[error("cannot remove old config.toml")]
-    CantRemoveFile {
-        #[backtrace]
-        source: io::Error,
-    },
+    CantRemoveFile(#[source] io::Error),
     #[error("cannot write new config.toml")]
-    CantWriteFile {
-        #[backtrace]
-        source: io::Error,
-    },
+    CantWriteFile(#[source] io::Error),
 }
 
 pub fn download_genesis(
@@ -49,27 +40,17 @@ pub fn download_genesis(
         url: url.to_owned(),
     })?;
     debug!(target: "unionvisor", "writing genesis.json to {}",  as_display(to.display()));
-    let mut out = fs::File::create(to).map_err(|source| CantCreateFile { source })?;
-    io::copy(&mut resp, &mut out).map_err(|source| CantWriteFile { source })?;
+    let mut out = fs::File::create(to).map_err(CantCreateFile)?;
+    io::copy(&mut resp, &mut out).map_err(CantWriteFile)?;
     Ok(())
 }
 
 #[derive(Error, Debug)]
 pub enum DownloadGenesisError {
     #[error("cannot download genesis.json from {url}")]
-    CantDownload {
-        #[backtrace]
-        source: reqwest::Error,
-        url: String,
-    },
+    CantDownload { source: reqwest::Error, url: String },
     #[error("cannot create genesis.json")]
-    CantCreateFile {
-        #[backtrace]
-        source: io::Error,
-    },
+    CantCreateFile(#[source] io::Error),
     #[error("cannot write genesis.json")]
-    CantWriteFile {
-        #[backtrace]
-        source: io::Error,
-    },
+    CantWriteFile(#[source] io::Error),
 }
