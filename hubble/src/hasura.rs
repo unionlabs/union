@@ -22,6 +22,12 @@ pub struct HasuraDataStore {
 }
 
 impl Datastore for HasuraDataStore {
+    /// Performs a GraphQL post request (which may query or mutate).
+    /// It injects the x-hasura-admin-secret header.
+    ///
+    /// # Errors
+    /// - On network related errors.
+    /// - If the graphql endpoint populates the errors field.
     #[allow(clippy::manual_async_fn)]
     fn do_post<Q: GraphQLQuery>(
         &self,
@@ -41,6 +47,16 @@ impl Datastore for HasuraDataStore {
                 .await?
                 .json()
                 .await?;
+
+            // GraphQL APIs return errors as an error field in the JSON. We convert the errors to the
+            // error variant.
+            if let Some(err) = response
+                .errors
+                .as_ref()
+                .map(|errors| color_eyre::eyre::eyre!("api returned error: {:?}", errors))
+            {
+                return Err(err);
+            }
             Ok(response)
         }
     }
