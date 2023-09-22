@@ -144,94 +144,6 @@ pub enum RunCliError {
     Init(#[from] InitError),
 }
 
-// pub trait MergeFormat {
-//     type Output: DeserializeOwned + ToString;
-//     type Format: FigmentFormat;
-// }
-
-// impl MergeFormat for Json {
-//     type Output = serde_json::Value;
-//     type Format = Self;
-// }
-
-// impl MergeFormat for Toml {
-//     type Output = toml::map::Map<String, toml::Value>;
-//     type Format = Self;
-// }
-
-// impl MergeCmd {
-//     fn merge_to_string(&self, input: &str) -> Result<String, MergeError> {
-//         let output = &self.file;
-//         let ext = output.extension().ok_or(MergeError::NoExtension)?;
-//         let base = std::fs::read_to_string(output)?;
-//         match ext.to_str().unwrap() {
-//             "toml" => Ok(merge_inner::<Toml>(input, &base)?.to_string()),
-//             "json" => Ok(merge_inner::<Json>(input, &base)?.to_string()),
-//             ext => Err(MergeError::IncorrectExtension(ext.to_owned())),
-//         }
-//     }
-
-//     fn merge_from_reader_or_file<R: Read>(&self, mut r: R) -> Result<String> {
-//         let input = if let Some(file) = &self.from {
-//             std::fs::read_to_string(file)?
-//         } else {
-//             let mut string = String::new();
-//             r.read_to_string(&mut string)?;
-//             string
-//         };
-//         self.merge_to_string(&input)
-//     }
-
-//     fn merge(&self) -> Result<(), MergeError> {
-//         let output = self.merge_from_reader_or_file(std::io::stdin().lock())?;
-//         write_to_file(&self.file, &output)?;
-//         Ok(())
-//     }
-// }
-
-// #[derive(Debug, Error)]
-// enum MergeError {
-//     #[error("file does not have an extension")]
-//     NoExtension,
-//     #[error("file extension is incorrect: should be json or toml, is {0} instead.")]
-//     IncorrectExtension(String),
-// }
-
-// fn merge_inner<F: MergeFormat>(add: &str, base: &str) -> Result<F::Output> {
-//     let value: F::Output = Figment::new()
-//         .merge(Data::<<F as MergeFormat>::Format>::string(base))
-//         .merge(Data::<<F as MergeFormat>::Format>::string(add))
-//         .extract()?;
-//     Ok(value)
-// }
-
-// fn write_to_file(path: impl Into<PathBuf>, contents: &str) -> Result<()> {
-//     let path = path.into();
-//     let mut tmp = path.clone();
-//     tmp.set_file_name("__unionvisor.tmp");
-//     let mut backup = path.clone();
-//     backup.set_file_name("__unionvisor.bak");
-//     std::fs::rename(&path, &backup)?;
-
-//     // We try writing to the temp file. If that fails, we remove the temp file and rename back the original.
-//     // If the write succeeds, we rename the temp file to the original, if that fails we perform the same cleanup.
-//     // If cleanup fails, we ignore errors and just show the original
-//     std::fs::write(&tmp, contents)
-//         .or_else(|err| {
-//             std::fs::remove_file(&tmp)?;
-//             Err(err)
-//         })
-//         .and_then(|()| std::fs::rename(&tmp, &path))
-//         .map_err(|err| {
-//             // Best effort to restore the original file
-//             let _ = std::fs::rename(&backup, &path);
-//             let _ = std::fs::remove_file(&tmp);
-//             err
-//         })?;
-//     std::fs::remove_file(backup)?;
-//     Ok(())
-// }
-
 /// The state that the init command left the fs in.
 #[derive(PartialEq, Debug)]
 pub enum InitState {
@@ -377,47 +289,6 @@ mod tests {
     use crate::testdata;
 
     #[test]
-    fn test_write_to_file() {
-        let tmp = testdata::temp_dir_with(&["home"]);
-        let home = tmp.into_path().join("home");
-        let path = home.join("config/client.toml");
-        write_to_file(&path, "hello").unwrap();
-        let contents = std::fs::read_to_string(&path).unwrap();
-        assert_eq!(contents, "hello");
-    }
-
-    #[test]
-    fn test_merge_from_reader() {
-        use toml::toml;
-
-        let tmp = testdata::temp_dir_with(&["home"]);
-        let home = tmp.into_path().join("home");
-
-        let cmd = MergeCmd {
-            file: home.join("config").join("client.toml"),
-            from: None,
-        };
-
-        let input = toml! {
-            broadcast-mode = "async"
-            foo = "bar"
-        };
-
-        let output = cmd
-            .merge_from_reader_or_file(input.to_string().as_bytes())
-            .unwrap();
-        let expected = toml! {
-            chain-id = "union"
-            keyring-backend = "os"
-            output = "text"
-            node = "tcp://localhost:26657"
-            broadcast-mode = "async"
-            foo = "bar"
-        };
-        assert_eq!(output, expected.to_string());
-    }
-
-    #[test]
     fn test_merge_to_string() {
         use toml::toml;
 
@@ -446,46 +317,6 @@ mod tests {
         assert_eq!(output, expected.to_string());
     }
 
-    #[test]
-    fn test_merge_inner_json() {
-        use serde_json::json;
-
-        let base = json!({"a": true, "b": false});
-        let added = json!({"b": true, "c": true});
-        let result = merge_inner::<Json>(&added.to_string(), &base.to_string()).unwrap();
-        assert_eq!(result, json!({"a": true, "b": true, "c": true}));
-    }
-
-    #[test]
-    fn test_merge_inner_toml() {
-        use toml::toml;
-
-        let base = toml! {
-            [package]
-            name = "toml"
-            version = "1"
-        };
-
-        let added = toml! {
-            [package]
-            name = "json"
-
-            [dependencies]
-            serde = "1.0"
-        };
-
-        let expected = toml! {
-            [package]
-            name = "json"
-            version = "1"
-
-            [dependencies]
-            serde = "1.0"
-        };
-        let result = merge_inner::<Toml>(&added.to_string(), &base.to_string()).unwrap();
-        assert_eq!(result, expected);
-    }
-
     /// Verifies that calling unionvisor init -i will return without impacting the fs.
     #[test]
     fn test_init_disallow_dirty_no_error() {
@@ -494,7 +325,7 @@ mod tests {
         let state = InitCmd {
             bundle: root.join("bundle"),
             moniker: String::from("test_init_moniker"),
-            network: Network::Testnet1,
+            network: Network::Testnet3,
             allow_dirty: true,
         }
         .init(root)
@@ -509,7 +340,7 @@ mod tests {
         let _ = InitCmd {
             bundle: root.join("bundle"),
             moniker: String::from("test_init_moniker"),
-            network: Network::Testnet1,
+            network: Network::Testnet3,
             allow_dirty: false,
         }
         .init(root)
