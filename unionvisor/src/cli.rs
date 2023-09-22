@@ -57,8 +57,6 @@ pub enum Command {
 
     /// Initializes a local directory to join the union network.
     Init(InitCmd),
-    // Merges toml or json configuration files.
-    // Merge(MergeCmd),
 }
 
 #[derive(Clone, Parser)]
@@ -102,17 +100,6 @@ pub struct RunCmd {
     /// Milliseconds in between each poll for an upgrade.
     #[arg(short, long, env = "UNIONVISOR_POLL_INTERVAL")]
     poll_interval: Option<u64>,
-}
-
-/// Merges toml or json files and writes the merged output to `file`.
-#[derive(Clone, Parser)]
-pub struct MergeCmd {
-    /// The file to use as base and write to.
-    file: PathBuf,
-
-    /// Input file to read from. If omitted, stdin is used.
-    #[arg(short, long)]
-    from: Option<PathBuf>,
 }
 
 impl Cli {
@@ -287,35 +274,6 @@ mod tests {
 
     use super::*;
     use crate::testdata;
-
-    #[test]
-    fn test_merge_to_string() {
-        use toml::toml;
-
-        let tmp = testdata::temp_dir_with(&["home"]);
-        let home = tmp.into_path().join("home");
-
-        let cmd = MergeCmd {
-            file: home.join("config").join("client.toml"),
-            from: None,
-        };
-
-        let input = toml! {
-            broadcast-mode = "async"
-            foo = "bar"
-        };
-
-        let output = cmd.merge_to_string(&input.to_string()).unwrap();
-        let expected = toml! {
-            chain-id = "union"
-            keyring-backend = "os"
-            output = "text"
-            node = "tcp://localhost:26657"
-            broadcast-mode = "async"
-            foo = "bar"
-        };
-        assert_eq!(output, expected.to_string());
-    }
 
     /// Verifies that calling unionvisor init -i will return without impacting the fs.
     #[test]
