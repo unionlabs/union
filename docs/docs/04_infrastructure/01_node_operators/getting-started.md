@@ -62,7 +62,7 @@ export GENESIS_URL="https://raw.githubusercontent.com/unionlabs/union/e1f9a3e3b8
 
 Then we'll have `uniond` initialize our data and configuration directories. By default `/User/{USER}/.uniond` is used.
 
-```
+```sh
 uniond init $MONIKER "bn254" --chain-id $CHAIN_ID
 ```
 
@@ -82,7 +82,7 @@ seeds = "b4d587b3d3666d52df0cd43962080fd164568fe0@union-testnet.cor.systems:2665
 
 Download the [genesis.json](https://raw.githubusercontent.com/unionlabs/union/e1f9a3e3b84a8c39faf7046931159eda3e95fdb2/networks/genesis/union-testnet-3/genesis.json) and copy it to your `uniond` home directory.
 
-```
+```sh
 curl $GENESIS_URL > ~/.union/config/genesis.json
 ```
 
@@ -92,7 +92,7 @@ To join as a validator, you need to submit a registration transaction. You can d
 
 First, add a wallet that holds Union tokens.
 
-```
+```sh
 uniond keys add $KEY_NAME --recover
 ```
 
@@ -122,7 +122,7 @@ uniond tx staking create-validator \
 
 We recommend running `uniond` as a systemd service. Create a file in `/etc/systemd/system` called `uniond.service`. Make sure to replace $USER with your username.
 
-```
+```systemd
 [Unit]
 Description=uniond
 [Service]
@@ -138,7 +138,7 @@ WantedBy=multi-user.target
 
 You should be able to view the node logs by executing
 
-```
+```sh
 sudo journalctl -f -u uniond
 ```
 

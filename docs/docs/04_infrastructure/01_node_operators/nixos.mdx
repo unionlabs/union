@@ -23,7 +23,7 @@ import CodeBlock from "@theme/CodeBlock";
 
 You can then deploy the configuration by running
 
-```
+```sh
 GIT_LFS_SKIP_SMUDGE=1 nixos-rebuild switch --flake .#testnet-validator --target-host user@validator.domain -L
 ```
 
@@ -31,7 +31,7 @@ GIT_LFS_SKIP_SMUDGE=1 nixos-rebuild switch --flake .#testnet-validator --target-
 
 To upgrade to newer versions, simply run
 
-```
+```sh
 nix flake update
 GIT_LFS_SKIP_SMUDGE=1 nixos-rebuild switch --flake .#testnet-validator --target-host user@validator.domain -L
 ```
