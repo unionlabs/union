@@ -19,10 +19,13 @@
     "@docusaurus/theme-mermaid": "2.4.1",
     "@mdx-js/react": "^1.6.22",
     "clsx": "^1.2.1",
+    "hast-util-is-element": "1.1.0",
     "prism-react-renderer": "^1.3.5",
     "raw-loader": "^4.0.2",
     "react": "^17.0.2",
-    "react-dom": "^17.0.2"
+    "react-dom": "^17.0.2",
+    "rehype-katex": "5",
+    "remark-math": "3"
   },
   "devDependencies": {
     "@docusaurus/module-type-aliases": "2.4.0"
