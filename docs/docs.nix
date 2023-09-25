@@ -1,7 +1,7 @@
 { ... }: {
   perSystem = { pkgs, lib, ... }:
     let
-      npmDepsHash = "sha256-0uH8gSnftFGVQfdoj8jxbxMhQb+/FTmrbQb+E0qfS68=";
+      npmDepsHash = "sha256-sNrhY5+/xtMpfmqbb8JlCWaktewOgZ6q8sGJ0fNL5kc=";
       src = ../.;
       pname = "docs";
       version = "0.0.1";
