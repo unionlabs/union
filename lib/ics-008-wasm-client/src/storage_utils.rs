@@ -84,11 +84,11 @@ pub fn save_client_state<C: CustomQuery, CS: IntoProto>(
 pub fn update_client_state<C: CustomQuery, CS: IntoProto>(
     deps: DepsMut<C>,
     mut wasm_client_state: wasm::client_state::ClientState<CS>,
-    latest_execution_height: u64,
+    latest_height: u64,
 ) {
     wasm_client_state.latest_height = Height {
         revision_number: 0,
-        revision_height: latest_execution_height,
+        revision_height: latest_height,
     };
 
     save_client_state(deps, wasm_client_state);
