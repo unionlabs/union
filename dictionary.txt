@@ -635,3 +635,6 @@ zedxv
 zerolog
 zkps
 λpxrx
+katex
+rehype
+crossorigin
