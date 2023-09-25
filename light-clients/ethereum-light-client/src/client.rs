@@ -219,6 +219,13 @@ impl IbcClient for EthereumLightClient {
             _ => {}
         }
 
+        // Some updates can be only for updating the sync committee, therefore the slot number can be
+        // smaller. We don't want to save a new state if this is the case.
+        let updated_height = core::cmp::max(
+            trusted_height.revision_height,
+            consensus_update.attested_header.beacon.slot,
+        );
+
         if consensus_update.attested_header.beacon.slot > consensus_state.data.slot {
             consensus_state.data.slot = consensus_update.attested_header.beacon.slot;
 
@@ -238,29 +245,16 @@ impl IbcClient for EthereumLightClient {
             );
             if client_state.data.latest_slot < consensus_update.attested_header.beacon.slot {
                 client_state.data.latest_slot = consensus_update.attested_header.beacon.slot;
+                update_client_state(deps.branch(), client_state, updated_height);
             }
         }
 
-        // Some updates can be only for updating the sync committee, therefore the execution number can be
-        // smaller. We don't want to save a new state if this is the case.
-        let updated_execution_height = core::cmp::max(
-            trusted_height.revision_height,
-            consensus_update.attested_header.execution.block_number,
-        );
-
-        update_client_state(
-            deps.branch(),
-            client_state,
-            // wasm_client_state.data,
-            updated_execution_height,
-        );
         save_consensus_state(
             deps,
             consensus_state,
-            // wasm_consensus_state.data,
             &Height {
                 revision_number: trusted_height.revision_number,
-                revision_height: updated_execution_height,
+                revision_height: updated_height,
             },
         );
 
