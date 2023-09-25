@@ -1,5 +1,6 @@
 ---
 title: "Getting Started"
+sidebar_position: 0
 ---
 
 This guide is intended for validators running on bare-metal servers and explains how Union releases work. Check out the [NixOS](./nixos) and the [kubernetes](./kubernetes) guide for more production-ready deployments.
