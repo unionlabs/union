@@ -18,7 +18,7 @@ services:
     image: ghcr.io/unionlabs/uniond:latest
     volumes: ~/.uniond:/root/.uniond
     ports:
-      - "127.0.0.1:26657:26657"
+      - "26657:26657"
       - "1317:1317"
       - "9093:9093"
     restart: unless-stopped
