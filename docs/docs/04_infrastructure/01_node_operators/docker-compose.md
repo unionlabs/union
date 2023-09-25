@@ -18,13 +18,13 @@ services:
     image: ghcr.io/unionlabs/uniond:latest
     volumes: ~/.uniond:/root/.uniond
     ports:
-      - "127.0.0.1:26657:26657"
+      - "26657:26657"
       - "1317:1317"
       - "9093:9093"
     restart: unless-stopped
 ```
 
-The only section of significance is the `volumes` key. Here we map an already initialized `~/.uniond` directory to the `node` service. The `~/.uniond` directory should contain a `config` and `data` directory. To properly set these up, check out the [validator guide](./getting-started#initialization).
+Pay special attention to the `volumes` key. Here we map an already initialized `~/.uniond` directory to the `node` service. The `~/.uniond` directory should contain a `config` and `data` directory. To properly set these up, check out the [validator guide](./getting-started#initialization).
 
 ## Monitoring
 

@@ -183,6 +183,7 @@ cpufeatures
 cratedir
 crisiskeeper
 crisistypes
+crossorigin
 ctypes
 dasel
 dataconnector
@@ -316,6 +317,7 @@ journalctl
 jsonschema
 jwtsecret
 karel
+katex
 keccak
 keepertest
 keybase
@@ -459,6 +461,7 @@ reentrancy
 reflectionv
 regclass
 regen
+rehype
 repr
 reqwest
 ripemd
