@@ -188,6 +188,7 @@ ctypes
 dasel
 dataconnector
 datadir
+datagram
 datetime
 delegators
 dels

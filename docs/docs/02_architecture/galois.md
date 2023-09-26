@@ -22,7 +22,7 @@ Transactions through Union to other layers are composed of three steps:
 sequenceDiagram
     Union->>+Voyager: Emits IBC datagram at block N
     Voyager->>+Galois: Proof Request for block M..N+1
-    Galois-->>-Voyager: Sends Generated Proofs for blocks 
+    Galois-->>-Voyager: Sends Generated Proofs for blocks
     Voyager->>-Counterparty: Updates counterparty with Union state
 ```
 
