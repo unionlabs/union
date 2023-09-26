@@ -4,7 +4,7 @@
 	import Tagline from '$lib/Tagline.svelte';
 </script>
 
-<div class=" max-w-screen relative flex items-center justify-center overflow-hidden">
+<main class="flex-1 max-w-screen relative flex items-center justify-center overflow-hidden">
 	<div class="flex flex-col justify-center items-center">
 		<Logo />
 		<Tagline />
@@ -18,7 +18,7 @@
     <p class="text-xl font-semibold">Infrastructure for <span class="text-accent font-bold">shared security</span>.<p>
     !-->
 	</div>
-</div>
+</main>
 
 <style lang="postcss">
 	@keyframes fadeIn {

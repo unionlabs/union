@@ -14,7 +14,7 @@ export default {
 				]
 			},
 			colors: {
-				background: '#1b1b1d',
+				background: '#040404',
 				sub: '#252525',
 				accent: '#00FFF0',
 				primary: '#fff'
