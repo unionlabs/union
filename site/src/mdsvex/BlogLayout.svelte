@@ -11,18 +11,5 @@
 	<span class="font-mono mb-2 mt-1 sm:text-lg"
 		>{date} - <a class="text-accent" href={`https://x.com/${author}`}>{author}</a></span
 	>
-
 	<slot />
 </main>
-
-<!--
-<style lang="postcss">
-	:global(.blog-post-container > p) {
-		@apply sm:text-xl mb-4;
-	}
-
-	:global(.blog-post-container > h2) {
-		@apply sm:text-3xl sm:mt-4 mb-0 font-semibold mb-4;
-	}
-</style>
-	!-->
