@@ -187,7 +187,7 @@ func (z *E2) Exp(x E2, k *big.Int) *E2 {
 }
 
 // Sqrt sets z to the square root of and returns z
-// The function does not test wether the square root
+// The function does not test whether the square root
 // exists or not, it's up to the caller to call
 // Legendre beforehand.
 // cf https://eprint.iacr.org/2012/685.pdf (algo 10)

@@ -361,7 +361,11 @@ func parse(r []Field, input interface{}, target reflect.Type, parentFullName, pa
 			val := tValue.Index(j)
 			if val.CanAddr() && val.Addr().CanInterface() {
 				fqn := getFullName(parentFullName, strconv.Itoa(j), "")
-				subFields, err = parse(subFields, val.Addr().Interface(), target, fqn, fqn, parentTagName, parentVisibility, nbPublic, nbSecret)
+				ival := val.Addr().Interface()
+				if ih, hasInitHook := ival.(InitHook); hasInitHook {
+					ih.GnarkInitHook()
+				}
+				subFields, err = parse(subFields, ival, target, fqn, fqn, parentTagName, parentVisibility, nbPublic, nbSecret)
 				if err != nil {
 					return nil, err
 				}

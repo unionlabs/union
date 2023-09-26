@@ -39,9 +39,9 @@ creating modes from options at runtime.
 
 EncMode and DecMode interfaces are created from EncOptions or DecOptions structs.
 
-    em := cbor.EncOptions{...}.EncMode()
-    em := cbor.CanonicalEncOptions().EncMode()
-    em := cbor.CTAP2EncOptions().EncMode()
+    em, err := cbor.EncOptions{...}.EncMode()
+    em, err := cbor.CanonicalEncOptions().EncMode()
+    em, err := cbor.CTAP2EncOptions().EncMode()
 
 Modes use immutable options to avoid side-effects and simplify concurrency. Behavior of
 modes won't accidentally change at runtime after they're created.

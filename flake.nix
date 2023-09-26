@@ -3,6 +3,7 @@
     "Union is a trust-minimized, zero-knowledge bridging protocol, designed for censorship resistance, extremely high security and usage in decentralized finance.";
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-parts = {
       url = "github:hercules-ci/flake-parts";
       inputs.nixpkgs-lib.follows = "nixpkgs";
@@ -82,6 +83,7 @@
   outputs =
     inputs@{ self
     , nixpkgs
+    , nixpkgs-unstable
     , flake-parts
     , nix-filter
     , crane
@@ -157,6 +159,13 @@
               inherit nixpkgs dbg get-flake;
 
               pkgs = nixpkgs.legacyPackages.${system}.appendOverlays
+                (with inputs; [
+                  rust-overlay.overlays.default
+                  iohk-nix.overlays.crypto
+                  foundry.overlay
+                ]);
+
+              pkgs-unstable = nixpkgs-unstable.legacyPackages.${system}.appendOverlays
                 (with inputs; [
                   rust-overlay.overlays.default
                   iohk-nix.overlays.crypto

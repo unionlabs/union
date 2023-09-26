@@ -18,6 +18,7 @@ package plonk
 
 import (
 	"crypto/sha256"
+	"errors"
 	"math/big"
 	"runtime"
 	"sync"
@@ -34,10 +35,11 @@ import (
 	"github.com/consensys/gnark-crypto/ecc/bls12-377/fr/fft"
 
 	"github.com/consensys/gnark-crypto/ecc/bls12-377/fr/iop"
-	"github.com/consensys/gnark/constraint/bls12-377"
+	cs "github.com/consensys/gnark/constraint/bls12-377"
 
 	"github.com/consensys/gnark-crypto/fiat-shamir"
 	"github.com/consensys/gnark/backend"
+	"github.com/consensys/gnark/constraint"
 	"github.com/consensys/gnark/constraint/solver"
 	"github.com/consensys/gnark/internal/utils"
 	"github.com/consensys/gnark/logger"
@@ -54,8 +56,7 @@ type Proof struct {
 	// Commitments to h1, h2, h3 such that h = h1 + Xh2 + X**2h3 is the quotient polynomial
 	H [3]kzg.Digest
 
-	// PI2, the BSB22 commitment
-	PI2 kzg.Digest
+	Bsb22Commitments []kzg.Digest
 
 	// Batch opening proof of h1 + zeta*h2 + zeta**2h3, linearizedPolynomial, l, r, o, s1, s2, qCPrime
 	BatchedProof kzg.BatchOpeningProof
@@ -64,16 +65,55 @@ type Proof struct {
 	ZShiftedOpening kzg.OpeningProof
 }
 
+// Computing and verifying Bsb22 multi-commits explained in https://hackmd.io/x8KsadW3RRyX7YTCFJIkHg
+func bsb22ComputeCommitmentHint(spr *cs.SparseR1CS, pk *ProvingKey, proof *Proof, cCommitments []*iop.Polynomial, res *fr.Element, commDepth int) solver.Hint {
+	return func(_ *big.Int, ins, outs []*big.Int) error {
+		commitmentInfo := spr.CommitmentInfo.(constraint.PlonkCommitments)[commDepth]
+		committedValues := make([]fr.Element, pk.Domain[0].Cardinality)
+		offset := spr.GetNbPublicVariables()
+		for i := range ins {
+			committedValues[offset+commitmentInfo.Committed[i]].SetBigInt(ins[i])
+		}
+		var (
+			err     error
+			hashRes []fr.Element
+		)
+		if _, err = committedValues[offset+commitmentInfo.CommitmentIndex].SetRandom(); err != nil { // Commitment injection constraint has qcp = 0. Safe to use for blinding.
+			return err
+		}
+		if _, err = committedValues[offset+spr.GetNbConstraints()-1].SetRandom(); err != nil { // Last constraint has qcp = 0. Safe to use for blinding
+			return err
+		}
+		pi2iop := iop.NewPolynomial(&committedValues, iop.Form{Basis: iop.Lagrange, Layout: iop.Regular})
+		cCommitments[commDepth] = pi2iop.ShallowClone()
+		cCommitments[commDepth].ToCanonical(&pk.Domain[0]).ToRegular()
+		if proof.Bsb22Commitments[commDepth], err = kzg.Commit(cCommitments[commDepth].Coefficients(), pk.Kzg); err != nil {
+			return err
+		}
+		if hashRes, err = fr.Hash(proof.Bsb22Commitments[commDepth].Marshal(), []byte("BSB22-Plonk"), 1); err != nil {
+			return err
+		}
+		res.Set(&hashRes[0]) // TODO @Tabaie use CommitmentIndex for this; create a new variable CommitmentConstraintIndex for other uses
+		res.BigInt(outs[0])
+
+		return nil
+	}
+}
+
 func Prove(spr *cs.SparseR1CS, pk *ProvingKey, fullWitness witness.Witness, opts ...backend.ProverOption) (*Proof, error) {
+	log := logger.Logger().With().
+		Str("curve", spr.CurveID().String()).
+		Int("nbConstraints", spr.GetNbConstraints()).
+		Str("backend", "plonk").Logger()
 
-	log := logger.Logger().With().Str("curve", spr.CurveID().String()).Int("nbConstraints", len(spr.Constraints)).Str("backend", "plonk").Logger()
-
+	// parse the options
 	opt, err := backend.NewProverConfig(opts...)
 	if err != nil {
 		return nil, err
 	}
 
 	start := time.Now()
+
 	// pick a hash function that will be used to derive the challenges
 	hFunc := sha256.New()
 
@@ -82,94 +122,64 @@ func Prove(spr *cs.SparseR1CS, pk *ProvingKey, fullWitness witness.Witness, opts
 
 	// result
 	proof := &Proof{}
-	lagReg := iop.Form{Basis: iop.Lagrange, Layout: iop.Regular}
-	var (
-		wpi2iop       *iop.Polynomial // canonical
-		commitmentVal fr.Element      // TODO @Tabaie get rid of this
-	)
-	if spr.CommitmentInfo.Is() {
-		opt.SolverOpts = append(opt.SolverOpts, solver.OverrideHint(spr.CommitmentInfo.HintID, func(_ *big.Int, ins, outs []*big.Int) error {
-			pi2 := make([]fr.Element, pk.Domain[0].Cardinality)
-			offset := spr.GetNbPublicVariables()
-			for i := range ins {
-				pi2[offset+spr.CommitmentInfo.Committed[i]].SetBigInt(ins[i])
-			}
-			var (
-				err     error
-				hashRes []fr.Element
-			)
-			if _, err = pi2[offset+spr.CommitmentInfo.CommitmentIndex].SetRandom(); err != nil { // Commitment injection constraint has qcp = 0. Safe to use for blinding.
-				return err
-			}
-			if _, err = pi2[offset+len(spr.Constraints)-1].SetRandom(); err != nil { // Last constraint has qcp = 0. Safe to use for blinding
-				return err
-			}
-			pi2iop := iop.NewPolynomial(&pi2, lagReg)
-			wpi2iop = pi2iop.ShallowClone()
-			wpi2iop.ToCanonical(&pk.Domain[0]).ToRegular()
-			if proof.PI2, err = kzg.Commit(wpi2iop.Coefficients(), pk.Vk.KZGSRS); err != nil {
-				return err
-			}
-			if hashRes, err = fr.Hash(proof.PI2.Marshal(), []byte("BSB22-Plonk"), 1); err != nil {
-				return err
-			}
-			commitmentVal = hashRes[0] // TODO @Tabaie use CommitmentIndex for this; create a new variable CommitmentConstraintIndex for other uses
-			commitmentVal.BigInt(outs[0])
-			return nil
-		}))
-	} else {
-		// TODO Leaving pi2 in for testing. In the future, bypass when no commitment present
-		pi2 := make([]fr.Element, pk.Domain[0].Cardinality)
 
-		pi2iop := iop.NewPolynomial(&pi2, lagReg)
-		wpi2iop = pi2iop.ShallowClone()
-		// wpi2iop.ToCanonical(&pk.Domain[0]).ToRegular()
+	commitmentInfo := spr.CommitmentInfo.(constraint.PlonkCommitments)
+	commitmentVal := make([]fr.Element, len(commitmentInfo)) // TODO @Tabaie get rid of this
+	cCommitments := make([]*iop.Polynomial, len(commitmentInfo))
+	proof.Bsb22Commitments = make([]kzg.Digest, len(commitmentInfo))
+
+	// override the hint for the commitment constraints
+	for i := range commitmentInfo {
+		opt.SolverOpts = append(opt.SolverOpts, solver.OverrideHint(commitmentInfo[i].HintID,
+			bsb22ComputeCommitmentHint(spr, pk, proof, cCommitments, &commitmentVal[i], i)))
+	}
+
+	// override the hint for GKR constraints
+	if spr.GkrInfo.Is() {
+		var gkrData cs.GkrSolvingData
+		opt.SolverOpts = append(opt.SolverOpts,
+			solver.OverrideHint(spr.GkrInfo.SolveHintID, cs.GkrSolveHint(spr.GkrInfo, &gkrData)),
+			solver.OverrideHint(spr.GkrInfo.ProveHintID, cs.GkrProveHint(spr.GkrInfo.HashName, &gkrData)))
 	}
 
 	// query l, r, o in Lagrange basis, not blinded
+	lagReg := iop.Form{Basis: iop.Lagrange, Layout: iop.Regular}
 	_solution, err := spr.Solve(fullWitness, opt.SolverOpts...)
 	if err != nil {
 		return nil, err
-	}
-	// TODO @gbotrel deal with that conversion lazily
-	var lcpi2iop *iop.Polynomial
-	if spr.CommitmentInfo.Is() {
-		lcpi2iop = wpi2iop.Clone(int(pk.Domain[1].Cardinality)).ToLagrangeCoset(&pk.Domain[1]) // lagrange coset form
-	} else {
-		coeffs := make([]fr.Element, pk.Domain[1].Cardinality)
-		lcpi2iop = iop.NewPolynomial(&coeffs, iop.Form{Basis: iop.LagrangeCoset, Layout: iop.Regular})
 	}
 	solution := _solution.(*cs.SparseR1CSSolution)
 	evaluationLDomainSmall := []fr.Element(solution.L)
 	evaluationRDomainSmall := []fr.Element(solution.R)
 	evaluationODomainSmall := []fr.Element(solution.O)
+	wliop := iop.NewPolynomial(&evaluationLDomainSmall, lagReg)
+	wriop := iop.NewPolynomial(&evaluationRDomainSmall, lagReg)
+	woiop := iop.NewPolynomial(&evaluationODomainSmall, lagReg)
 
-	// l, r o and blinded versions
-	var (
-		wliop,
-		wriop,
-		woiop,
-		bwliop,
-		bwriop,
-		bwoiop *iop.Polynomial
-	)
+	// convert the commitment polynomials to LagrangeCoset basis
+	lcCommitments := make([]*iop.Polynomial, len(cCommitments))
+	chLcc := make(chan struct{}, 1)
+	go func() {
+		for i := range cCommitments {
+			lcCommitments[i] = cCommitments[i].Clone(int(pk.Domain[1].Cardinality)).ToLagrangeCoset(&pk.Domain[1]).ToRegular() // lagrange coset form
+		}
+		close(chLcc)
+	}()
+
+	// l, r, o and blinded versions
+	var bwliop, bwriop, bwoiop *iop.Polynomial
 	var wgLRO sync.WaitGroup
 	wgLRO.Add(3)
 	go func() {
-		// we keep in lagrange regular form since iop.BuildRatioCopyConstraint prefers it in this form.
-		wliop = iop.NewPolynomial(&evaluationLDomainSmall, lagReg)
-		// we set the underlying slice capacity to domain[1].Cardinality to minimize mem moves.
-		bwliop = wliop.Clone(int(pk.Domain[1].Cardinality)).ToCanonical(&pk.Domain[0]).ToRegular().Blind(1)
+		bwliop = wliop.Clone(int(pk.Domain[0].Cardinality) + 2).ToCanonical(&pk.Domain[0]).ToRegular().Blind(1)
 		wgLRO.Done()
 	}()
 	go func() {
-		wriop = iop.NewPolynomial(&evaluationRDomainSmall, lagReg)
-		bwriop = wriop.Clone(int(pk.Domain[1].Cardinality)).ToCanonical(&pk.Domain[0]).ToRegular().Blind(1)
+		bwriop = wriop.Clone(int(pk.Domain[0].Cardinality) + 2).ToCanonical(&pk.Domain[0]).ToRegular().Blind(1)
 		wgLRO.Done()
 	}()
 	go func() {
-		woiop = iop.NewPolynomial(&evaluationODomainSmall, lagReg)
-		bwoiop = woiop.Clone(int(pk.Domain[1].Cardinality)).ToCanonical(&pk.Domain[0]).ToRegular().Blind(1)
+		bwoiop = woiop.Clone(int(pk.Domain[0].Cardinality) + 2).ToCanonical(&pk.Domain[0]).ToRegular().Blind(1)
 		wgLRO.Done()
 	}()
 
@@ -183,33 +193,27 @@ func Prove(spr *cs.SparseR1CS, pk *ProvingKey, fullWitness witness.Witness, opts
 	chLcqk := make(chan struct{}, 1)
 	go func() {
 		// compute qk in canonical basis, completed with the public inputs
-		// We copy the coeffs of qk to pk is not mutated
-		lqkcoef := pk.lQk.Coefficients()
-		qkCompletedCanonical := make([]fr.Element, len(lqkcoef))
+		lcqk = pk.trace.Qk.Clone(int(pk.Domain[1].Cardinality)).ToLagrange(&pk.Domain[0]).ToRegular()
+		qkCompletedCanonical := lcqk.Coefficients()
 		copy(qkCompletedCanonical, fw[:len(spr.Public)])
-		copy(qkCompletedCanonical[len(spr.Public):], lqkcoef[len(spr.Public):])
-		if spr.CommitmentInfo.Is() {
-			qkCompletedCanonical[spr.GetNbPublicVariables()+spr.CommitmentInfo.CommitmentIndex] = commitmentVal
+		for i := range commitmentInfo {
+			qkCompletedCanonical[spr.GetNbPublicVariables()+commitmentInfo[i].CommitmentIndex] = commitmentVal[i]
 		}
-		pk.Domain[0].FFTInverse(qkCompletedCanonical, fft.DIF)
-		fft.BitReverse(qkCompletedCanonical)
-
-		canReg := iop.Form{Basis: iop.Canonical, Layout: iop.Regular}
-		lcqk = iop.NewPolynomial(&qkCompletedCanonical, canReg)
-		lcqk.ToLagrangeCoset(&pk.Domain[1])
+		lcqk.ToCanonical(&pk.Domain[0]).ToRegular().
+			ToLagrangeCoset(&pk.Domain[1]).ToRegular()
 		close(chLcqk)
 	}()
 
 	// The first challenge is derived using the public data: the commitments to the permutation,
 	// the coefficients of the circuit, and the public inputs.
 	// derive gamma from the Comm(blinded cl), Comm(blinded cr), Comm(blinded co)
-	if err := bindPublicData(&fs, "gamma", *pk.Vk, fw[:len(spr.Public)], proof.PI2); err != nil {
+	if err := bindPublicData(&fs, "gamma", pk.Vk, fw[:len(spr.Public)]); err != nil {
 		return nil, err
 	}
 
 	// wait for polys to be blinded
 	wgLRO.Wait()
-	if err := commitToLRO(bwliop.Coefficients(), bwriop.Coefficients(), bwoiop.Coefficients(), proof, pk.Vk.KZGSRS); err != nil {
+	if err := commitToLRO(bwliop.Coefficients(), bwriop.Coefficients(), bwoiop.Coefficients(), proof, pk.Kzg); err != nil {
 		return nil, err
 	}
 
@@ -228,22 +232,30 @@ func Prove(spr *cs.SparseR1CS, pk *ProvingKey, fullWitness witness.Witness, opts
 
 	// l, r, o are already blinded
 	wgLRO.Add(3)
+
+	// compute l,r,o (blinded version) in LagrangeCoset basis.
+	// we keep the regular version in memory for the next step
+	var lcbwliop, lcbwriop, lcbwoiop *iop.Polynomial
+
 	go func() {
-		bwliop.ToLagrangeCoset(&pk.Domain[1])
+		lcbwliop = bwliop.Clone(int(pk.Domain[1].Cardinality))
+		lcbwliop.ToLagrangeCoset(&pk.Domain[1]).ToRegular()
 		wgLRO.Done()
 	}()
 	go func() {
-		bwriop.ToLagrangeCoset(&pk.Domain[1])
+		lcbwriop = bwriop.Clone(int(pk.Domain[1].Cardinality))
+		lcbwriop.ToLagrangeCoset(&pk.Domain[1]).ToRegular()
 		wgLRO.Done()
 	}()
 	go func() {
-		bwoiop.ToLagrangeCoset(&pk.Domain[1])
+		lcbwoiop = bwoiop.Clone(int(pk.Domain[1].Cardinality))
+		lcbwoiop.ToLagrangeCoset(&pk.Domain[1]).ToRegular()
 		wgLRO.Done()
 	}()
 
 	// compute the copy constraint's ratio
 	// note that wliop, wriop and woiop are fft'ed (mutated) in the process.
-	ziop, err := iop.BuildRatioCopyConstraint(
+	bwziop, err := iop.BuildRatioCopyConstraint(
 		[]*iop.Polynomial{
 			wliop,
 			wriop,
@@ -258,53 +270,79 @@ func Prove(spr *cs.SparseR1CS, pk *ProvingKey, fullWitness witness.Witness, opts
 	if err != nil {
 		return proof, err
 	}
+	// unused.
+	wliop = nil
+	wriop = nil
+	woiop = nil
 
 	// commit to the blinded version of z
 	chZ := make(chan error, 1)
-	var bwziop, bwsziop *iop.Polynomial
+	var bwsziop *iop.Polynomial
 	var alpha fr.Element
 	go func() {
-		bwziop = ziop // iop.NewWrappedPolynomial(&ziop)
+		// blind Z
+		// TODO @gbotrel memory wise we should allocate a bigger result for BuildRatioCopyConstraint
 		bwziop.Blind(2)
-		proof.Z, err = kzg.Commit(bwziop.Coefficients(), pk.Vk.KZGSRS, runtime.NumCPU()*2)
+		proof.Z, err = kzg.Commit(bwziop.Coefficients(), pk.Kzg, runtime.NumCPU()*2)
 		if err != nil {
 			chZ <- err
 		}
 
 		// derive alpha from the Comm(l), Comm(r), Comm(o), Com(Z)
-		alpha, err = deriveRandomness(&fs, "alpha", &proof.Z)
+		alphaDeps := make([]*curve.G1Affine, len(proof.Bsb22Commitments)+1)
+		for i := range proof.Bsb22Commitments {
+			alphaDeps[i] = &proof.Bsb22Commitments[i]
+		}
+		alphaDeps[len(alphaDeps)-1] = &proof.Z
+		alpha, err = deriveRandomness(&fs, "alpha", alphaDeps...)
 		if err != nil {
 			chZ <- err
 		}
 
-		// Store z(g*x), without reallocating a slice
-		bwsziop = bwziop.ShallowClone().Shift(1)
-		bwsziop.ToLagrangeCoset(&pk.Domain[1])
+		// Store z(g*x)
+		// perf note: converting ToRegular here perfoms better on Apple M1, but not on a hpc machine.
+		bwsziop = bwziop.Clone().ToLagrangeCoset(&pk.Domain[1]) //.ToRegular()
+
 		chZ <- nil
 		close(chZ)
 	}()
 
+	// l , r , o, z, zs, qk , Bsb22Commitments, qCPrime
+	const (
+		idx_L                int = iota // bwliop
+		idx_R                           // bwriop
+		idx_O                           // bwoiop
+		idx_Z                           // bwsziop
+		idx_ZS                          // bwsziop shifted
+		idx_QK                          // lcqk
+		idx_Bsb22Commitments            // lcCommitments ... pk.lcQcp...
+	)
+
 	// Full capture using latest gnark crypto...
-	fic := func(fql, fqr, fqm, fqo, fqk, fqCPrime, l, r, o, pi2 fr.Element) fr.Element { // TODO @Tabaie make use of the fact that qCPrime is a selector: sparse and binary
+	fic := func(i int, fqk, l, r, o fr.Element, pi2QcPrime []fr.Element) fr.Element {
 
 		var ic, tmp fr.Element
 
-		ic.Mul(&fql, &l)
-		tmp.Mul(&fqr, &r)
+		ic.Mul(&pk.expandedTrace.Polynomials[i][idx_QL], &l)
+		tmp.Mul(&pk.expandedTrace.Polynomials[i][idx_QR], &r)
 		ic.Add(&ic, &tmp)
-		tmp.Mul(&fqm, &l).Mul(&tmp, &r)
+		tmp.Mul(&pk.expandedTrace.Polynomials[i][idx_QM], &l).Mul(&tmp, &r)
 		ic.Add(&ic, &tmp)
-		tmp.Mul(&fqo, &o)
+		tmp.Mul(&pk.expandedTrace.Polynomials[i][idx_QO], &o)
 		ic.Add(&ic, &tmp).Add(&ic, &fqk)
-		tmp.Mul(&fqCPrime, &pi2)
-		ic.Add(&ic, &tmp)
+		nbComms := len(commitmentInfo)
+		for j := range commitmentInfo {
+			tmp.Mul(&pi2QcPrime[j], &pi2QcPrime[j+nbComms])
+			ic.Add(&ic, &tmp)
+		}
 
 		return ic
 	}
 
-	fo := func(l, r, o, fid, fs1, fs2, fs3, fz, fzs fr.Element) fr.Element {
+	fo := func(i int, fid, l, r, o, fz, fzs fr.Element) fr.Element {
 		u := &pk.Domain[0].FrMultiplicativeGen
 		var a, b, tmp fr.Element
+
 		b.Mul(&beta, &fid)
 		a.Add(&b, &l).Add(&a, &gamma)
 		b.Mul(&b, u)
@@ -313,10 +351,10 @@ func Prove(spr *cs.SparseR1CS, pk *ProvingKey, fullWitness witness.Witness, opts
 		tmp.Mul(&b, u).Add(&tmp, &o).Add(&tmp, &gamma)
 		a.Mul(&a, &tmp).Mul(&a, &fz)
 
-		b.Mul(&beta, &fs1).Add(&b, &l).Add(&b, &gamma)
-		tmp.Mul(&beta, &fs2).Add(&tmp, &r).Add(&tmp, &gamma)
+		b.Mul(&beta, &pk.expandedTrace.Polynomials[i][idx_S1]).Add(&b, &l).Add(&b, &gamma)
+		tmp.Mul(&beta, &pk.expandedTrace.Polynomials[i][idx_S2]).Add(&tmp, &r).Add(&tmp, &gamma)
 		b.Mul(&b, &tmp)
-		tmp.Mul(&beta, &fs3).Add(&tmp, &o).Add(&tmp, &gamma)
+		tmp.Mul(&beta, &pk.expandedTrace.Polynomials[i][idx_S3]).Add(&tmp, &o).Add(&tmp, &gamma)
 		b.Mul(&b, &tmp).Mul(&b, &fzs)
 
 		b.Sub(&b, &a)
@@ -324,19 +362,16 @@ func Prove(spr *cs.SparseR1CS, pk *ProvingKey, fullWitness witness.Witness, opts
 		return b
 	}
 
-	fone := func(fz, flone fr.Element) fr.Element {
+	fone := func(i int, fz fr.Element) fr.Element {
 		one := fr.One()
-		one.Sub(&fz, &one).Mul(&one, &flone)
+		one.Sub(&fz, &one).Mul(&one, &pk.expandedTrace.Polynomials[i][idx_LONE])
 		return one
 	}
 
-	// 0 , 1 , 2, 3 , 4 , 5 , 6 , 7, 8 , 9  , 10, 11, 12, 13, 14,   15   , 16
-	// l , r , o, id, s1, s2, s3, z, zs, PI2, ql, qr, qm, qo, qk, qCPrime, lone
-	fm := func(x ...fr.Element) fr.Element {
-
-		a := fic(x[10], x[11], x[12], x[13], x[14], x[15], x[0], x[1], x[2], x[9])
-		b := fo(x[0], x[1], x[2], x[3], x[4], x[5], x[6], x[7], x[8])
-		c := fone(x[7], x[16])
+	fm := func(i int, fid fr.Element, x ...fr.Element) fr.Element {
+		a := fic(i, x[idx_QK], x[idx_L], x[idx_R], x[idx_O], x[idx_Bsb22Commitments:])
+		b := fo(i, fid, x[idx_L], x[idx_R], x[idx_O], x[idx_Z], x[idx_ZS])
+		c := fone(i, x[idx_Z])
 
 		c.Mul(&c, &alpha).Add(&c, &b).Mul(&c, &alpha).Add(&c, &a)
 
@@ -352,38 +387,36 @@ func Prove(spr *cs.SparseR1CS, pk *ProvingKey, fullWitness witness.Witness, opts
 	}
 
 	// wait for l, r o lagrange coset conversion
+	<-chLcc
 	wgLRO.Wait()
+	toEval := make([]*iop.Polynomial, 6+2*len(commitmentInfo))
+	toEval[idx_L] = lcbwliop
+	toEval[idx_R] = lcbwriop
+	toEval[idx_O] = lcbwoiop
+	toEval[idx_Z] = bwsziop.ShallowClone()
+	toEval[idx_ZS] = bwsziop.Shift(1)
+	toEval[idx_QK] = lcqk
+	copy(toEval[idx_Bsb22Commitments:], lcCommitments)
+	copy(toEval[idx_Bsb22Commitments+len(lcCommitments):], pk.lcQcp)
 
-	systemEvaluation, err := iop.Evaluate(fm, iop.Form{Basis: iop.LagrangeCoset, Layout: iop.BitReverse},
-		bwliop,
-		bwriop,
-		bwoiop,
-		pk.lcIdIOP,
-		pk.lcS1,
-		pk.lcS2,
-		pk.lcS3,
-		bwziop,
-		bwsziop,
-		lcpi2iop,
-		pk.lcQl,
-		pk.lcQr,
-		pk.lcQm,
-		pk.lcQo,
-		lcqk,
-		pk.lcQcp,
-		pk.lLoneIOP,
-	)
+	// systemEvaluation reuses lcqk for memory.
+	systemEvaluation, err := evaluate(lcqk, pk, fm, toEval...)
 	if err != nil {
 		return nil, err
 	}
-	// open blinded Z at zeta*z
-	chbwzIOP := make(chan struct{}, 1)
-	go func() {
-		bwziop.ToCanonical(&pk.Domain[1]).ToRegular()
-		close(chbwzIOP)
-	}()
 
-	h, err := iop.DivideByXMinusOne(systemEvaluation, [2]*fft.Domain{&pk.Domain[0], &pk.Domain[1]}) // TODO Rename to DivideByXNMinusOne or DivideByVanishingPoly etc
+	toEval = nil
+	bwsziop = nil
+	lcqk = nil
+	lcbwliop = nil
+	lcbwriop = nil
+	lcbwoiop = nil
+
+	for i := range lcCommitments {
+		lcCommitments[i] = nil
+	}
+
+	h, err := divideByXMinusOne(systemEvaluation, [2]*fft.Domain{&pk.Domain[0], &pk.Domain[1]}) // TODO Rename to DivideByXNMinusOne or DivideByVanishingPoly etc
 	if err != nil {
 		return nil, err
 	}
@@ -393,7 +426,7 @@ func Prove(spr *cs.SparseR1CS, pk *ProvingKey, fullWitness witness.Witness, opts
 		h.Coefficients()[:pk.Domain[0].Cardinality+2],
 		h.Coefficients()[pk.Domain[0].Cardinality+2:2*(pk.Domain[0].Cardinality+2)],
 		h.Coefficients()[2*(pk.Domain[0].Cardinality+2):3*(pk.Domain[0].Cardinality+2)],
-		proof, pk.Vk.KZGSRS); err != nil {
+		proof, pk.Kzg); err != nil {
 		return nil, err
 	}
 
@@ -404,30 +437,31 @@ func Prove(spr *cs.SparseR1CS, pk *ProvingKey, fullWitness witness.Witness, opts
 	}
 
 	// compute evaluations of (blinded version of) l, r, o, z, qCPrime at zeta
-	var blzeta, brzeta, bozeta, qcpzeta fr.Element
+	var blzeta, brzeta, bozeta fr.Element
+	qcpzeta := make([]fr.Element, len(commitmentInfo))
 
 	var wgEvals sync.WaitGroup
-	wgEvals.Add(4)
+	wgEvals.Add(3)
 	evalAtZeta := func(poly *iop.Polynomial, res *fr.Element) {
-		poly.ToCanonical(&pk.Domain[1]).ToRegular()
 		*res = poly.Evaluate(zeta)
 		wgEvals.Done()
 	}
 	go evalAtZeta(bwliop, &blzeta)
 	go evalAtZeta(bwriop, &brzeta)
 	go evalAtZeta(bwoiop, &bozeta)
-	go func() {
-		qcpzeta = pk.trace.Qcp.Evaluate(zeta)
-		wgEvals.Done()
-	}()
+	evalQcpAtZeta := func(begin, end int) {
+		for i := begin; i < end; i++ {
+			qcpzeta[i] = pk.trace.Qcp[i].Evaluate(zeta)
+		}
+	}
+	utils.Parallelize(len(commitmentInfo), evalQcpAtZeta)
 
 	var zetaShifted fr.Element
 	zetaShifted.Mul(&zeta, &pk.Vk.Generator)
-	<-chbwzIOP
 	proof.ZShiftedOpening, err = kzg.Open(
 		bwziop.Coefficients()[:bwziop.BlindedSize()],
 		zetaShifted,
-		pk.Vk.KZGSRS,
+		pk.Kzg,
 	)
 	if err != nil {
 		return nil, err
@@ -455,11 +489,12 @@ func Prove(spr *cs.SparseR1CS, pk *ProvingKey, fullWitness witness.Witness, opts
 		h2 := h.Coefficients()[pk.Domain[0].Cardinality+2 : 2*(pk.Domain[0].Cardinality+2)]
 		h1 := h.Coefficients()[:pk.Domain[0].Cardinality+2]
 		utils.Parallelize(len(foldedH), func(start, end int) {
+			var t fr.Element
 			for i := start; i < end; i++ {
-				foldedH[i].Mul(&foldedH[i], &zetaPowerm) // ζᵐ⁺²*h3
-				foldedH[i].Add(&foldedH[i], &h2[i])      // ζ^{m+2)*h3+h2
-				foldedH[i].Mul(&foldedH[i], &zetaPowerm) // ζ²⁽ᵐ⁺²⁾*h3+h2*ζᵐ⁺²
-				foldedH[i].Add(&foldedH[i], &h1[i])      // ζ^{2(m+2)*h3+ζᵐ⁺²*h2 + h1
+				t.Mul(&foldedH[i], &zetaPowerm) // ζᵐ⁺²*h3
+				t.Add(&t, &h2[i])               // ζ^{m+2)*h3+h2
+				t.Mul(&t, &zetaPowerm)          // ζ²⁽ᵐ⁺²⁾*h3+h2*ζᵐ⁺²
+				foldedH[i].Add(&t, &h1[i])      // ζ^{2(m+2)*h3+ζᵐ⁺²*h2 + h1
 			}
 		})
 		close(computeFoldedH)
@@ -490,13 +525,13 @@ func Prove(spr *cs.SparseR1CS, pk *ProvingKey, fullWitness witness.Witness, opts
 		bzuzeta,
 		qcpzeta,
 		bwziop.Coefficients()[:bwziop.BlindedSize()],
-		wpi2iop.Coefficients(),
+		coefficients(cCommitments),
 		pk,
 	)
 
 	// TODO this commitment is only necessary to derive the challenge, we should
 	// be able to avoid doing it and get the challenge in another way
-	linearizedPolynomialDigest, errLPoly = kzg.Commit(linearizedPolynomialCanonical, pk.Vk.KZGSRS, runtime.NumCPU()*2)
+	linearizedPolynomialDigest, errLPoly = kzg.Commit(linearizedPolynomialCanonical, pk.Kzg, runtime.NumCPU()*2)
 	if errLPoly != nil {
 		return nil, errLPoly
 	}
@@ -505,30 +540,35 @@ func Prove(spr *cs.SparseR1CS, pk *ProvingKey, fullWitness witness.Witness, opts
 	<-computeFoldedH
 
 	// Batch open the first list of polynomials
+	polysQcp := coefficients(pk.trace.Qcp)
+	polysToOpen := make([][]fr.Element, 7+len(polysQcp))
+	copy(polysToOpen[7:], polysQcp)
+	// offset := len(polysQcp)
+	polysToOpen[0] = foldedH
+	polysToOpen[1] = linearizedPolynomialCanonical
+	polysToOpen[2] = bwliop.Coefficients()[:bwliop.BlindedSize()]
+	polysToOpen[3] = bwriop.Coefficients()[:bwriop.BlindedSize()]
+	polysToOpen[4] = bwoiop.Coefficients()[:bwoiop.BlindedSize()]
+	polysToOpen[5] = pk.trace.S1.Coefficients()
+	polysToOpen[6] = pk.trace.S2.Coefficients()
+
+	digestsToOpen := make([]curve.G1Affine, len(pk.Vk.Qcp)+7)
+	copy(digestsToOpen[7:], pk.Vk.Qcp)
+	// offset = len(pk.Vk.Qcp)
+	digestsToOpen[0] = foldedHDigest
+	digestsToOpen[1] = linearizedPolynomialDigest
+	digestsToOpen[2] = proof.LRO[0]
+	digestsToOpen[3] = proof.LRO[1]
+	digestsToOpen[4] = proof.LRO[2]
+	digestsToOpen[5] = pk.Vk.S[0]
+	digestsToOpen[6] = pk.Vk.S[1]
+
 	proof.BatchedProof, err = kzg.BatchOpenSinglePoint(
-		[][]fr.Element{
-			foldedH,
-			linearizedPolynomialCanonical,
-			bwliop.Coefficients()[:bwliop.BlindedSize()],
-			bwriop.Coefficients()[:bwriop.BlindedSize()],
-			bwoiop.Coefficients()[:bwoiop.BlindedSize()],
-			pk.trace.S1.Coefficients(),
-			pk.trace.S2.Coefficients(),
-			pk.trace.Qcp.Coefficients(),
-		},
-		[]kzg.Digest{
-			foldedHDigest,
-			linearizedPolynomialDigest,
-			proof.LRO[0],
-			proof.LRO[1],
-			proof.LRO[2],
-			pk.Vk.S[0],
-			pk.Vk.S[1],
-			pk.Vk.Qcp,
-		},
+		polysToOpen,
+		digestsToOpen,
 		zeta,
 		hFunc,
-		pk.Vk.KZGSRS,
+		pk.Kzg,
 	)
 
 	log.Debug().Dur("took", time.Since(start)).Msg("prover done")
@@ -541,21 +581,29 @@ func Prove(spr *cs.SparseR1CS, pk *ProvingKey, fullWitness witness.Witness, opts
 
 }
 
+func coefficients(p []*iop.Polynomial) [][]fr.Element {
+	res := make([][]fr.Element, len(p))
+	for i, pI := range p {
+		res[i] = pI.Coefficients()
+	}
+	return res
+}
+
 // fills proof.LRO with kzg commits of bcl, bcr and bco
-func commitToLRO(bcl, bcr, bco []fr.Element, proof *Proof, srs *kzg.SRS) error {
+func commitToLRO(bcl, bcr, bco []fr.Element, proof *Proof, kzgPk kzg.ProvingKey) error {
 	n := runtime.NumCPU()
 	var err0, err1, err2 error
 	chCommit0 := make(chan struct{}, 1)
 	chCommit1 := make(chan struct{}, 1)
 	go func() {
-		proof.LRO[0], err0 = kzg.Commit(bcl, srs, n)
+		proof.LRO[0], err0 = kzg.Commit(bcl, kzgPk, n)
 		close(chCommit0)
 	}()
 	go func() {
-		proof.LRO[1], err1 = kzg.Commit(bcr, srs, n)
+		proof.LRO[1], err1 = kzg.Commit(bcr, kzgPk, n)
 		close(chCommit1)
 	}()
-	if proof.LRO[2], err2 = kzg.Commit(bco, srs, n); err2 != nil {
+	if proof.LRO[2], err2 = kzg.Commit(bco, kzgPk, n); err2 != nil {
 		return err2
 	}
 	<-chCommit0
@@ -568,20 +616,20 @@ func commitToLRO(bcl, bcr, bco []fr.Element, proof *Proof, srs *kzg.SRS) error {
 	return err1
 }
 
-func commitToQuotient(h1, h2, h3 []fr.Element, proof *Proof, srs *kzg.SRS) error {
+func commitToQuotient(h1, h2, h3 []fr.Element, proof *Proof, kzgPk kzg.ProvingKey) error {
 	n := runtime.NumCPU()
 	var err0, err1, err2 error
 	chCommit0 := make(chan struct{}, 1)
 	chCommit1 := make(chan struct{}, 1)
 	go func() {
-		proof.H[0], err0 = kzg.Commit(h1, srs, n)
+		proof.H[0], err0 = kzg.Commit(h1, kzgPk, n)
 		close(chCommit0)
 	}()
 	go func() {
-		proof.H[1], err1 = kzg.Commit(h2, srs, n)
+		proof.H[1], err1 = kzg.Commit(h2, kzgPk, n)
 		close(chCommit1)
 	}()
-	if proof.H[2], err2 = kzg.Commit(h3, srs, n); err2 != nil {
+	if proof.H[2], err2 = kzg.Commit(h3, kzgPk, n); err2 != nil {
 		return err2
 	}
 	<-chCommit0
@@ -605,7 +653,7 @@ func commitToQuotient(h1, h2, h3 []fr.Element, proof *Proof, srs *kzg.SRS) error
 // α²*L₁(ζ)*Z(X)
 // + α*( (l(ζ)+β*s1(ζ)+γ)*(r(ζ)+β*s2(ζ)+γ)*Z(μζ)*s3(X) - Z(X)*(l(ζ)+β*id1(ζ)+γ)*(r(ζ)+β*id2(ζ)+γ)*(o(ζ)+β*id3(ζ)+γ))
 // + l(ζ)*Ql(X) + l(ζ)r(ζ)*Qm(X) + r(ζ)*Qr(X) + o(ζ)*Qo(X) + Qk(X)
-func computeLinearizedPolynomial(lZeta, rZeta, oZeta, alpha, beta, gamma, zeta, zu, qcpZeta fr.Element, blindedZCanonical []fr.Element, pi2Canonical []fr.Element, pk *ProvingKey) []fr.Element {
+func computeLinearizedPolynomial(lZeta, rZeta, oZeta, alpha, beta, gamma, zeta, zu fr.Element, qcpZeta, blindedZCanonical []fr.Element, pi2Canonical [][]fr.Element, pk *ProvingKey) []fr.Element {
 
 	// first part: individual constraints
 	var rl fr.Element
@@ -653,7 +701,14 @@ func computeLinearizedPolynomial(lZeta, rZeta, oZeta, alpha, beta, gamma, zeta, 
 						Mul(&lagrangeZeta, &pk.Domain[0].CardinalityInv) // (1/n)*α²*L₁(ζ)
 
 	s3canonical := pk.trace.S3.Coefficients()
+
 	utils.Parallelize(len(blindedZCanonical), func(start, end int) {
+
+		cql := pk.trace.Ql.Coefficients()
+		cqr := pk.trace.Qr.Coefficients()
+		cqm := pk.trace.Qm.Coefficients()
+		cqo := pk.trace.Qo.Coefficients()
+		cqk := pk.trace.Qk.Coefficients()
 
 		var t, t0, t1 fr.Element
 
@@ -670,26 +725,27 @@ func computeLinearizedPolynomial(lZeta, rZeta, oZeta, alpha, beta, gamma, zeta, 
 
 			t.Mul(&t, &alpha) // α*( (l(ζ)+β*s1(ζ)+γ)*(r(ζ)+β*s2(ζ)+γ)*Z(μζ)*s3(X) - Z(X)*(l(ζ)+β*ζ+γ)*(r(ζ)+β*u*ζ+γ)*(o(ζ)+β*u²*ζ+γ))
 
-			cql := pk.trace.Ql.Coefficients()
-			cqr := pk.trace.Qr.Coefficients()
-			cqm := pk.trace.Qm.Coefficients()
-			cqo := pk.trace.Qo.Coefficients()
-			cqk := pk.trace.Qk.Coefficients()
 			if i < len(cqm) {
 
 				t1.Mul(&cqm[i], &rl) // linPol = linPol + l(ζ)r(ζ)*Qm(X)
+
 				t0.Mul(&cql[i], &lZeta)
 				t0.Add(&t0, &t1)
+
 				t.Add(&t, &t0) // linPol = linPol + l(ζ)*Ql(X)
 
 				t0.Mul(&cqr[i], &rZeta)
 				t.Add(&t, &t0) // linPol = linPol + r(ζ)*Qr(X)
 
-				t0.Mul(&cqo[i], &oZeta).Add(&t0, &cqk[i])
+				t0.Mul(&cqo[i], &oZeta)
+				t0.Add(&t0, &cqk[i])
+
 				t.Add(&t, &t0) // linPol = linPol + o(ζ)*Qo(X) + Qk(X)
 
-				t0.Mul(&pi2Canonical[i], &qcpZeta)
-				t.Add(&t, &t0)
+				for j := range qcpZeta {
+					t0.Mul(&pi2Canonical[j][i], &qcpZeta[j])
+					t.Add(&t, &t0)
+				}
 			}
 
 			t0.Mul(&blindedZCanonical[i], &lagrangeZeta)
@@ -697,4 +753,119 @@ func computeLinearizedPolynomial(lZeta, rZeta, oZeta, alpha, beta, gamma, zeta, 
 		}
 	})
 	return blindedZCanonical
+}
+
+// TODO @gbotrel these changes below should be merge upstream in gnark-crypto
+
+// expression represents a multivariate polynomial.
+type expression func(i int, fid fr.Element, x ...fr.Element) fr.Element
+
+// Evaluate evaluates f on each entry of x. The returned value is
+// the vector of evaluations of e on x.
+// The form of the result is LagrangeCoset Regular.
+// The Size field of the result is the same as the one of x[0].
+// The blindedSize field of the result is the same as Size.
+// The Shift field of the result is 0.
+// The result re-uses result memory space.
+func evaluate(result *iop.Polynomial, pk *ProvingKey, f expression, x ...*iop.Polynomial) (*iop.Polynomial, error) {
+	if len(x) == 0 {
+		return nil, errors.New("need at lest one input")
+	}
+
+	// check that the sizes are consistent
+	n := len(x[0].Coefficients())
+	m := len(x)
+	for i := 1; i < m; i++ {
+		if n != len(x[i].Coefficients()) {
+			return nil, errors.New("inconsistent sizes")
+		}
+	}
+
+	// result coefficients
+	r := result.Coefficients()
+	if len(r) != n {
+		return nil, errors.New("inconsistent sizes")
+	}
+
+	utils.Parallelize(n, func(start, end int) {
+		// inputs to the expression we will evaluate
+		vx := make([]fr.Element, m)
+		generator := pk.Domain[1].Generator
+
+		// we inject id polynomial
+		var fid fr.Element
+		fid.Exp(generator, big.NewInt(int64(start)))
+		fid.Mul(&fid, &pk.Domain[1].FrMultiplicativeGen)
+
+		for i := start; i < end; i++ {
+			for j := 0; j < m; j++ {
+				vx[j] = x[j].GetCoeff(i)
+			}
+			r[i] = f(i, fid, vx...)
+			fid.Mul(&fid, &generator)
+		}
+	})
+
+	res := iop.NewPolynomial(&r, iop.Form{Layout: iop.Regular, Basis: iop.LagrangeCoset})
+	res.SetSize(x[0].Size())
+	res.SetBlindedSize(x[0].Size())
+
+	return res, nil
+}
+
+// divideByXMinusOne
+// The input must be in LagrangeCoset.
+// The result is in Canonical Regular. (in place using a)
+func divideByXMinusOne(a *iop.Polynomial, domains [2]*fft.Domain) (*iop.Polynomial, error) {
+
+	// check that the basis is LagrangeCoset
+	if a.Basis != iop.LagrangeCoset {
+		return nil, errors.New("invalid form")
+	}
+
+	// prepare the evaluations of x^n-1 on the big domain's coset
+	xnMinusOneInverseLagrangeCoset := evaluateXnMinusOneDomainBigCoset(domains)
+
+	nbElmts := len(a.Coefficients())
+	rho := nbElmts / a.Size()
+
+	r := a.Coefficients()
+
+	utils.Parallelize(nbElmts, func(start, end int) {
+		for i := start; i < end; i++ {
+			r[i].Mul(&r[i], &xnMinusOneInverseLagrangeCoset[i%rho])
+		}
+	})
+
+	// TODO @gbotrel this is the only place we do a FFT inverse (on coset) with domain[1]
+	a.ToCanonical(domains[1]).ToRegular()
+
+	return a, nil
+
+}
+
+// evaluateXnMinusOneDomainBigCoset evaluates Xᵐ-1 on DomainBig coset
+func evaluateXnMinusOneDomainBigCoset(domains [2]*fft.Domain) []fr.Element {
+
+	ratio := domains[1].Cardinality / domains[0].Cardinality
+
+	res := make([]fr.Element, ratio)
+
+	expo := big.NewInt(int64(domains[0].Cardinality))
+	res[0].Exp(domains[1].FrMultiplicativeGen, expo)
+
+	var t fr.Element
+	t.Exp(domains[1].Generator, big.NewInt(int64(domains[0].Cardinality)))
+
+	one := fr.One()
+
+	for i := 1; i < int(ratio); i++ {
+		res[i].Mul(&res[i-1], &t)
+		res[i-1].Sub(&res[i-1], &one)
+	}
+	res[len(res)-1].Sub(&res[len(res)-1], &one)
+
+	res = fr.BatchInvert(res)
+
+	return res
 }

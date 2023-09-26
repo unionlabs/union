@@ -1,4 +1,4 @@
-// Copyright 2020 ConsenSys Software Inc.
+// Copyright 2020 Consensys Software Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -99,6 +99,28 @@ func (p *Polynomial) Shift(shift int) *Polynomial {
 // default blindedSize=Size, until the polynomial is blinded.
 func (p *Polynomial) BlindedSize() int {
 	return p.blindedSize
+}
+
+// Size returns the real size of the polynomial (seen as a vector).
+// For instance if len(P)=32 but P.Size=8, it means that P has been
+// extended (e.g. it is evaluated on a larger set) but P is a polynomial
+// of degree 7.
+func (p *Polynomial) Size() int {
+	return p.size
+}
+
+// SetSize sets the size of the polynomial.
+// size is the real size of the polynomial (seen as a vector).
+// For instance if len(P)=32 but P.size=8, it means that P has been
+// extended (e.g. it is evaluated on a larger set) but P is a polynomial
+// of degree 7.
+func (p *Polynomial) SetSize(size int) {
+	p.size = size
+}
+
+// SetBlindedSize sets the blinded size of the polynomial.
+func (p *Polynomial) SetBlindedSize(size int) {
+	p.blindedSize = size
 }
 
 // Blind blinds a polynomial q by adding Q(X)*(X^{n}-1),

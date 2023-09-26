@@ -56,10 +56,8 @@ func WithLogger(l zerolog.Logger) Option {
 // NewConfig returns a default SolverConfig with given prover options opts applied.
 func NewConfig(opts ...Option) (Config, error) {
 	log := logger.Logger()
-	opt := Config{Logger: log, HintFunctions: make(map[HintID]Hint)}
-	for _, v := range GetRegisteredHints() {
-		opt.HintFunctions[GetHintID(v)] = v
-	}
+	opt := Config{Logger: log}
+	opt.HintFunctions = cloneHintRegistry()
 	for _, option := range opts {
 		if err := option(&opt); err != nil {
 			return Config{}, err

@@ -4,41 +4,17 @@ import (
 	"github.com/consensys/gnark/constraint"
 )
 
-// TODO @gbotrel --> storing a UUID in the linear expressions would enable better perf
-// in the frontend -> check a linear expression is boolean, or has been converted to a
-// "backend" constraint.LinearExpresion ... and avoid duplicating work would be interesting.
-
 type LinearExpression []Term
+
+// NewLinearExpression helper to initialize a linear expression with one term
+func NewLinearExpression(vID int, cID constraint.Element) LinearExpression {
+	return LinearExpression{Term{Coeff: cID, VID: vID}}
+}
 
 func (l LinearExpression) Clone() LinearExpression {
 	res := make(LinearExpression, len(l))
 	copy(res, l)
 	return res
-}
-
-// NewLinearExpression helper to initialize a linear expression with one term
-func NewLinearExpression(vID int, cID constraint.Coeff) LinearExpression {
-	return LinearExpression{Term{Coeff: cID, VID: vID}}
-}
-
-func NewTerm(vID int, cID constraint.Coeff) Term {
-	return Term{Coeff: cID, VID: vID}
-}
-
-type Term struct {
-	VID   int
-	Coeff constraint.Coeff
-}
-
-func (t *Term) SetCoeff(c constraint.Coeff) {
-	t.Coeff = c
-}
-func (t Term) WireID() int {
-	return t.VID
-}
-
-func (t Term) HashCode() uint64 {
-	return t.Coeff[0]*29 + uint64(t.VID<<12)
 }
 
 // Len return the length of the Variable (implements Sort interface)

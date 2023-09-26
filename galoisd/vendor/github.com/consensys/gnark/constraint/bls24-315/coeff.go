@@ -46,7 +46,7 @@ func newCoeffTable(capacity int) CoeffTable {
 
 }
 
-func (ct *CoeffTable) MakeTerm(coeff *constraint.Coeff, variableID int) constraint.Term {
+func (ct *CoeffTable) AddCoeff(coeff constraint.Element) uint32 {
 	c := (*fr.Element)(coeff[:])
 	var cID uint32
 	if c.IsZero() {
@@ -69,7 +69,11 @@ func (ct *CoeffTable) MakeTerm(coeff *constraint.Coeff, variableID int) constrai
 			ct.mCoeffs[cc] = cID
 		}
 	}
+	return cID
+}
 
+func (ct *CoeffTable) MakeTerm(coeff constraint.Element, variableID int) constraint.Term {
+	cID := ct.AddCoeff(coeff)
 	return constraint.Term{VID: uint32(variableID), CID: cID}
 }
 
@@ -78,7 +82,10 @@ func (ct *CoeffTable) CoeffToString(cID int) string {
 	return ct.Coefficients[cID].String()
 }
 
-var _ constraint.CoeffEngine = &arithEngine{}
+// implements constraint.Field
+type field struct{}
+
+var _ constraint.Field = &field{}
 
 var (
 	two      fr.Element
@@ -94,10 +101,7 @@ func init() {
 	minusTwo.Neg(&two)
 }
 
-// implements constraint.CoeffEngine
-type arithEngine struct{}
-
-func (engine *arithEngine) FromInterface(i interface{}) constraint.Coeff {
+func (engine *field) FromInterface(i interface{}) constraint.Element {
 	var e fr.Element
 	if _, err := e.SetInterface(i); err != nil {
 		// need to clean that --> some code path are dissimilar
@@ -106,55 +110,83 @@ func (engine *arithEngine) FromInterface(i interface{}) constraint.Coeff {
 		b := utils.FromInterface(i)
 		e.SetBigInt(&b)
 	}
-	var r constraint.Coeff
+	var r constraint.Element
 	copy(r[:], e[:])
 	return r
 }
-func (engine *arithEngine) ToBigInt(c *constraint.Coeff) *big.Int {
+func (engine *field) ToBigInt(c constraint.Element) *big.Int {
 	e := (*fr.Element)(c[:])
 	r := new(big.Int)
 	e.BigInt(r)
 	return r
 
 }
-func (engine *arithEngine) Mul(a, b *constraint.Coeff) {
+func (engine *field) Mul(a, b constraint.Element) constraint.Element {
 	_a := (*fr.Element)(a[:])
 	_b := (*fr.Element)(b[:])
 	_a.Mul(_a, _b)
+	return a
 }
-func (engine *arithEngine) Add(a, b *constraint.Coeff) {
+
+func (engine *field) Add(a, b constraint.Element) constraint.Element {
 	_a := (*fr.Element)(a[:])
 	_b := (*fr.Element)(b[:])
 	_a.Add(_a, _b)
+	return a
 }
-func (engine *arithEngine) Sub(a, b *constraint.Coeff) {
+func (engine *field) Sub(a, b constraint.Element) constraint.Element {
 	_a := (*fr.Element)(a[:])
 	_b := (*fr.Element)(b[:])
 	_a.Sub(_a, _b)
+	return a
 }
-func (engine *arithEngine) Neg(a *constraint.Coeff) {
+func (engine *field) Neg(a constraint.Element) constraint.Element {
 	e := (*fr.Element)(a[:])
 	e.Neg(e)
+	return a
 
 }
-func (engine *arithEngine) Inverse(a *constraint.Coeff) {
+func (engine *field) Inverse(a constraint.Element) (constraint.Element, bool) {
+	if a.IsZero() {
+		return a, false
+	}
 	e := (*fr.Element)(a[:])
+	if e.IsZero() {
+		return a, false
+	} else if e.IsOne() {
+		return a, true
+	}
+	var t fr.Element
+	t.Neg(e)
+	if t.IsOne() {
+		return a, true
+	}
+
 	e.Inverse(e)
+	return a, true
 }
 
-func (engine *arithEngine) IsOne(a *constraint.Coeff) bool {
+func (engine *field) IsOne(a constraint.Element) bool {
 	e := (*fr.Element)(a[:])
 	return e.IsOne()
 }
 
-func (engine *arithEngine) One() constraint.Coeff {
+func (engine *field) One() constraint.Element {
 	e := fr.One()
-	var r constraint.Coeff
+	var r constraint.Element
 	copy(r[:], e[:])
 	return r
 }
 
-func (engine *arithEngine) String(a *constraint.Coeff) string {
+func (engine *field) String(a constraint.Element) string {
 	e := (*fr.Element)(a[:])
 	return e.String()
+}
+
+func (engine *field) Uint64(a constraint.Element) (uint64, bool) {
+	e := (*fr.Element)(a[:])
+	if !e.IsUint64() {
+		return 0, false
+	}
+	return e.Uint64(), true
 }

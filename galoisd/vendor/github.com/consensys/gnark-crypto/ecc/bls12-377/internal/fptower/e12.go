@@ -1,4 +1,4 @@
-// Copyright 2020 ConsenSys Software Inc.
+// Copyright 2020 Consensys Software Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -36,7 +36,7 @@ type E12 struct {
 	C0, C1 E6
 }
 
-// Equal returns true if z equals x, fasle otherwise
+// Equal returns true if z equals x, false otherwise
 func (z *E12) Equal(x *E12) bool {
 	return z.C0.Equal(&x.C0) && z.C1.Equal(&x.C1)
 }
@@ -99,7 +99,7 @@ func (z *E12) SetRandom() (*E12, error) {
 	return z, nil
 }
 
-// IsZero returns true if the two elements are equal, fasle otherwise
+// IsZero returns true if the two elements are equal, false otherwise
 func (z *E12) IsZero() bool {
 	return z.C0.IsZero() && z.C1.IsZero()
 }
@@ -230,15 +230,17 @@ func (z *E12) DecompressKarabina(x *E12) *E12 {
 	var one E2
 	one.SetOne()
 
-	// g3 == 0
-	if x.C1.B2.IsZero() {
+	if x.C1.B2.IsZero() /* g3 == 0 */ {
 		t[0].Mul(&x.C0.B1, &x.C1.B2).
 			Double(&t[0])
 		// t1 = g2
 		t[1].Set(&x.C0.B2)
 
-		// g3 != 0
-	} else {
+		if t[1].IsZero() /* g2 == g3 == 0 */ {
+			return z.SetOne()
+		}
+	} else /* g3 != 0 */ {
+
 		// t0 = g1^2
 		t[0].Square(&x.C0.B1)
 		// t1 = 3 * g1^2 - 2 * g2
@@ -302,20 +304,24 @@ func BatchDecompressKarabina(x []E12) []E12 {
 	t0 := make([]E2, n)
 	t1 := make([]E2, n)
 	t2 := make([]E2, n)
+	zeroes := make([]bool, n)
 
 	var one E2
 	one.SetOne()
 
 	for i := 0; i < n; i++ {
-		// g3 == 0
-		if x[i].C1.B2.IsZero() {
+		if x[i].C1.B2.IsZero() /* g3 == 0 */ {
 			t0[i].Mul(&x[i].C0.B1, &x[i].C1.B2).
 				Double(&t0[i])
 			// t1 = g2
 			t1[i].Set(&x[i].C0.B2)
 
-			// g3 != 0
-		} else {
+			if t1[i].IsZero() /* g3 == g2 == 0 */ {
+				x[i].SetOne()
+				zeroes[i] = true
+				continue
+			}
+		} else /* g3 != 0 */ {
 			// t0 = g1^2
 			t0[i].Square(&x[i].C0.B1)
 			// t1 = 3 * g1^2 - 2 * g2
@@ -335,6 +341,10 @@ func BatchDecompressKarabina(x []E12) []E12 {
 	t1 = BatchInvertE2(t1) // costs 1 inverse
 
 	for i := 0; i < n; i++ {
+		if zeroes[i] {
+			continue
+		}
+
 		// z4 = g4
 		x[i].C1.B1.Mul(&t0[i], &t1[i])
 
@@ -640,7 +650,7 @@ func (z *E12) Marshal() []byte {
 	return b[:]
 }
 
-// Unmarshal is an allias to SetBytes()
+// Unmarshal is an alias to SetBytes()
 func (z *E12) Unmarshal(buf []byte) error {
 	return z.SetBytes(buf)
 }
@@ -713,11 +723,11 @@ func (z *E12) SetBytes(e []byte) error {
 	return nil
 }
 
-// IsInSubGroup ensures GT/E12 is in correct sugroup
+// IsInSubGroup ensures GT/E12 is in correct subgroup
 func (z *E12) IsInSubGroup() bool {
 	var a, b E12
 
-	// check z^(Phi_k(p)) == 1
+	// check z^(phi_k(p)) == 1
 	a.FrobeniusSquare(z)
 	b.FrobeniusSquare(&a).Mul(&b, z)
 

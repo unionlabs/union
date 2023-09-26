@@ -14,7 +14,6 @@ func (f *Field[T]) ToBits(a *Element[T]) []frontend.Variable {
 	f.enforceWidthConditional(a)
 	ba, aConst := f.constantValue(a)
 	if aConst {
-		ba.Mod(ba, f.fParams.Modulus())
 		res := make([]frontend.Variable, f.fParams.BitsPerLimb()*f.fParams.NbLimbs())
 		for i := range res {
 			res[i] = ba.Bit(i)

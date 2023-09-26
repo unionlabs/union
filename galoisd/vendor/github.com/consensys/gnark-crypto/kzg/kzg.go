@@ -19,11 +19,12 @@ import (
 	kzg_bw6761 "github.com/consensys/gnark-crypto/ecc/bw6-761/fr/kzg"
 )
 
-// SRS ...
-type SRS interface {
+type Serializable interface {
 	io.ReaderFrom
 	io.WriterTo
 }
+
+type SRS Serializable
 
 // NewSRS returns an empty curved-typed SRS object
 // that implements io.ReaderFrom and io.WriterTo interfaces

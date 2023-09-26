@@ -21,7 +21,7 @@ import (
 	"github.com/consensys/gnark-crypto/ecc/bls24-315/fr"
 	"github.com/consensys/gnark-crypto/ecc/bls24-315/fr/fft"
 	"github.com/consensys/gnark-crypto/ecc/bls24-315/fr/fri"
-	"github.com/consensys/gnark/constraint/bls24-315"
+	cs "github.com/consensys/gnark/constraint/bls24-315"
 )
 
 // ProvingKey stores the data needed to generate a proof:
@@ -106,7 +106,7 @@ func Setup(spr *cs.SparseR1CS) (*ProvingKey, *VerifyingKey, error) {
 	// The verifying key shares data with the proving key
 	pk.Vk = &vk
 
-	nbConstraints := len(spr.Constraints)
+	nbConstraints := spr.GetNbConstraints()
 
 	// fft domains
 	sizeSystem := uint64(nbConstraints + len(spr.Public)) // len(spr.Public) is for the placeholder constraints
@@ -156,15 +156,18 @@ func Setup(spr *cs.SparseR1CS) (*ProvingKey, *VerifyingKey, error) {
 		pk.CQkIncomplete[i].Set(&pk.LQkIncompleteDomainSmall[i]) // --> to be completed by the prover
 	}
 	offset := len(spr.Public)
-	for i := 0; i < nbConstraints; i++ { // constraints
 
-		pk.EvaluationQlDomainBigBitReversed[offset+i].Set(&spr.Coefficients[spr.Constraints[i].L.CoeffID()])
-		pk.EvaluationQrDomainBigBitReversed[offset+i].Set(&spr.Coefficients[spr.Constraints[i].R.CoeffID()])
-		pk.EvaluationQmDomainBigBitReversed[offset+i].Set(&spr.Coefficients[spr.Constraints[i].M[0].CoeffID()]).
-			Mul(&pk.EvaluationQmDomainBigBitReversed[offset+i], &spr.Coefficients[spr.Constraints[i].M[1].CoeffID()])
-		pk.EvaluationQoDomainBigBitReversed[offset+i].Set(&spr.Coefficients[spr.Constraints[i].O.CoeffID()])
-		pk.LQkIncompleteDomainSmall[offset+i].Set(&spr.Coefficients[spr.Constraints[i].K])
-		pk.CQkIncomplete[offset+i].Set(&pk.LQkIncompleteDomainSmall[offset+i])
+	j := 0
+	it := spr.GetSparseR1CIterator()
+	for c := it.Next(); c != nil; c = it.Next() {
+		pk.EvaluationQlDomainBigBitReversed[offset+j].Set(&spr.Coefficients[c.QL])
+		pk.EvaluationQrDomainBigBitReversed[offset+j].Set(&spr.Coefficients[c.QR])
+		pk.EvaluationQmDomainBigBitReversed[offset+j].Set(&spr.Coefficients[c.QM])
+		pk.EvaluationQoDomainBigBitReversed[offset+j].Set(&spr.Coefficients[c.QO])
+		pk.LQkIncompleteDomainSmall[offset+j].Set(&spr.Coefficients[c.QC])
+		pk.CQkIncomplete[offset+j].Set(&pk.LQkIncompleteDomainSmall[offset+j])
+
+		j++
 	}
 
 	pk.Domain[0].FFTInverse(pk.EvaluationQlDomainBigBitReversed[:pk.Domain[0].Cardinality], fft.DIF)
@@ -257,10 +260,14 @@ func buildPermutation(spr *cs.SparseR1CS, pk *ProvingKey) {
 	}
 
 	offset := len(spr.Public)
-	for i := 0; i < len(spr.Constraints); i++ { // IDs of LRO associated to constraints
-		lro[offset+i] = spr.Constraints[i].L.WireID()
-		lro[sizeSolution+offset+i] = spr.Constraints[i].R.WireID()
-		lro[2*sizeSolution+offset+i] = spr.Constraints[i].O.WireID()
+
+	j := 0
+	it := spr.GetSparseR1CIterator()
+	for c := it.Next(); c != nil; c = it.Next() {
+		lro[offset+j] = int(c.XA)
+		lro[sizeSolution+offset+j] = int(c.XB)
+		lro[2*sizeSolution+offset+j] = int(c.XC)
+		j++
 	}
 
 	// init cycle:

@@ -1,4 +1,4 @@
-// Copyright 2020 ConsenSys Software Inc.
+// Copyright 2020 Consensys Software Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -37,7 +37,13 @@ func processChunkG1BatchAffine[BJE ibg1JacExtended, B ibG1Affine, BS bitSet, TP 
 	chRes chan<- g1JacExtended,
 	c uint64,
 	points []G1Affine,
-	digits []uint16) {
+	digits []uint16,
+	sem chan struct{}) {
+
+	if sem != nil {
+		// if we are limited, wait for a token in the semaphore
+		<-sem
+	}
 
 	// the batch affine addition needs independent points; in other words, for a window of batchSize
 	// we want to hit independent bucketIDs when processing the digit. if there is a conflict (we're trying
@@ -47,7 +53,7 @@ func processChunkG1BatchAffine[BJE ibg1JacExtended, B ibG1Affine, BS bitSet, TP 
 	// if the queue is full, we "flush it"; we sequentially add the points to the buckets in
 	// g1JacExtended coordinates.
 	// The reasoning behind this is the following; batchSize is chosen such as, for a uniformly random
-	// input, the number of conflicts is going to be low, and the element added to the queue should be immediatly
+	// input, the number of conflicts is going to be low, and the element added to the queue should be immediately
 	// processed in the next batch. If it's not the case, then our inputs are not random; and we fallback to
 	// non-batch-affine version.
 
@@ -220,10 +226,16 @@ func processChunkG1BatchAffine[BJE ibg1JacExtended, B ibG1Affine, BS bitSet, TP 
 	total.setInfinity()
 	for k := len(buckets) - 1; k >= 0; k-- {
 		runningSum.addMixed(&buckets[k])
-		if !bucketsJE[k].ZZ.IsZero() {
+		if !bucketsJE[k].IsZero() {
 			runningSum.add(&bucketsJE[k])
 		}
 		total.add(&runningSum)
+	}
+
+	if sem != nil {
+		// release a token to the semaphore
+		// before sending to chRes
+		sem <- struct{}{}
 	}
 
 	chRes <- total
@@ -353,7 +365,13 @@ func processChunkG2BatchAffine[BJE ibg2JacExtended, B ibG2Affine, BS bitSet, TP 
 	chRes chan<- g2JacExtended,
 	c uint64,
 	points []G2Affine,
-	digits []uint16) {
+	digits []uint16,
+	sem chan struct{}) {
+
+	if sem != nil {
+		// if we are limited, wait for a token in the semaphore
+		<-sem
+	}
 
 	// the batch affine addition needs independent points; in other words, for a window of batchSize
 	// we want to hit independent bucketIDs when processing the digit. if there is a conflict (we're trying
@@ -363,7 +381,7 @@ func processChunkG2BatchAffine[BJE ibg2JacExtended, B ibG2Affine, BS bitSet, TP 
 	// if the queue is full, we "flush it"; we sequentially add the points to the buckets in
 	// g2JacExtended coordinates.
 	// The reasoning behind this is the following; batchSize is chosen such as, for a uniformly random
-	// input, the number of conflicts is going to be low, and the element added to the queue should be immediatly
+	// input, the number of conflicts is going to be low, and the element added to the queue should be immediately
 	// processed in the next batch. If it's not the case, then our inputs are not random; and we fallback to
 	// non-batch-affine version.
 
@@ -536,10 +554,16 @@ func processChunkG2BatchAffine[BJE ibg2JacExtended, B ibG2Affine, BS bitSet, TP 
 	total.setInfinity()
 	for k := len(buckets) - 1; k >= 0; k-- {
 		runningSum.addMixed(&buckets[k])
-		if !bucketsJE[k].ZZ.IsZero() {
+		if !bucketsJE[k].IsZero() {
 			runningSum.add(&bucketsJE[k])
 		}
 		total.add(&runningSum)
+	}
+
+	if sem != nil {
+		// release a token to the semaphore
+		// before sending to chRes
+		sem <- struct{}{}
 	}
 
 	chRes <- total

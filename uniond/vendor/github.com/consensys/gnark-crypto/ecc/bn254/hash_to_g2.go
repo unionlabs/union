@@ -1,4 +1,4 @@
-// Copyright 2020 ConsenSys Software Inc.
+// Copyright 2020 Consensys Software Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,10 +21,10 @@ import (
 	"github.com/consensys/gnark-crypto/ecc/bn254/internal/fptower"
 )
 
-// mapToCurve2 implements the Shallue and van de Woestijne method, applicable to any elliptic curve in Weierstrass form
+// MapToCurve2 implements the Shallue and van de Woestijne method, applicable to any elliptic curve in Weierstrass form
 // No cofactor clearing or isogeny
 // https://www.ietf.org/archive/id/draft-irtf-cfrg-hash-to-curve-16.html#straightline-svdw
-func mapToCurve2(u *fptower.E2) G2Affine {
+func MapToCurve2(u *fptower.E2) G2Affine {
 	var tv1, tv2, tv3, tv4 fptower.E2
 	var x1, x2, x3, gx1, gx2, gx, x, y fptower.E2
 	var one fptower.E2
@@ -143,7 +143,7 @@ func g2Sgn0(z *fptower.E2) uint64 {
 
 // MapToG2 invokes the SVDW map, and guarantees that the result is in g2
 func MapToG2(u fptower.E2) G2Affine {
-	res := mapToCurve2(&u)
+	res := MapToCurve2(&u)
 	res.ClearCofactor(&res)
 	return res
 }
@@ -160,7 +160,7 @@ func EncodeToG2(msg, dst []byte) (G2Affine, error) {
 		return res, err
 	}
 
-	res = mapToCurve2(&fptower.E2{
+	res = MapToCurve2(&fptower.E2{
 		A0: u[0],
 		A1: u[1],
 	})
@@ -179,11 +179,11 @@ func HashToG2(msg, dst []byte) (G2Affine, error) {
 		return G2Affine{}, err
 	}
 
-	Q0 := mapToCurve2(&fptower.E2{
+	Q0 := MapToCurve2(&fptower.E2{
 		A0: u[0],
 		A1: u[1],
 	})
-	Q1 := mapToCurve2(&fptower.E2{
+	Q1 := MapToCurve2(&fptower.E2{
 		A0: u[2+0],
 		A1: u[2+1],
 	})

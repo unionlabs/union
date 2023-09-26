@@ -250,7 +250,7 @@ type BigIntConvertMode int
 const (
 	// BigIntConvertShortest makes big.Int encode to CBOR integer if value fits.
 	// E.g. if big.Int value can be converted to CBOR integer while preserving
-	// value, encoder will encode it to CBOR interger (major type 0 or 1).
+	// value, encoder will encode it to CBOR integer (major type 0 or 1).
 	BigIntConvertShortest BigIntConvertMode = iota
 
 	// BigIntConvertNone makes big.Int encode to CBOR bignum (tag 2 or 3) without
@@ -262,6 +262,25 @@ const (
 
 func (bim BigIntConvertMode) valid() bool {
 	return bim < maxBigIntConvert
+}
+
+// NilContainersMode specifies how to encode nil slices and maps.
+type NilContainersMode int
+
+const (
+	// NilContainerAsNull encodes nil slices and maps as CBOR null.
+	// This is the default.
+	NilContainerAsNull NilContainersMode = iota
+
+	// NilContainerAsEmpty encodes nil slices and maps as
+	// empty container (CBOR bytestring, array, or map).
+	NilContainerAsEmpty
+
+	maxNilContainersMode
+)
+
+func (m NilContainersMode) valid() bool {
+	return m < maxNilContainersMode
 }
 
 // EncOptions specifies encoding options.
@@ -291,6 +310,9 @@ type EncOptions struct {
 
 	// IndefLength specifies whether to allow indefinite length CBOR items.
 	IndefLength IndefLengthMode
+
+	// NilContainers specifies how to encode nil slices and maps.
+	NilContainers NilContainersMode
 
 	// TagsMd specifies whether to allow CBOR tags (major type 6).
 	TagsMd TagsMode
@@ -464,6 +486,9 @@ func (opts EncOptions) encMode() (*encMode, error) {
 	if !opts.IndefLength.valid() {
 		return nil, errors.New("cbor: invalid IndefLength " + strconv.Itoa(int(opts.IndefLength)))
 	}
+	if !opts.NilContainers.valid() {
+		return nil, errors.New("cbor: invalid NilContainers " + strconv.Itoa(int(opts.NilContainers)))
+	}
 	if !opts.TagsMd.valid() {
 		return nil, errors.New("cbor: invalid TagsMd " + strconv.Itoa(int(opts.TagsMd)))
 	}
@@ -479,6 +504,7 @@ func (opts EncOptions) encMode() (*encMode, error) {
 		time:          opts.Time,
 		timeTag:       opts.TimeTag,
 		indefLength:   opts.IndefLength,
+		nilContainers: opts.NilContainers,
 		tagsMd:        opts.TagsMd,
 	}
 	return &em, nil
@@ -501,6 +527,7 @@ type encMode struct {
 	time          TimeMode
 	timeTag       EncTagMode
 	indefLength   IndefLengthMode
+	nilContainers NilContainersMode
 	tagsMd        TagsMode
 }
 
@@ -550,7 +577,7 @@ func (em *encMode) Marshal(v interface{}) ([]byte, error) {
 
 // NewEncoder returns a new encoder that writes to w using em EncMode.
 func (em *encMode) NewEncoder(w io.Writer) *Encoder {
-	return &Encoder{w: w, em: em, e: getEncoderBuffer()}
+	return &Encoder{w: w, em: em}
 }
 
 type encoderBuffer struct {
@@ -787,7 +814,7 @@ func encodeFloat64(e *encoderBuffer, f64 float64) error {
 
 func encodeByteString(e *encoderBuffer, em *encMode, v reflect.Value) error {
 	vk := v.Kind()
-	if vk == reflect.Slice && v.IsNil() {
+	if vk == reflect.Slice && v.IsNil() && em.nilContainers == NilContainerAsNull {
 		e.Write(cborNil)
 		return nil
 	}
@@ -824,7 +851,7 @@ type arrayEncodeFunc struct {
 }
 
 func (ae arrayEncodeFunc) encode(e *encoderBuffer, em *encMode, v reflect.Value) error {
-	if v.Kind() == reflect.Slice && v.IsNil() {
+	if v.Kind() == reflect.Slice && v.IsNil() && em.nilContainers == NilContainerAsNull {
 		e.Write(cborNil)
 		return nil
 	}
@@ -849,7 +876,7 @@ type mapEncodeFunc struct {
 }
 
 func (me mapEncodeFunc) encode(e *encoderBuffer, em *encMode, v reflect.Value) error {
-	if v.IsNil() {
+	if v.IsNil() && em.nilContainers == NilContainerAsNull {
 		e.Write(cborNil)
 		return nil
 	}
@@ -1250,6 +1277,14 @@ func encodeTag(e *encoderBuffer, em *encMode, v reflect.Value) error {
 	return nil
 }
 
+func encodeSimpleValue(e *encoderBuffer, em *encMode, v reflect.Value) error {
+	if b := em.encTagBytes(v.Type()); b != nil {
+		e.Write(b)
+	}
+	encodeHead(e, byte(cborTypePrimitives), v.Uint())
+	return nil
+}
+
 func encodeHead(e *encoderBuffer, t byte, n uint64) {
 	if n <= 23 {
 		e.WriteByte(t | byte(n))
@@ -1282,6 +1317,7 @@ var (
 	typeMarshaler       = reflect.TypeOf((*Marshaler)(nil)).Elem()
 	typeBinaryMarshaler = reflect.TypeOf((*encoding.BinaryMarshaler)(nil)).Elem()
 	typeRawMessage      = reflect.TypeOf(RawMessage(nil))
+	typeByteString      = reflect.TypeOf(ByteString(""))
 )
 
 func getEncodeFuncInternal(t reflect.Type) (encodeFunc, isEmptyFunc) {
@@ -1290,6 +1326,8 @@ func getEncodeFuncInternal(t reflect.Type) (encodeFunc, isEmptyFunc) {
 		return getEncodeIndirectValueFunc(t), isEmptyPtr
 	}
 	switch t {
+	case typeSimpleValue:
+		return encodeSimpleValue, isEmptyUint
 	case typeTag:
 		return encodeTag, alwaysNotEmpty
 	case typeTime:
@@ -1298,6 +1336,8 @@ func getEncodeFuncInternal(t reflect.Type) (encodeFunc, isEmptyFunc) {
 		return encodeBigInt, alwaysNotEmpty
 	case typeRawMessage:
 		return encodeMarshalerType, isEmptySlice
+	case typeByteString:
+		return encodeMarshalerType, isEmptyString
 	}
 	if reflect.PtrTo(t).Implements(typeMarshaler) {
 		return encodeMarshalerType, alwaysNotEmpty

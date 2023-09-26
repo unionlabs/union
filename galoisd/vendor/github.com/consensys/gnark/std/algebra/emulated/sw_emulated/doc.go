@@ -10,6 +10,10 @@ over some base field 𝐅p for some constants a, b ∈ 𝐅p.
 Additionally, for every curve we also define its generator (base point) G. All
 these parameters are stored in the variable of type [CurveParams].
 
+This package implements unified and complete point addition. The method
+[Curve.AddUnified] can be used for point additions or in case of points at
+infinity. As such, this package does not expose separate Add and Double methods.
+
 The package provides a few curve parameters, see functions [GetSecp256k1Params]
 and [GetBN254Params].
 

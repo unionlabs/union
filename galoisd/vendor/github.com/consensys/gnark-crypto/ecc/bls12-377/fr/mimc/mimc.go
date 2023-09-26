@@ -1,4 +1,4 @@
-// Copyright 2020 ConsenSys Software Inc.
+// Copyright 2020 Consensys Software Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -64,7 +64,7 @@ func NewMiMC() hash.Hash {
 
 // Reset resets the Hash to its initial state.
 func (d *digest) Reset() {
-	d.data = nil
+	d.data = d.data[:0]
 	d.h = fr.Element{0, 0, 0, 0}
 }
 
@@ -142,9 +142,9 @@ func (d *digest) checksum() fr.Element {
 func (d *digest) encrypt(m fr.Element) fr.Element {
 	once.Do(initConstants) // init constants
 
+	var tmp fr.Element
 	for i := 0; i < mimcNbRounds; i++ {
 		// m = (m+k+c)^**17
-		var tmp fr.Element
 		tmp.Add(&m, &d.h).Add(&tmp, &mimcConstants[i])
 		m.Square(&tmp).
 			Square(&m).
