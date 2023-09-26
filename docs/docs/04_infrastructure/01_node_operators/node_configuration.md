@@ -2,7 +2,7 @@
 title: "Node Configuration"
 ---
 
-After successfully running your node with `uniond`, you can refer to this guide to aid you in configuring your node. 
+After successfully running your node with `uniond`, you can refer to this guide to aid you in configuring your node.
 
 This is not a complete guide to all node configuration options, this is intended to help ensure that your node is fully operational.
 
@@ -23,7 +23,7 @@ For the Union Testnet, this value should be `"union-testnet-3"`.
 chain-id = "union-testnet-3"
 ```
 
-### Host/Port for the Tindermint RPC
+### Host/Port for the Tendermint RPC
 
 This will determine which address your client will listen for Tendermint RPC request on.
 
@@ -79,7 +79,7 @@ Located in `config/config.toml`, this file is host to many settings.
 
 Located in the `p2p` TOML group under the "P2P Configuration Options" section.
 
-You'll want to ensure your node is configured to accept p2p connections. To do so, set this value to the appropriate address. 
+You'll want to ensure your node is configured to accept p2p connections. To do so, set this value to the appropriate address.
 
 For example, to listen on every available network interface - set this to `"tcp://0.0.0.0:26656"`.
 
