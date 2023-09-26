@@ -21,8 +21,8 @@ Transactions through Union to other layers are composed of three steps:
 ```mermaid
 sequenceDiagram
     Union->>+Voyager: Emits IBC datagram at block N
-    Voyager->>+Galois: Proof Request for block N+1
-    Galois-->>-Voyager: Sends Generated Proofs for blocks M..N+1
+    Voyager->>+Galois: Proof Request for block M..N+1
+    Galois-->>-Voyager: Sends Generated Proofs for blocks 
     Voyager->>-Counterparty: Updates counterparty with Union state
 ```
 
