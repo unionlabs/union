@@ -242,6 +242,7 @@
               };
 
               # Used as the salt when executing `instantiate2` in CosmWasm.
+              # TODO: please rework and remove this
               cw-instantiate2-salt = "61616161";
             };
           };
