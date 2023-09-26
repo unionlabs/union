@@ -14,12 +14,16 @@ Galois is the umbrella term of Union's ZK efforts. It currently has one purpose:
 
 Transactions through Union to other layers are composed of three steps:
 
+1. Emit a `sendpacket` event
+2. Generate a ZKP of the Union state
+3. Update Counterparty with Union state
+
 ```mermaid
 sequenceDiagram
-    Union->>Galois: Generate a zkp of Union consensus
-    Galois->>Voyager: Forward zkp for to HA relaying service
-    Galois->>Union: Submit zkp for proof caching
-    Voyager->>Counterparty: Submit zkp for packet processing
+    Union->>+Voyager: Emits sendpacket event at block N
+    Voyager->>+Galois: Proof Request for block N
+    Galois-->>-Voyager: Sends Generated Proof for block N
+    Voyager->>-Counterparty: Updates counterparty with Union state
 ```
 
 [Proof caching](https://github.com/unionlabs/union/discussions/41) is currently in the pre-RFC stage. It ensures that the network does not perform redundant work and incentivizes decentralized proving, effectively using Union as a decentralized sequencers orchestration layer.
