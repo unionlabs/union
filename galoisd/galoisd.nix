@@ -3,14 +3,14 @@
     devShells = {
       galois = pkgs.mkShell {
         buildInputs = [
-          (pkgs-unstable.cudaPackages_12.cudatoolkit.overrideAttrs (old: old // { meta = null; }))
+          (pkgs-unstable.cudaPackages_12_2.cudatoolkit.overrideAttrs (old: old // { meta = null; }))
         ];
       };
     };
     packages =
       let
-        cuda = pkgs-unstable.cudaPackages_12.cudatoolkit.overrideAttrs (old: old // { meta = null; });
-        cudart = pkgs-unstable.cudaPackages_12.cuda_cudart.overrideAttrs (old: old // { meta = null; });
+        cuda = pkgs-unstable.cudaPackages_12_2.cudatoolkit.overrideAttrs (old: old // { meta = null; });
+        cudart = pkgs-unstable.cudaPackages_12_2.cuda_cudart.overrideAttrs (old: old // { meta = null; });
         icicle =
           let
             isAarch64 = ((builtins.head (pkgs.lib.splitString "-" system)) == "aarch64");
