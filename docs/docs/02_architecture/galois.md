@@ -14,13 +14,13 @@ Galois is the umbrella term of Union's ZK efforts. It currently has one purpose:
 
 Transactions through Union to other layers are composed of three steps:
 
-1. Emit a `sendpacket` event
+1. Emit a send-packet event
 2. Generate a ZKP of the Union state
 3. Update Counterparty with Union state
 
 ```mermaid
 sequenceDiagram
-    Union->>+Voyager: Emits sendpacket event at block N
+    Union->>+Voyager: Emits send-packet event at block N
     Voyager->>+Galois: Proof Request for block N
     Galois-->>-Voyager: Sends Generated Proof for block N
     Voyager->>-Counterparty: Updates counterparty with Union state
