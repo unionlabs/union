@@ -4,7 +4,7 @@
 	import Tagline from '$lib/Tagline.svelte';
 </script>
 
-<div class="h-screen max-w-screen relative flex items-center justify-center overflow-hidden">
+<div class=" max-w-screen relative flex items-center justify-center overflow-hidden">
 	<div class="flex flex-col justify-center items-center">
 		<Logo />
 		<Tagline />
@@ -21,11 +21,6 @@
 </div>
 
 <style lang="postcss">
-	:global(body) {
-		background-color: theme(colors.background);
-		color: theme(colors.primary);
-	}
-
 	@keyframes fadeIn {
 		0% {
 			opacity: 0;
