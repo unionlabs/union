@@ -1,0 +1,25 @@
+/** @type {import('tailwindcss').Config} */
+export default {
+	content: ['./src/**/*.{html,js,svelte,ts}'],
+	theme: {
+		extend: {
+			fontFamily: {
+				mono: 'Disket-Mono, Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"',			
+				sans: [
+					'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"',
+					{
+						fontFeatureSettings: '"cv11", "ss01"',
+						fontVariationSettings: '"opsz" 32'
+					}
+				]
+			},
+			colors: {
+				background: '#1b1b1d',
+				sub: '#252525',
+				accent: '#00FFF0',
+				primary: '#fff'
+			}
+		}
+	},
+	plugins: []
+};
