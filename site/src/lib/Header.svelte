@@ -4,6 +4,7 @@
 		<ul class="flex gap-4 font-mono">
 			<li><a href="/blog">blog</a></li>
 			<li><a href="https://docs.union.build">docs</a></li>
+			<li><a href="https://x.com/union_build">X</a></li>
 		</ul>
 	</nav>
 </header>
