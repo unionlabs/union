@@ -20,11 +20,17 @@ Transactions through Union to other layers are composed of three steps:
 
 ```mermaid
 sequenceDiagram
-    Union->>+Voyager: Emits send-packet event at block N
-    Voyager->>+Galois: Proof Request for block N
-    Galois-->>-Voyager: Sends Generated Proof for block N
+    Union->>+Voyager: Emits IBC datagram at block N
+    Voyager->>+Galois: Proof Request for block N+1
+    Galois-->>-Voyager: Sends Generated Proofs for blocks M..N+1
     Voyager->>-Counterparty: Updates counterparty with Union state
 ```
+
+:::note
+
+Depending on validator set drift, Galois may need to generate multiple proofs. This results in $M$ being the last trusted height and $N+1$ being the height to update to.
+
+:::
 
 ### Technologies
 
