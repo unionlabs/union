@@ -5,10 +5,10 @@
 </main>
 
 <style lang="postcss">
-	:global(.blog-post-container > h2) {
+	:global(.blog-post-container > h1) {
 		@apply text-3xl sm:text-5xl font-bold;
 	}
-	:global(.blog-post-container > h2 + span) {
+	:global(.blog-post-container > h1 + p) {
 		@apply font-mono mb-2 mt-1 sm:text-lg;
 	}
 	:global(.blog-post-container > h2 + span > a) {
