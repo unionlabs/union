@@ -2,6 +2,9 @@ import adapter from '@sveltejs/adapter-static';
 import { vitePreprocess } from '@sveltejs/kit/vite';
 import { mdsvex } from 'mdsvex';
 
+// import { join } from "path";
+
+
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
 	// Consult https://kit.svelte.dev/docs/integrations#preprocessors
@@ -9,7 +12,10 @@ const config = {
 	extensions: ['.svelte', '.md'],
 	preprocess: [
 		mdsvex({
-			extensions: ['.md' ]
+			extensions: ['.md' ],
+			layout: {
+				blog: 'src/mdsvex/BlogLayout.svelte',
+			}
 		}),
 		vitePreprocess(),
 	],

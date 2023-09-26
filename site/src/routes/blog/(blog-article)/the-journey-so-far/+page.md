@@ -1,5 +1,13 @@
-# The Journey So Far
-2023-09-26 - [@union_build](https://x.com/union_build)
+---
+title: The Journey So Far
+slug: the-journey-so-far
+date: "2023-09-26"
+author: "@union_build"
+---
+
+<script lang="ts">
+  import ButtonA from '$lib/ButtonA.svelte';
+</script>
 
 Today, we are happy to announce the work we have done so far on Union, the trustless
 infrastructure layer for web3. Over the last six months, unionlabs was founded with nothing but an
@@ -15,3 +23,4 @@ counterparty, on any chain, and this system may not rely on massive, closed sour
 
 With Union, we can bring any asset natively to any chain, hook into account abstraction with ICQ,
 and access coproccors and storage proofs.
+
