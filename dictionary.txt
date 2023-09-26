@@ -79,6 +79,7 @@ Unmarshal
 Verkle
 Woestijne
 Wrapf
+Xcompiler
 aarch
 abci
 abigen
@@ -184,6 +185,9 @@ cratedir
 crisiskeeper
 crisistypes
 ctypes
+cuda
+cudart
+cudatoolkit
 dasel
 dataconnector
 datadir
@@ -248,6 +252,7 @@ goblingarden
 gocosmos
 gofmt
 gogoproto
+goicicle
 googleapis
 gopath
 gopls
@@ -307,6 +312,7 @@ imap
 impls
 incentivizes
 infima
+ingonyama
 interchain
 interchainaccounts
 interfacetype
@@ -329,6 +335,7 @@ lcgadget
 ldflags
 legendres
 libblst
+libbn
 libcxx
 libfuzzer
 libiconv
@@ -359,6 +366,7 @@ mktemp
 monitonically
 monniker
 moreutils
+mult
 multistep
 muno
 muslc
@@ -382,6 +390,7 @@ noexecstack
 nolint
 notrunc
 numtide
+nvcc
 omit
 omnichain
 openapi

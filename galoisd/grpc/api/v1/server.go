@@ -342,7 +342,6 @@ func (p *proverServer) Prove(ctx context.Context, req *ProveRequest) (*ProveResp
 		return nil, fmt.Errorf("Impossible: proof backend must be BN254 at this point")
 	}
 
-
 	var proofBuffer bytes.Buffer
 	mem := bufio.NewWriter(&proofBuffer)
 	_, err = proof.WriteRawTo(mem)
