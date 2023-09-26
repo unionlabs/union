@@ -26,8 +26,6 @@ sequenceDiagram
     Voyager->>-Counterparty: Updates counterparty with Union state
 ```
 
-[Proof caching](https://github.com/unionlabs/union/discussions/41) is currently in the pre-RFC stage. It ensures that the network does not perform redundant work and incentivizes decentralized proving, effectively using Union as a decentralized sequencers orchestration layer.
-
 ### Technologies
 
 Galois is built using
@@ -40,6 +38,11 @@ Galois is built using
 
 The current focus for Galois is production-readiness. We're mainly maintaining the current implementation and making performance improvements. After mainnet, the major roadmap items include:
 
+- Proof caching
 - Verkle tree support (CometBLS v2).
 - Formal verification with [Lean](https://leanprover.github.io/).
 - Groth16 proof aggregation.
+
+### Proof Caching
+
+[Proof caching](https://github.com/unionlabs/union/discussions/41) is currently in the pre-RFC stage. It ensures that the network does not perform redundant work and incentivizes decentralized proving, effectively using Union as a decentralized sequencers orchestration layer.
