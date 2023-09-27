@@ -1,4 +1,5 @@
 <script>
+	export const prerender = true;
 	export let title;
 	export let date;
 	export let author;

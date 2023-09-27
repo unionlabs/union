@@ -1,3 +1,8 @@
+<script>
+	export const preprender = true;
+
+</script>
+
 <slot />
 
 <!-- this is actually a layout for the blog posts !-->
