@@ -1,6 +1,6 @@
 {
-  "name": "union-site",
-  "version": "0.0.1",
+  "name": "union.build",
+  "version": "0.0.3",
   "private": true,
   "scripts": {
     "dev": "vite dev",
