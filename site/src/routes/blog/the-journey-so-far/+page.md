@@ -2,17 +2,17 @@
 title: The Journey So Far
 date: "2023-09-27"
 author: "@union_build"
-preview: "Today, we are happy to announce the work we have done so far on Union, the trustless infrastructure layer. Over the last six months, unionlabs was founded with nothing but an idea, a diverse skillset, and a mission to ship zkp powered infra everywhere."
+preview: "Today, we are happy to announce the work we have done so far on Union, the trustless infrastructure layer. Over the last six months, Unionlabs was founded with nothing but an idea, a diverse skill set, and a mission to ship zero-knowledge proof infra everywhere."
 published: true
 ---
 
-Today, we are happy to announce the work we have done so far on Union, the trustless infrastructure layer. Over the last six months, Unionlabs was founded with nothing but an idea, a diverse skillset, and a mission to ship zero-knowledge proof infra everywhere.
+Today, we are happy to announce the work we have done so far on Union, the trustless infrastructure layer. Over the last six months, Unionlabs was founded with nothing but an idea, a diverse skill set, and a mission to ship zero-knowledge proof infra everywhere.
 
-We spent months building in stealthmode, heads-down, as we validated our technical assumptions. The product of that is the Union testnet, [CometBLS](https://docs.union.build/architecture/cometbls), [Voyager](https://docs.union.build/architecture/voyager), and [Galois](https://docs.union.build/architecture/galois). These components allowed us to achieve **IBC to Ethereum, the endgame**.`
+We spent months building in stealth mode, heads-down, as we validated our technical assumptions. The product of that is the Union testnet, [CometBLS](https://docs.union.build/architecture/cometbls), [Voyager](https://docs.union.build/architecture/voyager), and [Galois](https://docs.union.build/architecture/galois). These components allowed us to achieve **IBC to Ethereum, the endgame**.`
 
 Union is designed around a few key principles: code is law and barrier to entry leads to centralization. This means that we design our products to allow anyone to run them, not just parties with massive CPU/GPU farms. Proof generation must be a fair market to avoid censorship.
 
-With Union, we can bring any asset natively to any chain, hook into account abstraction with ICQ, and access coprocecors and storage proofs.
+With Union, we can bring any asset natively to any chain, hook into account abstraction with ICQ, and access coprocessor and storage proofs.
 
 ## The mission continues
 
