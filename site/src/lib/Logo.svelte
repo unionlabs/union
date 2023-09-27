@@ -4,12 +4,12 @@
 </script>
 
 <div class="logo-and-grid-container block relative" >
-  <div class="pointer-events-none my-grid overflow-hidden text-xs border-sub border-[1px] md:border-2 absolute -z-50">
+  <div class="pointer-events-none my-grid overflow-hidden text-xs border-sub border-[1px] md:border-2 absolute z-10">
     {#each elements as _, i}
       <div class="box-border border-sub border-[1px] md:border-2 grid-box"/>
     {/each}
   </div>
-  <div class="pointer-events-none my-grid text-xs box-border m-[1px] md:m-[2px] z-10 absolute logo-container">
+  <div class="pointer-events-none my-grid text-xs box-border m-[1px] md:m-[2px] z-20 absolute logo-container">
     <!-- u !-->
     <Piece kind="A" x={3} y={2} origin="west" --duration="1s" --delay="0.2s"/>
     <Piece kind="B" x={3} y={3} origin="west" --duration="0.9s" --delay="0.4s" rotation={3}/>

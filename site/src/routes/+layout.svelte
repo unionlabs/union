@@ -16,7 +16,7 @@
 
 <style lang="postcss">
 	:global(body) {
-		background-color: theme(colors.background);
+		background-color: theme(colors.bgDark);
 		color: theme(colors.primary);
 	}
 </style>

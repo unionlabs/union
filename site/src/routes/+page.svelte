@@ -4,11 +4,11 @@
 	import Tagline from '$lib/Tagline.svelte';
 </script>
 
-<main class="flex-1 max-w-screen relative flex items-center justify-center overflow-hidden">
+<main class="bg-background flex-1 max-w-screen relative flex items-center justify-center overflow-hidden">
 	<div class="flex flex-col justify-center items-center">
 		<Logo />
 		<Tagline />
-		<div class="flex flex-row md:flex-row gap-[16px] md:gap-[32px]">
+		<div class="z-20 flex flex-row md:flex-row gap-[16px] md:gap-[32px]">
 			<div class="buttonFly"><ButtonA href="/blog">Read More &gt;</ButtonA></div>
 		</div>
 		<div class="h-[33px] md:h-[67px]" />

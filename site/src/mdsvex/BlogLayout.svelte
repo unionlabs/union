@@ -6,6 +6,8 @@
 	export let published
 </script>
 
+
+<div class="bg-background flex flex-1 justify-center">
 <main
 	class="blog-post-container sm:text-xl p-4 sm:mt-4  justify-center max-w-2xl justify-center self-center"
 >
@@ -17,3 +19,4 @@
 	<slot />
 	{/if}
 </main>
+</div>
