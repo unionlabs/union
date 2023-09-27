@@ -1,6 +1,8 @@
 <script lang="ts">
-	type PostMeta = { metadata: { title: string, date: string, author: string, preview: string }};
+	type PostMeta = { metadata: { title: string, date: string, author: string, preview: string, published: bool }};
 	const posts: Record<string, PostMeta> = import.meta.globEager('../**/*.md');
+	const filteredPosts = Object.entries(posts)
+		.filter(([_path, post], _) => post.metadata.published); 
 	const slugRegex = /\/([^/]+)\//;
 
 	function extractSlug(path: string): string {
@@ -15,7 +17,7 @@
 
 <main class="flex flex-1 justify-center sm:mt-4 ">
 	<div class="flex flex-col gap-4 max-w-2xl">
-		{#each Object.entries(posts) as [path, {metadata}] }
+		{#each filteredPosts as [path, {metadata}] }
 			<a class="block p-4" href={extractSlug(path)}>
 				<h1 class="text-3xl sm:text-5xl font-bold mb-0">{metadata.title}</h1>
 				<div class="font-mono mb-2 mt-1 sm:text-lg">{metadata.date} - <a class="text-accent" href={`https://x.com/${metadata.author}`}>{metadata.author}</a></div>
