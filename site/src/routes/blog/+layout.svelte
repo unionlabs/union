@@ -1,7 +1,3 @@
-<script>
-	export const preprender = true;
-
-</script>
 
 <slot />
 

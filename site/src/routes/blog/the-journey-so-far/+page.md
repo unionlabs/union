@@ -38,6 +38,3 @@ If aligned with our mission:
 - Speak with us at [Cosmoverse 2023](https://cosmoverse.org/).
 
 Our Discord and forum will be operational in the coming weeks, as well as further updates arriving in the coming days.
-
-
-

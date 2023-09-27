@@ -20,7 +20,7 @@ stateDiagram-v2
       Actor --> Galois
       Galois --> [*]
     }
-    
+
     Processor --> Chains
     Chains --> EventListener
 ```
