@@ -1,9 +1,7 @@
 name: Site Preview
 
 on:
-  pull_request:
-    paths:
-      - site
+  pull_request
 
 env:
     ARTIFACT_NAME: BUILD_LOG
