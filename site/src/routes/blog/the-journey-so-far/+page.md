@@ -1,8 +1,8 @@
 ---
 title: The Journey So Far
-slug: the-journey-so-far
 date: "2023-09-26"
 author: "@union_build"
+preview: "Today, we are happy to announce the work we have done so far on Union, the trustless infrastructure layer. Over the last six months, unionlabs was founded with nothing but an idea, a diverse skillset, and a mission to ship zkp powered infra everywhere."
 ---
 
 Today, we are happy to announce the work we have done so far on Union, the trustless infrastructure layer. Over the last six months, unionlabs was founded with nothing but an idea, a diverse skillset, and a mission to ship zkp powered infra everywhere.
