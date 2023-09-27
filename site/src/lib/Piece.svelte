@@ -90,7 +90,7 @@
 
   .mover {
 
-    animation-duration: 1s;
+    animation-duration: var(--duration);
     animation-delay: var(--delay);
     animation-timing-function: ease-in-out;
     animation-fill-mode: both;

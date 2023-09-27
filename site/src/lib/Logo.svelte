@@ -11,33 +11,33 @@
   </div>
   <div class="pointer-events-none my-grid text-xs box-border m-[1px] md:m-[2px] z-10 absolute logo-container">
     <!-- u !-->
-    <Piece kind="A" x={3} y={2} origin="west" --delay="0.2s"/>
-    <Piece kind="B" x={3} y={3} origin="west" --delay="0.4s" rotation={3}/>
-    <Piece kind="B" x={5} y={3} origin="south" --delay="0.6s" rotation={2}/>
-    <Piece kind="A" x={6} y={2} origin="north" --delay="0.8s"/>
+    <Piece kind="A" x={3} y={2} origin="west" --duration="1s" --delay="0.2s"/>
+    <Piece kind="B" x={3} y={3} origin="west" --duration="0.9s" --delay="0.4s" rotation={3}/>
+    <Piece kind="B" x={5} y={3} origin="south" --duration="0.9s" --delay="0.6s" rotation={2}/>
+    <Piece kind="A" x={6} y={2} origin="north" --duration="0.8s" --delay="0.8s"/>
 
     <!-- n !-->
-    <Piece kind="A" x={8} y={3} origin="south" --delay="1.2s"/>
-    <Piece kind="B" x={10} y={2} origin="north" --delay="1.4s" rotation={1}/>
-    <Piece kind="B" x={8} y={2} origin="north" --delay="1.6s" rotation={4}/>
-    <Piece kind="A" x={11} y={3} origin="south" --delay="1.8s"/>
+    <Piece kind="B" x={10} y={2} origin="north" --duration="0.8s" --delay="1.1s" rotation={1}/>
+    <Piece kind="A" x={8} y={3} origin="south" --duration="0.8s" --delay="1.2s"/>
+    <Piece kind="B" x={8} y={2} origin="north" --duration="0.8s" --delay="1.3s" rotation={4}/>
+    <Piece kind="A" x={11} y={3} origin="south" --duration="0.8s" --delay="1.4s"/>
 
   
     <!-- i !-->
-    <Piece kind="A" x={13} y={2} origin="north" --delay="2s"/>
-    <Piece kind="A" x={13} y={3} origin="south" --delay="2.2s"/>
+    <Piece kind="A" x={13} y={2} origin="north" --duration="0.7s" --delay="1.5s"/>
+    <Piece kind="A" x={13} y={3} origin="south" --duration="0.7s" --delay="1.6s"/>
 
     <!-- o !-->
-    <Piece kind="B" x={17} y={2} origin="north" --delay="2.4s" rotation={1}/>
-    <Piece kind="B" x={17} y={3} origin="south" --delay="2.6s" rotation={2}/>
-    <Piece kind="B" x={15} y={3} origin="south" --delay="2.8s" rotation={3}/>
-    <Piece kind="B" x={15} y={2} origin="north" --delay="3s" rotation={4}/>
+    <Piece kind="B" x={17} y={2} origin="north" --duration="0.7s" --delay="1.7s" rotation={1}/>
+    <Piece kind="B" x={17} y={3} origin="south" --duration="0.7s" --delay="1.8s" rotation={2}/>
+    <Piece kind="B" x={15} y={3} origin="south" --duration="0.7s" --delay="1.9s" rotation={3}/>
+    <Piece kind="B" x={15} y={2} origin="north" --duration="0.7s" --delay="2.0s" rotation={4}/>
 
     <!-- n !-->
-    <Piece kind="A" x={20} y={3} origin="south" --delay="3.2s"/>
-    <Piece kind="B" x={22} y={2} origin="east" --delay="3.4s" rotation={1}/>
-    <Piece kind="B" x={20} y={2} origin="north" --delay="3.6s" rotation={4}/>
-    <Piece kind="A" x={23} y={3} origin="south" --delay="3.8s"/>
+    <Piece kind="A" x={20} y={3} origin="south" --duration="0.7s" --delay="2.1s"/>
+    <Piece kind="B" x={22} y={2} origin="east" --duration="0.8s" --delay="2.1s" rotation={1}/>
+    <Piece kind="B" x={20} y={2} origin="north" --duration="0.9s" --delay="2.2s" rotation={4}/>
+    <Piece kind="A" x={23} y={3} origin="south" --duration="1s" --delay="2.3s"/>
   </div>
 </div>
 
