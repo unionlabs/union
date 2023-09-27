@@ -10,7 +10,7 @@
 			<section class="p-4">
 				<h1 class="text-3xl sm:text-5xl font-bold mb-0">{metadata.title}</h1>
 				<div class="font-mono mb-2 mt-1 sm:text-lg">{metadata.date} - <a class="text-accent" href={`https://x.com/${metadata.author}`}>{metadata.author}</a></div>
-				<p class="text-xl">{metadata.preview}</p>
+				<p class="sm:text-xl">{metadata.preview}</p>
 				<a class="block mt-2 font-mono text-lg" href="/blog/the-journey-so-far">READ FULL POST -&gt;</a>
 			</section>
 		{/each}

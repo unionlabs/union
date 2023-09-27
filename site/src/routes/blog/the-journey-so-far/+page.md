@@ -1,11 +1,9 @@
 ---
 title: The Journey So Far
-date: "2023-09-26"
+date: "2023-09-27"
 author: "@union_build"
 preview: "Today, we are happy to announce the work we have done so far on Union, the trustless infrastructure layer. Over the last six months, unionlabs was founded with nothing but an idea, a diverse skillset, and a mission to ship zkp powered infra everywhere."
 ---
-
-Today, we are happy to announce the work we have done so far on Union, the trustless infrastructure layer. Over the last six months, unionlabs was founded with nothing but an idea, a diverse skillset, and a mission to ship zkp powered infra everywhere.
 
 We spent months building in stealthmode, heads-down, as we validated our technical assumptions. The product of that is the Union testnet, CometBLS, Voyager, and Galois. These components allowed us to achieve **IBC to Ethereum, the endgame**.`
 
