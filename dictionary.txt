@@ -16,10 +16,12 @@ Coeff
 Cofactor
 Configurator
 Cosm
+Cosmoverse
 Counterparty
 DATADIR
 DYLD
 Denoms
+Disket
 Feegrant
 GOARCH
 GOPATH
@@ -39,10 +41,13 @@ Karel
 Keybase
 Lahcen
 Layerzero
+Lightshift
 Merkle
 Mgoogle
 Misbehaviour
 NIXBUILDNET
+Neue
+Noto
 PINGPONG
 PRECOMMIT
 PREVOTE
@@ -59,9 +64,11 @@ Redelegate
 Redelegation
 Redelegations
 Repr
+Roboto
 Rustup
 SIGINT
 Secp
+Segoe
 Shacham
 Shallue
 Snapshotter
@@ -70,6 +77,7 @@ TRYOPEN
 Tempdirs
 Tendermint
 Timestamptz
+UDHC
 UNBONDED
 UNBONDING
 Unbonding
@@ -93,6 +101,8 @@ alloc
 amcl
 anypb
 anys
+appchain
+appchains
 appparams
 arion
 arkworks
@@ -333,6 +343,7 @@ ldflags
 legendres
 libblst
 libcxx
+libexec
 libfuzzer
 libiconv
 libmuslc
@@ -347,12 +358,14 @@ logtostderr
 lzrndrpkvsjqgk
 maxdome
 maxpeers
+mdsvex
 merkle
 metadatas
 metas
 mgoogle
 milagro
 miminum
+miniserve
 mintkeeper
 minttypes
 miri
@@ -389,6 +402,7 @@ omit
 omnichain
 openapi
 openapiv
+opsz
 optimisitic
 outdir
 outfile
@@ -528,6 +542,7 @@ sumbitter
 svrcmd
 symlinker
 syncmode
+tailwindcss
 taplo
 teku
 tempdir

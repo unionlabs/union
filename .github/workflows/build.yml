@@ -69,7 +69,9 @@ jobs:
                   "gen-proto",
                   "githook",
                   "go-vendor",
-                  "rust-proto"
+                  "rust-proto",
+                  "site-static",
+                  "site-server"
                 ]
               )
             ) or 

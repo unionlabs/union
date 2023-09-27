@@ -105,6 +105,7 @@
         [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" "x86_64-darwin" ];
       imports = [
         ./uniond/uniond.nix
+        ./site/site.nix
         ./galoisd/galoisd.nix
         ./unionvisor/unionvisor.nix
         ./voyager/voyager.nix
@@ -277,6 +278,7 @@
             name = "union-devShell";
             buildInputs = [ rust.toolchains.dev ] ++ (with pkgs; [
               bacon
+              bun
               cargo-nextest
               foundry-bin
               go_1_20
@@ -298,6 +300,9 @@
               solc
               yarn
               yq
+              nodePackages.svelte-language-server
+              nodePackages.typescript-language-server
+              nodePackages.vscode-css-languageserver-bin
             ]);
             nativeBuildInputs = [ config.treefmt.build.wrapper ]
               ++ lib.attrsets.attrValues config.treefmt.build.programs;
