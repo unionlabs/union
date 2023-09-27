@@ -12,6 +12,5 @@
 	<div class="font-mono mb-2 mt-1 sm:text-lg"
 		>{date} - <a class="text-accent" href={`https://x.com/${author}`}>{author}</a></div
 	>
-	<p>{preview}</p>
 	<slot />
 </main>
