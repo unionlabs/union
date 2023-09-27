@@ -37,6 +37,8 @@ jobs:
         id: publish-preview
         run: |
             cd site
+            export VERCEL_ORG_ID=team_lY7Vs9wFi3Ifb2A24bOxiA68
+            export VERCEL_PROJECT_ID=prj_HWQLgBiGFHNPSy5qJ3WpCeX1l492
             vercel pull --yes --environment=preview --token=${{secrets.VERCEL_TOKEN}} --scope unionbuild
             vercel build --token=${{secrets.VERCEL_TOKEN}} --scope unionbuild
             PREVIEW_URL=$(vercel deploy --prebuilt --token=${{secrets.VERCEL_TOKEN}} --scope unionbuild)
