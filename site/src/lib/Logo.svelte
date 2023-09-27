@@ -77,7 +77,7 @@
 
 .logo-container {
     animation-duration: 0.5s;
-    animation-delay: 5.3s;
+    animation-delay: 4s;
     animation-name: slideToPos;
     animation-timing-function: ease-in-out;
     animation-fill-mode: both;

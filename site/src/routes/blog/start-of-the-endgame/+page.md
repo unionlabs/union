@@ -15,7 +15,7 @@ Below is a live view of two smart contracts using General Message Passing (GMP) 
 
 The testnet does not have a live explorer yet, we'll be deploying that in the coming weeks, including a faucet and token transfers. 
 
-Our next demonstration will show erc20 to native token transfers, setting the foundation for accessing Ethereum assets natively on any appchain.
+Our next demonstration will show ERC-20 to native token transfers, setting the foundation for accessing Ethereum assets natively on any appchain.
 
 ## Join the Union
 

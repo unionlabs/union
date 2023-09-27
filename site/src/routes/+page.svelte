@@ -9,9 +9,7 @@
 		<Logo />
 		<Tagline />
 		<div class="flex flex-row md:flex-row gap-[16px] md:gap-[32px]">
-			<div class="buttonFly"><ButtonA href="/blog">Blog</ButtonA></div>
-			<div class="buttonFly"><ButtonA href="https://docs.union.build">Docs</ButtonA></div>
-			<div class="buttonFly"><ButtonA href="https://x.com/union_build">X</ButtonA></div>
+			<div class="buttonFly"><ButtonA href="/blog">Read More &gt;</ButtonA></div>
 		</div>
 		<div class="h-[33px] md:h-[67px]" />
 		<!--
