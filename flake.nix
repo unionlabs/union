@@ -300,6 +300,7 @@
               solc
               yarn
               yq
+              nodePackages.graphqurl
               nodePackages.svelte-language-server
               nodePackages.typescript-language-server
               nodePackages.vscode-css-languageserver-bin

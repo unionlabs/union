@@ -1,9 +1,8 @@
 use std::{net::SocketAddr, str::FromStr};
 
 use clap::Parser;
+use hubble::hasura::Datastore;
 use url::Url;
-
-use crate::hasura::Datastore;
 
 /// Hubble is state machine observer.
 #[derive(Parser, Debug)]

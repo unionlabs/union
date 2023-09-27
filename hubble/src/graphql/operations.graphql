@@ -26,3 +26,9 @@ mutation InsertBlocksMany($objects: [blocks_insert_input!]!) {
     affected_rows
   }
 }
+
+mutation InsertDemoTx($data: jsonb!) {
+  insert_demo_txes_one(object: {data: $data}) {
+    id
+  }
+}
