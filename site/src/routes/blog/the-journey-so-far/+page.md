@@ -9,7 +9,7 @@ Today, we are happy to announce the work we have done so far on Union, the trust
 
 We spent months building in stealthmode, heads-down, as we validated our technical assumptions. The product of that is the Union testnet, [CometBLS](https://docs.union.build/architecture/cometbls), [Voyager](https://docs.union.build/architecture/voyager), and [Galois](https://docs.union.build/architecture/galois). These components allowed us to achieve **IBC to Ethereum, the endgame**.`
 
-Union is designed around a few key principles: permissonless interopability, censorship resistance, and decentralized infrastrucutre. Anyone should be allowed to transact, with any counterparty, on any chain, and this system may not rely on massive, closed source infrastructure.
+Union is designed around a few key principles: code is law and barrier to entry leads to centralization. This means that we design our products to allow anyone to run them, not just parties with massive CPU/GPU farms. Proof generation must be a fair market to avoid censorship.
 
 With Union, we can bring any asset natively to any chain, hook into account abstraction with ICQ, and access coprocecors and storage proofs.
 
