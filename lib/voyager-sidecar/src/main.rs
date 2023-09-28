@@ -48,7 +48,7 @@ async fn main() {
 
     client
         .post(format!("{voyager_url}/msg"))
-        .body(msg.item.to_string())
+        .json(&msg.item)
         .send()
         .await
         .expect("unable to send message to voyager");
