@@ -101,7 +101,7 @@
 	<div style="margin: 0 auto;" class="absolute max-w-4xl p-4 md:shadow-2xl left-0 md:left-[16px] right-0 md:right-[16px] bg-black text-xs sm:text-sm font-jetbrains md:rounded-xl">
 			<div style="flex-direction: column-reverse;" bind:this={terminalElement} class="overflow-scroll flex scrollbar-hide h-[300px] md:h-[400px]" >
 			{#each logLines as {network, action, logLine}}
-				<div class="terminal-line p-0"><span class={ network == "union" ? "text-accent" : "text-yellow-300"}>[{network}] </span><span>{action}</span><span class="text-gray-400">{logLine}</span></div>
+				<div class="p-0"><span class={ network == "union" ? "text-accent" : "text-yellow-300"}>[{network}] </span><span>{action}</span><span class="text-gray-400">{logLine}</span></div>
 			{/each}
 			</div>
 	</div>
@@ -109,13 +109,6 @@
 
 
 <style>
-	.terminal-line {
-		overflow-anchor: none;
-	}
-	#anchor {
-		overflow-anchor: auto;
-		height: 1px;
-	}
 	/* For Webkit-based browsers (Chrome, Safari and Opera) */
 	.scrollbar-hide::-webkit-scrollbar {
 	    display: none;
