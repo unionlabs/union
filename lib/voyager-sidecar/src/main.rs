@@ -42,7 +42,7 @@ async fn main() {
         .expect("unable to read hasura response")
         .demo_queue
         .try_into()
-        .expect("recieved more than one message from demo queue");
+        .expect("received more than one message from demo queue");
 
     println!("sending message to voyager: {}", msg.item.to_string());
 
