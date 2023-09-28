@@ -15,7 +15,6 @@ Galois and CometBLS have been live on our internal testnets for a while, but now
 
 Below is a live view of two smart contracts using General Message Passing (GMP) to play pingpong. Under the hood, [Galois]() is generating zero knowledge proofs to update lightclient state. Voyager is handling IBC relaying between `union-testnet-3` and `sepolia`.
 
-
 <Pingpong/>
 
 ## Next Steps
