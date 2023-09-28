@@ -8,7 +8,7 @@ const katex = require("rehype-katex");
 
 /** @type {import('@docusaurus/types').Config} */
 const config = {
-  title: "Union Finance",
+  title: "Union",
   tagline: "Connecting blockchains trustlessly",
 
   markdown: {
