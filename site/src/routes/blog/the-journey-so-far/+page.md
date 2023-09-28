@@ -48,7 +48,7 @@ Note that this is not a dummy or hacky setup, we have:
 
 <Xterm/>
 
-For the first person that can point us to the contract addresses in use; DM our [twitter](https://x.com/union_build) for a reward.
+For the first person that can point us to the contract addresses in use; [DM our X](https://x.com/union_build) for a reward.
 
 ## Join the Union
 
