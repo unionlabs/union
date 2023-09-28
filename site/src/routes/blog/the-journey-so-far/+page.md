@@ -34,7 +34,7 @@ Interoperability is not enough. Building infrastructure is not enough. Announcem
 
 Thriving web3 infrastructure should be accessible to everyone. This means not only increasing the number of supported blockchains but also fostering a community of developers, users, and partners who share our vision. We can build an interconnected world that transcends borders.
 
-## A sneak peak
+<h2 id="a-sneak-peak">A sneak peak</h2>
 
 We have worked hard to be the first with an IBC connection between Ethereum and our testnet. Here we present live logs (once caught up) of our connection between **Union** and **Sepolia**, where a CosmWasm contract and Solidity contract are playing [ping-pong](https://docs.union.build/demos/pingpong).
 
