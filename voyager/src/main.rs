@@ -14,8 +14,7 @@ use std::fs::read_to_string;
 
 use chain_utils::{evm::Evm, union::Union};
 use clap::Parser;
-use typenum::Unsigned;
-use unionlabs::ethereum_consts_traits::{ChainSpec, Mainnet, Minimal};
+use unionlabs::ethereum_consts_traits::{Mainnet, Minimal};
 
 use crate::{
     chain::AnyChain,
