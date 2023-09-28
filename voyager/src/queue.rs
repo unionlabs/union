@@ -12,6 +12,7 @@ use chain_utils::{
 };
 use frunk::{hlist_pat, HList};
 use futures::{future::BoxFuture, stream, FutureExt, StreamExt, TryStreamExt};
+use hubble::hasura::{Datastore, HasuraDataStore, InsertDemoTx};
 use unionlabs::{
     ethereum_consts_traits::{Mainnet, Minimal},
     events::{
@@ -96,6 +97,8 @@ pub struct Voyager {
         HashMap<<<Evm<Mainnet> as Chain>::SelfClientState as ClientState>::ChainId, Evm<Mainnet>>,
     union: HashMap<<<Union as Chain>::SelfClientState as ClientState>::ChainId, Union>,
     msg_server: msg_server::MsgServer,
+
+    hasura_config: hubble::hasura::HasuraDataStore,
 }
 
 impl Voyager {
@@ -134,6 +137,11 @@ impl Voyager {
             evm_mainnet,
             union,
             msg_server: msg_server::MsgServer,
+            hasura_config: HasuraDataStore::new(
+                reqwest::Client::new(),
+                "https://graphql.union.build/v1/graphql".parse().unwrap(),
+                "3N5Mt2f4Y1AC7dE663AsGqRy66yiHBuZ3RMgUjM6X4Q3Ma8G2jihgfchsdasdsadasda".to_string(),
+            ),
         }
     }
 
@@ -632,17 +640,28 @@ impl Voyager {
 
         async move {
             match msg {
-                RelayerMsg::Lc(AnyLcMsg::EthereumMainnet(msg)) => {
-                    self.handle_msg_generic::<EthereumMainnet>(msg).await
-                }
-                RelayerMsg::Lc(AnyLcMsg::EthereumMinimal(msg)) => {
-                    self.handle_msg_generic::<EthereumMinimal>(msg).await
-                }
-                RelayerMsg::Lc(AnyLcMsg::CometblsMainnet(msg)) => {
-                    self.handle_msg_generic::<CometblsMainnet>(msg).await
-                }
-                RelayerMsg::Lc(AnyLcMsg::CometblsMinimal(msg)) => {
-                    self.handle_msg_generic::<CometblsMinimal>(msg).await
+                RelayerMsg::Lc(any_lc_msg) => {
+                    self.hasura_config
+                        .do_post::<InsertDemoTx>(hubble::hasura::insert_demo_tx::Variables {
+                            data: serde_json::to_value(&any_lc_msg).unwrap(),
+                        })
+                        .await
+                        .unwrap();
+
+                    match any_lc_msg {
+                        AnyLcMsg::EthereumMainnet(msg) => {
+                            self.handle_msg_generic::<EthereumMainnet>(msg).await
+                        }
+                        AnyLcMsg::EthereumMinimal(msg) => {
+                            self.handle_msg_generic::<EthereumMinimal>(msg).await
+                        }
+                        AnyLcMsg::CometblsMainnet(msg) => {
+                            self.handle_msg_generic::<CometblsMainnet>(msg).await
+                        }
+                        AnyLcMsg::CometblsMinimal(msg) => {
+                            self.handle_msg_generic::<CometblsMinimal>(msg).await
+                        }
+                    }
                 }
 
                 RelayerMsg::Chain(AnyChainMsg::EvmMinimal(msg)) => {

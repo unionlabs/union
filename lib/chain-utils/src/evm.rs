@@ -19,12 +19,13 @@ use ethers::{
     signers::{LocalWallet, Wallet},
     utils::secret_key_to_address,
 };
-use futures::{stream, Future, FutureExt, Stream, StreamExt};
+use futures::{stream, Future, FutureExt, Stream, StreamExt, TryStreamExt};
+use hubble::hasura::{insert_demo_tx, Datastore, HasuraConfig, HasuraDataStore, InsertDemoTx};
 use serde::{Deserialize, Serialize};
 use typenum::Unsigned;
 use unionlabs::{
     ethereum::{Address, H256, U256},
-    ethereum_consts_traits::ChainSpec,
+    ethereum_consts_traits::{ChainSpec, Mainnet, Minimal},
     events::{
         AcknowledgePacket, ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit, ChannelOpenTry,
         ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit, ConnectionOpenTry,
@@ -57,6 +58,8 @@ pub struct Evm<C: ChainSpec> {
     pub ibc_handler: IBCHandler<CometblsMiddleware>,
     pub provider: Provider<Ws>,
     pub beacon_api_client: BeaconApiClient<C>,
+
+    pub hasura_client: HasuraDataStore,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -71,6 +74,8 @@ pub struct Config {
     pub eth_rpc_api: String,
     /// The RPC endpoint for the beacon chain.
     pub eth_beacon_rpc_api: String,
+
+    pub hasura_config: HasuraConfig,
 }
 
 impl<C: ChainSpec> Chain for Evm<C> {
@@ -277,18 +282,24 @@ impl<C: ChainSpec> Evm<C> {
             provider,
             beacon_api_client: BeaconApiClient::new(config.eth_beacon_rpc_api).await,
             wallet,
+            hasura_client: HasuraDataStore::new(
+                reqwest::Client::new(),
+                config.hasura_config.url,
+                config.hasura_config.secret,
+            ),
         }
     }
 
     // TODO: Change to take a beacon slot instead of a height
-    // TODO: Change to return a block number, not a height
     pub async fn execution_height(&self, beacon_height: Height) -> u64 {
-        let height = self
+        let response = self
             .beacon_api_client
             .block(beacon_api::client::BlockId::Slot(
                 beacon_height.revision_height,
             ))
-            .await
+            .await;
+
+        let height = response
             .unwrap()
             .data
             .message
@@ -426,6 +437,14 @@ impl<C: ChainSpec> EventSource for Evm<C> {
         _seed: Self::Seed,
     ) -> impl Stream<Item = Result<Self::Event, Self::Error>> + '_ {
         async move {
+            let genesis_time = self
+                .beacon_api_client
+                .genesis()
+                .await
+                .unwrap()
+                .data
+                .genesis_time;
+
             stream::unfold(
                 self.query_latest_height().await,
                 move |previous_beacon_height| async move {
@@ -825,6 +844,26 @@ impl<C: ChainSpec> EventSource for Evm<C> {
                 },
             )
             .flatten()
+            .then(move |event| async move {
+                if let Ok(ref event) = event {
+                    let current_slot = event.height.revision_height;
+
+                    let next_epoch_ts = next_epoch_timestamp::<C>(current_slot, genesis_time);
+
+                    self.hasura_client
+                        .do_post::<InsertDemoTx>(insert_demo_tx::Variables {
+                            data: serde_json::json! {{
+                                "latest_execution_block_hash": event.block_hash,
+                                "timestamp": next_epoch_ts,
+                            }},
+                        })
+                        .await
+                        .unwrap();
+                }
+
+                // pass it back through
+                event
+            })
         }
         .flatten_stream()
         .inspect(|x| {
@@ -903,4 +942,22 @@ impl_eth_call_ext! {
     GetConnectionCall             -> GetConnectionReturn;
     GetChannelCall                -> GetChannelReturn;
     GetHashedPacketCommitmentCall -> GetHashedPacketCommitmentReturn;
+}
+
+pub fn next_epoch_timestamp<C: ChainSpec>(slot: u64, genesis_timestamp: u64) -> u64 {
+    let next_epoch_slot = slot + (C::SLOTS_PER_EPOCH::U64 - (slot % C::SLOTS_PER_EPOCH::U64));
+    genesis_timestamp + (next_epoch_slot * C::SECONDS_PER_SLOT::U64)
+}
+
+#[test]
+fn next_epoch_ts() {
+    dbg!(next_epoch_timestamp::<Mainnet>(6, 0));
+    dbg!(next_epoch_timestamp::<Mainnet>(7, 0));
+    dbg!(next_epoch_timestamp::<Mainnet>(8, 0));
+    dbg!(next_epoch_timestamp::<Mainnet>(9, 0));
+
+    dbg!(next_epoch_timestamp::<Minimal>(6, 0));
+    // dbg!(next_epoch::<Minimal>(48, 0));
+    // dbg!(next_epoch::<Minimal>(49, 0));
+    // dbg!(next_epoch::<Minimal>(47, 0));
 }

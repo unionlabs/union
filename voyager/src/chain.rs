@@ -45,6 +45,7 @@ impl AnyChain {
                     signer: evm.signer,
                     eth_rpc_api: evm.eth_rpc_api,
                     eth_beacon_rpc_api: evm.eth_beacon_rpc_api,
+                    hasura_config: evm.hasura_config,
                 })
                 .await,
             ),
@@ -54,6 +55,7 @@ impl AnyChain {
                     signer: evm.signer,
                     eth_rpc_api: evm.eth_rpc_api,
                     eth_beacon_rpc_api: evm.eth_beacon_rpc_api,
+                    hasura_config: evm.hasura_config,
                 })
                 .await,
             ),

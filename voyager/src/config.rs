@@ -6,6 +6,7 @@ use clap::{
     Args,
 };
 use ethers::prelude::k256::ecdsa;
+use hubble::hasura::HasuraConfig;
 use serde::{Deserialize, Serialize};
 use tendermint_rpc::WebSocketClientUrl;
 use unionlabs::ethereum::Address;
@@ -41,33 +42,25 @@ pub enum EvmChainConfig {
     Minimal(EvmChainConfigFields),
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Args)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EvmChainConfigFields {
     // TODO: Move all except for ibc_handler into the client config?
     /// The address of the `CometblsClient` smart contract.
-    #[arg(long)]
     pub cometbls_client_address: Address,
     /// The address of the `IBCHandler` smart contract.
-    #[arg(long)]
     pub ibc_handler_address: Address,
 
     /// The signer that will be used to submit transactions by voyager.
-    #[arg(
-        long,
-        value_parser = StringValueParser::new()
-            .try_map(parse_private_key_arg::<ecdsa::SigningKey>)
-    )]
     pub signer: PrivateKey<ecdsa::SigningKey>,
 
     // TODO(benluelo): Use `Url` or something similar
     /// The RPC endpoint for the execution chain.
-    #[arg(long)]
     pub eth_rpc_api: String,
     /// The RPC endpoint for the beacon chain.
-    #[arg(long)]
     pub eth_beacon_rpc_api: String,
     // #[arg(long)]
     // pub wasm_code_id: H256,
+    pub hasura_config: HasuraConfig,
 }
 
 impl From<EvmChainConfigFields> for chain_utils::evm::Config {
@@ -77,6 +70,7 @@ impl From<EvmChainConfigFields> for chain_utils::evm::Config {
             signer: value.signer,
             eth_rpc_api: value.eth_rpc_api,
             eth_beacon_rpc_api: value.eth_beacon_rpc_api,
+            hasura_config: value.hasura_config,
         }
     }
 }

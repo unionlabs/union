@@ -9,7 +9,11 @@
         "raw": "0x4e9444a6efd6d42725a250b650a781da2737ea308c839eaccb0f7f3dbd2fea77"
       },
       "eth_rpc_api": "ws://localhost:8546",
-      "eth_beacon_rpc_api": "http://localhost:9596"
+      "eth_beacon_rpc_api": "http://localhost:9596",
+      "hasura_config": {
+        "url": "https://graphql.union.build/v1/graphql",
+        "secret": "3N5Mt2f4Y1AC7dE663AsGqRy66yiHBuZ3RMgUjM6X4Q3Ma8G2jihgfchsdasdsadasda"
+      }
     },
     "union-devnet": {
       "chain_type": "union",

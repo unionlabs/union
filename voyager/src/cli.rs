@@ -10,12 +10,10 @@ use ethers::{
     types::{Address, H256},
 };
 use reqwest::Url;
-use unionlabs::{ethereum_consts_traits::PresetBaseKind, ibc::core::client::height::Height};
+use unionlabs::ibc::core::client::height::Height;
 
 use crate::chain::{
-    evm::CometblsConfig,
     proof::{self, ClientConsensusStatePath, ClientStatePath, IbcStateReadPaths},
-    union::EthereumConfig,
     HeightOf, QueryHeight,
 };
 
@@ -38,14 +36,6 @@ pub struct AppArgs {
 #[allow(clippy::large_enum_variant)]
 pub enum Command {
     PrintConfig,
-    #[command(subcommand)]
-    Chain(ChainCmd),
-    #[command(subcommand)]
-    Client(ClientCmd),
-    #[command(subcommand)]
-    Connection(ConnectionCmd),
-    #[command(subcommand)]
-    Channel(ChannelCmd),
     Relay(RelayCmd),
     #[command(subcommand)]
     SubmitPacket(SubmitPacketCmd),
@@ -192,148 +182,6 @@ pub enum QueryCmd {
         #[arg(long)]
         denom: String,
     },
-}
-
-#[derive(Debug, Subcommand)]
-pub enum ChainCmd {
-    #[command(subcommand)]
-    Add(ChainAddCmd),
-}
-
-#[derive(Debug, Subcommand)]
-pub enum ChainAddCmd {
-    Evm {
-        #[arg(long)]
-        overwrite: bool,
-        #[arg(long)]
-        name: String,
-        #[arg(long)]
-        preset_base: PresetBaseKind,
-        #[command(flatten)]
-        config: crate::config::EvmChainConfigFields,
-    },
-    Union {
-        #[arg(long)]
-        overwrite: bool,
-        #[arg(long)]
-        name: String,
-        #[command(flatten)]
-        config: crate::config::UnionChainConfig,
-    },
-}
-
-#[derive(Debug, Subcommand)]
-pub enum ClientCmd {
-    #[command(subcommand)]
-    Create(ClientCreateCmd),
-}
-
-#[derive(Debug, Subcommand)]
-pub enum ClientCreateCmd {
-    #[command(subcommand)]
-    Evm(EvmClientType),
-    #[command(subcommand)]
-    Union(CometblsClientType),
-}
-
-#[derive(Debug, Args)]
-pub struct ClientQueryCmd {
-    #[arg(long)]
-    pub client_id: String,
-    #[arg(long)]
-    pub on: String,
-}
-
-#[derive(Debug, Subcommand)]
-pub enum EvmClientType {
-    Cometbls {
-        /// The name of the chain to create the client on, as specified in the config file.
-        #[arg(long)]
-        on: String,
-        /// The name of the chain that the client will connect to, as specified in the config file.
-        #[arg(long)]
-        counterparty: String,
-        #[command(flatten)]
-        config: CometblsConfig,
-    },
-}
-
-#[derive(Debug, Subcommand)]
-pub enum CometblsClientType {
-    Ethereum08Wasm {
-        /// The name of the chain to create the client on, as specified in the config file.
-        #[arg(long)]
-        on: String,
-        /// The name of the chain that the client will connect to, as specified in the config file.
-        #[arg(long)]
-        counterparty: String,
-        #[command(flatten)]
-        config: EthereumConfig,
-    },
-}
-
-#[derive(Debug, Subcommand)]
-pub enum ConnectionCmd {
-    // #[command(subcommand)]
-    // Query(ConnectionQueryCmd),
-    Open {
-        #[arg(long)]
-        from_chain: String,
-        #[arg(long)]
-        from_client: String,
-
-        #[arg(long)]
-        to_chain: String,
-        #[arg(long)]
-        to_client: String,
-    },
-}
-
-#[derive(Debug, Subcommand)]
-pub enum ChannelCmd {
-    Open {
-        #[arg(long)]
-        from_chain: String,
-        #[arg(long)]
-        from_connection: String,
-        #[arg(long)]
-        from_port: String,
-        #[arg(long)]
-        from_version: String,
-
-        #[arg(long)]
-        to_chain: String,
-        #[arg(long)]
-        to_connection: String,
-        #[arg(long)]
-        to_port: String,
-        #[arg(long)]
-        to_version: String,
-    },
-}
-
-#[derive(Debug, Parser)]
-pub struct OpenConnectionArgs {
-    #[command(flatten)]
-    pub args: ClientArgs,
-}
-
-#[derive(Debug, Parser)]
-pub struct OpenChannelArgs {
-    #[command(flatten)]
-    pub args: ClientArgs,
-
-    #[arg(long)]
-    pub cometbls_port_id: String,
-    #[arg(long)]
-    pub ethereum_port_id: String,
-
-    /// format is client_id/connection_id
-    #[arg(long)]
-    pub cometbls: ConnectionEndInfo,
-    /// format is client_id/connection_id
-    #[arg(long)]
-    pub ethereum: ConnectionEndInfo,
 }
 
 #[derive(Debug, Parser)]

@@ -814,10 +814,13 @@ dependencies = [
  "ethers",
  "futures",
  "hex",
+ "hubble",
  "prost",
  "protos",
+ "reqwest",
  "serde",
  "serde-utils",
+ "serde_json",
  "sha2 0.10.7",
  "tendermint-rpc",
  "tokio",
@@ -4892,9 +4895,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.105"
+version = "1.0.107"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "693151e1ac27563d6dbcec9dee9fbd5da8539b20fa14ad3752b2e6d363ace360"
+checksum = "6b420ce6e3d8bd882e9b243c6eed35dbc9a6110c9769e74b584e0d68d1f20c65"
 dependencies = [
  "itoa",
  "ryu",
@@ -6239,6 +6242,7 @@ dependencies = [
  "futures",
  "hex",
  "hex-literal",
+ "hubble",
  "num-bigint",
  "pin-utils",
  "prost",

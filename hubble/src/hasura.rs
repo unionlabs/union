@@ -14,11 +14,17 @@ pub trait Datastore {
         <Q as GraphQLQuery>::Variables: 'static;
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct HasuraDataStore {
     client: Client,
     url: Url,
     secret: String,
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct HasuraConfig {
+    pub url: Url,
+    pub secret: String,
 }
 
 impl Datastore for HasuraDataStore {

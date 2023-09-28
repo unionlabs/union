@@ -47,6 +47,7 @@ frunk = "0.4.2"
 bitvec = "1.0.1"
 displaydoc = { version = "0.2.4", default-features = false }
 frame-support-procedural = "18.0.0"
+hubble.workspace = true
 
 [features]
 eth-mainnet = [ "unionlabs/eth-mainnet" ]
