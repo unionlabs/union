@@ -84,7 +84,7 @@
                 console.log(result)
 								const newLine = filter(result);
 								if (newLine != null) {
-									logLines = [...logLines, newLine];
+									logLines = [newLine, ...logLines];
 								}
 
 	        })
@@ -100,12 +100,10 @@
 
 <div class="h-[420px] my-8">
 	<div style="margin: 0 auto;" class="absolute max-w-4xl p-4 md:shadow-2xl left-0 md:left-[16px] right-0 md:right-[16px] bg-black text-sm font-jetbrains md:rounded-xl">
-			<div bind:this={terminalElement} class="overflow-scroll scrollbar-hide h-[400px]" >
-				<div class="terminal-line h-[100.1%]"/>
-				{#each logLines as {network, action, logLine}}
-					<div class="terminal-line p-0"><span class={ network == "union" ? "text-accent" : "text-yellow-300"}>[{network}] </span><span>{action}</span><span class="text-gray-400">{logLine}</span></div>
-				{/each}
-			  <div bind:this={scrollAnchor} id="anchor"/>
+			<div style="flex-direction: column-reverse;" bind:this={terminalElement} class="overflow-scroll flex scrollbar-hide h-[400px]" >
+			{#each logLines as {network, action, logLine}}
+				<div class="terminal-line p-0"><span class={ network == "union" ? "text-accent" : "text-yellow-300"}>[{network}] </span><span>{action}</span><span class="text-gray-400">{logLine}</span></div>
+			{/each}
 			</div>
 	</div>
 </div>
