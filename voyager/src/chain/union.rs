@@ -4,7 +4,6 @@ use std::{
     marker::PhantomData,
 };
 
-use bitvec::vec::BitVec;
 use chain_utils::{
     evm::Evm,
     union::{Union, Wasm},
@@ -13,7 +12,7 @@ use clap::Args;
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use frunk::{hlist_pat, HList};
 use futures::Future;
-use num_bigint::{BigInt, BigUint};
+use num_bigint::BigUint;
 use prost::Message;
 use protos::{
     cosmos::{
@@ -1023,6 +1022,7 @@ where
             let a_tokens = a.tokens.parse::<u128>().unwrap();
             let b_tokens = b.tokens.parse::<u128>().unwrap();
 
+            #[allow(clippy::collapsible_else_if)]
             if a_tokens == b_tokens {
                 let a_key = &a
                     .consensus_pubkey

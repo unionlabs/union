@@ -7,12 +7,10 @@ use protos::ibc::core::channel::v1::QueryPacketAcknowledgementRequest;
 use serde::{Deserialize, Serialize};
 use sha2::Digest;
 use tendermint_rpc::{
-    error::ResponseSubdetail,
     event::EventData,
     query::{Condition, EventType, Operand, Query},
     Client, SubscriptionClient, WebSocketClient, WebSocketClientUrl,
 };
-use tokio::select;
 use unionlabs::{
     ethereum::H256,
     events::{IbcEvent, TryFromTendermintEventError},
