@@ -1,5 +1,6 @@
 use std::{collections::VecDeque, fmt::Debug, marker::PhantomData, ops::Div, sync::Arc};
 
+use beacon_api::errors::{InternalServerError, NotFoundError};
 use chain_utils::{
     evm::{EthCallExt, Evm, TupleToOption},
     Chain, ClientState,
@@ -29,11 +30,9 @@ use ethers::{
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use frunk::{hlist_pat, HList};
 use futures::Future;
-use hubble::hasura::{insert_demo_tx, Datastore, InsertDemoTx};
 use prost::Message;
 use protos::union::ibc::lightclients::ethereum::v1 as ethereum_v1;
 use serde::{Deserialize, Serialize};
-use serde_json::json;
 use typenum::Unsigned;
 use unionlabs::{
     ethereum::{
@@ -1113,26 +1112,55 @@ where
             // either. It would be nice if the beacon chain exposed "fetch bootstrap by slot"
             // functionality; I'm surprised it doesn't.
 
-            let currently_trusted_block = evm
-                .beacon_api_client
-                .header(beacon_api::client::BlockId::Slot(
-                    slot / (C::SLOTS_PER_EPOCH::U64 * C::SECONDS_PER_SLOT::U64)
-                        * (C::SLOTS_PER_EPOCH::U64 * C::SECONDS_PER_SLOT::U64),
-                ))
-                .await
-                .unwrap()
-                .data;
+            let mut amount_of_slots_back: u64 = 0;
+
+            let floored_slot = slot / (C::SLOTS_PER_EPOCH::U64 * C::SECONDS_PER_SLOT::U64)
+                * (C::SLOTS_PER_EPOCH::U64 * C::SECONDS_PER_SLOT::U64);
+
+            let bootstrap = loop {
+                let header_response = evm
+                    .beacon_api_client
+                    .header(beacon_api::client::BlockId::Slot(
+                        floored_slot - amount_of_slots_back,
+                    ))
+                    .await;
+
+                let header = match dbg!(header_response) {
+                    Ok(header) => header,
+                    Err(beacon_api::errors::Error::NotFound(NotFoundError {
+                        status_code: _,
+                        error: _,
+                        message,
+                    })) if message.starts_with("No block found for id") => {
+                        amount_of_slots_back += 1;
+                        continue;
+                    }
+
+                    Err(err) => panic!("{err}"),
+                };
+
+                let bootstrap_response = evm
+                    .beacon_api_client
+                    .bootstrap(header.data.root.clone())
+                    .await;
+
+                match bootstrap_response {
+                    Ok(ok) => break ok.data,
+                    Err(err) => match err {
+                        beacon_api::errors::Error::Internal(InternalServerError {
+                            status_code: _,
+                            error: _,
+                            message,
+                        }) if message.starts_with("syncCommitteeWitness not available") => {
+                            amount_of_slots_back += 1;
+                        }
+                        _ => panic!("{err}"),
+                    },
+                };
+            };
 
             // bootstrap contains the current sync committee for the given height
-            CometblsDataMsg::Bootstrap(BootstrapData {
-                slot,
-                bootstrap: evm
-                    .beacon_api_client
-                    .bootstrap(currently_trusted_block.root.clone())
-                    .await
-                    .unwrap()
-                    .data,
-            })
+            CometblsDataMsg::Bootstrap(BootstrapData { slot, bootstrap })
         }
         CometblsFetchMsg::FetchAccountUpdate(FetchAccountUpdate { slot, __marker: _ }) => {
             let execution_height = evm

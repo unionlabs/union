@@ -115,19 +115,34 @@ impl Voyager {
                     let chain_id = c.chain_id.clone();
                     assert!(union.insert(c.chain_id.clone(), c).is_none());
 
-                    tracing::info!("registered chain {chain_name} (chain id {chain_id})");
+                    tracing::info!(
+                        chain_name,
+                        chain_id,
+                        chain_type = "Union",
+                        "registered chain"
+                    );
                 }
                 AnyChain::EvmMainnet(c) => {
                     let chain_id = c.chain_id;
                     assert!(evm_mainnet.insert(c.chain_id, c).is_none());
 
-                    tracing::info!("registered chain {chain_name} (chain id {chain_id})");
+                    tracing::info!(
+                        chain_name,
+                        %chain_id,
+                        chain_type = "EvmMainnet",
+                        "registered chain"
+                    );
                 }
                 AnyChain::EvmMinimal(c) => {
                     let chain_id = c.chain_id;
                     assert!(evm_minimal.insert(c.chain_id, c).is_none());
 
-                    tracing::info!("registered chain {chain_name} (chain id {chain_id})");
+                    tracing::info!(
+                        chain_name,
+                        %chain_id,
+                        chain_type = "EvmMinimal",
+                        "registered chain"
+                    );
                 }
             }
         }

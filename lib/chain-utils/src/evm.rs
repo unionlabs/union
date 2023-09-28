@@ -1,4 +1,4 @@
-use std::{fmt::Display, ops::Div, str::FromStr, sync::Arc, time::Duration};
+use std::{fmt::Display, ops::Div, str::FromStr, sync::Arc};
 
 use beacon_api::client::BeaconApiClient;
 use contracts::{
@@ -320,56 +320,6 @@ impl<C: ChainSpec> Evm<C> {
                 revision_number: 0,
                 revision_height: height.into(),
             }
-        }
-    }
-
-    pub async fn wait_for_beacon_block(&self, requested_height: Height) {
-        const WAIT_TIME_SECONDS: Duration = Duration::from_secs(3);
-
-        loop {
-            let current_height = self.query_latest_height().await;
-
-            tracing::debug!(
-                "waiting for beacon block {requested_height}, current height is {current_height}",
-            );
-
-            if current_height.revision_height >= requested_height.revision_height {
-                break;
-            }
-
-            tracing::debug!(
-                "requested height {requested_height} not yet reached, trying again in {} seconds",
-                WAIT_TIME_SECONDS.as_secs()
-            );
-
-            tokio::time::sleep(WAIT_TIME_SECONDS).await;
-        }
-    }
-
-    pub async fn wait_for_execution_block(&self, block_number: ethers::types::U64) {
-        loop {
-            let latest_finalized_block_number: u64 = self
-                .beacon_api_client
-                .finality_update()
-                .await
-                .unwrap()
-                .data
-                .attested_header
-                .execution
-                .block_number;
-
-            tracing::debug!(
-                %latest_finalized_block_number,
-                waiting_for = %block_number,
-                "waiting for block"
-            );
-
-            if latest_finalized_block_number >= block_number.as_u64() {
-                break;
-            }
-
-            tracing::debug!("requested height not yet reached");
-            tokio::time::sleep(Duration::from_secs(3)).await;
         }
     }
 
