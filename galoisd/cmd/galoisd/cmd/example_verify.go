@@ -317,8 +317,6 @@ func ExampleVerifyCmd() *cobra.Command {
 				log.Fatal(err)
 			}
 
-			log.Printf("Proof: %v\n", proveRes)
-
 			trustedValidatorBytes := make([][]byte, len(trustedValidators))
 			for i, val := range trustedValidators {
 				protoEncoding, err := val.Marshal()
@@ -347,13 +345,19 @@ func ExampleVerifyCmd() *cobra.Command {
 
 			hmX, hmY := cometbft_bn254.HashToField2(signedBytes)
 
-			verifyRes, err := client.Verify(ctx, &provergrpc.VerifyRequest{
+			verifyReq := provergrpc.VerifyRequest{
 				Proof:                     proveRes.Proof,
 				TrustedValidatorSetRoot:   trustedValidatorSetRoot,
 				UntrustedValidatorSetRoot: untrustedValidatorSetRoot,
 				BlockHeaderX:              &provergrpc.FrElement{Value: hmX.Marshal()},
 				BlockHeaderY:              &provergrpc.FrElement{Value: hmY.Marshal()},
-			})
+			}
+
+			// proof, _ := hex.DecodeString("C3B4C8CA5B0AB95A19EE2FE7E22C980F230DC828CBE1D8F8EC25D11EA2E61C18E7D309636B4EB64FCA3E861207159BDCC6ACC5BCD63573D256F68CE18F4CC468239650B9CABC00332A9F07FC02C8EE9760F9EE6944680E00ED02DDA9344B6A1BED5C618359004ED95EA4992C8C5BF29C856095E729CAFE5A40339E208FE2C95C00000001C0E3AEF646099B40A01D1C0BE4012E5C36C6011B4AC4B8D4C95DD4DF0ACC6DA5C7D065ADF3EFC7A1B2487E5E97C05F2790D71CF2C237D8F440464463B5AAD228")
+
+			// verifyReq.Proof.CompressedContent = proof
+
+			verifyRes, err := client.Verify(ctx, &verifyReq)
 
 			if err != nil {
 				log.Fatal(err)

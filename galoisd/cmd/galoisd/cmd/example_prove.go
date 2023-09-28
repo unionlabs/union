@@ -336,6 +336,7 @@ func ExampleProveCmd() *cobra.Command {
 			}
 
 			fmt.Printf("Gnark Proof: %X\n", res.Proof.Content)
+			fmt.Printf("Gnark Compressed Proof: %X\n", res.Proof.CompressedContent)
 			fmt.Printf("Public inputs: %X\n", res.Proof.PublicInputs)
 			fmt.Printf("Trusted root: %X\n", res.TrustedValidatorSetRoot)
 			fmt.Printf("Untrusted root: %X\n", res.UntrustedValidatorSetRoot)

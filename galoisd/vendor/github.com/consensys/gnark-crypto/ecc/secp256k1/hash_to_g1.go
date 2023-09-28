@@ -1,4 +1,4 @@
-// Copyright 2020 ConsenSys Software Inc.
+// Copyright 2020 Consensys Software Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,10 +20,10 @@ import (
 	"github.com/consensys/gnark-crypto/ecc/secp256k1/fp"
 )
 
-// mapToCurve1 implements the Shallue and van de Woestijne method, applicable to any elliptic curve in Weierstrass form
+// MapToCurve1 implements the Shallue and van de Woestijne method, applicable to any elliptic curve in Weierstrass form
 // No cofactor clearing or isogeny
 // https://www.ietf.org/archive/id/draft-irtf-cfrg-hash-to-curve-16.html#straightline-svdw
-func mapToCurve1(u *fp.Element) G1Affine {
+func MapToCurve1(u *fp.Element) G1Affine {
 	var tv1, tv2, tv3, tv4 fp.Element
 	var x1, x2, x3, gx1, gx2, gx, x, y fp.Element
 	var one fp.Element
@@ -112,7 +112,7 @@ func g1Sgn0(z *fp.Element) uint64 {
 
 // MapToG1 invokes the SVDW map, and guarantees that the result is in g1
 func MapToG1(u fp.Element) G1Affine {
-	res := mapToCurve1(&u)
+	res := MapToCurve1(&u)
 	return res
 }
 
@@ -128,7 +128,7 @@ func EncodeToG1(msg, dst []byte) (G1Affine, error) {
 		return res, err
 	}
 
-	res = mapToCurve1(&u[0])
+	res = MapToCurve1(&u[0])
 
 	return res, nil
 }
@@ -143,8 +143,8 @@ func HashToG1(msg, dst []byte) (G1Affine, error) {
 		return G1Affine{}, err
 	}
 
-	Q0 := mapToCurve1(&u[0])
-	Q1 := mapToCurve1(&u[1])
+	Q0 := MapToCurve1(&u[0])
+	Q1 := MapToCurve1(&u[1])
 
 	var _Q0, _Q1 G1Jac
 	_Q0.FromAffine(&Q0)

@@ -362,6 +362,22 @@
         "type": "github"
       }
     },
+    "nixpkgs-unstable": {
+      "locked": {
+        "lastModified": 1695360818,
+        "narHash": "sha256-JlkN3R/SSoMTa+CasbxS1gq+GpGxXQlNZRUh9+LIy/0=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "e35dcc04a3853da485a396bdd332217d0ac9054f",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixos-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
     "root": {
       "inputs": {
         "arion": "arion",
@@ -377,6 +393,7 @@
         "iohk-nix": "iohk-nix",
         "nix-filter": "nix-filter",
         "nixpkgs": "nixpkgs",
+        "nixpkgs-unstable": "nixpkgs-unstable",
         "rust-overlay": "rust-overlay_2",
         "treefmt-nix": "treefmt-nix",
         "v0_10_0": "v0_10_0",

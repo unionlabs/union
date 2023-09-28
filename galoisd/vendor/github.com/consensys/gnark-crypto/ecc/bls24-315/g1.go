@@ -1,4 +1,4 @@
-// Copyright 2020 ConsenSys Software Inc.
+// Copyright 2020 Consensys Software Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -88,6 +88,16 @@ func (p *G1Affine) Add(a, b *G1Affine) *G1Affine {
 	p1.FromAffine(a)
 	p2.FromAffine(b)
 	p1.AddAssign(&p2)
+	p.FromJacobian(&p1)
+	return p
+}
+
+// Double doubles a point in affine coordinates.
+// This should rarely be used as it is very inefficient compared to Jacobian
+func (p *G1Affine) Double(a *G1Affine) *G1Affine {
+	var p1 G1Jac
+	p1.FromAffine(a)
+	p1.Double(&p1)
 	p.FromJacobian(&p1)
 	return p
 }
@@ -626,6 +636,10 @@ func (p *g1JacExtended) setInfinity() *g1JacExtended {
 	return p
 }
 
+func (p *g1JacExtended) IsZero() bool {
+	return p.ZZ.IsZero()
+}
+
 // fromJacExtended sets Q in affine coordinates
 func (p *G1Affine) fromJacExtended(Q *g1JacExtended) *G1Affine {
 	if Q.ZZ.IsZero() {
@@ -1019,7 +1033,7 @@ func BatchScalarMultiplicationG1(base *G1Affine, scalars []fr.Element) []G1Affin
 					continue
 				}
 
-				// if msbWindow bit is set, we need to substract
+				// if msbWindow bit is set, we need to subtract
 				if digit&1 == 0 {
 					// add
 					p.AddMixed(&baseTableAff[(digit>>1)-1])

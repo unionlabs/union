@@ -51,15 +51,24 @@ type baseConversionConfig struct {
 	NbDigits             int
 	UnconstrainedOutputs bool
 	UnconstrainedInputs  bool
+
+	omitModulusCheck bool
 }
 
 // BaseConversionOption configures the behaviour of scalar decomposition.
 type BaseConversionOption func(opt *baseConversionConfig) error
 
-// WithNbDigits sets the resulting number of digits (nbDigits) to be used in the base conversion.
-// nbDigits must be > 0. If nbDigits is lower than the length of full decomposition and
-// WithUnconstrainedOutputs option is not used, then this function generates an unsatisfiable
-// constraint. If WithNbDigits option is not set, then the full decomposition is returned.
+// WithNbDigits sets the resulting number of digits (nbDigits) to be used in the
+// base conversion.
+//
+// nbDigits must be > 0. If nbDigits is lower than the length of full
+// decomposition and [WithUnconstrainedOutputs] option is not used, then the
+// conversion functions will generate an unsatisfiable constraint.
+//
+// If nbDigits is larger than the bitlength of the modulus, then the returned
+// slice has length nbDigits with excess bits being 0.
+//
+// If WithNbDigits option is not set, then the full decomposition is returned.
 func WithNbDigits(nbDigits int) BaseConversionOption {
 	return func(opt *baseConversionConfig) error {
 		if nbDigits <= 0 {
@@ -88,6 +97,24 @@ func WithUnconstrainedOutputs() BaseConversionOption {
 func WithUnconstrainedInputs() BaseConversionOption {
 	return func(opt *baseConversionConfig) error {
 		opt.UnconstrainedInputs = true
+		return nil
+	}
+}
+
+// OmitModulusCheck omits the comparison against native field modulus in
+// case the bitlength of the decomposed value (if [WithNbDigits] not set or set
+// to bitlength of the native modulus) eqals bitlength of the modulus.
+//
+// The check is otherwise required as there are possibly multiple correct binary
+// decompositions. For example, when decomposing small a the decomposition could
+// return the slices for both a or a+r, where r is the native modulus and the
+// enforced constraints are correct due to implicit modular reduction by r.
+//
+// This option can be used in case the decomposed output is manually checked to
+// be unique or if uniqueness is not required.
+func OmitModulusCheck() BaseConversionOption {
+	return func(opt *baseConversionConfig) error {
+		opt.omitModulusCheck = true
 		return nil
 	}
 }

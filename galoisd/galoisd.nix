@@ -1,7 +1,44 @@
 { ... }: {
-  perSystem = { self', pkgs, proto, ... }: {
+  perSystem = { self', pkgs, pkgs-unstable, proto, system, ... }: {
+    devShells = {
+      galois = pkgs.mkShell {
+        buildInputs = [
+          (pkgs-unstable.cudaPackages_12_2.cudatoolkit.overrideAttrs (old: old // { meta = null; }))
+        ];
+      };
+    };
     packages =
       let
+        cuda = pkgs-unstable.cudaPackages_12_2.cudatoolkit.overrideAttrs (old: old // { meta = null; });
+        cudart = pkgs-unstable.cudaPackages_12_2.cuda_cudart.overrideAttrs (old: old // { meta = null; });
+        icicle =
+          let
+            isAarch64 = ((builtins.head (pkgs.lib.splitString "-" system)) == "aarch64");
+          in
+          pkgs.gcc11Stdenv.mkDerivation {
+            pname = "icicle";
+            version = "0.0.1";
+            src = pkgs.fetchFromGitHub {
+              owner = "ingonyama-zk";
+              repo = "icicle";
+              rev = "04e5ff5d1af4";
+              hash = "sha256-flqfyD/r614gJPN+w/I+PksJ5gnbltLMXdMq7Vh7ziY=";
+            };
+            buildPhase = ''
+              ${cuda}/bin/nvcc -DG2_DEFINED -Xcompiler -fPIC -std=c++17 -shared -L${cudart}/lib \
+                  icicle/curves/bn254/lde.cu \
+                  icicle/curves/bn254/msm.cu \
+                  icicle/curves/bn254/projective.cu \
+                  icicle/curves/bn254/ve_mod_mult.cu \
+                  -o libbn254.so
+            '';
+            installPhase = ''
+              mkdir -p $out/lib
+              mv libbn254.so $out/lib
+            '';
+            enableParallelBuilding = true;
+            doCheck = true;
+          };
         galoisd = pkgs.buildGoModule ({
           name = "galoisd";
           src = ./.;
@@ -10,6 +47,7 @@
           meta = {
             mainProgram = "galoisd";
           };
+          tags = [ "!gpu" ];
         } // (if pkgs.stdenv.isLinux then {
           nativeBuildInputs = [ pkgs.musl ];
           CGO_ENABLED = 0;
@@ -32,6 +70,26 @@
             '';
           });
 
+        mkGaloisdGpu = { network, maxVal }:
+          galoisd.overrideAttrs (old: {
+            name = old.name + "-${network}";
+            src = pkgs.runCommand "src-patched" { } ''
+              mkdir -p $out
+              cp -r ${old.src}/* $out/
+              substituteInPlace $out/pkg/lightclient/common.go \
+              --replace "const MaxVal = 16" "const MaxVal = ${
+                builtins.toString maxVal
+              }"
+            '';
+            CGO_ENABLED = 1;
+            CGO_CFLAGS = "-I${cuda}/include -I${icicle.src}/goicicle/curves/bn254/include";
+            CC = "${pkgs.gcc11}/bin/gcc";
+            ldflags = [
+              "-extldflags '-L${icicle}/lib -L${cudart}/lib -s -w'"
+            ];
+            tags = [ "gpu" ];
+          });
+
         mkGaloisdImage = { galoisd }:
           pkgs.dockerTools.buildImage {
             name = "${galoisd.name}-image";
@@ -50,6 +108,10 @@
         galoisd-devnet = mkGaloisd { network = "devnet"; maxVal = 4; };
         galoisd-testnet = mkGaloisd { network = "testnet"; maxVal = 16; };
         galoisd-mainnet = mkGaloisd { network = "mainnet"; maxVal = 128; };
+
+        galoisd-devnet-gpu = mkGaloisdGpu { network = "devnet"; maxVal = 4; };
+        galoisd-testnet-gpu = mkGaloisdGpu { network = "testnet"; maxVal = 16; };
+        galoisd-mainnet-gpu = mkGaloisdGpu { network = "mainnet"; maxVal = 128; };
 
         galoisd-devnet-image = mkGaloisdImage { galoisd = self'.packages.galoisd-devnet; };
         galoisd-testnet-image = mkGaloisdImage { galoisd = self'.packages.galoisd-testnet; };

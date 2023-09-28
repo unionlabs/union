@@ -10,6 +10,7 @@
 package rangecheck
 
 import (
+	"github.com/consensys/gnark/constraint/solver"
 	"github.com/consensys/gnark/frontend"
 	"github.com/consensys/gnark/frontend/cs/r1cs"
 )
@@ -28,4 +29,9 @@ func New(api frontend.API) frontend.Rangechecker {
 		return newCommitRangechecker(api)
 	}
 	return plainChecker{api: api}
+}
+
+// GetHints returns all hints used in this package
+func GetHints() []solver.Hint {
+	return []solver.Hint{DecomposeHint}
 }

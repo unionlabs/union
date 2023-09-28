@@ -51,7 +51,6 @@ func NewKZGSRS(ccs constraint.ConstraintSystem) (kzg.SRS, error) {
 	}
 
 	return newKZGSRS(utils.FieldToCurve(ccs.Field()), kzgSize)
-
 }
 
 var srsCache map[ecc.ID]kzg.SRS

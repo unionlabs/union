@@ -19,11 +19,15 @@ package r1cs
 import (
 	"errors"
 	"fmt"
-	"github.com/consensys/gnark/frontend/cs"
 	"path/filepath"
 	"reflect"
 	"runtime"
 	"strings"
+
+	"github.com/consensys/gnark/internal/utils"
+
+	"github.com/consensys/gnark/debug"
+	"github.com/consensys/gnark/frontend/cs"
 
 	"github.com/consensys/gnark/constraint"
 	"github.com/consensys/gnark/constraint/solver"
@@ -55,14 +59,14 @@ func (builder *builder) MulAcc(a, b, c frontend.Variable) frontend.Variable {
 		// v1 and v2 are both unknown, this is the only case we add a constraint
 		if !v1Constant && !v2Constant {
 			res := builder.newInternalVariable()
-			builder.cs.AddConstraint(builder.newR1C(b, c, res))
+			builder.cs.AddR1C(builder.newR1C(b, c, res), builder.genericGate)
 			builder.mbuf1 = append(builder.mbuf1, res...)
 			return
 		}
 
 		// v1 and v2 are constants, we multiply big.Int values and return resulting constant
 		if v1Constant && v2Constant {
-			builder.cs.Mul(&n1, &n2)
+			n1 = builder.cs.Mul(n1, n2)
 			builder.mbuf1 = append(builder.mbuf1, expr.NewTerm(0, n1))
 			return
 		}
@@ -143,9 +147,9 @@ func (builder *builder) add(vars []expr.LinearExpression, sub bool, capacity int
 		if curr != -1 && t.VID == (*res)[curr].VID {
 			// accumulate, it's the same variable ID
 			if sub && lID != 0 {
-				builder.cs.Sub(&(*res)[curr].Coeff, &t.Coeff)
+				(*res)[curr].Coeff = builder.cs.Sub((*res)[curr].Coeff, t.Coeff)
 			} else {
-				builder.cs.Add(&(*res)[curr].Coeff, &t.Coeff)
+				(*res)[curr].Coeff = builder.cs.Add((*res)[curr].Coeff, t.Coeff)
 			}
 			if (*res)[curr].Coeff.IsZero() {
 				// remove self.
@@ -157,14 +161,14 @@ func (builder *builder) add(vars []expr.LinearExpression, sub bool, capacity int
 			(*res) = append((*res), *t)
 			curr++
 			if sub && lID != 0 {
-				builder.cs.Neg(&(*res)[curr].Coeff)
+				(*res)[curr].Coeff = builder.cs.Neg((*res)[curr].Coeff)
 			}
 		}
 	}
 
 	if len((*res)) == 0 {
 		// keep the linear expression valid (assertIsSet)
-		(*res) = append((*res), expr.NewTerm(0, constraint.Coeff{}))
+		(*res) = append((*res), expr.NewTerm(0, constraint.Element{}))
 	}
 	// if the linear expression LE is too long then record an equality
 	// constraint LE * 1 = t and return short linear expression instead.
@@ -183,7 +187,7 @@ func (builder *builder) Neg(i frontend.Variable) frontend.Variable {
 	v := builder.toVariable(i)
 
 	if n, ok := builder.constantValue(v); ok {
-		builder.cs.Neg(&n)
+		n = builder.cs.Neg(n)
 		return expr.NewLinearExpression(0, n)
 	}
 
@@ -202,13 +206,13 @@ func (builder *builder) Mul(i1, i2 frontend.Variable, in ...frontend.Variable) f
 		// v1 and v2 are both unknown, this is the only case we add a constraint
 		if !v1Constant && !v2Constant {
 			res := builder.newInternalVariable()
-			builder.cs.AddConstraint(builder.newR1C(v1, v2, res))
+			builder.cs.AddR1C(builder.newR1C(v1, v2, res), builder.genericGate)
 			return res
 		}
 
 		// v1 and v2 are constants, we multiply big.Int values and return resulting constant
 		if v1Constant && v2Constant {
-			builder.cs.Mul(&n1, &n2)
+			n1 = builder.cs.Mul(n1, n2)
 			return expr.NewLinearExpression(0, n1)
 		}
 
@@ -227,7 +231,7 @@ func (builder *builder) Mul(i1, i2 frontend.Variable, in ...frontend.Variable) f
 	return res
 }
 
-func (builder *builder) mulConstant(v1 expr.LinearExpression, lambda constraint.Coeff, inPlace bool) expr.LinearExpression {
+func (builder *builder) mulConstant(v1 expr.LinearExpression, lambda constraint.Element, inPlace bool) expr.LinearExpression {
 	// multiplying a frontend.Variable by a constant -> we updated the coefficients in the linear expression
 	// leading to that frontend.Variable
 	var res expr.LinearExpression
@@ -238,7 +242,7 @@ func (builder *builder) mulConstant(v1 expr.LinearExpression, lambda constraint.
 	}
 
 	for i := 0; i < len(res); i++ {
-		builder.cs.Mul(&res[i].Coeff, &lambda)
+		res[i].Coeff = builder.cs.Mul(res[i].Coeff, lambda)
 	}
 	return res
 }
@@ -254,9 +258,12 @@ func (builder *builder) DivUnchecked(i1, i2 frontend.Variable) frontend.Variable
 
 	if !v2Constant {
 		res := builder.newInternalVariable()
-		debug := builder.newDebugInfo("div", v1, "/", v2, " == ", res)
 		// note that here we don't ensure that divisor is != 0
-		builder.cs.AddConstraint(builder.newR1C(v2, res, v1), debug)
+		cID := builder.cs.AddR1C(builder.newR1C(v2, res, v1), builder.genericGate)
+		if debug.Debug {
+			debug := builder.newDebugInfo("div", v1, "/", v2, " == ", res)
+			builder.cs.AttachDebugInfo(debug, []int{cID})
+		}
 		return res
 	}
 
@@ -264,12 +271,10 @@ func (builder *builder) DivUnchecked(i1, i2 frontend.Variable) frontend.Variable
 	if n2.IsZero() {
 		panic("div by constant(0)")
 	}
-	// q := builder.q
-	builder.cs.Inverse(&n2)
-	// n2.ModInverse(n2, q)
+	n2, _ = builder.cs.Inverse(n2)
 
 	if v1Constant {
-		builder.cs.Mul(&n2, &n1)
+		n2 = builder.cs.Mul(n2, n1)
 		return expr.NewLinearExpression(0, n2)
 	}
 
@@ -292,8 +297,8 @@ func (builder *builder) Div(i1, i2 frontend.Variable) frontend.Variable {
 		debug := builder.newDebugInfo("div", v1, "/", v2, " == ", res)
 		v2Inv := builder.newInternalVariable()
 		// note that here we ensure that v2 can't be 0, but it costs us one extra constraint
-		c1 := builder.cs.AddConstraint(builder.newR1C(v2, v2Inv, builder.cstOne()))
-		c2 := builder.cs.AddConstraint(builder.newR1C(v1, v2Inv, res))
+		c1 := builder.cs.AddR1C(builder.newR1C(v2, v2Inv, builder.cstOne()), builder.genericGate)
+		c2 := builder.cs.AddR1C(builder.newR1C(v1, v2Inv, res), builder.genericGate)
 		builder.cs.AttachDebugInfo(debug, []int{c1, c2})
 		return res
 	}
@@ -302,10 +307,10 @@ func (builder *builder) Div(i1, i2 frontend.Variable) frontend.Variable {
 	if n2.IsZero() {
 		panic("div by constant(0)")
 	}
-	builder.cs.Inverse(&n2)
+	n2, _ = builder.cs.Inverse(n2)
 
 	if v1Constant {
-		builder.cs.Mul(&n2, &n1)
+		n2 = builder.cs.Mul(n2, n1)
 		return expr.NewLinearExpression(0, n2)
 	}
 
@@ -322,15 +327,18 @@ func (builder *builder) Inverse(i1 frontend.Variable) frontend.Variable {
 			panic("inverse by constant(0)")
 		}
 
-		builder.cs.Inverse(&c)
+		c, _ = builder.cs.Inverse(c)
 		return expr.NewLinearExpression(0, c)
 	}
 
 	// allocate resulting frontend.Variable
 	res := builder.newInternalVariable()
 
-	debug := builder.newDebugInfo("inverse", vars[0], "*", res, " == 1")
-	builder.cs.AddConstraint(builder.newR1C(res, vars[0], builder.cstOne()), debug)
+	cID := builder.cs.AddR1C(builder.newR1C(res, vars[0], builder.cstOne()), builder.genericGate)
+	if debug.Debug {
+		debug := builder.newDebugInfo("inverse", vars[0], "*", res, " == 1")
+		builder.cs.AttachDebugInfo(debug, []int{cID})
+	}
 
 	return res
 }
@@ -406,7 +414,7 @@ func (builder *builder) Or(_a, _b frontend.Variable) frontend.Variable {
 
 	c = append(c, a...)
 	c = append(c, b...)
-	builder.cs.AddConstraint(builder.newR1C(a, b, c))
+	builder.cs.AddR1C(builder.newR1C(a, b, c), builder.genericGate)
 
 	return res
 }
@@ -441,7 +449,7 @@ func (builder *builder) Select(i0, i1, i2 frontend.Variable) frontend.Variable {
 
 	if c, ok := builder.constantValue(cond); ok {
 		// condition is a constant return i1 if true, i2 if false
-		if builder.isCstOne(&c) {
+		if builder.isCstOne(c) {
 			return vars[1]
 		}
 		return vars[2]
@@ -451,7 +459,7 @@ func (builder *builder) Select(i0, i1, i2 frontend.Variable) frontend.Variable {
 	n2, ok2 := builder.constantValue(vars[2])
 
 	if ok1 && ok2 {
-		builder.cs.Sub(&n1, &n2)
+		n1 = builder.cs.Sub(n1, n2)
 		res := builder.Mul(cond, n1)    // no constraint is recorded
 		res = builder.Add(res, vars[2]) // no constraint is recorded
 		return res
@@ -488,8 +496,8 @@ func (builder *builder) Lookup2(b0, b1 frontend.Variable, i0, i1, i2, i3 fronten
 	c1, b1IsConstant := builder.constantValue(s1)
 
 	if b0IsConstant && b1IsConstant {
-		b0 := builder.isCstOne(&c0)
-		b1 := builder.isCstOne(&c1)
+		b0 := builder.isCstOne(c0)
+		b1 := builder.isCstOne(c1)
 
 		if !b0 && !b1 {
 			return in0
@@ -550,10 +558,10 @@ func (builder *builder) IsZero(i1 frontend.Variable) frontend.Variable {
 	}
 
 	// m = -a*x + 1         // constrain m to be 1 if a == 0
-	c1 := builder.cs.AddConstraint(builder.newR1C(builder.Neg(a), x[0], builder.Sub(m, 1)))
+	c1 := builder.cs.AddR1C(builder.newR1C(builder.Neg(a), x[0], builder.Sub(m, 1)), builder.genericGate)
 
 	// a * m = 0            // constrain m to be 0 if a != 0
-	c2 := builder.cs.AddConstraint(builder.newR1C(a, m, builder.cstZero()))
+	c2 := builder.cs.AddR1C(builder.newR1C(a, m, builder.cstZero()), builder.genericGate)
 
 	builder.cs.AttachDebugInfo(debug, []int{c1, c2})
 
@@ -563,9 +571,12 @@ func (builder *builder) IsZero(i1 frontend.Variable) frontend.Variable {
 // Cmp returns 1 if i1>i2, 0 if i1=i2, -1 if i1<i2
 func (builder *builder) Cmp(i1, i2 frontend.Variable) frontend.Variable {
 
-	vars, _ := builder.toVariables(i1, i2)
-	bi1 := builder.ToBinary(vars[0], builder.cs.FieldBitLen())
-	bi2 := builder.ToBinary(vars[1], builder.cs.FieldBitLen())
+	nbBits := builder.cs.FieldBitLen()
+	// in AssertIsLessOrEq we omitted comparison against modulus for the left
+	// side as if `a+r<b` implies `a<b`, then here we compute the inequality
+	// directly.
+	bi1 := bits.ToBinary(builder, i1, bits.WithNbDigits(nbBits))
+	bi2 := bits.ToBinary(builder, i2, bits.WithNbDigits(nbBits))
 
 	res := builder.cstZero()
 
@@ -660,7 +671,7 @@ func (builder *builder) negateLinExp(l expr.LinearExpression) expr.LinearExpress
 	res := make(expr.LinearExpression, len(l))
 	copy(res, l)
 	for i := 0; i < len(res); i++ {
-		builder.cs.Neg(&res[i].Coeff)
+		res[i].Coeff = builder.cs.Neg(res[i].Coeff)
 	}
 	return res
 }
@@ -670,23 +681,32 @@ func (builder *builder) Compiler() frontend.Compiler {
 }
 
 func (builder *builder) Commit(v ...frontend.Variable) (frontend.Variable, error) {
+
+	commitments := builder.cs.GetCommitments().(constraint.Groth16Commitments)
+	existingCommitmentIndexes := commitments.CommitmentIndexes()
+	privateCommittedSeeker := utils.MultiListSeeker(commitments.GetPrivateCommitted())
+
 	// we want to build a sorted slice of committed variables, without duplicates
 	// this is the same algorithm as builder.add(...); but we expect len(v) to be quite large.
 
 	vars, s := builder.toVariables(v...)
 
+	nbPublicCommitted := 0
 	// initialize the min-heap
 	// this is the same algorithm as api.add --> we want to merge k sorted linear expression
 	for lID, v := range vars {
-		builder.heap = append(builder.heap, linMeta{val: v[0].VID, lID: lID})
+		if v[0].VID < builder.cs.GetNbPublicVariables() {
+			nbPublicCommitted++
+		}
+		builder.heap = append(builder.heap, linMeta{val: v[0].VID, lID: lID}) // TODO: Use int heap
 	}
 	builder.heap.heapify()
 
 	// sort all the wires
-	committed := make([]int, 0, s)
-
-	curr := -1
-	nbPublicCommitted := 0
+	publicAndCommitmentCommitted := make([]int, 0, nbPublicCommitted+len(existingCommitmentIndexes)) // right now nbPublicCommitted is an upper bound
+	privateCommitted := make([]int, 0, s)
+	lastInsertedWireId := -1
+	nbPublicCommitted = 0
 
 	// process all the terms from all the inputs, in sorted order
 	for len(builder.heap) > 0 {
@@ -704,42 +724,78 @@ func (builder *builder) Commit(v ...frontend.Variable) (frontend.Variable, error
 		if t.VID == 0 {
 			continue // don't commit to ONE_WIRE
 		}
-		if curr != -1 && t.VID == committed[curr] {
+		if lastInsertedWireId == t.VID {
 			// it's the same variable ID, do nothing
 			continue
-		} else {
-			// append, it's a new variable ID
-			committed = append(committed, t.VID)
-			if t.VID < builder.cs.GetNbPublicVariables() {
-				nbPublicCommitted++
-			}
-			curr++
 		}
+
+		if t.VID < builder.cs.GetNbPublicVariables() { // public
+			publicAndCommitmentCommitted = append(publicAndCommitmentCommitted, t.VID)
+			lastInsertedWireId = t.VID
+			nbPublicCommitted++
+			continue
+		}
+
+		// private or commitment
+		for len(existingCommitmentIndexes) > 0 && existingCommitmentIndexes[0] < t.VID {
+			existingCommitmentIndexes = existingCommitmentIndexes[1:]
+		}
+		if len(existingCommitmentIndexes) > 0 && existingCommitmentIndexes[0] == t.VID { // commitment
+			publicAndCommitmentCommitted = append(publicAndCommitmentCommitted, t.VID)
+			existingCommitmentIndexes = existingCommitmentIndexes[1:] // technically unnecessary
+			lastInsertedWireId = t.VID
+			continue
+		}
+
+		// private
+		// Cannot commit to a secret variable that has already been committed to
+		// instead we commit to its commitment
+		if committer := privateCommittedSeeker.Seek(t.VID); committer != -1 {
+			committerWireIndex := existingCommitmentIndexes[committer]                                          // commit to this commitment instead
+			vars = append(vars, expr.LinearExpression{{Coeff: constraint.Element{1}, VID: committerWireIndex}}) // TODO Replace with mont 1
+			builder.heap.push(linMeta{lID: len(vars) - 1, tID: 0, val: committerWireIndex})                     // pushing to heap mid-op is okay because toCommit > t.VID > anything popped so far
+			continue
+		}
+
+		// so it's a new, so-far-uncommitted private variable
+		privateCommitted = append(privateCommitted, t.VID)
+		lastInsertedWireId = t.VID
 	}
 
-	if len(committed) == 0 {
+	if len(privateCommitted)+len(publicAndCommitmentCommitted) == 0 { // TODO @tabaie Necessary?
 		return nil, errors.New("must commit to at least one variable")
 	}
 
 	// build commitment
-	commitment := constraint.NewCommitment(committed, nbPublicCommitted)
+	commitment := constraint.Groth16Commitment{
+		PublicAndCommitmentCommitted: publicAndCommitmentCommitted,
+		NbPublicCommitted:            nbPublicCommitted,
+		PrivateCommitted:             privateCommitted,
+	}
 
 	// hint is used at solving time to compute the actual value of the commitment
 	// it is going to be dynamically replaced at solving time.
-	hintOut, err := builder.NewHint(cs.Bsb22CommitmentComputePlaceholder, 1, builder.getCommittedVariables(&commitment)...)
+
+	var (
+		hintOut []frontend.Variable
+		err     error
+	)
+
+	commitment.HintID, err = cs.RegisterBsb22CommitmentComputePlaceholder(len(commitments))
 	if err != nil {
 		return nil, err
 	}
+
+	if hintOut, err = builder.NewHintForId(commitment.HintID, 1, builder.wireIDsToVars(
+		commitment.PublicAndCommitmentCommitted,
+		commitment.PrivateCommitted,
+	)...); err != nil {
+		return nil, err
+	}
+
 	cVar := hintOut[0]
-	commitment.HintID = solver.GetHintID(cs.Bsb22CommitmentComputePlaceholder) // TODO @gbotrel probably not needed
 
 	commitment.CommitmentIndex = (cVar.(expr.LinearExpression))[0].WireID()
-
-	// TODO @Tabaie Get rid of this field
-	commitment.CommittedAndCommitment = append(commitment.Committed, commitment.CommitmentIndex)
-	if commitment.CommitmentIndex <= commitment.Committed[len(commitment.Committed)-1] {
-		return nil, fmt.Errorf("commitment variable index smaller than some committed variable indices")
-	}
 
 	if err := builder.cs.AddCommitment(commitment); err != nil {
 		return nil, err
@@ -748,10 +804,22 @@ func (builder *builder) Commit(v ...frontend.Variable) (frontend.Variable, error
 	return cVar, nil
 }
 
-func (builder *builder) getCommittedVariables(i *constraint.Commitment) []frontend.Variable {
-	res := make([]frontend.Variable, len(i.Committed))
-	for j, wireIndex := range i.Committed {
-		res[j] = expr.NewLinearExpression(wireIndex, builder.tOne)
+func (builder *builder) wireIDsToVars(wireIDs ...[]int) []frontend.Variable {
+	n := 0
+	for i := range wireIDs {
+		n += len(wireIDs[i])
+	}
+	res := make([]frontend.Variable, n)
+	n = 0
+	for _, list := range wireIDs {
+		for i := range list {
+			res[n+i] = expr.NewLinearExpression(list[i], builder.tOne)
+		}
+		n += len(list)
 	}
 	return res
+}
+
+func (builder *builder) SetGkrInfo(info constraint.GkrInfo) error {
+	return builder.cs.AddGkr(info)
 }

@@ -5,8 +5,8 @@ go 1.20
 require (
 	github.com/cometbft/cometbft v0.37.2
 	github.com/consensys/gnark v0.7.2-0.20230418172633-f83323bdf138
-	github.com/consensys/gnark-crypto v0.9.2-0.20230329155745-a57dcc3b53de
-	github.com/cosmos/cosmos-sdk v0.47.0
+	github.com/consensys/gnark-crypto v0.11.2
+	github.com/cosmos/cosmos-sdk v0.47.4
 	github.com/rs/zerolog v1.30.0
 	github.com/spf13/cobra v1.7.0
 	golang.org/x/net v0.12.0
@@ -18,7 +18,7 @@ require (
 	cosmossdk.io/errors v1.0.0 // indirect
 	cosmossdk.io/math v1.1.2 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
-	github.com/bits-and-blooms/bitset v1.5.0 // indirect
+	github.com/bits-and-blooms/bitset v1.8.0 // indirect
 	github.com/blang/semver/v4 v4.0.0 // indirect
 	github.com/btcsuite/btcd/btcec/v2 v2.3.2 // indirect
 	github.com/cespare/xxhash v1.1.0 // indirect
@@ -36,7 +36,7 @@ require (
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
-	github.com/fxamacker/cbor/v2 v2.4.0 // indirect
+	github.com/fxamacker/cbor/v2 v2.5.0 // indirect
 	github.com/go-kit/kit v0.12.0 // indirect
 	github.com/go-kit/log v0.2.1 // indirect
 	github.com/go-logfmt/logfmt v0.5.1 // indirect
@@ -46,12 +46,14 @@ require (
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/btree v1.1.2 // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
-	github.com/google/pprof v0.0.0-20230309165930-d61513b1440d // indirect
+	github.com/google/pprof v0.0.0-20230817174616-7a8ec2ada47b // indirect
 	github.com/gtank/merlin v0.1.1 // indirect
 	github.com/hashicorp/golang-lru v0.5.5-0.20210104140557-80c98217689d // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/holiman/uint256 v1.2.2 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
+	github.com/ingonyama-zk/icicle v0.0.0-20230907052343-04e5ff5d1af4 // indirect
+	github.com/ingonyama-zk/iciclegnark v0.0.0-20230914093448-b18f425e7e74 // indirect
 	github.com/jmhodges/levigo v1.0.0 // indirect
 	github.com/klauspost/compress v1.16.3 // indirect
 	github.com/libp2p/go-buffer-pool v0.1.0 // indirect
@@ -84,8 +86,8 @@ require (
 	github.com/tendermint/go-amino v0.16.0 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	go.etcd.io/bbolt v1.3.7 // indirect
-	golang.org/x/crypto v0.11.0 // indirect
-	golang.org/x/exp v0.0.0-20230711153332-06a737ee72cb // indirect
+	golang.org/x/crypto v0.12.0 // indirect
+	golang.org/x/exp v0.0.0-20230817173708-d852ddb80c63 // indirect
 	golang.org/x/sys v0.11.0 // indirect
 	golang.org/x/text v0.12.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20230711160842-782d3b101e98 // indirect
@@ -98,7 +100,10 @@ require (
 
 replace (
 	github.com/cometbft/cometbft => github.com/unionlabs/cometbls v0.0.0-20230606200400-20834775a066
-	github.com/consensys/gnark => github.com/unionlabs/gnark v0.0.0-20230820185220-9ebfeea2ca75
-	github.com/consensys/gnark-crypto => github.com/unionlabs/gnark-crypto v0.0.0-20230419121058-59d3a8050fda
+	github.com/consensys/gnark => github.com/unionlabs/gnark v0.0.0-20230926101454-57ba659e9d64
+	github.com/consensys/gnark-crypto => github.com/unionlabs/gnark-crypto v0.0.0-20230923064701-95e4ef3af084
 	github.com/cosmos/cosmos-sdk => github.com/unionlabs/cosmos-sdk v0.0.0-20230912185853-89f7ea352a8b
+	github.com/ingonyama-zk/iciclegnark => github.com/hussein-aitlahcen/iciclegnark v0.0.0-20230925132351-210ea141f4f0
+
+	golang.org/x/exp => golang.org/x/exp v0.0.0-20230711153332-06a737ee72cb
 )

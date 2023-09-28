@@ -29,3 +29,10 @@ func (l LinearExpression) String(r Resolver) string {
 	sbb.WriteLinearExpression(l)
 	return sbb.String()
 }
+
+func (l LinearExpression) Compress(to *[]uint32) {
+	(*to) = append((*to), uint32(len(l)))
+	for i := 0; i < len(l); i++ {
+		(*to) = append((*to), l[i].CID, l[i].VID)
+	}
+}

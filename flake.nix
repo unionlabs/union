@@ -3,6 +3,7 @@
     "Union is a trust-minimized, zero-knowledge bridging protocol, designed for censorship resistance, extremely high security and usage in decentralized finance.";
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-parts = {
       url = "github:hercules-ci/flake-parts";
       inputs.nixpkgs-lib.follows = "nixpkgs";
@@ -86,6 +87,7 @@
   outputs =
     inputs@{ self
     , nixpkgs
+    , nixpkgs-unstable
     , flake-parts
     , nix-filter
     , crane
@@ -168,6 +170,13 @@
                   foundry.overlay
                 ]);
 
+              pkgs-unstable = nixpkgs-unstable.legacyPackages.${system}.appendOverlays
+                (with inputs; [
+                  rust-overlay.overlays.default
+                  iohk-nix.overlays.crypto
+                  foundry.overlay
+                ]);
+
               ensureAtRepositoryRoot = ''
                 # If the current directory contains flake.nix, then we are at the repository root
                 if [[ -f flake.nix ]]
@@ -238,6 +247,7 @@
               };
 
               # Used as the salt when executing `instantiate2` in CosmWasm.
+              # TODO: please rework and remove this
               cw-instantiate2-salt = "61616161";
             };
           };

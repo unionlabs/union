@@ -35,10 +35,9 @@ import (
 
 type proverServer struct {
 	UnimplementedUnionProverAPIServer
-	cs         constraint.ConstraintSystem
-	pk         backend.ProvingKey
-	vk         backend.VerifyingKey
-	commitment constraint.Commitment
+	cs constraint.ConstraintSystem
+	pk backend.ProvingKey
+	vk backend.VerifyingKey
 }
 
 func (*proverServer) mustEmbedUnimplementedUnionProverAPIServer() {}
@@ -120,7 +119,7 @@ func (p *proverServer) Verify(ctx context.Context, req *VerifyRequest) (*VerifyR
 
 	err = backend.Verify(backend.Proof(&proof), p.vk, publicWitness)
 	if err != nil {
-		log.Println("Verification failed: %w", err)
+		log.Println("Verification failed: ", err)
 		return &VerifyResponse{
 			Valid: false,
 		}, nil
@@ -167,9 +166,10 @@ func (p *proverServer) QueryStats(ctx context.Context, req *QueryStatsRequest) (
 			NbG2:            uint32(p.vk.NbG2()),
 			NbPublicWitness: uint32(p.vk.NbPublicWitness()),
 		},
+		// Deprecated
 		CommitmentStats: &CommitmentStats{
-			NbPublicCommitted:  uint32(p.commitment.NbPublicCommitted()),
-			NbPrivateCommitted: uint32(p.commitment.NbPrivateCommitted),
+			NbPublicCommitted:  0,
+			NbPrivateCommitted: 0,
 		},
 	}, nil
 }
@@ -321,26 +321,6 @@ func (p *proverServer) Prove(ctx context.Context, req *ProveRequest) (*ProveResp
 	// Run GC to avoid high residency, a single prove call is very expensive in term of memory.
 	runtime.GC()
 
-	// F_r element
-	var commitmentHash []byte
-	// G1 uncompressed
-	var proofCommitment []byte
-	// Ugly but https://github.com/ConsenSys/gnark/issues/652
-	switch _proof := proof.(type) {
-	case *backend_bn254.Proof:
-		if p.commitment.Is() {
-			res, err := fr.Hash(p.commitment.SerializeCommitment(_proof.Commitment.Marshal(), []*big.Int{}, (fr.Bits-1)/8+1), []byte(constraint.CommitmentDst), 1)
-			if err != nil {
-				return nil, err
-			}
-			proofCommitment = _proof.Commitment.Marshal()
-			commitmentHash = res[0].Marshal()
-		}
-		break
-	default:
-		return nil, fmt.Errorf("Impossible: proof backend must be BN254 at this point")
-	}
-
 	publicWitness, err := privateWitness.Public()
 	if err != nil {
 		return nil, err
@@ -349,6 +329,17 @@ func (p *proverServer) Prove(ctx context.Context, req *ProveRequest) (*ProveResp
 	publicInputs, err := publicWitness.MarshalBinary()
 	if err != nil {
 		return nil, err
+	}
+
+	switch _proof := proof.(type) {
+	case *backend_bn254.Proof:
+		err = backend.Verify(backend.Proof(_proof), p.vk, publicWitness)
+		if err != nil {
+			log.Println(err)
+		}
+		break
+	default:
+		return nil, fmt.Errorf("Impossible: proof backend must be BN254 at this point")
 	}
 
 	var proofBuffer bytes.Buffer
@@ -372,7 +363,7 @@ func (p *proverServer) Prove(ctx context.Context, req *ProveRequest) (*ProveResp
 	// Due to how gnark proves, we not only need the ZKP A/B/C points, but also a commitment hash and proof commitment.
 	// The proof is an uncompressed proof serialized by gnark, we extract A(G1)/B(G2)/C(G1) and then append the commitment hash and commitment proof from the public inputs.
 	// The EVM verifier has been extended to support this two extra public inputs.
-	evmProof := append(append(proofBz[:256], commitmentHash...), proofCommitment...)
+	evmProof := proofBz[:256]
 
 	return &ProveResponse{
 		Proof: &ZeroKnowledgeProof{
@@ -453,23 +444,9 @@ func NewProverServer(r1csPath string, pkPath string, vkPath string) (*proverServ
 		return nil, err
 	}
 
-	var commitment constraint.Commitment
-	switch _pk := pk.(type) {
-	case *backend_bn254.ProvingKey:
-		switch _vk := vk.(type) {
-		case *backend_bn254.VerifyingKey:
-			_pk.CommitmentKey = _vk.CommitmentKey
-			commitment = _vk.CommitmentInfo
-			break
-		}
-		break
-	default:
-		return nil, fmt.Errorf("Impossible: vk backend must be BN254 at this point")
-	}
-
 	runtime.GC()
 
-	return &proverServer{cs: cs, pk: pk, vk: vk, commitment: commitment}, nil
+	return &proverServer{cs: cs, pk: pk, vk: vk}, nil
 }
 
 func readFrom(file string, obj io.ReaderFrom) error {

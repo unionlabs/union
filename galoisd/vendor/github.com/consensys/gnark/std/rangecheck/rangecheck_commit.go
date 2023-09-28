@@ -9,13 +9,13 @@ import (
 	"github.com/consensys/gnark/frontend"
 	"github.com/consensys/gnark/internal/frontendtype"
 	"github.com/consensys/gnark/internal/kvstore"
-	"github.com/consensys/gnark/std/internal/multicommit"
+	"github.com/consensys/gnark/std/internal/logderivarg"
 )
 
 type ctxCheckerKey struct{}
 
 func init() {
-	solver.RegisterHint(DecomposeHint, CountHint)
+	solver.RegisterHint(DecomposeHint)
 }
 
 type checkedVariable struct {
@@ -54,6 +54,14 @@ func (c *commitChecker) Check(in frontend.Variable, bits int) {
 	c.collected = append(c.collected, checkedVariable{v: in, bits: bits})
 }
 
+func (c *commitChecker) buildTable(nbTable int) []frontend.Variable {
+	tbl := make([]frontend.Variable, nbTable)
+	for i := 0; i < nbTable; i++ {
+		tbl[i] = i
+	}
+	return tbl
+}
+
 func (c *commitChecker) commit(api frontend.API) error {
 	if c.closed {
 		return nil
@@ -86,30 +94,7 @@ func (c *commitChecker) commit(api frontend.API) error {
 		api.AssertIsEqual(composed, c.collected[i].v)
 	}
 	nbTable := 1 << baseLength
-	// compute the counts for every value in the range
-	exps, err := api.Compiler().NewHint(CountHint, nbTable, decomposed...)
-	if err != nil {
-		panic(fmt.Sprintf("count %v", err))
-	}
-	multicommit.WithCommitment(api, func(api frontend.API, commitment frontend.Variable) error {
-		// compute the ratoinal function Sum_i e_i / (X - s_i)
-		// lp = Sum_i e_i / (X - s_i)
-		var lp frontend.Variable = 0
-		for i := 0; i < nbTable; i++ {
-			tmp := api.DivUnchecked(exps[i], api.Sub(commitment, i))
-			lp = api.Add(lp, tmp)
-		}
-
-		// rp = Sum_i 1 \ (X - f_i)
-		var rp frontend.Variable = 0
-		for i := range decomposed {
-			tmp := api.Inverse(api.Sub(commitment, decomposed[i]))
-			rp = api.Add(rp, tmp)
-		}
-		api.AssertIsEqual(lp, rp)
-		return nil
-	}, append(collected, exps...)...)
-	return nil
+	return logderivarg.Build(api, logderivarg.AsTable(c.buildTable(nbTable)), logderivarg.AsTable(decomposed))
 }
 
 func decompSize(varSize int, limbSize int) int {
@@ -138,28 +123,6 @@ func DecomposeHint(m *big.Int, inputs []*big.Int, outputs []*big.Int) error {
 	for i := 0; i < len(outputs); i++ {
 		outputs[i].Mod(tmp, base)
 		tmp.Rsh(tmp, uint(limbSize))
-	}
-	return nil
-}
-
-// CountHint is a hint function which is used in range checking using
-// commitment. It counts the occurences of checked variables in the range and
-// returns the counts.
-func CountHint(m *big.Int, inputs []*big.Int, outputs []*big.Int) error {
-	nbVals := len(outputs)
-	if len(outputs) != nbVals {
-		return fmt.Errorf("output size %d does not match range size %d", len(outputs), nbVals)
-	}
-	counts := make(map[uint64]uint64, nbVals)
-	for i := 0; i < len(inputs); i++ {
-		if !inputs[i].IsUint64() {
-			return fmt.Errorf("input %d not uint64", i)
-		}
-		c := inputs[i].Uint64()
-		counts[c]++
-	}
-	for i := 0; i < nbVals; i++ {
-		outputs[i].SetUint64(counts[uint64(i)])
 	}
 	return nil
 }

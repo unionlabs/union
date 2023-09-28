@@ -28,7 +28,7 @@ import (
 
 	"github.com/consensys/gnark-crypto/ecc/bls24-317/fr/fft"
 
-	"github.com/consensys/gnark/constraint/bls24-317"
+	cs "github.com/consensys/gnark/constraint/bls24-317"
 
 	"github.com/consensys/gnark-crypto/ecc/bls24-317/fr/fri"
 

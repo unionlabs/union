@@ -544,7 +544,7 @@ func printTraces(w io.Writer, rpt *Report) error {
 				// The inline flag may be inaccurate if 'show' or 'hide' filter is
 				// used. See https://github.com/google/pprof/issues/511.
 				inline := i != len(nodes)-1
-				stack = append(stack, stk{&n.Info, inline})
+				stack = append(stack, stk{&n.Info, inline}) // #nosec G601 false positive
 			}
 		}
 
@@ -647,7 +647,7 @@ func printCallgrind(w io.Writer, rpt *Report) error {
 			fmt.Fprintf(w, "* * %d\n", int64(c))
 		}
 
-		prevInfo = &n.Info
+		prevInfo = &n.Info //#nosec G601 false positive
 	}
 
 	return nil

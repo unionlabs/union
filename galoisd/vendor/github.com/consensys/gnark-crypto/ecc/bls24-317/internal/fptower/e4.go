@@ -25,7 +25,7 @@ type E4 struct {
 	B0, B1 E2
 }
 
-// Equal returns true if z equals x, fasle otherwise
+// Equal returns true if z equals x, false otherwise
 func (z *E4) Equal(x *E4) bool {
 	return z.B0.Equal(&x.B0) && z.B1.Equal(&x.B1)
 }
@@ -133,7 +133,7 @@ func (z *E4) SetRandom() (*E4, error) {
 	return z, nil
 }
 
-// IsZero returns true if the element is zero, fasle otherwise
+// IsZero returns true if the element is zero, false otherwise
 func (z *E4) IsZero() bool {
 	return z.B0.IsZero() && z.B1.IsZero()
 }
@@ -271,7 +271,7 @@ func (z *E4) Legendre() int {
 }
 
 // Sqrt sets z to the square root of and returns z
-// The function does not test wether the square root
+// The function does not test whether the square root
 // exists or not, it's up to the caller to call
 // Legendre beforehand.
 // cf https://eprint.iacr.org/2012/685.pdf (algo 10)

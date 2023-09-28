@@ -23,7 +23,7 @@ import (
 	"math/big"
 )
 
-func solveCommitmentWire(commitmentInfo *constraint.Commitment, commitment *curve.G1Affine, publicCommitted []*big.Int) (fr.Element, error) {
-	res, err := fr.Hash(commitmentInfo.SerializeCommitment(commitment.Marshal(), publicCommitted, (fr.Bits-1)/8+1), []byte(constraint.CommitmentDst), 1)
+func solveCommitmentWire(commitment *curve.G1Affine, publicCommitted []*big.Int) (fr.Element, error) {
+	res, err := fr.Hash(constraint.SerializeCommitment(commitment.Marshal(), publicCommitted, (fr.Bits-1)/8+1), []byte(constraint.CommitmentDst), 1)
 	return res[0], err
 }

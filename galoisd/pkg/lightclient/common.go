@@ -138,10 +138,6 @@ func (lc *TendermintLightClientAPI) Verify(message *gadget.G2Affine, expectedVal
 
 	curveArithmetic, _ := sw_emulated.New[emulated.BN254Fp, emulated.BN254Fr](lc.api, sw_emulated.GetBN254Params())
 
-	_, _, g1AffGen, _ := curve.Generators()
-
-	emulatedG1 := gadget.NewG1Affine(g1AffGen)
-
 	totalVotingPower := frontend.Variable(0)
 	currentVotingPower := frontend.Variable(0)
 	aggregatedKeys := frontend.Variable(0)
@@ -161,10 +157,10 @@ func (lc *TendermintLightClientAPI) Verify(message *gadget.G2Affine, expectedVal
 		// Optionally aggregated public key/voting power if validator at index signed
 		currentVotingPower = lc.api.Add(currentVotingPower, lc.api.Select(signed, power, 0))
 		// Avoid issue with null point, emulatedG1 is never used because only reference in the !signed branch
-		toAggregate := curveArithmetic.Select(signed, PK, &emulatedG1)
+		toAggregate := curveArithmetic.Select(signed, PK, &emulatedG1Zero)
 		// Optionally aggregated public key if validator at index signed
 		firstPK := lc.api.And(signed, lc.api.IsZero(aggregatedKeys))
-		aggregated := curveArithmetic.Add(&aggregatedPublicKey, toAggregate)
+		aggregated := curveArithmetic.AddUnified(&aggregatedPublicKey, toAggregate)
 		aggregateNext := curveArithmetic.Select(firstPK, PK, aggregated)
 		aggregatedPublicKey =
 			*curveArithmetic.Select(signed, aggregateNext, &aggregatedPublicKey)
@@ -193,6 +189,8 @@ func (lc *TendermintLightClientAPI) Verify(message *gadget.G2Affine, expectedVal
 	if err != nil {
 		return fmt.Errorf("new pairing: %w", err)
 	}
+
+	_, _, g1AffGen, _ := curve.Generators()
 
 	var g1AffGenNeg curve.G1Affine
 	g1AffGenNeg.Neg(&g1AffGen)

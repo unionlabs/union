@@ -69,6 +69,44 @@ func (e Ext12) ExptTorus(x *E6) *E6 {
 	return z
 }
 
+// Square034 squares an E12 sparse element of the form
+//
+//	E12{
+//		C0: E6{B0: 1, B1: 0, B2: 0},
+//		C1: E6{B0: c3, B1: c4, B2: 0},
+//	}
+func (e *Ext12) Square034(x *E12) *E12 {
+	c0 := E6{
+		B0: *e.Ext2.Sub(&x.C0.B0, &x.C1.B0),
+		B1: *e.Ext2.Neg(&x.C1.B1),
+		B2: *e.Ext2.Zero(),
+	}
+
+	c3 := E6{
+		B0: x.C0.B0,
+		B1: *e.Ext2.Neg(&x.C1.B0),
+		B2: *e.Ext2.Neg(&x.C1.B1),
+	}
+
+	c2 := E6{
+		B0: x.C1.B0,
+		B1: x.C1.B1,
+		B2: *e.Ext2.Zero(),
+	}
+	c3 = *e.MulBy01(&c3, &c0.B0, &c0.B1)
+	c3 = *e.Ext6.Add(&c3, &c2)
+
+	var z E12
+	z.C1.B0 = *e.Ext2.Add(&c2.B0, &c2.B0)
+	z.C1.B1 = *e.Ext2.Add(&c2.B1, &c2.B1)
+
+	z.C0.B0 = c3.B0
+	z.C0.B1 = *e.Ext2.Add(&c3.B1, &c2.B0)
+	z.C0.B2 = *e.Ext2.Add(&c3.B2, &c2.B1)
+
+	return &z
+}
+
 // MulBy034 multiplies z by an E12 sparse element of the form
 //
 //	E12{

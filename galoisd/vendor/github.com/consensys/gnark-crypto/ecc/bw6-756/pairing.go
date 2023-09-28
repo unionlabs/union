@@ -79,9 +79,15 @@ func FinalExponentiation(z *GT, _z ...*GT) GT {
 	result.Frobenius(&buf).
 		Mul(&result, &buf)
 
-		// Hard part (up to permutation)
-		// El Housni and Guillevic
-		// https://eprint.iacr.org/2020/351.pdf
+	var one GT
+	one.SetOne()
+	if result.Equal(&one) {
+		return result
+	}
+
+	// Hard part (up to permutation)
+	// El Housni and Guillevic
+	// https://eprint.iacr.org/2020/351.pdf
 	var m1, _m1, m2, _m2, m3, f0, f0_36, g0, g1, _g1, g2, g3, _g3, g4, _g4, g5, _g5, g6, gA, gB, g034, _g1g2, gC, h1, h2, h2g2C, h4 GT
 	m1.Expt(&result)
 	_m1.Conjugate(&m1)

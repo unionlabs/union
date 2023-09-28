@@ -1,4 +1,4 @@
-// Copyright 2020 ConsenSys Software Inc.
+// Copyright 2020 Consensys Software Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -214,7 +214,7 @@ func init() {
 var sqrtExp1, sqrtExp2 big.Int
 
 // Sqrt sets z to the square root of and returns z
-// The function does not test wether the square root
+// The function does not test whether the square root
 // exists or not, it's up to the caller to call
 // Legendre beforehand.
 // cf https://eprint.iacr.org/2012/685.pdf (algo 9)
