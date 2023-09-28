@@ -73,7 +73,7 @@
 
 	const worker = async () => {
 	    for (let i = 0; i < 100000000; i++) {
-	        await new Promise(r => setTimeout(r, 200));
+	        await new Promise(r => setTimeout(r, 2000));
 	        client.query({
              query: FETCH_EVENT,
              variables: {
@@ -98,13 +98,15 @@
 </script>
 
 
-<div class="h-[400px] my-4">
-	<div bind:this={terminalElement} style="margin: 0 auto;" class="absolute max-w-4xl p-0 shadow-xl overflow-scroll left-0 right-0 bg-black h-[400px] text-sm font-jetbrains">
-			<div class="terminal-line h-[100.1%]"/>
-			{#each logLines as {network, action, logLine}}
-				<div class="terminal-line p-0"><span class={ network == "union" ? "text-accent" : "text-yellow-300"}>[{network}] </span><span>{action}</span><span class="text-gray-400">{logLine}</span></div>
-			{/each}
-		  <div bind:this={scrollAnchor} id="anchor"/>
+<div class="h-[420px] my-8">
+	<div style="margin: 0 auto;" class="absolute max-w-4xl p-4 shadow-2xl left-0 right-0 bg-black text-sm font-jetbrains lg:rounded-xl">
+			<div bind:this={terminalElement} class="overflow-scroll scrollbar-hide h-[400px]" >
+				<div class="terminal-line h-[100.1%]"/>
+				{#each logLines as {network, action, logLine}}
+					<div class="terminal-line p-0"><span class={ network == "union" ? "text-accent" : "text-yellow-300"}>[{network}] </span><span>{action}</span><span class="text-gray-400">{logLine}</span></div>
+				{/each}
+			  <div bind:this={scrollAnchor} id="anchor"/>
+			</div>
 	</div>
 </div>
 
