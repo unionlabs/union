@@ -3,8 +3,8 @@
         "ethereum-testnet": {
             "chain_type": "evm",
             "preset_base": "minimal",
-            "cometbls_client_address": "0x1faa56ed8ecbf6fe840cc7946bf9707089ef83c8",
-            "ibc_handler_address": "0x85082bc36cd42c7002d2c50f401e8581a4382953",
+            "cometbls_client_address": "0x5140d1a67dd306d4D703e791E7F54956E6a5F7d1",
+            "ibc_handler_address": "0x8cB2C592deea63822cE8B24654337Cf2d57905D3",
             "signer": {
                 "raw": "0x227bfab7b601429981d3fbffb1b7625fb13464965cd4368ae48090c8d44b417e"
             },
