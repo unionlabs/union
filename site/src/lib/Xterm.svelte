@@ -1,8 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { ApolloClient, InMemoryCache, ApolloProvider, gql, type ApolloQueryResult } from '@apollo/client';
+	import { ApolloClient, InMemoryCache, ApolloProvider, gql } from '@apollo/client';
 	import type { Terminal } from 'xterm';
-    import { json } from '@sveltejs/kit';
 
 	const client = new ApolloClient({
 	  uri: 'https://graphql.union.build/v1/graphql',
@@ -20,6 +19,20 @@
 
 	let terminal: null | Terminal;
 	let terminalElement: HTMLElement;
+
+	let logLines: String[] = [];
+
+
+	const scrollToBottom = node => {
+    const scroll = () => node.scroll({
+        top: node.scrollHeight,
+        behavior: 'smooth',
+    });
+    scroll();
+
+    return { update: scroll }
+};
+
 
     const filter = (r: ApolloQueryResult<any>): null | string  => {
 			let data = r.data.demo_txes_by_pk;
@@ -62,6 +75,9 @@
 
 			return network + action + JSON.stringify(data) + '\r\n'
 	}
+
+
+
 	const worker = async () => {
 	    for (let i = 0; i < 100000000; i++) {
 	        await new Promise(r => setTimeout(r, 2000));
@@ -72,15 +88,14 @@
              },
             }).then((result) => {
 
-								if (terminal == null) {
-									console.error("Terminal has not been initiated correctly prior to starting worker");
-									return;
-								}
+								// if (terminal == null) {
+								// 	console.error("Terminal has not been initiated correctly prior to starting worker");
+								// 	return;
+								// }
                 console.log(result)
-				let line = filter(result);
-				if (line !== null) {
-					terminal.write(line)
-				}
+								const newLine = JSON.stringify(result);
+								logLines = [...logLines, newLine];
+								scrollToBottom(terminalElement);
               })
             .catch(err => {
 							if (terminal == null) {
@@ -88,22 +103,36 @@
 								return;
 							}
               console.error(err)
-              terminal.write(err)
+              terminal.write(JSON.stringify(err) + "\n")
             });
         }
     }
 	
 	onMount(async () => {
-		const xterm = (await import("xterm"))	
-		terminal = new xterm.Terminal()
-		terminal.open(terminalElement);
+		// const xterm = (await import("xterm"))	
+		// const addonFit= (await import('xterm-addon-fit'));
+		// const fitAddon = new addonFit.FitAddon();
+		// terminal = new xterm.Terminal({convertEol: true})
+		// terminal.loadAddon(fitAddon);
+		// terminal.open(terminalElement);
+		// fitAddon.fit();
     worker()
 	})
 </script>
 
-<div bind:this={terminalElement} />
+
+<div class="relative h-80">
+	<div bind:this={terminalElement} class=" overflow-y-auto break-words absolute left-0 right-0 bg-black h-80 font-mono text-sm">
+		{#each logLines as logline}
+			<div>{logline}</div>
+		{/each}
+	</div>
+</div>
+
+<!--<div bind:this={terminalElement} />!-->
 
 
+<!--
 
 <style>
 	.observer {
@@ -270,4 +299,9 @@
 			position: relative;
 	}
 
+	.terminal-container {
+	}
+
 </style>
+
+!-->
