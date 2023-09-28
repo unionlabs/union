@@ -1,5 +1,6 @@
 use color_eyre::eyre::{bail, Report};
 use futures::future::join_all;
+use hubble::hasura::*;
 use tendermint::{block::Height, consensus::Params, genesis::Genesis, validator::Update};
 use tendermint_rpc::{
     dialect::v0_37::Event, endpoint::block_results::Response as BlockResponse, error::ErrorDetail,
@@ -9,7 +10,7 @@ use tokio::time::{sleep, Duration};
 use tracing::{debug, info};
 use url::Url;
 
-use crate::{hasura::*, metrics};
+use crate::metrics;
 
 #[derive(Clone, Debug, serde::Deserialize)]
 pub struct Config {
@@ -186,7 +187,7 @@ async fn batch_sync<D: Datastore>(
         let events: Vec<_> = block
             .events()
             .enumerate()
-            .map(|event| event.into())
+            .map(into_many_blocks_input)
             .collect();
         debug!(
             "found {} events for block {}",
@@ -257,7 +258,7 @@ async fn sync_next<D: Datastore>(
     debug!("fetching block results for height: {}", &height);
     let block = client.block_results(height).await?;
     let height = block.height;
-    let events: Vec<_> = block.events().enumerate().map(Into::into).collect();
+    let events: Vec<_> = block.events().enumerate().map(into_block_input).collect();
     info!("found {} events for block {}", &events.len(), &height);
 
     debug!("storing events for block {}", &height);
@@ -292,27 +293,23 @@ async fn sync_next<D: Datastore>(
     Ok(Some(height.increment()))
 }
 
-impl From<(usize, StateChange)> for insert_blocks_many::EventsInsertInput {
-    fn from(value: (usize, StateChange)) -> Self {
-        Self {
-            id: None,
-            index: Some(value.0 as i64),
-            block: None,
-            block_id: None,
-            data: Some(serde_json::to_value(&value.1).unwrap()),
-        }
+fn into_many_blocks_input(value: (usize, StateChange)) -> insert_blocks_many::EventsInsertInput {
+    insert_blocks_many::EventsInsertInput {
+        id: None,
+        index: Some(value.0 as i64),
+        block: None,
+        block_id: None,
+        data: Some(serde_json::to_value(&value.1).unwrap()),
     }
 }
 
-impl From<(usize, StateChange)> for insert_block::EventsInsertInput {
-    fn from(value: (usize, StateChange)) -> Self {
-        Self {
-            id: None,
-            index: Some(value.0 as i64),
-            block: None,
-            block_id: None,
-            data: Some(serde_json::to_value(&value.1).unwrap()),
-        }
+fn into_block_input(value: (usize, StateChange)) -> insert_block::EventsInsertInput {
+    insert_block::EventsInsertInput {
+        id: None,
+        index: Some(value.0 as i64),
+        block: None,
+        block_id: None,
+        data: Some(serde_json::to_value(&value.1).unwrap()),
     }
 }
 

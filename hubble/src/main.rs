@@ -3,13 +3,13 @@
 
 use axum::{routing::get, Router};
 use clap::Parser;
-use hasura::HasuraDataStore;
+use hubble::hasura::HasuraDataStore;
 use reqwest::Client;
 use tokio::task::JoinSet;
 use tracing::{error, info, warn};
 
 mod cli;
-mod hasura;
+
 mod healthz;
 mod metrics;
 mod tm;
