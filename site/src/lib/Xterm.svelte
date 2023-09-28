@@ -1,58 +1,62 @@
-<script lang="js">
+<script lang="ts">
 	import { onMount } from 'svelte';
-    import { ApolloClient, InMemoryCache, ApolloProvider, gql } from '@apollo/client';
+	import { ApolloClient, InMemoryCache, ApolloProvider, gql } from '@apollo/client';
+	import type { Terminal } from 'xterm';
 
-const client = new ApolloClient({
-  uri: 'https://graphql.union.build/v1/graphql',
-  cache: new InMemoryCache(),
-});
+	const client = new ApolloClient({
+	  uri: 'https://graphql.union.build/v1/graphql',
+	  cache: new InMemoryCache(),
+	});
 
-const FETCH_EVENT = gql`
-query FetchEvent($id: Int!) {
-  demo_txes_by_pk(id: $id) {
-    data
-    created_at
-  }
-}
-`
+	const FETCH_EVENT = gql`
+		query FetchEvent($id: Int!) {
+		  demo_txes_by_pk(id: $id) {
+		    data
+		    created_at
+		  }
+		}
+	`
 
-	let xterm;
-	let terminal;
+	let terminal: null | Terminal;
+	let terminalElement: HTMLElement;
 
-    const worker = async () => {
-        for (let i = 0; i < 1000000; i++) {
-            await new Promise(r => setTimeout(r, 2000));
-            client.query({
-                 query: FETCH_EVENT,
-                 variables: {
-                    id: i
-                 },
-                }).then((result) => {
-                    console.log(result)
-                    terminal.write(result)
-                    })
-                .catch(err => {
-                    console.err(err)
-                    terminal.write(err)
-                    });
-          	
+	const worker = async () => {
+	    for (let i = 0; i < 100000000; i++) {
+	        await new Promise(r => setTimeout(r, 2000));
+	        client.query({
+             query: FETCH_EVENT,
+             variables: {
+                id: i
+             },
+            }).then((result) => {
+
+								if (terminal == null) {
+									console.error("Terminal has not been initiated correctly prior to starting worker");
+									return;
+								}
+                console.log(result)
+                terminal.write(JSON.stringify(result))
+              })
+            .catch(err => {
+							if (terminal == null) {
+								console.error("Terminal has not been initiated correctly prior to starting worker");
+								return;
+							}
+              console.err(err)
+              terminal.write(JSON.stringify(err))
+            });
         }
     }
 	
 	onMount(async () => {
-		xterm = (await import("xterm"))	
+		const xterm = (await import("xterm"))	
 		terminal = new xterm.Terminal()
-		terminal.open(document.getElementById('terminal'))
-        worker()
+		terminal.open(terminalElement);
+    worker()
 	})
 </script>
 
-<div>
-	<div
-			id="terminal"
-			bind:this="{xterm}"
-	/>
-</div>
+<div bind:this={terminalElement} />
 
 
 
