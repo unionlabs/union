@@ -2,7 +2,7 @@
 title: The Journey So Far
 date: "2023-09-27"
 author: "@union_build"
-preview: "Today, we are happy to announce the work we have done so far on Union, the trustless infrastructure layer. Over the last six months, Unionlabs was founded with nothing but an idea, a diverse skill set, and a mission to ship zero-knowledge proof infra everywhere."
+preview: "Today, we are happy to announce the work we have done so far on Union, the trustless infrastructure layer. Over the last six months, Union Labs was founded with nothing but an idea, a diverse skill set, and a mission to ship zero-knowledge proof infrastructure everywhere."
 published: true
 ---
 
@@ -10,17 +10,17 @@ published: true
   import Xterm from '$lib/Xterm.svelte';
 </script>
 
-Today, we are happy to announce the work we have done so far on Union, the trustless infrastructure layer. Over the last six months, Unionlabs was founded with nothing but an idea, a diverse skill set, and a mission to ship zero-knowledge proof infra everywhere.
+Today, we are happy to announce the work we have done so far on Union, the trustless infrastructure layer. Over the last six months, Union Labs was founded with nothing but an idea, a diverse skill set, and a mission to ship zero-knowledge proof infrastructure everywhere.
 
-We spent months building in stealth mode, heads-down, as we validated our technical assumptions. The product of that is the Union testnet, [CometBLS](https://docs.union.build/architecture/cometbls), [Voyager](https://docs.union.build/architecture/voyager), and [Galois](https://docs.union.build/architecture/galois). These components allowed us to achieve **IBC to Ethereum, the endgame**.`
+We spent months building in stealth mode, heads-down, as we validated our technical assumptions. The product of that is the Union testnet, [CometBLS](https://docs.union.build/architecture/cometbls), [Galois](https://docs.union.build/architecture/galois), and [Voyager](https://docs.union.build/architecture/voyager). These components allowed us to achieve **IBC to Ethereum, the endgame**.
 
-Union is designed around a few key principles: code is law and barrier to entry leads to centralization. This means that we design our products to allow anyone to run them, not just parties with massive CPU/GPU farms. Proof generation must be a fair market to avoid censorship.
+Union is designed around a few key principles: _code is law_, and _barrier to entry leads to centralization_. This means that we design our products to allow anyone to run them, not just parties with massive CPU/GPU farms. **Proof generation must be a fair market to avoid censorship**.
 
-With Union, we can bring any asset natively to any chain, hook into account abstraction with ICQ, and access coprocessor and storage proofs.
+With Union, we can bring any asset natively to any chain, hook into account abstraction with Interchain Queries (ICQ), and access coprocessor and storage proofs.
 
 ## The mission continues
 
-Our journey has been marked by relentless dedication to our mission: to provide trustless financial infrastructure. As we look ahead, our mission remains at the forefront of everything we do.
+Our journey has been marked by relentless dedication to our mission: to provide **trustless financial infrastructure**. As we look ahead, our mission remains at the forefront of everything we do.
 
 ### Fight Censorship
 
@@ -36,19 +36,19 @@ Thriving web3 infrastructure should be accessible to everyone. This means not on
 
 ## A sneak peak
 
-We have worked hard to be the first with an IBC connection between Ethereum and our testnet. Here we present live logs (once caught up) of our connection, where a Cosmwasm contract and Solidity contract are playing ping-pong.
+We have worked hard to be the first with an IBC connection between Ethereum and our testnet. Here we present live logs (once caught up) of our connection between **Union** and **Sepolia**, where a CosmWasm contract and Solidity contract are playing ping-pong.
 
 Note that this is not a dummy or hacky setup, we have:
 
 1. The full IBC stack on **Union** and **Sepolia**.
 2. Light clients on both sides are properly implemented including (non)membership proofs,
    header verification via ZK proof, etc.
-3. **Voyager**: fully functional stateless relayer.
-4. **Galois**: efficient zero-knowledge prover. 
+3. [**Voyager**](https://docs.union.build/architecture/voyager): a fully functional stateless relayer.
+4. [**Galois**](https://docs.union.build/architecture/galois): an efficient zero-knowledge prover. 
 
 <Xterm/>
 
-For the first person that can point us to the contract addresses in use; [DM our X](https://x.com/union_build) for a reward.
+For the first person that can point us to the contract addresses in use; [DM us on X](https://x.com/union_build) for a reward.
 
 ## Join the Union
 

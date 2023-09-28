@@ -99,7 +99,7 @@
 
 
 <div class="h-[420px] my-8">
-	<div style="margin: 0 auto;" class="absolute max-w-4xl p-4 shadow-2xl left-0 right-0 bg-black text-sm font-jetbrains lg:rounded-xl">
+	<div style="margin: 0 auto;" class="absolute max-w-4xl p-4 md:shadow-2xl left-0 md:left-[16px] right-0 md:right-[16px] bg-black text-sm font-jetbrains md:rounded-xl">
 			<div bind:this={terminalElement} class="overflow-scroll scrollbar-hide h-[400px]" >
 				<div class="terminal-line h-[100.1%]"/>
 				{#each logLines as {network, action, logLine}}
