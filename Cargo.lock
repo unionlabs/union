@@ -6268,6 +6268,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "voyager-sidecar"
+version = "0.1.0"
+dependencies = [
+ "hubble",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "tokio",
+]
+
+[[package]]
 name = "walkdir"
 version = "2.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"

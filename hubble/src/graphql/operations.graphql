@@ -38,3 +38,12 @@ mutation InsertDemoQueue($item: jsonb!) {
     id
   }
 }
+
+query GetLatestQueue {
+  demo_queue(limit: 1, order_by: {id: desc}) {
+    item
+    id
+    created_at
+    updated_at
+  }
+}
