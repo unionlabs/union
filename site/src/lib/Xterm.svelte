@@ -24,6 +24,10 @@
 	let logLines: {network: String, action: String, logLine: String}[] = [];
 
 
+	let scrollAnchor: HTMLElement;
+	let scroller: HTMLElement;
+
+
 
     const filter = (r: ApolloQueryResult<any>): null | { network: String, action: String, logLine: String } => {
 			let data = r.data.demo_txes_by_pk;
@@ -69,7 +73,7 @@
 
 	const worker = async () => {
 	    for (let i = 0; i < 100000000; i++) {
-	        await new Promise(r => setTimeout(r, 2000));
+	        await new Promise(r => setTimeout(r, 200));
 	        client.query({
              query: FETCH_EVENT,
              variables: {
@@ -81,7 +85,6 @@
 								const newLine = filter(result);
 								if (newLine != null) {
 									logLines = [...logLines, newLine];
-									// scrollToBottom(terminalElement);
 								}
 
 	        })
@@ -89,24 +92,25 @@
     }
 	
 	onMount(async () => {
+		terminalElement.scroll(0,1);
     worker();
-		document.getElementById("scroller")?.scroll(0,1);
 	})
 </script>
 
 
 <div class="relative h-80 my-4">
-	<div bind:this={terminalElement} id="scroller" class="absolute p-2 overflow-scroll left-0 right-0 bg-black h-80 text-sm font-jetbrains">
+	<div bind:this={terminalElement} class="absolute p-2 overflow-scroll left-0 right-0 bg-black h-80 text-sm font-jetbrains">
+			<div class="terminal-line h-[100.1%]"/>
 			{#each logLines as {network, action, logLine}}
-				<div class="p-0"><span class={ network == "union" ? "text-accent" : "text-yellow-300"}>[{network}] </span><span>{action}</span><span class="text-gray-400">{logLine}</span></div>
+				<div class="terminal-line p-0"><span class={ network == "union" ? "text-accent" : "text-yellow-300"}>[{network}] </span><span>{action}</span><span class="text-gray-400">{logLine}</span></div>
 			{/each}
-		  <div id="anchor"/>
+		  <div bind:this={scrollAnchor} id="anchor"/>
 	</div>
 </div>
 
 
 <style>
-	#scroller * {
+	.terminal-line {
 		overflow-anchor: none;
 	}
 	#anchor {
