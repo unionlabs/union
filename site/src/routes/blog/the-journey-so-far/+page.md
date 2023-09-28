@@ -42,7 +42,7 @@ Note that this is not a dummy or hacky setup, we have:
 
 1. The full IBC stack on Union and Sepolia,
 2. Light clients on both sides are properly implemented including (non)membership proofs,
-header verification via ZK proof, etc.
+   header verification via ZK proof, etc.
 3. A fully functional stateless relayer. (Voyager)
 4. An efficient zero-knowledge prover. (Galois)
 

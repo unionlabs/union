@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { ApolloClient, InMemoryCache, ApolloProvider, gql } from '@apollo/client';
+	import { ApolloClient, InMemoryCache, gql } from '@apollo/client/core';
 	import type { Terminal } from 'xterm';
 
 	const client = new ApolloClient({
