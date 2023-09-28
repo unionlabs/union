@@ -15,6 +15,7 @@ macro_rules! event {
                     $(
                         $(#[doc = $doc:literal])*
                         $(#[parse($parse:expr)])?
+                        $(#[serde($serde:meta)])?
                         $field:ident: $field_ty:ty,
                     )+
                 },
@@ -63,6 +64,7 @@ macro_rules! event {
             pub struct $Struct$(<$($struct_generics),+>)? {
                 $(
                     $(#[doc = $doc])*
+                    $(#[serde($serde)])?
                     pub $field: $field_ty,
                 )+
             }
@@ -186,6 +188,7 @@ event! {
             #[parse(|s: &str| s.split(',').map(Height::from_str).collect::<Result<_, _>>())]
             consensus_heights: Vec<Height>,
             #[parse(hex::decode)]
+            #[serde(with = "::serde_utils::hex_string")]
             header: Vec<u8>,
         },
 
@@ -333,6 +336,7 @@ event! {
         )]
         RecvPacket {
             #[parse(hex::decode)]
+            #[serde(with = "::serde_utils::hex_string")]
             packet_data_hex: Vec<u8>,
             #[parse(Height::from_str)]
             packet_timeout_height: Height,
@@ -359,6 +363,7 @@ event! {
         )]
         SendPacket {
             #[parse(hex::decode)]
+            #[serde(with = "::serde_utils::hex_string")]
             packet_data_hex: Vec<u8>,
             #[parse(Height::from_str)]
             packet_timeout_height: Height,

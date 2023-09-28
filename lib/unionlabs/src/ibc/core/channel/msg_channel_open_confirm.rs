@@ -6,6 +6,7 @@ use crate::{ibc::core::client::height::Height, CosmosAccountId, MsgIntoProto, Ty
 pub struct MsgChannelOpenConfirm {
     pub port_id: String,
     pub channel_id: String,
+    #[serde(with = "::serde_utils::hex_string")]
     pub proof_ack: Vec<u8>,
     pub proof_height: Height,
 }

@@ -9,6 +9,7 @@ pub struct MsgChannelOpenAck {
     pub channel_id: String,
     pub counterparty_channel_id: String,
     pub counterparty_version: String,
+    #[serde(with = "::serde_utils::hex_string")]
     pub proof_try: Vec<u8>,
     pub proof_height: Height,
 }
