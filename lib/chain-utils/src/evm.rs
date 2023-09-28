@@ -434,7 +434,7 @@ impl<C: ChainSpec> EventSource for Evm<C> {
                             .unwrap(),
                     )
                     .then(move |log| async move {
-                        dbg!(&log);
+                        // dbg!(&log);
 
                         let block_hash = log.block_hash.expect("log should have block_hash");
 
@@ -816,8 +816,8 @@ impl<C: ChainSpec> EventSource for Evm<C> {
             })
         }
         .flatten_stream()
-        .inspect(|x| {
-            dbg!(x);
+        .inspect(|_x| {
+            // dbg!(x);
         })
     }
 }

@@ -1010,7 +1010,7 @@ where
                 .await
         }
         Msg::CreateClient(data) => {
-            dbg!(&data);
+            // dbg!(&data);
 
             let register_client_result = evm.ibc_handler.register_client(
                 L::ClientType::TYPE.to_string(),
@@ -1018,11 +1018,14 @@ where
             );
 
             // TODO(benluelo): Better way to check if client type has already been registered?
-            match dbg!(register_client_result.send().await) {
+            match register_client_result.send().await {
                 Ok(ok) => {
-                    dbg!(ok.await.unwrap().unwrap());
+                    ok.await.unwrap().unwrap();
                 }
-                Err(why) => eprintln!("{}", why.decode_revert::<String>().unwrap()),
+                Err(why) => tracing::info!(
+                    "error registering client type, it is likely already registered: {}",
+                    why.decode_revert::<String>().unwrap()
+                ),
             }
 
             evm.ibc_handler
@@ -1042,7 +1045,7 @@ where
                 .update_client(ibc_handler::MsgUpdateClient {
                     client_id: data.msg.client_id.to_string(),
                     client_message: encode_dynamic_singleton_tuple(
-                        dbg!(data.msg.client_message.clone()).into_eth_abi(),
+                        data.msg.client_message.clone().into_eth_abi(),
                     )
                     .into(),
                 })
@@ -1125,7 +1128,7 @@ where
                     ))
                     .await;
 
-                let header = match dbg!(header_response) {
+                let header = match header_response {
                     Ok(header) => header,
                     Err(beacon_api::errors::Error::NotFound(NotFoundError {
                         status_code: _,

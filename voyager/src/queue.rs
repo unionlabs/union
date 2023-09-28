@@ -657,8 +657,11 @@ impl Voyager {
 
     // NOTE: Box is required bc recursion
     fn handle_msg(&self, msg: RelayerMsg, depth: usize) -> BoxFuture<'_, Vec<RelayerMsg>> {
-        println!("handling message (depth {depth}): {msg:#?}");
-        println!("json: {}", serde_json::to_string(&msg).unwrap());
+        tracing::info!(
+            depth,
+            json = serde_json::to_string(&msg).unwrap(),
+            "handling messsage",
+        );
 
         async move {
             match msg {

@@ -372,13 +372,13 @@ impl Union {
 
             let response_result = self.tm_client.broadcast_tx_sync(tx_raw_bytes.clone()).await;
 
-            dbg!(&response_result);
+            // dbg!(&response_result);
 
             let response = response_result.unwrap();
 
             assert_eq!(tx_hash, response.hash.to_string());
 
-            dbg!(&tx_hash);
+            tracing::debug!(%tx_hash);
 
             tracing::info!(check_tx_code = ?response.code, check_tx_log = %response.log);
 
@@ -391,7 +391,7 @@ impl Union {
 
             let tx_inclusion = self.tm_client.tx(tx_hash.parse().unwrap(), false).await;
 
-            dbg!(&tx_inclusion);
+            tracing::debug!(?tx_inclusion);
 
             match tx_inclusion {
                 Ok(x) => x,
