@@ -29,8 +29,8 @@
 	}
 
 	.buttonFly {
-		animation-duration: 1.1s;
-		animation-delay: 5.3s;
+		animation-duration: 0.5s;
+		animation-delay: 3.9s;
 		animation-name: fadeIn;
 		animation-timing-function: ease-in;
 		animation-fill-mode: both;

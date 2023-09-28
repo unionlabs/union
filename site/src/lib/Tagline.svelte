@@ -6,7 +6,7 @@
 	class="z-20 text-lg md:text-3xl font-semibold h-[36px] mt-[15px] md:mt-[35px] mb-[12px] md:mb-[24px] tagline flex gap-1 md:gap-2"
 >
 	<span>Infrastructure for</span>
-	<Typewriter mode="loop" delay={5000} showCursorOnDelay={true} cursor={false}>
+	<Typewriter mode="loop" delay={3500} showCursorOnDelay={true} cursor={false}>
 		<span class="text-accent font-bold flex">DeFi</span>
 		<span class="text-accent font-bold flex">Shared Security</span>
 		<span class="text-accent font-bold flex">NFTs</span>
@@ -28,8 +28,8 @@
 	}
 
 	.tagline {
-		animation-duration: 1.1s;
-		animation-delay: 5.3s;
+		animation-duration: 0.5s;
+		animation-delay: 3.2s;
 		animation-name: fadeIn;
 		animation-timing-function: ease-in;
 		animation-fill-mode: both;

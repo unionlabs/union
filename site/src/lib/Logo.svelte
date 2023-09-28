@@ -13,14 +13,14 @@
     <!-- u !-->
     <Piece kind="A" x={3} y={2} origin="west" --duration="1s" --delay="0.2s"/>
     <Piece kind="B" x={3} y={3} origin="west" --duration="0.9s" --delay="0.4s" rotation={3}/>
-    <Piece kind="B" x={5} y={3} origin="south" --duration="0.9s" --delay="0.6s" rotation={2}/>
+    <Piece kind="B" x={5} y={3} origin="south" --duration="0.8s" --delay="0.6s" rotation={2}/>
     <Piece kind="A" x={6} y={2} origin="north" --duration="0.8s" --delay="0.8s"/>
 
     <!-- n !-->
     <Piece kind="B" x={10} y={2} origin="north" --duration="0.8s" --delay="1.1s" rotation={1}/>
     <Piece kind="A" x={8} y={3} origin="south" --duration="0.8s" --delay="1.2s"/>
-    <Piece kind="B" x={8} y={2} origin="north" --duration="0.8s" --delay="1.3s" rotation={4}/>
-    <Piece kind="A" x={11} y={3} origin="south" --duration="0.8s" --delay="1.4s"/>
+    <Piece kind="B" x={8} y={2} origin="north" --duration="0.7s" --delay="1.3s" rotation={4}/>
+    <Piece kind="A" x={11} y={3} origin="south" --duration="0.7s" --delay="1.4s"/>
 
   
     <!-- i !-->
@@ -77,7 +77,7 @@
 
 .logo-container {
     animation-duration: 0.5s;
-    animation-delay: 4s;
+    animation-delay: 3.2s;
     animation-name: slideToPos;
     animation-timing-function: ease-in-out;
     animation-fill-mode: both;
