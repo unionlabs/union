@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 
-use bitvec::{view::AsBits, prelude::Msb0};
+use bitvec::{prelude::Msb0, view::AsBits};
 use serde::{Deserialize, Serialize};
 
 use crate::{tendermint::types::simple_validator::SimpleValidator, Proto, TypeUrl};

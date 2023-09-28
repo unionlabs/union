@@ -1045,8 +1045,7 @@ where
                 } else {
                     std::cmp::Ordering::Greater
                 }
-            }
-            else {
+            } else {
                 if a_tokens > b_tokens {
                     std::cmp::Ordering::Less
                 } else {
@@ -1091,9 +1090,11 @@ where
                             v.consensus_pubkey
                                 .as_bn254()
                                 .expect("validator key for cometbls is bn254")
-                                .key.clone(),
+                                .key
+                                .clone(),
                         )
-                        .finalize()[..20].to_vec(),
+                        .finalize()[..20]
+                        .to_vec(),
                     i,
                 )
             })
@@ -1111,7 +1112,11 @@ where
                         .expect("validator must exist if a signature exist");
                     bitmap.set_bit(*validator_index as u64, true);
                     signatures.push(sig.signature.clone().into());
-                    tracing::debug!("Validator {:?} at index {} signed", sig.validator_address, validator_index);
+                    tracing::debug!(
+                        "Validator {:?} at index {} signed",
+                        sig.validator_address,
+                        validator_index
+                    );
                 }
                 // TODO: not sure about this case
                 BlockIdFlag::Nil { .. } => {

@@ -26,7 +26,6 @@ import (
 	"github.com/consensys/gnark/test"
 )
 
-
 func TestRegression3(t *testing.T) {
 	decodeB64 := func(s string) []byte {
 		bz, err := base64.StdEncoding.DecodeString(s)
@@ -164,7 +163,6 @@ func TestRegression3(t *testing.T) {
 		}
 		return aggregatedSignature, nil
 	}
-
 
 	trustedValidatorsProto, trustedValidatorsRoot, err := marshalValidators(trustedValidators)
 	if err != nil {

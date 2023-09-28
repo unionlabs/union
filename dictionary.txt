@@ -1,3 +1,4 @@
+0xc0dejug
 ABCI
 Accs
 Acknowledgemets
@@ -195,6 +196,7 @@ cratedir
 crisiskeeper
 crisistypes
 crossorigin
+cryptware
 ctypes
 dasel
 dataconnector
@@ -543,6 +545,7 @@ structs
 stylesheet
 subdenom
 subdenoms
+subdetail
 submessage
 submessages
 submsg
@@ -650,6 +653,7 @@ vuex
 wasi
 wasmd
 wasmkeeper
+wasmparser
 wasmtypes
 wasmvm
 wasmvmstatic
@@ -667,7 +671,3 @@ zedxv
 zerolog
 zkps
 λpxrx
-0xc0dejug
-cryptware
-wasmparser
-subdetail
