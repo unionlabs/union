@@ -667,3 +667,7 @@ zedxv
 zerolog
 zkps
 λpxrx
+0xc0dejug
+cryptware
+wasmparser
+subdetail

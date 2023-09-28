@@ -8,7 +8,7 @@ use clap::{
 use ethers::prelude::k256::ecdsa;
 use serde::{Deserialize, Serialize};
 use tendermint_rpc::WebSocketClientUrl;
-use unionlabs::ethereum::{Address, H256};
+use unionlabs::ethereum::Address;
 
 use crate::{chain::AnyChain, config::private_key::parse_private_key_arg};
 

@@ -672,7 +672,7 @@ macro_rules! export_wasm_client_type {
     };
 }
 
-/// This type is used to discrimate 08-wasm light clients.
+/// This type is used to discriminate 08-wasm light clients.
 /// We need to be able to determine the light client from the light client code itself (not instantiated yet).
 /// Light clients supported by voyager must export a `#[no_mangle] static WASM_CLIENT_TYPE: WasmClientType = WasmClientType::...` variable.
 #[derive(Debug, PartialEq, Eq)]

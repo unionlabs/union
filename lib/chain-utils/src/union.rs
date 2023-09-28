@@ -358,8 +358,13 @@ impl Union {
             .into(),
         };
 
-        let tx = loop {
-            if let Ok(_) = self.tm_client.tx(tx_hash.parse().unwrap(), false).await {
+        loop {
+            if self
+                .tm_client
+                .tx(tx_hash.parse().unwrap(), false)
+                .await
+                .is_ok()
+            {
                 // TODO: Log an error if this is unsuccessful
                 let _ = self.tm_client.unsubscribe(query).await;
                 return;
@@ -394,12 +399,12 @@ impl Union {
                 Ok(x) => x,
                 Err(_) => {
                     // TODO: we don't handle this case, either we got an error or the tx hasn't been received
-                    // we need to disciminate
+                    // we need to discriminate
                     tracing::warn!("tx inclusion couldn't be retrieved after 1 block");
                     panic!()
                 }
             };
-        };
+        }
     }
 
     #[must_use]
