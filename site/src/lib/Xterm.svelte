@@ -24,18 +24,8 @@
 	let logLines: {network: String, action: String, logLine: String}[] = [];
 
 
-	const scrollToBottom = node => {
-    const scroll = () => node.scroll({
-        top: node.scrollHeight,
-        behavior: 'smooth',
-    });
-    scroll();
 
-    return { update: scroll }
-};
-
-
-    const filter = (r: ApolloQueryResult<any>): null | { origin: String, logLine: String } => {
+    const filter = (r: ApolloQueryResult<any>): null | { network: String, action: String, logLine: String } => {
 			let data = r.data.demo_txes_by_pk;
 			if (data === null) {
 				return null
@@ -74,10 +64,8 @@
 				return null
 			}
 
-			return { network, action,  logLine: JSON.stringify(data)}
+			return { network, action, logLine: JSON.stringify(data)}
 	}
-
-
 
 	const worker = async () => {
 	    for (let i = 0; i < 100000000; i++) {
@@ -87,13 +75,13 @@
              variables: {
                 id: i
              },
-            }).then((result) => {
+            }).then(async (result) => {
 
                 console.log(result)
 								const newLine = filter(result);
 								if (newLine != null) {
 									logLines = [...logLines, newLine];
-									scrollToBottom(terminalElement);
+									// scrollToBottom(terminalElement);
 								}
 
 	        })
@@ -101,16 +89,29 @@
     }
 	
 	onMount(async () => {
-    worker()
+    worker();
+		document.getElementById("scroller")?.scroll(0,1);
 	})
 </script>
 
 
 <div class="relative h-80 my-4">
-	<div bind:this={terminalElement} class="overflow-auto absolute left-0 right-0 bg-black h-80 text-sm font-jetbrains p-2">
-		{#each logLines as {network, action, logLine}}
-			<div><span class={ network == "union" ? "text-accent" : "text-yellow-300"}>[{network}] </span><span>{action}</span><span class="text-gray-400">{logLine}</span></div>
-		{/each}
+	<div bind:this={terminalElement} id="scroller" class="absolute p-2 overflow-scroll left-0 right-0 bg-black h-80 text-sm font-jetbrains">
+			{#each logLines as {network, action, logLine}}
+				<div class="p-0"><span class={ network == "union" ? "text-accent" : "text-yellow-300"}>[{network}] </span><span>{action}</span><span class="text-gray-400">{logLine}</span></div>
+			{/each}
+		  <div id="anchor"/>
 	</div>
 </div>
+
+
+<style>
+	#scroller * {
+		overflow-anchor: none;
+	}
+	#anchor {
+		overflow-anchor: auto;
+		height: 1px;
+	}
+</style>
 
