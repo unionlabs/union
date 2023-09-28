@@ -1,6 +1,7 @@
 ---
 title: "PingPong"
 ---
+
 ## Overview
 
 The `PingPong` contract implements a simple ping pong protocol that alternates between sending "ping" and "pong" messages between two contracts deployed on two different blockchains connected via IBC.
