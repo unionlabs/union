@@ -73,7 +73,7 @@
 				return null
 			}
 
-			return network + action + JSON.stringify(data) + '\r\n'
+			return network + action + JSON.stringify(data)
 	}
 
 
@@ -93,10 +93,13 @@
 								// 	return;
 								// }
                 console.log(result)
-								const newLine = JSON.stringify(result);
-								logLines = [...logLines, newLine];
-								scrollToBottom(terminalElement);
-              })
+								const newLine = filter(result);
+								if (newLine != null) {
+									logLines = [...logLines, newLine];
+									scrollToBottom(terminalElement);
+								}
+
+	        })
             .catch(err => {
 							if (terminal == null) {
 								console.error("Terminal has not been initiated correctly prior to starting worker");
