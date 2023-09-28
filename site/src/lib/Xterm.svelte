@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { ApolloClient, InMemoryCache, ApolloProvider, gql } from '@apollo/client';
+	import { ApolloClient, InMemoryCache, ApolloProvider, gql, type ApolloQueryResult } from '@apollo/client';
 	import type { Terminal } from 'xterm';
+    import { json } from '@sveltejs/kit';
 
 	const client = new ApolloClient({
 	  uri: 'https://graphql.union.build/v1/graphql',
@@ -20,6 +21,47 @@
 	let terminal: null | Terminal;
 	let terminalElement: HTMLElement;
 
+    const filter = (r: ApolloQueryResult<any>): null | string  => {
+			let data = r.data.demo_txes_by_pk;
+			if (data === null) {
+				return null
+			}
+			data = r.data.demo_txes_by_pk.data;
+
+			let network;
+			let action;
+
+			if ('EthereumMinimal' in data) {
+				network = "[union]: "
+                data = data['EthereumMinimal']
+			}
+
+			if ('CometblsMinimal' in data) {
+				network = "[sepolia]: "
+                data = data['CometblsMinimal']
+			}
+
+			if ('Fetch' in data) {
+                action = "fetching "
+				data = data["Fetch"]["data"]
+			}
+
+			if ('Event' in data) {
+                action = "observed event "
+				data = data["Event"]["data"]
+			}
+
+			if ('Msg' in data) {
+                action = "sending message "
+				data = data["Msg"]["data"]
+			}
+
+            if (network === undefined) {
+				return null
+			}
+
+			return network + action + JSON.stringify(data) + '\r\n'
+	}
 	const worker = async () => {
 	    for (let i = 0; i < 100000000; i++) {
 	        await new Promise(r => setTimeout(r, 2000));
@@ -35,7 +77,10 @@
 									return;
 								}
                 console.log(result)
-                terminal.write(JSON.stringify(result))
+				let line = filter(result);
+				if (line !== null) {
+					terminal.write(line)
+				}
               })
             .catch(err => {
 							if (terminal == null) {
@@ -43,7 +88,7 @@
 								return;
 							}
               console.error(err)
-              terminal.write(JSON.stringify(err))
+              terminal.write(err)
             });
         }
     }
