@@ -36,7 +36,7 @@ Thriving web3 infrastructure should be accessible to everyone. This means not on
 
 ## A sneak peak
 
-We have worked hard to be the first with an IBC connection between Ethereum and our testnet. Here we present live logs (once caught up) of our connection between **Union** and **Sepolia**, where a CosmWasm contract and Solidity contract are playing ping-pong.
+We have worked hard to be the first with an IBC connection between Ethereum and our testnet. Here we present live logs (once caught up) of our connection between **Union** and **Sepolia**, where a CosmWasm contract and Solidity contract are playing [ping-pong](https://docs.union.build/demos/pingpong).
 
 Note that this is not a dummy or hacky setup, we have:
 
@@ -44,7 +44,7 @@ Note that this is not a dummy or hacky setup, we have:
 2. Light clients on both sides are properly implemented including (non)membership proofs,
    header verification via ZK proof, etc.
 3. [**Voyager**](https://docs.union.build/architecture/voyager): a fully functional stateless relayer.
-4. [**Galois**](https://docs.union.build/architecture/galois): an efficient zero-knowledge prover. 
+4. [**Galois**](https://docs.union.build/architecture/galois): an efficient zero-knowledge prover.
 
 <Xterm/>
 
