@@ -125,7 +125,7 @@
 
 
 <div class="relative h-80">
-	<div bind:this={terminalElement} class=" overflow-y-auto break-words absolute left-0 right-0 bg-black h-80 font-mono text-sm">
+	<div bind:this={terminalElement} class=" overflow-y-auto break-words absolute left-0 right-0 bg-black h-80 text-sm font-jetbrains">
 		{#each logLines as logline}
 			<div>{logline}</div>
 		{/each}
