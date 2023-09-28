@@ -72,7 +72,7 @@
 	}
 
 	const worker = async () => {
-	    for (let i = 0; i < 100000000; i++) {
+	    for (let i = 862; i < 100000000; i++) {
 	        await new Promise(r => setTimeout(r, 2000));
 	        client.query({
              query: FETCH_EVENT,

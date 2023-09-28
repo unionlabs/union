@@ -4,7 +4,7 @@ slug: start-of-the-endgame
 date: "2023-09-27"
 author: "@union_build"
 preview: "Galois and CometBLS have been live on our internal testnets for a while, but now we are ready to share a brief demo in anticipation of Cosmoverse. This is the first, tangible implementation of an effort that has been going on for the last few years by many different teams. We proudly present the first IBC connection to Ethereum."
-published: true
+published: false
 ---
 
 Galois and CometBLS have been live on our internal testnets for a while, but now we are ready to share a brief demo in anticipation of Cosmoverse. This is the **first, tangible implementation** of an effort that has been going on for the last few years by many different teams. We proudly present the first IBC connection to Ethereum.
