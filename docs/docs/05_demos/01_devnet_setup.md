@@ -1,10 +1,8 @@
 ---
-title: "Devnet Demo"
+title: "Running the Union Devnet"
 ---
 
-# Union Devnet Demo
-
-The demo setup is used to run every component there is locally to be able to experiment with IBC between Ethereum and Union. The nice thing about the setup is that, it requires you to run only two commands and it will handle the rest. This document will explain every option to do the setup for your needs.
+The Union Devnet is used to run every component there is locally to be able to experiment with IBC between Ethereum and Union. The nice thing about the setup is that, it requires you to run only two commands and it will handle the rest. This document will explain every option to do the setup for your needs.
 
 ## Quick start
 

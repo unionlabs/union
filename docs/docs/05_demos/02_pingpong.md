@@ -4,7 +4,7 @@ title: "PingPong"
 
 ## Overview
 
-The [**`PingPong`**](https://github.com/unionlabs/union/blob/52d586d250bab396f7a07b03bf77ffb2fb459365/evm/contracts/apps/ucs/00-pingpong/PingPong.sol) contract implements a simple ping pong protocol that alternates between sending "ping" and "pong" messages between two contracts deployed on two different blockchains connected via IBC.
+The `PingPong` contract implements a simple ping pong protocol that alternates between sending "ping" and "pong" messages between two contracts deployed on two different blockchains connected via IBC.
 
 ### Contract Structure
 

@@ -1,13 +1,13 @@
 {
-  "label": "Advanced",
+  "label": "Demos",
   "collapsible": true,
   "collapsed": true,
   "className": "red",
   "link": {
     "type": "generated-index",
-    "title": "Advanced"
+    "title": "Demos"
   },
   "customProps": {
-    "description": "Advanced usage."
+    "description": "Miscellaneous tutorials."
   }
 }
