@@ -35,6 +35,10 @@
   },
   "type": "module",
   "dependencies": {
-    "@sveltejs/adapter-static": "^2.0.3"
+    "@apollo/client": "^3.8.4",
+    "@cosmjs/tendermint-rpc": "^0.31.1",
+    "@sveltejs/adapter-static": "^2.0.3",
+    "ethers": "^6.7.1",
+    "graphql": "^16.8.1"
   }
 }
