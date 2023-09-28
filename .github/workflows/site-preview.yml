@@ -3,7 +3,7 @@ name: Site Preview
 on:
   pull_request:
     paths:
-      - 'site/*'
+      - 'site/**'
 
 env:
     ARTIFACT_NAME: BUILD_LOG
