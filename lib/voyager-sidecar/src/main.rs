@@ -24,9 +24,7 @@ async fn main() {
             .get(format!("{voyager_url}/health"))
             .send()
             .await
-            .unwrap()
-            .status()
-            == StatusCode::OK
+            .is_ok_and(|res| res.status() == StatusCode::OK)
         {
             break;
         }
