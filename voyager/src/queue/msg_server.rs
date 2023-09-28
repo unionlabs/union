@@ -1,4 +1,9 @@
-use axum::{self, extract::State, routing::post, Json};
+use axum::{
+    self,
+    extract::State,
+    routing::{get, post},
+    Json,
+};
 use chain_utils::EventSource;
 use futures::StreamExt;
 use reqwest::StatusCode;
@@ -19,6 +24,7 @@ impl EventSource for MsgServer {
 
         let app = axum::Router::new()
             .route("/msg", post(msg_listener))
+            .route("/health", get(|| async move { StatusCode::OK }))
             .with_state(tx);
 
         #[axum::debug_handler]
