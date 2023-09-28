@@ -660,7 +660,7 @@ impl Voyager {
         tracing::info!(
             depth,
             json = serde_json::to_string(&msg).unwrap(),
-            "handling messsage",
+            "handling message",
         );
 
         async move {
