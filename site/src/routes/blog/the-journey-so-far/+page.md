@@ -34,7 +34,21 @@ Interoperability is not enough. Building infrastructure is not enough. Announcem
 
 Thriving web3 infrastructure should be accessible to everyone. This means not only increasing the number of supported blockchains but also fostering a community of developers, users, and partners who share our vision. We can build an interconnected world that transcends borders.
 
+## A sneak peak
+
+We have worked hard to be the first with an IBC connection between Ethereum and our testnet. Here we present live logs (once caught up) of our connection, where a Cosmwasm contract and Solidity contract are playing ping-pong.
+
+Note that this is not a dummy or hacky setup, we have:
+
+1. The full IBC stack on Union and Sepolia,
+2. Light clients on both sides are properly implemented including (non)membership proofs,
+header verification via ZK proof, etc.
+3. A fully functional stateless relayer. (Voyager)
+4. An efficient zero-knowledge prover. (Galois)
+
 <Xterm/>
+
+For the first person that can point us to the contract addresses in use; DM our [twitter](https://x.com/union_build) for a reward.
 
 ## Join the Union
 
