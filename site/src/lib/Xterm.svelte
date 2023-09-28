@@ -98,8 +98,8 @@
 </script>
 
 
-<div class="relative h-80 my-4">
-	<div bind:this={terminalElement} class="absolute p-2 overflow-scroll left-0 right-0 bg-black h-80 text-sm font-jetbrains">
+<div class="h-[400px] my-4">
+	<div bind:this={terminalElement} style="margin: 0 auto;" class="absolute max-w-4xl p-0 shadow-xl overflow-scroll left-0 right-0 bg-black h-[400px] text-sm font-jetbrains">
 			<div class="terminal-line h-[100.1%]"/>
 			{#each logLines as {network, action, logLine}}
 				<div class="terminal-line p-0"><span class={ network == "union" ? "text-accent" : "text-yellow-300"}>[{network}] </span><span>{action}</span><span class="text-gray-400">{logLine}</span></div>
