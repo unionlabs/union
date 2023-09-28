@@ -42,7 +42,7 @@
 								console.error("Terminal has not been initiated correctly prior to starting worker");
 								return;
 							}
-              console.err(err)
+              console.error(err)
               terminal.write(JSON.stringify(err))
             });
         }
