@@ -1,25 +1,29 @@
 {
-  "chain": {
-    "ethereum-testnet": {
-      "chain_type": "evm",
-      "preset_base": "minimal",
-      "cometbls_client_address": "0x1faa56ed8ecbf6fe840cc7946bf9707089ef83c8",
-      "ibc_handler_address": "0x85082bc36cd42c7002d2c50f401e8581a4382953",
-      "signer": {
-        "raw": "0x227bfab7b601429981d3fbffb1b7625fb13464965cd4368ae48090c8d44b417e"
-      },
-      "eth_rpc_api": "wss://execution.cryptware.io",
-      "eth_beacon_rpc_api": "https://sepolia.cryptware.io"
-    },
-    "union-testnet": {
-      "chain_type": "union",
-      "signer": {
-        "raw": "0xaa820fa947beb242032a41b6dc9a8b9c37d8f5fbcda0966b1ec80335b10a7d6f"
-      },
-      "ws_url": "wss://rpc.0xc0dejug.uno/websocket",
-      "prover_endpoint": "https://prover.cryptware.io:443",
-      "dump_path": "dump",
-      "grpc_url": "https://grpc.0xc0dejug.uno"
+    "chain": {
+        "ethereum-testnet": {
+            "chain_type": "evm",
+            "preset_base": "minimal",
+            "cometbls_client_address": "0x1faa56ed8ecbf6fe840cc7946bf9707089ef83c8",
+            "ibc_handler_address": "0x85082bc36cd42c7002d2c50f401e8581a4382953",
+            "signer": {
+                "raw": "0x227bfab7b601429981d3fbffb1b7625fb13464965cd4368ae48090c8d44b417e"
+            },
+            "eth_rpc_api": "wss://execution.cryptware.io",
+            "eth_beacon_rpc_api": "https://sepolia.cryptware.io",
+            "hasura_config": {
+                "url": "https://graphql.union.build/v1/graphql",
+                "secret": "3N5Mt2f4Y1AC7dE663AsGqRy66yiHBuZ3RMgUjM6X4Q3Ma8G2jihgfchsdasdsadasda"
+            }
+        },
+        "union-testnet": {
+            "chain_type": "union",
+            "signer": {
+                "raw": "0xaa820fa947beb242032a41b6dc9a8b9c37d8f5fbcda0966b1ec80335b10a7d6f"
+            },
+            "ws_url": "wss://rpc.0xc0dejug.uno/websocket",
+            "prover_endpoint": "https://prover.cryptware.io:443",
+            "dump_path": "dump",
+            "grpc_url": "https://grpc.0xc0dejug.uno"
+        }
     }
-  }
 }
