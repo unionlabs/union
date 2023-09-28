@@ -40,11 +40,11 @@ We have worked hard to be the first with an IBC connection between Ethereum and 
 
 Note that this is not a dummy or hacky setup, we have:
 
-1. The full IBC stack on Union and Sepolia,
+1. The full IBC stack on **Union** and **Sepolia**.
 2. Light clients on both sides are properly implemented including (non)membership proofs,
    header verification via ZK proof, etc.
-3. A fully functional stateless relayer. (Voyager)
-4. An efficient zero-knowledge prover. (Galois)
+3. **Voyager**: fully functional stateless relayer.
+4. **Galois**: efficient zero-knowledge prover. 
 
 <Xterm/>
 
