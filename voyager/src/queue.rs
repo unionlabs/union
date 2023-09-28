@@ -12,7 +12,7 @@ use chain_utils::{
 };
 use frunk::{hlist_pat, HList};
 use futures::{future::BoxFuture, stream, FutureExt, StreamExt, TryStreamExt};
-use hubble::hasura::{Datastore, HasuraDataStore, InsertDemoTx};
+use hubble::hasura::{Datastore, HasuraDataStore, InsertDemoQueue, InsertDemoTx};
 use unionlabs::{
     ethereum_consts_traits::{Mainnet, Minimal},
     events::{
@@ -626,6 +626,13 @@ impl Voyager {
 
         while let Some(msg) = events.next().await {
             let msg = msg.unwrap();
+
+            self.hasura_config
+                .do_post::<InsertDemoQueue>(hubble::hasura::insert_demo_queue::Variables {
+                    item: serde_json::to_value(&msg).unwrap(),
+                })
+                .await
+                .unwrap();
 
             let new_msgs = self.handle_msg(msg, 0).await;
 

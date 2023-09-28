@@ -32,3 +32,9 @@ mutation InsertDemoTx($data: jsonb!) {
     id
   }
 }
+
+mutation InsertDemoQueue($item: jsonb!) {
+  insert_demo_queue_one(object: {item: $item}) {
+    id
+  }
+}

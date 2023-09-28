@@ -127,3 +127,13 @@ pub struct InsertBlocksMany;
     skip_serializing_none
 )]
 pub struct InsertDemoTx;
+
+#[derive(GraphQLQuery)]
+#[graphql(
+    schema_path = "src/graphql/schema.graphql",
+    query_path = "src/graphql/operations.graphql",
+    response_derives = "Clone, Debug, Default",
+    normalization = "rust",
+    skip_serializing_none
+)]
+pub struct InsertDemoQueue;
