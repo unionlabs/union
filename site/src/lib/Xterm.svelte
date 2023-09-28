@@ -3,6 +3,8 @@
 	import { ApolloClient, InMemoryCache, gql } from '@apollo/client/core';
 	import type { Terminal } from 'xterm';
 	import type { ApolloQueryResult } from '@apollo/client';
+	import BlogLayout from '../mdsvex/BlogLayout.svelte';
+	import ButtonA from './ButtonA.svelte';
 
 	const client = new ApolloClient({
 	  uri: 'https://graphql.union.build/v1/graphql',
@@ -18,8 +20,18 @@
 		}
 	`
 
+	const FETCH_LATEST_ID = gql`
+		query GetLatestId {
+		  demo_txes(limit: 1, order_by: {id: desc}) {
+		    id
+		  }
+		}
+	`
+
 	let terminal: null | Terminal;
 	let terminalElement: HTMLElement;
+	let latestId: null | number = null;
+	const replayOffset = 300;
 
 	let logLines: {network: String, action: String, logLine: String}[] = [];
 
@@ -71,28 +83,34 @@
 			return { network, action, logLine: JSON.stringify(data)}
 	}
 
-	const worker = async () => {
-	    for (let i = 862; i < 100000000; i++) {
-	        await new Promise(r => setTimeout(r, 2000));
-	        client.query({
-             query: FETCH_EVENT,
-             variables: {
-                id: i
-             },
-            }).then(async (result) => {
+	const sleep = (ms: number) =>  new Promise(r => setTimeout(r, ms));
 
-                console.log(result)
-								const newLine = filter(result);
-								if (newLine != null) {
-									logLines = [newLine, ...logLines];
-								}
+	const worker = async (latestIdWorker) => {
+		const startHeight = latestIdWorker - replayOffset
+		let i = startHeight;
+    while (true) {
+			i++;
+      await sleep(2000);
+      const response = await client.query({
+       query: FETCH_EVENT,
+       variables: { id: i },
+      });
 
-	        })
-        }
+			const newLine = filter(response);
+			if (newLine != null) {
+				logLines = [newLine, ...logLines];
+			}
+
+			if (i === (latestIdWorker - 1)) {
+				i = startHeight;
+			} 
     }
+  }
 	
 	onMount(async () => {
-    worker();
+		let response = await client.query({ query: FETCH_LATEST_ID, });
+		latestId = response.data.demo_txes[0].id; 		
+    worker(latestId);
 	})
 </script>
 
@@ -106,7 +124,6 @@
 			</div>
 	</div>
 </div>
-
 
 <style>
 	/* For Webkit-based browsers (Chrome, Safari and Opera) */
