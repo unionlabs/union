@@ -1,11 +1,11 @@
 {
-  "label": "Tutorials",
+  "label": "Demos",
   "collapsible": true,
   "collapsed": true,
   "className": "red",
   "link": {
     "type": "generated-index",
-    "title": "Tutorials"
+    "title": "Demos"
   },
   "customProps": {
     "description": "Miscellaneous tutorials."
