@@ -279,6 +279,7 @@ hasura
 healthcheck
 healthz
 herumi
+hexlify
 hmac
 holiman
 horcrux
@@ -325,6 +326,7 @@ interchainaccounts
 interfacetype
 iohk
 ipetkov
+jetbrains
 journalctl
 jsonschema
 jwtsecret
@@ -355,6 +357,7 @@ lightclient
 lightclients
 linkmode
 logformat
+logline
 logtostderr
 lzrndrpkvsjqgk
 maxdome
@@ -579,6 +582,7 @@ tonumber
 treefmt
 trustlessly
 tryopen
+txes
 txpool
 typecheck
 typenum
