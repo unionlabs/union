@@ -103,7 +103,7 @@
 	onMount(async () => {
 		const response = await client.query({ query: FETCH_LATEST_ID, });
 		const latestId = response.data.demo_txes[0].id; 		
-    worker(latestId);
+    worker(1502);
 	})
 </script>
 
