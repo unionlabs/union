@@ -103,7 +103,7 @@
                       ${captcha} \
                       ${captcha-verify-url} \
                       --address '${cfg.address}' \
-                      --amount-send ${cfg.amount-send} \
+                      --amount-send ${toString cfg.amount-send} \
                       --grpc-address ${cfg.grpc-address}
                 '';
             };
