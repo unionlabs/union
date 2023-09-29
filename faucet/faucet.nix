@@ -45,6 +45,11 @@
           default = "";
           description = "the home folder";
         };
+        mnemonic = mkOption {
+          type = types.str;
+          default = "";
+          description = "wallet mnemonic";
+        };
         address = mkOption {
           type = types.str;
           default = ":8080";
@@ -109,7 +114,8 @@
                       ${captcha-verify-url} \
                       --address '${cfg.address}' \
                       --amount-send ${toString cfg.amount-send} \
-                      --grpc-address ${cfg.grpc-address}
+                      --grpc-address ${cfg.grpc-address} \
+                      --mnemonic '${cfg.mnemonic}'
                 '';
             };
           in
