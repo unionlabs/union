@@ -1117,8 +1117,10 @@ where
 
             let mut amount_of_slots_back: u64 = 0;
 
-            let floored_slot = slot / (C::SLOTS_PER_EPOCH::U64 * C::SECONDS_PER_SLOT::U64)
-                * (C::SLOTS_PER_EPOCH::U64 * C::SECONDS_PER_SLOT::U64);
+            let floored_slot = slot / (C::SLOTS_PER_EPOCH::U64 * C::EPOCHS_PER_SYNC_COMMITTEE_PERIOD::U64)
+                * (C::SLOTS_PER_EPOCH::U64 * C::EPOCHS_PER_SYNC_COMMITTEE_PERIOD::U64);
+
+            tracing::info!("fetching bootstrap at {}", floored_slot);
 
             let bootstrap = loop {
                 let header_response = evm
@@ -1647,7 +1649,7 @@ where
         assert_eq!(chain_id, light_client_updates_chain_id);
 
         let target_period =
-            sync_committee_period::<_, C>(finality_update.attested_header.beacon.slot);
+            sync_committee_period::<_, C>(finality_update.signature_slot);
 
         let trusted_period = sync_committee_period::<_, C>(req.update_from.revision_height);
 
