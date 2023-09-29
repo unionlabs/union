@@ -36,11 +36,13 @@
   "type": "module",
   "dependencies": {
     "@apollo/client": "^3.8.4",
-    "@cosmjs/amino": "^0.31.1",
-    "@cosmjs/stargate": "^0.31.1",
-    "@cosmjs/tendermint-rpc": "^0.31.1",
+    "@cosmjs/amino": "file:../../cosmjs/packages/amino",
+    "@cosmjs/cosmwasm-stargate": "file:../../cosmjs/packages/cosmwasm-stargate",
+    "@cosmjs/stargate": "file:../../cosmjs/packages/stargate",
+    "@cosmjs/tendermint-rpc": "file:../../cosmjs/packages/stargate",
     "@leapwallet/cosmos-snap-provider": "^0.1.23",
     "@sveltejs/adapter-static": "^2.0.3",
+    "cosmjs-types": "^0.8.0",
     "ethers": "^6.7.1",
     "graphql": "^16.8.1"
   }
