@@ -40,6 +40,11 @@
           type = types.package;
           default = self.packages.${pkgs.system}.faucet;
         };
+        home = mkOption {
+          type = types.str;
+          default = "";
+          description = "the home folder";
+        };
         address = mkOption {
           type = types.str;
           default = ":8080";
@@ -115,6 +120,9 @@
               Type = "simple";
               ExecStart = pkgs.lib.getExe faucet-systemd-script;
               Restart = mkForce "always";
+            };
+            environment = {
+              HOME = cfg.home;
             };
           };
       };
