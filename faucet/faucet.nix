@@ -90,6 +90,11 @@
           default = "127.0.0.1:9090";
           description = "grpc address of the node";
         };
+        extra-args = mkOption {
+          type = types.str;
+          default = "";
+          description = "extra arguments to pass to the command";
+        };
       };
 
       config = mkIf cfg.enable {
@@ -115,7 +120,7 @@
                       --address '${cfg.address}' \
                       --amount-send ${toString cfg.amount-send} \
                       --grpc-address ${cfg.grpc-address} \
-                      --mnemonic '${cfg.mnemonic}'
+                      --mnemonic '${cfg.mnemonic}' ${cfg.extra-args}
                 '';
             };
           in
