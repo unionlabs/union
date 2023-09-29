@@ -184,6 +184,26 @@
           rm -rf "$OUT"
         '';
       };
+
+      deploy-ucs01 = { network, rpc-url, private-key, ... }: pkgs.writeShellApplication {
+        name = "evm-${network}-ucs01";
+        runtimeInputs = [ pkgs.jq wrappedForge ];
+        text = ''
+          OUT="$(mktemp -d)"
+          cd "$OUT"
+          cp --no-preserve=mode -r ${self'.packages.evm-contracts}/* .
+
+          ${deploy-contracts { rpc-url = rpc-url;
+                           private-key = private-key; } [{
+                           path = "apps/ucs/01-relay/Relay.sol";
+                           name = "UCS01Relay";
+                           args = ''--constructor-args "$IBC_HANDLER_ADDRESS"''; }]}
+
+          echo "{\"ucs01_address\": \"$UCS01RELAY\" }"
+
+          rm -rf "$OUT"
+        '';
+      };
     in
     {
       packages = {
@@ -294,6 +314,11 @@
       builtins.listToAttrs (
         builtins.map
           (args: { name = "evm-${args.network}-ping-pong-deploy"; value = deploy-ping-pong args; })
+          networks
+      ) //
+      builtins.listToAttrs (
+        builtins.map
+          (args: { name = "evm-${args.network}-ucs01-deploy"; value = deploy-ucs01 args; })
           networks
       );
     };
