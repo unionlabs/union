@@ -135,6 +135,7 @@
         ./e2e/all-tests.nix
         ./e2e/e2e.nix
         ./lib/unionlabs/fuzz/default.nix
+        ./faucet/faucet.nix
         treefmt-nix.flakeModule
       ];
 
