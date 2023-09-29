@@ -7,22 +7,11 @@ preview: "Galois and CometBLS have been live on our internal testnets for a whil
 published: true
 ---
 
-<script lang="ts">
-
-import { onMount } from 'svelte';
-import { cosmjsOfflineSigner } from '@leapwallet/cosmos-snap-provider';
-
-
-const connect = async () => {
-    const offlineSigner = new cosmjsOfflineSigner(chainId);
-    const accounts = await offlineSigner.getAccounts();
-    const rpcUrl = ""; // Populate with an RPC URL corresponding to the given chainId
-}  
-
-onMount(async () => {
-	connect()
-})
+<script>
+	import TokenTransfer from '$lib/TokenTransfer.svelte';
 </script>
+
+<TokenTransfer/>
 
 
 Galois and CometBLS have been live on our internal testnets for a while, but now we are ready to share a brief demo in anticipation of Cosmoverse. This is the **first, tangible implementation** of an effort that has been going on for the last few years by many different teams. We proudly present the first ICS20 transfers to Sepolia (Ethereum).

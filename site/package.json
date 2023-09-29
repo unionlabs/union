@@ -36,6 +36,7 @@
   "type": "module",
   "dependencies": {
     "@apollo/client": "^3.8.4",
+    "@cosmjs/amino": "^0.31.1",
     "@cosmjs/stargate": "^0.31.1",
     "@cosmjs/tendermint-rpc": "^0.31.1",
     "@leapwallet/cosmos-snap-provider": "^0.1.23",
