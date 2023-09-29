@@ -36,7 +36,9 @@
   "type": "module",
   "dependencies": {
     "@apollo/client": "^3.8.4",
+    "@cosmjs/stargate": "^0.31.1",
     "@cosmjs/tendermint-rpc": "^0.31.1",
+    "@leapwallet/cosmos-snap-provider": "^0.1.23",
     "@sveltejs/adapter-static": "^2.0.3",
     "ethers": "^6.7.1",
     "graphql": "^16.8.1"
