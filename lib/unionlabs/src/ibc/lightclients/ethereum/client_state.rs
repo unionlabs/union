@@ -73,7 +73,8 @@ impl TryFrom<protos::union::ibc::lightclients::ethereum::v1::ClientState> for Cl
         value: protos::union::ibc::lightclients::ethereum::v1::ClientState,
     ) -> Result<Self, Self::Error> {
         Ok(Self {
-            chain_id: U256::from_str(&value.chain_id).map_err(TryFromClientStateError::ChainId)?,
+            chain_id: U256::from_str(dbg!(&value.chain_id))
+                .map_err(TryFromClientStateError::ChainId)?,
             genesis_validators_root: value
                 .genesis_validators_root
                 .try_into()
