@@ -3,6 +3,8 @@
 import { onMount } from 'svelte';
 import type { AccountData } from '@cosmjs/amino';
 import { browser } from '$app/environment';
+	import BlogLayout from '../mdsvex/BlogLayout.svelte';
+	import Error from '../routes/+error.svelte';
 
 
 let accounts: null | AccountData[] = null;
@@ -39,10 +41,10 @@ const connect = async () => {
 	)
     const offlineSigner = new CosmjsOfflineSigner(chainId);
 
-    accounts = await offlineSigner.getAccounts();
+  accounts = await offlineSigner.getAccounts();
 	const key = await getKey(chainId);
 	console.log(key)
-    const rpcUrl = "wss://rpc.0xc0dejug.uno"; // Populate with an RPC URL corresponding to the given chainId
+  const rpcUrl = "wss://rpc.0xc0dejug.uno"; // Populate with an RPC URL corresponding to the given chainId
 	console.log("connecting client")
 	let client = await Tendermint37Client.connect(rpcUrl);
 	console.log("creating stargate")
@@ -64,7 +66,17 @@ onMount(async () => {
 </script>
 
 
-<div>
-	{accounts}
+<div class="mb-8 bg-black p-4">
+	{#if accounts === null}
+		Loading account...
+	{:else}
+		Your Union Address:
+
+		{#each accounts as account}
+			<div class="font-jetbrains">{account.address}</div>
+		{/each}
+
+		<button class="px-4 mt-4 py-2 border-2 font-jetbrains border-accent text-accent">Get UNO from faucet</button>
+	{/if}
 </div>
 
