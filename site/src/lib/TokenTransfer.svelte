@@ -8,6 +8,8 @@ import Error from '../routes/+error.svelte';
 
 import { ApolloClient, InMemoryCache, gql } from '@apollo/client/core';
 import type { ApolloQueryResult } from '@apollo/client';
+	import { Tendermint37Client } from '@cosmjs/tendermint-rpc';
+	import { SigningStargateClient } from '@cosmjs/stargate';
 
 let accounts: null | AccountData[] = null;
 
@@ -44,6 +46,28 @@ const getUnoFromFaucent = async () => {
 	console.log(response);
 }
 
+const sendTransfer = async () => {
+	if (accounts === null || stargateClient === null) {
+		console.error("trying to get uno from faucet before accounts are loaded");
+		return;
+	}
+	console.log("sending tokens")
+	const txResponse = await stargateClient.sendTokens(
+       accounts[0].address,
+       "union1v39zvpn9ff7quu9lxsawdwpg60lyfpz8pmhfey",
+       [
+           { denom: "muno", amount: "1" },
+       ],
+       "auto",
+    )
+
+	console.log(txResponse);
+}
+
+
+let tendermintClient: Tendermint37Client | null = null;
+let stargateClient: SigningStargateClient | null = null;
+
 const connect = async () => {
 	let { CosmjsOfflineSigner } = await import('@leapwallet/cosmos-snap-provider');
 	let { getSnap, connectSnap, suggestChain, getKey } = await import('@leapwallet/cosmos-snap-provider');
@@ -67,25 +91,16 @@ const connect = async () => {
 	 },
 	 { force: false }
 	)
-    const offlineSigner = new CosmjsOfflineSigner(chainId);
+  const offlineSigner = new CosmjsOfflineSigner(chainId);
 
   accounts = await offlineSigner.getAccounts();
 	const key = await getKey(chainId);
 	console.log(key)
   const rpcUrl = "wss://rpc.0xc0dejug.uno"; // Populate with an RPC URL corresponding to the given chainId
-	console.log("connecting client")
-	let client = await Tendermint37Client.connect(rpcUrl);
-	console.log("creating stargate")
-	const stargateClient = await SigningStargateClient.createWithSigner(client, offlineSigner,{ gasPrice: GasPrice.fromString("0.001muno"),});
-	// console.log("sending tokens")
-	// stargateClient.sendTokens(
- //       key.address,
- //       "union1v39zvpn9ff7quu9lxsawdwpg60lyfpz8pmhfey",
- //       [
- //           { denom: "muno", amount: "1" },
- //       ],
- //       "auto",
- //    )
+	console.log("connecting tendermint client")
+	tendermintClient = await Tendermint37Client.connect(rpcUrl);
+	console.log("creating stargate client")
+	stargateClient = await SigningStargateClient.createWithSigner(tendermintClient, offlineSigner,{ gasPrice: GasPrice.fromString("0.001muno"),});
 }  
 
 onMount(async () => {
@@ -106,6 +121,7 @@ onMount(async () => {
 		{/each}
 
 		<button class="px-4 mt-4 py-2 border-2 font-jetbrains border-accent text-accent" on:click={getUnoFromFaucent}>Get UNO from faucet</button>
+		<button class="px-4 mt-4 py-2 border-2 font-jetbrains border-accent text-accent" on:click={sendTransfer}>Send UNO</button>
 	{/if}
 	</div>
 </div>
