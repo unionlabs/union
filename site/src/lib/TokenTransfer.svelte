@@ -3,17 +3,45 @@
 import { onMount } from 'svelte';
 import type { AccountData } from '@cosmjs/amino';
 import { browser } from '$app/environment';
-	import BlogLayout from '../mdsvex/BlogLayout.svelte';
-	import Error from '../routes/+error.svelte';
+import BlogLayout from '../mdsvex/BlogLayout.svelte';
+import Error from '../routes/+error.svelte';
 
+import { ApolloClient, InMemoryCache, gql } from '@apollo/client/core';
+import type { ApolloQueryResult } from '@apollo/client';
 
 let accounts: null | AccountData[] = null;
 
+const graphqlClient = new ApolloClient({
+  uri: 'https://graphql.union.build/v1/graphql',
+  cache: new InMemoryCache(),
+});
 
+type LogLine = { network: string, action: string, logLine: string };
+
+const GET_UNO_FROM_FAUCET = gql`
+	mutation MyMutation($addr: Address!) {
+	  union {
+	    send(input: {toAddress: $addr})
+	  }
+	}
+`
+	
 
 // Hack to import cosmjs
 if (browser) {
   window.process = { env: {} };
+}
+
+const getUnoFromFaucent = async () => {
+	if (accounts === null) {
+		console.error("trying to get uno from faucet before accounts are loaded");
+		return;
+	}
+	let response = await graphqlClient.mutate({ 
+		mutation: GET_UNO_FROM_FAUCET, 
+		variables: { addr: accounts[0].address }
+	});
+	console.log(response);
 }
 
 const connect = async () => {
@@ -49,15 +77,15 @@ const connect = async () => {
 	let client = await Tendermint37Client.connect(rpcUrl);
 	console.log("creating stargate")
 	const stargateClient = await SigningStargateClient.createWithSigner(client, offlineSigner,{ gasPrice: GasPrice.fromString("0.001muno"),});
-	console.log("sending tokens")
-	stargateClient.sendTokens(
-       key.address,
-       "union1v39zvpn9ff7quu9lxsawdwpg60lyfpz8pmhfey",
-       [
-           { denom: "muno", amount: "1" },
-       ],
-       "auto",
-    )
+	// console.log("sending tokens")
+	// stargateClient.sendTokens(
+ //       key.address,
+ //       "union1v39zvpn9ff7quu9lxsawdwpg60lyfpz8pmhfey",
+ //       [
+ //           { denom: "muno", amount: "1" },
+ //       ],
+ //       "auto",
+ //    )
 }  
 
 onMount(async () => {
@@ -77,7 +105,7 @@ onMount(async () => {
 			<div class="font-jetbrains">{account.address}</div>
 		{/each}
 
-		<button class="px-4 mt-4 py-2 border-2 font-jetbrains border-accent text-accent">Get UNO from faucet</button>
+		<button class="px-4 mt-4 py-2 border-2 font-jetbrains border-accent text-accent" on:click={getUnoFromFaucent}>Get UNO from faucet</button>
 	{/if}
 	</div>
 </div>
