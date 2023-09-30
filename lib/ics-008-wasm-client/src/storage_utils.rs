@@ -31,9 +31,9 @@ pub fn read_client_state<C: CustomQuery, CS>(
     deps: Deps<C>,
 ) -> Result<wasm::client_state::ClientState<CS>, Error>
 where
-    CS: TryFromProto + Debug,
-    <CS as Proto>::Proto: prost::Message + Default,
-    TryFromProtoErrorOf<CS>: Debug,
+    wasm::client_state::ClientState<CS>: Proto + TryFromProto,
+    Any<wasm::client_state::ClientState<CS>>: TryFromProto,
+    TryFromProtoErrorOf<Any<wasm::client_state::ClientState<CS>>>: Debug,
 {
     let any_state = deps
         .storage
@@ -58,9 +58,9 @@ pub fn read_consensus_state<C: CustomQuery, CS>(
     height: &Height,
 ) -> Result<Option<wasm::consensus_state::ConsensusState<CS>>, Error>
 where
-    CS: TryFromProto + Debug,
-    <CS as Proto>::Proto: prost::Message + Default,
-    TryFromProtoErrorOf<CS>: Debug,
+    wasm::consensus_state::ConsensusState<CS>: Proto + TryFromProto,
+    Any<wasm::consensus_state::ConsensusState<CS>>: TryFromProto,
+    TryFromProtoErrorOf<Any<wasm::consensus_state::ConsensusState<CS>>>: Debug,
 {
     deps.storage
         .get(consensus_db_key(height).as_bytes())

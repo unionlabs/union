@@ -1,5 +1,6 @@
 use std::{ffi::OsString, str::FromStr};
 
+use chain_utils::Chain;
 use clap::{
     error::{ContextKind, ContextValue},
     Args, Parser, Subcommand,
@@ -9,13 +10,11 @@ use ethers::{
     types::{Address, H256},
 };
 use reqwest::Url;
-use unionlabs::ethereum_consts_traits::PresetBaseKind;
+use unionlabs::ibc::core::client::height::Height;
 
 use crate::chain::{
-    cosmos::EthereumConfig,
-    evm::CometblsConfig,
-    proof::{self, IbcStateReadPaths},
-    Chain, QueryHeight,
+    proof::{self, ClientConsensusStatePath, ClientStatePath, IbcStateReadPaths},
+    HeightOf, QueryHeight,
 };
 
 #[derive(Debug, Parser)]
@@ -37,14 +36,6 @@ pub struct AppArgs {
 #[allow(clippy::large_enum_variant)]
 pub enum Command {
     PrintConfig,
-    #[command(subcommand)]
-    Chain(ChainCmd),
-    #[command(subcommand)]
-    Client(ClientCmd),
-    #[command(subcommand)]
-    Connection(ConnectionCmd),
-    #[command(subcommand)]
-    Channel(ChannelCmd),
     Relay(RelayCmd),
     #[command(subcommand)]
     SubmitPacket(SubmitPacketCmd),
@@ -61,8 +52,8 @@ pub enum IbcCmd {
     Query {
         #[arg(long)]
         on: String,
-        #[arg(long, default_value_t = QueryHeight::Latest)]
-        at: QueryHeight,
+        #[arg(long, default_value_t = QueryHeight::<Height>::Latest)]
+        at: QueryHeight<Height>,
         #[command(subcommand)]
         cmd: IbcQueryCmd,
     },
@@ -76,8 +67,8 @@ pub enum IbcQueryCmd {
 
 #[derive(Debug, clap::Subcommand)]
 pub enum IbcQueryPathCmd {
-    ClientState(proof::ClientStatePath),
-    ClientConsensusState(proof::ClientConsensusStatePath),
+    ClientState(proof::ClientStatePath<String>),
+    ClientConsensusState(proof::ClientConsensusStatePath<String, Height>),
     Connection(proof::ConnectionPath),
     ChannelEnd(proof::ChannelEndPath),
     Commitment(proof::CommitmentPath),
@@ -86,11 +77,11 @@ pub enum IbcQueryPathCmd {
 impl IbcQueryPathCmd {
     pub async fn any_state_proof_to_json<
         Counterparty: Chain,
-        C: IbcStateReadPaths<Counterparty>,
+        This: IbcStateReadPaths<Counterparty>,
     >(
         self,
-        c: C,
-        height: QueryHeight,
+        c: This,
+        height: QueryHeight<HeightOf<This>>,
     ) -> String {
         use serde_json::to_string_pretty as json;
 
@@ -100,8 +91,25 @@ impl IbcQueryPathCmd {
         };
 
         match self {
-            Self::ClientState(path) => json(&c.state_proof(path, height).await),
-            Self::ClientConsensusState(path) => json(&c.state_proof(path, height).await),
+            Self::ClientState(path) => json(
+                &c.state_proof(
+                    ClientStatePath {
+                        client_id: path.client_id.parse().unwrap(),
+                    },
+                    height,
+                )
+                .await,
+            ),
+            Self::ClientConsensusState(path) => json(
+                &c.state_proof(
+                    ClientConsensusStatePath {
+                        client_id: path.client_id.parse().unwrap(),
+                        height: path.height.into(),
+                    },
+                    height,
+                )
+                .await,
+            ),
             Self::Connection(path) => json(&c.state_proof(path, height).await),
             Self::ChannelEnd(path) => json(&c.state_proof(path, height).await),
             Self::Commitment(path) => json(&c.state_proof(path, height).await),
@@ -174,148 +182,6 @@ pub enum QueryCmd {
         #[arg(long)]
         denom: String,
     },
-}
-
-#[derive(Debug, Subcommand)]
-pub enum ChainCmd {
-    #[command(subcommand)]
-    Add(ChainAddCmd),
-}
-
-#[derive(Debug, Subcommand)]
-pub enum ChainAddCmd {
-    Evm {
-        #[arg(long)]
-        overwrite: bool,
-        #[arg(long)]
-        name: String,
-        #[arg(long)]
-        preset_base: PresetBaseKind,
-        #[command(flatten)]
-        config: crate::config::EvmChainConfigFields,
-    },
-    Union {
-        #[arg(long)]
-        overwrite: bool,
-        #[arg(long)]
-        name: String,
-        #[command(flatten)]
-        config: crate::config::UnionChainConfig,
-    },
-}
-
-#[derive(Debug, Subcommand)]
-pub enum ClientCmd {
-    #[command(subcommand)]
-    Create(ClientCreateCmd),
-}
-
-#[derive(Debug, Subcommand)]
-pub enum ClientCreateCmd {
-    #[command(subcommand)]
-    Evm(EvmClientType),
-    #[command(subcommand)]
-    Union(CometblsClientType),
-}
-
-#[derive(Debug, Args)]
-pub struct ClientQueryCmd {
-    #[arg(long)]
-    pub client_id: String,
-    #[arg(long)]
-    pub on: String,
-}
-
-#[derive(Debug, Subcommand)]
-pub enum EvmClientType {
-    Cometbls {
-        /// The name of the chain to create the client on, as specified in the config file.
-        #[arg(long)]
-        on: String,
-        /// The name of the chain that the client will connect to, as specified in the config file.
-        #[arg(long)]
-        counterparty: String,
-        #[command(flatten)]
-        config: CometblsConfig,
-    },
-}
-
-#[derive(Debug, Subcommand)]
-pub enum CometblsClientType {
-    Ethereum08Wasm {
-        /// The name of the chain to create the client on, as specified in the config file.
-        #[arg(long)]
-        on: String,
-        /// The name of the chain that the client will connect to, as specified in the config file.
-        #[arg(long)]
-        counterparty: String,
-        #[command(flatten)]
-        config: EthereumConfig,
-    },
-}
-
-#[derive(Debug, Subcommand)]
-pub enum ConnectionCmd {
-    // #[command(subcommand)]
-    // Query(ConnectionQueryCmd),
-    Open {
-        #[arg(long)]
-        from_chain: String,
-        #[arg(long)]
-        from_client: String,
-
-        #[arg(long)]
-        to_chain: String,
-        #[arg(long)]
-        to_client: String,
-    },
-}
-
-#[derive(Debug, Subcommand)]
-pub enum ChannelCmd {
-    Open {
-        #[arg(long)]
-        from_chain: String,
-        #[arg(long)]
-        from_connection: String,
-        #[arg(long)]
-        from_port: String,
-        #[arg(long)]
-        from_version: String,
-
-        #[arg(long)]
-        to_chain: String,
-        #[arg(long)]
-        to_connection: String,
-        #[arg(long)]
-        to_port: String,
-        #[arg(long)]
-        to_version: String,
-    },
-}
-
-#[derive(Debug, Parser)]
-pub struct OpenConnectionArgs {
-    #[command(flatten)]
-    pub args: ClientArgs,
-}
-
-#[derive(Debug, Parser)]
-pub struct OpenChannelArgs {
-    #[command(flatten)]
-    pub args: ClientArgs,
-
-    #[arg(long)]
-    pub cometbls_port_id: String,
-    #[arg(long)]
-    pub ethereum_port_id: String,
-
-    /// format is client_id/connection_id
-    #[arg(long)]
-    pub cometbls: ConnectionEndInfo,
-    /// format is client_id/connection_id
-    #[arg(long)]
-    pub ethereum: ConnectionEndInfo,
 }
 
 #[derive(Debug, Parser)]

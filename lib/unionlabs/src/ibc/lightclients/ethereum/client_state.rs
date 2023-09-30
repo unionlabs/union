@@ -1,8 +1,11 @@
+use std::str::FromStr;
+
 use serde::{Deserialize, Serialize};
+use uint::FromDecStrErr;
 
 use crate::{
     errors::{InvalidLength, MissingField},
-    ethereum::H256,
+    ethereum::{H256, U256},
     ibc::{
         core::client::height::Height,
         lightclients::{ethereum::fork_parameters::ForkParameters, tendermint::fraction::Fraction},
@@ -12,7 +15,7 @@ use crate::{
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ClientState {
-    pub chain_id: String,
+    pub chain_id: U256,
     pub genesis_validators_root: H256,
     pub min_sync_committee_participants: u64,
     pub genesis_time: u64,
@@ -38,7 +41,7 @@ impl Proto for ClientState {
 impl From<ClientState> for protos::union::ibc::lightclients::ethereum::v1::ClientState {
     fn from(value: ClientState) -> Self {
         Self {
-            chain_id: value.chain_id,
+            chain_id: value.chain_id.to_string(),
             genesis_validators_root: value.genesis_validators_root.into(),
             min_sync_committee_participants: value.min_sync_committee_participants,
             genesis_time: value.genesis_time,
@@ -58,6 +61,7 @@ impl From<ClientState> for protos::union::ibc::lightclients::ethereum::v1::Clien
 #[derive(Debug)]
 pub enum TryFromClientStateError {
     MissingField(MissingField),
+    ChainId(FromDecStrErr),
     ForkParameters(TryFromProtoErrorOf<ForkParameters>),
     GenesisValidatorsRoot(InvalidLength),
 }
@@ -69,7 +73,8 @@ impl TryFrom<protos::union::ibc::lightclients::ethereum::v1::ClientState> for Cl
         value: protos::union::ibc::lightclients::ethereum::v1::ClientState,
     ) -> Result<Self, Self::Error> {
         Ok(Self {
-            chain_id: value.chain_id,
+            chain_id: U256::from_str(dbg!(&value.chain_id))
+                .map_err(TryFromClientStateError::ChainId)?,
             genesis_validators_root: value
                 .genesis_validators_root
                 .try_into()

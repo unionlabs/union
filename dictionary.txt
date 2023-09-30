@@ -1,3 +1,4 @@
+0xc0dejug
 ABCI
 Accs
 Acknowledgemets
@@ -137,6 +138,7 @@ blcok
 blocksync
 blst
 boneh
+bools
 builtins
 byteorder
 cachix
@@ -194,6 +196,7 @@ cratedir
 crisiskeeper
 crisistypes
 crossorigin
+cryptware
 ctypes
 dasel
 dataconnector
@@ -204,15 +207,18 @@ delegators
 dels
 denoms
 denum
+deque
 devnet
 devnets
 devshell
 dirchange
+displaydoc
 distrkeeper
 distrtypes
 docgen
 doctest
 dont
+downcasting
 drawio
 dyld
 dylib
@@ -238,6 +244,7 @@ fkey
 fksmg
 floorlog
 foldl
+frunk
 fubar
 fucynrfkrt
 galois
@@ -280,6 +287,7 @@ healthcheck
 healthz
 herumi
 hexlify
+hlist
 hmac
 holiman
 horcrux
@@ -488,6 +496,7 @@ rlib
 roadmap
 rollups
 rpath
+rsplit
 runtimeservices
 rustc
 rustfilt
@@ -536,6 +545,7 @@ structs
 stylesheet
 subdenom
 subdenoms
+subdetail
 submessage
 submessages
 submsg
@@ -585,6 +595,7 @@ tryopen
 txes
 txpool
 typecheck
+typemap
 typenum
 typesparams
 uatom
@@ -642,6 +653,7 @@ vuex
 wasi
 wasmd
 wasmkeeper
+wasmparser
 wasmtypes
 wasmvm
 wasmvmstatic

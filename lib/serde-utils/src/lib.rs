@@ -284,3 +284,40 @@ pub mod u256_from_dec_str {
         })
     }
 }
+
+pub mod bitvec_string {
+    use bitvec::vec::BitVec;
+    use serde::de::{self, Deserialize};
+
+    pub fn serialize<S>(data: &BitVec<u8>, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let output = data
+            .iter()
+            .by_refs()
+            // REVIEW: Is string literal or char more efficient?
+            .map(|bit| if *bit { '1' } else { '0' })
+            .collect::<String>();
+
+        serializer.serialize_str(&output)
+    }
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<BitVec<u8>, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        <&str>::deserialize(deserializer).and_then(|s| {
+            s.chars()
+                .map(|c| match c {
+                    '0' => Ok(false),
+                    '1' => Ok(true),
+                    _ => Err(de::Error::invalid_value(
+                        de::Unexpected::Char(c),
+                        &"string containing only 1s and 0s",
+                    )),
+                })
+                .collect::<Result<BitVec<u8>, _>>()
+        })
+    }
+}

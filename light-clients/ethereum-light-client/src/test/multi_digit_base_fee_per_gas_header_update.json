@@ -167,8 +167,8 @@
   "account_update": {
     "proofs": [
       {
-        "address": "/JemGX3JC+9rvv1nJ0Ltdel2hVM=",
-        "storage_hash": "sVDx386AljTv4r30+InZaR8z6RgpBHUxUlP5rQHBdk0=",
+        "key": "/JemGX3JC+9rvv1nJ0Ltdel2hVM=",
+        "value": "sVDx386AljTv4r30+InZaR8z6RgpBHUxUlP5rQHBdk0=",
         "proof": [
           "+QHxoBreFSsqued5ASaTS09X83kkJnMYbvzgtgQ/iw7frB0coCfM5+xb0NZMPExDo0rIoOvfYQRMHI6bN2WATvmMErYGgKCeS8vhKjwzLTYmAoWGiirpOUWqBZ2ItN39w9qJ+ea9MKC+IFVHQldisLa8gKZgtaLyI81eyBL38gVdyjFCSWHaa6BtDZp1CqF+2Aemv7RenypTwUsnwdS2GvoaMU34eR/mF6DhgSj4+42g5FYtv4IU4bPGwidTje1D/Pt9+c9eyErVjaDSKOJmr36fW9AGhjYO2TZmMTIsB6d6V98KdbCnOSYNsaBl9dspv9QkpwtOfYrpDTiiIW+j87QBNAatv84gDVjzb6APyoKNL+oBqphZed0jJv8iSRB6Za5d9eAFo4znusqRs6CshNPZtMx+BqugAph+CyPzlu4yW8hvboxHOcEMXdKViqC+1XlpN1D3i6XZOEIWOXpdpPhy9iIWAeiYGeD9O51Kn6BbRy9Vd9S1DSwZJPGIjhpgyISmXw8huQt7qMmIQMYZUaA7HAsA0Zmmw8eK4aZuwRyXS6lmynpA6G2sMcGET85Nf6AhPr5zwoKUWY1jF0hvPN7NVAlUJTHPffu6MMwXEN2iX6DfMZ5DlK/RTJrwZBvGdIVBX9AT8iFYSXV6IqRCXRWlaoA=",
           "+FGAgICgUSMY1WemMt7mNLp6JTCg4BLmcCWV6qtZyyk470/+l6mAoAKZfaV0sEI5eaptUeTkhzwyAymbX1eOMnNyMZo3BRmHgICAgICAgICAgIA=",

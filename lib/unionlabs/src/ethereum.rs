@@ -1,4 +1,5 @@
 use core::fmt::Display;
+use std::{fmt::Debug, str::FromStr};
 
 use generic_array::GenericArray;
 use hex_literal::hex;
@@ -7,9 +8,11 @@ use ssz::{Decode, Encode};
 use ssz_types::{BitList, FixedVector, VariableList};
 use tree_hash::TreeHash;
 use typenum::U;
+use uint::FromDecStrErr;
 
 use crate::{
     bls::{BlsPublicKey, BlsSignature},
+    errors::{ExpectedLength, InvalidLength},
     ethereum::beacon::BeaconBlock,
     ethereum_consts_traits::{
         BYTES_PER_LOGS_BLOOM, DEPOSIT_CONTRACT_TREE_DEPTH, MAX_ATTESTATIONS,
@@ -19,6 +22,7 @@ use crate::{
         SYNC_COMMITTEE_SIZE,
     },
     ibc::lightclients::ethereum::beacon_block_header::BeaconBlockHeader,
+    Proto,
 };
 
 pub mod beacon;
@@ -33,7 +37,7 @@ macro_rules! hex_string_array_wrapper {
         )+
     ) => {
         $(
-            #[derive(Clone, PartialEq, Eq, Default, Encode, Decode, Serialize, Deserialize)]
+            #[derive(Clone, PartialEq, Eq, Encode, Decode, Serialize, Deserialize)]
             #[ssz(struct_behaviour = "transparent")]
             pub struct $Struct(#[serde(with = "::serde_utils::hex_string")] pub [u8; $N]);
 
@@ -45,6 +49,12 @@ macro_rules! hex_string_array_wrapper {
                 }
             }
 
+            impl Default for $Struct {
+                fn default() -> Self {
+                    Self([0_u8; $N])
+                }
+            }
+
             impl TryFrom<Vec<u8>> for $Struct {
                 type Error = crate::errors::InvalidLength;
 
@@ -53,7 +63,7 @@ macro_rules! hex_string_array_wrapper {
                         .try_into()
                         .map(Self)
                         .map_err(|invalid| crate::errors::InvalidLength {
-                            expected: $N,
+                            expected: crate::errors::ExpectedLength::Exact($N),
                             found: invalid.len(),
                         })
                 }
@@ -67,7 +77,7 @@ macro_rules! hex_string_array_wrapper {
                         .try_into()
                         .map(Self)
                         .map_err(|_| crate::errors::InvalidLength {
-                            expected: $N,
+                            expected: crate::errors::ExpectedLength::Exact($N),
                             found: value.len(),
                         })
                 }
@@ -136,6 +146,12 @@ macro_rules! hex_string_array_wrapper {
                 }
             }
 
+            impl AsRef<[u8]> for $Struct {
+                fn as_ref(&self) -> &[u8] {
+                    &self.0
+                }
+            }
+
             #[cfg(feature = "ethabi")]
             impl TryFrom<ethers_core::types::Bytes> for $Struct {
                 type Error = <Self as TryFrom<Vec<u8>>>::Error;
@@ -166,6 +182,7 @@ hex_string_array_wrapper! {
     // TODO: These aren't used for only ethereum, they should be moved out of this module
     pub struct Address(pub [u8; 20]);
     pub struct H256(pub [u8; 32]);
+    pub struct H512(pub [u8; 64]);
 }
 
 #[rustfmt::skip]
@@ -366,3 +383,88 @@ impl From<primitive_types::H160> for Address {
 //     pub current_sync_committee: SyncCommittee<SYNC_COMMITTEE_SIZE>,
 //     pub current_sync_committee_branch: [H256; CURRENT_SYNC_COMMITTEE_DEPTH],
 // }
+
+// [`primitive_types::U256`] can't roundtrip through string conversion since it parses from hex but displays as decimal.
+#[derive(
+    Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Encode, Decode,
+)]
+#[ssz(struct_behaviour = "transparent")]
+#[repr(transparent)]
+pub struct U256(#[serde(with = "::serde_utils::u256_from_dec_str")] pub primitive_types::U256);
+
+impl Debug for U256 {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("U256({self})"))
+    }
+}
+
+impl Proto for U256 {
+    type Proto = Vec<u8>;
+}
+
+impl TryFrom<Vec<u8>> for U256 {
+    type Error = InvalidLength;
+
+    fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
+        if value.len() > 32 {
+            Err(InvalidLength {
+                expected: ExpectedLength::LessThan(32),
+                found: value.len(),
+            })
+        } else {
+            // NOTE: This can panic if len > 32, hence the check above
+            Ok(Self(primitive_types::U256::from_little_endian(&value)))
+        }
+    }
+}
+
+impl From<U256> for Vec<u8> {
+    fn from(value: U256) -> Self {
+        let mut slice = [0_u8; 32];
+        value.0.to_little_endian(&mut slice);
+        slice.into()
+    }
+}
+
+impl TreeHash for U256 {
+    fn tree_hash_type() -> tree_hash::TreeHashType {
+        primitive_types::U256::tree_hash_type()
+    }
+
+    fn tree_hash_packed_encoding(&self) -> tree_hash::PackedEncoding {
+        self.0.tree_hash_packed_encoding()
+    }
+
+    fn tree_hash_packing_factor() -> usize {
+        primitive_types::U256::tree_hash_packing_factor()
+    }
+
+    fn tree_hash_root(&self) -> tree_hash::Hash256 {
+        self.0.tree_hash_root()
+    }
+}
+
+impl FromStr for U256 {
+    type Err = FromDecStrErr;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        primitive_types::U256::from_dec_str(s).map(Self)
+    }
+}
+
+impl Display for U256 {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("{}", self.0))
+    }
+}
+
+#[test]
+fn u256_roundtrip() {
+    use crate::test_utils::{
+        assert_json_roundtrip, assert_proto_roundtrip, assert_string_roundtrip,
+    };
+
+    assert_json_roundtrip(&U256::from_str("123456").unwrap());
+    assert_proto_roundtrip(&U256::from_str("123456").unwrap());
+    assert_string_roundtrip(&U256::from_str("123456").unwrap());
+}

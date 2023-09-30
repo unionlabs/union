@@ -13,7 +13,7 @@ use unionlabs::{
 };
 
 use crate::{
-    errors::{Error, InternalServerError},
+    errors::{Error, InternalServerError, NotFoundError},
     types::{BeaconHeaderData, LightClientUpdatesResponse, Spec},
 };
 
@@ -130,6 +130,7 @@ impl<C: ChainSpec> BeaconApiClient<C> {
 
                 Ok(serde_json::from_slice(&bytes).map_err(Error::Json)?)
             }
+            StatusCode::NOT_FOUND => Err(Error::NotFound(res.json::<NotFoundError>().await?)),
             StatusCode::INTERNAL_SERVER_ERROR => {
                 Err(Error::Internal(res.json::<InternalServerError>().await?))
             }

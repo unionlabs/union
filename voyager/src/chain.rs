@@ -1,52 +1,33 @@
 use std::{
     fmt::{Debug, Display},
-    num::NonZeroU64,
     str::FromStr,
 };
 
-use futures::{Future, Stream};
-use serde::Serialize;
+use chain_utils::{evm::Evm, union::Union, Chain};
+use futures::Future;
+use serde::{Deserialize, Serialize};
 use unionlabs::{
     ethereum_consts_traits::{Mainnet, Minimal},
-    ibc::{
-        core::{
-            channel::{
-                msg_channel_open_ack::MsgChannelOpenAck,
-                msg_channel_open_confirm::MsgChannelOpenConfirm,
-                msg_channel_open_init::MsgChannelOpenInit, msg_channel_open_try::MsgChannelOpenTry,
-                msg_recv_packet::MsgRecvPacket, packet::Packet,
-            },
-            client::height::{Height, HeightFromStrError},
-            connection::{
-                msg_connection_open_ack::MsgConnectionOpenAck,
-                msg_connection_open_confirm::MsgConnectionOpenConfirm,
-                msg_connection_open_init::MsgConnectionOpenInit,
-                msg_connection_open_try::MsgConnectionOpenTry,
-            },
-        },
-        google::protobuf::any::Any,
-        lightclients::{cometbls, ethereum, wasm},
-    },
+    ibc::core::client::height::{HeightFromStrError, IsHeight},
+    id, traits,
 };
 
 use crate::{
-    chain::{
-        cosmos::{Ethereum, Union},
-        events::{
-            ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit, ChannelOpenTry, ConnectionOpenAck,
-            ConnectionOpenConfirm, ConnectionOpenInit, ConnectionOpenTry, UpdateClient,
-        },
-        evm::{Cometbls, Evm},
-        proof::{IbcStateRead, StateProof},
-    },
+    chain::proof::{IbcStateRead, IbcStateReadPaths, StateProof},
     config::{ChainConfig, EvmChainConfig},
+    msg::{
+        aggregate::LightClientSpecificAggregate,
+        data::LightClientSpecificData,
+        fetch::{FetchUpdateHeaders, LightClientSpecificFetch},
+        msg::Msg,
+        DoAggregate, RelayerMsg,
+    },
 };
 
-pub mod cosmos;
 pub mod evm;
+pub mod union;
 
 pub mod dumper;
-pub mod events;
 pub mod proof;
 
 pub enum AnyChain {
@@ -58,99 +39,118 @@ pub enum AnyChain {
 impl AnyChain {
     pub async fn try_from_config(config: ChainConfig) -> Self {
         match config {
-            ChainConfig::Evm(EvmChainConfig::Mainnet(evm)) => {
-                Self::EvmMainnet(Evm::<Mainnet>::new(evm).await)
-            }
-            ChainConfig::Evm(EvmChainConfig::Minimal(evm)) => {
-                Self::EvmMinimal(Evm::<Minimal>::new(evm).await)
-            }
-            ChainConfig::Union(union) => Self::Union(Union::new(union).await),
+            ChainConfig::Evm(EvmChainConfig::Mainnet(evm)) => Self::EvmMainnet(
+                Evm::<Mainnet>::new(chain_utils::evm::Config {
+                    ibc_handler_address: evm.ibc_handler_address,
+                    signer: evm.signer,
+                    eth_rpc_api: evm.eth_rpc_api,
+                    eth_beacon_rpc_api: evm.eth_beacon_rpc_api,
+                    hasura_config: evm.hasura_config,
+                })
+                .await,
+            ),
+            ChainConfig::Evm(EvmChainConfig::Minimal(evm)) => Self::EvmMinimal(
+                Evm::<Minimal>::new(chain_utils::evm::Config {
+                    ibc_handler_address: evm.ibc_handler_address,
+                    signer: evm.signer,
+                    eth_rpc_api: evm.eth_rpc_api,
+                    eth_beacon_rpc_api: evm.eth_beacon_rpc_api,
+                    hasura_config: evm.hasura_config,
+                })
+                .await,
+            ),
+            ChainConfig::Union(union) => Self::Union(
+                Union::new(chain_utils::union::Config {
+                    signer: union.signer,
+                    ws_url: union.ws_url,
+                    prover_endpoint: union.prover_endpoint,
+                    dump_path: union.dump_path,
+                    grpc_url: union.grpc_url,
+                })
+                .await,
+            ),
         }
     }
-}
-
-pub enum AnyLightClient {
-    UnionEthereumMainnet(Ethereum<Mainnet>),
-    UnionEthereumMinimal(Ethereum<Minimal>),
-    EvmCometblsMainnet(Cometbls<Mainnet>),
-    EvmCometblsMinimal(Cometbls<Minimal>),
 }
 
 /// The IBC interface on a [`Chain`] that knows how to connect to a counterparty.
 pub trait LightClient: Send + Sync + Sized {
     /// The chain that this light client is on.
-    type HostChain: Chain;
+    type HostChain: Chain + IbcStateReadPaths<<Self::Counterparty as LightClient>::HostChain>;
+    type Counterparty: LightClient<Counterparty = Self>;
 
-    /// The chain that this light client is tracking.
-    type CounterpartyChain: Chain;
+    type ClientId: traits::Id
+        + TryFrom<<Self::HostChain as Chain>::ClientId>
+        + Into<<Self::HostChain as Chain>::ClientId>;
+    type ClientType: id::IdType
+        + TryFrom<<Self::HostChain as Chain>::ClientType>
+        + Into<<Self::HostChain as Chain>::ClientType>;
 
     /// The config required to construct this light client.
-    type Config;
+    type Config: Debug + Clone + PartialEq + Serialize + for<'de> Deserialize<'de>;
+
+    type Data: Debug
+        + Clone
+        + PartialEq
+        + Serialize
+        + for<'de> Deserialize<'de>
+        + Into<LightClientSpecificData<Self>>;
+    type Fetch: Debug
+        + Clone
+        + PartialEq
+        + Serialize
+        + for<'de> Deserialize<'de>
+        + Into<LightClientSpecificFetch<Self>>;
+    type Aggregate: Debug
+        + Clone
+        + PartialEq
+        + Serialize
+        + for<'de> Deserialize<'de>
+        + Into<LightClientSpecificAggregate<Self>>
+        + DoAggregate<Self>;
+
+    fn msg(&self, msg: Msg<Self>) -> impl Future + '_;
 
     /// Get the underlying [`Self::HostChain`] that this client is on.
     fn chain(&self) -> &Self::HostChain;
 
-    fn update_client(
-        &self,
-        client_id: String,
-        header: HeaderOf<Self::CounterpartyChain>,
-    ) -> impl Future<Output = (Height, UpdateClient)> + '_;
+    fn from_chain(chain: Self::HostChain) -> Self;
 
     // TODO: Use state_proof instead
     fn query_client_state(
         &self,
-        client_id: String,
-    ) -> impl Future<Output = ClientStateOf<Self::CounterpartyChain>> + '_;
+        // TODO: Make this Into<_>
+        client_id: <Self::HostChain as Chain>::ClientId,
+        height: HeightOf<Self::HostChain>,
+    ) -> impl Future<Output = ClientStateOf<<Self::Counterparty as LightClient>::HostChain>> + '_;
 
-    fn process_height_for_counterparty(&self, height: Height) -> impl Future<Output = Height> + '_;
+    fn do_fetch(&self, msg: Self::Fetch) -> impl Future<Output = Vec<RelayerMsg>> + '_;
+
+    // Should (eventually) resolve to UpdateClientData
+    fn generate_counterparty_updates(
+        &self,
+        update_info: FetchUpdateHeaders<Self>,
+    ) -> Vec<RelayerMsg>;
 }
 
 pub type ClientStateOf<C> = <C as Chain>::SelfClientState;
 pub type ConsensusStateOf<C> = <C as Chain>::SelfConsensusState;
 pub type HeaderOf<C> = <C as Chain>::Header;
+pub type HeightOf<C> = <C as Chain>::Height;
+pub type ChainOf<L> = <L as LightClient>::HostChain;
 
-/// Represents a block chain. One [`Chain`] may have many related [`LightClient`]s for connecting to
-/// various other [`Chain`]s, all sharing a common config.
-pub trait Chain {
-    type SelfClientState: ClientState + Debug + Serialize;
-    type SelfConsensusState: Debug + Serialize;
-    type Header;
-
-    fn chain_id(&self) -> impl Future<Output = String> + '_;
-
-    fn query_latest_height(&self) -> impl Future<Output = Height> + '_;
-
-    fn wait_for_block_at_timestamp(&self, timestamp: NonZeroU64) -> impl Future<Output = ()> + '_;
-
-    /// The client state on this chain at the current height.
-    fn self_client_state(&self, height: Height)
-        -> impl Future<Output = Self::SelfClientState> + '_;
-
-    /// The latest consensus state for the this chain.
-    fn self_consensus_state(
-        &self,
-        height: Height,
-    ) -> impl Future<Output = Self::SelfConsensusState> + '_;
-
-    fn packet_stream(&self)
-        -> impl Future<Output = impl Stream<Item = (Height, Packet)> + '_> + '_;
-}
-
-pub trait CreateClient<L: LightClient>: Chain {
-    fn create_client(
-        &self,
-        config: L::Config,
-        counterparty_chain: L::CounterpartyChain,
-    ) -> impl Future<Output = (String, L)> + '_;
-}
-
-#[derive(Debug, Clone)]
-pub enum QueryHeight {
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(
+    try_from = "&str",
+    into = "String",
+    bound(serialize = "", deserialize = "")
+)]
+pub enum QueryHeight<H: IsHeight> {
     Latest,
-    Specific(Height),
+    Specific(H),
 }
 
-impl Display for QueryHeight {
+impl<H: IsHeight> Display for QueryHeight<H> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             QueryHeight::Latest => f.write_str("latest"),
@@ -159,131 +159,107 @@ impl Display for QueryHeight {
     }
 }
 
-impl FromStr for QueryHeight {
-    type Err = String;
+impl<H: IsHeight> From<QueryHeight<H>> for String {
+    fn from(val: QueryHeight<H>) -> Self {
+        val.to_string()
+    }
+}
+
+impl<H: IsHeight> FromStr for QueryHeight<H> {
+    type Err = HeightFromStrError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "latest" => Ok(Self::Latest),
-            _ => s
-                .parse()
-                .map_err(|x: HeightFromStrError| x.to_string())
-                .map(Self::Specific),
+            _ => s.parse().map(Self::Specific),
         }
     }
 }
 
-pub trait Connect<L>: LightClient
-where
-    L: LightClient,
-{
-    // CONNECTION HANDSHAKE
+impl<H: IsHeight> TryFrom<&'_ str> for QueryHeight<H> {
+    type Error = HeightFromStrError;
 
-    fn connection_open_init(
-        &self,
-        _: MsgConnectionOpenInit,
-    ) -> impl Future<Output = (Height, ConnectionOpenInit)> + '_;
-
-    fn connection_open_try(
-        &self,
-        _: MsgConnectionOpenTry<ClientStateOf<L::CounterpartyChain>>,
-    ) -> impl Future<Output = (Height, ConnectionOpenTry)> + '_;
-
-    fn connection_open_ack(
-        &self,
-        _: MsgConnectionOpenAck<ClientStateOf<L::CounterpartyChain>>,
-    ) -> impl Future<Output = (Height, ConnectionOpenAck)> + '_;
-
-    fn connection_open_confirm(
-        &self,
-        _: MsgConnectionOpenConfirm,
-    ) -> impl Future<Output = (Height, ConnectionOpenConfirm)> + '_;
-
-    // CHANNEL HANDSHAKE
-
-    fn channel_open_init(
-        &self,
-        msg: MsgChannelOpenInit,
-    ) -> impl Future<Output = (Height, ChannelOpenInit)> + '_;
-
-    fn channel_open_try(
-        &self,
-        msg: MsgChannelOpenTry,
-    ) -> impl Future<Output = (Height, ChannelOpenTry)> + '_;
-
-    fn channel_open_ack(
-        &self,
-        msg: MsgChannelOpenAck,
-    ) -> impl Future<Output = (Height, ChannelOpenAck)> + '_;
-
-    fn channel_open_confirm(
-        &self,
-        msg: MsgChannelOpenConfirm,
-    ) -> impl Future<Output = (Height, ChannelOpenConfirm)> + '_;
-
-    // PACKETS
-
-    fn recv_packet(&self, _: MsgRecvPacket) -> impl Future<Output = ()> + Send + '_;
-
-    // OTHER STUFF
-
-    fn update_counterparty_client<'a>(
-        &'a self,
-        counterparty: &'a L,
-        counterparty_client_id: String,
-        update_from: Height,
-        update_to: Height,
-    ) -> impl Future<Output = Height> + 'a;
-}
-
-pub trait ChainConnection<To>: Chain + Sized
-where
-    To: ChainConnection<Self>,
-{
-    type LightClient: LightClient<HostChain = Self, CounterpartyChain = To>
-        + Connect<To::LightClient>;
-
-    fn light_client(&self) -> Self::LightClient;
-}
-
-// some hackery to work around wrapping in wasm::ClientState
-//
-// avert your eyes
-
-pub trait InnerClientState {
-    fn height(&self) -> Option<Height>;
-}
-
-pub trait ClientState {
-    fn height(&self) -> Height;
-}
-
-impl InnerClientState for ethereum::client_state::ClientState {
-    fn height(&self) -> Option<Height> {
-        Some(Height {
-            revision_number: 0,
-            revision_height: self.latest_slot,
-        })
+    fn try_from(value: &'_ str) -> Result<Self, Self::Error> {
+        value.parse()
     }
 }
 
-impl InnerClientState for cometbls::client_state::ClientState {
-    fn height(&self) -> Option<Height> {
-        None
-    }
+macro_rules! try_from_relayer_msg {
+    (
+        #[
+            $Lc:ident($(
+                lc_msg(
+                    msg = $LcMsg:ident($Specific:ident),
+                    ty = $Msg:ident,
+                    variants($( $Var:ident($Ty:ty), )+),
+                ),
+            )+)
+        ]
+    ) => {
+        $(
+            $(
+                impl TryFrom<RelayerMsg> for Identified<$Lc, $Ty> {
+                    type Error = RelayerMsg;
+                    fn try_from(value: RelayerMsg) -> Result<Identified<$Lc, $Ty>, RelayerMsg> {
+                        match value {
+                            RelayerMsg::Lc(AnyLcMsg::$Lc(LcMsg::$LcMsg(Identified {
+                                chain_id,
+                                data:
+                                    $LcMsg::LightClientSpecific($Specific($Msg::$Var(
+                                        data,
+                                    ))),
+                            }))) => Ok(Identified { chain_id, data }),
+                            _ => Err(value),
+                        }
+                    }
+                }
+            )+
+
+            crate::chain::this_is_a_hack_look_away! {
+                $Lc(
+                    lc_msg(
+                        msg = $LcMsg($Specific),
+                        ty = $Msg,
+                        variants($( $Var($Ty), )+),
+                    ),
+                )
+            }
+
+            impl From<<$Lc as LightClient>::$LcMsg> for $Specific<$Lc> {
+                fn from(msg: <$Lc as LightClient>::$LcMsg) -> Self {
+                    Self(msg)
+                }
+            }
+        )+
+    };
 }
 
-impl<Data: InnerClientState> ClientState for wasm::client_state::ClientState<Data> {
-    fn height(&self) -> Height {
-        self.data.height().unwrap_or(self.latest_height)
-    }
+macro_rules! this_is_a_hack_look_away {
+    (
+            $Lc:ident(
+                lc_msg(
+                    msg = Data(LightClientSpecificData),
+                    ty = $Msg:ident,
+                    variants($( $Var:ident($Ty:ty), )+),
+                ),
+            )
+    ) => {
+        $(
+            impl From<Identified<$Lc, $Ty>> for AggregateData {
+                fn from(Identified { chain_id, data }: Identified<$Lc, $Ty>) -> AggregateData {
+                    AggregateData::$Lc(Identified {
+                        chain_id,
+                        data: Data::LightClientSpecific(LightClientSpecificData($Msg::$Var(
+                            data,
+                        ))),
+                    })
+                }
+            }
+        )+
+    };
+
+    ($($_:tt)*) => {};
 }
 
-impl<T> ClientState for Any<T>
-where
-    T: ClientState,
-{
-    fn height(&self) -> Height {
-        self.0.height()
-    }
-}
+pub(crate) use this_is_a_hack_look_away;
+pub(crate) use try_from_relayer_msg;

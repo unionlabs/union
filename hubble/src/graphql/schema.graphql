@@ -960,6 +960,297 @@ enum cursor_ordering {
 }
 
 """
+columns and relationships of "demo.queue"
+"""
+type demo_queue {
+  created_at: timestamptz!
+  id: Int!
+  item(
+    """JSON select path"""
+    path: String
+  ): jsonb!
+  updated_at: timestamptz!
+}
+
+"""
+aggregated selection of "demo.queue"
+"""
+type demo_queue_aggregate {
+  aggregate: demo_queue_aggregate_fields
+  nodes: [demo_queue!]!
+}
+
+"""
+aggregate fields of "demo.queue"
+"""
+type demo_queue_aggregate_fields {
+  avg: demo_queue_avg_fields
+  count(columns: [demo_queue_select_column!], distinct: Boolean): Int!
+  max: demo_queue_max_fields
+  min: demo_queue_min_fields
+  stddev: demo_queue_stddev_fields
+  stddev_pop: demo_queue_stddev_pop_fields
+  stddev_samp: demo_queue_stddev_samp_fields
+  sum: demo_queue_sum_fields
+  var_pop: demo_queue_var_pop_fields
+  var_samp: demo_queue_var_samp_fields
+  variance: demo_queue_variance_fields
+}
+
+"""append existing jsonb value of filtered columns with new jsonb value"""
+input demo_queue_append_input {
+  item: jsonb
+}
+
+"""aggregate avg on columns"""
+type demo_queue_avg_fields {
+  id: Float
+}
+
+"""
+Boolean expression to filter rows from the table "demo.queue". All fields are combined with a logical 'AND'.
+"""
+input demo_queue_bool_exp {
+  _and: [demo_queue_bool_exp!]
+  _not: demo_queue_bool_exp
+  _or: [demo_queue_bool_exp!]
+  created_at: timestamptz_comparison_exp
+  id: Int_comparison_exp
+  item: jsonb_comparison_exp
+  updated_at: timestamptz_comparison_exp
+}
+
+"""
+unique or primary key constraints on table "demo.queue"
+"""
+enum demo_queue_constraint {
+  """
+  unique or primary key constraint on columns "id"
+  """
+  queue_pkey
+}
+
+"""
+delete the field or element with specified path (for JSON arrays, negative integers count from the end)
+"""
+input demo_queue_delete_at_path_input {
+  item: [String!]
+}
+
+"""
+delete the array element with specified index (negative integers count from the end). throws an error if top level container is not an array
+"""
+input demo_queue_delete_elem_input {
+  item: Int
+}
+
+"""
+delete key/value pair or string element. key/value pairs are matched based on their key value
+"""
+input demo_queue_delete_key_input {
+  item: String
+}
+
+"""
+input type for incrementing numeric columns in table "demo.queue"
+"""
+input demo_queue_inc_input {
+  id: Int
+}
+
+"""
+input type for inserting data into table "demo.queue"
+"""
+input demo_queue_insert_input {
+  created_at: timestamptz
+  id: Int
+  item: jsonb
+  updated_at: timestamptz
+}
+
+"""aggregate max on columns"""
+type demo_queue_max_fields {
+  created_at: timestamptz
+  id: Int
+  updated_at: timestamptz
+}
+
+"""aggregate min on columns"""
+type demo_queue_min_fields {
+  created_at: timestamptz
+  id: Int
+  updated_at: timestamptz
+}
+
+"""
+response of any mutation on the table "demo.queue"
+"""
+type demo_queue_mutation_response {
+  """number of rows affected by the mutation"""
+  affected_rows: Int!
+
+  """data from the rows affected by the mutation"""
+  returning: [demo_queue!]!
+}
+
+"""
+on_conflict condition type for table "demo.queue"
+"""
+input demo_queue_on_conflict {
+  constraint: demo_queue_constraint!
+  update_columns: [demo_queue_update_column!]! = []
+  where: demo_queue_bool_exp
+}
+
+"""Ordering options when selecting data from "demo.queue"."""
+input demo_queue_order_by {
+  created_at: order_by
+  id: order_by
+  item: order_by
+  updated_at: order_by
+}
+
+"""primary key columns input for table: demo.queue"""
+input demo_queue_pk_columns_input {
+  id: Int!
+}
+
+"""prepend existing jsonb value of filtered columns with new jsonb value"""
+input demo_queue_prepend_input {
+  item: jsonb
+}
+
+"""
+select columns of table "demo.queue"
+"""
+enum demo_queue_select_column {
+  """column name"""
+  created_at
+
+  """column name"""
+  id
+
+  """column name"""
+  item
+
+  """column name"""
+  updated_at
+}
+
+"""
+input type for updating data in table "demo.queue"
+"""
+input demo_queue_set_input {
+  created_at: timestamptz
+  id: Int
+  item: jsonb
+  updated_at: timestamptz
+}
+
+"""aggregate stddev on columns"""
+type demo_queue_stddev_fields {
+  id: Float
+}
+
+"""aggregate stddev_pop on columns"""
+type demo_queue_stddev_pop_fields {
+  id: Float
+}
+
+"""aggregate stddev_samp on columns"""
+type demo_queue_stddev_samp_fields {
+  id: Float
+}
+
+"""
+Streaming cursor of the table "demo_queue"
+"""
+input demo_queue_stream_cursor_input {
+  """Stream column input with initial value"""
+  initial_value: demo_queue_stream_cursor_value_input!
+
+  """cursor ordering"""
+  ordering: cursor_ordering
+}
+
+"""Initial value of the column from where the streaming should start"""
+input demo_queue_stream_cursor_value_input {
+  created_at: timestamptz
+  id: Int
+  item: jsonb
+  updated_at: timestamptz
+}
+
+"""aggregate sum on columns"""
+type demo_queue_sum_fields {
+  id: Int
+}
+
+"""
+update columns of table "demo.queue"
+"""
+enum demo_queue_update_column {
+  """column name"""
+  created_at
+
+  """column name"""
+  id
+
+  """column name"""
+  item
+
+  """column name"""
+  updated_at
+}
+
+input demo_queue_updates {
+  """append existing jsonb value of filtered columns with new jsonb value"""
+  _append: demo_queue_append_input
+
+  """
+  delete the field or element with specified path (for JSON arrays, negative integers count from the end)
+  """
+  _delete_at_path: demo_queue_delete_at_path_input
+
+  """
+  delete the array element with specified index (negative integers count from the end). throws an error if top level container is not an array
+  """
+  _delete_elem: demo_queue_delete_elem_input
+
+  """
+  delete key/value pair or string element. key/value pairs are matched based on their key value
+  """
+  _delete_key: demo_queue_delete_key_input
+
+  """increments the numeric columns with given value of the filtered values"""
+  _inc: demo_queue_inc_input
+
+  """prepend existing jsonb value of filtered columns with new jsonb value"""
+  _prepend: demo_queue_prepend_input
+
+  """sets the columns of the filtered rows to the given values"""
+  _set: demo_queue_set_input
+
+  """filter the rows which have to be updated"""
+  where: demo_queue_bool_exp!
+}
+
+"""aggregate var_pop on columns"""
+type demo_queue_var_pop_fields {
+  id: Float
+}
+
+"""aggregate var_samp on columns"""
+type demo_queue_var_samp_fields {
+  id: Float
+}
+
+"""aggregate variance on columns"""
+type demo_queue_variance_fields {
+  id: Float
+}
+
+"""
 columns and relationships of "demo.txes"
 """
 type demo_txes {
@@ -1763,6 +2054,19 @@ type mutation_root {
   delete_chains_by_pk(chain_id: String!, id: Int!): chains
 
   """
+  delete data from the table: "demo.queue"
+  """
+  delete_demo_queue(
+    """filter the rows which have to be deleted"""
+    where: demo_queue_bool_exp!
+  ): demo_queue_mutation_response
+
+  """
+  delete single row from the table: "demo.queue"
+  """
+  delete_demo_queue_by_pk(id: Int!): demo_queue
+
+  """
   delete data from the table: "demo.txes"
   """
   delete_demo_txes(
@@ -1831,6 +2135,28 @@ type mutation_root {
     """upsert condition"""
     on_conflict: chains_on_conflict
   ): chains
+
+  """
+  insert data into the table: "demo.queue"
+  """
+  insert_demo_queue(
+    """the rows to be inserted"""
+    objects: [demo_queue_insert_input!]!
+
+    """upsert condition"""
+    on_conflict: demo_queue_on_conflict
+  ): demo_queue_mutation_response
+
+  """
+  insert a single row into the table: "demo.queue"
+  """
+  insert_demo_queue_one(
+    """the row to be inserted"""
+    object: demo_queue_insert_input!
+
+    """upsert condition"""
+    on_conflict: demo_queue_on_conflict
+  ): demo_queue
 
   """
   insert data into the table: "demo.txes"
@@ -1985,6 +2311,82 @@ type mutation_root {
     """updates to execute, in order"""
     updates: [chains_updates!]!
   ): [chains_mutation_response]
+
+  """
+  update data of the table: "demo.queue"
+  """
+  update_demo_queue(
+    """append existing jsonb value of filtered columns with new jsonb value"""
+    _append: demo_queue_append_input
+
+    """
+    delete the field or element with specified path (for JSON arrays, negative integers count from the end)
+    """
+    _delete_at_path: demo_queue_delete_at_path_input
+
+    """
+    delete the array element with specified index (negative integers count from the end). throws an error if top level container is not an array
+    """
+    _delete_elem: demo_queue_delete_elem_input
+
+    """
+    delete key/value pair or string element. key/value pairs are matched based on their key value
+    """
+    _delete_key: demo_queue_delete_key_input
+
+    """increments the numeric columns with given value of the filtered values"""
+    _inc: demo_queue_inc_input
+
+    """prepend existing jsonb value of filtered columns with new jsonb value"""
+    _prepend: demo_queue_prepend_input
+
+    """sets the columns of the filtered rows to the given values"""
+    _set: demo_queue_set_input
+
+    """filter the rows which have to be updated"""
+    where: demo_queue_bool_exp!
+  ): demo_queue_mutation_response
+
+  """
+  update single row of the table: "demo.queue"
+  """
+  update_demo_queue_by_pk(
+    """append existing jsonb value of filtered columns with new jsonb value"""
+    _append: demo_queue_append_input
+
+    """
+    delete the field or element with specified path (for JSON arrays, negative integers count from the end)
+    """
+    _delete_at_path: demo_queue_delete_at_path_input
+
+    """
+    delete the array element with specified index (negative integers count from the end). throws an error if top level container is not an array
+    """
+    _delete_elem: demo_queue_delete_elem_input
+
+    """
+    delete key/value pair or string element. key/value pairs are matched based on their key value
+    """
+    _delete_key: demo_queue_delete_key_input
+
+    """increments the numeric columns with given value of the filtered values"""
+    _inc: demo_queue_inc_input
+
+    """prepend existing jsonb value of filtered columns with new jsonb value"""
+    _prepend: demo_queue_prepend_input
+
+    """sets the columns of the filtered rows to the given values"""
+    _set: demo_queue_set_input
+    pk_columns: demo_queue_pk_columns_input!
+  ): demo_queue
+
+  """
+  update multiples rows of table: "demo.queue"
+  """
+  update_demo_queue_many(
+    """updates to execute, in order"""
+    updates: [demo_queue_updates!]!
+  ): [demo_queue_mutation_response]
 
   """
   update data of the table: "demo.txes"
@@ -2244,6 +2646,49 @@ type query_root {
   chains_by_pk(chain_id: String!, id: Int!): chains
 
   """
+  fetch data from the table: "demo.queue"
+  """
+  demo_queue(
+    """distinct select on columns"""
+    distinct_on: [demo_queue_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [demo_queue_order_by!]
+
+    """filter the rows returned"""
+    where: demo_queue_bool_exp
+  ): [demo_queue!]!
+
+  """
+  fetch aggregated fields from the table: "demo.queue"
+  """
+  demo_queue_aggregate(
+    """distinct select on columns"""
+    distinct_on: [demo_queue_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [demo_queue_order_by!]
+
+    """filter the rows returned"""
+    where: demo_queue_bool_exp
+  ): demo_queue_aggregate!
+
+  """fetch data from the table: "demo.queue" using primary key columns"""
+  demo_queue_by_pk(id: Int!): demo_queue
+
+  """
   fetch data from the table: "demo.txes"
   """
   demo_txes(
@@ -2436,6 +2881,63 @@ type subscription_root {
     """filter the rows returned"""
     where: chains_bool_exp
   ): [chains!]!
+
+  """
+  fetch data from the table: "demo.queue"
+  """
+  demo_queue(
+    """distinct select on columns"""
+    distinct_on: [demo_queue_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [demo_queue_order_by!]
+
+    """filter the rows returned"""
+    where: demo_queue_bool_exp
+  ): [demo_queue!]!
+
+  """
+  fetch aggregated fields from the table: "demo.queue"
+  """
+  demo_queue_aggregate(
+    """distinct select on columns"""
+    distinct_on: [demo_queue_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [demo_queue_order_by!]
+
+    """filter the rows returned"""
+    where: demo_queue_bool_exp
+  ): demo_queue_aggregate!
+
+  """fetch data from the table: "demo.queue" using primary key columns"""
+  demo_queue_by_pk(id: Int!): demo_queue
+
+  """
+  fetch data from the table in a streaming manner: "demo.queue"
+  """
+  demo_queue_stream(
+    """maximum number of rows returned in a single batch"""
+    batch_size: Int!
+
+    """cursor to stream the results returned by the query"""
+    cursor: [demo_queue_stream_cursor_input]!
+
+    """filter the rows returned"""
+    where: demo_queue_bool_exp
+  ): [demo_queue!]!
 
   """
   fetch data from the table: "demo.txes"

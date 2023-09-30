@@ -1,4 +1,3 @@
-use primitive_types::U256;
 use serde::{Deserialize, Serialize};
 use ssz::{Decode, Encode};
 use ssz_types::{FixedVector, VariableList};
@@ -9,7 +8,7 @@ use crate::{
     bls::{BlsPublicKey, BlsSignature},
     ethereum::{
         Address, Attestation, AttesterSlashing, Deposit, Eth1Data, ProposerSlashing,
-        SignedVoluntaryExit, Version, H256,
+        SignedVoluntaryExit, Version, H256, U256,
     },
     ethereum_consts_traits::{
         consts::{floorlog2, CURRENT_SYNC_COMMITTEE_INDEX, FINALIZED_ROOT_INDEX},
@@ -153,7 +152,6 @@ pub struct ExecutionPayload<
     pub gas_used: u64,
     pub timestamp: u64,
     pub extra_data: VariableList<u8, C::MAX_EXTRA_DATA_BYTES>,
-    #[serde(with = "::serde_utils::u256_from_dec_str")]
     pub base_fee_per_gas: U256,
     /// Extra payload fields
     /// Hash of execution block
@@ -245,6 +243,8 @@ pub struct GenesisData {
 
 #[cfg(test)]
 mod tests {
+    use std::str::FromStr;
+
     use super::*;
     use crate::{
         ethereum_consts_traits::Minimal,
@@ -342,13 +342,14 @@ mod tests {
 
         assert_proto_roundtrip(&finality_update.attested_header);
 
-        dbg!(U256::from_dec_str("77").unwrap());
+        dbg!(U256::from_str("77").unwrap());
 
         assert_eq!(
             finality_update
                 .finalized_header
                 .execution
                 .base_fee_per_gas
+                .0
                 .as_u128(),
             77
         );

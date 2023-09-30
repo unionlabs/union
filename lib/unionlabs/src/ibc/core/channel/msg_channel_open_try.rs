@@ -10,6 +10,7 @@ pub struct MsgChannelOpenTry {
     pub port_id: String,
     pub channel: Channel,
     pub counterparty_version: String,
+    #[serde(with = "::serde_utils::hex_string")]
     pub proof_init: Vec<u8>,
     pub proof_height: Height,
 }

@@ -8,11 +8,30 @@ use crate::{
     TypeUrl,
 };
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, Encode, Decode, TreeHash)]
+#[derive(Clone, PartialEq, Deserialize, Serialize, Encode, Decode, TreeHash)]
 pub struct SyncAggregate<C: SYNC_COMMITTEE_SIZE> {
+    // TODO: Change debug print for this type in ssz_types
     pub sync_committee_bits: BitVector<C::SYNC_COMMITTEE_SIZE>,
     pub sync_committee_signature: BlsSignature,
 }
+
+impl<C: SYNC_COMMITTEE_SIZE + std::fmt::Debug> std::fmt::Debug for SyncAggregate<C> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("SyncAggregate")
+            .field(
+                "sync_committee_bits",
+                &self
+                    .sync_committee_bits
+                    .iter()
+                    .map(|b| if b { '1' } else { '0' })
+                    .collect::<String>(),
+            )
+            .field("sync_committee_signature", &self.sync_committee_signature)
+            .finish()
+    }
+}
+
+impl<C: SYNC_COMMITTEE_SIZE> SyncAggregate<C> {}
 
 impl<C: SYNC_COMMITTEE_SIZE> From<SyncAggregate<C>>
     for protos::union::ibc::lightclients::ethereum::v1::SyncAggregate

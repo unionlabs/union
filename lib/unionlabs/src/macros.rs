@@ -4,12 +4,18 @@ macro_rules! wrapper_enum {
         // NOTE: Currently there are no ethabi generated enums; use this if/when there are any.
         // $(#[ethabi($EthAbi:ty)])?
         pub enum $Enum:ident {
-            $($Variant:ident = $discriminant:literal,)+
+            $(
+                $(#[doc = $doc:literal])*
+                $Variant:ident = $discriminant:literal,
+            )+
         }
     ) => {
         #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, serde::Serialize, serde::Deserialize)]
         pub enum $Enum {
-            $($Variant = $discriminant),+
+            $(
+                $(#[doc = $doc])*
+                $Variant = $discriminant,
+            )+
         }
 
         mod ensure_enum_values_are_same_as_proto {
@@ -152,3 +158,68 @@ pub(crate) use result_try;
 // }
 
 // pub(crate) use result_unwrap;
+
+/// Given an enum bound by one generic parameter, generate [`Debug`], [`PartialEq`], [`Clone`], [`Serialize`], and
+/// [`Deserialize`] implementations without bounding the generic parameter.
+#[macro_export]
+macro_rules! generic_enum {
+    (
+        $(#[doc = $outer_doc:literal])*
+        pub enum $Enum:ident<$generics:ident: $bound:ident> {
+            $(
+                $(#[doc = $doc:literal])*
+                $Variant:ident$((
+                    $(#[$variant_inner_meta:meta])*
+                    $VariantInner:ty
+                ))?,
+            )+
+        }
+    ) => {
+        $(#[doc = $outer_doc])*
+        #[derive(::serde::Serialize, ::serde::Deserialize)]
+        #[serde(bound(serialize = "", deserialize = ""))]
+        #[allow(clippy::type_complexity)]
+        pub enum $Enum<$generics: $bound> {
+            $(
+                $(#[doc = $doc])*
+                $Variant$((
+                    $(#[$variant_inner_meta])*
+                    $VariantInner
+                ))?,
+            )+
+        }
+
+        impl<$generics: $bound> PartialEq for $Enum<$generics> {
+            fn eq(&self, other: &Self) -> bool {
+                match (self, other) {
+                    $(
+                        (Self::$Variant(this), Self::$Variant(other)) => this == other,
+                    )+
+                    _ => false,
+                }
+            }
+        }
+
+        impl<$generics: $bound> ::std::fmt::Debug for $Enum<$generics> {
+            fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+                match self {
+                    $(
+                        Self::$Variant(this) => f.debug_tuple(stringify!($Variant)).field(&this).finish(),
+                    )+
+                }
+            }
+        }
+
+        impl<$generics: $bound> Clone for $Enum<$generics> {
+            fn clone(&self) -> Self {
+                match self {
+                    $(
+                        Self::$Variant(this) => Self::$Variant(this.clone()),
+                    )+
+                }
+            }
+        }
+    };
+}
+
+pub use generic_enum;

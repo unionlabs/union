@@ -1,17 +1,17 @@
 use std::collections::BTreeMap;
 
+use chain_utils::private_key::PrivateKey;
 use clap::{
     builder::{StringValueParser, TypedValueParser},
     Args,
 };
+use ethers::prelude::k256::ecdsa;
+use hubble::hasura::HasuraConfig;
 use serde::{Deserialize, Serialize};
 use tendermint_rpc::WebSocketClientUrl;
-use unionlabs::ethereum::{Address, H256};
+use unionlabs::ethereum::Address;
 
-use crate::{
-    chain::AnyChain,
-    config::private_key::{parse_private_key_arg, PrivateKey},
-};
+use crate::{chain::AnyChain, config::private_key::parse_private_key_arg};
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Config {
@@ -42,34 +42,37 @@ pub enum EvmChainConfig {
     Minimal(EvmChainConfigFields),
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Args)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EvmChainConfigFields {
     // TODO: Move all except for ibc_handler into the client config?
     /// The address of the `CometblsClient` smart contract.
-    #[arg(long)]
     pub cometbls_client_address: Address,
     /// The address of the `IBCHandler` smart contract.
-    #[arg(long)]
     pub ibc_handler_address: Address,
 
     /// The signer that will be used to submit transactions by voyager.
-    #[arg(
-        long,
-        value_parser = StringValueParser::new()
-            .try_map(parse_private_key_arg::<ethers::prelude::k256::ecdsa::SigningKey>)
-    )]
-    pub signer: PrivateKey<ethers::prelude::k256::ecdsa::SigningKey>,
+    pub signer: PrivateKey<ecdsa::SigningKey>,
 
     // TODO(benluelo): Use `Url` or something similar
     /// The RPC endpoint for the execution chain.
-    #[arg(long)]
     pub eth_rpc_api: String,
     /// The RPC endpoint for the beacon chain.
-    #[arg(long)]
     pub eth_beacon_rpc_api: String,
+    // #[arg(long)]
+    // pub wasm_code_id: H256,
+    pub hasura_config: HasuraConfig,
+}
 
-    #[arg(long)]
-    pub wasm_code_id: H256,
+impl From<EvmChainConfigFields> for chain_utils::evm::Config {
+    fn from(value: EvmChainConfigFields) -> Self {
+        Self {
+            ibc_handler_address: value.ibc_handler_address,
+            signer: value.signer,
+            eth_rpc_api: value.eth_rpc_api,
+            eth_beacon_rpc_api: value.eth_beacon_rpc_api,
+            hasura_config: value.hasura_config,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Args)]
@@ -77,13 +80,13 @@ pub struct UnionChainConfig {
     #[arg(
         long,
         value_parser = StringValueParser::new()
-            .try_map(parse_private_key_arg::<ethers::prelude::k256::ecdsa::SigningKey>)
+            .try_map(parse_private_key_arg::<ecdsa::SigningKey>)
     )]
-    pub signer: PrivateKey<ethers::prelude::k256::ecdsa::SigningKey>,
+    pub signer: PrivateKey<ecdsa::SigningKey>,
     #[arg(long)]
     pub ws_url: WebSocketClientUrl,
-    #[arg(long)]
-    pub wasm_code_id: H256,
+    // #[arg(long)]
+    // pub wasm_code_id: H256,
     #[arg(long)]
     pub prover_endpoint: String,
     #[arg(long)]
@@ -92,49 +95,24 @@ pub struct UnionChainConfig {
     pub grpc_url: String,
 }
 
+impl From<UnionChainConfig> for chain_utils::union::Config {
+    fn from(value: UnionChainConfig) -> Self {
+        Self {
+            signer: value.signer,
+            ws_url: value.ws_url,
+            prover_endpoint: value.prover_endpoint,
+            dump_path: value.dump_path,
+            grpc_url: value.grpc_url,
+        }
+    }
+}
+
 pub mod private_key {
     use std::fmt::{Display, Write};
 
     use bip32::PrivateKeyBytes;
+    use chain_utils::private_key::PrivateKey;
     use clap::error::{ContextKind, ContextValue};
-    use serde::{Deserialize, Serialize};
-
-    #[derive(Debug, Clone, Serialize, Deserialize)]
-    #[serde(rename_all = "snake_case")]
-    pub enum PrivateKey<T: bip32::PrivateKey> {
-        /// The key stored in plaintext.
-        Raw(#[serde(with = "private_key_hex_string")] T), // TODO: Other key types (i.e. keyring)
-    }
-
-    mod private_key_hex_string {
-        use bip32::{PrivateKey, PrivateKeyBytes};
-        use serde::de::Error;
-
-        pub fn serialize<S, T: PrivateKey>(data: &T, serializer: S) -> Result<S::Ok, S::Error>
-        where
-            S: serde::Serializer,
-        {
-            serde_utils::hex_string::serialize(data.to_bytes(), serializer)
-        }
-
-        pub fn deserialize<'de, D, T>(deserializer: D) -> Result<T, D::Error>
-        where
-            D: serde::Deserializer<'de>,
-            T: PrivateKey,
-        {
-            serde_utils::hex_string::deserialize(deserializer).and_then(|data: PrivateKeyBytes| {
-                <T as PrivateKey>::from_bytes(&data).map_err(|x| D::Error::custom(x.to_string()))
-            })
-        }
-    }
-
-    impl<T: bip32::PrivateKey> PrivateKey<T> {
-        pub fn value(self) -> T {
-            match self {
-                PrivateKey::Raw(raw) => raw,
-            }
-        }
-    }
 
     #[allow(clippy::needless_pass_by_value)] // required by StringValueParser::try_map
     pub fn parse_private_key_arg<T: bip32::PrivateKey + Clone + Send + Sync + 'static>(

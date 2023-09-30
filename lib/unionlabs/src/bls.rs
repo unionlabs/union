@@ -8,7 +8,7 @@ use ssz_types::FixedVector;
 use tree_hash::TreeHash;
 use typenum::U;
 
-use crate::errors::InvalidLength;
+use crate::errors::{ExpectedLength, InvalidLength};
 
 const BLS_PUBLIC_KEY_BYTES_LEN: usize = 48;
 const BLS_SIGNATURE_BYTES_LEN: usize = G2_BYTES;
@@ -39,7 +39,7 @@ impl BlsSecretKey {
 #[derive(Clone, Hash, PartialEq, Eq, Encode, Decode, Serialize, Deserialize)]
 #[ssz(struct_behaviour = "transparent")]
 pub struct BlsPublicKey(
-    #[serde(with = "serde_utils::fixed_size_array")] pub [u8; BLS_PUBLIC_KEY_BYTES_LEN],
+    #[serde(with = "::serde_utils::hex_string")] pub [u8; BLS_PUBLIC_KEY_BYTES_LEN],
 );
 
 impl TreeHash for BlsPublicKey {
@@ -88,7 +88,7 @@ impl TryFrom<Vec<u8>> for BlsPublicKey {
 
     fn try_from(data: Vec<u8>) -> Result<Self, Self::Error> {
         data.try_into().map(Self).map_err(|invalid| InvalidLength {
-            expected: BLS_PUBLIC_KEY_BYTES_LEN,
+            expected: ExpectedLength::Exact(BLS_PUBLIC_KEY_BYTES_LEN),
             found: invalid.len(),
         })
     }
@@ -106,7 +106,7 @@ impl TryFrom<&[u8]> for BlsPublicKey {
     fn try_from(data: &[u8]) -> Result<Self, Self::Error> {
         let data_len = data.len();
         data.try_into().map(Self).map_err(|_| InvalidLength {
-            expected: BLS_PUBLIC_KEY_BYTES_LEN,
+            expected: ExpectedLength::Exact(BLS_PUBLIC_KEY_BYTES_LEN),
             found: data_len,
         })
     }
@@ -134,7 +134,7 @@ impl TryFrom<&BlsPublicKey> for milagro_bls::PublicKey {
 
 #[derive(Clone, Hash, PartialEq, Eq, Encode, Decode, Serialize, Deserialize)]
 #[ssz(struct_behaviour = "transparent")]
-pub struct BlsSignature(#[serde(with = "serde_utils::hex_string")] [u8; BLS_SIGNATURE_BYTES_LEN]);
+pub struct BlsSignature(#[serde(with = "::serde_utils::hex_string")] [u8; BLS_SIGNATURE_BYTES_LEN]);
 
 impl TreeHash for BlsSignature {
     fn tree_hash_type() -> tree_hash::TreeHashType {
@@ -192,7 +192,7 @@ impl TryFrom<Vec<u8>> for BlsSignature {
 
     fn try_from(data: Vec<u8>) -> Result<Self, Self::Error> {
         data.try_into().map(Self).map_err(|invalid| InvalidLength {
-            expected: BLS_SIGNATURE_BYTES_LEN,
+            expected: ExpectedLength::Exact(BLS_SIGNATURE_BYTES_LEN),
             found: invalid.len(),
         })
     }

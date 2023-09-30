@@ -1,5 +1,5 @@
 use core::fmt::Debug;
-use std::{fmt, str::FromStr};
+use std::str::FromStr;
 
 use serde::{Deserialize, Serialize};
 use typenum::Unsigned;
@@ -20,8 +20,8 @@ pub struct Mainnet;
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum PresetBaseKind {
-    Mainnet,
     Minimal,
+    Mainnet,
 }
 
 impl FromStr for PresetBaseKind {
@@ -54,26 +54,15 @@ impl FromStr for PresetBaseKind {
 /// }
 /// ```
 pub trait ChainSpecParameterizable {
-    type T<C: ChainSpec>;
+    type Inner<C: ChainSpec>;
 }
 
+// generic_enum! {
 pub enum AnyChainSpec<T: ChainSpecParameterizable> {
-    Mainnet(T::T<Mainnet>),
-    Minimal(T::T<Minimal>),
+    Mainnet(T::Inner<Mainnet>),
+    Minimal(T::Inner<Minimal>),
 }
-
-impl<T: ChainSpecParameterizable> Debug for AnyChainSpec<T>
-where
-    T::T<Mainnet>: Debug,
-    T::T<Minimal>: Debug,
-{
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            AnyChainSpec::Mainnet(t) => f.debug_tuple("Mainnet").field(t).finish(),
-            AnyChainSpec::Minimal(t) => f.debug_tuple("Minimal").field(t).finish(),
-        }
-    }
-}
+// }
 
 macro_rules! consts_traits {
     ($($CONST:ident $(,)?),+) => {
@@ -86,7 +75,10 @@ macro_rules! consts_traits {
             }
 
             impl $CONST for Minimal {
+                #[cfg(not(feature = "eth-mainnet"))]
                 type $CONST = typenum::U<{ preset::MINIMAL.$CONST }>;
+                #[cfg(feature = "eth-mainnet")]
+                type $CONST = typenum::U<{ preset::MAINNET.$CONST }>;
             }
 
             impl $CONST for Mainnet {
@@ -102,8 +94,15 @@ macro_rules! consts_traits {
         }
 
         impl ChainSpec for Minimal {
+            // TODO: please save me
+            #[cfg(not(feature = "eth-mainnet"))]
             const PRESET: preset::Preset = preset::MINIMAL;
+            #[cfg(not(feature = "eth-mainnet"))]
             const PRESET_BASE_KIND: PresetBaseKind = PresetBaseKind::Minimal;
+            #[cfg(feature = "eth-mainnet")]
+            const PRESET: preset::Preset = preset::MAINNET;
+            #[cfg(feature = "eth-mainnet")]
+            const PRESET_BASE_KIND: PresetBaseKind = PresetBaseKind::Mainnet;
 
             type PERIOD = typenum::Prod<
                 <Self as EPOCHS_PER_SYNC_COMMITTEE_PERIOD>::EPOCHS_PER_SYNC_COMMITTEE_PERIOD,

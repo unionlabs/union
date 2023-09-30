@@ -1,40 +1,41 @@
 use std::fmt::{Debug, Display};
 
-use contracts::ibc_handler::{
-    GetChannelCall, GetClientStateCall, GetConnectionCall, GetConsensusStateCall,
-    GetHashedPacketCommitmentCall,
-};
+use clap::builder::{StringValueParser, TypedValueParser};
+use displaydoc::Display;
 use futures::Future;
-use serde::Serialize;
-use unionlabs::ibc::core::{
-    channel::channel::Channel, client::height::Height, connection::connection_end::ConnectionEnd,
+use serde::{Deserialize, Serialize};
+use unionlabs::{
+    ibc::core::{
+        channel::channel::Channel,
+        client::height::{Height, IsHeight},
+        connection::connection_end::ConnectionEnd,
+    },
+    id::{ChannelId, ConnectionId},
+    traits,
 };
 
 use crate::chain::Chain;
 
-pub trait IbcStateRead<Counterparty: Chain, P: IbcPath>: Chain + Sized
+pub trait IbcStateRead<Counterparty: Chain, P: IbcPath<Self, Counterparty>>: Chain + Sized
 where
-    StateProof<P::Output<Counterparty>>: Debug + Serialize,
+    StateProof<P::Output>: Debug + Serialize,
 {
     fn state_proof(
         &self,
         path: P,
-        at: Height,
-    ) -> impl Future<Output = StateProof<P::Output<Counterparty>>> + '_;
+        at: Self::Height,
+    ) -> impl Future<Output = StateProof<P::Output>> + '_;
 }
 
 /// `IbcPath` represents the path to a light client's ibc storage. The values stored at each path
 /// are strongly typed, i.e. `connections/{connection_id}` always stores a [`ConnectionEnd`].
-pub trait IbcPath: Display + Clone + Sized {
-    type Output<C: Chain>: Debug + Serialize;
+pub trait IbcPath<This: Chain, Counterparty>: Display + Clone + Sized {
+    type Output: Debug + Clone + Serialize;
 }
 
-type ClientId = String;
-type ChannelId = String;
-type ConnectionId = String;
 type PortId = String;
 
-#[derive(Debug, Serialize)]
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub struct StateProof<Data> {
     pub state: Data,
     #[serde(with = "::serde_utils::hex_string")]
@@ -42,135 +43,181 @@ pub struct StateProof<Data> {
     pub proof_height: Height,
 }
 
-macro_rules! ibc_paths (
-    (
-        $(
-            #[display($fmt:literal)]
-            #[output($Output:ty)]
-            #[ethcall($EthCall:ty)]
-            pub struct $Struct:ident {
-                $(pub $field:ident: $field_ty:ty,)+
-            }
-        )+
-    ) => {
-        $(
-            #[derive(Debug, Clone, PartialEq, clap::Args)]
-            pub struct $Struct {
-                $(pub $field: $field_ty,)+
-            }
-
-            impl Display for $Struct {
-                fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                    let Self { $($field,)+ } = self;
-                    write!(f, $fmt)
-                }
-            }
-
-            impl IbcPath for $Struct {
-                type Output<C: Chain> = $Output;
-            }
-
-            impl From<$Struct> for $EthCall {
-                fn from(path: $Struct) -> Self {
-                    Self {
-                        $($field: path.$field.into()),+
-                    }
-                }
-            }
-
-            impl crate::chain::evm::IntoEthCall for $Struct {
-                type EthCall = $EthCall;
-            }
-        )+
-
-        pub trait IbcStateReadPaths<Counterparty: Chain>: Chain + $(IbcStateRead<Counterparty, $Struct>+)+ {}
-
-        impl<Counterparty: Chain, T: Chain> IbcStateReadPaths<Counterparty> for T
-            where
-                T: $(IbcStateRead<Counterparty, $Struct>+)+
-        {}
+impl<Data: Debug> Debug for StateProof<Data> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("StateProof")
+            .field("state", &self.state)
+            .field("proof", &serde_utils::to_hex(&self.proof))
+            .field("proof_height", &self.proof_height)
+            .finish()
     }
-);
+}
 
-ibc_paths! {
-    #[display("clients/{client_id}/clientState")]
-    #[output(C::SelfClientState)]
-    #[ethcall(GetClientStateCall)]
-    pub struct ClientStatePath {
-        pub client_id: ClientId,
-    }
+// NOTE: Commented out for now, may reuse this in the future
+// macro_rules! ibc_paths (
+//     (
+//         $(
+//             #[display($fmt:literal)]
+//             #[output($Output:ty)]
+//             pub struct $Struct:ident$(<$($generics:ident$(: $bound:ident)?),+>)? {
+//                 $(pub $field:ident: $field_ty:ty,)+
+//             }
+//         )+
+//     ) => {
+//         $(
+//             #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)] // clap::Args
+//             pub struct $Struct$(<$($generics),+>)? {
+//                 $(pub $field: $field_ty,)+
+//             }
 
-    #[display("clients/{client_id}/consensusStates/{height}")]
-    #[output(C::SelfConsensusState)]
-    #[ethcall(GetConsensusStateCall)]
-    pub struct ClientConsensusStatePath {
-        pub client_id: ClientId,
-        pub height: Height,
-    }
+//             impl$(<$($generics: Display),+>)? Display for $Struct {
+//                 fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+//                     let Self { $($field,)+ } = self;
+//                     write!(f, $fmt)
+//                 }
+//             }
 
-    // #[display("clients/{client_id}/connections")]
-    // pub struct ClientConnectionPath {
-    //     pub client_id: ClientId,
-    // }
+//             impl<$($($generics: Display,)+)? This: Chain, Counterparty: Chain> IbcPath<This, Counterparty> for $Struct$(<$($generics),+>)? {
+//                 type Output = $Output;
+//             }
 
-    #[display("connections/{connection_id}")]
-    #[output(ConnectionEnd)]
-    #[ethcall(GetConnectionCall)]
-    pub struct ConnectionPath {
-        pub connection_id: ConnectionId,
-    }
+//         )+
 
-    // #[display("ports/{port_id}")]
-    // pub struct PortPath {
-    //     pub port_id: PortId,
-    // }
+//         enum_variants_conversions! {
+//             #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+//             pub enum Path {
+//                 $(
+//                     $Struct($Struct),
+//                 )+
+//             }
+//         }
 
-    #[display("channelEnds/ports/{port_id}/channels/{channel_id}")]
-    #[output(Channel)]
-    #[ethcall(GetChannelCall)]
-    pub struct ChannelEndPath {
-        pub port_id: PortId,
-        pub channel_id: ChannelId,
-    }
+//         pub trait IbcStateReadPaths<Counterparty: Chain>: Chain + $(IbcStateRead<Counterparty, $Struct>+)+ {}
 
-    // #[display("nextSequenceSend/ports/{_0}/channels/{_1}")]
-    // pub struct SeqSendPath {
-    //     pub port_id: PortId,
-    //     pub channel_id: ChannelId,
-    // }
+//         impl<Counterparty: Chain, T: Chain> IbcStateReadPaths<Counterparty> for T
+//             where
+//                 T: $(IbcStateRead<Counterparty, $Struct>+)+
+//         {}
+//     }
+// );
 
-    // #[display("nextSequenceRecv/ports/{_0}/channels/{_1}")]
-    // pub struct SeqRecvPath {
-    //     pub port_id: PortId,
-    //     pub channel_id: ChannelId,
-    // }
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Display, clap::Args)]
+#[serde(bound(
+    serialize = "ClientId: Serialize",
+    deserialize = "ClientId: for<'d> Deserialize<'d>",
+))]
+#[displaydoc("clients/{client_id}/clientState")]
+pub struct ClientStatePath<ClientId: traits::Id> {
+    #[arg(
+        value_parser = StringValueParser::new()
+            .try_map(|x|
+                x.parse::<ClientId>()
+                    .map_err(|err| err.to_string())
+            )
+    )]
+    pub client_id: ClientId,
+}
 
-    // #[display("nextSequenceAck/ports/{_0}/channels/{_1}")]
-    // pub struct SeqAckPath {
-    //     pub port_id: PortId,
-    //     pub channel_id: ChannelId,
-    // }
+impl<This: Chain, Counterparty: Chain> IbcPath<This, Counterparty>
+    for ClientStatePath<This::ClientId>
+{
+    type Output = Counterparty::SelfClientState;
+}
 
-    #[display("commitments/ports/{port_id}/channels/{channel_id}/sequences/{sequence}")]
-    #[output([u8; 32])]
-    #[ethcall(GetHashedPacketCommitmentCall)]
-    pub struct CommitmentPath {
-        pub port_id: PortId,
-        pub channel_id: ChannelId,
-        pub sequence: u64,
-    }
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Display, clap::Args)]
+#[serde(bound(
+    serialize = "ClientId: Serialize",
+    deserialize = "ClientId: for<'d> Deserialize<'d>",
+))]
+#[displaydoc("clients/{client_id}/consensusStates/{height}")]
+pub struct ClientConsensusStatePath<ClientId: traits::Id, Height: IsHeight> {
+    #[arg(
+        value_parser = StringValueParser::new()
+            .try_map(|x|
+                x.parse::<ClientId>()
+                    .map_err(|err| err.to_string())
+            )
+    )]
+    pub client_id: ClientId,
+    #[arg(
+        value_parser = StringValueParser::new()
+            .try_map(|x|
+                x.parse::<Height>()
+                    .map_err(|err| err.to_string())
+            )
+    )]
+    pub height: Height,
+}
 
-    // #[display("acks/ports/{port_id}/channels/{channel_id}/sequences/{sequence}")]
-    // pub struct AckPath {
-    //     pub port_id: PortId,
-    //     pub channel_id: ChannelId,
-    //     pub sequence: Sequence,
-    // }
+impl<This: Chain, Counterparty: Chain> IbcPath<This, Counterparty>
+    for ClientConsensusStatePath<This::ClientId, Counterparty::Height>
+{
+    type Output = Counterparty::SelfConsensusState;
+}
 
-    // #[display("receipts/ports/{port_id}/channels/{channel_id}/sequences/{sequence}")]
-    // pub struct ReceiptPath {
-    //     pub port_id: PortId,
-    //     pub channel_id: ChannelId,
-    //     pub sequence: Sequence,
-    // }
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Display, clap::Args)]
+#[displaydoc("connections/{connection_id}")]
+pub struct ConnectionPath {
+    pub connection_id: ConnectionId,
+}
+
+impl<This: Chain, Counterparty: Chain> IbcPath<This, Counterparty> for ConnectionPath {
+    type Output = ConnectionEnd<This::ClientId, Counterparty::ClientId, String>;
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Display, clap::Args)]
+#[displaydoc("channelEnds/ports/{port_id}/channels/{channel_id}")]
+pub struct ChannelEndPath {
+    pub port_id: PortId,
+    pub channel_id: ChannelId,
+}
+
+impl<This: Chain, Counterparty: Chain> IbcPath<This, Counterparty> for ChannelEndPath {
+    type Output = Channel;
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Display, clap::Args)]
+#[displaydoc("commitments/ports/{port_id}/channels/{channel_id}/sequences/{sequence}")]
+pub struct CommitmentPath {
+    pub port_id: PortId,
+    pub channel_id: ChannelId,
+    pub sequence: u64,
+}
+
+impl<This: Chain, Counterparty: Chain> IbcPath<This, Counterparty> for CommitmentPath {
+    type Output = [u8; 32];
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(bound(
+    serialize = "ClientId: Serialize",
+    deserialize = "ClientId: for<'d> Deserialize<'d>",
+))]
+pub enum Path<ClientId: traits::Id, Height: IsHeight> {
+    ClientStatePath(ClientStatePath<ClientId>),
+    ClientConsensusStatePath(ClientConsensusStatePath<ClientId, Height>),
+    ConnectionPath(ConnectionPath),
+    ChannelEndPath(ChannelEndPath),
+    CommitmentPath(CommitmentPath),
+}
+
+pub trait IbcStateReadPaths<Counterparty: Chain>:
+    Chain
+    + IbcStateRead<Counterparty, ClientStatePath<<Self as Chain>::ClientId>>
+    + IbcStateRead<
+        Counterparty,
+        ClientConsensusStatePath<<Self as Chain>::ClientId, Counterparty::Height>,
+    > + IbcStateRead<Counterparty, ConnectionPath>
+    + IbcStateRead<Counterparty, ChannelEndPath>
+    + IbcStateRead<Counterparty, CommitmentPath>
+{
+}
+
+impl<Counterparty: Chain, T: Chain> IbcStateReadPaths<Counterparty> for T where
+    T: IbcStateRead<Counterparty, ClientStatePath<Self::ClientId>>
+        + IbcStateRead<Counterparty, ClientConsensusStatePath<Self::ClientId, Counterparty::Height>>
+        + IbcStateRead<Counterparty, ConnectionPath>
+        + IbcStateRead<Counterparty, ChannelEndPath>
+        + IbcStateRead<Counterparty, CommitmentPath>
+{
 }

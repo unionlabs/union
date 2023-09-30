@@ -14,11 +14,17 @@ pub trait Datastore {
         <Q as GraphQLQuery>::Variables: 'static;
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct HasuraDataStore {
     client: Client,
     url: Url,
     secret: String,
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct HasuraConfig {
+    pub url: Url,
+    pub secret: String,
 }
 
 impl Datastore for HasuraDataStore {
@@ -121,3 +127,23 @@ pub struct InsertBlocksMany;
     skip_serializing_none
 )]
 pub struct InsertDemoTx;
+
+#[derive(GraphQLQuery)]
+#[graphql(
+    schema_path = "src/graphql/schema.graphql",
+    query_path = "src/graphql/operations.graphql",
+    response_derives = "Clone, Debug, Default",
+    normalization = "rust",
+    skip_serializing_none
+)]
+pub struct InsertDemoQueue;
+
+#[derive(GraphQLQuery)]
+#[graphql(
+    schema_path = "src/graphql/schema.graphql",
+    query_path = "src/graphql/operations.graphql",
+    response_derives = "Clone, Debug, Default",
+    normalization = "rust",
+    skip_serializing_none
+)]
+pub struct GetLatestQueue;

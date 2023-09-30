@@ -1,7 +1,11 @@
 #![deny(clippy::pedantic)]
 #![allow(clippy::missing_errors_doc, clippy::module_name_repetitions)]
 
-use std::fmt::{Debug, Display};
+use std::{
+    error::Error,
+    fmt::{Debug, Display},
+    str::FromStr,
+};
 
 use bip32::{
     secp256k1::{
@@ -11,6 +15,7 @@ use bip32::{
     PrivateKey, PublicKey,
 };
 use prost::Message;
+use serde::{de, Deserialize, Serialize};
 use sha2::Digest;
 
 use crate::{errors::TryFromBranchError, ethereum::H256};
@@ -32,6 +37,9 @@ pub mod union;
 
 /// Wrapper types around [`milagro_bls`] types, providing more conversions and a simpler signing interface.
 pub mod bls;
+
+/// Well-known events emitted by ibc-enabled chains.
+pub mod events;
 
 pub mod ethereum_consts_traits;
 
@@ -76,8 +84,14 @@ pub mod errors {
     // Expected one length, but found another.
     #[derive(Debug, PartialEq, Eq)]
     pub struct InvalidLength {
-        pub expected: usize,
+        pub expected: ExpectedLength,
         pub found: usize,
+    }
+
+    #[derive(Debug, PartialEq, Eq)]
+    pub enum ExpectedLength {
+        Exact(usize),
+        LessThan(usize),
     }
 
     #[derive(Debug, PartialEq, Eq)]
@@ -107,9 +121,10 @@ where
 
 // TODO: Move these traits into `ibc`
 
-pub trait Proto: Into<Self::Proto> {
+// Into<Self::Proto>
+pub trait Proto {
     // all prost generated code implements Default
-    type Proto: TypeUrl + Default;
+    type Proto: Message + Default;
 }
 
 pub trait IntoProto: Proto + Into<Self::Proto> {
@@ -133,7 +148,7 @@ pub trait FromProto: Proto + From<Self::Proto> {
     }
 }
 
-pub trait TryFromProto: Proto + TryFrom<Self::Proto> {
+pub trait TryFromProto: Proto + TryFrom<<Self as Proto>::Proto> {
     fn try_from_proto(proto: Self::Proto) -> Result<Self, TryFromProtoErrorOf<Self>> {
         proto.try_into()
     }
@@ -326,5 +341,371 @@ impl Display for CosmosAccountId {
         );
 
         f.write_str(&encoded)
+    }
+}
+
+pub mod id {
+    use std::{
+        error::Error,
+        fmt::{Debug, Display},
+        num::ParseIntError,
+        str::FromStr,
+    };
+
+    use serde::{Deserialize, Serialize};
+
+    /// An id of the form `<ty>-<id>`.
+    #[derive(PartialEq, Serialize, Deserialize)]
+    #[serde(
+        bound(serialize = "Type: IdType", deserialize = "Type: IdType"),
+        try_from = "&str",
+        into = "String"
+    )]
+    pub struct Id<Type: IdType> {
+        ty: Type,
+        id: u32,
+    }
+
+    pub trait IdType:
+        Display
+        + FromStr<Err = InvalidIdType>
+        + Debug
+        + Clone
+        + PartialEq
+        + Serialize
+        + for<'de> Deserialize<'de>
+        + Send
+        + Sync
+        + 'static
+    {
+        const TYPE: &'static str;
+    }
+
+    impl<Type: IdType> crate::traits::Id for Id<Type> {
+        type FromStrErr = <Self as FromStr>::Err;
+    }
+
+    impl<Type: IdType> Clone for Id<Type> {
+        fn clone(&self) -> Self {
+            Self {
+                ty: self.ty.clone(),
+                id: self.id,
+            }
+        }
+    }
+
+    impl<Type: IdType> Debug for Id<Type> {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            f.write_fmt(format_args!("{:?}({})", self.ty, self.id))
+        }
+    }
+
+    impl<Type: IdType> Id<Type> {
+        pub fn new(ty: Type, id: u32) -> Self {
+            Self { ty, id }
+        }
+    }
+
+    impl<Type: IdType> Display for Id<Type> {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            f.write_fmt(format_args!("{}-{}", self.ty, self.id))
+        }
+    }
+
+    impl<Type: IdType> From<Id<Type>> for String {
+        fn from(value: Id<Type>) -> Self {
+            value.to_string()
+        }
+    }
+
+    #[derive(Debug)]
+    pub enum IdParseError {
+        Type(InvalidIdType),
+        Id(ParseIntError),
+        InvalidFormat { found: String },
+    }
+
+    impl Display for IdParseError {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            match self {
+                IdParseError::Type(ty) => f.write_fmt(format_args!(
+                    "unable to parse the type portion of the id: {ty}"
+                )),
+                IdParseError::Id(id) => f.write_fmt(format_args!(
+                    "unable to parse the numeric portion of the id: {id}"
+                )),
+                IdParseError::InvalidFormat { found } => f.write_fmt(format_args!(
+                    "the id was not in the expected format `<ty>-<id>`: {found}"
+                )),
+            }
+        }
+    }
+
+    impl Error for IdParseError {}
+
+    impl<Type: IdType> FromStr for Id<Type> {
+        type Err = IdParseError;
+
+        fn from_str(s: &str) -> Result<Self, Self::Err> {
+            match s.rsplit_once('-') {
+                Some((ty, id)) => Ok(Self {
+                    ty: ty.parse().map_err(IdParseError::Type)?,
+                    id: id.parse().map_err(IdParseError::Id)?,
+                }),
+                None => Err(IdParseError::InvalidFormat {
+                    found: s.to_string(),
+                }),
+            }
+        }
+    }
+
+    impl<Type: IdType> TryFrom<&str> for Id<Type> {
+        type Error = <Id<Type> as FromStr>::Err;
+
+        fn try_from(value: &str) -> Result<Self, Self::Error> {
+            value.parse()
+        }
+    }
+
+    #[derive(Debug, Clone, PartialEq)]
+    pub struct InvalidIdType {
+        pub expected: &'static str,
+        pub found: String,
+    }
+
+    impl Display for InvalidIdType {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            f.write_fmt(format_args!(
+                "expected `{}`, found `{}`",
+                self.expected, self.found,
+            ))
+        }
+    }
+
+    impl Error for InvalidIdType {}
+
+    #[macro_export]
+    macro_rules! id_type {
+        (
+            $(#[doc = $doc:literal])*
+            #[ty = $ty:literal]
+            pub struct $Struct:ident;
+        ) => {
+            #[derive(Debug, Clone, PartialEq)]
+            pub struct $Struct;
+
+            impl ::std::str::FromStr for $Struct {
+                type Err = $crate::id::InvalidIdType;
+
+                fn from_str(s: &str) -> Result<Self, Self::Err> {
+                    matches!(s, $ty)
+                        .then_some(Self)
+                        .ok_or($crate::id::InvalidIdType {
+                            expected: $ty,
+                            found: s.to_string(),
+                        })
+                }
+            }
+
+            impl ::std::fmt::Display for $Struct {
+                fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                    f.write_str($ty)
+                }
+            }
+
+            impl serde::Serialize for $Struct {
+                fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+                where
+                    S: serde::Serializer,
+                {
+                    serializer.collect_str(self)
+                }
+            }
+
+            impl<'de> serde::Deserialize<'de> for $Struct {
+                fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+                where
+                    D: serde::Deserializer<'de>,
+                {
+                    <&str>::deserialize(deserializer).and_then(|s| {
+                        s.parse()
+                            // TODO fix error situation
+                            // FromStr::Err has no bounds
+                            .map_err(|_| {
+                                serde::de::Error::invalid_value(serde::de::Unexpected::Str(s), &$ty)
+                            })
+                    })
+                }
+            }
+
+            impl $crate::id::IdType for $Struct {
+                const TYPE: &'static str = $ty;
+            }
+        };
+    }
+
+    pub use id_type;
+
+    id_type! {
+        /// Id type for `connection_id`.
+        #[ty = "connection"]
+        pub struct Connection;
+    }
+
+    id_type! {
+        /// Id for `channel_id`.
+        #[ty = "channel"]
+        pub struct Channel;
+    }
+
+    pub type ConnectionId = Id<Connection>;
+    pub type ChannelId = Id<Channel>;
+}
+
+pub mod traits {
+    use std::{
+        error::Error,
+        fmt::{Debug, Display},
+        str::FromStr,
+    };
+
+    use serde::{Deserialize, Serialize};
+
+    /// A convenience trait for a string id (`ChainId`, `ClientId`, `ConnectionId`, etc)
+    pub trait Id:
+        Debug
+        + Clone
+        + PartialEq
+        + Serialize
+        + for<'de> Deserialize<'de>
+        + FromStr<Err = Self::FromStrErr>
+        + Display
+        + Send
+        + Sync
+        + 'static
+    {
+        type FromStrErr: Error;
+    }
+
+    impl Id for String {
+        // type FromStrErr = <String as FromStr>::Err;
+        type FromStrErr = std::string::ParseError;
+    }
+}
+
+/// An empty string. Will only parse/serialize to/from `""`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct EmptyString;
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct EmptyStringParseError {
+    found: String,
+}
+
+impl Error for EmptyStringParseError {}
+
+impl Display for EmptyStringParseError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "expected empty string, found `{}`", self.found)
+    }
+}
+
+impl FromStr for EmptyString {
+    type Err = EmptyStringParseError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if s.is_empty() {
+            Ok(Self)
+        } else {
+            Err(EmptyStringParseError {
+                found: s.to_string(),
+            })
+        }
+    }
+}
+
+impl Display for EmptyString {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("")
+    }
+}
+
+impl Serialize for EmptyString {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.collect_str(self)
+    }
+}
+
+impl<'de> Deserialize<'de> for EmptyString {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        <&str>::deserialize(deserializer).and_then(|s| {
+            s.parse()
+                .map_err(|_| de::Error::invalid_value(de::Unexpected::Str(s), &"an empty string"))
+        })
+    }
+}
+
+impl traits::Id for EmptyString {
+    type FromStrErr = EmptyStringParseError;
+}
+
+pub use paste::paste;
+
+#[macro_export]
+macro_rules! export_wasm_client_type {
+    ($type:ident) => {
+        const _: unionlabs::WasmClientType = unionlabs::WasmClientType::$type;
+        unionlabs::paste! {
+            #[no_mangle]
+            #[used]
+            static [ <WASM_CLIENT_TYPE_ $type> ]: u8 = 0;
+        }
+        #[no_mangle]
+        #[used]
+        static WASM_CLIENT_TYPE_DEFINED: u8 = 0;
+    };
+}
+
+/// This type is used to discriminate 08-wasm light clients.
+/// We need to be able to determine the light client from the light client code itself (not instantiated yet).
+/// Light clients supported by voyager must export a `#[no_mangle] static WASM_CLIENT_TYPE: WasmClientType = WasmClientType::...` variable.
+#[derive(Debug, PartialEq, Eq)]
+pub enum WasmClientType {
+    EthereumMinimal,
+    EthereumMainnet,
+    Cometbls,
+}
+
+impl TryFrom<&[u8]> for WasmClientType {
+    type Error = ();
+    fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
+        let wasm_type_name = wasmparser::Parser::new(0)
+            .parse_all(value)
+            .find_map(|payload| {
+                payload.ok().and_then(|payload| match payload {
+                    wasmparser::Payload::ExportSection(e) => Some(e),
+                    _ => None,
+                })
+            })
+            .and_then(|exports| {
+                exports.into_iter().find_map(|export| {
+                    export
+                        .ok()
+                        .and_then(|export| export.name.strip_prefix("WASM_CLIENT_TYPE_"))
+                })
+            })
+            .ok_or(())?;
+        Ok(match wasm_type_name {
+            "EthereumMinimal" => WasmClientType::EthereumMinimal,
+            "EthereumMainnet" => WasmClientType::EthereumMainnet,
+            "Cometbls" => WasmClientType::Cometbls,
+            _ => Err(())?,
+        })
     }
 }

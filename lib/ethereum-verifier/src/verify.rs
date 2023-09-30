@@ -699,9 +699,9 @@ mod tests {
             assert_eq!(
                 verify_account_storage_root(
                     header.consensus_update.attested_header.execution.state_root,
-                    &proof_data.address.as_slice().try_into().unwrap(),
+                    &proof_data.key.as_slice().try_into().unwrap(),
                     &proof_data.proof,
-                    &proof_data.storage_hash.as_slice().try_into().unwrap()
+                    &proof_data.value.as_slice().try_into().unwrap()
                 ),
                 Ok(())
             );

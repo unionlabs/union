@@ -1,14 +1,25 @@
-use std::{fmt::Display, num::ParseIntError, str::FromStr};
+use std::{
+    fmt::{Debug, Display},
+    num::ParseIntError,
+    str::FromStr,
+};
 
 use serde::{Deserialize, Serialize};
 use ssz::{Decode, Encode};
 use tree_hash::TreeHash;
 
-#[derive(Clone, Copy, Debug, PartialEq, Encode, Decode, TreeHash, Serialize, Deserialize)]
+#[derive(Clone, Copy, PartialEq, Encode, Decode, TreeHash, Serialize, Deserialize)]
 pub struct Height {
+    // REVIEW: Why default?
     #[serde(default)]
     pub revision_number: u64,
     pub revision_height: u64,
+}
+
+impl Debug for Height {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Height({self})")
+    }
 }
 
 impl Height {
@@ -121,9 +132,70 @@ impl From<contracts::shared_types::IbcCoreClientV1HeightData> for Height {
     }
 }
 
+pub trait IsHeight:
+    FromStr<Err = HeightFromStrError>
+    + Display
+    + Debug
+    + Copy
+    + PartialEq
+    + Serialize
+    + for<'de> Deserialize<'de>
+    + From<Height>
+    + Into<Height>
+    + Send
+    + Sync
+    + 'static
+{
+    fn into_height(self) -> Height {
+        Into::<Height>::into(self)
+    }
+
+    #[must_use]
+    fn increment(self) -> Self {
+        Height {
+            revision_number: self.revision_number(),
+            revision_height: self.revision_height() + 1,
+        }
+        .into()
+    }
+
+    fn revision_number(&self) -> u64 {
+        self.into_height().revision_number
+    }
+    fn revision_height(&self) -> u64 {
+        self.into_height().revision_height
+    }
+}
+
+impl<T> IsHeight for T where
+    T: FromStr<Err = HeightFromStrError>
+        + Display
+        + Debug
+        + Copy
+        + PartialEq
+        + Serialize
+        + for<'de> Deserialize<'de>
+        + From<Height>
+        + Into<Height>
+        + Send
+        + Sync
+        + 'static
+{
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn height_impls_is_height() {
+        fn f(_: impl IsHeight) {}
+
+        f(Height {
+            revision_number: 0,
+            revision_height: 0,
+        });
+    }
 
     #[test]
     fn from_str() {

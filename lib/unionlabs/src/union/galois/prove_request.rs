@@ -1,9 +1,11 @@
+use serde::{Deserialize, Serialize};
+
 use crate::{
     tendermint::types::canonical_vote::CanonicalVote,
     union::galois::validator_set_commit::ValidatorSetCommit, Proto, TypeUrl,
 };
 
-#[derive(Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ProveRequest {
     pub vote: CanonicalVote,
     pub trusted_commit: ValidatorSetCommit,

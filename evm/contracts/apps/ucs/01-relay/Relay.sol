@@ -59,7 +59,6 @@ contract UCS01Relay is IBCAppBase {
     uint256 constant ACK_LENGTH = 1;
 
     IBCHandler private immutable ibcHandler;
-    uint64 private immutable revisionNumber;
 
     mapping(string => address) public denomToAddress;
     mapping(address => string) public addressToDenom;
@@ -86,9 +85,8 @@ contract UCS01Relay is IBCAppBase {
         uint256 amount
     );
 
-    constructor(IBCHandler _ibcHandler, uint64 _revisionNumber) {
+    constructor(IBCHandler _ibcHandler) {
         ibcHandler = _ibcHandler;
-        revisionNumber = _revisionNumber;
     }
 
     function ibcAddress() public view virtual override returns (address) {
