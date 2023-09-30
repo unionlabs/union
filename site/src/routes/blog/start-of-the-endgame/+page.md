@@ -11,16 +11,18 @@ published: true
 	import TokenTransfer from '$lib/TokenTransfer.svelte';
 </script>
 
-<TokenTransfer/>
 
 
 Galois and CometBLS have been live on our internal testnets for a while, but now we are ready to share a brief demo in anticipation of Cosmoverse. This is the **first, tangible implementation** of an effort that has been going on for the last few years by many different teams. We proudly present the first ICS20 transfers to Sepolia (Ethereum).
+
+<TokenTransfer/>
 
 ## Next Steps
 
 The testnet does not have a live explorer yet, we'll be deploying that in the coming weeks, including a faucet and token transfers.
 
 Our next demonstration will show ERC-20 to native token transfers, setting the foundation for accessing Ethereum assets natively on any appchain.
+
 
 ## Join the Union
 
