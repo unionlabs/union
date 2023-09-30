@@ -9,7 +9,8 @@
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"lint": "prettier --plugin-search-dir . --check . && eslint .",
-		"format": "prettier --plugin-search-dir . --write ."
+		"format": "prettier --plugin-search-dir . --write .",
+		"postinstall": "patch-package"
 	},
 	"devDependencies": {
 		"@sveltejs/adapter-static": "^2.0.2",
@@ -43,6 +44,8 @@
 		"@sveltejs/adapter-static": "^2.0.3",
 		"cosmjs-types": "^0.8.0",
 		"ethers": "^6.7.1",
-		"graphql": "^16.8.1"
+		"graphql": "^16.8.1",
+		"patch-package": "^8.0.0",
+		"postinstall-postinstall": "^2.1.0"
 	}
 }
