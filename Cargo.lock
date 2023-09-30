@@ -6002,6 +6002,7 @@ dependencies = [
  "cw-storage-plus",
  "ethabi",
  "serde",
+ "serde_json",
  "thiserror",
 ]
 

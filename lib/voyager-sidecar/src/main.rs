@@ -47,7 +47,7 @@ async fn main() {
     println!("sending message to voyager: {}", msg.item.to_string());
 
     client
-        .post(format!("{voyager_url}/msg"))
+        .post(format!("{voyager_url}/msgs"))
         .json(&msg.item)
         .send()
         .await

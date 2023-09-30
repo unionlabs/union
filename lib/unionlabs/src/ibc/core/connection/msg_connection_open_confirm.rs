@@ -8,6 +8,7 @@ use crate::{
 #[serde(bound(serialize = "", deserialize = ""))]
 pub struct MsgConnectionOpenConfirm<ProofHeight: IsHeight> {
     pub connection_id: ConnectionId,
+    #[serde(with = "::serde_utils::hex_string")]
     pub proof_ack: Vec<u8>,
     pub proof_height: ProofHeight,
 }

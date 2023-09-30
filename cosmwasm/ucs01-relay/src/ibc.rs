@@ -159,7 +159,7 @@ pub fn ibc_packet_ack(
     env: Env,
     msg: IbcPacketAckMsg,
 ) -> Result<IbcBasicResponse<TokenFactoryMsg>, ContractError> {
-    let channel_info = CHANNEL_INFO.load(deps.storage, &msg.original_packet.dest.channel_id)?;
+    let channel_info = CHANNEL_INFO.load(deps.storage, &msg.original_packet.src.channel_id)?;
 
     let info = MessageInfo {
         sender: msg.relayer,
@@ -199,7 +199,7 @@ pub fn ibc_packet_timeout(
     env: Env,
     msg: IbcPacketTimeoutMsg,
 ) -> Result<IbcBasicResponse<TokenFactoryMsg>, ContractError> {
-    let channel_info = CHANNEL_INFO.load(deps.storage, &msg.packet.dest.channel_id)?;
+    let channel_info = CHANNEL_INFO.load(deps.storage, &msg.packet.src.channel_id)?;
 
     let info = MessageInfo {
         sender: msg.relayer,

@@ -1,3 +1,5 @@
+use std::collections::VecDeque;
+
 use axum::{
     self,
     extract::State,
@@ -12,6 +14,7 @@ use tokio_stream::{wrappers::UnboundedReceiverStream, Stream};
 
 use crate::msg::RelayerMsg;
 
+#[derive(Debug, Clone)]
 pub struct MsgServer;
 
 impl EventSource for MsgServer {
@@ -23,17 +26,31 @@ impl EventSource for MsgServer {
         let (tx, rx) = unbounded_channel();
 
         let app = axum::Router::new()
-            .route("/msg", post(msg_listener))
+            .route("/msg", post(msg))
+            .route("/msgs", post(msgs))
             .route("/health", get(|| async move { StatusCode::OK }))
             .with_state(tx);
 
-        #[axum::debug_handler]
-        async fn msg_listener(
+        // #[axum::debug_handler]
+        async fn msg(
             State(sender): State<UnboundedSender<RelayerMsg>>,
             Json(msg): Json<RelayerMsg>,
         ) -> StatusCode {
             tracing::info!(?msg, "received msg");
             sender.send(msg).unwrap();
+
+            StatusCode::OK
+        }
+
+        // #[axum::debug_handler]
+        async fn msgs(
+            State(sender): State<UnboundedSender<RelayerMsg>>,
+            Json(msgs): Json<Vec<RelayerMsg>>,
+        ) -> StatusCode {
+            tracing::info!(?msgs, "received msgs");
+            for msg in msgs {
+                sender.send(msg).unwrap();
+            }
 
             StatusCode::OK
         }

@@ -13,7 +13,7 @@ use tendermint_rpc::{
 };
 use unionlabs::{
     ethereum::H256,
-    events::{IbcEvent, TryFromTendermintEventError},
+    events::{IbcEvent, TryFromTendermintEventError, WriteAcknowledgement},
     ibc::{
         core::{client::height::Height, commitment::merkle_root::MerkleRoot},
         google::protobuf::{any::Any, duration::Duration},
@@ -30,21 +30,20 @@ use crate::{private_key::PrivateKey, Chain, ChainEvent, ClientState, EventSource
 #[derive(Debug, Clone)]
 pub struct Union {
     pub chain_id: String,
-
     pub signer: CosmosAccountId,
+    pub fee_denom: String,
     pub tm_client: WebSocketClient,
     pub chain_revision: u64,
     pub prover_endpoint: String,
     pub grpc_url: String,
-    pub dump_path: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
     pub signer: PrivateKey<ecdsa::SigningKey>,
+    pub fee_denom: String,
     pub ws_url: WebSocketClientUrl,
     pub prover_endpoint: String,
-    pub dump_path: String,
     pub grpc_url: String,
 }
 
@@ -84,6 +83,10 @@ impl Chain for Union {
 
             self.make_height(height)
         }
+    }
+
+    fn query_latest_height_as_destination(&self) -> impl Future<Output = Height> + '_ {
+        self.query_latest_height()
     }
 
     fn query_latest_timestamp(&self) -> impl Future<Output = i64> + '_ {
@@ -225,26 +228,69 @@ impl Chain for Union {
 
     fn read_ack(
         &self,
-        _block_hash: H256,
-        channel_id: unionlabs::id::ChannelId,
-        port_id: String,
+        block_hash: H256,
+        destination_channel_id: unionlabs::id::ChannelId,
+        destination_port_id: String,
         sequence: u64,
     ) -> impl Future<Output = Vec<u8>> + '_ {
         async move {
-            protos::ibc::core::channel::v1::query_client::QueryClient::connect(
-                self.grpc_url.clone(),
-            )
-            .await
-            .unwrap()
-            .packet_acknowledgement(QueryPacketAcknowledgementRequest {
-                port_id,
-                channel_id: channel_id.to_string(),
-                sequence,
-            })
-            .await
-            .unwrap()
-            .into_inner()
-            .acknowledgement
+            let block_height = self
+                .tm_client
+                .block_by_hash(block_hash.0.to_vec().try_into().unwrap())
+                .await
+                .unwrap()
+                .block
+                .unwrap()
+                .header
+                .height;
+
+            let wa = self
+                .tm_client
+                .tx_search(
+                    Query::from(EventType::Tx).and_eq("tx.height", u64::from(block_height)),
+                    false,
+                    0,
+                    255,
+                    tendermint_rpc::Order::Ascending,
+                )
+                .await
+                .unwrap()
+                .txs
+                .into_iter()
+                .find_map(|tx| {
+                    tx.tx_result.events.into_iter().find_map(|event| {
+                        let maybe_ack = WriteAcknowledgement::try_from(
+                            unionlabs::tendermint::abci::event::Event {
+                                ty: event.kind,
+                                attributes: event.attributes.into_iter().map(|attr| {
+                                    unionlabs::tendermint::abci::event_attribute::EventAttribute {
+                                        key: attr.key,
+                                        value: attr.value,
+                                        index: attr.index,
+                                    }
+                                }).collect()
+                            },
+                        );
+
+                        match maybe_ack {
+                            Ok(ok)
+                                if ok.packet_sequence == sequence
+                                    && ok.packet_src_port == destination_port_id
+                                    && ok.packet_src_channel == destination_channel_id =>
+                            {
+                                Some(ok)
+                            }
+                            Ok(_) => None,
+                            Err(TryFromTendermintEventError::IncorrectType { .. }) => None,
+                            Err(err) => {
+                                panic!("{err:#?}")
+                            }
+                        }
+                    })
+                })
+                .unwrap();
+
+            wa.packet_ack_hex
         }
     }
 }
@@ -275,8 +321,8 @@ impl Union {
             chain_id,
             chain_revision,
             prover_endpoint: config.prover_endpoint,
-            dump_path: config.dump_path,
             grpc_url: config.grpc_url,
+            fee_denom: config.fee_denom,
         }
     }
 
@@ -317,7 +363,7 @@ impl Union {
                 fee: Some(tx::v1beta1::Fee {
                     amount: vec![protos::cosmos::base::v1beta1::Coin {
                         // TODO: This needs to be configurable
-                        denom: "muno".to_string(),
+                        denom: self.fee_denom.clone(),
                         amount: "1".to_string(),
                     }],
                     gas_limit: 5_000_000_000,

@@ -72,6 +72,7 @@ pub enum IbcQueryPathCmd {
     Connection(proof::ConnectionPath),
     ChannelEnd(proof::ChannelEndPath),
     Commitment(proof::CommitmentPath),
+    Acknowledgement(proof::AcknowledgementPath),
 }
 
 impl IbcQueryPathCmd {
@@ -113,6 +114,7 @@ impl IbcQueryPathCmd {
             Self::Connection(path) => json(&c.state_proof(path, height).await),
             Self::ChannelEnd(path) => json(&c.state_proof(path, height).await),
             Self::Commitment(path) => json(&c.state_proof(path, height).await),
+            Self::Acknowledgement(path) => json(&c.state_proof(path, height).await),
         }
         .unwrap()
     }

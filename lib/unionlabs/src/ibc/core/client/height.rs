@@ -159,6 +159,15 @@ pub trait IsHeight:
         .into()
     }
 
+    #[must_use]
+    fn decrement(self) -> Self {
+        Height {
+            revision_number: self.revision_number(),
+            revision_height: self.revision_height() - 1,
+        }
+        .into()
+    }
+
     fn revision_number(&self) -> u64 {
         self.into_height().revision_number
     }
