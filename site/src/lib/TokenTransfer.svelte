@@ -8,8 +8,9 @@ import Error from '../routes/+error.svelte';
 
 import { ApolloClient, InMemoryCache, gql } from '@apollo/client/core';
 import type { ApolloQueryResult } from '@apollo/client';
-import { Tendermint37Client } from '@cosmjs/tendermint-rpc';
-import { SigningStargateClient } from '@cosmjs/stargate';
+import { tendermintClient, stargateClient } from '$lib/stores/wallets.ts'; 
+import { get } from 'svelte/store';
+
 
 let account: null | AccountData = null;
 let balance: null | Coin = null;
@@ -74,20 +75,19 @@ const getBalanceWorker = async () => {
 }
 
 const getBalance = async () => {
-	if(stargateClient == null) {
+	const sgClient = get(stargateClient);
+	if (sgClient == null) {
 		console.error("stargateClient is null while querying balance");
 		return;
-	}
+	} 
 	if (account == null) {
 		console.error("fetching balance for nonexisting account");
 		return;
 	}
-	balance = await stargateClient.getBalance(account.address, "muno");
+	balance = await sgClient.getBalance(account.address, "muno");
 }
 
 
-let tendermintClient: Tendermint37Client | null = null;
-let stargateClient: SigningStargateClient | null = null;
 
 const connect = async () => {
 	let { CosmjsOfflineSigner } = await import('@leapwallet/cosmos-snap-provider');
@@ -124,9 +124,13 @@ const connect = async () => {
 	console.log(key)
   const rpcUrl = "wss://rpc.0xc0dejug.uno"; // Populate with an RPC URL corresponding to the given chainId
 	console.log("connecting tendermint client")
-	tendermintClient = await Tendermint37Client.connect(rpcUrl);
+	tendermintClient.set(await Tendermint37Client.connect(rpcUrl));
+	let tmClient = get(tendermintClient);
+	if (tmClient == null) {
+		return;
+	}
 	console.log("creating stargate client")
-	stargateClient = await SigningStargateClient.createWithSigner(tendermintClient, offlineSigner,{ gasPrice: GasPrice.fromString("0.001muno"),});
+	stargateClient.set(await SigningStargateClient.createWithSigner(tmClient, offlineSigner,{ gasPrice: GasPrice.fromString("0.001muno"),}));
 }  
 
 onMount(async () => {

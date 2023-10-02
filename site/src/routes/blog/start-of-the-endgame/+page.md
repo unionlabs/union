@@ -9,10 +9,10 @@ published: true
 
 <script>
 	import TokenTransfer from '$lib/TokenTransfer.svelte';
-	import Ethers from '$lib/Ethers.svelte';
+	// import Ethers from '$lib/Ethers.svelte';
 </script>
 
-<Ethers/>
+<!-- <Ethers/> !-->
 
 Galois and CometBLS have been live on our internal testnets for a while, but now we are ready to share a brief demo in anticipation of Cosmoverse. This is the **first, tangible implementation** of an effort that has been going on for the last few years by many different teams. We proudly present the first ICS20 transfers to Sepolia (Ethereum).
 
