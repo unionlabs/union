@@ -49,12 +49,13 @@ const getUnoFromFaucent = async () => {
 }
 
 const sendTransfer = async () => {
-	if (account === null || stargateClient === null) {
+	const sgClient = get(stargateClient);
+	if (sgClient === null || account === null) {
 		console.error("trying to get uno from faucet before accounts are loaded");
 		return;
 	}
 	console.log("sending tokens")
-	const txResponse = await stargateClient.sendTokens(
+	const txResponse = await sgClient.sendTokens(
        account.address,
        "union1v39zvpn9ff7quu9lxsawdwpg60lyfpz8pmhfey",
        [
