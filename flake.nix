@@ -191,7 +191,7 @@
                   };
                 };
                 validatorCount = 4;
-                ethereum = { beacon = { validatorCount = 8; }; };
+                ethereum = { beacon = { validatorCount = 128; }; };
               };
 
               nix-filter = nix-filter.lib;
