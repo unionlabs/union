@@ -1,5 +1,5 @@
 <script lang="ts">
-import { unionAccount, unionBalance } from '$lib/stores/wallets'; 
+import { unionAccount, unionBalance, ethereumBalance, ethereumAddress } from '$lib/stores/wallets'; 
 import { getUnoFromFaucet, sendUnoToUnionAddress } from '$lib/transferDemo';
 </script>
 
@@ -10,11 +10,18 @@ import { getUnoFromFaucet, sendUnoToUnionAddress } from '$lib/transferDemo';
 		Loading account...
 	{:else}
 		<div>Union Address: {$unionAccount.address}</div>
+		<div>Ethereum Address: {$ethereumAddress}</div>
 		
 		{#if $unionBalance === null}
-			<div>Fetching balance...</div>
+			<div>Fetching Union Balance...</div>
 		{:else}
 			<div>Union Balance: <b>{$unionBalance.amount}</b> {$unionBalance.denom}</div>
+		{/if}
+
+		{#if $ethereumBalance === null}
+			<div>Fetching Ethereum Balance...</div>
+		{:else}
+			<div>Ethereum Balance: <b>{$ethereumBalance}</b> ETH</div>
 		{/if}
 
 		<button class="px-4 mt-4 py-2 border-2 font-jetbrains border-accent text-accent" on:click={getUnoFromFaucet}>Get UNO from faucet</button>

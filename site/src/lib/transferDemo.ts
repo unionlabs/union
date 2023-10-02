@@ -118,15 +118,15 @@ export const sendUnoToUnionAddress = async () => {
 export const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 export const unionBalanceWorker = async () => {
 	while (true) {
-		await sleep(2000);
 		getUnionBalance();
+		await sleep(2000);
 	}
 };
 
 export const ethereumBalanceWorker = async () => {
 	while (true) {
-		await sleep(5000);
 		getEthereumBalance();
+		await sleep(5000);
 	}
 };
 
