@@ -8,3 +8,4 @@ export const tendermintClient: Writable<Tendermint37Client | null> = writable(nu
 export const stargateClient: Writable<SigningStargateClient | null> = writable(null);
 export const unionAccount: Writable<AccountData | null> = writable(null);
 export const unionBalance: Writable<Coin | null> = writable(null);
+export const apolloClient: Writable<ApolloClient | null> = writable(null);
