@@ -3,7 +3,6 @@
     import { onMount } from 'svelte';
 
     import { ethersProvider } from '$lib/stores/wallets'; 
-
 </script>
 
 <div>

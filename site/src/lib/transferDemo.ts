@@ -17,6 +17,7 @@ import { ethers } from 'ethers';
 import { GasPrice } from '@cosmjs/stargate';
 import { SigningCosmWasmClient } from '@cosmjs/cosmwasm-stargate';
 
+
 export const initClients = async (): Promise<void> => {
 	// Hack to import cosmjs
 	// @ts-ignore
