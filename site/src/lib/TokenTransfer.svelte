@@ -22,19 +22,21 @@ import { getUnoFromFaucet, sendUnoToUnionAddress, sendUnoToEthereum } from '$lib
 		{#if $ethereumEthBalance === null}
 			<div>Fetching Ethereum Balance...</div>
 		{:else}
-			<div>Ethereum ETH Balance: <b>{$ethereumEthBalance}</b> ETH</div>
+			<div>Ethereum ETH Balance: <b>{$ethereumEthBalance}</b> wei</div>
 		{/if}
 
 		{#if $ethereumUnoBalance === null}
 			<div>Fetching Ethereum UNOBalance...</div>
 		{:else}
-			<div>Ethereum UNO Balance: <b>{$ethereumUnoBalance}</b> UNO</div>
+			<div>Ethereum UNO Balance: <b>{$ethereumUnoBalance}</b> muno</div>
 		{/if}
 
 		<button class="px-4 mt-4 py-2 border-2 font-jetbrains border-accent text-accent" on:click={getUnoFromFaucet}>Get UNO from faucet</button>
-		<button class="px-4 mt-4 py-2 border-2 font-jetbrains border-accent text-accent" on:click={sendUnoToUnionAddress}>Send UNO</button>
 		<button class="px-4 mt-4 py-2 border-2 font-jetbrains border-accent text-accent" on:click={sendUnoToEthereum}>Send UNO to Ethereum</button>
 		<button class="px-4 mt-4 py-2 border-2 font-jetbrains border-accent text-accent" on:click={sendUnoToUnion}>Send UNO to Union</button>
+		<!--
+		<button class="px-4 mt-4 py-2 border-2 font-jetbrains border-accent text-accent" on:click={sendUnoToUnionAddress}>Send UNO</button>
+		!-->
 	{/if}
 	</div>
 </div>

@@ -236,7 +236,7 @@ export const sendUnoToEthereum = async () => {
 		UCS01_RELAY_CONTRACT,
 		{
 			transfer: {
-				channel: 'channel-11',
+				channel: 'channel-12',
 				receiver: eAddress,
 				timeout: null,
 				memo: "random more than four characters I'm transfering."
@@ -249,7 +249,7 @@ export const sendUnoToEthereum = async () => {
 };
 
 import ERC20_CONTRACT_ABI from '$lib/abi/erc20.json';
-const MUNO_ERC20_ADDRESS = '0x93bbed447dbc9907ea603e4fee622ace91cba271';
+const MUNO_ERC20_ADDRESS = '0x4bbca3a0360476a8a4f8482b8558c919e0663485';
 
 export const updateEthereumUnoBalance = async () => {
 	const eProvider = get(ethersProvider);

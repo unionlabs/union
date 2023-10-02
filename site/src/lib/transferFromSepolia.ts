@@ -15,7 +15,7 @@ import { get } from 'svelte/store';
 import ERC20_CONTRACT_ABI from '$lib/abi/erc20.json';
 import IBC_CONTRACT_ABI from '$lib/abi/ibc.json';
 
-const MUNO_ERC20_ADDRESS = '0x93bbed447dbc9907ea603e4fee622ace91cba271';
+const MUNO_ERC20_ADDRESS = '0x4bbca3a0360476a8a4f8482b8558c919e0663485';
 const IBC_ADDRESS = '0x100E44E3DD0349a60AB8C154Add0bE31a76C2CC7';
 
 export const approveUnoTransferToUnion = async () => {
