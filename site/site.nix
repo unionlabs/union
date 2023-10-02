@@ -22,6 +22,7 @@
               packageJson = "${src}/package.json";
               yarnLock = "${src}/yarn.lock";
               buildPhase = ''
+                yarn run postinstall
                 yarn --offline build 
               '';
               distPhase = "true";
