@@ -11,52 +11,52 @@ import {
 
 import { ethers } from 'ethers';
 import { get } from 'svelte/store';
-import erc20 from "$lib/abi/erc20.json"
-import ibc from "$lib/abi/ibc.json"
+import ERC20_CONTRACT_ABI from '$lib/abi/erc20.json';
+import IBC_CONTRACT_ABI from '$lib/abi/ibc.json';
 
-const eProvider = get(ethersProvider);
+const MUNO_ERC20_ADDRESS = '0x93bbed447dbc9907ea603e4fee622ace91cba271';
+const IBC_ADDRESS = '0x100E44E3DD0349a60AB8C154Add0bE31a76C2CC7';
 
-const allAccounts = await eProvider.listAccounts();
-console.log('all acccounts', allAccounts);
-const eSigner = await eProvider.getSigner(0);
-ethersSigner.set(eSigner);
-console.log('fetching ethereum balance');
-const eAddress = await eSigner.getAddress();
-console.log('ethereum address', eAddress);
-ethereumAddress.set(eAddress);
+// export const approveUnoTransferToUnion = async () => {
+// 	const eProvider = get(ethersProvider);
+// 	const eSigner = get(ethersSigner);
+// 	const eAddress = get(ethereumAddress);
+// 	const contract = new ethers.Contract(MUNO_ERC20_ADDRESS, ERC20_CONTRACT_ABI.abi, eProvider);
 
-const balance = await eProvider.getBalance(eAddress);
-console.log('balance:', balance.toString());
+// 	await contract.approve(IBC_ADDRESS, 100000, eSigner);
+// };
 
+export const sendUnoToUnion = async () => {
+	const eProvider = get(ethersProvider);
+	const eAddress = get(ethereumAddress);
+	const eSigner = get(ethersSigner);
+	const uAccount = get(unionAccount);
 
-console.log("querying erc20 balaance")
-const tokenContractAddress = '0x93bbed447dbc9907ea603e4fee622ace91cba271'
-const contract = new ethers.Contract(tokenContractAddress, erc20.abi, eProvider);
-console.log("sending request")
-const erc20balance = await contract.balanceOf(eAddress);
-console.log(erc20balance)
+	if (eProvider === null || eAddress === null || eSigner === null || uAccount === null) {
+		console.error('missing dependencies for transferFromSepolia');
+		return;
+	}
 
-console.log("sending funds back");
-let ibcContractAddress = "0x100E44E3DD0349a60AB8C154Add0bE31a76C2CC7"
-const ibcContract = new ethers.Contract(ibcContractAddress, ibc.abi, eProvider);
+	const contract = new ethers.Contract(MUNO_ERC20_ADDRESS, ERC20_CONTRACT_ABI.abi, eProvider);
 
-// string calldata portId,
-// string calldata channelId,
-// string calldata receiver,
-// LocalToken[] calldata tokens,
-// uint64 counterpartyTimeoutRevisionNumber,
-// uint64 counterpartyTimeoutRevisionHeight
-let result = await ibcContract.send(
-    "ucs01-relay",
-    "channel-3",
-    "union1dvywsn9akmglypck52sjtzdjvzrjg9sgsula4q",
-    [ 
-        [
-            tokenContractAddress,
-            1000
-        ]
-    ],
-    1,
-    10000000000,
-);
-console.log(result);
+	const erc20balance = await contract.balanceOf(eAddress);
+	console.log(erc20balance);
+
+	const ibcContract = new ethers.Contract(IBC_ADDRESS, IBC_CONTRACT_ABI.abi, eProvider);
+
+	// string calldata portId,
+	// string calldata channelId,
+	// string calldata receiver,
+	// LocalToken[] calldata tokens,
+	// uint64 counterpartyTimeoutRevisionNumber,
+	// uint64 counterpartyTimeoutRevisionHeight
+	let result = await ibcContract.send(
+		'ucs01-relay',
+		'channel-3',
+		uAccount.address,
+		[[MUNO_ERC20_ADDRESS, 1000]],
+		1,
+		10000000000
+	);
+	console.log(result);
+};
