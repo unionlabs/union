@@ -1,6 +1,6 @@
 <script lang="ts">
 import { unionAccount, unionBalance, ethereumBalance, ethereumAddress } from '$lib/stores/wallets'; 
-import { getUnoFromFaucet, sendUnoToUnionAddress } from '$lib/transferDemo';
+import { getUnoFromFaucet, sendUnoToUnionAddress, sendUnoToEthereum } from '$lib/transferDemo';
 </script>
 
 
@@ -26,6 +26,7 @@ import { getUnoFromFaucet, sendUnoToUnionAddress } from '$lib/transferDemo';
 
 		<button class="px-4 mt-4 py-2 border-2 font-jetbrains border-accent text-accent" on:click={getUnoFromFaucet}>Get UNO from faucet</button>
 		<button class="px-4 mt-4 py-2 border-2 font-jetbrains border-accent text-accent" on:click={sendUnoToUnionAddress}>Send UNO</button>
+		<button class="px-4 mt-4 py-2 border-2 font-jetbrains border-accent text-accent" on:click={sendUnoToEthereum}>Send UNO to Ethereum</button>
 	{/if}
 	</div>
 </div>

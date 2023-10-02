@@ -218,3 +218,32 @@ export const initCosmwasmClient = async () => {
 	});
 	cosmwasmClient.set(cwClient);
 };
+
+const UCS01_RELAY_CONTRACT = 'union15d0ne205wynlf33r44a2awtk74f5llgup25x69564h9964ysurds60xnjw';
+
+export const sendUnoToEthereum = async () => {
+	const cwClient = get(cosmwasmClient);
+	const uAccount = get(unionAccount);
+	const eAddress = get(ethereumAddress);
+
+	if (cwClient === null || uAccount === null || eAddress === null) {
+		console.error('please init depenencies for uno transfers');
+		return;
+	}
+
+	await cwClient.execute(
+		uAccount.address,
+		UCS01_RELAY_CONTRACT,
+		{
+			transfer: {
+				channel: 'channel-11',
+				receiver: eAddress,
+				timeout: null,
+				memo: "random more than four characters I'm transfering."
+			}
+		},
+		'auto',
+		undefined,
+		[{ denom: 'muno', amount: '10000' }]
+	);
+};
