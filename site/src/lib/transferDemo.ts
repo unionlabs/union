@@ -3,10 +3,14 @@ import {
 	tendermintClient,
 	stargateClient,
 	unionAccount,
-	unionBalance
+	unionBalance,
+	ethersProvider,
+	ethersSigner,
+	ethereumAddress
 } from '$lib/stores/wallets';
 import { ApolloClient, InMemoryCache, gql } from '@apollo/client/core';
 import { get } from 'svelte/store';
+import { ethers } from 'ethers';
 
 export const initClients = async (): Promise<void> => {
 	// Hack to import cosmjs
@@ -132,4 +136,40 @@ export const getBalance = async () => {
 	unionBalance.set(await sgClient.getBalance(uAccount.address, 'muno'));
 };
 
-export const setupEthers = async () => {};
+export const setupEthers = async () => {
+	console.log('connecting to ethereum');
+
+	const eProvider = new ethers.providers.Web3Provider(window.ethereum, 'any');
+
+	if (eProvider === null) {
+		console.error('qed eprovider');
+		return;
+	}
+
+	eProvider.on('network', (newNetwork, oldNetwork) => {
+		// When a Provider makes its initial connection, it emits a "network"
+		// event with a null oldNetwork along with the newNetwork. So, if the
+		// oldNetwork exists, it represents a changing network
+		console.log(newNetwork);
+		console.log(oldNetwork);
+		if (oldNetwork) {
+			window.location.reload();
+		}
+	});
+
+	/// Requests the end user to switch to sepolia.
+	await window.ethereum.request({
+		method: 'wallet_switchEthereumChain',
+		params: [{ chainId: '0xaa36a7' }]
+	});
+
+	ethersProvider.set(eProvider);
+	const eSigner = eProvider.getSigner();
+	ethersSigner.set(eSigner);
+	console.log('fetching ethereum balance');
+	const eAddress = await eSigner.getAddress();
+	ethereumAddress.set(eAddress);
+
+	const balance = await eProvider.getBalance(eAddress);
+	console.log('balance:', balance.toString());
+};
