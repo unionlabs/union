@@ -7,11 +7,15 @@ import {
 	ethersProvider,
 	ethersSigner,
 	ethereumAddress,
-	ethereumBalance
+	ethereumBalance,
+	cosmjsSigner,
+	cosmwasmClient
 } from '$lib/stores/wallets';
 import { ApolloClient, InMemoryCache, gql } from '@apollo/client/core';
 import { get } from 'svelte/store';
 import { ethers } from 'ethers';
+import { GasPrice } from '@cosmjs/stargate';
+import { SigningCosmWasmClient } from '@cosmjs/cosmwasm-stargate';
 
 export const initClients = async (): Promise<void> => {
 	// Hack to import cosmjs
@@ -44,6 +48,7 @@ export const initClients = async (): Promise<void> => {
 		{ force: false }
 	);
 	const offlineSigner = new CosmjsOfflineSigner(chainId);
+	cosmjsSigner.set(offlineSigner);
 
 	let accounts = await offlineSigner.getAccounts();
 	if (accounts.length > 0) {
@@ -70,6 +75,7 @@ export const initClients = async (): Promise<void> => {
 			cache: new InMemoryCache()
 		})
 	);
+	initCosmwasmClient();
 };
 
 const GET_UNO_FROM_FAUCET = gql`
@@ -196,4 +202,18 @@ export const getEthereumBalance = async () => {
 	const balance = await eProvider.getBalance(address);
 	ethereumBalance.set(balance);
 	console.log(balance);
+};
+
+export const initCosmwasmClient = async () => {
+	const tmClient = get(tendermintClient);
+	const cSigner = get(cosmjsSigner);
+	if (tmClient === null || cSigner === null) {
+		console.error('need tm client and cosmjs signer to init cosmwasmclient');
+		return;
+	}
+
+	const cwClient = await SigningCosmWasmClient.createWithSigner(tmClient, cSigner, {
+		gasPrice: GasPrice.fromString('0.001muno')
+	});
+	cosmwasmClient.set(cwClient);
 };

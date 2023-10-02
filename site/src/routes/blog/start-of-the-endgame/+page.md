@@ -16,8 +16,8 @@ published: true
 
 	onMount(async () => {
 		if (browser) {
-			await initClients();
 			await setupEthers();
+			await initClients();
 			ethereumBalanceWorker();
 			unionBalanceWorker();
 		}
