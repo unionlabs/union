@@ -6,7 +6,8 @@ import {
 	unionBalance,
 	ethersProvider,
 	ethersSigner,
-	ethereumAddress
+	ethereumAddress,
+	ethereumBalance
 } from '$lib/stores/wallets';
 import { ApolloClient, InMemoryCache, gql } from '@apollo/client/core';
 import { get } from 'svelte/store';
@@ -115,14 +116,21 @@ export const sendUnoToUnionAddress = async () => {
 };
 
 export const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-export const getBalanceWorker = async () => {
+export const unionBalanceWorker = async () => {
 	while (true) {
 		await sleep(2000);
-		getBalance();
+		getUnionBalance();
 	}
 };
 
-export const getBalance = async () => {
+export const ethereumBalanceWorker = async () => {
+	while (true) {
+		await sleep(5000);
+		getEthereumBalance();
+	}
+};
+
+export const getUnionBalance = async () => {
 	const sgClient = get(stargateClient);
 	const uAccount = get(unionAccount);
 	if (sgClient == null) {
@@ -172,7 +180,20 @@ export const setupEthers = async () => {
 	const eAddress = await eSigner.getAddress();
 	console.log('ethereum address', eAddress);
 	ethereumAddress.set(eAddress);
+};
 
-	const balance = await eProvider.getBalance(eAddress);
-	console.log('balance:', balance.toString());
+export const getEthereumBalance = async () => {
+	const eProvider = get(ethersProvider);
+	const address = get(ethereumAddress);
+	if (eProvider === null) {
+		console.error('ethereum provider is null when fetching balance');
+		return;
+	}
+	if (address === null) {
+		console.error('trying to fetch ethereum balance, but address is null');
+		return;
+	}
+	const balance = await eProvider.getBalance(address);
+	ethereumBalance.set(balance);
+	console.log(balance);
 };
