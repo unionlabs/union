@@ -885,7 +885,7 @@ where
                 chain_id,
                 data: Fetch::LightClientSpecific(LightClientSpecificFetch(
                     CometblsFetchMsg::FetchBootstrap(FetchBootstrap {
-                        slot: currently_trusted_slot,
+                        slot: light_client_update.attested_header.beacon.slot,
                         __marker: PhantomData,
                     }),
                 )),
@@ -1447,10 +1447,7 @@ where
         hlist_pat![
             Identified {
                 chain_id: bootstrap_chain_id,
-                data: BootstrapData {
-                    slot: bootstrap_slot,
-                    bootstrap
-                }
+                data: BootstrapData { slot, bootstrap }
             },
             Identified {
                 chain_id: account_update_chain_id,
@@ -1473,7 +1470,6 @@ where
         assert_eq!(bootstrap_chain_id, account_update_chain_id);
         assert_eq!(chain_id, account_update_chain_id);
         assert_eq!(chain_id, beacon_api_chain_id);
-        assert_eq!(bootstrap_slot, currently_trusted_slot);
 
         let header = wasm::header::Header {
             height: Height {

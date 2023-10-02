@@ -48,7 +48,7 @@ impl<C: ChainSpec> TrustedConsensusState<C> {
         // We are making sure that the given trusted sync committee actually matches
         // the sync committee that we stored
         if active_sync_committee != given_committee.aggregate_pubkey
-            && given_committee.aggregate_pubkey != aggregate_public_key
+            || given_committee.aggregate_pubkey != aggregate_public_key
         {
             Err(Error::InvalidSyncCommittee)
         } else {
