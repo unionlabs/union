@@ -2,13 +2,12 @@
     import { ethers } from "ethers";
     import { onMount } from 'svelte';
 
-
     let provider;
     let signer;
 
     onMount(async () => {
         console.log("connecting to ethereum")
-        provider = new ethers.providers.Web3Provider(window.ethereum, "any")
+        provider = new ethers.providers.Web3Provider(window.ethereum, "any");
         provider.on("network", (newNetwork, oldNetwork) => {
         // When a Provider makes its initial connection, it emits a "network"
         // event with a null oldNetwork along with the newNetwork. So, if the

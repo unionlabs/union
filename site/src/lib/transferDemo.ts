@@ -78,8 +78,10 @@ const GET_UNO_FROM_FAUCET = gql`
 export const getUnoFromFaucet = async () => {
 	const uAccount = get(unionAccount);
 	const apollo = get(apolloClient);
-	if (uAccount === null) {
-		console.error('trying to get uno from faucet before accounts are loaded');
+	if (uAccount === null || apollo === null) {
+		console.error(
+			'trying to get uno from faucet before accounts are loaded or apollo client has not been init'
+		);
 		return;
 	}
 
@@ -129,3 +131,5 @@ export const getBalance = async () => {
 	}
 	unionBalance.set(await sgClient.getBalance(uAccount.address, 'muno'));
 };
+
+export const setupEthers = async () => {};
