@@ -43,7 +43,7 @@
 		"@leapwallet/cosmos-snap-provider": "^0.1.23",
 		"@sveltejs/adapter-static": "^2.0.3",
 		"cosmjs-types": "^0.8.0",
-		"ethers": "5.7.2",
+		"ethers": "6.7.1",
 		"graphql": "^16.8.1",
 		"patch-package": "^8.0.0",
 		"postinstall-postinstall": "^2.1.0"

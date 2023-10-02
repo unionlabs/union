@@ -139,7 +139,7 @@ export const getBalance = async () => {
 export const setupEthers = async () => {
 	console.log('connecting to ethereum');
 
-	const eProvider = new ethers.providers.Web3Provider(window.ethereum, 'any');
+	const eProvider = new ethers.BrowserProvider(window.ethereum);
 
 	if (eProvider === null) {
 		console.error('qed eprovider');
@@ -164,10 +164,13 @@ export const setupEthers = async () => {
 	});
 
 	ethersProvider.set(eProvider);
-	const eSigner = eProvider.getSigner();
+	const allAccounts = await eProvider.listAccounts();
+	console.log('all acccounts', allAccounts);
+	const eSigner = await eProvider.getSigner(0);
 	ethersSigner.set(eSigner);
 	console.log('fetching ethereum balance');
 	const eAddress = await eSigner.getAddress();
+	console.log('ethereum address', eAddress);
 	ethereumAddress.set(eAddress);
 
 	const balance = await eProvider.getBalance(eAddress);
