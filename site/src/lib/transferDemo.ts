@@ -3,20 +3,20 @@ import {
 	tendermintClient,
 	stargateClient,
 	unionAccount,
-	unionBalance,
+	unionUnoBalance,
 	ethersProvider,
 	ethersSigner,
 	ethereumAddress,
-	ethereumBalance,
 	cosmjsSigner,
-	cosmwasmClient
+	cosmwasmClient,
+	ethereumUnoBalance,
+	ethereumEthBalance
 } from '$lib/stores/wallets';
 import { ApolloClient, InMemoryCache, gql } from '@apollo/client/core';
 import { get } from 'svelte/store';
 import { ethers } from 'ethers';
 import { GasPrice } from '@cosmjs/stargate';
 import { SigningCosmWasmClient } from '@cosmjs/cosmwasm-stargate';
-
 
 export const initClients = async (): Promise<void> => {
 	// Hack to import cosmjs
@@ -122,22 +122,22 @@ export const sendUnoToUnionAddress = async () => {
 	console.log(txResponse);
 };
 
-export const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-export const unionBalanceWorker = async () => {
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+const balanceWorker = async (fetcher: () => Promise<void>, interval: number) => {
 	while (true) {
-		getUnionBalance();
-		await sleep(2000);
+		fetcher();
+		await sleep(interval);
 	}
 };
 
-export const ethereumBalanceWorker = async () => {
-	while (true) {
-		getEthereumBalance();
-		await sleep(5000);
-	}
+export const startBalanceWorkers = () => {
+	balanceWorker(updateEthereumUnoBalance, 5000);
+	balanceWorker(updateEthereumEthBalance, 5000);
+	balanceWorker(updateUnionUnoBalance, 2000);
 };
 
-export const getUnionBalance = async () => {
+export const updateUnionUnoBalance = async () => {
 	const sgClient = get(stargateClient);
 	const uAccount = get(unionAccount);
 	if (sgClient == null) {
@@ -148,7 +148,7 @@ export const getUnionBalance = async () => {
 		console.error('fetching balance for nonexisting account');
 		return;
 	}
-	unionBalance.set(await sgClient.getBalance(uAccount.address, 'muno'));
+	unionUnoBalance.set(await sgClient.getBalance(uAccount.address, 'muno'));
 };
 
 export const setupEthers = async () => {
@@ -189,7 +189,7 @@ export const setupEthers = async () => {
 	ethereumAddress.set(eAddress);
 };
 
-export const getEthereumBalance = async () => {
+export const updateEthereumEthBalance = async () => {
 	const eProvider = get(ethersProvider);
 	const address = get(ethereumAddress);
 	if (eProvider === null) {
@@ -201,7 +201,7 @@ export const getEthereumBalance = async () => {
 		return;
 	}
 	const balance = await eProvider.getBalance(address);
-	ethereumBalance.set(balance);
+	ethereumEthBalance.set(balance);
 	console.log(balance);
 };
 
@@ -246,4 +246,23 @@ export const sendUnoToEthereum = async () => {
 		undefined,
 		[{ denom: 'muno', amount: '10000' }]
 	);
+};
+
+import ERC20_CONTRACT_ABI from '$lib/abi/erc20.json';
+const MUNO_ERC20_ADDRESS = '0x93bbed447dbc9907ea603e4fee622ace91cba271';
+
+export const updateEthereumUnoBalance = async () => {
+	const eProvider = get(ethersProvider);
+	const eAddress = get(ethereumAddress);
+	const eSigner = get(ethersSigner);
+	const uAccount = get(unionAccount);
+
+	if (eProvider === null || eAddress === null || eSigner === null || uAccount === null) {
+		console.error('missing dependencies for updateEthereumUnoBalance ');
+		return;
+	}
+
+	const contract = new ethers.Contract(MUNO_ERC20_ADDRESS, ERC20_CONTRACT_ABI.abi, eProvider);
+	const balance = await contract.balanceOf(eAddress);
+	ethereumUnoBalance.set(balance);
 };

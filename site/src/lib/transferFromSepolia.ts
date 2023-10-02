@@ -3,7 +3,7 @@ import {
 	tendermintClient,
 	stargateClient,
 	unionAccount,
-	unionBalance,
+	unionUnoBalance,
 	ethersProvider,
 	ethersSigner,
 	ethereumAddress
@@ -11,6 +11,7 @@ import {
 
 import { ethers } from 'ethers';
 import { get } from 'svelte/store';
+
 import ERC20_CONTRACT_ABI from '$lib/abi/erc20.json';
 import IBC_CONTRACT_ABI from '$lib/abi/ibc.json';
 

@@ -1,28 +1,34 @@
 <script lang="ts">
 import { sendUnoToUnion } from './transferFromSepolia';
-import { unionAccount, unionBalance, ethereumBalance, ethereumAddress } from '$lib/stores/wallets'; 
+import { unionAccount, unionUnoBalance, ethereumEthBalance, ethereumAddress, ethereumUnoBalance } from '$lib/stores/wallets'; 
 import { getUnoFromFaucet, sendUnoToUnionAddress, sendUnoToEthereum } from '$lib/transferDemo';
 </script>
 
 
-<div class="my-8 h-[200px]">
-	<div style="margin: 0 auto;" class="font-jetbrains absolute h-[200px] max-w-4xl p-4 md:shadow-2xl left-0 md:left-[16px] right-0 md:right-[16px] bg-black md:rounded-xl">
+<div class="my-8 h-[400px]">
+	<div style="margin: 0 auto;" class="font-jetbrains absolute h-[400px] max-w-4xl p-4 md:shadow-2xl left-0 md:left-[16px] right-0 md:right-[16px] bg-black md:rounded-xl">
 	{#if $unionAccount === null}
 		Loading account...
 	{:else}
 		<div>Union Address: {$unionAccount.address}</div>
 		<div>Ethereum Address: {$ethereumAddress}</div>
 		
-		{#if $unionBalance === null}
+		{#if $unionUnoBalance === null}
 			<div>Fetching Union Balance...</div>
 		{:else}
-			<div>Union Balance: <b>{$unionBalance.amount}</b> {$unionBalance.denom}</div>
+			<div>Union UNO Balance: <b>{$unionUnoBalance.amount}</b> {$unionUnoBalance.denom}</div>
 		{/if}
 
-		{#if $ethereumBalance === null}
+		{#if $ethereumEthBalance === null}
 			<div>Fetching Ethereum Balance...</div>
 		{:else}
-			<div>Ethereum Balance: <b>{$ethereumBalance}</b> ETH</div>
+			<div>Ethereum ETH Balance: <b>{$ethereumEthBalance}</b> ETH</div>
+		{/if}
+
+		{#if $ethereumUnoBalance === null}
+			<div>Fetching Ethereum UNOBalance...</div>
+		{:else}
+			<div>Ethereum UNO Balance: <b>{$ethereumUnoBalance}</b> UNO</div>
 		{/if}
 
 		<button class="px-4 mt-4 py-2 border-2 font-jetbrains border-accent text-accent" on:click={getUnoFromFaucet}>Get UNO from faucet</button>
