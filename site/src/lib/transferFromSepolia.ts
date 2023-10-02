@@ -55,7 +55,7 @@ export const sendUnoToUnion = async () => {
 	// uint64 counterpartyTimeoutRevisionHeight
 	const tx = await ibcContract.send(
 		'ucs01-relay',
-		'channel-3',
+		'channel-4',
 		uAccount.address,
 		[[MUNO_ERC20_ADDRESS, 1000]],
 		3,
