@@ -11,11 +11,15 @@ published: true
 	import TokenTransfer from '$lib/TokenTransfer.svelte';
 	// import Ethers from '$lib/Ethers.svelte';
 	import { browser } from '$app/environment';
-	import { initClients } from '$lib/transferDemo';
+	import { initClients, getBalanceWorker } from '$lib/transferDemo';
+	import { onMount } from 'svelte';
 
-	if (browser) {
-		initClients();
-	}
+	onMount(async () => {
+		if (browser) {
+			await initClients();
+			getBalanceWorker();
+		}
+	})
 </script>
 
 <!-- <Ethers/>!-->

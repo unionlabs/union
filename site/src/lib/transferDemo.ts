@@ -107,3 +107,25 @@ export const sendUnoToUnionAddress = async () => {
 
 	console.log(txResponse);
 };
+
+export const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+export const getBalanceWorker = async () => {
+	while (true) {
+		await sleep(2000);
+		getBalance();
+	}
+};
+
+export const getBalance = async () => {
+	const sgClient = get(stargateClient);
+	const uAccount = get(unionAccount);
+	if (sgClient == null) {
+		console.error('stargateClient is null while querying balance');
+		return;
+	}
+	if (uAccount == null) {
+		console.error('fetching balance for nonexisting account');
+		return;
+	}
+	unionBalance.set(await sgClient.getBalance(uAccount.address, 'muno'));
+};
