@@ -9,4 +9,5 @@ export const UCS01_UNION_ADDRESS =
 
 export const ERC20_CONTRACT_ABI = erc20abi.abi;
 export const IBC_CONTRACT_ABI = ibcAbi.abi;
-export const UNION_UNO_CHANNEL = 'channel-15';
+export const UCS01_UNION_SOURCE_CHANNEL = 'channel-15';
+export const UCS01_SEPOLIA_SOURCE_CHANNEL = 'channel-5';
