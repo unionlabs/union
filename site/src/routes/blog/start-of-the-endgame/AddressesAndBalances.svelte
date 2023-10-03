@@ -1,7 +1,7 @@
 <script lang="ts">
 import { sendUnoToUnion } from '$lib/transferFromSepolia';
 import { unionAccount, unionUnoBalance, ethereumEthBalance, ethereumAddress, ethereumUnoBalance } from '$lib/stores/wallets'; 
-import { toFixedPoint } from '$lib/format';
+import { toFixedEth, toFixedUno } from '$lib/format';
 import { getUnoFromFaucet, sendUnoToUnionAddress, sendUnoToEthereum } from '$lib/transferDemo';
 import TerminalContainer from '$lib/TerminalContainer.svelte';
 </script>
@@ -23,17 +23,17 @@ import TerminalContainer from '$lib/TerminalContainer.svelte';
 				{#if $unionUnoBalance === null}
 					<div>Fetching...</div>
 				{:else}
-					<div><span class="text-accent">{toFixedPoint(BigInt($unionUnoBalance.amount), 6)}</span> UNO</div>
+					<div><span class="text-accent">{toFixedUno(BigInt($unionUnoBalance.amount))}</span> UNO</div>
 				{/if}
 				{#if $ethereumEthBalance === null}
 					<div>Fetching...</div>
 				{:else}
-					<div><span class="text-accent">{toFixedPoint($ethereumEthBalance, 18).slice(0, -12)}</span> ETH</div>
+					<div><span class="text-accent">{toFixedEth($ethereumEthBalance)}</span> ETH</div>
 				{/if}
 				{#if $ethereumUnoBalance === null}
 					<div>Fetching...</div>
 				{:else}
-					<div><span class="text-accent">{toFixedPoint($ethereumUnoBalance, 6)}</span> UNO</div>
+					<div><span class="text-accent">{toFixedUno($ethereumUnoBalance)}</span> UNO</div>
 				{/if}
 			</div>
 		</div>
@@ -48,4 +48,3 @@ import TerminalContainer from '$lib/TerminalContainer.svelte';
 		!-->
 	{/if}
 </TerminalContainer>
-
