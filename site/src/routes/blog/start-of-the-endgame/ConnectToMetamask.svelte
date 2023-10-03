@@ -3,7 +3,7 @@
 	import { initClients, startBalanceWorkers } from '$lib/transferDemo';
 	import { onMount } from 'svelte';
 	import { metamaskInstalled, connectedToSepolia, connectedToUnion, snapInstalled } from '$lib/stores/wallets';
-	import { ethersSetup, connectToSepolia, updateConnectedToSeplia, connectLeapSnap, updateSnapInstalled, connectToUnion } from '$lib/ethersSetup';
+	import { ethersSetup, connectToSepolia, updateConnectedToSeplia, connectLeapSnap, updateSnapInstalled, updateConnectedToUnion, connectToUnion } from '$lib/ethersSetup';
 
 	import DemoButton from '$lib/DemoButton.svelte';
 	import BlogLayout from '../../../mdsvex/BlogLayout.svelte';
@@ -30,6 +30,7 @@
 				ethersSetup();
 				updateConnectedToSeplia();
 				updateSnapInstalled();
+				updateConnectedToUnion();
 			}
 		}
 	})

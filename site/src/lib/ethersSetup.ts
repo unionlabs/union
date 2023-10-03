@@ -101,3 +101,14 @@ export const connectToUnion = async () => {
 	);
 	connectedToUnion.set(true);
 };
+
+export const updateConnectedToUnion = async () => {
+	const { suggestChain, getKey } = await import('@leapwallet/cosmos-snap-provider');
+	try {
+		const key = await getKey(UNION_CHAIN_ID);
+		connectedToUnion.set(true);
+	} catch {
+		// not connected to union yet
+		connectedToUnion.set(false);
+	}
+};
