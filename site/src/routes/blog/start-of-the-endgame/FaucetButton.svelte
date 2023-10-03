@@ -8,6 +8,7 @@
 	import { connectedToUnion } from "$lib/stores/wallets";
 	import { unionUnoBalance } from "$lib/stores/wallets"; 
 	import AddressesAndBalances from "./AddressesAndBalances.svelte";
+	import { toFixedPoint } from "$lib/format";
 
 	let loading: Writable<boolean> = writable(false);
 	let fetchedFromFaucet: Writable<boolean> = writable(false);
@@ -41,7 +42,7 @@
 			</div>
 		{:else if $fetchedFromFaucet}
 			<div class="flex gap-4 h-[48px] items-center">
-				<div>✅ Received UNO from faucet, new balance is <span class="text-accent">{$unionUnoBalance.amount}</span></div> 
+				<div>✅ Received UNO from faucet, new balance is <span class="text-accent">{toFixedPoint(BigInt($unionUnoBalance.amount), 6)}</span></div> 
 			</div>
 		{:else}
 				<DemoButton on:click={clickHandler}>Get UNO from faucet</DemoButton>

@@ -8,6 +8,7 @@
 	import type { ExecuteResult } from "@cosmjs/cosmwasm-stargate";
 	import { ethereumEthBalance, ethereumUnoBalance } from "$lib/stores/wallets";
 	import { get } from "svelte/store";
+	import { toFixedPoint } from "$lib/format";
 
 	const clickHandler = async () => {
 		sendingUnoToEthereum.set('sending');
@@ -52,7 +53,7 @@
 			<DemoButton on:click={clickHandler}>Send UNO to Ethereum</DemoButton>
 		{:else if $sendingUnoToEthereum === 'done'} 
 			<div class="flex gap-4 h-[48px] items-center">
-				<div>✅ Received UNO on Sepolia, new balance is <span class="text-accent">{$ethereumUnoBalance}</span>muno</div> 
+				<div>✅ Received UNO on Sepolia, new balance is <span class="text-accent">{toFixedPoint($ethereumUnoBalance, 6)}</span>UNO</div> 
 			</div>
 	
 		{/if}
