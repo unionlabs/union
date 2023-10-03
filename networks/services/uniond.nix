@@ -42,7 +42,7 @@ in
         cp ${devnet-validator-keys}/valkey-${toString id}.json ./config/priv_validator_key.json
         cp ${devnet-validator-node-ids}/valnode-${toString id}.json ./config/node_key.json
         echo ${params}
-        ${uniond}/bin/uniond start --home . ${params} --rpc.laddr tcp://0.0.0.0:26657 --api.address tcp://0.0.0.0:1317 --grpc.address 0.0.0.0:9090
+        ${uniond}/bin/uniond start --home . ${params} --rpc.laddr tcp://0.0.0.0:26657 --api.enable true --rpc.unsafe --api.address tcp://0.0.0.0:1317 --grpc.address 0.0.0.0:9090
       ''
     ];
     healthcheck = {
