@@ -18,6 +18,8 @@ import { ethers } from 'ethers';
 import { GasPrice } from '@cosmjs/stargate';
 import { SigningCosmWasmClient } from '@cosmjs/cosmwasm-stargate';
 
+import { UNION_UNO_CHANNEL } from './constants';
+
 import {
 	UNION_CHAIN_ID,
 	ERC20_CONTRACT_ABI,
@@ -186,7 +188,7 @@ export const sendUnoToEthereum = async () => {
 		UCS01_UNION_ADDRESS,
 		{
 			transfer: {
-				channel: 'channel-12',
+				channel: UNION_UNO_CHANNEL,
 				receiver: eAddress,
 				timeout: null,
 				memo: "random more than four characters I'm transfering."
