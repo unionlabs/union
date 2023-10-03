@@ -18,7 +18,12 @@ import { ethers } from 'ethers';
 import { GasPrice } from '@cosmjs/stargate';
 import { SigningCosmWasmClient } from '@cosmjs/cosmwasm-stargate';
 
-const UNION_CHAIN_ID = 'union-testnet-3';
+import {
+	UNION_CHAIN_ID,
+	ERC20_CONTRACT_ABI,
+	UCS01_RELAY_CONTRACT,
+	MUNO_ERC20_ADDRESS
+} from './constants';
 
 export const initClients = async (): Promise<void> => {
 	// Hack to import cosmjs
@@ -166,8 +171,6 @@ export const initCosmwasmClient = async () => {
 	cosmwasmClient.set(cwClient);
 };
 
-const UCS01_RELAY_CONTRACT = 'union15d0ne205wynlf33r44a2awtk74f5llgup25x69564h9964ysurds60xnjw';
-
 export const sendUnoToEthereum = async () => {
 	const cwClient = get(cosmwasmClient);
 	const uAccount = get(unionAccount);
@@ -195,9 +198,6 @@ export const sendUnoToEthereum = async () => {
 	);
 };
 
-import ERC20_CONTRACT_ABI from '$lib/abi/erc20.json';
-const MUNO_ERC20_ADDRESS = '0x4bbca3a0360476a8a4f8482b8558c919e0663485';
-
 export const updateEthereumUnoBalance = async () => {
 	const eProvider = get(ethersProvider);
 	const eAddress = get(ethereumAddress);
@@ -209,7 +209,7 @@ export const updateEthereumUnoBalance = async () => {
 		return;
 	}
 
-	const contract = new ethers.Contract(MUNO_ERC20_ADDRESS, ERC20_CONTRACT_ABI.abi, eProvider);
+	const contract = new ethers.Contract(MUNO_ERC20_ADDRESS, ERC20_CONTRACT_ABI, eProvider);
 	const balance = await contract.balanceOf(eAddress);
 	ethereumUnoBalance.set(balance);
 };

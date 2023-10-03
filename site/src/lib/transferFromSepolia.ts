@@ -11,18 +11,13 @@ import {
 
 import { ethers } from 'ethers';
 import { get } from 'svelte/store';
-
-import ERC20_CONTRACT_ABI from '$lib/abi/erc20.json';
-import IBC_CONTRACT_ABI from '$lib/abi/ibc.json';
-
-const MUNO_ERC20_ADDRESS = '0x4bbca3a0360476a8a4f8482b8558c919e0663485';
-const IBC_ADDRESS = '0x100E44E3DD0349a60AB8C154Add0bE31a76C2CC7';
+import { MUNO_ERC20_ADDRESS, ERC20_CONTRACT_ABI, IBC_ADDRESS, IBC_CONTRACT_ABI } from './constants';
 
 export const approveUnoTransferToUnion = async () => {
 	const eProvider = get(ethersProvider);
 	const eSigner = get(ethersSigner);
 	const eAddress = get(ethereumAddress);
-	const contract = new ethers.Contract(MUNO_ERC20_ADDRESS, ERC20_CONTRACT_ABI.abi, eSigner);
+	const contract = new ethers.Contract(MUNO_ERC20_ADDRESS, ERC20_CONTRACT_ABI, eSigner);
 
 	const tx = await contract.approve(IBC_ADDRESS, 100000);
 	await tx.wait();
@@ -41,12 +36,12 @@ export const sendUnoToUnion = async () => {
 
 	await approveUnoTransferToUnion();
 
-	const contract = new ethers.Contract(MUNO_ERC20_ADDRESS, ERC20_CONTRACT_ABI.abi, eProvider);
+	const contract = new ethers.Contract(MUNO_ERC20_ADDRESS, ERC20_CONTRACT_ABI, eProvider);
 
 	const erc20balance = await contract.balanceOf(eAddress);
 	console.log(erc20balance);
 
-	const ibcContract = new ethers.Contract(IBC_ADDRESS, IBC_CONTRACT_ABI.abi, eSigner);
+	const ibcContract = new ethers.Contract(IBC_ADDRESS, IBC_CONTRACT_ABI, eSigner);
 
 	// string calldata portId,
 	// string calldata channelId,

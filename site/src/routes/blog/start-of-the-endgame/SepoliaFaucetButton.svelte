@@ -14,7 +14,7 @@
         }
         navigator.clipboard.writeText(address);
         message = "Copied"
-	}
+    }
 
     function goToFaucet() {
         window.open(faucetAddress, "_blank");
