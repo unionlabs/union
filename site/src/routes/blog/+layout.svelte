@@ -28,4 +28,12 @@
 	:global(.blog-post-container a) {
 		@apply text-accent;
 	}
+
+	:global(.blog-post-container code) {
+		@apply font-jetbrains;
+		color: #c0c0c5;
+		background: #0f0f10;
+		padding: 3px 7px 3px;
+  	border-radius: 7px;
+	}
 </style>
