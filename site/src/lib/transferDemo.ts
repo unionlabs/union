@@ -23,9 +23,10 @@ export const initClients = async (): Promise<void> => {
 	// @ts-ignore
 	window.process = { env: {} };
 
-	let { CosmjsOfflineSigner } = await import('@leapwallet/cosmos-snap-provider');
-	let { GasPrice, SigningStargateClient } = await import('@cosmjs/stargate');
-	let { Tendermint37Client } = await import('@cosmjs/tendermint-rpc');
+	const { CosmjsOfflineSigner } = await import('@leapwallet/cosmos-snap-provider');
+	const { GasPrice, SigningStargateClient } = await import('@cosmjs/stargate');
+	const { Tendermint37Client } = await import('@cosmjs/tendermint-rpc');
+	const { suggestChain, getKey } = await import('@leapwallet/cosmos-snap-provider');
 
 	const chainId = 'union-testnet-3';
 

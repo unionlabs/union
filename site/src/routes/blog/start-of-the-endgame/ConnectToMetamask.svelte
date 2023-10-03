@@ -9,12 +9,21 @@
 	import BlogLayout from '../../../mdsvex/BlogLayout.svelte';
 	import ButtonA from '$lib/ButtonA.svelte';
 
+
+	$: if (snapInstalled && connectedToSepolia && browser) {
+		(async () => {
+			await initClients();
+			startBalanceWorkers();
+		})();
+	}
+
 	onMount(async () => {
 
 		if (browser) {
 			const mmInstalled = window.ethereum !== undefined;
 			metamaskInstalled.set(mmInstalled); 
 			if (mmInstalled) {
+				ethersSetup();
 				updateConnectedToSeplia();
 				updateSnapInstalled();
 			}

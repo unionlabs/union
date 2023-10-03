@@ -68,12 +68,11 @@ export const ethersSetup = async () => {
 	const eAddress = await eSigner.getAddress();
 	ethersSigner.set(eSigner);
 	ethereumAddress.set(eAddress);
+	ethersProvider.set(eProvider);
 };
 
 export const connectLeapSnap = async () => {
-	const { getSnap, connectSnap, suggestChain, getKey } = await import(
-		'@leapwallet/cosmos-snap-provider'
-	);
+	const { getSnap, connectSnap, getKey } = await import('@leapwallet/cosmos-snap-provider');
 	//@ts-ignore
 	window.process = { env: {} };
 	const snap = await getSnap();

@@ -10,6 +10,7 @@ published: true
 <script>
 	import TokenTransfer from '$lib/TokenTransfer.svelte';
 	import ConnectToMetamask from './ConnectToMetamask.svelte';
+	import AddressesAndBalances from './AddressesAndBalances.svelte'; 
 </script>
 
 
@@ -18,6 +19,10 @@ In our inaugural post, we showcased the first IBC connection to Ethereum by show
 Union already has experimental support for [Metamask](https://metamask.io/) through [Leap Snaps](https://www.leapwallet.io/snaps). This allows us to handle the different account models while ensuring you only need one wallet installed.
 
 <ConnectToMetamask/>
+
+The Union faucet will send you `$UNO` tokens for bridging usage.
+
+<AddressesAndBalances/>
 
 
 ## Next Steps
