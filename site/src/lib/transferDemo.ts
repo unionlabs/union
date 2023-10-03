@@ -18,6 +18,8 @@ import { ethers } from 'ethers';
 import { GasPrice } from '@cosmjs/stargate';
 import { SigningCosmWasmClient } from '@cosmjs/cosmwasm-stargate';
 
+const UNION_CHAIN_ID = 'union-testnet-3';
+
 export const initClients = async (): Promise<void> => {
 	// Hack to import cosmjs
 	// @ts-ignore
@@ -26,22 +28,7 @@ export const initClients = async (): Promise<void> => {
 	const { CosmjsOfflineSigner } = await import('@leapwallet/cosmos-snap-provider');
 	const { GasPrice, SigningStargateClient } = await import('@cosmjs/stargate');
 	const { Tendermint37Client } = await import('@cosmjs/tendermint-rpc');
-	const { suggestChain, getKey } = await import('@leapwallet/cosmos-snap-provider');
-
-	const chainId = 'union-testnet-3';
-
-	await suggestChain(
-		{
-			chainId: 'union-testnet-3',
-			chainName: 'union-testnet',
-			bip44: { coinType: 118 },
-			bech32Config: {
-				bech32PrefixAccAddr: 'union'
-			}
-		},
-		{ force: false }
-	);
-	const offlineSigner = new CosmjsOfflineSigner(chainId);
+	const offlineSigner = new CosmjsOfflineSigner(UNION_CHAIN_ID);
 	cosmjsSigner.set(offlineSigner);
 
 	let accounts = await offlineSigner.getAccounts();
@@ -49,7 +36,6 @@ export const initClients = async (): Promise<void> => {
 		unionAccount.set(accounts[0]);
 	}
 
-	const key = await getKey(chainId);
 	const rpcUrl = 'wss://rpc.0xc0dejug.uno'; // Populate with an RPC URL corresponding to the given chainId
 	tendermintClient.set(await Tendermint37Client.connect(rpcUrl));
 	let tmClient = get(tendermintClient);

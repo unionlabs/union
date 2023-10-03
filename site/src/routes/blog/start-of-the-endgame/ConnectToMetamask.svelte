@@ -2,20 +2,24 @@
 	import { browser } from '$app/environment';
 	import { initClients, startBalanceWorkers } from '$lib/transferDemo';
 	import { onMount } from 'svelte';
-	import { metamaskInstalled, connectedToSepolia, snapInstalled } from '$lib/stores/wallets';
-	import { ethersSetup, connectToSepolia, updateConnectedToSeplia, connectLeapSnap, updateSnapInstalled } from '$lib/ethersSetup';
+	import { metamaskInstalled, connectedToSepolia, connectedToUnion, snapInstalled } from '$lib/stores/wallets';
+	import { ethersSetup, connectToSepolia, updateConnectedToSeplia, connectLeapSnap, updateSnapInstalled, connectToUnion } from '$lib/ethersSetup';
 
 	import DemoButton from '$lib/DemoButton.svelte';
 	import BlogLayout from '../../../mdsvex/BlogLayout.svelte';
 	import ButtonA from '$lib/ButtonA.svelte';
+	import AddressesAndBalances from './AddressesAndBalances.svelte';
+	import { get } from 'svelte/store';
 
 
-	$: if (snapInstalled && connectedToSepolia && browser) {
-		(async () => {
+
+	connectedToUnion.subscribe(async (connected) => {
+		if(connected) {
 			await initClients();
 			startBalanceWorkers();
-		})();
-	}
+		}
+	});
+
 
 	onMount(async () => {
 
@@ -44,7 +48,12 @@
 			{#if !$snapInstalled}
 				<DemoButton on:click={connectLeapSnap}>Add Leap Cosmos Wallet to Metamask 🌌</DemoButton>
 			{:else}
-				<div>Leap Cosmos Wallet Connected ✅</div>
+				<div>Leap Cosmos Wallet Installed ✅</div>
+				{#if !$connectedToUnion}
+					<DemoButton on:click={connectToUnion}>Connect to Union in Leap 🚀</DemoButton>
+				{:else}
+					<div>Connected to Union ✅</div> 
+				{/if}
 			{/if}
 		{/if}
 	{/if}

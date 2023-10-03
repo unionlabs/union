@@ -4,7 +4,8 @@ import {
 	ethersProvider,
 	ethersSigner,
 	connectedToSepolia,
-	snapInstalled
+	snapInstalled,
+	connectedToUnion
 } from './stores/wallets';
 import { get } from 'svelte/store';
 
@@ -80,4 +81,23 @@ export const connectLeapSnap = async () => {
 		await connectSnap(); // Initiates installation if not already present
 	}
 	await updateSnapInstalled();
+};
+
+const UNION_CHAIN_ID = 'union-testnet-3';
+
+export const connectToUnion = async () => {
+	const { suggestChain, getKey } = await import('@leapwallet/cosmos-snap-provider');
+
+	await suggestChain(
+		{
+			chainId: UNION_CHAIN_ID,
+			chainName: 'union-testnet',
+			bip44: { coinType: 118 },
+			bech32Config: {
+				bech32PrefixAccAddr: 'union'
+			}
+		},
+		{ force: false }
+	);
+	connectedToUnion.set(true);
 };
