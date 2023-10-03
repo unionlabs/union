@@ -17,22 +17,15 @@ import { get } from 'svelte/store';
 import { ethers } from 'ethers';
 import { GasPrice } from '@cosmjs/stargate';
 import { SigningCosmWasmClient } from '@cosmjs/cosmwasm-stargate';
+
 export const initClients = async (): Promise<void> => {
 	// Hack to import cosmjs
 	// @ts-ignore
 	window.process = { env: {} };
 
 	let { CosmjsOfflineSigner } = await import('@leapwallet/cosmos-snap-provider');
-	let { getSnap, connectSnap, suggestChain, getKey } = await import(
-		'@leapwallet/cosmos-snap-provider'
-	);
 	let { GasPrice, SigningStargateClient } = await import('@cosmjs/stargate');
 	let { Tendermint37Client } = await import('@cosmjs/tendermint-rpc');
-
-	const snapInstalled = await getSnap();
-	if (!snapInstalled) {
-		connectSnap(); // Initiates installation if not already present
-	}
 
 	const chainId = 'union-testnet-3';
 

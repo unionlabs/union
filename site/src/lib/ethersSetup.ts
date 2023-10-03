@@ -3,7 +3,8 @@ import {
 	ethereumAddress,
 	ethersProvider,
 	ethersSigner,
-	connectedToSepolia
+	connectedToSepolia,
+	snapInstalled
 } from './stores/wallets';
 import { get } from 'svelte/store';
 
@@ -15,6 +16,14 @@ export const updateConnectedToSeplia = async () => {
 	}
 	const currentChainId = await window.ethereum.request({ method: 'eth_chainId' });
 	connectedToSepolia.set(currentChainId === SEPOLIA_CHAIN_ID);
+};
+
+export const updateSnapInstalled = async () => {
+	//@ts-ignore
+	window.process = { env: {} };
+	const { getSnap } = await import('@leapwallet/cosmos-snap-provider');
+	const snap = await getSnap();
+	snapInstalled.set(snap !== undefined);
 };
 
 export const connectToSepolia = async () => {
@@ -59,4 +68,17 @@ export const ethersSetup = async () => {
 	const eAddress = await eSigner.getAddress();
 	ethersSigner.set(eSigner);
 	ethereumAddress.set(eAddress);
+};
+
+export const connectLeapSnap = async () => {
+	const { getSnap, connectSnap, suggestChain, getKey } = await import(
+		'@leapwallet/cosmos-snap-provider'
+	);
+	//@ts-ignore
+	window.process = { env: {} };
+	const snap = await getSnap();
+	if (snap === undefined) {
+		await connectSnap(); // Initiates installation if not already present
+	}
+	await updateSnapInstalled();
 };
