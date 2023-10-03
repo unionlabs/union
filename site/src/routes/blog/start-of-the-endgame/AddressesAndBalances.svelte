@@ -5,39 +5,39 @@ import { getUnoFromFaucet, sendUnoToUnionAddress, sendUnoToEthereum } from '$lib
 </script>
 
 
-<div class="my-8 h-[400px]">
-	<div style="margin: 0 auto;" class="font-jetbrains absolute h-[400px] max-w-4xl p-4 md:shadow-2xl left-0 md:left-[16px] right-0 md:right-[16px] bg-black md:rounded-xl">
+<div class="bg-black p-4 my-4 font-jetbrains">
 	{#if $unionAccount === null}
-		Loading account...
+		Complete the previous step to continue
 	{:else}
-		<div>Union Address: {$unionAccount.address}</div>
-		<div>Ethereum Address: {$ethereumAddress}</div>
+		<div>Union Address: <span class="text-accent">{$unionAccount.address}</span></div>
+		<div class="mb-8">Ethereum Address: <span class="text-accent">{$ethereumAddress}</span></div>
 		
 		{#if $unionUnoBalance === null}
 			<div>Fetching Union Balance...</div>
 		{:else}
-			<div>Union UNO Balance: <b>{$unionUnoBalance.amount}</b> {$unionUnoBalance.denom}</div>
+			<div>Union UNO Balance: <span class="text-accent">{$unionUnoBalance.amount}</span> {$unionUnoBalance.denom}</div>
 		{/if}
 
 		{#if $ethereumEthBalance === null}
 			<div>Fetching Ethereum Balance...</div>
 		{:else}
-			<div>Ethereum ETH Balance: <b>{$ethereumEthBalance}</b> wei</div>
+			<div>Ethereum ETH Balance: <span class="text-accent">{$ethereumEthBalance}</span> wei</div>
 		{/if}
 
 		{#if $ethereumUnoBalance === null}
 			<div>Fetching Ethereum UNOBalance...</div>
 		{:else}
-			<div>Ethereum UNO Balance: <b>{$ethereumUnoBalance}</b> muno</div>
+			<div>Ethereum UNO Balance: <span class="text-accent">{$ethereumUnoBalance}</span> muno</div>
 		{/if}
 
+		<!--
 		<button class="px-4 mt-4 py-2 border-2 font-jetbrains border-accent text-accent" on:click={getUnoFromFaucet}>Get UNO from faucet</button>
 		<button class="px-4 mt-4 py-2 border-2 font-jetbrains border-accent text-accent" on:click={sendUnoToEthereum}>Send UNO to Ethereum</button>
 		<button class="px-4 mt-4 py-2 border-2 font-jetbrains border-accent text-accent" on:click={sendUnoToUnion}>Send UNO to Union</button>
+		!-->
 		<!--
 		<button class="px-4 mt-4 py-2 border-2 font-jetbrains border-accent text-accent" on:click={sendUnoToUnionAddress}>Send UNO</button>
 		!-->
 	{/if}
-	</div>
 </div>
 

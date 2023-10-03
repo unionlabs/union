@@ -37,7 +37,7 @@
 </script>
 
 
-<div class="bg-black p-4 font-jetbrains rounded">
+<div class="bg-black my-4 p-4 font-jetbrains rounded">
 	{#if !$metamaskInstalled}
 		<a href="https://metamask.io/download/">Install MetaMask to continue 🦊</a>
 	{:else}

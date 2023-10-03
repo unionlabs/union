@@ -11,6 +11,8 @@ published: true
 	import TokenTransfer from '$lib/TokenTransfer.svelte';
 	import ConnectToMetamask from './ConnectToMetamask.svelte';
 	import AddressesAndBalances from './AddressesAndBalances.svelte'; 
+	import FaucetButton from './FaucetButton.svelte'; 
+	import TransferUnoToEthereum from './TransferUnoToEthereum.svelte'; 
 </script>
 
 
@@ -20,22 +22,59 @@ Union already has experimental support for [Metamask](https://metamask.io/) thro
 
 <ConnectToMetamask/>
 
-The Union faucet will send you `$UNO` tokens for bridging usage.
+
+Now that we're fully connected to both Sepolia and Union Testnet, we're able to show your addresses and balances:
 
 <AddressesAndBalances/>
 
+The Union faucet will send you `$UNO` tokens for bridging usage.
 
-## Next Steps
+<FaucetButton/>
 
-The testnet does not have a live explorer yet, we'll be deploying that in the coming weeks, including a faucet and token transfers.
+We are now going to initiate an IBC transfer from `union-testnet-3` to `sepolia`. You will be sending over $UNO to Sepolia (Ethereum Testnet) and back again.
 
-Our next demonstration will show ERC-20 to native token transfers, setting the foundation for accessing Ethereum assets natively on any appchain.
+<TransferUnoToEthereum/>
 
+
+Inside the testnet, a full IBC transfer is now occuring: 
+
+- The Union validators are finalizing the block.
+- [Voyager]() is observing events and constructing packets.
+- [Galois]() generates a zero-knowledge proof.
+
+When the transaction is received, the funds are locked on the Union chain, ensuring that the tokens on Sepolia are always backed 1:1. Since Union has rapid finality and proof generation, the transfer from Union to Sepolia will be quite fast.
+
+:::info
+For our testnet, `Galois` is running on an underpowered machine. This means that proof generation is relatively slow. For mainnet configurations and benchmarking, we maintain a 64 core worker node.
+:::
+
+On Sepolia, the zero-knowledge proof is verified inside the IBC contract stack, which is the validation necessary to update the Union light client. After successful validation, an ERC-20 token representing $UNO is transferred to your wallet. Union is compatible with any token standard and chain that has general-purpose programming capabilities.
+
+To transfer the $UNO back, we need to obtain some Sepolia ETH for gas fees.
+
+
+<!-- Sepolia Faucet + Copy button -->
+
+For the transfer back we need to wait for the acknowledgement of the initial transfer to reach Union. Acknowledgements prevent censorship attacks by provers, ensuring users never lose control of their tokens. The same light-client and packet mechanism is used to relay `acks`.
+
+<!-- Acknowledgement Element -->
+
+Once you have received Sepolia Eth, initiate the transfer to Union
+
+<!-- Union Transfer Element -->
+
+## Signing Committee
+
+Tracking Ethereum's consensus and finalization is quite complex compared to [CometBLS](). The entire Ethereum validator set produces blocks every 12 seconds, which are used to track the execution. The finalization process is tracked on the [beacon chain](), which is what is necessary to construct light-client proofs. [Voyager]() tracks both the execution and finalization layer.
+
+The signing committee constructs a BLS signature, which is used to sign blocks for finalization. Compared to Tendermint based chains, the beacon chain can encounter [block reorganizations](https://barnabe.substack.com/p/pos-ethereum-reorg) quite easily. Cosmos based chains use single-slot-finality, which is great for high-performance applications and bridging purposes. Seperating out execution and finalization in separate layers does have a major benefit. Ethereum can stall finalization but proceed with execution.
 
 ## Join the Union
 
-If this peaked your interest:
+We are launching or incentivized testnet soon! If you want to become a contributor:
 
 - Follow [@union_build on X](https://x.com/union_build).
 - Read [the docs](https://docs.union.build).
 - Speak with us at [Cosmoverse 2023](https://cosmoverse.org/).
+
+We are looking for infrastructure providers, technical collaborations, community managers and code contributors. Direct message @union_build if interested.
