@@ -1,7 +1,7 @@
 <script lang="ts">
 import { sendUnoToUnion } from '$lib/transferFromSepolia';
 import { unionAccount, unionUnoBalance, ethereumEthBalance, ethereumAddress, ethereumUnoBalance } from '$lib/stores/wallets'; 
-import { getUnoFromFaucet, sendUnoToUnionAddress, sendUnoToEthereum } from '$lib/transferDemo';
+import { getUnoFromFaucet, sendUnoToUnionAddress, sendUnoToEthereum, toFixedPoint } from '$lib/transferDemo';
 import TerminalContainer from '$lib/TerminalContainer.svelte';
 </script>
 
@@ -15,19 +15,19 @@ import TerminalContainer from '$lib/TerminalContainer.svelte';
 		{#if $unionUnoBalance === null}
 			<div>Fetching Union Balance...</div>
 		{:else}
-			<div>Union UNO Balance: <span class="text-accent">{$unionUnoBalance.amount}</span> {$unionUnoBalance.denom}</div>
+			<div>Union UNO Balance: <span class="text-accent">{toFixedPoint(BigInt($unionUnoBalance.amount), 6)}</span> UNO</div>
 		{/if}
 
 		{#if $ethereumEthBalance === null}
 			<div>Fetching Ethereum Balance...</div>
 		{:else}
-			<div>Ethereum ETH Balance: <span class="text-accent">{$ethereumEthBalance}</span> wei</div>
+			<div>Ethereum ETH Balance: <span class="text-accent">{toFixedPoint($ethereumEthBalance, 18)}</span> ETH</div>
 		{/if}
 
 		{#if $ethereumUnoBalance === null}
 			<div>Fetching Ethereum UNOBalance...</div>
 		{:else}
-			<div>Ethereum UNO Balance: <span class="text-accent">{$ethereumUnoBalance}</span> muno</div>
+			<div>Ethereum UNO Balance: <span class="text-accent">{toFixedPoint($ethereumUnoBalance, 6)}</span> UNO</div>
 		{/if}
 
 		<!--

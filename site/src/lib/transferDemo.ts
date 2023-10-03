@@ -116,6 +116,14 @@ export const startBalanceWorkers = () => {
 	balanceWorker(updateUnionUnoBalance, 2000);
 };
 
+export const toFixedPoint = (value: bigint, decimals: number) => {
+	let right = BigInt(value) % BigInt(10**decimals);
+	let left = BigInt(value) - right;
+
+	return left.toString()
+		.concat(".", right.toString().padStart(decimals, "0"))
+}
+
 export const updateUnionUnoBalance = async () => {
 	const sgClient = get(stargateClient);
 	const uAccount = get(unionAccount);
