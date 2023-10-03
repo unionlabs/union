@@ -2,10 +2,10 @@ import erc20abi from '$lib/abi/erc20.json';
 import ibcAbi from '$lib/abi/ibc.json';
 
 export const UNION_CHAIN_ID = 'union-testnet-3';
-export const MUNO_ERC20_ADDRESS = '0x4bbca3a0360476a8a4f8482b8558c919e0663485';
-export const UCS01_EVM_ADDRESS = '0x100E44E3DD0349a60AB8C154Add0bE31a76C2CC7';
+export const MUNO_ERC20_ADDRESS = '0x1ea17f35801d9d7c160f66603ac4c5bb59fcec19';
+export const UCS01_EVM_ADDRESS = '0xd5DA8d1667227F0143Ded9d5f654e08CA5e3D3EB';
 export const UCS01_UNION_ADDRESS =
-	'union15d0ne205wynlf33r44a2awtk74f5llgup25x69564h9964ysurds60xnjw';
+	'union1uyc9cyetraney0rrufh0w5qrst5ugaqqahdy99mzn3cz05e5v6vqsgrsza';
 
 export const ERC20_CONTRACT_ABI = erc20abi.abi;
 export const IBC_CONTRACT_ABI = ibcAbi.abi;

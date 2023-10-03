@@ -22,9 +22,14 @@
 		}
 
 		const currentEthereumUnoBalance = get(ethereumUnoBalance);
+		if (currentEthereumUnoBalance === null) {
+			console.error('qed');
+			return;
+		}
+
 
 		ethereumUnoBalance.subscribe((balance) => {
-			if (balance > currentEthereumUnoBalance) {
+			if (balance !== null && balance > currentEthereumUnoBalance) {
 				sendingUnoToEthereum.set('done');
 			}
 		});
