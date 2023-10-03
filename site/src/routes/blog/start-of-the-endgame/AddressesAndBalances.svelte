@@ -1,7 +1,8 @@
 <script lang="ts">
 import { sendUnoToUnion } from '$lib/transferFromSepolia';
 import { unionAccount, unionUnoBalance, ethereumEthBalance, ethereumAddress, ethereumUnoBalance } from '$lib/stores/wallets'; 
-import { getUnoFromFaucet, sendUnoToUnionAddress, sendUnoToEthereum, toFixedPoint } from '$lib/transferDemo';
+import { toFixedPoint } from '$lib/format';
+import { getUnoFromFaucet, sendUnoToUnionAddress, sendUnoToEthereum } from '$lib/transferDemo';
 import TerminalContainer from '$lib/TerminalContainer.svelte';
 </script>
 
@@ -12,23 +13,30 @@ import TerminalContainer from '$lib/TerminalContainer.svelte';
 		<div>Union Address: <span class="text-accent">{$unionAccount.address}</span></div>
 		<div class="mb-8">Ethereum Address: <span class="text-accent">{$ethereumAddress}</span></div>
 		
-		{#if $unionUnoBalance === null}
-			<div>Fetching Union Balance...</div>
-		{:else}
-			<div>Union UNO Balance: <span class="text-accent">{toFixedPoint(BigInt($unionUnoBalance.amount), 6)}</span> UNO</div>
-		{/if}
-
-		{#if $ethereumEthBalance === null}
-			<div>Fetching Ethereum Balance...</div>
-		{:else}
-			<div>Ethereum ETH Balance: <span class="text-accent">{toFixedPoint($ethereumEthBalance, 18)}</span> ETH</div>
-		{/if}
-
-		{#if $ethereumUnoBalance === null}
-			<div>Fetching Ethereum UNOBalance...</div>
-		{:else}
-			<div>Ethereum UNO Balance: <span class="text-accent">{toFixedPoint($ethereumUnoBalance, 6)}</span> UNO</div>
-		{/if}
+		<div class="md:columns-2 justify-end">
+			<div class="flex-col">
+				<div>Union UNO Balance: </div>
+				<div>Ethereum ETH Balance: </div>
+				<div>Ethereum UNO Balance: </div>
+			</div>
+			<div class="flex-col">
+				{#if $unionUnoBalance === null}
+					<div>Fetching...</div>
+				{:else}
+					<div><span class="text-accent">{toFixedPoint(BigInt($unionUnoBalance.amount), 6)}</span> UNO</div>
+				{/if}
+				{#if $ethereumEthBalance === null}
+					<div>Fetching...</div>
+				{:else}
+					<div><span class="text-accent">{toFixedPoint($ethereumEthBalance, 18).slice(0, -12)}</span> ETH</div>
+				{/if}
+				{#if $ethereumUnoBalance === null}
+					<div>Fetching...</div>
+				{:else}
+					<div><span class="text-accent">{toFixedPoint($ethereumUnoBalance, 6)}</span> UNO</div>
+				{/if}
+			</div>
+		</div>
 
 		<!--
 		<button class="px-4 mt-4 py-2 border-2 font-jetbrains border-accent text-accent" on:click={getUnoFromFaucet}>Get UNO from faucet</button>
