@@ -117,12 +117,11 @@ export const startBalanceWorkers = () => {
 };
 
 export const toFixedPoint = (value: bigint, decimals: number) => {
-	let right = BigInt(value) % BigInt(10**decimals);
+	let right = BigInt(value) % BigInt(10 ** decimals);
 	let left = BigInt(value) - right;
 
-	return left.toString()
-		.concat(".", right.toString().padStart(decimals, "0"))
-}
+	return left.toString().concat('.', right.toString().padStart(decimals, '0'));
+};
 
 export const updateUnionUnoBalance = async () => {
 	const sgClient = get(stargateClient);
@@ -179,7 +178,7 @@ export const sendUnoToEthereum = async () => {
 		return;
 	}
 
-	await cwClient.execute(
+	return cwClient.execute(
 		uAccount.address,
 		UCS01_RELAY_CONTRACT,
 		{
