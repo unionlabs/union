@@ -9,25 +9,16 @@ published: true
 
 <script>
 	import TokenTransfer from '$lib/TokenTransfer.svelte';
-	// import Ethers from '$lib/Ethers.svelte';
-	import { browser } from '$app/environment';
-	import { initClients, startBalanceWorkers, setupEthers } from '$lib/transferDemo';
-	import { onMount } from 'svelte';
-
-	onMount(async () => {
-		if (browser) {
-			await setupEthers();
-			await initClients();
-			startBalanceWorkers();
-		}
-	})
+	import ConnectToMetamask from './ConnectToMetamask.svelte';
 </script>
 
-<!-- <Ethers/>!-->
 
-Galois and CometBLS have been live on our internal testnets for a while, but now we are ready to share a brief demo in anticipation of Cosmoverse. This is the **first, tangible implementation** of an effort that has been going on for the last few years by many different teams. We proudly present the first ICS20 transfers to Sepolia (Ethereum).
+In our inaugural post, we showcased the first IBC connection to Ethereum by showing two contracts playing [ping-pong](../the-journey-so-far/+page.md) through general message passing. Today we have something even more exciting: a first look at UCS-1, the hardened version of ICS-20 for asset transfers between EVM and Cosmos-SDK based chains.
 
-<TokenTransfer/>
+Union already has experimental support for [Metamask](https://metamask.io/) through [Leap Snaps](https://www.leapwallet.io/snaps). This allows us to handle the different account models while ensuring you only need one wallet installed.
+
+<ConnectToMetamask/>
+
 
 ## Next Steps
 

@@ -17,7 +17,6 @@ import { get } from 'svelte/store';
 import { ethers } from 'ethers';
 import { GasPrice } from '@cosmjs/stargate';
 import { SigningCosmWasmClient } from '@cosmjs/cosmwasm-stargate';
-
 export const initClients = async (): Promise<void> => {
 	// Hack to import cosmjs
 	// @ts-ignore
@@ -150,45 +149,6 @@ export const updateUnionUnoBalance = async () => {
 	}
 	unionUnoBalance.set(await sgClient.getBalance(uAccount.address, 'muno'));
 };
-
-export const setupEthers = async () => {
-	console.log('connecting to ethereum');
-
-	const eProvider = new ethers.BrowserProvider(window.ethereum);
-
-	if (eProvider === null) {
-		console.error('qed eprovider');
-		return;
-	}
-
-	eProvider.on('network', (newNetwork, oldNetwork) => {
-		// When a Provider makes its initial connection, it emits a "network"
-		// event with a null oldNetwork along with the newNetwork. So, if the
-		// oldNetwork exists, it represents a changing network
-		console.log(newNetwork);
-		console.log(oldNetwork);
-		if (oldNetwork) {
-			window.location.reload();
-		}
-	});
-
-	/// Requests the end user to switch to sepolia.
-	await window.ethereum.request({
-		method: 'wallet_switchEthereumChain',
-		params: [{ chainId: '0xaa36a7' }]
-	});
-
-	ethersProvider.set(eProvider);
-	const allAccounts = await eProvider.listAccounts();
-	console.log('all acccounts', allAccounts);
-	const eSigner = await eProvider.getSigner(0);
-	ethersSigner.set(eSigner);
-	console.log('fetching ethereum balance');
-	const eAddress = await eSigner.getAddress();
-	console.log('ethereum address', eAddress);
-	ethereumAddress.set(eAddress);
-};
-
 export const updateEthereumEthBalance = async () => {
 	const eProvider = get(ethersProvider);
 	const address = get(ethereumAddress);
