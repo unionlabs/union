@@ -16,7 +16,8 @@ import {
 	ERC20_CONTRACT_ABI,
 	UCS01_EVM_ADDRESS,
 	IBC_CONTRACT_ABI,
-	UCS01_SEPOLIA_SOURCE_CHANNEL
+	UCS01_SEPOLIA_SOURCE_CHANNEL,
+	UCS01_SEPOLIA_PORT_ID
 } from './constants';
 
 export const approveUnoTransferToUnion = async () => {
@@ -56,7 +57,7 @@ export const sendUnoToUnion = async () => {
 	// uint64 counterpartyTimeoutRevisionNumber,
 	// uint64 counterpartyTimeoutRevisionHeight
 	const tx = await ibcContract.send(
-		'ucs01-relay',
+		UCS01_SEPOLIA_PORT_ID,
 		UCS01_SEPOLIA_SOURCE_CHANNEL,
 		uAccount.address,
 		[[MUNO_ERC20_ADDRESS, 1000]],

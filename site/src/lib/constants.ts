@@ -11,3 +11,4 @@ export const ERC20_CONTRACT_ABI = erc20abi.abi;
 export const IBC_CONTRACT_ABI = ibcAbi.abi;
 export const UCS01_UNION_SOURCE_CHANNEL = 'channel-15';
 export const UCS01_SEPOLIA_SOURCE_CHANNEL = 'channel-5';
+export const UCS01_SEPOLIA_PORT_ID = 'ucs01-relay-2';

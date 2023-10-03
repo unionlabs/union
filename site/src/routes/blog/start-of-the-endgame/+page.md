@@ -15,6 +15,7 @@ published: true
 	import TransferUnoToEthereum from './TransferUnoToEthereum.svelte'; 
 	import TransferUnoToEthereumStatus from './TransferUnoToEthereumStatus.svelte'; 
 	import SepoliaFaucetButton from './SepoliaFaucetButton.svelte';
+	import SendUnoToUnionButton from './SendUnoToUnionButton.svelte';
 </script>
 
 
@@ -63,6 +64,8 @@ For the transfer back we need to wait for the acknowledgement of the initial tra
 <!-- Acknowledgement Element -->
 
 Once you have received Sepolia Eth, initiate the transfer to Union. This will either burn or lock your tokens in the Sepolia vault, depending on the sovereign home of the asset. Once Sepolia finalizes, the funds are sent to Union.
+
+<SendUnoToUnionButton/>
 
 <!-- Union Transfer Element -->
 
