@@ -1,7 +1,7 @@
 ---
-title: Start of the Endgame
-slug: start-of-the-endgame
-date: "2023-09-27"
+title: ICS-20 Transfers to Ethereum
+slug: ics-20-to-ethereum
+date: "2023-10-04"
 author: "@union_build"
 preview: "Today we present a first look at UCS-01, a superset ICS-20 for asset transfers between EVM and Cosmos-SDK based chains."
 published: true
@@ -18,8 +18,7 @@ published: true
 	import SendUnoToUnionButton from './SendUnoToUnionButton.svelte';
 </script>
 
-
-In our inaugural post, we showcased the first IBC connection to Ethereum by showing two contracts playing [ping-pong](../the-journey-so-far/+page.md) through general message passing. Today we have something even more exciting: a first look at UCS-1, the improved version of ICS-20 for asset transfers between EVM and Cosmos-SDK based chains.
+In our inaugural post, we showcased the first IBC connection to Ethereum by showing two contracts playing [ping-pong](../the-journey-so-far/+page.md) through general message passing. Today we have something even more exciting: a first look at (UCS-1), the improved version of ICS-20 for asset transfers between EVM and Cosmos-SDK based chains. Our improvements are related to batch transfers to more efficiently transfer funds.
 
 Union already has experimental support for [Metamask](https://metamask.io/) through [Leap Snaps](https://www.leapwallet.io/snaps). This allows us to handle the different account models while ensuring you only need one wallet installed.
 
@@ -33,7 +32,7 @@ Claim $UNO from the Union faucet for bridging usage. If you opt-in to sharing yo
 
 <FaucetButton/>
 
-IBC transfers from `union-testnet-3` to `sepolia` are just contract interactions, which need to be sent to either Sepolia or Union, depending on the transfer direction. We start by sending $UNO to Sepolia (Ethereum Testnet), and then back again.
+IBC transfers from `union-testnet-3` to `sepolia` are just contract interactions, which need to be sent to either Sepolia or Union, depending on the transfer direction. We start by sending $UNO to Sepolia (Ethereum Testnet), and then back again. This showcase uses a single-threaded relayer with simple nonce management. This means it is not optimized for throughput, resulting in a lot of queued transactions. It's an MVP of a beta product after all. Optimized nonce management should land next week.
 
 <TransferUnoToEthereum/>
 
