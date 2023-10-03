@@ -66,8 +66,6 @@ contract UCS01Relay is IBCAppBase {
         public counterpartyEndpoints;
     mapping(string => mapping(string => mapping(address => uint256)))
         public outstanding;
-    mapping(string => mapping(string => mapping(address => uint256)))
-        public inFlight;
 
     event DenomCreated(string denom, address token);
     event Received(
@@ -162,26 +160,6 @@ contract UCS01Relay is IBCAppBase {
         ].sub(amount);
     }
 
-    function increaseInFlight(
-        string memory portId,
-        string memory channelId,
-        address token,
-        uint256 amount
-    ) internal {
-        inFlight[portId][channelId][token] = inFlight[portId][channelId][token]
-            .add(amount);
-    }
-
-    function decreaseInFlight(
-        string memory portId,
-        string memory channelId,
-        address token,
-        uint256 amount
-    ) internal {
-        inFlight[portId][channelId][token] = inFlight[portId][channelId][token]
-            .sub(amount);
-    }
-
     function send(
         string calldata portId,
         string calldata channelId,
@@ -211,7 +189,7 @@ contract UCS01Relay is IBCAppBase {
                     localToken.amount
                 );
             } else {
-                increaseInFlight(
+                increaseOutstanding(
                     portId,
                     channelId,
                     localToken.denom,
@@ -263,34 +241,22 @@ contract UCS01Relay is IBCAppBase {
             } else {
                 // It must be in the form 0x...
                 denomAddress = hexToAddress(token.denom);
-                // The token must be in-flight
-                decreaseInFlight(portId, channelId, denomAddress, token.amount);
-                IERC20(denomAddress).transfer(receiver, token.amount);
-            }
-        }
-    }
-
-    // We received a successful ack, move tokens from in-flight to outstanding.
-    function tokensLanded(
-        string memory portId,
-        string memory channelId,
-        RelayPacket memory packet
-    ) internal {
-        for (uint256 i = 0; i < packet.tokens.length; i++) {
-            Token memory token = packet.tokens[i];
-            // For local tokens only as remote tokens are burnt.
-            if (token.denom.toSlice().startsWith("0x".toSlice())) {
-                address denomAddress = hexToAddress(token.denom);
-                decreaseInFlight(portId, channelId, denomAddress, token.amount);
-                increaseOutstanding(
+                decreaseOutstanding(
                     portId,
                     channelId,
                     denomAddress,
                     token.amount
                 );
+                IERC20(denomAddress).transfer(receiver, token.amount);
             }
         }
     }
+
+    function tokensLanded(
+        string memory portId,
+        string memory channelId,
+        RelayPacket memory packet
+    ) internal {}
 
     function onRecvPacketProcessing(
         IbcCoreChannelV1Packet.Data calldata ibcPacket,

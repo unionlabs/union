@@ -72,54 +72,6 @@ fn decrease_outstanding(
     })
 }
 
-fn update_in_flight<F>(
-    deps: DepsMut,
-    channel_id: &str,
-    denom: &str,
-    f: F,
-) -> Result<(), ContractError>
-where
-    F: FnOnce(Option<Uint512>) -> Result<Uint512, ContractError>,
-{
-    CHANNEL_STATE.update(
-        deps.storage,
-        (channel_id, &denom),
-        |state| -> Result<_, ContractError> {
-            let new_in_flight = f(state.as_ref().map(|x| x.in_flight))?;
-            let mut state = state.unwrap_or_default();
-            state.in_flight = new_in_flight;
-            Ok(state)
-        },
-    )?;
-    Ok(())
-}
-
-fn increase_in_flight(
-    deps: DepsMut,
-    channel_id: &str,
-    denom: &str,
-    amount: Uint128,
-) -> Result<(), ContractError> {
-    update_in_flight(deps, channel_id, denom, |in_flight| {
-        let new_in_flight = in_flight.unwrap_or_default().checked_add(amount.into())?;
-        Ok(new_in_flight)
-    })
-}
-
-fn decrease_in_flight<'a>(
-    deps: DepsMut<'a>,
-    channel_id: &str,
-    denom: &str,
-    amount: Uint128,
-) -> Result<(), ContractError> {
-    update_in_flight(deps, channel_id, denom, |in_flight| {
-        let new_in_flight = in_flight
-            .ok_or(ContractError::InsufficientFunds)?
-            .checked_sub(amount.into())?;
-        Ok(new_in_flight)
-    })
-}
-
 trait OnReceive {
     fn foreign_toggle(&mut self, denom: &str) -> Result<bool, ContractError>;
 
@@ -268,7 +220,7 @@ impl<'a> ForTokens for StatefulSendTokens<'a> {
         denom: &str,
         amount: Uint128,
     ) -> Result<Vec<CosmosMsg<TokenFactoryMsg>>, ContractError> {
-        increase_in_flight(self.deps.branch(), channel_id, denom, amount)?;
+        increase_outstanding(self.deps.branch(), channel_id, denom, amount)?;
         Ok(Default::default())
     }
 
@@ -299,7 +251,7 @@ impl<'a> ForTokens for StatefulRefundTokens<'a> {
         denom: &str,
         amount: Uint128,
     ) -> Result<Vec<CosmosMsg<TokenFactoryMsg>>, ContractError> {
-        decrease_in_flight(self.deps.branch(), channel_id, denom, amount)?;
+        decrease_outstanding(self.deps.branch(), channel_id, denom, amount)?;
         Ok(vec![BankMsg::Send {
             to_address: self.receiver.clone(),
             amount: vec![Coin {
@@ -322,33 +274,6 @@ impl<'a> ForTokens for StatefulRefundTokens<'a> {
             mint_to_address: self.receiver.clone(),
         }
         .into()])
-    }
-}
-
-struct StatefulLandedTokens<'a> {
-    deps: DepsMut<'a>,
-}
-
-impl<'a> ForTokens for StatefulLandedTokens<'a> {
-    // When a local token landed in the counterparty chain, it is no longer considered in-flight
-    fn on_local(
-        &mut self,
-        channel_id: &str,
-        denom: &str,
-        amount: Uint128,
-    ) -> Result<Vec<CosmosMsg<TokenFactoryMsg>>, ContractError> {
-        decrease_in_flight(self.deps.branch(), channel_id, denom, amount)?;
-        increase_outstanding(self.deps.branch(), channel_id, denom, amount)?;
-        Ok(Default::default())
-    }
-
-    fn on_remote(
-        &mut self,
-        _channel_id: &str,
-        _denom: &str,
-        _amount: Uint128,
-    ) -> Result<Vec<CosmosMsg<TokenFactoryMsg>>, ContractError> {
-        Ok(Default::default())
     }
 }
 
@@ -415,17 +340,9 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
         &mut self,
         _sender: &str,
         _receiver: &str,
-        tokens: Vec<TransferToken>,
+        _tokens: Vec<TransferToken>,
     ) -> Result<Vec<CosmosMsg<Self::CustomMsg>>, Self::Error> {
-        StatefulLandedTokens {
-            deps: self.common.deps.branch(),
-        }
-        .execute(
-            &self.common.env.contract.address,
-            &self.common.channel.endpoint.channel_id,
-            &self.common.channel.counterparty_endpoint,
-            tokens,
-        )
+        Ok(Default::default())
     }
 
     fn send_tokens_failure(
