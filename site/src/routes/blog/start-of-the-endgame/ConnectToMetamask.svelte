@@ -5,7 +5,9 @@
 	import { metamaskInstalled, connectedToSepolia, connectedToUnion, snapInstalled } from '$lib/stores/wallets';
 	import { ethersSetup, connectToSepolia, updateConnectedToSeplia, connectLeapSnap, updateSnapInstalled, updateConnectedToUnion, connectToUnion } from '$lib/ethersSetup';
 
+	import TerminalContainer from '$lib/TerminalContainer.svelte';
 	import DemoButton from '$lib/DemoButton.svelte';
+	import DemoButtonA from '$lib/DemoButtonA.svelte';
 	import BlogLayout from '../../../mdsvex/BlogLayout.svelte';
 	import ButtonA from '$lib/ButtonA.svelte';
 	import AddressesAndBalances from './AddressesAndBalances.svelte';
@@ -37,25 +39,31 @@
 </script>
 
 
-<div class="bg-black my-4 p-4 font-jetbrains rounded">
+<TerminalContainer>
 	{#if !$metamaskInstalled}
-		<a href="https://metamask.io/download/">Install MetaMask to continue 🦊</a>
+		<div class="my-4"><DemoButtonA href="https://metamask.io/download/">Install MetaMask to continue 🦊</DemoButtonA></div>
 	{:else}
 		<div>✅ MetaMask is installed </div>
 		{#if !$connectedToSepolia }
-			<DemoButton on:click={connectToSepolia}>Connect to Sepolia</DemoButton>
+			<div class="mt-4">
+				<DemoButton on:click={connectToSepolia}>Connect to Sepolia</DemoButton>
+			</div>
 		{:else}
 			<div>✅ Connected to Sepolia</div>
 			{#if !$snapInstalled}
-				<DemoButton on:click={connectLeapSnap}>Add Leap Cosmos Wallet to Metamask 🌌</DemoButton>
+				<div class="mt-4">
+					<DemoButton on:click={connectLeapSnap}>Add Leap Cosmos Wallet to Metamask 🌌</DemoButton>
+				</div>
 			{:else}
 				<div>✅ Leap Cosmos Wallet Installed </div>
 				{#if !$connectedToUnion}
-					<DemoButton on:click={connectToUnion}>Connect to Union in Leap 🚀</DemoButton>
+					<div class="mt-4">
+						<DemoButton on:click={connectToUnion}>Connect to Union in Leap 🚀</DemoButton>
+					</div>
 				{:else}
 					<div>✅ Connected to Union Testnet</div> 
 				{/if}
 			{/if}
 		{/if}
 	{/if}
-</div>
+</TerminalContainer>

@@ -2,10 +2,10 @@
 import { sendUnoToUnion } from '$lib/transferFromSepolia';
 import { unionAccount, unionUnoBalance, ethereumEthBalance, ethereumAddress, ethereumUnoBalance } from '$lib/stores/wallets'; 
 import { getUnoFromFaucet, sendUnoToUnionAddress, sendUnoToEthereum } from '$lib/transferDemo';
+import TerminalContainer from '$lib/TerminalContainer.svelte';
 </script>
 
-
-<div class="bg-black p-4 my-4 font-jetbrains">
+<TerminalContainer>
 	{#if $unionAccount === null}
 		Complete the previous step to continue
 	{:else}
@@ -39,5 +39,5 @@ import { getUnoFromFaucet, sendUnoToUnionAddress, sendUnoToEthereum } from '$lib
 		<button class="px-4 mt-4 py-2 border-2 font-jetbrains border-accent text-accent" on:click={sendUnoToUnionAddress}>Send UNO</button>
 		!-->
 	{/if}
-</div>
+</TerminalContainer>
 
