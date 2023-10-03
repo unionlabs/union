@@ -293,6 +293,7 @@ holiman
 horcrux
 horiz
 httptemplate
+iaviewer
 iavl
 ibcante
 ibcchannelkeeper
