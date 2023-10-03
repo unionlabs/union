@@ -21,7 +21,7 @@ import { SigningCosmWasmClient } from '@cosmjs/cosmwasm-stargate';
 import {
 	UNION_CHAIN_ID,
 	ERC20_CONTRACT_ABI,
-	UCS01_RELAY_CONTRACT,
+	UCS01_UNION_ADDRESS,
 	MUNO_ERC20_ADDRESS
 } from './constants';
 
@@ -183,7 +183,7 @@ export const sendUnoToEthereum = async () => {
 
 	return cwClient.execute(
 		uAccount.address,
-		UCS01_RELAY_CONTRACT,
+		UCS01_UNION_ADDRESS,
 		{
 			transfer: {
 				channel: 'channel-12',

@@ -11,7 +11,12 @@ import {
 
 import { ethers } from 'ethers';
 import { get } from 'svelte/store';
-import { MUNO_ERC20_ADDRESS, ERC20_CONTRACT_ABI, IBC_ADDRESS, IBC_CONTRACT_ABI } from './constants';
+import {
+	MUNO_ERC20_ADDRESS,
+	ERC20_CONTRACT_ABI,
+	UCS01_EVM_ADDRESS,
+	IBC_CONTRACT_ABI
+} from './constants';
 
 export const approveUnoTransferToUnion = async () => {
 	const eProvider = get(ethersProvider);
@@ -19,7 +24,7 @@ export const approveUnoTransferToUnion = async () => {
 	const eAddress = get(ethereumAddress);
 	const contract = new ethers.Contract(MUNO_ERC20_ADDRESS, ERC20_CONTRACT_ABI, eSigner);
 
-	const tx = await contract.approve(IBC_ADDRESS, 100000);
+	const tx = await contract.approve(UCS01_EVM_ADDRESS, 100000);
 	await tx.wait();
 };
 
@@ -41,7 +46,7 @@ export const sendUnoToUnion = async () => {
 	const erc20balance = await contract.balanceOf(eAddress);
 	console.log(erc20balance);
 
-	const ibcContract = new ethers.Contract(IBC_ADDRESS, IBC_CONTRACT_ABI, eSigner);
+	const ibcContract = new ethers.Contract(UCS01_EVM_ADDRESS, IBC_CONTRACT_ABI, eSigner);
 
 	// string calldata portId,
 	// string calldata channelId,
