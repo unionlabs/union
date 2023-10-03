@@ -101,7 +101,7 @@ export const sendUnoToUnionAddress = async () => {
 	console.log(txResponse);
 };
 
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+export const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 const balanceWorker = async (fetcher: () => Promise<void>, interval: number) => {
 	while (true) {
