@@ -13,6 +13,7 @@ published: true
 	import AddressesAndBalances from './AddressesAndBalances.svelte'; 
 	import FaucetButton from './FaucetButton.svelte'; 
 	import TransferUnoToEthereum from './TransferUnoToEthereum.svelte'; 
+	import SepoliaFaucetButton from './SepoliaFaucetButton.svelte';
 </script>
 
 
@@ -46,7 +47,12 @@ On our testnet, `Galois` is running on relatively simple infrastructure. This me
 
 On Sepolia, the zero-knowledge proof is verified inside the IBC contract stack. This verification is necessary to update the Union light client. After successful verification, an ERC-20 token representing $UNO is transferred to your wallet.
 
+<div class="bg-black"> Show Ethereum UNO balance + loading</div>
+
 To transfer the $UNO back, we need to obtain some Sepolia ETH for gas fees.
+
+
+<SepoliaFaucetButton/>
 
 <!-- Sepolia Faucet + Copy button -->
 
