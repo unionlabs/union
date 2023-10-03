@@ -41,19 +41,19 @@
 	{#if !$metamaskInstalled}
 		<a href="https://metamask.io/download/">Install MetaMask to continue 🦊</a>
 	{:else}
-		<div>MetaMask is intalled ✅</div>
+		<div>✅ MetaMask is installed </div>
 		{#if !$connectedToSepolia }
 			<DemoButton on:click={connectToSepolia}>Connect to Sepolia</DemoButton>
 		{:else}
-			<div>Connected to Sepolia ✅</div>
+			<div>✅ Connected to Sepolia</div>
 			{#if !$snapInstalled}
 				<DemoButton on:click={connectLeapSnap}>Add Leap Cosmos Wallet to Metamask 🌌</DemoButton>
 			{:else}
-				<div>Leap Cosmos Wallet Installed ✅</div>
+				<div>✅ Leap Cosmos Wallet Installed </div>
 				{#if !$connectedToUnion}
 					<DemoButton on:click={connectToUnion}>Connect to Union in Leap 🚀</DemoButton>
 				{:else}
-					<div>Connected to Union ✅</div> 
+					<div>✅ Connected to Union Testnet</div> 
 				{/if}
 			{/if}
 		{/if}
