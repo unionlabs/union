@@ -1,6 +1,9 @@
 export const toFixedPoint = (value: bigint, decimals: number) => {
-	let right = BigInt(value) % BigInt(10 ** decimals);
-	let left = BigInt(value) - right;
+	console.log("value: " + value)
+	let right = BigInt(value) % BigInt(10) ** BigInt(decimals);
+	console.log("right: " + right)
+	let left = BigInt(value) / BigInt(10) ** BigInt(decimals);
+	console.log("left: " + left)
 
 	return left.toString().concat('.', right.toString().padStart(decimals, '0'));
 };
