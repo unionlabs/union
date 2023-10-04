@@ -74,7 +74,7 @@
 			</div>
 		{:else if $fetchedFromFaucet}
 			<div class="flex gap-4 h-[48px] items-center">
-				<div>✅ Received UNO from faucet, new balance is <span class="text-accent">{toFixedPoint(BigInt($unionUnoBalance.amount), 6)}</span></div> 
+				<div>✅ Received from faucet, new balance is <span class="text-accent">{toFixedPoint(BigInt($unionUnoBalance.amount), 6)}</span> UNO</div> 
 			</div>
 		{:else}
 				<div class="flex items-center gap-2 mb-4">

@@ -1,6 +1,6 @@
 ---
 title: ICS-20 Transfers to Ethereum
-slug: ics-20-to-ethereum
+slug: ics20-transfers-to-ethereum
 date: "2023-10-04"
 author: "@union_build"
 preview: "Today we present a first look at UCS-01, a superset ICS-20 for asset transfers between EVM and Cosmos-SDK based chains."
@@ -19,7 +19,7 @@ published: true
 	import SendUnoToUnionStatus from './SendUnoToUnionStatus.svelte';
 </script>
 
-In our inaugural post, we showcased the first IBC connection to Ethereum by showing two contracts playing [ping-pong](../the-journey-so-far/+page.md) through general message passing. Today we have something even more exciting: a first look at (UCS-1), the improved version of ICS-20 for asset transfers between EVM and Cosmos-SDK based chains. Our improvements are related to batch transfers to more efficiently transfer funds.
+In our inaugural post, we showcased the first IBC connection to Ethereum by showing two contracts playing [ping-pong](../the-journey-so-far) through general message passing. Today we have something even more exciting: a first look at (UCS-1), the improved version of ICS-20 for asset transfers between EVM and Cosmos-SDK based chains. Our improvements are related to batch transfers to more efficiently transfer funds.
 
 Union already has experimental support for [Metamask](https://metamask.io/) through [Leap Snaps](https://www.leapwallet.io/snaps). This allows us to handle the different account models while ensuring you only need one wallet installed.
 
