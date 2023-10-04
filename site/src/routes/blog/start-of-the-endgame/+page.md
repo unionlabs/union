@@ -52,8 +52,7 @@ On Sepolia, the zero-knowledge proof is verified inside the IBC contract stack. 
 
 <TransferUnoToEthereumStatus/>
 
-To transfer the $UNO back, we need to obtain some Sepolia ETH for gas fees.
-
+To transfer the $UNO back, we need to obtain some Sepolia ETH for gas fees. 
 
 <SepoliaFaucetButton/>
 
