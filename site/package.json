@@ -45,6 +45,7 @@
 		"@sveltejs/adapter-static": "^2.0.3",
 		"cosmjs-types": "^0.8.0",
 		"ethers": "6.7.1",
+		"get-browser-fingerprint": "3.0.0",
 		"graphql": "^16.8.1",
 		"patch-package": "^8.0.0",
 		"postinstall-postinstall": "^2.1.0"

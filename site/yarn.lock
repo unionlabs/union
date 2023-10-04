@@ -1360,6 +1360,11 @@ function-bind@^1.1.1:
   resolved "https://registry.yarnpkg.com/function-bind/-/function-bind-1.1.1.tgz#a56899d3ea3c9bab874bb9773b7c5ede92f4895d"
   integrity sha512-yIovAzMX49sF8Yl58fSCWJ5svSLuaibPxXQJFLmBObTuCr0Mf1KiPopGM9NiFjiYBCbfaa2Fh6breQ6ANVTI0A==
 
+get-browser-fingerprint@3.0.0:
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/get-browser-fingerprint/-/get-browser-fingerprint-3.0.0.tgz#99e9f1447bc0b464dff105a75ec4edf05c480a9f"
+  integrity sha512-uXLiCILFQM4MasKZ6UtJviVUrA2Z0ZcZARWhoHjuZw6CDFrfOPVv9iUL6EbWOzB/mV0CCvjA9MWtlc9/jIwFxQ==
+
 get-intrinsic@^1.1.1, get-intrinsic@^1.1.3, get-intrinsic@^1.2.1:
   version "1.2.1"
   resolved "https://registry.yarnpkg.com/get-intrinsic/-/get-intrinsic-1.2.1.tgz#d295644fed4505fc9cde952c37ee12b477a83d82"
