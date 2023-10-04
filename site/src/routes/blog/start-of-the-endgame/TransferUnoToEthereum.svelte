@@ -13,12 +13,11 @@
 	const clickHandler = async () => {
 		sendingUnoToEthereum.set('sending');
 		let result: ExecuteResult | undefined = undefined;
-		result = await sendUnoToEthereum();
 		try {
+			result = await sendUnoToEthereum();
 		} catch {
 			sendingUnoToEthereum.set('start');
 			console.error('failed uno transfer');
-
 		}
 		if (result === undefined) {
 			return;
