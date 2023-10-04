@@ -30,7 +30,7 @@ import TerminalContainer from '$lib/TerminalContainer.svelte';
 					{#if $ethereumEthBalance === null}
 						<div >Fetching...</div>
 					{:else}
-						<div class="flex md:justify-end"><span class="text-accent">{toFixedUno($ethereumEthBalance)}</span>&nbsp;ETH</div>
+						<div class="flex md:justify-end"><span class="text-accent">{toFixedEth($ethereumEthBalance)}</span>&nbsp;ETH</div>
 					{/if}
 				</div>
 			</div>
