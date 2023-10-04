@@ -4,6 +4,7 @@
 
 	import { sendingUnoToEthereum } from './demoStore';
 	import { ethereumUnoBalance } from "$lib/stores/wallets";
+	import { toFixedUno } from "$lib/format";
 </script>
 
 <TerminalContainer>
@@ -18,7 +19,7 @@
 			</div>
 		{:else if $sendingUnoToEthereum === 'done'} 
 			<div class="flex gap-4 h-[48px] items-center">
-				<div>✅ Received UNO on Sepolia, new balance is <span class="text-accent">{$ethereumUnoBalance}</span>muno</div> 
+				<div>✅ Received UNO on Sepolia, new balance is <span class="text-accent">{toFixedUno($ethereumUnoBalance)}</span> UNO</div> 
 			</div>
 	
 		{/if}
