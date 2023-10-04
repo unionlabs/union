@@ -18,7 +18,7 @@ import { ethers } from 'ethers';
 import { GasPrice } from '@cosmjs/stargate';
 import { SigningCosmWasmClient } from '@cosmjs/cosmwasm-stargate';
 
-import { UCS01_UNION_SOURCE_CHANNEL } from './constants';
+import { UCS01_UNION_SOURCE_CHANNEL, UNION_RPC_URL } from './constants';
 
 import {
 	UNION_CHAIN_ID,
@@ -43,8 +43,7 @@ export const initClients = async (): Promise<void> => {
 		unionAccount.set(accounts[0]);
 	}
 
-	const rpcUrl = 'wss://rpc.0xc0dejug.uno'; // Populate with an RPC URL corresponding to the given chainId
-	tendermintClient.set(await Tendermint37Client.connect(rpcUrl));
+	tendermintClient.set(await Tendermint37Client.connect(UNION_RPC_URL));
 	let tmClient = get(tendermintClient);
 	if (tmClient == null) {
 		return;

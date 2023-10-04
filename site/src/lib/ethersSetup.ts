@@ -60,7 +60,7 @@ export const ethersSetup = async () => {
 	const eProvider = new ethers.BrowserProvider(window.ethereum);
 	const allAccounts = await eProvider.listAccounts();
 	if (allAccounts.length === 0) {
-		alert('Please add an account to MetaMask to continue');
+		console.log('0 accounts avail');
 	}
 	const eSigner = await eProvider.getSigner(0);
 	const eAddress = await eSigner.getAddress();

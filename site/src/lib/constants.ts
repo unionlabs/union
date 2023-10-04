@@ -12,3 +12,5 @@ export const IBC_CONTRACT_ABI = ibcAbi.abi;
 export const UCS01_UNION_SOURCE_CHANNEL = 'channel-16';
 export const UCS01_SEPOLIA_SOURCE_CHANNEL = 'channel-6';
 export const UCS01_SEPOLIA_PORT_ID = 'ucs01-relay-2';
+
+export const UNION_RPC_URL = 'wss://rpc.0xc0dejug.uno';
