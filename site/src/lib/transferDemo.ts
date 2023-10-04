@@ -49,7 +49,6 @@ export const initClients = async (): Promise<void> => {
 	if (tmClient == null) {
 		return;
 	}
-	console.log('creating stargate client');
 	stargateClient.set(
 		await SigningStargateClient.createWithSigner(tmClient, offlineSigner, {
 			gasPrice: GasPrice.fromString('0.001muno')
@@ -87,7 +86,6 @@ export const getUnoFromFaucet = async () => {
 		mutation: GET_UNO_FROM_FAUCET,
 		variables: { addr: uAccount.address }
 	});
-	console.log(response);
 };
 
 export const sendUnoToUnionAddress = async () => {
@@ -97,15 +95,12 @@ export const sendUnoToUnionAddress = async () => {
 		console.error('trying to get uno from faucet before accounts are loaded');
 		return;
 	}
-	console.log('sending tokens');
 	const txResponse = await sgClient.sendTokens(
 		uAccount.address,
 		'union1v39zvpn9ff7quu9lxsawdwpg60lyfpz8pmhfey',
 		[{ denom: 'muno', amount: '1000' }],
 		'auto'
 	);
-
-	console.log(txResponse);
 };
 
 export const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -149,7 +144,6 @@ export const updateEthereumEthBalance = async () => {
 	}
 	const balance = await eProvider.getBalance(address);
 	ethereumEthBalance.set(balance);
-	console.log(balance);
 };
 
 export const initCosmwasmClient = async () => {

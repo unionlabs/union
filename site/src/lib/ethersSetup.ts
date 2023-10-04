@@ -38,8 +38,6 @@ export const connectToSepolia = async () => {
 		// When a Provider makes its initial connection, it emits a "network"
 		// event with a null oldNetwork along with the newNetwork. So, if the
 		// oldNetwork exists, it represents a changing network
-		console.log(newNetwork);
-		console.log(oldNetwork);
 		if (oldNetwork) {
 			window.location.reload();
 		}
@@ -56,7 +54,6 @@ export const connectToSepolia = async () => {
 	if (get(connectedToSepolia) == false) {
 		console.error('did not properly connect to sepolia');
 	}
-	console.log('connected to sepolia!');
 };
 
 export const ethersSetup = async () => {

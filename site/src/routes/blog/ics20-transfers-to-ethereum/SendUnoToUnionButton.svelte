@@ -9,6 +9,7 @@
 	import { ethereumEthBalance, ethereumUnoBalance, unionUnoBalance } from "$lib/stores/wallets";
 	import { get } from "svelte/store";
 	import { sendUnoToUnion } from "$lib/transferFromSepolia";
+	import { toFixedUno } from "$lib/format";
 
 	const clickHandler = async () => {
 		sendingUnoToUnion.set('sending');
@@ -47,7 +48,7 @@
 			<DemoButton on:click={clickHandler}>Send UNO to Union</DemoButton>
 		{:else if $sendingUnoToUnion === 'done'} 
 			<div class="flex gap-4 h-[48px] items-center">
-				<div>✅ Received UNO on Union, new balance is <span class="text-accent">{$unionUnoBalance}</span>muno</div> 
+				<div>✅ Received UNO on Union, new balance is <span class="text-accent">{toFixedUno(BigInt($unionUnoBalance.amount))}</span> UNO</div> 
 			</div>
 		{/if}
 	{/if}

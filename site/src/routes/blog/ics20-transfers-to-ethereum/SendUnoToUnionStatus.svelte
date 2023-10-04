@@ -5,6 +5,7 @@
 	import PulseSpinner from "$lib/PulseSpinner.svelte";
 	import type { ExecuteResult } from "@cosmjs/cosmwasm-stargate";
 	import { unionUnoBalance } from "$lib/stores/wallets";
+	import { toFixedUno } from "$lib/format";
 </script>
 
 <TerminalContainer>
@@ -19,7 +20,7 @@
 		</div>
 	{:else if $sendingUnoToUnion === 'done'} 
 		<div class="flex gap-4 h-[48px] items-center">
-			<div>✅ Received UNO on Union, new balance is <span class="text-accent">{$unionUnoBalance}</span>muno</div> 
+			<div>✅ Received UNO on Union, new balance is <span class="text-accent">{toFixedUno(BigInt($unionUnoBalance.amount))}</span> UNO</div> 
 		</div>
 	{/if}
 </TerminalContainer>

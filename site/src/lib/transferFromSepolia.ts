@@ -46,7 +46,6 @@ export const sendUnoToUnion = async () => {
 	const contract = new ethers.Contract(MUNO_ERC20_ADDRESS, ERC20_CONTRACT_ABI, eProvider);
 
 	const erc20balance = await contract.balanceOf(eAddress);
-	console.log(erc20balance);
 
 	const ibcContract = new ethers.Contract(UCS01_EVM_ADDRESS, IBC_CONTRACT_ABI, eSigner);
 
@@ -65,6 +64,5 @@ export const sendUnoToUnion = async () => {
 		10000000000
 	);
 
-	console.log('tx', tx);
 	await tx.wait();
 };
