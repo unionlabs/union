@@ -20,7 +20,7 @@ import TerminalContainer from '$lib/TerminalContainer.svelte';
 					{#if $unionUnoBalance === null}
 						<div >Fetching...</div>
 					{:else}
-						<div class="md:justify-end"><span class="text-accent">{toFixedUno(BigInt($unionUnoBalance.amount))}</span> UNO</div>
+						<div class="flex md:justify-end"><span class="text-accent">{toFixedUno(BigInt($unionUnoBalance.amount))}</span>&nbsp;UNO</div>
 					{/if}
 				</div>
 			</div>
@@ -30,7 +30,7 @@ import TerminalContainer from '$lib/TerminalContainer.svelte';
 					{#if $ethereumEthBalance === null}
 						<div >Fetching...</div>
 					{:else}
-						<div class="md:justify-end"><span class="text-accent">{toFixedUno($ethereumEthBalance)}</span> ETH</div>
+						<div class="flex md:justify-end"><span class="text-accent">{toFixedUno($ethereumEthBalance)}</span>&nbsp;ETH</div>
 					{/if}
 				</div>
 			</div>
@@ -40,7 +40,7 @@ import TerminalContainer from '$lib/TerminalContainer.svelte';
 					{#if $ethereumUnoBalance === null}
 						<div >Fetching...</div>
 					{:else}
-						<div class="md:justify-end"><span class="text-accent">{toFixedUno($ethereumUnoBalance)}</span> UNO</div>
+						<div class="flex md:justify-end"><span class="text-accent">{toFixedUno($ethereumUnoBalance)}</span>&nbsp;UNO</div>
 					{/if}
 				</div>
 			</div>
