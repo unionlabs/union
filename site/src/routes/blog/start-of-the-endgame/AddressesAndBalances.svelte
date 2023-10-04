@@ -13,28 +13,36 @@ import TerminalContainer from '$lib/TerminalContainer.svelte';
 		<div>Union Address: <span class="text-accent">{$unionAccount.address}</span></div>
 		<div class="mb-8">Ethereum Address: <span class="text-accent">{$ethereumAddress}</span></div>
 		
-		<div class="md:columns-2 justify-end">
-			<div class="flex-col">
+		<div>
+			<div class="flex-row md:columns-2">
 				<div>Union UNO Balance: </div>
-				<div>Ethereum ETH Balance: </div>
-				<div>Ethereum UNO Balance: </div>
+				<div class="flex-col md:justify-end">
+					{#if $unionUnoBalance === null}
+						<div >Fetching...</div>
+					{:else}
+						<div class="md:justify-end"><span class="text-accent">{toFixedUno(BigInt($unionUnoBalance.amount))}</span> UNO</div>
+					{/if}
+				</div>
 			</div>
-			<div class="flex-col">
-				{#if $unionUnoBalance === null}
-					<div>Fetching...</div>
-				{:else}
-					<div><span class="text-accent">{toFixedUno(BigInt($unionUnoBalance.amount))}</span> UNO</div>
-				{/if}
-				{#if $ethereumEthBalance === null}
-					<div>Fetching...</div>
-				{:else}
-					<div><span class="text-accent">{toFixedEth($ethereumEthBalance)}</span> ETH</div>
-				{/if}
-				{#if $ethereumUnoBalance === null}
-					<div>Fetching...</div>
-				{:else}
-					<div><span class="text-accent">{toFixedUno($ethereumUnoBalance)}</span> UNO</div>
-				{/if}
+			<div class="flex-row md:columns-2">
+				<div>Ethereum ETH Balance: </div>
+				<div class="flex-col md:justify-end">
+					{#if $ethereumEthBalance === null}
+						<div >Fetching...</div>
+					{:else}
+						<div class="md:justify-end"><span class="text-accent">{toFixedUno($ethereumEthBalance)}</span> ETH</div>
+					{/if}
+				</div>
+			</div>
+			<div class="flex-row md:columns-2">
+				<div>Ethereum UNO Balance: </div>
+				<div class="flex-col md:justify-end">
+					{#if $ethereumUnoBalance === null}
+						<div >Fetching...</div>
+					{:else}
+						<div class="md:justify-end"><span class="text-accent">{toFixedUno($ethereumUnoBalance)}</span> UNO</div>
+					{/if}
+				</div>
 			</div>
 		</div>
 
