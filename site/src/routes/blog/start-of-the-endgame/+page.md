@@ -16,6 +16,7 @@ published: true
 	import TransferUnoToEthereumStatus from './TransferUnoToEthereumStatus.svelte'; 
 	import SepoliaFaucetButton from './SepoliaFaucetButton.svelte';
 	import SendUnoToUnionButton from './SendUnoToUnionButton.svelte';
+	import SendUnoToUnionStatus from './SendUnoToUnionStatus.svelte';
 </script>
 
 In our inaugural post, we showcased the first IBC connection to Ethereum by showing two contracts playing [ping-pong](../the-journey-so-far/+page.md) through general message passing. Today we have something even more exciting: a first look at (UCS-1), the improved version of ICS-20 for asset transfers between EVM and Cosmos-SDK based chains. Our improvements are related to batch transfers to more efficiently transfer funds.
@@ -81,6 +82,8 @@ The golden standard for infrastructure is trustless, meaning no party can steal 
 Tracking Ethereum's consensus and finalization is quite complex compared to [CometBLS](https://docs.union.build/architecture/cometbls). The Ethereum executio layer produces blocks approximately every 15 seconds. The finalization process is tracked on the [beacon chain](https://ethereum.org/en/roadmap/beacon-chain/), which is what is necessary to construct light-client proofs. [Voyager](https://docs.union.build/architecture/voyager) tracks both the execution and finalization layers.
 
 The signing committee constructs a BLS signature, used to prove finalization of blocks. Compared to Tendermint-based chains, the beacon chain can encounter [block reorganizations](https://barnabe.substack.com/p/pos-ethereum-reorg) quite easily. Cosmos-based chains use single-slot-finality, which is better for high-performance applications and bridging purposes. 
+
+<SendUnoToUnionStatus/>
 
 ## Join the Union
 
