@@ -182,7 +182,7 @@ export const sendUnoToEthereum = async () => {
 		},
 		'auto',
 		undefined,
-		[{ denom: 'muno', amount: '10000' }]
+		[{ denom: 'muno', amount: '1000' }]
 	);
 };
 

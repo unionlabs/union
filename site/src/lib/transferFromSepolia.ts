@@ -61,7 +61,7 @@ export const sendUnoToUnion = async () => {
 		uAccount.address,
 		[[MUNO_ERC20_ADDRESS, 1000]],
 		3,
-		10000000000
+		800000000
 	);
 
 	await tx.wait();
