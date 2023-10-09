@@ -13,7 +13,6 @@ use crate::{
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub struct Header {
     pub signed_header: SignedHeader,
-    pub untrusted_validator_set_root: H256,
     pub trusted_height: Height,
     #[serde(with = "::serde_utils::hex_string")]
     pub zero_knowledge_proof: Vec<u8>,
