@@ -6,3 +6,15 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+ethers = { version = "2.0.4", features = ["rustls", "ws"] }
+serde_json = "1.0.96"
+serde = { version = "1.0.173", features = ["derive"] }
+tokio = { version = "1.27.0", features = ["macros"] }
+tokio-stream = { version = "0.1.14" }
+tendermint = { git = "https://github.com/unionlabs/tendermint-rs", branch = "bn254" }
+tendermint-proto = { git = "https://github.com/unionlabs/tendermint-rs", branch = "bn254" }
+tendermint-rpc = { git = "https://github.com/unionlabs/tendermint-rs", branch = "bn254", features = ["http-client", "websocket-client"] }
+
+unionlabs = { workspace = true, features = ["ethabi"] }
+chain-utils.workspace = true
+serde-utils.workspace = true

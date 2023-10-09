@@ -13,6 +13,7 @@ members = [
   "cosmwasm/*",
   "hubble",
   "tools/parse-wasm-client-type"
+  "zerg"
 ]
 
 resolver = "2"

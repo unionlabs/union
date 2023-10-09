@@ -6892,6 +6892,23 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.38",
+ ]
+
+[[package]]
+name = "zerg"
+version = "0.1.0"
+dependencies = [
+ "chain-utils",
+ "ethers",
+ "serde",
+ "serde-utils",
+ "serde_json",
+ "tendermint 0.33.0",
+ "tendermint-proto 0.33.0",
+ "tendermint-rpc",
+ "tokio",
+ "tokio-stream",
+ "unionlabs",
 ]
 
 [[package]]
