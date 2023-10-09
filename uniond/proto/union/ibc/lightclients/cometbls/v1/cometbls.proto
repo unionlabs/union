@@ -12,25 +12,22 @@ import "ibc/lightclients/tendermint/v1/tendermint.proto";
 import "ibc/core/commitment/v1/commitment.proto";
 import "gogoproto/gogo.proto";
 
-// NOTE: the `latest_height` is living in the ibc.lightclients.wasm.v1 wrapper
 message ClientState {
   string   chain_id    = 1;
-  .ibc.lightclients.tendermint.v1.Fraction trust_level = 2;
   // duration of the period since the LastestTimestamp during which the
   // submitted headers are valid for upgrade
-  google.protobuf.Duration trusting_period = 3
+  google.protobuf.Duration trusting_period = 2
         [(gogoproto.nullable) = false, (gogoproto.stdduration) = true];
   // duration of the staking unbonding period
-  google.protobuf.Duration unbonding_period = 4
+  google.protobuf.Duration unbonding_period = 3
         [(gogoproto.nullable) = false, (gogoproto.stdduration) = true];
   // defines how much new (untrusted) header's Time can drift into the future.
-  google.protobuf.Duration max_clock_drift = 5
+  google.protobuf.Duration max_clock_drift = 4
         [(gogoproto.nullable) = false, (gogoproto.stdduration) = true];
   // Block height when the client was frozen due to a misbehaviour
-  .ibc.core.client.v1.Height frozen_height = 6;
+  .ibc.core.client.v1.Height frozen_height = 5;
 }
 
-// NOTE: the `timestamp` is living in the ibc.lightclients.wasm.v1 wrapper
 message ConsensusState {
   // commitment root (i.e app hash)
   .ibc.core.commitment.v1.MerkleRoot root = 2
@@ -45,7 +42,6 @@ message Misbehaviour {
 
 message Header {
   .tendermint.types.SignedHeader    signed_header                = 1;
-  bytes                             untrusted_validator_set_root = 2;
-  .ibc.core.client.v1.Height        trusted_height               = 3;
-  bytes                             zero_knowledge_proof         = 4;
+  .ibc.core.client.v1.Height        trusted_height               = 2;
+  bytes                             zero_knowledge_proof         = 3;
 }
