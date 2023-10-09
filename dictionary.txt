@@ -349,6 +349,7 @@ keypairs
 kwallet
 laddr
 lahcen
+launchbadge
 lcfur
 lcgadget
 ldflags
@@ -528,6 +529,7 @@ snapshottypes
 solomachine
 spents
 splitn
+sqlx
 srcs
 stakingkeeper
 stakingtypes
