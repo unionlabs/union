@@ -283,7 +283,6 @@ func padding(api frontend.API, input []frontend.Variable, size frontend.Variable
 
 	// helpers
 	inputLen := len(input)
-	paddingLen := inputLen % 64
 
 	// t is start index of inputBitLen encoding
 	var t int
@@ -302,16 +301,6 @@ func padding(api frontend.API, input []frontend.Variable, size frontend.Variable
 	// zero padding
 	for i := 0; i < totalLen; i++ {
 		out[i] = 0
-	}
-
-	// return if no padding required
-	if paddingLen == 0 {
-
-		// overwrite into fixed size slice
-		for i := 0; i < inputLen; i++ {
-			out[i] = input[i]
-		}
-		return out
 	}
 
 	// existing bytes into out
