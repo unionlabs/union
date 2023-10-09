@@ -191,7 +191,9 @@ contract CometblsClient is ILightClient {
             untrustedValidatorsHash = trustedValidatorsHash;
         } else {
             untrustedValidatorsHash = header
-                .untrusted_validator_set_root
+                .signed_header
+                .header
+                .validators_hash
                 .toBytes32(0);
         }
 
