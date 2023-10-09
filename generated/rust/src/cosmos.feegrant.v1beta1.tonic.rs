@@ -12,7 +12,7 @@ pub mod query_client {
         /// Attempt to create a new client by connecting to a given endpoint.
         pub async fn connect<D>(dst: D) -> Result<Self, tonic::transport::Error>
         where
-            D: std::convert::TryInto<tonic::transport::Endpoint>,
+            D: TryInto<tonic::transport::Endpoint>,
             D::Error: Into<StdError>,
         {
             let conn = tonic::transport::Endpoint::new(dst)?.connect().await?;
@@ -67,10 +67,27 @@ pub mod query_client {
             self.inner = self.inner.accept_compressed(encoding);
             self
         }
+        /// Limits the maximum size of a decoded message.
+        ///
+        /// Default: `4MB`
+        #[must_use]
+        pub fn max_decoding_message_size(mut self, limit: usize) -> Self {
+            self.inner = self.inner.max_decoding_message_size(limit);
+            self
+        }
+        /// Limits the maximum size of an encoded message.
+        ///
+        /// Default: `usize::MAX`
+        #[must_use]
+        pub fn max_encoding_message_size(mut self, limit: usize) -> Self {
+            self.inner = self.inner.max_encoding_message_size(limit);
+            self
+        }
         pub async fn allowance(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryAllowanceRequest>,
-        ) -> Result<tonic::Response<super::QueryAllowanceResponse>, tonic::Status> {
+        ) -> std::result::Result<tonic::Response<super::QueryAllowanceResponse>, tonic::Status>
+        {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -80,12 +97,18 @@ pub mod query_client {
             let codec = tonic::codec::ProstCodec::default();
             let path =
                 http::uri::PathAndQuery::from_static("/cosmos.feegrant.v1beta1.Query/Allowance");
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "cosmos.feegrant.v1beta1.Query",
+                "Allowance",
+            ));
+            self.inner.unary(req, path, codec).await
         }
         pub async fn allowances(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryAllowancesRequest>,
-        ) -> Result<tonic::Response<super::QueryAllowancesResponse>, tonic::Status> {
+        ) -> std::result::Result<tonic::Response<super::QueryAllowancesResponse>, tonic::Status>
+        {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -95,13 +118,20 @@ pub mod query_client {
             let codec = tonic::codec::ProstCodec::default();
             let path =
                 http::uri::PathAndQuery::from_static("/cosmos.feegrant.v1beta1.Query/Allowances");
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "cosmos.feegrant.v1beta1.Query",
+                "Allowances",
+            ));
+            self.inner.unary(req, path, codec).await
         }
         pub async fn allowances_by_granter(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryAllowancesByGranterRequest>,
-        ) -> Result<tonic::Response<super::QueryAllowancesByGranterResponse>, tonic::Status>
-        {
+        ) -> std::result::Result<
+            tonic::Response<super::QueryAllowancesByGranterResponse>,
+            tonic::Status,
+        > {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -112,7 +142,12 @@ pub mod query_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/cosmos.feegrant.v1beta1.Query/AllowancesByGranter",
             );
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "cosmos.feegrant.v1beta1.Query",
+                "AllowancesByGranter",
+            ));
+            self.inner.unary(req, path, codec).await
         }
     }
 }
@@ -129,7 +164,7 @@ pub mod msg_client {
         /// Attempt to create a new client by connecting to a given endpoint.
         pub async fn connect<D>(dst: D) -> Result<Self, tonic::transport::Error>
         where
-            D: std::convert::TryInto<tonic::transport::Endpoint>,
+            D: TryInto<tonic::transport::Endpoint>,
             D::Error: Into<StdError>,
         {
             let conn = tonic::transport::Endpoint::new(dst)?.connect().await?;
@@ -181,10 +216,27 @@ pub mod msg_client {
             self.inner = self.inner.accept_compressed(encoding);
             self
         }
+        /// Limits the maximum size of a decoded message.
+        ///
+        /// Default: `4MB`
+        #[must_use]
+        pub fn max_decoding_message_size(mut self, limit: usize) -> Self {
+            self.inner = self.inner.max_decoding_message_size(limit);
+            self
+        }
+        /// Limits the maximum size of an encoded message.
+        ///
+        /// Default: `usize::MAX`
+        #[must_use]
+        pub fn max_encoding_message_size(mut self, limit: usize) -> Self {
+            self.inner = self.inner.max_encoding_message_size(limit);
+            self
+        }
         pub async fn grant_allowance(
             &mut self,
             request: impl tonic::IntoRequest<super::MsgGrantAllowance>,
-        ) -> Result<tonic::Response<super::MsgGrantAllowanceResponse>, tonic::Status> {
+        ) -> std::result::Result<tonic::Response<super::MsgGrantAllowanceResponse>, tonic::Status>
+        {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -194,12 +246,18 @@ pub mod msg_client {
             let codec = tonic::codec::ProstCodec::default();
             let path =
                 http::uri::PathAndQuery::from_static("/cosmos.feegrant.v1beta1.Msg/GrantAllowance");
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "cosmos.feegrant.v1beta1.Msg",
+                "GrantAllowance",
+            ));
+            self.inner.unary(req, path, codec).await
         }
         pub async fn revoke_allowance(
             &mut self,
             request: impl tonic::IntoRequest<super::MsgRevokeAllowance>,
-        ) -> Result<tonic::Response<super::MsgRevokeAllowanceResponse>, tonic::Status> {
+        ) -> std::result::Result<tonic::Response<super::MsgRevokeAllowanceResponse>, tonic::Status>
+        {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -210,7 +268,12 @@ pub mod msg_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/cosmos.feegrant.v1beta1.Msg/RevokeAllowance",
             );
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "cosmos.feegrant.v1beta1.Msg",
+                "RevokeAllowance",
+            ));
+            self.inner.unary(req, path, codec).await
         }
     }
 }

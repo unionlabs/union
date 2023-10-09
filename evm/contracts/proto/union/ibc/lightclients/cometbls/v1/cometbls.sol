@@ -11,7 +11,6 @@ library UnionIbcLightclientsCometblsV1ClientState {
     //struct definition
     struct Data {
         string chain_id;
-        IbcLightclientsTendermintV1Fraction.Data trust_level;
         GoogleProtobufDuration.Data trusting_period;
         GoogleProtobufDuration.Data unbonding_period;
         GoogleProtobufDuration.Data max_clock_drift;
@@ -70,14 +69,12 @@ library UnionIbcLightclientsCometblsV1ClientState {
             if (fieldId == 1) {
                 pointer += _read_chain_id(pointer, bs, r);
             } else if (fieldId == 2) {
-                pointer += _read_trust_level(pointer, bs, r);
-            } else if (fieldId == 3) {
                 pointer += _read_trusting_period(pointer, bs, r);
-            } else if (fieldId == 4) {
+            } else if (fieldId == 3) {
                 pointer += _read_unbonding_period(pointer, bs, r);
-            } else if (fieldId == 5) {
+            } else if (fieldId == 4) {
                 pointer += _read_max_clock_drift(pointer, bs, r);
-            } else if (fieldId == 6) {
+            } else if (fieldId == 5) {
                 pointer += _read_frozen_height(pointer, bs, r);
             } else {
                 pointer += ProtoBufRuntime._skip_field_decode(
@@ -106,26 +103,6 @@ library UnionIbcLightclientsCometblsV1ClientState {
     ) internal pure returns (uint) {
         (string memory x, uint256 sz) = ProtoBufRuntime._decode_string(p, bs);
         r.chain_id = x;
-        return sz;
-    }
-
-    /**
-     * @dev The decoder for reading a field
-     * @param p The offset of bytes array to start decode
-     * @param bs The bytes array to be decoded
-     * @param r The in-memory struct
-     * @return The number of bytes decoded
-     */
-    function _read_trust_level(
-        uint256 p,
-        bytes memory bs,
-        Data memory r
-    ) internal pure returns (uint) {
-        (
-            IbcLightclientsTendermintV1Fraction.Data memory x,
-            uint256 sz
-        ) = _decode_IbcLightclientsTendermintV1Fraction(p, bs);
-        r.trust_level = x;
         return sz;
     }
 
@@ -210,34 +187,6 @@ library UnionIbcLightclientsCometblsV1ClientState {
     }
 
     // struct decoder
-    /**
-     * @dev The decoder for reading a inner struct field
-     * @param p The offset of bytes array to start decode
-     * @param bs The bytes array to be decoded
-     * @return The decoded inner-struct
-     * @return The number of bytes used to decode
-     */
-    function _decode_IbcLightclientsTendermintV1Fraction(
-        uint256 p,
-        bytes memory bs
-    )
-        internal
-        pure
-        returns (IbcLightclientsTendermintV1Fraction.Data memory, uint)
-    {
-        uint256 pointer = p;
-        (uint256 sz, uint256 bytesRead) = ProtoBufRuntime._decode_varint(
-            pointer,
-            bs
-        );
-        pointer += bytesRead;
-        (
-            IbcLightclientsTendermintV1Fraction.Data memory r,
-
-        ) = IbcLightclientsTendermintV1Fraction._decode(pointer, bs, sz);
-        return (r, sz + bytesRead);
-    }
-
     /**
      * @dev The decoder for reading a inner struct field
      * @param p The offset of bytes array to start decode
@@ -334,8 +283,8 @@ library UnionIbcLightclientsCometblsV1ClientState {
             pointer,
             bs
         );
-        pointer += IbcLightclientsTendermintV1Fraction._encode_nested(
-            r.trust_level,
+        pointer += GoogleProtobufDuration._encode_nested(
+            r.trusting_period,
             pointer,
             bs
         );
@@ -347,7 +296,7 @@ library UnionIbcLightclientsCometblsV1ClientState {
             bs
         );
         pointer += GoogleProtobufDuration._encode_nested(
-            r.trusting_period,
+            r.unbonding_period,
             pointer,
             bs
         );
@@ -359,25 +308,13 @@ library UnionIbcLightclientsCometblsV1ClientState {
             bs
         );
         pointer += GoogleProtobufDuration._encode_nested(
-            r.unbonding_period,
-            pointer,
-            bs
-        );
-
-        pointer += ProtoBufRuntime._encode_key(
-            5,
-            ProtoBufRuntime.WireType.LengthDelim,
-            pointer,
-            bs
-        );
-        pointer += GoogleProtobufDuration._encode_nested(
             r.max_clock_drift,
             pointer,
             bs
         );
 
         pointer += ProtoBufRuntime._encode_key(
-            6,
+            5,
             ProtoBufRuntime.WireType.LengthDelim,
             pointer,
             bs
@@ -435,11 +372,6 @@ library UnionIbcLightclientsCometblsV1ClientState {
         e +=
             1 +
             ProtoBufRuntime._sz_lendelim(
-                IbcLightclientsTendermintV1Fraction._estimate(r.trust_level)
-            );
-        e +=
-            1 +
-            ProtoBufRuntime._sz_lendelim(
                 GoogleProtobufDuration._estimate(r.trusting_period)
             );
         e +=
@@ -478,10 +410,6 @@ library UnionIbcLightclientsCometblsV1ClientState {
      */
     function store(Data memory input, Data storage output) internal {
         output.chain_id = input.chain_id;
-        IbcLightclientsTendermintV1Fraction.store(
-            input.trust_level,
-            output.trust_level
-        );
         GoogleProtobufDuration.store(
             input.trusting_period,
             output.trusting_period
@@ -1120,7 +1048,6 @@ library UnionIbcLightclientsCometblsV1Header {
     //struct definition
     struct Data {
         TendermintTypesSignedHeader.Data signed_header;
-        bytes untrusted_validator_set_root;
         IbcCoreClientV1Height.Data trusted_height;
         bytes zero_knowledge_proof;
     }
@@ -1177,10 +1104,8 @@ library UnionIbcLightclientsCometblsV1Header {
             if (fieldId == 1) {
                 pointer += _read_signed_header(pointer, bs, r);
             } else if (fieldId == 2) {
-                pointer += _read_untrusted_validator_set_root(pointer, bs, r);
-            } else if (fieldId == 3) {
                 pointer += _read_trusted_height(pointer, bs, r);
-            } else if (fieldId == 4) {
+            } else if (fieldId == 3) {
                 pointer += _read_zero_knowledge_proof(pointer, bs, r);
             } else {
                 pointer += ProtoBufRuntime._skip_field_decode(
@@ -1212,23 +1137,6 @@ library UnionIbcLightclientsCometblsV1Header {
             uint256 sz
         ) = _decode_TendermintTypesSignedHeader(p, bs);
         r.signed_header = x;
-        return sz;
-    }
-
-    /**
-     * @dev The decoder for reading a field
-     * @param p The offset of bytes array to start decode
-     * @param bs The bytes array to be decoded
-     * @param r The in-memory struct
-     * @return The number of bytes decoded
-     */
-    function _read_untrusted_validator_set_root(
-        uint256 p,
-        bytes memory bs,
-        Data memory r
-    ) internal pure returns (uint) {
-        (bytes memory x, uint256 sz) = ProtoBufRuntime._decode_bytes(p, bs);
-        r.untrusted_validator_set_root = x;
         return sz;
     }
 
@@ -1364,22 +1272,8 @@ library UnionIbcLightclientsCometblsV1Header {
             bs
         );
 
-        if (r.untrusted_validator_set_root.length != 0) {
-            pointer += ProtoBufRuntime._encode_key(
-                2,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
-            );
-            pointer += ProtoBufRuntime._encode_bytes(
-                r.untrusted_validator_set_root,
-                pointer,
-                bs
-            );
-        }
-
         pointer += ProtoBufRuntime._encode_key(
-            3,
+            2,
             ProtoBufRuntime.WireType.LengthDelim,
             pointer,
             bs
@@ -1392,7 +1286,7 @@ library UnionIbcLightclientsCometblsV1Header {
 
         if (r.zero_knowledge_proof.length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                4,
+                3,
                 ProtoBufRuntime.WireType.LengthDelim,
                 pointer,
                 bs
@@ -1453,9 +1347,6 @@ library UnionIbcLightclientsCometblsV1Header {
             );
         e +=
             1 +
-            ProtoBufRuntime._sz_lendelim(r.untrusted_validator_set_root.length);
-        e +=
-            1 +
             ProtoBufRuntime._sz_lendelim(
                 IbcCoreClientV1Height._estimate(r.trusted_height)
             );
@@ -1466,10 +1357,6 @@ library UnionIbcLightclientsCometblsV1Header {
     // empty checker
 
     function _empty(Data memory r) internal pure returns (bool) {
-        if (r.untrusted_validator_set_root.length != 0) {
-            return false;
-        }
-
         if (r.zero_knowledge_proof.length != 0) {
             return false;
         }
@@ -1488,8 +1375,6 @@ library UnionIbcLightclientsCometblsV1Header {
             input.signed_header,
             output.signed_header
         );
-        output.untrusted_validator_set_root = input
-            .untrusted_validator_set_root;
         IbcCoreClientV1Height.store(
             input.trusted_height,
             output.trusted_height

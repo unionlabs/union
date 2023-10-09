@@ -109,7 +109,7 @@ impl IbcClient for CometblsLightClient {
         let untrusted_validators_hash = if untrusted_height_number == trusted_height_number + 1 {
             trusted_validators_hash.clone()
         } else {
-            header.untrusted_validator_set_root
+            header.signed_header.header.validators_hash.clone()
         };
 
         let expected_block_hash = header
@@ -183,7 +183,7 @@ impl IbcClient for CometblsLightClient {
         let untrusted_validators_hash = if untrusted_height_number == trusted_height_number + 1 {
             consensus_state.data.next_validators_hash.clone()
         } else {
-            header.untrusted_validator_set_root
+            header.signed_header.header.validators_hash
         };
 
         consensus_state.data.next_validators_hash = untrusted_validators_hash;

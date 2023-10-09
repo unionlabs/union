@@ -21,7 +21,7 @@ workspace = true
 [dependencies.tonic]
 features = ["gzip"]
 optional = true
-version = "0.8"
+version = "0.9"
 
 [features]
 # @@protoc_deletion_point(features)
@@ -131,6 +131,7 @@ proto_full = [
   "tendermint+store",
   "tendermint+types",
   "tendermint+version",
+  "tokenfactory+v1beta1",
   "union+galois+api+v1",
   "union+ibc+lightclients+cometbls+v1",
   "union+ibc+lightclients+ethereum+v1",
@@ -329,12 +330,12 @@ proto_full = [
   "tendermint+version",
 ]
 "tendermint+version" = []
+"tokenfactory+v1beta1" = ["cosmos+bank+v1beta1", "cosmos+base+v1beta1"]
 "union+galois+api+v1" = ["tendermint+types"]
 "union+ibc+lightclients+cometbls+v1" = [
   "google+protobuf",
   "ibc+core+client+v1",
   "ibc+core+commitment+v1",
-  "ibc+lightclients+tendermint+v1",
   "tendermint+types",
 ]
 "union+ibc+lightclients+ethereum+v1" = [

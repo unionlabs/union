@@ -12,7 +12,7 @@ pub mod reflection_service_client {
         /// Attempt to create a new client by connecting to a given endpoint.
         pub async fn connect<D>(dst: D) -> Result<Self, tonic::transport::Error>
         where
-            D: std::convert::TryInto<tonic::transport::Endpoint>,
+            D: TryInto<tonic::transport::Endpoint>,
             D::Error: Into<StdError>,
         {
             let conn = tonic::transport::Endpoint::new(dst)?.connect().await?;
@@ -67,10 +67,27 @@ pub mod reflection_service_client {
             self.inner = self.inner.accept_compressed(encoding);
             self
         }
+        /// Limits the maximum size of a decoded message.
+        ///
+        /// Default: `4MB`
+        #[must_use]
+        pub fn max_decoding_message_size(mut self, limit: usize) -> Self {
+            self.inner = self.inner.max_decoding_message_size(limit);
+            self
+        }
+        /// Limits the maximum size of an encoded message.
+        ///
+        /// Default: `usize::MAX`
+        #[must_use]
+        pub fn max_encoding_message_size(mut self, limit: usize) -> Self {
+            self.inner = self.inner.max_encoding_message_size(limit);
+            self
+        }
         pub async fn list_all_interfaces(
             &mut self,
             request: impl tonic::IntoRequest<super::ListAllInterfacesRequest>,
-        ) -> Result<tonic::Response<super::ListAllInterfacesResponse>, tonic::Status> {
+        ) -> std::result::Result<tonic::Response<super::ListAllInterfacesResponse>, tonic::Status>
+        {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -81,12 +98,18 @@ pub mod reflection_service_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/cosmos.base.reflection.v1beta1.ReflectionService/ListAllInterfaces",
             );
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "cosmos.base.reflection.v1beta1.ReflectionService",
+                "ListAllInterfaces",
+            ));
+            self.inner.unary(req, path, codec).await
         }
         pub async fn list_implementations(
             &mut self,
             request: impl tonic::IntoRequest<super::ListImplementationsRequest>,
-        ) -> Result<tonic::Response<super::ListImplementationsResponse>, tonic::Status> {
+        ) -> std::result::Result<tonic::Response<super::ListImplementationsResponse>, tonic::Status>
+        {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -97,7 +120,12 @@ pub mod reflection_service_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/cosmos.base.reflection.v1beta1.ReflectionService/ListImplementations",
             );
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "cosmos.base.reflection.v1beta1.ReflectionService",
+                "ListImplementations",
+            ));
+            self.inner.unary(req, path, codec).await
         }
     }
 }

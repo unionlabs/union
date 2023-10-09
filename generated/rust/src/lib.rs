@@ -790,6 +790,14 @@ pub mod tendermint {
         // @@protoc_insertion_point(tendermint.version)
     }
 }
+pub mod tokenfactory {
+    #[cfg(feature = "tokenfactory+v1beta1")]
+    // @@protoc_insertion_point(attribute:tokenfactory.v1beta1)
+    pub mod v1beta1 {
+        include!("tokenfactory.v1beta1.rs");
+        // @@protoc_insertion_point(tokenfactory.v1beta1)
+    }
+}
 pub mod union {
     pub mod galois {
         pub mod api {

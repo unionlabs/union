@@ -225,6 +225,23 @@ pub struct MsgPacketRecv {
     pub proof: ::ethers::core::types::Bytes,
     pub proof_height: IbcCoreClientV1HeightData,
 }
+///`MsgPacketTimeout((uint64,string,string,string,string,bytes,(uint64,uint64),uint64),bytes,(uint64,uint64),uint64)`
+#[derive(
+    Clone,
+    ::ethers::contract::EthAbiType,
+    ::ethers::contract::EthAbiCodec,
+    Default,
+    Debug,
+    PartialEq,
+    Eq,
+    Hash,
+)]
+pub struct MsgPacketTimeout {
+    pub packet: IbcCoreChannelV1PacketData,
+    pub proof: ::ethers::core::types::Bytes,
+    pub proof_height: IbcCoreClientV1HeightData,
+    pub next_sequence_recv: u64,
+}
 ///`MsgUpdateClient(string,bytes)`
 #[derive(
     Clone,

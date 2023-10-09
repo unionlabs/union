@@ -12,7 +12,7 @@ pub mod reflection_service_client {
         /// Attempt to create a new client by connecting to a given endpoint.
         pub async fn connect<D>(dst: D) -> Result<Self, tonic::transport::Error>
         where
-            D: std::convert::TryInto<tonic::transport::Endpoint>,
+            D: TryInto<tonic::transport::Endpoint>,
             D::Error: Into<StdError>,
         {
             let conn = tonic::transport::Endpoint::new(dst)?.connect().await?;
@@ -67,10 +67,27 @@ pub mod reflection_service_client {
             self.inner = self.inner.accept_compressed(encoding);
             self
         }
+        /// Limits the maximum size of a decoded message.
+        ///
+        /// Default: `4MB`
+        #[must_use]
+        pub fn max_decoding_message_size(mut self, limit: usize) -> Self {
+            self.inner = self.inner.max_decoding_message_size(limit);
+            self
+        }
+        /// Limits the maximum size of an encoded message.
+        ///
+        /// Default: `usize::MAX`
+        #[must_use]
+        pub fn max_encoding_message_size(mut self, limit: usize) -> Self {
+            self.inner = self.inner.max_encoding_message_size(limit);
+            self
+        }
         pub async fn get_authn_descriptor(
             &mut self,
             request: impl tonic::IntoRequest<super::GetAuthnDescriptorRequest>,
-        ) -> Result<tonic::Response<super::GetAuthnDescriptorResponse>, tonic::Status> {
+        ) -> std::result::Result<tonic::Response<super::GetAuthnDescriptorResponse>, tonic::Status>
+        {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -81,12 +98,18 @@ pub mod reflection_service_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/cosmos.base.reflection.v2alpha1.ReflectionService/GetAuthnDescriptor",
             );
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "cosmos.base.reflection.v2alpha1.ReflectionService",
+                "GetAuthnDescriptor",
+            ));
+            self.inner.unary(req, path, codec).await
         }
         pub async fn get_chain_descriptor(
             &mut self,
             request: impl tonic::IntoRequest<super::GetChainDescriptorRequest>,
-        ) -> Result<tonic::Response<super::GetChainDescriptorResponse>, tonic::Status> {
+        ) -> std::result::Result<tonic::Response<super::GetChainDescriptorResponse>, tonic::Status>
+        {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -97,12 +120,18 @@ pub mod reflection_service_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/cosmos.base.reflection.v2alpha1.ReflectionService/GetChainDescriptor",
             );
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "cosmos.base.reflection.v2alpha1.ReflectionService",
+                "GetChainDescriptor",
+            ));
+            self.inner.unary(req, path, codec).await
         }
         pub async fn get_codec_descriptor(
             &mut self,
             request: impl tonic::IntoRequest<super::GetCodecDescriptorRequest>,
-        ) -> Result<tonic::Response<super::GetCodecDescriptorResponse>, tonic::Status> {
+        ) -> std::result::Result<tonic::Response<super::GetCodecDescriptorResponse>, tonic::Status>
+        {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -113,13 +142,20 @@ pub mod reflection_service_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/cosmos.base.reflection.v2alpha1.ReflectionService/GetCodecDescriptor",
             );
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "cosmos.base.reflection.v2alpha1.ReflectionService",
+                "GetCodecDescriptor",
+            ));
+            self.inner.unary(req, path, codec).await
         }
         pub async fn get_configuration_descriptor(
             &mut self,
             request: impl tonic::IntoRequest<super::GetConfigurationDescriptorRequest>,
-        ) -> Result<tonic::Response<super::GetConfigurationDescriptorResponse>, tonic::Status>
-        {
+        ) -> std::result::Result<
+            tonic::Response<super::GetConfigurationDescriptorResponse>,
+            tonic::Status,
+        > {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -130,13 +166,20 @@ pub mod reflection_service_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/cosmos.base.reflection.v2alpha1.ReflectionService/GetConfigurationDescriptor",
             );
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "cosmos.base.reflection.v2alpha1.ReflectionService",
+                "GetConfigurationDescriptor",
+            ));
+            self.inner.unary(req, path, codec).await
         }
         pub async fn get_query_services_descriptor(
             &mut self,
             request: impl tonic::IntoRequest<super::GetQueryServicesDescriptorRequest>,
-        ) -> Result<tonic::Response<super::GetQueryServicesDescriptorResponse>, tonic::Status>
-        {
+        ) -> std::result::Result<
+            tonic::Response<super::GetQueryServicesDescriptorResponse>,
+            tonic::Status,
+        > {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -147,12 +190,18 @@ pub mod reflection_service_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/cosmos.base.reflection.v2alpha1.ReflectionService/GetQueryServicesDescriptor",
             );
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "cosmos.base.reflection.v2alpha1.ReflectionService",
+                "GetQueryServicesDescriptor",
+            ));
+            self.inner.unary(req, path, codec).await
         }
         pub async fn get_tx_descriptor(
             &mut self,
             request: impl tonic::IntoRequest<super::GetTxDescriptorRequest>,
-        ) -> Result<tonic::Response<super::GetTxDescriptorResponse>, tonic::Status> {
+        ) -> std::result::Result<tonic::Response<super::GetTxDescriptorResponse>, tonic::Status>
+        {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -163,7 +212,12 @@ pub mod reflection_service_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/cosmos.base.reflection.v2alpha1.ReflectionService/GetTxDescriptor",
             );
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "cosmos.base.reflection.v2alpha1.ReflectionService",
+                "GetTxDescriptor",
+            ));
+            self.inner.unary(req, path, codec).await
         }
     }
 }

@@ -794,6 +794,7 @@ impl<C: ChainSpec> EventSource for Evm<C> {
                                 }))
                             }
                             IBCHandlerEvents::WriteAcknowledgementFilter(_) => None,
+                            IBCHandlerEvents::TimeoutPacketFilter(_) => None,
                         };
 
                         Ok(event.map(|event| {

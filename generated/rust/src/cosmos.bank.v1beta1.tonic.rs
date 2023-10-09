@@ -12,7 +12,7 @@ pub mod query_client {
         /// Attempt to create a new client by connecting to a given endpoint.
         pub async fn connect<D>(dst: D) -> Result<Self, tonic::transport::Error>
         where
-            D: std::convert::TryInto<tonic::transport::Endpoint>,
+            D: TryInto<tonic::transport::Endpoint>,
             D::Error: Into<StdError>,
         {
             let conn = tonic::transport::Endpoint::new(dst)?.connect().await?;
@@ -67,10 +67,27 @@ pub mod query_client {
             self.inner = self.inner.accept_compressed(encoding);
             self
         }
+        /// Limits the maximum size of a decoded message.
+        ///
+        /// Default: `4MB`
+        #[must_use]
+        pub fn max_decoding_message_size(mut self, limit: usize) -> Self {
+            self.inner = self.inner.max_decoding_message_size(limit);
+            self
+        }
+        /// Limits the maximum size of an encoded message.
+        ///
+        /// Default: `usize::MAX`
+        #[must_use]
+        pub fn max_encoding_message_size(mut self, limit: usize) -> Self {
+            self.inner = self.inner.max_encoding_message_size(limit);
+            self
+        }
         pub async fn balance(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryBalanceRequest>,
-        ) -> Result<tonic::Response<super::QueryBalanceResponse>, tonic::Status> {
+        ) -> std::result::Result<tonic::Response<super::QueryBalanceResponse>, tonic::Status>
+        {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -79,12 +96,16 @@ pub mod query_client {
             })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static("/cosmos.bank.v1beta1.Query/Balance");
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(GrpcMethod::new("cosmos.bank.v1beta1.Query", "Balance"));
+            self.inner.unary(req, path, codec).await
         }
         pub async fn all_balances(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryAllBalancesRequest>,
-        ) -> Result<tonic::Response<super::QueryAllBalancesResponse>, tonic::Status> {
+        ) -> std::result::Result<tonic::Response<super::QueryAllBalancesResponse>, tonic::Status>
+        {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -94,12 +115,18 @@ pub mod query_client {
             let codec = tonic::codec::ProstCodec::default();
             let path =
                 http::uri::PathAndQuery::from_static("/cosmos.bank.v1beta1.Query/AllBalances");
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(GrpcMethod::new("cosmos.bank.v1beta1.Query", "AllBalances"));
+            self.inner.unary(req, path, codec).await
         }
         pub async fn spendable_balances(
             &mut self,
             request: impl tonic::IntoRequest<super::QuerySpendableBalancesRequest>,
-        ) -> Result<tonic::Response<super::QuerySpendableBalancesResponse>, tonic::Status> {
+        ) -> std::result::Result<
+            tonic::Response<super::QuerySpendableBalancesResponse>,
+            tonic::Status,
+        > {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -110,13 +137,20 @@ pub mod query_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/cosmos.bank.v1beta1.Query/SpendableBalances",
             );
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "cosmos.bank.v1beta1.Query",
+                "SpendableBalances",
+            ));
+            self.inner.unary(req, path, codec).await
         }
         pub async fn spendable_balance_by_denom(
             &mut self,
             request: impl tonic::IntoRequest<super::QuerySpendableBalanceByDenomRequest>,
-        ) -> Result<tonic::Response<super::QuerySpendableBalanceByDenomResponse>, tonic::Status>
-        {
+        ) -> std::result::Result<
+            tonic::Response<super::QuerySpendableBalanceByDenomResponse>,
+            tonic::Status,
+        > {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -127,12 +161,18 @@ pub mod query_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/cosmos.bank.v1beta1.Query/SpendableBalanceByDenom",
             );
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "cosmos.bank.v1beta1.Query",
+                "SpendableBalanceByDenom",
+            ));
+            self.inner.unary(req, path, codec).await
         }
         pub async fn total_supply(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryTotalSupplyRequest>,
-        ) -> Result<tonic::Response<super::QueryTotalSupplyResponse>, tonic::Status> {
+        ) -> std::result::Result<tonic::Response<super::QueryTotalSupplyResponse>, tonic::Status>
+        {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -142,12 +182,16 @@ pub mod query_client {
             let codec = tonic::codec::ProstCodec::default();
             let path =
                 http::uri::PathAndQuery::from_static("/cosmos.bank.v1beta1.Query/TotalSupply");
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(GrpcMethod::new("cosmos.bank.v1beta1.Query", "TotalSupply"));
+            self.inner.unary(req, path, codec).await
         }
         pub async fn supply_of(
             &mut self,
             request: impl tonic::IntoRequest<super::QuerySupplyOfRequest>,
-        ) -> Result<tonic::Response<super::QuerySupplyOfResponse>, tonic::Status> {
+        ) -> std::result::Result<tonic::Response<super::QuerySupplyOfResponse>, tonic::Status>
+        {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -156,12 +200,16 @@ pub mod query_client {
             })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static("/cosmos.bank.v1beta1.Query/SupplyOf");
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(GrpcMethod::new("cosmos.bank.v1beta1.Query", "SupplyOf"));
+            self.inner.unary(req, path, codec).await
         }
         pub async fn params(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryParamsRequest>,
-        ) -> Result<tonic::Response<super::QueryParamsResponse>, tonic::Status> {
+        ) -> std::result::Result<tonic::Response<super::QueryParamsResponse>, tonic::Status>
+        {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -170,12 +218,16 @@ pub mod query_client {
             })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static("/cosmos.bank.v1beta1.Query/Params");
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(GrpcMethod::new("cosmos.bank.v1beta1.Query", "Params"));
+            self.inner.unary(req, path, codec).await
         }
         pub async fn denom_metadata(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryDenomMetadataRequest>,
-        ) -> Result<tonic::Response<super::QueryDenomMetadataResponse>, tonic::Status> {
+        ) -> std::result::Result<tonic::Response<super::QueryDenomMetadataResponse>, tonic::Status>
+        {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -185,12 +237,18 @@ pub mod query_client {
             let codec = tonic::codec::ProstCodec::default();
             let path =
                 http::uri::PathAndQuery::from_static("/cosmos.bank.v1beta1.Query/DenomMetadata");
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "cosmos.bank.v1beta1.Query",
+                "DenomMetadata",
+            ));
+            self.inner.unary(req, path, codec).await
         }
         pub async fn denoms_metadata(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryDenomsMetadataRequest>,
-        ) -> Result<tonic::Response<super::QueryDenomsMetadataResponse>, tonic::Status> {
+        ) -> std::result::Result<tonic::Response<super::QueryDenomsMetadataResponse>, tonic::Status>
+        {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -200,12 +258,18 @@ pub mod query_client {
             let codec = tonic::codec::ProstCodec::default();
             let path =
                 http::uri::PathAndQuery::from_static("/cosmos.bank.v1beta1.Query/DenomsMetadata");
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "cosmos.bank.v1beta1.Query",
+                "DenomsMetadata",
+            ));
+            self.inner.unary(req, path, codec).await
         }
         pub async fn denom_owners(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryDenomOwnersRequest>,
-        ) -> Result<tonic::Response<super::QueryDenomOwnersResponse>, tonic::Status> {
+        ) -> std::result::Result<tonic::Response<super::QueryDenomOwnersResponse>, tonic::Status>
+        {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -215,12 +279,16 @@ pub mod query_client {
             let codec = tonic::codec::ProstCodec::default();
             let path =
                 http::uri::PathAndQuery::from_static("/cosmos.bank.v1beta1.Query/DenomOwners");
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(GrpcMethod::new("cosmos.bank.v1beta1.Query", "DenomOwners"));
+            self.inner.unary(req, path, codec).await
         }
         pub async fn send_enabled(
             &mut self,
             request: impl tonic::IntoRequest<super::QuerySendEnabledRequest>,
-        ) -> Result<tonic::Response<super::QuerySendEnabledResponse>, tonic::Status> {
+        ) -> std::result::Result<tonic::Response<super::QuerySendEnabledResponse>, tonic::Status>
+        {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -230,7 +298,10 @@ pub mod query_client {
             let codec = tonic::codec::ProstCodec::default();
             let path =
                 http::uri::PathAndQuery::from_static("/cosmos.bank.v1beta1.Query/SendEnabled");
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(GrpcMethod::new("cosmos.bank.v1beta1.Query", "SendEnabled"));
+            self.inner.unary(req, path, codec).await
         }
     }
 }
@@ -247,7 +318,7 @@ pub mod msg_client {
         /// Attempt to create a new client by connecting to a given endpoint.
         pub async fn connect<D>(dst: D) -> Result<Self, tonic::transport::Error>
         where
-            D: std::convert::TryInto<tonic::transport::Endpoint>,
+            D: TryInto<tonic::transport::Endpoint>,
             D::Error: Into<StdError>,
         {
             let conn = tonic::transport::Endpoint::new(dst)?.connect().await?;
@@ -299,10 +370,26 @@ pub mod msg_client {
             self.inner = self.inner.accept_compressed(encoding);
             self
         }
+        /// Limits the maximum size of a decoded message.
+        ///
+        /// Default: `4MB`
+        #[must_use]
+        pub fn max_decoding_message_size(mut self, limit: usize) -> Self {
+            self.inner = self.inner.max_decoding_message_size(limit);
+            self
+        }
+        /// Limits the maximum size of an encoded message.
+        ///
+        /// Default: `usize::MAX`
+        #[must_use]
+        pub fn max_encoding_message_size(mut self, limit: usize) -> Self {
+            self.inner = self.inner.max_encoding_message_size(limit);
+            self
+        }
         pub async fn send(
             &mut self,
             request: impl tonic::IntoRequest<super::MsgSend>,
-        ) -> Result<tonic::Response<super::MsgSendResponse>, tonic::Status> {
+        ) -> std::result::Result<tonic::Response<super::MsgSendResponse>, tonic::Status> {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -311,12 +398,16 @@ pub mod msg_client {
             })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static("/cosmos.bank.v1beta1.Msg/Send");
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(GrpcMethod::new("cosmos.bank.v1beta1.Msg", "Send"));
+            self.inner.unary(req, path, codec).await
         }
         pub async fn multi_send(
             &mut self,
             request: impl tonic::IntoRequest<super::MsgMultiSend>,
-        ) -> Result<tonic::Response<super::MsgMultiSendResponse>, tonic::Status> {
+        ) -> std::result::Result<tonic::Response<super::MsgMultiSendResponse>, tonic::Status>
+        {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -325,12 +416,16 @@ pub mod msg_client {
             })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static("/cosmos.bank.v1beta1.Msg/MultiSend");
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(GrpcMethod::new("cosmos.bank.v1beta1.Msg", "MultiSend"));
+            self.inner.unary(req, path, codec).await
         }
         pub async fn update_params(
             &mut self,
             request: impl tonic::IntoRequest<super::MsgUpdateParams>,
-        ) -> Result<tonic::Response<super::MsgUpdateParamsResponse>, tonic::Status> {
+        ) -> std::result::Result<tonic::Response<super::MsgUpdateParamsResponse>, tonic::Status>
+        {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -340,12 +435,16 @@ pub mod msg_client {
             let codec = tonic::codec::ProstCodec::default();
             let path =
                 http::uri::PathAndQuery::from_static("/cosmos.bank.v1beta1.Msg/UpdateParams");
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(GrpcMethod::new("cosmos.bank.v1beta1.Msg", "UpdateParams"));
+            self.inner.unary(req, path, codec).await
         }
         pub async fn set_send_enabled(
             &mut self,
             request: impl tonic::IntoRequest<super::MsgSetSendEnabled>,
-        ) -> Result<tonic::Response<super::MsgSetSendEnabledResponse>, tonic::Status> {
+        ) -> std::result::Result<tonic::Response<super::MsgSetSendEnabledResponse>, tonic::Status>
+        {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -355,7 +454,10 @@ pub mod msg_client {
             let codec = tonic::codec::ProstCodec::default();
             let path =
                 http::uri::PathAndQuery::from_static("/cosmos.bank.v1beta1.Msg/SetSendEnabled");
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(GrpcMethod::new("cosmos.bank.v1beta1.Msg", "SetSendEnabled"));
+            self.inner.unary(req, path, codec).await
         }
     }
 }

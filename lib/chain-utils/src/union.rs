@@ -17,7 +17,7 @@ use unionlabs::{
     ibc::{
         core::{client::height::Height, commitment::merkle_root::MerkleRoot},
         google::protobuf::{any::Any, duration::Duration},
-        lightclients::{cometbls, tendermint::fraction::Fraction, wasm},
+        lightclients::{cometbls, wasm},
     },
     id::Id,
     id_type,
@@ -148,11 +148,6 @@ impl Chain for Union {
             Any(wasm::client_state::ClientState {
                 data: cometbls::client_state::ClientState {
                     chain_id: self.chain_id.clone(),
-                    // https://github.com/cometbft/cometbft/blob/da0e55604b075bac9e1d5866cb2e62eaae386dd9/light/verifier.go#L16
-                    trust_level: Fraction {
-                        numerator: 1,
-                        denominator: 3,
-                    },
                     // https://github.com/cosmos/relayer/blob/23d1e5c864b35d133cad6a0ef06970a2b1e1b03f/relayer/chains/cosmos/provider.go#L177
                     trusting_period: Duration::new(
                         (unbonding_period * 85 / 100).as_secs() as i64,

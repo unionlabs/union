@@ -45,8 +45,6 @@ library Cometbls {
         m.clientStateBytes = CometblsClientState
             .Data({
                 chain_id: chainId,
-                // TODO: Unused and must be removed from the proto definition as it is hardcoded in the ZK circuit.
-                trust_level: Fraction.Data({numerator: 1, denominator: 3}),
                 // TODO: all this could be fuzzed
                 trusting_period: Duration.Data({
                     Seconds: int64(TRUSTING_PERIOD),
@@ -82,14 +80,12 @@ library Cometbls {
         string memory clientId,
         TendermintTypesSignedHeader.Data memory signedHeader,
         uint64 trustedHeight,
-        bytes memory untrustedValidatorsHash,
         bytes memory zkp
     ) internal view returns (IBCMsgs.MsgUpdateClient memory m) {
         m.clientId = clientId;
         m.clientMessage = CometblsHeader
             .Data({
                 signed_header: signedHeader,
-                untrusted_validator_set_root: untrustedValidatorsHash,
                 trusted_height: ClientHeight.Data({
                     revision_number: 0,
                     revision_height: trustedHeight

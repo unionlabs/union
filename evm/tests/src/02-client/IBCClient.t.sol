@@ -190,12 +190,10 @@ contract IBCClientTest is TestPlus {
         internal
         pure
         returns (
-            bytes memory untrustedValidatorsHash,
             bytes memory zkp,
             TendermintTypesSignedHeader.Data memory signedHeader
         )
     {
-        untrustedValidatorsHash = hex"F09E25471B41514B2F8B08B5F4C9093C5D6ED134E107FF491CED2374B947DF60";
         zkp = hex"09f57b8b308d9c57bd1e30cd493212314f5b680e685bc91402193fac45389c42064968d6db298707b5405431621b96bd73756907b2b5137ca4966c270d0b9b461a60936e4cdf9b77b993f25cdeb7d1c5623f082dc2c88b20d33a9b40c14dc39115aba4e371dc0443465b4d9b69aece3a4f15f0503c6d0f56dc1237356c32de80271ca20c7eb2bcb9bc56be7256a93d925fa3bae73829dbc53c4e9056f99046b80277d0bbc45741e6eb1e6a6a9e1d795f384cca1d3836e29ffecdebf6b0a9db5e15ec13c943d68283a8a781f4d5cb330ca1b02a7515990eb8c3c3e4da4ba9ef1717980acd29ff4c6ba58036337faae8def7355243b2449b9c5637f85ebecec1a42e4570af6b520476ccc96665d3d92dc7a22c0864169072332f17f7664223ea4004e3860aa093da597dc7f6b28284c45d9bc56e4d8e44ee5b784ec23b5309649116db1c88de8aaa9057b41b94939806fd8910bc1d5b33f3d4db7f568197c63f55";
         TendermintTypesHeader.Data memory header = TendermintTypesHeader.Data({
             version: TendermintVersionConsensus.Data({block: 11, app: 0}),
@@ -256,7 +254,6 @@ contract IBCClientTest is TestPlus {
         vm.assume(updateLatency < Cometbls.TRUSTING_PERIOD);
 
         (
-            bytes memory untrustedValidatorsHash,
             bytes memory zkp,
             TendermintTypesSignedHeader.Data memory signedHeader
         ) = getValidTransition();
@@ -283,7 +280,6 @@ contract IBCClientTest is TestPlus {
             id,
             signedHeader,
             trustedHeight,
-            untrustedValidatorsHash,
             zkp
         );
 
@@ -302,7 +298,6 @@ contract IBCClientTest is TestPlus {
         vm.assume(updateLatency < Cometbls.TRUSTING_PERIOD);
 
         (
-            bytes memory untrustedValidatorsHash,
             bytes memory zkp,
             TendermintTypesSignedHeader.Data memory signedHeader
         ) = getValidTransition();
@@ -335,7 +330,6 @@ contract IBCClientTest is TestPlus {
             id,
             signedHeader,
             trustedHeight,
-            untrustedValidatorsHash,
             zkp
         );
 
@@ -355,7 +349,6 @@ contract IBCClientTest is TestPlus {
         vm.assume(updateLatency < Cometbls.TRUSTING_PERIOD);
 
         (
-            bytes memory untrustedValidatorsHash,
             bytes memory zkp,
             TendermintTypesSignedHeader.Data memory signedHeader
         ) = getValidTransition();
@@ -385,7 +378,6 @@ contract IBCClientTest is TestPlus {
             id,
             signedHeader,
             trustedHeight,
-            untrustedValidatorsHash,
             zkp
         );
 
@@ -406,7 +398,6 @@ contract IBCClientTest is TestPlus {
         vm.assume(updateLatency < Cometbls.TRUSTING_PERIOD);
 
         (
-            bytes memory untrustedValidatorsHash,
             bytes memory zkp,
             TendermintTypesSignedHeader.Data memory signedHeader
         ) = getValidTransition();
@@ -436,7 +427,6 @@ contract IBCClientTest is TestPlus {
             id,
             signedHeader,
             trustedHeight,
-            untrustedValidatorsHash,
             zkp
         );
 
@@ -455,7 +445,6 @@ contract IBCClientTest is TestPlus {
         vm.assume(updateLatency < Cometbls.TRUSTING_PERIOD);
 
         (
-            bytes memory untrustedValidatorsHash,
             bytes memory zkp,
             TendermintTypesSignedHeader.Data memory signedHeader
         ) = getValidTransition();
@@ -479,7 +468,6 @@ contract IBCClientTest is TestPlus {
             id,
             signedHeader,
             trustedHeight,
-            untrustedValidatorsHash,
             zkp
         );
 
@@ -496,7 +484,6 @@ contract IBCClientTest is TestPlus {
         vm.assume(clockDrift < Cometbls.MAX_CLOCK_DRIFT);
 
         (
-            bytes memory untrustedValidatorsHash,
             bytes memory zkp,
             TendermintTypesSignedHeader.Data memory signedHeader
         ) = getValidTransition();
@@ -523,7 +510,6 @@ contract IBCClientTest is TestPlus {
             id,
             signedHeader,
             trustedHeight,
-            untrustedValidatorsHash,
             zkp
         );
 

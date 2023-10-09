@@ -2,17 +2,13 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     errors::{required, MissingField},
-    ibc::{
-        core::client::height::Height, google::protobuf::duration::Duration,
-        lightclients::tendermint::fraction::Fraction,
-    },
+    ibc::{core::client::height::Height, google::protobuf::duration::Duration},
     Proto, TryFromProtoErrorOf, TypeUrl,
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ClientState {
     pub chain_id: String,
-    pub trust_level: Fraction,
     pub trusting_period: Duration,
     pub unbonding_period: Duration,
     pub max_clock_drift: Duration,
@@ -23,7 +19,6 @@ impl From<ClientState> for protos::union::ibc::lightclients::cometbls::v1::Clien
     fn from(value: ClientState) -> Self {
         Self {
             chain_id: value.chain_id,
-            trust_level: Some(value.trust_level.into()),
             trusting_period: Some(value.trusting_period.into()),
             unbonding_period: Some(value.unbonding_period.into()),
             max_clock_drift: Some(value.max_clock_drift.into()),
@@ -56,7 +51,6 @@ impl TryFrom<protos::union::ibc::lightclients::cometbls::v1::ClientState> for Cl
     ) -> Result<Self, Self::Error> {
         Ok(Self {
             chain_id: value.chain_id,
-            trust_level: required!(value.trust_level)?.into(),
             trusting_period: required!(value.trusting_period)?
                 .try_into()
                 .map_err(TryFromClientStateError::TrustingPeriod)?,
@@ -76,7 +70,6 @@ impl From<ClientState> for contracts::glue::UnionIbcLightclientsCometblsV1Client
     fn from(value: ClientState) -> Self {
         Self {
             chain_id: value.chain_id,
-            trust_level: value.trust_level.into(),
             trusting_period: value.trusting_period.into(),
             unbonding_period: value.unbonding_period.into(),
             max_clock_drift: value.max_clock_drift.into(),
@@ -94,7 +87,6 @@ impl TryFrom<contracts::glue::UnionIbcLightclientsCometblsV1ClientStateData> for
     ) -> Result<Self, Self::Error> {
         Ok(Self {
             chain_id: value.chain_id,
-            trust_level: value.trust_level.into(),
             trusting_period: value
                 .trusting_period
                 .try_into()

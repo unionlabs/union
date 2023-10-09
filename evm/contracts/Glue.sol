@@ -21,6 +21,9 @@ contract Glue {
         IbcCoreClientV1Height.Data memory,
         OptimizedConsensusState memory,
         ProcessedMoment memory,
-        TendermintTypesCanonicalVote.Data memory
+        TendermintTypesCanonicalVote.Data memory,
+        IbcLightclientsTendermintV1ClientState.Data memory,
+        IbcLightclientsTendermintV1ConsensusState.Data memory,
+        IbcLightclientsTendermintV1Header.Data memory
     ) public pure {}
 }

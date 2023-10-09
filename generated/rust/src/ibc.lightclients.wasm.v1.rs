@@ -1,4 +1,25 @@
 // @generated
+/// Wasm light client's keeper genesis state
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GenesisState {
+    /// uploaded light client wasm contracts
+    #[prost(message, repeated, tag = "1")]
+    pub contracts: ::prost::alloc::vec::Vec<GenesisContract>,
+}
+/// A contract's store key and code
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GenesisContract {
+    /// store key of metadata without clientID-prefix
+    #[prost(bytes = "vec", tag = "1")]
+    pub code_id_key: ::prost::alloc::vec::Vec<u8>,
+    /// metadata value
+    #[prost(bytes = "vec", tag = "2")]
+    pub contract_code: ::prost::alloc::vec::Vec<u8>,
+}
 /// QueryCodeIdsRequest is the request type for the Query/CodeIds RPC method.
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -38,24 +59,6 @@ pub struct QueryCodeRequest {
 pub struct QueryCodeResponse {
     #[prost(bytes = "vec", tag = "1")]
     pub code: ::prost::alloc::vec::Vec<u8>,
-}
-/// MsgStoreCode defines the request type for the StoreCode rpc.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgStoreCode {
-    #[prost(string, tag = "1")]
-    pub signer: ::prost::alloc::string::String,
-    #[prost(bytes = "vec", tag = "2")]
-    pub code: ::prost::alloc::vec::Vec<u8>,
-}
-/// MsgStoreCodeResponse defines the response type for the StoreCode rpc
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgStoreCodeResponse {
-    #[prost(bytes = "vec", tag = "1")]
-    pub code_id: ::prost::alloc::vec::Vec<u8>,
 }
 /// Wasm light client's Client state
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
@@ -103,26 +106,23 @@ pub struct Misbehaviour {
     #[prost(bytes = "vec", tag = "1")]
     pub data: ::prost::alloc::vec::Vec<u8>,
 }
-/// Wasm light client's keeper genesis state
+/// MsgStoreCode defines the request type for the StoreCode rpc.
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct GenesisState {
-    /// uploaded light client wasm contracts
-    #[prost(message, repeated, tag = "1")]
-    pub contracts: ::prost::alloc::vec::Vec<GenesisContract>,
-}
-/// A contract's store key and code
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct GenesisContract {
-    /// store key of metadata without clientID-prefix
-    #[prost(bytes = "vec", tag = "1")]
-    pub code_id_key: ::prost::alloc::vec::Vec<u8>,
-    /// metadata value
+pub struct MsgStoreCode {
+    #[prost(string, tag = "1")]
+    pub signer: ::prost::alloc::string::String,
     #[prost(bytes = "vec", tag = "2")]
-    pub contract_code: ::prost::alloc::vec::Vec<u8>,
+    pub code: ::prost::alloc::vec::Vec<u8>,
+}
+/// MsgStoreCodeResponse defines the response type for the StoreCode rpc
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgStoreCodeResponse {
+    #[prost(bytes = "vec", tag = "1")]
+    pub code_id: ::prost::alloc::vec::Vec<u8>,
 }
 include!("ibc.lightclients.wasm.v1.tonic.rs");
 // @@protoc_insertion_point(module)

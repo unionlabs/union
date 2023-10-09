@@ -6,6 +6,4 @@
 pub mod devnet_ownable_ibc_handler;
 pub mod glue;
 pub mod ibc_handler;
-pub mod ics20_bank;
-pub mod ics20_transfer_bank;
 pub mod shared_types;
