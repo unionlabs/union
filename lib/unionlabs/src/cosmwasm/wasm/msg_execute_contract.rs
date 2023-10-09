@@ -1,9 +1,8 @@
-use crate::{
-    cosmos::{base::coin::Coin, staking::validator},
-    Proto, TypeUrl,
-};
+use serde::{Deserialize, Serialize};
 
-/// MsgExecuteContract submits the given message data to a smart contract
+use crate::{cosmos::base::coin::Coin, Proto, TypeUrl};
+
+/// `MsgExecuteContract` submits the given message data to a smart contract
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct MsgExecuteContract {
     /// Sender is the that actor that signed the messages
