@@ -30,6 +30,8 @@ pub const DELAY_PERIOD: u64 = 0;
 /// Wrapper types around protos defined in <https://github.com/cosmos/gogoproto/tree/main/protobuf/google/protobuf>, matching the proto module structure.
 pub mod google;
 
+pub mod cosmwasm;
+
 /// Defines types that wrap the IBC specification, matching the proto module structure. This also includes `union` extensions to ibc (i.e. types defined in `union.ibc`).
 pub mod ibc;
 
