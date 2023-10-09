@@ -133,6 +133,7 @@
         ./lib/unionlabs/fuzz/default.nix
         ./faucet/faucet.nix
         ./ucli/ucli.nix
+        ./zerg/zerg.nix
         treefmt-nix.flakeModule
       ];
 
