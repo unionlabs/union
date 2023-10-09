@@ -1,36 +1,4 @@
 // @generated
-/// CommitInfo defines commit information used by the multi-store when committing
-/// a version/height.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct CommitInfo {
-    #[prost(int64, tag = "1")]
-    pub version: i64,
-    #[prost(message, repeated, tag = "2")]
-    pub store_infos: ::prost::alloc::vec::Vec<StoreInfo>,
-    #[prost(message, optional, tag = "3")]
-    pub timestamp: ::core::option::Option<super::super::super::super::google::protobuf::Timestamp>,
-}
-/// StoreInfo defines store-specific commit information. It contains a reference
-/// between a store name and the commit ID.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct StoreInfo {
-    #[prost(string, tag = "1")]
-    pub name: ::prost::alloc::string::String,
-    #[prost(message, optional, tag = "2")]
-    pub commit_id: ::core::option::Option<CommitId>,
-}
-/// CommitID defines the commitment information when a specific store is
-/// committed.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct CommitId {
-    #[prost(int64, tag = "1")]
-    pub version: i64,
-    #[prost(bytes = "vec", tag = "2")]
-    pub hash: ::prost::alloc::vec::Vec<u8>,
-}
 /// StoreKVPair is a KVStore KVPair used for listening to state changes (Sets and Deletes)
 /// It optionally includes the StoreKey for the originating KVStore and a Boolean flag to distinguish between Sets and
 /// Deletes
@@ -88,5 +56,37 @@ pub mod block_metadata {
             super::super::super::super::super::tendermint::abci::ResponseDeliverTx,
         >,
     }
+}
+/// CommitInfo defines commit information used by the multi-store when committing
+/// a version/height.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct CommitInfo {
+    #[prost(int64, tag = "1")]
+    pub version: i64,
+    #[prost(message, repeated, tag = "2")]
+    pub store_infos: ::prost::alloc::vec::Vec<StoreInfo>,
+    #[prost(message, optional, tag = "3")]
+    pub timestamp: ::core::option::Option<super::super::super::super::google::protobuf::Timestamp>,
+}
+/// StoreInfo defines store-specific commit information. It contains a reference
+/// between a store name and the commit ID.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct StoreInfo {
+    #[prost(string, tag = "1")]
+    pub name: ::prost::alloc::string::String,
+    #[prost(message, optional, tag = "2")]
+    pub commit_id: ::core::option::Option<CommitId>,
+}
+/// CommitID defines the commitment information when a specific store is
+/// committed.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct CommitId {
+    #[prost(int64, tag = "1")]
+    pub version: i64,
+    #[prost(bytes = "vec", tag = "2")]
+    pub hash: ::prost::alloc::vec::Vec<u8>,
 }
 // @@protoc_insertion_point(module)

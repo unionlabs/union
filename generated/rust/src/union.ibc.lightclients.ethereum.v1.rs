@@ -70,6 +70,7 @@ pub struct ConsensusState {
     #[prost(bytes = "vec", tag = "5")]
     pub next_sync_committee: ::prost::alloc::vec::Vec<u8>,
 }
+/// TODO: This should be an enum containing either sync committee update or finality update.
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]

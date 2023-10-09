@@ -12,7 +12,7 @@ pub mod query_client {
         /// Attempt to create a new client by connecting to a given endpoint.
         pub async fn connect<D>(dst: D) -> Result<Self, tonic::transport::Error>
         where
-            D: std::convert::TryInto<tonic::transport::Endpoint>,
+            D: TryInto<tonic::transport::Endpoint>,
             D::Error: Into<StdError>,
         {
             let conn = tonic::transport::Endpoint::new(dst)?.connect().await?;
@@ -67,10 +67,27 @@ pub mod query_client {
             self.inner = self.inner.accept_compressed(encoding);
             self
         }
+        /// Limits the maximum size of a decoded message.
+        ///
+        /// Default: `4MB`
+        #[must_use]
+        pub fn max_decoding_message_size(mut self, limit: usize) -> Self {
+            self.inner = self.inner.max_decoding_message_size(limit);
+            self
+        }
+        /// Limits the maximum size of an encoded message.
+        ///
+        /// Default: `usize::MAX`
+        #[must_use]
+        pub fn max_encoding_message_size(mut self, limit: usize) -> Self {
+            self.inner = self.inner.max_encoding_message_size(limit);
+            self
+        }
         pub async fn group_info(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryGroupInfoRequest>,
-        ) -> Result<tonic::Response<super::QueryGroupInfoResponse>, tonic::Status> {
+        ) -> std::result::Result<tonic::Response<super::QueryGroupInfoResponse>, tonic::Status>
+        {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -79,12 +96,16 @@ pub mod query_client {
             })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static("/cosmos.group.v1.Query/GroupInfo");
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(GrpcMethod::new("cosmos.group.v1.Query", "GroupInfo"));
+            self.inner.unary(req, path, codec).await
         }
         pub async fn group_policy_info(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryGroupPolicyInfoRequest>,
-        ) -> Result<tonic::Response<super::QueryGroupPolicyInfoResponse>, tonic::Status> {
+        ) -> std::result::Result<tonic::Response<super::QueryGroupPolicyInfoResponse>, tonic::Status>
+        {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -94,12 +115,16 @@ pub mod query_client {
             let codec = tonic::codec::ProstCodec::default();
             let path =
                 http::uri::PathAndQuery::from_static("/cosmos.group.v1.Query/GroupPolicyInfo");
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(GrpcMethod::new("cosmos.group.v1.Query", "GroupPolicyInfo"));
+            self.inner.unary(req, path, codec).await
         }
         pub async fn group_members(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryGroupMembersRequest>,
-        ) -> Result<tonic::Response<super::QueryGroupMembersResponse>, tonic::Status> {
+        ) -> std::result::Result<tonic::Response<super::QueryGroupMembersResponse>, tonic::Status>
+        {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -108,12 +133,16 @@ pub mod query_client {
             })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static("/cosmos.group.v1.Query/GroupMembers");
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(GrpcMethod::new("cosmos.group.v1.Query", "GroupMembers"));
+            self.inner.unary(req, path, codec).await
         }
         pub async fn groups_by_admin(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryGroupsByAdminRequest>,
-        ) -> Result<tonic::Response<super::QueryGroupsByAdminResponse>, tonic::Status> {
+        ) -> std::result::Result<tonic::Response<super::QueryGroupsByAdminResponse>, tonic::Status>
+        {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -122,13 +151,18 @@ pub mod query_client {
             })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static("/cosmos.group.v1.Query/GroupsByAdmin");
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(GrpcMethod::new("cosmos.group.v1.Query", "GroupsByAdmin"));
+            self.inner.unary(req, path, codec).await
         }
         pub async fn group_policies_by_group(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryGroupPoliciesByGroupRequest>,
-        ) -> Result<tonic::Response<super::QueryGroupPoliciesByGroupResponse>, tonic::Status>
-        {
+        ) -> std::result::Result<
+            tonic::Response<super::QueryGroupPoliciesByGroupResponse>,
+            tonic::Status,
+        > {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -138,13 +172,20 @@ pub mod query_client {
             let codec = tonic::codec::ProstCodec::default();
             let path =
                 http::uri::PathAndQuery::from_static("/cosmos.group.v1.Query/GroupPoliciesByGroup");
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "cosmos.group.v1.Query",
+                "GroupPoliciesByGroup",
+            ));
+            self.inner.unary(req, path, codec).await
         }
         pub async fn group_policies_by_admin(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryGroupPoliciesByAdminRequest>,
-        ) -> Result<tonic::Response<super::QueryGroupPoliciesByAdminResponse>, tonic::Status>
-        {
+        ) -> std::result::Result<
+            tonic::Response<super::QueryGroupPoliciesByAdminResponse>,
+            tonic::Status,
+        > {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -154,12 +195,18 @@ pub mod query_client {
             let codec = tonic::codec::ProstCodec::default();
             let path =
                 http::uri::PathAndQuery::from_static("/cosmos.group.v1.Query/GroupPoliciesByAdmin");
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "cosmos.group.v1.Query",
+                "GroupPoliciesByAdmin",
+            ));
+            self.inner.unary(req, path, codec).await
         }
         pub async fn proposal(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryProposalRequest>,
-        ) -> Result<tonic::Response<super::QueryProposalResponse>, tonic::Status> {
+        ) -> std::result::Result<tonic::Response<super::QueryProposalResponse>, tonic::Status>
+        {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -168,13 +215,18 @@ pub mod query_client {
             })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static("/cosmos.group.v1.Query/Proposal");
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(GrpcMethod::new("cosmos.group.v1.Query", "Proposal"));
+            self.inner.unary(req, path, codec).await
         }
         pub async fn proposals_by_group_policy(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryProposalsByGroupPolicyRequest>,
-        ) -> Result<tonic::Response<super::QueryProposalsByGroupPolicyResponse>, tonic::Status>
-        {
+        ) -> std::result::Result<
+            tonic::Response<super::QueryProposalsByGroupPolicyResponse>,
+            tonic::Status,
+        > {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -185,13 +237,20 @@ pub mod query_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/cosmos.group.v1.Query/ProposalsByGroupPolicy",
             );
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "cosmos.group.v1.Query",
+                "ProposalsByGroupPolicy",
+            ));
+            self.inner.unary(req, path, codec).await
         }
         pub async fn vote_by_proposal_voter(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryVoteByProposalVoterRequest>,
-        ) -> Result<tonic::Response<super::QueryVoteByProposalVoterResponse>, tonic::Status>
-        {
+        ) -> std::result::Result<
+            tonic::Response<super::QueryVoteByProposalVoterResponse>,
+            tonic::Status,
+        > {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -201,12 +260,18 @@ pub mod query_client {
             let codec = tonic::codec::ProstCodec::default();
             let path =
                 http::uri::PathAndQuery::from_static("/cosmos.group.v1.Query/VoteByProposalVoter");
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "cosmos.group.v1.Query",
+                "VoteByProposalVoter",
+            ));
+            self.inner.unary(req, path, codec).await
         }
         pub async fn votes_by_proposal(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryVotesByProposalRequest>,
-        ) -> Result<tonic::Response<super::QueryVotesByProposalResponse>, tonic::Status> {
+        ) -> std::result::Result<tonic::Response<super::QueryVotesByProposalResponse>, tonic::Status>
+        {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -216,12 +281,16 @@ pub mod query_client {
             let codec = tonic::codec::ProstCodec::default();
             let path =
                 http::uri::PathAndQuery::from_static("/cosmos.group.v1.Query/VotesByProposal");
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(GrpcMethod::new("cosmos.group.v1.Query", "VotesByProposal"));
+            self.inner.unary(req, path, codec).await
         }
         pub async fn votes_by_voter(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryVotesByVoterRequest>,
-        ) -> Result<tonic::Response<super::QueryVotesByVoterResponse>, tonic::Status> {
+        ) -> std::result::Result<tonic::Response<super::QueryVotesByVoterResponse>, tonic::Status>
+        {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -230,12 +299,16 @@ pub mod query_client {
             })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static("/cosmos.group.v1.Query/VotesByVoter");
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(GrpcMethod::new("cosmos.group.v1.Query", "VotesByVoter"));
+            self.inner.unary(req, path, codec).await
         }
         pub async fn groups_by_member(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryGroupsByMemberRequest>,
-        ) -> Result<tonic::Response<super::QueryGroupsByMemberResponse>, tonic::Status> {
+        ) -> std::result::Result<tonic::Response<super::QueryGroupsByMemberResponse>, tonic::Status>
+        {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -245,12 +318,16 @@ pub mod query_client {
             let codec = tonic::codec::ProstCodec::default();
             let path =
                 http::uri::PathAndQuery::from_static("/cosmos.group.v1.Query/GroupsByMember");
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(GrpcMethod::new("cosmos.group.v1.Query", "GroupsByMember"));
+            self.inner.unary(req, path, codec).await
         }
         pub async fn tally_result(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryTallyResultRequest>,
-        ) -> Result<tonic::Response<super::QueryTallyResultResponse>, tonic::Status> {
+        ) -> std::result::Result<tonic::Response<super::QueryTallyResultResponse>, tonic::Status>
+        {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -259,12 +336,16 @@ pub mod query_client {
             })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static("/cosmos.group.v1.Query/TallyResult");
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(GrpcMethod::new("cosmos.group.v1.Query", "TallyResult"));
+            self.inner.unary(req, path, codec).await
         }
         pub async fn groups(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryGroupsRequest>,
-        ) -> Result<tonic::Response<super::QueryGroupsResponse>, tonic::Status> {
+        ) -> std::result::Result<tonic::Response<super::QueryGroupsResponse>, tonic::Status>
+        {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -273,7 +354,10 @@ pub mod query_client {
             })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static("/cosmos.group.v1.Query/Groups");
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(GrpcMethod::new("cosmos.group.v1.Query", "Groups"));
+            self.inner.unary(req, path, codec).await
         }
     }
 }
@@ -290,7 +374,7 @@ pub mod msg_client {
         /// Attempt to create a new client by connecting to a given endpoint.
         pub async fn connect<D>(dst: D) -> Result<Self, tonic::transport::Error>
         where
-            D: std::convert::TryInto<tonic::transport::Endpoint>,
+            D: TryInto<tonic::transport::Endpoint>,
             D::Error: Into<StdError>,
         {
             let conn = tonic::transport::Endpoint::new(dst)?.connect().await?;
@@ -342,10 +426,27 @@ pub mod msg_client {
             self.inner = self.inner.accept_compressed(encoding);
             self
         }
+        /// Limits the maximum size of a decoded message.
+        ///
+        /// Default: `4MB`
+        #[must_use]
+        pub fn max_decoding_message_size(mut self, limit: usize) -> Self {
+            self.inner = self.inner.max_decoding_message_size(limit);
+            self
+        }
+        /// Limits the maximum size of an encoded message.
+        ///
+        /// Default: `usize::MAX`
+        #[must_use]
+        pub fn max_encoding_message_size(mut self, limit: usize) -> Self {
+            self.inner = self.inner.max_encoding_message_size(limit);
+            self
+        }
         pub async fn create_group(
             &mut self,
             request: impl tonic::IntoRequest<super::MsgCreateGroup>,
-        ) -> Result<tonic::Response<super::MsgCreateGroupResponse>, tonic::Status> {
+        ) -> std::result::Result<tonic::Response<super::MsgCreateGroupResponse>, tonic::Status>
+        {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -354,12 +455,16 @@ pub mod msg_client {
             })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static("/cosmos.group.v1.Msg/CreateGroup");
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(GrpcMethod::new("cosmos.group.v1.Msg", "CreateGroup"));
+            self.inner.unary(req, path, codec).await
         }
         pub async fn update_group_members(
             &mut self,
             request: impl tonic::IntoRequest<super::MsgUpdateGroupMembers>,
-        ) -> Result<tonic::Response<super::MsgUpdateGroupMembersResponse>, tonic::Status> {
+        ) -> std::result::Result<tonic::Response<super::MsgUpdateGroupMembersResponse>, tonic::Status>
+        {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -369,12 +474,16 @@ pub mod msg_client {
             let codec = tonic::codec::ProstCodec::default();
             let path =
                 http::uri::PathAndQuery::from_static("/cosmos.group.v1.Msg/UpdateGroupMembers");
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(GrpcMethod::new("cosmos.group.v1.Msg", "UpdateGroupMembers"));
+            self.inner.unary(req, path, codec).await
         }
         pub async fn update_group_admin(
             &mut self,
             request: impl tonic::IntoRequest<super::MsgUpdateGroupAdmin>,
-        ) -> Result<tonic::Response<super::MsgUpdateGroupAdminResponse>, tonic::Status> {
+        ) -> std::result::Result<tonic::Response<super::MsgUpdateGroupAdminResponse>, tonic::Status>
+        {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -384,12 +493,18 @@ pub mod msg_client {
             let codec = tonic::codec::ProstCodec::default();
             let path =
                 http::uri::PathAndQuery::from_static("/cosmos.group.v1.Msg/UpdateGroupAdmin");
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(GrpcMethod::new("cosmos.group.v1.Msg", "UpdateGroupAdmin"));
+            self.inner.unary(req, path, codec).await
         }
         pub async fn update_group_metadata(
             &mut self,
             request: impl tonic::IntoRequest<super::MsgUpdateGroupMetadata>,
-        ) -> Result<tonic::Response<super::MsgUpdateGroupMetadataResponse>, tonic::Status> {
+        ) -> std::result::Result<
+            tonic::Response<super::MsgUpdateGroupMetadataResponse>,
+            tonic::Status,
+        > {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -399,12 +514,18 @@ pub mod msg_client {
             let codec = tonic::codec::ProstCodec::default();
             let path =
                 http::uri::PathAndQuery::from_static("/cosmos.group.v1.Msg/UpdateGroupMetadata");
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "cosmos.group.v1.Msg",
+                "UpdateGroupMetadata",
+            ));
+            self.inner.unary(req, path, codec).await
         }
         pub async fn create_group_policy(
             &mut self,
             request: impl tonic::IntoRequest<super::MsgCreateGroupPolicy>,
-        ) -> Result<tonic::Response<super::MsgCreateGroupPolicyResponse>, tonic::Status> {
+        ) -> std::result::Result<tonic::Response<super::MsgCreateGroupPolicyResponse>, tonic::Status>
+        {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -414,13 +535,18 @@ pub mod msg_client {
             let codec = tonic::codec::ProstCodec::default();
             let path =
                 http::uri::PathAndQuery::from_static("/cosmos.group.v1.Msg/CreateGroupPolicy");
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(GrpcMethod::new("cosmos.group.v1.Msg", "CreateGroupPolicy"));
+            self.inner.unary(req, path, codec).await
         }
         pub async fn create_group_with_policy(
             &mut self,
             request: impl tonic::IntoRequest<super::MsgCreateGroupWithPolicy>,
-        ) -> Result<tonic::Response<super::MsgCreateGroupWithPolicyResponse>, tonic::Status>
-        {
+        ) -> std::result::Result<
+            tonic::Response<super::MsgCreateGroupWithPolicyResponse>,
+            tonic::Status,
+        > {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -430,13 +556,20 @@ pub mod msg_client {
             let codec = tonic::codec::ProstCodec::default();
             let path =
                 http::uri::PathAndQuery::from_static("/cosmos.group.v1.Msg/CreateGroupWithPolicy");
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "cosmos.group.v1.Msg",
+                "CreateGroupWithPolicy",
+            ));
+            self.inner.unary(req, path, codec).await
         }
         pub async fn update_group_policy_admin(
             &mut self,
             request: impl tonic::IntoRequest<super::MsgUpdateGroupPolicyAdmin>,
-        ) -> Result<tonic::Response<super::MsgUpdateGroupPolicyAdminResponse>, tonic::Status>
-        {
+        ) -> std::result::Result<
+            tonic::Response<super::MsgUpdateGroupPolicyAdminResponse>,
+            tonic::Status,
+        > {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -446,13 +579,20 @@ pub mod msg_client {
             let codec = tonic::codec::ProstCodec::default();
             let path =
                 http::uri::PathAndQuery::from_static("/cosmos.group.v1.Msg/UpdateGroupPolicyAdmin");
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "cosmos.group.v1.Msg",
+                "UpdateGroupPolicyAdmin",
+            ));
+            self.inner.unary(req, path, codec).await
         }
         pub async fn update_group_policy_decision_policy(
             &mut self,
             request: impl tonic::IntoRequest<super::MsgUpdateGroupPolicyDecisionPolicy>,
-        ) -> Result<tonic::Response<super::MsgUpdateGroupPolicyDecisionPolicyResponse>, tonic::Status>
-        {
+        ) -> std::result::Result<
+            tonic::Response<super::MsgUpdateGroupPolicyDecisionPolicyResponse>,
+            tonic::Status,
+        > {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -463,13 +603,20 @@ pub mod msg_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/cosmos.group.v1.Msg/UpdateGroupPolicyDecisionPolicy",
             );
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "cosmos.group.v1.Msg",
+                "UpdateGroupPolicyDecisionPolicy",
+            ));
+            self.inner.unary(req, path, codec).await
         }
         pub async fn update_group_policy_metadata(
             &mut self,
             request: impl tonic::IntoRequest<super::MsgUpdateGroupPolicyMetadata>,
-        ) -> Result<tonic::Response<super::MsgUpdateGroupPolicyMetadataResponse>, tonic::Status>
-        {
+        ) -> std::result::Result<
+            tonic::Response<super::MsgUpdateGroupPolicyMetadataResponse>,
+            tonic::Status,
+        > {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -480,12 +627,18 @@ pub mod msg_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/cosmos.group.v1.Msg/UpdateGroupPolicyMetadata",
             );
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "cosmos.group.v1.Msg",
+                "UpdateGroupPolicyMetadata",
+            ));
+            self.inner.unary(req, path, codec).await
         }
         pub async fn submit_proposal(
             &mut self,
             request: impl tonic::IntoRequest<super::MsgSubmitProposal>,
-        ) -> Result<tonic::Response<super::MsgSubmitProposalResponse>, tonic::Status> {
+        ) -> std::result::Result<tonic::Response<super::MsgSubmitProposalResponse>, tonic::Status>
+        {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -494,12 +647,16 @@ pub mod msg_client {
             })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static("/cosmos.group.v1.Msg/SubmitProposal");
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(GrpcMethod::new("cosmos.group.v1.Msg", "SubmitProposal"));
+            self.inner.unary(req, path, codec).await
         }
         pub async fn withdraw_proposal(
             &mut self,
             request: impl tonic::IntoRequest<super::MsgWithdrawProposal>,
-        ) -> Result<tonic::Response<super::MsgWithdrawProposalResponse>, tonic::Status> {
+        ) -> std::result::Result<tonic::Response<super::MsgWithdrawProposalResponse>, tonic::Status>
+        {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -509,12 +666,15 @@ pub mod msg_client {
             let codec = tonic::codec::ProstCodec::default();
             let path =
                 http::uri::PathAndQuery::from_static("/cosmos.group.v1.Msg/WithdrawProposal");
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(GrpcMethod::new("cosmos.group.v1.Msg", "WithdrawProposal"));
+            self.inner.unary(req, path, codec).await
         }
         pub async fn vote(
             &mut self,
             request: impl tonic::IntoRequest<super::MsgVote>,
-        ) -> Result<tonic::Response<super::MsgVoteResponse>, tonic::Status> {
+        ) -> std::result::Result<tonic::Response<super::MsgVoteResponse>, tonic::Status> {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -523,12 +683,15 @@ pub mod msg_client {
             })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static("/cosmos.group.v1.Msg/Vote");
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(GrpcMethod::new("cosmos.group.v1.Msg", "Vote"));
+            self.inner.unary(req, path, codec).await
         }
         pub async fn exec(
             &mut self,
             request: impl tonic::IntoRequest<super::MsgExec>,
-        ) -> Result<tonic::Response<super::MsgExecResponse>, tonic::Status> {
+        ) -> std::result::Result<tonic::Response<super::MsgExecResponse>, tonic::Status> {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -537,12 +700,16 @@ pub mod msg_client {
             })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static("/cosmos.group.v1.Msg/Exec");
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(GrpcMethod::new("cosmos.group.v1.Msg", "Exec"));
+            self.inner.unary(req, path, codec).await
         }
         pub async fn leave_group(
             &mut self,
             request: impl tonic::IntoRequest<super::MsgLeaveGroup>,
-        ) -> Result<tonic::Response<super::MsgLeaveGroupResponse>, tonic::Status> {
+        ) -> std::result::Result<tonic::Response<super::MsgLeaveGroupResponse>, tonic::Status>
+        {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -551,7 +718,10 @@ pub mod msg_client {
             })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static("/cosmos.group.v1.Msg/LeaveGroup");
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(GrpcMethod::new("cosmos.group.v1.Msg", "LeaveGroup"));
+            self.inner.unary(req, path, codec).await
         }
     }
 }

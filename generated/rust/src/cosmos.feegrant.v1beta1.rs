@@ -63,6 +63,13 @@ pub struct Grant {
     #[prost(message, optional, tag = "3")]
     pub allowance: ::core::option::Option<super::super::super::google::protobuf::Any>,
 }
+/// GenesisState contains a set of fee allowances, persisted from the store
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GenesisState {
+    #[prost(message, repeated, tag = "1")]
+    pub allowances: ::prost::alloc::vec::Vec<Grant>,
+}
 /// QueryAllowanceRequest is the request type for the Query/Allowance RPC method.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -162,12 +169,5 @@ pub struct MsgRevokeAllowance {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgRevokeAllowanceResponse {}
-/// GenesisState contains a set of fee allowances, persisted from the store
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct GenesisState {
-    #[prost(message, repeated, tag = "1")]
-    pub allowances: ::prost::alloc::vec::Vec<Grant>,
-}
 include!("cosmos.feegrant.v1beta1.tonic.rs");
 // @@protoc_insertion_point(module)

@@ -83,10 +83,10 @@ pub mod query_client {
             self.inner = self.inner.max_encoding_message_size(limit);
             self
         }
-        pub async fn evidence(
+        pub async fn params(
             &mut self,
-            request: impl tonic::IntoRequest<super::QueryEvidenceRequest>,
-        ) -> std::result::Result<tonic::Response<super::QueryEvidenceResponse>, tonic::Status>
+            request: impl tonic::IntoRequest<super::QueryParamsRequest>,
+        ) -> std::result::Result<tonic::Response<super::QueryParamsResponse>, tonic::Status>
         {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
@@ -95,18 +95,19 @@ pub mod query_client {
                 )
             })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path =
-                http::uri::PathAndQuery::from_static("/cosmos.evidence.v1beta1.Query/Evidence");
+            let path = http::uri::PathAndQuery::from_static("/tokenfactory.v1beta1.Query/Params");
             let mut req = request.into_request();
             req.extensions_mut()
-                .insert(GrpcMethod::new("cosmos.evidence.v1beta1.Query", "Evidence"));
+                .insert(GrpcMethod::new("tokenfactory.v1beta1.Query", "Params"));
             self.inner.unary(req, path, codec).await
         }
-        pub async fn all_evidence(
+        pub async fn denom_authority_metadata(
             &mut self,
-            request: impl tonic::IntoRequest<super::QueryAllEvidenceRequest>,
-        ) -> std::result::Result<tonic::Response<super::QueryAllEvidenceResponse>, tonic::Status>
-        {
+            request: impl tonic::IntoRequest<super::QueryDenomAuthorityMetadataRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::QueryDenomAuthorityMetadataResponse>,
+            tonic::Status,
+        > {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -114,12 +115,37 @@ pub mod query_client {
                 )
             })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path =
-                http::uri::PathAndQuery::from_static("/cosmos.evidence.v1beta1.Query/AllEvidence");
+            let path = http::uri::PathAndQuery::from_static(
+                "/tokenfactory.v1beta1.Query/DenomAuthorityMetadata",
+            );
             let mut req = request.into_request();
             req.extensions_mut().insert(GrpcMethod::new(
-                "cosmos.evidence.v1beta1.Query",
-                "AllEvidence",
+                "tokenfactory.v1beta1.Query",
+                "DenomAuthorityMetadata",
+            ));
+            self.inner.unary(req, path, codec).await
+        }
+        pub async fn denoms_from_creator(
+            &mut self,
+            request: impl tonic::IntoRequest<super::QueryDenomsFromCreatorRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::QueryDenomsFromCreatorResponse>,
+            tonic::Status,
+        > {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/tokenfactory.v1beta1.Query/DenomsFromCreator",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "tokenfactory.v1beta1.Query",
+                "DenomsFromCreator",
             ));
             self.inner.unary(req, path, codec).await
         }
@@ -206,10 +232,10 @@ pub mod msg_client {
             self.inner = self.inner.max_encoding_message_size(limit);
             self
         }
-        pub async fn submit_evidence(
+        pub async fn create_denom(
             &mut self,
-            request: impl tonic::IntoRequest<super::MsgSubmitEvidence>,
-        ) -> std::result::Result<tonic::Response<super::MsgSubmitEvidenceResponse>, tonic::Status>
+            request: impl tonic::IntoRequest<super::MsgCreateDenom>,
+        ) -> std::result::Result<tonic::Response<super::MsgCreateDenomResponse>, tonic::Status>
         {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
@@ -219,11 +245,83 @@ pub mod msg_client {
             })?;
             let codec = tonic::codec::ProstCodec::default();
             let path =
-                http::uri::PathAndQuery::from_static("/cosmos.evidence.v1beta1.Msg/SubmitEvidence");
+                http::uri::PathAndQuery::from_static("/tokenfactory.v1beta1.Msg/CreateDenom");
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(GrpcMethod::new("tokenfactory.v1beta1.Msg", "CreateDenom"));
+            self.inner.unary(req, path, codec).await
+        }
+        pub async fn mint(
+            &mut self,
+            request: impl tonic::IntoRequest<super::MsgMint>,
+        ) -> std::result::Result<tonic::Response<super::MsgMintResponse>, tonic::Status> {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static("/tokenfactory.v1beta1.Msg/Mint");
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(GrpcMethod::new("tokenfactory.v1beta1.Msg", "Mint"));
+            self.inner.unary(req, path, codec).await
+        }
+        pub async fn burn(
+            &mut self,
+            request: impl tonic::IntoRequest<super::MsgBurn>,
+        ) -> std::result::Result<tonic::Response<super::MsgBurnResponse>, tonic::Status> {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static("/tokenfactory.v1beta1.Msg/Burn");
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(GrpcMethod::new("tokenfactory.v1beta1.Msg", "Burn"));
+            self.inner.unary(req, path, codec).await
+        }
+        pub async fn change_admin(
+            &mut self,
+            request: impl tonic::IntoRequest<super::MsgChangeAdmin>,
+        ) -> std::result::Result<tonic::Response<super::MsgChangeAdminResponse>, tonic::Status>
+        {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path =
+                http::uri::PathAndQuery::from_static("/tokenfactory.v1beta1.Msg/ChangeAdmin");
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(GrpcMethod::new("tokenfactory.v1beta1.Msg", "ChangeAdmin"));
+            self.inner.unary(req, path, codec).await
+        }
+        pub async fn set_denom_metadata(
+            &mut self,
+            request: impl tonic::IntoRequest<super::MsgSetDenomMetadata>,
+        ) -> std::result::Result<tonic::Response<super::MsgSetDenomMetadataResponse>, tonic::Status>
+        {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path =
+                http::uri::PathAndQuery::from_static("/tokenfactory.v1beta1.Msg/SetDenomMetadata");
             let mut req = request.into_request();
             req.extensions_mut().insert(GrpcMethod::new(
-                "cosmos.evidence.v1beta1.Msg",
-                "SubmitEvidence",
+                "tokenfactory.v1beta1.Msg",
+                "SetDenomMetadata",
             ));
             self.inner.unary(req, path, codec).await
         }

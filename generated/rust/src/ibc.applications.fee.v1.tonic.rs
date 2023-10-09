@@ -12,7 +12,7 @@ pub mod query_client {
         /// Attempt to create a new client by connecting to a given endpoint.
         pub async fn connect<D>(dst: D) -> Result<Self, tonic::transport::Error>
         where
-            D: std::convert::TryInto<tonic::transport::Endpoint>,
+            D: TryInto<tonic::transport::Endpoint>,
             D::Error: Into<StdError>,
         {
             let conn = tonic::transport::Endpoint::new(dst)?.connect().await?;
@@ -67,11 +67,29 @@ pub mod query_client {
             self.inner = self.inner.accept_compressed(encoding);
             self
         }
+        /// Limits the maximum size of a decoded message.
+        ///
+        /// Default: `4MB`
+        #[must_use]
+        pub fn max_decoding_message_size(mut self, limit: usize) -> Self {
+            self.inner = self.inner.max_decoding_message_size(limit);
+            self
+        }
+        /// Limits the maximum size of an encoded message.
+        ///
+        /// Default: `usize::MAX`
+        #[must_use]
+        pub fn max_encoding_message_size(mut self, limit: usize) -> Self {
+            self.inner = self.inner.max_encoding_message_size(limit);
+            self
+        }
         pub async fn incentivized_packets(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryIncentivizedPacketsRequest>,
-        ) -> Result<tonic::Response<super::QueryIncentivizedPacketsResponse>, tonic::Status>
-        {
+        ) -> std::result::Result<
+            tonic::Response<super::QueryIncentivizedPacketsResponse>,
+            tonic::Status,
+        > {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -82,13 +100,20 @@ pub mod query_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/ibc.applications.fee.v1.Query/IncentivizedPackets",
             );
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "ibc.applications.fee.v1.Query",
+                "IncentivizedPackets",
+            ));
+            self.inner.unary(req, path, codec).await
         }
         pub async fn incentivized_packet(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryIncentivizedPacketRequest>,
-        ) -> Result<tonic::Response<super::QueryIncentivizedPacketResponse>, tonic::Status>
-        {
+        ) -> std::result::Result<
+            tonic::Response<super::QueryIncentivizedPacketResponse>,
+            tonic::Status,
+        > {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -99,13 +124,20 @@ pub mod query_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/ibc.applications.fee.v1.Query/IncentivizedPacket",
             );
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "ibc.applications.fee.v1.Query",
+                "IncentivizedPacket",
+            ));
+            self.inner.unary(req, path, codec).await
         }
         pub async fn incentivized_packets_for_channel(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryIncentivizedPacketsForChannelRequest>,
-        ) -> Result<tonic::Response<super::QueryIncentivizedPacketsForChannelResponse>, tonic::Status>
-        {
+        ) -> std::result::Result<
+            tonic::Response<super::QueryIncentivizedPacketsForChannelResponse>,
+            tonic::Status,
+        > {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -116,12 +148,18 @@ pub mod query_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/ibc.applications.fee.v1.Query/IncentivizedPacketsForChannel",
             );
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "ibc.applications.fee.v1.Query",
+                "IncentivizedPacketsForChannel",
+            ));
+            self.inner.unary(req, path, codec).await
         }
         pub async fn total_recv_fees(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryTotalRecvFeesRequest>,
-        ) -> Result<tonic::Response<super::QueryTotalRecvFeesResponse>, tonic::Status> {
+        ) -> std::result::Result<tonic::Response<super::QueryTotalRecvFeesResponse>, tonic::Status>
+        {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -132,12 +170,18 @@ pub mod query_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/ibc.applications.fee.v1.Query/TotalRecvFees",
             );
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "ibc.applications.fee.v1.Query",
+                "TotalRecvFees",
+            ));
+            self.inner.unary(req, path, codec).await
         }
         pub async fn total_ack_fees(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryTotalAckFeesRequest>,
-        ) -> Result<tonic::Response<super::QueryTotalAckFeesResponse>, tonic::Status> {
+        ) -> std::result::Result<tonic::Response<super::QueryTotalAckFeesResponse>, tonic::Status>
+        {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -147,12 +191,18 @@ pub mod query_client {
             let codec = tonic::codec::ProstCodec::default();
             let path =
                 http::uri::PathAndQuery::from_static("/ibc.applications.fee.v1.Query/TotalAckFees");
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "ibc.applications.fee.v1.Query",
+                "TotalAckFees",
+            ));
+            self.inner.unary(req, path, codec).await
         }
         pub async fn total_timeout_fees(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryTotalTimeoutFeesRequest>,
-        ) -> Result<tonic::Response<super::QueryTotalTimeoutFeesResponse>, tonic::Status> {
+        ) -> std::result::Result<tonic::Response<super::QueryTotalTimeoutFeesResponse>, tonic::Status>
+        {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -163,12 +213,18 @@ pub mod query_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/ibc.applications.fee.v1.Query/TotalTimeoutFees",
             );
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "ibc.applications.fee.v1.Query",
+                "TotalTimeoutFees",
+            ));
+            self.inner.unary(req, path, codec).await
         }
         pub async fn payee(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryPayeeRequest>,
-        ) -> Result<tonic::Response<super::QueryPayeeResponse>, tonic::Status> {
+        ) -> std::result::Result<tonic::Response<super::QueryPayeeResponse>, tonic::Status>
+        {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -177,12 +233,18 @@ pub mod query_client {
             })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static("/ibc.applications.fee.v1.Query/Payee");
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(GrpcMethod::new("ibc.applications.fee.v1.Query", "Payee"));
+            self.inner.unary(req, path, codec).await
         }
         pub async fn counterparty_payee(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryCounterpartyPayeeRequest>,
-        ) -> Result<tonic::Response<super::QueryCounterpartyPayeeResponse>, tonic::Status> {
+        ) -> std::result::Result<
+            tonic::Response<super::QueryCounterpartyPayeeResponse>,
+            tonic::Status,
+        > {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -193,13 +255,20 @@ pub mod query_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/ibc.applications.fee.v1.Query/CounterpartyPayee",
             );
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "ibc.applications.fee.v1.Query",
+                "CounterpartyPayee",
+            ));
+            self.inner.unary(req, path, codec).await
         }
         pub async fn fee_enabled_channels(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryFeeEnabledChannelsRequest>,
-        ) -> Result<tonic::Response<super::QueryFeeEnabledChannelsResponse>, tonic::Status>
-        {
+        ) -> std::result::Result<
+            tonic::Response<super::QueryFeeEnabledChannelsResponse>,
+            tonic::Status,
+        > {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -210,12 +279,20 @@ pub mod query_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/ibc.applications.fee.v1.Query/FeeEnabledChannels",
             );
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "ibc.applications.fee.v1.Query",
+                "FeeEnabledChannels",
+            ));
+            self.inner.unary(req, path, codec).await
         }
         pub async fn fee_enabled_channel(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryFeeEnabledChannelRequest>,
-        ) -> Result<tonic::Response<super::QueryFeeEnabledChannelResponse>, tonic::Status> {
+        ) -> std::result::Result<
+            tonic::Response<super::QueryFeeEnabledChannelResponse>,
+            tonic::Status,
+        > {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -226,7 +303,12 @@ pub mod query_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/ibc.applications.fee.v1.Query/FeeEnabledChannel",
             );
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "ibc.applications.fee.v1.Query",
+                "FeeEnabledChannel",
+            ));
+            self.inner.unary(req, path, codec).await
         }
     }
 }
@@ -243,7 +325,7 @@ pub mod msg_client {
         /// Attempt to create a new client by connecting to a given endpoint.
         pub async fn connect<D>(dst: D) -> Result<Self, tonic::transport::Error>
         where
-            D: std::convert::TryInto<tonic::transport::Endpoint>,
+            D: TryInto<tonic::transport::Endpoint>,
             D::Error: Into<StdError>,
         {
             let conn = tonic::transport::Endpoint::new(dst)?.connect().await?;
@@ -295,10 +377,27 @@ pub mod msg_client {
             self.inner = self.inner.accept_compressed(encoding);
             self
         }
+        /// Limits the maximum size of a decoded message.
+        ///
+        /// Default: `4MB`
+        #[must_use]
+        pub fn max_decoding_message_size(mut self, limit: usize) -> Self {
+            self.inner = self.inner.max_decoding_message_size(limit);
+            self
+        }
+        /// Limits the maximum size of an encoded message.
+        ///
+        /// Default: `usize::MAX`
+        #[must_use]
+        pub fn max_encoding_message_size(mut self, limit: usize) -> Self {
+            self.inner = self.inner.max_encoding_message_size(limit);
+            self
+        }
         pub async fn register_payee(
             &mut self,
             request: impl tonic::IntoRequest<super::MsgRegisterPayee>,
-        ) -> Result<tonic::Response<super::MsgRegisterPayeeResponse>, tonic::Status> {
+        ) -> std::result::Result<tonic::Response<super::MsgRegisterPayeeResponse>, tonic::Status>
+        {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -308,13 +407,20 @@ pub mod msg_client {
             let codec = tonic::codec::ProstCodec::default();
             let path =
                 http::uri::PathAndQuery::from_static("/ibc.applications.fee.v1.Msg/RegisterPayee");
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "ibc.applications.fee.v1.Msg",
+                "RegisterPayee",
+            ));
+            self.inner.unary(req, path, codec).await
         }
         pub async fn register_counterparty_payee(
             &mut self,
             request: impl tonic::IntoRequest<super::MsgRegisterCounterpartyPayee>,
-        ) -> Result<tonic::Response<super::MsgRegisterCounterpartyPayeeResponse>, tonic::Status>
-        {
+        ) -> std::result::Result<
+            tonic::Response<super::MsgRegisterCounterpartyPayeeResponse>,
+            tonic::Status,
+        > {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -325,12 +431,18 @@ pub mod msg_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/ibc.applications.fee.v1.Msg/RegisterCounterpartyPayee",
             );
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "ibc.applications.fee.v1.Msg",
+                "RegisterCounterpartyPayee",
+            ));
+            self.inner.unary(req, path, codec).await
         }
         pub async fn pay_packet_fee(
             &mut self,
             request: impl tonic::IntoRequest<super::MsgPayPacketFee>,
-        ) -> Result<tonic::Response<super::MsgPayPacketFeeResponse>, tonic::Status> {
+        ) -> std::result::Result<tonic::Response<super::MsgPayPacketFeeResponse>, tonic::Status>
+        {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -340,12 +452,18 @@ pub mod msg_client {
             let codec = tonic::codec::ProstCodec::default();
             let path =
                 http::uri::PathAndQuery::from_static("/ibc.applications.fee.v1.Msg/PayPacketFee");
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "ibc.applications.fee.v1.Msg",
+                "PayPacketFee",
+            ));
+            self.inner.unary(req, path, codec).await
         }
         pub async fn pay_packet_fee_async(
             &mut self,
             request: impl tonic::IntoRequest<super::MsgPayPacketFeeAsync>,
-        ) -> Result<tonic::Response<super::MsgPayPacketFeeAsyncResponse>, tonic::Status> {
+        ) -> std::result::Result<tonic::Response<super::MsgPayPacketFeeAsyncResponse>, tonic::Status>
+        {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -356,7 +474,12 @@ pub mod msg_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/ibc.applications.fee.v1.Msg/PayPacketFeeAsync",
             );
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "ibc.applications.fee.v1.Msg",
+                "PayPacketFeeAsync",
+            ));
+            self.inner.unary(req, path, codec).await
         }
     }
 }

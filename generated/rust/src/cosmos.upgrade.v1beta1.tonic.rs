@@ -12,7 +12,7 @@ pub mod query_client {
         /// Attempt to create a new client by connecting to a given endpoint.
         pub async fn connect<D>(dst: D) -> Result<Self, tonic::transport::Error>
         where
-            D: std::convert::TryInto<tonic::transport::Endpoint>,
+            D: TryInto<tonic::transport::Endpoint>,
             D::Error: Into<StdError>,
         {
             let conn = tonic::transport::Endpoint::new(dst)?.connect().await?;
@@ -67,10 +67,27 @@ pub mod query_client {
             self.inner = self.inner.accept_compressed(encoding);
             self
         }
+        /// Limits the maximum size of a decoded message.
+        ///
+        /// Default: `4MB`
+        #[must_use]
+        pub fn max_decoding_message_size(mut self, limit: usize) -> Self {
+            self.inner = self.inner.max_decoding_message_size(limit);
+            self
+        }
+        /// Limits the maximum size of an encoded message.
+        ///
+        /// Default: `usize::MAX`
+        #[must_use]
+        pub fn max_encoding_message_size(mut self, limit: usize) -> Self {
+            self.inner = self.inner.max_encoding_message_size(limit);
+            self
+        }
         pub async fn current_plan(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryCurrentPlanRequest>,
-        ) -> Result<tonic::Response<super::QueryCurrentPlanResponse>, tonic::Status> {
+        ) -> std::result::Result<tonic::Response<super::QueryCurrentPlanResponse>, tonic::Status>
+        {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -80,12 +97,18 @@ pub mod query_client {
             let codec = tonic::codec::ProstCodec::default();
             let path =
                 http::uri::PathAndQuery::from_static("/cosmos.upgrade.v1beta1.Query/CurrentPlan");
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "cosmos.upgrade.v1beta1.Query",
+                "CurrentPlan",
+            ));
+            self.inner.unary(req, path, codec).await
         }
         pub async fn applied_plan(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryAppliedPlanRequest>,
-        ) -> Result<tonic::Response<super::QueryAppliedPlanResponse>, tonic::Status> {
+        ) -> std::result::Result<tonic::Response<super::QueryAppliedPlanResponse>, tonic::Status>
+        {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -95,13 +118,20 @@ pub mod query_client {
             let codec = tonic::codec::ProstCodec::default();
             let path =
                 http::uri::PathAndQuery::from_static("/cosmos.upgrade.v1beta1.Query/AppliedPlan");
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "cosmos.upgrade.v1beta1.Query",
+                "AppliedPlan",
+            ));
+            self.inner.unary(req, path, codec).await
         }
         pub async fn upgraded_consensus_state(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryUpgradedConsensusStateRequest>,
-        ) -> Result<tonic::Response<super::QueryUpgradedConsensusStateResponse>, tonic::Status>
-        {
+        ) -> std::result::Result<
+            tonic::Response<super::QueryUpgradedConsensusStateResponse>,
+            tonic::Status,
+        > {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -112,12 +142,18 @@ pub mod query_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/cosmos.upgrade.v1beta1.Query/UpgradedConsensusState",
             );
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "cosmos.upgrade.v1beta1.Query",
+                "UpgradedConsensusState",
+            ));
+            self.inner.unary(req, path, codec).await
         }
         pub async fn module_versions(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryModuleVersionsRequest>,
-        ) -> Result<tonic::Response<super::QueryModuleVersionsResponse>, tonic::Status> {
+        ) -> std::result::Result<tonic::Response<super::QueryModuleVersionsResponse>, tonic::Status>
+        {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -128,12 +164,18 @@ pub mod query_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/cosmos.upgrade.v1beta1.Query/ModuleVersions",
             );
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "cosmos.upgrade.v1beta1.Query",
+                "ModuleVersions",
+            ));
+            self.inner.unary(req, path, codec).await
         }
         pub async fn authority(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryAuthorityRequest>,
-        ) -> Result<tonic::Response<super::QueryAuthorityResponse>, tonic::Status> {
+        ) -> std::result::Result<tonic::Response<super::QueryAuthorityResponse>, tonic::Status>
+        {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -143,7 +185,10 @@ pub mod query_client {
             let codec = tonic::codec::ProstCodec::default();
             let path =
                 http::uri::PathAndQuery::from_static("/cosmos.upgrade.v1beta1.Query/Authority");
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(GrpcMethod::new("cosmos.upgrade.v1beta1.Query", "Authority"));
+            self.inner.unary(req, path, codec).await
         }
     }
 }
@@ -160,7 +205,7 @@ pub mod msg_client {
         /// Attempt to create a new client by connecting to a given endpoint.
         pub async fn connect<D>(dst: D) -> Result<Self, tonic::transport::Error>
         where
-            D: std::convert::TryInto<tonic::transport::Endpoint>,
+            D: TryInto<tonic::transport::Endpoint>,
             D::Error: Into<StdError>,
         {
             let conn = tonic::transport::Endpoint::new(dst)?.connect().await?;
@@ -212,10 +257,27 @@ pub mod msg_client {
             self.inner = self.inner.accept_compressed(encoding);
             self
         }
+        /// Limits the maximum size of a decoded message.
+        ///
+        /// Default: `4MB`
+        #[must_use]
+        pub fn max_decoding_message_size(mut self, limit: usize) -> Self {
+            self.inner = self.inner.max_decoding_message_size(limit);
+            self
+        }
+        /// Limits the maximum size of an encoded message.
+        ///
+        /// Default: `usize::MAX`
+        #[must_use]
+        pub fn max_encoding_message_size(mut self, limit: usize) -> Self {
+            self.inner = self.inner.max_encoding_message_size(limit);
+            self
+        }
         pub async fn software_upgrade(
             &mut self,
             request: impl tonic::IntoRequest<super::MsgSoftwareUpgrade>,
-        ) -> Result<tonic::Response<super::MsgSoftwareUpgradeResponse>, tonic::Status> {
+        ) -> std::result::Result<tonic::Response<super::MsgSoftwareUpgradeResponse>, tonic::Status>
+        {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -225,12 +287,18 @@ pub mod msg_client {
             let codec = tonic::codec::ProstCodec::default();
             let path =
                 http::uri::PathAndQuery::from_static("/cosmos.upgrade.v1beta1.Msg/SoftwareUpgrade");
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "cosmos.upgrade.v1beta1.Msg",
+                "SoftwareUpgrade",
+            ));
+            self.inner.unary(req, path, codec).await
         }
         pub async fn cancel_upgrade(
             &mut self,
             request: impl tonic::IntoRequest<super::MsgCancelUpgrade>,
-        ) -> Result<tonic::Response<super::MsgCancelUpgradeResponse>, tonic::Status> {
+        ) -> std::result::Result<tonic::Response<super::MsgCancelUpgradeResponse>, tonic::Status>
+        {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -240,7 +308,12 @@ pub mod msg_client {
             let codec = tonic::codec::ProstCodec::default();
             let path =
                 http::uri::PathAndQuery::from_static("/cosmos.upgrade.v1beta1.Msg/CancelUpgrade");
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "cosmos.upgrade.v1beta1.Msg",
+                "CancelUpgrade",
+            ));
+            self.inner.unary(req, path, codec).await
         }
     }
 }

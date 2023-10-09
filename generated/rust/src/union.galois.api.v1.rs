@@ -6,8 +6,6 @@ pub struct FrElement {
     pub value: ::prost::alloc::vec::Vec<u8>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
-// NOTE: These are temporary until i add these types to unionlabs
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ZeroKnowledgeProof {
     #[prost(bytes = "vec", tag = "1")]
@@ -41,8 +39,6 @@ pub struct ProveRequest {
     pub untrusted_commit: ::core::option::Option<ValidatorSetCommit>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
-// NOTE: These are temporary until i add these types to unionlabs
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ProveResponse {
     #[prost(message, optional, tag = "1")]

@@ -131,6 +131,7 @@ proto_full = [
   "tendermint+store",
   "tendermint+types",
   "tendermint+version",
+  "tokenfactory+v1beta1",
   "union+galois+api+v1",
   "union+ibc+lightclients+cometbls+v1",
   "union+ibc+lightclients+ethereum+v1",
@@ -329,6 +330,7 @@ proto_full = [
   "tendermint+version",
 ]
 "tendermint+version" = []
+"tokenfactory+v1beta1" = ["cosmos+bank+v1beta1", "cosmos+base+v1beta1"]
 "union+galois+api+v1" = ["tendermint+types"]
 "union+ibc+lightclients+cometbls+v1" = [
   "google+protobuf",

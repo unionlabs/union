@@ -12,7 +12,7 @@ pub mod query_client {
         /// Attempt to create a new client by connecting to a given endpoint.
         pub async fn connect<D>(dst: D) -> Result<Self, tonic::transport::Error>
         where
-            D: std::convert::TryInto<tonic::transport::Endpoint>,
+            D: TryInto<tonic::transport::Endpoint>,
             D::Error: Into<StdError>,
         {
             let conn = tonic::transport::Endpoint::new(dst)?.connect().await?;
@@ -67,10 +67,27 @@ pub mod query_client {
             self.inner = self.inner.accept_compressed(encoding);
             self
         }
+        /// Limits the maximum size of a decoded message.
+        ///
+        /// Default: `4MB`
+        #[must_use]
+        pub fn max_decoding_message_size(mut self, limit: usize) -> Self {
+            self.inner = self.inner.max_decoding_message_size(limit);
+            self
+        }
+        /// Limits the maximum size of an encoded message.
+        ///
+        /// Default: `usize::MAX`
+        #[must_use]
+        pub fn max_encoding_message_size(mut self, limit: usize) -> Self {
+            self.inner = self.inner.max_encoding_message_size(limit);
+            self
+        }
         pub async fn params(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryParamsRequest>,
-        ) -> Result<tonic::Response<super::QueryParamsResponse>, tonic::Status> {
+        ) -> std::result::Result<tonic::Response<super::QueryParamsResponse>, tonic::Status>
+        {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -80,13 +97,20 @@ pub mod query_client {
             let codec = tonic::codec::ProstCodec::default();
             let path =
                 http::uri::PathAndQuery::from_static("/cosmos.distribution.v1beta1.Query/Params");
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "cosmos.distribution.v1beta1.Query",
+                "Params",
+            ));
+            self.inner.unary(req, path, codec).await
         }
         pub async fn validator_distribution_info(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryValidatorDistributionInfoRequest>,
-        ) -> Result<tonic::Response<super::QueryValidatorDistributionInfoResponse>, tonic::Status>
-        {
+        ) -> std::result::Result<
+            tonic::Response<super::QueryValidatorDistributionInfoResponse>,
+            tonic::Status,
+        > {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -97,13 +121,20 @@ pub mod query_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/cosmos.distribution.v1beta1.Query/ValidatorDistributionInfo",
             );
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "cosmos.distribution.v1beta1.Query",
+                "ValidatorDistributionInfo",
+            ));
+            self.inner.unary(req, path, codec).await
         }
         pub async fn validator_outstanding_rewards(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryValidatorOutstandingRewardsRequest>,
-        ) -> Result<tonic::Response<super::QueryValidatorOutstandingRewardsResponse>, tonic::Status>
-        {
+        ) -> std::result::Result<
+            tonic::Response<super::QueryValidatorOutstandingRewardsResponse>,
+            tonic::Status,
+        > {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -114,13 +145,20 @@ pub mod query_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/cosmos.distribution.v1beta1.Query/ValidatorOutstandingRewards",
             );
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "cosmos.distribution.v1beta1.Query",
+                "ValidatorOutstandingRewards",
+            ));
+            self.inner.unary(req, path, codec).await
         }
         pub async fn validator_commission(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryValidatorCommissionRequest>,
-        ) -> Result<tonic::Response<super::QueryValidatorCommissionResponse>, tonic::Status>
-        {
+        ) -> std::result::Result<
+            tonic::Response<super::QueryValidatorCommissionResponse>,
+            tonic::Status,
+        > {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -131,12 +169,18 @@ pub mod query_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/cosmos.distribution.v1beta1.Query/ValidatorCommission",
             );
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "cosmos.distribution.v1beta1.Query",
+                "ValidatorCommission",
+            ));
+            self.inner.unary(req, path, codec).await
         }
         pub async fn validator_slashes(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryValidatorSlashesRequest>,
-        ) -> Result<tonic::Response<super::QueryValidatorSlashesResponse>, tonic::Status> {
+        ) -> std::result::Result<tonic::Response<super::QueryValidatorSlashesResponse>, tonic::Status>
+        {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -147,12 +191,20 @@ pub mod query_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/cosmos.distribution.v1beta1.Query/ValidatorSlashes",
             );
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "cosmos.distribution.v1beta1.Query",
+                "ValidatorSlashes",
+            ));
+            self.inner.unary(req, path, codec).await
         }
         pub async fn delegation_rewards(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryDelegationRewardsRequest>,
-        ) -> Result<tonic::Response<super::QueryDelegationRewardsResponse>, tonic::Status> {
+        ) -> std::result::Result<
+            tonic::Response<super::QueryDelegationRewardsResponse>,
+            tonic::Status,
+        > {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -163,13 +215,20 @@ pub mod query_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/cosmos.distribution.v1beta1.Query/DelegationRewards",
             );
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "cosmos.distribution.v1beta1.Query",
+                "DelegationRewards",
+            ));
+            self.inner.unary(req, path, codec).await
         }
         pub async fn delegation_total_rewards(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryDelegationTotalRewardsRequest>,
-        ) -> Result<tonic::Response<super::QueryDelegationTotalRewardsResponse>, tonic::Status>
-        {
+        ) -> std::result::Result<
+            tonic::Response<super::QueryDelegationTotalRewardsResponse>,
+            tonic::Status,
+        > {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -180,13 +239,20 @@ pub mod query_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/cosmos.distribution.v1beta1.Query/DelegationTotalRewards",
             );
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "cosmos.distribution.v1beta1.Query",
+                "DelegationTotalRewards",
+            ));
+            self.inner.unary(req, path, codec).await
         }
         pub async fn delegator_validators(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryDelegatorValidatorsRequest>,
-        ) -> Result<tonic::Response<super::QueryDelegatorValidatorsResponse>, tonic::Status>
-        {
+        ) -> std::result::Result<
+            tonic::Response<super::QueryDelegatorValidatorsResponse>,
+            tonic::Status,
+        > {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -197,13 +263,20 @@ pub mod query_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/cosmos.distribution.v1beta1.Query/DelegatorValidators",
             );
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "cosmos.distribution.v1beta1.Query",
+                "DelegatorValidators",
+            ));
+            self.inner.unary(req, path, codec).await
         }
         pub async fn delegator_withdraw_address(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryDelegatorWithdrawAddressRequest>,
-        ) -> Result<tonic::Response<super::QueryDelegatorWithdrawAddressResponse>, tonic::Status>
-        {
+        ) -> std::result::Result<
+            tonic::Response<super::QueryDelegatorWithdrawAddressResponse>,
+            tonic::Status,
+        > {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -214,12 +287,18 @@ pub mod query_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/cosmos.distribution.v1beta1.Query/DelegatorWithdrawAddress",
             );
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "cosmos.distribution.v1beta1.Query",
+                "DelegatorWithdrawAddress",
+            ));
+            self.inner.unary(req, path, codec).await
         }
         pub async fn community_pool(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryCommunityPoolRequest>,
-        ) -> Result<tonic::Response<super::QueryCommunityPoolResponse>, tonic::Status> {
+        ) -> std::result::Result<tonic::Response<super::QueryCommunityPoolResponse>, tonic::Status>
+        {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -230,7 +309,12 @@ pub mod query_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/cosmos.distribution.v1beta1.Query/CommunityPool",
             );
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "cosmos.distribution.v1beta1.Query",
+                "CommunityPool",
+            ));
+            self.inner.unary(req, path, codec).await
         }
     }
 }
@@ -247,7 +331,7 @@ pub mod msg_client {
         /// Attempt to create a new client by connecting to a given endpoint.
         pub async fn connect<D>(dst: D) -> Result<Self, tonic::transport::Error>
         where
-            D: std::convert::TryInto<tonic::transport::Endpoint>,
+            D: TryInto<tonic::transport::Endpoint>,
             D::Error: Into<StdError>,
         {
             let conn = tonic::transport::Endpoint::new(dst)?.connect().await?;
@@ -299,10 +383,27 @@ pub mod msg_client {
             self.inner = self.inner.accept_compressed(encoding);
             self
         }
+        /// Limits the maximum size of a decoded message.
+        ///
+        /// Default: `4MB`
+        #[must_use]
+        pub fn max_decoding_message_size(mut self, limit: usize) -> Self {
+            self.inner = self.inner.max_decoding_message_size(limit);
+            self
+        }
+        /// Limits the maximum size of an encoded message.
+        ///
+        /// Default: `usize::MAX`
+        #[must_use]
+        pub fn max_encoding_message_size(mut self, limit: usize) -> Self {
+            self.inner = self.inner.max_encoding_message_size(limit);
+            self
+        }
         pub async fn set_withdraw_address(
             &mut self,
             request: impl tonic::IntoRequest<super::MsgSetWithdrawAddress>,
-        ) -> Result<tonic::Response<super::MsgSetWithdrawAddressResponse>, tonic::Status> {
+        ) -> std::result::Result<tonic::Response<super::MsgSetWithdrawAddressResponse>, tonic::Status>
+        {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -313,13 +414,20 @@ pub mod msg_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/cosmos.distribution.v1beta1.Msg/SetWithdrawAddress",
             );
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "cosmos.distribution.v1beta1.Msg",
+                "SetWithdrawAddress",
+            ));
+            self.inner.unary(req, path, codec).await
         }
         pub async fn withdraw_delegator_reward(
             &mut self,
             request: impl tonic::IntoRequest<super::MsgWithdrawDelegatorReward>,
-        ) -> Result<tonic::Response<super::MsgWithdrawDelegatorRewardResponse>, tonic::Status>
-        {
+        ) -> std::result::Result<
+            tonic::Response<super::MsgWithdrawDelegatorRewardResponse>,
+            tonic::Status,
+        > {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -330,13 +438,20 @@ pub mod msg_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/cosmos.distribution.v1beta1.Msg/WithdrawDelegatorReward",
             );
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "cosmos.distribution.v1beta1.Msg",
+                "WithdrawDelegatorReward",
+            ));
+            self.inner.unary(req, path, codec).await
         }
         pub async fn withdraw_validator_commission(
             &mut self,
             request: impl tonic::IntoRequest<super::MsgWithdrawValidatorCommission>,
-        ) -> Result<tonic::Response<super::MsgWithdrawValidatorCommissionResponse>, tonic::Status>
-        {
+        ) -> std::result::Result<
+            tonic::Response<super::MsgWithdrawValidatorCommissionResponse>,
+            tonic::Status,
+        > {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -347,12 +462,18 @@ pub mod msg_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/cosmos.distribution.v1beta1.Msg/WithdrawValidatorCommission",
             );
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "cosmos.distribution.v1beta1.Msg",
+                "WithdrawValidatorCommission",
+            ));
+            self.inner.unary(req, path, codec).await
         }
         pub async fn fund_community_pool(
             &mut self,
             request: impl tonic::IntoRequest<super::MsgFundCommunityPool>,
-        ) -> Result<tonic::Response<super::MsgFundCommunityPoolResponse>, tonic::Status> {
+        ) -> std::result::Result<tonic::Response<super::MsgFundCommunityPoolResponse>, tonic::Status>
+        {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -363,12 +484,18 @@ pub mod msg_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/cosmos.distribution.v1beta1.Msg/FundCommunityPool",
             );
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "cosmos.distribution.v1beta1.Msg",
+                "FundCommunityPool",
+            ));
+            self.inner.unary(req, path, codec).await
         }
         pub async fn update_params(
             &mut self,
             request: impl tonic::IntoRequest<super::MsgUpdateParams>,
-        ) -> Result<tonic::Response<super::MsgUpdateParamsResponse>, tonic::Status> {
+        ) -> std::result::Result<tonic::Response<super::MsgUpdateParamsResponse>, tonic::Status>
+        {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -379,12 +506,18 @@ pub mod msg_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/cosmos.distribution.v1beta1.Msg/UpdateParams",
             );
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "cosmos.distribution.v1beta1.Msg",
+                "UpdateParams",
+            ));
+            self.inner.unary(req, path, codec).await
         }
         pub async fn community_pool_spend(
             &mut self,
             request: impl tonic::IntoRequest<super::MsgCommunityPoolSpend>,
-        ) -> Result<tonic::Response<super::MsgCommunityPoolSpendResponse>, tonic::Status> {
+        ) -> std::result::Result<tonic::Response<super::MsgCommunityPoolSpendResponse>, tonic::Status>
+        {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -395,7 +528,12 @@ pub mod msg_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/cosmos.distribution.v1beta1.Msg/CommunityPoolSpend",
             );
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "cosmos.distribution.v1beta1.Msg",
+                "CommunityPoolSpend",
+            ));
+            self.inner.unary(req, path, codec).await
         }
     }
 }

@@ -53,12 +53,10 @@ pub struct Header {
     #[prost(message, optional, tag = "1")]
     pub signed_header:
         ::core::option::Option<super::super::super::super::super::tendermint::types::SignedHeader>,
-    #[prost(bytes = "vec", tag = "2")]
-    pub untrusted_validator_set_root: ::prost::alloc::vec::Vec<u8>,
-    #[prost(message, optional, tag = "3")]
+    #[prost(message, optional, tag = "2")]
     pub trusted_height:
         ::core::option::Option<super::super::super::super::super::ibc::core::client::v1::Height>,
-    #[prost(bytes = "vec", tag = "4")]
+    #[prost(bytes = "vec", tag = "3")]
     pub zero_knowledge_proof: ::prost::alloc::vec::Vec<u8>,
 }
 // @@protoc_insertion_point(module)
