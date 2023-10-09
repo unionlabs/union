@@ -30,7 +30,7 @@ impl From<protos::cosmwasm::wasm::v1::MsgExecuteContract> for MsgExecuteContract
             sender: value.sender,
             contract: value.contract,
             msg: value.msg,
-            funds: value.funds,
+            funds: value.funds.into_iter().map(Into::into).collect(),
         }
     }
 }
@@ -41,7 +41,7 @@ impl From<MsgExecuteContract> for protos::cosmwasm::wasm::v1::MsgExecuteContract
             sender: value.sender,
             contract: value.contract,
             msg: value.msg,
-            funds: value.funds,
+            funds: value.funds.into_iter().map(Into::into).collect(),
         }
     }
 }
