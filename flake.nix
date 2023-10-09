@@ -128,6 +128,7 @@
         ./tools/hasura-cli/hasura-cli.nix
         ./tools/todo-comment.nix
         ./tools/iaviewer/iaviewer.nix
+        ./tools/sqlx-cli/sqlx-cli.nix
         ./networks/e2e-setup.nix
         ./networks/devnet.nix
         ./networks/genesis/devnet-minimal.nix
@@ -299,6 +300,7 @@
               protobuf
               self'.packages.hasura-cli
               self'.packages.tdc
+              self'.packages.sqlx-cli
               solc
               yarn
               yq

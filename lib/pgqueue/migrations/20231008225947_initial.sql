@@ -1,0 +1,1 @@
+CREATE TYPE status AS ENUM ('ready', 'done', 'failed');

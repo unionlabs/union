@@ -1,0 +1,26 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            UPDATE queue\n            SET status = 'in-progress'::status\n            WHERE id = (\n              SELECT id\n              FROM queue\n              WHERE status = 'ready'::status\n              ORDER BY id ASC\n              FOR UPDATE SKIP LOCKED\n              LIMIT 1\n            )\n            RETURNING id, item;",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "item",
+        "type_info": "Jsonb"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "19653718dd2da5680dda25339160802cf086278c3bacec18caed1755deebf5b8"
+}
