@@ -76,8 +76,8 @@ pub trait Chain {
     fn read_ack(
         &self,
         block_hash: H256,
-        destionation_channel_id: ChannelId,
-        destionation_port_id: String,
+        destination_channel_id: ChannelId,
+        destination_port_id: String,
         sequence: u64,
     ) -> impl Future<Output = Vec<u8>> + '_;
 }
