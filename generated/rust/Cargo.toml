@@ -21,7 +21,7 @@ workspace = true
 [dependencies.tonic]
 features = ["gzip"]
 optional = true
-version = "0.8"
+version = "0.9"
 
 [features]
 # @@protoc_deletion_point(features)
@@ -336,7 +336,6 @@ proto_full = [
   "google+protobuf",
   "ibc+core+client+v1",
   "ibc+core+commitment+v1",
-  "ibc+lightclients+tendermint+v1",
   "tendermint+types",
 ]
 "union+ibc+lightclients+ethereum+v1" = [

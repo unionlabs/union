@@ -1,33 +1,27 @@
 // @generated
-/// NOTE: the `latest_height` is living in the ibc.lightclients.wasm.v1 wrapper
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ClientState {
     #[prost(string, tag = "1")]
     pub chain_id: ::prost::alloc::string::String,
-    #[prost(message, optional, tag = "2")]
-    pub trust_level: ::core::option::Option<
-        super::super::super::super::super::ibc::lightclients::tendermint::v1::Fraction,
-    >,
     /// duration of the period since the LastestTimestamp during which the
     /// submitted headers are valid for upgrade
-    #[prost(message, optional, tag = "3")]
+    #[prost(message, optional, tag = "2")]
     pub trusting_period:
         ::core::option::Option<super::super::super::super::super::google::protobuf::Duration>,
     /// duration of the staking unbonding period
-    #[prost(message, optional, tag = "4")]
+    #[prost(message, optional, tag = "3")]
     pub unbonding_period:
         ::core::option::Option<super::super::super::super::super::google::protobuf::Duration>,
     /// defines how much new (untrusted) header's Time can drift into the future.
-    #[prost(message, optional, tag = "5")]
+    #[prost(message, optional, tag = "4")]
     pub max_clock_drift:
         ::core::option::Option<super::super::super::super::super::google::protobuf::Duration>,
     /// Block height when the client was frozen due to a misbehaviour
-    #[prost(message, optional, tag = "6")]
+    #[prost(message, optional, tag = "5")]
     pub frozen_height:
         ::core::option::Option<super::super::super::super::super::ibc::core::client::v1::Height>,
 }
-/// NOTE: the `timestamp` is living in the ibc.lightclients.wasm.v1 wrapper
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ConsensusState {

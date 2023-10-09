@@ -1229,10 +1229,6 @@ where
                             client_id: req.counterparty_client_id.clone(),
                             client_message: cometbls::header::Header {
                                 signed_header,
-                                untrusted_validator_set_root: response
-                                    .untrusted_validator_set_root
-                                    .try_into()
-                                    .unwrap(),
                                 trusted_height: req.update_from,
                                 zero_knowledge_proof: response.proof.unwrap().evm_proof,
                             },

@@ -12,8 +12,6 @@ use contracts::{
         self, GetChannelCall, GetClientStateCall, GetConnectionCall, GetConsensusStateCall,
         GetHashedPacketAcknowledgementCommitmentCall, GetHashedPacketCommitmentCall,
     },
-    ics20_bank::ICS20Bank,
-    ics20_transfer_bank::ICS20TransferBank,
     shared_types::{
         IbcCoreChannelV1ChannelData, IbcCoreChannelV1CounterpartyData,
         IbcCoreCommitmentV1MerklePrefixData, IbcCoreConnectionV1ConnectionEndData,
@@ -41,7 +39,6 @@ use unionlabs::{
     },
     ethereum_consts_traits::{ChainSpec, Mainnet, Minimal},
     ibc::{
-        applications::transfer::msg_transfer::MsgTransfer,
         core::client::{
             height::{Height, IsHeight},
             msg_update_client::MsgUpdateClient,
@@ -103,48 +100,6 @@ fn encode_dynamic_singleton_tuple(t: impl AbiEncode) -> Vec<u8> {
         .into_iter()
         .chain(t.encode())
         .collect::<Vec<_>>()
-}
-
-pub async fn transfer<C: ChainSpec>(
-    this: &Evm<C>,
-    msg: MsgTransfer,
-    ics20_transfer_bank_address: Address,
-) {
-    let signer_middleware = Arc::new(SignerMiddleware::new(
-        this.provider.clone(),
-        this.wallet.clone(),
-    ));
-
-    if msg.timeout_timestamp.is_some() {
-        tracing::warn!("timeout_timestamp is currently not supported by ICS20TransferBank")
-    }
-
-    if msg.memo.is_some() {
-        tracing::warn!("memo is currently not supported by ICS20TransferBank")
-    }
-
-    let ics20_transfer_bank =
-        ICS20TransferBank::new(ics20_transfer_bank_address, signer_middleware.clone());
-
-    ics20_transfer_bank
-        .send_transfer(
-            msg.token.denom,
-            msg.token
-                .amount
-                .parse()
-                .expect("ics20 expects amount to be u64"),
-            msg.receiver,
-            msg.source_port,
-            msg.source_channel,
-            msg.timeout_height.revision_number,
-            msg.timeout_height.revision_height,
-        )
-        .send()
-        .await
-        .unwrap()
-        .await
-        .unwrap()
-        .unwrap();
 }
 
 pub async fn bind_port<C: ChainSpec>(this: &Evm<C>, module_address: Address, port_id: String) {
@@ -214,44 +169,6 @@ pub async fn setup_initial_channel<C: ChainSpec>(
         .await
         .unwrap()
         .unwrap();
-}
-
-pub async fn ics20_bank_set_operator<C: ChainSpec>(
-    this: &Evm<C>,
-    ics20_bank_address: Address,
-    ics20_transfer_bank_address: Address,
-) {
-    let signer_middleware = Arc::new(SignerMiddleware::new(
-        this.provider.clone(),
-        this.wallet.clone(),
-    ));
-
-    let ics20_bank = ICS20Bank::new(ics20_bank_address, signer_middleware.clone());
-
-    ics20_bank
-        .set_operator(ics20_transfer_bank_address.clone().into())
-        .send()
-        .await
-        .unwrap()
-        .await
-        .unwrap()
-        .unwrap();
-}
-
-pub async fn balance_of<C: ChainSpec>(
-    this: &Evm<C>,
-    ics20_bank_address: Address,
-    who: Address,
-    denom: String,
-) -> U256 {
-    let signer_middleware = Arc::new(SignerMiddleware::new(
-        this.provider.clone(),
-        this.wallet.clone(),
-    ));
-
-    let ics20_bank = ICS20Bank::new(ics20_bank_address, signer_middleware);
-
-    ics20_bank.balance_of(who.into(), denom).await.unwrap()
 }
 
 impl LightClient for CometblsMainnet {

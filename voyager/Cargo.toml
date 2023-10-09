@@ -22,7 +22,7 @@ tendermint = { git = "https://github.com/unionlabs/tendermint-rs", branch = "bn2
 tendermint-proto = { git = "https://github.com/unionlabs/tendermint-rs", branch = "bn254" }
 tendermint-rpc = { git = "https://github.com/unionlabs/tendermint-rs", branch = "bn254", features = ["http-client", "websocket-client"] }
 tokio = { version = "1.27.0", features = ["macros"] }
-tonic = { version = "0.8", features = ["transport","tls","tls-roots","tls-webpki-roots"] }
+tonic = { version = "0.9", features = ["transport","tls","tls-roots","tls-webpki-roots"] }
 tower = { version = "*", features = ["log"] }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 clap = { version = "4.3.0", features = ["derive", "env", "error-context"] }

@@ -4,7 +4,6 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     errors::{InvalidLength, MissingField},
-    ethereum::H256,
     ibc::core::client::height::Height,
     tendermint::types::signed_header::SignedHeader,
     Proto, TryFromProtoErrorOf, TypeUrl,
@@ -22,10 +21,6 @@ impl Debug for Header {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Header")
             .field("signed_header", &self.signed_header)
-            .field(
-                "untrusted_validator_set_root",
-                &self.untrusted_validator_set_root,
-            )
             .field("trusted_height", &self.trusted_height)
             .field(
                 "zero_knowledge_proof",
@@ -57,7 +52,6 @@ impl From<Header> for protos::union::ibc::lightclients::cometbls::v1::Header {
     fn from(value: Header) -> Self {
         Self {
             signed_header: Some(value.signed_header.into()),
-            untrusted_validator_set_root: value.untrusted_validator_set_root.into(),
             trusted_height: Some(value.trusted_height.into()),
             zero_knowledge_proof: value.zero_knowledge_proof,
         }
@@ -69,7 +63,6 @@ impl From<Header> for contracts::glue::UnionIbcLightclientsCometblsV1HeaderData 
     fn from(value: Header) -> Self {
         Self {
             signed_header: value.signed_header.into(),
-            untrusted_validator_set_root: value.untrusted_validator_set_root.into(),
             trusted_height: value.trusted_height.into(),
             zero_knowledge_proof: value.zero_knowledge_proof.into(),
         }
@@ -102,10 +95,6 @@ impl TryFrom<protos::union::ibc::lightclients::cometbls::v1::Header> for Header 
                 )))?
                 .try_into()
                 .map_err(TryFromHeaderError::SignedHeader)?,
-            untrusted_validator_set_root: value
-                .untrusted_validator_set_root
-                .try_into()
-                .map_err(TryFromHeaderError::UntrustedValidatorSetRoot)?,
             trusted_height: value
                 .trusted_height
                 .ok_or(TryFromHeaderError::MissingField(MissingField(
