@@ -311,28 +311,15 @@ where
             })
         }
         EthereumFetchMsg::FetchValidators(FetchValidators { height, __marker }) => {
-            // TODO: Add to self
-            let mut staking_client =
-                staking::v1beta1::query_client::QueryClient::connect(union.grpc_url.clone())
-                    .await
-                    .unwrap();
-
-            // TODO: the query should be done for a specific block here, namely the trusted and untrusted commit if the valset is drifting
-            // http://localhost:26657/validators?height=H
-            // self.chain.tm_client.validators();
-            let validators = QueryValidatorsResponse::try_from(
-                staking_client
-                    .validators(staking::v1beta1::QueryValidatorsRequest {
-                        // FIXME: we probably need to merge bonded / unbonded etc as they are all part of val root
-                        status: BondStatus::Bonded.as_str_name().to_string(),
-                        pagination: None,
-                    })
-                    .await
-                    .unwrap()
-                    .into_inner(),
-            )
-            .unwrap()
-            .validators;
+            let validators = union
+                .tm_client
+                .validators(
+                    TryInto::<tendermint::block::Height>::try_into(height.revision_height).unwrap(),
+                    tendermint_rpc::Paging::All,
+                )
+                .await
+                .unwrap()
+                .validators;
 
             EthereumDataMsg::Validators(Validators {
                 height,
@@ -396,6 +383,15 @@ where
                         data: Fetch::LightClientSpecific(LightClientSpecificFetch(
                             EthereumFetchMsg::FetchUntrustedCommit(FetchUntrustedCommit {
                                 height: update_info.update_to,
+                                __marker: PhantomData,
+                            }),
+                        )),
+                    }))),
+                    RelayerMsg::Lc(AnyLcMsg::from(LcMsg::<L>::Fetch(Identified {
+                        chain_id: union.chain_id.clone(),
+                        data: Fetch::LightClientSpecific(LightClientSpecificFetch(
+                            EthereumFetchMsg::FetchValidators(FetchValidators {
+                                height: update_info.update_from,
                                 __marker: PhantomData,
                             }),
                         )),
@@ -707,7 +703,7 @@ pub struct UntrustedCommit<C: ChainSpec> {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Validators<C: ChainSpec> {
     pub height: Height,
-    pub validators: Vec<Validator>,
+    pub validators: Vec<tendermint::validator::Info>,
     #[serde(skip)]
     pub __marker: PhantomData<fn() -> C>,
 }
@@ -986,7 +982,7 @@ where
     AnyLcMsg: From<LcMsg<L>>,
     AggregateReceiver: From<identified!(Aggregate<L>)>,
 {
-    type AggregatedData = HList![Identified<L, UntrustedCommit<C>>, Identified<L, Validators<C>>];
+    type AggregatedData = HList![Identified<L, UntrustedCommit<C>>, Identified<L, Validators<C>>, Identified<L, Validators<C>>];
 
     fn aggregate(
         Identified {
@@ -1003,139 +999,120 @@ where
                 }
             },
             Identified {
-                chain_id: validators_chain_id,
+                chain_id: trusted_validators_chain_id,
                 data: Validators {
-                    height: validators_height,
-                    mut validators,
+                    height: trusted_validators_height,
+                    validators: trusted_validators,
+                    __marker: _
+                }
+            },
+            Identified {
+                chain_id: untrusted_validators_chain_id,
+                data: Validators {
+                    height: untrusted_validators_height,
+                    validators: untrusted_validators,
                     __marker: _
                 }
             },
         ]: Self::AggregatedData,
     ) -> RelayerMsg {
-        assert_eq!(untrusted_commit_chain_id, validators_chain_id);
-        assert_eq!(chain_id, validators_chain_id);
+        assert_eq!(untrusted_commit_chain_id, untrusted_validators_chain_id);
+        assert_eq!(chain_id, trusted_validators_chain_id);
+        assert_eq!(chain_id, untrusted_validators_chain_id);
 
-        assert_eq!(untrusted_commit_height, validators_height);
+        assert_eq!(req.update_from, trusted_validators_height);
+        assert_eq!(untrusted_commit_height, untrusted_validators_height);
 
-        // Validators must be sorted to match the root, by token then address
-        validators.sort_by(|a, b| {
-            let a_tokens = a.tokens.parse::<u128>().unwrap();
-            let b_tokens = b.tokens.parse::<u128>().unwrap();
-
-            #[allow(clippy::collapsible_else_if)]
-            if a_tokens == b_tokens {
-                let a_key = &a
-                    .consensus_pubkey
-                    .as_bn254()
-                    .expect("validator key for cometbls is bn254")
-                    .key;
-
-                let b_key = &b
-                    .consensus_pubkey
-                    .as_bn254()
-                    .expect("validator key for cometbls is bn254")
-                    .key;
-
-                // Tendermint address are sha256(pubkey)[0:20]
-                let a_address = &sha2::Sha256::new().chain_update(a_key).finalize()[..20];
-                let b_address = &sha2::Sha256::new().chain_update(b_key).finalize()[..20];
-
-                if a_address < b_address {
-                    std::cmp::Ordering::Less
+        let make_validators_commit = |mut validators: Vec<tendermint::validator::Info>| {
+            // Validators must be sorted to match the root, by token then address
+            validators.sort_by(|a, b| {
+                let a_power = a.power;
+                let b_power = b.power;
+                #[allow(clippy::collapsible_else_if)]
+                if a_power == b_power {
+                    let a_address = a.address;
+                    let b_address = b.address;
+                    if a_address < b_address {
+                        std::cmp::Ordering::Less
+                    } else {
+                        std::cmp::Ordering::Greater
+                    }
                 } else {
-                    std::cmp::Ordering::Greater
+                    if a_power > b_power {
+                        std::cmp::Ordering::Less
+                    } else {
+                        std::cmp::Ordering::Greater
+                    }
                 }
-            } else {
-                if a_tokens > b_tokens {
-                    std::cmp::Ordering::Less
-                } else {
-                    std::cmp::Ordering::Greater
+            });
+
+            // The bitmap is a public input of the circuit, it must fit in Fr (scalar field) bn254
+            let mut bitmap = BigUint::default();
+            // REVIEW: This will over-allocate for the trusted validators; should be benchmarked
+            let mut signatures = Vec::<Vec<u8>>::with_capacity(validators.len());
+
+            let validators_map = validators
+                .iter()
+                .enumerate()
+                .map(|(i, v)| (v.address, i))
+                .collect::<HashMap<_, _>>();
+
+            // For each validator signature, we search for the actual validator
+            // in the set and set it's signed bit to 1. We then push the
+            // signature only if the validator signed. It's possible that we
+            // don't find a validator for a given signature as the validator set
+            // may have drifted (trusted validator set).
+            for sig in signed_header.commit.signatures.iter() {
+                match sig.block_id_flag {
+                    BlockIdFlag::Absent => {
+                        tracing::debug!("Validator did not sign: {:?}", sig);
+                    }
+                    BlockIdFlag::Commit => {
+                        if let Some(validator_index) = validators_map
+                            .get(&sig.validator_address.0.to_vec().try_into().unwrap())
+                        {
+                            bitmap.set_bit(*validator_index as u64, true);
+                            signatures.push(sig.signature.clone().into());
+                            tracing::debug!(
+                                "Validator {:?} at index {} signed",
+                                sig.validator_address,
+                                validator_index
+                            );
+                        } else {
+                            tracing::warn!("Validator set drifted? Could not find validator for signature {:?}", sig.validator_address);
+                        }
+                    }
+                    BlockIdFlag::Nil { .. } => {
+                        tracing::warn!("Validator commit is nil: {:?}", sig);
+                    }
+                    BlockIdFlag::Unknown => {
+                        tracing::warn!("Validator commit is unknown, wtf: {:?}", sig);
+                    }
                 }
             }
-        });
 
-        let simple_validators = validators
-            .iter()
-            .map(|v| {
-                SimpleValidator {
-                    pub_key: PublicKey::Bn254(
-                        v.consensus_pubkey
-                            .as_bn254()
-                            .expect("validator key for cometbls is bn254")
-                            .key
-                            .clone()
-                            .into(),
-                    ),
-                    // Equivalent of sdk.TokensToConsensusPower(sdk.NewIntFromBigInt(tokens), sdk.DefaultPowerReduction)
-                    voting_power: (v.tokens.parse::<u128>().unwrap() / 1_000_000_u128)
-                        .try_into()
-                        .unwrap(),
-                }
-            })
-            .collect::<Vec<_>>();
+            let simple_validators = validators
+                .iter()
+                .map(|v| {
+                    let tendermint::PublicKey::Bn254(key) = v.pub_key else {
+                        panic!("must be bn254")
+                    };
+                    SimpleValidator {
+                        pub_key: PublicKey::Bn254(key.to_vec()),
+                        voting_power: v.power.into(),
+                    }
+                })
+                .collect::<Vec<_>>();
 
-        // The bitmap is a public input of the circuit, it must fit in Fr (scalar field) bn254
-
-        let mut bitmap = BigUint::default();
-        // REVIEW: This will over-allocate; should be benchmarked
-        let mut signatures = Vec::<Vec<u8>>::with_capacity(signed_header.commit.signatures.len());
-
-        let validators_map = validators
-            .iter()
-            .enumerate()
-            .map(|(i, v)| {
-                (
-                    sha2::Sha256::new()
-                        .chain_update(
-                            v.consensus_pubkey
-                                .as_bn254()
-                                .expect("validator key for cometbls is bn254")
-                                .key
-                                .clone(),
-                        )
-                        .finalize()[..20]
-                        .to_vec(),
-                    i,
-                )
-            })
-            .collect::<HashMap<_, _>>();
-
-        // NOTE: we assume that the signatures are correctly ordered. i.e. they follow the validator set order as the index is used to aggregate validator pks.
-        for sig in signed_header.commit.signatures.iter() {
-            match sig.block_id_flag {
-                BlockIdFlag::Absent => {
-                    tracing::debug!("Validator did not sign: {:?}", sig);
-                }
-                BlockIdFlag::Commit => {
-                    let validator_index = validators_map
-                        .get(&sig.validator_address.0.to_vec())
-                        .expect("validator must exist if a signature exist");
-                    bitmap.set_bit(*validator_index as u64, true);
-                    signatures.push(sig.signature.clone().into());
-                    tracing::debug!(
-                        "Validator {:?} at index {} signed",
-                        sig.validator_address,
-                        validator_index
-                    );
-                }
-                // TODO: not sure about this case
-                BlockIdFlag::Nil { .. } => {
-                    tracing::warn!("Validator commit is nil: {:?}", sig);
-                }
-                BlockIdFlag::Unknown => {
-                    tracing::warn!("Validator commit is unknown, wtf: {:?}", sig);
-                }
+            ValidatorSetCommit {
+                validators: simple_validators,
+                signatures,
+                bitmap: bitmap.to_bytes_be(),
             }
-        }
-
-        let validators_trusted_commit = ValidatorSetCommit {
-            validators: simple_validators,
-            signatures,
-            bitmap: bitmap.to_bytes_be(),
         };
 
-        // The untrusted commit is the same as we don't support validator set drift for now.
-        let validators_untrusted_commit = validators_trusted_commit.clone();
+        let trusted_validators_commit = make_validators_commit(trusted_validators);
+        let untrusted_validators_commit = make_validators_commit(untrusted_validators);
 
         RelayerMsg::Aggregate {
             queue: [RelayerMsg::Lc(AnyLcMsg::from(LcMsg::Fetch(Identified {
@@ -1163,8 +1140,8 @@ where
                                 },
                                 chain_id: signed_header.header.chain_id.clone(),
                             },
-                            trusted_commit: validators_trusted_commit,
-                            untrusted_commit: validators_untrusted_commit,
+                            trusted_commit: trusted_validators_commit,
+                            untrusted_commit: untrusted_validators_commit,
                         },
                         __marker: PhantomData,
                     }),
