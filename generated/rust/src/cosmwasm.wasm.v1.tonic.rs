@@ -84,10 +84,10 @@ pub mod query_client {
             self.inner = self.inner.max_encoding_message_size(limit);
             self
         }
-        pub async fn channel(
+        pub async fn contract_info(
             &mut self,
-            request: impl tonic::IntoRequest<super::QueryChannelRequest>,
-        ) -> std::result::Result<tonic::Response<super::QueryChannelResponse>, tonic::Status>
+            request: impl tonic::IntoRequest<super::QueryContractInfoRequest>,
+        ) -> std::result::Result<tonic::Response<super::QueryContractInfoResponse>, tonic::Status>
         {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
@@ -96,16 +96,16 @@ pub mod query_client {
                 )
             })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static("/ibc.core.channel.v1.Query/Channel");
+            let path = http::uri::PathAndQuery::from_static("/cosmwasm.wasm.v1.Query/ContractInfo");
             let mut req = request.into_request();
             req.extensions_mut()
-                .insert(GrpcMethod::new("ibc.core.channel.v1.Query", "Channel"));
+                .insert(GrpcMethod::new("cosmwasm.wasm.v1.Query", "ContractInfo"));
             self.inner.unary(req, path, codec).await
         }
-        pub async fn channels(
+        pub async fn contract_history(
             &mut self,
-            request: impl tonic::IntoRequest<super::QueryChannelsRequest>,
-        ) -> std::result::Result<tonic::Response<super::QueryChannelsResponse>, tonic::Status>
+            request: impl tonic::IntoRequest<super::QueryContractHistoryRequest>,
+        ) -> std::result::Result<tonic::Response<super::QueryContractHistoryResponse>, tonic::Status>
         {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
@@ -114,88 +114,17 @@ pub mod query_client {
                 )
             })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static("/ibc.core.channel.v1.Query/Channels");
+            let path =
+                http::uri::PathAndQuery::from_static("/cosmwasm.wasm.v1.Query/ContractHistory");
             let mut req = request.into_request();
             req.extensions_mut()
-                .insert(GrpcMethod::new("ibc.core.channel.v1.Query", "Channels"));
+                .insert(GrpcMethod::new("cosmwasm.wasm.v1.Query", "ContractHistory"));
             self.inner.unary(req, path, codec).await
         }
-        pub async fn connection_channels(
+        pub async fn contracts_by_code(
             &mut self,
-            request: impl tonic::IntoRequest<super::QueryConnectionChannelsRequest>,
-        ) -> std::result::Result<
-            tonic::Response<super::QueryConnectionChannelsResponse>,
-            tonic::Status,
-        > {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::new(
-                    tonic::Code::Unknown,
-                    format!("Service was not ready: {}", e.into()),
-                )
-            })?;
-            let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/ibc.core.channel.v1.Query/ConnectionChannels",
-            );
-            let mut req = request.into_request();
-            req.extensions_mut().insert(GrpcMethod::new(
-                "ibc.core.channel.v1.Query",
-                "ConnectionChannels",
-            ));
-            self.inner.unary(req, path, codec).await
-        }
-        pub async fn channel_client_state(
-            &mut self,
-            request: impl tonic::IntoRequest<super::QueryChannelClientStateRequest>,
-        ) -> std::result::Result<
-            tonic::Response<super::QueryChannelClientStateResponse>,
-            tonic::Status,
-        > {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::new(
-                    tonic::Code::Unknown,
-                    format!("Service was not ready: {}", e.into()),
-                )
-            })?;
-            let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/ibc.core.channel.v1.Query/ChannelClientState",
-            );
-            let mut req = request.into_request();
-            req.extensions_mut().insert(GrpcMethod::new(
-                "ibc.core.channel.v1.Query",
-                "ChannelClientState",
-            ));
-            self.inner.unary(req, path, codec).await
-        }
-        pub async fn channel_consensus_state(
-            &mut self,
-            request: impl tonic::IntoRequest<super::QueryChannelConsensusStateRequest>,
-        ) -> std::result::Result<
-            tonic::Response<super::QueryChannelConsensusStateResponse>,
-            tonic::Status,
-        > {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::new(
-                    tonic::Code::Unknown,
-                    format!("Service was not ready: {}", e.into()),
-                )
-            })?;
-            let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/ibc.core.channel.v1.Query/ChannelConsensusState",
-            );
-            let mut req = request.into_request();
-            req.extensions_mut().insert(GrpcMethod::new(
-                "ibc.core.channel.v1.Query",
-                "ChannelConsensusState",
-            ));
-            self.inner.unary(req, path, codec).await
-        }
-        pub async fn packet_commitment(
-            &mut self,
-            request: impl tonic::IntoRequest<super::QueryPacketCommitmentRequest>,
-        ) -> std::result::Result<tonic::Response<super::QueryPacketCommitmentResponse>, tonic::Status>
+            request: impl tonic::IntoRequest<super::QueryContractsByCodeRequest>,
+        ) -> std::result::Result<tonic::Response<super::QueryContractsByCodeResponse>, tonic::Status>
         {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
@@ -205,42 +134,16 @@ pub mod query_client {
             })?;
             let codec = tonic::codec::ProstCodec::default();
             let path =
-                http::uri::PathAndQuery::from_static("/ibc.core.channel.v1.Query/PacketCommitment");
+                http::uri::PathAndQuery::from_static("/cosmwasm.wasm.v1.Query/ContractsByCode");
             let mut req = request.into_request();
-            req.extensions_mut().insert(GrpcMethod::new(
-                "ibc.core.channel.v1.Query",
-                "PacketCommitment",
-            ));
+            req.extensions_mut()
+                .insert(GrpcMethod::new("cosmwasm.wasm.v1.Query", "ContractsByCode"));
             self.inner.unary(req, path, codec).await
         }
-        pub async fn packet_commitments(
+        pub async fn all_contract_state(
             &mut self,
-            request: impl tonic::IntoRequest<super::QueryPacketCommitmentsRequest>,
-        ) -> std::result::Result<
-            tonic::Response<super::QueryPacketCommitmentsResponse>,
-            tonic::Status,
-        > {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::new(
-                    tonic::Code::Unknown,
-                    format!("Service was not ready: {}", e.into()),
-                )
-            })?;
-            let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/ibc.core.channel.v1.Query/PacketCommitments",
-            );
-            let mut req = request.into_request();
-            req.extensions_mut().insert(GrpcMethod::new(
-                "ibc.core.channel.v1.Query",
-                "PacketCommitments",
-            ));
-            self.inner.unary(req, path, codec).await
-        }
-        pub async fn packet_receipt(
-            &mut self,
-            request: impl tonic::IntoRequest<super::QueryPacketReceiptRequest>,
-        ) -> std::result::Result<tonic::Response<super::QueryPacketReceiptResponse>, tonic::Status>
+            request: impl tonic::IntoRequest<super::QueryAllContractStateRequest>,
+        ) -> std::result::Result<tonic::Response<super::QueryAllContractStateResponse>, tonic::Status>
         {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
@@ -250,90 +153,18 @@ pub mod query_client {
             })?;
             let codec = tonic::codec::ProstCodec::default();
             let path =
-                http::uri::PathAndQuery::from_static("/ibc.core.channel.v1.Query/PacketReceipt");
+                http::uri::PathAndQuery::from_static("/cosmwasm.wasm.v1.Query/AllContractState");
             let mut req = request.into_request();
             req.extensions_mut().insert(GrpcMethod::new(
-                "ibc.core.channel.v1.Query",
-                "PacketReceipt",
+                "cosmwasm.wasm.v1.Query",
+                "AllContractState",
             ));
             self.inner.unary(req, path, codec).await
         }
-        pub async fn packet_acknowledgement(
+        pub async fn raw_contract_state(
             &mut self,
-            request: impl tonic::IntoRequest<super::QueryPacketAcknowledgementRequest>,
-        ) -> std::result::Result<
-            tonic::Response<super::QueryPacketAcknowledgementResponse>,
-            tonic::Status,
-        > {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::new(
-                    tonic::Code::Unknown,
-                    format!("Service was not ready: {}", e.into()),
-                )
-            })?;
-            let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/ibc.core.channel.v1.Query/PacketAcknowledgement",
-            );
-            let mut req = request.into_request();
-            req.extensions_mut().insert(GrpcMethod::new(
-                "ibc.core.channel.v1.Query",
-                "PacketAcknowledgement",
-            ));
-            self.inner.unary(req, path, codec).await
-        }
-        pub async fn packet_acknowledgements(
-            &mut self,
-            request: impl tonic::IntoRequest<super::QueryPacketAcknowledgementsRequest>,
-        ) -> std::result::Result<
-            tonic::Response<super::QueryPacketAcknowledgementsResponse>,
-            tonic::Status,
-        > {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::new(
-                    tonic::Code::Unknown,
-                    format!("Service was not ready: {}", e.into()),
-                )
-            })?;
-            let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/ibc.core.channel.v1.Query/PacketAcknowledgements",
-            );
-            let mut req = request.into_request();
-            req.extensions_mut().insert(GrpcMethod::new(
-                "ibc.core.channel.v1.Query",
-                "PacketAcknowledgements",
-            ));
-            self.inner.unary(req, path, codec).await
-        }
-        pub async fn unreceived_packets(
-            &mut self,
-            request: impl tonic::IntoRequest<super::QueryUnreceivedPacketsRequest>,
-        ) -> std::result::Result<
-            tonic::Response<super::QueryUnreceivedPacketsResponse>,
-            tonic::Status,
-        > {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::new(
-                    tonic::Code::Unknown,
-                    format!("Service was not ready: {}", e.into()),
-                )
-            })?;
-            let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/ibc.core.channel.v1.Query/UnreceivedPackets",
-            );
-            let mut req = request.into_request();
-            req.extensions_mut().insert(GrpcMethod::new(
-                "ibc.core.channel.v1.Query",
-                "UnreceivedPackets",
-            ));
-            self.inner.unary(req, path, codec).await
-        }
-        pub async fn unreceived_acks(
-            &mut self,
-            request: impl tonic::IntoRequest<super::QueryUnreceivedAcksRequest>,
-        ) -> std::result::Result<tonic::Response<super::QueryUnreceivedAcksResponse>, tonic::Status>
+            request: impl tonic::IntoRequest<super::QueryRawContractStateRequest>,
+        ) -> std::result::Result<tonic::Response<super::QueryRawContractStateResponse>, tonic::Status>
         {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
@@ -343,19 +174,19 @@ pub mod query_client {
             })?;
             let codec = tonic::codec::ProstCodec::default();
             let path =
-                http::uri::PathAndQuery::from_static("/ibc.core.channel.v1.Query/UnreceivedAcks");
+                http::uri::PathAndQuery::from_static("/cosmwasm.wasm.v1.Query/RawContractState");
             let mut req = request.into_request();
             req.extensions_mut().insert(GrpcMethod::new(
-                "ibc.core.channel.v1.Query",
-                "UnreceivedAcks",
+                "cosmwasm.wasm.v1.Query",
+                "RawContractState",
             ));
             self.inner.unary(req, path, codec).await
         }
-        pub async fn next_sequence_receive(
+        pub async fn smart_contract_state(
             &mut self,
-            request: impl tonic::IntoRequest<super::QueryNextSequenceReceiveRequest>,
+            request: impl tonic::IntoRequest<super::QuerySmartContractStateRequest>,
         ) -> std::result::Result<
-            tonic::Response<super::QueryNextSequenceReceiveResponse>,
+            tonic::Response<super::QuerySmartContractStateResponse>,
             tonic::Status,
         > {
             self.inner.ready().await.map_err(|e| {
@@ -365,20 +196,36 @@ pub mod query_client {
                 )
             })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/ibc.core.channel.v1.Query/NextSequenceReceive",
-            );
+            let path =
+                http::uri::PathAndQuery::from_static("/cosmwasm.wasm.v1.Query/SmartContractState");
             let mut req = request.into_request();
             req.extensions_mut().insert(GrpcMethod::new(
-                "ibc.core.channel.v1.Query",
-                "NextSequenceReceive",
+                "cosmwasm.wasm.v1.Query",
+                "SmartContractState",
             ));
             self.inner.unary(req, path, codec).await
         }
-        pub async fn next_sequence_send(
+        pub async fn code(
             &mut self,
-            request: impl tonic::IntoRequest<super::QueryNextSequenceSendRequest>,
-        ) -> std::result::Result<tonic::Response<super::QueryNextSequenceSendResponse>, tonic::Status>
+            request: impl tonic::IntoRequest<super::QueryCodeRequest>,
+        ) -> std::result::Result<tonic::Response<super::QueryCodeResponse>, tonic::Status> {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static("/cosmwasm.wasm.v1.Query/Code");
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(GrpcMethod::new("cosmwasm.wasm.v1.Query", "Code"));
+            self.inner.unary(req, path, codec).await
+        }
+        pub async fn codes(
+            &mut self,
+            request: impl tonic::IntoRequest<super::QueryCodesRequest>,
+        ) -> std::result::Result<tonic::Response<super::QueryCodesResponse>, tonic::Status>
         {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
@@ -387,12 +234,68 @@ pub mod query_client {
                 )
             })?;
             let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static("/cosmwasm.wasm.v1.Query/Codes");
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(GrpcMethod::new("cosmwasm.wasm.v1.Query", "Codes"));
+            self.inner.unary(req, path, codec).await
+        }
+        pub async fn pinned_codes(
+            &mut self,
+            request: impl tonic::IntoRequest<super::QueryPinnedCodesRequest>,
+        ) -> std::result::Result<tonic::Response<super::QueryPinnedCodesResponse>, tonic::Status>
+        {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static("/cosmwasm.wasm.v1.Query/PinnedCodes");
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(GrpcMethod::new("cosmwasm.wasm.v1.Query", "PinnedCodes"));
+            self.inner.unary(req, path, codec).await
+        }
+        pub async fn params(
+            &mut self,
+            request: impl tonic::IntoRequest<super::QueryParamsRequest>,
+        ) -> std::result::Result<tonic::Response<super::QueryParamsResponse>, tonic::Status>
+        {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static("/cosmwasm.wasm.v1.Query/Params");
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(GrpcMethod::new("cosmwasm.wasm.v1.Query", "Params"));
+            self.inner.unary(req, path, codec).await
+        }
+        pub async fn contracts_by_creator(
+            &mut self,
+            request: impl tonic::IntoRequest<super::QueryContractsByCreatorRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::QueryContractsByCreatorResponse>,
+            tonic::Status,
+        > {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
+            let codec = tonic::codec::ProstCodec::default();
             let path =
-                http::uri::PathAndQuery::from_static("/ibc.core.channel.v1.Query/NextSequenceSend");
+                http::uri::PathAndQuery::from_static("/cosmwasm.wasm.v1.Query/ContractsByCreator");
             let mut req = request.into_request();
             req.extensions_mut().insert(GrpcMethod::new(
-                "ibc.core.channel.v1.Query",
-                "NextSequenceSend",
+                "cosmwasm.wasm.v1.Query",
+                "ContractsByCreator",
             ));
             self.inner.unary(req, path, codec).await
         }
@@ -480,10 +383,10 @@ pub mod msg_client {
             self.inner = self.inner.max_encoding_message_size(limit);
             self
         }
-        pub async fn channel_open_init(
+        pub async fn store_code(
             &mut self,
-            request: impl tonic::IntoRequest<super::MsgChannelOpenInit>,
-        ) -> std::result::Result<tonic::Response<super::MsgChannelOpenInitResponse>, tonic::Status>
+            request: impl tonic::IntoRequest<super::MsgStoreCode>,
+        ) -> std::result::Result<tonic::Response<super::MsgStoreCodeResponse>, tonic::Status>
         {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
@@ -492,100 +395,137 @@ pub mod msg_client {
                 )
             })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path =
-                http::uri::PathAndQuery::from_static("/ibc.core.channel.v1.Msg/ChannelOpenInit");
-            let mut req = request.into_request();
-            req.extensions_mut().insert(GrpcMethod::new(
-                "ibc.core.channel.v1.Msg",
-                "ChannelOpenInit",
-            ));
-            self.inner.unary(req, path, codec).await
-        }
-        pub async fn channel_open_try(
-            &mut self,
-            request: impl tonic::IntoRequest<super::MsgChannelOpenTry>,
-        ) -> std::result::Result<tonic::Response<super::MsgChannelOpenTryResponse>, tonic::Status>
-        {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::new(
-                    tonic::Code::Unknown,
-                    format!("Service was not ready: {}", e.into()),
-                )
-            })?;
-            let codec = tonic::codec::ProstCodec::default();
-            let path =
-                http::uri::PathAndQuery::from_static("/ibc.core.channel.v1.Msg/ChannelOpenTry");
+            let path = http::uri::PathAndQuery::from_static("/cosmwasm.wasm.v1.Msg/StoreCode");
             let mut req = request.into_request();
             req.extensions_mut()
-                .insert(GrpcMethod::new("ibc.core.channel.v1.Msg", "ChannelOpenTry"));
+                .insert(GrpcMethod::new("cosmwasm.wasm.v1.Msg", "StoreCode"));
             self.inner.unary(req, path, codec).await
         }
-        pub async fn channel_open_ack(
+        pub async fn instantiate_contract(
             &mut self,
-            request: impl tonic::IntoRequest<super::MsgChannelOpenAck>,
-        ) -> std::result::Result<tonic::Response<super::MsgChannelOpenAckResponse>, tonic::Status>
-        {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::new(
-                    tonic::Code::Unknown,
-                    format!("Service was not ready: {}", e.into()),
-                )
-            })?;
-            let codec = tonic::codec::ProstCodec::default();
-            let path =
-                http::uri::PathAndQuery::from_static("/ibc.core.channel.v1.Msg/ChannelOpenAck");
-            let mut req = request.into_request();
-            req.extensions_mut()
-                .insert(GrpcMethod::new("ibc.core.channel.v1.Msg", "ChannelOpenAck"));
-            self.inner.unary(req, path, codec).await
-        }
-        pub async fn channel_open_confirm(
-            &mut self,
-            request: impl tonic::IntoRequest<super::MsgChannelOpenConfirm>,
-        ) -> std::result::Result<tonic::Response<super::MsgChannelOpenConfirmResponse>, tonic::Status>
-        {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::new(
-                    tonic::Code::Unknown,
-                    format!("Service was not ready: {}", e.into()),
-                )
-            })?;
-            let codec = tonic::codec::ProstCodec::default();
-            let path =
-                http::uri::PathAndQuery::from_static("/ibc.core.channel.v1.Msg/ChannelOpenConfirm");
-            let mut req = request.into_request();
-            req.extensions_mut().insert(GrpcMethod::new(
-                "ibc.core.channel.v1.Msg",
-                "ChannelOpenConfirm",
-            ));
-            self.inner.unary(req, path, codec).await
-        }
-        pub async fn channel_close_init(
-            &mut self,
-            request: impl tonic::IntoRequest<super::MsgChannelCloseInit>,
-        ) -> std::result::Result<tonic::Response<super::MsgChannelCloseInitResponse>, tonic::Status>
-        {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::new(
-                    tonic::Code::Unknown,
-                    format!("Service was not ready: {}", e.into()),
-                )
-            })?;
-            let codec = tonic::codec::ProstCodec::default();
-            let path =
-                http::uri::PathAndQuery::from_static("/ibc.core.channel.v1.Msg/ChannelCloseInit");
-            let mut req = request.into_request();
-            req.extensions_mut().insert(GrpcMethod::new(
-                "ibc.core.channel.v1.Msg",
-                "ChannelCloseInit",
-            ));
-            self.inner.unary(req, path, codec).await
-        }
-        pub async fn channel_close_confirm(
-            &mut self,
-            request: impl tonic::IntoRequest<super::MsgChannelCloseConfirm>,
+            request: impl tonic::IntoRequest<super::MsgInstantiateContract>,
         ) -> std::result::Result<
-            tonic::Response<super::MsgChannelCloseConfirmResponse>,
+            tonic::Response<super::MsgInstantiateContractResponse>,
+            tonic::Status,
+        > {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path =
+                http::uri::PathAndQuery::from_static("/cosmwasm.wasm.v1.Msg/InstantiateContract");
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "cosmwasm.wasm.v1.Msg",
+                "InstantiateContract",
+            ));
+            self.inner.unary(req, path, codec).await
+        }
+        pub async fn instantiate_contract2(
+            &mut self,
+            request: impl tonic::IntoRequest<super::MsgInstantiateContract2>,
+        ) -> std::result::Result<
+            tonic::Response<super::MsgInstantiateContract2Response>,
+            tonic::Status,
+        > {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path =
+                http::uri::PathAndQuery::from_static("/cosmwasm.wasm.v1.Msg/InstantiateContract2");
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "cosmwasm.wasm.v1.Msg",
+                "InstantiateContract2",
+            ));
+            self.inner.unary(req, path, codec).await
+        }
+        pub async fn execute_contract(
+            &mut self,
+            request: impl tonic::IntoRequest<super::MsgExecuteContract>,
+        ) -> std::result::Result<tonic::Response<super::MsgExecuteContractResponse>, tonic::Status>
+        {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path =
+                http::uri::PathAndQuery::from_static("/cosmwasm.wasm.v1.Msg/ExecuteContract");
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(GrpcMethod::new("cosmwasm.wasm.v1.Msg", "ExecuteContract"));
+            self.inner.unary(req, path, codec).await
+        }
+        pub async fn migrate_contract(
+            &mut self,
+            request: impl tonic::IntoRequest<super::MsgMigrateContract>,
+        ) -> std::result::Result<tonic::Response<super::MsgMigrateContractResponse>, tonic::Status>
+        {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path =
+                http::uri::PathAndQuery::from_static("/cosmwasm.wasm.v1.Msg/MigrateContract");
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(GrpcMethod::new("cosmwasm.wasm.v1.Msg", "MigrateContract"));
+            self.inner.unary(req, path, codec).await
+        }
+        pub async fn update_admin(
+            &mut self,
+            request: impl tonic::IntoRequest<super::MsgUpdateAdmin>,
+        ) -> std::result::Result<tonic::Response<super::MsgUpdateAdminResponse>, tonic::Status>
+        {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static("/cosmwasm.wasm.v1.Msg/UpdateAdmin");
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(GrpcMethod::new("cosmwasm.wasm.v1.Msg", "UpdateAdmin"));
+            self.inner.unary(req, path, codec).await
+        }
+        pub async fn clear_admin(
+            &mut self,
+            request: impl tonic::IntoRequest<super::MsgClearAdmin>,
+        ) -> std::result::Result<tonic::Response<super::MsgClearAdminResponse>, tonic::Status>
+        {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static("/cosmwasm.wasm.v1.Msg/ClearAdmin");
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(GrpcMethod::new("cosmwasm.wasm.v1.Msg", "ClearAdmin"));
+            self.inner.unary(req, path, codec).await
+        }
+        pub async fn update_instantiate_config(
+            &mut self,
+            request: impl tonic::IntoRequest<super::MsgUpdateInstantiateConfig>,
+        ) -> std::result::Result<
+            tonic::Response<super::MsgUpdateInstantiateConfigResponse>,
             tonic::Status,
         > {
             self.inner.ready().await.map_err(|e| {
@@ -596,19 +536,19 @@ pub mod msg_client {
             })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
-                "/ibc.core.channel.v1.Msg/ChannelCloseConfirm",
+                "/cosmwasm.wasm.v1.Msg/UpdateInstantiateConfig",
             );
             let mut req = request.into_request();
             req.extensions_mut().insert(GrpcMethod::new(
-                "ibc.core.channel.v1.Msg",
-                "ChannelCloseConfirm",
+                "cosmwasm.wasm.v1.Msg",
+                "UpdateInstantiateConfig",
             ));
             self.inner.unary(req, path, codec).await
         }
-        pub async fn recv_packet(
+        pub async fn update_params(
             &mut self,
-            request: impl tonic::IntoRequest<super::MsgRecvPacket>,
-        ) -> std::result::Result<tonic::Response<super::MsgRecvPacketResponse>, tonic::Status>
+            request: impl tonic::IntoRequest<super::MsgUpdateParams>,
+        ) -> std::result::Result<tonic::Response<super::MsgUpdateParamsResponse>, tonic::Status>
         {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
@@ -617,16 +557,16 @@ pub mod msg_client {
                 )
             })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static("/ibc.core.channel.v1.Msg/RecvPacket");
+            let path = http::uri::PathAndQuery::from_static("/cosmwasm.wasm.v1.Msg/UpdateParams");
             let mut req = request.into_request();
             req.extensions_mut()
-                .insert(GrpcMethod::new("ibc.core.channel.v1.Msg", "RecvPacket"));
+                .insert(GrpcMethod::new("cosmwasm.wasm.v1.Msg", "UpdateParams"));
             self.inner.unary(req, path, codec).await
         }
-        pub async fn timeout(
+        pub async fn sudo_contract(
             &mut self,
-            request: impl tonic::IntoRequest<super::MsgTimeout>,
-        ) -> std::result::Result<tonic::Response<super::MsgTimeoutResponse>, tonic::Status>
+            request: impl tonic::IntoRequest<super::MsgSudoContract>,
+        ) -> std::result::Result<tonic::Response<super::MsgSudoContractResponse>, tonic::Status>
         {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
@@ -635,16 +575,16 @@ pub mod msg_client {
                 )
             })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static("/ibc.core.channel.v1.Msg/Timeout");
+            let path = http::uri::PathAndQuery::from_static("/cosmwasm.wasm.v1.Msg/SudoContract");
             let mut req = request.into_request();
             req.extensions_mut()
-                .insert(GrpcMethod::new("ibc.core.channel.v1.Msg", "Timeout"));
+                .insert(GrpcMethod::new("cosmwasm.wasm.v1.Msg", "SudoContract"));
             self.inner.unary(req, path, codec).await
         }
-        pub async fn timeout_on_close(
+        pub async fn pin_codes(
             &mut self,
-            request: impl tonic::IntoRequest<super::MsgTimeoutOnClose>,
-        ) -> std::result::Result<tonic::Response<super::MsgTimeoutOnCloseResponse>, tonic::Status>
+            request: impl tonic::IntoRequest<super::MsgPinCodes>,
+        ) -> std::result::Result<tonic::Response<super::MsgPinCodesResponse>, tonic::Status>
         {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
@@ -653,17 +593,16 @@ pub mod msg_client {
                 )
             })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path =
-                http::uri::PathAndQuery::from_static("/ibc.core.channel.v1.Msg/TimeoutOnClose");
+            let path = http::uri::PathAndQuery::from_static("/cosmwasm.wasm.v1.Msg/PinCodes");
             let mut req = request.into_request();
             req.extensions_mut()
-                .insert(GrpcMethod::new("ibc.core.channel.v1.Msg", "TimeoutOnClose"));
+                .insert(GrpcMethod::new("cosmwasm.wasm.v1.Msg", "PinCodes"));
             self.inner.unary(req, path, codec).await
         }
-        pub async fn acknowledgement(
+        pub async fn unpin_codes(
             &mut self,
-            request: impl tonic::IntoRequest<super::MsgAcknowledgement>,
-        ) -> std::result::Result<tonic::Response<super::MsgAcknowledgementResponse>, tonic::Status>
+            request: impl tonic::IntoRequest<super::MsgUnpinCodes>,
+        ) -> std::result::Result<tonic::Response<super::MsgUnpinCodesResponse>, tonic::Status>
         {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
@@ -672,12 +611,105 @@ pub mod msg_client {
                 )
             })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path =
-                http::uri::PathAndQuery::from_static("/ibc.core.channel.v1.Msg/Acknowledgement");
+            let path = http::uri::PathAndQuery::from_static("/cosmwasm.wasm.v1.Msg/UnpinCodes");
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(GrpcMethod::new("cosmwasm.wasm.v1.Msg", "UnpinCodes"));
+            self.inner.unary(req, path, codec).await
+        }
+        pub async fn store_and_instantiate_contract(
+            &mut self,
+            request: impl tonic::IntoRequest<super::MsgStoreAndInstantiateContract>,
+        ) -> std::result::Result<
+            tonic::Response<super::MsgStoreAndInstantiateContractResponse>,
+            tonic::Status,
+        > {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/cosmwasm.wasm.v1.Msg/StoreAndInstantiateContract",
+            );
             let mut req = request.into_request();
             req.extensions_mut().insert(GrpcMethod::new(
-                "ibc.core.channel.v1.Msg",
-                "Acknowledgement",
+                "cosmwasm.wasm.v1.Msg",
+                "StoreAndInstantiateContract",
+            ));
+            self.inner.unary(req, path, codec).await
+        }
+        pub async fn remove_code_upload_params_addresses(
+            &mut self,
+            request: impl tonic::IntoRequest<super::MsgRemoveCodeUploadParamsAddresses>,
+        ) -> std::result::Result<
+            tonic::Response<super::MsgRemoveCodeUploadParamsAddressesResponse>,
+            tonic::Status,
+        > {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/cosmwasm.wasm.v1.Msg/RemoveCodeUploadParamsAddresses",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "cosmwasm.wasm.v1.Msg",
+                "RemoveCodeUploadParamsAddresses",
+            ));
+            self.inner.unary(req, path, codec).await
+        }
+        pub async fn add_code_upload_params_addresses(
+            &mut self,
+            request: impl tonic::IntoRequest<super::MsgAddCodeUploadParamsAddresses>,
+        ) -> std::result::Result<
+            tonic::Response<super::MsgAddCodeUploadParamsAddressesResponse>,
+            tonic::Status,
+        > {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/cosmwasm.wasm.v1.Msg/AddCodeUploadParamsAddresses",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "cosmwasm.wasm.v1.Msg",
+                "AddCodeUploadParamsAddresses",
+            ));
+            self.inner.unary(req, path, codec).await
+        }
+        pub async fn store_and_migrate_contract(
+            &mut self,
+            request: impl tonic::IntoRequest<super::MsgStoreAndMigrateContract>,
+        ) -> std::result::Result<
+            tonic::Response<super::MsgStoreAndMigrateContractResponse>,
+            tonic::Status,
+        > {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/cosmwasm.wasm.v1.Msg/StoreAndMigrateContract",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "cosmwasm.wasm.v1.Msg",
+                "StoreAndMigrateContract",
             ));
             self.inner.unary(req, path, codec).await
         }
