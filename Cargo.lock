@@ -828,7 +828,7 @@ dependencies = [
  "futures",
  "hex",
  "hubble",
- "prost 0.12.1",
+ "prost",
  "protos",
  "reqwest",
  "serde",
@@ -1052,7 +1052,7 @@ dependencies = [
  "cosmwasm-std",
  "hex",
  "ics008-wasm-client",
- "prost 0.11.9",
+ "prost",
  "protos",
  "schemars",
  "serde",
@@ -1824,7 +1824,7 @@ dependencies = [
  "hex-literal",
  "ibc",
  "ics008-wasm-client",
- "prost 0.11.9",
+ "prost",
  "protos",
  "rlp",
  "schemars",
@@ -3023,7 +3023,7 @@ dependencies = [
  "ics23",
  "num-traits",
  "primitive-types",
- "prost 0.11.9",
+ "prost",
  "safe-regex",
  "serde",
  "serde_derive",
@@ -3049,7 +3049,7 @@ dependencies = [
  "bytes",
  "flex-error",
  "parity-scale-codec",
- "prost 0.11.9",
+ "prost",
  "scale-info",
  "serde",
  "subtle-encoding",
@@ -3062,7 +3062,7 @@ version = "0.1.0"
 dependencies = [
  "cosmwasm-std",
  "ibc",
- "prost 0.11.9",
+ "prost",
  "protos",
  "serde",
  "serde_json",
@@ -3078,7 +3078,7 @@ dependencies = [
  "anyhow",
  "bytes",
  "hex",
- "prost 0.11.9",
+ "prost",
  "ripemd",
  "sha2 0.10.8",
  "sha3",
@@ -4212,17 +4212,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0b82eaa1d779e9a4bc1c3217db8ffbeabaae1dca241bf70183242128d48681cd"
 dependencies = [
  "bytes",
- "prost-derive 0.11.9",
-]
-
-[[package]]
-name = "prost"
-version = "0.12.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f4fdd22f3b9c31b53c060df4a0613a1c7f062d4115a2b984dd15b1858f7e340d"
-dependencies = [
- "bytes",
- "prost-derive 0.12.1",
+ "prost-derive",
 ]
 
 [[package]]
@@ -4239,25 +4229,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "prost-derive"
-version = "0.12.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "265baba7fabd416cf5078179f7d2cbeca4ce7a9041111900675ea7c4cb8a4c32"
-dependencies = [
- "anyhow",
- "itertools 0.11.0",
- "proc-macro2",
- "quote",
- "syn 2.0.38",
-]
-
-[[package]]
 name = "prost-types"
 version = "0.11.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "213622a1460818959ac1181aaeb2dc9c7f63df720db7d788b3e24eacd1983e13"
 dependencies = [
- "prost 0.11.9",
+ "prost",
 ]
 
 [[package]]
@@ -4271,7 +4248,7 @@ name = "protos"
 version = "0.1.0"
 dependencies = [
  "ethers",
- "prost 0.11.9",
+ "prost",
  "schemars",
  "serde",
  "serde-utils",
@@ -5619,7 +5596,7 @@ dependencies = [
  "futures",
  "num-traits",
  "once_cell",
- "prost 0.11.9",
+ "prost",
  "prost-types",
  "serde",
  "serde_bytes",
@@ -5647,7 +5624,7 @@ dependencies = [
  "futures",
  "num-traits",
  "once_cell",
- "prost 0.11.9",
+ "prost",
  "prost-types",
  "serde",
  "serde_bytes",
@@ -5698,7 +5675,7 @@ dependencies = [
  "flex-error",
  "num-derive",
  "num-traits",
- "prost 0.11.9",
+ "prost",
  "prost-types",
  "serde",
  "serde_bytes",
@@ -5715,7 +5692,7 @@ dependencies = [
  "flex-error",
  "num-derive",
  "num-traits",
- "prost 0.11.9",
+ "prost",
  "prost-types",
  "serde",
  "serde_bytes",
@@ -6069,8 +6046,8 @@ dependencies = [
  "hyper-timeout",
  "percent-encoding",
  "pin-project",
- "prost 0.11.9",
- "prost-derive 0.11.9",
+ "prost",
+ "prost-derive",
  "rustls-native-certs 0.6.3",
  "rustls-pemfile",
  "tokio",
@@ -6463,7 +6440,7 @@ dependencies = [
  "milagro_bls",
  "paste",
  "primitive-types",
- "prost 0.11.9",
+ "prost",
  "protos",
  "rand",
  "ripemd",
@@ -6613,7 +6590,7 @@ dependencies = [
  "hubble",
  "num-bigint",
  "pin-utils",
- "prost 0.12.1",
+ "prost",
  "protos",
  "reqwest",
  "ripemd",

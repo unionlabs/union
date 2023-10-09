@@ -22,7 +22,7 @@ tracing = "0.1.37"
 tokio = { version = "1.32.0", default-features = false }
 typenum = { version = "1.16.0", default-features = false, features = ["const-generics", "no_std"] }
 # TODO: Use a version here
-prost = "*"
+prost = "0.11.0"
 sha2 = "0.10.6"
 chrono = { version = "0.4.26", default-features = false, features = ["alloc"] }
 hubble.workspace = true
