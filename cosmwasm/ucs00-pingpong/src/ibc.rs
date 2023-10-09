@@ -1,9 +1,7 @@
-use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
-    attr, entry_point, from_binary, to_binary, Binary, DepsMut, Env, IbcBasicResponse, IbcChannel,
-    IbcChannelCloseMsg, IbcChannelConnectMsg, IbcChannelOpenMsg, IbcOrder, IbcPacket,
-    IbcPacketAckMsg, IbcPacketReceiveMsg, IbcPacketTimeoutMsg, IbcReceiveResponse, Reply, Response,
-    StdError,
+    attr, entry_point, Binary, DepsMut, Env, IbcBasicResponse, IbcChannel, IbcChannelCloseMsg,
+    IbcChannelConnectMsg, IbcChannelOpenMsg, IbcOrder, IbcPacket, IbcPacketAckMsg,
+    IbcPacketReceiveMsg, IbcPacketTimeoutMsg, IbcReceiveResponse, Reply, Response, StdError,
 };
 
 use crate::{msg::UCS00PingPong, state::CONFIG, ContractError};
@@ -11,20 +9,12 @@ use crate::{msg::UCS00PingPong, state::CONFIG, ContractError};
 pub const PINGPONG_VERSION: &str = "ucs00-pingpong-1";
 pub const PINGPONG_ORDERING: IbcOrder = IbcOrder::Unordered;
 
-#[cw_serde]
-pub enum Ack {
-    Result(Binary),
-    Error(String),
-}
-
 fn ack_success() -> Binary {
-    let res = Ack::Result(b"1".into());
-    to_binary(&res).unwrap()
+    [1].into()
 }
 
-fn ack_fail(err: String) -> Binary {
-    let res = Ack::Error(err);
-    to_binary(&res).unwrap()
+fn ack_fail() -> Binary {
+    [0].into()
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -93,7 +83,7 @@ pub fn ibc_packet_receive(
     let ping_packet: UCS00PingPong = packet.data.try_into()?;
     do_ibc_packet_receive(deps, env, packet.dest.channel_id, ping_packet).or_else(|err| {
         Ok(IbcReceiveResponse::new()
-            .set_ack(ack_fail(err.to_string()))
+            .set_ack(ack_fail())
             .add_attributes(vec![
                 attr("success", "false"),
                 attr("error", err.to_string()),
@@ -119,15 +109,12 @@ fn do_ibc_packet_receive(
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn ibc_packet_ack(
-    deps: DepsMut,
+    _deps: DepsMut,
     _env: Env,
-    msg: IbcPacketAckMsg,
+    _msg: IbcPacketAckMsg,
 ) -> Result<IbcBasicResponse, ContractError> {
-    let ack: Ack = from_binary(&msg.acknowledgement.data)?;
-    match ack {
-        Ack::Result(_) => on_packet_success(deps, msg.original_packet),
-        Ack::Error(err) => on_packet_failure(deps, msg.original_packet, err),
-    }
+    let attributes = vec![attr("action", "acknowledge")];
+    Ok(IbcBasicResponse::new().add_attributes(attributes))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -137,14 +124,6 @@ pub fn ibc_packet_timeout(
     msg: IbcPacketTimeoutMsg,
 ) -> Result<IbcBasicResponse, ContractError> {
     on_packet_failure(deps, msg.packet, "timeout".to_string())
-}
-
-fn on_packet_success(
-    _deps: DepsMut,
-    _packet: IbcPacket,
-) -> Result<IbcBasicResponse, ContractError> {
-    let attributes = vec![attr("action", "acknowledge"), attr("success", "true")];
-    Ok(IbcBasicResponse::new().add_attributes(attributes))
 }
 
 fn on_packet_failure(

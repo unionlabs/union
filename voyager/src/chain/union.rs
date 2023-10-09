@@ -30,7 +30,10 @@ use unionlabs::{
     ethereum::{Address, H256, H512},
     ethereum_consts_traits::{ChainSpec, Mainnet, Minimal},
     ibc::{
-        core::client::{height::Height, msg_update_client::MsgUpdateClient},
+        core::client::{
+            height::{Height, IsHeight},
+            msg_update_client::MsgUpdateClient,
+        },
         google::protobuf::{any::Any, timestamp::Timestamp},
         lightclients::{cometbls, ethereum, wasm},
     },
@@ -53,8 +56,8 @@ use crate::{
     chain::{
         evm::{CometblsMainnet, CometblsMinimal},
         proof::{
-            ChannelEndPath, ClientConsensusStatePath, ClientStatePath, CommitmentPath,
-            ConnectionPath, IbcPath, StateProof,
+            AcknowledgementPath, ChannelEndPath, ClientConsensusStatePath, ClientStatePath,
+            CommitmentPath, ConnectionPath, IbcPath, StateProof,
         },
         try_from_relayer_msg, Chain, ChainOf, ClientStateOf, ConsensusStateOf, HeaderOf, HeightOf,
         IbcStateRead, LightClient, QueryHeight,
@@ -65,8 +68,8 @@ use crate::{
         fetch::{Fetch, FetchTrustedClientState, FetchUpdateHeaders, LightClientSpecificFetch},
         identified,
         msg::{Msg, MsgUpdateClientData},
-        AggregateData, AggregateReceiver, AnyChainMsg, AnyLcMsg, ChainMsg, ChainMsgType,
-        DoAggregate, Identified, LcMsg, RelayerMsg,
+        wait::{Wait, WaitForBlock},
+        AggregateData, AggregateReceiver, AnyLcMsg, DoAggregate, Identified, LcMsg, RelayerMsg,
     },
     queue::aggregate_data::{do_aggregate, UseAggregate},
 };
@@ -74,13 +77,11 @@ use crate::{
 /// The 08-wasm light client tracking ethereum, running on the union chain.
 pub struct EthereumMinimal {
     chain: <Self as LightClient>::HostChain,
-    // dumper: Dumper,
 }
 
 /// The 08-wasm light client tracking ethereum, running on the union chain.
 pub struct EthereumMainnet {
     chain: <Self as LightClient>::HostChain,
-    // dumper: Dumper,
 }
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, Args)]
@@ -111,10 +112,7 @@ impl LightClient for EthereumMinimal {
     }
 
     fn from_chain(chain: Self::HostChain) -> Self {
-        Self {
-            // dumper: Dumper::new(chain.dump_path.clone()),
-            chain,
-        }
+        Self { chain }
     }
 
     fn query_client_state(
@@ -372,10 +370,10 @@ where
 {
     [RelayerMsg::Sequence(
         [
-            RelayerMsg::Chain(AnyChainMsg::from(ChainMsg::<ChainOf<L>> {
-                chain_id: union.chain_id.clone(),
-                msg: ChainMsgType::WaitForBlock(update_info.update_to.increment()),
-            })),
+            RelayerMsg::Lc(AnyLcMsg::from(LcMsg::<L>::Wait(Identified {
+                chain_id: union.chain_id(),
+                data: Wait::Block(WaitForBlock(update_info.update_to.increment())),
+            }))),
             RelayerMsg::Aggregate {
                 queue: [
                     RelayerMsg::Lc(AnyLcMsg::from(LcMsg::<L>::Fetch(Identified {
@@ -762,7 +760,7 @@ where
     // pub update_to: HeightOf<ChainOf<L>>,
 }
 
-async fn msg<L>(union: Union, msg: Msg<L>)
+async fn msg<L, C: ChainSpec>(union: Union, msg: Msg<L>)
 where
     L: LightClient<HostChain = Union, Config = EthereumConfig>,
     <L::Counterparty as LightClient>::HostChain: Chain<
@@ -770,9 +768,10 @@ where
         SelfConsensusState = Any<
             wasm::consensus_state::ConsensusState<ethereum::consensus_state::ConsensusState>,
         >,
+        Header = wasm::header::Header<ethereum::header::Header<C>>,
     >,
-    HeaderOf<<L::Counterparty as LightClient>::HostChain>: IntoProto,
-    <HeaderOf<<L::Counterparty as LightClient>::HostChain> as Proto>::Proto: TypeUrl,
+    // HeaderOf<<L::Counterparty as LightClient>::HostChain>: IntoProto,
+    // <HeaderOf<<L::Counterparty as LightClient>::HostChain> as Proto>::Proto: TypeUrl,
 {
     let msg_any = match msg {
         Msg::ConnectionOpenInit(data) => Any(data.msg).into_proto_with_signer(&union.signer),
@@ -784,13 +783,36 @@ where
         Msg::ChannelOpenAck(data) => Any(data.msg).into_proto_with_signer(&union.signer),
         Msg::ChannelOpenConfirm(data) => Any(data.msg).into_proto_with_signer(&union.signer),
         Msg::RecvPacket(data) => Any(data.msg).into_proto_with_signer(&union.signer),
+        Msg::AckPacket(data) => Any(data.msg).into_proto_with_signer(&union.signer),
         Msg::CreateClient(mut data) => {
             // i hate this lol
             data.msg.client_state.0.code_id = data.config.code_id;
 
             Any(data.msg).into_proto_with_signer(&union.signer)
         }
-        Msg::UpdateClient(data) => Any(data.msg).into_proto_with_signer(&union.signer),
+        Msg::UpdateClient(data) => {
+            // check if update has already been done
+            // let existing_consensus_height = L::from_chain(union.clone())
+            //     .query_client_state(
+            //         data.msg.client_id.clone().into(),
+            //         union.query_latest_height().await,
+            //     )
+            //     .await
+            //     .0
+            //     .latest_height;
+
+            // let update_height = data.update_from;
+            // if dbg!(existing_consensus_height) >= dbg!(update_height.into_height()) {
+            //     tracing::warn!(
+            //         "consensus state has already been updated to or past {update_height}, found {existing_consensus_height}"
+            //     );
+
+            //     // don't do the update, already has been done
+            //     return;
+            // }
+
+            Any(data.msg).into_proto_with_signer(&union.signer)
+        }
     };
 
     let _response = union.broadcast_tx_commit([msg_any]).await;
@@ -885,6 +907,15 @@ where
 }
 
 impl<Counterparty> AbciStateRead<Counterparty> for CommitmentPath
+where
+    Counterparty: Chain,
+{
+    fn from_abci_bytes(bytes: Vec<u8>) -> Self::Output {
+        bytes.try_into().unwrap()
+    }
+}
+
+impl<Counterparty> AbciStateRead<Counterparty> for AcknowledgementPath
 where
     Counterparty: Chain,
 {
@@ -1206,6 +1237,7 @@ where
                                 zero_knowledge_proof: response.proof.unwrap().evm_proof,
                             },
                         },
+                        update_from: req.update_from,
                     }),
                 }))),
                 // RelayerMsg::Lc(AnyLcMsg::from(LcMsg::<L::Counterparty>::Fetch(

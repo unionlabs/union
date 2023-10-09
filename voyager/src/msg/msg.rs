@@ -4,9 +4,9 @@ use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use serde::{Deserialize, Serialize};
 use unionlabs::ibc::core::{
     channel::{
-        msg_channel_open_ack::MsgChannelOpenAck, msg_channel_open_confirm::MsgChannelOpenConfirm,
-        msg_channel_open_init::MsgChannelOpenInit, msg_channel_open_try::MsgChannelOpenTry,
-        msg_recv_packet::MsgRecvPacket,
+        msg_acknowledgement::MsgAcknowledgement, msg_channel_open_ack::MsgChannelOpenAck,
+        msg_channel_open_confirm::MsgChannelOpenConfirm, msg_channel_open_init::MsgChannelOpenInit,
+        msg_channel_open_try::MsgChannelOpenTry, msg_recv_packet::MsgRecvPacket,
     },
     client::{msg_create_client::MsgCreateClient, msg_update_client::MsgUpdateClient},
     connection::{
@@ -30,11 +30,15 @@ any_enum! {
         ConnectionOpenTry(MsgConnectionOpenTryData<L>),
         ConnectionOpenAck(MsgConnectionOpenAckData<L>),
         ConnectionOpenConfirm(MsgConnectionOpenConfirmData<L>),
+
         ChannelOpenInit(MsgChannelOpenInitData<L>),
         ChannelOpenTry(MsgChannelOpenTryData<L>),
         ChannelOpenAck(MsgChannelOpenAckData<L>),
         ChannelOpenConfirm(MsgChannelOpenConfirmData<L>),
+
         RecvPacket(MsgRecvPacketData<L>),
+        AckPacket(MsgAckPacketData<L>),
+
         CreateClient(MsgCreateClientData<L>),
         UpdateClient(MsgUpdateClientData<L>),
     }
@@ -112,11 +116,19 @@ pub struct MsgRecvPacketData<L: LightClient> {
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""))]
+pub struct MsgAckPacketData<L: LightClient> {
+    pub msg: MsgAcknowledgement,
+    #[serde(skip)]
+    pub __marker: PhantomData<L>,
+}
+
+#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
+#[serde(bound(serialize = "", deserialize = ""))]
 pub struct MsgCreateClientData<L: LightClient> {
     pub config: L::Config,
     pub msg: MsgCreateClient<
-        ClientStateOf<<L::Counterparty as LightClient>::HostChain>,
-        ConsensusStateOf<<L::Counterparty as LightClient>::HostChain>,
+        ClientStateOf<ChainOf<L::Counterparty>>,
+        ConsensusStateOf<ChainOf<L::Counterparty>>,
     >,
 }
 
@@ -124,4 +136,5 @@ pub struct MsgCreateClientData<L: LightClient> {
 #[serde(bound(serialize = "", deserialize = ""))]
 pub struct MsgUpdateClientData<L: LightClient> {
     pub msg: MsgUpdateClient<L::ClientId, HeaderOf<<L::Counterparty as LightClient>::HostChain>>,
+    pub update_from: HeightOf<ChainOf<L::Counterparty>>,
 }

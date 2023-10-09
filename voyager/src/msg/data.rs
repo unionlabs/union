@@ -8,12 +8,12 @@ use unionlabs::{self, ibc::core::channel::channel::Channel};
 use crate::{
     chain::{
         proof::{
-            ChannelEndPath, ClientConsensusStatePath, ClientStatePath, CommitmentPath,
-            ConnectionPath,
+            AcknowledgementPath, ChannelEndPath, ClientConsensusStatePath, ClientStatePath,
+            CommitmentPath, ConnectionPath,
         },
         ChainOf, ClientStateOf, ConsensusStateOf, HeaderOf, HeightOf, LightClient,
     },
-    msg::{any_enum, identified, StateProofOf},
+    msg::{any_enum, fetch::FetchPacketAcknowledgement, identified, StateProofOf},
 };
 
 any_enum! {
@@ -25,6 +25,7 @@ any_enum! {
 
         ChannelEnd(ChannelEnd<L>),
         ConnectionEnd(ConnectionEnd<L>),
+        PacketAcknowledgement(PacketAcknowledgement<L>),
 
         TrustedClientState(TrustedClientState<L>),
         ClientStateProof(ClientStateProof<L>),
@@ -32,6 +33,8 @@ any_enum! {
         ConnectionProof(ConnectionProof<L>),
         ChannelEndProof(ChannelEndProof<L>),
         CommitmentProof(CommitmentProof<L>),
+        AcknowledgementProof(AcknowledgementProof<L>),
+
         LightClientSpecific(LightClientSpecificData<L>),
     }
 }
@@ -80,6 +83,10 @@ pub struct CommitmentProof<L: LightClient>(pub StateProofOf<CommitmentPath, L>);
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""))]
+pub struct AcknowledgementProof<L: LightClient>(pub StateProofOf<AcknowledgementPath, L>);
+
+#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
+#[serde(bound(serialize = "", deserialize = ""))]
 pub struct ChannelEnd<L: LightClient> {
     pub channel: Channel,
     #[serde(skip)]
@@ -96,6 +103,13 @@ pub struct ConnectionEnd<L: LightClient>(
         String,
     >,
 );
+
+#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
+#[serde(bound(serialize = "", deserialize = ""))]
+pub struct PacketAcknowledgement<L: LightClient> {
+    pub fetched_by: FetchPacketAcknowledgement<L>,
+    pub ack: Vec<u8>,
+}
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""))]
@@ -134,6 +148,7 @@ data_msg! {
 
     ChannelEnd,
     ConnectionEnd,
+    PacketAcknowledgement,
 
     TrustedClientState,
 
@@ -142,6 +157,7 @@ data_msg! {
     ConnectionProof,
     ChannelEndProof,
     CommitmentProof,
+    AcknowledgementProof,
 
     LightClientSpecificData,
 }

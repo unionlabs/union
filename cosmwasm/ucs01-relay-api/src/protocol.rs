@@ -117,7 +117,6 @@ pub trait TransferProtocol {
         let send_msgs = self.send_tokens(packet.sender(), packet.receiver(), packet.tokens())?;
 
         let memo = Into::<String>::into(extension);
-
         let transfer_event = if memo.is_empty() {
             Event::new(TRANSFER_EVENT)
         } else {
@@ -162,14 +161,21 @@ pub trait TransferProtocol {
                 attr("error", error.to_string()),
             ),
         };
+
+        let memo = Into::<String>::into(packet.extension().clone());
+        let packet_event = if memo.is_empty() {
+            Event::new(PACKET_EVENT)
+        } else {
+            Event::new(PACKET_EVENT).add_attribute("memo", &memo)
+        };
+
         Ok(IbcBasicResponse::new()
             .add_event(
-                Event::new(PACKET_EVENT)
+                packet_event
                     .add_attributes([
                         ("module", MODULE_NAME),
                         ("sender", packet.sender()),
                         ("receiver", packet.receiver()),
-                        ("memo", packet.extension().clone().into().as_str()),
                         ("acknowledgement", &raw_ack.into().to_string()),
                     ])
                     .add_attributes(packet.tokens().into_iter().map(
@@ -188,13 +194,20 @@ pub trait TransferProtocol {
         // same branch as failure ack
         let refund_msgs =
             self.send_tokens_failure(packet.sender(), packet.receiver(), packet.tokens())?;
+
+        let memo = Into::<String>::into(packet.extension().clone());
+        let timeout_event = if memo.is_empty() {
+            Event::new(PACKET_EVENT)
+        } else {
+            Event::new(PACKET_EVENT).add_attribute("memo", &memo)
+        };
+
         Ok(IbcBasicResponse::new()
             .add_event(
-                Event::new(TIMEOUT_EVENT)
+                timeout_event
                     .add_attributes([
                         ("module", MODULE_NAME),
                         ("refund_receiver", packet.sender()),
-                        ("memo", packet.extension().clone().into().as_str()),
                     ])
                     .add_attributes(packet.tokens().into_iter().map(
                         |TransferToken { denom, amount }| (format!("denom:{}", denom), amount),
@@ -226,15 +239,21 @@ pub trait TransferProtocol {
                 .into_iter()
                 .map(|msg| SubMsg::reply_on_error(msg, Self::RECEIVE_REPLY_ID));
 
+            let memo = Into::<String>::into(packet.extension().clone());
+            let packet_event = if memo.is_empty() {
+                Event::new(PACKET_EVENT)
+            } else {
+                Event::new(PACKET_EVENT).add_attribute("memo", &memo)
+            };
+
             Ok(IbcReceiveResponse::new()
                 .set_ack(Self::ack_success().try_into()?)
                 .add_event(
-                    Event::new(PACKET_EVENT)
+                    packet_event
                         .add_attributes([
                             ("module", MODULE_NAME),
                             ("sender", packet.sender()),
                             ("receiver", packet.receiver()),
-                            ("memo", packet.extension().clone().into().as_str()),
                             ("success", "true"),
                         ])
                         .add_attributes(packet.tokens().into_iter().map(

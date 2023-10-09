@@ -5,6 +5,7 @@ use displaydoc::Display;
 use futures::Future;
 use serde::{Deserialize, Serialize};
 use unionlabs::{
+    ethereum::H256,
     ibc::core::{
         channel::channel::Channel,
         client::height::{Height, IsHeight},
@@ -185,7 +186,19 @@ pub struct CommitmentPath {
 }
 
 impl<This: Chain, Counterparty: Chain> IbcPath<This, Counterparty> for CommitmentPath {
-    type Output = [u8; 32];
+    type Output = H256;
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Display, clap::Args)]
+#[displaydoc("acks/ports/{port_id}/channels/{channel_id}/sequences/{sequence}")]
+pub struct AcknowledgementPath {
+    pub port_id: PortId,
+    pub channel_id: ChannelId,
+    pub sequence: u64,
+}
+
+impl<This: Chain, Counterparty: Chain> IbcPath<This, Counterparty> for AcknowledgementPath {
+    type Output = H256;
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -199,6 +212,7 @@ pub enum Path<ClientId: traits::Id, Height: IsHeight> {
     ConnectionPath(ConnectionPath),
     ChannelEndPath(ChannelEndPath),
     CommitmentPath(CommitmentPath),
+    AcknowledgementPath(AcknowledgementPath),
 }
 
 pub trait IbcStateReadPaths<Counterparty: Chain>:
@@ -210,6 +224,7 @@ pub trait IbcStateReadPaths<Counterparty: Chain>:
     > + IbcStateRead<Counterparty, ConnectionPath>
     + IbcStateRead<Counterparty, ChannelEndPath>
     + IbcStateRead<Counterparty, CommitmentPath>
+    + IbcStateRead<Counterparty, AcknowledgementPath>
 {
 }
 
@@ -219,5 +234,6 @@ impl<Counterparty: Chain, T: Chain> IbcStateReadPaths<Counterparty> for T where
         + IbcStateRead<Counterparty, ConnectionPath>
         + IbcStateRead<Counterparty, ChannelEndPath>
         + IbcStateRead<Counterparty, CommitmentPath>
+        + IbcStateRead<Counterparty, AcknowledgementPath>
 {
 }

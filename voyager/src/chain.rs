@@ -14,7 +14,7 @@ use unionlabs::{
 
 use crate::{
     chain::proof::{IbcStateRead, IbcStateReadPaths, StateProof},
-    config::{ChainConfig, EvmChainConfig},
+    config::{self, ChainConfig, EvmChainConfig},
     msg::{
         aggregate::LightClientSpecificAggregate,
         data::LightClientSpecificData,
@@ -27,7 +27,6 @@ use crate::{
 pub mod evm;
 pub mod union;
 
-pub mod dumper;
 pub mod proof;
 
 pub enum AnyChain {
@@ -37,7 +36,10 @@ pub enum AnyChain {
 }
 
 impl AnyChain {
-    pub async fn try_from_config(config: ChainConfig) -> Self {
+    pub async fn try_from_config(
+        voyager_config: &config::VoyagerConfig,
+        config: ChainConfig,
+    ) -> Self {
         match config {
             ChainConfig::Evm(EvmChainConfig::Mainnet(evm)) => Self::EvmMainnet(
                 Evm::<Mainnet>::new(chain_utils::evm::Config {
@@ -45,7 +47,7 @@ impl AnyChain {
                     signer: evm.signer,
                     eth_rpc_api: evm.eth_rpc_api,
                     eth_beacon_rpc_api: evm.eth_beacon_rpc_api,
-                    hasura_config: evm.hasura_config,
+                    hasura_config: voyager_config.hasura.clone(),
                 })
                 .await,
             ),
@@ -55,7 +57,7 @@ impl AnyChain {
                     signer: evm.signer,
                     eth_rpc_api: evm.eth_rpc_api,
                     eth_beacon_rpc_api: evm.eth_beacon_rpc_api,
-                    hasura_config: evm.hasura_config,
+                    hasura_config: voyager_config.hasura.clone(),
                 })
                 .await,
             ),
@@ -64,8 +66,8 @@ impl AnyChain {
                     signer: union.signer,
                     ws_url: union.ws_url,
                     prover_endpoint: union.prover_endpoint,
-                    dump_path: union.dump_path,
                     grpc_url: union.grpc_url,
+                    fee_denom: union.fee_denom,
                 })
                 .await,
             ),

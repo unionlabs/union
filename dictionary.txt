@@ -534,6 +534,7 @@ stakingtypes
 stargate
 starport
 statemachine
+stateproof
 statesync
 staticcheck
 staticlib

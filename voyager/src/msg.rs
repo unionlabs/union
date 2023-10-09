@@ -2,13 +2,9 @@
 
 use std::{collections::VecDeque, fmt::Debug};
 
-use chain_utils::{evm::Evm, union::Union, Chain, ClientState};
+use chain_utils::{Chain, ClientState};
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use serde::{Deserialize, Serialize};
-use unionlabs::{
-    self,
-    ethereum_consts_traits::{Mainnet, Minimal},
-};
 
 use crate::{
     chain::{
@@ -23,6 +19,7 @@ use crate::{
         event::AnyEvent,
         fetch::AnyFetch,
         msg::AnyMsg,
+        wait::AnyWait,
     },
 };
 
@@ -31,6 +28,7 @@ pub mod event;
 pub mod fetch;
 #[allow(clippy::module_inception)] // fight me clippy
 pub mod msg;
+pub mod wait;
 
 pub type ChainIdOf<L> =
     <<<L as LightClient>::HostChain as Chain>::SelfClientState as ClientState>::ChainId;
@@ -54,9 +52,12 @@ pub trait TryFromRelayerMsg: Sized {
 #[allow(clippy::large_enum_variant)]
 pub enum RelayerMsg {
     Lc(AnyLcMsg),
-    Chain(AnyChainMsg),
     DeferUntil {
         timestamp: u64,
+    },
+    Timeout {
+        timeout_timestamp: u64,
+        msg: Box<RelayerMsg>,
     },
     Sequence(VecDeque<RelayerMsg>),
     Retry(u8, Box<RelayerMsg>),
@@ -265,15 +266,18 @@ pub(crate) use any_enum;
 pub mod aggregate {
     use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
     use serde::{Deserialize, Serialize};
-    use unionlabs::events::{
-        ChannelOpenAck, ChannelOpenInit, ChannelOpenTry, ConnectionOpenAck, ConnectionOpenInit,
-        ConnectionOpenTry, SendPacket,
+    use unionlabs::{
+        ethereum::H256,
+        events::{
+            ChannelOpenAck, ChannelOpenInit, ChannelOpenTry, ConnectionOpenAck, ConnectionOpenInit,
+            ConnectionOpenTry, RecvPacket, SendPacket,
+        },
     };
 
     use super::ChainIdOf;
     use crate::{
-        chain::{ChainOf, HeightOf, LightClient},
-        msg::identified,
+        chain::{proof::AcknowledgementPath, ChainOf, HeightOf, LightClient},
+        msg::{fetch::FetchStateProof, identified},
     };
 
     any_enum! {
@@ -289,6 +293,7 @@ pub mod aggregate {
             ChannelOpenConfirm(AggregateChannelOpenConfirm<L>),
 
             RecvPacket(AggregateRecvPacket<L>),
+            AckPacket(AggregateAckPacket<L>),
 
             ConnectionFetchFromChannelEnd(AggregateConnectionFetchFromChannelEnd<L>),
 
@@ -296,6 +301,12 @@ pub mod aggregate {
             ChannelHandshakeUpdateClient(AggregateChannelHandshakeUpdateClient<L>),
 
             PacketUpdateClient(AggregatePacketUpdateClient<L>),
+
+            WaitForTrustedHeight(AggregateWaitForTrustedHeight<L>),
+
+            FetchCounterpartyStateproof(AggregateFetchCounterpartyStateProof<L>),
+
+            UpdateClientFromClientId(AggregateUpdateClientFromClientId<L>),
 
             UpdateClient(AggregateUpdateClient<L>),
             UpdateClientWithCounterpartyChainIdData(AggregateUpdateClientWithCounterpartyChainId<L>),
@@ -361,6 +372,16 @@ pub mod aggregate {
 
     #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
     #[serde(bound(serialize = "", deserialize = ""))]
+    pub struct AggregateAckPacket<L: LightClient> {
+        pub event_height: HeightOf<L::HostChain>,
+        pub event: RecvPacket,
+        // HACK: Need to pass the block hash through, figure out a better/cleaner way to do this
+        pub block_hash: H256,
+        pub counterparty_client_id: <L::Counterparty as LightClient>::ClientId,
+    }
+
+    #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
+    #[serde(bound(serialize = "", deserialize = ""))]
     pub struct AggregateConnectionFetchFromChannelEnd<L: LightClient> {
         pub at: HeightOf<ChainOf<L>>,
     }
@@ -388,6 +409,7 @@ pub mod aggregate {
         // Will be threaded through to the update msg
         pub update_to: HeightOf<L::HostChain>,
         pub event_height: HeightOf<L::HostChain>,
+        pub block_hash: H256,
         pub packet_event: PacketEvent,
     }
 
@@ -395,12 +417,35 @@ pub mod aggregate {
     #[serde(bound(serialize = "", deserialize = ""))]
     pub enum PacketEvent {
         Send(SendPacket),
+        Recv(RecvPacket),
+    }
+
+    #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
+    #[serde(bound(serialize = "", deserialize = ""))]
+    pub struct AggregateFetchCounterpartyStateProof<L: LightClient> {
+        pub counterparty_client_id: <L::Counterparty as LightClient>::ClientId,
+        pub fetch: FetchStateProof<L::Counterparty>,
+    }
+
+    #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
+    #[serde(bound(serialize = "", deserialize = ""))]
+    pub struct AggregateUpdateClientFromClientId<L: LightClient> {
+        pub client_id: L::ClientId,
+        pub counterparty_client_id: <L::Counterparty as LightClient>::ClientId,
     }
 
     #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
     #[serde(bound(serialize = "", deserialize = ""))]
     pub struct AggregateUpdateClient<L: LightClient> {
         pub update_to: HeightOf<L::HostChain>,
+        pub client_id: L::ClientId,
+        pub counterparty_client_id: <L::Counterparty as LightClient>::ClientId,
+    }
+
+    #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
+    #[serde(bound(serialize = "", deserialize = ""))]
+    pub struct AggregateWaitForTrustedHeight<L: LightClient> {
+        pub wait_for: HeightOf<L::HostChain>,
         pub client_id: L::ClientId,
         pub counterparty_client_id: <L::Counterparty as LightClient>::ClientId,
     }
@@ -453,6 +498,7 @@ pub mod aggregate {
         ChannelOpenConfirm(AggregateChannelOpenConfirm<L>),
 
         RecvPacket(AggregateRecvPacket<L>),
+        AckPacket(AggregateAckPacket<L>),
     }
 }
 
@@ -471,34 +517,6 @@ where
             Err(data) => Err(Identified { chain_id, data }.into()),
         }
     }
-}
-
-// ================================================================================================
-// Chain
-// ================================================================================================
-
-enum_variants_conversions! {
-    #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-    pub enum AnyChainMsg {
-        EvmMinimal(ChainMsg<Evm<Minimal>>),
-        EvmMainnet(ChainMsg<Evm<Mainnet>>),
-        Union(ChainMsg<Union>),
-    }
-}
-
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
-pub struct ChainMsg<C: Chain> {
-    pub chain_id: <C::SelfClientState as ClientState>::ChainId,
-    pub msg: ChainMsgType<C>,
-}
-
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
-pub enum ChainMsgType<C: Chain> {
-    /// Signal that the chain should wait until the specified block. Likely used within a [`Relayer::Sequence`].
-    WaitForBlock(C::Height),
-    WaitForTimestamp(i64),
 }
 
 pub trait AnyLightClient {
@@ -588,7 +606,7 @@ mod tests {
             msg::{
                 Msg, MsgChannelOpenInitData, MsgConnectionOpenInitData, MsgConnectionOpenTryData,
             },
-            AggregateReceiver, AnyChainMsg, AnyLcMsg, AnyMsg, ChainMsgType, Identified, RelayerMsg,
+            AggregateReceiver, AnyLcMsg, AnyMsg, Identified, RelayerMsg,
         },
         DELAY_PERIOD,
     };
@@ -698,7 +716,7 @@ mod tests {
         print_json(RelayerMsg::Lc(AnyLcMsg::CometblsMinimal(LcMsg::Event(
             Identified {
                 chain_id: eth_chain_id,
-                data: crate::msg::event::Event {
+                data: crate::msg::event::Event::Ibc(crate::msg::event::IbcEvent {
                     block_hash: H256([0; 32]),
                     height: parse!("0-2941"),
                     event: IbcEvent::ConnectionOpenTry(ConnectionOpenTry {
@@ -707,9 +725,24 @@ mod tests {
                         counterparty_client_id: parse!("08-wasm-1"),
                         counterparty_connection_id: parse!("connection-14"),
                     }),
-                },
+                }),
             },
         ))));
+
+        print_json(RelayerMsg::Timeout {
+            timeout_timestamp: 1,
+            msg: Box::new(RelayerMsg::Lc(AnyLcMsg::CometblsMinimal(LcMsg::Event(
+                Identified {
+                    chain_id: eth_chain_id,
+                    data: crate::msg::event::Event::Command(
+                        crate::msg::event::Command::UpdateClient {
+                            client_id: parse!("cometbls-0"),
+                            counterparty_client_id: parse!("08-wasm-0"),
+                        },
+                    ),
+                },
+            )))),
+        });
 
         println!("\ncreate client msgs\n");
 
@@ -775,21 +808,21 @@ mod tests {
             .into(),
         ));
 
-        print_json(RelayerMsg::Lc(AnyLcMsg::EthereumMinimal(LcMsg::Event(
-            Identified {
-                chain_id: union_chain_id.clone(),
-                data: crate::msg::event::Event {
-                    block_hash: H256([0; 32]),
-                    height: parse!("1-1433"),
-                    event: IbcEvent::ConnectionOpenAck(ConnectionOpenAck {
-                        connection_id: parse!("connection-5"),
-                        client_id: parse!("08-wasm-0"),
-                        counterparty_client_id: parse!("cometbls-0"),
-                        counterparty_connection_id: parse!("connection-4"),
-                    }),
-                },
-            },
-        ))));
+        // print_json(RelayerMsg::Lc(AnyLcMsg::EthereumMinimal(LcMsg::Event(
+        //     Identified {
+        //         chain_id: union_chain_id.clone(),
+        //         data: crate::msg::event::Event {
+        //             block_hash: H256([0; 32]),
+        //             height: parse!("1-1433"),
+        //             event: IbcEvent::ConnectionOpenAck(ConnectionOpenAck {
+        //                 connection_id: parse!("connection-5"),
+        //                 client_id: parse!("08-wasm-0"),
+        //                 counterparty_client_id: parse!("cometbls-0"),
+        //                 counterparty_connection_id: parse!("connection-4"),
+        //             }),
+        //         },
+        //     },
+        // ))));
     }
 
     fn print_json<T: Serialize + DeserializeOwned + PartialEq + Debug>(msg: T) {
@@ -822,6 +855,7 @@ pub enum LcMsg<L: LightClient> {
     Fetch(InnerOf<AnyFetch, L>),
     // write
     Msg(InnerOf<AnyMsg, L>),
+    Wait(InnerOf<AnyWait, L>),
     // REVIEW: Does this make sense as a top-level message?
     Aggregate(InnerOf<AnyAggregate, L>),
 }
@@ -867,6 +901,8 @@ where
 
 #[test]
 fn t() {
+    use unionlabs::ethereum_consts_traits::{Mainnet, Minimal};
+
     use crate::chain::union::Validators;
 
     fn t<T: TryFrom<AggregateData> + Into<AggregateData>>() {}

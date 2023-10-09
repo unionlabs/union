@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct MerklePrefix {
+    #[serde(with = "::serde_utils::hex_string")]
     pub key_prefix: Vec<u8>,
 }
 

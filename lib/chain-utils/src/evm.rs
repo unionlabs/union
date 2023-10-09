@@ -5,8 +5,9 @@ use contracts::{
     ibc_handler::{
         GetChannelCall, GetChannelReturn, GetClientStateCall, GetClientStateReturn,
         GetConnectionCall, GetConnectionReturn, GetConsensusStateCall, GetConsensusStateReturn,
-        GetHashedPacketCommitmentCall, GetHashedPacketCommitmentReturn, IBCHandler,
-        IBCHandlerEvents, WriteAcknowledgementFilter,
+        GetHashedPacketAcknowledgementCommitmentCall,
+        GetHashedPacketAcknowledgementCommitmentReturn, GetHashedPacketCommitmentCall,
+        GetHashedPacketCommitmentReturn, IBCHandler, IBCHandlerEvents, WriteAcknowledgementFilter,
     },
     shared_types::{IbcCoreChannelV1ChannelData, IbcCoreConnectionV1ConnectionEndData},
 };
@@ -59,7 +60,7 @@ pub struct Evm<C: ChainSpec> {
     pub provider: Provider<Ws>,
     pub beacon_api_client: BeaconApiClient<C>,
 
-    pub hasura_client: HasuraDataStore,
+    pub hasura_client: Option<HasuraDataStore>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -75,7 +76,7 @@ pub struct Config {
     /// The RPC endpoint for the beacon chain.
     pub eth_beacon_rpc_api: String,
 
-    pub hasura_config: HasuraConfig,
+    pub hasura_config: Option<HasuraConfig>,
 }
 
 impl<C: ChainSpec> Chain for Evm<C> {
@@ -107,6 +108,21 @@ impl<C: ChainSpec> Chain for Evm<C> {
                 .data
                 .attested_header
                 .beacon
+                .slot;
+
+            self.make_height(height)
+        }
+    }
+
+    fn query_latest_height_as_destination(&self) -> impl Future<Output = Height> + '_ {
+        async move {
+            let height = self
+                .beacon_api_client
+                .block(beacon_api::client::BlockId::Head)
+                .await
+                .unwrap()
+                .data
+                .message
                 .slot;
 
             self.make_height(height)
@@ -228,8 +244,8 @@ impl<C: ChainSpec> Chain for Evm<C> {
     fn read_ack(
         &self,
         block_hash: H256,
-        channel_id: ChannelId,
-        port_id: String,
+        destination_channel_id: ChannelId,
+        destination_port_id: String,
         sequence: u64,
     ) -> impl Future<Output = Vec<u8>> + '_ {
         async move {
@@ -245,12 +261,12 @@ impl<C: ChainSpec> Chain for Evm<C> {
                 .map(|log| <WriteAcknowledgementFilter as EthLogDecode>::decode_log(&log.into()))
                 .find_map(|e| match e {
                     Ok(WriteAcknowledgementFilter {
-                        destination_port_id,
+                        destination_port_id: ack_dst_port_id,
                         destination_channel,
                         sequence: ack_sequence,
                         acknowledgement,
-                    }) if destination_port_id == port_id
-                        && destination_channel == channel_id.to_string()
+                    }) if ack_dst_port_id == destination_port_id
+                        && destination_channel == destination_channel_id.to_string()
                         && sequence == ack_sequence =>
                     {
                         Some(acknowledgement)
@@ -282,11 +298,13 @@ impl<C: ChainSpec> Evm<C> {
             provider,
             beacon_api_client: BeaconApiClient::new(config.eth_beacon_rpc_api).await,
             wallet,
-            hasura_client: HasuraDataStore::new(
-                reqwest::Client::new(),
-                config.hasura_config.url,
-                config.hasura_config.secret,
-            ),
+            hasura_client: config.hasura_config.map(|hasura_config| {
+                HasuraDataStore::new(
+                    reqwest::Client::new(),
+                    hasura_config.url,
+                    hasura_config.secret,
+                )
+            }),
         }
     }
 
@@ -800,15 +818,17 @@ impl<C: ChainSpec> EventSource for Evm<C> {
 
                     let next_epoch_ts = next_epoch_timestamp::<C>(current_slot, genesis_time);
 
-                    self.hasura_client
-                        .do_post::<InsertDemoTx>(insert_demo_tx::Variables {
-                            data: serde_json::json! {{
-                                "latest_execution_block_hash": event.block_hash,
-                                "timestamp": next_epoch_ts,
-                            }},
-                        })
-                        .await
-                        .unwrap();
+                        if let Some(hasura_config) = &self.hasura_client {
+                            hasura_config
+                                .do_post::<InsertDemoTx>(insert_demo_tx::Variables {
+                                    data: serde_json::json! {{
+                                        "latest_execution_block_hash": event.block_hash,
+                                        "timestamp": next_epoch_ts,
+                                    }},
+                                })
+                                .await
+                                .unwrap();
+                        }
                 }
 
                 // pass it back through
@@ -870,6 +890,14 @@ impl TupleToOption for GetHashedPacketCommitmentReturn {
     }
 }
 
+impl TupleToOption for GetHashedPacketAcknowledgementCommitmentReturn {
+    type Inner = [u8; 32];
+
+    fn tuple_to_option(self) -> Option<Self::Inner> {
+        self.1.then_some(self.0)
+    }
+}
+
 /// Wrapper trait for a contract call's signature, to map the input type to the return type.
 /// `ethers` generates both of these types, but doesn't correlate them.
 pub trait EthCallExt: EthCall {
@@ -887,11 +915,12 @@ macro_rules! impl_eth_call_ext {
 }
 
 impl_eth_call_ext! {
-    GetClientStateCall            -> GetClientStateReturn;
-    GetConsensusStateCall         -> GetConsensusStateReturn;
-    GetConnectionCall             -> GetConnectionReturn;
-    GetChannelCall                -> GetChannelReturn;
-    GetHashedPacketCommitmentCall -> GetHashedPacketCommitmentReturn;
+    GetClientStateCall                           -> GetClientStateReturn;
+    GetConsensusStateCall                        -> GetConsensusStateReturn;
+    GetConnectionCall                            -> GetConnectionReturn;
+    GetChannelCall                               -> GetChannelReturn;
+    GetHashedPacketCommitmentCall                -> GetHashedPacketCommitmentReturn;
+    GetHashedPacketAcknowledgementCommitmentCall -> GetHashedPacketAcknowledgementCommitmentReturn;
 }
 
 pub fn next_epoch_timestamp<C: ChainSpec>(slot: u64, genesis_timestamp: u64) -> u64 {

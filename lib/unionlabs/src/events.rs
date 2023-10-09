@@ -305,30 +305,30 @@ event! {
             connection_id: ConnectionId,
         },
 
-        // #[event(
-        //     tag = "write_acknowledgement",
-        //     deprecated("packet_data", "packet_ack", "packet_connection"),
-        // )]
-        // WriteAcknowledgement {
-        //     #[parse(hex::decode)]
-        //     packet_data_hex: Vec<u8>,
-        //     #[parse(Height::from_str)]
-        //     packet_timeout_height: Height,
-        //     #[parse(u64::from_str)]
-        //     packet_timeout_timestamp: u64,
-        //     #[parse(u64::from_str)]
-        //     packet_sequence: u64,
-        //     packet_src_port: String,
-        //     #[parse(ChannelId::from_str)]
-        //     packet_src_channel: ChannelId,
-        //     packet_dst_port: String,
-        //     #[parse(ChannelId::from_str)]
-        //     packet_dst_channel: ChannelId,
-        //     #[parse(hex::decode)]
-        //     packet_ack_hex: Vec<u8>,
-        //     #[parse(ConnectionId::from_str)]
-        //     connection_id: ConnectionId,
-        // },
+        #[event(
+            tag = "write_acknowledgement",
+            deprecated("packet_data", "packet_ack", "packet_connection"),
+        )]
+        WriteAcknowledgement {
+            #[parse(hex::decode)]
+            packet_data_hex: Vec<u8>,
+            #[parse(Height::from_str)]
+            packet_timeout_height: Height,
+            #[parse(u64::from_str)]
+            packet_timeout_timestamp: u64,
+            #[parse(u64::from_str)]
+            packet_sequence: u64,
+            packet_src_port: String,
+            #[parse(ChannelId::from_str)]
+            packet_src_channel: ChannelId,
+            packet_dst_port: String,
+            #[parse(ChannelId::from_str)]
+            packet_dst_channel: ChannelId,
+            #[parse(hex::decode)]
+            packet_ack_hex: Vec<u8>,
+            #[parse(ConnectionId::from_str)]
+            connection_id: ConnectionId,
+        },
 
         #[event(
             tag = "recv_packet",

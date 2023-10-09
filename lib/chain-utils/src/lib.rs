@@ -57,6 +57,8 @@ pub trait Chain {
 
     fn query_latest_height(&self) -> impl Future<Output = Self::Height> + '_;
 
+    fn query_latest_height_as_destination(&self) -> impl Future<Output = Self::Height> + '_;
+
     fn query_latest_timestamp(&self) -> impl Future<Output = i64> + '_;
 
     /// The client state on this chain at the specified `Height`.
@@ -74,8 +76,8 @@ pub trait Chain {
     fn read_ack(
         &self,
         block_hash: H256,
-        channel_id: ChannelId,
-        port_id: String,
+        destination_channel_id: ChannelId,
+        destination_port_id: String,
         sequence: u64,
     ) -> impl Future<Output = Vec<u8>> + '_;
 }

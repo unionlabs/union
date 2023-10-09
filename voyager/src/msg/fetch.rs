@@ -1,7 +1,12 @@
+use std::marker::PhantomData;
+
 use chain_utils::Chain;
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use serde::{Deserialize, Serialize};
-use unionlabs::id::{ChannelId, ConnectionId};
+use unionlabs::{
+    ethereum::H256,
+    id::{ChannelId, ConnectionId},
+};
 
 use crate::{
     chain::{proof, ChainOf, HeightOf, LightClient, QueryHeight},
@@ -13,12 +18,15 @@ any_enum! {
     #[any = AnyFetch(identified!(Fetch<L>))]
     pub enum Fetch<L: LightClient> {
         TrustedClientState(FetchTrustedClientState<L>),
+
         StateProof(FetchStateProof<L>),
         SelfClientState(FetchSelfClientState<L>),
         SelfConsensusState(FetchSelfConsensusState<L>),
 
         ChannelEnd(FetchChannelEnd<L>),
         ConnectionEnd(FetchConnectionEnd<L>),
+
+        PacketAcknowledgement(FetchPacketAcknowledgement<L>),
 
         UpdateHeaders(FetchUpdateHeaders<L>),
         LightClientSpecific(LightClientSpecificFetch<L>),
@@ -46,6 +54,13 @@ pub struct FetchTrustedClientState<L: LightClient> {
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""))]
+pub struct FetchCounterpartyTrustedClientState<L: LightClient> {
+    pub at: QueryHeight<HeightOf<ChainOf<L::Counterparty>>>,
+    pub client_id: <L::Counterparty as LightClient>::ClientId,
+}
+
+#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
+#[serde(bound(serialize = "", deserialize = ""))]
 pub struct FetchStateProof<L: LightClient> {
     pub at: HeightOf<ChainOf<L>>,
     pub path: proof::Path<<ChainOf<L> as Chain>::ClientId, HeightOf<ChainOf<L::Counterparty>>>,
@@ -64,6 +79,17 @@ pub struct FetchChannelEnd<L: LightClient> {
 pub struct FetchConnectionEnd<L: LightClient> {
     pub at: HeightOf<ChainOf<L>>,
     pub connection_id: ConnectionId,
+}
+
+#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
+#[serde(bound(serialize = "", deserialize = ""))]
+pub struct FetchPacketAcknowledgement<L: LightClient> {
+    pub block_hash: H256,
+    pub destination_port_id: String,
+    pub destination_channel_id: ChannelId,
+    pub sequence: u64,
+    #[serde(skip)]
+    pub __marker: PhantomData<fn() -> L>,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
