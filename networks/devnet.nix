@@ -50,7 +50,9 @@
         postgres = import ./services/postgres.nix { inherit lib pkgs; };
       };
 
-      # hasura-services = import ./services/hasura.nix { inherit lib pkgs; migrations = self'.packages.hubble-migrations; };
+      hasura-services = import ./services/hasura.nix {
+        inherit lib pkgs;
+      };
       # hubble-services = { hubble = import ./services/hubble.nix { inherit lib; image = self'.packages.hubble-image; }; };
 
       devnet = {
@@ -94,6 +96,13 @@
       build-evm = arion.build spec-evm;
 
       build-cosmos = arion.build spec-cosmos;
+
+      build-voyager-queue = arion.build {
+        modules = [{
+          project.name = "postgres";
+          services = postgres-services;
+        }];
+      };
     in
     {
       packages.devnet =
@@ -120,6 +129,15 @@
           runtimeInputs = [ arion ];
           text = ''
             arion --prebuilt-file ${build-cosmos} up --build --force-recreate -V --always-recreate-deps --remove-orphans
+          '';
+        };
+
+      packages.voyager-queue =
+        pkgs.writeShellApplication {
+          name = "postgres";
+          runtimeInputs = [ arion ];
+          text = ''
+            arion --prebuilt-file ${build-voyager-queue} up --build --force-recreate -V --always-recreate-deps --remove-orphans
           '';
         };
 

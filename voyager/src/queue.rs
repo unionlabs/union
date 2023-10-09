@@ -1,6 +1,7 @@
 use std::{
     collections::{HashMap, VecDeque},
-    fmt::Debug,
+    error::Error,
+    fmt::{Debug, Display},
     marker::PhantomData,
     ops::Add,
     time::{Duration, SystemTime, UNIX_EPOCH},
@@ -12,8 +13,11 @@ use chain_utils::{
     Chain, ClientState, EventSource,
 };
 use frunk::{hlist_pat, HList};
-use futures::{future::BoxFuture, stream, FutureExt, StreamExt, TryStreamExt};
+use futures::{future::BoxFuture, stream, Future, FutureExt, StreamExt, TryStreamExt};
 use hubble::hasura::{Datastore, HasuraDataStore, InsertDemoQueue, InsertDemoTx};
+use pg_queue::ProcessFlow;
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use sqlx::PgPool;
 use unionlabs::{
     ethereum_consts_traits::{Mainnet, Minimal},
     events::{
@@ -94,7 +98,7 @@ pub mod msg_server;
 pub mod aggregate_data;
 
 #[derive(Debug, Clone)]
-pub struct Voyager {
+pub struct Voyager<Q> {
     // TODO: Use some sort of typemap here instead of individual fields
     evm_minimal:
         HashMap<<<Evm<Minimal> as Chain>::SelfClientState as ClientState>::ChainId, Evm<Minimal>>,
@@ -104,10 +108,105 @@ pub struct Voyager {
     msg_server: msg_server::MsgServer,
 
     hasura_config: Option<hubble::hasura::HasuraDataStore>,
+
+    queue: Q,
 }
 
-impl Voyager {
-    pub async fn new(config: Config) -> Self {
+pub trait Queue: Clone + Send + Sync + Sized {
+    /// Error type returned by this queue, representing errors that are out of control of the consumer (i.e. unable to connect to database, can't insert into row, can't deserialize row, etc)
+    type Error: Debug + Display + Error;
+    type Config: Debug + Clone + PartialEq + Default + Serialize + DeserializeOwned;
+
+    fn new(cfg: Self::Config) -> impl Future<Output = Result<Self, Self::Error>>;
+
+    fn enqueue(&mut self, item: RelayerMsg) -> impl Future<Output = Result<(), Self::Error>> + '_;
+
+    fn process<'a, F, Fut>(
+        &'a mut self,
+        f: F,
+    ) -> impl Future<Output = Result<(), Self::Error>> + '_
+    where
+        F: (FnOnce(RelayerMsg) -> Fut) + 'a,
+        Fut: Future<Output = ProcessFlow<RelayerMsg>> + 'a;
+}
+
+#[derive(Debug, Clone)]
+pub struct InMemoryQueue(VecDeque<RelayerMsg>);
+
+impl Queue for InMemoryQueue {
+    type Error = std::convert::Infallible;
+    type Config = ();
+
+    fn new(_cfg: Self::Config) -> impl Future<Output = Result<Self, Self::Error>> {
+        futures::future::ok(Self(VecDeque::default()))
+    }
+
+    fn enqueue(&mut self, item: RelayerMsg) -> impl Future<Output = Result<(), Self::Error>> + '_ {
+        self.0.push_back(item);
+        futures::future::ok(())
+    }
+
+    fn process<'a, F, Fut>(&'a mut self, f: F) -> impl Future<Output = Result<(), Self::Error>> + '_
+    where
+        F: (FnOnce(RelayerMsg) -> Fut) + 'a,
+        Fut: Future<Output = ProcessFlow<RelayerMsg>> + 'a,
+    {
+        async move {
+            match self.0.pop_front() {
+                Some(msg) => match f(msg.clone()).await {
+                    ProcessFlow::Success(new_msgs) => {
+                        self.0.extend(new_msgs);
+                        Ok(())
+                    }
+                    ProcessFlow::Requeue => {
+                        self.0.push_front(msg);
+                        Ok(())
+                    }
+                    ProcessFlow::Fail(why) => panic!("{why}"),
+                },
+                None => Ok(()),
+            }
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct PgQueue(pg_queue::Queue<RelayerMsg>, sqlx::PgPool);
+
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
+pub struct PgQueueConfig {
+    database_url: String,
+}
+
+impl Queue for PgQueue {
+    type Error = sqlx::Error;
+
+    type Config = PgQueueConfig;
+
+    fn new(cfg: Self::Config) -> impl Future<Output = Result<Self, Self::Error>> {
+        async move {
+            Ok(Self(
+                pg_queue::Queue::new(),
+                PgPool::connect(&cfg.database_url).await?,
+            ))
+        }
+    }
+
+    fn enqueue(&mut self, item: RelayerMsg) -> impl Future<Output = Result<(), Self::Error>> + '_ {
+        pg_queue::Queue::<RelayerMsg>::enqueue(&self.1, item)
+    }
+
+    fn process<'a, F, Fut>(&'a mut self, f: F) -> impl Future<Output = Result<(), Self::Error>> + '_
+    where
+        F: (FnOnce(RelayerMsg) -> Fut) + 'a,
+        Fut: Future<Output = ProcessFlow<RelayerMsg>> + 'a,
+    {
+        pg_queue::Queue::<RelayerMsg>::process(&self.1, f)
+    }
+}
+
+impl<Q: Queue> Voyager<Q> {
+    pub async fn new(config: Config<Q>) -> Self {
         if config.voyager.hasura.is_none() {
             tracing::warn!("no hasura config supplied, no messages will be indexed");
         }
@@ -165,10 +264,11 @@ impl Voyager {
                 .voyager
                 .hasura
                 .map(|hc| HasuraDataStore::new(reqwest::Client::new(), hc.url, hc.secret)),
+            queue: Q::new(config.queue).await.unwrap(),
         }
     }
 
-    pub async fn run(&self) {
+    pub async fn run(mut self) {
         let mut events = Box::pin(stream::select_all([
             stream::iter(&self.evm_minimal)
                 .map(|(chain_id, chain)| {
@@ -658,7 +758,7 @@ impl Voyager {
                 .boxed(),
         ]));
 
-        let mut queue = VecDeque::new();
+        let mut queue = self.queue.clone();
 
         loop {
             let buffer_time = tokio::time::sleep(Duration::from_secs(2));
@@ -674,37 +774,21 @@ impl Voyager {
                         "received new message",
                     );
 
-                    queue.push_back(msg);
-
-                    // not push here?
-                    if let Some(hasura) = &self.hasura_config {
-                        hasura
-                            .do_post::<InsertDemoQueue>(hubble::hasura::insert_demo_queue::Variables {
-                                item: serde_json::to_value(&queue).unwrap(),
-                            })
-                            .await
-                            .unwrap();
-                    }
+                    queue.enqueue(msg).await.unwrap();
                 }
                 _ = buffer_time => {
                     tracing::debug!("no new messages");
                 }
             }
 
-            if let Some(msg) = queue.pop_front() {
-                let msgs = self.handle_msg(msg, 0).await;
+            queue
+                .process(|msg| async {
+                    let new_msgs = self.handle_msg(msg, 0).await;
 
-                events.push(stream::iter(msgs).map(Ok).boxed());
-
-                if let Some(hasura) = &self.hasura_config {
-                    hasura
-                        .do_post::<InsertDemoQueue>(hubble::hasura::insert_demo_queue::Variables {
-                            item: serde_json::to_value(&queue).unwrap(),
-                        })
-                        .await
-                        .unwrap();
-                }
-            }
+                    ProcessFlow::Success(new_msgs)
+                })
+                .await
+                .unwrap();
         }
     }
 
@@ -904,26 +988,26 @@ trait GetLc<L: LightClient> {
     fn get_lc(&self, chain_id: &ChainIdOf<L>) -> L;
 }
 
-impl GetLc<CometblsMinimal> for Voyager {
+impl<Q> GetLc<CometblsMinimal> for Voyager<Q> {
     fn get_lc(&self, chain_id: &ChainIdOf<CometblsMinimal>) -> CometblsMinimal {
         CometblsMinimal::from_chain(self.evm_minimal.get(chain_id).unwrap().clone())
     }
 }
 
-impl GetLc<CometblsMainnet> for Voyager {
+impl<Q> GetLc<CometblsMainnet> for Voyager<Q> {
     fn get_lc(&self, chain_id: &ChainIdOf<CometblsMainnet>) -> CometblsMainnet {
         CometblsMainnet::from_chain(self.evm_mainnet.get(chain_id).unwrap().clone())
     }
 }
 
-impl GetLc<EthereumMinimal> for Voyager {
+impl<Q> GetLc<EthereumMinimal> for Voyager<Q> {
     fn get_lc(&self, chain_id: &ChainIdOf<EthereumMinimal>) -> EthereumMinimal {
         // TODO: Ensure that the wasm code is for the correct config
         EthereumMinimal::from_chain(self.union.get(chain_id).unwrap().clone())
     }
 }
 
-impl GetLc<EthereumMainnet> for Voyager {
+impl<Q> GetLc<EthereumMainnet> for Voyager<Q> {
     fn get_lc(&self, chain_id: &ChainIdOf<EthereumMainnet>) -> EthereumMainnet {
         // TODO: Ensure that the wasm code is for the correct config
         EthereumMainnet::from_chain(self.union.get(chain_id).unwrap().clone())
