@@ -45,6 +45,17 @@
         '';
 
       all-protos-to-build = rec {
+        wasmd = rec {
+          src = "${proto.wasmd}/proto";
+          proto-deps = [
+            src
+            google.src
+            cosmos-sdk.src
+            ics23.src
+            "${proto.cosmosproto}/proto"
+            "${proto.googleapis}"
+          ];
+        };
         cometbls = rec {
           src = "${proto.cometbls}/proto";
           proto-deps = [

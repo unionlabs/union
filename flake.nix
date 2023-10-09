@@ -60,6 +60,10 @@
         "github:googleapis/googleapis?rev=6774ccbbc3f182f6ae3a32dca29e1da489ad8a8f";
       flake = false;
     };
+    wasmd = {
+      url = "github:CosmWasm/wasmd?rev=03f3c72a6ce447fafc2da023a1322899327433f8";
+      flake = false;
+    };
     nix-filter.url = "github:numtide/nix-filter";
     get-flake.url = "github:ursi/get-flake";
     # uniond versions
@@ -90,6 +94,7 @@
     , gogoproto
     , googleapis
     , get-flake
+    , wasmd
     , ...
     }:
     flake-parts.lib.mkFlake { inherit inputs; } {
@@ -210,6 +215,10 @@
               nix-filter = nix-filter.lib;
 
               proto = {
+                wasmd = mkUnpack {
+                  name = "wasmd-proto";
+                  package = wasmd;
+                };
                 uniond = builtins.path {
                   name = "uniond-proto";
                   path = ./uniond/proto;
