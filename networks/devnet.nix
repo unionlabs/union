@@ -46,16 +46,16 @@
         };
       };
 
-      # postgres-services = {
-      #   postgres = import ./services/postgres.nix { inherit lib pkgs; };
-      # };
+      postgres-services = {
+        postgres = import ./services/postgres.nix { inherit lib pkgs; };
+      };
 
       # hasura-services = import ./services/hasura.nix { inherit lib pkgs; migrations = self'.packages.hubble-migrations; };
       # hubble-services = { hubble = import ./services/hubble.nix { inherit lib; image = self'.packages.hubble-image; }; };
 
       devnet = {
         project.name = "devnet";
-        services = sepolia-services // uniond-services;
+        services = sepolia-services // uniond-services // postgres-services;
       };
 
       devnet-minimal = {
