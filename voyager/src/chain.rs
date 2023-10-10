@@ -22,6 +22,7 @@ use crate::{
         msg::Msg,
         DoAggregate, RelayerMsg,
     },
+    queue::Queue,
 };
 
 pub mod evm;
@@ -36,8 +37,8 @@ pub enum AnyChain {
 }
 
 impl AnyChain {
-    pub async fn try_from_config(
-        voyager_config: &config::VoyagerConfig,
+    pub async fn try_from_config<Q: Queue>(
+        voyager_config: &config::VoyagerConfig<Q>,
         config: ChainConfig,
     ) -> Self {
         match config {

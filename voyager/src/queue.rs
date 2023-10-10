@@ -4,6 +4,7 @@ use std::{
     fmt::{Debug, Display},
     marker::PhantomData,
     ops::Add,
+    sync::{Arc, Mutex},
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
@@ -13,11 +14,13 @@ use chain_utils::{
     Chain, ClientState, EventSource,
 };
 use frunk::{hlist_pat, HList};
-use futures::{future::BoxFuture, stream, Future, FutureExt, StreamExt, TryStreamExt};
+use futures::{
+    future::BoxFuture, stream, Future, FutureExt, StreamExt, TryFutureExt, TryStreamExt,
+};
 use hubble::hasura::{Datastore, HasuraDataStore, InsertDemoTx};
 use pg_queue::ProcessFlow;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
-use sqlx::PgPool;
+use sqlx::{error::BoxDynError, PgPool};
 use unionlabs::{
     ethereum_consts_traits::{Mainnet, Minimal},
     events::{
@@ -115,7 +118,7 @@ pub struct Voyager<Q> {
 pub trait Queue: Clone + Send + Sync + Sized {
     /// Error type returned by this queue, representing errors that are out of control of the consumer (i.e. unable to connect to database, can't insert into row, can't deserialize row, etc)
     type Error: Debug + Display + Error;
-    type Config: Debug + Clone + PartialEq + Default + Serialize + DeserializeOwned;
+    type Config: Debug + Clone + Serialize + DeserializeOwned;
 
     fn new(cfg: Self::Config) -> impl Future<Output = Result<Self, Self::Error>>;
 
@@ -130,19 +133,76 @@ pub trait Queue: Clone + Send + Sync + Sized {
         Fut: Future<Output = ProcessFlow<RelayerMsg>> + 'a;
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case", tag = "type")]
+pub enum AnyQueueConfig {
+    InMemory,
+    PgQueue(<PgQueue as Queue>::Config),
+}
+
 #[derive(Debug, Clone)]
-pub struct InMemoryQueue(VecDeque<RelayerMsg>);
+pub enum AnyQueue {
+    InMemory(InMemoryQueue),
+    PgQueue(PgQueue),
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum AnyQueueError {
+    #[error("{0}")]
+    InMemory(#[from] <InMemoryQueue as Queue>::Error),
+    #[error("{0}")]
+    PgQueue(#[from] <PgQueue as Queue>::Error),
+}
+
+impl Queue for AnyQueue {
+    type Error = AnyQueueError;
+    type Config = AnyQueueConfig;
+
+    fn new(cfg: Self::Config) -> impl Future<Output = Result<Self, Self::Error>> {
+        async move {
+            Ok(match cfg {
+                AnyQueueConfig::InMemory => Self::InMemory(InMemoryQueue::new(()).await?),
+                AnyQueueConfig::PgQueue(cfg) => Self::PgQueue(PgQueue::new(cfg).await?),
+            })
+        }
+    }
+
+    fn enqueue(&mut self, item: RelayerMsg) -> impl Future<Output = Result<(), Self::Error>> + '_ {
+        async move {
+            Ok(match self {
+                AnyQueue::InMemory(queue) => queue.enqueue(item).await?,
+                AnyQueue::PgQueue(queue) => queue.enqueue(item).await?,
+            })
+        }
+    }
+
+    fn process<'a, F, Fut>(&'a mut self, f: F) -> impl Future<Output = Result<(), Self::Error>> + '_
+    where
+        F: (FnOnce(RelayerMsg) -> Fut) + 'a,
+        Fut: Future<Output = ProcessFlow<RelayerMsg>> + 'a,
+    {
+        async move {
+            Ok(match self {
+                AnyQueue::InMemory(queue) => queue.process(f).await?,
+                AnyQueue::PgQueue(queue) => queue.process(f).await?,
+            })
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct InMemoryQueue(Arc<Mutex<VecDeque<RelayerMsg>>>);
 
 impl Queue for InMemoryQueue {
     type Error = std::convert::Infallible;
     type Config = ();
 
     fn new(_cfg: Self::Config) -> impl Future<Output = Result<Self, Self::Error>> {
-        futures::future::ok(Self(VecDeque::default()))
+        futures::future::ok(Self(Arc::new(Mutex::new(VecDeque::default()))))
     }
 
     fn enqueue(&mut self, item: RelayerMsg) -> impl Future<Output = Result<(), Self::Error>> + '_ {
-        self.0.push_back(item);
+        self.0.lock().expect("mutex is poisoned").push_back(item);
         futures::future::ok(())
     }
 
@@ -152,14 +212,16 @@ impl Queue for InMemoryQueue {
         Fut: Future<Output = ProcessFlow<RelayerMsg>> + 'a,
     {
         async move {
-            match self.0.pop_front() {
+            let queue = &mut self.0.lock().expect("mutex is poisoned");
+
+            match queue.pop_front() {
                 Some(msg) => match f(msg.clone()).await {
                     ProcessFlow::Success(new_msgs) => {
-                        self.0.extend(new_msgs);
+                        queue.extend(new_msgs);
                         Ok(())
                     }
                     ProcessFlow::Requeue => {
-                        self.0.push_front(msg);
+                        queue.push_front(msg);
                         Ok(())
                     }
                     ProcessFlow::Fail(why) => panic!("{why}"),
@@ -264,7 +326,7 @@ impl<Q: Queue> Voyager<Q> {
                 .voyager
                 .hasura
                 .map(|hc| HasuraDataStore::new(reqwest::Client::new(), hc.url, hc.secret)),
-            queue: Q::new(config.queue).await.unwrap(),
+            queue: Q::new(config.voyager.queue).await.unwrap(),
         }
     }
 

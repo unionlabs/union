@@ -18,14 +18,14 @@
       "fee_denom": "stake",
       "ws_url": "ws://localhost:26657/websocket",
       "prover_endpoint": "https://galois-devnet.cryptware.io:443",
-      "dump_path": "dump",
       "grpc_url": "http://localhost:9090"
     }
   },
   "voyager": {
-    "hasura": null
-  },
-  "queue": {
-    "database_url": "postgres://postgres:postgrespassword@localhost:5432/default"
+    "hasura": null,
+    "queue": {
+      "type": "pg-queue",
+      "database_url": "postgres://postgres:postgrespassword@localhost:5432/default"
+    }
   }
 }

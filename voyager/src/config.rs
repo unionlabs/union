@@ -2,7 +2,6 @@ use std::collections::BTreeMap;
 
 use chain_utils::private_key::PrivateKey;
 use ethers::prelude::k256::ecdsa;
-use frame_support_procedural::{CloneNoBound, DebugNoBound, DefaultNoBound};
 use hubble::hasura::HasuraConfig;
 use serde::{Deserialize, Serialize};
 use tendermint_rpc::WebSocketClientUrl;
@@ -10,18 +9,18 @@ use unionlabs::ethereum::Address;
 
 use crate::{chain::AnyChain, queue::Queue};
 
-#[derive(DebugNoBound, CloneNoBound, DefaultNoBound, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""))]
 pub struct Config<Q: Queue> {
     /// Map of chain name to it's respective config.
     pub chain: BTreeMap<String, ChainConfig>,
-    pub voyager: VoyagerConfig,
-    pub queue: Q::Config,
+    pub voyager: VoyagerConfig<Q>,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
-pub struct VoyagerConfig {
+pub struct VoyagerConfig<Q: Queue> {
     pub hasura: Option<HasuraConfig>,
+    pub queue: Q::Config,
 }
 
 impl<Q: Queue> Config<Q> {
@@ -68,7 +67,6 @@ pub struct UnionChainConfig {
     pub fee_denom: String,
     pub ws_url: WebSocketClientUrl,
     pub prover_endpoint: String,
-    pub dump_path: String,
     pub grpc_url: String,
 }
 

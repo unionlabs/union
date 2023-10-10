@@ -18,7 +18,7 @@ use crate::{
     chain::AnyChain,
     cli::{AppArgs, Command, IbcCmd, IbcQueryCmd},
     config::Config,
-    queue::{InMemoryQueue, PgQueue, Voyager},
+    queue::{AnyQueue, InMemoryQueue, PgQueue, Voyager},
 };
 
 pub const DELAY_PERIOD: u64 = 0;
@@ -44,9 +44,9 @@ async fn main() -> Result<(), anyhow::Error> {
 #[allow(clippy::too_many_lines)]
 // NOTE: This function is a mess, will be cleaned up
 async fn do_main(args: cli::AppArgs) -> Result<(), anyhow::Error> {
-    let voyager_config = read_to_string(&args.config_file_path).map_or(Config::default(), |s| {
-        serde_json::from_str::<Config<PgQueue>>(&s).unwrap()
-    });
+    let voyager_config = read_to_string(&args.config_file_path)
+        .map(|s| serde_json::from_str::<Config<AnyQueue>>(&s).unwrap())
+        .unwrap();
 
     match args.command {
         Command::PrintConfig => {
