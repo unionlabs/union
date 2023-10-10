@@ -19,3 +19,4 @@ tokio = { version = "1.27.0", features = ["macros"] }
 chain-utils.workspace = true
 serde-utils.workspace = true
 unionlabs = { workspace = true, features = ["ethabi"] }
+ucs01-relay = { workspace = true, features = [ "library" ] }
