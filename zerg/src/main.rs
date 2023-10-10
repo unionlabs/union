@@ -1,21 +1,26 @@
 use std::fs::read_to_string;
 
+use clap::Parser;
+use cli::AppArgs;
 use serde::{Deserialize, Serialize};
 use unionlabs::{
     cosmwasm::wasm::msg_execute_contract::MsgExecuteContract, ibc::google::protobuf::any::Any,
     IntoProto,
 };
 
+pub mod cli;
 pub mod config;
 
 #[tokio::main]
 async fn main() {
-    println!("Hello, zerg!");
+    let args = AppArgs::parse();
+
+    do_main(args).await
 }
 
-async fn do_main() {
-    let zerg_config = read_to_string("zerg_conf.json").unwrap();
-    let zerg_config: config::Config = serde_json::from_str(&zerg_config).unwrap();
+async fn do_main(args: AppArgs) {
+    let zerg_config: config::Config =
+        serde_json::from_str(&read_to_string(args.config_file_path).unwrap()).unwrap();
 
     let union = chain_utils::union::Union::new(zerg_config.union).await;
 

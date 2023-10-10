@@ -6899,6 +6899,7 @@ name = "zerg"
 version = "0.1.0"
 dependencies = [
  "chain-utils",
+ "clap",
  "ethers",
  "serde",
  "serde-utils",
