@@ -443,10 +443,7 @@ impl LightClient for EthereumMainnet {
     }
 
     fn from_chain(chain: Self::HostChain) -> Self {
-        Self {
-            // dumper: Dumper::new(chain.dump_path.clone()),
-            chain,
-        }
+        Self { chain }
     }
 
     fn query_client_state(

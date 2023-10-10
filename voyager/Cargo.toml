@@ -50,6 +50,7 @@ displaydoc = { version = "0.2.4", default-features = false }
 frame-support-procedural = "18.0.0"
 hubble.workspace = true
 sqlx = { version = "0.7.2", features = ["postgres"] }
+thiserror = "1.0.49"
 
 [features]
 eth-mainnet = [ "unionlabs/eth-mainnet" ]

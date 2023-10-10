@@ -6611,6 +6611,7 @@ dependencies = [
  "tendermint 0.33.0",
  "tendermint-proto 0.33.0",
  "tendermint-rpc",
+ "thiserror",
  "tokio",
  "tokio-stream",
  "tonic",
