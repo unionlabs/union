@@ -6900,7 +6900,9 @@ version = "0.1.0"
 dependencies = [
  "chain-utils",
  "clap",
+ "cosmwasm-std",
  "ethers",
+ "futures",
  "serde",
  "serde-utils",
  "serde_json",
@@ -6910,6 +6912,7 @@ dependencies = [
  "tokio",
  "tokio-stream",
  "ucs01-relay",
+ "ucs01-relay-api",
  "unionlabs",
 ]
 
