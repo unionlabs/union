@@ -1,12 +1,14 @@
 use std::fs::read_to_string;
 
+use chain_utils::EventSource;
 use clap::Parser;
 use cli::AppArgs;
 use serde::{Deserialize, Serialize};
+use tokio_stream::StreamExt;
 use ucs01_relay::msg::{ExecuteMsg, TransferMsg};
 use unionlabs::{
     cosmos::base::coin::Coin, cosmwasm::wasm::msg_execute_contract::MsgExecuteContract,
-    ibc::google::protobuf::any::Any, IntoProto,
+    ethereum_consts_traits::Minimal, ibc::google::protobuf::any::Any, IntoProto,
 };
 
 pub mod cli;
@@ -19,11 +21,28 @@ async fn main() {
     do_main(args).await
 }
 
+async fn listen_union(union: chain_utils::union::Union) {
+    let mut events = Box::pin(union.events(()));
+    loop {
+        let event = events.next().await;
+        println!("Event: {:?}", event);
+    }
+}
+
+async fn listen_eth(eth: chain_utils::evm::Evm<Minimal>) {
+    let mut events = Box::pin(eth.events(()));
+    loop {
+        let event = events.next().await;
+        println!("Event: {:?}", event);
+    }
+}
+
 async fn do_main(args: AppArgs) {
     let zerg_config: config::Config =
         serde_json::from_str(&read_to_string(args.config_file_path).unwrap()).unwrap();
 
     let union = chain_utils::union::Union::new(zerg_config.union).await;
+    let eth = chain_utils::evm::Evm::new(zerg_config.evm).await;
 
     let transfer_msg = ExecuteMsg::Transfer(TransferMsg {
         channel: zerg_config.channel,
@@ -45,7 +64,11 @@ async fn do_main(args: AppArgs) {
     })
     .into_proto();
 
-    union.broadcast_tx_commit([msg]).await
+    tokio::join!(
+        union.broadcast_tx_commit([msg]),
+        listen_union(union.clone()),
+        listen_eth(eth.clone())
+    );
 }
 
 /// Event types tracked by Zerg when exporting to CSV
