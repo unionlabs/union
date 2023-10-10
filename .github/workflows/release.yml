@@ -193,7 +193,9 @@ jobs:
           gcloud auth configure-docker europe-docker.pkg.dev
       - name: Copy Manifest to GCP
         run: |
-          skopeo copy --multi-arch=all --insecure-policy --src-tls-verify=false "docker://localhost:5000/unionlabs/${{ matrix.package }}:${{ github.ref_name }}" "docker://europe-docker.pkg.dev/model-envelope-401614/union-testnet/${{ matrix.package }}:${{ github.ref_name }}"
+          if [[ "uniond" == ${{ matrix.package }} ]]; then
+            skopeo copy --multi-arch=all --insecure-policy --src-tls-verify=false "docker://localhost:5000/unionlabs/${{ matrix.package }}:${{ github.ref_name }}" "docker://europe-docker.pkg.dev/model-envelope-401614/union-testnet/${{ matrix.package }}:${{ github.ref_name }}"
+          fi
 
     
   release:
