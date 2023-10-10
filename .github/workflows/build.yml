@@ -71,7 +71,8 @@ jobs:
                   "go-vendor",
                   "rust-proto",
                   "site-static",
-                  "site-server"
+                  "site-server",
+                  "voyager-queue"
                 ]
               )
             ) or 
@@ -123,7 +124,8 @@ jobs:
                   "treefmt-check",
                   "union-runs",
                   "upgrade-from-genesis",
-                  "virtualisation-works"
+                  "virtualisation-works",
+                  "voyager-queue"
                 ]
               )
             ) | not
