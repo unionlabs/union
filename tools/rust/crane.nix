@@ -75,7 +75,7 @@
         , # a suffix to add to the package name.
           pnameSuffix ? ""
           # extra environment variables to pass to the derivation.
-        , extraEnv ? {}
+        , extraEnv ? { }
         }:
         let
           cratePname = "${crateInfo.pname}${pnameSuffix}";
@@ -179,7 +179,7 @@
                 (lib.recursiveUpdate workspaceCargoToml { workspace.members = workspaceDepsForCrate; });
             in
             # REVIEW: This can maybe be a runCommand?
-            # I'm not touching it though
+              # I'm not touching it though
             pkgs.stdenv.mkDerivation {
               name = "${cratePname}-patched-workspace-cargo-toml";
               src = crateSrc;
