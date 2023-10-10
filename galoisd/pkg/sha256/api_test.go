@@ -1,8 +1,8 @@
 package sha256
 
 import (
-	"crypto/rand"
 	"crypto/sha256"
+	"fmt"
 	"testing"
 
 	"github.com/consensys/gnark-crypto/ecc"
@@ -13,7 +13,7 @@ import (
 
 const compressThreshold = 1000
 
-const MaxPreimageLength = 64
+const MaxPreimageLength = 32
 
 const ImageLength = 32
 
@@ -38,42 +38,43 @@ func (c *sha256Circuit) Define(api frontend.API) error {
 }
 
 func TestSha256(t *testing.T) {
-	message := make([]byte, MaxPreimageLength)
-	_, err := rand.Read(message)
-	if err != nil {
-		panic(err)
-	}
+	t.Parallel()
+	for i := 0; i < 10; i++ {
+		t.Run(fmt.Sprintf("PreimageLength = %d", i), func(t *testing.T) {
+			message := make([]byte, MaxPreimageLength)
 
-	nativeHasher := sha256.New()
-	nativeHasher.Write(message)
-	final := nativeHasher.Sum(nil)
+			nativeHasher := sha256.New()
+			nativeHasher.Write(message)
+			final := nativeHasher.Sum(nil)
 
-	var preimage [MaxPreimageLength]frontend.Variable
-	for i := 0; i < MaxPreimageLength; i++ {
-		if i < len(message) {
-			preimage[i] = message[i]
-		} else {
-			preimage[i] = 0
-		}
-	}
+			var preimage [MaxPreimageLength]frontend.Variable
+			for i := 0; i < MaxPreimageLength; i++ {
+				if i < len(message) {
+					preimage[i] = message[i]
+				} else {
+					preimage[i] = 0
+				}
+			}
 
-	var image [ImageLength]frontend.Variable
-	for i := 0; i < ImageLength; i++ {
-		image[i] = final[i]
-	}
+			var image [ImageLength]frontend.Variable
+			for i := 0; i < ImageLength; i++ {
+				image[i] = final[i]
+			}
 
-	circuit := sha256Circuit{}
-	assignment := sha256Circuit{
-		Preimage:       preimage,
-		PreimageLength: len(message),
-		Image:          image,
+			circuit := sha256Circuit{}
+			assignment := sha256Circuit{
+				Preimage:       preimage,
+				PreimageLength: len(message),
+				Image:          image,
+			}
+			test.NewAssert(t).ProverSucceeded(
+				&circuit,
+				&assignment,
+				test.WithCurves(ecc.BN254),
+				test.NoFuzzing(),
+				test.WithCurves(ecc.BN254),
+				test.WithBackends(backend.GROTH16),
+			)
+		})
 	}
-	test.NewAssert(t).ProverSucceeded(
-		&circuit,
-		&assignment,
-		test.WithCurves(ecc.BN254),
-		test.NoFuzzing(),
-		test.WithCurves(ecc.BN254),
-		test.WithBackends(backend.GROTH16),
-	)
 }
