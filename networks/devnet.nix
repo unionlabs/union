@@ -50,9 +50,9 @@
         postgres = import ./services/postgres.nix { inherit lib pkgs; };
       };
 
-      hasura-services = import ./services/hasura.nix {
-        inherit lib pkgs;
-      };
+      # hasura-services = import ./services/hasura.nix {
+      #   inherit lib pkgs;
+      # };
       # hubble-services = { hubble = import ./services/hubble.nix { inherit lib; image = self'.packages.hubble-image; }; };
 
       devnet = {
