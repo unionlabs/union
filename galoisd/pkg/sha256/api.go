@@ -1,5 +1,9 @@
 package sha256
 
+// NOTE: the circuit is not handling arbitrary size inputs, the padding would
+// need to be adjusted and made dynamic based on the `size` with a maximum
+// number of blocks hardcoded in the circuit
+
 import "github.com/consensys/gnark/frontend"
 
 type Sha256API struct {
