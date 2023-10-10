@@ -74,6 +74,8 @@
           cargoBuildInstallPhase ? null
         , # a suffix to add to the package name.
           pnameSuffix ? ""
+          # extra environment variables to pass to the derivation.
+        , extraEnv ? {}
         }:
         let
           cratePname = "${crateInfo.pname}${pnameSuffix}";
@@ -177,7 +179,7 @@
                 (lib.recursiveUpdate workspaceCargoToml { workspace.members = workspaceDepsForCrate; });
             in
             # REVIEW: This can maybe be a runCommand?
-              # I'm not touching it though
+            # I'm not touching it though
             pkgs.stdenv.mkDerivation {
               name = "${cratePname}-patched-workspace-cargo-toml";
               src = crateSrc;
@@ -198,7 +200,7 @@
 
           packageFilterArg = "-p ${crateInfo.pname}";
 
-          crateAttrs = {
+          crateAttrs = dbg (extraEnv // {
             inherit (crateInfo) pname version;
 
             # dontUnpack = true;
@@ -206,6 +208,7 @@
             src = patchedWorkspaceToml;
 
             dummySrc = craneLib.mkDummySrc patchedWorkspaceToml;
+            # cargoBuildCommand = "${extraEnvStr} cargo build";
             cargoExtraArgs = packageFilterArg;
 
             buildInputs = [ pkgs.pkg-config pkgs.openssl ] ++ (
@@ -223,7 +226,7 @@
 
             doCheck = cargoBuildCheckPhase != null;
             PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
-          };
+          });
 
           artifacts = craneLib.buildDepsOnly crateAttrs;
 
