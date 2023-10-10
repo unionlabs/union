@@ -14,7 +14,7 @@ use chain_utils::{
 };
 use frunk::{hlist_pat, HList};
 use futures::{future::BoxFuture, stream, Future, FutureExt, StreamExt, TryStreamExt};
-use hubble::hasura::{Datastore, HasuraDataStore, InsertDemoQueue, InsertDemoTx};
+use hubble::hasura::{Datastore, HasuraDataStore, InsertDemoTx};
 use pg_queue::ProcessFlow;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use sqlx::PgPool;
@@ -75,9 +75,9 @@ use crate::{
         },
         event::Event,
         fetch::{
-            Fetch, FetchChannelEnd, FetchConnectionEnd, FetchCounterpartyTrustedClientState,
-            FetchPacketAcknowledgement, FetchSelfClientState, FetchSelfConsensusState,
-            FetchStateProof, FetchTrustedClientState, FetchUpdateHeaders, LightClientSpecificFetch,
+            Fetch, FetchChannelEnd, FetchConnectionEnd, FetchPacketAcknowledgement,
+            FetchSelfClientState, FetchSelfConsensusState, FetchStateProof,
+            FetchTrustedClientState, FetchUpdateHeaders, LightClientSpecificFetch,
         },
         identified,
         msg::{
@@ -268,7 +268,7 @@ impl<Q: Queue> Voyager<Q> {
         }
     }
 
-    pub async fn run(mut self) {
+    pub async fn run(self) {
         let mut events = Box::pin(stream::select_all([
             stream::iter(&self.evm_minimal)
                 .map(|(chain_id, chain)| {
