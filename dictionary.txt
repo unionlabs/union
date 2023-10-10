@@ -81,6 +81,7 @@ Timestamptz
 UDHC
 UNBONDED
 UNBONDING
+UNNEST
 Unbonding
 Undelegate
 Unjail
