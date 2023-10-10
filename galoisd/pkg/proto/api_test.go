@@ -1,6 +1,8 @@
 package proto
 
 import (
+	"fmt"
+	"math/big"
 	"math/rand"
 	"testing"
 
@@ -40,6 +42,7 @@ func (c *protoCircuit) Define(api frontend.API) error {
 }
 
 func TestProto(t *testing.T) {
+	t.Parallel()
 	reverseBytes := func(numbers []byte) []byte {
 		newNumbers := make([]byte, 0, len(numbers))
 		for i := len(numbers) - 1; i >= 0; i-- {
@@ -47,20 +50,29 @@ func TestProto(t *testing.T) {
 		}
 		return newNumbers
 	}
-	value := rand.Uint64()
-	protoValue := proto.EncodeVarint(value)
-	circuit := protoCircuit{}
-	assignment := protoCircuit{
-		ProtoValue:     reverseBytes(protoValue),
-		ExpectedValue:  value,
-		ExpectedLength: len(protoValue),
+	for i := 0; i < MaxVarintSize; i++ {
+		t.Run(fmt.Sprintf("Varint of size %d", i), func(t *testing.T) {
+			raw := make([]byte, i)
+			_, err := rand.Read(raw)
+			if err != nil {
+				t.Fatal(err)
+			}
+			value := new(big.Int).SetBytes(raw).Uint64()
+			protoValue := proto.EncodeVarint(value)
+			circuit := protoCircuit{}
+			assignment := protoCircuit{
+				ProtoValue:     reverseBytes(protoValue),
+				ExpectedValue:  value,
+				ExpectedLength: len(protoValue),
+			}
+			test.NewAssert(t).ProverSucceeded(
+				&circuit,
+				&assignment,
+				test.WithCurves(ecc.BN254),
+				test.NoFuzzing(),
+				test.WithCurves(ecc.BN254),
+				test.WithBackends(backend.GROTH16),
+			)
+		})
 	}
-	test.NewAssert(t).ProverSucceeded(
-		&circuit,
-		&assignment,
-		test.WithCurves(ecc.BN254),
-		test.NoFuzzing(),
-		test.WithCurves(ecc.BN254),
-		test.WithBackends(backend.GROTH16),
-	)
 }
