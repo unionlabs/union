@@ -133,6 +133,7 @@ impl Context {
         recv_event: TimedEvent<RecvPacket>,
     ) {
         let mut file = OpenOptions::new()
+            .create(true)
             .write(true)
             .append(true)
             .open(self.output_file.as_str())
