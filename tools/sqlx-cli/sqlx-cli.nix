@@ -6,7 +6,7 @@
     {
       packages = {
         sqlx-cli = crane.lib.buildPackage {
-          name = name;
+          inherit name;
           version = "0.7.1";
           cargoExtraArgs = "-p sqlx-cli";
           nativeBuildInputs = [ pkgs.pkg-config ];

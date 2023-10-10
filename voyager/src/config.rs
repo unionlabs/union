@@ -2,18 +2,21 @@ use std::collections::BTreeMap;
 
 use chain_utils::private_key::PrivateKey;
 use ethers::prelude::k256::ecdsa;
+use frame_support_procedural::{CloneNoBound, DebugNoBound, DefaultNoBound};
 use hubble::hasura::HasuraConfig;
 use serde::{Deserialize, Serialize};
 use tendermint_rpc::WebSocketClientUrl;
 use unionlabs::ethereum::Address;
 
-use crate::chain::AnyChain;
+use crate::{chain::AnyChain, queue::Queue};
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
-pub struct Config {
+#[derive(DebugNoBound, CloneNoBound, DefaultNoBound, Serialize, Deserialize)]
+#[serde(bound(serialize = "", deserialize = ""))]
+pub struct Config<Q: Queue> {
     /// Map of chain name to it's respective config.
     pub chain: BTreeMap<String, ChainConfig>,
     pub voyager: VoyagerConfig,
+    pub queue: Q::Config,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -21,7 +24,7 @@ pub struct VoyagerConfig {
     pub hasura: Option<HasuraConfig>,
 }
 
-impl Config {
+impl<Q: Queue> Config<Q> {
     pub async fn get_chain(&self, name: &str) -> Option<AnyChain> {
         match self.chain.get(name) {
             Some(config) => Some(AnyChain::try_from_config(&self.voyager, config.clone()).await),

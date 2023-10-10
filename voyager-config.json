@@ -24,5 +24,8 @@
   },
   "voyager": {
     "hasura": null
+  },
+  "queue": {
+    "database_url": "postgres://postgres:postgrespassword@localhost:5432/default"
   }
 }

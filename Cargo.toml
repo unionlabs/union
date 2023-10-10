@@ -42,6 +42,7 @@ milagro_bls = { git = "https://github.com/datachainlab/milagro_bls", rev = "bc2b
 
 contracts = { path = "generated/contracts", default-features = false }
 serde-utils = { path = "lib/serde-utils", default-features = false }
+pg-queue = { path = "lib/pg-queue", default-features = false }
 ethereum-verifier = { path = "lib/ethereum-verifier", default-features = false }
 cometbls-groth16-verifier = { path = "lib/cometbls-groth16-verifier", default-features = false }
 ics008-wasm-client = { path = "lib/ics-008-wasm-client", default-features = false }

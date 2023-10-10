@@ -6596,6 +6596,7 @@ dependencies = [
  "hex-literal",
  "hubble",
  "num-bigint",
+ "pg-queue",
  "pin-utils",
  "prost",
  "protos",
@@ -6605,6 +6606,7 @@ dependencies = [
  "serde-utils",
  "serde_json",
  "sha2 0.10.8",
+ "sqlx",
  "subtle-encoding",
  "tendermint 0.33.0",
  "tendermint-proto 0.33.0",
@@ -6617,17 +6619,6 @@ dependencies = [
  "tracing-subscriber 0.3.17",
  "typenum",
  "unionlabs",
-]
-
-[[package]]
-name = "voyager-sidecar"
-version = "0.1.0"
-dependencies = [
- "hubble",
- "reqwest",
- "serde",
- "serde_json",
- "tokio",
 ]
 
 [[package]]

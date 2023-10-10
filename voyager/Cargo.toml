@@ -34,6 +34,7 @@ anyhow = "1.0.72"
 pin-utils = "0.1.0"
 tokio-stream = { version = "0.1.14" }
 either = { version = "1.9.0", features = ["serde"] }
+pg-queue.workspace = true
 
 beacon-api = { workspace = true, default-features = false }
 contracts.workspace = true
@@ -48,6 +49,7 @@ bitvec = "1.0.1"
 displaydoc = { version = "0.2.4", default-features = false }
 frame-support-procedural = "18.0.0"
 hubble.workspace = true
+sqlx = { version = "0.7.2", features = ["postgres"] }
 
 [features]
 eth-mainnet = [ "unionlabs/eth-mainnet" ]

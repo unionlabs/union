@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO queue (item)\n                                SELECT * FROM UNNEST($1::JSONB[])\n                                RETURNING id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "JsonbArray"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "6a85593f1503d8c91d1226cd484d02f1cf40c9f4f81ff258025a70797a2b5c75"
+}

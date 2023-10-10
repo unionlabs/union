@@ -1,26 +1,24 @@
 { ... }: {
-  perSystem = { self', pkgs, system, config, crane, stdenv, ... }:
+  perSystem = { self', pkgs, system, config, crane, stdenv, dbg, ... }:
     let
       mkVoyager = features: pnameSuffix: (crane.buildWorkspaceMember {
         inherit pnameSuffix;
         crateDirFromRoot = "voyager";
         cargoBuildExtraArgs = features;
+        additionalSrcFilter = path: _:
+          pkgs.lib.hasPrefix ".sqlx" path;
         additionalTestSrcFilter = path: _:
-          (pkgs.lib.hasPrefix "hubble/src/graphql" path);
+          pkgs.lib.hasPrefix "hubble/src/graphql" path;
+        extraEnv = {
+          SQLX_OFFLINE = "1";
+        };
       });
 
       voyagerMainnet = (mkVoyager "--features eth-mainnet" "-mainnet");
       voyagerMinimal = (mkVoyager "" "-minimal");
-
-      voyagerSidecar = crane.buildWorkspaceMember {
-        crateDirFromRoot = "lib/voyager-sidecar";
-        additionalTestSrcFilter = path: _:
-          (pkgs.lib.hasPrefix "hubble/src/graphql" path);
-      };
     in
     {
-      packages = pkgs.lib.recursiveUpdate voyagerMainnet.packages voyagerMinimal.packages // voyagerSidecar.packages;
-      checks = pkgs.lib.recursiveUpdate voyagerMainnet.checks voyagerMinimal.checks // voyagerSidecar.checks;
-
+      packages = pkgs.lib.recursiveUpdate voyagerMainnet.packages voyagerMinimal.packages;
+      checks = pkgs.lib.recursiveUpdate voyagerMainnet.checks voyagerMinimal.checks;
     };
 }
