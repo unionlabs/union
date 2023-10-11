@@ -103,7 +103,14 @@ pub struct ChainEvent<C: Chain> {
 }
 
 pub trait ClientState {
-    type ChainId: Debug + Display + PartialEq + Hash + Clone + Serialize + for<'de> Deserialize<'de>;
+    type ChainId: Debug
+        + Display
+        + PartialEq
+        + Eq
+        + Hash
+        + Clone
+        + Serialize
+        + for<'de> Deserialize<'de>;
     type Height: IsHeight;
 
     fn height(&self) -> Self::Height;

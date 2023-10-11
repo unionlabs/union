@@ -28,3 +28,4 @@ chrono = { version = "0.4.26", default-features = false, features = ["alloc"] }
 hubble.workspace = true
 reqwest = "0.11.20"
 serde_json = "1.0.107"
+thiserror = "1.0.49"

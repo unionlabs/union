@@ -85,6 +85,21 @@ macro_rules! bounded_int {
                 }
             }
 
+            impl<const MIN: $ty, const MAX: $ty> std::str::FromStr for $Struct<MIN, MAX> {
+                type Err = BoundedIntParseError<$ty>;
+
+                fn from_str(s: &str) -> Result<Self, Self::Err> {
+                    s.parse::<$ty>()
+                        .map_err(BoundedIntParseError::Parse)
+                        .and_then(|n| n.try_into().map_err(BoundedIntParseError::Value))
+                }
+            }
+
+            impl<const MIN: $ty, const MAX: $ty> std::fmt::Display for $Struct<MIN, MAX> {
+                fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                    write!(f, "{}", self.0)
+                }
+            }
 
             $(
                 const _: () = assert!(
@@ -127,6 +142,12 @@ pub struct BoundedIntError<T> {
     min: T,
     max: T,
     found: T,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum BoundedIntParseError<T> {
+    Parse(std::num::ParseIntError),
+    Value(BoundedIntError<T>),
 }
 
 bounded_int! {

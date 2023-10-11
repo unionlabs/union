@@ -1,9 +1,8 @@
-use std::{fmt::Display, str::FromStr};
+use std::{fmt::Display, num::ParseIntError, str::FromStr};
 
 use ethers::prelude::k256::ecdsa;
 use futures::{stream, Future, FutureExt, Stream, StreamExt, TryFutureExt, TryStreamExt};
 use prost::Message;
-use protos::ibc::core::channel::v1::QueryPacketAcknowledgementRequest;
 use serde::{Deserialize, Serialize};
 use sha2::Digest;
 use tendermint_rpc::{
@@ -290,27 +289,46 @@ impl Chain for Union {
     }
 }
 
+#[derive(Debug, thiserror::Error)]
+pub enum UnionInitError {
+    #[error("tendermint rpc error")]
+    Tendermint(#[from] tendermint_rpc::Error),
+    #[error(
+        "unable to parse chain id: expected format `<chain>-<revision-number>`, found `{found}`"
+    )]
+    // TODO: Once the `Id` trait in unionlabs is cleaned up to no longer use static id types, this error should just wrap `IdParseError`
+    ChainIdParse {
+        found: String,
+        #[source]
+        source: Option<ParseIntError>,
+    },
+}
+
 impl Union {
-    pub async fn new(config: Config) -> Self {
+    pub async fn new(config: Config) -> Result<Self, UnionInitError> {
         let (tm_client, driver) = WebSocketClient::builder(config.ws_url)
             .compat_mode(tendermint_rpc::client::CompatMode::V0_37)
             .build()
-            .await
-            .unwrap();
+            .await?;
 
         tokio::spawn(async move { driver.run().await });
 
-        let chain_id = tm_client
-            .status()
-            .await
-            .unwrap()
-            .node_info
-            .network
-            .to_string();
+        let chain_id = tm_client.status().await?.node_info.network.to_string();
 
-        let chain_revision = chain_id.split('-').last().unwrap().parse().unwrap();
+        let chain_revision = chain_id
+            .split('-')
+            .last()
+            .ok_or_else(|| UnionInitError::ChainIdParse {
+                found: chain_id.clone(),
+                source: None,
+            })?
+            .parse()
+            .map_err(|err| UnionInitError::ChainIdParse {
+                found: chain_id.clone(),
+                source: Some(err),
+            })?;
 
-        Self {
+        Ok(Self {
             signer: CosmosAccountId::new(config.signer.value(), "union".to_string()),
             tm_client,
             chain_id,
@@ -318,7 +336,7 @@ impl Union {
             prover_endpoint: config.prover_endpoint,
             grpc_url: config.grpc_url,
             fee_denom: config.fee_denom,
-        }
+        })
     }
 
     pub async fn broadcast_tx_commit(

@@ -20,7 +20,7 @@ use futures::{
 use hubble::hasura::{Datastore, HasuraDataStore, InsertDemoTx};
 use pg_queue::ProcessFlow;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
-use sqlx::{error::BoxDynError, PgPool};
+use sqlx::PgPool;
 use unionlabs::{
     ethereum_consts_traits::{Mainnet, Minimal},
     events::{
@@ -56,7 +56,7 @@ use crate::{
             CommitmentPath, ConnectionPath, IbcStateRead,
         },
         union::{EthereumMainnet, EthereumMinimal},
-        AnyChain, ChainOf, HeightOf, LightClient, QueryHeight,
+        AnyChain, AnyChainTryFromConfigError, ChainOf, HeightOf, LightClient, QueryHeight,
     },
     config::Config,
     msg::{
@@ -117,7 +117,7 @@ pub struct Voyager<Q> {
 
 pub trait Queue: Clone + Send + Sync + Sized {
     /// Error type returned by this queue, representing errors that are out of control of the consumer (i.e. unable to connect to database, can't insert into row, can't deserialize row, etc)
-    type Error: Debug + Display + Error;
+    type Error: Debug + Display + Error + 'static;
     type Config: Debug + Clone + Serialize + DeserializeOwned;
 
     fn new(cfg: Self::Config) -> impl Future<Output = Result<Self, Self::Error>>;
@@ -147,10 +147,9 @@ pub enum AnyQueue {
 }
 
 #[derive(Debug, thiserror::Error)]
+#[error(transparent)]
 pub enum AnyQueueError {
-    #[error("{0}")]
     InMemory(#[from] <InMemoryQueue as Queue>::Error),
-    #[error("{0}")]
     PgQueue(#[from] <PgQueue as Queue>::Error),
 }
 
@@ -267,8 +266,18 @@ impl Queue for PgQueue {
     }
 }
 
+#[derive(Debug, thiserror::Error)]
+pub enum VoyagerInitError<Q: Queue> {
+    #[error("multiple configured chains have the same chain id `{chain_id}`")]
+    DuplicateChainId { chain_id: String },
+    #[error("error initializing chain")]
+    ChainInit(#[from] AnyChainTryFromConfigError),
+    #[error("error initializing queue")]
+    QueueInit(#[source] Q::Error),
+}
+
 impl<Q: Queue> Voyager<Q> {
-    pub async fn new(config: Config<Q>) -> Self {
+    pub async fn new(config: Config<Q>) -> Result<Self, VoyagerInitError<Q>> {
         if config.voyager.hasura.is_none() {
             tracing::warn!("no hasura config supplied, no messages will be indexed");
         }
@@ -277,13 +286,26 @@ impl<Q: Queue> Voyager<Q> {
         let mut evm_minimal = HashMap::new();
         let mut evm_mainnet = HashMap::new();
 
+        fn insert_into_chain_map<C: Chain, Q: Queue>(
+            map: &mut HashMap<<<C as Chain>::SelfClientState as ClientState>::ChainId, C>,
+            chain: C,
+        ) -> Result<<<C as Chain>::SelfClientState as ClientState>::ChainId, VoyagerInitError<Q>>
+        {
+            let chain_id = chain.chain_id();
+            map.insert(chain_id.clone(), chain)
+                .map_or(Ok(chain_id), |prev| {
+                    Err(VoyagerInitError::DuplicateChainId {
+                        chain_id: prev.chain_id().to_string(),
+                    })
+                })
+        }
+
         for (chain_name, chain_config) in config.chain {
-            let chain = AnyChain::try_from_config(&config.voyager, chain_config).await;
+            let chain = AnyChain::try_from_config(&config.voyager, chain_config).await?;
 
             match chain {
                 AnyChain::Union(c) => {
-                    let chain_id = c.chain_id.clone();
-                    assert!(union.insert(c.chain_id.clone(), c).is_none());
+                    let chain_id = insert_into_chain_map(&mut union, c)?;
 
                     tracing::info!(
                         chain_name,
@@ -293,8 +315,7 @@ impl<Q: Queue> Voyager<Q> {
                     );
                 }
                 AnyChain::EvmMainnet(c) => {
-                    let chain_id = c.chain_id;
-                    assert!(evm_mainnet.insert(c.chain_id, c).is_none());
+                    let chain_id = insert_into_chain_map(&mut evm_mainnet, c)?;
 
                     tracing::info!(
                         chain_name,
@@ -304,8 +325,7 @@ impl<Q: Queue> Voyager<Q> {
                     );
                 }
                 AnyChain::EvmMinimal(c) => {
-                    let chain_id = c.chain_id;
-                    assert!(evm_minimal.insert(c.chain_id, c).is_none());
+                    let chain_id = insert_into_chain_map(&mut evm_minimal, c)?;
 
                     tracing::info!(
                         chain_name,
@@ -317,7 +337,11 @@ impl<Q: Queue> Voyager<Q> {
             }
         }
 
-        Self {
+        let queue = Q::new(config.voyager.queue)
+            .await
+            .map_err(VoyagerInitError::QueueInit)?;
+
+        Ok(Self {
             evm_minimal,
             evm_mainnet,
             union,
@@ -326,8 +350,8 @@ impl<Q: Queue> Voyager<Q> {
                 .voyager
                 .hasura
                 .map(|hc| HasuraDataStore::new(reqwest::Client::new(), hc.url, hc.secret)),
-            queue: Q::new(config.voyager.queue).await.unwrap(),
-        }
+            queue,
+        })
     }
 
     pub async fn run(self) {

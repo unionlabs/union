@@ -12,7 +12,7 @@ pub fn do_aggregate<L: LightClient, T: UseAggregate<L>>(
     event: T,
     data: VecDeque<AggregateData>,
 ) -> RelayerMsg {
-    let data_json = serde_json::to_string(&data).unwrap();
+    let data_json = serde_json::to_string(&data).expect("serialization should not fail");
 
     tracing::info!(%data_json, "aggregating data");
 
@@ -55,12 +55,17 @@ impl<U, T, Tail> HListTryFromIterator<U> for HCons<T, Tail>
 where
     T: TryFrom<U, Error = U> + Into<U>,
     Tail: HListTryFromIterator<U>,
+    // REVIEW: Should debug be used instead?
     U: Serialize,
 {
     fn try_from_iter(vec: VecDeque<U>) -> Result<Self, VecDeque<U>> {
         match pluck::<T, U>(vec) {
             ControlFlow::Continue(not_found) => {
-                tracing::warn!(not_found = %serde_json::to_string(&not_found).unwrap(), "type didn't match");
+                tracing::error!(
+                    not_found = %serde_json::to_string(&not_found).expect("serialization should not fail"),
+                    "type didn't match"
+                );
+
                 Err(not_found)
             }
             ControlFlow::Break((vec, u)) => Ok(HCons {
