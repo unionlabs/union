@@ -10,6 +10,7 @@ import "../proto/tendermint/types/canonical.sol";
 import "./Encoder.sol";
 import "./MerkleTree.sol";
 import "../core/IZKVerifier.sol";
+import "../core/IZKVerifierV2.sol";
 import "solidity-bytes-utils/BytesLib.sol";
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {GoogleProtobufAny as Any} from "../proto/GoogleProtobufAny.sol";
@@ -114,6 +115,39 @@ library CometblsHelp {
         ];
 
         return verifier.verifyProof(a, b, c, inputs);
+    }
+
+    function verifyZKP(
+        IZKVerifierV2 verifier,
+        bytes32 trustedValidatorsHash,
+        bytes32 untrustedValidatorsHash,
+        bytes memory message,
+        bytes memory zkp
+    ) internal view returns (bool) {
+        (uint256 messageX, uint256 messageY) = hashToField2(message);
+
+        (
+            uint256[2] memory a,
+            uint256[2][2] memory b,
+            uint256[2] memory c,
+            uint256 commitmentHash,
+            uint256[2] memory proofCommitment
+        ) = abi.decode(
+                zkp,
+                (uint256[2], uint256[2][2], uint256[2], uint256, uint256[2])
+            );
+
+        uint256[5] memory inputs = [
+            uint256(trustedValidatorsHash),
+            uint256(untrustedValidatorsHash),
+            messageX,
+            messageY,
+            // Gnark commitment API extend internal inputs with the following commitment hash and proof commitment
+            // See https://github.com/ConsenSys/gnark/issues/652
+            commitmentHash
+        ];
+
+        return verifier.verifyProof(a, b, c, inputs, proofCommitment);
     }
 
     function isExpired(

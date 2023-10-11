@@ -110,13 +110,13 @@
           network = "devnet";
           rpc-url = "http://localhost:8545";
           private-key = builtins.readFile ./../networks/genesis/devnet-evm/dev-key0.prv;
-          zkp-verifier-prefix = "Devnet";
+          zkp-verifier-prefix = "";
         }
         {
           network = "testnet";
           rpc-url = "https://rpc-sepolia.rockx.com/";
           private-key = ''"$1"'';
-          zkp-verifier-prefix = "Testnet";
+          zkp-verifier-prefix = "";
         }
       ];
 
@@ -160,7 +160,7 @@
 
               { path = "clients/${zkp-verifier-prefix}Verifier.sol"; name = "${zkp-verifier-prefix}Verifier"; }
               { path = "clients/ICS23MembershipVerifier.sol"; name = "ICS23MembershipVerifier"; }
-              { path = "clients/CometblsClient.sol"; name = "CometblsClient"; args = ''--constructor-args "$DEVNETOWNABLEIBCHANDLER" "''$${pkgs.lib.strings.toUpper zkp-verifier-prefix}VERIFIER" "$ICS23MEMBERSHIPVERIFIER"''; }
+              { path = "clients/CometblsClientV2.sol"; name = "CometblsClient"; args = ''--constructor-args "$DEVNETOWNABLEIBCHANDLER" "''$${pkgs.lib.strings.toUpper zkp-verifier-prefix}VERIFIER" "$ICS23MEMBERSHIPVERIFIER"''; }
 
               { path = "apps/ucs/01-relay/Relay.sol"; name = "UCS01Relay"; args = ''--constructor-args "$DEVNETOWNABLEIBCHANDLER" "1"'';}
             ]}
