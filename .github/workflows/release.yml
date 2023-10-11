@@ -180,6 +180,23 @@ jobs:
           skopeo copy --multi-arch=all --insecure-policy --src-tls-verify=false "docker://localhost:5000/unionlabs/${{ matrix.package }}:${{ github.ref_name }}" "docker://ghcr.io/unionlabs/${{ matrix.package }}:${{ github.ref_name }}"
 
           echo "Copied ${{ matrix.package }}:${{ github.ref_name }} multi-arch to GHCR"
+      - name: Authenticate to GCP
+        uses: 'google-github-actions/auth@v1'
+        with:
+          credentials_json: ${{ secrets.GCP_AR_CRED_JSON }}
+      - name: Set up GCP SDK
+        uses: google-github-actions/setup-gcloud@v1
+        with:
+          version: '>= 363.0.0'
+      - name: Configure docker to authinticate with GCP
+        run: |
+          gcloud auth configure-docker europe-docker.pkg.dev
+      - name: Copy Manifest to GCP
+        run: |
+          if [[ "uniond" == ${{ matrix.package }} ]]; then
+            skopeo copy --multi-arch=all --insecure-policy --src-tls-verify=false "docker://localhost:5000/unionlabs/${{ matrix.package }}:${{ github.ref_name }}" "docker://europe-docker.pkg.dev/model-envelope-401614/union-testnet/${{ matrix.package }}:${{ github.ref_name }}"
+          fi
+
     
   release:
     runs-on: ubuntu-latest
