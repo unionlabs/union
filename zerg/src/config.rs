@@ -35,4 +35,5 @@ pub struct Config {
     pub evm: chain_utils::evm::Config,
     pub contract: String,
     pub channel: String,
+    pub evm_contract: Address,
 }

@@ -22,5 +22,6 @@
       "grpc_url": "http://localhost:9090"
     },
   "contract": "union14hj2tavq8fpesdwxxcu44rty3hh90vhujrvcmstl4zr3txmfvw9s3e9fe2",
-  "channel": "channel-2"
+  "channel": "channel-2",
+  "evm_contract": "0xF8F7758FbcEfd546eAEff7dE24AFf666B6228e73"
 }

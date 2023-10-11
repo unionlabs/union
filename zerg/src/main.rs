@@ -11,7 +11,8 @@ use chain_utils::{Chain, EventSource};
 use clap::Parser;
 use cli::AppArgs;
 use config::Config;
-use ethers::utils::get_create2_address_from_hash;
+use contracts::ucs01_relay::{self as ucs01relay, LocalToken};
+use ethers::{prelude::SignerMiddleware, utils::get_create2_address_from_hash};
 use futures::{stream, StreamExt};
 use serde::{Deserialize, Serialize};
 use tendermint_rpc::WebSocketClient;
@@ -141,8 +142,14 @@ async fn main() {
 
 impl Context {
     async fn tx_handler(self) {
+        let signer_middleware = Arc::new(SignerMiddleware::new(
+            self.evm.provider.clone(),
+            self.evm.wallet.clone(),
+        ));
+        let receiver = signer_middleware.address().to_string();
+
         let mut previous_height = 0;
-        for _i in 0..10 {
+        for _i in 0..1 {
             let mut height = previous_height;
 
             while height == previous_height {
@@ -162,12 +169,12 @@ impl Context {
             let mut msgs = vec![];
             // :,)
             let mut unions = vec![];
-            for (i, account) in self.zerg_config.union.signers.iter().enumerate() {
+            for (i, _account) in self.zerg_config.union.signers.iter().enumerate() {
                 let union = self.zerg_config.union.get_union_for(i).await;
 
                 let transfer_msg = ExecuteMsg::Transfer(TransferMsg {
                     channel: self.zerg_config.channel.clone(),
-                    receiver: serde_json::to_string(&self.zerg_config.evm.signer).unwrap(),
+                    receiver: receiver.clone(),
                     // TODO: use uuid in memo
                     memo: "garbage".to_string(),
                     timeout: None,
@@ -221,6 +228,14 @@ impl Context {
 
     async fn listen_eth(&self) {
         let mut events = Box::pin(self.evm.events(()));
+        let signer_middleware = Arc::new(SignerMiddleware::new(
+            self.evm.provider.clone(),
+            self.evm.wallet.clone(),
+        ));
+        signer_middleware.address();
+
+        let ucs01_relay =
+            ucs01relay::UCS01Relay::new(self.zerg_config.evm_contract.clone(), signer_middleware);
 
         loop {
             let event = events.next().await.unwrap().unwrap();
@@ -230,6 +245,33 @@ impl Context {
                     self.append_record(create_send_event(event.chain_id.to_string(), e))
                 }
                 unionlabs::events::IbcEvent::RecvPacket(e) => {
+                    let transfer = Ucs01TransferPacket::try_from(cosmwasm_std::Binary(
+                        e.packet_data_hex.clone(),
+                    ))
+                    .unwrap();
+                    let denom =
+                        format!("{}/{}/{}", e.packet_src_port, e.packet_src_channel, "stake");
+                    println!("denom: {}", denom);
+                    let denom_address = ucs01_relay.denom_to_address(denom).await.unwrap();
+                    println!("address: {}", denom_address);
+                    ucs01_relay
+                        .send(
+                            e.packet_dst_port.clone(),
+                            e.packet_dst_channel.clone().to_string(),
+                            transfer.sender().to_string(),
+                            vec![LocalToken {
+                                denom: denom_address,
+                                amount: 1000,
+                            }],
+                            1,
+                            u64::MAX,
+                        )
+                        .send()
+                        .await
+                        .unwrap()
+                        .await
+                        .unwrap()
+                        .unwrap();
                     self.append_record(create_recv_event(event.chain_id.to_string(), e))
                 }
                 _ => (),
