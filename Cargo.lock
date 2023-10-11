@@ -6875,6 +6875,28 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "09041cd90cf85f7f8b2df60c646f853b7f535ce68f85244eb6731cf89fa498ec"
 
 [[package]]
+name = "zerg"
+version = "0.1.0"
+dependencies = [
+ "chain-utils",
+ "clap",
+ "cosmwasm-std",
+ "ethers",
+ "futures",
+ "serde",
+ "serde-utils",
+ "serde_json",
+ "tendermint",
+ "tendermint-proto",
+ "tendermint-rpc",
+ "tokio",
+ "tokio-stream",
+ "ucs01-relay",
+ "ucs01-relay-api",
+ "unionlabs",
+]
+
+[[package]]
 name = "zerocopy"
 version = "0.7.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6892,28 +6914,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.38",
- ]
-
-[[package]]
-name = "zerg"
-version = "0.1.0"
-dependencies = [
- "chain-utils",
- "clap",
- "cosmwasm-std",
- "ethers",
- "futures",
- "serde",
- "serde-utils",
- "serde_json",
- "tendermint 0.33.0",
- "tendermint-proto 0.33.0",
- "tendermint-rpc",
- "tokio",
- "tokio-stream",
- "ucs01-relay",
- "ucs01-relay-api",
- "unionlabs",
 ]
 
 [[package]]
