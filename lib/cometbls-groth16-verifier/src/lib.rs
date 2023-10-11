@@ -463,19 +463,11 @@ fn verify_generic_zkp<P: Pairing>(
         <P::ScalarField as PrimeField>::from_le_bytes_mod_order(&buffer)
     };
 
-    let trusted_validators_hash_high = trusted_validators_hash >> 128;
-    let trusted_validators_hash_low = trusted_validators_hash.low_u128().into();
-
-    let untrusted_validators_hash_high = untrusted_validators_hash >> 128;
-    let untrusted_validators_hash_low = untrusted_validators_hash.low_u128().into();
-
     let (message_x, message_y) = hash_to_field2(message.iter().copied());
 
-    let public_inputs: [P::ScalarField; 7] = [
-        decode_scalar(trusted_validators_hash_high),
-        decode_scalar(trusted_validators_hash_low),
-        decode_scalar(untrusted_validators_hash_high),
-        decode_scalar(untrusted_validators_hash_low),
+    let public_inputs: [P::ScalarField; 5] = [
+        decode_scalar(trusted_validators_hash),
+        decode_scalar(untrusted_validators_hash),
         decode_scalar(message_x),
         decode_scalar(message_y),
         decode_scalar(zkp.commitment_hash),
