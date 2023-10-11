@@ -30,6 +30,7 @@ GOPRIVATE
 Getenv
 HKTs
 HMAC
+Hashable
 Hasher
 Hhvf
 Hyperlane
@@ -48,6 +49,7 @@ Lightshift
 Maxblocks
 Merkle
 Mgoogle
+Mimc
 Misbehaviour
 NIXBUILDNET
 Neue
@@ -93,6 +95,8 @@ Unmarshal
 Verkle
 Woestijne
 Wrapf
+XMSB
+YMSB
 aarch
 abci
 abigen
@@ -391,6 +395,7 @@ metadatas
 metas
 mgoogle
 milagro
+mimc
 miminum
 miniserve
 mintkeeper
@@ -652,6 +657,7 @@ unmarshal
 unmarshalling
 unopinionated
 unsetting
+unshifted
 unvalidated
 unwithdrawn
 upgradability
