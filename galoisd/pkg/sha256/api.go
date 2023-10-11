@@ -1,20 +1,25 @@
 package sha256
 
-// NOTE: the circuit is not handling arbitrary size inputs, the padding would
-// need to be adjusted and made dynamic based on the `size` with a maximum
-// number of blocks hardcoded in the circuit
-
 import "github.com/consensys/gnark/frontend"
 
 type Sha256API struct {
-	api frontend.API
+	api               frontend.API
+	MaxBlocks         int
+	MaxPreimageLength int
 }
 
-func NewSHA256(api frontend.API) Sha256API {
-	return Sha256API{api: api}
+func NewSHA256(api frontend.API, maxBlocks int) Sha256API {
+	return Sha256API{
+		api:       api,
+		MaxBlocks: maxBlocks,
+		// Given a maximum number of blocks, we must be able to fit <original message of length L> 1b <K zeros> <L as 64 bit integer>
+		MaxPreimageLength: 55 + (maxBlocks-1)*64,
+	}
 }
 
 func (sha *Sha256API) Hash(preimage []frontend.Variable, size frontend.Variable) [32]frontend.Variable {
+
+	sha.api.AssertIsLessOrEqual(size, sha.MaxPreimageLength)
 
 	// K values
 	var K = [64]frontend.Variable{0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5, 0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174, 0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da, 0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967, 0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85, 0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070, 0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3, 0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2}
@@ -31,17 +36,23 @@ func (sha *Sha256API) Hash(preimage []frontend.Variable, size frontend.Variable)
 	H[7] = frontend.Variable(0x5BE0CD19)
 
 	// padding
-	paddedInput := padding(sha.api, preimage, size)
+	paddedPreimage, maxBlockIndex := sha.padding(preimage, size)
 
-	// chunk processing of padded input
-	numberChunks := int(len(paddedInput) / 64)
+	var w [64]frontend.Variable
+	var a frontend.Variable
+	var b frontend.Variable
+	var c frontend.Variable
+	var d frontend.Variable
+	var e frontend.Variable
+	var f frontend.Variable
+	var g frontend.Variable
+	var h frontend.Variable
 
-	for epoch := 0; epoch < numberChunks; epoch++ {
+	for epoch := 0; epoch < sha.MaxBlocks; epoch++ {
+		isDone := sha.api.IsZero(maxBlockIndex)
+		maxBlockIndex = sha.api.Select(isDone, 0, sha.api.Sub(maxBlockIndex, 1))
 
 		eIndex := epoch * 64
-
-		// w values init
-		var w [64]frontend.Variable
 
 		// first 16 w values is set based on input data
 		for i := 0; i < 16; i++ {
@@ -49,10 +60,10 @@ func (sha *Sha256API) Hash(preimage []frontend.Variable, size frontend.Variable)
 			j := i * 4
 
 			// same as in go except that | is replaced with api.Add for multi-bit operation
-			leftShift24 := shiftLeft(sha.api, paddedInput[eIndex+j], 24)
-			leftShift16 := shiftLeft(sha.api, paddedInput[eIndex+j+1], 16)
-			leftShift8 := shiftLeft(sha.api, paddedInput[eIndex+j+2], 8)
-			leftShiftNone := sha.api.FromBinary(sha.api.ToBinary(paddedInput[eIndex+j+3], 32)...)
+			leftShift24 := shiftLeft(sha.api, paddedPreimage[eIndex+j], 24)
+			leftShift16 := shiftLeft(sha.api, paddedPreimage[eIndex+j+1], 16)
+			leftShift8 := shiftLeft(sha.api, paddedPreimage[eIndex+j+2], 8)
+			leftShiftNone := sha.api.FromBinary(sha.api.ToBinary(paddedPreimage[eIndex+j+3], 32)...)
 			w[i] = trimBits(sha.api, sha.api.Add(sha.api.Add(sha.api.Add(leftShift24, leftShift16), leftShift8), leftShiftNone), 34)
 		}
 
@@ -88,16 +99,6 @@ func (sha *Sha256API) Hash(preimage []frontend.Variable, size frontend.Variable)
 			w16 := w[i-16]
 			w[i] = trimBits(sha.api, sha.api.Add(sha.api.Add(sha.api.Add(t1, w7), t2), w16), 34) // addition mod 2^32 ==> cut number to 32 bit
 		}
-
-		// a to h values
-		var a frontend.Variable
-		var b frontend.Variable
-		var c frontend.Variable
-		var d frontend.Variable
-		var e frontend.Variable
-		var f frontend.Variable
-		var g frontend.Variable
-		var h frontend.Variable
 
 		a = H[0]
 		b = H[1]
@@ -182,15 +183,14 @@ func (sha *Sha256API) Hash(preimage []frontend.Variable, size frontend.Variable)
 		}
 
 		// updating H values
-		H[0] = trimBits(sha.api, sha.api.Add(H[0], a), 33)
-		H[1] = trimBits(sha.api, sha.api.Add(H[1], b), 33)
-		H[2] = trimBits(sha.api, sha.api.Add(H[2], c), 33)
-		H[3] = trimBits(sha.api, sha.api.Add(H[3], d), 33)
-		H[4] = trimBits(sha.api, sha.api.Add(H[4], e), 33)
-		H[5] = trimBits(sha.api, sha.api.Add(H[5], f), 33)
-		H[6] = trimBits(sha.api, sha.api.Add(H[6], g), 33)
-		H[7] = trimBits(sha.api, sha.api.Add(H[7], h), 33)
-
+		H[0] = sha.api.Select(isDone, H[0], trimBits(sha.api, sha.api.Add(H[0], a), 33))
+		H[1] = sha.api.Select(isDone, H[1], trimBits(sha.api, sha.api.Add(H[1], b), 33))
+		H[2] = sha.api.Select(isDone, H[2], trimBits(sha.api, sha.api.Add(H[2], c), 33))
+		H[3] = sha.api.Select(isDone, H[3], trimBits(sha.api, sha.api.Add(H[3], d), 33))
+		H[4] = sha.api.Select(isDone, H[4], trimBits(sha.api, sha.api.Add(H[4], e), 33))
+		H[5] = sha.api.Select(isDone, H[5], trimBits(sha.api, sha.api.Add(H[5], f), 33))
+		H[6] = sha.api.Select(isDone, H[6], trimBits(sha.api, sha.api.Add(H[6], g), 33))
+		H[7] = sha.api.Select(isDone, H[7], trimBits(sha.api, sha.api.Add(H[7], h), 33))
 	}
 
 	// reorder bits
@@ -207,7 +207,6 @@ func (sha *Sha256API) Hash(preimage []frontend.Variable, size frontend.Variable)
 	}
 
 	return out
-
 }
 
 func trimBits(api frontend.API, a frontend.Variable, size int) frontend.Variable {
@@ -283,53 +282,50 @@ func variableXor(api frontend.API, a frontend.Variable, b frontend.Variable, siz
 	return api.FromBinary(x...)
 }
 
-func padding(api frontend.API, input []frontend.Variable, size frontend.Variable) []frontend.Variable {
+func (sha *Sha256API) padding(input []frontend.Variable, size frontend.Variable) ([]frontend.Variable, frontend.Variable) {
+	nbOfBlocks := frontend.Variable(1)
+	remainder := size
 
-	// helpers
-	inputLen := len(input)
-
-	// t is start index of inputBitLen encoding
-	var t int
-	if inputLen%64 < 56 {
-		t = 56 - inputLen%64
-	} else {
-		t = 64 + 56 - inputLen%64
+	for i := 1; i < sha.MaxBlocks; i++ {
+		biggerThanABlock := sha.api.Cmp(remainder, 64)
+		biggerThanABlock = sha.api.Select(sha.api.IsZero(biggerThanABlock), 1, biggerThanABlock)
+		biggerThanABlock = sha.api.Select(sha.api.IsZero(sha.api.Add(biggerThanABlock, 1)), 0, biggerThanABlock)
+		nbOfBlocks = sha.api.Add(nbOfBlocks, sha.api.Select(biggerThanABlock, 1, 0))
+		remainder = sha.api.Sub(remainder, sha.api.Select(biggerThanABlock, 64, 0))
 	}
 
-	// total length of padded input
-	totalLen := inputLen + t + 8
+	// Must be able to fit the 8 bytes len at the end of the last block
+	extraBlockRequired := sha.api.Cmp(8, sha.api.Sub(64, remainder))
+	extraBlockRequired = sha.api.Select(sha.api.IsZero(extraBlockRequired), 1, extraBlockRequired)
+	extraBlockRequired = sha.api.Select(sha.api.IsZero(sha.api.Add(extraBlockRequired, 1)), 0, extraBlockRequired)
+	nbOfBlocks = sha.api.Add(nbOfBlocks, sha.api.Select(extraBlockRequired, 1, 0))
 
-	// encode every byte in frontend.Variable
-	out := make([]frontend.Variable, totalLen)
+	output := make([]frontend.Variable, sha.MaxBlocks*64)
 
-	// zero padding
-	for i := 0; i < totalLen; i++ {
-		out[i] = 0
+	// We fill the input and then we append then `1` bit
+	toFill := sha.api.Add(size, 1)
+	for i := 0; i < len(output); i++ {
+		isZero := sha.api.IsZero(toFill)
+		if i < len(input) {
+			output[i] = sha.api.Select(isZero, 0, sha.api.Select(sha.api.IsZero(sha.api.Sub(toFill, 1)), 128, input[i]))
+		} else {
+			output[i] = sha.api.Select(isZero, 0, sha.api.Select(sha.api.IsZero(sha.api.Sub(toFill, 1)), 128, 0))
+		}
+		toFill = sha.api.Select(isZero, 0, sha.api.Sub(toFill, 1))
 	}
 
-	// existing bytes into out
-	for i := 0; i < inputLen; i++ {
-		out[i] = input[i]
+	// We append the input len in the last 8 bytes of the last block
+	bits := sha.api.ToBinary(shiftLeft(sha.api, size, 3), 64)
+
+	currentBlock := sha.api.Sub(nbOfBlocks, 1)
+	for i := 0; i < sha.MaxBlocks; i++ {
+		isZero := sha.api.IsZero(currentBlock)
+		for j := 7; j >= 0; j-- {
+			start := j * 8
+			output[64*i+56+(7-j)] = sha.api.Select(isZero, sha.api.FromBinary(bits[start:start+8]...), output[64*i+56+(7-j)])
+		}
+		currentBlock = sha.api.Sub(currentBlock, 1)
 	}
 
-	elements := api.Add(size, 1)
-	for i := 0; i < inputLen+1; i++ {
-		out[i] = api.Select(api.IsZero(api.Sub(elements, 1)), 128, out[i])
-		elements = api.Select(api.IsZero(elements), elements, api.Sub(elements, 1))
-	}
-
-	// bit size of number of input bytes
-	inputBitLen := shiftLeft(api, size, 3)
-
-	// fill last 8 byte in reverse because of little endian
-	bits := api.ToBinary(inputBitLen, 64) // 64 bit = 8 byte
-
-	ctr := inputLen + t
-	for i := 7; i >= 0; i-- {
-		start := i * 8
-		out[ctr] = api.FromBinary(bits[start : start+8]...)
-		ctr += 1
-	}
-
-	return out
+	return output, nbOfBlocks
 }

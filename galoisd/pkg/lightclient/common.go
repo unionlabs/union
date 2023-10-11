@@ -167,7 +167,9 @@ func (lc *TendermintLightClientAPI) Verify(message *gadget.G2Affine, expectedVal
 
 	leafHashes := make([][]frontend.Variable, MaxVal)
 
-	merkle := merkle.NewMerkleTreeAPI(lc.api)
+	// sizeof(0||leaf) = 1 + ValProtoSize = 48 bytes => 1 block
+	// sizeof(1||hash(left_leaf)|hash(right_leaf)) = 1 + 2*sizeof(hash(0||leaf)) = 65 bytes => 2 blocks
+	merkle := merkle.NewMerkleTreeAPI(lc.api, 1, 2)
 
 	forEachVal(func(i int, signed frontend.Variable, power frontend.Variable, PK *gadget.G1Affine, rawProto [ValProtoSize]frontend.Variable, protoSize frontend.Variable) {
 		// Aggregate voting power and current power

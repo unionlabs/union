@@ -12,11 +12,13 @@ const (
 )
 
 type MerkleTreeAPI struct {
-	api frontend.API
+	api            frontend.API
+	leafMaxBlocks  int
+	innerMaxBlocks int
 }
 
-func NewMerkleTreeAPI(api frontend.API) *MerkleTreeAPI {
-	return &MerkleTreeAPI{api: api}
+func NewMerkleTreeAPI(api frontend.API, leafMaxBlocks int, innerMaxblocks int) *MerkleTreeAPI {
+	return &MerkleTreeAPI{api: api, leafMaxBlocks: leafMaxBlocks, innerMaxBlocks: innerMaxblocks}
 }
 
 func (m *MerkleTreeAPI) LeafHash(leaf []frontend.Variable, size frontend.Variable) []frontend.Variable {
@@ -26,7 +28,7 @@ func (m *MerkleTreeAPI) LeafHash(leaf []frontend.Variable, size frontend.Variabl
 	for i := 0; i < len(leaf); i++ {
 		preimage[i+1] = leaf[i]
 	}
-	sha := sha256.NewSHA256(m.api)
+	sha := sha256.NewSHA256(m.api, m.leafMaxBlocks)
 	hash := sha.Hash(preimage[:], m.api.Add(size, 1))
 	return hash[:]
 }
@@ -41,7 +43,7 @@ func (m *MerkleTreeAPI) InnerHash(left []frontend.Variable, right []frontend.Var
 	for i := 0; i < len(right); i++ {
 		preimage[i+len(left)+1] = right[i]
 	}
-	sha := sha256.NewSHA256(m.api)
+	sha := sha256.NewSHA256(m.api, m.innerMaxBlocks)
 	hash := sha.Hash(preimage[:], 1+len(left)+len(right))
 	return hash[:]
 }
