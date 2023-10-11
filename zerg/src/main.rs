@@ -4,15 +4,17 @@ use std::{
     fs::{read_to_string, OpenOptions},
     io::Write,
     sync::Arc,
-    time::{SystemTime, UNIX_EPOCH},
+    time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
-use chain_utils::EventSource;
+use chain_utils::{Chain, EventSource};
 use clap::Parser;
 use cli::AppArgs;
+use config::Config;
 use ethers::utils::get_create2_address_from_hash;
 use futures::{stream, StreamExt};
 use serde::{Deserialize, Serialize};
+use tendermint_rpc::WebSocketClient;
 use tokio::sync::Mutex;
 use ucs01_relay::msg::{ExecuteMsg, TransferMsg};
 use ucs01_relay_api::types::Ucs01TransferPacket;
@@ -22,7 +24,7 @@ use unionlabs::{
     ethereum_consts_traits::Minimal,
     events::{RecvPacket, SendPacket},
     ibc::google::protobuf::any::Any,
-    IntoProto,
+    CosmosAccountId, IntoProto,
 };
 
 pub mod cli;
@@ -105,19 +107,101 @@ fn create_recv_event(chain_id: String, e: RecvPacket) -> Event {
     }
 }
 
+#[derive(Clone)]
 pub struct Context {
     pub output_file: String,
+    pub zerg_config: Config,
+    pub evm: chain_utils::evm::Evm<Minimal>,
 }
 
 #[tokio::main]
 async fn main() {
     let args = AppArgs::parse();
 
-    do_main(args).await
+    let zerg_config: Config =
+        serde_json::from_str(&read_to_string(args.config_file_path).unwrap()).unwrap();
+    let evm = chain_utils::evm::Evm::<Minimal>::new(zerg_config.evm.clone()).await;
+
+    let context = Context {
+        output_file: "output.csv".to_string(),
+        zerg_config,
+        evm,
+    };
+
+    let context2 = context.clone();
+
+    tokio::join!(
+        context.listen_union(),
+        context.listen_eth(),
+        tokio::spawn(async move {
+            context2.tx_handler().await;
+        }) //
+    );
 }
 
 impl Context {
-    async fn listen_union(&self, union: chain_utils::union::Union) -> ! {
+    async fn tx_handler(self) {
+        let mut previous_height = 0;
+        for _i in 0..10 {
+            let mut height = previous_height;
+
+            while height == previous_height {
+                height = self
+                    .zerg_config
+                    .union
+                    .get_union_for(0)
+                    .await
+                    .query_latest_height()
+                    .await
+                    .revision_height;
+                tokio::time::sleep(Duration::from_secs(1)).await;
+            }
+            previous_height = height;
+
+            let mut txs = vec![];
+            let mut msgs = vec![];
+            // :,)
+            let mut unions = vec![];
+            for (i, account) in self.zerg_config.union.signers.iter().enumerate() {
+                let union = self.zerg_config.union.get_union_for(i).await;
+
+                let transfer_msg = ExecuteMsg::Transfer(TransferMsg {
+                    channel: self.zerg_config.channel.clone(),
+                    receiver: serde_json::to_string(&self.zerg_config.evm.signer).unwrap(),
+                    // TODO: use uuid in memo
+                    memo: "garbage".to_string(),
+                    timeout: None,
+                });
+
+                let transfer_msg = format!("{}", serde_json::to_string(&transfer_msg).unwrap());
+
+                let msg = Any(MsgExecuteContract {
+                    sender: union.signer.to_string(),
+                    contract: self.zerg_config.contract.clone(),
+                    msg: transfer_msg.as_bytes().to_vec(),
+                    funds: vec![Coin {
+                        denom: "stake".into(),
+                        amount: "10000".into(),
+                    }],
+                })
+                .into_proto();
+
+                unions.push(union);
+                msgs.push(msg);
+            }
+
+            unions.into_iter().zip(msgs).for_each(|(union, msg)| {
+                txs.push(tokio::spawn(async move {
+                    union.broadcast_tx_commit([msg]).await;
+                }))
+            });
+
+            futures::future::try_join_all(txs.into_iter()).await;
+        }
+    }
+
+    async fn listen_union(&self) {
+        let union = self.zerg_config.union.get_union_for(0).await;
         let mut events = Box::pin(union.events(()));
 
         loop {
@@ -135,8 +219,8 @@ impl Context {
         }
     }
 
-    async fn listen_eth(&self, eth: chain_utils::evm::Evm<Minimal>) {
-        let mut events = Box::pin(eth.events(()));
+    async fn listen_eth(&self) {
+        let mut events = Box::pin(self.evm.events(()));
 
         loop {
             let event = events.next().await.unwrap().unwrap();
@@ -185,42 +269,4 @@ impl Context {
             }
         }
     }
-}
-
-async fn do_main(args: AppArgs) {
-    let zerg_config: config::Config =
-        serde_json::from_str(&read_to_string(args.config_file_path).unwrap()).unwrap();
-
-    let union = chain_utils::union::Union::new(zerg_config.union).await;
-    let eth = chain_utils::evm::Evm::new(zerg_config.evm).await;
-
-    let transfer_msg = ExecuteMsg::Transfer(TransferMsg {
-        channel: zerg_config.channel,
-        receiver: "0x1111111111111111111111111111111111111111".to_string(),
-        // TODO: use uuid in memo
-        memo: "garbage".to_string(),
-        timeout: None,
-    });
-    let transfer_msg = format!("{}", serde_json::to_string(&transfer_msg).unwrap());
-
-    let msg = Any(MsgExecuteContract {
-        sender: "union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2".to_string(),
-        contract: zerg_config.contract,
-        msg: transfer_msg.as_bytes().to_vec(),
-        funds: vec![Coin {
-            denom: "stake".into(),
-            amount: "10000".into(),
-        }],
-    })
-    .into_proto();
-
-    let context = Context {
-        output_file: "output.csv".into(),
-    };
-
-    tokio::join!(
-        union.broadcast_tx_commit([msg]),
-        context.listen_union(union.clone()),
-        context.listen_eth(eth.clone())
-    );
 }
