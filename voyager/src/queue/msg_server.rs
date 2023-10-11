@@ -37,7 +37,7 @@ impl EventSource for MsgServer {
             Json(msg): Json<RelayerMsg>,
         ) -> StatusCode {
             tracing::info!(?msg, "received msg");
-            sender.send(msg).unwrap();
+            sender.send(msg).expect("receiver should not close");
 
             StatusCode::OK
         }
@@ -49,7 +49,7 @@ impl EventSource for MsgServer {
         ) -> StatusCode {
             tracing::info!(?msgs, "received msgs");
             for msg in msgs {
-                sender.send(msg).unwrap();
+                sender.send(msg).expect("receiver should not close");
             }
 
             StatusCode::OK
@@ -57,7 +57,8 @@ impl EventSource for MsgServer {
 
         tokio::spawn(
             // TODO: Make this configurable
-            axum::Server::bind(&"0.0.0.0:65534".parse().unwrap()).serve(app.into_make_service()),
+            axum::Server::bind(&"0.0.0.0:65534".parse().expect("valid SocketAddr; qed;"))
+                .serve(app.into_make_service()),
         );
 
         UnboundedReceiverStream::new(rx).map(Ok)

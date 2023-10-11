@@ -7,7 +7,10 @@ use serde::{Deserialize, Serialize};
 use tendermint_rpc::WebSocketClientUrl;
 use unionlabs::ethereum::Address;
 
-use crate::{chain::AnyChain, queue::Queue};
+use crate::{
+    chain::{AnyChain, AnyChainTryFromConfigError},
+    queue::Queue,
+};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""))]
@@ -24,12 +27,22 @@ pub struct VoyagerConfig<Q: Queue> {
 }
 
 impl<Q: Queue> Config<Q> {
-    pub async fn get_chain(&self, name: &str) -> Option<AnyChain> {
+    pub async fn get_chain(&self, name: &str) -> Result<AnyChain, GetChainError> {
         match self.chain.get(name) {
-            Some(config) => Some(AnyChain::try_from_config(&self.voyager, config.clone()).await),
-            None => None,
+            Some(config) => Ok(AnyChain::try_from_config(&self.voyager, config.clone()).await?),
+            None => Err(GetChainError::ChainNotFound {
+                name: name.to_string(),
+            }),
         }
     }
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum GetChainError {
+    #[error("chain `{name}` not found in config")]
+    ChainNotFound { name: String },
+    #[error("error initializing chain")]
+    AnyChainTryFromConfig(#[from] AnyChainTryFromConfigError),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

@@ -16,6 +16,7 @@ pub struct Header {
     /// basic block info
     pub version: Consensus,
     pub chain_id: String,
+    #[serde(with = "::serde_utils::string")]
     pub height: BoundedI64<0, { i64::MAX }>,
     pub time: Timestamp,
     /// prev block info

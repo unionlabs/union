@@ -16,7 +16,7 @@ use ethers::{
     contract::{ContractError, EthCall, EthLogDecode},
     core::k256::ecdsa,
     middleware::SignerMiddleware,
-    providers::{Middleware, Provider, Ws},
+    providers::{Middleware, Provider, ProviderError, Ws, WsClientError},
     signers::{LocalWallet, Wallet},
     utils::secret_key_to_address,
 };
@@ -279,11 +279,19 @@ impl<C: ChainSpec> Chain for Evm<C> {
     }
 }
 
-impl<C: ChainSpec> Evm<C> {
-    pub async fn new(config: Config) -> Self {
-        let provider = Provider::new(Ws::connect(config.eth_rpc_api).await.unwrap());
+#[derive(Debug, thiserror::Error)]
+pub enum EvmInitError {
+    #[error("unable to connect to websocket")]
+    Ws(#[from] WsClientError),
+    #[error("provider error")]
+    Provider(#[from] ProviderError),
+}
 
-        let chain_id = provider.get_chainid().await.unwrap();
+impl<C: ChainSpec> Evm<C> {
+    pub async fn new(config: Config) -> Result<Self, EvmInitError> {
+        let provider = Provider::new(Ws::connect(config.eth_rpc_api).await?);
+
+        let chain_id = provider.get_chainid().await?;
 
         let signing_key: ecdsa::SigningKey = config.signer.value();
         let address = secret_key_to_address(&signing_key);
@@ -292,7 +300,7 @@ impl<C: ChainSpec> Evm<C> {
 
         let signer_middleware = Arc::new(SignerMiddleware::new(provider.clone(), wallet.clone()));
 
-        Self {
+        Ok(Self {
             chain_id: U256(chain_id),
             ibc_handler: IBCHandler::new(config.ibc_handler_address, signer_middleware.clone()),
             provider,
@@ -305,7 +313,7 @@ impl<C: ChainSpec> Evm<C> {
                     hasura_config.secret,
                 )
             }),
-        }
+        })
     }
 
     // TODO: Change to take a beacon slot instead of a height

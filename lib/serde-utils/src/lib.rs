@@ -10,6 +10,7 @@ const HEX_ENCODING_PREFIX: &str = "0x";
 pub enum FromHexStringError {
     Hex(FromHexError),
     MissingPrefix(String),
+    EmptyString,
     // NOTE: Contains the stringified error
     TryFromBytes(String),
 }
@@ -18,6 +19,7 @@ impl std::error::Error for FromHexStringError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
             FromHexStringError::Hex(hex) => Some(hex),
+            FromHexStringError::EmptyString => None,
             FromHexStringError::MissingPrefix(_) => None,
             FromHexStringError::TryFromBytes(_) => None,
         }
@@ -28,6 +30,7 @@ impl core::fmt::Display for FromHexStringError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             FromHexStringError::Hex(e) => write!(f, "{e}"),
+            FromHexStringError::EmptyString => write!(f, "cannot parse empty string as hex"),
             FromHexStringError::MissingPrefix(data) => write!(
                 f,
                 "missing prefix `{HEX_ENCODING_PREFIX}` when deserializing hex data '{data}'",
@@ -51,7 +54,13 @@ where
     T: TryFrom<Vec<u8>>,
     <T as TryFrom<Vec<u8>>>::Error: Debug + 'static,
 {
-    match string.as_ref().strip_prefix(HEX_ENCODING_PREFIX.as_bytes()) {
+    let s = &string.as_ref();
+
+    if s.is_empty() {
+        return Err(FromHexStringError::EmptyString);
+    }
+
+    match s.strip_prefix(HEX_ENCODING_PREFIX.as_bytes()) {
         Some(maybe_hex) => hex::decode(maybe_hex)
             .map_err(FromHexStringError::Hex)?
             .try_into()

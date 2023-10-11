@@ -4,7 +4,9 @@ use crate::{Proto, TypeUrl};
 
 #[derive(Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Consensus {
+    #[serde(with = "::serde_utils::string")]
     pub block: u64,
+    #[serde(with = "::serde_utils::string", default)]
     pub app: u64,
 }
 

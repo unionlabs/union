@@ -3,7 +3,11 @@ use std::{
     str::FromStr,
 };
 
-use chain_utils::{evm::Evm, union::Union, Chain};
+use chain_utils::{
+    evm::{Evm, EvmInitError},
+    union::{Union, UnionInitError},
+    Chain,
+};
 use futures::Future;
 use serde::{Deserialize, Serialize};
 use unionlabs::{
@@ -36,12 +40,20 @@ pub enum AnyChain {
     EvmMinimal(Evm<Minimal>),
 }
 
+#[derive(Debug, thiserror::Error)]
+pub enum AnyChainTryFromConfigError {
+    #[error("error initializing a union chain")]
+    Union(#[from] UnionInitError),
+    #[error("error initializing an ethereum chain")]
+    Evm(#[from] EvmInitError),
+}
+
 impl AnyChain {
     pub async fn try_from_config<Q: Queue>(
         voyager_config: &config::VoyagerConfig<Q>,
         config: ChainConfig,
-    ) -> Self {
-        match config {
+    ) -> Result<Self, AnyChainTryFromConfigError> {
+        Ok(match config {
             ChainConfig::Evm(EvmChainConfig::Mainnet(evm)) => Self::EvmMainnet(
                 Evm::<Mainnet>::new(chain_utils::evm::Config {
                     ibc_handler_address: evm.ibc_handler_address,
@@ -50,7 +62,7 @@ impl AnyChain {
                     eth_beacon_rpc_api: evm.eth_beacon_rpc_api,
                     hasura_config: voyager_config.hasura.clone(),
                 })
-                .await,
+                .await?,
             ),
             ChainConfig::Evm(EvmChainConfig::Minimal(evm)) => Self::EvmMinimal(
                 Evm::<Minimal>::new(chain_utils::evm::Config {
@@ -60,7 +72,7 @@ impl AnyChain {
                     eth_beacon_rpc_api: evm.eth_beacon_rpc_api,
                     hasura_config: voyager_config.hasura.clone(),
                 })
-                .await,
+                .await?,
             ),
             ChainConfig::Union(union) => Self::Union(
                 Union::new(chain_utils::union::Config {
@@ -70,9 +82,9 @@ impl AnyChain {
                     grpc_url: union.grpc_url,
                     fee_denom: union.fee_denom,
                 })
-                .await,
+                .await?,
             ),
-        }
+        })
     }
 }
 

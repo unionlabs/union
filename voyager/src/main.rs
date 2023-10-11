@@ -7,8 +7,9 @@
     clippy::manual_async_fn,
     clippy::module_name_repetitions
 )]
+// #![deny(clippy::unwrap_used)]
 
-use std::fs::read_to_string;
+use std::{ffi::OsString, fs::read_to_string, process::ExitCode};
 
 use chain_utils::{evm::Evm, union::Union};
 use clap::Parser;
@@ -17,8 +18,8 @@ use unionlabs::ethereum_consts_traits::Mainnet;
 use crate::{
     chain::AnyChain,
     cli::{AppArgs, Command, QueryCmd},
-    config::Config,
-    queue::{AnyQueue, Voyager},
+    config::{Config, GetChainError},
+    queue::{AnyQueue, Voyager, VoyagerInitError},
 };
 
 pub const DELAY_PERIOD: u64 = 0;
@@ -33,27 +34,67 @@ pub mod queue;
 pub mod chain;
 
 #[tokio::main]
-async fn main() -> Result<(), anyhow::Error> {
+async fn main() -> ExitCode {
     tracing_subscriber::fmt::init();
 
     let args = AppArgs::parse();
 
-    do_main(args).await
+    match do_main(args).await {
+        Ok(()) => ExitCode::SUCCESS,
+        Err(err) => {
+            eprintln!("Error: {err}");
+            ExitCode::FAILURE
+        }
+    }
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum VoyagerError {
+    #[error("unable to read the config file at {}", path.to_string_lossy())]
+    ConfigFileNotFound {
+        path: OsString,
+        #[source]
+        source: std::io::Error,
+    },
+    #[error("unable to parse the config file at {}", path.to_string_lossy())]
+    ConfigFileParse {
+        path: OsString,
+        #[source]
+        source: serde_json::Error,
+    },
+    #[error("error retrieving a chain from the config")]
+    GetChain(#[from] GetChainError),
+    #[error("error initializing voyager")]
+    Init(#[from] VoyagerInitError<AnyQueue>),
 }
 
 #[allow(clippy::too_many_lines)]
 // NOTE: This function is a mess, will be cleaned up
-async fn do_main(args: cli::AppArgs) -> Result<(), anyhow::Error> {
+async fn do_main(args: cli::AppArgs) -> Result<(), VoyagerError> {
     let voyager_config = read_to_string(&args.config_file_path)
-        .map(|s| serde_json::from_str::<Config<AnyQueue>>(&s).unwrap())
-        .unwrap();
+        .map_err(|err| VoyagerError::ConfigFileNotFound {
+            path: args.config_file_path.clone(),
+            source: err,
+        })
+        .and_then(|s| {
+            serde_json::from_str::<Config<AnyQueue>>(&s).map_err(|err| {
+                VoyagerError::ConfigFileParse {
+                    path: args.config_file_path,
+                    source: err,
+                }
+            })
+        })?;
 
     match args.command {
         Command::PrintConfig => {
-            println!("{}", serde_json::to_string_pretty(&voyager_config).unwrap());
+            println!(
+                "{}",
+                serde_json::to_string_pretty(&voyager_config)
+                    .expect("config serialization is infallible; qed;")
+            );
         }
         Command::Relay => {
-            let queue = Voyager::new(voyager_config.clone()).await;
+            let queue = Voyager::new(voyager_config.clone()).await?;
 
             queue.run().await;
         }
@@ -64,7 +105,7 @@ async fn do_main(args: cli::AppArgs) -> Result<(), anyhow::Error> {
                 module_address,
                 port_id,
             } => {
-                let chain = voyager_config.get_chain(&on).await.unwrap();
+                let chain = voyager_config.get_chain(&on).await?;
 
                 match chain {
                     AnyChain::EvmMinimal(evm) => {
@@ -83,7 +124,7 @@ async fn do_main(args: cli::AppArgs) -> Result<(), anyhow::Error> {
                 port_id,
                 channel_id,
             } => {
-                let chain = voyager_config.get_chain(&on).await.unwrap();
+                let chain = voyager_config.get_chain(&on).await?;
 
                 match chain {
                     AnyChain::EvmMinimal(evm) => {
@@ -102,7 +143,7 @@ async fn do_main(args: cli::AppArgs) -> Result<(), anyhow::Error> {
             _ => panic!("not supported"),
         },
         Command::Query { on, at, cmd } => {
-            let on = voyager_config.get_chain(&on).await.unwrap();
+            let on = voyager_config.get_chain(&on).await?;
 
             match cmd {
                 QueryCmd::IbcPath(path) => {
