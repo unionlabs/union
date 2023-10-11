@@ -15,6 +15,7 @@ import (
 	"github.com/cometbft/cometbft/crypto/merkle"
 	"github.com/cometbft/cometbft/libs/protoio"
 	"github.com/cometbft/cometbft/proto/tendermint/types"
+	"github.com/consensys/gnark-crypto/ecc/bn254"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/spf13/cobra"
 )
@@ -300,7 +301,7 @@ func ExampleVerifyCmd() *cobra.Command {
 			trustedBitmap := bitmap
 			untrustedBitmap := bitmap
 
-			proveRes, err := client.Prove(ctx, &provergrpc.ProveRequest{
+			request := provergrpc.ProveRequest{
 				Vote: &vote,
 				TrustedCommit: &provergrpc.ValidatorSetCommit{
 					Validators: trustedValidators,
@@ -312,7 +313,9 @@ func ExampleVerifyCmd() *cobra.Command {
 					Signatures: untrustedSignatures,
 					Bitmap:     untrustedBitmap.Bytes(),
 				},
-			})
+			}
+
+			proveRes, err := client.Prove(ctx, &request)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -321,24 +324,37 @@ func ExampleVerifyCmd() *cobra.Command {
 
 			trustedValidatorBytes := make([][]byte, len(trustedValidators))
 			for i, val := range trustedValidators {
-				protoEncoding, err := val.Marshal()
+				var public bn254.G1Affine
+				_, err := public.SetBytes(val.GetPubKey().GetBn254())
 				if err != nil {
 					log.Fatal(err)
 				}
-				trustedValidatorBytes[i] = protoEncoding
+				leaf, err := cometbn254.NewMerkleLeaf(public, val.VotingPower)
+				if err != nil {
+					log.Fatal(err)
+				}
+				trustedValidatorBytes[i] = leaf.Hash()
 			}
 
 			untrustedValidatorBytes := make([][]byte, len(untrustedValidators))
-			for i, val := range trustedValidators {
-				protoEncoding, err := val.Marshal()
+			for i, val := range untrustedValidators {
+				var public bn254.G1Affine
+				_, err := public.SetBytes(val.GetPubKey().GetBn254())
 				if err != nil {
 					log.Fatal(err)
 				}
-				untrustedValidatorBytes[i] = protoEncoding
+				leaf, err := cometbn254.NewMerkleLeaf(public, val.VotingPower)
+				if err != nil {
+					log.Fatal(err)
+				}
+				untrustedValidatorBytes[i] = leaf.Hash()
 			}
 
-			trustedValidatorSetRoot := merkle.HashFromByteSlices(trustedValidatorBytes)
-			untrustedValidatorSetRoot := merkle.HashFromByteSlices(untrustedValidatorBytes)
+			trustedValidatorSetRoot := merkle.MimcHashFromByteSlices(trustedValidatorBytes)
+			untrustedValidatorSetRoot := merkle.MimcHashFromByteSlices(untrustedValidatorBytes)
+
+			log.Println(trustedValidatorSetRoot)
+			log.Println(untrustedValidatorSetRoot)
 
 			signedBytes, err := protoio.MarshalDelimited(&vote)
 			if err != nil {

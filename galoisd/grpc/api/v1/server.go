@@ -16,12 +16,13 @@ import (
 	"sync/atomic"
 	"time"
 
-	cometbft_bn254 "github.com/cometbft/cometbft/crypto/bn254"
+	cometbn254 "github.com/cometbft/cometbft/crypto/bn254"
 	ce "github.com/cometbft/cometbft/crypto/encoding"
 	"github.com/cometbft/cometbft/crypto/merkle"
 	"github.com/cometbft/cometbft/libs/protoio"
 	"github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/consensys/gnark-crypto/ecc"
+	"github.com/consensys/gnark-crypto/ecc/bn254"
 	curve "github.com/consensys/gnark-crypto/ecc/bn254"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr"
 	backend "github.com/consensys/gnark/backend/groth16"
@@ -80,35 +81,30 @@ func (p *proverServer) Verify(ctx context.Context, req *VerifyRequest) (*VerifyR
 		return nil, fmt.Errorf("The block header Y must be a BN254 fr.Element: %w", err)
 	}
 
-	validatorsProto := [lightclient.MaxVal][4]frontend.Variable{}
+	validators := [lightclient.MaxVal]lightclient.Validator{}
 	for i := 0; i < lightclient.MaxVal; i++ {
-		validatorsProto[i][0] = 0
-		validatorsProto[i][1] = 0
-		validatorsProto[i][2] = 0
-		validatorsProto[i][3] = 0
+		validators[i].HashableX = 0
+		validators[i].HashableY = 0
+		validators[i].HashableXMSB = 0
+		validators[i].HashableYMSB = 0
+		validators[i].Power = 0
 	}
 
 	// We don't need the private input to verify, this is present to typecheck
 	dummyInput := lcgadget.TendermintNonAdjacentLightClientInput{
-		Sig:             gadget.G2Affine{},
-		ProtoValidators: validatorsProto,
-		NbOfVal:         0,
-		NbOfSignature:   0,
-		Bitmap:          0,
+		Sig:           gadget.G2Affine{},
+		Validators:    validators,
+		NbOfVal:       0,
+		NbOfSignature: 0,
+		Bitmap:        0,
 	}
 
 	witness := lcgadget.Circuit{
-		TrustedInput:   dummyInput,
-		UntrustedInput: dummyInput,
-		ExpectedTrustedValRoot: [2]frontend.Variable{
-			req.TrustedValidatorSetRoot[0:16],
-			req.TrustedValidatorSetRoot[16:32],
-		},
-		ExpectedUntrustedValRoot: [2]frontend.Variable{
-			req.UntrustedValidatorSetRoot[0:16],
-			req.UntrustedValidatorSetRoot[16:32],
-		},
-		Message: [2]frontend.Variable{req.BlockHeaderX.Value, req.BlockHeaderY.Value},
+		TrustedInput:             dummyInput,
+		UntrustedInput:           dummyInput,
+		ExpectedTrustedValRoot:   req.TrustedValidatorSetRoot,
+		ExpectedUntrustedValRoot: req.UntrustedValidatorSetRoot,
+		Message:                  [2]frontend.Variable{req.BlockHeaderX.Value, req.BlockHeaderY.Value},
 	}
 
 	privateWitness, err := frontend.NewWitness(&witness, ecc.BN254.ScalarField())
@@ -195,56 +191,48 @@ func (p *proverServer) Prove(ctx context.Context, req *ProveRequest) (*ProveResp
 	}
 	log.Println(string(reqJson))
 
-	reverseBytes := func(numbers []byte) []byte {
-		newNumbers := make([]byte, 0, len(numbers))
-		for i := len(numbers) - 1; i >= 0; i-- {
-			newNumbers = append(newNumbers, numbers[i])
-		}
-		return newNumbers
-	}
-
-	marshalValidators := func(validators []*types.SimpleValidator) ([lightclient.MaxVal][4]frontend.Variable, []byte, error) {
-		validatorsProto := [lightclient.MaxVal][4]frontend.Variable{}
+	marshalValidators := func(validators []*types.SimpleValidator) ([lightclient.MaxVal]lightclient.Validator, []byte, error) {
+		lcValidators := [lightclient.MaxVal]lightclient.Validator{}
 		// Make sure we zero initialize
 		for i := 0; i < lightclient.MaxVal; i++ {
-			validatorsProto[i][0] = 0
-			validatorsProto[i][1] = 0
-			validatorsProto[i][2] = 0
-			validatorsProto[i][3] = 0
+			lcValidators[i].HashableX = 0
+			lcValidators[i].HashableXMSB = 0
+			lcValidators[i].HashableY = 0
+			lcValidators[i].HashableYMSB = 0
+			lcValidators[i].Power = 0
 		}
 		merkleTree := make([][]byte, len(validators))
 		for i, val := range validators {
-			protoEncoding, err := val.Marshal()
-			if err != nil {
-				return validatorsProto, nil, err
-			}
-
-			merkleTree[i] = protoEncoding
-
 			tmPK, err := ce.PubKeyFromProto(*val.PubKey)
 			if err != nil {
-				return validatorsProto, nil, err
+				return lcValidators, nil, fmt.Errorf("Could not deserialize proto to tendermint public key %s", err)
 			}
-
-			compressedPK := tmPK.Bytes()
-
-			var PK curve.G1Affine
-			_, err = PK.SetBytes(compressedPK)
+			var public bn254.G1Affine
+			_, err = public.SetBytes(tmPK.Bytes())
 			if err != nil {
-				return validatorsProto, nil, err
+				return lcValidators, nil, fmt.Errorf("Could not deserialize bn254 public key %s", err)
 			}
+			leaf, err := cometbn254.NewMerkleLeaf(public, val.VotingPower)
+			if err != nil {
+				return lcValidators, nil, fmt.Errorf("Could not create merkle leaf %s", err)
+			}
+			lcValidators[i].HashableX = leaf.ShiftedX
+			lcValidators[i].HashableY = leaf.ShiftedY
+			if leaf.MsbX {
+				lcValidators[i].HashableXMSB = 1
+			} else {
+				lcValidators[i].HashableXMSB = 0
+			}
+			if leaf.MsbY {
+				lcValidators[i].HashableYMSB = 1
+			} else {
+				lcValidators[i].HashableYMSB = 0
+			}
+			lcValidators[i].Power = leaf.VotingPower
 
-			PKX := PK.X.Bytes()
-			PKY := PK.Y.Bytes()
-			// Need to reverse to simplify circuit computation
-			power := reverseBytes(protoEncoding[lightclient.ValProtoPower:])
-			mask := compressedPK[0] >> 6
-			validatorsProto[i][0] = PKX[:]
-			validatorsProto[i][1] = PKY[:]
-			validatorsProto[i][2] = power
-			validatorsProto[i][3] = mask
+			merkleTree[i] = leaf.Hash()
 		}
-		return validatorsProto, merkle.HashFromByteSlices(merkleTree), nil
+		return lcValidators, merkle.MimcHashFromByteSlices(merkleTree), nil
 	}
 
 	aggregateSignatures := func(signatures [][]byte) (curve.G2Affine, error) {
@@ -253,72 +241,77 @@ func (p *proverServer) Prove(ctx context.Context, req *ProveRequest) (*ProveResp
 		for _, signature := range signatures {
 			_, err := decompressedSignature.SetBytes(signature)
 			if err != nil {
-				return curve.G2Affine{}, err
+				return curve.G2Affine{}, fmt.Errorf("Could not decompress signature %s", err)
 			}
 			aggregatedSignature.Add(&aggregatedSignature, &decompressedSignature)
 		}
 		return aggregatedSignature, nil
 	}
 
-	trustedValidatorsProto, trustedValidatorsRoot, err := marshalValidators(req.TrustedCommit.Validators)
+	log.Println("Marshalling trusted validators...")
+	trustedValidators, trustedValidatorsRoot, err := marshalValidators(req.TrustedCommit.Validators)
 	if err != nil {
-		return nil, err
-	}
-	trustedAggregatedSignature, err := aggregateSignatures(req.TrustedCommit.Signatures)
-	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Could not marshal trusted validators %s", err)
 	}
 
-	untrustedValidatorsProto, untrustedValidatorsRoot, err := marshalValidators(req.UntrustedCommit.Validators)
+	log.Println("Aggregating trusted signature...")
+	trustedAggregatedSignature, err := aggregateSignatures(req.TrustedCommit.Signatures)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Could not aggregate trusted signature %s", err)
 	}
+
+	log.Println("Marshalling untrusted validators...")
+	untrustedValidators, untrustedValidatorsRoot, err := marshalValidators(req.UntrustedCommit.Validators)
+	if err != nil {
+		return nil, fmt.Errorf("Could not marshal untrusted validators %s", err)
+	}
+
+	log.Println("Aggregating untrusted signature...")
 	untrustedAggregatedSignature, err := aggregateSignatures(req.UntrustedCommit.Signatures)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Could not aggregate untrusted signature %s", err)
 	}
 
 	trustedInput := lcgadget.TendermintNonAdjacentLightClientInput{
-		Sig:             gadget.NewG2Affine(trustedAggregatedSignature),
-		ProtoValidators: trustedValidatorsProto,
-		NbOfVal:         len(req.TrustedCommit.Validators),
-		NbOfSignature:   len(req.TrustedCommit.Signatures),
-		Bitmap:          new(big.Int).SetBytes(req.TrustedCommit.Bitmap),
+		Sig:           gadget.NewG2Affine(trustedAggregatedSignature),
+		Validators:    trustedValidators,
+		NbOfVal:       len(req.TrustedCommit.Validators),
+		NbOfSignature: len(req.TrustedCommit.Signatures),
+		Bitmap:        new(big.Int).SetBytes(req.TrustedCommit.Bitmap),
 	}
 
 	untrustedInput := lcgadget.TendermintNonAdjacentLightClientInput{
-		Sig:             gadget.NewG2Affine(untrustedAggregatedSignature),
-		ProtoValidators: untrustedValidatorsProto,
-		NbOfVal:         len(req.UntrustedCommit.Validators),
-		NbOfSignature:   len(req.UntrustedCommit.Signatures),
-		Bitmap:          new(big.Int).SetBytes(req.UntrustedCommit.Bitmap),
+		Sig:           gadget.NewG2Affine(untrustedAggregatedSignature),
+		Validators:    untrustedValidators,
+		NbOfVal:       len(req.UntrustedCommit.Validators),
+		NbOfSignature: len(req.UntrustedCommit.Signatures),
+		Bitmap:        new(big.Int).SetBytes(req.UntrustedCommit.Bitmap),
 	}
 
 	signedBytes, err := protoio.MarshalDelimited(req.Vote)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Could not marshal the vote %s", err)
 	}
 
-	hmX, hmY := cometbft_bn254.HashToField2(signedBytes)
+	hmX, hmY := cometbn254.HashToField2(signedBytes)
 
 	witness := lcgadget.Circuit{
-		TrustedInput:   trustedInput,
-		UntrustedInput: untrustedInput,
-		ExpectedTrustedValRoot: [2]frontend.Variable{
-			trustedValidatorsRoot[0:16],
-			trustedValidatorsRoot[16:32],
-		},
-		ExpectedUntrustedValRoot: [2]frontend.Variable{
-			untrustedValidatorsRoot[0:16],
-			untrustedValidatorsRoot[16:32],
-		},
-		Message: [2]frontend.Variable{hmX, hmY},
+		TrustedInput:             trustedInput,
+		UntrustedInput:           untrustedInput,
+		ExpectedTrustedValRoot:   trustedValidatorsRoot,
+		ExpectedUntrustedValRoot: untrustedValidatorsRoot,
+		Message:                  [2]frontend.Variable{hmX, hmY},
 	}
 
-	log.Println("Witness: ", witness)
-	privateWitness, err := frontend.NewWitness(&witness, ecc.BN254.ScalarField())
+	witnessJson, err := json.MarshalIndent(witness, "", "    ")
 	if err != nil {
 		return nil, err
+	}
+	log.Println(string(witnessJson))
+
+	privateWitness, err := frontend.NewWitness(&witness, ecc.BN254.ScalarField())
+	if err != nil {
+		return nil, fmt.Errorf("Could not create witness %s", err)
 	}
 
 	logger.SetOutput(os.Stdout)
@@ -327,7 +320,7 @@ func (p *proverServer) Prove(ctx context.Context, req *ProveRequest) (*ProveResp
 	log.Println("Executing proving backend...")
 	proof, err := backend.Prove(p.cs, p.pk, privateWitness)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Prover failed with %s", err)
 	}
 
 	// Run GC to avoid high residency, a single prove call is very expensive in term of memory.
@@ -357,12 +350,12 @@ func (p *proverServer) Prove(ctx context.Context, req *ProveRequest) (*ProveResp
 
 	publicWitness, err := privateWitness.Public()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Could not extract public inputs from witness %s", err)
 	}
 
 	publicInputs, err := publicWitness.MarshalBinary()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Could not marshal public witness %s", err)
 	}
 
 	var proofBuffer bytes.Buffer

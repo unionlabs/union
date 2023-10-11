@@ -392,10 +392,10 @@ github.com/tendermint/go-amino v0.16.0 h1:GyhmgQKvqF82e2oZeuMSp9JTN0N09emoSZlb2l
 github.com/tendermint/go-amino v0.16.0/go.mod h1:TQU0M1i/ImAo+tYpZi73AU3V/dKeCoMC9Sphe2ZwGME=
 github.com/tidwall/btree v1.6.0 h1:LDZfKfQIBHGHWSwckhXI0RPSXzlo+KYdjK7FWSqOzzg=
 github.com/ugorji/go/codec v0.0.0-20181204163529-d75b2dcb6bc8/go.mod h1:VFNgLljTbGfSG7qAOspJ7OScBnGdDN/yBr0sguwnwf0=
-github.com/unionlabs/cometbls v0.0.0-20230606200400-20834775a066 h1:0Swewo4WixAHxzqxcJ37Oh4gqSf2RbC03J/2tv+HZC4=
-github.com/unionlabs/cometbls v0.0.0-20230606200400-20834775a066/go.mod h1:DQBrLANmGK8o6LQPxaH03I3prPrLy3gecQ2Nf2NvD6I=
-github.com/unionlabs/cosmos-sdk v0.0.0-20230912185853-89f7ea352a8b h1:zm9pD4dc5XIodnc732Sw+L9AELZ0ITwgDFOB7xVIZcU=
-github.com/unionlabs/cosmos-sdk v0.0.0-20230912185853-89f7ea352a8b/go.mod h1:qzraIKBZm1HwtoeGDccJEWVJT3PkEVClXcaQOnx6suk=
+github.com/unionlabs/cometbls v0.0.0-20231011174820-ff72408662f2 h1:uoBhTLk+Hz5nwuMO0klDcD7vHZDzH7Y9oL1b4yjGUTw=
+github.com/unionlabs/cometbls v0.0.0-20231011174820-ff72408662f2/go.mod h1:DQBrLANmGK8o6LQPxaH03I3prPrLy3gecQ2Nf2NvD6I=
+github.com/unionlabs/cosmos-sdk v0.0.0-20231011174947-84c295ea3fa2 h1:21HA8zmRAKrE2TMVBcPklyrQm6FLHmTWesJJNow8I1g=
+github.com/unionlabs/cosmos-sdk v0.0.0-20231011174947-84c295ea3fa2/go.mod h1:WV8aacpf9qTGZJtIuFQ5kFkOo2Fx2XZCSeel0jCKoSA=
 github.com/unionlabs/gnark v0.0.0-20230820185220-9ebfeea2ca75 h1:NIlqgyO86tmD6/KAriKYJht5w/AJGSMd3yNPmpnrUqk=
 github.com/unionlabs/gnark v0.0.0-20230820185220-9ebfeea2ca75/go.mod h1:eWB6H48UXNUN9M1FaxIRBlKvJdNFWAZdg5KMsulJB2w=
 github.com/unionlabs/gnark-crypto v0.0.0-20230419121058-59d3a8050fda h1:zRJnt3/+XdblFTxaOaZUIYnfiVIyqT996v8+kQcYvwI=

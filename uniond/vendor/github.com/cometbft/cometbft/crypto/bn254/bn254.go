@@ -13,6 +13,7 @@ import (
 	"github.com/consensys/gnark-crypto/ecc/bn254"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fp"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr"
+	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 	bls254 "github.com/consensys/gnark-crypto/ecc/bn254/signature/bls"
 
 	"github.com/cometbft/cometbft/crypto"
@@ -21,17 +22,17 @@ import (
 )
 
 const (
-	PubKeySize     = sizePublicKey
-	PrivKeySize    = sizePrivateKey
-	sizeFr         = fr.Bytes
-	sizeFp         = fp.Bytes
-	sizePublicKey  = sizeFp
-	sizePrivateKey = sizeFr + sizePublicKey
+	PubKeySize               = sizePublicKey
+	PrivKeySize              = sizePrivateKey
+	sizeFr                   = fr.Bytes
+	sizeFp                   = fp.Bytes
+	sizePublicKey            = sizeFp
+	sizePrivateKey           = sizeFr + sizePublicKey
 	XHashToScalarFieldPrefix = 0
 	YHashToScalarFieldPrefix = 1
-	PrivKeyName    = "tendermint/PrivKeyBn254"
-	PubKeyName     = "tendermint/PubKeyBn254"
-	KeyType        = "bn254"
+	PrivKeyName              = "tendermint/PrivKeyBn254"
+	PubKeyName               = "tendermint/PubKeyBn254"
+	KeyType                  = "bn254"
 )
 
 var G1Gen bn254.G1Affine
@@ -364,4 +365,54 @@ func HashToG2(msg []byte) bn254.G2Affine {
 		panic("Point is zero")
 	}
 	return point
+}
+
+type MerkleLeaf struct {
+	VotingPower int64
+	ShiftedX    fr.Element
+	ShiftedY    fr.Element
+	MsbX        bool
+	MsbY        bool
+}
+
+func NewMerkleLeaf(pubKey bn254.G1Affine, votingPower int64) (MerkleLeaf, error) {
+	x := pubKey.X.BigInt(new(big.Int))
+	y := pubKey.Y.BigInt(new(big.Int))
+	msbX := x.Bit(254)
+	msbY := y.Bit(254)
+	var frX, frY fr.Element
+	x.SetBit(x, 254, 0)
+	var padded [32]byte
+	x.FillBytes(padded[:])
+	err := frX.SetBytesCanonical(padded[:])
+	if err != nil {
+		return MerkleLeaf{}, err
+	}
+	y.SetBit(y, 254, 0)
+	y.FillBytes(padded[:])
+	err = frY.SetBytesCanonical(padded[:])
+	if err != nil {
+		return MerkleLeaf{}, err
+	}
+	return MerkleLeaf{
+		VotingPower: votingPower,
+		ShiftedX:    frX,
+		ShiftedY:    frY,
+		MsbX:        msbX == 1,
+		MsbY:        msbY == 1,
+	}, nil
+}
+
+func (l MerkleLeaf) Hash() []byte {
+	frXBytes := l.ShiftedX.Bytes()
+	frYBytes := l.ShiftedY.Bytes()
+	mimc := mimc.NewMiMC()
+	mimc.Write(frXBytes[:])
+	mimc.Write(frYBytes[:])
+	var powerBytes big.Int
+	powerBytes.SetUint64(uint64(l.VotingPower))
+	var padded [32]byte
+	powerBytes.FillBytes(padded[:])
+	mimc.Write(padded[:])
+	return mimc.Sum(nil)
 }
