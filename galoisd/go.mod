@@ -7,6 +7,7 @@ require (
 	github.com/consensys/gnark v0.7.2-0.20230418172633-f83323bdf138
 	github.com/consensys/gnark-crypto v0.9.2-0.20230329155745-a57dcc3b53de
 	github.com/cosmos/cosmos-sdk v0.47.0
+	github.com/gogo/protobuf v1.3.2
 	github.com/rs/zerolog v1.30.0
 	github.com/spf13/cobra v1.7.0
 	golang.org/x/net v0.12.0
@@ -40,7 +41,6 @@ require (
 	github.com/go-kit/kit v0.12.0 // indirect
 	github.com/go-kit/log v0.2.1 // indirect
 	github.com/go-logfmt/logfmt v0.5.1 // indirect
-	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/glog v1.1.0 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
