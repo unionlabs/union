@@ -16,9 +16,9 @@ use unionlabs::ethereum_consts_traits::Mainnet;
 
 use crate::{
     chain::AnyChain,
-    cli::{AppArgs, Command, IbcCmd, IbcQueryCmd},
+    cli::{AppArgs, Command, QueryCmd},
     config::Config,
-    queue::{AnyQueue, InMemoryQueue, PgQueue, Voyager},
+    queue::{AnyQueue, Voyager},
 };
 
 pub const DELAY_PERIOD: u64 = 0;
@@ -51,7 +51,8 @@ async fn do_main(args: cli::AppArgs) -> Result<(), anyhow::Error> {
     match args.command {
         Command::PrintConfig => {
             println!("{}", serde_json::to_string_pretty(&voyager_config).unwrap());
-
+        }
+        Command::Relay => {
             let queue = Voyager::new(voyager_config.clone()).await;
 
             queue.run().await;
@@ -100,39 +101,30 @@ async fn do_main(args: cli::AppArgs) -> Result<(), anyhow::Error> {
             }
             _ => panic!("not supported"),
         },
-        Command::Ibc(IbcCmd::Query {
-            on,
-            at,
-            cmd: IbcQueryCmd::Path(path),
-        }) => {
+        Command::Query { on, at, cmd } => {
             let on = voyager_config.get_chain(&on).await.unwrap();
 
-            let json = match on {
-                // AnyChain::Union(_) => todo!(),
-                AnyChain::EvmMainnet(evm) => {
-                    path.any_state_proof_to_json::<Union, _>(evm, at).await
-                }
-                AnyChain::EvmMinimal(evm) => {
-                    path.any_state_proof_to_json::<Union, _>(evm, at).await
-                }
-                AnyChain::Union(union) => {
-                    // NOTE: ChainSpec is arbitrary
-                    path.any_state_proof_to_json::<Evm<Mainnet>, _>(union, at)
-                        .await
-                }
-                _ => panic!(),
-            };
+            match cmd {
+                QueryCmd::IbcPath(path) => {
+                    let json = match on {
+                        AnyChain::EvmMainnet(evm) => {
+                            path.any_state_proof_to_json::<Union, _>(evm, at).await
+                        }
+                        AnyChain::EvmMinimal(evm) => {
+                            path.any_state_proof_to_json::<Union, _>(evm, at).await
+                        }
+                        AnyChain::Union(union) => {
+                            // NOTE: ChainSpec is arbitrary
+                            path.any_state_proof_to_json::<Evm<Mainnet>, _>(union, at)
+                                .await
+                        }
+                    };
 
-            println!("{json}");
+                    println!("{json}");
+                }
+            }
         }
-        _ => panic!(),
     }
-
-    std::fs::write(
-        args.config_file_path,
-        serde_json::to_string_pretty(&voyager_config).unwrap(),
-    )
-    .unwrap();
 
     Ok(())
 }

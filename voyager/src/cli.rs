@@ -36,37 +36,27 @@ pub struct AppArgs {
 #[allow(clippy::large_enum_variant)]
 pub enum Command {
     PrintConfig,
-    Relay(RelayCmd),
-    #[command(subcommand)]
-    SubmitPacket(SubmitPacketCmd),
-    #[command(subcommand)]
-    Query(QueryCmd),
+    Relay,
     #[command(subcommand)]
     Setup(SetupCmd),
-    #[command(subcommand)]
-    Ibc(IbcCmd),
-}
-
-#[derive(Debug, Subcommand)]
-pub enum IbcCmd {
     Query {
         #[arg(long)]
         on: String,
         #[arg(long, default_value_t = QueryHeight::<Height>::Latest)]
         at: QueryHeight<Height>,
         #[command(subcommand)]
-        cmd: IbcQueryCmd,
+        cmd: QueryCmd,
     },
 }
 
 #[derive(Debug, Subcommand)]
-pub enum IbcQueryCmd {
+pub enum QueryCmd {
     #[command(subcommand)]
-    Path(IbcQueryPathCmd),
+    IbcPath(QueryIbcPathCmd),
 }
 
 #[derive(Debug, clap::Subcommand)]
-pub enum IbcQueryPathCmd {
+pub enum QueryIbcPathCmd {
     ClientState(proof::ClientStatePath<String>),
     ClientConsensusState(proof::ClientConsensusStatePath<String, Height>),
     Connection(proof::ConnectionPath),
@@ -75,7 +65,7 @@ pub enum IbcQueryPathCmd {
     Acknowledgement(proof::AcknowledgementPath),
 }
 
-impl IbcQueryPathCmd {
+impl QueryIbcPathCmd {
     pub async fn any_state_proof_to_json<
         Counterparty: Chain,
         This: IbcStateReadPaths<Counterparty>,
@@ -163,26 +153,6 @@ pub enum SubmitPacketCmd {
         source_port: String,
         #[arg(long)]
         source_channel: String,
-    },
-}
-
-#[derive(Debug, Subcommand)]
-pub enum QueryCmd {
-    Client {
-        #[arg(long)]
-        on: String,
-        #[arg(long)]
-        client_id: String,
-    },
-    Connection {},
-    Channel {},
-    Balances {
-        #[arg(long)]
-        on: String,
-        #[arg(long)]
-        who: Address,
-        #[arg(long)]
-        denom: String,
     },
 }
 
