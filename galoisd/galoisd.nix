@@ -49,6 +49,7 @@
       {
         galoisd-devnet = mkGaloisd { network = "devnet"; maxVal = 4; };
         galoisd-testnet = mkGaloisd { network = "testnet"; maxVal = 16; };
+        galoisd-bigtestnet = mkGaloisd { network = "testnet"; maxVal = 64; };
         galoisd-mainnet = mkGaloisd { network = "mainnet"; maxVal = 128; };
 
         galoisd-devnet-image = mkGaloisdImage { galoisd = self'.packages.galoisd-devnet; };

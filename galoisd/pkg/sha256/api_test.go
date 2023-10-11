@@ -3,6 +3,7 @@ package sha256
 import (
 	"crypto/sha256"
 	"fmt"
+	"math/rand"
 	"testing"
 
 	"github.com/consensys/gnark-crypto/ecc"
@@ -13,9 +14,11 @@ import (
 
 const compressThreshold = 1000
 
-const MaxPreimageLength = 32
-
 const ImageLength = 32
+
+const MaxBlocks = 1
+
+const MaxPreimageLength = 55 + (MaxBlocks-1)*64
 
 type sha256Circuit struct {
 	PreimageLength frontend.Variable
@@ -25,7 +28,7 @@ type sha256Circuit struct {
 
 func (c *sha256Circuit) Define(api frontend.API) error {
 	api.AssertIsLessOrEqual(c.PreimageLength, MaxPreimageLength)
-	hash := NewSHA256(api)
+	hash := NewSHA256(api, MaxBlocks)
 	actualPreimage := make([]frontend.Variable, MaxPreimageLength)
 	for i := 0; i < MaxPreimageLength; i++ {
 		actualPreimage[i] = c.Preimage[i]
@@ -39,9 +42,15 @@ func (c *sha256Circuit) Define(api frontend.API) error {
 
 func TestSha256(t *testing.T) {
 	t.Parallel()
-	for i := 0; i < 10; i++ {
-		t.Run(fmt.Sprintf("PreimageLength = %d", i), func(t *testing.T) {
-			message := make([]byte, MaxPreimageLength)
+	for i := 0; i < MaxPreimageLength; i++ {
+		k := i
+		t.Run(fmt.Sprintf("PreimageLength = %d", k), func(t *testing.T) {
+			t.Parallel()
+			message := make([]byte, k)
+			_, err := rand.Read(message)
+			if err != nil {
+				t.Fatal(err)
+			}
 
 			nativeHasher := sha256.New()
 			nativeHasher.Write(message)
