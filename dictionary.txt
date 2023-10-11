@@ -43,6 +43,7 @@ Keybase
 Lahcen
 Layerzero
 Lightshift
+Maxblocks
 Merkle
 Mgoogle
 Misbehaviour
@@ -128,6 +129,7 @@ beacondata
 bech
 behaviour
 benluelo
+bigtestnet
 binaryen
 bindir
 bitarray
