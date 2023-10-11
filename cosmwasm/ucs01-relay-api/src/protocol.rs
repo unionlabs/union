@@ -152,21 +152,22 @@ pub trait TransferProtocol {
         // https://github.com/cosmos/ibc-go/blob/5ca37ef6e56a98683cf2b3b1570619dc9b322977/modules/apps/transfer/ibc_module.go#L261
         let ack = Into::<GenericAck>::into(Self::Ack::try_from(raw_ack.clone().into())?);
         let (ack_msgs, ack_attr) = match ack {
-            Ok(value) => (
-                self.send_tokens_success(packet.sender(), packet.receiver(), packet.tokens())?,
-                attr("success", value.to_string()),
-            ),
+            Ok(value) => {
+                let value_string = value.to_string();
+                (
+                    self.send_tokens_success(packet.sender(), packet.receiver(), packet.tokens())?,
+                    (!value_string.is_empty()).then_some(("success", value_string)),
+                )
+            }
             Err(error) => (
                 self.send_tokens_failure(packet.sender(), packet.receiver(), packet.tokens())?,
-                attr("error", error.to_string()),
+                Some(("error", error.to_string())),
             ),
         };
 
-        let memo = Into::<String>::into(packet.extension().clone());
-        let packet_event = if memo.is_empty() {
-            Event::new(PACKET_EVENT)
-        } else {
-            Event::new(PACKET_EVENT).add_attribute("memo", &memo)
+        let packet_event = {
+            let memo = Into::<String>::into(packet.extension().clone());
+            Event::new(PACKET_EVENT).add_attributes((!memo.is_empty()).then_some(("memo", &memo)))
         };
 
         Ok(IbcBasicResponse::new()
@@ -182,7 +183,7 @@ pub trait TransferProtocol {
                         |TransferToken { denom, amount }| (format!("denom:{}", denom), amount),
                     )),
             )
-            .add_event(Event::new(PACKET_EVENT).add_attributes([ack_attr]))
+            .add_event(Event::new(PACKET_EVENT).add_attributes(ack_attr))
             .add_messages(ack_msgs))
     }
 
