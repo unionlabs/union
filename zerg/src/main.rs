@@ -10,6 +10,7 @@ use std::{
 use chain_utils::EventSource;
 use clap::Parser;
 use cli::AppArgs;
+use ethers::utils::get_create2_address_from_hash;
 use futures::{stream, StreamExt};
 use serde::{Deserialize, Serialize};
 use tokio::sync::Mutex;
@@ -27,6 +28,7 @@ use unionlabs::{
 pub mod cli;
 pub mod config;
 
+/// A timestamped event originating from `chain_id`.
 pub struct TimedEvent<T> {
     pub time: u64,
     pub event: T,
@@ -46,8 +48,64 @@ impl<T> TimedEvent<T> {
     }
 }
 
+/// Event types tracked by Zerg when exporting to CSV
+enum EventType {
+    SendEvent(TimedEvent<SendPacket>),
+    ReceiveEvent(TimedEvent<RecvPacket>),
+}
+
+/// Event information recorded to the output CSV.
+pub struct Event {
+    sender: String,
+    stamped_event: EventType,
+    uuid: String,
+}
+
+/// Creates an `Event` originating from `chain_id` from the `SendPacket` event data.
+///
+/// Constructs a unique ID from packet information in the form of:
+/// `<src_port>-<src_channel>-<sequence>`
+fn create_send_event(chain_id: String, e: SendPacket) -> Event {
+    let transfer =
+        Ucs01TransferPacket::try_from(cosmwasm_std::Binary(e.packet_data_hex.clone())).unwrap();
+
+    let uuid = format!(
+        "{}-{}-{}",
+        e.packet_src_port.clone(),
+        e.packet_src_channel,
+        e.packet_sequence
+    );
+
+    Event {
+        sender: transfer.sender().to_owned(),
+        stamped_event: EventType::SendEvent(TimedEvent::new(chain_id, e)),
+        uuid,
+    }
+}
+
+/// Creates an `Event` originating from `chain_id` from the `RecvPacket` event data.
+///
+/// Constructs a unique ID from packet information in the form of:
+/// `<src_port>-<src_channel>-<sequence>`
+fn create_recv_event(chain_id: String, e: RecvPacket) -> Event {
+    let transfer =
+        Ucs01TransferPacket::try_from(cosmwasm_std::Binary(e.packet_data_hex.clone())).unwrap();
+
+    let uuid = format!(
+        "{}-{}-{}",
+        e.packet_src_port.clone(),
+        e.packet_src_channel,
+        e.packet_sequence
+    );
+
+    Event {
+        sender: transfer.sender().to_owned(),
+        stamped_event: EventType::ReceiveEvent(TimedEvent::new(chain_id, e)),
+        uuid,
+    }
+}
+
 pub struct Context {
-    pub sent_queue: Arc<Mutex<BTreeMap<(String, String, u64), TimedEvent<SendPacket>>>>,
     pub output_file: String,
 }
 
@@ -59,35 +117,18 @@ async fn main() {
 }
 
 impl Context {
-    async fn listen_union(&self, union: chain_utils::union::Union) {
+    async fn listen_union(&self, union: chain_utils::union::Union) -> ! {
         let mut events = Box::pin(union.events(()));
+
         loop {
             let event = events.next().await.unwrap().unwrap();
-            println!("Event: {:?}", event);
+
             match event.event {
                 unionlabs::events::IbcEvent::SendPacket(e) => {
-                    let transfer = Ucs01TransferPacket::try_from(cosmwasm_std::Binary(
-                        e.packet_data_hex.clone(),
-                    ))
-                    .unwrap();
-                    println!("{:?}", transfer);
-                    self.sent_queue.lock().await.insert(
-                        (
-                            e.packet_src_port.clone(),
-                            e.packet_src_channel.to_string(),
-                            e.packet_sequence,
-                        ),
-                        TimedEvent::new(event.chain_id, e),
-                    );
+                    self.append_record(create_send_event(event.chain_id, e))
                 }
-                unionlabs::events::IbcEvent::RecvPacket(recv_event) => {
-                    if let Some(send_event) = self.sent_queue.lock().await.remove(&(
-                        recv_event.packet_src_port.clone(),
-                        recv_event.packet_src_channel.to_string(),
-                        recv_event.packet_sequence,
-                    )) {
-                        self.append_record(send_event, TimedEvent::new(event.chain_id, recv_event));
-                    }
+                unionlabs::events::IbcEvent::RecvPacket(e) => {
+                    self.append_record(create_recv_event(event.chain_id, e))
                 }
                 _ => (),
             }
@@ -96,42 +137,28 @@ impl Context {
 
     async fn listen_eth(&self, eth: chain_utils::evm::Evm<Minimal>) {
         let mut events = Box::pin(eth.events(()));
+
         loop {
             let event = events.next().await.unwrap().unwrap();
-            println!("Event: {:?}", event);
+
             match event.event {
                 unionlabs::events::IbcEvent::SendPacket(e) => {
-                    self.sent_queue.lock().await.insert(
-                        (
-                            e.packet_src_port.clone(),
-                            e.packet_src_channel.to_string(),
-                            e.packet_sequence,
-                        ),
-                        TimedEvent::new(event.chain_id.to_string(), e),
-                    );
+                    self.append_record(create_send_event(event.chain_id.to_string(), e))
                 }
-                unionlabs::events::IbcEvent::RecvPacket(recv_event) => {
-                    if let Some(send_event) = self.sent_queue.lock().await.remove(&(
-                        recv_event.packet_src_port.clone(),
-                        recv_event.packet_src_channel.to_string(),
-                        recv_event.packet_sequence,
-                    )) {
-                        self.append_record(
-                            send_event,
-                            TimedEvent::new(event.chain_id.to_string(), recv_event),
-                        );
-                    }
+                unionlabs::events::IbcEvent::RecvPacket(e) => {
+                    self.append_record(create_recv_event(event.chain_id.to_string(), e))
                 }
                 _ => (),
             }
         }
     }
 
-    fn append_record(
-        &self,
-        send_event: TimedEvent<SendPacket>,
-        recv_event: TimedEvent<RecvPacket>,
-    ) {
+    /// Appends a comma seperated line to the `output_file` provided by the context.
+    ///
+    /// Line Format:
+    /// `<uuid>, <address>, <timestamp>, <EVENT_TYPE>, <chain_id>`
+    /// Where `EVENT_TYPE` is either `"SentFrom"` or `"ReceivedOn"`.
+    fn append_record(&self, event: Event) {
         let mut file = OpenOptions::new()
             .create(true)
             .write(true)
@@ -139,11 +166,24 @@ impl Context {
             .open(self.output_file.as_str())
             .unwrap();
 
-        writeln!(
-            file,
-            "{},{},{},{}",
-            send_event.chain_id, send_event.time, recv_event.chain_id, recv_event.time
-        );
+        match event.stamped_event {
+            EventType::SendEvent(e) => {
+                writeln!(
+                    file,
+                    "{},{},{},SentFrom,{}",
+                    event.uuid, event.sender, e.time, e.chain_id
+                )
+                .unwrap();
+            }
+            EventType::ReceiveEvent(e) => {
+                writeln!(
+                    file,
+                    "{},{},{},ReceivedOn,{}",
+                    event.uuid, event.sender, e.time, e.chain_id
+                )
+                .unwrap();
+            }
+        }
     }
 }
 
@@ -175,7 +215,6 @@ async fn do_main(args: AppArgs) {
     .into_proto();
 
     let context = Context {
-        sent_queue: Arc::new(Mutex::new(BTreeMap::new())),
         output_file: "output.csv".into(),
     };
 
@@ -184,16 +223,4 @@ async fn do_main(args: AppArgs) {
         context.listen_union(union.clone()),
         context.listen_eth(eth.clone())
     );
-}
-
-/// Event types tracked by Zerg when exporting to CSV
-enum EventType {
-    /// Funds sent to Union
-    SendToUnion,
-    /// Funds received on Union
-    ReceivedOnUnion,
-    /// Funds sent to Ethereum
-    SendToEthereum,
-    /// Funds received on Ethereum
-    ReceivedOnEthereum,
 }
