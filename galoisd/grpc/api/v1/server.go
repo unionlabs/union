@@ -218,16 +218,8 @@ func (p *proverServer) Prove(ctx context.Context, req *ProveRequest) (*ProveResp
 			}
 			lcValidators[i].HashableX = leaf.ShiftedX
 			lcValidators[i].HashableY = leaf.ShiftedY
-			if leaf.MsbX {
-				lcValidators[i].HashableXMSB = 1
-			} else {
-				lcValidators[i].HashableXMSB = 0
-			}
-			if leaf.MsbY {
-				lcValidators[i].HashableYMSB = 1
-			} else {
-				lcValidators[i].HashableYMSB = 0
-			}
+			lcValidators[i].HashableXMSB = leaf.MsbX
+			lcValidators[i].HashableYMSB = leaf.MsbY
 			lcValidators[i].Power = leaf.VotingPower
 
 			merkleTree[i] = leaf.Hash()

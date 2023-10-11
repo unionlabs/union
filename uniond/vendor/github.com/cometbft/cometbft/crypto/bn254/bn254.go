@@ -371,8 +371,8 @@ type MerkleLeaf struct {
 	VotingPower int64
 	ShiftedX    fr.Element
 	ShiftedY    fr.Element
-	MsbX        bool
-	MsbY        bool
+	MsbX        uint8
+	MsbY        uint8
 }
 
 func NewMerkleLeaf(pubKey bn254.G1Affine, votingPower int64) (MerkleLeaf, error) {
@@ -398,20 +398,25 @@ func NewMerkleLeaf(pubKey bn254.G1Affine, votingPower int64) (MerkleLeaf, error)
 		VotingPower: votingPower,
 		ShiftedX:    frX,
 		ShiftedY:    frY,
-		MsbX:        msbX == 1,
-		MsbY:        msbY == 1,
+		MsbX:        uint8(msbX),
+		MsbY:        uint8(msbY),
 	}, nil
 }
 
+// mimc(X, Xmsb, Y, Ymsb, power)
 func (l MerkleLeaf) Hash() []byte {
 	frXBytes := l.ShiftedX.Bytes()
 	frYBytes := l.ShiftedY.Bytes()
 	mimc := mimc.NewMiMC()
 	mimc.Write(frXBytes[:])
 	mimc.Write(frYBytes[:])
+	var padded [32]byte
+	big.NewInt(int64(l.MsbX)).FillBytes(padded[:])
+	mimc.Write(padded[:])
+	big.NewInt(int64(l.MsbY)).FillBytes(padded[:])
+	mimc.Write(padded[:])
 	var powerBytes big.Int
 	powerBytes.SetUint64(uint64(l.VotingPower))
-	var padded [32]byte
 	powerBytes.FillBytes(padded[:])
 	mimc.Write(padded[:])
 	return mimc.Sum(nil)

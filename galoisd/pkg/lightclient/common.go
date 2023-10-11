@@ -75,9 +75,8 @@ func (lc *TendermintLightClientAPI) Verify(message *gadget.G2Affine, expectedVal
 	// Facility to iterate over the validators in the lc, this function will
 	// do the necessary decoding/marshalling for the caller.
 	//
-	// This function will reconstruct each validator protobuf payload from the secret inputs by:
-	// - re-compressing the given public key with the given mask
-	// - decoding the validator power that is a varint64
+	// This function will reconstruct each validator from the secret inputs by:
+	// - re-composing the public key from its shifted/msb values
 	forEachVal := func(f func(i int, signed frontend.Variable, publicKey *gadget.G1Affine, power frontend.Variable, leaf frontend.Variable) error) error {
 		for i, signed := range bitmap {
 			validator := lc.input.Validators[i]
@@ -85,7 +84,7 @@ func (lc *TendermintLightClientAPI) Verify(message *gadget.G2Affine, expectedVal
 			if err != nil {
 				return err
 			}
-			h.Write(validator.HashableX, validator.HashableY, validator.Power)
+			h.Write(validator.HashableX, validator.HashableY, validator.HashableXMSB, validator.HashableYMSB, validator.Power)
 			leaf := h.Sum()
 
 			shiftedX := Unpack(lc.api, validator.HashableX, 256, 1)
