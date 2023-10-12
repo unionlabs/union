@@ -4,15 +4,15 @@
     let
       alice = "wine parrot nominee girl exchange element pudding grow area twenty next junior come render shadow evidence sentence start rough debate feed all limb real";
       devMnemonics = [
-         "gun more barrel helmet velvet people alter depth bargain use isolate pear before frown already limb sweet response legal invest stand barrel stone conduct"
-         "young soup enroll tornado mercy athlete tray resist limit spare address license cargo quantum panda useful clog autumn shoot observe input next across movie"
-         "allow where void replace vocal cabbage can expose rival danger stomach noodle faculty cart surround cash rice kite audit slight ten bicycle dance middle"
-         "hard educate knock ketchup salon obey debate one other impose smoke spoon pull describe cactus talk other merit joy great critic canvas scene lounge"
-         "over floor explain will stereo camera subway park pilot trick good exchange foot violin shop kite educate bracket shoulder fancy denial ill era battle"
-         "mercy animal rival black process document great armor demand shiver unit lava sorry outside thank verb term you output unit thank manual spike capital"
-         "embark smoke reduce belt bar mimic bench priority crop fetch portion sadness obscure around wait injury annual enable universe citizen cream blossom across dash"
-         "april orbit comfort fossil clean vague exclude live enjoy bus leader sail supply bird jungle start sunny lens ensure lunch weasel merge daughter capital"
-         "rebuild equip basket entire hurt index chase camera gravity pave boat vendor hero pizza october narrow train spoon cage intact jazz suffer ten spirit"
+        "gun more barrel helmet velvet people alter depth bargain use isolate pear before frown already limb sweet response legal invest stand barrel stone conduct"
+        "young soup enroll tornado mercy athlete tray resist limit spare address license cargo quantum panda useful clog autumn shoot observe input next across movie"
+        "allow where void replace vocal cabbage can expose rival danger stomach noodle faculty cart surround cash rice kite audit slight ten bicycle dance middle"
+        "hard educate knock ketchup salon obey debate one other impose smoke spoon pull describe cactus talk other merit joy great critic canvas scene lounge"
+        "over floor explain will stereo camera subway park pilot trick good exchange foot violin shop kite educate bracket shoulder fancy denial ill era battle"
+        "mercy animal rival black process document great armor demand shiver unit lava sorry outside thank verb term you output unit thank manual spike capital"
+        "embark smoke reduce belt bar mimic bench priority crop fetch portion sadness obscure around wait injury annual enable universe citizen cream blossom across dash"
+        "april orbit comfort fossil clean vague exclude live enjoy bus leader sail supply bird jungle start sunny lens ensure lunch weasel merge daughter capital"
+        "rebuild equip basket entire hurt index chase camera gravity pave boat vendor hero pizza october narrow train spoon cage intact jazz suffer ten spirit"
       ];
       genesisAccountName = "testkey";
       uniond = pkgs.lib.getExe self'.packages.uniond;
@@ -53,7 +53,7 @@
               --keyring-backend test \
               --home $out
           '') devMnemonics)}
-      '';
+        '';
 
       applyGenesisOverwrites = home: genesisOverwrites:
         let

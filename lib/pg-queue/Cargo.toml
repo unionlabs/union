@@ -9,3 +9,5 @@ edition = "2021"
 serde = "1.0.188"
 serde_json = "1.0.107"
 sqlx = { version = "0.7.2", features = ["postgres", "migrate", "runtime-tokio"] }
+tokio = { version = "1.33.0", default-features = false, features = ["time"] }
+tracing = "0.1.37"

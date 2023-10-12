@@ -14,15 +14,12 @@ use chain_utils::{
     Chain, ClientState, EventSource,
 };
 use frunk::{hlist_pat, HList};
-use futures::{
-    future::BoxFuture, stream, Future, FutureExt, StreamExt, TryFutureExt, TryStreamExt,
-};
+use futures::{future::BoxFuture, stream, Future, FutureExt, StreamExt, TryStreamExt};
 use hubble::hasura::{Datastore, HasuraDataStore, InsertDemoTx};
 use pg_queue::ProcessFlow;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use sqlx::PgPool;
 use tokio::task::JoinSet;
-use tracing::Instrument;
 use unionlabs::{
     ethereum_consts_traits::{Mainnet, Minimal},
     events::{
@@ -104,22 +101,18 @@ pub mod aggregate_data;
 
 #[derive(Debug, Clone)]
 pub struct Voyager<Q> {
-    chains: Chains,
-
+    chains: Arc<Chains>,
+    hasura_client: Option<Arc<hubble::hasura::HasuraDataStore>>,
     num_workers: u16,
-
     msg_server: msg_server::MsgServer,
-
-    hasura_config: Option<hubble::hasura::HasuraDataStore>,
-
     queue: Q,
 }
 
 #[derive(Debug, Clone)]
 pub struct Worker {
-    pub id: u64,
-    pub chains: Chains,
-    pub hasura_client: Option<hubble::hasura::HasuraDataStore>,
+    pub id: u16,
+    pub chains: Arc<Chains>,
+    pub hasura_client: Option<Arc<hubble::hasura::HasuraDataStore>>,
 }
 
 #[derive(Debug, Clone)]
@@ -275,7 +268,7 @@ pub struct PgQueue(pg_queue::Queue<RelayerMsg>, sqlx::PgPool);
 
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
 pub struct PgQueueConfig {
-    database_url: String,
+    pub database_url: String,
 }
 
 impl Queue for PgQueue {
@@ -296,7 +289,7 @@ impl Queue for PgQueue {
         &mut self,
         item: RelayerMsg,
     ) -> impl Future<Output = Result<(), Self::Error>> + Send + '_ {
-        pg_queue::Queue::<RelayerMsg>::enqueue(&self.1, item)
+        self.0.enqueue(&self.1, item)
     }
 
     fn process<F, Fut>(&mut self, f: F) -> impl Future<Output = Result<(), Self::Error>> + Send + '_
@@ -304,7 +297,7 @@ impl Queue for PgQueue {
         F: (FnOnce(RelayerMsg) -> Fut) + Send + 'static,
         Fut: Future<Output = ProcessFlow<RelayerMsg>> + Send + 'static,
     {
-        pg_queue::Queue::<RelayerMsg>::process(&self.1, f)
+        self.0.process(&self.1, f)
     }
 }
 
@@ -319,11 +312,11 @@ pub enum VoyagerInitError<Q: Queue> {
 }
 
 impl<Q: Queue> Voyager<Q> {
-    fn worker(&self, id: u64) -> Worker {
+    fn worker(&self, id: u16) -> Worker {
         Worker {
             id,
             chains: self.chains.clone(),
-            hasura_client: self.hasura_config.clone(),
+            hasura_client: self.hasura_client.clone(),
         }
     }
 
@@ -392,17 +385,20 @@ impl<Q: Queue> Voyager<Q> {
             .map_err(VoyagerInitError::QueueInit)?;
 
         Ok(Self {
-            chains: Chains {
+            chains: Arc::new(Chains {
                 evm_minimal,
                 evm_mainnet,
                 union,
-            },
+            }),
             msg_server: msg_server::MsgServer,
             num_workers: config.voyager.num_workers,
-            hasura_config: config
-                .voyager
-                .hasura
-                .map(|hc| HasuraDataStore::new(reqwest::Client::new(), hc.url, hc.secret)),
+            hasura_client: config.voyager.hasura.map(|hc| {
+                Arc::new(HasuraDataStore::new(
+                    reqwest::Client::new(),
+                    hc.url,
+                    hc.secret,
+                ))
+            }),
             queue,
         })
     }
@@ -413,9 +409,6 @@ impl<Q: Queue> Voyager<Q> {
                 .map(|(chain_id, chain)| {
                     chain
                         .events(())
-                        // .inspect_ok(|e| {
-                        //     dbg!(e);
-                        // })
                         .map_ok(move |event| {
                             if chain_id != event.chain_id {
                                 tracing::warn!(

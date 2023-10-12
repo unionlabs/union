@@ -1,4 +1,11 @@
-use std::{future::Future, marker::PhantomData};
+use std::{
+    future::Future,
+    marker::PhantomData,
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc,
+    },
+};
 
 use serde::{de::DeserializeOwned, Serialize};
 use sqlx::{migrate::Migrator, query, query_as, types::Json, Acquire, Postgres};
@@ -15,6 +22,7 @@ pub static MIGRATOR: Migrator = sqlx::migrate!(); // defaults to "./migrations"
 ///     error TEXT
 #[derive(Debug, Clone)]
 pub struct Queue<T> {
+    lock: Arc<AtomicBool>,
     __marker: PhantomData<fn() -> T>,
 }
 
@@ -22,6 +30,7 @@ impl<T> Queue<T> {
     #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
         Self {
+            lock: Arc::new(AtomicBool::new(false)),
             __marker: PhantomData,
         }
     }
@@ -30,7 +39,7 @@ impl<T> Queue<T> {
 impl<T: DeserializeOwned + Serialize + Unpin + Send + Sync> Queue<T> {
     /// Enqueues a new item for processing. The item's processing status is set to 0, indicating that it is ready
     /// for processing.
-    pub async fn enqueue<'a, A>(conn: A, item: T) -> Result<(), sqlx::Error>
+    pub async fn enqueue<'a, A>(&self, conn: A, item: T) -> Result<(), sqlx::Error>
     where
         A: Acquire<'a, Database = Postgres>,
     {
@@ -45,7 +54,9 @@ impl<T: DeserializeOwned + Serialize + Unpin + Send + Sync> Queue<T> {
 
         tx.commit().await?;
 
-        println!("enqueued item with id {}", row.id);
+        tracing::info!(id = row.id, "enqueued item");
+
+        self.lock.store(false, Ordering::SeqCst);
 
         Ok(())
     }
@@ -59,12 +70,17 @@ impl<T: DeserializeOwned + Serialize + Unpin + Send + Sync> Queue<T> {
     /// Database atomicity is used to ensure that the queue is always in a consistent state, meaning that an item
     /// process will always be retried until it reaches ProcessFlow::Fail or ProcessFlow::Success. `f` is responsible for
     /// storing metadata in the job to determine if retrying should fail permanently.
-    pub async fn process<'a, F, Fut, A>(conn: A, f: F) -> Result<(), sqlx::Error>
+    pub async fn process<'a, F, Fut, A>(&self, conn: A, f: F) -> Result<(), sqlx::Error>
     where
         F: (FnOnce(T) -> Fut) + 'a,
         Fut: Future<Output = ProcessFlow<T>> + 'a,
         A: Acquire<'a, Database = Postgres>,
     {
+        if self.lock.swap(false, Ordering::SeqCst) {
+            tracing::debug!("queue is locked");
+            tokio::time::sleep(std::time::Duration::from_millis(1000)).await;
+        }
+
         let mut tx = conn.begin().await?;
 
         #[derive(Debug)]
@@ -93,8 +109,7 @@ impl<T: DeserializeOwned + Serialize + Unpin + Send + Sync> Queue<T> {
 
         match row {
             Some(row) => {
-                // TODO: Use tracing
-                println!("processing item at row {}", row.id);
+                tracing::info!(id = row.id, "processing item");
 
                 match f(row.item.0).await {
                     ProcessFlow::Fail(error) => {
@@ -126,14 +141,9 @@ impl<T: DeserializeOwned + Serialize + Unpin + Send + Sync> Queue<T> {
                             .fetch_all(tx.as_mut())
                             .await?;
 
-                            println!(
-                                "inserted new messages with ids {}",
-                                new_ids
-                                    .into_iter()
-                                    .map(|x| x.id.to_string())
-                                    .collect::<Vec<_>>()
-                                    .join(", ")
-                            );
+                            for row in new_ids {
+                                tracing::debug!(id = row.id, "inserted new messages");
+                            }
                         }
 
                         tx.commit().await?;
@@ -144,7 +154,9 @@ impl<T: DeserializeOwned + Serialize + Unpin + Send + Sync> Queue<T> {
                 }
             }
             None => {
-                // println!("queue is empty")
+                tracing::debug!("queue is empty");
+                self.lock.store(true, Ordering::SeqCst);
+                tokio::time::sleep(std::time::Duration::from_millis(500)).await;
             }
         }
         Ok(())

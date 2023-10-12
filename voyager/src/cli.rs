@@ -36,6 +36,7 @@ pub struct AppArgs {
 #[derive(Debug, Subcommand)]
 #[allow(clippy::large_enum_variant)]
 pub enum Command {
+    RunMigrations,
     PrintConfig,
     Relay,
     #[command(subcommand)]

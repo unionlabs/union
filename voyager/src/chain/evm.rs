@@ -1,4 +1,4 @@
-use std::{collections::VecDeque, fmt::Debug, marker::PhantomData, ops::Div, sync::Arc};
+use std::{collections::VecDeque, fmt::Debug, marker::PhantomData, ops::Div};
 
 use beacon_api::errors::{InternalServerError, NotFoundError};
 use chain_utils::{
@@ -7,20 +7,14 @@ use chain_utils::{
 };
 use clap::Args;
 use contracts::{
-    devnet_ownable_ibc_handler,
     ibc_handler::{
         self, GetChannelCall, GetClientStateCall, GetConnectionCall, GetConsensusStateCall,
         GetHashedPacketAcknowledgementCommitmentCall, GetHashedPacketCommitmentCall,
     },
-    shared_types::{
-        IbcCoreChannelV1ChannelData, IbcCoreChannelV1CounterpartyData,
-        IbcCoreCommitmentV1MerklePrefixData, IbcCoreConnectionV1ConnectionEndData,
-        IbcCoreConnectionV1CounterpartyData, IbcCoreConnectionV1VersionData,
-    },
+    shared_types::{IbcCoreChannelV1ChannelData, IbcCoreConnectionV1ConnectionEndData},
 };
 use ethers::{
     abi::AbiEncode,
-    prelude::SignerMiddleware,
     providers::Middleware,
     types::{EIP1186ProofResponse, U256},
     utils::keccak256,
@@ -67,7 +61,7 @@ use crate::{
         },
         try_from_relayer_msg,
         union::{EthereumMainnet, EthereumMinimal},
-        ChainOf, ClientStateOf, ConsensusStateOf, HeaderOf, HeightOf, IbcStateRead, LightClient,
+        ClientStateOf, ConsensusStateOf, HeaderOf, HeightOf, IbcStateRead, LightClient,
         QueryHeight, StateProof,
     },
     msg::{
@@ -119,6 +113,7 @@ pub async fn bind_port<C: ChainSpec>(this: &Evm<C>, module_address: Address, por
         .await
 }
 
+#[allow(unused_variables)]
 pub async fn setup_initial_channel<C: ChainSpec>(
     this: &Evm<C>,
     module_address: Address,
