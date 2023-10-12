@@ -1,10 +1,8 @@
-use std::collections::BTreeMap;
-
-use chain_utils::{private_key::PrivateKey, union::Union};
+use chain_utils::private_key::PrivateKey;
 use ethers::prelude::k256::ecdsa;
 use serde::{Deserialize, Serialize};
-use tendermint_rpc::{WebSocketClient, WebSocketClientUrl};
-use unionlabs::{ethereum::Address, CosmosAccountId};
+use tendermint_rpc::WebSocketClientUrl;
+use unionlabs::ethereum::Address;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UnionConfig {
@@ -33,7 +31,8 @@ impl UnionConfig {
 pub struct Config {
     pub union: UnionConfig,
     pub evm: chain_utils::evm::Config,
-    pub contract: String,
-    pub channel: String,
+    pub union_contract: String,
     pub evm_contract: Address,
+    pub channel: String,
+    pub rush_blocks: u64,
 }

@@ -36,7 +36,7 @@ impl Context {
         let receiver = format!("{:?}", signer_middleware.address());
 
         let mut previous_height = 0;
-        for _i in 0..1 {
+        for _ in 0..self.zerg_config.rush_blocks {
             let mut height = previous_height;
 
             while height == previous_height {
@@ -54,7 +54,6 @@ impl Context {
 
             let mut txs = vec![];
             let mut msgs = vec![];
-            // :,)
             let mut unions = vec![];
             for (i, _account) in self.zerg_config.union.signers.iter().enumerate() {
                 let union = self.zerg_config.union.get_union_for(i).await;
@@ -71,7 +70,7 @@ impl Context {
 
                 let msg = Any(MsgExecuteContract {
                     sender: union.signer.to_string(),
-                    contract: self.zerg_config.contract.clone(),
+                    contract: self.zerg_config.union_contract.clone(),
                     msg: transfer_msg.as_bytes().to_vec(),
                     funds: vec![Coin {
                         denom: "stake".into(),
