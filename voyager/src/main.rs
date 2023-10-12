@@ -13,6 +13,7 @@ use std::{ffi::OsString, fs::read_to_string, process::ExitCode};
 
 use chain_utils::{evm::Evm, union::Union};
 use clap::Parser;
+use contracts::ucs01_relay::{LocalToken, UCS01Relay};
 use unionlabs::ethereum_consts_traits::Mainnet;
 
 use crate::{
@@ -140,6 +141,48 @@ async fn do_main(args: cli::AppArgs) -> Result<(), VoyagerError> {
                     _ => panic!("Not supported."),
                 }
             }
+            cli::SetupCmd::Transfer {
+                on,
+                relay_address,
+                port_id,
+                channel_id,
+                receiver,
+                amount,
+                denom,
+            } => {
+                let chain = voyager_config.get_chain(&on).await?;
+
+                match chain {
+                    AnyChain::EvmMinimal(evm) => {
+                        let relay = UCS01Relay::new(relay_address, evm.provider.into());
+
+                        let denom = relay.denom_to_address(denom).await.unwrap();
+
+                        let tx_rcp = relay
+                            .send(
+                                port_id,
+                                channel_id,
+                                receiver,
+                                [LocalToken {
+                                    denom,
+                                    amount: amount.into(),
+                                }]
+                                .into(),
+                                u64::MAX,
+                                u64::MAX,
+                            )
+                            .send()
+                            .await
+                            .unwrap()
+                            .await
+                            .unwrap()
+                            .unwrap();
+
+                        dbg!(tx_rcp);
+                    }
+                    _ => panic!("Not supported."),
+                }
+            }
             _ => panic!("not supported"),
         },
         Command::Query { on, at, cmd } => {
@@ -168,4 +211,43 @@ async fn do_main(args: cli::AppArgs) -> Result<(), VoyagerError> {
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use serde::{Deserialize, Serialize};
+
+    use crate::{chain::union::EthereumMinimal, msg::msg::MsgUpdateClientData};
+
+    #[test]
+    fn update_csv() {
+        #[derive(Debug, Serialize, Deserialize)]
+        struct Record {
+            data: String,
+            id: u64,
+        }
+
+        for record in csv::ReaderBuilder::new()
+            .from_path("/tmp/out.csv")
+            .unwrap()
+            .into_deserialize::<Record>()
+        {
+            let json =
+                serde_json::from_str::<MsgUpdateClientData<EthereumMinimal>>(&record.unwrap().data)
+                    .unwrap();
+
+            let update_from = json.update_from;
+
+            let msg = json.msg.client_message.data.consensus_update;
+
+            println!(
+                "update_from: {}\nattested beacon slot: {}\nattested execution block number: {}\nfinalized beacon slot: {}\nfinalized execution block number: {}\n",
+                update_from,
+                msg.attested_header.beacon.slot,
+                msg.attested_header.execution.block_number,
+                msg.finalized_header.beacon.slot,
+                msg.finalized_header.execution.block_number,
+            );
+        }
+    }
 }

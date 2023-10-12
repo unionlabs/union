@@ -54,3 +54,6 @@ thiserror = "1.0.49"
 
 [features]
 eth-mainnet = [ "unionlabs/eth-mainnet" ]
+
+[dev-dependencies]
+csv = "1.3.0"

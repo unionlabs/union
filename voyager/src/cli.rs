@@ -5,6 +5,7 @@ use clap::{
     error::{ContextKind, ContextValue},
     Args, Parser, Subcommand,
 };
+use contracts::ucs01_relay::LocalToken;
 use ethers::{
     signers::LocalWallet,
     types::{Address, H256},
@@ -112,6 +113,26 @@ impl QueryIbcPathCmd {
 
 #[derive(Debug, Subcommand)]
 pub enum SetupCmd {
+    Transfer {
+        #[arg(long)]
+        on: String,
+        #[arg(long)]
+        relay_address: Address,
+        // #[arg(long)]
+        // from: Address,
+        // #[arg(long)]
+        // to: String,
+        #[arg(long)]
+        port_id: String,
+        #[arg(long)]
+        channel_id: String,
+        #[arg(long)]
+        receiver: String,
+        #[arg(long)]
+        amount: u64,
+        #[arg(long)]
+        denom: String,
+    },
     SetOperator {
         #[arg(long)]
         on: String,
