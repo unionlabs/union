@@ -24,6 +24,7 @@ pub struct Context {
     pub output_file: String,
     pub zerg_config: Config,
     pub evm: chain_utils::evm::Evm<Minimal>,
+    pub is_rush: bool,
 }
 
 impl Context {
@@ -93,27 +94,7 @@ impl Context {
         }
     }
 
-    pub async fn listen_union(&self) {
-        let union = self.zerg_config.union.get_union_for(0).await;
-        let mut events = Box::pin(union.events(()));
-
-        loop {
-            let event = events.next().await.unwrap().unwrap();
-
-            match event.event {
-                unionlabs::events::IbcEvent::SendPacket(e) => {
-                    self.append_record(Event::create_send_event(event.chain_id, e))
-                }
-                unionlabs::events::IbcEvent::RecvPacket(e) => {
-                    self.append_record(Event::create_recv_event(event.chain_id, e))
-                }
-                _ => (),
-            }
-        }
-    }
-
-    pub async fn listen_eth(&self) {
-        let mut events = Box::pin(self.evm.events(()));
+    async fn send_from_eth(&self, e: unionlabs::events::RecvPacket) {
         let signer_middleware = Arc::new(SignerMiddleware::new(
             self.evm.provider.clone(),
             self.evm.wallet.clone(),
@@ -136,6 +117,76 @@ impl Context {
                 .unwrap()
         );
 
+        let transfer =
+            Ucs01TransferPacket::try_from(cosmwasm_std::Binary(e.packet_data_hex.clone())).unwrap();
+        let denom = format!("{}/{}/{}", e.packet_src_port, e.packet_src_channel, "stake");
+        println!("denom: {}", denom);
+        let denom_address = ucs01_relay.denom_to_address(denom).call().await.unwrap();
+        let calc_denom = ucs01_relay
+            .make_foreign_denom(
+                e.packet_src_port.clone(),
+                e.packet_src_channel.to_string(),
+                "stake".into(),
+            )
+            .await
+            .unwrap();
+        println!("address: {} {}", denom_address, calc_denom);
+        let erc_contract = erc20::ERC20::new(denom_address, signer_middleware.clone());
+
+        erc_contract
+            .approve(
+                self.zerg_config.evm_contract.clone().into(),
+                U256::max_value(),
+            )
+            .send()
+            .await
+            .unwrap()
+            .await
+            .unwrap()
+            .unwrap();
+
+        ucs01_relay
+            .send(
+                e.packet_dst_port.clone(),
+                e.packet_dst_channel.clone().to_string(),
+                transfer.sender().to_string(),
+                vec![LocalToken {
+                    denom: denom_address,
+                    amount: 1000,
+                }],
+                1,
+                u64::MAX,
+            )
+            .send()
+            .await
+            .unwrap()
+            .await
+            .unwrap()
+            .unwrap();
+    }
+
+    pub async fn listen_union(&self) {
+        let union = self.zerg_config.union.get_union_for(0).await;
+        let mut events = Box::pin(union.events(()));
+
+        loop {
+            let event = events.next().await.unwrap().unwrap();
+
+            match event.event {
+                unionlabs::events::IbcEvent::SendPacket(e) => {
+                    self.append_record(Event::create_send_event(event.chain_id, e))
+                }
+                unionlabs::events::IbcEvent::RecvPacket(e) => {
+                    self.append_record(Event::create_recv_event(event.chain_id, e))
+                }
+                _ => (),
+            }
+        }
+    }
+
+    pub async fn listen_eth(&self) {
+        let mut events = Box::pin(self.evm.events(()));
+
         loop {
             let event = events.next().await.unwrap().unwrap();
 
@@ -144,55 +195,9 @@ impl Context {
                     self.append_record(Event::create_send_event(event.chain_id.to_string(), e))
                 }
                 unionlabs::events::IbcEvent::RecvPacket(e) => {
-                    let transfer = Ucs01TransferPacket::try_from(cosmwasm_std::Binary(
-                        e.packet_data_hex.clone(),
-                    ))
-                    .unwrap();
-                    let denom =
-                        format!("{}/{}/{}", e.packet_src_port, e.packet_src_channel, "stake");
-                    println!("denom: {}", denom);
-                    let denom_address = ucs01_relay.denom_to_address(denom).call().await.unwrap();
-                    let calc_denom = ucs01_relay
-                        .make_foreign_denom(
-                            e.packet_src_port.clone(),
-                            e.packet_src_channel.to_string(),
-                            "stake".into(),
-                        )
-                        .await
-                        .unwrap();
-                    println!("address: {} {}", denom_address, calc_denom);
-                    let erc_contract = erc20::ERC20::new(denom_address, signer_middleware.clone());
-
-                    erc_contract
-                        .approve(
-                            self.zerg_config.evm_contract.clone().into(),
-                            U256::max_value(),
-                        )
-                        .send()
-                        .await
-                        .unwrap()
-                        .await
-                        .unwrap()
-                        .unwrap();
-
-                    ucs01_relay
-                        .send(
-                            e.packet_dst_port.clone(),
-                            e.packet_dst_channel.clone().to_string(),
-                            transfer.sender().to_string(),
-                            vec![LocalToken {
-                                denom: denom_address,
-                                amount: 1000,
-                            }],
-                            1,
-                            u64::MAX,
-                        )
-                        .send()
-                        .await
-                        .unwrap()
-                        .await
-                        .unwrap()
-                        .unwrap();
+                    if self.is_rush {
+                        self.send_from_eth(e.clone()).await;
+                    }
                     self.append_record(Event::create_recv_event(event.chain_id.to_string(), e))
                 }
                 _ => (),

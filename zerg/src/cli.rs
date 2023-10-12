@@ -24,6 +24,8 @@ pub struct AppArgs {
 pub enum Command {
     /// Exports the config to stdout.
     PrintConfig,
-    /// Conducts stress tests on the configured network.
+    /// Conducts stress tests and benchmarks on the configured network.
     Rush,
+    /// Observes and benchmarks the configured network.
+    Observe,
 }
