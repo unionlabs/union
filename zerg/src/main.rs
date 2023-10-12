@@ -17,7 +17,9 @@ async fn main() {
 
     let zerg_config: Config =
         serde_json::from_str(&read_to_string(args.config_file_path).unwrap()).unwrap();
-    let evm = chain_utils::evm::Evm::<Minimal>::new(zerg_config.evm.clone()).await;
+    let evm = chain_utils::evm::Evm::<Minimal>::new(zerg_config.evm.clone())
+        .await
+        .unwrap();
 
     let is_rush = matches!(args.command, cli::Command::Rush);
     let context = Context {

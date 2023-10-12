@@ -23,7 +23,7 @@ impl UnionConfig {
             grpc_url: self.grpc_url.clone(),
         };
 
-        chain_utils::union::Union::new(config).await
+        chain_utils::union::Union::new(config).await.unwrap()
     }
 }
 
