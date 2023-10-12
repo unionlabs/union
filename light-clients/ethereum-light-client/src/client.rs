@@ -305,17 +305,13 @@ impl IbcClient for EthereumLightClient {
 
             // Next sync committee for a consensus height can be set if it is not being set
             // previously, but it cannot be changed or unset after being set.
-            match (
+            if let (Some(lhs), Some(rhs)) = (
                 consensus_state.data.next_sync_committee,
                 header.consensus_update.next_sync_committee,
             ) {
-                (Some(_), None) => return Err(Error::NextSyncCommitteeCannotBeModified),
-                (Some(lhs), Some(rhs)) => {
-                    if lhs != rhs.aggregate_pubkey {
-                        return Err(Error::NextSyncCommitteeCannotBeModified);
-                    }
+                if lhs != rhs.aggregate_pubkey {
+                    return Err(Error::NextSyncCommitteeCannotBeModified);
                 }
-                _ => {}
             }
 
             // NOTE(aeryz): we don't check the timestamp here since it is calculated based on the

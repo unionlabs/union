@@ -9,7 +9,7 @@
 )]
 // #![deny(clippy::unwrap_used)]
 
-use std::{ffi::OsString, fs::read_to_string, process::ExitCode};
+use std::{error::Error, ffi::OsString, fs::read_to_string, process::ExitCode};
 
 use chain_utils::{evm::Evm, union::Union};
 use clap::Parser;
@@ -44,6 +44,9 @@ async fn main() -> ExitCode {
         Ok(()) => ExitCode::SUCCESS,
         Err(err) => {
             eprintln!("Error: {err}");
+            if let Some(source) = err.source() {
+                eprintln!("Caused by: {source}");
+            }
             ExitCode::FAILURE
         }
     }
@@ -232,21 +235,23 @@ mod tests {
             .unwrap()
             .into_deserialize::<Record>()
         {
+            let record = record.unwrap();
             let json =
-                serde_json::from_str::<MsgUpdateClientData<EthereumMinimal>>(&record.unwrap().data)
-                    .unwrap();
+                serde_json::from_str::<MsgUpdateClientData<EthereumMinimal>>(&record.data).unwrap();
 
             let update_from = json.update_from;
 
-            let msg = json.msg.client_message.data.consensus_update;
+            let msg = json.msg.client_message.data;
 
             println!(
-                "update_from: {}\nattested beacon slot: {}\nattested execution block number: {}\nfinalized beacon slot: {}\nfinalized execution block number: {}\n",
+                "id: {}\nupdate_from: {}\nattested beacon slot: {}\nattested execution block number: {}\nfinalized beacon slot: {}\nfinalized execution block number: {}\nnext_sync_committee: {}\n",
+                record.id,
                 update_from,
-                msg.attested_header.beacon.slot,
-                msg.attested_header.execution.block_number,
-                msg.finalized_header.beacon.slot,
-                msg.finalized_header.execution.block_number,
+                msg.consensus_update.attested_header.beacon.slot,
+                msg.consensus_update.attested_header.execution.block_number,
+                msg.consensus_update.finalized_header.beacon.slot,
+                msg.consensus_update.finalized_header.execution.block_number,
+                msg.consensus_update.next_sync_committee.is_some(),
             );
         }
     }
