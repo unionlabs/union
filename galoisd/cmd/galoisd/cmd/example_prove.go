@@ -84,6 +84,7 @@ func ExampleProveCmd() *cobra.Command {
 				return err
 			}
 
+
 			var signatures [][]byte
 			var bitmap big.Int
 			votingPower := 0
@@ -130,6 +131,7 @@ func ExampleProveCmd() *cobra.Command {
 				return err
 			}
 
+			fmt.Printf("Vote: %X\n", signedBytes)
 			fmt.Printf("Gnark Proof: %X\n", res.Proof.Content)
 			fmt.Printf("Public inputs: %X\n", res.Proof.PublicInputs)
 			fmt.Printf("Trusted root: %X\n", res.TrustedValidatorSetRoot)
