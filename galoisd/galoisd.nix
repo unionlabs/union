@@ -87,27 +87,11 @@
             name = "download-circuit";
             runtimeInputs = [ pkgs.rclone ];
             text = ''
-              if [[ "$#" -ne 2 ]]; then
-                echo "Invalid arguments, must be: download-circuit (devnet|testnet|mainnet) [path]"
+              if [[ "$#" -ne 1 ]]; then
+                echo "Invalid arguments, must be: download-circuit [path]"
                 exit 1
               fi
-              case $1 in
-                devnet)
-                  url="https://devnet.union.cryptware.io"
-                  ;;
-                testnet)
-                  url="https://testnet.union.cryptware.io"
-                  ;;
-                mainnet)
-                  echo "Mainnet circuit has not been uploaded yet"
-                  exit 1
-                  ;;
-                *)
-                  echo "Unknown network: $1, must be one of devnet|testnet|mainnet"
-                  exit 1
-                  ;;
-              esac
-              rclone --progress --no-traverse --http-url "$url" copy :http:/ "$2" --files-from=${files}
+              rclone --progress --no-traverse --http-url "https://circuit.cryptware.io" copy :http:/ "$1" --files-from=${files}
             '';
           };
       };
