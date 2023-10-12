@@ -22,6 +22,7 @@ pub struct Config<Q: Queue> {
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct VoyagerConfig<Q: Queue> {
+    pub num_workers: u16,
     pub hasura: Option<HasuraConfig>,
     pub queue: Q::Config,
 }
@@ -65,7 +66,7 @@ pub struct EvmChainConfigFields {
     pub ibc_handler_address: Address,
 
     /// The signer that will be used to submit transactions by voyager.
-    pub signer: PrivateKey<ecdsa::SigningKey>,
+    pub signers: Vec<PrivateKey<ecdsa::SigningKey>>,
 
     // TODO(benluelo): Use `Url` or something similar
     /// The RPC endpoint for the execution chain.
@@ -76,7 +77,7 @@ pub struct EvmChainConfigFields {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UnionChainConfig {
-    pub signer: PrivateKey<ecdsa::SigningKey>,
+    pub signers: Vec<PrivateKey<ecdsa::SigningKey>>,
     pub fee_denom: String,
     pub ws_url: WebSocketClientUrl,
     pub prover_endpoint: String,

@@ -57,7 +57,7 @@ impl AnyChain {
             ChainConfig::Evm(EvmChainConfig::Mainnet(evm)) => Self::EvmMainnet(
                 Evm::<Mainnet>::new(chain_utils::evm::Config {
                     ibc_handler_address: evm.ibc_handler_address,
-                    signer: evm.signer,
+                    signers: evm.signers,
                     eth_rpc_api: evm.eth_rpc_api,
                     eth_beacon_rpc_api: evm.eth_beacon_rpc_api,
                     hasura_config: voyager_config.hasura.clone(),
@@ -67,7 +67,7 @@ impl AnyChain {
             ChainConfig::Evm(EvmChainConfig::Minimal(evm)) => Self::EvmMinimal(
                 Evm::<Minimal>::new(chain_utils::evm::Config {
                     ibc_handler_address: evm.ibc_handler_address,
-                    signer: evm.signer,
+                    signers: evm.signers,
                     eth_rpc_api: evm.eth_rpc_api,
                     eth_beacon_rpc_api: evm.eth_beacon_rpc_api,
                     hasura_config: voyager_config.hasura.clone(),
@@ -76,7 +76,7 @@ impl AnyChain {
             ),
             ChainConfig::Union(union) => Self::Union(
                 Union::new(chain_utils::union::Config {
-                    signer: union.signer,
+                    signers: union.signers,
                     ws_url: union.ws_url,
                     prover_endpoint: union.prover_endpoint,
                     grpc_url: union.grpc_url,

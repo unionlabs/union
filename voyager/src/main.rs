@@ -34,7 +34,7 @@ pub mod queue;
 
 pub mod chain;
 
-#[tokio::main]
+#[tokio::main(flavor = "multi_thread")]
 async fn main() -> ExitCode {
     tracing_subscriber::fmt::init();
 

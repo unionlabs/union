@@ -22,7 +22,7 @@ impl EventSource for MsgServer {
     type Error = ();
     type Seed = ();
 
-    fn events(&self, _: Self::Seed) -> impl Stream<Item = Result<Self::Event, Self::Error>> + '_ {
+    fn events(self, _: Self::Seed) -> impl Stream<Item = Result<Self::Event, Self::Error>> {
         let (tx, rx) = unbounded_channel();
 
         let app = axum::Router::new()

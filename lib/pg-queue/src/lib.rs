@@ -144,7 +144,7 @@ impl<T: DeserializeOwned + Serialize + Unpin + Send + Sync> Queue<T> {
                 }
             }
             None => {
-                println!("queue is empty")
+                // println!("queue is empty")
             }
         }
         Ok(())

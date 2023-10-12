@@ -1,14 +1,13 @@
 use std::{fmt::Display, num::ParseIntError, str::FromStr};
 
 use ethers::prelude::k256::ecdsa;
-use futures::{stream, Future, FutureExt, Stream, StreamExt, TryFutureExt, TryStreamExt};
+use futures::{stream, Future, FutureExt, Stream, StreamExt};
 use prost::Message;
 use serde::{Deserialize, Serialize};
 use sha2::Digest;
 use tendermint_rpc::{
-    event::EventData,
     query::{Condition, EventType, Operand, Query},
-    Client, SubscriptionClient, WebSocketClient, WebSocketClientUrl,
+    Client, Order, SubscriptionClient, WebSocketClient, WebSocketClientUrl,
 };
 use unionlabs::{
     ethereum::H256,
@@ -24,12 +23,12 @@ use unionlabs::{
     CosmosAccountId,
 };
 
-use crate::{private_key::PrivateKey, Chain, ChainEvent, ClientState, EventSource};
+use crate::{private_key::PrivateKey, Chain, ChainEvent, ClientState, EventSource, Pool};
 
 #[derive(Debug, Clone)]
 pub struct Union {
     pub chain_id: String,
-    pub signer: CosmosAccountId,
+    pub signers: Pool<CosmosAccountId>,
     pub fee_denom: String,
     pub tm_client: WebSocketClient,
     pub chain_revision: u64,
@@ -39,7 +38,7 @@ pub struct Union {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
-    pub signer: PrivateKey<ecdsa::SigningKey>,
+    pub signers: Vec<PrivateKey<ecdsa::SigningKey>>,
     pub fee_denom: String,
     pub ws_url: WebSocketClientUrl,
     pub prover_endpoint: String,
@@ -329,7 +328,12 @@ impl Union {
             })?;
 
         Ok(Self {
-            signer: CosmosAccountId::new(config.signer.value(), "union".to_string()),
+            signers: Pool::new(
+                config
+                    .signers
+                    .into_iter()
+                    .map(|signer| CosmosAccountId::new(signer.value(), "union".to_string())),
+            ),
             tm_client,
             chain_id,
             chain_revision,
@@ -341,11 +345,12 @@ impl Union {
 
     pub async fn broadcast_tx_commit(
         &self,
+        signer: CosmosAccountId,
         messages: impl IntoIterator<Item = protos::google::protobuf::Any>,
     ) {
         use protos::cosmos::tx;
 
-        let account = self.account_info_of_signer(&self.signer).await;
+        let account = self.account_info_of_signer(&signer).await;
 
         let sign_doc = tx::v1beta1::SignDoc {
             body_bytes: tx::v1beta1::TxBody {
@@ -361,7 +366,7 @@ impl Union {
                 signer_infos: [tx::v1beta1::SignerInfo {
                     public_key: Some(protos::google::protobuf::Any {
                         type_url: "/cosmos.crypto.secp256k1.PubKey".to_string(),
-                        value: self.signer.public_key().encode_to_vec(),
+                        value: signer.public_key().encode_to_vec(),
                     }),
                     mode_info: Some(tx::v1beta1::ModeInfo {
                         sum: Some(tx::v1beta1::mode_info::Sum::Single(
@@ -390,11 +395,7 @@ impl Union {
             account_number: account.account_number,
         };
 
-        let alice_signature = self
-            .signer
-            .try_sign(&sign_doc.encode_to_vec())
-            .unwrap()
-            .to_vec();
+        let alice_signature = signer.try_sign(&sign_doc.encode_to_vec()).unwrap().to_vec();
 
         let tx_raw = tx::v1beta1::TxRaw {
             body_bytes: sign_doc.body_bytes,
@@ -520,153 +521,104 @@ impl EventSource for Union {
     // TODO: Make this the height to start from
     type Seed = ();
 
-    fn events(
-        &self,
-        _seed: Self::Seed,
-    ) -> impl Stream<Item = Result<Self::Event, Self::Error>> + '_ {
-        let chain_revision = self.chain_revision;
+    fn events(self, _seed: Self::Seed) -> impl Stream<Item = Result<Self::Event, Self::Error>> {
+        async move {
+            let chain_revision = self.chain_revision;
 
-        // TODO: Change this to fetch new blocks instead of subscribing to txs
-        let new_events = self
-            .tm_client
-            .subscribe(EventType::Tx.into())
-            .map_err(<Self::Error>::Subscription)
-            .map_ok(|s| s.map_err(<Self::Error>::Subscription))
-            .into_stream()
-            .try_flatten()
-            .map_ok(move |event| {
-                tracing::info!(?event.data);
+            let latest_height = self.query_latest_height().await;
 
-                if let EventData::Tx { tx_result } = event.data {
-                    Some(
-                        stream::iter(tx_result.result.events.into_iter().map(|event| {
-                            Event {
-                                ty: event.kind,
-                                attributes: event
-                                    .attributes
-                                    .into_iter()
-                                    .map(|attr| EventAttribute {
-                                        key: attr.key,
-                                        value: attr.value,
-                                        index: attr.index,
-                                    })
-                                    .collect(),
-                            }
+            stream::unfold(
+                (self, latest_height),
+                move |(this, previous_height)| async move {
+                    tracing::info!("fetching events");
+
+                    let current_height = loop {
+                        tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+
+                        let current_height = this.query_latest_height().await;
+
+                        tracing::debug!(%current_height, %previous_height);
+
+                        if current_height > previous_height {
+                            break current_height;
+                        }
+                    };
+
+                    tracing::debug!(
+                        previous_height = previous_height.revision_height,
+                        current_height = current_height.revision_height
+                    );
+
+                    let mut events = vec![];
+
+                    for h in
+                        (previous_height.revision_height + 1)..=(current_height.revision_height)
+                    {
+                        let response = this
+                            .tm_client
+                            .tx_search(Query::eq("tx.height", h), false, 1, 255, Order::Descending)
+                            .await
+                            .unwrap();
+
+                        let new_events = stream::iter(response.txs.into_iter().flat_map(|tx| {
+                            tx.tx_result
+                                .events
+                                .into_iter()
+                                .map(|event| Event {
+                                    ty: event.kind,
+                                    attributes: event
+                                        .attributes
+                                        .into_iter()
+                                        .map(|attr| EventAttribute {
+                                            key: attr.key,
+                                            value: attr.value,
+                                            index: attr.index,
+                                        })
+                                        .collect(),
+                                })
+                                .filter_map(IbcEvent::try_from_tendermint_event)
+                                .map(move |res| {
+                                    res.map(|x| (tx.height, x))
+                                        .map_err(UnionEventSourceError::TryFromTendermintEvent)
+                                })
                         }))
-                        .filter_map(move |event| async move {
-                            IbcEvent::try_from_tendermint_event(event)
-                        })
-                        .map_err(UnionEventSourceError::TryFromTendermintEvent)
-                        .and_then(
-                            move |event: IbcEvent<_, _, String>| async move {
-                                Ok(ChainEvent {
-                                    chain_id: self.chain_id.clone(),
-                                    block_hash: (self
+                        .then(|res| async {
+                            match res {
+                                Ok((height, event)) => Ok(ChainEvent {
+                                    chain_id: this.chain_id(),
+                                    block_hash: this
                                         .tm_client
-                                        .block(u32::try_from(tx_result.height).unwrap())
+                                        .block(height)
                                         .await
                                         .unwrap()
                                         .block_id
                                         .hash
                                         .as_bytes()
                                         .try_into()
-                                        .unwrap()),
+                                        .unwrap(),
                                     height: Height {
                                         revision_number: chain_revision,
-                                        revision_height: tx_result.height.try_into().unwrap(),
+                                        revision_height: height.try_into().unwrap(),
                                     },
                                     event,
-                                })
-                            },
-                        ),
-                    )
-                } else {
-                    None
-                }
-            })
-            .filter_map(|x| async { x.transpose() })
-            .try_flatten();
+                                }),
+                                Err(err) => Err(err),
+                            }
+                        })
+                        .collect::<Vec<_>>()
+                        .await;
 
-        // Box::pin(new_events)
-        //     .into_future()
-        //     .map(move |(read_until_height, new_events)| {
-        //         read_until_height
-        //             .expect("stream should not be finished")
-        //             .map_err(|x| match x {
-        //                 fatal @ queue::Error::Fatal(_) => fatal,
-        //                 queue::Error::Recoverable(err) => queue::Error::Fatal(Box::new(format!(
-        //                     "unable to read first event out of stream: {err:?}"
-        //                 ))),
-        //             })
-        //             .map(|read_until_height| {
-        //                 stream::iter(
-        //                     (read_until_height
-        //                         .height
-        //                         .revision_height
-        //                         .checked_sub(50)
-        //                         .unwrap_or(1))
-        //                         ..read_until_height.height.revision_height,
-        //                 )
-        //                 .then(move |height| {
-        //                     let client = self.tm_client.clone();
+                        events.extend(new_events);
+                    }
 
-        //                     async move {
-        //                         tracing::info!("querying block results at block {height}");
-        //                         client
-        //                             .block_results(u32::try_from(height).unwrap())
-        //                             .await
-        //                             .map_err(|e| queue::Error::Fatal(Box::new(e)))
-        //                             .map(|response| {
-        //                                 response.txs_results.into_iter().flatten().flat_map(
-        //                                     move |tx_result| {
-        //                                         ibc_events_from_tx(
-        //                                             tx_result.events,
-        //                                             response.height.into(),
-        //                                             chain_revision,
-        //                                         )
-        //                                     },
-        //                                 )
-        //                             })
-        //                     }
-        //                 })
-        //                 .map_ok(stream::iter)
-        //                 .try_flatten()
-        //                 .chain(stream::iter([Ok(read_until_height)]))
-        //                 .chain(new_events)
-        //             })
-        //     })
-        //     .try_flatten_stream()
+                    let iter = events;
 
-        // let missed_events = rx
-        //     .map(|x| x.expect("channel should not have been cancelled; qed;"))
-        //     .map(move |read_until_height| {
-        //         stream::iter((read_until_height.checked_sub(50).unwrap_or(1))..read_until_height)
-        //             .then(move |height| {
-        //                 let client = self.tm_client.clone().clone();
-
-        //                 async move {
-        //                     client
-        //                         .block_results(u32::try_from(height).unwrap())
-        //                         .await
-        //                         .map_err(|e| queue::Error::Fatal(Box::new(e)))
-        //                         .map(|response| {
-        //                             response.txs_results.into_iter().flatten().flat_map(
-        //                                 move |tx_result| {
-        //                                     ibc_events_from_tx(
-        //                                         tx_result.events,
-        //                                         response.height.into(),
-        //                                         chain_revision,
-        //                                     )
-        //                                 },
-        //                             )
-        //                         })
-        //                 }
-        //             })
-        //     })
-        //     .flatten_stream()
-        //     .map_ok(stream::iter)
-        //     .try_flatten()
-
-        new_events
+                    Some((iter, (this, current_height)))
+                },
+            )
+        }
+        .flatten_stream()
+        .map(futures::stream::iter)
+        .flatten()
     }
 }

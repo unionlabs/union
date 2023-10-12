@@ -9,8 +9,10 @@ use std::{
     error::Error,
     fmt::{Debug, Display},
     hash::Hash,
+    sync::Arc,
 };
 
+use crossbeam_queue::ArrayQueue;
 use futures::{Future, Stream};
 use serde::{Deserialize, Serialize};
 use unionlabs::{
@@ -88,8 +90,7 @@ pub trait EventSource {
     /// The initial state of this event source, if any.
     type Seed;
 
-    fn events(&self, seed: Self::Seed)
-        -> impl Stream<Item = Result<Self::Event, Self::Error>> + '_;
+    fn events(self, seed: Self::Seed) -> impl Stream<Item = Result<Self::Event, Self::Error>>;
 }
 
 // Serialize, Deserialize
@@ -388,3 +389,54 @@ impl Display for ChainClientIdParseError {
 }
 
 impl Error for ChainClientIdParseError {}
+
+#[derive(Debug, Clone)]
+pub struct Pool<T> {
+    pool: Arc<ArrayQueue<T>>,
+}
+
+impl<T: Clone> Pool<T> {
+    pub fn new(ts: impl ExactSizeIterator<Item = T>) -> Self {
+        let data = ArrayQueue::new(ts.len());
+
+        for t in ts {
+            data.push(t)
+                .map_err(|_| ())
+                .expect("queue is initialized with the correct length; qed;");
+        }
+
+        Self {
+            pool: Arc::new(data),
+        }
+    }
+
+    pub async fn with<R, F: FnOnce(T) -> Fut, Fut: Future<Output = R>>(&self, f: F) -> R {
+        let t = loop {
+            match self.pool.pop() {
+                Some(t) => break t,
+                None => {
+                    const RETRY_SECONDS: u64 = 3;
+
+                    tracing::warn!(
+                        "high traffic in queue of {}, ran out of items! trying again in {RETRY_SECONDS} seconds",
+                        std::any::type_name::<T>()
+                    );
+
+                    tokio::time::sleep(std::time::Duration::from_secs(RETRY_SECONDS)).await;
+
+                    continue;
+                }
+            }
+        };
+
+        // TODO: Figure out a way to pass this as ref
+        let r = f(t.clone()).await;
+
+        self.pool
+            .push(t)
+            .map_err(|_| ())
+            .expect("no additional items are added; qed;");
+
+        r
+    }
+}

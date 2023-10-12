@@ -103,14 +103,20 @@ fn encode_dynamic_singleton_tuple(t: impl AbiEncode) -> Vec<u8> {
 }
 
 pub async fn bind_port<C: ChainSpec>(this: &Evm<C>, module_address: Address, port_id: String) {
-    let bind_port_result = this.ibc_handler.bind_port(port_id, module_address.into());
+    // HACK: This will pop the top item out of the queue, but binding the port requires the contract owner;
+    // this will work as long as the first signer in the list is the owner.
+    this.ibc_handlers
+        .with(|ibc_handler| async move {
+            let bind_port_result = ibc_handler.bind_port(port_id, module_address.into());
 
-    match bind_port_result.send().await {
-        Ok(ok) => {
-            ok.await.unwrap().unwrap();
-        }
-        Err(why) => eprintln!("{:?}", why.decode_revert::<String>()),
-    };
+            match bind_port_result.send().await {
+                Ok(ok) => {
+                    ok.await.unwrap().unwrap();
+                }
+                Err(why) => eprintln!("{:?}", why.decode_revert::<String>()),
+            };
+        })
+        .await
 }
 
 pub async fn setup_initial_channel<C: ChainSpec>(
@@ -120,55 +126,56 @@ pub async fn setup_initial_channel<C: ChainSpec>(
     port_id: String,
     counterparty_port_id: String,
 ) {
-    let signer_middleware = Arc::new(SignerMiddleware::new(
-        this.provider.clone(),
-        this.wallet.clone(),
-    ));
+    // let signer_middleware = Arc::new(SignerMiddleware::new(
+    //     this.provider.clone(),
+    //     this.wallet.clone(),
+    // ));
 
-    let ibc_handler = devnet_ownable_ibc_handler::DevnetOwnableIBCHandler::new(
-        this.ibc_handler.address(),
-        signer_middleware,
-    );
+    // let ibc_handler = devnet_ownable_ibc_handler::DevnetOwnableIBCHandler::new(
+    //     this.ibc_handler.address(),
+    //     signer_middleware,
+    // );
 
-    ibc_handler
-        .setup_initial_channel(
-            "connection-0".into(),
-            IbcCoreConnectionV1ConnectionEndData {
-                client_id: "cometbls-new-0".into(),
-                versions: vec![IbcCoreConnectionV1VersionData {
-                    identifier: "1".into(),
-                    features: vec!["ORDER_ORDERED".into(), "ORDER_UNORDERED".into()],
-                }],
-                state: 3,
-                counterparty: IbcCoreConnectionV1CounterpartyData {
-                    client_id: "08-wasm-0".into(),
-                    connection_id: "connection-0".into(),
-                    prefix: IbcCoreCommitmentV1MerklePrefixData {
-                        key_prefix: b"ibc".to_vec().into(),
-                    },
-                },
-                delay_period: 6,
-            },
-            port_id,
-            channel_id.clone(),
-            IbcCoreChannelV1ChannelData {
-                state: 3,
-                ordering: 1,
-                counterparty: IbcCoreChannelV1CounterpartyData {
-                    port_id: counterparty_port_id,
-                    channel_id,
-                },
-                connection_hops: vec!["connection-0".into()],
-                version: "ics20-1".into(),
-            },
-            module_address.into(),
-        )
-        .send()
-        .await
-        .unwrap()
-        .await
-        .unwrap()
-        .unwrap();
+    // ibc_handler
+    //     .setup_initial_channel(
+    //         "connection-0".into(),
+    //         IbcCoreConnectionV1ConnectionEndData {
+    //             client_id: "cometbls-new-0".into(),
+    //             versions: vec![IbcCoreConnectionV1VersionData {
+    //                 identifier: "1".into(),
+    //                 features: vec!["ORDER_ORDERED".into(), "ORDER_UNORDERED".into()],
+    //             }],
+    //             state: 3,
+    //             counterparty: IbcCoreConnectionV1CounterpartyData {
+    //                 client_id: "08-wasm-0".into(),
+    //                 connection_id: "connection-0".into(),
+    //                 prefix: IbcCoreCommitmentV1MerklePrefixData {
+    //                     key_prefix: b"ibc".to_vec().into(),
+    //                 },
+    //             },
+    //             delay_period: 6,
+    //         },
+    //         port_id,
+    //         channel_id.clone(),
+    //         IbcCoreChannelV1ChannelData {
+    //             state: 3,
+    //             ordering: 1,
+    //             counterparty: IbcCoreChannelV1CounterpartyData {
+    //                 port_id: counterparty_port_id,
+    //                 channel_id,
+    //             },
+    //             connection_hops: vec!["connection-0".into()],
+    //             version: "ics20-1".into(),
+    //         },
+    //         module_address.into(),
+    //     )
+    //     .send()
+    //     .await
+    //     .unwrap()
+    //     .await
+    //     .unwrap()
+    //     .unwrap();
+    todo!()
 }
 
 impl LightClient for CometblsMainnet {
@@ -901,138 +908,146 @@ where
     ConsensusStateOf<<L::Counterparty as LightClient>::HostChain>: IntoProto,
     HeaderOf<<L::Counterparty as LightClient>::HostChain>: IntoEthAbi,
 {
-    let tx_res = match msg {
-        Msg::ConnectionOpenInit(data) => {
-            evm.ibc_handler
-                .connection_open_init(data.msg.into())
-                .send()
-                .await
-                .unwrap()
-                .await
-        }
-        Msg::ConnectionOpenTry(data) => {
-            evm.ibc_handler
-                .connection_open_try(data.msg.into())
-                .send()
-                .await
-                .unwrap()
-                .await
-        }
-        Msg::ConnectionOpenAck(data) => {
-            evm.ibc_handler
-                .connection_open_ack(data.msg.into())
-                .send()
-                .await
-                .unwrap()
-                .await
-        }
-        Msg::ConnectionOpenConfirm(data) => {
-            evm.ibc_handler
-                .connection_open_confirm(data.0.into())
-                .send()
-                .await
-                .unwrap()
-                .await
-        }
-        Msg::ChannelOpenInit(data) => {
-            evm.ibc_handler
-                .channel_open_init(data.msg.into())
-                .send()
-                .await
-                .unwrap()
-                .await
-        }
-        Msg::ChannelOpenTry(data) => {
-            evm.ibc_handler
-                .channel_open_try(data.msg.into())
-                .send()
-                .await
-                .unwrap()
-                .await
-        }
-        Msg::ChannelOpenAck(data) => {
-            evm.ibc_handler
-                .channel_open_ack(data.msg.into())
-                .send()
-                .await
-                .unwrap()
-                .await
-        }
-        Msg::ChannelOpenConfirm(data) => {
-            evm.ibc_handler
-                .channel_open_confirm(data.msg.into())
-                .send()
-                .await
-                .unwrap()
-                .await
-        }
-        Msg::RecvPacket(data) => {
-            tracing::error!("submitting RecvPacket");
-            evm.ibc_handler
-                .recv_packet(data.msg.into())
-                .send()
-                .await
-                .unwrap()
-                .await
-        }
-        Msg::AckPacket(data) => {
-            evm.ibc_handler
-                .acknowledge_packet(data.msg.into())
-                .send()
-                .await
-                .unwrap()
-                .await
-        }
-        Msg::CreateClient(data) => {
-            // dbg!(&data);
-
-            let register_client_result = evm.ibc_handler.register_client(
-                L::ClientType::TYPE.to_string(),
-                data.config.cometbls_client_address.clone().into(),
-            );
-
-            // TODO(benluelo): Better way to check if client type has already been registered?
-            match register_client_result.send().await {
-                Ok(ok) => {
-                    ok.await.unwrap().unwrap();
+    evm.ibc_handlers
+        .with(|ibc_handler| async move {
+            let tx_res = match msg {
+                Msg::ConnectionOpenInit(data) => {
+                    ibc_handler
+                        .connection_open_init(data.msg.into())
+                        .send()
+                        .await
+                        .unwrap()
+                        .await
                 }
-                Err(why) => tracing::info!(
-                    "error registering client type, it is likely already registered: {}",
-                    why.decode_revert::<String>().unwrap()
-                ),
+                Msg::ConnectionOpenTry(data) => {
+                    ibc_handler
+                        .connection_open_try(data.msg.into())
+                        .send()
+                        .await
+                        .unwrap()
+                        .await
+                }
+                Msg::ConnectionOpenAck(data) => {
+                    ibc_handler
+                        .connection_open_ack(data.msg.into())
+                        .send()
+                        .await
+                        .unwrap()
+                        .await
+                }
+                Msg::ConnectionOpenConfirm(data) => {
+                    ibc_handler
+                        .connection_open_confirm(data.0.into())
+                        .send()
+                        .await
+                        .unwrap()
+                        .await
+                }
+                Msg::ChannelOpenInit(data) => {
+                    ibc_handler
+                        .channel_open_init(data.msg.into())
+                        .send()
+                        .await
+                        .unwrap()
+                        .await
+                }
+                Msg::ChannelOpenTry(data) => {
+                    ibc_handler
+                        .channel_open_try(data.msg.into())
+                        .send()
+                        .await
+                        .unwrap()
+                        .await
+                }
+                Msg::ChannelOpenAck(data) => {
+                    ibc_handler
+                        .channel_open_ack(data.msg.into())
+                        .send()
+                        .await
+                        .unwrap()
+                        .await
+                }
+                Msg::ChannelOpenConfirm(data) => {
+                    ibc_handler
+                        .channel_open_confirm(data.msg.into())
+                        .send()
+                        .await
+                        .unwrap()
+                        .await
+                }
+                Msg::RecvPacket(data) => {
+                    tracing::error!("submitting RecvPacket");
+                    ibc_handler
+                        .recv_packet(data.msg.into())
+                        .send()
+                        .await
+                        .unwrap()
+                        .await
+                }
+                Msg::AckPacket(data) => {
+                    ibc_handler
+                        .acknowledge_packet(data.msg.into())
+                        .send()
+                        .await
+                        .unwrap()
+                        .await
+                }
+                Msg::CreateClient(data) => {
+                    // dbg!(&data);
+
+                    let register_client_result = ibc_handler.register_client(
+                        L::ClientType::TYPE.to_string(),
+                        data.config.cometbls_client_address.clone().into(),
+                    );
+
+                    // TODO(benluelo): Better way to check if client type has already been registered?
+                    match register_client_result.send().await {
+                        Ok(ok) => {
+                            ok.await.unwrap().unwrap();
+                        }
+                        Err(why) => tracing::info!(
+                            "error registering client type, it is likely already registered: {}",
+                            why.decode_revert::<String>().unwrap()
+                        ),
+                    }
+
+                    ibc_handler
+                        .create_client(contracts::shared_types::MsgCreateClient {
+                            // TODO: Add this to the config
+                            client_type: L::ClientType::TYPE.to_string(),
+                            client_state_bytes: data.msg.client_state.into_proto_bytes().into(),
+                            consensus_state_bytes: data
+                                .msg
+                                .consensus_state
+                                .into_proto_bytes()
+                                .into(),
+                        })
+                        .send()
+                        .await
+                        .unwrap()
+                        .await
+                }
+                Msg::UpdateClient(data) => {
+                    ibc_handler
+                        .update_client(ibc_handler::MsgUpdateClient {
+                            client_id: data.msg.client_id.to_string(),
+                            client_message: encode_dynamic_singleton_tuple(
+                                data.msg.client_message.clone().into_eth_abi(),
+                            )
+                            .into(),
+                        })
+                        .send()
+                        .await
+                        .unwrap()
+                        .await
+                }
             }
+            .unwrap()
+            .unwrap();
 
-            evm.ibc_handler
-                .create_client(contracts::shared_types::MsgCreateClient {
-                    // TODO: Add this to the config
-                    client_type: L::ClientType::TYPE.to_string(),
-                    client_state_bytes: data.msg.client_state.into_proto_bytes().into(),
-                    consensus_state_bytes: data.msg.consensus_state.into_proto_bytes().into(),
-                })
-                .send()
-                .await
-                .unwrap()
-                .await
-        }
-        Msg::UpdateClient(data) => {
-            evm.ibc_handler
-                .update_client(ibc_handler::MsgUpdateClient {
-                    client_id: data.msg.client_id.to_string(),
-                    client_message: encode_dynamic_singleton_tuple(
-                        data.msg.client_message.clone().into_eth_abi(),
-                    )
-                    .into(),
-                })
-                .send()
-                .await
-                .unwrap()
-                .await
-        }
-    }
-    .unwrap()
-    .unwrap();
-
-    tracing::warn!(?tx_res, "evm tx submitted");
+            tracing::warn!(?tx_res, "evm tx submitted");
+        })
+        .await
 }
 
 async fn query_client_state<C: ChainSpec>(
@@ -1047,7 +1062,7 @@ async fn query_client_state<C: ChainSpec>(
     let execution_height = evm.execution_height(height).await;
 
     let (client_state_bytes, is_found) = evm
-        .ibc_handler
+        .readonly_ibc_handler
         .get_client_state(client_id.to_string())
         .block(execution_height)
         .await
@@ -1167,11 +1182,11 @@ where
 
             CometblsDataMsg::AccountUpdate(AccountUpdateData {
                 slot,
-                ibc_handler_address: evm.ibc_handler.address().0.into(),
+                ibc_handler_address: evm.readonly_ibc_handler.address().0.into(),
                 update: evm
                     .provider
                     .get_proof(
-                        evm.ibc_handler.address(),
+                        evm.readonly_ibc_handler.address(),
                         vec![],
                         // NOTE: Proofs are from the execution layer, so we use execution height, not beacon slot.
                         Some(execution_height.into()),
@@ -1239,7 +1254,7 @@ where
             let proof = self
                 .provider
                 .get_proof(
-                    self.ibc_handler.address(),
+                    self.readonly_ibc_handler.address(),
                     vec![location.into()],
                     Some(execution_height.into()),
                 )

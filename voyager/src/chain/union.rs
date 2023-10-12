@@ -770,49 +770,54 @@ where
     // HeaderOf<<L::Counterparty as LightClient>::HostChain>: IntoProto,
     // <HeaderOf<<L::Counterparty as LightClient>::HostChain> as Proto>::Proto: TypeUrl,
 {
-    let msg_any = match msg {
-        Msg::ConnectionOpenInit(data) => Any(data.msg).into_proto_with_signer(&union.signer),
-        Msg::ConnectionOpenTry(data) => Any(data.msg).into_proto_with_signer(&union.signer),
-        Msg::ConnectionOpenAck(data) => Any(data.msg).into_proto_with_signer(&union.signer),
-        Msg::ConnectionOpenConfirm(data) => Any(data.0).into_proto_with_signer(&union.signer),
-        Msg::ChannelOpenInit(data) => Any(data.msg).into_proto_with_signer(&union.signer),
-        Msg::ChannelOpenTry(data) => Any(data.msg).into_proto_with_signer(&union.signer),
-        Msg::ChannelOpenAck(data) => Any(data.msg).into_proto_with_signer(&union.signer),
-        Msg::ChannelOpenConfirm(data) => Any(data.msg).into_proto_with_signer(&union.signer),
-        Msg::RecvPacket(data) => Any(data.msg).into_proto_with_signer(&union.signer),
-        Msg::AckPacket(data) => Any(data.msg).into_proto_with_signer(&union.signer),
-        Msg::CreateClient(mut data) => {
-            // i hate this lol
-            data.msg.client_state.0.code_id = data.config.code_id;
+    union
+        .signers
+        .with(|signer| async {
+            let msg_any = match msg {
+                Msg::ConnectionOpenInit(data) => Any(data.msg).into_proto_with_signer(&signer),
+                Msg::ConnectionOpenTry(data) => Any(data.msg).into_proto_with_signer(&signer),
+                Msg::ConnectionOpenAck(data) => Any(data.msg).into_proto_with_signer(&signer),
+                Msg::ConnectionOpenConfirm(data) => Any(data.0).into_proto_with_signer(&signer),
+                Msg::ChannelOpenInit(data) => Any(data.msg).into_proto_with_signer(&signer),
+                Msg::ChannelOpenTry(data) => Any(data.msg).into_proto_with_signer(&signer),
+                Msg::ChannelOpenAck(data) => Any(data.msg).into_proto_with_signer(&signer),
+                Msg::ChannelOpenConfirm(data) => Any(data.msg).into_proto_with_signer(&signer),
+                Msg::RecvPacket(data) => Any(data.msg).into_proto_with_signer(&signer),
+                Msg::AckPacket(data) => Any(data.msg).into_proto_with_signer(&signer),
+                Msg::CreateClient(mut data) => {
+                    // i hate this lol
+                    data.msg.client_state.0.code_id = data.config.code_id;
 
-            Any(data.msg).into_proto_with_signer(&union.signer)
-        }
-        Msg::UpdateClient(data) => {
-            // check if update has already been done
-            // let existing_consensus_height = L::from_chain(union.clone())
-            //     .query_client_state(
-            //         data.msg.client_id.clone().into(),
-            //         union.query_latest_height().await,
-            //     )
-            //     .await
-            //     .0
-            //     .latest_height;
+                    Any(data.msg).into_proto_with_signer(&signer)
+                }
+                Msg::UpdateClient(data) => {
+                    // check if update has already been done
+                    // let existing_consensus_height = L::from_chain(union.clone())
+                    //     .query_client_state(
+                    //         data.msg.client_id.clone().into(),
+                    //         union.query_latest_height().await,
+                    //     )
+                    //     .await
+                    //     .0
+                    //     .latest_height;
 
-            // let update_height = data.update_from;
-            // if dbg!(existing_consensus_height) >= dbg!(update_height.into_height()) {
-            //     tracing::warn!(
-            //         "consensus state has already been updated to or past {update_height}, found {existing_consensus_height}"
-            //     );
+                    // let update_height = data.update_from;
+                    // if dbg!(existing_consensus_height) >= dbg!(update_height.into_height()) {
+                    //     tracing::warn!(
+                    //         "consensus state has already been updated to or past {update_height}, found {existing_consensus_height}"
+                    //     );
 
-            //     // don't do the update, already has been done
-            //     return;
-            // }
+                    //     // don't do the update, already has been done
+                    //     return;
+                    // }
 
-            Any(data.msg).into_proto_with_signer(&union.signer)
-        }
-    };
+                    Any(data.msg).into_proto_with_signer(&signer)
+                }
+            };
 
-    let _response = union.broadcast_tx_commit([msg_any]).await;
+            let _response = union.broadcast_tx_commit(signer, [msg_any]).await;
+        })
+        .await
 }
 
 async fn query_client_state<L>(
