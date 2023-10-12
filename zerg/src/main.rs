@@ -1,6 +1,5 @@
+use core::panic;
 use std::{
-    collections::{BTreeMap, HashMap},
-    fmt::Binary,
     fs::{read_to_string, OpenOptions},
     io::Write,
     sync::Arc,
@@ -11,12 +10,12 @@ use chain_utils::{Chain, EventSource};
 use clap::Parser;
 use cli::AppArgs;
 use config::Config;
-use contracts::ucs01_relay::{self as ucs01relay, LocalToken};
-use ethers::{prelude::SignerMiddleware, utils::get_create2_address_from_hash};
-use futures::{stream, StreamExt};
-use serde::{Deserialize, Serialize};
-use tendermint_rpc::WebSocketClient;
-use tokio::sync::Mutex;
+use contracts::{
+    erc20,
+    ucs01_relay::{self as ucs01relay, LocalToken},
+};
+use ethers::{prelude::SignerMiddleware, types::U256};
+use futures::StreamExt;
 use ucs01_relay::msg::{ExecuteMsg, TransferMsg};
 use ucs01_relay_api::types::Ucs01TransferPacket;
 use unionlabs::{
@@ -25,7 +24,7 @@ use unionlabs::{
     ethereum_consts_traits::Minimal,
     events::{RecvPacket, SendPacket},
     ibc::google::protobuf::any::Any,
-    CosmosAccountId, IntoProto,
+    IntoProto,
 };
 
 pub mod cli;
@@ -146,7 +145,7 @@ impl Context {
             self.evm.provider.clone(),
             self.evm.wallet.clone(),
         ));
-        let receiver = signer_middleware.address().to_string();
+        let receiver = format!("{:?}", signer_middleware.address());
 
         let mut previous_height = 0;
         for _i in 0..1 {
@@ -232,10 +231,23 @@ impl Context {
             self.evm.provider.clone(),
             self.evm.wallet.clone(),
         ));
-        signer_middleware.address();
 
-        let ucs01_relay =
-            ucs01relay::UCS01Relay::new(self.zerg_config.evm_contract.clone(), signer_middleware);
+        let ucs01_relay = ucs01relay::UCS01Relay::new(
+            self.zerg_config.evm_contract.clone(),
+            signer_middleware.clone(),
+        );
+
+        let denom_address = ucs01_relay.denom_to_address(
+            "wasm.union14hj2tavq8fpesdwxxcu44rty3hh90vhujrvcmstl4zr3txmfvw9s3e9fe2/channel-2/stake"
+                .into()).call().await.unwrap();
+        let erc_contract = erc20::ERC20::new(denom_address, signer_middleware.clone());
+        println!(
+            "BALANCE: {}",
+            erc_contract
+                .balance_of(signer_middleware.address())
+                .await
+                .unwrap()
+        );
 
         loop {
             let event = events.next().await.unwrap().unwrap();
@@ -252,8 +264,30 @@ impl Context {
                     let denom =
                         format!("{}/{}/{}", e.packet_src_port, e.packet_src_channel, "stake");
                     println!("denom: {}", denom);
-                    let denom_address = ucs01_relay.denom_to_address(denom).await.unwrap();
-                    println!("address: {}", denom_address);
+                    let denom_address = ucs01_relay.denom_to_address(denom).call().await.unwrap();
+                    let calc_denom = ucs01_relay
+                        .make_foreign_denom(
+                            e.packet_src_port.clone(),
+                            e.packet_src_channel.to_string(),
+                            "stake".into(),
+                        )
+                        .await
+                        .unwrap();
+                    println!("address: {} {}", denom_address, calc_denom);
+                    let erc_contract = erc20::ERC20::new(denom_address, signer_middleware.clone());
+
+                    erc_contract
+                        .approve(
+                            self.zerg_config.evm_contract.clone().into(),
+                            U256::max_value(),
+                        )
+                        .send()
+                        .await
+                        .unwrap()
+                        .await
+                        .unwrap()
+                        .unwrap();
+
                     ucs01_relay
                         .send(
                             e.packet_dst_port.clone(),
