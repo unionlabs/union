@@ -216,43 +216,44 @@ async fn do_main(args: cli::AppArgs) -> Result<(), VoyagerError> {
     Ok(())
 }
 
-#[cfg(test)]
-mod tests {
-    use serde::{Deserialize, Serialize};
+// commented out for now as this is useful in debugging but not to be run in CI
+// #[cfg(test)]
+// mod tests {
+//     use serde::{Deserialize, Serialize};
 
-    use crate::{chain::union::EthereumMinimal, msg::msg::MsgUpdateClientData};
+//     use crate::{chain::union::EthereumMinimal, msg::msg::MsgUpdateClientData};
 
-    #[test]
-    fn update_csv() {
-        #[derive(Debug, Serialize, Deserialize)]
-        struct Record {
-            data: String,
-            id: u64,
-        }
+//     #[test]
+//     fn update_csv() {
+//         #[derive(Debug, Serialize, Deserialize)]
+//         struct Record {
+//             data: String,
+//             id: u64,
+//         }
 
-        for record in csv::ReaderBuilder::new()
-            .from_path("/tmp/out.csv")
-            .unwrap()
-            .into_deserialize::<Record>()
-        {
-            let record = record.unwrap();
-            let json =
-                serde_json::from_str::<MsgUpdateClientData<EthereumMinimal>>(&record.data).unwrap();
+//         for record in csv::ReaderBuilder::new()
+//             .from_path("/tmp/out.csv")
+//             .unwrap()
+//             .into_deserialize::<Record>()
+//         {
+//             let record = record.unwrap();
+//             let json =
+//                 serde_json::from_str::<MsgUpdateClientData<EthereumMinimal>>(&record.data).unwrap();
 
-            let update_from = json.update_from;
+//             let update_from = json.update_from;
 
-            let msg = json.msg.client_message.data;
+//             let msg = json.msg.client_message.data;
 
-            println!(
-                "id: {}\nupdate_from: {}\nattested beacon slot: {}\nattested execution block number: {}\nfinalized beacon slot: {}\nfinalized execution block number: {}\nnext_sync_committee: {}\n",
-                record.id,
-                update_from,
-                msg.consensus_update.attested_header.beacon.slot,
-                msg.consensus_update.attested_header.execution.block_number,
-                msg.consensus_update.finalized_header.beacon.slot,
-                msg.consensus_update.finalized_header.execution.block_number,
-                msg.consensus_update.next_sync_committee.is_some(),
-            );
-        }
-    }
-}
+//             println!(
+//                 "id: {}\nupdate_from: {}\nattested beacon slot: {}\nattested execution block number: {}\nfinalized beacon slot: {}\nfinalized execution block number: {}\nnext_sync_committee: {}\n",
+//                 record.id,
+//                 update_from,
+//                 msg.consensus_update.attested_header.beacon.slot,
+//                 msg.consensus_update.attested_header.execution.block_number,
+//                 msg.consensus_update.finalized_header.beacon.slot,
+//                 msg.consensus_update.finalized_header.execution.block_number,
+//                 msg.consensus_update.next_sync_committee.is_some(),
+//             );
+//         }
+//     }
+// }
