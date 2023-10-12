@@ -34,7 +34,7 @@
             ${self'.packages.evm-contracts}/out/IBCHandler.sol/IBCHandler.json \
             ${self'.packages.evm-contracts}/out/Glue.sol/Glue.json \
             ${self'.packages.evm-contracts}/out/DevnetOwnableIBCHandler.sol/DevnetOwnableIBCHandler.json \
-            # ${self'.packages.evm-contracts}/out/CometblsHelp.sol/CometblsHelp.json
+            ${self'.packages.evm-contracts}/out/Relay.sol/UCS01Relay.json
 
           ls -al ./out/
 

@@ -13067,7 +13067,7 @@ pub mod glue {
         pub block: u64,
         pub app: u64,
     }
-    ///`Data(string,(int64,int32),(int64,int32),(int64,int32),(uint64,uint64))`
+    ///`UnionIbcLightclientsCometblsV1ClientStateData(string,(int64,int32),(int64,int32),(int64,int32),(uint64,uint64))`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
