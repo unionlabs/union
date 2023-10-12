@@ -31,6 +31,7 @@ Getenv
 HKTs
 HMAC
 Hasher
+Hhvf
 Hyperlane
 IAVL
 IIBC
@@ -400,6 +401,7 @@ nasm
 neighbouring
 neoeinstein
 neofetch
+neondb
 netutil
 networkid
 nextest
@@ -534,6 +536,7 @@ spents
 splitn
 sqlx
 srcs
+sslmode
 stakingkeeper
 stakingtypes
 stargate
@@ -599,6 +602,8 @@ tonumber
 treefmt
 trustlessly
 tryopen
+tsdb
+tsdbadmin
 txes
 txpool
 typecheck
@@ -628,6 +633,7 @@ unionvisorbn
 unjail
 unjailed
 unmarshal
+unopinionated
 unsetting
 unvalidated
 unwithdrawn

@@ -28,6 +28,7 @@
     "**/*.pb.go",
     "**/testdata",
     "networks/genesis/union-testnet-2/**",
-    "networks/genesis/union-testnet-3/**"
+    "networks/genesis/union-testnet-3/**",
+    "hubble/hasura/**"
   ]
 }

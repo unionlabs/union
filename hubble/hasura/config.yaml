@@ -1,6 +1,5 @@
 version: 3
-endpoint: https://localhost:8080
-admin_secret: secret
+endpoint: https://noble-pika-27.hasura.app
 metadata_directory: metadata
 actions:
   kind: synchronous

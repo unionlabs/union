@@ -1,3 +1,3 @@
 table:
   name: events
-  schema: public
+  schema: v0

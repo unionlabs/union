@@ -1,0 +1,3 @@
+table:
+  name: faucet_claims
+  schema: demo

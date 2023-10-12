@@ -14,6 +14,12 @@ directive @cached(
 ) on QUERY
 
 """
+Represent a cosmos address as [Betch32](https://en.bitcoin.it/wiki/Bech32) format prefixed by the blockchain prefix.
+e.i. `cosmos1jse8senm9hcvydhl8v9x47kfe5z82zmwtw8jvj`
+"""
+scalar Address
+
+"""
 Boolean expression to compare columns of type "Boolean". All fields are combined with logical 'AND'.
 """
 input Boolean_comparison_exp {
@@ -26,6 +32,30 @@ input Boolean_comparison_exp {
   _lte: Boolean
   _neq: Boolean
   _nin: [Boolean!]
+}
+
+"""Represent the actual server configuration"""
+type Configuration {
+  """Amount value of token to send"""
+  amountSend: Long!
+
+  """The network chain ID"""
+  chainId: String!
+
+  """Token denom"""
+  denom: String!
+
+  """Fee amount allowed"""
+  feeAmount: Long!
+
+  """Gas limit allowed on transaction"""
+  gasLimit: UInt64!
+
+  """Memo used when send transaction"""
+  memo: String!
+
+  """Address prefix"""
+  prefix: String!
 }
 
 """
@@ -41,6 +71,18 @@ input Int_comparison_exp {
   _lte: Int
   _neq: Int
   _nin: [Int!]
+}
+
+"""Represent a signed 64-bit integer"""
+scalar Long
+
+"""All inputs needed to send token to a given address"""
+input SendInput {
+  """Captcha token"""
+  captchaToken: String
+
+  """Address where to send token(s)"""
+  toAddress: Address!
 }
 
 """
@@ -96,50 +138,56 @@ input String_comparison_exp {
   _similar: String
 }
 
+"""Represent a transaction response"""
+type TxResponse {
+  """
+  Return the result code of transaction.
+  See code correspondence error : https://github.com/cosmos/cosmos-sdk/blob/main/types/errors/errors.go
+  """
+  code: Int!
+
+  """Transaction gas used"""
+  gasUsed: Long!
+
+  """Transaction gas wanted"""
+  gasWanted: Long!
+
+  """Corresponding to the transaction hash."""
+  hash: String!
+
+  """Description of error if available."""
+  rawLog: String
+}
+
+"""An unsigned 64-bit integer"""
+scalar UInt64
+
+"""Represent a void return type, representing no value"""
+scalar Void
+
+scalar bigint
+
+"""
+Boolean expression to compare columns of type "bigint". All fields are combined with logical 'AND'.
+"""
+input bigint_comparison_exp {
+  _eq: bigint
+  _gt: bigint
+  _gte: bigint
+  _in: [bigint!]
+  _is_null: Boolean
+  _lt: bigint
+  _lte: bigint
+  _neq: bigint
+  _nin: [bigint!]
+}
+
 """
 columns and relationships of "blocks"
 """
 type blocks {
-  """An object relationship"""
-  chain: chains!
   chain_id: Int!
   created_at: timestamptz
-
-  """An array relationship"""
-  events(
-    """distinct select on columns"""
-    distinct_on: [events_select_column!]
-
-    """limit the number of rows returned"""
-    limit: Int
-
-    """skip the first n rows. Use only with order_by"""
-    offset: Int
-
-    """sort the rows by one or more columns"""
-    order_by: [events_order_by!]
-
-    """filter the rows returned"""
-    where: events_bool_exp
-  ): [events!]!
-
-  """An aggregate relationship"""
-  events_aggregate(
-    """distinct select on columns"""
-    distinct_on: [events_select_column!]
-
-    """limit the number of rows returned"""
-    limit: Int
-
-    """skip the first n rows. Use only with order_by"""
-    offset: Int
-
-    """sort the rows by one or more columns"""
-    order_by: [events_order_by!]
-
-    """filter the rows returned"""
-    where: events_bool_exp
-  ): events_aggregate!
   extra_data(
     """JSON select path"""
     path: String
@@ -159,33 +207,6 @@ type blocks_aggregate {
   nodes: [blocks!]!
 }
 
-input blocks_aggregate_bool_exp {
-  bool_and: blocks_aggregate_bool_exp_bool_and
-  bool_or: blocks_aggregate_bool_exp_bool_or
-  count: blocks_aggregate_bool_exp_count
-}
-
-input blocks_aggregate_bool_exp_bool_and {
-  arguments: blocks_select_column_blocks_aggregate_bool_exp_bool_and_arguments_columns!
-  distinct: Boolean
-  filter: blocks_bool_exp
-  predicate: Boolean_comparison_exp!
-}
-
-input blocks_aggregate_bool_exp_bool_or {
-  arguments: blocks_select_column_blocks_aggregate_bool_exp_bool_or_arguments_columns!
-  distinct: Boolean
-  filter: blocks_bool_exp
-  predicate: Boolean_comparison_exp!
-}
-
-input blocks_aggregate_bool_exp_count {
-  arguments: [blocks_select_column!]
-  distinct: Boolean
-  filter: blocks_bool_exp
-  predicate: Int_comparison_exp!
-}
-
 """
 aggregate fields of "blocks"
 """
@@ -203,36 +224,9 @@ type blocks_aggregate_fields {
   variance: blocks_variance_fields
 }
 
-"""
-order by aggregate values of table "blocks"
-"""
-input blocks_aggregate_order_by {
-  avg: blocks_avg_order_by
-  count: order_by
-  max: blocks_max_order_by
-  min: blocks_min_order_by
-  stddev: blocks_stddev_order_by
-  stddev_pop: blocks_stddev_pop_order_by
-  stddev_samp: blocks_stddev_samp_order_by
-  sum: blocks_sum_order_by
-  var_pop: blocks_var_pop_order_by
-  var_samp: blocks_var_samp_order_by
-  variance: blocks_variance_order_by
-}
-
 """append existing jsonb value of filtered columns with new jsonb value"""
 input blocks_append_input {
   extra_data: jsonb
-}
-
-"""
-input type for inserting array relation for remote table "blocks"
-"""
-input blocks_arr_rel_insert_input {
-  data: [blocks_insert_input!]!
-
-  """upsert condition"""
-  on_conflict: blocks_on_conflict
 }
 
 """aggregate avg on columns"""
@@ -243,26 +237,14 @@ type blocks_avg_fields {
 }
 
 """
-order by avg() on columns of table "blocks"
-"""
-input blocks_avg_order_by {
-  chain_id: order_by
-  height: order_by
-  id: order_by
-}
-
-"""
 Boolean expression to filter rows from the table "blocks". All fields are combined with a logical 'AND'.
 """
 input blocks_bool_exp {
   _and: [blocks_bool_exp!]
   _not: blocks_bool_exp
   _or: [blocks_bool_exp!]
-  chain: chains_bool_exp
   chain_id: Int_comparison_exp
   created_at: timestamptz_comparison_exp
-  events: events_bool_exp
-  events_aggregate: events_aggregate_bool_exp
   extra_data: jsonb_comparison_exp
   hash: String_comparison_exp
   height: Int_comparison_exp
@@ -320,10 +302,8 @@ input blocks_inc_input {
 input type for inserting data into table "blocks"
 """
 input blocks_insert_input {
-  chain: chains_obj_rel_insert_input
   chain_id: Int
   created_at: timestamptz
-  events: events_arr_rel_insert_input
   extra_data: jsonb
   hash: String
   height: Int
@@ -342,18 +322,6 @@ type blocks_max_fields {
   updated_at: timestamptz
 }
 
-"""
-order by max() on columns of table "blocks"
-"""
-input blocks_max_order_by {
-  chain_id: order_by
-  created_at: order_by
-  hash: order_by
-  height: order_by
-  id: order_by
-  updated_at: order_by
-}
-
 """aggregate min on columns"""
 type blocks_min_fields {
   chain_id: Int
@@ -362,18 +330,6 @@ type blocks_min_fields {
   height: Int
   id: Int
   updated_at: timestamptz
-}
-
-"""
-order by min() on columns of table "blocks"
-"""
-input blocks_min_order_by {
-  chain_id: order_by
-  created_at: order_by
-  hash: order_by
-  height: order_by
-  id: order_by
-  updated_at: order_by
 }
 
 """
@@ -388,16 +344,6 @@ type blocks_mutation_response {
 }
 
 """
-input type for inserting object relation for remote table "blocks"
-"""
-input blocks_obj_rel_insert_input {
-  data: blocks_insert_input!
-
-  """upsert condition"""
-  on_conflict: blocks_on_conflict
-}
-
-"""
 on_conflict condition type for table "blocks"
 """
 input blocks_on_conflict {
@@ -408,10 +354,8 @@ input blocks_on_conflict {
 
 """Ordering options when selecting data from "blocks"."""
 input blocks_order_by {
-  chain: chains_order_by
   chain_id: order_by
   created_at: order_by
-  events_aggregate: events_aggregate_order_by
   extra_data: order_by
   hash: order_by
   height: order_by
@@ -460,22 +404,6 @@ enum blocks_select_column {
 }
 
 """
-select "blocks_aggregate_bool_exp_bool_and_arguments_columns" columns of table "blocks"
-"""
-enum blocks_select_column_blocks_aggregate_bool_exp_bool_and_arguments_columns {
-  """column name"""
-  is_finalized
-}
-
-"""
-select "blocks_aggregate_bool_exp_bool_or_arguments_columns" columns of table "blocks"
-"""
-enum blocks_select_column_blocks_aggregate_bool_exp_bool_or_arguments_columns {
-  """column name"""
-  is_finalized
-}
-
-"""
 input type for updating data in table "blocks"
 """
 input blocks_set_input {
@@ -496,15 +424,6 @@ type blocks_stddev_fields {
   id: Float
 }
 
-"""
-order by stddev() on columns of table "blocks"
-"""
-input blocks_stddev_order_by {
-  chain_id: order_by
-  height: order_by
-  id: order_by
-}
-
 """aggregate stddev_pop on columns"""
 type blocks_stddev_pop_fields {
   chain_id: Float
@@ -512,29 +431,11 @@ type blocks_stddev_pop_fields {
   id: Float
 }
 
-"""
-order by stddev_pop() on columns of table "blocks"
-"""
-input blocks_stddev_pop_order_by {
-  chain_id: order_by
-  height: order_by
-  id: order_by
-}
-
 """aggregate stddev_samp on columns"""
 type blocks_stddev_samp_fields {
   chain_id: Float
   height: Float
   id: Float
-}
-
-"""
-order by stddev_samp() on columns of table "blocks"
-"""
-input blocks_stddev_samp_order_by {
-  chain_id: order_by
-  height: order_by
-  id: order_by
 }
 
 """
@@ -565,15 +466,6 @@ type blocks_sum_fields {
   chain_id: Int
   height: Int
   id: Int
-}
-
-"""
-order by sum() on columns of table "blocks"
-"""
-input blocks_sum_order_by {
-  chain_id: order_by
-  height: order_by
-  id: order_by
 }
 
 """
@@ -644,29 +536,11 @@ type blocks_var_pop_fields {
   id: Float
 }
 
-"""
-order by var_pop() on columns of table "blocks"
-"""
-input blocks_var_pop_order_by {
-  chain_id: order_by
-  height: order_by
-  id: order_by
-}
-
 """aggregate var_samp on columns"""
 type blocks_var_samp_fields {
   chain_id: Float
   height: Float
   id: Float
-}
-
-"""
-order by var_samp() on columns of table "blocks"
-"""
-input blocks_var_samp_order_by {
-  chain_id: order_by
-  height: order_by
-  id: order_by
 }
 
 """aggregate variance on columns"""
@@ -677,53 +551,9 @@ type blocks_variance_fields {
 }
 
 """
-order by variance() on columns of table "blocks"
-"""
-input blocks_variance_order_by {
-  chain_id: order_by
-  height: order_by
-  id: order_by
-}
-
-"""
 columns and relationships of "chains"
 """
 type chains {
-  """An array relationship"""
-  blocks(
-    """distinct select on columns"""
-    distinct_on: [blocks_select_column!]
-
-    """limit the number of rows returned"""
-    limit: Int
-
-    """skip the first n rows. Use only with order_by"""
-    offset: Int
-
-    """sort the rows by one or more columns"""
-    order_by: [blocks_order_by!]
-
-    """filter the rows returned"""
-    where: blocks_bool_exp
-  ): [blocks!]!
-
-  """An aggregate relationship"""
-  blocks_aggregate(
-    """distinct select on columns"""
-    distinct_on: [blocks_select_column!]
-
-    """limit the number of rows returned"""
-    limit: Int
-
-    """skip the first n rows. Use only with order_by"""
-    offset: Int
-
-    """sort the rows by one or more columns"""
-    order_by: [blocks_order_by!]
-
-    """filter the rows returned"""
-    where: blocks_bool_exp
-  ): blocks_aggregate!
   chain_id: String!
   id: Int!
 }
@@ -765,8 +595,6 @@ input chains_bool_exp {
   _and: [chains_bool_exp!]
   _not: chains_bool_exp
   _or: [chains_bool_exp!]
-  blocks: blocks_bool_exp
-  blocks_aggregate: blocks_aggregate_bool_exp
   chain_id: String_comparison_exp
   id: Int_comparison_exp
 }
@@ -797,7 +625,6 @@ input chains_inc_input {
 input type for inserting data into table "chains"
 """
 input chains_insert_input {
-  blocks: blocks_arr_rel_insert_input
   chain_id: String
   id: Int
 }
@@ -826,16 +653,6 @@ type chains_mutation_response {
 }
 
 """
-input type for inserting object relation for remote table "chains"
-"""
-input chains_obj_rel_insert_input {
-  data: chains_insert_input!
-
-  """upsert condition"""
-  on_conflict: chains_on_conflict
-}
-
-"""
 on_conflict condition type for table "chains"
 """
 input chains_on_conflict {
@@ -846,7 +663,6 @@ input chains_on_conflict {
 
 """Ordering options when selecting data from "chains"."""
 input chains_order_by {
-  blocks_aggregate: blocks_aggregate_order_by
   chain_id: order_by
   id: order_by
 }
@@ -960,6 +776,311 @@ enum cursor_ordering {
 }
 
 """
+columns and relationships of "demo.faucet_claims"
+"""
+type demo_faucet_claims {
+  address: String!
+  created_at: timestamptz!
+  id: Int!
+  identifiers(
+    """JSON select path"""
+    path: String
+  ): jsonb
+  updated_at: timestamptz!
+}
+
+"""
+aggregated selection of "demo.faucet_claims"
+"""
+type demo_faucet_claims_aggregate {
+  aggregate: demo_faucet_claims_aggregate_fields
+  nodes: [demo_faucet_claims!]!
+}
+
+"""
+aggregate fields of "demo.faucet_claims"
+"""
+type demo_faucet_claims_aggregate_fields {
+  avg: demo_faucet_claims_avg_fields
+  count(columns: [demo_faucet_claims_select_column!], distinct: Boolean): Int!
+  max: demo_faucet_claims_max_fields
+  min: demo_faucet_claims_min_fields
+  stddev: demo_faucet_claims_stddev_fields
+  stddev_pop: demo_faucet_claims_stddev_pop_fields
+  stddev_samp: demo_faucet_claims_stddev_samp_fields
+  sum: demo_faucet_claims_sum_fields
+  var_pop: demo_faucet_claims_var_pop_fields
+  var_samp: demo_faucet_claims_var_samp_fields
+  variance: demo_faucet_claims_variance_fields
+}
+
+"""append existing jsonb value of filtered columns with new jsonb value"""
+input demo_faucet_claims_append_input {
+  identifiers: jsonb
+}
+
+"""aggregate avg on columns"""
+type demo_faucet_claims_avg_fields {
+  id: Float
+}
+
+"""
+Boolean expression to filter rows from the table "demo.faucet_claims". All fields are combined with a logical 'AND'.
+"""
+input demo_faucet_claims_bool_exp {
+  _and: [demo_faucet_claims_bool_exp!]
+  _not: demo_faucet_claims_bool_exp
+  _or: [demo_faucet_claims_bool_exp!]
+  address: String_comparison_exp
+  created_at: timestamptz_comparison_exp
+  id: Int_comparison_exp
+  identifiers: jsonb_comparison_exp
+  updated_at: timestamptz_comparison_exp
+}
+
+"""
+unique or primary key constraints on table "demo.faucet_claims"
+"""
+enum demo_faucet_claims_constraint {
+  """
+  unique or primary key constraint on columns "id"
+  """
+  faucet_claims_pkey
+}
+
+"""
+delete the field or element with specified path (for JSON arrays, negative integers count from the end)
+"""
+input demo_faucet_claims_delete_at_path_input {
+  identifiers: [String!]
+}
+
+"""
+delete the array element with specified index (negative integers count from the end). throws an error if top level container is not an array
+"""
+input demo_faucet_claims_delete_elem_input {
+  identifiers: Int
+}
+
+"""
+delete key/value pair or string element. key/value pairs are matched based on their key value
+"""
+input demo_faucet_claims_delete_key_input {
+  identifiers: String
+}
+
+"""
+input type for incrementing numeric columns in table "demo.faucet_claims"
+"""
+input demo_faucet_claims_inc_input {
+  id: Int
+}
+
+"""
+input type for inserting data into table "demo.faucet_claims"
+"""
+input demo_faucet_claims_insert_input {
+  address: String
+  created_at: timestamptz
+  id: Int
+  identifiers: jsonb
+  updated_at: timestamptz
+}
+
+"""aggregate max on columns"""
+type demo_faucet_claims_max_fields {
+  address: String
+  created_at: timestamptz
+  id: Int
+  updated_at: timestamptz
+}
+
+"""aggregate min on columns"""
+type demo_faucet_claims_min_fields {
+  address: String
+  created_at: timestamptz
+  id: Int
+  updated_at: timestamptz
+}
+
+"""
+response of any mutation on the table "demo.faucet_claims"
+"""
+type demo_faucet_claims_mutation_response {
+  """number of rows affected by the mutation"""
+  affected_rows: Int!
+
+  """data from the rows affected by the mutation"""
+  returning: [demo_faucet_claims!]!
+}
+
+"""
+on_conflict condition type for table "demo.faucet_claims"
+"""
+input demo_faucet_claims_on_conflict {
+  constraint: demo_faucet_claims_constraint!
+  update_columns: [demo_faucet_claims_update_column!]! = []
+  where: demo_faucet_claims_bool_exp
+}
+
+"""Ordering options when selecting data from "demo.faucet_claims"."""
+input demo_faucet_claims_order_by {
+  address: order_by
+  created_at: order_by
+  id: order_by
+  identifiers: order_by
+  updated_at: order_by
+}
+
+"""primary key columns input for table: demo.faucet_claims"""
+input demo_faucet_claims_pk_columns_input {
+  id: Int!
+}
+
+"""prepend existing jsonb value of filtered columns with new jsonb value"""
+input demo_faucet_claims_prepend_input {
+  identifiers: jsonb
+}
+
+"""
+select columns of table "demo.faucet_claims"
+"""
+enum demo_faucet_claims_select_column {
+  """column name"""
+  address
+
+  """column name"""
+  created_at
+
+  """column name"""
+  id
+
+  """column name"""
+  identifiers
+
+  """column name"""
+  updated_at
+}
+
+"""
+input type for updating data in table "demo.faucet_claims"
+"""
+input demo_faucet_claims_set_input {
+  address: String
+  created_at: timestamptz
+  id: Int
+  identifiers: jsonb
+  updated_at: timestamptz
+}
+
+"""aggregate stddev on columns"""
+type demo_faucet_claims_stddev_fields {
+  id: Float
+}
+
+"""aggregate stddev_pop on columns"""
+type demo_faucet_claims_stddev_pop_fields {
+  id: Float
+}
+
+"""aggregate stddev_samp on columns"""
+type demo_faucet_claims_stddev_samp_fields {
+  id: Float
+}
+
+"""
+Streaming cursor of the table "demo_faucet_claims"
+"""
+input demo_faucet_claims_stream_cursor_input {
+  """Stream column input with initial value"""
+  initial_value: demo_faucet_claims_stream_cursor_value_input!
+
+  """cursor ordering"""
+  ordering: cursor_ordering
+}
+
+"""Initial value of the column from where the streaming should start"""
+input demo_faucet_claims_stream_cursor_value_input {
+  address: String
+  created_at: timestamptz
+  id: Int
+  identifiers: jsonb
+  updated_at: timestamptz
+}
+
+"""aggregate sum on columns"""
+type demo_faucet_claims_sum_fields {
+  id: Int
+}
+
+"""
+update columns of table "demo.faucet_claims"
+"""
+enum demo_faucet_claims_update_column {
+  """column name"""
+  address
+
+  """column name"""
+  created_at
+
+  """column name"""
+  id
+
+  """column name"""
+  identifiers
+
+  """column name"""
+  updated_at
+}
+
+input demo_faucet_claims_updates {
+  """append existing jsonb value of filtered columns with new jsonb value"""
+  _append: demo_faucet_claims_append_input
+
+  """
+  delete the field or element with specified path (for JSON arrays, negative integers count from the end)
+  """
+  _delete_at_path: demo_faucet_claims_delete_at_path_input
+
+  """
+  delete the array element with specified index (negative integers count from the end). throws an error if top level container is not an array
+  """
+  _delete_elem: demo_faucet_claims_delete_elem_input
+
+  """
+  delete key/value pair or string element. key/value pairs are matched based on their key value
+  """
+  _delete_key: demo_faucet_claims_delete_key_input
+
+  """increments the numeric columns with given value of the filtered values"""
+  _inc: demo_faucet_claims_inc_input
+
+  """prepend existing jsonb value of filtered columns with new jsonb value"""
+  _prepend: demo_faucet_claims_prepend_input
+
+  """sets the columns of the filtered rows to the given values"""
+  _set: demo_faucet_claims_set_input
+
+  """filter the rows which have to be updated"""
+  where: demo_faucet_claims_bool_exp!
+}
+
+"""aggregate var_pop on columns"""
+type demo_faucet_claims_var_pop_fields {
+  id: Float
+}
+
+"""aggregate var_samp on columns"""
+type demo_faucet_claims_var_samp_fields {
+  id: Float
+}
+
+"""aggregate variance on columns"""
+type demo_faucet_claims_variance_fields {
+  id: Float
+}
+
+"""
 columns and relationships of "demo.queue"
 """
 type demo_queue {
@@ -969,6 +1090,7 @@ type demo_queue {
     """JSON select path"""
     path: String
   ): jsonb!
+  length: numeric
   updated_at: timestamptz!
 }
 
@@ -1005,6 +1127,7 @@ input demo_queue_append_input {
 """aggregate avg on columns"""
 type demo_queue_avg_fields {
   id: Float
+  length: Float
 }
 
 """
@@ -1017,6 +1140,7 @@ input demo_queue_bool_exp {
   created_at: timestamptz_comparison_exp
   id: Int_comparison_exp
   item: jsonb_comparison_exp
+  length: numeric_comparison_exp
   updated_at: timestamptz_comparison_exp
 }
 
@@ -1072,6 +1196,7 @@ input demo_queue_insert_input {
 type demo_queue_max_fields {
   created_at: timestamptz
   id: Int
+  length: numeric
   updated_at: timestamptz
 }
 
@@ -1079,6 +1204,7 @@ type demo_queue_max_fields {
 type demo_queue_min_fields {
   created_at: timestamptz
   id: Int
+  length: numeric
   updated_at: timestamptz
 }
 
@@ -1107,6 +1233,7 @@ input demo_queue_order_by {
   created_at: order_by
   id: order_by
   item: order_by
+  length: order_by
   updated_at: order_by
 }
 
@@ -1134,6 +1261,9 @@ enum demo_queue_select_column {
   item
 
   """column name"""
+  length
+
+  """column name"""
   updated_at
 }
 
@@ -1150,16 +1280,19 @@ input demo_queue_set_input {
 """aggregate stddev on columns"""
 type demo_queue_stddev_fields {
   id: Float
+  length: Float
 }
 
 """aggregate stddev_pop on columns"""
 type demo_queue_stddev_pop_fields {
   id: Float
+  length: Float
 }
 
 """aggregate stddev_samp on columns"""
 type demo_queue_stddev_samp_fields {
   id: Float
+  length: Float
 }
 
 """
@@ -1178,12 +1311,14 @@ input demo_queue_stream_cursor_value_input {
   created_at: timestamptz
   id: Int
   item: jsonb
+  length: numeric
   updated_at: timestamptz
 }
 
 """aggregate sum on columns"""
 type demo_queue_sum_fields {
   id: Int
+  length: numeric
 }
 
 """
@@ -1238,16 +1373,19 @@ input demo_queue_updates {
 """aggregate var_pop on columns"""
 type demo_queue_var_pop_fields {
   id: Float
+  length: Float
 }
 
 """aggregate var_samp on columns"""
 type demo_queue_var_samp_fields {
   id: Float
+  length: Float
 }
 
 """aggregate variance on columns"""
 type demo_queue_variance_fields {
   id: Float
+  length: Float
 }
 
 """
@@ -1545,8 +1683,6 @@ type demo_txes_variance_fields {
 columns and relationships of "events"
 """
 type events {
-  """An object relationship"""
-  block: blocks!
   block_id: Int!
   data(
     """JSON select path"""
@@ -1562,17 +1698,6 @@ aggregated selection of "events"
 type events_aggregate {
   aggregate: events_aggregate_fields
   nodes: [events!]!
-}
-
-input events_aggregate_bool_exp {
-  count: events_aggregate_bool_exp_count
-}
-
-input events_aggregate_bool_exp_count {
-  arguments: [events_select_column!]
-  distinct: Boolean
-  filter: events_bool_exp
-  predicate: Int_comparison_exp!
 }
 
 """
@@ -1592,36 +1717,9 @@ type events_aggregate_fields {
   variance: events_variance_fields
 }
 
-"""
-order by aggregate values of table "events"
-"""
-input events_aggregate_order_by {
-  avg: events_avg_order_by
-  count: order_by
-  max: events_max_order_by
-  min: events_min_order_by
-  stddev: events_stddev_order_by
-  stddev_pop: events_stddev_pop_order_by
-  stddev_samp: events_stddev_samp_order_by
-  sum: events_sum_order_by
-  var_pop: events_var_pop_order_by
-  var_samp: events_var_samp_order_by
-  variance: events_variance_order_by
-}
-
 """append existing jsonb value of filtered columns with new jsonb value"""
 input events_append_input {
   data: jsonb
-}
-
-"""
-input type for inserting array relation for remote table "events"
-"""
-input events_arr_rel_insert_input {
-  data: [events_insert_input!]!
-
-  """upsert condition"""
-  on_conflict: events_on_conflict
 }
 
 """aggregate avg on columns"""
@@ -1632,22 +1730,12 @@ type events_avg_fields {
 }
 
 """
-order by avg() on columns of table "events"
-"""
-input events_avg_order_by {
-  block_id: order_by
-  id: order_by
-  index: order_by
-}
-
-"""
 Boolean expression to filter rows from the table "events". All fields are combined with a logical 'AND'.
 """
 input events_bool_exp {
   _and: [events_bool_exp!]
   _not: events_bool_exp
   _or: [events_bool_exp!]
-  block: blocks_bool_exp
   block_id: Int_comparison_exp
   data: jsonb_comparison_exp
   id: Int_comparison_exp
@@ -1703,7 +1791,6 @@ input events_inc_input {
 input type for inserting data into table "events"
 """
 input events_insert_input {
-  block: blocks_obj_rel_insert_input
   block_id: Int
   data: jsonb
   id: Int
@@ -1717,29 +1804,11 @@ type events_max_fields {
   index: Int
 }
 
-"""
-order by max() on columns of table "events"
-"""
-input events_max_order_by {
-  block_id: order_by
-  id: order_by
-  index: order_by
-}
-
 """aggregate min on columns"""
 type events_min_fields {
   block_id: Int
   id: Int
   index: Int
-}
-
-"""
-order by min() on columns of table "events"
-"""
-input events_min_order_by {
-  block_id: order_by
-  id: order_by
-  index: order_by
 }
 
 """
@@ -1764,7 +1833,6 @@ input events_on_conflict {
 
 """Ordering options when selecting data from "events"."""
 input events_order_by {
-  block: blocks_order_by
   block_id: order_by
   data: order_by
   id: order_by
@@ -1815,15 +1883,6 @@ type events_stddev_fields {
   index: Float
 }
 
-"""
-order by stddev() on columns of table "events"
-"""
-input events_stddev_order_by {
-  block_id: order_by
-  id: order_by
-  index: order_by
-}
-
 """aggregate stddev_pop on columns"""
 type events_stddev_pop_fields {
   block_id: Float
@@ -1831,29 +1890,11 @@ type events_stddev_pop_fields {
   index: Float
 }
 
-"""
-order by stddev_pop() on columns of table "events"
-"""
-input events_stddev_pop_order_by {
-  block_id: order_by
-  id: order_by
-  index: order_by
-}
-
 """aggregate stddev_samp on columns"""
 type events_stddev_samp_fields {
   block_id: Float
   id: Float
   index: Float
-}
-
-"""
-order by stddev_samp() on columns of table "events"
-"""
-input events_stddev_samp_order_by {
-  block_id: order_by
-  id: order_by
-  index: order_by
 }
 
 """
@@ -1880,15 +1921,6 @@ type events_sum_fields {
   block_id: Int
   id: Int
   index: Int
-}
-
-"""
-order by sum() on columns of table "events"
-"""
-input events_sum_order_by {
-  block_id: order_by
-  id: order_by
-  index: order_by
 }
 
 """
@@ -1947,15 +1979,6 @@ type events_var_pop_fields {
   index: Float
 }
 
-"""
-order by var_pop() on columns of table "events"
-"""
-input events_var_pop_order_by {
-  block_id: order_by
-  id: order_by
-  index: order_by
-}
-
 """aggregate var_samp on columns"""
 type events_var_samp_fields {
   block_id: Float
@@ -1963,29 +1986,11 @@ type events_var_samp_fields {
   index: Float
 }
 
-"""
-order by var_samp() on columns of table "events"
-"""
-input events_var_samp_order_by {
-  block_id: order_by
-  id: order_by
-  index: order_by
-}
-
 """aggregate variance on columns"""
 type events_variance_fields {
   block_id: Float
   id: Float
   index: Float
-}
-
-"""
-order by variance() on columns of table "events"
-"""
-input events_variance_order_by {
-  block_id: order_by
-  id: order_by
-  index: order_by
 }
 
 scalar jsonb
@@ -2054,6 +2059,19 @@ type mutation_root {
   delete_chains_by_pk(chain_id: String!, id: Int!): chains
 
   """
+  delete data from the table: "demo.faucet_claims"
+  """
+  delete_demo_faucet_claims(
+    """filter the rows which have to be deleted"""
+    where: demo_faucet_claims_bool_exp!
+  ): demo_faucet_claims_mutation_response
+
+  """
+  delete single row from the table: "demo.faucet_claims"
+  """
+  delete_demo_faucet_claims_by_pk(id: Int!): demo_faucet_claims
+
+  """
   delete data from the table: "demo.queue"
   """
   delete_demo_queue(
@@ -2091,6 +2109,53 @@ type mutation_root {
   delete single row from the table: "events"
   """
   delete_events_by_pk(id: Int!): events
+
+  """
+  delete data from the table: "v0.blocks"
+  """
+  delete_v0_blocks(
+    """filter the rows which have to be deleted"""
+    where: v0_blocks_bool_exp!
+  ): v0_blocks_mutation_response
+
+  """
+  delete single row from the table: "v0.blocks"
+  """
+  delete_v0_blocks_by_pk(id: bigint!): v0_blocks
+
+  """
+  delete data from the table: "v0.chains"
+  """
+  delete_v0_chains(
+    """filter the rows which have to be deleted"""
+    where: v0_chains_bool_exp!
+  ): v0_chains_mutation_response
+
+  """
+  delete single row from the table: "v0.chains"
+  """
+  delete_v0_chains_by_pk(id: Int!): v0_chains
+
+  """
+  delete data from the table: "v0.coin_receiveds"
+  """
+  delete_v0_coin_receiveds(
+    """filter the rows which have to be deleted"""
+    where: v0_coin_receiveds_bool_exp!
+  ): v0_coin_receiveds_mutation_response
+
+  """
+  delete data from the table: "v0.events"
+  """
+  delete_v0_events(
+    """filter the rows which have to be deleted"""
+    where: v0_events_bool_exp!
+  ): v0_events_mutation_response
+
+  """
+  delete single row from the table: "v0.events"
+  """
+  delete_v0_events_by_pk(block_id: bigint!, index: Int!, time: timestamptz!): v0_events
 
   """
   insert data into the table: "blocks"
@@ -2135,6 +2200,28 @@ type mutation_root {
     """upsert condition"""
     on_conflict: chains_on_conflict
   ): chains
+
+  """
+  insert data into the table: "demo.faucet_claims"
+  """
+  insert_demo_faucet_claims(
+    """the rows to be inserted"""
+    objects: [demo_faucet_claims_insert_input!]!
+
+    """upsert condition"""
+    on_conflict: demo_faucet_claims_on_conflict
+  ): demo_faucet_claims_mutation_response
+
+  """
+  insert a single row into the table: "demo.faucet_claims"
+  """
+  insert_demo_faucet_claims_one(
+    """the row to be inserted"""
+    object: demo_faucet_claims_insert_input!
+
+    """upsert condition"""
+    on_conflict: demo_faucet_claims_on_conflict
+  ): demo_faucet_claims
 
   """
   insert data into the table: "demo.queue"
@@ -2201,6 +2288,89 @@ type mutation_root {
     """upsert condition"""
     on_conflict: events_on_conflict
   ): events
+
+  """
+  insert data into the table: "v0.blocks"
+  """
+  insert_v0_blocks(
+    """the rows to be inserted"""
+    objects: [v0_blocks_insert_input!]!
+
+    """upsert condition"""
+    on_conflict: v0_blocks_on_conflict
+  ): v0_blocks_mutation_response
+
+  """
+  insert a single row into the table: "v0.blocks"
+  """
+  insert_v0_blocks_one(
+    """the row to be inserted"""
+    object: v0_blocks_insert_input!
+
+    """upsert condition"""
+    on_conflict: v0_blocks_on_conflict
+  ): v0_blocks
+
+  """
+  insert data into the table: "v0.chains"
+  """
+  insert_v0_chains(
+    """the rows to be inserted"""
+    objects: [v0_chains_insert_input!]!
+
+    """upsert condition"""
+    on_conflict: v0_chains_on_conflict
+  ): v0_chains_mutation_response
+
+  """
+  insert a single row into the table: "v0.chains"
+  """
+  insert_v0_chains_one(
+    """the row to be inserted"""
+    object: v0_chains_insert_input!
+
+    """upsert condition"""
+    on_conflict: v0_chains_on_conflict
+  ): v0_chains
+
+  """
+  insert data into the table: "v0.coin_receiveds"
+  """
+  insert_v0_coin_receiveds(
+    """the rows to be inserted"""
+    objects: [v0_coin_receiveds_insert_input!]!
+  ): v0_coin_receiveds_mutation_response
+
+  """
+  insert a single row into the table: "v0.coin_receiveds"
+  """
+  insert_v0_coin_receiveds_one(
+    """the row to be inserted"""
+    object: v0_coin_receiveds_insert_input!
+  ): v0_coin_receiveds
+
+  """
+  insert data into the table: "v0.events"
+  """
+  insert_v0_events(
+    """the rows to be inserted"""
+    objects: [v0_events_insert_input!]!
+
+    """upsert condition"""
+    on_conflict: v0_events_on_conflict
+  ): v0_events_mutation_response
+
+  """
+  insert a single row into the table: "v0.events"
+  """
+  insert_v0_events_one(
+    """the row to be inserted"""
+    object: v0_events_insert_input!
+
+    """upsert condition"""
+    on_conflict: v0_events_on_conflict
+  ): v0_events
+  union: unionMutation
 
   """
   update data of the table: "blocks"
@@ -2311,6 +2481,82 @@ type mutation_root {
     """updates to execute, in order"""
     updates: [chains_updates!]!
   ): [chains_mutation_response]
+
+  """
+  update data of the table: "demo.faucet_claims"
+  """
+  update_demo_faucet_claims(
+    """append existing jsonb value of filtered columns with new jsonb value"""
+    _append: demo_faucet_claims_append_input
+
+    """
+    delete the field or element with specified path (for JSON arrays, negative integers count from the end)
+    """
+    _delete_at_path: demo_faucet_claims_delete_at_path_input
+
+    """
+    delete the array element with specified index (negative integers count from the end). throws an error if top level container is not an array
+    """
+    _delete_elem: demo_faucet_claims_delete_elem_input
+
+    """
+    delete key/value pair or string element. key/value pairs are matched based on their key value
+    """
+    _delete_key: demo_faucet_claims_delete_key_input
+
+    """increments the numeric columns with given value of the filtered values"""
+    _inc: demo_faucet_claims_inc_input
+
+    """prepend existing jsonb value of filtered columns with new jsonb value"""
+    _prepend: demo_faucet_claims_prepend_input
+
+    """sets the columns of the filtered rows to the given values"""
+    _set: demo_faucet_claims_set_input
+
+    """filter the rows which have to be updated"""
+    where: demo_faucet_claims_bool_exp!
+  ): demo_faucet_claims_mutation_response
+
+  """
+  update single row of the table: "demo.faucet_claims"
+  """
+  update_demo_faucet_claims_by_pk(
+    """append existing jsonb value of filtered columns with new jsonb value"""
+    _append: demo_faucet_claims_append_input
+
+    """
+    delete the field or element with specified path (for JSON arrays, negative integers count from the end)
+    """
+    _delete_at_path: demo_faucet_claims_delete_at_path_input
+
+    """
+    delete the array element with specified index (negative integers count from the end). throws an error if top level container is not an array
+    """
+    _delete_elem: demo_faucet_claims_delete_elem_input
+
+    """
+    delete key/value pair or string element. key/value pairs are matched based on their key value
+    """
+    _delete_key: demo_faucet_claims_delete_key_input
+
+    """increments the numeric columns with given value of the filtered values"""
+    _inc: demo_faucet_claims_inc_input
+
+    """prepend existing jsonb value of filtered columns with new jsonb value"""
+    _prepend: demo_faucet_claims_prepend_input
+
+    """sets the columns of the filtered rows to the given values"""
+    _set: demo_faucet_claims_set_input
+    pk_columns: demo_faucet_claims_pk_columns_input!
+  ): demo_faucet_claims
+
+  """
+  update multiples rows of table: "demo.faucet_claims"
+  """
+  update_demo_faucet_claims_many(
+    """updates to execute, in order"""
+    updates: [demo_faucet_claims_updates!]!
+  ): [demo_faucet_claims_mutation_response]
 
   """
   update data of the table: "demo.queue"
@@ -2539,6 +2785,231 @@ type mutation_root {
     """updates to execute, in order"""
     updates: [events_updates!]!
   ): [events_mutation_response]
+
+  """
+  update data of the table: "v0.blocks"
+  """
+  update_v0_blocks(
+    """append existing jsonb value of filtered columns with new jsonb value"""
+    _append: v0_blocks_append_input
+
+    """
+    delete the field or element with specified path (for JSON arrays, negative integers count from the end)
+    """
+    _delete_at_path: v0_blocks_delete_at_path_input
+
+    """
+    delete the array element with specified index (negative integers count from the end). throws an error if top level container is not an array
+    """
+    _delete_elem: v0_blocks_delete_elem_input
+
+    """
+    delete key/value pair or string element. key/value pairs are matched based on their key value
+    """
+    _delete_key: v0_blocks_delete_key_input
+
+    """increments the numeric columns with given value of the filtered values"""
+    _inc: v0_blocks_inc_input
+
+    """prepend existing jsonb value of filtered columns with new jsonb value"""
+    _prepend: v0_blocks_prepend_input
+
+    """sets the columns of the filtered rows to the given values"""
+    _set: v0_blocks_set_input
+
+    """filter the rows which have to be updated"""
+    where: v0_blocks_bool_exp!
+  ): v0_blocks_mutation_response
+
+  """
+  update single row of the table: "v0.blocks"
+  """
+  update_v0_blocks_by_pk(
+    """append existing jsonb value of filtered columns with new jsonb value"""
+    _append: v0_blocks_append_input
+
+    """
+    delete the field or element with specified path (for JSON arrays, negative integers count from the end)
+    """
+    _delete_at_path: v0_blocks_delete_at_path_input
+
+    """
+    delete the array element with specified index (negative integers count from the end). throws an error if top level container is not an array
+    """
+    _delete_elem: v0_blocks_delete_elem_input
+
+    """
+    delete key/value pair or string element. key/value pairs are matched based on their key value
+    """
+    _delete_key: v0_blocks_delete_key_input
+
+    """increments the numeric columns with given value of the filtered values"""
+    _inc: v0_blocks_inc_input
+
+    """prepend existing jsonb value of filtered columns with new jsonb value"""
+    _prepend: v0_blocks_prepend_input
+
+    """sets the columns of the filtered rows to the given values"""
+    _set: v0_blocks_set_input
+    pk_columns: v0_blocks_pk_columns_input!
+  ): v0_blocks
+
+  """
+  update multiples rows of table: "v0.blocks"
+  """
+  update_v0_blocks_many(
+    """updates to execute, in order"""
+    updates: [v0_blocks_updates!]!
+  ): [v0_blocks_mutation_response]
+
+  """
+  update data of the table: "v0.chains"
+  """
+  update_v0_chains(
+    """increments the numeric columns with given value of the filtered values"""
+    _inc: v0_chains_inc_input
+
+    """sets the columns of the filtered rows to the given values"""
+    _set: v0_chains_set_input
+
+    """filter the rows which have to be updated"""
+    where: v0_chains_bool_exp!
+  ): v0_chains_mutation_response
+
+  """
+  update single row of the table: "v0.chains"
+  """
+  update_v0_chains_by_pk(
+    """increments the numeric columns with given value of the filtered values"""
+    _inc: v0_chains_inc_input
+
+    """sets the columns of the filtered rows to the given values"""
+    _set: v0_chains_set_input
+    pk_columns: v0_chains_pk_columns_input!
+  ): v0_chains
+
+  """
+  update multiples rows of table: "v0.chains"
+  """
+  update_v0_chains_many(
+    """updates to execute, in order"""
+    updates: [v0_chains_updates!]!
+  ): [v0_chains_mutation_response]
+
+  """
+  update data of the table: "v0.coin_receiveds"
+  """
+  update_v0_coin_receiveds(
+    """increments the numeric columns with given value of the filtered values"""
+    _inc: v0_coin_receiveds_inc_input
+
+    """sets the columns of the filtered rows to the given values"""
+    _set: v0_coin_receiveds_set_input
+
+    """filter the rows which have to be updated"""
+    where: v0_coin_receiveds_bool_exp!
+  ): v0_coin_receiveds_mutation_response
+
+  """
+  update multiples rows of table: "v0.coin_receiveds"
+  """
+  update_v0_coin_receiveds_many(
+    """updates to execute, in order"""
+    updates: [v0_coin_receiveds_updates!]!
+  ): [v0_coin_receiveds_mutation_response]
+
+  """
+  update data of the table: "v0.events"
+  """
+  update_v0_events(
+    """append existing jsonb value of filtered columns with new jsonb value"""
+    _append: v0_events_append_input
+
+    """
+    delete the field or element with specified path (for JSON arrays, negative integers count from the end)
+    """
+    _delete_at_path: v0_events_delete_at_path_input
+
+    """
+    delete the array element with specified index (negative integers count from the end). throws an error if top level container is not an array
+    """
+    _delete_elem: v0_events_delete_elem_input
+
+    """
+    delete key/value pair or string element. key/value pairs are matched based on their key value
+    """
+    _delete_key: v0_events_delete_key_input
+
+    """increments the numeric columns with given value of the filtered values"""
+    _inc: v0_events_inc_input
+
+    """prepend existing jsonb value of filtered columns with new jsonb value"""
+    _prepend: v0_events_prepend_input
+
+    """sets the columns of the filtered rows to the given values"""
+    _set: v0_events_set_input
+
+    """filter the rows which have to be updated"""
+    where: v0_events_bool_exp!
+  ): v0_events_mutation_response
+
+  """
+  update single row of the table: "v0.events"
+  """
+  update_v0_events_by_pk(
+    """append existing jsonb value of filtered columns with new jsonb value"""
+    _append: v0_events_append_input
+
+    """
+    delete the field or element with specified path (for JSON arrays, negative integers count from the end)
+    """
+    _delete_at_path: v0_events_delete_at_path_input
+
+    """
+    delete the array element with specified index (negative integers count from the end). throws an error if top level container is not an array
+    """
+    _delete_elem: v0_events_delete_elem_input
+
+    """
+    delete key/value pair or string element. key/value pairs are matched based on their key value
+    """
+    _delete_key: v0_events_delete_key_input
+
+    """increments the numeric columns with given value of the filtered values"""
+    _inc: v0_events_inc_input
+
+    """prepend existing jsonb value of filtered columns with new jsonb value"""
+    _prepend: v0_events_prepend_input
+
+    """sets the columns of the filtered rows to the given values"""
+    _set: v0_events_set_input
+    pk_columns: v0_events_pk_columns_input!
+  ): v0_events
+
+  """
+  update multiples rows of table: "v0.events"
+  """
+  update_v0_events_many(
+    """updates to execute, in order"""
+    updates: [v0_events_updates!]!
+  ): [v0_events_mutation_response]
+}
+
+scalar numeric
+
+"""
+Boolean expression to compare columns of type "numeric". All fields are combined with logical 'AND'.
+"""
+input numeric_comparison_exp {
+  _eq: numeric
+  _gt: numeric
+  _gte: numeric
+  _in: [numeric!]
+  _is_null: Boolean
+  _lt: numeric
+  _lte: numeric
+  _neq: numeric
+  _nin: [numeric!]
 }
 
 """column ordering options"""
@@ -2563,7 +3034,9 @@ enum order_by {
 }
 
 type query_root {
-  """An array relationship"""
+  """
+  fetch data from the table: "blocks"
+  """
   blocks(
     """distinct select on columns"""
     distinct_on: [blocks_select_column!]
@@ -2581,7 +3054,9 @@ type query_root {
     where: blocks_bool_exp
   ): [blocks!]!
 
-  """An aggregate relationship"""
+  """
+  fetch aggregated fields from the table: "blocks"
+  """
   blocks_aggregate(
     """distinct select on columns"""
     distinct_on: [blocks_select_column!]
@@ -2644,6 +3119,51 @@ type query_root {
 
   """fetch data from the table: "chains" using primary key columns"""
   chains_by_pk(chain_id: String!, id: Int!): chains
+
+  """
+  fetch data from the table: "demo.faucet_claims"
+  """
+  demo_faucet_claims(
+    """distinct select on columns"""
+    distinct_on: [demo_faucet_claims_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [demo_faucet_claims_order_by!]
+
+    """filter the rows returned"""
+    where: demo_faucet_claims_bool_exp
+  ): [demo_faucet_claims!]!
+
+  """
+  fetch aggregated fields from the table: "demo.faucet_claims"
+  """
+  demo_faucet_claims_aggregate(
+    """distinct select on columns"""
+    distinct_on: [demo_faucet_claims_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [demo_faucet_claims_order_by!]
+
+    """filter the rows returned"""
+    where: demo_faucet_claims_bool_exp
+  ): demo_faucet_claims_aggregate!
+
+  """
+  fetch data from the table: "demo.faucet_claims" using primary key columns
+  """
+  demo_faucet_claims_by_pk(id: Int!): demo_faucet_claims
 
   """
   fetch data from the table: "demo.queue"
@@ -2731,7 +3251,9 @@ type query_root {
   """fetch data from the table: "demo.txes" using primary key columns"""
   demo_txes_by_pk(id: Int!): demo_txes
 
-  """An array relationship"""
+  """
+  fetch data from the table: "events"
+  """
   events(
     """distinct select on columns"""
     distinct_on: [events_select_column!]
@@ -2749,7 +3271,9 @@ type query_root {
     where: events_bool_exp
   ): [events!]!
 
-  """An aggregate relationship"""
+  """
+  fetch aggregated fields from the table: "events"
+  """
   events_aggregate(
     """distinct select on columns"""
     distinct_on: [events_select_column!]
@@ -2769,10 +3293,182 @@ type query_root {
 
   """fetch data from the table: "events" using primary key columns"""
   events_by_pk(id: Int!): events
+  union: unionQuery
+
+  """
+  fetch data from the table: "v0.blocks"
+  """
+  v0_blocks(
+    """distinct select on columns"""
+    distinct_on: [v0_blocks_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v0_blocks_order_by!]
+
+    """filter the rows returned"""
+    where: v0_blocks_bool_exp
+  ): [v0_blocks!]!
+
+  """
+  fetch aggregated fields from the table: "v0.blocks"
+  """
+  v0_blocks_aggregate(
+    """distinct select on columns"""
+    distinct_on: [v0_blocks_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v0_blocks_order_by!]
+
+    """filter the rows returned"""
+    where: v0_blocks_bool_exp
+  ): v0_blocks_aggregate!
+
+  """fetch data from the table: "v0.blocks" using primary key columns"""
+  v0_blocks_by_pk(id: bigint!): v0_blocks
+
+  """
+  fetch data from the table: "v0.chains"
+  """
+  v0_chains(
+    """distinct select on columns"""
+    distinct_on: [v0_chains_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v0_chains_order_by!]
+
+    """filter the rows returned"""
+    where: v0_chains_bool_exp
+  ): [v0_chains!]!
+
+  """
+  fetch aggregated fields from the table: "v0.chains"
+  """
+  v0_chains_aggregate(
+    """distinct select on columns"""
+    distinct_on: [v0_chains_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v0_chains_order_by!]
+
+    """filter the rows returned"""
+    where: v0_chains_bool_exp
+  ): v0_chains_aggregate!
+
+  """fetch data from the table: "v0.chains" using primary key columns"""
+  v0_chains_by_pk(id: Int!): v0_chains
+
+  """
+  fetch data from the table: "v0.coin_receiveds"
+  """
+  v0_coin_receiveds(
+    """distinct select on columns"""
+    distinct_on: [v0_coin_receiveds_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v0_coin_receiveds_order_by!]
+
+    """filter the rows returned"""
+    where: v0_coin_receiveds_bool_exp
+  ): [v0_coin_receiveds!]!
+
+  """
+  fetch aggregated fields from the table: "v0.coin_receiveds"
+  """
+  v0_coin_receiveds_aggregate(
+    """distinct select on columns"""
+    distinct_on: [v0_coin_receiveds_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v0_coin_receiveds_order_by!]
+
+    """filter the rows returned"""
+    where: v0_coin_receiveds_bool_exp
+  ): v0_coin_receiveds_aggregate!
+
+  """
+  fetch data from the table: "v0.events"
+  """
+  v0_events(
+    """distinct select on columns"""
+    distinct_on: [v0_events_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v0_events_order_by!]
+
+    """filter the rows returned"""
+    where: v0_events_bool_exp
+  ): [v0_events!]!
+
+  """
+  fetch aggregated fields from the table: "v0.events"
+  """
+  v0_events_aggregate(
+    """distinct select on columns"""
+    distinct_on: [v0_events_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v0_events_order_by!]
+
+    """filter the rows returned"""
+    where: v0_events_bool_exp
+  ): v0_events_aggregate!
+
+  """fetch data from the table: "v0.events" using primary key columns"""
+  v0_events_by_pk(block_id: bigint!, index: Int!, time: timestamptz!): v0_events
 }
 
 type subscription_root {
-  """An array relationship"""
+  """
+  fetch data from the table: "blocks"
+  """
   blocks(
     """distinct select on columns"""
     distinct_on: [blocks_select_column!]
@@ -2790,7 +3486,9 @@ type subscription_root {
     where: blocks_bool_exp
   ): [blocks!]!
 
-  """An aggregate relationship"""
+  """
+  fetch aggregated fields from the table: "blocks"
+  """
   blocks_aggregate(
     """distinct select on columns"""
     distinct_on: [blocks_select_column!]
@@ -2881,6 +3579,65 @@ type subscription_root {
     """filter the rows returned"""
     where: chains_bool_exp
   ): [chains!]!
+
+  """
+  fetch data from the table: "demo.faucet_claims"
+  """
+  demo_faucet_claims(
+    """distinct select on columns"""
+    distinct_on: [demo_faucet_claims_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [demo_faucet_claims_order_by!]
+
+    """filter the rows returned"""
+    where: demo_faucet_claims_bool_exp
+  ): [demo_faucet_claims!]!
+
+  """
+  fetch aggregated fields from the table: "demo.faucet_claims"
+  """
+  demo_faucet_claims_aggregate(
+    """distinct select on columns"""
+    distinct_on: [demo_faucet_claims_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [demo_faucet_claims_order_by!]
+
+    """filter the rows returned"""
+    where: demo_faucet_claims_bool_exp
+  ): demo_faucet_claims_aggregate!
+
+  """
+  fetch data from the table: "demo.faucet_claims" using primary key columns
+  """
+  demo_faucet_claims_by_pk(id: Int!): demo_faucet_claims
+
+  """
+  fetch data from the table in a streaming manner: "demo.faucet_claims"
+  """
+  demo_faucet_claims_stream(
+    """maximum number of rows returned in a single batch"""
+    batch_size: Int!
+
+    """cursor to stream the results returned by the query"""
+    cursor: [demo_faucet_claims_stream_cursor_input]!
+
+    """filter the rows returned"""
+    where: demo_faucet_claims_bool_exp
+  ): [demo_faucet_claims!]!
 
   """
   fetch data from the table: "demo.queue"
@@ -2996,7 +3753,9 @@ type subscription_root {
     where: demo_txes_bool_exp
   ): [demo_txes!]!
 
-  """An array relationship"""
+  """
+  fetch data from the table: "events"
+  """
   events(
     """distinct select on columns"""
     distinct_on: [events_select_column!]
@@ -3014,7 +3773,9 @@ type subscription_root {
     where: events_bool_exp
   ): [events!]!
 
-  """An aggregate relationship"""
+  """
+  fetch aggregated fields from the table: "events"
+  """
   events_aggregate(
     """distinct select on columns"""
     distinct_on: [events_select_column!]
@@ -3048,6 +3809,232 @@ type subscription_root {
     """filter the rows returned"""
     where: events_bool_exp
   ): [events!]!
+  union: unionSubscription
+
+  """
+  fetch data from the table: "v0.blocks"
+  """
+  v0_blocks(
+    """distinct select on columns"""
+    distinct_on: [v0_blocks_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v0_blocks_order_by!]
+
+    """filter the rows returned"""
+    where: v0_blocks_bool_exp
+  ): [v0_blocks!]!
+
+  """
+  fetch aggregated fields from the table: "v0.blocks"
+  """
+  v0_blocks_aggregate(
+    """distinct select on columns"""
+    distinct_on: [v0_blocks_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v0_blocks_order_by!]
+
+    """filter the rows returned"""
+    where: v0_blocks_bool_exp
+  ): v0_blocks_aggregate!
+
+  """fetch data from the table: "v0.blocks" using primary key columns"""
+  v0_blocks_by_pk(id: bigint!): v0_blocks
+
+  """
+  fetch data from the table in a streaming manner: "v0.blocks"
+  """
+  v0_blocks_stream(
+    """maximum number of rows returned in a single batch"""
+    batch_size: Int!
+
+    """cursor to stream the results returned by the query"""
+    cursor: [v0_blocks_stream_cursor_input]!
+
+    """filter the rows returned"""
+    where: v0_blocks_bool_exp
+  ): [v0_blocks!]!
+
+  """
+  fetch data from the table: "v0.chains"
+  """
+  v0_chains(
+    """distinct select on columns"""
+    distinct_on: [v0_chains_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v0_chains_order_by!]
+
+    """filter the rows returned"""
+    where: v0_chains_bool_exp
+  ): [v0_chains!]!
+
+  """
+  fetch aggregated fields from the table: "v0.chains"
+  """
+  v0_chains_aggregate(
+    """distinct select on columns"""
+    distinct_on: [v0_chains_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v0_chains_order_by!]
+
+    """filter the rows returned"""
+    where: v0_chains_bool_exp
+  ): v0_chains_aggregate!
+
+  """fetch data from the table: "v0.chains" using primary key columns"""
+  v0_chains_by_pk(id: Int!): v0_chains
+
+  """
+  fetch data from the table in a streaming manner: "v0.chains"
+  """
+  v0_chains_stream(
+    """maximum number of rows returned in a single batch"""
+    batch_size: Int!
+
+    """cursor to stream the results returned by the query"""
+    cursor: [v0_chains_stream_cursor_input]!
+
+    """filter the rows returned"""
+    where: v0_chains_bool_exp
+  ): [v0_chains!]!
+
+  """
+  fetch data from the table: "v0.coin_receiveds"
+  """
+  v0_coin_receiveds(
+    """distinct select on columns"""
+    distinct_on: [v0_coin_receiveds_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v0_coin_receiveds_order_by!]
+
+    """filter the rows returned"""
+    where: v0_coin_receiveds_bool_exp
+  ): [v0_coin_receiveds!]!
+
+  """
+  fetch aggregated fields from the table: "v0.coin_receiveds"
+  """
+  v0_coin_receiveds_aggregate(
+    """distinct select on columns"""
+    distinct_on: [v0_coin_receiveds_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v0_coin_receiveds_order_by!]
+
+    """filter the rows returned"""
+    where: v0_coin_receiveds_bool_exp
+  ): v0_coin_receiveds_aggregate!
+
+  """
+  fetch data from the table in a streaming manner: "v0.coin_receiveds"
+  """
+  v0_coin_receiveds_stream(
+    """maximum number of rows returned in a single batch"""
+    batch_size: Int!
+
+    """cursor to stream the results returned by the query"""
+    cursor: [v0_coin_receiveds_stream_cursor_input]!
+
+    """filter the rows returned"""
+    where: v0_coin_receiveds_bool_exp
+  ): [v0_coin_receiveds!]!
+
+  """
+  fetch data from the table: "v0.events"
+  """
+  v0_events(
+    """distinct select on columns"""
+    distinct_on: [v0_events_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v0_events_order_by!]
+
+    """filter the rows returned"""
+    where: v0_events_bool_exp
+  ): [v0_events!]!
+
+  """
+  fetch aggregated fields from the table: "v0.events"
+  """
+  v0_events_aggregate(
+    """distinct select on columns"""
+    distinct_on: [v0_events_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v0_events_order_by!]
+
+    """filter the rows returned"""
+    where: v0_events_bool_exp
+  ): v0_events_aggregate!
+
+  """fetch data from the table: "v0.events" using primary key columns"""
+  v0_events_by_pk(block_id: bigint!, index: Int!, time: timestamptz!): v0_events
+
+  """
+  fetch data from the table in a streaming manner: "v0.events"
+  """
+  v0_events_stream(
+    """maximum number of rows returned in a single batch"""
+    batch_size: Int!
+
+    """cursor to stream the results returned by the query"""
+    cursor: [v0_events_stream_cursor_input]!
+
+    """filter the rows returned"""
+    where: v0_events_bool_exp
+  ): [v0_events!]!
 }
 
 scalar timestamptz
@@ -3065,5 +4052,1626 @@ input timestamptz_comparison_exp {
   _lte: timestamptz
   _neq: timestamptz
   _nin: [timestamptz!]
+}
+
+type unionMutation {
+  """
+  Send the configured amount of token to the given address, returning nothing as the transaction is made
+  asynchronously. A successful invocation means that the send operation is queued and will be processed, but it'll
+  does not necessary lead to a successful transaction.
+  
+  For clients needing information on the underlying transaction state, consider using the `send` subscription.
+  """
+  send(input: SendInput!): Void
+}
+
+type unionQuery {
+  """This query allow to get the actual server configuration."""
+  configuration: Configuration!
+}
+
+type unionSubscription {
+  """
+  Send the configured amount of token to the given address.
+  
+  By opening the subscription the send message is added to a queue, once the transaction is successfully submitted
+  with all the queued messages it'll return the corresponding before closing the stream. A successful submission does
+  not mean it has been successfully written in a block, it is the client's responsibility to make additional checks
+  through the transaction's code and hash.
+  """
+  send(input: SendInput!): TxResponse!
+}
+
+"""
+columns and relationships of "v0.blocks"
+"""
+type v0_blocks {
+  """An object relationship"""
+  chain: v0_chains!
+  chain_id: Int!
+  created_at: timestamptz!
+  data(
+    """JSON select path"""
+    path: String
+  ): jsonb!
+
+  """An array relationship"""
+  events(
+    """distinct select on columns"""
+    distinct_on: [v0_events_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v0_events_order_by!]
+
+    """filter the rows returned"""
+    where: v0_events_bool_exp
+  ): [v0_events!]!
+
+  """An aggregate relationship"""
+  events_aggregate(
+    """distinct select on columns"""
+    distinct_on: [v0_events_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v0_events_order_by!]
+
+    """filter the rows returned"""
+    where: v0_events_bool_exp
+  ): v0_events_aggregate!
+  hash: String!
+  height: bigint!
+  id: bigint!
+  is_finalized: Boolean!
+  time: timestamptz!
+  updated_at: timestamptz!
+}
+
+"""
+aggregated selection of "v0.blocks"
+"""
+type v0_blocks_aggregate {
+  aggregate: v0_blocks_aggregate_fields
+  nodes: [v0_blocks!]!
+}
+
+input v0_blocks_aggregate_bool_exp {
+  bool_and: v0_blocks_aggregate_bool_exp_bool_and
+  bool_or: v0_blocks_aggregate_bool_exp_bool_or
+  count: v0_blocks_aggregate_bool_exp_count
+}
+
+input v0_blocks_aggregate_bool_exp_bool_and {
+  arguments: v0_blocks_select_column_v0_blocks_aggregate_bool_exp_bool_and_arguments_columns!
+  distinct: Boolean
+  filter: v0_blocks_bool_exp
+  predicate: Boolean_comparison_exp!
+}
+
+input v0_blocks_aggregate_bool_exp_bool_or {
+  arguments: v0_blocks_select_column_v0_blocks_aggregate_bool_exp_bool_or_arguments_columns!
+  distinct: Boolean
+  filter: v0_blocks_bool_exp
+  predicate: Boolean_comparison_exp!
+}
+
+input v0_blocks_aggregate_bool_exp_count {
+  arguments: [v0_blocks_select_column!]
+  distinct: Boolean
+  filter: v0_blocks_bool_exp
+  predicate: Int_comparison_exp!
+}
+
+"""
+aggregate fields of "v0.blocks"
+"""
+type v0_blocks_aggregate_fields {
+  avg: v0_blocks_avg_fields
+  count(columns: [v0_blocks_select_column!], distinct: Boolean): Int!
+  max: v0_blocks_max_fields
+  min: v0_blocks_min_fields
+  stddev: v0_blocks_stddev_fields
+  stddev_pop: v0_blocks_stddev_pop_fields
+  stddev_samp: v0_blocks_stddev_samp_fields
+  sum: v0_blocks_sum_fields
+  var_pop: v0_blocks_var_pop_fields
+  var_samp: v0_blocks_var_samp_fields
+  variance: v0_blocks_variance_fields
+}
+
+"""
+order by aggregate values of table "v0.blocks"
+"""
+input v0_blocks_aggregate_order_by {
+  avg: v0_blocks_avg_order_by
+  count: order_by
+  max: v0_blocks_max_order_by
+  min: v0_blocks_min_order_by
+  stddev: v0_blocks_stddev_order_by
+  stddev_pop: v0_blocks_stddev_pop_order_by
+  stddev_samp: v0_blocks_stddev_samp_order_by
+  sum: v0_blocks_sum_order_by
+  var_pop: v0_blocks_var_pop_order_by
+  var_samp: v0_blocks_var_samp_order_by
+  variance: v0_blocks_variance_order_by
+}
+
+"""append existing jsonb value of filtered columns with new jsonb value"""
+input v0_blocks_append_input {
+  data: jsonb
+}
+
+"""
+input type for inserting array relation for remote table "v0.blocks"
+"""
+input v0_blocks_arr_rel_insert_input {
+  data: [v0_blocks_insert_input!]!
+
+  """upsert condition"""
+  on_conflict: v0_blocks_on_conflict
+}
+
+"""aggregate avg on columns"""
+type v0_blocks_avg_fields {
+  chain_id: Float
+  height: Float
+  id: Float
+}
+
+"""
+order by avg() on columns of table "v0.blocks"
+"""
+input v0_blocks_avg_order_by {
+  chain_id: order_by
+  height: order_by
+  id: order_by
+}
+
+"""
+Boolean expression to filter rows from the table "v0.blocks". All fields are combined with a logical 'AND'.
+"""
+input v0_blocks_bool_exp {
+  _and: [v0_blocks_bool_exp!]
+  _not: v0_blocks_bool_exp
+  _or: [v0_blocks_bool_exp!]
+  chain: v0_chains_bool_exp
+  chain_id: Int_comparison_exp
+  created_at: timestamptz_comparison_exp
+  data: jsonb_comparison_exp
+  events: v0_events_bool_exp
+  events_aggregate: v0_events_aggregate_bool_exp
+  hash: String_comparison_exp
+  height: bigint_comparison_exp
+  id: bigint_comparison_exp
+  is_finalized: Boolean_comparison_exp
+  time: timestamptz_comparison_exp
+  updated_at: timestamptz_comparison_exp
+}
+
+"""
+unique or primary key constraints on table "v0.blocks"
+"""
+enum v0_blocks_constraint {
+  """
+  unique or primary key constraint on columns "chain_id", "hash"
+  """
+  blocks_hash_chain_id_key
+
+  """
+  unique or primary key constraint on columns "id"
+  """
+  blocks_pkey
+}
+
+"""
+delete the field or element with specified path (for JSON arrays, negative integers count from the end)
+"""
+input v0_blocks_delete_at_path_input {
+  data: [String!]
+}
+
+"""
+delete the array element with specified index (negative integers count from the end). throws an error if top level container is not an array
+"""
+input v0_blocks_delete_elem_input {
+  data: Int
+}
+
+"""
+delete key/value pair or string element. key/value pairs are matched based on their key value
+"""
+input v0_blocks_delete_key_input {
+  data: String
+}
+
+"""
+input type for incrementing numeric columns in table "v0.blocks"
+"""
+input v0_blocks_inc_input {
+  chain_id: Int
+  height: bigint
+  id: bigint
+}
+
+"""
+input type for inserting data into table "v0.blocks"
+"""
+input v0_blocks_insert_input {
+  chain: v0_chains_obj_rel_insert_input
+  chain_id: Int
+  created_at: timestamptz
+  data: jsonb
+  events: v0_events_arr_rel_insert_input
+  hash: String
+  height: bigint
+  id: bigint
+  is_finalized: Boolean
+  time: timestamptz
+  updated_at: timestamptz
+}
+
+"""aggregate max on columns"""
+type v0_blocks_max_fields {
+  chain_id: Int
+  created_at: timestamptz
+  hash: String
+  height: bigint
+  id: bigint
+  time: timestamptz
+  updated_at: timestamptz
+}
+
+"""
+order by max() on columns of table "v0.blocks"
+"""
+input v0_blocks_max_order_by {
+  chain_id: order_by
+  created_at: order_by
+  hash: order_by
+  height: order_by
+  id: order_by
+  time: order_by
+  updated_at: order_by
+}
+
+"""aggregate min on columns"""
+type v0_blocks_min_fields {
+  chain_id: Int
+  created_at: timestamptz
+  hash: String
+  height: bigint
+  id: bigint
+  time: timestamptz
+  updated_at: timestamptz
+}
+
+"""
+order by min() on columns of table "v0.blocks"
+"""
+input v0_blocks_min_order_by {
+  chain_id: order_by
+  created_at: order_by
+  hash: order_by
+  height: order_by
+  id: order_by
+  time: order_by
+  updated_at: order_by
+}
+
+"""
+response of any mutation on the table "v0.blocks"
+"""
+type v0_blocks_mutation_response {
+  """number of rows affected by the mutation"""
+  affected_rows: Int!
+
+  """data from the rows affected by the mutation"""
+  returning: [v0_blocks!]!
+}
+
+"""
+input type for inserting object relation for remote table "v0.blocks"
+"""
+input v0_blocks_obj_rel_insert_input {
+  data: v0_blocks_insert_input!
+
+  """upsert condition"""
+  on_conflict: v0_blocks_on_conflict
+}
+
+"""
+on_conflict condition type for table "v0.blocks"
+"""
+input v0_blocks_on_conflict {
+  constraint: v0_blocks_constraint!
+  update_columns: [v0_blocks_update_column!]! = []
+  where: v0_blocks_bool_exp
+}
+
+"""Ordering options when selecting data from "v0.blocks"."""
+input v0_blocks_order_by {
+  chain: v0_chains_order_by
+  chain_id: order_by
+  created_at: order_by
+  data: order_by
+  events_aggregate: v0_events_aggregate_order_by
+  hash: order_by
+  height: order_by
+  id: order_by
+  is_finalized: order_by
+  time: order_by
+  updated_at: order_by
+}
+
+"""primary key columns input for table: v0.blocks"""
+input v0_blocks_pk_columns_input {
+  id: bigint!
+}
+
+"""prepend existing jsonb value of filtered columns with new jsonb value"""
+input v0_blocks_prepend_input {
+  data: jsonb
+}
+
+"""
+select columns of table "v0.blocks"
+"""
+enum v0_blocks_select_column {
+  """column name"""
+  chain_id
+
+  """column name"""
+  created_at
+
+  """column name"""
+  data
+
+  """column name"""
+  hash
+
+  """column name"""
+  height
+
+  """column name"""
+  id
+
+  """column name"""
+  is_finalized
+
+  """column name"""
+  time
+
+  """column name"""
+  updated_at
+}
+
+"""
+select "v0_blocks_aggregate_bool_exp_bool_and_arguments_columns" columns of table "v0.blocks"
+"""
+enum v0_blocks_select_column_v0_blocks_aggregate_bool_exp_bool_and_arguments_columns {
+  """column name"""
+  is_finalized
+}
+
+"""
+select "v0_blocks_aggregate_bool_exp_bool_or_arguments_columns" columns of table "v0.blocks"
+"""
+enum v0_blocks_select_column_v0_blocks_aggregate_bool_exp_bool_or_arguments_columns {
+  """column name"""
+  is_finalized
+}
+
+"""
+input type for updating data in table "v0.blocks"
+"""
+input v0_blocks_set_input {
+  chain_id: Int
+  created_at: timestamptz
+  data: jsonb
+  hash: String
+  height: bigint
+  id: bigint
+  is_finalized: Boolean
+  time: timestamptz
+  updated_at: timestamptz
+}
+
+"""aggregate stddev on columns"""
+type v0_blocks_stddev_fields {
+  chain_id: Float
+  height: Float
+  id: Float
+}
+
+"""
+order by stddev() on columns of table "v0.blocks"
+"""
+input v0_blocks_stddev_order_by {
+  chain_id: order_by
+  height: order_by
+  id: order_by
+}
+
+"""aggregate stddev_pop on columns"""
+type v0_blocks_stddev_pop_fields {
+  chain_id: Float
+  height: Float
+  id: Float
+}
+
+"""
+order by stddev_pop() on columns of table "v0.blocks"
+"""
+input v0_blocks_stddev_pop_order_by {
+  chain_id: order_by
+  height: order_by
+  id: order_by
+}
+
+"""aggregate stddev_samp on columns"""
+type v0_blocks_stddev_samp_fields {
+  chain_id: Float
+  height: Float
+  id: Float
+}
+
+"""
+order by stddev_samp() on columns of table "v0.blocks"
+"""
+input v0_blocks_stddev_samp_order_by {
+  chain_id: order_by
+  height: order_by
+  id: order_by
+}
+
+"""
+Streaming cursor of the table "v0_blocks"
+"""
+input v0_blocks_stream_cursor_input {
+  """Stream column input with initial value"""
+  initial_value: v0_blocks_stream_cursor_value_input!
+
+  """cursor ordering"""
+  ordering: cursor_ordering
+}
+
+"""Initial value of the column from where the streaming should start"""
+input v0_blocks_stream_cursor_value_input {
+  chain_id: Int
+  created_at: timestamptz
+  data: jsonb
+  hash: String
+  height: bigint
+  id: bigint
+  is_finalized: Boolean
+  time: timestamptz
+  updated_at: timestamptz
+}
+
+"""aggregate sum on columns"""
+type v0_blocks_sum_fields {
+  chain_id: Int
+  height: bigint
+  id: bigint
+}
+
+"""
+order by sum() on columns of table "v0.blocks"
+"""
+input v0_blocks_sum_order_by {
+  chain_id: order_by
+  height: order_by
+  id: order_by
+}
+
+"""
+update columns of table "v0.blocks"
+"""
+enum v0_blocks_update_column {
+  """column name"""
+  chain_id
+
+  """column name"""
+  created_at
+
+  """column name"""
+  data
+
+  """column name"""
+  hash
+
+  """column name"""
+  height
+
+  """column name"""
+  id
+
+  """column name"""
+  is_finalized
+
+  """column name"""
+  time
+
+  """column name"""
+  updated_at
+}
+
+input v0_blocks_updates {
+  """append existing jsonb value of filtered columns with new jsonb value"""
+  _append: v0_blocks_append_input
+
+  """
+  delete the field or element with specified path (for JSON arrays, negative integers count from the end)
+  """
+  _delete_at_path: v0_blocks_delete_at_path_input
+
+  """
+  delete the array element with specified index (negative integers count from the end). throws an error if top level container is not an array
+  """
+  _delete_elem: v0_blocks_delete_elem_input
+
+  """
+  delete key/value pair or string element. key/value pairs are matched based on their key value
+  """
+  _delete_key: v0_blocks_delete_key_input
+
+  """increments the numeric columns with given value of the filtered values"""
+  _inc: v0_blocks_inc_input
+
+  """prepend existing jsonb value of filtered columns with new jsonb value"""
+  _prepend: v0_blocks_prepend_input
+
+  """sets the columns of the filtered rows to the given values"""
+  _set: v0_blocks_set_input
+
+  """filter the rows which have to be updated"""
+  where: v0_blocks_bool_exp!
+}
+
+"""aggregate var_pop on columns"""
+type v0_blocks_var_pop_fields {
+  chain_id: Float
+  height: Float
+  id: Float
+}
+
+"""
+order by var_pop() on columns of table "v0.blocks"
+"""
+input v0_blocks_var_pop_order_by {
+  chain_id: order_by
+  height: order_by
+  id: order_by
+}
+
+"""aggregate var_samp on columns"""
+type v0_blocks_var_samp_fields {
+  chain_id: Float
+  height: Float
+  id: Float
+}
+
+"""
+order by var_samp() on columns of table "v0.blocks"
+"""
+input v0_blocks_var_samp_order_by {
+  chain_id: order_by
+  height: order_by
+  id: order_by
+}
+
+"""aggregate variance on columns"""
+type v0_blocks_variance_fields {
+  chain_id: Float
+  height: Float
+  id: Float
+}
+
+"""
+order by variance() on columns of table "v0.blocks"
+"""
+input v0_blocks_variance_order_by {
+  chain_id: order_by
+  height: order_by
+  id: order_by
+}
+
+"""
+columns and relationships of "v0.chains"
+"""
+type v0_chains {
+  """An array relationship"""
+  blocks(
+    """distinct select on columns"""
+    distinct_on: [v0_blocks_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v0_blocks_order_by!]
+
+    """filter the rows returned"""
+    where: v0_blocks_bool_exp
+  ): [v0_blocks!]!
+
+  """An aggregate relationship"""
+  blocks_aggregate(
+    """distinct select on columns"""
+    distinct_on: [v0_blocks_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v0_blocks_order_by!]
+
+    """filter the rows returned"""
+    where: v0_blocks_bool_exp
+  ): v0_blocks_aggregate!
+  chain_id: String!
+  created_at: timestamptz
+  id: Int!
+  name: String!
+  updated_at: timestamptz
+}
+
+"""
+aggregated selection of "v0.chains"
+"""
+type v0_chains_aggregate {
+  aggregate: v0_chains_aggregate_fields
+  nodes: [v0_chains!]!
+}
+
+"""
+aggregate fields of "v0.chains"
+"""
+type v0_chains_aggregate_fields {
+  avg: v0_chains_avg_fields
+  count(columns: [v0_chains_select_column!], distinct: Boolean): Int!
+  max: v0_chains_max_fields
+  min: v0_chains_min_fields
+  stddev: v0_chains_stddev_fields
+  stddev_pop: v0_chains_stddev_pop_fields
+  stddev_samp: v0_chains_stddev_samp_fields
+  sum: v0_chains_sum_fields
+  var_pop: v0_chains_var_pop_fields
+  var_samp: v0_chains_var_samp_fields
+  variance: v0_chains_variance_fields
+}
+
+"""aggregate avg on columns"""
+type v0_chains_avg_fields {
+  id: Float
+}
+
+"""
+Boolean expression to filter rows from the table "v0.chains". All fields are combined with a logical 'AND'.
+"""
+input v0_chains_bool_exp {
+  _and: [v0_chains_bool_exp!]
+  _not: v0_chains_bool_exp
+  _or: [v0_chains_bool_exp!]
+  blocks: v0_blocks_bool_exp
+  blocks_aggregate: v0_blocks_aggregate_bool_exp
+  chain_id: String_comparison_exp
+  created_at: timestamptz_comparison_exp
+  id: Int_comparison_exp
+  name: String_comparison_exp
+  updated_at: timestamptz_comparison_exp
+}
+
+"""
+unique or primary key constraints on table "v0.chains"
+"""
+enum v0_chains_constraint {
+  """
+  unique or primary key constraint on columns "id"
+  """
+  chains_pkey
+}
+
+"""
+input type for incrementing numeric columns in table "v0.chains"
+"""
+input v0_chains_inc_input {
+  id: Int
+}
+
+"""
+input type for inserting data into table "v0.chains"
+"""
+input v0_chains_insert_input {
+  blocks: v0_blocks_arr_rel_insert_input
+  chain_id: String
+  created_at: timestamptz
+  id: Int
+  name: String
+  updated_at: timestamptz
+}
+
+"""aggregate max on columns"""
+type v0_chains_max_fields {
+  chain_id: String
+  created_at: timestamptz
+  id: Int
+  name: String
+  updated_at: timestamptz
+}
+
+"""aggregate min on columns"""
+type v0_chains_min_fields {
+  chain_id: String
+  created_at: timestamptz
+  id: Int
+  name: String
+  updated_at: timestamptz
+}
+
+"""
+response of any mutation on the table "v0.chains"
+"""
+type v0_chains_mutation_response {
+  """number of rows affected by the mutation"""
+  affected_rows: Int!
+
+  """data from the rows affected by the mutation"""
+  returning: [v0_chains!]!
+}
+
+"""
+input type for inserting object relation for remote table "v0.chains"
+"""
+input v0_chains_obj_rel_insert_input {
+  data: v0_chains_insert_input!
+
+  """upsert condition"""
+  on_conflict: v0_chains_on_conflict
+}
+
+"""
+on_conflict condition type for table "v0.chains"
+"""
+input v0_chains_on_conflict {
+  constraint: v0_chains_constraint!
+  update_columns: [v0_chains_update_column!]! = []
+  where: v0_chains_bool_exp
+}
+
+"""Ordering options when selecting data from "v0.chains"."""
+input v0_chains_order_by {
+  blocks_aggregate: v0_blocks_aggregate_order_by
+  chain_id: order_by
+  created_at: order_by
+  id: order_by
+  name: order_by
+  updated_at: order_by
+}
+
+"""primary key columns input for table: v0.chains"""
+input v0_chains_pk_columns_input {
+  id: Int!
+}
+
+"""
+select columns of table "v0.chains"
+"""
+enum v0_chains_select_column {
+  """column name"""
+  chain_id
+
+  """column name"""
+  created_at
+
+  """column name"""
+  id
+
+  """column name"""
+  name
+
+  """column name"""
+  updated_at
+}
+
+"""
+input type for updating data in table "v0.chains"
+"""
+input v0_chains_set_input {
+  chain_id: String
+  created_at: timestamptz
+  id: Int
+  name: String
+  updated_at: timestamptz
+}
+
+"""aggregate stddev on columns"""
+type v0_chains_stddev_fields {
+  id: Float
+}
+
+"""aggregate stddev_pop on columns"""
+type v0_chains_stddev_pop_fields {
+  id: Float
+}
+
+"""aggregate stddev_samp on columns"""
+type v0_chains_stddev_samp_fields {
+  id: Float
+}
+
+"""
+Streaming cursor of the table "v0_chains"
+"""
+input v0_chains_stream_cursor_input {
+  """Stream column input with initial value"""
+  initial_value: v0_chains_stream_cursor_value_input!
+
+  """cursor ordering"""
+  ordering: cursor_ordering
+}
+
+"""Initial value of the column from where the streaming should start"""
+input v0_chains_stream_cursor_value_input {
+  chain_id: String
+  created_at: timestamptz
+  id: Int
+  name: String
+  updated_at: timestamptz
+}
+
+"""aggregate sum on columns"""
+type v0_chains_sum_fields {
+  id: Int
+}
+
+"""
+update columns of table "v0.chains"
+"""
+enum v0_chains_update_column {
+  """column name"""
+  chain_id
+
+  """column name"""
+  created_at
+
+  """column name"""
+  id
+
+  """column name"""
+  name
+
+  """column name"""
+  updated_at
+}
+
+input v0_chains_updates {
+  """increments the numeric columns with given value of the filtered values"""
+  _inc: v0_chains_inc_input
+
+  """sets the columns of the filtered rows to the given values"""
+  _set: v0_chains_set_input
+
+  """filter the rows which have to be updated"""
+  where: v0_chains_bool_exp!
+}
+
+"""aggregate var_pop on columns"""
+type v0_chains_var_pop_fields {
+  id: Float
+}
+
+"""aggregate var_samp on columns"""
+type v0_chains_var_samp_fields {
+  id: Float
+}
+
+"""aggregate variance on columns"""
+type v0_chains_variance_fields {
+  id: Float
+}
+
+"""
+columns and relationships of "v0.coin_receiveds"
+"""
+type v0_coin_receiveds {
+  amount: String
+  block_id: bigint
+  denom: String
+  index: Int
+  receiver: String
+  time: timestamptz
+}
+
+"""
+aggregated selection of "v0.coin_receiveds"
+"""
+type v0_coin_receiveds_aggregate {
+  aggregate: v0_coin_receiveds_aggregate_fields
+  nodes: [v0_coin_receiveds!]!
+}
+
+"""
+aggregate fields of "v0.coin_receiveds"
+"""
+type v0_coin_receiveds_aggregate_fields {
+  avg: v0_coin_receiveds_avg_fields
+  count(columns: [v0_coin_receiveds_select_column!], distinct: Boolean): Int!
+  max: v0_coin_receiveds_max_fields
+  min: v0_coin_receiveds_min_fields
+  stddev: v0_coin_receiveds_stddev_fields
+  stddev_pop: v0_coin_receiveds_stddev_pop_fields
+  stddev_samp: v0_coin_receiveds_stddev_samp_fields
+  sum: v0_coin_receiveds_sum_fields
+  var_pop: v0_coin_receiveds_var_pop_fields
+  var_samp: v0_coin_receiveds_var_samp_fields
+  variance: v0_coin_receiveds_variance_fields
+}
+
+"""aggregate avg on columns"""
+type v0_coin_receiveds_avg_fields {
+  block_id: Float
+  index: Float
+}
+
+"""
+Boolean expression to filter rows from the table "v0.coin_receiveds". All fields are combined with a logical 'AND'.
+"""
+input v0_coin_receiveds_bool_exp {
+  _and: [v0_coin_receiveds_bool_exp!]
+  _not: v0_coin_receiveds_bool_exp
+  _or: [v0_coin_receiveds_bool_exp!]
+  amount: String_comparison_exp
+  block_id: bigint_comparison_exp
+  denom: String_comparison_exp
+  index: Int_comparison_exp
+  receiver: String_comparison_exp
+  time: timestamptz_comparison_exp
+}
+
+"""
+input type for incrementing numeric columns in table "v0.coin_receiveds"
+"""
+input v0_coin_receiveds_inc_input {
+  block_id: bigint
+  index: Int
+}
+
+"""
+input type for inserting data into table "v0.coin_receiveds"
+"""
+input v0_coin_receiveds_insert_input {
+  amount: String
+  block_id: bigint
+  denom: String
+  index: Int
+  receiver: String
+  time: timestamptz
+}
+
+"""aggregate max on columns"""
+type v0_coin_receiveds_max_fields {
+  amount: String
+  block_id: bigint
+  denom: String
+  index: Int
+  receiver: String
+  time: timestamptz
+}
+
+"""aggregate min on columns"""
+type v0_coin_receiveds_min_fields {
+  amount: String
+  block_id: bigint
+  denom: String
+  index: Int
+  receiver: String
+  time: timestamptz
+}
+
+"""
+response of any mutation on the table "v0.coin_receiveds"
+"""
+type v0_coin_receiveds_mutation_response {
+  """number of rows affected by the mutation"""
+  affected_rows: Int!
+
+  """data from the rows affected by the mutation"""
+  returning: [v0_coin_receiveds!]!
+}
+
+"""Ordering options when selecting data from "v0.coin_receiveds"."""
+input v0_coin_receiveds_order_by {
+  amount: order_by
+  block_id: order_by
+  denom: order_by
+  index: order_by
+  receiver: order_by
+  time: order_by
+}
+
+"""
+select columns of table "v0.coin_receiveds"
+"""
+enum v0_coin_receiveds_select_column {
+  """column name"""
+  amount
+
+  """column name"""
+  block_id
+
+  """column name"""
+  denom
+
+  """column name"""
+  index
+
+  """column name"""
+  receiver
+
+  """column name"""
+  time
+}
+
+"""
+input type for updating data in table "v0.coin_receiveds"
+"""
+input v0_coin_receiveds_set_input {
+  amount: String
+  block_id: bigint
+  denom: String
+  index: Int
+  receiver: String
+  time: timestamptz
+}
+
+"""aggregate stddev on columns"""
+type v0_coin_receiveds_stddev_fields {
+  block_id: Float
+  index: Float
+}
+
+"""aggregate stddev_pop on columns"""
+type v0_coin_receiveds_stddev_pop_fields {
+  block_id: Float
+  index: Float
+}
+
+"""aggregate stddev_samp on columns"""
+type v0_coin_receiveds_stddev_samp_fields {
+  block_id: Float
+  index: Float
+}
+
+"""
+Streaming cursor of the table "v0_coin_receiveds"
+"""
+input v0_coin_receiveds_stream_cursor_input {
+  """Stream column input with initial value"""
+  initial_value: v0_coin_receiveds_stream_cursor_value_input!
+
+  """cursor ordering"""
+  ordering: cursor_ordering
+}
+
+"""Initial value of the column from where the streaming should start"""
+input v0_coin_receiveds_stream_cursor_value_input {
+  amount: String
+  block_id: bigint
+  denom: String
+  index: Int
+  receiver: String
+  time: timestamptz
+}
+
+"""aggregate sum on columns"""
+type v0_coin_receiveds_sum_fields {
+  block_id: bigint
+  index: Int
+}
+
+input v0_coin_receiveds_updates {
+  """increments the numeric columns with given value of the filtered values"""
+  _inc: v0_coin_receiveds_inc_input
+
+  """sets the columns of the filtered rows to the given values"""
+  _set: v0_coin_receiveds_set_input
+
+  """filter the rows which have to be updated"""
+  where: v0_coin_receiveds_bool_exp!
+}
+
+"""aggregate var_pop on columns"""
+type v0_coin_receiveds_var_pop_fields {
+  block_id: Float
+  index: Float
+}
+
+"""aggregate var_samp on columns"""
+type v0_coin_receiveds_var_samp_fields {
+  block_id: Float
+  index: Float
+}
+
+"""aggregate variance on columns"""
+type v0_coin_receiveds_variance_fields {
+  block_id: Float
+  index: Float
+}
+
+"""
+columns and relationships of "v0.events"
+"""
+type v0_events {
+  """An object relationship"""
+  block: v0_blocks!
+  block_id: bigint!
+  created_at: timestamptz!
+  data(
+    """JSON select path"""
+    path: String
+  ): jsonb!
+  index: Int!
+  time: timestamptz!
+  updated_at: timestamptz!
+}
+
+"""
+aggregated selection of "v0.events"
+"""
+type v0_events_aggregate {
+  aggregate: v0_events_aggregate_fields
+  nodes: [v0_events!]!
+}
+
+input v0_events_aggregate_bool_exp {
+  count: v0_events_aggregate_bool_exp_count
+}
+
+input v0_events_aggregate_bool_exp_count {
+  arguments: [v0_events_select_column!]
+  distinct: Boolean
+  filter: v0_events_bool_exp
+  predicate: Int_comparison_exp!
+}
+
+"""
+aggregate fields of "v0.events"
+"""
+type v0_events_aggregate_fields {
+  avg: v0_events_avg_fields
+  count(columns: [v0_events_select_column!], distinct: Boolean): Int!
+  max: v0_events_max_fields
+  min: v0_events_min_fields
+  stddev: v0_events_stddev_fields
+  stddev_pop: v0_events_stddev_pop_fields
+  stddev_samp: v0_events_stddev_samp_fields
+  sum: v0_events_sum_fields
+  var_pop: v0_events_var_pop_fields
+  var_samp: v0_events_var_samp_fields
+  variance: v0_events_variance_fields
+}
+
+"""
+order by aggregate values of table "v0.events"
+"""
+input v0_events_aggregate_order_by {
+  avg: v0_events_avg_order_by
+  count: order_by
+  max: v0_events_max_order_by
+  min: v0_events_min_order_by
+  stddev: v0_events_stddev_order_by
+  stddev_pop: v0_events_stddev_pop_order_by
+  stddev_samp: v0_events_stddev_samp_order_by
+  sum: v0_events_sum_order_by
+  var_pop: v0_events_var_pop_order_by
+  var_samp: v0_events_var_samp_order_by
+  variance: v0_events_variance_order_by
+}
+
+"""append existing jsonb value of filtered columns with new jsonb value"""
+input v0_events_append_input {
+  data: jsonb
+}
+
+"""
+input type for inserting array relation for remote table "v0.events"
+"""
+input v0_events_arr_rel_insert_input {
+  data: [v0_events_insert_input!]!
+
+  """upsert condition"""
+  on_conflict: v0_events_on_conflict
+}
+
+"""aggregate avg on columns"""
+type v0_events_avg_fields {
+  block_id: Float
+  index: Float
+}
+
+"""
+order by avg() on columns of table "v0.events"
+"""
+input v0_events_avg_order_by {
+  block_id: order_by
+  index: order_by
+}
+
+"""
+Boolean expression to filter rows from the table "v0.events". All fields are combined with a logical 'AND'.
+"""
+input v0_events_bool_exp {
+  _and: [v0_events_bool_exp!]
+  _not: v0_events_bool_exp
+  _or: [v0_events_bool_exp!]
+  block: v0_blocks_bool_exp
+  block_id: bigint_comparison_exp
+  created_at: timestamptz_comparison_exp
+  data: jsonb_comparison_exp
+  index: Int_comparison_exp
+  time: timestamptz_comparison_exp
+  updated_at: timestamptz_comparison_exp
+}
+
+"""
+unique or primary key constraints on table "v0.events"
+"""
+enum v0_events_constraint {
+  """
+  unique or primary key constraint on columns "index", "time", "block_id"
+  """
+  events_pkey
+}
+
+"""
+delete the field or element with specified path (for JSON arrays, negative integers count from the end)
+"""
+input v0_events_delete_at_path_input {
+  data: [String!]
+}
+
+"""
+delete the array element with specified index (negative integers count from the end). throws an error if top level container is not an array
+"""
+input v0_events_delete_elem_input {
+  data: Int
+}
+
+"""
+delete key/value pair or string element. key/value pairs are matched based on their key value
+"""
+input v0_events_delete_key_input {
+  data: String
+}
+
+"""
+input type for incrementing numeric columns in table "v0.events"
+"""
+input v0_events_inc_input {
+  block_id: bigint
+  index: Int
+}
+
+"""
+input type for inserting data into table "v0.events"
+"""
+input v0_events_insert_input {
+  block: v0_blocks_obj_rel_insert_input
+  block_id: bigint
+  created_at: timestamptz
+  data: jsonb
+  index: Int
+  time: timestamptz
+  updated_at: timestamptz
+}
+
+"""aggregate max on columns"""
+type v0_events_max_fields {
+  block_id: bigint
+  created_at: timestamptz
+  index: Int
+  time: timestamptz
+  updated_at: timestamptz
+}
+
+"""
+order by max() on columns of table "v0.events"
+"""
+input v0_events_max_order_by {
+  block_id: order_by
+  created_at: order_by
+  index: order_by
+  time: order_by
+  updated_at: order_by
+}
+
+"""aggregate min on columns"""
+type v0_events_min_fields {
+  block_id: bigint
+  created_at: timestamptz
+  index: Int
+  time: timestamptz
+  updated_at: timestamptz
+}
+
+"""
+order by min() on columns of table "v0.events"
+"""
+input v0_events_min_order_by {
+  block_id: order_by
+  created_at: order_by
+  index: order_by
+  time: order_by
+  updated_at: order_by
+}
+
+"""
+response of any mutation on the table "v0.events"
+"""
+type v0_events_mutation_response {
+  """number of rows affected by the mutation"""
+  affected_rows: Int!
+
+  """data from the rows affected by the mutation"""
+  returning: [v0_events!]!
+}
+
+"""
+on_conflict condition type for table "v0.events"
+"""
+input v0_events_on_conflict {
+  constraint: v0_events_constraint!
+  update_columns: [v0_events_update_column!]! = []
+  where: v0_events_bool_exp
+}
+
+"""Ordering options when selecting data from "v0.events"."""
+input v0_events_order_by {
+  block: v0_blocks_order_by
+  block_id: order_by
+  created_at: order_by
+  data: order_by
+  index: order_by
+  time: order_by
+  updated_at: order_by
+}
+
+"""primary key columns input for table: v0.events"""
+input v0_events_pk_columns_input {
+  block_id: bigint!
+  index: Int!
+  time: timestamptz!
+}
+
+"""prepend existing jsonb value of filtered columns with new jsonb value"""
+input v0_events_prepend_input {
+  data: jsonb
+}
+
+"""
+select columns of table "v0.events"
+"""
+enum v0_events_select_column {
+  """column name"""
+  block_id
+
+  """column name"""
+  created_at
+
+  """column name"""
+  data
+
+  """column name"""
+  index
+
+  """column name"""
+  time
+
+  """column name"""
+  updated_at
+}
+
+"""
+input type for updating data in table "v0.events"
+"""
+input v0_events_set_input {
+  block_id: bigint
+  created_at: timestamptz
+  data: jsonb
+  index: Int
+  time: timestamptz
+  updated_at: timestamptz
+}
+
+"""aggregate stddev on columns"""
+type v0_events_stddev_fields {
+  block_id: Float
+  index: Float
+}
+
+"""
+order by stddev() on columns of table "v0.events"
+"""
+input v0_events_stddev_order_by {
+  block_id: order_by
+  index: order_by
+}
+
+"""aggregate stddev_pop on columns"""
+type v0_events_stddev_pop_fields {
+  block_id: Float
+  index: Float
+}
+
+"""
+order by stddev_pop() on columns of table "v0.events"
+"""
+input v0_events_stddev_pop_order_by {
+  block_id: order_by
+  index: order_by
+}
+
+"""aggregate stddev_samp on columns"""
+type v0_events_stddev_samp_fields {
+  block_id: Float
+  index: Float
+}
+
+"""
+order by stddev_samp() on columns of table "v0.events"
+"""
+input v0_events_stddev_samp_order_by {
+  block_id: order_by
+  index: order_by
+}
+
+"""
+Streaming cursor of the table "v0_events"
+"""
+input v0_events_stream_cursor_input {
+  """Stream column input with initial value"""
+  initial_value: v0_events_stream_cursor_value_input!
+
+  """cursor ordering"""
+  ordering: cursor_ordering
+}
+
+"""Initial value of the column from where the streaming should start"""
+input v0_events_stream_cursor_value_input {
+  block_id: bigint
+  created_at: timestamptz
+  data: jsonb
+  index: Int
+  time: timestamptz
+  updated_at: timestamptz
+}
+
+"""aggregate sum on columns"""
+type v0_events_sum_fields {
+  block_id: bigint
+  index: Int
+}
+
+"""
+order by sum() on columns of table "v0.events"
+"""
+input v0_events_sum_order_by {
+  block_id: order_by
+  index: order_by
+}
+
+"""
+update columns of table "v0.events"
+"""
+enum v0_events_update_column {
+  """column name"""
+  block_id
+
+  """column name"""
+  created_at
+
+  """column name"""
+  data
+
+  """column name"""
+  index
+
+  """column name"""
+  time
+
+  """column name"""
+  updated_at
+}
+
+input v0_events_updates {
+  """append existing jsonb value of filtered columns with new jsonb value"""
+  _append: v0_events_append_input
+
+  """
+  delete the field or element with specified path (for JSON arrays, negative integers count from the end)
+  """
+  _delete_at_path: v0_events_delete_at_path_input
+
+  """
+  delete the array element with specified index (negative integers count from the end). throws an error if top level container is not an array
+  """
+  _delete_elem: v0_events_delete_elem_input
+
+  """
+  delete key/value pair or string element. key/value pairs are matched based on their key value
+  """
+  _delete_key: v0_events_delete_key_input
+
+  """increments the numeric columns with given value of the filtered values"""
+  _inc: v0_events_inc_input
+
+  """prepend existing jsonb value of filtered columns with new jsonb value"""
+  _prepend: v0_events_prepend_input
+
+  """sets the columns of the filtered rows to the given values"""
+  _set: v0_events_set_input
+
+  """filter the rows which have to be updated"""
+  where: v0_events_bool_exp!
+}
+
+"""aggregate var_pop on columns"""
+type v0_events_var_pop_fields {
+  block_id: Float
+  index: Float
+}
+
+"""
+order by var_pop() on columns of table "v0.events"
+"""
+input v0_events_var_pop_order_by {
+  block_id: order_by
+  index: order_by
+}
+
+"""aggregate var_samp on columns"""
+type v0_events_var_samp_fields {
+  block_id: Float
+  index: Float
+}
+
+"""
+order by var_samp() on columns of table "v0.events"
+"""
+input v0_events_var_samp_order_by {
+  block_id: order_by
+  index: order_by
+}
+
+"""aggregate variance on columns"""
+type v0_events_variance_fields {
+  block_id: Float
+  index: Float
+}
+
+"""
+order by variance() on columns of table "v0.events"
+"""
+input v0_events_variance_order_by {
+  block_id: order_by
+  index: order_by
 }
 
