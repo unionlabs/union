@@ -40,13 +40,13 @@ impl Event {
     /// Creates an `Event` originating from `chain_id` from the `SendPacket` event data.
     ///
     /// Constructs a unique ID from packet information in the form of:
-    /// `<src_port>-<src_channel>-<sequence>`
+    /// `<src_port>/<src_channel>/<sequence>`
     pub fn create_send_event(chain_id: String, e: SendPacket) -> Event {
         let transfer =
             Ucs01TransferPacket::try_from(cosmwasm_std::Binary(e.packet_data_hex.clone())).unwrap();
 
         let uuid = format!(
-            "{}-{}-{}",
+            "{}/{}/{}",
             e.packet_src_port.clone(),
             e.packet_src_channel,
             e.packet_sequence
@@ -62,13 +62,13 @@ impl Event {
     /// Creates an `Event` originating from `chain_id` from the `RecvPacket` event data.
     ///
     /// Constructs a unique ID from packet information in the form of:
-    /// `<src_port>-<src_channel>-<sequence>`
+    /// `<src_port>/<src_channel>/<sequence>`
     pub fn create_recv_event(chain_id: String, e: RecvPacket) -> Event {
         let transfer =
             Ucs01TransferPacket::try_from(cosmwasm_std::Binary(e.packet_data_hex.clone())).unwrap();
 
         let uuid = format!(
-            "{}-{}-{}",
+            "{}/{}/{}",
             e.packet_src_port.clone(),
             e.packet_src_channel,
             e.packet_sequence

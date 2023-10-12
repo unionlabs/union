@@ -173,9 +173,11 @@ impl Context {
 
             match event.event {
                 unionlabs::events::IbcEvent::SendPacket(e) => {
+                    println!("SendPacket from Union!");
                     self.append_record(Event::create_send_event(event.chain_id, e))
                 }
                 unionlabs::events::IbcEvent::RecvPacket(e) => {
+                    println!("RecvPacket on Union!");
                     self.append_record(Event::create_recv_event(event.chain_id, e))
                 }
                 _ => (),
@@ -191,9 +193,11 @@ impl Context {
 
             match event.event {
                 unionlabs::events::IbcEvent::SendPacket(e) => {
+                    println!("SendPacket on Evm!");
                     self.append_record(Event::create_send_event(event.chain_id.to_string(), e))
                 }
                 unionlabs::events::IbcEvent::RecvPacket(e) => {
+                    println!("RecvPacket on Evm!");
                     if self.is_rush {
                         self.send_from_eth(e.clone()).await;
                     }
