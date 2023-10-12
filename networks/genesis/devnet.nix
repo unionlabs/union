@@ -2,7 +2,18 @@
 { ... }: {
   perSystem = { devnetConfig, system, pkgs, self', inputs', cw-instantiate2-salt, dbg, ... }:
     let
-      MNEMONIC = "wine parrot nominee girl exchange element pudding grow area twenty next junior come render shadow evidence sentence start rough debate feed all limb real";
+      alice = "wine parrot nominee girl exchange element pudding grow area twenty next junior come render shadow evidence sentence start rough debate feed all limb real";
+      devMnemonics = [
+         "gun more barrel helmet velvet people alter depth bargain use isolate pear before frown already limb sweet response legal invest stand barrel stone conduct"
+         "young soup enroll tornado mercy athlete tray resist limit spare address license cargo quantum panda useful clog autumn shoot observe input next across movie"
+         "allow where void replace vocal cabbage can expose rival danger stomach noodle faculty cart surround cash rice kite audit slight ten bicycle dance middle"
+         "hard educate knock ketchup salon obey debate one other impose smoke spoon pull describe cactus talk other merit joy great critic canvas scene lounge"
+         "over floor explain will stereo camera subway park pilot trick good exchange foot violin shop kite educate bracket shoulder fancy denial ill era battle"
+         "mercy animal rival black process document great armor demand shiver unit lava sorry outside thank verb term you output unit thank manual spike capital"
+         "embark smoke reduce belt bar mimic bench priority crop fetch portion sadness obscure around wait injury annual enable universe citizen cream blossom across dash"
+         "april orbit comfort fossil clean vague exclude live enjoy bus leader sail supply bird jungle start sunny lens ensure lunch weasel merge daughter capital"
+         "rebuild equip basket entire hurt index chase camera gravity pave boat vendor hero pizza october narrow train spoon cage intact jazz suffer ten spirit"
+      ];
       genesisAccountName = "testkey";
       uniond = pkgs.lib.getExe self'.packages.uniond;
       chainId = "union-devnet-1";
@@ -23,8 +34,7 @@
 
           ${uniond} init testnet bn254 --chain-id ${chainId} --home $out
 
-          # Add the dev account
-          echo ${MNEMONIC} | ${uniond} keys add \
+          echo ${alice} | ${uniond} keys add \
             --recover ${genesisAccountName} \
             --keyring-backend test \
             --home $out
@@ -32,7 +42,18 @@
           ${uniond} add-genesis-account ${genesisAccountName} 10000000000000000000000000stake \
             --keyring-backend test \
             --home $out
-        '';
+
+          ${builtins.concatStringsSep "\n" (pkgs.lib.lists.imap0 (i: mnemonic: ''
+            # Add the dev account
+            echo ${mnemonic} | ${uniond} keys add \
+              --recover ${genesisAccountName}-${toString i} \
+              --keyring-backend test \
+              --home $out
+            ${uniond} add-genesis-account ${genesisAccountName}-${toString i} 10000000000000000000000000stake \
+              --keyring-backend test \
+              --home $out
+          '') devMnemonics)}
+      '';
 
       applyGenesisOverwrites = home: genesisOverwrites:
         let
@@ -55,7 +76,7 @@
         }
         ''
           export HOME=$(pwd)
-          mkdir -p $out 
+          mkdir -p $out
           cp --no-preserve=mode -r ${home}/* $out
 
           ALICE_ADDRESS=$(${uniond} keys list \
@@ -75,7 +96,7 @@
         }
         ''
           export HOME=$(pwd)
-          mkdir -p $out 
+          mkdir -p $out
           cp --no-preserve=mode -r ${home}/* $out
 
           ALICE_ADDRESS=$(${uniond} keys list \
@@ -113,7 +134,7 @@
                 "client_id": "cometbls-new-0",
                 "connection_id": "connection-0",
                 "prefix": {
-                  "key_prefix": "aWJj" 
+                  "key_prefix": "aWJj"
                 }
               },
               "delay_period": 0
@@ -232,11 +253,11 @@
           jq \
             '.app_state.ibc.channel_genesis.next_channel_sequence = "2"' \
             $out/config/genesis.json | sponge $out/config/genesis.json
-              
+
           jq \
             '.app_state.capability.index = "3"' \
             $out/config/genesis.json | sponge $out/config/genesis.json
-                   
+
           jq \
            --arg capability1 capabilities/ports/$CW20_PORT/channels/channel-0 \
            --arg capability2 capabilities/ports/$PING_PONG_PORT/channels/channel-1 \
@@ -270,7 +291,7 @@
               }
             } ]' \
             $out/config/genesis.json | sponge $out/config/genesis.json
-              
+
         '';
 
       addLightClientCodeToGenesis = contract: home: pkgs.runCommand "add-light-client-contract-code-to-genesis"
@@ -337,14 +358,14 @@
                   --arg creator $ALICE_ADDRESS \
                   --rawfile encoded <(base64 -w0 $wasm) \
                   '.app_state.wasm.codes += [{
-                    "code_id": ${toString idx}, 
-                    "code_info": { 
-                      "code_hash": $code_hash, 
-                      "creator": $creator, 
-                      "instantiate_config": { "permission": "Everybody" } 
-                    }, 
-                    "code_bytes": $encoded, 
-                    "pinned": false 
+                    "code_id": ${toString idx},
+                    "code_info": {
+                      "code_hash": $code_hash,
+                      "creator": $creator,
+                      "instantiate_config": { "permission": "Everybody" }
+                    },
+                    "code_bytes": $encoded,
+                    "pinned": false
                   }]' \
                   $out/config/genesis.json | sponge $out/config/genesis.json
               done
@@ -368,7 +389,7 @@
               jq \
                 --arg last_code_id_key $(echo -ne "\x04lastCodeId" | base64) \
                 '.app_state.wasm.sequences += [{
-                  "id_key": $last_code_id_key, 
+                  "id_key": $last_code_id_key,
                   "value": ${toString ((builtins.length contracts) + 1)},
                 }]' \
                 $out/config/genesis.json | sponge $out/config/genesis.json
