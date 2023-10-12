@@ -1691,6 +1691,8 @@ where
         let does_not_have_finality_update =
             last_update_block_number >= req.update_to.revision_height;
 
+        tracing::error!(last_update_block_number, req.update_to.revision_height);
+
         let finality_update_msg = if does_not_have_finality_update {
             // do nothing
             None

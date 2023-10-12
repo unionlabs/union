@@ -7,3 +7,4 @@ pub mod devnet_ownable_ibc_handler;
 pub mod glue;
 pub mod ibc_handler;
 pub mod shared_types;
+pub mod ucs01_relay;

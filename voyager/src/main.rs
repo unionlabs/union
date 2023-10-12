@@ -9,10 +9,11 @@
 )]
 // #![deny(clippy::unwrap_used)]
 
-use std::{ffi::OsString, fs::read_to_string, process::ExitCode};
+use std::{error::Error, ffi::OsString, fs::read_to_string, process::ExitCode};
 
 use chain_utils::{evm::Evm, union::Union};
 use clap::Parser;
+use contracts::ucs01_relay::{LocalToken, UCS01Relay};
 use unionlabs::ethereum_consts_traits::Mainnet;
 
 use crate::{
@@ -43,6 +44,9 @@ async fn main() -> ExitCode {
         Ok(()) => ExitCode::SUCCESS,
         Err(err) => {
             eprintln!("Error: {err}");
+            if let Some(source) = err.source() {
+                eprintln!("Caused by: {source}");
+            }
             ExitCode::FAILURE
         }
     }
@@ -140,6 +144,48 @@ async fn do_main(args: cli::AppArgs) -> Result<(), VoyagerError> {
                     _ => panic!("Not supported."),
                 }
             }
+            cli::SetupCmd::Transfer {
+                on,
+                relay_address,
+                port_id,
+                channel_id,
+                receiver,
+                amount,
+                denom,
+            } => {
+                let chain = voyager_config.get_chain(&on).await?;
+
+                match chain {
+                    AnyChain::EvmMinimal(evm) => {
+                        let relay = UCS01Relay::new(relay_address, evm.provider.into());
+
+                        let denom = relay.denom_to_address(denom).await.unwrap();
+
+                        let tx_rcp = relay
+                            .send(
+                                port_id,
+                                channel_id,
+                                receiver,
+                                [LocalToken {
+                                    denom,
+                                    amount: amount.into(),
+                                }]
+                                .into(),
+                                u64::MAX,
+                                u64::MAX,
+                            )
+                            .send()
+                            .await
+                            .unwrap()
+                            .await
+                            .unwrap()
+                            .unwrap();
+
+                        dbg!(tx_rcp);
+                    }
+                    _ => panic!("Not supported."),
+                }
+            }
             _ => panic!("not supported"),
         },
         Command::Query { on, at, cmd } => {
@@ -169,3 +215,45 @@ async fn do_main(args: cli::AppArgs) -> Result<(), VoyagerError> {
 
     Ok(())
 }
+
+// commented out for now as this is useful in debugging but not to be run in CI
+// #[cfg(test)]
+// mod tests {
+//     use serde::{Deserialize, Serialize};
+
+//     use crate::{chain::union::EthereumMinimal, msg::msg::MsgUpdateClientData};
+
+//     #[test]
+//     fn update_csv() {
+//         #[derive(Debug, Serialize, Deserialize)]
+//         struct Record {
+//             data: String,
+//             id: u64,
+//         }
+
+//         for record in csv::ReaderBuilder::new()
+//             .from_path("/tmp/out.csv")
+//             .unwrap()
+//             .into_deserialize::<Record>()
+//         {
+//             let record = record.unwrap();
+//             let json =
+//                 serde_json::from_str::<MsgUpdateClientData<EthereumMinimal>>(&record.data).unwrap();
+
+//             let update_from = json.update_from;
+
+//             let msg = json.msg.client_message.data;
+
+//             println!(
+//                 "id: {}\nupdate_from: {}\nattested beacon slot: {}\nattested execution block number: {}\nfinalized beacon slot: {}\nfinalized execution block number: {}\nnext_sync_committee: {}\n",
+//                 record.id,
+//                 update_from,
+//                 msg.consensus_update.attested_header.beacon.slot,
+//                 msg.consensus_update.attested_header.execution.block_number,
+//                 msg.consensus_update.finalized_header.beacon.slot,
+//                 msg.consensus_update.finalized_header.execution.block_number,
+//                 msg.consensus_update.next_sync_committee.is_some(),
+//             );
+//         }
+//     }
+// }

@@ -818,7 +818,16 @@ impl<Q: Queue> Voyager<Q> {
                                         }),
                                     })
                                 }
-                                IbcEvent::AcknowledgePacket(_) => todo!(),
+                                IbcEvent::AcknowledgePacket(ack_packet) => {
+                                    LcMsg::<EthereumMinimal>::Event(Identified {
+                                        chain_id: event.chain_id,
+                                        data: Event::Ibc(crate::msg::event::IbcEvent {
+                                            block_hash: event.block_hash,
+                                            height: event.height,
+                                            event: IbcEvent::AcknowledgePacket(ack_packet),
+                                        }),
+                                    })
+                                }
                                 IbcEvent::TimeoutPacket(_) => todo!(),
                                 IbcEvent::WriteAcknowledgement(write_ack) => {
                                     LcMsg::<EthereumMinimal>::Event(Identified {
@@ -1368,42 +1377,38 @@ where
                 vec![]
             }
 
-            IbcEvent::RecvPacket(_packet) => {
-                //
-                // [RelayerMsg::Sequence(
-                //     [
-                //         RelayerMsg::Lc(AnyLcMsg::from(LcMsg::<L>::Wait(Identified {
-                //             chain_id: l.chain().chain_id(),
-                //             data: Wait::Block(WaitForBlock(ibc_event.height.increment())),
-                //         }))),
-                //         RelayerMsg::Aggregate {
-                //             data: [].into(),
-                //             queue: [RelayerMsg::Lc(AnyLcMsg::from(LcMsg::Fetch(
-                //                 Identified::new(
-                //                     l.chain().chain_id(),
-                //                     Fetch::ConnectionEnd(FetchConnectionEnd {
-                //                         at: ibc_event.height,
-                //                         connection_id: packet.connection_id.clone(),
-                //                     }),
-                //                 ),
-                //             )))]
-                //             .into(),
-                //             receiver: AggregateReceiver::from(Identified::new(
-                //                 l.chain().chain_id(),
-                //                 Aggregate::PacketUpdateClient(AggregatePacketUpdateClient {
-                //                     update_to: ibc_event.height.increment(),
-                //                     event_height: ibc_event.height,
-                //                     block_hash: ibc_event.block_hash,
-                //                     packet_event: PacketEvent::Recv(packet),
-                //                 }),
-                //             )),
-                //         },
-                //     ]
-                //     .into(),
-                // )]
-                // .into()
-                [].into()
-            }
+            IbcEvent::RecvPacket(packet) => [RelayerMsg::Sequence(
+                [
+                    RelayerMsg::Lc(AnyLcMsg::from(LcMsg::<L>::Wait(Identified {
+                        chain_id: l.chain().chain_id(),
+                        data: Wait::Block(WaitForBlock(ibc_event.height.increment())),
+                    }))),
+                    RelayerMsg::Aggregate {
+                        data: [].into(),
+                        queue: [RelayerMsg::Lc(AnyLcMsg::from(LcMsg::Fetch(
+                            Identified::new(
+                                l.chain().chain_id(),
+                                Fetch::ConnectionEnd(FetchConnectionEnd {
+                                    at: ibc_event.height,
+                                    connection_id: packet.connection_id.clone(),
+                                }),
+                            ),
+                        )))]
+                        .into(),
+                        receiver: AggregateReceiver::from(Identified::new(
+                            l.chain().chain_id(),
+                            Aggregate::PacketUpdateClient(AggregatePacketUpdateClient {
+                                update_to: ibc_event.height.increment(),
+                                event_height: ibc_event.height,
+                                block_hash: ibc_event.block_hash,
+                                packet_event: PacketEvent::Recv(packet),
+                            }),
+                        )),
+                    },
+                ]
+                .into(),
+            )]
+            .into(),
             IbcEvent::SendPacket(packet) => [RelayerMsg::Sequence(
                 [
                     RelayerMsg::Lc(AnyLcMsg::from(LcMsg::<L>::Wait(Identified {
