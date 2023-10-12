@@ -45,6 +45,14 @@ impl Config {
         while let Some(up_to) = should_fast_sync_up_to(&client, Self::BATCH_SIZE, height).await? {
             info!("starting fast sync protocol up to: {}", up_to);
             loop {
+                let batch_end =
+                    std::cmp::min(up_to.value(), height.value() + Self::BATCH_SIZE as u64);
+                if batch_end - height.value() != 20 {
+                    info!("re-evaluating fast sync protocol");
+                    break; // go back to the should_fast_sync_up_to. If this returns None, we continue to slow sync.
+                }
+
+                info!("fast syncing for batch: {}..{}", height, batch_end);
                 height = batch_sync(
                     &client,
                     &db,
@@ -54,12 +62,10 @@ impl Config {
                     height,
                 )
                 .await?;
-                if height >= up_to {
-                    info!("re-evaluating fast sync protocol");
-                    break; // go back to the should_fast_sync_up_to. If this returns None, we continue to slow sync.
-                }
             }
         }
+
+        info!("continuing regular sync protocol");
 
         let mut retry_count = 0;
         loop {
@@ -94,7 +100,8 @@ pub fn is_height_exceeded_error(err: &Error) -> bool {
         let code = inner.code();
         let message = inner.data().unwrap_or_default();
         return matches!(code, Code::InternalError)
-            && message.contains("must be less than or equal to");
+            && (message.contains("must be less than or equal to")
+                | message.contains("could not find results for height"));
     }
     false
 }
@@ -116,14 +123,17 @@ async fn get_current_data<D: Datastore>(
         .data
         .expect("db should be prepared for indexing");
 
-    let height: u32 = if data.blocks.is_empty() {
+    let height: u32 = if data.v0_blocks.is_empty() {
         0
     } else {
-        TryInto::<u32>::try_into(data.blocks[0].height).unwrap()
+        data.v0_blocks[0]
+            .height
+            .try_into()
+            .expect("invalid bigint stored in DB")
     };
     debug!("latest stored block height is: {}", &height);
 
-    let chain_db_id = if let Some(chains) = data.chains.get(0) {
+    let chain_db_id = if let Some(chains) = data.v0_chains.get(0) {
         chains.id
     } else {
         let created = db
@@ -131,7 +141,7 @@ async fn get_current_data<D: Datastore>(
                 chain_id: chain_id.to_string(),
             })
             .await?;
-        created.data.unwrap().insert_chains_one.unwrap().id
+        created.data.unwrap().insert_v0_chains_one.unwrap().id
     };
 
     Ok((height, chain_db_id))
@@ -166,20 +176,11 @@ async fn batch_sync<D: Datastore>(
     batch_size: u32,
     from: Height,
 ) -> Result<Height, Report> {
-    if from.value() == 1 {
-        sync_next(client, db, chain_id, chain_db_id, from).await?;
-    }
-
     let min = from.value() as u32;
-    let max = (from.value() + batch_size as u64) as u32;
+    let max = min + batch_size - 1_u32;
     debug!("fetching batch of headers from {} to {}", min, max);
 
-    let headers = client
-        .blockchain(
-            // Tendermint-rs is buggy, it
-            min, max,
-        )
-        .await?;
+    let headers = client.blockchain(min, max).await?;
 
     let objects: Vec<_> = join_all(headers.block_metas.iter().rev().map(|header| async {
         debug!("fetching block results for height {}", header.header.height);
@@ -187,27 +188,28 @@ async fn batch_sync<D: Datastore>(
         let events: Vec<_> = block
             .events()
             .enumerate()
-            .map(into_many_blocks_input)
+            .map(|i| into_many_blocks_input(header.header.time.to_rfc3339(), i))
             .collect();
         debug!(
             "found {} events for block {}",
             events.len(),
             header.header.height
         );
-        Ok(insert_blocks_many::BlocksInsertInput {
+        Ok(insert_blocks_many::V0BlocksInsertInput {
             chain_id: Some(chain_db_id),
             chain: None,
-            events: Some(insert_blocks_many::EventsArrRelInsertInput {
+            events: Some(insert_blocks_many::V0EventsArrRelInsertInput {
                 data: events,
                 on_conflict: None,
             }),
             hash: Some(header.header.hash().to_string()),
-            height: Some(header.header.height.into()),
+            height: Some(header.header.height.value().into()),
             id: None,
             created_at: None,
             updated_at: None,
             is_finalized: Some(true),
-            extra_data: Some(serde_json::to_value(header.clone())?),
+            data: Some(serde_json::to_value(header.clone())?),
+            time: Some(header.header.time.to_rfc3339()),
         })
     }))
     .await
@@ -256,9 +258,23 @@ async fn sync_next<D: Datastore>(
         Ok(val) => val.block.header,
     };
     debug!("fetching block results for height: {}", &height);
-    let block = client.block_results(height).await?;
+    let block = match client.block_results(height).await {
+        Err(err) => {
+            if is_height_exceeded_error(&err) {
+                return Ok(None);
+            } else {
+                return Err(err.into());
+            }
+        }
+        Ok(block) => block,
+    };
+
     let height = block.height;
-    let events: Vec<_> = block.events().enumerate().map(into_block_input).collect();
+    let events: Vec<_> = block
+        .events()
+        .enumerate()
+        .map(|item| into_block_input(header.time.to_rfc3339(), item))
+        .collect();
     info!("found {} events for block {}", &events.len(), &height);
 
     debug!("storing events for block {}", &height);
@@ -271,20 +287,21 @@ async fn sync_next<D: Datastore>(
         .with_label_values(&[chain_id])
         .inc();
     let v = insert_block::Variables {
-        object: insert_block::BlocksInsertInput {
+        object: insert_block::V0BlocksInsertInput {
             chain: None,
             chain_id: Some(chain_db_id),
             created_at: None,
-            events: Some(insert_block::EventsArrRelInsertInput {
+            events: Some(insert_block::V0EventsArrRelInsertInput {
                 data: events,
                 on_conflict: None,
             }),
             hash: Some(header.hash().to_string()),
-            extra_data: Some(serde_json::to_value(header.clone())?),
-            height: Some(header.height.into()),
+            data: Some(serde_json::to_value(header.clone())?),
+            height: Some(header.height.value().into()),
             id: None,
             is_finalized: Some(true),
             updated_at: None,
+            time: Some(header.time.to_rfc3339()),
         },
     };
 
@@ -293,23 +310,33 @@ async fn sync_next<D: Datastore>(
     Ok(Some(height.increment()))
 }
 
-fn into_many_blocks_input(value: (usize, StateChange)) -> insert_blocks_many::EventsInsertInput {
-    insert_blocks_many::EventsInsertInput {
-        id: None,
+fn into_many_blocks_input(
+    time: String,
+    value: (usize, StateChange),
+) -> insert_blocks_many::V0EventsInsertInput {
+    insert_blocks_many::V0EventsInsertInput {
         index: Some(value.0 as i64),
         block: None,
         block_id: None,
         data: Some(serde_json::to_value(&value.1).unwrap()),
+        created_at: None,
+        updated_at: None,
+        time: Some(time),
     }
 }
 
-fn into_block_input(value: (usize, StateChange)) -> insert_block::EventsInsertInput {
-    insert_block::EventsInsertInput {
-        id: None,
+fn into_block_input(
+    time: String,
+    value: (usize, StateChange),
+) -> insert_block::V0EventsInsertInput {
+    insert_block::V0EventsInsertInput {
         index: Some(value.0 as i64),
         block: None,
         block_id: None,
         data: Some(serde_json::to_value(&value.1).unwrap()),
+        created_at: None,
+        updated_at: None,
+        time: Some(time),
     }
 }
 

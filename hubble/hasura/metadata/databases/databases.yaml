@@ -6,15 +6,16 @@
         from_env: PG_DATABASE_URL
       isolation_level: read-committed
       use_prepared_statements: false
-  logical_models:
-    - fields:
-        - name: receiver
-          type:
-            nullable: false
-            scalar: text
-        - name: amount
-          type:
-            nullable: true
-            scalar: text
-      name: coin_received
   tables: "!include default/tables/tables.yaml"
+- name: timescale
+  kind: postgres
+  configuration:
+    connection_info:
+      database_url:
+        from_env: TIMESCALE_DATABASE_URL
+      isolation_level: read-committed
+      pool_settings:
+        connection_lifetime: 600
+        total_max_connections: 30
+      use_prepared_statements: false
+  tables: "!include timescale/tables/tables.yaml"
