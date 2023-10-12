@@ -319,13 +319,11 @@
         #       buildInputs = [ wrappedForge pkgs.lcov ];
         #     } "forge coverage --ir-minimum --report lcov && genhtml lcov.info -o $out --branch-coverage";
 
-        # show-evm-coverage = pkgs.writeShellApplication {
-        #   name = "show-evm-coverage";
-        #   runtimeInputs = [ wrappedForge ];
-        #   text = ''
-        #     xdg-open ${self'.packages.evm-coverage}/index.html
-        #   '';
-        # };
+        evm-coverage =
+          pkgs.runCommand "evm-coverage.log"
+            {
+              buildInputs = [ wrappedForge pkgs.lcov ];
+            } "forge coverage --ir-minimum --report lcov && genhtml lcov.info -o $out --branch-coverage";
 
         forge = wrappedForge;
       } //
