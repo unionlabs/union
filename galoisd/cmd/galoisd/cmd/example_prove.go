@@ -84,7 +84,6 @@ func ExampleProveCmd() *cobra.Command {
 				return err
 			}
 
-
 			var signatures [][]byte
 			var bitmap big.Int
 			votingPower := 0
