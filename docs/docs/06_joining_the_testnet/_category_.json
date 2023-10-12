@@ -1,0 +1,13 @@
+{
+  "label": "Joining the Testnet",
+  "collapsible": true,
+  "collapsed": true,
+  "className": "red",
+  "link": {
+    "type": "generated-index",
+    "title": "Joining the Testnet"
+  },
+  "customProps": {
+    "description": "On-Boarding Process for the Union Testnet."
+  }
+}
