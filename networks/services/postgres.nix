@@ -1,4 +1,4 @@
-{ lib, pkgs, ... }:
+{ lib, pkgs, init-scripts, ... }:
 let
   postgres = pkgs.dockerTools.pullImage {
     imageName = "postgres";
@@ -20,5 +20,8 @@ in
       POSTGRES_PASSWORD = "postgrespassword";
       POSTGRES_DB = "default";
     };
+    volumes = [
+      "${init-scripts}:/docker-entrypoint-initdb.d"
+    ];
   };
 }

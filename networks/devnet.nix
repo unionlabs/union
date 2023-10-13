@@ -47,7 +47,10 @@
       };
 
       postgres-services = {
-        postgres = import ./services/postgres.nix { inherit lib pkgs; };
+        postgres = import ./services/postgres.nix {
+          inherit lib pkgs;
+          init-scripts = ./../lib/pg-queue/migrations;
+        };
       };
 
       # hasura-services = import ./services/hasura.nix {
