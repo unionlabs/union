@@ -7,7 +7,7 @@ pub use ucs01_relay::*;
     clippy::upper_case_acronyms,
     clippy::type_complexity,
     dead_code,
-    non_camel_case_types,
+    non_camel_case_types
 )]
 pub mod ucs01_relay {
     pub use super::super::shared_types::*;
@@ -783,7 +783,9 @@ pub mod ucs01_relay {
     #[cfg(feature = "providers")]
     impl<M> ::core::fmt::Debug for UCS01Relay<M> {
         fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
-            f.debug_tuple(stringify!(UCS01Relay)).field(&self.address()).finish()
+            f.debug_tuple(stringify!(UCS01Relay))
+                .field(&self.address())
+                .finish()
         }
     }
     #[cfg(feature = "providers")]
@@ -794,13 +796,11 @@ pub mod ucs01_relay {
             address: T,
             client: ::std::sync::Arc<M>,
         ) -> Self {
-            Self(
-                ::ethers::contract::Contract::new(
-                    address.into(),
-                    UCS01RELAY_ABI.clone(),
-                    client,
-                ),
-            )
+            Self(::ethers::contract::Contract::new(
+                address.into(),
+                UCS01RELAY_ABI.clone(),
+                client,
+            ))
         }
         /// Constructs the general purpose `Deployer` instance based on the provided constructor arguments and sends it.
         /// Returns a new instance of a deployer that returns an instance of this contract after sending the transaction
@@ -867,10 +867,7 @@ pub mod ucs01_relay {
         pub fn denom_to_address(
             &self,
             p0: ::std::string::String,
-        ) -> ::ethers::contract::builders::ContractCall<
-            M,
-            ::ethers::core::types::Address,
-        > {
+        ) -> ::ethers::contract::builders::ContractCall<M, ::ethers::core::types::Address> {
             self.0
                 .method_hash([64, 32, 208, 237], p0)
                 .expect("method not found (this should never happen)")
@@ -878,10 +875,7 @@ pub mod ucs01_relay {
         ///Calls the contract's `ibcAddress` (0x696a9bf4) function
         pub fn ibc_address(
             &self,
-        ) -> ::ethers::contract::builders::ContractCall<
-            M,
-            ::ethers::core::types::Address,
-        > {
+        ) -> ::ethers::contract::builders::ContractCall<M, ::ethers::core::types::Address> {
             self.0
                 .method_hash([105, 106, 155, 244], ())
                 .expect("method not found (this should never happen)")
@@ -1002,10 +996,7 @@ pub mod ucs01_relay {
             &self,
             ibc_packet: IbcCoreChannelV1PacketData,
             relayer: ::ethers::core::types::Address,
-        ) -> ::ethers::contract::builders::ContractCall<
-            M,
-            ::ethers::core::types::Bytes,
-        > {
+        ) -> ::ethers::contract::builders::ContractCall<M, ::ethers::core::types::Bytes> {
             self.0
                 .method_hash([35, 1, 198, 245], (ibc_packet, relayer))
                 .expect("method not found (this should never happen)")
@@ -1068,21 +1059,14 @@ pub mod ucs01_relay {
         ///Gets the contract's `DenomCreated` event
         pub fn denom_created_filter(
             &self,
-        ) -> ::ethers::contract::builders::Event<
-            ::std::sync::Arc<M>,
-            M,
-            DenomCreatedFilter,
-        > {
+        ) -> ::ethers::contract::builders::Event<::std::sync::Arc<M>, M, DenomCreatedFilter>
+        {
             self.0.event()
         }
         ///Gets the contract's `Received` event
         pub fn received_filter(
             &self,
-        ) -> ::ethers::contract::builders::Event<
-            ::std::sync::Arc<M>,
-            M,
-            ReceivedFilter,
-        > {
+        ) -> ::ethers::contract::builders::Event<::std::sync::Arc<M>, M, ReceivedFilter> {
             self.0.event()
         }
         ///Gets the contract's `Sent` event
@@ -1094,12 +1078,9 @@ pub mod ucs01_relay {
         /// Returns an `Event` builder for all the events of this contract.
         pub fn events(
             &self,
-        ) -> ::ethers::contract::builders::Event<
-            ::std::sync::Arc<M>,
-            M,
-            UCS01RelayEvents,
-        > {
-            self.0.event_with_filter(::core::default::Default::default())
+        ) -> ::ethers::contract::builders::Event<::std::sync::Arc<M>, M, UCS01RelayEvents> {
+            self.0
+                .event_with_filter(::core::default::Default::default())
         }
     }
     #[cfg(feature = "providers")]
@@ -1116,7 +1097,7 @@ pub mod ucs01_relay {
         Debug,
         PartialEq,
         Eq,
-        Hash
+        Hash,
     )]
     #[ethevent(name = "DenomCreated", abi = "DenomCreated(string,address)")]
     pub struct DenomCreatedFilter {
@@ -1131,7 +1112,7 @@ pub mod ucs01_relay {
         Debug,
         PartialEq,
         Eq,
-        Hash
+        Hash,
     )]
     #[ethevent(
         name = "Received",
@@ -1152,7 +1133,7 @@ pub mod ucs01_relay {
         Debug,
         PartialEq,
         Eq,
-        Hash
+        Hash,
     )]
     #[ethevent(name = "Sent", abi = "Sent(address,string,string,address,uint256)")]
     pub struct SentFilter {
@@ -1188,9 +1169,7 @@ pub mod ucs01_relay {
     impl ::core::fmt::Display for UCS01RelayEvents {
         fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
             match self {
-                Self::DenomCreatedFilter(element) => {
-                    ::core::fmt::Display::fmt(element, f)
-                }
+                Self::DenomCreatedFilter(element) => ::core::fmt::Display::fmt(element, f),
                 Self::ReceivedFilter(element) => ::core::fmt::Display::fmt(element, f),
                 Self::SentFilter(element) => ::core::fmt::Display::fmt(element, f),
             }
@@ -1220,7 +1199,7 @@ pub mod ucs01_relay {
         Debug,
         PartialEq,
         Eq,
-        Hash
+        Hash,
     )]
     #[ethcall(name = "addressToDenom", abi = "addressToDenom(address)")]
     pub struct AddressToDenomCall(pub ::ethers::core::types::Address);
@@ -1233,16 +1212,13 @@ pub mod ucs01_relay {
         Debug,
         PartialEq,
         Eq,
-        Hash
+        Hash,
     )]
     #[ethcall(
         name = "counterpartyEndpoints",
         abi = "counterpartyEndpoints(string,string)"
     )]
-    pub struct CounterpartyEndpointsCall(
-        pub ::std::string::String,
-        pub ::std::string::String,
-    );
+    pub struct CounterpartyEndpointsCall(pub ::std::string::String, pub ::std::string::String);
     ///Container type for all input parameters for the `denomToAddress` function with signature `denomToAddress(string)` and selector `0x4020d0ed`
     #[derive(
         Clone,
@@ -1252,7 +1228,7 @@ pub mod ucs01_relay {
         Debug,
         PartialEq,
         Eq,
-        Hash
+        Hash,
     )]
     #[ethcall(name = "denomToAddress", abi = "denomToAddress(string)")]
     pub struct DenomToAddressCall(pub ::std::string::String);
@@ -1265,7 +1241,7 @@ pub mod ucs01_relay {
         Debug,
         PartialEq,
         Eq,
-        Hash
+        Hash,
     )]
     #[ethcall(name = "ibcAddress", abi = "ibcAddress()")]
     pub struct IbcAddressCall;
@@ -1278,7 +1254,7 @@ pub mod ucs01_relay {
         Debug,
         PartialEq,
         Eq,
-        Hash
+        Hash,
     )]
     #[ethcall(
         name = "onAcknowledgementPacket",
@@ -1298,7 +1274,7 @@ pub mod ucs01_relay {
         Debug,
         PartialEq,
         Eq,
-        Hash
+        Hash,
     )]
     #[ethcall(name = "onChanCloseConfirm", abi = "onChanCloseConfirm(string,string)")]
     pub struct OnChanCloseConfirmCall {
@@ -1314,7 +1290,7 @@ pub mod ucs01_relay {
         Debug,
         PartialEq,
         Eq,
-        Hash
+        Hash,
     )]
     #[ethcall(name = "onChanCloseInit", abi = "onChanCloseInit(string,string)")]
     pub struct OnChanCloseInitCall {
@@ -1330,7 +1306,7 @@ pub mod ucs01_relay {
         Debug,
         PartialEq,
         Eq,
-        Hash
+        Hash,
     )]
     #[ethcall(
         name = "onChanOpenAck",
@@ -1351,7 +1327,7 @@ pub mod ucs01_relay {
         Debug,
         PartialEq,
         Eq,
-        Hash
+        Hash,
     )]
     #[ethcall(name = "onChanOpenConfirm", abi = "onChanOpenConfirm(string,string)")]
     pub struct OnChanOpenConfirmCall {
@@ -1367,7 +1343,7 @@ pub mod ucs01_relay {
         Debug,
         PartialEq,
         Eq,
-        Hash
+        Hash,
     )]
     #[ethcall(
         name = "onChanOpenInit",
@@ -1390,7 +1366,7 @@ pub mod ucs01_relay {
         Debug,
         PartialEq,
         Eq,
-        Hash
+        Hash,
     )]
     #[ethcall(
         name = "onChanOpenTry",
@@ -1414,7 +1390,7 @@ pub mod ucs01_relay {
         Debug,
         PartialEq,
         Eq,
-        Hash
+        Hash,
     )]
     #[ethcall(
         name = "onRecvPacket",
@@ -1433,7 +1409,7 @@ pub mod ucs01_relay {
         Debug,
         PartialEq,
         Eq,
-        Hash
+        Hash,
     )]
     #[ethcall(
         name = "onRecvPacketProcessing",
@@ -1452,7 +1428,7 @@ pub mod ucs01_relay {
         Debug,
         PartialEq,
         Eq,
-        Hash
+        Hash,
     )]
     #[ethcall(
         name = "onTimeoutPacket",
@@ -1471,7 +1447,7 @@ pub mod ucs01_relay {
         Debug,
         PartialEq,
         Eq,
-        Hash
+        Hash,
     )]
     #[ethcall(name = "outstanding", abi = "outstanding(string,string,address)")]
     pub struct OutstandingCall(
@@ -1488,7 +1464,7 @@ pub mod ucs01_relay {
         Debug,
         PartialEq,
         Eq,
-        Hash
+        Hash,
     )]
     #[ethcall(
         name = "send",
@@ -1527,22 +1503,22 @@ pub mod ucs01_relay {
             data: impl AsRef<[u8]>,
         ) -> ::core::result::Result<Self, ::ethers::core::abi::AbiError> {
             let data = data.as_ref();
-            if let Ok(decoded)
-                = <AddressToDenomCall as ::ethers::core::abi::AbiDecode>::decode(data) {
+            if let Ok(decoded) =
+                <AddressToDenomCall as ::ethers::core::abi::AbiDecode>::decode(data)
+            {
                 return Ok(Self::AddressToDenom(decoded));
             }
-            if let Ok(decoded)
-                = <CounterpartyEndpointsCall as ::ethers::core::abi::AbiDecode>::decode(
-                    data,
-                ) {
+            if let Ok(decoded) =
+                <CounterpartyEndpointsCall as ::ethers::core::abi::AbiDecode>::decode(data)
+            {
                 return Ok(Self::CounterpartyEndpoints(decoded));
             }
-            if let Ok(decoded)
-                = <DenomToAddressCall as ::ethers::core::abi::AbiDecode>::decode(data) {
+            if let Ok(decoded) =
+                <DenomToAddressCall as ::ethers::core::abi::AbiDecode>::decode(data)
+            {
                 return Ok(Self::DenomToAddress(decoded));
             }
-            if let Ok(decoded)
-                = <IbcAddressCall as ::ethers::core::abi::AbiDecode>::decode(data) {
+            if let Ok(decoded) = <IbcAddressCall as ::ethers::core::abi::AbiDecode>::decode(data) {
                 return Ok(Self::IbcAddress(decoded));
             }
             if let Ok(decoded) =
@@ -1550,54 +1526,52 @@ pub mod ucs01_relay {
             {
                 return Ok(Self::OnAcknowledgementPacket(decoded));
             }
-            if let Ok(decoded)
-                = <OnChanCloseConfirmCall as ::ethers::core::abi::AbiDecode>::decode(
-                    data,
-                ) {
+            if let Ok(decoded) =
+                <OnChanCloseConfirmCall as ::ethers::core::abi::AbiDecode>::decode(data)
+            {
                 return Ok(Self::OnChanCloseConfirm(decoded));
             }
-            if let Ok(decoded)
-                = <OnChanCloseInitCall as ::ethers::core::abi::AbiDecode>::decode(data) {
+            if let Ok(decoded) =
+                <OnChanCloseInitCall as ::ethers::core::abi::AbiDecode>::decode(data)
+            {
                 return Ok(Self::OnChanCloseInit(decoded));
             }
-            if let Ok(decoded)
-                = <OnChanOpenAckCall as ::ethers::core::abi::AbiDecode>::decode(data) {
+            if let Ok(decoded) = <OnChanOpenAckCall as ::ethers::core::abi::AbiDecode>::decode(data)
+            {
                 return Ok(Self::OnChanOpenAck(decoded));
             }
-            if let Ok(decoded)
-                = <OnChanOpenConfirmCall as ::ethers::core::abi::AbiDecode>::decode(
-                    data,
-                ) {
+            if let Ok(decoded) =
+                <OnChanOpenConfirmCall as ::ethers::core::abi::AbiDecode>::decode(data)
+            {
                 return Ok(Self::OnChanOpenConfirm(decoded));
             }
-            if let Ok(decoded)
-                = <OnChanOpenInitCall as ::ethers::core::abi::AbiDecode>::decode(data) {
+            if let Ok(decoded) =
+                <OnChanOpenInitCall as ::ethers::core::abi::AbiDecode>::decode(data)
+            {
                 return Ok(Self::OnChanOpenInit(decoded));
             }
-            if let Ok(decoded)
-                = <OnChanOpenTryCall as ::ethers::core::abi::AbiDecode>::decode(data) {
+            if let Ok(decoded) = <OnChanOpenTryCall as ::ethers::core::abi::AbiDecode>::decode(data)
+            {
                 return Ok(Self::OnChanOpenTry(decoded));
             }
-            if let Ok(decoded)
-                = <OnRecvPacketCall as ::ethers::core::abi::AbiDecode>::decode(data) {
+            if let Ok(decoded) = <OnRecvPacketCall as ::ethers::core::abi::AbiDecode>::decode(data)
+            {
                 return Ok(Self::OnRecvPacket(decoded));
             }
-            if let Ok(decoded)
-                = <OnRecvPacketProcessingCall as ::ethers::core::abi::AbiDecode>::decode(
-                    data,
-                ) {
+            if let Ok(decoded) =
+                <OnRecvPacketProcessingCall as ::ethers::core::abi::AbiDecode>::decode(data)
+            {
                 return Ok(Self::OnRecvPacketProcessing(decoded));
             }
-            if let Ok(decoded)
-                = <OnTimeoutPacketCall as ::ethers::core::abi::AbiDecode>::decode(data) {
+            if let Ok(decoded) =
+                <OnTimeoutPacketCall as ::ethers::core::abi::AbiDecode>::decode(data)
+            {
                 return Ok(Self::OnTimeoutPacket(decoded));
             }
-            if let Ok(decoded)
-                = <OutstandingCall as ::ethers::core::abi::AbiDecode>::decode(data) {
+            if let Ok(decoded) = <OutstandingCall as ::ethers::core::abi::AbiDecode>::decode(data) {
                 return Ok(Self::Outstanding(decoded));
             }
-            if let Ok(decoded)
-                = <SendCall as ::ethers::core::abi::AbiDecode>::decode(data) {
+            if let Ok(decoded) = <SendCall as ::ethers::core::abi::AbiDecode>::decode(data) {
                 return Ok(Self::Send(decoded));
             }
             Err(::ethers::core::abi::Error::InvalidData.into())
@@ -1606,9 +1580,7 @@ pub mod ucs01_relay {
     impl ::ethers::core::abi::AbiEncode for UCS01RelayCalls {
         fn encode(self) -> Vec<u8> {
             match self {
-                Self::AddressToDenom(element) => {
-                    ::ethers::core::abi::AbiEncode::encode(element)
-                }
+                Self::AddressToDenom(element) => ::ethers::core::abi::AbiEncode::encode(element),
                 Self::CounterpartyEndpoints(element) => {
                     ::ethers::core::abi::AbiEncode::encode(element)
                 }
@@ -1620,33 +1592,17 @@ pub mod ucs01_relay {
                 Self::OnChanCloseConfirm(element) => {
                     ::ethers::core::abi::AbiEncode::encode(element)
                 }
-                Self::OnChanCloseInit(element) => {
-                    ::ethers::core::abi::AbiEncode::encode(element)
-                }
-                Self::OnChanOpenAck(element) => {
-                    ::ethers::core::abi::AbiEncode::encode(element)
-                }
-                Self::OnChanOpenConfirm(element) => {
-                    ::ethers::core::abi::AbiEncode::encode(element)
-                }
-                Self::OnChanOpenInit(element) => {
-                    ::ethers::core::abi::AbiEncode::encode(element)
-                }
-                Self::OnChanOpenTry(element) => {
-                    ::ethers::core::abi::AbiEncode::encode(element)
-                }
-                Self::OnRecvPacket(element) => {
-                    ::ethers::core::abi::AbiEncode::encode(element)
-                }
+                Self::OnChanCloseInit(element) => ::ethers::core::abi::AbiEncode::encode(element),
+                Self::OnChanOpenAck(element) => ::ethers::core::abi::AbiEncode::encode(element),
+                Self::OnChanOpenConfirm(element) => ::ethers::core::abi::AbiEncode::encode(element),
+                Self::OnChanOpenInit(element) => ::ethers::core::abi::AbiEncode::encode(element),
+                Self::OnChanOpenTry(element) => ::ethers::core::abi::AbiEncode::encode(element),
+                Self::OnRecvPacket(element) => ::ethers::core::abi::AbiEncode::encode(element),
                 Self::OnRecvPacketProcessing(element) => {
                     ::ethers::core::abi::AbiEncode::encode(element)
                 }
-                Self::OnTimeoutPacket(element) => {
-                    ::ethers::core::abi::AbiEncode::encode(element)
-                }
-                Self::Outstanding(element) => {
-                    ::ethers::core::abi::AbiEncode::encode(element)
-                }
+                Self::OnTimeoutPacket(element) => ::ethers::core::abi::AbiEncode::encode(element),
+                Self::Outstanding(element) => ::ethers::core::abi::AbiEncode::encode(element),
                 Self::Send(element) => ::ethers::core::abi::AbiEncode::encode(element),
             }
         }
@@ -1655,9 +1611,7 @@ pub mod ucs01_relay {
         fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
             match self {
                 Self::AddressToDenom(element) => ::core::fmt::Display::fmt(element, f),
-                Self::CounterpartyEndpoints(element) => {
-                    ::core::fmt::Display::fmt(element, f)
-                }
+                Self::CounterpartyEndpoints(element) => ::core::fmt::Display::fmt(element, f),
                 Self::DenomToAddress(element) => ::core::fmt::Display::fmt(element, f),
                 Self::IbcAddress(element) => ::core::fmt::Display::fmt(element, f),
                 Self::OnAcknowledgementPacket(element) => ::core::fmt::Display::fmt(element, f),
@@ -1668,9 +1622,7 @@ pub mod ucs01_relay {
                 Self::OnChanOpenInit(element) => ::core::fmt::Display::fmt(element, f),
                 Self::OnChanOpenTry(element) => ::core::fmt::Display::fmt(element, f),
                 Self::OnRecvPacket(element) => ::core::fmt::Display::fmt(element, f),
-                Self::OnRecvPacketProcessing(element) => {
-                    ::core::fmt::Display::fmt(element, f)
-                }
+                Self::OnRecvPacketProcessing(element) => ::core::fmt::Display::fmt(element, f),
                 Self::OnTimeoutPacket(element) => ::core::fmt::Display::fmt(element, f),
                 Self::Outstanding(element) => ::core::fmt::Display::fmt(element, f),
                 Self::Send(element) => ::core::fmt::Display::fmt(element, f),
@@ -1766,7 +1718,7 @@ pub mod ucs01_relay {
         Debug,
         PartialEq,
         Eq,
-        Hash
+        Hash,
     )]
     pub struct AddressToDenomReturn(pub ::std::string::String);
     ///Container type for all return fields from the `counterpartyEndpoints` function with signature `counterpartyEndpoints(string,string)` and selector `0x06d8af32`
@@ -1778,7 +1730,7 @@ pub mod ucs01_relay {
         Debug,
         PartialEq,
         Eq,
-        Hash
+        Hash,
     )]
     pub struct CounterpartyEndpointsReturn {
         pub port_id: ::std::string::String,
@@ -1793,7 +1745,7 @@ pub mod ucs01_relay {
         Debug,
         PartialEq,
         Eq,
-        Hash
+        Hash,
     )]
     pub struct DenomToAddressReturn(pub ::ethers::core::types::Address);
     ///Container type for all return fields from the `ibcAddress` function with signature `ibcAddress()` and selector `0x696a9bf4`
@@ -1805,7 +1757,7 @@ pub mod ucs01_relay {
         Debug,
         PartialEq,
         Eq,
-        Hash
+        Hash,
     )]
     pub struct IbcAddressReturn(pub ::ethers::core::types::Address);
     ///Container type for all return fields from the `onRecvPacket` function with signature `onRecvPacket((uint64,string,string,string,string,bytes,(uint64,uint64),uint64),address)` and selector `0x2301c6f5`
@@ -1817,7 +1769,7 @@ pub mod ucs01_relay {
         Debug,
         PartialEq,
         Eq,
-        Hash
+        Hash,
     )]
     pub struct OnRecvPacketReturn {
         pub acknowledgement: ::ethers::core::types::Bytes,
@@ -1831,7 +1783,7 @@ pub mod ucs01_relay {
         Debug,
         PartialEq,
         Eq,
-        Hash
+        Hash,
     )]
     pub struct OutstandingReturn(pub ::ethers::core::types::U256);
     ///`LocalToken(address,uint128)`
@@ -1843,7 +1795,7 @@ pub mod ucs01_relay {
         Debug,
         PartialEq,
         Eq,
-        Hash
+        Hash,
     )]
     pub struct LocalToken {
         pub denom: ::ethers::core::types::Address,

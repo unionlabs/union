@@ -15,16 +15,19 @@ The Zerg configuration file must also contain the private keys of accounts you w
 Zerg will then observe and record data about these transactions in the `output.csv`.
 
 Each line of the CSV will be of the following format:
+
 ```csv
 <uuid>, <address>, <timestamp>, <EVENT_TYPE>, <chain_id>
 ```
 
 Where `uuid` is constructed in the following form:
+
 ```
 <src_port>/<src_channel>/<sequence>
 ```
 
 and `EVENT_TYPE` is one of:
+
 ```
 SentFrom | RReceivedOn
 ```
