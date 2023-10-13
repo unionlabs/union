@@ -243,7 +243,7 @@ impl Chain for Union {
                 .tx_search(
                     Query::from(EventType::Tx).and_eq("tx.height", u64::from(block_height)),
                     false,
-                    0,
+                    1,
                     255,
                     tendermint_rpc::Order::Ascending,
                 )
