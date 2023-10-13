@@ -1,8 +1,9 @@
+#[cfg(not(feature = "library"))]
+use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    entry_point, DepsMut, Env, Ibc3ChannelOpenResponse, IbcBasicResponse, IbcChannel,
-    IbcChannelCloseMsg, IbcChannelConnectMsg, IbcChannelOpenMsg, IbcPacketAckMsg,
-    IbcPacketReceiveMsg, IbcPacketTimeoutMsg, IbcReceiveResponse, MessageInfo, Reply, Response,
-    SubMsgResult,
+    DepsMut, Env, Ibc3ChannelOpenResponse, IbcBasicResponse, IbcChannel, IbcChannelCloseMsg,
+    IbcChannelConnectMsg, IbcChannelOpenMsg, IbcPacketAckMsg, IbcPacketReceiveMsg,
+    IbcPacketTimeoutMsg, IbcReceiveResponse, MessageInfo, Reply, Response, SubMsgResult,
 };
 use token_factory_api::TokenFactoryMsg;
 use ucs01_relay_api::protocol::TransferProtocol;

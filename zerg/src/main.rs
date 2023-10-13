@@ -29,8 +29,6 @@ async fn main() {
         is_rush,
     };
 
-    let context2 = context.clone();
-
     match args.command {
         cli::Command::PrintConfig => {
             println!(
@@ -42,9 +40,7 @@ async fn main() {
             let _ = tokio::join!(
                 context.listen_union(),
                 context.listen_eth(),
-                tokio::spawn(async move {
-                    context2.tx_handler().await;
-                })
+                context.tx_handler()
             );
         }
         cli::Command::Observe => {

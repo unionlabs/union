@@ -28,11 +28,9 @@ pub struct Context {
 }
 
 impl Context {
-    pub async fn tx_handler(self) {
-        let signer_middleware = Arc::new(SignerMiddleware::new(
-            self.evm.provider.clone(),
-            self.evm.wallet.clone(),
-        ));
+    pub async fn tx_handler(&self) {
+        let signer_middleware =
+            SignerMiddleware::new(self.evm.provider.clone(), self.evm.wallet.clone());
         let receiver = format!("{:?}", signer_middleware.address());
 
         let mut previous_height = 0;
@@ -104,23 +102,10 @@ impl Context {
             signer_middleware.clone(),
         );
 
-        let denom_address = ucs01_relay.denom_to_address(
-            "wasm.union14hj2tavq8fpesdwxxcu44rty3hh90vhujrvcmstl4zr3txmfvw9s3e9fe2/channel-2/stake"
-                .into()).call().await.unwrap();
-        let erc_contract = erc20::ERC20::new(denom_address, signer_middleware.clone());
-
         let transfer =
             Ucs01TransferPacket::try_from(cosmwasm_std::Binary(e.packet_data_hex.clone())).unwrap();
         let denom = format!("{}/{}/{}", e.packet_src_port, e.packet_src_channel, "stake");
         let denom_address = ucs01_relay.denom_to_address(denom).call().await.unwrap();
-        let calc_denom = ucs01_relay
-            .make_foreign_denom(
-                e.packet_src_port.clone(),
-                e.packet_src_channel.to_string(),
-                "stake".into(),
-            )
-            .await
-            .unwrap();
         let erc_contract = erc20::ERC20::new(denom_address, signer_middleware.clone());
 
         erc_contract
@@ -205,7 +190,7 @@ impl Context {
         }
     }
 
-    /// Appends a comma seperated line to the `output_file` provided by the context.
+    /// Appends a comma separated line to the `output_file` provided by the context.
     ///
     /// Line Format:
     /// `<uuid>, <address>, <timestamp>, <EVENT_TYPE>, <chain_id>`
