@@ -127,9 +127,7 @@
 
               if [[ -z "$NO_FUND" ]]; then
                 echo ".. Sending $AMOUNT$DENOM to $ACCOUNTS by using key $KEYNAME."
-                echo "$NODE"
-                echo ${uniond} tx bank multi-send "$KEYNAME" "$ACCOUNTS" "$AMOUNT$DENOM" --home "$HOME" --node "$NODE" --keyring-backend test -y --chain-id "$CHAIN_ID"
-                # echo "+ Done"
+                eval ${uniond} tx bank multi-send "$KEYNAME" "$ACCOUNTS" "$AMOUNT$DENOM" --home "$HOME" --node "$NODE" --keyring-backend test -y --chain-id "$CHAIN_ID"
               fi
           '';
         };
