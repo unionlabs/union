@@ -183,7 +183,14 @@ contract UCS01Relay is IBCAppBase {
                 localToken.amount
             );
             string memory addressDenom = addressToDenom[localToken.denom];
-            if (bytes(addressDenom).length != 0) {
+            string memory prefix = makeDenomPrefix(
+                counterparty.port_id,
+                counterparty.channel_id
+            );
+            if (
+                bytes(addressDenom).length != 0 &&
+                addressDenom.toSlice().startsWith(prefix.toSlice())
+            ) {
                 IERC20Denom(localToken.denom).burn(
                     address(this),
                     localToken.amount
