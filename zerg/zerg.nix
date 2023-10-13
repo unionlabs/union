@@ -119,15 +119,18 @@
 
               ACCOUNTS=""
               for i in $(seq "$NUM_OF_ACCOUNTS"); do
-                ACC_NAME="gen-acc-$i"
-                ADDR=$(${uniond} keys add "$ACC_NAME" --keyring-backend test --output json | jq .address -r)
+                ACC_NAME="zerg-gen-acc-$i"
+                ADDR=$(echo y | ${uniond} keys add "$ACC_NAME" --keyring-backend test --home "$HOME" --output json | jq .address -r)
                 ACCOUNTS="$ACCOUNTS $ADDR"
+                echo "---------------------"
                 echo "+ Generated $ADDR"
+                echo "+ Private key"
+                echo y | ${uniond} keys export "$ACC_NAME" --unsafe --unarmored-hex --keyring-backend test
               done
 
               if [[ -z "$NO_FUND" ]]; then
                 echo ".. Sending $AMOUNT$DENOM to $ACCOUNTS by using key $KEYNAME."
-                eval ${uniond} tx bank multi-send "$KEYNAME" "$ACCOUNTS" "$AMOUNT$DENOM" --home "$HOME" --node "$NODE" --keyring-backend test -y --chain-id "$CHAIN_ID"
+                eval ${uniond} tx bank multi-send "$KEYNAME" "$ACCOUNTS" "$AMOUNT$DENOM" --home "$HOME" --node "$NODE" --keyring-backend test -y --chain-id "$CHAIN_ID" --gas auto --gas-adjustment=1.3
               fi
           '';
         };
