@@ -6924,6 +6924,7 @@ dependencies = [
  "clap",
  "contracts",
  "cosmwasm-std",
+ "csv",
  "ethers",
  "futures",
  "serde",

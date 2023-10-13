@@ -22,6 +22,9 @@ pub struct AppArgs {
 
 #[derive(Debug, Subcommand)]
 pub enum Command {
+    Analyze {
+        input_file: String,
+    },
     /// Exports the config to stdout.
     PrintConfig,
     /// Conducts stress tests and benchmarks on the configured network.
