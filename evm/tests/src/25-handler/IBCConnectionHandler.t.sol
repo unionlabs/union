@@ -1,4 +1,4 @@
-pragma solidity ^0.8.18;
+pragma solidity ^0.8.21;
 
 import {ILightClient} from "../../../contracts/core/02-client/ILightClient.sol";
 import {MockClient} from "../../../contracts/clients/MockClient.sol";

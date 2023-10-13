@@ -1,4 +1,4 @@
-pragma solidity ^0.8.18;
+pragma solidity ^0.8.21;
 
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "../../proto/ibc/core/channel/v1/channel.sol";

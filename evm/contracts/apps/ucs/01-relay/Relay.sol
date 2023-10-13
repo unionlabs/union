@@ -1,4 +1,4 @@
-pragma solidity ^0.8.18;
+pragma solidity ^0.8.21;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -183,7 +183,14 @@ contract UCS01Relay is IBCAppBase {
                 localToken.amount
             );
             string memory addressDenom = addressToDenom[localToken.denom];
-            if (bytes(addressDenom).length != 0) {
+            string memory prefix = makeDenomPrefix(
+                counterparty.port_id,
+                counterparty.channel_id
+            );
+            if (
+                bytes(addressDenom).length != 0 &&
+                addressDenom.toSlice().startsWith(prefix.toSlice())
+            ) {
                 IERC20Denom(localToken.denom).burn(
                     address(this),
                     localToken.amount

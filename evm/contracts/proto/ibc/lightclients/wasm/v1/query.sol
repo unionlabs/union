@@ -1,4 +1,4 @@
-pragma solidity ^0.8.18;
+pragma solidity ^0.8.21;
 import "../../../../ProtoBufRuntime.sol";
 import "../../../../GoogleProtobufAny.sol";
 import "../../../../cosmos/base/query/v1beta1/pagination.sol";

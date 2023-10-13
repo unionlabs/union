@@ -244,7 +244,7 @@
               #     ${protoIncludes} \
               #    -I"$plugindir/include" \
               #    --plugin="protoc-gen-sol=$plugindir/plugin/gen_sol.py" \
-              #    --sol_out=gen_runtime="ProtoBufRuntime.sol&solc_version=0.8.18:$2" \
+              #    --sol_out=gen_runtime="ProtoBufRuntime.sol&solc_version=0.8.21:$2" \
               #     "$file"
               # done
               # find ${proto.cometbls}/proto -type f -regex ".*canonical.proto" |\
@@ -254,7 +254,7 @@
               #     ${protoIncludes} \
               #    -I"$plugindir/include" \
               #    --plugin="protoc-gen-sol=$plugindir/plugin/gen_sol.py" \
-              #    --sol_out=gen_runtime="ProtoBufRuntime.sol&solc_version=0.8.18:$2" \
+              #    --sol_out=gen_runtime="ProtoBufRuntime.sol&solc_version=0.8.21:$2" \
               #     "$file"
               # done
 
@@ -265,7 +265,7 @@
                   ${protoIncludes} \
                  -I"$plugindir/include" \
                  --plugin="protoc-gen-sol=$plugindir/plugin/gen_sol.py" \
-                 --sol_out=gen_runtime="ProtoBufRuntime.sol&solc_version=0.8.18:$2" \
+                 --sol_out=gen_runtime="ProtoBufRuntime.sol&solc_version=0.8.21:$2" \
                   "$file"
               done
             '';
@@ -291,19 +291,21 @@
           '';
         };
 
-        evm-coverage =
-          pkgs.runCommand "evm-coverage.log"
-            {
-              buildInputs = [ wrappedForge pkgs.lcov ];
-            } "forge coverage --ir-minimum --report lcov && genhtml lcov.info -o $out --branch-coverage";
+        # Stack too deep even if --ir-minimum
+        # evm-coverage =
+        #   pkgs.runCommand "evm-coverage.log"
+        #     {
+        #       buildInputs = [ wrappedForge pkgs.lcov ];
+        #     } "forge coverage --ir-minimum --report lcov && genhtml lcov.info -o $out --branch-coverage";
 
-        show-evm-coverage = pkgs.writeShellApplication {
-          name = "show-evm-coverage";
-          runtimeInputs = [ wrappedForge ];
-          text = ''
-            xdg-open ${self'.packages.evm-coverage}/index.html
-          '';
-        };
+        # show-evm-coverage = pkgs.writeShellApplication {
+        #   name = "show-evm-coverage";
+        #   runtimeInputs = [ wrappedForge ];
+        #   text = ''
+        #     xdg-open ${self'.packages.evm-coverage}/index.html
+        #   '';
+        # };
+
         forge = wrappedForge;
       } //
       builtins.listToAttrs (

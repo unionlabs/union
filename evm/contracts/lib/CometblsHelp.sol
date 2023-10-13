@@ -1,4 +1,4 @@
-pragma solidity ^0.8.18;
+pragma solidity ^0.8.21;
 
 import "../proto/union/ibc/lightclients/cometbls/v1/cometbls.sol";
 import "../proto/ibc/lightclients/wasm/v1/wasm.sol";
