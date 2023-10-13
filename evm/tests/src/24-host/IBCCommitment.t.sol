@@ -1,4 +1,4 @@
-pragma solidity ^0.8.18;
+pragma solidity ^0.8.21;
 
 import {IBCCommitment} from "../../../contracts/core/24-host/IBCCommitment.sol";
 
