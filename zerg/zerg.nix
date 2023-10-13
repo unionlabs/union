@@ -32,7 +32,7 @@
                 -d, --denom      Denom (Default: muno) \n\
                 -h, --home       Home directory of the chain \n\
                 --node           Rpc endpoint of the node (Default: \"http://localhost:26657\") \n\
-                -k, --keyname    Key to use when sending the funds \n\
+                -k, --key-name    Key to use when sending the funds \n\
                 -c, --chain-id   Chain id to use \n\
                 --no-fund        Don't fund the accounts \n\
                 --help           Print help \n\
@@ -46,7 +46,7 @@
             NO_FUND=""
             HOME=""
             NODE="http://localhost:26657"
-            KEYNAME=""
+            KEY_NAME=""
             CHAIN_ID=""
 
             while [[ $# -gt 0 ]]; do
@@ -85,8 +85,8 @@
                   shift
                   shift
                   ;;
-                -k|--keyname)
-                  KEYNAME="$2"
+                -k|--key-name)
+                  KEY_NAME="$2"
                   shift
                   shift
                   ;;
@@ -101,8 +101,8 @@
                 usage 1
               fi
 
-              if [[ -z "$KEYNAME" ]] && [[ -z "$NO_FUND" ]]; then
-                echo "--keyname must be specified since funds are gonna be sent to accounts."
+              if [[ -z "$KEY_NAME" ]] && [[ -z "$NO_FUND" ]]; then
+                echo "--key-name must be specified since funds are gonna be sent to accounts."
                 echo "Use --no-fund to disable funding the accounts."
                 usage 1
               fi
@@ -129,8 +129,8 @@
               done
 
               if [[ -z "$NO_FUND" ]]; then
-                echo ".. Sending $AMOUNT$DENOM to $ACCOUNTS by using key $KEYNAME."
-                eval ${uniond} tx bank multi-send "$KEYNAME" "$ACCOUNTS" "$AMOUNT$DENOM" --home "$HOME" --node "$NODE" --keyring-backend test -y --chain-id "$CHAIN_ID" --gas auto --gas-adjustment=1.3
+                echo ".. Sending $AMOUNT$DENOM to $ACCOUNTS by using key $KEY_NAME."
+                eval ${uniond} tx bank multi-send "$KEY_NAME" "$ACCOUNTS" "$AMOUNT$DENOM" --home "$HOME" --node "$NODE" --keyring-backend test -y --chain-id "$CHAIN_ID" --gas auto --gas-adjustment=1.3
               fi
           '';
         };
