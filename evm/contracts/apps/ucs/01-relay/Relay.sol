@@ -208,7 +208,7 @@ contract UCS01Relay is IBCAppBase {
             );
         }
         RelayPacket memory packet = RelayPacket({
-            sender: string(abi.encodePacked(msg.sender)),
+            sender: msg.sender.toHexString(),
             receiver: receiver,
             tokens: normalizedTokens
         });
