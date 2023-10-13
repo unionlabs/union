@@ -28,6 +28,19 @@ pub struct Context {
 }
 
 impl Context {
+    pub async fn new(zerg_config: Config, is_rush: bool) -> Context {
+        let evm = chain_utils::evm::Evm::<Minimal>::new(zerg_config.evm.clone())
+            .await
+            .unwrap();
+
+        Context {
+            output_file: "output.csv".to_string(),
+            zerg_config,
+            evm,
+            is_rush,
+        }
+    }
+
     pub async fn tx_handler(&self) {
         let signer_middleware =
             SignerMiddleware::new(self.evm.provider.clone(), self.evm.wallet.clone());
