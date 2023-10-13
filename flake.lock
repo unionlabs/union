@@ -195,11 +195,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1691140388,
-        "narHash": "sha256-AH3fx2VFGPRSOjnuakab4T4AdUstwTnFTbnkoU4df8Q=",
+        "lastModified": 1696410815,
+        "narHash": "sha256-uku47D/L+VzO3sVoZbnexPQPGeQtMwMFBesyaA1vKtE=",
         "owner": "shazow",
         "repo": "foundry.nix",
-        "rev": "6089aad0ef615ac8c7b0c948d6052fa848c99523",
+        "rev": "a56126a754d73f85d904768fed569a9e250388d9",
         "type": "github"
       },
       "original": {
@@ -362,6 +362,22 @@
         "type": "github"
       }
     },
+    "nixpkgs-solc": {
+      "locked": {
+        "lastModified": 1696879762,
+        "narHash": "sha256-Ud6bH4DMcYHUDKavNMxAhcIpDGgHMyL/yaDEAVSImQY=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "f99e5f03cc0aa231ab5950a15ed02afec45ed51a",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixos-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
     "root": {
       "inputs": {
         "arion": "arion",
@@ -377,6 +393,7 @@
         "iohk-nix": "iohk-nix",
         "nix-filter": "nix-filter",
         "nixpkgs": "nixpkgs",
+        "nixpkgs-solc": "nixpkgs-solc",
         "rust-overlay": "rust-overlay_2",
         "treefmt-nix": "treefmt-nix",
         "v0_10_0": "v0_10_0",
