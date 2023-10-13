@@ -53,7 +53,7 @@ impl Event {
         );
 
         Event {
-            sender: transfer.sender().to_owned(),
+            sender: transfer.sender().to_string(),
             stamped_event: EventType::SendEvent(TimedEvent::new(chain_id, e)),
             uuid,
         }
@@ -75,7 +75,7 @@ impl Event {
         );
 
         Event {
-            sender: transfer.sender().to_owned(),
+            sender: transfer.sender().to_string(),
             stamped_event: EventType::ReceiveEvent(TimedEvent::new(chain_id, e)),
             uuid,
         }

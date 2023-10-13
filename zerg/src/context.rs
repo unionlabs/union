@@ -108,18 +108,10 @@ impl Context {
             "wasm.union14hj2tavq8fpesdwxxcu44rty3hh90vhujrvcmstl4zr3txmfvw9s3e9fe2/channel-2/stake"
                 .into()).call().await.unwrap();
         let erc_contract = erc20::ERC20::new(denom_address, signer_middleware.clone());
-        println!(
-            "BALANCE: {}",
-            erc_contract
-                .balance_of(signer_middleware.address())
-                .await
-                .unwrap()
-        );
 
         let transfer =
             Ucs01TransferPacket::try_from(cosmwasm_std::Binary(e.packet_data_hex.clone())).unwrap();
         let denom = format!("{}/{}/{}", e.packet_src_port, e.packet_src_channel, "stake");
-        println!("denom: {}", denom);
         let denom_address = ucs01_relay.denom_to_address(denom).call().await.unwrap();
         let calc_denom = ucs01_relay
             .make_foreign_denom(
@@ -129,7 +121,6 @@ impl Context {
             )
             .await
             .unwrap();
-        println!("address: {} {}", denom_address, calc_denom);
         let erc_contract = erc20::ERC20::new(denom_address, signer_middleware.clone());
 
         erc_contract
@@ -169,6 +160,7 @@ impl Context {
         let mut events = Box::pin(union.events(()));
 
         loop {
+            println!("Listening for Union IBC events...");
             let event = events.next().await.unwrap().unwrap();
 
             match event.event {
@@ -180,7 +172,9 @@ impl Context {
                     println!("RecvPacket on Union!");
                     self.append_record(Event::create_recv_event(event.chain_id, e))
                 }
-                _ => (),
+                _ => {
+                    println!("Untracked Union IBC event")
+                }
             }
         }
     }
@@ -189,11 +183,12 @@ impl Context {
         let mut events = Box::pin(self.evm.events(()));
 
         loop {
+            println!("Listening for Evm IBC events...");
             let event = events.next().await.unwrap().unwrap();
 
             match event.event {
                 unionlabs::events::IbcEvent::SendPacket(e) => {
-                    println!("SendPacket on Evm!");
+                    println!("SendPacket from Evm!");
                     self.append_record(Event::create_send_event(event.chain_id.to_string(), e))
                 }
                 unionlabs::events::IbcEvent::RecvPacket(e) => {
@@ -203,7 +198,9 @@ impl Context {
                     }
                     self.append_record(Event::create_recv_event(event.chain_id.to_string(), e))
                 }
-                _ => (),
+                _ => {
+                    println!("Untracked Evm IBC event")
+                }
             }
         }
     }
