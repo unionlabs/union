@@ -15,25 +15,17 @@ use futures::Future;
 use num_bigint::BigUint;
 use prost::Message;
 use protos::{
-    cosmos::{
-        base::tendermint::v1beta1::AbciQueryRequest,
-        staking::{self, v1beta1::BondStatus},
-    },
+    cosmos::base::tendermint::v1beta1::AbciQueryRequest,
     union::galois::api::v1::{union_prover_api_client, ProveResponse as RawProveResponse},
 };
 use serde::{Deserialize, Serialize};
-use sha2::Digest;
 use tendermint_rpc::Client;
 use unionlabs::{
     bounded_int::BoundedI64,
-    cosmos::staking::{query_validators_response::QueryValidatorsResponse, validator::Validator},
     ethereum::{Address, H256, H512},
     ethereum_consts_traits::{ChainSpec, Mainnet, Minimal},
     ibc::{
-        core::client::{
-            height::{Height, IsHeight},
-            msg_update_client::MsgUpdateClient,
-        },
+        core::client::{height::Height, msg_update_client::MsgUpdateClient},
         google::protobuf::{any::Any, timestamp::Timestamp},
         lightclients::{cometbls, ethereum, wasm},
     },
@@ -49,7 +41,7 @@ use unionlabs::{
         },
     },
     union::galois::{prove_request::ProveRequest, validator_set_commit::ValidatorSetCommit},
-    IntoProto, MsgIntoProto, Proto, TryFromProto, TryFromProtoErrorOf, TypeUrl,
+    IntoProto, MsgIntoProto, Proto, TryFromProto, TryFromProtoErrorOf,
 };
 
 use crate::{
@@ -467,7 +459,9 @@ impl LightClient for EthereumMainnet {
     }
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
+#[derive(
+    DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, derive_more::Display,
+)]
 #[serde(bound(serialize = "", deserialize = ""))]
 #[allow(clippy::large_enum_variant)]
 pub enum EthereumDataMsg<C: ChainSpec> {
@@ -475,22 +469,32 @@ pub enum EthereumDataMsg<C: ChainSpec> {
     // TrustedCommit {
     //     height: Height,
     // },
+    #[display(fmt = "UntrustedCommit")]
     UntrustedCommit(UntrustedCommit<C>),
+    #[display(fmt = "Validators")]
     Validators(Validators<C>),
+    #[display(fmt = "ProveResponse")]
     ProveResponse(ProveResponse<C>),
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
+#[derive(
+    DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, derive_more::Display,
+)]
 #[serde(bound(serialize = "", deserialize = ""))]
 #[allow(clippy::large_enum_variant)]
 pub enum EthereumFetchMsg<C: ChainSpec> {
     // FetchTrustedCommit { height: Height },
+    #[display(fmt = "FetchUntrustedCommit")]
     FetchUntrustedCommit(FetchUntrustedCommit<C>),
+    #[display(fmt = "FetchValidators")]
     FetchValidators(FetchValidators<C>),
+    #[display(fmt = "FetchProveRequest")]
     FetchProveRequest(FetchProveRequest<C>),
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
+#[derive(
+    DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, derive_more::Display,
+)]
 #[serde(bound(serialize = "", deserialize = ""))]
 #[allow(clippy::large_enum_variant)]
 pub enum EthereumAggregateMsg<L, C>
@@ -499,7 +503,9 @@ where
     L: LightClient<HostChain = Union>,
     L::Counterparty: LightClient<HostChain = Evm<C>>,
 {
+    #[display(fmt = "AggregateProveRequest")]
     AggregateProveRequest(AggregateProveRequest<L>),
+    #[display(fmt = "AggregateHeader")]
     AggregateHeader(AggregateHeader<L>),
 }
 

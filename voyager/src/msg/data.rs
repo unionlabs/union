@@ -39,6 +39,26 @@ any_enum! {
     }
 }
 
+impl<L: LightClient> std::fmt::Display for Data<L> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Data::SelfClientState(_) => write!(f, "SelfClientState"),
+            Data::SelfConsensusState(_) => write!(f, "SelfConsensusState"),
+            Data::ChannelEnd(_) => write!(f, "ChannelEnd"),
+            Data::ConnectionEnd(_) => write!(f, "ConnectionEnd"),
+            Data::PacketAcknowledgement(_) => write!(f, "PacketAcknowledgement"),
+            Data::TrustedClientState(_) => write!(f, "TrustedClientState"),
+            Data::ClientStateProof(_) => write!(f, "ClientStateProof"),
+            Data::ClientConsensusStateProof(_) => write!(f, "ClientConsensusStateProof"),
+            Data::ConnectionProof(_) => write!(f, "ConnectionProof"),
+            Data::ChannelEndProof(_) => write!(f, "ChannelEndProof"),
+            Data::CommitmentProof(_) => write!(f, "CommitmentProof"),
+            Data::AcknowledgementProof(_) => write!(f, "AcknowledgementProof"),
+            Data::LightClientSpecific(data) => write!(f, "LightClientSpecific({})", data.0),
+        }
+    }
+}
+
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""))]
 pub struct SelfClientState<L: LightClient>(pub ClientStateOf<L::HostChain>);

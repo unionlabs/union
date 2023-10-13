@@ -244,19 +244,25 @@ impl Queue for InMemoryQueue {
             };
 
             match msg {
-                Some(msg) => match f(msg.clone()).await {
-                    ProcessFlow::Success(new_msgs) => {
-                        let mut queue = self.0.lock().expect("mutex is poisoned");
-                        queue.extend(new_msgs);
-                        Ok(())
+                Some(msg) => {
+                    tracing::info!(
+                        json = %serde_json::to_string(&msg).unwrap(),
+                    );
+
+                    match f(msg.clone()).await {
+                        ProcessFlow::Success(new_msgs) => {
+                            let mut queue = self.0.lock().expect("mutex is poisoned");
+                            queue.extend(new_msgs);
+                            Ok(())
+                        }
+                        ProcessFlow::Requeue => {
+                            let mut queue = self.0.lock().expect("mutex is poisoned");
+                            queue.push_front(msg);
+                            Ok(())
+                        }
+                        ProcessFlow::Fail(why) => panic!("{why}"),
                     }
-                    ProcessFlow::Requeue => {
-                        let mut queue = self.0.lock().expect("mutex is poisoned");
-                        queue.push_front(msg);
-                        Ok(())
-                    }
-                    ProcessFlow::Fail(why) => panic!("{why}"),
-                },
+                }
                 None => Ok(()),
             }
         }
@@ -953,7 +959,7 @@ impl Worker {
         tracing::info!(
             worker = self.id,
             depth,
-            json = %serde_json::to_string(&msg).unwrap(),
+            msg = %msg,
             "handling message",
         );
 

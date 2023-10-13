@@ -1,7 +1,6 @@
-use std::{collections::VecDeque, ops::ControlFlow};
+use std::{collections::VecDeque, fmt::Display, ops::ControlFlow};
 
 use frunk::{HCons, HNil};
-use serde::Serialize;
 
 use crate::{
     chain::LightClient,
@@ -12,9 +11,9 @@ pub fn do_aggregate<L: LightClient, T: UseAggregate<L>>(
     event: T,
     data: VecDeque<AggregateData>,
 ) -> RelayerMsg {
-    let data_json = serde_json::to_string(&data).expect("serialization should not fail");
+    // let data_json = serde_json::to_string(&data).expect("serialization should not fail");
 
-    tracing::info!(%data_json, "aggregating data");
+    // tracing::info!(%data_json, "aggregating data");
 
     let data = match HListTryFromIterator::try_from_iter(data) {
         Ok(ok) => ok,
@@ -56,17 +55,23 @@ where
     T: TryFrom<U, Error = U> + Into<U>,
     Tail: HListTryFromIterator<U>,
     // REVIEW: Should debug be used instead?
-    U: Serialize,
+    U: Display,
 {
     fn try_from_iter(vec: VecDeque<U>) -> Result<Self, VecDeque<U>> {
         match pluck::<T, U>(vec) {
-            ControlFlow::Continue(not_found) => {
+            ControlFlow::Continue(invalid) => {
+                let invalid_str = invalid
+                    .iter()
+                    .map(|x| x.to_string())
+                    .collect::<Vec<_>>()
+                    .join(", ");
+
                 tracing::error!(
-                    not_found = %serde_json::to_string(&not_found).expect("serialization should not fail"),
+                    %invalid_str,
                     "type didn't match"
                 );
 
-                Err(not_found)
+                Err(invalid)
             }
             ControlFlow::Break((vec, u)) => Ok(HCons {
                 head: u,
@@ -102,7 +107,7 @@ pub(crate) mod tests {
     #[test]
     fn hlist_try_from_iter() {
         enum_variants_conversions! {
-            #[derive(Debug, PartialEq, Serialize)]
+            #[derive(Debug, PartialEq, derive_more::Display)]
             pub enum A {
                 B(B),
                 C(C),
@@ -110,13 +115,13 @@ pub(crate) mod tests {
             }
         }
 
-        #[derive(Debug, PartialEq, Serialize)]
+        #[derive(Debug, PartialEq, derive_more::Display)]
         pub struct B;
 
-        #[derive(Debug, PartialEq, Serialize)]
+        #[derive(Debug, PartialEq, derive_more::Display)]
         pub struct C;
 
-        #[derive(Debug, PartialEq, Serialize)]
+        #[derive(Debug, PartialEq, derive_more::Display)]
         pub struct D;
 
         // correct items, correct order

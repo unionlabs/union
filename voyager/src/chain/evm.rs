@@ -16,7 +16,7 @@ use contracts::{
 use ethers::{
     abi::AbiEncode,
     providers::Middleware,
-    types::{EIP1186ProofResponse, U256},
+    types::{EIP1186ProofResponse, TransactionReceipt, U256},
     utils::keccak256,
 };
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
@@ -469,26 +469,42 @@ try_from_relayer_msg! {
     )]
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
+#[derive(
+    DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, derive_more::Display,
+)]
 #[serde(bound(serialize = "", deserialize = ""))]
 pub enum CometblsFetchMsg<C: ChainSpec> {
+    #[display(fmt = "FetchFinalityUpdate")]
     FetchFinalityUpdate(PhantomData<C>),
+    #[display(fmt = "FetchLightClientUpdates")]
     FetchLightClientUpdates(FetchLightClientUpdates<C>),
+    #[display(fmt = "FetchLightClientUpdate")]
     FetchLightClientUpdate(FetchLightClientUpdate<C>),
+    #[display(fmt = "FetchBootstrap")]
     FetchBootstrap(FetchBootstrap<C>),
+    #[display(fmt = "FetchAccountUpdate")]
     FetchAccountUpdate(FetchAccountUpdate<C>),
+    #[display(fmt = "FetchBeaconGenesis")]
     FetchBeaconGenesis(FetchBeaconGenesis<C>),
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
+#[derive(
+    DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, derive_more::Display,
+)]
 #[serde(bound(serialize = "", deserialize = ""))]
 #[allow(clippy::large_enum_variant)]
 pub enum CometblsDataMsg<C: ChainSpec> {
+    #[display(fmt = "FinalityUpdate")]
     FinalityUpdate(FinalityUpdate<C>),
+    #[display(fmt = "LightClientUpdates")]
     LightClientUpdates(LightClientUpdates<C>),
+    #[display(fmt = "LightClientUpdate")]
     LightClientUpdate(LightClientUpdate<C>),
+    #[display(fmt = "Bootstrap")]
     Bootstrap(BootstrapData<C>),
+    #[display(fmt = "AccountUpdate")]
     AccountUpdate(AccountUpdateData<C>),
+    #[display(fmt = "BeaconGenesis")]
     BeaconGenesis(BeaconGenesisData<C>),
 }
 
@@ -664,12 +680,17 @@ where
     }
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
+#[derive(
+    DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, derive_more::Display,
+)]
 #[serde(bound(serialize = "", deserialize = ""))]
 #[allow(clippy::large_enum_variant)]
 pub enum CometblsAggregateMsg<L: LightClient<HostChain = Evm<C>>, C: ChainSpec> {
+    #[display(fmt = "CreateUpdate")]
     CreateUpdate(CreateUpdateData<L, C>),
+    #[display(fmt = "MakeCreateUpdates")]
     MakeCreateUpdates(MakeCreateUpdatesData<L, C>),
+    #[display(fmt = "MakeCreateUpdatesFromLightClientUpdates")]
     MakeCreateUpdatesFromLightClientUpdates(MakeCreateUpdatesFromLightClientUpdatesData<L, C>),
 }
 
@@ -905,7 +926,7 @@ where
 {
     evm.ibc_handlers
         .with(|ibc_handler| async move {
-            let tx_res = match msg {
+            let tx_res: TransactionReceipt = match msg {
                 Msg::ConnectionOpenInit(data) => {
                     ibc_handler
                         .connection_open_init(data.msg.into())

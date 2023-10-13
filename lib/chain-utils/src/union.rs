@@ -346,122 +346,136 @@ impl Union {
     pub async fn broadcast_tx_commit(
         &self,
         signer: CosmosAccountId,
-        messages: impl IntoIterator<Item = protos::google::protobuf::Any>,
+        messages: impl IntoIterator<Item = protos::google::protobuf::Any> + Clone,
     ) {
         use protos::cosmos::tx;
 
-        let account = self.account_info_of_signer(&signer).await;
+        'construct_tx: loop {
+            let account = self.account_info_of_signer(&signer).await;
 
-        let sign_doc = tx::v1beta1::SignDoc {
-            body_bytes: tx::v1beta1::TxBody {
-                messages: messages.into_iter().collect(),
-                // TODO(benluelo): What do we want to use as our memo?
-                memo: String::new(),
-                timeout_height: 123_123_123,
-                extension_options: vec![],
-                non_critical_extension_options: vec![],
-            }
-            .encode_to_vec(),
-            auth_info_bytes: tx::v1beta1::AuthInfo {
-                signer_infos: [tx::v1beta1::SignerInfo {
-                    public_key: Some(protos::google::protobuf::Any {
-                        type_url: "/cosmos.crypto.secp256k1.PubKey".to_string(),
-                        value: signer.public_key().encode_to_vec(),
-                    }),
-                    mode_info: Some(tx::v1beta1::ModeInfo {
-                        sum: Some(tx::v1beta1::mode_info::Sum::Single(
-                            tx::v1beta1::mode_info::Single {
-                                mode: tx::signing::v1beta1::SignMode::Direct.into(),
-                            },
-                        )),
-                    }),
-                    sequence: account.sequence,
-                }]
-                .to_vec(),
-                fee: Some(tx::v1beta1::Fee {
-                    amount: vec![protos::cosmos::base::v1beta1::Coin {
-                        // TODO: This needs to be configurable
-                        denom: self.fee_denom.clone(),
-                        amount: "1".to_string(),
-                    }],
-                    gas_limit: 5_000_000_000,
-                    payer: String::new(),
-                    granter: String::new(),
-                }),
-                tip: None,
-            }
-            .encode_to_vec(),
-            chain_id: self.chain_id.clone(),
-            account_number: account.account_number,
-        };
-
-        let alice_signature = signer.try_sign(&sign_doc.encode_to_vec()).unwrap().to_vec();
-
-        let tx_raw = tx::v1beta1::TxRaw {
-            body_bytes: sign_doc.body_bytes,
-            auth_info_bytes: sign_doc.auth_info_bytes,
-            signatures: [alice_signature].to_vec(),
-        };
-
-        let tx_raw_bytes = tx_raw.encode_to_vec();
-
-        let tx_hash = hex::encode_upper(sha2::Sha256::new().chain_update(&tx_raw_bytes).finalize());
-
-        let query = Query {
-            event_type: Some(EventType::Tx),
-            conditions: [Condition::eq(
-                "tx.hash".to_string(),
-                Operand::String(tx_hash.clone()),
-            )]
-            .into(),
-        };
-
-        loop {
-            if self
-                .tm_client
-                .tx(tx_hash.parse().unwrap(), false)
-                .await
-                .is_ok()
-            {
-                // TODO: Log an error if this is unsuccessful
-                let _ = self.tm_client.unsubscribe(query).await;
-                return;
-            }
-
-            // dbg!(maybe_tx);
-
-            let response_result = self.tm_client.broadcast_tx_sync(tx_raw_bytes.clone()).await;
-
-            // dbg!(&response_result);
-
-            let response = response_result.unwrap();
-
-            assert_eq!(tx_hash, response.hash.to_string());
-
-            tracing::debug!(%tx_hash);
-
-            tracing::info!(check_tx_code = ?response.code, check_tx_log = %response.log);
-
-            if response.code.is_err() {
-                panic!("check_tx failed: {:?}", response)
-            };
-
-            // HACK: wait for a block to verify inclusion
-            tokio::time::sleep(std::time::Duration::from_secs(7)).await;
-
-            let tx_inclusion = self.tm_client.tx(tx_hash.parse().unwrap(), false).await;
-
-            tracing::debug!(?tx_inclusion);
-
-            match tx_inclusion {
-                Ok(x) => x,
-                Err(_) => {
-                    // TODO: we don't handle this case, either we got an error or the tx hasn't been received
-                    // we need to discriminate
-                    tracing::warn!("tx inclusion couldn't be retrieved after 1 block");
-                    panic!()
+            let sign_doc = tx::v1beta1::SignDoc {
+                body_bytes: tx::v1beta1::TxBody {
+                    messages: messages.clone().into_iter().collect(),
+                    // TODO(benluelo): What do we want to use as our memo?
+                    memo: String::new(),
+                    timeout_height: 123_123_123,
+                    extension_options: vec![],
+                    non_critical_extension_options: vec![],
                 }
+                .encode_to_vec(),
+                auth_info_bytes: tx::v1beta1::AuthInfo {
+                    signer_infos: [tx::v1beta1::SignerInfo {
+                        public_key: Some(protos::google::protobuf::Any {
+                            type_url: "/cosmos.crypto.secp256k1.PubKey".to_string(),
+                            value: signer.public_key().encode_to_vec(),
+                        }),
+                        mode_info: Some(tx::v1beta1::ModeInfo {
+                            sum: Some(tx::v1beta1::mode_info::Sum::Single(
+                                tx::v1beta1::mode_info::Single {
+                                    mode: tx::signing::v1beta1::SignMode::Direct.into(),
+                                },
+                            )),
+                        }),
+                        sequence: account.sequence,
+                    }]
+                    .to_vec(),
+                    fee: Some(tx::v1beta1::Fee {
+                        amount: vec![protos::cosmos::base::v1beta1::Coin {
+                            // TODO: This needs to be configurable
+                            denom: self.fee_denom.clone(),
+                            amount: "1".to_string(),
+                        }],
+                        gas_limit: 5_000_000_000,
+                        payer: String::new(),
+                        granter: String::new(),
+                    }),
+                    tip: None,
+                }
+                .encode_to_vec(),
+                chain_id: self.chain_id.clone(),
+                account_number: account.account_number,
             };
+
+            let alice_signature = signer.try_sign(&sign_doc.encode_to_vec()).unwrap().to_vec();
+
+            let tx_raw = tx::v1beta1::TxRaw {
+                body_bytes: sign_doc.body_bytes,
+                auth_info_bytes: sign_doc.auth_info_bytes,
+                signatures: [alice_signature].to_vec(),
+            };
+
+            let tx_raw_bytes = tx_raw.encode_to_vec();
+
+            let tx_hash =
+                hex::encode_upper(sha2::Sha256::new().chain_update(&tx_raw_bytes).finalize());
+
+            let query = Query {
+                event_type: Some(EventType::Tx),
+                conditions: [Condition::eq(
+                    "tx.hash".to_string(),
+                    Operand::String(tx_hash.clone()),
+                )]
+                .into(),
+            };
+
+            loop {
+                if self
+                    .tm_client
+                    .tx(tx_hash.parse().unwrap(), false)
+                    .await
+                    .is_ok()
+                {
+                    // TODO: Log an error if this is unsuccessful
+                    let _ = self.tm_client.unsubscribe(query).await;
+                    return;
+                }
+
+                // dbg!(maybe_tx);
+
+                let response_result = self.tm_client.broadcast_tx_sync(tx_raw_bytes.clone()).await;
+
+                // dbg!(&response_result);
+
+                let response = response_result.unwrap();
+
+                assert_eq!(tx_hash, response.hash.to_string());
+
+                tracing::debug!(%tx_hash);
+
+                tracing::info!(check_tx_code = ?response.code, check_tx_log = %response.log);
+
+                if response.code.is_err() {
+                    let value: TendermintResponseErrorCode = response
+                        .code
+                        .value()
+                        .try_into()
+                        .expect("unknown response code");
+
+                    if value == TendermintResponseErrorCode::WrongSequence {
+                        tracing::warn!("sequence mismatch, reconstructing tx");
+                        continue 'construct_tx;
+                    }
+
+                    panic!("check_tx failed: {:?}", response)
+                };
+
+                // HACK: wait for a block to verify inclusion
+                tokio::time::sleep(std::time::Duration::from_secs(7)).await;
+
+                let tx_inclusion = self.tm_client.tx(tx_hash.parse().unwrap(), false).await;
+
+                tracing::debug!(?tx_inclusion);
+
+                match tx_inclusion {
+                    Ok(_) => break 'construct_tx,
+                    Err(_) => {
+                        // TODO: we don't handle this case, either we got an error or the tx hasn't been received
+                        // we need to discriminate
+                        tracing::warn!("tx inclusion couldn't be retrieved after 1 block");
+                        panic!()
+                    }
+                };
+            }
         }
     }
 
@@ -621,4 +635,145 @@ impl EventSource for Union {
         .map(futures::stream::iter)
         .flatten()
     }
+}
+
+#[derive(
+    Debug, Copy, Clone, PartialEq, Eq, Hash, num_enum::IntoPrimitive, num_enum::TryFromPrimitive,
+)]
+#[repr(u32)]
+#[allow(non_upper_case_globals)] // TODO: Report this upstream
+pub enum TendermintResponseErrorCode {
+    // errInternal should never be exposed, but we reserve this code for non-specified errors
+    Internal = 1,
+
+    // ErrTxDecode is returned if we cannot parse a transaction
+    TxDecode = 2,
+
+    // ErrInvalidSequence is used the sequence number (nonce) is incorrect
+    // for the signature
+    InvalidSequence = 3,
+
+    // ErrUnauthorized is used whenever a request without sufficient
+    // authorization is handled.
+    Unauthorized = 4,
+
+    // ErrInsufficientFunds is used when the account cannot pay requested amount.
+    InsufficientFunds = 5,
+
+    // ErrUnknownRequest to doc
+    UnknownRequest = 6,
+
+    // ErrInvalidAddress to doc
+    InvalidAddress = 7,
+
+    // ErrInvalidPubKey to doc
+    InvalidPubKey = 8,
+
+    // ErrUnknownAddress to doc
+    UnknownAddress = 9,
+
+    // ErrInvalidCoins to doc
+    InvalidCoins = 10,
+
+    // ErrOutOfGas to doc
+    OutOfGas = 11,
+
+    // ErrMemoTooLarge to doc
+    MemoTooLarge = 12,
+
+    // ErrInsufficientFee to doc
+    InsufficientFee = 13,
+
+    // ErrTooManySignatures to doc
+    TooManySignatures = 14,
+
+    // ErrNoSignatures to doc
+    NoSignatures = 15,
+
+    // ErrJSONMarshal defines an ABCI typed JSON marshalling error
+    JSONMarshal = 16,
+
+    // ErrJSONUnmarshal defines an ABCI typed JSON unmarshalling error
+    JSONUnmarshal = 17,
+
+    // ErrInvalidRequest defines an ABCI typed error where the request contains
+    // invalid data.
+    InvalidRequest = 18,
+
+    // ErrTxInMempoolCache defines an ABCI typed error where a tx already exists
+    // in the mempool.
+    TxInMempoolCache = 19,
+
+    // ErrMempoolIsFull defines an ABCI typed error where the mempool is full.
+    MempoolIsFull = 20,
+
+    // ErrTxTooLarge defines an ABCI typed error where tx is too large.
+    TxTooLarge = 21,
+
+    // ErrKeyNotFound defines an error when the key doesn't exist
+    KeyNotFound = 22,
+
+    // ErrWrongPassword defines an error when the key password is invalid.
+    WrongPassword = 23,
+
+    // ErrorInvalidSigner defines an error when the tx intended signer does not match the given signer.
+    orInvalidSigner = 24,
+
+    // ErrorInvalidGasAdjustment defines an error for an invalid gas adjustment
+    orInvalidGasAdjustment = 25,
+
+    // ErrInvalidHeight defines an error for an invalid height
+    InvalidHeight = 26,
+
+    // ErrInvalidVersion defines a general error for an invalid version
+    InvalidVersion = 27,
+
+    // ErrInvalidChainID defines an error when the chain-id is invalid.
+    InvalidChainID = 28,
+
+    // ErrInvalidType defines an error an invalid type.
+    InvalidType = 29,
+
+    // ErrTxTimeoutHeight defines an error for when a tx is rejected out due to an
+    // explicitly set timeout height.
+    TxTimeoutHeight = 30,
+
+    // ErrUnknownExtensionOptions defines an error for unknown extension options.
+    UnknownExtensionOptions = 31,
+
+    // ErrWrongSequence defines an error where the account sequence defined in
+    // the signer info doesn't match the account's actual sequence number.
+    WrongSequence = 32,
+
+    // ErrPackAny defines an error when packing a protobuf message to Any fails.
+    PackAny = 33,
+
+    // ErrUnpackAny defines an error when unpacking a protobuf message from Any fails.
+    UnpackAny = 34,
+
+    // ErrLogic defines an internal logic error, e.g. an invariant or assertion
+    // that is violated. It is a programmer error, not a user-facing error.
+    Logic = 35,
+
+    // ErrConflict defines a conflict error, e.g. when two goroutines try to access
+    // the same resource and one of them fails.
+    Conflict = 36,
+
+    // ErrNotSupported is returned when we call a branch of a code which is currently not
+    // supported.
+    NotSupported = 37,
+
+    // ErrNotFound defines an error when requested entity doesn't exist in the state.
+    NotFound = 38,
+
+    // ErrIO should be used to wrap internal errors caused by external operation.
+    // Examples: not DB domain error, file writing etc...
+    IO = 39,
+
+    // ErrPanic is only set when we recover from a panic, so we know to
+    // redact potentially sensitive system info
+    Panic = 111222,
+
+    // ErrAppConfig defines an error occurred if min-gas-prices field in BaseConfig is empty.
+    AppConfig = 40,
 }

@@ -105,18 +105,21 @@ pub trait LightClient: Send + Sync + Sized {
     type Config: Debug + Clone + PartialEq + Serialize + for<'de> Deserialize<'de>;
 
     type Data: Debug
+        + Display
         + Clone
         + PartialEq
         + Serialize
         + for<'de> Deserialize<'de>
         + Into<LightClientSpecificData<Self>>;
     type Fetch: Debug
+        + Display
         + Clone
         + PartialEq
         + Serialize
         + for<'de> Deserialize<'de>
         + Into<LightClientSpecificFetch<Self>>;
     type Aggregate: Debug
+        + Display
         + Clone
         + PartialEq
         + Serialize

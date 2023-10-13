@@ -15,7 +15,7 @@ use ethers::{
     abi::Tokenizable,
     contract::{ContractError, EthCall, EthLogDecode},
     core::k256::ecdsa,
-    middleware::SignerMiddleware,
+    middleware::{NonceManagerMiddleware, SignerMiddleware},
     providers::{Middleware, Provider, ProviderError, Ws, WsClientError},
     signers::{LocalWallet, Wallet},
     utils::secret_key_to_address,
@@ -48,7 +48,8 @@ use crate::{
     chain_client_id, private_key::PrivateKey, Chain, ChainEvent, ClientState, EventSource, Pool,
 };
 
-pub type CometblsMiddleware = SignerMiddleware<Provider<Ws>, Wallet<ecdsa::SigningKey>>;
+pub type CometblsMiddleware =
+    SignerMiddleware<NonceManagerMiddleware<Provider<Ws>>, Wallet<ecdsa::SigningKey>>;
 
 // TODO(benluelo): Generic over middleware?
 #[derive(Debug, Clone)]
@@ -301,8 +302,10 @@ impl<C: ChainSpec> Evm<C> {
 
             let wallet = LocalWallet::new_with_signer(signing_key, address, chain_id.as_u64());
 
-            let signer_middleware =
-                Arc::new(SignerMiddleware::new(provider.clone(), wallet.clone()));
+            let signer_middleware = Arc::new(SignerMiddleware::new(
+                NonceManagerMiddleware::new(provider.clone(), address),
+                wallet.clone(),
+            ));
 
             IBCHandler::new(
                 config.ibc_handler_address.clone(),
