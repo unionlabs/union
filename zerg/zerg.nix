@@ -2,19 +2,25 @@
   perSystem = { self', pkgs, system, config, crane, stdenv, ... }:
     let
       uniond = pkgs.lib.getExe self'.packages.uniond;
-      mkZerg = features: pnameSuffix: (crane.buildWorkspaceMember {
-        inherit pnameSuffix;
-        crateDirFromRoot = "zerg";
-        cargoBuildExtraArgs = features;
-      });
 
-      zerg = (mkZerg "" "");
+      zerg = crane.buildWorkspaceMember {
+        crateDirFromRoot = "zerg";
+        additionalTestSrcFilter = path: _:
+          pkgs.lib.hasPrefix "hubble/src/graphql" path;
+        cargoTestExtraAttrs = {
+          partitions = 1;
+          partitionType = "count";
+        };
+      };
+
     in
     {
-      packages = zerg.packages // {
-        generate-testnet-accounts = pkgs.writeShellApplication { 
+      packages = {
+        zerg = zerg.packages.zerg;
+
+        generate-testnet-accounts = pkgs.writeShellApplication {
           name = "generate-testnet-accounts";
-          runtimeInputs = [];
+          runtimeInputs = [ ];
           text = ''
             usage() {
               printf "\
