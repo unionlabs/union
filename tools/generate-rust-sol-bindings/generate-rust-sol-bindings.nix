@@ -1,13 +1,9 @@
 { ... }: {
   perSystem = { self', pkgs, system, config, crane, stdenv, ensureAtRepositoryRoot, ... }:
     let
-      attrs = {
-        src = crane.lib.cleanCargoSource ./.;
-        doCheck = false;
-        cargoVendorDir = crane.lib.vendorCargoDeps { cargoLock = ./Cargo.lock; };
-      } // (crane.lib.crateNameFromCargoToml { cargoToml = ./Cargo.toml; });
-
-      generate-rust-sol-bindings-crate = crane.lib.buildPackage attrs;
+      generate-rust-sol-bindings-crate = (crane.buildWorkspaceMember {
+        crateDirFromRoot = "tools/generate-rust-sol-bindings";
+      }).packages.generate-rust-sol-bindings;
 
       # cargo-toml = crane.lib.writeTOML "Cargo.toml" {
       #   package = {
@@ -41,11 +37,11 @@
           # format and normalize comments in generated code
           # rustfmt --config normalize_comments=true --edition "2021" lib.rs
 
-          # mkdir $out/src
-          # cp -r ./lib.rs $out/src/lib.rs
-          # cp -r $ {cargo-toml} $out/Cargo.toml
-
           cp -r ./out/* $out
+
+          taplo format $out/Cargo.toml
+
+          sed -i 's/version = "2"/workspace = true/g' $out/Cargo.toml
 
           taplo format $out/Cargo.toml
         '';
