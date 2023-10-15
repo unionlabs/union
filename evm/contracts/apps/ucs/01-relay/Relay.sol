@@ -24,7 +24,7 @@ struct Token {
 
 struct RelayPacket {
     string sender;
-    string receiver;
+    bytes receiver;
     Token[] tokens;
 }
 
@@ -87,6 +87,13 @@ library RelayLib {
         }
         return address(iaddr);
     }
+
+    function bytesToAddress(bytes memory b) private pure returns (address) {
+        if (b.length != 20) {
+            revert("Invalid address.");
+        }
+        return address(uint160(bytes20(b)));
+    }
 }
 
 library RelayPacketLib {
@@ -101,9 +108,9 @@ library RelayPacketLib {
     ) internal pure returns (RelayPacket memory) {
         (
             string memory sender,
-            string memory receiver,
+            bytes memory receiver,
             Token[] memory tokens
-        ) = abi.decode(packet, (string, string, Token[]));
+        ) = abi.decode(packet, (string, bytes, Token[]));
         return
             RelayPacket({sender: sender, receiver: receiver, tokens: tokens});
     }
@@ -151,7 +158,7 @@ contract UCS01Relay is IBCAppBase {
     function ibcAddress() public view virtual override returns (address) {
         return address(ibcHandler);
     }
-
+ 
     function increaseOutstanding(
         string memory portId,
         string memory channelId,
@@ -213,7 +220,7 @@ contract UCS01Relay is IBCAppBase {
     function send(
         string calldata portId,
         string calldata channelId,
-        string calldata receiver,
+        address receiver,
         LocalToken[] calldata tokens,
         uint64 counterpartyTimeoutRevisionNumber,
         uint64 counterpartyTimeoutRevisionHeight
@@ -237,7 +244,7 @@ contract UCS01Relay is IBCAppBase {
             normalizedTokens[i].amount = uint256(localToken.amount);
             emit Sent(
                 msg.sender,
-                receiver,
+                receiver.toHexString(),
                 addressDenom,
                 localToken.denom,
                 uint256(localToken.amount)
@@ -246,7 +253,7 @@ contract UCS01Relay is IBCAppBase {
         string memory sender = msg.sender.toHexString();
         RelayPacket memory packet = RelayPacket({
             sender: msg.sender.toHexString(),
-            receiver: receiver,
+            receiver: abi.encodePacked(receiver),
             tokens: normalizedTokens
         });
         IbcCoreClientV1Height.Data memory timeoutHeight = IbcCoreClientV1Height
@@ -314,7 +321,7 @@ contract UCS01Relay is IBCAppBase {
             strings.slice memory trimedDenom = denomSlice.beyond(
                 prefix.toSlice()
             );
-            address receiver = RelayLib.hexToAddress(packet.receiver);
+            address receiver = bytesToAddress(packet.receiver);
             address denomAddress;
             string memory denom;
             if (!denomSlice.equals(token.denom.toSlice())) {

@@ -81,21 +81,21 @@ pub trait TransferProtocol {
     fn send_tokens(
         &mut self,
         sender: &str,
-        receiver: &str,
+        receiver: &<Self::Packet as TransferPacket>::Receiver,
         tokens: Vec<TransferToken>,
     ) -> Result<Vec<CosmosMsg<Self::CustomMsg>>, Self::Error>;
 
     fn send_tokens_success(
         &mut self,
         sender: &str,
-        receiver: &str,
+        receiver: &<Self::Packet as TransferPacket>::Receiver,
         tokens: Vec<TransferToken>,
     ) -> Result<Vec<CosmosMsg<Self::CustomMsg>>, Self::Error>;
 
     fn send_tokens_failure(
         &mut self,
         sender: &str,
-        receiver: &str,
+        receiver: &<Self::Packet as TransferPacket>::Receiver,
         tokens: Vec<TransferToken>,
     ) -> Result<Vec<CosmosMsg<Self::CustomMsg>>, Self::Error>;
 
@@ -182,7 +182,7 @@ pub trait TransferProtocol {
                     .add_attributes([
                         ("module", MODULE_NAME),
                         ("sender", packet.sender()),
-                        ("receiver", packet.receiver()),
+                        ("receiver", packet.receiver().to_string().as_str()),
                         ("acknowledgement", &raw_ack.into().to_string()),
                     ])
                     .add_attributes(packet.tokens().into_iter().map(
@@ -242,7 +242,7 @@ pub trait TransferProtocol {
             // the reply handler via the `receive_error` for the acknowledgement
             // to be overwritten.
             let transfer_msgs = self
-                .receive_transfer(packet.receiver(), packet.tokens())?
+                .receive_transfer(packet.receiver().to_string().as_str(), packet.tokens())?
                 .into_iter()
                 .map(|msg| SubMsg::reply_on_error(msg, Self::RECEIVE_REPLY_ID));
 
@@ -260,7 +260,7 @@ pub trait TransferProtocol {
                         .add_attributes([
                             ("module", MODULE_NAME),
                             ("sender", packet.sender()),
-                            ("receiver", packet.receiver()),
+                            ("receiver", packet.receiver().to_string().as_str()),
                             ("success", "true"),
                         ])
                         .add_attributes(packet.tokens().into_iter().map(

@@ -416,7 +416,7 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
     fn send_tokens(
         &mut self,
         _sender: &str,
-        _receiver: &str,
+        _receiver: &String,
         tokens: Vec<TransferToken>,
     ) -> Result<Vec<CosmosMsg<Self::CustomMsg>>, Self::Error> {
         StatefulSendTokens {
@@ -434,7 +434,7 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
     fn send_tokens_success(
         &mut self,
         _sender: &str,
-        _receiver: &str,
+        _receiver: &String,
         _tokens: Vec<TransferToken>,
     ) -> Result<Vec<CosmosMsg<Self::CustomMsg>>, Self::Error> {
         Ok(Default::default())
@@ -443,7 +443,7 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
     fn send_tokens_failure(
         &mut self,
         sender: &str,
-        _receiver: &str,
+        _receiver: &String,
         tokens: Vec<TransferToken>,
     ) -> Result<Vec<CosmosMsg<Self::CustomMsg>>, Self::Error> {
         StatefulRefundTokens {
@@ -530,7 +530,7 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
     fn send_tokens(
         &mut self,
         _sender: &str,
-        _receiver: &str,
+        _receiver: &HexBinary,
         tokens: Vec<TransferToken>,
     ) -> Result<Vec<CosmosMsg<Self::CustomMsg>>, Self::Error> {
         StatefulSendTokens {
@@ -548,7 +548,7 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
     fn send_tokens_success(
         &mut self,
         _sender: &str,
-        _receiver: &str,
+        _receiver: &HexBinary,
         _tokens: Vec<TransferToken>,
     ) -> Result<Vec<CosmosMsg<Self::CustomMsg>>, Self::Error> {
         Ok(Default::default())
@@ -557,7 +557,7 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
     fn send_tokens_failure(
         &mut self,
         sender: &str,
-        _receiver: &str,
+        _receiver: &HexBinary,
         tokens: Vec<TransferToken>,
     ) -> Result<Vec<CosmosMsg<Self::CustomMsg>>, Self::Error> {
         StatefulRefundTokens {
