@@ -1,15 +1,16 @@
-use std::marker::PhantomData;
+use std::{fmt::Display, marker::PhantomData};
 
-use chain_utils::Chain;
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use serde::{Deserialize, Serialize};
 use unionlabs::{
     ethereum::H256,
     id::{ChannelId, ConnectionId},
+    proof,
+    traits::Chain,
 };
 
 use crate::{
-    chain::{proof, ChainOf, HeightOf, LightClient, QueryHeight},
+    chain::{ChainOf, HeightOf, LightClient, QueryHeight},
     msg::{any_enum, identified, ChainIdOf},
 };
 
@@ -30,6 +31,22 @@ any_enum! {
 
         UpdateHeaders(FetchUpdateHeaders<L>),
         LightClientSpecific(LightClientSpecificFetch<L>),
+    }
+}
+
+impl<L: LightClient> Display for Fetch<L> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Fetch::TrustedClientState(_) => write!(f, "TrustedClientState"),
+            Fetch::StateProof(sp) => write!(f, "{sp}"),
+            Fetch::SelfClientState(_) => write!(f, "SelfClientState"),
+            Fetch::SelfConsensusState(_) => write!(f, "SelfConsensusState"),
+            Fetch::ChannelEnd(_) => write!(f, "ChannelEnd"),
+            Fetch::ConnectionEnd(_) => write!(f, "ConnectionEnd"),
+            Fetch::PacketAcknowledgement(_) => write!(f, "PacketAcknowledgement"),
+            Fetch::UpdateHeaders(_) => write!(f, "UpdateHeaders"),
+            Fetch::LightClientSpecific(fetch) => write!(f, "LightClientSpecific({})", fetch.0),
+        }
     }
 }
 
@@ -64,6 +81,21 @@ pub struct FetchCounterpartyTrustedClientState<L: LightClient> {
 pub struct FetchStateProof<L: LightClient> {
     pub at: HeightOf<ChainOf<L>>,
     pub path: proof::Path<<ChainOf<L> as Chain>::ClientId, HeightOf<ChainOf<L::Counterparty>>>,
+}
+
+impl<L: LightClient> Display for FetchStateProof<L> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "StateProof::")?;
+
+        match self.path {
+            proof::Path::ClientStatePath(_) => write!(f, "ClientStatePath"),
+            proof::Path::ClientConsensusStatePath(_) => write!(f, "ClientConsensusStatePath"),
+            proof::Path::ConnectionPath(_) => write!(f, "ConnectionPath"),
+            proof::Path::ChannelEndPath(_) => write!(f, "ChannelEndPath"),
+            proof::Path::CommitmentPath(_) => write!(f, "CommitmentPath"),
+            proof::Path::AcknowledgementPath(_) => write!(f, "AcknowledgementPath"),
+        }
+    }
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]

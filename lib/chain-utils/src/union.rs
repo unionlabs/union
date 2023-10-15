@@ -1,14 +1,13 @@
 use std::{fmt::Display, num::ParseIntError, str::FromStr};
 
 use ethers::prelude::k256::ecdsa;
-use futures::{stream, Future, FutureExt, Stream, StreamExt, TryFutureExt, TryStreamExt};
+use futures::{stream, Future, FutureExt, Stream, StreamExt};
 use prost::Message;
 use serde::{Deserialize, Serialize};
 use sha2::Digest;
 use tendermint_rpc::{
-    event::EventData,
-    query::{Condition, EventType, Operand, Query},
-    Client, SubscriptionClient, WebSocketClient, WebSocketClientUrl,
+    query::{EventType, Query},
+    Client, Order, WebSocketClient, WebSocketClientUrl,
 };
 use unionlabs::{
     ethereum::H256,
@@ -21,15 +20,19 @@ use unionlabs::{
     id::Id,
     id_type,
     tendermint::abci::{event::Event, event_attribute::EventAttribute},
+    traits::{Chain, ClientState},
     CosmosAccountId,
 };
 
-use crate::{private_key::PrivateKey, Chain, ChainEvent, ClientState, EventSource};
+use crate::{
+    private_key::PrivateKey, union::tm_types::TendermintResponseErrorCode, ChainEvent, EventSource,
+    MaybeRecoverableError, Pool,
+};
 
 #[derive(Debug, Clone)]
 pub struct Union {
     pub chain_id: String,
-    pub signer: CosmosAccountId,
+    pub signers: Pool<CosmosAccountId>,
     pub fee_denom: String,
     pub tm_client: WebSocketClient,
     pub chain_revision: u64,
@@ -39,7 +42,7 @@ pub struct Union {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
-    pub signer: PrivateKey<ecdsa::SigningKey>,
+    pub signers: Vec<PrivateKey<ecdsa::SigningKey>>,
     pub fee_denom: String,
     pub ws_url: WebSocketClientUrl,
     pub prover_endpoint: String,
@@ -329,7 +332,12 @@ impl Union {
             })?;
 
         Ok(Self {
-            signer: CosmosAccountId::new(config.signer.value(), "union".to_string()),
+            signers: Pool::new(
+                config
+                    .signers
+                    .into_iter()
+                    .map(|signer| CosmosAccountId::new(signer.value(), "union".to_string())),
+            ),
             tm_client,
             chain_id,
             chain_revision,
@@ -341,15 +349,16 @@ impl Union {
 
     pub async fn broadcast_tx_commit(
         &self,
-        messages: impl IntoIterator<Item = protos::google::protobuf::Any>,
-    ) {
+        signer: CosmosAccountId,
+        messages: impl IntoIterator<Item = protos::google::protobuf::Any> + Clone,
+    ) -> Result<(), BroadcastTxCommitError> {
         use protos::cosmos::tx;
 
-        let account = self.account_info_of_signer(&self.signer).await;
+        let account = self.account_info_of_signer(&signer).await;
 
         let sign_doc = tx::v1beta1::SignDoc {
             body_bytes: tx::v1beta1::TxBody {
-                messages: messages.into_iter().collect(),
+                messages: messages.clone().into_iter().collect(),
                 // TODO(benluelo): What do we want to use as our memo?
                 memo: String::new(),
                 timeout_height: 123_123_123,
@@ -361,7 +370,7 @@ impl Union {
                 signer_infos: [tx::v1beta1::SignerInfo {
                     public_key: Some(protos::google::protobuf::Any {
                         type_url: "/cosmos.crypto.secp256k1.PubKey".to_string(),
-                        value: self.signer.public_key().encode_to_vec(),
+                        value: signer.public_key().encode_to_vec(),
                     }),
                     mode_info: Some(tx::v1beta1::ModeInfo {
                         sum: Some(tx::v1beta1::mode_info::Sum::Single(
@@ -390,77 +399,68 @@ impl Union {
             account_number: account.account_number,
         };
 
-        let alice_signature = self
-            .signer
+        let signature = signer
             .try_sign(&sign_doc.encode_to_vec())
-            .unwrap()
+            .expect("signing failed")
             .to_vec();
 
         let tx_raw = tx::v1beta1::TxRaw {
             body_bytes: sign_doc.body_bytes,
             auth_info_bytes: sign_doc.auth_info_bytes,
-            signatures: [alice_signature].to_vec(),
+            signatures: [signature].to_vec(),
         };
 
         let tx_raw_bytes = tx_raw.encode_to_vec();
 
         let tx_hash = hex::encode_upper(sha2::Sha256::new().chain_update(&tx_raw_bytes).finalize());
 
-        let query = Query {
-            event_type: Some(EventType::Tx),
-            conditions: [Condition::eq(
-                "tx.hash".to_string(),
-                Operand::String(tx_hash.clone()),
-            )]
-            .into(),
+        if self
+            .tm_client
+            .tx(tx_hash.parse().unwrap(), false)
+            .await
+            .is_ok()
+        {
+            tracing::info!(%tx_hash, "tx already included");
+            return Ok(());
+        }
+
+        let response_result = self.tm_client.broadcast_tx_sync(tx_raw_bytes.clone()).await;
+
+        let response = response_result.unwrap();
+
+        assert_eq!(
+            tx_hash,
+            response.hash.to_string(),
+            "tx hash calculated incorrectly"
+        );
+
+        tracing::debug!(%tx_hash);
+
+        tracing::info!(check_tx_code = ?response.code, codespace = %response.codespace, check_tx_log = %response.log);
+
+        if response.code.is_err() {
+            let value: tm_types::TendermintResponseErrorCode = response
+                .code
+                .value()
+                .try_into()
+                .expect("unknown response code");
+
+            return Err(BroadcastTxCommitError::Tx(value));
         };
 
-        loop {
-            if self
-                .tm_client
-                .tx(tx_hash.parse().unwrap(), false)
-                .await
-                .is_ok()
-            {
-                // TODO: Log an error if this is unsuccessful
-                let _ = self.tm_client.unsubscribe(query).await;
-                return;
+        // HACK: wait for a block to verify inclusion
+        tokio::time::sleep(std::time::Duration::from_secs(7)).await;
+
+        let tx_inclusion = self.tm_client.tx(tx_hash.parse().unwrap(), false).await;
+
+        tracing::debug!(?tx_inclusion);
+
+        match tx_inclusion {
+            Ok(_) => Ok(()),
+            Err(err) => {
+                tracing::warn!("tx inclusion couldn't be retrieved after 1 block");
+                Err(BroadcastTxCommitError::Inclusion(err))
             }
-
-            // dbg!(maybe_tx);
-
-            let response_result = self.tm_client.broadcast_tx_sync(tx_raw_bytes.clone()).await;
-
-            // dbg!(&response_result);
-
-            let response = response_result.unwrap();
-
-            assert_eq!(tx_hash, response.hash.to_string());
-
-            tracing::debug!(%tx_hash);
-
-            tracing::info!(check_tx_code = ?response.code, check_tx_log = %response.log);
-
-            if response.code.is_err() {
-                panic!("check_tx failed: {:?}", response)
-            };
-
-            // HACK: wait for a block to verify inclusion
-            tokio::time::sleep(std::time::Duration::from_secs(7)).await;
-
-            let tx_inclusion = self.tm_client.tx(tx_hash.parse().unwrap(), false).await;
-
-            tracing::debug!(?tx_inclusion);
-
-            match tx_inclusion {
-                Ok(x) => x,
-                Err(_) => {
-                    // TODO: we don't handle this case, either we got an error or the tx hasn't been received
-                    // we need to discriminate
-                    tracing::warn!("tx inclusion couldn't be retrieved after 1 block");
-                    panic!()
-                }
-            };
         }
     }
 
@@ -497,6 +497,30 @@ impl Union {
     }
 }
 
+#[derive(Debug, thiserror::Error)]
+pub enum BroadcastTxCommitError {
+    #[error("tx was not included")]
+    Inclusion(#[from] tendermint_rpc::Error),
+    #[error("tx failed: {0:?}")]
+    Tx(TendermintResponseErrorCode),
+}
+
+impl MaybeRecoverableError for BroadcastTxCommitError {
+    fn is_recoverable(&self) -> bool {
+        match self {
+            // tx wasn't included, retry unconditionally
+            Self::Inclusion(_) => true,
+            Self::Tx(code) => matches!(
+                code,
+                TendermintResponseErrorCode::TxInMempoolCache
+                    | TendermintResponseErrorCode::MempoolIsFull
+                    | TendermintResponseErrorCode::TxTimeoutHeight
+                    | TendermintResponseErrorCode::WrongSequence
+            ),
+        }
+    }
+}
+
 // TODO: This is for all cosmos chains; rename?
 crate::chain_client_id! {
     #[ty = UnionClientType]
@@ -520,153 +544,284 @@ impl EventSource for Union {
     // TODO: Make this the height to start from
     type Seed = ();
 
-    fn events(
-        &self,
-        _seed: Self::Seed,
-    ) -> impl Stream<Item = Result<Self::Event, Self::Error>> + '_ {
-        let chain_revision = self.chain_revision;
+    fn events(self, _seed: Self::Seed) -> impl Stream<Item = Result<Self::Event, Self::Error>> {
+        async move {
+            let chain_revision = self.chain_revision;
 
-        // TODO: Change this to fetch new blocks instead of subscribing to txs
-        let new_events = self
-            .tm_client
-            .subscribe(EventType::Tx.into())
-            .map_err(<Self::Error>::Subscription)
-            .map_ok(|s| s.map_err(<Self::Error>::Subscription))
-            .into_stream()
-            .try_flatten()
-            .map_ok(move |event| {
-                tracing::info!(?event.data);
+            let latest_height = self.query_latest_height().await;
 
-                if let EventData::Tx { tx_result } = event.data {
-                    Some(
-                        stream::iter(tx_result.result.events.into_iter().map(|event| {
-                            Event {
-                                ty: event.kind,
-                                attributes: event
-                                    .attributes
-                                    .into_iter()
-                                    .map(|attr| EventAttribute {
-                                        key: attr.key,
-                                        value: attr.value,
-                                        index: attr.index,
-                                    })
-                                    .collect(),
-                            }
+            stream::unfold(
+                (self, latest_height),
+                move |(this, previous_height)| async move {
+                    tracing::info!("fetching events");
+
+                    let current_height = loop {
+                        tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+
+                        let current_height = this.query_latest_height().await;
+
+                        tracing::debug!(%current_height, %previous_height);
+
+                        if current_height > previous_height {
+                            break current_height;
+                        }
+                    };
+
+                    tracing::debug!(
+                        previous_height = previous_height.revision_height,
+                        current_height = current_height.revision_height
+                    );
+
+                    let mut events = vec![];
+
+                    for h in
+                        (previous_height.revision_height + 1)..=(current_height.revision_height)
+                    {
+                        let response = this
+                            .tm_client
+                            .tx_search(Query::eq("tx.height", h), false, 1, 255, Order::Descending)
+                            .await
+                            .unwrap();
+
+                        let new_events = stream::iter(response.txs.into_iter().flat_map(|tx| {
+                            tx.tx_result
+                                .events
+                                .into_iter()
+                                .map(|event| Event {
+                                    ty: event.kind,
+                                    attributes: event
+                                        .attributes
+                                        .into_iter()
+                                        .map(|attr| EventAttribute {
+                                            key: attr.key,
+                                            value: attr.value,
+                                            index: attr.index,
+                                        })
+                                        .collect(),
+                                })
+                                .filter_map(IbcEvent::try_from_tendermint_event)
+                                .map(move |res| {
+                                    res.map(|x| (tx.height, x))
+                                        .map_err(UnionEventSourceError::TryFromTendermintEvent)
+                                })
                         }))
-                        .filter_map(move |event| async move {
-                            IbcEvent::try_from_tendermint_event(event)
-                        })
-                        .map_err(UnionEventSourceError::TryFromTendermintEvent)
-                        .and_then(
-                            move |event: IbcEvent<_, _, String>| async move {
-                                Ok(ChainEvent {
-                                    chain_id: self.chain_id.clone(),
-                                    block_hash: (self
+                        .then(|res| async {
+                            match res {
+                                Ok((height, event)) => Ok(ChainEvent {
+                                    chain_id: this.chain_id(),
+                                    block_hash: this
                                         .tm_client
-                                        .block(u32::try_from(tx_result.height).unwrap())
+                                        .block(height)
                                         .await
                                         .unwrap()
                                         .block_id
                                         .hash
                                         .as_bytes()
                                         .try_into()
-                                        .unwrap()),
+                                        .unwrap(),
                                     height: Height {
                                         revision_number: chain_revision,
-                                        revision_height: tx_result.height.try_into().unwrap(),
+                                        revision_height: height.try_into().unwrap(),
                                     },
                                     event,
-                                })
-                            },
-                        ),
-                    )
-                } else {
-                    None
-                }
-            })
-            .filter_map(|x| async { x.transpose() })
-            .try_flatten();
+                                }),
+                                Err(err) => Err(err),
+                            }
+                        })
+                        .collect::<Vec<_>>()
+                        .await;
 
-        // Box::pin(new_events)
-        //     .into_future()
-        //     .map(move |(read_until_height, new_events)| {
-        //         read_until_height
-        //             .expect("stream should not be finished")
-        //             .map_err(|x| match x {
-        //                 fatal @ queue::Error::Fatal(_) => fatal,
-        //                 queue::Error::Recoverable(err) => queue::Error::Fatal(Box::new(format!(
-        //                     "unable to read first event out of stream: {err:?}"
-        //                 ))),
-        //             })
-        //             .map(|read_until_height| {
-        //                 stream::iter(
-        //                     (read_until_height
-        //                         .height
-        //                         .revision_height
-        //                         .checked_sub(50)
-        //                         .unwrap_or(1))
-        //                         ..read_until_height.height.revision_height,
-        //                 )
-        //                 .then(move |height| {
-        //                     let client = self.tm_client.clone();
+                        events.extend(new_events);
+                    }
 
-        //                     async move {
-        //                         tracing::info!("querying block results at block {height}");
-        //                         client
-        //                             .block_results(u32::try_from(height).unwrap())
-        //                             .await
-        //                             .map_err(|e| queue::Error::Fatal(Box::new(e)))
-        //                             .map(|response| {
-        //                                 response.txs_results.into_iter().flatten().flat_map(
-        //                                     move |tx_result| {
-        //                                         ibc_events_from_tx(
-        //                                             tx_result.events,
-        //                                             response.height.into(),
-        //                                             chain_revision,
-        //                                         )
-        //                                     },
-        //                                 )
-        //                             })
-        //                     }
-        //                 })
-        //                 .map_ok(stream::iter)
-        //                 .try_flatten()
-        //                 .chain(stream::iter([Ok(read_until_height)]))
-        //                 .chain(new_events)
-        //             })
-        //     })
-        //     .try_flatten_stream()
+                    let iter = events;
 
-        // let missed_events = rx
-        //     .map(|x| x.expect("channel should not have been cancelled; qed;"))
-        //     .map(move |read_until_height| {
-        //         stream::iter((read_until_height.checked_sub(50).unwrap_or(1))..read_until_height)
-        //             .then(move |height| {
-        //                 let client = self.tm_client.clone().clone();
+                    Some((iter, (this, current_height)))
+                },
+            )
+        }
+        .flatten_stream()
+        .map(futures::stream::iter)
+        .flatten()
+    }
+}
 
-        //                 async move {
-        //                     client
-        //                         .block_results(u32::try_from(height).unwrap())
-        //                         .await
-        //                         .map_err(|e| queue::Error::Fatal(Box::new(e)))
-        //                         .map(|response| {
-        //                             response.txs_results.into_iter().flatten().flat_map(
-        //                                 move |tx_result| {
-        //                                     ibc_events_from_tx(
-        //                                         tx_result.events,
-        //                                         response.height.into(),
-        //                                         chain_revision,
-        //                                     )
-        //                                 },
-        //                             )
-        //                         })
-        //                 }
-        //             })
-        //     })
-        //     .flatten_stream()
-        //     .map_ok(stream::iter)
-        //     .try_flatten()
+#[allow(non_upper_case_globals)] // TODO: Report this upstream
+pub mod tm_types {
+    #[derive(
+        Debug, Copy, Clone, PartialEq, Eq, Hash, num_enum::IntoPrimitive, num_enum::TryFromPrimitive,
+    )]
+    #[repr(u32)]
+    pub enum TendermintResponseErrorCode {
+        /// ErrTxDecode is returned if we cannot parse a transaction
+        // #[a("tx parse error")]
+        TxDecode = 2,
 
-        new_events
+        /// ErrInvalidSequence is used the sequence number (nonce) is incorrect
+        /// for the signature
+        // #[a("invalid sequence")]
+        InvalidSequence = 3,
+
+        /// ErrUnauthorized is used whenever a request without sufficient
+        /// authorization is handled.
+        // #[a("unauthorized")]
+        Unauthorized = 4,
+
+        /// ErrInsufficientFunds is used when the account cannot pay requested amount.
+        // #[a("insufficient funds")]
+        InsufficientFunds = 5,
+
+        /// ErrUnknownRequest to doc
+        // #[a("unknown request")]
+        UnknownRequest = 6,
+
+        /// ErrInvalidAddress to doc
+        // #[a("invalid address")]
+        InvalidAddress = 7,
+
+        /// ErrInvalidPubKey to doc
+        // #[a("invalid pubkey")]
+        InvalidPubKey = 8,
+
+        /// ErrUnknownAddress to doc
+        // #[a("unknown address")]
+        UnknownAddress = 9,
+
+        /// ErrInvalidCoins to doc
+        // #[a("invalid coins")]
+        InvalidCoins = 10,
+
+        /// ErrOutOfGas to doc
+        // #[a("out of gas")]
+        OutOfGas = 11,
+
+        /// ErrMemoTooLarge to doc
+        // #[a("memo too large")]
+        MemoTooLarge = 12,
+
+        /// ErrInsufficientFee to doc
+        // #[a("insufficient fee")]
+        InsufficientFee = 13,
+
+        /// ErrTooManySignatures to doc
+        // #[a("maximum number of signatures exceeded")]
+        TooManySignatures = 14,
+
+        /// ErrNoSignatures to doc
+        // #[a("no signatures supplied")]
+        NoSignatures = 15,
+
+        /// ErrJSONMarshal defines an ABCI typed JSON marshalling error
+        // #[a("failed to marshal JSON bytes")]
+        JSONMarshal = 16,
+
+        /// ErrJSONUnmarshal defines an ABCI typed JSON unmarshalling error
+        // #[a("failed to unmarshal JSON bytes")]
+        JSONUnmarshal = 17,
+
+        /// ErrInvalidRequest defines an ABCI typed error where the request contains
+        /// invalid data.
+        // #[a("invalid request")]
+        InvalidRequest = 18,
+
+        /// ErrTxInMempoolCache defines an ABCI typed error where a tx already exists
+        /// in the mempool.
+        // #[a("tx already in mempool")]
+        TxInMempoolCache = 19,
+
+        /// ErrMempoolIsFull defines an ABCI typed error where the mempool is full.
+        // #[a("mempool is full")]
+        MempoolIsFull = 20,
+
+        /// ErrTxTooLarge defines an ABCI typed error where tx is too large.
+        // #[a("tx too large")]
+        TxTooLarge = 21,
+
+        /// ErrKeyNotFound defines an error when the key doesn't exist
+        // #[a("key not found")]
+        KeyNotFound = 22,
+
+        /// ErrWrongPassword defines an error when the key password is invalid.
+        // #[a("invalid account password")]
+        WrongPassword = 23,
+
+        /// ErrorInvalidSigner defines an error when the tx intended signer does not match the given signer.
+        // #[a("tx intended signer does not match the given signer")]
+        InvalidSigner = 24,
+
+        /// ErrorInvalidGasAdjustment defines an error for an invalid gas adjustment
+        // #[a("invalid gas adjustment")]
+        InvalidGasAdjustment = 25,
+
+        /// ErrInvalidHeight defines an error for an invalid height
+        // #[a("invalid height")]
+        InvalidHeight = 26,
+
+        /// ErrInvalidVersion defines a general error for an invalid version
+        // #[a("invalid version")]
+        InvalidVersion = 27,
+
+        /// ErrInvalidChainID defines an error when the chain-id is invalid.
+        // #[a("invalid chain-id")]
+        InvalidChainID = 28,
+
+        /// ErrInvalidType defines an error an invalid type.
+        // #[a("invalid type")]
+        InvalidType = 29,
+
+        /// ErrTxTimeoutHeight defines an error for when a tx is rejected out due to an
+        /// explicitly set timeout height.
+        // #[a("tx timeout height")]
+        TxTimeoutHeight = 30,
+
+        /// ErrUnknownExtensionOptions defines an error for unknown extension options.
+        // #[a("unknown extension options")]
+        UnknownExtensionOptions = 31,
+
+        /// ErrWrongSequence defines an error where the account sequence defined in
+        /// the signer info doesn't match the account's actual sequence number.
+        // #[a("incorrect account sequence")]
+        WrongSequence = 32,
+
+        /// ErrPackAny defines an error when packing a protobuf message to Any fails.
+        // #[a("failed packing protobuf message to Any")]
+        PackAny = 33,
+
+        /// ErrUnpackAny defines an error when unpacking a protobuf message from Any fails.
+        // #[a("failed unpacking protobuf message from Any")]
+        UnpackAny = 34,
+
+        /// ErrLogic defines an internal logic error, e.g. an invariant or assertion
+        /// that is violated. It is a programmer error, not a user-facing error.
+        // #[a("internal logic error")]
+        Logic = 35,
+
+        /// ErrConflict defines a conflict error, e.g. when two goroutines try to access
+        /// the same resource and one of them fails.
+        // #[a("conflict")]
+        Conflict = 36,
+
+        /// ErrNotSupported is returned when we call a branch of a code which is currently not
+        /// supported.
+        // #[a("feature not supported")]
+        NotSupported = 37,
+
+        /// ErrNotFound defines an error when requested entity doesn't exist in the state.
+        // #[a("not found")]
+        NotFound = 38,
+
+        /// ErrIO should be used to wrap internal errors caused by external operation.
+        /// Examples: not DB domain error, file writing etc...
+        // #[a("Internal IO error")]
+        IO = 39,
+
+        /// ErrAppConfig defines an error occurred if min-gas-prices field in BaseConfig is empty.
+        // #[a("error in app.toml")]
+        AppConfig = 40,
+
+        /// ErrInvalidGasLimit defines an error when an invalid GasWanted value is
+        /// supplied.
+        // #[a("invalid gas limit")]
+        InvalidGasLimit = 41,
     }
 }

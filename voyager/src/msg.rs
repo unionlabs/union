@@ -1,15 +1,21 @@
 #![allow(clippy::type_complexity)]
 
-use std::{collections::VecDeque, fmt::Debug};
+use std::{
+    collections::VecDeque,
+    fmt::{Debug, Display},
+};
 
-use chain_utils::{Chain, ClientState};
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use serde::{Deserialize, Serialize};
+use unionlabs::{
+    proof::IbcPath,
+    traits::{Chain, ClientState},
+};
 
 use crate::{
     chain::{
         evm::{CometblsMainnet, CometblsMinimal},
-        proof::{IbcPath, StateProof},
+        proof::StateProof,
         union::{EthereumMainnet, EthereumMinimal},
         LightClient,
     },
@@ -71,6 +77,50 @@ pub enum RelayerMsg {
     },
 }
 
+impl std::fmt::Display for RelayerMsg {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            RelayerMsg::Lc(lc) => write!(f, "Lc({lc})"),
+            RelayerMsg::DeferUntil { timestamp } => write!(f, "DeferUntil({timestamp})"),
+            RelayerMsg::Timeout {
+                timeout_timestamp,
+                msg,
+            } => write!(f, "Timeout({timeout_timestamp}, {msg})"),
+            RelayerMsg::Sequence(seq) => {
+                write!(f, "Sequence [")?;
+                let len = seq.len();
+                for (idx, msg) in seq.iter().enumerate() {
+                    write!(f, "{msg}")?;
+                    if idx != len - 1 {
+                        write!(f, ", ")?;
+                    }
+                }
+                write!(f, "]")
+            }
+            RelayerMsg::Retry(remaining, msg) => write!(f, "Retry({remaining}, {msg})"),
+            RelayerMsg::Aggregate {
+                queue,
+                data,
+                receiver,
+            } => {
+                let data = data
+                    .iter()
+                    .map(|x| x.to_string())
+                    .collect::<Vec<_>>()
+                    .join(", ");
+
+                let queue = queue
+                    .iter()
+                    .map(|x| x.to_string())
+                    .collect::<Vec<_>>()
+                    .join(", ");
+
+                write!(f, "Aggregate([{queue}] -> [{data}] -> {receiver})")
+            }
+        }
+    }
+}
+
 enum_variants_conversions! {
     #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
     pub enum AggregateData {
@@ -82,6 +132,25 @@ enum_variants_conversions! {
         CometblsMainnet(identified!(Data<CometblsMainnet>)),
         // The solidity client on Evm<Minimal> tracking the state of Union.
         CometblsMinimal(identified!(Data<CometblsMinimal>)),
+    }
+}
+
+impl Display for AggregateData {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            AggregateData::EthereumMainnet(data) => {
+                write!(f, "Data::EthereumMainnet({}, {})", data.chain_id, data.data)
+            }
+            AggregateData::EthereumMinimal(data) => {
+                write!(f, "Data::EthereumMinimal({}, {})", data.chain_id, data.data)
+            }
+            AggregateData::CometblsMainnet(data) => {
+                write!(f, "Data::CometblsMainnet({}, {})", data.chain_id, data.data)
+            }
+            AggregateData::CometblsMinimal(data) => {
+                write!(f, "Data::CometblsMinimal({}, {})", data.chain_id, data.data)
+            }
+        }
     }
 }
 
@@ -108,16 +177,20 @@ impl TryFrom<RelayerMsg> for AggregateData {
 }
 
 enum_variants_conversions! {
-    #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+    #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, derive_more::Display)]
     // TODO: Rename this
     pub enum AggregateReceiver {
         // The 08-wasm client tracking the state of Evm<Mainnet>.
+        #[display(fmt = "EthereumMainnet({}, {})", "_0.chain_id", "_0.data")]
         EthereumMainnet(identified!(Aggregate<EthereumMainnet>)),
         // The 08-wasm client tracking the state of Evm<Minimal>.
+        #[display(fmt = "EthereumMinimal({}, {})", "_0.chain_id", "_0.data")]
         EthereumMinimal(identified!(Aggregate<EthereumMinimal>)),
         // The solidity client on Evm<Mainnet> tracking the state of Union.
+        #[display(fmt = "CometblsMainnet({}, {})", "_0.chain_id", "_0.data")]
         CometblsMainnet(identified!(Aggregate<CometblsMainnet>)),
         // The solidity client on Evm<Minimal> tracking the state of Union.
+        #[display(fmt = "CometblsMinimal({}, {})", "_0.chain_id", "_0.data")]
         CometblsMinimal(identified!(Aggregate<CometblsMinimal>)),
     }
 }
@@ -264,6 +337,8 @@ macro_rules! any_enum {
 pub(crate) use any_enum;
 
 pub mod aggregate {
+    use std::fmt::Display;
+
     use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
     use serde::{Deserialize, Serialize};
     use unionlabs::{
@@ -276,7 +351,7 @@ pub mod aggregate {
 
     use super::ChainIdOf;
     use crate::{
-        chain::{proof::AcknowledgementPath, ChainOf, HeightOf, LightClient},
+        chain::{ChainOf, HeightOf, LightClient},
         msg::{fetch::FetchStateProof, identified},
     };
 
@@ -318,6 +393,43 @@ pub mod aggregate {
             AggregateMsgAfterUpdate(AggregateMsgAfterUpdate<L>),
 
             LightClientSpecific(LightClientSpecificAggregate<L>),
+        }
+    }
+
+    impl<L: LightClient> Display for Aggregate<L> {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            match self {
+                Aggregate::ConnectionOpenTry(_) => write!(f, "ConnectionOpenTry"),
+                Aggregate::ConnectionOpenAck(_) => write!(f, "ConnectionOpenAck"),
+                Aggregate::ConnectionOpenConfirm(_) => write!(f, "ConnectionOpenConfirm"),
+                Aggregate::ChannelOpenTry(_) => write!(f, "ChannelOpenTry"),
+                Aggregate::ChannelOpenAck(_) => write!(f, "ChannelOpenAck"),
+                Aggregate::ChannelOpenConfirm(_) => write!(f, "ChannelOpenConfirm"),
+                Aggregate::RecvPacket(_) => write!(f, "RecvPacket"),
+                Aggregate::AckPacket(_) => write!(f, "AckPacket"),
+                Aggregate::ConnectionFetchFromChannelEnd(_) => {
+                    write!(f, "ConnectionFetchFromChannelEnd")
+                }
+                Aggregate::ChannelHandshakeUpdateClient(_) => {
+                    write!(f, "ChannelHandshakeUpdateClient")
+                }
+                Aggregate::PacketUpdateClient(_) => write!(f, "PacketUpdateClient"),
+                Aggregate::WaitForTrustedHeight(_) => write!(f, "WaitForTrustedHeight"),
+                Aggregate::FetchCounterpartyStateproof(_) => {
+                    write!(f, "FetchCounterpartyStateproof")
+                }
+                Aggregate::UpdateClientFromClientId(_) => write!(f, "UpdateClientFromClientId"),
+                Aggregate::UpdateClient(_) => write!(f, "UpdateClient"),
+                Aggregate::UpdateClientWithCounterpartyChainIdData(_) => {
+                    write!(f, "UpdateClientWithCounterpartyChainIdData")
+                }
+                Aggregate::CreateClient(_) => write!(f, "CreateClient"),
+                Aggregate::ConsensusStateProofAtLatestHeight(_) => {
+                    write!(f, "ConsensusStateProofAtLatestHeight")
+                }
+                Aggregate::AggregateMsgAfterUpdate(_) => write!(f, "AggregateMsgAfterUpdate"),
+                Aggregate::LightClientSpecific(agg) => write!(f, "LightClientSpecific({})", agg.0),
+            }
         }
     }
 
@@ -528,7 +640,7 @@ macro_rules! enum_variants_conversions {
         $(#[$meta:meta])*
         pub enum $Enum:ident {
             $(
-                $(#[doc = $doc:literal])*
+                $(#[$inner_meta:meta])*
                 $Variant:ident($Inner:ty),
             )+
         }
@@ -536,7 +648,7 @@ macro_rules! enum_variants_conversions {
         $(#[$meta])*
         pub enum $Enum {
             $(
-                $(#[doc = $doc])*
+                $(#[$inner_meta])*
                 $Variant($Inner),
             )+
         }
@@ -844,34 +956,46 @@ macro_rules! identified {
 
 pub(crate) use identified;
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
+#[derive(
+    DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, derive_more::Display,
+)]
 #[serde(bound(serialize = "", deserialize = ""))]
 #[allow(clippy::large_enum_variant)]
 pub enum LcMsg<L: LightClient> {
+    #[display(fmt = "Event({}, {})", "_0.chain_id", "_0.data")]
     Event(InnerOf<AnyEvent, L>),
     // data that has been read
+    #[display(fmt = "Data({}, {})", "_0.chain_id", "_0.data")]
     Data(InnerOf<AnyData, L>),
     // read
+    #[display(fmt = "Fetch({}, {})", "_0.chain_id", "_0.data")]
     Fetch(InnerOf<AnyFetch, L>),
     // write
+    #[display(fmt = "Msg({}, {})", "_0.chain_id", "_0.data")]
     Msg(InnerOf<AnyMsg, L>),
+    #[display(fmt = "Wait({}, {})", "_0.chain_id", "_0.data")]
     Wait(InnerOf<AnyWait, L>),
     // REVIEW: Does this make sense as a top-level message?
+    #[display(fmt = "Aggregate({}, {})", "_0.chain_id", "_0.data")]
     Aggregate(InnerOf<AnyAggregate, L>),
 }
 
-type InnerOf<T, L> = <T as AnyLightClient>::Inner<L>;
+pub type InnerOf<T, L> = <T as AnyLightClient>::Inner<L>;
 
 enum_variants_conversions! {
-    #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+    #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, derive_more::Display)]
     pub enum AnyLcMsg {
         // The 08-wasm client tracking the state of Evm<Mainnet>.
+        #[display(fmt = "EthereumMainnet({})", "_0")]
         EthereumMainnet(LcMsg<EthereumMainnet>),
         // The 08-wasm client tracking the state of Evm<Minimal>.
+        #[display(fmt = "EthereumMinimal({})", "_0")]
         EthereumMinimal(LcMsg<EthereumMinimal>),
         // The solidity client on Evm<Mainnet> tracking the state of Union.
+        #[display(fmt = "CometblsMainnet({})", "_0")]
         CometblsMainnet(LcMsg<CometblsMainnet>),
         // The solidity client on Evm<Minimal> tracking the state of Union.
+        #[display(fmt = "CometblsMinimal({})", "_0")]
         CometblsMinimal(LcMsg<CometblsMinimal>),
     }
 }
@@ -911,4 +1035,14 @@ fn t() {
     t::<Identified<EthereumMinimal, Validators<Minimal>>>();
     u::<EthereumMinimal, Validators<Minimal>>();
     // u::<CometblsMinimal, Validators<Minimal>>();
+}
+
+fn t2() {
+    enum T {
+        U,
+    }
+
+    match T::U {
+        T::U { .. } => {}
+    }
 }

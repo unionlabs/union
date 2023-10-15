@@ -1,5 +1,6 @@
 #![deny(clippy::pedantic)]
 #![allow(clippy::missing_errors_doc, clippy::module_name_repetitions)]
+#![feature(return_position_impl_trait_in_trait)]
 
 use std::{
     error::Error,
@@ -44,6 +45,8 @@ pub mod events;
 pub mod ethereum_consts_traits;
 
 pub mod bounded_int;
+
+pub mod proof;
 
 pub(crate) mod macros;
 
@@ -566,10 +569,23 @@ pub mod traits {
     use std::{
         error::Error,
         fmt::{Debug, Display},
+        future::Future,
+        hash::Hash,
         str::FromStr,
     };
 
     use serde::{Deserialize, Serialize};
+
+    use crate::{
+        ethereum::{H256, U256},
+        ethereum_consts_traits::ChainSpec,
+        ibc::{
+            core::client::height::{Height, IsHeight},
+            google::protobuf::any::Any,
+            lightclients::{cometbls, ethereum, wasm},
+        },
+        id::ChannelId,
+    };
 
     /// A convenience trait for a string id (`ChainId`, `ClientId`, `ConnectionId`, etc)
     pub trait Id:
@@ -590,6 +606,146 @@ pub mod traits {
     impl Id for String {
         // type FromStrErr = <String as FromStr>::Err;
         type FromStrErr = std::string::ParseError;
+    }
+
+    /// Represents a chain. One [`Chain`] may have many related [`LightClient`]s for connecting to
+    /// various other [`Chain`]s, all sharing a common config.
+    pub trait Chain {
+        type SelfClientState: Debug
+            + Clone
+            + PartialEq
+            + Serialize
+            + for<'de> Deserialize<'de>
+            // TODO: Bound ChainId in the same way
+            + ClientState<Height = Self::Height>;
+        type SelfConsensusState: Debug + Clone + PartialEq + Serialize + for<'de> Deserialize<'de>;
+
+        type Header: Header + Debug + Clone + PartialEq + Serialize + for<'de> Deserialize<'de>;
+
+        // this is just Height
+        type Height: IsHeight;
+
+        type ClientId: Id;
+
+        /// Available client types for this chain.
+        type ClientType: Debug + Clone + PartialEq + Serialize + for<'de> Deserialize<'de>;
+
+        fn chain_id(&self) -> <Self::SelfClientState as ClientState>::ChainId;
+
+        fn query_latest_height(&self) -> impl Future<Output = Self::Height> + '_;
+
+        fn query_latest_height_as_destination(&self) -> impl Future<Output = Self::Height> + '_;
+
+        fn query_latest_timestamp(&self) -> impl Future<Output = i64> + '_;
+
+        /// The client state on this chain at the specified `Height`.
+        fn self_client_state(
+            &self,
+            height: Self::Height,
+        ) -> impl Future<Output = Self::SelfClientState> + '_;
+
+        /// The consensus state on this chain at the specified `Height`.
+        fn self_consensus_state(
+            &self,
+            height: Self::Height,
+        ) -> impl Future<Output = Self::SelfConsensusState> + '_;
+
+        fn read_ack(
+            &self,
+            block_hash: H256,
+            destination_channel_id: ChannelId,
+            destination_port_id: String,
+            sequence: u64,
+        ) -> impl Future<Output = Vec<u8>> + '_;
+    }
+
+    pub trait ClientState {
+        type ChainId: Debug
+            + Display
+            + PartialEq
+            + Eq
+            + Hash
+            + Clone
+            + Serialize
+            + for<'de> Deserialize<'de>;
+        type Height: IsHeight;
+
+        fn height(&self) -> Self::Height;
+        fn chain_id(&self) -> Self::ChainId;
+    }
+
+    impl ClientState for wasm::client_state::ClientState<ethereum::client_state::ClientState> {
+        type ChainId = U256;
+        type Height = Height;
+
+        fn height(&self) -> Height {
+            Height {
+                revision_number: 0,
+                revision_height: self.data.latest_slot,
+            }
+        }
+
+        fn chain_id(&self) -> Self::ChainId {
+            self.data.chain_id
+        }
+    }
+
+    impl ClientState for wasm::client_state::ClientState<cometbls::client_state::ClientState> {
+        type ChainId = String;
+        type Height = Height;
+
+        fn height(&self) -> Height {
+            // NOTE: cometbls::ClientState doesn't store a height, as it's always wrapped in
+            // wasm::ClientState (for our use cases)
+            // TODO: Add it back
+            self.latest_height
+        }
+
+        fn chain_id(&self) -> Self::ChainId {
+            self.data.chain_id.clone()
+        }
+    }
+
+    impl<T> ClientState for Any<T>
+    where
+        T: ClientState,
+    {
+        type ChainId = T::ChainId;
+        type Height = T::Height;
+
+        fn height(&self) -> Self::Height {
+            self.0.height()
+        }
+
+        fn chain_id(&self) -> Self::ChainId {
+            self.0.chain_id()
+        }
+    }
+
+    pub trait Header {
+        fn timestamp(&self) -> u64;
+    }
+
+    impl<C: ChainSpec> Header for wasm::header::Header<ethereum::header::Header<C>> {
+        fn timestamp(&self) -> u64 {
+            self.data
+                .consensus_update
+                .attested_header
+                .execution
+                .timestamp
+        }
+    }
+
+    impl Header for cometbls::header::Header {
+        fn timestamp(&self) -> u64 {
+            self.signed_header
+                .header
+                .time
+                .seconds
+                .inner()
+                .try_into()
+                .unwrap()
+        }
     }
 }
 

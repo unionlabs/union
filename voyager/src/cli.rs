@@ -1,22 +1,21 @@
 use std::{ffi::OsString, str::FromStr};
 
-use chain_utils::Chain;
 use clap::{
     error::{ContextKind, ContextValue},
     Args, Parser, Subcommand,
 };
-use contracts::ucs01_relay::LocalToken;
 use ethers::{
     signers::LocalWallet,
     types::{Address, H256},
 };
 use reqwest::Url;
-use unionlabs::ibc::core::client::height::Height;
-
-use crate::chain::{
-    proof::{self, ClientConsensusStatePath, ClientStatePath, IbcStateReadPaths},
-    HeightOf, QueryHeight,
+use unionlabs::{
+    ibc::core::client::height::Height,
+    proof::{self, ClientConsensusStatePath, ClientStatePath},
+    traits::Chain,
 };
+
+use crate::chain::{proof::IbcStateReadPaths, HeightOf, QueryHeight};
 
 #[derive(Debug, Parser)]
 #[command(arg_required_else_help = true)]
@@ -36,6 +35,7 @@ pub struct AppArgs {
 #[derive(Debug, Subcommand)]
 #[allow(clippy::large_enum_variant)]
 pub enum Command {
+    RunMigrations,
     PrintConfig,
     Relay,
     #[command(subcommand)]
@@ -53,62 +53,47 @@ pub enum Command {
 #[derive(Debug, Subcommand)]
 pub enum QueryCmd {
     #[command(subcommand)]
-    IbcPath(QueryIbcPathCmd),
+    IbcPath(proof::Path<String, Height>),
 }
 
-#[derive(Debug, clap::Subcommand)]
-pub enum QueryIbcPathCmd {
-    ClientState(proof::ClientStatePath<String>),
-    ClientConsensusState(proof::ClientConsensusStatePath<String, Height>),
-    Connection(proof::ConnectionPath),
-    ChannelEnd(proof::ChannelEndPath),
-    Commitment(proof::CommitmentPath),
-    Acknowledgement(proof::AcknowledgementPath),
-}
+pub async fn any_state_proof_to_json<Counterparty: Chain, This: IbcStateReadPaths<Counterparty>>(
+    path: proof::Path<String, Height>,
+    c: This,
+    height: QueryHeight<HeightOf<This>>,
+) -> String {
+    use serde_json::to_string_pretty as json;
 
-impl QueryIbcPathCmd {
-    pub async fn any_state_proof_to_json<
-        Counterparty: Chain,
-        This: IbcStateReadPaths<Counterparty>,
-    >(
-        self,
-        c: This,
-        height: QueryHeight<HeightOf<This>>,
-    ) -> String {
-        use serde_json::to_string_pretty as json;
+    let height = match height {
+        QueryHeight::Latest => c.query_latest_height().await,
+        QueryHeight::Specific(height) => height,
+    };
 
-        let height = match height {
-            QueryHeight::Latest => c.query_latest_height().await,
-            QueryHeight::Specific(height) => height,
-        };
-
-        match self {
-            Self::ClientState(path) => json(
-                &c.state_proof(
-                    ClientStatePath {
-                        client_id: path.client_id.parse().unwrap(),
-                    },
-                    height,
-                )
-                .await,
-            ),
-            Self::ClientConsensusState(path) => json(
-                &c.state_proof(
-                    ClientConsensusStatePath {
-                        client_id: path.client_id.parse().unwrap(),
-                        height: path.height.into(),
-                    },
-                    height,
-                )
-                .await,
-            ),
-            Self::Connection(path) => json(&c.state_proof(path, height).await),
-            Self::ChannelEnd(path) => json(&c.state_proof(path, height).await),
-            Self::Commitment(path) => json(&c.state_proof(path, height).await),
-            Self::Acknowledgement(path) => json(&c.state_proof(path, height).await),
-        }
-        .unwrap()
+    match path {
+        proof::Path::ClientStatePath(path) => json(
+            &c.state_proof(
+                ClientStatePath {
+                    client_id: path.client_id.parse().unwrap(),
+                },
+                height,
+            )
+            .await,
+        ),
+        proof::Path::ClientConsensusStatePath(path) => json(
+            &c.state_proof(
+                ClientConsensusStatePath {
+                    client_id: path.client_id.parse().unwrap(),
+                    height: path.height.into(),
+                },
+                height,
+            )
+            .await,
+        ),
+        proof::Path::ConnectionPath(path) => json(&c.state_proof(path, height).await),
+        proof::Path::ChannelEndPath(path) => json(&c.state_proof(path, height).await),
+        proof::Path::CommitmentPath(path) => json(&c.state_proof(path, height).await),
+        proof::Path::AcknowledgementPath(path) => json(&c.state_proof(path, height).await),
     }
+    .unwrap()
 }
 
 #[derive(Debug, Subcommand)]

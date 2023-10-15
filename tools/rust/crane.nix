@@ -208,6 +208,10 @@
             src = patchedWorkspaceToml;
 
             dummySrc = craneLib.mkDummySrc patchedWorkspaceToml;
+
+            # defaults to "--all-targets" otherwise, which breaks some stuff
+            cargoCheckExtraArgs = "";
+
             # cargoBuildCommand = "${extraEnvStr} cargo build";
             cargoExtraArgs = packageFilterArg;
 

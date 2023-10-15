@@ -1,4 +1,4 @@
-use std::marker::PhantomData;
+use std::{fmt::Display, marker::PhantomData};
 
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use serde::{Deserialize, Serialize};
@@ -41,6 +41,25 @@ any_enum! {
 
         CreateClient(MsgCreateClientData<L>),
         UpdateClient(MsgUpdateClientData<L>),
+    }
+}
+
+impl<L: LightClient> Display for Msg<L> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Msg::ConnectionOpenInit(_) => write!(f, "ConnectionOpenInit"),
+            Msg::ConnectionOpenTry(_) => write!(f, "ConnectionOpenTry"),
+            Msg::ConnectionOpenAck(_) => write!(f, "ConnectionOpenAck"),
+            Msg::ConnectionOpenConfirm(_) => write!(f, "ConnectionOpenConfirm"),
+            Msg::ChannelOpenInit(_) => write!(f, "ChannelOpenInit"),
+            Msg::ChannelOpenTry(_) => write!(f, "ChannelOpenTry"),
+            Msg::ChannelOpenAck(_) => write!(f, "ChannelOpenAck"),
+            Msg::ChannelOpenConfirm(_) => write!(f, "ChannelOpenConfirm"),
+            Msg::RecvPacket(_) => write!(f, "RecvPacket"),
+            Msg::AckPacket(_) => write!(f, "AckPacket"),
+            Msg::CreateClient(_) => write!(f, "CreateClient"),
+            Msg::UpdateClient(_) => write!(f, "UpdateClient"),
+        }
     }
 }
 

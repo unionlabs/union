@@ -42,6 +42,8 @@ bitvec = "1.0.1"
 wasmparser = { version = "0.113" }
 
 paste = { version = "1.0" }
+derive_more = { version = "0.99.17", default-features = false, features = ["display"] }
+clap = { version = "4.4.6", default-features = false, features = ["derive", "std"] }
 
 [dev-dependencies]
 rand = "0.8.5"

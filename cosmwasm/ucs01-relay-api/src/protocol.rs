@@ -1,7 +1,7 @@
 use std::fmt::Debug;
 
 use cosmwasm_std::{
-    attr, Addr, Binary, CosmosMsg, Event, IbcBasicResponse, IbcEndpoint, IbcMsg, IbcOrder,
+    Addr, Binary, CosmosMsg, Event, IbcBasicResponse, IbcEndpoint, IbcMsg, IbcOrder,
     IbcReceiveResponse, Response, SubMsg, Timestamp,
 };
 use thiserror::Error;
@@ -159,10 +159,13 @@ pub trait TransferProtocol {
                     (!value_string.is_empty()).then_some(("success", value_string)),
                 )
             }
-            Err(error) => (
-                self.send_tokens_failure(packet.sender(), packet.receiver(), packet.tokens())?,
-                Some(("error", error.to_string())),
-            ),
+            Err(error) => {
+                let error_string = error.to_string();
+                (
+                    self.send_tokens_failure(packet.sender(), packet.receiver(), packet.tokens())?,
+                    (!error_string.is_empty()).then_some(("error", error_string)),
+                )
+            }
         };
 
         let packet_event = {

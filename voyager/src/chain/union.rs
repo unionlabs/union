@@ -6,7 +6,7 @@ use std::{
 
 use chain_utils::{
     evm::Evm,
-    union::{Union, Wasm},
+    union::{BroadcastTxCommitError, Union, Wasm},
 };
 use clap::Args;
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
@@ -15,29 +15,25 @@ use futures::Future;
 use num_bigint::BigUint;
 use prost::Message;
 use protos::{
-    cosmos::{
-        base::tendermint::v1beta1::AbciQueryRequest,
-        staking::{self, v1beta1::BondStatus},
-    },
+    cosmos::base::tendermint::v1beta1::AbciQueryRequest,
     union::galois::api::v1::{union_prover_api_client, ProveResponse as RawProveResponse},
 };
 use serde::{Deserialize, Serialize};
-use sha2::Digest;
 use tendermint_rpc::Client;
 use unionlabs::{
     bounded_int::BoundedI64,
-    cosmos::staking::{query_validators_response::QueryValidatorsResponse, validator::Validator},
     ethereum::{Address, H256, H512},
     ethereum_consts_traits::{ChainSpec, Mainnet, Minimal},
     ibc::{
-        core::client::{
-            height::{Height, IsHeight},
-            msg_update_client::MsgUpdateClient,
-        },
+        core::client::{height::Height, msg_update_client::MsgUpdateClient},
         google::protobuf::{any::Any, timestamp::Timestamp},
         lightclients::{cometbls, ethereum, wasm},
     },
     id::Id,
+    proof::{
+        AcknowledgementPath, ChannelEndPath, ClientConsensusStatePath, ClientStatePath,
+        CommitmentPath, ConnectionPath, IbcPath,
+    },
     tendermint::{
         crypto::public_key::PublicKey,
         types::{
@@ -49,16 +45,13 @@ use unionlabs::{
         },
     },
     union::galois::{prove_request::ProveRequest, validator_set_commit::ValidatorSetCommit},
-    IntoProto, MsgIntoProto, Proto, TryFromProto, TryFromProtoErrorOf, TypeUrl,
+    IntoProto, MsgIntoProto, Proto, TryFromProto, TryFromProtoErrorOf,
 };
 
 use crate::{
     chain::{
         evm::{CometblsMainnet, CometblsMinimal},
-        proof::{
-            AcknowledgementPath, ChannelEndPath, ClientConsensusStatePath, ClientStatePath,
-            CommitmentPath, ConnectionPath, IbcPath, StateProof,
-        },
+        proof::StateProof,
         try_from_relayer_msg, Chain, ClientStateOf, ConsensusStateOf, HeightOf, IbcStateRead,
         LightClient, QueryHeight,
     },
@@ -103,7 +96,9 @@ impl LightClient for EthereumMinimal {
     type Fetch = EthereumFetchMsg<Minimal>;
     type Aggregate = EthereumAggregateMsg<Self, Minimal>;
 
-    fn msg(&self, msg: Msg<Self>) -> impl Future + '_ {
+    type MsgError = BroadcastTxCommitError;
+
+    fn msg(&self, msg: Msg<Self>) -> impl Future<Output = Result<(), Self::MsgError>> + '_ {
         self::msg(self.chain.clone(), msg)
     }
 
@@ -434,7 +429,9 @@ impl LightClient for EthereumMainnet {
     type Fetch = EthereumFetchMsg<Mainnet>;
     type Aggregate = EthereumAggregateMsg<Self, Mainnet>;
 
-    fn msg(&self, msg: Msg<Self>) -> impl Future + '_ {
+    type MsgError = BroadcastTxCommitError;
+
+    fn msg(&self, msg: Msg<Self>) -> impl Future<Output = Result<(), Self::MsgError>> + '_ {
         self::msg(self.chain.clone(), msg)
     }
 
@@ -467,7 +464,9 @@ impl LightClient for EthereumMainnet {
     }
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
+#[derive(
+    DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, derive_more::Display,
+)]
 #[serde(bound(serialize = "", deserialize = ""))]
 #[allow(clippy::large_enum_variant)]
 pub enum EthereumDataMsg<C: ChainSpec> {
@@ -475,22 +474,32 @@ pub enum EthereumDataMsg<C: ChainSpec> {
     // TrustedCommit {
     //     height: Height,
     // },
+    #[display(fmt = "UntrustedCommit")]
     UntrustedCommit(UntrustedCommit<C>),
+    #[display(fmt = "Validators")]
     Validators(Validators<C>),
+    #[display(fmt = "ProveResponse")]
     ProveResponse(ProveResponse<C>),
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
+#[derive(
+    DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, derive_more::Display,
+)]
 #[serde(bound(serialize = "", deserialize = ""))]
 #[allow(clippy::large_enum_variant)]
 pub enum EthereumFetchMsg<C: ChainSpec> {
     // FetchTrustedCommit { height: Height },
+    #[display(fmt = "FetchUntrustedCommit")]
     FetchUntrustedCommit(FetchUntrustedCommit<C>),
+    #[display(fmt = "FetchValidators")]
     FetchValidators(FetchValidators<C>),
+    #[display(fmt = "FetchProveRequest")]
     FetchProveRequest(FetchProveRequest<C>),
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
+#[derive(
+    DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, derive_more::Display,
+)]
 #[serde(bound(serialize = "", deserialize = ""))]
 #[allow(clippy::large_enum_variant)]
 pub enum EthereumAggregateMsg<L, C>
@@ -499,7 +508,9 @@ where
     L: LightClient<HostChain = Union>,
     L::Counterparty: LightClient<HostChain = Evm<C>>,
 {
+    #[display(fmt = "AggregateProveRequest")]
     AggregateProveRequest(AggregateProveRequest<L>),
+    #[display(fmt = "AggregateHeader")]
     AggregateHeader(AggregateHeader<L>),
 }
 
@@ -757,9 +768,9 @@ where
     // pub update_to: HeightOf<ChainOf<L>>,
 }
 
-async fn msg<L, C: ChainSpec>(union: Union, msg: Msg<L>)
+async fn msg<L, C: ChainSpec>(union: Union, msg: Msg<L>) -> Result<(), L::MsgError>
 where
-    L: LightClient<HostChain = Union, Config = EthereumConfig>,
+    L: LightClient<HostChain = Union, Config = EthereumConfig, MsgError = BroadcastTxCommitError>,
     <L::Counterparty as LightClient>::HostChain: Chain<
         SelfClientState = Any<wasm::client_state::ClientState<ethereum::client_state::ClientState>>,
         SelfConsensusState = Any<
@@ -767,52 +778,55 @@ where
         >,
         Header = wasm::header::Header<ethereum::header::Header<C>>,
     >,
-    // HeaderOf<<L::Counterparty as LightClient>::HostChain>: IntoProto,
-    // <HeaderOf<<L::Counterparty as LightClient>::HostChain> as Proto>::Proto: TypeUrl,
 {
-    let msg_any = match msg {
-        Msg::ConnectionOpenInit(data) => Any(data.msg).into_proto_with_signer(&union.signer),
-        Msg::ConnectionOpenTry(data) => Any(data.msg).into_proto_with_signer(&union.signer),
-        Msg::ConnectionOpenAck(data) => Any(data.msg).into_proto_with_signer(&union.signer),
-        Msg::ConnectionOpenConfirm(data) => Any(data.0).into_proto_with_signer(&union.signer),
-        Msg::ChannelOpenInit(data) => Any(data.msg).into_proto_with_signer(&union.signer),
-        Msg::ChannelOpenTry(data) => Any(data.msg).into_proto_with_signer(&union.signer),
-        Msg::ChannelOpenAck(data) => Any(data.msg).into_proto_with_signer(&union.signer),
-        Msg::ChannelOpenConfirm(data) => Any(data.msg).into_proto_with_signer(&union.signer),
-        Msg::RecvPacket(data) => Any(data.msg).into_proto_with_signer(&union.signer),
-        Msg::AckPacket(data) => Any(data.msg).into_proto_with_signer(&union.signer),
-        Msg::CreateClient(mut data) => {
-            // i hate this lol
-            data.msg.client_state.0.code_id = data.config.code_id;
+    union
+        .signers
+        .with(|signer| async {
+            let msg_any = match msg {
+                Msg::ConnectionOpenInit(data) => Any(data.msg).into_proto_with_signer(&signer),
+                Msg::ConnectionOpenTry(data) => Any(data.msg).into_proto_with_signer(&signer),
+                Msg::ConnectionOpenAck(data) => Any(data.msg).into_proto_with_signer(&signer),
+                Msg::ConnectionOpenConfirm(data) => Any(data.0).into_proto_with_signer(&signer),
+                Msg::ChannelOpenInit(data) => Any(data.msg).into_proto_with_signer(&signer),
+                Msg::ChannelOpenTry(data) => Any(data.msg).into_proto_with_signer(&signer),
+                Msg::ChannelOpenAck(data) => Any(data.msg).into_proto_with_signer(&signer),
+                Msg::ChannelOpenConfirm(data) => Any(data.msg).into_proto_with_signer(&signer),
+                Msg::RecvPacket(data) => Any(data.msg).into_proto_with_signer(&signer),
+                Msg::AckPacket(data) => Any(data.msg).into_proto_with_signer(&signer),
+                Msg::CreateClient(mut data) => {
+                    // i hate this lol
+                    data.msg.client_state.0.code_id = data.config.code_id;
 
-            Any(data.msg).into_proto_with_signer(&union.signer)
-        }
-        Msg::UpdateClient(data) => {
-            // check if update has already been done
-            // let existing_consensus_height = L::from_chain(union.clone())
-            //     .query_client_state(
-            //         data.msg.client_id.clone().into(),
-            //         union.query_latest_height().await,
-            //     )
-            //     .await
-            //     .0
-            //     .latest_height;
+                    Any(data.msg).into_proto_with_signer(&signer)
+                }
+                Msg::UpdateClient(data) => {
+                    // check if update has already been done
+                    // let existing_consensus_height = L::from_chain(union.clone())
+                    //     .query_client_state(
+                    //         data.msg.client_id.clone().into(),
+                    //         union.query_latest_height().await,
+                    //     )
+                    //     .await
+                    //     .0
+                    //     .latest_height;
 
-            // let update_height = data.update_from;
-            // if dbg!(existing_consensus_height) >= dbg!(update_height.into_height()) {
-            //     tracing::warn!(
-            //         "consensus state has already been updated to or past {update_height}, found {existing_consensus_height}"
-            //     );
+                    // let update_height = data.update_from;
+                    // if dbg!(existing_consensus_height) >= dbg!(update_height.into_height()) {
+                    //     tracing::warn!(
+                    //         "consensus state has already been updated to or past {update_height}, found {existing_consensus_height}"
+                    //     );
 
-            //     // don't do the update, already has been done
-            //     return;
-            // }
+                    //     // don't do the update, already has been done
+                    //     return;
+                    // }
 
-            Any(data.msg).into_proto_with_signer(&union.signer)
-        }
-    };
+                    Any(data.msg).into_proto_with_signer(&signer)
+                }
+            };
 
-    let _response = union.broadcast_tx_commit([msg_any]).await;
+            union.broadcast_tx_commit(signer, [msg_any]).await
+        })
+        .await
 }
 
 async fn query_client_state<L>(

@@ -2,27 +2,26 @@ use std::{collections::VecDeque, fmt::Debug, marker::PhantomData, ops::Div, sync
 
 use beacon_api::errors::{InternalServerError, NotFoundError};
 use chain_utils::{
-    evm::{EthCallExt, Evm, TupleToOption},
-    Chain, ClientState,
+    evm::{CometblsMiddleware, EthCallExt, Evm, TupleToOption},
+    MaybeRecoverableError,
 };
 use clap::Args;
 use contracts::{
-    devnet_ownable_ibc_handler,
     ibc_handler::{
-        self, GetChannelCall, GetClientStateCall, GetConnectionCall, GetConsensusStateCall,
-        GetHashedPacketAcknowledgementCommitmentCall, GetHashedPacketCommitmentCall,
+        self, AcknowledgePacketCall, ChannelOpenAckCall, ChannelOpenConfirmCall,
+        ChannelOpenInitCall, ChannelOpenTryCall, ConnectionOpenAckCall, ConnectionOpenConfirmCall,
+        ConnectionOpenInitCall, ConnectionOpenTryCall, CreateClientCall, GetChannelCall,
+        GetClientStateCall, GetConnectionCall, GetConsensusStateCall,
+        GetHashedPacketAcknowledgementCommitmentCall, GetHashedPacketCommitmentCall, IBCHandler,
+        RecvPacketCall, UpdateClientCall,
     },
-    shared_types::{
-        IbcCoreChannelV1ChannelData, IbcCoreChannelV1CounterpartyData,
-        IbcCoreCommitmentV1MerklePrefixData, IbcCoreConnectionV1ConnectionEndData,
-        IbcCoreConnectionV1CounterpartyData, IbcCoreConnectionV1VersionData,
-    },
+    shared_types::{IbcCoreChannelV1ChannelData, IbcCoreConnectionV1ConnectionEndData},
 };
 use ethers::{
     abi::AbiEncode,
-    prelude::SignerMiddleware,
-    providers::Middleware,
-    types::{EIP1186ProofResponse, U256},
+    contract::{ContractError, EthCall},
+    providers::{Middleware, ProviderError},
+    types::{EIP1186ProofResponse, TransactionReceipt, U256},
     utils::keccak256,
 };
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
@@ -56,18 +55,19 @@ use unionlabs::{
         },
     },
     id::{Id, IdType},
+    proof::{
+        AcknowledgementPath, ChannelEndPath, ClientConsensusStatePath, ClientStatePath,
+        CommitmentPath, ConnectionPath, IbcPath,
+    },
+    traits::{Chain, ClientState},
     IntoEthAbi, IntoProto, TryFromProto, TryFromProtoErrorOf,
 };
 
 use crate::{
     chain::{
-        proof::{
-            AcknowledgementPath, ChannelEndPath, ClientConsensusStatePath, ClientStatePath,
-            CommitmentPath, ConnectionPath, IbcPath,
-        },
         try_from_relayer_msg,
         union::{EthereumMainnet, EthereumMinimal},
-        ChainOf, ClientStateOf, ConsensusStateOf, HeaderOf, HeightOf, IbcStateRead, LightClient,
+        ClientStateOf, ConsensusStateOf, HeaderOf, HeightOf, IbcStateRead, LightClient,
         QueryHeight, StateProof,
     },
     msg::{
@@ -103,16 +103,23 @@ fn encode_dynamic_singleton_tuple(t: impl AbiEncode) -> Vec<u8> {
 }
 
 pub async fn bind_port<C: ChainSpec>(this: &Evm<C>, module_address: Address, port_id: String) {
-    let bind_port_result = this.ibc_handler.bind_port(port_id, module_address.into());
+    // HACK: This will pop the top item out of the queue, but binding the port requires the contract owner;
+    // this will work as long as the first signer in the list is the owner.
+    this.ibc_handlers
+        .with(|ibc_handler| async move {
+            let bind_port_result = ibc_handler.bind_port(port_id, module_address.into());
 
-    match bind_port_result.send().await {
-        Ok(ok) => {
-            ok.await.unwrap().unwrap();
-        }
-        Err(why) => eprintln!("{:?}", why.decode_revert::<String>()),
-    };
+            match bind_port_result.send().await {
+                Ok(ok) => {
+                    ok.await.unwrap().unwrap();
+                }
+                Err(why) => eprintln!("{:?}", why.decode_revert::<String>()),
+            };
+        })
+        .await
 }
 
+#[allow(unused_variables)]
 pub async fn setup_initial_channel<C: ChainSpec>(
     this: &Evm<C>,
     module_address: Address,
@@ -120,55 +127,56 @@ pub async fn setup_initial_channel<C: ChainSpec>(
     port_id: String,
     counterparty_port_id: String,
 ) {
-    let signer_middleware = Arc::new(SignerMiddleware::new(
-        this.provider.clone(),
-        this.wallet.clone(),
-    ));
+    // let signer_middleware = Arc::new(SignerMiddleware::new(
+    //     this.provider.clone(),
+    //     this.wallet.clone(),
+    // ));
 
-    let ibc_handler = devnet_ownable_ibc_handler::DevnetOwnableIBCHandler::new(
-        this.ibc_handler.address(),
-        signer_middleware,
-    );
+    // let ibc_handler = devnet_ownable_ibc_handler::DevnetOwnableIBCHandler::new(
+    //     this.ibc_handler.address(),
+    //     signer_middleware,
+    // );
 
-    ibc_handler
-        .setup_initial_channel(
-            "connection-0".into(),
-            IbcCoreConnectionV1ConnectionEndData {
-                client_id: "cometbls-new-0".into(),
-                versions: vec![IbcCoreConnectionV1VersionData {
-                    identifier: "1".into(),
-                    features: vec!["ORDER_ORDERED".into(), "ORDER_UNORDERED".into()],
-                }],
-                state: 3,
-                counterparty: IbcCoreConnectionV1CounterpartyData {
-                    client_id: "08-wasm-0".into(),
-                    connection_id: "connection-0".into(),
-                    prefix: IbcCoreCommitmentV1MerklePrefixData {
-                        key_prefix: b"ibc".to_vec().into(),
-                    },
-                },
-                delay_period: 6,
-            },
-            port_id,
-            channel_id.clone(),
-            IbcCoreChannelV1ChannelData {
-                state: 3,
-                ordering: 1,
-                counterparty: IbcCoreChannelV1CounterpartyData {
-                    port_id: counterparty_port_id,
-                    channel_id,
-                },
-                connection_hops: vec!["connection-0".into()],
-                version: "ics20-1".into(),
-            },
-            module_address.into(),
-        )
-        .send()
-        .await
-        .unwrap()
-        .await
-        .unwrap()
-        .unwrap();
+    // ibc_handler
+    //     .setup_initial_channel(
+    //         "connection-0".into(),
+    //         IbcCoreConnectionV1ConnectionEndData {
+    //             client_id: "cometbls-new-0".into(),
+    //             versions: vec![IbcCoreConnectionV1VersionData {
+    //                 identifier: "1".into(),
+    //                 features: vec!["ORDER_ORDERED".into(), "ORDER_UNORDERED".into()],
+    //             }],
+    //             state: 3,
+    //             counterparty: IbcCoreConnectionV1CounterpartyData {
+    //                 client_id: "08-wasm-0".into(),
+    //                 connection_id: "connection-0".into(),
+    //                 prefix: IbcCoreCommitmentV1MerklePrefixData {
+    //                     key_prefix: b"ibc".to_vec().into(),
+    //                 },
+    //             },
+    //             delay_period: 6,
+    //         },
+    //         port_id,
+    //         channel_id.clone(),
+    //         IbcCoreChannelV1ChannelData {
+    //             state: 3,
+    //             ordering: 1,
+    //             counterparty: IbcCoreChannelV1CounterpartyData {
+    //                 port_id: counterparty_port_id,
+    //                 channel_id,
+    //             },
+    //             connection_hops: vec!["connection-0".into()],
+    //             version: "ics20-1".into(),
+    //         },
+    //         module_address.into(),
+    //     )
+    //     .send()
+    //     .await
+    //     .unwrap()
+    //     .await
+    //     .unwrap()
+    //     .unwrap();
+    todo!()
 }
 
 impl LightClient for CometblsMainnet {
@@ -184,7 +192,9 @@ impl LightClient for CometblsMainnet {
     type Fetch = CometblsFetchMsg<Mainnet>;
     type Aggregate = CometblsAggregateMsg<Self, Mainnet>;
 
-    fn msg(&self, msg: Msg<Self>) -> impl Future + '_ {
+    type MsgError = TxSubmitError;
+
+    fn msg(&self, msg: Msg<Self>) -> impl Future<Output = Result<(), Self::MsgError>> + '_ {
         self::msg(&self.chain, msg)
     }
 
@@ -230,7 +240,9 @@ impl LightClient for CometblsMinimal {
     type Fetch = CometblsFetchMsg<Minimal>;
     type Aggregate = CometblsAggregateMsg<Self, Minimal>;
 
-    fn msg(&self, msg: Msg<Self>) -> impl Future + '_ {
+    type MsgError = TxSubmitError;
+
+    fn msg(&self, msg: Msg<Self>) -> impl Future<Output = Result<(), Self::MsgError>> + '_ {
         self::msg(&self.chain, msg)
     }
 
@@ -467,26 +479,42 @@ try_from_relayer_msg! {
     )]
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
+#[derive(
+    DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, derive_more::Display,
+)]
 #[serde(bound(serialize = "", deserialize = ""))]
 pub enum CometblsFetchMsg<C: ChainSpec> {
+    #[display(fmt = "FetchFinalityUpdate")]
     FetchFinalityUpdate(PhantomData<C>),
+    #[display(fmt = "FetchLightClientUpdates")]
     FetchLightClientUpdates(FetchLightClientUpdates<C>),
+    #[display(fmt = "FetchLightClientUpdate")]
     FetchLightClientUpdate(FetchLightClientUpdate<C>),
+    #[display(fmt = "FetchBootstrap")]
     FetchBootstrap(FetchBootstrap<C>),
+    #[display(fmt = "FetchAccountUpdate")]
     FetchAccountUpdate(FetchAccountUpdate<C>),
+    #[display(fmt = "FetchBeaconGenesis")]
     FetchBeaconGenesis(FetchBeaconGenesis<C>),
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
+#[derive(
+    DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, derive_more::Display,
+)]
 #[serde(bound(serialize = "", deserialize = ""))]
 #[allow(clippy::large_enum_variant)]
 pub enum CometblsDataMsg<C: ChainSpec> {
+    #[display(fmt = "FinalityUpdate")]
     FinalityUpdate(FinalityUpdate<C>),
+    #[display(fmt = "LightClientUpdates")]
     LightClientUpdates(LightClientUpdates<C>),
+    #[display(fmt = "LightClientUpdate")]
     LightClientUpdate(LightClientUpdate<C>),
+    #[display(fmt = "Bootstrap")]
     Bootstrap(BootstrapData<C>),
+    #[display(fmt = "AccountUpdate")]
     AccountUpdate(AccountUpdateData<C>),
+    #[display(fmt = "BeaconGenesis")]
     BeaconGenesis(BeaconGenesisData<C>),
 }
 
@@ -662,12 +690,17 @@ where
     }
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
+#[derive(
+    DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, derive_more::Display,
+)]
 #[serde(bound(serialize = "", deserialize = ""))]
 #[allow(clippy::large_enum_variant)]
 pub enum CometblsAggregateMsg<L: LightClient<HostChain = Evm<C>>, C: ChainSpec> {
+    #[display(fmt = "CreateUpdate")]
     CreateUpdate(CreateUpdateData<L, C>),
+    #[display(fmt = "MakeCreateUpdates")]
     MakeCreateUpdates(MakeCreateUpdatesData<L, C>),
+    #[display(fmt = "MakeCreateUpdatesFromLightClientUpdates")]
     MakeCreateUpdatesFromLightClientUpdates(MakeCreateUpdatesFromLightClientUpdatesData<L, C>),
 }
 
@@ -893,7 +926,7 @@ fn sync_committee_period<H: Into<u64>, C: ChainSpec>(height: H) -> u64 {
     height.into().div(C::PERIOD::U64)
 }
 
-async fn msg<C, L>(evm: &Evm<C>, msg: Msg<L>)
+async fn msg<C, L>(evm: &Evm<C>, msg: Msg<L>) -> Result<(), TxSubmitError>
 where
     C: ChainSpec,
     L: LightClient<HostChain = Evm<C>, Config = CometblsConfig>,
@@ -901,138 +934,148 @@ where
     ConsensusStateOf<<L::Counterparty as LightClient>::HostChain>: IntoProto,
     HeaderOf<<L::Counterparty as LightClient>::HostChain>: IntoEthAbi,
 {
-    let tx_res = match msg {
-        Msg::ConnectionOpenInit(data) => {
-            evm.ibc_handler
-                .connection_open_init(data.msg.into())
-                .send()
-                .await
-                .unwrap()
-                .await
-        }
-        Msg::ConnectionOpenTry(data) => {
-            evm.ibc_handler
-                .connection_open_try(data.msg.into())
-                .send()
-                .await
-                .unwrap()
-                .await
-        }
-        Msg::ConnectionOpenAck(data) => {
-            evm.ibc_handler
-                .connection_open_ack(data.msg.into())
-                .send()
-                .await
-                .unwrap()
-                .await
-        }
-        Msg::ConnectionOpenConfirm(data) => {
-            evm.ibc_handler
-                .connection_open_confirm(data.0.into())
-                .send()
-                .await
-                .unwrap()
-                .await
-        }
-        Msg::ChannelOpenInit(data) => {
-            evm.ibc_handler
-                .channel_open_init(data.msg.into())
-                .send()
-                .await
-                .unwrap()
-                .await
-        }
-        Msg::ChannelOpenTry(data) => {
-            evm.ibc_handler
-                .channel_open_try(data.msg.into())
-                .send()
-                .await
-                .unwrap()
-                .await
-        }
-        Msg::ChannelOpenAck(data) => {
-            evm.ibc_handler
-                .channel_open_ack(data.msg.into())
-                .send()
-                .await
-                .unwrap()
-                .await
-        }
-        Msg::ChannelOpenConfirm(data) => {
-            evm.ibc_handler
-                .channel_open_confirm(data.msg.into())
-                .send()
-                .await
-                .unwrap()
-                .await
-        }
-        Msg::RecvPacket(data) => {
-            tracing::error!("submitting RecvPacket");
-            evm.ibc_handler
-                .recv_packet(data.msg.into())
-                .send()
-                .await
-                .unwrap()
-                .await
-        }
-        Msg::AckPacket(data) => {
-            evm.ibc_handler
-                .acknowledge_packet(data.msg.into())
-                .send()
-                .await
-                .unwrap()
-                .await
-        }
-        Msg::CreateClient(data) => {
-            // dbg!(&data);
-
-            let register_client_result = evm.ibc_handler.register_client(
-                L::ClientType::TYPE.to_string(),
-                data.config.cometbls_client_address.clone().into(),
-            );
-
-            // TODO(benluelo): Better way to check if client type has already been registered?
-            match register_client_result.send().await {
-                Ok(ok) => {
-                    ok.await.unwrap().unwrap();
-                }
-                Err(why) => tracing::info!(
-                    "error registering client type, it is likely already registered: {}",
-                    why.decode_revert::<String>().unwrap()
+    evm.ibc_handlers
+        .with(|ibc_handler| async move {
+            let msg: ethers::contract::FunctionCall<_, _, ()> = match msg {
+                Msg::ConnectionOpenInit(data) => mk_function_call(
+                    ibc_handler,
+                    ConnectionOpenInitCall {
+                        msg: data.msg.into(),
+                    },
                 ),
-            }
+                Msg::ConnectionOpenTry(data) => mk_function_call(
+                    ibc_handler,
+                    ConnectionOpenTryCall {
+                        msg: data.msg.into(),
+                    },
+                ),
+                Msg::ConnectionOpenAck(data) => mk_function_call(
+                    ibc_handler,
+                    ConnectionOpenAckCall {
+                        msg: data.msg.into(),
+                    },
+                ),
+                Msg::ConnectionOpenConfirm(data) => mk_function_call(
+                    ibc_handler,
+                    ConnectionOpenConfirmCall { msg: data.0.into() },
+                ),
+                Msg::ChannelOpenInit(data) => mk_function_call(
+                    ibc_handler,
+                    ChannelOpenInitCall {
+                        msg: data.msg.into(),
+                    },
+                ),
+                Msg::ChannelOpenTry(data) => mk_function_call(
+                    ibc_handler,
+                    ChannelOpenTryCall {
+                        msg: data.msg.into(),
+                    },
+                ),
+                Msg::ChannelOpenAck(data) => mk_function_call(
+                    ibc_handler,
+                    ChannelOpenAckCall {
+                        msg: data.msg.into(),
+                    },
+                ),
+                Msg::ChannelOpenConfirm(data) => mk_function_call(
+                    ibc_handler,
+                    ChannelOpenConfirmCall {
+                        msg: data.msg.into(),
+                    },
+                ),
+                Msg::RecvPacket(data) => mk_function_call(
+                    ibc_handler,
+                    RecvPacketCall {
+                        msg: data.msg.into(),
+                    },
+                ),
+                Msg::AckPacket(data) => mk_function_call(
+                    ibc_handler,
+                    AcknowledgePacketCall {
+                        msg: data.msg.into(),
+                    },
+                ),
+                Msg::CreateClient(data) => {
+                    let register_client_result = ibc_handler.register_client(
+                        L::ClientType::TYPE.to_string(),
+                        data.config.cometbls_client_address.clone().into(),
+                    );
 
-            evm.ibc_handler
-                .create_client(contracts::shared_types::MsgCreateClient {
-                    // TODO: Add this to the config
-                    client_type: L::ClientType::TYPE.to_string(),
-                    client_state_bytes: data.msg.client_state.into_proto_bytes().into(),
-                    consensus_state_bytes: data.msg.consensus_state.into_proto_bytes().into(),
-                })
-                .send()
-                .await
-                .unwrap()
-                .await
-        }
-        Msg::UpdateClient(data) => {
-            evm.ibc_handler
-                .update_client(ibc_handler::MsgUpdateClient {
-                    client_id: data.msg.client_id.to_string(),
-                    client_message: encode_dynamic_singleton_tuple(
-                        data.msg.client_message.clone().into_eth_abi(),
+                    // TODO(benluelo): Better way to check if client type has already been registered?
+                    match register_client_result.send().await {
+                        Ok(ok) => {
+                            ok.await.unwrap().unwrap();
+                        }
+                        Err(why) => tracing::info!(
+                            "error registering client type, it is likely already registered: {}",
+                            why.decode_revert::<String>().unwrap()
+                        ),
+                    }
+
+                    mk_function_call(
+                        ibc_handler,
+                        CreateClientCall {
+                            msg: contracts::shared_types::MsgCreateClient {
+                                // TODO: Add this to the config
+                                client_type: L::ClientType::TYPE.to_string(),
+                                client_state_bytes: data.msg.client_state.into_proto_bytes().into(),
+                                consensus_state_bytes: data
+                                    .msg
+                                    .consensus_state
+                                    .into_proto_bytes()
+                                    .into(),
+                            },
+                        },
                     )
-                    .into(),
-                })
-                .send()
-                .await
-                .unwrap()
-                .await
-        }
-    }
-    .unwrap()
-    .unwrap();
+                }
+                Msg::UpdateClient(data) => mk_function_call(
+                    ibc_handler,
+                    UpdateClientCall {
+                        msg: ibc_handler::MsgUpdateClient {
+                            client_id: data.msg.client_id.to_string(),
+                            client_message: encode_dynamic_singleton_tuple(
+                                data.msg.client_message.clone().into_eth_abi(),
+                            )
+                            .into(),
+                        },
+                    },
+                ),
+            };
 
-    tracing::warn!(?tx_res, "evm tx submitted");
+            let tx_rcp: TransactionReceipt =
+                msg.send().await?.await?.ok_or(TxSubmitError::NoTxReceipt)?;
+
+            tracing::info!(?tx_rcp, "tx submitted");
+
+            Ok(())
+        })
+        .await
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum TxSubmitError {
+    #[error(transparent)]
+    Contract(#[from] ContractError<CometblsMiddleware>),
+    #[error(transparent)]
+    Provider(#[from] ProviderError),
+    #[error("no tx receipt from tx")]
+    NoTxReceipt,
+}
+
+impl MaybeRecoverableError for TxSubmitError {
+    fn is_recoverable(&self) -> bool {
+        // TODO: Figure out if any failures are unrecoverable
+        true
+    }
+}
+
+fn mk_function_call<Call: EthCall>(
+    ibc_handler: IBCHandler<CometblsMiddleware>,
+    data: Call,
+) -> ethers::contract::FunctionCall<Arc<CometblsMiddleware>, CometblsMiddleware, ()> {
+    ibc_handler
+        .method_hash(<Call as EthCall>::selector(), data)
+        .expect("method selector is generated; qed;")
 }
 
 async fn query_client_state<C: ChainSpec>(
@@ -1047,7 +1090,7 @@ async fn query_client_state<C: ChainSpec>(
     let execution_height = evm.execution_height(height).await;
 
     let (client_state_bytes, is_found) = evm
-        .ibc_handler
+        .readonly_ibc_handler
         .get_client_state(client_id.to_string())
         .block(execution_height)
         .await
@@ -1167,11 +1210,11 @@ where
 
             CometblsDataMsg::AccountUpdate(AccountUpdateData {
                 slot,
-                ibc_handler_address: evm.ibc_handler.address().0.into(),
+                ibc_handler_address: evm.readonly_ibc_handler.address().0.into(),
                 update: evm
                     .provider
                     .get_proof(
-                        evm.ibc_handler.address(),
+                        evm.readonly_ibc_handler.address(),
                         vec![],
                         // NOTE: Proofs are from the execution layer, so we use execution height, not beacon slot.
                         Some(execution_height.into()),
@@ -1239,7 +1282,7 @@ where
             let proof = self
                 .provider
                 .get_proof(
-                    self.ibc_handler.address(),
+                    self.readonly_ibc_handler.address(),
                     vec![location.into()],
                     Some(execution_height.into()),
                 )

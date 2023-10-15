@@ -11,16 +11,16 @@ use std::{
 use chain_utils::{
     evm::{Evm, EvmClientId, EvmClientType},
     union::{Union, UnionClientId, UnionClientType},
-    Chain, ClientState, EventSource,
+    EventSource,
 };
+use frame_support_procedural::DebugNoBound;
 use frunk::{hlist_pat, HList};
-use futures::{
-    future::BoxFuture, stream, Future, FutureExt, StreamExt, TryFutureExt, TryStreamExt,
-};
+use futures::{future::BoxFuture, stream, Future, FutureExt, StreamExt, TryStreamExt};
 use hubble::hasura::{Datastore, HasuraDataStore, InsertDemoTx};
 use pg_queue::ProcessFlow;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use sqlx::PgPool;
+use tokio::task::JoinSet;
 use unionlabs::{
     ethereum_consts_traits::{Mainnet, Minimal},
     events::{
@@ -46,15 +46,17 @@ use unionlabs::{
             msg_connection_open_try::MsgConnectionOpenTry,
         },
     },
+    proof::{
+        self, AcknowledgementPath, ChannelEndPath, ClientConsensusStatePath, ClientStatePath,
+        CommitmentPath, ConnectionPath,
+    },
+    traits::{Chain, ClientState},
 };
 
 use crate::{
     chain::{
         evm::{CometblsMainnet, CometblsMinimal},
-        proof::{
-            self, AcknowledgementPath, ChannelEndPath, ClientConsensusStatePath, ClientStatePath,
-            CommitmentPath, ConnectionPath, IbcStateRead,
-        },
+        proof::IbcStateRead,
         union::{EthereumMainnet, EthereumMinimal},
         AnyChain, AnyChainTryFromConfigError, ChainOf, HeightOf, LightClient, QueryHeight,
     },
@@ -76,6 +78,7 @@ use crate::{
             ClientStateProof, CommitmentProof, ConnectionEnd, ConnectionProof, Data,
             PacketAcknowledgement, SelfClientState, SelfConsensusState, TrustedClientState,
         },
+        enum_variants_conversions,
         event::Event,
         fetch::{
             Fetch, FetchChannelEnd, FetchConnectionEnd, FetchPacketAcknowledgement,
@@ -102,35 +105,49 @@ pub mod aggregate_data;
 
 #[derive(Debug, Clone)]
 pub struct Voyager<Q> {
+    chains: Arc<Chains>,
+    hasura_client: Option<Arc<hubble::hasura::HasuraDataStore>>,
+    num_workers: u16,
+    msg_server: msg_server::MsgServer,
+    queue: Q,
+}
+
+#[derive(Debug, Clone)]
+pub struct Worker {
+    pub id: u16,
+    pub chains: Arc<Chains>,
+    pub hasura_client: Option<Arc<hubble::hasura::HasuraDataStore>>,
+}
+
+#[derive(Debug, Clone)]
+pub struct Chains {
     // TODO: Use some sort of typemap here instead of individual fields
     evm_minimal:
         HashMap<<<Evm<Minimal> as Chain>::SelfClientState as ClientState>::ChainId, Evm<Minimal>>,
     evm_mainnet:
         HashMap<<<Evm<Mainnet> as Chain>::SelfClientState as ClientState>::ChainId, Evm<Mainnet>>,
     union: HashMap<<<Union as Chain>::SelfClientState as ClientState>::ChainId, Union>,
-    msg_server: msg_server::MsgServer,
-
-    hasura_config: Option<hubble::hasura::HasuraDataStore>,
-
-    queue: Q,
 }
 
-pub trait Queue: Clone + Send + Sync + Sized {
+pub trait Queue: Clone + Send + Sync + Sized + 'static {
     /// Error type returned by this queue, representing errors that are out of control of the consumer (i.e. unable to connect to database, can't insert into row, can't deserialize row, etc)
-    type Error: Debug + Display + Error + 'static;
+    type Error: Debug + Display + Error + Send + 'static;
     type Config: Debug + Clone + Serialize + DeserializeOwned;
 
     fn new(cfg: Self::Config) -> impl Future<Output = Result<Self, Self::Error>>;
 
-    fn enqueue(&mut self, item: RelayerMsg) -> impl Future<Output = Result<(), Self::Error>> + '_;
+    fn enqueue(
+        &mut self,
+        item: RelayerMsg,
+    ) -> impl Future<Output = Result<(), Self::Error>> + Send + '_;
 
-    fn process<'a, F, Fut>(
-        &'a mut self,
+    fn process<F, Fut>(
+        &mut self,
         f: F,
-    ) -> impl Future<Output = Result<(), Self::Error>> + '_
+    ) -> impl Future<Output = Result<(), Self::Error>> + Send + '_
     where
-        F: (FnOnce(RelayerMsg) -> Fut) + 'a,
-        Fut: Future<Output = ProcessFlow<RelayerMsg>> + 'a;
+        F: (FnOnce(RelayerMsg) -> Fut) + Send + 'static,
+        Fut: Future<Output = ProcessFlow<RelayerMsg>> + Send + 'static;
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -166,25 +183,32 @@ impl Queue for AnyQueue {
         }
     }
 
-    fn enqueue(&mut self, item: RelayerMsg) -> impl Future<Output = Result<(), Self::Error>> + '_ {
+    fn enqueue(
+        &mut self,
+        item: RelayerMsg,
+    ) -> impl Future<Output = Result<(), Self::Error>> + Send + '_ {
         async move {
-            Ok(match self {
+            match self {
                 AnyQueue::InMemory(queue) => queue.enqueue(item).await?,
                 AnyQueue::PgQueue(queue) => queue.enqueue(item).await?,
-            })
+            };
+
+            Ok(())
         }
     }
 
-    fn process<'a, F, Fut>(&'a mut self, f: F) -> impl Future<Output = Result<(), Self::Error>> + '_
+    fn process<F, Fut>(&mut self, f: F) -> impl Future<Output = Result<(), Self::Error>> + Send + '_
     where
-        F: (FnOnce(RelayerMsg) -> Fut) + 'a,
-        Fut: Future<Output = ProcessFlow<RelayerMsg>> + 'a,
+        F: (FnOnce(RelayerMsg) -> Fut) + Send + 'static,
+        Fut: Future<Output = ProcessFlow<RelayerMsg>> + Send + 'static,
     {
         async move {
-            Ok(match self {
+            match self {
                 AnyQueue::InMemory(queue) => queue.process(f).await?,
                 AnyQueue::PgQueue(queue) => queue.process(f).await?,
-            })
+            };
+
+            Ok(())
         }
     }
 }
@@ -200,31 +224,49 @@ impl Queue for InMemoryQueue {
         futures::future::ok(Self(Arc::new(Mutex::new(VecDeque::default()))))
     }
 
-    fn enqueue(&mut self, item: RelayerMsg) -> impl Future<Output = Result<(), Self::Error>> + '_ {
+    fn enqueue(
+        &mut self,
+        item: RelayerMsg,
+    ) -> impl Future<Output = Result<(), Self::Error>> + Send + '_ {
         self.0.lock().expect("mutex is poisoned").push_back(item);
         futures::future::ok(())
     }
 
-    fn process<'a, F, Fut>(&'a mut self, f: F) -> impl Future<Output = Result<(), Self::Error>> + '_
+    fn process<F, Fut>(&mut self, f: F) -> impl Future<Output = Result<(), Self::Error>> + Send + '_
     where
-        F: (FnOnce(RelayerMsg) -> Fut) + 'a,
-        Fut: Future<Output = ProcessFlow<RelayerMsg>> + 'a,
+        F: (FnOnce(RelayerMsg) -> Fut) + Send + 'static,
+        Fut: Future<Output = ProcessFlow<RelayerMsg>> + Send + 'static,
     {
         async move {
-            let queue = &mut self.0.lock().expect("mutex is poisoned");
+            let msg = {
+                let mut queue = self.0.lock().expect("mutex is poisoned");
+                let msg = queue.pop_front();
 
-            match queue.pop_front() {
-                Some(msg) => match f(msg.clone()).await {
-                    ProcessFlow::Success(new_msgs) => {
-                        queue.extend(new_msgs);
-                        Ok(())
+                drop(queue);
+
+                msg
+            };
+
+            match msg {
+                Some(msg) => {
+                    tracing::info!(
+                        json = %serde_json::to_string(&msg).unwrap(),
+                    );
+
+                    match f(msg.clone()).await {
+                        ProcessFlow::Success(new_msgs) => {
+                            let mut queue = self.0.lock().expect("mutex is poisoned");
+                            queue.extend(new_msgs);
+                            Ok(())
+                        }
+                        ProcessFlow::Requeue => {
+                            let mut queue = self.0.lock().expect("mutex is poisoned");
+                            queue.push_front(msg);
+                            Ok(())
+                        }
+                        ProcessFlow::Fail(why) => panic!("{why}"),
                     }
-                    ProcessFlow::Requeue => {
-                        queue.push_front(msg);
-                        Ok(())
-                    }
-                    ProcessFlow::Fail(why) => panic!("{why}"),
-                },
+                }
                 None => Ok(()),
             }
         }
@@ -236,7 +278,7 @@ pub struct PgQueue(pg_queue::Queue<RelayerMsg>, sqlx::PgPool);
 
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
 pub struct PgQueueConfig {
-    database_url: String,
+    pub database_url: String,
 }
 
 impl Queue for PgQueue {
@@ -253,16 +295,19 @@ impl Queue for PgQueue {
         }
     }
 
-    fn enqueue(&mut self, item: RelayerMsg) -> impl Future<Output = Result<(), Self::Error>> + '_ {
-        pg_queue::Queue::<RelayerMsg>::enqueue(&self.1, item)
+    fn enqueue(
+        &mut self,
+        item: RelayerMsg,
+    ) -> impl Future<Output = Result<(), Self::Error>> + Send + '_ {
+        self.0.enqueue(&self.1, item)
     }
 
-    fn process<'a, F, Fut>(&'a mut self, f: F) -> impl Future<Output = Result<(), Self::Error>> + '_
+    fn process<F, Fut>(&mut self, f: F) -> impl Future<Output = Result<(), Self::Error>> + Send + '_
     where
-        F: (FnOnce(RelayerMsg) -> Fut) + 'a,
-        Fut: Future<Output = ProcessFlow<RelayerMsg>> + 'a,
+        F: (FnOnce(RelayerMsg) -> Fut) + Send + 'static,
+        Fut: Future<Output = ProcessFlow<RelayerMsg>> + Send + 'static,
     {
-        pg_queue::Queue::<RelayerMsg>::process(&self.1, f)
+        self.0.process(&self.1, f)
     }
 }
 
@@ -277,6 +322,14 @@ pub enum VoyagerInitError<Q: Queue> {
 }
 
 impl<Q: Queue> Voyager<Q> {
+    fn worker(&self, id: u16) -> Worker {
+        Worker {
+            id,
+            chains: self.chains.clone(),
+            hasura_client: self.hasura_client.clone(),
+        }
+    }
+
     pub async fn new(config: Config<Q>) -> Result<Self, VoyagerInitError<Q>> {
         if config.voyager.hasura.is_none() {
             tracing::warn!("no hasura config supplied, no messages will be indexed");
@@ -342,29 +395,32 @@ impl<Q: Queue> Voyager<Q> {
             .map_err(VoyagerInitError::QueueInit)?;
 
         Ok(Self {
-            evm_minimal,
-            evm_mainnet,
-            union,
+            chains: Arc::new(Chains {
+                evm_minimal,
+                evm_mainnet,
+                union,
+            }),
             msg_server: msg_server::MsgServer,
-            hasura_config: config
-                .voyager
-                .hasura
-                .map(|hc| HasuraDataStore::new(reqwest::Client::new(), hc.url, hc.secret)),
+            num_workers: config.voyager.num_workers,
+            hasura_client: config.voyager.hasura.map(|hc| {
+                Arc::new(HasuraDataStore::new(
+                    reqwest::Client::new(),
+                    hc.url,
+                    hc.secret,
+                ))
+            }),
             queue,
         })
     }
 
     pub async fn run(self) {
         let mut events = Box::pin(stream::select_all([
-            stream::iter(&self.evm_minimal)
+            stream::iter(self.chains.evm_minimal.clone())
                 .map(|(chain_id, chain)| {
                     chain
                         .events(())
-                        // .inspect_ok(|e| {
-                        //     dbg!(e);
-                        // })
                         .map_ok(move |event| {
-                            if chain_id != &event.chain_id {
+                            if chain_id != event.chain_id {
                                 tracing::warn!(
                                     "chain {chain_id} produced an event from chain {}",
                                     event.chain_id
@@ -376,7 +432,7 @@ impl<Q: Queue> Voyager<Q> {
                                     match create_client.client_type {
                                         EvmClientType::Cometbls(_) => {
                                             LcMsg::<CometblsMinimal>::Event(Identified {
-                                                chain_id: *chain_id,
+                                                chain_id,
                                                 data: Event::Ibc(crate::msg::event::IbcEvent {
                                                     block_hash: event.block_hash,
                                                     height: event.height,
@@ -578,16 +634,16 @@ impl<Q: Queue> Voyager<Q> {
 
                             RelayerMsg::Lc(AnyLcMsg::from(event))
                         })
-                        .map_err(|x| Box::new(x) as Box<dyn Debug>)
+                        .map_err(|x| Box::new(x) as Box<dyn Debug + Send>)
                 })
                 .flatten()
                 .boxed(),
-            stream::iter(&self.union)
+            stream::iter(self.chains.union.clone())
                 .map(|(chain_id, chain)| {
                     chain
                         .events(())
                         .map_ok(move |event| {
-                            if chain_id != &event.chain_id {
+                            if chain_id != event.chain_id {
                                 tracing::warn!(
                                     "chain {chain_id} produced an event from chain {}",
                                     event.chain_id
@@ -600,7 +656,7 @@ impl<Q: Queue> Voyager<Q> {
                                         // TODO: Introspect the contract for a client type beyond just "wasm"
                                         UnionClientType::Wasm(_) => {
                                             LcMsg::<EthereumMinimal>::Event(Identified {
-                                                chain_id: chain_id.clone(),
+                                                chain_id: event.chain_id,
                                                 data: Event::Ibc(crate::msg::event::IbcEvent {
                                                     block_hash: event.block_hash,
                                                     height: event.height,
@@ -843,73 +899,90 @@ impl<Q: Queue> Voyager<Q> {
 
                             RelayerMsg::Lc(AnyLcMsg::from(event))
                         })
-                        .map_err(|x| Box::new(x) as Box<dyn Debug>)
+                        .map_err(|x| Box::new(x) as Box<dyn Debug + Send>)
                 })
                 .flatten()
                 .boxed(),
             self.msg_server
+                .clone()
                 .events(())
-                .map_err(|x| Box::new(x) as Box<dyn Debug>)
+                .map_err(|x| Box::new(x) as Box<dyn Debug + Send>)
                 .boxed(),
         ]));
 
-        let mut queue = self.queue.clone();
+        let mut join_set = JoinSet::new();
 
-        loop {
-            let buffer_time = tokio::time::sleep(Duration::from_secs(2));
-
+        let mut q = self.queue.clone();
+        join_set.spawn(async move {
             tracing::debug!("checking for new messages");
 
-            tokio::select! {
-                msg = events.select_next_some() => {
-                    let msg = msg.unwrap();
+            while let Some(msg) = events.next().await {
+                let msg = msg.unwrap();
 
-                    tracing::info!(
-                        json = %serde_json::to_string(&msg).unwrap(),
-                        "received new message",
-                    );
+                tracing::info!(
+                    json = %serde_json::to_string(&msg).unwrap(),
+                    "received new message",
+                );
 
-                    queue.enqueue(msg).await.unwrap();
-                }
-                _ = buffer_time => {
-                    tracing::debug!("no new messages");
-                }
+                q.enqueue(msg).await.unwrap();
             }
+        });
 
-            queue
-                .process(|msg| async {
-                    let new_msgs = self.handle_msg(msg, 0).await;
+        for i in 0..self.num_workers {
+            tracing::info!("spawning worker {i}");
 
-                    ProcessFlow::Success(new_msgs)
+            let worker = self.worker(i);
+
+            join_set.spawn(worker.run(self.queue.clone()));
+        }
+
+        while let Some(res) = join_set.join_next().await {
+            res.unwrap();
+        }
+    }
+}
+
+impl Worker {
+    fn run<Q: Queue>(self, mut q: Q) -> impl Future<Output = ()> + Send + 'static {
+        async move {
+            loop {
+                let worker = self.clone();
+                q.process(move |msg| async move {
+                    let new_msgs = worker.handle_msg(msg, 0).await;
+
+                    match new_msgs {
+                        Ok(ok) => ProcessFlow::Success(ok),
+                        // REVIEW: Check if this error is recoverable or not - i.e. if this is an IO error,
+                        // the msg can likely be retried
+                        Err(err) => {
+                            // ProcessFlow::Fail(err.to_string())
+                            panic!("{err}");
+                        }
+                    }
                 })
                 .await
                 .unwrap();
-        }
-    }
-
-    async fn handle_buffered_queue(&self, mut buffered_queue: VecDeque<RelayerMsg>) {
-        // TODO: Introspect the messages and factor out all messages that require an update
-        while let Some(msg) = buffered_queue.pop_front() {
-            let new_msgs = self.handle_msg(msg, 0).await;
-
-            for msg in new_msgs {
-                buffered_queue.push_back(msg)
             }
         }
     }
 
     // NOTE: Box is required bc recursion
-    fn handle_msg(&self, msg: RelayerMsg, depth: usize) -> BoxFuture<'_, Vec<RelayerMsg>> {
+    fn handle_msg(
+        &self,
+        msg: RelayerMsg,
+        depth: usize,
+    ) -> BoxFuture<'_, Result<Vec<RelayerMsg>, HandleMsgError>> {
         tracing::info!(
+            worker = self.id,
             depth,
-            json = %serde_json::to_string(&msg).unwrap(),
+            msg = %msg,
             "handling message",
         );
 
         async move {
             match msg {
                 RelayerMsg::Lc(any_lc_msg) => {
-                    if let Some(hasura) = &self.hasura_config {
+                    if let Some(hasura) = &self.hasura_client {
                         hasura
                             .do_post::<InsertDemoTx>(hubble::hasura::insert_demo_tx::Variables {
                                 data: serde_json::to_value(&any_lc_msg).unwrap(),
@@ -918,20 +991,23 @@ impl<Q: Queue> Voyager<Q> {
                             .unwrap();
                     }
 
-                    match any_lc_msg {
+                    let res = match any_lc_msg {
                         AnyLcMsg::EthereumMainnet(msg) => {
-                            self.handle_msg_generic::<EthereumMainnet>(msg).await
+                            let vec: Vec<RelayerMsg> = self.handle_msg_generic::<EthereumMainnet>(msg).await.map_err(AnyLcError::EthereumMainnet)?;
+                            vec
                         }
                         AnyLcMsg::EthereumMinimal(msg) => {
-                            self.handle_msg_generic::<EthereumMinimal>(msg).await
+                            self.handle_msg_generic::<EthereumMinimal>(msg).await.map_err(AnyLcError::EthereumMinimal)?
                         }
                         AnyLcMsg::CometblsMainnet(msg) => {
-                            self.handle_msg_generic::<CometblsMainnet>(msg).await
+                            self.handle_msg_generic::<CometblsMainnet>(msg).await.map_err(AnyLcError::CometblsMainnet)?
                         }
                         AnyLcMsg::CometblsMinimal(msg) => {
-                            self.handle_msg_generic::<CometblsMinimal>(msg).await
+                            self.handle_msg_generic::<CometblsMinimal>(msg).await.map_err(AnyLcError::CometblsMinimal)?
                         }
-                    }
+                    };
+
+                    Ok(res)
                 }
 
                 RelayerMsg::DeferUntil { timestamp } => {
@@ -945,9 +1021,9 @@ impl<Q: Queue> Voyager<Q> {
                         // TODO: Make the time configurable?
                         tokio::time::sleep(Duration::from_secs(1)).await;
 
-                        [RelayerMsg::DeferUntil { timestamp }].into()
+                        Ok([RelayerMsg::DeferUntil { timestamp }].into())
                     } else {
-                        vec![]
+                        Ok(vec![])
                     }
                 }
 
@@ -964,7 +1040,7 @@ impl<Q: Queue> Voyager<Q> {
                     if now > timeout_timestamp {
                         tracing::warn!(json = %serde_json::to_string(&msg).unwrap(), "message expired");
 
-                        [].into()
+                        Ok([].into())
                     } else {
                         self.handle_msg(*msg, depth + 1).await
                     }
@@ -972,18 +1048,39 @@ impl<Q: Queue> Voyager<Q> {
 
                 RelayerMsg::Sequence(mut seq) => {
                     let msgs = match seq.pop_front() {
-                        Some(msg) => self.handle_msg(msg, depth + 1).await,
-                        None => return vec![],
+                        Some(msg) => self.handle_msg(msg, depth + 1).await?,
+                        None => return Ok(vec![]),
                     };
 
                     for msg in msgs.into_iter().rev() {
                         seq.push_front(msg);
                     }
 
-                    [flatten_seq(RelayerMsg::Sequence(seq))].into()
+                    Ok([flatten_seq(RelayerMsg::Sequence(seq))].into())
                 }
 
-                RelayerMsg::Retry(_, _) => todo!(),
+                RelayerMsg::Retry(count, msg) =>  {
+                    const RETRY_DELAY_SECONDS: u64 = 3;
+
+                    match self.handle_msg(*msg.clone(), depth + 1).await {
+                        Ok(ok) => Ok(ok),
+                        Err(err) => if count > 0 {
+                            let retries_left = count - 1;
+                            tracing::warn!(%msg, retries_left, "msg failed, retrying in {RETRY_DELAY_SECONDS} seconds");
+                            let timestamp = SystemTime::now()
+                        .duration_since(UNIX_EPOCH)
+                        .unwrap()
+                        .as_secs() + RETRY_DELAY_SECONDS;
+
+                            let seq = [RelayerMsg::DeferUntil { timestamp }, RelayerMsg::Retry(retries_left, msg)].into();
+
+                            Ok([RelayerMsg::Sequence(seq)].into())
+                        } else {
+                            tracing::error!(%msg, "msg failed after all retries");
+                            Err(err)
+                        },
+                    }
+                },
 
                 RelayerMsg::Aggregate {
                     mut queue,
@@ -991,7 +1088,7 @@ impl<Q: Queue> Voyager<Q> {
                     receiver,
                 } => {
                     if let Some(msg) = queue.pop_front() {
-                        let msgs = self.handle_msg(msg, depth + 1).await;
+                        let msgs = self.handle_msg(msg, depth + 1).await?;
 
                         for m in msgs {
                             match m.try_into() {
@@ -1004,16 +1101,18 @@ impl<Q: Queue> Voyager<Q> {
                             }
                         }
 
-                        [RelayerMsg::Aggregate {
+                        let res = [RelayerMsg::Aggregate {
                             queue,
                             data,
                             receiver,
                         }]
-                        .into()
+                        .into();
+
+                        Ok(res)
                     } else {
                         // queue is empty, handle msg
 
-                        match receiver {
+                        let res = match receiver {
                             AggregateReceiver::EthereumMainnet(msg) => {
                                 do_create::<EthereumMainnet>(msg, data)
                             }
@@ -1026,7 +1125,9 @@ impl<Q: Queue> Voyager<Q> {
                             AggregateReceiver::CometblsMinimal(msg) => {
                                 do_create::<CometblsMinimal>(msg, data)
                             }
-                        }
+                        };
+
+                        Ok(res)
                     }
                 }
             }
@@ -1034,7 +1135,7 @@ impl<Q: Queue> Voyager<Q> {
         .boxed()
     }
 
-    async fn handle_msg_generic<L>(&self, msg: LcMsg<L>) -> Vec<RelayerMsg>
+    async fn handle_msg_generic<L>(&self, msg: LcMsg<L>) -> Result<Vec<RelayerMsg>, LcError<L>>
     where
         L: LightClient,
         Self: GetLc<L>,
@@ -1050,7 +1151,7 @@ impl<Q: Queue> Voyager<Q> {
         >>::Error: Debug,
     {
         match msg {
-            LcMsg::Event(event) => handle_event(self.get_lc(&event.chain_id), event.data),
+            LcMsg::Event(event) => Ok(handle_event(self.get_lc(&event.chain_id), event.data)),
             LcMsg::Data(data) => {
                 // TODO: Figure out a way to bubble it up to the top level
 
@@ -1059,19 +1160,22 @@ impl<Q: Queue> Voyager<Q> {
 
                 // panic!();
 
-                [].into()
+                Ok([].into())
                 // } else {
                 //     [RelayerMsg::Lc(AnyLcMsg::from(LcMsg::Data(data)))].into()
                 // }
             }
-            LcMsg::Fetch(fetch) => handle_fetch(self.get_lc(&fetch.chain_id), fetch.data).await,
+            LcMsg::Fetch(fetch) => Ok(handle_fetch(self.get_lc(&fetch.chain_id), fetch.data).await),
             LcMsg::Msg(msg) => {
                 // NOTE: `Msg`s don't requeue any `RelayerMsg`s; they are side-effect only.
-                self.get_lc(&msg.chain_id).msg(msg.data).await;
+                self.get_lc(&msg.chain_id)
+                    .msg(msg.data)
+                    .await
+                    .map_err(LcError::Msg)?;
 
-                [].into()
+                Ok([].into())
             }
-            LcMsg::Wait(wait) => handle_wait(&self.get_lc(&wait.chain_id), wait.data).await,
+            LcMsg::Wait(wait) => Ok(handle_wait(&self.get_lc(&wait.chain_id), wait.data).await),
             LcMsg::Aggregate(_) => {
                 todo!()
             }
@@ -1079,33 +1183,68 @@ impl<Q: Queue> Voyager<Q> {
     }
 }
 
+#[derive(Debug, thiserror::Error)]
+pub enum HandleMsgError {
+    #[error(transparent)]
+    Lc(#[from] AnyLcError),
+}
+
+enum_variants_conversions! {
+    #[derive(Debug, thiserror::Error)]
+    pub enum AnyLcError {
+        // The 08-wasm client tracking the state of Evm<Mainnet>.
+        #[error(transparent)]
+        EthereumMainnet(LcError<EthereumMainnet>),
+        // The 08-wasm client tracking the state of Evm<Minimal>.
+        #[error(transparent)]
+        EthereumMinimal(LcError<EthereumMinimal>),
+        // The solidity client on Evm<Mainnet> tracking the state of Union.
+        #[error(transparent)]
+        CometblsMainnet(LcError<CometblsMainnet>),
+        // The solidity client on Evm<Minimal> tracking the state of Union.
+        #[error(transparent)]
+        CometblsMinimal(LcError<CometblsMinimal>),
+    }
+}
+
+#[derive(DebugNoBound, thiserror::Error)]
+pub enum LcError<L: LightClient> {
+    #[error(transparent)]
+    Msg(L::MsgError),
+}
+
+// pub enum AnyLcError_ {}
+
+// impl AnyLightClient for AnyLcError_ {}
+
 trait GetLc<L: LightClient> {
     fn get_lc(&self, chain_id: &ChainIdOf<L>) -> L;
 }
 
-impl<Q> GetLc<CometblsMinimal> for Voyager<Q> {
+// TODO: Implement this on Chains, not Worker
+impl GetLc<CometblsMinimal> for Worker {
     fn get_lc(&self, chain_id: &ChainIdOf<CometblsMinimal>) -> CometblsMinimal {
-        CometblsMinimal::from_chain(self.evm_minimal.get(chain_id).unwrap().clone())
+        CometblsMinimal::from_chain(self.chains.evm_minimal.get(chain_id).unwrap().clone())
     }
 }
 
-impl<Q> GetLc<CometblsMainnet> for Voyager<Q> {
+impl GetLc<CometblsMainnet> for Worker {
     fn get_lc(&self, chain_id: &ChainIdOf<CometblsMainnet>) -> CometblsMainnet {
-        CometblsMainnet::from_chain(self.evm_mainnet.get(chain_id).unwrap().clone())
+        CometblsMainnet::from_chain(self.chains.evm_mainnet.get(chain_id).unwrap().clone())
     }
 }
 
-impl<Q> GetLc<EthereumMinimal> for Voyager<Q> {
+impl GetLc<EthereumMinimal> for Worker {
     fn get_lc(&self, chain_id: &ChainIdOf<EthereumMinimal>) -> EthereumMinimal {
         // TODO: Ensure that the wasm code is for the correct config
-        EthereumMinimal::from_chain(self.union.get(chain_id).unwrap().clone())
+        EthereumMinimal::from_chain(self.chains.union.get(chain_id).unwrap().clone())
     }
 }
 
-impl<Q> GetLc<EthereumMainnet> for Voyager<Q> {
+impl GetLc<EthereumMainnet> for Worker {
     fn get_lc(&self, chain_id: &ChainIdOf<EthereumMainnet>) -> EthereumMainnet {
         // TODO: Ensure that the wasm code is for the correct config
-        EthereumMainnet::from_chain(self.union.get(chain_id).unwrap().clone())
+        EthereumMainnet::from_chain(self.chains.union.get(chain_id).unwrap().clone())
     }
 }
 
@@ -1818,11 +1957,10 @@ where
             counterparty_client_id,
             counterparty_chain_id,
         }) => {
-            let latest_height = dbg!(l.chain().query_latest_height_as_destination().await);
-            let trusted_client_state = dbg!(
-                l.query_client_state(client_id.clone().into(), latest_height)
-                    .await
-            );
+            let latest_height = l.chain().query_latest_height_as_destination().await;
+            let trusted_client_state = l
+                .query_client_state(client_id.clone().into(), latest_height)
+                .await;
 
             if trusted_client_state.height().revision_height() >= height.revision_height() {
                 tracing::debug!(

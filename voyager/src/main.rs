@@ -14,13 +14,14 @@ use std::{error::Error, ffi::OsString, fs::read_to_string, process::ExitCode};
 use chain_utils::{evm::Evm, union::Union};
 use clap::Parser;
 use contracts::ucs01_relay::{LocalToken, UCS01Relay};
+use sqlx::PgPool;
 use unionlabs::ethereum_consts_traits::Mainnet;
 
 use crate::{
     chain::AnyChain,
-    cli::{AppArgs, Command, QueryCmd},
+    cli::{any_state_proof_to_json, AppArgs, Command, QueryCmd},
     config::{Config, GetChainError},
-    queue::{AnyQueue, Voyager, VoyagerInitError},
+    queue::{AnyQueue, AnyQueueConfig, PgQueueConfig, Voyager, VoyagerInitError},
 };
 
 pub const DELAY_PERIOD: u64 = 0;
@@ -34,7 +35,7 @@ pub mod queue;
 
 pub mod chain;
 
-#[tokio::main]
+#[tokio::main(flavor = "multi_thread")]
 async fn main() -> ExitCode {
     tracing_subscriber::fmt::init();
 
@@ -70,6 +71,18 @@ pub enum VoyagerError {
     GetChain(#[from] GetChainError),
     #[error("error initializing voyager")]
     Init(#[from] VoyagerInitError<AnyQueue>),
+    #[error("error while running migrations")]
+    Migrations(#[from] MigrationsError),
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum MigrationsError {
+    #[error("running migrations requires the `pg-queue` queue config")]
+    IncorrectQueueConfig,
+    #[error(transparent)]
+    Sqlx(#[from] sqlx::Error),
+    #[error(transparent)]
+    Migrate(#[from] sqlx::migrate::MigrateError),
 }
 
 #[allow(clippy::too_many_lines)]
@@ -90,6 +103,24 @@ async fn do_main(args: cli::AppArgs) -> Result<(), VoyagerError> {
         })?;
 
     match args.command {
+        Command::RunMigrations => {
+            let AnyQueueConfig::PgQueue(PgQueueConfig { database_url }) =
+                voyager_config.voyager.queue
+            else {
+                return Err(VoyagerError::Migrations(
+                    MigrationsError::IncorrectQueueConfig,
+                ));
+            };
+
+            let pool = PgPool::connect(&database_url)
+                .await
+                .map_err(MigrationsError::Sqlx)?;
+
+            pg_queue::MIGRATOR
+                .run(&pool)
+                .await
+                .map_err(MigrationsError::Migrate)?;
+        }
         Command::PrintConfig => {
             println!(
                 "{}",
@@ -195,15 +226,14 @@ async fn do_main(args: cli::AppArgs) -> Result<(), VoyagerError> {
                 QueryCmd::IbcPath(path) => {
                     let json = match on {
                         AnyChain::EvmMainnet(evm) => {
-                            path.any_state_proof_to_json::<Union, _>(evm, at).await
+                            any_state_proof_to_json::<Union, _>(path, evm, at).await
                         }
                         AnyChain::EvmMinimal(evm) => {
-                            path.any_state_proof_to_json::<Union, _>(evm, at).await
+                            any_state_proof_to_json::<Union, _>(path, evm, at).await
                         }
                         AnyChain::Union(union) => {
                             // NOTE: ChainSpec is arbitrary
-                            path.any_state_proof_to_json::<Evm<Mainnet>, _>(union, at)
-                                .await
+                            any_state_proof_to_json::<Evm<Mainnet>, _>(path, union, at).await
                         }
                     };
 

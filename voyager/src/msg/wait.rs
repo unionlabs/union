@@ -1,4 +1,4 @@
-use std::marker::PhantomData;
+use std::{fmt::Display, marker::PhantomData};
 
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use serde::{Deserialize, Serialize};
@@ -15,6 +15,16 @@ any_enum! {
         Block(WaitForBlock<L>),
         Timestamp(WaitForTimestamp<L>),
         TrustedHeight(WaitForTrustedHeight<L>),
+    }
+}
+
+impl<L: LightClient> Display for Wait<L> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Wait::Block(block) => write!(f, "Block({})", block.0),
+            Wait::Timestamp(ts) => write!(f, "Timestamp({})", ts.timestamp),
+            Wait::TrustedHeight(th) => write!(f, "TrustedHeight({})", th.height),
+        }
     }
 }
 
