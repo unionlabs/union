@@ -6,7 +6,7 @@ use std::{
 
 use chain_utils::{
     evm::Evm,
-    union::{Union, Wasm},
+    union::{BroadcastTxCommitError, Union, Wasm},
 };
 use clap::Args;
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
@@ -30,6 +30,10 @@ use unionlabs::{
         lightclients::{cometbls, ethereum, wasm},
     },
     id::Id,
+    proof::{
+        AcknowledgementPath, ChannelEndPath, ClientConsensusStatePath, ClientStatePath,
+        CommitmentPath, ConnectionPath, IbcPath,
+    },
     tendermint::{
         crypto::public_key::PublicKey,
         types::{
@@ -47,10 +51,7 @@ use unionlabs::{
 use crate::{
     chain::{
         evm::{CometblsMainnet, CometblsMinimal},
-        proof::{
-            AcknowledgementPath, ChannelEndPath, ClientConsensusStatePath, ClientStatePath,
-            CommitmentPath, ConnectionPath, IbcPath, StateProof,
-        },
+        proof::StateProof,
         try_from_relayer_msg, Chain, ClientStateOf, ConsensusStateOf, HeightOf, IbcStateRead,
         LightClient, QueryHeight,
     },
@@ -95,7 +96,9 @@ impl LightClient for EthereumMinimal {
     type Fetch = EthereumFetchMsg<Minimal>;
     type Aggregate = EthereumAggregateMsg<Self, Minimal>;
 
-    fn msg(&self, msg: Msg<Self>) -> impl Future + '_ {
+    type MsgError = BroadcastTxCommitError;
+
+    fn msg(&self, msg: Msg<Self>) -> impl Future<Output = Result<(), Self::MsgError>> + '_ {
         self::msg(self.chain.clone(), msg)
     }
 
@@ -426,7 +429,9 @@ impl LightClient for EthereumMainnet {
     type Fetch = EthereumFetchMsg<Mainnet>;
     type Aggregate = EthereumAggregateMsg<Self, Mainnet>;
 
-    fn msg(&self, msg: Msg<Self>) -> impl Future + '_ {
+    type MsgError = BroadcastTxCommitError;
+
+    fn msg(&self, msg: Msg<Self>) -> impl Future<Output = Result<(), Self::MsgError>> + '_ {
         self::msg(self.chain.clone(), msg)
     }
 
@@ -763,9 +768,9 @@ where
     // pub update_to: HeightOf<ChainOf<L>>,
 }
 
-async fn msg<L, C: ChainSpec>(union: Union, msg: Msg<L>)
+async fn msg<L, C: ChainSpec>(union: Union, msg: Msg<L>) -> Result<(), L::MsgError>
 where
-    L: LightClient<HostChain = Union, Config = EthereumConfig>,
+    L: LightClient<HostChain = Union, Config = EthereumConfig, MsgError = BroadcastTxCommitError>,
     <L::Counterparty as LightClient>::HostChain: Chain<
         SelfClientState = Any<wasm::client_state::ClientState<ethereum::client_state::ClientState>>,
         SelfConsensusState = Any<
@@ -773,8 +778,6 @@ where
         >,
         Header = wasm::header::Header<ethereum::header::Header<C>>,
     >,
-    // HeaderOf<<L::Counterparty as LightClient>::HostChain>: IntoProto,
-    // <HeaderOf<<L::Counterparty as LightClient>::HostChain> as Proto>::Proto: TypeUrl,
 {
     union
         .signers
@@ -821,7 +824,7 @@ where
                 }
             };
 
-            let _response = union.broadcast_tx_commit(signer, [msg_any]).await;
+            union.broadcast_tx_commit(signer, [msg_any]).await
         })
         .await
 }

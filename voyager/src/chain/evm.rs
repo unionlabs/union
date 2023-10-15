@@ -1,21 +1,26 @@
-use std::{collections::VecDeque, fmt::Debug, marker::PhantomData, ops::Div};
+use std::{collections::VecDeque, fmt::Debug, marker::PhantomData, ops::Div, sync::Arc};
 
 use beacon_api::errors::{InternalServerError, NotFoundError};
 use chain_utils::{
-    evm::{EthCallExt, Evm, TupleToOption},
-    Chain, ClientState,
+    evm::{CometblsMiddleware, EthCallExt, Evm, TupleToOption},
+    MaybeRecoverableError,
 };
 use clap::Args;
 use contracts::{
     ibc_handler::{
-        self, GetChannelCall, GetClientStateCall, GetConnectionCall, GetConsensusStateCall,
-        GetHashedPacketAcknowledgementCommitmentCall, GetHashedPacketCommitmentCall,
+        self, AcknowledgePacketCall, ChannelOpenAckCall, ChannelOpenConfirmCall,
+        ChannelOpenInitCall, ChannelOpenTryCall, ConnectionOpenAckCall, ConnectionOpenConfirmCall,
+        ConnectionOpenInitCall, ConnectionOpenTryCall, CreateClientCall, GetChannelCall,
+        GetClientStateCall, GetConnectionCall, GetConsensusStateCall,
+        GetHashedPacketAcknowledgementCommitmentCall, GetHashedPacketCommitmentCall, IBCHandler,
+        RecvPacketCall, UpdateClientCall,
     },
     shared_types::{IbcCoreChannelV1ChannelData, IbcCoreConnectionV1ConnectionEndData},
 };
 use ethers::{
     abi::AbiEncode,
-    providers::Middleware,
+    contract::{ContractError, EthCall},
+    providers::{Middleware, ProviderError},
     types::{EIP1186ProofResponse, TransactionReceipt, U256},
     utils::keccak256,
 };
@@ -50,15 +55,16 @@ use unionlabs::{
         },
     },
     id::{Id, IdType},
+    proof::{
+        AcknowledgementPath, ChannelEndPath, ClientConsensusStatePath, ClientStatePath,
+        CommitmentPath, ConnectionPath, IbcPath,
+    },
+    traits::{Chain, ClientState},
     IntoEthAbi, IntoProto, TryFromProto, TryFromProtoErrorOf,
 };
 
 use crate::{
     chain::{
-        proof::{
-            AcknowledgementPath, ChannelEndPath, ClientConsensusStatePath, ClientStatePath,
-            CommitmentPath, ConnectionPath, IbcPath,
-        },
         try_from_relayer_msg,
         union::{EthereumMainnet, EthereumMinimal},
         ClientStateOf, ConsensusStateOf, HeaderOf, HeightOf, IbcStateRead, LightClient,
@@ -186,7 +192,9 @@ impl LightClient for CometblsMainnet {
     type Fetch = CometblsFetchMsg<Mainnet>;
     type Aggregate = CometblsAggregateMsg<Self, Mainnet>;
 
-    fn msg(&self, msg: Msg<Self>) -> impl Future + '_ {
+    type MsgError = TxSubmitError;
+
+    fn msg(&self, msg: Msg<Self>) -> impl Future<Output = Result<(), Self::MsgError>> + '_ {
         self::msg(&self.chain, msg)
     }
 
@@ -232,7 +240,9 @@ impl LightClient for CometblsMinimal {
     type Fetch = CometblsFetchMsg<Minimal>;
     type Aggregate = CometblsAggregateMsg<Self, Minimal>;
 
-    fn msg(&self, msg: Msg<Self>) -> impl Future + '_ {
+    type MsgError = TxSubmitError;
+
+    fn msg(&self, msg: Msg<Self>) -> impl Future<Output = Result<(), Self::MsgError>> + '_ {
         self::msg(&self.chain, msg)
     }
 
@@ -916,7 +926,7 @@ fn sync_committee_period<H: Into<u64>, C: ChainSpec>(height: H) -> u64 {
     height.into().div(C::PERIOD::U64)
 }
 
-async fn msg<C, L>(evm: &Evm<C>, msg: Msg<L>)
+async fn msg<C, L>(evm: &Evm<C>, msg: Msg<L>) -> Result<(), TxSubmitError>
 where
     C: ChainSpec,
     L: LightClient<HostChain = Evm<C>, Config = CometblsConfig>,
@@ -926,91 +936,66 @@ where
 {
     evm.ibc_handlers
         .with(|ibc_handler| async move {
-            let tx_res: TransactionReceipt = match msg {
-                Msg::ConnectionOpenInit(data) => {
-                    ibc_handler
-                        .connection_open_init(data.msg.into())
-                        .send()
-                        .await
-                        .unwrap()
-                        .await
-                }
-                Msg::ConnectionOpenTry(data) => {
-                    ibc_handler
-                        .connection_open_try(data.msg.into())
-                        .send()
-                        .await
-                        .unwrap()
-                        .await
-                }
-                Msg::ConnectionOpenAck(data) => {
-                    ibc_handler
-                        .connection_open_ack(data.msg.into())
-                        .send()
-                        .await
-                        .unwrap()
-                        .await
-                }
-                Msg::ConnectionOpenConfirm(data) => {
-                    ibc_handler
-                        .connection_open_confirm(data.0.into())
-                        .send()
-                        .await
-                        .unwrap()
-                        .await
-                }
-                Msg::ChannelOpenInit(data) => {
-                    ibc_handler
-                        .channel_open_init(data.msg.into())
-                        .send()
-                        .await
-                        .unwrap()
-                        .await
-                }
-                Msg::ChannelOpenTry(data) => {
-                    ibc_handler
-                        .channel_open_try(data.msg.into())
-                        .send()
-                        .await
-                        .unwrap()
-                        .await
-                }
-                Msg::ChannelOpenAck(data) => {
-                    ibc_handler
-                        .channel_open_ack(data.msg.into())
-                        .send()
-                        .await
-                        .unwrap()
-                        .await
-                }
-                Msg::ChannelOpenConfirm(data) => {
-                    ibc_handler
-                        .channel_open_confirm(data.msg.into())
-                        .send()
-                        .await
-                        .unwrap()
-                        .await
-                }
-                Msg::RecvPacket(data) => {
-                    tracing::error!("submitting RecvPacket");
-                    ibc_handler
-                        .recv_packet(data.msg.into())
-                        .send()
-                        .await
-                        .unwrap()
-                        .await
-                }
-                Msg::AckPacket(data) => {
-                    ibc_handler
-                        .acknowledge_packet(data.msg.into())
-                        .send()
-                        .await
-                        .unwrap()
-                        .await
-                }
+            let msg: ethers::contract::FunctionCall<_, _, ()> = match msg {
+                Msg::ConnectionOpenInit(data) => mk_function_call(
+                    ibc_handler,
+                    ConnectionOpenInitCall {
+                        msg: data.msg.into(),
+                    },
+                ),
+                Msg::ConnectionOpenTry(data) => mk_function_call(
+                    ibc_handler,
+                    ConnectionOpenTryCall {
+                        msg: data.msg.into(),
+                    },
+                ),
+                Msg::ConnectionOpenAck(data) => mk_function_call(
+                    ibc_handler,
+                    ConnectionOpenAckCall {
+                        msg: data.msg.into(),
+                    },
+                ),
+                Msg::ConnectionOpenConfirm(data) => mk_function_call(
+                    ibc_handler,
+                    ConnectionOpenConfirmCall { msg: data.0.into() },
+                ),
+                Msg::ChannelOpenInit(data) => mk_function_call(
+                    ibc_handler,
+                    ChannelOpenInitCall {
+                        msg: data.msg.into(),
+                    },
+                ),
+                Msg::ChannelOpenTry(data) => mk_function_call(
+                    ibc_handler,
+                    ChannelOpenTryCall {
+                        msg: data.msg.into(),
+                    },
+                ),
+                Msg::ChannelOpenAck(data) => mk_function_call(
+                    ibc_handler,
+                    ChannelOpenAckCall {
+                        msg: data.msg.into(),
+                    },
+                ),
+                Msg::ChannelOpenConfirm(data) => mk_function_call(
+                    ibc_handler,
+                    ChannelOpenConfirmCall {
+                        msg: data.msg.into(),
+                    },
+                ),
+                Msg::RecvPacket(data) => mk_function_call(
+                    ibc_handler,
+                    RecvPacketCall {
+                        msg: data.msg.into(),
+                    },
+                ),
+                Msg::AckPacket(data) => mk_function_call(
+                    ibc_handler,
+                    AcknowledgePacketCall {
+                        msg: data.msg.into(),
+                    },
+                ),
                 Msg::CreateClient(data) => {
-                    // dbg!(&data);
-
                     let register_client_result = ibc_handler.register_client(
                         L::ClientType::TYPE.to_string(),
                         data.config.cometbls_client_address.clone().into(),
@@ -1027,43 +1012,70 @@ where
                         ),
                     }
 
-                    ibc_handler
-                        .create_client(contracts::shared_types::MsgCreateClient {
-                            // TODO: Add this to the config
-                            client_type: L::ClientType::TYPE.to_string(),
-                            client_state_bytes: data.msg.client_state.into_proto_bytes().into(),
-                            consensus_state_bytes: data
-                                .msg
-                                .consensus_state
-                                .into_proto_bytes()
-                                .into(),
-                        })
-                        .send()
-                        .await
-                        .unwrap()
-                        .await
+                    mk_function_call(
+                        ibc_handler,
+                        CreateClientCall {
+                            msg: contracts::shared_types::MsgCreateClient {
+                                // TODO: Add this to the config
+                                client_type: L::ClientType::TYPE.to_string(),
+                                client_state_bytes: data.msg.client_state.into_proto_bytes().into(),
+                                consensus_state_bytes: data
+                                    .msg
+                                    .consensus_state
+                                    .into_proto_bytes()
+                                    .into(),
+                            },
+                        },
+                    )
                 }
-                Msg::UpdateClient(data) => {
-                    ibc_handler
-                        .update_client(ibc_handler::MsgUpdateClient {
+                Msg::UpdateClient(data) => mk_function_call(
+                    ibc_handler,
+                    UpdateClientCall {
+                        msg: ibc_handler::MsgUpdateClient {
                             client_id: data.msg.client_id.to_string(),
                             client_message: encode_dynamic_singleton_tuple(
                                 data.msg.client_message.clone().into_eth_abi(),
                             )
                             .into(),
-                        })
-                        .send()
-                        .await
-                        .unwrap()
-                        .await
-                }
-            }
-            .unwrap()
-            .unwrap();
+                        },
+                    },
+                ),
+            };
 
-            tracing::warn!(?tx_res, "evm tx submitted");
+            let tx_rcp: TransactionReceipt =
+                msg.send().await?.await?.ok_or(TxSubmitError::NoTxReceipt)?;
+
+            tracing::info!(?tx_rcp, "tx submitted");
+
+            Ok(())
         })
         .await
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum TxSubmitError {
+    #[error(transparent)]
+    Contract(#[from] ContractError<CometblsMiddleware>),
+    #[error(transparent)]
+    Provider(#[from] ProviderError),
+    #[error("no tx receipt from tx")]
+    NoTxReceipt,
+}
+
+impl MaybeRecoverableError for TxSubmitError {
+    fn is_recoverable(&self) -> bool {
+        // TODO: Figure out if any failures are unrecoverable
+        true
+    }
+}
+
+fn mk_function_call<Call: EthCall>(
+    ibc_handler: IBCHandler<CometblsMiddleware>,
+    data: Call,
+) -> ethers::contract::FunctionCall<Arc<CometblsMiddleware>, CometblsMiddleware, ()> {
+    ibc_handler
+        .method_hash(<Call as EthCall>::selector(), data)
+        .expect("method selector is generated; qed;")
 }
 
 async fn query_client_state<C: ChainSpec>(

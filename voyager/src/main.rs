@@ -19,7 +19,7 @@ use unionlabs::ethereum_consts_traits::Mainnet;
 
 use crate::{
     chain::AnyChain,
-    cli::{AppArgs, Command, QueryCmd},
+    cli::{any_state_proof_to_json, AppArgs, Command, QueryCmd},
     config::{Config, GetChainError},
     queue::{AnyQueue, AnyQueueConfig, PgQueueConfig, Voyager, VoyagerInitError},
 };
@@ -226,15 +226,14 @@ async fn do_main(args: cli::AppArgs) -> Result<(), VoyagerError> {
                 QueryCmd::IbcPath(path) => {
                     let json = match on {
                         AnyChain::EvmMainnet(evm) => {
-                            path.any_state_proof_to_json::<Union, _>(evm, at).await
+                            any_state_proof_to_json::<Union, _>(path, evm, at).await
                         }
                         AnyChain::EvmMinimal(evm) => {
-                            path.any_state_proof_to_json::<Union, _>(evm, at).await
+                            any_state_proof_to_json::<Union, _>(path, evm, at).await
                         }
                         AnyChain::Union(union) => {
                             // NOTE: ChainSpec is arbitrary
-                            path.any_state_proof_to_json::<Evm<Mainnet>, _>(union, at)
-                                .await
+                            any_state_proof_to_json::<Evm<Mainnet>, _>(path, union, at).await
                         }
                     };
 

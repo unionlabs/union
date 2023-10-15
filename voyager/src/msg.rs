@@ -5,14 +5,17 @@ use std::{
     fmt::{Debug, Display},
 };
 
-use chain_utils::{Chain, ClientState};
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use serde::{Deserialize, Serialize};
+use unionlabs::{
+    proof::IbcPath,
+    traits::{Chain, ClientState},
+};
 
 use crate::{
     chain::{
         evm::{CometblsMainnet, CometblsMinimal},
-        proof::{IbcPath, StateProof},
+        proof::StateProof,
         union::{EthereumMainnet, EthereumMinimal},
         LightClient,
     },
@@ -112,7 +115,7 @@ impl std::fmt::Display for RelayerMsg {
                     .collect::<Vec<_>>()
                     .join(", ");
 
-                write!(f, "Aggregate([{queue}], [{data}] -> {receiver})")
+                write!(f, "Aggregate([{queue}] -> [{data}] -> {receiver})")
             }
         }
     }
@@ -348,7 +351,7 @@ pub mod aggregate {
 
     use super::ChainIdOf;
     use crate::{
-        chain::{proof::AcknowledgementPath, ChainOf, HeightOf, LightClient},
+        chain::{ChainOf, HeightOf, LightClient},
         msg::{fetch::FetchStateProof, identified},
     };
 
@@ -977,7 +980,7 @@ pub enum LcMsg<L: LightClient> {
     Aggregate(InnerOf<AnyAggregate, L>),
 }
 
-type InnerOf<T, L> = <T as AnyLightClient>::Inner<L>;
+pub type InnerOf<T, L> = <T as AnyLightClient>::Inner<L>;
 
 enum_variants_conversions! {
     #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, derive_more::Display)]

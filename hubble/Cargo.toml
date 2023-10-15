@@ -12,8 +12,8 @@ path = "src/main.rs"
 
 [dependencies]
 graphql_client = { version = "0.13.0",  features = ["reqwest-rustls", "reqwest", "reqwest-blocking"] }
-tendermint-rpc = { git = "https://github.com/unionlabs/tendermint-rs", branch = "bn254", features = ["http", "http-client", "hyper-rustls", "tokio"] }
-tendermint = { git = "https://github.com/unionlabs/tendermint-rs", branch = "bn254" }
+tendermint-rpc = { workspace = true, features = ["http", "http-client", "hyper-rustls", "tokio"] }
+tendermint = { workspace = true, features = ["std"] }
 tokio = { version = "1", features = ["full"] }
 serde = { version = "1.0", features = ["derive"] }
 reqwest = { version = "^0.11", features = ["json", "blocking"] }

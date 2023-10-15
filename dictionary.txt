@@ -275,6 +275,7 @@ googleapis
 gopath
 gopls
 goprivate
+goroutines
 gotest
 gotools
 govclient
@@ -633,6 +634,7 @@ unionvisorbn
 unjail
 unjailed
 unmarshal
+unmarshalling
 unopinionated
 unsetting
 unvalidated

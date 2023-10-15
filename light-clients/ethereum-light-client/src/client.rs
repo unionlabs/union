@@ -465,16 +465,6 @@ mod test {
     };
     use ethereum_verifier::crypto::{eth_aggregate_public_keys, fast_aggregate_verify};
     use hex_literal::hex;
-    use ibc::{
-        core::{
-            ics02_client::client_type::ClientType,
-            ics24_host::{
-                identifier::{ClientId, ConnectionId},
-                path::{ClientConsensusStatePath, ClientStatePath, ConnectionPath},
-            },
-        },
-        Height as IbcHeight,
-    };
     use ics008_wasm_client::storage_utils::save_client_state;
     use prost::Message;
     use unionlabs::{
@@ -482,9 +472,10 @@ mod test {
         ethereum_consts_traits::Minimal,
         ibc::{
             core::commitment::merkle_root::MerkleRoot,
-            google::protobuf::duration::Duration,
-            lightclients::{cometbls, ethereum, tendermint::fraction::Fraction},
+            lightclients::{cometbls, ethereum},
         },
+        id::{self, ConnectionId},
+        proof::{ClientConsensusStatePath, ClientStatePath, ConnectionPath},
         IntoProto,
     };
 
@@ -991,10 +982,13 @@ mod test {
         };
 
         do_verify_membership(
-            ClientConsensusStatePath::new(
-                &ClientId::new(ClientType::new(ETHEREUM_CLIENT_ID_PREFIX.into()), 0).unwrap(),
-                &IbcHeight::new(0, 1).unwrap(),
-            )
+            ClientConsensusStatePath {
+                client_id: format!("{ETHEREUM_CLIENT_ID_PREFIX}-0"),
+                height: Height {
+                    revision_number: 0,
+                    revision_height: 1,
+                },
+            }
             .to_string(),
             storage_root,
             3,
@@ -1042,7 +1036,10 @@ mod test {
         let (proof, storage_root, connection_end) = prepare_connection_end();
 
         do_verify_membership(
-            ConnectionPath::new(&ConnectionId::new(0)).to_string(),
+            ConnectionPath {
+                connection_id: ConnectionId::new(id::Connection, 0),
+            }
+            .to_string(),
             storage_root,
             3,
             proof,
@@ -1074,7 +1071,10 @@ mod test {
 
         for proof in proofs {
             assert!(do_verify_membership(
-                ConnectionPath::new(&ConnectionId::new(0)).to_string(),
+                ConnectionPath {
+                    connection_id: ConnectionId::new(id::Connection, 0),
+                }
+                .to_string(),
                 storage_root.clone(),
                 3,
                 proof,
@@ -1091,7 +1091,10 @@ mod test {
         storage_root.0[10] = u8::MAX - storage_root.0[10];
 
         assert!(do_verify_membership(
-            ConnectionPath::new(&ConnectionId::new(0)).to_string(),
+            ConnectionPath {
+                connection_id: ConnectionId::new(id::Connection, 0),
+            }
+            .to_string(),
             storage_root,
             3,
             proof,
@@ -1107,7 +1110,10 @@ mod test {
         connection_end.client_id = "incorrect-client-id".into();
 
         assert!(do_verify_membership(
-            ConnectionPath::new(&ConnectionId::new(0)).to_string(),
+            ConnectionPath {
+                connection_id: ConnectionId::new(id::Connection, 0),
+            }
+            .to_string(),
             storage_root,
             3,
             proof,
@@ -1127,9 +1133,9 @@ mod test {
         let storage_root = NON_MEMBERSHIP_STORAGE_ROOT.clone();
 
         do_verify_non_membership(
-            ClientStatePath::new(
-                &ClientId::new(ClientType::new(ETHEREUM_CLIENT_ID_PREFIX.into()), 0).unwrap(),
-            )
+            ClientStatePath {
+                client_id: format!("{ETHEREUM_CLIENT_ID_PREFIX}-0"),
+            }
             .to_string(),
             storage_root,
             3,
@@ -1144,7 +1150,10 @@ mod test {
 
         assert_eq!(
             do_verify_non_membership(
-                ConnectionPath::new(&ConnectionId::new(0)).to_string(),
+                ConnectionPath {
+                    connection_id: ConnectionId::new(id::Connection, 0),
+                }
+                .to_string(),
                 storage_root,
                 3,
                 proof,

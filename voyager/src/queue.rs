@@ -11,8 +11,9 @@ use std::{
 use chain_utils::{
     evm::{Evm, EvmClientId, EvmClientType},
     union::{Union, UnionClientId, UnionClientType},
-    Chain, ClientState, EventSource,
+    EventSource,
 };
+use frame_support_procedural::DebugNoBound;
 use frunk::{hlist_pat, HList};
 use futures::{future::BoxFuture, stream, Future, FutureExt, StreamExt, TryStreamExt};
 use hubble::hasura::{Datastore, HasuraDataStore, InsertDemoTx};
@@ -45,15 +46,17 @@ use unionlabs::{
             msg_connection_open_try::MsgConnectionOpenTry,
         },
     },
+    proof::{
+        self, AcknowledgementPath, ChannelEndPath, ClientConsensusStatePath, ClientStatePath,
+        CommitmentPath, ConnectionPath,
+    },
+    traits::{Chain, ClientState},
 };
 
 use crate::{
     chain::{
         evm::{CometblsMainnet, CometblsMinimal},
-        proof::{
-            self, AcknowledgementPath, ChannelEndPath, ClientConsensusStatePath, ClientStatePath,
-            CommitmentPath, ConnectionPath, IbcStateRead,
-        },
+        proof::IbcStateRead,
         union::{EthereumMainnet, EthereumMinimal},
         AnyChain, AnyChainTryFromConfigError, ChainOf, HeightOf, LightClient, QueryHeight,
     },
@@ -75,6 +78,7 @@ use crate::{
             ClientStateProof, CommitmentProof, ConnectionEnd, ConnectionProof, Data,
             PacketAcknowledgement, SelfClientState, SelfConsensusState, TrustedClientState,
         },
+        enum_variants_conversions,
         event::Event,
         fetch::{
             Fetch, FetchChannelEnd, FetchConnectionEnd, FetchPacketAcknowledgement,
@@ -946,7 +950,15 @@ impl Worker {
                 q.process(move |msg| async move {
                     let new_msgs = worker.handle_msg(msg, 0).await;
 
-                    ProcessFlow::Success(new_msgs)
+                    match new_msgs {
+                        Ok(ok) => ProcessFlow::Success(ok),
+                        // REVIEW: Check if this error is recoverable or not - i.e. if this is an IO error,
+                        // the msg can likely be retried
+                        Err(err) => {
+                            // ProcessFlow::Fail(err.to_string())
+                            panic!("{err}");
+                        }
+                    }
                 })
                 .await
                 .unwrap();
@@ -955,7 +967,11 @@ impl Worker {
     }
 
     // NOTE: Box is required bc recursion
-    fn handle_msg(&self, msg: RelayerMsg, depth: usize) -> BoxFuture<'_, Vec<RelayerMsg>> {
+    fn handle_msg(
+        &self,
+        msg: RelayerMsg,
+        depth: usize,
+    ) -> BoxFuture<'_, Result<Vec<RelayerMsg>, HandleMsgError>> {
         tracing::info!(
             worker = self.id,
             depth,
@@ -975,20 +991,23 @@ impl Worker {
                             .unwrap();
                     }
 
-                    match any_lc_msg {
+                    let res = match any_lc_msg {
                         AnyLcMsg::EthereumMainnet(msg) => {
-                            self.handle_msg_generic::<EthereumMainnet>(msg).await
+                            let vec: Vec<RelayerMsg> = self.handle_msg_generic::<EthereumMainnet>(msg).await.map_err(AnyLcError::EthereumMainnet)?;
+                            vec
                         }
                         AnyLcMsg::EthereumMinimal(msg) => {
-                            self.handle_msg_generic::<EthereumMinimal>(msg).await
+                            self.handle_msg_generic::<EthereumMinimal>(msg).await.map_err(AnyLcError::EthereumMinimal)?
                         }
                         AnyLcMsg::CometblsMainnet(msg) => {
-                            self.handle_msg_generic::<CometblsMainnet>(msg).await
+                            self.handle_msg_generic::<CometblsMainnet>(msg).await.map_err(AnyLcError::CometblsMainnet)?
                         }
                         AnyLcMsg::CometblsMinimal(msg) => {
-                            self.handle_msg_generic::<CometblsMinimal>(msg).await
+                            self.handle_msg_generic::<CometblsMinimal>(msg).await.map_err(AnyLcError::CometblsMinimal)?
                         }
-                    }
+                    };
+
+                    Ok(res)
                 }
 
                 RelayerMsg::DeferUntil { timestamp } => {
@@ -1002,9 +1021,9 @@ impl Worker {
                         // TODO: Make the time configurable?
                         tokio::time::sleep(Duration::from_secs(1)).await;
 
-                        [RelayerMsg::DeferUntil { timestamp }].into()
+                        Ok([RelayerMsg::DeferUntil { timestamp }].into())
                     } else {
-                        vec![]
+                        Ok(vec![])
                     }
                 }
 
@@ -1021,7 +1040,7 @@ impl Worker {
                     if now > timeout_timestamp {
                         tracing::warn!(json = %serde_json::to_string(&msg).unwrap(), "message expired");
 
-                        [].into()
+                        Ok([].into())
                     } else {
                         self.handle_msg(*msg, depth + 1).await
                     }
@@ -1029,18 +1048,39 @@ impl Worker {
 
                 RelayerMsg::Sequence(mut seq) => {
                     let msgs = match seq.pop_front() {
-                        Some(msg) => self.handle_msg(msg, depth + 1).await,
-                        None => return vec![],
+                        Some(msg) => self.handle_msg(msg, depth + 1).await?,
+                        None => return Ok(vec![]),
                     };
 
                     for msg in msgs.into_iter().rev() {
                         seq.push_front(msg);
                     }
 
-                    [flatten_seq(RelayerMsg::Sequence(seq))].into()
+                    Ok([flatten_seq(RelayerMsg::Sequence(seq))].into())
                 }
 
-                RelayerMsg::Retry(_, _) => todo!(),
+                RelayerMsg::Retry(count, msg) =>  {
+                    const RETRY_DELAY_SECONDS: u64 = 3;
+
+                    match self.handle_msg(*msg.clone(), depth + 1).await {
+                        Ok(ok) => Ok(ok),
+                        Err(err) => if count > 0 {
+                            let retries_left = count - 1;
+                            tracing::warn!(%msg, retries_left, "msg failed, retrying in {RETRY_DELAY_SECONDS} seconds");
+                            let timestamp = SystemTime::now()
+                        .duration_since(UNIX_EPOCH)
+                        .unwrap()
+                        .as_secs() + RETRY_DELAY_SECONDS;
+
+                            let seq = [RelayerMsg::DeferUntil { timestamp }, RelayerMsg::Retry(retries_left, msg)].into();
+
+                            Ok([RelayerMsg::Sequence(seq)].into())
+                        } else {
+                            tracing::error!(%msg, "msg failed after all retries");
+                            Err(err)
+                        },
+                    }
+                },
 
                 RelayerMsg::Aggregate {
                     mut queue,
@@ -1048,7 +1088,7 @@ impl Worker {
                     receiver,
                 } => {
                     if let Some(msg) = queue.pop_front() {
-                        let msgs = self.handle_msg(msg, depth + 1).await;
+                        let msgs = self.handle_msg(msg, depth + 1).await?;
 
                         for m in msgs {
                             match m.try_into() {
@@ -1061,16 +1101,18 @@ impl Worker {
                             }
                         }
 
-                        [RelayerMsg::Aggregate {
+                        let res = [RelayerMsg::Aggregate {
                             queue,
                             data,
                             receiver,
                         }]
-                        .into()
+                        .into();
+
+                        Ok(res)
                     } else {
                         // queue is empty, handle msg
 
-                        match receiver {
+                        let res = match receiver {
                             AggregateReceiver::EthereumMainnet(msg) => {
                                 do_create::<EthereumMainnet>(msg, data)
                             }
@@ -1083,7 +1125,9 @@ impl Worker {
                             AggregateReceiver::CometblsMinimal(msg) => {
                                 do_create::<CometblsMinimal>(msg, data)
                             }
-                        }
+                        };
+
+                        Ok(res)
                     }
                 }
             }
@@ -1091,7 +1135,7 @@ impl Worker {
         .boxed()
     }
 
-    async fn handle_msg_generic<L>(&self, msg: LcMsg<L>) -> Vec<RelayerMsg>
+    async fn handle_msg_generic<L>(&self, msg: LcMsg<L>) -> Result<Vec<RelayerMsg>, LcError<L>>
     where
         L: LightClient,
         Self: GetLc<L>,
@@ -1107,7 +1151,7 @@ impl Worker {
         >>::Error: Debug,
     {
         match msg {
-            LcMsg::Event(event) => handle_event(self.get_lc(&event.chain_id), event.data),
+            LcMsg::Event(event) => Ok(handle_event(self.get_lc(&event.chain_id), event.data)),
             LcMsg::Data(data) => {
                 // TODO: Figure out a way to bubble it up to the top level
 
@@ -1116,19 +1160,22 @@ impl Worker {
 
                 // panic!();
 
-                [].into()
+                Ok([].into())
                 // } else {
                 //     [RelayerMsg::Lc(AnyLcMsg::from(LcMsg::Data(data)))].into()
                 // }
             }
-            LcMsg::Fetch(fetch) => handle_fetch(self.get_lc(&fetch.chain_id), fetch.data).await,
+            LcMsg::Fetch(fetch) => Ok(handle_fetch(self.get_lc(&fetch.chain_id), fetch.data).await),
             LcMsg::Msg(msg) => {
                 // NOTE: `Msg`s don't requeue any `RelayerMsg`s; they are side-effect only.
-                self.get_lc(&msg.chain_id).msg(msg.data).await;
+                self.get_lc(&msg.chain_id)
+                    .msg(msg.data)
+                    .await
+                    .map_err(LcError::Msg)?;
 
-                [].into()
+                Ok([].into())
             }
-            LcMsg::Wait(wait) => handle_wait(&self.get_lc(&wait.chain_id), wait.data).await,
+            LcMsg::Wait(wait) => Ok(handle_wait(&self.get_lc(&wait.chain_id), wait.data).await),
             LcMsg::Aggregate(_) => {
                 todo!()
             }
@@ -1136,10 +1183,45 @@ impl Worker {
     }
 }
 
+#[derive(Debug, thiserror::Error)]
+pub enum HandleMsgError {
+    #[error(transparent)]
+    Lc(#[from] AnyLcError),
+}
+
+enum_variants_conversions! {
+    #[derive(Debug, thiserror::Error)]
+    pub enum AnyLcError {
+        // The 08-wasm client tracking the state of Evm<Mainnet>.
+        #[error(transparent)]
+        EthereumMainnet(LcError<EthereumMainnet>),
+        // The 08-wasm client tracking the state of Evm<Minimal>.
+        #[error(transparent)]
+        EthereumMinimal(LcError<EthereumMinimal>),
+        // The solidity client on Evm<Mainnet> tracking the state of Union.
+        #[error(transparent)]
+        CometblsMainnet(LcError<CometblsMainnet>),
+        // The solidity client on Evm<Minimal> tracking the state of Union.
+        #[error(transparent)]
+        CometblsMinimal(LcError<CometblsMinimal>),
+    }
+}
+
+#[derive(DebugNoBound, thiserror::Error)]
+pub enum LcError<L: LightClient> {
+    #[error(transparent)]
+    Msg(L::MsgError),
+}
+
+// pub enum AnyLcError_ {}
+
+// impl AnyLightClient for AnyLcError_ {}
+
 trait GetLc<L: LightClient> {
     fn get_lc(&self, chain_id: &ChainIdOf<L>) -> L;
 }
 
+// TODO: Implement this on Chains, not Worker
 impl GetLc<CometblsMinimal> for Worker {
     fn get_lc(&self, chain_id: &ChainIdOf<CometblsMinimal>) -> CometblsMinimal {
         CometblsMinimal::from_chain(self.chains.evm_minimal.get(chain_id).unwrap().clone())
@@ -1875,11 +1957,10 @@ where
             counterparty_client_id,
             counterparty_chain_id,
         }) => {
-            let latest_height = dbg!(l.chain().query_latest_height_as_destination().await);
-            let trusted_client_state = dbg!(
-                l.query_client_state(client_id.clone().into(), latest_height)
-                    .await
-            );
+            let latest_height = l.chain().query_latest_height_as_destination().await;
+            let trusted_client_state = l
+                .query_client_state(client_id.clone().into(), latest_height)
+                .await;
 
             if trusted_client_state.height().revision_height() >= height.revision_height() {
                 tracing::debug!(

@@ -1,18 +1,19 @@
 use std::marker::PhantomData;
 
-use chain_utils::Chain;
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use serde::{Deserialize, Serialize};
-use unionlabs::{self, ibc::core::channel::channel::Channel};
+use unionlabs::{
+    self,
+    ibc::core::channel::channel::Channel,
+    proof::{
+        AcknowledgementPath, ChannelEndPath, ClientConsensusStatePath, ClientStatePath,
+        CommitmentPath, ConnectionPath,
+    },
+    traits::Chain,
+};
 
 use crate::{
-    chain::{
-        proof::{
-            AcknowledgementPath, ChannelEndPath, ClientConsensusStatePath, ClientStatePath,
-            CommitmentPath, ConnectionPath,
-        },
-        ChainOf, ClientStateOf, ConsensusStateOf, HeaderOf, HeightOf, LightClient,
-    },
+    chain::{ChainOf, ClientStateOf, ConsensusStateOf, HeaderOf, HeightOf, LightClient},
     msg::{any_enum, fetch::FetchPacketAcknowledgement, identified, StateProofOf},
 };
 

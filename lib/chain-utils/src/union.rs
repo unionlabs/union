@@ -6,8 +6,8 @@ use prost::Message;
 use serde::{Deserialize, Serialize};
 use sha2::Digest;
 use tendermint_rpc::{
-    query::{Condition, EventType, Operand, Query},
-    Client, Order, SubscriptionClient, WebSocketClient, WebSocketClientUrl,
+    query::{EventType, Query},
+    Client, Order, WebSocketClient, WebSocketClientUrl,
 };
 use unionlabs::{
     ethereum::H256,
@@ -20,10 +20,14 @@ use unionlabs::{
     id::Id,
     id_type,
     tendermint::abci::{event::Event, event_attribute::EventAttribute},
+    traits::{Chain, ClientState},
     CosmosAccountId,
 };
 
-use crate::{private_key::PrivateKey, Chain, ChainEvent, ClientState, EventSource, Pool};
+use crate::{
+    private_key::PrivateKey, union::tm_types::TendermintResponseErrorCode, ChainEvent, EventSource,
+    MaybeRecoverableError, Pool,
+};
 
 #[derive(Debug, Clone)]
 pub struct Union {
@@ -347,134 +351,115 @@ impl Union {
         &self,
         signer: CosmosAccountId,
         messages: impl IntoIterator<Item = protos::google::protobuf::Any> + Clone,
-    ) {
+    ) -> Result<(), BroadcastTxCommitError> {
         use protos::cosmos::tx;
 
-        'construct_tx: loop {
-            let account = self.account_info_of_signer(&signer).await;
+        let account = self.account_info_of_signer(&signer).await;
 
-            let sign_doc = tx::v1beta1::SignDoc {
-                body_bytes: tx::v1beta1::TxBody {
-                    messages: messages.clone().into_iter().collect(),
-                    // TODO(benluelo): What do we want to use as our memo?
-                    memo: String::new(),
-                    timeout_height: 123_123_123,
-                    extension_options: vec![],
-                    non_critical_extension_options: vec![],
-                }
-                .encode_to_vec(),
-                auth_info_bytes: tx::v1beta1::AuthInfo {
-                    signer_infos: [tx::v1beta1::SignerInfo {
-                        public_key: Some(protos::google::protobuf::Any {
-                            type_url: "/cosmos.crypto.secp256k1.PubKey".to_string(),
-                            value: signer.public_key().encode_to_vec(),
-                        }),
-                        mode_info: Some(tx::v1beta1::ModeInfo {
-                            sum: Some(tx::v1beta1::mode_info::Sum::Single(
-                                tx::v1beta1::mode_info::Single {
-                                    mode: tx::signing::v1beta1::SignMode::Direct.into(),
-                                },
-                            )),
-                        }),
-                        sequence: account.sequence,
-                    }]
-                    .to_vec(),
-                    fee: Some(tx::v1beta1::Fee {
-                        amount: vec![protos::cosmos::base::v1beta1::Coin {
-                            // TODO: This needs to be configurable
-                            denom: self.fee_denom.clone(),
-                            amount: "1".to_string(),
-                        }],
-                        gas_limit: 5_000_000_000,
-                        payer: String::new(),
-                        granter: String::new(),
+        let sign_doc = tx::v1beta1::SignDoc {
+            body_bytes: tx::v1beta1::TxBody {
+                messages: messages.clone().into_iter().collect(),
+                // TODO(benluelo): What do we want to use as our memo?
+                memo: String::new(),
+                timeout_height: 123_123_123,
+                extension_options: vec![],
+                non_critical_extension_options: vec![],
+            }
+            .encode_to_vec(),
+            auth_info_bytes: tx::v1beta1::AuthInfo {
+                signer_infos: [tx::v1beta1::SignerInfo {
+                    public_key: Some(protos::google::protobuf::Any {
+                        type_url: "/cosmos.crypto.secp256k1.PubKey".to_string(),
+                        value: signer.public_key().encode_to_vec(),
                     }),
-                    tip: None,
-                }
-                .encode_to_vec(),
-                chain_id: self.chain_id.clone(),
-                account_number: account.account_number,
-            };
+                    mode_info: Some(tx::v1beta1::ModeInfo {
+                        sum: Some(tx::v1beta1::mode_info::Sum::Single(
+                            tx::v1beta1::mode_info::Single {
+                                mode: tx::signing::v1beta1::SignMode::Direct.into(),
+                            },
+                        )),
+                    }),
+                    sequence: account.sequence,
+                }]
+                .to_vec(),
+                fee: Some(tx::v1beta1::Fee {
+                    amount: vec![protos::cosmos::base::v1beta1::Coin {
+                        // TODO: This needs to be configurable
+                        denom: self.fee_denom.clone(),
+                        amount: "1".to_string(),
+                    }],
+                    gas_limit: 5_000_000_000,
+                    payer: String::new(),
+                    granter: String::new(),
+                }),
+                tip: None,
+            }
+            .encode_to_vec(),
+            chain_id: self.chain_id.clone(),
+            account_number: account.account_number,
+        };
 
-            let alice_signature = signer.try_sign(&sign_doc.encode_to_vec()).unwrap().to_vec();
+        let signature = signer
+            .try_sign(&sign_doc.encode_to_vec())
+            .expect("signing failed")
+            .to_vec();
 
-            let tx_raw = tx::v1beta1::TxRaw {
-                body_bytes: sign_doc.body_bytes,
-                auth_info_bytes: sign_doc.auth_info_bytes,
-                signatures: [alice_signature].to_vec(),
-            };
+        let tx_raw = tx::v1beta1::TxRaw {
+            body_bytes: sign_doc.body_bytes,
+            auth_info_bytes: sign_doc.auth_info_bytes,
+            signatures: [signature].to_vec(),
+        };
 
-            let tx_raw_bytes = tx_raw.encode_to_vec();
+        let tx_raw_bytes = tx_raw.encode_to_vec();
 
-            let tx_hash =
-                hex::encode_upper(sha2::Sha256::new().chain_update(&tx_raw_bytes).finalize());
+        let tx_hash = hex::encode_upper(sha2::Sha256::new().chain_update(&tx_raw_bytes).finalize());
 
-            let query = Query {
-                event_type: Some(EventType::Tx),
-                conditions: [Condition::eq(
-                    "tx.hash".to_string(),
-                    Operand::String(tx_hash.clone()),
-                )]
-                .into(),
-            };
+        if self
+            .tm_client
+            .tx(tx_hash.parse().unwrap(), false)
+            .await
+            .is_ok()
+        {
+            tracing::info!(%tx_hash, "tx already included");
+            return Ok(());
+        }
 
-            loop {
-                if self
-                    .tm_client
-                    .tx(tx_hash.parse().unwrap(), false)
-                    .await
-                    .is_ok()
-                {
-                    // TODO: Log an error if this is unsuccessful
-                    let _ = self.tm_client.unsubscribe(query).await;
-                    return;
-                }
+        let response_result = self.tm_client.broadcast_tx_sync(tx_raw_bytes.clone()).await;
 
-                // dbg!(maybe_tx);
+        let response = response_result.unwrap();
 
-                let response_result = self.tm_client.broadcast_tx_sync(tx_raw_bytes.clone()).await;
+        assert_eq!(
+            tx_hash,
+            response.hash.to_string(),
+            "tx hash calculated incorrectly"
+        );
 
-                // dbg!(&response_result);
+        tracing::debug!(%tx_hash);
 
-                let response = response_result.unwrap();
+        tracing::info!(check_tx_code = ?response.code, codespace = %response.codespace, check_tx_log = %response.log);
 
-                assert_eq!(tx_hash, response.hash.to_string());
+        if response.code.is_err() {
+            let value: tm_types::TendermintResponseErrorCode = response
+                .code
+                .value()
+                .try_into()
+                .expect("unknown response code");
 
-                tracing::debug!(%tx_hash);
+            return Err(BroadcastTxCommitError::Tx(value));
+        };
 
-                tracing::info!(check_tx_code = ?response.code, check_tx_log = %response.log);
+        // HACK: wait for a block to verify inclusion
+        tokio::time::sleep(std::time::Duration::from_secs(7)).await;
 
-                if response.code.is_err() {
-                    let value: TendermintResponseErrorCode = response
-                        .code
-                        .value()
-                        .try_into()
-                        .expect("unknown response code");
+        let tx_inclusion = self.tm_client.tx(tx_hash.parse().unwrap(), false).await;
 
-                    if value == TendermintResponseErrorCode::WrongSequence {
-                        tracing::warn!("sequence mismatch, reconstructing tx");
-                        continue 'construct_tx;
-                    }
+        tracing::debug!(?tx_inclusion);
 
-                    panic!("check_tx failed: {:?}", response)
-                };
-
-                // HACK: wait for a block to verify inclusion
-                tokio::time::sleep(std::time::Duration::from_secs(7)).await;
-
-                let tx_inclusion = self.tm_client.tx(tx_hash.parse().unwrap(), false).await;
-
-                tracing::debug!(?tx_inclusion);
-
-                match tx_inclusion {
-                    Ok(_) => break 'construct_tx,
-                    Err(_) => {
-                        // TODO: we don't handle this case, either we got an error or the tx hasn't been received
-                        // we need to discriminate
-                        tracing::warn!("tx inclusion couldn't be retrieved after 1 block");
-                        panic!()
-                    }
-                };
+        match tx_inclusion {
+            Ok(_) => Ok(()),
+            Err(err) => {
+                tracing::warn!("tx inclusion couldn't be retrieved after 1 block");
+                Err(BroadcastTxCommitError::Inclusion(err))
             }
         }
     }
@@ -509,6 +494,30 @@ impl Union {
         assert!(account.type_url == "/cosmos.auth.v1beta1.BaseAccount");
 
         protos::cosmos::auth::v1beta1::BaseAccount::decode(&*account.value).unwrap()
+    }
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum BroadcastTxCommitError {
+    #[error("tx was not included")]
+    Inclusion(#[from] tendermint_rpc::Error),
+    #[error("tx failed: {0:?}")]
+    Tx(TendermintResponseErrorCode),
+}
+
+impl MaybeRecoverableError for BroadcastTxCommitError {
+    fn is_recoverable(&self) -> bool {
+        match self {
+            // tx wasn't included, retry unconditionally
+            Self::Inclusion(_) => true,
+            Self::Tx(code) => matches!(
+                code,
+                TendermintResponseErrorCode::TxInMempoolCache
+                    | TendermintResponseErrorCode::MempoolIsFull
+                    | TendermintResponseErrorCode::TxTimeoutHeight
+                    | TendermintResponseErrorCode::WrongSequence
+            ),
+        }
     }
 }
 
@@ -637,143 +646,182 @@ impl EventSource for Union {
     }
 }
 
-#[derive(
-    Debug, Copy, Clone, PartialEq, Eq, Hash, num_enum::IntoPrimitive, num_enum::TryFromPrimitive,
-)]
-#[repr(u32)]
 #[allow(non_upper_case_globals)] // TODO: Report this upstream
-pub enum TendermintResponseErrorCode {
-    // errInternal should never be exposed, but we reserve this code for non-specified errors
-    Internal = 1,
+pub mod tm_types {
+    #[derive(
+        Debug, Copy, Clone, PartialEq, Eq, Hash, num_enum::IntoPrimitive, num_enum::TryFromPrimitive,
+    )]
+    #[repr(u32)]
+    pub enum TendermintResponseErrorCode {
+        /// ErrTxDecode is returned if we cannot parse a transaction
+        // #[a("tx parse error")]
+        TxDecode = 2,
 
-    // ErrTxDecode is returned if we cannot parse a transaction
-    TxDecode = 2,
+        /// ErrInvalidSequence is used the sequence number (nonce) is incorrect
+        /// for the signature
+        // #[a("invalid sequence")]
+        InvalidSequence = 3,
 
-    // ErrInvalidSequence is used the sequence number (nonce) is incorrect
-    // for the signature
-    InvalidSequence = 3,
+        /// ErrUnauthorized is used whenever a request without sufficient
+        /// authorization is handled.
+        // #[a("unauthorized")]
+        Unauthorized = 4,
 
-    // ErrUnauthorized is used whenever a request without sufficient
-    // authorization is handled.
-    Unauthorized = 4,
+        /// ErrInsufficientFunds is used when the account cannot pay requested amount.
+        // #[a("insufficient funds")]
+        InsufficientFunds = 5,
 
-    // ErrInsufficientFunds is used when the account cannot pay requested amount.
-    InsufficientFunds = 5,
+        /// ErrUnknownRequest to doc
+        // #[a("unknown request")]
+        UnknownRequest = 6,
 
-    // ErrUnknownRequest to doc
-    UnknownRequest = 6,
+        /// ErrInvalidAddress to doc
+        // #[a("invalid address")]
+        InvalidAddress = 7,
 
-    // ErrInvalidAddress to doc
-    InvalidAddress = 7,
+        /// ErrInvalidPubKey to doc
+        // #[a("invalid pubkey")]
+        InvalidPubKey = 8,
 
-    // ErrInvalidPubKey to doc
-    InvalidPubKey = 8,
+        /// ErrUnknownAddress to doc
+        // #[a("unknown address")]
+        UnknownAddress = 9,
 
-    // ErrUnknownAddress to doc
-    UnknownAddress = 9,
+        /// ErrInvalidCoins to doc
+        // #[a("invalid coins")]
+        InvalidCoins = 10,
 
-    // ErrInvalidCoins to doc
-    InvalidCoins = 10,
+        /// ErrOutOfGas to doc
+        // #[a("out of gas")]
+        OutOfGas = 11,
 
-    // ErrOutOfGas to doc
-    OutOfGas = 11,
+        /// ErrMemoTooLarge to doc
+        // #[a("memo too large")]
+        MemoTooLarge = 12,
 
-    // ErrMemoTooLarge to doc
-    MemoTooLarge = 12,
+        /// ErrInsufficientFee to doc
+        // #[a("insufficient fee")]
+        InsufficientFee = 13,
 
-    // ErrInsufficientFee to doc
-    InsufficientFee = 13,
+        /// ErrTooManySignatures to doc
+        // #[a("maximum number of signatures exceeded")]
+        TooManySignatures = 14,
 
-    // ErrTooManySignatures to doc
-    TooManySignatures = 14,
+        /// ErrNoSignatures to doc
+        // #[a("no signatures supplied")]
+        NoSignatures = 15,
 
-    // ErrNoSignatures to doc
-    NoSignatures = 15,
+        /// ErrJSONMarshal defines an ABCI typed JSON marshalling error
+        // #[a("failed to marshal JSON bytes")]
+        JSONMarshal = 16,
 
-    // ErrJSONMarshal defines an ABCI typed JSON marshalling error
-    JSONMarshal = 16,
+        /// ErrJSONUnmarshal defines an ABCI typed JSON unmarshalling error
+        // #[a("failed to unmarshal JSON bytes")]
+        JSONUnmarshal = 17,
 
-    // ErrJSONUnmarshal defines an ABCI typed JSON unmarshalling error
-    JSONUnmarshal = 17,
+        /// ErrInvalidRequest defines an ABCI typed error where the request contains
+        /// invalid data.
+        // #[a("invalid request")]
+        InvalidRequest = 18,
 
-    // ErrInvalidRequest defines an ABCI typed error where the request contains
-    // invalid data.
-    InvalidRequest = 18,
+        /// ErrTxInMempoolCache defines an ABCI typed error where a tx already exists
+        /// in the mempool.
+        // #[a("tx already in mempool")]
+        TxInMempoolCache = 19,
 
-    // ErrTxInMempoolCache defines an ABCI typed error where a tx already exists
-    // in the mempool.
-    TxInMempoolCache = 19,
+        /// ErrMempoolIsFull defines an ABCI typed error where the mempool is full.
+        // #[a("mempool is full")]
+        MempoolIsFull = 20,
 
-    // ErrMempoolIsFull defines an ABCI typed error where the mempool is full.
-    MempoolIsFull = 20,
+        /// ErrTxTooLarge defines an ABCI typed error where tx is too large.
+        // #[a("tx too large")]
+        TxTooLarge = 21,
 
-    // ErrTxTooLarge defines an ABCI typed error where tx is too large.
-    TxTooLarge = 21,
+        /// ErrKeyNotFound defines an error when the key doesn't exist
+        // #[a("key not found")]
+        KeyNotFound = 22,
 
-    // ErrKeyNotFound defines an error when the key doesn't exist
-    KeyNotFound = 22,
+        /// ErrWrongPassword defines an error when the key password is invalid.
+        // #[a("invalid account password")]
+        WrongPassword = 23,
 
-    // ErrWrongPassword defines an error when the key password is invalid.
-    WrongPassword = 23,
+        /// ErrorInvalidSigner defines an error when the tx intended signer does not match the given signer.
+        // #[a("tx intended signer does not match the given signer")]
+        InvalidSigner = 24,
 
-    // ErrorInvalidSigner defines an error when the tx intended signer does not match the given signer.
-    orInvalidSigner = 24,
+        /// ErrorInvalidGasAdjustment defines an error for an invalid gas adjustment
+        // #[a("invalid gas adjustment")]
+        InvalidGasAdjustment = 25,
 
-    // ErrorInvalidGasAdjustment defines an error for an invalid gas adjustment
-    orInvalidGasAdjustment = 25,
+        /// ErrInvalidHeight defines an error for an invalid height
+        // #[a("invalid height")]
+        InvalidHeight = 26,
 
-    // ErrInvalidHeight defines an error for an invalid height
-    InvalidHeight = 26,
+        /// ErrInvalidVersion defines a general error for an invalid version
+        // #[a("invalid version")]
+        InvalidVersion = 27,
 
-    // ErrInvalidVersion defines a general error for an invalid version
-    InvalidVersion = 27,
+        /// ErrInvalidChainID defines an error when the chain-id is invalid.
+        // #[a("invalid chain-id")]
+        InvalidChainID = 28,
 
-    // ErrInvalidChainID defines an error when the chain-id is invalid.
-    InvalidChainID = 28,
+        /// ErrInvalidType defines an error an invalid type.
+        // #[a("invalid type")]
+        InvalidType = 29,
 
-    // ErrInvalidType defines an error an invalid type.
-    InvalidType = 29,
+        /// ErrTxTimeoutHeight defines an error for when a tx is rejected out due to an
+        /// explicitly set timeout height.
+        // #[a("tx timeout height")]
+        TxTimeoutHeight = 30,
 
-    // ErrTxTimeoutHeight defines an error for when a tx is rejected out due to an
-    // explicitly set timeout height.
-    TxTimeoutHeight = 30,
+        /// ErrUnknownExtensionOptions defines an error for unknown extension options.
+        // #[a("unknown extension options")]
+        UnknownExtensionOptions = 31,
 
-    // ErrUnknownExtensionOptions defines an error for unknown extension options.
-    UnknownExtensionOptions = 31,
+        /// ErrWrongSequence defines an error where the account sequence defined in
+        /// the signer info doesn't match the account's actual sequence number.
+        // #[a("incorrect account sequence")]
+        WrongSequence = 32,
 
-    // ErrWrongSequence defines an error where the account sequence defined in
-    // the signer info doesn't match the account's actual sequence number.
-    WrongSequence = 32,
+        /// ErrPackAny defines an error when packing a protobuf message to Any fails.
+        // #[a("failed packing protobuf message to Any")]
+        PackAny = 33,
 
-    // ErrPackAny defines an error when packing a protobuf message to Any fails.
-    PackAny = 33,
+        /// ErrUnpackAny defines an error when unpacking a protobuf message from Any fails.
+        // #[a("failed unpacking protobuf message from Any")]
+        UnpackAny = 34,
 
-    // ErrUnpackAny defines an error when unpacking a protobuf message from Any fails.
-    UnpackAny = 34,
+        /// ErrLogic defines an internal logic error, e.g. an invariant or assertion
+        /// that is violated. It is a programmer error, not a user-facing error.
+        // #[a("internal logic error")]
+        Logic = 35,
 
-    // ErrLogic defines an internal logic error, e.g. an invariant or assertion
-    // that is violated. It is a programmer error, not a user-facing error.
-    Logic = 35,
+        /// ErrConflict defines a conflict error, e.g. when two goroutines try to access
+        /// the same resource and one of them fails.
+        // #[a("conflict")]
+        Conflict = 36,
 
-    // ErrConflict defines a conflict error, e.g. when two goroutines try to access
-    // the same resource and one of them fails.
-    Conflict = 36,
+        /// ErrNotSupported is returned when we call a branch of a code which is currently not
+        /// supported.
+        // #[a("feature not supported")]
+        NotSupported = 37,
 
-    // ErrNotSupported is returned when we call a branch of a code which is currently not
-    // supported.
-    NotSupported = 37,
+        /// ErrNotFound defines an error when requested entity doesn't exist in the state.
+        // #[a("not found")]
+        NotFound = 38,
 
-    // ErrNotFound defines an error when requested entity doesn't exist in the state.
-    NotFound = 38,
+        /// ErrIO should be used to wrap internal errors caused by external operation.
+        /// Examples: not DB domain error, file writing etc...
+        // #[a("Internal IO error")]
+        IO = 39,
 
-    // ErrIO should be used to wrap internal errors caused by external operation.
-    // Examples: not DB domain error, file writing etc...
-    IO = 39,
+        /// ErrAppConfig defines an error occurred if min-gas-prices field in BaseConfig is empty.
+        // #[a("error in app.toml")]
+        AppConfig = 40,
 
-    // ErrPanic is only set when we recover from a panic, so we know to
-    // redact potentially sensitive system info
-    Panic = 111222,
-
-    // ErrAppConfig defines an error occurred if min-gas-prices field in BaseConfig is empty.
-    AppConfig = 40,
+        /// ErrInvalidGasLimit defines an error when an invalid GasWanted value is
+        /// supplied.
+        // #[a("invalid gas limit")]
+        InvalidGasLimit = 41,
+    }
 }

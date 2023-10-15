@@ -38,6 +38,32 @@ pub struct IbcEvent<L: LightClient> {
     >,
 }
 
+impl<L: LightClient> Display for IbcEvent<L> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        use unionlabs::events::IbcEvent::*;
+
+        match self.event {
+            CreateClient(_) => write!(f, "Ibc::CreateClient"),
+            UpdateClient(_) => write!(f, "Ibc::UpdateClient"),
+            ClientMisbehaviour(_) => write!(f, "Ibc::ClientMisbehaviour"),
+            SubmitEvidence(_) => write!(f, "Ibc::SubmitEvidence"),
+            ConnectionOpenInit(_) => write!(f, "Ibc::ConnectionOpenInit"),
+            ConnectionOpenTry(_) => write!(f, "Ibc::ConnectionOpenTry"),
+            ConnectionOpenAck(_) => write!(f, "Ibc::ConnectionOpenAck"),
+            ConnectionOpenConfirm(_) => write!(f, "Ibc::ConnectionOpenConfirm"),
+            ChannelOpenInit(_) => write!(f, "Ibc::ChannelOpenInit"),
+            ChannelOpenTry(_) => write!(f, "Ibc::ChannelOpenTry"),
+            ChannelOpenAck(_) => write!(f, "Ibc::ChannelOpenAck"),
+            ChannelOpenConfirm(_) => write!(f, "Ibc::ChannelOpenConfirm"),
+            WriteAcknowledgement(_) => write!(f, "Ibc::WriteAcknowledgement"),
+            RecvPacket(_) => write!(f, "Ibc::RecvPacket"),
+            SendPacket(_) => write!(f, "Ibc::SendPacket"),
+            AcknowledgePacket(_) => write!(f, "Ibc::AcknowledgePacket"),
+            TimeoutPacket(_) => write!(f, "Ibc::TimeoutPacket"),
+        }
+    }
+}
+
 #[derive(
     DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, derive_more::Display,
 )]

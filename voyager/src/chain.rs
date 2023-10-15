@@ -6,14 +6,15 @@ use std::{
 use chain_utils::{
     evm::{Evm, EvmInitError},
     union::{Union, UnionInitError},
-    Chain,
+    MaybeRecoverableError,
 };
 use futures::Future;
 use serde::{Deserialize, Serialize};
 use unionlabs::{
     ethereum_consts_traits::{Mainnet, Minimal},
     ibc::core::client::height::{HeightFromStrError, IsHeight},
-    id, traits,
+    id,
+    traits::{self, Chain},
 };
 
 use crate::{
@@ -127,7 +128,10 @@ pub trait LightClient: Send + Sync + Sized {
         + Into<LightClientSpecificAggregate<Self>>
         + DoAggregate<Self>;
 
-    fn msg(&self, msg: Msg<Self>) -> impl Future + '_;
+    /// Error type for [`Self::msg`].
+    type MsgError: MaybeRecoverableError;
+
+    fn msg(&self, msg: Msg<Self>) -> impl Future<Output = Result<(), Self::MsgError>> + '_;
 
     /// Get the underlying [`Self::HostChain`] that this client is on.
     fn chain(&self) -> &Self::HostChain;

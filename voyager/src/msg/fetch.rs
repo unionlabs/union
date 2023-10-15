@@ -1,15 +1,16 @@
 use std::{fmt::Display, marker::PhantomData};
 
-use chain_utils::Chain;
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use serde::{Deserialize, Serialize};
 use unionlabs::{
     ethereum::H256,
     id::{ChannelId, ConnectionId},
+    proof,
+    traits::Chain,
 };
 
 use crate::{
-    chain::{proof, ChainOf, HeightOf, LightClient, QueryHeight},
+    chain::{ChainOf, HeightOf, LightClient, QueryHeight},
     msg::{any_enum, identified, ChainIdOf},
 };
 

@@ -41,12 +41,12 @@ use unionlabs::{
         lightclients::{cometbls, ethereum, tendermint::fraction::Fraction, wasm},
     },
     id::{ChannelId, Id, IdParseError},
-    id_type, EmptyString, TryFromEthAbiErrorOf, TryFromProto,
+    id_type,
+    traits::{Chain, ClientState},
+    EmptyString, TryFromEthAbiErrorOf, TryFromProto,
 };
 
-use crate::{
-    chain_client_id, private_key::PrivateKey, Chain, ChainEvent, ClientState, EventSource, Pool,
-};
+use crate::{chain_client_id, private_key::PrivateKey, ChainEvent, EventSource, Pool};
 
 pub type CometblsMiddleware =
     SignerMiddleware<NonceManagerMiddleware<Provider<Ws>>, Wallet<ecdsa::SigningKey>>;
