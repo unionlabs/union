@@ -101,7 +101,7 @@ impl Display for Timestamp {
 
 impl From<Timestamp> for DateTime<Utc> {
     fn from(value: Timestamp) -> Self {
-        DateTime::<Utc>::from_utc(
+        DateTime::<Utc>::from_naive_utc_and_offset(
             NaiveDateTime::from_timestamp_opt(
                 value.seconds.inner(),
                 value

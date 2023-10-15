@@ -40,7 +40,7 @@ impl TransferToken {
             .denom
             .strip_prefix("factory/")
             .and_then(|denom| denom.strip_prefix(contract_address))
-            .and_then(|denom| denom.strip_prefix("/"))
+            .and_then(|denom| denom.strip_prefix('/'))
         {
             // This is a denom created by us
             Some(factory_denom) => {
@@ -149,14 +149,14 @@ impl TryFrom<Binary> for Ucs01TransferPacket {
                     sender: sender.clone(),
                     receiver: receiver.clone(),
                     tokens: tokens
-                        .into_iter()
+                        .iter()
                         .map(|encoded_token| {
                             if let Token::Tuple(encoded_token_inner) = encoded_token {
                                 match &encoded_token_inner[..] {
                                     [Token::String(denom), Token::Uint(amount)] => TransferToken {
                                         denom: denom.clone(),
                                         // NOTE: both structures uses big endian by default
-                                        amount: Uint256::new(amount.clone().into()),
+                                        amount: Uint256::new((*amount).into()),
                                     },
                                     _ => unreachable!(),
                                 }
@@ -365,14 +365,14 @@ impl TryFrom<TransferPacketCommon<String>> for Ics20Packet {
         }: TransferPacketCommon<String>,
     ) -> Result<Self, Self::Error> {
         let (denom, amount) = match &tokens[..] {
-            [TransferToken { denom, amount }] => Ok((denom.clone(), amount.clone())),
+            [TransferToken { denom, amount }] => Ok((denom.clone(), *amount)),
             _ => Err(EncodingError::Ics20OnlyOneCoin),
         }?;
         Ok(Self {
             sender,
             receiver,
             denom,
-            amount: amount.into(),
+            amount,
             memo: extension,
         })
     }
@@ -397,9 +397,9 @@ impl<'a> From<(&'a str, &IbcEndpoint)> for DenomOrigin<'a> {
         // The denom is local IFF we can strip all prefixes
         match denom
             .strip_prefix(&remote_endpoint.port_id)
-            .and_then(|denom| denom.strip_prefix("/"))
+            .and_then(|denom| denom.strip_prefix('/'))
             .and_then(|denom| denom.strip_prefix(&remote_endpoint.channel_id))
-            .and_then(|denom| denom.strip_prefix("/"))
+            .and_then(|denom| denom.strip_prefix('/'))
         {
             Some(denom) => DenomOrigin::Local { denom },
             None => DenomOrigin::Remote { denom },
@@ -514,7 +514,7 @@ mod tests {
                 }
             )),
             Ok(DenomOrigin::Remote {
-                denom: "blabla/ok/-k".into()
+                denom: "blabla/ok/-k"
             })
         );
     }

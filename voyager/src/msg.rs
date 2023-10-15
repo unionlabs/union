@@ -1022,27 +1022,3 @@ where
 {
     fn do_aggregate(_: Identified<L, Self>, _: VecDeque<AggregateData>) -> Vec<RelayerMsg>;
 }
-
-#[test]
-fn t() {
-    use unionlabs::ethereum_consts_traits::{Mainnet, Minimal};
-
-    use crate::chain::union::Validators;
-
-    fn t<T: TryFrom<AggregateData> + Into<AggregateData>>() {}
-    fn u<L: LightClient, T: TryFrom<Data<L>>>() {}
-
-    t::<Identified<EthereumMinimal, Validators<Minimal>>>();
-    u::<EthereumMinimal, Validators<Minimal>>();
-    // u::<CometblsMinimal, Validators<Minimal>>();
-}
-
-fn t2() {
-    enum T {
-        U,
-    }
-
-    match T::U {
-        T::U { .. } => {}
-    }
-}

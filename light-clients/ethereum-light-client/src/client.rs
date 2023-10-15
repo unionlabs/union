@@ -483,20 +483,20 @@ mod test {
 
     /// These values are obtained by uploading a dummy contract with the necessary types to the devnet and
     /// reading the values by `eth_getProof` RPC call.
-    const CLIENT_STATE_PROOF_KEY: &[u8] =
-        &hex!("b35cad2b263a62faaae30d8b3f51201fea5501d2df17d59a3eef2751403e684f");
-    const CLIENT_STATE_PROOF_VALUE: &[u8] =
-        &hex!("272c7c82ac0f0adbfe4ae30614165bf3b94d49754ce8c1955cc255dcc829b5");
-    const CLIENT_STATE_PROOF: [&[u8]; 2] = [
-        &hex!("f871808080a0b9f6e8d11cf768b8034f04b8b2ab45bb5ca792e1c6e3929cf8222a885631ffac808080808080808080a0f7202a06e8dc011d3123f907597f51546fe03542551af2c9c54d21ba0fbafc7280a0d1797d071b81705da736e39e75f1186c8e529ba339f7a7d12a9b4fafe33e43cc80"),
-        &hex!("f842a03a8c7f353aebdcd6b56a67cd1b5829681a3c6e1695282161ab3faa6c3666d4c3a09f272c7c82ac0f0adbfe4ae30614165bf3b94d49754ce8c1955cc255dcc829b5")
-    ];
-    /// Storage root of the contract at the time that this proof is obtained.
-    const CLIENT_STATE_STORAGE_ROOT: H256 = H256(hex!(
-        "5634f342b966b609cdd8d2f7ed43bb94702c9e83d4e974b08a3c2b8205fd85e3"
-    ));
-    const CLIENT_STATE_WASM_CODE_ID: &[u8] =
-        &hex!("B41F9EE164A6520C269F8928A1F3264A6F983F27478CB3A2251B77A65E0CEFBF");
+    // const CLIENT_STATE_PROOF_KEY: &[u8] =
+    //     &hex!("b35cad2b263a62faaae30d8b3f51201fea5501d2df17d59a3eef2751403e684f");
+    // const CLIENT_STATE_PROOF_VALUE: &[u8] =
+    //     &hex!("272c7c82ac0f0adbfe4ae30614165bf3b94d49754ce8c1955cc255dcc829b5");
+    // const CLIENT_STATE_PROOF: [&[u8]; 2] = [
+    //     &hex!("f871808080a0b9f6e8d11cf768b8034f04b8b2ab45bb5ca792e1c6e3929cf8222a885631ffac808080808080808080a0f7202a06e8dc011d3123f907597f51546fe03542551af2c9c54d21ba0fbafc7280a0d1797d071b81705da736e39e75f1186c8e529ba339f7a7d12a9b4fafe33e43cc80"),
+    //     &hex!("f842a03a8c7f353aebdcd6b56a67cd1b5829681a3c6e1695282161ab3faa6c3666d4c3a09f272c7c82ac0f0adbfe4ae30614165bf3b94d49754ce8c1955cc255dcc829b5")
+    // ];
+    // /// Storage root of the contract at the time that this proof is obtained.
+    // const CLIENT_STATE_STORAGE_ROOT: H256 = H256(hex!(
+    //     "5634f342b966b609cdd8d2f7ed43bb94702c9e83d4e974b08a3c2b8205fd85e3"
+    // ));
+    // const CLIENT_STATE_WASM_CODE_ID: &[u8] =
+    //     &hex!("B41F9EE164A6520C269F8928A1F3264A6F983F27478CB3A2251B77A65E0CEFBF");
 
     const CONSENSUS_STATE_PROOF_KEY: &[u8] =
         &hex!("9f22934f38bf5512b9c33ed55f71525c5d129895aad5585a2624f6c756c1c101");

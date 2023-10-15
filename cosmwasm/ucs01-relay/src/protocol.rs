@@ -116,7 +116,7 @@ trait OnReceive {
                         Ok(if exists {
                             vec![TokenMsg::MintTokens {
                                 denom: factory_denom,
-                                amount: amount,
+                                amount,
                                 mint_to_address: receiver.to_string(),
                             }
                             .into()]
@@ -129,7 +129,7 @@ trait OnReceive {
                                 .into(),
                                 TokenMsg::MintTokens {
                                     denom: factory_denom,
-                                    amount: amount,
+                                    amount,
                                     mint_to_address: receiver.to_string(),
                                 }
                                 .into(),
@@ -197,10 +197,10 @@ trait ForTokens {
                     // the denom has been previously normalized (factory/{}/ prefix removed), we must reconstruct to burn
                     let foreign_denom = make_foreign_denom(counterparty_endpoint, denom);
                     let factory_denom = format!("factory/{}/{}", contract_address, foreign_denom);
-                    messages.append(&mut self.on_remote(&channel_id, &factory_denom, amount)?);
+                    messages.append(&mut self.on_remote(channel_id, &factory_denom, amount)?);
                 }
                 DenomOrigin::Remote { denom } => {
-                    messages.append(&mut self.on_local(&channel_id, &denom, amount)?);
+                    messages.append(&mut self.on_local(channel_id, denom, amount)?);
                 }
             }
         }
