@@ -6,6 +6,7 @@ use reqwest::{Client, Url};
 type Jsonb = serde_json::Value;
 type Timestamptz = String;
 type Bigint = u128;
+type Smallint = i32;
 
 pub trait Datastore {
     fn do_post<Q: GraphQLQuery>(

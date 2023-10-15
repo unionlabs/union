@@ -1,16 +1,26 @@
 use color_eyre::eyre::{bail, Report};
 use futures::future::join_all;
 use hubble::hasura::*;
-use tendermint::{block::Height, consensus::Params, genesis::Genesis, validator::Update};
+use tendermint::{block::Height, genesis::Genesis, Time};
 use tendermint_rpc::{
-    dialect::v0_37::Event, endpoint::block_results::Response as BlockResponse, error::ErrorDetail,
-    response_error::Code, Client, Error, HttpClient, Order, query::{Query, EventType},
+    endpoint::block_results::Response as BlockResponse,
+    error::ErrorDetail,
+    query::{EventType, Query},
+    response_error::Code,
+    Client, Error, HttpClient, Order,
 };
 use tokio::time::{sleep, Duration};
 use tracing::{debug, info};
 use url::Url;
 
-use crate::metrics;
+use crate::{metrics, tm::insert_blocks_many::V0EventsInsertInput};
+
+pub const STAGE_BEGIN_BLOCK: i32 = 1;
+pub const STAGE_END_BLOCK: i32 = 2;
+pub const STAGE_FINALIZE_BLOCK: i32 = 3;
+pub const STAGE_VALIDATOR_UPDATES: i32 = 4;
+pub const STAGE_CONSENSUS_PARAM_UPDATES: i32 = 5;
+pub const STAGE_TX: i32 = 6;
 
 #[derive(Clone, Debug, serde::Deserialize)]
 pub struct Config {
@@ -185,21 +195,16 @@ async fn batch_sync<D: Datastore>(
     let objects: Vec<_> = join_all(headers.block_metas.iter().rev().map(|header| async {
         debug!("fetching block results for height {}", header.header.height);
         let block = client.block_results(header.header.height).await?;
-        let len = if let Some(tx_results) = &block.txs_results {
-            Some(tx_results.len())
-        } else {
-            None
-        };
+        let len = block
+            .txs_results
+            .as_ref()
+            .map(|tx_results| tx_results.len());
 
         let txs = fetch_transactions_for_block(client, header.header.height, len).await?;
-        let events: Vec<_> = block
-            .events()
-            .enumerate()
-            .map(|i| into_many_blocks_input(header.header.time.to_rfc3339(), i))
-            .collect();
+        let events: Vec<_> = block.events(&header.header.time).collect();
         debug!(
             "found {} events for block {}",
-            events.len(),
+            events.len() + txs.len(),
             header.header.height
         );
         Ok(insert_blocks_many::V0BlocksInsertInput {
@@ -217,6 +222,7 @@ async fn batch_sync<D: Datastore>(
             is_finalized: Some(true),
             data: Some(serde_json::to_value(header.clone())?),
             time: Some(header.header.time.to_rfc3339()),
+            transactions: Some(transactions_into_many_blocks_input(txs)),
         })
     }))
     .await
@@ -277,11 +283,9 @@ async fn sync_next<D: Datastore>(
     };
 
     let height = block.height;
-    let events: Vec<_> = block
-        .events()
-        .enumerate()
-        .map(|item| into_block_input(header.time.to_rfc3339(), item))
-        .collect();
+    let len = block.txs_results.as_ref().map(|e| e.len());
+    let events: Vec<_> = block.events(&header.time).collect();
+    let txs = fetch_transactions_for_block(client, height, len).await?;
     info!("found {} events for block {}", &events.len(), &height);
 
     debug!("storing events for block {}", &height);
@@ -293,12 +297,12 @@ async fn sync_next<D: Datastore>(
     metrics::BLOCK_COLLECTOR
         .with_label_values(&[chain_id])
         .inc();
-    let v = insert_block::Variables {
-        object: insert_block::V0BlocksInsertInput {
+    let v = insert_blocks_many::Variables {
+        objects: vec![insert_blocks_many::V0BlocksInsertInput {
             chain: None,
             chain_id: Some(chain_db_id),
             created_at: None,
-            events: Some(insert_block::V0EventsArrRelInsertInput {
+            events: Some(insert_blocks_many::V0EventsArrRelInsertInput {
                 data: events,
                 on_conflict: None,
             }),
@@ -309,15 +313,20 @@ async fn sync_next<D: Datastore>(
             is_finalized: Some(true),
             updated_at: None,
             time: Some(header.time.to_rfc3339()),
-        },
+            transactions: Some(transactions_into_many_blocks_input(txs)),
+        }],
     };
 
-    db.do_post::<InsertBlock>(v).await?;
+    db.do_post::<InsertBlocksMany>(v).await?;
     metrics::POST_COLLECTOR.with_label_values(&[chain_id]).inc();
     Ok(Some(height.increment()))
 }
 
-async fn fetch_transactions_for_block(client: &HttpClient, height: Height, expected: impl Into<Option<usize>>) -> Result<Vec<tendermint_rpc::endpoint::tx::Response>, Report> {
+async fn fetch_transactions_for_block(
+    client: &HttpClient,
+    height: Height,
+    expected: impl Into<Option<usize>>,
+) -> Result<Vec<tendermint_rpc::endpoint::tx::Response>, Report> {
     let query = Query::from(EventType::Tx).and_eq("tx.height", height.value());
     let expected = expected.into();
 
@@ -327,104 +336,172 @@ async fn fetch_transactions_for_block(client: &HttpClient, height: Height, expec
         vec![]
     };
 
-    for page in 0..u32::MAX {
-        let response = client.tx_search(query.clone(), false, page, 100, Order::Ascending).await?;
+    for page in 1..u32::MAX {
+        let response = client
+            .tx_search(query.clone(), false, page, 100, Order::Ascending)
+            .await?;
         let len = response.txs.len();
         txs.extend(response.txs);
 
         // We always query for the maximum page size. If we get less items, we know pagination is done
         if len < 100 {
-            break
+            break;
         }
 
         // If we deduce the number from expected, we end pagination once we reach expected.
         if txs.len() == expected.unwrap_or(usize::MAX) {
-            break
+            break;
         }
     }
 
     if let Some(expected) = expected {
         assert_eq!(txs.len(), expected);
     }
-    return Ok(txs);
+    Ok(txs)
 }
 
-fn into_many_blocks_input(
-    time: String,
-    value: (usize, StateChange),
-) -> insert_blocks_many::V0EventsInsertInput {
-    insert_blocks_many::V0EventsInsertInput {
-        index: Some(value.0 as i64),
-        block: None,
-        block_id: None,
-        data: Some(serde_json::to_value(&value.1).unwrap()),
-        created_at: None,
-        updated_at: None,
-        time: Some(time),
-    }
-}
-
-fn into_block_input(
-    time: String,
-    value: (usize, StateChange),
-) -> insert_block::V0EventsInsertInput {
-    insert_block::V0EventsInsertInput {
-        index: Some(value.0 as i64),
-        block: None,
-        block_id: None,
-        data: Some(serde_json::to_value(&value.1).unwrap()),
-        created_at: None,
-        updated_at: None,
-        time: Some(time),
+fn transactions_into_many_blocks_input(
+    txs: Vec<tendermint_rpc::endpoint::tx::Response>,
+) -> crate::tm::insert_blocks_many::V0TransactionsArrRelInsertInput {
+    let mut index = 0;
+    crate::tm::insert_blocks_many::V0TransactionsArrRelInsertInput {
+        data: txs
+            .into_iter()
+            .map(
+                |tx| hubble::hasura::insert_blocks_many::V0TransactionsInsertInput {
+                    block: None,
+                    block_id: None,
+                    created_at: None,
+                    updated_at: None,
+                    data: Some(serde_json::to_value(&tx).unwrap()),
+                    hash: Some(tx.hash.to_string()),
+                    id: None,
+                    index: Some(tx.index.into()),
+                    events: Some(insert_blocks_many::V0EventsArrRelInsertInput {
+                        data: tx
+                            .tx_result
+                            .events
+                            .into_iter()
+                            .map(|r| {
+                                let input = insert_blocks_many::V0EventsInsertInput {
+                                    block: None,
+                                    block_id: None,
+                                    created_at: None,
+                                    data: Some(serde_json::to_value(r).unwrap()),
+                                    index: Some(index),
+                                    time: None,
+                                    updated_at: None,
+                                    transaction: None,
+                                    transaction_id: None,
+                                    stage: Some(STAGE_TX),
+                                };
+                                index += 1;
+                                input
+                            })
+                            .collect(),
+                        on_conflict: None,
+                    }),
+                },
+            )
+            .collect(),
+        on_conflict: None,
     }
 }
 
 pub trait BlockExt {
-    fn events(self) -> impl Iterator<Item = StateChange>;
+    /// Returns the non-tx related events from a block formatted for insertion.
+    fn events(self, timestamp: &Time) -> impl Iterator<Item = V0EventsInsertInput> + '_;
 }
 
 impl BlockExt for BlockResponse {
-    fn events(self) -> impl Iterator<Item = StateChange> {
-        self.begin_block_events
+    fn events(self, timestamp: &Time) -> impl Iterator<Item = V0EventsInsertInput> + '_ {
+        let begin_block_events = self
+            .begin_block_events
             .unwrap_or_default()
             .into_iter()
-            .chain(
-                self.txs_results
-                    .unwrap_or_default()
-                    .into_iter()
-                    .flat_map(|tx| tx.events),
-            )
-            .chain(self.end_block_events.unwrap_or_default())
-            .chain(self.finalize_block_events)
-            .map(StateChange::Event)
-            .chain(
-                self.validator_updates
-                    .into_iter()
-                    .map(StateChange::validator_update),
-            )
-            .chain(
-                self.consensus_param_updates
-                    .into_iter()
-                    .map(StateChange::consensus_param_update),
-            )
-    }
-}
+            .enumerate()
+            .map(|(i, e)| V0EventsInsertInput {
+                block: None,
+                block_id: None,
+                created_at: None,
+                updated_at: None,
+                index: Some(i as i64),
+                data: Some(serde_json::to_value(e).unwrap()),
+                time: Some(timestamp.to_rfc3339()),
+                stage: Some(STAGE_BEGIN_BLOCK),
+                transaction_id: None,
+                transaction: None,
+            });
+        let end_block_events =
+            self.end_block_events
+                .into_iter()
+                .enumerate()
+                .map(|(i, e)| V0EventsInsertInput {
+                    block: None,
+                    block_id: None,
+                    created_at: None,
+                    updated_at: None,
+                    index: Some(i as i64),
+                    data: Some(serde_json::to_value(e).unwrap()),
+                    time: Some(timestamp.to_rfc3339()),
+                    stage: Some(STAGE_END_BLOCK),
+                    transaction_id: None,
+                    transaction: None,
+                });
+        let finalize_block_events =
+            self.finalize_block_events
+                .into_iter()
+                .enumerate()
+                .map(|(i, e)| V0EventsInsertInput {
+                    block: None,
+                    block_id: None,
+                    created_at: None,
+                    updated_at: None,
+                    index: Some(i as i64),
+                    data: Some(serde_json::to_value(e).unwrap()),
+                    time: Some(timestamp.to_rfc3339()),
+                    stage: Some(STAGE_FINALIZE_BLOCK),
+                    transaction_id: None,
+                    transaction: None,
+                });
+        let validator_updates = self
+            .validator_updates
+            .into_iter()
+            .enumerate()
+            .map(|(i, e)| V0EventsInsertInput {
+                block: None,
+                block_id: None,
+                created_at: None,
+                updated_at: None,
+                index: Some(i as i64),
+                data: Some(serde_json::to_value(WithType::validator_update(e)).unwrap()),
+                time: Some(timestamp.to_rfc3339()),
+                stage: Some(STAGE_VALIDATOR_UPDATES),
+                transaction_id: None,
+                transaction: None,
+            });
+        let consensus_param_updates =
+            self.consensus_param_updates
+                .into_iter()
+                .enumerate()
+                .map(|(i, e)| V0EventsInsertInput {
+                    block: None,
+                    block_id: None,
+                    created_at: None,
+                    updated_at: None,
+                    index: Some(i as i64),
+                    data: Some(serde_json::to_value(WithType::consensus_param_update(e)).unwrap()),
+                    time: Some(timestamp.to_rfc3339()),
+                    stage: Some(STAGE_CONSENSUS_PARAM_UPDATES),
+                    transaction_id: None,
+                    transaction: None,
+                });
 
-#[derive(serde::Serialize)]
-#[serde(untagged)]
-pub enum StateChange {
-    Event(Event),
-    ValidatorUpdate(WithType<Update>),
-    ConsensusUpdate(WithType<Params>),
-}
-
-impl StateChange {
-    fn validator_update(inner: Update) -> Self {
-        StateChange::ValidatorUpdate(WithType::validator_update(inner))
-    }
-
-    fn consensus_param_update(inner: Params) -> Self {
-        StateChange::ConsensusUpdate(WithType::consensus_param_update(inner))
+        begin_block_events
+            .chain(end_block_events)
+            .chain(finalize_block_events)
+            .chain(validator_updates)
+            .chain(consensus_param_updates)
     }
 }
 
