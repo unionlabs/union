@@ -11,12 +11,12 @@ use crate::types::{
 };
 
 // https://github.com/cosmos/ibc-go/blob/8218aeeef79d556852ec62a773f2bc1a013529d4/modules/apps/transfer/types/keys.go#L12
-pub const MODULE_NAME: &'static str = "transfer";
+pub const MODULE_NAME: &str = "transfer";
 
 // https://github.com/cosmos/ibc-go/blob/8218aeeef79d556852ec62a773f2bc1a013529d4/modules/apps/transfer/types/events.go#L4-L22
-pub const PACKET_EVENT: &'static str = "fungible_token_packet";
-pub const TRANSFER_EVENT: &'static str = "ibc_transfer";
-pub const TIMEOUT_EVENT: &'static str = "timeout";
+pub const PACKET_EVENT: &str = "fungible_token_packet";
+pub const TRANSFER_EVENT: &str = "ibc_transfer";
+pub const TIMEOUT_EVENT: &str = "timeout";
 
 #[derive(Error, Debug, PartialEq)]
 pub enum ProtocolError {

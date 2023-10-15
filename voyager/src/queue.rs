@@ -2425,6 +2425,7 @@ where
         }]: Self::AggregatedData,
     ) -> RelayerMsg {
         assert_eq!(this_chain_id, self_chain_id);
+        assert_eq!(trusted_client_state_client_id, client_id);
 
         let counterparty_chain_id = trusted_client_state.chain_id();
 
@@ -2588,14 +2589,17 @@ where
                 },
         }: Self,
         hlist_pat![Identified {
-            chain_id,
+            chain_id: trusted_client_state_chain_id,
             data: TrustedClientState {
                 fetched_at: _,
-                client_id: latest_trusted_client_state_client_id,
+                client_id: trusted_client_state_client_id,
                 trusted_client_state
             },
         }]: Self::AggregatedData,
     ) -> RelayerMsg {
+        assert_eq!(trusted_client_state_client_id, client_id);
+        assert_eq!(trusted_client_state_chain_id, this_chain_id);
+
         let counterparty_chain_id: ChainIdOf<L::Counterparty> = trusted_client_state.chain_id();
 
         tracing::debug!("building WaitForTrustedHeight");
@@ -3751,8 +3755,8 @@ where
                 AggregateAckPacket {
                     event_height: _,
                     event,
-                    block_hash,
-                    counterparty_client_id,
+                    block_hash: _,
+                    counterparty_client_id: _,
                 },
         }: Self,
         hlist_pat![
@@ -3766,7 +3770,7 @@ where
             },
             Identified {
                 chain_id: packet_acknowledgement_chain_id,
-                data: PacketAcknowledgement { fetched_by, ack }
+                data: PacketAcknowledgement { fetched_by: _, ack }
             },
             Identified {
                 chain_id: commitment_proof_chain_id,
@@ -3775,10 +3779,10 @@ where
         ]: Self::AggregatedData,
     ) -> RelayerMsg {
         assert_eq!(this_chain_id, trusted_client_state_chain_id);
+        assert_eq!(this_chain_id, packet_acknowledgement_chain_id);
+        assert_eq!(commitment_proof_chain_id, this_chain_id);
 
         let counterparty_chain_id: ChainIdOf<L::Counterparty> = trusted_client_state.chain_id();
-
-        assert_eq!(commitment_proof_chain_id, this_chain_id);
 
         RelayerMsg::Lc(AnyLcMsg::from(LcMsg::<L::Counterparty>::Msg(Identified {
             chain_id: counterparty_chain_id,
@@ -3817,7 +3821,7 @@ where
             chain_id: this_chain_id,
             data:
                 AggregateFetchCounterpartyStateProof {
-                    counterparty_client_id,
+                    counterparty_client_id: _,
                     fetch,
                 },
         }: Self,
