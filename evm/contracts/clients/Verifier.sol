@@ -125,12 +125,13 @@ contract Verifier is IZKVerifierV2 {
     /// @notice Computes the multi-scalar-multiplication of the public input
     /// elements and the verification key including the constant term.
     /// @param input The public inputs. These are elements of the scalar field Fr.
+    /// @return success the result of the msm.
     /// @return x The X coordinate of the resulting G1 point.
     /// @return y The Y coordinate of the resulting G1 point.
     function publicInputMSM(
         uint256[2] calldata proofCommitment,
         uint256[5] calldata input
-    ) internal view returns (uint256 x, uint256 y) {
+    ) internal view returns (bool success, uint256 x, uint256 y) {
         // Note: The ECMUL precompile does not reject unreduced values, so we check this.
         // Note: Unrolling this loop does not cost much extra in code-size, the bulk of the
         //       code-size is in the PUB_ constants.
@@ -138,7 +139,7 @@ contract Verifier is IZKVerifierV2 {
         // ECADD has input (x1, y1, x2, y2) and output (x', y').
         // We call them such that ecmul output is already in the second point
         // argument to ECADD so we can have a tight loop.
-        bool success = true;
+        success = true;
         assembly ("memory-safe") {
             let f := mload(0x40)
             let g := add(f, 0x40)
@@ -147,8 +148,8 @@ contract Verifier is IZKVerifierV2 {
             mstore(add(f, 0x20), CONSTANT_Y)
 
             // Add the proof commitment
-            mstore(g, calldataload(input))
-            mstore(add(g, 0x20), calldataload(add(input, 32)))
+            mstore(g, calldataload(proofCommitment))
+            mstore(add(g, 0x20), calldataload(add(proofCommitment, 32)))
             success := and(
                 success,
                 staticcall(gas(), PRECOMPILE_ADD, f, 0x80, f, 0x40)
@@ -222,11 +223,6 @@ contract Verifier is IZKVerifierV2 {
             x := mload(f)
             y := mload(add(f, 0x20))
         }
-        if (!success) {
-            // Either Public input not in field, or verification key invalid.
-            // We assume the contract is correctly generated, so the verification key is valid.
-            revert PublicInputNotInField();
-        }
     }
 
     /// Verify an uncompressed Groth16 proof.
@@ -243,12 +239,13 @@ contract Verifier is IZKVerifierV2 {
         uint256[2] calldata proofCommitment,
         uint256[5] calldata input
     ) public view returns (bool) {
-        (uint256 x, uint256 y) = publicInputMSM(proofCommitment, input);
+        (bool success, uint256 x, uint256 y) = publicInputMSM(proofCommitment, input);
+        if(!success) {
+            return false;
+        }
 
         // Note: The precompile expects the F2 coefficients in big-endian order.
         // Note: The pairing precompile rejects unreduced values, so we won't check that here.
-
-        bool success;
         assembly ("memory-safe") {
             let f := mload(0x40) // Free memory pointer.
 
