@@ -41,7 +41,6 @@ type proverServer struct {
 	cs         constraint.ConstraintSystem
 	pk         backend.ProvingKey
 	vk         backend.VerifyingKey
-	commitment constraint.Commitment
 	proving    atomic.Bool
 }
 
@@ -166,9 +165,10 @@ func (p *proverServer) QueryStats(ctx context.Context, req *QueryStatsRequest) (
 			NbG2:            uint32(p.vk.NbG2()),
 			NbPublicWitness: uint32(p.vk.NbPublicWitness()),
 		},
+		// Deprecated
 		CommitmentStats: &CommitmentStats{
-			NbPublicCommitted:  uint32(p.commitment.NbPublicCommitted()),
-			NbPrivateCommitted: uint32(p.commitment.NbPrivateCommitted),
+			NbPublicCommitted:  uint32(0),
+			NbPrivateCommitted: uint32(0),
 		},
 	}, nil
 }
@@ -327,14 +327,15 @@ func (p *proverServer) Prove(ctx context.Context, req *ProveRequest) (*ProveResp
 	// Ugly but https://github.com/ConsenSys/gnark/issues/652
 	switch _proof := proof.(type) {
 	case *backend_bn254.Proof:
-		if p.commitment.Is() {
-			res, err := fr.Hash(p.commitment.SerializeCommitment(_proof.Commitment.Marshal(), []*big.Int{}, (fr.Bits-1)/8+1), []byte(constraint.CommitmentDst), 1)
-			if err != nil {
-				return nil, err
-			}
-			proofCommitment = _proof.Commitment.Marshal()
-			commitmentHash = res[0].Marshal()
+		if len(_proof.Commitments) != 1 {
+			return nil, fmt.Errorf("Proof encoding is specialized for a single commitment, got: %d", len(_proof.Commitments))
 		}
+		res, err := fr.Hash(constraint.SerializeCommitment(_proof.Commitments[0].Marshal(), []*big.Int{}, (fr.Bits-1)/8+1), []byte(constraint.CommitmentDst), 1)
+		if err != nil {
+			return nil, err
+		}
+		proofCommitment = _proof.Commitments[0].Marshal()
+		commitmentHash = res[0].Marshal()
 		break
 	default:
 		return nil, fmt.Errorf("Impossible: proof backend must be BN254 at this point")
@@ -452,23 +453,9 @@ func NewProverServer(r1csPath string, pkPath string, vkPath string) (*proverServ
 		return nil, err
 	}
 
-	var commitment constraint.Commitment
-	switch _pk := pk.(type) {
-	case *backend_bn254.ProvingKey:
-		switch _vk := vk.(type) {
-		case *backend_bn254.VerifyingKey:
-			_pk.CommitmentKey = _vk.CommitmentKey
-			commitment = _vk.CommitmentInfo
-			break
-		}
-		break
-	default:
-		return nil, fmt.Errorf("Impossible: vk backend must be BN254 at this point")
-	}
-
 	runtime.GC()
 
-	return &proverServer{cs: cs, pk: pk, vk: vk, commitment: commitment}, nil
+	return &proverServer{cs: cs, pk: pk, vk: vk}, nil
 }
 
 func readFrom(file string, obj io.ReaderFrom) error {

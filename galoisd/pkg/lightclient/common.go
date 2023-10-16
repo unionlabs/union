@@ -108,10 +108,6 @@ func (lc *TendermintLightClientAPI) Verify(message *gadget.G2Affine, expectedVal
 
 	curveArithmetic, _ := sw_emulated.New[emulated.BN254Fp, emulated.BN254Fr](lc.api, sw_emulated.GetBN254Params())
 
-	_, _, g1AffGen, _ := curve.Generators()
-
-	emulatedG1 := gadget.NewG1Affine(g1AffGen)
-
 	totalVotingPower := frontend.Variable(0)
 	currentVotingPower := frontend.Variable(0)
 	aggregatedKeys := frontend.Variable(0)
@@ -123,20 +119,16 @@ func (lc *TendermintLightClientAPI) Verify(message *gadget.G2Affine, expectedVal
 
 	leafHashes := make([]frontend.Variable, MaxVal)
 
-	// sizeof(0||leaf) = 1 + ValProtoSize = 48 bytes => 1 block
-	// sizeof(1||hash(left_leaf)|hash(right_leaf)) = 1 + 2*sizeof(hash(0||leaf)) = 65 bytes => 2 blocks
-	merkle := merkle.NewMerkleTreeAPI(lc.api, 1, 2)
+	merkle := merkle.NewMerkleTreeAPI(lc.api)
 
 	if err := forEachVal(func(i int, signed frontend.Variable, publicKey *gadget.G1Affine, power frontend.Variable, leaf frontend.Variable) error {
 		// Aggregate voting power and current power
 		totalVotingPower = lc.api.Add(totalVotingPower, power)
 		// Optionally aggregated public key/voting power if validator at index signed
 		currentVotingPower = lc.api.Add(currentVotingPower, lc.api.Select(signed, power, 0))
-		// Avoid issue with null point, emulatedG1 is never used because only reference in the !signed branch
-		toAggregate := curveArithmetic.Select(signed, publicKey, &emulatedG1)
 		// Optionally aggregated public key if validator at index signed
 		firstPK := lc.api.And(signed, lc.api.IsZero(aggregatedKeys))
-		aggregated := curveArithmetic.Add(&aggregatedPublicKey, toAggregate)
+		aggregated := curveArithmetic.AddUnified(&aggregatedPublicKey, curveArithmetic.Select(signed, publicKey, &gadget.G1Affine{}))
 		aggregateNext := curveArithmetic.Select(firstPK, publicKey, aggregated)
 		aggregatedPublicKey =
 			*curveArithmetic.Select(signed, aggregateNext, &aggregatedPublicKey)
@@ -166,6 +158,8 @@ func (lc *TendermintLightClientAPI) Verify(message *gadget.G2Affine, expectedVal
 	if err != nil {
 		return fmt.Errorf("new pairing: %w", err)
 	}
+
+	_, _, g1AffGen, _ := curve.Generators()
 
 	// Verify that the aggregated signature is correct
 	var g1AffGenNeg curve.G1Affine

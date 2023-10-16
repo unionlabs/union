@@ -14,12 +14,10 @@ const (
 
 type MerkleTreeAPI struct {
 	api            frontend.API
-	leafMaxBlocks  int
-	innerMaxBlocks int
 }
 
-func NewMerkleTreeAPI(api frontend.API, leafMaxBlocks int, innerMaxblocks int) *MerkleTreeAPI {
-	return &MerkleTreeAPI{api: api, leafMaxBlocks: leafMaxBlocks, innerMaxBlocks: innerMaxblocks}
+func NewMerkleTreeAPI(api frontend.API) *MerkleTreeAPI {
+	return &MerkleTreeAPI{api: api}
 }
 
 func (m *MerkleTreeAPI) LeafHash(leaf []frontend.Variable) frontend.Variable {
