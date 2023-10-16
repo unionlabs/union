@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	provergrpc "galois/grpc/api/v1"
 	"log"
@@ -320,7 +321,13 @@ func ExampleVerifyCmd() *cobra.Command {
 				log.Fatal(err)
 			}
 
-			log.Printf("Proof: %v\n", proveRes)
+			resJson, err := json.MarshalIndent(&proveRes, "", "    ")
+			if err != nil {
+				return err
+			}
+			log.Println(string(resJson))
+			log.Printf("%X\n", proveRes.Proof.Content)
+			log.Printf("%X\n", proveRes.Proof.EvmProof)
 
 			trustedValidatorBytes := make([][]byte, len(trustedValidators))
 			for i, val := range trustedValidators {
@@ -353,8 +360,8 @@ func ExampleVerifyCmd() *cobra.Command {
 			trustedValidatorSetRoot := merkle.MimcHashFromByteSlices(trustedValidatorBytes)
 			untrustedValidatorSetRoot := merkle.MimcHashFromByteSlices(untrustedValidatorBytes)
 
-			log.Println(trustedValidatorSetRoot)
-			log.Println(untrustedValidatorSetRoot)
+			log.Printf("%X\n", trustedValidatorSetRoot)
+			log.Printf("%X\n", untrustedValidatorSetRoot)
 
 			signedBytes, err := protoio.MarshalDelimited(&vote)
 			if err != nil {

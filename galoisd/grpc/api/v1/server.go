@@ -25,6 +25,7 @@ import (
 	"github.com/consensys/gnark-crypto/ecc/bn254"
 	curve "github.com/consensys/gnark-crypto/ecc/bn254"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr"
+	"github.com/consensys/gnark-crypto/utils"
 	backend "github.com/consensys/gnark/backend/groth16"
 	backend_bn254 "github.com/consensys/gnark/backend/groth16/bn254"
 	"github.com/consensys/gnark/logger"
@@ -33,14 +34,15 @@ import (
 	"github.com/consensys/gnark/constraint"
 	"github.com/consensys/gnark/frontend"
 	"github.com/consensys/gnark/frontend/cs/r1cs"
+	cs_bn254 "github.com/consensys/gnark/constraint/bn254"
 	gadget "github.com/consensys/gnark/std/algebra/emulated/sw_bn254"
 )
 
 type proverServer struct {
 	UnimplementedUnionProverAPIServer
-	cs         constraint.ConstraintSystem
-	pk         backend.ProvingKey
-	vk         backend.VerifyingKey
+	cs cs_bn254.R1CS
+	pk backend_bn254.ProvingKey
+	vk backend_bn254.VerifyingKey
 	proving    atomic.Bool
 }
 
@@ -116,7 +118,7 @@ func (p *proverServer) Verify(ctx context.Context, req *VerifyRequest) (*VerifyR
 		return nil, fmt.Errorf("Unable to extract public witness: %w", err)
 	}
 
-	err = backend.Verify(backend.Proof(&proof), p.vk, publicWitness)
+	err = backend.Verify(backend.Proof(&proof), backend.VerifyingKey(&p.vk), publicWitness)
 	if err != nil {
 		log.Println("Verification failed: %w", err)
 		return &VerifyResponse{
@@ -295,12 +297,6 @@ func (p *proverServer) Prove(ctx context.Context, req *ProveRequest) (*ProveResp
 		Message:                  [2]frontend.Variable{hmX, hmY},
 	}
 
-	witnessJson, err := json.MarshalIndent(witness, "", "    ")
-	if err != nil {
-		return nil, err
-	}
-	log.Println(string(witnessJson))
-
 	privateWitness, err := frontend.NewWitness(&witness, ecc.BN254.ScalarField())
 	if err != nil {
 		return nil, fmt.Errorf("Could not create witness %s", err)
@@ -310,7 +306,7 @@ func (p *proverServer) Prove(ctx context.Context, req *ProveRequest) (*ProveResp
 	logger.Logger().Level(zerolog.TraceLevel)
 
 	log.Println("Executing proving backend...")
-	proof, err := backend.Prove(p.cs, p.pk, privateWitness)
+	proof, err := backend.Prove(constraint.R1CS(&p.cs), backend.ProvingKey(&p.pk), privateWitness)
 	if err != nil {
 		return nil, fmt.Errorf("Prover failed with %s", err)
 	}
@@ -320,6 +316,11 @@ func (p *proverServer) Prove(ctx context.Context, req *ProveRequest) (*ProveResp
 
 	p.proving.Store(false)
 
+	publicWitness, err := privateWitness.Public()
+	if err != nil {
+		return nil, fmt.Errorf("Could not extract public inputs from witness %s", err)
+	}
+
 	// F_r element
 	var commitmentHash []byte
 	// G1 uncompressed
@@ -327,23 +328,32 @@ func (p *proverServer) Prove(ctx context.Context, req *ProveRequest) (*ProveResp
 	// Ugly but https://github.com/ConsenSys/gnark/issues/652
 	switch _proof := proof.(type) {
 	case *backend_bn254.Proof:
-		if len(_proof.Commitments) != 1 {
-			return nil, fmt.Errorf("Proof encoding is specialized for a single commitment, got: %d", len(_proof.Commitments))
+		if len(p.vk.PublicAndCommitmentCommitted) != 1 {
+			return nil, fmt.Errorf("Expected a single proof commitment, got: %d", len(p.vk.PublicAndCommitmentCommitted))
 		}
-		res, err := fr.Hash(constraint.SerializeCommitment(_proof.Commitments[0].Marshal(), []*big.Int{}, (fr.Bits-1)/8+1), []byte(constraint.CommitmentDst), 1)
-		if err != nil {
-			return nil, err
+		witnesses := publicWitness.Vector().(fr.Vector)
+		maxNbPublicCommitted := 0
+		for _, s := range p.vk.PublicAndCommitmentCommitted {
+			maxNbPublicCommitted = utils.Max(maxNbPublicCommitted, len(s))
+		}
+		commitmentPrehashSerialized := make([]byte, curve.SizeOfG1AffineUncompressed+maxNbPublicCommitted*fr.Bytes)
+		for i := range p.vk.PublicAndCommitmentCommitted {
+			copy(commitmentPrehashSerialized, _proof.Commitments[i].Marshal())
+			offset := curve.SizeOfG1AffineUncompressed
+			for j := range p.vk.PublicAndCommitmentCommitted[i] {
+				copy(commitmentPrehashSerialized[offset:], witnesses[p.vk.PublicAndCommitmentCommitted[i][j]-1].Marshal())
+				offset += fr.Bytes
+			}
+			if res, err := fr.Hash(commitmentPrehashSerialized[:offset], []byte(constraint.CommitmentDst), 1); err != nil {
+				return nil, fmt.Errorf("Failed to hash commitment: %v", err)
+			} else {
+				commitmentHash = res[0].Marshal()
+			}
 		}
 		proofCommitment = _proof.Commitments[0].Marshal()
-		commitmentHash = res[0].Marshal()
 		break
 	default:
 		return nil, fmt.Errorf("Impossible: proof backend must be BN254 at this point")
-	}
-
-	publicWitness, err := privateWitness.Public()
-	if err != nil {
-		return nil, fmt.Errorf("Could not extract public inputs from witness %s", err)
 	}
 
 	publicInputs, err := publicWitness.MarshalBinary()
@@ -386,33 +396,33 @@ func (p *proverServer) Prove(ctx context.Context, req *ProveRequest) (*ProveResp
 	}, nil
 }
 
-func loadOrCreate(r1csPath string, pkPath string, vkPath string) (constraint.ConstraintSystem, backend.ProvingKey, backend.VerifyingKey, error) {
-	r1csInstance := backend.NewCS(ecc.BN254)
-	pk := backend.NewProvingKey(ecc.BN254)
-	vk := backend.NewVerifyingKey(ecc.BN254)
+func loadOrCreate(r1csPath string, pkPath string, vkPath string) (cs_bn254.R1CS, backend_bn254.ProvingKey, backend_bn254.VerifyingKey, error) {
+	cs := cs_bn254.R1CS{}
+	pk := backend_bn254.ProvingKey{}
+	vk := backend_bn254.VerifyingKey{}
 
 	if _, err := os.Stat(r1csPath); err == nil {
 		if _, err = os.Stat(pkPath); err == nil {
 			if _, err = os.Stat(vkPath); err == nil {
 				log.Println("Loading R1CS...")
-				err := readFrom(r1csPath, r1csInstance)
+				err := readFrom(r1csPath, constraint.R1CS(&cs))
 				if err != nil {
-					return nil, nil, nil, err
+					return cs, pk, vk, err
 				}
 
 				log.Println("Loading proving key...")
-				err = readFrom(pkPath, pk)
+				err = readFrom(pkPath, backend.ProvingKey(&pk))
 				if err != nil {
-					return nil, nil, nil, err
+					return cs, pk, vk, err
 				}
 
 				log.Println("Loading verifying key...")
-				err = readFrom(vkPath, vk)
+				err = readFrom(vkPath, backend.VerifyingKey(&vk))
 				if err != nil {
-					return nil, nil, nil, err
+					return cs, pk, vk, err
 				}
 
-				return r1csInstance, pk, vk, nil
+				return cs, pk, vk, nil
 			}
 		}
 	}
@@ -422,29 +432,29 @@ func loadOrCreate(r1csPath string, pkPath string, vkPath string) (constraint.Con
 	log.Println("Compiling circuit...")
 	r1csInstance, err := frontend.Compile(ecc.BN254.ScalarField(), r1cs.NewBuilder, &circuit, frontend.WithCompressThreshold(300))
 	if err != nil {
-		return nil, nil, nil, err
+		return cs, pk, vk, err
 	}
 
 	log.Println("Setup PK/VK")
-	pk, vk, err = backend.Setup(r1csInstance)
+	err = backend_bn254.Setup(&cs, &pk, &vk)
 	if err != nil {
-		return nil, nil, nil, err
+		return cs, pk, vk, err
 	}
 
 	err = saveTo(r1csPath, r1csInstance)
 	if err != nil {
-		return nil, nil, nil, err
+		return cs, pk, vk, err
 	}
-	err = saveTo(pkPath, pk)
+	err = saveTo(pkPath, backend.ProvingKey(&pk))
 	if err != nil {
-		return nil, nil, nil, err
+		return cs, pk, vk, err
 	}
-	err = saveTo(vkPath, vk)
+	err = saveTo(vkPath, backend.VerifyingKey(&vk))
 	if err != nil {
-		return nil, nil, nil, err
+		return cs, pk, vk, err
 	}
 
-	return r1csInstance, pk, vk, nil
+	return cs, pk, vk, nil
 }
 
 func NewProverServer(r1csPath string, pkPath string, vkPath string) (*proverServer, error) {

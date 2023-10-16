@@ -1,7 +1,7 @@
 { ... }: {
   perSystem = { self', pkgs, proto, ... }: {
     packages =
-      let
+      {
         galoisd = pkgs.buildGoModule ({
           name = "galoisd";
           src = ./.;
@@ -19,42 +19,20 @@
           ];
         } else { }));
 
-        mkGaloisd = { network, maxVal }:
-          galoisd.overrideAttrs (old: {
-            name = old.name + "-${network}";
-            src = pkgs.runCommand "src-patched" { } ''
-              mkdir -p $out
-              cp -r ${old.src}/* $out/
-              substituteInPlace $out/pkg/lightclient/common.go \
-              --replace "const MaxVal = 16" "const MaxVal = ${
-                builtins.toString maxVal
-              }"
-            '';
-          });
-
-        mkGaloisdImage = { galoisd }:
+        galoisd-image =
           pkgs.dockerTools.buildImage {
-            name = "${galoisd.name}-image";
+            name = "${self'.packages.galoisd.name}-image";
             copyToRoot = pkgs.buildEnv {
               name = "image-root";
               paths = [ pkgs.coreutils-full pkgs.cacert ];
               pathsToLink = [ "/bin" ];
             };
             config = {
-              Entrypoint = [ (pkgs.lib.getExe galoisd) ];
+              Entrypoint = [ (pkgs.lib.getExe self'.packages.galoisd) ];
               Env = [ "SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt" ];
             };
           };
-      in
-      {
-        galoisd-devnet = mkGaloisd { network = "devnet"; maxVal = 4; };
-        galoisd-testnet = mkGaloisd { network = "testnet"; maxVal = 16; };
-        galoisd-bigtestnet = mkGaloisd { network = "testnet"; maxVal = 64; };
-        galoisd-mainnet = mkGaloisd { network = "mainnet"; maxVal = 128; };
 
-        galoisd-devnet-image = mkGaloisdImage { galoisd = self'.packages.galoisd-devnet; };
-        galoisd-testnet-image = mkGaloisdImage { galoisd = self'.packages.galoisd-testnet; };
-        galoisd-mainnet-image = mkGaloisdImage { galoisd = self'.packages.galoisd-mainnet; };
 
         generate-prover-proto = pkgs.writeShellApplication {
           name = "generate-prover-proto";
@@ -63,14 +41,14 @@
           text = ''
             find ${proto.galoisd} -type f -regex ".*proto" |\
             while read -r file; do
-              echo "Generating $file"
-              protoc \
-                 -I"${proto.cometbls}/proto" \
-                 -I"${proto.gogoproto}" \
-                 -I"${proto.galoisd}" \
-                --go_out=./grpc --go_opt=paths=source_relative \
-                --go-grpc_out=./grpc --go-grpc_opt=paths=source_relative \
-                "$file"
+            echo "Generating $file"
+            protoc \
+            -I"${proto.cometbls}/proto" \
+            -I"${proto.gogoproto}" \
+            -I"${proto.galoisd}" \
+            --go_out=./grpc --go_opt=paths=source_relative \
+            --go-grpc_out=./grpc --go-grpc_opt=paths=source_relative \
+            "$file"
             done
           '';
         };
@@ -88,8 +66,8 @@
             runtimeInputs = [ pkgs.rclone ];
             text = ''
               if [[ "$#" -ne 1 ]]; then
-                echo "Invalid arguments, must be: download-circuit [path]"
-                exit 1
+              echo "Invalid arguments, must be: download-circuit [path]"
+              exit 1
               fi
               rclone --progress --no-traverse --http-url "https://circuit.cryptware.io" copy :http:/ "$1" --files-from=${files}
             '';
