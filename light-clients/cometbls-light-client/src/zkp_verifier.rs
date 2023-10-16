@@ -12,8 +12,7 @@ pub fn verify_zkp(
         message,
         zkp,
     )
-    .unwrap();
-    true
+    .map_or(false, |_| true)
 }
 
 pub fn verify_zkp_v2(
@@ -28,6 +27,5 @@ pub fn verify_zkp_v2(
         message,
         zkp,
     )
-    .unwrap();
-    true
+    .map_or(false, |_| true)
 }
