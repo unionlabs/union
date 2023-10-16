@@ -413,7 +413,16 @@ pub mod aggregate {
                 Aggregate::ChannelHandshakeUpdateClient(_) => {
                     write!(f, "ChannelHandshakeUpdateClient")
                 }
-                Aggregate::PacketUpdateClient(_) => write!(f, "PacketUpdateClient"),
+                Aggregate::PacketUpdateClient(msg) => {
+                    write!(
+                        f,
+                        "PacketUpdateClient::{}",
+                        match msg.packet_event {
+                            PacketEvent::Send(_) => "Send",
+                            PacketEvent::Recv(_) => "Recv",
+                        }
+                    )
+                }
                 Aggregate::WaitForTrustedHeight(_) => write!(f, "WaitForTrustedHeight"),
                 Aggregate::FetchCounterpartyStateproof(_) => {
                     write!(f, "FetchCounterpartyStateproof")
@@ -427,7 +436,27 @@ pub mod aggregate {
                 Aggregate::ConsensusStateProofAtLatestHeight(_) => {
                     write!(f, "ConsensusStateProofAtLatestHeight")
                 }
-                Aggregate::AggregateMsgAfterUpdate(_) => write!(f, "AggregateMsgAfterUpdate"),
+                Aggregate::AggregateMsgAfterUpdate(msg) => {
+                    write!(f, "AggregateMsgAfterUpdate::")?;
+                    match msg {
+                        AggregateMsgAfterUpdate::ConnectionOpenTry(_) => {
+                            write!(f, "ConnectionOpenTry")
+                        }
+                        AggregateMsgAfterUpdate::ConnectionOpenAck(_) => {
+                            write!(f, "ConnectionOpenAck")
+                        }
+                        AggregateMsgAfterUpdate::ConnectionOpenConfirm(_) => {
+                            write!(f, "ConnectionOpenConfirm")
+                        }
+                        AggregateMsgAfterUpdate::ChannelOpenTry(_) => write!(f, "ChannelOpenTry"),
+                        AggregateMsgAfterUpdate::ChannelOpenAck(_) => write!(f, "ChannelOpenAck"),
+                        AggregateMsgAfterUpdate::ChannelOpenConfirm(_) => {
+                            write!(f, "ChannelOpenConfirm")
+                        }
+                        AggregateMsgAfterUpdate::RecvPacket(_) => write!(f, "RecvPacket"),
+                        AggregateMsgAfterUpdate::AckPacket(_) => write!(f, "AckPacket"),
+                    }
+                }
                 Aggregate::LightClientSpecific(agg) => write!(f, "LightClientSpecific({})", agg.0),
             }
         }
