@@ -11,11 +11,8 @@ import (
 	"github.com/consensys/gnark/std/math/emulated"
 )
 
-// NOTE: this circuit is compatible with the bn254 backend ONLY as we assume
-// that the scalar field is the one from this curve for many public inputs.
-
-// Max number of validators this lc can handle
-const MaxVal = 16
+// Max number of validators the light client can handle
+const MaxVal = 128
 
 type Validator struct {
 	HashableX    frontend.Variable
@@ -128,7 +125,7 @@ func (lc *TendermintLightClientAPI) Verify(message *gadget.G2Affine, expectedVal
 		currentVotingPower = lc.api.Add(currentVotingPower, lc.api.Select(signed, power, 0))
 		// Optionally aggregated public key if validator at index signed
 		firstPK := lc.api.And(signed, lc.api.IsZero(aggregatedKeys))
-		aggregated := curveArithmetic.AddUnified(&aggregatedPublicKey, curveArithmetic.Select(signed, publicKey, &gadget.G1Affine{}))
+		aggregated := curveArithmetic.AddUnified(&aggregatedPublicKey, curveArithmetic.Select(signed, publicKey, &emulatedG1Zero))
 		aggregateNext := curveArithmetic.Select(firstPK, publicKey, aggregated)
 		aggregatedPublicKey =
 			*curveArithmetic.Select(signed, aggregateNext, &aggregatedPublicKey)
@@ -165,19 +162,14 @@ func (lc *TendermintLightClientAPI) Verify(message *gadget.G2Affine, expectedVal
 	var g1AffGenNeg curve.G1Affine
 	g1AffGenNeg.Neg(&g1AffGen)
 	negG1 := gadget.NewG1Affine(g1AffGenNeg)
-	e, err := pairing.Pair(
+
+	err = pairing.PairingCheck(
 		[]*gadget.G1Affine{&negG1, &aggregatedPublicKey},
 		[]*gadget.G2Affine{&lc.input.Sig, message},
 	)
 	if err != nil {
 		return fmt.Errorf("pair: %w", err)
 	}
-
-	var oneN curve.GT
-	oneN.SetOne()
-	one := gadget.NewGTEl(oneN)
-
-	pairing.AssertIsEqual(e, &one)
 
 	return nil
 }

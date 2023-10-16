@@ -13,7 +13,7 @@ const (
 )
 
 type MerkleTreeAPI struct {
-	api            frontend.API
+	api frontend.API
 }
 
 func NewMerkleTreeAPI(api frontend.API) *MerkleTreeAPI {
