@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 ark-groth16 =  { version = "0.4", default-features = false }
+ark-relations =  { version = "0.4", default-features = false }
 ark-ec = { version = "0.4", default-features = false }
 ark-ff = { version = "0.4", default-features = false }
 ark-bn254 = { version = "0.4", default-features = false, features = [ "curve" ] }
