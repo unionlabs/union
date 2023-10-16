@@ -13,7 +13,7 @@ serde-utils.workspace = true
 protos = { workspace = true, default-features = true }
 
 futures = "0.3.28"
-ethers = { version = "2.0.4", features = ["rustls", "ws"] }
+ethers = { workspace = true, features = ["rustls", "ws"] }
 tendermint-rpc = {  workspace = true, features = ["http-client", "websocket-client"] }
 serde = { version = "1.0.173", features = ["derive"] }
 hex = { version = "0.4.3", features = [ "serde" ] }
@@ -21,7 +21,6 @@ bip32 = { version = "0.5.0", features = ["secp256k1"] }
 tracing = "0.1.37"
 tokio = { version = "1.32.0", default-features = false }
 typenum = { version = "1.16.0", default-features = false, features = ["const-generics", "no_std"] }
-# TODO: Use a version here
 prost = "0.11.0"
 sha2 = "0.10.6"
 chrono = { version = "0.4.26", default-features = false, features = ["alloc"] }
