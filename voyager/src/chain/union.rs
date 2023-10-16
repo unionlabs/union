@@ -16,7 +16,7 @@ use num_bigint::BigUint;
 use prost::Message;
 use protos::{
     cosmos::base::tendermint::v1beta1::AbciQueryRequest,
-    union::galois::api::v1::{union_prover_api_client, ProveResponse as RawProveResponse},
+    union::galois::api::v1::union_prover_api_client,
 };
 use serde::{Deserialize, Serialize};
 use tendermint_rpc::Client;
@@ -44,7 +44,9 @@ use unionlabs::{
             signed_msg_type::SignedMsgType, simple_validator::SimpleValidator,
         },
     },
-    union::galois::{prove_request::ProveRequest, validator_set_commit::ValidatorSetCommit},
+    union::galois::{
+        prove_request::ProveRequest, prove_response, validator_set_commit::ValidatorSetCommit,
+    },
     IntoProto, MsgIntoProto, Proto, TryFromProto, TryFromProtoErrorOf,
 };
 
@@ -332,7 +334,7 @@ where
             .into_inner();
 
             EthereumDataMsg::ProveResponse(ProveResponse {
-                response,
+                response: response.try_into().unwrap(),
                 __marker: PhantomData,
             })
         }
@@ -709,6 +711,7 @@ pub struct UntrustedCommit<C: ChainSpec> {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Validators<C: ChainSpec> {
     pub height: Height,
+    // TODO: Use non-`tendermint-rs` type here
     pub validators: Vec<tendermint::validator::Info>,
     #[serde(skip)]
     pub __marker: PhantomData<fn() -> C>,
@@ -716,7 +719,7 @@ pub struct Validators<C: ChainSpec> {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ProveResponse<C: ChainSpec> {
-    pub response: RawProveResponse,
+    pub response: prove_response::ProveResponse,
     #[serde(skip)]
     pub __marker: PhantomData<fn() -> C>,
 }
@@ -1241,7 +1244,7 @@ where
                             client_message: cometbls::header::Header {
                                 signed_header,
                                 trusted_height: req.update_from,
-                                zero_knowledge_proof: response.proof.unwrap().evm_proof,
+                                zero_knowledge_proof: response.proof.evm_proof,
                             },
                         },
                         update_from: req.update_from,
@@ -1263,7 +1266,6 @@ where
                     data: Fetch::TrustedClientState(FetchTrustedClientState {
                         // NOTE: We can pass update_to directly here since cosmos -> evm always updates to the exact height requested.
                         at: QueryHeight::Specific(req.update_to),
-                        // at: QueryHeight::Latest,
                         client_id: req.client_id,
                     }),
                 }))),

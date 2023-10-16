@@ -43,10 +43,15 @@ impl core::fmt::Display for FromHexStringError {
 }
 
 pub fn to_hex<T: AsRef<[u8]>>(data: T) -> String {
-    format!(
-        "{HEX_ENCODING_PREFIX}{encoding}",
-        encoding = hex::encode(data.as_ref())
-    )
+    let data = data.as_ref();
+
+    let encoded = if data.is_empty() {
+        "0".to_string()
+    } else {
+        hex::encode(data)
+    };
+
+    format!("{HEX_ENCODING_PREFIX}{encoded}")
 }
 
 pub fn parse_hex<T>(string: impl AsRef<[u8]>) -> Result<T, FromHexStringError>
