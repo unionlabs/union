@@ -9,11 +9,15 @@
 )]
 // #![deny(clippy::unwrap_used)]
 
-use std::{error::Error, ffi::OsString, fs::read_to_string, process::ExitCode};
+use std::{error::Error, ffi::OsString, fs::read_to_string, process::ExitCode, sync::Arc};
 
 use chain_utils::{evm::Evm, union::Union};
 use clap::Parser;
-use contracts::ucs01_relay::{LocalToken, UCS01Relay};
+use contracts::{
+    erc20,
+    ucs01_relay::{LocalToken, UCS01Relay},
+};
+use ethers::{middleware::SignerMiddleware, signers::Signer, types::U256};
 use sqlx::PgPool;
 use tikv_jemallocator::Jemalloc;
 use unionlabs::ethereum_consts_traits::Mainnet;
@@ -192,15 +196,35 @@ async fn do_main(args: cli::AppArgs) -> Result<(), VoyagerError> {
 
                 match chain {
                     AnyChain::EvmMinimal(evm) => {
-                        let relay = UCS01Relay::new(relay_address, evm.provider.into());
+                        let signer_middleware = Arc::new(SignerMiddleware::new(
+                            evm.provider.clone(),
+                            evm.wallet.clone(),
+                        ));
+                        let relay = UCS01Relay::new(relay_address, signer_middleware.clone());
 
                         let denom = relay.denom_to_address(denom).await.unwrap();
+                        println!("ADdress is: {}", denom);
+
+                        let erc_contract = erc20::ERC20::new(denom, signer_middleware.clone());
+
+                        let balance = erc_contract.balance_of(evm.wallet.address()).await.unwrap();
+                        println!("Balance is: {}", balance);
+
+                        erc_contract
+                            .approve(relay_address, U256::max_value() / 2)
+                            .send()
+                            .await
+                            .unwrap()
+                            .await
+                            .unwrap()
+                            .unwrap();
+                        println!("{:?}", evm.wallet.address());
 
                         let tx_rcp = relay
                             .send(
                                 port_id,
                                 channel_id,
-                                receiver,
+                                hex::decode(receiver).unwrap().into(),
                                 [LocalToken {
                                     denom,
                                     amount: amount.into(),

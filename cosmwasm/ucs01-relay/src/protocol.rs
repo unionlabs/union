@@ -7,8 +7,8 @@ use token_factory_api::TokenFactoryMsg;
 use ucs01_relay_api::{
     protocol::TransferProtocol,
     types::{
-        make_foreign_denom, DenomOrigin, Ics20Ack, Ics20Packet, TransferToken, Ucs01Ack,
-        Ucs01TransferPacket,
+        make_foreign_denom, DenomOrigin, EncodingError, Ics20Ack, Ics20Packet, TransferPacket,
+        TransferToken, Ucs01Ack, Ucs01TransferPacket,
     },
 };
 
@@ -415,7 +415,7 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
 
     fn send_tokens(
         &mut self,
-        _sender: &str,
+        _sender: &String,
         _receiver: &String,
         tokens: Vec<TransferToken>,
     ) -> Result<Vec<CosmosMsg<Self::CustomMsg>>, Self::Error> {
@@ -433,7 +433,7 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
 
     fn send_tokens_success(
         &mut self,
-        _sender: &str,
+        _sender: &String,
         _receiver: &String,
         _tokens: Vec<TransferToken>,
     ) -> Result<Vec<CosmosMsg<Self::CustomMsg>>, Self::Error> {
@@ -442,7 +442,7 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
 
     fn send_tokens_failure(
         &mut self,
-        sender: &str,
+        sender: &String,
         _receiver: &String,
         tokens: Vec<TransferToken>,
     ) -> Result<Vec<CosmosMsg<Self::CustomMsg>>, Self::Error> {
@@ -460,7 +460,7 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
 
     fn receive_transfer(
         &mut self,
-        receiver: &str,
+        receiver: &<Self::Packet as TransferPacket>::Addr,
         tokens: Vec<TransferToken>,
     ) -> Result<Vec<CosmosMsg<Self::CustomMsg>>, ContractError> {
         StatefulOnReceive {
@@ -470,12 +470,11 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
             &self.common.env.contract.address,
             &self.common.channel.endpoint,
             &self.common.channel.counterparty_endpoint,
-            receiver,
+            receiver.as_str(),
             tokens,
         )
         .map(|msgs| batch_submessages(self.self_addr(), msgs))?
     }
-
     fn normalize_for_ibc_transfer(
         &mut self,
         token: TransferToken,
@@ -490,6 +489,15 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
             &self.common.channel.counterparty_endpoint,
             token,
         )
+    }
+
+    fn common_to_protocol_packet(
+        &self,
+        packet: ucs01_relay_api::types::TransferPacketCommon<
+            ucs01_relay_api::protocol::PacketExtensionOf<Self>,
+        >,
+    ) -> Result<Self::Packet, ucs01_relay_api::types::EncodingError> {
+        Ics20Packet::try_from(packet)
     }
 }
 
@@ -529,7 +537,7 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
 
     fn send_tokens(
         &mut self,
-        _sender: &str,
+        _sender: &HexBinary,
         _receiver: &HexBinary,
         tokens: Vec<TransferToken>,
     ) -> Result<Vec<CosmosMsg<Self::CustomMsg>>, Self::Error> {
@@ -547,7 +555,7 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
 
     fn send_tokens_success(
         &mut self,
-        _sender: &str,
+        _sender: &HexBinary,
         _receiver: &HexBinary,
         _tokens: Vec<TransferToken>,
     ) -> Result<Vec<CosmosMsg<Self::CustomMsg>>, Self::Error> {
@@ -556,13 +564,14 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
 
     fn send_tokens_failure(
         &mut self,
-        sender: &str,
+        sender: &HexBinary,
         _receiver: &HexBinary,
         tokens: Vec<TransferToken>,
     ) -> Result<Vec<CosmosMsg<Self::CustomMsg>>, Self::Error> {
+        let addr = self.common.deps.api.addr_humanize(&sender.clone().into())?;
         StatefulRefundTokens {
             deps: self.common.deps.branch(),
-            receiver: sender.into(),
+            receiver: addr.to_string(),
         }
         .execute(
             &self.common.env.contract.address,
@@ -574,9 +583,14 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
 
     fn receive_transfer(
         &mut self,
-        receiver: &str,
+        receiver: &<Self::Packet as TransferPacket>::Addr,
         tokens: Vec<TransferToken>,
     ) -> Result<Vec<CosmosMsg<Self::CustomMsg>>, ContractError> {
+        let receiver = self
+            .common
+            .deps
+            .api
+            .addr_humanize(&receiver.clone().into())?;
         StatefulOnReceive {
             deps: self.common.deps.branch(),
         }
@@ -584,7 +598,7 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
             &self.common.env.contract.address,
             &self.common.channel.endpoint,
             &self.common.channel.counterparty_endpoint,
-            receiver,
+            receiver.as_str(),
             tokens,
         )
         .map(|msgs| batch_submessages(self.self_addr(), msgs))?
@@ -604,6 +618,24 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
             &self.common.channel.counterparty_endpoint,
             token,
         )
+    }
+
+    fn common_to_protocol_packet(
+        &self,
+        packet: ucs01_relay_api::types::TransferPacketCommon<
+            ucs01_relay_api::protocol::PacketExtensionOf<Self>,
+        >,
+    ) -> Result<Self::Packet, EncodingError> {
+        Ok(Ucs01TransferPacket::new(
+            self.common
+                .deps
+                .api
+                .addr_canonicalize(&packet.sender)
+                .map_err(|_| EncodingError::InvalidEncoding)?
+                .into(),
+            HexBinary::from_hex(&packet.receiver).map_err(|_| EncodingError::InvalidEncoding)?,
+            packet.tokens,
+        ))
     }
 }
 

@@ -68,8 +68,7 @@
     "hasura": null,
     "num_workers": 10,
     "queue": {
-      "type": "pg-queue",
-      "database_url": "postgres://postgres:postgrespassword@localhost:5432/default"
+      "type": "in-memory"
     }
   }
 }

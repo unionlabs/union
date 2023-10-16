@@ -38,7 +38,7 @@ impl From<Coin> for TransferToken {
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Ucs01TransferPacket {
     /// the sender address
-    sender: String,
+    sender: HexBinary,
     /// the recipient address on the destination chain
     receiver: HexBinary,
     /// the transferred tokens
@@ -46,7 +46,7 @@ pub struct Ucs01TransferPacket {
 }
 
 impl Ucs01TransferPacket {
-    pub fn sender(&self) -> &String {
+    pub fn sender(&self) -> &HexBinary {
         &self.sender
     }
 
@@ -58,7 +58,7 @@ impl Ucs01TransferPacket {
         &self.tokens
     }
 
-    pub fn new(sender: String, receiver: HexBinary, tokens: Vec<TransferToken>) -> Self {
+    pub fn new(sender: HexBinary, receiver: HexBinary, tokens: Vec<TransferToken>) -> Self {
         Self {
             sender,
             receiver,
@@ -72,7 +72,7 @@ impl TryFrom<Ucs01TransferPacket> for Binary {
 
     fn try_from(value: Ucs01TransferPacket) -> Result<Binary, Self::Error> {
         Ok(ethabi::encode(&[
-            Token::String(value.sender),
+            Token::Bytes(value.sender.into()),
             Token::Bytes(value.receiver.into()),
             Token::Array(
                 value
@@ -97,8 +97,8 @@ impl TryFrom<Binary> for Ucs01TransferPacket {
     fn try_from(value: Binary) -> Result<Self, Self::Error> {
         let encoded_packet = ethabi::decode(
             &[
-                ParamType::String,
-                ParamType::String,
+                ParamType::Bytes,
+                ParamType::Bytes,
                 ParamType::Array(Box::new(ParamType::Tuple(vec![
                     ParamType::String,
                     ParamType::Uint(256),
@@ -110,9 +110,9 @@ impl TryFrom<Binary> for Ucs01TransferPacket {
         // NOTE: at this point, it is technically impossible to have any other branch than the one we
         // match unless there is a bug in the underlying `ethabi` crate
         match &encoded_packet[..] {
-            [Token::String(sender), Token::Bytes(receiver), Token::Array(tokens)] => {
+            [Token::Bytes(sender), Token::Bytes(receiver), Token::Array(tokens)] => {
                 Ok(Ucs01TransferPacket {
-                    sender: sender.clone(),
+                    sender: sender.clone().into(),
                     receiver: receiver.clone().into(),
                     tokens: tokens
                         .iter()
@@ -165,19 +165,17 @@ impl TryFrom<Binary> for Ics20Packet {
     }
 }
 
-pub trait TransferPacket:
-    TryFrom<TransferPacketCommon<Self::Extension>, Error = EncodingError>
-{
+pub trait TransferPacket {
     type Extension: Into<String> + Clone;
-    type Receiver: ToString;
+    type Addr: ToString;
 
     // NOTE: can't ref here because cosmwasm_std::Coins don't impl iterator nor
     // exposes the underlying BTreeMap...
     fn tokens(&self) -> Vec<TransferToken>;
 
-    fn sender(&self) -> &str;
+    fn sender(&self) -> &Self::Addr;
 
-    fn receiver(&self) -> &Self::Receiver;
+    fn receiver(&self) -> &Self::Addr;
 
     fn extension(&self) -> &Self::Extension;
 }
@@ -193,13 +191,13 @@ impl From<NoExtension> for String {
 
 impl TransferPacket for Ucs01TransferPacket {
     type Extension = NoExtension;
-    type Receiver = HexBinary;
+    type Addr = HexBinary;
 
     fn tokens(&self) -> Vec<TransferToken> {
         self.tokens().clone()
     }
 
-    fn sender(&self) -> &str {
+    fn sender(&self) -> &HexBinary {
         &self.sender
     }
 
@@ -214,7 +212,7 @@ impl TransferPacket for Ucs01TransferPacket {
 
 impl TransferPacket for Ics20Packet {
     type Extension = String;
-    type Receiver = String;
+    type Addr = String;
 
     fn tokens(&self) -> Vec<TransferToken> {
         vec![TransferToken {
@@ -223,7 +221,7 @@ impl TransferPacket for Ics20Packet {
         }]
     }
 
-    fn sender(&self) -> &str {
+    fn sender(&self) -> &String {
         &self.sender
     }
 
@@ -307,20 +305,24 @@ impl From<Ics20Ack> for GenericAck {
     }
 }
 
-impl TryFrom<TransferPacketCommon<NoExtension>> for Ucs01TransferPacket {
-    type Error = EncodingError;
+// impl TryFrom<TransferPacketCommon<NoExtension>> for Ucs01TransferPacket {
+//     type Error = EncodingError;
 
-    fn try_from(
-        TransferPacketCommon {
-            sender,
-            receiver,
-            tokens,
-            ..
-        }: TransferPacketCommon<NoExtension>,
-    ) -> Result<Self, Self::Error> {
-        Ok(Self::new(sender, vec![].into(), tokens))
-    }
-}
+//     fn try_from(
+//         TransferPacketCommon {
+//             sender,
+//             receiver,
+//             tokens,
+//             ..
+//         }: TransferPacketCommon<NoExtension>,
+//     ) -> Result<Self, Self::Error> {
+//         Ok(Self::new(
+//             HexBinary::from_hex(&sender).map_err(|_| EncodingError::InvalidEncoding)?,
+//             HexBinary::from_hex(&receiver).map_err(|_| EncodingError::InvalidEncoding)?,
+//             tokens,
+//         ))
+//     }
+// }
 
 impl TryFrom<TransferPacketCommon<String>> for Ics20Packet {
     type Error = EncodingError;
@@ -386,7 +388,7 @@ mod tests {
     #[test]
     fn ucs01_packet_encode_decode_iso() {
         let packet = Ucs01TransferPacket {
-            sender: "a".into(),
+            sender: b"a".into(),
             receiver: b"b".into(),
             tokens: vec![
                 TransferToken {

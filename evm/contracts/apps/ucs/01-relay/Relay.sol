@@ -23,7 +23,7 @@ struct Token {
 }
 
 struct RelayPacket {
-    string sender;
+    bytes sender;
     bytes receiver;
     Token[] tokens;
 }
@@ -107,10 +107,10 @@ library RelayPacketLib {
         bytes memory packet
     ) internal pure returns (RelayPacket memory) {
         (
-            string memory sender,
+            bytes memory sender,
             bytes memory receiver,
             Token[] memory tokens
-        ) = abi.decode(packet, (string, bytes, Token[]));
+        ) = abi.decode(packet, (bytes, bytes, Token[]));
         return
             RelayPacket({sender: sender, receiver: receiver, tokens: tokens});
     }
@@ -220,7 +220,7 @@ contract UCS01Relay is IBCAppBase {
     function send(
         string calldata portId,
         string calldata channelId,
-        address receiver,
+        bytes calldata receiver,
         LocalToken[] calldata tokens,
         uint64 counterpartyTimeoutRevisionNumber,
         uint64 counterpartyTimeoutRevisionHeight
@@ -252,8 +252,8 @@ contract UCS01Relay is IBCAppBase {
         }
         string memory sender = msg.sender.toHexString();
         RelayPacket memory packet = RelayPacket({
-            sender: msg.sender.toHexString(),
-            receiver: abi.encodePacked(receiver),
+            sender: abi.encodePacked(msg.sender),
+            receiver: receiver,
             tokens: normalizedTokens
         });
         IbcCoreClientV1Height.Data memory timeoutHeight = IbcCoreClientV1Height
@@ -276,7 +276,7 @@ contract UCS01Relay is IBCAppBase {
         RelayPacket memory packet
     ) internal {
         // We're going to refund, the receiver will be the sender.
-        address receiver = RelayLib.hexToAddress(packet.sender);
+        address receiver = bytesToAddress(packet.sender);
         for (uint256 i = 0; i < packet.tokens.length; i++) {
             Token memory token = packet.tokens[i];
             // Either we tried to send back a remote native token
@@ -351,7 +351,7 @@ contract UCS01Relay is IBCAppBase {
                 IERC20Denom(denomAddress).mint(receiver, token.amount);
             }
             emit Received(
-                packet.sender,
+                packet.sender.toHexString(),
                 receiver,
                 denom,
                 denomAddress,

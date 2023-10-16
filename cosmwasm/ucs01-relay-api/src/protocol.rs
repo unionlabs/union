@@ -1,8 +1,8 @@
 use std::fmt::Debug;
 
 use cosmwasm_std::{
-    Addr, Binary, CosmosMsg, Event, IbcBasicResponse, IbcEndpoint, IbcMsg, IbcOrder,
-    IbcReceiveResponse, Response, SubMsg, Timestamp,
+    attr, Addr, Binary, CanonicalAddr, CosmosMsg, Event, IbcBasicResponse, IbcEndpoint, IbcMsg,
+    IbcOrder, IbcReceiveResponse, Response, SubMsg, Timestamp,
 };
 use thiserror::Error;
 
@@ -69,6 +69,11 @@ pub trait TransferProtocol {
 
     fn self_addr(&self) -> &Addr;
 
+    fn common_to_protocol_packet(
+        &self,
+        packet: TransferPacketCommon<PacketExtensionOf<Self>>,
+    ) -> Result<Self::Packet, EncodingError>;
+
     fn ack_success() -> Self::Ack;
 
     fn ack_failure(error: String) -> Self::Ack;
@@ -80,22 +85,22 @@ pub trait TransferProtocol {
 
     fn send_tokens(
         &mut self,
-        sender: &str,
-        receiver: &<Self::Packet as TransferPacket>::Receiver,
+        sender: &<Self::Packet as TransferPacket>::Addr,
+        receiver: &<Self::Packet as TransferPacket>::Addr,
         tokens: Vec<TransferToken>,
     ) -> Result<Vec<CosmosMsg<Self::CustomMsg>>, Self::Error>;
 
     fn send_tokens_success(
         &mut self,
-        sender: &str,
-        receiver: &<Self::Packet as TransferPacket>::Receiver,
+        sender: &<Self::Packet as TransferPacket>::Addr,
+        receiver: &<Self::Packet as TransferPacket>::Addr,
         tokens: Vec<TransferToken>,
     ) -> Result<Vec<CosmosMsg<Self::CustomMsg>>, Self::Error>;
 
     fn send_tokens_failure(
         &mut self,
-        sender: &str,
-        receiver: &<Self::Packet as TransferPacket>::Receiver,
+        sender: &<Self::Packet as TransferPacket>::Addr,
+        receiver: &<Self::Packet as TransferPacket>::Addr,
         tokens: Vec<TransferToken>,
     ) -> Result<Vec<CosmosMsg<Self::CustomMsg>>, Self::Error>;
 
@@ -110,8 +115,8 @@ pub trait TransferProtocol {
             .map(|token| self.normalize_for_ibc_transfer(token))
             .collect::<Result<Vec<_>, _>>()?;
 
-        let packet = Self::Packet::try_from(TransferPacketCommon {
-            sender: input.sender.to_string(),
+        let packet = self.common_to_protocol_packet(TransferPacketCommon {
+            sender: input.sender.clone().to_string(),
             receiver: input.receiver.clone(),
             tokens: input.tokens.clone(),
             extension: extension.clone(),
@@ -181,7 +186,7 @@ pub trait TransferProtocol {
                 packet_event
                     .add_attributes([
                         ("module", MODULE_NAME),
-                        ("sender", packet.sender()),
+                        ("sender", packet.sender().to_string().as_str()),
                         ("receiver", packet.receiver().to_string().as_str()),
                         ("acknowledgement", &raw_ack.into().to_string()),
                     ])
@@ -214,7 +219,7 @@ pub trait TransferProtocol {
                 timeout_event
                     .add_attributes([
                         ("module", MODULE_NAME),
-                        ("refund_receiver", packet.sender()),
+                        ("refund_receiver", packet.sender().to_string().as_str()),
                     ])
                     .add_attributes(packet.tokens().into_iter().map(
                         |TransferToken { denom, amount }| (format!("denom:{}", denom), amount),
@@ -225,7 +230,7 @@ pub trait TransferProtocol {
 
     fn receive_transfer(
         &mut self,
-        receiver: &str,
+        receiver: &<Self::Packet as TransferPacket>::Addr,
         tokens: Vec<TransferToken>,
     ) -> Result<Vec<CosmosMsg<Self::CustomMsg>>, Self::Error>;
 
@@ -242,7 +247,7 @@ pub trait TransferProtocol {
             // the reply handler via the `receive_error` for the acknowledgement
             // to be overwritten.
             let transfer_msgs = self
-                .receive_transfer(packet.receiver().to_string().as_str(), packet.tokens())?
+                .receive_transfer(packet.receiver(), packet.tokens())?
                 .into_iter()
                 .map(|msg| SubMsg::reply_on_error(msg, Self::RECEIVE_REPLY_ID));
 
@@ -259,7 +264,7 @@ pub trait TransferProtocol {
                     packet_event
                         .add_attributes([
                             ("module", MODULE_NAME),
-                            ("sender", packet.sender()),
+                            ("sender", packet.sender().to_string().as_str()),
                             ("receiver", packet.receiver().to_string().as_str()),
                             ("success", "true"),
                         ])
