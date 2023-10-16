@@ -239,8 +239,11 @@ contract Verifier is IZKVerifierV2 {
         uint256[2] calldata proofCommitment,
         uint256[5] calldata input
     ) public view returns (bool) {
-        (bool success, uint256 x, uint256 y) = publicInputMSM(proofCommitment, input);
-        if(!success) {
+        (bool success, uint256 x, uint256 y) = publicInputMSM(
+            proofCommitment,
+            input
+        );
+        if (!success) {
             return false;
         }
 
