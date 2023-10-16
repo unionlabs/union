@@ -8,22 +8,23 @@ import (
 
 	"github.com/consensys/gnark-crypto/ecc"
 
-	kzg_bls12377 "github.com/consensys/gnark-crypto/ecc/bls12-377/fr/kzg"
-	kzg_bls12378 "github.com/consensys/gnark-crypto/ecc/bls12-378/fr/kzg"
-	kzg_bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381/fr/kzg"
-	kzg_bls24315 "github.com/consensys/gnark-crypto/ecc/bls24-315/fr/kzg"
-	kzg_bls24317 "github.com/consensys/gnark-crypto/ecc/bls24-317/fr/kzg"
-	kzg_bn254 "github.com/consensys/gnark-crypto/ecc/bn254/fr/kzg"
-	kzg_bw6633 "github.com/consensys/gnark-crypto/ecc/bw6-633/fr/kzg"
-	kzg_bw6756 "github.com/consensys/gnark-crypto/ecc/bw6-756/fr/kzg"
-	kzg_bw6761 "github.com/consensys/gnark-crypto/ecc/bw6-761/fr/kzg"
+	kzg_bls12377 "github.com/consensys/gnark-crypto/ecc/bls12-377/kzg"
+	kzg_bls12378 "github.com/consensys/gnark-crypto/ecc/bls12-378/kzg"
+	kzg_bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381/kzg"
+	kzg_bls24315 "github.com/consensys/gnark-crypto/ecc/bls24-315/kzg"
+	kzg_bls24317 "github.com/consensys/gnark-crypto/ecc/bls24-317/kzg"
+	kzg_bn254 "github.com/consensys/gnark-crypto/ecc/bn254/kzg"
+	kzg_bw6633 "github.com/consensys/gnark-crypto/ecc/bw6-633/kzg"
+	kzg_bw6756 "github.com/consensys/gnark-crypto/ecc/bw6-756/kzg"
+	kzg_bw6761 "github.com/consensys/gnark-crypto/ecc/bw6-761/kzg"
 )
 
-// SRS ...
-type SRS interface {
+type Serializable interface {
 	io.ReaderFrom
 	io.WriterTo
 }
+
+type SRS Serializable
 
 // NewSRS returns an empty curved-typed SRS object
 // that implements io.ReaderFrom and io.WriterTo interfaces

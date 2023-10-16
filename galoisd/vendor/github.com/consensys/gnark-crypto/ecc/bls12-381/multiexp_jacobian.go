@@ -1,4 +1,4 @@
-// Copyright 2020 ConsenSys Software Inc.
+// Copyright 2020 Consensys Software Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,7 +20,13 @@ func processChunkG1Jacobian[B ibg1JacExtended](chunk uint64,
 	chRes chan<- g1JacExtended,
 	c uint64,
 	points []G1Affine,
-	digits []uint16) {
+	digits []uint16,
+	sem chan struct{}) {
+
+	if sem != nil {
+		// if we are limited, wait for a token in the semaphore
+		<-sem
+	}
 
 	var buckets B
 	for i := 0; i < len(buckets); i++ {
@@ -33,7 +39,7 @@ func processChunkG1Jacobian[B ibg1JacExtended](chunk uint64,
 			continue
 		}
 
-		// if msbWindow bit is set, we need to substract
+		// if msbWindow bit is set, we need to subtract
 		if digit&1 == 0 {
 			// add
 			buckets[(digit>>1)-1].addMixed(&points[i])
@@ -50,10 +56,16 @@ func processChunkG1Jacobian[B ibg1JacExtended](chunk uint64,
 	runningSum.setInfinity()
 	total.setInfinity()
 	for k := len(buckets) - 1; k >= 0; k-- {
-		if !buckets[k].ZZ.IsZero() {
+		if !buckets[k].IsZero() {
 			runningSum.add(&buckets[k])
 		}
 		total.add(&runningSum)
+	}
+
+	if sem != nil {
+		// release a token to the semaphore
+		// before sending to chRes
+		sem <- struct{}{}
 	}
 
 	chRes <- total
@@ -97,7 +109,13 @@ func processChunkG2Jacobian[B ibg2JacExtended](chunk uint64,
 	chRes chan<- g2JacExtended,
 	c uint64,
 	points []G2Affine,
-	digits []uint16) {
+	digits []uint16,
+	sem chan struct{}) {
+
+	if sem != nil {
+		// if we are limited, wait for a token in the semaphore
+		<-sem
+	}
 
 	var buckets B
 	for i := 0; i < len(buckets); i++ {
@@ -110,7 +128,7 @@ func processChunkG2Jacobian[B ibg2JacExtended](chunk uint64,
 			continue
 		}
 
-		// if msbWindow bit is set, we need to substract
+		// if msbWindow bit is set, we need to subtract
 		if digit&1 == 0 {
 			// add
 			buckets[(digit>>1)-1].addMixed(&points[i])
@@ -127,10 +145,16 @@ func processChunkG2Jacobian[B ibg2JacExtended](chunk uint64,
 	runningSum.setInfinity()
 	total.setInfinity()
 	for k := len(buckets) - 1; k >= 0; k-- {
-		if !buckets[k].ZZ.IsZero() {
+		if !buckets[k].IsZero() {
 			runningSum.add(&buckets[k])
 		}
 		total.add(&runningSum)
+	}
+
+	if sem != nil {
+		// release a token to the semaphore
+		// before sending to chRes
+		sem <- struct{}{}
 	}
 
 	chRes <- total

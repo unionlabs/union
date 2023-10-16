@@ -109,11 +109,6 @@ func (f *Field[T]) NewElement(v interface{}) *Element[T] {
 		return f.packLimbs([]frontend.Variable{v}, true)
 	}
 	if e, ok := v.([]frontend.Variable); ok {
-		for _, sv := range e {
-			if !frontend.IsCanonical(sv) {
-				panic("[]frontend.Variable that are not canonical (known to the compiler) is not a valid input")
-			}
-		}
 		return f.packLimbs(e, true)
 	}
 	c := ValueOf[T](v)

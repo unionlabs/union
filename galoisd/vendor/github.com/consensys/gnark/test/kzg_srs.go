@@ -25,13 +25,13 @@ import (
 	"github.com/consensys/gnark/constraint"
 	"github.com/consensys/gnark/internal/utils"
 
-	kzg_bls12377 "github.com/consensys/gnark-crypto/ecc/bls12-377/fr/kzg"
-	kzg_bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381/fr/kzg"
-	kzg_bls24315 "github.com/consensys/gnark-crypto/ecc/bls24-315/fr/kzg"
-	kzg_bls24317 "github.com/consensys/gnark-crypto/ecc/bls24-317/fr/kzg"
-	kzg_bn254 "github.com/consensys/gnark-crypto/ecc/bn254/fr/kzg"
-	kzg_bw6633 "github.com/consensys/gnark-crypto/ecc/bw6-633/fr/kzg"
-	kzg_bw6761 "github.com/consensys/gnark-crypto/ecc/bw6-761/fr/kzg"
+	kzg_bls12377 "github.com/consensys/gnark-crypto/ecc/bls12-377/kzg"
+	kzg_bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381/kzg"
+	kzg_bls24315 "github.com/consensys/gnark-crypto/ecc/bls24-315/kzg"
+	kzg_bls24317 "github.com/consensys/gnark-crypto/ecc/bls24-317/kzg"
+	kzg_bn254 "github.com/consensys/gnark-crypto/ecc/bn254/kzg"
+	kzg_bw6633 "github.com/consensys/gnark-crypto/ecc/bw6-633/kzg"
+	kzg_bw6761 "github.com/consensys/gnark-crypto/ecc/bw6-761/kzg"
 )
 
 const srsCachedSize = (1 << 14) + 3
@@ -51,7 +51,6 @@ func NewKZGSRS(ccs constraint.ConstraintSystem) (kzg.SRS, error) {
 	}
 
 	return newKZGSRS(utils.FieldToCurve(ccs.Field()), kzgSize)
-
 }
 
 var srsCache map[ecc.ID]kzg.SRS

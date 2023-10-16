@@ -23,7 +23,7 @@ type E12 struct {
 	C0, C1, C2 E4
 }
 
-// Equal returns true if z equals x, fasle otherwise
+// Equal returns true if z equals x, false otherwise
 func (z *E12) Equal(x *E12) bool {
 	return z.C0.Equal(&x.C0) && z.C1.Equal(&x.C1) && z.C2.Equal(&x.C2)
 }
@@ -70,7 +70,7 @@ func (z *E12) SetRandom() (*E12, error) {
 	return z, nil
 }
 
-// IsZero returns true if the two elements are equal, fasle otherwise
+// IsZero returns true if the two elements are equal, false otherwise
 func (z *E12) IsZero() bool {
 	return z.C0.IsZero() && z.C1.IsZero() && z.C2.IsZero()
 }

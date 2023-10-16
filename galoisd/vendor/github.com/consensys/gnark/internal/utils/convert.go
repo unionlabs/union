@@ -15,6 +15,7 @@
 package utils
 
 import (
+	"math"
 	"math/big"
 	"reflect"
 )
@@ -60,7 +61,7 @@ func FromInterface(input interface{}) big.Int {
 	case int32:
 		r.SetInt64(int64(v))
 	case int64:
-		r.SetInt64(int64(v))
+		r.SetInt64(v)
 	case int:
 		r.SetInt64(int64(v))
 	case string:
@@ -86,4 +87,32 @@ func FromInterface(input interface{}) big.Int {
 	}
 
 	return r
+}
+
+func IntSliceSliceToUint64SliceSlice(in [][]int) [][]uint64 {
+	res := make([][]uint64, len(in))
+	for i := range in {
+		res[i] = make([]uint64, len(in[i]))
+		for j := range in[i] {
+			if in[i][j] < 0 {
+				panic("negative value in int slice")
+			}
+			res[i][j] = uint64(in[i][j])
+		}
+	}
+	return res
+}
+
+func Uint64SliceSliceToIntSliceSlice(in [][]uint64) [][]int {
+	res := make([][]int, len(in))
+	for i := range in {
+		res[i] = make([]int, len(in[i]))
+		for j := range in[i] {
+			if in[i][j] >= math.MaxInt {
+				panic("too large")
+			}
+			res[i][j] = int(in[i][j])
+		}
+	}
+	return res
 }

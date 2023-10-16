@@ -40,17 +40,17 @@ import (
 // To unmarshal CBOR into an empty interface value, Unmarshal uses the
 // following rules:
 //
-//     CBOR booleans decode to bool.
-//     CBOR positive integers decode to uint64.
-//     CBOR negative integers decode to int64 (big.Int if value overflows).
-//     CBOR floating points decode to float64.
-//     CBOR byte strings decode to []byte.
-//     CBOR text strings decode to string.
-//     CBOR arrays decode to []interface{}.
-//     CBOR maps decode to map[interface{}]interface{}.
-//     CBOR null and undefined values decode to nil.
-//     CBOR times (tag 0 and 1) decode to time.Time.
-//     CBOR bignums (tag 2 and 3) decode to big.Int.
+//	CBOR booleans decode to bool.
+//	CBOR positive integers decode to uint64.
+//	CBOR negative integers decode to int64 (big.Int if value overflows).
+//	CBOR floating points decode to float64.
+//	CBOR byte strings decode to []byte.
+//	CBOR text strings decode to string.
+//	CBOR arrays decode to []interface{}.
+//	CBOR maps decode to map[interface{}]interface{}.
+//	CBOR null and undefined values decode to nil.
+//	CBOR times (tag 0 and 1) decode to time.Time.
+//	CBOR bignums (tag 2 and 3) decode to big.Int.
 //
 // To unmarshal a CBOR array into a slice, Unmarshal allocates a new slice
 // if the CBOR array is empty or slice capacity is less than CBOR array length.
@@ -75,9 +75,9 @@ import (
 // To unmarshal a CBOR map into a struct, Unmarshal matches CBOR map keys to the
 // keys in the following priority:
 //
-//     1. "cbor" key in struct field tag,
-//     2. "json" key in struct field tag,
-//     3. struct field name.
+//  1. "cbor" key in struct field tag,
+//  2. "json" key in struct field tag,
+//  3. struct field name.
 //
 // Unmarshal tries an exact match for field name, then a case-insensitive match.
 // Map key-value pairs without corresponding struct fields are ignored.  See
@@ -95,13 +95,49 @@ import (
 //
 // Unmarshal supports CBOR tag 55799 (self-describe CBOR), tag 0 and 1 (time),
 // and tag 2 and 3 (bignum).
+//
+// Unmarshal returns ExtraneousDataError error (without decoding into v)
+// if there are any remaining bytes following the first valid CBOR data item.
+// See UnmarshalFirst, if you want to unmarshal only the first
+// CBOR data item without ExtraneousDataError caused by remaining bytes.
 func Unmarshal(data []byte, v interface{}) error {
 	return defaultDecMode.Unmarshal(data, v)
 }
 
-// Valid checks whether the CBOR data is complete and well-formed.
+// UnmarshalFirst parses the first CBOR data item into the value pointed to by v
+// using default decoding options.  Any remaining bytes are returned in rest.
+//
+// If v is nil, not a pointer, or a nil pointer, UnmarshalFirst returns an error.
+//
+// See the documentation for Unmarshal for details.
+func UnmarshalFirst(data []byte, v interface{}) (rest []byte, err error) {
+	return defaultDecMode.UnmarshalFirst(data, v)
+}
+
+// Valid checks whether data is a well-formed encoded CBOR data item and
+// that it complies with default restrictions such as MaxNestedLevels,
+// MaxArrayElements, MaxMapPairs, etc.
+//
+// If there are any remaining bytes after the CBOR data item,
+// an ExtraneousDataError is returned.
+//
+// WARNING: Valid doesn't check if encoded CBOR data item is valid (i.e. validity)
+// and RFC 8949 distinctly defines what is "Valid" and what is "Well-formed".
+//
+// Deprecated: Valid is kept for compatibility and should not be used.
+// Use Wellformed instead because it has a more appropriate name.
 func Valid(data []byte) error {
 	return defaultDecMode.Valid(data)
+}
+
+// Wellformed checks whether data is a well-formed encoded CBOR data item and
+// that it complies with default restrictions such as MaxNestedLevels,
+// MaxArrayElements, MaxMapPairs, etc.
+//
+// If there are any remaining bytes after the CBOR data item,
+// an ExtraneousDataError is returned.
+func Wellformed(data []byte) error {
+	return defaultDecMode.Wellformed(data)
 }
 
 // Unmarshaler is the interface implemented by types that wish to unmarshal
@@ -139,6 +175,16 @@ func (e *UnmarshalTypeError) Error() string {
 		s += " (" + e.errorMsg + ")"
 	}
 	return s
+}
+
+// InvalidMapKeyTypeError describes invalid Go map key type when decoding CBOR map.
+// For example, Go doesn't allow slice as map key.
+type InvalidMapKeyTypeError struct {
+	GoType string
+}
+
+func (e *InvalidMapKeyTypeError) Error() string {
+	return "cbor: invalid map key type: " + e.GoType
 }
 
 // DupMapKeyError describes detected duplicate map key in CBOR map.
@@ -239,6 +285,36 @@ func (idm IntDecMode) valid() bool {
 	return idm < maxIntDec
 }
 
+// MapKeyByteStringMode specifies how to decode CBOR byte string (major type 2)
+// as Go map key when decoding CBOR map key into an empty Go interface value.
+// Specifically, this option applies when decoding CBOR map into
+// - Go empty interface, or
+// - Go map with empty interface as key type.
+// The CBOR map key types handled by this option are
+// - byte string
+// - tagged byte string
+// - nested tagged byte string
+type MapKeyByteStringMode int
+
+const (
+	// MapKeyByteStringAllowed allows CBOR byte string to be decoded as Go map key.
+	// Since Go doesn't allow []byte as map key, CBOR byte string is decoded to
+	// ByteString which has underlying string type.
+	// This is the default setting.
+	MapKeyByteStringAllowed MapKeyByteStringMode = iota
+
+	// MapKeyByteStringForbidden forbids CBOR byte string being decoded as Go map key.
+	// Attempting to decode CBOR byte string as map key into empty interface value
+	// returns a decoding error.
+	MapKeyByteStringForbidden
+
+	maxMapKeyByteStringMode
+)
+
+func (mkbsm MapKeyByteStringMode) valid() bool {
+	return mkbsm < maxMapKeyByteStringMode
+}
+
 // ExtraDecErrorCond specifies extra conditions that should be treated as errors.
 type ExtraDecErrorCond uint
 
@@ -257,6 +333,26 @@ func (ec ExtraDecErrorCond) valid() bool {
 	return ec < maxExtraDecError
 }
 
+// UTF8Mode option specifies if decoder should
+// decode CBOR Text containing invalid UTF-8 string.
+type UTF8Mode int
+
+const (
+	// UTF8RejectInvalid rejects CBOR Text containing
+	// invalid UTF-8 string.
+	UTF8RejectInvalid UTF8Mode = iota
+
+	// UTF8DecodeInvalid allows decoding CBOR Text containing
+	// invalid UTF-8 string.
+	UTF8DecodeInvalid
+
+	maxUTF8Mode
+)
+
+func (um UTF8Mode) valid() bool {
+	return um < maxUTF8Mode
+}
+
 // DecOptions specifies decoding options.
 type DecOptions struct {
 	// DupMapKey specifies whether to enforce duplicate map key.
@@ -267,7 +363,8 @@ type DecOptions struct {
 	TimeTag DecTagMode
 
 	// MaxNestedLevels specifies the max nested levels allowed for any combination of CBOR array, maps, and tags.
-	// Default is 32 levels and it can be set to [4, 256].
+	// Default is 32 levels and it can be set to [4, 65535]. Note that higher maximum levels of nesting can
+	// require larger amounts of stack to deserialize. Don't increase this higher than you require.
 	MaxNestedLevels int
 
 	// MaxArrayElements specifies the max number of elements for CBOR arrays.
@@ -288,6 +385,12 @@ type DecOptions struct {
 	// when decoding CBOR int (major type 0 and 1) to Go interface{}.
 	IntDec IntDecMode
 
+	// MapKeyByteString specifies how to decode CBOR byte string as map key
+	// when decoding CBOR map with byte string key into an empty interface value.
+	// By default, an error is returned when attempting to decode CBOR byte string
+	// as map key because Go doesn't allow []byte as map key.
+	MapKeyByteString MapKeyByteStringMode
+
 	// ExtraReturnErrors specifies extra conditions that should be treated as errors.
 	ExtraReturnErrors ExtraDecErrorCond
 
@@ -295,6 +398,10 @@ type DecOptions struct {
 	// when unmarshalling CBOR into an empty interface value.
 	// By default, unmarshal uses map[interface{}]interface{}.
 	DefaultMapType reflect.Type
+
+	// UTF8 specifies if decoder should decode CBOR Text containing invalid UTF-8.
+	// By default, unmarshal rejects CBOR text containing invalid UTF-8.
+	UTF8 UTF8Mode
 }
 
 // DecMode returns DecMode with immutable options and no tags (safe for concurrency).
@@ -376,10 +483,13 @@ func (opts DecOptions) decMode() (*decMode, error) {
 	if !opts.IntDec.valid() {
 		return nil, errors.New("cbor: invalid IntDec " + strconv.Itoa(int(opts.IntDec)))
 	}
+	if !opts.MapKeyByteString.valid() {
+		return nil, errors.New("cbor: invalid MapKeyByteString " + strconv.Itoa(int(opts.MapKeyByteString)))
+	}
 	if opts.MaxNestedLevels == 0 {
 		opts.MaxNestedLevels = 32
-	} else if opts.MaxNestedLevels < 4 || opts.MaxNestedLevels > 256 {
-		return nil, errors.New("cbor: invalid MaxNestedLevels " + strconv.Itoa(opts.MaxNestedLevels) + " (range is [4, 256])")
+	} else if opts.MaxNestedLevels < 4 || opts.MaxNestedLevels > 65535 {
+		return nil, errors.New("cbor: invalid MaxNestedLevels " + strconv.Itoa(opts.MaxNestedLevels) + " (range is [4, 65535])")
 	}
 	if opts.MaxArrayElements == 0 {
 		opts.MaxArrayElements = defaultMaxArrayElements
@@ -397,6 +507,9 @@ func (opts DecOptions) decMode() (*decMode, error) {
 	if opts.DefaultMapType != nil && opts.DefaultMapType.Kind() != reflect.Map {
 		return nil, fmt.Errorf("cbor: invalid DefaultMapType %s", opts.DefaultMapType)
 	}
+	if !opts.UTF8.valid() {
+		return nil, errors.New("cbor: invalid UTF8 " + strconv.Itoa(int(opts.UTF8)))
+	}
 	dm := decMode{
 		dupMapKey:         opts.DupMapKey,
 		timeTag:           opts.TimeTag,
@@ -406,8 +519,10 @@ func (opts DecOptions) decMode() (*decMode, error) {
 		indefLength:       opts.IndefLength,
 		tagsMd:            opts.TagsMd,
 		intDec:            opts.IntDec,
+		mapKeyByteString:  opts.MapKeyByteString,
 		extraReturnErrors: opts.ExtraReturnErrors,
 		defaultMapType:    opts.DefaultMapType,
+		utf8:              opts.UTF8,
 	}
 	return &dm, nil
 }
@@ -420,10 +535,40 @@ type DecMode interface {
 	//
 	// See the documentation for Unmarshal for details.
 	Unmarshal(data []byte, v interface{}) error
-	// Valid checks whether the CBOR data is complete and well-formed.
+
+	// UnmarshalFirst parses the first CBOR data item into the value pointed to by v
+	// using the decoding mode.  Any remaining bytes are returned in rest.
+	//
+	// If v is nil, not a pointer, or a nil pointer, UnmarshalFirst returns an error.
+	//
+	// See the documentation for Unmarshal for details.
+	UnmarshalFirst(data []byte, v interface{}) (rest []byte, err error)
+
+	// Valid checks whether data is a well-formed encoded CBOR data item and
+	// that it complies with configurable restrictions such as MaxNestedLevels,
+	// MaxArrayElements, MaxMapPairs, etc.
+	//
+	// If there are any remaining bytes after the CBOR data item,
+	// an ExtraneousDataError is returned.
+	//
+	// WARNING: Valid doesn't check if encoded CBOR data item is valid (i.e. validity)
+	// and RFC 8949 distinctly defines what is "Valid" and what is "Well-formed".
+	//
+	// Deprecated: Valid is kept for compatibility and should not be used.
+	// Use Wellformed instead because it has a more appropriate name.
 	Valid(data []byte) error
+
+	// Wellformed checks whether data is a well-formed encoded CBOR data item and
+	// that it complies with configurable restrictions such as MaxNestedLevels,
+	// MaxArrayElements, MaxMapPairs, etc.
+	//
+	// If there are any remaining bytes after the CBOR data item,
+	// an ExtraneousDataError is returned.
+	Wellformed(data []byte) error
+
 	// NewDecoder returns a new decoder that reads from r using dm DecMode.
 	NewDecoder(r io.Reader) *Decoder
+
 	// DecOptions returns user specified options used to create this DecMode.
 	DecOptions() DecOptions
 }
@@ -438,8 +583,10 @@ type decMode struct {
 	indefLength       IndefLengthMode
 	tagsMd            TagsMode
 	intDec            IntDecMode
+	mapKeyByteString  MapKeyByteStringMode
 	extraReturnErrors ExtraDecErrorCond
 	defaultMapType    reflect.Type
+	utf8              UTF8Mode
 }
 
 var defaultDecMode, _ = DecOptions{}.decMode()
@@ -455,7 +602,9 @@ func (dm *decMode) DecOptions() DecOptions {
 		IndefLength:       dm.indefLength,
 		TagsMd:            dm.tagsMd,
 		IntDec:            dm.intDec,
+		MapKeyByteString:  dm.mapKeyByteString,
 		ExtraReturnErrors: dm.extraReturnErrors,
+		UTF8:              dm.utf8,
 	}
 }
 
@@ -466,13 +615,72 @@ func (dm *decMode) DecOptions() DecOptions {
 // See the documentation for Unmarshal for details.
 func (dm *decMode) Unmarshal(data []byte, v interface{}) error {
 	d := decoder{data: data, dm: dm}
+
+	// Check well-formedness.
+	off := d.off               // Save offset before data validation
+	err := d.wellformed(false) // don't allow any extra data after valid data item.
+	d.off = off                // Restore offset
+	if err != nil {
+		return err
+	}
+
 	return d.value(v)
 }
 
-// Valid checks whether the CBOR data is complete and well-formed.
-func (dm *decMode) Valid(data []byte) error {
+// UnmarshalFirst parses the first CBOR data item into the value pointed to by v
+// using dm decoding mode.  Any remaining bytes are returned in rest.
+//
+// If v is nil, not a pointer, or a nil pointer, UnmarshalFirst returns an error.
+//
+// See the documentation for Unmarshal for details.
+func (dm *decMode) UnmarshalFirst(data []byte, v interface{}) (rest []byte, err error) {
 	d := decoder{data: data, dm: dm}
-	return d.valid()
+
+	// check well-formedness.
+	off := d.off             // Save offset before data validation
+	err = d.wellformed(true) // allow extra data after well-formed data item
+	d.off = off              // Restore offset
+
+	// If it is well-formed, parse the value. This is structured like this to allow
+	// better test coverage
+	if err == nil {
+		err = d.value(v)
+	}
+
+	// If either wellformed or value returned an error, do not return rest bytes
+	if err != nil {
+		return nil, err
+	}
+
+	// Return the rest of the data slice (which might be len 0)
+	return d.data[d.off:], nil
+}
+
+// Valid checks whether data is a well-formed encoded CBOR data item and
+// that it complies with configurable restrictions such as MaxNestedLevels,
+// MaxArrayElements, MaxMapPairs, etc.
+//
+// If there are any remaining bytes after the CBOR data item,
+// an ExtraneousDataError is returned.
+//
+// WARNING: Valid doesn't check if encoded CBOR data item is valid (i.e. validity)
+// and RFC 8949 distinctly defines what is "Valid" and what is "Well-formed".
+//
+// Deprecated: Valid is kept for compatibility and should not be used.
+// Use Wellformed instead because it has a more appropriate name.
+func (dm *decMode) Valid(data []byte) error {
+	return dm.Wellformed(data)
+}
+
+// Wellformed checks whether data is a well-formed encoded CBOR data item and
+// that it complies with configurable restrictions such as MaxNestedLevels,
+// MaxArrayElements, MaxMapPairs, etc.
+//
+// If there are any remaining bytes after the CBOR data item,
+// an ExtraneousDataError is returned.
+func (dm *decMode) Wellformed(data []byte) error {
+	d := decoder{data: data, dm: dm}
+	return d.wellformed(false)
 }
 
 // NewDecoder returns a new decoder that reads from r using dm DecMode.
@@ -486,6 +694,10 @@ type decoder struct {
 	dm   *decMode
 }
 
+// value decodes CBOR data item into the value pointed to by v.
+// If CBOR data item fails to be decoded into v,
+// error is returned and offset is moved to the next CBOR data item.
+// Precondition: d.data contains at least one well-formed CBOR data item.
 func (d *decoder) value(v interface{}) error {
 	// v can't be nil, non-pointer, or nil pointer value.
 	if v == nil {
@@ -497,14 +709,6 @@ func (d *decoder) value(v interface{}) error {
 	} else if rv.IsNil() {
 		return &InvalidUnmarshalError{"cbor: Unmarshal(nil " + rv.Type().String() + ")"}
 	}
-
-	off := d.off // Save offset before data validation
-	err := d.valid()
-	d.off = off // Restore offset
-	if err != nil {
-		return err
-	}
-
 	rv = rv.Elem()
 	return d.parseToValue(rv, getTypeInfo(rv.Type()))
 }
@@ -700,14 +904,7 @@ func (d *decoder) parseToValue(v reflect.Value, tInfo *typeInfo) error { //nolin
 		return fillTextString(t, b, v)
 	case cborTypePrimitives:
 		_, ai, val := d.getHead()
-		if ai < 20 || ai == 24 {
-			return fillPositiveInt(t, val, v)
-		}
 		switch ai {
-		case 20, 21:
-			return fillBool(t, ai == 21, v)
-		case 22, 23:
-			return fillNil(t, v)
 		case 25:
 			f := float64(float16.Frombits(uint16(val)).Float32())
 			return fillFloat(t, f, v)
@@ -717,7 +914,22 @@ func (d *decoder) parseToValue(v reflect.Value, tInfo *typeInfo) error { //nolin
 		case 27:
 			f := math.Float64frombits(val)
 			return fillFloat(t, f, v)
+		default: // ai <= 24
+			// Decode simple values (including false, true, null, and undefined)
+			if tInfo.nonPtrType == typeSimpleValue {
+				v.SetUint(val)
+				return nil
+			}
+			switch ai {
+			case 20, 21:
+				return fillBool(t, ai == 21, v)
+			case 22, 23:
+				return fillNil(t, v)
+			default:
+				return fillPositiveInt(t, val, v)
+			}
 		}
+
 	case cborTypeTag:
 		_, _, tagNum := d.getHead()
 		switch tagNum {
@@ -1003,7 +1215,7 @@ func (d *decoder) parse(skipSelfDescribedTag bool) (interface{}, error) { //noli
 	case cborTypePrimitives:
 		_, ai, val := d.getHead()
 		if ai < 20 || ai == 24 {
-			return val, nil
+			return SimpleValue(val), nil
 		}
 		switch ai {
 		case 20, 21:
@@ -1064,7 +1276,7 @@ func (d *decoder) parseTextString() ([]byte, error) {
 	if ai != 31 {
 		b := d.data[d.off : d.off+int(val)]
 		d.off += int(val)
-		if !utf8.Valid(b) {
+		if d.dm.utf8 == UTF8RejectInvalid && !utf8.Valid(b) {
 			return nil, &SemanticError{"cbor: invalid UTF-8 string"}
 		}
 		return b, nil
@@ -1075,7 +1287,7 @@ func (d *decoder) parseTextString() ([]byte, error) {
 		_, _, val = d.getHead()
 		x := d.data[d.off : d.off+int(val)]
 		d.off += int(val)
-		if !utf8.Valid(x) {
+		if d.dm.utf8 == UTF8RejectInvalid && !utf8.Valid(x) {
 			for !d.foundBreak() {
 				d.skip() // Skip remaining chunk on error
 			}
@@ -1181,11 +1393,17 @@ func (d *decoder) parseMap() (interface{}, error) {
 		// Detect if CBOR map key can be used as Go map key.
 		rv := reflect.ValueOf(k)
 		if !isHashableValue(rv) {
-			if err == nil {
-				err = errors.New("cbor: invalid map key type: " + rv.Type().String())
+			var converted bool
+			if d.dm.mapKeyByteString == MapKeyByteStringAllowed {
+				k, converted = convertByteSliceToByteString(k)
 			}
-			d.skip()
-			continue
+			if !converted {
+				if err == nil {
+					err = &InvalidMapKeyTypeError{rv.Type().String()}
+				}
+				d.skip()
+				continue
+			}
 		}
 
 		// Parse CBOR map value.
@@ -1267,11 +1485,21 @@ func (d *decoder) parseMapToMap(v reflect.Value, tInfo *typeInfo) error { //noli
 		// Detect if CBOR map key can be used as Go map key.
 		if keyIsInterfaceType && keyValue.Elem().IsValid() {
 			if !isHashableValue(keyValue.Elem()) {
-				if err == nil {
-					err = errors.New("cbor: invalid map key type: " + keyValue.Elem().Type().String())
+				var converted bool
+				if d.dm.mapKeyByteString == MapKeyByteStringAllowed {
+					var k interface{}
+					k, converted = convertByteSliceToByteString(keyValue.Elem().Interface())
+					if converted {
+						keyValue.Set(reflect.ValueOf(k))
+					}
 				}
-				d.skip()
-				continue
+				if !converted {
+					if err == nil {
+						err = &InvalidMapKeyTypeError{keyValue.Elem().Type().String()}
+					}
+					d.skip()
+					continue
+				}
 			}
 		}
 
@@ -1895,6 +2123,25 @@ func isHashableValue(rv reflect.Value) bool {
 		}
 	}
 	return true
+}
+
+// convertByteSliceToByteString converts []byte to ByteString if
+// - v is []byte type, or
+// - v is Tag type and tag content type is []byte
+// This function also handles nested tags.
+// CBOR data is already verified to be well-formed before this function is used,
+// so the recursion won't exceed max nested levels.
+func convertByteSliceToByteString(v interface{}) (interface{}, bool) {
+	switch v := v.(type) {
+	case []byte:
+		return ByteString(v), true
+	case Tag:
+		content, converted := convertByteSliceToByteString(v.Content)
+		if converted {
+			return Tag{Number: v.Number, Content: content}, true
+		}
+	}
+	return v, false
 }
 
 // validBuiltinTag checks that supported built-in tag numbers are followed by expected content types.

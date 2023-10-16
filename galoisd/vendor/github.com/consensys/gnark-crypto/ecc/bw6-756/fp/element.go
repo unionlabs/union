@@ -272,7 +272,7 @@ func (z *Element) IsZero() bool {
 
 // IsOne returns z == 1
 func (z *Element) IsOne() bool {
-	return (z[11] ^ 369351476012747 | z[10] ^ 9468215855567529777 | z[9] ^ 3108243834975866807 | z[8] ^ 2055362399696866477 | z[7] ^ 18366804658688562287 | z[6] ^ 8643488375494563078 | z[5] ^ 4799902015386277509 | z[4] ^ 2720419343484222500 | z[3] ^ 12241294279704278364 | z[2] ^ 15160016368967634470 | z[1] ^ 14463961505609547775 | z[0] ^ 18446744073709547378) == 0
+	return ((z[11] ^ 369351476012747) | (z[10] ^ 9468215855567529777) | (z[9] ^ 3108243834975866807) | (z[8] ^ 2055362399696866477) | (z[7] ^ 18366804658688562287) | (z[6] ^ 8643488375494563078) | (z[5] ^ 4799902015386277509) | (z[4] ^ 2720419343484222500) | (z[3] ^ 12241294279704278364) | (z[2] ^ 15160016368967634470) | (z[1] ^ 14463961505609547775) | (z[0] ^ 18446744073709547378)) == 0
 }
 
 // IsUint64 reports whether z can be represented as an uint64.
@@ -422,7 +422,7 @@ func (z *Element) SetRandom() (*Element, error) {
 			return nil, err
 		}
 
-		// Clear unused bits in in the most signicant byte to increase probability
+		// Clear unused bits in in the most significant byte to increase probability
 		// that the candidate is < q.
 		bytes[k-1] &= uint8(int(1<<b) - 1)
 		z[0] = binary.LittleEndian.Uint64(bytes[0:8])
@@ -1692,6 +1692,11 @@ func (z *Element) Bytes() (res [Bytes]byte) {
 func (z *Element) Marshal() []byte {
 	b := z.Bytes()
 	return b[:]
+}
+
+// Unmarshal is an alias for SetBytes, it sets z to the value of e.
+func (z *Element) Unmarshal(e []byte) {
+	z.SetBytes(e)
 }
 
 // SetBytes interprets e as the bytes of a big-endian unsigned integer,

@@ -12,6 +12,8 @@ type NewBuilder func(*big.Int, CompileConfig) (Builder, error)
 
 // Compiler represents a constraint system compiler
 type Compiler interface {
+	constraint.CustomizableSystem
+
 	// MarkBoolean sets (but do not constraint!) v to be boolean
 	// This is useful in scenarios where a variable is known to be boolean through a constraint
 	// that is not api.AssertIsBoolean. If v is a constant, this is a no-op.
@@ -37,6 +39,7 @@ type Compiler interface {
 	//
 	// If nbOutputs is specified, it must be >= 1 and <= f.NbOutputs
 	NewHint(f solver.Hint, nbOutputs int, inputs ...Variable) ([]Variable, error)
+	NewHintForId(id solver.HintID, nbOutputs int, inputs ...Variable) ([]Variable, error)
 
 	// ConstantValue returns the big.Int value of v and true if op is a success.
 	// nil and false if failure. This API returns a boolean to allow for future refactoring
@@ -53,6 +56,16 @@ type Compiler interface {
 	// allows for the circuits to register callbacks which finalize batching
 	// operations etc. Unlike Go defer, it is not locally scoped.
 	Defer(cb func(api API) error)
+
+	// InternalVariable returns the internal variable associated with the given wireID
+	// ! Experimental: use in conjunction with constraint.CustomizableSystem
+	InternalVariable(wireID uint32) Variable
+
+	// ToCanonicalVariable converts a frontend.Variable to a constraint system specific Variable
+	// ! Experimental: use in conjunction with constraint.CustomizableSystem
+	ToCanonicalVariable(Variable) CanonicalVariable
+
+	SetGkrInfo(constraint.GkrInfo) error
 }
 
 // Builder represents a constraint system builder
@@ -86,4 +99,12 @@ type Committer interface {
 type Rangechecker interface {
 	// Check checks that the given variable v has bit-length bits.
 	Check(v Variable, bits int)
+}
+
+// CanonicalVariable represents a variable that's encoded in a constraint system specific way.
+// For example a R1CS builder may represent this as a constraint.LinearExpression,
+// a PLONK builder --> constraint.Term
+// and the test/Engine --> ~*big.Int.
+type CanonicalVariable interface {
+	constraint.Compressible
 }

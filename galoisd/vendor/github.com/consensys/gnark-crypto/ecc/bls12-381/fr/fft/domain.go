@@ -1,4 +1,4 @@
-// Copyright 2020 ConsenSys Software Inc.
+// Copyright 2020 Consensys Software Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
 package fft
 
 import (
-	"fmt"
 	"io"
 	"math/big"
 	"math/bits"
@@ -53,12 +52,10 @@ type Domain struct {
 	// we precompute these mostly to avoid the memory intensive bit reverse permutation in the groth16.Prover
 
 	// CosetTable u*<1,g,..,g^(n-1)>
-	CosetTable         []fr.Element
-	CosetTableReversed []fr.Element // optional, this is computed on demand at the creation of the domain
+	CosetTable []fr.Element
 
 	// CosetTable[i][j] = domain.Generator(i-th)SqrtInv ^ j
-	CosetTableInv         []fr.Element
-	CosetTableInvReversed []fr.Element // optional, this is computed on demand at the creation of the domain
+	CosetTableInv []fr.Element
 }
 
 // NewDomain returns a subgroup with a power of 2 cardinality
@@ -90,41 +87,13 @@ func NewDomain(m uint64, shift ...fr.Element) *Domain {
 	// twiddle factors
 	domain.preComputeTwiddles()
 
-	// store the bit reversed coset tables
-	domain.reverseCosetTables()
-
 	return domain
 }
 
 // Generator returns a generator for Z/2^(log(m))Z
 // or an error if m is too big (required root of unity doesn't exist)
 func Generator(m uint64) (fr.Element, error) {
-	x := ecc.NextPowerOfTwo(m)
-
-	var rootOfUnity fr.Element
-
-	rootOfUnity.SetString("10238227357739495823651030575849232062558860180284477541189508159991286009131")
-	const maxOrderRoot uint64 = 32
-
-	// find generator for Z/2^(log(m))Z
-	logx := uint64(bits.TrailingZeros64(x))
-	if logx > maxOrderRoot {
-		return fr.Element{}, fmt.Errorf("m (%d) is too big: the required root of unity does not exist", m)
-	}
-
-	expo := uint64(1 << (maxOrderRoot - logx))
-	var generator fr.Element
-	generator.Exp(rootOfUnity, big.NewInt(int64(expo))) // order x
-	return generator, nil
-}
-
-func (d *Domain) reverseCosetTables() {
-	d.CosetTableReversed = make([]fr.Element, d.Cardinality)
-	d.CosetTableInvReversed = make([]fr.Element, d.Cardinality)
-	copy(d.CosetTableReversed, d.CosetTable)
-	copy(d.CosetTableInvReversed, d.CosetTableInv)
-	BitReverse(d.CosetTableReversed)
-	BitReverse(d.CosetTableInvReversed)
+	return fr.Generator(m)
 }
 
 func (d *Domain) preComputeTwiddles() {
@@ -252,8 +221,31 @@ func (d *Domain) ReadFrom(r io.Reader) (int64, error) {
 	// twiddle factors
 	d.preComputeTwiddles()
 
-	// store the bit reversed coset tables if needed
-	d.reverseCosetTables()
-
 	return dec.BytesRead(), nil
+}
+
+// AsyncReadFrom attempts to decode a domain from Reader. It returns a channel that will be closed
+// when the precomputation is done.
+func (d *Domain) AsyncReadFrom(r io.Reader) (int64, error, chan struct{}) {
+
+	dec := curve.NewDecoder(r)
+
+	toDecode := []interface{}{&d.Cardinality, &d.CardinalityInv, &d.Generator, &d.GeneratorInv, &d.FrMultiplicativeGen, &d.FrMultiplicativeGenInv}
+
+	for _, v := range toDecode {
+		if err := dec.Decode(v); err != nil {
+			return dec.BytesRead(), err, nil
+		}
+	}
+
+	chDone := make(chan struct{})
+
+	go func() {
+		// twiddle factors
+		d.preComputeTwiddles()
+
+		close(chDone)
+	}()
+
+	return dec.BytesRead(), nil, chDone
 }

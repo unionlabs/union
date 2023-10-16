@@ -1,4 +1,4 @@
-// Copyright 2020 ConsenSys Software Inc.
+// Copyright 2020 Consensys Software Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,10 +17,9 @@
 package fft
 
 import (
-	"math/bits"
-
 	"github.com/consensys/gnark-crypto/ecc"
 	"github.com/consensys/gnark-crypto/internal/parallel"
+	"math/bits"
 
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 )
@@ -45,18 +44,22 @@ func (domain *Domain) FFT(a []fr.Element, decimation Decimation, opts ...Option)
 
 	// if coset != 0, scale by coset table
 	if opt.coset {
-		scale := func(cosetTable []fr.Element) {
+		if decimation == DIT {
+			// scale by coset table (in bit reversed order)
 			parallel.Execute(len(a), func(start, end int) {
+				n := uint64(len(a))
+				nn := uint64(64 - bits.TrailingZeros64(n))
 				for i := start; i < end; i++ {
-					a[i].Mul(&a[i], &cosetTable[i])
+					irev := int(bits.Reverse64(uint64(i)) >> nn)
+					a[i].Mul(&a[i], &domain.CosetTable[irev])
 				}
 			}, opt.nbTasks)
-		}
-		if decimation == DIT {
-			scale(domain.CosetTableReversed)
-
 		} else {
-			scale(domain.CosetTable)
+			parallel.Execute(len(a), func(start, end int) {
+				for i := start; i < end; i++ {
+					a[i].Mul(&a[i], &domain.CosetTable[i])
+				}
+			}, opt.nbTasks)
 		}
 	}
 
@@ -110,21 +113,26 @@ func (domain *Domain) FFTInverse(a []fr.Element, decimation Decimation, opts ...
 		return
 	}
 
-	scale := func(cosetTable []fr.Element) {
+	if decimation == DIT {
 		parallel.Execute(len(a), func(start, end int) {
 			for i := start; i < end; i++ {
-				a[i].Mul(&a[i], &cosetTable[i]).
+				a[i].Mul(&a[i], &domain.CosetTableInv[i]).
 					Mul(&a[i], &domain.CardinalityInv)
 			}
 		}, opt.nbTasks)
-	}
-	if decimation == DIT {
-		scale(domain.CosetTableInv)
 		return
 	}
 
-	// decimation == DIF
-	scale(domain.CosetTableInvReversed)
+	// decimation == DIF, need to access coset table in bit reversed order.
+	parallel.Execute(len(a), func(start, end int) {
+		n := uint64(len(a))
+		nn := uint64(64 - bits.TrailingZeros64(n))
+		for i := start; i < end; i++ {
+			irev := int(bits.Reverse64(uint64(i)) >> nn)
+			a[i].Mul(&a[i], &domain.CosetTableInv[irev]).
+				Mul(&a[i], &domain.CardinalityInv)
+		}
+	}, opt.nbTasks)
 
 }
 
@@ -223,20 +231,6 @@ func ditFFT(a []fr.Element, twiddles [][]fr.Element, stage, maxSplits int, chDon
 		for k := 1; k < m; k++ {
 			a[k+m].Mul(&a[k+m], &twiddles[stage][k])
 			fr.Butterfly(&a[k], &a[k+m])
-		}
-	}
-}
-
-// BitReverse applies the bit-reversal permutation to a.
-// len(a) must be a power of 2 (as in every single function in this file)
-func BitReverse(a []fr.Element) {
-	n := uint64(len(a))
-	nn := uint64(64 - bits.TrailingZeros64(n))
-
-	for i := uint64(0); i < n; i++ {
-		irev := bits.Reverse64(i) >> nn
-		if irev > i {
-			a[i], a[irev] = a[irev], a[i]
 		}
 	}
 }

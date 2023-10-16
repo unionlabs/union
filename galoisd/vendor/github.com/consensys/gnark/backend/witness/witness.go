@@ -207,6 +207,8 @@ func (w *witness) ReadFrom(r io.Reader) (n int64, err error) {
 	}
 	w.nbSecret = binary.BigEndian.Uint32(buf[:4])
 
+	n = 8
+
 	var m int64
 	switch t := w.vector.(type) {
 	case fr_bn254.Vector:

@@ -3,15 +3,8 @@ package bits
 import (
 	"math/big"
 
-	"github.com/consensys/gnark/constraint/solver"
 	"github.com/consensys/gnark/frontend"
 )
-
-func init() {
-	// register hints
-	solver.RegisterHint(IthBit)
-	solver.RegisterHint(NBits)
-}
 
 // ToBinary is an alias of ToBase(api, Binary, v, opts)
 func ToBinary(api frontend.API, v frontend.Variable, opts ...BaseConversionOption) []frontend.Variable {
@@ -63,9 +56,28 @@ func toBinary(api frontend.API, v frontend.Variable, opts ...BaseConversionOptio
 		}
 	}
 
+	// by default we also check that the value to be decomposed is less than the
+	// modulus. However, we can omit the check when the number of bits we want
+	// to decompose to is less than the modulus or it was strictly requested.
+	omitReducednessCheck := cfg.omitModulusCheck || cfg.NbDigits < api.Compiler().FieldBitLen()
+
+	// when cfg.NbDigits == 1, v itself has to be a binary digit. This if clause
+	// saves one constraint.
+	if cfg.NbDigits == 1 {
+		api.AssertIsBoolean(v)
+		return []frontend.Variable{v}
+	}
+	// if we decompose into more bits than fieldbitlen then the rest would be
+	// always zeros. Reduce the always-zeros to have fewer edge-cases elsewhere.
+	var paddingBits int
+	if cfg.NbDigits > api.Compiler().FieldBitLen() {
+		paddingBits = cfg.NbDigits - api.Compiler().FieldBitLen()
+		cfg.NbDigits = api.Compiler().FieldBitLen()
+	}
+
 	c := big.NewInt(1)
 
-	bits, err := api.Compiler().NewHint(NBits, cfg.NbDigits, v)
+	bits, err := api.Compiler().NewHint(nBits, cfg.NbDigits, v)
 	if err != nil {
 		panic(err)
 	}
@@ -82,30 +94,21 @@ func toBinary(api frontend.API, v frontend.Variable, opts ...BaseConversionOptio
 
 	// record the constraint Σ (2**i * b[i]) == a
 	api.AssertIsEqual(Σbi, v)
+	if !omitReducednessCheck {
+		if cmper, ok := api.Compiler().(bitsComparatorConstant); ok {
+			bound := new(big.Int).Sub(api.Compiler().Field(), big.NewInt(1))
+			cmper.MustBeLessOrEqCst(bits, bound, v)
+		} else {
+			panic("builder does not expose comparison to constant")
+		}
+	}
+
+	// restore the zero bits which exceed the field bit-length when requested by
+	// setting WithNbDigits larger than the field bitlength.
+	bits = append(bits, make([]frontend.Variable, paddingBits)...)
+	for i := cfg.NbDigits; i < len(bits); i++ {
+		bits[i] = 0 // frontend.Variable is interface{}, we get nil pointer err if trying to access it.
+	}
 
 	return bits
-}
-
-// IthBit returns the i-tb bit the input. The function expects exactly two
-// integer inputs i and n, takes the little-endian bit representation of n and
-// returns its i-th bit.
-func IthBit(_ *big.Int, inputs []*big.Int, results []*big.Int) error {
-	result := results[0]
-	if !inputs[1].IsUint64() {
-		result.SetUint64(0)
-		return nil
-	}
-
-	result.SetUint64(uint64(inputs[0].Bit(int(inputs[1].Uint64()))))
-	return nil
-}
-
-// NBits returns the first bits of the input. The number of returned bits is
-// defined by the length of the results slice.
-func NBits(_ *big.Int, inputs []*big.Int, results []*big.Int) error {
-	n := inputs[0]
-	for i := 0; i < len(results); i++ {
-		results[i].SetUint64(uint64(n.Bit(i)))
-	}
-	return nil
 }
