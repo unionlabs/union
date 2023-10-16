@@ -127,14 +127,12 @@ library CometblsHelp {
         (uint256 messageX, uint256 messageY) = hashToField2(message);
 
         (
-            uint256[2] memory a,
-            uint256[2][2] memory b,
-            uint256[2] memory c,
+            uint256[8] memory proof,
             uint256 commitmentHash,
             uint256[2] memory proofCommitment
         ) = abi.decode(
                 zkp,
-                (uint256[2], uint256[2][2], uint256[2], uint256, uint256[2])
+                (uint256[8], uint256, uint256[2])
             );
 
         uint256[5] memory inputs = [
@@ -147,7 +145,7 @@ library CometblsHelp {
             commitmentHash
         ];
 
-        return verifier.verifyProof(a, b, c, inputs, proofCommitment);
+        return verifier.verifyProof(proof, proofCommitment, inputs);
     }
 
     function isExpired(

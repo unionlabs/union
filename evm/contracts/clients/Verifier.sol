@@ -3,229 +3,218 @@ pragma solidity ^0.8.21;
 import "../lib/Pairing.sol";
 import "../core/IZKVerifierV2.sol";
 
+/// @title Groth16 verifier template.
+/// @author Remco Bloemen
+/// @notice Supports verifying Groth16 proofs. Proofs can be in uncompressed
+/// (256 bytes) and compressed (128 bytes) format. A view function is provided
+/// to compress proofs.
+/// @notice See <https://2π.com/23/bn254-compression> for further explanation.
 contract Verifier is IZKVerifierV2 {
-    using Pairing for *;
 
-    uint256 constant SNARK_SCALAR_FIELD =
-        21888242871839275222246405745257275088548364400416034343698204186575808495617;
-    uint256 constant PRIME_Q =
-        21888242871839275222246405745257275088696311157297823662689037894645226208583;
+    /// Some of the provided public input values are larger than the field modulus.
+    /// @dev Public input elements are not automatically reduced, as this is can be
+    /// a dangerous source of bugs.
+    error PublicInputNotInField();
 
-    struct VerifyingKey {
-        Pairing.G1Point alfa1;
-        Pairing.G2Point beta2;
-        Pairing.G2Point gamma2;
-        Pairing.G2Point delta2;
-        // []G1Point IC (K in gnark) appears directly in verifyProof
-    }
+    /// The proof is invalid.
+    /// @dev This can mean that provided Groth16 proof points are not on their
+    /// curves, that pairing equation fails, or that the proof is not for the
+    /// provided public input.
+    error ProofInvalid();
 
-    struct Proof {
-        Pairing.G1Point A;
-        Pairing.G2Point B;
-        Pairing.G1Point C;
-    }
+    // Addresses of precompiles
+    uint256 constant PRECOMPILE_MODEXP = 0x05;
+    uint256 constant PRECOMPILE_ADD = 0x06;
+    uint256 constant PRECOMPILE_MUL = 0x07;
+    uint256 constant PRECOMPILE_VERIFY = 0x08;
 
-    function verifyingKey() internal pure returns (VerifyingKey memory vk) {
-        vk.alfa1 = Pairing.G1Point(
-            uint256(
-                2550450311668052934365492757435655272086248044926623610031063320730829667555
-            ),
-            uint256(
-                8703042035341333540858177383145184333521890832996178936720364709928918567324
-            )
-        );
-        vk.beta2 = Pairing.G2Point(
-            [
-                uint256(
-                    12087544808749353461394614734663969995991213332932322707094948493323523587075
-                ),
-                uint256(
-                    5609784734408442342743459772838249525064711794655914581473900530365072178092
-                )
-            ],
-            [
-                uint256(
-                    3620271307123320035058604702546780432892661890675938601781290078906891602600
-                ),
-                uint256(
-                    12561749020549188140474766670178579480395789909983438907997458237645471245637
-                )
-            ]
-        );
-        vk.gamma2 = Pairing.G2Point(
-            [
-                uint256(
-                    16152858558628938416519886954198273278207481765134586011504238844337112405492
-                ),
-                uint256(
-                    1666473556802178727950421359638955559724204816316988428054967258707482978937
-                )
-            ],
-            [
-                uint256(
-                    11671729608220716829286816261707767434127200387281583853687528523414420405187
-                ),
-                uint256(
-                    11529896311426611528742842264352476302384772641871656355304253747472884088839
-                )
-            ]
-        );
-        vk.delta2 = Pairing.G2Point(
-            [
-                uint256(
-                    1978394675920979727010360476867770152431151269630391960275282752505331298298
-                ),
-                uint256(
-                    8057837855735530867774111909354816419959310377834316597048249385367299183616
-                )
-            ],
-            [
-                uint256(
-                    617817208407359897149661494204930461401582985150453668270265136103096748375
-                ),
-                uint256(
-                    20112109139090099709565952821220817370470570950311800907839011307723047316048
-                )
-            ]
-        );
-    }
+    // Base field Fp order P and scalar field Fr order R.
+    // For BN254 these are computed as follows:
+    //     t = 4965661367192848881
+    //     P = 36⋅t⁴ + 36⋅t³ + 24⋅t² + 6⋅t + 1
+    //     R = 36⋅t⁴ + 36⋅t³ + 18⋅t² + 6⋅t + 1
+    uint256 constant P = 0x30644e72e131a029b85045b68181585d97816a916871ca8d3c208c16d87cfd47;
+    uint256 constant R = 0x30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000001;
 
-    // accumulate scalarMul(mul_input) into q
-    // that is computes sets q = (mul_input[0:2] * mul_input[3]) + q
-    function accumulate(
-        uint256[3] memory mul_input,
-        Pairing.G1Point memory p,
-        uint256[4] memory buffer,
-        Pairing.G1Point memory q
-    ) internal view {
-        // computes p = mul_input[0:2] * mul_input[3]
-        Pairing.scalar_mul_raw(mul_input, p);
+    // Extension field Fp2 = Fp[i] / (i² + 1)
+    // Note: This is the complex extension field of Fp with i² = -1.
+    //       Values in Fp2 are represented as a pair of Fp elements (a₀, a₁) as a₀ + a₁⋅i.
+    // Note: The order of Fp2 elements is *opposite* that of the pairing contract, which
+    //       expects Fp2 elements in order (a₁, a₀). This is also the order in which
+    //       Fp2 elements are encoded in the public interface as this became convention.
 
-        // point addition inputs
-        buffer[0] = q.X;
-        buffer[1] = q.Y;
-        buffer[2] = p.X;
-        buffer[3] = p.Y;
+    // Constants in Fp
+    uint256 constant FRACTION_1_2_FP = 0x183227397098d014dc2822db40c0ac2ecbc0b548b438e5469e10460b6c3e7ea4;
+    uint256 constant FRACTION_27_82_FP = 0x2b149d40ceb8aaae81be18991be06ac3b5b4c5e559dbefa33267e6dc24a138e5;
+    uint256 constant FRACTION_3_82_FP = 0x2fcd3ac2a640a154eb23960892a85a68f031ca0c8344b23a577dcf1052b9e775;
 
-        // q = p + q
-        Pairing.plus_raw(buffer, q);
-    }
+    // Exponents for inversions and square roots mod P
+    uint256 constant EXP_INVERSE_FP = 0x30644E72E131A029B85045B68181585D97816A916871CA8D3C208C16D87CFD45; // P - 2
+    uint256 constant EXP_SQRT_FP = 0xC19139CB84C680A6E14116DA060561765E05AA45A1C72A34F082305B61F3F52; // (P + 1) / 4;
 
-    /*
-     * @returns Whether the proof is valid given the hardcoded verifying key
-     *          above and the public inputs
-     */
-    function verifyProof(
-        uint256[2] memory a,
-        uint256[2][2] memory b,
-        uint256[2] memory c,
-        uint256[5] calldata input,
-        uint256[2] memory proofCommitment
-    ) public view returns (bool r) {
-        Proof memory proof;
-        proof.A = Pairing.G1Point(a[0], a[1]);
-        proof.B = Pairing.G2Point([b[0][0], b[0][1]], [b[1][0], b[1][1]]);
-        proof.C = Pairing.G1Point(c[0], c[1]);
+    // Groth16 alpha point in G1
+    uint256 constant ALPHA_X = 9299508173272494929105865905051404951897332658127374605046930680488559435254;
+    uint256 constant ALPHA_Y = 18449071807414126702267921501212908485048748329681149742020934064919667139808;
 
-        // Make sure that proof.A, B, and C are each less than the prime q
-        require(proof.A.X < PRIME_Q, "verifier-aX-gte-prime-q");
-        require(proof.A.Y < PRIME_Q, "verifier-aY-gte-prime-q");
+    // Groth16 beta point in G2 in powers of i
+    uint256 constant BETA_NEG_X_0 = 5096212357132918452251252704388234225082503905831131839538574831059776733824;
+    uint256 constant BETA_NEG_X_1 = 9871394374390025166143634557536008713523746310108852017986533167638746256254;
+    uint256 constant BETA_NEG_Y_0 = 10257329245772136621237004856328533138620113207220168934508698339556702785178;
+    uint256 constant BETA_NEG_Y_1 = 18894139624053465020579281736299426107385342374636336042166942007732141599011;
 
-        require(proof.B.X[0] < PRIME_Q, "verifier-bX0-gte-prime-q");
-        require(proof.B.Y[0] < PRIME_Q, "verifier-bY0-gte-prime-q");
+    // Groth16 gamma point in G2 in powers of i
+    uint256 constant GAMMA_NEG_X_0 = 8728326510657556501512980085722704788008476669448966656332002127230351337993;
+    uint256 constant GAMMA_NEG_X_1 = 8364486770349664052628814504100073278919932121455819239030081350179461823255;
+    uint256 constant GAMMA_NEG_Y_0 = 17901974275277736851257028015316698744031820877933491941182096909050444016412;
+    uint256 constant GAMMA_NEG_Y_1 = 13519022673629903141041892101411689224957336911943384243700710410962322430318;
 
-        require(proof.B.X[1] < PRIME_Q, "verifier-bX1-gte-prime-q");
-        require(proof.B.Y[1] < PRIME_Q, "verifier-bY1-gte-prime-q");
+    // Groth16 delta point in G2 in powers of i
+    uint256 constant DELTA_NEG_X_0 = 13803603616464982263018301486372576233533900013090456112322126315787178138538;
+    uint256 constant DELTA_NEG_X_1 = 15824501983485336860943033585861669302973904504328308733732788275953716696237;
+    uint256 constant DELTA_NEG_Y_0 = 295230685829764795071300340548983765068699095378671011298530392578381855868;
+    uint256 constant DELTA_NEG_Y_1 = 13723343821081770385926578276975021810841325468910496986126755925166628394647;
 
-        require(proof.C.X < PRIME_Q, "verifier-cX-gte-prime-q");
-        require(proof.C.Y < PRIME_Q, "verifier-cY-gte-prime-q");
+    // Constant and public input points
+    uint256 constant CONSTANT_X = 15789004268582736978147923000559689535590265661013579550864224155679253949897;
+    uint256 constant CONSTANT_Y = 1378048636762829303302526908931588869607672607207967622330083376530840124919;
+    uint256 constant PUB_0_X = 2222813113581775923098353798807000005994352347537085954054160366314881180586;
+    uint256 constant PUB_0_Y = 10833463196202613792815504387972169711057769303503761560475306516141880631310;
+    uint256 constant PUB_1_X = 18950818390236121779972718343821485543494748152479479013021078890349283103120;
+    uint256 constant PUB_1_Y = 3967742757730080263928210937291599691657153408926332509289769604416050599011;
+    uint256 constant PUB_2_X = 21291585552723056987506800233852525266397034135262812413707718006347913793952;
+    uint256 constant PUB_2_Y = 17333157225545652033279143133357670093701423541263171910427135425472957379906;
+    uint256 constant PUB_3_X = 14094587378870074193859910743132907717421241456133051336165176568216476766244;
+    uint256 constant PUB_3_Y = 5252230952813796724951345120624842989580576711840279663039165584333195353196;
+    uint256 constant PUB_4_X = 6364930290697954112798602306389412897383882966810085954781152845718560683087;
+    uint256 constant PUB_4_Y = 11388818647852555134322205108540002610100119175840510285347738772685624275714;
 
-        // Make sure that every input is less than the snark scalar field
-        for (uint256 i = 0; i < input.length; i++) {
-            require(
-                input[i] < SNARK_SCALAR_FIELD,
-                "verifier-gte-snark-scalar-field"
-            );
+    /// Compute the public input linear combination.
+    /// @notice Reverts with PublicInputNotInField if the input is not in the field.
+    /// @notice Computes the multi-scalar-multiplication of the public input
+    /// elements and the verification key including the constant term.
+    /// @param input The public inputs. These are elements of the scalar field Fr.
+    /// @return x The X coordinate of the resulting G1 point.
+    /// @return y The Y coordinate of the resulting G1 point.
+    function publicInputMSM(uint256[2] calldata proofCommitment, uint256[5] calldata input)
+    internal view returns (uint256 x, uint256 y) {
+        // Note: The ECMUL precompile does not reject unreduced values, so we check this.
+        // Note: Unrolling this loop does not cost much extra in code-size, the bulk of the
+        //       code-size is in the PUB_ constants.
+        // ECMUL has input (x, y, scalar) and output (x', y').
+        // ECADD has input (x1, y1, x2, y2) and output (x', y').
+        // We call them such that ecmul output is already in the second point
+        // argument to ECADD so we can have a tight loop.
+        bool success = true;
+        assembly ("memory-safe") {
+            let f := mload(0x40)
+            let g := add(f, 0x40)
+            let s
+            mstore(f, CONSTANT_X)
+            mstore(add(f, 0x20), CONSTANT_Y)
+
+            // Add the proof commitment
+            mstore(g, calldataload(input))
+            mstore(add(g, 0x20), calldataload(add(input, 32)))
+            success := and(success, staticcall(gas(), PRECOMPILE_ADD, f, 0x80, f, 0x40))
+
+            mstore(g, PUB_0_X)
+            mstore(add(g, 0x20), PUB_0_Y)
+            s :=  calldataload(input)
+            mstore(add(g, 0x40), s)
+            success := and(success, lt(s, R))
+            success := and(success, staticcall(gas(), PRECOMPILE_MUL, g, 0x60, g, 0x40))
+            success := and(success, staticcall(gas(), PRECOMPILE_ADD, f, 0x80, f, 0x40))
+            mstore(g, PUB_1_X)
+            mstore(add(g, 0x20), PUB_1_Y)
+            s :=  calldataload(add(input, 32))
+            mstore(add(g, 0x40), s)
+            success := and(success, lt(s, R))
+            success := and(success, staticcall(gas(), PRECOMPILE_MUL, g, 0x60, g, 0x40))
+            success := and(success, staticcall(gas(), PRECOMPILE_ADD, f, 0x80, f, 0x40))
+            mstore(g, PUB_2_X)
+            mstore(add(g, 0x20), PUB_2_Y)
+            s :=  calldataload(add(input, 64))
+            mstore(add(g, 0x40), s)
+            success := and(success, lt(s, R))
+            success := and(success, staticcall(gas(), PRECOMPILE_MUL, g, 0x60, g, 0x40))
+            success := and(success, staticcall(gas(), PRECOMPILE_ADD, f, 0x80, f, 0x40))
+            mstore(g, PUB_3_X)
+            mstore(add(g, 0x20), PUB_3_Y)
+            s :=  calldataload(add(input, 96))
+            mstore(add(g, 0x40), s)
+            success := and(success, lt(s, R))
+            success := and(success, staticcall(gas(), PRECOMPILE_MUL, g, 0x60, g, 0x40))
+            success := and(success, staticcall(gas(), PRECOMPILE_ADD, f, 0x80, f, 0x40))
+            mstore(g, PUB_4_X)
+            mstore(add(g, 0x20), PUB_4_Y)
+            s :=  calldataload(add(input, 128))
+            mstore(add(g, 0x40), s)
+            success := and(success, lt(s, R))
+            success := and(success, staticcall(gas(), PRECOMPILE_MUL, g, 0x60, g, 0x40))
+            success := and(success, staticcall(gas(), PRECOMPILE_ADD, f, 0x80, f, 0x40))
+            x := mload(f)
+            y := mload(add(f, 0x20))
         }
+        if (!success) {
+            // Either Public input not in field, or verification key invalid.
+            // We assume the contract is correctly generated, so the verification key is valid.
+            revert PublicInputNotInField();
+        }
+    }
 
-        VerifyingKey memory vk = verifyingKey();
+    /// Verify an uncompressed Groth16 proof.
+    /// @notice Reverts with InvalidProof if the proof is invalid or
+    /// with PublicInputNotInField the public input is not reduced.
+    /// @notice There is no return value. If the function does not revert, the
+    /// proof was successfully verified.
+    /// @param proof the points (A, B, C) in EIP-197 format matching the output
+    /// of compressProof.
+    /// @param input the public input field elements in the scalar field Fr.
+    /// Elements must be reduced.
+    function verifyProof(
+        uint256[8] calldata proof,
+        uint256[2] calldata proofCommitment,
+        uint256[5] calldata input
+    ) public view returns (bool) {
+        (uint256 x, uint256 y) = publicInputMSM(proofCommitment, input);
 
-        // Compute the linear combination vk_x
-        Pairing.G1Point memory vk_x = Pairing.G1Point(0, 0);
+        // Note: The precompile expects the F2 coefficients in big-endian order.
+        // Note: The pairing precompile rejects unreduced values, so we won't check that here.
 
-        // Buffer reused for addition p1 + p2 to avoid memory allocations
-        // [0:2] -> p1.X, p1.Y ; [2:4] -> p2.X, p2.Y
-        uint256[4] memory add_input;
+        bool success;
+        assembly ("memory-safe") {
+            let f := mload(0x40) // Free memory pointer.
 
-        // Buffer reused for multiplication p1 * s
-        // [0:2] -> p1.X, p1.Y ; [3] -> s
-        uint256[3] memory mul_input;
+            // Copy points (A, B, C) to memory. They are already in correct encoding.
+            // This is pairing e(A, B) and G1 of e(C, -δ).
+            calldatacopy(f, proof, 0x100)
 
-        // temporary point to avoid extra allocations in accumulate
-        Pairing.G1Point memory q = Pairing.G1Point(0, 0);
+            // Complete e(C, -δ) and write e(α, -β), e(L_pub, -γ) to memory.
+            // OPT: This could be better done using a single codecopy, but
+            //      Solidity (unlike standalone Yul) doesn't provide a way to
+            //      to do this.
+            mstore(add(f, 0x100), DELTA_NEG_X_1)
+            mstore(add(f, 0x120), DELTA_NEG_X_0)
+            mstore(add(f, 0x140), DELTA_NEG_Y_1)
+            mstore(add(f, 0x160), DELTA_NEG_Y_0)
+            mstore(add(f, 0x180), ALPHA_X)
+            mstore(add(f, 0x1a0), ALPHA_Y)
+            mstore(add(f, 0x1c0), BETA_NEG_X_1)
+            mstore(add(f, 0x1e0), BETA_NEG_X_0)
+            mstore(add(f, 0x200), BETA_NEG_Y_1)
+            mstore(add(f, 0x220), BETA_NEG_Y_0)
+            mstore(add(f, 0x240), x)
+            mstore(add(f, 0x260), y)
+            mstore(add(f, 0x280), GAMMA_NEG_X_1)
+            mstore(add(f, 0x2a0), GAMMA_NEG_X_0)
+            mstore(add(f, 0x2c0), GAMMA_NEG_Y_1)
+            mstore(add(f, 0x2e0), GAMMA_NEG_Y_0)
 
-        vk_x.X = uint256(
-            19784694582259872339546543192603616109827470778459686418308124157049352412391
-        ); // vk.K[0].X
-        vk_x.Y = uint256(
-            8050675694081171924276577880525281636790024000613356369940397902103623997045
-        ); // vk.K[0].Y
-        add_input[0] = vk_x.X;
-        add_input[1] = vk_x.Y;
-        add_input[2] = proofCommitment[0];
-        add_input[3] = proofCommitment[1];
-        Pairing.plus_raw(add_input, vk_x);
-        mul_input[0] = uint256(
-            11971204246816059209275294976507473955184279486240207887069942049166626280793
-        ); // vk.K[1].X
-        mul_input[1] = uint256(
-            17504727181738195812829690872641417282627885783178145006033783186285339904875
-        ); // vk.K[1].Y
-        mul_input[2] = input[0];
-        accumulate(mul_input, q, add_input, vk_x); // vk_x += vk.K[1] * input[0]
-        mul_input[0] = uint256(
-            11657740610894456804295347994135540407849394439286467178511726083546573935190
-        ); // vk.K[2].X
-        mul_input[1] = uint256(
-            15322460840551705023577477711103730789391402917721093431052634068176417470830
-        ); // vk.K[2].Y
-        mul_input[2] = input[1];
-        accumulate(mul_input, q, add_input, vk_x); // vk_x += vk.K[2] * input[1]
-        mul_input[0] = uint256(
-            18128705705780345472226931423901518026915070087276737749651398231700428372595
-        ); // vk.K[3].X
-        mul_input[1] = uint256(
-            3028226418589796602201694314311238770080143896157409106468825846675506179552
-        ); // vk.K[3].Y
-        mul_input[2] = input[2];
-        accumulate(mul_input, q, add_input, vk_x); // vk_x += vk.K[3] * input[2]
-        mul_input[0] = uint256(
-            4197945774141365264567395738908678390136055541810363021270211823598396886106
-        ); // vk.K[4].X
-        mul_input[1] = uint256(
-            784961274727179063355557729271941546761163202680786306491941279774542819927
-        ); // vk.K[4].Y
-        mul_input[2] = input[3];
-        accumulate(mul_input, q, add_input, vk_x); // vk_x += vk.K[4] * input[3]
-        mul_input[0] = uint256(
-            8766677265255536993942124635649738274909387559882289319459250062942891332208
-        ); // vk.K[5].X
-        mul_input[1] = uint256(
-            4058621307841112497722744752034571789854603453063040480920996807162994795066
-        ); // vk.K[5].Y
-        mul_input[2] = input[4];
-        accumulate(mul_input, q, add_input, vk_x); // vk_x += vk.K[5] * input[4]
-
-        return
-            Pairing.pairing(
-                Pairing.negate(proof.A),
-                proof.B,
-                vk.alfa1,
-                vk.beta2,
-                vk_x,
-                vk.gamma2,
-                proof.C,
-                vk.delta2
-            );
+            // Check pairing equation.
+            success := staticcall(gas(), PRECOMPILE_VERIFY, f, 0x300, f, 0x20)
+            // Also check returned value (both are either 1 or 0).
+            success := and(success, mload(f))
+        }
+        return success;
     }
 }
