@@ -45,7 +45,12 @@ contract DevnetIBCHandlerInit is IBCHost {
             channel.counterparty,
             channel.version
         );
-        module.onChanOpenAck(portId, channelId, channel.version);
+        module.onChanOpenAck(
+            portId,
+            channelId,
+            channel.counterparty.channel_id,
+            channel.version
+        );
         claimCapability(
             channelCapabilityPath(portId, channelId),
             address(module)

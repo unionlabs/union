@@ -67,6 +67,7 @@ abstract contract IBCAppBase is Context, IIBCModule {
     function onChanOpenAck(
         string calldata portId,
         string calldata channelId,
+        string calldata counterpartyChannelId,
         string calldata counterpartyVersion
     ) external virtual override onlyIBC {}
 

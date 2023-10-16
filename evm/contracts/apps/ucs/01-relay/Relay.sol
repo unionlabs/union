@@ -432,10 +432,15 @@ contract UCS01Relay is IBCAppBase {
     }
 
     function onChanOpenAck(
-        string calldata _portId,
-        string calldata _channelId,
+        string calldata portId,
+        string calldata channelId,
+        string calldata counterpartyChannelId,
         string calldata _counterpartyVersion
-    ) external virtual override onlyIBC {}
+    ) external virtual override onlyIBC {
+        // Counterparty channel was empty.
+        counterpartyEndpoints[portId][channelId]
+            .channel_id = counterpartyChannelId;
+    }
 
     function onChanOpenConfirm(
         string calldata _portId,

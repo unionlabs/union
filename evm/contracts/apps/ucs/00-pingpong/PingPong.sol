@@ -153,7 +153,8 @@ contract PingPong is IBCAppBase {
     function onChanOpenAck(
         string calldata _portId,
         string calldata _channelId,
-        string calldata
+        string calldata _counterpartyChannelId,
+        string calldata _counterpartyVersion
     ) external virtual override onlyIBC {
         portId = _portId;
         channelId = _channelId;
@@ -168,15 +169,15 @@ contract PingPong is IBCAppBase {
     }
 
     function onChanCloseInit(
-        string calldata,
-        string calldata
+        string calldata _portId,
+        string calldata _channelId
     ) external virtual override onlyIBC {
         revert("This game is infinite");
     }
 
     function onChanCloseConfirm(
-        string calldata,
-        string calldata
+        string calldata _portId,
+        string calldata _channelId
     ) external virtual override onlyIBC {
         revert("This game is infinite");
     }
