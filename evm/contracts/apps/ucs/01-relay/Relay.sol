@@ -28,16 +28,77 @@ struct RelayPacket {
     Token[] tokens;
 }
 
+library RelayLib {
+    using LibString for *;
+
+    function isRemote(
+        string memory portId,
+        string memory channelId,
+        string memory denom
+    ) public pure returns (bool) {
+        return
+            bytes(denom).length > 0 &&
+            denom.startsWith(makeDenomPrefix(portId, channelId));
+    }
+
+    function makeDenomPrefix(
+        string memory portId,
+        string memory channelId
+    ) public pure returns (string memory) {
+        return string(abi.encodePacked(portId, "/", channelId, "/"));
+    }
+
+    function makeForeignDenom(
+        string memory portId,
+        string memory channelId,
+        string memory denom
+    ) public pure returns (string memory) {
+        return
+            string(abi.encodePacked(makeDenomPrefix(portId, channelId), denom));
+    }
+
+    // It expect 0x.. prefix
+    function hexToAddress(
+        string memory _a
+    ) internal pure returns (address _parsedAddress) {
+        bytes memory tmp = bytes(_a);
+        uint160 iaddr = 0;
+        uint160 b1;
+        uint160 b2;
+        for (uint256 i = 2; i < 2 + 2 * 20; i += 2) {
+            iaddr *= 256;
+            b1 = uint160(uint8(tmp[i]));
+            b2 = uint160(uint8(tmp[i + 1]));
+            if ((b1 >= 97) && (b1 <= 102)) {
+                b1 -= 87;
+            } else if ((b1 >= 65) && (b1 <= 70)) {
+                b1 -= 55;
+            } else if ((b1 >= 48) && (b1 <= 57)) {
+                b1 -= 48;
+            }
+            if ((b2 >= 97) && (b2 <= 102)) {
+                b2 -= 87;
+            } else if ((b2 >= 65) && (b2 <= 70)) {
+                b2 -= 55;
+            } else if ((b2 >= 48) && (b2 <= 57)) {
+                b2 -= 48;
+            }
+            iaddr += (b1 * 16 + b2);
+        }
+        return address(iaddr);
+    }
+}
+
 library RelayPacketLib {
     function encode(
         RelayPacket memory packet
-    ) internal pure returns (bytes memory) {
+    ) public pure returns (bytes memory) {
         return abi.encode(packet.sender, packet.receiver, packet.tokens);
     }
 
     function decode(
         bytes memory packet
-    ) internal pure returns (RelayPacket memory) {
+    ) public pure returns (RelayPacket memory) {
         (
             string memory sender,
             string memory receiver,
@@ -91,53 +152,6 @@ contract UCS01Relay is IBCAppBase {
         return address(ibcHandler);
     }
 
-    // It expect 0x.. prefix
-    function hexToAddress(
-        string memory _a
-    ) internal pure returns (address _parsedAddress) {
-        bytes memory tmp = bytes(_a);
-        uint160 iaddr = 0;
-        uint160 b1;
-        uint160 b2;
-        for (uint256 i = 2; i < 2 + 2 * 20; i += 2) {
-            iaddr *= 256;
-            b1 = uint160(uint8(tmp[i]));
-            b2 = uint160(uint8(tmp[i + 1]));
-            if ((b1 >= 97) && (b1 <= 102)) {
-                b1 -= 87;
-            } else if ((b1 >= 65) && (b1 <= 70)) {
-                b1 -= 55;
-            } else if ((b1 >= 48) && (b1 <= 57)) {
-                b1 -= 48;
-            }
-            if ((b2 >= 97) && (b2 <= 102)) {
-                b2 -= 87;
-            } else if ((b2 >= 65) && (b2 <= 70)) {
-                b2 -= 55;
-            } else if ((b2 >= 48) && (b2 <= 57)) {
-                b2 -= 48;
-            }
-            iaddr += (b1 * 16 + b2);
-        }
-        return address(iaddr);
-    }
-
-    function makeDenomPrefix(
-        string memory portId,
-        string memory channelId
-    ) public view returns (string memory) {
-        return string(abi.encodePacked(portId, "/", channelId, "/"));
-    }
-
-    function makeForeignDenom(
-        string memory portId,
-        string memory channelId,
-        string memory denom
-    ) public view returns (string memory) {
-        return
-            string(abi.encodePacked(makeDenomPrefix(portId, channelId), denom));
-    }
-
     function increaseOutstanding(
         string memory portId,
         string memory channelId,
@@ -160,6 +174,42 @@ contract UCS01Relay is IBCAppBase {
         ].sub(amount);
     }
 
+    function sendToken(
+        string calldata portId,
+        string calldata channelId,
+        string memory counterpartyPortId,
+        string memory counterpartyChannelId,
+        LocalToken calldata localToken
+    ) internal returns (string memory addressDenom) {
+        SafeERC20.safeTransferFrom(
+            IERC20(localToken.denom),
+            msg.sender,
+            address(this),
+            localToken.amount
+        );
+        addressDenom = addressToDenom[localToken.denom];
+        if (
+            RelayLib.isRemote(
+                counterpartyPortId,
+                counterpartyChannelId,
+                addressDenom
+            )
+        ) {
+            IERC20Denom(localToken.denom).burn(
+                address(this),
+                localToken.amount
+            );
+        } else {
+            increaseOutstanding(
+                portId,
+                channelId,
+                localToken.denom,
+                localToken.amount
+            );
+            addressDenom = localToken.denom.toHexString();
+        }
+    }
+
     function send(
         string calldata portId,
         string calldata channelId,
@@ -176,34 +226,13 @@ contract UCS01Relay is IBCAppBase {
         // - if the token is remote native, burn the wrapper
         for (uint256 i = 0; i < tokens.length; i++) {
             LocalToken calldata localToken = tokens[i];
-            SafeERC20.safeTransferFrom(
-                IERC20(localToken.denom),
-                msg.sender,
-                address(this),
-                localToken.amount
-            );
-            string memory addressDenom = addressToDenom[localToken.denom];
-            string memory prefix = makeDenomPrefix(
+            string memory addressDenom = sendToken(
+                portId,
+                channelId,
                 counterparty.port_id,
-                counterparty.channel_id
+                counterparty.channel_id,
+                localToken
             );
-            if (
-                bytes(addressDenom).length != 0 &&
-                addressDenom.toSlice().startsWith(prefix.toSlice())
-            ) {
-                IERC20Denom(localToken.denom).burn(
-                    address(this),
-                    localToken.amount
-                );
-            } else {
-                increaseOutstanding(
-                    portId,
-                    channelId,
-                    localToken.denom,
-                    localToken.amount
-                );
-                addressDenom = localToken.denom.toHexString();
-            }
             normalizedTokens[i].denom = addressDenom;
             normalizedTokens[i].amount = uint256(localToken.amount);
             emit Sent(
@@ -214,18 +243,21 @@ contract UCS01Relay is IBCAppBase {
                 uint256(localToken.amount)
             );
         }
+        string memory sender = msg.sender.toHexString();
         RelayPacket memory packet = RelayPacket({
             sender: msg.sender.toHexString(),
             receiver: receiver,
             tokens: normalizedTokens
         });
+        IbcCoreClientV1Height.Data memory timeoutHeight = IbcCoreClientV1Height
+            .Data({
+                revision_number: counterpartyTimeoutRevisionNumber,
+                revision_height: counterpartyTimeoutRevisionHeight
+            });
         ibcHandler.sendPacket(
             portId,
             channelId,
-            IbcCoreClientV1Height.Data({
-                revision_number: counterpartyTimeoutRevisionNumber,
-                revision_height: counterpartyTimeoutRevisionHeight
-            }),
+            timeoutHeight,
             0,
             packet.encode()
         );
@@ -237,7 +269,7 @@ contract UCS01Relay is IBCAppBase {
         RelayPacket memory packet
     ) internal {
         // We're going to refund, the receiver will be the sender.
-        address receiver = hexToAddress(packet.sender);
+        address receiver = RelayLib.hexToAddress(packet.sender);
         for (uint256 i = 0; i < packet.tokens.length; i++) {
             Token memory token = packet.tokens[i];
             // Either we tried to send back a remote native token
@@ -247,7 +279,7 @@ contract UCS01Relay is IBCAppBase {
                 IERC20Denom(denomAddress).mint(receiver, token.amount);
             } else {
                 // It must be in the form 0x...
-                denomAddress = hexToAddress(token.denom);
+                denomAddress = RelayLib.hexToAddress(token.denom);
                 decreaseOutstanding(
                     portId,
                     channelId,
@@ -271,7 +303,7 @@ contract UCS01Relay is IBCAppBase {
     ) public {
         require(msg.sender == address(this));
         RelayPacket memory packet = RelayPacketLib.decode(ibcPacket.data);
-        string memory prefix = makeDenomPrefix(
+        string memory prefix = RelayLib.makeDenomPrefix(
             ibcPacket.destination_port,
             ibcPacket.destination_channel
         );
@@ -282,12 +314,12 @@ contract UCS01Relay is IBCAppBase {
             strings.slice memory trimedDenom = denomSlice.beyond(
                 prefix.toSlice()
             );
-            address receiver = hexToAddress(packet.receiver);
+            address receiver = RelayLib.hexToAddress(packet.receiver);
             address denomAddress;
             string memory denom;
             if (!denomSlice.equals(trimedDenom)) {
                 denom = trimedDenom.toString();
-                denomAddress = hexToAddress(denom);
+                denomAddress = RelayLib.hexToAddress(denom);
                 // The token must be outstanding.
                 decreaseOutstanding(
                     ibcPacket.destination_port,
@@ -297,7 +329,7 @@ contract UCS01Relay is IBCAppBase {
                 );
                 IERC20(denomAddress).transfer(receiver, token.amount);
             } else {
-                denom = makeForeignDenom(
+                denom = RelayLib.makeForeignDenom(
                     ibcPacket.source_port,
                     ibcPacket.source_channel,
                     token.denom
