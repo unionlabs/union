@@ -38,6 +38,8 @@ async fn main() {
         cli::Command::Analyze {
             input_file,
             output: _,
-        } => analyze(input_file),
+        } => {
+            let _ = analyze(input_file);
+        }
     };
 }
