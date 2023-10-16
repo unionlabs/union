@@ -32,9 +32,9 @@ import (
 	"github.com/rs/zerolog"
 
 	"github.com/consensys/gnark/constraint"
+	cs_bn254 "github.com/consensys/gnark/constraint/bn254"
 	"github.com/consensys/gnark/frontend"
 	"github.com/consensys/gnark/frontend/cs/r1cs"
-	cs_bn254 "github.com/consensys/gnark/constraint/bn254"
 	gadget "github.com/consensys/gnark/std/algebra/emulated/sw_bn254"
 )
 

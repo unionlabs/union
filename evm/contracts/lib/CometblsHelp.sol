@@ -130,10 +130,7 @@ library CometblsHelp {
             uint256[8] memory proof,
             uint256 commitmentHash,
             uint256[2] memory proofCommitment
-        ) = abi.decode(
-                zkp,
-                (uint256[8], uint256, uint256[2])
-            );
+        ) = abi.decode(zkp, (uint256[8], uint256, uint256[2]));
 
         uint256[5] memory inputs = [
             uint256(trustedValidatorsHash),
