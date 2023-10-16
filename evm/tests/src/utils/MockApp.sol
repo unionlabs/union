@@ -66,6 +66,7 @@ contract MockApp is IIBCModule {
     function onChanOpenAck(
         string calldata portId,
         string calldata channelId,
+        string calldata counterpartyChannelId,
         string calldata counterpartyVersion
     ) external virtual override {
         emit MockChannelOpenAck();

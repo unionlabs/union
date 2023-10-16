@@ -134,6 +134,7 @@ abstract contract IBCChannelHandler is ModuleManager {
         lookupModuleByPort(msg_.portId).onChanOpenAck(
             msg_.portId,
             msg_.channelId,
+            msg_.counterpartyChannelId,
             msg_.counterpartyVersion
         );
 
