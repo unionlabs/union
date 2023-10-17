@@ -35,7 +35,7 @@ library RelayLib {
         string memory portId,
         string memory channelId,
         string memory denom
-    ) public pure returns (bool) {
+    ) internal pure returns (bool) {
         return
             bytes(denom).length > 0 &&
             denom.startsWith(makeDenomPrefix(portId, channelId));
@@ -44,7 +44,7 @@ library RelayLib {
     function makeDenomPrefix(
         string memory portId,
         string memory channelId
-    ) public pure returns (string memory) {
+    ) internal pure returns (string memory) {
         return string(abi.encodePacked(portId, "/", channelId, "/"));
     }
 
@@ -52,7 +52,7 @@ library RelayLib {
         string memory portId,
         string memory channelId,
         string memory denom
-    ) public pure returns (string memory) {
+    ) internal pure returns (string memory) {
         return
             string(abi.encodePacked(makeDenomPrefix(portId, channelId), denom));
     }
@@ -92,13 +92,13 @@ library RelayLib {
 library RelayPacketLib {
     function encode(
         RelayPacket memory packet
-    ) public pure returns (bytes memory) {
+    ) internal pure returns (bytes memory) {
         return abi.encode(packet.sender, packet.receiver, packet.tokens);
     }
 
     function decode(
         bytes memory packet
-    ) public pure returns (RelayPacket memory) {
+    ) internal pure returns (RelayPacket memory) {
         (
             string memory sender,
             string memory receiver,
