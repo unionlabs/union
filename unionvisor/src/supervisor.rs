@@ -297,7 +297,7 @@ mod tests {
         )
         .unwrap_err();
 
-        if let RuntimeError::BinaryUnavailable { name, err: _ } = err {
+        if let RuntimeError::BinaryUnavailable { name, source: _ } = err {
             assert_eq!(name, "upgrade3");
         } else {
             panic!("didn't receive expected error: {err:?}")
@@ -326,7 +326,7 @@ mod tests {
         )
         .unwrap_err();
 
-        if let RuntimeError::BinaryUnavailable { name, err: _ } = err {
+        if let RuntimeError::BinaryUnavailable { name, source: _ } = err {
             assert_eq!(name, "upgrade3");
         } else {
             panic!("didn't receive expected error: {err:?}")
@@ -376,6 +376,6 @@ mod tests {
         )
         .unwrap_err();
 
-        assert!(matches!(dbg!(err), RuntimeError::EarlyExit { .. }));
+        assert!(matches!(dbg!(err), RuntimeError::FileReader { .. }));
     }
 }

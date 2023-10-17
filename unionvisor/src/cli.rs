@@ -289,7 +289,9 @@ mod tests {
         let root = tmp.into_path();
         let state = InitCmd {
             bundle: root.join("bundle"),
-            moniker: String::from("test_init_moniker"),
+            moniker: "test_init_moniker".to_owned(),
+            network: "union-testnet-1".to_owned(),
+            seeds: "some_seed.io".to_owned(),
             allow_dirty: true,
         }
         .init(root)
@@ -303,8 +305,9 @@ mod tests {
         let root = tmp.into_path();
         let _ = InitCmd {
             bundle: root.join("bundle"),
-            moniker: String::from("test_init_moniker"),
-            network: String::from("union-testnet-3"),
+            moniker: "test_init_moniker".to_owned(),
+            network: "union-testnet-3".to_owned(),
+            seeds: "some_seed.io".to_owned(),
             allow_dirty: false,
         }
         .init(root)
@@ -318,8 +321,9 @@ mod tests {
         let root = tmp.into_path().join("test_init_cmd");
         let command = InitCmd {
             bundle: root.join("bundle"),
-            moniker: String::from("test_init_moniker"),
-            network: String::from("union-testnet-3"),
+            seeds: "some.seed.io".to_owned(),
+            moniker: "test_init_moniker".to_owned(),
+            network: "union-testnet-3".to_owned(),
             allow_dirty: false,
         };
         command.init(root).unwrap();
