@@ -22,10 +22,10 @@ use crate::{
     msg::{
         aggregate::{Aggregate, AnyAggregate},
         data::{AnyData, Data},
-        event::AnyEvent,
-        fetch::AnyFetch,
-        msg::AnyMsg,
-        wait::AnyWait,
+        event::{AnyEvent, Event},
+        fetch::{AnyFetch, Fetch},
+        msg::{AnyMsg, Msg},
+        wait::{AnyWait, Wait},
     },
 };
 
@@ -719,7 +719,7 @@ mod tests {
     use serde::{de::DeserializeOwned, Serialize};
     use unionlabs::{
         ethereum::{Address, H256, U256},
-        events::{ConnectionOpenAck, ConnectionOpenTry, IbcEvent},
+        events::{ConnectionOpenAck, ConnectionOpenTry},
         ibc::core::{
             channel::{
                 self, channel::Channel, msg_channel_open_init::MsgChannelOpenInit, order::Order,
@@ -735,15 +735,21 @@ mod tests {
 
     use super::LcMsg;
     use crate::{
-        chain::{evm::CometblsConfig, union::EthereumConfig, QueryHeight},
+        chain::{
+            evm::{CometblsConfig, CometblsMinimal},
+            union::{EthereumConfig, EthereumMinimal},
+            QueryHeight,
+        },
         msg::{
             aggregate::{Aggregate, AggregateCreateClient, AnyAggregate},
             data::Data,
-            event::Event,
+            event,
+            event::{Event, IbcEvent},
             fetch::{
                 AnyFetch, Fetch, FetchSelfClientState, FetchSelfConsensusState,
                 FetchTrustedClientState,
             },
+            msg,
             msg::{
                 Msg, MsgChannelOpenInitData, MsgConnectionOpenInitData, MsgConnectionOpenTryData,
             },
@@ -763,112 +769,101 @@ mod tests {
         let union_chain_id: String = parse!("union-devnet-1");
         let eth_chain_id: U256 = parse!("32382");
 
-        print_json(RelayerMsg::Lc(AnyLcMsg::EthereumMinimal(LcMsg::Msg(
-            Identified {
-                chain_id: union_chain_id.clone(),
-                data: Msg::ConnectionOpenInit(MsgConnectionOpenInitData {
-                    msg: MsgConnectionOpenInit {
-                        client_id: parse!("08-wasm-2"),
-                        counterparty: connection::counterparty::Counterparty {
-                            client_id: parse!("cometbls-0"),
-                            connection_id: EmptyString,
-                            prefix: MerklePrefix {
-                                key_prefix: b"ibc".to_vec(),
-                            },
-                        },
-                        version: Version {
-                            identifier: "1".into(),
-                            features: [Order::Ordered, Order::Unordered].into_iter().collect(),
-                        },
-                        delay_period: DELAY_PERIOD,
-                    },
-                }),
-            },
-        ))));
-
-        print_json(RelayerMsg::Lc(AnyLcMsg::EthereumMinimal(LcMsg::Msg(
-            Identified {
-                chain_id: union_chain_id.clone(),
-                data: Msg::ChannelOpenInit(MsgChannelOpenInitData {
-                    msg: MsgChannelOpenInit {
-                                port_id: "ping-pong".to_string(),
-                        channel: Channel {
-                            state: channel::state::State::Init,
-                            ordering: channel::order::Order::Unordered,
-                            counterparty: channel::counterparty::Counterparty {
-                        port_id: "wasm.union12zp282rjmvh0jkqprmx2y7hphqlz45za6uxfekp0mz9vfxp4c0ts2gp3ss"
-                                .to_string(),
-                                channel_id: EmptyString.to_string(),
-                            },
-                            connection_hops: vec![parse!("connection-8")],
-                            version: "ucs00-pingpong-1".to_string(),
-                        },
-                    },
-                    __marker: PhantomData,
-                }),
-            },
-        ))));
-
-        print_json(RelayerMsg::Lc(AnyLcMsg::CometblsMinimal(LcMsg::Msg(
-            Identified {
-                chain_id: eth_chain_id,
-                data: Msg::ChannelOpenInit(MsgChannelOpenInitData {
-                    msg: MsgChannelOpenInit {
-                        port_id: "transfer".to_string(),
-                        channel: Channel {
-                            state: channel::state::State::Init,
-                            ordering: channel::order::Order::Ordered,
-                            counterparty: channel::counterparty::Counterparty {
-                                port_id: "transfer".to_string(),
-                                channel_id: EmptyString.to_string(),
-                            },
-                            connection_hops: vec![parse!("connection-8")],
-                            version: "ucs001-pingpong".to_string(),
-                        },
-                    },
-                    __marker: PhantomData,
-                }),
-            },
-        ))));
-
-        print_json(RelayerMsg::Lc(AnyLcMsg::CometblsMinimal(LcMsg::Msg(
-            Identified {
-                chain_id: eth_chain_id,
-                data: Msg::ConnectionOpenInit(MsgConnectionOpenInitData {
-                    msg: MsgConnectionOpenInit {
+        print_json(msg::<EthereumMinimal>(
+            union_chain_id.clone(),
+            MsgConnectionOpenInitData {
+                msg: MsgConnectionOpenInit {
+                    client_id: parse!("08-wasm-2"),
+                    counterparty: connection::counterparty::Counterparty {
                         client_id: parse!("cometbls-0"),
-                        counterparty: connection::counterparty::Counterparty {
-                            client_id: parse!("08-wasm-0"),
-                            connection_id: EmptyString,
-                            prefix: MerklePrefix {
-                                key_prefix: b"ibc".to_vec(),
-                            },
+                        connection_id: EmptyString,
+                        prefix: MerklePrefix {
+                            key_prefix: b"ibc".to_vec(),
                         },
-                        version: Version {
-                            identifier: "1".into(),
-                            features: [Order::Ordered, Order::Unordered].into_iter().collect(),
-                        },
-                        delay_period: DELAY_PERIOD,
                     },
-                }),
+                    version: Version {
+                        identifier: "1".into(),
+                        features: [Order::Ordered, Order::Unordered].into_iter().collect(),
+                    },
+                    delay_period: DELAY_PERIOD,
+                },
             },
-        ))));
+        ));
 
-        print_json(RelayerMsg::Lc(AnyLcMsg::CometblsMinimal(LcMsg::Event(
-            Identified {
-                chain_id: eth_chain_id,
-                data: crate::msg::event::Event::Ibc(crate::msg::event::IbcEvent {
-                    block_hash: H256([0; 32]),
-                    height: parse!("0-2941"),
-                    event: IbcEvent::ConnectionOpenTry(ConnectionOpenTry {
-                        connection_id: parse!("connection-0"),
-                        client_id: parse!("cometbls-0"),
-                        counterparty_client_id: parse!("08-wasm-1"),
-                        counterparty_connection_id: parse!("connection-14"),
-                    }),
+        print_json(msg::<EthereumMinimal>(
+            union_chain_id.clone(),
+            MsgChannelOpenInitData {
+                msg: MsgChannelOpenInit {
+                    port_id: "ping-pong".to_string(),
+                    channel: Channel {
+                        state: channel::state::State::Init,
+                        ordering: channel::order::Order::Unordered,
+                        counterparty: channel::counterparty::Counterparty {
+                            port_id: "WASM_PORT_ID".to_string(),
+                            channel_id: EmptyString.to_string(),
+                        },
+                        connection_hops: vec![parse!("connection-8")],
+                        version: "ucs00-pingpong-1".to_string(),
+                    },
+                },
+                __marker: PhantomData,
+            },
+        ));
+
+        print_json(msg::<CometblsMinimal>(
+            eth_chain_id,
+            MsgChannelOpenInitData {
+                msg: MsgChannelOpenInit {
+                    port_id: "transfer".to_string(),
+                    channel: Channel {
+                        state: channel::state::State::Init,
+                        ordering: channel::order::Order::Ordered,
+                        counterparty: channel::counterparty::Counterparty {
+                            port_id: "transfer".to_string(),
+                            channel_id: EmptyString.to_string(),
+                        },
+                        connection_hops: vec![parse!("connection-8")],
+                        version: "ucs001-pingpong".to_string(),
+                    },
+                },
+                __marker: PhantomData,
+            },
+        ));
+
+        print_json(msg::<CometblsMinimal>(
+            eth_chain_id,
+            MsgConnectionOpenInitData {
+                msg: MsgConnectionOpenInit {
+                    client_id: parse!("cometbls-0"),
+                    counterparty: connection::counterparty::Counterparty {
+                        client_id: parse!("08-wasm-0"),
+                        connection_id: EmptyString,
+                        prefix: MerklePrefix {
+                            key_prefix: b"ibc".to_vec(),
+                        },
+                    },
+                    version: Version {
+                        identifier: "1".into(),
+                        features: [Order::Ordered, Order::Unordered].into_iter().collect(),
+                    },
+                    delay_period: DELAY_PERIOD,
+                },
+            },
+        ));
+
+        print_json(event::<CometblsMinimal>(
+            eth_chain_id,
+            IbcEvent {
+                block_hash: H256([0; 32]),
+                height: parse!("0-2941"),
+                event: unionlabs::events::IbcEvent::ConnectionOpenTry(ConnectionOpenTry {
+                    connection_id: parse!("connection-0"),
+                    client_id: parse!("cometbls-0"),
+                    counterparty_client_id: parse!("08-wasm-1"),
+                    counterparty_connection_id: parse!("connection-14"),
                 }),
             },
-        ))));
+        ));
 
         print_json(RelayerMsg::Timeout {
             timeout_timestamp: 1,
@@ -1050,4 +1045,68 @@ where
     L: LightClient,
 {
     fn do_aggregate(_: Identified<L, Self>, _: VecDeque<AggregateData>) -> Vec<RelayerMsg>;
+}
+
+// helper fns
+
+pub fn retry(count: u8, t: impl Into<RelayerMsg>) -> RelayerMsg {
+    RelayerMsg::Retry(count, Box::new(t.into()))
+}
+
+pub fn seq(ts: impl IntoIterator<Item = RelayerMsg>) -> RelayerMsg {
+    RelayerMsg::Sequence(ts.into_iter().collect())
+}
+
+pub fn defer(timestamp: u64) -> RelayerMsg {
+    RelayerMsg::DeferUntil { timestamp }
+}
+
+pub fn fetch<L: LightClient>(chain_id: ChainIdOf<L>, t: impl Into<Fetch<L>>) -> RelayerMsg
+where
+    AnyLcMsg: From<LcMsg<L>>,
+{
+    RelayerMsg::Lc(AnyLcMsg::from(LcMsg::Fetch(Identified::new(
+        chain_id,
+        t.into(),
+    ))))
+}
+
+pub fn msg<L: LightClient>(chain_id: ChainIdOf<L>, t: impl Into<Msg<L>>) -> RelayerMsg
+where
+    AnyLcMsg: From<LcMsg<L>>,
+{
+    RelayerMsg::Lc(AnyLcMsg::from(LcMsg::Msg(Identified::new(
+        chain_id,
+        t.into(),
+    ))))
+}
+
+pub fn event<L: LightClient>(chain_id: ChainIdOf<L>, t: impl Into<Event<L>>) -> RelayerMsg
+where
+    AnyLcMsg: From<LcMsg<L>>,
+{
+    RelayerMsg::Lc(AnyLcMsg::from(LcMsg::Event(Identified::new(
+        chain_id,
+        t.into(),
+    ))))
+}
+
+pub fn wait<L: LightClient>(chain_id: ChainIdOf<L>, t: impl Into<Wait<L>>) -> RelayerMsg
+where
+    AnyLcMsg: From<LcMsg<L>>,
+{
+    RelayerMsg::Lc(AnyLcMsg::from(LcMsg::Wait(Identified::new(
+        chain_id,
+        t.into(),
+    ))))
+}
+
+pub fn data<L: LightClient>(chain_id: ChainIdOf<L>, t: impl Into<Data<L>>) -> RelayerMsg
+where
+    AnyLcMsg: From<LcMsg<L>>,
+{
+    RelayerMsg::Lc(AnyLcMsg::from(LcMsg::Data(Identified::new(
+        chain_id,
+        t.into(),
+    ))))
 }

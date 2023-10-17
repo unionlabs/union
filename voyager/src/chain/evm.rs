@@ -72,11 +72,14 @@ use crate::{
     },
     msg::{
         aggregate::{Aggregate, LightClientSpecificAggregate},
+        data,
         data::{Data, LightClientSpecificData},
+        fetch,
         fetch::{Fetch, FetchTrustedClientState, FetchUpdateHeaders, LightClientSpecificFetch},
         identified,
         msg::{Msg, MsgUpdateClientData},
-        wait::{Wait, WaitForTimestamp},
+        seq, wait,
+        wait::WaitForTimestamp,
         AggregateData, AggregateReceiver, AnyLcMsg, DoAggregate, Identified, LcMsg, RelayerMsg,
     },
     queue::aggregate_data::{do_aggregate, UseAggregate},
@@ -292,15 +295,12 @@ where
     AggregateReceiver: From<identified!(Aggregate<L>)>,
 {
     [RelayerMsg::Aggregate {
-        queue: [RelayerMsg::Sequence(
-            [RelayerMsg::Lc(AnyLcMsg::from(LcMsg::Fetch(Identified {
-                chain_id: evm.chain_id,
-                data: Fetch::LightClientSpecific(LightClientSpecificFetch(
-                    CometblsFetchMsg::FetchFinalityUpdate(PhantomData),
-                )),
-            })))]
-            .into(),
-        )]
+        queue: [seq([fetch(
+            evm.chain_id,
+            Fetch::LightClientSpecific(LightClientSpecificFetch(
+                CometblsFetchMsg::FetchFinalityUpdate(PhantomData),
+            )),
+        )])]
         .into(),
         data: [].into(),
         receiver: AggregateReceiver::from(Identified {
@@ -879,32 +879,32 @@ where
         - 1;
     RelayerMsg::Aggregate {
         queue: [
-            RelayerMsg::Lc(AnyLcMsg::from(LcMsg::<L>::Fetch(Identified {
+            fetch::<L>(
                 chain_id,
-                data: Fetch::LightClientSpecific(LightClientSpecificFetch(
+                Fetch::LightClientSpecific(LightClientSpecificFetch(
                     CometblsFetchMsg::FetchLightClientUpdate(FetchLightClientUpdate {
                         period: previous_period,
                         __marker: PhantomData,
                     }),
                 )),
-            }))),
-            RelayerMsg::Lc(AnyLcMsg::from(LcMsg::<L>::Fetch(Identified {
+            ),
+            fetch::<L>(
                 chain_id,
-                data: Fetch::LightClientSpecific(LightClientSpecificFetch(
+                Fetch::LightClientSpecific(LightClientSpecificFetch(
                     CometblsFetchMsg::FetchAccountUpdate(FetchAccountUpdate {
                         slot: light_client_update.attested_header.beacon.slot,
                         __marker: PhantomData,
                     }),
                 )),
-            }))),
-            RelayerMsg::Lc(AnyLcMsg::from(LcMsg::<L>::Fetch(Identified {
+            ),
+            fetch::<L>(
                 chain_id,
-                data: Fetch::LightClientSpecific(LightClientSpecificFetch(
+                Fetch::LightClientSpecific(LightClientSpecificFetch(
                     CometblsFetchMsg::FetchBeaconGenesis(FetchBeaconGenesis {
                         __marker: PhantomData,
                     }),
                 )),
-            }))),
+            ),
         ]
         .into(),
         data: [].into(),
@@ -1232,13 +1232,7 @@ where
         }
     };
 
-    [RelayerMsg::Lc(AnyLcMsg::from(LcMsg::<L>::Data(
-        Identified {
-            chain_id: evm.chain_id,
-            data: Data::LightClientSpecific(LightClientSpecificData::from(msg)),
-        },
-    )))]
-    .into()
+    [data::<L>(evm.chain_id, LightClientSpecificData::from(msg))].into()
 }
 
 impl<Counterparty, C, P> IbcStateRead<Counterparty, P> for Evm<C>
@@ -1556,39 +1550,31 @@ where
             },
         };
 
-        RelayerMsg::Sequence(
-            [
-                RelayerMsg::Lc(AnyLcMsg::from(LcMsg::<L::Counterparty>::Wait(
-                    Identified::new(
-                        req.counterparty_chain_id.clone(),
-                        Wait::Timestamp(WaitForTimestamp {
-                            timestamp: (genesis.genesis_time
-                                + (header.data.consensus_update.signature_slot
-                                    * C::SECONDS_PER_SLOT::U64))
-                                .try_into()
-                                .unwrap(),
-                            __marker: PhantomData,
-                        }),
-                    ),
-                ))),
-                RelayerMsg::Lc(AnyLcMsg::from(LcMsg::<L::Counterparty>::Msg(
-                    Identified::new(
-                        req.counterparty_chain_id,
-                        Msg::UpdateClient(MsgUpdateClientData {
-                            msg: MsgUpdateClient {
-                                client_id: req.counterparty_client_id,
-                                client_message: header,
-                            },
-                            update_from: Height {
-                                revision_number: 0,
-                                revision_height: currently_trusted_slot,
-                            },
-                        }),
-                    ),
-                ))),
-            ]
-            .into(),
-        )
+        seq([
+            wait::<L::Counterparty>(
+                req.counterparty_chain_id.clone(),
+                WaitForTimestamp {
+                    timestamp: (genesis.genesis_time
+                        + (header.data.consensus_update.signature_slot * C::SECONDS_PER_SLOT::U64))
+                        .try_into()
+                        .unwrap(),
+                    __marker: PhantomData,
+                },
+            ),
+            crate::msg::msg::<L::Counterparty>(
+                req.counterparty_chain_id,
+                MsgUpdateClientData {
+                    msg: MsgUpdateClient {
+                        client_id: req.counterparty_client_id,
+                        client_message: header,
+                    },
+                    update_from: Height {
+                        revision_number: 0,
+                        revision_height: currently_trusted_slot,
+                    },
+                },
+            ),
+        ])
     }
 }
 
@@ -1758,30 +1744,25 @@ where
             ))
         };
 
-        RelayerMsg::Sequence(
-            lc_updates
-                .into_iter()
-                .chain(finality_update_msg)
-                .chain([RelayerMsg::Lc(AnyLcMsg::from(LcMsg::<L>::Fetch(
-                    Identified {
-                        chain_id,
-                        data: Fetch::TrustedClientState(FetchTrustedClientState {
-                            at: QueryHeight::Specific(Height {
-                                revision_number: EVM_REVISION_NUMBER,
-                                revision_height: (!does_not_have_finality_update)
-                                    .then_some(finality_update_attested_header_slot)
-                                    .unwrap_or_else(|| {
-                                        std::cmp::max(
-                                            req.update_to.revision_height,
-                                            last_update_block_number,
-                                        )
-                                    }),
+        seq(lc_updates
+            .into_iter()
+            .chain(finality_update_msg)
+            .chain([fetch::<L>(
+                chain_id,
+                FetchTrustedClientState {
+                    at: QueryHeight::Specific(Height {
+                        revision_number: EVM_REVISION_NUMBER,
+                        revision_height: (!does_not_have_finality_update)
+                            .then_some(finality_update_attested_header_slot)
+                            .unwrap_or_else(|| {
+                                std::cmp::max(
+                                    req.update_to.revision_height,
+                                    last_update_block_number,
+                                )
                             }),
-                            client_id: req.client_id,
-                        }),
-                    },
-                )))])
-                .collect(),
-        )
+                    }),
+                    client_id: req.client_id,
+                },
+            )]))
     }
 }
