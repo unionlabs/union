@@ -1,6 +1,7 @@
 use core::time::Duration;
 use std::{
     ffi::OsString,
+    fs,
     io::{self},
     path::PathBuf,
     process::Stdio,
@@ -13,9 +14,8 @@ use tracing_subscriber::filter::LevelFilter;
 
 use crate::{
     bundle::{Bundle, NewBundleError, ValidateVersionPathError},
-    init::{self, DownloadGenesisError, SetSeedsError},
+    init::{self, SetSeedsError},
     logging::LogFormat,
-    network::Network,
     supervisor::{self, RuntimeError},
     symlinker::{MakeFallbackLinkError, Symlinker},
 };
@@ -75,12 +75,16 @@ pub struct InitCmd {
     bundle: PathBuf,
 
     /// The validator's moniker.
-    #[arg(short, long)]
+    #[arg(long)]
     moniker: String,
 
-    /// The network to create the configuration for (union-1 or union-testnet-1)
-    #[arg(short, long, default_value = "union-testnet-3")]
-    network: Network,
+    /// The network identifier.
+    #[arg(short, long)]
+    network: String,
+
+    /// Seeds to set in the config.toml.
+    #[arg(long, default_value = "")]
+    seeds: String,
 
     /// Determines if unionvisor initializes regardless of previous dirty state.
     /// This might still error depending on the behavior of the underlying uniond binary
@@ -140,12 +144,12 @@ pub enum InitState {
 
 impl InitCmd {
     fn init(&self, root: impl Into<PathBuf>) -> Result<InitState, InitError> {
-        use InitError::*;
+        use InitError::{HomeExistsAndDirtyIsNotAllowed, SetGenesisError};
         let root = root.into();
         let home = root.join("home");
 
         let bundle = Bundle::new(self.bundle.clone())?;
-        let symlinker = Symlinker::new(root.clone(), bundle);
+        let symlinker = Symlinker::new(root.clone(), bundle.clone());
 
         if symlinker.current_validated().is_err() {
             symlinker.make_fallback_link()?;
@@ -167,12 +171,13 @@ impl InitCmd {
                 OsString::from(self.moniker.clone()),
                 OsString::from("bn254"),
                 OsString::from("--chain-id"),
-                OsString::from(self.network.to_string()),
+                OsString::from(&self.network),
             ],
         };
         init.call_silent(root)?;
-        init::download_genesis(self.network, home.join("config/genesis.json"))?;
-        init::set_seeds(self.network, home.join("config/config.toml"))?;
+        fs::copy(bundle.genesis_json(), home.join("config/genesis.json"))
+            .map_err(SetGenesisError)?;
+        init::set_seeds(&self.seeds, home.join("config/config.toml"))?;
         Ok(InitState::SeedsConfigured)
     }
 }
@@ -185,8 +190,8 @@ pub enum InitError {
     MakeFallbackLink(#[from] MakeFallbackLinkError),
     #[error("home {0} already exists, refusing to override")]
     HomeExistsAndDirtyIsNotAllowed(PathBuf),
-    #[error("download genesis error")]
-    DownloadGenesis(#[from] DownloadGenesisError),
+    #[error("set genesis error")]
+    SetGenesisError(#[from] io::Error),
     #[error("set seeds error")]
     SetSeeds(#[from] SetSeedsError),
     #[error("cannot call")]
@@ -283,7 +288,6 @@ mod tests {
         let state = InitCmd {
             bundle: root.join("bundle"),
             moniker: String::from("test_init_moniker"),
-            network: Network::Testnet3,
             allow_dirty: true,
         }
         .init(root)
@@ -298,7 +302,7 @@ mod tests {
         let _ = InitCmd {
             bundle: root.join("bundle"),
             moniker: String::from("test_init_moniker"),
-            network: Network::Testnet3,
+            network: String::from("union-testnet-3"),
             allow_dirty: false,
         }
         .init(root)
@@ -306,7 +310,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "Currently cannot do networked I/O required to fetch the genesis.json inside of the sandbox"]
     #[traced_test]
     fn test_init() {
         let tmp = testdata::temp_dir_with(&["test_init_cmd"]);
@@ -314,7 +317,7 @@ mod tests {
         let command = InitCmd {
             bundle: root.join("bundle"),
             moniker: String::from("test_init_moniker"),
-            network: Network::Testnet1,
+            network: String::from("union-testnet-3"),
             allow_dirty: false,
         };
         command.init(root).unwrap();
