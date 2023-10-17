@@ -13,9 +13,13 @@ use tracing::{debug, error, field::display as as_display};
 ///
 /// ```text
 /// bundle
+/// ├── genesis.json
 /// ├── meta.json
+/// ├── unionvisor
 /// └── versions
-///     └── v0.5.0
+///     ├── v0.8.0
+///     │   └── uniond
+///     └── v0.9.0
 ///         └── uniond
 /// ```
 ///
@@ -23,6 +27,7 @@ use tracing::{debug, error, field::display as as_display};
 ///
 /// ```text
 /// bundle
+/// ├── genesis.json
 /// ├── meta.json
 /// └── META.VERSIONS_PATH
 ///     └── BINARY_VERSION_IDENTIFIER
@@ -125,6 +130,12 @@ impl Bundle {
         let meta = fs::read_to_string(meta).map_err(NoMetaJson)?;
         let meta = serde_json::from_str(&meta).map_err(DeserializeMeta)?;
 
+        // Check if bundle contains genesis.json
+        let genesis = path.join("genesis.json");
+        if !genesis.exists() {
+            return Err(NoGenesisJson);
+        }
+
         let bundle = Bundle { path, meta };
 
         Ok(bundle)
@@ -141,6 +152,11 @@ impl Bundle {
         )
     }
 
+    /// Returns a PathBuf to the Bundle's genesis.json
+    pub fn genesis_json(&self) -> PathBuf {
+        self.path.join("genesis.json")
+    }
+
     /// Construct the path to the fallback verison, based on the [`BundleMeta`]
     pub fn fallback_path(&self) -> Result<ValidVersionPath, ValidateVersionPathError> {
         let fallback_version = &self.meta.fallback_version.clone();
@@ -152,6 +168,8 @@ impl Bundle {
 pub enum NewBundleError {
     #[error("cannot find meta.json in bundle. Please make sure it exists at bundle/meta.json")]
     NoMetaJson(#[source] io::Error),
+    #[error("cannot find genesis.json in bundle. Please make sure it exists at bundle/meta.json")]
+    NoGenesisJson,
     #[error("cannot deserialize bundle/meta.json. Please ensure that it adheres to the scheme.")]
     DeserializeMeta(#[source] serde_json::Error),
 }
