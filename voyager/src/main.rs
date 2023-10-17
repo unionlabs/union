@@ -203,7 +203,31 @@ async fn do_main(args: cli::AppArgs) -> Result<(), VoyagerError> {
                         let relay = UCS01Relay::new(relay_address, signer_middleware.clone());
 
                         let denom = relay.denom_to_address(denom).await.unwrap();
-                        println!("ADdress is: {}", denom);
+                        let addr = relay.address_to_denom(denom).await.unwrap();
+                        println!(
+                            "Counter: {:?}",
+                            relay
+                                .counterparty_endpoints(port_id.clone(), channel_id.clone())
+                                .await
+                                .unwrap()
+                        );
+                        println!("ADdress is: {}, {}", denom, addr);
+                        println!(
+                            "Foreign: {}, Prefix: {}",
+                            relay
+                                .make_foreign_denom(
+                                    port_id.clone(),
+                                    channel_id.clone(),
+                                    "stake".to_string()
+                                )
+                                .await
+                                .unwrap(),
+                            relay
+                                .make_denom_prefix(port_id.clone(), channel_id.clone())
+                                .await
+                                .unwrap()
+                        );
+                        panic!();
 
                         let erc_contract = erc20::ERC20::new(denom, signer_middleware.clone());
 
