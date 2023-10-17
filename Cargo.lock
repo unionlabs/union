@@ -6140,6 +6140,21 @@ version = "1.16.0"
 source = "git+https://github.com/unionlabs/typenum?branch=ben/192-const-generic-32-bit#678f7d0e20d5ca862788c66d6d21dba9b11eeb21"
 
 [[package]]
+name = "ucli"
+version = "0.1.0"
+dependencies = [
+ "chain-utils",
+ "clap",
+ "contracts",
+ "ethers",
+ "hex",
+ "serde",
+ "serde_json",
+ "tendermint-rpc",
+ "unionlabs",
+]
+
+[[package]]
 name = "ucs00-pingpong"
 version = "1.0.0"
 dependencies = [

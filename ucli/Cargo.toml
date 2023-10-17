@@ -1,0 +1,18 @@
+[package]
+name = "ucli"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+ethers = { workspace = true, features = ["rustls", "ws"] }
+clap = { version = "4.3.0", features = ["derive", "env", "error-context"] }
+serde_json = "1.0.96"
+serde = { version = "1.0.173", features = ["derive"] }
+hex = { version = "0.4.3", features = [ "serde" ] }
+
+unionlabs = { workspace = true, features = ["ethabi"] }
+contracts.workspace = true
+chain-utils.workspace = true
+tendermint-rpc = { workspace = true, features = ["http-client", "websocket-client"] }
