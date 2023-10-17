@@ -5,7 +5,7 @@ use tendermint::{block::Height, genesis::Genesis, Time};
 use tendermint_rpc::{
     endpoint::block_results::Response as BlockResponse,
     error::ErrorDetail,
-    query::{Condition, EventType, Query},
+    query::{Condition, Query},
     response_error::Code,
     Client, Error, HttpClient, Order,
 };
@@ -543,56 +543,4 @@ impl<I> WithType<I> {
             inner,
         }
     }
-}
-
-#[cfg(test)]
-mod tests {
-    use serde::Serialize;
-    use tendermint::{abci::EventAttribute, vote::Power};
-
-    use super::*;
-
-    // #[test]
-    // fn state_change_serializes_correctly() {
-    //     use serde_json::{json, to_value};
-
-    //     fn check<T: Serialize>(t: T, json: serde_json::Value) {
-    //         assert_eq!(to_value(t).unwrap(), json)
-    //     }
-
-    //     check(
-    //         StateChange::Event(Event {
-    //             kind: "foo".to_string(),
-    //             attributes: vec![EventAttribute {
-    //                 index: false,
-    //                 key: "bar".to_string(),
-    //                 value: "bax".to_string(),
-    //             }],
-    //         }),
-    //         json!({
-    //             "type": "foo",
-    //             "attributes": [
-    //                 {
-    //                     "key": "bar",
-    //                     "index": false,
-    //                     "value": "bax",
-    //                 }
-    //             ]
-    //         }),
-    //     );
-    //     check(
-    //         StateChange::validator_update(Update {
-    //             pub_key: tendermint::PublicKey::Bn254(Default::default()),
-    //             power: Power::from(1_u8),
-    //         }),
-    //         json!({
-    //             "type": "validator_update",
-    //             "power": "1",
-    //             "pub_key": {
-    //                 "type": "tendermint/PubKeyBn254",
-    //                 "value": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
-    //             }
-    //         }),
-    //     );
-    // }
 }
