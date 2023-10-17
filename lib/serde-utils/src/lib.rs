@@ -1,6 +1,6 @@
 extern crate alloc;
 
-use std::fmt::Debug;
+use core::fmt::Debug;
 
 use hex::FromHexError;
 
@@ -66,6 +66,9 @@ where
     }
 
     match s.strip_prefix(HEX_ENCODING_PREFIX.as_bytes()) {
+        Some([b'0']) => {
+            T::try_from(vec![]).map_err(|err| FromHexStringError::TryFromBytes(format!("{err:?}")))
+        }
         Some(maybe_hex) => hex::decode(maybe_hex)
             .map_err(FromHexStringError::Hex)?
             .try_into()
@@ -333,5 +336,15 @@ pub mod bitvec_string {
                 })
                 .collect::<Result<BitVec<u8>, _>>()
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn hex() {
+        parse_hex::<Vec<u8>>(to_hex([])).unwrap();
     }
 }
