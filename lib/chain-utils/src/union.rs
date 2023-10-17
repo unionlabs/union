@@ -25,8 +25,9 @@ use unionlabs::{
 };
 
 use crate::{
-    private_key::PrivateKey, union::tm_types::TendermintResponseErrorCode, ChainEvent, EventSource,
-    MaybeRecoverableError, Pool,
+    private_key::PrivateKey,
+    union::tm_types::{CosmosSdkError, SdkError},
+    ChainEvent, EventSource, MaybeRecoverableError, Pool,
 };
 
 #[derive(Debug, Clone)]
@@ -439,11 +440,10 @@ impl Union {
         tracing::info!(check_tx_code = ?response.code, codespace = %response.codespace, check_tx_log = %response.log);
 
         if response.code.is_err() {
-            let value: tm_types::TendermintResponseErrorCode = response
-                .code
-                .value()
-                .try_into()
-                .expect("unknown response code");
+            let value = tm_types::CosmosSdkError::from_code_and_codespace(
+                &response.codespace,
+                response.code.value(),
+            );
 
             return Err(BroadcastTxCommitError::Tx(value));
         };
@@ -502,7 +502,7 @@ pub enum BroadcastTxCommitError {
     #[error("tx was not included")]
     Inclusion(#[from] tendermint_rpc::Error),
     #[error("tx failed: {0:?}")]
-    Tx(TendermintResponseErrorCode),
+    Tx(CosmosSdkError),
 }
 
 impl MaybeRecoverableError for BroadcastTxCommitError {
@@ -512,10 +512,10 @@ impl MaybeRecoverableError for BroadcastTxCommitError {
             Self::Inclusion(_) => true,
             Self::Tx(code) => matches!(
                 code,
-                TendermintResponseErrorCode::TxInMempoolCache
-                    | TendermintResponseErrorCode::MempoolIsFull
-                    | TendermintResponseErrorCode::TxTimeoutHeight
-                    | TendermintResponseErrorCode::WrongSequence
+                CosmosSdkError::SdkError(SdkError::ErrTxInMempoolCache)
+                    | CosmosSdkError::SdkError(SdkError::ErrMempoolIsFull)
+                    | CosmosSdkError::SdkError(SdkError::ErrTxTimeoutHeight)
+                    | CosmosSdkError::SdkError(SdkError::ErrWrongSequence)
             ),
         }
     }
@@ -646,182 +646,284 @@ impl EventSource for Union {
     }
 }
 
-#[allow(non_upper_case_globals)] // TODO: Report this upstream
+#[allow(non_upper_case_globals)] // TODO: Report this upstream to num_enum
 pub mod tm_types {
-    #[derive(
-        Debug, Copy, Clone, PartialEq, Eq, Hash, num_enum::IntoPrimitive, num_enum::TryFromPrimitive,
-    )]
-    #[repr(u32)]
-    pub enum TendermintResponseErrorCode {
-        /// ErrTxDecode is returned if we cannot parse a transaction
-        // #[a("tx parse error")]
-        TxDecode = 2,
+    macro_rules! cosmos_sdk_errors {
+        (
+            $(
+                #[err(name = $Module:ident, codespace = $codespace:literal)]
+                var (
+                    $(
+                    	$Err:ident = errorsmod.Register($ModuleName_:ident, $code:literal, $msg:literal)
+                    )+
+                )
+            )+
+        ) => {
+            #[derive(
+                Debug,
+                Clone,
+                PartialEq,
+                Eq,
+                Hash,
+                thiserror::Error,
+            )]
+            pub enum CosmosSdkError {
+                $(
+                    #[error(transparent)]
+                    $Module(#[from] $Module),
+                )+
+                #[error("unknown error: {0}: {1}")]
+                Unknown(String, u32),
+            }
 
-        /// ErrInvalidSequence is used the sequence number (nonce) is incorrect
-        /// for the signature
-        // #[a("invalid sequence")]
-        InvalidSequence = 3,
+            impl CosmosSdkError {
+                pub fn from_code_and_codespace(codespace: &str, code: u32) -> Self {
+                    match codespace {
+                        $(
+                            $codespace => $Module::try_from(code)
+                                .map(Into::into)
+                                .map_err(|x| x.number),
+                        )+
+                        _ => return Self::Unknown(codespace.to_string(), code),
+                    }
+                    .map_or_else(
+                        |code| Self::Unknown(codespace.to_string(), code),
+                        std::convert::identity,
+                    )
+                }
+            }
 
-        /// ErrUnauthorized is used whenever a request without sufficient
-        /// authorization is handled.
-        // #[a("unauthorized")]
-        Unauthorized = 4,
+            $(
+                #[derive(
+                    Debug,
+                    Copy,
+                    Clone,
+                    PartialEq,
+                    Eq,
+                    Hash,
+                    num_enum::IntoPrimitive,
+                    num_enum::TryFromPrimitive,
+                    thiserror::Error,
+                )]
+                #[repr(u32)]
+                pub enum $Module {
+                    $(
+                        #[error($msg)]
+                        $Err = $code,
+                    )+
+                }
+            )+
+        }
+    }
 
-        /// ErrInsufficientFunds is used when the account cannot pay requested amount.
-        // #[a("insufficient funds")]
-        InsufficientFunds = 5,
+    cosmos_sdk_errors! {
+        #[err(name = HostError, codespace = "host")]
+        var (
+            ErrInvalidID     = errorsmod.Register(SubModuleName, 2, "invalid identifier")
+            ErrInvalidPath   = errorsmod.Register(SubModuleName, 3, "invalid path")
+            ErrInvalidPacket = errorsmod.Register(SubModuleName, 4, "invalid packet")
+        )
 
-        /// ErrUnknownRequest to doc
-        // #[a("unknown request")]
-        UnknownRequest = 6,
+        #[err(name = IbcError, codespace = "ibc")]
+        var (
+            // ErrInvalidSequence is used the sequence number (nonce) is incorrect
+            // for the signature.
+            ErrInvalidSequence = errorsmod.Register(codespace, 1, "invalid sequence")
 
-        /// ErrInvalidAddress to doc
-        // #[a("invalid address")]
-        InvalidAddress = 7,
+            // ErrUnauthorized is used whenever a request without sufficient
+            // authorization is handled.
+            ErrUnauthorized = errorsmod.Register(codespace, 2, "unauthorized")
 
-        /// ErrInvalidPubKey to doc
-        // #[a("invalid pubkey")]
-        InvalidPubKey = 8,
+            // ErrInsufficientFunds is used when the account cannot pay requested amount.
+            ErrInsufficientFunds = errorsmod.Register(codespace, 3, "insufficient funds")
 
-        /// ErrUnknownAddress to doc
-        // #[a("unknown address")]
-        UnknownAddress = 9,
+            // ErrUnknownRequest is used when the request body.
+            ErrUnknownRequest = errorsmod.Register(codespace, 4, "unknown request")
 
-        /// ErrInvalidCoins to doc
-        // #[a("invalid coins")]
-        InvalidCoins = 10,
+            // ErrInvalidAddress is used when an address is found to be invalid.
+            ErrInvalidAddress = errorsmod.Register(codespace, 5, "invalid address")
 
-        /// ErrOutOfGas to doc
-        // #[a("out of gas")]
-        OutOfGas = 11,
+            // ErrInvalidCoins is used when sdk.Coins are invalid.
+            ErrInvalidCoins = errorsmod.Register(codespace, 6, "invalid coins")
 
-        /// ErrMemoTooLarge to doc
-        // #[a("memo too large")]
-        MemoTooLarge = 12,
+            // ErrOutOfGas is used when there is not enough gas.
+            ErrOutOfGas = errorsmod.Register(codespace, 7, "out of gas")
 
-        /// ErrInsufficientFee to doc
-        // #[a("insufficient fee")]
-        InsufficientFee = 13,
+            // ErrInvalidRequest defines an ABCI typed error where the request contains
+            // invalid data.
+            ErrInvalidRequest = errorsmod.Register(codespace, 8, "invalid request")
 
-        /// ErrTooManySignatures to doc
-        // #[a("maximum number of signatures exceeded")]
-        TooManySignatures = 14,
+            // ErrInvalidHeight defines an error for an invalid height
+            ErrInvalidHeight = errorsmod.Register(codespace, 9, "invalid height")
 
-        /// ErrNoSignatures to doc
-        // #[a("no signatures supplied")]
-        NoSignatures = 15,
+            // ErrInvalidVersion defines a general error for an invalid version
+            ErrInvalidVersion = errorsmod.Register(codespace, 10, "invalid version")
 
-        /// ErrJSONMarshal defines an ABCI typed JSON marshalling error
-        // #[a("failed to marshal JSON bytes")]
-        JSONMarshal = 16,
+            // ErrInvalidChainID defines an error when the chain-id is invalid.
+            ErrInvalidChainID = errorsmod.Register(codespace, 11, "invalid chain-id")
 
-        /// ErrJSONUnmarshal defines an ABCI typed JSON unmarshalling error
-        // #[a("failed to unmarshal JSON bytes")]
-        JSONUnmarshal = 17,
+            // ErrInvalidType defines an error an invalid type.
+            ErrInvalidType = errorsmod.Register(codespace, 12, "invalid type")
 
-        /// ErrInvalidRequest defines an ABCI typed error where the request contains
-        /// invalid data.
-        // #[a("invalid request")]
-        InvalidRequest = 18,
+            // ErrPackAny defines an error when packing a protobuf message to Any fails.
+            ErrPackAny = errorsmod.Register(codespace, 13, "failed packing protobuf message to Any")
 
-        /// ErrTxInMempoolCache defines an ABCI typed error where a tx already exists
-        /// in the mempool.
-        // #[a("tx already in mempool")]
-        TxInMempoolCache = 19,
+            // ErrUnpackAny defines an error when unpacking a protobuf message from Any fails.
+            ErrUnpackAny = errorsmod.Register(codespace, 14, "failed unpacking protobuf message from Any")
 
-        /// ErrMempoolIsFull defines an ABCI typed error where the mempool is full.
-        // #[a("mempool is full")]
-        MempoolIsFull = 20,
+            // ErrLogic defines an internal logic error, e.g. an invariant or assertion
+            // that is violated. It is a programmer error, not a user-facing error.
+            ErrLogic = errorsmod.Register(codespace, 15, "internal logic error")
 
-        /// ErrTxTooLarge defines an ABCI typed error where tx is too large.
-        // #[a("tx too large")]
-        TxTooLarge = 21,
+            // ErrNotFound defines an error when requested entity doesn't exist in the state.
+            ErrNotFound = errorsmod.Register(codespace, 16, "not found")
+        )
 
-        /// ErrKeyNotFound defines an error when the key doesn't exist
-        // #[a("key not found")]
-        KeyNotFound = 22,
+        #[err(name = PortError, codespace = "port")]
+        var (
+            // cspell:ignore binded
+            ErrPortExists   = errorsmod.Register(SubModuleName, 2, "port is already binded")
+            ErrPortNotFound = errorsmod.Register(SubModuleName, 3, "port not found")
+            ErrInvalidPort  = errorsmod.Register(SubModuleName, 4, "invalid port")
+            ErrInvalidRoute = errorsmod.Register(SubModuleName, 5, "route not found")
+        )
 
-        /// ErrWrongPassword defines an error when the key password is invalid.
-        // #[a("invalid account password")]
-        WrongPassword = 23,
+        #[err(name = SdkError, codespace = "sdk")]
+        var (
+            // ErrTxDecode is returned if we cannot parse a transaction
+            ErrTxDecode = errorsmod.Register(RootCodespace, 2, "tx parse error")
 
-        /// ErrorInvalidSigner defines an error when the tx intended signer does not match the given signer.
-        // #[a("tx intended signer does not match the given signer")]
-        InvalidSigner = 24,
+            // ErrInvalidSequence is used the sequence number (nonce) is incorrect
+            // for the signature
+            ErrInvalidSequence = errorsmod.Register(RootCodespace, 3, "invalid sequence")
 
-        /// ErrorInvalidGasAdjustment defines an error for an invalid gas adjustment
-        // #[a("invalid gas adjustment")]
-        InvalidGasAdjustment = 25,
+            // ErrUnauthorized is used whenever a request without sufficient
+            // authorization is handled.
+            ErrUnauthorized = errorsmod.Register(RootCodespace, 4, "unauthorized")
 
-        /// ErrInvalidHeight defines an error for an invalid height
-        // #[a("invalid height")]
-        InvalidHeight = 26,
+            // ErrInsufficientFunds is used when the account cannot pay requested amount.
+            ErrInsufficientFunds = errorsmod.Register(RootCodespace, 5, "insufficient funds")
 
-        /// ErrInvalidVersion defines a general error for an invalid version
-        // #[a("invalid version")]
-        InvalidVersion = 27,
+            // ErrUnknownRequest to doc
+            ErrUnknownRequest = errorsmod.Register(RootCodespace, 6, "unknown request")
 
-        /// ErrInvalidChainID defines an error when the chain-id is invalid.
-        // #[a("invalid chain-id")]
-        InvalidChainID = 28,
+            // ErrInvalidAddress to doc
+            ErrInvalidAddress = errorsmod.Register(RootCodespace, 7, "invalid address")
 
-        /// ErrInvalidType defines an error an invalid type.
-        // #[a("invalid type")]
-        InvalidType = 29,
+            // ErrInvalidPubKey to doc
+            ErrInvalidPubKey = errorsmod.Register(RootCodespace, 8, "invalid pubkey")
 
-        /// ErrTxTimeoutHeight defines an error for when a tx is rejected out due to an
-        /// explicitly set timeout height.
-        // #[a("tx timeout height")]
-        TxTimeoutHeight = 30,
+            // ErrUnknownAddress to doc
+            ErrUnknownAddress = errorsmod.Register(RootCodespace, 9, "unknown address")
 
-        /// ErrUnknownExtensionOptions defines an error for unknown extension options.
-        // #[a("unknown extension options")]
-        UnknownExtensionOptions = 31,
+            // ErrInvalidCoins to doc
+            ErrInvalidCoins = errorsmod.Register(RootCodespace, 10, "invalid coins")
 
-        /// ErrWrongSequence defines an error where the account sequence defined in
-        /// the signer info doesn't match the account's actual sequence number.
-        // #[a("incorrect account sequence")]
-        WrongSequence = 32,
+            // ErrOutOfGas to doc
+            ErrOutOfGas = errorsmod.Register(RootCodespace, 11, "out of gas")
 
-        /// ErrPackAny defines an error when packing a protobuf message to Any fails.
-        // #[a("failed packing protobuf message to Any")]
-        PackAny = 33,
+            // ErrMemoTooLarge to doc
+            ErrMemoTooLarge = errorsmod.Register(RootCodespace, 12, "memo too large")
 
-        /// ErrUnpackAny defines an error when unpacking a protobuf message from Any fails.
-        // #[a("failed unpacking protobuf message from Any")]
-        UnpackAny = 34,
+            // ErrInsufficientFee to doc
+            ErrInsufficientFee = errorsmod.Register(RootCodespace, 13, "insufficient fee")
 
-        /// ErrLogic defines an internal logic error, e.g. an invariant or assertion
-        /// that is violated. It is a programmer error, not a user-facing error.
-        // #[a("internal logic error")]
-        Logic = 35,
+            // ErrTooManySignatures to doc
+            ErrTooManySignatures = errorsmod.Register(RootCodespace, 14, "maximum number of signatures exceeded")
 
-        /// ErrConflict defines a conflict error, e.g. when two goroutines try to access
-        /// the same resource and one of them fails.
-        // #[a("conflict")]
-        Conflict = 36,
+            // ErrNoSignatures to doc
+            ErrNoSignatures = errorsmod.Register(RootCodespace, 15, "no signatures supplied")
 
-        /// ErrNotSupported is returned when we call a branch of a code which is currently not
-        /// supported.
-        // #[a("feature not supported")]
-        NotSupported = 37,
+            // ErrJSONMarshal defines an ABCI typed JSON marshalling error
+            ErrJSONMarshal = errorsmod.Register(RootCodespace, 16, "failed to marshal JSON bytes")
 
-        /// ErrNotFound defines an error when requested entity doesn't exist in the state.
-        // #[a("not found")]
-        NotFound = 38,
+            // ErrJSONUnmarshal defines an ABCI typed JSON unmarshalling error
+            ErrJSONUnmarshal = errorsmod.Register(RootCodespace, 17, "failed to unmarshal JSON bytes")
 
-        /// ErrIO should be used to wrap internal errors caused by external operation.
-        /// Examples: not DB domain error, file writing etc...
-        // #[a("Internal IO error")]
-        IO = 39,
+            // ErrInvalidRequest defines an ABCI typed error where the request contains
+            // invalid data.
+            ErrInvalidRequest = errorsmod.Register(RootCodespace, 18, "invalid request")
 
-        /// ErrAppConfig defines an error occurred if min-gas-prices field in BaseConfig is empty.
-        // #[a("error in app.toml")]
-        AppConfig = 40,
+            // ErrTxInMempoolCache defines an ABCI typed error where a tx already exists
+            // in the mempool.
+            ErrTxInMempoolCache = errorsmod.Register(RootCodespace, 19, "tx already in mempool")
 
-        /// ErrInvalidGasLimit defines an error when an invalid GasWanted value is
-        /// supplied.
-        // #[a("invalid gas limit")]
-        InvalidGasLimit = 41,
+            // ErrMempoolIsFull defines an ABCI typed error where the mempool is full.
+            ErrMempoolIsFull = errorsmod.Register(RootCodespace, 20, "mempool is full")
+
+            // ErrTxTooLarge defines an ABCI typed error where tx is too large.
+            ErrTxTooLarge = errorsmod.Register(RootCodespace, 21, "tx too large")
+
+            // ErrKeyNotFound defines an error when the key doesn't exist
+            ErrKeyNotFound = errorsmod.Register(RootCodespace, 22, "key not found")
+
+            // ErrWrongPassword defines an error when the key password is invalid.
+            ErrWrongPassword = errorsmod.Register(RootCodespace, 23, "invalid account password")
+
+            // ErrorInvalidSigner defines an error when the tx intended signer does not match the given signer.
+            ErrorInvalidSigner = errorsmod.Register(RootCodespace, 24, "tx intended signer does not match the given signer")
+
+            // ErrorInvalidGasAdjustment defines an error for an invalid gas adjustment
+            ErrorInvalidGasAdjustment = errorsmod.Register(RootCodespace, 25, "invalid gas adjustment")
+
+            // ErrInvalidHeight defines an error for an invalid height
+            ErrInvalidHeight = errorsmod.Register(RootCodespace, 26, "invalid height")
+
+            // ErrInvalidVersion defines a general error for an invalid version
+            ErrInvalidVersion = errorsmod.Register(RootCodespace, 27, "invalid version")
+
+            // ErrInvalidChainID defines an error when the chain-id is invalid.
+            ErrInvalidChainID = errorsmod.Register(RootCodespace, 28, "invalid chain-id")
+
+            // ErrInvalidType defines an error an invalid type.
+            ErrInvalidType = errorsmod.Register(RootCodespace, 29, "invalid type")
+
+            // ErrTxTimeoutHeight defines an error for when a tx is rejected out due to an
+            // explicitly set timeout height.
+            ErrTxTimeoutHeight = errorsmod.Register(RootCodespace, 30, "tx timeout height")
+
+            // ErrUnknownExtensionOptions defines an error for unknown extension options.
+            ErrUnknownExtensionOptions = errorsmod.Register(RootCodespace, 31, "unknown extension options")
+
+            // ErrWrongSequence defines an error where the account sequence defined in
+            // the signer info doesn't match the account's actual sequence number.
+            ErrWrongSequence = errorsmod.Register(RootCodespace, 32, "incorrect account sequence")
+
+            // ErrPackAny defines an error when packing a protobuf message to Any fails.
+            ErrPackAny = errorsmod.Register(RootCodespace, 33, "failed packing protobuf message to Any")
+
+            // ErrUnpackAny defines an error when unpacking a protobuf message from Any fails.
+            ErrUnpackAny = errorsmod.Register(RootCodespace, 34, "failed unpacking protobuf message from Any")
+
+            // ErrLogic defines an internal logic error, e.g. an invariant or assertion
+            // that is violated. It is a programmer error, not a user-facing error.
+            ErrLogic = errorsmod.Register(RootCodespace, 35, "internal logic error")
+
+            // ErrConflict defines a conflict error, e.g. when two goroutines try to access
+            // the same resource and one of them fails.
+            ErrConflict = errorsmod.Register(RootCodespace, 36, "conflict")
+
+            // ErrNotSupported is returned when we call a branch of a code which is currently not
+            // supported.
+            ErrNotSupported = errorsmod.Register(RootCodespace, 37, "feature not supported")
+
+            // ErrNotFound defines an error when requested entity doesn't exist in the state.
+            ErrNotFound = errorsmod.Register(RootCodespace, 38, "not found")
+
+            // ErrIO should be used to wrap internal errors caused by external operation.
+            // Examples: not DB domain error, file writing etc...
+            ErrIO = errorsmod.Register(RootCodespace, 39, "Internal IO error")
+
+            // ErrAppConfig defines an error occurred if min-gas-prices field in BaseConfig is empty.
+            ErrAppConfig = errorsmod.Register(RootCodespace, 40, "error in app.toml")
+
+            // ErrInvalidGasLimit defines an error when an invalid GasWanted value is
+            // supplied.
+            ErrInvalidGasLimit = errorsmod.Register(RootCodespace, 41, "invalid gas limit")
+
+            // ErrPanic should only be set when we recovering from a panic
+            // TODO: Figure out what this is and where it comes from
+            // ErrPanic = errorsmod.ErrPanic
+        )
     }
 }

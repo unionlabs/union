@@ -3,7 +3,6 @@ use std::{
     error::Error,
     fmt::{Debug, Display},
     marker::PhantomData,
-    ops::Add,
     sync::{Arc, Mutex},
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
@@ -73,24 +72,27 @@ use crate::{
             AggregateWaitForTrustedHeight, ChannelHandshakeEvent,
             ConsensusStateProofAtLatestHeight, LightClientSpecificAggregate, PacketEvent,
         },
+        data,
         data::{
             AcknowledgementProof, ChannelEnd, ChannelEndProof, ClientConsensusStateProof,
             ClientStateProof, CommitmentProof, ConnectionEnd, ConnectionProof, Data,
             PacketAcknowledgement, SelfClientState, SelfConsensusState, TrustedClientState,
         },
-        enum_variants_conversions,
+        defer, enum_variants_conversions,
         event::Event,
+        fetch,
         fetch::{
             Fetch, FetchChannelEnd, FetchConnectionEnd, FetchPacketAcknowledgement,
             FetchSelfClientState, FetchSelfConsensusState, FetchStateProof,
             FetchTrustedClientState, FetchUpdateHeaders, LightClientSpecificFetch,
         },
-        identified,
+        identified, msg,
         msg::{
             Msg, MsgAckPacketData, MsgChannelOpenAckData, MsgChannelOpenConfirmData,
             MsgChannelOpenTryData, MsgConnectionOpenAckData, MsgConnectionOpenConfirmData,
             MsgConnectionOpenTryData, MsgCreateClientData, MsgRecvPacketData,
         },
+        retry, seq, wait,
         wait::{Wait, WaitForBlock, WaitForTimestamp, WaitForTrustedHeight},
         AggregateData, AggregateReceiver, AnyLcMsg, ChainIdOf, DoAggregate, Identified, LcMsg,
         RelayerMsg,
@@ -1021,7 +1023,7 @@ impl Worker {
                         // TODO: Make the time configurable?
                         tokio::time::sleep(Duration::from_secs(1)).await;
 
-                        Ok([RelayerMsg::DeferUntil { timestamp }].into())
+                        Ok([defer(timestamp)].into())
                     } else {
                         Ok(vec![])
                     }
@@ -1031,13 +1033,8 @@ impl Worker {
                     timeout_timestamp,
                     msg,
                 } => {
-                    let now = SystemTime::now()
-                        .duration_since(UNIX_EPOCH)
-                        .unwrap()
-                        .as_secs();
-
                     // if we haven't hit the time yet, requeue the defer msg
-                    if now > timeout_timestamp {
+                    if now() > timeout_timestamp {
                         tracing::warn!(json = %serde_json::to_string(&msg).unwrap(), "message expired");
 
                         Ok([].into())
@@ -1046,17 +1043,17 @@ impl Worker {
                     }
                 }
 
-                RelayerMsg::Sequence(mut seq) => {
-                    let msgs = match seq.pop_front() {
+                RelayerMsg::Sequence(mut s) => {
+                    let msgs = match s.pop_front() {
                         Some(msg) => self.handle_msg(msg, depth + 1).await?,
                         None => return Ok(vec![]),
                     };
 
                     for msg in msgs.into_iter().rev() {
-                        seq.push_front(msg);
+                        s.push_front(msg);
                     }
 
-                    Ok([flatten_seq(RelayerMsg::Sequence(seq))].into())
+                    Ok([flatten_seq(seq(s))].into())
                 }
 
                 RelayerMsg::Retry(count, msg) =>  {
@@ -1066,15 +1063,12 @@ impl Worker {
                         Ok(ok) => Ok(ok),
                         Err(err) => if count > 0 {
                             let retries_left = count - 1;
-                            tracing::warn!(%msg, retries_left, "msg failed, retrying in {RETRY_DELAY_SECONDS} seconds");
-                            let timestamp = SystemTime::now()
-                        .duration_since(UNIX_EPOCH)
-                        .unwrap()
-                        .as_secs() + RETRY_DELAY_SECONDS;
-
-                            let seq = [RelayerMsg::DeferUntil { timestamp }, RelayerMsg::Retry(retries_left, msg)].into();
-
-                            Ok([RelayerMsg::Sequence(seq)].into())
+                            tracing::warn!(
+                                %msg,
+                                retries_left,
+                                "msg failed, retrying in {RETRY_DELAY_SECONDS} seconds"
+                            );
+                            Ok([seq([defer(now() + RETRY_DELAY_SECONDS), retry(retries_left, *msg)])].into())
                         } else {
                             tracing::error!(%msg, "msg failed after all retries");
                             Err(err)
@@ -1183,6 +1177,14 @@ impl Worker {
     }
 }
 
+/// Returns the current unix timestamp in seconds.
+fn now() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_secs()
+}
+
 #[derive(Debug, thiserror::Error)]
 pub enum HandleMsgError {
     #[error(transparent)]
@@ -1272,98 +1274,89 @@ where
             IbcEvent::ClientMisbehaviour(_) => unimplemented!(),
             IbcEvent::SubmitEvidence(_) => unimplemented!(),
 
-            IbcEvent::ConnectionOpenInit(init) => [RelayerMsg::Sequence(
-                [
-                    RelayerMsg::Lc(AnyLcMsg::from(LcMsg::<L>::Wait(Identified {
-                        chain_id: l.chain().chain_id(),
-                        data: Wait::Block(WaitForBlock(ibc_event.height.increment())),
-                    }))),
-                    RelayerMsg::Aggregate {
-                        data: [].into(),
-                        queue: [mk_aggregate_update(
-                            l.chain().chain_id(),
-                            init.client_id.clone(),
-                            init.counterparty_client_id.clone(),
-                            ibc_event.height,
-                        )]
-                        .into(),
-                        receiver: AggregateReceiver::from(Identified::new(
-                            l.chain().chain_id(),
-                            Aggregate::AggregateMsgAfterUpdate(
-                                AggregateMsgAfterUpdate::ConnectionOpenTry(
-                                    AggregateConnectionOpenTry {
-                                        event_height: ibc_event.height,
-                                        event: init,
-                                    },
-                                ),
+            IbcEvent::ConnectionOpenInit(init) => [seq([
+                wait::<L>(
+                    l.chain().chain_id(),
+                    WaitForBlock(ibc_event.height.increment()),
+                ),
+                RelayerMsg::Aggregate {
+                    data: [].into(),
+                    queue: [mk_aggregate_update(
+                        l.chain().chain_id(),
+                        init.client_id.clone(),
+                        init.counterparty_client_id.clone(),
+                        ibc_event.height,
+                    )]
+                    .into(),
+                    receiver: AggregateReceiver::from(Identified::new(
+                        l.chain().chain_id(),
+                        Aggregate::AggregateMsgAfterUpdate(
+                            AggregateMsgAfterUpdate::ConnectionOpenTry(
+                                AggregateConnectionOpenTry {
+                                    event_height: ibc_event.height,
+                                    event: init,
+                                },
                             ),
-                        )),
-                    },
-                ]
-                .into(),
-            )]
+                        ),
+                    )),
+                },
+            ])]
             .into(),
-            IbcEvent::ConnectionOpenTry(try_) => [RelayerMsg::Sequence(
-                [
-                    RelayerMsg::Lc(AnyLcMsg::from(LcMsg::<L>::Wait(Identified {
-                        chain_id: l.chain().chain_id(),
-                        data: Wait::Block(WaitForBlock(ibc_event.height.increment())),
-                    }))),
-                    RelayerMsg::Aggregate {
-                        data: [].into(),
-                        queue: [mk_aggregate_update(
-                            l.chain().chain_id(),
-                            try_.client_id.clone(),
-                            try_.counterparty_client_id.clone(),
-                            ibc_event.height,
-                        )]
-                        .into(),
-                        receiver: AggregateReceiver::from(Identified::new(
-                            l.chain().chain_id(),
-                            Aggregate::AggregateMsgAfterUpdate(
-                                AggregateMsgAfterUpdate::ConnectionOpenAck(
-                                    AggregateConnectionOpenAck {
-                                        event_height: ibc_event.height,
-                                        event: try_,
-                                    },
-                                ),
+            IbcEvent::ConnectionOpenTry(try_) => [seq([
+                wait::<L>(
+                    l.chain().chain_id(),
+                    WaitForBlock(ibc_event.height.increment()),
+                ),
+                RelayerMsg::Aggregate {
+                    data: [].into(),
+                    queue: [mk_aggregate_update(
+                        l.chain().chain_id(),
+                        try_.client_id.clone(),
+                        try_.counterparty_client_id.clone(),
+                        ibc_event.height,
+                    )]
+                    .into(),
+                    receiver: AggregateReceiver::from(Identified::new(
+                        l.chain().chain_id(),
+                        Aggregate::AggregateMsgAfterUpdate(
+                            AggregateMsgAfterUpdate::ConnectionOpenAck(
+                                AggregateConnectionOpenAck {
+                                    event_height: ibc_event.height,
+                                    event: try_,
+                                },
                             ),
-                        )),
-                    },
-                ]
-                .into(),
-            )]
+                        ),
+                    )),
+                },
+            ])]
             .into(),
-            IbcEvent::ConnectionOpenAck(ack) => [RelayerMsg::Sequence(
-                [
-                    RelayerMsg::Lc(AnyLcMsg::from(LcMsg::<L>::Wait(Identified {
-                        chain_id: l.chain().chain_id(),
-                        data: Wait::Block(WaitForBlock(ibc_event.height.increment())),
-                    }))),
-                    RelayerMsg::Aggregate {
-                        data: [].into(),
-                        queue: [mk_aggregate_update(
-                            l.chain().chain_id(),
-                            ack.client_id.clone(),
-                            ack.counterparty_client_id.clone(),
-                            ibc_event.height,
-                        )]
-                        .into(),
-                        receiver: AggregateReceiver::from(Identified::new(
-                            l.chain().chain_id(),
-                            Aggregate::AggregateMsgAfterUpdate(
-                                AggregateMsgAfterUpdate::ConnectionOpenConfirm(
-                                    AggregateConnectionOpenConfirm {
-                                        event_height: ibc_event.height,
-                                        event: ack,
-                                    },
-                                ),
+            IbcEvent::ConnectionOpenAck(ack) => [seq([
+                wait::<L>(
+                    l.chain().chain_id(),
+                    WaitForBlock(ibc_event.height.increment()),
+                ),
+                RelayerMsg::Aggregate {
+                    data: [].into(),
+                    queue: [mk_aggregate_update(
+                        l.chain().chain_id(),
+                        ack.client_id.clone(),
+                        ack.counterparty_client_id.clone(),
+                        ibc_event.height,
+                    )]
+                    .into(),
+                    receiver: AggregateReceiver::from(Identified::new(
+                        l.chain().chain_id(),
+                        Aggregate::AggregateMsgAfterUpdate(
+                            AggregateMsgAfterUpdate::ConnectionOpenConfirm(
+                                AggregateConnectionOpenConfirm {
+                                    event_height: ibc_event.height,
+                                    event: ack,
+                                },
                             ),
-                        )),
-                    },
-                ]
-                .into(),
-            )]
+                        ),
+                    )),
+                },
+            ])]
             .into(),
             IbcEvent::ConnectionOpenConfirm(confirm) => {
                 println!("connection opened: {confirm:#?}");
@@ -1371,143 +1364,128 @@ where
                 vec![]
             }
 
-            IbcEvent::ChannelOpenInit(init) => [RelayerMsg::Sequence(
-                [
-                    RelayerMsg::Lc(AnyLcMsg::from(LcMsg::<L>::Wait(Identified {
-                        chain_id: l.chain().chain_id(),
-                        data: Wait::Block(WaitForBlock(ibc_event.height.increment())),
-                    }))),
-                    RelayerMsg::Aggregate {
+            IbcEvent::ChannelOpenInit(init) => [seq([
+                wait::<L>(
+                    l.chain().chain_id(),
+                    WaitForBlock(ibc_event.height.increment()),
+                ),
+                RelayerMsg::Aggregate {
+                    data: [].into(),
+                    queue: [RelayerMsg::Aggregate {
                         data: [].into(),
-                        queue: [RelayerMsg::Aggregate {
-                            data: [].into(),
-                            queue: [RelayerMsg::Lc(AnyLcMsg::from(LcMsg::Fetch(
-                                Identified::new(
-                                    l.chain().chain_id(),
-                                    Fetch::ChannelEnd(FetchChannelEnd {
-                                        at: ibc_event.height.increment(),
-                                        port_id: init.port_id.clone(),
-                                        channel_id: init.channel_id.clone(),
-                                    }),
-                                ),
-                            )))]
-                            .into(),
-                            receiver: AggregateReceiver::from(Identified::new(
-                                l.chain().chain_id(),
-                                Aggregate::ConnectionFetchFromChannelEnd(
-                                    AggregateConnectionFetchFromChannelEnd {
-                                        at: ibc_event.height.increment(),
-                                    },
-                                ),
-                            )),
-                        }]
+                        queue: [fetch(
+                            l.chain().chain_id(),
+                            FetchChannelEnd {
+                                at: ibc_event.height.increment(),
+                                port_id: init.port_id.clone(),
+                                channel_id: init.channel_id.clone(),
+                            },
+                        )]
                         .into(),
                         receiver: AggregateReceiver::from(Identified::new(
                             l.chain().chain_id(),
-                            Aggregate::ChannelHandshakeUpdateClient(
-                                AggregateChannelHandshakeUpdateClient {
-                                    update_to: ibc_event.height.increment(),
-                                    event_height: ibc_event.height,
-                                    channel_handshake_event: ChannelHandshakeEvent::Init(init),
+                            Aggregate::ConnectionFetchFromChannelEnd(
+                                AggregateConnectionFetchFromChannelEnd {
+                                    at: ibc_event.height.increment(),
                                 },
                             ),
                         )),
-                    },
-                ]
-                .into(),
-            )]
+                    }]
+                    .into(),
+                    receiver: AggregateReceiver::from(Identified::new(
+                        l.chain().chain_id(),
+                        Aggregate::ChannelHandshakeUpdateClient(
+                            AggregateChannelHandshakeUpdateClient {
+                                update_to: ibc_event.height.increment(),
+                                event_height: ibc_event.height,
+                                channel_handshake_event: ChannelHandshakeEvent::Init(init),
+                            },
+                        ),
+                    )),
+                },
+            ])]
             .into(),
-            IbcEvent::ChannelOpenTry(try_) => [RelayerMsg::Sequence(
-                [
-                    RelayerMsg::Lc(AnyLcMsg::from(LcMsg::<L>::Wait(Identified {
-                        chain_id: l.chain().chain_id(),
-                        data: Wait::Block(WaitForBlock(ibc_event.height.increment())),
-                    }))),
-                    RelayerMsg::Aggregate {
+            IbcEvent::ChannelOpenTry(try_) => [seq([
+                wait::<L>(
+                    l.chain().chain_id(),
+                    WaitForBlock(ibc_event.height.increment()),
+                ),
+                RelayerMsg::Aggregate {
+                    data: [].into(),
+                    queue: [RelayerMsg::Aggregate {
                         data: [].into(),
-                        queue: [RelayerMsg::Aggregate {
-                            data: [].into(),
-                            queue: [RelayerMsg::Lc(AnyLcMsg::from(LcMsg::Fetch(
-                                Identified::new(
-                                    l.chain().chain_id(),
-                                    Fetch::ChannelEnd(FetchChannelEnd {
-                                        at: ibc_event.height.increment(),
-                                        port_id: try_.port_id.clone(),
-                                        channel_id: try_.channel_id.clone(),
-                                    }),
-                                ),
-                            )))]
-                            .into(),
-                            receiver: AggregateReceiver::from(Identified::new(
-                                l.chain().chain_id(),
-                                Aggregate::ConnectionFetchFromChannelEnd(
-                                    AggregateConnectionFetchFromChannelEnd {
-                                        at: ibc_event.height.increment(),
-                                    },
-                                ),
-                            )),
-                        }]
+                        queue: [fetch(
+                            l.chain().chain_id(),
+                            FetchChannelEnd {
+                                at: ibc_event.height.increment(),
+                                port_id: try_.port_id.clone(),
+                                channel_id: try_.channel_id.clone(),
+                            },
+                        )]
                         .into(),
                         receiver: AggregateReceiver::from(Identified::new(
                             l.chain().chain_id(),
-                            Aggregate::ChannelHandshakeUpdateClient(
-                                AggregateChannelHandshakeUpdateClient {
-                                    update_to: ibc_event.height.increment(),
-                                    event_height: ibc_event.height,
-                                    channel_handshake_event: ChannelHandshakeEvent::Try(try_),
+                            Aggregate::ConnectionFetchFromChannelEnd(
+                                AggregateConnectionFetchFromChannelEnd {
+                                    at: ibc_event.height.increment(),
                                 },
                             ),
                         )),
-                    },
-                ]
-                .into(),
-            )]
+                    }]
+                    .into(),
+                    receiver: AggregateReceiver::from(Identified::new(
+                        l.chain().chain_id(),
+                        Aggregate::ChannelHandshakeUpdateClient(
+                            AggregateChannelHandshakeUpdateClient {
+                                update_to: ibc_event.height.increment(),
+                                event_height: ibc_event.height,
+                                channel_handshake_event: ChannelHandshakeEvent::Try(try_),
+                            },
+                        ),
+                    )),
+                },
+            ])]
             .into(),
-            IbcEvent::ChannelOpenAck(ack) => [RelayerMsg::Sequence(
-                [
-                    RelayerMsg::Lc(AnyLcMsg::from(LcMsg::<L>::Wait(Identified {
-                        chain_id: l.chain().chain_id(),
-                        data: Wait::Block(WaitForBlock(ibc_event.height.increment())),
-                    }))),
-                    RelayerMsg::Aggregate {
+            IbcEvent::ChannelOpenAck(ack) => [seq([
+                wait::<L>(
+                    l.chain().chain_id(),
+                    WaitForBlock(ibc_event.height.increment()),
+                ),
+                RelayerMsg::Aggregate {
+                    data: [].into(),
+                    queue: [RelayerMsg::Aggregate {
                         data: [].into(),
-                        queue: [RelayerMsg::Aggregate {
-                            data: [].into(),
-                            queue: [RelayerMsg::Lc(AnyLcMsg::from(LcMsg::Fetch(
-                                Identified::new(
-                                    l.chain().chain_id(),
-                                    Fetch::ChannelEnd(FetchChannelEnd {
-                                        at: ibc_event.height.increment(),
-                                        port_id: ack.port_id.clone(),
-                                        channel_id: ack.channel_id.clone(),
-                                    }),
-                                ),
-                            )))]
-                            .into(),
-                            receiver: AggregateReceiver::from(Identified::new(
-                                l.chain().chain_id(),
-                                Aggregate::ConnectionFetchFromChannelEnd(
-                                    AggregateConnectionFetchFromChannelEnd {
-                                        at: ibc_event.height.increment(),
-                                    },
-                                ),
-                            )),
-                        }]
+                        queue: [fetch(
+                            l.chain().chain_id(),
+                            FetchChannelEnd {
+                                at: ibc_event.height.increment(),
+                                port_id: ack.port_id.clone(),
+                                channel_id: ack.channel_id.clone(),
+                            },
+                        )]
                         .into(),
                         receiver: AggregateReceiver::from(Identified::new(
                             l.chain().chain_id(),
-                            Aggregate::ChannelHandshakeUpdateClient(
-                                AggregateChannelHandshakeUpdateClient {
-                                    update_to: ibc_event.height.increment(),
-                                    event_height: ibc_event.height,
-                                    channel_handshake_event: ChannelHandshakeEvent::Ack(ack),
+                            Aggregate::ConnectionFetchFromChannelEnd(
+                                AggregateConnectionFetchFromChannelEnd {
+                                    at: ibc_event.height.increment(),
                                 },
                             ),
                         )),
-                    },
-                ]
-                .into(),
-            )]
+                    }]
+                    .into(),
+                    receiver: AggregateReceiver::from(Identified::new(
+                        l.chain().chain_id(),
+                        Aggregate::ChannelHandshakeUpdateClient(
+                            AggregateChannelHandshakeUpdateClient {
+                                update_to: ibc_event.height.increment(),
+                                event_height: ibc_event.height,
+                                channel_handshake_event: ChannelHandshakeEvent::Ack(ack),
+                            },
+                        ),
+                    )),
+                },
+            ])]
             .into(),
 
             IbcEvent::ChannelOpenConfirm(confirm) => {
@@ -1516,69 +1494,59 @@ where
                 vec![]
             }
 
-            IbcEvent::RecvPacket(packet) => [RelayerMsg::Sequence(
-                [
-                    RelayerMsg::Lc(AnyLcMsg::from(LcMsg::<L>::Wait(Identified {
-                        chain_id: l.chain().chain_id(),
-                        data: Wait::Block(WaitForBlock(ibc_event.height.increment())),
-                    }))),
-                    RelayerMsg::Aggregate {
-                        data: [].into(),
-                        queue: [RelayerMsg::Lc(AnyLcMsg::from(LcMsg::Fetch(
-                            Identified::new(
-                                l.chain().chain_id(),
-                                Fetch::ConnectionEnd(FetchConnectionEnd {
-                                    at: ibc_event.height,
-                                    connection_id: packet.connection_id.clone(),
-                                }),
-                            ),
-                        )))]
-                        .into(),
-                        receiver: AggregateReceiver::from(Identified::new(
-                            l.chain().chain_id(),
-                            Aggregate::PacketUpdateClient(AggregatePacketUpdateClient {
-                                update_to: ibc_event.height.increment(),
-                                event_height: ibc_event.height,
-                                block_hash: ibc_event.block_hash,
-                                packet_event: PacketEvent::Recv(packet),
-                            }),
-                        )),
-                    },
-                ]
-                .into(),
-            )]
+            IbcEvent::RecvPacket(packet) => [seq([
+                wait::<L>(
+                    l.chain().chain_id(),
+                    WaitForBlock(ibc_event.height.increment()),
+                ),
+                RelayerMsg::Aggregate {
+                    data: [].into(),
+                    queue: [fetch(
+                        l.chain().chain_id(),
+                        FetchConnectionEnd {
+                            at: ibc_event.height,
+                            connection_id: packet.connection_id.clone(),
+                        },
+                    )]
+                    .into(),
+                    receiver: AggregateReceiver::from(Identified::new(
+                        l.chain().chain_id(),
+                        Aggregate::PacketUpdateClient(AggregatePacketUpdateClient {
+                            update_to: ibc_event.height.increment(),
+                            event_height: ibc_event.height,
+                            block_hash: ibc_event.block_hash,
+                            packet_event: PacketEvent::Recv(packet),
+                        }),
+                    )),
+                },
+            ])]
             .into(),
-            IbcEvent::SendPacket(packet) => [RelayerMsg::Sequence(
-                [
-                    RelayerMsg::Lc(AnyLcMsg::from(LcMsg::<L>::Wait(Identified {
-                        chain_id: l.chain().chain_id(),
-                        data: Wait::Block(WaitForBlock(ibc_event.height.increment())),
-                    }))),
-                    RelayerMsg::Aggregate {
-                        data: [].into(),
-                        queue: [RelayerMsg::Lc(AnyLcMsg::from(LcMsg::Fetch(
-                            Identified::new(
-                                l.chain().chain_id(),
-                                Fetch::ConnectionEnd(FetchConnectionEnd {
-                                    at: ibc_event.height,
-                                    connection_id: packet.connection_id.clone(),
-                                }),
-                            ),
-                        )))]
-                        .into(),
-                        receiver: AggregateReceiver::from(Identified::new(
-                            l.chain().chain_id(),
-                            Aggregate::PacketUpdateClient(AggregatePacketUpdateClient {
-                                update_to: ibc_event.height.increment(),
-                                event_height: ibc_event.height,
-                                block_hash: ibc_event.block_hash,
-                                packet_event: PacketEvent::Send(packet),
-                            }),
-                        )),
-                    },
-                ]
-                .into(),
-            )]
+            IbcEvent::SendPacket(packet) => [seq([
+                wait::<L>(
+                    l.chain().chain_id(),
+                    WaitForBlock(ibc_event.height.increment()),
+                ),
+                RelayerMsg::Aggregate {
+                    data: [].into(),
+                    queue: [fetch(
+                        l.chain().chain_id(),
+                        FetchConnectionEnd {
+                            at: ibc_event.height,
+                            connection_id: packet.connection_id.clone(),
+                        },
+                    )]
+                    .into(),
+                    receiver: AggregateReceiver::from(Identified::new(
+                        l.chain().chain_id(),
+                        Aggregate::PacketUpdateClient(AggregatePacketUpdateClient {
+                            update_to: ibc_event.height.increment(),
+                            event_height: ibc_event.height,
+                            block_hash: ibc_event.block_hash,
+                            packet_event: PacketEvent::Send(packet),
+                        }),
+                    )),
+                },
+            ])]
             .into(),
             IbcEvent::AcknowledgePacket(ack) => {
                 tracing::info!(?ack, "packet acknowledged");
@@ -1598,15 +1566,13 @@ where
                 client_id,
                 counterparty_client_id,
             } => [RelayerMsg::Aggregate {
-                queue: [RelayerMsg::Lc(AnyLcMsg::from(LcMsg::<L>::Fetch(
-                    Identified::new(
-                        l.chain().chain_id(),
-                        Fetch::TrustedClientState(FetchTrustedClientState {
-                            at: QueryHeight::Latest,
-                            client_id: client_id.clone(),
-                        }),
-                    ),
-                )))]
+                queue: [fetch::<L>(
+                    l.chain().chain_id(),
+                    FetchTrustedClientState {
+                        at: QueryHeight::Latest,
+                        client_id: client_id.clone(),
+                    },
+                )]
                 .into(),
                 data: [].into(),
                 receiver: AggregateReceiver::from(Identified::new(
@@ -1657,15 +1623,13 @@ where
     AggregateReceiver: From<identified!(Aggregate<L>)>,
 {
     RelayerMsg::Aggregate {
-        queue: [RelayerMsg::Lc(AnyLcMsg::from(LcMsg::<L>::Fetch(
-            Identified::new(
-                chain_id.clone(),
-                Fetch::TrustedClientState(FetchTrustedClientState {
-                    at: QueryHeight::Latest,
-                    client_id: client_id.clone(),
-                }),
-            ),
-        )))]
+        queue: [fetch::<L>(
+            chain_id.clone(),
+            FetchTrustedClientState {
+                at: QueryHeight::Latest,
+                client_id: client_id.clone(),
+            },
+        )]
         .into(),
         data: [].into(),
         receiver: AggregateReceiver::from(Identified::new(
@@ -1699,43 +1663,39 @@ where
                 QueryHeight::Specific(h) => h,
             };
 
-            [RelayerMsg::Lc(AnyLcMsg::from(LcMsg::Data(
-                Identified::new(
-                    l.chain().chain_id(),
-                    Data::TrustedClientState(TrustedClientState {
-                        fetched_at: height,
-                        client_id: client_id.clone(),
-                        trusted_client_state: l.query_client_state(client_id.into(), height).await,
-                    }),
-                ),
-            )))]
+            [data(
+                l.chain().chain_id(),
+                TrustedClientState {
+                    fetched_at: height,
+                    client_id: client_id.clone(),
+                    trusted_client_state: l.query_client_state(client_id.into(), height).await,
+                },
+            )]
             .into()
         }
-        Fetch::StateProof(FetchStateProof { at, path }) => [RelayerMsg::Lc(AnyLcMsg::from(
-            LcMsg::Data(Identified::new(
-                l.chain().chain_id(),
-                match path {
-                    proof::Path::ClientStatePath(path) => Data::ClientStateProof(ClientStateProof(
-                        l.chain().state_proof(path, at).await,
-                    )),
-                    proof::Path::ClientConsensusStatePath(path) => Data::ClientConsensusStateProof(
-                        ClientConsensusStateProof(l.chain().state_proof(path, at).await),
-                    ),
-                    proof::Path::ConnectionPath(path) => Data::ConnectionProof(ConnectionProof(
-                        l.chain().state_proof(path, at).await,
-                    )),
-                    proof::Path::ChannelEndPath(path) => Data::ChannelEndProof(ChannelEndProof(
-                        l.chain().state_proof(path, at).await,
-                    )),
-                    proof::Path::CommitmentPath(path) => Data::CommitmentProof(CommitmentProof(
-                        l.chain().state_proof(path, at).await,
-                    )),
-                    proof::Path::AcknowledgementPath(path) => Data::AcknowledgementProof(
-                        AcknowledgementProof(l.chain().state_proof(path, at).await),
-                    ),
-                },
-            )),
-        ))]
+        Fetch::StateProof(FetchStateProof { at, path }) => [data(
+            l.chain().chain_id(),
+            match path {
+                proof::Path::ClientStatePath(path) => {
+                    Data::ClientStateProof(ClientStateProof(l.chain().state_proof(path, at).await))
+                }
+                proof::Path::ClientConsensusStatePath(path) => Data::ClientConsensusStateProof(
+                    ClientConsensusStateProof(l.chain().state_proof(path, at).await),
+                ),
+                proof::Path::ConnectionPath(path) => {
+                    Data::ConnectionProof(ConnectionProof(l.chain().state_proof(path, at).await))
+                }
+                proof::Path::ChannelEndPath(path) => {
+                    Data::ChannelEndProof(ChannelEndProof(l.chain().state_proof(path, at).await))
+                }
+                proof::Path::CommitmentPath(path) => {
+                    Data::CommitmentProof(CommitmentProof(l.chain().state_proof(path, at).await))
+                }
+                proof::Path::AcknowledgementPath(path) => Data::AcknowledgementProof(
+                    AcknowledgementProof(l.chain().state_proof(path, at).await),
+                ),
+            },
+        )]
         .into(),
         Fetch::SelfClientState(FetchSelfClientState { at: height }) => {
             // TODO: Split this into a separate query and aggregate
@@ -1744,14 +1704,10 @@ where
                 QueryHeight::Specific(h) => h,
             };
 
-            [RelayerMsg::Lc(AnyLcMsg::from(LcMsg::Data(
-                Identified::new(
-                    l.chain().chain_id(),
-                    Data::SelfClientState(SelfClientState(
-                        l.chain().self_client_state(height).await,
-                    )),
-                ),
-            )))]
+            [data(
+                l.chain().chain_id(),
+                SelfClientState(l.chain().self_client_state(height).await),
+            )]
             .into()
         }
         Fetch::SelfConsensusState(FetchSelfConsensusState { at: height }) => {
@@ -1761,14 +1717,10 @@ where
                 QueryHeight::Specific(h) => h,
             };
 
-            [RelayerMsg::Lc(AnyLcMsg::from(LcMsg::Data(
-                Identified::new(
-                    l.chain().chain_id(),
-                    Data::SelfConsensusState(SelfConsensusState(
-                        l.chain().self_consensus_state(height).await,
-                    )),
-                ),
-            )))]
+            [data(
+                l.chain().chain_id(),
+                SelfConsensusState(l.chain().self_consensus_state(height).await),
+            )]
             .into()
         }
         Fetch::PacketAcknowledgement(FetchPacketAcknowledgement {
@@ -1788,21 +1740,19 @@ where
                 )
                 .await;
 
-            [RelayerMsg::Lc(AnyLcMsg::from(LcMsg::Data(
-                Identified::new(
-                    l.chain().chain_id(),
-                    Data::PacketAcknowledgement(PacketAcknowledgement {
-                        fetched_by: FetchPacketAcknowledgement {
-                            block_hash,
-                            destination_port_id,
-                            destination_channel_id,
-                            sequence,
-                            __marker,
-                        },
-                        ack,
-                    }),
-                ),
-            )))]
+            [data(
+                l.chain().chain_id(),
+                PacketAcknowledgement {
+                    fetched_by: FetchPacketAcknowledgement {
+                        block_hash,
+                        destination_port_id,
+                        destination_channel_id,
+                        sequence,
+                        __marker,
+                    },
+                    ack,
+                },
+            )]
             .into()
         }
         Fetch::UpdateHeaders(fetch_update_headers) => {
@@ -1813,38 +1763,35 @@ where
             at,
             port_id,
             channel_id,
-        }) => [RelayerMsg::Lc(AnyLcMsg::from(LcMsg::Data(
-            Identified::new(
-                l.chain().chain_id(),
-                Data::ChannelEnd(ChannelEnd {
-                    channel: l
-                        .chain()
-                        .state_proof(
-                            proof::ChannelEndPath {
-                                port_id,
-                                channel_id,
-                            },
-                            at,
-                        )
-                        .map(|channel_end_proof| channel_end_proof.state)
-                        .await,
-                    __marker: PhantomData,
-                }),
-            ),
-        )))]
+        }) => [data(
+            l.chain().chain_id(),
+            ChannelEnd {
+                channel: l
+                    .chain()
+                    .state_proof(
+                        proof::ChannelEndPath {
+                            port_id,
+                            channel_id,
+                        },
+                        at,
+                    )
+                    .map(|channel_end_proof| channel_end_proof.state)
+                    .await,
+                __marker: PhantomData,
+            },
+        )]
         .into(),
         Fetch::ConnectionEnd(FetchConnectionEnd { at, connection_id }) => {
-            [RelayerMsg::Lc(AnyLcMsg::from(LcMsg::Data(
-                Identified::new(
-                    l.chain().chain_id(),
-                    Data::ConnectionEnd(ConnectionEnd(
-                        l.chain()
-                            .state_proof(proof::ConnectionPath { connection_id }, at)
-                            .map(|connection_end_proof| {
-                                unionlabs::ibc::core::connection::connection_end::ConnectionEnd::<
+            [data(
+                l.chain().chain_id(),
+                ConnectionEnd(
+                    l.chain()
+                        .state_proof(proof::ConnectionPath { connection_id }, at)
+                        .map(|connection_end_proof| {
+                            unionlabs::ibc::core::connection::connection_end::ConnectionEnd::<
                                 L::ClientId,
                                 <L::Counterparty as LightClient>::ClientId,
-                                // NOTE: String used here since it may be empty; figure out a way to more strongly type this
+                                // NOTE: String used here since it may be empty; figure out a way to more strongly type this?
                                 String,
                             > {
                                 client_id: connection_end_proof.state.client_id.try_into().expect(
@@ -1854,10 +1801,11 @@ where
                                 state: connection_end_proof.state.state,
                                 counterparty:
                                     unionlabs::ibc::core::connection::counterparty::Counterparty {
-                                        client_id: <<L::Counterparty as LightClient>::ClientId>::try_from(connection_end_proof
-                                            .state
-                                            .counterparty
-                                            .client_id).unwrap(),
+                                        client_id:
+                                            <<L::Counterparty as LightClient>::ClientId>::try_from(
+                                                connection_end_proof.state.counterparty.client_id,
+                                            )
+                                            .unwrap(),
                                         connection_id: connection_end_proof
                                             .state
                                             .counterparty
@@ -1866,11 +1814,10 @@ where
                                     },
                                 delay_period: connection_end_proof.state.delay_period,
                             }
-                            })
-                            .await,
-                    )),
+                        })
+                        .await,
                 ),
-            )))]
+            )]
             .into()
         }
     };
@@ -1878,44 +1825,30 @@ where
     relayer_msg
 }
 
-async fn handle_wait<L: LightClient>(l: &L, wait: Wait<L>) -> Vec<RelayerMsg>
+async fn handle_wait<L: LightClient>(l: &L, wait_msg: Wait<L>) -> Vec<RelayerMsg>
 where
     AnyLcMsg: From<LcMsg<L>>,
     AnyLcMsg: From<LcMsg<L::Counterparty>>,
 {
-    match wait {
+    match wait_msg {
         Wait::Block(WaitForBlock(height)) => {
             let chain_height = l.chain().query_latest_height().await;
 
             assert_eq!(
-                Into::<Height>::into(chain_height).revision_number,
-                Into::<Height>::into(height).revision_number,
+                chain_height.revision_number(),
+                height.revision_number(),
                 "chain_height: {chain_height}, height: {height}",
                 height = Into::<Height>::into(height)
             );
 
-            if Into::<Height>::into(chain_height).revision_height
-                >= Into::<Height>::into(height).revision_height
-            {
+            if chain_height.revision_height() >= height.revision_height() {
                 [].into()
             } else {
-                [RelayerMsg::Sequence(
-                    [
-                        RelayerMsg::DeferUntil {
-                            timestamp: SystemTime::now()
-                                .duration_since(UNIX_EPOCH)
-                                .unwrap()
-                                // REVIEW: Defer until `now + chain.block_time()`? Would require a new method on chain
-                                .add(Duration::from_secs(1))
-                                .as_secs(),
-                        },
-                        RelayerMsg::Lc(AnyLcMsg::from(LcMsg::<L>::Wait(Identified {
-                            chain_id: l.chain().chain_id(),
-                            data: Wait::Block(WaitForBlock(height)),
-                        }))),
-                    ]
-                    .into(),
-                )]
+                [seq([
+                    // REVIEW: Defer until `now + chain.block_time()`? Would require a new method on chain
+                    defer(now() + 1),
+                    wait::<L>(l.chain().chain_id(), WaitForBlock(height)),
+                ])]
                 .into()
             }
         }
@@ -1928,26 +1861,17 @@ where
             if chain_ts >= timestamp {
                 [].into()
             } else {
-                [RelayerMsg::Sequence(
-                    [
-                        RelayerMsg::DeferUntil {
-                            timestamp: SystemTime::now()
-                                .duration_since(UNIX_EPOCH)
-                                .unwrap()
-                                // REVIEW: Defer until `now + chain.block_time()`? Would require a new method on chain
-                                .add(Duration::from_secs(1))
-                                .as_secs(),
+                [seq([
+                    // REVIEW: Defer until `now + chain.block_time()`? Would require a new method on chain
+                    defer(now() + 1),
+                    wait::<L>(
+                        l.chain().chain_id(),
+                        WaitForTimestamp {
+                            timestamp,
+                            __marker,
                         },
-                        RelayerMsg::Lc(AnyLcMsg::from(LcMsg::<L>::Wait(Identified {
-                            chain_id: l.chain().chain_id(),
-                            data: Wait::Timestamp(WaitForTimestamp {
-                                timestamp,
-                                __marker,
-                            }),
-                        }))),
-                    ]
-                    .into(),
-                )]
+                    ),
+                ])]
                 .into()
             }
         }
@@ -1969,39 +1893,28 @@ where
                     height
                 );
 
-                [RelayerMsg::Lc(AnyLcMsg::from(
-                    LcMsg::<L::Counterparty>::Fetch(Identified::new(
-                        counterparty_chain_id,
-                        Fetch::TrustedClientState(FetchTrustedClientState {
-                            at: QueryHeight::Specific(trusted_client_state.height()),
-                            client_id: counterparty_client_id.clone(),
-                        }),
-                    )),
-                ))]
+                [fetch::<L::Counterparty>(
+                    counterparty_chain_id,
+                    FetchTrustedClientState {
+                        at: QueryHeight::Specific(trusted_client_state.height()),
+                        client_id: counterparty_client_id.clone(),
+                    },
+                )]
                 .into()
             } else {
-                [RelayerMsg::Sequence(
-                    [
-                        RelayerMsg::DeferUntil {
-                            timestamp: SystemTime::now()
-                                .duration_since(UNIX_EPOCH)
-                                .unwrap()
-                                // REVIEW: Defer until `now + chain.block_time()`? Would require a new method on chain
-                                .add(Duration::from_secs(1))
-                                .as_secs(),
-                        },
-                        RelayerMsg::Lc(AnyLcMsg::from(LcMsg::<L>::Wait(Identified {
-                            chain_id: l.chain().chain_id(),
-                            data: Wait::TrustedHeight(WaitForTrustedHeight {
-                                client_id,
-                                height,
-                                counterparty_client_id,
-                                counterparty_chain_id,
-                            }),
-                        }))),
-                    ]
-                    .into(),
-                )]
+                [seq([
+                    // REVIEW: Defer until `now + counterparty_chain.block_time()`? Would require a new method on chain
+                    defer(now() + 1),
+                    wait::<L>(
+                        l.chain().chain_id(),
+                        Wait::TrustedHeight(WaitForTrustedHeight {
+                            client_id,
+                            height,
+                            counterparty_client_id,
+                            counterparty_chain_id,
+                        }),
+                    ),
+                ])]
                 .into()
             }
         }
@@ -2338,15 +2251,13 @@ where
         RelayerMsg::Aggregate {
             data: [].into(),
             queue: [RelayerMsg::Aggregate {
-                queue: [RelayerMsg::Lc(AnyLcMsg::from(LcMsg::<L>::Fetch(
-                    Identified::new(
-                        this_chain_id.clone().clone(),
-                        Fetch::TrustedClientState(FetchTrustedClientState {
-                            at: QueryHeight::Latest,
-                            client_id: connection.client_id.clone().clone(),
-                        }),
-                    ),
-                )))]
+                queue: [fetch::<L>(
+                    this_chain_id.clone().clone(),
+                    FetchTrustedClientState {
+                        at: QueryHeight::Latest,
+                        client_id: connection.client_id.clone().clone(),
+                    },
+                )]
                 .into(),
                 data: [].into(),
                 receiver: AggregateReceiver::from(Identified::new(
@@ -2386,13 +2297,13 @@ where
     ) -> RelayerMsg {
         assert_eq!(this_chain_id, self_chain_id);
 
-        RelayerMsg::Lc(AnyLcMsg::from(LcMsg::Fetch(Identified::new(
+        fetch(
             this_chain_id,
-            Fetch::ConnectionEnd(FetchConnectionEnd {
+            FetchConnectionEnd {
                 at,
                 connection_id: channel.connection_hops[0].clone(),
-            }),
-        ))))
+            },
+        )
     }
 }
 
@@ -2430,15 +2341,13 @@ where
         let counterparty_chain_id = trusted_client_state.chain_id();
 
         RelayerMsg::Aggregate {
-            queue: [RelayerMsg::Lc(AnyLcMsg::from(
-                LcMsg::<L::Counterparty>::Fetch(Identified {
-                    chain_id: counterparty_chain_id.clone(),
-                    data: Fetch::TrustedClientState(FetchTrustedClientState {
-                        at: QueryHeight::Specific(trusted_client_state.height()),
-                        client_id: counterparty_client_id.clone(),
-                    }),
-                }),
-            ))]
+            queue: [fetch::<L::Counterparty>(
+                counterparty_chain_id.clone(),
+                FetchTrustedClientState {
+                    at: QueryHeight::Specific(trusted_client_state.height()),
+                    client_id: counterparty_client_id.clone(),
+                },
+            )]
             .into(),
             data: [].into(),
             receiver: AggregateReceiver::from(Identified::new(
@@ -2491,15 +2400,13 @@ where
         let counterparty_chain_id: ChainIdOf<L::Counterparty> = trusted_client_state.chain_id();
 
         RelayerMsg::Aggregate {
-            queue: [RelayerMsg::Lc(AnyLcMsg::from(
-                LcMsg::<L::Counterparty>::Fetch(Identified {
-                    chain_id: counterparty_chain_id.clone(),
-                    data: Fetch::TrustedClientState(FetchTrustedClientState {
-                        at: QueryHeight::Latest,
-                        client_id: update_counterparty_client_id.clone(),
-                    }),
-                }),
-            ))]
+            queue: [fetch::<L::Counterparty>(
+                counterparty_chain_id.clone(),
+                FetchTrustedClientState {
+                    at: QueryHeight::Latest,
+                    client_id: update_counterparty_client_id.clone(),
+                },
+            )]
             .into(),
             data: [].into(),
             receiver: AggregateReceiver::from(Identified::new(
@@ -2556,16 +2463,16 @@ where
         );
         assert_eq!(counterparty_chain_id, update_counterparty_chain_id);
 
-        RelayerMsg::Lc(AnyLcMsg::from(LcMsg::<L>::Fetch(Identified {
-            chain_id: this_chain_id,
-            data: Fetch::UpdateHeaders(FetchUpdateHeaders {
+        fetch::<L>(
+            this_chain_id,
+            FetchUpdateHeaders {
                 client_id: update_client_id,
                 counterparty_client_id: update_counterparty_client_id,
                 counterparty_chain_id,
                 update_from: trusted_client_state.height(),
                 update_to,
-            }),
-        })))
+            },
+        )
     }
 }
 
@@ -2604,15 +2511,15 @@ where
 
         tracing::debug!("building WaitForTrustedHeight");
 
-        RelayerMsg::Lc(AnyLcMsg::from(LcMsg::<L::Counterparty>::Wait(Identified {
-            chain_id: counterparty_chain_id,
-            data: Wait::TrustedHeight(WaitForTrustedHeight {
+        wait::<L::Counterparty>(
+            counterparty_chain_id,
+            WaitForTrustedHeight {
                 height: wait_for,
                 client_id: counterparty_client_id,
                 counterparty_client_id: client_id,
                 counterparty_chain_id: this_chain_id,
-            }),
-        })))
+            },
+        )
     }
 }
 
@@ -2643,16 +2550,16 @@ where
         assert_eq!(this_chain_id, self_chain_id);
         assert_eq!(client_id, latest_trusted_client_state_client_id);
 
-        RelayerMsg::Lc(AnyLcMsg::from(LcMsg::Fetch(Identified {
-            chain_id: this_chain_id,
-            data: Fetch::<L>::StateProof(FetchStateProof {
+        fetch::<L>(
+            this_chain_id,
+            FetchStateProof {
                 at,
                 path: proof::Path::ClientConsensusStatePath(ClientConsensusStatePath {
                     client_id: client_id.into(),
                     height: trusted_client_state.height(),
                 }),
-            }),
-        })))
+            },
+        )
     }
 }
 
@@ -2717,18 +2624,18 @@ where
                     ))]
                     .into(),
                     queue: [
-                        RelayerMsg::Lc(AnyLcMsg::from(LcMsg::<L>::Fetch(Identified {
-                            chain_id: this_chain_id.clone(),
-                            data: Fetch::StateProof(FetchStateProof {
+                        fetch::<L>(
+                            this_chain_id.clone(),
+                            FetchStateProof {
                                 at: trusted_client_state_fetched_at_height,
                                 path: proof::Path::ClientStatePath(ClientStatePath {
                                     client_id: event.client_id.clone().into(),
                                 }),
-                            }),
-                        }))),
-                        RelayerMsg::Lc(AnyLcMsg::from(LcMsg::<L>::Fetch(Identified {
-                            chain_id: this_chain_id.clone(),
-                            data: Fetch::StateProof(FetchStateProof {
+                            },
+                        ),
+                        fetch::<L>(
+                            this_chain_id.clone(),
+                            FetchStateProof {
                                 at: trusted_client_state_fetched_at_height,
                                 path: proof::Path::ClientConsensusStatePath(
                                     ClientConsensusStatePath {
@@ -2736,17 +2643,17 @@ where
                                         height: trusted_client_state_height,
                                     },
                                 ),
-                            }),
-                        }))),
-                        RelayerMsg::Lc(AnyLcMsg::from(LcMsg::<L>::Fetch(Identified {
-                            chain_id: this_chain_id.clone(),
-                            data: Fetch::StateProof(FetchStateProof {
+                            },
+                        ),
+                        fetch::<L>(
+                            this_chain_id.clone(),
+                            FetchStateProof {
                                 at: trusted_client_state_fetched_at_height,
                                 path: proof::Path::ConnectionPath(ConnectionPath {
                                     connection_id: event.connection_id.clone(),
                                 }),
-                            }),
-                        }))),
+                            },
+                        ),
                     ]
                     .into(),
                     receiver: AggregateReceiver::from(Identified::new(
@@ -2790,18 +2697,18 @@ where
                     ))]
                     .into(),
                     queue: [
-                        RelayerMsg::Lc(AnyLcMsg::from(LcMsg::<L>::Fetch(Identified {
-                            chain_id: this_chain_id.clone(),
-                            data: Fetch::StateProof(FetchStateProof {
+                        fetch::<L>(
+                            this_chain_id.clone(),
+                            FetchStateProof {
                                 at: trusted_client_state_fetched_at_height,
                                 path: proof::Path::ClientStatePath(ClientStatePath {
                                     client_id: event.client_id.clone().into(),
                                 }),
-                            }),
-                        }))),
-                        RelayerMsg::Lc(AnyLcMsg::from(LcMsg::<L>::Fetch(Identified {
-                            chain_id: this_chain_id.clone(),
-                            data: Fetch::StateProof(FetchStateProof {
+                            },
+                        ),
+                        fetch::<L>(
+                            this_chain_id.clone(),
+                            FetchStateProof {
                                 at: trusted_client_state_fetched_at_height,
                                 path: proof::Path::ClientConsensusStatePath(
                                     ClientConsensusStatePath {
@@ -2809,17 +2716,17 @@ where
                                         height: trusted_client_state_height,
                                     },
                                 ),
-                            }),
-                        }))),
-                        RelayerMsg::Lc(AnyLcMsg::from(LcMsg::<L>::Fetch(Identified {
-                            chain_id: this_chain_id.clone(),
-                            data: Fetch::StateProof(FetchStateProof {
+                            },
+                        ),
+                        fetch::<L>(
+                            this_chain_id.clone(),
+                            FetchStateProof {
                                 at: trusted_client_state_fetched_at_height,
                                 path: proof::Path::ConnectionPath(ConnectionPath {
                                     connection_id: event.connection_id.clone(),
                                 }),
-                            }),
-                        }))),
+                            },
+                        ),
                     ]
                     .into(),
                     receiver: AggregateReceiver::from(Identified::new(
@@ -2860,17 +2767,15 @@ where
                         }),
                     ))]
                     .into(),
-                    queue: [RelayerMsg::Lc(AnyLcMsg::from(LcMsg::<L>::Fetch(
-                        Identified {
-                            chain_id: this_chain_id.clone(),
-                            data: Fetch::StateProof(FetchStateProof {
-                                at: trusted_client_state_fetched_at_height,
-                                path: proof::Path::ConnectionPath(ConnectionPath {
-                                    connection_id: event.connection_id.clone(),
-                                }),
+                    queue: [fetch::<L>(
+                        this_chain_id.clone(),
+                        Fetch::StateProof(FetchStateProof {
+                            at: trusted_client_state_fetched_at_height,
+                            path: proof::Path::ConnectionPath(ConnectionPath {
+                                connection_id: event.connection_id.clone(),
                             }),
-                        },
-                    )))]
+                        }),
+                    )]
                     .into(),
                     receiver: AggregateReceiver::from(Identified::new(
                         this_chain_id,
@@ -2913,16 +2818,14 @@ where
                     queue: [
                         RelayerMsg::Aggregate {
                             data: [].into(),
-                            queue: [RelayerMsg::Lc(AnyLcMsg::from(LcMsg::<L>::Fetch(
-                                Identified::new(
-                                    this_chain_id.clone(),
-                                    Fetch::ChannelEnd(FetchChannelEnd {
-                                        at: trusted_client_state_fetched_at_height,
-                                        port_id: event.port_id.clone(),
-                                        channel_id: event.channel_id.clone(),
-                                    }),
-                                ),
-                            )))]
+                            queue: [fetch::<L>(
+                                this_chain_id.clone(),
+                                FetchChannelEnd {
+                                    at: trusted_client_state_fetched_at_height,
+                                    port_id: event.port_id.clone(),
+                                    channel_id: event.channel_id.clone(),
+                                },
+                            )]
                             .into(),
                             receiver: AggregateReceiver::from(Identified::new(
                                 this_chain_id.clone(),
@@ -2933,16 +2836,16 @@ where
                                 ),
                             )),
                         },
-                        RelayerMsg::Lc(AnyLcMsg::from(LcMsg::<L>::Fetch(Identified {
-                            chain_id: this_chain_id.clone(),
-                            data: Fetch::StateProof(FetchStateProof {
+                        fetch::<L>(
+                            this_chain_id.clone(),
+                            FetchStateProof {
                                 at: trusted_client_state_fetched_at_height,
                                 path: proof::Path::ChannelEndPath(ChannelEndPath {
                                     port_id: event.port_id.clone(),
                                     channel_id: event.channel_id.clone(),
                                 }),
-                            }),
-                        }))),
+                            },
+                        ),
                     ]
                     .into(),
                     receiver: AggregateReceiver::from(Identified::new(
@@ -2984,40 +2887,16 @@ where
                         }),
                     ))]
                     .into(),
-                    queue: [
-                        // RelayerMsg::Aggregate {
-                        //     data: [].into(),
-                        //     queue: [RelayerMsg::Lc(AnyLcMsg::from(LcMsg::Fetch(
-                        //         Identified::new(
-                        //             this_chain_id.clone(),
-                        //             Fetch::ChannelEnd(FetchChannelEnd {
-                        //                 at: trusted_client_state_fetched_at_height,
-                        //                 port_id: event.port_id.clone(),
-                        //                 channel_id: event.channel_id.clone(),
-                        //             }),
-                        //         ),
-                        //     )))]
-                        //     .into(),
-                        //     receiver: AggregateReceiver::from(Identified::new(
-                        //         this_chain_id.clone(),
-                        //         Aggregate::ConnectionFetchFromChannelEnd(
-                        //             AggregateConnectionFetchFromChannelEnd {
-                        //                 at: trusted_client_state_fetched_at_height,
-                        //             },
-                        //         ),
-                        //     )),
-                        // },
-                        RelayerMsg::Lc(AnyLcMsg::from(LcMsg::<L>::Fetch(Identified {
-                            chain_id: this_chain_id.clone(),
-                            data: Fetch::StateProof(FetchStateProof {
-                                at: trusted_client_state_fetched_at_height,
-                                path: proof::Path::ChannelEndPath(ChannelEndPath {
-                                    port_id: event.port_id.clone(),
-                                    channel_id: event.channel_id.clone(),
-                                }),
+                    queue: [fetch::<L>(
+                        this_chain_id.clone(),
+                        FetchStateProof {
+                            at: trusted_client_state_fetched_at_height,
+                            path: proof::Path::ChannelEndPath(ChannelEndPath {
+                                port_id: event.port_id.clone(),
+                                channel_id: event.channel_id.clone(),
                             }),
-                        }))),
-                    ]
+                        },
+                    )]
                     .into(),
                     receiver: AggregateReceiver::from(Identified::new(
                         this_chain_id,
@@ -3057,18 +2936,16 @@ where
                         }),
                     ))]
                     .into(),
-                    queue: [RelayerMsg::Lc(AnyLcMsg::from(LcMsg::<L>::Fetch(
-                        Identified {
-                            chain_id: this_chain_id.clone(),
-                            data: Fetch::StateProof(FetchStateProof {
-                                at: trusted_client_state_fetched_at_height,
-                                path: proof::Path::ChannelEndPath(ChannelEndPath {
-                                    port_id: event.port_id.clone(),
-                                    channel_id: event.channel_id.clone(),
-                                }),
+                    queue: [fetch::<L>(
+                        this_chain_id.clone(),
+                        FetchStateProof {
+                            at: trusted_client_state_fetched_at_height,
+                            path: proof::Path::ChannelEndPath(ChannelEndPath {
+                                port_id: event.port_id.clone(),
+                                channel_id: event.channel_id.clone(),
                             }),
                         },
-                    )))]
+                    )]
                     .into(),
                     receiver: AggregateReceiver::from(Identified::new(
                         this_chain_id,
@@ -3096,19 +2973,17 @@ where
                         }),
                     ))]
                     .into(),
-                    queue: [RelayerMsg::Lc(AnyLcMsg::from(LcMsg::<L>::Fetch(
-                        Identified {
-                            chain_id: this_chain_id.clone(),
-                            data: Fetch::StateProof(FetchStateProof {
-                                at: trusted_client_state_fetched_at_height,
-                                path: proof::Path::CommitmentPath(CommitmentPath {
-                                    port_id: event.packet_src_port.clone(),
-                                    channel_id: event.packet_src_channel.clone(),
-                                    sequence: event.packet_sequence,
-                                }),
+                    queue: [fetch::<L>(
+                        this_chain_id.clone(),
+                        FetchStateProof {
+                            at: trusted_client_state_fetched_at_height,
+                            path: proof::Path::CommitmentPath(CommitmentPath {
+                                port_id: event.packet_src_port.clone(),
+                                channel_id: event.packet_src_channel.clone(),
+                                sequence: event.packet_sequence,
                             }),
                         },
-                    )))]
+                    )]
                     .into(),
                     receiver: AggregateReceiver::from(Identified::new(
                         this_chain_id,
@@ -3135,70 +3010,27 @@ where
                 ))]
                 .into(),
                 queue: [
-                    RelayerMsg::Lc(AnyLcMsg::from(LcMsg::<L>::Fetch(Identified::new(
+                    fetch::<L>(
                         this_chain_id.clone(),
-                        Fetch::PacketAcknowledgement(FetchPacketAcknowledgement {
+                        FetchPacketAcknowledgement {
                             block_hash: block_hash.clone(),
                             destination_port_id: event.packet_dst_port.clone(),
                             destination_channel_id: event.packet_dst_channel.clone(),
                             sequence: event.packet_sequence,
                             __marker: PhantomData,
-                        }),
-                    )))),
-                    // RelayerMsg::Aggregate {
-                    //     queue: [RelayerMsg::Lc(AnyLcMsg::from(
-                    //         LcMsg::<L::Counterparty>::Fetch(Fetch::TrustedClientState(
-                    //             Identified::new(FetchTrustedClientState {
-                    //                 at: QueryHeight::Specific(trusted_client_state.height()),
-                    //                 client_id: counterparty_client_id.clone(),
-                    //             }),
-                    //         )),
-                    //     ))]
-                    //     .into(),
-                    //     data: [].into(),
-                    //     receiver: AggregateReceiver::from(Identified::new(
-                    //         this_chain_id,
-                    //         Aggregate::FetchCounterpartyStateproof(
-                    //             AggregateFetchCounterpartyStateProof {
-                    //                 counterparty_client_id: counterparty_client_id.clone(),
-                    //                 fetch: FetchStateProof {
-                    //                     at: trusted_client_state.height(),
-                    //                     path: proof::Path::AcknowledgementPath(
-                    //                         AcknowledgementPath {
-                    //                             port_id: event.packet_dst_port.clone(),
-                    //                             channel_id: event.packet_dst_channel.clone(),
-                    //                             sequence: event.packet_sequence,
-                    //                         },
-                    //                     ),
-                    //                 },
-                    //             },
-                    //         ),
-                    //     )),
-                    // },
-                    // RelayerMsg::Lc(AnyLcMsg::from(LcMsg::<L::Counterparty>::Fetch(
-                    //     Identified::new(
-                    //         trusted_client_state.chain_id(),
-                    //         Fetch::StateProof(FetchStateProof {
-                    //             at: trusted_client_state.height(),
-                    //             path: proof::Path::AcknowledgementPath(AcknowledgementPath {
-                    //                 port_id: event.packet_dst_port.clone(),
-                    //                 channel_id: event.packet_dst_channel.clone(),
-                    //                 sequence: event.packet_sequence,
-                    //             }),
-                    //         }),
-                    //     ),
-                    // ))),
-                    RelayerMsg::Lc(AnyLcMsg::from(LcMsg::<L>::Fetch(Identified::new(
+                        },
+                    ),
+                    fetch::<L>(
                         this_chain_id.clone(),
-                        Fetch::StateProof(FetchStateProof {
+                        FetchStateProof {
                             at: trusted_client_state_fetched_at_height,
                             path: proof::Path::AcknowledgementPath(AcknowledgementPath {
                                 port_id: event.packet_dst_port.clone(),
                                 channel_id: event.packet_dst_channel.clone(),
                                 sequence: event.packet_sequence,
                             }),
-                        }),
-                    )))),
+                        },
+                    ),
                 ]
                 .into(),
                 receiver: AggregateReceiver::from(Identified::new(
@@ -3287,9 +3119,9 @@ where
 
         let consensus_height = trusted_client_state.height();
 
-        RelayerMsg::Lc(AnyLcMsg::from(LcMsg::<L::Counterparty>::Msg(Identified {
-            chain_id: counterparty_chain_id,
-            data: Msg::ConnectionOpenTry(MsgConnectionOpenTryData {
+        msg::<L::Counterparty>(
+            counterparty_chain_id,
+            Msg::ConnectionOpenTry(MsgConnectionOpenTryData {
                 msg: MsgConnectionOpenTry {
                     client_id: event.counterparty_client_id,
                     client_state: client_state_proof.state,
@@ -3310,7 +3142,7 @@ where
                     consensus_height,
                 },
             }),
-        })))
+        )
     }
 }
 
@@ -3386,9 +3218,9 @@ where
 
         let consensus_height = trusted_client_state.height();
 
-        RelayerMsg::Lc(AnyLcMsg::from(LcMsg::<L::Counterparty>::Msg(Identified {
-            chain_id: counterparty_chain_id,
-            data: Msg::ConnectionOpenAck(MsgConnectionOpenAckData {
+        msg::<L::Counterparty>(
+            counterparty_chain_id,
+            Msg::ConnectionOpenAck(MsgConnectionOpenAckData {
                 msg: MsgConnectionOpenAck {
                     connection_id: event.counterparty_connection_id,
                     counterparty_connection_id: event.connection_id,
@@ -3403,7 +3235,7 @@ where
                     consensus_height: consensus_height.into(),
                 },
             }),
-        })))
+        )
     }
 }
 
@@ -3455,16 +3287,14 @@ where
         // assert_eq!(counterparty_chain_id, client_updated_chain_id);
         assert_eq!(connection_proof_chain_id, this_chain_id);
 
-        RelayerMsg::Lc(AnyLcMsg::from(LcMsg::<L::Counterparty>::Msg(Identified {
-            chain_id: counterparty_chain_id,
-            data: Msg::ConnectionOpenConfirm(MsgConnectionOpenConfirmData(
-                MsgConnectionOpenConfirm {
-                    connection_id: event.counterparty_connection_id,
-                    proof_height: connection_proof.proof_height.into(),
-                    proof_ack: connection_proof.proof,
-                },
-            )),
-        })))
+        msg::<L::Counterparty>(
+            counterparty_chain_id,
+            Msg::ConnectionOpenConfirm(MsgConnectionOpenConfirmData(MsgConnectionOpenConfirm {
+                connection_id: event.counterparty_connection_id,
+                proof_height: connection_proof.proof_height.into(),
+                proof_ack: connection_proof.proof,
+            })),
+        )
     }
 }
 
@@ -3518,9 +3348,9 @@ where
 
         assert_eq!(channel_proof_chain_id, this_chain_id);
 
-        RelayerMsg::Lc(AnyLcMsg::from(LcMsg::<L::Counterparty>::Msg(Identified {
-            chain_id: counterparty_chain_id,
-            data: Msg::ChannelOpenTry(MsgChannelOpenTryData {
+        msg::<L::Counterparty>(
+            counterparty_chain_id,
+            Msg::ChannelOpenTry(MsgChannelOpenTryData {
                 msg: MsgChannelOpenTry {
                     port_id: channel_proof.state.counterparty.port_id.clone(),
                     channel: Channel {
@@ -3544,7 +3374,7 @@ where
                 },
                 __marker: PhantomData,
             }),
-        })))
+        )
     }
 }
 
@@ -3591,9 +3421,9 @@ where
 
         assert_eq!(channel_proof_chain_id, this_chain_id);
 
-        RelayerMsg::Lc(AnyLcMsg::from(LcMsg::<L::Counterparty>::Msg(Identified {
-            chain_id: counterparty_chain_id,
-            data: Msg::ChannelOpenAck(MsgChannelOpenAckData {
+        msg::<L::Counterparty>(
+            counterparty_chain_id,
+            Msg::ChannelOpenAck(MsgChannelOpenAckData {
                 msg: MsgChannelOpenAck {
                     port_id: channel_proof.state.counterparty.port_id.clone(),
                     channel_id: event.counterparty_channel_id.to_string(),
@@ -3604,7 +3434,7 @@ where
                 },
                 __marker: PhantomData,
             }),
-        })))
+        )
     }
 }
 
@@ -3646,14 +3476,13 @@ where
         ]: Self::AggregatedData,
     ) -> RelayerMsg {
         assert_eq!(this_chain_id, trusted_client_state_chain_id);
+        assert_eq!(this_chain_id, channel_proof_chain_id);
 
         let counterparty_chain_id: ChainIdOf<L::Counterparty> = trusted_client_state.chain_id();
 
-        assert_eq!(channel_proof_chain_id, this_chain_id);
-
-        RelayerMsg::Lc(AnyLcMsg::from(LcMsg::<L::Counterparty>::Msg(Identified {
-            chain_id: counterparty_chain_id,
-            data: Msg::ChannelOpenConfirm(MsgChannelOpenConfirmData {
+        msg::<L::Counterparty>(
+            counterparty_chain_id,
+            Msg::ChannelOpenConfirm(MsgChannelOpenConfirmData {
                 msg: MsgChannelOpenConfirm {
                     port_id: channel_proof.state.counterparty.port_id.clone(),
                     channel_id: event.counterparty_channel_id.to_string(),
@@ -3662,7 +3491,7 @@ where
                 },
                 __marker: PhantomData,
             }),
-        })))
+        )
     }
 }
 
@@ -3704,14 +3533,13 @@ where
         ]: Self::AggregatedData,
     ) -> RelayerMsg {
         assert_eq!(this_chain_id, trusted_client_state_chain_id);
+        assert_eq!(this_chain_id, commitment_proof_chain_id);
 
         let counterparty_chain_id: ChainIdOf<L::Counterparty> = trusted_client_state.chain_id();
 
-        assert_eq!(commitment_proof_chain_id, this_chain_id);
-
-        RelayerMsg::Lc(AnyLcMsg::from(LcMsg::<L::Counterparty>::Msg(Identified {
-            chain_id: counterparty_chain_id,
-            data: Msg::RecvPacket(MsgRecvPacketData {
+        msg::<L::Counterparty>(
+            counterparty_chain_id,
+            Msg::RecvPacket(MsgRecvPacketData {
                 msg: MsgRecvPacket {
                     proof_height: commitment_proof.proof_height,
                     packet: Packet {
@@ -3728,7 +3556,7 @@ where
                 },
                 __marker: PhantomData,
             }),
-        })))
+        )
     }
 }
 
@@ -3784,9 +3612,9 @@ where
 
         let counterparty_chain_id: ChainIdOf<L::Counterparty> = trusted_client_state.chain_id();
 
-        RelayerMsg::Lc(AnyLcMsg::from(LcMsg::<L::Counterparty>::Msg(Identified {
-            chain_id: counterparty_chain_id,
-            data: Msg::AckPacket(MsgAckPacketData {
+        msg::<L::Counterparty>(
+            counterparty_chain_id,
+            Msg::AckPacket(MsgAckPacketData {
                 msg: MsgAcknowledgement {
                     proof_height: acknowledgement_proof.proof_height,
                     packet: Packet {
@@ -3804,7 +3632,7 @@ where
                 },
                 __marker: PhantomData,
             }),
-        })))
+        )
     }
 }
 
@@ -3880,16 +3708,16 @@ where
 
         // let counterparty_chain_id = self_client_state_chain_id;
 
-        RelayerMsg::Lc(AnyLcMsg::from(LcMsg::Msg(Identified {
-            chain_id: this_chain_id,
-            data: Msg::<L>::CreateClient(MsgCreateClientData {
+        msg::<L>(
+            this_chain_id,
+            Msg::CreateClient(MsgCreateClientData {
                 config: this.config,
                 msg: MsgCreateClient {
                     client_state: self_client_state,
                     consensus_state: self_consensus_state,
                 },
             }),
-        })))
+        )
     }
 }
 
@@ -3907,27 +3735,20 @@ fn flatten_seq(msg: RelayerMsg) -> RelayerMsg {
     if msgs.len() == 1 {
         msgs.pop_front().unwrap()
     } else {
-        RelayerMsg::Sequence(msgs)
+        seq(msgs)
     }
 }
 
 #[test]
 fn flatten() {
-    let msg = RelayerMsg::Sequence(
-        [
-            RelayerMsg::DeferUntil { timestamp: 1 },
-            RelayerMsg::Sequence(
-                [
-                    RelayerMsg::DeferUntil { timestamp: 2 },
-                    RelayerMsg::DeferUntil { timestamp: 3 },
-                ]
-                .into(),
-            ),
-            RelayerMsg::Sequence([RelayerMsg::DeferUntil { timestamp: 4 }].into()),
-            RelayerMsg::DeferUntil { timestamp: 5 },
-        ]
-        .into(),
-    );
+    use crate::msg::{defer, seq};
+
+    let msg = seq([
+        defer(1),
+        seq([defer(2), defer(3)]),
+        seq([defer(4)]),
+        defer(5),
+    ]);
 
     let msg = flatten_seq(msg);
 

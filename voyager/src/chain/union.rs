@@ -59,11 +59,14 @@ use crate::{
     },
     msg::{
         aggregate::{Aggregate, LightClientSpecificAggregate},
+        data,
         data::{Data, LightClientSpecificData},
+        fetch,
         fetch::{Fetch, FetchTrustedClientState, FetchUpdateHeaders, LightClientSpecificFetch},
         identified,
         msg::{Msg, MsgUpdateClientData},
-        wait::{Wait, WaitForBlock},
+        seq, wait,
+        wait::WaitForBlock,
         AggregateData, AggregateReceiver, AnyLcMsg, DoAggregate, Identified, LcMsg, RelayerMsg,
     },
     queue::aggregate_data::{do_aggregate, UseAggregate},
@@ -340,12 +343,10 @@ where
         }
     };
 
-    [RelayerMsg::Lc(AnyLcMsg::from(LcMsg::<L>::Data(
-        Identified {
-            chain_id: union.chain_id.clone(),
-            data: Data::LightClientSpecific(LightClientSpecificData(msg)),
-        },
-    )))]
+    [data::<L>(
+        union.chain_id.clone(),
+        LightClientSpecificData(msg),
+    )]
     .into()
 }
 
@@ -365,56 +366,53 @@ where
     AggregateData: From<identified!(Data<L>)>,
     AggregateReceiver: From<identified!(Aggregate<L>)>,
 {
-    [RelayerMsg::Sequence(
-        [
-            RelayerMsg::Lc(AnyLcMsg::from(LcMsg::<L>::Wait(Identified {
-                chain_id: union.chain_id(),
-                data: Wait::Block(WaitForBlock(update_info.update_to.increment())),
-            }))),
-            RelayerMsg::Aggregate {
-                queue: [
-                    RelayerMsg::Lc(AnyLcMsg::from(LcMsg::<L>::Fetch(Identified {
-                        chain_id: union.chain_id.clone(),
-                        data: Fetch::LightClientSpecific(LightClientSpecificFetch(
-                            EthereumFetchMsg::FetchUntrustedCommit(FetchUntrustedCommit {
-                                height: update_info.update_to,
-                                __marker: PhantomData,
-                            }),
-                        )),
-                    }))),
-                    RelayerMsg::Lc(AnyLcMsg::from(LcMsg::<L>::Fetch(Identified {
-                        chain_id: union.chain_id.clone(),
-                        data: Fetch::LightClientSpecific(LightClientSpecificFetch(
-                            EthereumFetchMsg::FetchValidators(FetchValidators {
-                                height: update_info.update_from,
-                                __marker: PhantomData,
-                            }),
-                        )),
-                    }))),
-                    RelayerMsg::Lc(AnyLcMsg::from(LcMsg::<L>::Fetch(Identified {
-                        chain_id: union.chain_id.clone(),
-                        data: Fetch::LightClientSpecific(LightClientSpecificFetch(
-                            EthereumFetchMsg::FetchValidators(FetchValidators {
-                                height: update_info.update_to,
-                                __marker: PhantomData,
-                            }),
-                        )),
-                    }))),
-                ]
-                .into(),
-                data: [].into(),
-                receiver: AggregateReceiver::from(Identified {
-                    chain_id: union.chain_id.clone(),
-                    data: Aggregate::LightClientSpecific(LightClientSpecificAggregate(
-                        EthereumAggregateMsg::AggregateProveRequest(AggregateProveRequest {
-                            req: update_info,
+    [seq([
+        wait::<L>(
+            union.chain_id(),
+            WaitForBlock(update_info.update_to.increment()),
+        ),
+        RelayerMsg::Aggregate {
+            queue: [
+                fetch::<L>(
+                    union.chain_id.clone(),
+                    Fetch::LightClientSpecific(LightClientSpecificFetch(
+                        EthereumFetchMsg::FetchUntrustedCommit(FetchUntrustedCommit {
+                            height: update_info.update_to,
+                            __marker: PhantomData,
                         }),
                     )),
-                }),
-            },
-        ]
-        .into(),
-    )]
+                ),
+                fetch::<L>(
+                    union.chain_id.clone(),
+                    Fetch::LightClientSpecific(LightClientSpecificFetch(
+                        EthereumFetchMsg::FetchValidators(FetchValidators {
+                            height: update_info.update_from,
+                            __marker: PhantomData,
+                        }),
+                    )),
+                ),
+                fetch::<L>(
+                    union.chain_id.clone(),
+                    Fetch::LightClientSpecific(LightClientSpecificFetch(
+                        EthereumFetchMsg::FetchValidators(FetchValidators {
+                            height: update_info.update_to,
+                            __marker: PhantomData,
+                        }),
+                    )),
+                ),
+            ]
+            .into(),
+            data: [].into(),
+            receiver: AggregateReceiver::from(Identified {
+                chain_id: union.chain_id.clone(),
+                data: Aggregate::LightClientSpecific(LightClientSpecificAggregate(
+                    EthereumAggregateMsg::AggregateProveRequest(AggregateProveRequest {
+                        req: update_info,
+                    }),
+                )),
+            }),
+        },
+    ])]
     .into()
 }
 
@@ -1160,38 +1158,36 @@ where
         let untrusted_validators_commit = make_validators_commit(untrusted_validators);
 
         RelayerMsg::Aggregate {
-            queue: [RelayerMsg::Lc(AnyLcMsg::from(LcMsg::Fetch(Identified {
-                chain_id: chain_id.clone(),
-                data: Fetch::LightClientSpecific(LightClientSpecificFetch(
-                    EthereumFetchMsg::FetchProveRequest(FetchProveRequest {
-                        request: ProveRequest {
-                            vote: CanonicalVote {
-                                // REVIEW: Should this be hardcoded to precommit?
-                                ty: SignedMsgType::Precommit,
-                                height: signed_header.commit.height,
-                                round: BoundedI64::new(signed_header.commit.round.inner().into())
-                                    .expect("0..=i32::MAX can be converted to 0..=i64::MAX safely"),
-                                block_id: CanonicalBlockId {
-                                    hash: signed_header.commit.block_id.hash.clone(),
-                                    part_set_header: CanonicalPartSetHeader {
-                                        total: signed_header.commit.block_id.part_set_header.total,
-                                        hash: signed_header
-                                            .commit
-                                            .block_id
-                                            .part_set_header
-                                            .hash
-                                            .clone(),
-                                    },
+            queue: [fetch(
+                chain_id.clone(),
+                LightClientSpecificFetch(EthereumFetchMsg::FetchProveRequest(FetchProveRequest {
+                    request: ProveRequest {
+                        vote: CanonicalVote {
+                            // REVIEW: Should this be hardcoded to precommit?
+                            ty: SignedMsgType::Precommit,
+                            height: signed_header.commit.height,
+                            round: BoundedI64::new(signed_header.commit.round.inner().into())
+                                .expect("0..=i32::MAX can be converted to 0..=i64::MAX safely"),
+                            block_id: CanonicalBlockId {
+                                hash: signed_header.commit.block_id.hash.clone(),
+                                part_set_header: CanonicalPartSetHeader {
+                                    total: signed_header.commit.block_id.part_set_header.total,
+                                    hash: signed_header
+                                        .commit
+                                        .block_id
+                                        .part_set_header
+                                        .hash
+                                        .clone(),
                                 },
-                                chain_id: signed_header.header.chain_id.clone(),
                             },
-                            trusted_commit: trusted_validators_commit,
-                            untrusted_commit: untrusted_validators_commit,
+                            chain_id: signed_header.header.chain_id.clone(),
                         },
-                        __marker: PhantomData,
-                    }),
-                )),
-            })))]
+                        trusted_commit: trusted_validators_commit,
+                        untrusted_commit: untrusted_validators_commit,
+                    },
+                    __marker: PhantomData,
+                })),
+            )]
             .into(),
             data: [].into(),
             receiver: AggregateReceiver::from(Identified {
@@ -1234,43 +1230,29 @@ where
     ) -> RelayerMsg {
         assert_eq!(chain_id, untrusted_commit_chain_id);
 
-        RelayerMsg::Sequence(
-            [
-                RelayerMsg::Lc(AnyLcMsg::from(LcMsg::<L::Counterparty>::Msg(Identified {
-                    chain_id: req.counterparty_chain_id,
-                    data: Msg::UpdateClient(MsgUpdateClientData {
-                        msg: MsgUpdateClient {
-                            client_id: req.counterparty_client_id.clone(),
-                            client_message: cometbls::header::Header {
-                                signed_header,
-                                trusted_height: req.update_from,
-                                zero_knowledge_proof: response.proof.evm_proof,
-                            },
+        seq([
+            crate::msg::msg::<L::Counterparty>(
+                req.counterparty_chain_id,
+                MsgUpdateClientData {
+                    msg: MsgUpdateClient {
+                        client_id: req.counterparty_client_id.clone(),
+                        client_message: cometbls::header::Header {
+                            signed_header,
+                            trusted_height: req.update_from,
+                            zero_knowledge_proof: response.proof.evm_proof,
                         },
-                        update_from: req.update_from,
-                    }),
-                }))),
-                // RelayerMsg::Lc(AnyLcMsg::from(LcMsg::<L::Counterparty>::Fetch(
-                //     Identified {
-                //         chain_id: req.counterparty_chain_id,
-                //         data: Fetch::TrustedClientState(FetchTrustedClientState {
-                //             // NOTE: We can pass update_to directly here since cosmos -> evm always updates to the exact height requested.
-                //             at: QueryHeight::Specific(req.update_to),
-                //             // at: QueryHeight::Latest,
-                //             client_id: req.counterparty_client_id,
-                //         }),
-                //     },
-                // ))),
-                RelayerMsg::Lc(AnyLcMsg::from(LcMsg::<L>::Fetch(Identified {
-                    chain_id,
-                    data: Fetch::TrustedClientState(FetchTrustedClientState {
-                        // NOTE: We can pass update_to directly here since cosmos -> evm always updates to the exact height requested.
-                        at: QueryHeight::Specific(req.update_to),
-                        client_id: req.client_id,
-                    }),
-                }))),
-            ]
-            .into(),
-        )
+                    },
+                    update_from: req.update_from,
+                },
+            ),
+            fetch::<L>(
+                chain_id,
+                Fetch::TrustedClientState(FetchTrustedClientState {
+                    // NOTE: We can pass update_to directly here since cosmos -> evm always updates to the exact height requested.
+                    at: QueryHeight::Specific(req.update_to),
+                    client_id: req.client_id,
+                }),
+            ),
+        ])
     }
 }
