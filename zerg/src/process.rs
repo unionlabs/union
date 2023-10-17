@@ -17,12 +17,12 @@ enum TransactionState {
     ReceivedOn,
 }
 
-#[derive(Debug, serde::Serialize, PartialEq, Clone)]
+#[derive(Debug, serde::Serialize, serde::Deserialize, PartialEq, Clone)]
 pub struct TransactionReport {
-    uuid: String,
-    completed: bool,
-    arrived_on: Option<u64>,
-    duration: Option<u64>,
+    pub uuid: String,
+    pub completed: bool,
+    pub arrived_on: Option<u64>,
+    pub duration: Option<u64>,
 }
 
 pub fn process(input_file_path: String) -> Vec<TransactionReport> {

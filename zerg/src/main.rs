@@ -1,11 +1,13 @@
 use std::fs::read_to_string;
 
+use analyze::analyze;
 use clap::Parser;
 use cli::AppArgs;
 use config::Config;
 use context::Context;
 use process::process;
 
+pub mod analyze;
 pub mod cli;
 pub mod config;
 pub mod context;
@@ -40,6 +42,9 @@ async fn main() {
             output: _,
         } => {
             let _ = process(input_file);
+        }
+        cli::Command::Analyze { input_file, output } => {
+            let _ = analyze(input_file, output);
         }
     };
 }

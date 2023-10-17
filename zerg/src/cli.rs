@@ -21,22 +21,28 @@ pub struct AppArgs {
 
 #[derive(Debug, Subcommand, Clone)]
 pub enum Command {
+    /// Gather analytics based off of a `process` output.
+    Analyze {
+        input_file: String,
+        #[arg(long, short = 'o', env, default_value = "zerg-analyze.csv")]
+        output: String,
+    },
     /// Process the output produced by `rush` or `observe` to get formatted details about whole transactions.
     Process {
         input_file: String,
-        #[arg(long, short = 'o', env, default_value = "zerg-report.csv")]
+        #[arg(long, short = 'o', env, default_value = "zerg-process.csv")]
         output: String,
     },
     /// Exports the config to stdout.
     PrintConfig,
     /// Conducts stress tests and benchmarks on the configured network.
     Rush {
-        #[arg(long, short = 'o', env, default_value = "zerg-output.csv")]
+        #[arg(long, short = 'o', env, default_value = "zerg-rush.csv")]
         output: String,
     },
     /// Observes and benchmarks the configured network.
     Observe {
-        #[arg(long, short = 'o', env, default_value = "zerg-output.csv")]
+        #[arg(long, short = 'o', env, default_value = "zerg-observe.csv")]
         output: String,
     },
 }
