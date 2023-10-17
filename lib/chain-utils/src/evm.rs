@@ -128,6 +128,30 @@ impl<C: ChainSpec> Chain for Evm<C> {
                 .message
                 .slot;
 
+            // HACK: we introduced this because we were using alchemy for the
+            // execution endpoint and our custom beacon endpoint that rely on
+            // its own execution chain. Alchemy was a bit delayed and the
+            // execution height for the beacon head wasn't existing for few
+            // secs. We wait for an extra beacon head to let alchemy catch up.
+            // We should be able to remove that once we rely on an execution
+            // endpoint that is itself used by the beacon endpoint (no different
+            // POV).
+            loop {
+                let next_height = self
+                    .beacon_api_client
+                    .block(beacon_api::client::BlockId::Head)
+                    .await
+                    .unwrap()
+                    .data
+                    .message
+                    .slot;
+                if next_height > height {
+                    break;
+                }
+
+                tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+            }
+
             self.make_height(height)
         }
     }
