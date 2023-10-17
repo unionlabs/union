@@ -178,6 +178,8 @@ impl InitCmd {
         fs::copy(bundle.genesis_json(), home.join("config/genesis.json"))
             .map_err(SetGenesisError)?;
         init::set_seeds(&self.seeds, home.join("config/config.toml"))?;
+
+        info!(target: "unionvisor", "succesfully initalized unionvisor");
         Ok(InitState::SeedsConfigured)
     }
 }
