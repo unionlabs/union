@@ -20,7 +20,7 @@ use crate::{
         LightClient,
     },
     msg::{
-        aggregate::{Aggregate, AnyAggregate},
+        aggregate::AnyAggregate,
         data::{AnyData, Data},
         event::{AnyEvent, Event},
         fetch::{AnyFetch, Fetch},
@@ -63,7 +63,7 @@ pub enum DeferPoint {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[allow(clippy::large_enum_variant)]
 pub enum RelayerMsg {
-    Lc(AnyLcMsg),
+    Lc(AnyLightClientIdentified<AnyLcMsg>),
     DeferUntil {
         point: DeferPoint,
         seconds: u64,
@@ -82,11 +82,43 @@ pub enum RelayerMsg {
         /// Messages that are expected to resolve to [`Data`].
         queue: VecDeque<RelayerMsg>,
         /// The resolved data messages.
-        data: VecDeque<AggregateData>,
+        data: VecDeque<AnyLightClientIdentified<AnyData>>,
         /// The message that will utilize the aggregated data.
-        receiver: AggregateReceiver,
+        receiver: AnyLightClientIdentified<AnyAggregate>,
     },
 }
+
+impl TryFrom<AnyLightClientIdentified<AnyLcMsg>> for AnyLightClientIdentified<AnyData> {
+    type Error = AnyLightClientIdentified<AnyLcMsg>;
+
+    fn try_from(value: AnyLightClientIdentified<AnyLcMsg>) -> Result<Self, Self::Error> {
+        match value {
+            AnyLightClientIdentified::EthereumMainnet(i) => <Data<_>>::try_from(i.data)
+                .map(|d| Identified::new(i.chain_id.clone(), d))
+                .map(AnyLightClientIdentified::EthereumMainnet)
+                .map_err(|l| Identified::new(i.chain_id, l))
+                .map_err(AnyLightClientIdentified::EthereumMainnet),
+            AnyLightClientIdentified::EthereumMinimal(i) => <Data<_>>::try_from(i.data)
+                .map(|d| Identified::new(i.chain_id.clone(), d))
+                .map(AnyLightClientIdentified::EthereumMinimal)
+                .map_err(|l| Identified::new(i.chain_id, l))
+                .map_err(AnyLightClientIdentified::EthereumMinimal),
+            AnyLightClientIdentified::CometblsMainnet(i) => <Data<_>>::try_from(i.data)
+                .map(|d| Identified::new(i.chain_id, d))
+                .map(AnyLightClientIdentified::CometblsMainnet)
+                .map_err(|l| Identified::new(i.chain_id, l))
+                .map_err(AnyLightClientIdentified::CometblsMainnet),
+            AnyLightClientIdentified::CometblsMinimal(i) => <Data<_>>::try_from(i.data)
+                .map(|d| Identified::new(i.chain_id, d))
+                .map(AnyLightClientIdentified::CometblsMinimal)
+                .map_err(|l| Identified::new(i.chain_id, l))
+                .map_err(AnyLightClientIdentified::CometblsMinimal),
+        }
+    }
+}
+
+pub type AggregateReceiver = AnyLightClientIdentified<AnyAggregate>;
+pub type AggregateData = AnyLightClientIdentified<AnyData>;
 
 impl std::fmt::Display for RelayerMsg {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -135,81 +167,7 @@ impl std::fmt::Display for RelayerMsg {
     }
 }
 
-enum_variants_conversions! {
-    #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-    pub enum AggregateData {
-        // The 08-wasm client tracking the state of Evm<Mainnet>.
-        EthereumMainnet(identified!(Data<EthereumMainnet>)),
-        // The 08-wasm client tracking the state of Evm<Minimal>.
-        EthereumMinimal(identified!(Data<EthereumMinimal>)),
-        // The solidity client on Evm<Mainnet> tracking the state of Union.
-        CometblsMainnet(identified!(Data<CometblsMainnet>)),
-        // The solidity client on Evm<Minimal> tracking the state of Union.
-        CometblsMinimal(identified!(Data<CometblsMinimal>)),
-    }
-}
-
-impl Display for AggregateData {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            AggregateData::EthereumMainnet(data) => {
-                write!(f, "Data::EthereumMainnet({}, {})", data.chain_id, data.data)
-            }
-            AggregateData::EthereumMinimal(data) => {
-                write!(f, "Data::EthereumMinimal({}, {})", data.chain_id, data.data)
-            }
-            AggregateData::CometblsMainnet(data) => {
-                write!(f, "Data::CometblsMainnet({}, {})", data.chain_id, data.data)
-            }
-            AggregateData::CometblsMinimal(data) => {
-                write!(f, "Data::CometblsMinimal({}, {})", data.chain_id, data.data)
-            }
-        }
-    }
-}
-
-impl TryFrom<RelayerMsg> for AggregateData {
-    type Error = RelayerMsg;
-
-    fn try_from(value: RelayerMsg) -> Result<Self, Self::Error> {
-        match value {
-            RelayerMsg::Lc(AnyLcMsg::EthereumMainnet(LcMsg::Data(data))) => {
-                Ok(AggregateData::EthereumMainnet(data))
-            }
-            RelayerMsg::Lc(AnyLcMsg::EthereumMinimal(LcMsg::Data(data))) => {
-                Ok(AggregateData::EthereumMinimal(data))
-            }
-            RelayerMsg::Lc(AnyLcMsg::CometblsMainnet(LcMsg::Data(data))) => {
-                Ok(AggregateData::CometblsMainnet(data))
-            }
-            RelayerMsg::Lc(AnyLcMsg::CometblsMinimal(LcMsg::Data(data))) => {
-                Ok(AggregateData::CometblsMinimal(data))
-            }
-            _ => Err(value),
-        }
-    }
-}
-
-enum_variants_conversions! {
-    #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, derive_more::Display)]
-    // TODO: Rename this
-    pub enum AggregateReceiver {
-        // The 08-wasm client tracking the state of Evm<Mainnet>.
-        #[display(fmt = "EthereumMainnet({}, {})", "_0.chain_id", "_0.data")]
-        EthereumMainnet(identified!(Aggregate<EthereumMainnet>)),
-        // The 08-wasm client tracking the state of Evm<Minimal>.
-        #[display(fmt = "EthereumMinimal({}, {})", "_0.chain_id", "_0.data")]
-        EthereumMinimal(identified!(Aggregate<EthereumMinimal>)),
-        // The solidity client on Evm<Mainnet> tracking the state of Union.
-        #[display(fmt = "CometblsMainnet({}, {})", "_0.chain_id", "_0.data")]
-        CometblsMainnet(identified!(Aggregate<CometblsMainnet>)),
-        // The solidity client on Evm<Minimal> tracking the state of Union.
-        #[display(fmt = "CometblsMinimal({}, {})", "_0.chain_id", "_0.data")]
-        CometblsMinimal(identified!(Aggregate<CometblsMinimal>)),
-    }
-}
-
-impl TryFrom<RelayerMsg> for AnyLcMsg {
+impl TryFrom<RelayerMsg> for AnyLightClientIdentified<AnyLcMsg> {
     type Error = RelayerMsg;
 
     fn try_from(value: RelayerMsg) -> Result<Self, Self::Error> {
@@ -220,37 +178,51 @@ impl TryFrom<RelayerMsg> for AnyLcMsg {
     }
 }
 
-impl From<AnyLcMsg> for RelayerMsg {
-    fn from(value: AnyLcMsg) -> Self {
+impl TryFrom<RelayerMsg> for AnyLightClientIdentified<AnyData> {
+    type Error = RelayerMsg;
+
+    fn try_from(value: RelayerMsg) -> Result<Self, Self::Error> {
+        match value {
+            RelayerMsg::Lc(any_lc_msg) => {
+                AnyLightClientIdentified::<AnyData>::try_from(any_lc_msg).map_err(RelayerMsg::Lc)
+            }
+            _ => Err(value),
+        }
+    }
+}
+
+impl From<AnyLightClientIdentified<AnyLcMsg>> for RelayerMsg {
+    fn from(value: AnyLightClientIdentified<AnyLcMsg>) -> Self {
         Self::Lc(value)
     }
 }
 
 impl<L: LightClient> TryFrom<RelayerMsg> for LcMsg<L>
 where
-    AnyLcMsg: TryFrom<RelayerMsg, Error = RelayerMsg> + Into<RelayerMsg>,
-    LcMsg<L>: TryFrom<AnyLcMsg, Error = AnyLcMsg> + Into<AnyLcMsg>,
+    LcMsg<L>: TryFrom<AnyLightClientIdentified<AnyLcMsg>, Error = AnyLightClientIdentified<AnyLcMsg>>
+        + Into<AnyLightClientIdentified<AnyLcMsg>>,
 {
     type Error = RelayerMsg;
 
     fn try_from(value: RelayerMsg) -> Result<Self, Self::Error> {
-        LcMsg::<L>::try_from(AnyLcMsg::try_from(value)?).map_err(Into::into)
+        LcMsg::<L>::try_from(<AnyLightClientIdentified<AnyLcMsg>>::try_from(value)?)
+            .map_err(Into::into)
     }
 }
 
 impl<L: LightClient> From<LcMsg<L>> for RelayerMsg
 where
-    AnyLcMsg: From<LcMsg<L>>,
+    AnyLightClientIdentified<AnyLcMsg>: From<LcMsg<L>>,
 {
     fn from(value: LcMsg<L>) -> Self {
-        RelayerMsg::Lc(AnyLcMsg::from(value))
+        RelayerMsg::Lc(<AnyLightClientIdentified<AnyLcMsg>>::from(value))
     }
 }
 
 macro_rules! any_enum {
     (
         $(#[doc = $outer_doc:literal])*
-        #[any = $Any:ident($AnyInner:ty)]
+        #[any = $Any:ident]
         pub enum $Enum:ident<L: LightClient> {
             $(
                 $(#[doc = $doc:literal])*
@@ -264,6 +236,7 @@ macro_rules! any_enum {
         #[derive(frame_support_procedural::DebugNoBound, frame_support_procedural::CloneNoBound, frame_support_procedural::PartialEqNoBound, serde::Serialize, serde::Deserialize)]
         #[serde(bound(serialize = "", deserialize = ""))]
         $(#[doc = $outer_doc])*
+        #[allow(clippy::large_enum_variant)]
         pub enum $Enum<L: LightClient> {
             $(
                 $(#[doc = $doc])*
@@ -276,7 +249,60 @@ macro_rules! any_enum {
 
         pub enum $Any {}
         impl crate::msg::AnyLightClient for $Any {
-            type Inner<L: LightClient> = $AnyInner;
+            type Inner<L: LightClient> = $Enum<L>;
+        }
+
+        impl<L: LightClient> TryFrom<crate::msg::LcMsg<L>> for $Enum<L> {
+            type Error = crate::msg::LcMsg<L>;
+
+            fn try_from(value: crate::msg::LcMsg<L>) -> Result<Self, Self::Error> {
+                if let crate::msg::LcMsg::$Enum(t) = value {
+                    Ok(t)
+                } else {
+                    Err(value)
+                }
+            }
+        }
+
+        impl<L: LightClient> From<crate::msg::Identified<L, crate::msg::InnerOf<$Any, L>>> for crate::msg::RelayerMsg
+        where
+            crate::msg::LcMsg<L>: From<crate::msg::InnerOf<$Any, L>>,
+            crate::msg::AnyLightClientIdentified<crate::msg::AnyLcMsg>:
+                From<crate::msg::Identified<L, crate::msg::InnerOf<crate::msg::AnyLcMsg, L>>>
+        {
+            fn from(value: crate::msg::Identified<L, crate::msg::InnerOf<$Any, L>>) -> Self {
+                Self::Lc(
+                    <crate::msg::AnyLightClientIdentified<crate::msg::AnyLcMsg>>::from(
+                        crate::msg::Identified {
+                            chain_id: value.chain_id, data: crate::msg::LcMsg::from(value.data)
+                        }
+                    )
+                )
+            }
+        }
+
+        impl<L: LightClient> TryFrom<crate::msg::RelayerMsg> for crate::msg::Identified<L, crate::msg::InnerOf<$Any, L>>
+        where
+            crate::msg::AnyLightClientIdentified<crate::msg::AnyLcMsg>: TryFrom<crate::msg::RelayerMsg, Error = crate::msg::RelayerMsg> + Into<crate::msg::RelayerMsg>,
+            crate::msg::Identified<L, crate::msg::LcMsg<L>>: TryFrom<crate::msg::AnyLightClientIdentified<crate::msg::AnyLcMsg>, Error = crate::msg::AnyLightClientIdentified<crate::msg::AnyLcMsg>>
+                + Into<crate::msg::AnyLightClientIdentified<crate::msg::AnyLcMsg>>,
+            crate::msg::InnerOf<$Any, L>: TryFrom<crate::msg::LcMsg<L>, Error = crate::msg::LcMsg<L>> + Into<crate::msg::LcMsg<L>>,
+        {
+            type Error = crate::msg::RelayerMsg;
+            fn try_from(value: crate::msg::RelayerMsg) -> Result<Self, crate::msg::RelayerMsg> {
+                let any_lc_msg = <crate::msg::AnyLightClientIdentified<crate::msg::AnyLcMsg>>::try_from(value)?;
+                let identified_lc_msg = <crate::msg::Identified<L, crate::msg::LcMsg<L>>>::try_from(any_lc_msg)
+                    .map_err(<crate::msg::AnyLightClientIdentified<crate::msg::AnyLcMsg>>::from)?;
+                let data =
+                    <crate::msg::InnerOf<$Any, L>>::try_from(identified_lc_msg.data).map_err(|x: crate::msg::LcMsg<L>| {
+                        Into::<crate::msg::AnyLightClientIdentified<crate::msg::AnyLcMsg>>::into(crate::msg::Identified::<L, crate::msg::LcMsg<L>>::new(
+                            identified_lc_msg.chain_id.clone(),
+                            x,
+                        ))
+                    })?;
+
+                Ok(crate::msg::Identified::new(identified_lc_msg.chain_id, data))
+            }
         }
 
         $(
@@ -300,46 +326,43 @@ macro_rules! any_enum {
 
                 impl<L: LightClient> TryInto<crate::msg::Identified<L, $VariantInner>> for crate::msg::RelayerMsg
                 where
-                    crate::msg::AnyLcMsg: TryFrom<crate::msg::RelayerMsg, Error = crate::msg::RelayerMsg> + Into<crate::msg::RelayerMsg>,
-                    crate::msg::LcMsg<L>: TryFrom<crate::msg::AnyLcMsg, Error = crate::msg::AnyLcMsg> + Into<crate::msg::AnyLcMsg>,
+                    crate::msg::AnyLightClientIdentified<crate::msg::AnyLcMsg>: TryFrom<crate::msg::RelayerMsg, Error = crate::msg::RelayerMsg> + Into<crate::msg::RelayerMsg>,
+                    crate::msg::LcMsg<L>: TryFrom<crate::msg::AnyLightClientIdentified<crate::msg::AnyLcMsg>, Error = crate::msg::AnyLightClientIdentified<crate::msg::AnyLcMsg>> + Into<crate::msg::AnyLightClientIdentified<crate::msg::AnyLcMsg>>,
                     crate::msg::Identified<L, $VariantInner>: TryFrom<crate::msg::LcMsg<L>, Error = crate::msg::LcMsg<L>> + Into<crate::msg::LcMsg<L>>,
                 {
                     type Error = crate::msg::RelayerMsg;
 
                     fn try_into(self) -> Result<crate::msg::Identified<L, $VariantInner>, crate::msg::RelayerMsg> {
-                        crate::msg::AnyLcMsg::try_from(self)
+                        <crate::msg::AnyLightClientIdentified<crate::msg::AnyLcMsg>>::try_from(self)
                             .and_then(|x| <crate::msg::LcMsg<L>>::try_from(x).map_err(Into::into))
                             .and_then(|x| {
                                 <crate::msg::Identified<L, $VariantInner>>::try_from(x)
                                     .map_err(Into::<crate::msg::LcMsg<L>>::into)
-                                    .map_err(Into::<crate::msg::AnyLcMsg>::into)
+                                    .map_err(Into::<crate::msg::AnyLightClientIdentified<crate::msg::AnyLcMsg>>::into)
                                     .map_err(Into::<crate::msg::RelayerMsg>::into)
                             })
                     }
                 }
 
-                impl<L: LightClient> TryFrom<crate::msg::LcMsg<L>> for crate::msg::Identified<L, $VariantInner> {
+                impl<L: LightClient> TryFrom<crate::msg::LcMsg<L>> for $VariantInner {
                     type Error = crate::msg::LcMsg<L>;
 
                     fn try_from(value: crate::msg::LcMsg<L>) -> Result<Self, crate::msg::LcMsg<L>> {
                         match value {
-                            crate::msg::LcMsg::$Enum(crate::msg::Identified {
-                                chain_id,
-                                data: $Enum::$Variant(data),
-                            }) => Ok(crate::msg::Identified { chain_id, data }),
+                            crate::msg::LcMsg::$Enum($Enum::$Variant(data)) => Ok(data),
                             _ => Err(value),
                         }
                     }
                 }
 
-                impl<L: LightClient> TryFrom<crate::msg::AnyLcMsg> for crate::msg::Identified<L, $VariantInner>
+                impl<L: LightClient> TryFrom<crate::msg::AnyLightClientIdentified<crate::msg::AnyLcMsg>> for crate::msg::Identified<L, $VariantInner>
                 where
-                    crate::msg::LcMsg<L>: TryFrom<crate::msg::AnyLcMsg, Error = crate::msg::AnyLcMsg> + Into<crate::msg::AnyLcMsg>,
+                    crate::msg::LcMsg<L>: TryFrom<crate::msg::AnyLightClientIdentified<crate::msg::AnyLcMsg>, Error = crate::msg::AnyLightClientIdentified<crate::msg::AnyLcMsg>> + Into<crate::msg::AnyLightClientIdentified<crate::msg::AnyLcMsg>>,
                     Self: TryFrom<crate::msg::LcMsg<L>, Error = crate::msg::LcMsg<L>> + Into<crate::msg::LcMsg<L>>,
                 {
-                    type Error = crate::msg::AnyLcMsg;
+                    type Error = crate::msg::AnyLightClientIdentified<crate::msg::AnyLcMsg>;
 
-                    fn try_from(value: crate::msg::AnyLcMsg) -> Result<Self, crate::msg::AnyLcMsg> {
+                    fn try_from(value: crate::msg::AnyLightClientIdentified<crate::msg::AnyLcMsg>) -> Result<Self, crate::msg::AnyLightClientIdentified<crate::msg::AnyLcMsg>> {
                         crate::msg::LcMsg::<L>::try_from(value).and_then(|x| Self::try_from(x).map_err(Into::into))
                     }
                 }
@@ -350,6 +373,7 @@ macro_rules! any_enum {
 
 pub(crate) use any_enum;
 
+// TODO: Move to file
 pub mod aggregate {
     use std::fmt::Display;
 
@@ -366,12 +390,12 @@ pub mod aggregate {
     use super::ChainIdOf;
     use crate::{
         chain::{ChainOf, HeightOf, LightClient},
-        msg::{fetch::FetchStateProof, identified},
+        msg::fetch::FetchStateProof,
     };
 
     any_enum! {
         /// Aggregate data, using data from [`AggregateData`]
-        #[any = AnyAggregate(identified!(Aggregate<L>))]
+        #[any = AnyAggregate]
         pub enum Aggregate<L: LightClient> {
             ConnectionOpenTry(AggregateConnectionOpenTry<L>),
             ConnectionOpenAck(AggregateConnectionOpenAck<L>),
@@ -657,26 +681,215 @@ pub mod aggregate {
     }
 }
 
-impl<L: LightClient, T> TryFrom<AggregateData> for Identified<L, T>
-where
-    T: TryFrom<Data<L>, Error = Data<L>> + Into<Data<L>> + Debug + Clone + PartialEq,
-    identified!(Data<L>): TryFrom<AggregateData, Error = AggregateData> + Into<AggregateData>,
+// impl<L: LightClient, T> TryFrom<AggregateData> for Identified<L, T>
+// where
+//     T: TryFrom<Data<L>, Error = Data<L>> + Into<Data<L>> + Debug + Clone + PartialEq,
+//     identified!(Data<L>): TryFrom<AggregateData, Error = AggregateData> + Into<AggregateData>,
+// {
+//     type Error = AggregateData;
+
+//     fn try_from(value: AggregateData) -> Result<Self, Self::Error> {
+//         let Identified { chain_id, data } = <identified!(Data<L>)>::try_from(value)?;
+
+//         match T::try_from(data) {
+//             Ok(t) => Ok(Identified { chain_id, data: t }),
+//             Err(data) => Err(Identified { chain_id, data }.into()),
+//         }
+//     }
+// }
+
+pub trait AnyLightClient {
+    type Inner<L: LightClient>: Debug
+        + Display
+        + Clone
+        + PartialEq
+        + Serialize
+        + for<'de> Deserialize<'de>;
+}
+
+#[derive(
+    DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, derive_more::Display,
+)]
+#[serde(bound(serialize = "", deserialize = ""))]
+#[allow(clippy::large_enum_variant)]
+pub enum AnyLightClientIdentified<T: AnyLightClient> {
+    // The 08-wasm client tracking the state of Evm<Mainnet>.
+    #[display(fmt = "EthereumMainnet({}, {})", "_0.chain_id", "_0.data")]
+    EthereumMainnet(Identified<EthereumMainnet, InnerOf<T, EthereumMainnet>>),
+    // The 08-wasm client tracking the state of Evm<Minimal>.
+    #[display(fmt = "EthereumMinimal({}, {})", "_0.chain_id", "_0.data")]
+    EthereumMinimal(Identified<EthereumMinimal, InnerOf<T, EthereumMinimal>>),
+    // The solidity client on Evm<Mainnet> tracking the state of Union.
+    #[display(fmt = "CometblsMainnet({}, {})", "_0.chain_id", "_0.data")]
+    CometblsMainnet(Identified<CometblsMainnet, InnerOf<T, CometblsMainnet>>),
+    // The solidity client on Evm<Minimal> tracking the state of Union.
+    #[display(fmt = "CometblsMinimal({}, {})", "_0.chain_id", "_0.data")]
+    CometblsMinimal(Identified<CometblsMinimal, InnerOf<T, CometblsMinimal>>),
+}
+
+// pub trait Map<T> {
+//     type This<S>;
+
+//     fn map<U>(this: Self::This<T>, f: impl FnOnce(T) -> U) -> Self::This<U>;
+// }
+
+// impl<T> Map<T> for Option<T> {
+//     type This<S> = Option<S>;
+
+//     fn map<U>(this: Self::This<T>, f: impl FnOnce(T) -> U) -> Self::This<U> {
+//         this.map(f)
+//     }
+// }
+
+// impl<T, E> Map<T> for Result<T, E> {
+//     type This<S> = Result<S, E>;
+
+//     fn map<U>(this: Self::This<T>, f: impl FnOnce(T) -> U) -> Self::This<U> {
+//         this.map(f)
+//     }
+// }
+
+// impl<T: AnyLightClient> AnyLightClientIdentified<T> {
+//     pub fn map<U, A>(self, a: A) -> A::Output<AnyLightClientIdentified<U>>
+//     where
+//         U: AnyLightClient,
+//         A: AnyLightClientMapper<T, U>,
+//     // <AnyLightClientMapper<T, U>>::Output<>
+//         <A as AnyLightClientMapper<T, U>>::Output<
+//             Identified<EthereumMainnet, InnerOf<U, EthereumMainnet>>,
+//         >: Map<
+//             Identified<EthereumMainnet, InnerOf<U, EthereumMainnet>>,
+//             This<<A as AnyLightClientMapper<T, U>>::Output<
+//                 Identified<EthereumMainnet, InnerOf<U, EthereumMainnet>>,
+//             >> = <A as AnyLightClientMapper<T, U>>::Output<
+//                 Identified<EthereumMainnet, InnerOf<U, EthereumMainnet>>,
+//             >,
+//         >,
+//     {
+//         use AnyLightClientIdentified as AnyLc;
+
+//         let t = match self {
+//             AnyLc::EthereumMainnet(t) => {
+//                 let t: A::Output<AnyLc<U>> = <A::Output<Identified<_, _>> as Map<_>>::map::<AnyLc<U>>(a.map(t), |x| AnyLc::EthereumMainnet(x));
+//             }
+//             AnyLc::EthereumMinimal(t) => {
+//                 <A::Output<Identified<_, _>> as Map<_>>::map::<AnyLc<U>>(a.map(t), |x| AnyLc::EthereumMinimal(x))
+//             }
+//             AnyLc::CometblsMainnet(t) => {
+//                 <A::Output<Identified<_, _>> as Map<_>>::map::<AnyLc<U>>(a.map(t), |x| AnyLc::CometblsMainnet(x))
+//             }
+//             AnyLc::CometblsMinimal(t) => {
+//                 <A::Output<Identified<_, _>> as Map<_>>::map::<AnyLc<U>>(a.map(t), |x| AnyLc::CometblsMinimal(x))
+//             }
+//             // EthereumMainnet(t) => a.map(t),
+//             // EthereumMinimal(t) => a.map(t),
+//             // CometblsMainnet(t) => a.map(t),
+//             // CometblsMinimal(t) => a.map(t),
+//         };
+
+//         todo!()
+//     }
+// }
+
+// trait AnyLightClientMapper<T: AnyLightClient, U: AnyLightClient> {
+//     type Output<O>: Map<O, This<O> = Self::Output<O>>;
+
+//     fn map<L: LightClient>(
+//         self,
+//         t: Identified<L, InnerOf<T, L>>,
+//     ) -> Self::Output<Identified<L, InnerOf<U, L>>>;
+
+//     // fn map2(
+//     //     self,
+//     //     t: Identified<impl LightClient, InnerOf<T, impl LightClient>>,
+//     // ) -> Self::Output<Identified<impl LightClient, InnerOf<U, impl LightClient>>>;
+// }
+
+impl<T: AnyLightClient> From<Identified<EthereumMainnet, InnerOf<T, EthereumMainnet>>>
+    for AnyLightClientIdentified<T>
 {
-    type Error = AggregateData;
+    fn from(v: Identified<EthereumMainnet, InnerOf<T, EthereumMainnet>>) -> Self {
+        Self::EthereumMainnet(v)
+    }
+}
 
-    fn try_from(value: AggregateData) -> Result<Self, Self::Error> {
-        let Identified { chain_id, data } = <identified!(Data<L>)>::try_from(value)?;
-
-        match T::try_from(data) {
-            Ok(t) => Ok(Identified { chain_id, data: t }),
-            Err(data) => Err(Identified { chain_id, data }.into()),
+impl<T: AnyLightClient> TryFrom<AnyLightClientIdentified<T>>
+    for Identified<EthereumMainnet, InnerOf<T, EthereumMainnet>>
+{
+    type Error = AnyLightClientIdentified<T>;
+    fn try_from(v: AnyLightClientIdentified<T>) -> Result<Self, Self::Error> {
+        if let AnyLightClientIdentified::EthereumMainnet(v) = v {
+            Ok(v)
+        } else {
+            Err(v)
         }
     }
 }
 
-pub trait AnyLightClient {
-    type Inner<L: LightClient>: Debug + Clone + PartialEq + Serialize + for<'de> Deserialize<'de>;
+impl<T: AnyLightClient> From<Identified<EthereumMinimal, InnerOf<T, EthereumMinimal>>>
+    for AnyLightClientIdentified<T>
+{
+    fn from(v: Identified<EthereumMinimal, InnerOf<T, EthereumMinimal>>) -> Self {
+        Self::EthereumMinimal(v)
+    }
 }
+
+impl<T: AnyLightClient> TryFrom<AnyLightClientIdentified<T>>
+    for Identified<EthereumMinimal, InnerOf<T, EthereumMinimal>>
+{
+    type Error = AnyLightClientIdentified<T>;
+    fn try_from(v: AnyLightClientIdentified<T>) -> Result<Self, Self::Error> {
+        if let AnyLightClientIdentified::EthereumMinimal(v) = v {
+            Ok(v)
+        } else {
+            Err(v)
+        }
+    }
+}
+
+impl<T: AnyLightClient> From<Identified<CometblsMainnet, InnerOf<T, CometblsMainnet>>>
+    for AnyLightClientIdentified<T>
+{
+    fn from(v: Identified<CometblsMainnet, InnerOf<T, CometblsMainnet>>) -> Self {
+        Self::CometblsMainnet(v)
+    }
+}
+
+impl<T: AnyLightClient> TryFrom<AnyLightClientIdentified<T>>
+    for Identified<CometblsMainnet, InnerOf<T, CometblsMainnet>>
+{
+    type Error = AnyLightClientIdentified<T>;
+    fn try_from(v: AnyLightClientIdentified<T>) -> Result<Self, Self::Error> {
+        if let AnyLightClientIdentified::CometblsMainnet(v) = v {
+            Ok(v)
+        } else {
+            Err(v)
+        }
+    }
+}
+
+impl<T: AnyLightClient> From<Identified<CometblsMinimal, InnerOf<T, CometblsMinimal>>>
+    for AnyLightClientIdentified<T>
+{
+    fn from(v: Identified<CometblsMinimal, InnerOf<T, CometblsMinimal>>) -> Self {
+        Self::CometblsMinimal(v)
+    }
+}
+
+impl<T: AnyLightClient> TryFrom<AnyLightClientIdentified<T>>
+    for Identified<CometblsMinimal, InnerOf<T, CometblsMinimal>>
+{
+    type Error = AnyLightClientIdentified<T>;
+    fn try_from(v: AnyLightClientIdentified<T>) -> Result<Self, Self::Error> {
+        if let AnyLightClientIdentified::CometblsMinimal(v) = v {
+            Ok(v)
+        } else {
+            Err(v)
+        }
+    }
+}
+
+pub type AnyDataIdentified = AnyLightClientIdentified<AnyData>;
 
 macro_rules! enum_variants_conversions {
     (
@@ -759,6 +972,7 @@ mod tests {
             data::Data,
             event,
             event::{Event, IbcEvent},
+            fetch,
             fetch::{
                 AnyFetch, Fetch, FetchSelfClientState, FetchSelfConsensusState,
                 FetchTrustedClientState,
@@ -880,18 +1094,25 @@ mod tests {
         ));
 
         print_json(RelayerMsg::Timeout {
-            timeout_timestamp: 1,
-            msg: Box::new(RelayerMsg::Lc(AnyLcMsg::CometblsMinimal(LcMsg::Event(
-                Identified {
-                    chain_id: eth_chain_id,
-                    data: crate::msg::event::Event::Command(
-                        crate::msg::event::Command::UpdateClient {
-                            client_id: parse!("cometbls-0"),
-                            counterparty_client_id: parse!("08-wasm-0"),
-                        },
-                    ),
+            timeout_timestamp: u64::MAX,
+            msg: Box::new(event::<CometblsMinimal>(
+                eth_chain_id,
+                crate::msg::event::Command::UpdateClient {
+                    client_id: parse!("cometbls-0"),
+                    counterparty_client_id: parse!("08-wasm-0"),
                 },
-            )))),
+            )),
+        });
+
+        print_json(RelayerMsg::Timeout {
+            timeout_timestamp: u64::MAX,
+            msg: Box::new(event::<EthereumMinimal>(
+                union_chain_id.clone(),
+                crate::msg::event::Command::UpdateClient {
+                    client_id: parse!("08-wasm-0"),
+                    counterparty_client_id: parse!("cometbls-0"),
+                },
+            )),
         });
 
         println!("\ncreate client msgs\n");
@@ -900,18 +1121,18 @@ mod tests {
             [
                 RelayerMsg::Aggregate {
                     queue: [
-                        RelayerMsg::Lc(AnyLcMsg::EthereumMinimal(LcMsg::Fetch(Identified {
-                            chain_id: union_chain_id.clone(),
-                            data: Fetch::SelfClientState(FetchSelfClientState {
+                        fetch::<EthereumMinimal>(
+                            union_chain_id.clone(),
+                            FetchSelfClientState {
                                 at: QueryHeight::Latest,
-                            }),
-                        }))),
-                        RelayerMsg::Lc(AnyLcMsg::EthereumMinimal(LcMsg::Fetch(Identified {
-                            chain_id: union_chain_id.clone(),
-                            data: Fetch::SelfConsensusState(FetchSelfConsensusState {
+                            },
+                        ),
+                        fetch::<EthereumMinimal>(
+                            union_chain_id.clone(),
+                            FetchSelfConsensusState {
                                 at: QueryHeight::Latest,
-                            }),
-                        }))),
+                            },
+                        )
                     ]
                     .into(),
                     data: [].into_iter().collect(),
@@ -919,6 +1140,7 @@ mod tests {
                         chain_id: eth_chain_id,
                         data: Aggregate::CreateClient(AggregateCreateClient {
                             config: CometblsConfig {
+                                client_type: "cometbls".to_string(),
                                 cometbls_client_address: Address(hex!(
                                     "83428c7db9815f482a39a1715684dcf755021997"
                                 )),
@@ -928,18 +1150,18 @@ mod tests {
                 },
                 RelayerMsg::Aggregate {
                     queue: [
-                        RelayerMsg::Lc(AnyLcMsg::CometblsMinimal(LcMsg::Fetch(Identified {
-                            chain_id: eth_chain_id,
-                            data: Fetch::SelfClientState(FetchSelfClientState {
+                        fetch::<CometblsMinimal>(
+                            eth_chain_id,
+                            FetchSelfClientState {
                                 at: QueryHeight::Latest,
-                            }),
-                        }))),
-                        RelayerMsg::Lc(AnyLcMsg::CometblsMinimal(LcMsg::Fetch(Identified {
-                            chain_id: eth_chain_id,
-                            data: Fetch::SelfConsensusState(FetchSelfConsensusState {
+                            },
+                        ),
+                        fetch::<CometblsMinimal>(
+                            eth_chain_id,
+                            FetchSelfConsensusState {
                                 at: QueryHeight::Latest,
-                            }),
-                        }))),
+                            },
+                        )
                     ]
                     .into(),
                     data: [].into_iter().collect(),
@@ -1000,42 +1222,30 @@ pub(crate) use identified;
 #[serde(bound(serialize = "", deserialize = ""))]
 #[allow(clippy::large_enum_variant)]
 pub enum LcMsg<L: LightClient> {
-    #[display(fmt = "Event({}, {})", "_0.chain_id", "_0.data")]
+    #[display(fmt = "Event({})", "_0")]
     Event(InnerOf<AnyEvent, L>),
     // data that has been read
-    #[display(fmt = "Data({}, {})", "_0.chain_id", "_0.data")]
+    #[display(fmt = "Data({})", "_0")]
     Data(InnerOf<AnyData, L>),
     // read
-    #[display(fmt = "Fetch({}, {})", "_0.chain_id", "_0.data")]
+    #[display(fmt = "Fetch({})", "_0")]
     Fetch(InnerOf<AnyFetch, L>),
     // write
-    #[display(fmt = "Msg({}, {})", "_0.chain_id", "_0.data")]
+    #[display(fmt = "Msg({})", "_0")]
     Msg(InnerOf<AnyMsg, L>),
-    #[display(fmt = "Wait({}, {})", "_0.chain_id", "_0.data")]
+    #[display(fmt = "Wait({})", "_0")]
     Wait(InnerOf<AnyWait, L>),
     // REVIEW: Does this make sense as a top-level message?
-    #[display(fmt = "Aggregate({}, {})", "_0.chain_id", "_0.data")]
+    #[display(fmt = "Aggregate({})", "_0")]
     Aggregate(InnerOf<AnyAggregate, L>),
 }
 
 pub type InnerOf<T, L> = <T as AnyLightClient>::Inner<L>;
 
-enum_variants_conversions! {
-    #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, derive_more::Display)]
-    pub enum AnyLcMsg {
-        // The 08-wasm client tracking the state of Evm<Mainnet>.
-        #[display(fmt = "EthereumMainnet({})", "_0")]
-        EthereumMainnet(LcMsg<EthereumMainnet>),
-        // The 08-wasm client tracking the state of Evm<Minimal>.
-        #[display(fmt = "EthereumMinimal({})", "_0")]
-        EthereumMinimal(LcMsg<EthereumMinimal>),
-        // The solidity client on Evm<Mainnet> tracking the state of Union.
-        #[display(fmt = "CometblsMainnet({})", "_0")]
-        CometblsMainnet(LcMsg<CometblsMainnet>),
-        // The solidity client on Evm<Minimal> tracking the state of Union.
-        #[display(fmt = "CometblsMinimal({})", "_0")]
-        CometblsMinimal(LcMsg<CometblsMinimal>),
-    }
+pub enum AnyLcMsg {}
+
+impl AnyLightClient for AnyLcMsg {
+    type Inner<L: LightClient> = LcMsg<L>;
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
@@ -1043,6 +1253,8 @@ enum_variants_conversions! {
     serialize = "Data: ::serde::Serialize",
     deserialize = "Data: for<'d> Deserialize<'d>"
 ))]
+// TODO: `Data: AnyLightClient`
+// prerequisites: derive macro for AnyLightClient
 pub struct Identified<L: LightClient, Data: Debug + Clone + PartialEq> {
     pub chain_id: ChainIdOf<L>,
     pub data: Data,
@@ -1058,7 +1270,10 @@ pub trait DoAggregate<L>: Sized + Debug + Clone + PartialEq
 where
     L: LightClient,
 {
-    fn do_aggregate(_: Identified<L, Self>, _: VecDeque<AggregateData>) -> Vec<RelayerMsg>;
+    fn do_aggregate(
+        _: Identified<L, Self>,
+        _: VecDeque<AnyLightClientIdentified<AnyData>>,
+    ) -> Vec<RelayerMsg>;
 }
 
 // helper fns
@@ -1080,50 +1295,50 @@ pub fn defer(timestamp: u64) -> RelayerMsg {
 
 pub fn fetch<L: LightClient>(chain_id: ChainIdOf<L>, t: impl Into<Fetch<L>>) -> RelayerMsg
 where
-    AnyLcMsg: From<LcMsg<L>>,
+    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L>)>,
 {
-    RelayerMsg::Lc(AnyLcMsg::from(LcMsg::Fetch(Identified::new(
+    RelayerMsg::Lc(AnyLightClientIdentified::from(Identified::new(
         chain_id,
-        t.into(),
-    ))))
+        LcMsg::Fetch(t.into()),
+    )))
 }
 
 pub fn msg<L: LightClient>(chain_id: ChainIdOf<L>, t: impl Into<Msg<L>>) -> RelayerMsg
 where
-    AnyLcMsg: From<LcMsg<L>>,
+    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L>)>,
 {
-    RelayerMsg::Lc(AnyLcMsg::from(LcMsg::Msg(Identified::new(
+    RelayerMsg::Lc(AnyLightClientIdentified::from(Identified::new(
         chain_id,
-        t.into(),
-    ))))
-}
-
-pub fn event<L: LightClient>(chain_id: ChainIdOf<L>, t: impl Into<Event<L>>) -> RelayerMsg
-where
-    AnyLcMsg: From<LcMsg<L>>,
-{
-    RelayerMsg::Lc(AnyLcMsg::from(LcMsg::Event(Identified::new(
-        chain_id,
-        t.into(),
-    ))))
-}
-
-pub fn wait<L: LightClient>(chain_id: ChainIdOf<L>, t: impl Into<Wait<L>>) -> RelayerMsg
-where
-    AnyLcMsg: From<LcMsg<L>>,
-{
-    RelayerMsg::Lc(AnyLcMsg::from(LcMsg::Wait(Identified::new(
-        chain_id,
-        t.into(),
-    ))))
+        LcMsg::Msg(t.into()),
+    )))
 }
 
 pub fn data<L: LightClient>(chain_id: ChainIdOf<L>, t: impl Into<Data<L>>) -> RelayerMsg
 where
-    AnyLcMsg: From<LcMsg<L>>,
+    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L>)>,
 {
-    RelayerMsg::Lc(AnyLcMsg::from(LcMsg::Data(Identified::new(
+    RelayerMsg::Lc(AnyLightClientIdentified::from(Identified::new(
         chain_id,
-        t.into(),
-    ))))
+        LcMsg::Data(t.into()),
+    )))
+}
+
+pub fn wait<L: LightClient>(chain_id: ChainIdOf<L>, t: impl Into<Wait<L>>) -> RelayerMsg
+where
+    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L>)>,
+{
+    RelayerMsg::Lc(AnyLightClientIdentified::from(Identified::new(
+        chain_id,
+        LcMsg::Wait(t.into()),
+    )))
+}
+
+pub fn event<L: LightClient>(chain_id: ChainIdOf<L>, t: impl Into<Event<L>>) -> RelayerMsg
+where
+    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L>)>,
+{
+    RelayerMsg::Lc(AnyLightClientIdentified::from(Identified::new(
+        chain_id,
+        LcMsg::Event(t.into()),
+    )))
 }

@@ -19,12 +19,12 @@ use unionlabs::ibc::core::{
 
 use crate::{
     chain::{ChainOf, ClientStateOf, ConsensusStateOf, HeaderOf, HeightOf, LightClient},
-    msg::{any_enum, identified},
+    msg::any_enum,
 };
 
 any_enum! {
     /// Defines messages that are sent *to* the lightclient `L`.
-    #[any = AnyMsg(identified!(Msg<L>))]
+    #[any = AnyMsg]
     pub enum Msg<L: LightClient> {
         ConnectionOpenInit(MsgConnectionOpenInitData<L>),
         ConnectionOpenTry(MsgConnectionOpenTryData<L>),

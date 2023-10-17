@@ -3,15 +3,12 @@ use std::{
     error::Error,
     fmt::{Debug, Display},
     marker::PhantomData,
+    str::FromStr,
     sync::{Arc, Mutex},
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
-use chain_utils::{
-    evm::{Evm, EvmClientId, EvmClientType},
-    union::{Union, UnionClientId, UnionClientType},
-    EventSource,
-};
+use chain_utils::{evm::Evm, union::Union, EventSource};
 use frame_support_procedural::DebugNoBound;
 use frunk::{hlist_pat, HList};
 use futures::{future::BoxFuture, stream, Future, FutureExt, StreamExt, TryStreamExt};
@@ -23,8 +20,10 @@ use tokio::task::JoinSet;
 use unionlabs::{
     ethereum_consts_traits::{Mainnet, Minimal},
     events::{
-        ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit, ConnectionOpenTry,
-        CreateClient, IbcEvent, UpdateClient,
+        AcknowledgePacket, ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit, ChannelOpenTry,
+        ClientMisbehaviour, ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit,
+        ConnectionOpenTry, CreateClient, IbcEvent, RecvPacket, SendPacket, SubmitEvidence,
+        TimeoutPacket, UpdateClient, WriteAcknowledgement,
     },
     ibc::core::{
         channel::{
@@ -74,11 +73,11 @@ use crate::{
         },
         data,
         data::{
-            AcknowledgementProof, ChannelEnd, ChannelEndProof, ClientConsensusStateProof,
+            AcknowledgementProof, AnyData, ChannelEnd, ChannelEndProof, ClientConsensusStateProof,
             ClientStateProof, CommitmentProof, ConnectionEnd, ConnectionProof, Data,
             PacketAcknowledgement, SelfClientState, SelfConsensusState, TrustedClientState,
         },
-        defer, enum_variants_conversions,
+        defer, enum_variants_conversions, event,
         event::Event,
         fetch,
         fetch::{
@@ -94,8 +93,8 @@ use crate::{
         },
         retry, seq, wait,
         wait::{Wait, WaitForBlock, WaitForTimestamp, WaitForTrustedHeight},
-        AggregateData, AggregateReceiver, AnyLcMsg, ChainIdOf, DeferPoint, DoAggregate, Identified,
-        LcMsg, RelayerMsg,
+        AggregateData, AggregateReceiver, AnyLcMsg, AnyLightClientIdentified, ChainIdOf,
+        DeferPoint, DoAggregate, Identified, LcMsg, RelayerMsg,
     },
     queue::aggregate_data::UseAggregate,
     DELAY_PERIOD,
@@ -421,236 +420,24 @@ impl<Q: Queue> Voyager<Q> {
                 .map(|(chain_id, chain)| {
                     chain
                         .events(())
-                        .map_ok(move |event| {
-                            if chain_id != event.chain_id {
+                        .map_ok(move |chain_event| {
+                            if chain_id != chain_event.chain_id {
                                 tracing::warn!(
                                     "chain {chain_id} produced an event from chain {}",
-                                    event.chain_id
+                                    chain_event.chain_id
                                 );
                             }
 
-                            let event = match event.event {
-                                IbcEvent::CreateClient(create_client) => {
-                                    match create_client.client_type {
-                                        EvmClientType::Cometbls(_) => {
-                                            LcMsg::<CometblsMinimal>::Event(Identified {
-                                                chain_id,
-                                                data: Event::Ibc(crate::msg::event::IbcEvent {
-                                                    block_hash: event.block_hash,
-                                                    height: event.height,
-                                                    event: IbcEvent::CreateClient(CreateClient {
-                                                        client_id: create_client
-                                                            .client_id
-                                                            .try_into()
-                                                            .expect(
-                                                                "only cometbls supported currently",
-                                                            ),
-                                                        client_type: chain_utils::evm::Cometbls,
-                                                        consensus_height: create_client
-                                                            .consensus_height,
-                                                    }),
-                                                }),
-                                            })
-                                        }
-                                    }
-                                }
-                                IbcEvent::UpdateClient(_) => todo!(),
-                                IbcEvent::ClientMisbehaviour(_) => todo!(),
-                                IbcEvent::SubmitEvidence(_) => todo!(),
-                                IbcEvent::ConnectionOpenInit(init) => match init.client_id {
-                                    EvmClientId::Cometbls(client_id) => {
-                                        if let Ok(counterparty_client_id) = init
-                                            .counterparty_client_id
-                                            .parse::<<EthereumMinimal as LightClient>::ClientId>()
-                                        {
-                                            LcMsg::<CometblsMinimal>::Event(Identified {
-                                                chain_id: event.chain_id,
-                                                data: Event::Ibc(crate::msg::event::IbcEvent {
-                                                    block_hash: event.block_hash,
-                                                    height: event.height,
-                                                    event: IbcEvent::ConnectionOpenInit(
-                                                        ConnectionOpenInit {
-                                                            connection_id: init.connection_id,
-                                                            client_id,
-                                                            counterparty_client_id,
-                                                            counterparty_connection_id: init
-                                                                .counterparty_connection_id,
-                                                        },
-                                                    ),
-                                                }),
-                                            })
-                                        } else {
-                                            panic!()
-                                        }
-                                    }
+                            event::<CometblsMinimal>(
+                                chain_event.chain_id,
+                                crate::msg::event::IbcEvent {
+                                    block_hash: chain_event.block_hash,
+                                    height: chain_event.height,
+                                    event: chain_event_to_lc_event::<CometblsMinimal>(
+                                        chain_event.event,
+                                    ),
                                 },
-                                IbcEvent::ConnectionOpenTry(try_) => match try_.client_id {
-                                    EvmClientId::Cometbls(client_id) => {
-                                        if let Ok(counterparty_client_id) = try_
-                                            .counterparty_client_id
-                                            .parse::<<EthereumMinimal as LightClient>::ClientId>()
-                                        {
-                                            LcMsg::<CometblsMinimal>::Event(Identified {
-                                                chain_id: event.chain_id,
-                                                data: Event::Ibc(crate::msg::event::IbcEvent {
-                                                    block_hash: event.block_hash,
-                                                    height: event.height,
-                                                    event: IbcEvent::ConnectionOpenTry(
-                                                        ConnectionOpenTry {
-                                                            connection_id: try_.connection_id,
-                                                            client_id,
-                                                            counterparty_client_id,
-                                                            counterparty_connection_id: try_
-                                                                .counterparty_connection_id,
-                                                        },
-                                                    ),
-                                                }),
-                                            })
-                                        } else {
-                                            panic!()
-                                        }
-                                    }
-                                },
-                                IbcEvent::ConnectionOpenAck(ack) => match ack.client_id {
-                                    EvmClientId::Cometbls(client_id) => {
-                                        if let Ok(counterparty_client_id) = ack
-                                            .counterparty_client_id
-                                            .parse::<<EthereumMinimal as LightClient>::ClientId>()
-                                        {
-                                            LcMsg::<CometblsMinimal>::Event(Identified {
-                                                chain_id: event.chain_id,
-                                                data: Event::Ibc(crate::msg::event::IbcEvent {
-                                                    block_hash: event.block_hash,
-                                                    height: event.height,
-                                                    event: IbcEvent::ConnectionOpenAck(
-                                                        ConnectionOpenAck {
-                                                            connection_id: ack.connection_id,
-                                                            client_id,
-                                                            counterparty_client_id,
-                                                            counterparty_connection_id: ack
-                                                                .counterparty_connection_id,
-                                                        },
-                                                    ),
-                                                }),
-                                            })
-                                        } else {
-                                            panic!()
-                                        }
-                                    }
-                                },
-                                IbcEvent::ConnectionOpenConfirm(confirm) => match confirm.client_id
-                                {
-                                    EvmClientId::Cometbls(client_id) => {
-                                        if let Ok(counterparty_client_id) = confirm
-                                            .counterparty_client_id
-                                            .parse::<<EthereumMinimal as LightClient>::ClientId>()
-                                        {
-                                            LcMsg::<CometblsMinimal>::Event(Identified {
-                                                chain_id: event.chain_id,
-                                                data: Event::Ibc(crate::msg::event::IbcEvent {
-                                                    block_hash: event.block_hash,
-                                                    height: event.height,
-                                                    event: IbcEvent::ConnectionOpenConfirm(
-                                                        ConnectionOpenConfirm {
-                                                            connection_id: confirm.connection_id,
-                                                            client_id,
-                                                            counterparty_client_id,
-                                                            counterparty_connection_id: confirm
-                                                                .counterparty_connection_id,
-                                                        },
-                                                    ),
-                                                }),
-                                            })
-                                        } else {
-                                            panic!()
-                                        }
-                                    }
-                                },
-                                // NOTE: CometblsMinimal assumed for now for channel events
-                                IbcEvent::ChannelOpenInit(init) => {
-                                    LcMsg::<CometblsMinimal>::Event(Identified {
-                                        chain_id: event.chain_id,
-                                        data: Event::Ibc(crate::msg::event::IbcEvent {
-                                            block_hash: event.block_hash,
-                                            height: event.height,
-                                            event: IbcEvent::ChannelOpenInit(init),
-                                        }),
-                                    })
-                                }
-                                IbcEvent::ChannelOpenTry(try_) => {
-                                    LcMsg::<CometblsMinimal>::Event(Identified {
-                                        chain_id: event.chain_id,
-                                        data: Event::Ibc(crate::msg::event::IbcEvent {
-                                            block_hash: event.block_hash,
-                                            height: event.height,
-                                            event: IbcEvent::ChannelOpenTry(try_),
-                                        }),
-                                    })
-                                }
-                                IbcEvent::ChannelOpenAck(ack) => {
-                                    LcMsg::<CometblsMinimal>::Event(Identified {
-                                        chain_id: event.chain_id,
-                                        data: Event::Ibc(crate::msg::event::IbcEvent {
-                                            block_hash: event.block_hash,
-                                            height: event.height,
-                                            event: IbcEvent::ChannelOpenAck(ack),
-                                        }),
-                                    })
-                                }
-                                IbcEvent::ChannelOpenConfirm(confirm) => {
-                                    LcMsg::<CometblsMinimal>::Event(Identified {
-                                        chain_id: event.chain_id,
-                                        data: Event::Ibc(crate::msg::event::IbcEvent {
-                                            block_hash: event.block_hash,
-                                            height: event.height,
-                                            event: IbcEvent::ChannelOpenConfirm(confirm),
-                                        }),
-                                    })
-                                }
-                                IbcEvent::RecvPacket(packet) => {
-                                    LcMsg::<CometblsMinimal>::Event(Identified {
-                                        chain_id: event.chain_id,
-                                        data: Event::Ibc(crate::msg::event::IbcEvent {
-                                            block_hash: event.block_hash,
-                                            height: event.height,
-                                            event: IbcEvent::RecvPacket(packet),
-                                        }),
-                                    })
-                                }
-                                IbcEvent::SendPacket(packet) => {
-                                    LcMsg::<CometblsMinimal>::Event(Identified {
-                                        chain_id: event.chain_id,
-                                        data: Event::Ibc(crate::msg::event::IbcEvent {
-                                            block_hash: event.block_hash,
-                                            height: event.height,
-                                            event: IbcEvent::SendPacket(packet),
-                                        }),
-                                    })
-                                }
-                                IbcEvent::AcknowledgePacket(ack_packet) => {
-                                    LcMsg::<CometblsMinimal>::Event(Identified {
-                                        chain_id: event.chain_id,
-                                        data: Event::Ibc(crate::msg::event::IbcEvent {
-                                            block_hash: event.block_hash,
-                                            height: event.height,
-                                            event: IbcEvent::AcknowledgePacket(ack_packet),
-                                        }),
-                                    })
-                                }
-                                IbcEvent::WriteAcknowledgement(write_ack) => {
-                                    LcMsg::<CometblsMinimal>::Event(Identified {
-                                        chain_id: event.chain_id,
-                                        data: Event::Ibc(crate::msg::event::IbcEvent {
-                                            block_hash: event.block_hash,
-                                            height: event.height,
-                                            event: IbcEvent::WriteAcknowledgement(write_ack),
-                                        }),
-                                    })
-                                }
-                                IbcEvent::TimeoutPacket(_) => todo!(),
-                            };
-
-                            RelayerMsg::Lc(AnyLcMsg::from(event))
+                            )
                         })
                         .map_err(|x| Box::new(x) as Box<dyn Debug + Send>)
                 })
@@ -660,261 +447,24 @@ impl<Q: Queue> Voyager<Q> {
                 .map(|(chain_id, chain)| {
                     chain
                         .events(())
-                        .map_ok(move |event| {
-                            if chain_id != event.chain_id {
+                        .map_ok(move |chain_event| {
+                            if chain_id != chain_event.chain_id {
                                 tracing::warn!(
                                     "chain {chain_id} produced an event from chain {}",
-                                    event.chain_id
+                                    chain_event.chain_id
                                 );
                             }
 
-                            let event = match event.event {
-                                IbcEvent::CreateClient(create_client) => {
-                                    match create_client.client_type {
-                                        // TODO: Introspect the contract for a client type beyond just "wasm"
-                                        UnionClientType::Wasm(_) => {
-                                            LcMsg::<EthereumMinimal>::Event(Identified {
-                                                chain_id: event.chain_id,
-                                                data: Event::Ibc(crate::msg::event::IbcEvent {
-                                                    block_hash: event.block_hash,
-                                                    height: event.height,
-                                                    event: IbcEvent::CreateClient(CreateClient {
-                                                        client_id: create_client
-                                                            .client_id
-                                                            .try_into()
-                                                            .expect(
-                                                                "only cometbls supported currently",
-                                                            ),
-                                                        client_type: chain_utils::union::Wasm,
-                                                        consensus_height: create_client
-                                                            .consensus_height,
-                                                    }),
-                                                }),
-                                            })
-                                        }
-                                        UnionClientType::Tendermint(_) => todo!(),
-                                    }
-                                }
-                                IbcEvent::UpdateClient(updated) => match updated.client_id {
-                                    UnionClientId::Wasm(client_id) => {
-                                        LcMsg::<EthereumMinimal>::Event(Identified {
-                                            chain_id: event.chain_id,
-                                            data: Event::Ibc(crate::msg::event::IbcEvent {
-                                                block_hash: event.block_hash,
-                                                height: event.height,
-                                                event: IbcEvent::UpdateClient(UpdateClient {
-                                                    client_id,
-                                                    client_type: chain_utils::union::Wasm,
-                                                    consensus_heights: updated.consensus_heights,
-                                                    header: updated.header,
-                                                }),
-                                            }),
-                                        })
-                                    }
-                                    UnionClientId::Tendermint(_) => todo!(),
+                            event::<EthereumMinimal>(
+                                chain_event.chain_id,
+                                crate::msg::event::IbcEvent {
+                                    block_hash: chain_event.block_hash,
+                                    height: chain_event.height,
+                                    event: chain_event_to_lc_event::<EthereumMinimal>(
+                                        chain_event.event,
+                                    ),
                                 },
-                                IbcEvent::ClientMisbehaviour(_) => todo!(),
-                                IbcEvent::SubmitEvidence(_) => todo!(),
-                                IbcEvent::ConnectionOpenInit(init) => match init.client_id {
-                                    UnionClientId::Wasm(client_id) => {
-                                        if let Ok(counterparty_client_id) = init
-                                            .counterparty_client_id
-                                            .parse::<<CometblsMinimal as LightClient>::ClientId>()
-                                        {
-                                            LcMsg::<EthereumMinimal>::Event(Identified {
-                                                chain_id: event.chain_id,
-                                                data: Event::Ibc(crate::msg::event::IbcEvent {
-                                                    block_hash: event.block_hash,
-                                                    height: event.height,
-                                                    event: IbcEvent::ConnectionOpenInit(
-                                                        ConnectionOpenInit {
-                                                            connection_id: init.connection_id,
-                                                            client_id,
-                                                            counterparty_client_id,
-                                                            counterparty_connection_id: init
-                                                                .counterparty_connection_id,
-                                                        },
-                                                    ),
-                                                }),
-                                            })
-                                        } else {
-                                            panic!()
-                                        }
-                                    }
-                                    UnionClientId::Tendermint(_) => todo!(),
-                                },
-                                IbcEvent::ConnectionOpenTry(try_) => match try_.client_id {
-                                    UnionClientId::Wasm(client_id) => {
-                                        if let Ok(counterparty_client_id) = try_
-                                            .counterparty_client_id
-                                            .parse::<<CometblsMinimal as LightClient>::ClientId>()
-                                        {
-                                            LcMsg::<EthereumMinimal>::Event(Identified {
-                                                chain_id: event.chain_id,
-                                                data: Event::Ibc(crate::msg::event::IbcEvent {
-                                                    block_hash: event.block_hash,
-                                                    height: event.height,
-                                                    event: IbcEvent::ConnectionOpenTry(
-                                                        ConnectionOpenTry {
-                                                            connection_id: try_.connection_id,
-                                                            client_id,
-                                                            counterparty_client_id,
-                                                            counterparty_connection_id: try_
-                                                                .counterparty_connection_id,
-                                                        },
-                                                    ),
-                                                }),
-                                            })
-                                        } else {
-                                            panic!()
-                                        }
-                                    }
-                                    UnionClientId::Tendermint(_) => todo!(),
-                                },
-                                IbcEvent::ConnectionOpenAck(ack) => match ack.client_id {
-                                    UnionClientId::Wasm(client_id) => {
-                                        if let Ok(counterparty_client_id) = ack
-                                            .counterparty_client_id
-                                            .parse::<<CometblsMinimal as LightClient>::ClientId>()
-                                        {
-                                            LcMsg::<EthereumMinimal>::Event(Identified {
-                                                chain_id: event.chain_id,
-                                                data: Event::Ibc(crate::msg::event::IbcEvent {
-                                                    block_hash: event.block_hash,
-                                                    height: event.height,
-                                                    event: IbcEvent::ConnectionOpenAck(
-                                                        ConnectionOpenAck {
-                                                            connection_id: ack.connection_id,
-                                                            client_id,
-                                                            counterparty_client_id,
-                                                            counterparty_connection_id: ack
-                                                                .counterparty_connection_id,
-                                                        },
-                                                    ),
-                                                }),
-                                            })
-                                        } else {
-                                            panic!()
-                                        }
-                                    }
-                                    UnionClientId::Tendermint(_) => todo!(),
-                                },
-                                IbcEvent::ConnectionOpenConfirm(confirm) => match confirm.client_id
-                                {
-                                    UnionClientId::Wasm(client_id) => {
-                                        if let Ok(counterparty_client_id) = confirm
-                                            .counterparty_client_id
-                                            .parse::<<CometblsMinimal as LightClient>::ClientId>()
-                                        {
-                                            LcMsg::<EthereumMinimal>::Event(Identified {
-                                                chain_id: event.chain_id,
-                                                data: Event::Ibc(crate::msg::event::IbcEvent {
-                                                    block_hash: event.block_hash,
-                                                    height: event.height,
-                                                    event: IbcEvent::ConnectionOpenConfirm(
-                                                        ConnectionOpenConfirm {
-                                                            connection_id: confirm.connection_id,
-                                                            client_id,
-                                                            counterparty_client_id,
-                                                            counterparty_connection_id: confirm
-                                                                .counterparty_connection_id,
-                                                        },
-                                                    ),
-                                                }),
-                                            })
-                                        } else {
-                                            panic!()
-                                        }
-                                    }
-                                    UnionClientId::Tendermint(_) => todo!(),
-                                },
-
-                                // NOTE: EthereumMinimal assumed for now for channel events
-                                IbcEvent::ChannelOpenInit(init) => {
-                                    LcMsg::<EthereumMinimal>::Event(Identified {
-                                        chain_id: event.chain_id,
-                                        data: Event::Ibc(crate::msg::event::IbcEvent {
-                                            block_hash: event.block_hash,
-                                            height: event.height,
-                                            event: IbcEvent::ChannelOpenInit(init),
-                                        }),
-                                    })
-                                }
-                                IbcEvent::ChannelOpenTry(try_) => {
-                                    LcMsg::<EthereumMinimal>::Event(Identified {
-                                        chain_id: event.chain_id,
-                                        data: Event::Ibc(crate::msg::event::IbcEvent {
-                                            block_hash: event.block_hash,
-                                            height: event.height,
-                                            event: IbcEvent::ChannelOpenTry(try_),
-                                        }),
-                                    })
-                                }
-                                IbcEvent::ChannelOpenAck(ack) => {
-                                    LcMsg::<EthereumMinimal>::Event(Identified {
-                                        chain_id: event.chain_id,
-                                        data: Event::Ibc(crate::msg::event::IbcEvent {
-                                            block_hash: event.block_hash,
-                                            height: event.height,
-                                            event: IbcEvent::ChannelOpenAck(ack),
-                                        }),
-                                    })
-                                }
-                                IbcEvent::ChannelOpenConfirm(confirm) => {
-                                    LcMsg::<EthereumMinimal>::Event(Identified {
-                                        chain_id: event.chain_id,
-                                        data: Event::Ibc(crate::msg::event::IbcEvent {
-                                            block_hash: event.block_hash,
-                                            height: event.height,
-                                            event: IbcEvent::ChannelOpenConfirm(confirm),
-                                        }),
-                                    })
-                                }
-
-                                IbcEvent::RecvPacket(recv_packet) => {
-                                    LcMsg::<EthereumMinimal>::Event(Identified {
-                                        chain_id: event.chain_id,
-                                        data: Event::Ibc(crate::msg::event::IbcEvent {
-                                            block_hash: event.block_hash,
-                                            height: event.height,
-                                            event: IbcEvent::RecvPacket(recv_packet),
-                                        }),
-                                    })
-                                }
-                                IbcEvent::SendPacket(send_packet) => {
-                                    LcMsg::<EthereumMinimal>::Event(Identified {
-                                        chain_id: event.chain_id,
-                                        data: Event::Ibc(crate::msg::event::IbcEvent {
-                                            block_hash: event.block_hash,
-                                            height: event.height,
-                                            event: IbcEvent::SendPacket(send_packet),
-                                        }),
-                                    })
-                                }
-                                IbcEvent::AcknowledgePacket(ack_packet) => {
-                                    LcMsg::<EthereumMinimal>::Event(Identified {
-                                        chain_id: event.chain_id,
-                                        data: Event::Ibc(crate::msg::event::IbcEvent {
-                                            block_hash: event.block_hash,
-                                            height: event.height,
-                                            event: IbcEvent::AcknowledgePacket(ack_packet),
-                                        }),
-                                    })
-                                }
-                                IbcEvent::WriteAcknowledgement(write_ack) => {
-                                    LcMsg::<EthereumMinimal>::Event(Identified {
-                                        chain_id: event.chain_id,
-                                        data: Event::Ibc(crate::msg::event::IbcEvent {
-                                            block_hash: event.block_hash,
-                                            height: event.height,
-                                            event: IbcEvent::WriteAcknowledgement(write_ack),
-                                        }),
-                                    })
-                                }
-                                IbcEvent::TimeoutPacket(_) => todo!(),
-                            };
-
-                            RelayerMsg::Lc(AnyLcMsg::from(event))
+                            )
                         })
                         .map_err(|x| Box::new(x) as Box<dyn Debug + Send>)
                 })
@@ -1009,17 +559,17 @@ impl Worker {
                     }
 
                     let res = match any_lc_msg {
-                        AnyLcMsg::EthereumMainnet(msg) => {
+                        AnyLightClientIdentified::EthereumMainnet(msg) => {
                             let vec: Vec<RelayerMsg> = self.handle_msg_generic::<EthereumMainnet>(msg).await.map_err(AnyLcError::EthereumMainnet)?;
                             vec
                         }
-                        AnyLcMsg::EthereumMinimal(msg) => {
+                        AnyLightClientIdentified::EthereumMinimal(msg) => {
                             self.handle_msg_generic::<EthereumMinimal>(msg).await.map_err(AnyLcError::EthereumMinimal)?
                         }
-                        AnyLcMsg::CometblsMainnet(msg) => {
+                        AnyLightClientIdentified::CometblsMainnet(msg) => {
                             self.handle_msg_generic::<CometblsMainnet>(msg).await.map_err(AnyLcError::CometblsMainnet)?
                         }
-                        AnyLcMsg::CometblsMinimal(msg) => {
+                        AnyLightClientIdentified::CometblsMinimal(msg) => {
                             self.handle_msg_generic::<CometblsMinimal>(msg).await.map_err(AnyLcError::CometblsMinimal)?
                         }
                     };
@@ -1046,7 +596,7 @@ impl Worker {
                     timeout_timestamp,
                     msg,
                 } => {
-                    // if we haven't hit the time yet, requeue the defer msg
+                    // if we haven't hit the timeout yet, handle the msg
                     if now() > timeout_timestamp {
                         tracing::warn!(json = %serde_json::to_string(&msg).unwrap(), "message expired");
 
@@ -1098,7 +648,7 @@ impl Worker {
                         let msgs = self.handle_msg(msg, depth + 1).await?;
 
                         for m in msgs {
-                            match m.try_into() {
+                            match <AnyLightClientIdentified<AnyData>>::try_from(m) {
                                 Ok(d) => {
                                     data.push_back(d);
                                 }
@@ -1146,12 +696,15 @@ impl Worker {
         .boxed()
     }
 
-    async fn handle_msg_generic<L>(&self, msg: LcMsg<L>) -> Result<Vec<RelayerMsg>, LcError<L>>
+    async fn handle_msg_generic<L>(
+        &self,
+        msg: identified!(LcMsg<L>),
+    ) -> Result<Vec<RelayerMsg>, LcError<L>>
     where
         L: LightClient,
         Self: GetLc<L>,
-        AnyLcMsg: From<LcMsg<L>>,
-        AnyLcMsg: From<LcMsg<L::Counterparty>>,
+        AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L>)>,
+        AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L::Counterparty>)>,
         AggregateReceiver: From<identified!(Aggregate<L>)>,
         // TODO: Remove once we no longer unwrap in handle_fetch
         <<L as LightClient>::ClientId as TryFrom<
@@ -1161,32 +714,28 @@ impl Worker {
             <<L::Counterparty as LightClient>::HostChain as Chain>::ClientId,
         >>::Error: Debug,
     {
-        match msg {
-            LcMsg::Event(event) => Ok(handle_event(self.get_lc(&event.chain_id), event.data)),
+        let l = self.get_lc(&msg.chain_id);
+
+        match msg.data {
+            LcMsg::Event(event) => Ok(handle_event(l, event)),
             LcMsg::Data(data) => {
                 // TODO: Figure out a way to bubble it up to the top level
 
-                // if depth == 0 {
-                tracing::error!(data = %serde_json::to_string(&data).unwrap(), "received data outside of an aggregation");
-
-                // panic!();
+                tracing::error!(
+                    data = %serde_json::to_string(&data).unwrap(),
+                    "received data outside of an aggregation"
+                );
 
                 Ok([].into())
-                // } else {
-                //     [RelayerMsg::Lc(AnyLcMsg::from(LcMsg::Data(data)))].into()
-                // }
             }
-            LcMsg::Fetch(fetch) => Ok(handle_fetch(self.get_lc(&fetch.chain_id), fetch.data).await),
-            LcMsg::Msg(msg) => {
+            LcMsg::Fetch(fetch) => Ok(handle_fetch(l, fetch).await),
+            LcMsg::Msg(m) => {
                 // NOTE: `Msg`s don't requeue any `RelayerMsg`s; they are side-effect only.
-                self.get_lc(&msg.chain_id)
-                    .msg(msg.data)
-                    .await
-                    .map_err(LcError::Msg)?;
+                l.msg(m).await.map_err(LcError::Msg)?;
 
                 Ok([].into())
             }
-            LcMsg::Wait(wait) => Ok(handle_wait(&self.get_lc(&wait.chain_id), wait.data).await),
+            LcMsg::Wait(wait) => Ok(handle_wait(l, wait).await),
             LcMsg::Aggregate(_) => {
                 todo!()
             }
@@ -1269,7 +818,7 @@ impl GetLc<EthereumMainnet> for Worker {
 
 fn handle_event<L: LightClient>(l: L, event: crate::msg::event::Event<L>) -> Vec<RelayerMsg>
 where
-    AnyLcMsg: From<LcMsg<L>>,
+    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L>)>,
     AggregateReceiver: From<identified!(Aggregate<L>)>,
 {
     match event {
@@ -1636,7 +1185,7 @@ fn mk_aggregate_update<L: LightClient>(
     event_height: HeightOf<ChainOf<L>>,
 ) -> RelayerMsg
 where
-    AnyLcMsg: From<LcMsg<L>>,
+    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L>)>,
     AggregateReceiver: From<identified!(Aggregate<L>)>,
 {
     RelayerMsg::Aggregate {
@@ -1663,7 +1212,7 @@ where
 
 async fn handle_fetch<L: LightClient>(l: L, fetch: Fetch<L>) -> Vec<RelayerMsg>
 where
-    AnyLcMsg: From<LcMsg<L>>,
+    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L>)>,
 // TODO: Remove once we no longer unwrap
     <<L as LightClient>::ClientId as TryFrom<
         <<L as LightClient>::HostChain as Chain>::ClientId,
@@ -1842,10 +1391,10 @@ where
     relayer_msg
 }
 
-async fn handle_wait<L: LightClient>(l: &L, wait_msg: Wait<L>) -> Vec<RelayerMsg>
+async fn handle_wait<L: LightClient>(l: L, wait_msg: Wait<L>) -> Vec<RelayerMsg>
 where
-    AnyLcMsg: From<LcMsg<L>>,
-    AnyLcMsg: From<LcMsg<L::Counterparty>>,
+    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L>)>,
+    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L::Counterparty>)>,
 {
     match wait_msg {
         Wait::Block(WaitForBlock(height)) => {
@@ -1975,8 +1524,8 @@ where
     identified!(PacketAcknowledgement<L>):
         TryFrom<AggregateData, Error = AggregateData> + Into<AggregateData>,
 
-    AnyLcMsg: From<LcMsg<L>>,
-    AnyLcMsg: From<LcMsg<L::Counterparty>>,
+    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L>)>,
+    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L::Counterparty>)>,
     AggregateData: From<identified!(Data<L>)>,
     AggregateReceiver: From<identified!(Aggregate<L>)>,
 {
@@ -2161,7 +1710,7 @@ impl<L: LightClient> UseAggregate<L> for identified!(AggregateChannelHandshakeUp
 where
     identified!(ConnectionEnd<L>):
         TryFrom<AggregateData, Error = AggregateData> + Into<AggregateData>,
-    AnyLcMsg: From<LcMsg<L>>,
+    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L>)>,
     AggregateReceiver: From<identified!(Aggregate<L>)>,
 {
     type AggregatedData = HList![identified!(ConnectionEnd<L>)];
@@ -2225,7 +1774,7 @@ impl<L: LightClient> UseAggregate<L> for identified!(AggregatePacketUpdateClient
 where
     identified!(ConnectionEnd<L>):
         TryFrom<AggregateData, Error = AggregateData> + Into<AggregateData>,
-    AnyLcMsg: From<LcMsg<L>>,
+    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L>)>,
     AggregateReceiver: From<identified!(Aggregate<L>)>,
 {
     type AggregatedData = HList![identified!(ConnectionEnd<L>)];
@@ -2295,7 +1844,7 @@ where
 impl<L: LightClient> UseAggregate<L> for identified!(AggregateConnectionFetchFromChannelEnd<L>)
 where
     identified!(ChannelEnd<L>): TryFrom<AggregateData, Error = AggregateData> + Into<AggregateData>,
-    AnyLcMsg: From<LcMsg<L>>,
+    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L>)>,
 {
     type AggregatedData = HList![identified!(ChannelEnd<L>)];
 
@@ -2328,8 +1877,8 @@ impl<L: LightClient> UseAggregate<L> for identified!(AggregateUpdateClientFromCl
 where
     identified!(TrustedClientState<L>):
         TryFrom<AggregateData, Error = AggregateData> + Into<AggregateData>,
-    // AnyLcMsg: From<LcMsg<L>>,
-    AnyLcMsg: From<LcMsg<L::Counterparty>>,
+    // AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L>)>,
+    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L::Counterparty>)>,
     AggregateReceiver: From<identified!(Aggregate<L>)>,
 {
     type AggregatedData = HList![identified!(TrustedClientState<L>)];
@@ -2386,8 +1935,8 @@ impl<L: LightClient> UseAggregate<L> for identified!(AggregateUpdateClient<L>)
 where
     identified!(TrustedClientState<L>):
         TryFrom<AggregateData, Error = AggregateData> + Into<AggregateData>,
-    // AnyLcMsg: From<LcMsg<L::Counterparty>>,
-    AnyLcMsg: From<LcMsg<L::Counterparty>>,
+    // AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L::Counterparty>)>,
+    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L::Counterparty>)>,
     AggregateReceiver: From<identified!(Aggregate<L>)>,
 {
     type AggregatedData = HList![identified!(TrustedClientState<L>)];
@@ -2446,7 +1995,7 @@ impl<L: LightClient> UseAggregate<L>
 where
     identified!(TrustedClientState<L::Counterparty>):
         TryFrom<AggregateData, Error = AggregateData> + Into<AggregateData>,
-    AnyLcMsg: From<LcMsg<L>>,
+    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L>)>,
     AggregateReceiver: From<identified!(Aggregate<L>)>,
 {
     type AggregatedData = HList![identified!(TrustedClientState<L::Counterparty>)];
@@ -2497,7 +2046,7 @@ impl<L: LightClient> UseAggregate<L> for identified!(AggregateWaitForTrustedHeig
 where
     identified!(TrustedClientState<L>):
         TryFrom<AggregateData, Error = AggregateData> + Into<AggregateData>,
-    AnyLcMsg: From<LcMsg<L::Counterparty>>,
+    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L::Counterparty>)>,
     AggregateReceiver: From<identified!(Aggregate<L>)>,
 {
     type AggregatedData = HList![identified!(TrustedClientState<L>)];
@@ -2545,7 +2094,7 @@ impl<L: LightClient> UseAggregate<L> for identified!(ConsensusStateProofAtLatest
 where
     identified!(TrustedClientState<L>):
         TryFrom<AggregateData, Error = AggregateData> + Into<AggregateData>,
-    AnyLcMsg: From<LcMsg<L>>,
+    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L>)>,
     AggregateReceiver: From<identified!(Aggregate<L>)>,
 {
     type AggregatedData = HList![identified!(TrustedClientState<L>)];
@@ -2584,8 +2133,8 @@ impl<L: LightClient> UseAggregate<L> for identified!(AggregateMsgAfterUpdate<L>)
 where
     identified!(TrustedClientState<L>):
         TryFrom<AggregateData, Error = AggregateData> + Into<AggregateData>,
-    AnyLcMsg: From<LcMsg<L>>,
-    AnyLcMsg: From<LcMsg<L::Counterparty>>,
+    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L>)>,
+    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L::Counterparty>)>,
     AggregateData: From<identified!(Data<L>)>,
     AggregateReceiver: From<identified!(Aggregate<L>)>,
 {
@@ -3074,7 +2623,7 @@ where
         TryFrom<AggregateData, Error = AggregateData> + Into<AggregateData>,
     identified!(ConnectionProof<L>):
         TryFrom<AggregateData, Error = AggregateData> + Into<AggregateData>,
-    AnyLcMsg: From<LcMsg<L::Counterparty>>,
+    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L::Counterparty>)>,
 {
     type AggregatedData = HList![
         identified!(TrustedClientState<L>),
@@ -3173,7 +2722,7 @@ where
         TryFrom<AggregateData, Error = AggregateData> + Into<AggregateData>,
     identified!(ConnectionProof<L>):
         TryFrom<AggregateData, Error = AggregateData> + Into<AggregateData>,
-    AnyLcMsg: From<LcMsg<L::Counterparty>>,
+    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L::Counterparty>)>,
 {
     type AggregatedData = HList![
         identified!(TrustedClientState<L>),
@@ -3266,7 +2815,7 @@ where
         TryFrom<AggregateData, Error = AggregateData> + Into<AggregateData>,
     identified!(ConnectionProof<L>):
         TryFrom<AggregateData, Error = AggregateData> + Into<AggregateData>,
-    AnyLcMsg: From<LcMsg<L::Counterparty>>,
+    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L::Counterparty>)>,
 {
     type AggregatedData = HList![
         identified!(TrustedClientState<L>),
@@ -3323,7 +2872,7 @@ where
         TryFrom<AggregateData, Error = AggregateData> + Into<AggregateData>,
     identified!(ConnectionEnd<L>):
         TryFrom<AggregateData, Error = AggregateData> + Into<AggregateData>,
-    AnyLcMsg: From<LcMsg<L::Counterparty>>,
+    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L::Counterparty>)>,
 {
     type AggregatedData = HList![
         identified!(TrustedClientState<L>),
@@ -3401,7 +2950,7 @@ where
         TryFrom<AggregateData, Error = AggregateData> + Into<AggregateData>,
     identified!(ChannelEndProof<L>):
         TryFrom<AggregateData, Error = AggregateData> + Into<AggregateData>,
-    AnyLcMsg: From<LcMsg<L::Counterparty>>,
+    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L::Counterparty>)>,
 {
     type AggregatedData = HList![
         identified!(TrustedClientState<L>),
@@ -3461,7 +3010,7 @@ where
         TryFrom<AggregateData, Error = AggregateData> + Into<AggregateData>,
     identified!(ChannelEndProof<L>):
         TryFrom<AggregateData, Error = AggregateData> + Into<AggregateData>,
-    AnyLcMsg: From<LcMsg<L::Counterparty>>,
+    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L::Counterparty>)>,
 {
     type AggregatedData = HList![
         identified!(TrustedClientState<L>),
@@ -3518,7 +3067,7 @@ where
         TryFrom<AggregateData, Error = AggregateData> + Into<AggregateData>,
     identified!(CommitmentProof<L>):
         TryFrom<AggregateData, Error = AggregateData> + Into<AggregateData>,
-    AnyLcMsg: From<LcMsg<L::Counterparty>>,
+    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L::Counterparty>)>,
 {
     type AggregatedData = HList![
         identified!(TrustedClientState<L>),
@@ -3585,7 +3134,7 @@ where
         TryFrom<AggregateData, Error = AggregateData> + Into<AggregateData>,
     identified!(AcknowledgementProof<L>):
         TryFrom<AggregateData, Error = AggregateData> + Into<AggregateData>,
-    AnyLcMsg: From<LcMsg<L::Counterparty>>,
+    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L::Counterparty>)>,
 {
     type AggregatedData = HList![
         identified!(TrustedClientState<L>),
@@ -3657,7 +3206,7 @@ impl<L: LightClient> UseAggregate<L> for identified!(AggregateFetchCounterpartyS
 where
     identified!(TrustedClientState<L>):
         TryFrom<AggregateData, Error = AggregateData> + Into<AggregateData>,
-    AnyLcMsg: From<LcMsg<L::Counterparty>>,
+    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L::Counterparty>)>,
 {
     type AggregatedData = HList![identified!(TrustedClientState<L>),];
 
@@ -3667,7 +3216,7 @@ where
             data:
                 AggregateFetchCounterpartyStateProof {
                     counterparty_client_id: _,
-                    fetch,
+                    fetch: fetch_,
                 },
         }: Self,
         hlist_pat![Identified {
@@ -3683,12 +3232,7 @@ where
 
         let counterparty_chain_id: ChainIdOf<L::Counterparty> = trusted_client_state.chain_id();
 
-        RelayerMsg::Lc(AnyLcMsg::from(LcMsg::<L::Counterparty>::Fetch(
-            Identified {
-                chain_id: counterparty_chain_id,
-                data: Fetch::StateProof(fetch),
-            },
-        )))
+        fetch::<L::Counterparty>(counterparty_chain_id, fetch_)
     }
 }
 
@@ -3698,7 +3242,7 @@ where
         TryFrom<AggregateData, Error = AggregateData> + Into<AggregateData>,
     identified!(SelfConsensusState<L::Counterparty>):
         TryFrom<AggregateData, Error = AggregateData> + Into<AggregateData>,
-    AnyLcMsg: From<LcMsg<L>>,
+    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L>)>,
 {
     type AggregatedData = HList![
         identified!(SelfClientState<L::Counterparty>),
@@ -3770,4 +3314,259 @@ fn flatten() {
     let msg = flatten_seq(msg);
 
     dbg!(msg);
+}
+
+fn chain_event_to_lc_event<L: LightClient>(
+    event: IbcEvent<<L::HostChain as Chain>::ClientId, <L::HostChain as Chain>::ClientType, String>,
+) -> IbcEvent<L::ClientId, L::ClientType, <L::Counterparty as LightClient>::ClientId>
+where
+    <L::ClientId as TryFrom<<L::HostChain as Chain>::ClientId>>::Error: Debug,
+    <L::ClientType as TryFrom<<L::HostChain as Chain>::ClientType>>::Error: Debug,
+    <<L::Counterparty as LightClient>::ClientId as FromStr>::Err: Debug,
+{
+    match event {
+        IbcEvent::CreateClient(CreateClient {
+            client_id,
+            client_type,
+            consensus_height,
+        }) => IbcEvent::CreateClient(CreateClient {
+            client_id: client_id.try_into().unwrap(),
+            client_type: client_type.try_into().unwrap(),
+            consensus_height,
+        }),
+        IbcEvent::UpdateClient(UpdateClient {
+            client_id,
+            client_type,
+            consensus_heights,
+            header,
+        }) => IbcEvent::UpdateClient(UpdateClient {
+            client_id: client_id.try_into().unwrap(),
+            client_type: client_type.try_into().unwrap(),
+            consensus_heights,
+            header,
+        }),
+        IbcEvent::ClientMisbehaviour(ClientMisbehaviour {
+            client_id,
+            client_type,
+            consensus_height,
+        }) => IbcEvent::ClientMisbehaviour(ClientMisbehaviour {
+            client_id: client_id.try_into().unwrap(),
+            client_type: client_type.try_into().unwrap(),
+            consensus_height,
+        }),
+        IbcEvent::SubmitEvidence(SubmitEvidence { evidence_hash }) => {
+            IbcEvent::SubmitEvidence(SubmitEvidence { evidence_hash })
+        }
+        IbcEvent::ConnectionOpenInit(ConnectionOpenInit {
+            connection_id,
+            client_id,
+            counterparty_client_id,
+            counterparty_connection_id,
+        }) => IbcEvent::ConnectionOpenInit(ConnectionOpenInit {
+            connection_id,
+            client_id: client_id.try_into().unwrap(),
+            counterparty_client_id: counterparty_client_id.parse().unwrap(),
+            counterparty_connection_id,
+        }),
+        IbcEvent::ConnectionOpenTry(ConnectionOpenTry {
+            connection_id,
+            client_id,
+            counterparty_client_id,
+            counterparty_connection_id,
+        }) => IbcEvent::ConnectionOpenTry(ConnectionOpenTry {
+            connection_id,
+            client_id: client_id.try_into().unwrap(),
+            counterparty_client_id: counterparty_client_id.parse().unwrap(),
+            counterparty_connection_id,
+        }),
+        IbcEvent::ConnectionOpenAck(ConnectionOpenAck {
+            connection_id,
+            client_id,
+            counterparty_client_id,
+            counterparty_connection_id,
+        }) => IbcEvent::ConnectionOpenAck(ConnectionOpenAck {
+            connection_id,
+            client_id: client_id.try_into().unwrap(),
+            counterparty_client_id: counterparty_client_id.parse().unwrap(),
+            counterparty_connection_id,
+        }),
+        IbcEvent::ConnectionOpenConfirm(ConnectionOpenConfirm {
+            connection_id,
+            client_id,
+            counterparty_client_id,
+            counterparty_connection_id,
+        }) => IbcEvent::ConnectionOpenConfirm(ConnectionOpenConfirm {
+            connection_id,
+            client_id: client_id.try_into().unwrap(),
+            counterparty_client_id: counterparty_client_id.parse().unwrap(),
+            counterparty_connection_id,
+        }),
+        IbcEvent::ChannelOpenInit(ChannelOpenInit {
+            port_id,
+            channel_id,
+            counterparty_channel_id,
+            counterparty_port_id,
+            connection_id,
+            version,
+        }) => IbcEvent::ChannelOpenInit(ChannelOpenInit {
+            port_id,
+            channel_id,
+            counterparty_channel_id,
+            counterparty_port_id,
+            connection_id,
+            version,
+        }),
+        IbcEvent::ChannelOpenTry(ChannelOpenTry {
+            port_id,
+            channel_id,
+            counterparty_port_id,
+            counterparty_channel_id,
+            connection_id,
+            version,
+        }) => IbcEvent::ChannelOpenTry(ChannelOpenTry {
+            port_id,
+            channel_id,
+            counterparty_port_id,
+            counterparty_channel_id,
+            connection_id,
+            version,
+        }),
+        IbcEvent::ChannelOpenAck(ChannelOpenAck {
+            port_id,
+            channel_id,
+            counterparty_port_id,
+            counterparty_channel_id,
+            connection_id,
+        }) => IbcEvent::ChannelOpenAck(ChannelOpenAck {
+            port_id,
+            channel_id,
+            counterparty_port_id,
+            counterparty_channel_id,
+            connection_id,
+        }),
+        IbcEvent::ChannelOpenConfirm(ChannelOpenConfirm {
+            port_id,
+            channel_id,
+            counterparty_port_id,
+            counterparty_channel_id,
+            connection_id,
+        }) => IbcEvent::ChannelOpenConfirm(ChannelOpenConfirm {
+            port_id,
+            channel_id,
+            counterparty_port_id,
+            counterparty_channel_id,
+            connection_id,
+        }),
+        IbcEvent::WriteAcknowledgement(WriteAcknowledgement {
+            packet_data_hex,
+            packet_timeout_height,
+            packet_timeout_timestamp,
+            packet_sequence,
+            packet_src_port,
+            packet_src_channel,
+            packet_dst_port,
+            packet_dst_channel,
+            packet_ack_hex,
+            connection_id,
+        }) => IbcEvent::WriteAcknowledgement(WriteAcknowledgement {
+            packet_data_hex,
+            packet_timeout_height,
+            packet_timeout_timestamp,
+            packet_sequence,
+            packet_src_port,
+            packet_src_channel,
+            packet_dst_port,
+            packet_dst_channel,
+            packet_ack_hex,
+            connection_id,
+        }),
+        IbcEvent::RecvPacket(RecvPacket {
+            packet_data_hex,
+            packet_timeout_height,
+            packet_timeout_timestamp,
+            packet_sequence,
+            packet_src_port,
+            packet_src_channel,
+            packet_dst_port,
+            packet_dst_channel,
+            packet_channel_ordering,
+            connection_id,
+        }) => IbcEvent::RecvPacket(RecvPacket {
+            packet_data_hex,
+            packet_timeout_height,
+            packet_timeout_timestamp,
+            packet_sequence,
+            packet_src_port,
+            packet_src_channel,
+            packet_dst_port,
+            packet_dst_channel,
+            packet_channel_ordering,
+            connection_id,
+        }),
+        IbcEvent::SendPacket(SendPacket {
+            packet_data_hex,
+            packet_timeout_height,
+            packet_timeout_timestamp,
+            packet_sequence,
+            packet_src_port,
+            packet_src_channel,
+            packet_dst_port,
+            packet_dst_channel,
+            packet_channel_ordering,
+            connection_id,
+        }) => IbcEvent::SendPacket(SendPacket {
+            packet_data_hex,
+            packet_timeout_height,
+            packet_timeout_timestamp,
+            packet_sequence,
+            packet_src_port,
+            packet_src_channel,
+            packet_dst_port,
+            packet_dst_channel,
+            packet_channel_ordering,
+            connection_id,
+        }),
+        IbcEvent::AcknowledgePacket(AcknowledgePacket {
+            packet_timeout_height,
+            packet_timeout_timestamp,
+            packet_sequence,
+            packet_src_port,
+            packet_src_channel,
+            packet_dst_port,
+            packet_dst_channel,
+            packet_channel_ordering,
+            connection_id,
+        }) => IbcEvent::AcknowledgePacket(AcknowledgePacket {
+            packet_timeout_height,
+            packet_timeout_timestamp,
+            packet_sequence,
+            packet_src_port,
+            packet_src_channel,
+            packet_dst_port,
+            packet_dst_channel,
+            packet_channel_ordering,
+            connection_id,
+        }),
+        IbcEvent::TimeoutPacket(TimeoutPacket {
+            packet_timeout_height,
+            packet_timeout_timestamp,
+            packet_sequence,
+            packet_src_port,
+            packet_src_channel,
+            packet_dst_port,
+            packet_dst_channel,
+            packet_channel_ordering,
+            connection_id,
+        }) => IbcEvent::TimeoutPacket(TimeoutPacket {
+            packet_timeout_height,
+            packet_timeout_timestamp,
+            packet_sequence,
+            packet_src_port,
+            packet_src_channel,
+            packet_dst_port,
+            packet_dst_channel,
+            packet_channel_ordering,
+            connection_id,
+        }),
+    }
 }

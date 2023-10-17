@@ -1,4 +1,4 @@
-use std::{fmt::Display, num::ParseIntError, str::FromStr};
+use std::num::ParseIntError;
 
 use ethers::prelude::k256::ecdsa;
 use futures::{stream, Future, FutureExt, Stream, StreamExt};
@@ -17,8 +17,7 @@ use unionlabs::{
         google::protobuf::{any::Any, duration::Duration},
         lightclients::{cometbls, wasm},
     },
-    id::Id,
-    id_type,
+    id::ClientId,
     tendermint::abci::{event::Event, event_attribute::EventAttribute},
     traits::{Chain, ClientState},
     CosmosAccountId,
@@ -62,7 +61,7 @@ impl Chain for Union {
 
     type ClientId = UnionClientId;
 
-    type ClientType = UnionClientType;
+    type ClientType = String;
 
     fn chain_id(&self) -> <Self::SelfClientState as ClientState>::ChainId {
         self.chain_id.clone()
@@ -545,16 +544,7 @@ impl MaybeRecoverableError for BroadcastTxCommitError {
     }
 }
 
-// TODO: This is for all cosmos chains; rename?
-crate::chain_client_id! {
-    #[ty = UnionClientType]
-    pub enum UnionClientId {
-        #[id(ty = "08-wasm")]
-        Wasm(Id<_>),
-        #[id(ty = "07-tendermint")]
-        Tendermint(Id<_>),
-    }
-}
+pub type UnionClientId = ClientId;
 
 #[derive(Debug)]
 pub enum UnionEventSourceError {
@@ -948,6 +938,45 @@ pub mod tm_types {
             // ErrPanic should only be set when we recovering from a panic
             // TODO: Figure out what this is and where it comes from
             // ErrPanic = errorsmod.ErrPanic
+        )
+
+        #[err(name = ChannelError, codespace = "channel")]
+        var (
+            ErrChannelExists             = errorsmod.Register(SubModuleName, 2, "channel already exists")
+            ErrChannelNotFound           = errorsmod.Register(SubModuleName, 3, "channel not found")
+            ErrInvalidChannel            = errorsmod.Register(SubModuleName, 4, "invalid channel")
+            ErrInvalidChannelState       = errorsmod.Register(SubModuleName, 5, "invalid channel state")
+            ErrInvalidChannelOrdering    = errorsmod.Register(SubModuleName, 6, "invalid channel ordering")
+            ErrInvalidCounterparty       = errorsmod.Register(SubModuleName, 7, "invalid counterparty channel")
+            ErrInvalidChannelCapability  = errorsmod.Register(SubModuleName, 8, "invalid channel capability")
+            ErrChannelCapabilityNotFound = errorsmod.Register(SubModuleName, 9, "channel capability not found")
+            ErrSequenceSendNotFound      = errorsmod.Register(SubModuleName, 10, "sequence send not found")
+            ErrSequenceReceiveNotFound   = errorsmod.Register(SubModuleName, 11, "sequence receive not found")
+            ErrSequenceAckNotFound       = errorsmod.Register(SubModuleName, 12, "sequence acknowledgement not found")
+            ErrInvalidPacket             = errorsmod.Register(SubModuleName, 13, "invalid packet")
+            ErrPacketTimeout             = errorsmod.Register(SubModuleName, 14, "packet timeout")
+            ErrTooManyConnectionHops     = errorsmod.Register(SubModuleName, 15, "too many connection hops")
+            ErrInvalidAcknowledgement    = errorsmod.Register(SubModuleName, 16, "invalid acknowledgement")
+            ErrAcknowledgementExists     = errorsmod.Register(SubModuleName, 17, "acknowledgement for packet already exists")
+            ErrInvalidChannelIdentifier  = errorsmod.Register(SubModuleName, 18, "invalid channel identifier")
+
+            // packets already relayed errors
+            ErrPacketReceived           = errorsmod.Register(SubModuleName, 19, "packet already received")
+            ErrPacketCommitmentNotFound = errorsmod.Register(SubModuleName, 20, "packet commitment not found") // may occur for already received acknowledgements or timeouts and in rare cases for packets never sent
+
+            // ORDERED channel error
+            ErrPacketSequenceOutOfOrder = errorsmod.Register(SubModuleName, 21, "packet sequence is out of order")
+
+            // cspell:ignore Antehandler
+            // Antehandler error
+            ErrRedundantTx = errorsmod.Register(SubModuleName, 22, "packet messages are redundant")
+
+            // Perform a no-op on the current Msg
+            ErrNoOpMsg = errorsmod.Register(SubModuleName, 23, "message is redundant, no-op will be performed")
+
+            ErrInvalidChannelVersion = errorsmod.Register(SubModuleName, 24, "invalid channel version")
+            ErrPacketNotSent         = errorsmod.Register(SubModuleName, 25, "packet has not been sent")
+            ErrInvalidTimeout        = errorsmod.Register(SubModuleName, 26, "invalid packet timeout")
         )
     }
 }

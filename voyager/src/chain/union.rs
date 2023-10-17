@@ -6,7 +6,7 @@ use std::{
 
 use chain_utils::{
     evm::Evm,
-    union::{BroadcastTxCommitError, Union, Wasm},
+    union::{BroadcastTxCommitError, Union},
 };
 use clap::Args;
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
@@ -21,7 +21,7 @@ use protos::{
 use serde::{Deserialize, Serialize};
 use tendermint_rpc::Client;
 use unionlabs::{
-    bounded_int::BoundedI64,
+    bounded::BoundedI64,
     ethereum::{Address, H256, H512},
     ethereum_consts_traits::{ChainSpec, Mainnet, Minimal},
     ibc::{
@@ -29,7 +29,7 @@ use unionlabs::{
         google::protobuf::{any::Any, timestamp::Timestamp},
         lightclients::{cometbls, ethereum, wasm},
     },
-    id::Id,
+    id::ClientId,
     proof::{
         AcknowledgementPath, ChannelEndPath, ClientConsensusStatePath, ClientStatePath,
         CommitmentPath, ConnectionPath, IbcPath,
@@ -67,7 +67,8 @@ use crate::{
         msg::{Msg, MsgUpdateClientData},
         seq, wait,
         wait::WaitForBlock,
-        AggregateData, AggregateReceiver, AnyLcMsg, DoAggregate, Identified, LcMsg, RelayerMsg,
+        AggregateData, AggregateReceiver, AnyLcMsg, AnyLightClientIdentified, DoAggregate,
+        Identified, LcMsg, RelayerMsg,
     },
     queue::aggregate_data::{do_aggregate, UseAggregate},
 };
@@ -92,8 +93,8 @@ impl LightClient for EthereumMinimal {
     type HostChain = Union;
     type Counterparty = CometblsMinimal;
 
-    type ClientId = Id<Wasm>;
-    type ClientType = Wasm;
+    type ClientId = ClientId;
+    type ClientType = String;
 
     type Config = EthereumConfig;
 
@@ -140,7 +141,7 @@ async fn do_fetch<C, L>(union: &Union, msg: EthereumFetchMsg<C>) -> Vec<RelayerM
 where
     C: ChainSpec,
     L: LightClient<HostChain = Union, Fetch = EthereumFetchMsg<C>, Data = EthereumDataMsg<C>>,
-    AnyLcMsg: From<LcMsg<L>>,
+    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L>)>,
     AggregateData: From<identified!(Data<L>)>,
     AggregateReceiver: From<identified!(Aggregate<L>)>,
 {
@@ -362,7 +363,7 @@ where
         Fetch = EthereumFetchMsg<C>,
     >,
     L::Counterparty: LightClient<HostChain = Evm<C>>,
-    AnyLcMsg: From<LcMsg<L>>,
+    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L>)>,
     AggregateData: From<identified!(Data<L>)>,
     AggregateReceiver: From<identified!(Aggregate<L>)>,
 {
@@ -420,8 +421,8 @@ impl LightClient for EthereumMainnet {
     type HostChain = Union;
     type Counterparty = CometblsMainnet;
 
-    type ClientId = Id<Wasm>;
-    type ClientType = Wasm;
+    type ClientId = ClientId;
+    type ClientType = String;
 
     type Config = EthereumConfig;
 
@@ -619,7 +620,7 @@ where
     Identified<L, AggregateProveRequest<L>>: UseAggregate<L>,
     Identified<L, AggregateHeader<L>>: UseAggregate<L>,
 
-    AnyLcMsg: From<LcMsg<L>>,
+    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L>)>,
     AggregateReceiver: From<identified!(Aggregate<L>)>,
 {
     fn do_aggregate(
@@ -1022,7 +1023,7 @@ where
         TryFrom<AggregateData, Error = AggregateData> + Into<AggregateData>,
     Identified<L, Validators<C>>:
         TryFrom<AggregateData, Error = AggregateData> + Into<AggregateData>,
-    AnyLcMsg: From<LcMsg<L>>,
+    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L>)>,
     AggregateReceiver: From<identified!(Aggregate<L>)>,
 {
     type AggregatedData = HList![Identified<L, UntrustedCommit<C>>, Identified<L, Validators<C>>, Identified<L, Validators<C>>];
@@ -1210,8 +1211,8 @@ where
     Identified<L, Validators<C>>:
         TryFrom<AggregateData, Error = AggregateData> + Into<AggregateData>,
 
-    AnyLcMsg: From<LcMsg<L>>,
-    AnyLcMsg: From<LcMsg<L::Counterparty>>,
+    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L>)>,
+    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L::Counterparty>)>,
 {
     type AggregatedData = HList![Identified<L, ProveResponse<C>>];
 

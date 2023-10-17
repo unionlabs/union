@@ -3,7 +3,8 @@ use serde::{Deserialize, Serialize};
 use crate::{
     errors::{required, MissingField, UnknownEnumVariant},
     ibc::core::channel::{counterparty::Counterparty, order::Order, state::State},
-    id::{ConnectionId, IdParseError},
+    id::{ConnectionId, ConnectionIdValidator},
+    validated::{Validate, ValidateT},
     Proto, TypeUrl,
 };
 
@@ -38,7 +39,7 @@ pub enum TryFromChannelError {
     MissingField(MissingField),
     State(UnknownEnumVariant<i32>),
     Ordering(UnknownEnumVariant<i32>),
-    ConnectionHops(IdParseError),
+    ConnectionHops(<ConnectionIdValidator as Validate<String>>::Error),
 }
 
 impl TryFrom<protos::ibc::core::channel::v1::Channel> for Channel {
@@ -52,7 +53,7 @@ impl TryFrom<protos::ibc::core::channel::v1::Channel> for Channel {
             connection_hops: proto
                 .connection_hops
                 .into_iter()
-                .map(|x| x.parse())
+                .map(ValidateT::validate)
                 .collect::<Result<_, _>>()
                 .map_err(TryFromChannelError::ConnectionHops)?,
             version: proto.version,
@@ -90,7 +91,7 @@ impl From<Channel> for contracts::ibc_handler::IbcCoreChannelV1ChannelData {
 pub enum TryFromEthAbiChannelError {
     State(UnknownEnumVariant<u8>),
     Ordering(UnknownEnumVariant<u8>),
-    ConnectionHops(IdParseError),
+    ConnectionHops(<ConnectionIdValidator as Validate<String>>::Error),
 }
 
 #[cfg(feature = "ethabi")]
@@ -113,7 +114,7 @@ impl TryFrom<contracts::ibc_handler::IbcCoreChannelV1ChannelData> for Channel {
             connection_hops: value
                 .connection_hops
                 .into_iter()
-                .map(|x| x.parse())
+                .map(ValidateT::validate)
                 .collect::<Result<_, _>>()
                 .map_err(TryFromEthAbiChannelError::ConnectionHops)?,
             version: value.version,

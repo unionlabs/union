@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    bounded_int::BoundedI64,
+    bounded::BoundedI64,
     tendermint::types::{canonical_block_id::CanonicalBlockId, signed_msg_type::SignedMsgType},
     Proto, TypeUrl,
 };

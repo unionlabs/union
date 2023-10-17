@@ -14,12 +14,15 @@ use unionlabs::{
 
 use crate::{
     chain::{ChainOf, ClientStateOf, ConsensusStateOf, HeaderOf, HeightOf, LightClient},
-    msg::{any_enum, fetch::FetchPacketAcknowledgement, identified, StateProofOf},
+    msg::{
+        any_enum, fetch::FetchPacketAcknowledgement, identified, AnyLightClientIdentified,
+        StateProofOf,
+    },
 };
 
 any_enum! {
     /// Data that will likely be used in a [`RelayerMsg::Aggregate`].
-    #[any = AnyData(identified!(Data<L>))]
+    #[any = AnyData]
     pub enum Data<L: LightClient> {
         SelfClientState(SelfClientState<L>),
         SelfConsensusState(SelfConsensusState<L>),
@@ -157,6 +160,29 @@ macro_rules! data_msg {
                         chain_id,
                         data: Data::from(data),
                     })
+                }
+            }
+
+            impl<L: LightClient> TryFrom<AnyLightClientIdentified<AnyData>>
+                for crate::msg::Identified<L, $Ty<L>>
+            where
+                identified!(Data<L>): TryFrom<
+                        crate::msg::AnyLightClientIdentified<AnyData>,
+                        Error = crate::msg::AnyLightClientIdentified<AnyData>,
+                    > + Into<crate::msg::AnyLightClientIdentified<AnyData>>,
+            {
+                type Error = AnyLightClientIdentified<AnyData>;
+
+                fn try_from(value: crate::msg::AnyLightClientIdentified<AnyData>) -> Result<Self, Self::Error> {
+                    let crate::msg::Identified { chain_id, data } =
+                        <crate::msg::Identified<L, Data<L>>>::try_from(value)?;
+
+                    Ok(crate::msg::Identified::new(
+                        chain_id.clone(),
+                        <$Ty<L>>::try_from(data).map_err(|x: Data<L>| {
+                            Into::<AnyLightClientIdentified<_>>::into(crate::msg::Identified::new(chain_id, x))
+                        })?,
+                    ))
                 }
             }
         )+

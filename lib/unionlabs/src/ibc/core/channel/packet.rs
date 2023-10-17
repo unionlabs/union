@@ -3,7 +3,8 @@ use serde::{Deserialize, Serialize};
 use crate::{
     errors::{required, MissingField},
     ibc::core::client::height::Height,
-    id::{ChannelId, IdParseError},
+    id::{ChannelId, ChannelIdValidator},
+    validated::{Validate, ValidateT},
     Proto, TypeUrl,
 };
 
@@ -46,8 +47,8 @@ impl From<Packet> for protos::ibc::core::channel::v1::Packet {
 #[derive(Debug)]
 pub enum TryFromPacketError {
     MissingField(MissingField),
-    SourceChannel(IdParseError),
-    DestinationChannel(IdParseError),
+    SourceChannel(<ChannelIdValidator as Validate<String>>::Error),
+    DestinationChannel(<ChannelIdValidator as Validate<String>>::Error),
 }
 
 impl TryFrom<protos::ibc::core::channel::v1::Packet> for Packet {
@@ -59,12 +60,12 @@ impl TryFrom<protos::ibc::core::channel::v1::Packet> for Packet {
             source_port: proto.source_port,
             source_channel: proto
                 .source_channel
-                .parse()
+                .validate()
                 .map_err(TryFromPacketError::SourceChannel)?,
             destination_port: proto.destination_port,
             destination_channel: proto
                 .destination_channel
-                .parse()
+                .validate()
                 .map_err(TryFromPacketError::DestinationChannel)?,
             data: proto.data,
             timeout_height: required!(proto.timeout_height)?.into(),
@@ -76,8 +77,8 @@ impl TryFrom<protos::ibc::core::channel::v1::Packet> for Packet {
 #[cfg(feature = "ethabi")]
 #[derive(Debug)]
 pub enum TryFromEthAbiPacketError {
-    SourceChannel(IdParseError),
-    DestinationChannel(IdParseError),
+    SourceChannel(<ChannelIdValidator as Validate<String>>::Error),
+    DestinationChannel(<ChannelIdValidator as Validate<String>>::Error),
 }
 
 #[cfg(feature = "ethabi")]

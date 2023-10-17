@@ -6,11 +6,11 @@ use unionlabs::ethereum::H256;
 
 use crate::{
     chain::{ChainOf, HeightOf, LightClient},
-    msg::{any_enum, identified},
+    msg::any_enum,
 };
 
 any_enum! {
-    #[any = AnyEvent(identified!(Event<L>))]
+    #[any = AnyEvent]
     pub enum Event<L: LightClient> {
         Ibc(IbcEvent<L>),
         Command(Command<L>),

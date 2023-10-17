@@ -11,7 +11,7 @@ use serde::{
 };
 
 use crate::{
-    bounded_int::{BoundedI128, BoundedI32, BoundedI64, BoundedIntError},
+    bounded::{BoundedI128, BoundedI32, BoundedI64, BoundedIntError},
     macros::result_try,
     Proto, TypeUrl,
 };

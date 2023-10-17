@@ -11,12 +11,12 @@ use unionlabs::{
 
 use crate::{
     chain::{ChainOf, HeightOf, LightClient, QueryHeight},
-    msg::{any_enum, identified, ChainIdOf},
+    msg::{any_enum, ChainIdOf},
 };
 
 any_enum! {
     /// Fetch some data that will likely be used in a [`RelayerMsg::Aggregate`].
-    #[any = AnyFetch(identified!(Fetch<L>))]
+    #[any = AnyFetch]
     pub enum Fetch<L: LightClient> {
         TrustedClientState(FetchTrustedClientState<L>),
 

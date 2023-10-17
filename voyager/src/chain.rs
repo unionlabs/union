@@ -13,7 +13,6 @@ use serde::{Deserialize, Serialize};
 use unionlabs::{
     ethereum_consts_traits::{Mainnet, Minimal},
     ibc::core::client::height::{HeightFromStrError, IsHeight},
-    id,
     traits::{self, Chain},
 };
 
@@ -98,9 +97,18 @@ pub trait LightClient: Send + Sync + Sized {
     type ClientId: traits::Id
         + TryFrom<<Self::HostChain as Chain>::ClientId>
         + Into<<Self::HostChain as Chain>::ClientId>;
-    type ClientType: id::IdType
+    type ClientType: Display
+        + FromStr
+        + Debug
+        + Clone
+        + PartialEq
+        + Serialize
+        + for<'de> Deserialize<'de>
+        + Send
+        + Sync
         + TryFrom<<Self::HostChain as Chain>::ClientType>
-        + Into<<Self::HostChain as Chain>::ClientType>;
+        + Into<<Self::HostChain as Chain>::ClientType>
+        + 'static;
 
     /// The config required to construct this light client.
     type Config: Debug + Clone + PartialEq + Serialize + for<'de> Deserialize<'de>;
@@ -224,13 +232,14 @@ macro_rules! try_from_relayer_msg {
                     type Error = RelayerMsg;
                     fn try_from(value: RelayerMsg) -> Result<Identified<$Lc, $Ty>, RelayerMsg> {
                         match value {
-                            RelayerMsg::Lc(AnyLcMsg::$Lc(LcMsg::$LcMsg(Identified {
+                            RelayerMsg::Lc(crate::msg::AnyLightClientIdentified::$Lc(Identified {
                                 chain_id,
-                                data:
+                                data: LcMsg::$LcMsg(
                                     $LcMsg::LightClientSpecific($Specific($Msg::$Var(
                                         data,
                                     ))),
-                            }))) => Ok(Identified { chain_id, data }),
+                                ),
+                            })) => Ok(Identified { chain_id, data }),
                             _ => Err(value),
                         }
                     }
@@ -267,14 +276,30 @@ macro_rules! this_is_a_hack_look_away {
             )
     ) => {
         $(
-            impl From<Identified<$Lc, $Ty>> for AggregateData {
-                fn from(Identified { chain_id, data }: Identified<$Lc, $Ty>) -> AggregateData {
-                    AggregateData::$Lc(Identified {
+            impl From<Identified<$Lc, $Ty>> for crate::msg::AggregateData {
+                fn from(Identified { chain_id, data }: Identified<$Lc, $Ty>) -> crate::msg::AggregateData {
+                    crate::msg::AggregateData::$Lc(Identified {
                         chain_id,
                         data: Data::LightClientSpecific(LightClientSpecificData($Msg::$Var(
                             data,
                         ))),
                     })
+                }
+            }
+
+            impl TryFrom<crate::msg::AggregateData> for Identified<$Lc, $Ty> {
+                type Error = crate::msg::AggregateData;
+
+                fn try_from(value: crate::msg::AggregateData) -> Result<Identified<$Lc, $Ty>, crate::msg::AggregateData> {
+                    match value {
+                        crate::msg::AnyLightClientIdentified::$Lc(Identified {
+                            chain_id,
+                            data: Data::LightClientSpecific(LightClientSpecificData($Msg::$Var(
+                                data,
+                            ))),
+                        }) => Ok(Identified { chain_id, data }),
+                        _ => Err(value),
+                    }
                 }
             }
         )+
