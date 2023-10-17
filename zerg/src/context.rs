@@ -1,4 +1,9 @@
-use std::{fs::OpenOptions, io::Write, sync::Arc, time::Duration};
+use std::{
+    fs::{File, OpenOptions},
+    io::Write,
+    sync::Arc,
+    time::Duration,
+};
 
 use chain_utils::{Chain, EventSource};
 use contracts::{
@@ -7,6 +12,7 @@ use contracts::{
 };
 use ethers::{prelude::SignerMiddleware, types::U256};
 use futures::StreamExt;
+use tokio::sync::Mutex;
 use ucs01_relay::msg::{ExecuteMsg, TransferMsg};
 use ucs01_relay_api::types::Ucs01TransferPacket;
 use unionlabs::{
@@ -25,12 +31,20 @@ pub struct Context {
     pub zerg_config: Config,
     pub evm: chain_utils::evm::Evm<Minimal>,
     pub is_rush: bool,
+    pub writer: Arc<Mutex<File>>,
 }
 
 impl Context {
-    pub async fn new(zerg_config: Config, is_rush: bool) -> Context {
+    pub async fn new(zerg_config: Config, output: String, is_rush: bool) -> Context {
         let evm = chain_utils::evm::Evm::<Minimal>::new(zerg_config.evm.clone())
             .await
+            .unwrap();
+
+        let writer = OpenOptions::new()
+            .create(true)
+            .write(true)
+            .append(true)
+            .open(output)
             .unwrap();
 
         Context {
@@ -38,6 +52,7 @@ impl Context {
             zerg_config,
             evm,
             is_rush,
+            writer: Arc::new(Mutex::new(writer)),
         }
     }
 
@@ -165,10 +180,12 @@ impl Context {
                 unionlabs::events::IbcEvent::SendPacket(e) => {
                     println!("SendPacket from Union!");
                     self.append_record(Event::create_send_event(event.chain_id, e))
+                        .await
                 }
                 unionlabs::events::IbcEvent::RecvPacket(e) => {
                     println!("RecvPacket on Union!");
                     self.append_record(Event::create_recv_event(event.chain_id, e))
+                        .await
                 }
                 _ => {
                     println!("Untracked Union IBC event")
@@ -188,6 +205,7 @@ impl Context {
                 unionlabs::events::IbcEvent::SendPacket(e) => {
                     println!("SendPacket from Evm!");
                     self.append_record(Event::create_send_event(event.chain_id.to_string(), e))
+                        .await
                 }
                 unionlabs::events::IbcEvent::RecvPacket(e) => {
                     println!("RecvPacket on Evm!");
@@ -195,6 +213,7 @@ impl Context {
                         self.send_from_eth(e.clone()).await;
                     }
                     self.append_record(Event::create_recv_event(event.chain_id.to_string(), e))
+                        .await
                 }
                 _ => {
                     println!("Untracked Evm IBC event")
@@ -208,18 +227,12 @@ impl Context {
     /// Line Format:
     /// `<uuid>, <address>, <timestamp>, <EVENT_TYPE>, <chain_id>`
     /// Where `EVENT_TYPE` is either `"SentFrom"` or `"ReceivedOn"`.
-    pub fn append_record(&self, event: Event) {
-        let mut file = OpenOptions::new()
-            .create(true)
-            .write(true)
-            .append(true)
-            .open(self.output_file.as_str())
-            .unwrap();
-
+    pub async fn append_record(&self, event: Event) {
+        let mut writer = self.writer.lock().await;
         match event.stamped_event {
             EventType::SendEvent(e) => {
                 writeln!(
-                    file,
+                    writer,
                     "{},{},{},SentFrom,{}",
                     event.uuid, event.sender, e.time, e.chain_id
                 )
@@ -227,7 +240,7 @@ impl Context {
             }
             EventType::ReceiveEvent(e) => {
                 writeln!(
-                    file,
+                    writer,
                     "{},{},{},ReceivedOn,{}",
                     event.uuid, event.sender, e.time, e.chain_id
                 )

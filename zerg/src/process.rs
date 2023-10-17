@@ -25,7 +25,7 @@ pub struct TransactionReport {
     duration: Option<u64>,
 }
 
-pub fn analyze(input_file_path: String) -> Vec<TransactionReport> {
+pub fn process(input_file_path: String) -> Vec<TransactionReport> {
     let mut reader = ReaderBuilder::new()
         .has_headers(false)
         .from_path(input_file_path)
@@ -91,7 +91,7 @@ mod tests {
 
         #[test]
         fn should_drop_transactions_with_no_sent_packet() {
-            let reports = analyze("resources/test/output.csv".to_owned());
+            let reports = process("resources/test/output.csv".to_owned());
             assert!(reports.iter().all(|report| {
                 report.uuid != "wasm.union14hj2tavq8fpesdwxxcu44rty3hh90vhujrvcmstl4zr3txmfvw9s3e9fe2/channel-2/11"
             }))
@@ -99,7 +99,7 @@ mod tests {
 
         #[test]
         fn should_capture_all_full_transactions() {
-            let reports = analyze("resources/test/output.csv".to_owned());
+            let reports = process("resources/test/output.csv".to_owned());
             let mut full_tx_uuids = [
                 "wasm.union14hj2tavq8fpesdwxxcu44rty3hh90vhujrvcmstl4zr3txmfvw9s3e9fe2/channel-2/3",
                 "wasm.union14hj2tavq8fpesdwxxcu44rty3hh90vhujrvcmstl4zr3txmfvw9s3e9fe2/channel-2/9",
@@ -124,7 +124,7 @@ mod tests {
 
         #[test]
         fn should_capture_all_incomplete_transactions() {
-            let reports = analyze("resources/test/output.csv".to_owned());
+            let reports = process("resources/test/output.csv".to_owned());
             let mut full_tx_uuids = [
                 "wasm.union14hj2tavq8fpesdwxxcu44rty3hh90vhujrvcmstl4zr3txmfvw9s3e9fe2/channel-2/1",
                 "wasm.union14hj2tavq8fpesdwxxcu44rty3hh90vhujrvcmstl4zr3txmfvw9s3e9fe2/channel-2/2",

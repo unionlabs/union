@@ -21,8 +21,8 @@ pub struct AppArgs {
 
 #[derive(Debug, Subcommand, Clone)]
 pub enum Command {
-    /// Analyze the output produced by `rush` or `observe` to get formatted details about whole transactions.
-    Analyze {
+    /// Process the output produced by `rush` or `observe` to get formatted details about whole transactions.
+    Process {
         input_file: String,
         #[arg(long, short = 'o', env, default_value = "zerg-report.csv")]
         output: String,

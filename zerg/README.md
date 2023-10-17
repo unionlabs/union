@@ -4,7 +4,7 @@ Zerg is a stress test, fuzzer, benchmarker, for Voyager.
 
 ## Features
 
-Zerg has three main features `rush`, `observe`, and `analyze`.
+Zerg has three main features `rush`, `observe`, and `process`.
 
 ### Rush
 
@@ -36,9 +36,9 @@ SentFrom | RReceivedOn
 
 Like `zerg rush`, `zerg observe` will benchmark transactions from Voyager. However, it will not spawn transactions of its own.
 
-### Analyze
+### Process
 
-After `zerg rush` or `zerg observe` outputs its transaction indexing, you can use `zerg analyze` to structure the data into a report CSV that will contain lines of the following form:
+After `zerg rush` or `zerg observe` outputs its transaction indexing, you can use `zerg process` to structure the data into a report CSV that will contain lines of the following form:
 
 ```csv
 <uuid>,<is_completed>,<arrived_on?>,<duration?>

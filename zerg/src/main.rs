@@ -1,16 +1,16 @@
 use std::fs::read_to_string;
 
-use analyze::analyze;
 use clap::Parser;
 use cli::AppArgs;
 use config::Config;
 use context::Context;
+use process::process;
 
-pub mod analyze;
 pub mod cli;
 pub mod config;
 pub mod context;
 pub mod events;
+pub mod process;
 
 #[tokio::main]
 async fn main() {
@@ -23,23 +23,23 @@ async fn main() {
         cli::Command::PrintConfig => {
             println!("{}", serde_json::to_string_pretty(&zerg_config).unwrap());
         }
-        cli::Command::Rush { output: _ } => {
-            let context = Context::new(zerg_config, is_rush).await;
+        cli::Command::Rush { output } => {
+            let context = Context::new(zerg_config, output, is_rush).await;
             let _ = tokio::join!(
                 context.listen_union(),
                 context.listen_eth(),
                 context.tx_handler()
             );
         }
-        cli::Command::Observe { output: _ } => {
-            let context = Context::new(zerg_config, is_rush).await;
+        cli::Command::Observe { output } => {
+            let context = Context::new(zerg_config, output, is_rush).await;
             let _ = tokio::join!(context.listen_union(), context.listen_eth(),);
         }
-        cli::Command::Analyze {
+        cli::Command::Process {
             input_file,
             output: _,
         } => {
-            let _ = analyze(input_file);
+            let _ = process(input_file);
         }
     };
 }
