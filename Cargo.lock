@@ -6935,6 +6935,7 @@ dependencies = [
  "tendermint-rpc",
  "tokio",
  "tokio-stream",
+ "tonic",
  "ucs01-relay",
  "ucs01-relay-api",
  "unionlabs",
