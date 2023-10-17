@@ -1,7 +1,7 @@
 use std::{ffi::OsString, fs, io, path::PathBuf};
 
 use thiserror::Error;
-use tracing::debug;
+use tracing::{debug, info};
 
 use crate::bundle::{Bundle, UnvalidatedVersionPath, ValidVersionPath, ValidateVersionPathError};
 
@@ -46,11 +46,11 @@ impl Symlinker {
         let current = self.current_path();
 
         if current.exists() {
-            debug!(target: "unionvisor", "removing old symlink at {}", &current.display());
+            info!(target: "unionvisor", "removing old symlink at {}", &current.display());
             std::fs::remove_file(&current).map_err(SymlinkerError::CantRemoveSymlink)?;
         }
 
-        debug!(target: "unionvisor", "creating symlink from {} to {}", &current.display(), new_path.0.display());
+        info!(target: "unionvisor", "creating symlink from {} to {}", &current.display(), new_path.0.display());
         std::os::unix::fs::symlink(new_path.0, current)
             .map_err(SymlinkerError::CantCreateSymlink)?;
 

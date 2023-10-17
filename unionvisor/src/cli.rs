@@ -9,7 +9,7 @@ use std::{
 
 use clap::Parser;
 use thiserror::Error;
-use tracing::{debug, field::display as as_display};
+use tracing::{field::display as as_display, info};
 use tracing_subscriber::filter::LevelFilter;
 
 use crate::{
@@ -243,7 +243,7 @@ impl CallCmd {
         let bundle = Bundle::new(self.bundle.clone())?;
         let symlinker = Symlinker::new(root.clone(), bundle);
         let current = symlinker.current_validated()?;
-        debug!(target: "unionvisor",
+        info!(target: "unionvisor",
             binary = as_display(current.0.display()),
             root = as_display(root.display()),
             "calling uniond binary at {}",

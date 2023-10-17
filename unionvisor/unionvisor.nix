@@ -94,6 +94,14 @@
           default = self.packages.${pkgs.system}.bundle-testnet-3;
         };
         moniker = mkOption { type = types.str; };
+        network = mkOption {
+          type = types.str;
+          default = "union-testnet-3";
+        };
+        seeds = mkOption {
+          type = types.str;
+          default = "b4d587b3d3666d52df0cd43962080fd164568fe0@union-testnet.cor.systems:26656";
+        };
       };
 
       config = mkIf cfg.enable {
@@ -105,7 +113,7 @@
               text = ''
                 ${pkgs.coreutils}/bin/mkdir -p /var/lib/unionvisor
                 cd /var/lib/unionvisor
-                HOME=/var/lib/unionvisor ${cfg.bundle}/unionvisor --root /var/lib/unionvisor init --bundle ${cfg.bundle} --moniker ${cfg.moniker} --allow-dirty
+                HOME=/var/lib/unionvisor ${cfg.bundle}/unionvisor --root /var/lib/unionvisor init --bundle ${cfg.bundle} --moniker ${cfg.moniker} --seeds ${cfg.seeds} --network ${cfg.network} --allow-dirty
                 HOME=/var/lib/unionvisor ${cfg.bundle}/unionvisor --root /var/lib/unionvisor run --bundle ${cfg.bundle} 
               '';
             };

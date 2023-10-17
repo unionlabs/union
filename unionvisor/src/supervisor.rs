@@ -8,7 +8,7 @@ use std::{
 };
 
 use thiserror::Error;
-use tracing::{debug, error, field::display as as_display, info, warn};
+use tracing::{error, field::display as as_display, info, warn};
 
 use crate::{
     bundle::ValidateVersionPathError,
@@ -83,17 +83,18 @@ impl Supervisor {
     pub fn backup(&self, backup_dir: impl AsRef<Path>) -> Result<(), BackupError> {
         use fs_extra::dir::{copy, CopyOptions};
         let backup_dir = backup_dir.as_ref();
-        debug!(target: "unionvisor", "creating backup dir at {}",  as_display(backup_dir.display()));
+        info!(target: "unionvisor", "creating backup dir at {}",  as_display(backup_dir.display()));
         create_dir_all(backup_dir)
             .map_err(|source| BackupError::CreateDir(backup_dir.to_owned(), source))?;
         let home_dir = self.home_dir();
         let options = CopyOptions::new().overwrite(true);
-        debug!(target: "unionvisor", "backing up {} to {}",  as_display(home_dir.display()),  as_display(backup_dir.display()));
+        info!(target: "unionvisor", "backing up {} to {}. This might take a while",  as_display(home_dir.display()),  as_display(backup_dir.display()));
         copy(&home_dir, backup_dir, &options).map_err(|source| BackupError::CopyDir {
             home: home_dir.to_owned(),
             backup: backup_dir.to_owned(),
             source,
         })?;
+        info!(target: "unionvisor", "completed backup");
         Ok(())
     }
 
@@ -211,7 +212,7 @@ pub fn run_and_upgrade<S: AsRef<OsStr>, I: IntoIterator<Item = S> + Clone>(
                 let current_version = symlinker.current_version()?;
                 let upgrade_name = OsString::from(&upgrade.name);
                 if current_version == upgrade_name {
-                    debug!(target: "unionvisor", "detected upgrade {}, but already running that binary. sleeping for {} milliseconds.", &upgrade.name, pol_interval.as_millis());
+                    info!(target: "unionvisor", "detected upgrade {}, but already running that binary. sleeping for {} milliseconds.", &upgrade.name, pol_interval.as_millis());
                     std::thread::sleep(pol_interval);
                     continue;
                 }
@@ -222,7 +223,7 @@ pub fn run_and_upgrade<S: AsRef<OsStr>, I: IntoIterator<Item = S> + Clone>(
                     height = upgrade.height,
                     "upgrade detected"
                 );
-                debug!(target: "unionvisor", "checking binary availability");
+                info!(target: "unionvisor", "checking binary availability");
 
                 symlinker
                     .bundle
@@ -233,23 +234,23 @@ pub fn run_and_upgrade<S: AsRef<OsStr>, I: IntoIterator<Item = S> + Clone>(
                         source,
                     })?;
 
-                debug!(target: "unionvisor", "killing supervisor process");
+                info!(target: "unionvisor", "killing supervisor process");
                 supervisor.kill()?;
                 let backup_dir = root.join("home_backup");
 
                 // If we fail to backup, the file system is incorrectly configured (permissions) or we are running
                 // out of disk space. Either way we exit the node as now the server itself has become unreliable.
-                debug!(target: "unionvisor", "backing up current home");
+                info!(target: "unionvisor", "backing up current home");
                 supervisor.backup(&backup_dir)?;
 
-                debug!(target: "unionvisor", "creating new symlink for {}", &upgrade.name);
+                info!(target: "unionvisor", "creating new symlink for {}", &upgrade.name);
                 symlinker.swap(&upgrade_name)?;
 
                 supervisor = Supervisor::new(root.clone(), symlinker.clone());
 
                 // If this upgrade fails, we'll revert the local DB and exit the node, ensuring we keep the filesystem in
                 // the last correct state.
-                debug!(target: "unionvisor", "spawning new supervisor process for {}", &upgrade.name);
+                info!(target: "unionvisor", "spawning new supervisor process for {}", &upgrade.name);
                 supervisor.spawn(logformat, args.clone()).map_err(|err| {
                     error!(target: "unionvisor", err = err.to_string().as_str(), "spawning new supervisor process for {} failed", &upgrade.name);
                     // This error is most likely caused by incorrect args because of an upgrade. We can reduce the chance of that happening
@@ -258,7 +259,7 @@ pub fn run_and_upgrade<S: AsRef<OsStr>, I: IntoIterator<Item = S> + Clone>(
                 })?;
             }
         }
-        debug!(target: "unionvisor", "no upgrade detected, sleeping for {} milliseconds.", &pol_interval.as_millis());
+        info!(target: "unionvisor", "no upgrade detected, sleeping for {} milliseconds.", &pol_interval.as_millis());
         std::thread::sleep(pol_interval);
     }
 }

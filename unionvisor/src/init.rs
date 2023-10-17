@@ -1,12 +1,12 @@
 use std::{fs, io, path::Path};
 
 use thiserror::Error;
-use tracing::{debug, field::display as as_display};
+use tracing::{debug, field::display as as_display, info};
 
 pub fn set_seeds(seeds: &str, file: impl AsRef<Path>) -> Result<(), SetSeedsError> {
     use SetSeedsError::*;
     let file = file.as_ref();
-    debug!(target: "unionvisor", "reading config.toml at {} to replace seeds",  as_display(file.display()));
+    info!(target: "unionvisor", "reading config.toml at {} to replace seeds",  as_display(file.display()));
     let contents = fs::read_to_string(file).map_err(CantReadContents)?;
     let new = contents.replace(r#"seeds = """#, &format!(r#"seeds="{}""#, seeds));
     debug!(target: "unionvisor", "replacing contents by deleting and writing file");
