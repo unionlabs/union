@@ -125,7 +125,7 @@
                 echo "---------------------"
                 echo "+ Generated $ADDR"
                 echo "+ Private key"
-                echo y | ${uniond} keys export "$ACC_NAME" --unsafe --unarmored-hex --keyring-backend test
+                echo y | ${uniond} keys export "$ACC_NAME" --unsafe --unarmored-hex --keyring-backend test --home $HOME
               done
 
               if [[ -z "$NO_FUND" ]]; then
