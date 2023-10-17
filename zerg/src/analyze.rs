@@ -73,7 +73,7 @@ pub fn analyze(input: String, output: String) -> HashMap<String, ChannelBenchmar
         writer.serialize(report).unwrap();
     });
 
-    benchmarks
+    dbg!(benchmarks)
 }
 
 fn get_channel_id(uuid: String) -> String {
