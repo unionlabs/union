@@ -781,6 +781,7 @@ pub mod tm_types {
 
         #[err(name = PortError, codespace = "port")]
         var (
+            // cspell:ignore binded
             ErrPortExists   = errorsmod.Register(SubModuleName, 2, "port is already binded")
             ErrPortNotFound = errorsmod.Register(SubModuleName, 3, "port not found")
             ErrInvalidPort  = errorsmod.Register(SubModuleName, 4, "invalid port")
