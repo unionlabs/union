@@ -5138,6 +5138,8 @@ dependencies = [
  "once_cell",
  "paste",
  "percent-encoding",
+ "rustls 0.21.7",
+ "rustls-pemfile",
  "serde",
  "serde_json",
  "sha2 0.10.8",
@@ -5148,6 +5150,7 @@ dependencies = [
  "tokio-stream",
  "tracing",
  "url",
+ "webpki-roots 0.24.0",
 ]
 
 [[package]]
@@ -6592,6 +6595,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b03058f88386e5ff5310d9111d53f48b17d732b401aeb83a8d5190f2ac459338"
 dependencies = [
  "rustls-webpki 0.100.3",
+]
+
+[[package]]
+name = "webpki-roots"
+version = "0.24.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b291546d5d9d1eab74f069c77749f2cb8504a12caa20f0f2de93ddbf6f411888"
+dependencies = [
+ "rustls-webpki 0.101.6",
 ]
 
 [[package]]
