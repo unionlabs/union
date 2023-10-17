@@ -88,7 +88,7 @@ library RelayLib {
         return address(iaddr);
     }
 
-    function bytesToAddress(bytes memory b) private pure returns (address) {
+    function bytesToAddress(bytes memory b) internal pure returns (address) {
         if (b.length != 20) {
             revert("Invalid address.");
         }
@@ -276,7 +276,7 @@ contract UCS01Relay is IBCAppBase {
         RelayPacket memory packet
     ) internal {
         // We're going to refund, the receiver will be the sender.
-        address receiver = bytesToAddress(packet.sender);
+        address receiver = RelayLib.bytesToAddress(packet.sender);
         for (uint256 i = 0; i < packet.tokens.length; i++) {
             Token memory token = packet.tokens[i];
             // Either we tried to send back a remote native token
@@ -321,7 +321,7 @@ contract UCS01Relay is IBCAppBase {
             strings.slice memory trimedDenom = denomSlice.beyond(
                 prefix.toSlice()
             );
-            address receiver = bytesToAddress(packet.receiver);
+            address receiver = RelayLib.bytesToAddress(packet.receiver);
             address denomAddress;
             string memory denom;
             if (!denomSlice.equals(token.denom.toSlice())) {

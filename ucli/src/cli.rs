@@ -1,17 +1,23 @@
 use std::{collections::BTreeMap, ffi::OsString, str::FromStr};
 
-use chain_utils::private_key::PrivateKey;
+use beacon_api::client::BeaconApiClient;
+use chain_utils::{private_key::PrivateKey, union::Union};
 use clap::{
     error::{ContextKind, ContextValue},
     Args, Parser, Subcommand,
 };
 use ethers::{
     prelude::k256::ecdsa,
+    providers::{Middleware, Provider, Ws},
     signers::LocalWallet,
-    types::{Address, H256},
+    utils::secret_key_to_address,
 };
 use serde::{Deserialize, Serialize};
 use tendermint_rpc::WebSocketClientUrl;
+use unionlabs::{
+    ethereum::{Address, H256, U256},
+    ethereum_consts_traits::{ChainSpec, Minimal},
+};
 
 #[derive(Debug, Parser)]
 #[command(arg_required_else_help = true)]
@@ -44,8 +50,6 @@ pub enum TxCmd {
 pub enum EvmTx {
     Transfer {
         #[arg(long)]
-        on: String,
-        #[arg(long)]
         relay_address: Address,
         // #[arg(long)]
         // from: Address,
@@ -67,15 +71,8 @@ pub enum EvmTx {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""))]
 pub struct Config {
-    /// Map of chain name to it's respective config.
-    pub chain: BTreeMap<String, ChainConfig>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case", tag = "chain_type")]
-pub enum ChainConfig {
-    Evm(EvmChainConfig),
-    Union(UnionChainConfig),
+    pub evm: EvmChainConfig,
+    pub union: UnionChainConfig,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -84,7 +81,7 @@ pub struct EvmChainConfig {
     pub ibc_handler_address: Address,
 
     /// The signer that will be used to submit transactions by voyager.
-    pub signers: Vec<PrivateKey<ecdsa::SigningKey>>,
+    pub signer: PrivateKey<ecdsa::SigningKey>,
 
     // TODO(benluelo): Use `Url` or something similar
     /// The RPC endpoint for the execution chain.
@@ -100,4 +97,31 @@ pub struct UnionChainConfig {
     pub ws_url: WebSocketClientUrl,
     pub prover_endpoint: String,
     pub grpc_url: String,
+}
+
+#[derive(Debug, Clone)]
+pub struct Evm<C: ChainSpec> {
+    pub chain_id: U256,
+    pub wallet: LocalWallet,
+    pub provider: Provider<Ws>,
+    pub beacon_api_client: BeaconApiClient<C>,
+}
+
+impl<C: ChainSpec> Evm<C> {
+    pub async fn new(config: EvmChainConfig) -> Result<Self, ()> {
+        let provider = Provider::new(Ws::connect(config.eth_rpc_api).await.unwrap());
+
+        let chain_id = provider.get_chainid().await.unwrap();
+
+        let signer = config.signer.value();
+        let address = secret_key_to_address(&signer);
+        let wallet = LocalWallet::new_with_signer(signer, address, chain_id.as_u64());
+
+        Ok(Self {
+            chain_id: U256(chain_id),
+            provider,
+            beacon_api_client: BeaconApiClient::new(config.eth_beacon_rpc_api).await,
+            wallet,
+        })
+    }
 }

@@ -6143,6 +6143,7 @@ source = "git+https://github.com/unionlabs/typenum?branch=ben/192-const-generic-
 name = "ucli"
 version = "0.1.0"
 dependencies = [
+ "beacon-api",
  "chain-utils",
  "clap",
  "contracts",
@@ -6151,6 +6152,7 @@ dependencies = [
  "serde",
  "serde_json",
  "tendermint-rpc",
+ "tokio",
  "unionlabs",
 ]
 

@@ -6,13 +6,15 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-ethers = { workspace = true, features = ["rustls", "ws"] }
 clap = { version = "4.3.0", features = ["derive", "env", "error-context"] }
-serde_json = "1.0.96"
-serde = { version = "1.0.173", features = ["derive"] }
+ethers = { workspace = true, features = ["rustls", "ws"] }
 hex = { version = "0.4.3", features = [ "serde" ] }
+serde = { version = "1.0.173", features = ["derive"] }
+serde_json = "1.0.96"
+tokio = { version = "1.27.0", features = ["macros"] }
 
 unionlabs = { workspace = true, features = ["ethabi"] }
 contracts.workspace = true
 chain-utils.workspace = true
 tendermint-rpc = { workspace = true, features = ["http-client", "websocket-client"] }
+beacon-api = { workspace = true, default-features = false }
