@@ -158,17 +158,17 @@ impl Context {
         let denom_address = ucs01_relay.denom_to_address(denom).call().await.unwrap();
         let erc_contract = erc20::ERC20::new(denom_address, signer_middleware.clone());
 
-        erc_contract
+        // TODO: Move this to s.t. it only triggers once
+        if let Ok(res) = erc_contract
             .approve(
                 self.zerg_config.evm_contract.clone().into(),
                 U256::max_value(),
             )
             .send()
             .await
-            .unwrap()
-            .await
-            .unwrap()
-            .unwrap();
+        {
+            res.await.unwrap().unwrap();
+        };
 
         ucs01_relay
             .send(
