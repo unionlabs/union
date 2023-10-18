@@ -11,7 +11,7 @@ import { get } from "svelte/store";
 
 const SEPOLIA_CHAIN_ID = "0xaa36a7";
 
-export const updateConnectedToSeplia = async () => {
+export const updateConnectedToSepolia = async () => {
   if (window.ethereum === undefined) {
     console.error(
       "trying to update connected to sepolia with no metamask installed"
@@ -54,7 +54,7 @@ export const connectToSepolia = async () => {
     params: [{ chainId: SEPOLIA_CHAIN_ID }],
   });
 
-  updateConnectedToSeplia();
+  updateConnectedToSepolia();
   if (get(connectedToSepolia) == false) {
     console.error("did not properly connect to sepolia");
   }

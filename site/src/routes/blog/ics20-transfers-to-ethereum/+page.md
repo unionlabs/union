@@ -35,13 +35,13 @@ Claim $UNO from the Union faucet for bridging usage. If you opt-in to sharing yo
 
 IBC transfers from `union-testnet-3` to `sepolia` are just contract interactions, which need to be sent to either Sepolia or Union, depending on the transfer direction. We start by sending $UNO to Sepolia (Ethereum Testnet), and then back again. This showcase uses a single-threaded relayer with simple nonce management. This means it is not optimized for throughput, resulting in a lot of queued transactions. It's an MVP of a beta product after all. Optimized nonce management should land next week.
 
-IBC is as fast as the underlying chains. When you do Tendermint to Tendermint transactions, IBC is quite fast because the finality time is 6 seconds. However, when connecting to Sepolia, which has the same configuration as the Ethereum Mainnet, it takes two epochs for a block to finalize, which is approximately thirteen minutes. However, we are using the "justified" (or "safe") commitment level to decrease the required number of epocs to one, which is approximately six and a half minutes.
+IBC is as fast as the underlying chains. When you do Tendermint to Tendermint transactions, IBC is quite fast because the finality time is 6 seconds. However, when connecting to Sepolia, which has the same configuration as the Ethereum Mainnet, it takes two epochs for a block to finalize, which is approximately thirteen minutes. However, we are using the "justified" (or "safe") commitment level to decrease the required number of epochs to one, which is approximately six and a half minutes.
 
 If you want to learn more about these commitment levels, read [What are Ethereum commitment levels? Latest, Safe, Finalized](https://www.alchemy.com/overviews/ethereum-commitment-levels), from the Alchemy team.
 
 <TransferUnoToEthereum/>
 
-Inside the testnet, a full IBC transfer is now occuring:
+Inside the testnet, a full IBC transfer is now occurring:
 
 - The Union validators are finalizing the block.
 - [Voyager](https://docs.union.build/architecture/voyager) is observing events and constructing packets.
@@ -81,7 +81,7 @@ The golden standard for infrastructure is trustless, meaning no party can steal 
 
 ### Signing Committee
 
-Tracking Ethereum's consensus and finalization is quite complex compared to [CometBLS](https://docs.union.build/architecture/cometbls). The Ethereum executio layer produces blocks approximately every 15 seconds. The finalization process is tracked on the [beacon chain](https://ethereum.org/en/roadmap/beacon-chain/), which is what is necessary to construct light-client proofs. [Voyager](https://docs.union.build/architecture/voyager) tracks both the execution and finalization layers.
+Tracking Ethereum's consensus and finalization is quite complex compared to [CometBLS](https://docs.union.build/architecture/cometbls). The Ethereum execution layer produces blocks approximately every 15 seconds. The finalization process is tracked on the [beacon chain](https://ethereum.org/en/roadmap/beacon-chain/), which is what is necessary to construct light-client proofs. [Voyager](https://docs.union.build/architecture/voyager) tracks both the execution and finalization layers.
 
 The signing committee constructs a BLS signature, used to prove finalization of blocks. Compared to Tendermint-based chains, the beacon chain can encounter [block reorganizations](https://barnabe.substack.com/p/pos-ethereum-reorg) quite easily. Cosmos-based chains use single-slot-finality, which is better for high-performance applications and bridging purposes.
 

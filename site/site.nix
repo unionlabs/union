@@ -60,8 +60,10 @@
             yarn
             yarn build
 
+            # cspell:disable
             export VERCEL_PROJECT_ID=prj_HWQLgBiGFHNPSy5qJ3WpCeX1l492
             export VERCEL_ORG_ID=team_lY7Vs9wFi3Ifb2A24bOxiA68
+            # cspell:enable
 
             vercel deploy --prebuilt --scope unionbuild
           '';

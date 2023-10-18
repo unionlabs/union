@@ -174,7 +174,7 @@ export const sendUnoToEthereum = async () => {
   const eAddress = get(ethereumAddress);
 
   if (cwClient === null || uAccount === null || eAddress === null) {
-    console.error("please init depenencies for uno transfers");
+    console.error("please init dependencies for uno transfers");
     return;
   }
 
@@ -186,7 +186,7 @@ export const sendUnoToEthereum = async () => {
         channel: UCS01_UNION_SOURCE_CHANNEL,
         receiver: eAddress,
         timeout: null,
-        memo: "random more than four characters I'm transfering.",
+        memo: "random more than four characters I'm transferring.",
       },
     },
     "auto",
