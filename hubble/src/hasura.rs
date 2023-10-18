@@ -2,10 +2,12 @@ use std::future::Future;
 
 use graphql_client::{GraphQLQuery, Response};
 use reqwest::{Client, Url};
+use tracing::error;
 
 type Jsonb = serde_json::Value;
 type Timestamptz = String;
 type Bigint = u128;
+type Smallint = i32;
 
 pub trait Datastore {
     fn do_post<Q: GraphQLQuery>(
@@ -46,15 +48,23 @@ impl Datastore for HasuraDataStore {
     {
         async move {
             let body = Q::build_query(v);
-            let response: Response<Q::ResponseData> = self
+            let response = self
                 .client
                 .post(self.url.clone())
                 .json(&body)
                 .header("x-hasura-admin-secret", &self.secret)
                 .send()
                 .await?
-                .json()
+                .text()
                 .await?;
+
+            let response: Response<Q::ResponseData> = match serde_json::from_str(&response) {
+                Err(err) => {
+                    error!("received unexpected response from hasura: {}", response);
+                    return Err(err.into());
+                }
+                Ok(response) => response,
+            };
 
             // GraphQL APIs return errors as an error field in the JSON. We convert the errors to the
             // error variant.
