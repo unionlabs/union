@@ -6,20 +6,30 @@ use std::{
     time::Duration,
 };
 
-use chain_utils::{Chain, EventSource};
+use chain_utils::EventSource;
 use contracts::{
     erc20,
     ucs01_relay::{self as ucs01relay, LocalToken},
 };
 use cosmwasm_std::Uint128;
-use ethers::{prelude::SignerMiddleware, types::U256};
+use ecdsa::SigningKey;
+use ethers::{
+    abi::Address,
+    core::k256::ecdsa,
+    middleware::NonceManagerMiddleware,
+    prelude::SignerMiddleware,
+    providers::Middleware,
+    signers::{LocalWallet, Wallet},
+    types::{H160, U256},
+    utils::secret_key_to_address,
+};
 use futures::StreamExt;
 use tokio::sync::Mutex;
 use ucs01_relay::msg::{ExecuteMsg, TransferMsg};
 use ucs01_relay_api::types::Ucs01TransferPacket;
 use unionlabs::{
     cosmos::base::coin::Coin, cosmwasm::wasm::msg_execute_contract::MsgExecuteContract,
-    ibc::google::protobuf::any::Any, IntoProto,
+    ethereum_consts_traits::Minimal, ibc::google::protobuf::any::Any, traits::Chain, IntoProto,
 };
 
 use crate::{
@@ -33,7 +43,9 @@ pub struct Context {
     pub zerg_config: Config,
     pub is_rush: bool,
     pub writer: Arc<Mutex<File>>,
-    pub account_indexes: HashMap<String, usize>,
+    pub union: chain_utils::union::Union,
+    pub evm: chain_utils::evm::Evm<Minimal>,
+    pub evm_accounts: HashMap<Address, Wallet<SigningKey>>,
 }
 
 impl Context {
@@ -44,20 +56,37 @@ impl Context {
             .append(true)
             .open(output)
             .unwrap();
+        let union = chain_utils::union::Union::new(zerg_config.clone().union)
+            .await
+            .unwrap();
+        let evm = chain_utils::evm::Evm::new(zerg_config.clone().evm)
+            .await
+            .unwrap();
 
-        let mut account_indexes = HashMap::new();
-        for (i, _account) in zerg_config.union.signers.iter().enumerate() {
-            let union = zerg_config.union.get_union_for(i).await;
-            let sender = union.signer.to_string();
-            account_indexes.insert(sender, i);
-        }
+        let mut evm_accounts = HashMap::new();
+
+        let chain_id = evm.provider.get_chainid().await.unwrap().as_u64();
+
+        zerg_config
+            .clone()
+            .evm
+            .signers
+            .into_iter()
+            .for_each(|signer| {
+                let signing_key: ecdsa::SigningKey = signer.value();
+                let address = secret_key_to_address(&signing_key);
+                let wallet = LocalWallet::new_with_signer(signing_key, address, chain_id);
+                evm_accounts.insert(address, wallet);
+            });
 
         Context {
             output_file: "output.csv".to_string(),
             zerg_config,
             is_rush,
             writer: Arc::new(Mutex::new(writer)),
-            account_indexes,
+            union,
+            evm,
+            evm_accounts,
         }
     }
 
@@ -69,61 +98,44 @@ impl Context {
             let mut height = previous_height;
 
             while height == previous_height {
-                height = self
-                    .zerg_config
-                    .union
-                    .get_union_for(0)
-                    .await
-                    .query_latest_height()
-                    .await
-                    .revision_height;
+                height = self.union.query_latest_height().await.revision_height;
                 tokio::time::sleep(Duration::from_secs(1)).await;
             }
             previous_height = height;
 
-            let mut txs = vec![];
-            let mut msgs = vec![];
-            let mut unions = vec![];
             for (i, _account) in self.zerg_config.union.signers.iter().enumerate() {
-                let evm = self.zerg_config.evm.get_evm_for(i).await;
-                let union = self.zerg_config.union.get_union_for(i).await;
-                let signer_middleware =
-                    SignerMiddleware::new(evm.provider.clone(), evm.wallet.clone());
-                let receiver = format!("{:?}", signer_middleware.address());
+                self.evm
+                    .ibc_handlers
+                    .with(|receiver| async move {
+                        let transfer_msg = ExecuteMsg::Transfer(TransferMsg {
+                            channel: self.zerg_config.channel.clone(),
+                            receiver: receiver.address().to_string(),
+                            // TODO: use uuid in memo
+                            memo: "garbage".to_string(),
+                            timeout: None,
+                        });
+                        let transfer_msg =
+                            format!("{}", serde_json::to_string(&transfer_msg).unwrap());
+                        self.union
+                            .signers
+                            .with(|signer| async {
+                                let msg = Any(MsgExecuteContract {
+                                    sender: signer.to_string(),
+                                    contract: self.zerg_config.union_contract.clone(),
+                                    msg: transfer_msg.as_bytes().to_vec(),
+                                    funds: vec![Coin {
+                                        denom: self.zerg_config.union.fee_denom.clone(),
+                                        amount: "1".into(),
+                                    }],
+                                })
+                                .into_proto();
 
-                let transfer_msg = ExecuteMsg::Transfer(TransferMsg {
-                    channel: self.zerg_config.channel.clone(),
-                    receiver: receiver.clone(),
-                    // TODO: use uuid in memo
-                    memo: "garbage".to_string(),
-                    timeout: None,
-                });
-
-                let transfer_msg = format!("{}", serde_json::to_string(&transfer_msg).unwrap());
-                let sender = union.signer.to_string();
-
-                let msg = Any(MsgExecuteContract {
-                    sender,
-                    contract: self.zerg_config.union_contract.clone(),
-                    msg: transfer_msg.as_bytes().to_vec(),
-                    funds: vec![Coin {
-                        denom: self.zerg_config.union.fee_denom.clone(),
-                        amount: "1".into(),
-                    }],
-                })
-                .into_proto();
-
-                unions.push(union);
-                msgs.push(msg);
+                                self.union.broadcast_tx_commit(signer, [msg]).await.unwrap()
+                            })
+                            .await
+                    })
+                    .await
             }
-
-            unions.into_iter().zip(msgs).for_each(|(union, msg)| {
-                txs.push(tokio::spawn(async move {
-                    union.broadcast_tx_commit([msg]).await;
-                }))
-            });
-
-            let _ = futures::future::try_join_all(txs.into_iter()).await;
         }
         println!("Done rushing Union txs!");
     }
@@ -131,14 +143,14 @@ impl Context {
     async fn send_from_eth(self, e: unionlabs::events::RecvPacket) {
         let transfer =
             Ucs01TransferPacket::try_from(cosmwasm_std::Binary(e.packet_data_hex.clone())).unwrap();
-        let evm = self
-            .zerg_config
-            .evm
-            .get_evm_for(self.account_indexes[transfer.sender()])
-            .await;
+
+        let wallet = self
+            .evm_accounts
+            .get(transfer.receiver().try_into().unwrap());
+
         let signer_middleware = Arc::new(SignerMiddleware::new(
-            evm.provider.clone(),
-            evm.wallet.clone(),
+            NonceManagerMiddleware::new(self.evm.provider.clone(), address),
+            wallet.clone(),
         ));
 
         let ucs01_relay = ucs01relay::UCS01Relay::new(
@@ -188,8 +200,7 @@ impl Context {
     }
 
     pub async fn listen_union(&self) {
-        let union = self.zerg_config.union.get_union_for(0).await;
-        let mut events = Box::pin(union.events(()));
+        let mut events = Box::pin(self.union.clone().events(()));
 
         loop {
             println!("Listening for Union IBC events...");
@@ -214,8 +225,7 @@ impl Context {
     }
 
     pub async fn listen_eth(&self) {
-        let evm = self.zerg_config.evm.get_evm_for(0).await;
-        let mut events = Box::pin(evm.events(()));
+        let mut events = Box::pin(self.evm.events(()));
 
         loop {
             println!("Listening for Evm IBC events...");
