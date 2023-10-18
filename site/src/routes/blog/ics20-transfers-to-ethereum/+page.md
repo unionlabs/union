@@ -41,7 +41,7 @@ If you want to learn more about these commitment levels, read [What are Ethereum
 
 <TransferUnoToEthereum/>
 
-Inside the testnet, a full IBC transfer is now occuring: 
+Inside the testnet, a full IBC transfer is now occuring:
 
 - The Union validators are finalizing the block.
 - [Voyager](https://docs.union.build/architecture/voyager) is observing events and constructing packets.
@@ -49,10 +49,9 @@ Inside the testnet, a full IBC transfer is now occuring:
 
 When the transaction is received, the funds are locked in a vault, ensuring the tokens on Sepolia are always backed one-to-one on. Since Union has rapid finality and proof generation, the transfer from Union to Sepolia will be quite fast.
 
-On our testnet, `Galois` is running on relatively simple infrastructure. This means proof generation is relatively slow. Proof generation becomes close to instant on 128 core machines. On mainnet, relayers with fast proving speeds will outcompete slow relayers and generate significantly more fees. This market dynamic optimizes our infrastructure. 
+On our testnet, `Galois` is running on relatively simple infrastructure. This means proof generation is relatively slow. Proof generation becomes close to instant on 128 core machines. On mainnet, relayers with fast proving speeds will outcompete slow relayers and generate significantly more fees. This market dynamic optimizes our infrastructure.
 
 On Sepolia, the zero-knowledge proof is verified inside the IBC contract stack. This verification is necessary to update the Union light client. After successful verification, an ERC-20 token representing $UNO is transferred to your wallet.
-
 
 <TransferUnoToEthereumStatus/>
 
@@ -84,7 +83,7 @@ The golden standard for infrastructure is trustless, meaning no party can steal 
 
 Tracking Ethereum's consensus and finalization is quite complex compared to [CometBLS](https://docs.union.build/architecture/cometbls). The Ethereum executio layer produces blocks approximately every 15 seconds. The finalization process is tracked on the [beacon chain](https://ethereum.org/en/roadmap/beacon-chain/), which is what is necessary to construct light-client proofs. [Voyager](https://docs.union.build/architecture/voyager) tracks both the execution and finalization layers.
 
-The signing committee constructs a BLS signature, used to prove finalization of blocks. Compared to Tendermint-based chains, the beacon chain can encounter [block reorganizations](https://barnabe.substack.com/p/pos-ethereum-reorg) quite easily. Cosmos-based chains use single-slot-finality, which is better for high-performance applications and bridging purposes. 
+The signing committee constructs a BLS signature, used to prove finalization of blocks. Compared to Tendermint-based chains, the beacon chain can encounter [block reorganizations](https://barnabe.substack.com/p/pos-ethereum-reorg) quite easily. Cosmos-based chains use single-slot-finality, which is better for high-performance applications and bridging purposes.
 
 <SendUnoToUnionStatus/>
 
