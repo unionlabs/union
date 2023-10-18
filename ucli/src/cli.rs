@@ -79,7 +79,7 @@ pub enum QueryCmd {
 #[derive(Debug, Subcommand)]
 pub enum EvmQuery {
     // TODO(aeryz): Check if native denoms present in the `denomToAddress` mapping.
-    UcsBalance {
+    Ucs01Balance {
         #[arg(long)]
         contract_address: Address,
         #[arg(long)]
@@ -87,7 +87,7 @@ pub enum EvmQuery {
         #[arg(long)]
         address: Address,
     },
-    ErcBalance {
+    Erc20Balance {
         #[arg(long)]
         contract_address: Address,
         #[arg(long)]

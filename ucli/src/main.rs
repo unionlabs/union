@@ -59,7 +59,7 @@ async fn main() {
             cli::QueryCmd::Evm(evm_query) => {
                 let evm: Evm<EvmConfig> = Evm::new(config.evm).await.unwrap();
                 match evm_query {
-                    cli::EvmQuery::UcsBalance {
+                    cli::EvmQuery::Ucs01Balance {
                         contract_address,
                         denom,
                         address,
@@ -67,7 +67,7 @@ async fn main() {
                         handle_ucs_balance(evm, contract_address.into(), denom, address.into())
                             .await
                     }
-                    cli::EvmQuery::ErcBalance {
+                    cli::EvmQuery::Erc20Balance {
                         contract_address,
                         address,
                     } => todo!(),
@@ -89,6 +89,9 @@ async fn handle_ucs_balance(
     ));
     let relay = UCS01Relay::new(contract_address, signer_middleware.clone());
 
+    // let denom = relay.address_to_denom(address).await.unwrap();
+    // println!("Address is: {}", denom);
+    // panic!();
     let denom = relay.denom_to_address(denom).await.unwrap();
     println!("Address is: {}", denom);
 

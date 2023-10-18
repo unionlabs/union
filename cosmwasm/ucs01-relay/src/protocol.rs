@@ -1,6 +1,6 @@
 use cosmwasm_std::{
-    wasm_execute, Addr, BankMsg, Coin, CosmosMsg, DepsMut, Env, IbcEndpoint, IbcOrder, MessageInfo,
-    Uint128, Uint512,
+    wasm_execute, Addr, BankMsg, Coin, CosmosMsg, DepsMut, Env, HexBinary, IbcEndpoint, IbcOrder,
+    MessageInfo, Uint128, Uint512,
 };
 use sha2::{Digest, Sha256};
 use token_factory_api::TokenFactoryMsg;
