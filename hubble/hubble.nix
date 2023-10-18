@@ -30,7 +30,6 @@
     with lib;
     let
       cfg = config.services.hubble;
-      uid = config.ids.uids.hubble;
     in
     {
       options.services.hubble = {
@@ -72,17 +71,6 @@
       };
 
       config = mkIf cfg.enable {
-
-        users.users.hubble = {
-          description = "Hubble Indexer User";
-          uid = uid;
-          group = "hubble";
-          home = "/var/log/hubble/";
-          createHome = true;
-        };
-
-        users.groups.hubble.gid = config.ids.gids.hubble;
-
         systemd.services.hubble =
           let
             hubble-systemd-script = pkgs.writeShellApplication {
@@ -109,8 +97,6 @@
               Type = "simple";
               ExecStart = pkgs.lib.getExe hubble-systemd-script;
               Restart = mkForce "always";
-              User = "hubble";
-              Group = "hubble";
             };
           };
       };
