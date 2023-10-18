@@ -242,10 +242,18 @@ impl Chain for Union {
                 .header
                 .height;
 
+            tracing::info!(
+                "Querying ack for {}/{}/{} at {}",
+                destination_port_id,
+                destination_channel_id,
+                sequence,
+                block_height
+            );
+
             let wa = self
                 .tm_client
                 .tx_search(
-                    Query::from(EventType::Tx).and_eq("tx.height", u64::from(block_height)),
+                    Query::eq("tx.height", u64::from(block_height)),
                     false,
                     1,
                     255,
@@ -269,16 +277,18 @@ impl Chain for Union {
                                 }).collect()
                             },
                         );
-
                         match maybe_ack {
                             Ok(ok)
                                 if ok.packet_sequence == sequence
-                                    && ok.packet_src_port == destination_port_id
-                                    && ok.packet_src_channel == destination_channel_id =>
+                                    && ok.packet_dst_port == destination_port_id
+                                    && ok.packet_dst_channel == destination_channel_id =>
                             {
                                 Some(ok)
                             }
-                            Ok(_) => None,
+                            Ok(ok) => {
+                                tracing::debug!("Found ack not matching our packet {:?}", ok);
+                                None
+                            }
                             Err(TryFromTendermintEventError::IncorrectType { .. }) => None,
                             Err(err) => {
                                 panic!("{err:#?}")
