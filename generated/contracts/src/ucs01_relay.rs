@@ -783,7 +783,7 @@ pub mod ucs01_relay {
     #[cfg(feature = "providers")]
     impl<M> ::core::fmt::Debug for UCS01Relay<M> {
         fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
-            f.debug_tuple(stringify!(UCS01Relay))
+            f.debug_tuple(::core::stringify!(UCS01Relay))
                 .field(&self.address())
                 .finish()
         }
@@ -948,7 +948,7 @@ pub mod ucs01_relay {
             connection_hops: ::std::vec::Vec<::std::string::String>,
             port_id: ::std::string::String,
             channel_id: ::std::string::String,
-            counterparty_endpoint: IbcCoreChannelV1CounterpartyData,
+            counterparty_endpoint: IbcCoreChannelV1ChannelData,
             version: ::std::string::String,
         ) -> ::ethers::contract::builders::ContractCall<M, ()> {
             self.0
@@ -972,7 +972,7 @@ pub mod ucs01_relay {
             connection_hops: ::std::vec::Vec<::std::string::String>,
             port_id: ::std::string::String,
             channel_id: ::std::string::String,
-            counterparty_endpoint: IbcCoreChannelV1CounterpartyData,
+            counterparty_endpoint: IbcCoreChannelV1ChannelData,
             version: ::std::string::String,
             counterparty_version: ::std::string::String,
         ) -> ::ethers::contract::builders::ContractCall<M, ()> {
@@ -1354,7 +1354,7 @@ pub mod ucs01_relay {
         pub connection_hops: ::std::vec::Vec<::std::string::String>,
         pub port_id: ::std::string::String,
         pub channel_id: ::std::string::String,
-        pub counterparty_endpoint: IbcCoreChannelV1CounterpartyData,
+        pub counterparty_endpoint: IbcCoreChannelV1ChannelData,
         pub version: ::std::string::String,
     }
     ///Container type for all input parameters for the `onChanOpenTry` function with signature `onChanOpenTry(uint8,string[],string,string,(string,string),string,string)` and selector `0x981389f2`
@@ -1377,7 +1377,7 @@ pub mod ucs01_relay {
         pub connection_hops: ::std::vec::Vec<::std::string::String>,
         pub port_id: ::std::string::String,
         pub channel_id: ::std::string::String,
-        pub counterparty_endpoint: IbcCoreChannelV1CounterpartyData,
+        pub counterparty_endpoint: IbcCoreChannelV1ChannelData,
         pub version: ::std::string::String,
         pub counterparty_version: ::std::string::String,
     }

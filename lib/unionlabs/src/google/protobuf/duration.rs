@@ -335,21 +335,21 @@ impl TryFrom<protos::google::protobuf::Duration> for Duration {
 }
 
 #[cfg(feature = "ethabi")]
-impl From<Duration> for contracts::glue::GoogleProtobufDurationData {
+impl From<Duration> for contracts::glue::GoogleProtobufTimestampData {
     fn from(value: Duration) -> Self {
         Self {
-            seconds: value.seconds().inner(),
-            nanos: value.nanos().inner(),
+            nanos: value.nanos().inner().into(),
+            secs: value.seconds().inner(),
         }
     }
 }
 
 #[cfg(feature = "ethabi")]
-impl TryFrom<contracts::glue::GoogleProtobufDurationData> for Duration {
+impl TryFrom<contracts::glue::GoogleProtobufTimestampData> for Duration {
     type Error = DurationError;
 
-    fn try_from(value: contracts::glue::GoogleProtobufDurationData) -> Result<Self, Self::Error> {
-        Self::new(value.seconds, value.nanos)
+    fn try_from(value: contracts::glue::GoogleProtobufTimestampData) -> Result<Self, Self::Error> {
+        Self::new(value.secs, value.nanos.try_into().unwrap())
     }
 }
 

@@ -828,7 +828,7 @@ pub mod glue {
         Eq,
         Hash,
     )]
-    pub struct GoogleProtobufDurationData {
+    pub struct Data {
         pub seconds: i64,
         pub nanos: i32,
     }
@@ -875,9 +875,9 @@ pub mod glue {
     pub struct IbcLightclientsTendermintV1ClientStateData {
         pub chain_id: ::std::string::String,
         pub trust_level: IbcLightclientsTendermintV1FractionData,
-        pub trusting_period: GoogleProtobufDurationData,
-        pub unbonding_period: GoogleProtobufDurationData,
-        pub max_clock_drift: GoogleProtobufDurationData,
+        pub trusting_period: Data,
+        pub unbonding_period: Data,
+        pub max_clock_drift: Data,
         pub frozen_height: IbcCoreClientV1HeightData,
         pub latest_height: IbcCoreClientV1HeightData,
         pub proof_specs: ::std::vec::Vec<CosmosIcs23V1ProofSpecData>,
