@@ -1,4 +1,4 @@
 {
-  "outputDirectory": "result",
-  "buildCommand": "nix build .#site-static"
+  "outputDirectory": "build",
+  "buildCommand": "yarn build"
 }

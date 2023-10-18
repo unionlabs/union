@@ -194,6 +194,7 @@ cosmosproto
 cosmossdk
 cosmrs
 cosmwasm
+cosmwasmclient
 counterparty
 cpufeatures
 cratedir
@@ -333,6 +334,7 @@ iflag
 ilog
 imap
 impls
+incentivized
 incentivizes
 infima
 interchain
@@ -358,6 +360,7 @@ launchbadge
 lcfur
 lcgadget
 ldflags
+leapwallet
 legendres
 libblst
 libcxx
@@ -424,6 +427,7 @@ openapi
 openapiv
 opsz
 optimisitic
+outcompete
 outdir
 outfile
 overrrides
@@ -620,6 +624,7 @@ undelegate
 undelegations
 unescrow
 uninit
+unionbuild
 unionbundle
 unioncustomquery
 uniond
@@ -658,6 +663,7 @@ valnode
 valoper
 valoperpub
 valset
+vercel
 verison
 verkle
 vestingtypes
@@ -674,6 +680,7 @@ wasmvm
 wasmvmstatic
 wasmvmtypes
 wctx
+wearehome
 webpki
 whistleblower
 withdrawability

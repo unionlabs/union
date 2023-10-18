@@ -46,7 +46,6 @@
 		// );
 		const contract = new ethers.Contract(evmContract, abi, provider);
 		contract.on('Ring', (ping, event) => {
-			console.log(event);
 			const action = ping ? 'ping' : 'pong';
 			txs = txs.concat([
 				{
@@ -60,7 +59,6 @@
 		const client = await TmClient.connect(cosmosUrl);
 		client.subscribeTx().addListener({
 			next: (event: TxEvent) => {
-				console.log(event);
 				const wasmEvent = event.result.events.find((e) => e.type === 'wasm');
 				if (wasmEvent) {
 					const contractAddress = wasmEvent.attributes.find((a) => a.key == '_contract_address');

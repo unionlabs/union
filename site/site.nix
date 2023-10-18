@@ -1,5 +1,5 @@
 { ... }: {
-  perSystem = { pkgs, lib, nix-filter, ... }:
+  perSystem = { pkgs, lib, nix-filter, ensureAtRepositoryRoot, ... }:
     let
       packageJSON = lib.importJSON ./package.json;
     in
@@ -22,6 +22,7 @@
               packageJson = "${src}/package.json";
               yarnLock = "${src}/yarn.lock";
               buildPhase = ''
+                yarn run postinstall
                 yarn --offline build 
               '';
               distPhase = "true";
@@ -46,10 +47,27 @@
             miniserve --index index.html --spa ${site-static}
           '';
         };
-      };
 
-      apps = {
-        docs-dev-server = { };
+        impure-site-deploy = pkgs.writeShellApplication {
+          name = "impure-site-deploy";
+
+          runtimeInputs = [ pkgs.nodePackages.vercel ];
+
+          text = ''
+            ${ensureAtRepositoryRoot}
+
+            cd site
+            yarn
+            yarn build
+
+            # cspell:disable
+            export VERCEL_PROJECT_ID=prj_HWQLgBiGFHNPSy5qJ3WpCeX1l492
+            export VERCEL_ORG_ID=team_lY7Vs9wFi3Ifb2A24bOxiA68
+            # cspell:enable
+
+            vercel deploy --prebuilt --scope unionbuild
+          '';
+        };
       };
     };
 }
