@@ -14,7 +14,6 @@ import (
 	"os"
 	"runtime"
 	"sync/atomic"
-	"time"
 
 	cometbft_bn254 "github.com/cometbft/cometbft/crypto/bn254"
 	ce "github.com/cometbft/cometbft/crypto/encoding"
@@ -178,16 +177,16 @@ func (p *proverServer) QueryStats(ctx context.Context, req *QueryStatsRequest) (
 }
 
 func (p *proverServer) Prove(ctx context.Context, req *ProveRequest) (*ProveResponse, error) {
-	log.Println("Proving...")
-
 	for true {
 		swapped := p.proving.CompareAndSwap(false, true)
 		if swapped {
 			break
 		} else {
-			time.Sleep(1000)
+			return nil, fmt.Errorf("Busy building")
 		}
 	}
+
+	log.Println("Proving...")
 
 	reqJson, err := json.MarshalIndent(req, "", "    ")
 	if err != nil {
