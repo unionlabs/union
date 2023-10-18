@@ -26,40 +26,6 @@ pub struct TransferToken {
     pub amount: Uint256,
 }
 
-impl TransferToken {
-    // If a denom originated from a remote network, it will be in the form:
-    //   `factory/{contract_address}/{hash}`
-    // In order for the remote module to consider this denom as local, we must
-    // strip the `factory/{contract_address}/` prefix before sending the tokens.
-    pub fn normalize_for_ibc_transfer(
-        self,
-        contract_address: &str,
-        endpoint: &IbcEndpoint,
-    ) -> Self {
-        let normalized_denom = match self
-            .denom
-            .strip_prefix("factory/")
-            .and_then(|denom| denom.strip_prefix(contract_address))
-            .and_then(|denom| denom.strip_prefix('/'))
-        {
-            // This is a denom created by us
-            Some(factory_denom) => {
-                // Check whether it's a remotely created denom by switching
-                // to the remote POV and using the DenomOrigin parser.
-                match DenomOrigin::from((factory_denom, endpoint)) {
-                    DenomOrigin::Local { denom } => denom.to_string(),
-                    DenomOrigin::Remote { .. } => self.denom,
-                }
-            }
-            None => self.denom,
-        };
-        TransferToken {
-            denom: normalized_denom.to_string(),
-            amount: self.amount,
-        }
-    }
-}
-
 impl From<Coin> for TransferToken {
     fn from(value: Coin) -> Self {
         Self {
@@ -516,65 +482,6 @@ mod tests {
             Ok(DenomOrigin::Remote {
                 denom: "blabla/ok/-k"
             })
-        );
-    }
-
-    #[test]
-    fn transfer_token_normalize_identity() {
-        assert_eq!(
-            TransferToken {
-                denom: "factory/0xDEADC0DE/blabla-1".into(),
-                amount: Uint256::MAX
-            }
-            .normalize_for_ibc_transfer(
-                "0xDEADC0DE",
-                &IbcEndpoint {
-                    port_id: "transfer".into(),
-                    channel_id: "channel-332".into()
-                }
-            ),
-            TransferToken {
-                denom: "factory/0xDEADC0DE/blabla-1".into(),
-                amount: Uint256::MAX
-            }
-        );
-        assert_eq!(
-            TransferToken {
-                denom: "factory/0xDEADC0DE/transfer/channel-441/blabla-1".into(),
-                amount: Uint256::MAX
-            }
-            .normalize_for_ibc_transfer(
-                "0xDEADC0DE",
-                &IbcEndpoint {
-                    port_id: "transfer".into(),
-                    channel_id: "channel-332".into()
-                }
-            ),
-            TransferToken {
-                denom: "factory/0xDEADC0DE/transfer/channel-441/blabla-1".into(),
-                amount: Uint256::MAX
-            }
-        );
-    }
-
-    #[test]
-    fn transfer_token_normalize_strip() {
-        assert_eq!(
-            TransferToken {
-                denom: "factory/0xDEADC0DE/transfer/channel-332/blabla-1".into(),
-                amount: Uint256::MAX
-            }
-            .normalize_for_ibc_transfer(
-                "0xDEADC0DE",
-                &IbcEndpoint {
-                    port_id: "transfer".into(),
-                    channel_id: "channel-332".into()
-                }
-            ),
-            TransferToken {
-                denom: "blabla-1".into(),
-                amount: Uint256::MAX
-            }
         );
     }
 }

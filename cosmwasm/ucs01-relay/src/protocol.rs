@@ -1,6 +1,6 @@
 use cosmwasm_std::{
     wasm_execute, Addr, BankMsg, Coin, CosmosMsg, DepsMut, Env, IbcEndpoint, IbcOrder, MessageInfo,
-    StdError, Uint128, Uint512,
+    Uint128, Uint512,
 };
 use sha2::{Digest, Sha256};
 use token_factory_api::TokenFactoryMsg;
@@ -26,6 +26,10 @@ pub fn hash_denom(denom: &str) -> Hash {
     hasher.finalize()[..HASH_LENGTH]
         .try_into()
         .expect("impossible")
+}
+
+pub fn hash_denom_str(denom: &str) -> String {
+    format!("0x{}", hex::encode(hash_denom(denom)))
 }
 
 pub fn protocol_ordering(version: &str) -> Option<IbcOrder> {
@@ -84,6 +88,39 @@ fn decrease_outstanding(
     })
 }
 
+fn normalize_for_ibc_transfer(
+    mut hash_to_denom: impl FnMut(Hash) -> Result<String, ContractError>,
+    contract_address: &str,
+    counterparty_endpoint: &IbcEndpoint,
+    token: TransferToken,
+) -> Result<TransferToken, ContractError> {
+    let normalized_denom = match token
+        .denom
+        .strip_prefix("factory/")
+        .and_then(|denom| denom.strip_prefix(contract_address))
+        .and_then(|denom| denom.strip_prefix("/0x"))
+    {
+        Some(denom_hash) => {
+            let normalized_denom = hash_to_denom(
+                hex::decode(denom_hash)
+                    .expect("impossible")
+                    .try_into()
+                    .expect("impossible"),
+            )?;
+            // Check whether it's a remotely created denom by switching
+            // to the remote POV and using the DenomOrigin parser.
+            match DenomOrigin::from((normalized_denom.as_ref(), counterparty_endpoint)) {
+                DenomOrigin::Local { .. } => normalized_denom,
+                DenomOrigin::Remote { .. } => token.denom,
+            }
+        }
+        None => token.denom,
+    };
+    Ok(TransferToken {
+        denom: normalized_denom.to_string(),
+        amount: token.amount,
+    })
+}
 trait OnReceive {
     fn foreign_toggle(
         &mut self,
@@ -224,25 +261,13 @@ trait ForTokens {
             let amount = amount
                 .try_into()
                 .expect("CosmWasm require transferred amount to be Uint128...");
-            // We know at this point that the factory/{contract_address} have
-            // been stripped if the denom has been created by the contract. If
-            // the denom is a hexadecimal string, it's a foreign one.
-            let normalized_denom = match denom.strip_prefix("0x") {
-                Some(foreign_denom_hash) => self.hash_to_denom(
-                    hex::decode(foreign_denom_hash)
-                        .map_err(|e| {
-                            StdError::generic_err(format!("Failed to decode denom hash {:?}", e))
-                        })?
-                        .try_into()
-                        .expect("impossible"),
-                )?,
-                None => denom.to_string(),
-            };
             // This is the origin from the counterparty POV
-            match DenomOrigin::from((normalized_denom.as_ref(), counterparty_endpoint)) {
-                DenomOrigin::Local { .. } => {
-                    // the denom has been previously normalized (factory/{contract}/ prefix removed), we must reconstruct to burn
-                    let factory_denom = format!("factory/{}/{}", contract_address, denom);
+            match DenomOrigin::from((denom.as_str(), counterparty_endpoint)) {
+                DenomOrigin::Local { denom } => {
+                    // the denom has been previously normalized (factory/{}/ prefix removed), we must reconstruct to burn
+                    let foreign_denom =
+                        hash_denom_str(&make_foreign_denom(counterparty_endpoint, denom));
+                    let factory_denom = format!("factory/{}/{}", contract_address, foreign_denom);
                     messages.append(&mut self.on_remote(channel_id, &factory_denom, amount)?);
                 }
                 DenomOrigin::Remote { denom } => {
@@ -437,6 +462,22 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
             tokens,
         )
     }
+
+    fn normalize_for_ibc_transfer(
+        &mut self,
+        token: TransferToken,
+    ) -> Result<TransferToken, Self::Error> {
+        normalize_for_ibc_transfer(
+            |hash| {
+                HASH_TO_FOREIGN_DENOM
+                    .load(self.common.deps.storage, hash)
+                    .map_err(Into::into)
+            },
+            self.common.env.contract.address.as_str(),
+            &self.common.channel.counterparty_endpoint,
+            token,
+        )
+    }
 }
 
 pub struct Ucs01Protocol<'a> {
@@ -534,6 +575,22 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
             tokens,
         )
     }
+
+    fn normalize_for_ibc_transfer(
+        &mut self,
+        token: TransferToken,
+    ) -> Result<TransferToken, Self::Error> {
+        normalize_for_ibc_transfer(
+            |hash| {
+                HASH_TO_FOREIGN_DENOM
+                    .load(self.common.deps.storage, hash)
+                    .map_err(Into::into)
+            },
+            self.common.env.contract.address.as_str(),
+            &self.common.channel.counterparty_endpoint,
+            token,
+        )
+    }
 }
 
 #[cfg(test)]
@@ -545,7 +602,9 @@ mod tests {
     use ucs01_relay_api::types::TransferToken;
 
     use super::{hash_denom, ForTokens, OnReceive};
-    use crate::{error::ContractError, msg::ExecuteMsg, state::Hash};
+    use crate::{
+        error::ContractError, msg::ExecuteMsg, protocol::normalize_for_ibc_transfer, state::Hash,
+    };
 
     struct TestOnReceive {
         toggle: bool,
@@ -688,7 +747,7 @@ mod tests {
     }
 
     #[test]
-    fn send_tokens_burn_channel_remote() {
+    fn send_tokens_channel_remote_burn() {
         struct OnRemoteOnly;
         impl ForTokens for OnRemoteOnly {
             fn on_local(
@@ -700,7 +759,7 @@ mod tests {
                 Vec<cosmwasm_std::CosmosMsg<token_factory_api::TokenFactoryMsg>>,
                 crate::error::ContractError,
             > {
-                todo!()
+                Ok(vec![])
             }
 
             fn on_remote(
@@ -735,22 +794,40 @@ mod tests {
                     port_id: "transfer".into(),
                     channel_id: "channel-1".into()
                 },
-                vec![TransferToken {
-                    denom: "transfer/channel-1/remote-denom".into(),
-                    amount: Uint256::from(119u128)
-                }],
+                vec![
+                    TransferToken {
+                        denom: "transfer/channel-1/remote-denom".into(),
+                        amount: Uint256::from(119u128)
+                    },
+                    TransferToken {
+                        denom: "transfer/channel-2/remote-denom".into(),
+                        amount: Uint256::from(10u128)
+                    },
+                    TransferToken {
+                        denom: "transfer/channel-1/remote-denom2".into(),
+                        amount: Uint256::from(129u128)
+                    },
+                ],
             ),
-            Ok(vec![TokenFactoryMsg::BurnTokens {
-                denom: "factory/0xCAFEBABE/transfer/channel-1/remote-denom".into(),
-                amount: Uint128::from(119u128),
-                burn_from_address: "0xCAFEBABE".into()
-            }
-            .into()])
+            Ok(vec![
+                TokenFactoryMsg::BurnTokens {
+                    denom: "factory/0xCAFEBABE/0xab92d7960e907a915f77021facde1e952d89af11c3".into(),
+                    amount: Uint128::from(119u128),
+                    burn_from_address: "0xCAFEBABE".into()
+                }
+                .into(),
+                TokenFactoryMsg::BurnTokens {
+                    denom: "factory/0xCAFEBABE/0x0eab39ddf78af2c170767a8587ae49f24a36e3a9d3".into(),
+                    amount: Uint128::from(129u128),
+                    burn_from_address: "0xCAFEBABE".into()
+                }
+                .into()
+            ])
         );
     }
 
     #[test]
-    fn send_tokens_escrow_local() {
+    fn send_tokens_channel_local_escrow() {
         struct OnLocalOnly {
             total: Uint128,
         }
@@ -796,13 +873,81 @@ mod tests {
                     port_id: "transfer".into(),
                     channel_id: "channel-1".into()
                 },
-                vec![TransferToken {
-                    denom: "transfer/channel-2/remote-denom".into(),
-                    amount: Uint256::from(119u128)
-                }],
+                vec![
+                    TransferToken {
+                        denom: "transfer/channel-2/remote-denom".into(),
+                        amount: Uint256::from(119u128)
+                    },
+                    TransferToken {
+                        denom: "transfer/channel-2/remote-denom2".into(),
+                        amount: Uint256::from(129u128)
+                    }
+                ],
             ),
             Ok(vec![])
         );
-        assert_eq!(state.total, Uint128::from(119u128));
+        assert_eq!(state.total, Uint128::from(119u128 + 129u128));
+    }
+
+    #[test]
+    fn normalize_identity() {
+        assert_eq!(
+            normalize_for_ibc_transfer(
+                |_| Ok("transfer/channel-331/from-counterparty".into()),
+                "0xDEADC0DE",
+                &IbcEndpoint {
+                    port_id: "transfer".into(),
+                    channel_id: "channel-332".into()
+                },
+                TransferToken {
+                    denom: "factory/0xDEADC0DE/0xaf30fd00576e1d27471a4d2b0c0487dc6876e0589e".into(),
+                    amount: Uint256::MAX
+                }
+            ),
+            Ok(TransferToken {
+                denom: "factory/0xDEADC0DE/0xaf30fd00576e1d27471a4d2b0c0487dc6876e0589e".into(),
+                amount: Uint256::MAX
+            })
+        );
+        assert_eq!(
+            normalize_for_ibc_transfer(
+                |_| Ok("transfer1/channel-332/from-counterparty".into()),
+                "0xDEADC0DE",
+                &IbcEndpoint {
+                    port_id: "transfer".into(),
+                    channel_id: "channel-332".into()
+                },
+                TransferToken {
+                    denom: "factory/0xDEADC0DE/0xaf30fd00576e1d27471a4d2b0c0487dc6876e0589e".into(),
+                    amount: Uint256::MAX
+                }
+            ),
+            Ok(TransferToken {
+                denom: "factory/0xDEADC0DE/0xaf30fd00576e1d27471a4d2b0c0487dc6876e0589e".into(),
+                amount: Uint256::MAX
+            })
+        );
+    }
+
+    #[test]
+    fn normalize_strip() {
+        assert_eq!(
+            normalize_for_ibc_transfer(
+                |_| Ok("transfer/channel-332/blabla-1".into()),
+                "0xDEADC0DE",
+                &IbcEndpoint {
+                    port_id: "transfer".into(),
+                    channel_id: "channel-332".into()
+                },
+                TransferToken {
+                    denom: "factory/0xDEADC0DE/0xaf30fd00576e1d27471a4d2b0c0487dc6876e0589e".into(),
+                    amount: Uint256::MAX
+                }
+            ),
+            Ok(TransferToken {
+                denom: "transfer/channel-332/blabla-1".into(),
+                amount: Uint256::MAX
+            })
+        );
     }
 }

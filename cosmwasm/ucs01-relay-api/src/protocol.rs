@@ -73,6 +73,11 @@ pub trait TransferProtocol {
 
     fn ack_failure(error: String) -> Self::Ack;
 
+    fn normalize_for_ibc_transfer(
+        &mut self,
+        token: TransferToken,
+    ) -> Result<TransferToken, Self::Error>;
+
     fn send_tokens(
         &mut self,
         sender: &str,
@@ -102,10 +107,8 @@ pub trait TransferProtocol {
         input.tokens = input
             .tokens
             .into_iter()
-            .map(|token| {
-                token.normalize_for_ibc_transfer(self.self_addr().as_str(), self.channel_endpoint())
-            })
-            .collect();
+            .map(|token| self.normalize_for_ibc_transfer(token))
+            .collect::<Result<Vec<_>, _>>()?;
 
         let packet = Self::Packet::try_from(TransferPacketCommon {
             sender: input.sender.to_string(),
