@@ -28,8 +28,11 @@
 
   flake.nixosModules.hubble = { lib, pkgs, config, ... }:
     with lib;
-    let cfg = config.services.hubble;
-    in {
+    let
+      cfg = config.services.hubble;
+      uid = config.ids.uids.hubble;
+    in
+    {
       options.services.hubble = {
         enable = mkEnableOption "Hubble service";
         package = mkOption {
@@ -69,6 +72,17 @@
       };
 
       config = mkIf cfg.enable {
+
+        users.users.hubble = {
+          description = "Hubble Indexer User";
+          uid = uid;
+          group = "hubble";
+          home = "/var/log/hubble/";
+          createHome = true;
+        };
+
+        users.groups.hubble.gid = config.ids.gids.hubble;
+
         systemd.services.hubble =
           let
             hubble-systemd-script = pkgs.writeShellApplication {
