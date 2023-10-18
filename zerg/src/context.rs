@@ -74,7 +74,7 @@ impl Context {
                 let signing_key: ecdsa::SigningKey = signer.value();
                 let address = secret_key_to_address(&signing_key);
                 let wallet = LocalWallet::new_with_signer(signing_key, address, chain_id);
-                evm_accounts.insert(address.to_string(), wallet);
+                evm_accounts.insert(format!("{:?}", address), wallet);
             });
 
         Context {
@@ -104,7 +104,7 @@ impl Context {
             for pk in self.zerg_config.evm.signers.iter() {
                 let signing_key: ecdsa::SigningKey = pk.clone().value();
                 let address = secret_key_to_address(&signing_key);
-                let receiver = address.to_string();
+                let receiver = format!("{:?}", address);
                 let transfer_msg = ExecuteMsg::Transfer(TransferMsg {
                     channel: self.zerg_config.channel.clone(),
                     receiver,
@@ -139,9 +139,7 @@ impl Context {
         let transfer =
             Ucs01TransferPacket::try_from(cosmwasm_std::Binary(e.packet_data_hex.clone())).unwrap();
 
-        dbg!(self.evm_accounts.keys());
-
-        let wallet = self.evm_accounts.get(dbg!(transfer.receiver())).unwrap();
+        let wallet = self.evm_accounts.get(transfer.receiver()).unwrap();
 
         let signer_middleware = Arc::new(SignerMiddleware::new(
             self.evm.provider.clone(),
@@ -150,7 +148,7 @@ impl Context {
 
         let ucs01_relay = ucs01relay::UCS01Relay::new(
             self.zerg_config.evm_contract.clone(),
-            self.evm.provider.into(),
+            signer_middleware.clone(),
         );
 
         let denom = format!(
@@ -178,7 +176,7 @@ impl Context {
                 e.packet_dst_channel.clone().to_string(),
                 transfer.sender().to_string(),
                 vec![LocalToken {
-                    denom: dbg!(denom_address),
+                    denom: denom_address,
                     amount: Uint128::try_from(transfer.tokens()[0].amount)
                         .unwrap()
                         .u128(),
