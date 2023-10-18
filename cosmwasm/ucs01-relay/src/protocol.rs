@@ -2,7 +2,7 @@ use cosmwasm_std::{
     Addr, BankMsg, Coin, CosmosMsg, DepsMut, Env, IbcEndpoint, IbcOrder, MessageInfo, Uint128,
     Uint512,
 };
-use token_factory_api::{TokenFactoryMsg, TokenMsg};
+use token_factory_api::TokenFactoryMsg;
 use ucs01_relay_api::{
     protocol::TransferProtocol,
     types::{
@@ -114,7 +114,7 @@ trait OnReceive {
                             format!("factory/{}/{}", contract_address, foreign_denom);
                         let exists = self.foreign_toggle(&factory_denom)?;
                         Ok(if exists {
-                            vec![TokenMsg::MintTokens {
+                            vec![TokenFactoryMsg::MintTokens {
                                 denom: factory_denom,
                                 amount,
                                 mint_to_address: receiver.to_string(),
@@ -122,12 +122,12 @@ trait OnReceive {
                             .into()]
                         } else {
                             vec![
-                                TokenMsg::CreateDenom {
+                                TokenFactoryMsg::CreateDenom {
                                     subdenom: foreign_denom.clone(),
                                     metadata: None,
                                 }
                                 .into(),
-                                TokenMsg::MintTokens {
+                                TokenFactoryMsg::MintTokens {
                                     denom: factory_denom,
                                     amount,
                                     mint_to_address: receiver.to_string(),
@@ -230,7 +230,7 @@ impl<'a> ForTokens for StatefulSendTokens<'a> {
         denom: &str,
         amount: Uint128,
     ) -> Result<Vec<CosmosMsg<TokenFactoryMsg>>, ContractError> {
-        Ok(vec![TokenMsg::BurnTokens {
+        Ok(vec![TokenFactoryMsg::BurnTokens {
             denom: denom.into(),
             amount,
             burn_from_address: self.contract_address.clone(),
@@ -268,7 +268,7 @@ impl<'a> ForTokens for StatefulRefundTokens<'a> {
         denom: &str,
         amount: Uint128,
     ) -> Result<Vec<CosmosMsg<TokenFactoryMsg>>, ContractError> {
-        Ok(vec![TokenMsg::MintTokens {
+        Ok(vec![TokenFactoryMsg::MintTokens {
             denom: denom.into(),
             amount,
             mint_to_address: self.receiver.clone(),
@@ -481,7 +481,7 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
 #[cfg(test)]
 mod tests {
     use cosmwasm_std::{Addr, BankMsg, Coin, IbcEndpoint, Uint128, Uint256};
-    use token_factory_api::TokenMsg;
+    use token_factory_api::TokenFactoryMsg;
     use ucs01_relay_api::types::TransferToken;
 
     use super::{ForTokens, OnReceive};
@@ -524,12 +524,12 @@ mod tests {
                 },],
             ),
             Ok(vec![
-                TokenMsg::CreateDenom {
+                TokenFactoryMsg::CreateDenom {
                     subdenom: "transfer/channel-34/from-counterparty".into(),
                     metadata: None
                 }
                 .into(),
-                TokenMsg::MintTokens {
+                TokenFactoryMsg::MintTokens {
                     denom: "factory/0xDEADC0DE/transfer/channel-34/from-counterparty".into(),
                     amount: Uint128::from(100u128),
                     mint_to_address: "receiver".into()
@@ -558,7 +558,7 @@ mod tests {
                     amount: Uint256::from(100u128)
                 },],
             ),
-            Ok(vec![TokenMsg::MintTokens {
+            Ok(vec![TokenFactoryMsg::MintTokens {
                 denom: "factory/0xDEADC0DE/transfer/channel-34/from-counterparty".into(),
                 amount: Uint128::from(100u128),
                 mint_to_address: "receiver".into()
@@ -622,7 +622,7 @@ mod tests {
                 Vec<cosmwasm_std::CosmosMsg<token_factory_api::TokenFactoryMsg>>,
                 crate::error::ContractError,
             > {
-                Ok(vec![TokenMsg::BurnTokens {
+                Ok(vec![TokenFactoryMsg::BurnTokens {
                     denom: denom.into(),
                     amount,
                     burn_from_address: "0xCAFEBABE".into(),
@@ -643,7 +643,7 @@ mod tests {
                     amount: Uint256::from(119u128)
                 }],
             ),
-            Ok(vec![TokenMsg::BurnTokens {
+            Ok(vec![TokenFactoryMsg::BurnTokens {
                 denom: "factory/0xCAFEBABE/transfer/channel-1/remote-denom".into(),
                 amount: Uint128::from(119u128),
                 burn_from_address: "0xCAFEBABE".into()
