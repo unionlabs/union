@@ -55,7 +55,47 @@ async fn main() {
                 };
             }
         },
+        cli::Command::Query(query) => match query {
+            cli::QueryCmd::Evm(evm_query) => {
+                let evm: Evm<EvmConfig> = Evm::new(config.evm).await.unwrap();
+                match evm_query {
+                    cli::EvmQuery::UcsBalance {
+                        contract_address,
+                        denom,
+                        address,
+                    } => {
+                        handle_ucs_balance(evm, contract_address.into(), denom, address.into())
+                            .await
+                    }
+                    cli::EvmQuery::ErcBalance {
+                        contract_address,
+                        address,
+                    } => todo!(),
+                }
+            }
+        },
     }
+}
+
+async fn handle_ucs_balance(
+    evm: Evm<EvmConfig>,
+    contract_address: Address,
+    denom: String,
+    address: Address,
+) {
+    let signer_middleware = Arc::new(SignerMiddleware::new(
+        evm.provider.clone(),
+        evm.wallet.clone(),
+    ));
+    let relay = UCS01Relay::new(contract_address, signer_middleware.clone());
+
+    let denom = relay.denom_to_address(denom).await.unwrap();
+    println!("Address is: {}", denom);
+
+    let erc_contract = erc20::ERC20::new(denom, signer_middleware.clone());
+
+    let balance = erc_contract.balance_of(address).await.unwrap();
+    println!("Balance is: {}", balance);
 }
 
 async fn handle_transfer(

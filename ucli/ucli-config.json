@@ -1,31 +1,14 @@
 {
-  "chain": {
-    "ethereum-devnet": {
-      "chain_type": "evm",
-      "preset_base": "minimal",
-      "ibc_handler_address": "0x774667629726ec1FaBEbCEc0D9139bD1C8f72a23",
-      "signers": [
+    "evm": {
+      "ibc_handler_address": "0xeda338e4dc46038493b885327842fd3e301cab39",
+      "signer": 
         {
           "raw": "0x4e9444a6efd6d42725a250b650a781da2737ea308c839eaccb0f7f3dbd2fea77"
         },
-        {
-          "raw": "0xd9c5dc47ed678fc3e63249953866d79e5cf48418e79d8eec1a985be7393ef3b9"
-        },
-        {
-          "raw": "0x0a917066d306f09670e47729bfd4384f4afcac98493c65b9733870a434d71f29"
-        },
-        {
-          "raw": "0xff45ae2a6c4899294e898a171e15de8a4d2557852378364f8684c6a1520ccd7d"
-        },
-        {
-          "raw": "0x27ae0c7b8d7c698e41b173265490a4c64b4e39ae78599166e003f868f12140fd"
-        }
-      ],
       "eth_rpc_api": "ws://localhost:8546",
       "eth_beacon_rpc_api": "http://localhost:9596"
     },
-    "union-devnet": {
-      "chain_type": "union",
+    "union": {
       "signers": [
         {
           "raw": "0xaa820fa947beb242032a41b6dc9a8b9c37d8f5fbcda0966b1ec80335b10a7d6f"
@@ -63,13 +46,4 @@
       "prover_endpoint": "https://galois-devnet.cryptware.io:443",
       "grpc_url": "http://localhost:9090"
     }
-  },
-  "voyager": {
-    "hasura": null,
-    "num_workers": 10,
-    "queue": {
-      "type": "pg-queue",
-      "database_url": "postgres://postgres:postgrespassword@localhost:5432/default"
-    }
-  }
 }

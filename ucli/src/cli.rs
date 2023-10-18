@@ -38,6 +38,8 @@ pub struct AppArgs {
 pub enum Command {
     #[command(subcommand)]
     Tx(TxCmd),
+    #[command(subcommand)]
+    Query(QueryCmd),
 }
 
 #[derive(Debug, Subcommand)]
@@ -65,6 +67,31 @@ pub enum EvmTx {
         amount: u64,
         #[arg(long)]
         denom: String,
+    },
+}
+
+#[derive(Debug, Subcommand)]
+pub enum QueryCmd {
+    #[command(subcommand)]
+    Evm(EvmQuery),
+}
+
+#[derive(Debug, Subcommand)]
+pub enum EvmQuery {
+    // TODO(aeryz): Check if native denoms present in the `denomToAddress` mapping.
+    UcsBalance {
+        #[arg(long)]
+        contract_address: Address,
+        #[arg(long)]
+        denom: String,
+        #[arg(long)]
+        address: Address,
+    },
+    ErcBalance {
+        #[arg(long)]
+        contract_address: Address,
+        #[arg(long)]
+        address: Address,
     },
 }
 
