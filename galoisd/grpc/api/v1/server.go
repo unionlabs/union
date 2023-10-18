@@ -178,16 +178,20 @@ func (p *proverServer) QueryStats(ctx context.Context, req *QueryStatsRequest) (
 }
 
 func (p *proverServer) Prove(ctx context.Context, req *ProveRequest) (*ProveResponse, error) {
-	log.Println("Proving...")
-
 	for true {
 		swapped := p.proving.CompareAndSwap(false, true)
 		if swapped {
 			break
 		} else {
-			time.Sleep(1000)
+			return nil, fmt.Errorf("busy building")
 		}
 	}
+
+	defer func () {
+		p.proving.Store(false)
+	}()
+
+	log.Println("Proving...")
 
 	reqJson, err := json.MarshalIndent(req, "", "    ")
 	if err != nil {
@@ -332,8 +336,6 @@ func (p *proverServer) Prove(ctx context.Context, req *ProveRequest) (*ProveResp
 
 	// Run GC to avoid high residency, a single prove call is very expensive in term of memory.
 	runtime.GC()
-
-	p.proving.Store(false)
 
 	// F_r element
 	var commitmentHash []byte
