@@ -13,6 +13,8 @@ import (
 	"math/big"
 	"os"
 	"runtime"
+	"sync/atomic"
+	"time"
 
 	cometbft_bn254 "github.com/cometbft/cometbft/crypto/bn254"
 	ce "github.com/cometbft/cometbft/crypto/encoding"
@@ -39,6 +41,7 @@ type proverServer struct {
 	pk         backend.ProvingKey
 	vk         backend.VerifyingKey
 	commitment constraint.Commitment
+	proving    atomic.Bool
 }
 
 func (*proverServer) mustEmbedUnimplementedUnionProverAPIServer() {}
@@ -176,6 +179,15 @@ func (p *proverServer) QueryStats(ctx context.Context, req *QueryStatsRequest) (
 
 func (p *proverServer) Prove(ctx context.Context, req *ProveRequest) (*ProveResponse, error) {
 	log.Println("Proving...")
+
+	for true {
+		swapped := p.proving.CompareAndSwap(false, true)
+		if swapped {
+			break
+		} else {
+			time.Sleep(1000)
+		}
+	}
 
 	reqJson, err := json.MarshalIndent(req, "", "    ")
 	if err != nil {
@@ -320,6 +332,8 @@ func (p *proverServer) Prove(ctx context.Context, req *ProveRequest) (*ProveResp
 
 	// Run GC to avoid high residency, a single prove call is very expensive in term of memory.
 	runtime.GC()
+
+	p.proving.Store(false)
 
 	// F_r element
 	var commitmentHash []byte
