@@ -65,6 +65,6 @@ func ServeCmd() *cobra.Command {
 	cmd.Flags().String(flagR1CS, "r1cs.bin", "Path to the compiled R1CS circuit.")
 	cmd.Flags().String(flagPK, "pk.bin", "Path to the proving key.")
 	cmd.Flags().String(flagVK, "vk.bin", "Path to the verifying key.")
-	cmd.Flags().Int(flagMaxConn, 1, "Maximum number of concurrent connection.")
+	cmd.Flags().Int(flagMaxConn, 10, "Maximum number of concurrent connection.")
 	return cmd
 }
