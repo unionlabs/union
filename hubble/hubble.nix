@@ -44,8 +44,12 @@
           type = types.str;
           default = "0.0.0.0:9090";
         };
-        hasura-admin-secret = mkOption {
-          type = types.str;
+        api-key-file = mkOption {
+          description = lib.mdDoc ''
+            Path to a file containing the Hasura admin secret to allow for mutations.
+          '';
+          example = "/run/keys/hubble.key";
+          type = types.path;
           default = "";
         };
         indexers = mkOption {
@@ -72,13 +76,14 @@
               runtimeInputs = [ pkgs.coreutils cfg.package ];
               text =
                 let
-                  secretArg = if cfg.hasura-admin-secret != "" then "--secret ${cfg.hasura-admin-secret}" else "";
                   indexersJson = builtins.toJSON cfg.indexers;
                 in
                 ''
-                  RUST_LOG=${cfg.log-level} ${pkgs.lib.getExe cfg.package}  \
+                  RUST_LOG=${cfg.log-level} \
+                  HUBBLE_SECRET=$(head -n 1 ${cfg.api-key-file}) \
+                  ${pkgs.lib.getExe cfg.package}  \
                     --metrics-addr ${cfg.metrics-addr} \
-                    --url ${cfg.url} ${secretArg} \
+                    --url ${cfg.url} \
                     --indexers '${indexersJson}'
                 '';
             };
@@ -90,6 +95,8 @@
               Type = "simple";
               ExecStart = pkgs.lib.getExe hubble-systemd-script;
               Restart = mkForce "always";
+              User = "hubble";
+              Group = "hubble";
             };
           };
       };
