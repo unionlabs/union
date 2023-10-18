@@ -14,13 +14,11 @@ use contracts::{
 use cosmwasm_std::Uint128;
 use ecdsa::SigningKey;
 use ethers::{
-    abi::Address,
     core::k256::ecdsa,
-    middleware::NonceManagerMiddleware,
     prelude::SignerMiddleware,
     providers::Middleware,
     signers::{LocalWallet, Wallet},
-    types::{H160, U256},
+    types::U256,
     utils::secret_key_to_address,
 };
 use futures::StreamExt;
@@ -45,7 +43,7 @@ pub struct Context {
     pub writer: Arc<Mutex<File>>,
     pub union: chain_utils::union::Union,
     pub evm: chain_utils::evm::Evm<Minimal>,
-    pub evm_accounts: HashMap<Address, Wallet<SigningKey>>,
+    pub evm_accounts: HashMap<String, Wallet<SigningKey>>,
 }
 
 impl Context {
@@ -76,7 +74,7 @@ impl Context {
                 let signing_key: ecdsa::SigningKey = signer.value();
                 let address = secret_key_to_address(&signing_key);
                 let wallet = LocalWallet::new_with_signer(signing_key, address, chain_id);
-                evm_accounts.insert(address, wallet);
+                evm_accounts.insert(address.to_string(), wallet);
             });
 
         Context {
@@ -144,12 +142,10 @@ impl Context {
         let transfer =
             Ucs01TransferPacket::try_from(cosmwasm_std::Binary(e.packet_data_hex.clone())).unwrap();
 
-        let wallet = self
-            .evm_accounts
-            .get(transfer.receiver().try_into().unwrap());
+        let wallet = self.evm_accounts.get(transfer.receiver()).unwrap();
 
         let signer_middleware = Arc::new(SignerMiddleware::new(
-            NonceManagerMiddleware::new(self.evm.provider.clone(), address),
+            self.evm.provider.clone(),
             wallet.clone(),
         ));
 
@@ -225,7 +221,7 @@ impl Context {
     }
 
     pub async fn listen_eth(&self) {
-        let mut events = Box::pin(self.evm.events(()));
+        let mut events = Box::pin(self.evm.clone().events(()));
 
         loop {
             println!("Listening for Evm IBC events...");
