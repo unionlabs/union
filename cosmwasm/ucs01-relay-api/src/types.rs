@@ -28,7 +28,7 @@ pub struct TransferToken {
 
 impl TransferToken {
     // If a denom originated from a remote network, it will be in the form:
-    //   `factory/{contract_address}/{port_id}/{channel_id}/denom`
+    //   `factory/{contract_address}/{hash}`
     // In order for the remote module to consider this denom as local, we must
     // strip the `factory/{contract_address}/` prefix before sending the tokens.
     pub fn normalize_for_ibc_transfer(

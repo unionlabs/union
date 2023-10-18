@@ -13,7 +13,16 @@ pub const CHANNEL_INFO: Map<&str, ChannelInfo> = Map::new("channel_info");
 /// indexed by (channel_id, denom) maintaining the balance of the channel in that currency
 pub const CHANNEL_STATE: Map<(&str, &str), ChannelState> = Map::new("channel_state");
 
-pub const FOREIGN_TOKEN_CREATED: Map<&str, ()> = Map::new("foreign_tokens");
+// TokenFactory limitation
+// MaxSubdenomLength = 44
+// HASH_LENGTH = (MaxSubdenomLength - size_of("0x")) / 2 = 42
+pub const HASH_LENGTH: usize = 21;
+
+pub type Hash = [u8; HASH_LENGTH];
+
+pub const FOREIGN_DENOM_TO_HASH: Map<String, Hash> = Map::new("foreign_denom_to_hash");
+
+pub const HASH_TO_FOREIGN_DENOM: Map<Hash, String> = Map::new("hash_to_foreign_denom");
 
 #[cw_serde]
 #[derive(Default)]
