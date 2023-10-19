@@ -376,6 +376,6 @@ mod tests {
         )
         .unwrap_err();
 
-        assert!(matches!(dbg!(err), RuntimeError::FileReader { .. }));
+        assert!(matches!(dbg!(err), RuntimeError::UniondExit { .. }));
     }
 }

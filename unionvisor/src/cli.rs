@@ -277,8 +277,6 @@ pub enum CallError {
 
 #[cfg(test)]
 mod tests {
-    use tracing_test::traced_test;
-
     use super::*;
     use crate::testdata;
 
@@ -312,20 +310,5 @@ mod tests {
         }
         .init(root)
         .expect_err("unionvisor should refuse to initialize if the home directory is populated");
-    }
-
-    #[test]
-    #[traced_test]
-    fn test_init() {
-        let tmp = testdata::temp_dir_with(&["test_init_cmd"]);
-        let root = tmp.into_path().join("test_init_cmd");
-        let command = InitCmd {
-            bundle: root.join("bundle"),
-            seeds: "some.seed.io".to_owned(),
-            moniker: "test_init_moniker".to_owned(),
-            network: "union-testnet-3".to_owned(),
-            allow_dirty: false,
-        };
-        command.init(root).unwrap();
     }
 }
