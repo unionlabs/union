@@ -55,11 +55,22 @@ pub trait TryFromRelayerMsg: Sized {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum DeferPoint {
+    Absolute,
+    Relative,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[allow(clippy::large_enum_variant)]
 pub enum RelayerMsg {
     Lc(AnyLcMsg),
     DeferUntil {
-        timestamp: u64,
+        point: DeferPoint,
+        seconds: u64,
+    },
+    Repeat {
+        times: u64,
+        msg: Box<RelayerMsg>,
     },
     Timeout {
         timeout_timestamp: u64,
@@ -81,7 +92,10 @@ impl std::fmt::Display for RelayerMsg {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             RelayerMsg::Lc(lc) => write!(f, "Lc({lc})"),
-            RelayerMsg::DeferUntil { timestamp } => write!(f, "DeferUntil({timestamp})"),
+            RelayerMsg::DeferUntil { point, seconds } => {
+                write!(f, "DeferUntil({:?}, {seconds})", point)
+            }
+            RelayerMsg::Repeat { times, msg } => write!(f, "Repeat({times}, {msg})"),
             RelayerMsg::Timeout {
                 timeout_timestamp,
                 msg,
@@ -1058,7 +1072,10 @@ pub fn seq(ts: impl IntoIterator<Item = RelayerMsg>) -> RelayerMsg {
 }
 
 pub fn defer(timestamp: u64) -> RelayerMsg {
-    RelayerMsg::DeferUntil { timestamp }
+    RelayerMsg::DeferUntil {
+        point: DeferPoint::Absolute,
+        seconds: timestamp,
+    }
 }
 
 pub fn fetch<L: LightClient>(chain_id: ChainIdOf<L>, t: impl Into<Fetch<L>>) -> RelayerMsg

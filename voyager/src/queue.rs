@@ -94,8 +94,8 @@ use crate::{
         },
         retry, seq, wait,
         wait::{Wait, WaitForBlock, WaitForTimestamp, WaitForTrustedHeight},
-        AggregateData, AggregateReceiver, AnyLcMsg, ChainIdOf, DoAggregate, Identified, LcMsg,
-        RelayerMsg,
+        AggregateData, AggregateReceiver, AnyLcMsg, ChainIdOf, DeferPoint, DoAggregate, Identified,
+        LcMsg, RelayerMsg,
     },
     queue::aggregate_data::UseAggregate,
     DELAY_PERIOD,
@@ -1012,18 +1012,16 @@ impl Worker {
                     Ok(res)
                 }
 
-                RelayerMsg::DeferUntil { timestamp } => {
-                    let now = SystemTime::now()
-                        .duration_since(UNIX_EPOCH)
-                        .unwrap()
-                        .as_secs();
+                RelayerMsg::DeferUntil { point: DeferPoint::Relative, seconds } =>
+                    Ok([RelayerMsg::DeferUntil { point: DeferPoint::Absolute, seconds: now() + seconds }].into()),
 
+                RelayerMsg::DeferUntil { seconds, .. } => {
                     // if we haven't hit the time yet, requeue the defer msg
-                    if now < timestamp {
+                    if now() < seconds {
                         // TODO: Make the time configurable?
                         tokio::time::sleep(Duration::from_secs(1)).await;
 
-                        Ok([defer(timestamp)].into())
+                        Ok([defer(seconds)].into())
                     } else {
                         Ok(vec![])
                     }
@@ -1124,6 +1122,10 @@ impl Worker {
                         Ok(res)
                     }
                 }
+                RelayerMsg::Repeat { times: 0, .. } => Ok([].into()),
+                RelayerMsg::Repeat { times, msg } => {
+                    Ok([flatten_seq(seq([*msg.clone(), RelayerMsg::Repeat { times: times - 1, msg}]))].into())
+                },
             }
         }
         .boxed()
