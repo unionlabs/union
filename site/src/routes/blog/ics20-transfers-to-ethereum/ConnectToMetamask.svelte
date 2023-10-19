@@ -2,8 +2,8 @@
 	import { browser } from '$app/environment';
 	import { initClients, startBalanceWorkers } from '$lib/transferDemo';
 	import { onMount } from 'svelte';
-	import { metamaskInstalled, connectedToSepolia, connectedToUnion, snapInstalled } from '$lib/stores/wallets';
-	import { ethersSetup, connectToSepolia, updateConnectedToSepolia, connectLeapSnap, updateSnapInstalled, updateConnectedToUnion, connectToUnion } from '$lib/ethersSetup';
+	import { metamaskInstalled, connectedToSepolia, connectedToUnion, snapInstalled, sepUNOAdded } from '$lib/stores/wallets';
+	import { ethersSetup, connectToSepolia, updateConnectedToSepolia, connectLeapSnap, updateSnapInstalled, updateConnectedToUnion, connectToUnion, addUnoErc } from '$lib/ethersSetup';
 
 	import TerminalContainer from '$lib/TerminalContainer.svelte';
 	import DemoButton from '$lib/DemoButton.svelte';
@@ -61,7 +61,14 @@
 						<DemoButton on:click={connectToUnion}>Connect to Union in Leap 🚀</DemoButton>
 					</div>
 				{:else}
-					<div>✅ Connected to Union Testnet</div> 
+				    <div>✅ Connected to Union Testnet</div> 
+			        {#if !$sepUNOAdded}
+				        <div class="mt-4">
+					        <DemoButton on:click={addUnoErc}>Add UNO (ERC-20) 💸</DemoButton>
+				        </div>
+			        {:else}
+					   <div>✅ Tracking UNO (Sepolia) </div>
+					{/if}
 				{/if}
 			{/if}
 		{/if}
