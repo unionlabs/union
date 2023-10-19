@@ -25,4 +25,5 @@ serde-utils.workspace = true
 ucs01-relay-api = { workspace = true }
 ucs01-relay = { workspace = true, features = [ "library" ] }
 unionlabs = { workspace = true, features = ["ethabi", "eth-mainnet"] }
+# unionlabs = { workspace = true, features = ["ethabi"] }
 contracts.workspace = true

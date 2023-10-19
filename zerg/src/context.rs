@@ -3,7 +3,7 @@ use std::{
     fs::{File, OpenOptions},
     io::Write,
     sync::Arc,
-    time::Duration,
+    time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
 use chain_utils::EventSource;
@@ -14,6 +14,7 @@ use contracts::{
 use cosmwasm_std::Uint128;
 use ecdsa::SigningKey;
 use ethers::{
+    abi::Address,
     core::k256::ecdsa,
     prelude::SignerMiddleware,
     providers::Middleware,
@@ -44,6 +45,7 @@ pub struct Context {
     pub union: chain_utils::union::Union,
     pub evm: chain_utils::evm::Evm<Minimal>,
     pub evm_accounts: HashMap<String, Wallet<SigningKey>>,
+    pub denom_address: Address,
 }
 
 impl Context {
@@ -64,18 +66,36 @@ impl Context {
         let mut evm_accounts = HashMap::new();
 
         let chain_id = evm.provider.get_chainid().await.unwrap().as_u64();
+        let ucs01_relay = ucs01relay::UCS01Relay::new(
+            zerg_config.evm_contract.clone(),
+            evm.provider.clone().into(),
+        );
+        let denom = format!(
+            "wasm.{}/{}/{}",
+            zerg_config.union_contract, zerg_config.channel, zerg_config.union.fee_denom
+        );
+        let denom_address = ucs01_relay.denom_to_address(denom).call().await.unwrap();
 
-        zerg_config
-            .clone()
-            .evm
-            .signers
-            .into_iter()
-            .for_each(|signer| {
-                let signing_key: ecdsa::SigningKey = signer.value();
-                let address = secret_key_to_address(&signing_key);
-                let wallet = LocalWallet::new_with_signer(signing_key, address, chain_id);
-                evm_accounts.insert(format!("{:?}", address), wallet);
-            });
+        for signer in zerg_config.clone().evm.signers.into_iter() {
+            let signing_key: ecdsa::SigningKey = signer.value();
+            let address = secret_key_to_address(&signing_key);
+            let wallet = LocalWallet::new_with_signer(signing_key, address, chain_id);
+            evm_accounts.insert(format!("{:?}", address), wallet.clone());
+
+            let signer_middleware =
+                Arc::new(SignerMiddleware::new(evm.provider.clone(), wallet.clone()));
+
+            let erc_contract = erc20::ERC20::new(denom_address, signer_middleware.clone());
+
+            // TODO: Move this to s.t. it only triggers once
+            if let Ok(res) = erc_contract
+                .approve(zerg_config.evm_contract.clone().into(), U256::max_value())
+                .send()
+                .await
+            {
+                res.await.unwrap().unwrap();
+            };
+        }
 
         Context {
             output_file: "output.csv".to_string(),
@@ -85,6 +105,7 @@ impl Context {
             union,
             evm,
             evm_accounts,
+            denom_address,
         }
     }
 
@@ -127,19 +148,34 @@ impl Context {
                         })
                         .into_proto();
 
-                        self.union.broadcast_tx_commit(signer, [msg]).await.unwrap()
+                        if (self.union.broadcast_tx_commit(signer, [msg]).await).is_err() {
+                            println!("Union: FAILED TO SUBMIT TX!")
+                        }
                     })
                     .await
             }
         }
+        let finished_at = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs();
         println!("Rush: Done rushing Union txs!");
+        loop {
+            println!("Rush: Union transaction rush finished at {}.", finished_at);
+            tokio::time::sleep(Duration::from_secs(60)).await;
+        }
     }
 
     async fn send_from_eth(self, e: unionlabs::events::RecvPacket) {
         let transfer =
             Ucs01TransferPacket::try_from(cosmwasm_std::Binary(e.packet_data_hex.clone())).unwrap();
 
-        let wallet = self.evm_accounts.get(transfer.receiver()).unwrap();
+        let wallet = if let Some(wallet) = self.evm_accounts.get(transfer.receiver()) {
+            wallet
+        } else {
+            println!("Evm: Recv Packet not from zerg");
+            return;
+        };
 
         let signer_middleware = Arc::new(SignerMiddleware::new(
             self.evm.provider.clone(),
@@ -150,25 +186,6 @@ impl Context {
             self.zerg_config.evm_contract.clone(),
             signer_middleware.clone(),
         );
-
-        let denom = format!(
-            "{}/{}/{}",
-            e.packet_src_port, e.packet_src_channel, self.zerg_config.union.fee_denom
-        );
-        let denom_address = ucs01_relay.denom_to_address(denom).call().await.unwrap();
-        let erc_contract = erc20::ERC20::new(denom_address, signer_middleware.clone());
-
-        // TODO: Move this to s.t. it only triggers once
-        if let Ok(res) = erc_contract
-            .approve(
-                self.zerg_config.evm_contract.clone().into(),
-                U256::max_value(),
-            )
-            .send()
-            .await
-        {
-            res.await.unwrap().unwrap();
-        };
 
         let mut previous_height = 0;
         loop {
@@ -186,7 +203,7 @@ impl Context {
                     e.packet_dst_channel.clone().to_string(),
                     transfer.sender().to_string(),
                     vec![LocalToken {
-                        denom: denom_address,
+                        denom: self.denom_address,
                         amount: Uint128::try_from(transfer.tokens()[0].amount)
                             .unwrap()
                             .u128(),
@@ -214,22 +231,25 @@ impl Context {
 
         loop {
             println!("Union: Listening for IBC events...");
-            let event = events.next().await.unwrap().unwrap();
 
-            match event.event {
-                unionlabs::events::IbcEvent::SendPacket(e) => {
-                    println!("Union: SendPacket observed!");
-                    self.append_record(Event::create_send_event(event.chain_id, e))
-                        .await
+            if let Some(Ok(event)) = events.next().await {
+                match event.event {
+                    unionlabs::events::IbcEvent::SendPacket(e) => {
+                        println!("Union: SendPacket observed!");
+                        self.append_record(Event::create_send_event(event.chain_id, e))
+                            .await
+                    }
+                    unionlabs::events::IbcEvent::RecvPacket(e) => {
+                        println!("Union: RecvPacket observed!");
+                        self.append_record(Event::create_recv_event(event.chain_id, e))
+                            .await
+                    }
+                    _ => {
+                        println!("Union: Untracked event observed.")
+                    }
                 }
-                unionlabs::events::IbcEvent::RecvPacket(e) => {
-                    println!("Union: RecvPacket observed!");
-                    self.append_record(Event::create_recv_event(event.chain_id, e))
-                        .await
-                }
-                _ => {
-                    println!("Union: Untracked event observed.")
-                }
+            } else {
+                println!("Union: Skipping events due to error.");
             }
         }
     }
@@ -239,28 +259,31 @@ impl Context {
 
         loop {
             println!("Evm: Listening for IBC events...");
-            let event = events.next().await.unwrap().unwrap();
 
-            match event.event {
-                unionlabs::events::IbcEvent::SendPacket(e) => {
-                    println!("Evm: SendPacket observed!");
-                    self.append_record(Event::create_send_event(event.chain_id.to_string(), e))
+            if let Some(Ok(event)) = events.next().await {
+                match event.event {
+                    unionlabs::events::IbcEvent::SendPacket(e) => {
+                        println!("Evm: SendPacket observed!");
+                        self.append_record(Event::create_send_event(event.chain_id.to_string(), e))
+                            .await;
+                    }
+                    unionlabs::events::IbcEvent::RecvPacket(e) => {
+                        println!("Evm: RecvPacket observed!");
+                        self.append_record(Event::create_recv_event(
+                            event.chain_id.to_string(),
+                            e.clone(),
+                        ))
                         .await;
-                }
-                unionlabs::events::IbcEvent::RecvPacket(e) => {
-                    println!("Evm: RecvPacket observed!");
-                    self.append_record(Event::create_recv_event(
-                        event.chain_id.to_string(),
-                        e.clone(),
-                    ))
-                    .await;
-                    if self.is_rush {
-                        tokio::spawn(self.clone().send_from_eth(e));
+                        if self.is_rush {
+                            tokio::spawn(self.clone().send_from_eth(e));
+                        }
+                    }
+                    _ => {
+                        println!("Evm: Untracked event observed.")
                     }
                 }
-                _ => {
-                    println!("Evm: Untracked event observed.")
-                }
+            } else {
+                println!("Evm: Skipping events due to error.");
             }
         }
     }

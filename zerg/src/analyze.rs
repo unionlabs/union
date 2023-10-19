@@ -13,6 +13,7 @@ pub fn analyze(input: String, output: String) -> HashMap<String, ChannelBenchmar
 
     let mut durations: HashMap<String, Vec<u64>> = HashMap::new();
     let mut incomplete_transfers: HashMap<String, u64> = HashMap::new();
+    let mut complete_transfers: HashMap<String, u64> = HashMap::new();
 
     iter.for_each(|report_maybe| {
         if let Ok(report) = report_maybe {
@@ -24,7 +25,12 @@ pub fn analyze(input: String, output: String) -> HashMap<String, ChannelBenchmar
                 if let Some(times) = durations.get_mut(&id) {
                     times.push(duration);
                 } else {
-                    durations.insert(id, vec![duration]);
+                    durations.insert(id.clone(), vec![duration]);
+                }
+                if let Some(channel_complete_transfers) = complete_transfers.get_mut(&id) {
+                    *channel_complete_transfers += 1;
+                } else {
+                    complete_transfers.insert(id, 1);
                 }
             } else if let Some(channel_incomplete_transfers) = incomplete_transfers.get_mut(&id) {
                 println!(
@@ -51,6 +57,7 @@ pub fn analyze(input: String, output: String) -> HashMap<String, ChannelBenchmar
         let max_transfer_duration = *channel_durations.last().expect("durations is not empty");
         let min_transfer_duration = *channel_durations.first().expect("durations is not empty");
         let incomplete_transfers = *incomplete_transfers.get(channel_port_id).unwrap_or(&0);
+        let complete_transfers = *complete_transfers.get(channel_port_id).unwrap_or(&0);
 
         benchmarks.insert(
             channel_port_id.to_string(),
@@ -60,6 +67,7 @@ pub fn analyze(input: String, output: String) -> HashMap<String, ChannelBenchmar
                 max_transfer_duration,
                 min_transfer_duration,
                 incomplete_transfers,
+                complete_transfers,
             },
         );
     });
@@ -92,4 +100,5 @@ pub struct ChannelBenchmark {
     max_transfer_duration: u64,
     min_transfer_duration: u64,
     incomplete_transfers: u64,
+    complete_transfers: u64,
 }
