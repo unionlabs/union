@@ -458,18 +458,32 @@ impl Union {
             return Err(BroadcastTxCommitError::Tx(value));
         };
 
-        // HACK: wait for a block to verify inclusion
-        tokio::time::sleep(std::time::Duration::from_secs(7)).await;
+        let mut target_height = self.query_latest_height().await.increment();
+        let mut i = 0;
+        loop {
+            let reached_height = 'l: loop {
+                let current_height = self.query_latest_height().await;
+                if current_height >= target_height {
+                    break 'l current_height;
+                }
+                tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+            };
 
-        let tx_inclusion = self.tm_client.tx(tx_hash.parse().unwrap(), false).await;
+            let tx_inclusion = self.tm_client.tx(tx_hash.parse().unwrap(), false).await;
 
-        tracing::debug!(?tx_inclusion);
+            tracing::debug!(?tx_inclusion);
 
-        match tx_inclusion {
-            Ok(_) => Ok(()),
-            Err(err) => {
-                tracing::warn!("tx inclusion couldn't be retrieved after 1 block");
-                Err(BroadcastTxCommitError::Inclusion(err))
+            match tx_inclusion {
+                Ok(_) => break Ok(()),
+                Err(err) if i > 5 => {
+                    tracing::warn!("tx inclusion couldn't be retrieved after {} try", i);
+                    break Err(BroadcastTxCommitError::Inclusion(err));
+                }
+                Err(_) => {
+                    target_height = reached_height.increment();
+                    i += 1;
+                    continue;
+                }
             }
         }
     }
