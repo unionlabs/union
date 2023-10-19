@@ -186,7 +186,7 @@ impl InitCmd {
 
 #[derive(Debug, Error)]
 pub enum InitError {
-    #[error("cannot create new bundle")]
+    #[error("cannot load bundle")]
     NewBundle(#[from] NewBundleError),
     #[error("cannot make fallback link")]
     MakeFallbackLink(#[from] MakeFallbackLinkError),

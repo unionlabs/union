@@ -166,10 +166,12 @@ impl Bundle {
 
 #[derive(Debug, Error)]
 pub enum NewBundleError {
-    #[error("cannot find meta.json in bundle. Please make sure it exists at bundle/meta.json")]
+    #[error("cannot read bundle/meta.json")]
     NoMetaJson(#[source] io::Error),
-    #[error("cannot find genesis.json in bundle. Please make sure it exists at bundle/meta.json")]
+    #[error("cannot read bundle/genesis.json")]
     NoGenesisJson,
-    #[error("cannot deserialize bundle/meta.json. Please ensure that it adheres to the scheme.")]
+    #[error(
+        "cannot deserialize bundle/meta.json, please ensure that it adheres to the bundle scheme."
+    )]
     DeserializeMeta(#[source] serde_json::Error),
 }

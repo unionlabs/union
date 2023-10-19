@@ -6260,6 +6260,7 @@ name = "unionvisor"
 version = "0.1.0"
 dependencies = [
  "clap",
+ "color-eyre",
  "figment",
  "fs_extra",
  "reqwest",

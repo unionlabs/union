@@ -2,6 +2,7 @@
 #![allow(clippy::question_mark)]
 
 use clap::Parser;
+use color_eyre::eyre;
 
 mod bundle;
 mod cli;
@@ -19,12 +20,13 @@ compile_error!(
     "unionvisor heavily interacts with the fs, and hasn't been implemented to work on windows."
 );
 
-fn main() {
+fn main() -> eyre::Result<()> {
+    color_eyre::install()?;
+
     let cli = cli::Cli::parse();
 
     logging::init(cli.log_format, cli.log_level);
 
-    if let Err(err) = cli.run() {
-        tracing::error!(target: "unionvisor", error = err.to_string().as_str(), "exited with error");
-    }
+    cli.run()?;
+    Ok(())
 }
