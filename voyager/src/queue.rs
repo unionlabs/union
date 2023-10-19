@@ -607,8 +607,6 @@ impl<Q: Queue> Voyager<Q> {
                                         }),
                                     })
                                 }
-
-                                // IbcEvent::WriteAcknowledgement(_) => todo!(),
                                 IbcEvent::RecvPacket(packet) => {
                                     LcMsg::<CometblsMinimal>::Event(Identified {
                                         chain_id: event.chain_id,
@@ -629,9 +627,27 @@ impl<Q: Queue> Voyager<Q> {
                                         }),
                                     })
                                 }
-                                IbcEvent::AcknowledgePacket(_) => todo!(),
+                                IbcEvent::AcknowledgePacket(ack_packet) => {
+                                    LcMsg::<CometblsMinimal>::Event(Identified {
+                                        chain_id: event.chain_id,
+                                        data: Event::Ibc(crate::msg::event::IbcEvent {
+                                            block_hash: event.block_hash,
+                                            height: event.height,
+                                            event: IbcEvent::AcknowledgePacket(ack_packet),
+                                        }),
+                                    })
+                                }
+                                IbcEvent::WriteAcknowledgement(write_ack) => {
+                                    LcMsg::<CometblsMinimal>::Event(Identified {
+                                        chain_id: event.chain_id,
+                                        data: Event::Ibc(crate::msg::event::IbcEvent {
+                                            block_hash: event.block_hash,
+                                            height: event.height,
+                                            event: IbcEvent::WriteAcknowledgement(write_ack),
+                                        }),
+                                    })
+                                }
                                 IbcEvent::TimeoutPacket(_) => todo!(),
-                                IbcEvent::WriteAcknowledgement(_) => todo!(),
                             };
 
                             RelayerMsg::Lc(AnyLcMsg::from(event))
@@ -855,7 +871,6 @@ impl<Q: Queue> Voyager<Q> {
                                     })
                                 }
 
-                                // IbcEvent::WriteAcknowledgement(_) => todo!(),
                                 IbcEvent::RecvPacket(recv_packet) => {
                                     LcMsg::<EthereumMinimal>::Event(Identified {
                                         chain_id: event.chain_id,
@@ -886,7 +901,6 @@ impl<Q: Queue> Voyager<Q> {
                                         }),
                                     })
                                 }
-                                IbcEvent::TimeoutPacket(_) => todo!(),
                                 IbcEvent::WriteAcknowledgement(write_ack) => {
                                     LcMsg::<EthereumMinimal>::Event(Identified {
                                         chain_id: event.chain_id,
@@ -897,6 +911,7 @@ impl<Q: Queue> Voyager<Q> {
                                         }),
                                     })
                                 }
+                                IbcEvent::TimeoutPacket(_) => todo!(),
                             };
 
                             RelayerMsg::Lc(AnyLcMsg::from(event))
