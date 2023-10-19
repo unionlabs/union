@@ -44,7 +44,6 @@ pub struct Context {
     pub union: chain_utils::union::Union,
     pub evm: chain_utils::evm::Evm<Minimal>,
     pub evm_accounts: HashMap<String, Wallet<SigningKey>>,
-    pub evm_recv_packets: Arc<Mutex<u64>>,
 }
 
 impl Context {
@@ -86,7 +85,6 @@ impl Context {
             union,
             evm,
             evm_accounts,
-            evm_recv_packets: Arc::new(Mutex::new(0)),
         }
     }
 
@@ -200,7 +198,13 @@ impl Context {
                 .await
             {
                 res.await.unwrap().unwrap();
+                println!("Eth: Transaction {} was submitted!", e.packet_sequence);
                 break;
+            } else {
+                println!(
+                    "Eth: Transaction {} failed, trying again next block...",
+                    e.packet_sequence
+                );
             }
         }
     }
