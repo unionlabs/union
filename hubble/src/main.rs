@@ -52,16 +52,21 @@ async fn main() -> color_eyre::eyre::Result<()> {
     });
 
     while let Some(res) = set.join_next().await {
-        if let Err(err) = res {
-            error!(
-                "encountered error while indexing: {:?}. shutting down.",
-                err
-            );
-            healthz::set_unhealthy();
-            set.shutdown().await;
-            return Err(err.into());
+        match res {
+            Ok(Err(err)) => {
+                error!(
+                    "encountered error while indexing: {:?}. shutting down.",
+                    err
+                );
+                healthz::set_unhealthy();
+                set.shutdown().await;
+                return Err(err.into());
+            }
+            Err(err) => return Err(err.into()),
+            Ok(Ok(_)) => {
+                info!("indexer exited gracefully");
+            }
         }
-        info!("indexer exited gracefully");
     }
     Ok(())
 }
