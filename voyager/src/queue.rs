@@ -18,7 +18,7 @@ use futures::{future::BoxFuture, stream, Future, FutureExt, StreamExt, TryStream
 use hubble::hasura::{Datastore, HasuraDataStore, InsertDemoTx};
 use pg_queue::ProcessFlow;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
-use sqlx::PgPool;
+use sqlx::postgres::PgPoolOptions;
 use tokio::task::JoinSet;
 use unionlabs::{
     ethereum_consts_traits::{Mainnet, Minimal},
@@ -292,7 +292,11 @@ impl Queue for PgQueue {
         async move {
             Ok(Self(
                 pg_queue::Queue::new(),
-                PgPool::connect(&cfg.database_url).await?,
+                PgPoolOptions::new()
+                    .min_connections(40)
+                    .max_connections(300)
+                    .connect(&cfg.database_url)
+                    .await?,
             ))
         }
     }
