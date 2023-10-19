@@ -5,21 +5,21 @@ use reqwest::StatusCode;
 lazy_static! {
     pub static ref REGISTRY: Registry = Registry::new();
     pub static ref EVENT_COLLECTOR: IntCounterVec = IntCounterVec::new(
-        Opts::new("count", "Events")
+        Opts::new("events", "Events")
             .namespace("hubble")
-            .subsystem("events"),
+            .subsystem("index"),
         &["chain_id", "block_hash"]
     )
     .expect("register EVENT_COLLECTOR");
     pub static ref BLOCK_COLLECTOR: IntCounterVec = IntCounterVec::new(
-        Opts::new("count", "Blocks")
+        Opts::new("blocks", "Blocks")
             .namespace("hubble")
-            .subsystem("blocks"),
+            .subsystem("index"),
         &["chain_id"]
     )
     .expect("register BLOCK_COLLECTOR");
     pub static ref POST_COLLECTOR: IntCounterVec = IntCounterVec::new(
-        Opts::new("num_posts", "Posts to Hasura")
+        Opts::new("requests", "Posts to Hasura")
             .namespace("hubble")
             .subsystem("hasura"),
         &["chain_id"]
