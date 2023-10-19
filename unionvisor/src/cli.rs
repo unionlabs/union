@@ -179,7 +179,7 @@ impl InitCmd {
             .map_err(SetGenesisError)?;
         init::set_seeds(&self.seeds, home.join("config/config.toml"))?;
 
-        info!(target: "unionvisor", "succesfully initalized unionvisor");
+        info!(target: "unionvisor", "successfully initialized unionvisor");
         Ok(InitState::SeedsConfigured)
     }
 }
