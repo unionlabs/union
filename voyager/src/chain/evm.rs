@@ -21,7 +21,7 @@ use ethers::{
     abi::AbiEncode,
     contract::{ContractError, EthCall},
     providers::{Middleware, ProviderError},
-    types::{EIP1186ProofResponse, TransactionReceipt, U256},
+    types::{EIP1186ProofResponse, U256},
     utils::keccak256,
 };
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
@@ -1041,13 +1041,21 @@ where
                     },
                 ),
             };
-
-            let tx_rcp: TransactionReceipt =
-                msg.send().await?.await?.ok_or(TxSubmitError::NoTxReceipt)?;
-
-            tracing::info!(?tx_rcp, "tx submitted");
-
-            Ok(())
+            let result = msg.send().await;
+            match result {
+                Ok(ok) => {
+                    let tx_rcp = ok.await?.ok_or(TxSubmitError::NoTxReceipt)?;
+                    tracing::info!(?tx_rcp, "evm transaction submitted");
+                    Ok(())
+                }
+                Err(ContractError::Revert(revert)) => {
+                    tracing::error!(?revert, "evm transaction failed");
+                    Ok(())
+                }
+                _ => {
+                    panic!("evm transaction non-recoverable failure");
+                }
+            }
         })
         .await
 }
