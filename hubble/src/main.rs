@@ -19,7 +19,7 @@ async fn main() -> color_eyre::eyre::Result<()> {
     color_eyre::install().unwrap();
 
     let args = crate::cli::Args::parse();
-    tracing_subscriber::fmt::init();
+    tracing_subscriber::fmt().with_ansi(false).init();
     metrics::register_custom_metrics();
 
     let url = args.url.clone();
