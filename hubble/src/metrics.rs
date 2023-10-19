@@ -4,15 +4,27 @@ use reqwest::StatusCode;
 
 lazy_static! {
     pub static ref REGISTRY: Registry = Registry::new();
-    pub static ref EVENT_COLLECTOR: IntCounterVec =
-        IntCounterVec::new(Opts::new("events", "Events"), &["chain_id", "block_hash"])
-            .expect("register EVENT_COLLECTOR");
-    pub static ref BLOCK_COLLECTOR: IntCounterVec =
-        IntCounterVec::new(Opts::new("blocks", "Blocks"), &["chain_id"])
-            .expect("register BLOCK_COLLECTOR");
-    pub static ref POST_COLLECTOR: IntCounterVec =
-        IntCounterVec::new(Opts::new("posts", "Posts to Hasura"), &["chain_id"])
-            .expect("register POST_COLLECTOR");
+    pub static ref EVENT_COLLECTOR: IntCounterVec = IntCounterVec::new(
+        Opts::new("events", "Events")
+            .namespace("hubble")
+            .subsystem("index"),
+        &["chain_id", "block_hash"]
+    )
+    .expect("register EVENT_COLLECTOR");
+    pub static ref BLOCK_COLLECTOR: IntCounterVec = IntCounterVec::new(
+        Opts::new("blocks", "Blocks")
+            .namespace("hubble")
+            .subsystem("index"),
+        &["chain_id"]
+    )
+    .expect("register BLOCK_COLLECTOR");
+    pub static ref POST_COLLECTOR: IntCounterVec = IntCounterVec::new(
+        Opts::new("requests", "Posts to Hasura")
+            .namespace("hubble")
+            .subsystem("hasura"),
+        &["chain_id"]
+    )
+    .expect("register POST_COLLECTOR");
 }
 
 pub fn register_custom_metrics() {
