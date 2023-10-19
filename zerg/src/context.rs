@@ -44,6 +44,7 @@ pub struct Context {
     pub union: chain_utils::union::Union,
     pub evm: chain_utils::evm::Evm<Minimal>,
     pub evm_accounts: HashMap<String, Wallet<SigningKey>>,
+    pub evm_recv_packets: Arc<Mutex<u64>>,
 }
 
 impl Context {
@@ -85,6 +86,7 @@ impl Context {
             union,
             evm,
             evm_accounts,
+            evm_recv_packets: Arc::new(Mutex::new(0)),
         }
     }
 
@@ -170,26 +172,37 @@ impl Context {
             res.await.unwrap().unwrap();
         };
 
-        ucs01_relay
-            .send(
-                e.packet_dst_port.clone(),
-                e.packet_dst_channel.clone().to_string(),
-                transfer.sender().to_string(),
-                vec![LocalToken {
-                    denom: denom_address,
-                    amount: Uint128::try_from(transfer.tokens()[0].amount)
-                        .unwrap()
-                        .u128(),
-                }],
-                3,
-                u64::MAX,
-            )
-            .send()
-            .await
-            .unwrap()
-            .await
-            .unwrap()
-            .unwrap();
+        let mut previous_height = 0;
+        loop {
+            let mut height = previous_height;
+
+            while height == previous_height {
+                height = self.evm.query_latest_height().await.revision_height;
+                tokio::time::sleep(Duration::from_secs(1)).await;
+            }
+            previous_height = height;
+
+            if let Ok(res) = ucs01_relay
+                .send(
+                    e.packet_dst_port.clone(),
+                    e.packet_dst_channel.clone().to_string(),
+                    transfer.sender().to_string(),
+                    vec![LocalToken {
+                        denom: denom_address,
+                        amount: Uint128::try_from(transfer.tokens()[0].amount)
+                            .unwrap()
+                            .u128(),
+                    }],
+                    3,
+                    u64::MAX,
+                )
+                .send()
+                .await
+            {
+                res.await.unwrap().unwrap();
+                break;
+            }
+        }
     }
 
     pub async fn listen_union(&self) {
@@ -238,7 +251,7 @@ impl Context {
                     ))
                     .await;
                     if self.is_rush {
-                        tokio::spawn(self.clone().send_from_eth(e.clone()));
+                        tokio::spawn(self.clone().send_from_eth(e));
                     }
                 }
                 _ => {
