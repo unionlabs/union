@@ -656,11 +656,15 @@ impl EventSource for Union {
                     for h in
                         (previous_height.revision_height + 1)..=(current_height.revision_height)
                     {
-                        let response = this
+                        let response = if let Ok(res) = this
                             .tm_client
                             .tx_search(Query::eq("tx.height", h), false, 1, 255, Order::Descending)
                             .await
-                            .unwrap();
+                        {
+                            res
+                        } else {
+                            return None;
+                        };
 
                         let new_events = stream::iter(response.txs.into_iter().flat_map(|tx| {
                             tx.tx_result
@@ -686,24 +690,30 @@ impl EventSource for Union {
                         }))
                         .then(|res| async {
                             match res {
-                                Ok((height, event)) => Ok(ChainEvent {
-                                    chain_id: this.chain_id(),
-                                    block_hash: this
-                                        .tm_client
-                                        .block(height)
-                                        .await
-                                        .unwrap()
-                                        .block_id
-                                        .hash
-                                        .as_bytes()
-                                        .try_into()
-                                        .unwrap(),
-                                    height: Height {
-                                        revision_number: chain_revision,
-                                        revision_height: height.try_into().unwrap(),
-                                    },
-                                    event,
-                                }),
+                                Ok((height, event)) => {
+                                    if let Ok(block) = this.tm_client.block(height).await {
+                                        Ok(ChainEvent {
+                                            chain_id: this.chain_id(),
+                                            block_hash: block
+                                                .block_id
+                                                .hash
+                                                .as_bytes()
+                                                .try_into()
+                                                .unwrap(),
+                                            height: Height {
+                                                revision_number: chain_revision,
+                                                revision_height: height.try_into().unwrap(),
+                                            },
+                                            event,
+                                        })
+                                    } else {
+                                        Err(UnionEventSourceError::TryFromTendermintEvent(
+                                            TryFromTendermintEventError::UnknownField(
+                                                "".to_owned(),
+                                            ),
+                                        ))
+                                    }
+                                }
                                 Err(err) => Err(err),
                             }
                         })
