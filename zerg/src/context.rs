@@ -117,7 +117,12 @@ impl Context {
             let mut height = previous_height;
 
             while height == previous_height {
-                height = self.union.query_latest_height().await.revision_height;
+                let maybe_height = self.union.query_latest_height().await.revision_height;
+                height = if maybe_height == 0 {
+                    height
+                } else {
+                    maybe_height
+                };
                 tokio::time::sleep(Duration::from_secs(1)).await;
             }
             previous_height = height;
@@ -192,7 +197,12 @@ impl Context {
             let mut height = previous_height;
 
             while height == previous_height {
-                height = self.evm.query_latest_height().await.revision_height;
+                let maybe_height = self.evm.query_latest_height().await.revision_height;
+                height = if maybe_height == 0 {
+                    height
+                } else {
+                    maybe_height
+                };
                 tokio::time::sleep(Duration::from_secs(1)).await;
             }
             previous_height = height;
