@@ -1,13 +1,13 @@
 {
-  "label": "Joining the Testnet",
+  "label": "Testnet Onboarding",
   "collapsible": true,
   "collapsed": true,
   "className": "red",
   "link": {
     "type": "generated-index",
-    "title": "Joining the Testnet"
+    "title": "Testnet Onboarding"
   },
   "customProps": {
-    "description": "On-Boarding Process for the Union Testnet."
+    "description": "Instructions for joining the Union Testnet."
   }
 }
