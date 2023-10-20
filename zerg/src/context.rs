@@ -19,7 +19,7 @@ use ethers::{
     prelude::SignerMiddleware,
     providers::Middleware,
     signers::{LocalWallet, Wallet},
-    types::U256,
+    types::{U256, U64},
     utils::secret_key_to_address,
 };
 use futures::StreamExt;
@@ -246,12 +246,12 @@ impl Context {
                 match event.event {
                     unionlabs::events::IbcEvent::SendPacket(e) => {
                         println!("Union: SendPacket observed!");
-                        self.append_record(Event::create_send_event(event.chain_id, e))
+                        self.append_record(Event::create_send_event(event.chain_id, e, None))
                             .await
                     }
                     unionlabs::events::IbcEvent::RecvPacket(e) => {
                         println!("Union: RecvPacket observed!");
-                        self.append_record(Event::create_recv_event(event.chain_id, e))
+                        self.append_record(Event::create_recv_event(event.chain_id, e, None))
                             .await
                     }
                     _ => {
@@ -271,17 +271,31 @@ impl Context {
             println!("Evm: Listening for IBC events...");
 
             if let Some(Ok(event)) = events.next().await {
+                let block = self
+                    .evm
+                    .provider
+                    .get_block(ethers::types::H256(event.block_hash.into()))
+                    .await
+                    .unwrap()
+                    .unwrap();
+                let timestamp = block.timestamp.as_u64();
+
                 match event.event {
                     unionlabs::events::IbcEvent::SendPacket(e) => {
                         println!("Evm: SendPacket observed!");
-                        self.append_record(Event::create_send_event(event.chain_id.to_string(), e))
-                            .await;
+                        self.append_record(Event::create_send_event(
+                            event.chain_id.to_string(),
+                            e,
+                            Some(timestamp),
+                        ))
+                        .await;
                     }
                     unionlabs::events::IbcEvent::RecvPacket(e) => {
                         println!("Evm: RecvPacket observed!");
                         self.append_record(Event::create_recv_event(
                             event.chain_id.to_string(),
                             e.clone(),
+                            Some(timestamp),
                         ))
                         .await;
                         if self.is_rush {

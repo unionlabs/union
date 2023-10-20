@@ -41,7 +41,7 @@ impl Event {
     ///
     /// Constructs a unique ID from packet information in the form of:
     /// `<src_port>/<src_channel>/<sequence>`
-    pub fn create_send_event(chain_id: String, e: SendPacket) -> Event {
+    pub fn create_send_event(chain_id: String, e: SendPacket, timestamp: Option<u64>) -> Event {
         let transfer =
             Ucs01TransferPacket::try_from(cosmwasm_std::Binary(e.packet_data_hex.clone())).unwrap();
 
@@ -52,9 +52,18 @@ impl Event {
             e.packet_sequence
         );
 
+        let timed_event = match timestamp {
+            Some(timestamp) => TimedEvent {
+                time: timestamp,
+                event: e,
+                chain_id,
+            },
+            None => TimedEvent::new(chain_id, e),
+        };
+
         Event {
             sender: transfer.sender().to_string(),
-            stamped_event: EventType::SendEvent(TimedEvent::new(chain_id, e)),
+            stamped_event: EventType::SendEvent(timed_event),
             uuid,
         }
     }
@@ -63,7 +72,7 @@ impl Event {
     ///
     /// Constructs a unique ID from packet information in the form of:
     /// `<src_port>/<src_channel>/<sequence>`
-    pub fn create_recv_event(chain_id: String, e: RecvPacket) -> Event {
+    pub fn create_recv_event(chain_id: String, e: RecvPacket, timestamp: Option<u64>) -> Event {
         let transfer =
             Ucs01TransferPacket::try_from(cosmwasm_std::Binary(e.packet_data_hex.clone())).unwrap();
 
@@ -74,9 +83,18 @@ impl Event {
             e.packet_sequence
         );
 
+        let timed_event = match timestamp {
+            Some(timestamp) => TimedEvent {
+                time: timestamp,
+                event: e,
+                chain_id,
+            },
+            None => TimedEvent::new(chain_id, e),
+        };
+
         Event {
             sender: transfer.sender().to_string(),
-            stamped_event: EventType::ReceiveEvent(TimedEvent::new(chain_id, e)),
+            stamped_event: EventType::ReceiveEvent(timed_event),
             uuid,
         }
     }

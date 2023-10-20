@@ -1,0 +1,46 @@
+{
+  "evm": {
+    "preset_base": "mainnet",
+    "ibc_handler_address": "0x971A9631b0a4E0e78954c764C7060e9D95d5cfD6",
+    "signers": [
+      {
+        "raw": "0x34745b40d4305b14cf6091e52389f885286f6c11aa0e898e2caeebfa1d82d6a2"
+      },
+      {
+        "raw": "0xb5b4c218a2e39d7177d6cfbf54878b3c42222ceea1a0308654bbde41933dba22"
+      },
+      {
+        "raw": "0xf8c32f682e99e3a4f98b7032f319a58e29b6df2695a2ac9a90adf0ebde4ada98"
+      },
+      {
+        "raw": "0xf90bf3f3a1304cc19f763a12b801787b1757d47c08faa6bd6084db7a50770b3f"
+      }
+    ],
+    "eth_rpc_api": "wss://rpc.ankr.com/eth_sepolia/ws/864e6497c4508f901b2dbaec5ae848868e2163370ec1776d3262960137dc38eb",
+    "eth_beacon_rpc_api": "https://sepolia.cryptware.io"
+  },
+  "union": {
+    "signers": [
+      {
+        "raw": "0xfdf7eda23f10fc6188284f0b16cd4e2633fbb2db6c514986b6d593785f228fa9"
+      },
+      {
+        "raw": "0x98cdba213789a96501936d173842a99d01da18baf7be69b549290d126b4d2592"
+      },
+      {
+        "raw": "0x8664d1ed892798d4ceba4689505a6accb0879a1d88912f5eb9deacccf26611e4"
+      },
+      {
+        "raw": "0x26cf24f1604047f3a810f27ac3010191c02a6ca3c22621491bb303aab0548bea"
+      }
+    ],
+    "fee_denom": "muno",
+    "ws_url": "wss://rpc.0xc0dejug.uno/websocket",
+    "prover_endpoint": "https://prover.cryptware.io:443",
+    "grpc_url": "https://grpc.0xc0dejug.uno"
+  },
+  "union_contract": "union160fvsl34ngsz8q00q7xsdkmnf3rp8u3720uhh3plykhjs0qv86dq0m83cy",
+  "evm_contract": "0x96239486A2ACD9DF22D5a6538691C179BbB2061c",
+  "channel": "channel-17",
+  "rush_blocks": 100
+}
