@@ -5,12 +5,12 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     chain::{ChainOf, HeightOf, LightClient},
-    msg::{any_enum, identified, ChainIdOf},
+    msg::{any_enum, ChainIdOf},
 };
 
 any_enum! {
     /// Defines messages that are sent *to* the lightclient `L`.
-    #[any = AnyWait(identified!(Wait<L>))]
+    #[any = AnyWait]
     pub enum Wait<L: LightClient> {
         Block(WaitForBlock<L>),
         Timestamp(WaitForTimestamp<L>),

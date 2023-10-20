@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    bounded_int::{BoundedI32, BoundedI64, BoundedIntError},
+    bounded::{BoundedI32, BoundedI64, BoundedIntError},
     errors::{required, MissingField},
     tendermint::types::{block_id::BlockId, commit_sig::CommitSig},
     Proto, TryFromProtoErrorOf, TypeUrl,
@@ -34,8 +34,8 @@ impl crate::EthAbi for Commit {
 #[cfg(feature = "ethabi")]
 #[derive(Debug)]
 pub enum TryFromEthAbiCommitError {
-    Height(crate::bounded_int::BoundedIntError<i64>),
-    Round(crate::bounded_int::BoundedIntError<i32>),
+    Height(crate::bounded::BoundedIntError<i64>),
+    Round(crate::bounded::BoundedIntError<i32>),
     BlockId(crate::TryFromEthAbiErrorOf<BlockId>),
     Signatures(crate::TryFromEthAbiErrorOf<CommitSig>),
 }

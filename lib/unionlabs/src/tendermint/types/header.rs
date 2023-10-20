@@ -3,7 +3,7 @@ use rs_merkle::{algorithms::Sha256, Hasher, MerkleTree};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    bounded_int::{BoundedI64, BoundedIntError},
+    bounded::{BoundedI64, BoundedIntError},
     errors::{required, InvalidLength, MissingField},
     ethereum::{Address, H256},
     ibc::google::protobuf::timestamp::Timestamp,

@@ -1,4 +1,4 @@
-use std::{fmt::Display, ops::Div, str::FromStr, sync::Arc};
+use std::{ops::Div, str::FromStr, sync::Arc};
 
 use beacon_api::client::BeaconApiClient;
 use contracts::{
@@ -40,13 +40,12 @@ use unionlabs::{
         google::protobuf::any::Any,
         lightclients::{cometbls, ethereum, tendermint::fraction::Fraction, wasm},
     },
-    id::{ChannelId, Id, IdParseError},
-    id_type,
+    id::{ChannelId, ClientId, ConnectionId},
     traits::{Chain, ClientState},
     EmptyString, TryFromEthAbiErrorOf, TryFromProto,
 };
 
-use crate::{chain_client_id, private_key::PrivateKey, ChainEvent, EventSource, Pool};
+use crate::{private_key::PrivateKey, ChainEvent, EventSource, Pool};
 
 pub type CometblsMiddleware =
     SignerMiddleware<NonceManagerMiddleware<Provider<Ws>>, Wallet<ecdsa::SigningKey>>;
@@ -95,7 +94,7 @@ impl<C: ChainSpec> Chain for Evm<C> {
 
     type ClientId = EvmClientId;
 
-    type ClientType = EvmClientType;
+    type ClientType = String;
 
     fn chain_id(&self) -> <Self::SelfClientState as ClientState>::ChainId {
         self.chain_id
@@ -412,13 +411,7 @@ impl<C: ChainSpec> Evm<C> {
     }
 }
 
-chain_client_id! {
-    #[ty = EvmClientType]
-    pub enum EvmClientId {
-        #[id(ty = "cometbls")]
-        Cometbls(Id<_>),
-    }
-}
+pub type EvmClientId = ClientId;
 
 #[derive(Debug)]
 pub enum EvmEventSourceError {
@@ -436,9 +429,9 @@ pub enum EvmEventSourceError {
     ConnectionOpenInitConnectionConversion(
         TryFromEthAbiErrorOf<ConnectionEnd<EvmClientId, String, EmptyString>>,
     ),
-    Parse(IdParseError),
-    ClientTypeParse(<EvmClientType as FromStr>::Err),
-    ClientIdParse(<EvmClientId as FromStr>::Err),
+    ClientIdParse(<ClientId as FromStr>::Err),
+    ConnectionIdParse(<ConnectionId as FromStr>::Err),
+    ChannelIdParse(<ChannelId as FromStr>::Err),
     EthAbi(ethers::core::abi::Error),
 }
 
@@ -569,13 +562,13 @@ impl<C: ChainSpec> EventSource for Evm<C> {
                                         .packet
                                         .source_channel
                                         .parse()
-                                        .map_err(EvmEventSourceError::Parse)?,
+                                        .map_err(EvmEventSourceError::ChannelIdParse)?,
                                     packet_dst_port: packet_ack.packet.destination_port,
                                     packet_dst_channel: packet_ack
                                         .packet
                                         .destination_channel
                                         .parse()
-                                        .map_err(EvmEventSourceError::Parse)?,
+                                        .map_err(EvmEventSourceError::ChannelIdParse)?,
                                     packet_channel_ordering: channel_data.ordering,
                                     connection_id: channel_data.connection_hops[0].clone(),
                                 }))
@@ -592,13 +585,13 @@ impl<C: ChainSpec> EventSource for Evm<C> {
                                     channel_id: event
                                         .channel_id
                                         .parse()
-                                        .map_err(EvmEventSourceError::Parse)?,
+                                        .map_err(EvmEventSourceError::ChannelIdParse)?,
                                     counterparty_port_id: channel.counterparty.port_id,
                                     counterparty_channel_id: channel
                                         .counterparty
                                         .channel_id
                                         .parse()
-                                        .map_err(EvmEventSourceError::Parse)?,
+                                        .map_err(EvmEventSourceError::ChannelIdParse)?,
                                     connection_id: channel.connection_hops[0].clone(),
                                 }))
                             }
@@ -612,13 +605,13 @@ impl<C: ChainSpec> EventSource for Evm<C> {
                                     channel_id: event
                                         .channel_id
                                         .parse()
-                                        .map_err(EvmEventSourceError::Parse)?,
+                                        .map_err(EvmEventSourceError::ChannelIdParse)?,
                                     counterparty_port_id: channel.counterparty.port_id,
                                     counterparty_channel_id: channel
                                         .counterparty
                                         .channel_id
                                         .parse()
-                                        .map_err(EvmEventSourceError::Parse)?,
+                                        .map_err(EvmEventSourceError::ChannelIdParse)?,
                                     connection_id: channel.connection_hops[0].clone(),
                                 }))
                             }
@@ -632,14 +625,14 @@ impl<C: ChainSpec> EventSource for Evm<C> {
                                     channel_id: event
                                         .channel_id
                                         .parse()
-                                        .map_err(EvmEventSourceError::Parse)?,
+                                        .map_err(EvmEventSourceError::ChannelIdParse)?,
                                     // TODO: Ensure that event.counterparty_channel_id is `EmptyString`
                                     counterparty_channel_id: EmptyString,
                                     counterparty_port_id: event.counterparty_port_id,
                                     connection_id: event
                                         .connection_id
                                         .parse()
-                                        .map_err(EvmEventSourceError::Parse)?,
+                                        .map_err(EvmEventSourceError::ConnectionIdParse)?,
                                     version: channel.version,
                                 }))
                             }
@@ -653,17 +646,17 @@ impl<C: ChainSpec> EventSource for Evm<C> {
                                     channel_id: event
                                         .channel_id
                                         .parse()
-                                        .map_err(EvmEventSourceError::Parse)?,
+                                        .map_err(EvmEventSourceError::ChannelIdParse)?,
                                     counterparty_port_id: event.counterparty_port_id,
                                     counterparty_channel_id: channel
                                         .counterparty
                                         .channel_id
                                         .parse()
-                                        .map_err(EvmEventSourceError::Parse)?,
+                                        .map_err(EvmEventSourceError::ChannelIdParse)?,
                                     connection_id: event
                                         .connection_id
                                         .parse()
-                                        .map_err(EvmEventSourceError::Parse)?,
+                                        .map_err(EvmEventSourceError::ConnectionIdParse)?,
                                     version: event.version,
                                 }))
                             }
@@ -675,7 +668,7 @@ impl<C: ChainSpec> EventSource for Evm<C> {
                                     connection_id: event
                                         .connection_id
                                         .parse()
-                                        .map_err(EvmEventSourceError::Parse)?,
+                                        .map_err(EvmEventSourceError::ConnectionIdParse)?,
                                     client_id: connection.client_id,
                                     counterparty_client_id: connection.counterparty.client_id,
                                     counterparty_connection_id: connection
@@ -691,7 +684,7 @@ impl<C: ChainSpec> EventSource for Evm<C> {
                                     connection_id: event
                                         .connection_id
                                         .parse()
-                                        .map_err(EvmEventSourceError::Parse)?,
+                                        .map_err(EvmEventSourceError::ConnectionIdParse)?,
                                     client_id: connection.client_id,
                                     counterparty_client_id: connection.counterparty.client_id,
                                     counterparty_connection_id: connection
@@ -725,7 +718,7 @@ impl<C: ChainSpec> EventSource for Evm<C> {
                                     connection_id: event
                                         .connection_id
                                         .parse()
-                                        .map_err(EvmEventSourceError::Parse)?,
+                                        .map_err(EvmEventSourceError::ConnectionIdParse)?,
                                     client_id: connection.client_id,
                                     counterparty_client_id: connection.counterparty.client_id,
                                     counterparty_connection_id: connection
@@ -741,7 +734,7 @@ impl<C: ChainSpec> EventSource for Evm<C> {
                                     connection_id: event
                                         .connection_id
                                         .parse()
-                                        .map_err(EvmEventSourceError::Parse)?,
+                                        .map_err(EvmEventSourceError::ConnectionIdParse)?,
                                     client_id: connection.client_id,
                                     counterparty_client_id: connection.counterparty.client_id,
                                     counterparty_connection_id: connection
@@ -778,9 +771,7 @@ impl<C: ChainSpec> EventSource for Evm<C> {
                                         .0
                                         .parse()
                                         .map_err(EvmEventSourceError::ClientIdParse)?,
-                                    client_type: client_type
-                                        .parse()
-                                        .map_err(EvmEventSourceError::ClientTypeParse)?,
+                                    client_type,
                                     consensus_height: client_state.0.latest_height,
                                 }))
                             }
@@ -801,13 +792,13 @@ impl<C: ChainSpec> EventSource for Evm<C> {
                                         .packet
                                         .source_channel
                                         .parse()
-                                        .map_err(EvmEventSourceError::Parse)?,
+                                        .map_err(EvmEventSourceError::ChannelIdParse)?,
                                     packet_dst_port: event.packet.destination_port,
                                     packet_dst_channel: event
                                         .packet
                                         .destination_channel
                                         .parse()
-                                        .map_err(EvmEventSourceError::Parse)?,
+                                        .map_err(EvmEventSourceError::ChannelIdParse)?,
                                     packet_channel_ordering: channel.ordering,
                                     connection_id: channel.connection_hops[0].clone(),
                                 }))
@@ -828,7 +819,7 @@ impl<C: ChainSpec> EventSource for Evm<C> {
                                     packet_src_channel: event
                                         .source_channel
                                         .parse()
-                                        .map_err(EvmEventSourceError::Parse)?,
+                                        .map_err(EvmEventSourceError::ChannelIdParse)?,
                                     // REVIEW: Should we query the packet instead? Or is that the same info? Is it even possible to
                                     // query packets from the evm?
                                     packet_dst_port: channel.counterparty.port_id,
@@ -836,7 +827,7 @@ impl<C: ChainSpec> EventSource for Evm<C> {
                                         .counterparty
                                         .channel_id
                                         .parse()
-                                        .map_err(EvmEventSourceError::Parse)?,
+                                        .map_err(EvmEventSourceError::ChannelIdParse)?,
                                     packet_channel_ordering: channel.ordering,
                                     connection_id: channel.connection_hops[0].clone(),
                                 }))

@@ -44,7 +44,7 @@ pub mod events;
 
 pub mod ethereum_consts_traits;
 
-pub mod bounded_int;
+pub mod bounded;
 
 pub mod proof;
 
@@ -85,16 +85,21 @@ pub mod errors {
     pub(crate) use required;
 
     // Expected one length, but found another.
-    #[derive(Debug, PartialEq, Eq)]
+    #[derive(Debug, PartialEq, Eq, thiserror::Error)]
+    #[error("invalid length: expected {expected}, found {found}")]
     pub struct InvalidLength {
         pub expected: ExpectedLength,
         pub found: usize,
     }
 
-    #[derive(Debug, PartialEq, Eq)]
+    #[derive(Debug, PartialEq, Eq, derive_more::Display)]
     pub enum ExpectedLength {
+        #[display(fmt = "exactly {_0}")]
         Exact(usize),
+        #[display(fmt = "less than {_0}")]
         LessThan(usize),
+        #[display(fmt = "between ({_0}, {_0})")]
+        Between(usize, usize),
     }
 
     #[derive(Debug, PartialEq, Eq)]
@@ -348,221 +353,80 @@ impl Display for CosmosAccountId {
 }
 
 pub mod id {
-    use std::{
-        error::Error,
-        fmt::{Debug, Display},
-        num::ParseIntError,
-        str::FromStr,
+    use std::fmt::Debug;
+
+    use crate::{
+        errors::{ExpectedLength, InvalidLength},
+        validated::{Validate, Validated},
     };
 
-    use serde::{Deserialize, Serialize};
+    pub type PortIdValidator = (Bounded<2, 128>, Ics024IdentifierCharacters);
+    pub type PortId = Validated<String, PortIdValidator>;
+    pub type ClientIdValidator = (Bounded<9, 64>, Ics024IdentifierCharacters);
+    pub type ClientId = Validated<String, ClientIdValidator>;
+    pub type ConnectionIdValidator = (Bounded<10, 64>, Ics024IdentifierCharacters);
+    pub type ConnectionId = Validated<String, ConnectionIdValidator>;
+    pub type ChannelIdValidator = (Bounded<8, 64>, Ics024IdentifierCharacters);
+    pub type ChannelId = Validated<String, ChannelIdValidator>;
 
-    /// An id of the form `<ty>-<id>`.
-    #[derive(PartialEq, Serialize, Deserialize)]
-    #[serde(
-        bound(serialize = "Type: IdType", deserialize = "Type: IdType"),
-        try_from = "&str",
-        into = "String"
-    )]
-    pub struct Id<Type: IdType> {
-        ty: Type,
-        id: u32,
+    #[test]
+    fn cid2() {
+        let c = ChannelId::new("channel-1".into()).unwrap();
+
+        dbg!(c);
     }
 
-    pub trait IdType:
-        Display
-        + FromStr<Err = InvalidIdType>
-        + Debug
-        + Clone
-        + PartialEq
-        + Serialize
-        + for<'de> Deserialize<'de>
-        + Send
-        + Sync
-        + 'static
-    {
-        const TYPE: &'static str;
-    }
+    // https://github.com/cosmos/ibc/tree/main/spec/core/ics-024-host-requirements#paths-identifiers-separators
+    pub struct Ics024IdentifierCharacters;
 
-    impl<Type: IdType> crate::traits::Id for Id<Type> {
-        type FromStrErr = <Self as FromStr>::Err;
-    }
+    #[derive(Debug, thiserror::Error)]
+    #[error("invalid ics-024 identifier character: `{0}`")]
+    pub struct InvalidIcs024IdentifierCharacter(char);
 
-    impl<Type: IdType> Clone for Id<Type> {
-        fn clone(&self) -> Self {
-            Self {
-                ty: self.ty.clone(),
-                id: self.id,
-            }
-        }
-    }
+    impl<T: AsRef<str>> Validate<T> for Ics024IdentifierCharacters {
+        type Error = InvalidIcs024IdentifierCharacter;
 
-    impl<Type: IdType> Debug for Id<Type> {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            f.write_fmt(format_args!("{:?}({})", self.ty, self.id))
-        }
-    }
-
-    impl<Type: IdType> Id<Type> {
-        pub fn new(ty: Type, id: u32) -> Self {
-            Self { ty, id }
-        }
-    }
-
-    impl<Type: IdType> Display for Id<Type> {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            f.write_fmt(format_args!("{}-{}", self.ty, self.id))
-        }
-    }
-
-    impl<Type: IdType> From<Id<Type>> for String {
-        fn from(value: Id<Type>) -> Self {
-            value.to_string()
-        }
-    }
-
-    #[derive(Debug)]
-    pub enum IdParseError {
-        Type(InvalidIdType),
-        Id(ParseIntError),
-        InvalidFormat { found: String },
-    }
-
-    impl Display for IdParseError {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            match self {
-                IdParseError::Type(ty) => f.write_fmt(format_args!(
-                    "unable to parse the type portion of the id: {ty}"
-                )),
-                IdParseError::Id(id) => f.write_fmt(format_args!(
-                    "unable to parse the numeric portion of the id: {id}"
-                )),
-                IdParseError::InvalidFormat { found } => f.write_fmt(format_args!(
-                    "the id was not in the expected format `<ty>-<id>`: {found}"
-                )),
-            }
-        }
-    }
-
-    impl Error for IdParseError {}
-
-    impl<Type: IdType> FromStr for Id<Type> {
-        type Err = IdParseError;
-
-        fn from_str(s: &str) -> Result<Self, Self::Err> {
-            match s.rsplit_once('-') {
-                Some((ty, id)) => Ok(Self {
-                    ty: ty.parse().map_err(IdParseError::Type)?,
-                    id: id.parse().map_err(IdParseError::Id)?,
-                }),
-                None => Err(IdParseError::InvalidFormat {
-                    found: s.to_string(),
-                }),
-            }
-        }
-    }
-
-    impl<Type: IdType> TryFrom<&str> for Id<Type> {
-        type Error = <Id<Type> as FromStr>::Err;
-
-        fn try_from(value: &str) -> Result<Self, Self::Error> {
-            value.parse()
-        }
-    }
-
-    #[derive(Debug, Clone, PartialEq)]
-    pub struct InvalidIdType {
-        pub expected: &'static str,
-        pub found: String,
-    }
-
-    impl Display for InvalidIdType {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            f.write_fmt(format_args!(
-                "expected `{}`, found `{}`",
-                self.expected, self.found,
-            ))
-        }
-    }
-
-    impl Error for InvalidIdType {}
-
-    #[macro_export]
-    macro_rules! id_type {
-        (
-            $(#[doc = $doc:literal])*
-            #[ty = $ty:literal]
-            pub struct $Struct:ident;
-        ) => {
-            #[derive(Debug, Clone, PartialEq)]
-            pub struct $Struct;
-
-            impl ::std::str::FromStr for $Struct {
-                type Err = $crate::id::InvalidIdType;
-
-                fn from_str(s: &str) -> Result<Self, Self::Err> {
-                    matches!(s, $ty)
-                        .then_some(Self)
-                        .ok_or($crate::id::InvalidIdType {
-                            expected: $ty,
-                            found: s.to_string(),
-                        })
+        fn validate(t: T) -> Result<T, Self::Error> {
+            for c in t.as_ref().chars() {
+                match c {
+                    'a'..='z'
+                    | 'A'..='Z'
+                    | '0'..='9'
+                    | '.'
+                    | '_'
+                    | '+'
+                    | '-'
+                    | '#'
+                    | '['
+                    | ']'
+                    | '<'
+                    | '>' => {}
+                    _ => return Err(InvalidIcs024IdentifierCharacter(c)),
                 }
             }
 
-            impl ::std::fmt::Display for $Struct {
-                fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                    f.write_str($ty)
-                }
-            }
-
-            impl serde::Serialize for $Struct {
-                fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-                where
-                    S: serde::Serializer,
-                {
-                    serializer.collect_str(self)
-                }
-            }
-
-            impl<'de> serde::Deserialize<'de> for $Struct {
-                fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-                where
-                    D: serde::Deserializer<'de>,
-                {
-                    <&str>::deserialize(deserializer).and_then(|s| {
-                        s.parse()
-                            // TODO fix error situation
-                            // FromStr::Err has no bounds
-                            .map_err(|_| {
-                                serde::de::Error::invalid_value(serde::de::Unexpected::Str(s), &$ty)
-                            })
-                    })
-                }
-            }
-
-            impl $crate::id::IdType for $Struct {
-                const TYPE: &'static str = $ty;
-            }
-        };
+            Ok(t)
+        }
     }
 
-    pub use id_type;
+    pub struct Bounded<const MIN: usize, const MAX: usize>;
 
-    id_type! {
-        /// Id type for `connection_id`.
-        #[ty = "connection"]
-        pub struct Connection;
+    impl<T: AsRef<str>, const MIN: usize, const MAX: usize> Validate<T> for Bounded<MIN, MAX> {
+        type Error = InvalidLength;
+
+        fn validate(s: T) -> Result<T, Self::Error> {
+            let len = s.as_ref().len();
+
+            if (MIN..=MAX).contains(&len) {
+                Ok(s)
+            } else {
+                Err(InvalidLength {
+                    expected: ExpectedLength::Between(MIN, MAX),
+                    found: len,
+                })
+            }
+        }
     }
-
-    id_type! {
-        /// Id for `channel_id`.
-        #[ty = "channel"]
-        pub struct Channel;
-    }
-
-    pub type ConnectionId = Id<Connection>;
-    pub type ChannelId = Id<Channel>;
 }
 
 pub mod traits {
@@ -585,6 +449,7 @@ pub mod traits {
             lightclients::{cometbls, ethereum, wasm},
         },
         id::ChannelId,
+        validated::{Validate, Validated},
     };
 
     /// A convenience trait for a string id (`ChainId`, `ClientId`, `ConnectionId`, etc)
@@ -606,6 +471,14 @@ pub mod traits {
     impl Id for String {
         // type FromStrErr = <String as FromStr>::Err;
         type FromStrErr = std::string::ParseError;
+    }
+
+    impl<T: Id, V: Validate<T> + 'static> Id for Validated<T, V>
+    where
+        T::FromStrErr: Error,
+        V::Error: Error,
+    {
+        type FromStrErr = <Self as FromStr>::Err;
     }
 
     /// Represents a chain. One [`Chain`] may have many related [`LightClient`]s for connecting to
@@ -863,5 +736,206 @@ impl TryFrom<&[u8]> for WasmClientType {
             "Cometbls" => WasmClientType::Cometbls,
             _ => Err(())?,
         })
+    }
+}
+
+pub mod validated {
+    use std::{
+        fmt::{Debug, Display},
+        marker::PhantomData,
+        str::FromStr,
+    };
+
+    use either::Either;
+    use serde::{Deserialize, Serialize};
+
+    #[derive(Serialize, Deserialize)]
+    #[serde(
+        transparent,
+        bound(serialize = "T: Serialize", deserialize = "T: for<'d> Deserialize<'d>")
+    )]
+    pub struct Validated<T, V: Validate<T>>(T, #[serde(skip)] PhantomData<fn() -> V>);
+
+    pub trait ValidateT: Sized {
+        fn validate<V: Validate<Self>>(self) -> Result<Validated<Self, V>, V::Error> {
+            Validated::new(self)
+        }
+    }
+
+    impl<T> ValidateT for T {}
+
+    impl<T: Debug, V: Validate<T>> Debug for Validated<T, V> {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            f.debug_tuple("Validated").field(&self.0).finish()
+        }
+    }
+
+    impl<T: Display, V: Validate<T>> Display for Validated<T, V> {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(f, "{}", self.0)
+        }
+    }
+
+    impl<T: FromStr, V: Validate<T>> FromStr for Validated<T, V> {
+        type Err = Either<T::Err, V::Error>;
+
+        fn from_str(s: &str) -> Result<Self, Self::Err> {
+            Validated::new(s.parse().map_err(Either::Left)?).map_err(Either::Right)
+        }
+    }
+
+    impl<T: Clone, V: Validate<T>> Clone for Validated<T, V> {
+        fn clone(&self) -> Self {
+            Self(self.0.clone(), PhantomData)
+        }
+    }
+
+    impl<T: PartialEq, V: Validate<T>> PartialEq for Validated<T, V> {
+        fn eq(&self, other: &Self) -> bool {
+            self.0.eq(&other.0)
+        }
+    }
+
+    impl<T, V: Validate<T>> Validated<T, V> {
+        pub fn new(t: T) -> Result<Self, V::Error> {
+            V::validate(t).map(|ok| Validated(ok, PhantomData))
+        }
+
+        pub fn value(self) -> T {
+            self.0
+        }
+
+        pub fn mutate<U>(
+            self,
+            f: impl FnOnce(T) -> U,
+        ) -> Result<Validated<U, V>, <V as Validate<U>>::Error>
+        where
+            V: Validate<U>,
+        {
+            Validated::new(f(self.0))
+        }
+    }
+
+    pub trait Validate<T>: Sized {
+        type Error;
+
+        fn validate(t: T) -> Result<T, Self::Error>;
+    }
+
+    impl<T, V1: Validate<T>, V2: Validate<T>> Validate<T> for (V1, V2) {
+        type Error = Either<V1::Error, V2::Error>;
+
+        fn validate(t: T) -> Result<T, Self::Error> {
+            match V1::validate(t).map(|t| V2::validate(t)) {
+                Ok(Ok(t)) => Ok(t),
+                Ok(Err(e)) => Err(Either::Right(e)),
+                Err(e) => Err(Either::Left(e)),
+            }
+        }
+    }
+
+    impl<T> Validate<T> for () {
+        type Error = ();
+
+        fn validate(t: T) -> Result<T, Self::Error> {
+            Ok(t)
+        }
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+
+        #[test]
+        fn validate() {
+            #[derive(Debug, PartialEq)]
+            struct NonZero;
+            #[derive(Debug, PartialEq)]
+            struct NonMax;
+            #[derive(Debug, PartialEq)]
+            struct NotEight;
+
+            impl Validate<u8> for NonZero {
+                type Error = Self;
+
+                fn validate(t: u8) -> Result<u8, Self::Error> {
+                    if t == 0 {
+                        Err(NonZero)
+                    } else {
+                        Ok(t)
+                    }
+                }
+            }
+
+            impl Validate<u8> for NonMax {
+                type Error = Self;
+
+                fn validate(t: u8) -> Result<u8, Self::Error> {
+                    if t == u8::MAX {
+                        Err(NonMax)
+                    } else {
+                        Ok(t)
+                    }
+                }
+            }
+
+            impl Validate<u8> for NotEight {
+                type Error = Self;
+
+                fn validate(t: u8) -> Result<u8, Self::Error> {
+                    if t == 8 {
+                        Err(NotEight)
+                    } else {
+                        Ok(t)
+                    }
+                }
+            }
+
+            assert_eq!(Validated::<_, NonZero>::new(0), Err(NonZero));
+
+            assert_eq!(
+                Validated::<_, (NonZero, ())>::new(0),
+                Err(Either::Left(NonZero))
+            );
+
+            assert_eq!(
+                Validated::<_, (NonZero, NonMax)>::new(0),
+                Err(Either::Left(NonZero))
+            );
+
+            assert_eq!(
+                Validated::<_, (NonZero, NonMax)>::new(u8::MAX),
+                Err(Either::Right(NonMax))
+            );
+
+            assert_eq!(
+                Validated::<_, (NonZero, NonMax)>::new(8),
+                Ok(Validated(8, PhantomData))
+            );
+
+            assert_eq!(
+                Validated::<_, (NonZero, (NonMax, NotEight))>::new(8),
+                Err(Either::Right(Either::Right(NotEight)))
+            );
+
+            assert_eq!(
+                Validated::<_, (NotEight, (NonMax, NonZero))>::new(8),
+                Err(Either::Left(NotEight))
+            );
+
+            assert_eq!(
+                Validated::<_, (NotEight, (NonMax, NonZero))>::new(7)
+                    .unwrap()
+                    .mutate(|t| t + 1),
+                Err(Either::Left(NotEight))
+            );
+
+            assert_eq!(
+                Validated::<_, (NotEight, (NonMax, NonZero))>::new(7)
+                    .unwrap()
+                    .mutate(|t| t + 2),
+                Ok(Validated(9, PhantomData))
+            );
+        }
     }
 }

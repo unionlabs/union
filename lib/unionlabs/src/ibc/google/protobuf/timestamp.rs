@@ -8,7 +8,7 @@ use serde::{
 };
 
 use crate::{
-    bounded_int::{BoundedI32, BoundedI64, BoundedIntError},
+    bounded::{BoundedI32, BoundedI64, BoundedIntError},
     ibc::google::protobuf::duration::{Duration, NANOS_PER_SECOND},
     Proto, TypeUrl,
 };

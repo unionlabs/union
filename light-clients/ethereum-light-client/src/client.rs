@@ -474,7 +474,6 @@ mod test {
             core::commitment::merkle_root::MerkleRoot,
             lightclients::{cometbls, ethereum},
         },
-        id::{self, ConnectionId},
         proof::{ClientConsensusStatePath, ClientStatePath, ConnectionPath},
         IntoProto,
     };
@@ -1037,7 +1036,7 @@ mod test {
 
         do_verify_membership(
             ConnectionPath {
-                connection_id: ConnectionId::new(id::Connection, 0),
+                connection_id: "connection-0".parse().unwrap(),
             }
             .to_string(),
             storage_root,
@@ -1072,7 +1071,7 @@ mod test {
         for proof in proofs {
             assert!(do_verify_membership(
                 ConnectionPath {
-                    connection_id: ConnectionId::new(id::Connection, 0),
+                    connection_id: "connection-0".parse().unwrap(),
                 }
                 .to_string(),
                 storage_root.clone(),
@@ -1092,7 +1091,7 @@ mod test {
 
         assert!(do_verify_membership(
             ConnectionPath {
-                connection_id: ConnectionId::new(id::Connection, 0),
+                connection_id: "connection-0".parse().unwrap(),
             }
             .to_string(),
             storage_root,
@@ -1111,7 +1110,7 @@ mod test {
 
         assert!(do_verify_membership(
             ConnectionPath {
-                connection_id: ConnectionId::new(id::Connection, 0),
+                connection_id: "connection-0".parse().unwrap(),
             }
             .to_string(),
             storage_root,
@@ -1151,7 +1150,7 @@ mod test {
         assert_eq!(
             do_verify_non_membership(
                 ConnectionPath {
-                    connection_id: ConnectionId::new(id::Connection, 0),
+                    connection_id: "connection-0".parse().unwrap(),
                 }
                 .to_string(),
                 storage_root,
