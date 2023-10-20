@@ -52,6 +52,9 @@ pub enum ContractError {
         channel_id: String,
         protocol_version: String,
     },
+
+    #[error("Only myself is able to trigger this message")]
+    Unauthorized,
 }
 
 impl From<FromUtf8Error> for ContractError {

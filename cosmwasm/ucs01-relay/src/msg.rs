@@ -1,5 +1,5 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{IbcChannel, Uint512};
+use cosmwasm_std::{Binary, IbcChannel, Uint512};
 
 use crate::state::ChannelInfo;
 
@@ -20,6 +20,8 @@ pub struct MigrateMsg {}
 pub enum ExecuteMsg {
     /// This allows us to transfer native tokens
     Transfer(TransferMsg),
+    /// Register a denom, this message exist only to create sub-transaction from the top-level IBC call.
+    RegisterDenom { denom: String, hash: Binary },
     /// Change the admin (must be called by current admin)
     UpdateAdmin { admin: String },
 }

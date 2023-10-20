@@ -317,7 +317,7 @@ contract UCS01Relay is IBCAppBase {
             address receiver = RelayLib.hexToAddress(packet.receiver);
             address denomAddress;
             string memory denom;
-            if (!denomSlice.equals(trimedDenom)) {
+            if (!denomSlice.equals(token.denom.toSlice())) {
                 denom = trimedDenom.toString();
                 denomAddress = RelayLib.hexToAddress(denom);
                 // The token must be outstanding.

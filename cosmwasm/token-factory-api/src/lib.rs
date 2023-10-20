@@ -1,17 +1,9 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Coin, CosmosMsg, CustomMsg, CustomQuery, QueryRequest, Uint128};
-
-/// A top-level Custom message for the token factory.
-/// It is embedded like this to easily allow adding other variants that are custom
-/// to your chain, or other "standardized" extensions along side it.
-#[cw_serde]
-pub enum TokenFactoryMsg {
-    Token(TokenMsg),
-}
+use cosmwasm_std::{Coin, CosmosMsg, CustomMsg, CustomQuery, Uint128};
 
 /// Special messages to be supported by any chain that supports token_factory
 #[cw_serde]
-pub enum TokenMsg {
+pub enum TokenFactoryMsg {
     /// CreateDenom creates a new factory denom, of denomination:
     /// factory/{creating contract bech32 address}/{Subdenom}
     /// Subdenom can be of length at most 44 characters, in [0-9a-zA-Z./]
@@ -92,9 +84,9 @@ pub struct Params {
     pub denom_creation_fee: Vec<Coin>,
 }
 
-impl From<TokenMsg> for CosmosMsg<TokenFactoryMsg> {
-    fn from(msg: TokenMsg) -> CosmosMsg<TokenFactoryMsg> {
-        CosmosMsg::Custom(TokenFactoryMsg::Token(msg))
+impl From<TokenFactoryMsg> for CosmosMsg<TokenFactoryMsg> {
+    fn from(msg: TokenFactoryMsg) -> CosmosMsg<TokenFactoryMsg> {
+        CosmosMsg::Custom(msg)
     }
 }
 
@@ -107,14 +99,8 @@ pub struct CreateDenomResponse {
 }
 
 #[cw_serde]
-pub enum TokenFactoryQuery {
-    // Note: embed  enums don't work with QueryResponses currently
-    Token(TokenQuery),
-}
-
-#[cw_serde]
 #[derive(QueryResponses)]
-pub enum TokenQuery {
+pub enum TokenFactoryQuery {
     /// Given a subdenom created by the address `creator_addr` via `TokenFactoryMsg::CreateDenom`,
     /// returns the full denom as used by `BankMsg::Send`.
     /// You may call `FullDenom { creator_addr: env.contract.address, subdenom }` to find the denom issued
@@ -144,12 +130,6 @@ pub enum TokenQuery {
 }
 
 impl CustomQuery for TokenFactoryQuery {}
-
-impl From<TokenQuery> for QueryRequest<TokenFactoryQuery> {
-    fn from(query: TokenQuery) -> Self {
-        QueryRequest::Custom(TokenFactoryQuery::Token(query))
-    }
-}
 
 #[cw_serde]
 pub struct FullDenomResponse {

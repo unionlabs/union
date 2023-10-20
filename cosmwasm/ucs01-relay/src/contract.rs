@@ -19,7 +19,10 @@ use crate::{
         PortResponse, QueryMsg, TransferMsg,
     },
     protocol::{Ics20Protocol, ProtocolCommon, Ucs01Protocol},
-    state::{ChannelInfo, Config, ADMIN, CHANNEL_INFO, CHANNEL_STATE, CONFIG},
+    state::{
+        ChannelInfo, Config, ADMIN, CHANNEL_INFO, CHANNEL_STATE, CONFIG, FOREIGN_DENOM_TO_HASH,
+        HASH_TO_FOREIGN_DENOM,
+    },
 };
 
 const CONTRACT_NAME: &str = "crates.io:ucs01-relay";
@@ -70,6 +73,16 @@ pub fn execute(
         ExecuteMsg::UpdateAdmin { admin } => {
             let admin = deps.api.addr_validate(&admin)?;
             Ok(ADMIN.execute_update_admin(deps, info, Some(admin))?)
+        }
+        ExecuteMsg::RegisterDenom { denom, hash } => {
+            if info.sender != env.contract.address {
+                Err(ContractError::Unauthorized)
+            } else {
+                let normalized_hash = hash.0.try_into().expect("impossible");
+                FOREIGN_DENOM_TO_HASH.save(deps.storage, denom.clone().into(), &normalized_hash)?;
+                HASH_TO_FOREIGN_DENOM.save(deps.storage, normalized_hash, &denom.to_string())?;
+                Ok(Response::default())
+            }
         }
     }
 }
