@@ -24,60 +24,61 @@
         };
       };
 
-      mkBundle = name: versions: meta:
+      mkBundle = { name, versions, genesis, meta, nextVersion ? "" }:
         pkgs.linkFarm "union-bundle-${name}" ([
           {
             name = "meta.json";
             path = pkgs.writeText "meta.json" (builtins.toJSON meta);
           }
           {
-            name = "unionvisor";
-            path = "${unionvisorAll.packages.unionvisor}/bin/unionvisor";
-          }
-        ] ++ map
-          (version: {
-            name =
-              "${meta.versions_directory}/${version}/${meta.binary_name}";
-            path = pkgs.lib.getExe (get-flake "${inputs."${swapDotsWithUnderscores version}"}").packages.${system}.uniond;
-          })
-          versions);
-      mkNextBundle = name: versions: nextVersion: meta:
-        pkgs.linkFarm "union-bundle-${name}" ([
-          {
-            name = "meta.json";
-            path = pkgs.writeText "meta.json" (builtins.toJSON meta);
+            name = "genesis.json";
+            path = genesis;
           }
           {
             name = "unionvisor";
             path = "${unionvisorAll.packages.unionvisor}/bin/unionvisor";
           }
-          {
-            name = "${meta.versions_directory}/${nextVersion}/${meta.binary_name}";
-            path = pkgs.lib.getExe self'.packages.uniond;
-          }
-        ] ++ map
+        ]
+        ++ # add all `versions` to the bundle
+        map
           (version: {
             name =
               "${meta.versions_directory}/${version}/${meta.binary_name}";
             path = pkgs.lib.getExe (get-flake "${inputs."${swapDotsWithUnderscores version}"}").packages.${system}.uniond;
           })
-          versions);
+          versions
+        ++ # add `nextVersion` to the bundle if supplied 
+        pkgs.lib.lists.optional (nextVersion != "") ({
+          name = "${meta.versions_directory}/${nextVersion}/${meta.binary_name}";
+          path = pkgs.lib.getExe self'.packages.uniond;
+        }));
     in
     {
       inherit (unionvisorAll) checks;
       packages = {
         inherit (unionvisorAll.packages) unionvisor;
-        bundle-testnet =
-          mkBundle "testnet" [ "v0.8.0" "v0.9.0" "v0.10.0" "v0.11.0" "v0.12.0" "v0.13.0" ] {
-            binary_name = "uniond";
-            versions_directory = "versions";
-            fallback_version = "v0.8.0";
+        bundle-testnet-3 =
+          mkBundle {
+            name = "testnet-3";
+            versions = [ "v0.8.0" "v0.9.0" "v0.10.0" "v0.11.0" "v0.12.0" "v0.13.0" ];
+            genesis = ../networks/genesis/union-testnet-3/genesis.json;
+            meta = {
+              binary_name = "uniond";
+              versions_directory = "versions";
+              fallback_version = "v0.8.0";
+            };
           };
         bundle-testnet-next =
-          mkNextBundle "testnet" [ "v0.8.0" "v0.9.0" "v0.10.0" "v0.11.0" "v0.12.0" "v0.13.0" ] "v0.14.0" {
-            binary_name = "uniond";
-            versions_directory = "versions";
-            fallback_version = "v0.8.0";
+          mkBundle {
+            name = "testnet-3";
+            versions = [ "v0.8.0" "v0.9.0" "v0.10.0" "v0.11.0" "v0.12.0" "v0.13.0" ];
+            nextVersion = "v0.14.0";
+            genesis = ../networks/genesis/union-testnet-3/genesis.json;
+            meta = {
+              binary_name = "uniond";
+              versions_directory = "versions";
+              fallback_version = "v0.8.0";
+            };
           };
       };
     };
@@ -90,9 +91,17 @@
         enable = mkEnableOption "Unionvisor service";
         bundle = mkOption {
           type = types.package;
-          default = self.packages.${pkgs.system}.bundle-testnet;
+          default = self.packages.${pkgs.system}.bundle-testnet-3;
         };
         moniker = mkOption { type = types.str; };
+        network = mkOption {
+          type = types.str;
+          default = "union-testnet-3";
+        };
+        seeds = mkOption {
+          type = types.str;
+          default = "b4d587b3d3666d52df0cd43962080fd164568fe0@union-testnet.cor.systems:26656";
+        };
       };
 
       config = mkIf cfg.enable {
@@ -104,7 +113,7 @@
               text = ''
                 ${pkgs.coreutils}/bin/mkdir -p /var/lib/unionvisor
                 cd /var/lib/unionvisor
-                HOME=/var/lib/unionvisor ${cfg.bundle}/unionvisor --root /var/lib/unionvisor init --bundle ${cfg.bundle} --moniker ${cfg.moniker} --allow-dirty
+                HOME=/var/lib/unionvisor ${cfg.bundle}/unionvisor --root /var/lib/unionvisor init --bundle ${cfg.bundle} --moniker ${cfg.moniker} --seeds ${cfg.seeds} --network ${cfg.network} --allow-dirty
                 HOME=/var/lib/unionvisor ${cfg.bundle}/unionvisor --root /var/lib/unionvisor run --bundle ${cfg.bundle} 
               '';
             };

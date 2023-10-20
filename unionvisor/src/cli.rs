@@ -1,21 +1,23 @@
 use core::time::Duration;
-use std::{ffi::OsString, io::Read, path::PathBuf, process::Stdio};
+use std::{
+    ffi::OsString,
+    fs,
+    io::{self},
+    path::PathBuf,
+    process::Stdio,
+};
 
 use clap::Parser;
-use color_eyre::{
-    eyre::{bail, eyre},
-    Result,
-};
-use figment::{
-    providers::{Data, Format as FigmentFormat, Json, Toml},
-    Figment,
-};
-use serde::de::DeserializeOwned;
-use tracing::{debug, field::display as as_display};
+use thiserror::Error;
+use tracing::{field::display as as_display, info};
 use tracing_subscriber::filter::LevelFilter;
 
 use crate::{
-    bundle::Bundle, init, logging::LogFormat, network::Network, supervisor, symlinker::Symlinker,
+    bundle::{Bundle, NewBundleError, ValidateVersionPathError},
+    init::{self, SetSeedsError},
+    logging::LogFormat,
+    supervisor::{self, RuntimeError},
+    symlinker::{MakeFallbackLinkError, Symlinker},
 };
 
 #[derive(Parser, Clone)]
@@ -55,9 +57,6 @@ pub enum Command {
 
     /// Initializes a local directory to join the union network.
     Init(InitCmd),
-
-    /// Merges toml or json configuration files.
-    Merge(MergeCmd),
 }
 
 #[derive(Clone, Parser)]
@@ -76,12 +75,16 @@ pub struct InitCmd {
     bundle: PathBuf,
 
     /// The validator's moniker.
-    #[arg(short, long)]
+    #[arg(long)]
     moniker: String,
 
-    /// The network to create the configuration for (union-1 or union-testnet-1)
-    #[arg(short, long, default_value = "union-testnet-1")]
-    network: Network,
+    /// The network identifier.
+    #[arg(short, long)]
+    network: String,
+
+    /// Seeds to set in the config.toml.
+    #[arg(long, default_value = "")]
+    seeds: String,
 
     /// Determines if unionvisor initializes regardless of previous dirty state.
     /// This might still error depending on the behavior of the underlying uniond binary
@@ -103,19 +106,8 @@ pub struct RunCmd {
     poll_interval: Option<u64>,
 }
 
-/// Merges toml or json files and writes the merged output to `file`.
-#[derive(Clone, Parser)]
-pub struct MergeCmd {
-    /// The file to use as base and write to.
-    file: PathBuf,
-
-    /// Input file to read from. If omitted, stdin is used.
-    #[arg(short, long)]
-    from: Option<PathBuf>,
-}
-
 impl Cli {
-    pub fn run(self) -> Result<()> {
+    pub fn run(self) -> Result<(), RunCliError> {
         match &self.command {
             Command::Call(cmd) => {
                 cmd.call(self.root)?;
@@ -128,93 +120,19 @@ impl Cli {
             Command::Init(cmd) => {
                 cmd.init(self.root)?;
                 Ok(())
-            }
-            Command::Merge(cmd) => cmd.merge(),
+            } // Command::Merge(cmd) => cmd.merge(),
         }
     }
 }
 
-pub trait MergeFormat {
-    type Output: DeserializeOwned + ToString;
-    type Format: FigmentFormat;
-}
-
-impl MergeFormat for Json {
-    type Output = serde_json::Value;
-    type Format = Self;
-}
-
-impl MergeFormat for Toml {
-    type Output = toml::map::Map<String, toml::Value>;
-    type Format = Self;
-}
-
-impl MergeCmd {
-    fn merge_to_string(&self, input: &str) -> Result<String> {
-        let output = &self.file;
-        let ext = output
-            .extension()
-            .ok_or(eyre!("file must have either a .json or .toml extension"))?;
-        let base = std::fs::read_to_string(output)?;
-        let data = match ext.to_str().unwrap() {
-            "toml" => merge_inner::<Toml>(input, &base)?.to_string(),
-            "json" => merge_inner::<Json>(input, &base)?.to_string(),
-            _ => bail!("unknown extension: {:?}", ext),
-        };
-        Ok(data)
-    }
-
-    fn merge_from_reader_or_file<R: Read>(&self, mut r: R) -> Result<String> {
-        let input = if let Some(file) = &self.from {
-            std::fs::read_to_string(file)?
-        } else {
-            let mut string = String::new();
-            r.read_to_string(&mut string)?;
-            string
-        };
-        self.merge_to_string(&input)
-    }
-
-    fn merge(&self) -> Result<()> {
-        let output = self.merge_from_reader_or_file(std::io::stdin().lock())?;
-        write_to_file(&self.file, &output)?;
-        Ok(())
-    }
-}
-
-fn merge_inner<F: MergeFormat>(add: &str, base: &str) -> Result<F::Output> {
-    let value: F::Output = Figment::new()
-        .merge(Data::<<F as MergeFormat>::Format>::string(base))
-        .merge(Data::<<F as MergeFormat>::Format>::string(add))
-        .extract()?;
-    Ok(value)
-}
-
-fn write_to_file(path: impl Into<PathBuf>, contents: &str) -> Result<()> {
-    let path = path.into();
-    let mut tmp = path.clone();
-    tmp.set_file_name("__unionvisor.tmp");
-    let mut backup = path.clone();
-    backup.set_file_name("__unionvisor.bak");
-    std::fs::rename(&path, &backup)?;
-
-    // We try writing to the temp file. If that fails, we remove the temp file and rename back the original.
-    // If the write succeeds, we rename the temp file to the original, if that fails we perform the same cleanup.
-    // If cleanup fails, we ignore errors and just show the original
-    std::fs::write(&tmp, contents)
-        .or_else(|err| {
-            std::fs::remove_file(&tmp)?;
-            Err(err)
-        })
-        .and_then(|()| std::fs::rename(&tmp, &path))
-        .map_err(|err| {
-            // Best effort to restore the original file
-            let _ = std::fs::rename(&backup, &path);
-            let _ = std::fs::remove_file(&tmp);
-            err
-        })?;
-    std::fs::remove_file(backup)?;
-    Ok(())
+#[derive(Debug, Error)]
+pub enum RunCliError {
+    #[error("call command error")]
+    Call(#[from] CallError),
+    #[error("run command error")]
+    Run(#[from] RunError),
+    #[error("init command error")]
+    Init(#[from] InitError),
 }
 
 /// The state that the init command left the fs in.
@@ -225,12 +143,13 @@ pub enum InitState {
 }
 
 impl InitCmd {
-    fn init(&self, root: impl Into<PathBuf>) -> Result<InitState> {
+    fn init(&self, root: impl Into<PathBuf>) -> Result<InitState, InitError> {
+        use InitError::{HomeExistsAndDirtyIsNotAllowed, SetGenesisError};
         let root = root.into();
         let home = root.join("home");
 
         let bundle = Bundle::new(self.bundle.clone())?;
-        let symlinker = Symlinker::new(root.clone(), bundle);
+        let symlinker = Symlinker::new(root.clone(), bundle.clone());
 
         if symlinker.current_validated().is_err() {
             symlinker.make_fallback_link()?;
@@ -240,7 +159,7 @@ impl InitCmd {
             if self.allow_dirty {
                 return Ok(InitState::None);
             }
-            bail!("{} already exists, refusing to override", home.display())
+            return Err(HomeExistsAndDirtyIsNotAllowed(home));
         }
 
         let init = CallCmd {
@@ -252,18 +171,37 @@ impl InitCmd {
                 OsString::from(self.moniker.clone()),
                 OsString::from("bn254"),
                 OsString::from("--chain-id"),
-                OsString::from(self.network.to_string()),
+                OsString::from(&self.network),
             ],
         };
         init.call_silent(root)?;
-        init::download_genesis(self.network, home.join("config/genesis.json"))?;
-        init::set_seeds(self.network, home.join("config/config.toml"))?;
+        fs::copy(bundle.genesis_json(), home.join("config/genesis.json"))
+            .map_err(SetGenesisError)?;
+        init::set_seeds(&self.seeds, home.join("config/config.toml"))?;
+
+        info!(target: "unionvisor", "successfully initialized unionvisor");
         Ok(InitState::SeedsConfigured)
     }
 }
 
+#[derive(Debug, Error)]
+pub enum InitError {
+    #[error("cannot load bundle")]
+    NewBundle(#[from] NewBundleError),
+    #[error("cannot make fallback link")]
+    MakeFallbackLink(#[from] MakeFallbackLinkError),
+    #[error("home {0} already exists, refusing to override")]
+    HomeExistsAndDirtyIsNotAllowed(PathBuf),
+    #[error("set genesis error")]
+    SetGenesisError(#[from] io::Error),
+    #[error("set seeds error")]
+    SetSeeds(#[from] SetSeedsError),
+    #[error("cannot call")]
+    CallError(#[from] CallError),
+}
+
 impl RunCmd {
-    fn run(&self, root: impl Into<PathBuf>, logformat: LogFormat) -> Result<()> {
+    fn run(&self, root: impl Into<PathBuf>, logformat: LogFormat) -> Result<(), RunError> {
         let root = root.into();
         let bundle = Bundle::new(self.bundle.clone())?;
         let symlinker = Symlinker::new(root.clone(), bundle);
@@ -278,13 +216,21 @@ impl RunCmd {
     }
 }
 
+#[derive(Debug, Error)]
+pub enum RunError {
+    #[error("new bundle error")]
+    NewBundle(#[from] NewBundleError),
+    #[error("runtime error")]
+    Runtime(#[from] RuntimeError),
+}
+
 impl CallCmd {
     /// Executes the logic for the Call variant. Will panic if the enum is not [`Command::Call`].
-    fn call(&self, root: impl Into<PathBuf>) -> Result<()> {
+    fn call(&self, root: impl Into<PathBuf>) -> Result<(), CallError> {
         self.call_inner(root, Stdio::inherit(), Stdio::inherit(), Stdio::inherit())
     }
 
-    fn call_silent(&self, root: impl Into<PathBuf>) -> Result<()> {
+    fn call_silent(&self, root: impl Into<PathBuf>) -> Result<(), CallError> {
         self.call_inner(root, Stdio::null(), Stdio::null(), Stdio::null())
     }
 
@@ -294,12 +240,12 @@ impl CallCmd {
         stdin: impl Into<Stdio>,
         stdout: impl Into<Stdio>,
         stderr: impl Into<Stdio>,
-    ) -> Result<()> {
+    ) -> Result<(), CallError> {
         let root = root.into();
         let bundle = Bundle::new(self.bundle.clone())?;
         let symlinker = Symlinker::new(root.clone(), bundle);
         let current = symlinker.current_validated()?;
-        debug!(target: "unionvisor",
+        info!(target: "unionvisor",
             binary = as_display(current.0.display()),
             root = as_display(root.display()),
             "calling uniond binary at {}",
@@ -310,128 +256,29 @@ impl CallCmd {
             .stdin(stdin.into())
             .stderr(stderr.into())
             .stdout(stdout.into())
-            .spawn()?;
-        child.wait()?;
+            .spawn()
+            .map_err(CallError::SpawnChildProcess)?;
+        child.wait().map_err(CallError::ChildExitedWithError)?;
         Ok(())
     }
 }
 
+#[derive(Debug, Error)]
+pub enum CallError {
+    #[error("cannot init new bundle")]
+    NewBundle(#[from] NewBundleError),
+    #[error("cannot validating version path")]
+    ValidateVersionPath(#[from] ValidateVersionPathError),
+    #[error("cannot spawn child process")]
+    SpawnChildProcess(#[source] io::Error),
+    #[error("child process exited with error")]
+    ChildExitedWithError(#[source] io::Error),
+}
+
 #[cfg(test)]
 mod tests {
-    use tracing_test::traced_test;
-
     use super::*;
     use crate::testdata;
-
-    #[test]
-    fn test_write_to_file() {
-        let tmp = testdata::temp_dir_with(&["home"]);
-        let home = tmp.into_path().join("home");
-        let path = home.join("config/client.toml");
-        write_to_file(&path, "hello").unwrap();
-        let contents = std::fs::read_to_string(&path).unwrap();
-        assert_eq!(contents, "hello");
-    }
-
-    #[test]
-    fn test_merge_from_reader() {
-        use toml::toml;
-
-        let tmp = testdata::temp_dir_with(&["home"]);
-        let home = tmp.into_path().join("home");
-
-        let cmd = MergeCmd {
-            file: home.join("config").join("client.toml"),
-            from: None,
-        };
-
-        let input = toml! {
-            broadcast-mode = "async"
-            foo = "bar"
-        };
-
-        let output = cmd
-            .merge_from_reader_or_file(input.to_string().as_bytes())
-            .unwrap();
-        let expected = toml! {
-            chain-id = "union"
-            keyring-backend = "os"
-            output = "text"
-            node = "tcp://localhost:26657"
-            broadcast-mode = "async"
-            foo = "bar"
-        };
-        assert_eq!(output, expected.to_string());
-    }
-
-    #[test]
-    fn test_merge_to_string() {
-        use toml::toml;
-
-        let tmp = testdata::temp_dir_with(&["home"]);
-        let home = tmp.into_path().join("home");
-
-        let cmd = MergeCmd {
-            file: home.join("config").join("client.toml"),
-            from: None,
-        };
-
-        let input = toml! {
-            broadcast-mode = "async"
-            foo = "bar"
-        };
-
-        let output = cmd.merge_to_string(&input.to_string()).unwrap();
-        let expected = toml! {
-            chain-id = "union"
-            keyring-backend = "os"
-            output = "text"
-            node = "tcp://localhost:26657"
-            broadcast-mode = "async"
-            foo = "bar"
-        };
-        assert_eq!(output, expected.to_string());
-    }
-
-    #[test]
-    fn test_merge_inner_json() {
-        use serde_json::json;
-
-        let base = json!({"a": true, "b": false});
-        let added = json!({"b": true, "c": true});
-        let result = merge_inner::<Json>(&added.to_string(), &base.to_string()).unwrap();
-        assert_eq!(result, json!({"a": true, "b": true, "c": true}));
-    }
-
-    #[test]
-    fn test_merge_inner_toml() {
-        use toml::toml;
-
-        let base = toml! {
-            [package]
-            name = "toml"
-            version = "1"
-        };
-
-        let added = toml! {
-            [package]
-            name = "json"
-
-            [dependencies]
-            serde = "1.0"
-        };
-
-        let expected = toml! {
-            [package]
-            name = "json"
-            version = "1"
-
-            [dependencies]
-            serde = "1.0"
-        };
-        let result = merge_inner::<Toml>(&added.to_string(), &base.to_string()).unwrap();
-        assert_eq!(result, expected);
-    }
 
     /// Verifies that calling unionvisor init -i will return without impacting the fs.
     #[test]
@@ -440,8 +287,9 @@ mod tests {
         let root = tmp.into_path();
         let state = InitCmd {
             bundle: root.join("bundle"),
-            moniker: String::from("test_init_moniker"),
-            network: Network::Testnet1,
+            moniker: "test_init_moniker".to_owned(),
+            network: "union-testnet-1".to_owned(),
+            seeds: "some_seed.io".to_owned(),
             allow_dirty: true,
         }
         .init(root)
@@ -455,26 +303,12 @@ mod tests {
         let root = tmp.into_path();
         let _ = InitCmd {
             bundle: root.join("bundle"),
-            moniker: String::from("test_init_moniker"),
-            network: Network::Testnet1,
+            moniker: "test_init_moniker".to_owned(),
+            network: "union-testnet-3".to_owned(),
+            seeds: "some_seed.io".to_owned(),
             allow_dirty: false,
         }
         .init(root)
         .expect_err("unionvisor should refuse to initialize if the home directory is populated");
-    }
-
-    #[test]
-    #[ignore = "Currently cannot do networked I/O required to fetch the genesis.json inside of the sandbox"]
-    #[traced_test]
-    fn test_init() {
-        let tmp = testdata::temp_dir_with(&["test_init_cmd"]);
-        let root = tmp.into_path().join("test_init_cmd");
-        let command = InitCmd {
-            bundle: root.join("bundle"),
-            moniker: String::from("test_init_moniker"),
-            network: Network::Testnet1,
-            allow_dirty: false,
-        };
-        command.init(root).unwrap();
     }
 }
