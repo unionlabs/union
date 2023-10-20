@@ -33,13 +33,8 @@ pub fn analyze(input: String, output: String) -> HashMap<String, ChannelBenchmar
                     complete_transfers.insert(id, 1);
                 }
             } else if let Some(channel_incomplete_transfers) = incomplete_transfers.get_mut(&id) {
-                println!(
-                    "Additional incomplete transfer on {} ({} + 1 incomplete)",
-                    id, channel_incomplete_transfers
-                );
                 *channel_incomplete_transfers += 1;
             } else {
-                println!("Incomplete transfer on {}", id);
                 incomplete_transfers.insert(id, 1);
             }
         }
