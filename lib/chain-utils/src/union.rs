@@ -76,15 +76,8 @@ impl Chain for Union {
                 .tm_client
                 .latest_block()
                 .await
-                .unwrap()
-                .block
-                .header
-                .height
-                .value()
-                // HACK: for some reason, abci_query on latest block return null
-                // value sometimes, probably a racy condition if we use the
-                // actually latest block being built?
-                .saturating_sub(1);
+                .map(|height| height.block.header.height.value())
+                .unwrap_or(0);
 
             self.make_height(height)
         }

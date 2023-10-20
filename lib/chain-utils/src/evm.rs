@@ -108,11 +108,8 @@ impl<C: ChainSpec> Chain for Evm<C> {
                 .beacon_api_client
                 .finality_update()
                 .await
-                .unwrap()
-                .data
-                .attested_header
-                .beacon
-                .slot;
+                .map(|height| height.data.attested_header.beacon.slot)
+                .unwrap_or(0);
 
             self.make_height(height)
         }
