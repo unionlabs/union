@@ -51,5 +51,7 @@ thiserror = "1.0.49"
 crossbeam-queue = "0.3.8"
 derive_more = "0.99.17"
 
+tikv-jemallocator = "0.5"
+
 [features]
 eth-mainnet = [ "unionlabs/eth-mainnet" ]

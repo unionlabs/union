@@ -15,7 +15,11 @@ use chain_utils::{evm::Evm, union::Union};
 use clap::Parser;
 use contracts::ucs01_relay::{LocalToken, UCS01Relay};
 use sqlx::PgPool;
+use tikv_jemallocator::Jemalloc;
 use unionlabs::ethereum_consts_traits::Mainnet;
+
+#[global_allocator]
+static GLOBAL: Jemalloc = Jemalloc;
 
 use crate::{
     chain::AnyChain,
