@@ -454,7 +454,9 @@ impl Union {
                 response.code.value(),
             );
 
-            return Err(BroadcastTxCommitError::Tx(value));
+            tracing::error!("cosmos tx failed: {}", value);
+
+            return Ok(());
         };
 
         let mut target_height = self.query_latest_height().await.increment();
