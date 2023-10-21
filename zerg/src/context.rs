@@ -19,7 +19,7 @@ use ethers::{
     prelude::SignerMiddleware,
     providers::Middleware,
     signers::{LocalWallet, Wallet},
-    types::{U256, U64},
+    types::U256,
     utils::secret_key_to_address,
 };
 use futures::StreamExt;
@@ -197,17 +197,12 @@ impl Context {
             let mut height = previous_height;
 
             while height == previous_height {
-                let maybe_height = self.evm.query_latest_height().await.revision_height;
-                height = if maybe_height == 0 {
-                    height
-                } else {
-                    maybe_height
-                };
+                height = self.evm.provider.get_block_number().await.unwrap().as_u64();
                 tokio::time::sleep(Duration::from_secs(1)).await;
             }
             previous_height = height;
 
-            if let Ok(res) = ucs01_relay
+            if let Ok(pending) = ucs01_relay
                 .send(
                     e.packet_dst_port.clone(),
                     e.packet_dst_channel.clone().to_string(),
@@ -224,9 +219,11 @@ impl Context {
                 .send()
                 .await
             {
-                res.await.unwrap().unwrap();
-                println!("Eth: Transaction {} was submitted!", e.packet_sequence);
-                break;
+                if let Ok(sent) = pending.await {
+                    sent.unwrap();
+                    println!("Eth: Transaction {} was submitted!", e.packet_sequence);
+                    break;
+                }
             } else {
                 println!(
                     "Eth: Transaction {} failed, trying again next block...",
@@ -315,7 +312,7 @@ impl Context {
     /// Appends a comma separated line to the `output_file` provided by the context.
     ///
     /// Line Format:
-    /// `<uuid>, <address>, <timestamp>, <EVENT_TYPE>, <chain_id>`
+    /// `<uuid>,<address>,<execution_timestamp>,<finalization_timestamp>,<event_type>,<chain_id>`
     /// Where `EVENT_TYPE` is either `"SentFrom"` or `"ReceivedOn"`.
     pub async fn append_record(&self, event: Event) {
         let mut writer = self.writer.lock().await;
@@ -323,16 +320,24 @@ impl Context {
             EventType::SendEvent(e) => {
                 writeln!(
                     writer,
-                    "{},{},{},SentFrom,{}",
-                    event.uuid, event.sender, e.time, e.chain_id
+                    "{},{},{},{},SentFrom,{}",
+                    event.uuid,
+                    event.sender,
+                    e.execution_timestamp,
+                    e.finalization_timestamp,
+                    e.chain_id
                 )
                 .unwrap();
             }
             EventType::ReceiveEvent(e) => {
                 writeln!(
                     writer,
-                    "{},{},{},ReceivedOn,{}",
-                    event.uuid, event.sender, e.time, e.chain_id
+                    "{},{},{},{},ReceivedOn,{}",
+                    event.uuid,
+                    event.sender,
+                    e.execution_timestamp,
+                    e.finalization_timestamp,
+                    e.chain_id
                 )
                 .unwrap();
             }

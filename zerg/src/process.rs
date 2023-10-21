@@ -6,7 +6,8 @@ use csv::{ReaderBuilder, WriterBuilder};
 struct Transaction {
     uuid: String,
     sender: String,
-    timestamp: u64,
+    execution_timestamp: u64,
+    finalization_timestamp: u64,
     transaction_state: TransactionState,
     chain_id: String,
 }
@@ -21,8 +22,10 @@ enum TransactionState {
 pub struct TransactionReport {
     pub uuid: String,
     pub completed: bool,
-    pub arrived_on: Option<u64>,
-    pub duration: Option<u64>,
+    pub executed_on: Option<u64>,
+    pub execution_duration: Option<u64>,
+    pub finalized_on: Option<u64>,
+    pub finalization_duration: Option<u64>,
 }
 
 pub fn process(input_file_path: String) -> Vec<TransactionReport> {
@@ -58,14 +61,22 @@ pub fn process(input_file_path: String) -> Vec<TransactionReport> {
             Some(received_on) => TransactionReport {
                 uuid: sent_from.uuid,
                 completed: true,
-                arrived_on: Some(received_on.timestamp),
-                duration: Some(received_on.timestamp - sent_from.timestamp),
+                executed_on: Some(received_on.execution_timestamp),
+                execution_duration: Some(
+                    received_on.execution_timestamp - sent_from.execution_timestamp,
+                ),
+                finalized_on: Some(received_on.finalization_timestamp),
+                finalization_duration: Some(
+                    received_on.finalization_timestamp - sent_from.execution_timestamp,
+                ),
             },
             None => TransactionReport {
                 uuid: sent_from.uuid,
                 completed: false,
-                arrived_on: None,
-                duration: None,
+                executed_on: None,
+                execution_duration: None,
+                finalized_on: None,
+                finalization_duration: None,
             },
         })
         .collect();
