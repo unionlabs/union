@@ -40,6 +40,18 @@ pub fn protocol_ordering(version: &str) -> Option<IbcOrder> {
     }
 }
 
+fn batch_submessages(
+    self_addr: &cosmwasm_std::Addr,
+    msgs: Vec<CosmosMsg<TokenFactoryMsg>>,
+) -> Result<Vec<CosmosMsg<TokenFactoryMsg>>, ContractError> {
+    Ok(vec![wasm_execute(
+        self_addr,
+        &ExecuteMsg::BatchExecute { msgs },
+        vec![],
+    )?
+    .into()])
+}
+
 fn update_outstanding<F>(
     deps: DepsMut,
     channel_id: &str,
@@ -417,6 +429,7 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
             &self.common.channel.counterparty_endpoint,
             tokens,
         )
+        .map(|msgs| batch_submessages(self.self_addr(), msgs))?
     }
 
     fn send_tokens_success(
@@ -444,6 +457,7 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
             &self.common.channel.counterparty_endpoint,
             tokens,
         )
+        .map(|msgs| batch_submessages(self.self_addr(), msgs))?
     }
 
     fn receive_transfer(
@@ -451,7 +465,7 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
         receiver: &str,
         tokens: Vec<TransferToken>,
     ) -> Result<Vec<CosmosMsg<Self::CustomMsg>>, ContractError> {
-        let msgs = StatefulOnReceive {
+        StatefulOnReceive {
             deps: self.common.deps.branch(),
         }
         .receive_phase1_transfer(
@@ -460,14 +474,8 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
             &self.common.channel.counterparty_endpoint,
             receiver,
             tokens,
-        )?;
-
-        Ok(vec![wasm_execute(
-            self.self_addr(),
-            &ExecuteMsg::BatchExecute { msgs },
-            vec![],
-        )?
-        .into()])
+        )
+        .map(|msgs| batch_submessages(self.self_addr(), msgs))?
     }
 
     fn normalize_for_ibc_transfer(
@@ -537,6 +545,7 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
             &self.common.channel.counterparty_endpoint,
             tokens,
         )
+        .map(|msgs| batch_submessages(self.self_addr(), msgs))?
     }
 
     fn send_tokens_success(
@@ -564,6 +573,7 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
             &self.common.channel.counterparty_endpoint,
             tokens,
         )
+        .map(|msgs| batch_submessages(self.self_addr(), msgs))?
     }
 
     fn receive_transfer(
@@ -581,6 +591,7 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
             receiver,
             tokens,
         )
+        .map(|msgs| batch_submessages(self.self_addr(), msgs))?
     }
 
     fn normalize_for_ibc_transfer(
