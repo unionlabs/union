@@ -429,7 +429,6 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
             &self.common.channel.counterparty_endpoint,
             tokens,
         )
-        .map(|msgs| batch_submessages(self.self_addr(), msgs))?
     }
 
     fn send_tokens_success(
@@ -457,7 +456,6 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
             &self.common.channel.counterparty_endpoint,
             tokens,
         )
-        .map(|msgs| batch_submessages(self.self_addr(), msgs))?
     }
 
     fn receive_transfer(
@@ -545,7 +543,6 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
             &self.common.channel.counterparty_endpoint,
             tokens,
         )
-        .map(|msgs| batch_submessages(self.self_addr(), msgs))?
     }
 
     fn send_tokens_success(
@@ -573,7 +570,6 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
             &self.common.channel.counterparty_endpoint,
             tokens,
         )
-        .map(|msgs| batch_submessages(self.self_addr(), msgs))?
     }
 
     fn receive_transfer(
