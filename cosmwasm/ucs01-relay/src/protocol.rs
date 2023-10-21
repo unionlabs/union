@@ -451,7 +451,7 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
         receiver: &str,
         tokens: Vec<TransferToken>,
     ) -> Result<Vec<CosmosMsg<Self::CustomMsg>>, ContractError> {
-        StatefulOnReceive {
+        let msgs = StatefulOnReceive {
             deps: self.common.deps.branch(),
         }
         .receive_phase1_transfer(
@@ -460,7 +460,14 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
             &self.common.channel.counterparty_endpoint,
             receiver,
             tokens,
-        )
+        )?;
+
+        Ok(vec![wasm_execute(
+            self.self_addr(),
+            &ExecuteMsg::BatchExecute { msgs },
+            vec![],
+        )?
+        .into()])
     }
 
     fn normalize_for_ibc_transfer(
