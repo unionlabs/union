@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use unionlabs::ethereum::H256;
 
 use crate::{
-    chain::{ChainOf, HeightOf, LightClient},
+    chain::{ChainOf, HeightOf, LightClient, LightClientBase},
     msg::any_enum,
 };
 
@@ -34,7 +34,7 @@ pub struct IbcEvent<L: LightClient> {
     pub event: unionlabs::events::IbcEvent<
         L::ClientId,
         L::ClientType,
-        <L::Counterparty as LightClient>::ClientId,
+        <L::Counterparty as LightClientBase>::ClientId,
     >,
 }
 
@@ -73,6 +73,6 @@ pub enum Command<L: LightClient> {
     #[display(fmt = "UpdateClient({client_id}, {counterparty_client_id})")]
     UpdateClient {
         client_id: L::ClientId,
-        counterparty_client_id: <L::Counterparty as LightClient>::ClientId,
+        counterparty_client_id: <L::Counterparty as LightClientBase>::ClientId,
     },
 }

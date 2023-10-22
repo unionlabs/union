@@ -56,7 +56,8 @@ use crate::{
         evm::{CometblsMainnet, CometblsMinimal},
         proof::IbcStateRead,
         union::{EthereumMainnet, EthereumMinimal},
-        AnyChain, AnyChainTryFromConfigError, ChainOf, HeightOf, LightClient, QueryHeight,
+        AnyChain, AnyChainTryFromConfigError, ChainOf, HeightOf, LightClient, LightClientBase,
+        QueryHeight,
     },
     config::Config,
     msg::{
@@ -707,11 +708,11 @@ impl Worker {
         AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L::Counterparty>)>,
         AggregateReceiver: From<identified!(Aggregate<L>)>,
         // TODO: Remove once we no longer unwrap in handle_fetch
-        <<L as LightClient>::ClientId as TryFrom<
-            <<L as LightClient>::HostChain as Chain>::ClientId,
+        <<L as LightClientBase>::ClientId as TryFrom<
+            <<L as LightClientBase>::HostChain as Chain>::ClientId,
         >>::Error: Debug,
-        <<L::Counterparty as LightClient>::ClientId as TryFrom<
-            <<L::Counterparty as LightClient>::HostChain as Chain>::ClientId,
+        <<L::Counterparty as LightClientBase>::ClientId as TryFrom<
+            <<L::Counterparty as LightClientBase>::HostChain as Chain>::ClientId,
         >>::Error: Debug,
     {
         let l = self.get_lc(&msg.chain_id);
@@ -1181,7 +1182,7 @@ where
 fn mk_aggregate_update<L: LightClient>(
     chain_id: ChainIdOf<L>,
     client_id: L::ClientId,
-    counterparty_client_id: <L::Counterparty as LightClient>::ClientId,
+    counterparty_client_id: <L::Counterparty as LightClientBase>::ClientId,
     event_height: HeightOf<ChainOf<L>>,
 ) -> RelayerMsg
 where
@@ -1213,12 +1214,12 @@ where
 async fn handle_fetch<L: LightClient>(l: L, fetch: Fetch<L>) -> Vec<RelayerMsg>
 where
     AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L>)>,
-// TODO: Remove once we no longer unwrap
-    <<L as LightClient>::ClientId as TryFrom<
-        <<L as LightClient>::HostChain as Chain>::ClientId,
+    // TODO: Remove once we no longer unwrap
+    <<L as LightClientBase>::ClientId as TryFrom<
+        <<L as LightClientBase>::HostChain as Chain>::ClientId,
     >>::Error: Debug,
-    <<L::Counterparty as LightClient>::ClientId as TryFrom<
-        <<L::Counterparty as LightClient>::HostChain as Chain>::ClientId,
+    <<L::Counterparty as LightClientBase>::ClientId as TryFrom<
+        <<L::Counterparty as LightClientBase>::HostChain as Chain>::ClientId,
     >>::Error: Debug,
 {
     let relayer_msg = match fetch {
@@ -1356,7 +1357,7 @@ where
                         .map(|connection_end_proof| {
                             unionlabs::ibc::core::connection::connection_end::ConnectionEnd::<
                                 L::ClientId,
-                                <L::Counterparty as LightClient>::ClientId,
+                                <L::Counterparty as LightClientBase>::ClientId,
                                 // NOTE: String used here since it may be empty; figure out a way to more strongly type this?
                                 String,
                             > {
@@ -1368,7 +1369,7 @@ where
                                 counterparty:
                                     unionlabs::ibc::core::connection::counterparty::Counterparty {
                                         client_id:
-                                            <<L::Counterparty as LightClient>::ClientId>::try_from(
+                                            <<L::Counterparty as LightClientBase>::ClientId>::try_from(
                                                 connection_end_proof.state.counterparty.client_id,
                                             )
                                             .unwrap(),
@@ -3318,11 +3319,11 @@ fn flatten() {
 
 fn chain_event_to_lc_event<L: LightClient>(
     event: IbcEvent<<L::HostChain as Chain>::ClientId, <L::HostChain as Chain>::ClientType, String>,
-) -> IbcEvent<L::ClientId, L::ClientType, <L::Counterparty as LightClient>::ClientId>
+) -> IbcEvent<L::ClientId, L::ClientType, <L::Counterparty as LightClientBase>::ClientId>
 where
     <L::ClientId as TryFrom<<L::HostChain as Chain>::ClientId>>::Error: Debug,
     <L::ClientType as TryFrom<<L::HostChain as Chain>::ClientType>>::Error: Debug,
-    <<L::Counterparty as LightClient>::ClientId as FromStr>::Err: Debug,
+    <<L::Counterparty as LightClientBase>::ClientId as FromStr>::Err: Debug,
 {
     match event {
         IbcEvent::CreateClient(CreateClient {

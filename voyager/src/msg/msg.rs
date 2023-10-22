@@ -18,7 +18,9 @@ use unionlabs::ibc::core::{
 };
 
 use crate::{
-    chain::{ChainOf, ClientStateOf, ConsensusStateOf, HeaderOf, HeightOf, LightClient},
+    chain::{
+        ChainOf, ClientStateOf, ConsensusStateOf, HeaderOf, HeightOf, LightClient, LightClientBase,
+    },
     msg::any_enum,
 };
 
@@ -66,7 +68,7 @@ impl<L: LightClient> Display for Msg<L> {
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""))]
 pub struct MsgConnectionOpenInitData<L: LightClient> {
-    pub msg: MsgConnectionOpenInit<L::ClientId, <L::Counterparty as LightClient>::ClientId>,
+    pub msg: MsgConnectionOpenInit<L::ClientId, <L::Counterparty as LightClientBase>::ClientId>,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
@@ -75,7 +77,7 @@ pub struct MsgConnectionOpenTryData<L: LightClient> {
     pub msg: MsgConnectionOpenTry<
         ClientStateOf<L::HostChain>,
         L::ClientId,
-        <L::Counterparty as LightClient>::ClientId,
+        <L::Counterparty as LightClientBase>::ClientId,
         HeightOf<ChainOf<L::Counterparty>>,
         HeightOf<ChainOf<L>>,
     >,
@@ -154,6 +156,7 @@ pub struct MsgCreateClientData<L: LightClient> {
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""))]
 pub struct MsgUpdateClientData<L: LightClient> {
-    pub msg: MsgUpdateClient<L::ClientId, HeaderOf<<L::Counterparty as LightClient>::HostChain>>,
+    pub msg:
+        MsgUpdateClient<L::ClientId, HeaderOf<<L::Counterparty as LightClientBase>::HostChain>>,
     pub update_from: HeightOf<ChainOf<L::Counterparty>>,
 }

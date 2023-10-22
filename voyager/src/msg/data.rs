@@ -13,7 +13,9 @@ use unionlabs::{
 };
 
 use crate::{
-    chain::{ChainOf, ClientStateOf, ConsensusStateOf, HeaderOf, HeightOf, LightClient},
+    chain::{
+        ChainOf, ClientStateOf, ConsensusStateOf, HeaderOf, HeightOf, LightClient, LightClientBase,
+    },
     msg::{
         any_enum, fetch::FetchPacketAcknowledgement, identified, AnyLightClientIdentified,
         StateProofOf,
@@ -122,7 +124,7 @@ pub struct ChannelEnd<L: LightClient> {
 pub struct ConnectionEnd<L: LightClient>(
     pub  unionlabs::ibc::core::connection::connection_end::ConnectionEnd<
         L::ClientId,
-        <L::Counterparty as LightClient>::ClientId,
+        <L::Counterparty as LightClientBase>::ClientId,
         // NOTE: String used here since it may be empty; figure out a way to more strongly type this
         String,
     >,
@@ -140,7 +142,7 @@ pub struct PacketAcknowledgement<L: LightClient> {
 pub struct TrustedClientState<L: LightClient> {
     pub fetched_at: HeightOf<ChainOf<L>>,
     pub client_id: L::ClientId,
-    pub trusted_client_state: ClientStateOf<<L::Counterparty as LightClient>::HostChain>,
+    pub trusted_client_state: ClientStateOf<<L::Counterparty as LightClientBase>::HostChain>,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]

@@ -1,6 +1,6 @@
 #![recursion_limit = "256"]
 // *almost* stable, more than safe enough to use imo https://github.com/rust-lang/rfcs/pull/3425
-#![feature(return_position_impl_trait_in_trait)]
+#![feature(return_position_impl_trait_in_trait, trait_alias)]
 // #![warn(clippy::pedantic)]
 #![allow(
      // required due to return_position_impl_trait_in_trait false positives

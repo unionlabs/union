@@ -10,7 +10,7 @@ use unionlabs::{
 };
 
 use crate::{
-    chain::{ChainOf, HeightOf, LightClient, QueryHeight},
+    chain::{ChainOf, HeightOf, LightClient, LightClientBase, QueryHeight},
     msg::{any_enum, ChainIdOf},
 };
 
@@ -73,7 +73,7 @@ pub struct FetchTrustedClientState<L: LightClient> {
 #[serde(bound(serialize = "", deserialize = ""))]
 pub struct FetchCounterpartyTrustedClientState<L: LightClient> {
     pub at: QueryHeight<HeightOf<ChainOf<L::Counterparty>>>,
-    pub client_id: <L::Counterparty as LightClient>::ClientId,
+    pub client_id: <L::Counterparty as LightClientBase>::ClientId,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
@@ -130,7 +130,7 @@ pub struct FetchUpdateHeaders<L: LightClient> {
     pub client_id: L::ClientId,
     pub counterparty_chain_id: ChainIdOf<L::Counterparty>,
     // id of the counterparty client that will be updated with the fetched headers
-    pub counterparty_client_id: <L::Counterparty as LightClient>::ClientId,
+    pub counterparty_client_id: <L::Counterparty as LightClientBase>::ClientId,
     pub update_from: HeightOf<L::HostChain>,
     pub update_to: HeightOf<L::HostChain>,
 }
