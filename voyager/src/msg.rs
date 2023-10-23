@@ -1198,6 +1198,13 @@ pub fn defer(timestamp: u64) -> RelayerMsg {
     }
 }
 
+pub fn defer_relative(seconds: u64) -> RelayerMsg {
+    RelayerMsg::DeferUntil {
+        point: DeferPoint::Relative,
+        seconds,
+    }
+}
+
 pub fn fetch<L: LightClient>(chain_id: ChainIdOf<L>, t: impl Into<Fetch<L>>) -> RelayerMsg
 where
     AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L>)>,
