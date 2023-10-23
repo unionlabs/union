@@ -282,6 +282,9 @@ pub struct PgQueue(pg_queue::Queue<RelayerMsg>, sqlx::PgPool);
 pub struct PgQueueConfig {
     pub database_url: String,
     pub max_connections: Option<u32>,
+    pub min_connections: Option<u32>,
+    pub idle_timeout: Option<Duration>,
+    pub max_lifetime: Option<Duration>,
 }
 
 impl Queue for PgQueue {
@@ -296,6 +299,9 @@ impl Queue for PgQueue {
                 // 10 is the default
                 PgPoolOptions::new()
                     .max_connections(cfg.max_connections.unwrap_or(10))
+                    .min_connections(cfg.min_connections.unwrap_or(0))
+                    .idle_timeout(cfg.idle_timeout)
+                    .max_lifetime(cfg.max_lifetime)
                     .connect(&cfg.database_url)
                     .await?,
             ))
