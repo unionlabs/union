@@ -17,7 +17,7 @@ use crate::{
         evm::{CometblsMainnet, CometblsMinimal},
         proof::StateProof,
         union::{EthereumMainnet, EthereumMinimal},
-        LightClient,
+        LightClient, LightClientBase,
     },
     msg::{
         aggregate::AnyAggregate,
@@ -37,12 +37,12 @@ pub mod msg;
 pub mod wait;
 
 pub type ChainIdOf<L> =
-    <<<L as LightClient>::HostChain as Chain>::SelfClientState as ClientState>::ChainId;
+    <<<L as LightClientBase>::HostChain as Chain>::SelfClientState as ClientState>::ChainId;
 
 pub type StateProofOf<T, L> = StateProof<
     <T as IbcPath<
-        <L as LightClient>::HostChain,
-        <<L as LightClient>::Counterparty as LightClient>::HostChain,
+        <L as LightClientBase>::HostChain,
+        <<L as LightClientBase>::Counterparty as LightClientBase>::HostChain,
     >>::Output,
 >;
 
@@ -389,7 +389,7 @@ pub mod aggregate {
 
     use super::ChainIdOf;
     use crate::{
-        chain::{ChainOf, HeightOf, LightClient},
+        chain::{ChainOf, HeightOf, LightClient, LightClientBase},
         msg::fetch::FetchStateProof,
     };
 
@@ -504,21 +504,21 @@ pub mod aggregate {
     #[serde(bound(serialize = "", deserialize = ""))]
     pub struct AggregateConnectionOpenTry<L: LightClient> {
         pub event_height: HeightOf<L::HostChain>,
-        pub event: ConnectionOpenInit<L::ClientId, <L::Counterparty as LightClient>::ClientId>,
+        pub event: ConnectionOpenInit<L::ClientId, <L::Counterparty as LightClientBase>::ClientId>,
     }
 
     #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
     #[serde(bound(serialize = "", deserialize = ""))]
     pub struct AggregateConnectionOpenAck<L: LightClient> {
         pub event_height: HeightOf<L::HostChain>,
-        pub event: ConnectionOpenTry<L::ClientId, <L::Counterparty as LightClient>::ClientId>,
+        pub event: ConnectionOpenTry<L::ClientId, <L::Counterparty as LightClientBase>::ClientId>,
     }
 
     #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
     #[serde(bound(serialize = "", deserialize = ""))]
     pub struct AggregateConnectionOpenConfirm<L: LightClient> {
         pub event_height: HeightOf<L::HostChain>,
-        pub event: ConnectionOpenAck<L::ClientId, <L::Counterparty as LightClient>::ClientId>,
+        pub event: ConnectionOpenAck<L::ClientId, <L::Counterparty as LightClientBase>::ClientId>,
     }
 
     #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
@@ -556,7 +556,7 @@ pub mod aggregate {
         pub event: RecvPacket,
         // HACK: Need to pass the block hash through, figure out a better/cleaner way to do this
         pub block_hash: H256,
-        pub counterparty_client_id: <L::Counterparty as LightClient>::ClientId,
+        pub counterparty_client_id: <L::Counterparty as LightClientBase>::ClientId,
     }
 
     #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
@@ -602,7 +602,7 @@ pub mod aggregate {
     #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
     #[serde(bound(serialize = "", deserialize = ""))]
     pub struct AggregateFetchCounterpartyStateProof<L: LightClient> {
-        pub counterparty_client_id: <L::Counterparty as LightClient>::ClientId,
+        pub counterparty_client_id: <L::Counterparty as LightClientBase>::ClientId,
         pub fetch: FetchStateProof<L::Counterparty>,
     }
 
@@ -610,7 +610,7 @@ pub mod aggregate {
     #[serde(bound(serialize = "", deserialize = ""))]
     pub struct AggregateUpdateClientFromClientId<L: LightClient> {
         pub client_id: L::ClientId,
-        pub counterparty_client_id: <L::Counterparty as LightClient>::ClientId,
+        pub counterparty_client_id: <L::Counterparty as LightClientBase>::ClientId,
     }
 
     #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
@@ -618,7 +618,7 @@ pub mod aggregate {
     pub struct AggregateUpdateClient<L: LightClient> {
         pub update_to: HeightOf<L::HostChain>,
         pub client_id: L::ClientId,
-        pub counterparty_client_id: <L::Counterparty as LightClient>::ClientId,
+        pub counterparty_client_id: <L::Counterparty as LightClientBase>::ClientId,
     }
 
     #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
@@ -626,7 +626,7 @@ pub mod aggregate {
     pub struct AggregateWaitForTrustedHeight<L: LightClient> {
         pub wait_for: HeightOf<L::HostChain>,
         pub client_id: L::ClientId,
-        pub counterparty_client_id: <L::Counterparty as LightClient>::ClientId,
+        pub counterparty_client_id: <L::Counterparty as LightClientBase>::ClientId,
     }
 
     #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
@@ -634,7 +634,7 @@ pub mod aggregate {
     pub struct AggregateUpdateClientWithCounterpartyChainId<L: LightClient> {
         pub update_to: HeightOf<L::HostChain>,
         pub client_id: L::ClientId,
-        pub counterparty_client_id: <L::Counterparty as LightClient>::ClientId,
+        pub counterparty_client_id: <L::Counterparty as LightClientBase>::ClientId,
         pub counterparty_chain_id: ChainIdOf<L::Counterparty>,
     }
 
@@ -643,7 +643,7 @@ pub mod aggregate {
     pub struct AggregateMsgUpdateClient<L: LightClient> {
         pub update_to: HeightOf<L::HostChain>,
         pub client_id: L::ClientId,
-        pub counterparty_client_id: <L::Counterparty as LightClient>::ClientId,
+        pub counterparty_client_id: <L::Counterparty as LightClientBase>::ClientId,
         pub counterparty_chain_id: ChainIdOf<L::Counterparty>,
     }
 
@@ -681,23 +681,6 @@ pub mod aggregate {
     }
 }
 
-// impl<L: LightClient, T> TryFrom<AggregateData> for Identified<L, T>
-// where
-//     T: TryFrom<Data<L>, Error = Data<L>> + Into<Data<L>> + Debug + Clone + PartialEq,
-//     identified!(Data<L>): TryFrom<AggregateData, Error = AggregateData> + Into<AggregateData>,
-// {
-//     type Error = AggregateData;
-
-//     fn try_from(value: AggregateData) -> Result<Self, Self::Error> {
-//         let Identified { chain_id, data } = <identified!(Data<L>)>::try_from(value)?;
-
-//         match T::try_from(data) {
-//             Ok(t) => Ok(Identified { chain_id, data: t }),
-//             Err(data) => Err(Identified { chain_id, data }.into()),
-//         }
-//     }
-// }
-
 pub trait AnyLightClient {
     type Inner<L: LightClient>: Debug
         + Display
@@ -726,84 +709,6 @@ pub enum AnyLightClientIdentified<T: AnyLightClient> {
     #[display(fmt = "CometblsMinimal({}, {})", "_0.chain_id", "_0.data")]
     CometblsMinimal(Identified<CometblsMinimal, InnerOf<T, CometblsMinimal>>),
 }
-
-// pub trait Map<T> {
-//     type This<S>;
-
-//     fn map<U>(this: Self::This<T>, f: impl FnOnce(T) -> U) -> Self::This<U>;
-// }
-
-// impl<T> Map<T> for Option<T> {
-//     type This<S> = Option<S>;
-
-//     fn map<U>(this: Self::This<T>, f: impl FnOnce(T) -> U) -> Self::This<U> {
-//         this.map(f)
-//     }
-// }
-
-// impl<T, E> Map<T> for Result<T, E> {
-//     type This<S> = Result<S, E>;
-
-//     fn map<U>(this: Self::This<T>, f: impl FnOnce(T) -> U) -> Self::This<U> {
-//         this.map(f)
-//     }
-// }
-
-// impl<T: AnyLightClient> AnyLightClientIdentified<T> {
-//     pub fn map<U, A>(self, a: A) -> A::Output<AnyLightClientIdentified<U>>
-//     where
-//         U: AnyLightClient,
-//         A: AnyLightClientMapper<T, U>,
-//     // <AnyLightClientMapper<T, U>>::Output<>
-//         <A as AnyLightClientMapper<T, U>>::Output<
-//             Identified<EthereumMainnet, InnerOf<U, EthereumMainnet>>,
-//         >: Map<
-//             Identified<EthereumMainnet, InnerOf<U, EthereumMainnet>>,
-//             This<<A as AnyLightClientMapper<T, U>>::Output<
-//                 Identified<EthereumMainnet, InnerOf<U, EthereumMainnet>>,
-//             >> = <A as AnyLightClientMapper<T, U>>::Output<
-//                 Identified<EthereumMainnet, InnerOf<U, EthereumMainnet>>,
-//             >,
-//         >,
-//     {
-//         use AnyLightClientIdentified as AnyLc;
-
-//         let t = match self {
-//             AnyLc::EthereumMainnet(t) => {
-//                 let t: A::Output<AnyLc<U>> = <A::Output<Identified<_, _>> as Map<_>>::map::<AnyLc<U>>(a.map(t), |x| AnyLc::EthereumMainnet(x));
-//             }
-//             AnyLc::EthereumMinimal(t) => {
-//                 <A::Output<Identified<_, _>> as Map<_>>::map::<AnyLc<U>>(a.map(t), |x| AnyLc::EthereumMinimal(x))
-//             }
-//             AnyLc::CometblsMainnet(t) => {
-//                 <A::Output<Identified<_, _>> as Map<_>>::map::<AnyLc<U>>(a.map(t), |x| AnyLc::CometblsMainnet(x))
-//             }
-//             AnyLc::CometblsMinimal(t) => {
-//                 <A::Output<Identified<_, _>> as Map<_>>::map::<AnyLc<U>>(a.map(t), |x| AnyLc::CometblsMinimal(x))
-//             }
-//             // EthereumMainnet(t) => a.map(t),
-//             // EthereumMinimal(t) => a.map(t),
-//             // CometblsMainnet(t) => a.map(t),
-//             // CometblsMinimal(t) => a.map(t),
-//         };
-
-//         todo!()
-//     }
-// }
-
-// trait AnyLightClientMapper<T: AnyLightClient, U: AnyLightClient> {
-//     type Output<O>: Map<O, This<O> = Self::Output<O>>;
-
-//     fn map<L: LightClient>(
-//         self,
-//         t: Identified<L, InnerOf<T, L>>,
-//     ) -> Self::Output<Identified<L, InnerOf<U, L>>>;
-
-//     // fn map2(
-//     //     self,
-//     //     t: Identified<impl LightClient, InnerOf<T, impl LightClient>>,
-//     // ) -> Self::Output<Identified<impl LightClient, InnerOf<U, impl LightClient>>>;
-// }
 
 impl<T: AnyLightClient> From<Identified<EthereumMainnet, InnerOf<T, EthereumMainnet>>>
     for AnyLightClientIdentified<T>

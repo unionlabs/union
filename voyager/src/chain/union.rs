@@ -55,7 +55,7 @@ use crate::{
         evm::{CometblsMainnet, CometblsMinimal},
         proof::StateProof,
         try_from_relayer_msg, Chain, ClientStateOf, ConsensusStateOf, HeightOf, IbcStateRead,
-        LightClient, QueryHeight,
+        LightClient, LightClientBase, QueryHeight,
     },
     msg::{
         aggregate::{Aggregate, LightClientSpecificAggregate},
@@ -75,12 +75,12 @@ use crate::{
 
 /// The 08-wasm light client tracking ethereum, running on the union chain.
 pub struct EthereumMinimal {
-    chain: <Self as LightClient>::HostChain,
+    chain: <Self as LightClientBase>::HostChain,
 }
 
 /// The 08-wasm light client tracking ethereum, running on the union chain.
 pub struct EthereumMainnet {
-    chain: <Self as LightClient>::HostChain,
+    chain: <Self as LightClientBase>::HostChain,
 }
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, Args)]
@@ -89,7 +89,7 @@ pub struct EthereumConfig {
     pub code_id: H256,
 }
 
-impl LightClient for EthereumMinimal {
+impl LightClientBase for EthereumMinimal {
     type HostChain = Union;
     type Counterparty = CometblsMinimal;
 
@@ -97,16 +97,6 @@ impl LightClient for EthereumMinimal {
     type ClientType = String;
 
     type Config = EthereumConfig;
-
-    type Data = EthereumDataMsg<Minimal>;
-    type Fetch = EthereumFetchMsg<Minimal>;
-    type Aggregate = EthereumAggregateMsg<Self, Minimal>;
-
-    type MsgError = BroadcastTxCommitError;
-
-    fn msg(&self, msg: Msg<Self>) -> impl Future<Output = Result<(), Self::MsgError>> + '_ {
-        self::msg(self.chain.clone(), msg)
-    }
 
     fn chain(&self) -> &Self::HostChain {
         &self.chain
@@ -120,9 +110,75 @@ impl LightClient for EthereumMinimal {
         &self,
         client_id: <Self::HostChain as Chain>::ClientId,
         height: HeightOf<Self::HostChain>,
-    ) -> impl Future<Output = ClientStateOf<<Self::Counterparty as LightClient>::HostChain>> + '_
+    ) -> impl Future<Output = ClientStateOf<<Self::Counterparty as LightClientBase>::HostChain>> + '_
     {
         query_client_state::<Self>(&self.chain, client_id, height)
+    }
+}
+
+impl LightClient for EthereumMinimal {
+    type BaseCounterparty = Self::Counterparty;
+
+    type Data = EthereumDataMsg<Minimal>;
+    type Fetch = EthereumFetchMsg<Minimal>;
+    type Aggregate = EthereumAggregateMsg<Self, Minimal>;
+
+    type MsgError = BroadcastTxCommitError;
+
+    fn msg(&self, msg: Msg<Self>) -> impl Future<Output = Result<(), BroadcastTxCommitError>> + '_ {
+        self::msg::<Self, Minimal>(self.chain.clone(), msg)
+    }
+
+    fn do_fetch(&self, msg: Self::Fetch) -> impl Future<Output = Vec<RelayerMsg>> + '_ {
+        do_fetch::<Minimal, Self>(&self.chain, msg)
+    }
+
+    fn generate_counterparty_updates(
+        &self,
+        update_info: FetchUpdateHeaders<Self>,
+    ) -> Vec<RelayerMsg> {
+        generate_counterparty_updates::<_, Self>(&self.chain, update_info)
+    }
+}
+
+impl LightClientBase for EthereumMainnet {
+    type HostChain = Union;
+    type Counterparty = CometblsMainnet;
+
+    type ClientId = ClientId;
+    type ClientType = String;
+
+    type Config = EthereumConfig;
+
+    fn chain(&self) -> &Self::HostChain {
+        &self.chain
+    }
+
+    fn from_chain(chain: Self::HostChain) -> Self {
+        Self { chain }
+    }
+
+    fn query_client_state(
+        &self,
+        client_id: <Self::HostChain as Chain>::ClientId,
+        height: HeightOf<Self::HostChain>,
+    ) -> impl Future<Output = ClientStateOf<<Self::Counterparty as LightClientBase>::HostChain>> + '_
+    {
+        query_client_state::<Self>(&self.chain, client_id, height)
+    }
+}
+
+impl LightClient for EthereumMainnet {
+    type BaseCounterparty = Self::Counterparty;
+
+    type Data = EthereumDataMsg<Mainnet>;
+    type Fetch = EthereumFetchMsg<Mainnet>;
+    type Aggregate = EthereumAggregateMsg<Self, Mainnet>;
+
+    type MsgError = BroadcastTxCommitError;
+
+    fn msg(&self, msg: Msg<Self>) -> impl Future<Output = Result<(), Self::MsgError>> + '_ {
+        self::msg(self.chain.clone(), msg)
     }
 
     fn do_fetch(&self, msg: Self::Fetch) -> impl Future<Output = Vec<RelayerMsg>> + '_ {
@@ -415,54 +471,6 @@ where
         },
     ])]
     .into()
-}
-
-impl LightClient for EthereumMainnet {
-    type HostChain = Union;
-    type Counterparty = CometblsMainnet;
-
-    type ClientId = ClientId;
-    type ClientType = String;
-
-    type Config = EthereumConfig;
-
-    type Data = EthereumDataMsg<Mainnet>;
-    type Fetch = EthereumFetchMsg<Mainnet>;
-    type Aggregate = EthereumAggregateMsg<Self, Mainnet>;
-
-    type MsgError = BroadcastTxCommitError;
-
-    fn msg(&self, msg: Msg<Self>) -> impl Future<Output = Result<(), Self::MsgError>> + '_ {
-        self::msg(self.chain.clone(), msg)
-    }
-
-    fn chain(&self) -> &Self::HostChain {
-        &self.chain
-    }
-
-    fn from_chain(chain: Self::HostChain) -> Self {
-        Self { chain }
-    }
-
-    fn query_client_state(
-        &self,
-        client_id: <Self::HostChain as Chain>::ClientId,
-        height: HeightOf<Self::HostChain>,
-    ) -> impl Future<Output = ClientStateOf<<Self::Counterparty as LightClient>::HostChain>> + '_
-    {
-        query_client_state::<Self>(&self.chain, client_id, height)
-    }
-
-    fn do_fetch(&self, msg: Self::Fetch) -> impl Future<Output = Vec<RelayerMsg>> + '_ {
-        do_fetch::<_, Self>(&self.chain, msg)
-    }
-
-    fn generate_counterparty_updates(
-        &self,
-        update_info: FetchUpdateHeaders<Self>,
-    ) -> Vec<RelayerMsg> {
-        generate_counterparty_updates::<_, Self>(&self.chain, update_info)
-    }
 }
 
 #[derive(
@@ -770,10 +778,10 @@ where
     // pub update_to: HeightOf<ChainOf<L>>,
 }
 
-async fn msg<L, C: ChainSpec>(union: Union, msg: Msg<L>) -> Result<(), L::MsgError>
+async fn msg<L, C: ChainSpec>(union: Union, msg: Msg<L>) -> Result<(), BroadcastTxCommitError>
 where
     L: LightClient<HostChain = Union, Config = EthereumConfig, MsgError = BroadcastTxCommitError>,
-    <L::Counterparty as LightClient>::HostChain: Chain<
+    <L::Counterparty as LightClientBase>::HostChain: Chain<
         SelfClientState = Any<wasm::client_state::ClientState<ethereum::client_state::ClientState>>,
         SelfConsensusState = Any<
             wasm::consensus_state::ConsensusState<ethereum::consensus_state::ConsensusState>,
@@ -835,14 +843,17 @@ async fn query_client_state<L>(
     union: &Union,
     client_id: chain_utils::union::UnionClientId,
     height: Height,
-) -> ClientStateOf<<L::Counterparty as LightClient>::HostChain>
+) -> ClientStateOf<<L::Counterparty as LightClientBase>::HostChain>
 where
     L: LightClient<HostChain = Union>,
-    ClientStateOf<<L::Counterparty as LightClient>::HostChain>: Proto<Proto = protos::google::protobuf::Any>
+    ClientStateOf<<L::Counterparty as LightClientBase>::HostChain>: Proto<Proto = protos::google::protobuf::Any>
         + TryFrom<protos::google::protobuf::Any>
         + TryFromProto<Proto = protos::google::protobuf::Any>,
     // NOTE: This bound can be removed once we don't unwrap anymore
-    TryFromProtoErrorOf<ClientStateOf<<L::Counterparty as LightClient>::HostChain>>: Debug,
+    TryFromProtoErrorOf<ClientStateOf<<L::Counterparty as LightClientBase>::HostChain>>: Debug,
+    <<L::BaseCounterparty as LightClientBase>::HostChain as Chain>::SelfClientState: Proto<Proto = protos::google::protobuf::Any>
+        + TryFrom<protos::google::protobuf::Any>
+        + TryFromProto<Proto = protos::google::protobuf::Any>,
 {
     let mut client =
         protos::cosmos::base::tendermint::v1beta1::service_client::ServiceClient::connect(
@@ -851,7 +862,7 @@ where
         .await
         .unwrap();
 
-    <ClientStateOf<<L::Counterparty as LightClient>::HostChain>>::try_from_proto_bytes(
+    <ClientStateOf<<L::Counterparty as LightClientBase>::HostChain>>::try_from_proto_bytes(
         &client
             .abci_query(AbciQueryRequest {
                 data: ClientStatePath { client_id }.to_string().into_bytes(),

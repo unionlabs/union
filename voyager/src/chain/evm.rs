@@ -60,7 +60,7 @@ use unionlabs::{
         CommitmentPath, ConnectionPath, IbcPath,
     },
     traits::{Chain, ClientState},
-    IntoEthAbi, IntoProto, TryFromProto, TryFromProtoErrorOf,
+    EthAbi, IntoEthAbi, IntoProto, Proto, TryFromProto, TryFromProtoErrorOf,
 };
 
 use crate::{
@@ -68,7 +68,7 @@ use crate::{
         try_from_relayer_msg,
         union::{EthereumMainnet, EthereumMinimal},
         ClientStateOf, ConsensusStateOf, HeaderOf, HeightOf, IbcStateRead, LightClient,
-        QueryHeight, StateProof,
+        LightClientBase, QueryHeight, StateProof,
     },
     msg::{
         aggregate::{Aggregate, AnyAggregate, LightClientSpecificAggregate},
@@ -183,7 +183,7 @@ pub async fn setup_initial_channel<C: ChainSpec>(
     todo!()
 }
 
-impl LightClient for CometblsMainnet {
+impl LightClientBase for CometblsMainnet {
     type HostChain = Evm<Mainnet>;
     type Counterparty = EthereumMainnet;
 
@@ -191,16 +191,6 @@ impl LightClient for CometblsMainnet {
     type ClientType = String;
 
     type Config = CometblsConfig;
-
-    type Data = CometblsDataMsg<Mainnet>;
-    type Fetch = CometblsFetchMsg<Mainnet>;
-    type Aggregate = CometblsAggregateMsg<Self, Mainnet>;
-
-    type MsgError = TxSubmitError;
-
-    fn msg(&self, msg: Msg<Self>) -> impl Future<Output = Result<(), Self::MsgError>> + '_ {
-        self::msg(&self.chain, msg)
-    }
 
     fn chain(&self) -> &Self::HostChain {
         &self.chain
@@ -214,9 +204,23 @@ impl LightClient for CometblsMainnet {
         &self,
         client_id: <Self::HostChain as Chain>::ClientId,
         height: HeightOf<Self::HostChain>,
-    ) -> impl Future<Output = ClientStateOf<<Self::Counterparty as LightClient>::HostChain>> + '_
+    ) -> impl Future<Output = ClientStateOf<<Self::Counterparty as LightClientBase>::HostChain>> + '_
     {
         query_client_state(&self.chain, client_id, height)
+    }
+}
+
+impl LightClient for CometblsMainnet {
+    type BaseCounterparty = Self::Counterparty;
+
+    type Data = CometblsDataMsg<Mainnet>;
+    type Fetch = CometblsFetchMsg<Mainnet>;
+    type Aggregate = CometblsAggregateMsg<Self, Mainnet>;
+
+    type MsgError = TxSubmitError;
+
+    fn msg(&self, msg: Msg<Self>) -> impl Future<Output = Result<(), Self::MsgError>> + '_ {
+        self::msg(&self.chain, msg)
     }
 
     fn do_fetch(&self, msg: Self::Fetch) -> impl Future<Output = Vec<RelayerMsg>> + '_ {
@@ -231,7 +235,7 @@ impl LightClient for CometblsMainnet {
     }
 }
 
-impl LightClient for CometblsMinimal {
+impl LightClientBase for CometblsMinimal {
     type HostChain = Evm<Minimal>;
     type Counterparty = EthereumMinimal;
 
@@ -239,16 +243,6 @@ impl LightClient for CometblsMinimal {
     type ClientType = String;
 
     type Config = CometblsConfig;
-
-    type Data = CometblsDataMsg<Minimal>;
-    type Fetch = CometblsFetchMsg<Minimal>;
-    type Aggregate = CometblsAggregateMsg<Self, Minimal>;
-
-    type MsgError = TxSubmitError;
-
-    fn msg(&self, msg: Msg<Self>) -> impl Future<Output = Result<(), Self::MsgError>> + '_ {
-        self::msg(&self.chain, msg)
-    }
 
     fn chain(&self) -> &Self::HostChain {
         &self.chain
@@ -262,9 +256,23 @@ impl LightClient for CometblsMinimal {
         &self,
         client_id: <Self::HostChain as Chain>::ClientId,
         height: HeightOf<Self::HostChain>,
-    ) -> impl Future<Output = ClientStateOf<<Self::Counterparty as LightClient>::HostChain>> + '_
+    ) -> impl Future<Output = ClientStateOf<<Self::Counterparty as LightClientBase>::HostChain>> + '_
     {
         query_client_state(&self.chain, client_id, height)
+    }
+}
+
+impl LightClient for CometblsMinimal {
+    type BaseCounterparty = Self::Counterparty;
+
+    type Data = CometblsDataMsg<Minimal>;
+    type Fetch = CometblsFetchMsg<Minimal>;
+    type Aggregate = CometblsAggregateMsg<Self, Minimal>;
+
+    type MsgError = TxSubmitError;
+
+    fn msg(&self, msg: Msg<Self>) -> impl Future<Output = Result<(), Self::MsgError>> + '_ {
+        self::msg(&self.chain, msg)
     }
 
     fn do_fetch(&self, msg: Self::Fetch) -> impl Future<Output = Vec<RelayerMsg>> + '_ {
@@ -713,24 +721,6 @@ pub struct FinalityUpdate<C: ChainSpec>(pub LightClientFinalityUpdate<C>);
 #[serde(bound(serialize = "", deserialize = ""))]
 pub struct LightClientUpdates<C: ChainSpec>(pub Vec<LightClientUpdate<C>>);
 
-// fn outer<L, C>()
-// where
-//     C: ChainSpec,
-//     L: LightClient<
-//         HostChain = Evm<C>,
-//         Aggregate = CometblsAggregateMsg<L, C>,
-//         Fetch = CometblsFetchMsg<C>,
-//     >,
-// {
-//     fn lc_specific<
-//         T: TryFrom<AnyLightClientIdentified<AnyData>, Error = AnyLightClientIdentified<AnyData>>
-//             + Into<AnyLightClientIdentified<AnyData>>,
-//     >() {
-//     }
-
-//     lc_specific::<Identified<L, AccountUpdateData<C>>>()
-// }
-
 impl<C, L> DoAggregate<L> for CometblsAggregateMsg<L, C>
 where
     C: ChainSpec,
@@ -951,9 +941,13 @@ async fn msg<C, L>(evm: &Evm<C>, msg: Msg<L>) -> Result<(), TxSubmitError>
 where
     C: ChainSpec,
     L: LightClient<HostChain = Evm<C>, Config = CometblsConfig>,
-    ClientStateOf<<L::Counterparty as LightClient>::HostChain>: IntoProto,
-    ConsensusStateOf<<L::Counterparty as LightClient>::HostChain>: IntoProto,
-    HeaderOf<<L::Counterparty as LightClient>::HostChain>: IntoEthAbi,
+    ClientStateOf<<L::Counterparty as LightClientBase>::HostChain>: Proto + IntoProto,
+    ConsensusStateOf<<L::Counterparty as LightClientBase>::HostChain>: Proto + IntoProto,
+    HeaderOf<<L::Counterparty as LightClientBase>::HostChain>: EthAbi + IntoEthAbi,
+    // not sure why these bounds are required
+    <<L::BaseCounterparty as LightClientBase>::HostChain as Chain>::SelfClientState: Proto,
+    <<L::BaseCounterparty as LightClientBase>::HostChain as Chain>::SelfConsensusState: Proto,
+    <<L::BaseCounterparty as LightClientBase>::HostChain as Chain>::Header: EthAbi,
 {
     evm.ibc_handlers
         .with(|ibc_handler| async move {

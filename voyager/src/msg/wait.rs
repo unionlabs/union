@@ -4,7 +4,7 @@ use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    chain::{ChainOf, HeightOf, LightClient},
+    chain::{ChainOf, HeightOf, LightClient, LightClientBase},
     msg::{any_enum, ChainIdOf},
 };
 
@@ -44,7 +44,7 @@ pub struct WaitForTimestamp<L: LightClient> {
 #[serde(bound(serialize = "", deserialize = ""))]
 pub struct WaitForTrustedHeight<L: LightClient> {
     pub client_id: L::ClientId,
-    pub counterparty_client_id: <L::Counterparty as LightClient>::ClientId,
+    pub counterparty_client_id: <L::Counterparty as LightClientBase>::ClientId,
     pub counterparty_chain_id: ChainIdOf<L::Counterparty>,
     pub height: HeightOf<ChainOf<L::Counterparty>>,
 }

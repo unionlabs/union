@@ -89,10 +89,10 @@ impl AnyChain {
 }
 
 /// The IBC interface on a [`Chain`] that knows how to connect to a counterparty.
-pub trait LightClient: Send + Sync + Sized {
+pub trait LightClientBase: Send + Sync + Sized {
     /// The chain that this light client is on.
-    type HostChain: Chain + IbcStateReadPaths<<Self::Counterparty as LightClient>::HostChain>;
-    type Counterparty: LightClient<Counterparty = Self>;
+    type HostChain: Chain + IbcStateReadPaths<<Self::Counterparty as LightClientBase>::HostChain>;
+    type Counterparty: LightClientBase<Counterparty = Self>;
 
     type ClientId: traits::Id
         + TryFrom<<Self::HostChain as Chain>::ClientId>
@@ -112,6 +112,24 @@ pub trait LightClient: Send + Sync + Sized {
 
     /// The config required to construct this light client.
     type Config: Debug + Clone + PartialEq + Serialize + for<'de> Deserialize<'de>;
+
+    /// Get the underlying [`Self::HostChain`] that this client is on.
+    fn chain(&self) -> &Self::HostChain;
+
+    fn from_chain(chain: Self::HostChain) -> Self;
+
+    // TODO: Use state_proof instead
+    fn query_client_state(
+        &self,
+        // TODO: Make this Into<_>
+        client_id: <Self::HostChain as Chain>::ClientId,
+        height: HeightOf<Self::HostChain>,
+    ) -> impl Future<Output = ClientStateOf<<Self::Counterparty as LightClientBase>::HostChain>> + '_;
+}
+
+pub trait LightClient: LightClientBase<Counterparty = Self::BaseCounterparty> {
+    // https://github.com/rust-lang/rust/issues/20671
+    type BaseCounterparty: LightClient<BaseCounterparty = Self, Counterparty = Self>;
 
     type Data: Debug
         + Display
@@ -141,19 +159,6 @@ pub trait LightClient: Send + Sync + Sized {
 
     fn msg(&self, msg: Msg<Self>) -> impl Future<Output = Result<(), Self::MsgError>> + '_;
 
-    /// Get the underlying [`Self::HostChain`] that this client is on.
-    fn chain(&self) -> &Self::HostChain;
-
-    fn from_chain(chain: Self::HostChain) -> Self;
-
-    // TODO: Use state_proof instead
-    fn query_client_state(
-        &self,
-        // TODO: Make this Into<_>
-        client_id: <Self::HostChain as Chain>::ClientId,
-        height: HeightOf<Self::HostChain>,
-    ) -> impl Future<Output = ClientStateOf<<Self::Counterparty as LightClient>::HostChain>> + '_;
-
     fn do_fetch(&self, msg: Self::Fetch) -> impl Future<Output = Vec<RelayerMsg>> + '_;
 
     // Should (eventually) resolve to UpdateClientData
@@ -163,11 +168,13 @@ pub trait LightClient: Send + Sync + Sized {
     ) -> Vec<RelayerMsg>;
 }
 
+trait LightClientExt = LightClient where <Self as LightClientBase>::Counterparty: LightClient;
+
 pub type ClientStateOf<C> = <C as Chain>::SelfClientState;
 pub type ConsensusStateOf<C> = <C as Chain>::SelfConsensusState;
 pub type HeaderOf<C> = <C as Chain>::Header;
 pub type HeightOf<C> = <C as Chain>::Height;
-pub type ChainOf<L> = <L as LightClient>::HostChain;
+pub type ChainOf<L> = <L as LightClientBase>::HostChain;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(
