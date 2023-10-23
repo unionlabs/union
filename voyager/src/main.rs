@@ -108,7 +108,7 @@ async fn do_main(args: cli::AppArgs) -> Result<(), VoyagerError> {
 
     match args.command {
         Command::RunMigrations => {
-            let AnyQueueConfig::PgQueue(PgQueueConfig { database_url }) =
+            let AnyQueueConfig::PgQueue(PgQueueConfig { database_url, .. }) =
                 voyager_config.voyager.queue
             else {
                 return Err(VoyagerError::Migrations(
