@@ -158,7 +158,7 @@ contract UCS01Relay is IBCAppBase {
     function ibcAddress() public view virtual override returns (address) {
         return address(ibcHandler);
     }
- 
+
     function increaseOutstanding(
         string memory portId,
         string memory channelId,

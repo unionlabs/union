@@ -20,5 +20,5 @@
     {
       packages = pkgs.lib.recursiveUpdate ucliMinimal.packages ucliMainnet.packages;
     };
-  }
+}
       

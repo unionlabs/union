@@ -81,6 +81,7 @@ TRYOPEN
 Tempdirs
 Tendermint
 Timestamptz
+Ucli
 UDHC
 UNBONDED
 UNBONDING
@@ -623,6 +624,7 @@ typemap
 typenum
 typesparams
 uatom
+ucli
 ucosm
 unbond
 unbonded
