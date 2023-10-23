@@ -15,7 +15,7 @@ pub static MIGRATOR: Migrator = sqlx::migrate!(); // defaults to "./migrations"
 /// A fifo queue backed by a postgres table. Not suitable for high-throughput, but enough for ~1k items/sec.
 ///
 /// The queue assumes the following database schema:
-///     
+///
 ///     id SERIAL AUTO INCREMENT
 ///     status 0..2
 ///     item JSONB
@@ -156,7 +156,7 @@ impl<T: DeserializeOwned + Serialize + Unpin + Send + Sync> Queue<T> {
             None => {
                 tracing::debug!("queue is empty");
                 self.lock.store(true, Ordering::SeqCst);
-                tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+                tokio::time::sleep(std::time::Duration::from_millis(2000)).await;
             }
         }
         Ok(())
