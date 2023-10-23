@@ -420,7 +420,7 @@ where
                 // TODO: use an gRPC status code from galois, most likely: // UNAVAILABLE
                 // see https://developers.google.com/actions-center/reference/grpc-api/status_codes
                 // This error message means that we crashed while trying to gen
-                // a proof and we have to wait for the prover to be done (max 40s as of writting this).
+                // a proof and we have to wait for the prover to be done (max 40s as of writing this).
                 Err(err) if err.message() == "Busy building" => [seq([
                     defer_relative(20),
                     RelayerMsg::Lc(

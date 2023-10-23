@@ -37,6 +37,7 @@ IAVL
 IIBC
 Infima
 Interchain
+Jemalloc
 Joye
 KEYPAIR
 Karel
@@ -342,6 +343,8 @@ interchainaccounts
 interfacetype
 iohk
 ipetkov
+jemalloc
+jemallocator
 jetbrains
 journalctl
 jsonschema
@@ -588,6 +591,7 @@ tfkeeper
 tfmodule
 tftypes
 thiserror
+tikv
 tkey
 tkeys
 tmcfg
