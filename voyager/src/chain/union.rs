@@ -61,7 +61,7 @@ use crate::{
         aggregate::{Aggregate, LightClientSpecificAggregate},
         data,
         data::{Data, LightClientSpecificData},
-        fetch,
+        defer_relative, fetch,
         fetch::{Fetch, FetchTrustedClientState, FetchUpdateHeaders, LightClientSpecificFetch},
         identified,
         msg::{Msg, MsgUpdateClientData},
@@ -201,7 +201,7 @@ where
     AggregateData: From<identified!(Data<L>)>,
     AggregateReceiver: From<identified!(Aggregate<L>)>,
 {
-    let msg = match msg {
+    match &msg {
         EthereumFetchMsg::FetchUntrustedCommit(FetchUntrustedCommit { height, __marker }) => {
             let commit = union
                 .tm_client
@@ -358,12 +358,18 @@ where
                 },
             };
 
-            EthereumDataMsg::UntrustedCommit(UntrustedCommit {
-                height,
+            let msg = EthereumDataMsg::UntrustedCommit(UntrustedCommit {
+                height: *height,
                 // REVIEW: Ensure `commit.canonical`?
                 signed_header,
                 __marker: PhantomData,
-            })
+            });
+
+            [data::<L>(
+                union.chain_id.clone(),
+                LightClientSpecificData(msg),
+            )]
+            .into()
         }
         EthereumFetchMsg::FetchValidators(FetchValidators { height, __marker }) => {
             let validators = union
@@ -376,11 +382,17 @@ where
                 .unwrap()
                 .validators;
 
-            EthereumDataMsg::Validators(Validators {
-                height,
+            let msg = EthereumDataMsg::Validators(Validators {
+                height: *height,
                 validators,
                 __marker: PhantomData,
-            })
+            });
+
+            [data::<L>(
+                union.chain_id.clone(),
+                LightClientSpecificData(msg),
+            )]
+            .into()
         }
         EthereumFetchMsg::FetchProveRequest(FetchProveRequest { request, __marker }) => {
             let response = union_prover_api_client::UnionProverApiClient::connect(
@@ -388,23 +400,44 @@ where
             )
             .await
             .unwrap()
-            .prove(request.into_proto())
+            .prove(request.clone().into_proto())
             .await
-            .unwrap()
-            .into_inner();
+            .map(|x| x.into_inner());
 
-            EthereumDataMsg::ProveResponse(ProveResponse {
-                response: response.try_into().unwrap(),
-                __marker: PhantomData,
-            })
+            match response {
+                Ok(response) => {
+                    let msg = EthereumDataMsg::ProveResponse(ProveResponse {
+                        response: response.try_into().unwrap(),
+                        __marker: PhantomData,
+                    });
+
+                    [data::<L>(
+                        union.chain_id.clone(),
+                        LightClientSpecificData(msg),
+                    )]
+                    .into()
+                }
+                // TODO: use an gRPC status code from galois, most likely: // UNAVAILABLE
+                // see https://developers.google.com/actions-center/reference/grpc-api/status_codes
+                // This error message means that we crashed while trying to gen
+                // a proof and we have to wait for the prover to be done (max 40s as of writing this).
+                Err(err) if err.message() == "Busy building" => [seq([
+                    defer_relative(20),
+                    RelayerMsg::Lc(
+                        Identified::new(
+                            union.chain_id.clone(),
+                            LcMsg::Fetch(Fetch::LightClientSpecific(LightClientSpecificFetch(msg))),
+                        )
+                        .into(),
+                    ),
+                ])]
+                .into(),
+                Err(err) => {
+                    panic!("{:?}", err)
+                }
+            }
         }
-    };
-
-    [data::<L>(
-        union.chain_id.clone(),
-        LightClientSpecificData(msg),
-    )]
-    .into()
+    }
 }
 
 fn generate_counterparty_updates<C, L>(
