@@ -1,11 +1,8 @@
-use std::{collections::BTreeMap, ffi::OsString, str::FromStr};
+use std::ffi::OsString;
 
 use beacon_api::client::BeaconApiClient;
-use chain_utils::{private_key::PrivateKey, union::Union};
-use clap::{
-    error::{ContextKind, ContextValue},
-    Args, Parser, Subcommand,
-};
+use chain_utils::private_key::PrivateKey;
+use clap::{Parser, Subcommand};
 use ethers::{
     prelude::k256::ecdsa,
     providers::{Middleware, Provider, Ws},
@@ -15,8 +12,8 @@ use ethers::{
 use serde::{Deserialize, Serialize};
 use tendermint_rpc::WebSocketClientUrl;
 use unionlabs::{
-    ethereum::{Address, H256, U256},
-    ethereum_consts_traits::{ChainSpec, Minimal},
+    ethereum::{Address, U256},
+    ethereum_consts_traits::ChainSpec,
 };
 
 #[derive(Debug, Parser)]

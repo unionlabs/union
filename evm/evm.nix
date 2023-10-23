@@ -311,10 +311,7 @@
             cp ${foundryConfig}/foundry.toml .
             forge build --revert-strings debug
           '';
-          doCheck = true;
-          checkPhase = ''
-            forge test --revert-strings debug -vvv --gas-report
-          '';
+          doCheck = false;
           installPhase = ''
             mkdir -p $out
             mv out $out

@@ -305,25 +305,6 @@ impl From<Ics20Ack> for GenericAck {
     }
 }
 
-// impl TryFrom<TransferPacketCommon<NoExtension>> for Ucs01TransferPacket {
-//     type Error = EncodingError;
-
-//     fn try_from(
-//         TransferPacketCommon {
-//             sender,
-//             receiver,
-//             tokens,
-//             ..
-//         }: TransferPacketCommon<NoExtension>,
-//     ) -> Result<Self, Self::Error> {
-//         Ok(Self::new(
-//             HexBinary::from_hex(&sender).map_err(|_| EncodingError::InvalidEncoding)?,
-//             HexBinary::from_hex(&receiver).map_err(|_| EncodingError::InvalidEncoding)?,
-//             tokens,
-//         ))
-//     }
-// }
-
 impl TryFrom<TransferPacketCommon<String>> for Ics20Packet {
     type Error = EncodingError;
 

@@ -18,3 +18,7 @@ contracts.workspace = true
 chain-utils.workspace = true
 tendermint-rpc = { workspace = true, features = ["http-client", "websocket-client"] }
 beacon-api = { workspace = true, default-features = false }
+
+[features]
+eth-minimal = []
+

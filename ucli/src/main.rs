@@ -11,16 +11,19 @@ use ethers::{
     signers::Signer,
     types::{Address, U256},
 };
-use unionlabs::ethereum_consts_traits::{Mainnet, Minimal};
+#[cfg(not(feature = "eth-minimal"))]
+use unionlabs::ethereum_consts_traits::Mainnet;
+#[cfg(feature = "eth-minimal")]
+use unionlabs::ethereum_consts_traits::Minimal;
 
 use crate::cli::{AppArgs, Config};
 
 mod cli;
 
 #[cfg(not(feature = "eth-minimal"))]
-pub type EvmConfig = Minimal;
-#[cfg(feature = "eth-minimal")]
 pub type EvmConfig = Mainnet;
+#[cfg(feature = "eth-minimal")]
+pub type EvmConfig = Minimal;
 
 #[tokio::main]
 async fn main() {
@@ -70,7 +73,7 @@ async fn main() {
                     cli::EvmQuery::Erc20Balance {
                         contract_address,
                         address,
-                    } => todo!(),
+                    } => handle_erc_balance(evm, contract_address.into(), address.into()).await,
                 }
             }
         },
@@ -89,13 +92,21 @@ async fn handle_ucs_balance(
     ));
     let relay = UCS01Relay::new(contract_address, signer_middleware.clone());
 
-    // let denom = relay.address_to_denom(address).await.unwrap();
-    // println!("Address is: {}", denom);
-    // panic!();
     let denom = relay.denom_to_address(denom).await.unwrap();
-    println!("Address is: {}", denom);
+    println!("Corresponding ERC20 address: {}", denom);
 
     let erc_contract = erc20::ERC20::new(denom, signer_middleware.clone());
+
+    let balance = erc_contract.balance_of(address).await.unwrap();
+    println!("Balance is: {}", balance);
+}
+
+async fn handle_erc_balance(evm: Evm<EvmConfig>, contract_address: Address, address: Address) {
+    let signer_middleware = Arc::new(SignerMiddleware::new(
+        evm.provider.clone(),
+        evm.wallet.clone(),
+    ));
+    let erc_contract = erc20::ERC20::new(contract_address, signer_middleware);
 
     let balance = erc_contract.balance_of(address).await.unwrap();
     println!("Balance is: {}", balance);
