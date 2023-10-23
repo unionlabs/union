@@ -90,7 +90,7 @@ impl Supervisor {
         let options = CopyOptions::new().overwrite(true);
         info!(target: "unionvisor", "backing up {} to {}. This might take a while",  as_display(home_dir.display()),  as_display(backup_dir.display()));
         copy(&home_dir, backup_dir, &options).map_err(|source| BackupError::CopyDir {
-            home: home_dir.to_owned(),
+            home: home_dir.clone(),
             backup: backup_dir.to_owned(),
             source,
         })?;

@@ -284,6 +284,7 @@
           checks = mkChecks "${cratePname}" {
             clippy = craneLib.cargoClippy (crateAttrs // {
               cargoArtifacts = artifacts;
+              cargoClippyExtraArgs = " -- --deny warnings";
             });
             tests = craneLib.cargoNextest cargoNextestAttrs;
           };

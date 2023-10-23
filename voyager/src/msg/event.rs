@@ -64,6 +64,7 @@ impl<L: LightClient> Display for IbcEvent<L> {
     }
 }
 
+#[allow(non_camel_case_types, non_upper_case_globals)]
 #[derive(
     DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, derive_more::Display,
 )]
