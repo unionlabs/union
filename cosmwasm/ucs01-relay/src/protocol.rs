@@ -40,6 +40,18 @@ pub fn protocol_ordering(version: &str) -> Option<IbcOrder> {
     }
 }
 
+fn batch_submessages(
+    self_addr: &cosmwasm_std::Addr,
+    msgs: Vec<CosmosMsg<TokenFactoryMsg>>,
+) -> Result<Vec<CosmosMsg<TokenFactoryMsg>>, ContractError> {
+    Ok(vec![wasm_execute(
+        self_addr,
+        &ExecuteMsg::BatchExecute { msgs },
+        vec![],
+    )?
+    .into()])
+}
+
 fn update_outstanding<F>(
     deps: DepsMut,
     channel_id: &str,
@@ -461,6 +473,7 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
             receiver,
             tokens,
         )
+        .map(|msgs| batch_submessages(self.self_addr(), msgs))?
     }
 
     fn normalize_for_ibc_transfer(
@@ -574,6 +587,7 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
             receiver,
             tokens,
         )
+        .map(|msgs| batch_submessages(self.self_addr(), msgs))?
     }
 
     fn normalize_for_ibc_transfer(

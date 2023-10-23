@@ -1,5 +1,6 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Binary, IbcChannel, Uint512};
+use cosmwasm_std::{Binary, CosmosMsg, IbcChannel, Uint512};
+use token_factory_api::TokenFactoryMsg;
 
 use crate::state::ChannelInfo;
 
@@ -24,6 +25,9 @@ pub enum ExecuteMsg {
     RegisterDenom { denom: String, hash: Binary },
     /// Change the admin (must be called by current admin)
     UpdateAdmin { admin: String },
+    BatchExecute {
+        msgs: Vec<CosmosMsg<TokenFactoryMsg>>,
+    },
 }
 
 /// This is the message we accept via Receive
