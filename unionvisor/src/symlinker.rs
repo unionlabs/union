@@ -14,10 +14,10 @@ pub struct Symlinker {
 
 #[derive(Error, Debug)]
 pub enum SymlinkerError {
-    #[error("cannot remove old symlink: {0}")]
-    CantRemoveSymlink(io::Error),
-    #[error("cannot create symlink: {0}")]
-    CantCreateSymlink(io::Error),
+    #[error("cannot remove old symlink")]
+    RemoveSymlink(io::Error),
+    #[error("cannot create symlink")]
+    CreateSymlink(io::Error),
     #[error("cannot validate version path")]
     ValidateVersionPath(#[from] ValidateVersionPathError),
 }
@@ -47,12 +47,11 @@ impl Symlinker {
 
         if current.exists() {
             info!(target: "unionvisor", "removing old symlink at {}", &current.display());
-            std::fs::remove_file(&current).map_err(SymlinkerError::CantRemoveSymlink)?;
+            std::fs::remove_file(&current).map_err(SymlinkerError::RemoveSymlink)?;
         }
 
         info!(target: "unionvisor", "creating symlink from {} to {}", &current.display(), new_path.0.display());
-        std::os::unix::fs::symlink(new_path.0, current)
-            .map_err(SymlinkerError::CantCreateSymlink)?;
+        std::os::unix::fs::symlink(new_path.0, current).map_err(SymlinkerError::CreateSymlink)?;
 
         Ok(())
     }
@@ -84,15 +83,17 @@ impl Symlinker {
 
     /// Reads the `root/current` link and determines the binary version based on the path.
     pub fn current_version(&self) -> Result<OsString, CurrentVersionError> {
-        use CurrentVersionError::*;
-        let version_in_bundle = fs::read_link(self.current_path()).map_err(ReadLink)?;
+        let version_in_bundle =
+            fs::read_link(self.current_path()).map_err(CurrentVersionError::ReadLink)?;
         let mut actual = version_in_bundle.clone();
 
         actual.pop(); // pop meta.binary_name (such as `uniond`) from the path
         let version = actual.file_name();
 
         match version {
-            None => Err(InvalidBundleStructure(version_in_bundle)),
+            None => Err(CurrentVersionError::InvalidBundleStructure(
+                version_in_bundle,
+            )),
             Some(v) => Ok(v.to_os_string()),
         }
     }
@@ -101,7 +102,7 @@ impl Symlinker {
 #[derive(Debug, Error)]
 pub enum CurrentVersionError {
     #[error("cannot read current link")]
-    ReadLink(#[source] io::Error),
+    ReadLink(#[from] io::Error),
     #[error("invalid bundle structure: binary parent directory is not a version {0}")]
     InvalidBundleStructure(PathBuf),
 }

@@ -60,7 +60,7 @@ async fn main() -> color_eyre::eyre::Result<()> {
                 );
                 healthz::set_unhealthy();
                 set.shutdown().await;
-                return Err(err.into());
+                return Err(err);
             }
             Err(err) => return Err(err.into()),
             Ok(Ok(_)) => {

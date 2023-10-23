@@ -74,7 +74,6 @@ pub enum ValidateVersionPathError {
 impl UnvalidatedVersionPath {
     /// Validates a [`UnvalidatedVersionPath`], turning it into a [`ValidVersionPath`] if validation is successful
     pub fn validate(&self) -> Result<ValidVersionPath, ValidateVersionPathError> {
-        use ValidateVersionPathError::*;
         debug!(
             "testing if binary {} is available by calling --help",
             as_display(self.0.display())
@@ -84,18 +83,24 @@ impl UnvalidatedVersionPath {
             .stderr(Stdio::null())
             .stdout(Stdio::null())
             .spawn()
-            .map_err(HelpCallFailed)?;
+            .map_err(ValidateVersionPathError::HelpCallFailed)?;
         debug!(target: "unionvisor", "killing test call of {}", as_display(self.0.display()));
 
         if let Err(err) = child.kill() {
             match err.kind() {
-                io::ErrorKind::NotFound => return Err(NotInBundle(self.0.clone(), err)),
-                io::ErrorKind::PermissionDenied => {
-                    return Err(PermissionDenied(self.0.clone(), err))
+                io::ErrorKind::NotFound => {
+                    return Err(ValidateVersionPathError::NotInBundle(self.0.clone(), err))
                 }
-                _ => return Err(OtherIO(err)),
+                io::ErrorKind::PermissionDenied => {
+                    return Err(ValidateVersionPathError::PermissionDenied(
+                        self.0.clone(),
+                        err,
+                    ))
+                }
+                _ => return Err(ValidateVersionPathError::OtherIO(err)),
             }
         }
+
         Ok(ValidVersionPath(self.0.clone()))
     }
 }
@@ -122,18 +127,17 @@ impl Bundle {
     /// Constructs a new [`Bundle`] based on a path.
     /// Will read `bundle/meta.json` and error if invalid.
     pub fn new(path: impl Into<PathBuf>) -> Result<Self, NewBundleError> {
-        use NewBundleError::*;
         let path: PathBuf = path.into();
 
         // Read `bundle/meta.json` and deserialize into `BundleMeta`
         let meta = path.join("meta.json");
-        let meta = fs::read_to_string(meta).map_err(NoMetaJson)?;
-        let meta = serde_json::from_str(&meta).map_err(DeserializeMeta)?;
+        let meta = fs::read_to_string(meta)?;
+        let meta = serde_json::from_str(&meta)?;
 
         // Check if bundle contains genesis.json
         let genesis = path.join("genesis.json");
         if !genesis.exists() {
-            return Err(NoGenesisJson);
+            return Err(NewBundleError::NoGenesisJson);
         }
 
         let bundle = Bundle { path, meta };
@@ -152,7 +156,7 @@ impl Bundle {
         )
     }
 
-    /// Returns a PathBuf to the Bundle's genesis.json
+    /// Returns a [`PathBuf`] to the Bundle's genesis.json
     pub fn genesis_json(&self) -> PathBuf {
         self.path.join("genesis.json")
     }
@@ -167,11 +171,11 @@ impl Bundle {
 #[derive(Debug, Error)]
 pub enum NewBundleError {
     #[error("cannot read bundle/meta.json")]
-    NoMetaJson(#[source] io::Error),
+    NoMetaJson(#[from] io::Error),
     #[error("cannot read bundle/genesis.json")]
     NoGenesisJson,
     #[error(
         "cannot deserialize bundle/meta.json, please ensure that it adheres to the bundle scheme."
     )]
-    DeserializeMeta(#[source] serde_json::Error),
+    DeserializeMeta(#[from] serde_json::Error),
 }

@@ -1,5 +1,5 @@
 #![warn(clippy::all, clippy::pedantic)]
-#![allow(clippy::question_mark)]
+#![allow(clippy::module_name_repetitions)]
 
 use clap::Parser;
 use color_eyre::eyre;
@@ -30,3 +30,5 @@ fn main() -> eyre::Result<()> {
     cli.run()?;
     Ok(())
 }
+
+//

@@ -5,10 +5,7 @@ use futures::{stream, Future, FutureExt, Stream, StreamExt};
 use prost::Message;
 use serde::{Deserialize, Serialize};
 use sha2::Digest;
-use tendermint_rpc::{
-    query::{EventType, Query},
-    Client, Order, WebSocketClient, WebSocketClientUrl,
-};
+use tendermint_rpc::{query::Query, Client, Order, WebSocketClient, WebSocketClientUrl};
 use unionlabs::{
     ethereum::H256,
     events::{IbcEvent, TryFromTendermintEventError, WriteAcknowledgement},
