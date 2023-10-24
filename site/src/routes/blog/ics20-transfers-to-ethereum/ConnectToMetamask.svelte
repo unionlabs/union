@@ -63,11 +63,17 @@
 				{:else}
 				    <div>✅ Connected to Union Testnet</div> 
 			        {#if !$sepUNOAdded}
-				        <div class="mt-4">
-					        <DemoButton on:click={addUnoErc}>Add UNO (ERC-20) 💸</DemoButton>
+				        <div class="mt-4 text-sm">
+									Optional:
+									 <button
+										class="px-2 py-1 border-[1px] text-sm border-accent text-accent font-jetbrains"
+										on:click={addUnoErc}
+									>
+										Track UNO on Sepolia in Metamask 💸
+									</button>
 				        </div>
 			        {:else}
-					   <div>✅ Tracking UNO (Sepolia) </div>
+					   <div>✅ Tracking UNO on Sepolia</div>
 					{/if}
 				{/if}
 			{/if}
