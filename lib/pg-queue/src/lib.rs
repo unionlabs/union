@@ -156,7 +156,7 @@ impl<T: DeserializeOwned + Serialize + Unpin + Send + Sync> Queue<T> {
             None => {
                 tracing::debug!("queue is empty");
                 self.lock.store(true, Ordering::SeqCst);
-                tokio::time::sleep(std::time::Duration::from_millis(2000)).await;
+                tokio::time::sleep(std::time::Duration::from_millis(250)).await;
             }
         }
         Ok(())
