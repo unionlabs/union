@@ -10,7 +10,7 @@
 <TerminalContainer>
 		{#if $sendingUnoToEthereum === 'sending'}
 			<div class="flex gap-4 h-[48px] items-center">
-				<div>Sending UNO to Ethereum</div>
+				<div>Sending 0.001 UNO to Ethereum</div>
 				<PulseSpinner/>
 			</div>
 		{:else if $sendingUnoToEthereum === 'start'}
