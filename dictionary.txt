@@ -675,6 +675,7 @@ vhosts
 virtualisation
 vmdebug
 vuex
+wakey
 wasi
 wasmd
 wasmkeeper
