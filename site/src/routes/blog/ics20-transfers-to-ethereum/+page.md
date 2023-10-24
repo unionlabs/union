@@ -3,23 +3,23 @@ title: ICS-20 Transfers to Ethereum
 slug: ics20-transfers-to-ethereum
 date: "2023-10-04"
 author: "@union_build"
-preview: "Today we present a first look at UCS-01, a superset ICS-20 for asset transfers between EVM and Cosmos-SDK based chains."
+preview: "Today we present a first look at UCS-01, a superset ICS-20 for asset transfers between EVM and Cosmos-SDK-based chains."
 published: false
 ---
 
 <script>
-	import TokenTransfer from '$lib/TokenTransfer.svelte';
-	import ConnectToMetamask from './ConnectToMetamask.svelte';
-	import AddressesAndBalances from './AddressesAndBalances.svelte'; 
-	import FaucetButton from './FaucetButton.svelte'; 
-	import TransferUnoToEthereum from './TransferUnoToEthereum.svelte'; 
-	import TransferUnoToEthereumStatus from './TransferUnoToEthereumStatus.svelte'; 
-	import SepoliaFaucetButton from './SepoliaFaucetButton.svelte';
-	import SendUnoToUnionButton from './SendUnoToUnionButton.svelte';
-	import SendUnoToUnionStatus from './SendUnoToUnionStatus.svelte';
+    import TokenTransfer from '$lib/TokenTransfer.svelte';
+    import ConnectToMetamask from './ConnectToMetamask.svelte';
+    import AddressesAndBalances from './AddressesAndBalances.svelte'; 
+    import FaucetButton from './FaucetButton.svelte'; 
+    import TransferUnoToEthereum from './TransferUnoToEthereum.svelte'; 
+    import TransferUnoToEthereumStatus from './TransferUnoToEthereumStatus.svelte'; 
+    import SepoliaFaucetButton from './SepoliaFaucetButton.svelte';
+    import SendUnoToUnionButton from './SendUnoToUnionButton.svelte';
+    import SendUnoToUnionStatus from './SendUnoToUnionStatus.svelte';
 </script>
 
-In our inaugural post, we showcased the first IBC connection to Ethereum by showing two contracts playing [ping-pong](../the-journey-so-far) through general message passing. Today we have something even more exciting: a first look at (UCS-1), the improved version of ICS-20 for asset transfers between EVM and Cosmos-SDK based chains. Our improvements are related to batch transfers to more efficiently transfer funds.
+In our inaugural post, we showcased the first IBC connection to Ethereum by showing two contracts playing [ping-pong](../the-journey-so-far) through general message passing. Today we have something even more exciting: a first look at Union Chain Standard 1 (UCS-1), the adjusted version of ICS-20 for asset transfers between EVM and Cosmos-SDK-based chains. Our improvements are related to batch transfers to more efficiently transfer funds.
 
 Union already has experimental support for [Metamask](https://metamask.io/) through [Leap Snaps](https://www.leapwallet.io/snaps). This allows us to handle the different account models while ensuring you only need one wallet installed.
 
@@ -29,15 +29,15 @@ After installing and configuring Metamask to Sepolia and Union Testnet, you shou
 
 <AddressesAndBalances/>
 
-Claim $UNO from the Union faucet for bridging usage. If you opt-in to sharing your address, you will be tracked as an early contributor.
+Claim $UNO from the Union faucet for bridging usage. If you opt-in to share your address, you will be tracked as an early contributor.
 
 <FaucetButton/>
 
-IBC transfers from `union-testnet-3` to `sepolia` are just contract interactions, which need to be sent to either Sepolia or Union, depending on the transfer direction. We start by sending $UNO to Sepolia (Ethereum Testnet), and then back again. This showcase uses a single-threaded relayer with simple nonce management. This means it is not optimized for throughput, resulting in a lot of queued transactions. It's an MVP of a beta product after all. Optimized nonce management should land next week.
+IBC transfers from `union-testnet-3` to `sepolia` are just contract interactions, which need to be sent to either Sepolia or Union, depending on the transfer direction. We start by sending $UNO to Sepolia (Ethereum Testnet), and then back again. This showcase uses a single-threaded relayer with simple nonce management.
 
-IBC is as fast as the underlying chains. When you do Tendermint to Tendermint transactions, IBC is quite fast because the finality time is 6 seconds. However, when connecting to Sepolia, which has the same configuration as the Ethereum Mainnet, it takes two epochs for a block to finalize, which is approximately thirteen minutes. However, we are using the "justified" (or "safe") commitment level to decrease the required number of epochs to one, which is approximately six and a half minutes.
+IBC is as fast as the underlying chains. When you do Tendermint to Tendermint transactions, IBC is quite fast because the finality time is 6 seconds. However, when connecting to Sepolia, which has a similar configuration to Ethereum Mainnet, it takes a while for blocks to finalize. We need to await finalization to avoid double-spending. 
 
-If you want to learn more about these commitment levels, read [What are Ethereum commitment levels? Latest, Safe, Finalized](https://www.alchemy.com/overviews/ethereum-commitment-levels), from the Alchemy team.
+If you want to learn more about these commitment levels, read [What are Ethereum commitment levels? Latest, Safe, Finalized](https://www.alchemy.com/overviews/ethereum-commitment-levels).
 
 <TransferUnoToEthereum/>
 
@@ -47,11 +47,11 @@ Inside the testnet, a full IBC transfer is now occurring:
 - [Voyager](https://docs.union.build/architecture/voyager) is observing events and constructing packets.
 - [Galois](https://docs.union.build/architecture/galois) generates a zero-knowledge proof.
 
-When the transaction is received, the funds are locked in a vault, ensuring the tokens on Sepolia are always backed one-to-one on. Since Union has rapid finality and proof generation, the transfer from Union to Sepolia will be quite fast.
+When the transaction is received, the funds are locked in a vault, ensuring the tokens on Sepolia are always backed one-to-one. Since Union has rapid finality and proof generation, the transfer from Union to Sepolia will be quite fast.
 
-On our testnet, `Galois` is running on relatively simple infrastructure. This means proof generation is relatively slow. Proof generation becomes close to instant on 128 core machines. On mainnet, relayers with fast proving speeds will outcompete slow relayers and generate significantly more fees. This market dynamic optimizes our infrastructure.
+On our testnet, `Galois` is running on relatively simple infrastructure. This means proof generation is relatively slow. Proof generation becomes close to instant on 128-core machines. On mainnet, relayers with fast proving speeds will outcompete slow relayers and generate significantly more fees. This market dynamic optimizes our infrastructure.
 
-On Sepolia, the zero-knowledge proof is verified inside the IBC contract stack. This verification is necessary to update the Union light client. After successful verification, an ERC-20 token representing $UNO is transferred to your wallet.
+On Sepolia, the zero-knowledge proof is verified inside the IBC contract stack. This verification is necessary to update the Union Light client. After successful verification, an ERC-20 token representing $UNO is transferred to your wallet.
 
 <TransferUnoToEthereumStatus/>
 
@@ -61,7 +61,7 @@ To transfer the $UNO back, we need to obtain some Sepolia ETH for gas fees. Copy
 
 <!-- Sepolia Faucet + Copy button -->
 
-For the transfer back we need to wait for the acknowledgement of the initial transfer to reach Union. Acknowledgements prevent censorship attacks by provers, ensuring users never lose control of their tokens. The same light-client and packet mechanism is used to relay acknowledgements.
+For the transfer back we need to wait for the acknowledgement of the initial transfer to reach Union. Acknowledgments prevent censorship attacks by provers, ensuring users never lose control of their tokens. The same light-client and packet mechanism is used to relay acknowledgments.
 
 <!-- Acknowledgement Element -->
 
@@ -83,9 +83,11 @@ The golden standard for infrastructure is trustless, meaning no party can steal 
 
 Tracking Ethereum's consensus and finalization is quite complex compared to [CometBLS](https://docs.union.build/architecture/cometbls). The Ethereum execution layer produces blocks approximately every 15 seconds. The finalization process is tracked on the [beacon chain](https://ethereum.org/en/roadmap/beacon-chain/), which is what is necessary to construct light-client proofs. [Voyager](https://docs.union.build/architecture/voyager) tracks both the execution and finalization layers.
 
-The signing committee constructs a BLS signature, used to prove finalization of blocks. Compared to Tendermint-based chains, the beacon chain can encounter [block reorganizations](https://barnabe.substack.com/p/pos-ethereum-reorg) quite easily. Cosmos-based chains use single-slot-finality, which is better for high-performance applications and bridging purposes.
+The signing committee constructs a BLS signature, used to prove the finalization of blocks. Compared to Tendermint-based chains, the beacon chain can encounter [block reorganizations](https://barnabe.substack.com/p/pos-ethereum-reorg) quite easily. Cosmos-based chains use single-slot-finality, which is better for high-performance applications and bridging purposes.
 
 <SendUnoToUnionStatus/>
+
+You will at some point lose the $UNO obtained through this faucet, as we migrate to newer versions of the testnet. If you opted in for early contribution, your participation in this demo is registered for later incentivization.
 
 ## Join the Union
 
