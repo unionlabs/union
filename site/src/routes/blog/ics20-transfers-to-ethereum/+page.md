@@ -89,6 +89,16 @@ The signing committee constructs a BLS signature, used to prove the finalization
 
 You will at some point lose the $UNO obtained through this faucet, as we migrate to newer versions of the testnet. If you opted in for early contribution, your participation in this demo is registered for later incentivization.
 
+## Future Improvements
+
+Currently, transfer times are dominated by:
+
+- Network latency.
+- Awaiting finalization.
+- Proof generation.
+
+Our primary focus for public testnet is getting voyager more efficient to reduce relayer latency to sub-second timeframes. Finalization will improve if single-slot finality lands on Ethereum, or with possible restaking integrations. Proof generation is already quite efficient, but we have more in store before mainnet with CometBLS V2.
+
 ## Join the Union
 
 We are launching or incentivized testnet soon! If you want to become a contributor:
