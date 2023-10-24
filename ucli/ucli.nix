@@ -13,8 +13,8 @@
         };
       });
 
-      ucliMainnet = (mkUcli "--features eth-minimal" "");
-      ucliMinimal = (mkUcli "" "-minimal");
+      ucliMainnet = (mkUcli "" "-mainnet");
+      ucliMinimal = (mkUcli "--features eth-minimal" "-minimal");
 
     in
     {

@@ -81,11 +81,11 @@ TRYOPEN
 Tempdirs
 Tendermint
 Timestamptz
-Ucli
 UDHC
 UNBONDED
 UNBONDING
 UNNEST
+Ucli
 Unbonding
 Undelegate
 Unjail
@@ -149,6 +149,7 @@ builtins
 byteorder
 cachix
 canonicalization
+canonicalize
 capabilitykeeper
 capabilitytypes
 cargotoml
