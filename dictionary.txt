@@ -604,6 +604,7 @@ tftypes
 thiserror
 tikv
 timeframes
+timescaledb
 tkey
 tkeys
 tmcfg

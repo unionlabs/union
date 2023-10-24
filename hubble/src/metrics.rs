@@ -19,9 +19,9 @@ lazy_static! {
     )
     .expect("register BLOCK_COLLECTOR");
     pub static ref POST_COLLECTOR: IntCounterVec = IntCounterVec::new(
-        Opts::new("requests", "Posts to Hasura")
+        Opts::new("requests", "Posts to the datastore")
             .namespace("hubble")
-            .subsystem("hasura"),
+            .subsystem("datastore"),
         &["chain_id"]
     )
     .expect("register POST_COLLECTOR");

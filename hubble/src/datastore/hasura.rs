@@ -4,19 +4,7 @@ use graphql_client::{GraphQLQuery, Response};
 use reqwest::{Client, Url};
 use tracing::error;
 
-type Jsonb = serde_json::Value;
-type Timestamptz = String;
-type Bigint = u128;
-type Smallint = i32;
-
-pub trait Datastore {
-    fn do_post<Q: GraphQLQuery>(
-        &self,
-        v: Q::Variables,
-    ) -> impl Future<Output = color_eyre::Result<Response<Q::ResponseData>>> + '_
-    where
-        <Q as GraphQLQuery>::Variables: 'static;
-}
+use super::Datastore;
 
 #[derive(Debug, Clone)]
 pub struct HasuraDataStore {
@@ -89,73 +77,3 @@ impl HasuraDataStore {
         }
     }
 }
-
-#[derive(GraphQLQuery)]
-#[graphql(
-    schema_path = "src/graphql/schema.graphql",
-    query_path = "src/graphql/operations.graphql",
-    response_derives = "Debug, Default",
-    normalization = "rust",
-    skip_serializing_none
-)]
-pub struct InsertBlock;
-
-#[derive(GraphQLQuery)]
-#[graphql(
-    schema_path = "src/graphql/schema.graphql",
-    query_path = "src/graphql/operations.graphql",
-    response_derives = "Debug, Default",
-    normalization = "rust",
-    skip_serializing_none
-)]
-pub struct GetLatestBlock;
-
-#[derive(GraphQLQuery)]
-#[graphql(
-    schema_path = "src/graphql/schema.graphql",
-    query_path = "src/graphql/operations.graphql",
-    response_derives = "Debug, Default",
-    normalization = "rust",
-    skip_serializing_none
-)]
-pub struct InsertChain;
-
-#[derive(GraphQLQuery)]
-#[graphql(
-    schema_path = "src/graphql/schema.graphql",
-    query_path = "src/graphql/operations.graphql",
-    response_derives = "Clone, Debug, Default",
-    normalization = "rust",
-    skip_serializing_none
-)]
-pub struct InsertBlocksMany;
-
-#[derive(GraphQLQuery)]
-#[graphql(
-    schema_path = "src/graphql/schema.graphql",
-    query_path = "src/graphql/operations.graphql",
-    response_derives = "Clone, Debug, Default",
-    normalization = "rust",
-    skip_serializing_none
-)]
-pub struct InsertDemoTx;
-
-#[derive(GraphQLQuery)]
-#[graphql(
-    schema_path = "src/graphql/schema.graphql",
-    query_path = "src/graphql/operations.graphql",
-    response_derives = "Clone, Debug, Default",
-    normalization = "rust",
-    skip_serializing_none
-)]
-pub struct InsertDemoQueue;
-
-#[derive(GraphQLQuery)]
-#[graphql(
-    schema_path = "src/graphql/schema.graphql",
-    query_path = "src/graphql/operations.graphql",
-    response_derives = "Clone, Debug, Default",
-    normalization = "rust",
-    skip_serializing_none
-)]
-pub struct GetLatestQueue;

@@ -21,7 +21,10 @@ use ethers::{
     utils::{keccak256, secret_key_to_address},
 };
 use futures::{stream, Future, FutureExt, Stream, StreamExt};
-use hubble::hasura::{insert_demo_tx, Datastore, HasuraConfig, HasuraDataStore, InsertDemoTx};
+use hubble::datastore::{
+    hasura::{HasuraConfig, HasuraDataStore},
+    insert_demo_tx, Datastore, InsertDemoTx,
+};
 use prost::Message;
 use serde::{Deserialize, Serialize};
 use typenum::Unsigned;

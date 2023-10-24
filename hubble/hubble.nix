@@ -3,10 +3,13 @@
     let
       hubble = crane.buildWorkspaceMember {
         crateDirFromRoot = "hubble";
-        additionalSrcFilter = path: _type: pkgs.lib.hasPrefix "hubble/src/graphql/" path;
+        additionalSrcFilter = path: _type: pkgs.lib.hasPrefix "hubble/src/graphql/" path || pkgs.lib.hasPrefix ".sqlx" path;
         cargoTestExtraAttrs = {
           partitions = 1;
           partitionType = "count";
+        };
+        extraEnv = {
+          SQLX_OFFLINE = "1";
         };
       };
     in
@@ -48,11 +51,17 @@
         };
         api-key-file = mkOption {
           description = lib.mdDoc ''
-            Path to a file containing the Hasura admin secret to allow for mutations.
+            Path to a file containing the datastore secret to allow for inserts.
           '';
           example = "/run/keys/hubble.key";
           type = types.path;
           default = "";
+        };
+        datastore-method = mkOption {
+          description = lib.mdDoc ''
+            The method for connecting to the datastore. Must match the format in api-key-file.
+          '';
+          type = types.enum [ "hasura" "timescale" ];
         };
         indexers = mkOption {
           type = types.listOf (
@@ -79,13 +88,13 @@
               text =
                 let
                   indexersJson = builtins.toJSON cfg.indexers;
+                  datastore = if cfg.datastore-method == "hasura" then ''--hasura-admin-secret "$(head -n 1 ${cfg.api-key-file})" --url ${cfg.url}'' else ''--database-url "$(head -n 1 ${cfg.api-key-file})"'';
                 in
                 ''
                   RUST_LOG=${cfg.log-level} \
-                  HUBBLE_SECRET=$(head -n 1 ${cfg.api-key-file}) \
                   ${pkgs.lib.getExe cfg.package}  \
+                    ${datastore} \
                     --metrics-addr ${cfg.metrics-addr} \
-                    --url ${cfg.url} \
                     --indexers '${indexersJson}'
                 '';
             };
