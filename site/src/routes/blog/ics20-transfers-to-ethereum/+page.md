@@ -35,7 +35,7 @@ Claim $UNO from the Union faucet for bridging usage. If you opt-in to share your
 
 IBC transfers from `union-testnet-3` to `sepolia` are just contract interactions, which need to be sent to either Sepolia or Union, depending on the transfer direction. We start by sending $UNO to Sepolia (Ethereum Testnet), and then back again. This showcase uses a single-threaded relayer with simple nonce management.
 
-IBC is as fast as the underlying chains. When you do Tendermint to Tendermint transactions, IBC is quite fast because the finality time is 6 seconds. However, when connecting to Sepolia, which has a similar configuration to Ethereum Mainnet, it takes a while for blocks to finalize. We need to await finalization to avoid double-spending. 
+IBC is as fast as the underlying chains. When you do Tendermint to Tendermint transactions, IBC is quite fast because the finality time is 6 seconds. However, when connecting to Sepolia, which has a similar configuration to Ethereum Mainnet, it takes a while for blocks to finalize. We need to await finalization to avoid double-spending.
 
 If you want to learn more about these commitment levels, read [What are Ethereum commitment levels? Latest, Safe, Finalized](https://www.alchemy.com/overviews/ethereum-commitment-levels).
 
