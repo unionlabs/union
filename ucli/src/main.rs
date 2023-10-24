@@ -143,7 +143,6 @@ async fn handle_transfer(
         .await
         .unwrap()
         .unwrap();
-    println!("{:?}", evm.wallet.address());
 
     let tx_rcp = relay
         .send(

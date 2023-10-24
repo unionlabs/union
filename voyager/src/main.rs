@@ -9,15 +9,10 @@
 )]
 // #![deny(clippy::unwrap_used)]
 
-use std::{error::Error, ffi::OsString, fs::read_to_string, process::ExitCode, sync::Arc};
+use std::{error::Error, ffi::OsString, fs::read_to_string, process::ExitCode};
 
 use chain_utils::{evm::Evm, union::Union};
 use clap::Parser;
-use contracts::{
-    erc20,
-    ucs01_relay::{LocalToken, UCS01Relay},
-};
-use ethers::{middleware::SignerMiddleware, signers::Signer, types::U256};
 use sqlx::PgPool;
 use tikv_jemallocator::Jemalloc;
 use unionlabs::ethereum_consts_traits::Mainnet;

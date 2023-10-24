@@ -1,8 +1,8 @@
 use std::fmt::Debug;
 
 use cosmwasm_std::{
-    attr, Addr, Binary, CanonicalAddr, CosmosMsg, Event, IbcBasicResponse, IbcEndpoint, IbcMsg,
-    IbcOrder, IbcReceiveResponse, Response, SubMsg, Timestamp,
+    Addr, Binary, CosmosMsg, Event, IbcBasicResponse, IbcEndpoint, IbcMsg, IbcOrder,
+    IbcReceiveResponse, Response, SubMsg, Timestamp,
 };
 use thiserror::Error;
 
