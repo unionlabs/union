@@ -117,9 +117,9 @@ const balanceWorker = async (
 };
 
 export const startBalanceWorkers = () => {
-  balanceWorker(updateEthereumUnoBalance, 5000);
-  balanceWorker(updateEthereumEthBalance, 5000);
-  balanceWorker(updateUnionUnoBalance, 2000);
+  balanceWorker(updateEthereumUnoBalance, 2500);
+  balanceWorker(updateEthereumEthBalance, 2500);
+  balanceWorker(updateUnionUnoBalance, 2500);
 };
 
 export const updateUnionUnoBalance = async () => {
