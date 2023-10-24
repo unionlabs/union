@@ -506,6 +506,7 @@ regen
 rehype
 repr
 reqwest
+restaking
 ripemd
 rlib
 roadmap
@@ -592,6 +593,7 @@ tfmodule
 tftypes
 thiserror
 tikv
+timeframes
 tkey
 tkeys
 tmcfg
