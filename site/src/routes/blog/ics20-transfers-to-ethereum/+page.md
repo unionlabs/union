@@ -101,10 +101,10 @@ Our primary focus for public testnet is getting voyager more efficient to reduce
 
 ## Join the Union
 
-We are launching or incentivized testnet soon! If you want to become a contributor:
+We are launching our incentivized testnet soon! If you want to become a contributor:
 
 - Follow [@union_build on X](https://x.com/union_build).
 - Read [the docs](https://docs.union.build).
-- Speak with us at [Cosmoverse 2023](https://cosmoverse.org/).
+- Join our [Discord](https://discord.com/invite/union-build).
 
 We are looking for infrastructure providers, technical collaborations, community managers, and code contributors. Direct message @union_build if interested.
