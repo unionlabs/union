@@ -1,7 +1,7 @@
 ---
 title: The Journey So Far
 date: "2023-09-27"
-author: "@union_build"
+author: "union_build"
 preview: "Today, we are happy to announce the work we have done so far on Union, the trustless infrastructure layer. Over the last six months, Union Labs was founded with nothing but an idea, a diverse skill set, and a mission to ship zero-knowledge proof infrastructure everywhere."
 published: true
 ---

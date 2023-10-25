@@ -14,7 +14,7 @@
 	{#if published}
 	<h1 class="text-3xl sm:text-5xl font-bold mb-0">{title}</h1>
 	<div class="font-mono mb-2 mt-1 sm:text-lg"
-		>{date} - <a class="text-accent" href={`https://x.com/${author}`}>{author}</a></div
+		>{date} - <a class="text-accent" href={`https://x.com/${author}`}>@{author}</a></div
 	>
 	<slot />
 	{/if}
