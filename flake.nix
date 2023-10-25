@@ -6,7 +6,7 @@
     # Track a separate nixpkgs for latest solc
     nixpkgs-solc.url = "github:NixOS/nixpkgs/nixos-unstable";
 
-    # Track a seperate nixpkgs for Vercel as it needs to be the latest version for every deploy
+    # Track a separate nixpkgs for Vercel as it needs to be the latest version for every deploy
     nixpkgs-vercel.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-parts = {
       url = "github:hercules-ci/flake-parts";
