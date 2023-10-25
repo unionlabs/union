@@ -4,15 +4,14 @@ use ucs01_relay_api::types::Ucs01TransferPacket;
 use unionlabs::events::{RecvPacket, SendPacket};
 
 /// A timestamped event originating from `chain_id`.
-pub struct TimedEvent<T> {
+pub struct TimedEvent {
     pub execution_timestamp: u64,
     pub finalization_timestamp: u64,
-    pub event: T,
     pub chain_id: String,
 }
 
-impl<T> TimedEvent<T> {
-    pub fn new(chain_id: String, event: T, execution_timestamp: Option<u64>) -> Self {
+impl TimedEvent {
+    pub fn new(chain_id: String, execution_timestamp: Option<u64>) -> Self {
         let finalization_timestamp = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap()
@@ -23,7 +22,6 @@ impl<T> TimedEvent<T> {
         };
         Self {
             chain_id,
-            event,
             execution_timestamp,
             finalization_timestamp,
         }
@@ -32,8 +30,8 @@ impl<T> TimedEvent<T> {
 
 /// Event types tracked by Zerg when exporting to CSV
 pub enum EventType {
-    SendEvent(TimedEvent<SendPacket>),
-    ReceiveEvent(TimedEvent<RecvPacket>),
+    SendEvent(TimedEvent),
+    ReceiveEvent(TimedEvent),
 }
 
 /// Event information recorded to the output CSV.
@@ -49,24 +47,15 @@ impl Event {
     /// Constructs a unique ID from packet information in the form of:
     /// `<src_port>/<src_channel>/<sequence>`
     pub fn create_send_event(
+        uuid: String,
         chain_id: String,
-        e: SendPacket,
+        sender: String,
         execution_timestamp: Option<u64>,
     ) -> Event {
-        let transfer =
-            Ucs01TransferPacket::try_from(cosmwasm_std::Binary(e.packet_data_hex.clone())).unwrap();
-
-        let uuid = format!(
-            "{}/{}/{}",
-            e.packet_src_port.clone(),
-            e.packet_src_channel,
-            e.packet_sequence
-        );
-
-        let timed_event = TimedEvent::new(chain_id, e, execution_timestamp);
+        let timed_event = TimedEvent::new(chain_id, execution_timestamp);
 
         Event {
-            sender: transfer.sender().to_string(),
+            sender,
             stamped_event: EventType::SendEvent(timed_event),
             uuid,
         }
@@ -78,25 +67,19 @@ impl Event {
     /// `<src_port>/<src_channel>/<sequence>`
     pub fn create_recv_event(
         chain_id: String,
+        uuid: String,
         e: RecvPacket,
         execution_timestamp: Option<u64>,
     ) -> Event {
         let transfer =
             Ucs01TransferPacket::try_from(cosmwasm_std::Binary(e.packet_data_hex.clone())).unwrap();
 
-        let uuid = format!(
-            "{}/{}/{}",
-            e.packet_src_port.clone(),
-            e.packet_src_channel,
-            e.packet_sequence
-        );
-
-        let timed_event = TimedEvent::new(chain_id, e, execution_timestamp);
+        let timed_event = TimedEvent::new(chain_id, execution_timestamp);
 
         Event {
+            uuid,
             sender: transfer.sender().to_string(),
             stamped_event: EventType::ReceiveEvent(timed_event),
-            uuid,
         }
     }
 }

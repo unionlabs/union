@@ -9,26 +9,31 @@ use std::{
 use chain_utils::EventSource;
 use contracts::{
     erc20,
+    ibc_handler::SendPacketFilter,
     ucs01_relay::{self as ucs01relay, LocalToken},
 };
 use cosmwasm_std::Uint128;
 use ecdsa::SigningKey;
 use ethers::{
     abi::Address,
+    contract::EthEvent,
     core::k256::ecdsa,
     prelude::SignerMiddleware,
     providers::Middleware,
-    signers::{LocalWallet, Wallet},
+    signers::{LocalWallet, Signer, Wallet},
     types::U256,
     utils::secret_key_to_address,
 };
 use futures::StreamExt;
+use tendermint_rpc::Client;
 use tokio::sync::Mutex;
+use tracing::{event, Level};
 use ucs01_relay::msg::{ExecuteMsg, TransferMsg};
 use ucs01_relay_api::types::Ucs01TransferPacket;
 use unionlabs::{
     cosmos::base::coin::Coin, cosmwasm::wasm::msg_execute_contract::MsgExecuteContract,
-    ethereum_consts_traits::Minimal, ibc::google::protobuf::any::Any, traits::Chain, IntoProto,
+    ethereum_consts_traits::Minimal, events::IbcEvent, ibc::google::protobuf::any::Any,
+    traits::Chain, IntoProto,
 };
 
 use crate::{
@@ -46,6 +51,8 @@ pub struct Context {
     pub evm: chain_utils::evm::Evm<Minimal>,
     pub evm_accounts: HashMap<String, Wallet<SigningKey>>,
     pub denom_address: Address,
+    pub union_txs: Arc<Mutex<HashMap<u64, uuid::Uuid>>>,
+    pub evm_txs: Arc<Mutex<HashMap<u64, uuid::Uuid>>>,
 }
 
 impl Context {
@@ -56,12 +63,15 @@ impl Context {
             .append(true)
             .open(output)
             .unwrap();
+        event!(Level::DEBUG, "Created writter");
         let union = chain_utils::union::Union::new(zerg_config.clone().union)
             .await
             .unwrap();
+        event!(Level::DEBUG, "Created Union instance");
         let evm = chain_utils::evm::Evm::new(zerg_config.clone().evm)
             .await
             .unwrap();
+        event!(Level::DEBUG, "Created Evm instance");
 
         let mut evm_accounts = HashMap::new();
 
@@ -70,11 +80,13 @@ impl Context {
             zerg_config.evm_contract.clone(),
             evm.provider.clone().into(),
         );
+        event!(Level::DEBUG, "Created usc01 relay");
         let denom = format!(
             "wasm.{}/{}/{}",
             zerg_config.union_contract, zerg_config.channel, zerg_config.union.fee_denom
         );
         let denom_address = ucs01_relay.denom_to_address(denom).call().await.unwrap();
+        event!(Level::DEBUG, "Fetched denom address");
 
         for signer in zerg_config.clone().evm.signers.into_iter() {
             let signing_key: ecdsa::SigningKey = signer.value();
@@ -87,14 +99,18 @@ impl Context {
 
             let erc_contract = erc20::ERC20::new(denom_address, signer_middleware.clone());
 
-            // TODO: Move this to s.t. it only triggers once
-            if let Ok(res) = erc_contract
-                .approve(zerg_config.evm_contract.clone().into(), U256::max_value())
-                .send()
-                .await
-            {
-                res.await.unwrap().unwrap();
-            };
+            let ecr_contact_address = zerg_config.evm_contract.clone();
+
+            tokio::spawn(async move {
+                if let Ok(res) = erc_contract
+                    .approve(ecr_contact_address.into(), U256::max_value())
+                    .send()
+                    .await
+                {
+                    res.await.unwrap().unwrap();
+                    event!(Level::DEBUG, "Approved balance");
+                };
+            });
         }
 
         Context {
@@ -106,11 +122,13 @@ impl Context {
             evm,
             evm_accounts,
             denom_address,
+            union_txs: Arc::new(Mutex::new(HashMap::new())),
+            evm_txs: Arc::new(Mutex::new(HashMap::new())),
         }
     }
 
     pub async fn tx_handler(&self) {
-        println!("Rush: Starting to rush Union txs...");
+        event!(Level::INFO, "Rush: Starting to rush Union txs...");
 
         let mut previous_height = 0;
         for _ in 0..self.zerg_config.rush_blocks {
@@ -127,21 +145,22 @@ impl Context {
             }
             previous_height = height;
 
-            for pk in self.zerg_config.evm.signers.iter() {
+            for pk in self.zerg_config.clone().evm.signers.iter() {
                 let signing_key: ecdsa::SigningKey = pk.clone().value();
                 let address = secret_key_to_address(&signing_key);
                 let receiver = format!("{:?}", address);
+                let uuid = uuid::Uuid::new_v4();
                 let transfer_msg = ExecuteMsg::Transfer(TransferMsg {
                     channel: self.zerg_config.channel.clone(),
                     receiver,
-                    // TODO: use uuid in memo
-                    memo: "garbage".to_string(),
+                    memo: uuid.to_string(),
                     timeout: None,
                 });
                 let transfer_msg = format!("{}", serde_json::to_string(&transfer_msg).unwrap());
                 self.union
-                    .signers
-                    .with(|signer| async {
+                    .signers.clone()
+                    .with(|signer| async move {
+                        event!(Level::INFO, "Sending union Tx for {}", signer.to_string());
                         let msg = Any(MsgExecuteContract {
                             sender: signer.to_string(),
                             contract: self.zerg_config.union_contract.clone(),
@@ -153,9 +172,50 @@ impl Context {
                         })
                         .into_proto();
 
-                        if (self.union.broadcast_tx_commit(signer, [msg]).await).is_err() {
-                            println!("Union: FAILED TO SUBMIT TX!")
-                        }
+                        let timestamp = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
+
+                        match self.union.broadcast_tx_commit(signer.clone(), [msg]).await {
+                            Ok(tx_hash) => {
+                                let tx_res = self
+                                    .union
+                                    .tm_client
+                                    .tx(tx_hash.clone().parse().unwrap(), false)
+                                    .await
+                                    .unwrap();
+                                let events: Result<Vec<_>, _> = tx_res
+                                    .tx_result
+                                    .events
+                                    .into_iter()
+                                    .map(|event| unionlabs::tendermint::abci::event::Event {
+                                        ty: event.kind,
+                                        attributes: event
+                                            .attributes
+                                            .into_iter()
+                                            .map(|attr| {
+                                                unionlabs::tendermint::abci::event_attribute::EventAttribute {
+                                                    key: attr.key,
+                                                    value: attr.value,
+                                                    index: attr.index,
+                                                }
+                                            })
+                                            .collect(),
+                                    })
+                                    .filter_map(IbcEvent::<String, String, String>::try_from_tendermint_event)
+                                    .collect();
+                                let event = events.unwrap().into_iter().find_map(|e| {
+                                    match e {
+                                        IbcEvent::SendPacket(e) => Some(e),
+                                        _ => None
+                                    }
+                                }).expect("Tx totally exists, QED");
+                                let mut union_txs = self.union_txs.lock().await;
+                                union_txs.insert(event.packet_sequence, uuid);
+                                self.append_record(Event::create_send_event(uuid.to_string(), self.union.chain_id.clone(), signer.to_string(), Some(timestamp))).await;
+                            }
+                            Err(e) => {
+                                event!(Level::ERROR, error = %e, "Union: Failed to submit tx!");
+                            }
+                        };
                     })
                     .await
             }
@@ -164,9 +224,13 @@ impl Context {
             .duration_since(UNIX_EPOCH)
             .unwrap()
             .as_secs();
-        println!("Rush: Done rushing Union txs!");
+        event!(Level::INFO, "Rush: Done rushing Union txs!");
         loop {
-            println!("Rush: Union transaction rush finished at {}.", finished_at);
+            event!(
+                Level::INFO,
+                "Rush: Union transaction rush finished at {}.",
+                finished_at
+            );
             tokio::time::sleep(Duration::from_secs(60)).await;
         }
     }
@@ -178,7 +242,7 @@ impl Context {
         let wallet = if let Some(wallet) = self.evm_accounts.get(transfer.receiver()) {
             wallet
         } else {
-            println!("Evm: Recv Packet not from zerg");
+            event!(Level::DEBUG, "Evm: Recv Packet not from zerg");
             return;
         };
 
@@ -202,6 +266,12 @@ impl Context {
             }
             previous_height = height;
 
+            let timestamp = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_secs();
+            let uuid = uuid::Uuid::new_v4();
+
             if let Ok(pending) = ucs01_relay
                 .send(
                     e.packet_dst_port.clone(),
@@ -220,12 +290,33 @@ impl Context {
                 .await
             {
                 if let Ok(sent) = pending.await {
-                    sent.unwrap();
-                    println!("Eth: Transaction {} was submitted!", e.packet_sequence);
+                    let tx = sent.unwrap();
+                    let send: SendPacketFilter = tx
+                        .logs
+                        .into_iter()
+                        .find_map(|log| SendPacketFilter::decode_log(&log.into()).ok())
+                        .unwrap();
+
+                    let mut evm_txs = self.evm_txs.lock().await;
+                    evm_txs.insert(send.sequence, uuid);
+
+                    self.append_record(Event::create_send_event(
+                        uuid.to_string(),
+                        self.union.chain_id.clone(),
+                        wallet.address().to_string(),
+                        Some(timestamp),
+                    ))
+                    .await;
+                    event!(
+                        Level::INFO,
+                        "Eth: Transaction {} was submitted!",
+                        e.packet_sequence
+                    );
                     break;
                 }
             } else {
-                println!(
+                event!(
+                    Level::ERROR,
                     "Eth: Transaction {} failed, trying again next block...",
                     e.packet_sequence
                 );
@@ -237,35 +328,44 @@ impl Context {
         let mut events = Box::pin(self.union.clone().events(()));
 
         loop {
-            println!("Union: Listening for IBC events...");
+            event!(Level::INFO, "Union: Listening for IBC events...");
 
             if let Some(Ok(event)) = events.next().await {
                 match event.event {
-                    unionlabs::events::IbcEvent::SendPacket(e) => {
-                        println!("Union: SendPacket observed!");
-                        self.append_record(Event::create_send_event(event.chain_id, e, None))
-                            .await
+                    IbcEvent::SendPacket(_) => {
+                        event!(Level::INFO, "Union: SendPacket observed!");
                     }
-                    unionlabs::events::IbcEvent::RecvPacket(e) => {
-                        println!("Union: RecvPacket observed!");
-                        self.append_record(Event::create_recv_event(event.chain_id, e, None))
-                            .await
+                    IbcEvent::RecvPacket(e) => {
+                        event!(Level::INFO, "Union: RecvPacket observed!");
+                        let union_txs = self.union_txs.lock().await;
+                        let uuid = match union_txs.get(&e.packet_sequence) {
+                            Some(uuid) => uuid.to_owned(),
+                            None => uuid::Uuid::new_v4(),
+                        };
+                        self.append_record(Event::create_recv_event(
+                            uuid.to_string(),
+                            event.chain_id,
+                            e,
+                            None,
+                        ))
+                        .await;
                     }
                     _ => {
-                        println!("Union: Untracked event observed.")
+                        event!(Level::DEBUG, "Union: Untracked event observed.")
                     }
                 }
             } else {
-                println!("Union: Skipping events due to error.");
+                event!(Level::ERROR, "Union: Skipping events due to error.");
             }
         }
     }
 
     pub async fn listen_eth(&self) {
         let mut events = Box::pin(self.evm.clone().events(()));
+        // let e = self.evm.readonly_ibc_handler.events().filter.from_block(1).to_block(1));
 
         loop {
-            println!("Evm: Listening for IBC events...");
+            event!(Level::INFO, "Evm: Listening for IBC events...");
 
             if let Some(Ok(event)) = events.next().await {
                 let block = self
@@ -278,18 +378,18 @@ impl Context {
                 let timestamp = block.timestamp.as_u64();
 
                 match event.event {
-                    unionlabs::events::IbcEvent::SendPacket(e) => {
-                        println!("Evm: SendPacket observed!");
-                        self.append_record(Event::create_send_event(
-                            event.chain_id.to_string(),
-                            e,
-                            Some(timestamp),
-                        ))
-                        .await;
+                    IbcEvent::SendPacket(_e) => {
+                        event!(Level::INFO, "Evm: SendPacket observed!");
                     }
-                    unionlabs::events::IbcEvent::RecvPacket(e) => {
-                        println!("Evm: RecvPacket observed!");
+                    IbcEvent::RecvPacket(e) => {
+                        event!(Level::INFO, "Evm: RecvPacket observed!");
+                        let union_txs = self.union_txs.lock().await;
+                        let uuid = match union_txs.get(&e.packet_sequence) {
+                            Some(uuid) => uuid.to_owned(),
+                            None => uuid::Uuid::new_v4(),
+                        };
                         self.append_record(Event::create_recv_event(
+                            uuid.to_string(),
                             event.chain_id.to_string(),
                             e.clone(),
                             Some(timestamp),
@@ -300,11 +400,11 @@ impl Context {
                         }
                     }
                     _ => {
-                        println!("Evm: Untracked event observed.")
+                        event!(Level::DEBUG, "Evm: Untracked event observed.")
                     }
                 }
             } else {
-                println!("Evm: Skipping events due to error.");
+                event!(Level::ERROR, "Evm: Skipping events due to error.");
             }
         }
     }
