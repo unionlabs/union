@@ -6,8 +6,10 @@ import {
   connectedToSepolia,
   snapInstalled,
   connectedToUnion,
+  sepUNOAdded,
 } from "./stores/wallets";
 import { get } from "svelte/store";
+import { MUNO_ERC20_ADDRESS } from "$lib/constants";
 
 const SEPOLIA_CHAIN_ID = "0xaa36a7";
 
@@ -117,5 +119,28 @@ export const updateConnectedToUnion = async () => {
   } catch {
     // not connected to union yet
     connectedToUnion.set(false);
+  }
+};
+
+export const addUnoErc = async () => {
+  try {
+    const wasAdded = await window.ethereum.request({
+      method: "wallet_watchAsset",
+      params: {
+        type: "ERC20",
+        options: {
+          address: MUNO_ERC20_ADDRESS, // The address of the token.
+          symbol: "UNO", // A ticker symbol or shorthand, up to 5 characters.
+          decimals: 6, // The number of decimals in the token.
+          image: "https://union.build/logo.svg", // A string URL of the token logo.
+        },
+      },
+    });
+
+    if (wasAdded) {
+      sepUNOAdded.set(true);
+    }
+  } catch {
+    sepUNOAdded.set(false);
   }
 };

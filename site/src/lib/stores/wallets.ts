@@ -33,3 +33,4 @@ export const metamaskInstalled: Writable<boolean> = writable(false);
 export const connectedToSepolia: Writable<boolean> = writable(false);
 export const snapInstalled: Writable<boolean> = writable(false);
 export const connectedToUnion: Writable<boolean> = writable(false);
+export const sepUNOAdded: Writable<boolean> = writable(false);

@@ -45,11 +45,11 @@
 	{:else}
 		{#if $sendingUnoToEthereum === 'sending'}
 			<div class="flex gap-4 h-[48px] items-center">
-				<div>Sending UNO to Ethereum</div>
+				<div>Sending 0.001 UNO to Ethereum</div>
 				<PulseSpinner/>
 			</div>
 		{:else if $sendingUnoToEthereum === 'start'}
-			<DemoButton on:click={clickHandler}>Send UNO to Ethereum</DemoButton>
+			<DemoButton on:click={clickHandler}>Send 0.001 UNO to Ethereum</DemoButton>
 		{:else if $sendingUnoToEthereum === 'done'} 
 			<div class="flex gap-4 h-[48px] items-center">
 				<div>✅ Received UNO on Sepolia, new balance is <span class="text-accent">{toFixedUno($ethereumUnoBalance)}</span> UNO</div> 

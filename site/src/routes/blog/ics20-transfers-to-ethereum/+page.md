@@ -4,7 +4,7 @@ slug: ics20-transfers-to-ethereum
 date: "2023-10-04"
 author: "@union_build"
 preview: "Today we present a first look at UCS-01, a superset ICS-20 for asset transfers between EVM and Cosmos-SDK-based chains."
-published: false
+published: true
 ---
 
 <script>
@@ -29,11 +29,11 @@ After installing and configuring Metamask to Sepolia and Union Testnet, you shou
 
 <AddressesAndBalances/>
 
-Claim $UNO from the Union faucet for bridging usage. If you opt-in to share your address, you will be tracked as an early contributor.
+Claim UNO from the Union faucet for bridging usage. If you opt-in to share your address, you will be tracked as an early contributor.
 
 <FaucetButton/>
 
-IBC transfers from `union-testnet-3` to `sepolia` are just contract interactions, which need to be sent to either Sepolia or Union, depending on the transfer direction. We start by sending $UNO to Sepolia (Ethereum Testnet), and then back again. This showcase uses a single-threaded relayer with simple nonce management.
+IBC transfers from `union-testnet-3` to `sepolia` are just contract interactions, which need to be sent to either Sepolia or Union, depending on the transfer direction. We start by sending UNO to Sepolia (Ethereum Testnet), and then back again. This showcase uses a single-threaded relayer with simple nonce management.
 
 IBC is as fast as the underlying chains. When you do Tendermint to Tendermint transactions, IBC is quite fast because the finality time is 6 seconds. However, when connecting to Sepolia, which has a similar configuration to Ethereum Mainnet, it takes a while for blocks to finalize. We need to await finalization to avoid double-spending.
 
@@ -51,11 +51,11 @@ When the transaction is received, the funds are locked in a vault, ensuring the 
 
 On our testnet, `Galois` is running on relatively simple infrastructure. This means proof generation is relatively slow. Proof generation becomes close to instant on 128-core machines. On mainnet, relayers with fast proving speeds will outcompete slow relayers and generate significantly more fees. This market dynamic optimizes our infrastructure.
 
-On Sepolia, the zero-knowledge proof is verified inside the IBC contract stack. This verification is necessary to update the Union Light client. After successful verification, an ERC-20 token representing $UNO is transferred to your wallet.
+On Sepolia, the zero-knowledge proof is verified inside the IBC contract stack. This verification is necessary to update the Union Light client. After successful verification, an ERC-20 token representing UNO is transferred to your wallet.
 
 <TransferUnoToEthereumStatus/>
 
-To transfer the $UNO back, we need to obtain some Sepolia ETH for gas fees. Copy your address below, and enter it on the Sepolia Faucet page.
+To transfer the UNO back, we need to obtain some SepoliaETH for gas fees. Copy your address below, and enter it on the Sepolia Faucet page.
 
 <SepoliaFaucetButton/>
 
@@ -65,7 +65,7 @@ For the transfer back we need to wait for the acknowledgement of the initial tra
 
 <!-- Acknowledgement Element -->
 
-Once you have received Sepolia Eth, initiate the transfer to Union. This will either burn or lock your tokens in the Sepolia vault, depending on the sovereign home of the asset. Once Sepolia finalizes, the funds are sent to Union.
+Once you have received SepoliaETH, initiate the transfer to Union. This will either burn or lock your tokens in the Sepolia vault, depending on the sovereign home of the asset. Once Sepolia finalizes, the funds are sent to Union.
 
 <SendUnoToUnionButton/>
 
@@ -87,7 +87,7 @@ The signing committee constructs a BLS signature, used to prove the finalization
 
 <SendUnoToUnionStatus/>
 
-You will at some point lose the $UNO obtained through this faucet, as we migrate to newer versions of the testnet. If you opted in for early contribution, your participation in this demo is registered for later incentivization.
+You will at some point lose the UNO obtained through this faucet, as we migrate to newer versions of the testnet. If you opted in for early contribution, your participation in this demo is registered for later incentivization.
 
 ## Future Improvements
 

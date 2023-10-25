@@ -41,11 +41,11 @@
 	{:else}
 		{#if $sendingUnoToUnion === 'sending'}
 			<div class="flex gap-4 h-[48px] items-center">
-				<div>Sending UNO to Union</div>
+				<div>Sending 0.001 UNO to Union</div>
 				<PulseSpinner/>
 			</div>
 		{:else if $sendingUnoToUnion === 'start'}
-			<DemoButton on:click={clickHandler}>Send UNO to Union</DemoButton>
+			<DemoButton on:click={clickHandler}>Send 0.001 UNO to Union</DemoButton>
 		{:else if $sendingUnoToUnion === 'done'} 
 			<div class="flex gap-4 h-[48px] items-center">
 				<div>✅ Received UNO on Union, new balance is <span class="text-accent">{toFixedUno(BigInt($unionUnoBalance.amount))}</span> UNO</div> 
