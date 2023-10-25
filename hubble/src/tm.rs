@@ -202,11 +202,6 @@ async fn batch_sync<D: Datastore>(
 
         let txs = fetch_transactions_for_block(client, header.header.height, len).await?;
         let events: Vec<_> = block.events(&header.header.time).collect();
-        // debug!(
-        //     "found {} events for block {}",
-        //     events.len() + txs.iter().len(),
-        //     header.header.height
-        // );
         Ok(insert_blocks_many::V0BlocksInsertInput {
             chain_id: Some(chain_db_id),
             chain: None,
@@ -220,7 +215,7 @@ async fn batch_sync<D: Datastore>(
             created_at: None,
             updated_at: None,
             is_finalized: Some(true),
-            data: Some(serde_json::to_value(header.clone())?),
+            data: Some(serde_json::to_value(header.clone())?.replace_escape_chars()),
             time: Some(header.header.time.to_rfc3339()),
             transactions: Some(transactions_into_many_blocks_input(
                 txs,
@@ -310,7 +305,7 @@ async fn sync_next<D: Datastore>(
                 on_conflict: None,
             }),
             hash: Some(header.hash().to_string()),
-            data: Some(serde_json::to_value(header.clone())?),
+            data: Some(serde_json::to_value(header.clone())?.replace_escape_chars()),
             height: Some(header.height.value().into()),
             id: None,
             is_finalized: Some(true),
@@ -389,7 +384,7 @@ fn transactions_into_many_blocks_input(
                     block_id: None,
                     created_at: None,
                     updated_at: None,
-                    data: Some(serde_json::to_value(&tx).unwrap()),
+                    data: Some(serde_json::to_value(&tx).unwrap().replace_escape_chars()),
                     hash: Some(tx.hash.to_string()),
                     id: None,
                     index: Some(tx.index.into()),
@@ -403,7 +398,9 @@ fn transactions_into_many_blocks_input(
                                     block: None,
                                     block_id: None,
                                     created_at: None,
-                                    data: Some(serde_json::to_value(r).unwrap()),
+                                    data: Some(
+                                        serde_json::to_value(r).unwrap().replace_escape_chars(),
+                                    ),
                                     index: Some(index),
                                     time: Some(time.clone()),
                                     updated_at: None,
@@ -442,7 +439,7 @@ impl BlockExt for BlockResponse {
                 created_at: None,
                 updated_at: None,
                 index: Some(i as i64),
-                data: Some(serde_json::to_value(e).unwrap()),
+                data: Some(serde_json::to_value(e).unwrap().replace_escape_chars()),
                 time: Some(timestamp.to_rfc3339()),
                 stage: Some(STAGE_BEGIN_BLOCK),
                 transaction_id: None,
@@ -458,7 +455,7 @@ impl BlockExt for BlockResponse {
                     created_at: None,
                     updated_at: None,
                     index: Some(i as i64),
-                    data: Some(serde_json::to_value(e).unwrap()),
+                    data: Some(serde_json::to_value(e).unwrap().replace_escape_chars()),
                     time: Some(timestamp.to_rfc3339()),
                     stage: Some(STAGE_END_BLOCK),
                     transaction_id: None,
@@ -474,7 +471,7 @@ impl BlockExt for BlockResponse {
                     created_at: None,
                     updated_at: None,
                     index: Some(i as i64),
-                    data: Some(serde_json::to_value(e).unwrap()),
+                    data: Some(serde_json::to_value(e).unwrap().replace_escape_chars()),
                     time: Some(timestamp.to_rfc3339()),
                     stage: Some(STAGE_FINALIZE_BLOCK),
                     transaction_id: None,
@@ -490,7 +487,11 @@ impl BlockExt for BlockResponse {
                 created_at: None,
                 updated_at: None,
                 index: Some(i as i64),
-                data: Some(serde_json::to_value(WithType::validator_update(e)).unwrap()),
+                data: Some(
+                    serde_json::to_value(WithType::validator_update(e))
+                        .unwrap()
+                        .replace_escape_chars(),
+                ),
                 time: Some(timestamp.to_rfc3339()),
                 stage: Some(STAGE_VALIDATOR_UPDATES),
                 transaction_id: None,
@@ -506,7 +507,11 @@ impl BlockExt for BlockResponse {
                     created_at: None,
                     updated_at: None,
                     index: Some(i as i64),
-                    data: Some(serde_json::to_value(WithType::consensus_param_update(e)).unwrap()),
+                    data: Some(
+                        serde_json::to_value(WithType::consensus_param_update(e))
+                            .unwrap()
+                            .replace_escape_chars(),
+                    ),
                     time: Some(timestamp.to_rfc3339()),
                     stage: Some(STAGE_CONSENSUS_PARAM_UPDATES),
                     transaction_id: None,
@@ -541,6 +546,40 @@ impl<I> WithType<I> {
         WithType {
             kind: "consensus_param_update",
             inner,
+        }
+    }
+}
+
+trait SerdeValueExt {
+    fn replace_escape_chars(self) -> Self;
+}
+
+impl SerdeValueExt for serde_json::Value {
+    /// Replaces \u0000 from JSON objects and replaces it with \\u0000
+    fn replace_escape_chars(mut self) -> Self {
+        replace_escape_chars(&mut self);
+        self
+    }
+}
+
+fn replace_escape_chars(val: &mut serde_json::Value) {
+    match val {
+        serde_json::Value::Null => (),
+        serde_json::Value::Bool(_) => (),
+        serde_json::Value::Number(_) => (),
+        serde_json::Value::String(str) => {
+            let result = str::replace(str, "\\u0000", "\\\\u0000");
+            let _ = std::mem::replace(str, result);
+        }
+        serde_json::Value::Array(arr) => {
+            for item in arr {
+                replace_escape_chars(item)
+            }
+        }
+        serde_json::Value::Object(obj) => {
+            for item in obj.values_mut() {
+                replace_escape_chars(item)
+            }
         }
     }
 }
