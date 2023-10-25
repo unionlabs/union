@@ -1,7 +1,7 @@
 ---
 title: Unionlabs raises 3.7 million USDC
 date: "2023-09-29"
-author: "@union_build"
+author: "union_build"
 preview: "We have successfully raised $3.7 million USDC at a 35 million valuation from the top investors in the infra space for our seed round."
 published: false
 ---

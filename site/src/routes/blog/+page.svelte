@@ -20,7 +20,7 @@
 		{#each filteredPosts as [path, {metadata}] }
 			<a class="block p-4" href={extractSlug(path)}>
 				<h1 class="text-3xl sm:text-5xl font-bold mb-0">{metadata.title}</h1>
-				<div class="font-mono mb-2 mt-1 sm:text-lg">{metadata.date} - <a class="text-accent" href={`https://x.com/${metadata.author}`}>{metadata.author}</a></div>
+				<div class="font-mono mb-2 mt-1 sm:text-lg">{metadata.date} - <a class="text-accent" href={`https://x.com/${metadata.author}`}>@{metadata.author}</a></div>
 				<p class="sm:text-xl">{metadata.preview}</p>
 				<p class="block mt-2 font-mono text-lg">READ FULL POST -&gt;</p>
 			</a>
