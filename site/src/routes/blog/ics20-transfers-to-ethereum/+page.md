@@ -97,7 +97,7 @@ Currently, transfer times are dominated by:
 - Awaiting finalization.
 - Proof generation.
 
-Our primary focus for public testnet is getting voyager more efficient to reduce relayer latency to sub-second timeframes. Finalization will improve if single-slot finality lands on Ethereum, or with possible restaking integrations. Proof generation is already quite efficient, but we have more in store before mainnet with CometBLS V2.
+Our primary focus for public testnet is getting voyager more efficient to reduce relayer latency to sub-second timeframes, a primary example being the transfer time from Union to Sepolia; currently we are waiting for two epochs, but this will be reduced to one in a future update, effectively halving the time from around 15 minutes to around 7. Finalization will improve if single-slot finality lands on Ethereum, or with possible restaking integrations. Proof generation is already quite efficient, but we have more in store before mainnet with CometBLS V2.
 
 ## Join the Union
 
