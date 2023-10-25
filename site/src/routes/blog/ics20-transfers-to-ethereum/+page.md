@@ -4,7 +4,7 @@ slug: ics20-transfers-to-ethereum
 date: "2023-10-04"
 author: "@union_build"
 preview: "Today we present a first look at UCS-01, a superset ICS-20 for asset transfers between EVM and Cosmos-SDK-based chains."
-published: false
+published: true
 ---
 
 <script>

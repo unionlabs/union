@@ -18,6 +18,7 @@ import {
   IBC_CONTRACT_ABI,
   UCS01_SEPOLIA_SOURCE_CHANNEL,
   UCS01_SEPOLIA_PORT_ID,
+  AMOUNT_TO_SEND_TO_UNION,
 } from "./constants";
 
 export const approveUnoTransferToUnion = async () => {
@@ -30,7 +31,7 @@ export const approveUnoTransferToUnion = async () => {
     eSigner
   );
 
-  const tx = await contract.approve(UCS01_EVM_ADDRESS, 100000);
+  const tx = await contract.approve(UCS01_EVM_ADDRESS, AMOUNT_TO_SEND_TO_UNION);
   await tx.wait();
 };
 
@@ -76,7 +77,7 @@ export const sendUnoToUnion = async () => {
     UCS01_SEPOLIA_PORT_ID,
     UCS01_SEPOLIA_SOURCE_CHANNEL,
     uAccount.address,
-    [[MUNO_ERC20_ADDRESS, 1000]],
+    [[MUNO_ERC20_ADDRESS, AMOUNT_TO_SEND_TO_UNION]],
     3,
     800000000
   );

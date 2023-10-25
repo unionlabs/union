@@ -14,3 +14,5 @@ export const UCS01_SEPOLIA_SOURCE_CHANNEL = "channel-0";
 export const UCS01_SEPOLIA_PORT_ID = "ucs01-relay";
 
 export const UNION_RPC_URL = "wss://rpc.wakey.uno";
+
+export const AMOUNT_TO_SEND_TO_UNION = 1000;
