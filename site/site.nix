@@ -1,5 +1,5 @@
-{ ... }: {
-  perSystem = { pkgs, lib, nix-filter, ensureAtRepositoryRoot, ... }:
+{ inputs, ... }: {
+  perSystem = { pkgs, system, lib, nix-filter, ensureAtRepositoryRoot, ... }:
     let
       packageJSON = lib.importJSON ./package.json;
     in
@@ -48,26 +48,31 @@
           '';
         };
 
-        impure-site-deploy = pkgs.writeShellApplication {
-          name = "impure-site-deploy";
+        impure-site-deploy =
+          let
+            vercelPkgs = import inputs.nixpkgs-vercel { inherit system; };
+          in
+          pkgs.writeShellApplication {
+            name = "impure-site-deploy";
 
-          runtimeInputs = [ pkgs.nodePackages.vercel ];
+            runtimeInputs = [ vercelPkgs.yarn vercelPkgs.nodePackages.vercel ];
 
-          text = ''
-            ${ensureAtRepositoryRoot}
+            text = ''
+              ${ensureAtRepositoryRoot}
 
-            cd site
-            yarn
-            yarn build
+              cd site
+              yarn
 
-            # cspell:disable
-            export VERCEL_PROJECT_ID=prj_HWQLgBiGFHNPSy5qJ3WpCeX1l492
-            export VERCEL_ORG_ID=team_lY7Vs9wFi3Ifb2A24bOxiA68
-            # cspell:enable
+              # cspell:disable
+              export VERCEL_PROJECT_ID=prj_HWQLgBiGFHNPSy5qJ3WpCeX1l492
+              export VERCEL_ORG_ID=team_lY7Vs9wFi3Ifb2A24bOxiA68
+              # cspell:enable
 
-            vercel deploy --prebuilt --scope unionbuild
-          '';
-        };
+              vercel pull --yes --environment=preview --scope=unionbuild
+              vercel build --scope unionbuild
+              vercel deploy --prebuilt --scope unionbuild
+            '';
+          };
       };
     };
 }

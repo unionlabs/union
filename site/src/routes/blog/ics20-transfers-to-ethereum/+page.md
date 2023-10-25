@@ -1,7 +1,7 @@
 ---
 title: ICS-20 Transfers to Ethereum
 slug: ics20-transfers-to-ethereum
-date: "2023-10-04"
+date: "2023-10-25"
 author: "@union_build"
 preview: "Today we present a first look at UCS-01, a superset ICS-20 for asset transfers between EVM and Cosmos-SDK-based chains."
 published: true
@@ -97,14 +97,14 @@ Currently, transfer times are dominated by:
 - Awaiting finalization.
 - Proof generation.
 
-Our primary focus for public testnet is getting voyager more efficient to reduce relayer latency to sub-second timeframes. Finalization will improve if single-slot finality lands on Ethereum, or with possible restaking integrations. Proof generation is already quite efficient, but we have more in store before mainnet with CometBLS V2.
+Our primary focus for public testnet is getting voyager more efficient to reduce relayer latency to sub-second timeframes, a primary example being the transfer time from Union to Sepolia; currently we are waiting for two epochs, but this will be reduced to one in a future update, effectively halving the time from around 15 minutes to around 7. Finalization will improve if single-slot finality lands on Ethereum, or with possible restaking integrations. Proof generation is already quite efficient, but we have more in store before mainnet with CometBLS V2.
 
 ## Join the Union
 
-We are launching or incentivized testnet soon! If you want to become a contributor:
+We are launching our incentivized testnet soon! If you want to become a contributor:
 
 - Follow [@union_build on X](https://x.com/union_build).
 - Read [the docs](https://docs.union.build).
-- Speak with us at [Cosmoverse 2023](https://cosmoverse.org/).
+- Join our [Discord](https://discord.com/invite/union-build).
 
 We are looking for infrastructure providers, technical collaborations, community managers, and code contributors. Direct message @union_build if interested.
