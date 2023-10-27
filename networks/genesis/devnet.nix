@@ -92,7 +92,7 @@
         '';
 
       # Adds IBC connection `connection-0` between `08-wasm-0` and `cometbls-0`
-      addIbcConnectionToGenesis = home: pkgs.runCommand "add-ibc-connection-to-genesis"
+      addIbcConnectionToGenesis = thisClient: counterpartyClient: home: pkgs.runCommand "add-ibc-connection-to-genesis"
         {
           buildInputs = [ pkgs.jq pkgs.moreutils ];
         }
@@ -101,10 +101,17 @@
           mkdir -p $out
           cp --no-preserve=mode -r ${home}/* $out
 
+          CONNECTION_SEQ=$(jq -r \
+            '.app_state.ibc.connection_genesis.next_connection_sequence' \
+            $out/config/genesis.json)
+
+          CONNECTION="connection-$CONNECTION_SEQ"
+          
           jq \
+           --arg connection $CONNECTION \
            '.app_state.ibc.connection_genesis.connections += [{
-              "id": "connection-0",
-              "client_id": "08-wasm-0",
+              "id": $connection,
+              "client_id": "${thisClient}",
               "versions": [{
                 "identifier": "1",
                 "features": [
@@ -113,8 +120,8 @@
                }],
               "state": 3,
               "counterparty": {
-                "client_id": "cometbls-0",
-                "connection_id": "connection-0",
+                "client_id": "${counterpartyClient}",
+                "connection_id": $connection,
                 "prefix": {
                   "key_prefix": "aWJj"
                 }
@@ -124,15 +131,19 @@
             $out/config/genesis.json | sponge $out/config/genesis.json
 
           jq \
+            --arg connection $CONNECTION \
             '.app_state.ibc.connection_genesis.client_connection_paths += [{
-                "client_id": "08-wasm-0",
-                "paths": ["connection-0"]
+                "client_id": "${thisClient}",
+                "paths": [$connection]
             }]' \
             $out/config/genesis.json | sponge $out/config/genesis.json
 
+          CONNECTION_SEQ=$((CONNECTION_SEQ+1))
+
           # Connection id sequence is advanced to prevent overlapping.
           jq \
-            '.app_state.ibc.connection_genesis.next_connection_sequence = "1"' \
+            --arg sequence "$CONNECTION_SEQ" \
+            '.app_state.ibc.connection_genesis.next_connection_sequence = $sequence' \
             $out/config/genesis.json | sponge $out/config/genesis.json
         '';
 
@@ -436,7 +447,7 @@
           ]
           # add ibc connection
           ++ [
-            (addIbcConnectionToGenesis)
+            (addIbcConnectionToGenesis "08-wasm-0" "cometbls-0")
           ]
           # add ibc channels for the contracts
           ++ [
