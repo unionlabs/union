@@ -70,7 +70,7 @@
             mv merge.json $out/config/genesis.json
           '';
 
-      calculateCw20Ics20ContractAddress = home: pkgs.runCommand "calculate-ucs01-relay-contract-address"
+      calculateCosmWasmAddress = contract: home: pkgs.runCommand "calculate-cosmwasm-address"
         {
           buildInputs = [ pkgs.jq ];
         }
@@ -85,31 +85,13 @@
             --output json \
             | jq '.[] | select(.name == "${genesisAccountName}").address' --raw-output)
 
-          CODE_HASH=$(sha256sum ${self'.packages.ucs01-relay}/lib/ucs01_relay.wasm | cut -f1 -d" ")
+          # CODE_HASH=$(sha256sum ${self'.packages.ucs01-relay}/lib/ucs01_relay.wasm | cut -f1 -d" ")
+          CODE_HASH=$(sha256sum $contract | cut -f1 -d" ")
 
-          ${uniond} query wasm build-address $CODE_HASH $ALICE_ADDRESS ${cw-instantiate2-salt} > $out/CW20_ICS20_CONTRACT_ADDRESS
+          ${uniond} query wasm build-address $CODE_HASH $ALICE_ADDRESS ${cw-instantiate2-salt} > $out/address-$(basename -z -s .wasm ${contract})
         '';
 
-      calculatePingPongAddress = home: pkgs.runCommand "calculate-ping-pong-contract-address"
-        {
-          buildInputs = [ pkgs.jq ];
-        }
-        ''
-          export HOME=$(pwd)
-          mkdir -p $out
-          cp --no-preserve=mode -r ${home}/* $out
-
-          ALICE_ADDRESS=$(${uniond} keys list \
-            --keyring-backend test \
-            --home $out \
-            --output json \
-            | jq '.[] | select(.name == "${genesisAccountName}").address' --raw-output)
-
-          CODE_HASH=$(sha256sum ${self'.packages.ucs00-pingpong}/lib/ucs00_pingpong.wasm | cut -f1 -d" ")
-
-          ${uniond} query wasm build-address $CODE_HASH $ALICE_ADDRESS ${cw-instantiate2-salt} > $out/PING_PONG_CONTRACT_ADDRESS
-        '';
-
+      # Adds IBC connection `connection-0` between `08-wasm-0` and `cometbls-0`
       addIbcConnectionToGenesis = home: pkgs.runCommand "add-ibc-connection-to-genesis"
         {
           buildInputs = [ pkgs.jq pkgs.moreutils ];
@@ -131,7 +113,7 @@
                }],
               "state": 3,
               "counterparty": {
-                "client_id": "cometbls-new-0",
+                "client_id": "cometbls-0",
                 "connection_id": "connection-0",
                 "prefix": {
                   "key_prefix": "aWJj"
@@ -154,7 +136,7 @@
             $out/config/genesis.json | sponge $out/config/genesis.json
         '';
 
-      addIbcChannelToGenesis = home: pkgs.runCommand "add-ibc-channel-to-genesis"
+      addIbcChannelToGenesis = contract: counterpartyPortId: version: home: pkgs.runCommand "add-ibc-channel-to-genesis-2"
         {
           buildInputs = [ pkgs.jq pkgs.moreutils ];
         }
@@ -169,129 +151,94 @@
             --output json \
             | jq '.[] | select(.name == "${genesisAccountName}").address' --raw-output)
 
-          CW20_ADDRESS=$(cat ${calculateCw20Ics20ContractAddress home}/CW20_ICS20_CONTRACT_ADDRESS)
-          CW20_PORT=wasm.$CW20_ADDRESS
+          PORT_ID=wasm.$(cat ${calculateCosmWasmAddress contract home}/address-$(basename -z -s .wasm ${contract}))
+          NEXT_CHANNEL_SEQ=$(jq -r .app_state.ibc.channel_genesis.next_channel_sequence $out/config/genesis.json)
+          NEXT_CHANNEL="channel-$NEXT_CHANNEL_SEQ"
 
-          PING_PONG_ADDRESS=$(cat ${calculatePingPongAddress home}/PING_PONG_CONTRACT_ADDRESS)
-          PING_PONG_PORT=wasm.$PING_PONG_ADDRESS
-
-          # TODO(aeryz): get the port id and channel info as parameters
           jq \
-           --arg cw20_port $CW20_PORT \
+           --arg portId $PORT_ID \
+           --arg channel $NEXT_CHANNEL \
            '.app_state.ibc.channel_genesis.channels += [{
               "state": 3,
               "ordering": 1,
               "counterparty": {
-                "port_id": "transfer",
-                "channel_id": "channel-0"
+                "port_id": "${counterpartyPortId}",
+                "channel_id": $channel
               },
               "connection_hops": ["connection-0"],
-              "version": "ics20-1",
-              "port_id": $cw20_port,
-              "channel_id": "channel-0"
+              "version": "${version}",
+              "port_id": $portId,
+              "channel_id": $channel
             }]' \
             $out/config/genesis.json | sponge $out/config/genesis.json
 
           jq \
-           --arg cw20_port $CW20_PORT \
-           --arg ping_pong_port $PING_PONG_PORT \
+           --arg portId $PORT_ID \
+           --arg channel $NEXT_CHANNEL \
            '.app_state.ibc.channel_genesis.send_sequences += [{
-              "port_id": $cw20_port,
-              "channel_id": "channel-0",
-              "sequence": 1
-            }, {
-              "port_id": $ping_pong_port,
-              "channel_id": "channel-1",
+              "port_id": $portId,
+              "channel_id": $channel,
               "sequence": 1
             }]' \
             $out/config/genesis.json | sponge $out/config/genesis.json
 
           jq \
-           --arg cw20_port $CW20_PORT \
-           --arg ping_pong_port $PING_PONG_PORT \
+           --arg portId $PORT_ID \
+           --arg channel $NEXT_CHANNEL \
            '.app_state.ibc.channel_genesis.recv_sequences += [{
-              "port_id": $cw20_port,
-              "channel_id": "channel-0",
-              "sequence": 1
-            }, {
-              "port_id": $ping_pong_port,
-              "channel_id": "channel-1",
+              "port_id": $portId,
+              "channel_id": $channel,
               "sequence": 1
             }]' \
             $out/config/genesis.json | sponge $out/config/genesis.json
 
           jq \
-           --arg cw20_port $CW20_PORT \
-           --arg ping_pong_port $PING_PONG_PORT \
+           --arg portId $PORT_ID \
+           --arg channel $NEXT_CHANNEL \
            '.app_state.ibc.channel_genesis.ack_sequences += [{
-              "port_id": $cw20_port,
-              "channel_id": "channel-0",
-              "sequence": 1
-            }, {
-              "port_id": $ping_pong_port,
-              "channel_id": "channel-1",
+              "port_id": $portId,
+              "channel_id": $channel,
               "sequence": 1
             }]' \
             $out/config/genesis.json | sponge $out/config/genesis.json
 
-          jq \
-           --arg ping_pong_port $PING_PONG_PORT \
-           '.app_state.ibc.channel_genesis.channels += [{
-              "state": 3,
-              "ordering": 1,
-              "counterparty": {
-                "port_id": "ping-pong",
-                "channel_id": "channel-1"
-              },
-              "connection_hops": ["connection-0"],
-              "version": "ics20-1",
-              "port_id": $ping_pong_port,
-              "channel_id": "channel-1"
-            }]' \
-            $out/config/genesis.json | sponge $out/config/genesis.json
+          NEXT_CHANNEL_SEQ=$((NEXT_CHANNEL_SEQ+1))
 
           jq \
-            '.app_state.ibc.channel_genesis.next_channel_sequence = "2"' \
+            --arg sequence $NEXT_CHANNEL_SEQ \
+            '.app_state.ibc.channel_genesis.next_channel_sequence = $sequence' \
             $out/config/genesis.json | sponge $out/config/genesis.json
 
-          jq \
-            '.app_state.capability.index = "3"' \
-            $out/config/genesis.json | sponge $out/config/genesis.json
+          CAPABILITY_INDEX=$(jq -r\
+            '.app_state.capability.index' \
+            $out/config/genesis.json)
 
           jq \
-           --arg capability1 capabilities/ports/$CW20_PORT/channels/channel-0 \
-           --arg capability2 capabilities/ports/$PING_PONG_PORT/channels/channel-1 \
+           --arg index "$CAPABILITY_INDEX" \
+           --arg capability capabilities/ports/$PORT_ID/channels/$NEXT_CHANNEL \
             '.app_state.capability.owners += [{
-              "index": "1",
+              "index": $index,
               "index_owners": {
                 "owners": [
                   {
                     "module": "ibc",
-                    "name": $capability1
+                    "name": $capability
                   },
                   {
                     "module": "wasm",
-                    "name": $capability1
+                    "name": $capability
                   }
                 ]
               }
-            },{
-              "index": "2",
-              "index_owners": {
-                "owners": [
-                  {
-                    "module": "ibc",
-                    "name": $capability2
-                  },
-                  {
-                    "module": "wasm",
-                    "name": $capability2
-                  }
-                ]
-              }
-            } ]' \
+            }]' \
             $out/config/genesis.json | sponge $out/config/genesis.json
 
+          CAPABILITY_INDEX=$((CAPABILITY_INDEX+1))
+
+          jq \
+            --arg index "$CAPABILITY_INDEX" \
+            '.app_state.capability.index = $index' \
+            $out/config/genesis.json | sponge $out/config/genesis.json
         '';
 
       addLightClientCodeToGenesis = contract: home: pkgs.runCommand "add-light-client-contract-code-to-genesis"
@@ -491,8 +438,12 @@
           ++ [
             (addIbcConnectionToGenesis)
           ]
+          # add ibc channels for the contracts
           ++ [
-            (addIbcChannelToGenesis)
+            (addIbcChannelToGenesis "${self'.packages.ucs01-relay}/lib/ucs01-relay.wasm" "ucs01-relay" "ucs01-0")
+            (addIbcChannelToGenesis "${self'.packages.ucs00-pingpong}/lib/ucs00-pingpong.wasm" "ping-pong" "ics20-1")
+          ]
+          ++ [
             (mkHome {
               genesisAccounts = builtins.genList (i: "val-${toString i}") devnetConfig.validatorCount;
             })
