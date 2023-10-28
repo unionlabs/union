@@ -8,9 +8,8 @@ use unionlabs::{
         AcknowledgementPath, ChannelEndPath, ClientConsensusStatePath, ClientStatePath,
         CommitmentPath, ConnectionPath, IbcPath,
     },
+    traits::Chain,
 };
-
-use crate::chain::Chain;
 
 pub trait IbcStateRead<Counterparty: Chain, P: IbcPath<Self, Counterparty>>: Chain + Sized
 where
@@ -24,14 +23,14 @@ where
 }
 
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
-pub struct StateProof<Data> {
-    pub state: Data,
+pub struct StateProof<State> {
+    pub state: State,
     #[serde(with = "::serde_utils::hex_string")]
     pub proof: Vec<u8>,
     pub proof_height: Height,
 }
 
-impl<Data: Debug> Debug for StateProof<Data> {
+impl<State: Debug> Debug for StateProof<State> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("StateProof")
             .field("state", &self.state)
@@ -40,54 +39,6 @@ impl<Data: Debug> Debug for StateProof<Data> {
             .finish()
     }
 }
-
-// NOTE: Commented out for now, may reuse this in the future
-// macro_rules! ibc_paths (
-//     (
-//         $(
-//             #[display($fmt:literal)]
-//             #[output($Output:ty)]
-//             pub struct $Struct:ident$(<$($generics:ident$(: $bound:ident)?),+>)? {
-//                 $(pub $field:ident: $field_ty:ty,)+
-//             }
-//         )+
-//     ) => {
-//         $(
-//             #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)] // clap::Args
-//             pub struct $Struct$(<$($generics),+>)? {
-//                 $(pub $field: $field_ty,)+
-//             }
-
-//             impl$(<$($generics: Display),+>)? Display for $Struct {
-//                 fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-//                     let Self { $($field,)+ } = self;
-//                     write!(f, $fmt)
-//                 }
-//             }
-
-//             impl<$($($generics: Display,)+)? This: Chain, Counterparty: Chain> IbcPath<This, Counterparty> for $Struct$(<$($generics),+>)? {
-//                 type Output = $Output;
-//             }
-
-//         )+
-
-//         enum_variants_conversions! {
-//             #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-//             pub enum Path {
-//                 $(
-//                     $Struct($Struct),
-//                 )+
-//             }
-//         }
-
-//         pub trait IbcStateReadPaths<Counterparty: Chain>: Chain + $(IbcStateRead<Counterparty, $Struct>+)+ {}
-
-//         impl<Counterparty: Chain, T: Chain> IbcStateReadPaths<Counterparty> for T
-//             where
-//                 T: $(IbcStateRead<Counterparty, $Struct>+)+
-//         {}
-//     }
-// );
 
 pub trait IbcStateReadPaths<Counterparty: Chain>:
     Chain

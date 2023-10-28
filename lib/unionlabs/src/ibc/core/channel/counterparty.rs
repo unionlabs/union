@@ -1,8 +1,12 @@
+use std::str::FromStr;
+
 use serde::{Deserialize, Serialize};
+
+use crate::id::PortId;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Counterparty {
-    pub port_id: String,
+    pub port_id: PortId,
     // TODO: Make into `ChannelId`
     pub channel_id: String,
 }
@@ -10,18 +14,29 @@ pub struct Counterparty {
 impl From<Counterparty> for protos::ibc::core::channel::v1::Counterparty {
     fn from(value: Counterparty) -> Self {
         Self {
-            port_id: value.port_id,
+            port_id: value.port_id.to_string(),
             channel_id: value.channel_id,
         }
     }
 }
 
-impl From<protos::ibc::core::channel::v1::Counterparty> for Counterparty {
-    fn from(proto: protos::ibc::core::channel::v1::Counterparty) -> Self {
-        Self {
-            port_id: proto.port_id,
+#[derive(Debug, thiserror::Error)]
+pub enum TryFromChannelCounterpartyError {
+    #[error("error parsing port id")]
+    PortId(#[source] <PortId as FromStr>::Err),
+}
+
+impl TryFrom<protos::ibc::core::channel::v1::Counterparty> for Counterparty {
+    type Error = TryFromChannelCounterpartyError;
+
+    fn try_from(proto: protos::ibc::core::channel::v1::Counterparty) -> Result<Self, Self::Error> {
+        Ok(Self {
+            port_id: proto
+                .port_id
+                .parse()
+                .map_err(TryFromChannelCounterpartyError::PortId)?,
             channel_id: proto.channel_id,
-        }
+        })
     }
 }
 
@@ -29,18 +44,37 @@ impl From<protos::ibc::core::channel::v1::Counterparty> for Counterparty {
 impl From<Counterparty> for contracts::ibc_handler::IbcCoreChannelV1CounterpartyData {
     fn from(value: Counterparty) -> Self {
         Self {
-            port_id: value.port_id,
+            port_id: value.port_id.to_string(),
             channel_id: value.channel_id,
         }
     }
 }
 
 #[cfg(feature = "ethabi")]
-impl From<contracts::ibc_handler::IbcCoreChannelV1CounterpartyData> for Counterparty {
-    fn from(value: contracts::ibc_handler::IbcCoreChannelV1CounterpartyData) -> Self {
-        Self {
-            port_id: value.port_id,
+#[derive(Debug, thiserror::Error)]
+pub enum TryFromEthAbiChannelCounterpartyError {
+    #[error("error parsing port id")]
+    PortId(#[source] <PortId as FromStr>::Err),
+}
+
+#[cfg(feature = "ethabi")]
+impl TryFrom<contracts::ibc_handler::IbcCoreChannelV1CounterpartyData> for Counterparty {
+    type Error = TryFromChannelCounterpartyError;
+
+    fn try_from(
+        value: contracts::ibc_handler::IbcCoreChannelV1CounterpartyData,
+    ) -> Result<Self, Self::Error> {
+        Ok(Self {
+            port_id: value
+                .port_id
+                .parse()
+                .map_err(TryFromChannelCounterpartyError::PortId)?,
             channel_id: value.channel_id,
-        }
+        })
     }
+}
+
+#[cfg(feature = "ethabi")]
+impl crate::EthAbi for Counterparty {
+    type EthAbi = contracts::ibc_handler::IbcCoreChannelV1CounterpartyData;
 }

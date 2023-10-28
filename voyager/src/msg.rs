@@ -862,6 +862,7 @@ mod tests {
                 msg_connection_open_try::MsgConnectionOpenTry, version::Version,
             },
         },
+        validated::ValidateT,
         EmptyString,
     };
 
@@ -909,7 +910,10 @@ mod tests {
                     client_id: parse!("08-wasm-2"),
                     counterparty: connection::counterparty::Counterparty {
                         client_id: parse!("cometbls-0"),
-                        connection_id: EmptyString,
+                        connection_id: ""
+                            .to_string()
+                            .validate()
+                            .expect("empty string is a valid empty string; qed;"),
                         prefix: MerklePrefix {
                             key_prefix: b"ibc".to_vec(),
                         },
@@ -927,13 +931,13 @@ mod tests {
             union_chain_id.clone(),
             MsgChannelOpenInitData {
                 msg: MsgChannelOpenInit {
-                    port_id: "ping-pong".to_string(),
+                    port_id: parse!("ucs01-relay"),
                     channel: Channel {
                         state: channel::state::State::Init,
                         ordering: channel::order::Order::Unordered,
                         counterparty: channel::counterparty::Counterparty {
-                            port_id: "WASM_PORT_ID".to_string(),
-                            channel_id: EmptyString.to_string(),
+                            port_id: parse!("WASM_PORT_ID"),
+                            channel_id: parse!(""),
                         },
                         connection_hops: vec![parse!("connection-8")],
                         version: "ucs00-pingpong-1".to_string(),
@@ -947,13 +951,13 @@ mod tests {
             eth_chain_id,
             MsgChannelOpenInitData {
                 msg: MsgChannelOpenInit {
-                    port_id: "transfer".to_string(),
+                    port_id: parse!("ucs01-relay"),
                     channel: Channel {
                         state: channel::state::State::Init,
                         ordering: channel::order::Order::Ordered,
                         counterparty: channel::counterparty::Counterparty {
-                            port_id: "transfer".to_string(),
-                            channel_id: EmptyString.to_string(),
+                            port_id: parse!("ucs01-relay"),
+                            channel_id: parse!(""),
                         },
                         connection_hops: vec![parse!("connection-8")],
                         version: "ucs001-pingpong".to_string(),
@@ -970,7 +974,7 @@ mod tests {
                     client_id: parse!("cometbls-0"),
                     counterparty: connection::counterparty::Counterparty {
                         client_id: parse!("08-wasm-0"),
-                        connection_id: EmptyString,
+                        connection_id: parse!(""),
                         prefix: MerklePrefix {
                             key_prefix: b"ibc".to_vec(),
                         },

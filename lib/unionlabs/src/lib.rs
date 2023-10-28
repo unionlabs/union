@@ -2,11 +2,7 @@
 #![allow(clippy::missing_errors_doc, clippy::module_name_repetitions)]
 #![feature(return_position_impl_trait_in_trait)]
 
-use std::{
-    error::Error,
-    fmt::{Debug, Display},
-    str::FromStr,
-};
+use std::fmt::{Debug, Display};
 
 use bip32::{
     secp256k1::{
@@ -16,10 +12,9 @@ use bip32::{
     PrivateKey, PublicKey,
 };
 use prost::Message;
-use serde::{de, Deserialize, Serialize};
 use sha2::Digest;
 
-use crate::{errors::TryFromBranchError, ethereum::H256};
+use crate::{errors::TryFromBranchError, ethereum::H256, id::Bounded, validated::Validated};
 
 /// Defines types that wrap the IBC specification, matching the proto module structure. This also includes `union` extensions to ibc (i.e. types defined in `union.ibc`).
 pub mod ibc;
@@ -448,7 +443,7 @@ pub mod traits {
             google::protobuf::any::Any,
             lightclients::{cometbls, ethereum, wasm},
         },
-        id::ChannelId,
+        id::{ChannelId, PortId},
         validated::{Validate, Validated},
     };
 
@@ -527,7 +522,7 @@ pub mod traits {
             &self,
             block_hash: H256,
             destination_channel_id: ChannelId,
-            destination_port_id: String,
+            destination_port_id: PortId,
             sequence: u64,
         ) -> impl Future<Output = Vec<u8>> + '_;
     }
@@ -553,6 +548,7 @@ pub mod traits {
 
         fn height(&self) -> Height {
             Height {
+                // TODO: Make EVM_REVISION_NUMBER a constant in this crate
                 revision_number: 0,
                 revision_height: self.data.latest_slot,
             }
@@ -623,66 +619,8 @@ pub mod traits {
 }
 
 /// An empty string. Will only parse/serialize to/from `""`.
-#[derive(Debug, Clone, PartialEq)]
-pub struct EmptyString;
-
-#[derive(Debug, Clone, PartialEq)]
-pub struct EmptyStringParseError {
-    found: String,
-}
-
-impl Error for EmptyStringParseError {}
-
-impl Display for EmptyStringParseError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "expected empty string, found `{}`", self.found)
-    }
-}
-
-impl FromStr for EmptyString {
-    type Err = EmptyStringParseError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if s.is_empty() {
-            Ok(Self)
-        } else {
-            Err(EmptyStringParseError {
-                found: s.to_string(),
-            })
-        }
-    }
-}
-
-impl Display for EmptyString {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str("")
-    }
-}
-
-impl Serialize for EmptyString {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        serializer.collect_str(self)
-    }
-}
-
-impl<'de> Deserialize<'de> for EmptyString {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        <&str>::deserialize(deserializer).and_then(|s| {
-            s.parse()
-                .map_err(|_| de::Error::invalid_value(de::Unexpected::Str(s), &"an empty string"))
-        })
-    }
-}
-
-impl traits::Id for EmptyString {
-    type FromStrErr = EmptyStringParseError;
-}
+pub type EmptyString<S = String> = Validated<S, EmptyStringValidator>;
+pub type EmptyStringValidator = Bounded<0, 0>;
 
 pub use paste::paste;
 

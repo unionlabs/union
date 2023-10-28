@@ -2,7 +2,7 @@ use core::str::FromStr;
 
 use crate::{
     ibc::core::{channel::order::Order, client::height::Height},
-    id::{ChannelId, ConnectionId},
+    id::{ChannelId, ConnectionId, PortId},
     EmptyString,
 };
 
@@ -257,12 +257,14 @@ event! {
 
         #[event(tag = "channel_open_init")]
         ChannelOpenInit {
-            port_id: String,
+            #[parse(PortId::from_str)]
+            port_id: PortId,
             #[parse(ChannelId::from_str)]
             channel_id: ChannelId,
             #[parse(EmptyString::from_str)]
             counterparty_channel_id: EmptyString,
-            counterparty_port_id: String,
+            #[parse(PortId::from_str)]
+            counterparty_port_id: PortId,
             #[parse(ConnectionId::from_str)]
             connection_id: ConnectionId,
             version: String,
@@ -270,10 +272,12 @@ event! {
 
         #[event(tag = "channel_open_try")]
         ChannelOpenTry {
-            port_id: String,
+            #[parse(PortId::from_str)]
+            port_id: PortId,
             #[parse(ChannelId::from_str)]
             channel_id: ChannelId,
-            counterparty_port_id: String,
+            #[parse(PortId::from_str)]
+            counterparty_port_id: PortId,
             #[parse(ChannelId::from_str)]
             counterparty_channel_id: ChannelId,
             #[parse(ConnectionId::from_str)]
@@ -283,10 +287,12 @@ event! {
 
         #[event(tag = "channel_open_ack")]
         ChannelOpenAck {
-            port_id: String,
+            #[parse(PortId::from_str)]
+            port_id: PortId,
             #[parse(ChannelId::from_str)]
             channel_id: ChannelId,
-            counterparty_port_id: String,
+            #[parse(PortId::from_str)]
+            counterparty_port_id: PortId,
             #[parse(ChannelId::from_str)]
             counterparty_channel_id: ChannelId,
             #[parse(ConnectionId::from_str)]
@@ -295,10 +301,12 @@ event! {
 
         #[event(tag = "channel_open_confirm")]
         ChannelOpenConfirm {
-            port_id: String,
+            #[parse(PortId::from_str)]
+            port_id: PortId,
             #[parse(ChannelId::from_str)]
             channel_id: ChannelId,
-            counterparty_port_id: String,
+            #[parse(PortId::from_str)]
+            counterparty_port_id: PortId,
             #[parse(ChannelId::from_str)]
             counterparty_channel_id: ChannelId,
             #[parse(ConnectionId::from_str)]
@@ -318,10 +326,12 @@ event! {
             packet_timeout_timestamp: u64,
             #[parse(u64::from_str)]
             packet_sequence: u64,
-            packet_src_port: String,
+            #[parse(PortId::from_str)]
+            packet_src_port: PortId,
             #[parse(ChannelId::from_str)]
             packet_src_channel: ChannelId,
-            packet_dst_port: String,
+            #[parse(PortId::from_str)]
+            packet_dst_port: PortId,
             #[parse(ChannelId::from_str)]
             packet_dst_channel: ChannelId,
             #[parse(hex::decode)]
@@ -344,10 +354,12 @@ event! {
             packet_timeout_timestamp: u64,
             #[parse(u64::from_str)]
             packet_sequence: u64,
-            packet_src_port: String,
+            #[parse(PortId::from_str)]
+            packet_src_port: PortId,
             #[parse(ChannelId::from_str)]
             packet_src_channel: ChannelId,
-            packet_dst_port: String,
+            #[parse(PortId::from_str)]
+            packet_dst_port: PortId,
             #[parse(ChannelId::from_str)]
             packet_dst_channel: ChannelId,
             #[parse(Order::from_str)]
@@ -371,10 +383,12 @@ event! {
             packet_timeout_timestamp: u64,
             #[parse(u64::from_str)]
             packet_sequence: u64,
-            packet_src_port: String,
+            #[parse(PortId::from_str)]
+            packet_src_port: PortId,
             #[parse(ChannelId::from_str)]
             packet_src_channel: ChannelId,
-            packet_dst_port: String,
+            #[parse(PortId::from_str)]
+            packet_dst_port: PortId,
             #[parse(ChannelId::from_str)]
             packet_dst_channel: ChannelId,
             #[parse(Order::from_str)]
@@ -394,10 +408,12 @@ event! {
             packet_timeout_timestamp: u64,
             #[parse(u64::from_str)]
             packet_sequence: u64,
-            packet_src_port: String,
+            #[parse(PortId::from_str)]
+            packet_src_port: PortId,
             #[parse(ChannelId::from_str)]
             packet_src_channel: ChannelId,
-            packet_dst_port: String,
+            #[parse(PortId::from_str)]
+            packet_dst_port: PortId,
             #[parse(ChannelId::from_str)]
             packet_dst_channel: ChannelId,
             #[parse(Order::from_str)]
@@ -414,10 +430,12 @@ event! {
             packet_timeout_timestamp: u64,
             #[parse(u64::from_str)]
             packet_sequence: u64,
-            packet_src_port: String,
+            #[parse(PortId::from_str)]
+            packet_src_port: PortId,
             #[parse(ChannelId::from_str)]
             packet_src_channel: ChannelId,
-            packet_dst_port: String,
+            #[parse(PortId::from_str)]
+            packet_dst_port: PortId,
             #[parse(ChannelId::from_str)]
             packet_dst_channel: ChannelId,
             #[parse(Order::from_str)]

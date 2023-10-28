@@ -2,7 +2,11 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     errors::{required, MissingField, UnknownEnumVariant},
-    ibc::core::channel::{counterparty::Counterparty, order::Order, state::State},
+    ibc::core::channel::{
+        counterparty::{Counterparty, TryFromChannelCounterpartyError},
+        order::Order,
+        state::State,
+    },
     id::{ConnectionId, ConnectionIdValidator},
     validated::{Validate, ValidateT},
     Proto, TypeUrl,
@@ -38,6 +42,7 @@ impl From<Channel> for protos::ibc::core::channel::v1::Channel {
 pub enum TryFromChannelError {
     MissingField(MissingField),
     State(UnknownEnumVariant<i32>),
+    Counterparty(TryFromChannelCounterpartyError),
     Ordering(UnknownEnumVariant<i32>),
     ConnectionHops(<ConnectionIdValidator as Validate<String>>::Error),
 }
@@ -49,7 +54,9 @@ impl TryFrom<protos::ibc::core::channel::v1::Channel> for Channel {
         Ok(Channel {
             state: State::try_from(proto.state).map_err(TryFromChannelError::State)?,
             ordering: Order::try_from(proto.ordering).map_err(TryFromChannelError::State)?,
-            counterparty: required!(proto.counterparty)?.into(),
+            counterparty: required!(proto.counterparty)?
+                .try_into()
+                .map_err(TryFromChannelError::Counterparty)?,
             connection_hops: proto
                 .connection_hops
                 .into_iter()
@@ -91,6 +98,7 @@ impl From<Channel> for contracts::ibc_handler::IbcCoreChannelV1ChannelData {
 pub enum TryFromEthAbiChannelError {
     State(UnknownEnumVariant<u8>),
     Ordering(UnknownEnumVariant<u8>),
+    Counterparty(crate::TryFromEthAbiErrorOf<Counterparty>),
     ConnectionHops(<ConnectionIdValidator as Validate<String>>::Error),
 }
 
@@ -110,7 +118,10 @@ impl TryFrom<contracts::ibc_handler::IbcCoreChannelV1ChannelData> for Channel {
                 .ordering
                 .try_into()
                 .map_err(TryFromEthAbiChannelError::Ordering)?,
-            counterparty: value.counterparty.into(),
+            counterparty: value
+                .counterparty
+                .try_into()
+                .map_err(TryFromEthAbiChannelError::Counterparty)?,
             connection_hops: value
                 .connection_hops
                 .into_iter()

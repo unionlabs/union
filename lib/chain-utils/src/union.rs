@@ -224,7 +224,7 @@ impl Chain for Union {
         &self,
         block_hash: H256,
         destination_channel_id: unionlabs::id::ChannelId,
-        destination_port_id: String,
+        destination_port_id: unionlabs::id::PortId,
         sequence: u64,
     ) -> impl Future<Output = Vec<u8>> + '_ {
         async move {

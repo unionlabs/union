@@ -1421,7 +1421,7 @@ impl<C: ChainSpec, Counterparty: Chain> EthereumStateRead<C, Counterparty> for C
 
     fn into_eth_call(self) -> Self::EthCall {
         Self::EthCall {
-            port_id: self.port_id,
+            port_id: self.port_id.to_string(),
             channel_id: self.channel_id.to_string(),
         }
     }
@@ -1438,7 +1438,7 @@ impl<C: ChainSpec, Counterparty: Chain> EthereumStateRead<C, Counterparty> for C
 
     fn into_eth_call(self) -> Self::EthCall {
         Self::EthCall {
-            port_id: self.port_id,
+            port_id: self.port_id.to_string(),
             channel_id: self.channel_id.to_string(),
             sequence: self.sequence,
         }
@@ -1456,7 +1456,7 @@ impl<C: ChainSpec, Counterparty: Chain> EthereumStateRead<C, Counterparty> for A
 
     fn into_eth_call(self) -> Self::EthCall {
         Self::EthCall {
-            port_id: self.port_id,
+            port_id: self.port_id.to_string(),
             channel_id: self.channel_id.to_string(),
             sequence: self.sequence,
         }
