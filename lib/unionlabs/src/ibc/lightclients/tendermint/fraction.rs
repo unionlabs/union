@@ -24,7 +24,6 @@ impl From<protos::ibc::lightclients::tendermint::v1::Fraction> for Fraction {
     }
 }
 
-// TODO(benluelo): This will be replaced with tendermint once the solidity contract types are regenerated
 #[cfg(feature = "ethabi")]
 impl From<Fraction> for contracts::glue::IbcLightclientsTendermintV1FractionData {
     fn from(value: Fraction) -> Self {
