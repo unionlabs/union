@@ -1,0 +1,16 @@
+error[E0119]: conflicting implementations of trait `_::MustNotImplDrop` for type `Foo<_, _>`
+ --> tests/ui/pin_project/conflict-drop.rs:3:1
+  |
+3 | / pin_project! { //~ ERROR E0119
+4 | |     struct Foo<T, U> {
+5 | |         #[pin]
+6 | |         future: T,
+7 | |         field: U,
+8 | |     }
+9 | | }
+  | | ^
+  | | |
+  | |_first implementation here
+  |   conflicting implementation for `Foo<_, _>`
+  |
+  = note: this error originates in the macro `$crate::__pin_project_make_drop_impl` (in Nightly builds, run with -Z macro-backtrace for more info)

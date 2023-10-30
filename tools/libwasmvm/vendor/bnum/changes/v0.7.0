@@ -1,0 +1,3 @@
+Removal of `const` impls of standard library traits, addition of equivalent methods defined on the integer types themselves.
+Following methods are now `const`: `abs_diff`, `BUint::{overflowing_neg, wrapping_neg}`, `wrapping_{shr, shl}`, `overflowing_{shr, shl}`, `checked_{shr, shl}`, `rotate_left`, `rotate_right`, `from_be_slice`, `from_le_slice`.
+Implementation of `Arbitrary`.

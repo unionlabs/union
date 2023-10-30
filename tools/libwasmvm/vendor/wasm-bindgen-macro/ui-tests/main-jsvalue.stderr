@@ -1,0 +1,5 @@
+error: the main function has to be called main
+ --> ui-tests/main-jsvalue.rs:9:4
+  |
+9 | fn fail() {}
+  |    ^^^^

@@ -1,0 +1,47 @@
+error: the start function cannot have arguments
+ --> ui-tests/start-function.rs:7:9
+  |
+7 | fn foo2(x: u32) {}
+  |         ^^^^^^
+
+error: the start function cannot have generics
+  --> ui-tests/start-function.rs:10:8
+   |
+10 | fn foo3<T>() {}
+   |        ^^^
+
+error[E0277]: the trait bound `Result<wasm_bindgen::JsValue, ()>: wasm_bindgen::__rt::Start` is not satisfied
+  --> ui-tests/start-function.rs:15:1
+   |
+15 | #[wasm_bindgen(start)]
+   | ^^^^^^^^^^^^^^^^^^^^^^ the trait `wasm_bindgen::__rt::Start` is not implemented for `Result<wasm_bindgen::JsValue, ()>`
+   |
+   = help: the trait `wasm_bindgen::__rt::Start` is implemented for `Result<(), E>`
+   = note: this error originates in the attribute macro `wasm_bindgen` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `Result<wasm_bindgen::JsValue, wasm_bindgen::JsValue>: wasm_bindgen::__rt::Start` is not satisfied
+  --> ui-tests/start-function.rs:18:1
+   |
+18 | #[wasm_bindgen(start)]
+   | ^^^^^^^^^^^^^^^^^^^^^^ the trait `wasm_bindgen::__rt::Start` is not implemented for `Result<wasm_bindgen::JsValue, wasm_bindgen::JsValue>`
+   |
+   = help: the trait `wasm_bindgen::__rt::Start` is implemented for `Result<(), E>`
+   = note: this error originates in the attribute macro `wasm_bindgen` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `Result<wasm_bindgen::JsValue, ()>: wasm_bindgen::__rt::Start` is not satisfied
+  --> ui-tests/start-function.rs:27:1
+   |
+27 | #[wasm_bindgen(start)]
+   | ^^^^^^^^^^^^^^^^^^^^^^ the trait `wasm_bindgen::__rt::Start` is not implemented for `Result<wasm_bindgen::JsValue, ()>`
+   |
+   = help: the trait `wasm_bindgen::__rt::Start` is implemented for `Result<(), E>`
+   = note: this error originates in the attribute macro `wasm_bindgen` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `Result<wasm_bindgen::JsValue, wasm_bindgen::JsValue>: wasm_bindgen::__rt::Start` is not satisfied
+  --> ui-tests/start-function.rs:30:1
+   |
+30 | #[wasm_bindgen(start)]
+   | ^^^^^^^^^^^^^^^^^^^^^^ the trait `wasm_bindgen::__rt::Start` is not implemented for `Result<wasm_bindgen::JsValue, wasm_bindgen::JsValue>`
+   |
+   = help: the trait `wasm_bindgen::__rt::Start` is implemented for `Result<(), E>`
+   = note: this error originates in the attribute macro `wasm_bindgen` (in Nightly builds, run with -Z macro-backtrace for more info)

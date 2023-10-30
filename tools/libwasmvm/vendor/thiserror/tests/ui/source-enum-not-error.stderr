@@ -1,0 +1,22 @@
+error[E0599]: the method `as_dyn_error` exists for reference `&NotError`, but its trait bounds were not satisfied
+  --> tests/ui/source-enum-not-error.rs:10:9
+   |
+4  | pub struct NotError;
+   | -------------------
+   | |
+   | doesn't satisfy `NotError: AsDynError<'_>`
+   | doesn't satisfy `NotError: std::error::Error`
+...
+10 |         source: NotError,
+   |         ^^^^^^ method cannot be called on `&NotError` due to unsatisfied trait bounds
+   |
+   = note: the following trait bounds were not satisfied:
+           `NotError: std::error::Error`
+           which is required by `NotError: AsDynError<'_>`
+           `&NotError: std::error::Error`
+           which is required by `&NotError: AsDynError<'_>`
+note: the trait `std::error::Error` must be implemented
+  --> $RUST/core/src/error.rs
+   |
+   | pub trait Error: Debug + Display {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

@@ -1,0 +1,3 @@
+Non-breaking:
+* the following methods are now const: {BUint, BInt}::from_str_radix, {BUint, BInt}::parse_bytes, BInt::overflowing_mul, BInt::overflowing_neg, BInt::overflowing_abs, BInt::overflowing_pow, BInt::wrapping_neg, BInt::wrapping_abs, BInt::checked_mul, BInt::checked_neg, BInt::checked_abs, BInt::checked_pow, BInt::saturating_mul, BInt::saturating_neg, BInt::saturating_abs, BInt::saturating_pow, BInt::unsigned_abs, BInt::pow, BInt::abs, BInt::abs_diff
+* the following methods are now const when the nightly feature is enabled: {BUint, BInt}::from_radix_be, {BUint, BInt}::from_radix_le

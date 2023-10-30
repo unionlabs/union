@@ -1,0 +1,5 @@
+error: the main function has to be called main
+  --> ui-tests/main-infallible.rs:10:4
+   |
+10 | fn fail() {}
+   |    ^^^^

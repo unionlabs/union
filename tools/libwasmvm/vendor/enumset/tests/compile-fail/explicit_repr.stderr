@@ -1,0 +1,45 @@
+error[E0599]: the function or associated item `from_repr` exists for struct `EnumSet<OkayEnumButCantUseFromRepr>`, but its trait bounds were not satisfied
+  --> tests/compile-fail/explicit_repr.rs:15:44
+   |
+4  | enum OkayEnumButCantUseFromRepr {
+   | -------------------------------
+   | |
+   | doesn't satisfy `<_ as EnumSetTypePrivate>::Repr = <OkayEnumButCantUseFromRepr as EnumSetTypeWithRepr>::Repr`
+   | doesn't satisfy `OkayEnumButCantUseFromRepr: EnumSetTypeWithRepr`
+...
+15 |     EnumSet::<OkayEnumButCantUseFromRepr>::from_repr(1);
+   |                                            ^^^^^^^^^ function or associated item cannot be called on `EnumSet<OkayEnumButCantUseFromRepr>` due to unsatisfied trait bounds
+   |
+   = note: the following trait bounds were not satisfied:
+           `OkayEnumButCantUseFromRepr: EnumSetTypeWithRepr`
+           `<OkayEnumButCantUseFromRepr as EnumSetTypePrivate>::Repr = <OkayEnumButCantUseFromRepr as EnumSetTypeWithRepr>::Repr`
+           which is required by `OkayEnumButCantUseFromRepr: EnumSetTypeWithRepr`
+note: the trait `EnumSetTypeWithRepr` must be implemented
+  --> src/traits.rs
+   |
+   | / pub unsafe trait EnumSetTypeWithRepr:
+   | |     EnumSetType + EnumSetTypePrivate<Repr = <Self as EnumSetTypeWithRepr>::Repr>
+   | |________________________________________________________________________________^
+
+error[E0599]: the function or associated item `from_repr` exists for struct `EnumSet<OkayEnumButCantUseFromReprArray>`, but its trait bounds were not satisfied
+  --> tests/compile-fail/explicit_repr.rs:16:49
+   |
+10 | enum OkayEnumButCantUseFromReprArray {
+   | ------------------------------------
+   | |
+   | doesn't satisfy `<_ as EnumSetTypePrivate>::Repr = <OkayEnumButCantUseFromReprArray as EnumSetTypeWithRepr>::Repr`
+   | doesn't satisfy `_: EnumSetTypeWithRepr`
+...
+16 |     EnumSet::<OkayEnumButCantUseFromReprArray>::from_repr([1]);
+   |                                                 ^^^^^^^^^ function or associated item cannot be called on `EnumSet<OkayEnumButCantUseFromReprArray>` due to unsatisfied trait bounds
+   |
+   = note: the following trait bounds were not satisfied:
+           `OkayEnumButCantUseFromReprArray: EnumSetTypeWithRepr`
+           `<OkayEnumButCantUseFromReprArray as EnumSetTypePrivate>::Repr = <OkayEnumButCantUseFromReprArray as EnumSetTypeWithRepr>::Repr`
+           which is required by `OkayEnumButCantUseFromReprArray: EnumSetTypeWithRepr`
+note: the trait `EnumSetTypeWithRepr` must be implemented
+  --> src/traits.rs
+   |
+   | / pub unsafe trait EnumSetTypeWithRepr:
+   | |     EnumSetType + EnumSetTypePrivate<Repr = <Self as EnumSetTypeWithRepr>::Repr>
+   | |________________________________________________________________________________^

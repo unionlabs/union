@@ -1,0 +1,2 @@
+Breaking:
+num_traits and num_integer traits no longer const implementation (requires traits to be marked as const_trait which hasn't been done in these crates)

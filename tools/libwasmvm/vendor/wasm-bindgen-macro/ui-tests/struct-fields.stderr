@@ -1,0 +1,28 @@
+error[E0277]: the trait bound `Foo: std::marker::Copy` is not satisfied
+  --> ui-tests/struct-fields.rs:10:12
+   |
+10 |     pub a: Foo,
+   |            ^^^ the trait `std::marker::Copy` is not implemented for `Foo`
+   |
+note: required by a bound in `__wbg_get_bar_a::assert_copy`
+  --> ui-tests/struct-fields.rs:8:1
+   |
+8  | #[wasm_bindgen]
+   | ^^^^^^^^^^^^^^^ required by this bound in `assert_copy`
+   = note: this error originates in the attribute macro `wasm_bindgen` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `Foo: Clone` is not satisfied
+  --> ui-tests/struct-fields.rs:11:20
+   |
+11 |       #[wasm_bindgen(getter_with_clone)]
+   |                      ^----------------
+   |                      |
+   |  ____________________required by a bound introduced by this call
+   | |
+12 | |     pub b: Foo,
+   | |_________^ the trait `Clone` is not implemented for `Foo`
+   |
+help: consider annotating `Foo` with `#[derive(Clone)]`
+   |
+3  | #[derive(Clone)]
+   |

@@ -1,0 +1,75 @@
+error[E0263]: lifetime name `'__pin` declared twice in the same scope
+ --> tests/ui/pin_project/overlapping_lifetime_names.rs:4:20
+  |
+3 | / pin_project! { //~ ERROR E0263,E0496
+4 | |     pub struct Foo<'__pin, T> {
+  | |                    ^^^^^^ declared twice
+5 | |         #[pin]
+6 | |         field: &'__pin mut T,
+7 | |     }
+8 | | }
+  | |_- previous declaration here
+
+error[E0263]: lifetime name `'__pin` declared twice in the same scope
+ --> tests/ui/pin_project/overlapping_lifetime_names.rs:4:20
+  |
+3 | / pin_project! { //~ ERROR E0263,E0496
+4 | |     pub struct Foo<'__pin, T> {
+  | |                    ^^^^^^ declared twice
+5 | |         #[pin]
+6 | |         field: &'__pin mut T,
+7 | |     }
+8 | | }
+  | |_- previous declaration here
+
+error[E0263]: lifetime name `'__pin` declared twice in the same scope
+ --> tests/ui/pin_project/overlapping_lifetime_names.rs:4:20
+  |
+3 | / pin_project! { //~ ERROR E0263,E0496
+4 | |     pub struct Foo<'__pin, T> {
+  | |                    ^^^^^^ declared twice
+5 | |         #[pin]
+6 | |         field: &'__pin mut T,
+7 | |     }
+8 | | }
+  | |_- previous declaration here
+
+error[E0496]: lifetime name `'__pin` shadows a lifetime name that is already in scope
+ --> tests/ui/pin_project/overlapping_lifetime_names.rs:3:1
+  |
+3 | / pin_project! { //~ ERROR E0263,E0496
+4 | |     pub struct Foo<'__pin, T> {
+  | |                    ------ first declared here
+5 | |         #[pin]
+6 | |         field: &'__pin mut T,
+7 | |     }
+8 | | }
+  | |_^ lifetime `'__pin` already in scope
+  |
+  = note: this error originates in the macro `$crate::__pin_project_struct_make_proj_method` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0496]: lifetime name `'__pin` shadows a lifetime name that is already in scope
+ --> tests/ui/pin_project/overlapping_lifetime_names.rs:3:1
+  |
+3 | / pin_project! { //~ ERROR E0263,E0496
+4 | |     pub struct Foo<'__pin, T> {
+  | |                    ------ first declared here
+5 | |         #[pin]
+6 | |         field: &'__pin mut T,
+7 | |     }
+8 | | }
+  | |_^ lifetime `'__pin` already in scope
+  |
+  = note: this error originates in the macro `$crate::__pin_project_struct_make_proj_method` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0263]: lifetime name `'__pin` declared twice in the same scope
+ --> tests/ui/pin_project/overlapping_lifetime_names.rs:4:20
+  |
+3 | / pin_project! { //~ ERROR E0263,E0496
+4 | |     pub struct Foo<'__pin, T> {
+  | |                    ^^^^^^ declared twice
+5 | |         #[pin]
+6 | |         field: &'__pin mut T,
+7 | |     }
+8 | | }
+  | |_- previous declaration here
