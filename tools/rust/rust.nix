@@ -1,5 +1,5 @@
 { ... }: {
-  perSystem = { pkgs, system, dbg, ... }:
+  perSystem = { pkgs, system, dbg, ensureAtRepositoryRoot, ... }:
     let
       nightlyVersion = "2023-08-26";
       channel = "nightly-${nightlyVersion}";
@@ -18,6 +18,25 @@
         rust-src = "rust-src";
         llvm-tools-preview = "llvm-tools-preview";
       };
+
+      rustSrc = let
+        content = pkgs.rust-bin.manifests.nightly.${nightlyVersion}.pkg.rust-src.target."*";
+        # copied from https://github.com/oxalica/rust-overlay/blob/44210df7a70dcf0a81a5919f9422b6ae589ee673/rust-overlay.nix#L123C36-L123C36
+        mkComponentSrc = { url, sha256 }:
+          let
+            url' = pkgs.lib.replaceStrings [" "] ["%20"] url; # This is required or download will fail.
+            # Filter names like `llvm-tools-1.34.2 (6c2484dc3 2019-05-13)-aarch64-unknown-linux-gnu.tar.xz`
+            matchParenPart = builtins.match ".*/([^ /]*) [(][^)]*[)](.*)" url;
+            name = if matchParenPart == null then "" else (pkgs.lib.elemAt matchParenPart 0) + (pkgs.lib.elemAt matchParenPart 1);
+          in
+            builtins.fetchurl {
+              inherit name sha256;
+              url = url';
+            };
+        in mkComponentSrc {
+          url = content.xz_url;
+          sha256 = content.xz_hash;
+        };
 
       mkToolchain =
         { target ? null
@@ -52,8 +71,25 @@
         };
     in
     {
+      packages.fetchRustStdCargoLock = pkgs.writeShellApplication {
+        name = "fetchRustStdCargoLock";
+        runtimeInputs = [ pkgs.xz ];
+        text = ''
+          ${ensureAtRepositoryRoot}
+
+          output=$(mktemp -d)
+
+          echo "$output"
+
+          tar -xf ${rustSrc} -C "$output"
+
+          ls -al "$output"
+
+          cp "$output"/rust-src-nightly/rust-src/lib/rustlib/src/rust/Cargo.lock tools/rust/rust-std-Cargo.lock
+        '';
+      };
       _module.args.rust = {
-        inherit mkBuildStdToolchain mkNightly;
+        inherit mkBuildStdToolchain mkNightly rustSrc;
 
         toolchains = {
           nightly = mkNightly { };
