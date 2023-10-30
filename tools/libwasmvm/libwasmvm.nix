@@ -1,9 +1,6 @@
 { ... }: {
   perSystem = { pkgs, self', crane, rust, system, ensureAtRepositoryRoot, srcWithVendoredSources, ... }:
     let
-      vendorDir = "tools/libwasmvm/vendor/";
-      vendorDirPath = ./vendor;
-
       throwBadSystem = throw "libwasmvm cannot be built on system `${system}`";
 
       CARGO_BUILD_TARGET =
