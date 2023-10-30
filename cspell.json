@@ -22,7 +22,7 @@
     "uniond/x/tokenfactory",
     "uniond/proto",
     "galoisd/vendor",
-    "tools/libwasmvm/vendor",
+    "tools/vendor",
     "**/go.mod",
     "**/go.sum",
     "evm",
