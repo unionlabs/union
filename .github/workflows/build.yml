@@ -75,7 +75,7 @@ jobs:
                   "voyager-queue",
                   "sqlx-cli",
                   "fetchRustStdCargoLock",
-                  "vendorLibwasmvm",
+                  "vendorLibwasmvm"
                 ]
               )
             ) or 
