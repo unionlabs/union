@@ -22,37 +22,37 @@
         hash = "sha256-rsTYvbkYpDkUE4IvILdSL3hXMgAWxz5ltGotJB2t1e4=";
       };
 
-    srcWithVendoredSources =
-      let
-        configToml = ''
-          [source.crates-io]
-          replace-with = "vendored-sources"
+      srcWithVendoredSources =
+        let
+          configToml = ''
+            [source.crates-io]
+            replace-with = "vendored-sources"
 
-          [source."git+https://github.com/CosmWasm/cosmwasm.git?rev=v1.3.0"]
-          git = "https://github.com/CosmWasm/cosmwasm.git"
-          rev = "v1.3.0"
-          replace-with = "vendored-sources"
+            [source."git+https://github.com/CosmWasm/cosmwasm.git?rev=v1.3.0"]
+            git = "https://github.com/CosmWasm/cosmwasm.git"
+            rev = "v1.3.0"
+            replace-with = "vendored-sources"
 
-          [source.vendored-sources]
-          directory = "tools/libwasmvm/vendor/"
-        '';
-      in
-      pkgs.stdenv.mkDerivation {
-        name = "libwasmvm-with-vendored-sources-cargo-config-toml";
-        src = "${wasmvm}/libwasmvm";
-        buildPhase = ''
-          cp -r . $out
+            [source.vendored-sources]
+            directory = "tools/libwasmvm/vendor/"
+          '';
+        in
+        pkgs.stdenv.mkDerivation {
+          name = "libwasmvm-with-vendored-sources-cargo-config-toml";
+          src = "${wasmvm}/libwasmvm";
+          buildPhase = ''
+            cp -r . $out
 
-          mkdir -p $out/${vendorDir}
+            mkdir -p $out/${vendorDir}
           
-          cp -r --no-preserve=mode ${vendorDirPath}/. $out/${vendorDir}/
+            cp -r --no-preserve=mode ${vendorDirPath}/. $out/${vendorDir}/
 
-          diff -r $out/${vendorDir} ${vendorDirPath}
+            diff -r $out/${vendorDir} ${vendorDirPath}
 
-          mkdir -p $out/.cargo
-          echo '${configToml}' >> $out/.cargo/config.toml
-        '';
-      };
+            mkdir -p $out/.cargo
+            echo '${configToml}' >> $out/.cargo/config.toml
+          '';
+        };
     in
     {
       packages.libwasmvm =
@@ -99,7 +99,7 @@
 
             cargo vendor --manifest-path ${wasmvm}/libwasmvm/Cargo.toml ${vendorDir}
           '';
-        };
+      };
 
       packages.vendoredSource = srcWithVendoredSources;
     };

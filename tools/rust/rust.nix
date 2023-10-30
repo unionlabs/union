@@ -19,21 +19,23 @@
         llvm-tools-preview = "llvm-tools-preview";
       };
 
-      rustSrc = let
-        content = pkgs.rust-bin.manifests.nightly.${nightlyVersion}.pkg.rust-src.target."*";
-        # copied from https://github.com/oxalica/rust-overlay/blob/44210df7a70dcf0a81a5919f9422b6ae589ee673/rust-overlay.nix#L123C36-L123C36
-        mkComponentSrc = { url, sha256 }:
-          let
-            url' = pkgs.lib.replaceStrings [" "] ["%20"] url; # This is required or download will fail.
-            # Filter names like `llvm-tools-1.34.2 (6c2484dc3 2019-05-13)-aarch64-unknown-linux-gnu.tar.xz`
-            matchParenPart = builtins.match ".*/([^ /]*) [(][^)]*[)](.*)" url;
-            name = if matchParenPart == null then "" else (pkgs.lib.elemAt matchParenPart 0) + (pkgs.lib.elemAt matchParenPart 1);
-          in
+      rustSrc =
+        let
+          content = pkgs.rust-bin.manifests.nightly.${nightlyVersion}.pkg.rust-src.target."*";
+          # copied from https://github.com/oxalica/rust-overlay/blob/44210df7a70dcf0a81a5919f9422b6ae589ee673/rust-overlay.nix#L123C36-L123C36
+          mkComponentSrc = { url, sha256 }:
+            let
+              url' = pkgs.lib.replaceStrings [ " " ] [ "%20" ] url; # This is required or download will fail.
+              # Filter names like `llvm-tools-1.34.2 (6c2484dc3 2019-05-13)-aarch64-unknown-linux-gnu.tar.xz`
+              matchParenPart = builtins.match ".*/([^ /]*) [(][^)]*[)](.*)" url;
+              name = if matchParenPart == null then "" else (pkgs.lib.elemAt matchParenPart 0) + (pkgs.lib.elemAt matchParenPart 1);
+            in
             builtins.fetchurl {
               inherit name sha256;
               url = url';
             };
-        in mkComponentSrc {
+        in
+        mkComponentSrc {
           url = content.xz_url;
           sha256 = content.xz_hash;
         };
