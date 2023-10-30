@@ -125,6 +125,7 @@
         ./cosmwasm/cosmwasm.nix
         ./evm/evm.nix
         ./tools/rust-proto.nix
+        ./tools/vendor.nix
         ./tools/generate-rust-sol-bindings/generate-rust-sol-bindings.nix
         ./tools/libwasmvm/libwasmvm.nix
         ./tools/rust/rust.nix
@@ -290,7 +291,6 @@
             name = "union-devShell";
             buildInputs = [ rust.toolchains.dev ] ++ (with pkgs; [
               bacon
-              bun
               cargo-nextest
               foundry-bin
               go_1_20

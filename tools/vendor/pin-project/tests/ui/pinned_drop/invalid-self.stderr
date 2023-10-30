@@ -1,0 +1,25 @@
+error: expected identifier, found keyword `self`
+ --> tests/ui/pinned_drop/invalid-self.rs:8:26
+  |
+8 |     fn take_ref_self(ref self: Pin<&mut Self>) {} //~ ERROR expected identifier, found keyword `self`
+  |                          ^^^^ expected identifier, found keyword
+
+error: expected identifier, found keyword `self`
+ --> tests/ui/pinned_drop/invalid-self.rs:9:34
+  |
+9 |     fn take_ref_mut_self(ref mut self: Pin<&mut Self>) {} //~ ERROR expected identifier, found keyword `self`
+  |                                  ^^^^ expected identifier, found keyword
+
+error: expected parameter name, found `@`
+  --> tests/ui/pinned_drop/invalid-self.rs:11:25
+   |
+11 |     fn self_subpat(self @ S {}: Self) {} //~ ERROR expected one of `)`, `,`, or `:`, found `@`
+   |                         ^ expected parameter name
+
+error: expected one of `)`, `,`, or `:`, found `@`
+  --> tests/ui/pinned_drop/invalid-self.rs:11:25
+   |
+11 |     fn self_subpat(self @ S {}: Self) {} //~ ERROR expected one of `)`, `,`, or `:`, found `@`
+   |                        -^ expected one of `)`, `,`, or `:`
+   |                        |
+   |                        help: missing `,`

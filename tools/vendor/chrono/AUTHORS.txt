@@ -1,0 +1,43 @@
+Chrono is mainly written by Kang Seonghoon <public+rust@mearie.org>,
+and also the following people (in ascending order):
+
+Alex Mikhalev <alexmikhalevalex@gmail.com>
+Alexander Bulaev <alexbool@yandex-team.ru>
+Ashley Mannix <ashleymannix@live.com.au>
+Ben Boeckel <mathstuf@gmail.com>
+Ben Eills <ben@beneills.com>
+Brandon W Maister <bwm@knewton.com>
+Brandon W Maister <quodlibetor@gmail.com>
+Cecile Tonglet <cecile.tonglet@cecton.com>
+Colin Ray <r.colinray@gmail.com>
+Corey Farwell <coreyf@rwell.org>
+Dan <dan@ebip.co.uk>
+Danilo Bargen <mail@dbrgn.ch>
+David Hewson <dev@daveid.co.uk>
+David Ross <daboross@daboross.net>
+David Tolnay <dtolnay@gmail.com>
+David Willie <david.willie.1@gmail.com>
+Eric Findlay <e.findlay@protonmail.ch>
+Eunchong Yu <kroisse@gmail.com>
+Frans Skarman <frans.skarman@gmail.com>
+Huon Wilson <dbau.pp+github@gmail.com>
+Igor Gnatenko <ignatenko@redhat.com>
+Jake Vossen <jake@vossen.dev>
+Jim Turner <jturner314@gmail.com>
+Jisoo Park <xxxyel@gmail.com>
+Joe Wilm <joe@jwilm.com>
+John Heitmann <jheitmann@gmail.com>
+John Nagle <nagle@sitetruth.com>
+Jonas mg <jonasmg@yepmail.net>
+János Illés <ijanos@gmail.com>
+Ken Tossell <ken@tossell.net>
+Martin Risell Lilja <martin.risell.lilja@gmail.com>
+Richard Petrie <rap1011@ksu.edu>
+Ryan Lewis <ryansname@gmail.com>
+Sergey V. Shadoy <shadoysv@yandex.ru>
+Sergey V. Galtsev <sergey.v.galtsev@github.com>
+Steve Klabnik <steve@steveklabnik.com>
+Tom Gallacher <tomgallacher23@gmail.com>
+klutzy <klutzytheklutzy@gmail.com>
+kud1ing <github@kudling.de>
+Yohan Boogaert <yozhgoor@outlook.com>

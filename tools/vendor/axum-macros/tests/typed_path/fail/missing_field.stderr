@@ -1,0 +1,5 @@
+error[E0026]: struct `MyPath` does not have a field named `id`
+ --> tests/typed_path/fail/missing_field.rs:5:14
+  |
+5 | #[typed_path("/users/:id")]
+  |              ^^^^^^^^^^^^ struct `MyPath` does not have this field

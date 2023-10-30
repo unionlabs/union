@@ -1,0 +1,5 @@
+error: unsupported casing: `fail`
+  --> $DIR/rename_all_wrong_casing.rs:12:42
+   |
+12 | #[structopt(name = "basic", rename_all = "fail")]
+   |                                          ^^^^^^

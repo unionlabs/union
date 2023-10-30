@@ -1,0 +1,17 @@
+error: unknown attribute
+ --> $DIR/invalid-attr.rs:3:16
+  |
+3 | #[wasm_bindgen(x)]
+  |                ^
+
+error: unknown attribute
+ --> $DIR/invalid-attr.rs:8:20
+  |
+8 |     #[wasm_bindgen(y)]
+  |                    ^
+
+error: malformed #[wasm_bindgen] attribute
+  --> $DIR/invalid-attr.rs:11:5
+   |
+11 |     #[wasm_bindgen {  }]
+   |     ^^^^^^^^^^^^^^^^^^^^

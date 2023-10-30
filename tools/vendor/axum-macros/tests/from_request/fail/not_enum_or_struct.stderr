@@ -1,0 +1,11 @@
+error: expected `struct` or `enum`
+ --> tests/from_request/fail/not_enum_or_struct.rs:4:1
+  |
+4 | union Extractor {}
+  | ^^^^^^^^^^^^^^^^^^
+
+error: unions cannot have zero fields
+ --> tests/from_request/fail/not_enum_or_struct.rs:4:1
+  |
+4 | union Extractor {}
+  | ^^^^^^^^^^^^^^^^^^

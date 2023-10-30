@@ -1,0 +1,14 @@
+error[E0027]: pattern does not mention field `id`
+ --> tests/typed_path/fail/missing_capture.rs:5:14
+  |
+5 | #[typed_path("/users")]
+  |              ^^^^^^^^ missing field `id`
+  |
+help: include the missing field in the pattern
+  |
+5 | #[typed_path("/users" { id })]
+  |                       ++++++
+help: if you don't care about this missing field, you can explicitly ignore it
+  |
+5 | #[typed_path("/users" { .. })]
+  |                       ++++++

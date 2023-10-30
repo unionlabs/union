@@ -1,0 +1,5 @@
+error: subcommand, flatten and skip cannot be used together
+  --> $DIR/skip_subcommand.rs:17:29
+   |
+17 |     #[structopt(subcommand, skip)]
+   |                             ^^^^

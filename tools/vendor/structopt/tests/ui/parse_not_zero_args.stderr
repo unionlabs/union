@@ -1,0 +1,5 @@
+error: `parse` must have exactly one argument
+  --> $DIR/parse_not_zero_args.rs:14:17
+   |
+14 |     #[structopt(parse(from_str, from_str))]
+   |                 ^^^^^

@@ -1,0 +1,5 @@
+error[E0599]: no method named `non_existing_attribute` found for struct `Arg` in the current scope
+  --> $DIR/non_existent_attr.rs:14:24
+   |
+14 |     #[structopt(short, non_existing_attribute = 1)]
+   |                        ^^^^^^^^^^^^^^^^^^^^^^ method not found in `Arg<'_, '_>`

@@ -1,0 +1,11 @@
+error: #[pin_project] attribute may not be used on structs with zero fields
+ --> tests/ui/cfg/unsupported.rs:4:10
+  |
+4 |   struct S {
+  |  __________^
+5 | |     //~^ ERROR may not be used on structs with zero fields
+6 | |     #[cfg(any())]
+7 | |     #[pin]
+8 | |     f: u8,
+9 | | }
+  | |_^

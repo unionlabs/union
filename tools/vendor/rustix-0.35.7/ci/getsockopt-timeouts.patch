@@ -1,0 +1,80 @@
+From: Dan Gohman <dev@sunfishcode.online>
+Subject: [PATCH] Avoid storing unexpected values for `SO_RCVTIMEO_NEW` etc.
+
+This issue is reported upstream [here].
+
+[here]: https://gitlab.com/qemu-project/qemu/-/issues/885
+
+---
+ linux-user/generic/sockbits.h | 2 ++
+ linux-user/mips/sockbits.h    | 2 ++
+ linux-user/sparc/sockbits.h   | 2 ++
+ linux-user/syscall.c          | 6 ++++++
+ 4 files changed, 12 insertions(+)
+
+diff --git a/linux-user/generic/sockbits.h b/linux-user/generic/sockbits.h
+index b3b4a8e44c..f95747e3cc 100644
+--- a/linux-user/generic/sockbits.h
++++ b/linux-user/generic/sockbits.h
+@@ -36,6 +36,8 @@
+ #define TARGET_SO_SNDLOWAT     19
+ #define TARGET_SO_RCVTIMEO     20
+ #define TARGET_SO_SNDTIMEO     21
++#define TARGET_SO_RCVTIMEO_NEW 66
++#define TARGET_SO_SNDTIMEO_NEW 67
+ 
+ /* Security levels - as per NRL IPv6 - don't actually do anything */
+ #define TARGET_SO_SECURITY_AUTHENTICATION              22
+diff --git a/linux-user/mips/sockbits.h b/linux-user/mips/sockbits.h
+index 562cad88e2..4d411f7b61 100644
+--- a/linux-user/mips/sockbits.h
++++ b/linux-user/mips/sockbits.h
+@@ -39,6 +39,8 @@
+ #define TARGET_SO_RCVLOWAT     0x1004  /* receive low-water mark */
+ #define TARGET_SO_SNDTIMEO     0x1005  /* send timeout */
+ #define TARGET_SO_RCVTIMEO     0x1006  /* receive timeout */
++#define TARGET_SO_RCVTIMEO_NEW 66
++#define TARGET_SO_SNDTIMEO_NEW 67
+ #define TARGET_SO_ACCEPTCONN   0x1009
+ #define TARGET_SO_PROTOCOL     0x1028  /* protocol type */
+ #define TARGET_SO_DOMAIN       0x1029  /* domain/socket family */
+diff --git a/linux-user/sparc/sockbits.h b/linux-user/sparc/sockbits.h
+index 0a822e3e1f..8420ef9953 100644
+--- a/linux-user/sparc/sockbits.h
++++ b/linux-user/sparc/sockbits.h
+@@ -26,6 +26,8 @@
+ #define TARGET_SO_SNDLOWAT     0x1000
+ #define TARGET_SO_RCVTIMEO     0x2000
+ #define TARGET_SO_SNDTIMEO     0x4000
++#define TARGET_SO_RCVTIMEO_NEW 68
++#define TARGET_SO_SNDTIMEO_NEW 69
+ #define TARGET_SO_ACCEPTCONN   0x8000
+ 
+ #define TARGET_SO_SNDBUF       0x1001
+diff --git a/linux-user/syscall.c b/linux-user/syscall.c
+index a8eae3c4ac..8326e03a19 100644
+--- a/linux-user/syscall.c
++++ b/linux-user/syscall.c
+@@ -2348,6 +2348,9 @@ set_timeout:
+         case TARGET_SO_SNDTIMEO:
+                 optname = SO_SNDTIMEO;
+                 goto set_timeout;
++        case TARGET_SO_RCVTIMEO_NEW:
++        case TARGET_SO_SNDTIMEO_NEW:
++                return -TARGET_ENOPROTOOPT;
+         case TARGET_SO_ATTACH_FILTER:
+         {
+                 struct target_sock_fprog *tfprog;
+@@ -2595,6 +2598,9 @@ get_timeout:
+         case TARGET_SO_SNDTIMEO:
+             optname = SO_SNDTIMEO;
+             goto get_timeout;
++        case TARGET_SO_RCVTIMEO_NEW:
++        case TARGET_SO_SNDTIMEO_NEW:
++            return -TARGET_ENOPROTOOPT;
+         case TARGET_SO_PEERCRED: {
+             struct ucred cr;
+             socklen_t crlen;
+-- 
+2.32.0
+

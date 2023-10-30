@@ -1,0 +1,5 @@
+error: Typed paths for unit structs cannot contain captures
+ --> tests/typed_path/fail/unit_with_capture.rs:5:14
+  |
+5 | #[typed_path("/users/:id")]
+  |              ^^^^^^^^^^^^

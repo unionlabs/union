@@ -1,0 +1,45 @@
+# v2. The private key ends with a zero byte.
+Input = 3053020101300506032b657004220420a22efdb713f0e1600d2a5ce948e321ca3a18137c47f15091a12c7126c1749a00a1230321001aeb8e3ee5ba5afd91113466d19f4ea77fa0feffbd8c5adcb499927f12535f77
+
+# v2. The private key's last byte, zero, is omitted.
+Input = 3052020101300506032b65700421041fa22efdb713f0e1600d2a5ce948e321ca3a18137c47f15091a12c7126c1749aa1230321001aeb8e3ee5ba5afd91113466d19f4ea77fa0feffbd8c5adcb499927f12535f77
+Error = InvalidEncoding
+
+# v2. The private key starts with a zero byte.
+Input = 3053020101300506032b65700422042000b1a7c20b2b4ed9c78f3686db82f854734cdc95be51def304d98e0cd30bf490a12303210063457cd4dfdd0e98a53796265831d46ac6a5a685f2a54c9697a38b2c800d60ba
+
+# v2. The private key's first byte, zero, is omitted.
+Input = 3052020101300506032b65700421041fb1a7c20b2b4ed9c78f3686db82f854734cdc95be51def304d98e0cd30bf490a12303210063457cd4dfdd0e98a53796265831d46ac6a5a685f2a54c9697a38b2c800d60ba
+Error = InvalidEncoding
+
+# v2. The public key's first byte is zero.
+Input = 3053020101300506032b6570042204202dc67de5186d9193021c0b104d9c6ef24bee2bd395ccb5ed5a2db5f37a2fc1f0a12303210000c17e4d8bbff27c1fb618c23fce988703c7efa3cd590aacac12d3f1e3c90c8c
+
+# v2. The public key's first byte, zero, is omitted.
+Input = 3052020101300506032b6570042204202dc67de5186d9193021c0b104d9c6ef24bee2bd395ccb5ed5a2db5f37a2fc1f0a122032000c17e4d8bbff27c1fb618c23fce988703c7efa3cd590aacac12d3f1e3c90c8c
+Error = InvalidEncoding
+
+# v2. The public key's last byte is zero.
+Input = 3053020101300506032b657004220420b2579f555a2eabdabac8d46997b1c08fe8ce63858df124efc29c60dfbb86c349a1230321009d421270ce2fcc08672c41e427214876245c9b0f14ab671b8bb9d266a492e400
+
+# v2. The public key's last byte, zero, is omitted (valid ASN.1 DER).
+Input = 3052020101300506032b657004220420b2579f555a2eabdabac8d46997b1c08fe8ce63858df124efc29c60dfbb86c349a1220320009d421270ce2fcc08672c41e427214876245c9b0f14ab671b8bb9d266a492e4
+Error = InvalidEncoding
+
+# v2. The public key's last byte, zero, has been truncated (invalid ASN.1 DER).
+Input = 3053020101300506032b657004220420b2579f555a2eabdabac8d46997b1c08fe8ce63858df124efc29c60dfbb86c349a1230321009d421270ce2fcc08672c41e427214876245c9b0f14ab671b8bb9d266a492e4
+Error = InvalidEncoding
+
+# v2. The public key's high bit has been flipped. Ed25519 public keys don't
+# have their high bit masked, so this is wrong.
+Input = 3053020101300506032b6570042204202dc67de5186d9193021c0b104d9c6ef24bee2bd395ccb5ed5a2db5f37a2fc1f0a12303210000c17e4d8bbff27c1fb618c23fce988703c7efa3cd590aacac12d3f1e3c90c0c
+Error = InconsistentComponents
+
+# v2. Valid except the public key field is missing.
+Input = 302e020101300506032b657004220420a22efdb713f0e1600d2a5ce948e321ca3a18137c47f15091a12c7126c1749a00
+Error = PublicKeyIsMissing
+
+# v2. Valid except the public key is encoded as [0] instead of [1]; i.e. the
+# attributes are invalid and the public key is missing.
+Input = 3053020101300506032b657004220420a22efdb713f0e1600d2a5ce948e321ca3a18137c47f15091a12c7126c1749a00a0230321001aeb8e3ee5ba5afd91113466d19f4ea77fa0feffbd8c5adcb499927f12535f77
+Error = PublicKeyIsMissing

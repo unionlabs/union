@@ -1,0 +1,5 @@
+error: `#[from_request(via(...))]` cannot be used inside variants
+ --> tests/from_request/fail/enum_from_request_ident_in_variant.rs:7:24
+  |
+7 |         #[from_request(via(axum::Extension))]
+  |                        ^^^

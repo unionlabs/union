@@ -1,0 +1,11 @@
+error: Only one body extractor can be applied
+ --> tests/debug_handler/fail/multiple_body_extractors.rs:5:18
+  |
+5 | async fn handler(_: String, _: Bytes) {}
+  |                  ^^^^^^^^^
+
+error: Only one body extractor can be applied
+ --> tests/debug_handler/fail/multiple_body_extractors.rs:5:29
+  |
+5 | async fn handler(_: String, _: Bytes) {}
+  |                             ^^^^^^^^

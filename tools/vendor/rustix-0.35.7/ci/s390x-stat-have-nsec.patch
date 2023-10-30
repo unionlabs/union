@@ -1,0 +1,27 @@
+From: Dan Gohman <dev@sunfishcode.online>
+Subject: [PATCH] Define `TARGET_STAT_HAVE_NSEC` for s390x
+
+Without this, The `fstat` syscall sets `st_mtime_nsec` and the other `_nsec`
+fields to 0. Libc `fstat` will sometimes use the `fstatat` or `fstat64`
+syscalls instead, which aren't affected, but the libc `fstat` on ubuntu-20.04
+on Github Actions appears to be affected.
+
+This can be seen in the `st_mtime_nsec` assert in tests/fs/futimens.rs.
+
+It's not yet known why upstream qemu doesn't define this.
+
+---
+ linux-user/generic/sockbits.h | 1 +
+ 1 files changed, 1 insertions(+)
+
+diff -ur a/linux-user/syscall_defs.h b/linux-user/syscall_defs.h
+--- a/linux-user/syscall_defs.h	2021-08-24 10:35:41.000000000 -0700
++++ b/linux-user/syscall_defs.h	2022-04-12 13:23:25.291064887 -0700
+@@ -2040,6 +2040,7 @@
+ 	abi_long	__unused[3];
+ };
+ #elif defined(TARGET_S390X)
++#define TARGET_STAT_HAVE_NSEC
+ struct target_stat {
+     abi_ulong  st_dev;
+     abi_ulong  st_ino;

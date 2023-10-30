@@ -1,0 +1,11 @@
+error: lint `safe_packed_borrows` has been renamed to `unaligned_references`
+ --> tests/ui/pin_project/safe_packed_borrows.rs:2:9
+  |
+2 | #![deny(safe_packed_borrows)] //~ ERROR has been renamed to `unaligned_references`
+  |         ^^^^^^^^^^^^^^^^^^^ help: use the new name: `unaligned_references`
+  |
+note: the lint level is defined here
+ --> tests/ui/pin_project/safe_packed_borrows.rs:1:9
+  |
+1 | #![deny(renamed_and_removed_lints)]
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^

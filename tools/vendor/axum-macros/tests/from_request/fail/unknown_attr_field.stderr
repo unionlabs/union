@@ -1,0 +1,5 @@
+error: expected `via`
+ --> tests/from_request/fail/unknown_attr_field.rs:4:33
+  |
+4 | struct Extractor(#[from_request(foo)] String);
+  |                                 ^^^

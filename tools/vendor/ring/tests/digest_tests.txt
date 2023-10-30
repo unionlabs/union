@@ -1,0 +1,214 @@
+# SHA-1 tests from RFC 3174.
+
+Hash = SHA1
+Input = "abc"
+Repeat = 1
+Output = a9993e364706816aba3e25717850c26c9cd0d89d
+
+Hash = SHA1
+Input = "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq"
+Repeat = 1
+Output = 84983e441c3bd26ebaae4aa1f95129e5e54670f1
+
+Hash = SHA1
+Input = "a"
+Repeat = 1000000
+Output = 34aa973cd4c4daa4f61eeb2bdbad27316534016f
+
+Hash = SHA1
+Input = "0123456701234567012345670123456701234567012345670123456701234567"
+Repeat = 10
+Output = dea356a2cddd90c7a7ecedc5ebb563934f460452
+
+# SHA-256 tests from NIST.
+
+Hash = SHA256
+Input = "abc"
+Repeat = 1
+Output = ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad
+
+Hash = SHA256
+Input = "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq"
+Repeat = 1
+Output = 248d6a61d20638b8e5c026930c3e6039a33ce45964ff2167f6ecedd419db06c1
+
+# SHA-384 tests from NIST.
+
+Hash = SHA384
+Input = "abc"
+Repeat = 1
+Output = cb00753f45a35e8bb5a03d699ac65007272c32ab0eded1631a8b605a43ff5bed8086072ba1e7cc2358baeca134c825a7
+
+Hash = SHA384
+Input = "abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijklmnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu"
+Repeat = 1
+Output = 09330c33f71147e83d192fc782cd1b4753111b173b3b05d22fa08086e3b0f712fcc7c71a557e2db966c3e9fa91746039
+
+# SHA-512 tests from NIST
+
+Hash = SHA512
+Input = "abc"
+Repeat = 1
+Output = ddaf35a193617abacc417349ae20413112e6fa4e89a97ea20a9eeee64b55d39a2192992a274fc1a836ba3c23a3feebbd454d4423643ce80e2a9ac94fa54ca49f
+
+Hash = SHA512
+Input = "abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijklmnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu"
+Repeat = 1
+Output = 8e959b75dae313da8cf4f72814fc143f8f7779c6eb9f7fa17299aeadb6889018501d289e4900f7e4331b99dec4b5433ac7d329eeb6dd26545e96e55b874be909
+
+# SHA-512/256 tests from Go.
+
+Hash = SHA512_256
+Input = ""
+Repeat = 1
+Output = c672b8d1ef56ed28ab87c3622c5114069bdd3ad7b8f9737498d0c01ecef0967a
+
+Hash = SHA512_256
+Input = "a"
+Repeat = 1
+Output = 455e518824bc0601f9fb858ff5c37d417d67c2f8e0df2babe4808858aea830f8
+
+Hash = SHA512_256
+Input = "ab"
+Repeat = 1
+Output = 22d4d37ec6370571af7109fb12eae79673d5f7c83e6e677083faa3cfac3b2c14
+
+Hash = SHA512_256
+Input = "abc"
+Repeat = 1
+Output = 53048e2681941ef99b2e29b76b4c7dabe4c2d0c634fc6d46e0e2f13107e7af23
+
+Hash = SHA512_256
+Input = "abcd"
+Repeat = 1
+Output = d2891c7978be0e24948f37caa415b87cb5cbe2b26b7bad9dc6391b8a6f6ddcc9
+
+Hash = SHA512_256
+Input = "abcde"
+Repeat = 1
+Output = de8322b46e78b67d4431997070703e9764e03a1237b896fd8b379ed4576e8363
+
+Hash = SHA512_256
+Input = "abcdef"
+Repeat = 1
+Output = e4fdcb11d1ac14e698743acd8805174cea5ddc0d312e3e47f6372032571bad84
+
+Hash = SHA512_256
+Input = "abcdefg"
+Repeat = 1
+Output = a8117f680bdceb5d1443617cbdae9255f6900075422326a972fdd2f65ba9bee3
+
+Hash = SHA512_256
+Input = "abcdefgh"
+Repeat = 1
+Output = a29b9645d2a02a8b582888d044199787220e316bf2e89d1422d3df26bf545bbe
+
+Hash = SHA512_256
+Input = "abcdefghi"
+Repeat = 1
+Output = b955095330f9c8188d11884ec1679dc44c9c5b25ff9bda700416df9cdd39188f
+
+Hash = SHA512_256
+Input = "abcdefghij"
+Repeat = 1
+Output = 550762913d51eefbcd1a55068fcfc9b154fd11c1078b996df0d926ea59d2a68d
+
+Hash = SHA512_256
+Input = "Discard medicine more than two years old."
+Repeat = 1
+Output = 690c8ad3916cefd3ad29226d9875965e3ee9ec0d4482eacc248f2ff4aa0d8e5b
+
+Hash = SHA512_256
+Input = "He who has a shady past knows that nice guys finish last."
+Repeat = 1
+Output = 25938ca49f7ef1178ce81620842b65e576245fcaed86026a36b516b80bb86b3b
+
+Hash = SHA512_256
+Input = "I wouldn't marry him with a ten foot pole."
+Repeat = 1
+Output = 698e420c3a7038e53d8e73f4be2b02e03b93464ac1a61ebe69f557079921ef65
+
+Hash = SHA512_256
+Input = "Free! Free!/A trip/to Mars/for 900/empty jars/Burma Shave"
+Repeat = 1
+Output = 839b414d7e3900ee243aa3d1f9b6955720e64041f5ab9bedd3eb0a08da5a2ca8
+
+Hash = SHA512_256
+Input = "The days of the digital watch are numbered.  -Tom Stoppard"
+Repeat = 1
+Output = 5625ecb9d284e54c00b257b67a8cacb25a78db2845c60ef2d29e43c84f236e8e
+
+Hash = SHA512_256
+Input = "Nepal premier won't resign."
+Repeat = 1
+Output = 9b81d06bca2f985e6ad3249096ff3c0f2a9ec5bb16ef530d738d19d81e7806f2
+
+Hash = SHA512_256
+Input = "For every action there is an equal and opposite government program."
+Repeat = 1
+Output = 08241df8d91edfcd68bb1a1dada6e0ae1475a5c6e7b8f12d8e24ca43a38240a9
+
+Hash = SHA512_256
+Input = "His money is twice tainted: 'taint yours and 'taint mine."
+Repeat = 1
+Output = 4ff74d9213a8117745f5d37b5353a774ec81c5dfe65c4c8986a56fc01f2c551e
+
+Hash = SHA512_256
+Input = "There is no reason for any individual to have a computer in their home. -Ken Olsen, 1977"
+Repeat = 1
+Output = b5baf747c307f98849ec881cf0d48605ae4edd386372aea9b26e71db517e650b
+
+Hash = SHA512_256
+Input = "It's a tiny change to the code and not completely disgusting. - Bob Manchek"
+Repeat = 1
+Output = 7eef0538ebd7ecf18611d23b0e1cd26a74d65b929a2e374197dc66e755ca4944
+
+Hash = SHA512_256
+Input = "size:  a.out:  bad magic"
+Repeat = 1
+Output = d05600964f83f55323104aadab434f32391c029718a7690d08ddb2d7e8708443
+
+Hash = SHA512_256
+Input = "The major problem is with sendmail.  -Mark Horton"
+Repeat = 1
+Output = 53ed5f9b5c0b674ac0f3425d9f9a5d462655b07cc90f5d0f692eec093884a607
+
+Hash = SHA512_256
+Input = "Give me a rock, paper and scissors and I will move the world.  CCFestoon"
+Repeat = 1
+Output = 5a0147685a44eea2435dbd582724efca7637acd9c428e5e1a05115bc3bc2a0e0
+
+Hash = SHA512_256
+Input = "If the enemy is within range, then so are you."
+Repeat = 1
+Output = 1152c9b27a99dbf4057d21438f4e63dd0cd0977d5ff12317c64d3b97fcac875a
+
+Hash = SHA512_256
+Input = "It's well we cannot hear the screams/That we create in others' dreams."
+Repeat = 1
+Output = 105e890f5d5cf1748d9a7b4cdaf58b69855779deebc2097747c2210a17b2cb51
+
+Hash = SHA512_256
+Input = "You remind me of a TV show, but that's all right: I watch it anyway."
+Repeat = 1
+Output = 74644ead770da1434365cd912656fe1aca2056d3039d39f10eb1151bddb32cf3
+
+Hash = SHA512_256
+Input = "C is as portable as Stonehedge!!"
+Repeat = 1
+Output = 50a234625de5587581883dad9ef399460928032a5ea6bd005d7dc7b68d8cc3d6
+
+Hash = SHA512_256
+Input = "Even if I could be Shakespeare, I think I should still choose to be Faraday. - A. Huxley"
+Repeat = 1
+Output = a7a3846005f8a9935a0a2d43e7fd56d95132a9a3609bf3296ef80b8218acffa0
+
+Hash = SHA512_256
+Input = "The fugacity of a constituent in a mixture of gases at a given temperature is proportional to its mole fraction.  Lewis-Randall Rule"
+Repeat = 1
+Output = 688ff03e367680757aa9906cb1e2ad218c51f4526dc0426ea229a5ba9d002c69
+
+Hash = SHA512_256
+Input = "How can you write a big system without C++?  -Paul Glick"
+Repeat = 1
+Output = 3fa46d52094b01021cff5af9a438982b887a5793f624c0a6644149b6b7c3f485

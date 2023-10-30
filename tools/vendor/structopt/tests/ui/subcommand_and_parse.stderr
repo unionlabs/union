@@ -1,0 +1,5 @@
+error: parse attribute is not allowed for subcommand
+  --> $DIR/subcommand_and_parse.rs:17:29
+   |
+17 |     #[structopt(subcommand, parse(from_occurrences))]
+   |                             ^^^^^

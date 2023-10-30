@@ -1,0 +1,5 @@
+error: opt out of `Debug` requires also opting out of `Error`. Use `#[from_request(rejection_derive(!Debug, !Error))]`
+ --> tests/from_request/fail/derive_opt_out_debug_without_error.rs:4:34
+  |
+4 | #[from_request(rejection_derive(!Debug))]
+  |                                  ^^^^^

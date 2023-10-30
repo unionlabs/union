@@ -1,0 +1,7 @@
+error[E0277]: the trait bound `bool: FromRequest<Body>` is not satisfied
+ --> tests/debug_handler/fail/argument_not_extractor.rs:4:23
+  |
+4 | async fn handler(foo: bool) {}
+  |                       ^^^^ the trait `FromRequest<Body>` is not implemented for `bool`
+  |
+  = help: see issue #48214

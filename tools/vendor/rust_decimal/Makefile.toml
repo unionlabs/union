@@ -1,0 +1,280 @@
+[config]
+default_to_workspace = false
+
+[env]
+FUZZ_RUNS = 1000
+
+[tasks.build]
+command = "cargo"
+args = ["build"]
+
+[tasks.format]
+workspace = true
+install_crate = "rustfmt"
+command = "cargo"
+args = ["fmt", "--", "--emit=files"]
+
+[tasks.clippy]
+workspace = true
+install_crate = "clippy"
+command = "cargo"
+args = ["clippy"]
+
+[tasks.outdated]
+install_crate = "cargo-outdated"
+command = "cargo"
+args = ["outdated", "-R"]
+
+[tasks.bench]
+toolchain = "nightly"
+command = "cargo"
+args = ["bench", "${@}"]
+
+[tasks.bench-maths]
+toolchain = "nightly"
+command = "cargo"
+args = ["bench", "--features", "maths", "${@}"]
+
+[tasks.bench-legacy]
+toolchain = "nightly"
+command = "cargo"
+args = ["bench", "--no-default-features", "--features", "serde,std,legacy-ops", "${@}"]
+
+[tasks.benchcmp]
+dependencies = [
+    "benchcmp-legacy",
+    "benchcmp-default"
+]
+install_crate = "benchcmp"
+command = "cargo"
+args = ["benchcmp", "target/legacy.bench", "target/default.bench"]
+
+[tasks.benchcmp-default]
+script = "cargo +nightly bench > target/default.bench"
+
+[tasks.benchcmp-legacy]
+script = "cargo +nightly bench --no-default-features --features serde,std,legacy-ops > target/legacy.bench"
+
+[tasks.coverage]
+dependencies = ["codecov-clean"]
+env = { "CARGO_INCREMENTAL" = "0", "RUSTFLAGS" = "-Zprofile -Ccodegen-units=1 -Copt-level=0 -Clink-dead-code -Coverflow-checks=off -Zpanic_abort_tests -Cpanic=abort", "RUSTDOCFLAGS" = "-Cpanic=abort" }
+run_task = "codecov-grcov"
+
+[tasks.codecov-grcov]
+dependencies = ["codecov-build", "codecov-test"]
+command = "grcov"
+args = [".", "-s", ".", "--binary-path", "./target/debug/", "-t",  "html", "--branch", "--ignore-not-existing", "-o", "./target/debug/coverage/"]
+
+[tasks.codecov-open]
+command = "open"
+args = [ "./target/debug/coverage/index.html" ]
+
+[tasks.codecov-clean]
+toolchain = "nightly"
+command = "cargo"
+args = [ "clean" ]
+
+[tasks.codecov-build]
+toolchain = "nightly"
+command = "cargo"
+args = [ "build", "-p", "rust_decimal", "--features=default" ]
+
+[tasks.codecov-test]
+toolchain = "nightly"
+command = "cargo"
+args = [ "test", "-p", "rust_decimal", "--features=default"  ]
+
+# Always test no-std with std tests
+[tasks.test]
+dependencies = ["test-no-std"]
+command = "cargo"
+args = ["test"]
+
+[tasks.fuzz]
+dependencies = [
+    "fuzz-arithmetic",
+    "fuzz-constructors"
+]
+
+[tasks.fuzz-arithmetic]
+toolchain = "nightly"
+install_crate = "cargo-fuzz"
+command = "cargo"
+args = ["fuzz", "run", "arithmetic", "--", "-runs=${FUZZ_RUNS}"]
+
+[tasks.fuzz-constructors]
+toolchain = "nightly"
+install_crate = "cargo-fuzz"
+command = "cargo"
+args = ["fuzz", "run", "constructors", "--", "-runs=${FUZZ_RUNS}"]
+
+[tasks.test-all]
+dependencies = [
+    "test-no-std",
+    "test-default",
+    "test-legacy-ops",
+    "test-maths",
+    "test-misc",
+    "test-db",
+    "test-rocket-traits",
+    "test-serde",
+    "test-macros"
+]
+
+[tasks.test-db]
+dependencies = [
+    "test-db-mysql-all",
+    "test-db-postgres-all"
+]
+
+[tasks.test-serde]
+dependencies = [
+    "test-serde-float",
+    "test-serde-str",
+    "test-serde-str-float",
+    "test-serde-arbitrary-precision",
+    "test-serde-arbitrary-precision-float",
+    "test-serde-with-arbitrary-precision",
+    "test-serde-with-float",
+    "test-serde-with-str",
+]
+
+[tasks.test-macros]
+workspace = true
+
+[tasks.test-no-std]
+command = "cargo"
+args = ["test", "--no-default-features"]
+
+[tasks.test-default]
+command = "cargo"
+args = ["test", "--workspace", "--features=default"]
+
+[tasks.test-legacy-ops]
+command = "cargo"
+args = ["test", "--workspace", "--features=legacy-ops"]
+
+[tasks.test-maths]
+dependencies = [
+    "test-maths-default",
+    "test-maths-legacy",
+    "test-maths-nopanic",
+]
+
+[tasks.test-maths-default]
+command = "cargo"
+args = ["test", "--workspace", "--no-default-features", "--features=maths", "maths", "--", "--skip", "generated"]
+
+[tasks.test-maths-legacy]
+command = "cargo"
+args = ["test", "--workspace", "--no-default-features", "--features=maths,legacy-ops", "maths", "--", "--skip", "generated"]
+
+[tasks.test-maths-nopanic]
+command = "cargo"
+args = ["test", "--workspace", "--no-default-features", "--features=maths-nopanic", "maths", "--", "--skip", "generated"]
+
+[tasks.test-misc]
+dependencies = [
+    "test-rust-fuzz",
+    "test-borsh",
+    "test-rkyv"
+]
+
+[tasks.test-rust-fuzz]
+command = "cargo"
+args = ["test", "--workspace", "--no-default-features", "--features=rust-fuzz", "rust_fuzz", "--", "--skip", "generated"]
+
+[tasks.test-db-diesel]
+dependencies = [
+    "test-db-diesel1-mysql",
+    "test-db-diesel1-postgres",
+    "test-db-diesel2-mysql",
+    "test-db-diesel2-postgres",
+]
+
+[tasks.test-db-mysql-all]
+dependencies = [
+    "test-db-diesel1-mysql",
+    "test-db-diesel2-mysql",
+]
+
+[tasks.test-db-diesel1-mysql]
+command = "cargo"
+args = ["test", "--workspace", "--tests", "--features=db-diesel1-mysql", "mysql", "--", "--skip", "generated"]
+
+[tasks.test-db-diesel2-mysql]
+command = "cargo"
+args = ["test", "--workspace", "--tests", "--features=db-diesel2-mysql", "mysql", "--", "--skip", "generated"]
+
+[tasks.test-db-postgres-all]
+dependencies = [
+    "test-db-postgres",
+    "test-db-tokio-postgres",
+    "test-db-diesel1-postgres",
+    "test-db-diesel2-postgres"
+]
+
+[tasks.test-db-postgres]
+command = "cargo"
+args = ["test", "--workspace", "--tests", "--features=db-postgres", "postgres", "--", "--skip", "generated"]
+
+[tasks.test-db-tokio-postgres]
+command = "cargo"
+args = ["test", "--workspace", "--tests", "--features=db-tokio-postgres", "postgres", "--", "--skip", "generated"]
+
+[tasks.test-db-diesel1-postgres]
+command = "cargo"
+args = ["test", "--workspace", "--tests", "--features=db-diesel1-postgres", "postgres", "--", "--skip", "generated"]
+
+[tasks.test-db-diesel2-postgres]
+command = "cargo"
+args = ["test", "--workspace", "--tests", "--features=db-diesel2-postgres", "postgres", "--", "--skip", "generated"]
+
+[tasks.test-rocket-traits]
+command = "cargo"
+args = ["test", "--workspace", "--features=rocket-traits"]
+
+[tasks.test-serde-float]
+command = "cargo"
+args = ["test", "--workspace", "--tests", "--features=serde-float", "serde", "--", "--skip", "generated"]
+
+[tasks.test-serde-str]
+command = "cargo"
+args = ["test", "--workspace", "--tests", "--features=serde-str", "serde", "--", "--skip", "generated"]
+
+[tasks.test-serde-str-float]
+command = "cargo"
+args = ["test", "--workspace", "--tests", "--features=serde-str,serde-float", "serde", "--", "--skip", "generated"]
+
+[tasks.test-serde-arbitrary-precision]
+command = "cargo"
+args = ["test", "--workspace", "--tests", "--features=serde-arbitrary-precision", "serde", "--", "--skip", "generated"]
+
+[tasks.test-serde-arbitrary-precision-float]
+command = "cargo"
+args = ["test", "--workspace", "--tests", "--features=serde-arbitrary-precision,serde-float", "serde", "--", "--skip", "generated"]
+
+[tasks.test-serde-with-arbitrary-precision]
+command = "cargo"
+args = ["test", "--workspace", "--tests", "--features=serde-with-arbitrary-precision", "serde", "--", "--skip", "generated"]
+
+[tasks.test-serde-with-float]
+command = "cargo"
+args = ["test", "--workspace", "--tests", "--features=serde-with-float", "serde", "--", "--skip", "generated"]
+
+[tasks.test-serde-with-str]
+command = "cargo"
+args = ["test", "--workspace", "--tests", "--features=serde-with-str", "serde", "--", "--skip", "generated"]
+
+[tasks.test-borsh]
+command = "cargo"
+args = ["test", "--workspace", "--features=borsh", "--", "--skip", "generated"]
+
+[tasks.test-rkyv]
+command = "cargo"
+args = ["test", "--workspace", "--features=rkyv", "--features=rkyv-safe", "--", "--skip", "generated"]
+
+[tasks.test-rand]
+command = "cargo"
+args = ["test", "--workspace", "--features=rand", "--", "--skip", "generated"]
+

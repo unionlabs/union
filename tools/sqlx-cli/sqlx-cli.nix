@@ -1,25 +1,35 @@
 { ... }: {
-  perSystem = { pkgs, crane, ... }:
+  perSystem = { pkgs, rust, srcWithVendoredSources, ... }:
     let
       name = "sqlx-cli";
+      sqlx = pkgs.fetchFromGitHub {
+        name = "sqlx";
+        owner = "launchbadge";
+        repo = "sqlx";
+        rev = "v0.7.1";
+        sha256 = "sha256-567/uJPQhrNqDqBF/PqklXm2avSjvtQsddjChwUKUCI=";
+      };
     in
     {
-      packages = {
-        sqlx-cli = crane.lib.buildPackage {
-          inherit name;
+      _module.args.sqlxCliCargoToml = "${sqlx}/${name}/Cargo.toml";
+
+      packages.sqlx-cli =
+        pkgs.stdenv.mkDerivation {
+          pname = name;
           version = "0.7.1";
-          cargoExtraArgs = "-p sqlx-cli";
           nativeBuildInputs = [ pkgs.pkg-config ];
-          buildInputs = [ pkgs.openssl ];
-          src = pkgs.fetchFromGitHub {
-            inherit name;
-            owner = "launchbadge";
-            repo = "sqlx";
-            rev = "b1387057e5e6c6b72eacd01f491cb45854616502";
-            sha256 = "sha256-jCMDJuE7iYCAWgIDRq4KVGrwbV3TM0Ws9GiFxFn+hVU=";
-          };
+
+          buildPhase = "cargo build --release --locked --offline -p ${name}";
+          installPhase = ''
+            mkdir -p $out/bin
+            mv target/release/sqlx $out/bin/sqlx
+          '';
+
+          buildInputs = [ rust.toolchains.nightly pkgs.openssl ];
+
+          src = srcWithVendoredSources { inherit name; originalSrc = "${sqlx}"; };
+
           meta.mainProgram = "sqlx";
         };
-      };
     };
 }

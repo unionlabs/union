@@ -1,0 +1,15 @@
+error: duplicate #[pin] attribute
+ --> tests/ui/pin_project/add-attr-to-struct.rs:7:1
+  |
+7 | #[add_pin_attr(struct)] //~ ERROR duplicate #[pin] attribute
+  | ^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: this error originates in the attribute macro `add_pin_attr` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: #[pin] attribute may only be used on fields of structs or variants
+  --> tests/ui/pin_project/add-attr-to-struct.rs:13:1
+   |
+13 | #[add_pin_attr(struct)] //~ ERROR #[pin] attribute may only be used on fields of structs or variants
+   | ^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: this error originates in the attribute macro `add_pin_attr` (in Nightly builds, run with -Z macro-backtrace for more info)

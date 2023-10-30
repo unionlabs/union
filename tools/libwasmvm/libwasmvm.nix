@@ -1,5 +1,5 @@
 { ... }: {
-  perSystem = { pkgs, self', crane, rust, system, ensureAtRepositoryRoot, ... }:
+  perSystem = { pkgs, self', crane, rust, system, ensureAtRepositoryRoot, srcWithVendoredSources, ... }:
     let
       vendorDir = "tools/libwasmvm/vendor/";
       vendorDirPath = ./vendor;
@@ -21,40 +21,10 @@
         rev = "v1.3.0"; # wasmd 0.41.0
         hash = "sha256-rsTYvbkYpDkUE4IvILdSL3hXMgAWxz5ltGotJB2t1e4=";
       };
-
-      srcWithVendoredSources =
-        let
-          configToml = ''
-            [source.crates-io]
-            replace-with = "vendored-sources"
-
-            [source."git+https://github.com/CosmWasm/cosmwasm.git?rev=v1.3.0"]
-            git = "https://github.com/CosmWasm/cosmwasm.git"
-            rev = "v1.3.0"
-            replace-with = "vendored-sources"
-
-            [source.vendored-sources]
-            directory = "tools/libwasmvm/vendor/"
-          '';
-        in
-        pkgs.stdenv.mkDerivation {
-          name = "libwasmvm-with-vendored-sources-cargo-config-toml";
-          src = "${wasmvm}/libwasmvm";
-          buildPhase = ''
-            cp -r . $out
-
-            mkdir -p $out/${vendorDir}
-          
-            cp -r --no-preserve=mode ${vendorDirPath}/. $out/${vendorDir}/
-
-            diff -r $out/${vendorDir} ${vendorDirPath}
-
-            mkdir -p $out/.cargo
-            echo '${configToml}' >> $out/.cargo/config.toml
-          '';
-        };
     in
     {
+      _module.args.libwasmvmCargoToml = "${wasmvm}/libwasmvm/Cargo.toml";
+
       packages.libwasmvm =
         pkgs.stdenv.mkDerivation (
           {
@@ -67,14 +37,14 @@
 
             buildInputs = [ rustToolchain ];
 
-            src = srcWithVendoredSources;
+            src = srcWithVendoredSources { name = "libwasmvm"; originalSrc = "${wasmvm}/libwasmvm"; };
             # cargoLock = "${wasmvm}/libwasmvm/Cargo.lock";
             # # cargoVendorDir = vendorDir;
             # doCheck = false;
             # doInstallCargoArtifacts = false;
             # buildPhaseCargoCommand = "";
           } // (if pkgs.stdenv.isLinux then {
-            buildPhase = "ls -al ${vendorDir}/typenum; cargo build --release --locked --offline --example=wasmvmstatic";
+            buildPhase = "cargo build --release --locked --offline --example=wasmvmstatic";
             installPhase = ''
               mkdir -p $out/lib
               mv target/${CARGO_BUILD_TARGET}/release/examples/libwasmvmstatic.a $out/lib/libwasmvm.${builtins.head (pkgs.lib.strings.splitString "-" system)}.a
@@ -88,19 +58,5 @@
             '';
           } else throwBadSystem)
         );
-
-      packages.vendorLibwasmvm = pkgs.writeShellApplication {
-        name = "vendor-libwasmvm";
-        text =
-          ''
-            ${ensureAtRepositoryRoot}
-
-            cargo --version
-
-            cargo vendor --manifest-path ${wasmvm}/libwasmvm/Cargo.toml ${vendorDir}
-          '';
-      };
-
-      packages.vendoredSource = srcWithVendoredSources;
     };
 }

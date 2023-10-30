@@ -1,0 +1,7 @@
+error: missing `#[from_request(via(...))]`
+ --> tests/from_request/fail/enum_no_via.rs:3:10
+  |
+3 | #[derive(FromRequest, Clone)]
+  |          ^^^^^^^^^^^
+  |
+  = note: this error originates in the derive macro `FromRequest` (in Nightly builds, run with -Z macro-backtrace for more info)

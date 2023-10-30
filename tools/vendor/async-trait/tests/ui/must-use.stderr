@@ -1,0 +1,11 @@
+error: unused return value of `Interface::f` that must be used
+  --> tests/ui/must-use.rs:18:5
+   |
+18 |     Thing.f();
+   |     ^^^^^^^^^^
+   |
+note: the lint level is defined here
+  --> tests/ui/must-use.rs:1:9
+   |
+1  | #![deny(unused_must_use)]
+   |         ^^^^^^^^^^^^^^^

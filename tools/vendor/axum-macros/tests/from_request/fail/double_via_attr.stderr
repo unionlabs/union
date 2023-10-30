@@ -1,0 +1,13 @@
+error: `via` specified more than once
+ --> tests/from_request/fail/double_via_attr.rs:5:49
+  |
+5 | struct Extractor(#[from_request(via(Extension), via(Extension))] State);
+  |                                                 ^^^
+
+warning: unused import: `axum::extract::Extension`
+ --> tests/from_request/fail/double_via_attr.rs:2:5
+  |
+2 | use axum::extract::Extension;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default

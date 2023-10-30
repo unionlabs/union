@@ -90,6 +90,7 @@
           cp "$output"/rust-src-nightly/rust-src/lib/rustlib/src/rust/Cargo.lock tools/rust/rust-std-Cargo.lock
         '';
       };
+
       _module.args.rust = {
         inherit mkBuildStdToolchain mkNightly rustSrc;
 
