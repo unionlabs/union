@@ -98,7 +98,7 @@ services:
       - "1317:1317"
       - "9093:9093"
     restart: unless-stopped
-    command: start
+    command: start --home /.union
 ```
 
 This will mount our chain configuration and settings folder while also exposing ports `26657`, `1317`, and `9093`.

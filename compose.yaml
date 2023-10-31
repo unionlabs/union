@@ -5,7 +5,8 @@ services:
         - ~/.union:/.union
     ports:
       - "26657:26657"
+      - "26656:26656"
       - "1317:1317"
       - "9093:9093"
     restart: unless-stopped
-    command: start
+    command: start --home /.union
