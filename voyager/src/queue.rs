@@ -3064,8 +3064,8 @@ where
             Msg::ChannelOpenAck(MsgChannelOpenAckData {
                 msg: MsgChannelOpenAck {
                     port_id: channel_proof.state.counterparty.port_id.clone(),
-                    channel_id: event.counterparty_channel_id.to_string(),
-                    counterparty_channel_id: event.channel_id.to_string(),
+                    channel_id: event.counterparty_channel_id,
+                    counterparty_channel_id: event.channel_id,
                     counterparty_version: event.version,
                     proof_try: channel_proof.proof,
                     proof_height: channel_proof.proof_height,
@@ -3122,8 +3122,8 @@ where
             counterparty_chain_id,
             Msg::ChannelOpenConfirm(MsgChannelOpenConfirmData {
                 msg: MsgChannelOpenConfirm {
-                    port_id: channel_proof.state.counterparty.port_id.clone(),
-                    channel_id: event.counterparty_channel_id.to_string(),
+                    port_id: channel_proof.state.counterparty.port_id,
+                    channel_id: event.counterparty_channel_id,
                     proof_ack: channel_proof.proof,
                     proof_height: channel_proof.proof_height,
                 },

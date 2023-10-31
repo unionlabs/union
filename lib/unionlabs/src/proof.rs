@@ -9,7 +9,7 @@ use crate::{
         channel::channel::Channel, client::height::IsHeight,
         connection::connection_end::ConnectionEnd,
     },
-    id::{ChannelId, ConnectionId},
+    id::{ChannelId, ConnectionId, PortId},
     traits::{self, Chain},
 };
 
@@ -18,8 +18,6 @@ use crate::{
 pub trait IbcPath<This: Chain, Counterparty>: Display + Clone + Sized {
     type Output: Debug + Clone + Serialize;
 }
-
-type PortId = String;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, derive_more::Display, clap::Args)]
 #[serde(bound(

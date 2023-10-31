@@ -40,8 +40,9 @@ use unionlabs::{
         google::protobuf::any::Any,
         lightclients::{cometbls, ethereum, tendermint::fraction::Fraction, wasm},
     },
-    id::{ChannelId, ClientId, ConnectionId},
+    id::{ChannelId, ClientId, ConnectionId, PortId},
     traits::{Chain, ClientState},
+    validated::ValidateT,
     EmptyString, TryFromEthAbiErrorOf, TryFromProto,
 };
 
@@ -271,7 +272,7 @@ impl<C: ChainSpec> Chain for Evm<C> {
         &self,
         block_hash: H256,
         destination_channel_id: ChannelId,
-        destination_port_id: String,
+        destination_port_id: PortId,
         sequence: u64,
     ) -> impl Future<Output = Vec<u8>> + '_ {
         async move {
@@ -291,7 +292,7 @@ impl<C: ChainSpec> Chain for Evm<C> {
                         destination_channel,
                         sequence: ack_sequence,
                         acknowledgement,
-                    }) if ack_dst_port_id == destination_port_id
+                    }) if ack_dst_port_id == destination_port_id.to_string()
                         && destination_channel == destination_channel_id.to_string()
                         && sequence == ack_sequence =>
                     {
@@ -413,26 +414,34 @@ impl<C: ChainSpec> Evm<C> {
 
 pub type EvmClientId = ClientId;
 
-#[derive(Debug)]
+// TODO: Don't use debug here, instead impl Error for all error types
+#[derive(Debug, thiserror::Error)]
 pub enum EvmEventSourceError {
-    Contract(ContractError<Provider<Ws>>),
-    ChannelNotFound {
-        port_id: String,
-        channel_id: String,
-    },
+    #[error(transparent)]
+    Contract(#[from] ContractError<Provider<Ws>>),
+    #[error("channel `{channel_id}/{port_id}` not found")]
+    ChannelNotFound { port_id: String, channel_id: String },
+    #[error("{0:?}")]
     ChannelConversion(TryFromEthAbiErrorOf<Channel>),
-    ConnectionNotFound {
-        connection_id: String,
-    },
+    #[error("channel `{connection_id}` not found")]
+    ConnectionNotFound { connection_id: String },
+    #[error("{0:?}")]
     ConnectionConversion(TryFromEthAbiErrorOf<ConnectionEnd<EvmClientId, String>>),
     // this is a mess, should be cleaned up
+    #[error("{0:?}")]
     ConnectionOpenInitConnectionConversion(
         TryFromEthAbiErrorOf<ConnectionEnd<EvmClientId, String, EmptyString>>,
     ),
+    #[error(transparent)]
     ClientIdParse(<ClientId as FromStr>::Err),
+    #[error(transparent)]
     ConnectionIdParse(<ConnectionId as FromStr>::Err),
+    #[error(transparent)]
     ChannelIdParse(<ChannelId as FromStr>::Err),
-    EthAbi(ethers::core::abi::Error),
+    #[error(transparent)]
+    PortIdParse(<PortId as FromStr>::Err),
+    #[error(transparent)]
+    EthAbi(#[from] ethers::core::abi::Error),
 }
 
 impl<C: ChainSpec> EventSource for Evm<C> {
@@ -557,13 +566,15 @@ impl<C: ChainSpec> EventSource for Evm<C> {
                                     packet_timeout_height: packet_ack.packet.timeout_height.into(),
                                     packet_timeout_timestamp: packet_ack.packet.timeout_timestamp,
                                     packet_sequence: packet_ack.packet.sequence,
-                                    packet_src_port: packet_ack.packet.source_port,
+                                    packet_src_port: packet_ack.packet.source_port.parse()
+                                        .map_err(EvmEventSourceError::PortIdParse)?,
                                     packet_src_channel: packet_ack
                                         .packet
                                         .source_channel
                                         .parse()
                                         .map_err(EvmEventSourceError::ChannelIdParse)?,
-                                    packet_dst_port: packet_ack.packet.destination_port,
+                                    packet_dst_port: packet_ack.packet.destination_port.parse()
+                                        .map_err(EvmEventSourceError::PortIdParse)?,
                                     packet_dst_channel: packet_ack
                                         .packet
                                         .destination_channel
@@ -581,7 +592,7 @@ impl<C: ChainSpec> EventSource for Evm<C> {
                                         .await?;
 
                                 Some(IbcEvent::ChannelOpenAck(ChannelOpenAck {
-                                    port_id: event.port_id,
+                                    port_id: event.port_id.parse().map_err(EvmEventSourceError::PortIdParse)?,
                                     channel_id: event
                                         .channel_id
                                         .parse()
@@ -601,7 +612,7 @@ impl<C: ChainSpec> EventSource for Evm<C> {
                                         .await?;
 
                                 Some(IbcEvent::ChannelOpenConfirm(ChannelOpenConfirm {
-                                    port_id: event.port_id,
+                                    port_id: event.port_id.parse().map_err(EvmEventSourceError::PortIdParse)?,
                                     channel_id: event
                                         .channel_id
                                         .parse()
@@ -621,14 +632,14 @@ impl<C: ChainSpec> EventSource for Evm<C> {
                                         .await?;
 
                                 Some(IbcEvent::ChannelOpenInit(ChannelOpenInit {
-                                    port_id: event.port_id,
+                                    port_id: event.port_id.parse().map_err(EvmEventSourceError::PortIdParse)?,
                                     channel_id: event
                                         .channel_id
                                         .parse()
                                         .map_err(EvmEventSourceError::ChannelIdParse)?,
                                     // TODO: Ensure that event.counterparty_channel_id is `EmptyString`
-                                    counterparty_channel_id: EmptyString,
-                                    counterparty_port_id: event.counterparty_port_id,
+                                    counterparty_channel_id: "".to_string().validate().expect("empty string is a valid empty string; qed;"),
+                                    counterparty_port_id: event.counterparty_port_id.parse().map_err(EvmEventSourceError::PortIdParse)?,
                                     connection_id: event
                                         .connection_id
                                         .parse()
@@ -642,12 +653,12 @@ impl<C: ChainSpec> EventSource for Evm<C> {
                                         .await?;
 
                                 Some(IbcEvent::ChannelOpenTry(ChannelOpenTry {
-                                    port_id: event.port_id,
+                                    port_id: event.port_id.parse().map_err(EvmEventSourceError::PortIdParse)?,
                                     channel_id: event
                                         .channel_id
                                         .parse()
                                         .map_err(EvmEventSourceError::ChannelIdParse)?,
-                                    counterparty_port_id: event.counterparty_port_id,
+                                    counterparty_port_id: event.counterparty_port_id.parse().map_err(EvmEventSourceError::PortIdParse)?,
                                     counterparty_channel_id: channel
                                         .counterparty
                                         .channel_id
@@ -787,13 +798,15 @@ impl<C: ChainSpec> EventSource for Evm<C> {
                                     packet_timeout_height: event.packet.timeout_height.into(),
                                     packet_timeout_timestamp: event.packet.timeout_timestamp,
                                     packet_sequence: event.packet.sequence,
-                                    packet_src_port: event.packet.source_port,
+                                    packet_src_port: event.packet.source_port.parse()
+                                        .map_err(EvmEventSourceError::PortIdParse)?,
                                     packet_src_channel: event
                                         .packet
                                         .source_channel
                                         .parse()
                                         .map_err(EvmEventSourceError::ChannelIdParse)?,
-                                    packet_dst_port: event.packet.destination_port,
+                                    packet_dst_port: event.packet.destination_port.parse()
+                                        .map_err(EvmEventSourceError::PortIdParse)?,
                                     packet_dst_channel: event
                                         .packet
                                         .destination_channel
@@ -815,7 +828,8 @@ impl<C: ChainSpec> EventSource for Evm<C> {
                                     packet_timeout_height: event.timeout_height.into(),
                                     packet_timeout_timestamp: event.timeout_timestamp,
                                     packet_sequence: event.sequence,
-                                    packet_src_port: event.source_port,
+                                    packet_src_port: event.source_port.parse()
+                                        .map_err(EvmEventSourceError::PortIdParse)?,
                                     packet_src_channel: event
                                         .source_channel
                                         .parse()

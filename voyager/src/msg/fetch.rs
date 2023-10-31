@@ -4,7 +4,7 @@ use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use serde::{Deserialize, Serialize};
 use unionlabs::{
     ethereum::H256,
-    id::{ChannelId, ConnectionId},
+    id::{ChannelId, ConnectionId, PortId},
     proof,
     traits::Chain,
 };
@@ -102,7 +102,7 @@ impl<L: LightClient> Display for FetchStateProof<L> {
 #[serde(bound(serialize = "", deserialize = ""))]
 pub struct FetchChannelEnd<L: LightClient> {
     pub at: HeightOf<ChainOf<L>>,
-    pub port_id: String,
+    pub port_id: PortId,
     pub channel_id: ChannelId,
 }
 
@@ -117,7 +117,7 @@ pub struct FetchConnectionEnd<L: LightClient> {
 #[serde(bound(serialize = "", deserialize = ""))]
 pub struct FetchPacketAcknowledgement<L: LightClient> {
     pub block_hash: H256,
-    pub destination_port_id: String,
+    pub destination_port_id: PortId,
     pub destination_channel_id: ChannelId,
     pub sequence: u64,
     #[serde(skip)]
