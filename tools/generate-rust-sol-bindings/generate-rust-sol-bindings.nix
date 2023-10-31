@@ -30,6 +30,7 @@
             ${self'.packages.evm-contracts}/out/IBCHandler.sol/IBCHandler.json \
             ${self'.packages.evm-contracts}/out/Glue.sol/Glue.json \
             ${self'.packages.evm-contracts}/out/DevnetOwnableIBCHandler.sol/DevnetOwnableIBCHandler.json \
+            ${self'.packages.external-evm-contracts}/out/ERC20.sol/ERC20.json \
             ${self'.packages.evm-contracts}/out/Relay.sol/UCS01Relay.json
 
           ls -al ./out/

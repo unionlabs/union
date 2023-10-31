@@ -10,7 +10,7 @@ unionlabs = { workspace = true, default-features = true }
 beacon-api = { workspace = true, default-features = false }
 contracts.workspace = true
 serde-utils.workspace = true
-protos = { workspace = true, default-features = true }
+protos = { workspace = true, default-features = true, features = [ "client" ] }
 
 futures = "0.3.28"
 ethers = { workspace = true, features = ["rustls", "ws"] }

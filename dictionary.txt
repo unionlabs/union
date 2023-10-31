@@ -85,6 +85,7 @@ UDHC
 UNBONDED
 UNBONDING
 UNNEST
+Ucli
 Unbonding
 Undelegate
 Unjail
@@ -148,6 +149,7 @@ builtins
 byteorder
 cachix
 canonicalization
+canonicalize
 capabilitykeeper
 capabilitytypes
 cargotoml
@@ -623,6 +625,7 @@ typemap
 typenum
 typesparams
 uatom
+ucli
 ucosm
 unbond
 unbonded

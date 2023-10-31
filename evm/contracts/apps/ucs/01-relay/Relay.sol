@@ -23,8 +23,8 @@ struct Token {
 }
 
 struct RelayPacket {
-    string sender;
-    string receiver;
+    bytes sender;
+    bytes receiver;
     Token[] tokens;
 }
 
@@ -87,6 +87,13 @@ library RelayLib {
         }
         return address(iaddr);
     }
+
+    function bytesToAddress(bytes memory b) internal pure returns (address) {
+        if (b.length != 20) {
+            revert("Invalid address.");
+        }
+        return address(uint160(bytes20(b)));
+    }
 }
 
 library RelayPacketLib {
@@ -100,10 +107,10 @@ library RelayPacketLib {
         bytes memory packet
     ) internal pure returns (RelayPacket memory) {
         (
-            string memory sender,
-            string memory receiver,
+            bytes memory sender,
+            bytes memory receiver,
             Token[] memory tokens
-        ) = abi.decode(packet, (string, string, Token[]));
+        ) = abi.decode(packet, (bytes, bytes, Token[]));
         return
             RelayPacket({sender: sender, receiver: receiver, tokens: tokens});
     }
@@ -213,7 +220,7 @@ contract UCS01Relay is IBCAppBase {
     function send(
         string calldata portId,
         string calldata channelId,
-        string calldata receiver,
+        bytes calldata receiver,
         LocalToken[] calldata tokens,
         uint64 counterpartyTimeoutRevisionNumber,
         uint64 counterpartyTimeoutRevisionHeight
@@ -237,7 +244,7 @@ contract UCS01Relay is IBCAppBase {
             normalizedTokens[i].amount = uint256(localToken.amount);
             emit Sent(
                 msg.sender,
-                receiver,
+                receiver.toHexString(),
                 addressDenom,
                 localToken.denom,
                 uint256(localToken.amount)
@@ -245,7 +252,7 @@ contract UCS01Relay is IBCAppBase {
         }
         string memory sender = msg.sender.toHexString();
         RelayPacket memory packet = RelayPacket({
-            sender: msg.sender.toHexString(),
+            sender: abi.encodePacked(msg.sender),
             receiver: receiver,
             tokens: normalizedTokens
         });
@@ -269,7 +276,7 @@ contract UCS01Relay is IBCAppBase {
         RelayPacket memory packet
     ) internal {
         // We're going to refund, the receiver will be the sender.
-        address receiver = RelayLib.hexToAddress(packet.sender);
+        address receiver = RelayLib.bytesToAddress(packet.sender);
         for (uint256 i = 0; i < packet.tokens.length; i++) {
             Token memory token = packet.tokens[i];
             // Either we tried to send back a remote native token
@@ -314,7 +321,7 @@ contract UCS01Relay is IBCAppBase {
             strings.slice memory trimedDenom = denomSlice.beyond(
                 prefix.toSlice()
             );
-            address receiver = RelayLib.hexToAddress(packet.receiver);
+            address receiver = RelayLib.bytesToAddress(packet.receiver);
             address denomAddress;
             string memory denom;
             if (!denomSlice.equals(token.denom.toSlice())) {
@@ -344,7 +351,7 @@ contract UCS01Relay is IBCAppBase {
                 IERC20Denom(denomAddress).mint(receiver, token.amount);
             }
             emit Received(
-                packet.sender,
+                packet.sender.toHexString(),
                 receiver,
                 denom,
                 denomAddress,

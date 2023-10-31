@@ -13,7 +13,6 @@ use std::{error::Error, ffi::OsString, fs::read_to_string, process::ExitCode};
 
 use chain_utils::{evm::Evm, union::Union};
 use clap::Parser;
-use contracts::ucs01_relay::{LocalToken, UCS01Relay};
 use sqlx::PgPool;
 use tikv_jemallocator::Jemalloc;
 use unionlabs::ethereum_consts_traits::Mainnet;
@@ -179,48 +178,7 @@ async fn do_main(args: cli::AppArgs) -> Result<(), VoyagerError> {
                     _ => panic!("Not supported."),
                 }
             }
-            cli::SetupCmd::Transfer {
-                on,
-                relay_address,
-                port_id,
-                channel_id,
-                receiver,
-                amount,
-                denom,
-            } => {
-                let chain = voyager_config.get_chain(&on).await?;
-
-                match chain {
-                    AnyChain::EvmMinimal(evm) => {
-                        let relay = UCS01Relay::new(relay_address, evm.provider.into());
-
-                        let denom = relay.denom_to_address(denom).await.unwrap();
-
-                        let tx_rcp = relay
-                            .send(
-                                port_id,
-                                channel_id,
-                                receiver,
-                                [LocalToken {
-                                    denom,
-                                    amount: amount.into(),
-                                }]
-                                .into(),
-                                u64::MAX,
-                                u64::MAX,
-                            )
-                            .send()
-                            .await
-                            .unwrap()
-                            .await
-                            .unwrap()
-                            .unwrap();
-
-                        dbg!(tx_rcp);
-                    }
-                    _ => panic!("Not supported."),
-                }
-            }
+            cli::SetupCmd::Transfer { .. } => {}
             _ => panic!("not supported"),
         },
         Command::Query { on, at, cmd } => {

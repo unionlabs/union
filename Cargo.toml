@@ -6,6 +6,7 @@ members = [
   "light-clients/*",
   "generated/rust",
   "generated/contracts",
+  "ucli",
   "unionvisor",
   "voyager",
   "cosmwasm/*",

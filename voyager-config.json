@@ -3,7 +3,7 @@
     "ethereum-devnet": {
       "chain_type": "evm",
       "preset_base": "minimal",
-      "ibc_handler_address": "0x774667629726ec1FaBEbCEc0D9139bD1C8f72a23",
+      "ibc_handler_address": "0xEDa338E4dC46038493b885327842fD3E301CaB39",
       "signers": [
         {
           "raw": "0x4e9444a6efd6d42725a250b650a781da2737ea308c839eaccb0f7f3dbd2fea77"
