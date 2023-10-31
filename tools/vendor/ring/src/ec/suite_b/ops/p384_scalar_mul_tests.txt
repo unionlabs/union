@@ -1,0 +1,32 @@
+
+a = 00
+b = 00
+r = 00
+
+a = 00
+b = ffffffffffffffffffffffffffffffffffffffffffffffffc7634d81f4372ddf581a0db248b0a77aecec196accc52972
+r = 00
+
+a = 01
+b = ffffffffffffffffffffffffffffffffffffffffffffffffc7634d81f4372ddf581a0db248b0a77aecec196accc52972
+r = caa357821c6244e05eafdf931b0e6b53872b45a79929e877e4c3adcae9998bc585acc2c6a24bb9ca8be13114da045062
+
+a = 02
+b = ffffffffffffffffffffffffffffffffffffffffffffffffc7634d81f4372ddf581a0db248b0a77aecec196accc52972
+r = 9546af0438c489c0bd5fbf26361cd6a70e568b4f3253d0f002240e13defbe9abb33f77dafbe6cc1a2ad648bee7437751
+
+a = 03
+b = ffffffffffffffffffffffffffffffffffffffffffffffffc7634d81f4372ddf581a0db248b0a77aecec196accc52972
+r = 5fea06865526cea11c0f9eb9512b41fa9581d0f6cb7db9681f846e5cd45e4791e0d22cef5581de69c9cb6068f4829e40
+
+a = 7fffffffffffffffffffffffffffffffffffffffffffffffe3b1a6c0fa1b96efac0d06d9245853bd76760cb5666294b9
+b = 02
+r = caa357821c6244e05eafdf931b0e6b53872b45a79929e877e4c3adcae9998bc585acc2c6a24bb9ca8be13114da045062
+
+a = 7fffffffffffffffffffffffffffffffffffffffffffffffe3b1a6c0fa1b96efac0d06d9245853bd76760cb5666294ba
+b = 02
+r = 355ca87de39dbb1fa150206ce4f194ac78d4ba5866d61787e29f9fb70a9da219d26d4aeba664edb0610ae855f2c0d911
+
+a = 800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+b = 02
+r = 01

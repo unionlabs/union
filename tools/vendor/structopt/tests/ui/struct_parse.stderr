@@ -1,0 +1,5 @@
+error: `parse` attribute is only allowed on fields
+  --> $DIR/struct_parse.rs:12:29
+   |
+12 | #[structopt(name = "basic", parse(from_str))]
+   |                             ^^^^^

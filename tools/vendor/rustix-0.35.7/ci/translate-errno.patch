@@ -1,0 +1,28 @@
+From: Dan Gohman <dev@sunfishcode.online>
+Subject: [PATCH] Translate errno codes from host to target for `SO_ERROR`.
+
+This issue is reported upstream [here].
+
+[here]: https://gitlab.com/qemu-project/qemu/-/issues/872
+
+---
+ linux-user/syscall.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/linux-user/syscall.c b/linux-user/syscall.c
+index b9b18a7eaf..a8eae3c4ac 100644
+--- a/linux-user/syscall.c
++++ b/linux-user/syscall.c
+@@ -2767,6 +2767,9 @@ get_timeout:
+         if (optname == SO_TYPE) {
+             val = host_to_target_sock_type(val);
+         }
++        if (level == SOL_SOCKET && optname == SO_ERROR) {
++            val = host_to_target_errno(val);
++        }
+         if (len > lv)
+             len = lv;
+         if (len == 4) {
+-- 
+2.32.0
+

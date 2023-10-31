@@ -1,0 +1,149 @@
+#!/bin/sh
+
+set -e
+D="$(dirname "$0")"
+
+# Convenience function for checking that a command exists.
+requires() {
+    cmd="$1"
+    if ! command -v "$cmd" > /dev/null 2>&1; then
+        echo "DEPENDENCY MISSING: $cmd must be installed" >&2
+        exit 1
+    fi
+}
+
+# Test if an array ($2) contains a particular element ($1).
+array_exists() {
+    needle="$1"
+    shift
+
+    for el in "$@"; do
+        if [ "$el" = "$needle" ]; then
+            return 0
+        fi
+    done
+    return 1
+}
+
+graphemes() {
+    regex="$(sh "$D/regex/grapheme.sh")"
+
+    echo "generating forward grapheme DFA"
+    ucd-generate dfa \
+        --name GRAPHEME_BREAK_FWD \
+        --sparse --minimize --anchored --state-size 2 \
+        src/unicode/fsm/ \
+        "$regex"
+
+    echo "generating reverse grapheme DFA"
+    ucd-generate dfa \
+        --name GRAPHEME_BREAK_REV \
+        --reverse --longest \
+        --sparse --minimize --anchored --state-size 2 \
+        src/unicode/fsm/ \
+        "$regex"
+}
+
+words() {
+    regex="$(sh "$D/regex/word.sh")"
+
+    echo "generating forward word DFA (this can take a while)"
+    ucd-generate dfa \
+        --name WORD_BREAK_FWD \
+        --sparse --minimize --anchored --state-size 4 \
+        src/unicode/fsm/ \
+        "$regex"
+}
+
+sentences() {
+    regex="$(sh "$D/regex/sentence.sh")"
+
+    echo "generating forward sentence DFA (this can take a while)"
+    ucd-generate dfa \
+        --name SENTENCE_BREAK_FWD \
+        --minimize \
+        --sparse --anchored --state-size 4 \
+        src/unicode/fsm/ \
+        "$regex"
+}
+
+regional_indicator() {
+    # For finding all occurrences of region indicators. This is used to handle
+    # regional indicators as a special case for the reverse grapheme iterator
+    # and the reverse word iterator.
+    echo "generating regional indicator DFA"
+    ucd-generate dfa \
+        --name REGIONAL_INDICATOR_REV \
+        --reverse \
+        --classes --minimize --anchored --premultiply --state-size 1 \
+        src/unicode/fsm/ \
+        "\p{gcb=Regional_Indicator}"
+}
+
+simple_word() {
+    echo "generating forward simple word DFA"
+    ucd-generate dfa \
+        --name SIMPLE_WORD_FWD \
+        --sparse --minimize --state-size 2 \
+        src/unicode/fsm/ \
+        "\w"
+}
+
+whitespace() {
+    echo "generating forward whitespace DFA"
+    ucd-generate dfa \
+        --name WHITESPACE_ANCHORED_FWD \
+        --anchored --classes --premultiply --minimize --state-size 1 \
+        src/unicode/fsm/ \
+        "\s+"
+
+    echo "generating reverse whitespace DFA"
+    ucd-generate dfa \
+        --name WHITESPACE_ANCHORED_REV \
+        --reverse \
+        --anchored --classes --premultiply --minimize --state-size 2 \
+        src/unicode/fsm/ \
+        "\s+"
+}
+
+main() {
+    if array_exists "-h" "$@" || array_exists "--help" "$@"; then
+        echo "Usage: $(basename "$0") [--list-commands] [<command>] ..." >&2
+        exit
+    fi
+
+    commands="
+        graphemes
+        sentences
+        words
+        regional-indicator
+        simple-word
+        whitespace
+    "
+    if array_exists "--list-commands" "$@"; then
+        for cmd in $commands; do
+            echo "$cmd"
+        done
+        exit
+    fi
+
+    # ucd-generate is used to compile regexes into DFAs.
+    requires ucd-generate
+
+    mkdir -p src/unicode/fsm/
+
+    cmds=$*
+    if [ $# -eq 0 ] || array_exists "all" "$@"; then
+        cmds=$commands
+    fi
+    for cmd in $cmds; do
+        if array_exists "$cmd" $commands; then
+            fun="$(echo "$cmd" | sed 's/-/_/g')"
+            eval "$fun"
+        else
+            echo "unrecognized command: $cmd" >&2
+        fi
+    done
+}
+
+main "$@"

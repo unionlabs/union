@@ -1,0 +1,23 @@
+version: 2
+jobs:
+  build:
+    working_directory: ~/build
+    docker:
+      - image: jimmycuadra/rust:1.18.0
+    steps:
+      - checkout
+      - restore_cache:
+          key: registry
+      - run: cargo generate-lockfile
+      - save_cache:
+          key: registry-{{ epoch }}
+          paths:
+            - ~/.cargo/registry/index
+      - restore_cache:
+          key: dependencies-1.18-{{ checksum "Cargo.lock" }}
+      - run: cargo test
+      - save_cache:
+          key: dependencies-1.18-{{ checksum "Cargo.lock" }}
+          paths:
+            - target
+            - ~/.cargo/registry/cache

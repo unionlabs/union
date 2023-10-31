@@ -1,0 +1,5 @@
+error: parser specification must start with identifier
+  --> $DIR/parse_literal_spec.rs:14:23
+   |
+14 |     #[structopt(parse("from_str"))]
+   |                       ^^^^^^^^^^

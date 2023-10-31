@@ -443,6 +443,7 @@ paramspace
 paramstore
 paramstypes
 paramtypes
+paren
 partset
 passthru
 patchelf

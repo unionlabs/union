@@ -1,0 +1,13 @@
+error: `#[from_request(via(...))]` on a field cannot be used together with `#[from_request(...)]` on the container
+ --> tests/from_request/fail/via_on_container_and_field.rs:6:33
+  |
+6 | struct Extractor(#[from_request(via(Extension))] State);
+  |                                 ^^^
+
+warning: unused import: `axum::extract::Extension`
+ --> tests/from_request/fail/via_on_container_and_field.rs:2:5
+  |
+2 | use axum::extract::Extension;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default

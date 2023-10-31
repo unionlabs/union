@@ -1,0 +1,17 @@
+error: use of deprecated constant `_::__enumset_derive__generated_warnings::_w`: #[enumset(serialize_as_map)] is deprecated. Use `#[enumset(serialize_repr = "map")]` instead.
+ --> tests/compile-fail-serde/deprecation.rs:7:11
+  |
+7 | #[enumset(serialize_as_map)]
+  |           ^^^^^^^^^^^^^^^^
+  |
+note: the lint level is defined here
+ --> tests/compile-fail-serde/deprecation.rs:1:9
+  |
+1 | #![deny(deprecated)]
+  |         ^^^^^^^^^^
+
+error: use of deprecated constant `_::__enumset_derive__generated_warnings::_w`: #[enumset(serialize_as_list)] is deprecated. Use `#[enumset(serialize_repr = "list")]` instead.
+  --> tests/compile-fail-serde/deprecation.rs:14:11
+   |
+14 | #[enumset(serialize_as_list)]
+   |           ^^^^^^^^^^^^^^^^^

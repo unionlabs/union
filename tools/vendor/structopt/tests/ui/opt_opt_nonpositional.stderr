@@ -1,0 +1,5 @@
+error: Option<Option<T>> type is meaningless for positional argument
+  --> $DIR/opt_opt_nonpositional.rs:14:8
+   |
+14 |     n: Option<Option<u32>>,
+   |        ^^^^^^^^^^^^^^^^^^^

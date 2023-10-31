@@ -1,0 +1,5 @@
+error: Handlers must be `async fn`s
+ --> tests/debug_handler/fail/not_async.rs:4:1
+  |
+4 | fn handler() {}
+  | ^^

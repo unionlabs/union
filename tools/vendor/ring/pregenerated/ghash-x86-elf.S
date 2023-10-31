@@ -1,0 +1,364 @@
+# This file is generated from a similarly-named Perl script in the BoringSSL
+# source tree. Do not edit by hand.
+
+#if defined(__i386__)
+#if defined(BORINGSSL_PREFIX)
+#include <boringssl_prefix_symbols_asm.h>
+#endif
+.text
+.globl	GFp_gcm_init_clmul
+.hidden	GFp_gcm_init_clmul
+.type	GFp_gcm_init_clmul,@function
+.align	16
+GFp_gcm_init_clmul:
+.L_GFp_gcm_init_clmul_begin:
+	movl	4(%esp),%edx
+	movl	8(%esp),%eax
+	call	.L000pic
+.L000pic:
+	popl	%ecx
+	leal	.Lbswap-.L000pic(%ecx),%ecx
+	movdqu	(%eax),%xmm2
+	pshufd	$78,%xmm2,%xmm2
+	pshufd	$255,%xmm2,%xmm4
+	movdqa	%xmm2,%xmm3
+	psllq	$1,%xmm2
+	pxor	%xmm5,%xmm5
+	psrlq	$63,%xmm3
+	pcmpgtd	%xmm4,%xmm5
+	pslldq	$8,%xmm3
+	por	%xmm3,%xmm2
+	pand	16(%ecx),%xmm5
+	pxor	%xmm5,%xmm2
+	movdqa	%xmm2,%xmm0
+	movdqa	%xmm0,%xmm1
+	pshufd	$78,%xmm0,%xmm3
+	pshufd	$78,%xmm2,%xmm4
+	pxor	%xmm0,%xmm3
+	pxor	%xmm2,%xmm4
+.byte	102,15,58,68,194,0
+.byte	102,15,58,68,202,17
+.byte	102,15,58,68,220,0
+	xorps	%xmm0,%xmm3
+	xorps	%xmm1,%xmm3
+	movdqa	%xmm3,%xmm4
+	psrldq	$8,%xmm3
+	pslldq	$8,%xmm4
+	pxor	%xmm3,%xmm1
+	pxor	%xmm4,%xmm0
+	movdqa	%xmm0,%xmm4
+	movdqa	%xmm0,%xmm3
+	psllq	$5,%xmm0
+	pxor	%xmm0,%xmm3
+	psllq	$1,%xmm0
+	pxor	%xmm3,%xmm0
+	psllq	$57,%xmm0
+	movdqa	%xmm0,%xmm3
+	pslldq	$8,%xmm0
+	psrldq	$8,%xmm3
+	pxor	%xmm4,%xmm0
+	pxor	%xmm3,%xmm1
+	movdqa	%xmm0,%xmm4
+	psrlq	$1,%xmm0
+	pxor	%xmm4,%xmm1
+	pxor	%xmm0,%xmm4
+	psrlq	$5,%xmm0
+	pxor	%xmm4,%xmm0
+	psrlq	$1,%xmm0
+	pxor	%xmm1,%xmm0
+	pshufd	$78,%xmm2,%xmm3
+	pshufd	$78,%xmm0,%xmm4
+	pxor	%xmm2,%xmm3
+	movdqu	%xmm2,(%edx)
+	pxor	%xmm0,%xmm4
+	movdqu	%xmm0,16(%edx)
+.byte	102,15,58,15,227,8
+	movdqu	%xmm4,32(%edx)
+	ret
+.size	GFp_gcm_init_clmul,.-.L_GFp_gcm_init_clmul_begin
+.globl	GFp_gcm_gmult_clmul
+.hidden	GFp_gcm_gmult_clmul
+.type	GFp_gcm_gmult_clmul,@function
+.align	16
+GFp_gcm_gmult_clmul:
+.L_GFp_gcm_gmult_clmul_begin:
+	movl	4(%esp),%eax
+	movl	8(%esp),%edx
+	call	.L001pic
+.L001pic:
+	popl	%ecx
+	leal	.Lbswap-.L001pic(%ecx),%ecx
+	movdqu	(%eax),%xmm0
+	movdqa	(%ecx),%xmm5
+	movups	(%edx),%xmm2
+.byte	102,15,56,0,197
+	movups	32(%edx),%xmm4
+	movdqa	%xmm0,%xmm1
+	pshufd	$78,%xmm0,%xmm3
+	pxor	%xmm0,%xmm3
+.byte	102,15,58,68,194,0
+.byte	102,15,58,68,202,17
+.byte	102,15,58,68,220,0
+	xorps	%xmm0,%xmm3
+	xorps	%xmm1,%xmm3
+	movdqa	%xmm3,%xmm4
+	psrldq	$8,%xmm3
+	pslldq	$8,%xmm4
+	pxor	%xmm3,%xmm1
+	pxor	%xmm4,%xmm0
+	movdqa	%xmm0,%xmm4
+	movdqa	%xmm0,%xmm3
+	psllq	$5,%xmm0
+	pxor	%xmm0,%xmm3
+	psllq	$1,%xmm0
+	pxor	%xmm3,%xmm0
+	psllq	$57,%xmm0
+	movdqa	%xmm0,%xmm3
+	pslldq	$8,%xmm0
+	psrldq	$8,%xmm3
+	pxor	%xmm4,%xmm0
+	pxor	%xmm3,%xmm1
+	movdqa	%xmm0,%xmm4
+	psrlq	$1,%xmm0
+	pxor	%xmm4,%xmm1
+	pxor	%xmm0,%xmm4
+	psrlq	$5,%xmm0
+	pxor	%xmm4,%xmm0
+	psrlq	$1,%xmm0
+	pxor	%xmm1,%xmm0
+.byte	102,15,56,0,197
+	movdqu	%xmm0,(%eax)
+	ret
+.size	GFp_gcm_gmult_clmul,.-.L_GFp_gcm_gmult_clmul_begin
+.globl	GFp_gcm_ghash_clmul
+.hidden	GFp_gcm_ghash_clmul
+.type	GFp_gcm_ghash_clmul,@function
+.align	16
+GFp_gcm_ghash_clmul:
+.L_GFp_gcm_ghash_clmul_begin:
+	pushl	%ebp
+	pushl	%ebx
+	pushl	%esi
+	pushl	%edi
+	movl	20(%esp),%eax
+	movl	24(%esp),%edx
+	movl	28(%esp),%esi
+	movl	32(%esp),%ebx
+	call	.L002pic
+.L002pic:
+	popl	%ecx
+	leal	.Lbswap-.L002pic(%ecx),%ecx
+	movdqu	(%eax),%xmm0
+	movdqa	(%ecx),%xmm5
+	movdqu	(%edx),%xmm2
+.byte	102,15,56,0,197
+	subl	$16,%ebx
+	jz	.L003odd_tail
+	movdqu	(%esi),%xmm3
+	movdqu	16(%esi),%xmm6
+.byte	102,15,56,0,221
+.byte	102,15,56,0,245
+	movdqu	32(%edx),%xmm5
+	pxor	%xmm3,%xmm0
+	pshufd	$78,%xmm6,%xmm3
+	movdqa	%xmm6,%xmm7
+	pxor	%xmm6,%xmm3
+	leal	32(%esi),%esi
+.byte	102,15,58,68,242,0
+.byte	102,15,58,68,250,17
+.byte	102,15,58,68,221,0
+	movups	16(%edx),%xmm2
+	nop
+	subl	$32,%ebx
+	jbe	.L004even_tail
+	jmp	.L005mod_loop
+.align	32
+.L005mod_loop:
+	pshufd	$78,%xmm0,%xmm4
+	movdqa	%xmm0,%xmm1
+	pxor	%xmm0,%xmm4
+	nop
+.byte	102,15,58,68,194,0
+.byte	102,15,58,68,202,17
+.byte	102,15,58,68,229,16
+	movups	(%edx),%xmm2
+	xorps	%xmm6,%xmm0
+	movdqa	(%ecx),%xmm5
+	xorps	%xmm7,%xmm1
+	movdqu	(%esi),%xmm7
+	pxor	%xmm0,%xmm3
+	movdqu	16(%esi),%xmm6
+	pxor	%xmm1,%xmm3
+.byte	102,15,56,0,253
+	pxor	%xmm3,%xmm4
+	movdqa	%xmm4,%xmm3
+	psrldq	$8,%xmm4
+	pslldq	$8,%xmm3
+	pxor	%xmm4,%xmm1
+	pxor	%xmm3,%xmm0
+.byte	102,15,56,0,245
+	pxor	%xmm7,%xmm1
+	movdqa	%xmm6,%xmm7
+	movdqa	%xmm0,%xmm4
+	movdqa	%xmm0,%xmm3
+	psllq	$5,%xmm0
+	pxor	%xmm0,%xmm3
+	psllq	$1,%xmm0
+	pxor	%xmm3,%xmm0
+.byte	102,15,58,68,242,0
+	movups	32(%edx),%xmm5
+	psllq	$57,%xmm0
+	movdqa	%xmm0,%xmm3
+	pslldq	$8,%xmm0
+	psrldq	$8,%xmm3
+	pxor	%xmm4,%xmm0
+	pxor	%xmm3,%xmm1
+	pshufd	$78,%xmm7,%xmm3
+	movdqa	%xmm0,%xmm4
+	psrlq	$1,%xmm0
+	pxor	%xmm7,%xmm3
+	pxor	%xmm4,%xmm1
+.byte	102,15,58,68,250,17
+	movups	16(%edx),%xmm2
+	pxor	%xmm0,%xmm4
+	psrlq	$5,%xmm0
+	pxor	%xmm4,%xmm0
+	psrlq	$1,%xmm0
+	pxor	%xmm1,%xmm0
+.byte	102,15,58,68,221,0
+	leal	32(%esi),%esi
+	subl	$32,%ebx
+	ja	.L005mod_loop
+.L004even_tail:
+	pshufd	$78,%xmm0,%xmm4
+	movdqa	%xmm0,%xmm1
+	pxor	%xmm0,%xmm4
+.byte	102,15,58,68,194,0
+.byte	102,15,58,68,202,17
+.byte	102,15,58,68,229,16
+	movdqa	(%ecx),%xmm5
+	xorps	%xmm6,%xmm0
+	xorps	%xmm7,%xmm1
+	pxor	%xmm0,%xmm3
+	pxor	%xmm1,%xmm3
+	pxor	%xmm3,%xmm4
+	movdqa	%xmm4,%xmm3
+	psrldq	$8,%xmm4
+	pslldq	$8,%xmm3
+	pxor	%xmm4,%xmm1
+	pxor	%xmm3,%xmm0
+	movdqa	%xmm0,%xmm4
+	movdqa	%xmm0,%xmm3
+	psllq	$5,%xmm0
+	pxor	%xmm0,%xmm3
+	psllq	$1,%xmm0
+	pxor	%xmm3,%xmm0
+	psllq	$57,%xmm0
+	movdqa	%xmm0,%xmm3
+	pslldq	$8,%xmm0
+	psrldq	$8,%xmm3
+	pxor	%xmm4,%xmm0
+	pxor	%xmm3,%xmm1
+	movdqa	%xmm0,%xmm4
+	psrlq	$1,%xmm0
+	pxor	%xmm4,%xmm1
+	pxor	%xmm0,%xmm4
+	psrlq	$5,%xmm0
+	pxor	%xmm4,%xmm0
+	psrlq	$1,%xmm0
+	pxor	%xmm1,%xmm0
+	testl	%ebx,%ebx
+	jnz	.L006done
+	movups	(%edx),%xmm2
+.L003odd_tail:
+	movdqu	(%esi),%xmm3
+.byte	102,15,56,0,221
+	pxor	%xmm3,%xmm0
+	movdqa	%xmm0,%xmm1
+	pshufd	$78,%xmm0,%xmm3
+	pshufd	$78,%xmm2,%xmm4
+	pxor	%xmm0,%xmm3
+	pxor	%xmm2,%xmm4
+.byte	102,15,58,68,194,0
+.byte	102,15,58,68,202,17
+.byte	102,15,58,68,220,0
+	xorps	%xmm0,%xmm3
+	xorps	%xmm1,%xmm3
+	movdqa	%xmm3,%xmm4
+	psrldq	$8,%xmm3
+	pslldq	$8,%xmm4
+	pxor	%xmm3,%xmm1
+	pxor	%xmm4,%xmm0
+	movdqa	%xmm0,%xmm4
+	movdqa	%xmm0,%xmm3
+	psllq	$5,%xmm0
+	pxor	%xmm0,%xmm3
+	psllq	$1,%xmm0
+	pxor	%xmm3,%xmm0
+	psllq	$57,%xmm0
+	movdqa	%xmm0,%xmm3
+	pslldq	$8,%xmm0
+	psrldq	$8,%xmm3
+	pxor	%xmm4,%xmm0
+	pxor	%xmm3,%xmm1
+	movdqa	%xmm0,%xmm4
+	psrlq	$1,%xmm0
+	pxor	%xmm4,%xmm1
+	pxor	%xmm0,%xmm4
+	psrlq	$5,%xmm0
+	pxor	%xmm4,%xmm0
+	psrlq	$1,%xmm0
+	pxor	%xmm1,%xmm0
+.L006done:
+.byte	102,15,56,0,197
+	movdqu	%xmm0,(%eax)
+	popl	%edi
+	popl	%esi
+	popl	%ebx
+	popl	%ebp
+	ret
+.size	GFp_gcm_ghash_clmul,.-.L_GFp_gcm_ghash_clmul_begin
+.align	64
+.Lbswap:
+.byte	15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0
+.byte	1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,194
+.align	64
+.L007rem_8bit:
+.value	0,450,900,582,1800,1738,1164,1358
+.value	3600,4050,3476,3158,2328,2266,2716,2910
+.value	7200,7650,8100,7782,6952,6890,6316,6510
+.value	4656,5106,4532,4214,5432,5370,5820,6014
+.value	14400,14722,15300,14854,16200,16010,15564,15630
+.value	13904,14226,13780,13334,12632,12442,13020,13086
+.value	9312,9634,10212,9766,9064,8874,8428,8494
+.value	10864,11186,10740,10294,11640,11450,12028,12094
+.value	28800,28994,29444,29382,30600,30282,29708,30158
+.value	32400,32594,32020,31958,31128,30810,31260,31710
+.value	27808,28002,28452,28390,27560,27242,26668,27118
+.value	25264,25458,24884,24822,26040,25722,26172,26622
+.value	18624,18690,19268,19078,20424,19978,19532,19854
+.value	18128,18194,17748,17558,16856,16410,16988,17310
+.value	21728,21794,22372,22182,21480,21034,20588,20910
+.value	23280,23346,22900,22710,24056,23610,24188,24510
+.value	57600,57538,57988,58182,58888,59338,58764,58446
+.value	61200,61138,60564,60758,59416,59866,60316,59998
+.value	64800,64738,65188,65382,64040,64490,63916,63598
+.value	62256,62194,61620,61814,62520,62970,63420,63102
+.value	55616,55426,56004,56070,56904,57226,56780,56334
+.value	55120,54930,54484,54550,53336,53658,54236,53790
+.value	50528,50338,50916,50982,49768,50090,49644,49198
+.value	52080,51890,51444,51510,52344,52666,53244,52798
+.value	37248,36930,37380,37830,38536,38730,38156,38094
+.value	40848,40530,39956,40406,39064,39258,39708,39646
+.value	36256,35938,36388,36838,35496,35690,35116,35054
+.value	33712,33394,32820,33270,33976,34170,34620,34558
+.value	43456,43010,43588,43910,44744,44810,44364,44174
+.value	42960,42514,42068,42390,41176,41242,41820,41630
+.value	46560,46114,46692,47014,45800,45866,45420,45230
+.value	48112,47666,47220,47542,48376,48442,49020,48830
+.byte	71,72,65,83,72,32,102,111,114,32,120,56,54,44,32,67
+.byte	82,89,80,84,79,71,65,77,83,32,98,121,32,60,97,112
+.byte	112,114,111,64,111,112,101,110,115,115,108,46,111,114,103,62
+.byte	0
+#endif
+.section	.note.GNU-stack,"",@progbits

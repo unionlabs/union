@@ -72,7 +72,10 @@ jobs:
                   "rust-proto",
                   "site-static",
                   "site-server",
-                  "voyager-queue"
+                  "voyager-queue",
+                  "sqlx-cli",
+                  "fetchRustStdCargoLock",
+                  "vendorLibwasmvm"
                 ]
               )
             ) or 

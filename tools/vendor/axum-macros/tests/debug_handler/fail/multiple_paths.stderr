@@ -1,0 +1,11 @@
+error: Multiple parameters must be extracted with a tuple `Path<(_, _)>` or a struct `Path<YourParams>`, not by applying multiple `Path<_>` extractors
+ --> tests/debug_handler/fail/multiple_paths.rs:5:18
+  |
+5 | async fn handler(_: Path<String>, _: Path<String>) {}
+  |                  ^^^^^^^^^^^^^^^
+
+error: Multiple parameters must be extracted with a tuple `Path<(_, _)>` or a struct `Path<YourParams>`, not by applying multiple `Path<_>` extractors
+ --> tests/debug_handler/fail/multiple_paths.rs:5:35
+  |
+5 | async fn handler(_: Path<String>, _: Path<String>) {}
+  |                                   ^^^^^^^^^^^^^^^

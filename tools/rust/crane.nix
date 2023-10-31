@@ -224,7 +224,7 @@
               cargoLockList = [
                 workspaceCargoLockPath
               ] ++ (lib.optionals (buildStdTarget != null) ([
-                "${cargoBuildRustToolchain'.passthru.availableComponents.rust-src}/lib/rustlib/src/rust/Cargo.lock"
+                ./rust-std-Cargo.lock
               ]));
             };
 

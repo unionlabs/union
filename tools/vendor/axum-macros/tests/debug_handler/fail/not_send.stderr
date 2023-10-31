@@ -1,0 +1,21 @@
+error: future cannot be sent between threads safely
+ --> tests/debug_handler/fail/not_send.rs:4:1
+  |
+4 | async fn handler() {
+  | ^^^^^ future returned by `handler` is not `Send`
+  |
+  = help: within `impl Future<Output = ()>`, the trait `Send` is not implemented for `Rc<()>`
+note: future is not `Send` as this value is used across an await
+ --> tests/debug_handler/fail/not_send.rs:6:13
+  |
+5 |     let rc = std::rc::Rc::new(());
+  |         -- has type `Rc<()>` which is not `Send`
+6 |     async {}.await;
+  |             ^^^^^^ await occurs here, with `rc` maybe used later
+7 | }
+  | - `rc` is later dropped here
+note: required by a bound in `check`
+ --> tests/debug_handler/fail/not_send.rs:4:1
+  |
+4 | async fn handler() {
+  | ^^^^^ required by this bound in `check`

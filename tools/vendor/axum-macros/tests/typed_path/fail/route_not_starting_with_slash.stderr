@@ -1,0 +1,5 @@
+error: paths must start with a `/`. Use "/" for root routes
+ --> tests/typed_path/fail/route_not_starting_with_slash.rs:4:14
+  |
+4 | #[typed_path("")]
+  |              ^^

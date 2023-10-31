@@ -1,0 +1,8 @@
+error[E0277]: `NonError` doesn't implement `std::fmt::Display`
+ --> tests/ui/result_no_display.rs:4:19
+  |
+4 |         fn f() -> Result<()>;
+  |                   ^^^^^^^^^^ `NonError` cannot be formatted with the default formatter
+  |
+  = help: the trait `std::fmt::Display` is not implemented for `NonError`
+  = note: in format strings you may be able to use `{:?}` (or {:#?} for pretty-print) instead

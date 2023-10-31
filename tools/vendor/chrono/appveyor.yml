@@ -1,0 +1,12 @@
+# TODO: delete this without breaking all PRs
+environment:
+  matrix:
+    - TARGET: nightly-i686-pc-windows-gnu
+matrix:
+  allow_failures:
+    - channel: nightly
+
+build: false
+
+test_script:
+  - echo "stub"

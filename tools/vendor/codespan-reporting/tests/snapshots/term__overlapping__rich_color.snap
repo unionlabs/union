@@ -1,0 +1,58 @@
+---
+source: codespan-reporting/tests/term.rs
+expression: TEST_DATA.emit_color(&config)
+---
+{fg:Red bold bright}error[E0666]{bold bright}: nested `impl Trait` is not allowed{/}
+  {fg:Blue}┌─{/} nested_impl_trait.rs:5:56
+  {fg:Blue}│{/}
+{fg:Blue}5{/} {fg:Blue}│{/} fn bad_in_ret_position(x: impl Into<u32>) -> impl Into<{fg:Red}impl Debug{/}> { x }
+  {fg:Blue}│{/}                                              {fg:Blue}----------{fg:Red}^^^^^^^^^^{fg:Blue}-{/}
+  {fg:Blue}│{/}                                              {fg:Blue}│{/}         {fg:Red}│{/}
+  {fg:Blue}│{/}                                              {fg:Blue}│{/}         {fg:Red}nested `impl Trait` here{/}
+  {fg:Blue}│{/}                                              {fg:Blue}outer `impl Trait`{/}
+
+{fg:Red bold bright}error[E0121]{bold bright}: the type placeholder `_` is not allowed within types on item signatures{/}
+  {fg:Blue}┌─{/} typeck_type_placeholder_item.rs:1:18
+  {fg:Blue}│{/}
+{fg:Blue}1{/} {fg:Blue}│{/} fn fn_test1() -> {fg:Red}_{/} { 5 }
+  {fg:Blue}│{/}                  {fg:Red}^{/}
+  {fg:Blue}│{/}                  {fg:Red}│{/}
+  {fg:Blue}│{/}                  {fg:Red}not allowed in type signatures{/}
+  {fg:Blue}│{/}                  {fg:Blue}help: replace with the correct return type: `i32`{/}
+
+{fg:Red bold bright}error[E0121]{bold bright}: the type placeholder `_` is not allowed within types on item signatures{/}
+  {fg:Blue}┌─{/} typeck_type_placeholder_item.rs:2:25
+  {fg:Blue}│{/}
+{fg:Blue}2{/} {fg:Blue}│{/} fn fn_test2(x: i32) -> ({fg:Red}_{/}, {fg:Red}_{/}) { (x, x) }
+  {fg:Blue}│{/}                        {fg:Blue}-{fg:Red}^{fg:Blue}--{fg:Red}^{fg:Blue}-{/}
+  {fg:Blue}│{/}                        {fg:Blue}│{/}{fg:Red}│{/}  {fg:Red}│{/}
+  {fg:Blue}│{/}                        {fg:Blue}│{/}{fg:Red}│{/}  {fg:Red}not allowed in type signatures{/}
+  {fg:Blue}│{/}                        {fg:Blue}│{/}{fg:Red}not allowed in type signatures{/}
+  {fg:Blue}│{/}                        {fg:Blue}help: replace with the correct return type: `(i32, i32)`{/}
+
+{fg:Red bold bright}error[E0277]{bold bright}: `std::rc::Rc<()>` cannot be sent between threads safely{/}
+   {fg:Blue}┌─{/} no_send_res_ports.rs:25:5
+   {fg:Blue}│{/}  
+{fg:Blue}25{/} {fg:Blue}│{/}       {fg:Red}thread::spawn{/}(move|| {
+   {fg:Blue}│{/}       {fg:Red}^^^^^^^^^^^^^{/} {fg:Red}`std::rc::Rc<()>` cannot be sent between threads safely{/}
+   {fg:Blue}│{/} {fg:Blue}╭{/}{fg:Blue}───────────────────'{/}
+{fg:Blue}26{/} {fg:Blue}│{/} {fg:Blue}│{/}         let y = x;
+{fg:Blue}27{/} {fg:Blue}│{/} {fg:Blue}│{/}         println!("{:?}", y);
+{fg:Blue}28{/} {fg:Blue}│{/} {fg:Blue}│{/}     });
+   {fg:Blue}│{/} {fg:Blue}╰{/}{fg:Blue}──────' within this `[closure@no_send_res_ports.rs:29:19: 33:6 x:main::Foo]`{/}
+   {fg:Blue}│{/}  
+   {fg:Blue}┌─{/} libstd/thread/mod.rs:5:8
+   {fg:Blue}│{/}
+{fg:Blue} 5{/} {fg:Blue}│{/}     F: Send + 'static,
+   {fg:Blue}│{/}        {fg:Blue}----{/} {fg:Blue}required by this bound in `std::thread::spawn`{/}
+   {fg:Blue}│{/}
+   {fg:Blue}={/} help: within `[closure@no_send_res_ports.rs:29:19: 33:6 x:main::Foo]`, the trait `std::marker::Send` is not implemented for `std::rc::Rc<()>`
+   {fg:Blue}={/} note: required because it appears within the type `Port<()>`
+   {fg:Blue}={/} note: required because it appears within the type `main::Foo`
+   {fg:Blue}={/} note: required because it appears within the type `[closure@no_send_res_ports.rs:29:19: 33:6 x:main::Foo]`
+
+{fg:Red bold bright}error{bold bright}: aborting due 5 previous errors{/}
+ {fg:Blue}={/} Some errors have detailed explanations: E0121, E0277, E0666.
+ {fg:Blue}={/} For more information about an error, try `rustc --explain E0121`.
+
+

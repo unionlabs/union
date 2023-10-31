@@ -1,0 +1,12 @@
+error: unused return value of `anyhow::private::must_use` that must be used
+ --> tests/ui/must-use.rs:8:9
+  |
+8 |         anyhow!("it failed");
+  |         ^^^^^^^^^^^^^^^^^^^^
+  |
+note: the lint level is defined here
+ --> tests/ui/must-use.rs:1:9
+  |
+1 | #![deny(unused_must_use)]
+  |         ^^^^^^^^^^^^^^^
+  = note: this error originates in the macro `anyhow` (in Nightly builds, run with -Z macro-backtrace for more info)

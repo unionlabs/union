@@ -1,0 +1,25 @@
+---
+source: codespan-reporting/tests/term.rs
+expression: TEST_DATA.emit_color(&config)
+---
+{fg:Red bold bright}error[E0308]{bold bright}: match arms have incompatible types{/}
+  {fg:Blue}┌─{/} codespan/src/file.rs:4:34
+  {fg:Blue}│{/}    
+{fg:Blue}1{/} {fg:Blue}│{/}   {fg:Blue}╭{/}         match line_index.compare(self.last_line_index()) {
+{fg:Blue}2{/} {fg:Blue}│{/}   {fg:Blue}│{/}             Ordering::Less => Ok(self.line_starts()[line_index.to_usize()]),
+  {fg:Blue}│{/}   {fg:Blue}│{/}                               {fg:Blue}---------------------------------------------{/} {fg:Blue}this is found to be of type `Result<ByteIndex, LineIndexOutOfBoundsError>`{/}
+{fg:Blue}3{/} {fg:Blue}│{/}   {fg:Blue}│{/}             Ordering::Equal => Ok(self.source_span().end()),
+  {fg:Blue}│{/}   {fg:Blue}│{/}                                {fg:Blue}----------------------------{/} {fg:Blue}this is found to be of type `Result<ByteIndex, LineIndexOutOfBoundsError>`{/}
+{fg:Blue}4{/} {fg:Blue}│{/}   {fg:Blue}│{/}             Ordering::Greater => {fg:Red}LineIndexOutOfBoundsError {{/}
+  {fg:Blue}│{/} {fg:Red}╭{/}{fg:Red}─{/}{fg:Blue}│{/}{fg:Red}──────────────────────────────────^{/}
+{fg:Blue}5{/} {fg:Blue}│{/} {fg:Red}│{/} {fg:Blue}│{/} {fg:Red}                given: line_index,{/}
+{fg:Blue}6{/} {fg:Blue}│{/} {fg:Red}│{/} {fg:Blue}│{/} {fg:Red}                max: self.last_line_index(),{/}
+{fg:Blue}7{/} {fg:Blue}│{/} {fg:Red}│{/} {fg:Blue}│{/} {fg:Red}            }{/},
+  {fg:Blue}│{/} {fg:Red}╰{/}{fg:Red}─{/}{fg:Blue}│{/}{fg:Red}─────────────^ expected enum `Result`, found struct `LineIndexOutOfBoundsError`{/}
+{fg:Blue}8{/} {fg:Blue}│{/}   {fg:Blue}│{/}         }
+  {fg:Blue}│{/}   {fg:Blue}╰{/}{fg:Blue}─────────' `match` arms have incompatible types{/}
+  {fg:Blue}│{/}    
+  {fg:Blue}={/} expected type `Result<ByteIndex, LineIndexOutOfBoundsError>`
+       found type `LineIndexOutOfBoundsError`
+
+

@@ -1,0 +1,5 @@
+error: subcommand is only allowed on fields
+  --> $DIR/struct_subcommand.rs:12:29
+   |
+12 | #[structopt(name = "basic", subcommand)]
+   |                             ^^^^^^^^^^

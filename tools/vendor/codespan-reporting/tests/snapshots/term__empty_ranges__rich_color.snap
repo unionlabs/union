@@ -1,0 +1,29 @@
+---
+source: codespan-reporting/tests/term.rs
+expression: TEST_DATA.emit_color(&config)
+---
+{fg:Green bold bright}note{bold bright}: middle{/}
+  {fg:Blue}┌─{/} hello:1:7
+  {fg:Blue}│{/}
+{fg:Blue}1{/} {fg:Blue}│{/} Hello {fg:Green}w{/}orld!
+  {fg:Blue}│{/}       {fg:Green}^{/} {fg:Green}middle{/}
+
+{fg:Green bold bright}note{bold bright}: end of line{/}
+  {fg:Blue}┌─{/} hello:1:13
+  {fg:Blue}│{/}
+{fg:Blue}1{/} {fg:Blue}│{/} Hello world!
+  {fg:Blue}│{/}             {fg:Green}^{/} {fg:Green}end of line{/}
+
+{fg:Green bold bright}note{bold bright}: end of line{/}
+  {fg:Blue}┌─{/} hello:2:11
+  {fg:Blue}│{/}
+{fg:Blue}2{/} {fg:Blue}│{/} Bye world!
+  {fg:Blue}│{/}           {fg:Green}^{/} {fg:Green}end of line{/}
+
+{fg:Green bold bright}note{bold bright}: end of file{/}
+  {fg:Blue}┌─{/} hello:3:4
+  {fg:Blue}│{/}
+{fg:Blue}3{/} {fg:Blue}│{/}    
+  {fg:Blue}│{/}    {fg:Green}^{/} {fg:Green}end of file{/}
+
+

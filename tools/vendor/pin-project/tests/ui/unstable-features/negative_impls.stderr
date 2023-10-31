@@ -1,0 +1,19 @@
+error: cross-crate traits with a default impl, like `Unpin`, should not be specialized
+  --> tests/ui/unstable-features/negative_impls.rs:17:1
+   |
+17 | impl Unpin for Foo<MyPhantomPinned, ()> {}
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+note: the lint level is defined here
+  --> tests/ui/unstable-features/negative_impls.rs:2:9
+   |
+2  | #![deny(suspicious_auto_trait_impls)]
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = warning: this will change its meaning in a future release!
+   = note: for more information, see issue #93367 <https://github.com/rust-lang/rust/issues/93367>
+   = note: `MyPhantomPinned` is not a generic parameter
+note: try using the same sequence of generic parameters as the struct definition
+  --> tests/ui/unstable-features/negative_impls.rs:8:1
+   |
+8  | struct Foo<Pinned, Unpinned> {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^

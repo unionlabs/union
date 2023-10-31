@@ -1,0 +1,4 @@
+reorder_imports = true
+tab_spaces = 2
+use_field_init_shorthand = true
+use_try_shorthand = true

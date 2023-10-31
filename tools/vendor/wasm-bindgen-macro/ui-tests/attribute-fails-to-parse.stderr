@@ -1,0 +1,5 @@
+error: unknown attribute
+ --> $DIR/attribute-fails-to-parse.rs:3:16
+  |
+3 | #[wasm_bindgen(nonsense)]
+  |                ^^^^^^^^

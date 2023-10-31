@@ -1,0 +1,17 @@
+error[E0277]: the trait bound `Result<wasm_bindgen::JsValue, wasm_bindgen::JsValue>: FromWasmAbi` is not satisfied
+  --> $DIR/missing-catch.rs:6:9
+   |
+6  |     pub fn foo() -> Result<JsValue, JsValue>;
+   |            ^^^ the trait `FromWasmAbi` is not implemented for `Result<wasm_bindgen::JsValue, wasm_bindgen::JsValue>`
+   |
+note: required by a bound in `FromWasmAbi`
+  --> $DIR/traits.rs:23:1
+   |
+23 | / pub trait FromWasmAbi: WasmDescribe {
+24 | |     /// The wasm ABI type that this converts from when coming back out from the
+25 | |     /// ABI boundary.
+26 | |     type Abi: WasmAbi;
+...  |
+35 | |     unsafe fn from_abi(js: Self::Abi) -> Self;
+36 | | }
+   | |_^ required by this bound in `FromWasmAbi`

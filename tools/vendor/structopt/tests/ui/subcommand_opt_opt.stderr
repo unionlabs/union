@@ -1,0 +1,5 @@
+error: Option<Option<T>> type is not allowed for subcommand
+  --> $DIR/subcommand_opt_opt.rs:18:10
+   |
+18 |     cmd: Option<Option<Command>>,
+   |          ^^^^^^^^^^^^^^^^^^^^^^^

@@ -1,0 +1,13 @@
+# ModExp tests.
+#
+# These test vectors satisfy A ^ E = ModExp (mod M) and 0 <= ModExp < M.
+# Additionally, These test vectors satisfy the following constraints:
+#
+#   * 0 <= A < M.
+#   * E is odd, and the number of bits in E is in [2, 33].
+#   * M requires at least 4 (64-bit) words to represent.
+#
+# XXX: Unfortunately, the above criteria exclude all BoringSSL test vectors;
+# i.e. none of the BoringSSL test vectors were suitable for testing the
+# variable-time exponentiation used in RSA verification in *ring*. TODO: Make
+# new test vectors.

@@ -1,0 +1,98 @@
+error[E0308]: mismatched types
+ --> tests/ui/async_instrument.rs:5:5
+  |
+5 |     ""
+  |     ^^ expected `()`, found `&str`
+  |
+note: return type inferred to be `()` here
+ --> tests/ui/async_instrument.rs:4:10
+  |
+4 | async fn unit() {
+  |          ^^^^
+
+error[E0308]: mismatched types
+  --> tests/ui/async_instrument.rs:10:5
+   |
+10 |     ""
+   |     ^^- help: try using a conversion method: `.to_string()`
+   |     |
+   |     expected `String`, found `&str`
+   |
+note: return type inferred to be `String` here
+  --> tests/ui/async_instrument.rs:9:31
+   |
+9  | async fn simple_mismatch() -> String {
+   |                               ^^^^^^
+
+error[E0277]: `(&str,)` doesn't implement `std::fmt::Display`
+  --> tests/ui/async_instrument.rs:14:1
+   |
+14 | #[tracing::instrument]
+   | ^^^^^^^^^^^^^^^^^^^^^^ `(&str,)` cannot be formatted with the default formatter
+   |
+   = help: the trait `std::fmt::Display` is not implemented for `(&str,)`
+   = note: in format strings you may be able to use `{:?}` (or {:#?} for pretty-print) instead
+   = note: this error originates in the attribute macro `tracing::instrument` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: `(&str,)` doesn't implement `std::fmt::Display`
+  --> tests/ui/async_instrument.rs:15:34
+   |
+15 | async fn opaque_unsatisfied() -> impl std::fmt::Display {
+   |                                  ^^^^^^^^^^^^^^^^^^^^^^ `(&str,)` cannot be formatted with the default formatter
+   |
+   = help: the trait `std::fmt::Display` is not implemented for `(&str,)`
+   = note: in format strings you may be able to use `{:?}` (or {:#?} for pretty-print) instead
+
+error[E0308]: mismatched types
+  --> tests/ui/async_instrument.rs:23:5
+   |
+23 |     ""
+   |     ^^ expected `Wrapper<_>`, found `&str`
+   |
+   = note: expected struct `Wrapper<_>`
+           found reference `&'static str`
+note: return type inferred to be `Wrapper<_>` here
+  --> tests/ui/async_instrument.rs:22:36
+   |
+22 | async fn mismatch_with_opaque() -> Wrapper<impl std::fmt::Display> {
+   |                                    ^^^^^^^
+help: try wrapping the expression in `Wrapper`
+   |
+23 |     Wrapper("")
+   |     ++++++++  +
+
+error[E0308]: mismatched types
+  --> tests/ui/async_instrument.rs:29:16
+   |
+29 |         return "";
+   |                ^^ expected `()`, found `&str`
+   |
+note: return type inferred to be `()` here
+  --> tests/ui/async_instrument.rs:27:10
+   |
+27 | async fn early_return_unit() {
+   |          ^^^^^^^^^^^^^^^^^
+
+error[E0308]: mismatched types
+  --> tests/ui/async_instrument.rs:36:16
+   |
+36 |         return "";
+   |                ^^- help: try using a conversion method: `.to_string()`
+   |                |
+   |                expected `String`, found `&str`
+   |
+note: return type inferred to be `String` here
+  --> tests/ui/async_instrument.rs:34:28
+   |
+34 | async fn early_return() -> String {
+   |                            ^^^^^^
+
+error[E0308]: mismatched types
+  --> tests/ui/async_instrument.rs:42:35
+   |
+42 |   async fn extra_semicolon() -> i32 {
+   |  ___________________________________^
+43 | |     1;
+   | |      - help: remove this semicolon to return this value
+44 | | }
+   | |_^ expected `i32`, found `()`

@@ -1,0 +1,41 @@
+error: Enum discriminants must not be negative.
+ --> tests/compile-fail/variants.rs:5:15
+  |
+5 |     Variant = -1,
+  |               ^^
+
+error: `#[derive(EnumSetType)]` can only be used on fieldless enums.
+  --> tests/compile-fail/variants.rs:10:5
+   |
+10 |     Variant(u32),
+   |     ^^^^^^^^^^^^
+
+error: `repr` is too small to contain the largest discriminant.
+  --> tests/compile-fail/variants.rs:16:5
+   |
+16 |     Variant = 128,
+   |     ^^^^^^^^^^^^^
+
+error: `serialize_repr` is too small to contain the largest discriminant.
+  --> tests/compile-fail/variants.rs:22:5
+   |
+22 |     Variant = 8,
+   |     ^^^^^^^^^^^
+
+error: Enum discriminants must be literal expressions.
+  --> tests/compile-fail/variants.rs:27:5
+   |
+27 |     Variant = 1 + 1,
+   |     ^^^^^^^^^^^^^^^
+
+error: `repr` is too small to contain the largest discriminant.
+  --> tests/compile-fail/variants.rs:33:5
+   |
+33 |     Variant = 16,
+   |     ^^^^^^^^^^^^
+
+error: Maximum discriminant allowed is `0xFFFFFFBF`.
+  --> tests/compile-fail/variants.rs:38:5
+   |
+38 |     Variant = 0xFFFFFFD0,
+   |     ^^^^^^^^^^^^^^^^^^^^

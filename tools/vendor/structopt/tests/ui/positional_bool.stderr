@@ -1,0 +1,10 @@
+error: `bool` cannot be used as positional parameter with default parser
+
+  = help: if you want to create a flag add `long` or `short`
+  = help: If you really want a boolean parameter add an explicit parser, for example `parse(try_from_str)`
+  = note: see also https://github.com/TeXitoi/structopt/tree/master/examples/true_or_false.rs
+
+ --> $DIR/positional_bool.rs:5:14
+  |
+5 |     verbose: bool,
+  |              ^^^^

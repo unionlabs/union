@@ -1,0 +1,5 @@
+error: `#[derive(FromRequest)] doesn't support generics
+ --> tests/from_request/fail/generic.rs:4:17
+  |
+4 | struct Extractor<T>(Option<T>);
+  |                 ^^^

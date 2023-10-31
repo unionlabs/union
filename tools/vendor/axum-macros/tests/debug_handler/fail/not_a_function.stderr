@@ -1,0 +1,5 @@
+error: expected `fn`
+ --> tests/debug_handler/fail/not_a_function.rs:4:1
+  |
+4 | struct A;
+  | ^^^^^^

@@ -1,0 +1,5 @@
+error: required is meaningless for bool
+  --> $DIR/bool_required.rs:14:24
+   |
+14 |     #[structopt(short, required = true)]
+   |                        ^^^^^^^^
