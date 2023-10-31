@@ -1,6 +1,6 @@
 services:
   node:
-    image: ghcr.io/unionlabs/uniond:v0.13.0
+    image: ghcr.io/unionlabs/uniond:${UNIOND_VERSION}
     volumes: 
         - ~/.union:/.union
     ports:

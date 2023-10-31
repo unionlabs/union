@@ -68,6 +68,48 @@ After the `uniond init` command is done running, you should have a `.union` fold
     └── priv_validator_state.json
 ```
 
-### Issuing Commands to uniond
+### Issuing Sub-Commands to uniond
+
+To run `uniond` sub-commands, it will be useful to alias the docker command in your shell `.*rc` file.
+
+For example, in `zsh`, you can add the following alias to your `.zshrc`:
+
+```sh
+export UNIOND_VERSION='v0.13.0'
+alias uniond='docker run -u $(id -u):$(id -g) -v ~/.union:/.union -it ghcr.io/unionlabs/uniond:$UNIOND_VERSION --home /.union'
+```
+
+This will enable you to issue `uniond` sub-commands with such as `uniond keys add` with ease.
 
 ### Starting the Node
+
+To run a node using `uniond`, you'll also need to expose ports to the docker container. We'll use this as an opportunity to create a Docker Compose file four `uniond`.
+
+A minimal Docker Compose file for `uniond` looks like this:
+```yaml
+services:
+  node:
+    image: ghcr.io/unionlabs/uniond:v0.13.0
+    volumes: 
+        - ~/.union:/.union
+    ports:
+      - "26657:26657"
+      - "26656:26656"
+      - "1317:1317"
+      - "9093:9093"
+    restart: unless-stopped
+    command: start
+```
+
+This will mount our chain configuration and settings folder while also exposing ports `26657`, `1317`, and `9093`.
+
+After creating a `compose.yml` file with the contents above, you'll be able to start your Union node with `docker compose`.
+
+:::warning
+Before starting your Union node for the first time, you should configure your node correcly. For some recommendations see our [Node Configuration](../04_infrastructure/01_node_operators/node_configuration.md) page.
+:::
+
+To run your node in detached mode, run:
+```sh
+docker compose up -f path/to/compose.yml -d
+```

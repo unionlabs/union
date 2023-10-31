@@ -48,7 +48,11 @@ Take note of your `address` here and continue to [Receiving Testnet Tokens](#rec
 
 ## Receiving Testnet Tokens
 
-Once you've been accepted to the Testnet, you will receive a form to submit your Testnet address. To ensure your account will have an UNO balance, please submit the address from your newly created or recovered account. 
+Once you've been accepted to the Testnet, you will receive a form to submit your Union address as well as your node address. 
+
+### Finding your Union Address
+
+To ensure your account will have an UNO balance, please submit the address from your newly created or recovered account. 
 
 If you haven't already noted down your address, you can retrieve it with the following command:
 
@@ -57,3 +61,11 @@ uniond keys show $KEY_NAME --address
 ```
 
 *Where `KEY_NAME` is the name you would like to use when referencing your key.*
+
+### Finding your Node Address
+
+To find your node address you can run the following `uniond` sub-command:
+
+```sh
+uniond tindermint show-address
+```
