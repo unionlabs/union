@@ -6450,6 +6450,7 @@ dependencies = [
  "tikv-jemallocator",
  "tokio",
  "tokio-stream",
+ "tokio-util",
  "tonic",
  "tower",
  "tracing",

@@ -73,16 +73,11 @@
           "tests"
         ];
       };
-      externalEvmSources = nix-filter {
-        root = pkgs.fetchFromGitHub {
-          owner = "OpenZeppelin";
-          repo = "openzeppelin-contracts";
-          rev = "793d92a3331538d126033cbacb1ee5b8a7d95adc";
-          hash = "sha256-9D9Mxuk/5bzX3tZjRAnWk7LP/GMOe0NRsrMuvOfKy78=";
-        };
-        include = [
-          "contracts/token/ERC20"
-        ];
+      externalEvmSources = pkgs.fetchFromGitHub {
+        owner = "OpenZeppelin";
+        repo = "openzeppelin-contracts";
+        rev = "793d92a3331538d126033cbacb1ee5b8a7d95adc";
+        hash = "sha256-9D9Mxuk/5bzX3tZjRAnWk7LP/GMOe0NRsrMuvOfKy78=";
       };
       foundryEnv = {
         FOUNDRY_OPTIMIZER = "true";
@@ -304,7 +299,7 @@
 
         external-evm-contracts = pkgs.stdenv.mkDerivation {
           name = "external-evm-contracts";
-          src = externalEvmSources;
+          src = "${externalEvmSources}/contracts/token/ERC20";
           buildInputs = [ wrappedForge ];
           buildPhase = ''
             forge --version

@@ -9,7 +9,7 @@
 )]
 // #![deny(clippy::unwrap_used)]
 
-use std::{error::Error, ffi::OsString, fs::read_to_string, process::ExitCode};
+use std::{error::Error, ffi::OsString, fs::read_to_string, iter, process::ExitCode};
 
 use chain_utils::{evm::Evm, union::Union};
 use clap::Parser;
@@ -24,7 +24,7 @@ use crate::{
     chain::AnyChain,
     cli::{any_state_proof_to_json, AppArgs, Command, QueryCmd},
     config::{Config, GetChainError},
-    queue::{AnyQueue, AnyQueueConfig, PgQueueConfig, Voyager, VoyagerInitError},
+    queue::{AnyQueue, AnyQueueConfig, PgQueueConfig, RunError, Voyager, VoyagerInitError},
 };
 
 pub const DELAY_PERIOD: u64 = 0;
@@ -47,10 +47,18 @@ async fn main() -> ExitCode {
     match do_main(args).await {
         Ok(()) => ExitCode::SUCCESS,
         Err(err) => {
-            eprintln!("Error: {err}");
-            if let Some(source) = err.source() {
-                eprintln!("Caused by: {source}");
+            // TODO: Clean this up, it sucks I know
+
+            let e = err.to_string().replace('\n', "\n\t");
+
+            eprintln!("Error:\n\t{e}");
+
+            for e in iter::successors(err.source(), |e| (*e).source()) {
+                let e = e.to_string().replace('\n', "\n\t");
+
+                eprintln!("Caused by:\n\t{e}");
             }
+
             ExitCode::FAILURE
         }
     }
@@ -76,6 +84,8 @@ pub enum VoyagerError {
     Init(#[from] VoyagerInitError<AnyQueue>),
     #[error("error while running migrations")]
     Migrations(#[from] MigrationsError),
+    #[error("fatal error encountered")]
+    Run(#[from] RunError),
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -134,7 +144,7 @@ async fn do_main(args: cli::AppArgs) -> Result<(), VoyagerError> {
         Command::Relay => {
             let queue = Voyager::new(voyager_config.clone()).await?;
 
-            queue.run().await;
+            queue.run().await?;
         }
         Command::Setup(cmd) => match cmd {
             // TODO(aeryz): this might go into channel as well, since it's highly coupled with it

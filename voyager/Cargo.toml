@@ -52,6 +52,7 @@ crossbeam-queue = "0.3.8"
 derive_more = "0.99.17"
 
 tikv-jemallocator = "0.5"
+tokio-util = "0.7.9"
 
 [features]
 eth-mainnet = [ "unionlabs/eth-mainnet" ]

@@ -17,6 +17,7 @@ use pg_queue::ProcessFlow;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use sqlx::postgres::PgPoolOptions;
 use tokio::task::JoinSet;
+use tokio_util::sync::CancellationToken;
 use unionlabs::{
     ethereum_consts_traits::{Mainnet, Minimal},
     events::{
@@ -133,7 +134,7 @@ pub struct Chains {
 
 pub trait Queue: Clone + Send + Sync + Sized + 'static {
     /// Error type returned by this queue, representing errors that are out of control of the consumer (i.e. unable to connect to database, can't insert into row, can't deserialize row, etc)
-    type Error: Debug + Display + Error + Send + 'static;
+    type Error: Debug + Display + Error + Send + Sync + 'static;
     type Config: Debug + Clone + Serialize + DeserializeOwned;
 
     fn new(cfg: Self::Config) -> impl Future<Output = Result<Self, Self::Error>>;
@@ -426,7 +427,7 @@ impl<Q: Queue> Voyager<Q> {
         })
     }
 
-    pub async fn run(self) {
+    pub async fn run(self) -> Result<(), RunError> {
         let mut events = Box::pin(stream::select_all([
             stream::iter(self.chains.evm_minimal.clone())
                 .map(|(chain_id, chain)| {
@@ -451,7 +452,7 @@ impl<Q: Queue> Voyager<Q> {
                                 },
                             )
                         })
-                        .map_err(|x| Box::new(x) as Box<dyn Debug + Send>)
+                        .map_err(|x| Box::new(x) as Box<dyn Debug + Send + Sync>)
                 })
                 .flatten()
                 .boxed(),
@@ -478,32 +479,49 @@ impl<Q: Queue> Voyager<Q> {
                                 },
                             )
                         })
-                        .map_err(|x| Box::new(x) as Box<dyn Debug + Send>)
+                        .map_err(|x| Box::new(x) as Box<dyn Debug + Send + Sync>)
                 })
                 .flatten()
                 .boxed(),
             self.msg_server
                 .clone()
                 .events(())
-                .map_err(|x| Box::new(x) as Box<dyn Debug + Send>)
+                .map_err(|x| Box::new(x) as Box<dyn Debug + Send + Sync>)
                 .boxed(),
         ]));
+
+        let cancellation_token = CancellationToken::new();
 
         let mut join_set = JoinSet::new();
 
         let mut q = self.queue.clone();
-        join_set.spawn(async move {
-            tracing::debug!("checking for new messages");
+        join_set.spawn({
+            let ct = cancellation_token.clone();
+            async move {
+                tracing::debug!("checking for new messages");
 
-            while let Some(msg) = events.next().await {
-                let msg = msg.unwrap();
+                loop {
+                    tokio::select! {
+                        _ = tokio::time::sleep(std::time::Duration::from_secs(3)) => {
+                            if ct.is_cancelled() {
+                                tracing::info!("shutting down event listener");
+                                break;
+                            }
+                        }
+                        msg = events.select_next_some() => {
+                            let msg = msg.map_err(|x| format!("{x:?}"))?;
 
-                tracing::info!(
-                    json = %serde_json::to_string(&msg).unwrap(),
-                    "received new message",
-                );
+                            tracing::info!(
+                                json = %serde_json::to_string(&msg).unwrap(),
+                                "received new message",
+                            );
 
-                q.enqueue(msg).await.unwrap();
+                            q.enqueue(msg).await?;
+                        }
+                    }
+                }
+
+                Ok(())
             }
         });
 
@@ -512,35 +530,77 @@ impl<Q: Queue> Voyager<Q> {
 
             let worker = self.worker(i);
 
-            join_set.spawn(worker.run(self.queue.clone()));
+            join_set.spawn(worker.run(cancellation_token.child_token(), self.queue.clone()));
         }
 
+        let mut errs = vec![];
+
         while let Some(res) = join_set.join_next().await {
-            res.unwrap();
+            match res {
+                Ok(Ok(())) => {}
+                Ok(Err(err)) => {
+                    tracing::error!(%err, "error running task");
+                    cancellation_token.cancel();
+                    errs.push(err);
+                }
+                Err(err) => {
+                    tracing::error!(%err, "error running task");
+                    cancellation_token.cancel();
+                    errs.push(Box::new(err));
+                }
+            }
         }
+
+        Err(RunError { errs })
+    }
+}
+
+#[derive(Debug)]
+pub struct RunError {
+    errs: Vec<Box<dyn Error + Send + Sync>>,
+}
+
+impl Error for RunError {}
+
+impl Display for RunError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for err in &self.errs {
+            writeln!(f, "{err}")?
+        }
+
+        Ok(())
     }
 }
 
 impl Worker {
-    fn run<Q: Queue>(self, mut q: Q) -> impl Future<Output = ()> + Send + 'static {
+    fn run<Q: Queue>(
+        self,
+        ct: CancellationToken,
+        mut q: Q,
+    ) -> impl Future<Output = Result<(), Box<dyn Error + Send + Sync>>> + Send + 'static {
         async move {
             loop {
-                let worker = self.clone();
-                q.process(move |msg| async move {
-                    let new_msgs = worker.handle_msg(msg, 0).await;
+                if ct.is_cancelled() {
+                    tracing::info!(worker = self.id, "shutting down");
+                    break Ok(());
+                } else {
+                    let worker = self.clone();
+                    q.process(move |msg| async move {
+                        let new_msgs = worker.handle_msg(msg, 0).await;
 
-                    match new_msgs {
-                        Ok(ok) => ProcessFlow::Success(ok),
-                        // REVIEW: Check if this error is recoverable or not - i.e. if this is an IO error,
-                        // the msg can likely be retried
-                        Err(err) => {
-                            // ProcessFlow::Fail(err.to_string())
-                            panic!("{err}");
+                        match new_msgs {
+                            Ok(ok) => ProcessFlow::Success(ok),
+                            // REVIEW: Check if this error is recoverable or not - i.e. if this is an IO error,
+                            // the msg can likely be retried
+                            Err(err) => {
+                                // ProcessFlow::Fail(err.to_string())
+                                // HACK: panic is OK here since this is spawned in a task, and will be caught by the runtime worker
+                                panic!("{err}");
+                            }
                         }
-                    }
-                })
-                .await
-                .unwrap();
+                    })
+                    .await?;
+                }
             }
         }
     }
