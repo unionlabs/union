@@ -546,6 +546,10 @@ mod test {
         revision_height: 3577184,
     };
 
+    const UPDATES_DIR_PATH: &str = "test/updates/";
+
+    fn setup() {}
+
     #[test]
     #[ignore = "broken test data"]
     fn query_status_returns_active() {
@@ -687,11 +691,18 @@ mod test {
             &INITIAL_CONSENSUS_STATE_HEIGHT,
         );
 
-        let updates: &[ethereum::header::Header<Mainnet>] =
-            &[
-                serde_json::from_str(include_str!("./test/updates/finality_update_3577216.json"))
-                    .unwrap(),
-            ];
+        let updates: &[ethereum::header::Header<Mainnet>] = &[
+            serde_json::from_str(include_str!("./test/updates/finality_update-3577216.json"))
+                .unwrap(),
+            serde_json::from_str(include_str!("./test/updates/finality_update-3577248.json"))
+                .unwrap(),
+            serde_json::from_str(include_str!("./test/updates/finality_update-3577280.json"))
+                .unwrap(),
+            serde_json::from_str(include_str!("./test/updates/finality_update-3577284.json"))
+                .unwrap(),
+            serde_json::from_str(include_str!("./test/updates/finality_update-3577312.json"))
+                .unwrap(),
+        ];
 
         for update in updates {
             let mut env = mock_env();

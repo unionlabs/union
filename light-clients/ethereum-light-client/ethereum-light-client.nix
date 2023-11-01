@@ -23,8 +23,9 @@
               # TODO(aeryz): add this in case we need a limit
               # if [[ $A -eq 10 ]]; then 
               #   break; 
-              # fi; 
-  
+              # fi;
+              I=$((I+1))
+                  
               TARGET_SLOT=$(echo "$line" | jq .client_message.data.consensus_update.attested_header.beacon.slot -r)
 
               echo "processing line: $I, slot: $TARGET_SLOT"
@@ -38,10 +39,7 @@
                 filename="finality_update-$filename.json"
               fi
 
-              echo "$line" | jq > "$OUTPUT_PATH/$filename"
-
-              I=$((I+1))
-
+              echo "$line" | jq .client_message.data > "$UPDATES_PATH/$filename"
             done 
           '';
         };
