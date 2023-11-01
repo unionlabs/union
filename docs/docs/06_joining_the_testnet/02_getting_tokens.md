@@ -10,7 +10,7 @@ To ensure a fair initial distribution of Testnet tokens to validators, we will b
 
 ## Getting a Testnet Account
 
-Before you can get a Testnet address, you will need to [obtain and run the `uniond` Docker image](.).
+Before you can get a Testnet address, you will need to [obtain and run the `uniond` Docker image](./01_obtaining_uniond.md).
 
 Once you can run `uniond`, you can either create a new account, or recover one from an existing mnemonic.
 
