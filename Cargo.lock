@@ -1657,6 +1657,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "ensure-blocks"
+version = "0.0.0"
+dependencies = [
+ "clap",
+ "ethers",
+ "reqwest",
+ "tendermint-rpc",
+ "tokio",
+ "tracing",
+ "tracing-subscriber 0.3.17",
+]
+
+[[package]]
 name = "equivalent"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"

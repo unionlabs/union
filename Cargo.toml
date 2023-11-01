@@ -4,6 +4,7 @@ members = [
   "lib/*/fuzz",
   "tools/generate-rust-sol-bindings",
   "light-clients/*",
+  "e2e/*",
   "generated/rust",
   "generated/contracts",
   "ucli",
