@@ -108,6 +108,7 @@ external_address = "example.com:26656"
 Located in the `p2p` TOML group under the "P2P Configuration Options" section.
 
 Seed nodes help orchestrate initial connections to the network. For union-testnet-4, the seed nodes are:
+
 ```toml
 seeds = "[COMING SOON]"
 ```

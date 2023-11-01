@@ -25,7 +25,6 @@ Before running this Docker image, we'll want to create a folder to host the chai
 
 You can create this wherever you would like, but we'll be doing so in our current user's home directory.
 
-
 :::caution
 It's important that you will be able to edit this contents of this folder.
 :::
@@ -45,17 +44,21 @@ To do this, we'll be using Docker volumes.
 ```sh
 docker run -u $(id -u):$(id -g) -v ~/.union:/.union -it ghcr.io/unionlabs/uniond:$UNIOND_VERSION init $MONIKER bn254 --home /.union
 ```
-*Where `MONIKER` is the preferred moniker you'd like to use on this node.*
+
+_Where `MONIKER` is the preferred moniker you'd like to use on this node._
 
 :::note
+
 Note the usage of the flags and arguments we pass to `docker run` run here:
 
 - `-u $(id -u):(id -g)` ensures that the Docker container is being created and ran with the current user and their permissions
 - `-v ~/.union:/.union` mounts the folder we created to the `/.union` folder of the container
 - `-it` ensures we are running the container interactively
+
 :::
 
 After the `uniond init` command is done running, you should have a `.union` folder with the following contents:
+
 ```
 .union
 ├── config
@@ -87,12 +90,13 @@ This will enable you to issue `uniond` sub-commands with such as `uniond keys ad
 To run a node using `uniond`, you'll also need to expose ports to the Docker container. We'll use this as an opportunity to create a Docker Compose file four `uniond`.
 
 A minimal Docker Compose file for `uniond` looks like this:
+
 ```yaml
 services:
   node:
     image: ghcr.io/unionlabs/uniond:${UNIOND_VERSION}
-    volumes: 
-        - ~/.union:/.union
+    volumes:
+      - ~/.union:/.union
     ports:
       - "26657:26657"
       - "26656:26656"
@@ -115,6 +119,7 @@ You can obtain the testnet genesis here [COMING SOON].
 :::
 
 To run your node in detached mode, run:
+
 ```sh
 docker compose up -f path/to/compose.yml -d
 ```

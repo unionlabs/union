@@ -10,7 +10,7 @@ Validators are the backbone of the network. Becoming one requires significant to
 ## Obtaining uniond
 
 :::note
-Currently, directly downloading the `uniond` binary requires access to our private GitHub repository. 
+Currently, directly downloading the `uniond` binary requires access to our private GitHub repository.
 
 If you don't have access to our private GitHub repository, you can still run our node using the public Docker image.
 :::

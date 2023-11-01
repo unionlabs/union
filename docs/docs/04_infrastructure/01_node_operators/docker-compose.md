@@ -14,8 +14,8 @@ Our base `compose.yml` is fairly simple:
 services:
   node:
     image: ghcr.io/unionlabs/uniond:${UNIOND_VERSION}
-    volumes: 
-        - ~/.union:/.union
+    volumes:
+      - ~/.union:/.union
     ports:
       - "26657:26657"
       - "26656:26656"

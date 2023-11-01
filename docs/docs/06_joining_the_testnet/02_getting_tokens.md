@@ -2,7 +2,7 @@
 title: "Getting Testnet Tokens"
 ---
 
-To participate in the Union Testnet, you will first need an account with a UNO balance. 
+To participate in the Union Testnet, you will first need an account with a UNO balance.
 
 UNO is the primary token denom for the Union Testnet. We technically represent UNO as `muno` a fixed point representation of UNO with six digits of precision. This means that a balance of `1000000muno` is equivalent to 1 UNO.
 
@@ -28,7 +28,7 @@ To create a new Account and mnemonic, use the following sub-command of the `unio
 uniond keys add $KEY_NAME
 ```
 
-*Where `KEY_NAME` is the name you would like to use when referencing your key.*
+_Where `KEY_NAME` is the name you would like to use when referencing your key._
 
 Make sure to securely store the new mnemonic phrase that was outputted by the command.
 
@@ -42,17 +42,17 @@ To recover an Account using an existing mnemonic, use the following sub-command 
 uniond keys add $KEY_NAME --recover
 ```
 
-*Where `KEY_NAME` is the name you would like to use when referencing your key.*
+_Where `KEY_NAME` is the name you would like to use when referencing your key._
 
 Take note of your `address` here and continue to [Receiving Testnet Tokens](#receiving-testnet-tokens)
 
 ## Receiving Testnet Tokens
 
-Once you've been accepted to the Testnet, you will receive a form to submit your Union address as well as your node address. 
+Once you've been accepted to the Testnet, you will receive a form to submit your Union address as well as your node address.
 
 ### Finding your Union Address
 
-To ensure your account will have an UNO balance, please submit the address from your newly created or recovered account. 
+To ensure your account will have an UNO balance, please submit the address from your newly created or recovered account.
 
 If you haven't already noted down your address, you can retrieve it with the following command:
 
@@ -60,7 +60,7 @@ If you haven't already noted down your address, you can retrieve it with the fol
 uniond keys show $KEY_NAME --address
 ```
 
-*Where `KEY_NAME` is the name you would like to use when referencing your key.*
+_Where `KEY_NAME` is the name you would like to use when referencing your key._
 
 ### Finding your Node Address
 
