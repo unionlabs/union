@@ -688,7 +688,10 @@ mod test {
         );
 
         let updates: &[ethereum::header::Header<Mainnet>] =
-            &[serde_json::from_str(include_str!("./test/finality_update_3577216.json")).unwrap()];
+            &[
+                serde_json::from_str(include_str!("./test/updates/finality_update_3577216.json"))
+                    .unwrap(),
+            ];
 
         for update in updates {
             let mut env = mock_env();
