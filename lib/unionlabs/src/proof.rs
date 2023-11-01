@@ -15,7 +15,7 @@ use crate::{
 
 /// `IbcPath` represents the path to a light client's ibc storage. The values stored at each path
 /// are strongly typed, i.e. `connections/{connection_id}` always stores a [`ConnectionEnd`].
-pub trait IbcPath<This: Chain, Counterparty>: Display + Clone + Sized {
+pub trait IbcPath<This: Chain, Counterparty: Chain>: Display + Clone + Sized {
     type Output: Debug + Clone + Serialize;
 }
 

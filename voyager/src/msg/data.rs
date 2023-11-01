@@ -2,24 +2,13 @@ use std::marker::PhantomData;
 
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use serde::{Deserialize, Serialize};
-use unionlabs::{
-    self,
-    ibc::core::channel::channel::Channel,
-    proof::{
-        AcknowledgementPath, ChannelEndPath, ClientConsensusStatePath, ClientStatePath,
-        CommitmentPath, ConnectionPath,
-    },
-    traits::Chain,
-};
+use unionlabs::{self, ibc::core::channel::channel::Channel};
 
 use crate::{
     chain::{
         ChainOf, ClientStateOf, ConsensusStateOf, HeaderOf, HeightOf, LightClient, LightClientBase,
     },
-    msg::{
-        any_enum, fetch::FetchPacketAcknowledgement, identified, AnyLightClientIdentified,
-        StateProofOf,
-    },
+    msg::{any_enum, fetch::FetchPacketAcknowledgement, identified, AnyLightClientIdentified},
 };
 
 any_enum! {
@@ -34,6 +23,7 @@ any_enum! {
         PacketAcknowledgement(PacketAcknowledgement<L>),
 
         TrustedClientState(TrustedClientState<L>),
+
         ClientStateProof(ClientStateProof<L>),
         ClientConsensusStateProof(ClientConsensusStateProof<L>),
         ConnectionProof(ConnectionProof<L>),
@@ -79,37 +69,51 @@ pub struct Header<L: LightClient>(pub HeaderOf<L::HostChain>);
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""))]
-pub struct ClientStateProof<L: LightClient>(
-    pub StateProofOf<ClientStatePath<<ChainOf<L> as Chain>::ClientId>, L>,
-);
+pub struct ClientStateProof<L: LightClient> {
+    pub height: HeightOf<ChainOf<L>>,
+    #[serde(with = "::serde_utils::hex_string")]
+    pub proof: Vec<u8>,
+}
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""))]
-pub struct ClientConsensusStateProof<L: LightClient>(
-    pub  StateProofOf<
-        ClientConsensusStatePath<
-            <ChainOf<L> as Chain>::ClientId,
-            <ChainOf<L::Counterparty> as Chain>::Height,
-        >,
-        L,
-    >,
-);
+pub struct ClientConsensusStateProof<L: LightClient> {
+    pub height: HeightOf<ChainOf<L>>,
+    #[serde(with = "::serde_utils::hex_string")]
+    pub proof: Vec<u8>,
+}
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""))]
-pub struct ConnectionProof<L: LightClient>(pub StateProofOf<ConnectionPath, L>);
+pub struct ConnectionProof<L: LightClient> {
+    pub height: HeightOf<ChainOf<L>>,
+    #[serde(with = "::serde_utils::hex_string")]
+    pub proof: Vec<u8>,
+}
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""))]
-pub struct ChannelEndProof<L: LightClient>(pub StateProofOf<ChannelEndPath, L>);
+pub struct ChannelEndProof<L: LightClient> {
+    pub height: HeightOf<ChainOf<L>>,
+    #[serde(with = "::serde_utils::hex_string")]
+    pub proof: Vec<u8>,
+}
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""))]
-pub struct CommitmentProof<L: LightClient>(pub StateProofOf<CommitmentPath, L>);
+pub struct CommitmentProof<L: LightClient> {
+    pub height: HeightOf<ChainOf<L>>,
+    #[serde(with = "::serde_utils::hex_string")]
+    pub proof: Vec<u8>,
+}
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""))]
-pub struct AcknowledgementProof<L: LightClient>(pub StateProofOf<AcknowledgementPath, L>);
+pub struct AcknowledgementProof<L: LightClient> {
+    pub height: HeightOf<ChainOf<L>>,
+    #[serde(with = "::serde_utils::hex_string")]
+    pub proof: Vec<u8>,
+}
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""))]

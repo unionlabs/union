@@ -12,17 +12,22 @@ use futures::Future;
 use serde::{Deserialize, Serialize};
 use unionlabs::{
     ethereum_consts_traits::{Mainnet, Minimal},
-    ibc::core::client::height::{HeightFromStrError, IsHeight},
+    ibc::core::{
+        channel::channel::Channel,
+        client::height::{HeightFromStrError, IsHeight},
+        connection::connection_end::ConnectionEnd,
+    },
+    id::{ChannelId, ConnectionId, PortId},
     traits::{self, Chain},
 };
 
 use crate::{
-    chain::proof::{IbcStateRead, IbcStateReadPaths, StateProof},
+    chain::proof::{IbcStateRead, IbcStateReadPaths},
     config::{self, ChainConfig, EvmChainConfig},
     msg::{
         aggregate::LightClientSpecificAggregate,
         data::LightClientSpecificData,
-        fetch::{FetchUpdateHeaders, LightClientSpecificFetch},
+        fetch::{FetchStateProof, FetchUpdateHeaders, LightClientSpecificFetch},
         msg::Msg,
         DoAggregate, RelayerMsg,
     },
@@ -118,6 +123,25 @@ pub trait LightClientBase: Send + Sync + Sized {
 
     fn from_chain(chain: Self::HostChain) -> Self;
 
+    fn channel(
+        &self,
+        channel_id: ChannelId,
+        port_id: PortId,
+        at: HeightOf<Self::HostChain>,
+    ) -> impl Future<Output = Channel> + '_;
+
+    fn connection(
+        &self,
+        connection_id: ConnectionId,
+        at: HeightOf<Self::HostChain>,
+    ) -> impl Future<
+        Output = ConnectionEnd<
+            Self::ClientId,
+            <Self::Counterparty as LightClientBase>::ClientId,
+            String,
+        >,
+    > + '_;
+
     // TODO: Use state_proof instead
     fn query_client_state(
         &self,
@@ -156,6 +180,8 @@ pub trait LightClient: LightClientBase<Counterparty = Self::BaseCounterparty> {
 
     /// Error type for [`Self::msg`].
     type MsgError: MaybeRecoverableError;
+
+    fn proof(&self, msg: FetchStateProof<Self>) -> RelayerMsg;
 
     fn msg(&self, msg: Msg<Self>) -> impl Future<Output = Result<(), Self::MsgError>> + '_;
 

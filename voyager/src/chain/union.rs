@@ -25,7 +25,10 @@ use unionlabs::{
     ethereum::{Address, H256, H512},
     ethereum_consts_traits::{ChainSpec, Mainnet, Minimal},
     ibc::{
-        core::client::{height::Height, msg_update_client::MsgUpdateClient},
+        core::{
+            client::{height::Height, msg_update_client::MsgUpdateClient},
+            connection::connection_end::ConnectionEnd,
+        },
         google::protobuf::{any::Any, timestamp::Timestamp},
         lightclients::{cometbls, ethereum, wasm},
     },
@@ -53,22 +56,27 @@ use unionlabs::{
 use crate::{
     chain::{
         evm::{CometblsMainnet, CometblsMinimal},
-        proof::StateProof,
-        try_from_relayer_msg, Chain, ClientStateOf, ConsensusStateOf, HeightOf, IbcStateRead,
-        LightClient, LightClientBase, QueryHeight,
+        try_from_relayer_msg, Chain, ChainOf, ClientStateOf, ConsensusStateOf, HeightOf,
+        IbcStateRead, LightClient, LightClientBase, QueryHeight,
     },
     msg::{
         aggregate::{Aggregate, LightClientSpecificAggregate},
         data,
-        data::{Data, LightClientSpecificData},
+        data::{
+            AcknowledgementProof, ChannelEndProof, ClientConsensusStateProof, ClientStateProof,
+            CommitmentProof, ConnectionProof, Data, LightClientSpecificData,
+        },
         defer_relative, fetch,
-        fetch::{Fetch, FetchTrustedClientState, FetchUpdateHeaders, LightClientSpecificFetch},
+        fetch::{
+            Fetch, FetchStateProof, FetchTrustedClientState, FetchUpdateHeaders,
+            LightClientSpecificFetch,
+        },
         identified,
         msg::{Msg, MsgUpdateClientData},
         seq, wait,
         wait::WaitForBlock,
         AggregateData, AggregateReceiver, AnyLcMsg, AnyLightClientIdentified, DoAggregate,
-        Identified, LcMsg, RelayerMsg,
+        Identified, LcMsg, PathOf, RelayerMsg,
     },
     queue::aggregate_data::{do_aggregate, UseAggregate},
 };
@@ -114,16 +122,63 @@ impl LightClientBase for EthereumMinimal {
     {
         query_client_state::<Self>(&self.chain, client_id, height)
     }
+
+    fn channel(
+        &self,
+        channel_id: unionlabs::id::ChannelId,
+        port_id: unionlabs::id::PortId,
+        at: HeightOf<Self::HostChain>,
+    ) -> impl Future<Output = unionlabs::ibc::core::channel::channel::Channel> + '_ {
+        read_ibc_state::<ChainOf<Self::Counterparty>, _>(
+            &self.chain,
+            ChannelEndPath {
+                port_id,
+                channel_id,
+            },
+            at,
+        )
+    }
+
+    fn connection(
+        &self,
+        connection_id: unionlabs::id::ConnectionId,
+        at: HeightOf<Self::HostChain>,
+    ) -> impl Future<
+        Output = ConnectionEnd<
+            Self::ClientId,
+            <Self::Counterparty as LightClientBase>::ClientId,
+            String,
+        >,
+    > + '_ {
+        read_ibc_state::<ChainOf<Self::Counterparty>, _>(
+            &self.chain,
+            ConnectionPath { connection_id },
+            at,
+        )
+    }
 }
 
 impl LightClient for EthereumMinimal {
     type BaseCounterparty = Self::Counterparty;
 
     type Data = EthereumDataMsg<Minimal>;
-    type Fetch = EthereumFetchMsg<Minimal>;
+    type Fetch = EthereumFetchMsg<Self, Minimal>;
     type Aggregate = EthereumAggregateMsg<Self, Minimal>;
 
     type MsgError = BroadcastTxCommitError;
+
+    fn proof(&self, msg: FetchStateProof<Self>) -> RelayerMsg {
+        seq([
+            wait::<Self>(self.chain.chain_id(), WaitForBlock(msg.at.increment())),
+            fetch::<Self>(
+                self.chain.chain_id(),
+                LightClientSpecificFetch(EthereumFetchMsg::AbciQuery(FetchAbciQuery {
+                    path: msg.path,
+                    height: msg.at,
+                })),
+            ),
+        ])
+    }
 
     fn msg(&self, msg: Msg<Self>) -> impl Future<Output = Result<(), BroadcastTxCommitError>> + '_ {
         self::msg::<Self, Minimal>(self.chain.clone(), msg)
@@ -166,16 +221,63 @@ impl LightClientBase for EthereumMainnet {
     {
         query_client_state::<Self>(&self.chain, client_id, height)
     }
+
+    fn channel(
+        &self,
+        channel_id: unionlabs::id::ChannelId,
+        port_id: unionlabs::id::PortId,
+        at: HeightOf<Self::HostChain>,
+    ) -> impl Future<Output = unionlabs::ibc::core::channel::channel::Channel> + '_ {
+        read_ibc_state::<ChainOf<Self::Counterparty>, _>(
+            &self.chain,
+            ChannelEndPath {
+                port_id,
+                channel_id,
+            },
+            at,
+        )
+    }
+
+    fn connection(
+        &self,
+        connection_id: unionlabs::id::ConnectionId,
+        at: HeightOf<Self::HostChain>,
+    ) -> impl Future<
+        Output = ConnectionEnd<
+            Self::ClientId,
+            <Self::Counterparty as LightClientBase>::ClientId,
+            String,
+        >,
+    > + '_ {
+        read_ibc_state::<ChainOf<Self::Counterparty>, _>(
+            &self.chain,
+            ConnectionPath { connection_id },
+            at,
+        )
+    }
 }
 
 impl LightClient for EthereumMainnet {
     type BaseCounterparty = Self::Counterparty;
 
     type Data = EthereumDataMsg<Mainnet>;
-    type Fetch = EthereumFetchMsg<Mainnet>;
+    type Fetch = EthereumFetchMsg<Self, Mainnet>;
     type Aggregate = EthereumAggregateMsg<Self, Mainnet>;
 
     type MsgError = BroadcastTxCommitError;
+
+    fn proof(&self, msg: FetchStateProof<Self>) -> RelayerMsg {
+        seq([
+            wait::<Self>(self.chain.chain_id(), WaitForBlock(msg.at.increment())),
+            fetch::<Self>(
+                self.chain.chain_id(),
+                LightClientSpecificFetch(EthereumFetchMsg::AbciQuery(FetchAbciQuery {
+                    path: msg.path,
+                    height: msg.at,
+                })),
+            ),
+        ])
+    }
 
     fn msg(&self, msg: Msg<Self>) -> impl Future<Output = Result<(), Self::MsgError>> + '_ {
         self::msg(self.chain.clone(), msg)
@@ -193,10 +295,10 @@ impl LightClient for EthereumMainnet {
     }
 }
 
-async fn do_fetch<C, L>(union: &Union, msg: EthereumFetchMsg<C>) -> Vec<RelayerMsg>
+async fn do_fetch<C, L>(union: &Union, msg: EthereumFetchMsg<L, C>) -> Vec<RelayerMsg>
 where
     C: ChainSpec,
-    L: LightClient<HostChain = Union, Fetch = EthereumFetchMsg<C>, Data = EthereumDataMsg<C>>,
+    L: LightClient<HostChain = Union, Fetch = EthereumFetchMsg<L, C>, Data = EthereumDataMsg<C>>,
     AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L>)>,
     AggregateData: From<identified!(Data<L>)>,
     AggregateReceiver: From<identified!(Aggregate<L>)>,
@@ -437,6 +539,63 @@ where
                 }
             }
         }
+        EthereumFetchMsg::AbciQuery(FetchAbciQuery { path, height }) => {
+            let mut client =
+                protos::cosmos::base::tendermint::v1beta1::service_client::ServiceClient::connect(
+                    union.grpc_url.clone(),
+                )
+                .await
+                .unwrap();
+
+            let query_result = client
+                .abci_query(AbciQueryRequest {
+                    data: path.to_string().into_bytes(),
+                    path: "store/ibc/key".to_string(),
+                    height: i64::try_from(height.revision_height).unwrap() - 1_i64,
+                    prove: true,
+                })
+                .await
+                .unwrap()
+                .into_inner();
+
+            let proof = protos::ibc::core::commitment::v1::MerkleProof {
+                proofs: query_result
+                    .proof_ops
+                    .unwrap()
+                    .ops
+                    .into_iter()
+                    .map(|op| {
+                        protos::cosmos::ics23::v1::CommitmentProof::decode(op.data.as_slice())
+                            .unwrap()
+                    })
+                    .collect::<Vec<_>>(),
+            }
+            .encode_to_vec();
+
+            let height = *height;
+            [match path {
+                unionlabs::proof::Path::ClientStatePath(_) => {
+                    data::<L>(union.chain_id(), ClientStateProof { proof, height })
+                }
+                unionlabs::proof::Path::ClientConsensusStatePath(_) => data::<L>(
+                    union.chain_id(),
+                    ClientConsensusStateProof { proof, height },
+                ),
+                unionlabs::proof::Path::ConnectionPath(_) => {
+                    data::<L>(union.chain_id(), ConnectionProof { proof, height })
+                }
+                unionlabs::proof::Path::ChannelEndPath(_) => {
+                    data::<L>(union.chain_id(), ChannelEndProof { proof, height })
+                }
+                unionlabs::proof::Path::CommitmentPath(_) => {
+                    data::<L>(union.chain_id(), CommitmentProof { proof, height })
+                }
+                unionlabs::proof::Path::AcknowledgementPath(_) => {
+                    data::<L>(union.chain_id(), AcknowledgementProof { proof, height })
+                }
+            }]
+            .into()
+        }
     }
 }
 
@@ -449,7 +608,7 @@ where
     L: LightClient<
         HostChain = Union,
         Aggregate = EthereumAggregateMsg<L, C>,
-        Fetch = EthereumFetchMsg<C>,
+        Fetch = EthereumFetchMsg<L, C>,
     >,
     L::Counterparty: LightClient<HostChain = Evm<C>>,
     AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L>)>,
@@ -529,7 +688,7 @@ pub enum EthereumDataMsg<C: ChainSpec> {
 )]
 #[serde(bound(serialize = "", deserialize = ""))]
 #[allow(clippy::large_enum_variant)]
-pub enum EthereumFetchMsg<C: ChainSpec> {
+pub enum EthereumFetchMsg<L: LightClient<HostChain = Union>, C: ChainSpec> {
     // FetchTrustedCommit { height: Height },
     #[display(fmt = "FetchUntrustedCommit")]
     FetchUntrustedCommit(FetchUntrustedCommit<C>),
@@ -537,6 +696,8 @@ pub enum EthereumFetchMsg<C: ChainSpec> {
     FetchValidators(FetchValidators<C>),
     #[display(fmt = "FetchProveRequest")]
     FetchProveRequest(FetchProveRequest<C>),
+    #[display(fmt = "FetchAbciQuery")]
+    AbciQuery(FetchAbciQuery<L>),
 }
 
 #[derive(
@@ -647,7 +808,7 @@ where
     // REVIEW: Use trait alias here?
     L: LightClient<
         HostChain = Union,
-        Fetch = EthereumFetchMsg<C>,
+        Fetch = EthereumFetchMsg<L, C>,
         Aggregate = EthereumAggregateMsg<L, C>,
     >,
     L::Counterparty: LightClient<HostChain = Evm<C>>,
@@ -784,6 +945,13 @@ pub struct FetchProveRequest<C: ChainSpec> {
     pub request: ProveRequest,
     #[serde(skip)]
     pub __marker: PhantomData<fn() -> C>,
+}
+
+#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
+#[serde(bound(serialize = "", deserialize = ""))]
+pub struct FetchAbciQuery<L: LightClient<HostChain = Union>> {
+    path: PathOf<L>,
+    height: HeightOf<L::HostChain>,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
@@ -988,7 +1156,7 @@ where
     ConsensusStateOf<Counterparty>: TryFromProto,
     P: IbcPath<Union, Counterparty> + AbciStateRead<Counterparty> + 'static,
 {
-    fn state_proof(&self, path: P, at: Height) -> impl Future<Output = StateProof<P::Output>> + '_ {
+    fn state_proof(&self, path: P, at: Height) -> impl Future<Output = Vec<u8>> + '_ {
         async move {
             tracing::info!(%path, %at, "fetching state proof");
 
@@ -1003,41 +1171,46 @@ where
                 .abci_query(AbciQueryRequest {
                     data: path.to_string().into_bytes(),
                     path: "store/ibc/key".to_string(),
-                    height: i64::try_from(at.revision_height).unwrap() - 1_i64,
+                    height: i64::try_from(at.revision_height).unwrap(),
                     prove: true,
                 })
                 .await
                 .unwrap()
                 .into_inner();
 
-            // dbg!(&query_result);
+            let _state = P::from_abci_bytes(query_result.value);
 
-            let state = P::from_abci_bytes(query_result.value);
-            tracing::info!(?state, "fetched state proof");
-
-            StateProof {
-                state,
-                proof: protos::ibc::core::commitment::v1::MerkleProof {
-                    proofs: query_result
-                        .proof_ops
-                        .unwrap()
-                        .ops
-                        .into_iter()
-                        .map(|op| {
-                            protos::cosmos::ics23::v1::CommitmentProof::decode(op.data.as_slice())
-                                .unwrap()
-                        })
-                        .collect::<Vec<_>>(),
-                }
-                .encode_to_vec(),
-                // NOTE: query_result.height == AbciQueryRequest.height, hence the increment
-                // we could use at.revision_height here as well, maybe add an assert?
-                proof_height: self
-                    .make_height(query_result.height.try_into().unwrap())
-                    .increment(),
-            }
+            todo!()
         }
     }
+}
+
+async fn read_ibc_state<Counterparty, P>(union: &Union, path: P, at: HeightOf<Union>) -> P::Output
+where
+    Counterparty: Chain,
+    ClientStateOf<Counterparty>: TryFromProto,
+    ConsensusStateOf<Counterparty>: TryFromProto,
+    P: IbcPath<Union, Counterparty> + AbciStateRead<Counterparty> + 'static,
+{
+    let mut client =
+        protos::cosmos::base::tendermint::v1beta1::service_client::ServiceClient::connect(
+            union.grpc_url.clone(),
+        )
+        .await
+        .unwrap();
+
+    let query_result = client
+        .abci_query(AbciQueryRequest {
+            data: path.to_string().into_bytes(),
+            path: "store/ibc/key".to_string(),
+            height: i64::try_from(at.revision_height).unwrap(),
+            prove: false,
+        })
+        .await
+        .unwrap()
+        .into_inner();
+
+    P::from_abci_bytes(query_result.value)
 }
 
 fn tendermint_hash_to_h256(hash: tendermint::Hash) -> H256 {
@@ -1059,7 +1232,7 @@ where
     // REVIEW: Use trait alias here?
     L: LightClient<
         HostChain = Union,
-        Fetch = EthereumFetchMsg<C>,
+        Fetch = EthereumFetchMsg<L, C>,
         Aggregate = EthereumAggregateMsg<L, C>,
     >,
     L::Counterparty: LightClient<HostChain = Evm<C>>,
@@ -1248,7 +1421,7 @@ where
 impl<L, C> UseAggregate<L> for Identified<L, AggregateHeader<L>>
 where
     C: ChainSpec,
-    L: LightClient<HostChain = Union, Fetch = EthereumFetchMsg<C>>,
+    L: LightClient<HostChain = Union, Fetch = EthereumFetchMsg<L, C>>,
     // L::Counterparty: LightClient<HostChain = Evm<C>>,
     Identified<L, ProveResponse<C>>:
         TryFrom<AggregateData, Error = AggregateData> + Into<AggregateData>,

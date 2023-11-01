@@ -8,16 +8,18 @@ use std::{
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use serde::{Deserialize, Serialize};
 use unionlabs::{
-    proof::IbcPath,
+    proof::{
+        AcknowledgementPath, ChannelEndPath, ClientConsensusStatePath, ClientStatePath,
+        CommitmentPath, ConnectionPath, IbcPath,
+    },
     traits::{Chain, ClientState},
 };
 
 use crate::{
     chain::{
         evm::{CometblsMainnet, CometblsMinimal},
-        proof::StateProof,
         union::{EthereumMainnet, EthereumMinimal},
-        LightClient, LightClientBase,
+        ChainOf, LightClient, LightClientBase,
     },
     msg::{
         aggregate::AnyAggregate,
@@ -38,13 +40,6 @@ pub mod wait;
 
 pub type ChainIdOf<L> =
     <<<L as LightClientBase>::HostChain as Chain>::SelfClientState as ClientState>::ChainId;
-
-pub type StateProofOf<T, L> = StateProof<
-    <T as IbcPath<
-        <L as LightClientBase>::HostChain,
-        <<L as LightClientBase>::Counterparty as LightClientBase>::HostChain,
-    >>::Output,
->;
 
 pub trait IntoRelayerMsg {
     fn into_relayer_msg(self) -> RelayerMsg;
@@ -679,7 +674,77 @@ pub mod aggregate {
         RecvPacket(AggregateRecvPacket<L>),
         AckPacket(AggregateAckPacket<L>),
     }
+
+    // #[derive(
+    //     DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, derive_more::Display,
+    // )]
+    // #[serde(bound(serialize = "", deserialize = ""))]
+    // pub enum AggregateAnyStateProof<L: LightClient> {
+    //     #[display(fmt = "{_0}")]
+    //     ClientState(
+    //         AggregateStateProof<
+    //             L,
+    //             ClientStatePath<<L::HostChain as unionlabs::traits::Chain>::ClientId>,
+    //         >,
+    //     ),
+    //     #[display(fmt = "{_0}")]
+    //     ClientConsensusState(
+    //         AggregateStateProof<
+    //             L,
+    //             ClientConsensusStatePath<
+    //                 <ChainOf<L::Counterparty> as unionlabs::traits::Chain>::ClientId,
+    //                 HeightOf<ChainOf<L>>,
+    //             >,
+    //         >,
+    //     ),
+    //     #[display(fmt = "{_0}")]
+    //     Connection(AggregateStateProof<L, ConnectionPath>),
+    //     #[display(fmt = "{_0}")]
+    //     ChannelEnd(AggregateStateProof<L, ChannelEndPath>),
+    //     #[display(fmt = "{_0}")]
+    //     Commitment(AggregateStateProof<L, CommitmentPath>),
+    //     #[display(fmt = "{_0}")]
+    //     Acknowledgement(AggregateStateProof<L, AcknowledgementPath>),
+    // }
+
+    // #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
+    // #[serde(bound(serialize = "", deserialize = ""))]
+    // pub struct AggregateStateProof<L: LightClient, P: IbcPathExt<L>> {
+    //     height: HeightOf<ChainOf<L>>,
+    //     #[serde(skip)]
+    //     pub __marker: PhantomData<P>,
+    // }
 }
+
+pub trait IbcPathExt<L: LightClient>: IbcPath<ChainOf<L>, ChainOf<L::Counterparty>> {
+    type Data: TryFrom<AggregateData, Error = AggregateData> + Into<AggregateData>;
+    type Proof: TryFrom<AggregateData, Error = AggregateData> + Into<AggregateData>;
+}
+
+pub trait AnyPath<L: LightClient> {
+    type Inner<P: IbcPath<L::HostChain, ChainOf<L::Counterparty>>>;
+}
+
+pub enum Path2<L: LightClient, P: AnyPath<L>> {
+    ClientStatePath(P::Inner<ClientStatePath<<L::HostChain as Chain>::ClientId>>),
+    ClientConsensusStatePath(
+        P::Inner<
+            ClientConsensusStatePath<
+                <L::HostChain as Chain>::ClientId,
+                <ChainOf<L::Counterparty> as Chain>::Height,
+            >,
+        >,
+    ),
+    ConnectionPath(P::Inner<ConnectionPath>),
+    ChannelEndPath(P::Inner<ChannelEndPath>),
+    CommitmentPath(P::Inner<CommitmentPath>),
+    AcknowledgementPath(P::Inner<AcknowledgementPath>),
+}
+
+pub type PathOf<L> = unionlabs::proof::Path<
+    <<L as LightClientBase>::HostChain as Chain>::ClientId,
+    <ChainOf<<L as LightClientBase>::Counterparty> as Chain>::Height,
+>;
 
 pub trait AnyLightClient {
     type Inner<L: LightClient>: Debug
@@ -876,18 +941,18 @@ mod tests {
         msg::{
             aggregate::{Aggregate, AggregateCreateClient, AnyAggregate},
             data::Data,
-            event,
+            defer_relative, event,
             event::{Event, IbcEvent},
             fetch,
             fetch::{
-                AnyFetch, Fetch, FetchSelfClientState, FetchSelfConsensusState,
+                AnyFetch, Fetch, FetchConnectionEnd, FetchSelfClientState, FetchSelfConsensusState,
                 FetchTrustedClientState,
             },
             msg,
             msg::{
                 Msg, MsgChannelOpenInitData, MsgConnectionOpenInitData, MsgConnectionOpenTryData,
             },
-            AggregateReceiver, AnyLcMsg, AnyMsg, Identified, RelayerMsg,
+            seq, AggregateReceiver, AnyLcMsg, AnyMsg, Identified, RelayerMsg,
         },
         DELAY_PERIOD,
     };
@@ -1002,26 +1067,32 @@ mod tests {
             },
         ));
 
-        print_json(RelayerMsg::Timeout {
-            timeout_timestamp: u64::MAX,
-            msg: Box::new(event::<CometblsMinimal>(
-                eth_chain_id,
-                crate::msg::event::Command::UpdateClient {
-                    client_id: parse!("cometbls-0"),
-                    counterparty_client_id: parse!("08-wasm-0"),
-                },
-            )),
+        print_json(RelayerMsg::Repeat {
+            times: u64::MAX,
+            msg: Box::new(seq([
+                defer_relative(30),
+                event::<CometblsMinimal>(
+                    eth_chain_id,
+                    crate::msg::event::Command::UpdateClient {
+                        client_id: parse!("cometbls-0"),
+                        counterparty_client_id: parse!("08-wasm-0"),
+                    },
+                ),
+            ])),
         });
 
-        print_json(RelayerMsg::Timeout {
-            timeout_timestamp: u64::MAX,
-            msg: Box::new(event::<EthereumMinimal>(
-                union_chain_id.clone(),
-                crate::msg::event::Command::UpdateClient {
-                    client_id: parse!("08-wasm-0"),
-                    counterparty_client_id: parse!("cometbls-0"),
-                },
-            )),
+        print_json(RelayerMsg::Repeat {
+            times: u64::MAX,
+            msg: Box::new(seq([
+                defer_relative(30),
+                event::<EthereumMinimal>(
+                    union_chain_id.clone(),
+                    crate::msg::event::Command::UpdateClient {
+                        client_id: parse!("08-wasm-0"),
+                        counterparty_client_id: parse!("cometbls-0"),
+                    },
+                ),
+            ])),
         });
 
         println!("\ncreate client msgs\n");
@@ -1104,6 +1175,13 @@ mod tests {
         //         },
         //     },
         // ))));
+        print_json(fetch::<EthereumMinimal>(
+            union_chain_id.clone(),
+            FetchConnectionEnd {
+                at: parse!("1-103"),
+                connection_id: parse!("connection-1"),
+            },
+        ))
     }
 
     fn print_json<T: Serialize + DeserializeOwned + PartialEq + Debug>(msg: T) {
