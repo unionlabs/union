@@ -32,12 +32,12 @@ use unionlabs::{
         ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit, ConnectionOpenTry,
         CreateClient, IbcEvent, RecvPacket, SendPacket,
     },
+    google::protobuf::any::Any,
     ibc::{
         core::{
             channel::channel::Channel, client::height::Height,
             connection::connection_end::ConnectionEnd,
         },
-        google::protobuf::any::Any,
         lightclients::{cometbls, ethereum, tendermint::fraction::Fraction, wasm},
     },
     id::{ChannelId, ClientId, ConnectionId, PortId},

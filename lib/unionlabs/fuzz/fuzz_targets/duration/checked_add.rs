@@ -1,7 +1,7 @@
 #![no_main]
 
 use libfuzzer_sys::fuzz_target;
-use unionlabs::ibc::google::protobuf::duration::Duration;
+use unionlabs::google::protobuf::duration::Duration;
 
 fuzz_target!(|data: (Duration, Duration)| {
     let (a, b) = data;

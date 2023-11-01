@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     cosmos::staking::commission_rates::CommissionRates,
     errors::{required, MissingField},
-    ibc::google::protobuf::timestamp::Timestamp,
+    google::protobuf::timestamp::Timestamp,
     Proto, TryFromProtoErrorOf, TypeUrl,
 };
 

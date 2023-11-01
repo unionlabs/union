@@ -9,9 +9,9 @@ use tendermint_rpc::{query::Query, Client, Order, WebSocketClient, WebSocketClie
 use unionlabs::{
     ethereum::H256,
     events::{IbcEvent, TryFromTendermintEventError, WriteAcknowledgement},
+    google::protobuf::{any::Any, duration::Duration},
     ibc::{
         core::{client::height::Height, commitment::merkle_root::MerkleRoot},
-        google::protobuf::{any::Any, duration::Duration},
         lightclients::{cometbls, wasm},
     },
     id::ClientId,

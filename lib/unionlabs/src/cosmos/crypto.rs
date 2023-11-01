@@ -3,7 +3,7 @@ use std::fmt::Debug;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    errors::InvalidLength, ibc::google::protobuf::any::Any, IntoProto, Proto, TryFromProto,
+    errors::InvalidLength, google::protobuf::any::Any, IntoProto, Proto, TryFromProto,
     TryFromProtoBytesError, TypeUrl,
 };
 

@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     errors::{required, InvalidLength, MissingField},
     ethereum::{Address, H512},
-    ibc::google::protobuf::timestamp::Timestamp,
+    google::protobuf::timestamp::Timestamp,
     tendermint::types::block_id_flag::BlockIdFlag,
     Proto, TryFromProtoErrorOf, TypeUrl,
 };

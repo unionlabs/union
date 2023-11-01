@@ -37,6 +37,7 @@ use unionlabs::{
         Address,
     },
     ethereum_consts_traits::{ChainSpec, Mainnet, Minimal},
+    google::protobuf::any::Any,
     ibc::{
         core::{
             client::{
@@ -45,7 +46,6 @@ use unionlabs::{
             },
             connection::connection_end::ConnectionEnd,
         },
-        google::protobuf::any::Any,
         lightclients::{
             ethereum::{
                 self,

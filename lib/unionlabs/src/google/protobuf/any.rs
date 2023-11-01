@@ -16,6 +16,7 @@ use crate::{
 #[derive(Debug, Clone, PartialEq)]
 pub struct Any<T>(pub T);
 
+/// TODO(unionlabs/union#876): Properly implement google.protobuf.Any json serde
 impl<'de, T> Deserialize<'de> for Any<T>
 where
     T: Deserialize<'de> + TryFromProto,

@@ -2,7 +2,8 @@ use core::fmt::Debug;
 
 use cosmwasm_std::{CustomQuery, Deps, DepsMut};
 use unionlabs::{
-    ibc::{core::client::height::Height, google::protobuf::any::Any, lightclients::wasm},
+    google::protobuf::any::Any,
+    ibc::{core::client::height::Height, lightclients::wasm},
     IntoProto, Proto, TryFromProto, TryFromProtoErrorOf,
 };
 

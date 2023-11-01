@@ -16,6 +16,9 @@ use sha2::Digest;
 
 use crate::{errors::TryFromBranchError, ethereum::H256, id::Bounded, validated::Validated};
 
+/// Wrapper types around protos defined in <https://github.com/cosmos/gogoproto/tree/main/protobuf/google/protobuf>, matching the proto module structure.
+pub mod google;
+
 /// Defines types that wrap the IBC specification, matching the proto module structure. This also includes `union` extensions to ibc (i.e. types defined in `union.ibc`).
 pub mod ibc;
 
@@ -438,9 +441,9 @@ pub mod traits {
     use crate::{
         ethereum::{H256, U256},
         ethereum_consts_traits::ChainSpec,
+        google::protobuf::any::Any,
         ibc::{
             core::client::height::{Height, IsHeight},
-            google::protobuf::any::Any,
             lightclients::{cometbls, ethereum, wasm},
         },
         id::{ChannelId, PortId},

@@ -2,7 +2,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     errors::{required, MissingField},
-    ibc::{core::client::height::Height, google::protobuf::duration::Duration},
+    google::protobuf::duration::Duration,
+    ibc::core::client::height::Height,
     Proto, TryFromProtoErrorOf, TypeUrl,
 };
 
