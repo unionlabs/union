@@ -38,9 +38,12 @@ use unionlabs::{
     },
     ethereum_consts_traits::{ChainSpec, Mainnet, Minimal},
     ibc::{
-        core::client::{
-            height::{Height, IsHeight},
-            msg_update_client::MsgUpdateClient,
+        core::{
+            client::{
+                height::{Height, IsHeight},
+                msg_update_client::MsgUpdateClient,
+            },
+            connection::connection_end::ConnectionEnd,
         },
         google::protobuf::any::Any,
         lightclients::{
@@ -67,15 +70,21 @@ use crate::{
     chain::{
         try_from_relayer_msg,
         union::{EthereumMainnet, EthereumMinimal},
-        ClientStateOf, ConsensusStateOf, HeaderOf, HeightOf, IbcStateRead, LightClient,
-        LightClientBase, QueryHeight, StateProof,
+        ChainOf, ClientStateOf, ConsensusStateOf, HeaderOf, HeightOf, IbcStateRead, LightClient,
+        LightClientBase, QueryHeight,
     },
     msg::{
         aggregate::{Aggregate, AnyAggregate, LightClientSpecificAggregate},
         data,
-        data::{Data, LightClientSpecificData},
+        data::{
+            AcknowledgementProof, ChannelEndProof, ClientConsensusStateProof, ClientStateProof,
+            CommitmentProof, ConnectionProof, Data, LightClientSpecificData,
+        },
         fetch,
-        fetch::{Fetch, FetchTrustedClientState, FetchUpdateHeaders, LightClientSpecificFetch},
+        fetch::{
+            Fetch, FetchStateProof, FetchTrustedClientState, FetchUpdateHeaders,
+            LightClientSpecificFetch,
+        },
         identified,
         msg::{Msg, MsgUpdateClientData},
         seq, wait,
@@ -200,6 +209,40 @@ impl LightClientBase for CometblsMainnet {
         Self { chain }
     }
 
+    fn channel(
+        &self,
+        channel_id: unionlabs::id::ChannelId,
+        port_id: unionlabs::id::PortId,
+        at: HeightOf<Self::HostChain>,
+    ) -> impl Future<Output = unionlabs::ibc::core::channel::channel::Channel> + '_ {
+        read_ibc_state::<ChainOf<Self::Counterparty>, _, _>(
+            &self.chain,
+            ChannelEndPath {
+                port_id,
+                channel_id,
+            },
+            at.revision_height(),
+        )
+    }
+
+    fn connection(
+        &self,
+        connection_id: unionlabs::id::ConnectionId,
+        at: HeightOf<Self::HostChain>,
+    ) -> impl Future<
+        Output = ConnectionEnd<
+            Self::ClientId,
+            <Self::Counterparty as LightClientBase>::ClientId,
+            String,
+        >,
+    > + '_ {
+        read_ibc_state::<ChainOf<Self::Counterparty>, _, _>(
+            &self.chain,
+            ConnectionPath { connection_id },
+            at.revision_height(),
+        )
+    }
+
     fn query_client_state(
         &self,
         client_id: <Self::HostChain as Chain>::ClientId,
@@ -214,10 +257,20 @@ impl LightClient for CometblsMainnet {
     type BaseCounterparty = Self::Counterparty;
 
     type Data = CometblsDataMsg<Mainnet>;
-    type Fetch = CometblsFetchMsg<Mainnet>;
+    type Fetch = CometblsFetchMsg<Self, Mainnet>;
     type Aggregate = CometblsAggregateMsg<Self, Mainnet>;
 
     type MsgError = TxSubmitError;
+
+    fn proof(&self, msg: FetchStateProof<Self>) -> RelayerMsg {
+        fetch(
+            self.chain.chain_id(),
+            LightClientSpecificFetch::<Self>(CometblsFetchMsg::FetchGetProof(GetProof {
+                path: msg.path,
+                height: msg.at,
+            })),
+        )
+    }
 
     fn msg(&self, msg: Msg<Self>) -> impl Future<Output = Result<(), Self::MsgError>> + '_ {
         self::msg(&self.chain, msg)
@@ -252,6 +305,40 @@ impl LightClientBase for CometblsMinimal {
         Self { chain }
     }
 
+    fn channel(
+        &self,
+        channel_id: unionlabs::id::ChannelId,
+        port_id: unionlabs::id::PortId,
+        at: HeightOf<Self::HostChain>,
+    ) -> impl Future<Output = unionlabs::ibc::core::channel::channel::Channel> + '_ {
+        read_ibc_state::<ChainOf<Self::Counterparty>, _, _>(
+            &self.chain,
+            ChannelEndPath {
+                port_id,
+                channel_id,
+            },
+            at.revision_height(),
+        )
+    }
+
+    fn connection(
+        &self,
+        connection_id: unionlabs::id::ConnectionId,
+        at: HeightOf<Self::HostChain>,
+    ) -> impl Future<
+        Output = ConnectionEnd<
+            Self::ClientId,
+            <Self::Counterparty as LightClientBase>::ClientId,
+            String,
+        >,
+    > + '_ {
+        read_ibc_state::<ChainOf<Self::Counterparty>, _, _>(
+            &self.chain,
+            ConnectionPath { connection_id },
+            at.revision_height(),
+        )
+    }
+
     fn query_client_state(
         &self,
         client_id: <Self::HostChain as Chain>::ClientId,
@@ -266,10 +353,20 @@ impl LightClient for CometblsMinimal {
     type BaseCounterparty = Self::Counterparty;
 
     type Data = CometblsDataMsg<Minimal>;
-    type Fetch = CometblsFetchMsg<Minimal>;
+    type Fetch = CometblsFetchMsg<Self, Minimal>;
     type Aggregate = CometblsAggregateMsg<Self, Minimal>;
 
     type MsgError = TxSubmitError;
+
+    fn proof(&self, msg: FetchStateProof<Self>) -> RelayerMsg {
+        fetch(
+            self.chain.chain_id(),
+            LightClientSpecificFetch::<Self>(CometblsFetchMsg::FetchGetProof(GetProof {
+                path: msg.path,
+                height: msg.at,
+            })),
+        )
+    }
 
     fn msg(&self, msg: Msg<Self>) -> impl Future<Output = Result<(), Self::MsgError>> + '_ {
         self::msg(&self.chain, msg)
@@ -287,6 +384,29 @@ impl LightClient for CometblsMinimal {
     }
 }
 
+async fn read_ibc_state<Counterparty, C, P>(
+    evm: &Evm<C>,
+    p: P,
+    at: u64,
+) -> P::Output
+where
+    Counterparty: Chain,
+    C: ChainSpec,
+    P: IbcPath<Evm<C>, Counterparty>
+        + EthereumStateRead<
+            C,
+            Counterparty,
+            Encoded = <<<P as EthereumStateRead<C, Counterparty>>::EthCall as EthCallExt>::Return as TupleToOption>::Inner,
+        > + 'static,
+    <P::EthCall as EthCallExt>::Return: TupleToOption,
+{
+    evm.read_ibc_state(p.into_eth_call(), at)
+        .await
+        .unwrap()
+        .map(|x| P::decode_ibc_state(x))
+        .unwrap()
+}
+
 fn generate_counterparty_updates<C, L>(
     evm: &Evm<C>,
     update_info: FetchUpdateHeaders<L>,
@@ -295,11 +415,11 @@ where
     C: ChainSpec,
     L: LightClient<
         HostChain = Evm<C>,
-        Fetch = CometblsFetchMsg<C>,
+        Fetch = CometblsFetchMsg<L, C>,
         Data = CometblsDataMsg<C>,
         Aggregate = CometblsAggregateMsg<L, C>,
     >,
-    LightClientSpecificFetch<L>: From<CometblsFetchMsg<C>>,
+    LightClientSpecificFetch<L>: From<CometblsFetchMsg<L, C>>,
     AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L>)>,
     AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<L>)>,
 {
@@ -492,7 +612,7 @@ try_from_relayer_msg! {
     DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, derive_more::Display,
 )]
 #[serde(bound(serialize = "", deserialize = ""))]
-pub enum CometblsFetchMsg<C: ChainSpec> {
+pub enum CometblsFetchMsg<L: LightClient<HostChain = Evm<C>>, C: ChainSpec> {
     #[display(fmt = "FetchFinalityUpdate")]
     FetchFinalityUpdate(PhantomData<C>),
     #[display(fmt = "FetchLightClientUpdates")]
@@ -505,6 +625,8 @@ pub enum CometblsFetchMsg<C: ChainSpec> {
     FetchAccountUpdate(FetchAccountUpdate<C>),
     #[display(fmt = "FetchBeaconGenesis")]
     FetchBeaconGenesis(FetchBeaconGenesis<C>),
+    #[display(fmt = "FetchGetProof::{}", "_0.path")]
+    FetchGetProof(GetProof<C, L>),
 }
 
 #[derive(
@@ -724,7 +846,7 @@ pub struct LightClientUpdates<C: ChainSpec>(pub Vec<LightClientUpdate<C>>);
 impl<C, L> DoAggregate<L> for CometblsAggregateMsg<L, C>
 where
     C: ChainSpec,
-    L: LightClient<HostChain = Evm<C>, Aggregate = Self, Fetch = CometblsFetchMsg<C>>,
+    L: LightClient<HostChain = Evm<C>, Aggregate = Self, Fetch = CometblsFetchMsg<L, C>>,
 
     Identified<L, AccountUpdateData<C>>:
         TryFrom<AggregateData, Error = AggregateData> + Into<AggregateData>,
@@ -877,7 +999,7 @@ where
     C: ChainSpec,
     L: LightClient<
         HostChain = Evm<C>,
-        Fetch = CometblsFetchMsg<C>,
+        Fetch = CometblsFetchMsg<L, C>,
         Aggregate = CometblsAggregateMsg<L, C>,
     >,
     AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L>)>,
@@ -1123,10 +1245,10 @@ async fn query_client_state<C: ChainSpec>(
     Any::try_from_proto_bytes(&client_state_bytes).unwrap()
 }
 
-async fn do_fetch<C, L>(evm: &Evm<C>, msg: CometblsFetchMsg<C>) -> Vec<RelayerMsg>
+async fn do_fetch<C, L>(evm: &Evm<C>, msg: CometblsFetchMsg<L, C>) -> Vec<RelayerMsg>
 where
     C: ChainSpec,
-    L: LightClient<HostChain = Evm<C>, Fetch = CometblsFetchMsg<C>, Data = CometblsDataMsg<C>>,
+    L: LightClient<HostChain = Evm<C>, Fetch = CometblsFetchMsg<L, C>, Data = CometblsDataMsg<C>>,
     LightClientSpecificData<L>: From<CometblsDataMsg<C>>,
     AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L>)>,
 {
@@ -1252,6 +1374,98 @@ where
                 __marker: PhantomData,
             })
         }
+        CometblsFetchMsg::FetchGetProof(get_proof) => {
+            let execution_height = evm.execution_height(get_proof.height).await;
+
+            let path = get_proof.path.to_string();
+
+            let location = keccak256(
+                keccak256(path.as_bytes())
+                    .into_iter()
+                    .chain(U256::from(0).encode())
+                    .collect::<Vec<_>>(),
+            );
+
+            let proof = evm
+                .provider
+                .get_proof(
+                    evm.readonly_ibc_handler.address(),
+                    vec![location.into()],
+                    Some(execution_height.into()),
+                )
+                .await
+                .unwrap();
+
+            tracing::info!(?proof);
+
+            let proof = match <[_; 1]>::try_from(proof.storage_proof) {
+                Ok([proof]) => proof,
+                Err(invalid) => {
+                    panic!("received invalid response from eth_getProof, expected length of 1 but got `{invalid:#?}`");
+                }
+            };
+
+            let proof = ethereum_v1::StorageProof {
+                proofs: [ethereum_v1::Proof {
+                    key: proof.key.to_fixed_bytes().to_vec(),
+                    // REVIEW(benluelo): Make sure this encoding works
+                    value: proof.value.encode(),
+                    proof: proof
+                        .proof
+                        .into_iter()
+                        .map(|bytes| bytes.to_vec())
+                        .collect(),
+                }]
+                .to_vec(),
+            }
+            .encode_to_vec();
+
+            return [match get_proof.path {
+                unionlabs::proof::Path::ClientStatePath(_) => data::<L>(
+                    evm.chain_id,
+                    ClientStateProof {
+                        proof,
+                        height: get_proof.height,
+                    },
+                ),
+                unionlabs::proof::Path::ClientConsensusStatePath(_) => data::<L>(
+                    evm.chain_id,
+                    ClientConsensusStateProof {
+                        proof,
+                        height: get_proof.height,
+                    },
+                ),
+                unionlabs::proof::Path::ConnectionPath(_) => data::<L>(
+                    evm.chain_id,
+                    ConnectionProof {
+                        proof,
+                        height: get_proof.height,
+                    },
+                ),
+                unionlabs::proof::Path::ChannelEndPath(_) => data::<L>(
+                    evm.chain_id,
+                    ChannelEndProof {
+                        proof,
+                        height: get_proof.height,
+                    },
+                ),
+                unionlabs::proof::Path::CommitmentPath(_) => data::<L>(
+                    evm.chain_id,
+                    CommitmentProof {
+                        proof,
+                        height: get_proof.height,
+                    },
+                ),
+                unionlabs::proof::Path::AcknowledgementPath(_) => data::<L>(
+                    evm.chain_id,
+                    AcknowledgementProof {
+                        proof,
+                        height: get_proof.height,
+                    },
+                ),
+            }]
+            .into();
+        }
     };
 
     [data::<L>(evm.chain_id, LightClientSpecificData::from(msg))].into()
@@ -1273,20 +1487,11 @@ where
         &self,
         path: P,
         at: Height,
-    ) -> impl Future<Output = StateProof<<P as IbcPath<Evm<C>, Counterparty>>::Output>> + '_ {
+    ) -> impl Future<Output = Vec<u8>> + '_ {
         async move {
             let execution_height = self.execution_height(at).await;
 
-            let ret = self
-                .read_ibc_state(path.clone().into_eth_call(), execution_height)
-                .await
-                .unwrap()
-                .map(|x| P::decode_ibc_state(x))
-                .unwrap();
-
             let path = path.to_string();
-
-            tracing::info!(path, ?execution_height);
 
             let location = keccak256(
                 keccak256(path.as_bytes())
@@ -1310,13 +1515,11 @@ where
             let proof = match <[_; 1]>::try_from(proof.storage_proof) {
                 Ok([proof]) => proof,
                 Err(invalid) => {
-                    panic!("received invalid response from eth_getProof, expected length of 1 but got {invalid:#?}");
+                    panic!("received invalid response from eth_getProof, expected length of 1 but got `{invalid:#?}`");
                 }
             };
 
-            StateProof {
-                state: ret,
-                proof: ethereum_v1::StorageProof {
+                ethereum_v1::StorageProof {
                     proofs: [ethereum_v1::Proof {
                         key: proof.key.to_fixed_bytes().to_vec(),
                         // REVIEW(benluelo): Make sure this encoding works
@@ -1329,13 +1532,26 @@ where
                     }]
                     .to_vec(),
                 }
-                .encode_to_vec(),
-                // REVIEW: Beacon or execution?
-                proof_height: at,
-            }
+                .encode_to_vec()
         }
     }
 }
+
+#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, serde::Serialize, serde::Deserialize)]
+#[serde(bound(serialize = "", deserialize = ""))]
+pub struct GetProof<C: ChainSpec, L: LightClient<HostChain = Evm<C>>> {
+    path: unionlabs::proof::Path<
+        <L::HostChain as Chain>::ClientId,
+        <ChainOf<L::Counterparty> as Chain>::Height,
+    >,
+    height: <Evm<C> as Chain>::Height,
+}
+
+// pub struct AnyGetProof<C: ChainSpec, L: LightClient<HostChain = Evm<C>>> {
+//     __marker: PhantomData<fn() -> (C, L)>,
+// }
+
+// type _AnyGetProof<C, L> = Path2<L, AnyGetProof<C, L>>;
 
 trait EthereumStateRead<C, Counterparty>: IbcPath<Evm<C>, Counterparty>
 where
@@ -1605,7 +1821,7 @@ where
     C: ChainSpec,
     L: LightClient<
         HostChain = Evm<C>,
-        Fetch = CometblsFetchMsg<C>,
+        Fetch = CometblsFetchMsg<L, C>,
         Aggregate = CometblsAggregateMsg<L, C>,
     >,
     Identified<L, FinalityUpdate<C>>:
@@ -1675,7 +1891,7 @@ where
     C: ChainSpec,
     L: LightClient<
         HostChain = Evm<C>,
-        Fetch = CometblsFetchMsg<C>,
+        Fetch = CometblsFetchMsg<L, C>,
         Aggregate = CometblsAggregateMsg<L, C>,
     >,
 

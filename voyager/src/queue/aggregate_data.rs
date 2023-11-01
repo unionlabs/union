@@ -4,12 +4,15 @@ use frunk::{HCons, HNil};
 
 use crate::{
     chain::LightClient,
-    msg::{AggregateData, RelayerMsg},
+    msg::{data::AnyData, AnyLightClientIdentified, RelayerMsg},
 };
+
+pub trait IsAggregateData = TryFrom<AnyLightClientIdentified<AnyData>, Error = AnyLightClientIdentified<AnyData>>
+    + Into<AnyLightClientIdentified<AnyData>>;
 
 pub fn do_aggregate<L: LightClient, T: UseAggregate<L>>(
     event: T,
-    data: VecDeque<AggregateData>,
+    data: VecDeque<AnyLightClientIdentified<AnyData>>,
 ) -> RelayerMsg {
     // let data_json = serde_json::to_string(&data).expect("serialization should not fail");
 
@@ -92,7 +95,7 @@ impl<U> HListTryFromIterator<U> for HNil {
 }
 
 pub trait UseAggregate<L: LightClient> {
-    type AggregatedData: HListTryFromIterator<AggregateData>;
+    type AggregatedData: HListTryFromIterator<AnyLightClientIdentified<AnyData>>;
 
     fn aggregate(this: Self, data: Self::AggregatedData) -> RelayerMsg;
 }
