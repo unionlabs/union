@@ -67,5 +67,5 @@ uniond keys show $KEY_NAME --address
 To find your node address you can run the following `uniond` sub-command:
 
 ```sh
-uniond tindermint show-address
+uniond tendermint show-address
 ```

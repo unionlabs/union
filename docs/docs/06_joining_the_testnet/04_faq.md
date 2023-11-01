@@ -6,4 +6,4 @@ As we continue onboarding validators and expanding the testnet, we'll populate t
 
 ### How can I confirm my position as a testnet validator?
 
-We started our testnet with the goal of onboarding 64 validators. The signup form for these first 64 slots has been closed. We later plan to expand to 128 testnet validators. To stay up to date with the most recent news on Union and our first public testnet, please [join our Discord](https://discord.gg/union-build).
+We started our testnet with the goal of onboarding 64 validators. The sign-up form for these first 64 slots has been closed. We later plan to expand to 128 testnet validators. To stay up to date with the most recent news on Union and our first public testnet, please [join our Discord](https://discord.gg/union-build).
