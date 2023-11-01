@@ -2,7 +2,6 @@
 
 This section will guide you through creating a node in the Union Testnet and becoming a validator.
 
-
 ## The Onboarding Process
 
 To conduct the onboarding process, follow the steps below:
@@ -27,8 +26,8 @@ After we see your validator is created, we'll delegate more to your node to ensu
 
 Once we see that you've produced blocks for a day, you will have completed the onboarding process.
 
-```mdx-code-block
-import DocCardList from '@theme/DocCardList';
+## Feedback
 
-<DocCardList />
-```
+If you have any questions or concerns about becoming a testnet validator, please check out our [FAQ](./faq)
+
+If you have any questions or feedback for the testnet onboarding process, please [join our Discord](https://discord.gg/union-build) and share your feedback with us there.

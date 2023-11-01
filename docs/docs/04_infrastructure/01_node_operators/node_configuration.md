@@ -16,11 +16,11 @@ Located in `config/client.toml`, this file is host to client settings.
 
 Update this value to ensure that your client is supplied with the correct chain ID.
 
-For the Union Testnet, this value should be `"union-testnet-3"`.
+For the Union Testnet, this value should be `"union-testnet-4"`.
 
 ```toml
 # The network chain ID
-chain-id = "union-testnet-3"
+chain-id = "union-testnet-4"
 ```
 
 ### Host/Port for the Tendermint RPC
@@ -36,7 +36,7 @@ node = "tcp://0.0.0.0:26657"
 
 :::caution
 
-You should ensure this device is protected from DDoS attacks with a service such as Cloudflare's proxies.
+You should ensure this device is protected from attacks with a service such as Cloudflare's proxies.
 
 :::
 
@@ -103,11 +103,24 @@ If you've configured a domain name for your node, this is the place to inform yo
 external_address = "example.com:26656"
 ```
 
+### Seeds
+
+Located in the `p2p` TOML group under the "P2P Configuration Options" section.
+
+Seed nodes help orchistrate initial connections to the network. For union-testnet-4, the seed nodes are:
+```toml
+seeds = "[COMING SOON]"
+```
+
 ### Seed Mode
 
 Located in the `p2p` TOML group under the "P2P Configuration Options" section.
 
 If you'd like to be a seed node, be sure to set this to `true`.
+
+:::caution
+If you plan for your node to be a validator, it should not also be a seed node.
+:::
 
 ```toml
 # Seed mode, in which node constantly crawls the network and looks for
