@@ -4,17 +4,17 @@
       "chain_type": "evm",
       "preset_base": "minimal",
       "ibc_handler_address": "0x8cb2c592deea63822ce8b24654337cf2d57905d3",
-      "signer": {
+      "signers": [{
         "raw": "0x227bfab7b601429981d3fbffb1b7625fb13464965cd4368ae48090c8d44b417e"
-      },
+      }],
       "eth_rpc_api": "wss://eth-sepolia.g.alchemy.com/v2/Xn_VBUDyUtXUYb9O6b5ZmuBNDaSlH-BB",
       "eth_beacon_rpc_api": "https://sepolia.cryptware.io"
     },
     "union-testnet": {
       "chain_type": "union",
-      "signer": {
+      "signers": [{
         "raw": "0xaa820fa947beb242032a41b6dc9a8b9c37d8f5fbcda0966b1ec80335b10a7d6f"
-      },
+      }],
       "fee_denom": "muno",
       "ws_url": "wss://rpc.0xc0dejug.uno/websocket",
       "prover_endpoint": "https://prover.cryptware.io:443",
@@ -26,6 +26,10 @@
     "hasura": {
       "url": "https://graphql.union.build/v1/graphql",
       "secret": "3N5Mt2f4Y1AC7dE663AsGqRy66yiHBuZ3RMgUjM6X4Q3Ma8G2jihgfchsdasdsadasda"
+    },
+    "num_workers": 1,
+    "queue": {
+      "type": "in-memory"
     }
   }
 }
