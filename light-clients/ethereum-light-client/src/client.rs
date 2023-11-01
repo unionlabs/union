@@ -457,7 +457,7 @@ fn is_client_expired(
 
 #[cfg(test)]
 mod test {
-    use std::marker::PhantomData;
+    use std::{fs, marker::PhantomData, path};
 
     use cosmwasm_std::{
         testing::{mock_env, MockApi, MockQuerier, MockQuerierCustomHandlerResult, MockStorage},
@@ -469,7 +469,7 @@ mod test {
     use prost::Message;
     use unionlabs::{
         bls::BlsPublicKey,
-        ethereum_consts_traits::{Mainnet, Minimal},
+        ethereum_consts_traits::Mainnet,
         ibc::{
             core::commitment::merkle_root::MerkleRoot,
             lightclients::{cometbls, ethereum},
@@ -546,12 +546,25 @@ mod test {
         revision_height: 3577184,
     };
 
-    const UPDATES_DIR_PATH: &str = "test/updates/";
+    lazy_static::lazy_static! {
+        static ref UPDATE_FILES: Vec<path::PathBuf> = {
+            let mut update_files = vec![];
+            for entry in fs::read_dir(UPDATES_DIR_PATH).unwrap() {
+                let entry = entry.unwrap();
+                let path = entry.path();
+                if path.file_name().is_some() {
+                    update_files.push(path);
+                }
+            }
 
-    fn setup() {}
+            update_files.sort();
+            update_files
+        };
+    }
+
+    const UPDATES_DIR_PATH: &str = "src/test/updates/";
 
     #[test]
-    #[ignore = "broken test data"]
     fn query_status_returns_active() {
         let mut deps = OwnedDeps::<_, _, _, CustomQuery> {
             storage: MockStorage::default(),
@@ -560,20 +573,17 @@ mod test {
             custom_query_type: PhantomData,
         };
 
-        let wasm_client_state =
+        let wasm_client_state: WasmClientState =
             serde_json::from_str(include_str!("./test/client_state.json")).unwrap();
 
-        let wasm_consensus_state =
+        let wasm_consensus_state: WasmConsensusState =
             serde_json::from_str(include_str!("./test/consensus_state.json")).unwrap();
 
-        save_client_state(
-            deps.as_mut(),
-            WasmClientState::try_from_proto(dbg!(wasm_client_state)).unwrap(),
-        );
+        save_client_state(deps.as_mut(), wasm_client_state);
 
         save_consensus_state(
             deps.as_mut(),
-            WasmConsensusState::try_from_proto(wasm_consensus_state).unwrap(),
+            wasm_consensus_state,
             &INITIAL_CONSENSUS_STATE_HEIGHT,
         );
 
@@ -587,7 +597,6 @@ mod test {
     }
 
     #[test]
-    #[ignore = "broken test data"]
     fn query_status_returns_frozen() {
         let mut deps = OwnedDeps::<_, _, _, CustomQuery> {
             storage: MockStorage::default(),
@@ -596,10 +605,8 @@ mod test {
             custom_query_type: PhantomData,
         };
 
-        let mut wasm_client_state = <WasmClientState>::try_from_proto(
-            serde_json::from_str(include_str!("./test/client_state.json")).unwrap(),
-        )
-        .unwrap();
+        let mut wasm_client_state: WasmClientState =
+            serde_json::from_str(include_str!("./test/client_state.json")).unwrap();
 
         wasm_client_state.data.frozen_height = Some(Height {
             revision_number: 1,
@@ -615,7 +622,6 @@ mod test {
     }
 
     #[test]
-    #[ignore = "broken test data"]
     fn query_status_returns_expired() {
         let mut deps = OwnedDeps::<_, _, _, CustomQuery> {
             storage: MockStorage::default(),
@@ -624,10 +630,8 @@ mod test {
             custom_query_type: PhantomData,
         };
 
-        let mut wasm_client_state = <WasmClientState>::try_from_proto(
-            serde_json::from_str(include_str!("./test/client_state.json")).unwrap(),
-        )
-        .unwrap();
+        let mut wasm_client_state: WasmClientState =
+            serde_json::from_str(include_str!("./test/client_state.json")).unwrap();
 
         save_client_state(deps.as_mut(), wasm_client_state.clone());
 
@@ -637,10 +641,8 @@ mod test {
             Ok(Status::Expired.into())
         );
 
-        let wasm_consensus_state = <WasmConsensusState>::try_from_proto(
-            serde_json::from_str(include_str!("./test/consensus_state.json")).unwrap(),
-        )
-        .unwrap();
+        let wasm_consensus_state: WasmConsensusState =
+            serde_json::from_str(include_str!("./test/consensus_state.json")).unwrap();
 
         save_consensus_state(
             deps.as_mut(),
@@ -691,18 +693,10 @@ mod test {
             &INITIAL_CONSENSUS_STATE_HEIGHT,
         );
 
-        let updates: &[ethereum::header::Header<Mainnet>] = &[
-            serde_json::from_str(include_str!("./test/updates/finality_update-3577216.json"))
-                .unwrap(),
-            serde_json::from_str(include_str!("./test/updates/finality_update-3577248.json"))
-                .unwrap(),
-            serde_json::from_str(include_str!("./test/updates/finality_update-3577280.json"))
-                .unwrap(),
-            serde_json::from_str(include_str!("./test/updates/finality_update-3577284.json"))
-                .unwrap(),
-            serde_json::from_str(include_str!("./test/updates/finality_update-3577312.json"))
-                .unwrap(),
-        ];
+        let updates: Vec<ethereum::header::Header<Mainnet>> = (*UPDATE_FILES)
+            .iter()
+            .map(|f| serde_json::from_str(&fs::read_to_string(f).unwrap()).unwrap())
+            .collect::<Vec<_>>();
 
         for update in updates {
             let mut env = mock_env();
@@ -812,83 +806,76 @@ mod test {
         }
     }
 
-    // #[allow(clippy::type_complexity)]
-    // fn prepare_test_data() -> (
-    //     OwnedDeps<MockStorage, MockApi, MockQuerier<CustomQuery>, CustomQuery>,
-    //     ethereum::header::Header<Minimal>,
-    //     Env,
-    // ) {
-    //     let mut deps = OwnedDeps::<_, _, _, CustomQuery> {
-    //         storage: MockStorage::default(),
-    //         api: MockApi::default(),
-    //         querier: MockQuerier::<CustomQuery>::new(&[]).with_custom_handler(custom_query_handler),
-    //         custom_query_type: PhantomData,
-    //     };
+    #[allow(clippy::type_complexity)]
+    fn prepare_test_data() -> (
+        OwnedDeps<MockStorage, MockApi, MockQuerier<CustomQuery>, CustomQuery>,
+        ethereum::header::Header<Mainnet>,
+        Env,
+    ) {
+        let mut deps = OwnedDeps::<_, _, _, CustomQuery> {
+            storage: MockStorage::default(),
+            api: MockApi::default(),
+            querier: MockQuerier::<CustomQuery>::new(&[]).with_custom_handler(custom_query_handler),
+            custom_query_type: PhantomData,
+        };
 
-    //     let wasm_client_state: protos::ibc::lightclients::wasm::v1::ClientState =
-    //         serde_json::from_str(include_str!("./test/client_state.json")).unwrap();
+        let wasm_client_state: WasmClientState =
+            serde_json::from_str(include_str!("./test/client_state.json")).unwrap();
 
-    //     let wasm_consensus_state: protos::ibc::lightclients::wasm::v1::ConsensusState =
-    //         serde_json::from_str(include_str!("./test/consensus_state.json")).unwrap();
+        let wasm_consensus_state: WasmConsensusState =
+            serde_json::from_str(include_str!("./test/consensus_state.json")).unwrap();
 
-    //     save_client_state(
-    //         deps.as_mut(),
-    //         <WasmClientState>::try_from_proto(wasm_client_state).unwrap(),
-    //     );
-    //     save_consensus_state(
-    //         deps.as_mut(),
-    //         <WasmConsensusState>::try_from_proto(wasm_consensus_state.clone()).unwrap(),
-    //         &INITIAL_CONSENSUS_STATE_HEIGHT,
-    //     );
+        save_client_state(deps.as_mut(), wasm_client_state);
+        save_consensus_state(
+            deps.as_mut(),
+            wasm_consensus_state.clone(),
+            &INITIAL_CONSENSUS_STATE_HEIGHT,
+        );
 
-    //     let update =
-    //         serde_json::from_str::<protos::union::ibc::lightclients::ethereum::v1::Header>(
-    //             include_str!("./test/sync_committee_update_1.json"),
-    //         )
-    //         .unwrap();
+        let update = serde_json::from_str::<ethereum::header::Header<Mainnet>>(
+            &fs::read_to_string(&*UPDATE_FILES[0]).unwrap(),
+        )
+        .unwrap();
 
-    //     let mut env = mock_env();
-    //     env.block.time =
-    //         cosmwasm_std::Timestamp::from_seconds(wasm_consensus_state.timestamp + 60 * 5);
+        let mut env = mock_env();
+        env.block.time =
+            cosmwasm_std::Timestamp::from_seconds(wasm_consensus_state.timestamp + 60 * 5);
 
-    //     (deps, update.try_into().unwrap(), env)
-    // }
+        (deps, update, env)
+    }
 
-    // #[test]
-    // #[ignore = "broken test data"]
-    // fn verify_header_fails_when_sync_committee_aggregate_pubkey_is_incorrect() {
-    //     let (deps, mut update, env) = prepare_test_data();
+    #[test]
+    fn verify_header_fails_when_sync_committee_aggregate_pubkey_is_incorrect() {
+        let (deps, mut update, env) = prepare_test_data();
 
-    //     let mut pubkey = update
-    //         .trusted_sync_committee
-    //         .sync_committee
-    //         .get()
-    //         .aggregate_pubkey
-    //         .clone();
-    //     pubkey.0[0] += 1;
-    //     update
-    //         .trusted_sync_committee
-    //         .sync_committee
-    //         .get_mut()
-    //         .aggregate_pubkey = pubkey;
-    //     assert!(EthereumLightClient::verify_header(deps.as_ref(), env, update).is_err());
-    // }
+        let mut pubkey = update
+            .trusted_sync_committee
+            .sync_committee
+            .get()
+            .aggregate_pubkey
+            .clone();
+        pubkey.0[0] += 1;
+        update
+            .trusted_sync_committee
+            .sync_committee
+            .get_mut()
+            .aggregate_pubkey = pubkey;
+        assert!(EthereumLightClient::verify_header(deps.as_ref(), env, update).is_err());
+    }
 
-    // #[test]
-    // #[ignore = "broken test data"]
-    // fn verify_header_fails_when_finalized_header_execution_branch_merkle_is_invalid() {
-    //     let (deps, mut update, env) = prepare_test_data();
-    //     update.consensus_update.finalized_header.execution_branch[0].0[0] += 1;
-    //     assert!(EthereumLightClient::verify_header(deps.as_ref(), env, update).is_err());
-    // }
+    #[test]
+    fn verify_header_fails_when_finalized_header_execution_branch_merkle_is_invalid() {
+        let (deps, mut update, env) = prepare_test_data();
+        update.consensus_update.finalized_header.execution_branch[0].0[0] += 1;
+        assert!(EthereumLightClient::verify_header(deps.as_ref(), env, update).is_err());
+    }
 
-    // #[test]
-    // #[ignore = "broken test data"]
-    // fn verify_header_fails_when_finality_branch_merkle_is_invalid() {
-    //     let (deps, mut update, env) = prepare_test_data();
-    //     update.consensus_update.finality_branch[0].0[0] += 1;
-    //     assert!(EthereumLightClient::verify_header(deps.as_ref(), env, update).is_err());
-    // }
+    #[test]
+    fn verify_header_fails_when_finality_branch_merkle_is_invalid() {
+        let (deps, mut update, env) = prepare_test_data();
+        update.consensus_update.finality_branch[0].0[0] += 1;
+        assert!(EthereumLightClient::verify_header(deps.as_ref(), env, update).is_err());
+    }
 
     // TODO: the proof is no longer valid as we removed `trust_level` from the type
     // #[test]
@@ -927,9 +914,9 @@ mod test {
     //     };
 
     //     do_verify_membership(
-    //         ClientStatePath::new(
-    //             &ClientId::new(ClientType::new(ETHEREUM_CLIENT_ID_PREFIX.into()), 0).unwrap(),
-    //         )
+    //         ClientStatePath {
+    //             client_id: ClientId::new("10-ethereum-0".into()).unwrap(),
+    //         }
     //         .to_string(),
     //         storage_root,
     //         3,
@@ -1147,28 +1134,27 @@ mod test {
         );
     }
 
-    // #[test]
-    // #[ignore = "broken test data"]
-    // fn update_state_on_misbehaviour_works() {
-    //     let (mut deps, header, env) = prepare_test_data();
+    #[test]
+    fn update_state_on_misbehaviour_works() {
+        let (mut deps, header, env) = prepare_test_data();
 
-    //     EthereumLightClient::update_state_on_misbehaviour(
-    //         deps.as_mut(),
-    //         env.clone(),
-    //         ics008_wasm_client::ClientMessage::Header(
-    //             protos::ibc::lightclients::wasm::v1::Header {
-    //                 data: header.into_proto_bytes(),
-    //                 height: None,
-    //             },
-    //         ),
-    //     )
-    //     .unwrap();
+        EthereumLightClient::update_state_on_misbehaviour(
+            deps.as_mut(),
+            env.clone(),
+            ics008_wasm_client::ClientMessage::Header(
+                protos::ibc::lightclients::wasm::v1::Header {
+                    data: header.into_proto_bytes(),
+                    height: None,
+                },
+            ),
+        )
+        .unwrap();
 
-    //     assert_eq!(
-    //         EthereumLightClient::status(deps.as_ref(), &env)
-    //             .unwrap()
-    //             .status,
-    //         Status::Frozen.to_string()
-    //     );
-    // }
+        assert_eq!(
+            EthereumLightClient::status(deps.as_ref(), &env)
+                .unwrap()
+                .status,
+            Status::Frozen.to_string()
+        );
+    }
 }

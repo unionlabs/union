@@ -31,6 +31,7 @@ unionlabs = { workspace = true, default-features = false }
 [dev-dependencies]
 # ibc = { version = "0.37.0", default-features = false, features = [ "serde" ] }
 unionlabs = { workspace = true, features = ["std"] }
+lazy_static = "1.4.0"
 base64 = "0.21"
 serde_json = "1"
 hex-literal = "0.4.1"
