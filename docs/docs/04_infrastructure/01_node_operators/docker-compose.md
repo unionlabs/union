@@ -8,20 +8,21 @@ This guide assumes you are familiar with running a Union validator. If not, star
 
 ## Configuration
 
-Our base docker-compose.yml is fairly simple:
+Our base `compose.yml` is fairly simple:
 
 ```yaml
-version: "3.5"
-
 services:
   node:
-    image: ghcr.io/unionlabs/uniond:latest
-    volumes: ~/.uniond:/root/.uniond
+    image: ghcr.io/unionlabs/uniond:${UNIOND_VERSION}
+    volumes: 
+        - ~/.union:/.union
     ports:
       - "26657:26657"
+      - "26656:26656"
       - "1317:1317"
       - "9093:9093"
     restart: unless-stopped
+    command: start --home /.union
 ```
 
 Pay special attention to the `volumes` key. Here we map an already initialized `~/.uniond` directory to the `node` service. The `~/.uniond` directory should contain a `config` and `data` directory. To properly set these up, check out the [validator guide](./getting-started#initialization).

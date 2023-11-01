@@ -35,5 +35,6 @@ uniond tx staking create-validator \
   --min-self-delegation "1"
 ```
 
-> **NOTE**
-> If your own node isn't set up to accept RPC request, you can send them to another node such as `https://rpc.wakey.uno:443` via the `--node` option.
+:::note
+If your own node isn't set up to accept RPC request, you can send them to another node such as `https://rpc.wakey.uno:443` via the `--node` option.
+:::

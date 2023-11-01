@@ -13,7 +13,8 @@ This guide assumes you have [Docker](https://www.docker.com/get-started/) correc
 To get the `uniond` Docker image, you can visit [our container on the GitHub Container Registry](https://github.com/unionlabs/union/pkgs/container/uniond), or run the following command:
 
 ```sh
-docker pull ghcr.io/unionlabs/uniond:v0.13.0
+export UNIOND_VERSION='v0.13.0'
+docker pull ghcr.io/unionlabs/uniond:$UNIOND_VERSION
 ```
 
 ## Running uniond
@@ -42,7 +43,7 @@ Now, using the `uniond` Docker image and the folder we just created, we can init
 To do this, we'll be using Docker volumes.
 
 ```sh
-docker run -u $(id -u):$(id -g) -v ~/.union:/.union -it ghcr.io/unionlabs/uniond:v0.13.0 init $MONIKER bn254 --home /.union
+docker run -u $(id -u):$(id -g) -v ~/.union:/.union -it ghcr.io/unionlabs/uniond:$UNIOND_VERSION init $MONIKER bn254 --home /.union
 ```
 *Where `MONIKER` is the preferred moniker you'd like to use on this node.*
 
@@ -89,7 +90,7 @@ A minimal Docker Compose file for `uniond` looks like this:
 ```yaml
 services:
   node:
-    image: ghcr.io/unionlabs/uniond:v0.13.0
+    image: ghcr.io/unionlabs/uniond:${UNIOND_VERSION}
     volumes: 
         - ~/.union:/.union
     ports:
