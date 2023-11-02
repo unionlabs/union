@@ -899,7 +899,14 @@ func New(
 			wasmkeeper.NewWasmSnapshotter(app.CommitMultiStore(), &app.WasmKeeper),
 		)
 		if err != nil {
-			panic(fmt.Errorf("failed to register snapshot extension: %s", err))
+			panic(fmt.Errorf("failed to register wasm snapshot extension: %s", err))
+		}
+
+		err = manager.RegisterExtensions(
+			ibcwasmkeeper.NewWasmSnapshotter(app.CommitMultiStore(), &app.WasmClientKeeper),
+		)
+		if err != nil {
+			panic(fmt.Errorf("failed to register ibc-wasm snapshot extension: %s", err))
 		}
 	}
 

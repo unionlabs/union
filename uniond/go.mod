@@ -208,7 +208,7 @@ replace (
 
 	github.com/cosmos/gogoproto => github.com/cosmos/gogoproto v1.4.10
 
-	github.com/cosmos/ibc-go/v7 => github.com/unionlabs/ibc-go/v7 v7.0.0-20231102132125-a3e288a7a4d4
+	github.com/cosmos/ibc-go/v7 => github.com/unionlabs/ibc-go/v7 v7.0.0-20231103071641-221c1dc64a60
 
 	github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
 

@@ -71,7 +71,9 @@ func (ws *WasmSnapshotter) SnapshotExtension(height uint64, payloadWriter snapsh
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {
-		codeHash := iterator.Key()
+		code := iterator.Value()
+		// TODO: inefficient, should parse the code hash from the iterator.Key() codeIDKey
+		codeHash := generateWasmCodeHash(code)
 		wasmCode, err := ws.keeper.wasmVM.GetCode(codeHash)
 		if err != nil {
 			return err
