@@ -215,14 +215,19 @@ impl LightClientBase for CometblsMainnet {
         port_id: unionlabs::id::PortId,
         at: HeightOf<Self::HostChain>,
     ) -> impl Future<Output = unionlabs::ibc::core::channel::channel::Channel> + '_ {
-        read_ibc_state::<ChainOf<Self::Counterparty>, _, _>(
-            &self.chain,
-            ChannelEndPath {
-                port_id,
-                channel_id,
-            },
-            at.revision_height(),
-        )
+        async move {
+            let execution_block_number = self.chain.execution_height(at).await;
+
+            read_ibc_state::<ChainOf<Self::Counterparty>, _, _>(
+                &self.chain,
+                ChannelEndPath {
+                    port_id,
+                    channel_id,
+                },
+                execution_block_number,
+            )
+            .await
+        }
     }
 
     fn connection(
@@ -236,11 +241,16 @@ impl LightClientBase for CometblsMainnet {
             String,
         >,
     > + '_ {
-        read_ibc_state::<ChainOf<Self::Counterparty>, _, _>(
-            &self.chain,
-            ConnectionPath { connection_id },
-            at.revision_height(),
-        )
+        async move {
+            let execution_block_number = self.chain.execution_height(at).await;
+
+            read_ibc_state::<ChainOf<Self::Counterparty>, _, _>(
+                &self.chain,
+                ConnectionPath { connection_id },
+                execution_block_number,
+            )
+            .await
+        }
     }
 
     fn query_client_state(
@@ -311,14 +321,19 @@ impl LightClientBase for CometblsMinimal {
         port_id: unionlabs::id::PortId,
         at: HeightOf<Self::HostChain>,
     ) -> impl Future<Output = unionlabs::ibc::core::channel::channel::Channel> + '_ {
-        read_ibc_state::<ChainOf<Self::Counterparty>, _, _>(
-            &self.chain,
-            ChannelEndPath {
-                port_id,
-                channel_id,
-            },
-            at.revision_height(),
-        )
+        async move {
+            let execution_block_number = self.chain.execution_height(at).await;
+
+            read_ibc_state::<ChainOf<Self::Counterparty>, _, _>(
+                &self.chain,
+                ChannelEndPath {
+                    port_id,
+                    channel_id,
+                },
+                execution_block_number,
+            )
+            .await
+        }
     }
 
     fn connection(
@@ -332,11 +347,16 @@ impl LightClientBase for CometblsMinimal {
             String,
         >,
     > + '_ {
-        read_ibc_state::<ChainOf<Self::Counterparty>, _, _>(
-            &self.chain,
-            ConnectionPath { connection_id },
-            at.revision_height(),
-        )
+        async move {
+            let execution_block_number = self.chain.execution_height(at).await;
+
+            read_ibc_state::<ChainOf<Self::Counterparty>, _, _>(
+                &self.chain,
+                ConnectionPath { connection_id },
+                execution_block_number,
+            )
+            .await
+        }
     }
 
     fn query_client_state(
