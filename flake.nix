@@ -172,6 +172,8 @@
             args = {
               inherit nixpkgs dbg get-flake;
 
+              writeShellApplicationWithArgs = import ./tools/writeShellApplicationWithArgs.nix { inherit pkgs; };
+
               pkgs = nixpkgs.legacyPackages.${system}.appendOverlays
                 (with inputs; [
                   rust-overlay.overlays.default
