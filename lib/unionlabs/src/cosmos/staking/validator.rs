@@ -8,7 +8,7 @@ use crate::{
         staking::{bond_status::BondStatus, commission::Commission, description::Description},
     },
     errors::{required, MissingField, UnknownEnumVariant},
-    ibc::google::protobuf::timestamp::Timestamp,
+    google::protobuf::timestamp::Timestamp,
     Proto, TryFromProtoErrorOf, TypeUrl,
 };
 

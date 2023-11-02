@@ -9,7 +9,7 @@ use serde::{
 
 use crate::{
     bounded::{BoundedI32, BoundedI64, BoundedIntError},
-    ibc::google::protobuf::duration::{Duration, NANOS_PER_SECOND},
+    google::protobuf::duration::{Duration, NANOS_PER_SECOND},
     Proto, TypeUrl,
 };
 

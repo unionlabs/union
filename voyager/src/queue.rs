@@ -68,8 +68,8 @@ use crate::{
             AggregateFetchCounterpartyStateProof, AggregateMsgAfterUpdate,
             AggregatePacketUpdateClient, AggregateRecvPacket, AggregateUpdateClient,
             AggregateUpdateClientFromClientId, AggregateUpdateClientWithCounterpartyChainId,
-            AggregateWaitForTrustedHeight, ChannelHandshakeEvent,
-            ConsensusStateProofAtLatestHeight, LightClientSpecificAggregate, PacketEvent,
+            AggregateWaitForTrustedHeight, ChannelHandshakeEvent, LightClientSpecificAggregate,
+            PacketEvent,
         },
         data,
         data::{
@@ -1645,16 +1645,6 @@ where
             data,
         )]
         .into(),
-        Aggregate::ConsensusStateProofAtLatestHeight(make_consensus_state_proof) => {
-            [aggregate_data::do_aggregate::<L, _>(
-                Identified {
-                    chain_id,
-                    data: make_consensus_state_proof,
-                },
-                data,
-            )]
-            .into()
-        }
         Aggregate::AggregateMsgAfterUpdate(aggregate) => [aggregate_data::do_aggregate::<L, _>(
             Identified {
                 chain_id,
@@ -2110,45 +2100,6 @@ where
                 client_id: counterparty_client_id,
                 counterparty_client_id: client_id,
                 counterparty_chain_id: this_chain_id,
-            },
-        )
-    }
-}
-
-// TODO: Remove, unused
-impl<L: LightClient> UseAggregate<L> for identified!(ConsensusStateProofAtLatestHeight<L>)
-where
-    identified!(TrustedClientState<L>): IsAggregateData,
-    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L>)>,
-    AggregateReceiver: From<identified!(Aggregate<L>)>,
-{
-    type AggregatedData = HList![identified!(TrustedClientState<L>)];
-
-    fn aggregate(
-        Identified {
-            chain_id: this_chain_id,
-            data: ConsensusStateProofAtLatestHeight { client_id, at },
-        }: Self,
-        hlist_pat![Identified {
-            chain_id: self_chain_id,
-            data: TrustedClientState {
-                fetched_at: _,
-                client_id: latest_trusted_client_state_client_id,
-                trusted_client_state
-            },
-        }]: Self::AggregatedData,
-    ) -> RelayerMsg {
-        assert_eq!(this_chain_id, self_chain_id);
-        assert_eq!(client_id, latest_trusted_client_state_client_id);
-
-        fetch::<L>(
-            this_chain_id,
-            FetchStateProof {
-                at,
-                path: proof::Path::ClientConsensusStatePath(ClientConsensusStatePath {
-                    client_id: client_id.into(),
-                    height: trusted_client_state.height(),
-                }),
             },
         )
     }

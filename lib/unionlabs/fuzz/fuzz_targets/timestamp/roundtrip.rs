@@ -1,7 +1,7 @@
 #![no_main]
 
 use libfuzzer_sys::fuzz_target;
-use unionlabs::{ibc::google::protobuf::timestamp::Timestamp, test_utils::*};
+use unionlabs::{google::protobuf::timestamp::Timestamp, test_utils::*};
 
 fuzz_target!(|data: Timestamp| {
     assert_proto_roundtrip(&data);

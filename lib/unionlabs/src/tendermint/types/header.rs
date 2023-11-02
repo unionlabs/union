@@ -6,7 +6,7 @@ use crate::{
     bounded::{BoundedI64, BoundedIntError},
     errors::{required, InvalidLength, MissingField},
     ethereum::{Address, H256},
-    ibc::google::protobuf::timestamp::Timestamp,
+    google::protobuf::timestamp::Timestamp,
     tendermint::{types::block_id::BlockId, version::consensus::Consensus},
     Proto, TryFromProtoErrorOf, TypeUrl,
 };

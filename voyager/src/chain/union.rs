@@ -24,12 +24,12 @@ use unionlabs::{
     bounded::BoundedI64,
     ethereum::{Address, H256, H512},
     ethereum_consts_traits::{ChainSpec, Mainnet, Minimal},
+    google::protobuf::{any::Any, timestamp::Timestamp},
     ibc::{
         core::{
             client::{height::Height, msg_update_client::MsgUpdateClient},
             connection::connection_end::ConnectionEnd,
         },
-        google::protobuf::{any::Any, timestamp::Timestamp},
         lightclients::{cometbls, ethereum, wasm},
     },
     id::ClientId,
@@ -411,7 +411,7 @@ where
                             tendermint::block::CommitSig::BlockIdFlagAbsent => CommitSig {
                                 block_id_flag: BlockIdFlag::Absent,
                                 validator_address: Address([0; 20]),
-                                timestamp: unionlabs::ibc::google::protobuf::timestamp::Timestamp {
+                                timestamp: unionlabs::google::protobuf::timestamp::Timestamp {
                                     seconds: 0.try_into().unwrap(),
                                     nanos: 0.try_into().unwrap(),
                                 },

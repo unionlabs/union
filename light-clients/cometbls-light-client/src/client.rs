@@ -7,9 +7,9 @@ use ics008_wasm_client::{
 };
 use prost::Message;
 use unionlabs::{
+    google::protobuf::timestamp::Timestamp,
     ibc::{
         core::{client::height::Height, commitment::merkle_root::MerkleRoot},
-        google::protobuf::timestamp::Timestamp,
         lightclients::cometbls::{
             client_state::ClientState, consensus_state::ConsensusState, header::Header,
         },

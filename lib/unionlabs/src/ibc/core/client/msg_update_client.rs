@@ -1,8 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    ibc::google::protobuf::any::Any, traits, CosmosAccountId, IntoProto, MsgIntoProto, Proto,
-    TypeUrl,
+    google::protobuf::any::Any, traits, CosmosAccountId, IntoProto, MsgIntoProto, Proto, TypeUrl,
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
