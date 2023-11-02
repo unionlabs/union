@@ -210,7 +210,7 @@ impl Context {
                                 }).expect("Tx totally exists, QED");
                                 let mut union_txs = self.union_txs.lock().await;
                                 union_txs.insert(event.packet_sequence, uuid);
-                                self.append_record(Event::create_send_event(uuid.to_string(), self.union.chain_id.clone(), signer.to_string(), Some(timestamp))).await;
+                                self.append_record(Event::create_send_event(self.union.chain_id.clone(), uuid, signer.to_string(), Some(timestamp))).await;
                             }
                             Err(e) => {
                                 event!(Level::ERROR, error = %e, "Union: Failed to submit tx!");
@@ -301,16 +301,17 @@ impl Context {
                     evm_txs.insert(send.sequence, uuid);
 
                     self.append_record(Event::create_send_event(
-                        uuid.to_string(),
-                        self.union.chain_id.clone(),
+                        self.evm.chain_id().to_string(),
+                        uuid,
                         wallet.address().to_string(),
                         Some(timestamp),
                     ))
                     .await;
                     event!(
                         Level::INFO,
-                        "Eth: Transaction {} was submitted!",
-                        e.packet_sequence
+                        "Eth: Transaction {}/{} was submitted!",
+                        e.packet_sequence,
+                        send.sequence
                     );
                     break;
                 }
@@ -337,18 +338,20 @@ impl Context {
                     }
                     IbcEvent::RecvPacket(e) => {
                         event!(Level::INFO, "Union: RecvPacket observed!");
-                        let union_txs = self.union_txs.lock().await;
-                        let uuid = match union_txs.get(&e.packet_sequence) {
+                        let evm_txs = self.evm_txs.lock().await;
+                        let uuid = match evm_txs.get(&e.packet_sequence) {
                             Some(uuid) => uuid.to_owned(),
-                            None => uuid::Uuid::new_v4(),
+                            None => {
+                                event!(
+                                    Level::WARN,
+                                    "Union: no matching uuid for packet sequence: {}",
+                                    e.packet_sequence
+                                );
+                                uuid::Uuid::new_v4()
+                            }
                         };
-                        self.append_record(Event::create_recv_event(
-                            uuid.to_string(),
-                            event.chain_id,
-                            e,
-                            None,
-                        ))
-                        .await;
+                        self.append_record(Event::create_recv_event(event.chain_id, uuid, e, None))
+                            .await;
                     }
                     _ => {
                         event!(Level::DEBUG, "Union: Untracked event observed.")
@@ -386,11 +389,14 @@ impl Context {
                         let union_txs = self.union_txs.lock().await;
                         let uuid = match union_txs.get(&e.packet_sequence) {
                             Some(uuid) => uuid.to_owned(),
-                            None => uuid::Uuid::new_v4(),
+                            None => {
+                                event!(Level::WARN, "Union: no matching uuid for packet sequence.");
+                                uuid::Uuid::new_v4()
+                            }
                         };
                         self.append_record(Event::create_recv_event(
-                            uuid.to_string(),
                             event.chain_id.to_string(),
+                            uuid,
                             e.clone(),
                             Some(timestamp),
                         ))

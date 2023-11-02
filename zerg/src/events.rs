@@ -2,6 +2,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use ucs01_relay_api::types::Ucs01TransferPacket;
 use unionlabs::events::{RecvPacket, SendPacket};
+use uuid::Uuid;
 
 /// A timestamped event originating from `chain_id`.
 pub struct TimedEvent {
@@ -38,7 +39,7 @@ pub enum EventType {
 pub struct Event {
     pub sender: String,
     pub stamped_event: EventType,
-    pub uuid: String,
+    pub uuid: Uuid,
 }
 
 impl Event {
@@ -47,8 +48,8 @@ impl Event {
     /// Constructs a unique ID from packet information in the form of:
     /// `<src_port>/<src_channel>/<sequence>`
     pub fn create_send_event(
-        uuid: String,
         chain_id: String,
+        uuid: Uuid,
         sender: String,
         execution_timestamp: Option<u64>,
     ) -> Event {
@@ -67,7 +68,7 @@ impl Event {
     /// `<src_port>/<src_channel>/<sequence>`
     pub fn create_recv_event(
         chain_id: String,
-        uuid: String,
+        uuid: Uuid,
         e: RecvPacket,
         execution_timestamp: Option<u64>,
     ) -> Event {

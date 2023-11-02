@@ -17,7 +17,7 @@ pub fn analyze(input: String, output: String) -> HashMap<String, ChannelBenchmar
 
     iter.for_each(|report_maybe| {
         if let Ok(report) = report_maybe {
-            let id = get_channel_id(report.uuid);
+            let id = report.src;
             if report.completed {
                 let execution_duration = report
                     .execution_duration
@@ -110,15 +110,6 @@ pub fn analyze(input: String, output: String) -> HashMap<String, ChannelBenchmar
     benchmarks
 }
 
-fn get_channel_id(uuid: String) -> String {
-    let parts = uuid.split('/');
-    let id = parts.take(2);
-    let id: Vec<&str> = id.collect();
-    let id: Vec<String> = vec![id[0].to_owned(), id[1].to_owned()];
-
-    format!("{}/{}", id[0], id[1])
-}
-
 #[derive(Debug, serde::Serialize, serde::Deserialize, PartialEq, Clone)]
 pub struct Durations {
     pub execution_durations: Vec<u64>,
@@ -159,10 +150,8 @@ fn as_min_sec(duration: u64) -> String {
 
 fn as_to_from(src_id: String) -> String {
     match src_id.as_str() {
-        "wasm.union160fvsl34ngsz8q00q7xsdkmnf3rp8u3720uhh3plykhjs0qv86dq0m83cy/channel-17" => {
-            "Union -> Sepolia".to_string()
-        }
-        "ucs01-relay/channel-0" => "Sepolia -> Union".to_string(),
+        "union-testnet-3" => "Union -> Sepolia".to_string(),
+        "11155111" => "Sepolia -> Union".to_string(),
         _ => format!("From {}", src_id),
     }
 }

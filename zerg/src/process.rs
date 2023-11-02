@@ -21,10 +21,11 @@ enum TransactionState {
 #[derive(Debug, serde::Serialize, serde::Deserialize, PartialEq, Clone)]
 pub struct TransactionReport {
     pub uuid: String,
+    pub src: String,
     pub completed: bool,
-    pub executed_on: Option<u64>,
+    pub executed_at: Option<u64>,
     pub execution_duration: Option<u64>,
-    pub finalized_on: Option<u64>,
+    pub finalized_at: Option<u64>,
     pub finalization_duration: Option<u64>,
 }
 
@@ -60,22 +61,24 @@ pub fn process(input_file_path: String) -> Vec<TransactionReport> {
         .map(|(sent_from, received_on_maybe)| match received_on_maybe {
             Some(received_on) => TransactionReport {
                 uuid: sent_from.uuid,
+                src: sent_from.chain_id,
                 completed: true,
-                executed_on: Some(received_on.execution_timestamp),
+                executed_at: Some(received_on.execution_timestamp),
                 execution_duration: Some(
                     received_on.execution_timestamp - sent_from.execution_timestamp,
                 ),
-                finalized_on: Some(received_on.finalization_timestamp),
+                finalized_at: Some(received_on.finalization_timestamp),
                 finalization_duration: Some(
                     received_on.finalization_timestamp - sent_from.execution_timestamp,
                 ),
             },
             None => TransactionReport {
                 uuid: sent_from.uuid,
+                src: sent_from.chain_id,
                 completed: false,
-                executed_on: None,
+                executed_at: None,
                 execution_duration: None,
-                finalized_on: None,
+                finalized_at: None,
                 finalization_duration: None,
             },
         })
