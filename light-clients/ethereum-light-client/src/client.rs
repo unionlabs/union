@@ -457,14 +457,15 @@ fn is_client_expired(
 
 #[cfg(test)]
 mod test {
-    use std::{fs, marker::PhantomData, path};
+    use std::{cmp::Ordering, fs, marker::PhantomData};
 
     use cosmwasm_std::{
         testing::{mock_env, MockApi, MockQuerier, MockQuerierCustomHandlerResult, MockStorage},
         HexBinary, OwnedDeps, SystemResult, Timestamp,
     };
-    use ethereum_verifier::crypto::{eth_aggregate_public_keys, fast_aggregate_verify};
-    use hex_literal::hex;
+    use ethereum_verifier::crypto::{
+        eth_aggregate_public_keys_unchecked, fast_aggregate_verify_unchecked,
+    };
     use ics008_wasm_client::storage_utils::save_client_state;
     use serde::Deserialize;
     use unionlabs::{
@@ -494,11 +495,11 @@ mod test {
 
     const INITIAL_CONSENSUS_STATE_HEIGHT: Height = Height {
         revision_number: 0,
-        revision_height: 3577184,
+        revision_height: 3577152,
     };
 
     lazy_static::lazy_static! {
-        static ref UPDATE_FILES: Vec<path::PathBuf> = {
+        static ref UPDATES: Vec<ethereum::header::Header<Mainnet>> = {
             let mut update_files = vec![];
             for entry in fs::read_dir(UPDATES_DIR_PATH).unwrap() {
                 let entry = entry.unwrap();
@@ -508,8 +509,28 @@ mod test {
                 }
             }
 
-            update_files.sort();
-            update_files
+            update_files.sort_by(|lhs, rhs| {
+                let lhs = lhs.file_name().unwrap().to_string_lossy().strip_suffix(".json").unwrap().to_string().parse::<u32>().unwrap();
+                let rhs = rhs.file_name().unwrap().to_string_lossy().strip_suffix(".json").unwrap().to_string().parse().unwrap();
+                if lhs > rhs {
+                    Ordering::Greater
+                } else {
+                    Ordering::Less
+                }
+            });
+
+            let mut updates = vec![];
+            let mut prev_height = 0;
+            for f in update_files {
+                let mut data: ethereum::header::Header<Mainnet>= serde_json::from_str(&fs::read_to_string(f).unwrap()).unwrap();
+                if prev_height != 0 {
+                    data.trusted_sync_committee.trusted_height.revision_height = prev_height;
+                }
+                prev_height = data.consensus_update.attested_header.beacon.slot;
+                updates.push(data);
+            }
+
+            updates
         };
     }
 
@@ -644,12 +665,7 @@ mod test {
             &INITIAL_CONSENSUS_STATE_HEIGHT,
         );
 
-        let updates: Vec<ethereum::header::Header<Mainnet>> = (*UPDATE_FILES)
-            .iter()
-            .map(|f| serde_json::from_str(&fs::read_to_string(f).unwrap()).unwrap())
-            .collect::<Vec<_>>();
-
-        for update in updates {
+        for update in &*UPDATES {
             let mut env = mock_env();
             env.block.time = cosmwasm_std::Timestamp::from_seconds(
                 update.consensus_update.attested_header.execution.timestamp + 60 * 5,
@@ -730,7 +746,7 @@ mod test {
                     .map(|pk| pk.0.clone().try_into().unwrap())
                     .collect();
 
-                let res = fast_aggregate_verify(
+                let res = fast_aggregate_verify_unchecked(
                     pubkeys.iter().collect::<Vec<&BlsPublicKey>>().as_slice(),
                     message.as_ref(),
                     &signature.0.clone().try_into().unwrap(),
@@ -741,7 +757,7 @@ mod test {
                 ))
             }
             CustomQuery::Aggregate { public_keys } => {
-                let pubkey = eth_aggregate_public_keys(
+                let pubkey = eth_aggregate_public_keys_unchecked(
                     public_keys
                         .iter()
                         .map(|pk| pk.as_ref().try_into().unwrap())
@@ -783,10 +799,7 @@ mod test {
             &INITIAL_CONSENSUS_STATE_HEIGHT,
         );
 
-        let update = serde_json::from_str::<ethereum::header::Header<Mainnet>>(
-            &fs::read_to_string(&*UPDATE_FILES[0]).unwrap(),
-        )
-        .unwrap();
+        let update = UPDATES[0].clone();
 
         let mut env = mock_env();
         env.block.time =
@@ -942,7 +955,7 @@ mod test {
 
     #[test]
     fn membership_verification_fails_for_incorrect_storage_root() {
-        let (mut proof, commitment_path, slot, mut storage_root, connection_end) =
+        let (proof, commitment_path, slot, mut storage_root, connection_end) =
             membership_data::<ConnectionEnd<ClientId, ClientId>>(
                 "src/test/memberships/valid_connection_end.json",
             );

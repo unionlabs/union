@@ -12,7 +12,7 @@
   "dictionaries": ["en_US", "companies", "softwareTerms", "go", "union"],
   "ignorePaths": [
     "**/*.graphql",
-    "light-clients/ethereum-light-client/src/test/*.json",
+    "light-clients/ethereum-light-client/src/test/**",
     "generated/**",
     "dictionaries/**",
     "**/*.svg",
