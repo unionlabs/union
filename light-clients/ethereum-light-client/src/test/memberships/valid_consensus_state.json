@@ -10,7 +10,7 @@
   ],
   "storage_root": "063c060724381b920ce28a751f2bd11ff52ee6b1033908da37467d7c37171b31",
   "commitment_path": "clients/cometbls-0/consensusStates/3-1045140",
-  "commitments_map_slot": 0, 
+  "commitments_map_slot": 0,
   "expected_data": {
     "type_url": "/ibc.lightclients.wasm.v1.ConsensusState",
     "data": {
