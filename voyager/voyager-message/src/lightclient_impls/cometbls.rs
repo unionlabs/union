@@ -1,21 +1,11 @@
 use std::{collections::VecDeque, fmt::Debug, marker::PhantomData, ops::Div, sync::Arc};
 
 use beacon_api::errors::{InternalServerError, NotFoundError};
-use chain_utils::{
-    evm::{CometblsMiddleware, EthCallExt, Evm, TupleToOption},
-    MaybeRecoverableError,
-};
-use clap::Args;
-use contracts::{
-    ibc_handler::{
-        self, AcknowledgePacketCall, ChannelOpenAckCall, ChannelOpenConfirmCall,
-        ChannelOpenInitCall, ChannelOpenTryCall, ConnectionOpenAckCall, ConnectionOpenConfirmCall,
-        ConnectionOpenInitCall, ConnectionOpenTryCall, CreateClientCall, GetChannelCall,
-        GetClientStateCall, GetConnectionCall, GetConsensusStateCall,
-        GetHashedPacketAcknowledgementCommitmentCall, GetHashedPacketCommitmentCall, IBCHandler,
-        RecvPacketCall, UpdateClientCall,
-    },
-    shared_types::{IbcCoreChannelV1ChannelData, IbcCoreConnectionV1ConnectionEndData},
+use chain_utils::evm::{CometblsMiddleware, Evm};
+use contracts::ibc_handler::{
+    self, AcknowledgePacketCall, ChannelOpenAckCall, ChannelOpenConfirmCall, ChannelOpenInitCall,
+    ChannelOpenTryCall, ConnectionOpenAckCall, ConnectionOpenConfirmCall, ConnectionOpenInitCall,
+    ConnectionOpenTryCall, CreateClientCall, IBCHandler, RecvPacketCall, UpdateClientCall,
 };
 use ethers::{
     abi::AbiEncode,
@@ -27,6 +17,7 @@ use ethers::{
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use frunk::{hlist_pat, HList};
 use futures::Future;
+use lightclient::cometbls::{CometblsConfig, CometblsMainnet, CometblsMinimal};
 use prost::Message;
 use protos::union::ibc::lightclients::ethereum::v1 as ethereum_v1;
 use serde::{Deserialize, Serialize};
@@ -37,15 +28,8 @@ use unionlabs::{
         Address,
     },
     ethereum_consts_traits::{ChainSpec, Mainnet, Minimal},
-    google::protobuf::any::Any,
     ibc::{
-        core::{
-            client::{
-                height::{Height, IsHeight},
-                msg_update_client::MsgUpdateClient,
-            },
-            connection::connection_end::ConnectionEnd,
-        },
+        core::client::{height::Height, msg_update_client::MsgUpdateClient},
         lightclients::{
             ethereum::{
                 self,
@@ -57,55 +41,36 @@ use unionlabs::{
             wasm,
         },
     },
-    id::ClientId,
-    proof::{
-        AcknowledgementPath, ChannelEndPath, ClientConsensusStatePath, ClientStatePath,
-        CommitmentPath, ConnectionPath, IbcPath,
+    traits::{
+        Chain, ChainOf, ClientState, ClientStateOf, ConsensusStateOf, HeaderOf, HeightOf,
+        LightClientBase,
     },
-    traits::{Chain, ClientState},
-    EthAbi, IntoEthAbi, IntoProto, Proto, TryFromProto, TryFromProtoErrorOf,
+    EthAbi, IntoEthAbi, IntoProto, MaybeRecoverableError, Proto,
 };
 
 use crate::{
-    chain::{
-        try_from_relayer_msg,
-        union::{EthereumMainnet, EthereumMinimal},
-        ChainOf, ClientStateOf, ConsensusStateOf, HeaderOf, HeightOf, IbcStateRead, LightClient,
-        LightClientBase, QueryHeight,
+    aggregate::{Aggregate, AnyAggregate, LightClientSpecificAggregate},
+    data,
+    data::{
+        AcknowledgementProof, ChannelEndProof, ClientConsensusStateProof, ClientStateProof,
+        CommitmentProof, ConnectionProof, Data, LightClientSpecificData,
     },
-    msg::{
-        aggregate::{Aggregate, AnyAggregate, LightClientSpecificAggregate},
-        data,
-        data::{
-            AcknowledgementProof, ChannelEndProof, ClientConsensusStateProof, ClientStateProof,
-            CommitmentProof, ConnectionProof, Data, LightClientSpecificData,
-        },
-        fetch,
-        fetch::{
-            Fetch, FetchStateProof, FetchTrustedClientState, FetchUpdateHeaders,
-            LightClientSpecificFetch,
-        },
-        identified,
-        msg::{Msg, MsgUpdateClientData},
-        seq, wait,
-        wait::WaitForTimestamp,
-        AggregateData, AggregateReceiver, AnyLcMsg, AnyLightClientIdentified, DoAggregate,
-        Identified, LcMsg, RelayerMsg,
+    fetch,
+    fetch::{
+        Fetch, FetchStateProof, FetchTrustedClientState, FetchUpdateHeaders,
+        LightClientSpecificFetch,
     },
-    queue::aggregate_data::{do_aggregate, UseAggregate},
+    identified, msg,
+    msg::{Msg, MsgUpdateClientData},
+    seq,
+    use_aggregate::{do_aggregate, UseAggregate},
+    wait,
+    wait::WaitForTimestamp,
+    AggregateData, AggregateReceiver, AnyLcMsg, AnyLightClientIdentified, DoAggregate, Identified,
+    LcMsg, LightClient, RelayerMsg,
 };
 
 pub const EVM_REVISION_NUMBER: u64 = 0;
-
-/// The solidity light client, tracking the state of the 08-wasm light client on union.
-pub struct CometblsMinimal {
-    chain: Evm<Minimal>,
-}
-
-/// The solidity light client, tracking the state of the 08-wasm light client on union.
-pub struct CometblsMainnet {
-    chain: Evm<Mainnet>,
-}
 
 fn encode_dynamic_singleton_tuple(t: impl AbiEncode) -> Vec<u8> {
     U256::from(32)
@@ -113,154 +78,6 @@ fn encode_dynamic_singleton_tuple(t: impl AbiEncode) -> Vec<u8> {
         .into_iter()
         .chain(t.encode())
         .collect::<Vec<_>>()
-}
-
-pub async fn bind_port<C: ChainSpec>(this: &Evm<C>, module_address: Address, port_id: String) {
-    // HACK: This will pop the top item out of the queue, but binding the port requires the contract owner;
-    // this will work as long as the first signer in the list is the owner.
-    this.ibc_handlers
-        .with(|ibc_handler| async move {
-            let bind_port_result = ibc_handler.bind_port(port_id, module_address.into());
-
-            match bind_port_result.send().await {
-                Ok(ok) => {
-                    ok.await.unwrap().unwrap();
-                }
-                Err(why) => eprintln!("{:?}", why.decode_revert::<String>()),
-            };
-        })
-        .await
-}
-
-#[allow(unused_variables)]
-pub async fn setup_initial_channel<C: ChainSpec>(
-    this: &Evm<C>,
-    module_address: Address,
-    channel_id: String,
-    port_id: String,
-    counterparty_port_id: String,
-) {
-    // let signer_middleware = Arc::new(SignerMiddleware::new(
-    //     this.provider.clone(),
-    //     this.wallet.clone(),
-    // ));
-
-    // let ibc_handler = devnet_ownable_ibc_handler::DevnetOwnableIBCHandler::new(
-    //     this.ibc_handler.address(),
-    //     signer_middleware,
-    // );
-
-    // ibc_handler
-    //     .setup_initial_channel(
-    //         "connection-0".into(),
-    //         IbcCoreConnectionV1ConnectionEndData {
-    //             client_id: "cometbls-new-0".into(),
-    //             versions: vec![IbcCoreConnectionV1VersionData {
-    //                 identifier: "1".into(),
-    //                 features: vec!["ORDER_ORDERED".into(), "ORDER_UNORDERED".into()],
-    //             }],
-    //             state: 3,
-    //             counterparty: IbcCoreConnectionV1CounterpartyData {
-    //                 client_id: "08-wasm-0".into(),
-    //                 connection_id: "connection-0".into(),
-    //                 prefix: IbcCoreCommitmentV1MerklePrefixData {
-    //                     key_prefix: b"ibc".to_vec().into(),
-    //                 },
-    //             },
-    //             delay_period: 6,
-    //         },
-    //         port_id,
-    //         channel_id.clone(),
-    //         IbcCoreChannelV1ChannelData {
-    //             state: 3,
-    //             ordering: 1,
-    //             counterparty: IbcCoreChannelV1CounterpartyData {
-    //                 port_id: counterparty_port_id,
-    //                 channel_id,
-    //             },
-    //             connection_hops: vec!["connection-0".into()],
-    //             version: "ics20-1".into(),
-    //         },
-    //         module_address.into(),
-    //     )
-    //     .send()
-    //     .await
-    //     .unwrap()
-    //     .await
-    //     .unwrap()
-    //     .unwrap();
-    todo!()
-}
-
-impl LightClientBase for CometblsMainnet {
-    type HostChain = Evm<Mainnet>;
-    type Counterparty = EthereumMainnet;
-
-    type ClientId = ClientId;
-    type ClientType = String;
-
-    type Config = CometblsConfig;
-
-    fn chain(&self) -> &Self::HostChain {
-        &self.chain
-    }
-
-    fn from_chain(chain: Self::HostChain) -> Self {
-        Self { chain }
-    }
-
-    fn channel(
-        &self,
-        channel_id: unionlabs::id::ChannelId,
-        port_id: unionlabs::id::PortId,
-        at: HeightOf<Self::HostChain>,
-    ) -> impl Future<Output = unionlabs::ibc::core::channel::channel::Channel> + '_ {
-        async move {
-            let execution_block_number = self.chain.execution_height(at).await;
-
-            read_ibc_state::<ChainOf<Self::Counterparty>, _, _>(
-                &self.chain,
-                ChannelEndPath {
-                    port_id,
-                    channel_id,
-                },
-                execution_block_number,
-            )
-            .await
-        }
-    }
-
-    fn connection(
-        &self,
-        connection_id: unionlabs::id::ConnectionId,
-        at: HeightOf<Self::HostChain>,
-    ) -> impl Future<
-        Output = ConnectionEnd<
-            Self::ClientId,
-            <Self::Counterparty as LightClientBase>::ClientId,
-            String,
-        >,
-    > + '_ {
-        async move {
-            let execution_block_number = self.chain.execution_height(at).await;
-
-            read_ibc_state::<ChainOf<Self::Counterparty>, _, _>(
-                &self.chain,
-                ConnectionPath { connection_id },
-                execution_block_number,
-            )
-            .await
-        }
-    }
-
-    fn query_client_state(
-        &self,
-        client_id: <Self::HostChain as Chain>::ClientId,
-        height: HeightOf<Self::HostChain>,
-    ) -> impl Future<Output = ClientStateOf<<Self::Counterparty as LightClientBase>::HostChain>> + '_
-    {
-        query_client_state(&self.chain, client_id, height)
-    }
 }
 
 impl LightClient for CometblsMainnet {
@@ -274,7 +91,7 @@ impl LightClient for CometblsMainnet {
 
     fn proof(&self, msg: FetchStateProof<Self>) -> RelayerMsg {
         fetch(
-            self.chain.chain_id(),
+            self.chain().chain_id(),
             LightClientSpecificFetch::<Self>(CometblsFetchMsg::FetchGetProof(GetProof {
                 path: msg.path,
                 height: msg.at,
@@ -283,89 +100,18 @@ impl LightClient for CometblsMainnet {
     }
 
     fn msg(&self, msg: Msg<Self>) -> impl Future<Output = Result<(), Self::MsgError>> + '_ {
-        self::msg(&self.chain, msg)
+        do_msg(self.chain(), msg)
     }
 
     fn do_fetch(&self, msg: Self::Fetch) -> impl Future<Output = Vec<RelayerMsg>> + '_ {
-        do_fetch::<_, Self>(&self.chain, msg)
+        do_fetch::<_, Self>(self.chain(), msg)
     }
 
     fn generate_counterparty_updates(
         &self,
         update_info: FetchUpdateHeaders<Self>,
     ) -> Vec<RelayerMsg> {
-        generate_counterparty_updates::<_, Self>(&self.chain, update_info)
-    }
-}
-
-impl LightClientBase for CometblsMinimal {
-    type HostChain = Evm<Minimal>;
-    type Counterparty = EthereumMinimal;
-
-    type ClientId = ClientId;
-    type ClientType = String;
-
-    type Config = CometblsConfig;
-
-    fn chain(&self) -> &Self::HostChain {
-        &self.chain
-    }
-
-    fn from_chain(chain: Self::HostChain) -> Self {
-        Self { chain }
-    }
-
-    fn channel(
-        &self,
-        channel_id: unionlabs::id::ChannelId,
-        port_id: unionlabs::id::PortId,
-        at: HeightOf<Self::HostChain>,
-    ) -> impl Future<Output = unionlabs::ibc::core::channel::channel::Channel> + '_ {
-        async move {
-            let execution_block_number = self.chain.execution_height(at).await;
-
-            read_ibc_state::<ChainOf<Self::Counterparty>, _, _>(
-                &self.chain,
-                ChannelEndPath {
-                    port_id,
-                    channel_id,
-                },
-                execution_block_number,
-            )
-            .await
-        }
-    }
-
-    fn connection(
-        &self,
-        connection_id: unionlabs::id::ConnectionId,
-        at: HeightOf<Self::HostChain>,
-    ) -> impl Future<
-        Output = ConnectionEnd<
-            Self::ClientId,
-            <Self::Counterparty as LightClientBase>::ClientId,
-            String,
-        >,
-    > + '_ {
-        async move {
-            let execution_block_number = self.chain.execution_height(at).await;
-
-            read_ibc_state::<ChainOf<Self::Counterparty>, _, _>(
-                &self.chain,
-                ConnectionPath { connection_id },
-                execution_block_number,
-            )
-            .await
-        }
-    }
-
-    fn query_client_state(
-        &self,
-        client_id: <Self::HostChain as Chain>::ClientId,
-        height: HeightOf<Self::HostChain>,
-    ) -> impl Future<Output = ClientStateOf<<Self::Counterparty as LightClientBase>::HostChain>> + '_
-    {
-        query_client_state(&self.chain, client_id, height)
+        generate_counterparty_updates::<_, Self>(self.chain(), update_info)
     }
 }
 
@@ -380,7 +126,7 @@ impl LightClient for CometblsMinimal {
 
     fn proof(&self, msg: FetchStateProof<Self>) -> RelayerMsg {
         fetch(
-            self.chain.chain_id(),
+            self.chain().chain_id(),
             LightClientSpecificFetch::<Self>(CometblsFetchMsg::FetchGetProof(GetProof {
                 path: msg.path,
                 height: msg.at,
@@ -389,42 +135,19 @@ impl LightClient for CometblsMinimal {
     }
 
     fn msg(&self, msg: Msg<Self>) -> impl Future<Output = Result<(), Self::MsgError>> + '_ {
-        self::msg(&self.chain, msg)
+        do_msg(self.chain(), msg)
     }
 
     fn do_fetch(&self, msg: Self::Fetch) -> impl Future<Output = Vec<RelayerMsg>> + '_ {
-        do_fetch::<_, Self>(&self.chain, msg)
+        do_fetch::<_, Self>(self.chain(), msg)
     }
 
     fn generate_counterparty_updates(
         &self,
         update_info: FetchUpdateHeaders<Self>,
     ) -> Vec<RelayerMsg> {
-        generate_counterparty_updates::<_, Self>(&self.chain, update_info)
+        generate_counterparty_updates::<_, Self>(self.chain(), update_info)
     }
-}
-
-async fn read_ibc_state<Counterparty, C, P>(
-    evm: &Evm<C>,
-    p: P,
-    at: u64,
-) -> P::Output
-where
-    Counterparty: Chain,
-    C: ChainSpec,
-    P: IbcPath<Evm<C>, Counterparty>
-        + EthereumStateRead<
-            C,
-            Counterparty,
-            Encoded = <<<P as EthereumStateRead<C, Counterparty>>::EthCall as EthCallExt>::Return as TupleToOption>::Inner,
-        > + 'static,
-    <P::EthCall as EthCallExt>::Return: TupleToOption,
-{
-    evm.read_ibc_state(p.into_eth_call(), at)
-        .await
-        .unwrap()
-        .map(|x| P::decode_ibc_state(x))
-        .unwrap()
 }
 
 fn generate_counterparty_updates<C, L>(
@@ -918,14 +641,6 @@ where
     }
 }
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, Args)]
-pub struct CometblsConfig {
-    #[arg(long)]
-    pub client_type: String,
-    #[arg(long)]
-    pub cometbls_client_address: Address,
-}
-
 // async fn create_update(
 //     &self,
 //     currently_trusted_slot: u64,
@@ -1079,7 +794,7 @@ fn sync_committee_period<H: Into<u64>, C: ChainSpec>(height: H) -> u64 {
     height.into().div(C::PERIOD::U64)
 }
 
-async fn msg<C, L>(evm: &Evm<C>, msg: Msg<L>) -> Result<(), TxSubmitError>
+async fn do_msg<C, L>(evm: &Evm<C>, msg: Msg<L>) -> Result<(), TxSubmitError>
 where
     C: ChainSpec,
     L: LightClient<HostChain = Evm<C>, Config = CometblsConfig>,
@@ -1240,29 +955,6 @@ fn mk_function_call<Call: EthCall>(
     ibc_handler
         .method_hash(<Call as EthCall>::selector(), data)
         .expect("method selector is generated; qed;")
-}
-
-async fn query_client_state<C: ChainSpec>(
-    evm: &Evm<C>,
-    client_id: chain_utils::evm::EvmClientId,
-    height: Height,
-) -> Any<
-    wasm::client_state::ClientState<
-        unionlabs::ibc::lightclients::cometbls::client_state::ClientState,
-    >,
-> {
-    let execution_height = evm.execution_height(height).await;
-
-    let (client_state_bytes, is_found) = evm
-        .readonly_ibc_handler
-        .get_client_state(client_id.to_string())
-        .block(execution_height)
-        .await
-        .unwrap();
-
-    assert!(is_found);
-
-    Any::try_from_proto_bytes(&client_state_bytes).unwrap()
 }
 
 async fn do_fetch<C, L>(evm: &Evm<C>, msg: CometblsFetchMsg<L, C>) -> Vec<RelayerMsg>
@@ -1491,78 +1183,12 @@ where
     [data::<L>(evm.chain_id, LightClientSpecificData::from(msg))].into()
 }
 
-impl<Counterparty, C, P> IbcStateRead<Counterparty, P> for Evm<C>
-where
-    Counterparty: Chain,
-    C: ChainSpec,
-    P: IbcPath<Evm<C>, Counterparty>
-        + EthereumStateRead<
-            C,
-            Counterparty,
-            Encoded = <<<P as EthereumStateRead<C, Counterparty>>::EthCall as EthCallExt>::Return as TupleToOption>::Inner,
-        > + 'static,
-    <P::EthCall as EthCallExt>::Return: TupleToOption,
-{
-    fn state_proof(
-        &self,
-        path: P,
-        at: Height,
-    ) -> impl Future<Output = Vec<u8>> + '_ {
-        async move {
-            let execution_height = self.execution_height(at).await;
-
-            let path = path.to_string();
-
-            let location = keccak256(
-                keccak256(path.as_bytes())
-                    .into_iter()
-                    .chain(U256::from(0).encode())
-                    .collect::<Vec<_>>(),
-            );
-
-            let proof = self
-                .provider
-                .get_proof(
-                    self.readonly_ibc_handler.address(),
-                    vec![location.into()],
-                    Some(execution_height.into()),
-                )
-                .await
-                .unwrap();
-
-            tracing::info!(?proof);
-
-            let proof = match <[_; 1]>::try_from(proof.storage_proof) {
-                Ok([proof]) => proof,
-                Err(invalid) => {
-                    panic!("received invalid response from eth_getProof, expected length of 1 but got `{invalid:#?}`");
-                }
-            };
-
-                ethereum_v1::StorageProof {
-                    proofs: [ethereum_v1::Proof {
-                        key: proof.key.to_fixed_bytes().to_vec(),
-                        // REVIEW(benluelo): Make sure this encoding works
-                        value: proof.value.encode(),
-                        proof: proof
-                            .proof
-                            .into_iter()
-                            .map(|bytes| bytes.to_vec())
-                            .collect(),
-                    }]
-                    .to_vec(),
-                }
-                .encode_to_vec()
-        }
-    }
-}
-
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, serde::Serialize, serde::Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""))]
 pub struct GetProof<C: ChainSpec, L: LightClient<HostChain = Evm<C>>> {
     path: unionlabs::proof::Path<
         <L::HostChain as Chain>::ClientId,
-        <ChainOf<L::Counterparty> as Chain>::Height,
+        HeightOf<ChainOf<L::Counterparty>>,
     >,
     height: <Evm<C> as Chain>::Height,
 }
@@ -1572,136 +1198,6 @@ pub struct GetProof<C: ChainSpec, L: LightClient<HostChain = Evm<C>>> {
 // }
 
 // type _AnyGetProof<C, L> = Path2<L, AnyGetProof<C, L>>;
-
-trait EthereumStateRead<C, Counterparty>: IbcPath<Evm<C>, Counterparty>
-where
-    Counterparty: Chain,
-    C: ChainSpec,
-{
-    /// The type of the encoded state returned from the contract. This may be bytes (see client state)
-    /// or a type (see connection end)
-    /// Since solidity doesn't support generics, it emulates generics by using bytes in interfaces and
-    /// "downcasting" (via parsing) to expected types in implementations.
-    type Encoded;
-
-    type EthCall: EthCallExt + 'static;
-
-    fn into_eth_call(self) -> Self::EthCall;
-
-    fn decode_ibc_state(encoded: Self::Encoded) -> Self::Output;
-}
-
-impl<C: ChainSpec, Counterparty: Chain> EthereumStateRead<C, Counterparty>
-    for ClientStatePath<<Evm<C> as Chain>::ClientId>
-where
-    ClientStateOf<Counterparty>: TryFromProto,
-    TryFromProtoErrorOf<ClientStateOf<Counterparty>>: Debug,
-{
-    type Encoded = Vec<u8>;
-
-    type EthCall = GetClientStateCall;
-
-    fn into_eth_call(self) -> Self::EthCall {
-        Self::EthCall {
-            client_id: self.client_id.to_string(),
-        }
-    }
-
-    fn decode_ibc_state(encoded: Self::Encoded) -> Self::Output {
-        TryFromProto::try_from_proto_bytes(&encoded).unwrap()
-    }
-}
-
-impl<C: ChainSpec, Counterparty: Chain> EthereumStateRead<C, Counterparty>
-    for ClientConsensusStatePath<<Evm<C> as Chain>::ClientId, <Counterparty as Chain>::Height>
-where
-    ConsensusStateOf<Counterparty>: TryFromProto,
-    TryFromProtoErrorOf<ConsensusStateOf<Counterparty>>: Debug,
-{
-    type Encoded = Vec<u8>;
-
-    type EthCall = GetConsensusStateCall;
-
-    fn into_eth_call(self) -> Self::EthCall {
-        Self::EthCall {
-            client_id: self.client_id.to_string(),
-            height: self.height.into_height().into(),
-        }
-    }
-
-    fn decode_ibc_state(encoded: Self::Encoded) -> Self::Output {
-        TryFromProto::try_from_proto_bytes(&encoded).unwrap()
-    }
-}
-
-impl<C: ChainSpec, Counterparty: Chain> EthereumStateRead<C, Counterparty> for ConnectionPath {
-    type Encoded = IbcCoreConnectionV1ConnectionEndData;
-
-    type EthCall = GetConnectionCall;
-
-    fn into_eth_call(self) -> Self::EthCall {
-        Self::EthCall {
-            connection_id: self.connection_id.to_string(),
-        }
-    }
-
-    fn decode_ibc_state(encoded: Self::Encoded) -> Self::Output {
-        encoded.try_into().unwrap()
-    }
-}
-
-impl<C: ChainSpec, Counterparty: Chain> EthereumStateRead<C, Counterparty> for ChannelEndPath {
-    type Encoded = IbcCoreChannelV1ChannelData;
-
-    type EthCall = GetChannelCall;
-
-    fn into_eth_call(self) -> Self::EthCall {
-        Self::EthCall {
-            port_id: self.port_id.to_string(),
-            channel_id: self.channel_id.to_string(),
-        }
-    }
-
-    fn decode_ibc_state(encoded: Self::Encoded) -> Self::Output {
-        encoded.try_into().unwrap()
-    }
-}
-
-impl<C: ChainSpec, Counterparty: Chain> EthereumStateRead<C, Counterparty> for CommitmentPath {
-    type Encoded = [u8; 32];
-
-    type EthCall = GetHashedPacketCommitmentCall;
-
-    fn into_eth_call(self) -> Self::EthCall {
-        Self::EthCall {
-            port_id: self.port_id.to_string(),
-            channel_id: self.channel_id.to_string(),
-            sequence: self.sequence,
-        }
-    }
-
-    fn decode_ibc_state(encoded: Self::Encoded) -> Self::Output {
-        encoded.into()
-    }
-}
-
-impl<C: ChainSpec, Counterparty: Chain> EthereumStateRead<C, Counterparty> for AcknowledgementPath {
-    type Encoded = [u8; 32];
-
-    type EthCall = GetHashedPacketAcknowledgementCommitmentCall;
-
-    fn into_eth_call(self) -> Self::EthCall {
-        Self::EthCall {
-            port_id: self.port_id.to_string(),
-            channel_id: self.channel_id.to_string(),
-            sequence: self.sequence,
-        }
-    }
-
-    fn decode_ibc_state(encoded: Self::Encoded) -> Self::Output {
-        encoded.into()
-    }
-}
 
 // fn decode_log<T: EthLogDecode + Debug>(logs: impl IntoIterator<Item = impl Into<RawLog>>) -> T {
 //     let t = decode_logs::<T>(&logs.into_iter().map(Into::into).collect::<Vec<_>>()).unwrap();
@@ -1819,7 +1315,7 @@ where
                     __marker: PhantomData,
                 },
             ),
-            crate::msg::msg::<L::Counterparty>(
+            msg::<L::Counterparty>(
                 req.counterparty_chain_id,
                 MsgUpdateClientData {
                     msg: MsgUpdateClient {
@@ -1871,9 +1367,9 @@ where
         let trusted_period = sync_committee_period::<_, C>(req.update_from.revision_height);
 
         assert!(
-            trusted_period <= target_period,
-            "trusted period {trusted_period} is behind target period {target_period}, something is wrong!",
-        );
+        trusted_period <= target_period,
+        "trusted period {trusted_period} is behind target period {target_period}, something is wrong!",
+    );
 
         // Eth chain is more than 1 signature period ahead of us. We need to do sync committee
         // updates until we reach the `target_period - 1`.
@@ -2006,7 +1502,7 @@ where
             .chain([fetch::<L>(
                 chain_id,
                 FetchTrustedClientState {
-                    at: QueryHeight::Specific(Height {
+                    at: unionlabs::QueryHeight::Specific(Height {
                         revision_number: EVM_REVISION_NUMBER,
                         revision_height: (!does_not_have_finality_update)
                             .then_some(finality_update_attested_header_slot)

@@ -2,13 +2,14 @@ use std::marker::PhantomData;
 
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use serde::{Deserialize, Serialize};
-use unionlabs::{self, ibc::core::channel::channel::Channel};
+use unionlabs::{
+    self,
+    ibc::core::channel::channel::Channel,
+    traits::{ChainOf, ClientStateOf, ConsensusStateOf, HeaderOf, HeightOf, LightClientBase},
+};
 
 use crate::{
-    chain::{
-        ChainOf, ClientStateOf, ConsensusStateOf, HeaderOf, HeightOf, LightClient, LightClientBase,
-    },
-    msg::{any_enum, fetch::FetchPacketAcknowledgement, identified, AnyLightClientIdentified},
+    any_enum, fetch::FetchPacketAcknowledgement, identified, AnyLightClientIdentified, LightClient,
 };
 
 any_enum! {
@@ -156,13 +157,13 @@ pub struct LightClientSpecificData<L: LightClient>(pub L::Data);
 macro_rules! data_msg {
     ($($Ty:ident,)+) => {
         $(
-            impl<L: LightClient> From<crate::msg::Identified<L, $Ty<L>>> for crate::msg::AggregateData
+            impl<L: LightClient> From<crate::Identified<L, $Ty<L>>> for crate::AggregateData
             where
                 $Ty<L>: Into<Data<L>>,
-                crate::msg::AggregateData: From<identified!(Data<L>)>,
+                crate::AggregateData: From<identified!(Data<L>)>,
             {
-                fn from(crate::msg::Identified { chain_id, data }: identified!($Ty<L>)) -> Self {
-                    Self::from(crate::msg::Identified {
+                fn from(crate::Identified { chain_id, data }: identified!($Ty<L>)) -> Self {
+                    Self::from(crate::Identified {
                         chain_id,
                         data: Data::from(data),
                     })
@@ -170,23 +171,23 @@ macro_rules! data_msg {
             }
 
             impl<L: LightClient> TryFrom<AnyLightClientIdentified<AnyData>>
-                for crate::msg::Identified<L, $Ty<L>>
+                for crate::Identified<L, $Ty<L>>
             where
                 identified!(Data<L>): TryFrom<
-                        crate::msg::AnyLightClientIdentified<AnyData>,
-                        Error = crate::msg::AnyLightClientIdentified<AnyData>,
-                    > + Into<crate::msg::AnyLightClientIdentified<AnyData>>,
+                        crate::AnyLightClientIdentified<AnyData>,
+                        Error = crate::AnyLightClientIdentified<AnyData>,
+                    > + Into<crate::AnyLightClientIdentified<AnyData>>,
             {
                 type Error = AnyLightClientIdentified<AnyData>;
 
-                fn try_from(value: crate::msg::AnyLightClientIdentified<AnyData>) -> Result<Self, Self::Error> {
-                    let crate::msg::Identified { chain_id, data } =
-                        <crate::msg::Identified<L, Data<L>>>::try_from(value)?;
+                fn try_from(value: crate::AnyLightClientIdentified<AnyData>) -> Result<Self, Self::Error> {
+                    let crate::Identified { chain_id, data } =
+                        <crate::Identified<L, Data<L>>>::try_from(value)?;
 
-                    Ok(crate::msg::Identified::new(
+                    Ok(crate::Identified::new(
                         chain_id.clone(),
                         <$Ty<L>>::try_from(data).map_err(|x: Data<L>| {
-                            Into::<AnyLightClientIdentified<_>>::into(crate::msg::Identified::new(chain_id, x))
+                            Into::<AnyLightClientIdentified<_>>::into(crate::Identified::new(chain_id, x))
                         })?,
                     ))
                 }

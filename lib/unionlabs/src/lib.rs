@@ -2,7 +2,10 @@
 #![allow(clippy::missing_errors_doc, clippy::module_name_repetitions)]
 #![feature(return_position_impl_trait_in_trait)]
 
-use std::fmt::{Debug, Display};
+use std::{
+    fmt::{Debug, Display},
+    str::FromStr,
+};
 
 use bip32::{
     secp256k1::{
@@ -12,9 +15,18 @@ use bip32::{
     PrivateKey, PublicKey,
 };
 use prost::Message;
+use serde::{Deserialize, Serialize};
 use sha2::Digest;
 
-use crate::{errors::TryFromBranchError, ethereum::H256, id::Bounded, validated::Validated};
+use crate::{
+    errors::TryFromBranchError,
+    ethereum::H256,
+    ibc::core::client::height::{HeightFromStrError, IsHeight},
+    id::Bounded,
+    validated::Validated,
+};
+
+pub const DELAY_PERIOD: u64 = 0;
 
 /// Wrapper types around protos defined in <https://github.com/cosmos/gogoproto/tree/main/protobuf/google/protobuf>, matching the proto module structure.
 pub mod google;
@@ -45,6 +57,8 @@ pub mod ethereum_consts_traits;
 pub mod bounded;
 
 pub mod proof;
+
+pub mod validated;
 
 pub(crate) mod macros;
 
@@ -443,10 +457,15 @@ pub mod traits {
         ethereum_consts_traits::ChainSpec,
         google::protobuf::any::Any,
         ibc::{
-            core::client::height::{Height, IsHeight},
+            core::{
+                channel::channel::Channel,
+                client::height::{Height, IsHeight},
+                connection::connection_end::ConnectionEnd,
+            },
             lightclients::{cometbls, ethereum, wasm},
         },
-        id::{ChannelId, PortId},
+        id::{ChannelId, ConnectionId, PortId},
+        proof::IbcStateReadPaths,
         validated::{Validate, Validated},
     };
 
@@ -619,6 +638,72 @@ pub mod traits {
                 .unwrap()
         }
     }
+    /// The IBC interface on a [`Chain`] that knows how to connect to a counterparty.
+    pub trait LightClientBase: Send + Sync + Sized {
+        /// The chain that this light client is on.
+        type HostChain: Chain
+            + IbcStateReadPaths<<Self::Counterparty as LightClientBase>::HostChain>;
+        type Counterparty: LightClientBase<Counterparty = Self>;
+
+        type ClientId: Id
+            + TryFrom<<Self::HostChain as Chain>::ClientId>
+            + Into<<Self::HostChain as Chain>::ClientId>;
+        type ClientType: Display
+            + FromStr
+            + Debug
+            + Clone
+            + PartialEq
+            + Serialize
+            + for<'de> Deserialize<'de>
+            + Send
+            + Sync
+            + TryFrom<<Self::HostChain as Chain>::ClientType>
+            + Into<<Self::HostChain as Chain>::ClientType>
+            + 'static;
+
+        /// The config required to construct this light client.
+        type Config: Debug + Clone + PartialEq + Serialize + for<'de> Deserialize<'de>;
+
+        /// Get the underlying [`Self::HostChain`] that this client is on.
+        fn chain(&self) -> &Self::HostChain;
+
+        fn from_chain(chain: Self::HostChain) -> Self;
+
+        fn channel(
+            &self,
+            channel_id: ChannelId,
+            port_id: PortId,
+            at: HeightOf<Self::HostChain>,
+        ) -> impl Future<Output = Channel> + '_;
+
+        fn connection(
+            &self,
+            connection_id: ConnectionId,
+            at: HeightOf<Self::HostChain>,
+        ) -> impl Future<
+            Output = ConnectionEnd<
+                Self::ClientId,
+                <Self::Counterparty as LightClientBase>::ClientId,
+                String,
+            >,
+        > + '_;
+
+        // TODO: Use state_proof instead
+        fn query_client_state(
+            &self,
+            // TODO: Make this Into<_>
+            client_id: <Self::HostChain as Chain>::ClientId,
+            height: HeightOf<Self::HostChain>,
+        ) -> impl Future<Output = ClientStateOf<<Self::Counterparty as LightClientBase>::HostChain>> + '_;
+    }
+
+    pub type ClientStateOf<C> = <C as Chain>::SelfClientState;
+    pub type ConsensusStateOf<C> = <C as Chain>::SelfConsensusState;
+    pub type HeaderOf<C> = <C as Chain>::Header;
+    pub type HeightOf<C> = <C as Chain>::Height;
+    pub type ChainOf<L> = <L as LightClientBase>::HostChain;
+    pub type ChainIdOf<L> =
+        <<<L as LightClientBase>::HostChain as Chain>::SelfClientState as ClientState>::ChainId;
 }
 
 /// An empty string. Will only parse/serialize to/from `""`.
@@ -680,203 +765,53 @@ impl TryFrom<&[u8]> for WasmClientType {
     }
 }
 
-pub mod validated {
-    use std::{
-        fmt::{Debug, Display},
-        marker::PhantomData,
-        str::FromStr,
-    };
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(
+    try_from = "&str",
+    into = "String",
+    bound(serialize = "", deserialize = "")
+)]
+pub enum QueryHeight<H: IsHeight> {
+    Latest,
+    Specific(H),
+}
 
-    use either::Either;
-    use serde::{Deserialize, Serialize};
-
-    #[derive(Serialize, Deserialize)]
-    #[serde(
-        transparent,
-        bound(serialize = "T: Serialize", deserialize = "T: for<'d> Deserialize<'d>")
-    )]
-    pub struct Validated<T, V: Validate<T>>(T, #[serde(skip)] PhantomData<fn() -> V>);
-
-    pub trait ValidateT: Sized {
-        fn validate<V: Validate<Self>>(self) -> Result<Validated<Self, V>, V::Error> {
-            Validated::new(self)
-        }
-    }
-
-    impl<T> ValidateT for T {}
-
-    impl<T: Debug, V: Validate<T>> Debug for Validated<T, V> {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            f.debug_tuple("Validated").field(&self.0).finish()
-        }
-    }
-
-    impl<T: Display, V: Validate<T>> Display for Validated<T, V> {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            write!(f, "{}", self.0)
-        }
-    }
-
-    impl<T: FromStr, V: Validate<T>> FromStr for Validated<T, V> {
-        type Err = Either<T::Err, V::Error>;
-
-        fn from_str(s: &str) -> Result<Self, Self::Err> {
-            Validated::new(s.parse().map_err(Either::Left)?).map_err(Either::Right)
-        }
-    }
-
-    impl<T: Clone, V: Validate<T>> Clone for Validated<T, V> {
-        fn clone(&self) -> Self {
-            Self(self.0.clone(), PhantomData)
-        }
-    }
-
-    impl<T: PartialEq, V: Validate<T>> PartialEq for Validated<T, V> {
-        fn eq(&self, other: &Self) -> bool {
-            self.0.eq(&other.0)
-        }
-    }
-
-    impl<T, V: Validate<T>> Validated<T, V> {
-        pub fn new(t: T) -> Result<Self, V::Error> {
-            V::validate(t).map(|ok| Validated(ok, PhantomData))
-        }
-
-        pub fn value(self) -> T {
-            self.0
-        }
-
-        pub fn mutate<U>(
-            self,
-            f: impl FnOnce(T) -> U,
-        ) -> Result<Validated<U, V>, <V as Validate<U>>::Error>
-        where
-            V: Validate<U>,
-        {
-            Validated::new(f(self.0))
-        }
-    }
-
-    pub trait Validate<T>: Sized {
-        type Error;
-
-        fn validate(t: T) -> Result<T, Self::Error>;
-    }
-
-    impl<T, V1: Validate<T>, V2: Validate<T>> Validate<T> for (V1, V2) {
-        type Error = Either<V1::Error, V2::Error>;
-
-        fn validate(t: T) -> Result<T, Self::Error> {
-            match V1::validate(t).map(|t| V2::validate(t)) {
-                Ok(Ok(t)) => Ok(t),
-                Ok(Err(e)) => Err(Either::Right(e)),
-                Err(e) => Err(Either::Left(e)),
-            }
-        }
-    }
-
-    impl<T> Validate<T> for () {
-        type Error = ();
-
-        fn validate(t: T) -> Result<T, Self::Error> {
-            Ok(t)
-        }
-    }
-
-    #[cfg(test)]
-    mod tests {
-        use super::*;
-
-        #[test]
-        fn validate() {
-            #[derive(Debug, PartialEq)]
-            struct NonZero;
-            #[derive(Debug, PartialEq)]
-            struct NonMax;
-            #[derive(Debug, PartialEq)]
-            struct NotEight;
-
-            impl Validate<u8> for NonZero {
-                type Error = Self;
-
-                fn validate(t: u8) -> Result<u8, Self::Error> {
-                    if t == 0 {
-                        Err(NonZero)
-                    } else {
-                        Ok(t)
-                    }
-                }
-            }
-
-            impl Validate<u8> for NonMax {
-                type Error = Self;
-
-                fn validate(t: u8) -> Result<u8, Self::Error> {
-                    if t == u8::MAX {
-                        Err(NonMax)
-                    } else {
-                        Ok(t)
-                    }
-                }
-            }
-
-            impl Validate<u8> for NotEight {
-                type Error = Self;
-
-                fn validate(t: u8) -> Result<u8, Self::Error> {
-                    if t == 8 {
-                        Err(NotEight)
-                    } else {
-                        Ok(t)
-                    }
-                }
-            }
-
-            assert_eq!(Validated::<_, NonZero>::new(0), Err(NonZero));
-
-            assert_eq!(
-                Validated::<_, (NonZero, ())>::new(0),
-                Err(Either::Left(NonZero))
-            );
-
-            assert_eq!(
-                Validated::<_, (NonZero, NonMax)>::new(0),
-                Err(Either::Left(NonZero))
-            );
-
-            assert_eq!(
-                Validated::<_, (NonZero, NonMax)>::new(u8::MAX),
-                Err(Either::Right(NonMax))
-            );
-
-            assert_eq!(
-                Validated::<_, (NonZero, NonMax)>::new(8),
-                Ok(Validated(8, PhantomData))
-            );
-
-            assert_eq!(
-                Validated::<_, (NonZero, (NonMax, NotEight))>::new(8),
-                Err(Either::Right(Either::Right(NotEight)))
-            );
-
-            assert_eq!(
-                Validated::<_, (NotEight, (NonMax, NonZero))>::new(8),
-                Err(Either::Left(NotEight))
-            );
-
-            assert_eq!(
-                Validated::<_, (NotEight, (NonMax, NonZero))>::new(7)
-                    .unwrap()
-                    .mutate(|t| t + 1),
-                Err(Either::Left(NotEight))
-            );
-
-            assert_eq!(
-                Validated::<_, (NotEight, (NonMax, NonZero))>::new(7)
-                    .unwrap()
-                    .mutate(|t| t + 2),
-                Ok(Validated(9, PhantomData))
-            );
+impl<H: IsHeight> Display for QueryHeight<H> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            QueryHeight::Latest => f.write_str("latest"),
+            QueryHeight::Specific(height) => f.write_fmt(format_args!("{height}")),
         }
     }
 }
+
+impl<H: IsHeight> From<QueryHeight<H>> for String {
+    fn from(val: QueryHeight<H>) -> Self {
+        val.to_string()
+    }
+}
+
+impl<H: IsHeight> FromStr for QueryHeight<H> {
+    type Err = HeightFromStrError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "latest" => Ok(Self::Latest),
+            _ => s.parse().map(Self::Specific),
+        }
+    }
+}
+
+impl<H: IsHeight> TryFrom<&'_ str> for QueryHeight<H> {
+    type Error = HeightFromStrError;
+
+    fn try_from(value: &'_ str) -> Result<Self, Self::Error> {
+        value.parse()
+    }
+}
+
+pub trait MaybeRecoverableError: std::error::Error {
+    fn is_recoverable(&self) -> bool;
+}
+
+fn _is_object_safe(_: &dyn MaybeRecoverableError) {}

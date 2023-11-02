@@ -11,11 +11,12 @@ use ethers::{
 use reqwest::Url;
 use unionlabs::{
     ibc::core::client::height::Height,
-    proof::{self, ClientConsensusStatePath, ClientStatePath},
-    traits::Chain,
+    proof::{
+        self, ClientConsensusStatePath, ClientStatePath, IbcPath, IbcStateRead, IbcStateReadPaths,
+    },
+    traits::{Chain, HeightOf},
+    QueryHeight,
 };
-
-use crate::chain::{proof::IbcStateReadPaths, HeightOf, QueryHeight};
 
 #[derive(Debug, Parser)]
 #[command(arg_required_else_help = true)]
@@ -68,30 +69,61 @@ pub async fn any_state_proof_to_json<Counterparty: Chain, This: IbcStateReadPath
         QueryHeight::Specific(height) => height,
     };
 
+    async fn state_proof<
+        Counterparty: Chain,
+        This: IbcStateRead<Counterparty, P>,
+        P: IbcPath<This, Counterparty>,
+    >(
+        path: P,
+        c: This,
+        height: HeightOf<This>,
+    ) -> StateProof<Counterparty, This, P> {
+        StateProof {
+            state: c.state(path.clone(), height).await,
+            proof: c.proof(path, height).await,
+            height,
+        }
+    }
+
+    #[derive(Debug, serde::Serialize)]
+    #[serde(bound(serialize = ""))]
+    struct StateProof<
+        Counterparty: Chain,
+        This: IbcStateRead<Counterparty, P>,
+        P: IbcPath<This, Counterparty>,
+    > {
+        state: P::Output,
+        #[serde(with = "::serde_utils::hex_string")]
+        proof: Vec<u8>,
+        height: HeightOf<This>,
+    }
+
     match path {
         proof::Path::ClientStatePath(path) => json(
-            &c.state_proof(
+            &state_proof(
                 ClientStatePath {
                     client_id: path.client_id.parse().unwrap(),
                 },
+                c,
                 height,
             )
             .await,
         ),
         proof::Path::ClientConsensusStatePath(path) => json(
-            &c.state_proof(
+            &state_proof(
                 ClientConsensusStatePath {
                     client_id: path.client_id.parse().unwrap(),
                     height: path.height.into(),
                 },
+                c,
                 height,
             )
             .await,
         ),
-        proof::Path::ConnectionPath(path) => json(&c.state_proof(path, height).await),
-        proof::Path::ChannelEndPath(path) => json(&c.state_proof(path, height).await),
-        proof::Path::CommitmentPath(path) => json(&c.state_proof(path, height).await),
-        proof::Path::AcknowledgementPath(path) => json(&c.state_proof(path, height).await),
+        proof::Path::ConnectionPath(path) => json(&state_proof(path, c, height).await),
+        proof::Path::ChannelEndPath(path) => json(&state_proof(path, c, height).await),
+        proof::Path::CommitmentPath(path) => json(&state_proof(path, c, height).await),
+        proof::Path::AcknowledgementPath(path) => json(&state_proof(path, c, height).await),
     }
     .unwrap()
 }

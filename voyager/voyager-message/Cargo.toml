@@ -1,0 +1,36 @@
+[package]
+name = "voyager-message"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+serde = { version = "1.0.173", features = ["derive"] }
+frame-support-procedural = "18.0.0"
+unionlabs = { workspace = true, features = ["ethabi"] }
+serde-utils.workspace = true
+lightclient.workspace = true
+derive_more = "0.99.17"
+chain-utils.workspace = true
+frunk = "0.4.2"
+futures = "0.3.28"
+num-bigint = "0.4"
+prost = "0.11.0"
+protos = { workspace = true, features = ["proto_full", "client"] }
+tendermint = { workspace = true }
+tendermint-proto = { workspace = true }
+tendermint-rpc = { workspace = true, features = ["http-client", "websocket-client"] }
+tonic = { version = "0.9", features = ["transport","tls","tls-roots","tls-webpki-roots"] }
+tracing = "0.1.40"
+beacon-api = { workspace = true, default-features = false }
+contracts = { workspace = true }
+typenum = "1.16.0"
+ethers = { workspace = true, features = ["rustls", "ws"] }
+thiserror = "1.0.50"
+serde_json = "1.0.108"
+tokio = { version = "1.33.0", default-features = false, features = ["time"] }
+
+[dev-dependencies]
+hex-literal = "0.4.1"
+serde_json = "1.0.108"
