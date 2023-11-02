@@ -59,9 +59,9 @@ First, set some environment variables, which are used throughout initialization.
 
 ```sh
 export CHAIN_ID=union-testnet-4 # or union-1
-export MONIKER="Unionized Goblin" # Only for example
-export KEY_NAME=alice # Only for example
-export GENESIS_URL="https://raw.githubusercontent.com/unionlabs/union/e1f9a3e3b84a8c39faf7046931159eda3e95fdb2/networks/genesis/union-testnet-3/genesis.json"
+export MONIKER="Unionized Goblin"
+export KEY_NAME=alice
+export GENESIS_URL="[Coming Soon]"
 ```
 
 Then we'll have `uniond` initialize our data and configuration directories. By default, `/User/{USER}/.uniond` is used.
@@ -84,7 +84,7 @@ seeds = "[COMING SOON]"
 
 ### Genesis Configuration
 
-Download the [`genesis.json`](https://raw.githubusercontent.com/unionlabs/union/e1f9a3e3b84a8c39faf7046931159eda3e95fdb2/networks/genesis/union-testnet-3/genesis.json) and copy it to your `uniond` home directory.
+Download the `genesis.json` and copy it to your `uniond` home directory.
 
 ```sh
 curl $GENESIS_URL > ~/.union/config/genesis.json

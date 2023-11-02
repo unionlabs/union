@@ -4,13 +4,13 @@ title: "Obtaining the Union Testnet Binary"
 
 Currently, we are only officially supporting running the Union Testnet binary (`uniond`) as a Docker container.
 
-You are welcome to try other means of running the binary. If you succeed in running a node outside a Docker container, please let us know about it in our [Discord](https://discord.gg/union-build).
+It is possible to run the `uniond` binary outside of containers, however, we aren't directly supplying bare-metal binaries at this time.
 
-This guide assumes you have [Docker](https://www.docker.com/get-started/) correctly installed and configured for your system. We provide `uniond` images for Linux on both x86_64 (amd64) and aarch64 (arm64).
+This guide assumes you have [Docker](https://www.docker.com/get-started/) correctly installed and configured on your system. We provide `uniond` images for Linux on both x86_64 (amd64) and aarch64 (arm64).
 
 ## Getting the Docker Image
 
-To get the `uniond` Docker image, you can visit [our container on the GitHub Container Registry](https://github.com/unionlabs/union/pkgs/container/uniond), or run the following command:
+To get the `uniond` image, you can visit [our container on the GitHub Container Registry](https://github.com/unionlabs/union/pkgs/container/uniond), or run the following command:
 
 ```sh
 export UNIOND_VERSION='v0.13.0'
@@ -21,7 +21,7 @@ docker pull ghcr.io/unionlabs/uniond:$UNIOND_VERSION
 
 ### Creating a Chain Config & State Folder
 
-Before running this Docker image, we'll want to create a folder to host the chain configuration and state.
+Before running this image, we need to create a folder to host the chain configuration and state.
 
 You can create this wherever you would like, but we'll be doing so in our current user's home directory.
 
@@ -37,7 +37,7 @@ mkdir ~/.union
 
 ### Initializing the Chain Config & State Folder
 
-Now, using the `uniond` Docker image and the folder we just created, we can initialize the contents of this folder.
+Now, using the `uniond` image and the folder we just created, we can initialize the contents of this folder.
 
 To do this, we'll be using Docker volumes.
 
@@ -51,7 +51,7 @@ _Where `MONIKER` is the preferred moniker you'd like to use on this node._
 
 Note the usage of the flags and arguments we pass to `docker run` run here:
 
-- `-u $(id -u):(id -g)` ensures that the Docker container is being created and ran with the current user and their permissions
+- `-u $(id -u):(id -g)` ensures that the container is being created and ran with the current user and their permissions
 - `-v ~/.union:/.union` mounts the folder we created to the `/.union` folder of the container
 - `-it` ensures we are running the container interactively
 
@@ -87,7 +87,7 @@ This will enable you to issue `uniond` sub-commands with such as `uniond keys ad
 
 ### Starting the Node
 
-To run a node using `uniond`, you'll also need to expose ports to the Docker container. We'll use this as an opportunity to create a Docker Compose file four `uniond`.
+To run a node using `uniond`, you'll also need to expose ports to the container. We'll use this as an opportunity to create a Docker Compose file four `uniond`.
 
 A minimal Docker Compose file for `uniond` looks like this:
 

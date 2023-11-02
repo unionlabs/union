@@ -34,12 +34,6 @@ This will default to `"tcp://localhost:26657"`, setting this to `"tcp://0.0.0.0:
 node = "tcp://0.0.0.0:26657"
 ```
 
-:::caution
-
-You should ensure this device is protected from attacks with a service such as Cloudflare's proxies.
-
-:::
-
 ## App Configuration
 
 Located in `config/app.toml`, this file is host to app settings.
@@ -77,7 +71,7 @@ Located in `config/config.toml`, this file is host to many settings.
 
 ### P2P Listening Address
 
-Located in the `p2p` TOML group under the "P2P Configuration Options" section.
+Located in the `p2p` TOML table under the "P2P Configuration Options" section.
 
 You'll want to ensure your node is configured to accept p2p connections. To do so, set this value to the appropriate address.
 
@@ -90,7 +84,7 @@ laddr = "tcp://0.0.0.0:26656"
 
 ### External Address
 
-Located in the `p2p` TOML group under the "P2P Configuration Options" section.
+Located in the `p2p` TOML table under the "P2P Configuration Options" section.
 
 If you've configured a domain name for your node, this is the place to inform your node of it.
 
@@ -105,7 +99,7 @@ external_address = "example.com:26656"
 
 ### Seeds
 
-Located in the `p2p` TOML group under the "P2P Configuration Options" section.
+Located in the `p2p` TOML table under the "P2P Configuration Options" section.
 
 Seed nodes help orchestrate initial connections to the network. For union-testnet-4, the seed nodes are:
 
@@ -115,7 +109,7 @@ seeds = "[COMING SOON]"
 
 ### Seed Mode
 
-Located in the `p2p` TOML group under the "P2P Configuration Options" section.
+Located in the `p2p` TOML table under the "P2P Configuration Options" section.
 
 If you'd like to be a seed node, be sure to set this to `true`.
 
