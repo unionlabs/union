@@ -40,10 +40,10 @@ import (
 
 type proverServer struct {
 	UnimplementedUnionProverAPIServer
-	cs cs_bn254.R1CS
-	pk backend_bn254.ProvingKey
-	vk backend_bn254.VerifyingKey
-	proving    atomic.Bool
+	cs      cs_bn254.R1CS
+	pk      backend_bn254.ProvingKey
+	vk      backend_bn254.VerifyingKey
+	proving atomic.Bool
 }
 
 func (*proverServer) mustEmbedUnimplementedUnionProverAPIServer() {}
