@@ -485,7 +485,12 @@ func New(
 		groupConfig,
 	)
 
-	app.WasmClientKeeper = ibcwasmkeeper.NewKeeper(appCodec, keys[ibcwasmtypes.StoreKey], &unioncustomquery.UnionCustomQueryHandler{}, ibcwasmtypes.DefaultWasmConfig(homePath))
+	app.WasmClientKeeper = ibcwasmkeeper.NewKeeper(
+		appCodec,
+		keys[ibcwasmtypes.StoreKey],
+		&unioncustomquery.UnionCustomQueryHandler{},
+		ibcwasmtypes.DefaultWasmConfig(homePath),
+	)
 
 	app.UpgradeKeeper = upgradekeeper.NewKeeper(
 		skipUpgradeHeights,
