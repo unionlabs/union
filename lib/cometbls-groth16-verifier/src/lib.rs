@@ -497,11 +497,7 @@ where
                 .expect("impossible"),
         )?;
         Ok(Self {
-            proof: Proof {
-                a: a.into(),
-                b: b.into(),
-                c: c.into(),
-            },
+            proof: Proof { a, b, c },
             commitment_hash,
             proof_commitment,
             _marker: PhantomData,
