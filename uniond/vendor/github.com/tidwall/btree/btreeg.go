@@ -601,19 +601,30 @@ func (tr *BTreeG[T]) nodeRebalance(n *node[T], i int) {
 // Pass nil for pivot to scan all item in ascending order
 // Return false to stop iterating
 func (tr *BTreeG[T]) Ascend(pivot T, iter func(item T) bool) {
-	tr.ascend(pivot, iter, false)
+	tr.ascend(pivot, iter, false, nil)
 }
 func (tr *BTreeG[T]) AscendMut(pivot T, iter func(item T) bool) {
-	tr.ascend(pivot, iter, true)
+	tr.ascend(pivot, iter, true, nil)
 }
-func (tr *BTreeG[T]) ascend(pivot T, iter func(item T) bool, mut bool) {
+func (tr *BTreeG[T]) ascend(pivot T, iter func(item T) bool, mut bool,
+	hint *PathHint,
+) {
 	if tr.lock(mut) {
 		defer tr.unlock(mut)
 	}
 	if tr.root == nil {
 		return
 	}
-	tr.nodeAscend(&tr.root, pivot, nil, 0, iter, mut)
+	tr.nodeAscend(&tr.root, pivot, hint, 0, iter, mut)
+}
+func (tr *BTreeG[T]) AscendHint(pivot T, iter func(item T) bool, hint *PathHint,
+) {
+	tr.ascend(pivot, iter, false, hint)
+}
+func (tr *BTreeG[T]) AscendHintMut(pivot T, iter func(item T) bool,
+	hint *PathHint,
+) {
+	tr.ascend(pivot, iter, true, hint)
 }
 
 // The return value of this function determines whether we should keep iterating
@@ -693,19 +704,32 @@ func (tr *BTreeG[T]) nodeReverse(cn **node[T], iter func(item T) bool, mut bool,
 // Pass nil for pivot to scan all item in descending order
 // Return false to stop iterating
 func (tr *BTreeG[T]) Descend(pivot T, iter func(item T) bool) {
-	tr.descend(pivot, iter, false)
+	tr.descend(pivot, iter, false, nil)
 }
 func (tr *BTreeG[T]) DescendMut(pivot T, iter func(item T) bool) {
-	tr.descend(pivot, iter, true)
+	tr.descend(pivot, iter, true, nil)
 }
-func (tr *BTreeG[T]) descend(pivot T, iter func(item T) bool, mut bool) {
+func (tr *BTreeG[T]) descend(pivot T, iter func(item T) bool, mut bool,
+	hint *PathHint,
+) {
 	if tr.lock(mut) {
 		defer tr.unlock(mut)
 	}
 	if tr.root == nil {
 		return
 	}
-	tr.nodeDescend(&tr.root, pivot, nil, 0, iter, mut)
+	tr.nodeDescend(&tr.root, pivot, hint, 0, iter, mut)
+}
+
+func (tr *BTreeG[T]) DescendHint(pivot T, iter func(item T) bool,
+	hint *PathHint,
+) {
+	tr.descend(pivot, iter, false, hint)
+}
+func (tr *BTreeG[T]) DescendHintMut(pivot T, iter func(item T) bool,
+	hint *PathHint,
+) {
+	tr.descend(pivot, iter, true, hint)
 }
 
 func (tr *BTreeG[T]) nodeDescend(cn **node[T], pivot T, hint *PathHint,
@@ -1104,6 +1128,7 @@ type IterG[T any] struct {
 	seeked  bool
 	atstart bool
 	atend   bool
+	stack0  [4]iterStackItemG[T]
 	stack   []iterStackItemG[T]
 	item    T
 }
@@ -1128,12 +1153,21 @@ func (tr *BTreeG[T]) iter(mut bool) IterG[T] {
 	iter.tr = tr
 	iter.mut = mut
 	iter.locked = tr.lock(iter.mut)
+	iter.stack = iter.stack0[:0]
 	return iter
 }
 
 // Seek to item greater-or-equal-to key.
 // Returns false if there was no item found.
 func (iter *IterG[T]) Seek(key T) bool {
+	return iter.seek(key, nil)
+}
+
+func (iter *IterG[T]) SeekHint(key T, hint *PathHint) bool {
+	return iter.seek(key, hint)
+}
+
+func (iter *IterG[T]) seek(key T, hint *PathHint) bool {
 	if iter.tr == nil {
 		return false
 	}
@@ -1143,8 +1177,9 @@ func (iter *IterG[T]) Seek(key T) bool {
 		return false
 	}
 	n := iter.tr.isoLoad(&iter.tr.root, iter.mut)
+	var depth int
 	for {
-		i, found := iter.tr.find(n, key, nil, 0)
+		i, found := iter.tr.find(n, key, hint, depth)
 		iter.stack = append(iter.stack, iterStackItemG[T]{n, i})
 		if found {
 			iter.item = n.items[i]
@@ -1155,6 +1190,7 @@ func (iter *IterG[T]) Seek(key T) bool {
 			return iter.Next()
 		}
 		n = iter.tr.isoLoad(&(*n.children)[i], iter.mut)
+		depth++
 	}
 }
 

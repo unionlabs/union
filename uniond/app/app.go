@@ -477,10 +477,6 @@ func New(
 	)
 
 	groupConfig := group.DefaultConfig()
-	/*
-		Example of setting group params:
-		groupConfig.MaxMetadataLen = 1000
-	*/
 	app.GroupKeeper = groupkeeper.NewKeeper(
 		keys[group.StoreKey],
 		appCodec,
@@ -489,7 +485,7 @@ func New(
 		groupConfig,
 	)
 
-	app.WasmClientKeeper = ibcwasmkeeper.NewKeeper(appCodec, keys[ibcwasmtypes.StoreKey], &unioncustomquery.UnionCustomQueryHandler{})
+	app.WasmClientKeeper = ibcwasmkeeper.NewKeeper(appCodec, keys[ibcwasmtypes.StoreKey], &unioncustomquery.UnionCustomQueryHandler{}, ibcwasmtypes.DefaultWasmConfig(homePath))
 
 	app.UpgradeKeeper = upgradekeeper.NewKeeper(
 		skipUpgradeHeights,

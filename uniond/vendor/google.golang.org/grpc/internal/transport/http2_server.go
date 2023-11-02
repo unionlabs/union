@@ -165,7 +165,7 @@ func NewServerTransport(conn net.Conn, config *ServerConfig) (_ ServerTransport,
 	if config.MaxHeaderListSize != nil {
 		maxHeaderListSize = *config.MaxHeaderListSize
 	}
-	framer := newFramer(conn, writeBufSize, readBufSize, maxHeaderListSize)
+	framer := newFramer(conn, writeBufSize, readBufSize, config.SharedWriteBuffer, maxHeaderListSize)
 	// Send initial settings as connection preface to client.
 	isettings := []http2.Setting{{
 		ID:  http2.SettingMaxFrameSize,
@@ -855,7 +855,7 @@ func (t *http2Server) handleSettings(f *http2.SettingsFrame) {
 		}
 		return nil
 	})
-	t.controlBuf.executeAndPut(func(interface{}) bool {
+	t.controlBuf.executeAndPut(func(any) bool {
 		for _, f := range updateFuncs {
 			f()
 		}
@@ -939,7 +939,7 @@ func appendHeaderFieldsFromMD(headerFields []hpack.HeaderField, md metadata.MD) 
 	return headerFields
 }
 
-func (t *http2Server) checkForHeaderListSize(it interface{}) bool {
+func (t *http2Server) checkForHeaderListSize(it any) bool {
 	if t.maxSendHeaderListSize == nil {
 		return true
 	}

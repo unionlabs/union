@@ -289,7 +289,7 @@ func (p *Pusher) push(ctx context.Context, method string) error {
 		}
 		if err := enc.Encode(mf); err != nil {
 			return fmt.Errorf(
-				"failed to encode metric familty %s, error is %w",
+				"failed to encode metric family %s, error is %w",
 				mf.GetName(), err)
 		}
 	}

@@ -49,7 +49,7 @@ type asmState struct {
 	buf       []byte          // care must be taken to ensure cap(buf) is a multiple of rate
 	rate      int             // equivalent to block size
 	storage   [3072]byte      // underlying storage for buf
-	outputLen int             // output length if fixed, 0 if not
+	outputLen int             // output length for full security
 	function  code            // KIMD/KLMD function code
 	state     spongeDirection // whether the sponge is absorbing or squeezing
 }
@@ -72,8 +72,10 @@ func newAsmState(function code) *asmState {
 		s.outputLen = 64
 	case shake_128:
 		s.rate = 168
+		s.outputLen = 32
 	case shake_256:
 		s.rate = 136
+		s.outputLen = 64
 	default:
 		panic("sha3: unrecognized function code")
 	}
@@ -108,7 +110,7 @@ func (s *asmState) resetBuf() {
 // It never returns an error.
 func (s *asmState) Write(b []byte) (int, error) {
 	if s.state != spongeAbsorbing {
-		panic("sha3: write to sponge after read")
+		panic("sha3: Write after Read")
 	}
 	length := len(b)
 	for len(b) > 0 {
@@ -192,8 +194,8 @@ func (s *asmState) Read(out []byte) (n int, err error) {
 // Sum appends the current hash to b and returns the resulting slice.
 // It does not change the underlying hash state.
 func (s *asmState) Sum(b []byte) []byte {
-	if s.outputLen == 0 {
-		panic("sha3: cannot call Sum on SHAKE functions")
+	if s.state != spongeAbsorbing {
+		panic("sha3: Sum after Read")
 	}
 
 	// Copy the state to preserve the original.

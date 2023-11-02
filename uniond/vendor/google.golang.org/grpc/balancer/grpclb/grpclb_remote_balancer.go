@@ -113,7 +113,6 @@ func (lb *lbBalancer) refreshSubConns(backendAddrs []resolver.Address, fallback 
 	}
 
 	balancingPolicyChanged := lb.usePickFirst != pickFirst
-	oldUsePickFirst := lb.usePickFirst
 	lb.usePickFirst = pickFirst
 
 	if fallbackModeChanged || balancingPolicyChanged {
@@ -123,13 +122,7 @@ func (lb *lbBalancer) refreshSubConns(backendAddrs []resolver.Address, fallback 
 		// For fallback mode switching with pickfirst, we want to recreate the
 		// SubConn because the creds could be different.
 		for a, sc := range lb.subConns {
-			if oldUsePickFirst {
-				// If old SubConn were created for pickfirst, bypass cache and
-				// remove directly.
-				lb.cc.cc.RemoveSubConn(sc)
-			} else {
-				lb.cc.RemoveSubConn(sc)
-			}
+			sc.Shutdown()
 			delete(lb.subConns, a)
 		}
 	}
@@ -144,16 +137,17 @@ func (lb *lbBalancer) refreshSubConns(backendAddrs []resolver.Address, fallback 
 		}
 		if sc != nil {
 			if len(backendAddrs) == 0 {
-				lb.cc.cc.RemoveSubConn(sc)
+				sc.Shutdown()
 				delete(lb.subConns, scKey)
 				return
 			}
-			lb.cc.cc.UpdateAddresses(sc, backendAddrs)
+			lb.cc.ClientConn.UpdateAddresses(sc, backendAddrs)
 			sc.Connect()
 			return
 		}
+		opts.StateListener = func(scs balancer.SubConnState) { lb.updateSubConnState(sc, scs) }
 		// This bypasses the cc wrapper with SubConn cache.
-		sc, err := lb.cc.cc.NewSubConn(backendAddrs, opts)
+		sc, err := lb.cc.ClientConn.NewSubConn(backendAddrs, opts)
 		if err != nil {
 			logger.Warningf("grpclb: failed to create new SubConn: %v", err)
 			return
@@ -176,6 +170,8 @@ func (lb *lbBalancer) refreshSubConns(backendAddrs []resolver.Address, fallback 
 
 		if _, ok := lb.subConns[addrWithoutAttrs]; !ok {
 			// Use addrWithMD to create the SubConn.
+			var sc balancer.SubConn
+			opts.StateListener = func(scs balancer.SubConnState) { lb.updateSubConnState(sc, scs) }
 			sc, err := lb.cc.NewSubConn([]resolver.Address{addr}, opts)
 			if err != nil {
 				logger.Warningf("grpclb: failed to create new SubConn: %v", err)
@@ -194,7 +190,7 @@ func (lb *lbBalancer) refreshSubConns(backendAddrs []resolver.Address, fallback 
 	for a, sc := range lb.subConns {
 		// a was removed by resolver.
 		if _, ok := addrsSet[a]; !ok {
-			lb.cc.RemoveSubConn(sc)
+			sc.Shutdown()
 			delete(lb.subConns, a)
 			// Keep the state of this sc in b.scStates until sc's state becomes Shutdown.
 			// The entry will be deleted in UpdateSubConnState.
@@ -419,7 +415,7 @@ func (ccw *remoteBalancerCCWrapper) watchRemoteBalancer() {
 			}
 		}
 		// Trigger a re-resolve when the stream errors.
-		ccw.lb.cc.cc.ResolveNow(resolver.ResolveNowOptions{})
+		ccw.lb.cc.ClientConn.ResolveNow(resolver.ResolveNowOptions{})
 
 		ccw.lb.mu.Lock()
 		ccw.lb.remoteBalancerConnected = false
