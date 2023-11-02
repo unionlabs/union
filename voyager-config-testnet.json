@@ -3,7 +3,7 @@
     "ethereum-testnet": {
       "chain_type": "evm",
       "preset_base": "minimal",
-      "ibc_handler_address": "0x8cb2c592deea63822ce8b24654337cf2d57905d3",
+      "ibc_handler_address": "0x971A9631b0a4E0e78954c764C7060e9D95d5cfD6",
       "signers": [
         {
           "raw": "0x227bfab7b601429981d3fbffb1b7625fb13464965cd4368ae48090c8d44b417e"
