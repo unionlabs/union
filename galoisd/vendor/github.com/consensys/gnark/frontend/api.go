@@ -100,7 +100,14 @@ type API interface {
 	// IsZero returns 1 if a is zero, 0 otherwise
 	IsZero(i1 Variable) Variable
 
-	// Cmp returns 1 if i1>i2, 0 if i1=i2, -1 if i1<i2
+	// Cmp returns:
+	//  * 1 if i1>i2,
+	//  * 0 if i1=i2,
+	//  * -1 if i1<i2.
+	//
+	// If the absolute difference between the variables i1 and i2 is known, then
+	// it is more efficient to use the bounded methdods in package
+	// [github.com/consensys/gnark/std/math/bits].
 	Cmp(i1, i2 Variable) Variable
 
 	// ---------------------------------------------------------------------------------------------
@@ -115,7 +122,11 @@ type API interface {
 	// AssertIsBoolean fails if v != 0 ∥ v != 1
 	AssertIsBoolean(i1 Variable)
 
-	// AssertIsLessOrEqual fails if  v > bound
+	// AssertIsLessOrEqual fails if v > bound.
+	//
+	// If the absolute difference between the variables b and bound is known, then
+	// it is more efficient to use the bounded methdods in package
+	// [github.com/consensys/gnark/std/math/bits].
 	AssertIsLessOrEqual(v Variable, bound Variable)
 
 	// Println behaves like fmt.Println but accepts cd.Variable as parameter
@@ -134,4 +145,12 @@ type API interface {
 	// ConstantValue is a shortcut to api.Compiler().ConstantValue()
 	// Deprecated: use api.Compiler().ConstantValue() instead
 	ConstantValue(v Variable) (*big.Int, bool)
+}
+
+// BatchInvert returns a slice of variables containing the inverse of each element in i1
+// This is a temporary API, do not use it in your circuit
+type BatchInverter interface {
+	// BatchInvert returns a slice of variables containing the inverse of each element in i1
+	// This is a temporary API, do not use it in your circuit
+	BatchInvert(i1 []Variable) []Variable
 }

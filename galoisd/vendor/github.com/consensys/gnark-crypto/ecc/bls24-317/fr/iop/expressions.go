@@ -1,4 +1,4 @@
-// Copyright 2020 ConsenSys Software Inc.
+// Copyright 2020 Consensys Software Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,15 +24,17 @@ import (
 )
 
 // Expression represents a multivariate polynomial.
-type Expression func(x ...fr.Element) fr.Element
+type Expression func(i int, x ...fr.Element) fr.Element
 
 // Evaluate evaluates f on each entry of x. The returned value is
 // the vector of evaluations of e on x.
 // The form of the result is form.
+// if r is provided (not nil), it is used as the result vector,
+// that is the memory space for the coefficients of the resulting polynomial.
 // The Size field of the result is the same as the one of x[0].
 // The blindedSize field of the result is the same as Size.
 // The Shift field of the result is 0.
-func Evaluate(f Expression, form Form, x ...*Polynomial) (*Polynomial, error) {
+func Evaluate(f Expression, r []fr.Element, form Form, x ...*Polynomial) (*Polynomial, error) {
 	if len(x) == 0 {
 		return nil, errors.New("need at lest one input")
 	}
@@ -46,8 +48,14 @@ func Evaluate(f Expression, form Form, x ...*Polynomial) (*Polynomial, error) {
 		}
 	}
 
+	// check result len
+	if r == nil {
+		r = make([]fr.Element, n)
+	} else if len(r) != n {
+		return nil, ErrInconsistentSize
+	}
+
 	// result coefficients
-	r := make([]fr.Element, n)
 	idx := func(i int) int {
 		return i
 	}
@@ -64,7 +72,7 @@ func Evaluate(f Expression, form Form, x ...*Polynomial) (*Polynomial, error) {
 			for j := 0; j < m; j++ {
 				vx[j] = x[j].GetCoeff(i)
 			}
-			r[idx(i)] = f(vx...)
+			r[idx(i)] = f(i, vx...)
 		}
 	})
 

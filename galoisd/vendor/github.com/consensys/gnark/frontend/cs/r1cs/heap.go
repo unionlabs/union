@@ -21,7 +21,7 @@ func (h *minHeap) heapify() {
 	}
 }
 
-// push pushes the element x onto the heap.
+// push the element x onto the heap.
 // The complexity is O(log n) where n = len(*h).
 func (h *minHeap) push(x linMeta) {
 	*h = append(*h, x)

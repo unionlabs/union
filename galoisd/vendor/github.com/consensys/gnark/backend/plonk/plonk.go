@@ -52,13 +52,13 @@ import (
 	fr_bw6633 "github.com/consensys/gnark-crypto/ecc/bw6-633/fr"
 	fr_bw6761 "github.com/consensys/gnark-crypto/ecc/bw6-761/fr"
 
-	kzg_bls12377 "github.com/consensys/gnark-crypto/ecc/bls12-377/fr/kzg"
-	kzg_bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381/fr/kzg"
-	kzg_bls24315 "github.com/consensys/gnark-crypto/ecc/bls24-315/fr/kzg"
-	kzg_bls24317 "github.com/consensys/gnark-crypto/ecc/bls24-317/fr/kzg"
-	kzg_bn254 "github.com/consensys/gnark-crypto/ecc/bn254/fr/kzg"
-	kzg_bw6633 "github.com/consensys/gnark-crypto/ecc/bw6-633/fr/kzg"
-	kzg_bw6761 "github.com/consensys/gnark-crypto/ecc/bw6-761/fr/kzg"
+	kzg_bls12377 "github.com/consensys/gnark-crypto/ecc/bls12-377/kzg"
+	kzg_bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381/kzg"
+	kzg_bls24315 "github.com/consensys/gnark-crypto/ecc/bls24-315/kzg"
+	kzg_bls24317 "github.com/consensys/gnark-crypto/ecc/bls24-317/kzg"
+	kzg_bn254 "github.com/consensys/gnark-crypto/ecc/bn254/kzg"
+	kzg_bw6633 "github.com/consensys/gnark-crypto/ecc/bw6-633/kzg"
+	kzg_bw6761 "github.com/consensys/gnark-crypto/ecc/bw6-761/kzg"
 
 	gnarkio "github.com/consensys/gnark/io"
 )
@@ -78,7 +78,8 @@ type Proof interface {
 type ProvingKey interface {
 	io.WriterTo
 	io.ReaderFrom
-	InitKZG(srs kzg.SRS) error
+	gnarkio.WriterRawTo
+	gnarkio.UnsafeReaderFrom
 	VerifyingKey() interface{}
 }
 
@@ -88,29 +89,30 @@ type ProvingKey interface {
 type VerifyingKey interface {
 	io.WriterTo
 	io.ReaderFrom
-	InitKZG(srs kzg.SRS) error
+	gnarkio.WriterRawTo
+	gnarkio.UnsafeReaderFrom
 	NbPublicWitness() int // number of elements expected in the public witness
 	ExportSolidity(w io.Writer) error
 }
 
 // Setup prepares the public data associated to a circuit + public inputs.
-func Setup(ccs constraint.ConstraintSystem, kzgSRS kzg.SRS) (ProvingKey, VerifyingKey, error) {
+func Setup(ccs constraint.ConstraintSystem, kzgSrs kzg.SRS) (ProvingKey, VerifyingKey, error) {
 
 	switch tccs := ccs.(type) {
 	case *cs_bn254.SparseR1CS:
-		return plonk_bn254.Setup(tccs, kzgSRS.(*kzg_bn254.SRS))
+		return plonk_bn254.Setup(tccs, *kzgSrs.(*kzg_bn254.SRS))
 	case *cs_bls12381.SparseR1CS:
-		return plonk_bls12381.Setup(tccs, kzgSRS.(*kzg_bls12381.SRS))
+		return plonk_bls12381.Setup(tccs, *kzgSrs.(*kzg_bls12381.SRS))
 	case *cs_bls12377.SparseR1CS:
-		return plonk_bls12377.Setup(tccs, kzgSRS.(*kzg_bls12377.SRS))
+		return plonk_bls12377.Setup(tccs, *kzgSrs.(*kzg_bls12377.SRS))
 	case *cs_bw6761.SparseR1CS:
-		return plonk_bw6761.Setup(tccs, kzgSRS.(*kzg_bw6761.SRS))
+		return plonk_bw6761.Setup(tccs, *kzgSrs.(*kzg_bw6761.SRS))
 	case *cs_bls24317.SparseR1CS:
-		return plonk_bls24317.Setup(tccs, kzgSRS.(*kzg_bls24317.SRS))
+		return plonk_bls24317.Setup(tccs, *kzgSrs.(*kzg_bls24317.SRS))
 	case *cs_bls24315.SparseR1CS:
-		return plonk_bls24315.Setup(tccs, kzgSRS.(*kzg_bls24315.SRS))
+		return plonk_bls24315.Setup(tccs, *kzgSrs.(*kzg_bls24315.SRS))
 	case *cs_bw6633.SparseR1CS:
-		return plonk_bw6633.Setup(tccs, kzgSRS.(*kzg_bw6633.SRS))
+		return plonk_bw6633.Setup(tccs, *kzgSrs.(*kzg_bw6633.SRS))
 	default:
 		panic("unrecognized SparseR1CS curve type")
 	}

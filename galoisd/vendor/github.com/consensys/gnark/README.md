@@ -122,17 +122,17 @@ If you use `gnark` in your research a citation would be appreciated.
 Please use the following BibTeX to cite the most recent release.
 
 ```bib
-@software{gnark-v0.8.0,
+@software{gnark-v0.9.0,
   author       = {Gautam Botrel and
                   Thomas Piellard and
                   Youssef El Housni and
                   Ivo Kubjas and
                   Arya Tabaie},
-  title        = {ConsenSys/gnark: v0.8.0},
+  title        = {ConsenSys/gnark: v0.9.0},
   month        = feb,
   year         = 2023,
   publisher    = {Zenodo},
-  version      = {v0.8.0},
+  version      = {v0.9.0},
   doi          = {10.5281/zenodo.5819104},
   url          = {https://doi.org/10.5281/zenodo.5819104}
 }

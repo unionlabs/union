@@ -24,6 +24,7 @@ func GetHints() []solver.Hint {
 		MultiplicationHint,
 		RemHint,
 		RightShift,
+		SqrtHint,
 	}
 }
 
@@ -303,4 +304,22 @@ func RightShift(_ *big.Int, inputs []*big.Int, outputs []*big.Int) error {
 	shift := inputs[0].Uint64()
 	outputs[0].Rsh(inputs[1], uint(shift))
 	return nil
+}
+
+// SqrtHint compute square root of the input.
+func SqrtHint(mod *big.Int, inputs []*big.Int, outputs []*big.Int) error {
+	return UnwrapHint(inputs, outputs, func(field *big.Int, inputs, outputs []*big.Int) error {
+		if len(inputs) != 1 {
+			return fmt.Errorf("expecting single input")
+		}
+		if len(outputs) != 1 {
+			return fmt.Errorf("expecting single output")
+		}
+		res := new(big.Int)
+		if res.ModSqrt(inputs[0], field) == nil {
+			return fmt.Errorf("no square root")
+		}
+		outputs[0].Set(res)
+		return nil
+	})
 }

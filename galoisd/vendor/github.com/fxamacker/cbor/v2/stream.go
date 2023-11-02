@@ -4,6 +4,7 @@
 package cbor
 
 import (
+	"bytes"
 	"errors"
 	"io"
 	"reflect"
@@ -26,26 +27,37 @@ func NewDecoder(r io.Reader) *Decoder {
 
 // Decode reads CBOR value and decodes it into the value pointed to by v.
 func (dec *Decoder) Decode(v interface{}) error {
-	if len(dec.buf) == dec.off {
-		if n, err := dec.read(); n == 0 {
-			return err
-		}
+	_, err := dec.readNext()
+	if err != nil {
+		// Return validation error or read error.
+		return err
 	}
 
 	dec.d.reset(dec.buf[dec.off:])
-	err := dec.d.value(v)
+	err = dec.d.value(v)
+
+	// Increment dec.off even if decoding err is not nil because
+	// dec.d.off points to the next CBOR data item if current
+	// CBOR data item is valid but failed to be decoded into v.
+	// This allows next CBOR data item to be decoded in next
+	// call to this function.
 	dec.off += dec.d.off
 	dec.bytesRead += dec.d.off
+
+	return err
+}
+
+// Skip skips to the next CBOR data item (if there is any),
+// otherwise it returns error such as io.EOF, io.UnexpectedEOF, etc.
+func (dec *Decoder) Skip() error {
+	n, err := dec.readNext()
 	if err != nil {
-		if err != io.ErrUnexpectedEOF {
-			return err
-		}
-		// Need to read more data.
-		if n, e := dec.read(); n == 0 {
-			return e
-		}
-		return dec.Decode(v)
+		// Return validation error or read error.
+		return err
 	}
+
+	dec.off += n
+	dec.bytesRead += n
 	return nil
 }
 
@@ -54,6 +66,71 @@ func (dec *Decoder) NumBytesRead() int {
 	return dec.bytesRead
 }
 
+// Buffered returns a reader for data remaining in Decoder's buffer.
+// Returned reader is valid until the next call to Decode or Skip.
+func (dec *Decoder) Buffered() io.Reader {
+	return bytes.NewReader(dec.buf[dec.off:])
+}
+
+// readNext() reads next CBOR data item from Reader to buffer.
+// It returns the size of next CBOR data item.
+// It also returns validation error or read error if any.
+func (dec *Decoder) readNext() (int, error) {
+	var readErr error
+	var validErr error
+
+	for {
+		// Process any unread data in dec.buf.
+		if dec.off < len(dec.buf) {
+			dec.d.reset(dec.buf[dec.off:])
+			off := dec.off // Save offset before data validation
+			validErr = dec.d.wellformed(true)
+			dec.off = off // Restore offset
+
+			if validErr == nil {
+				return dec.d.off, nil
+			}
+
+			if validErr != io.ErrUnexpectedEOF {
+				return 0, validErr
+			}
+
+			// Process last read error on io.ErrUnexpectedEOF.
+			if readErr != nil {
+				if readErr == io.EOF {
+					// current CBOR data item is incomplete.
+					return 0, io.ErrUnexpectedEOF
+				}
+				return 0, readErr
+			}
+		}
+
+		// More data is needed and there was no read error.
+		var n int
+		for n == 0 {
+			n, readErr = dec.read()
+			if n == 0 && readErr != nil {
+				// No more data can be read and read error is encountered.
+				// At this point, validErr is either nil or io.ErrUnexpectedEOF.
+				if readErr == io.EOF {
+					if validErr == io.ErrUnexpectedEOF {
+						// current CBOR data item is incomplete.
+						return 0, io.ErrUnexpectedEOF
+					}
+				}
+				return 0, readErr
+			}
+		}
+
+		// At this point, dec.buf contains new data from last read (n > 0).
+	}
+}
+
+// read() reads data from Reader to buffer.
+// It returns number of bytes read and any read error encountered.
+// Postconditions:
+// - dec.buf contains previously unread data and new data.
+// - dec.off is 0.
 func (dec *Decoder) read() (int, error) {
 	// Grow buf if needed.
 	const minRead = 512
@@ -84,7 +161,6 @@ func (dec *Decoder) overwriteBuf(newBuf []byte) {
 type Encoder struct {
 	w          io.Writer
 	em         *encMode
-	e          *encoderBuffer
 	indefTypes []cborType
 }
 
@@ -111,24 +187,27 @@ func (enc *Encoder) Encode(v interface{}) error {
 		}
 	}
 
-	err := encode(enc.e, enc.em, reflect.ValueOf(v))
+	buf := getEncoderBuffer()
+
+	err := encode(buf, enc.em, reflect.ValueOf(v))
 	if err == nil {
-		_, err = enc.e.WriteTo(enc.w)
+		_, err = enc.w.Write(buf.Bytes())
 	}
-	enc.e.Reset()
+
+	putEncoderBuffer(buf)
 	return err
 }
 
 // StartIndefiniteByteString starts byte string encoding of indefinite length.
 // Subsequent calls of (*Encoder).Encode() encodes definite length byte strings
-// ("chunks") as one continguous string until EndIndefinite is called.
+// ("chunks") as one contiguous string until EndIndefinite is called.
 func (enc *Encoder) StartIndefiniteByteString() error {
 	return enc.startIndefinite(cborTypeByteString)
 }
 
 // StartIndefiniteTextString starts text string encoding of indefinite length.
 // Subsequent calls of (*Encoder).Encode() encodes definite length text strings
-// ("chunks") as one continguous string until EndIndefinite is called.
+// ("chunks") as one contiguous string until EndIndefinite is called.
 func (enc *Encoder) StartIndefiniteTextString() error {
 	return enc.startIndefinite(cborTypeTextString)
 }
@@ -193,7 +272,6 @@ func (m *RawMessage) UnmarshalCBOR(data []byte) error {
 	if m == nil {
 		return errors.New("cbor.RawMessage: UnmarshalCBOR on nil pointer")
 	}
-	*m = make([]byte, len(data))
-	copy(*m, data)
+	*m = append((*m)[0:0], data...)
 	return nil
 }

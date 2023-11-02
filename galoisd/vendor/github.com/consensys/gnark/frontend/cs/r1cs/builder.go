@@ -60,7 +60,9 @@ type builder struct {
 	// map for recording boolean constrained variables (to not constrain them twice)
 	mtBooleans map[uint64][]expr.LinearExpression
 
-	tOne constraint.Coeff
+	tOne        constraint.Element
+	eZero, eOne expr.LinearExpression
+	cZero, cOne constraint.LinearExpression
 
 	// helps merge k sorted linear expressions
 	heap minHeap
@@ -68,6 +70,8 @@ type builder struct {
 	// buffers used to do in place api.MAC
 	mbuf1 expr.LinearExpression
 	mbuf2 expr.LinearExpression
+
+	genericGate constraint.BlueprintID
 }
 
 // initialCapacity has quite some impact on frontend performance, especially on large circuits size
@@ -116,6 +120,14 @@ func newBuilder(field *big.Int, config frontend.CompileConfig) *builder {
 	builder.tOne = builder.cs.One()
 	builder.cs.AddPublicVariable("1")
 
+	builder.genericGate = builder.cs.AddBlueprint(&constraint.BlueprintGenericR1C{})
+
+	builder.eZero = expr.NewLinearExpression(0, constraint.Element{})
+	builder.eOne = expr.NewLinearExpression(0, builder.tOne)
+
+	builder.cOne = constraint.LinearExpression{constraint.Term{VID: 0, CID: constraint.CoeffIdOne}}
+	builder.cZero = constraint.LinearExpression{constraint.Term{VID: 0, CID: constraint.CoeffIdZero}}
+
 	return &builder
 }
 
@@ -140,19 +152,15 @@ func (builder *builder) SecretVariable(f schema.LeafInfo) frontend.Variable {
 
 // cstOne return the one constant
 func (builder *builder) cstOne() expr.LinearExpression {
-	return expr.NewLinearExpression(0, builder.tOne)
+	return builder.eOne
 }
 
 // cstZero return the zero constant
 func (builder *builder) cstZero() expr.LinearExpression {
-	return expr.NewLinearExpression(0, constraint.Coeff{})
+	return builder.eZero
 }
 
-func (builder *builder) isCstZero(c *constraint.Coeff) bool {
-	return c.IsZero()
-}
-
-func (builder *builder) isCstOne(c *constraint.Coeff) bool {
+func (builder *builder) isCstOne(c constraint.Element) bool {
 	return builder.cs.IsOne(c)
 }
 
@@ -189,9 +197,16 @@ func (builder *builder) getLinearExpression(_l interface{}) constraint.LinearExp
 	var L constraint.LinearExpression
 	switch tl := _l.(type) {
 	case expr.LinearExpression:
+		if len(tl) == 1 && tl[0].VID == 0 {
+			if tl[0].Coeff.IsZero() {
+				return builder.cZero
+			} else if tl[0].Coeff == builder.tOne {
+				return builder.cOne
+			}
+		}
 		L = make(constraint.LinearExpression, 0, len(tl))
 		for _, t := range tl {
-			L = append(L, builder.cs.MakeTerm(&t.Coeff, t.VID))
+			L = append(L, builder.cs.MakeTerm(t.Coeff, t.VID))
 		}
 	case constraint.LinearExpression:
 		L = tl
@@ -209,7 +224,7 @@ func (builder *builder) getLinearExpression(_l interface{}) constraint.LinearExp
 // that is not api.AssertIsBoolean. If v is a constant, this is a no-op.
 func (builder *builder) MarkBoolean(v frontend.Variable) {
 	if b, ok := builder.constantValue(v); ok {
-		if !(builder.isCstZero(&b) || builder.isCstOne(&b)) {
+		if !(b.IsZero() || builder.isCstOne(b)) {
 			panic("MarkBoolean called a non-boolean constant")
 		}
 		return
@@ -229,7 +244,7 @@ func (builder *builder) MarkBoolean(v frontend.Variable) {
 // This returns true if the v is a constant and v == 0 || v == 1.
 func (builder *builder) IsBoolean(v frontend.Variable) bool {
 	if b, ok := builder.constantValue(v); ok {
-		return (builder.isCstZero(&b) || builder.isCstOne(&b))
+		return (b.IsZero() || builder.isCstOne(b))
 	}
 	// v is a linear expression
 	l := v.(expr.LinearExpression)
@@ -281,20 +296,20 @@ func (builder *builder) ConstantValue(v frontend.Variable) (*big.Int, bool) {
 	if !ok {
 		return nil, false
 	}
-	return builder.cs.ToBigInt(&coeff), true
+	return builder.cs.ToBigInt(coeff), true
 }
 
-func (builder *builder) constantValue(v frontend.Variable) (constraint.Coeff, bool) {
+func (builder *builder) constantValue(v frontend.Variable) (constraint.Element, bool) {
 	if _v, ok := v.(expr.LinearExpression); ok {
 		assertIsSet(_v)
 
 		if len(_v) != 1 {
 			// TODO @gbotrel this assumes linear expressions of coeff are not possible
 			// and are always reduced to one element. may not always be true?
-			return constraint.Coeff{}, false
+			return constraint.Element{}, false
 		}
 		if !(_v[0].WireID() == 0) { // public ONE WIRE
-			return constraint.Coeff{}, false
+			return constraint.Element{}, false
 		}
 		return _v[0].Coeff, true
 	}
@@ -315,9 +330,9 @@ func (builder *builder) toVariable(input interface{}) expr.LinearExpression {
 	case *expr.LinearExpression:
 		assertIsSet(*t)
 		return *t
-	case constraint.Coeff:
+	case constraint.Element:
 		return expr.NewLinearExpression(0, t)
-	case *constraint.Coeff:
+	case *constraint.Element:
 		return expr.NewLinearExpression(0, *t)
 	default:
 		// try to make it into a constant
@@ -356,6 +371,14 @@ func (builder *builder) toVariables(in ...frontend.Variable) ([]expr.LinearExpre
 // No new constraints are added to the newly created wire and must be added
 // manually in the circuit. Failing to do so leads to solver failure.
 func (builder *builder) NewHint(f solver.Hint, nbOutputs int, inputs ...frontend.Variable) ([]frontend.Variable, error) {
+	return builder.newHint(f, solver.GetHintID(f), nbOutputs, inputs)
+}
+
+func (builder *builder) NewHintForId(id solver.HintID, nbOutputs int, inputs ...frontend.Variable) ([]frontend.Variable, error) {
+	return builder.newHint(nil, id, nbOutputs, inputs)
+}
+
+func (builder *builder) newHint(f solver.Hint, id solver.HintID, nbOutputs int, inputs []frontend.Variable) ([]frontend.Variable, error) {
 	hintInputs := make([]constraint.LinearExpression, len(inputs))
 
 	// TODO @gbotrel hint input pass
@@ -366,13 +389,13 @@ func (builder *builder) NewHint(f solver.Hint, nbOutputs int, inputs ...frontend
 			hintInputs[i] = builder.getLinearExpression(t)
 		} else {
 			c := builder.cs.FromInterface(in)
-			term := builder.cs.MakeTerm(&c, 0)
+			term := builder.cs.MakeTerm(c, 0)
 			term.MarkConstant()
 			hintInputs[i] = constraint.LinearExpression{term}
 		}
 	}
 
-	internalVariables, err := builder.cs.AddSolverHint(f, hintInputs, nbOutputs)
+	internalVariables, err := builder.cs.AddSolverHint(f, id, hintInputs, nbOutputs)
 	if err != nil {
 		return nil, err
 	}
@@ -383,7 +406,6 @@ func (builder *builder) NewHint(f solver.Hint, nbOutputs int, inputs ...frontend
 		res[i] = expr.NewLinearExpression(idx, builder.tOne)
 	}
 	return res, nil
-
 }
 
 // assertIsSet panics if the variable is unset
@@ -424,10 +446,10 @@ func (builder *builder) newDebugInfo(errName string, in ...interface{}) constrai
 			in[i] = builder.getLinearExpression(expr.LinearExpression{t})
 		case *expr.Term:
 			in[i] = builder.getLinearExpression(expr.LinearExpression{*t})
-		case constraint.Coeff:
-			in[i] = builder.cs.String(&t)
-		case *constraint.Coeff:
+		case constraint.Element:
 			in[i] = builder.cs.String(t)
+		case *constraint.Element:
+			in[i] = builder.cs.String(*t)
 		}
 	}
 
@@ -446,7 +468,7 @@ func (builder *builder) compress(le expr.LinearExpression) expr.LinearExpression
 
 	one := builder.cstOne()
 	t := builder.newInternalVariable()
-	builder.cs.AddConstraint(builder.newR1C(le, one, t))
+	builder.cs.AddR1C(builder.newR1C(le, one, t), builder.genericGate)
 	return t
 }
 
@@ -456,4 +478,32 @@ func (builder *builder) Defer(cb func(frontend.API) error) {
 
 func (*builder) FrontendType() frontendtype.Type {
 	return frontendtype.R1CS
+}
+
+// AddInstruction is used to add custom instructions to the constraint system.
+func (builder *builder) AddInstruction(bID constraint.BlueprintID, calldata []uint32) []uint32 {
+	return builder.cs.AddInstruction(bID, calldata)
+}
+
+// AddBlueprint adds a custom blueprint to the constraint system.
+func (builder *builder) AddBlueprint(b constraint.Blueprint) constraint.BlueprintID {
+	return builder.cs.AddBlueprint(b)
+}
+
+func (builder *builder) InternalVariable(wireID uint32) frontend.Variable {
+	return expr.NewLinearExpression(int(wireID), builder.tOne)
+}
+
+// ToCanonicalVariable converts a frontend.Variable to a constraint system specific Variable
+// ! Experimental: use in conjunction with constraint.CustomizableSystem
+func (builder *builder) ToCanonicalVariable(in frontend.Variable) frontend.CanonicalVariable {
+	if t, ok := in.(expr.LinearExpression); ok {
+		assertIsSet(t)
+		return builder.getLinearExpression(t)
+	} else {
+		c := builder.cs.FromInterface(in)
+		term := builder.cs.MakeTerm(c, 0)
+		term.MarkConstant()
+		return constraint.LinearExpression{term}
+	}
 }

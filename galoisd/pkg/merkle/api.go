@@ -1,9 +1,10 @@
 package merkle
 
 import (
-	"galois/pkg/sha256"
-	"github.com/consensys/gnark/frontend"
 	"math"
+
+	"github.com/consensys/gnark/frontend"
+	"github.com/consensys/gnark/std/hash/mimc"
 )
 
 const (
@@ -12,44 +13,39 @@ const (
 )
 
 type MerkleTreeAPI struct {
-	api            frontend.API
-	leafMaxBlocks  int
-	innerMaxBlocks int
+	api frontend.API
 }
 
-func NewMerkleTreeAPI(api frontend.API, leafMaxBlocks int, innerMaxblocks int) *MerkleTreeAPI {
-	return &MerkleTreeAPI{api: api, leafMaxBlocks: leafMaxBlocks, innerMaxBlocks: innerMaxblocks}
+func NewMerkleTreeAPI(api frontend.API) *MerkleTreeAPI {
+	return &MerkleTreeAPI{api: api}
 }
 
-func (m *MerkleTreeAPI) LeafHash(leaf []frontend.Variable, size frontend.Variable) []frontend.Variable {
+func (m *MerkleTreeAPI) LeafHash(leaf []frontend.Variable) frontend.Variable {
 	preimage := make([]frontend.Variable, 1+len(leaf))
 	// Leaf prefix
 	preimage[0] = LeafPrefix
 	for i := 0; i < len(leaf); i++ {
 		preimage[i+1] = leaf[i]
 	}
-	sha := sha256.NewSHA256(m.api, m.leafMaxBlocks)
-	hash := sha.Hash(preimage[:], m.api.Add(size, 1))
-	return hash[:]
+	mimc, err := mimc.NewMiMC(m.api)
+	if err != nil {
+		panic(err)
+	}
+	mimc.Write(preimage[:]...)
+	return mimc.Sum()
 }
 
-func (m *MerkleTreeAPI) InnerHash(left []frontend.Variable, right []frontend.Variable) []frontend.Variable {
-	preimage := make([]frontend.Variable, 1+len(left)+len(right))
-	// Inner prefix
-	preimage[0] = InnerPrefix
-	for i := 0; i < len(left); i++ {
-		preimage[i+1] = left[i]
+func (m *MerkleTreeAPI) InnerHash(left frontend.Variable, right frontend.Variable) frontend.Variable {
+	mimc, err := mimc.NewMiMC(m.api)
+	if err != nil {
+		panic(err)
 	}
-	for i := 0; i < len(right); i++ {
-		preimage[i+len(left)+1] = right[i]
-	}
-	sha := sha256.NewSHA256(m.api, m.innerMaxBlocks)
-	hash := sha.Hash(preimage[:], 1+len(left)+len(right))
-	return hash[:]
+	mimc.Write(InnerPrefix, left, right)
+	return mimc.Sum()
 }
 
 // Compute merkle root in place at leafHashes[0]
-func (m *MerkleTreeAPI) RootHash(leafHashes [][]frontend.Variable, size frontend.Variable) []frontend.Variable {
+func (m *MerkleTreeAPI) RootHash(leafHashes []frontend.Variable, size frontend.Variable) frontend.Variable {
 	maxLeaves := len(leafHashes)
 	for i := 0; i < int(math.Log2(float64(maxLeaves))); i++ {
 		r := size
@@ -59,9 +55,7 @@ func (m *MerkleTreeAPI) RootHash(leafHashes [][]frontend.Variable, size frontend
 			right := leafHashes[j+1]
 			root := m.InnerHash(left, right)
 			isOrphan := m.api.Or(m.api.IsZero(r), m.api.IsZero(m.api.Sub(r, 1)))
-			for k := 0; k < 32; k++ {
-				leafHashes[w][k] = m.api.Select(isOrphan, left[k], root[k])
-			}
+			leafHashes[w] = m.api.Select(isOrphan, left, root)
 			size = m.api.Select(m.api.Or(isOrphan, m.api.IsZero(size)), size, m.api.Sub(size, 1))
 			r = m.api.Select(m.api.IsZero(r), r, m.api.Sub(r, 1))
 			r = m.api.Select(m.api.IsZero(r), r, m.api.Sub(r, 1))

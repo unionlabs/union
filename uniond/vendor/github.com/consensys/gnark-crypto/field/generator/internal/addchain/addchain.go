@@ -62,7 +62,7 @@ var (
 	mAddchains  map[string]*AddChainData // key is big.Int.Text(16)
 )
 
-// GetAddChain retunrs template data of a short addition chain for given big.Int
+// GetAddChain returns template data of a short addition chain for given big.Int
 func GetAddChain(n *big.Int) *AddChainData {
 
 	// init the cache only once.

@@ -91,9 +91,21 @@ func (w *walker) Slice(value reflect.Value) error {
 	return nil
 }
 
-func (w *walker) SliceElem(index int, _ reflect.Value) error {
+func (w *walker) arraySliceElem(index int, v reflect.Value) error {
 	w.path.push(LeafInfo{Visibility: w.visibility(), name: strconv.Itoa(index)})
+	if v.CanAddr() && v.Addr().CanInterface() {
+		// TODO @gbotrel don't like that hook, undesirable side effects
+		// will be hard to detect; (for example calling Parse multiple times will init multiple times!)
+		value := v.Addr().Interface()
+		if ih, hasInitHook := value.(InitHook); hasInitHook {
+			ih.GnarkInitHook()
+		}
+	}
 	return nil
+}
+
+func (w *walker) SliceElem(index int, v reflect.Value) error {
+	return w.arraySliceElem(index, v)
 }
 
 // Array handles array elements found within complex structures.
@@ -103,9 +115,8 @@ func (w *walker) Array(value reflect.Value) error {
 	}
 	return nil
 }
-func (w *walker) ArrayElem(index int, _ reflect.Value) error {
-	w.path.push(LeafInfo{Visibility: w.visibility(), name: strconv.Itoa(index)})
-	return nil
+func (w *walker) ArrayElem(index int, v reflect.Value) error {
+	return w.arraySliceElem(index, v)
 }
 
 // process an array or slice of leaves; since it's quite common to have large array/slices

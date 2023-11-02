@@ -23,6 +23,7 @@ import (
 
 	"github.com/consensys/gnark-crypto/ecc"
 	"github.com/consensys/gnark/constraint"
+	"github.com/consensys/gnark/debug"
 	"github.com/consensys/gnark/frontend"
 	"github.com/consensys/gnark/frontend/internal/expr"
 	"github.com/consensys/gnark/frontend/schema"
@@ -57,26 +58,36 @@ type builder struct {
 
 	// records multiplications constraint to avoid duplicate.
 	// see mulConstraintExist(...)
-	mMulConstraints map[uint64]int
+	mMulInstructions map[uint64]int
 
 	// same thing for addition gates
 	// see addConstraintExist(...)
-	mAddConstraints map[uint64]int
+	mAddInstructions map[uint64]int
 
 	// frequently used coefficients
-	tOne, tMinusOne constraint.Coeff
+	tOne, tMinusOne constraint.Element
+
+	genericGate                constraint.BlueprintID
+	mulGate, addGate, boolGate constraint.BlueprintID
+
+	// used to avoid repeated allocations
+	bufL expr.LinearExpression
+	bufH []constraint.LinearExpression
 }
 
 // initialCapacity has quite some impact on frontend performance, especially on large circuits size
 // we may want to add build tags to tune that
 func newBuilder(field *big.Int, config frontend.CompileConfig) *builder {
 	b := builder{
-		mtBooleans:      make(map[expr.Term]struct{}),
-		mMulConstraints: make(map[uint64]int, config.Capacity/2),
-		mAddConstraints: make(map[uint64]int, config.Capacity/2),
-		config:          config,
-		Store:           kvstore.New(),
+		mtBooleans:       make(map[expr.Term]struct{}),
+		mMulInstructions: make(map[uint64]int, config.Capacity/2),
+		mAddInstructions: make(map[uint64]int, config.Capacity/2),
+		config:           config,
+		Store:            kvstore.New(),
+		bufL:             make(expr.LinearExpression, 20),
 	}
+	// init hint buffer.
+	_ = b.hintBuffer(256)
 
 	curve := utils.FieldToCurve(field)
 
@@ -106,6 +117,11 @@ func newBuilder(field *big.Int, config frontend.CompileConfig) *builder {
 	b.tOne = b.cs.One()
 	b.tMinusOne = b.cs.FromInterface(-1)
 
+	b.genericGate = b.cs.AddBlueprint(&constraint.BlueprintGenericSparseR1C{})
+	b.mulGate = b.cs.AddBlueprint(&constraint.BlueprintSparseR1CMul{})
+	b.addGate = b.cs.AddBlueprint(&constraint.BlueprintSparseR1CAdd{})
+	b.boolGate = b.cs.AddBlueprint(&constraint.BlueprintSparseR1CBool{})
+
 	return &b
 }
 
@@ -120,47 +136,82 @@ func (builder *builder) FieldBitLen() int {
 // TODO @gbotrel doing a 2-step refactoring for now, frontend only. need to update constraint/SparseR1C.
 // qL⋅xa + qR⋅xb + qO⋅xc + qM⋅(xaxb) + qC == 0
 type sparseR1C struct {
-	xa, xb, xc         int              // wires
-	qL, qR, qO, qM, qC constraint.Coeff // coefficients
+	xa, xb, xc         int                // wires
+	qL, qR, qO, qM, qC constraint.Element // coefficients
 	commitment         constraint.CommitmentConstraint
 }
 
 // a * b == c
-func (builder *builder) addMulGate(a, b, c expr.Term, debug ...constraint.DebugInfo) {
-	qO := builder.tMinusOne
-	if c.Coeff != builder.tOne {
-		// slow path
-		t := c.Coeff
-		builder.cs.Neg(&t)
-		qO = t
+func (builder *builder) addMulGate(a, b, c expr.Term) {
+	qM := builder.cs.Mul(a.Coeff, b.Coeff)
+	QM := builder.cs.AddCoeff(qM)
+
+	builder.cs.AddSparseR1C(constraint.SparseR1C{
+		XA: uint32(a.VID),
+		XB: uint32(b.VID),
+		XC: uint32(c.VID),
+		QM: QM,
+		QO: constraint.CoeffIdMinusOne,
+	}, builder.mulGate)
+}
+
+// a + b + k == c
+func (builder *builder) addAddGate(a, b expr.Term, xc uint32, k constraint.Element) {
+	qL := builder.cs.AddCoeff(a.Coeff)
+	qR := builder.cs.AddCoeff(b.Coeff)
+	qC := builder.cs.AddCoeff(k)
+
+	builder.cs.AddSparseR1C(constraint.SparseR1C{
+		XA: uint32(a.VID),
+		XB: uint32(b.VID),
+		XC: xc,
+		QL: qL,
+		QR: qR,
+		QC: qC,
+		QO: constraint.CoeffIdMinusOne,
+	}, builder.addGate)
+}
+
+func (builder *builder) addBoolGate(c sparseR1C, debugInfo ...constraint.DebugInfo) {
+	QL := builder.cs.AddCoeff(c.qL)
+	QM := builder.cs.AddCoeff(c.qM)
+
+	cID := builder.cs.AddSparseR1C(constraint.SparseR1C{
+		XA: uint32(c.xa),
+		QL: QL,
+		QM: QM},
+		builder.boolGate)
+	if debug.Debug && len(debugInfo) == 1 {
+		builder.cs.AttachDebugInfo(debugInfo[0], []int{cID})
 	}
-	qM := a.Coeff
-	builder.cs.Mul(&qM, &b.Coeff)
-	builder.addPlonkConstraint(sparseR1C{
-		xa: a.VID,
-		xb: b.VID,
-		xc: c.VID,
-		qM: qM,
-		qO: qO,
-	}, debug...)
 }
 
 // addPlonkConstraint adds a sparseR1C to the underlying constraint system
-func (builder *builder) addPlonkConstraint(c sparseR1C, debug ...constraint.DebugInfo) {
+func (builder *builder) addPlonkConstraint(c sparseR1C, debugInfo ...constraint.DebugInfo) {
 	if !c.qM.IsZero() && (c.xa == 0 || c.xb == 0) {
 		// TODO this is internal but not easy to detect; if qM is set, but one or both of xa / xb is not,
 		// since wireID == 0 is a valid wire, it may trigger unexpected behavior.
 		log := logger.Logger()
 		log.Warn().Msg("adding a plonk constraint with qM set but xa or xb == 0 (wire 0)")
 	}
-	L := builder.cs.MakeTerm(&c.qL, c.xa)
-	R := builder.cs.MakeTerm(&c.qR, c.xb)
-	O := builder.cs.MakeTerm(&c.qO, c.xc)
-	U := builder.cs.MakeTerm(&c.qM, c.xa)
-	V := builder.cs.MakeTerm(&builder.tOne, c.xb)
-	K := builder.cs.MakeTerm(&c.qC, 0)
-	K.MarkConstant()
-	builder.cs.AddConstraint(constraint.SparseR1C{L: L, R: R, O: O, M: [2]constraint.Term{U, V}, K: K.CoeffID(), Commitment: c.commitment}, debug...)
+	QL := builder.cs.AddCoeff(c.qL)
+	QR := builder.cs.AddCoeff(c.qR)
+	QO := builder.cs.AddCoeff(c.qO)
+	QM := builder.cs.AddCoeff(c.qM)
+	QC := builder.cs.AddCoeff(c.qC)
+
+	cID := builder.cs.AddSparseR1C(constraint.SparseR1C{
+		XA: uint32(c.xa),
+		XB: uint32(c.xb),
+		XC: uint32(c.xc),
+		QL: QL,
+		QR: QR,
+		QO: QO,
+		QM: QM,
+		QC: QC, Commitment: c.commitment}, builder.genericGate)
+	if debug.Debug && len(debugInfo) == 1 {
+		builder.cs.AttachDebugInfo(debugInfo[0], []int{cID})
+	}
 }
 
 // newInternalVariable creates a new wire, appends it on the list of wires of the circuit, sets
@@ -194,7 +245,7 @@ func (builder *builder) reduce(l expr.LinearExpression) expr.LinearExpression {
 	for i := 1; i < len(l); i++ {
 		if l[i-1].VID == l[i].VID {
 			// we have redundancy
-			builder.cs.Add(&l[i-1].Coeff, &l[i].Coeff)
+			l[i-1].Coeff = builder.cs.Add(l[i-1].Coeff, l[i].Coeff)
 			l = append(l[:i], l[i+1:]...)
 			i--
 		}
@@ -207,7 +258,7 @@ func (builder *builder) reduce(l expr.LinearExpression) expr.LinearExpression {
 // This returns true if the v is a constant and v == 0 || v == 1.
 func (builder *builder) IsBoolean(v frontend.Variable) bool {
 	if b, ok := builder.constantValue(v); ok {
-		return (b.IsZero() || builder.cs.IsOne(&b))
+		return (b.IsZero() || builder.cs.IsOne(b))
 	}
 	_, ok := builder.mtBooleans[v.(expr.Term)]
 	return ok
@@ -257,14 +308,25 @@ func (builder *builder) ConstantValue(v frontend.Variable) (*big.Int, bool) {
 	if !ok {
 		return nil, false
 	}
-	return builder.cs.ToBigInt(&coeff), true
+	return builder.cs.ToBigInt(coeff), true
 }
 
-func (builder *builder) constantValue(v frontend.Variable) (constraint.Coeff, bool) {
+func (builder *builder) constantValue(v frontend.Variable) (constraint.Element, bool) {
 	if _, ok := v.(expr.Term); ok {
-		return constraint.Coeff{}, false
+		return constraint.Element{}, false
 	}
 	return builder.cs.FromInterface(v), true
+}
+
+func (builder *builder) hintBuffer(size int) []constraint.LinearExpression {
+	if cap(builder.bufH) < size {
+		builder.bufH = make([]constraint.LinearExpression, 2*size)
+		for i := 0; i < len(builder.bufH); i++ {
+			builder.bufH[i] = make(constraint.LinearExpression, 1)
+		}
+	}
+
+	return builder.bufH[:size]
 }
 
 // NewHint initializes internal variables whose value will be evaluated using
@@ -280,22 +342,30 @@ func (builder *builder) constantValue(v frontend.Variable) (constraint.Coeff, bo
 // No new constraints are added to the newly created wire and must be added
 // manually in the circuit. Failing to do so leads to solver failure.
 func (builder *builder) NewHint(f solver.Hint, nbOutputs int, inputs ...frontend.Variable) ([]frontend.Variable, error) {
-	hintInputs := make([]constraint.LinearExpression, len(inputs))
+	return builder.newHint(f, solver.GetHintID(f), nbOutputs, inputs...)
+}
+
+func (builder *builder) NewHintForId(id solver.HintID, nbOutputs int, inputs ...frontend.Variable) ([]frontend.Variable, error) {
+	return builder.newHint(nil, id, nbOutputs, inputs...)
+}
+
+func (builder *builder) newHint(f solver.Hint, id solver.HintID, nbOutputs int, inputs ...frontend.Variable) ([]frontend.Variable, error) {
+	hintInputs := builder.hintBuffer(len(inputs))
 
 	// ensure inputs are set and pack them in a []uint64
 	for i, in := range inputs {
 		switch t := in.(type) {
 		case expr.Term:
-			hintInputs[i] = constraint.LinearExpression{builder.cs.MakeTerm(&t.Coeff, t.VID)}
+			hintInputs[i][0] = builder.cs.MakeTerm(t.Coeff, t.VID)
 		default:
 			c := builder.cs.FromInterface(in)
-			term := builder.cs.MakeTerm(&c, 0)
+			term := builder.cs.MakeTerm(c, 0)
 			term.MarkConstant()
-			hintInputs[i] = constraint.LinearExpression{term}
+			hintInputs[i][0] = term
 		}
 	}
 
-	internalVariables, err := builder.cs.AddSolverHint(f, hintInputs, nbOutputs)
+	internalVariables, err := builder.cs.AddSolverHint(f, id, hintInputs, nbOutputs)
 	if err != nil {
 		return nil, err
 	}
@@ -310,26 +380,43 @@ func (builder *builder) NewHint(f solver.Hint, nbOutputs int, inputs ...frontend
 }
 
 // returns in split into a slice of compiledTerm and the sum of all constants in in as a bigInt
-func (builder *builder) filterConstantSum(in []frontend.Variable) (expr.LinearExpression, constraint.Coeff) {
-	res := make(expr.LinearExpression, 0, len(in))
-	b := constraint.Coeff{}
+func (builder *builder) filterConstantSum(in []frontend.Variable) (expr.LinearExpression, constraint.Element) {
+	var res expr.LinearExpression
+	if len(in) <= cap(builder.bufL) {
+		// we can use the temp buffer
+		res = builder.bufL[:0]
+	} else {
+		res = make(expr.LinearExpression, 0, len(in))
+	}
+
+	b := constraint.Element{}
 	for i := 0; i < len(in); i++ {
 		if c, ok := builder.constantValue(in[i]); ok {
-			builder.cs.Add(&b, &c)
+			b = builder.cs.Add(b, c)
 		} else {
-			res = append(res, in[i].(expr.Term))
+			if inTerm := in[i].(expr.Term); !inTerm.Coeff.IsZero() {
+				// add only term if coefficient is not zero.
+				res = append(res, in[i].(expr.Term))
+			}
 		}
 	}
 	return res, b
 }
 
 // returns in split into a slice of compiledTerm and the product of all constants in in as a coeff
-func (builder *builder) filterConstantProd(in []frontend.Variable) (expr.LinearExpression, constraint.Coeff) {
-	res := make(expr.LinearExpression, 0, len(in))
+func (builder *builder) filterConstantProd(in []frontend.Variable) (expr.LinearExpression, constraint.Element) {
+	var res expr.LinearExpression
+	if len(in) <= cap(builder.bufL) {
+		// we can use the temp buffer
+		res = builder.bufL[:0]
+	} else {
+		res = make(expr.LinearExpression, 0, len(in))
+	}
+
 	b := builder.tOne
 	for i := 0; i < len(in); i++ {
 		if c, ok := builder.constantValue(in[i]); ok {
-			builder.cs.Mul(&b, &c)
+			b = builder.cs.Mul(b, c)
 		} else {
 			res = append(res, in[i].(expr.Term))
 		}
@@ -337,7 +424,7 @@ func (builder *builder) filterConstantProd(in []frontend.Variable) (expr.LinearE
 	return res, b
 }
 
-func (builder *builder) splitSum(acc expr.Term, r expr.LinearExpression, k *constraint.Coeff) expr.Term {
+func (builder *builder) splitSum(acc expr.Term, r expr.LinearExpression, k *constraint.Element) expr.Term {
 	// floor case
 	if len(r) == 0 {
 		if k != nil {
@@ -345,13 +432,7 @@ func (builder *builder) splitSum(acc expr.Term, r expr.LinearExpression, k *cons
 			o, found := builder.addConstraintExist(acc, expr.Term{}, *k)
 			if !found {
 				o = builder.newInternalVariable()
-				builder.addPlonkConstraint(sparseR1C{
-					xa: acc.VID,
-					xc: o.VID,
-					qL: acc.Coeff,
-					qO: builder.tMinusOne,
-					qC: *k,
-				})
+				builder.addAddGate(acc, expr.Term{}, uint32(o.VID), *k)
 			}
 
 			return o
@@ -360,23 +441,14 @@ func (builder *builder) splitSum(acc expr.Term, r expr.LinearExpression, k *cons
 	}
 
 	// constraint to add: acc + r[0] (+ k) == o
-	qC := constraint.Coeff{}
+	qC := constraint.Element{}
 	if k != nil {
 		qC = *k
 	}
 	o, found := builder.addConstraintExist(acc, r[0], qC)
 	if !found {
 		o = builder.newInternalVariable()
-
-		builder.addPlonkConstraint(sparseR1C{
-			xa: acc.VID,
-			xb: r[0].VID,
-			xc: o.VID,
-			qL: acc.Coeff,
-			qR: r[0].Coeff,
-			qO: builder.tMinusOne,
-			qC: qC,
-		})
+		builder.addAddGate(acc, r[0], uint32(o.VID), qC)
 	}
 
 	return builder.splitSum(o, r[1:], nil)
@@ -400,84 +472,76 @@ func (builder *builder) splitSum(acc expr.Term, r expr.LinearExpression, k *cons
 // not going to catch these duplicates.
 // 2. this piece of code assumes some behavior from constraint/ package (like coeffIDs, or append-style
 // constraint management)
-func (builder *builder) addConstraintExist(a, b expr.Term, k constraint.Coeff) (expr.Term, bool) {
+func (builder *builder) addConstraintExist(a, b expr.Term, k constraint.Element) (expr.Term, bool) {
 	// ensure deterministic combined identifier;
 	if a.VID < b.VID {
 		a, b = b, a
 	}
 	h := uint64(a.WireID()) | uint64(b.WireID()<<32)
 
-	if cID, ok := builder.mAddConstraints[h]; ok {
+	if iID, ok := builder.mAddInstructions[h]; ok {
+		// if we do custom gates with slices in the constraint
+		// should use a shared object here to avoid allocs.
+		var c constraint.SparseR1C
+
 		// seems likely we have a fit, let's double check
-		if c := builder.cs.GetConstraint(cID); c != nil {
-			if c.M[0].CoeffID() != constraint.CoeffIdZero {
-				panic("sanity check failed; recorded a add constraint with qM set")
-			}
+		inst := builder.cs.GetInstruction(iID)
+		// we know the blueprint we added it.
+		blueprint := constraint.BlueprintSparseR1CAdd{}
+		blueprint.DecompressSparseR1C(&c, inst)
 
-			if a.WireID() == c.R.WireID() {
-				a, b = b, a // ensure a is in qL
-			}
-			if (a.WireID() != c.L.WireID()) || (b.WireID() != c.R.WireID()) {
-				// that shouldn't happen; it means we added an entry in the duplicate add constraint
-				// map with a key that don't match the entries.
-				log := logger.Logger()
-				log.Error().Msg("mAddConstraints entry doesn't match key")
-				return expr.Term{}, false
-			}
-
-			// qO == -1
-			if c.O.CoeffID() != constraint.CoeffIdMinusOne {
-				// we could probably handle that case, but it shouldn't
-				// happen with our current APIs --> each time we record a add gate in the duplicate
-				// map qO == -1
-				return expr.Term{}, false
-			}
-
-			tk := builder.cs.MakeTerm(&k, 0)
-			if tk.CoeffID() != c.K {
-				// the constant part of the addition differs, no point going forward
-				// since we will need to add a new constraint anyway.
-				return expr.Term{}, false
-			}
-
-			// check that the coeff matches
-			qL := a.Coeff
-			qR := b.Coeff
-			ta := builder.cs.MakeTerm(&qL, 0)
-			tb := builder.cs.MakeTerm(&qR, 0)
-			if c.L.CoeffID() != ta.CoeffID() || c.R.CoeffID() != tb.CoeffID() {
-				if !k.IsZero() {
-					// may be for some edge cases we could avoid adding a constraint here.
-					return expr.Term{}, false
-				}
-				// we recorded an addition in the form q1*a + q2*b == c
-				// we want to record a new one in the form q3*a + q4*b == n*c
-				// question is; can we re-use c to avoid introducing a new wire & new constraint
-				// this is possible only if n == q3/q1 == q4/q2, that is, q3q2 == q1q4
-				q1 := builder.cs.GetCoefficient(c.L.CoeffID())
-				q2 := builder.cs.GetCoefficient(c.R.CoeffID())
-				q3 := qL
-				q4 := qR
-				builder.cs.Mul(&q3, &q2)
-				builder.cs.Mul(&q1, &q4)
-				if q1 == q3 {
-					// no need to introduce a new constraint;
-					// compute n, the coefficient for the output wire
-					builder.cs.Inverse(&q2)
-					builder.cs.Mul(&q2, &q4)
-					return expr.NewTerm(c.O.WireID(), q2), true
-				}
-				// we will need an additional constraint
-				return expr.Term{}, false
-			}
-
-			// we found the same constraint!
-			return expr.NewTerm(c.O.WireID(), builder.tOne), true
+		// qO == -1
+		if a.WireID() == int(c.XB) {
+			a, b = b, a // ensure a is in qL
 		}
+
+		tk := builder.cs.MakeTerm(k, 0)
+		if tk.CoeffID() != int(c.QC) {
+			// the constant part of the addition differs, no point going forward
+			// since we will need to add a new constraint anyway.
+			return expr.Term{}, false
+		}
+
+		// check that the coeff matches
+		qL := a.Coeff
+		qR := b.Coeff
+		ta := builder.cs.MakeTerm(qL, 0)
+		tb := builder.cs.MakeTerm(qR, 0)
+		if int(c.QL) != ta.CoeffID() || int(c.QR) != tb.CoeffID() {
+			if !k.IsZero() {
+				// may be for some edge cases we could avoid adding a constraint here.
+				return expr.Term{}, false
+			}
+			// we recorded an addition in the form q1*a + q2*b == c
+			// we want to record a new one in the form q3*a + q4*b == n*c
+			// question is; can we re-use c to avoid introducing a new wire & new constraint
+			// this is possible only if n == q3/q1 == q4/q2, that is, q3q2 == q1q4
+			q1 := builder.cs.GetCoefficient(int(c.QL))
+			q2 := builder.cs.GetCoefficient(int(c.QR))
+			q3 := qL
+			q4 := qR
+			q3 = builder.cs.Mul(q3, q2)
+			q1 = builder.cs.Mul(q1, q4)
+			if q1 == q3 {
+				// no need to introduce a new constraint;
+				// compute n, the coefficient for the output wire
+				q2, ok = builder.cs.Inverse(q2)
+				if !ok {
+					panic("div by 0") // shouldn't happen
+				}
+				q2 = builder.cs.Mul(q2, q4)
+				return expr.NewTerm(int(c.XC), q2), true
+			}
+			// we will need an additional constraint
+			return expr.Term{}, false
+		}
+
+		// we found the same constraint!
+		return expr.NewTerm(int(c.XC), builder.tOne), true
 	}
 	// we are going to add this constraint, so we mark it.
-	// ! assumes the caller add a constraint immediately  after the call to this function
-	builder.mAddConstraints[h] = builder.cs.GetNbConstraints()
+	// ! assumes the caller add an instruction immediately  after the call to this function
+	builder.mAddInstructions[h] = builder.cs.GetNbInstructions()
 	return expr.Term{}, false
 }
 
@@ -502,62 +566,51 @@ func (builder *builder) mulConstraintExist(a, b expr.Term) (expr.Term, bool) {
 		a, b = b, a
 	}
 	h := uint64(a.WireID()) | uint64(b.WireID()<<32)
-	if a.VID < b.VID {
-		a, b = b, a
-	}
 
-	if cID, ok := builder.mMulConstraints[h]; ok {
+	if iID, ok := builder.mMulInstructions[h]; ok {
+		// if we do custom gates with slices in the constraint
+		// should use a shared object here to avoid allocs.
+		var c constraint.SparseR1C
+
 		// seems likely we have a fit, let's double check
-		if c := builder.cs.GetConstraint(cID); c != nil {
-			if !(c.K|c.L.CoeffID()|c.R.CoeffID() == constraint.CoeffIdZero) {
-				panic("sanity check failed; recorded a mul constraint with qL, qR or qC set")
-			}
+		inst := builder.cs.GetInstruction(iID)
+		// we know the blueprint we added it.
+		blueprint := constraint.BlueprintSparseR1CMul{}
+		blueprint.DecompressSparseR1C(&c, inst)
 
-			// qO == -1
-			if c.O.CoeffID() != constraint.CoeffIdMinusOne {
-				// we could probably handle that case, but it shouldn't
-				// happen with our current APIs --> each time we record a mul gate in the duplicate
-				// map qO == -1
-				return expr.Term{}, false
-			}
+		// qO == -1
 
-			if a.WireID() == c.R.WireID() {
-				a, b = b, a // ensure a is in qL
-			}
-			if (a.WireID() != c.L.WireID()) || (b.WireID() != c.R.WireID()) {
-				// that shouldn't happen; it means we added an entry in the duplicate mul constraint
-				// map with a key that don't match the entries.
-				log := logger.Logger()
-				log.Error().Msg("mMulConstraints entry doesn't match key")
-				return expr.Term{}, false
-			}
-
-			// recompute the qM coeff and check that it matches;
-			qM := a.Coeff
-			builder.cs.Mul(&qM, &b.Coeff)
-			tm := builder.cs.MakeTerm(&qM, 0)
-			if c.M[0].CoeffID() != tm.CoeffID() {
-				// so we wanted to compute
-				// N * xC == qM*xA*xB
-				// but found a constraint
-				// xC == qM'*xA*xB
-				// the coefficient for our resulting wire is different;
-				// N = qM / qM'
-				N := builder.cs.GetCoefficient(c.M[0].CoeffID())
-				builder.cs.Inverse(&N)
-				builder.cs.Mul(&N, &qM)
-
-				return expr.NewTerm(c.O.WireID(), N), true
-			}
-
-			// we found the exact same constraint
-			return expr.NewTerm(c.O.WireID(), builder.tOne), true
+		if a.WireID() == int(c.XB) {
+			a, b = b, a // ensure a is in qL
 		}
+
+		// recompute the qM coeff and check that it matches;
+		qM := builder.cs.Mul(a.Coeff, b.Coeff)
+		tm := builder.cs.MakeTerm(qM, 0)
+		if int(c.QM) != tm.CoeffID() {
+			// so we wanted to compute
+			// N * xC == qM*xA*xB
+			// but found a constraint
+			// xC == qM'*xA*xB
+			// the coefficient for our resulting wire is different;
+			// N = qM / qM'
+			N := builder.cs.GetCoefficient(int(c.QM))
+			N, ok := builder.cs.Inverse(N)
+			if !ok {
+				panic("div by 0") // sanity check.
+			}
+			N = builder.cs.Mul(N, qM)
+
+			return expr.NewTerm(int(c.XC), N), true
+		}
+
+		// we found the exact same constraint
+		return expr.NewTerm(int(c.XC), builder.tOne), true
 	}
 
 	// we are going to add this constraint, so we mark it.
-	// ! assumes the caller add a constraint immediately  after the call to this function
-	builder.mMulConstraints[h] = builder.cs.GetNbConstraints()
+	// ! assumes the caller add an instruction immediately  after the call to this function
+	builder.mMulInstructions[h] = builder.cs.GetNbInstructions()
 	return expr.Term{}, false
 }
 
@@ -592,13 +645,13 @@ func (builder *builder) newDebugInfo(errName string, in ...interface{}) constrai
 		case *expr.LinearExpression, expr.LinearExpression:
 			// shouldn't happen
 		case expr.Term:
-			in[i] = builder.cs.MakeTerm(&t.Coeff, t.VID)
+			in[i] = builder.cs.MakeTerm(t.Coeff, t.VID)
 		case *expr.Term:
-			in[i] = builder.cs.MakeTerm(&t.Coeff, t.VID)
-		case constraint.Coeff:
-			in[i] = builder.cs.String(&t)
-		case *constraint.Coeff:
+			in[i] = builder.cs.MakeTerm(t.Coeff, t.VID)
+		case constraint.Element:
 			in[i] = builder.cs.String(t)
+		case *constraint.Element:
+			in[i] = builder.cs.String(*t)
 		}
 	}
 
@@ -608,4 +661,32 @@ func (builder *builder) newDebugInfo(errName string, in ...interface{}) constrai
 
 func (builder *builder) Defer(cb func(frontend.API) error) {
 	circuitdefer.Put(builder, cb)
+}
+
+// AddInstruction is used to add custom instructions to the constraint system.
+func (builder *builder) AddInstruction(bID constraint.BlueprintID, calldata []uint32) []uint32 {
+	return builder.cs.AddInstruction(bID, calldata)
+}
+
+// AddBlueprint adds a custom blueprint to the constraint system.
+func (builder *builder) AddBlueprint(b constraint.Blueprint) constraint.BlueprintID {
+	return builder.cs.AddBlueprint(b)
+}
+
+func (builder *builder) InternalVariable(wireID uint32) frontend.Variable {
+	return expr.NewTerm(int(wireID), builder.tOne)
+}
+
+// ToCanonicalVariable converts a frontend.Variable to a constraint system specific Variable
+// ! Experimental: use in conjunction with constraint.CustomizableSystem
+func (builder *builder) ToCanonicalVariable(v frontend.Variable) frontend.CanonicalVariable {
+	switch t := v.(type) {
+	case expr.Term:
+		return builder.cs.MakeTerm(t.Coeff, t.VID)
+	default:
+		c := builder.cs.FromInterface(v)
+		term := builder.cs.MakeTerm(c, 0)
+		term.MarkConstant()
+		return term
+	}
 }

@@ -9,7 +9,7 @@ import (
 
 type Circuit struct {
 	Input           lightclient.TendermintLightClientInput
-	ExpectedValRoot [2]frontend.Variable `gnark:",public"`
+	ExpectedValRoot frontend.Variable    `gnark:",public"`
 	Message         [2]frontend.Variable `gnark:",public"`
 }
 

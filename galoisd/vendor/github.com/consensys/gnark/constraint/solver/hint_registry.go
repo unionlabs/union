@@ -1,6 +1,7 @@
 package solver
 
 import (
+	"fmt"
 	"math/big"
 	"sync"
 
@@ -32,6 +33,19 @@ func RegisterHint(hintFns ...Hint) {
 	}
 }
 
+func GetRegisteredHint(key HintID) Hint {
+	return registry[key]
+}
+
+func RegisterNamedHint(hintFn Hint, key HintID) {
+	registryM.Lock()
+	defer registryM.Unlock()
+	if _, ok := registry[key]; ok {
+		panic(fmt.Errorf("hint id %d already taken", key))
+	}
+	registry[key] = hintFn
+}
+
 // GetRegisteredHints returns all registered hint functions.
 func GetRegisteredHints() []Hint {
 	registryM.RLock()
@@ -41,6 +55,20 @@ func GetRegisteredHints() []Hint {
 		ret = append(ret, v)
 	}
 	return ret
+}
+
+func cloneMap[K comparable, V any](src map[K]V) map[K]V {
+	res := make(map[K]V, len(registry))
+	for k, v := range src {
+		res[k] = v
+	}
+	return res
+}
+
+func cloneHintRegistry() map[HintID]Hint {
+	registryM.Lock()
+	defer registryM.Unlock()
+	return cloneMap(registry)
 }
 
 // InvZeroHint computes the value 1/a for the single input a. If a == 0, returns 0.

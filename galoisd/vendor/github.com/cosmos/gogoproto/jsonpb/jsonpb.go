@@ -918,7 +918,7 @@ func (u *Unmarshaler) unmarshalValue(target reflect.Value, inputValue json.RawMe
 
 			t, err := time.Parse(time.RFC3339Nano, unq)
 			if err != nil {
-				return fmt.Errorf("bad Timestamp: %v", err)
+				return fmt.Errorf("bad Timestamp, should be RFC 3339 encoded: %v", err)
 			}
 
 			target.Field(0).SetInt(t.Unix())

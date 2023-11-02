@@ -17,7 +17,7 @@ use unionlabs::{
     tendermint::types::commit::Commit,
 };
 
-use crate::{errors::Error, zkp_verifier::verify_zkp};
+use crate::{errors::Error, zkp_verifier::verify_zkp_v2};
 
 type WasmClientState = unionlabs::ibc::lightclients::wasm::client_state::ClientState<ClientState>;
 type WasmConsensusState =
@@ -131,7 +131,7 @@ impl IbcClient for CometblsLightClient {
         )
         .encode_length_delimited_to_vec();
 
-        if !verify_zkp(
+        if !verify_zkp_v2(
             &trusted_validators_hash.0,
             &untrusted_validators_hash.0,
             &signed_vote,

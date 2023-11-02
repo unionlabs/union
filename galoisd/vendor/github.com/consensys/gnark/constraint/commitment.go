@@ -1,62 +1,109 @@
 package constraint
 
 import (
-	"math/big"
-
 	"github.com/consensys/gnark/constraint/solver"
+	"math/big"
 )
 
 const CommitmentDst = "bsb22-commitment"
 
-type Commitment struct {
-	Committed              []int // sorted list of id's of committed variables in groth16. in plonk, list of indexes of constraints defining committed values
-	NbPrivateCommitted     int
-	HintID                 solver.HintID // TODO @gbotrel we probably don't need that here
-	CommitmentIndex        int           // in groth16, CommitmentIndex is the wire index. in plonk, it's the constraint defining it
-	CommittedAndCommitment []int         // sorted list of id's of committed variables AND the commitment itself
+type Groth16Commitment struct {
+	PublicAndCommitmentCommitted []int // PublicAndCommitmentCommitted sorted list of id's of public and commitment committed wires
+	PrivateCommitted             []int // PrivateCommitted sorted list of id's of private/internal committed wires
+	CommitmentIndex              int   // CommitmentIndex the wire index of the commitment
+	HintID                       solver.HintID
+	NbPublicCommitted            int
 }
 
-func (i *Commitment) NbPublicCommitted() int {
-	return i.NbCommitted() - i.NbPrivateCommitted
+type PlonkCommitment struct {
+	Committed       []int // sorted list of id's of committed variables in groth16. in plonk, list of indexes of constraints defining committed values
+	CommitmentIndex int   // CommitmentIndex index of the constraint defining the commitment
+	HintID          solver.HintID
 }
 
-func (i *Commitment) NbCommitted() int {
-	return len(i.Committed)
-}
+type Commitment interface{}
+type Commitments interface{ CommitmentIndexes() []int }
 
-func (i *Commitment) Is() bool {
-	return len(i.Committed) != 0
-}
+type Groth16Commitments []Groth16Commitment
+type PlonkCommitments []PlonkCommitment
 
-// NewCommitment initialize a Commitment object
-//   - committed are the sorted wireID to commit to (without duplicate)
-//   - nbPublicCommited is the number of public inputs among the commited wireIDs
-func NewCommitment(committed []int, nbPublicCommitted int) Commitment {
-	return Commitment{
-		Committed:          committed,
-		NbPrivateCommitted: len(committed) - nbPublicCommitted,
+func (c Groth16Commitments) CommitmentIndexes() []int {
+	commitmentWires := make([]int, len(c))
+	for i := range c {
+		commitmentWires[i] = c[i].CommitmentIndex
 	}
+	return commitmentWires
 }
 
-func (i *Commitment) SerializeCommitment(privateCommitment []byte, publicCommitted []*big.Int, fieldByteLen int) []byte {
+func (c PlonkCommitments) CommitmentIndexes() []int {
+	commitmentWires := make([]int, len(c))
+	for i := range c {
+		commitmentWires[i] = c[i].CommitmentIndex
+	}
+	return commitmentWires
+}
+
+func (c Groth16Commitments) GetPrivateCommitted() [][]int {
+	res := make([][]int, len(c))
+	for i := range c {
+		res[i] = c[i].PrivateCommitted
+	}
+	return res
+}
+
+// GetPublicAndCommitmentCommitted returns the list of public and commitment committed wires
+// if committedTranslationList is not nil, commitment indexes are translated into their relative positions on the list plus the offset
+func (c Groth16Commitments) GetPublicAndCommitmentCommitted(committedTranslationList []int, offset int) [][]int {
+	res := make([][]int, len(c))
+	for i := range c {
+		res[i] = make([]int, len(c[i].PublicAndCommitmentCommitted))
+		copy(res[i], c[i].GetPublicCommitted())
+		translatedCommitmentCommitted := res[i][c[i].NbPublicCommitted:]
+		commitmentCommitted := c[i].GetCommitmentCommitted()
+		// convert commitment indexes to verifier understandable ones
+		if committedTranslationList == nil {
+			copy(translatedCommitmentCommitted, commitmentCommitted)
+		} else {
+			k := 0
+			for j := range translatedCommitmentCommitted {
+				for committedTranslationList[k] != commitmentCommitted[j] {
+					k++
+				} // find it in the translation list
+				translatedCommitmentCommitted[j] = k + offset
+			}
+		}
+	}
+	return res
+}
+
+func SerializeCommitment(privateCommitment []byte, publicCommitted []*big.Int, fieldByteLen int) []byte {
 
 	res := make([]byte, len(privateCommitment)+len(publicCommitted)*fieldByteLen)
 	copy(res, privateCommitment)
 
 	offset := len(privateCommitment)
-	for j, inJ := range publicCommitted {
-		offset += j * fieldByteLen
+	for _, inJ := range publicCommitted {
 		inJ.FillBytes(res[offset : offset+fieldByteLen])
+		offset += fieldByteLen
 	}
 
 	return res
 }
 
-// PrivateToPublic returns indexes of variables which are private to the constraint system, but public to Groth16. That is, private committed variables and the commitment itself
-func (i *Commitment) PrivateToPublic() []int {
-	return i.CommittedAndCommitment[i.NbPublicCommitted():]
+func NewCommitments(t SystemType) Commitments {
+	switch t {
+	case SystemR1CS:
+		return Groth16Commitments{}
+	case SystemSparseR1CS:
+		return PlonkCommitments{}
+	}
+	panic("unknown cs type")
 }
 
-func (i *Commitment) PrivateCommitted() []int {
-	return i.Committed[i.NbPublicCommitted():]
+func (c Groth16Commitment) GetPublicCommitted() []int {
+	return c.PublicAndCommitmentCommitted[:c.NbPublicCommitted]
+}
+
+func (c Groth16Commitment) GetCommitmentCommitted() []int {
+	return c.PublicAndCommitmentCommitted[c.NbPublicCommitted:]
 }

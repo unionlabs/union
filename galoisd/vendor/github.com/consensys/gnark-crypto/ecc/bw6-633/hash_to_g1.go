@@ -1,4 +1,4 @@
-// Copyright 2020 ConsenSys Software Inc.
+// Copyright 2020 Consensys Software Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -169,9 +169,9 @@ func g1MulByZ(z *fp.Element, x *fp.Element) {
 }
 
 // https://www.ietf.org/archive/id/draft-irtf-cfrg-hash-to-curve-16.html#name-simplified-swu-method
-// mapToCurve1 implements the SSWU map
+// MapToCurve1 implements the SSWU map
 // No cofactor clearing or isogeny
-func mapToCurve1(u *fp.Element) G1Affine {
+func MapToCurve1(u *fp.Element) G1Affine {
 
 	var sswuIsoCurveCoeffA = fp.Element{12925890271846221020, 6355149021182850637, 12305199997029221454, 3176370205483940054, 1111744716227392272, 1674946515969267914, 9082444721826297409, 17859522351279563418, 11442187008395780520, 4206825732020662}
 	var sswuIsoCurveCoeffB = fp.Element{1447342806075484185, 5642327672839545870, 16783436050687675045, 2630023864181351186, 5909133526915342434, 1057352115267779153, 1923190814798170064, 13280701548970829092, 3305076617946573429, 29606717104036842}
@@ -271,7 +271,7 @@ func g1Sgn0(z *fp.Element) uint64 {
 
 // MapToG1 invokes the SSWU map, and guarantees that the result is in g1
 func MapToG1(u fp.Element) G1Affine {
-	res := mapToCurve1(&u)
+	res := MapToCurve1(&u)
 	//this is in an isogenous curve
 	g1Isogeny(&res)
 	res.ClearCofactor(&res)
@@ -290,7 +290,7 @@ func EncodeToG1(msg, dst []byte) (G1Affine, error) {
 		return res, err
 	}
 
-	res = mapToCurve1(&u[0])
+	res = MapToCurve1(&u[0])
 
 	//this is in an isogenous curve
 	g1Isogeny(&res)
@@ -308,8 +308,8 @@ func HashToG1(msg, dst []byte) (G1Affine, error) {
 		return G1Affine{}, err
 	}
 
-	Q0 := mapToCurve1(&u[0])
-	Q1 := mapToCurve1(&u[1])
+	Q0 := MapToCurve1(&u[0])
+	Q1 := MapToCurve1(&u[1])
 
 	//TODO (perf): Add in E' first, then apply isogeny
 	g1Isogeny(&Q0)
