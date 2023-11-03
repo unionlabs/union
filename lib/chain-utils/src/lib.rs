@@ -117,9 +117,3 @@ impl<T: Clone> Pool<T> {
         r
     }
 }
-
-pub trait MaybeRecoverableError: Error {
-    fn is_recoverable(&self) -> bool;
-}
-
-fn _is_object_safe(_: &dyn MaybeRecoverableError) {}

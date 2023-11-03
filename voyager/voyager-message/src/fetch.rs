@@ -1,4 +1,7 @@
-use std::{fmt::Display, marker::PhantomData};
+use std::{
+    fmt::{Debug, Display},
+    marker::PhantomData,
+};
 
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use serde::{Deserialize, Serialize};
@@ -6,12 +9,17 @@ use unionlabs::{
     ethereum::H256,
     id::{ChannelId, ConnectionId, PortId},
     proof,
-    traits::Chain,
+    traits::{Chain, ChainIdOf, ChainOf, HeightOf, LightClientBase},
+    QueryHeight,
 };
 
 use crate::{
-    chain::{ChainOf, HeightOf, LightClient, LightClientBase, QueryHeight},
-    msg::{any_enum, ChainIdOf},
+    any_enum, data,
+    data::{
+        ChannelEnd, ConnectionEnd, PacketAcknowledgement, SelfClientState, SelfConsensusState,
+        TrustedClientState,
+    },
+    identified, AnyLcMsg, AnyLightClientIdentified, LcMsg, LightClient, RelayerMsg,
 };
 
 any_enum! {
@@ -138,3 +146,119 @@ pub struct FetchUpdateHeaders<L: LightClient> {
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""))]
 pub struct LightClientSpecificFetch<L: LightClient>(pub L::Fetch);
+
+impl<L: LightClient> Fetch<L> {
+    pub async fn handle(self, l: L) -> Vec<RelayerMsg>
+    where
+        AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L>)>,
+        // TODO: Remove once we no longer unwrap
+        <<L as LightClientBase>::ClientId as TryFrom<
+            <<L as LightClientBase>::HostChain as Chain>::ClientId,
+        >>::Error: Debug,
+        <<L::Counterparty as LightClientBase>::ClientId as TryFrom<
+            <<L::Counterparty as LightClientBase>::HostChain as Chain>::ClientId,
+        >>::Error: Debug,
+    {
+        let relayer_msg = match self {
+            Fetch::TrustedClientState(FetchTrustedClientState { at, client_id }) => {
+                // TODO: Split this into a separate query and aggregate
+                let height = match at {
+                    QueryHeight::Latest => l.chain().query_latest_height().await,
+                    QueryHeight::Specific(h) => h,
+                };
+
+                [data(
+                    l.chain().chain_id(),
+                    TrustedClientState {
+                        fetched_at: height,
+                        client_id: client_id.clone(),
+                        trusted_client_state: l.query_client_state(client_id.into(), height).await,
+                    },
+                )]
+                .into()
+            }
+            Fetch::StateProof(msg) => [l.proof(msg)].into(),
+            Fetch::SelfClientState(FetchSelfClientState { at: height }) => {
+                // TODO: Split this into a separate query and aggregate
+                let height = match height {
+                    QueryHeight::Latest => l.chain().query_latest_height().await,
+                    QueryHeight::Specific(h) => h,
+                };
+
+                [data(
+                    l.chain().chain_id(),
+                    SelfClientState(l.chain().self_client_state(height).await),
+                )]
+                .into()
+            }
+            Fetch::SelfConsensusState(FetchSelfConsensusState { at: height }) => {
+                // TODO: Split this into a separate query and aggregate
+                let height = match height {
+                    QueryHeight::Latest => l.chain().query_latest_height().await,
+                    QueryHeight::Specific(h) => h,
+                };
+
+                [data(
+                    l.chain().chain_id(),
+                    SelfConsensusState(l.chain().self_consensus_state(height).await),
+                )]
+                .into()
+            }
+            Fetch::PacketAcknowledgement(FetchPacketAcknowledgement {
+                block_hash,
+                destination_port_id,
+                destination_channel_id,
+                sequence,
+                __marker,
+            }) => {
+                let ack = l
+                    .chain()
+                    .read_ack(
+                        block_hash.clone(),
+                        destination_channel_id.clone(),
+                        destination_port_id.clone(),
+                        sequence,
+                    )
+                    .await;
+
+                [data(
+                    l.chain().chain_id(),
+                    PacketAcknowledgement {
+                        fetched_by: FetchPacketAcknowledgement {
+                            block_hash,
+                            destination_port_id,
+                            destination_channel_id,
+                            sequence,
+                            __marker,
+                        },
+                        ack,
+                    },
+                )]
+                .into()
+            }
+            Fetch::UpdateHeaders(fetch_update_headers) => {
+                l.generate_counterparty_updates(fetch_update_headers)
+            }
+            Fetch::LightClientSpecific(LightClientSpecificFetch(fetch)) => l.do_fetch(fetch).await,
+            Fetch::ChannelEnd(FetchChannelEnd {
+                at,
+                port_id,
+                channel_id,
+            }) => [data(
+                l.chain().chain_id(),
+                ChannelEnd {
+                    channel: l.channel(channel_id, port_id, at).await,
+                    __marker: PhantomData,
+                },
+            )]
+            .into(),
+            Fetch::ConnectionEnd(FetchConnectionEnd { at, connection_id }) => [data(
+                l.chain().chain_id(),
+                ConnectionEnd(l.connection(connection_id, at).await),
+            )]
+            .into(),
+        };
+
+        relayer_msg
+    }
+}

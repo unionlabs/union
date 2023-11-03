@@ -3282,6 +3282,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "lightclient"
+version = "0.1.0"
+dependencies = [
+ "chain-utils",
+ "hex-literal",
+ "protos",
+ "serde",
+ "unionlabs",
+]
+
+[[package]]
 name = "linux-raw-sys"
 version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4864,9 +4875,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.107"
+version = "1.0.108"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6b420ce6e3d8bd882e9b243c6eed35dbc9a6110c9769e74b584e0d68d1f20c65"
+checksum = "3d1c7e3eac408d115102c4c24ad393e0821bb3a5df4d506a80f85f7a742a526b"
 dependencies = [
  "itoa",
  "ryu",
@@ -6445,6 +6456,7 @@ dependencies = [
  "hex",
  "hex-literal",
  "hubble",
+ "lightclient",
  "num-bigint",
  "pg-queue",
  "pin-utils",
@@ -6470,6 +6482,38 @@ dependencies = [
  "tower",
  "tracing",
  "tracing-subscriber 0.3.17",
+ "typenum",
+ "unionlabs",
+ "voyager-message",
+]
+
+[[package]]
+name = "voyager-message"
+version = "0.1.0"
+dependencies = [
+ "beacon-api",
+ "chain-utils",
+ "contracts",
+ "derive_more",
+ "ethers",
+ "frame-support-procedural",
+ "frunk",
+ "futures",
+ "hex-literal",
+ "lightclient",
+ "num-bigint",
+ "prost",
+ "protos",
+ "serde",
+ "serde-utils",
+ "serde_json",
+ "tendermint",
+ "tendermint-proto",
+ "tendermint-rpc",
+ "thiserror",
+ "tokio",
+ "tonic",
+ "tracing",
  "typenum",
  "unionlabs",
 ]

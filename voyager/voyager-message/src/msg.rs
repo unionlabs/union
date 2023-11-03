@@ -2,27 +2,26 @@ use std::{fmt::Display, marker::PhantomData};
 
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use serde::{Deserialize, Serialize};
-use unionlabs::ibc::core::{
-    channel::{
-        msg_acknowledgement::MsgAcknowledgement, msg_channel_open_ack::MsgChannelOpenAck,
-        msg_channel_open_confirm::MsgChannelOpenConfirm, msg_channel_open_init::MsgChannelOpenInit,
-        msg_channel_open_try::MsgChannelOpenTry, msg_recv_packet::MsgRecvPacket,
+use unionlabs::{
+    ibc::core::{
+        channel::{
+            msg_acknowledgement::MsgAcknowledgement, msg_channel_open_ack::MsgChannelOpenAck,
+            msg_channel_open_confirm::MsgChannelOpenConfirm,
+            msg_channel_open_init::MsgChannelOpenInit, msg_channel_open_try::MsgChannelOpenTry,
+            msg_recv_packet::MsgRecvPacket,
+        },
+        client::{msg_create_client::MsgCreateClient, msg_update_client::MsgUpdateClient},
+        connection::{
+            msg_connection_open_ack::MsgConnectionOpenAck,
+            msg_connection_open_confirm::MsgConnectionOpenConfirm,
+            msg_connection_open_init::MsgConnectionOpenInit,
+            msg_connection_open_try::MsgConnectionOpenTry,
+        },
     },
-    client::{msg_create_client::MsgCreateClient, msg_update_client::MsgUpdateClient},
-    connection::{
-        msg_connection_open_ack::MsgConnectionOpenAck,
-        msg_connection_open_confirm::MsgConnectionOpenConfirm,
-        msg_connection_open_init::MsgConnectionOpenInit,
-        msg_connection_open_try::MsgConnectionOpenTry,
-    },
+    traits::{ChainOf, ClientStateOf, ConsensusStateOf, HeaderOf, HeightOf, LightClientBase},
 };
 
-use crate::{
-    chain::{
-        ChainOf, ClientStateOf, ConsensusStateOf, HeaderOf, HeightOf, LightClient, LightClientBase,
-    },
-    msg::any_enum,
-};
+use crate::{any_enum, LightClient};
 
 any_enum! {
     /// Defines messages that are sent *to* the lightclient `L`.

@@ -9,8 +9,7 @@ use futures::StreamExt;
 use reqwest::StatusCode;
 use tokio::sync::mpsc::{unbounded_channel, UnboundedSender};
 use tokio_stream::{wrappers::UnboundedReceiverStream, Stream};
-
-use crate::msg::RelayerMsg;
+use voyager_message::RelayerMsg;
 
 #[derive(Debug, Clone)]
 pub struct MsgServer;
