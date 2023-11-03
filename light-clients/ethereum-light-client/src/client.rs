@@ -67,10 +67,9 @@ impl IbcClient for EthereumLightClient {
             read_consensus_state(deps, &height)?.ok_or(Error::ConsensusStateNotFound(height))?;
         let client_state: WasmClientState = read_client_state(deps)?;
 
-        let path = path
-            .key_path
-            .pop()
-            .ok_or(Error::InvalidPath("path is empty".into()))?;
+        let path = path.key_path.pop().ok_or(Error::InvalidPath(
+            "path is empty, cannot do membership verification".to_string(),
+        ))?;
 
         // This storage root is verified during the header update, so we don't need to verify it again.
         let storage_root = consensus_state.data.storage_root;
@@ -139,7 +138,10 @@ impl IbcClient for EthereumLightClient {
             wasm_client_state.data.genesis_validators_root.clone(),
             VerificationContext { deps },
         )
-        .map_err(|e| Error::Verification(e.to_string()))?;
+        .map_err(|e| Error::Verification {
+            context: "light client update validation failed".to_string(),
+            error: e.to_string(),
+        })?;
 
         let proof_data = header
             .account_update
@@ -161,7 +163,10 @@ impl IbcClient for EthereumLightClient {
                 )
             })?,
         )
-        .map_err(|e| Error::Verification(e.to_string()))?;
+        .map_err(|e| Error::Verification {
+            context: "account storage root verification failed".to_string(),
+            error: e.to_string(),
+        })?;
 
         Ok(ContractResult::valid(None))
     }
@@ -299,7 +304,10 @@ impl IbcClient for EthereumLightClient {
                     )
                 })?;
             if consensus_state.data.storage_root != storage_root {
-                return Err(Error::StorageRootMismatch);
+                return Err(Error::StorageRootMismatch(
+                    consensus_state.data.storage_root.to_string(),
+                    storage_root.to_string(),
+                ));
             }
 
             if consensus_state.data.slot != header.consensus_update.attested_header.beacon.slot {
@@ -414,7 +422,10 @@ fn do_verify_membership(
         &rlp::encode(&storage_proof.value.as_slice()),
         &storage_proof.proof,
     )
-    .map_err(|e| Error::Verification(e.to_string()))
+    .map_err(|e| Error::Verification {
+        context: "storage proof verification failed".to_string(),
+        error: e.to_string(),
+    })
 }
 
 /// Verifies that no value is committed at `path` in the counterparty light client's storage.
@@ -426,9 +437,12 @@ fn do_verify_non_membership(
 ) -> Result<(), Error> {
     check_commitment_key(path, counterparty_commitment_slot, &storage_proof.key)?;
 
-    if verify_storage_absence(storage_root, &storage_proof.key, &storage_proof.proof)
-        .map_err(|e| Error::Verification(e.to_string()))?
-    {
+    if verify_storage_absence(storage_root, &storage_proof.key, &storage_proof.proof).map_err(
+        |e| Error::Verification {
+            context: "storage absence verification failed".to_string(),
+            error: e.to_string(),
+        },
+    )? {
         Ok(())
     } else {
         Err(Error::CounterpartyStorageNotNil)

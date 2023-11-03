@@ -68,7 +68,9 @@ pub fn query_fast_aggregate_verify(
         signature,
     });
 
-    deps.querier.query(&request).map_err(Error::custom_query)
+    deps.querier
+        .query(&request)
+        .map_err(|e| Error::CustomQuery(format!("`fast_aggregate_verify` failed: {e}")))
 }
 
 pub fn query_aggregate_public_keys(
@@ -79,11 +81,14 @@ pub fn query_aggregate_public_keys(
         public_keys: public_keys.into_iter().map(|x| Binary(x.into())).collect(),
     });
 
-    let response: Binary = deps.querier.query(&request).map_err(Error::custom_query)?;
+    let response: Binary = deps
+        .querier
+        .query(&request)
+        .map_err(|e| Error::CustomQuery(format!("`aggregate_public_keys` failed: {e}")))?;
 
-    response
-        .0
-        .as_slice()
-        .try_into()
-        .map_err(|_| Error::custom_query("Invalid public key type"))
+    response.0.as_slice().try_into().map_err(|_| {
+        Error::CustomQuery(
+            "Invalid public key is returned from `aggregate_public_keys`".to_string(),
+        )
+    })
 }

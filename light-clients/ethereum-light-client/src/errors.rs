@@ -38,22 +38,14 @@ pub enum Error {
     #[error("Consensus state not found at height {0}")]
     ConsensusStateNotFound(Height),
 
-    // TODO(aeryz): we could add additional context, now we only propagate the underlying error but we
-    // can't guarantee if it's gonna be meaningful.
-    #[error("Verification error: {0}")]
-    Verification(String),
+    #[error("Verification error: {error} ({context})")]
+    Verification { context: String, error: String },
 
     #[error("Invalid path {0}")]
     InvalidPath(String),
 
-    #[error("Invalid membership value")]
-    InvalidValue,
-
     #[error("Invalid commitment key. Expected {0}, got {1}.")]
     InvalidCommitmentKey(String, String),
-
-    #[error("Missing field in the protobuf encoded data")]
-    MissingProtoField,
 
     #[error("Client's store period must be equal to update's finalized period")]
     StorePeriodMustBeEqualToFinalizedPeriod,
@@ -73,8 +65,8 @@ pub enum Error {
     #[error("Custom query: {0}")]
     CustomQuery(String),
 
-    #[error("Storage root mismatch")]
-    StorageRootMismatch,
+    #[error("Storage root mismatch. Expected {0}, got {1}")]
+    StorageRootMismatch(String, String),
 
     #[error("Wasm client error: {0}")]
     Wasm(String),
@@ -97,10 +89,6 @@ impl Error {
     pub fn stored_value_mismatch<B1: AsRef<[u8]>, B2: AsRef<[u8]>>(expected: B1, got: B2) -> Error {
         Error::ExpectedAndStoredValueMismatch(hex::encode(expected), hex::encode(got))
     }
-
-    pub fn custom_query<S: ToString>(s: S) -> Error {
-        Error::CustomQuery(s.to_string())
-    }
 }
 
 impl From<TryFromProtoBytesError<TryFromProtoErrorOf<Header<Config>>>> for Error {
@@ -115,6 +103,7 @@ impl From<ics008_wasm_client::Error> for Error {
     fn from(error: ics008_wasm_client::Error) -> Self {
         match error {
             ics008_wasm_client::Error::Decode(e) => Error::DecodeFromProto { reason: e },
+            // TODO(aeryz): what
             ics008_wasm_client::Error::UnexpectedCallDataFromHostModule(e) => Error::Wasm(e),
             ics008_wasm_client::Error::ClientStateNotFound => Error::ClientStateNotFound,
         }
