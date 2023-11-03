@@ -11,58 +11,55 @@ pub struct InvalidMerkleBranch {
     pub root: H256,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, derive_more::Display)]
 pub enum Error {
+    #[display(fmt = "invalid merkle branch ({:?})", "_0")]
     InvalidMerkleBranch(InvalidMerkleBranch),
+    #[display(fmt = "invalid chain conversion")]
     InvalidChainVersion,
+    #[display(fmt = "crypto error")]
     Crypto,
+    #[display(
+        fmt = "expected current sync committee to be provided since `update_period == current_period`"
+    )]
     ExpectedCurrentSyncCommittee,
+    #[display(
+        fmt = "expected next sync committee to be provided since `update_period > current_period`"
+    )]
     ExpectedNextSyncCommittee,
+    #[display(
+        fmt = "irrelevant update since the order of the slots in the update data, and stored data is not correct"
+    )]
     IrrelevantUpdate,
+    #[display(fmt = "the order of the slots in the update data, and stored data is not correct")]
     InvalidSlots,
-    InvalidSignature,
+    #[display(
+        fmt = "signature period must be equal to `store_period` or `store_period + 1` \
+                when the next sync committee is stored. Otherwise, it must be equal to `store_period`"
+    )]
     InvalidSignaturePeriod,
+    #[display(fmt = "signature is not valid")]
+    InvalidSignature,
+    #[display(fmt = "invalid public key")]
     InvalidPublicKey,
+    #[display(fmt = "next sync committee does not match with the one in the current state")]
     NextSyncCommitteeMismatch,
+    #[display(
+        fmt = "insufficient number of sync committee participants, expected it to be at least ({}) but got ({})",
+        "_0",
+        "_1"
+    )]
     InsufficientSyncCommitteeParticipants(usize, usize),
+    #[display(fmt = "Bls error ({:?})", "_0")]
     Bls(AmclError),
+    #[display(fmt = "proof is invalid due to value mismatch")]
     ValueMismatch,
+    #[display(fmt = "trie error ({:?})", "_0")]
     Trie(Box<TrieError<primitive_types::H256, rlp::DecoderError>>),
+    #[display(fmt = "rlp decoding failed ({})", "_0")]
     RlpDecode(String),
+    #[display(fmt = "custom query error: ({})", "_0")]
     CustomError(String),
-}
-
-impl core::fmt::Display for Error {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Error::InvalidMerkleBranch(err) => write!(f, "Invalid merkle branch: {err:#?}"),
-            Error::InvalidChainVersion => write!(f, "Invalid chain conversion."),
-            Error::Crypto => write!(f, "Crypto error."),
-            Error::ExpectedCurrentSyncCommittee => write!(f, "Expected current sync committee to be provided since `update_period == current_period`."),
-            Error::ExpectedNextSyncCommittee => write!(f, "Expected next sync committee to be provided since `update_period > current_period`"),
-            Error::IrrelevantUpdate => write!(f, "Irrelevant update since the order of the slots in the update data, and stored data is not correct."),
-            Error::InvalidSlots => write!(f, "Invalid slots since the order of the slots in the update data, and stored data is not correct."),
-            Error::InvalidSignaturePeriod => write!(
-                f,
-                "Signature period must be equal to `store_period` or `store_period + 1` \
-                when the next sync committee is stored. Otherwise, it must be equal to `store_period`."
-            ),
-            Error::NextSyncCommitteeMismatch => write!(
-                f,
-                "Next sync committee does not match with the one in the current state."
-            ),
-            Error::InsufficientSyncCommitteeParticipants(expected, got) => {
-                write!(f, "Insufficient number of sync committee participants. Expected it to be at least {expected}, but got {got}")
-            }
-            Error::Bls(e) => write!(f, "Bls error: {e:?}"),
-            Error::InvalidSignature => write!(f, "Signature is not valid."),
-            Error::InvalidPublicKey => write!(f, "Invalid public key."),
-            Error::ValueMismatch => write!(f, "Proof is invalid. Value mismatch."),
-            Error::Trie(e) => write!(f, "Trie error: {e:?}"),
-            Error::RlpDecode(reason) => write!(f, "Rlp decoding failed: {reason}"),
-            Error::CustomError(e) => write!(f, "Custom query error: {}", e),
-        }
-    }
 }
 
 impl From<AmclError> for Error {

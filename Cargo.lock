@@ -1798,6 +1798,7 @@ name = "ethereum-verifier"
 version = "0.1.0"
 dependencies = [
  "bytes",
+ "derive_more",
  "ethereum_ssz",
  "hash-db",
  "hash256-std-hasher",
