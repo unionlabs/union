@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	context "context"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"galois/pkg/lightclient"
@@ -13,6 +14,7 @@ import (
 	"math/big"
 	"os"
 	"runtime"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -43,10 +45,290 @@ type proverServer struct {
 	cs      cs_bn254.R1CS
 	pk      backend_bn254.ProvingKey
 	vk      backend_bn254.VerifyingKey
-	proving atomic.Bool
+	maxJobs uint32
+	nbJobs  atomic.Uint32
+	results sync.Map
 }
 
 func (*proverServer) mustEmbedUnimplementedUnionProverAPIServer() {}
+
+func (p *proverServer) Poll(ctx context.Context, pollReq *PollRequest) (*PollResponse, error) {
+	req := pollReq.Request
+
+	prove := func() (*ProveResponse, error) {
+
+		marshalValidators := func(validators []*types.SimpleValidator) ([lightclient.MaxVal]lightclient.Validator, []byte, error) {
+			lcValidators := [lightclient.MaxVal]lightclient.Validator{}
+			// Make sure we zero initialize
+			for i := 0; i < lightclient.MaxVal; i++ {
+				lcValidators[i].HashableX = 0
+				lcValidators[i].HashableXMSB = 0
+				lcValidators[i].HashableY = 0
+				lcValidators[i].HashableYMSB = 0
+				lcValidators[i].Power = 0
+			}
+			merkleTree := make([][]byte, len(validators))
+			for i, val := range validators {
+				tmPK, err := ce.PubKeyFromProto(*val.PubKey)
+				if err != nil {
+					return lcValidators, nil, fmt.Errorf("Could not deserialize proto to tendermint public key %s", err)
+				}
+				var public bn254.G1Affine
+				_, err = public.SetBytes(tmPK.Bytes())
+				if err != nil {
+					return lcValidators, nil, fmt.Errorf("Could not deserialize bn254 public key %s", err)
+				}
+				leaf, err := cometbn254.NewMerkleLeaf(public, val.VotingPower)
+				if err != nil {
+					return lcValidators, nil, fmt.Errorf("Could not create merkle leaf %s", err)
+				}
+				lcValidators[i].HashableX = leaf.ShiftedX
+				lcValidators[i].HashableY = leaf.ShiftedY
+				lcValidators[i].HashableXMSB = leaf.MsbX
+				lcValidators[i].HashableYMSB = leaf.MsbY
+				lcValidators[i].Power = leaf.VotingPower
+
+				merkleTree[i] = leaf.Hash()
+			}
+			return lcValidators, merkle.MimcHashFromByteSlices(merkleTree), nil
+		}
+
+		aggregateSignatures := func(signatures [][]byte) (curve.G2Affine, error) {
+			var aggregatedSignature curve.G2Affine
+			var decompressedSignature curve.G2Affine
+			for _, signature := range signatures {
+				_, err := decompressedSignature.SetBytes(signature)
+				if err != nil {
+					return curve.G2Affine{}, fmt.Errorf("Could not decompress signature %s", err)
+				}
+				aggregatedSignature.Add(&aggregatedSignature, &decompressedSignature)
+			}
+			return aggregatedSignature, nil
+		}
+
+		log.Println("Marshalling trusted validators...")
+		trustedValidators, trustedValidatorsRoot, err := marshalValidators(req.TrustedCommit.Validators)
+		if err != nil {
+			return nil, fmt.Errorf("Could not marshal trusted validators %s", err)
+		}
+
+		log.Println("Aggregating trusted signature...")
+		trustedAggregatedSignature, err := aggregateSignatures(req.TrustedCommit.Signatures)
+		if err != nil {
+			return nil, fmt.Errorf("Could not aggregate trusted signature %s", err)
+		}
+
+		log.Println("Marshalling untrusted validators...")
+		untrustedValidators, untrustedValidatorsRoot, err := marshalValidators(req.UntrustedCommit.Validators)
+		if err != nil {
+			return nil, fmt.Errorf("Could not marshal untrusted validators %s", err)
+		}
+
+		log.Println("Aggregating untrusted signature...")
+		untrustedAggregatedSignature, err := aggregateSignatures(req.UntrustedCommit.Signatures)
+		if err != nil {
+			return nil, fmt.Errorf("Could not aggregate untrusted signature %s", err)
+		}
+
+		trustedInput := lcgadget.TendermintNonAdjacentLightClientInput{
+			Sig:           gadget.NewG2Affine(trustedAggregatedSignature),
+			Validators:    trustedValidators,
+			NbOfVal:       len(req.TrustedCommit.Validators),
+			NbOfSignature: len(req.TrustedCommit.Signatures),
+			Bitmap:        new(big.Int).SetBytes(req.TrustedCommit.Bitmap),
+		}
+
+		untrustedInput := lcgadget.TendermintNonAdjacentLightClientInput{
+			Sig:           gadget.NewG2Affine(untrustedAggregatedSignature),
+			Validators:    untrustedValidators,
+			NbOfVal:       len(req.UntrustedCommit.Validators),
+			NbOfSignature: len(req.UntrustedCommit.Signatures),
+			Bitmap:        new(big.Int).SetBytes(req.UntrustedCommit.Bitmap),
+		}
+
+		signedBytes, err := protoio.MarshalDelimited(req.Vote)
+		if err != nil {
+			return nil, fmt.Errorf("Could not marshal the vote %s", err)
+		}
+
+		hmX, hmY := cometbn254.HashToField2(signedBytes)
+
+		witness := lcgadget.Circuit{
+			TrustedInput:             trustedInput,
+			UntrustedInput:           untrustedInput,
+			ExpectedTrustedValRoot:   trustedValidatorsRoot,
+			ExpectedUntrustedValRoot: untrustedValidatorsRoot,
+			Message:                  [2]frontend.Variable{hmX, hmY},
+		}
+
+		privateWitness, err := frontend.NewWitness(&witness, ecc.BN254.ScalarField())
+		if err != nil {
+			return nil, fmt.Errorf("Could not create witness %s", err)
+		}
+
+		logger.SetOutput(os.Stdout)
+		logger.Logger().Level(zerolog.TraceLevel)
+
+		log.Println("Executing proving backend...")
+		proof, err := backend.Prove(constraint.R1CS(&p.cs), backend.ProvingKey(&p.pk), privateWitness)
+		if err != nil {
+			return nil, fmt.Errorf("Prover failed with %s", err)
+		}
+
+		publicWitness, err := privateWitness.Public()
+		if err != nil {
+			return nil, fmt.Errorf("Could not extract public inputs from witness %s", err)
+		}
+
+		// F_r element
+		var commitmentHash []byte
+		// G1 uncompressed
+		var proofCommitment []byte
+		// Ugly but https://github.com/ConsenSys/gnark/issues/652
+		switch _proof := proof.(type) {
+		case *backend_bn254.Proof:
+			if len(p.vk.PublicAndCommitmentCommitted) != 1 {
+				return nil, fmt.Errorf("Expected a single proof commitment, got: %d", len(p.vk.PublicAndCommitmentCommitted))
+			}
+			witnesses := publicWitness.Vector().(fr.Vector)
+			maxNbPublicCommitted := 0
+			for _, s := range p.vk.PublicAndCommitmentCommitted {
+				maxNbPublicCommitted = utils.Max(maxNbPublicCommitted, len(s))
+			}
+			commitmentPrehashSerialized := make([]byte, curve.SizeOfG1AffineUncompressed+maxNbPublicCommitted*fr.Bytes)
+			for i := range p.vk.PublicAndCommitmentCommitted {
+				copy(commitmentPrehashSerialized, _proof.Commitments[i].Marshal())
+				offset := curve.SizeOfG1AffineUncompressed
+				for j := range p.vk.PublicAndCommitmentCommitted[i] {
+					copy(commitmentPrehashSerialized[offset:], witnesses[p.vk.PublicAndCommitmentCommitted[i][j]-1].Marshal())
+					offset += fr.Bytes
+				}
+				if res, err := fr.Hash(commitmentPrehashSerialized[:offset], []byte(constraint.CommitmentDst), 1); err != nil {
+					return nil, fmt.Errorf("Failed to hash commitment: %v", err)
+				} else {
+					commitmentHash = res[0].Marshal()
+				}
+			}
+			proofCommitment = _proof.Commitments[0].Marshal()
+			break
+		default:
+			return nil, fmt.Errorf("Impossible: proof backend must be BN254 at this point")
+		}
+
+		publicInputs, err := publicWitness.MarshalBinary()
+		if err != nil {
+			return nil, fmt.Errorf("Could not marshal public witness %s", err)
+		}
+
+		var proofBuffer bytes.Buffer
+		mem := bufio.NewWriter(&proofBuffer)
+		_, err = proof.WriteRawTo(mem)
+		if err != nil {
+			return nil, err
+		}
+		mem.Flush()
+		proofBz := proofBuffer.Bytes()
+
+		var compressedProofBuffer bytes.Buffer
+		mem = bufio.NewWriter(&compressedProofBuffer)
+		_, err = proof.WriteTo(mem)
+		if err != nil {
+			return nil, err
+		}
+		mem.Flush()
+		compressedProofBz := compressedProofBuffer.Bytes()
+
+		// Due to how gnark proves, we not only need the ZKP A/B/C points, but also a commitment hash and proof commitment.
+		// The proof is an uncompressed proof serialized by gnark, we extract A(G1)/B(G2)/C(G1) and then append the commitment hash and commitment proof from the public inputs.
+		// The EVM verifier has been extended to support this two extra public inputs.
+		evmProof := append(append(proofBz[:256], commitmentHash...), proofCommitment...)
+
+		proveRes := ProveResponse{
+			Proof: &ZeroKnowledgeProof{
+				Content:           proofBz,
+				CompressedContent: compressedProofBz,
+				PublicInputs:      publicInputs,
+				EvmProof:          evmProof,
+			},
+			TrustedValidatorSetRoot:   trustedValidatorsRoot,
+			UntrustedValidatorSetRoot: untrustedValidatorsRoot,
+		}
+
+		return &proveRes, nil
+	}
+
+	reqJson, err := json.MarshalIndent(req, "", "    ")
+	if err != nil {
+		return nil, err
+	}
+	proveKey := sha256.Sum256(reqJson)
+
+	result, found := p.results.LoadOrStore(proveKey, &ProveRequestPending{})
+	if found {
+		log.Println("Poll check...")
+
+		switch _result := result.(type) {
+		case *ProveRequestPending:
+			return &PollResponse{
+				Result: &PollResponse_Pending{
+					Pending: _result,
+				},
+			}, nil
+		case *ProveResponse:
+			p.results.Delete(proveKey)
+			return &PollResponse{
+				Result: &PollResponse_Done{
+					Done: &ProveRequestDone{
+						Response: _result,
+					},
+				},
+			}, nil
+		case string:
+			return &PollResponse{
+				Result: &PollResponse_Failed{
+					Failed: &ProveRequestFailed{
+						Message: _result,
+					},
+				},
+			}, nil
+		}
+	} else {
+		log.Println("Poll new...")
+
+		for true {
+			nbJobs := p.nbJobs.Load()
+			if nbJobs >= p.maxJobs {
+				p.results.Delete(proveKey)
+				return nil, fmt.Errorf("busy_building")
+			} else {
+				if swapped := p.nbJobs.CompareAndSwap(nbJobs, nbJobs+1); swapped {
+					break
+				}
+			}
+			time.Sleep(10 * time.Millisecond)
+		}
+
+		go func() {
+			log.Println(string(reqJson))
+			proveRes, err := prove()
+			runtime.GC()
+			if err != nil {
+				p.results.Store(proveKey, fmt.Errorf("failed to generate proof: %v", err))
+			} else {
+				p.results.Store(proveKey, proveRes)
+			}
+			for true {
+				value := p.nbJobs.Load()
+				if swapped := p.nbJobs.CompareAndSwap(value, value-1); swapped {
+					break
+				}
+				time.Sleep(10 * time.Millisecond)
+			}
+		}()
+	}
+
+	return nil, nil
+}
 
 func (p *proverServer) Verify(ctx context.Context, req *VerifyRequest) (*VerifyResponse, error) {
 	log.Println("Verifying...")
@@ -176,224 +458,23 @@ func (p *proverServer) QueryStats(ctx context.Context, req *QueryStatsRequest) (
 }
 
 func (p *proverServer) Prove(ctx context.Context, req *ProveRequest) (*ProveResponse, error) {
-	log.Println("Proving...")
-
 	for true {
-		swapped := p.proving.CompareAndSwap(false, true)
-		if swapped {
-			break
-		} else {
-			time.Sleep(1000)
+		pollRes, err := p.Poll(ctx, &PollRequest{
+			Request: req,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("%v", err)
 		}
-	}
-
-	reqJson, err := json.MarshalIndent(req, "", "    ")
-	if err != nil {
-		return nil, err
-	}
-	log.Println(string(reqJson))
-
-	marshalValidators := func(validators []*types.SimpleValidator) ([lightclient.MaxVal]lightclient.Validator, []byte, error) {
-		lcValidators := [lightclient.MaxVal]lightclient.Validator{}
-		// Make sure we zero initialize
-		for i := 0; i < lightclient.MaxVal; i++ {
-			lcValidators[i].HashableX = 0
-			lcValidators[i].HashableXMSB = 0
-			lcValidators[i].HashableY = 0
-			lcValidators[i].HashableYMSB = 0
-			lcValidators[i].Power = 0
+		if done := pollRes.GetDone(); done != nil {
+			return done.Response, nil
 		}
-		merkleTree := make([][]byte, len(validators))
-		for i, val := range validators {
-			tmPK, err := ce.PubKeyFromProto(*val.PubKey)
-			if err != nil {
-				return lcValidators, nil, fmt.Errorf("Could not deserialize proto to tendermint public key %s", err)
-			}
-			var public bn254.G1Affine
-			_, err = public.SetBytes(tmPK.Bytes())
-			if err != nil {
-				return lcValidators, nil, fmt.Errorf("Could not deserialize bn254 public key %s", err)
-			}
-			leaf, err := cometbn254.NewMerkleLeaf(public, val.VotingPower)
-			if err != nil {
-				return lcValidators, nil, fmt.Errorf("Could not create merkle leaf %s", err)
-			}
-			lcValidators[i].HashableX = leaf.ShiftedX
-			lcValidators[i].HashableY = leaf.ShiftedY
-			lcValidators[i].HashableXMSB = leaf.MsbX
-			lcValidators[i].HashableYMSB = leaf.MsbY
-			lcValidators[i].Power = leaf.VotingPower
-
-			merkleTree[i] = leaf.Hash()
+		if failed := pollRes.GetFailed(); failed != nil {
+			return nil, fmt.Errorf("%v", failed.Message)
 		}
-		return lcValidators, merkle.MimcHashFromByteSlices(merkleTree), nil
+		time.Sleep(2 * time.Second)
 	}
 
-	aggregateSignatures := func(signatures [][]byte) (curve.G2Affine, error) {
-		var aggregatedSignature curve.G2Affine
-		var decompressedSignature curve.G2Affine
-		for _, signature := range signatures {
-			_, err := decompressedSignature.SetBytes(signature)
-			if err != nil {
-				return curve.G2Affine{}, fmt.Errorf("Could not decompress signature %s", err)
-			}
-			aggregatedSignature.Add(&aggregatedSignature, &decompressedSignature)
-		}
-		return aggregatedSignature, nil
-	}
-
-	log.Println("Marshalling trusted validators...")
-	trustedValidators, trustedValidatorsRoot, err := marshalValidators(req.TrustedCommit.Validators)
-	if err != nil {
-		return nil, fmt.Errorf("Could not marshal trusted validators %s", err)
-	}
-
-	log.Println("Aggregating trusted signature...")
-	trustedAggregatedSignature, err := aggregateSignatures(req.TrustedCommit.Signatures)
-	if err != nil {
-		return nil, fmt.Errorf("Could not aggregate trusted signature %s", err)
-	}
-
-	log.Println("Marshalling untrusted validators...")
-	untrustedValidators, untrustedValidatorsRoot, err := marshalValidators(req.UntrustedCommit.Validators)
-	if err != nil {
-		return nil, fmt.Errorf("Could not marshal untrusted validators %s", err)
-	}
-
-	log.Println("Aggregating untrusted signature...")
-	untrustedAggregatedSignature, err := aggregateSignatures(req.UntrustedCommit.Signatures)
-	if err != nil {
-		return nil, fmt.Errorf("Could not aggregate untrusted signature %s", err)
-	}
-
-	trustedInput := lcgadget.TendermintNonAdjacentLightClientInput{
-		Sig:           gadget.NewG2Affine(trustedAggregatedSignature),
-		Validators:    trustedValidators,
-		NbOfVal:       len(req.TrustedCommit.Validators),
-		NbOfSignature: len(req.TrustedCommit.Signatures),
-		Bitmap:        new(big.Int).SetBytes(req.TrustedCommit.Bitmap),
-	}
-
-	untrustedInput := lcgadget.TendermintNonAdjacentLightClientInput{
-		Sig:           gadget.NewG2Affine(untrustedAggregatedSignature),
-		Validators:    untrustedValidators,
-		NbOfVal:       len(req.UntrustedCommit.Validators),
-		NbOfSignature: len(req.UntrustedCommit.Signatures),
-		Bitmap:        new(big.Int).SetBytes(req.UntrustedCommit.Bitmap),
-	}
-
-	signedBytes, err := protoio.MarshalDelimited(req.Vote)
-	if err != nil {
-		return nil, fmt.Errorf("Could not marshal the vote %s", err)
-	}
-
-	hmX, hmY := cometbn254.HashToField2(signedBytes)
-
-	witness := lcgadget.Circuit{
-		TrustedInput:             trustedInput,
-		UntrustedInput:           untrustedInput,
-		ExpectedTrustedValRoot:   trustedValidatorsRoot,
-		ExpectedUntrustedValRoot: untrustedValidatorsRoot,
-		Message:                  [2]frontend.Variable{hmX, hmY},
-	}
-
-	privateWitness, err := frontend.NewWitness(&witness, ecc.BN254.ScalarField())
-	if err != nil {
-		return nil, fmt.Errorf("Could not create witness %s", err)
-	}
-
-	logger.SetOutput(os.Stdout)
-	logger.Logger().Level(zerolog.TraceLevel)
-
-	log.Println("Executing proving backend...")
-	proof, err := backend.Prove(constraint.R1CS(&p.cs), backend.ProvingKey(&p.pk), privateWitness)
-	if err != nil {
-		return nil, fmt.Errorf("Prover failed with %s", err)
-	}
-
-	// Run GC to avoid high residency, a single prove call is very expensive in term of memory.
-	runtime.GC()
-
-	p.proving.Store(false)
-
-	publicWitness, err := privateWitness.Public()
-	if err != nil {
-		return nil, fmt.Errorf("Could not extract public inputs from witness %s", err)
-	}
-
-	// F_r element
-	var commitmentHash []byte
-	// G1 uncompressed
-	var proofCommitment []byte
-	// Ugly but https://github.com/ConsenSys/gnark/issues/652
-	switch _proof := proof.(type) {
-	case *backend_bn254.Proof:
-		if len(p.vk.PublicAndCommitmentCommitted) != 1 {
-			return nil, fmt.Errorf("Expected a single proof commitment, got: %d", len(p.vk.PublicAndCommitmentCommitted))
-		}
-		witnesses := publicWitness.Vector().(fr.Vector)
-		maxNbPublicCommitted := 0
-		for _, s := range p.vk.PublicAndCommitmentCommitted {
-			maxNbPublicCommitted = utils.Max(maxNbPublicCommitted, len(s))
-		}
-		commitmentPrehashSerialized := make([]byte, curve.SizeOfG1AffineUncompressed+maxNbPublicCommitted*fr.Bytes)
-		for i := range p.vk.PublicAndCommitmentCommitted {
-			copy(commitmentPrehashSerialized, _proof.Commitments[i].Marshal())
-			offset := curve.SizeOfG1AffineUncompressed
-			for j := range p.vk.PublicAndCommitmentCommitted[i] {
-				copy(commitmentPrehashSerialized[offset:], witnesses[p.vk.PublicAndCommitmentCommitted[i][j]-1].Marshal())
-				offset += fr.Bytes
-			}
-			if res, err := fr.Hash(commitmentPrehashSerialized[:offset], []byte(constraint.CommitmentDst), 1); err != nil {
-				return nil, fmt.Errorf("Failed to hash commitment: %v", err)
-			} else {
-				commitmentHash = res[0].Marshal()
-			}
-		}
-		proofCommitment = _proof.Commitments[0].Marshal()
-		break
-	default:
-		return nil, fmt.Errorf("Impossible: proof backend must be BN254 at this point")
-	}
-
-	publicInputs, err := publicWitness.MarshalBinary()
-	if err != nil {
-		return nil, fmt.Errorf("Could not marshal public witness %s", err)
-	}
-
-	var proofBuffer bytes.Buffer
-	mem := bufio.NewWriter(&proofBuffer)
-	_, err = proof.WriteRawTo(mem)
-	if err != nil {
-		return nil, err
-	}
-	mem.Flush()
-	proofBz := proofBuffer.Bytes()
-
-	var compressedProofBuffer bytes.Buffer
-	mem = bufio.NewWriter(&compressedProofBuffer)
-	_, err = proof.WriteTo(mem)
-	if err != nil {
-		return nil, err
-	}
-	mem.Flush()
-	compressedProofBz := compressedProofBuffer.Bytes()
-
-	// Due to how gnark proves, we not only need the ZKP A/B/C points, but also a commitment hash and proof commitment.
-	// The proof is an uncompressed proof serialized by gnark, we extract A(G1)/B(G2)/C(G1) and then append the commitment hash and commitment proof from the public inputs.
-	// The EVM verifier has been extended to support this two extra public inputs.
-	evmProof := append(append(proofBz[:256], commitmentHash...), proofCommitment...)
-
-	return &ProveResponse{
-		Proof: &ZeroKnowledgeProof{
-			Content:           proofBz,
-			CompressedContent: compressedProofBz,
-			PublicInputs:      publicInputs,
-			EvmProof:          evmProof,
-		},
-		TrustedValidatorSetRoot:   trustedValidatorsRoot,
-		UntrustedValidatorSetRoot: untrustedValidatorsRoot,
-	}, nil
+	panic("impossible; qed;")
 }
 
 func loadOrCreate(r1csPath string, pkPath string, vkPath string) (cs_bn254.R1CS, backend_bn254.ProvingKey, backend_bn254.VerifyingKey, error) {
@@ -457,7 +538,7 @@ func loadOrCreate(r1csPath string, pkPath string, vkPath string) (cs_bn254.R1CS,
 	return cs, pk, vk, nil
 }
 
-func NewProverServer(r1csPath string, pkPath string, vkPath string) (*proverServer, error) {
+func NewProverServer(maxJobs uint32, r1csPath string, pkPath string, vkPath string) (*proverServer, error) {
 	cs, pk, vk, err := loadOrCreate(r1csPath, pkPath, vkPath)
 	if err != nil {
 		return nil, err
@@ -465,7 +546,7 @@ func NewProverServer(r1csPath string, pkPath string, vkPath string) (*proverServ
 
 	runtime.GC()
 
-	return &proverServer{cs: cs, pk: pk, vk: vk}, nil
+	return &proverServer{cs: cs, pk: pk, vk: vk, maxJobs: maxJobs}, nil
 }
 
 func readFrom(file string, obj io.ReaderFrom) error {

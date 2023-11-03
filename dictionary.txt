@@ -433,6 +433,7 @@ notrunc
 numtide
 omit
 omnichain
+oneof
 openapi
 openapiv
 opsz
