@@ -1,7 +1,9 @@
 use cosmwasm_std::StdError;
 use thiserror::Error as ThisError;
 use unionlabs::{
-    ibc::lightclients::ethereum::header::Header, TryFromProtoBytesError, TryFromProtoErrorOf,
+    bls::BlsPublicKey,
+    ibc::{core::client::height::Height, lightclients::ethereum::header::Header},
+    TryFromProtoBytesError, TryFromProtoErrorOf,
 };
 
 use crate::Config;
@@ -11,57 +13,35 @@ pub enum Error {
     #[error("{0}")]
     Std(#[from] StdError),
 
-    #[error("Unimplemented")]
-    Unimplemented,
-
-    #[error("Decode error: {0}")]
-    DecodeError(String),
-
-    #[error("Unknown type url")]
-    UnknownTypeUrl,
+    #[error("Error while decoding proto: {reason}")]
+    DecodeFromProto { reason: String },
 
     #[error("Client state not found")]
     ClientStateNotFound,
 
-    #[error("Invalid proof format")]
-    InvalidProofFormat,
+    #[error("Invalid proof format: `{0}`")]
+    InvalidProofFormat(String),
 
-    #[error("Invalid client id")]
-    InvalidClientId,
+    #[error(
+        "Given trusted sync committee doesn't match the given aggregate \
+        public key, or the stored one. Stored aggregate: {stored_aggregate}, \
+        given aggregate: {given_aggregate}"
+    )]
+    TrustedSyncCommitteeMismatch {
+        stored_aggregate: BlsPublicKey,
+        given_aggregate: BlsPublicKey,
+    },
 
-    #[error("Invalid public key: {0}")]
-    InvalidPublicKey(String),
-
-    #[error("Invalid height")]
-    InvalidHeight,
-
-    #[error("Invalid sync committee")]
-    InvalidSyncCommittee,
-
-    #[error("No next sync committee")]
+    #[error("Active sync committee is `next` but there is no next sync committee in the consensus state")]
     NoNextSyncCommittee,
 
-    #[error("Consensus state not found for {0}-{1}")]
-    // REVIEW: Why not just use `Height` directly?
-    ConsensusStateNotFound(u64, u64),
+    #[error("Consensus state not found at height {0}")]
+    ConsensusStateNotFound(Height),
 
-    #[error("Timestamp not set")]
-    TimestampNotSet,
-
+    // TODO(aeryz): we could add additional context, now we only propagate the underlying error but we
+    // can't guarantee if it's gonna be meaningful.
     #[error("Verification error: {0}")]
     Verification(String),
-
-    #[error("Unexpected timestamp: Expected timestamp {0}, got {1}")]
-    UnexpectedTimestamp(u64, u64),
-
-    #[error("Future period")]
-    FuturePeriod,
-
-    #[error("Cannot generate proof")]
-    CannotGenerateProof,
-
-    #[error("Invalid chain version")]
-    InvalidChainVersion,
 
     #[error("Invalid path {0}")]
     InvalidPath(String),
@@ -107,14 +87,6 @@ pub enum Error {
 }
 
 impl Error {
-    pub fn decode<S: Into<String>>(s: S) -> Error {
-        Error::DecodeError(s.into())
-    }
-
-    pub fn invalid_public_key<S: ToString>(s: S) -> Error {
-        Error::InvalidPublicKey(s.to_string())
-    }
-
     pub fn invalid_commitment_key<B1: AsRef<[u8]>, B2: AsRef<[u8]>>(
         expected: B1,
         got: B2,
@@ -133,16 +105,18 @@ impl Error {
 
 impl From<TryFromProtoBytesError<TryFromProtoErrorOf<Header<Config>>>> for Error {
     fn from(value: TryFromProtoBytesError<TryFromProtoErrorOf<Header<Config>>>) -> Self {
-        Self::DecodeError(format!("{:?}", value))
+        Self::DecodeFromProto {
+            reason: format!("{:?}", value),
+        }
     }
 }
 
 impl From<ics008_wasm_client::Error> for Error {
     fn from(error: ics008_wasm_client::Error) -> Self {
         match error {
-            ics008_wasm_client::Error::Decode(e) => Error::DecodeError(e),
+            ics008_wasm_client::Error::Decode(e) => Error::DecodeFromProto { reason: e },
             ics008_wasm_client::Error::UnexpectedCallDataFromHostModule(e) => Error::Wasm(e),
-            ics008_wasm_client::Error::ClientStateNotFound => Error::Wasm(format!("{error:#?}")),
+            ics008_wasm_client::Error::ClientStateNotFound => Error::ClientStateNotFound,
         }
     }
 }

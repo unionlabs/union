@@ -50,7 +50,10 @@ impl<C: ChainSpec> TrustedConsensusState<C> {
         if active_sync_committee != given_committee.aggregate_pubkey
             || given_committee.aggregate_pubkey != aggregate_public_key
         {
-            Err(Error::InvalidSyncCommittee)
+            Err(Error::TrustedSyncCommitteeMismatch {
+                stored_aggregate: active_sync_committee,
+                given_aggregate: given_committee.aggregate_pubkey.clone(),
+            })
         } else {
             Ok(TrustedConsensusState {
                 state: consensus_state,

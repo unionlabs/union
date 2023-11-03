@@ -63,9 +63,8 @@ impl IbcClient for EthereumLightClient {
         mut path: ics008_wasm_client::MerklePath,
         value: ics008_wasm_client::StorageState,
     ) -> Result<ics008_wasm_client::ContractResult, Self::Error> {
-        let consensus_state: WasmConsensusState = read_consensus_state(deps, &height)?.ok_or(
-            Error::ConsensusStateNotFound(height.revision_number, height.revision_height),
-        )?;
+        let consensus_state: WasmConsensusState =
+            read_consensus_state(deps, &height)?.ok_or(Error::ConsensusStateNotFound(height))?;
         let client_state: WasmClientState = read_client_state(deps)?;
 
         let path = path
@@ -78,7 +77,9 @@ impl IbcClient for EthereumLightClient {
 
         let storage_proof = {
             let mut proofs = StorageProof::try_from_proto_bytes(&proof.0)
-                .map_err(|e| Error::decode(format!("when decoding storage proof: {e:#?}")))?
+                .map_err(|e| Error::DecodeFromProto {
+                    reason: format!("when decoding storage proof: {e:#?}"),
+                })?
                 .proofs;
             if proofs.len() > 1 {
                 return Err(Error::BatchingProofsNotSupported);
@@ -113,10 +114,7 @@ impl IbcClient for EthereumLightClient {
         let trusted_sync_committee = header.trusted_sync_committee;
         let wasm_consensus_state =
             read_consensus_state(deps, &trusted_sync_committee.trusted_height)?.ok_or(
-                Error::ConsensusStateNotFound(
-                    trusted_sync_committee.trusted_height.revision_number,
-                    trusted_sync_committee.trusted_height.revision_height,
-                ),
+                Error::ConsensusStateNotFound(trusted_sync_committee.trusted_height),
             )?;
 
         let trusted_consensus_state = TrustedConsensusState::new(
@@ -151,17 +149,17 @@ impl IbcClient for EthereumLightClient {
 
         verify_account_storage_root(
             header.consensus_update.attested_header.execution.state_root,
-            &proof_data
-                .key
-                .as_slice()
-                .try_into()
-                .map_err(|_| Error::InvalidProofFormat)?,
+            &proof_data.key.as_slice().try_into().map_err(|_| {
+                Error::InvalidProofFormat(
+                    "`proof.key` must be a 20 bytes Ethereum address".to_string(),
+                )
+            })?,
             &proof_data.proof,
-            proof_data
-                .value
-                .as_slice()
-                .try_into()
-                .map_err(|_| Error::InvalidProofFormat)?,
+            proof_data.value.as_slice().try_into().map_err(|_| {
+                Error::InvalidProofFormat(
+                    "`proof.value` must be a 32 bytes storage hash".to_string(),
+                )
+            })?,
         )
         .map_err(|e| Error::Verification(e.to_string()))?;
 
@@ -185,10 +183,7 @@ impl IbcClient for EthereumLightClient {
 
         let mut consensus_state: WasmConsensusState =
             read_consensus_state(deps.as_ref(), &trusted_sync_committee.trusted_height)?.ok_or(
-                Error::ConsensusStateNotFound(
-                    trusted_sync_committee.trusted_height.revision_number,
-                    trusted_sync_committee.trusted_height.revision_height,
-                ),
+                Error::ConsensusStateNotFound(trusted_sync_committee.trusted_height),
             )?;
 
         let mut client_state: WasmClientState = read_client_state(deps.as_ref())?;
@@ -236,7 +231,11 @@ impl IbcClient for EthereumLightClient {
                 .value
                 .as_slice()
                 .try_into()
-                .map_err(|_| Error::InvalidProofFormat)?;
+                .map_err(|_| {
+                    Error::InvalidProofFormat(
+                        "`proof.value` must be a 32 bytes storage hash".to_string(),
+                    )
+                })?;
             consensus_state.data.storage_root = storage_root;
 
             consensus_state.timestamp = compute_timestamp_at_slot::<Config>(
@@ -294,7 +293,11 @@ impl IbcClient for EthereumLightClient {
                 .value
                 .as_slice()
                 .try_into()
-                .map_err(|_| Error::InvalidProofFormat)?;
+                .map_err(|_| {
+                    Error::InvalidProofFormat(
+                        "`proof.value` must be a 32 bytes storage hash".to_string(),
+                    )
+                })?;
             if consensus_state.data.storage_root != storage_root {
                 return Err(Error::StorageRootMismatch);
             }
