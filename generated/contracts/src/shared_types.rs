@@ -7,7 +7,7 @@
     Debug,
     PartialEq,
     Eq,
-    Hash
+    Hash,
 )]
 pub struct MsgChannelCloseConfirm {
     pub port_id: ::std::string::String,
@@ -24,7 +24,7 @@ pub struct MsgChannelCloseConfirm {
     Debug,
     PartialEq,
     Eq,
-    Hash
+    Hash,
 )]
 pub struct MsgChannelCloseInit {
     pub port_id: ::std::string::String,
@@ -39,7 +39,7 @@ pub struct MsgChannelCloseInit {
     Debug,
     PartialEq,
     Eq,
-    Hash
+    Hash,
 )]
 pub struct MsgChannelOpenAck {
     pub port_id: ::std::string::String,
@@ -58,7 +58,7 @@ pub struct MsgChannelOpenAck {
     Debug,
     PartialEq,
     Eq,
-    Hash
+    Hash,
 )]
 pub struct MsgChannelOpenConfirm {
     pub port_id: ::std::string::String,
@@ -75,7 +75,7 @@ pub struct MsgChannelOpenConfirm {
     Debug,
     PartialEq,
     Eq,
-    Hash
+    Hash,
 )]
 pub struct MsgChannelOpenInit {
     pub port_id: ::std::string::String,
@@ -90,7 +90,7 @@ pub struct MsgChannelOpenInit {
     Debug,
     PartialEq,
     Eq,
-    Hash
+    Hash,
 )]
 pub struct MsgChannelOpenTry {
     pub port_id: ::std::string::String,
@@ -108,7 +108,7 @@ pub struct MsgChannelOpenTry {
     Debug,
     PartialEq,
     Eq,
-    Hash
+    Hash,
 )]
 pub struct MsgConnectionOpenAck {
     pub connection_id: ::std::string::String,
@@ -130,7 +130,7 @@ pub struct MsgConnectionOpenAck {
     Debug,
     PartialEq,
     Eq,
-    Hash
+    Hash,
 )]
 pub struct MsgConnectionOpenConfirm {
     pub connection_id: ::std::string::String,
@@ -146,7 +146,7 @@ pub struct MsgConnectionOpenConfirm {
     Debug,
     PartialEq,
     Eq,
-    Hash
+    Hash,
 )]
 pub struct MsgConnectionOpenInit {
     pub client_id: ::std::string::String,
@@ -162,7 +162,7 @@ pub struct MsgConnectionOpenInit {
     Debug,
     PartialEq,
     Eq,
-    Hash
+    Hash,
 )]
 pub struct MsgConnectionOpenTry {
     pub counterparty: IbcCoreConnectionV1CounterpartyData,
@@ -185,7 +185,7 @@ pub struct MsgConnectionOpenTry {
     Debug,
     PartialEq,
     Eq,
-    Hash
+    Hash,
 )]
 pub struct MsgCreateClient {
     pub client_type: ::std::string::String,
@@ -201,7 +201,7 @@ pub struct MsgCreateClient {
     Debug,
     PartialEq,
     Eq,
-    Hash
+    Hash,
 )]
 pub struct MsgPacketAcknowledgement {
     pub packet: IbcCoreChannelV1PacketData,
@@ -218,7 +218,7 @@ pub struct MsgPacketAcknowledgement {
     Debug,
     PartialEq,
     Eq,
-    Hash
+    Hash,
 )]
 pub struct MsgPacketRecv {
     pub packet: IbcCoreChannelV1PacketData,
@@ -234,7 +234,7 @@ pub struct MsgPacketRecv {
     Debug,
     PartialEq,
     Eq,
-    Hash
+    Hash,
 )]
 pub struct MsgPacketTimeout {
     pub packet: IbcCoreChannelV1PacketData,
@@ -251,7 +251,7 @@ pub struct MsgPacketTimeout {
     Debug,
     PartialEq,
     Eq,
-    Hash
+    Hash,
 )]
 pub struct MsgUpdateClient {
     pub client_id: ::std::string::String,
@@ -266,7 +266,7 @@ pub struct MsgUpdateClient {
     Debug,
     PartialEq,
     Eq,
-    Hash
+    Hash,
 )]
 pub struct IbcCoreChannelV1ChannelData {
     pub state: u8,
@@ -284,7 +284,7 @@ pub struct IbcCoreChannelV1ChannelData {
     Debug,
     PartialEq,
     Eq,
-    Hash
+    Hash,
 )]
 pub struct IbcCoreChannelV1CounterpartyData {
     pub port_id: ::std::string::String,
@@ -299,7 +299,7 @@ pub struct IbcCoreChannelV1CounterpartyData {
     Debug,
     PartialEq,
     Eq,
-    Hash
+    Hash,
 )]
 pub struct IbcCoreChannelV1PacketData {
     pub sequence: u64,
@@ -320,7 +320,7 @@ pub struct IbcCoreChannelV1PacketData {
     Debug,
     PartialEq,
     Eq,
-    Hash
+    Hash,
 )]
 pub struct IbcCoreClientV1HeightData {
     pub revision_number: u64,
@@ -335,7 +335,7 @@ pub struct IbcCoreClientV1HeightData {
     Debug,
     PartialEq,
     Eq,
-    Hash
+    Hash,
 )]
 pub struct IbcCoreCommitmentV1MerklePrefixData {
     pub key_prefix: ::ethers::core::types::Bytes,
@@ -349,7 +349,7 @@ pub struct IbcCoreCommitmentV1MerklePrefixData {
     Debug,
     PartialEq,
     Eq,
-    Hash
+    Hash,
 )]
 pub struct IbcCoreConnectionV1ConnectionEndData {
     pub client_id: ::std::string::String,
@@ -367,7 +367,7 @@ pub struct IbcCoreConnectionV1ConnectionEndData {
     Debug,
     PartialEq,
     Eq,
-    Hash
+    Hash,
 )]
 pub struct IbcCoreConnectionV1CounterpartyData {
     pub client_id: ::std::string::String,
@@ -383,7 +383,7 @@ pub struct IbcCoreConnectionV1CounterpartyData {
     Debug,
     PartialEq,
     Eq,
-    Hash
+    Hash,
 )]
 pub struct IbcCoreConnectionV1VersionData {
     pub identifier: ::std::string::String,
