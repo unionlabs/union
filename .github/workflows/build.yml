@@ -75,7 +75,13 @@ jobs:
                   "voyager-queue",
                   "sqlx-cli",
                   "fetchRustStdCargoLock",
-                  "vendorLibwasmvm"
+                  "fetch-membership-data",
+                  "gen-eth-lc-update-test-data",
+                  "impure-site-deploy",
+                  "rust-sol-bindings",
+                  "vendor-tools",
+                  "impure-site-deploy",
+                  "generate-rust-sol-bindings"
                 ]
               )
             ) or 
