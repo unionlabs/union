@@ -29,7 +29,7 @@ use crate::{
     consensus_state::TrustedConsensusState,
     context::LightClientContext,
     custom_query::{CustomQuery, VerificationContext},
-    errors::Error,
+    errors::{Error, VerificationError},
     eth_encoding::generate_commitment_key,
     Config,
 };
@@ -67,9 +67,7 @@ impl IbcClient for EthereumLightClient {
             read_consensus_state(deps, &height)?.ok_or(Error::ConsensusStateNotFound(height))?;
         let client_state: WasmClientState = read_client_state(deps)?;
 
-        let path = path.key_path.pop().ok_or(Error::InvalidPath(
-            "path is empty, cannot do membership verification".to_string(),
-        ))?;
+        let path = path.key_path.pop().ok_or(Error::EmptyIbcPath)?;
 
         // This storage root is verified during the header update, so we don't need to verify it again.
         let storage_root = consensus_state.data.storage_root;
@@ -139,7 +137,7 @@ impl IbcClient for EthereumLightClient {
             VerificationContext { deps },
         )
         .map_err(|e| Error::Verification {
-            context: "light client update validation failed".to_string(),
+            context: VerificationError::LightClientUpdate,
             error: e.to_string(),
         })?;
 
@@ -164,7 +162,7 @@ impl IbcClient for EthereumLightClient {
             })?,
         )
         .map_err(|e| Error::Verification {
-            context: "account storage root verification failed".to_string(),
+            context: VerificationError::AccountStorageRoot,
             error: e.to_string(),
         })?;
 
@@ -423,7 +421,7 @@ fn do_verify_membership(
         &storage_proof.proof,
     )
     .map_err(|e| Error::Verification {
-        context: "storage proof verification failed".to_string(),
+        context: VerificationError::Membership,
         error: e.to_string(),
     })
 }
@@ -439,7 +437,7 @@ fn do_verify_non_membership(
 
     if verify_storage_absence(storage_root, &storage_proof.key, &storage_proof.proof).map_err(
         |e| Error::Verification {
-            context: "storage absence verification failed".to_string(),
+            context: VerificationError::NonMembership,
             error: e.to_string(),
         },
     )? {

@@ -38,10 +38,13 @@ pub enum Error {
     ConsensusStateNotFound(Height),
 
     #[error("verification error: {error} ({context})")]
-    Verification { context: String, error: String },
+    Verification {
+        context: VerificationError,
+        error: String,
+    },
 
-    #[error("invalid path ({0})")]
-    InvalidPath(String),
+    #[error("IBC path is empty")]
+    EmptyIbcPath,
 
     #[error("invalid commitment key, expected ({0}) but got ({1})")]
     InvalidCommitmentKey(String, String),
@@ -62,7 +65,7 @@ pub enum Error {
     ExpectedAndStoredValueMismatch(String, String),
 
     #[error("custom query ({0})")]
-    CustomQuery(String),
+    CustomQuery(CustomQueryError),
 
     #[error("storage root mismatch, expected ({0}) but got ({1})")]
     StorageRootMismatch(String, String),
@@ -106,4 +109,32 @@ impl From<ics008_wasm_client::Error> for Error {
             ics008_wasm_client::Error::ClientStateNotFound => Error::ClientStateNotFound,
         }
     }
+}
+
+#[derive(ThisError, Debug, PartialEq)]
+pub enum CustomQueryError {
+    #[error("error while running `fast_aggregate_verify` query ({0})")]
+    FastAggregateVerify(String),
+    #[error("error while running `aggregate_public_keys` query ({0})")]
+    AggregatePublicKeys(String),
+    #[error("invalid public key is returned from `aggregate_public_key`")]
+    InvalidAggregatePublicKey,
+}
+
+impl From<CustomQueryError> for Error {
+    fn from(value: CustomQueryError) -> Self {
+        Error::CustomQuery(value)
+    }
+}
+
+#[derive(ThisError, Debug, PartialEq)]
+pub enum VerificationError {
+    #[error("light client update")]
+    LightClientUpdate,
+    #[error("account storage root")]
+    AccountStorageRoot,
+    #[error("membership")]
+    Membership,
+    #[error("non-membership")]
+    NonMembership,
 }

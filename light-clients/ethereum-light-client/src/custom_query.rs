@@ -2,7 +2,7 @@ use cosmwasm_std::{Binary, Deps, QueryRequest};
 use ethereum_verifier::BlsVerify;
 use unionlabs::bls::{BlsPublicKey, BlsSignature};
 
-use crate::errors::Error;
+use crate::errors::{CustomQueryError, Error};
 
 #[derive(serde::Serialize, serde::Deserialize, Clone)]
 #[serde(rename_all = "snake_case")]
@@ -70,7 +70,7 @@ pub fn query_fast_aggregate_verify(
 
     deps.querier
         .query(&request)
-        .map_err(|e| Error::CustomQuery(format!("`fast_aggregate_verify` failed: {e}")))
+        .map_err(|e| CustomQueryError::FastAggregateVerify(e.to_string()).into())
 }
 
 pub fn query_aggregate_public_keys(
@@ -84,11 +84,11 @@ pub fn query_aggregate_public_keys(
     let response: Binary = deps
         .querier
         .query(&request)
-        .map_err(|e| Error::CustomQuery(format!("`aggregate_public_keys` failed: {e}")))?;
+        .map_err(|e| CustomQueryError::AggregatePublicKeys(e.to_string()))?;
 
-    response.0.as_slice().try_into().map_err(|_| {
-        Error::CustomQuery(
-            "Invalid public key is returned from `aggregate_public_keys`".to_string(),
-        )
-    })
+    response
+        .0
+        .as_slice()
+        .try_into()
+        .map_err(|_| CustomQueryError::InvalidAggregatePublicKey.into())
 }
