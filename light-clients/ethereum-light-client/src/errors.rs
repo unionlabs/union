@@ -103,7 +103,6 @@ impl From<ics008_wasm_client::Error> for Error {
     fn from(error: ics008_wasm_client::Error) -> Self {
         match error {
             ics008_wasm_client::Error::Decode(e) => Error::DecodeFromProto { reason: e },
-            // TODO(aeryz): what
             ics008_wasm_client::Error::UnexpectedCallDataFromHostModule(e) => Error::Wasm(e),
             ics008_wasm_client::Error::ClientStateNotFound => Error::ClientStateNotFound,
         }

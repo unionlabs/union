@@ -58,7 +58,10 @@ pub fn validate_light_client_update<Ctx: LightClientContext, V: BlsVerify>(
     if sync_aggregate.sync_committee_bits.num_set_bits()
         < <Ctx::ChainSpec as MIN_SYNC_COMMITTEE_PARTICIPANTS>::MIN_SYNC_COMMITTEE_PARTICIPANTS::USIZE
     {
-        return Err(Error::InsufficientSyncCommitteeParticipants);
+        return Err(Error::InsufficientSyncCommitteeParticipants(
+            <Ctx::ChainSpec as MIN_SYNC_COMMITTEE_PARTICIPANTS>::MIN_SYNC_COMMITTEE_PARTICIPANTS::USIZE,
+            sync_aggregate.sync_committee_bits.num_set_bits()
+        ));
     }
 
     // Verify update does not skip a sync committee period
@@ -443,10 +446,10 @@ mod tests {
     //     // Setting the sync committee bits to zero will result in no participants.
     //     header.consensus_update.sync_aggregate.sync_committee_bits = Default::default();
 
-    //     assert_eq!(
+    //     assert!(matches!(
     //         do_validate_light_client_update(header),
-    //         Err(Error::InsufficientSyncCommitteeParticipants)
-    //     );
+    //         Err(Error::InsufficientSyncCommitteeParticipants(_, _))
+    //     ));
     // }
 
     // #[test]

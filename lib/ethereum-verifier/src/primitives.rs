@@ -36,21 +36,18 @@ struct RawAccount {
 impl Account {
     pub fn from_rlp_bytes(bz: &[u8]) -> Result<Account, Error> {
         let r = rlp::Rlp::new(bz);
-        let raw_account = RawAccount::decode(&r).map_err(|_| Error::RlpDecode)?;
+        let raw_account =
+            RawAccount::decode(&r).map_err(|_| Error::RlpDecode("`RawAccount`".to_string()))?;
 
         Ok(Account {
             nonce: raw_account.nonce,
             balance: raw_account.balance,
-            storage_root: raw_account
-                .storage_root
-                .to_vec()
-                .try_into()
-                .map_err(|_| Error::RlpDecode)?,
-            code_hash: raw_account
-                .code_hash
-                .to_vec()
-                .try_into()
-                .map_err(|_| Error::RlpDecode)?,
+            storage_root: raw_account.storage_root.to_vec().try_into().map_err(|_| {
+                Error::RlpDecode("`raw_account.storage_root` must be 32 bytes".to_string())
+            })?,
+            code_hash: raw_account.code_hash.to_vec().try_into().map_err(|_| {
+                Error::RlpDecode("`raw_account.code_hash` must be 32 bytes".to_string())
+            })?,
         })
     }
 }
