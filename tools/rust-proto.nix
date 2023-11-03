@@ -18,13 +18,13 @@
           cargotoml='${builtins.toJSON {
             package = {
               name = name;
-              version = "0.1.0";
+              version = "0.0.0";
               edition = "2021";
             };
             lib = { doctest = false; };
             dependencies = {
               prost = { version = "0.11.0"; default-features = false; features = ["prost-derive"]; };
-              ethers = { workspace = true; optional = true; features = ["rustls" "std"]; };
+              ethers = { workspace = true; optional = true; features = ["rustls"]; };
               serde = { version = "1.0"; default-features = false; features = ["derive"]; optional = true; };
               tonic = { version = "0.9"; features = [ "gzip" ]; optional = true; };
               schemars = { version = "0.8.3"; default-features = false; optional = true; };

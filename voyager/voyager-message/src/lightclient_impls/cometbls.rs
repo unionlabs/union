@@ -56,10 +56,7 @@ use crate::{
         CommitmentProof, ConnectionProof, Data, LightClientSpecificData,
     },
     fetch,
-    fetch::{
-        Fetch, FetchStateProof, FetchTrustedClientState, FetchUpdateHeaders,
-        LightClientSpecificFetch,
-    },
+    fetch::{Fetch, FetchStateProof, FetchUpdateHeaders, LightClientSpecificFetch},
     identified, msg,
     msg::{Msg, MsgUpdateClientData},
     seq,
@@ -1467,8 +1464,6 @@ where
             [].into()
         };
 
-        let finality_update_attested_header_slot = finality_update.attested_header.beacon.slot;
-
         let does_not_have_finality_update =
             last_update_block_number >= req.update_to.revision_height;
 
@@ -1496,25 +1491,6 @@ where
             ))
         };
 
-        seq(lc_updates
-            .into_iter()
-            .chain(finality_update_msg)
-            .chain([fetch::<L>(
-                chain_id,
-                FetchTrustedClientState {
-                    at: unionlabs::QueryHeight::Specific(Height {
-                        revision_number: EVM_REVISION_NUMBER,
-                        revision_height: (!does_not_have_finality_update)
-                            .then_some(finality_update_attested_header_slot)
-                            .unwrap_or_else(|| {
-                                std::cmp::max(
-                                    req.update_to.revision_height,
-                                    last_update_block_number,
-                                )
-                            }),
-                    }),
-                    client_id: req.client_id,
-                },
-            )]))
+        seq(lc_updates.into_iter().chain(finality_update_msg))
     }
 }
