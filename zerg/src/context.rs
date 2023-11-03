@@ -63,7 +63,7 @@ impl Context {
             .append(true)
             .open(output)
             .unwrap();
-        event!(Level::DEBUG, "Created writter");
+        event!(Level::DEBUG, "Created writer");
         let union = chain_utils::union::Union::new(zerg_config.clone().union)
             .await
             .unwrap();

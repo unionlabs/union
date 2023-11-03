@@ -21,10 +21,10 @@ pub fn analyze(input: String, output: String) -> HashMap<String, ChannelBenchmar
             if report.completed {
                 let execution_duration = report
                     .execution_duration
-                    .expect("Compleated transactions should have durations");
+                    .expect("Completed transactions should have durations");
                 let finalization_duration = report
                     .finalization_duration
-                    .expect("Compleated transactions should have durations");
+                    .expect("Completed transactions should have durations");
 
                 if let Some(times) = durations.get_mut(&id) {
                     times.push(execution_duration, finalization_duration);
