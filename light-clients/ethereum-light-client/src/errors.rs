@@ -13,68 +13,67 @@ pub enum Error {
     #[error("{0}")]
     Std(#[from] StdError),
 
-    #[error("Error while decoding proto: {reason}")]
+    #[error("error while decoding proto ({reason})")]
     DecodeFromProto { reason: String },
 
-    #[error("Client state not found")]
+    #[error("client state not found")]
     ClientStateNotFound,
 
-    #[error("Invalid proof format: `{0}`")]
+    #[error("invalid proof format ({0})")]
     InvalidProofFormat(String),
 
     #[error(
-        "Given trusted sync committee doesn't match the given aggregate \
-        public key, or the stored one. Stored aggregate: {stored_aggregate}, \
-        given aggregate: {given_aggregate}"
+        "given trusted sync committee doesn't match the given aggregate public \
+        key ({given_aggregate}) or the stored one ({stored_aggregate})"
     )]
     TrustedSyncCommitteeMismatch {
         stored_aggregate: BlsPublicKey,
         given_aggregate: BlsPublicKey,
     },
 
-    #[error("Active sync committee is `next` but there is no next sync committee in the consensus state")]
+    #[error("active sync committee is `next` but there is no next sync committee in the consensus state")]
     NoNextSyncCommittee,
 
-    #[error("Consensus state not found at height {0}")]
+    #[error("consensus state not found at height {0}")]
     ConsensusStateNotFound(Height),
 
-    #[error("Verification error: {error} ({context})")]
+    #[error("verification error: {error} ({context})")]
     Verification { context: String, error: String },
 
-    #[error("Invalid path {0}")]
+    #[error("invalid path ({0})")]
     InvalidPath(String),
 
-    #[error("Invalid commitment key. Expected {0}, got {1}.")]
+    #[error("invalid commitment key, expected ({0}) but got ({1})")]
     InvalidCommitmentKey(String, String),
 
-    #[error("Client's store period must be equal to update's finalized period")]
+    #[error("client's store period must be equal to update's finalized period")]
     StorePeriodMustBeEqualToFinalizedPeriod,
 
-    #[error("Proof is empty")]
+    #[error("proof is empty")]
     EmptyProof,
 
-    #[error("Counterparty storage not nil")]
+    #[error("counterparty storage not nil")]
     CounterpartyStorageNotNil,
 
-    #[error("Batching proofs are not supported")]
+    #[error("batching proofs are not supported")]
     BatchingProofsNotSupported,
 
-    #[error("Expected value: '{0}' and stored value '{1}' doesn't match")]
+    #[error("expected value ({0}) and stored value ({1}) doesn't match")]
     ExpectedAndStoredValueMismatch(String, String),
 
-    #[error("Custom query: {0}")]
+    #[error("custom query ({0})")]
     CustomQuery(String),
 
-    #[error("Storage root mismatch. Expected {0}, got {1}")]
+    #[error("storage root mismatch, expected ({0}) but got ({1})")]
     StorageRootMismatch(String, String),
 
-    #[error("Wasm client error: {0}")]
+    #[error("wasm client error ({0})")]
     Wasm(String),
 
-    #[error("Next sync committee can't be changed after being set.")]
+    #[error("next sync committee can't be changed after being set")]
     NextSyncCommitteeCannotBeModified,
 
-    #[error("The slot number that is saved previously to the consensus state cannot be changed.")]
+    #[error("the slot number that is saved previously to the consensus state cannot be changed")]
     SlotCannotBeModified,
 }
 
