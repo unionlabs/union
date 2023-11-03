@@ -858,7 +858,7 @@ mod test {
     #[test]
     fn membership_verification_works_for_client_state() {
         do_membership_test::<
-            unionlabs::ibc::google::protobuf::any::Any<
+            unionlabs::google::protobuf::any::Any<
                 wasm::client_state::ClientState<cometbls::client_state::ClientState>,
             >,
         >("src/test/memberships/valid_client_state.json")
@@ -868,7 +868,7 @@ mod test {
     #[test]
     fn membership_verification_works_for_consensus_state() {
         do_membership_test::<
-            unionlabs::ibc::google::protobuf::any::Any<
+            unionlabs::google::protobuf::any::Any<
                 wasm::consensus_state::ConsensusState<cometbls::consensus_state::ConsensusState>,
             >,
         >("src/test/memberships/valid_consensus_state.json")
