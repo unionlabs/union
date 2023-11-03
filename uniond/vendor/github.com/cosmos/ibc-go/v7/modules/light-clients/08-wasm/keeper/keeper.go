@@ -3,8 +3,6 @@ package keeper
 import (
 	"bytes"
 	"crypto/sha256"
-	"math"
-	"strings"
 
 	cosmwasm "github.com/CosmWasm/wasmvm"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -27,18 +25,12 @@ type Keeper struct {
 	authority string
 }
 
-func NewKeeper(cdc codec.BinaryCodec, key storetypes.StoreKey, querier cosmwasm.Querier) Keeper {
-	// Wasm VM
-	wasmDataDir := "ibc_08-wasm_client_data"
-	wasmSupportedFeatures := strings.Join([]string{"storage", "iterator"}, ",")
-	wasmMemoryLimitMb := uint32(math.Pow(2, 12))
-	wasmPrintDebug := true
-	wasmCacheSizeMb := uint32(math.Pow(2, 8))
-
-	vm, err := cosmwasm.NewVM(wasmDataDir, wasmSupportedFeatures, wasmMemoryLimitMb, wasmPrintDebug, wasmCacheSizeMb)
+func NewKeeper(cdc codec.BinaryCodec, key storetypes.StoreKey, querier cosmwasm.Querier, config types.WasmConfig) Keeper {
+	vm, err := cosmwasm.NewVM(config.DataDir, config.SupportedFeatures, types.ContractMemoryLimit, config.ContractDebugMode, config.MemoryCacheSize)
 	if err != nil {
 		panic(err)
 	}
+
 	types.WasmVM = vm
 	types.Querier = querier
 

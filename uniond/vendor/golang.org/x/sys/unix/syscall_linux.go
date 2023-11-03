@@ -693,10 +693,10 @@ type SockaddrALG struct {
 
 func (sa *SockaddrALG) sockaddr() (unsafe.Pointer, _Socklen, error) {
 	// Leave room for NUL byte terminator.
-	if len(sa.Type) > 13 {
+	if len(sa.Type) > len(sa.raw.Type)-1 {
 		return nil, 0, EINVAL
 	}
-	if len(sa.Name) > 63 {
+	if len(sa.Name) > len(sa.raw.Name)-1 {
 		return nil, 0, EINVAL
 	}
 
@@ -704,17 +704,8 @@ func (sa *SockaddrALG) sockaddr() (unsafe.Pointer, _Socklen, error) {
 	sa.raw.Feat = sa.Feature
 	sa.raw.Mask = sa.Mask
 
-	typ, err := ByteSliceFromString(sa.Type)
-	if err != nil {
-		return nil, 0, err
-	}
-	name, err := ByteSliceFromString(sa.Name)
-	if err != nil {
-		return nil, 0, err
-	}
-
-	copy(sa.raw.Type[:], typ)
-	copy(sa.raw.Name[:], name)
+	copy(sa.raw.Type[:], sa.Type)
+	copy(sa.raw.Name[:], sa.Name)
 
 	return unsafe.Pointer(&sa.raw), SizeofSockaddrALG, nil
 }
@@ -1988,8 +1979,6 @@ func Signalfd(fd int, sigmask *Sigset_t, flags int) (newfd int, err error) {
 //sys	Unshare(flags int) (err error)
 //sys	write(fd int, p []byte) (n int, err error)
 //sys	exitThread(code int) (err error) = SYS_EXIT
-//sys	readlen(fd int, p *byte, np int) (n int, err error) = SYS_READ
-//sys	writelen(fd int, p *byte, np int) (n int, err error) = SYS_WRITE
 //sys	readv(fd int, iovs []Iovec) (n int, err error) = SYS_READV
 //sys	writev(fd int, iovs []Iovec) (n int, err error) = SYS_WRITEV
 //sys	preadv(fd int, iovs []Iovec, offs_l uintptr, offs_h uintptr) (n int, err error) = SYS_PREADV
@@ -2471,98 +2460,25 @@ func Pselect(nfd int, r *FdSet, w *FdSet, e *FdSet, timeout *Timespec, sigmask *
 	return pselect6(nfd, r, w, e, mutableTimeout, kernelMask)
 }
 
-/*
- * Unimplemented
- */
-// AfsSyscall
-// ArchPrctl
-// Brk
-// ClockNanosleep
-// ClockSettime
-// Clone
-// EpollCtlOld
-// EpollPwait
-// EpollWaitOld
-// Execve
-// Fork
-// Futex
-// GetKernelSyms
-// GetMempolicy
-// GetRobustList
-// GetThreadArea
-// Getpmsg
-// IoCancel
-// IoDestroy
-// IoGetevents
-// IoSetup
-// IoSubmit
-// IoprioGet
-// IoprioSet
-// KexecLoad
-// LookupDcookie
-// Mbind
-// MigratePages
-// Mincore
-// ModifyLdt
-// Mount
-// MovePages
-// MqGetsetattr
-// MqNotify
-// MqOpen
-// MqTimedreceive
-// MqTimedsend
-// MqUnlink
-// Msgctl
-// Msgget
-// Msgrcv
-// Msgsnd
-// Nfsservctl
-// Personality
-// Pselect6
-// Ptrace
-// Putpmsg
-// Quotactl
-// Readahead
-// Readv
-// RemapFilePages
-// RestartSyscall
-// RtSigaction
-// RtSigpending
-// RtSigqueueinfo
-// RtSigreturn
-// RtSigsuspend
-// RtSigtimedwait
-// SchedGetPriorityMax
-// SchedGetPriorityMin
-// SchedGetparam
-// SchedGetscheduler
-// SchedRrGetInterval
-// SchedSetparam
-// SchedYield
-// Security
-// Semctl
-// Semget
-// Semop
-// Semtimedop
-// SetMempolicy
-// SetRobustList
-// SetThreadArea
-// SetTidAddress
-// Sigaltstack
-// Swapoff
-// Swapon
-// Sysfs
-// TimerCreate
-// TimerDelete
-// TimerGetoverrun
-// TimerGettime
-// TimerSettime
-// Tkill (obsolete)
-// Tuxcall
-// Umount2
-// Uselib
-// Utimensat
-// Vfork
-// Vhangup
-// Vserver
-// _Sysctl
+//sys	schedSetattr(pid int, attr *SchedAttr, flags uint) (err error)
+//sys	schedGetattr(pid int, attr *SchedAttr, size uint, flags uint) (err error)
+
+// SchedSetAttr is a wrapper for sched_setattr(2) syscall.
+// https://man7.org/linux/man-pages/man2/sched_setattr.2.html
+func SchedSetAttr(pid int, attr *SchedAttr, flags uint) error {
+	if attr == nil {
+		return EINVAL
+	}
+	attr.Size = SizeofSchedAttr
+	return schedSetattr(pid, attr, flags)
+}
+
+// SchedGetAttr is a wrapper for sched_getattr(2) syscall.
+// https://man7.org/linux/man-pages/man2/sched_getattr.2.html
+func SchedGetAttr(pid int, flags uint) (*SchedAttr, error) {
+	attr := &SchedAttr{}
+	if err := schedGetattr(pid, attr, SizeofSchedAttr, flags); err != nil {
+		return nil, err
+	}
+	return attr, nil
+}

@@ -142,6 +142,26 @@ func (tr *BTree) AscendMut(pivot any, iter func(item any) bool) {
 	}
 }
 
+func (tr *BTree) AscendHint(pivot any, iter func(item any) bool,
+	hint *PathHint,
+) {
+	if pivot == nil {
+		tr.base.Scan(iter)
+	} else {
+		tr.base.AscendHint(pivot, iter, hint)
+	}
+}
+
+func (tr *BTree) AscendHintMut(pivot any, iter func(item any) bool,
+	hint *PathHint,
+) {
+	if pivot == nil {
+		tr.base.ScanMut(iter)
+	} else {
+		tr.base.AscendHintMut(pivot, iter, hint)
+	}
+}
+
 // Descend the tree within the range [pivot, first]
 // Pass nil for pivot to scan all item in descending order
 // Return false to stop iterating
@@ -158,6 +178,26 @@ func (tr *BTree) DescendMut(pivot any, iter func(item any) bool) {
 		tr.base.ReverseMut(iter)
 	} else {
 		tr.base.DescendMut(pivot, iter)
+	}
+}
+
+func (tr *BTree) DescendHint(pivot any, iter func(item any) bool,
+	hint *PathHint,
+) {
+	if pivot == nil {
+		tr.base.Reverse(iter)
+	} else {
+		tr.base.DescendHint(pivot, iter, hint)
+	}
+}
+
+func (tr *BTree) DescendHintMut(pivot any, iter func(item any) bool,
+	hint *PathHint,
+) {
+	if pivot == nil {
+		tr.base.ReverseMut(iter)
+	} else {
+		tr.base.DescendHintMut(pivot, iter, hint)
 	}
 }
 
@@ -315,6 +355,10 @@ func (tr *BTree) IterMut() Iter {
 // Returns false if there was no item found.
 func (iter *Iter) Seek(key any) bool {
 	return iter.base.Seek(key)
+}
+
+func (iter *Iter) SeekHint(key any, hint *PathHint) bool {
+	return iter.base.SeekHint(key, hint)
 }
 
 // First moves iterator to first item in tree.

@@ -132,6 +132,11 @@ func create(tag string, t time.Time) (f *os.File, filename string, err error) {
 			symlink := filepath.Join(dir, link)
 			os.Remove(symlink)        // ignore err
 			os.Symlink(name, symlink) // ignore err
+			if *logLink != "" {
+				lsymlink := filepath.Join(*logLink, link)
+				os.Remove(lsymlink)         // ignore err
+				os.Symlink(fname, lsymlink) // ignore err
+			}
 			return f, fname, nil
 		}
 		lastErr = err
@@ -153,8 +158,6 @@ var sinks struct {
 }
 
 func init() {
-	sinks.stderr.w = os.Stderr
-
 	// Register stderr first: that way if we crash during file-writing at least
 	// the log will have gone somewhere.
 	logsink.TextSinks = append(logsink.TextSinks, &sinks.stderr, &sinks.file)
@@ -167,7 +170,7 @@ func init() {
 // if they meet certain conditions.
 type stderrSink struct {
 	mu sync.Mutex
-	w  io.Writer
+	w  io.Writer // if nil Emit uses os.Stderr directly
 }
 
 // Enabled implements logsink.Text.Enabled.  It returns true if any of the
@@ -182,8 +185,11 @@ func (s *stderrSink) Enabled(m *logsink.Meta) bool {
 func (s *stderrSink) Emit(m *logsink.Meta, data []byte) (n int, err error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-
-	dn, err := s.w.Write(data)
+	w := s.w
+	if w == nil {
+		w = os.Stderr
+	}
+	dn, err := w.Write(data)
 	n += dn
 	return n, err
 }

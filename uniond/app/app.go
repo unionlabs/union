@@ -477,10 +477,6 @@ func New(
 	)
 
 	groupConfig := group.DefaultConfig()
-	/*
-		Example of setting group params:
-		groupConfig.MaxMetadataLen = 1000
-	*/
 	app.GroupKeeper = groupkeeper.NewKeeper(
 		keys[group.StoreKey],
 		appCodec,
@@ -489,7 +485,12 @@ func New(
 		groupConfig,
 	)
 
-	app.WasmClientKeeper = ibcwasmkeeper.NewKeeper(appCodec, keys[ibcwasmtypes.StoreKey], &unioncustomquery.UnionCustomQueryHandler{})
+	app.WasmClientKeeper = ibcwasmkeeper.NewKeeper(
+		appCodec,
+		keys[ibcwasmtypes.StoreKey],
+		&unioncustomquery.UnionCustomQueryHandler{},
+		ibcwasmtypes.DefaultWasmConfig(homePath),
+	)
 
 	app.UpgradeKeeper = upgradekeeper.NewKeeper(
 		skipUpgradeHeights,
@@ -898,7 +899,14 @@ func New(
 			wasmkeeper.NewWasmSnapshotter(app.CommitMultiStore(), &app.WasmKeeper),
 		)
 		if err != nil {
-			panic(fmt.Errorf("failed to register snapshot extension: %s", err))
+			panic(fmt.Errorf("failed to register wasm snapshot extension: %s", err))
+		}
+
+		err = manager.RegisterExtensions(
+			ibcwasmkeeper.NewWasmSnapshotter(app.CommitMultiStore(), &app.WasmClientKeeper),
+		)
+		if err != nil {
+			panic(fmt.Errorf("failed to register ibc-wasm snapshot extension: %s", err))
 		}
 	}
 

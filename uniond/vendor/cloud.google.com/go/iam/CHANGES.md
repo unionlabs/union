@@ -1,6 +1,20 @@
 # Changes
 
 
+## [1.1.2](https://github.com/googleapis/google-cloud-go/compare/iam/v1.1.1...iam/v1.1.2) (2023-08-08)
+
+
+### Documentation
+
+* **iam:** Minor formatting ([b4349cc](https://github.com/googleapis/google-cloud-go/commit/b4349cc507870ff8629bbc07de578b63bb889626))
+
+## [1.1.1](https://github.com/googleapis/google-cloud-go/compare/iam/v1.1.0...iam/v1.1.1) (2023-06-20)
+
+
+### Bug Fixes
+
+* **iam:** REST query UpdateMask bug ([df52820](https://github.com/googleapis/google-cloud-go/commit/df52820b0e7721954809a8aa8700b93c5662dc9b))
+
 ## [1.1.0](https://github.com/googleapis/google-cloud-go/compare/iam/v1.0.1...iam/v1.1.0) (2023-05-30)
 
 

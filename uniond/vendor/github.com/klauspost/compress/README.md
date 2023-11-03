@@ -16,6 +16,15 @@ This package provides various compression algorithms.
 
 # changelog
 
+* Apr 5, 2023 - [v1.16.4](https://github.com/klauspost/compress/releases/tag/v1.16.4)
+	* zstd: Improve zstd best efficiency by @greatroar and @klauspost in https://github.com/klauspost/compress/pull/784
+	* zstd: Respect WithAllLitEntropyCompression https://github.com/klauspost/compress/pull/792
+	* zstd: Fix amd64 not always detecting corrupt data https://github.com/klauspost/compress/pull/785
+	* zstd: Various minor improvements by @greatroar in https://github.com/klauspost/compress/pull/788 https://github.com/klauspost/compress/pull/794 https://github.com/klauspost/compress/pull/795
+	* s2: Fix huge block overflow https://github.com/klauspost/compress/pull/779
+	* s2: Allow CustomEncoder fallback https://github.com/klauspost/compress/pull/780
+	* gzhttp: Suppport ResponseWriter Unwrap() in gzhttp handler by @jgimenez in https://github.com/klauspost/compress/pull/799
+
 * Mar 13, 2023 - [v1.16.1](https://github.com/klauspost/compress/releases/tag/v1.16.1)
 	* zstd: Speed up + improve best encoder by @greatroar in https://github.com/klauspost/compress/pull/776
 	* gzhttp: Add optional [BREACH mitigation](https://github.com/klauspost/compress/tree/master/gzhttp#breach-mitigation). https://github.com/klauspost/compress/pull/762 https://github.com/klauspost/compress/pull/768 https://github.com/klauspost/compress/pull/769 https://github.com/klauspost/compress/pull/770 https://github.com/klauspost/compress/pull/767
