@@ -455,99 +455,88 @@ fn is_client_expired(
     consensus_state_timestamp + trusting_period < current_block_time
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "mainnet"))]
 mod test {
-    use std::marker::PhantomData;
+    use std::{cmp::Ordering, fs, marker::PhantomData};
 
     use cosmwasm_std::{
         testing::{mock_env, MockApi, MockQuerier, MockQuerierCustomHandlerResult, MockStorage},
-        OwnedDeps, SystemResult, Timestamp,
+        HexBinary, OwnedDeps, SystemResult, Timestamp,
     };
-    use ethereum_verifier::crypto::{eth_aggregate_public_keys, fast_aggregate_verify};
-    use hex_literal::hex;
+    use ethereum_verifier::crypto::{
+        eth_aggregate_public_keys_unchecked, fast_aggregate_verify_unchecked,
+    };
     use ics008_wasm_client::storage_utils::save_client_state;
-    use prost::Message;
+    use serde::Deserialize;
     use unionlabs::{
         bls::BlsPublicKey,
-        ethereum_consts_traits::Minimal,
+        ethereum_consts_traits::Mainnet,
         ibc::{
-            core::commitment::merkle_root::MerkleRoot,
-            lightclients::{cometbls, ethereum},
+            core::connection::connection_end::ConnectionEnd,
+            lightclients::{cometbls, ethereum, wasm},
         },
-        proof::{ClientConsensusStatePath, ClientStatePath, ConnectionPath},
+        id::ClientId,
+        proof::ConnectionPath,
         IntoProto,
     };
 
     use super::*;
 
-    /// These values are obtained by uploading a dummy contract with the necessary types to the devnet and
-    /// reading the values by `eth_getProof` RPC call.
-    // const CLIENT_STATE_PROOF_KEY: &[u8] =
-    //     &hex!("b35cad2b263a62faaae30d8b3f51201fea5501d2df17d59a3eef2751403e684f");
-    // const CLIENT_STATE_PROOF_VALUE: &[u8] =
-    //     &hex!("272c7c82ac0f0adbfe4ae30614165bf3b94d49754ce8c1955cc255dcc829b5");
-    // const CLIENT_STATE_PROOF: [&[u8]; 2] = [
-    //     &hex!("f871808080a0b9f6e8d11cf768b8034f04b8b2ab45bb5ca792e1c6e3929cf8222a885631ffac808080808080808080a0f7202a06e8dc011d3123f907597f51546fe03542551af2c9c54d21ba0fbafc7280a0d1797d071b81705da736e39e75f1186c8e529ba339f7a7d12a9b4fafe33e43cc80"),
-    //     &hex!("f842a03a8c7f353aebdcd6b56a67cd1b5829681a3c6e1695282161ab3faa6c3666d4c3a09f272c7c82ac0f0adbfe4ae30614165bf3b94d49754ce8c1955cc255dcc829b5")
-    // ];
-    // /// Storage root of the contract at the time that this proof is obtained.
-    // const CLIENT_STATE_STORAGE_ROOT: H256 = H256(hex!(
-    //     "5634f342b966b609cdd8d2f7ed43bb94702c9e83d4e974b08a3c2b8205fd85e3"
-    // ));
-    // const CLIENT_STATE_WASM_CODE_ID: &[u8] =
-    //     &hex!("B41F9EE164A6520C269F8928A1F3264A6F983F27478CB3A2251B77A65E0CEFBF");
+    #[derive(Deserialize)]
+    struct MembershipTest<T> {
+        key: HexBinary,
+        value: HexBinary,
+        proof: Vec<HexBinary>,
+        storage_root: HexBinary,
+        commitment_path: String,
+        commitments_map_slot: Slot,
+        expected_data: T,
+    }
 
-    const CONSENSUS_STATE_PROOF_KEY: &[u8] =
-        &hex!("9f22934f38bf5512b9c33ed55f71525c5d129895aad5585a2624f6c756c1c101");
-    const CONSENSUS_STATE_PROOF_VALUE: &[u8] =
-        &hex!("504adb89d4e609110eebf79183a10b9a4788a797d973c0ba0504e7a97fc1daa6");
-    const CONSENSUS_STATE_PROOF: [&[u8]; 2] = [
-        &hex!("f871808080a0b9f6e8d11cf768b8034f04b8b2ab45bb5ca792e1c6e3929cf8222a885631ffac808080808080808080a0f7202a06e8dc011d3123f907597f51546fe03542551af2c9c54d21ba0fbafc7280a0d1797d071b81705da736e39e75f1186c8e529ba339f7a7d12a9b4fafe33e43cc80"),
-        &hex!("f843a036210c27d08bc29676360b820acc6de648bb730808a3a7d36a960f6869ac4a3aa1a0504adb89d4e609110eebf79183a10b9a4788a797d973c0ba0504e7a97fc1daa6")
-    ];
-    /// Storage root of the contract at the time that this proof is obtained.
-    const CONSENSUS_STATE_STORAGE_ROOT: H256 = H256(hex!(
-        "5634f342b966b609cdd8d2f7ed43bb94702c9e83d4e974b08a3c2b8205fd85e3"
-    ));
-    const CONSENSUS_STATE_CONTRACT_MERKLE_ROOT: H256 = H256(hex!(
-        "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-    ));
-    const CONSENSUS_STATE_NEXT_VALIDATORS_HASH: H256 = H256(hex!(
-        "B41F9EE164A6520C269F8928A1F3264A6F983F27478CB3A2251B77A65E0CEFBF"
-    ));
-
-    const CONNECTION_END_PROOF_KEY: &[u8] =
-        &hex!("8e80b902df24e0c324c454fcd01ae0c92966a3f6fe4d1809e7fb75043b6549db");
-    const CONNECTION_END_PROOF_VALUE: &[u8] =
-        &hex!("9ac95d1087518963f797142524b3c6c273bb74297c076c00b02ed129bcb4cfc0");
-    const CONNECTION_END_PROOF: [&[u8]; 2] = [
-        &hex!("f871808080a01c44ba4a3ade71a6b527cb53c3f2dd91606f91cd119fd74e85208b1d13096739808080808080808080a0f7202a06e8dc011d3123f907597f51546fe03542551af2c9c54d21ba0fbafc7280a0771904c17414dbc0741f3d1fce0d2709d4f73418020b9b4961e4cb3ec6f46ac280"),
-        &hex!("f843a0320fddcfabb459601044296253eed7d7cb53d9a8a3e46b1f7db5115be261c419a1a09ac95d1087518963f797142524b3c6c273bb74297c076c00b02ed129bcb4cfc0")
-    ];
-    /// Storage root of the contract at the time that this proof is obtained.
-    const CONNECTION_END_STORAGE_ROOT: H256 = H256(hex!(
-        "78c3bf305b31e5f903d623b0b0023bfa764208429d3ecc0f8e61df44b643981d"
-    ));
-
-    const NON_MEMBERSHIP_STORAGE_ROOT: H256 = H256(hex!(
-        "9e352a10c5a38c301ee06c22a90f0971b679985b2ca6dd66aca224bd7a9957c1"
-    ));
-    const NON_MEMBERSHIP_PROOF_KEY: &[u8] =
-        &hex!("b35cad2b263a62faaae30d8b3f51201fea5501d2df17d59a3eef2751403e684f");
-    const NON_MEMBERSHIP_PROOF: [&[u8]; 1] = [
-        &hex!("f838a120df6966c971051c3d54ec59162606531493a51404a002842f56009d7e5cf4a8c79594be68fc2d8249eb60bfcf0e71d5a0d2f2e292c4ed"),
-    ];
-
-    const WASM_CLIENT_ID_PREFIX: &str = "08-wasm";
-    const ETHEREUM_CLIENT_ID_PREFIX: &str = "10-ethereum";
-    const IBC_KEY_PREFIX: &str = "ibc";
     const INITIAL_CONSENSUS_STATE_HEIGHT: Height = Height {
         revision_number: 0,
-        revision_height: 1328,
+        revision_height: 3577152,
     };
 
+    lazy_static::lazy_static! {
+        static ref UPDATES: Vec<ethereum::header::Header<Mainnet>> = {
+            let mut update_files = vec![];
+            for entry in fs::read_dir(UPDATES_DIR_PATH).unwrap() {
+                let entry = entry.unwrap();
+                let path = entry.path();
+                if path.file_name().is_some() {
+                    update_files.push(path);
+                }
+            }
+
+            update_files.sort_by(|lhs, rhs| {
+                let lhs = lhs.file_name().unwrap().to_string_lossy().strip_suffix(".json").unwrap().to_string().parse::<u32>().unwrap();
+                let rhs = rhs.file_name().unwrap().to_string_lossy().strip_suffix(".json").unwrap().to_string().parse().unwrap();
+                if lhs > rhs {
+                    Ordering::Greater
+                } else {
+                    Ordering::Less
+                }
+            });
+
+            let mut updates = vec![];
+            let mut prev_height = 0;
+            for f in update_files {
+                let mut data: ethereum::header::Header<Mainnet>= serde_json::from_str(&fs::read_to_string(f).unwrap()).unwrap();
+                if prev_height != 0 {
+                    data.trusted_sync_committee.trusted_height.revision_height = prev_height;
+                }
+                prev_height = data.consensus_update.attested_header.beacon.slot;
+                updates.push(data);
+            }
+
+            updates
+        };
+    }
+
+    const UPDATES_DIR_PATH: &str = "src/test/updates/";
+
     #[test]
-    #[ignore = "broken test data"]
     fn query_status_returns_active() {
         let mut deps = OwnedDeps::<_, _, _, CustomQuery> {
             storage: MockStorage::default(),
@@ -556,20 +545,17 @@ mod test {
             custom_query_type: PhantomData,
         };
 
-        let wasm_client_state =
+        let wasm_client_state: WasmClientState =
             serde_json::from_str(include_str!("./test/client_state.json")).unwrap();
 
-        let wasm_consensus_state =
+        let wasm_consensus_state: WasmConsensusState =
             serde_json::from_str(include_str!("./test/consensus_state.json")).unwrap();
 
-        save_client_state(
-            deps.as_mut(),
-            WasmClientState::try_from_proto(dbg!(wasm_client_state)).unwrap(),
-        );
+        save_client_state(deps.as_mut(), wasm_client_state);
 
         save_consensus_state(
             deps.as_mut(),
-            WasmConsensusState::try_from_proto(wasm_consensus_state).unwrap(),
+            wasm_consensus_state,
             &INITIAL_CONSENSUS_STATE_HEIGHT,
         );
 
@@ -583,7 +569,6 @@ mod test {
     }
 
     #[test]
-    #[ignore = "broken test data"]
     fn query_status_returns_frozen() {
         let mut deps = OwnedDeps::<_, _, _, CustomQuery> {
             storage: MockStorage::default(),
@@ -592,10 +577,8 @@ mod test {
             custom_query_type: PhantomData,
         };
 
-        let mut wasm_client_state = <WasmClientState>::try_from_proto(
-            serde_json::from_str(include_str!("./test/client_state.json")).unwrap(),
-        )
-        .unwrap();
+        let mut wasm_client_state: WasmClientState =
+            serde_json::from_str(include_str!("./test/client_state.json")).unwrap();
 
         wasm_client_state.data.frozen_height = Some(Height {
             revision_number: 1,
@@ -611,7 +594,6 @@ mod test {
     }
 
     #[test]
-    #[ignore = "broken test data"]
     fn query_status_returns_expired() {
         let mut deps = OwnedDeps::<_, _, _, CustomQuery> {
             storage: MockStorage::default(),
@@ -620,10 +602,8 @@ mod test {
             custom_query_type: PhantomData,
         };
 
-        let mut wasm_client_state = <WasmClientState>::try_from_proto(
-            serde_json::from_str(include_str!("./test/client_state.json")).unwrap(),
-        )
-        .unwrap();
+        let mut wasm_client_state: WasmClientState =
+            serde_json::from_str(include_str!("./test/client_state.json")).unwrap();
 
         save_client_state(deps.as_mut(), wasm_client_state.clone());
 
@@ -633,10 +613,8 @@ mod test {
             Ok(Status::Expired.into())
         );
 
-        let wasm_consensus_state = <WasmConsensusState>::try_from_proto(
-            serde_json::from_str(include_str!("./test/consensus_state.json")).unwrap(),
-        )
-        .unwrap();
+        let wasm_consensus_state: WasmConsensusState =
+            serde_json::from_str(include_str!("./test/consensus_state.json")).unwrap();
 
         save_consensus_state(
             deps.as_mut(),
@@ -666,7 +644,6 @@ mod test {
     }
 
     #[test]
-    #[ignore = "broken test data"]
     fn verify_and_update_header_works_with_good_data() {
         let mut deps = OwnedDeps::<_, _, _, CustomQuery> {
             storage: MockStorage::default(),
@@ -675,50 +652,20 @@ mod test {
             custom_query_type: PhantomData,
         };
 
-        let wasm_client_state =
+        let wasm_client_state: WasmClientState =
             serde_json::from_str(include_str!("./test/client_state.json")).unwrap();
 
-        let wasm_consensus_state =
+        let wasm_consensus_state: WasmConsensusState =
             serde_json::from_str(include_str!("./test/consensus_state.json")).unwrap();
 
-        save_client_state(
-            deps.as_mut(),
-            <WasmClientState>::try_from_proto(wasm_client_state).unwrap(),
-        );
+        save_client_state(deps.as_mut(), wasm_client_state);
         save_consensus_state(
             deps.as_mut(),
-            <WasmConsensusState>::try_from_proto(wasm_consensus_state).unwrap(),
+            wasm_consensus_state,
             &INITIAL_CONSENSUS_STATE_HEIGHT,
         );
 
-        let updates = &[
-            ethereum::header::Header::<Minimal>::try_from_proto(
-                serde_json::from_str(include_str!("./test/sync_committee_update_1.json")).unwrap(),
-            )
-            .unwrap(),
-            ethereum::header::Header::<Minimal>::try_from_proto(
-                serde_json::from_str(include_str!("./test/finality_update_1.json")).unwrap(),
-            )
-            .unwrap(),
-            ethereum::header::Header::<Minimal>::try_from_proto(
-                serde_json::from_str(include_str!("./test/sync_committee_update_2.json")).unwrap(),
-            )
-            .unwrap(),
-            ethereum::header::Header::<Minimal>::try_from_proto(
-                serde_json::from_str(include_str!("./test/finality_update_2.json")).unwrap(),
-            )
-            .unwrap(),
-            ethereum::header::Header::<Minimal>::try_from_proto(
-                serde_json::from_str(include_str!("./test/finality_update_3.json")).unwrap(),
-            )
-            .unwrap(),
-            ethereum::header::Header::<Minimal>::try_from_proto(
-                serde_json::from_str(include_str!("./test/finality_update_4.json")).unwrap(),
-            )
-            .unwrap(),
-        ];
-
-        for update in updates {
+        for update in &*UPDATES {
             let mut env = mock_env();
             env.block.time = cosmwasm_std::Timestamp::from_seconds(
                 update.consensus_update.attested_header.execution.timestamp + 60 * 5,
@@ -799,7 +746,7 @@ mod test {
                     .map(|pk| pk.0.clone().try_into().unwrap())
                     .collect();
 
-                let res = fast_aggregate_verify(
+                let res = fast_aggregate_verify_unchecked(
                     pubkeys.iter().collect::<Vec<&BlsPublicKey>>().as_slice(),
                     message.as_ref(),
                     &signature.0.clone().try_into().unwrap(),
@@ -810,7 +757,7 @@ mod test {
                 ))
             }
             CustomQuery::Aggregate { public_keys } => {
-                let pubkey = eth_aggregate_public_keys(
+                let pubkey = eth_aggregate_public_keys_unchecked(
                     public_keys
                         .iter()
                         .map(|pk| pk.as_ref().try_into().unwrap())
@@ -829,7 +776,7 @@ mod test {
     #[allow(clippy::type_complexity)]
     fn prepare_test_data() -> (
         OwnedDeps<MockStorage, MockApi, MockQuerier<CustomQuery>, CustomQuery>,
-        ethereum::header::Header<Minimal>,
+        ethereum::header::Header<Mainnet>,
         Env,
     ) {
         let mut deps = OwnedDeps::<_, _, _, CustomQuery> {
@@ -839,37 +786,29 @@ mod test {
             custom_query_type: PhantomData,
         };
 
-        let wasm_client_state: protos::ibc::lightclients::wasm::v1::ClientState =
+        let wasm_client_state: WasmClientState =
             serde_json::from_str(include_str!("./test/client_state.json")).unwrap();
 
-        let wasm_consensus_state: protos::ibc::lightclients::wasm::v1::ConsensusState =
+        let wasm_consensus_state: WasmConsensusState =
             serde_json::from_str(include_str!("./test/consensus_state.json")).unwrap();
 
-        save_client_state(
-            deps.as_mut(),
-            <WasmClientState>::try_from_proto(wasm_client_state).unwrap(),
-        );
+        save_client_state(deps.as_mut(), wasm_client_state);
         save_consensus_state(
             deps.as_mut(),
-            <WasmConsensusState>::try_from_proto(wasm_consensus_state.clone()).unwrap(),
+            wasm_consensus_state.clone(),
             &INITIAL_CONSENSUS_STATE_HEIGHT,
         );
 
-        let update =
-            serde_json::from_str::<protos::union::ibc::lightclients::ethereum::v1::Header>(
-                include_str!("./test/sync_committee_update_1.json"),
-            )
-            .unwrap();
+        let update = UPDATES[0].clone();
 
         let mut env = mock_env();
         env.block.time =
             cosmwasm_std::Timestamp::from_seconds(wasm_consensus_state.timestamp + 60 * 5);
 
-        (deps, update.try_into().unwrap(), env)
+        (deps, update, env)
     }
 
     #[test]
-    #[ignore = "broken test data"]
     fn verify_header_fails_when_sync_committee_aggregate_pubkey_is_incorrect() {
         let (deps, mut update, env) = prepare_test_data();
 
@@ -889,7 +828,6 @@ mod test {
     }
 
     #[test]
-    #[ignore = "broken test data"]
     fn verify_header_fails_when_finalized_header_execution_branch_merkle_is_invalid() {
         let (deps, mut update, env) = prepare_test_data();
         update.consensus_update.finalized_header.execution_branch[0].0[0] += 1;
@@ -897,159 +835,94 @@ mod test {
     }
 
     #[test]
-    #[ignore = "broken test data"]
     fn verify_header_fails_when_finality_branch_merkle_is_invalid() {
         let (deps, mut update, env) = prepare_test_data();
         update.consensus_update.finality_branch[0].0[0] += 1;
         assert!(EthereumLightClient::verify_header(deps.as_ref(), env, update).is_err());
     }
 
-    // TODO: the proof is no longer valid as we removed `trust_level` from the type
-    // #[test]
-    // fn membership_verification_works_for_client_state() {
-    //     let proof = Proof {
-    //         key: CLIENT_STATE_PROOF_KEY.into(),
-    //         value: CLIENT_STATE_PROOF_VALUE.into(),
-    //         proof: CLIENT_STATE_PROOF.into_iter().map(Into::into).collect(),
-    //     };
+    #[test]
+    fn gen_commitment_key() {
+        let key = generate_commitment_key(
+            ConnectionPath {
+                connection_id: unionlabs::validated::Validated::new("connection-100".into())
+                    .unwrap(),
+            }
+            .to_string(),
+            0,
+        );
 
-    //     let storage_root = CLIENT_STATE_STORAGE_ROOT.clone();
+        println!("KEY: {}", hex::encode(key));
+    }
 
-    //     let client_state = cometbls::client_state::ClientState {
-    //         chain_id: "ibc-0".to_string(),
-    //         trusting_period: Duration::new(1814400, 0).unwrap(),
-    //         unbonding_period: Duration::new(1814400, 0).unwrap(),
-    //         max_clock_drift: Duration::new(40, 0).unwrap(),
-    //         frozen_height: Height {
-    //             revision_number: 0,
-    //             revision_height: 0,
-    //         },
-    //     };
-
-    //     let wasm_client_state = protos::ibc::lightclients::wasm::v1::ClientState {
-    //         data: client_state.into_proto_bytes(),
-    //         code_id: CLIENT_STATE_WASM_CODE_ID.into(),
-    //         latest_height: Some(protos::ibc::core::client::v1::Height {
-    //             revision_number: 0,
-    //             revision_height: 1,
-    //         }),
-    //     };
-
-    //     let any_client_state = protos::google::protobuf::Any {
-    //         type_url: "/ibc.lightclients.wasm.v1.ClientState".into(),
-    //         value: wasm_client_state.encode_to_vec(),
-    //     };
-
-    //     do_verify_membership(
-    //         ClientStatePath::new(
-    //             &ClientId::new(ClientType::new(ETHEREUM_CLIENT_ID_PREFIX.into()), 0).unwrap(),
-    //         )
-    //         .to_string(),
-    //         storage_root,
-    //         3,
-    //         proof,
-    //         any_client_state.encode_to_vec(),
-    //     )
-    //     .expect("Membership verification of client state failed");
-    // }
+    #[test]
+    fn membership_verification_works_for_client_state() {
+        do_membership_test::<
+            unionlabs::google::protobuf::any::Any<
+                wasm::client_state::ClientState<cometbls::client_state::ClientState>,
+            >,
+        >("src/test/memberships/valid_client_state.json")
+        .expect("Membership verification of client state failed");
+    }
 
     #[test]
     fn membership_verification_works_for_consensus_state() {
+        do_membership_test::<
+            unionlabs::google::protobuf::any::Any<
+                wasm::consensus_state::ConsensusState<cometbls::consensus_state::ConsensusState>,
+            >,
+        >("src/test/memberships/valid_consensus_state.json")
+        .expect("Membership verification of client state failed");
+    }
+    fn membership_data<T: serde::de::DeserializeOwned>(
+        path: &str,
+    ) -> (Proof, String, Slot, H256, T) {
+        let data: MembershipTest<T> =
+            serde_json::from_str(&fs::read_to_string(path).unwrap()).unwrap();
+
         let proof = Proof {
-            key: CONSENSUS_STATE_PROOF_KEY.into(),
-            value: CONSENSUS_STATE_PROOF_VALUE.into(),
-            proof: CONSENSUS_STATE_PROOF.into_iter().map(Into::into).collect(),
+            key: data.key.into(),
+            value: data.value.into(),
+            proof: data.proof.into_iter().map(Into::into).collect(),
         };
 
-        let storage_root = CONSENSUS_STATE_STORAGE_ROOT.clone();
-
-        let consensus_state = cometbls::consensus_state::ConsensusState {
-            root: MerkleRoot {
-                hash: CONSENSUS_STATE_CONTRACT_MERKLE_ROOT.clone(),
-            },
-            next_validators_hash: CONSENSUS_STATE_NEXT_VALIDATORS_HASH.clone(),
-        };
-
-        let wasm_consensus_state = protos::ibc::lightclients::wasm::v1::ConsensusState {
-            data: consensus_state.into_proto_bytes(),
-            timestamp: 1684400046,
-        };
-
-        let any_consensus_state = protos::google::protobuf::Any {
-            type_url: "/ibc.lightclients.wasm.v1.ConsensusState".into(),
-            value: wasm_consensus_state.encode_to_vec(),
-        };
-
-        do_verify_membership(
-            ClientConsensusStatePath {
-                client_id: format!("{ETHEREUM_CLIENT_ID_PREFIX}-0"),
-                height: Height {
-                    revision_number: 0,
-                    revision_height: 1,
-                },
-            }
-            .to_string(),
-            storage_root,
-            3,
+        (
             proof,
-            any_consensus_state.encode_to_vec(),
+            data.commitment_path,
+            data.commitments_map_slot,
+            data.storage_root.as_ref().try_into().unwrap(),
+            data.expected_data,
         )
-        .expect("Membership verification of consensus state failed");
     }
 
-    fn prepare_connection_end() -> (
-        Proof,
-        H256,
-        protos::ibc::core::connection::v1::ConnectionEnd,
-    ) {
-        let proof = Proof {
-            key: CONNECTION_END_PROOF_KEY.into(),
-            value: CONNECTION_END_PROOF_VALUE.into(),
-            proof: CONNECTION_END_PROOF.into_iter().map(Into::into).collect(),
-        };
-
-        let storage_root = CONNECTION_END_STORAGE_ROOT.clone();
-
-        let connection_end = protos::ibc::core::connection::v1::ConnectionEnd {
-            client_id: format!("{ETHEREUM_CLIENT_ID_PREFIX}-0"),
-            versions: vec![protos::ibc::core::connection::v1::Version {
-                identifier: "1".into(),
-                features: vec!["ORDER_ORDERED".into(), "ORDER_UNORDERED".into()],
-            }],
-            state: 1,
-            counterparty: Some(protos::ibc::core::connection::v1::Counterparty {
-                client_id: format!("{WASM_CLIENT_ID_PREFIX}-0"),
-                connection_id: Default::default(),
-                prefix: Some(protos::ibc::core::commitment::v1::MerklePrefix {
-                    key_prefix: IBC_KEY_PREFIX.as_bytes().to_vec(),
-                }),
-            }),
-            delay_period: 0,
-        };
-
-        (proof, storage_root, connection_end)
+    fn do_membership_test<T: serde::de::DeserializeOwned + IntoProto>(
+        path: &str,
+    ) -> Result<(), Error> {
+        let (proof, commitment_path, slot, storage_root, expected_data) =
+            membership_data::<T>(path);
+        do_verify_membership(
+            commitment_path,
+            storage_root.as_ref().try_into().unwrap(),
+            slot,
+            proof,
+            expected_data.into_proto_bytes(),
+        )
     }
 
     #[test]
     fn membership_verification_works_for_connection_end() {
-        let (proof, storage_root, connection_end) = prepare_connection_end();
-
-        do_verify_membership(
-            ConnectionPath {
-                connection_id: "connection-0".parse().unwrap(),
-            }
-            .to_string(),
-            storage_root,
-            3,
-            proof,
-            connection_end.encode_to_vec(),
+        do_membership_test::<ConnectionEnd<ClientId, ClientId>>(
+            "src/test/memberships/valid_connection_end.json",
         )
-        .expect("Membership verification of connection end failed");
+        .expect("Membership verification of client state failed");
     }
 
     #[test]
     fn membership_verification_fails_for_incorrect_proofs() {
-        let (mut proof, storage_root, connection_end) = prepare_connection_end();
+        let (mut proof, commitment_path, slot, storage_root, connection_end) =
+            membership_data::<ConnectionEnd<ClientId, ClientId>>(
+                "src/test/memberships/valid_connection_end.json",
+            );
 
         let proofs = vec![
             {
@@ -1070,14 +943,11 @@ mod test {
 
         for proof in proofs {
             assert!(do_verify_membership(
-                ConnectionPath {
-                    connection_id: "connection-0".parse().unwrap(),
-                }
-                .to_string(),
+                commitment_path.clone(),
                 storage_root.clone(),
-                3,
+                slot,
                 proof,
-                connection_end.encode_to_vec(),
+                connection_end.clone().into_proto_bytes(),
             )
             .is_err());
         }
@@ -1085,84 +955,65 @@ mod test {
 
     #[test]
     fn membership_verification_fails_for_incorrect_storage_root() {
-        let (proof, mut storage_root, connection_end) = prepare_connection_end();
+        let (proof, commitment_path, slot, mut storage_root, connection_end) =
+            membership_data::<ConnectionEnd<ClientId, ClientId>>(
+                "src/test/memberships/valid_connection_end.json",
+            );
 
         storage_root.0[10] = u8::MAX - storage_root.0[10];
 
         assert!(do_verify_membership(
-            ConnectionPath {
-                connection_id: "connection-0".parse().unwrap(),
-            }
-            .to_string(),
+            commitment_path,
             storage_root,
-            3,
+            slot,
             proof,
-            connection_end.encode_to_vec(),
+            connection_end.into_proto_bytes(),
         )
         .is_err());
     }
 
     #[test]
     fn membership_verification_fails_for_incorrect_data() {
-        let (proof, storage_root, mut connection_end) = prepare_connection_end();
+        let (proof, commitment_path, slot, storage_root, mut connection_end) =
+            membership_data::<ConnectionEnd<ClientId, ClientId>>(
+                "src/test/memberships/valid_connection_end.json",
+            );
 
-        connection_end.client_id = "incorrect-client-id".into();
+        connection_end.client_id =
+            unionlabs::validated::Validated::new("08-client-1".into()).unwrap();
 
         assert!(do_verify_membership(
-            ConnectionPath {
-                connection_id: "connection-0".parse().unwrap(),
-            }
-            .to_string(),
+            commitment_path,
             storage_root,
-            3,
+            slot,
             proof,
-            connection_end.encode_to_vec(),
+            connection_end.into_proto_bytes(),
         )
         .is_err());
     }
 
     #[test]
     fn non_membership_verification_works() {
-        let proof = Proof {
-            key: NON_MEMBERSHIP_PROOF_KEY.into(),
-            value: vec![0x0],
-            proof: NON_MEMBERSHIP_PROOF.into_iter().map(Into::into).collect(),
-        };
+        let (proof, commitment_path, slot, storage_root, _) =
+            membership_data::<()>("src/test/memberships/valid_non_membership_proof.json");
 
-        let storage_root = NON_MEMBERSHIP_STORAGE_ROOT.clone();
-
-        do_verify_non_membership(
-            ClientStatePath {
-                client_id: format!("{ETHEREUM_CLIENT_ID_PREFIX}-0"),
-            }
-            .to_string(),
-            storage_root,
-            3,
-            proof,
-        )
-        .expect("Membership verification of client state failed");
+        do_verify_non_membership(commitment_path, storage_root, slot, proof)
+            .expect("Membership verification of client state failed");
     }
 
     #[test]
     fn non_membership_verification_fails_when_value_not_empty() {
-        let (proof, storage_root, _) = prepare_connection_end();
-
+        let (proof, commitment_path, slot, storage_root, _) =
+            membership_data::<ConnectionEnd<ClientId, ClientId>>(
+                "src/test/memberships/valid_connection_end.json",
+            );
         assert_eq!(
-            do_verify_non_membership(
-                ConnectionPath {
-                    connection_id: "connection-0".parse().unwrap(),
-                }
-                .to_string(),
-                storage_root,
-                3,
-                proof,
-            ),
+            do_verify_non_membership(commitment_path, storage_root, slot, proof),
             Err(Error::CounterpartyStorageNotNil)
         );
     }
 
     #[test]
-    #[ignore = "broken test data"]
     fn update_state_on_misbehaviour_works() {
         let (mut deps, header, env) = prepare_test_data();
 

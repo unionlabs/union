@@ -1763,6 +1763,7 @@ dependencies = [
  "hex",
  "hex-literal",
  "ics008-wasm-client",
+ "lazy_static",
  "prost",
  "protos",
  "rlp",

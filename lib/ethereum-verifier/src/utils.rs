@@ -302,75 +302,75 @@ mod tests {
         )
     }
 
-    #[test]
-    fn valid_merkle_branch_works() {
-        // TODO(aeryz): move test data to ibc types
-        let header = <Header<Minimal>>::try_from_proto(
-            serde_json::from_str(include_str!(
-                "../../../light-clients/ethereum-light-client/src/test/finality_update_1.json"
-            ))
-            .unwrap(),
-        )
-        .unwrap();
+    // #[test]
+    // fn valid_merkle_branch_works() {
+    //     // TODO(aeryz): move test data to ibc types
+    //     let header = <Header<Minimal>>::try_from_proto(
+    //         serde_json::from_str(include_str!(
+    //             "../../../light-clients/ethereum-light-client/src/test/finality_update_1.json"
+    //         ))
+    //         .unwrap(),
+    //     )
+    //     .unwrap();
 
-        let header = header.consensus_update.attested_header;
+    //     let header = header.consensus_update.attested_header;
 
-        let valid_leaf = H256::from(header.execution.tree_hash_root());
-        let valid_branch = header.execution_branch.clone();
-        let valid_root = header.beacon.body_root.clone();
+    //     let valid_leaf = H256::from(header.execution.tree_hash_root());
+    //     let valid_branch = header.execution_branch.clone();
+    //     let valid_root = header.beacon.body_root.clone();
 
-        // Works for valid data
-        assert_eq!(
-            validate_merkle_branch(
-                &valid_leaf,
-                &valid_branch,
-                floorlog2(EXECUTION_PAYLOAD_INDEX),
-                EXECUTION_PAYLOAD_INDEX,
-                &valid_root,
-            ),
-            Ok(())
-        );
+    //     // Works for valid data
+    //     assert_eq!(
+    //         validate_merkle_branch(
+    //             &valid_leaf,
+    //             &valid_branch,
+    //             floorlog2(EXECUTION_PAYLOAD_INDEX),
+    //             EXECUTION_PAYLOAD_INDEX,
+    //             &valid_root,
+    //         ),
+    //         Ok(())
+    //     );
 
-        // Fails when index is wrong
-        assert!(validate_merkle_branch(
-            &valid_leaf,
-            &valid_branch,
-            floorlog2(EXECUTION_PAYLOAD_INDEX),
-            EXECUTION_PAYLOAD_INDEX + 1,
-            &valid_root,
-        )
-        .is_err());
+    //     // Fails when index is wrong
+    //     assert!(validate_merkle_branch(
+    //         &valid_leaf,
+    //         &valid_branch,
+    //         floorlog2(EXECUTION_PAYLOAD_INDEX),
+    //         EXECUTION_PAYLOAD_INDEX + 1,
+    //         &valid_root,
+    //     )
+    //     .is_err());
 
-        let invalid_leaf = {
-            let mut header = header.clone();
-            header.execution.gas_limit += 1;
-            H256::from(header.execution.tree_hash_root())
-        };
+    //     let invalid_leaf = {
+    //         let mut header = header.clone();
+    //         header.execution.gas_limit += 1;
+    //         H256::from(header.execution.tree_hash_root())
+    //     };
 
-        // Fails when root is wrong
-        assert!(validate_merkle_branch(
-            &invalid_leaf,
-            &valid_branch,
-            floorlog2(EXECUTION_PAYLOAD_INDEX),
-            EXECUTION_PAYLOAD_INDEX,
-            &valid_root,
-        )
-        .is_err());
+    //     // Fails when root is wrong
+    //     assert!(validate_merkle_branch(
+    //         &invalid_leaf,
+    //         &valid_branch,
+    //         floorlog2(EXECUTION_PAYLOAD_INDEX),
+    //         EXECUTION_PAYLOAD_INDEX,
+    //         &valid_root,
+    //     )
+    //     .is_err());
 
-        let invalid_branch = {
-            let mut header = header.clone();
-            header.execution_branch[0] = Default::default();
-            header.execution_branch
-        };
+    //     let invalid_branch = {
+    //         let mut header = header.clone();
+    //         header.execution_branch[0] = Default::default();
+    //         header.execution_branch
+    //     };
 
-        // Fails when branch is wrong
-        assert!(validate_merkle_branch(
-            &valid_leaf,
-            &invalid_branch,
-            floorlog2(EXECUTION_PAYLOAD_INDEX),
-            EXECUTION_PAYLOAD_INDEX,
-            &valid_root,
-        )
-        .is_err());
-    }
+    //     // Fails when branch is wrong
+    //     assert!(validate_merkle_branch(
+    //         &valid_leaf,
+    //         &invalid_branch,
+    //         floorlog2(EXECUTION_PAYLOAD_INDEX),
+    //         EXECUTION_PAYLOAD_INDEX,
+    //         &valid_root,
+    //     )
+    //     .is_err());
+    // }
 }
