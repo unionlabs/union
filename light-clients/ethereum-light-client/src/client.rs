@@ -455,7 +455,7 @@ fn is_client_expired(
     consensus_state_timestamp + trusting_period < current_block_time
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "mainnet"))]
 mod test {
     use std::{cmp::Ordering, fs, marker::PhantomData};
 
