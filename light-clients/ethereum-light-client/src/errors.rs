@@ -37,11 +37,8 @@ pub enum Error {
     #[error("consensus state not found at height {0}")]
     ConsensusStateNotFound(Height),
 
-    #[error("verification error: {error} ({context})")]
-    Verification {
-        context: VerificationError,
-        error: String,
-    },
+    #[error("verification error ({0})")]
+    Verification(VerificationError),
 
     #[error("IBC path is empty")]
     EmptyIbcPath,
@@ -130,11 +127,17 @@ impl From<CustomQueryError> for Error {
 #[derive(ThisError, Debug, PartialEq)]
 pub enum VerificationError {
     #[error("light client update")]
-    LightClientUpdate,
+    LightClientUpdate(ethereum_verifier::Error),
     #[error("account storage root")]
-    AccountStorageRoot,
+    AccountStorageRoot(ethereum_verifier::Error),
     #[error("membership")]
-    Membership,
+    Membership(ethereum_verifier::Error),
     #[error("non-membership")]
-    NonMembership,
+    NonMembership(ethereum_verifier::Error),
+}
+
+impl From<VerificationError> for Error {
+    fn from(value: VerificationError) -> Self {
+        Error::Verification(value)
+    }
 }

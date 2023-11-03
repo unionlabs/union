@@ -136,10 +136,7 @@ impl IbcClient for EthereumLightClient {
             wasm_client_state.data.genesis_validators_root.clone(),
             VerificationContext { deps },
         )
-        .map_err(|e| Error::Verification {
-            context: VerificationError::LightClientUpdate,
-            error: e.to_string(),
-        })?;
+        .map_err(VerificationError::LightClientUpdate)?;
 
         let proof_data = header
             .account_update
@@ -161,10 +158,7 @@ impl IbcClient for EthereumLightClient {
                 )
             })?,
         )
-        .map_err(|e| Error::Verification {
-            context: VerificationError::AccountStorageRoot,
-            error: e.to_string(),
-        })?;
+        .map_err(VerificationError::AccountStorageRoot)?;
 
         Ok(ContractResult::valid(None))
     }
@@ -420,10 +414,8 @@ fn do_verify_membership(
         &rlp::encode(&storage_proof.value.as_slice()),
         &storage_proof.proof,
     )
-    .map_err(|e| Error::Verification {
-        context: VerificationError::Membership,
-        error: e.to_string(),
-    })
+    .map_err(VerificationError::Membership)
+    .map_err(Into::into)
 }
 
 /// Verifies that no value is committed at `path` in the counterparty light client's storage.
@@ -435,12 +427,9 @@ fn do_verify_non_membership(
 ) -> Result<(), Error> {
     check_commitment_key(path, counterparty_commitment_slot, &storage_proof.key)?;
 
-    if verify_storage_absence(storage_root, &storage_proof.key, &storage_proof.proof).map_err(
-        |e| Error::Verification {
-            context: VerificationError::NonMembership,
-            error: e.to_string(),
-        },
-    )? {
+    if verify_storage_absence(storage_root, &storage_proof.key, &storage_proof.proof)
+        .map_err(VerificationError::NonMembership)?
+    {
         Ok(())
     } else {
         Err(Error::CounterpartyStorageNotNil)
