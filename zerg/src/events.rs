@@ -1,7 +1,7 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use ucs01_relay_api::types::Ucs01TransferPacket;
-use unionlabs::events::{RecvPacket, SendPacket};
+use unionlabs::events::RecvPacket;
 use uuid::Uuid;
 
 /// A timestamped event originating from `chain_id`.
