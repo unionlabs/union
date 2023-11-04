@@ -41,9 +41,13 @@ use unionlabs::{
     },
     traits::{Chain, HeightOf, LightClientBase},
     union::galois::{
-        prove_request::ProveRequest, prove_response, validator_set_commit::ValidatorSetCommit,
+        poll_request::PollRequest,
+        poll_response::{PollResponse, ProveRequestDone, ProveRequestFailed},
+        prove_request::ProveRequest,
+        prove_response,
+        validator_set_commit::ValidatorSetCommit,
     },
-    IntoProto, MsgIntoProto, QueryHeight,
+    IntoProto, MsgIntoProto,
 };
 
 use crate::{
@@ -54,10 +58,7 @@ use crate::{
         CommitmentProof, ConnectionProof, Data, LightClientSpecificData,
     },
     defer_relative, fetch,
-    fetch::{
-        Fetch, FetchStateProof, FetchTrustedClientState, FetchUpdateHeaders,
-        LightClientSpecificFetch,
-    },
+    fetch::{Fetch, FetchStateProof, FetchUpdateHeaders, LightClientSpecificFetch},
     identified, msg,
     msg::{Msg, MsgUpdateClientData},
     seq,
@@ -152,7 +153,7 @@ where
     AggregateData: From<identified!(Data<L>)>,
     AggregateReceiver: From<identified!(Aggregate<L>)>,
 {
-    match &msg {
+    match msg {
         EthereumFetchMsg::FetchUntrustedCommit(FetchUntrustedCommit { height, __marker }) => {
             let commit = union
                 .tm_client
@@ -310,7 +311,7 @@ where
             };
 
             let msg = EthereumDataMsg::UntrustedCommit(UntrustedCommit {
-                height: *height,
+                height,
                 // REVIEW: Ensure `commit.canonical`?
                 signed_header,
                 __marker: PhantomData,
@@ -334,7 +335,7 @@ where
                 .validators;
 
             let msg = EthereumDataMsg::Validators(Validators {
-                height: *height,
+                height,
                 validators,
                 __marker: PhantomData,
             });
@@ -347,39 +348,44 @@ where
         }
         EthereumFetchMsg::FetchProveRequest(FetchProveRequest { request, __marker }) => {
             let response = union_prover_api_client::UnionProverApiClient::connect(
-                tonic::transport::Endpoint::from_shared(union.prover_endpoint.clone()).unwrap(),
+                union.prover_endpoint.clone(),
             )
             .await
             .unwrap()
-            .prove(request.clone().into_proto())
+            .poll(
+                PollRequest {
+                    request: request.clone(),
+                }
+                .into_proto(),
+            )
             .await
-            .map(|x| x.into_inner());
+            .map(|x| x.into_inner().try_into().unwrap())
+            .unwrap();
 
             match response {
-                Ok(response) => {
-                    let msg = EthereumDataMsg::ProveResponse(ProveResponse {
-                        response: response.try_into().unwrap(),
-                        __marker: PhantomData,
-                    });
-
-                    [data::<L>(
+                PollResponse::Pending => [seq([
+                    // REVIEW: How long should we wait between polls?
+                    defer_relative(3),
+                    fetch::<L>(
                         union.chain_id.clone(),
-                        LightClientSpecificData(msg),
-                    )]
-                    .into()
-                }
-                // TODO: use an gRPC status code from galois, most likely: // UNAVAILABLE
-                // see https://developers.google.com/actions-center/reference/grpc-api/status_codes
-                // This error message means that we crashed while trying to gen
-                // a proof and we have to wait for the prover to be done (max 40s as of writing this).
-                Err(err) if err.message() == "Busy building" => [seq([
-                    defer_relative(20),
-                    fetch::<L>(union.chain_id.clone(), LightClientSpecificFetch(msg)),
+                        LightClientSpecificFetch(EthereumFetchMsg::FetchProveRequest(
+                            FetchProveRequest { request, __marker },
+                        )),
+                    ),
                 ])]
                 .into(),
-                Err(err) => {
-                    panic!("{:?}", err)
+                PollResponse::Failed(ProveRequestFailed { message }) => {
+                    tracing::error!(%message, "prove request failed");
+                    panic!()
                 }
+                PollResponse::Done(ProveRequestDone { response }) => [data::<L>(
+                    union.chain_id.clone(),
+                    LightClientSpecificData(EthereumDataMsg::ProveResponse(ProveResponse {
+                        response,
+                        __marker: PhantomData,
+                    })),
+                )]
+                .into(),
             }
         }
         EthereumFetchMsg::AbciQuery(FetchAbciQuery { path, height }) => {
@@ -415,7 +421,6 @@ where
             }
             .encode_to_vec();
 
-            let height = *height;
             [match path {
                 unionlabs::proof::Path::ClientStatePath(_) => {
                     data::<L>(union.chain_id(), ClientStateProof { proof, height })
@@ -1118,30 +1123,19 @@ where
     ) -> RelayerMsg {
         assert_eq!(chain_id, untrusted_commit_chain_id);
 
-        seq([
-            msg::<L::Counterparty>(
-                req.counterparty_chain_id,
-                MsgUpdateClientData {
-                    msg: MsgUpdateClient {
-                        client_id: req.counterparty_client_id.clone(),
-                        client_message: cometbls::header::Header {
-                            signed_header,
-                            trusted_height: req.update_from,
-                            zero_knowledge_proof: response.proof.evm_proof,
-                        },
+        msg::<L::Counterparty>(
+            req.counterparty_chain_id,
+            MsgUpdateClientData {
+                msg: MsgUpdateClient {
+                    client_id: req.counterparty_client_id.clone(),
+                    client_message: cometbls::header::Header {
+                        signed_header,
+                        trusted_height: req.update_from,
+                        zero_knowledge_proof: response.proof.evm_proof,
                     },
-                    update_from: req.update_from,
                 },
-            ),
-            // REVIEW: Is this required anymore, now that all messages require externally-queued updates?
-            fetch::<L>(
-                chain_id,
-                FetchTrustedClientState {
-                    // NOTE: We can pass update_to directly here since cosmos -> evm always updates to the exact height requested.
-                    at: QueryHeight::Specific(req.update_to),
-                    client_id: req.client_id,
-                },
-            ),
-        ])
+                update_from: req.update_from,
+            },
+        )
     }
 }

@@ -60,6 +60,24 @@ pub struct QueryCodeResponse {
     #[prost(bytes = "vec", tag = "1")]
     pub code: ::prost::alloc::vec::Vec<u8>,
 }
+/// MsgStoreCode defines the request type for the StoreCode rpc.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgStoreCode {
+    #[prost(string, tag = "1")]
+    pub signer: ::prost::alloc::string::String,
+    #[prost(bytes = "vec", tag = "2")]
+    pub code: ::prost::alloc::vec::Vec<u8>,
+}
+/// MsgStoreCodeResponse defines the response type for the StoreCode rpc
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgStoreCodeResponse {
+    #[prost(bytes = "vec", tag = "1")]
+    pub code_id: ::prost::alloc::vec::Vec<u8>,
+}
 /// Wasm light client's Client state
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -105,24 +123,6 @@ pub struct Header {
 pub struct Misbehaviour {
     #[prost(bytes = "vec", tag = "1")]
     pub data: ::prost::alloc::vec::Vec<u8>,
-}
-/// MsgStoreCode defines the request type for the StoreCode rpc.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgStoreCode {
-    #[prost(string, tag = "1")]
-    pub signer: ::prost::alloc::string::String,
-    #[prost(bytes = "vec", tag = "2")]
-    pub code: ::prost::alloc::vec::Vec<u8>,
-}
-/// MsgStoreCodeResponse defines the response type for the StoreCode rpc
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgStoreCodeResponse {
-    #[prost(bytes = "vec", tag = "1")]
-    pub code_id: ::prost::alloc::vec::Vec<u8>,
 }
 include!("ibc.lightclients.wasm.v1.tonic.rs");
 // @@protoc_insertion_point(module)

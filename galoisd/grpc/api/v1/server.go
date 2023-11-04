@@ -327,7 +327,11 @@ func (p *proverServer) Poll(ctx context.Context, pollReq *PollRequest) (*PollRes
 		}()
 	}
 
-	return nil, nil
+	return &PollResponse{
+		Result: &PollResponse_Pending{
+			Pending: &ProveRequestPending{},
+		},
+	}, nil
 }
 
 func (p *proverServer) Verify(ctx context.Context, req *VerifyRequest) (*VerifyResponse, error) {

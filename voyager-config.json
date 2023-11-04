@@ -60,7 +60,7 @@
       ],
       "fee_denom": "stake",
       "ws_url": "ws://localhost:26657/websocket",
-      "prover_endpoint": "https://galois-devnet.cryptware.io:443",
+      "prover_endpoint": "http://localhost:9999",
       "grpc_url": "http://localhost:9090"
     }
   },

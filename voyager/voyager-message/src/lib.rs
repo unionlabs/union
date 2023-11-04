@@ -8,12 +8,12 @@ use std::{
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
-use ::lightclient::{
+use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
+use futures::{future::BoxFuture, FutureExt};
+use lightclient::{
     cometbls::{CometblsMainnet, CometblsMinimal},
     ethereum::{EthereumMainnet, EthereumMinimal},
 };
-use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
-use futures::{future::BoxFuture, FutureExt};
 use serde::{Deserialize, Serialize};
 use unionlabs::{
     proof::{
