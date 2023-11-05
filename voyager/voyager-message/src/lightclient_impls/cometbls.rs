@@ -49,6 +49,7 @@ use unionlabs::{
 };
 
 use crate::{
+    aggregate,
     aggregate::{Aggregate, AnyAggregate, LightClientSpecificAggregate},
     data,
     data::{
@@ -63,8 +64,7 @@ use crate::{
     use_aggregate::{do_aggregate, IsAggregateData, UseAggregate},
     wait,
     wait::{AnyWait, Wait, WaitForTimestamp},
-    AggregateData, AggregateReceiver, AnyLightClientIdentified, DoAggregate, Identified,
-    LightClient, RelayerMsg,
+    AnyLightClientIdentified, DoAggregate, Identified, LightClient, RelayerMsg,
 };
 
 pub const EVM_REVISION_NUMBER: u64 = 0;
@@ -166,18 +166,16 @@ where
     [RelayerMsg::Aggregate {
         queue: [seq([fetch(
             evm.chain_id,
-            Fetch::LightClientSpecific(LightClientSpecificFetch(
-                CometblsFetchMsg::FetchFinalityUpdate(PhantomData),
-            )),
+            LightClientSpecificFetch(CometblsFetchMsg::FetchFinalityUpdate(PhantomData)),
         )])]
         .into(),
         data: [].into(),
-        receiver: AggregateReceiver::from(Identified {
-            chain_id: evm.chain_id,
-            data: Aggregate::LightClientSpecific(LightClientSpecificAggregate(
-                CometblsAggregateMsg::MakeCreateUpdates(MakeCreateUpdatesData { req: update_info }),
+        receiver: aggregate(
+            evm.chain_id,
+            LightClientSpecificAggregate(CometblsAggregateMsg::MakeCreateUpdates(
+                MakeCreateUpdatesData { req: update_info },
             )),
-        }),
+        ),
     }]
     .into()
 }
@@ -599,12 +597,12 @@ where
     AnyLightClientIdentified<AnyMsg>: From<identified!(Msg<L::Counterparty>)>,
     AnyLightClientIdentified<AnyWait>: From<identified!(Wait<L::Counterparty>)>,
 
-    AggregateData: From<identified!(Data<L>)>,
-    AggregateReceiver: From<identified!(Aggregate<L>)>,
+    AnyLightClientIdentified<AnyData>: From<identified!(Data<L>)>,
+    AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<L>)>,
 {
     fn do_aggregate(
         Identified { chain_id, data }: Identified<L, Self>,
-        aggregated_data: VecDeque<AggregateData>,
+        aggregated_data: VecDeque<AnyLightClientIdentified<AnyData>>,
     ) -> Vec<RelayerMsg> {
         [match data {
             CometblsAggregateMsg::CreateUpdate(msg) => do_aggregate(
@@ -648,7 +646,7 @@ where
         Aggregate = CometblsAggregateMsg<L, C>,
     >,
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<L>)>,
-    AggregateReceiver: From<Identified<L, Aggregate<L>>>,
+    AnyLightClientIdentified<AnyAggregate>: From<Identified<L, Aggregate<L>>>,
 {
     // When we fetch the update at this height, the `next_sync_committee` will
     // be the current sync committee of the period that we want to update to.
@@ -659,44 +657,42 @@ where
         queue: [
             fetch::<L>(
                 chain_id,
-                Fetch::LightClientSpecific(LightClientSpecificFetch(
-                    CometblsFetchMsg::FetchLightClientUpdate(FetchLightClientUpdate {
+                LightClientSpecificFetch(CometblsFetchMsg::FetchLightClientUpdate(
+                    FetchLightClientUpdate {
                         period: previous_period,
                         __marker: PhantomData,
-                    }),
+                    },
                 )),
             ),
             fetch::<L>(
                 chain_id,
-                Fetch::LightClientSpecific(LightClientSpecificFetch(
-                    CometblsFetchMsg::FetchAccountUpdate(FetchAccountUpdate {
+                LightClientSpecificFetch(CometblsFetchMsg::FetchAccountUpdate(
+                    FetchAccountUpdate {
                         slot: light_client_update.attested_header.beacon.slot,
                         __marker: PhantomData,
-                    }),
+                    },
                 )),
             ),
             fetch::<L>(
                 chain_id,
-                Fetch::LightClientSpecific(LightClientSpecificFetch(
-                    CometblsFetchMsg::FetchBeaconGenesis(FetchBeaconGenesis {
+                LightClientSpecificFetch(CometblsFetchMsg::FetchBeaconGenesis(
+                    FetchBeaconGenesis {
                         __marker: PhantomData,
-                    }),
+                    },
                 )),
             ),
         ]
         .into(),
         data: [].into(),
-        receiver: AggregateReceiver::from(Identified {
+        receiver: aggregate(
             chain_id,
-            data: Aggregate::LightClientSpecific(LightClientSpecificAggregate(
-                CometblsAggregateMsg::CreateUpdate(CreateUpdateData {
-                    req,
-                    currently_trusted_slot,
-                    light_client_update,
-                    is_next,
-                }),
-            )),
-        }),
+            LightClientSpecificAggregate(CometblsAggregateMsg::CreateUpdate(CreateUpdateData {
+                req,
+                currently_trusted_slot,
+                light_client_update,
+                is_next,
+            })),
+        ),
     }
 }
 
@@ -1249,7 +1245,7 @@ where
     >,
     Identified<L, FinalityUpdate<C>>: IsAggregateData,
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<L>)>,
-    AggregateReceiver: From<Identified<L, Aggregate<L>>>,
+    AnyLightClientIdentified<AnyAggregate>: From<Identified<L, Aggregate<L>>>,
 {
     type AggregatedData = HList![
         Identified<L, FinalityUpdate<C>>,
@@ -1292,9 +1288,9 @@ where
             )]
             .into(),
             data: [].into(),
-            receiver: AggregateReceiver::from(Identified {
+            receiver: aggregate(
                 chain_id,
-                data: Aggregate::LightClientSpecific(LightClientSpecificAggregate(
+                LightClientSpecificAggregate(
                     CometblsAggregateMsg::MakeCreateUpdatesFromLightClientUpdates(
                         MakeCreateUpdatesFromLightClientUpdatesData {
                             req: req.clone(),
@@ -1302,8 +1298,8 @@ where
                             finality_update,
                         },
                     ),
-                )),
-            }),
+                ),
+            ),
         }
     }
 }
@@ -1320,7 +1316,7 @@ where
     Identified<L, LightClientUpdates<C>>: IsAggregateData,
 
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<L>)>,
-    AggregateReceiver: From<Identified<L, Aggregate<L>>>,
+    AnyLightClientIdentified<AnyAggregate>: From<Identified<L, Aggregate<L>>>,
 {
     type AggregatedData = HList![
         Identified<L, LightClientUpdates<C>>,

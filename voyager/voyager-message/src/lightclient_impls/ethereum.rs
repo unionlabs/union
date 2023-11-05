@@ -51,7 +51,8 @@ use unionlabs::{
 };
 
 use crate::{
-    aggregate::{Aggregate, LightClientSpecificAggregate},
+    aggregate,
+    aggregate::{Aggregate, AnyAggregate, LightClientSpecificAggregate},
     data,
     data::{
         AcknowledgementProof, AnyData, ChannelEndProof, ClientConsensusStateProof,
@@ -62,11 +63,10 @@ use crate::{
     identified, msg,
     msg::{AnyMsg, Msg, MsgUpdateClientData},
     seq,
-    use_aggregate::{do_aggregate, UseAggregate},
+    use_aggregate::{do_aggregate, IsAggregateData, UseAggregate},
     wait,
     wait::{AnyWait, Wait, WaitForBlock},
-    AggregateData, AggregateReceiver, AnyLightClientIdentified, DoAggregate, Identified,
-    LightClient, PathOf, RelayerMsg,
+    AnyLightClientIdentified, DoAggregate, Identified, LightClient, PathOf, RelayerMsg,
 };
 
 impl LightClient for EthereumMinimal {
@@ -151,8 +151,7 @@ where
     L: LightClient<HostChain = Union, Fetch = EthereumFetchMsg<L, C>, Data = EthereumDataMsg<C>>,
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<L>)>,
     AnyLightClientIdentified<AnyData>: From<identified!(Data<L>)>,
-    AggregateData: From<identified!(Data<L>)>,
-    AggregateReceiver: From<identified!(Aggregate<L>)>,
+    AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<L>)>,
 {
     match msg {
         EthereumFetchMsg::FetchUntrustedCommit(FetchUntrustedCommit { height, __marker }) => {
@@ -462,8 +461,8 @@ where
     L::Counterparty: LightClient<HostChain = Evm<C>>,
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<L>)>,
     AnyLightClientIdentified<AnyWait>: From<identified!(Wait<L>)>,
-    AggregateData: From<identified!(Data<L>)>,
-    AggregateReceiver: From<identified!(Aggregate<L>)>,
+    AnyLightClientIdentified<AnyData>: From<identified!(Data<L>)>,
+    AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<L>)>,
 {
     [seq([
         wait::<L>(
@@ -475,42 +474,36 @@ where
             queue: [
                 fetch::<L>(
                     union.chain_id.clone(),
-                    Fetch::LightClientSpecific(LightClientSpecificFetch(
-                        EthereumFetchMsg::FetchUntrustedCommit(FetchUntrustedCommit {
+                    LightClientSpecificFetch(EthereumFetchMsg::FetchUntrustedCommit(
+                        FetchUntrustedCommit {
                             height: update_info.update_to,
                             __marker: PhantomData,
-                        }),
+                        },
                     )),
                 ),
                 fetch::<L>(
                     union.chain_id.clone(),
-                    Fetch::LightClientSpecific(LightClientSpecificFetch(
-                        EthereumFetchMsg::FetchValidators(FetchValidators {
-                            height: update_info.update_from,
-                            __marker: PhantomData,
-                        }),
-                    )),
+                    LightClientSpecificFetch(EthereumFetchMsg::FetchValidators(FetchValidators {
+                        height: update_info.update_from,
+                        __marker: PhantomData,
+                    })),
                 ),
                 fetch::<L>(
                     union.chain_id.clone(),
-                    Fetch::LightClientSpecific(LightClientSpecificFetch(
-                        EthereumFetchMsg::FetchValidators(FetchValidators {
-                            height: update_info.update_to,
-                            __marker: PhantomData,
-                        }),
-                    )),
+                    LightClientSpecificFetch(EthereumFetchMsg::FetchValidators(FetchValidators {
+                        height: update_info.update_to,
+                        __marker: PhantomData,
+                    })),
                 ),
             ]
             .into(),
             data: [].into(),
-            receiver: AggregateReceiver::from(Identified {
-                chain_id: union.chain_id.clone(),
-                data: Aggregate::LightClientSpecific(LightClientSpecificAggregate(
-                    EthereumAggregateMsg::AggregateProveRequest(AggregateProveRequest {
-                        req: update_info,
-                    }),
+            receiver: aggregate(
+                union.chain_id.clone(),
+                LightClientSpecificAggregate(EthereumAggregateMsg::AggregateProveRequest(
+                    AggregateProveRequest { req: update_info },
                 )),
-            }),
+            ),
         },
     ])]
     .into()
@@ -663,22 +656,19 @@ where
         Aggregate = EthereumAggregateMsg<L, C>,
     >,
     L::Counterparty: LightClient<HostChain = Evm<C>>,
-    Identified<L, UntrustedCommit<C>>:
-        TryFrom<AggregateData, Error = AggregateData> + Into<AggregateData>,
-    Identified<L, Validators<C>>:
-        TryFrom<AggregateData, Error = AggregateData> + Into<AggregateData>,
-    Identified<L, ProveResponse<C>>:
-        TryFrom<AggregateData, Error = AggregateData> + Into<AggregateData>,
+    Identified<L, UntrustedCommit<C>>: IsAggregateData,
+    Identified<L, Validators<C>>: IsAggregateData,
+    Identified<L, ProveResponse<C>>: IsAggregateData,
 
     Identified<L, AggregateProveRequest<L>>: UseAggregate<L>,
     Identified<L, AggregateHeader<L>>: UseAggregate<L>,
 
     // AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L>)>,
-    AggregateReceiver: From<identified!(Aggregate<L>)>,
+    AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<L>)>,
 {
     fn do_aggregate(
         Identified { chain_id, data }: Identified<L, Self>,
-        aggregate_data: VecDeque<AggregateData>,
+        aggregate_data: VecDeque<AnyLightClientIdentified<AnyData>>,
     ) -> Vec<RelayerMsg> {
         [match data {
             EthereumAggregateMsg::AggregateProveRequest(data) => {
@@ -914,12 +904,10 @@ where
         Aggregate = EthereumAggregateMsg<L, C>,
     >,
     L::Counterparty: LightClient<HostChain = Evm<C>>,
-    Identified<L, UntrustedCommit<C>>:
-        TryFrom<AggregateData, Error = AggregateData> + Into<AggregateData>,
-    Identified<L, Validators<C>>:
-        TryFrom<AggregateData, Error = AggregateData> + Into<AggregateData>,
+    Identified<L, UntrustedCommit<C>>: IsAggregateData,
+    Identified<L, Validators<C>>: IsAggregateData,
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<L>)>,
-    AggregateReceiver: From<identified!(Aggregate<L>)>,
+    AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<L>)>,
 {
     type AggregatedData = HList![Identified<L, UntrustedCommit<C>>, Identified<L, Validators<C>>, Identified<L, Validators<C>>];
 
@@ -1086,12 +1074,12 @@ where
             )]
             .into(),
             data: [].into(),
-            receiver: AggregateReceiver::from(Identified {
+            receiver: aggregate(
                 chain_id,
-                data: Aggregate::LightClientSpecific(LightClientSpecificAggregate(
-                    EthereumAggregateMsg::AggregateHeader(AggregateHeader { signed_header, req }),
+                LightClientSpecificAggregate(EthereumAggregateMsg::AggregateHeader(
+                    AggregateHeader { signed_header, req },
                 )),
-            }),
+            ),
         }
     }
 }
@@ -1101,10 +1089,8 @@ where
     C: ChainSpec,
     L: LightClient<HostChain = Union, Fetch = EthereumFetchMsg<L, C>>,
     // L::Counterparty: LightClient<HostChain = Evm<C>>,
-    Identified<L, ProveResponse<C>>:
-        TryFrom<AggregateData, Error = AggregateData> + Into<AggregateData>,
-    Identified<L, Validators<C>>:
-        TryFrom<AggregateData, Error = AggregateData> + Into<AggregateData>,
+    Identified<L, ProveResponse<C>>: IsAggregateData,
+    Identified<L, Validators<C>>: IsAggregateData,
 
     AnyLightClientIdentified<AnyMsg>: From<identified!(Msg<L::Counterparty>)>,
 {

@@ -25,7 +25,7 @@ use unionlabs::{
 };
 
 use crate::{
-    aggregate::AnyAggregate,
+    aggregate::{Aggregate, AnyAggregate},
     data::{AnyData, Data, LightClientSpecificData},
     event::{AnyEvent, Event},
     fetch::{AnyFetch, Fetch, FetchStateProof, FetchUpdateHeaders, LightClientSpecificFetch},
@@ -306,16 +306,16 @@ impl RelayerMsg {
                         // queue is empty, handle msg
 
                         let res = match receiver {
-                            AggregateReceiver::EthereumMainnet(msg) => {
+                            AnyLightClientIdentified::EthereumMainnet(msg) => {
                                 msg.handle(data)
                             }
-                            AggregateReceiver::EthereumMinimal(msg) => {
+                            AnyLightClientIdentified::EthereumMinimal(msg) => {
                                 msg.handle(data)
                             }
-                            AggregateReceiver::CometblsMainnet(msg) => {
+                            AnyLightClientIdentified::CometblsMainnet(msg) => {
                                 msg.handle(data)
                             }
-                            AggregateReceiver::CometblsMinimal(msg) => {
+                            AnyLightClientIdentified::CometblsMinimal(msg) => {
                                 msg.handle(data)
                             }
                         };
@@ -357,38 +357,6 @@ enum_variants_conversions! {
     }
 }
 
-// impl TryFrom<AnyLightClientIdentified<AnyLcMsg>> for AnyLightClientIdentified<AnyData> {
-//     type Error = AnyLightClientIdentified<AnyLcMsg>;
-
-//     fn try_from(value: AnyLightClientIdentified<AnyLcMsg>) -> Result<Self, Self::Error> {
-//         match value {
-//             AnyLightClientIdentified::EthereumMainnet(i) => <Data<_>>::try_from(i.data)
-//                 .map(|d| Identified::new(i.chain_id.clone(), d))
-//                 .map(AnyLightClientIdentified::EthereumMainnet)
-//                 .map_err(|l| Identified::new(i.chain_id, l))
-//                 .map_err(AnyLightClientIdentified::EthereumMainnet),
-//             AnyLightClientIdentified::EthereumMinimal(i) => <Data<_>>::try_from(i.data)
-//                 .map(|d| Identified::new(i.chain_id.clone(), d))
-//                 .map(AnyLightClientIdentified::EthereumMinimal)
-//                 .map_err(|l| Identified::new(i.chain_id, l))
-//                 .map_err(AnyLightClientIdentified::EthereumMinimal),
-//             AnyLightClientIdentified::CometblsMainnet(i) => <Data<_>>::try_from(i.data)
-//                 .map(|d| Identified::new(i.chain_id, d))
-//                 .map(AnyLightClientIdentified::CometblsMainnet)
-//                 .map_err(|l| Identified::new(i.chain_id, l))
-//                 .map_err(AnyLightClientIdentified::CometblsMainnet),
-//             AnyLightClientIdentified::CometblsMinimal(i) => <Data<_>>::try_from(i.data)
-//                 .map(|d| Identified::new(i.chain_id, d))
-//                 .map(AnyLightClientIdentified::CometblsMinimal)
-//                 .map_err(|l| Identified::new(i.chain_id, l))
-//                 .map_err(AnyLightClientIdentified::CometblsMinimal),
-//         }
-//     }
-// }
-
-pub type AggregateReceiver = AnyLightClientIdentified<AnyAggregate>;
-pub type AggregateData = AnyLightClientIdentified<AnyData>;
-
 impl std::fmt::Display for RelayerMsg {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -397,7 +365,6 @@ impl std::fmt::Display for RelayerMsg {
             RelayerMsg::Fetch(fetch) => write!(f, "Fetch({fetch})"),
             RelayerMsg::Msg(msg) => write!(f, "Msg({msg})"),
             RelayerMsg::Wait(wait) => write!(f, "Wait({wait})"),
-            // RelayerMsg::Lc(lc) => write!(f, "Lc({lc})"),
             RelayerMsg::DeferUntil { point, seconds } => {
                 write!(f, "DeferUntil({:?}, {seconds})", point)
             }
@@ -634,11 +601,6 @@ macro_rules! any_enum {
 
 pub(crate) use any_enum;
 
-pub trait IbcPathExt<L: LightClient>: IbcPath<ChainOf<L>, ChainOf<L::Counterparty>> {
-    type Data: TryFrom<AggregateData, Error = AggregateData> + Into<AggregateData>;
-    type Proof: TryFrom<AggregateData, Error = AggregateData> + Into<AggregateData>;
-}
-
 pub trait AnyPath<L: LightClient> {
     type Inner<P: IbcPath<L::HostChain, ChainOf<L::Counterparty>>>;
 }
@@ -829,7 +791,7 @@ macro_rules! identified {
 //     where
 //         AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L>)>,
 //         AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L::Counterparty>)>,
-//         AggregateReceiver: From<identified!(Aggregate<L>)>,
+//         AnyLightClientIdentified: From<identified!(Aggregate<L>)>,
 //         AnyLightClientIdentified<AnyData>: From<identified!(Data<L>)>,
 //         // TODO: Remove once we no longer unwrap in fetch.handle()
 //         <<L as LightClientBase>::ClientId as TryFrom<
@@ -974,6 +936,16 @@ where
     )))
 }
 
+pub fn aggregate<L: LightClient>(
+    chain_id: ChainIdOf<L>,
+    t: impl Into<Aggregate<L>>,
+) -> AnyLightClientIdentified<AnyAggregate>
+where
+    AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<L>)>,
+{
+    AnyLightClientIdentified::from(Identified::new(chain_id, t.into()))
+}
+
 /// Returns the current unix timestamp in seconds.
 pub fn now() -> u64 {
     SystemTime::now()
@@ -1050,6 +1022,7 @@ mod tests {
     };
 
     use crate::{
+        aggregate,
         aggregate::{Aggregate, AggregateCreateClient, AnyAggregate},
         data::Data,
         defer_relative, event,
@@ -1064,7 +1037,7 @@ mod tests {
             AnyMsg, Msg, MsgChannelOpenInitData, MsgConnectionOpenInitData,
             MsgConnectionOpenTryData,
         },
-        seq, AggregateReceiver, Identified, RelayerMsg,
+        seq, Identified, RelayerMsg,
     };
 
     macro_rules! parse {
@@ -1223,17 +1196,17 @@ mod tests {
                     ]
                     .into(),
                     data: [].into_iter().collect(),
-                    receiver: AggregateReceiver::CometblsMinimal(Identified {
-                        chain_id: eth_chain_id,
-                        data: Aggregate::CreateClient(AggregateCreateClient {
+                    receiver: aggregate::<CometblsMinimal>(
+                        eth_chain_id,
+                        AggregateCreateClient {
                             config: CometblsConfig {
                                 client_type: "cometbls".to_string(),
                                 cometbls_client_address: Address(hex!(
                                     "83428c7db9815f482a39a1715684dcf755021997"
                                 )),
                             },
-                        }),
-                    }),
+                        },
+                    ),
                 },
                 RelayerMsg::Aggregate {
                     queue: [
@@ -1252,16 +1225,16 @@ mod tests {
                     ]
                     .into(),
                     data: [].into_iter().collect(),
-                    receiver: AggregateReceiver::EthereumMinimal(Identified {
-                        chain_id: union_chain_id.clone(),
-                        data: Aggregate::CreateClient(AggregateCreateClient {
+                    receiver: aggregate::<EthereumMinimal>(
+                        union_chain_id.clone(),
+                        AggregateCreateClient {
                             config: EthereumConfig {
                                 code_id: H256(hex!(
                                     "78266014ea77f3b785e45a33d1f8d3709444a076b3b38b2aeef265b39ad1e494"
                                 )),
                             },
-                        }),
-                    }),
+                        },
+                    ),
                 },
             ]
             .into(),

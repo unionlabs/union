@@ -157,10 +157,10 @@ pub struct LightClientSpecificData<L: LightClient>(pub L::Data);
 macro_rules! data_msg {
     ($($Ty:ident,)+) => {
         $(
-            impl<L: LightClient> From<crate::Identified<L, $Ty<L>>> for crate::AggregateData
+            impl<L: LightClient> From<crate::Identified<L, $Ty<L>>> for crate::AnyLightClientIdentified<crate::data::AnyData>
             where
                 $Ty<L>: Into<Data<L>>,
-                crate::AggregateData: From<identified!(Data<L>)>,
+                crate::AnyLightClientIdentified<crate::data::AnyData>: From<identified!(Data<L>)>,
             {
                 fn from(crate::Identified { chain_id, data }: identified!($Ty<L>)) -> Self {
                     Self::from(crate::Identified {
