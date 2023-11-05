@@ -54,19 +54,19 @@ use crate::{
     aggregate::{Aggregate, LightClientSpecificAggregate},
     data,
     data::{
-        AcknowledgementProof, ChannelEndProof, ClientConsensusStateProof, ClientStateProof,
-        CommitmentProof, ConnectionProof, Data, LightClientSpecificData,
+        AcknowledgementProof, AnyData, ChannelEndProof, ClientConsensusStateProof,
+        ClientStateProof, CommitmentProof, ConnectionProof, Data, LightClientSpecificData,
     },
     defer_relative, fetch,
-    fetch::{Fetch, FetchStateProof, FetchUpdateHeaders, LightClientSpecificFetch},
+    fetch::{AnyFetch, Fetch, FetchStateProof, FetchUpdateHeaders, LightClientSpecificFetch},
     identified, msg,
-    msg::{Msg, MsgUpdateClientData},
+    msg::{AnyMsg, Msg, MsgUpdateClientData},
     seq,
     use_aggregate::{do_aggregate, UseAggregate},
     wait,
-    wait::WaitForBlock,
-    AggregateData, AggregateReceiver, AnyLcMsg, AnyLightClientIdentified, DoAggregate, Identified,
-    LcMsg, LightClient, PathOf, RelayerMsg,
+    wait::{AnyWait, Wait, WaitForBlock},
+    AggregateData, AggregateReceiver, AnyLightClientIdentified, DoAggregate, Identified,
+    LightClient, PathOf, RelayerMsg,
 };
 
 impl LightClient for EthereumMinimal {
@@ -149,7 +149,8 @@ async fn do_fetch<C, L>(union: &Union, msg: EthereumFetchMsg<L, C>) -> Vec<Relay
 where
     C: ChainSpec,
     L: LightClient<HostChain = Union, Fetch = EthereumFetchMsg<L, C>, Data = EthereumDataMsg<C>>,
-    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L>)>,
+    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<L>)>,
+    AnyLightClientIdentified<AnyData>: From<identified!(Data<L>)>,
     AggregateData: From<identified!(Data<L>)>,
     AggregateReceiver: From<identified!(Aggregate<L>)>,
 {
@@ -459,13 +460,15 @@ where
         Fetch = EthereumFetchMsg<L, C>,
     >,
     L::Counterparty: LightClient<HostChain = Evm<C>>,
-    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L>)>,
+    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<L>)>,
+    AnyLightClientIdentified<AnyWait>: From<identified!(Wait<L>)>,
     AggregateData: From<identified!(Data<L>)>,
     AggregateReceiver: From<identified!(Aggregate<L>)>,
 {
     [seq([
         wait::<L>(
             union.chain_id(),
+            // REVIEW: Should we wait for update_to or update_to.increment()?
             WaitForBlock(update_info.update_to.increment()),
         ),
         RelayerMsg::Aggregate {
@@ -670,7 +673,7 @@ where
     Identified<L, AggregateProveRequest<L>>: UseAggregate<L>,
     Identified<L, AggregateHeader<L>>: UseAggregate<L>,
 
-    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L>)>,
+    // AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L>)>,
     AggregateReceiver: From<identified!(Aggregate<L>)>,
 {
     fn do_aggregate(
@@ -709,13 +712,13 @@ try_from_relayer_msg! {
                 FetchProveRequest(FetchProveRequest<Mainnet>),
             ),
         ),
-        lc_msg(
-            msg = Aggregate(LightClientSpecificAggregate),
-            ty = EthereumAggregateMsg,
-            variants(
-                AggregateHeader(AggregateHeader<EthereumMainnet>),
-            ),
-        ),
+        // lc_msg(
+        //     msg = Aggregate(LightClientSpecificAggregate),
+        //     ty = EthereumAggregateMsg,
+        //     variants(
+        //         AggregateHeader(AggregateHeader<EthereumMainnet>),
+        //     ),
+        // ),
     )]
 }
 
@@ -739,13 +742,13 @@ try_from_relayer_msg! {
                 FetchProveRequest(FetchProveRequest<Minimal>),
             ),
         ),
-        lc_msg(
-            msg = Aggregate(LightClientSpecificAggregate),
-            ty = EthereumAggregateMsg,
-            variants(
-                AggregateHeader(AggregateHeader<EthereumMinimal>),
-            ),
-        ),
+        // lc_msg(
+        //     msg = Aggregate(LightClientSpecificAggregate),
+        //     ty = EthereumAggregateMsg,
+        //     variants(
+        //         AggregateHeader(AggregateHeader<EthereumMinimal>),
+        //     ),
+        // ),
     )]
 }
 
@@ -915,7 +918,7 @@ where
         TryFrom<AggregateData, Error = AggregateData> + Into<AggregateData>,
     Identified<L, Validators<C>>:
         TryFrom<AggregateData, Error = AggregateData> + Into<AggregateData>,
-    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L>)>,
+    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<L>)>,
     AggregateReceiver: From<identified!(Aggregate<L>)>,
 {
     type AggregatedData = HList![Identified<L, UntrustedCommit<C>>, Identified<L, Validators<C>>, Identified<L, Validators<C>>];
@@ -1103,8 +1106,7 @@ where
     Identified<L, Validators<C>>:
         TryFrom<AggregateData, Error = AggregateData> + Into<AggregateData>,
 
-    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L>)>,
-    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L::Counterparty>)>,
+    AnyLightClientIdentified<AnyMsg>: From<identified!(Msg<L::Counterparty>)>,
 {
     type AggregatedData = HList![Identified<L, ProveResponse<C>>];
 

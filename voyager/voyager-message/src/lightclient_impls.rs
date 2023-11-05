@@ -16,13 +16,12 @@ macro_rules! try_from_relayer_msg {
                     type Error = RelayerMsg;
                     fn try_from(value: RelayerMsg) -> Result<Identified<$Lc, $Ty>, RelayerMsg> {
                         match value {
-                            RelayerMsg::Lc(crate::AnyLightClientIdentified::$Lc(Identified {
+                            RelayerMsg::$LcMsg(crate::AnyLightClientIdentified::$Lc(Identified {
                                 chain_id,
-                                data: LcMsg::$LcMsg(
+                                data:
                                     $LcMsg::LightClientSpecific($Specific($Msg::$Var(
                                         data,
                                     ))),
-                                ),
                             })) => Ok(Identified { chain_id, data }),
                             _ => Err(value),
                         }

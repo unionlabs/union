@@ -17,11 +17,10 @@ use crate::{
         PacketEvent,
     },
     any_enum, fetch,
-    fetch::{FetchChannelEnd, FetchConnectionEnd, FetchTrustedClientState},
+    fetch::{AnyFetch, Fetch, FetchChannelEnd, FetchConnectionEnd, FetchTrustedClientState},
     identified, seq, wait,
-    wait::WaitForBlock,
-    AggregateReceiver, AnyLcMsg, AnyLightClientIdentified, Identified, LcMsg, LightClient,
-    RelayerMsg,
+    wait::{AnyWait, Wait, WaitForBlock},
+    AggregateReceiver, AnyLightClientIdentified, Identified, LightClient, RelayerMsg,
 };
 
 any_enum! {
@@ -35,7 +34,8 @@ any_enum! {
 impl<L: LightClient> Event<L> {
     pub fn handle(self, l: L) -> Vec<RelayerMsg>
     where
-        AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L>)>,
+        AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<L>)>,
+        AnyLightClientIdentified<AnyWait>: From<identified!(Wait<L>)>,
         AggregateReceiver: From<identified!(Aggregate<L>)>,
     {
         match self {

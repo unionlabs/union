@@ -42,20 +42,20 @@ use crate::{
     },
     fetch,
     fetch::{
-        FetchChannelEnd, FetchConnectionEnd, FetchPacketAcknowledgement, FetchStateProof,
-        FetchTrustedClientState, FetchUpdateHeaders,
+        AnyFetch, Fetch, FetchChannelEnd, FetchConnectionEnd, FetchPacketAcknowledgement,
+        FetchStateProof, FetchTrustedClientState, FetchUpdateHeaders,
     },
     identified, msg,
     msg::{
-        MsgAckPacketData, MsgChannelOpenAckData, MsgChannelOpenConfirmData, MsgChannelOpenTryData,
-        MsgConnectionOpenAckData, MsgConnectionOpenConfirmData, MsgConnectionOpenTryData,
-        MsgCreateClientData, MsgRecvPacketData,
+        AnyMsg, Msg, MsgAckPacketData, MsgChannelOpenAckData, MsgChannelOpenConfirmData,
+        MsgChannelOpenTryData, MsgConnectionOpenAckData, MsgConnectionOpenConfirmData,
+        MsgConnectionOpenTryData, MsgCreateClientData, MsgRecvPacketData,
     },
     use_aggregate::{do_aggregate, IsAggregateData, UseAggregate},
     wait,
-    wait::WaitForTrustedHeight,
-    AggregateData, AggregateReceiver, AnyLcMsg, AnyLightClientIdentified, DoAggregate, Identified,
-    LcMsg, LightClient, RelayerMsg,
+    wait::{AnyWait, Wait, WaitForTrustedHeight},
+    AggregateData, AggregateReceiver, AnyLightClientIdentified, DoAggregate, Identified,
+    LightClient, RelayerMsg,
 };
 
 any_enum! {
@@ -117,8 +117,15 @@ impl<L: LightClient> identified!(Aggregate<L>) {
         identified!(ConnectionEnd<L>): IsAggregateData,
         identified!(PacketAcknowledgement<L>): IsAggregateData,
 
-        AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L>)>,
-        AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L::Counterparty>)>,
+        AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<L>)>,
+        AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<L::Counterparty>)>,
+
+        AnyLightClientIdentified<AnyWait>: From<identified!(Wait<L>)>,
+        AnyLightClientIdentified<AnyWait>: From<identified!(Wait<L::Counterparty>)>,
+
+        AnyLightClientIdentified<AnyMsg>: From<identified!(Msg<L>)>,
+        AnyLightClientIdentified<AnyMsg>: From<identified!(Msg<L::Counterparty>)>,
+
         AggregateData: From<identified!(Data<L>)>,
         AggregateReceiver: From<identified!(Aggregate<L>)>,
     {
@@ -565,7 +572,7 @@ pub enum AggregateMsgAfterUpdate<L: LightClient> {
 impl<L: LightClient> UseAggregate<L> for identified!(AggregateChannelHandshakeUpdateClient<L>)
 where
     identified!(ConnectionEnd<L>): IsAggregateData,
-    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L>)>,
+    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<L>)>,
     AggregateReceiver: From<identified!(Aggregate<L>)>,
 {
     type AggregatedData = HList![identified!(ConnectionEnd<L>)];
@@ -632,7 +639,7 @@ pub fn mk_aggregate_wait_for_update<L: LightClient>(
     wait_for: HeightOf<L::HostChain>,
 ) -> RelayerMsg
 where
-    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L>)>,
+    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<L>)>,
     AggregateReceiver: From<identified!(Aggregate<L>)>,
 {
     RelayerMsg::Aggregate {
@@ -659,7 +666,7 @@ where
 impl<L: LightClient> UseAggregate<L> for identified!(AggregatePacketUpdateClient<L>)
 where
     identified!(ConnectionEnd<L>): IsAggregateData,
-    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L>)>,
+    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<L>)>,
     AggregateReceiver: From<identified!(Aggregate<L>)>,
 {
     type AggregatedData = HList![identified!(ConnectionEnd<L>)];
@@ -730,7 +737,7 @@ where
 impl<L: LightClient> UseAggregate<L> for identified!(AggregateConnectionFetchFromChannelEnd<L>)
 where
     identified!(ChannelEnd<L>): IsAggregateData,
-    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L>)>,
+    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<L>)>,
 {
     type AggregatedData = HList![identified!(ChannelEnd<L>)];
 
@@ -762,8 +769,7 @@ where
 impl<L: LightClient> UseAggregate<L> for identified!(AggregateUpdateClientFromClientId<L>)
 where
     identified!(TrustedClientState<L>): IsAggregateData,
-    // AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L>)>,
-    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L::Counterparty>)>,
+    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<L::Counterparty>)>,
     AggregateReceiver: From<identified!(Aggregate<L>)>,
 {
     type AggregatedData = HList![identified!(TrustedClientState<L>)];
@@ -831,8 +837,7 @@ where
 impl<L: LightClient> UseAggregate<L> for identified!(AggregateUpdateClient<L>)
 where
     identified!(TrustedClientState<L>): IsAggregateData,
-    // AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L::Counterparty>)>,
-    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L::Counterparty>)>,
+    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<L::Counterparty>)>,
     AggregateReceiver: From<identified!(Aggregate<L>)>,
 {
     type AggregatedData = HList![identified!(TrustedClientState<L>)];
@@ -890,7 +895,7 @@ impl<L: LightClient> UseAggregate<L>
     for identified!(AggregateUpdateClientWithCounterpartyChainId<L>)
 where
     identified!(TrustedClientState<L::Counterparty>): IsAggregateData,
-    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L>)>,
+    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<L>)>,
     AggregateReceiver: From<identified!(Aggregate<L>)>,
 {
     type AggregatedData = HList![identified!(TrustedClientState<L::Counterparty>)];
@@ -940,7 +945,7 @@ where
 impl<L: LightClient> UseAggregate<L> for identified!(AggregateWaitForTrustedHeight<L>)
 where
     identified!(TrustedClientState<L>): IsAggregateData,
-    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L::Counterparty>)>,
+    AnyLightClientIdentified<AnyWait>: From<identified!(Wait<L::Counterparty>)>,
     AggregateReceiver: From<identified!(Aggregate<L>)>,
 {
     type AggregatedData = HList![identified!(TrustedClientState<L>)];
@@ -986,8 +991,9 @@ where
 impl<L: LightClient> UseAggregate<L> for identified!(AggregateMsgAfterUpdate<L>)
 where
     identified!(TrustedClientState<L>): IsAggregateData,
-    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L>)>,
-    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L::Counterparty>)>,
+    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<L::Counterparty>)>,
+    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<L>)>,
+    AnyLightClientIdentified<AnyWait>: From<identified!(Wait<L>)>,
     AggregateData: From<identified!(Data<L>)>,
     AggregateReceiver: From<identified!(Aggregate<L>)>,
 {
@@ -1515,7 +1521,8 @@ where
     identified!(ClientConsensusStateProof<L>): IsAggregateData,
     identified!(ConnectionProof<L>): IsAggregateData,
     identified!(ConnectionEnd<L>): IsAggregateData,
-    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L::Counterparty>)>,
+    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<L>)>,
+    AnyLightClientIdentified<AnyMsg>: From<identified!(Msg<L::Counterparty>)>,
 {
     type AggregatedData = HList![
         identified!(TrustedClientState<L>),
@@ -1617,7 +1624,7 @@ where
     identified!(ClientConsensusStateProof<L>): IsAggregateData,
     identified!(ConnectionProof<L>): IsAggregateData,
     identified!(ConnectionEnd<L>): IsAggregateData,
-    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L::Counterparty>)>,
+    AnyLightClientIdentified<AnyMsg>: From<identified!(Msg<L::Counterparty>)>,
 {
     type AggregatedData = HList![
         identified!(TrustedClientState<L>),
@@ -1711,7 +1718,7 @@ where
     identified!(ClientStateProof<L>): IsAggregateData,
     identified!(ClientConsensusStateProof<L>): IsAggregateData,
     identified!(ConnectionProof<L>): IsAggregateData,
-    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L::Counterparty>)>,
+    AnyLightClientIdentified<AnyMsg>: From<identified!(Msg<L::Counterparty>)>,
 {
     type AggregatedData = HList![
         identified!(TrustedClientState<L>),
@@ -1767,7 +1774,7 @@ where
     identified!(ChannelEndProof<L>): IsAggregateData,
     identified!(ConnectionEnd<L>): IsAggregateData,
     identified!(ChannelEnd<L>): IsAggregateData,
-    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L::Counterparty>)>,
+    AnyLightClientIdentified<AnyMsg>: From<identified!(Msg<L::Counterparty>)>,
 {
     type AggregatedData = HList![
         identified!(TrustedClientState<L>),
@@ -1855,7 +1862,7 @@ where
     identified!(TrustedClientState<L>): IsAggregateData,
     identified!(ChannelEndProof<L>): IsAggregateData,
     identified!(ChannelEnd<L>): IsAggregateData,
-    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L::Counterparty>)>,
+    AnyLightClientIdentified<AnyMsg>: From<identified!(Msg<L::Counterparty>)>,
 {
     type AggregatedData = HList![
         identified!(TrustedClientState<L>),
@@ -1925,7 +1932,8 @@ where
     identified!(TrustedClientState<L>): IsAggregateData,
     identified!(ChannelEndProof<L>): IsAggregateData,
     identified!(ChannelEnd<L>): IsAggregateData,
-    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L::Counterparty>)>,
+    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<L::Counterparty>)>,
+    AnyLightClientIdentified<AnyMsg>: From<identified!(Msg<L::Counterparty>)>,
 {
     type AggregatedData = HList![
         identified!(TrustedClientState<L>),
@@ -1992,7 +2000,8 @@ impl<L: LightClient> UseAggregate<L> for identified!(AggregateRecvPacket<L>)
 where
     identified!(TrustedClientState<L>): IsAggregateData,
     identified!(CommitmentProof<L>): IsAggregateData,
-    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L::Counterparty>)>,
+    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<L::Counterparty>)>,
+    AnyLightClientIdentified<AnyMsg>: From<identified!(Msg<L::Counterparty>)>,
 {
     type AggregatedData = HList![
         identified!(TrustedClientState<L>),
@@ -2059,7 +2068,8 @@ where
     identified!(TrustedClientState<L>): IsAggregateData,
     identified!(PacketAcknowledgement<L>): IsAggregateData,
     identified!(AcknowledgementProof<L>): IsAggregateData,
-    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L::Counterparty>)>,
+    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<L::Counterparty>)>,
+    AnyLightClientIdentified<AnyMsg>: From<identified!(Msg<L::Counterparty>)>,
 {
     type AggregatedData = HList![
         identified!(TrustedClientState<L>),
@@ -2133,7 +2143,7 @@ where
 impl<L: LightClient> UseAggregate<L> for identified!(AggregateFetchCounterpartyStateProof<L>)
 where
     identified!(TrustedClientState<L>): IsAggregateData,
-    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L::Counterparty>)>,
+    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<L::Counterparty>)>,
 {
     type AggregatedData = HList![identified!(TrustedClientState<L>),];
 
@@ -2167,7 +2177,7 @@ impl<L: LightClient> UseAggregate<L> for identified!(AggregateCreateClient<L>)
 where
     identified!(SelfClientState<L::Counterparty>): IsAggregateData,
     identified!(SelfConsensusState<L::Counterparty>): IsAggregateData,
-    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L>)>,
+    AnyLightClientIdentified<AnyMsg>: From<identified!(Msg<L>)>,
 {
     type AggregatedData = HList![
         identified!(SelfClientState<L::Counterparty>),
