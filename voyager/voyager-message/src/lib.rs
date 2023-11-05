@@ -419,34 +419,6 @@ impl TryFrom<RelayerMsg> for AnyLightClientIdentified<AnyData> {
     }
 }
 
-// impl From<AnyLightClientIdentified<AnyLcMsg>> for RelayerMsg {
-//     fn from(value: AnyLightClientIdentified<AnyLcMsg>) -> Self {
-//         Self::Lc(value)
-//     }
-// }
-
-// impl<L: LightClient> TryFrom<RelayerMsg> for LcMsg<L>
-// where
-//     LcMsg<L>: TryFrom<AnyLightClientIdentified<AnyLcMsg>, Error = AnyLightClientIdentified<AnyLcMsg>>
-//         + Into<AnyLightClientIdentified<AnyLcMsg>>,
-// {
-//     type Error = RelayerMsg;
-
-//     fn try_from(value: RelayerMsg) -> Result<Self, Self::Error> {
-//         LcMsg::<L>::try_from(<AnyLightClientIdentified<AnyLcMsg>>::try_from(value)?)
-//             .map_err(Into::into)
-//     }
-// }
-
-// impl<L: LightClient> From<LcMsg<L>> for RelayerMsg
-// where
-//     AnyLightClientIdentified<AnyLcMsg>: From<LcMsg<L>>,
-// {
-//     fn from(value: LcMsg<L>) -> Self {
-//         RelayerMsg::Lc(<AnyLightClientIdentified<AnyLcMsg>>::from(value))
-//     }
-// }
-
 macro_rules! any_enum {
     (
         $(#[doc = $outer_doc:literal])*
@@ -480,59 +452,6 @@ macro_rules! any_enum {
             type Inner<L: LightClient> = $Enum<L>;
         }
 
-        // impl<L: LightClient> TryFrom<crate::LcMsg<L>> for $Enum<L> {
-        //     type Error = crate::LcMsg<L>;
-
-        //     fn try_from(value: crate::LcMsg<L>) -> Result<Self, Self::Error> {
-        //         if let crate::LcMsg::$Enum(t) = value {
-        //             Ok(t)
-        //         } else {
-        //             Err(value)
-        //         }
-        //     }
-        // }
-
-        // impl<L: LightClient> From<crate::Identified<L, $Enum<L>>> for crate::RelayerMsg
-        // where
-        //     crate::LcMsg<L>: From<$Enum<L>>,
-        //     crate::AnyLightClientIdentified<crate::AnyLcMsg>:
-        //         From<crate::Identified<L, crate::InnerOf<crate::AnyLcMsg, L>>>
-        // {
-        //     fn from(value: crate::Identified<L, $Enum<L>>) -> Self {
-        //         Self::$Enum(
-        //             <crate::AnyLightClientIdentified<$Any>>::from(
-        //                 crate::Identified {
-        //                     chain_id: value.chain_id, data: crate::LcMsg::from(value.data)
-        //                 }
-        //             )
-        //         )
-        //     }
-        // }
-
-        // impl<L: LightClient> TryFrom<crate::RelayerMsg> for crate::Identified<L, crate::InnerOf<$Any, L>>
-        // where
-        //     crate::AnyLightClientIdentified<crate::AnyLcMsg>: TryFrom<crate::RelayerMsg, Error = crate::RelayerMsg> + Into<crate::RelayerMsg>,
-        //     crate::Identified<L, crate::LcMsg<L>>: TryFrom<crate::AnyLightClientIdentified<crate::AnyLcMsg>, Error = crate::AnyLightClientIdentified<crate::AnyLcMsg>>
-        //         + Into<crate::AnyLightClientIdentified<crate::AnyLcMsg>>,
-        //     crate::InnerOf<$Any, L>: TryFrom<crate::LcMsg<L>, Error = crate::LcMsg<L>> + Into<crate::LcMsg<L>>,
-        // {
-        //     type Error = crate::RelayerMsg;
-        //     fn try_from(value: crate::RelayerMsg) -> Result<Self, crate::RelayerMsg> {
-        //         let any_lc_msg = <crate::AnyLightClientIdentified<crate::AnyLcMsg>>::try_from(value)?;
-        //         let identified_lc_msg = <crate::Identified<L, crate::LcMsg<L>>>::try_from(any_lc_msg)
-        //             .map_err(<crate::AnyLightClientIdentified<crate::AnyLcMsg>>::from)?;
-        //         let data =
-        //             <crate::InnerOf<$Any, L>>::try_from(identified_lc_msg.data).map_err(|x: crate::LcMsg<L>| {
-        //                 Into::<crate::AnyLightClientIdentified<crate::AnyLcMsg>>::into(crate::Identified::<L, crate::LcMsg<L>>::new(
-        //                     identified_lc_msg.chain_id.clone(),
-        //                     x,
-        //                 ))
-        //             })?;
-
-        //         Ok(crate::Identified::new(identified_lc_msg.chain_id, data))
-        //     }
-        // }
-
         $(
             $(
                 impl<L: LightClient> TryFrom<$Enum<L>> for $VariantInner {
@@ -551,49 +470,6 @@ macro_rules! any_enum {
                         Self::$Variant(value)
                     }
                 }
-
-                // impl<L: LightClient> TryInto<crate::Identified<L, $VariantInner>> for crate::RelayerMsg
-                // where
-                //     crate::AnyLightClientIdentified<crate::AnyLcMsg>: TryFrom<crate::RelayerMsg, Error = crate::RelayerMsg> + Into<crate::RelayerMsg>,
-                //     crate::LcMsg<L>: TryFrom<crate::AnyLightClientIdentified<crate::AnyLcMsg>, Error = crate::AnyLightClientIdentified<crate::AnyLcMsg>> + Into<crate::AnyLightClientIdentified<crate::AnyLcMsg>>,
-                //     crate::Identified<L, $VariantInner>: TryFrom<crate::LcMsg<L>, Error = crate::LcMsg<L>> + Into<crate::LcMsg<L>>,
-                // {
-                //     type Error = crate::RelayerMsg;
-
-                //     fn try_into(self) -> Result<crate::Identified<L, $VariantInner>, crate::RelayerMsg> {
-                //         <crate::AnyLightClientIdentified<crate::AnyLcMsg>>::try_from(self)
-                //             .and_then(|x| <crate::LcMsg<L>>::try_from(x).map_err(Into::into))
-                //             .and_then(|x| {
-                //                 <crate::Identified<L, $VariantInner>>::try_from(x)
-                //                     .map_err(Into::<crate::LcMsg<L>>::into)
-                //                     .map_err(Into::<crate::AnyLightClientIdentified<crate::AnyLcMsg>>::into)
-                //                     .map_err(Into::<crate::RelayerMsg>::into)
-                //             })
-                //     }
-                // }
-
-                // impl<L: LightClient> TryFrom<crate::LcMsg<L>> for $VariantInner {
-                //     type Error = crate::LcMsg<L>;
-
-                //     fn try_from(value: crate::LcMsg<L>) -> Result<Self, crate::LcMsg<L>> {
-                //         match value {
-                //             crate::LcMsg::$Enum($Enum::$Variant(data)) => Ok(data),
-                //             _ => Err(value),
-                //         }
-                //     }
-                // }
-
-                // impl<L: LightClient> TryFrom<crate::AnyLightClientIdentified<crate::AnyLcMsg>> for crate::Identified<L, $VariantInner>
-                // where
-                //     crate::LcMsg<L>: TryFrom<crate::AnyLightClientIdentified<crate::AnyLcMsg>, Error = crate::AnyLightClientIdentified<crate::AnyLcMsg>> + Into<crate::AnyLightClientIdentified<crate::AnyLcMsg>>,
-                //     Self: TryFrom<crate::LcMsg<L>, Error = crate::LcMsg<L>> + Into<crate::LcMsg<L>>,
-                // {
-                //     type Error = crate::AnyLightClientIdentified<crate::AnyLcMsg>;
-
-                //     fn try_from(value: crate::AnyLightClientIdentified<crate::AnyLcMsg>) -> Result<Self, crate::AnyLightClientIdentified<crate::AnyLcMsg>> {
-                //         crate::LcMsg::<L>::try_from(value).and_then(|x| Self::try_from(x).map_err(Into::into))
-                //     }
-                // }
             )?
         )+
     };
@@ -785,46 +661,6 @@ macro_rules! identified {
         $crate::Identified<$L, $Ty<$L>>
     };
 }
-
-// impl<L: LightClient> LcMsg<L> {
-//     pub async fn handle(self, l: L) -> Result<Vec<RelayerMsg>, LcError<L>>
-//     where
-//         AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L>)>,
-//         AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L::Counterparty>)>,
-//         AnyLightClientIdentified: From<identified!(Aggregate<L>)>,
-//         AnyLightClientIdentified<AnyData>: From<identified!(Data<L>)>,
-//         // TODO: Remove once we no longer unwrap in fetch.handle()
-//         <<L as LightClientBase>::ClientId as TryFrom<
-//             <<L as LightClientBase>::HostChain as Chain>::ClientId,
-//         >>::Error: Debug,
-//         <<L::Counterparty as LightClientBase>::ClientId as TryFrom<
-//             <<L::Counterparty as LightClientBase>::HostChain as Chain>::ClientId,
-//         >>::Error: Debug,
-//     {
-//         match self {
-//             LcMsg::Event(event) => Ok(event.handle(l)),
-//             LcMsg::Data(data) => {
-//                 // TODO: Figure out a way to bubble it up to the top level
-
-//                 let data = AnyLightClientIdentified::<AnyData>::from(Identified::new(
-//                     l.chain().chain_id(),
-//                     data,
-//                 ));
-//             }
-//             LcMsg::Fetch(fetch) => Ok(fetch.handle(l).await),
-//             LcMsg::Msg(m) => {
-//                 // NOTE: `Msg`s don't requeue any `RelayerMsg`s; they are side-effect only.
-//                 l.msg(m).await.map_err(LcError::Msg)?;
-
-//                 Ok([].into())
-//             }
-//             LcMsg::Wait(wait) => Ok(wait.handle(l).await),
-//             LcMsg::Aggregate(_) => {
-//                 todo!()
-//             }
-//         }
-//     }
-// }
 
 #[derive(DebugNoBound, thiserror::Error)]
 pub enum LcError<L: LightClient> {

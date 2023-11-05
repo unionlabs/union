@@ -1099,22 +1099,6 @@ pub struct GetProof<C: ChainSpec, L: LightClient<HostChain = Evm<C>>> {
     height: <Evm<C> as Chain>::Height,
 }
 
-// pub struct AnyGetProof<C: ChainSpec, L: LightClient<HostChain = Evm<C>>> {
-//     __marker: PhantomData<fn() -> (C, L)>,
-// }
-
-// type _AnyGetProof<C, L> = Path2<L, AnyGetProof<C, L>>;
-
-// fn decode_log<T: EthLogDecode + Debug>(logs: impl IntoIterator<Item = impl Into<RawLog>>) -> T {
-//     let t = decode_logs::<T>(&logs.into_iter().map(Into::into).collect::<Vec<_>>()).unwrap();
-
-//     let [t] = <[T; 1]>::try_from(t)
-//         .map_err(|err| format!("invalid events, expected one event but got {err:#?}"))
-//         .unwrap();
-
-//     t
-// }
-
 impl<L, C> UseAggregate<L> for Identified<L, CreateUpdateData<L, C>>
 where
     Identified<L, AccountUpdateData<C>>: IsAggregateData,

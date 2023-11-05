@@ -528,46 +528,6 @@ pub enum AggregateMsgAfterUpdate<L: LightClient> {
     AckPacket(AggregateAckPacket<L>),
 }
 
-// #[derive(
-//     DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, derive_more::Display,
-// )]
-// #[serde(bound(serialize = "", deserialize = ""))]
-// pub enum AggregateAnyStateProof<L: LightClient> {
-//     #[display(fmt = "{_0}")]
-//     ClientState(
-//         AggregateStateProof<
-//             L,
-//             ClientStatePath<<L::HostChain as unionlabs::traits::Chain>::ClientId>,
-//         >,
-//     ),
-//     #[display(fmt = "{_0}")]
-//     ClientConsensusState(
-//         AggregateStateProof<
-//             L,
-//             ClientConsensusStatePath<
-//                 <ChainOf<L::Counterparty> as unionlabs::traits::Chain>::ClientId,
-//                 HeightOf<ChainOf<L>>,
-//             >,
-//         >,
-//     ),
-//     #[display(fmt = "{_0}")]
-//     Connection(AggregateStateProof<L, ConnectionPath>),
-//     #[display(fmt = "{_0}")]
-//     ChannelEnd(AggregateStateProof<L, ChannelEndPath>),
-//     #[display(fmt = "{_0}")]
-//     Commitment(AggregateStateProof<L, CommitmentPath>),
-//     #[display(fmt = "{_0}")]
-//     Acknowledgement(AggregateStateProof<L, AcknowledgementPath>),
-// }
-
-// #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-// #[serde(bound(serialize = "", deserialize = ""))]
-// pub struct AggregateStateProof<L: LightClient, P: IbcPathExt<L>> {
-//     height: HeightOf<ChainOf<L>>,
-//     #[serde(skip)]
-//     pub __marker: PhantomData<P>,
-// }
-
 impl<L: LightClient> UseAggregate<L> for identified!(AggregateChannelHandshakeUpdateClient<L>)
 where
     identified!(ConnectionEnd<L>): IsAggregateData,

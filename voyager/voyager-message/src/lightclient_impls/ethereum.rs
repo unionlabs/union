@@ -663,7 +663,6 @@ where
     Identified<L, AggregateProveRequest<L>>: UseAggregate<L>,
     Identified<L, AggregateHeader<L>>: UseAggregate<L>,
 
-    // AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L>)>,
     AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<L>)>,
 {
     fn do_aggregate(
@@ -702,13 +701,6 @@ try_from_relayer_msg! {
                 FetchProveRequest(FetchProveRequest<Mainnet>),
             ),
         ),
-        // lc_msg(
-        //     msg = Aggregate(LightClientSpecificAggregate),
-        //     ty = EthereumAggregateMsg,
-        //     variants(
-        //         AggregateHeader(AggregateHeader<EthereumMainnet>),
-        //     ),
-        // ),
     )]
 }
 
@@ -732,13 +724,6 @@ try_from_relayer_msg! {
                 FetchProveRequest(FetchProveRequest<Minimal>),
             ),
         ),
-        // lc_msg(
-        //     msg = Aggregate(LightClientSpecificAggregate),
-        //     ty = EthereumAggregateMsg,
-        //     variants(
-        //         AggregateHeader(AggregateHeader<EthereumMinimal>),
-        //     ),
-        // ),
     )]
 }
 
@@ -800,7 +785,6 @@ pub struct FetchAbciQuery<L: LightClient<HostChain = Union>> {
 pub struct AggregateHeader<L>
 where
     L: LightClient<HostChain = Union>,
-    // L::Counterparty: LightClient<HostChain = Evm<C>>,
 {
     pub signed_header: SignedHeader,
 
@@ -814,10 +798,6 @@ where
     L: LightClient<HostChain = Union>,
 {
     pub req: FetchUpdateHeaders<L>,
-    // pub counterparty_chain_id: ChainIdOf<L::Counterparty>,
-    // pub counterparty_client_id: <L::Counterparty as LightClient>::ClientId,
-    // pub update_from: HeightOf<ChainOf<L>>,
-    // pub update_to: HeightOf<ChainOf<L>>,
 }
 
 async fn do_msg<L, C: ChainSpec>(union: Union, msg: Msg<L>) -> Result<(), BroadcastTxCommitError>
@@ -1088,7 +1068,6 @@ impl<L, C> UseAggregate<L> for Identified<L, AggregateHeader<L>>
 where
     C: ChainSpec,
     L: LightClient<HostChain = Union, Fetch = EthereumFetchMsg<L, C>>,
-    // L::Counterparty: LightClient<HostChain = Evm<C>>,
     Identified<L, ProveResponse<C>>: IsAggregateData,
     Identified<L, Validators<C>>: IsAggregateData,
 
