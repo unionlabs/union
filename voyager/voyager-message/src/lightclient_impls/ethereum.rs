@@ -467,8 +467,8 @@ where
     [seq([
         wait::<L>(
             union.chain_id(),
-            // REVIEW: Should we wait for update_to or update_to.increment()?
-            WaitForBlock(update_info.update_to.increment()),
+            // NOTE: There was previously an increment here, but we were unsure why - if there are issues with the updates, it may need to be added back. Please leave a comment explaining why if so!
+            WaitForBlock(update_info.update_to),
         ),
         RelayerMsg::Aggregate {
             queue: [
