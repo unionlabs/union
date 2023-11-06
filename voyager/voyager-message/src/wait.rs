@@ -9,8 +9,9 @@ use unionlabs::{
 };
 
 use crate::{
-    any_enum, defer, fetch, fetch::FetchTrustedClientState, identified, now, seq, wait, AnyLcMsg,
-    AnyLightClientIdentified, LcMsg, LightClient, RelayerMsg,
+    any_enum, defer, fetch,
+    fetch::{AnyFetch, Fetch, FetchTrustedClientState},
+    identified, now, seq, wait, AnyLightClientIdentified, LightClient, RelayerMsg,
 };
 
 any_enum! {
@@ -26,8 +27,8 @@ any_enum! {
 impl<L: LightClient> Wait<L> {
     pub async fn handle(self, l: L) -> Vec<RelayerMsg>
     where
-        AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L>)>,
-        AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L::Counterparty>)>,
+        AnyLightClientIdentified<AnyWait>: From<identified!(Wait<L>)>,
+        AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<L::Counterparty>)>,
     {
         match self {
             Wait::Block(WaitForBlock(height)) => {

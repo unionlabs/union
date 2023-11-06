@@ -16,10 +16,10 @@ use unionlabs::{
 use crate::{
     any_enum, data,
     data::{
-        ChannelEnd, ConnectionEnd, PacketAcknowledgement, SelfClientState, SelfConsensusState,
-        TrustedClientState,
+        AnyData, ChannelEnd, ConnectionEnd, Data, PacketAcknowledgement, SelfClientState,
+        SelfConsensusState, TrustedClientState,
     },
-    identified, AnyLcMsg, AnyLightClientIdentified, LcMsg, LightClient, RelayerMsg,
+    identified, AnyLightClientIdentified, LightClient, RelayerMsg,
 };
 
 any_enum! {
@@ -150,7 +150,7 @@ pub struct LightClientSpecificFetch<L: LightClient>(pub L::Fetch);
 impl<L: LightClient> Fetch<L> {
     pub async fn handle(self, l: L) -> Vec<RelayerMsg>
     where
-        AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L>)>,
+        AnyLightClientIdentified<AnyData>: From<identified!(Data<L>)>,
         // TODO: Remove once we no longer unwrap
         <<L as LightClientBase>::ClientId as TryFrom<
             <<L as LightClientBase>::HostChain as Chain>::ClientId,

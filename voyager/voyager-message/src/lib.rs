@@ -25,7 +25,7 @@ use unionlabs::{
 };
 
 use crate::{
-    aggregate::{Aggregate, AnyAggregate, LightClientSpecificAggregate},
+    aggregate::{Aggregate, AnyAggregate},
     data::{AnyData, Data, LightClientSpecificData},
     event::{AnyEvent, Event},
     fetch::{AnyFetch, Fetch, FetchStateProof, FetchUpdateHeaders, LightClientSpecificFetch},
@@ -70,7 +70,7 @@ pub trait LightClient: LightClientBase<Counterparty = Self::BaseCounterparty> {
         + PartialEq
         + Serialize
         + for<'de> Deserialize<'de>
-        + Into<LightClientSpecificAggregate<Self>>
+        // + Into<LightClientSpecificAggregate<Self>>
         + DoAggregate<Self>;
 
     /// Error type for [`Self::msg`].
@@ -106,7 +106,14 @@ pub enum DeferPoint {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[allow(clippy::large_enum_variant)]
 pub enum RelayerMsg {
-    Lc(AnyLightClientIdentified<AnyLcMsg>),
+    Event(AnyLightClientIdentified<AnyEvent>),
+    // data that has been read
+    Data(AnyLightClientIdentified<AnyData>),
+    // read
+    Fetch(AnyLightClientIdentified<AnyFetch>),
+    // write
+    Msg(AnyLightClientIdentified<AnyMsg>),
+    Wait(AnyLightClientIdentified<AnyWait>),
     DeferUntil {
         point: DeferPoint,
         seconds: u64,
@@ -156,25 +163,55 @@ impl RelayerMsg {
             "handling message",
         );
 
+        macro_rules! any_lc {
+            (|$msg:ident| $expr:expr) => {
+                match $msg {
+                    AnyLightClientIdentified::EthereumMainnet($msg) => $expr,
+                    AnyLightClientIdentified::EthereumMinimal($msg) => $expr,
+                    AnyLightClientIdentified::CometblsMainnet($msg) => $expr,
+                    AnyLightClientIdentified::CometblsMinimal($msg) => $expr,
+                }
+            };
+        }
+
         async move {
             match self {
-                RelayerMsg::Lc(any_lc_msg) => {
-                    let res = match any_lc_msg {
+                RelayerMsg::Event(event) => any_lc! {
+                    |event| Ok(event.data.handle(g.get_lc(&event.chain_id)))
+                },
+                RelayerMsg::Data(data) => {
+                    tracing::error!(
+                        data = %serde_json::to_string(&data).unwrap(),
+                        "received data outside of an aggregation"
+                    );
+
+                    Ok([].into())
+                }
+                RelayerMsg::Fetch(fetch) => any_lc! {
+                    |fetch| Ok(fetch.data.handle(g.get_lc(&fetch.chain_id)).await)
+                },
+                RelayerMsg::Msg(msg) => {
+                        // NOTE: `Msg`s don't requeue any `RelayerMsg`s; they are side-effect only.
+                    match msg {
                         AnyLightClientIdentified::EthereumMainnet(msg) => {
-                            msg.data.handle(g.get_lc(&msg.chain_id)).await.map_err(AnyLcError::EthereumMainnet)?
+                            GetLc::<EthereumMainnet>::get_lc(g, &msg.chain_id).msg(msg.data).await.map_err(|e| AnyLcError::EthereumMainnet(LcError::Msg(e)))?;
                         }
                         AnyLightClientIdentified::EthereumMinimal(msg) => {
-                            msg.data.handle(g.get_lc(&msg.chain_id)).await.map_err(AnyLcError::EthereumMinimal)?
+                            GetLc::<EthereumMinimal>::get_lc(g, &msg.chain_id).msg(msg.data).await.map_err(|e| AnyLcError::EthereumMinimal(LcError::Msg(e)))?;
                         }
                         AnyLightClientIdentified::CometblsMainnet(msg) => {
-                            msg.data.handle(g.get_lc(&msg.chain_id)).await.map_err(AnyLcError::CometblsMainnet)?
+                            GetLc::<CometblsMainnet>::get_lc(g, &msg.chain_id).msg(msg.data).await.map_err(|e| AnyLcError::CometblsMainnet(LcError::Msg(e)))?;
                         }
                         AnyLightClientIdentified::CometblsMinimal(msg) => {
-                            msg.data.handle(g.get_lc(&msg.chain_id)).await.map_err(AnyLcError::CometblsMinimal)?
-                        }                    };
+                            GetLc::<CometblsMinimal>::get_lc(g, &msg.chain_id).msg(msg.data).await.map_err(|e| AnyLcError::CometblsMinimal(LcError::Msg(e)))?;
+                        }
+                    };
 
-                    Ok(res)
-                }
+                    Ok([].into())
+                },
+                RelayerMsg::Wait(wait) => any_lc! {
+                    |wait| Ok(wait.data.handle(g.get_lc(&wait.chain_id)).await)
+                },
 
                 RelayerMsg::DeferUntil { point: DeferPoint::Relative, seconds } =>
                     Ok([RelayerMsg::DeferUntil { point: DeferPoint::Absolute, seconds: now() + seconds }].into()),
@@ -269,16 +306,16 @@ impl RelayerMsg {
                         // queue is empty, handle msg
 
                         let res = match receiver {
-                            AggregateReceiver::EthereumMainnet(msg) => {
+                            AnyLightClientIdentified::EthereumMainnet(msg) => {
                                 msg.handle(data)
                             }
-                            AggregateReceiver::EthereumMinimal(msg) => {
+                            AnyLightClientIdentified::EthereumMinimal(msg) => {
                                 msg.handle(data)
                             }
-                            AggregateReceiver::CometblsMainnet(msg) => {
+                            AnyLightClientIdentified::CometblsMainnet(msg) => {
                                 msg.handle(data)
                             }
-                            AggregateReceiver::CometblsMinimal(msg) => {
+                            AnyLightClientIdentified::CometblsMinimal(msg) => {
                                 msg.handle(data)
                             }
                         };
@@ -320,42 +357,14 @@ enum_variants_conversions! {
     }
 }
 
-impl TryFrom<AnyLightClientIdentified<AnyLcMsg>> for AnyLightClientIdentified<AnyData> {
-    type Error = AnyLightClientIdentified<AnyLcMsg>;
-
-    fn try_from(value: AnyLightClientIdentified<AnyLcMsg>) -> Result<Self, Self::Error> {
-        match value {
-            AnyLightClientIdentified::EthereumMainnet(i) => <Data<_>>::try_from(i.data)
-                .map(|d| Identified::new(i.chain_id.clone(), d))
-                .map(AnyLightClientIdentified::EthereumMainnet)
-                .map_err(|l| Identified::new(i.chain_id, l))
-                .map_err(AnyLightClientIdentified::EthereumMainnet),
-            AnyLightClientIdentified::EthereumMinimal(i) => <Data<_>>::try_from(i.data)
-                .map(|d| Identified::new(i.chain_id.clone(), d))
-                .map(AnyLightClientIdentified::EthereumMinimal)
-                .map_err(|l| Identified::new(i.chain_id, l))
-                .map_err(AnyLightClientIdentified::EthereumMinimal),
-            AnyLightClientIdentified::CometblsMainnet(i) => <Data<_>>::try_from(i.data)
-                .map(|d| Identified::new(i.chain_id, d))
-                .map(AnyLightClientIdentified::CometblsMainnet)
-                .map_err(|l| Identified::new(i.chain_id, l))
-                .map_err(AnyLightClientIdentified::CometblsMainnet),
-            AnyLightClientIdentified::CometblsMinimal(i) => <Data<_>>::try_from(i.data)
-                .map(|d| Identified::new(i.chain_id, d))
-                .map(AnyLightClientIdentified::CometblsMinimal)
-                .map_err(|l| Identified::new(i.chain_id, l))
-                .map_err(AnyLightClientIdentified::CometblsMinimal),
-        }
-    }
-}
-
-pub type AggregateReceiver = AnyLightClientIdentified<AnyAggregate>;
-pub type AggregateData = AnyLightClientIdentified<AnyData>;
-
 impl std::fmt::Display for RelayerMsg {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            RelayerMsg::Lc(lc) => write!(f, "Lc({lc})"),
+            RelayerMsg::Event(event) => write!(f, "Event({event})"),
+            RelayerMsg::Data(data) => write!(f, "Data({data})"),
+            RelayerMsg::Fetch(fetch) => write!(f, "Fetch({fetch})"),
+            RelayerMsg::Msg(msg) => write!(f, "Msg({msg})"),
+            RelayerMsg::Wait(wait) => write!(f, "Wait({wait})"),
             RelayerMsg::DeferUntil { point, seconds } => {
                 write!(f, "DeferUntil({:?}, {seconds})", point)
             }
@@ -399,55 +408,14 @@ impl std::fmt::Display for RelayerMsg {
     }
 }
 
-impl TryFrom<RelayerMsg> for AnyLightClientIdentified<AnyLcMsg> {
-    type Error = RelayerMsg;
-
-    fn try_from(value: RelayerMsg) -> Result<Self, Self::Error> {
-        match value {
-            RelayerMsg::Lc(ok) => Ok(ok),
-            _ => Err(value),
-        }
-    }
-}
-
 impl TryFrom<RelayerMsg> for AnyLightClientIdentified<AnyData> {
     type Error = RelayerMsg;
 
     fn try_from(value: RelayerMsg) -> Result<Self, Self::Error> {
         match value {
-            RelayerMsg::Lc(any_lc_msg) => {
-                AnyLightClientIdentified::<AnyData>::try_from(any_lc_msg).map_err(RelayerMsg::Lc)
-            }
+            RelayerMsg::Data(data) => Ok(data),
             _ => Err(value),
         }
-    }
-}
-
-impl From<AnyLightClientIdentified<AnyLcMsg>> for RelayerMsg {
-    fn from(value: AnyLightClientIdentified<AnyLcMsg>) -> Self {
-        Self::Lc(value)
-    }
-}
-
-impl<L: LightClient> TryFrom<RelayerMsg> for LcMsg<L>
-where
-    LcMsg<L>: TryFrom<AnyLightClientIdentified<AnyLcMsg>, Error = AnyLightClientIdentified<AnyLcMsg>>
-        + Into<AnyLightClientIdentified<AnyLcMsg>>,
-{
-    type Error = RelayerMsg;
-
-    fn try_from(value: RelayerMsg) -> Result<Self, Self::Error> {
-        LcMsg::<L>::try_from(<AnyLightClientIdentified<AnyLcMsg>>::try_from(value)?)
-            .map_err(Into::into)
-    }
-}
-
-impl<L: LightClient> From<LcMsg<L>> for RelayerMsg
-where
-    AnyLightClientIdentified<AnyLcMsg>: From<LcMsg<L>>,
-{
-    fn from(value: LcMsg<L>) -> Self {
-        RelayerMsg::Lc(<AnyLightClientIdentified<AnyLcMsg>>::from(value))
     }
 }
 
@@ -484,59 +452,6 @@ macro_rules! any_enum {
             type Inner<L: LightClient> = $Enum<L>;
         }
 
-        impl<L: LightClient> TryFrom<crate::LcMsg<L>> for $Enum<L> {
-            type Error = crate::LcMsg<L>;
-
-            fn try_from(value: crate::LcMsg<L>) -> Result<Self, Self::Error> {
-                if let crate::LcMsg::$Enum(t) = value {
-                    Ok(t)
-                } else {
-                    Err(value)
-                }
-            }
-        }
-
-        impl<L: LightClient> From<crate::Identified<L, crate::InnerOf<$Any, L>>> for crate::RelayerMsg
-        where
-            crate::LcMsg<L>: From<crate::InnerOf<$Any, L>>,
-            crate::AnyLightClientIdentified<crate::AnyLcMsg>:
-                From<crate::Identified<L, crate::InnerOf<crate::AnyLcMsg, L>>>
-        {
-            fn from(value: crate::Identified<L, crate::InnerOf<$Any, L>>) -> Self {
-                Self::Lc(
-                    <crate::AnyLightClientIdentified<crate::AnyLcMsg>>::from(
-                        crate::Identified {
-                            chain_id: value.chain_id, data: crate::LcMsg::from(value.data)
-                        }
-                    )
-                )
-            }
-        }
-
-        impl<L: LightClient> TryFrom<crate::RelayerMsg> for crate::Identified<L, crate::InnerOf<$Any, L>>
-        where
-            crate::AnyLightClientIdentified<crate::AnyLcMsg>: TryFrom<crate::RelayerMsg, Error = crate::RelayerMsg> + Into<crate::RelayerMsg>,
-            crate::Identified<L, crate::LcMsg<L>>: TryFrom<crate::AnyLightClientIdentified<crate::AnyLcMsg>, Error = crate::AnyLightClientIdentified<crate::AnyLcMsg>>
-                + Into<crate::AnyLightClientIdentified<crate::AnyLcMsg>>,
-            crate::InnerOf<$Any, L>: TryFrom<crate::LcMsg<L>, Error = crate::LcMsg<L>> + Into<crate::LcMsg<L>>,
-        {
-            type Error = crate::RelayerMsg;
-            fn try_from(value: crate::RelayerMsg) -> Result<Self, crate::RelayerMsg> {
-                let any_lc_msg = <crate::AnyLightClientIdentified<crate::AnyLcMsg>>::try_from(value)?;
-                let identified_lc_msg = <crate::Identified<L, crate::LcMsg<L>>>::try_from(any_lc_msg)
-                    .map_err(<crate::AnyLightClientIdentified<crate::AnyLcMsg>>::from)?;
-                let data =
-                    <crate::InnerOf<$Any, L>>::try_from(identified_lc_msg.data).map_err(|x: crate::LcMsg<L>| {
-                        Into::<crate::AnyLightClientIdentified<crate::AnyLcMsg>>::into(crate::Identified::<L, crate::LcMsg<L>>::new(
-                            identified_lc_msg.chain_id.clone(),
-                            x,
-                        ))
-                    })?;
-
-                Ok(crate::Identified::new(identified_lc_msg.chain_id, data))
-            }
-        }
-
         $(
             $(
                 impl<L: LightClient> TryFrom<$Enum<L>> for $VariantInner {
@@ -555,60 +470,12 @@ macro_rules! any_enum {
                         Self::$Variant(value)
                     }
                 }
-
-                impl<L: LightClient> TryInto<crate::Identified<L, $VariantInner>> for crate::RelayerMsg
-                where
-                    crate::AnyLightClientIdentified<crate::AnyLcMsg>: TryFrom<crate::RelayerMsg, Error = crate::RelayerMsg> + Into<crate::RelayerMsg>,
-                    crate::LcMsg<L>: TryFrom<crate::AnyLightClientIdentified<crate::AnyLcMsg>, Error = crate::AnyLightClientIdentified<crate::AnyLcMsg>> + Into<crate::AnyLightClientIdentified<crate::AnyLcMsg>>,
-                    crate::Identified<L, $VariantInner>: TryFrom<crate::LcMsg<L>, Error = crate::LcMsg<L>> + Into<crate::LcMsg<L>>,
-                {
-                    type Error = crate::RelayerMsg;
-
-                    fn try_into(self) -> Result<crate::Identified<L, $VariantInner>, crate::RelayerMsg> {
-                        <crate::AnyLightClientIdentified<crate::AnyLcMsg>>::try_from(self)
-                            .and_then(|x| <crate::LcMsg<L>>::try_from(x).map_err(Into::into))
-                            .and_then(|x| {
-                                <crate::Identified<L, $VariantInner>>::try_from(x)
-                                    .map_err(Into::<crate::LcMsg<L>>::into)
-                                    .map_err(Into::<crate::AnyLightClientIdentified<crate::AnyLcMsg>>::into)
-                                    .map_err(Into::<crate::RelayerMsg>::into)
-                            })
-                    }
-                }
-
-                impl<L: LightClient> TryFrom<crate::LcMsg<L>> for $VariantInner {
-                    type Error = crate::LcMsg<L>;
-
-                    fn try_from(value: crate::LcMsg<L>) -> Result<Self, crate::LcMsg<L>> {
-                        match value {
-                            crate::LcMsg::$Enum($Enum::$Variant(data)) => Ok(data),
-                            _ => Err(value),
-                        }
-                    }
-                }
-
-                impl<L: LightClient> TryFrom<crate::AnyLightClientIdentified<crate::AnyLcMsg>> for crate::Identified<L, $VariantInner>
-                where
-                    crate::LcMsg<L>: TryFrom<crate::AnyLightClientIdentified<crate::AnyLcMsg>, Error = crate::AnyLightClientIdentified<crate::AnyLcMsg>> + Into<crate::AnyLightClientIdentified<crate::AnyLcMsg>>,
-                    Self: TryFrom<crate::LcMsg<L>, Error = crate::LcMsg<L>> + Into<crate::LcMsg<L>>,
-                {
-                    type Error = crate::AnyLightClientIdentified<crate::AnyLcMsg>;
-
-                    fn try_from(value: crate::AnyLightClientIdentified<crate::AnyLcMsg>) -> Result<Self, crate::AnyLightClientIdentified<crate::AnyLcMsg>> {
-                        crate::LcMsg::<L>::try_from(value).and_then(|x| Self::try_from(x).map_err(Into::into))
-                    }
-                }
             )?
         )+
     };
 }
 
 pub(crate) use any_enum;
-
-pub trait IbcPathExt<L: LightClient>: IbcPath<ChainOf<L>, ChainOf<L::Counterparty>> {
-    type Data: TryFrom<AggregateData, Error = AggregateData> + Into<AggregateData>;
-    type Proof: TryFrom<AggregateData, Error = AggregateData> + Into<AggregateData>;
-}
 
 pub trait AnyPath<L: LightClient> {
     type Inner<P: IbcPath<L::HostChain, ChainOf<L::Counterparty>>>;
@@ -795,77 +662,6 @@ macro_rules! identified {
     };
 }
 
-#[derive(
-    DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, derive_more::Display,
-)]
-#[serde(bound(serialize = "", deserialize = ""))]
-#[allow(clippy::large_enum_variant)]
-pub enum LcMsg<L: LightClient> {
-    #[display(fmt = "Event({})", "_0")]
-    Event(InnerOf<AnyEvent, L>),
-    // data that has been read
-    #[display(fmt = "Data({})", "_0")]
-    Data(InnerOf<AnyData, L>),
-    // read
-    #[display(fmt = "Fetch({})", "_0")]
-    Fetch(InnerOf<AnyFetch, L>),
-    // write
-    #[display(fmt = "Msg({})", "_0")]
-    Msg(InnerOf<AnyMsg, L>),
-    #[display(fmt = "Wait({})", "_0")]
-    Wait(InnerOf<AnyWait, L>),
-    // REVIEW: Does this make sense as a top-level message?
-    #[display(fmt = "Aggregate({})", "_0")]
-    Aggregate(InnerOf<AnyAggregate, L>),
-}
-
-impl<L: LightClient> LcMsg<L> {
-    pub async fn handle(self, l: L) -> Result<Vec<RelayerMsg>, LcError<L>>
-    where
-        AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L>)>,
-        AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L::Counterparty>)>,
-        AggregateReceiver: From<identified!(Aggregate<L>)>,
-        AnyLightClientIdentified<AnyData>: From<identified!(Data<L>)>,
-        // TODO: Remove once we no longer unwrap in fetch.handle()
-        <<L as LightClientBase>::ClientId as TryFrom<
-            <<L as LightClientBase>::HostChain as Chain>::ClientId,
-        >>::Error: Debug,
-        <<L::Counterparty as LightClientBase>::ClientId as TryFrom<
-            <<L::Counterparty as LightClientBase>::HostChain as Chain>::ClientId,
-        >>::Error: Debug,
-    {
-        match self {
-            LcMsg::Event(event) => Ok(event.handle(l)),
-            LcMsg::Data(data) => {
-                // TODO: Figure out a way to bubble it up to the top level
-
-                let data = AnyLightClientIdentified::<AnyData>::from(Identified::new(
-                    l.chain().chain_id(),
-                    data,
-                ));
-
-                tracing::error!(
-                    data = %serde_json::to_string(&data).unwrap(),
-                    "received data outside of an aggregation"
-                );
-
-                Ok([].into())
-            }
-            LcMsg::Fetch(fetch) => Ok(fetch.handle(l).await),
-            LcMsg::Msg(m) => {
-                // NOTE: `Msg`s don't requeue any `RelayerMsg`s; they are side-effect only.
-                l.msg(m).await.map_err(LcError::Msg)?;
-
-                Ok([].into())
-            }
-            LcMsg::Wait(wait) => Ok(wait.handle(l).await),
-            LcMsg::Aggregate(_) => {
-                todo!()
-            }
-        }
-    }
-}
-
 #[derive(DebugNoBound, thiserror::Error)]
 pub enum LcError<L: LightClient> {
     #[error(transparent)]
@@ -873,12 +669,6 @@ pub enum LcError<L: LightClient> {
 }
 
 pub type InnerOf<T, L> = <T as AnyLightClient>::Inner<L>;
-
-pub enum AnyLcMsg {}
-
-impl AnyLightClient for AnyLcMsg {
-    type Inner<L: LightClient> = LcMsg<L>;
-}
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(
@@ -934,52 +724,62 @@ pub fn defer_relative(seconds: u64) -> RelayerMsg {
 
 pub fn fetch<L: LightClient>(chain_id: ChainIdOf<L>, t: impl Into<Fetch<L>>) -> RelayerMsg
 where
-    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L>)>,
+    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<L>)>,
 {
-    RelayerMsg::Lc(AnyLightClientIdentified::from(Identified::new(
+    RelayerMsg::Fetch(AnyLightClientIdentified::from(Identified::new(
         chain_id,
-        LcMsg::Fetch(t.into()),
+        t.into(),
     )))
 }
 
 pub fn msg<L: LightClient>(chain_id: ChainIdOf<L>, t: impl Into<Msg<L>>) -> RelayerMsg
 where
-    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L>)>,
+    AnyLightClientIdentified<AnyMsg>: From<identified!(Msg<L>)>,
 {
-    RelayerMsg::Lc(AnyLightClientIdentified::from(Identified::new(
+    RelayerMsg::Msg(AnyLightClientIdentified::from(Identified::new(
         chain_id,
-        LcMsg::Msg(t.into()),
+        t.into(),
     )))
 }
 
 pub fn data<L: LightClient>(chain_id: ChainIdOf<L>, t: impl Into<Data<L>>) -> RelayerMsg
 where
-    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L>)>,
+    AnyLightClientIdentified<AnyData>: From<identified!(Data<L>)>,
 {
-    RelayerMsg::Lc(AnyLightClientIdentified::from(Identified::new(
+    RelayerMsg::Data(AnyLightClientIdentified::from(Identified::new(
         chain_id,
-        LcMsg::Data(t.into()),
+        t.into(),
     )))
 }
 
 pub fn wait<L: LightClient>(chain_id: ChainIdOf<L>, t: impl Into<Wait<L>>) -> RelayerMsg
 where
-    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L>)>,
+    AnyLightClientIdentified<AnyWait>: From<identified!(Wait<L>)>,
 {
-    RelayerMsg::Lc(AnyLightClientIdentified::from(Identified::new(
+    RelayerMsg::Wait(AnyLightClientIdentified::from(Identified::new(
         chain_id,
-        LcMsg::Wait(t.into()),
+        t.into(),
     )))
 }
 
 pub fn event<L: LightClient>(chain_id: ChainIdOf<L>, t: impl Into<Event<L>>) -> RelayerMsg
 where
-    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L>)>,
+    AnyLightClientIdentified<AnyEvent>: From<identified!(Event<L>)>,
 {
-    RelayerMsg::Lc(AnyLightClientIdentified::from(Identified::new(
+    RelayerMsg::Event(AnyLightClientIdentified::from(Identified::new(
         chain_id,
-        LcMsg::Event(t.into()),
+        t.into(),
     )))
+}
+
+pub fn aggregate<L: LightClient>(
+    chain_id: ChainIdOf<L>,
+    t: impl Into<Aggregate<L>>,
+) -> AnyLightClientIdentified<AnyAggregate>
+where
+    AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<L>)>,
+{
+    AnyLightClientIdentified::from(Identified::new(chain_id, t.into()))
 }
 
 /// Returns the current unix timestamp in seconds.
@@ -1057,8 +857,8 @@ mod tests {
         EmptyString, QueryHeight, DELAY_PERIOD,
     };
 
-    use super::LcMsg;
     use crate::{
+        aggregate,
         aggregate::{Aggregate, AggregateCreateClient, AnyAggregate},
         data::Data,
         defer_relative, event,
@@ -1069,8 +869,11 @@ mod tests {
             FetchTrustedClientState,
         },
         msg,
-        msg::{Msg, MsgChannelOpenInitData, MsgConnectionOpenInitData, MsgConnectionOpenTryData},
-        seq, AggregateReceiver, AnyLcMsg, AnyMsg, Identified, RelayerMsg,
+        msg::{
+            AnyMsg, Msg, MsgChannelOpenInitData, MsgConnectionOpenInitData,
+            MsgConnectionOpenTryData,
+        },
+        seq, Identified, RelayerMsg,
     };
 
     macro_rules! parse {
@@ -1091,10 +894,7 @@ mod tests {
                     client_id: parse!("08-wasm-2"),
                     counterparty: connection::counterparty::Counterparty {
                         client_id: parse!("cometbls-0"),
-                        connection_id: ""
-                            .to_string()
-                            .validate()
-                            .expect("empty string is a valid empty string; qed;"),
+                        connection_id: parse!(""),
                         prefix: MerklePrefix {
                             key_prefix: b"ibc".to_vec(),
                         },
@@ -1186,7 +986,6 @@ mod tests {
         print_json(RelayerMsg::Repeat {
             times: u64::MAX,
             msg: Box::new(seq([
-                defer_relative(30),
                 event::<CometblsMinimal>(
                     eth_chain_id,
                     crate::event::Command::UpdateClient {
@@ -1194,13 +993,13 @@ mod tests {
                         counterparty_client_id: parse!("08-wasm-0"),
                     },
                 ),
+                defer_relative(10),
             ])),
         });
 
         print_json(RelayerMsg::Repeat {
             times: u64::MAX,
             msg: Box::new(seq([
-                defer_relative(30),
                 event::<EthereumMinimal>(
                     union_chain_id.clone(),
                     crate::event::Command::UpdateClient {
@@ -1208,6 +1007,7 @@ mod tests {
                         counterparty_client_id: parse!("cometbls-0"),
                     },
                 ),
+                defer_relative(10),
             ])),
         });
 
@@ -1232,17 +1032,17 @@ mod tests {
                     ]
                     .into(),
                     data: [].into_iter().collect(),
-                    receiver: AggregateReceiver::CometblsMinimal(Identified {
-                        chain_id: eth_chain_id,
-                        data: Aggregate::CreateClient(AggregateCreateClient {
+                    receiver: aggregate::<CometblsMinimal>(
+                        eth_chain_id,
+                        AggregateCreateClient {
                             config: CometblsConfig {
                                 client_type: "cometbls".to_string(),
                                 cometbls_client_address: Address(hex!(
                                     "83428c7db9815f482a39a1715684dcf755021997"
                                 )),
                             },
-                        }),
-                    }),
+                        },
+                    ),
                 },
                 RelayerMsg::Aggregate {
                     queue: [
@@ -1261,16 +1061,16 @@ mod tests {
                     ]
                     .into(),
                     data: [].into_iter().collect(),
-                    receiver: AggregateReceiver::EthereumMinimal(Identified {
-                        chain_id: union_chain_id.clone(),
-                        data: Aggregate::CreateClient(AggregateCreateClient {
+                    receiver: aggregate::<EthereumMinimal>(
+                        union_chain_id.clone(),
+                        AggregateCreateClient {
                             config: EthereumConfig {
                                 code_id: H256(hex!(
                                     "78266014ea77f3b785e45a33d1f8d3709444a076b3b38b2aeef265b39ad1e494"
                                 )),
                             },
-                        }),
-                    }),
+                        },
+                    ),
                 },
             ]
             .into(),

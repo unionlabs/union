@@ -16,13 +16,12 @@ macro_rules! try_from_relayer_msg {
                     type Error = RelayerMsg;
                     fn try_from(value: RelayerMsg) -> Result<Identified<$Lc, $Ty>, RelayerMsg> {
                         match value {
-                            RelayerMsg::Lc(crate::AnyLightClientIdentified::$Lc(Identified {
+                            RelayerMsg::$LcMsg(crate::AnyLightClientIdentified::$Lc(Identified {
                                 chain_id,
-                                data: LcMsg::$LcMsg(
+                                data:
                                     $LcMsg::LightClientSpecific($Specific($Msg::$Var(
                                         data,
                                     ))),
-                                ),
                             })) => Ok(Identified { chain_id, data }),
                             _ => Err(value),
                         }
@@ -60,9 +59,9 @@ macro_rules! this_is_a_hack_look_away {
             )
     ) => {
         $(
-            impl From<Identified<$Lc, $Ty>> for crate::AggregateData {
-                fn from(Identified { chain_id, data }: Identified<$Lc, $Ty>) -> crate::AggregateData {
-                    crate::AggregateData::$Lc(Identified {
+            impl From<Identified<$Lc, $Ty>> for crate::AnyLightClientIdentified<crate::data::AnyData> {
+                fn from(Identified { chain_id, data }: Identified<$Lc, $Ty>) -> crate::AnyLightClientIdentified<crate::data::AnyData> {
+                    crate::AnyLightClientIdentified::$Lc(Identified {
                         chain_id,
                         data: Data::LightClientSpecific(LightClientSpecificData($Msg::$Var(
                             data,
@@ -71,10 +70,10 @@ macro_rules! this_is_a_hack_look_away {
                 }
             }
 
-            impl TryFrom<crate::AggregateData> for Identified<$Lc, $Ty> {
-                type Error = crate::AggregateData;
+            impl TryFrom<crate::AnyLightClientIdentified<crate::data::AnyData>> for Identified<$Lc, $Ty> {
+                type Error = crate::AnyLightClientIdentified<crate::data::AnyData>;
 
-                fn try_from(value: crate::AggregateData) -> Result<Identified<$Lc, $Ty>, crate::AggregateData> {
+                fn try_from(value: crate::AnyLightClientIdentified<crate::data::AnyData>) -> Result<Identified<$Lc, $Ty>, crate::AnyLightClientIdentified<crate::data::AnyData>> {
                     match value {
                         crate::AnyLightClientIdentified::$Lc(Identified {
                             chain_id,

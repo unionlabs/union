@@ -49,22 +49,22 @@ use unionlabs::{
 };
 
 use crate::{
+    aggregate,
     aggregate::{Aggregate, AnyAggregate, LightClientSpecificAggregate},
     data,
     data::{
-        AcknowledgementProof, ChannelEndProof, ClientConsensusStateProof, ClientStateProof,
-        CommitmentProof, ConnectionProof, Data, LightClientSpecificData,
+        AcknowledgementProof, AnyData, ChannelEndProof, ClientConsensusStateProof,
+        ClientStateProof, CommitmentProof, ConnectionProof, Data, LightClientSpecificData,
     },
     fetch,
-    fetch::{Fetch, FetchStateProof, FetchUpdateHeaders, LightClientSpecificFetch},
+    fetch::{AnyFetch, Fetch, FetchStateProof, FetchUpdateHeaders, LightClientSpecificFetch},
     identified, msg,
-    msg::{Msg, MsgUpdateClientData},
+    msg::{AnyMsg, Msg, MsgUpdateClientData},
     seq,
-    use_aggregate::{do_aggregate, UseAggregate},
+    use_aggregate::{do_aggregate, IsAggregateData, UseAggregate},
     wait,
-    wait::WaitForTimestamp,
-    AggregateData, AggregateReceiver, AnyLcMsg, AnyLightClientIdentified, DoAggregate, Identified,
-    LcMsg, LightClient, RelayerMsg,
+    wait::{AnyWait, Wait, WaitForTimestamp},
+    AnyLightClientIdentified, DoAggregate, Identified, LightClient, RelayerMsg,
 };
 
 pub const EVM_REVISION_NUMBER: u64 = 0;
@@ -160,24 +160,22 @@ where
         Aggregate = CometblsAggregateMsg<L, C>,
     >,
     LightClientSpecificFetch<L>: From<CometblsFetchMsg<L, C>>,
-    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L>)>,
+    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<L>)>,
     AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<L>)>,
 {
     [RelayerMsg::Aggregate {
         queue: [seq([fetch(
             evm.chain_id,
-            Fetch::LightClientSpecific(LightClientSpecificFetch(
-                CometblsFetchMsg::FetchFinalityUpdate(PhantomData),
-            )),
+            LightClientSpecificFetch(CometblsFetchMsg::FetchFinalityUpdate(PhantomData)),
         )])]
         .into(),
         data: [].into(),
-        receiver: AggregateReceiver::from(Identified {
-            chain_id: evm.chain_id,
-            data: Aggregate::LightClientSpecific(LightClientSpecificAggregate(
-                CometblsAggregateMsg::MakeCreateUpdates(MakeCreateUpdatesData { req: update_info }),
+        receiver: aggregate(
+            evm.chain_id,
+            LightClientSpecificAggregate(CometblsAggregateMsg::MakeCreateUpdates(
+                MakeCreateUpdatesData { req: update_info },
             )),
-        }),
+        ),
     }]
     .into()
 }
@@ -298,15 +296,15 @@ try_from_relayer_msg! {
                 FetchAccountUpdate(FetchAccountUpdate<Minimal>),
             ),
         ),
-        lc_msg(
-            msg = Aggregate(LightClientSpecificAggregate),
-            ty = CometblsAggregateMsg,
-            variants(
-                CreateUpdate(CreateUpdateData<CometblsMinimal, Minimal>),
-                MakeCreateUpdates(MakeCreateUpdatesData<CometblsMinimal, Minimal>),
-                MakeCreateUpdatesFromLightClientUpdates(MakeCreateUpdatesFromLightClientUpdatesData<CometblsMinimal, Minimal>),
-            ),
-        ),
+        // lc_msg(
+        //     msg = Aggregate(LightClientSpecificAggregate),
+        //     ty = CometblsAggregateMsg,
+        //     variants(
+        //         CreateUpdate(CreateUpdateData<CometblsMinimal, Minimal>),
+        //         MakeCreateUpdates(MakeCreateUpdatesData<CometblsMinimal, Minimal>),
+        //         MakeCreateUpdatesFromLightClientUpdates(MakeCreateUpdatesFromLightClientUpdatesData<CometblsMinimal, Minimal>),
+        //     ),
+        // ),
     )]
 }
 
@@ -336,15 +334,15 @@ try_from_relayer_msg! {
                 FetchBeaconGenesis(FetchBeaconGenesis<Mainnet>),
             ),
         ),
-        lc_msg(
-            msg = Aggregate(LightClientSpecificAggregate),
-            ty = CometblsAggregateMsg,
-            variants(
-                CreateUpdate(CreateUpdateData<CometblsMainnet, Mainnet>),
-                MakeCreateUpdates(MakeCreateUpdatesData<CometblsMainnet, Mainnet>),
-                MakeCreateUpdatesFromLightClientUpdates(MakeCreateUpdatesFromLightClientUpdatesData<CometblsMainnet, Mainnet>),
-            ),
-        ),
+        // lc_msg(
+        //     msg = Aggregate(LightClientSpecificAggregate),
+        //     ty = CometblsAggregateMsg,
+        //     variants(
+        //         CreateUpdate(CreateUpdateData<CometblsMainnet, Mainnet>),
+        //         MakeCreateUpdates(MakeCreateUpdatesData<CometblsMainnet, Mainnet>),
+        //         MakeCreateUpdatesFromLightClientUpdates(MakeCreateUpdatesFromLightClientUpdatesData<CometblsMainnet, Mainnet>),
+        //     ),
+        // ),
     )]
 }
 
@@ -588,28 +586,23 @@ where
     C: ChainSpec,
     L: LightClient<HostChain = Evm<C>, Aggregate = Self, Fetch = CometblsFetchMsg<L, C>>,
 
-    Identified<L, AccountUpdateData<C>>:
-        TryFrom<AggregateData, Error = AggregateData> + Into<AggregateData>,
-    Identified<L, BootstrapData<C>>:
-        TryFrom<AggregateData, Error = AggregateData> + Into<AggregateData>,
-    Identified<L, BeaconGenesisData<C>>:
-        TryFrom<AggregateData, Error = AggregateData> + Into<AggregateData>,
-    Identified<L, FinalityUpdate<C>>:
-        TryFrom<AggregateData, Error = AggregateData> + Into<AggregateData>,
-    Identified<L, LightClientUpdates<C>>:
-        TryFrom<AggregateData, Error = AggregateData> + Into<AggregateData>,
-    Identified<L, LightClientUpdate<C>>:
-        TryFrom<AggregateData, Error = AggregateData> + Into<AggregateData>,
+    Identified<L, AccountUpdateData<C>>: IsAggregateData,
+    Identified<L, BootstrapData<C>>: IsAggregateData,
+    Identified<L, BeaconGenesisData<C>>: IsAggregateData,
+    Identified<L, FinalityUpdate<C>>: IsAggregateData,
+    Identified<L, LightClientUpdates<C>>: IsAggregateData,
+    Identified<L, LightClientUpdate<C>>: IsAggregateData,
 
-    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L>)>,
-    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L::Counterparty>)>,
+    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<L>)>,
+    AnyLightClientIdentified<AnyMsg>: From<identified!(Msg<L::Counterparty>)>,
+    AnyLightClientIdentified<AnyWait>: From<identified!(Wait<L::Counterparty>)>,
 
-    AggregateData: From<identified!(Data<L>)>,
-    AggregateReceiver: From<identified!(Aggregate<L>)>,
+    AnyLightClientIdentified<AnyData>: From<identified!(Data<L>)>,
+    AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<L>)>,
 {
     fn do_aggregate(
         Identified { chain_id, data }: Identified<L, Self>,
-        aggregated_data: VecDeque<AggregateData>,
+        aggregated_data: VecDeque<AnyLightClientIdentified<AnyData>>,
     ) -> Vec<RelayerMsg> {
         [match data {
             CometblsAggregateMsg::CreateUpdate(msg) => do_aggregate(
@@ -638,88 +631,6 @@ where
     }
 }
 
-// async fn create_update(
-//     &self,
-//     currently_trusted_slot: u64,
-//     light_client_update: LightClientUpdate<C>,
-//     is_next: bool,
-// ) -> wasm::header::Header<ethereum::header::Header<C>> {
-//     tracing::debug!(
-//         light_client_update = %serde_json::to_string(&light_client_update).unwrap(),
-//         "applying light client update",
-//     );
-
-//     let bootstrap = {
-//         let currently_trusted_block = self
-//             .chain
-//             .beacon_api_client
-//             .header(beacon_api::client::BlockId::Slot(currently_trusted_slot))
-//             .await
-//             .unwrap()
-//             .data;
-
-//         // bootstrap contains the current sync committee for the given height
-//         self.chain
-//             .beacon_api_client
-//             .bootstrap(currently_trusted_block.root.clone())
-//             .await
-//             .unwrap()
-//             .data
-//     };
-
-//     let account_update_proof_height =
-//         light_client_update.attested_header.execution.block_number;
-
-//     let account_update = self
-//         .chain
-//         .provider
-//         .get_proof(
-//             self.chain.ibc_handler.address(),
-//             vec![],
-//             // Proofs are from the execution layer, so we use execution height, not beacon slot.
-//             Some(account_update_proof_height.into()),
-//         )
-//         .await
-//         .unwrap();
-
-//     let header = wasm::header::Header {
-//         height: self.chain.make_height(account_update_proof_height),
-//         data: ethereum::header::Header {
-//             consensus_update: light_client_update,
-//             trusted_sync_committee: TrustedSyncCommittee {
-//                 trusted_height: self
-//                     .chain
-//                     .make_height(bootstrap.header.execution.block_number),
-//                 sync_committee: bootstrap.current_sync_committee,
-//                 is_next,
-//             },
-//             account_update: AccountUpdate {
-//                 proofs: [Proof {
-//                     key: self.chain.ibc_handler.address().as_bytes().to_vec(),
-//                     value: account_update.storage_hash.as_bytes().to_vec(),
-//                     proof: account_update
-//                         .account_proof
-//                         .into_iter()
-//                         .map(|x| x.to_vec())
-//                         .collect(),
-//                 }]
-//                 .to_vec(),
-//             },
-//             timestamp: bootstrap.header.execution.timestamp,
-//         },
-//     };
-
-//     // let new_trusted_slot = header.data.consensus_update.attested_header.beacon.slot;
-
-//     // tracing::debug!(
-//     //     "updating trusted_slot from {currently_trusted_slot} to {new_trusted_slot}"
-//     // );
-
-//     // tracing::debug!(header = %serde_json::to_string(&header).unwrap());
-
-//     header
-// }
-
 fn make_create_update<C, L>(
     req: FetchUpdateHeaders<L>,
     chain_id: <<Evm<C> as Chain>::SelfClientState as ClientState>::ChainId,
@@ -734,8 +645,8 @@ where
         Fetch = CometblsFetchMsg<L, C>,
         Aggregate = CometblsAggregateMsg<L, C>,
     >,
-    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L>)>,
-    AggregateReceiver: From<Identified<L, Aggregate<L>>>,
+    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<L>)>,
+    AnyLightClientIdentified<AnyAggregate>: From<Identified<L, Aggregate<L>>>,
 {
     // When we fetch the update at this height, the `next_sync_committee` will
     // be the current sync committee of the period that we want to update to.
@@ -746,44 +657,42 @@ where
         queue: [
             fetch::<L>(
                 chain_id,
-                Fetch::LightClientSpecific(LightClientSpecificFetch(
-                    CometblsFetchMsg::FetchLightClientUpdate(FetchLightClientUpdate {
+                LightClientSpecificFetch(CometblsFetchMsg::FetchLightClientUpdate(
+                    FetchLightClientUpdate {
                         period: previous_period,
                         __marker: PhantomData,
-                    }),
+                    },
                 )),
             ),
             fetch::<L>(
                 chain_id,
-                Fetch::LightClientSpecific(LightClientSpecificFetch(
-                    CometblsFetchMsg::FetchAccountUpdate(FetchAccountUpdate {
+                LightClientSpecificFetch(CometblsFetchMsg::FetchAccountUpdate(
+                    FetchAccountUpdate {
                         slot: light_client_update.attested_header.beacon.slot,
                         __marker: PhantomData,
-                    }),
+                    },
                 )),
             ),
             fetch::<L>(
                 chain_id,
-                Fetch::LightClientSpecific(LightClientSpecificFetch(
-                    CometblsFetchMsg::FetchBeaconGenesis(FetchBeaconGenesis {
+                LightClientSpecificFetch(CometblsFetchMsg::FetchBeaconGenesis(
+                    FetchBeaconGenesis {
                         __marker: PhantomData,
-                    }),
+                    },
                 )),
             ),
         ]
         .into(),
         data: [].into(),
-        receiver: AggregateReceiver::from(Identified {
+        receiver: aggregate(
             chain_id,
-            data: Aggregate::LightClientSpecific(LightClientSpecificAggregate(
-                CometblsAggregateMsg::CreateUpdate(CreateUpdateData {
-                    req,
-                    currently_trusted_slot,
-                    light_client_update,
-                    is_next,
-                }),
-            )),
-        }),
+            LightClientSpecificAggregate(CometblsAggregateMsg::CreateUpdate(CreateUpdateData {
+                req,
+                currently_trusted_slot,
+                light_client_update,
+                is_next,
+            })),
+        ),
     }
 }
 
@@ -959,7 +868,7 @@ where
     C: ChainSpec,
     L: LightClient<HostChain = Evm<C>, Fetch = CometblsFetchMsg<L, C>, Data = CometblsDataMsg<C>>,
     LightClientSpecificData<L>: From<CometblsDataMsg<C>>,
-    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L>)>,
+    AnyLightClientIdentified<AnyData>: From<identified!(Data<L>)>,
 {
     let msg = match msg {
         CometblsFetchMsg::FetchFinalityUpdate(PhantomData {}) => CometblsDataMsg::FinalityUpdate(
@@ -1190,33 +1099,14 @@ pub struct GetProof<C: ChainSpec, L: LightClient<HostChain = Evm<C>>> {
     height: <Evm<C> as Chain>::Height,
 }
 
-// pub struct AnyGetProof<C: ChainSpec, L: LightClient<HostChain = Evm<C>>> {
-//     __marker: PhantomData<fn() -> (C, L)>,
-// }
-
-// type _AnyGetProof<C, L> = Path2<L, AnyGetProof<C, L>>;
-
-// fn decode_log<T: EthLogDecode + Debug>(logs: impl IntoIterator<Item = impl Into<RawLog>>) -> T {
-//     let t = decode_logs::<T>(&logs.into_iter().map(Into::into).collect::<Vec<_>>()).unwrap();
-
-//     let [t] = <[T; 1]>::try_from(t)
-//         .map_err(|err| format!("invalid events, expected one event but got {err:#?}"))
-//         .unwrap();
-
-//     t
-// }
-
 impl<L, C> UseAggregate<L> for Identified<L, CreateUpdateData<L, C>>
 where
-    Identified<L, AccountUpdateData<C>>:
-        TryFrom<AggregateData, Error = AggregateData> + Into<AggregateData>,
-    Identified<L, LightClientUpdate<C>>:
-        TryFrom<AggregateData, Error = AggregateData> + Into<AggregateData>,
-    Identified<L, BeaconGenesisData<C>>:
-        TryFrom<AggregateData, Error = AggregateData> + Into<AggregateData>,
+    Identified<L, AccountUpdateData<C>>: IsAggregateData,
+    Identified<L, LightClientUpdate<C>>: IsAggregateData,
+    Identified<L, BeaconGenesisData<C>>: IsAggregateData,
 
-    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L>)>,
-    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L::Counterparty>)>,
+    AnyLightClientIdentified<AnyMsg>: From<identified!(Msg<L::Counterparty>)>,
+    AnyLightClientIdentified<AnyWait>: From<identified!(Wait<L::Counterparty>)>,
 
     L: LightClient<HostChain = Evm<C>>,
     C: ChainSpec,
@@ -1337,10 +1227,9 @@ where
         Fetch = CometblsFetchMsg<L, C>,
         Aggregate = CometblsAggregateMsg<L, C>,
     >,
-    Identified<L, FinalityUpdate<C>>:
-        TryFrom<AggregateData, Error = AggregateData> + Into<AggregateData>,
-    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L>)>,
-    AggregateReceiver: From<Identified<L, Aggregate<L>>>,
+    Identified<L, FinalityUpdate<C>>: IsAggregateData,
+    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<L>)>,
+    AnyLightClientIdentified<AnyAggregate>: From<Identified<L, Aggregate<L>>>,
 {
     type AggregatedData = HList![
         Identified<L, FinalityUpdate<C>>,
@@ -1383,9 +1272,9 @@ where
             )]
             .into(),
             data: [].into(),
-            receiver: AggregateReceiver::from(Identified {
+            receiver: aggregate(
                 chain_id,
-                data: Aggregate::LightClientSpecific(LightClientSpecificAggregate(
+                LightClientSpecificAggregate(
                     CometblsAggregateMsg::MakeCreateUpdatesFromLightClientUpdates(
                         MakeCreateUpdatesFromLightClientUpdatesData {
                             req: req.clone(),
@@ -1393,8 +1282,8 @@ where
                             finality_update,
                         },
                     ),
-                )),
-            }),
+                ),
+            ),
         }
     }
 }
@@ -1408,11 +1297,10 @@ where
         Aggregate = CometblsAggregateMsg<L, C>,
     >,
 
-    Identified<L, LightClientUpdates<C>>:
-        TryFrom<AggregateData, Error = AggregateData> + Into<AggregateData>,
+    Identified<L, LightClientUpdates<C>>: IsAggregateData,
 
-    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L>)>,
-    AggregateReceiver: From<Identified<L, Aggregate<L>>>,
+    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<L>)>,
+    AnyLightClientIdentified<AnyAggregate>: From<Identified<L, Aggregate<L>>>,
 {
     type AggregatedData = HList![
         Identified<L, LightClientUpdates<C>>,

@@ -9,19 +9,19 @@ use unionlabs::{
 };
 
 use crate::{
+    aggregate,
     aggregate::{
         mk_aggregate_wait_for_update, Aggregate, AggregateChannelHandshakeUpdateClient,
         AggregateConnectionFetchFromChannelEnd, AggregateConnectionOpenAck,
         AggregateConnectionOpenConfirm, AggregateConnectionOpenTry, AggregateMsgAfterUpdate,
-        AggregatePacketUpdateClient, AggregateUpdateClientFromClientId, ChannelHandshakeEvent,
-        PacketEvent,
+        AggregatePacketUpdateClient, AggregateUpdateClientFromClientId, AnyAggregate,
+        ChannelHandshakeEvent, PacketEvent,
     },
     any_enum, fetch,
-    fetch::{FetchChannelEnd, FetchConnectionEnd, FetchTrustedClientState},
+    fetch::{AnyFetch, Fetch, FetchChannelEnd, FetchConnectionEnd, FetchTrustedClientState},
     identified, seq, wait,
-    wait::WaitForBlock,
-    AggregateReceiver, AnyLcMsg, AnyLightClientIdentified, Identified, LcMsg, LightClient,
-    RelayerMsg,
+    wait::{AnyWait, Wait, WaitForBlock},
+    AnyLightClientIdentified, LightClient, RelayerMsg,
 };
 
 any_enum! {
@@ -35,8 +35,9 @@ any_enum! {
 impl<L: LightClient> Event<L> {
     pub fn handle(self, l: L) -> Vec<RelayerMsg>
     where
-        AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L>)>,
-        AggregateReceiver: From<identified!(Aggregate<L>)>,
+        AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<L>)>,
+        AnyLightClientIdentified<AnyWait>: From<identified!(Wait<L>)>,
+        AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<L>)>,
     {
         match self {
             Event::Ibc(ibc_event) => match ibc_event.event {
@@ -68,17 +69,15 @@ impl<L: LightClient> Event<L> {
                             ibc_event.height,
                         )]
                         .into(),
-                        receiver: AggregateReceiver::from(Identified::new(
+                        receiver: aggregate(
                             l.chain().chain_id(),
-                            Aggregate::AggregateMsgAfterUpdate(
-                                AggregateMsgAfterUpdate::ConnectionOpenTry(
-                                    AggregateConnectionOpenTry {
-                                        event_height: ibc_event.height,
-                                        event: init,
-                                    },
-                                ),
+                            AggregateMsgAfterUpdate::ConnectionOpenTry(
+                                AggregateConnectionOpenTry {
+                                    event_height: ibc_event.height,
+                                    event: init,
+                                },
                             ),
-                        )),
+                        ),
                     },
                 ])]
                 .into(),
@@ -92,17 +91,15 @@ impl<L: LightClient> Event<L> {
                             ibc_event.height,
                         )]
                         .into(),
-                        receiver: AggregateReceiver::from(Identified::new(
+                        receiver: aggregate(
                             l.chain().chain_id(),
-                            Aggregate::AggregateMsgAfterUpdate(
-                                AggregateMsgAfterUpdate::ConnectionOpenAck(
-                                    AggregateConnectionOpenAck {
-                                        event_height: ibc_event.height,
-                                        event: try_,
-                                    },
-                                ),
+                            AggregateMsgAfterUpdate::ConnectionOpenAck(
+                                AggregateConnectionOpenAck {
+                                    event_height: ibc_event.height,
+                                    event: try_,
+                                },
                             ),
-                        )),
+                        ),
                     }])]
                     .into()
                 }
@@ -116,17 +113,15 @@ impl<L: LightClient> Event<L> {
                             ibc_event.height,
                         )]
                         .into(),
-                        receiver: AggregateReceiver::from(Identified::new(
+                        receiver: aggregate(
                             l.chain().chain_id(),
-                            Aggregate::AggregateMsgAfterUpdate(
-                                AggregateMsgAfterUpdate::ConnectionOpenConfirm(
-                                    AggregateConnectionOpenConfirm {
-                                        event_height: ibc_event.height,
-                                        event: ack,
-                                    },
-                                ),
+                            AggregateMsgAfterUpdate::ConnectionOpenConfirm(
+                                AggregateConnectionOpenConfirm {
+                                    event_height: ibc_event.height,
+                                    event: ack,
+                                },
                             ),
-                        )),
+                        ),
                     }])]
                     .into()
                 }
@@ -150,26 +145,22 @@ impl<L: LightClient> Event<L> {
                                 },
                             )]
                             .into(),
-                            receiver: AggregateReceiver::from(Identified::new(
+                            receiver: aggregate(
                                 l.chain().chain_id(),
-                                Aggregate::ConnectionFetchFromChannelEnd(
-                                    AggregateConnectionFetchFromChannelEnd {
-                                        at: ibc_event.height,
-                                    },
-                                ),
-                            )),
-                        }]
-                        .into(),
-                        receiver: AggregateReceiver::from(Identified::new(
-                            l.chain().chain_id(),
-                            Aggregate::ChannelHandshakeUpdateClient(
-                                AggregateChannelHandshakeUpdateClient {
-                                    update_to: ibc_event.height,
-                                    event_height: ibc_event.height,
-                                    channel_handshake_event: ChannelHandshakeEvent::Init(init),
+                                AggregateConnectionFetchFromChannelEnd {
+                                    at: ibc_event.height,
                                 },
                             ),
-                        )),
+                        }]
+                        .into(),
+                        receiver: aggregate(
+                            l.chain().chain_id(),
+                            AggregateChannelHandshakeUpdateClient {
+                                update_to: ibc_event.height,
+                                event_height: ibc_event.height,
+                                channel_handshake_event: ChannelHandshakeEvent::Init(init),
+                            },
+                        ),
                     }])]
                     .into()
                 }
@@ -187,26 +178,24 @@ impl<L: LightClient> Event<L> {
                                 },
                             )]
                             .into(),
-                            receiver: AggregateReceiver::from(Identified::new(
+                            receiver: aggregate(
                                 l.chain().chain_id(),
                                 Aggregate::ConnectionFetchFromChannelEnd(
                                     AggregateConnectionFetchFromChannelEnd {
                                         at: ibc_event.height,
                                     },
                                 ),
-                            )),
+                            ),
                         }]
                         .into(),
-                        receiver: AggregateReceiver::from(Identified::new(
+                        receiver: aggregate(
                             l.chain().chain_id(),
-                            Aggregate::ChannelHandshakeUpdateClient(
-                                AggregateChannelHandshakeUpdateClient {
-                                    update_to: ibc_event.height,
-                                    event_height: ibc_event.height,
-                                    channel_handshake_event: ChannelHandshakeEvent::Try(try_),
-                                },
-                            ),
-                        )),
+                            AggregateChannelHandshakeUpdateClient {
+                                update_to: ibc_event.height,
+                                event_height: ibc_event.height,
+                                channel_handshake_event: ChannelHandshakeEvent::Try(try_),
+                            },
+                        ),
                     }])]
                     .into()
                 }
@@ -224,26 +213,22 @@ impl<L: LightClient> Event<L> {
                                 },
                             )]
                             .into(),
-                            receiver: AggregateReceiver::from(Identified::new(
+                            receiver: aggregate(
                                 l.chain().chain_id(),
-                                Aggregate::ConnectionFetchFromChannelEnd(
-                                    AggregateConnectionFetchFromChannelEnd {
-                                        at: ibc_event.height,
-                                    },
-                                ),
-                            )),
-                        }]
-                        .into(),
-                        receiver: AggregateReceiver::from(Identified::new(
-                            l.chain().chain_id(),
-                            Aggregate::ChannelHandshakeUpdateClient(
-                                AggregateChannelHandshakeUpdateClient {
-                                    update_to: ibc_event.height,
-                                    event_height: ibc_event.height,
-                                    channel_handshake_event: ChannelHandshakeEvent::Ack(ack),
+                                AggregateConnectionFetchFromChannelEnd {
+                                    at: ibc_event.height,
                                 },
                             ),
-                        )),
+                        }]
+                        .into(),
+                        receiver: aggregate(
+                            l.chain().chain_id(),
+                            AggregateChannelHandshakeUpdateClient {
+                                update_to: ibc_event.height,
+                                event_height: ibc_event.height,
+                                channel_handshake_event: ChannelHandshakeEvent::Ack(ack),
+                            },
+                        ),
                     }])]
                     .into()
                 }
@@ -264,15 +249,15 @@ impl<L: LightClient> Event<L> {
                         },
                     )]
                     .into(),
-                    receiver: AggregateReceiver::from(Identified::new(
+                    receiver: aggregate(
                         l.chain().chain_id(),
-                        Aggregate::PacketUpdateClient(AggregatePacketUpdateClient {
+                        AggregatePacketUpdateClient {
                             update_to: ibc_event.height,
                             event_height: ibc_event.height,
                             block_hash: ibc_event.block_hash,
                             packet_event: PacketEvent::Recv(packet),
-                        }),
-                    )),
+                        },
+                    ),
                 }])]
                 .into(),
                 unionlabs::events::IbcEvent::SendPacket(packet) => [seq([RelayerMsg::Aggregate {
@@ -285,15 +270,15 @@ impl<L: LightClient> Event<L> {
                         },
                     )]
                     .into(),
-                    receiver: AggregateReceiver::from(Identified::new(
+                    receiver: aggregate(
                         l.chain().chain_id(),
-                        Aggregate::PacketUpdateClient(AggregatePacketUpdateClient {
+                        AggregatePacketUpdateClient {
                             update_to: ibc_event.height,
                             event_height: ibc_event.height,
                             block_hash: ibc_event.block_hash,
                             packet_event: PacketEvent::Send(packet),
-                        }),
-                    )),
+                        },
+                    ),
                 }])]
                 .into(),
                 unionlabs::events::IbcEvent::AcknowledgePacket(ack) => {
@@ -323,15 +308,13 @@ impl<L: LightClient> Event<L> {
                     )]
                     .into(),
                     data: [].into(),
-                    receiver: AggregateReceiver::from(Identified::new(
+                    receiver: aggregate(
                         l.chain().chain_id(),
-                        Aggregate::<L>::UpdateClientFromClientId(
-                            AggregateUpdateClientFromClientId {
-                                client_id,
-                                counterparty_client_id,
-                            },
-                        ),
-                    )),
+                        AggregateUpdateClientFromClientId {
+                            client_id,
+                            counterparty_client_id,
+                        },
+                    ),
                 }]
                 .into(),
             },

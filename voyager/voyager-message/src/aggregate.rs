@@ -36,26 +36,25 @@ use unionlabs::{
 use crate::{
     any_enum,
     data::{
-        AcknowledgementProof, ChannelEnd, ChannelEndProof, ClientConsensusStateProof,
+        AcknowledgementProof, AnyData, ChannelEnd, ChannelEndProof, ClientConsensusStateProof,
         ClientStateProof, CommitmentProof, ConnectionEnd, ConnectionProof, Data,
         PacketAcknowledgement, SelfClientState, SelfConsensusState, TrustedClientState,
     },
     fetch,
     fetch::{
-        FetchChannelEnd, FetchConnectionEnd, FetchPacketAcknowledgement, FetchStateProof,
-        FetchTrustedClientState, FetchUpdateHeaders,
+        AnyFetch, Fetch, FetchChannelEnd, FetchConnectionEnd, FetchPacketAcknowledgement,
+        FetchStateProof, FetchTrustedClientState, FetchUpdateHeaders,
     },
     identified, msg,
     msg::{
-        MsgAckPacketData, MsgChannelOpenAckData, MsgChannelOpenConfirmData, MsgChannelOpenTryData,
-        MsgConnectionOpenAckData, MsgConnectionOpenConfirmData, MsgConnectionOpenTryData,
-        MsgCreateClientData, MsgRecvPacketData,
+        AnyMsg, Msg, MsgAckPacketData, MsgChannelOpenAckData, MsgChannelOpenConfirmData,
+        MsgChannelOpenTryData, MsgConnectionOpenAckData, MsgConnectionOpenConfirmData,
+        MsgConnectionOpenTryData, MsgCreateClientData, MsgRecvPacketData,
     },
     use_aggregate::{do_aggregate, IsAggregateData, UseAggregate},
     wait,
-    wait::WaitForTrustedHeight,
-    AggregateData, AggregateReceiver, AnyLcMsg, AnyLightClientIdentified, DoAggregate, Identified,
-    LcMsg, LightClient, RelayerMsg,
+    wait::{AnyWait, Wait, WaitForTrustedHeight},
+    AnyLightClientIdentified, DoAggregate, Identified, LightClient, RelayerMsg,
 };
 
 any_enum! {
@@ -98,7 +97,7 @@ any_enum! {
 }
 
 impl<L: LightClient> identified!(Aggregate<L>) {
-    pub fn handle(self, data: VecDeque<AggregateData>) -> Vec<RelayerMsg>
+    pub fn handle(self, data: VecDeque<AnyLightClientIdentified<AnyData>>) -> Vec<RelayerMsg>
     where
         identified!(TrustedClientState<L>): IsAggregateData,
         identified!(TrustedClientState<L::Counterparty>): IsAggregateData,
@@ -117,10 +116,17 @@ impl<L: LightClient> identified!(Aggregate<L>) {
         identified!(ConnectionEnd<L>): IsAggregateData,
         identified!(PacketAcknowledgement<L>): IsAggregateData,
 
-        AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L>)>,
-        AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L::Counterparty>)>,
-        AggregateData: From<identified!(Data<L>)>,
-        AggregateReceiver: From<identified!(Aggregate<L>)>,
+        AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<L>)>,
+        AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<L::Counterparty>)>,
+
+        AnyLightClientIdentified<AnyWait>: From<identified!(Wait<L>)>,
+        AnyLightClientIdentified<AnyWait>: From<identified!(Wait<L::Counterparty>)>,
+
+        AnyLightClientIdentified<AnyMsg>: From<identified!(Msg<L>)>,
+        AnyLightClientIdentified<AnyMsg>: From<identified!(Msg<L::Counterparty>)>,
+
+        AnyLightClientIdentified<AnyData>: From<identified!(Data<L>)>,
+        AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<L>)>,
     {
         let chain_id = self.chain_id;
 
@@ -522,51 +528,11 @@ pub enum AggregateMsgAfterUpdate<L: LightClient> {
     AckPacket(AggregateAckPacket<L>),
 }
 
-// #[derive(
-//     DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, derive_more::Display,
-// )]
-// #[serde(bound(serialize = "", deserialize = ""))]
-// pub enum AggregateAnyStateProof<L: LightClient> {
-//     #[display(fmt = "{_0}")]
-//     ClientState(
-//         AggregateStateProof<
-//             L,
-//             ClientStatePath<<L::HostChain as unionlabs::traits::Chain>::ClientId>,
-//         >,
-//     ),
-//     #[display(fmt = "{_0}")]
-//     ClientConsensusState(
-//         AggregateStateProof<
-//             L,
-//             ClientConsensusStatePath<
-//                 <ChainOf<L::Counterparty> as unionlabs::traits::Chain>::ClientId,
-//                 HeightOf<ChainOf<L>>,
-//             >,
-//         >,
-//     ),
-//     #[display(fmt = "{_0}")]
-//     Connection(AggregateStateProof<L, ConnectionPath>),
-//     #[display(fmt = "{_0}")]
-//     ChannelEnd(AggregateStateProof<L, ChannelEndPath>),
-//     #[display(fmt = "{_0}")]
-//     Commitment(AggregateStateProof<L, CommitmentPath>),
-//     #[display(fmt = "{_0}")]
-//     Acknowledgement(AggregateStateProof<L, AcknowledgementPath>),
-// }
-
-// #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-// #[serde(bound(serialize = "", deserialize = ""))]
-// pub struct AggregateStateProof<L: LightClient, P: IbcPathExt<L>> {
-//     height: HeightOf<ChainOf<L>>,
-//     #[serde(skip)]
-//     pub __marker: PhantomData<P>,
-// }
-
 impl<L: LightClient> UseAggregate<L> for identified!(AggregateChannelHandshakeUpdateClient<L>)
 where
     identified!(ConnectionEnd<L>): IsAggregateData,
-    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L>)>,
-    AggregateReceiver: From<identified!(Aggregate<L>)>,
+    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<L>)>,
+    AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<L>)>,
 {
     type AggregatedData = HList![identified!(ConnectionEnd<L>)];
 
@@ -617,7 +583,7 @@ where
                 update_to,
             )]
             .into(),
-            receiver: AggregateReceiver::from(Identified::new(
+            receiver: AnyLightClientIdentified::from(Identified::new(
                 this_chain_id,
                 Aggregate::AggregateMsgAfterUpdate(event_msg),
             )),
@@ -632,8 +598,8 @@ pub fn mk_aggregate_wait_for_update<L: LightClient>(
     wait_for: HeightOf<L::HostChain>,
 ) -> RelayerMsg
 where
-    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L>)>,
-    AggregateReceiver: From<identified!(Aggregate<L>)>,
+    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<L>)>,
+    AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<L>)>,
 {
     RelayerMsg::Aggregate {
         queue: [fetch::<L>(
@@ -645,7 +611,7 @@ where
         )]
         .into(),
         data: [].into(),
-        receiver: AggregateReceiver::from(Identified::new(
+        receiver: AnyLightClientIdentified::from(Identified::new(
             chain_id,
             Aggregate::<L>::WaitForTrustedHeight(AggregateWaitForTrustedHeight {
                 wait_for,
@@ -659,8 +625,8 @@ where
 impl<L: LightClient> UseAggregate<L> for identified!(AggregatePacketUpdateClient<L>)
 where
     identified!(ConnectionEnd<L>): IsAggregateData,
-    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L>)>,
-    AggregateReceiver: From<identified!(Aggregate<L>)>,
+    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<L>)>,
+    AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<L>)>,
 {
     type AggregatedData = HList![identified!(ConnectionEnd<L>)];
 
@@ -709,7 +675,7 @@ where
             )]
             .into(),
             data: [].into(),
-            receiver: AggregateReceiver::from(Identified::new(
+            receiver: AnyLightClientIdentified::from(Identified::new(
                 this_chain_id.clone(),
                 Aggregate::<L>::WaitForTrustedHeight(AggregateWaitForTrustedHeight {
                     wait_for: update_to,
@@ -722,7 +688,7 @@ where
         RelayerMsg::Aggregate {
             data: [].into(),
             queue: [agg].into(),
-            receiver: AggregateReceiver::from(Identified::new(this_chain_id, event)),
+            receiver: AnyLightClientIdentified::from(Identified::new(this_chain_id, event)),
         }
     }
 }
@@ -730,7 +696,7 @@ where
 impl<L: LightClient> UseAggregate<L> for identified!(AggregateConnectionFetchFromChannelEnd<L>)
 where
     identified!(ChannelEnd<L>): IsAggregateData,
-    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L>)>,
+    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<L>)>,
 {
     type AggregatedData = HList![identified!(ChannelEnd<L>)];
 
@@ -762,9 +728,8 @@ where
 impl<L: LightClient> UseAggregate<L> for identified!(AggregateUpdateClientFromClientId<L>)
 where
     identified!(TrustedClientState<L>): IsAggregateData,
-    // AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L>)>,
-    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L::Counterparty>)>,
-    AggregateReceiver: From<identified!(Aggregate<L>)>,
+    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<L::Counterparty>)>,
+    AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<L>)>,
 {
     type AggregatedData = HList![identified!(TrustedClientState<L>)];
 
@@ -813,7 +778,7 @@ where
             )]
             .into(),
             data: [].into(),
-            receiver: AggregateReceiver::from(Identified::new(
+            receiver: AnyLightClientIdentified::from(Identified::new(
                 this_chain_id,
                 Aggregate::UpdateClientWithCounterpartyChainIdData(
                     AggregateUpdateClientWithCounterpartyChainId {
@@ -831,9 +796,8 @@ where
 impl<L: LightClient> UseAggregate<L> for identified!(AggregateUpdateClient<L>)
 where
     identified!(TrustedClientState<L>): IsAggregateData,
-    // AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L::Counterparty>)>,
-    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L::Counterparty>)>,
-    AggregateReceiver: From<identified!(Aggregate<L>)>,
+    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<L::Counterparty>)>,
+    AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<L>)>,
 {
     type AggregatedData = HList![identified!(TrustedClientState<L>)];
 
@@ -871,7 +835,7 @@ where
             )]
             .into(),
             data: [].into(),
-            receiver: AggregateReceiver::from(Identified::new(
+            receiver: AnyLightClientIdentified::from(Identified::new(
                 this_chain_id,
                 Aggregate::UpdateClientWithCounterpartyChainIdData(
                     AggregateUpdateClientWithCounterpartyChainId {
@@ -890,8 +854,8 @@ impl<L: LightClient> UseAggregate<L>
     for identified!(AggregateUpdateClientWithCounterpartyChainId<L>)
 where
     identified!(TrustedClientState<L::Counterparty>): IsAggregateData,
-    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L>)>,
-    AggregateReceiver: From<identified!(Aggregate<L>)>,
+    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<L>)>,
+    AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<L>)>,
 {
     type AggregatedData = HList![identified!(TrustedClientState<L::Counterparty>)];
 
@@ -940,8 +904,8 @@ where
 impl<L: LightClient> UseAggregate<L> for identified!(AggregateWaitForTrustedHeight<L>)
 where
     identified!(TrustedClientState<L>): IsAggregateData,
-    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L::Counterparty>)>,
-    AggregateReceiver: From<identified!(Aggregate<L>)>,
+    AnyLightClientIdentified<AnyWait>: From<identified!(Wait<L::Counterparty>)>,
+    AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<L>)>,
 {
     type AggregatedData = HList![identified!(TrustedClientState<L>)];
 
@@ -986,10 +950,11 @@ where
 impl<L: LightClient> UseAggregate<L> for identified!(AggregateMsgAfterUpdate<L>)
 where
     identified!(TrustedClientState<L>): IsAggregateData,
-    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L>)>,
-    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L::Counterparty>)>,
-    AggregateData: From<identified!(Data<L>)>,
-    AggregateReceiver: From<identified!(Aggregate<L>)>,
+    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<L::Counterparty>)>,
+    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<L>)>,
+    AnyLightClientIdentified<AnyWait>: From<identified!(Wait<L>)>,
+    AnyLightClientIdentified<AnyData>: From<identified!(Data<L>)>,
+    AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<L>)>,
 {
     type AggregatedData = HList![identified!(TrustedClientState<L>)];
 
@@ -1033,7 +998,7 @@ where
                 let trusted_client_state_height = trusted_client_state.height();
 
                 RelayerMsg::Aggregate {
-                    data: [AggregateData::from(Identified::new(
+                    data: [AnyLightClientIdentified::from(Identified::new(
                         this_chain_id.clone(),
                         Data::TrustedClientState(TrustedClientState {
                             fetched_at: trusted_client_state_fetched_at_height,
@@ -1082,7 +1047,7 @@ where
                         ),
                     ]
                     .into(),
-                    receiver: AggregateReceiver::from(Identified::new(
+                    receiver: AnyLightClientIdentified::from(Identified::new(
                         this_chain_id,
                         Aggregate::ConnectionOpenTry(AggregateConnectionOpenTry {
                             event_height,
@@ -1113,7 +1078,7 @@ where
                 let trusted_client_state_height = trusted_client_state.height();
 
                 RelayerMsg::Aggregate {
-                    data: [AggregateData::from(Identified::new(
+                    data: [AnyLightClientIdentified::from(Identified::new(
                         this_chain_id.clone(),
                         Data::TrustedClientState(TrustedClientState {
                             fetched_at: trusted_client_state_fetched_at_height,
@@ -1162,7 +1127,7 @@ where
                         ),
                     ]
                     .into(),
-                    receiver: AggregateReceiver::from(Identified::new(
+                    receiver: AnyLightClientIdentified::from(Identified::new(
                         this_chain_id,
                         Aggregate::ConnectionOpenAck(AggregateConnectionOpenAck {
                             event_height,
@@ -1191,7 +1156,7 @@ where
                 );
 
                 RelayerMsg::Aggregate {
-                    data: [AggregateData::from(Identified::new(
+                    data: [AnyLightClientIdentified::from(Identified::new(
                         this_chain_id.clone(),
                         Data::TrustedClientState(TrustedClientState {
                             fetched_at: trusted_client_state_fetched_at_height,
@@ -1210,7 +1175,7 @@ where
                         },
                     )]
                     .into(),
-                    receiver: AggregateReceiver::from(Identified::new(
+                    receiver: AnyLightClientIdentified::from(Identified::new(
                         this_chain_id,
                         Aggregate::ConnectionOpenConfirm(AggregateConnectionOpenConfirm {
                             event_height,
@@ -1239,7 +1204,7 @@ where
                 );
 
                 RelayerMsg::Aggregate {
-                    data: [AggregateData::from(Identified::new(
+                    data: [AnyLightClientIdentified::from(Identified::new(
                         this_chain_id.clone(),
                         Data::TrustedClientState(TrustedClientState {
                             fetched_at: trusted_client_state_fetched_at_height,
@@ -1260,7 +1225,7 @@ where
                                 },
                             )]
                             .into(),
-                            receiver: AggregateReceiver::from(Identified::new(
+                            receiver: AnyLightClientIdentified::from(Identified::new(
                                 this_chain_id.clone(),
                                 Aggregate::ConnectionFetchFromChannelEnd(
                                     AggregateConnectionFetchFromChannelEnd {
@@ -1289,7 +1254,7 @@ where
                         ),
                     ]
                     .into(),
-                    receiver: AggregateReceiver::from(Identified::new(
+                    receiver: AnyLightClientIdentified::from(Identified::new(
                         this_chain_id,
                         Aggregate::ChannelOpenTry(AggregateChannelOpenTry {
                             event_height,
@@ -1319,7 +1284,7 @@ where
 
                 // RelayerMsg::Sequence([].into());
                 RelayerMsg::Aggregate {
-                    data: [AggregateData::from(Identified::new(
+                    data: [AnyLightClientIdentified::from(Identified::new(
                         this_chain_id.clone(),
                         Data::TrustedClientState(TrustedClientState {
                             fetched_at: trusted_client_state_fetched_at_height,
@@ -1349,7 +1314,7 @@ where
                         ),
                     ]
                     .into(),
-                    receiver: AggregateReceiver::from(Identified::new(
+                    receiver: AnyLightClientIdentified::from(Identified::new(
                         this_chain_id,
                         Aggregate::ChannelOpenAck(AggregateChannelOpenAck {
                             event_height,
@@ -1378,7 +1343,7 @@ where
                 );
 
                 RelayerMsg::Aggregate {
-                    data: [AggregateData::from(Identified::new(
+                    data: [AnyLightClientIdentified::from(Identified::new(
                         this_chain_id.clone(),
                         Data::TrustedClientState(TrustedClientState {
                             fetched_at: trusted_client_state_fetched_at_height,
@@ -1408,7 +1373,7 @@ where
                         ),
                     ]
                     .into(),
-                    receiver: AggregateReceiver::from(Identified::new(
+                    receiver: AnyLightClientIdentified::from(Identified::new(
                         this_chain_id,
                         Aggregate::ChannelOpenConfirm(AggregateChannelOpenConfirm {
                             event_height,
@@ -1425,7 +1390,7 @@ where
                 tracing::debug!("building aggregate for RecvPacket");
 
                 RelayerMsg::Aggregate {
-                    data: [AggregateData::from(Identified::new(
+                    data: [AnyLightClientIdentified::from(Identified::new(
                         this_chain_id.clone(),
                         Data::TrustedClientState(TrustedClientState {
                             fetched_at: trusted_client_state_fetched_at_height,
@@ -1446,7 +1411,7 @@ where
                         },
                     )]
                     .into(),
-                    receiver: AggregateReceiver::from(Identified::new(
+                    receiver: AnyLightClientIdentified::from(Identified::new(
                         this_chain_id,
                         Aggregate::RecvPacket(AggregateRecvPacket {
                             event_height,
@@ -1461,7 +1426,7 @@ where
                 block_hash,
                 counterparty_client_id,
             }) => RelayerMsg::Aggregate {
-                data: [AggregateData::from(Identified::new(
+                data: [AnyLightClientIdentified::from(Identified::new(
                     this_chain_id.clone(),
                     Data::TrustedClientState(TrustedClientState {
                         fetched_at: trusted_client_state_fetched_at_height,
@@ -1494,7 +1459,7 @@ where
                     ),
                 ]
                 .into(),
-                receiver: AggregateReceiver::from(Identified::new(
+                receiver: AnyLightClientIdentified::from(Identified::new(
                     this_chain_id,
                     Aggregate::AckPacket(AggregateAckPacket {
                         event_height,
@@ -1515,7 +1480,8 @@ where
     identified!(ClientConsensusStateProof<L>): IsAggregateData,
     identified!(ConnectionProof<L>): IsAggregateData,
     identified!(ConnectionEnd<L>): IsAggregateData,
-    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L::Counterparty>)>,
+    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<L>)>,
+    AnyLightClientIdentified<AnyMsg>: From<identified!(Msg<L::Counterparty>)>,
 {
     type AggregatedData = HList![
         identified!(TrustedClientState<L>),
@@ -1617,7 +1583,7 @@ where
     identified!(ClientConsensusStateProof<L>): IsAggregateData,
     identified!(ConnectionProof<L>): IsAggregateData,
     identified!(ConnectionEnd<L>): IsAggregateData,
-    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L::Counterparty>)>,
+    AnyLightClientIdentified<AnyMsg>: From<identified!(Msg<L::Counterparty>)>,
 {
     type AggregatedData = HList![
         identified!(TrustedClientState<L>),
@@ -1711,7 +1677,7 @@ where
     identified!(ClientStateProof<L>): IsAggregateData,
     identified!(ClientConsensusStateProof<L>): IsAggregateData,
     identified!(ConnectionProof<L>): IsAggregateData,
-    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L::Counterparty>)>,
+    AnyLightClientIdentified<AnyMsg>: From<identified!(Msg<L::Counterparty>)>,
 {
     type AggregatedData = HList![
         identified!(TrustedClientState<L>),
@@ -1767,7 +1733,7 @@ where
     identified!(ChannelEndProof<L>): IsAggregateData,
     identified!(ConnectionEnd<L>): IsAggregateData,
     identified!(ChannelEnd<L>): IsAggregateData,
-    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L::Counterparty>)>,
+    AnyLightClientIdentified<AnyMsg>: From<identified!(Msg<L::Counterparty>)>,
 {
     type AggregatedData = HList![
         identified!(TrustedClientState<L>),
@@ -1855,7 +1821,7 @@ where
     identified!(TrustedClientState<L>): IsAggregateData,
     identified!(ChannelEndProof<L>): IsAggregateData,
     identified!(ChannelEnd<L>): IsAggregateData,
-    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L::Counterparty>)>,
+    AnyLightClientIdentified<AnyMsg>: From<identified!(Msg<L::Counterparty>)>,
 {
     type AggregatedData = HList![
         identified!(TrustedClientState<L>),
@@ -1925,7 +1891,8 @@ where
     identified!(TrustedClientState<L>): IsAggregateData,
     identified!(ChannelEndProof<L>): IsAggregateData,
     identified!(ChannelEnd<L>): IsAggregateData,
-    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L::Counterparty>)>,
+    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<L::Counterparty>)>,
+    AnyLightClientIdentified<AnyMsg>: From<identified!(Msg<L::Counterparty>)>,
 {
     type AggregatedData = HList![
         identified!(TrustedClientState<L>),
@@ -1992,7 +1959,8 @@ impl<L: LightClient> UseAggregate<L> for identified!(AggregateRecvPacket<L>)
 where
     identified!(TrustedClientState<L>): IsAggregateData,
     identified!(CommitmentProof<L>): IsAggregateData,
-    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L::Counterparty>)>,
+    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<L::Counterparty>)>,
+    AnyLightClientIdentified<AnyMsg>: From<identified!(Msg<L::Counterparty>)>,
 {
     type AggregatedData = HList![
         identified!(TrustedClientState<L>),
@@ -2059,7 +2027,8 @@ where
     identified!(TrustedClientState<L>): IsAggregateData,
     identified!(PacketAcknowledgement<L>): IsAggregateData,
     identified!(AcknowledgementProof<L>): IsAggregateData,
-    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L::Counterparty>)>,
+    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<L::Counterparty>)>,
+    AnyLightClientIdentified<AnyMsg>: From<identified!(Msg<L::Counterparty>)>,
 {
     type AggregatedData = HList![
         identified!(TrustedClientState<L>),
@@ -2133,7 +2102,7 @@ where
 impl<L: LightClient> UseAggregate<L> for identified!(AggregateFetchCounterpartyStateProof<L>)
 where
     identified!(TrustedClientState<L>): IsAggregateData,
-    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L::Counterparty>)>,
+    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<L::Counterparty>)>,
 {
     type AggregatedData = HList![identified!(TrustedClientState<L>),];
 
@@ -2167,7 +2136,7 @@ impl<L: LightClient> UseAggregate<L> for identified!(AggregateCreateClient<L>)
 where
     identified!(SelfClientState<L::Counterparty>): IsAggregateData,
     identified!(SelfConsensusState<L::Counterparty>): IsAggregateData,
-    AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L>)>,
+    AnyLightClientIdentified<AnyMsg>: From<identified!(Msg<L>)>,
 {
     type AggregatedData = HList![
         identified!(SelfClientState<L::Counterparty>),

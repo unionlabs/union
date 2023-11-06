@@ -1092,17 +1092,18 @@ where
         }
     }
 
-    fn state(&self, path: P, at: Self::Height)
-    -> impl Future<Output = <P as IbcPath<Evm<C>, Counterparty>>::Output> + '_ {
+    fn state(&self, path: P, at: Self::Height) -> impl Future<Output = <P as IbcPath<Evm<C>, Counterparty>>::Output> + '_
+    {
         async move {
-
             let execution_block_number = self.execution_height(at).await;
-    self.read_ibc_state(path.into_eth_call(), execution_block_number)
-        .await
-        .unwrap()
-        .map(|x| P::decode_ibc_state(x))
-        .unwrap()
-    }}
+
+            self.read_ibc_state(path.into_eth_call(), execution_block_number)
+                .await
+                .unwrap()
+                .map(|x| P::decode_ibc_state(x))
+                .unwrap()
+        }
+    }
 }
 
 pub trait EthereumStateRead<C, Counterparty>: IbcPath<Evm<C>, Counterparty>
