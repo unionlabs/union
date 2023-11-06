@@ -10,3 +10,5 @@ pub mod part_set_header;
 pub mod signed_header;
 pub mod signed_msg_type;
 pub mod simple_validator;
+pub mod validator;
+pub mod validator_set;
