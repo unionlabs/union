@@ -34,6 +34,20 @@
         })
         4));
 
+       wasmd-services = (builtins.listToAttrs (builtins.genList
+        (id: {
+          name = "wasmd-${toString id}";
+          value = import ./services/wasmd.nix {
+            inherit pkgs;
+            inherit id;
+            wasmd = self'.packages.wasmd;
+            devnet-genesis = self'.packages.wasmd-genesis;
+            devnet-validator-keys = self'.packages.wasmd-validator-keys;
+            devnet-validator-node-ids = self'.packages.wasmd-validator-node-ids;
+          };
+        })
+        4));
+
       sepolia-services = {
         geth = import ./services/geth.nix {
           inherit pkgs;
@@ -91,11 +105,21 @@
         }];
       };
 
+     spec-wasmd = {
+        modules = [{
+          project.name = "wasmd-devnet";
+          networks.wasmd-devnet = { };
+          services = wasmd-services;
+        }];
+      };
+
       build = arion.build spec;
 
       build-evm = arion.build spec-evm;
 
       build-cosmos = arion.build spec-cosmos;
+
+      build-wasmd = arion.build spec-wasmd;
 
       build-voyager-queue = arion.build {
         modules = [{
@@ -129,6 +153,15 @@
           runtimeInputs = [ arion ];
           text = ''
             arion --prebuilt-file ${build-cosmos} up --build --force-recreate -V --always-recreate-deps --remove-orphans
+          '';
+        };
+
+      packages.devnet-wasmd =
+        pkgs.writeShellApplication {
+          name = "wasmd-devnet";
+          runtimeInputs = [ arion ];
+          text = ''
+            arion --prebuilt-file ${build-wasmd} up --build --force-recreate -V --always-recreate-deps --remove-orphans
           '';
         };
 

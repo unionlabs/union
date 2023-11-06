@@ -140,6 +140,8 @@
         ./networks/devnet.nix
         ./networks/genesis/devnet-minimal.nix
         ./networks/genesis/devnet.nix
+        ./networks/simulation/wasmd.nix
+        ./networks/simulation/genesis.nix
         ./testnet-validator.nix
         ./e2e/all-tests.nix
         ./e2e/e2e.nix
