@@ -1,25 +1,34 @@
 { ... }: {
-  perSystem = { crane, lib, dbg, pkgs, writeShellApplicationWithArgs, ... }:
+  perSystem = { crane, lib, dbg, pkgs, writeShellApplicationWithArgs, ensure-wasm-client-type, ... }:
     let
       mkEthLc = chain-spec: crane.buildWasmContract {
         crateDirFromRoot = "light-clients/ethereum-light-client";
-        features = [ chain-spec ];
+        features = [ (pkgs.lib.strings.toLower chain-spec) ];
+        checks = [
+          (file_path: ''
+            ${ensure-wasm-client-type {
+              inherit file_path;
+              type = "Ethereum${chain-spec}";
+            }}
+          '')
+        ];
         additionalTestSrcFilter = path: _:
           (lib.hasPrefix "light-clients/ethereum-light-client/src/test" path)
           && (lib.strings.hasSuffix ".json" path);
       };
 
-      minimal = mkEthLc "minimal";
-      mainnet = mkEthLc "mainnet";
+      minimal = mkEthLc "Minimal";
+      mainnet = mkEthLc "Mainnet";
 
       gen-eth-lc-update-test-data = writeShellApplicationWithArgs {
         name = "parse-test-data";
         runtimeInputs = [ pkgs.jq ];
-        arguments = [{
-          arg = "output_path";
-          required = true;
-          help = "The output directory to put the update data";
-        }
+        arguments = [
+          {
+            arg = "output_path";
+            required = true;
+            help = "The output directory to put the update data";
+          }
           {
             arg = "finality_update_per_period";
             default = "99999999";
@@ -29,7 +38,8 @@
             arg = "test_data";
             required = true;
             help = "The exported test data that is going to be processed";
-          }];
+          }
+        ];
         text = ''
           I=0
           FINALITY=0

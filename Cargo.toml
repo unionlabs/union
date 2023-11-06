@@ -11,15 +11,13 @@ members = [
   "unionvisor",
   "voyager",
   "cosmwasm/*",
-  "hubble"
+  "hubble",
+  "tools/parse-wasm-client-type"
 ]
-
-# exclude = [
-#   "e2e/ensure-blocks",
-# ]
 
 resolver = "2"
 
+# TODO: Review if crane uses this and if so, how we should set these values
 [profile.release]
 opt-level = 3
 debug = false
