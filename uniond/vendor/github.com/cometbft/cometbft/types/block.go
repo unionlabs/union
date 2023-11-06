@@ -809,6 +809,13 @@ func (commit *Commit) VoteSignBytes(chainID string, valIdx int32) []byte {
 	return VoteSignBytes(chainID, v)
 }
 
+// Same as `VoteSignBytes` but uses `Tendermint/CometBFT` vote for signing to support
+// `07-tendermint` light clients.
+func (commit *Commit) VoteSignBytesLegacy(chainID string, valIdx int32) []byte {
+	v := commit.GetVote(valIdx).ToProto()
+	return VoteSignBytesLegacy(chainID, v)
+}
+
 // Type returns the vote type of the commit, which is always VoteTypePrecommit
 // Implements VoteSetReader.
 func (commit *Commit) Type() byte {

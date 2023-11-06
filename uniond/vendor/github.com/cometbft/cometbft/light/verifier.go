@@ -29,7 +29,7 @@ var (
 //
 // maxClockDrift defines how much untrustedHeader.Time can drift into the
 // future.
-func VerifyNonAdjacent(
+func verifyNonAdjacent(
 	trustedHeader *types.SignedHeader, // height=X
 	trustedVals *types.ValidatorSet, // height=X or height=X+1
 	untrustedHeader *types.SignedHeader, // height=Y
@@ -37,7 +37,8 @@ func VerifyNonAdjacent(
 	trustingPeriod time.Duration,
 	now time.Time,
 	maxClockDrift time.Duration,
-	trustLevel cmtmath.Fraction) error {
+	trustLevel cmtmath.Fraction,
+	isLegacy bool) error {
 
 	if untrustedHeader.Height == trustedHeader.Height+1 {
 		return errors.New("headers must be non adjacent in height")
@@ -55,7 +56,13 @@ func VerifyNonAdjacent(
 	}
 
 	// Ensure that +`trustLevel` (default 1/3) or more of last trusted validators signed correctly.
-	err := trustedVals.VerifyCommitLightTrusting(trustedHeader.ChainID, untrustedHeader.Commit, trustLevel)
+	var err error
+	if !isLegacy {
+		err = trustedVals.VerifyCommitLightTrusting(trustedHeader.ChainID, untrustedHeader.Commit, trustLevel)
+	} else {
+		err = trustedVals.VerifyCommitLightTrustingLegacy(trustedHeader.ChainID, untrustedHeader.Commit, trustLevel)
+	}
+
 	if err != nil {
 		switch e := err.(type) {
 		case types.ErrNotEnoughVotingPowerSigned:
@@ -70,12 +77,40 @@ func VerifyNonAdjacent(
 	// NOTE: this should always be the last check because untrustedVals can be
 	// intentionally made very large to DOS the light client. not the case for
 	// VerifyAdjacent, where validator set is known in advance.
-	if err := untrustedVals.VerifyCommitLight(trustedHeader.ChainID, untrustedHeader.Commit.BlockID,
-		untrustedHeader.Height, untrustedHeader.Commit); err != nil {
+	if !isLegacy {
+		err = untrustedVals.VerifyCommitLight(trustedHeader.ChainID, untrustedHeader.Commit.BlockID,
+			untrustedHeader.Height, untrustedHeader.Commit)
+	} else {
+		err = untrustedVals.VerifyCommitLightLegacy(trustedHeader.ChainID, untrustedHeader.Commit.BlockID,
+			untrustedHeader.Height, untrustedHeader.Commit)
+	}
+
+	if err != nil {
 		return ErrInvalidHeader{err}
 	}
 
 	return nil
+}
+
+func VerifyNonAdjacent(
+	trustedHeader *types.SignedHeader, // height=X
+	trustedVals *types.ValidatorSet, // height=X or height=X+1
+	untrustedHeader *types.SignedHeader, // height=Y
+	untrustedVals *types.ValidatorSet, // height=Y
+	trustingPeriod time.Duration,
+	now time.Time,
+	maxClockDrift time.Duration,
+	trustLevel cmtmath.Fraction) error {
+	return verifyNonAdjacent(
+		trustedHeader,
+		trustedVals,
+		untrustedHeader,
+		untrustedVals,
+		trustingPeriod,
+		now,
+		maxClockDrift,
+		trustLevel,
+		false)
 }
 
 // VerifyAdjacent verifies directly adjacent untrustedHeader against
@@ -90,13 +125,14 @@ func VerifyNonAdjacent(
 //
 // maxClockDrift defines how much untrustedHeader.Time can drift into the
 // future.
-func VerifyAdjacent(
+func verifyAdjacent(
 	trustedHeader *types.SignedHeader, // height=X
 	untrustedHeader *types.SignedHeader, // height=X+1
 	untrustedVals *types.ValidatorSet, // height=X+1
 	trustingPeriod time.Duration,
 	now time.Time,
-	maxClockDrift time.Duration) error {
+	maxClockDrift time.Duration,
+	isLegacy bool) error {
 
 	if untrustedHeader.Height != trustedHeader.Height+1 {
 		return errors.New("headers must be adjacent in height")
@@ -123,12 +159,37 @@ func VerifyAdjacent(
 	}
 
 	// Ensure that +2/3 of new validators signed correctly.
-	if err := untrustedVals.VerifyCommitLight(trustedHeader.ChainID, untrustedHeader.Commit.BlockID,
-		untrustedHeader.Height, untrustedHeader.Commit); err != nil {
+	var err error
+	if !isLegacy {
+		err = untrustedVals.VerifyCommitLight(trustedHeader.ChainID, untrustedHeader.Commit.BlockID,
+			untrustedHeader.Height, untrustedHeader.Commit)
+	} else {
+		err = untrustedVals.VerifyCommitLightLegacy(trustedHeader.ChainID, untrustedHeader.Commit.BlockID,
+			untrustedHeader.Height, untrustedHeader.Commit)
+	}
+
+	if err != nil {
 		return ErrInvalidHeader{err}
 	}
 
 	return nil
+}
+
+func VerifyAdjacent(
+	trustedHeader *types.SignedHeader, // height=X
+	untrustedHeader *types.SignedHeader, // height=X+1
+	untrustedVals *types.ValidatorSet, // height=X+1
+	trustingPeriod time.Duration,
+	now time.Time,
+	maxClockDrift time.Duration) error {
+	return verifyAdjacent(
+		trustedHeader,
+		untrustedHeader,
+		untrustedVals,
+		trustingPeriod,
+		now,
+		maxClockDrift,
+		false)
 }
 
 // Verify combines both VerifyAdjacent and VerifyNonAdjacent functions.
@@ -148,6 +209,24 @@ func Verify(
 	}
 
 	return VerifyAdjacent(trustedHeader, untrustedHeader, untrustedVals, trustingPeriod, now, maxClockDrift)
+}
+
+func VerifyLegacy(
+	trustedHeader *types.SignedHeader, // height=X
+	trustedVals *types.ValidatorSet, // height=X or height=X+1
+	untrustedHeader *types.SignedHeader, // height=Y
+	untrustedVals *types.ValidatorSet, // height=Y
+	trustingPeriod time.Duration,
+	now time.Time,
+	maxClockDrift time.Duration,
+	trustLevel cmtmath.Fraction) error {
+
+	if untrustedHeader.Height != trustedHeader.Height+1 {
+		return verifyNonAdjacent(trustedHeader, trustedVals, untrustedHeader, untrustedVals,
+			trustingPeriod, now, maxClockDrift, trustLevel, true)
+	}
+
+	return verifyAdjacent(trustedHeader, untrustedHeader, untrustedVals, trustingPeriod, now, maxClockDrift, true)
 }
 
 func verifyNewHeaderAndVals(

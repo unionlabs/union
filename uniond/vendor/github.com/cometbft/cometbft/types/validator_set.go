@@ -675,9 +675,8 @@ func (vals *ValidatorSet) UpdateWithChangeSet(changes []*Validator) error {
 // application that depends on the LastCommitInfo sent in BeginBlock, which
 // includes which validators signed. For instance, Gaia incentivizes proposers
 // with a bonus for including more than +2/3 of the signatures.
-func (vals *ValidatorSet) VerifyCommit(chainID string, blockID BlockID,
-	height int64, commit *Commit) error {
-
+func (vals *ValidatorSet) verifyCommit(chainID string, blockID BlockID,
+	height int64, commit *Commit, isLegacy bool) error {
 	if vals.Size() != len(commit.Signatures) {
 		return NewErrInvalidCommitSignatures(vals.Size(), len(commit.Signatures))
 	}
@@ -703,7 +702,12 @@ func (vals *ValidatorSet) VerifyCommit(chainID string, blockID BlockID,
 		val := vals.Validators[idx]
 
 		// Validate signature.
-		voteSignBytes := commit.VoteSignBytes(chainID, int32(idx))
+		var voteSignBytes []byte
+		if !isLegacy {
+			voteSignBytes = commit.VoteSignBytes(chainID, int32(idx))
+		} else {
+			voteSignBytes = commit.VoteSignBytesLegacy(chainID, int32(idx))
+		}
 		if !val.PubKey.VerifySignature(voteSignBytes, commitSig.Signature) {
 			return fmt.Errorf("wrong signature (#%d): %X", idx, commitSig.Signature)
 		}
@@ -724,14 +728,30 @@ func (vals *ValidatorSet) VerifyCommit(chainID string, blockID BlockID,
 	return nil
 }
 
+// Wrapper around verifyCommit for CometBLS
+func (vals *ValidatorSet) VerifyCommit(chainID string, blockID BlockID,
+	height int64, commit *Commit) error {
+	return vals.verifyCommit(chainID, blockID, height, commit, false)
+}
+
+// Wrapper around verifyCommit for CometBFT
+//
+// NOTE: If you are targeting Tendermint/CometBFT for any purpose (eg. lightclients)
+// use this function, otherwise the `CanonicalVote` that is signed will be different
+// and your verification won't pass.
+func (vals *ValidatorSet) VerifyCommitLegacy(chainID string, blockID BlockID,
+	height int64, commit *Commit) error {
+	return vals.verifyCommit(chainID, blockID, height, commit, true)
+}
+
 // LIGHT CLIENT VERIFICATION METHODS
 
 // VerifyCommitLight verifies +2/3 of the set had signed the given commit.
 //
 // This method is primarily used by the light client and does not check all the
 // signatures.
-func (vals *ValidatorSet) VerifyCommitLight(chainID string, blockID BlockID,
-	height int64, commit *Commit) error {
+func (vals *ValidatorSet) verifyCommitLight(chainID string, blockID BlockID,
+	height int64, commit *Commit, isLegacy bool) error {
 
 	if vals.Size() != len(commit.Signatures) {
 		return NewErrInvalidCommitSignatures(vals.Size(), len(commit.Signatures))
@@ -759,7 +779,13 @@ func (vals *ValidatorSet) VerifyCommitLight(chainID string, blockID BlockID,
 		val := vals.Validators[idx]
 
 		// Validate signature.
-		voteSignBytes := commit.VoteSignBytes(chainID, int32(idx))
+		var voteSignBytes []byte
+		if !isLegacy {
+			voteSignBytes = commit.VoteSignBytes(chainID, int32(idx))
+		} else {
+			voteSignBytes = commit.VoteSignBytesLegacy(chainID, int32(idx))
+		}
+
 		if !val.PubKey.VerifySignature(voteSignBytes, commitSig.Signature) {
 			return fmt.Errorf("wrong signature (#%d): %X", idx, commitSig.Signature)
 		}
@@ -775,6 +801,22 @@ func (vals *ValidatorSet) VerifyCommitLight(chainID string, blockID BlockID,
 	return ErrNotEnoughVotingPowerSigned{Got: talliedVotingPower, Needed: votingPowerNeeded}
 }
 
+// Wrapper around verifyCommitLight for CometBLS
+func (vals *ValidatorSet) VerifyCommitLight(chainID string, blockID BlockID,
+	height int64, commit *Commit) error {
+	return vals.verifyCommitLight(chainID, blockID, height, commit, false)
+}
+
+// Wrapper around verifyCommitLight for CometBFT
+//
+// NOTE: If you are targeting Tendermint/CometBFT for any purpose (eg. lightclients)
+// use this function, otherwise the `CanonicalVote` that is signed will be different
+// and your verification won't pass.
+func (vals *ValidatorSet) VerifyCommitLightLegacy(chainID string, blockID BlockID,
+	height int64, commit *Commit) error {
+	return vals.verifyCommitLight(chainID, blockID, height, commit, true)
+}
+
 // VerifyCommitLightTrusting verifies that trustLevel of the validator set signed
 // this commit.
 //
@@ -783,7 +825,7 @@ func (vals *ValidatorSet) VerifyCommitLight(chainID string, blockID BlockID,
 //
 // This method is primarily used by the light client and does not check all the
 // signatures.
-func (vals *ValidatorSet) VerifyCommitLightTrusting(chainID string, commit *Commit, trustLevel cmtmath.Fraction) error {
+func (vals *ValidatorSet) verifyCommitLightTrusting(chainID string, commit *Commit, trustLevel cmtmath.Fraction, isLegacy bool) error {
 	// sanity check
 	if trustLevel.Denominator == 0 {
 		return errors.New("trustLevel has zero Denominator")
@@ -820,7 +862,13 @@ func (vals *ValidatorSet) VerifyCommitLightTrusting(chainID string, commit *Comm
 			seenVals[valIdx] = idx
 
 			// Validate signature.
-			voteSignBytes := commit.VoteSignBytes(chainID, int32(idx))
+			var voteSignBytes []byte
+			if !isLegacy {
+				voteSignBytes = commit.VoteSignBytes(chainID, int32(idx))
+			} else {
+				voteSignBytes = commit.VoteSignBytesLegacy(chainID, int32(idx))
+			}
+
 			if !val.PubKey.VerifySignature(voteSignBytes, commitSig.Signature) {
 				return fmt.Errorf("wrong signature (#%d): %X", idx, commitSig.Signature)
 			}
@@ -834,6 +882,20 @@ func (vals *ValidatorSet) VerifyCommitLightTrusting(chainID string, commit *Comm
 	}
 
 	return ErrNotEnoughVotingPowerSigned{Got: talliedVotingPower, Needed: votingPowerNeeded}
+}
+
+// Wrapper around verifyCommitLightTrusting for CometBLS
+func (vals *ValidatorSet) VerifyCommitLightTrusting(chainID string, commit *Commit, trustLevel cmtmath.Fraction) error {
+	return vals.verifyCommitLightTrusting(chainID, commit, trustLevel, false)
+}
+
+// Wrapper around verifyCommitLightTrusting for CometBFT
+//
+// NOTE: If you are targeting Tendermint/CometBFT for any purpose (eg. lightclients)
+// use this function, otherwise the `CanonicalVote` that is signed will be different
+// and your verification won't pass.
+func (vals *ValidatorSet) VerifyCommitLightTrustingLegacy(chainID string, commit *Commit, trustLevel cmtmath.Fraction) error {
+	return vals.verifyCommitLightTrusting(chainID, commit, trustLevel, true)
 }
 
 // findPreviousProposer reverses the compare proposer priority function to find the validator
