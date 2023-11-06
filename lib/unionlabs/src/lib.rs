@@ -1,6 +1,5 @@
 #![deny(clippy::pedantic)]
 #![allow(clippy::missing_errors_doc, clippy::module_name_repetitions)]
-#![feature(return_position_impl_trait_in_trait)]
 
 use std::{
     fmt::{Debug, Display},
