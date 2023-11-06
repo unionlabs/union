@@ -11,56 +11,68 @@ pub struct InvalidMerkleBranch {
     pub root: H256,
 }
 
-#[derive(Debug, PartialEq, derive_more::Display)]
+#[derive(Debug, PartialEq, thiserror::Error)]
 pub enum Error {
-    #[display(fmt = "invalid merkle branch ({:?})", "_0")]
+    #[error("invalid merkle branch ({0:?})")]
     InvalidMerkleBranch(InvalidMerkleBranch),
-    #[display(fmt = "invalid chain conversion")]
+    #[error("invalid chain conversion")]
     InvalidChainVersion,
-    #[display(fmt = "crypto error")]
+    #[error("crypto error")]
     Crypto,
-    #[display(
-        fmt = "expected current sync committee to be provided since `update_period == current_period`"
+    #[error(
+        "expected current sync committee to be provided since `update_period == current_period`"
     )]
     ExpectedCurrentSyncCommittee,
-    #[display(
-        fmt = "expected next sync committee to be provided since `update_period > current_period`"
-    )]
+    #[error("expected next sync committee to be provided since `update_period > current_period`")]
     ExpectedNextSyncCommittee,
-    #[display(
-        fmt = "irrelevant update since the order of the slots in the update data, and stored data is not correct"
+    #[error(
+        "irrelevant update since the order of the slots in the update data, and stored data is not correct"
     )]
     IrrelevantUpdate,
-    #[display(fmt = "the order of the slots in the update data, and stored data is not correct")]
+    #[error("the order of the slots in the update data, and stored data is not correct")]
     InvalidSlots,
-    #[display(
-        fmt = "signature period must be equal to `store_period` or `store_period + 1` \
+    #[error(
+        "signature period must be equal to `store_period` or `store_period + 1` \
                 when the next sync committee is stored. Otherwise, it must be equal to `store_period`"
     )]
     InvalidSignaturePeriod,
-    #[display(fmt = "signature is not valid")]
+    #[error("signature is not valid")]
     InvalidSignature,
-    #[display(fmt = "invalid public key")]
+    #[error("invalid public key")]
     InvalidPublicKey,
-    #[display(fmt = "next sync committee does not match with the one in the current state")]
+    #[error("next sync committee does not match with the one in the current state")]
     NextSyncCommitteeMismatch,
-    #[display(
-        fmt = "insufficient number of sync committee participants, expected it to be at least ({}) but got ({})",
-        "_0",
-        "_1"
+    #[error(
+        "insufficient number of sync committee participants, expected it to be at least ({0}) but got ({1})",
     )]
     InsufficientSyncCommitteeParticipants(usize, usize),
-    #[display(fmt = "Bls error ({:?})", "_0")]
+    #[error("bls error ({0:?})")]
     Bls(AmclError),
-    #[display(fmt = "proof is invalid due to value mismatch")]
+    #[error("proof is invalid due to value mismatch")]
     ValueMismatch,
-    #[display(fmt = "trie error ({:?})", "_0")]
+    #[error("trie error ({0:?})")]
     Trie(Box<TrieError<primitive_types::H256, rlp::DecoderError>>),
-    #[display(fmt = "rlp decoding failed ({})", "_0")]
+    #[error("rlp decoding failed ({0})")]
     RlpDecode(String),
-    #[display(fmt = "custom query error: ({})", "_0")]
+    #[error("custom query error: ({0})")]
     CustomError(String),
 }
+
+#[derive(Debug, thiserror::Error, PartialEq)]
+#[error("verify storage absence error: {0}")]
+pub struct VerifyStorageAbsenceError(#[from] Error);
+
+#[derive(Debug, thiserror::Error, PartialEq)]
+#[error("validate light client error: {0}")]
+pub struct ValidateLightClientError(#[from] Error);
+
+#[derive(Debug, thiserror::Error, PartialEq)]
+#[error("verify account storage root error: {0}")]
+pub struct VerifyAccountStorageRootError(#[from] Error);
+
+#[derive(Debug, thiserror::Error, PartialEq)]
+#[error("verify storage proof error: {0}")]
+pub struct VerifyStorageProofError(#[from] Error);
 
 impl From<AmclError> for Error {
     fn from(e: AmclError) -> Self {

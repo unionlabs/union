@@ -26,7 +26,8 @@ use crate::{
         compute_domain, compute_epoch_at_slot, compute_fork_version, compute_signing_root,
         compute_sync_committee_period_at_slot, validate_merkle_branch,
     },
-    Error, LightClientContext,
+    Error, LightClientContext, ValidateLightClientError, VerifyAccountStorageRootError,
+    VerifyStorageAbsenceError, VerifyStorageProofError,
 };
 
 pub trait BlsVerify {
@@ -52,16 +53,16 @@ pub fn validate_light_client_update<Ctx: LightClientContext, V: BlsVerify>(
     current_slot: Slot,
     genesis_validators_root: H256,
     bls_verifier: V,
-) -> Result<(), Error> {
+) -> Result<(), ValidateLightClientError> {
     // Verify sync committee has sufficient participants
     let sync_aggregate = &update.sync_aggregate;
     if sync_aggregate.sync_committee_bits.num_set_bits()
         < <Ctx::ChainSpec as MIN_SYNC_COMMITTEE_PARTICIPANTS>::MIN_SYNC_COMMITTEE_PARTICIPANTS::USIZE
     {
-        return Err(Error::InsufficientSyncCommitteeParticipants(
+        Err(Error::InsufficientSyncCommitteeParticipants(
             <Ctx::ChainSpec as MIN_SYNC_COMMITTEE_PARTICIPANTS>::MIN_SYNC_COMMITTEE_PARTICIPANTS::USIZE,
             sync_aggregate.sync_committee_bits.num_set_bits()
-        ));
+        ))?;
     }
 
     // Verify update does not skip a sync committee period
@@ -73,7 +74,7 @@ pub fn validate_light_client_update<Ctx: LightClientContext, V: BlsVerify>(
         && update.signature_slot > update_attested_slot
         && update_attested_slot >= update_finalized_slot)
     {
-        return Err(Error::InvalidSlots);
+        Err(Error::InvalidSlots)?;
     }
 
     let store_period =
@@ -83,10 +84,10 @@ pub fn validate_light_client_update<Ctx: LightClientContext, V: BlsVerify>(
 
     if ctx.next_sync_committee().is_some() {
         if update_signature_period != store_period && update_signature_period != store_period + 1 {
-            return Err(Error::InvalidSignaturePeriod);
+            Err(Error::InvalidSignaturePeriod)?;
         }
     } else if update_signature_period != store_period {
-        return Err(Error::InvalidSignaturePeriod);
+        Err(Error::InvalidSignaturePeriod)?;
     }
 
     // Verify update is relevant
@@ -98,7 +99,7 @@ pub fn validate_light_client_update<Ctx: LightClientContext, V: BlsVerify>(
             && update.next_sync_committee.is_some()
             && ctx.next_sync_committee().is_none()))
     {
-        return Err(Error::IrrelevantUpdate);
+        Err(Error::IrrelevantUpdate)?;
     }
 
     // Verify that the `finality_branch`, if present, confirms `finalized_header`
@@ -121,7 +122,7 @@ pub fn validate_light_client_update<Ctx: LightClientContext, V: BlsVerify>(
             if update_attested_period == store_period
                 && next_sync_committee != current_next_sync_committee
             {
-                return Err(Error::NextSyncCommitteeMismatch);
+                Err(Error::NextSyncCommitteeMismatch)?;
             }
         }
 
@@ -202,17 +203,17 @@ pub fn verify_account_storage_root(
     address: &ExecutionAddress,
     proof: impl IntoIterator<Item = impl AsRef<[u8]>>,
     storage_root: &Hash32,
-) -> Result<(), Error> {
+) -> Result<(), VerifyAccountStorageRootError> {
     match verify_state(root, address.as_ref(), proof)? {
         Some(account) => {
             let account = Account::from_rlp_bytes(account.as_ref())?;
             if &account.storage_root == storage_root {
                 Ok(())
             } else {
-                Err(Error::ValueMismatch)
+                Err(Error::ValueMismatch)?
             }
         }
-        None => Err(Error::ValueMismatch),
+        None => Err(Error::ValueMismatch)?,
     }
 }
 
@@ -229,10 +230,10 @@ pub fn verify_storage_proof(
     key: &[u8],
     expected_value: &[u8],
     proof: impl IntoIterator<Item = impl AsRef<[u8]>>,
-) -> Result<(), Error> {
+) -> Result<(), VerifyStorageProofError> {
     match verify_state(root, key, proof)? {
         Some(value) if value == expected_value => Ok(()),
-        _ => Err(Error::ValueMismatch),
+        _ => Err(Error::ValueMismatch)?,
     }
 }
 
@@ -247,7 +248,7 @@ pub fn verify_storage_absence(
     root: H256,
     key: &[u8],
     proof: impl IntoIterator<Item = impl AsRef<[u8]>>,
-) -> Result<bool, Error> {
+) -> Result<bool, VerifyStorageAbsenceError> {
     Ok(verify_state(root, key, proof)?.is_none())
 }
 

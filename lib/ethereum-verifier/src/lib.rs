@@ -1,3 +1,4 @@
+#![feature(error_in_core)]
 extern crate alloc;
 
 mod context;
