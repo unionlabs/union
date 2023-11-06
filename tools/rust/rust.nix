@@ -1,7 +1,7 @@
 { ... }: {
   perSystem = { pkgs, system, dbg, ensureAtRepositoryRoot, ... }:
     let
-      nightlyVersion = "2023-08-26";
+      nightlyVersion = "2023-11-02";
       channel = "nightly-${nightlyVersion}";
 
       # # hopefully if we ever use wasi this issue will be resolved: https://github.com/NixOS/nixpkgs/pull/146274
