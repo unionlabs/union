@@ -1,4 +1,8 @@
 use cosmwasm_std::StdError;
+use ethereum_verifier::{
+    ValidateLightClientError, VerifyAccountStorageRootError, VerifyStorageAbsenceError,
+    VerifyStorageProofError,
+};
 use thiserror::Error as ThisError;
 use unionlabs::{
     bls::BlsPublicKey,
@@ -37,8 +41,17 @@ pub enum Error {
     #[error("consensus state not found at height {0}")]
     ConsensusStateNotFound(Height),
 
-    #[error("verification error ({0})")]
-    Verification(VerificationError),
+    #[error("{0}")]
+    ValidateLightClient(#[from] ValidateLightClientError),
+
+    #[error("{0}")]
+    VerifyAccountStorageRoot(#[from] VerifyAccountStorageRootError),
+
+    #[error("{0}")]
+    VerifyStorageAbsence(#[from] VerifyStorageAbsenceError),
+
+    #[error("{0}")]
+    VerifyStorageProof(#[from] VerifyStorageProofError),
 
     #[error("IBC path is empty")]
     EmptyIbcPath,
@@ -121,23 +134,5 @@ pub enum CustomQueryError {
 impl From<CustomQueryError> for Error {
     fn from(value: CustomQueryError) -> Self {
         Error::CustomQuery(value)
-    }
-}
-
-#[derive(ThisError, Debug, PartialEq)]
-pub enum VerificationError {
-    #[error("light client update")]
-    LightClientUpdate(ethereum_verifier::Error),
-    #[error("account storage root")]
-    AccountStorageRoot(ethereum_verifier::Error),
-    #[error("membership")]
-    Membership(ethereum_verifier::Error),
-    #[error("non-membership")]
-    NonMembership(ethereum_verifier::Error),
-}
-
-impl From<VerificationError> for Error {
-    fn from(value: VerificationError) -> Self {
-        Error::Verification(value)
     }
 }

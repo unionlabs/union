@@ -29,7 +29,7 @@ use crate::{
     consensus_state::TrustedConsensusState,
     context::LightClientContext,
     custom_query::{CustomQuery, VerificationContext},
-    errors::{Error, VerificationError},
+    errors::Error,
     eth_encoding::generate_commitment_key,
     Config,
 };
@@ -135,8 +135,7 @@ impl IbcClient for EthereumLightClient {
             current_slot,
             wasm_client_state.data.genesis_validators_root.clone(),
             VerificationContext { deps },
-        )
-        .map_err(VerificationError::LightClientUpdate)?;
+        )?;
 
         let proof_data = header
             .account_update
@@ -157,8 +156,7 @@ impl IbcClient for EthereumLightClient {
                     "`proof.value` must be a 32 bytes storage hash".to_string(),
                 )
             })?,
-        )
-        .map_err(VerificationError::AccountStorageRoot)?;
+        )?;
 
         Ok(ContractResult::valid(None))
     }
@@ -414,7 +412,6 @@ fn do_verify_membership(
         &rlp::encode(&storage_proof.value.as_slice()),
         &storage_proof.proof,
     )
-    .map_err(VerificationError::Membership)
     .map_err(Into::into)
 }
 
@@ -427,9 +424,7 @@ fn do_verify_non_membership(
 ) -> Result<(), Error> {
     check_commitment_key(path, counterparty_commitment_slot, &storage_proof.key)?;
 
-    if verify_storage_absence(storage_root, &storage_proof.key, &storage_proof.proof)
-        .map_err(VerificationError::NonMembership)?
-    {
+    if verify_storage_absence(storage_root, &storage_proof.key, &storage_proof.proof)? {
         Ok(())
     } else {
         Err(Error::CounterpartyStorageNotNil)
