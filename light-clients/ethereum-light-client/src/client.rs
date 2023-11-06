@@ -146,7 +146,7 @@ impl IbcClient for EthereumLightClient {
         let proof_data = header
             .account_update
             .proofs
-            .get(0)
+            .first()
             .ok_or(Error::EmptyProof)?;
 
         verify_account_storage_root(
@@ -231,7 +231,7 @@ impl IbcClient for EthereumLightClient {
 
             let storage_root = account_update
                 .proofs
-                .get(0)
+                .first()
                 .ok_or(Error::EmptyProof)?
                 .value
                 .as_slice()
@@ -289,7 +289,7 @@ impl IbcClient for EthereumLightClient {
             let storage_root = header
                 .account_update
                 .proofs
-                .get(0)
+                .first()
                 .ok_or(Error::EmptyProof)?
                 .value
                 .as_slice()

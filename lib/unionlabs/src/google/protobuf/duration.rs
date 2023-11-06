@@ -213,6 +213,7 @@ impl Display for Duration {
 
 impl Duration {
     pub const fn new(seconds: i64, nanos: i32) -> Result<Self, DurationError> {
+        #[allow(overlapping_range_endpoints)] // false positive, report upstream
         match (seconds, nanos) {
             (0, _) => {
                 let nanos = result_try!(SubZeroNanos::new(nanos), DurationError::Nanos);

@@ -1,4 +1,4 @@
-#![feature(return_position_impl_trait_in_trait, trait_alias)]
+#![feature(trait_alias)]
 #![allow(clippy::type_complexity)]
 
 use std::{
@@ -39,7 +39,6 @@ pub mod aggregate;
 pub mod data;
 pub mod event;
 pub mod fetch;
-#[allow(clippy::module_inception)] // fight me clippy
 pub mod msg;
 pub mod wait;
 

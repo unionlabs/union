@@ -1,4 +1,3 @@
-#![feature(return_position_impl_trait_in_trait)]
 #![feature(result_option_inspect)]
 
 use axum::{routing::get, Router};
