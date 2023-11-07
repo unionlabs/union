@@ -101,7 +101,8 @@
           mv $out/unionvisor $out/bin/unionvisor
         '';
       };
-    in {
+    in
+    {
       options.services.unionvisor = {
         enable = mkEnableOption "Unionvisor service";
         bundle = mkOption {
