@@ -549,17 +549,17 @@
     "v0_14_0": {
       "flake": false,
       "locked": {
-        "lastModified": 1699362772,
-        "narHash": "sha256-GntmAJbt570vimwXVXybW8runCPGopRlOfXPfHTnGu0=",
+        "lastModified": 1699387200,
+        "narHash": "sha256-MWkrPaUjcpbG2ufQreUHu9m/hrcypwPm7Y1ujrfnCEA=",
         "owner": "unionlabs",
         "repo": "union",
-        "rev": "08e0005ddc98f85e242543be745b6d503b6b9845",
+        "rev": "14007cbae6d464e70ca68220a36b30cb445f82fd",
         "type": "github"
       },
       "original": {
         "owner": "unionlabs",
-        "ref": "release-v0.14.0",
         "repo": "union",
+        "rev": "14007cbae6d464e70ca68220a36b30cb445f82fd",
         "type": "github"
       }
     }
