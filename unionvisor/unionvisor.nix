@@ -95,7 +95,7 @@
           wrapProgram ${cfg.bundle}/unionvisor \
             --append-flags "--root /var/lib/unionvisor" \
             --set UNIONVISOR_BUNDLE ${cfg.bundle} \
-            --set HOME /var/lib/unionvisor \
+            --set HOME /var/lib/unionvisor
         '';
       };
     in {
