@@ -30,7 +30,7 @@
             cp -r --no-preserve=mode ${vendorDirPath}/. $out/${vendorDir}/
 
             # FIXME: This would be a hack, but it might work
-            # find $out/${vendorDir} -type f -name ".cargo-checksum.json" -exec echo '{}' > {} \;
+            find $out/${vendorDir} -type f -name ".cargo-checksum.json" -exec echo '{}' > {} \;
 
             diff -r $out/${vendorDir} ${vendorDirPath}
 
