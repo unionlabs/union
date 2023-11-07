@@ -36,5 +36,5 @@ uniond tx staking create-validator \
 ```
 
 :::note
-If your own node isn't set up to accept RPC request, you can send them to another node such as `https://rpc.wakey.uno:443` via the `--node` option.
+If your own node isn't set up to accept RPC request, you can send them to another node such as `https://rpc.cryptware.io:443` via the `--node` option.
 :::

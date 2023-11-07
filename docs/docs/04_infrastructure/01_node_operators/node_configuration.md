@@ -104,7 +104,7 @@ Located in the `p2p` TOML table under the "P2P Configuration Options" section.
 Seed nodes help orchestrate initial connections to the network. For union-testnet-4, the seed nodes are:
 
 ```toml
-seeds = "[COMING SOON]"
+seeds = "a069a341154484298156a56ace42b6e6a71e7b9d@blazingbit.io:27656,8a07752a234bb16471dbb577180de7805ba6b5d9@union.testnet.4.seed.poisonphang.com:26656"
 ```
 
 ### Seed Mode

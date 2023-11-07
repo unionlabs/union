@@ -13,7 +13,7 @@ This guide assumes you have [Docker](https://www.docker.com/get-started/) correc
 To get the `uniond` image, you can visit [our container on the GitHub Container Registry](https://github.com/unionlabs/union/pkgs/container/uniond), or run the following command:
 
 ```sh
-export UNIOND_VERSION='v0.13.0'
+export UNIOND_VERSION='v0.14.0'
 docker pull ghcr.io/unionlabs/uniond:$UNIOND_VERSION
 ```
 
@@ -79,8 +79,8 @@ To run `uniond` sub-commands, it will be useful to alias the Docker command in y
 For example, in `zsh`, you can add the following alias to your `.zshrc`:
 
 ```sh
-export UNIOND_VERSION='v0.13.0'
-alias uniond='docker run -u $(id -u):$(id -g) -v ~/.union:/.union -it ghcr.io/unionlabs/uniond:$UNIOND_VERSION --home /.union'
+export UNIOND_VERSION='v0.14.0'
+alias uniond='docker run -v ~/.union:/.union -it ghcr.io/unionlabs/uniond:$UNIOND_VERSION --home /.union'
 ```
 
 This will enable you to issue `uniond` sub-commands with such as `uniond keys add` with ease.
