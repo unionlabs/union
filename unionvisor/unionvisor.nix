@@ -92,7 +92,7 @@
         paths = [ cfg.bundle ];
         buildInputs = [ pkgs.makeWrapper ];
         postBuild = ''
-          wrapProgram "${unionvisorAll.packages.unionvisor}/bin/unionvisor" \
+          wrapProgram unionvisor \
             --append-flags "--root /var/lib/unionvisor" \
             --set UNIONVISOR_BUNDLE ${cfg.bundle} \
             --set HOME /var/lib/unionvisor
