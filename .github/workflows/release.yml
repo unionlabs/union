@@ -212,51 +212,10 @@ jobs:
 
           current_semantic_version="${{github.ref_name}}"
 
-          previous_semantic_version=""
-          highest_version=""
-
-          # Function to compare semantic versions
-          compare_versions() {
-              local version1="$1"
-              local version2="$2"
-              if [[ "$version1" == "$version2" ]]; then
-                  echo "equal"
-              else
-                  if [[ "$version1" < "$version2" ]]; then
-                      echo "less"
-                  else
-                      echo "greater"
-                  fi
-              fi
-          }
-
           # Sort the list of tags in ascending order
           sorted_tags=($(printf "%s\n" "${semantic_version_tags[@]}" | sort -V))
 
-          # Iterate through the sorted list of tags
-          for tag in "${sorted_tags[@]}"; do
-              echo $tag
-
-              comparison_result=$(compare_versions "$tag" "$current_semantic_version")
-
-              # If the current tag is less than or equal to the current semantic version and greater than the highest version found so far
-              if [ "$comparison_result" != "greater" ] && [ "$comparison_result" != "equal" ] && [ "$comparison_result" == "less" ]; then
-                  highest_version="$tag"
-              fi
-
-              # If the current tag is equal to the current semantic version, set the previous version to the highest version found
-              if [ "$comparison_result" == "equal" ]; then
-                  previous_semantic_version="$highest_version"
-              fi
-          done
-
-          # Print the previous semantic version (if found)
-          if [ -n "$previous_semantic_version" ]; then
-              echo "Previous semantic version: $previous_semantic_version"
-          else
-              echo "No previous semantic version found."
-              exit 1
-          fi
+          previous_semantic_version=$sorted_tags[-1]
 
           # Download & Install clog-tool/clog-cli
           wget https://github.com/clog-tool/clog-cli/releases/download/v0.9.3/clog-v0.9.3-x86_64-unknown-linux-gnu.tar.gz
