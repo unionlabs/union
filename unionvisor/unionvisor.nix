@@ -84,7 +84,20 @@
 
   flake.nixosModules.unionvisor = { lib, pkgs, config, ... }:
     with lib;
-    let cfg = config.services.unionvisor;
+    let
+      cfg = config.services.unionvisor;
+
+      wrappedUnionvisor = pkgs.symlinkJoin {
+        name = "unionvisor";
+        paths = [ cfg.bundle ];
+        buildInputs = [ pkgs.makeWrapper ];
+        postBuild = ''
+          wrapProgram ${cfg.bundle}/unionvisor \
+            --append-flags "--root /var/lib/unionvisor" \
+            --set UNIONVISOR_BUNDLE ${cfg.bundle} \
+            --set HOME /var/lib/unionvisor \
+        '';
+      };
     in {
       options.services.unionvisor = {
         enable = mkEnableOption "Unionvisor service";
@@ -103,17 +116,21 @@
         };
       };
 
+      environment.systemPackages = [
+        wrappedUnionvisor
+      ];
+
       config = mkIf cfg.enable {
         systemd.services.unionvisor =
           let
             unionvisor-systemd-script = pkgs.writeShellApplication {
               name = "unionvisor-systemd";
-              runtimeInputs = [ pkgs.coreutils cfg.bundle ];
+              runtimeInputs = [ pkgs.coreutils wrappedUnionvisor ];
               text = ''
                 ${pkgs.coreutils}/bin/mkdir -p /var/lib/unionvisor
                 cd /var/lib/unionvisor
-                HOME=/var/lib/unionvisor ${cfg.bundle}/unionvisor --root /var/lib/unionvisor init --bundle ${cfg.bundle} --moniker ${cfg.moniker} --seeds ${cfg.seeds} --network ${cfg.network} --allow-dirty
-                HOME=/var/lib/unionvisor ${cfg.bundle}/unionvisor --root /var/lib/unionvisor run --bundle ${cfg.bundle} 
+                unionvisor init  --moniker ${cfg.moniker} --seeds ${cfg.seeds} --network ${cfg.network} --allow-dirty
+                unionvisor run
               '';
             };
           in
