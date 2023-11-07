@@ -116,11 +116,11 @@
         };
       };
 
-      environment.systemPackages = [
-        wrappedUnionvisor
-      ];
-
       config = mkIf cfg.enable {
+        environment.systemPackages = [
+          wrappedUnionvisor
+        ];
+
         systemd.services.unionvisor =
           let
             unionvisor-systemd-script = pkgs.writeShellApplication {
