@@ -61,7 +61,7 @@
           mkBundle {
             name = "testnet-4";
             versions = [ "v0.14.0" ];
-            genesis = ../networks/genesis/union-testnet-3/genesis.json;
+            genesis = ../networks/genesis/union-testnet-4/genesis.json;
             meta = {
               binary_name = "uniond";
               versions_directory = "versions";
@@ -72,7 +72,7 @@
           mkBundle {
             name = "testnet-4";
             versions = [ "v0.14.0" ];
-            genesis = ../networks/genesis/union-testnet-3/genesis.json;
+            genesis = ../networks/genesis/union-testnet-4/genesis.json;
             meta = {
               binary_name = "uniond";
               versions_directory = "versions";
