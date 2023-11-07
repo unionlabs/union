@@ -93,7 +93,7 @@
         buildInputs = [ pkgs.makeWrapper ];
         postBuild = ''
           wrapProgram $out/bin/unionvisor \
-            --append-flags "--root /var/lib/unionvisor" \
+            --set UNIONVISOR_ROOT /var/lib/unionvisor \
             --set UNIONVISOR_BUNDLE ${cfg.bundle} \
             --set HOME /var/lib/unionvisor
         '';
