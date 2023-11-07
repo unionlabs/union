@@ -235,6 +235,8 @@ jobs:
 
           # Iterate through the sorted list of tags
           for tag in "${sorted_tags[@]}"; do
+              echo 'Checking tag "$tag"'
+
               comparison_result=$(compare_versions "$tag" "$current_semantic_version")
 
               # If the current tag is less than or equal to the current semantic version and greater than the highest version found so far
