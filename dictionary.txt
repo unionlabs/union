@@ -211,6 +211,7 @@ crossorigin
 cryptware
 ctypes
 dasel
+dashmap
 dataconnector
 datadir
 datagram
@@ -657,6 +658,7 @@ unjailed
 unmarshal
 unmarshalling
 unopinionated
+unprefixed
 unsetting
 unshifted
 unvalidated

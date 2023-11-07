@@ -56,6 +56,3 @@ tokio-util = "0.7.9"
 
 voyager-message.workspace = true
 lightclient.workspace = true
-
-[features]
-eth-mainnet = [ "unionlabs/eth-mainnet" ]

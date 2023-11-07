@@ -59,5 +59,3 @@ std = ["tree_hash/detect-cpufeatures"]
 ethabi = ["contracts", "ethers-core"]
 
 fuzzing = ["arbitrary", "serde_json"]
-
-eth-mainnet = []
