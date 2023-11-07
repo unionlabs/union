@@ -64,7 +64,7 @@
     get-flake.url = "github:ursi/get-flake";
     # uniond versions
     v0_14_0 = {
-      url = "github:unionlabs/union/release-v0.14.0";
+      url = "github:unionlabs/union?ref=v0.14.0-rc5";
       flake = false;
     };
   };
