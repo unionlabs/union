@@ -63,28 +63,8 @@
     nix-filter.url = "github:numtide/nix-filter";
     get-flake.url = "github:ursi/get-flake";
     # uniond versions
-    v0_8_0 = {
-      url = "github:unionlabs/union/release-v0.8.1";
-      flake = false;
-    };
-    v0_9_0 = {
-      url = "github:unionlabs/union/release-v0.9.1";
-      flake = false;
-    };
-    v0_10_0 = {
-      url = "github:unionlabs/union/release-v0.10.1";
-      flake = false;
-    };
-    v0_11_0 = {
-      url = "github:unionlabs/union/release-v0.11.0";
-      flake = false;
-    };
-    v0_12_0 = {
-      url = "github:unionlabs/union/release-v0.12.0";
-      flake = false;
-    };
-    v0_13_0 = {
-      url = "github:unionlabs/union/release-v0.13.0";
+    v0_14_0 = {
+      url = "github:unionlabs/union/release-v0.14.0";
       flake = false;
     };
   };

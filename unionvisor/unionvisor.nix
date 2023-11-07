@@ -57,27 +57,26 @@
       inherit (unionvisorAll) checks;
       packages = {
         inherit (unionvisorAll.packages) unionvisor;
-        bundle-testnet-3 =
+        bundle-testnet-4 =
           mkBundle {
-            name = "testnet-3";
-            versions = [ "v0.8.0" "v0.9.0" "v0.10.0" "v0.11.0" "v0.12.0" "v0.13.0" ];
+            name = "testnet-4";
+            versions = [ "v0.14.0" ];
             genesis = ../networks/genesis/union-testnet-3/genesis.json;
             meta = {
               binary_name = "uniond";
               versions_directory = "versions";
-              fallback_version = "v0.8.0";
+              fallback_version = "v0.14.0";
             };
           };
         bundle-testnet-next =
           mkBundle {
-            name = "testnet-3";
-            versions = [ "v0.8.0" "v0.9.0" "v0.10.0" "v0.11.0" "v0.12.0" "v0.13.0" ];
-            nextVersion = "v0.14.0";
+            name = "testnet-4";
+            versions = [ "v0.14.0" ];
             genesis = ../networks/genesis/union-testnet-3/genesis.json;
             meta = {
               binary_name = "uniond";
               versions_directory = "versions";
-              fallback_version = "v0.8.0";
+              fallback_version = "v0.14.0";
             };
           };
       };
@@ -91,12 +90,12 @@
         enable = mkEnableOption "Unionvisor service";
         bundle = mkOption {
           type = types.package;
-          default = self.packages.${pkgs.system}.bundle-testnet-3;
+          default = self.packages.${pkgs.system}.bundle-testnet-4;
         };
         moniker = mkOption { type = types.str; };
         network = mkOption {
           type = types.str;
-          default = "union-testnet-3";
+          default = "union-testnet-4";
         };
         seeds = mkOption {
           type = types.str;

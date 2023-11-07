@@ -23,13 +23,13 @@
           value = import ./services/unionvisor.nix {
             inherit pkgs;
             inherit id;
-            uniond = (get-flake inputs.v0_8_0).packages.${system}.uniond;
+            uniond = (get-flake inputs.v0_14_0).packages.${system}.uniond;
             unionvisor = self'.packages.unionvisor;
             devnet-genesis = self'.packages.minimal-genesis;
             devnet-validator-keys = self'.packages.minimal-validator-keys;
             devnet-validator-node-ids = self'.packages.minimal-validator-node-ids;
             network = "union-minimal-1";
-            bundle = self'.packages.bundle-testnet-3;
+            bundle = self'.packages.bundle-testnet-4;
           };
         })
         4));
