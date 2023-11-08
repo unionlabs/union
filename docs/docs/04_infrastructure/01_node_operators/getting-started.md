@@ -79,7 +79,7 @@ Next, edit `~/.union/config/config.toml`. We'll set the seeds to ensure your nod
 For `union-testnet-4` replace `seeds = ""` with:
 
 ```toml
-seeds = "[COMING SOON]"
+seeds = "a069a341154484298156a56ace42b6e6a71e7b9d@blazingbit.io:27656,8a07752a234bb16471dbb577180de7805ba6b5d9@union.testnet.4.seed.poisonphang.com:26656"
 ```
 
 ### Genesis Configuration
