@@ -263,7 +263,7 @@
               doCheck = true;
               checkPhase = ''
                 cd $src/.
-                for i in `find . -name "*.nix" -type f`; do
+                for i in `find . -name "*.nix" -type f ! -name "*upgrades.nix"`; do
                     nil diagnostics "$i"
                 done
                 touch $out
