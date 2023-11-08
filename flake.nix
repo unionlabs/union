@@ -106,6 +106,7 @@
         ./cosmwasm/cosmwasm.nix
         ./evm/evm.nix
         ./tools/rust-proto.nix
+        ./tools/wasm-light-client.nix
         ./tools/vendor.nix
         ./tools/generate-rust-sol-bindings/generate-rust-sol-bindings.nix
         ./tools/libwasmvm/libwasmvm.nix
@@ -144,7 +145,6 @@
         }:
         let
           mkUnpack = import ./tools/mkUnpack.nix { inherit pkgs; };
-
           dbg = value:
             builtins.trace (pkgs.lib.generators.toPretty { } value) value;
         in

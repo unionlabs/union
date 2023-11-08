@@ -16,3 +16,8 @@ compile_error!(r#"cannot enable both "minimal" and "mainnet""#);
 
 #[cfg(all(not(feature = "minimal"), not(feature = "mainnet")))]
 compile_error!(r#"one of "minimal" or "mainnet" must be enabled"#);
+
+#[cfg(feature = "mainnet")]
+unionlabs::export_wasm_client_type!(EthereumMainnet);
+#[cfg(feature = "minimal")]
+unionlabs::export_wasm_client_type!(EthereumMinimal);

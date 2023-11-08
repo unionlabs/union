@@ -38,6 +38,6 @@ hex-literal = "0.4.1"
 protos = { workspace = true, default-features = false, features = ["proto_full", "std"] }
 
 [features]
-default = ["mainnet"]
+default = ["minimal"]
 minimal = []
 mainnet = []

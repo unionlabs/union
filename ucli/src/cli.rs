@@ -100,7 +100,14 @@ pub struct Config {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct EvmChainConfig {
+#[serde(rename_all = "snake_case", tag = "preset_base")]
+pub enum EvmChainConfig {
+    Mainnet(EvmChainConfigFields),
+    Minimal(EvmChainConfigFields),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct EvmChainConfigFields {
     /// The address of the `IBCHandler` smart contract.
     pub ibc_handler_address: Address,
 
@@ -132,7 +139,7 @@ pub struct Evm<C: ChainSpec> {
 }
 
 impl<C: ChainSpec> Evm<C> {
-    pub async fn new(config: EvmChainConfig) -> Result<Self, ()> {
+    pub async fn new(config: EvmChainConfigFields) -> Result<Self, ()> {
         let provider = Provider::new(Ws::connect(config.eth_rpc_api).await.unwrap());
 
         let chain_id = provider.get_chainid().await.unwrap();

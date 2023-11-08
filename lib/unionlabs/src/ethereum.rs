@@ -37,9 +37,19 @@ macro_rules! hex_string_array_wrapper {
         )+
     ) => {
         $(
-            #[derive(Clone, PartialEq, Eq, Encode, Decode, Serialize, Deserialize)]
+            #[derive(Clone, PartialEq, Eq, Encode, Decode, Serialize, Deserialize, Hash)]
             #[ssz(struct_behaviour = "transparent")]
             pub struct $Struct(#[serde(with = "::serde_utils::hex_string")] pub [u8; $N]);
+
+            impl $Struct {
+                #[doc = concat!("The [`Display`] impl for [`", stringify!($Struct), "`]")]
+                /// prefixes the output with `0x`, which may not be desirable in all contexts.
+                /// This fn serves as a convenience around [`hex::encode(&self)`].
+                #[must_use]
+                pub fn to_string_unprefixed(&self) -> String {
+                    hex::encode(&self)
+                }
+            }
 
             impl std::str::FromStr for $Struct {
                 type Err = serde_utils::FromHexStringError;

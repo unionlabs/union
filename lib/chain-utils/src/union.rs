@@ -1,5 +1,6 @@
-use std::{fmt::Debug, num::ParseIntError};
+use std::{fmt::Debug, num::ParseIntError, sync::Arc};
 
+use dashmap::DashMap;
 use ethers::prelude::k256::ecdsa;
 use futures::{stream, Future, FutureExt, Stream, StreamExt};
 use prost::Message;
@@ -14,14 +15,16 @@ use unionlabs::{
         core::{client::height::Height, commitment::merkle_root::MerkleRoot},
         lightclients::{cometbls, wasm},
     },
-    id::ClientId,
+    id::{ClientId, ConnectionId},
+    parse_wasm_client_type,
     proof::{
         AcknowledgementPath, ChannelEndPath, ClientConsensusStatePath, ClientStatePath,
         CommitmentPath, ConnectionPath, IbcPath, IbcStateRead,
     },
     tendermint::abci::{event::Event, event_attribute::EventAttribute},
     traits::{Chain, ClientState, ClientStateOf, ConsensusStateOf},
-    CosmosAccountId, MaybeRecoverableError, TryFromProto, TryFromProtoErrorOf,
+    validated::ValidateT,
+    CosmosAccountId, MaybeRecoverableError, TryFromProto, TryFromProtoErrorOf, WasmClientType,
 };
 
 use crate::{
@@ -39,6 +42,8 @@ pub struct Union {
     pub chain_revision: u64,
     pub prover_endpoint: String,
     pub grpc_url: String,
+
+    pub code_id_cache: Arc<dashmap::DashMap<H256, WasmClientType>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -355,7 +360,50 @@ impl Union {
             prover_endpoint: config.prover_endpoint,
             grpc_url: config.grpc_url,
             fee_denom: config.fee_denom,
+            code_id_cache: Arc::new(DashMap::default()),
         })
+    }
+
+    pub async fn client_type_of_code_id(&self, code_id: H256) -> WasmClientType {
+        if let Some(ty) = self.code_id_cache.get(&code_id) {
+            tracing::debug!(
+                code_id = %code_id.to_string_unprefixed(),
+                ty = ?*ty,
+                "cache hit for code_id"
+            );
+
+            return *ty;
+        };
+
+        tracing::info!(
+            code_id = %code_id.to_string_unprefixed(),
+            "cache miss for code_id"
+        );
+
+        let bz = protos::ibc::lightclients::wasm::v1::query_client::QueryClient::connect(
+            self.grpc_url.clone(),
+        )
+        .await
+        .unwrap()
+        .code(protos::ibc::lightclients::wasm::v1::QueryCodeRequest {
+            code_id: code_id.to_string_unprefixed(),
+        })
+        .await
+        .unwrap()
+        .into_inner()
+        .code;
+
+        let ty = parse_wasm_client_type(bz).unwrap().unwrap();
+
+        tracing::info!(
+            code_id = %code_id.to_string_unprefixed(),
+            ?ty,
+            "parsed code_id"
+        );
+
+        self.code_id_cache.insert(code_id, ty);
+
+        ty
     }
 
     pub async fn broadcast_tx_commit(
@@ -520,6 +568,48 @@ impl Union {
         assert!(account.type_url == "/cosmos.auth.v1beta1.BaseAccount");
 
         protos::cosmos::auth::v1beta1::BaseAccount::decode(&*account.value).unwrap()
+    }
+
+    pub async fn code_id_of_client_id(&self, client_id: UnionClientId) -> H256 {
+        let client_state = protos::ibc::core::client::v1::query_client::QueryClient::connect(
+            self.grpc_url.clone(),
+        )
+        .await
+        .unwrap()
+        .client_state(protos::ibc::core::client::v1::QueryClientStateRequest {
+            client_id: client_id.to_string(),
+        })
+        .await
+        .unwrap()
+        .into_inner()
+        .client_state
+        .unwrap();
+
+        // TODO: Type in `unionlabs` for this
+        assert!(client_state.type_url == "/ibc.lightclients.wasm.v1.ClientState");
+
+        protos::ibc::lightclients::wasm::v1::ClientState::decode(&*client_state.value)
+            .unwrap()
+            .code_id
+            .try_into()
+            .unwrap()
+    }
+
+    pub async fn client_id_of_connection(&self, connection_id: ConnectionId) -> UnionClientId {
+        protos::ibc::core::connection::v1::query_client::QueryClient::connect(self.grpc_url.clone())
+            .await
+            .unwrap()
+            .connection(protos::ibc::core::connection::v1::QueryConnectionRequest {
+                connection_id: connection_id.to_string(),
+            })
+            .await
+            .unwrap()
+            .into_inner()
+            .connection
+            .unwrap()
+            .client_id
+            .validate()
+            .unwrap()
     }
 }
 

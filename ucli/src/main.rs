@@ -11,19 +11,11 @@ use ethers::{
     signers::Signer,
     types::{Address, U256},
 };
-#[cfg(not(feature = "eth-minimal"))]
-use unionlabs::ethereum_consts_traits::Mainnet;
-#[cfg(feature = "eth-minimal")]
-use unionlabs::ethereum_consts_traits::Minimal;
+use unionlabs::ethereum_consts_traits::{ChainSpec, Mainnet, Minimal};
 
 use crate::cli::{AppArgs, Config};
 
 mod cli;
-
-#[cfg(not(feature = "eth-minimal"))]
-pub type EvmConfig = Mainnet;
-#[cfg(feature = "eth-minimal")]
-pub type EvmConfig = Minimal;
 
 #[tokio::main]
 async fn main() {
@@ -34,7 +26,6 @@ async fn main() {
     match args.command {
         cli::Command::Tx(tx) => match tx {
             cli::TxCmd::Evm(evm_tx) => {
-                let evm: Evm<EvmConfig> = Evm::new(config.evm).await.unwrap();
                 match evm_tx {
                     cli::EvmTx::Transfer {
                         relay_address,
@@ -43,45 +34,89 @@ async fn main() {
                         receiver,
                         amount,
                         denom,
-                    } => {
-                        handle_transfer(
-                            evm,
-                            relay_address.into(),
-                            port_id,
-                            channel_id,
-                            receiver,
-                            amount,
-                            denom,
-                        )
-                        .await
-                    }
+                    } => match config.evm {
+                        cli::EvmChainConfig::Mainnet(config) => {
+                            handle_transfer::<Mainnet>(
+                                Evm::new(config).await.unwrap(),
+                                relay_address.into(),
+                                port_id,
+                                channel_id,
+                                receiver,
+                                amount,
+                                denom,
+                            )
+                            .await
+                        }
+                        cli::EvmChainConfig::Minimal(config) => {
+                            handle_transfer::<Minimal>(
+                                Evm::new(config).await.unwrap(),
+                                relay_address.into(),
+                                port_id,
+                                channel_id,
+                                receiver,
+                                amount,
+                                denom,
+                            )
+                            .await
+                        }
+                    },
                 };
             }
         },
         cli::Command::Query(query) => match query {
-            cli::QueryCmd::Evm(evm_query) => {
-                let evm: Evm<EvmConfig> = Evm::new(config.evm).await.unwrap();
-                match evm_query {
-                    cli::EvmQuery::Ucs01Balance {
-                        contract_address,
-                        denom,
-                        address,
-                    } => {
-                        handle_ucs_balance(evm, contract_address.into(), denom, address.into())
-                            .await
+            cli::QueryCmd::Evm(evm_query) => match evm_query {
+                cli::EvmQuery::Ucs01Balance {
+                    contract_address,
+                    denom,
+                    address,
+                } => match config.evm {
+                    cli::EvmChainConfig::Mainnet(config) => {
+                        handle_ucs_balance::<Mainnet>(
+                            Evm::new(config).await.unwrap(),
+                            contract_address.into(),
+                            denom,
+                            address.into(),
+                        )
+                        .await
                     }
-                    cli::EvmQuery::Erc20Balance {
-                        contract_address,
-                        address,
-                    } => handle_erc_balance(evm, contract_address.into(), address.into()).await,
-                }
-            }
+                    cli::EvmChainConfig::Minimal(config) => {
+                        handle_ucs_balance::<Minimal>(
+                            Evm::new(config).await.unwrap(),
+                            contract_address.into(),
+                            denom,
+                            address.into(),
+                        )
+                        .await
+                    }
+                },
+                cli::EvmQuery::Erc20Balance {
+                    contract_address,
+                    address,
+                } => match config.evm {
+                    cli::EvmChainConfig::Mainnet(config) => {
+                        handle_erc_balance::<Mainnet>(
+                            Evm::new(config).await.unwrap(),
+                            contract_address.into(),
+                            address.into(),
+                        )
+                        .await
+                    }
+                    cli::EvmChainConfig::Minimal(config) => {
+                        handle_erc_balance::<Minimal>(
+                            Evm::new(config).await.unwrap(),
+                            contract_address.into(),
+                            address.into(),
+                        )
+                        .await
+                    }
+                },
+            },
         },
     }
 }
 
-async fn handle_ucs_balance(
-    evm: Evm<EvmConfig>,
+async fn handle_ucs_balance<C: ChainSpec>(
+    evm: Evm<C>,
     contract_address: Address,
     denom: String,
     address: Address,
@@ -101,7 +136,11 @@ async fn handle_ucs_balance(
     println!("Balance is: {}", balance);
 }
 
-async fn handle_erc_balance(evm: Evm<EvmConfig>, contract_address: Address, address: Address) {
+async fn handle_erc_balance<C: ChainSpec>(
+    evm: Evm<C>,
+    contract_address: Address,
+    address: Address,
+) {
     let signer_middleware = Arc::new(SignerMiddleware::new(
         evm.provider.clone(),
         evm.wallet.clone(),
@@ -112,8 +151,8 @@ async fn handle_erc_balance(evm: Evm<EvmConfig>, contract_address: Address, addr
     println!("Balance is: {}", balance);
 }
 
-async fn handle_transfer(
-    evm: Evm<EvmConfig>,
+async fn handle_transfer<C: ChainSpec>(
+    evm: Evm<C>,
     relay_address: Address,
     port_id: String,
     channel_id: String,

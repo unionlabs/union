@@ -75,10 +75,7 @@ macro_rules! consts_traits {
             }
 
             impl $CONST for Minimal {
-                #[cfg(not(feature = "eth-mainnet"))]
                 type $CONST = typenum::U<{ preset::MINIMAL.$CONST }>;
-                #[cfg(feature = "eth-mainnet")]
-                type $CONST = typenum::U<{ preset::MAINNET.$CONST }>;
             }
 
             impl $CONST for Mainnet {
@@ -95,14 +92,8 @@ macro_rules! consts_traits {
 
         impl ChainSpec for Minimal {
             // TODO: please save me
-            #[cfg(not(feature = "eth-mainnet"))]
             const PRESET: preset::Preset = preset::MINIMAL;
-            #[cfg(not(feature = "eth-mainnet"))]
             const PRESET_BASE_KIND: PresetBaseKind = PresetBaseKind::Minimal;
-            #[cfg(feature = "eth-mainnet")]
-            const PRESET: preset::Preset = preset::MAINNET;
-            #[cfg(feature = "eth-mainnet")]
-            const PRESET_BASE_KIND: PresetBaseKind = PresetBaseKind::Mainnet;
 
             type PERIOD = typenum::Prod<
                 <Self as EPOCHS_PER_SYNC_COMMITTEE_PERIOD>::EPOCHS_PER_SYNC_COMMITTEE_PERIOD,

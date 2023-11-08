@@ -720,48 +720,58 @@ macro_rules! export_wasm_client_type {
             #[used]
             static [ <WASM_CLIENT_TYPE_ $type> ]: u8 = 0;
         }
-        #[no_mangle]
-        #[used]
-        static WASM_CLIENT_TYPE_DEFINED: u8 = 0;
     };
 }
 
 /// This type is used to discriminate 08-wasm light clients.
 /// We need to be able to determine the light client from the light client code itself (not instantiated yet).
 /// Light clients supported by voyager must export a `#[no_mangle] static WASM_CLIENT_TYPE: WasmClientType = WasmClientType::...` variable.
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum WasmClientType {
     EthereumMinimal,
     EthereumMainnet,
     Cometbls,
 }
 
-impl TryFrom<&[u8]> for WasmClientType {
-    type Error = ();
-    fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
-        let wasm_type_name = wasmparser::Parser::new(0)
-            .parse_all(value)
-            .find_map(|payload| {
-                payload.ok().and_then(|payload| match payload {
-                    wasmparser::Payload::ExportSection(e) => Some(e),
-                    _ => None,
-                })
-            })
-            .and_then(|exports| {
-                exports.into_iter().find_map(|export| {
-                    export
-                        .ok()
-                        .and_then(|export| export.name.strip_prefix("WASM_CLIENT_TYPE_"))
-                })
-            })
-            .ok_or(())?;
-        Ok(match wasm_type_name {
-            "EthereumMinimal" => WasmClientType::EthereumMinimal,
-            "EthereumMainnet" => WasmClientType::EthereumMainnet,
-            "Cometbls" => WasmClientType::Cometbls,
-            _ => Err(())?,
-        })
+impl FromStr for WasmClientType {
+    type Err = WasmClientTypeParseError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "EthereumMinimal" => Ok(WasmClientType::EthereumMinimal),
+            "EthereumMainnet" => Ok(WasmClientType::EthereumMainnet),
+            "Cometbls" => Ok(WasmClientType::Cometbls),
+            _ => Err(WasmClientTypeParseError::UnknownType(s.to_string())),
+        }
     }
+}
+
+#[derive(Debug, PartialEq, Eq, thiserror::Error)]
+pub enum WasmClientTypeParseError {
+    #[error("unknown wasm client type `{0}`")]
+    UnknownType(String),
+}
+
+pub fn parse_wasm_client_type(
+    bz: impl AsRef<[u8]>,
+) -> Result<Option<WasmClientType>, WasmClientTypeParseError> {
+    wasmparser::Parser::new(0)
+        .parse_all(bz.as_ref())
+        .find_map(|payload| {
+            payload.ok().and_then(|payload| match payload {
+                wasmparser::Payload::ExportSection(e) => Some(e),
+                _ => None,
+            })
+        })
+        .and_then(|exports| {
+            exports.into_iter().find_map(|export| {
+                export
+                    .ok()
+                    .and_then(|export| export.name.strip_prefix("WASM_CLIENT_TYPE_"))
+            })
+        })
+        .map(str::parse)
+        .transpose()
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

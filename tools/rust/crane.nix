@@ -200,7 +200,7 @@
 
           packageFilterArg = "-p ${crateInfo.pname}";
 
-          crateAttrs = dbg (extraEnv // {
+          crateAttrs = extraEnv // {
             inherit (crateInfo) pname version;
 
             # dontUnpack = true;
@@ -230,7 +230,7 @@
 
             doCheck = cargoBuildCheckPhase != null;
             PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
-          });
+          };
 
           artifacts = craneLib.buildDepsOnly crateAttrs;
 
@@ -263,12 +263,13 @@
           packages.${cratePname} = cargoBuild.buildPackage (
             crateAttrs // {
               inherit pnameSuffix;
+              # TODO: -j1
               cargoExtraArgs = "${packageFilterArg} ${cargoBuildExtraArgs}" + (pkgs.lib.optionalString
                 (buildStdTarget != null)
                 # the leading space is important here!
                 " -Z build-std=std,panic_abort -Z build-std-features=panic_immediate_abort --target ${buildStdTarget}");
               RUSTFLAGS = rustflags;
-            } // (pkgs.lib.optionalAttrs (cargoBuildCheckPhase != null) ({
+            } // (pkgs.lib.optionalAttrs (cargoBuildInstallPhase != null) ({
               installPhaseCommand = cargoBuildInstallPhase;
             })) // (pkgs.lib.optionalAttrs (cargoBuildCheckPhase != null) ({
               checkPhase = cargoBuildCheckPhase;
