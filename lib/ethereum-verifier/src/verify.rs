@@ -59,10 +59,11 @@ pub fn validate_light_client_update<Ctx: LightClientContext, V: BlsVerify>(
     if sync_aggregate.sync_committee_bits.num_set_bits()
         < <Ctx::ChainSpec as MIN_SYNC_COMMITTEE_PARTICIPANTS>::MIN_SYNC_COMMITTEE_PARTICIPANTS::USIZE
     {
-        Err(Error::InsufficientSyncCommitteeParticipants(
-            <Ctx::ChainSpec as MIN_SYNC_COMMITTEE_PARTICIPANTS>::MIN_SYNC_COMMITTEE_PARTICIPANTS::USIZE,
+        Err(Error::InsufficientSyncCommitteeParticipants {
+            min_limit: <Ctx::ChainSpec as MIN_SYNC_COMMITTEE_PARTICIPANTS>::MIN_SYNC_COMMITTEE_PARTICIPANTS::USIZE,
+            participants:
             sync_aggregate.sync_committee_bits.num_set_bits()
-        ))?;
+        })?;
     }
 
     // Verify update does not skip a sync committee period
@@ -77,17 +78,25 @@ pub fn validate_light_client_update<Ctx: LightClientContext, V: BlsVerify>(
         Err(Error::InvalidSlots)?;
     }
 
-    let store_period =
+    let stored_period =
         compute_sync_committee_period_at_slot::<Ctx::ChainSpec>(ctx.finalized_slot());
-    let update_signature_period =
+    let signature_period =
         compute_sync_committee_period_at_slot::<Ctx::ChainSpec>(update.signature_slot);
 
     if ctx.next_sync_committee().is_some() {
-        if update_signature_period != store_period && update_signature_period != store_period + 1 {
-            Err(Error::InvalidSignaturePeriod)?;
+        if signature_period != stored_period && signature_period != stored_period + 1 {
+            Err(Error::InvalidSignaturePeriodWhenNextSyncCommitteeExists {
+                signature_period,
+                stored_period,
+            })?;
         }
-    } else if update_signature_period != store_period {
-        Err(Error::InvalidSignaturePeriod)?;
+    } else if signature_period != stored_period {
+        Err(
+            Error::InvalidSignaturePeriodWhenNextSyncCommitteeDoesNotExist {
+                signature_period,
+                stored_period,
+            },
+        )?;
     }
 
     // Verify update is relevant
@@ -95,7 +104,7 @@ pub fn validate_light_client_update<Ctx: LightClientContext, V: BlsVerify>(
         compute_sync_committee_period_at_slot::<Ctx::ChainSpec>(update_attested_slot);
 
     if !(update_attested_slot > ctx.finalized_slot()
-        || (update_attested_period == store_period
+        || (update_attested_period == stored_period
             && update.next_sync_committee.is_some()
             && ctx.next_sync_committee().is_none()))
     {
@@ -119,10 +128,13 @@ pub fn validate_light_client_update<Ctx: LightClientContext, V: BlsVerify>(
     // state of the `attested_header` if the store period is equal to the attested period
     if let Some(next_sync_committee) = &update.next_sync_committee {
         if let Some(current_next_sync_committee) = ctx.next_sync_committee() {
-            if update_attested_period == store_period
+            if update_attested_period == stored_period
                 && next_sync_committee != current_next_sync_committee
             {
-                Err(Error::NextSyncCommitteeMismatch)?;
+                Err(Error::NextSyncCommitteeMismatch {
+                    expected: current_next_sync_committee.aggregate_pubkey.clone(),
+                    got: next_sync_committee.aggregate_pubkey.clone(),
+                })?;
             }
         }
 
@@ -136,7 +148,7 @@ pub fn validate_light_client_update<Ctx: LightClientContext, V: BlsVerify>(
     }
 
     // Verify sync committee aggregate signature
-    let sync_committee = if update_signature_period == store_period {
+    let sync_committee = if signature_period == stored_period {
         ctx.current_sync_committee()
             .ok_or(Error::ExpectedCurrentSyncCommittee)?
     } else {
@@ -395,7 +407,9 @@ mod tests {
     //     .into()
     // }
 
-    fn do_validate_light_client_update(header: Header<Minimal>) -> Result<(), Error> {
+    fn do_validate_light_client_update(
+        header: Header<Minimal>,
+    ) -> Result<(), ValidateLightClientError> {
         let genesis_validators_root: H256 = hex::decode(GENESIS_VALIDATORS_ROOT)
             .unwrap()
             .try_into()
@@ -737,7 +751,7 @@ mod tests {
                 &proof_value,
                 VALID_PROOF.iter()
             ),
-            Err(Error::ValueMismatch)
+            Err(Error::ValueMismatch.into())
         );
     }
 

@@ -1,6 +1,6 @@
 use milagro_bls::AmclError;
 use trie_db::TrieError;
-use unionlabs::ethereum::H256;
+use unionlabs::{bls::BlsPublicKey, ethereum::H256};
 
 #[derive(Debug, PartialEq)]
 pub struct InvalidMerkleBranch {
@@ -32,20 +32,35 @@ pub enum Error {
     #[error("the order of the slots in the update data, and stored data is not correct")]
     InvalidSlots,
     #[error(
-        "signature period must be equal to `store_period` or `store_period + 1` \
-                when the next sync committee is stored. Otherwise, it must be equal to `store_period`"
+        "signature period ({signature_period}) must be equal to `store_period` \
+        ({stored_period}) or `store_period + 1` when the next sync committee is stored"
     )]
-    InvalidSignaturePeriod,
-    #[error("signature is not valid")]
-    InvalidSignature,
-    #[error("invalid public key")]
-    InvalidPublicKey,
-    #[error("next sync committee does not match with the one in the current state")]
-    NextSyncCommitteeMismatch,
+    InvalidSignaturePeriodWhenNextSyncCommitteeExists {
+        signature_period: u64,
+        stored_period: u64,
+    },
     #[error(
-        "insufficient number of sync committee participants, expected it to be at least ({0}) but got ({1})",
+        "signature period ({signature_period}) must be equal to `store_period` \
+        ({stored_period}) when the next sync committee is not stored"
     )]
-    InsufficientSyncCommitteeParticipants(usize, usize),
+    InvalidSignaturePeriodWhenNextSyncCommitteeDoesNotExist {
+        signature_period: u64,
+        stored_period: u64,
+    },
+    #[error(
+        "next sync committee ({got}) does not match with the one in the current state ({expected})"
+    )]
+    NextSyncCommitteeMismatch {
+        expected: BlsPublicKey,
+        got: BlsPublicKey,
+    },
+    #[error(
+        "insufficient number of sync committee participants, expected it to be at least ({min_limit}) but got ({participants})",
+    )]
+    InsufficientSyncCommitteeParticipants {
+        min_limit: usize,
+        participants: usize,
+    },
     #[error("bls error ({0:?})")]
     Bls(AmclError),
     #[error("proof is invalid due to value mismatch")]
