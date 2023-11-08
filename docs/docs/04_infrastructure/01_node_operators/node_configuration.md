@@ -69,6 +69,19 @@ pruning = "default"
 
 Located in `config/config.toml`, this file is host to many settings.
 
+### RPC Listening Address
+
+Located in the `rpc` TOML table under the "RPC Server Configuration Options" section.
+
+You'll want to ensure your node is configured to accept rpc connections. To do so, set this value to the appropriate address.
+
+For example, to listen on every available network interface - set this to `"tcp://0.0.0.0:26657"`.
+
+```toml
+# TCP or UNIX socket address for the RPC server to listen on
+laddr = "tcp://0.0.0.0:26657"
+```
+
 ### P2P Listening Address
 
 Located in the `p2p` TOML table under the "P2P Configuration Options" section.
