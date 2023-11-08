@@ -62,10 +62,10 @@ uniond keys show $KEY_NAME --address
 
 _Where `KEY_NAME` is the name you would like to use when referencing your key._
 
-### Finding your Node Address
+### Finding your Validator Address
 
-To find your node address you can run the following `uniond` sub-command:
+To find your validator address you can run the following `uniond` sub-command:
 
 ```sh
-uniond tendermint show-address
+uniond tendermint show-validator
 ```
