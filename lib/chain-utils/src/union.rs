@@ -1,5 +1,6 @@
-use std::num::ParseIntError;
+use std::{fmt::Debug, num::ParseIntError, sync::Arc};
 
+use dashmap::DashMap;
 use ethers::prelude::k256::ecdsa;
 use futures::{stream, Future, FutureExt, Stream, StreamExt};
 use prost::Message;
@@ -14,16 +15,22 @@ use unionlabs::{
         core::{client::height::Height, commitment::merkle_root::MerkleRoot},
         lightclients::{cometbls, wasm},
     },
-    id::ClientId,
+    id::{ClientId, ConnectionId},
+    parse_wasm_client_type,
+    proof::{
+        AcknowledgementPath, ChannelEndPath, ClientConsensusStatePath, ClientStatePath,
+        CommitmentPath, ConnectionPath, IbcPath, IbcStateRead,
+    },
     tendermint::abci::{event::Event, event_attribute::EventAttribute},
-    traits::{Chain, ClientState},
-    CosmosAccountId,
+    traits::{Chain, ClientState, ClientStateOf, ConsensusStateOf},
+    validated::ValidateT,
+    CosmosAccountId, MaybeRecoverableError, TryFromProto, TryFromProtoErrorOf, WasmClientType,
 };
 
 use crate::{
     private_key::PrivateKey,
     union::tm_types::{CosmosSdkError, SdkError},
-    ChainEvent, EventSource, MaybeRecoverableError, Pool,
+    ChainEvent, EventSource, Pool,
 };
 
 #[derive(Debug, Clone)]
@@ -35,6 +42,8 @@ pub struct Union {
     pub chain_revision: u64,
     pub prover_endpoint: String,
     pub grpc_url: String,
+
+    pub code_id_cache: Arc<dashmap::DashMap<H256, WasmClientType>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -351,7 +360,50 @@ impl Union {
             prover_endpoint: config.prover_endpoint,
             grpc_url: config.grpc_url,
             fee_denom: config.fee_denom,
+            code_id_cache: Arc::new(DashMap::default()),
         })
+    }
+
+    pub async fn client_type_of_code_id(&self, code_id: H256) -> WasmClientType {
+        if let Some(ty) = self.code_id_cache.get(&code_id) {
+            tracing::debug!(
+                code_id = %code_id.to_string_unprefixed(),
+                ty = ?*ty,
+                "cache hit for code_id"
+            );
+
+            return *ty;
+        };
+
+        tracing::info!(
+            code_id = %code_id.to_string_unprefixed(),
+            "cache miss for code_id"
+        );
+
+        let bz = protos::ibc::lightclients::wasm::v1::query_client::QueryClient::connect(
+            self.grpc_url.clone(),
+        )
+        .await
+        .unwrap()
+        .code(protos::ibc::lightclients::wasm::v1::QueryCodeRequest {
+            code_id: code_id.to_string_unprefixed(),
+        })
+        .await
+        .unwrap()
+        .into_inner()
+        .code;
+
+        let ty = parse_wasm_client_type(bz).unwrap().unwrap();
+
+        tracing::info!(
+            code_id = %code_id.to_string_unprefixed(),
+            ?ty,
+            "parsed code_id"
+        );
+
+        self.code_id_cache.insert(code_id, ty);
+
+        ty
     }
 
     pub async fn broadcast_tx_commit(
@@ -516,6 +568,48 @@ impl Union {
         assert!(account.type_url == "/cosmos.auth.v1beta1.BaseAccount");
 
         protos::cosmos::auth::v1beta1::BaseAccount::decode(&*account.value).unwrap()
+    }
+
+    pub async fn code_id_of_client_id(&self, client_id: UnionClientId) -> H256 {
+        let client_state = protos::ibc::core::client::v1::query_client::QueryClient::connect(
+            self.grpc_url.clone(),
+        )
+        .await
+        .unwrap()
+        .client_state(protos::ibc::core::client::v1::QueryClientStateRequest {
+            client_id: client_id.to_string(),
+        })
+        .await
+        .unwrap()
+        .into_inner()
+        .client_state
+        .unwrap();
+
+        // TODO: Type in `unionlabs` for this
+        assert!(client_state.type_url == "/ibc.lightclients.wasm.v1.ClientState");
+
+        protos::ibc::lightclients::wasm::v1::ClientState::decode(&*client_state.value)
+            .unwrap()
+            .code_id
+            .try_into()
+            .unwrap()
+    }
+
+    pub async fn client_id_of_connection(&self, connection_id: ConnectionId) -> UnionClientId {
+        protos::ibc::core::connection::v1::query_client::QueryClient::connect(self.grpc_url.clone())
+            .await
+            .unwrap()
+            .connection(protos::ibc::core::connection::v1::QueryConnectionRequest {
+                connection_id: connection_id.to_string(),
+            })
+            .await
+            .unwrap()
+            .into_inner()
+            .connection
+            .unwrap()
+            .client_id
+            .validate()
+            .unwrap()
     }
 }
 
@@ -977,5 +1071,151 @@ pub mod tm_types {
             ErrPacketNotSent         = errorsmod.Register(SubModuleName, 25, "packet has not been sent")
             ErrInvalidTimeout        = errorsmod.Register(SubModuleName, 26, "invalid packet timeout")
         )
+    }
+}
+
+pub trait AbciStateRead<Counterparty>: IbcPath<Union, Counterparty>
+where
+    Counterparty: Chain,
+{
+    fn from_abci_bytes(bytes: Vec<u8>) -> Self::Output;
+}
+
+impl<Counterparty> AbciStateRead<Counterparty> for ClientStatePath<<Union as Chain>::ClientId>
+where
+    Counterparty: Chain,
+    ClientStateOf<Counterparty>: TryFromProto,
+    TryFromProtoErrorOf<ClientStateOf<Counterparty>>: Debug,
+{
+    fn from_abci_bytes(bytes: Vec<u8>) -> Self::Output {
+        Self::Output::try_from_proto_bytes(&bytes).unwrap()
+    }
+}
+
+impl<Counterparty> AbciStateRead<Counterparty>
+    for ClientConsensusStatePath<<Union as Chain>::ClientId, <Counterparty as Chain>::Height>
+where
+    Counterparty: Chain,
+    ConsensusStateOf<Counterparty>: TryFromProto,
+    TryFromProtoErrorOf<ConsensusStateOf<Counterparty>>: Debug,
+{
+    fn from_abci_bytes(bytes: Vec<u8>) -> Self::Output {
+        Self::Output::try_from_proto_bytes(&bytes).unwrap()
+    }
+}
+
+impl<Counterparty> AbciStateRead<Counterparty> for ConnectionPath
+where
+    Counterparty: Chain,
+    // <Counterparty as Chain>::ClientId: ClientId,
+    // Self::Output: Proto + TryFrom<protos::ibc::core::connection::v1::ConnectionEnd>,
+{
+    fn from_abci_bytes(bytes: Vec<u8>) -> Self::Output {
+        Self::Output::try_from_proto_bytes(&bytes).unwrap()
+    }
+}
+
+impl<Counterparty> AbciStateRead<Counterparty> for ChannelEndPath
+where
+    Counterparty: Chain,
+{
+    fn from_abci_bytes(bytes: Vec<u8>) -> Self::Output {
+        Self::Output::try_from_proto_bytes(&bytes).unwrap()
+    }
+}
+
+impl<Counterparty> AbciStateRead<Counterparty> for CommitmentPath
+where
+    Counterparty: Chain,
+{
+    fn from_abci_bytes(bytes: Vec<u8>) -> Self::Output {
+        bytes.try_into().unwrap()
+    }
+}
+
+impl<Counterparty> AbciStateRead<Counterparty> for AcknowledgementPath
+where
+    Counterparty: Chain,
+{
+    fn from_abci_bytes(bytes: Vec<u8>) -> Self::Output {
+        bytes.try_into().unwrap()
+    }
+}
+
+impl<Counterparty, P> IbcStateRead<Counterparty, P> for Union
+where
+    Counterparty: Chain,
+    ClientStateOf<Counterparty>: TryFromProto,
+    ConsensusStateOf<Counterparty>: TryFromProto,
+    P: IbcPath<Union, Counterparty> + AbciStateRead<Counterparty> + 'static,
+{
+    fn proof(&self, path: P, at: Height) -> impl Future<Output = Vec<u8>> + '_ {
+        async move {
+            tracing::info!(%path, %at, "fetching state proof");
+
+            let mut client =
+                protos::cosmos::base::tendermint::v1beta1::service_client::ServiceClient::connect(
+                    self.grpc_url.clone(),
+                )
+                .await
+                .unwrap();
+
+            let query_result = client
+                .abci_query(
+                    protos::cosmos::base::tendermint::v1beta1::AbciQueryRequest {
+                        data: path.to_string().into_bytes(),
+                        path: "store/ibc/key".to_string(),
+                        height: i64::try_from(at.revision_height).unwrap(),
+                        prove: true,
+                    },
+                )
+                .await
+                .unwrap()
+                .into_inner();
+
+            protos::ibc::core::commitment::v1::MerkleProof {
+                proofs: query_result
+                    .proof_ops
+                    .unwrap()
+                    .ops
+                    .into_iter()
+                    .map(|op| {
+                        protos::cosmos::ics23::v1::CommitmentProof::decode(op.data.as_slice())
+                            .unwrap()
+                    })
+                    .collect::<Vec<_>>(),
+            }
+            .encode_to_vec()
+        }
+    }
+
+    fn state(
+        &self,
+        path: P,
+        at: Self::Height,
+    ) -> impl Future<Output = <P as IbcPath<Union, Counterparty>>::Output> + '_ {
+        async move {
+            let mut client =
+                protos::cosmos::base::tendermint::v1beta1::service_client::ServiceClient::connect(
+                    self.grpc_url.clone(),
+                )
+                .await
+                .unwrap();
+
+            let query_result = client
+                .abci_query(
+                    protos::cosmos::base::tendermint::v1beta1::AbciQueryRequest {
+                        data: path.to_string().into_bytes(),
+                        path: "store/ibc/key".to_string(),
+                        height: i64::try_from(at.revision_height).unwrap(),
+                        prove: false,
+                    },
+                )
+                .await
+                .unwrap()
+                .into_inner();
+
+            P::from_abci_bytes(query_result.value)
+        }
     }
 }

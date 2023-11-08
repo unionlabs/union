@@ -1,4 +1,7 @@
-use std::fmt::{Debug, Display};
+use std::{
+    fmt::{Debug, Display},
+    future::Future,
+};
 
 use clap::builder::{StringValueParser, TypedValueParser};
 use serde::{Deserialize, Serialize};
@@ -131,4 +134,32 @@ pub enum Path<ClientId: traits::Id, Height: IsHeight> {
     CommitmentPath(CommitmentPath),
     #[display(fmt = "{_0}")]
     AcknowledgementPath(AcknowledgementPath),
+}
+
+pub trait IbcStateRead<Counterparty: Chain, P: IbcPath<Self, Counterparty>>: Chain + Sized {
+    fn proof(&self, path: P, at: Self::Height) -> impl Future<Output = Vec<u8>> + '_;
+    fn state(&self, path: P, at: Self::Height) -> impl Future<Output = P::Output> + '_;
+}
+
+pub trait IbcStateReadPaths<Counterparty: Chain>:
+    Chain
+    + IbcStateRead<Counterparty, ClientStatePath<<Self as Chain>::ClientId>>
+    + IbcStateRead<
+        Counterparty,
+        ClientConsensusStatePath<<Self as Chain>::ClientId, Counterparty::Height>,
+    > + IbcStateRead<Counterparty, ConnectionPath>
+    + IbcStateRead<Counterparty, ChannelEndPath>
+    + IbcStateRead<Counterparty, CommitmentPath>
+    + IbcStateRead<Counterparty, AcknowledgementPath>
+{
+}
+
+impl<Counterparty: Chain, T: Chain> IbcStateReadPaths<Counterparty> for T where
+    T: IbcStateRead<Counterparty, ClientStatePath<Self::ClientId>>
+        + IbcStateRead<Counterparty, ClientConsensusStatePath<Self::ClientId, Counterparty::Height>>
+        + IbcStateRead<Counterparty, ConnectionPath>
+        + IbcStateRead<Counterparty, ChannelEndPath>
+        + IbcStateRead<Counterparty, CommitmentPath>
+        + IbcStateRead<Counterparty, AcknowledgementPath>
+{
 }

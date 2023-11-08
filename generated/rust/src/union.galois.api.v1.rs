@@ -1,7 +1,5 @@
 // @generated
 #[allow(clippy::derive_partial_eq_without_eq)]
-// NOTE: These are temporary until i add these types to unionlabs
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct FrElement {
     #[prost(bytes = "vec", tag = "1")]
@@ -133,6 +131,46 @@ pub struct QueryStatsResponse {
     pub verifying_key_stats: ::core::option::Option<VerifyingKeyStats>,
     #[prost(message, optional, tag = "4")]
     pub commitment_stats: ::core::option::Option<CommitmentStats>,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct PollRequest {
+    #[prost(message, optional, tag = "1")]
+    pub request: ::core::option::Option<ProveRequest>,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ProveRequestPending {}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ProveRequestFailed {
+    #[prost(string, tag = "1")]
+    pub message: ::prost::alloc::string::String,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ProveRequestDone {
+    #[prost(message, optional, tag = "1")]
+    pub response: ::core::option::Option<ProveResponse>,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct PollResponse {
+    #[prost(oneof = "poll_response::Result", tags = "1, 2, 3")]
+    pub result: ::core::option::Option<poll_response::Result>,
+}
+/// Nested message and enum types in `PollResponse`.
+pub mod poll_response {
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Oneof)]
+    pub enum Result {
+        #[prost(message, tag = "1")]
+        Pending(super::ProveRequestPending),
+        #[prost(message, tag = "2")]
+        Failed(super::ProveRequestFailed),
+        #[prost(message, tag = "3")]
+        Done(super::ProveRequestDone),
+    }
 }
 include!("union.galois.api.v1.tonic.rs");
 // @@protoc_insertion_point(module)

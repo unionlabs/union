@@ -1,4 +1,3 @@
-#![feature(return_position_impl_trait_in_trait)]
 // #![warn(clippy::pedantic)]
 #![allow(
      // required due to return_position_impl_trait_in_trait false positives
@@ -117,9 +116,3 @@ impl<T: Clone> Pool<T> {
         r
     }
 }
-
-pub trait MaybeRecoverableError: Error {
-    fn is_recoverable(&self) -> bool;
-}
-
-fn _is_object_safe(_: &dyn MaybeRecoverableError) {}

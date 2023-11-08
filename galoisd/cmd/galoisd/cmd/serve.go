@@ -36,11 +36,11 @@ func ServeCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			server, err := provergrpc.NewProverServer(r1csPath, pkPath, vkPath)
+			maxConn, err := cmd.Flags().GetInt(flagMaxConn)
 			if err != nil {
 				return err
 			}
-			maxConn, err := cmd.Flags().GetInt(flagMaxConn)
+			server, err := provergrpc.NewProverServer(uint32(maxConn), r1csPath, pkPath, vkPath)
 			if err != nil {
 				return err
 			}
@@ -65,6 +65,6 @@ func ServeCmd() *cobra.Command {
 	cmd.Flags().String(flagR1CS, "r1cs.bin", "Path to the compiled R1CS circuit.")
 	cmd.Flags().String(flagPK, "pk.bin", "Path to the proving key.")
 	cmd.Flags().String(flagVK, "vk.bin", "Path to the verifying key.")
-	cmd.Flags().Int(flagMaxConn, 10, "Maximum number of concurrent connection.")
+	cmd.Flags().Int(flagMaxConn, 1, "Maximum number of concurrent connection.")
 	return cmd
 }

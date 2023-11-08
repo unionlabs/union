@@ -29,6 +29,9 @@
           
             cp -r --no-preserve=mode ${vendorDirPath}/. $out/${vendorDir}/
 
+            # FIXME: This would be a hack, but it might work
+            find $out/${vendorDir} -type f -name ".cargo-checksum.json" -exec echo '{}' > {} \;
+
             diff -r $out/${vendorDir} ${vendorDirPath}
 
             mkdir -p $out/.cargo
@@ -41,7 +44,18 @@
 
       packages.vendor-tools =
         let
-          args = pkgs.lib.concatStringsSep " " (pkgs.lib.lists.imap0 (i: tool: if i == 0 then "--manifest-path ${tool}" else "--sync ${tool}") [ libwasmvmCargoToml sqlxCliCargoToml ]);
+          args = pkgs.lib.concatStringsSep
+            " "
+            (pkgs.lib.lists.imap0
+              (i: tool:
+                if i == 0
+                then
+                  "--manifest-path ${tool}"
+                else
+                  "--sync ${tool}"
+              )
+              [ libwasmvmCargoToml sqlxCliCargoToml ]
+            );
         in
         pkgs.writeShellApplication {
           name = "vendor-tools";

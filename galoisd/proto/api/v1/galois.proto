@@ -87,10 +87,35 @@ message QueryStatsResponse {
   CommitmentStats commitment_stats = 4;
 }
 
+message PollRequest {
+  ProveRequest request = 1;
+}
+
+message ProveRequestPending {
+}
+
+message ProveRequestFailed {
+  string message = 1;
+}
+
+message ProveRequestDone {
+  ProveResponse response = 1;
+}
+
+message PollResponse {
+  oneof result {
+    ProveRequestPending pending = 1;
+    ProveRequestFailed failed = 2;
+    ProveRequestDone done = 3;
+  }
+}
+
 service UnionProverAPI {
   rpc Prove(ProveRequest) returns (ProveResponse);
   rpc Verify(VerifyRequest) returns (VerifyResponse);
   rpc GenerateContract(GenerateContractRequest) returns (GenerateContractResponse);
   rpc QueryStats(QueryStatsRequest) returns (QueryStatsResponse);
+
+  rpc Poll(PollRequest) returns (PollResponse);
 }
 

@@ -7,6 +7,8 @@
 , features ? null
 , additionalSrcFilter ? _: _: false
 , additionalTestSrcFilter ? _: _: false
+  # list of fns taking the file path as an argument and producing arbitrary shell script
+, checks ? [ ]
 }:
 let
   CARGO_BUILD_TARGET = "wasm32-unknown-unknown";
@@ -18,18 +20,12 @@ let
 
   featuresString = if features == null then "" else (lib.concatMapStrings (feature: "-${feature}") features);
 
-  all =
-    buildWorkspaceMember {
-      inherit crateDirFromRoot additionalSrcFilter additionalTestSrcFilter;
-      buildStdTarget = CARGO_BUILD_TARGET;
-      pnameSuffix = featuresString;
+  allChecks = builtins.concatLists [
+    checks
+    [
+      (file_name: ''
+        blob=$(${pkgs.binaryen}/bin/wasm-dis ${file_name})
 
-      cargoBuildExtraArgs = "--no-default-features --lib ${if features != null then lib.concatStringsSep " " ([ "--features" ] ++ features) else ""}";
-      rustflags = "-C target-feature=-sign-ext -C link-arg=-s -C target-cpu=mvp";
-
-      cargoBuildCheckPhase = ''
-        ls target/wasm32-unknown-unknown/release
-        blob=$(${pkgs.binaryen}/bin/wasm-dis target/wasm32-unknown-unknown/release/${contractFileNameWithoutExt}.wasm)
         if [ $? -ne 0 ]
         then
           echo $blob
@@ -44,9 +40,39 @@ let
         else
           echo "wasm binary doesn't contain any sign-extension opcodes!"
         fi
+      '')
+    ]
+  ];
+
+  all =
+    buildWorkspaceMember {
+      # extraEnv = {
+      #   nativeBuildInputs = [ pkgs.breakpointHook ];
+      # };
+      inherit crateDirFromRoot additionalSrcFilter additionalTestSrcFilter;
+      buildStdTarget = CARGO_BUILD_TARGET;
+      pnameSuffix = featuresString;
+
+      cargoBuildExtraArgs = "--no-default-features --lib ${if features != null then lib.concatStringsSep " " ([ "--features" ] ++ features) else ""}";
+      rustflags = "-C target-feature=-sign-ext -C link-arg=-s -C target-cpu=mvp";
+
+      cargoBuildCheckPhase = ''
+        ls target/wasm32-unknown-unknown/release
+
+        sha256sum target/wasm32-unknown-unknown/release/${contractFileNameWithoutExt}.wasm  
+
       '';
 
       cargoBuildInstallPhase = ''
+        ${
+          builtins.concatStringsSep
+            "\n\n"
+            (map
+              (check: check "target/wasm32-unknown-unknown/release/${contractFileNameWithoutExt}.wasm")
+              allChecks
+            )
+        }
+
         mkdir -p $out/lib
         mv target/wasm32-unknown-unknown/release/${contractFileNameWithoutExt}.wasm $out/lib/${contractFileNameWithoutExt}${dashesToUnderscores featuresString}.wasm
         # TODO: Re-enable this?

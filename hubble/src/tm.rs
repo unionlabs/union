@@ -143,7 +143,7 @@ async fn get_current_data<D: Datastore>(
     };
     debug!("latest stored block height is: {}", &height);
 
-    let chain_db_id = if let Some(chains) = data.v0_chains.get(0) {
+    let chain_db_id = if let Some(chains) = data.v0_chains.first() {
         chains.id
     } else {
         let created = db

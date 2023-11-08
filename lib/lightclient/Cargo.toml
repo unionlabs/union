@@ -1,0 +1,15 @@
+[package]
+name = "lightclient"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+chain-utils.workspace = true
+unionlabs = { workspace = true, features = ["ethabi"] }
+serde = { version = "1.0.173", features = ["derive"] }
+protos = { workspace = true, features = ["proto_full", "client"] }
+
+[dev-dependencies]
+hex-literal = "0.4.1"

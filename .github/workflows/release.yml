@@ -11,7 +11,7 @@ jobs:
       nixbuild_token: ${{ secrets.nixbuild_token }}
       access-tokens: github.com=${{ secrets.GITHUB_TOKEN }}
     with:
-      filter_builds: '(.top_attr == "packages") and (.system == "x86_64-linux" or .system == "aarch64-linux") and (.attr == "uniond" or .attr == "galoisd-devnet" or .attr == "galoisd-testnet" or .attr == "galoisd-mainnet" or .attr == "uniond-image" or .attr == "galoisd-devnet-image" or .attr == "galoisd-testnet-image" or .attr == "galoisd-mainnet-image")' # ensure to append this list if you want to release more artifacts
+      filter_builds: '(.top_attr == "packages") and (.system == "x86_64-linux" or .system == "aarch64-linux") and (.attr == "uniond" or .attr == "galoisd" or .attr == "uniond-image" or .attr == "galoisd-image")' # ensure to append this list if you want to release more artifacts
 
   dl-images:
     runs-on: ubuntu-latest
@@ -19,9 +19,9 @@ jobs:
     permissions: write-all
     strategy:
       matrix:
-        package: [ uniond, galoisd-devnet, galoisd-testnet, galoisd-mainnet ]
+        package: [ uniond, galoisd ]
         system: [ aarch64-linux, x86_64-linux ]
-    steps: 
+    steps:
       - uses: actions/download-artifact@v3
         with:
           name: packages.${{ matrix.system }}.${{ matrix.package }}-image
@@ -44,8 +44,8 @@ jobs:
     strategy:
       matrix:
         system: [ aarch64-linux, x86_64-linux ]
-        package: [ uniond, galoisd-devnet, galoisd-testnet, galoisd-mainnet ]
-    steps: 
+        package: [ uniond, galoisd ]
+    steps:
       - uses: actions/download-artifact@v3
         with:
           name: packages.${{ matrix.system }}.${{ matrix.package }}
@@ -58,10 +58,10 @@ jobs:
           echo "Getting OUTPUT and NARINFO_NAME"
           OUTPUT=`cat result.json | jq -r '.packages."${{ matrix.system }}"."${{ matrix.package }}".outputs.out'`
           NARINFO_NAME=$(basename "$OUTPUT" | cut -d'-' -f1)
-        
+
           echo "Copying artifacts from nixbuild.net"
           nix copy --to file://`pwd`/${{ matrix.system }} --from ssh-ng://eu.nixbuild.net $OUTPUT --extra-experimental-features nix-command
-      
+
           echo "Get the NAR_URL"
           nar_url_line=$(cat ./${{ matrix.system }}/${NARINFO_NAME}.narinfo | grep "URL:")
           NAR_URL=$(echo "$nar_url_line" | cut -d " " -f 2-)
@@ -86,7 +86,7 @@ jobs:
     permissions: write-all
     strategy:
       matrix:
-        package: [ uniond, galoisd-devnet, galoisd-testnet, galoisd-mainnet ]
+        package: [ uniond, galoisd ]
     services:
       registry:
         image: registry:2
@@ -163,7 +163,7 @@ jobs:
 
           regctl registry set --tls disabled localhost:5000
           regctl image mod localhost:5000/unionlabs/${{ matrix.package }}:${{ github.ref_name }} --to-oci --create ${{ github.ref_name }} --annotation org.opencontainers.image.description="$(cat $GITHUB_WORKSPACE/.github/container-descriptions/$package.txt)"
-         
+
       - uses: docker/login-action@v2
         with:
           registry: ghcr.io
@@ -197,7 +197,7 @@ jobs:
             skopeo copy --multi-arch=all --insecure-policy --src-tls-verify=false "docker://localhost:5000/unionlabs/${{ matrix.package }}:${{ github.ref_name }}" "docker://europe-docker.pkg.dev/model-envelope-401614/union-testnet/${{ matrix.package }}:${{ github.ref_name }}"
           fi
 
-    
+
   release:
     runs-on: ubuntu-latest
     needs: [ docker-manifest, dl-bins ]
@@ -263,7 +263,7 @@ jobs:
 
           clog -s ${{github.ref_name}} --from $previous_semantic_version --to ${{github.ref_name}} > ${{github.ref_name}}-CHANGELOG.md
       - uses: actions/download-artifact@v3
-      # NOTE: please ensure that the following two steps remain in sync, other than the 
+      # NOTE: please ensure that the following two steps remain in sync, other than the
       # if condition, the `prerelease` value, and the name.
       - if: "contains(github.ref_name, 'rc')"
         name: 'Create Release Candidate'
@@ -275,12 +275,8 @@ jobs:
           files: |
             **/uniond-aarch64-linux
             **/uniond-x86_64-linux
-            **/galoisd-devnet-aarch64-linux
-            **/galoisd-devnet-x86_64-linux
-            **/galoisd-testnet-aarch64-linux
-            **/galoisd-testnet-x86_64-linux
-            **/galoisd-mainnet-aarch64-linux
-            **/galoisd-mainnet-x86_64-linux
+            **/galoisd-aarch64-linux
+            **/galoisd-x86_64-linux
       - if: "!contains(github.ref_name, 'rc')"
         name: 'Create Release'
         uses: softprops/action-gh-release@v1
@@ -292,9 +288,5 @@ jobs:
           files: |
             **/uniond-aarch64-linux
             **/uniond-x86_64-linux
-            **/galoisd-devnet-aarch64-linux
-            **/galoisd-devnet-x86_64-linux
-            **/galoisd-testnet-aarch64-linux
-            **/galoisd-testnet-x86_64-linux
-            **/galoisd-mainnet-aarch64-linux
-            **/galoisd-mainnet-x86_64-linux
+            **/galoisd-aarch64-linux
+            **/galoisd-x86_64-linux

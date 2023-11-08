@@ -211,6 +211,7 @@ crossorigin
 cryptware
 ctypes
 dasel
+dashmap
 dataconnector
 datadir
 datagram
@@ -433,6 +434,7 @@ notrunc
 numtide
 omit
 omnichain
+oneof
 openapi
 openapiv
 opsz
@@ -656,6 +658,7 @@ unjailed
 unmarshal
 unmarshalling
 unopinionated
+unprefixed
 unsetting
 unshifted
 unvalidated

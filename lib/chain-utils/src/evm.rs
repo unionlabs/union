@@ -1,4 +1,4 @@
-use std::{ops::Div, str::FromStr, sync::Arc};
+use std::{fmt::Debug, ops::Div, str::FromStr, sync::Arc};
 
 use beacon_api::client::BeaconApiClient;
 use contracts::{
@@ -12,16 +12,17 @@ use contracts::{
     shared_types::{IbcCoreChannelV1ChannelData, IbcCoreConnectionV1ConnectionEndData},
 };
 use ethers::{
-    abi::Tokenizable,
+    abi::{AbiEncode, Tokenizable},
     contract::{ContractError, EthCall, EthLogDecode},
     core::k256::ecdsa,
     middleware::{NonceManagerMiddleware, SignerMiddleware},
     providers::{Middleware, Provider, ProviderError, Ws, WsClientError},
     signers::{LocalWallet, Wallet},
-    utils::secret_key_to_address,
+    utils::{keccak256, secret_key_to_address},
 };
 use futures::{stream, Future, FutureExt, Stream, StreamExt};
 use hubble::hasura::{insert_demo_tx, Datastore, HasuraConfig, HasuraDataStore, InsertDemoTx};
+use prost::Message;
 use serde::{Deserialize, Serialize};
 use typenum::Unsigned;
 use unionlabs::{
@@ -35,15 +36,20 @@ use unionlabs::{
     google::protobuf::any::Any,
     ibc::{
         core::{
-            channel::channel::Channel, client::height::Height,
+            channel::channel::Channel,
+            client::height::{Height, IsHeight},
             connection::connection_end::ConnectionEnd,
         },
         lightclients::{cometbls, ethereum, tendermint::fraction::Fraction, wasm},
     },
     id::{ChannelId, ClientId, ConnectionId, PortId},
-    traits::{Chain, ClientState},
+    proof::{
+        AcknowledgementPath, ChannelEndPath, ClientConsensusStatePath, ClientStatePath,
+        CommitmentPath, ConnectionPath, IbcPath, IbcStateRead,
+    },
+    traits::{Chain, ClientState, ClientStateOf, ConsensusStateOf},
     validated::ValidateT,
-    EmptyString, TryFromEthAbiErrorOf, TryFromProto,
+    EmptyString, TryFromEthAbiErrorOf, TryFromProto, TryFromProtoErrorOf,
 };
 
 use crate::{private_key::PrivateKey, ChainEvent, EventSource, Pool};
@@ -516,8 +522,11 @@ impl<C: ChainSpec> EventSource for Evm<C> {
                         let event = match event {
                             Ok(x) => x,
                             Err(e) => {
-                                tracing::warn!("Failed to decode ibc handler event, we may need to regenerate them: {:?}", e);
-                                return Ok::<_, EvmEventSourceError>(None::<ChainEvent<Evm<C>>>)
+                                tracing::error!(
+                                    error = ?e,
+                                    "failed to decode ibc handler event"
+                                );
+                                return Ok::<_, EvmEventSourceError>(None::<ChainEvent<Evm<C>>>);
                             }
                         };
 
@@ -566,14 +575,20 @@ impl<C: ChainSpec> EventSource for Evm<C> {
                                     packet_timeout_height: packet_ack.packet.timeout_height.into(),
                                     packet_timeout_timestamp: packet_ack.packet.timeout_timestamp,
                                     packet_sequence: packet_ack.packet.sequence,
-                                    packet_src_port: packet_ack.packet.source_port.parse()
+                                    packet_src_port: packet_ack
+                                        .packet
+                                        .source_port
+                                        .parse()
                                         .map_err(EvmEventSourceError::PortIdParse)?,
                                     packet_src_channel: packet_ack
                                         .packet
                                         .source_channel
                                         .parse()
                                         .map_err(EvmEventSourceError::ChannelIdParse)?,
-                                    packet_dst_port: packet_ack.packet.destination_port.parse()
+                                    packet_dst_port: packet_ack
+                                        .packet
+                                        .destination_port
+                                        .parse()
                                         .map_err(EvmEventSourceError::PortIdParse)?,
                                     packet_dst_channel: packet_ack
                                         .packet
@@ -592,7 +607,10 @@ impl<C: ChainSpec> EventSource for Evm<C> {
                                         .await?;
 
                                 Some(IbcEvent::ChannelOpenAck(ChannelOpenAck {
-                                    port_id: event.port_id.parse().map_err(EvmEventSourceError::PortIdParse)?,
+                                    port_id: event
+                                        .port_id
+                                        .parse()
+                                        .map_err(EvmEventSourceError::PortIdParse)?,
                                     channel_id: event
                                         .channel_id
                                         .parse()
@@ -612,7 +630,10 @@ impl<C: ChainSpec> EventSource for Evm<C> {
                                         .await?;
 
                                 Some(IbcEvent::ChannelOpenConfirm(ChannelOpenConfirm {
-                                    port_id: event.port_id.parse().map_err(EvmEventSourceError::PortIdParse)?,
+                                    port_id: event
+                                        .port_id
+                                        .parse()
+                                        .map_err(EvmEventSourceError::PortIdParse)?,
                                     channel_id: event
                                         .channel_id
                                         .parse()
@@ -632,14 +653,23 @@ impl<C: ChainSpec> EventSource for Evm<C> {
                                         .await?;
 
                                 Some(IbcEvent::ChannelOpenInit(ChannelOpenInit {
-                                    port_id: event.port_id.parse().map_err(EvmEventSourceError::PortIdParse)?,
+                                    port_id: event
+                                        .port_id
+                                        .parse()
+                                        .map_err(EvmEventSourceError::PortIdParse)?,
                                     channel_id: event
                                         .channel_id
                                         .parse()
                                         .map_err(EvmEventSourceError::ChannelIdParse)?,
                                     // TODO: Ensure that event.counterparty_channel_id is `EmptyString`
-                                    counterparty_channel_id: "".to_string().validate().expect("empty string is a valid empty string; qed;"),
-                                    counterparty_port_id: event.counterparty_port_id.parse().map_err(EvmEventSourceError::PortIdParse)?,
+                                    counterparty_channel_id: ""
+                                        .to_string()
+                                        .validate()
+                                        .expect("empty string is a valid empty string; qed;"),
+                                    counterparty_port_id: event
+                                        .counterparty_port_id
+                                        .parse()
+                                        .map_err(EvmEventSourceError::PortIdParse)?,
                                     connection_id: event
                                         .connection_id
                                         .parse()
@@ -653,12 +683,18 @@ impl<C: ChainSpec> EventSource for Evm<C> {
                                         .await?;
 
                                 Some(IbcEvent::ChannelOpenTry(ChannelOpenTry {
-                                    port_id: event.port_id.parse().map_err(EvmEventSourceError::PortIdParse)?,
+                                    port_id: event
+                                        .port_id
+                                        .parse()
+                                        .map_err(EvmEventSourceError::PortIdParse)?,
                                     channel_id: event
                                         .channel_id
                                         .parse()
                                         .map_err(EvmEventSourceError::ChannelIdParse)?,
-                                    counterparty_port_id: event.counterparty_port_id.parse().map_err(EvmEventSourceError::PortIdParse)?,
+                                    counterparty_port_id: event
+                                        .counterparty_port_id
+                                        .parse()
+                                        .map_err(EvmEventSourceError::PortIdParse)?,
                                     counterparty_channel_id: channel
                                         .counterparty
                                         .channel_id
@@ -798,14 +834,20 @@ impl<C: ChainSpec> EventSource for Evm<C> {
                                     packet_timeout_height: event.packet.timeout_height.into(),
                                     packet_timeout_timestamp: event.packet.timeout_timestamp,
                                     packet_sequence: event.packet.sequence,
-                                    packet_src_port: event.packet.source_port.parse()
+                                    packet_src_port: event
+                                        .packet
+                                        .source_port
+                                        .parse()
                                         .map_err(EvmEventSourceError::PortIdParse)?,
                                     packet_src_channel: event
                                         .packet
                                         .source_channel
                                         .parse()
                                         .map_err(EvmEventSourceError::ChannelIdParse)?,
-                                    packet_dst_port: event.packet.destination_port.parse()
+                                    packet_dst_port: event
+                                        .packet
+                                        .destination_port
+                                        .parse()
                                         .map_err(EvmEventSourceError::PortIdParse)?,
                                     packet_dst_channel: event
                                         .packet
@@ -828,7 +870,9 @@ impl<C: ChainSpec> EventSource for Evm<C> {
                                     packet_timeout_height: event.timeout_height.into(),
                                     packet_timeout_timestamp: event.timeout_timestamp,
                                     packet_sequence: event.sequence,
-                                    packet_src_port: event.source_port.parse()
+                                    packet_src_port: event
+                                        .source_port
+                                        .parse()
                                         .map_err(EvmEventSourceError::PortIdParse)?,
                                     packet_src_channel: event
                                         .source_channel
@@ -861,28 +905,30 @@ impl<C: ChainSpec> EventSource for Evm<C> {
                         }))
                     })
                     .filter_map(|x| async { x.transpose() })
-                    .then(|event: Result<ChainEvent<Evm<C>>, EvmEventSourceError>| async {
-                        if let Ok(ref event) = event {
-                            let current_slot = event.height.revision_height;
+                    .then(
+                        |event: Result<ChainEvent<Evm<C>>, EvmEventSourceError>| async {
+                            if let Ok(ref event) = event {
+                                let current_slot = event.height.revision_height;
 
-                            let next_epoch_ts = next_epoch_timestamp::<C>(current_slot, genesis_time);
+                                let next_epoch_ts =
+                                    next_epoch_timestamp::<C>(current_slot, genesis_time);
 
                                 if let Some(hc) = &this.hasura_client {
-                                    hc
-                                        .do_post::<InsertDemoTx>(insert_demo_tx::Variables {
-                                            data: serde_json::json! {{
-                                                "latest_execution_block_hash": event.block_hash,
-                                                "timestamp": next_epoch_ts,
-                                            }},
-                                        })
-                                        .await
-                                        .unwrap();
+                                    hc.do_post::<InsertDemoTx>(insert_demo_tx::Variables {
+                                        data: serde_json::json! {{
+                                            "latest_execution_block_hash": event.block_hash,
+                                            "timestamp": next_epoch_ts,
+                                        }},
+                                    })
+                                    .await
+                                    .unwrap();
                                 }
-                        }
+                            }
 
-                        // pass it back through
-                        event
-                    });
+                            // pass it back through
+                            event
+                        },
+                    );
 
                     let iter = futures::stream::iter(packets.collect::<Vec<_>>().await);
 
@@ -981,15 +1027,288 @@ pub fn next_epoch_timestamp<C: ChainSpec>(slot: u64, genesis_timestamp: u64) -> 
     genesis_timestamp + (next_epoch_slot * C::SECONDS_PER_SLOT::U64)
 }
 
-// #[test]
-// fn next_epoch_ts() {
-//     dbg!(next_epoch_timestamp::<Mainnet>(6, 0));
-//     dbg!(next_epoch_timestamp::<Mainnet>(7, 0));
-//     dbg!(next_epoch_timestamp::<Mainnet>(8, 0));
-//     dbg!(next_epoch_timestamp::<Mainnet>(9, 0));
+impl<Counterparty, C, P> IbcStateRead<Counterparty, P> for Evm<C>
+where
+    Counterparty: Chain,
+    C: ChainSpec,
+    P: IbcPath<Evm<C>, Counterparty>
+        + EthereumStateRead<
+            C,
+            Counterparty,
+            Encoded = <<<P as EthereumStateRead<C, Counterparty>>::EthCall as EthCallExt>::Return as TupleToOption>::Inner,
+        > + 'static,
+    <P::EthCall as EthCallExt>::Return: TupleToOption,
+{
+    fn proof(
+        &self,
+        path: P,
+        at: Height,
+    ) -> impl Future<Output = Vec<u8>> + '_ {
+        async move {
+            let execution_height = self.execution_height(at).await;
 
-//     dbg!(next_epoch_timestamp::<Minimal>(6, 0));
-//     // dbg!(next_epoch::<Minimal>(48, 0));
-//     // dbg!(next_epoch::<Minimal>(49, 0));
-//     // dbg!(next_epoch::<Minimal>(47, 0));
-// }
+            let path = path.to_string();
+
+            let location = keccak256(
+                keccak256(path.as_bytes())
+                    .into_iter()
+                    .chain(ethers::types::U256::from(0).encode())
+                    .collect::<Vec<_>>(),
+            );
+
+            let proof = self
+                .provider
+                .get_proof(
+                    self.readonly_ibc_handler.address(),
+                    vec![location.into()],
+                    Some(execution_height.into()),
+                )
+                .await
+                .unwrap();
+
+            tracing::info!(?proof);
+
+            let proof = match <[_; 1]>::try_from(proof.storage_proof) {
+                Ok([proof]) => proof,
+                Err(invalid) => {
+                    panic!("received invalid response from eth_getProof, expected length of 1 but got `{invalid:#?}`");
+                }
+            };
+
+                protos::union::ibc::lightclients::ethereum::v1::StorageProof {
+                    proofs: [protos::union::ibc::lightclients::ethereum::v1::Proof {
+                        key: proof.key.to_fixed_bytes().to_vec(),
+                        // REVIEW(benluelo): Make sure this encoding works
+                        value: proof.value.encode(),
+                        proof: proof
+                            .proof
+                            .into_iter()
+                            .map(|bytes| bytes.to_vec())
+                            .collect(),
+                    }]
+                    .to_vec(),
+                }
+                .encode_to_vec()
+        }
+    }
+
+    fn state(&self, path: P, at: Self::Height) -> impl Future<Output = <P as IbcPath<Evm<C>, Counterparty>>::Output> + '_
+    {
+        async move {
+            let execution_block_number = self.execution_height(at).await;
+
+            self.read_ibc_state(path.into_eth_call(), execution_block_number)
+                .await
+                .unwrap()
+                .map(|x| P::decode_ibc_state(x))
+                .unwrap()
+        }
+    }
+}
+
+pub trait EthereumStateRead<C, Counterparty>: IbcPath<Evm<C>, Counterparty>
+where
+    Counterparty: Chain,
+    C: ChainSpec,
+{
+    /// The type of the encoded state returned from the contract. This may be bytes (see client state)
+    /// or a type (see connection end)
+    /// Since solidity doesn't support generics, it emulates generics by using bytes in interfaces and
+    /// "downcasting" (via parsing) to expected types in implementations.
+    type Encoded;
+
+    type EthCall: EthCallExt + 'static;
+
+    fn into_eth_call(self) -> Self::EthCall;
+
+    fn decode_ibc_state(encoded: Self::Encoded) -> Self::Output;
+}
+
+impl<C: ChainSpec, Counterparty: Chain> EthereumStateRead<C, Counterparty>
+    for ClientStatePath<<Evm<C> as Chain>::ClientId>
+where
+    ClientStateOf<Counterparty>: TryFromProto,
+    TryFromProtoErrorOf<ClientStateOf<Counterparty>>: Debug,
+{
+    type Encoded = Vec<u8>;
+
+    type EthCall = GetClientStateCall;
+
+    fn into_eth_call(self) -> Self::EthCall {
+        Self::EthCall {
+            client_id: self.client_id.to_string(),
+        }
+    }
+
+    fn decode_ibc_state(encoded: Self::Encoded) -> Self::Output {
+        TryFromProto::try_from_proto_bytes(&encoded).unwrap()
+    }
+}
+
+impl<C: ChainSpec, Counterparty: Chain> EthereumStateRead<C, Counterparty>
+    for ClientConsensusStatePath<<Evm<C> as Chain>::ClientId, <Counterparty as Chain>::Height>
+where
+    ConsensusStateOf<Counterparty>: TryFromProto,
+    TryFromProtoErrorOf<ConsensusStateOf<Counterparty>>: Debug,
+{
+    type Encoded = Vec<u8>;
+
+    type EthCall = GetConsensusStateCall;
+
+    fn into_eth_call(self) -> Self::EthCall {
+        Self::EthCall {
+            client_id: self.client_id.to_string(),
+            height: self.height.into_height().into(),
+        }
+    }
+
+    fn decode_ibc_state(encoded: Self::Encoded) -> Self::Output {
+        TryFromProto::try_from_proto_bytes(&encoded).unwrap()
+    }
+}
+
+impl<C: ChainSpec, Counterparty: Chain> EthereumStateRead<C, Counterparty> for ConnectionPath {
+    type Encoded = IbcCoreConnectionV1ConnectionEndData;
+
+    type EthCall = GetConnectionCall;
+
+    fn into_eth_call(self) -> Self::EthCall {
+        Self::EthCall {
+            connection_id: self.connection_id.to_string(),
+        }
+    }
+
+    fn decode_ibc_state(encoded: Self::Encoded) -> Self::Output {
+        encoded.try_into().unwrap()
+    }
+}
+
+impl<C: ChainSpec, Counterparty: Chain> EthereumStateRead<C, Counterparty> for ChannelEndPath {
+    type Encoded = IbcCoreChannelV1ChannelData;
+
+    type EthCall = GetChannelCall;
+
+    fn into_eth_call(self) -> Self::EthCall {
+        Self::EthCall {
+            port_id: self.port_id.to_string(),
+            channel_id: self.channel_id.to_string(),
+        }
+    }
+
+    fn decode_ibc_state(encoded: Self::Encoded) -> Self::Output {
+        encoded.try_into().unwrap()
+    }
+}
+
+impl<C: ChainSpec, Counterparty: Chain> EthereumStateRead<C, Counterparty> for CommitmentPath {
+    type Encoded = [u8; 32];
+
+    type EthCall = GetHashedPacketCommitmentCall;
+
+    fn into_eth_call(self) -> Self::EthCall {
+        Self::EthCall {
+            port_id: self.port_id.to_string(),
+            channel_id: self.channel_id.to_string(),
+            sequence: self.sequence,
+        }
+    }
+
+    fn decode_ibc_state(encoded: Self::Encoded) -> Self::Output {
+        encoded.into()
+    }
+}
+
+impl<C: ChainSpec, Counterparty: Chain> EthereumStateRead<C, Counterparty> for AcknowledgementPath {
+    type Encoded = [u8; 32];
+
+    type EthCall = GetHashedPacketAcknowledgementCommitmentCall;
+
+    fn into_eth_call(self) -> Self::EthCall {
+        Self::EthCall {
+            port_id: self.port_id.to_string(),
+            channel_id: self.channel_id.to_string(),
+            sequence: self.sequence,
+        }
+    }
+
+    fn decode_ibc_state(encoded: Self::Encoded) -> Self::Output {
+        encoded.into()
+    }
+}
+
+pub async fn bind_port<C: ChainSpec>(this: &Evm<C>, module_address: Address, port_id: String) {
+    // HACK: This will pop the top item out of the queue, but binding the port requires the contract owner;
+    // this will work as long as the first signer in the list is the owner.
+    this.ibc_handlers
+        .with(|ibc_handler| async move {
+            let bind_port_result = ibc_handler.bind_port(port_id, module_address.into());
+
+            match bind_port_result.send().await {
+                Ok(ok) => {
+                    ok.await.unwrap().unwrap();
+                }
+                Err(why) => eprintln!("{:?}", why.decode_revert::<String>()),
+            };
+        })
+        .await
+}
+
+#[allow(unused_variables)]
+pub async fn setup_initial_channel<C: ChainSpec>(
+    this: &Evm<C>,
+    module_address: Address,
+    channel_id: String,
+    port_id: String,
+    counterparty_port_id: String,
+) {
+    // let signer_middleware = Arc::new(SignerMiddleware::new(
+    //     this.provider.clone(),
+    //     this.wallet.clone(),
+    // ));
+
+    // let ibc_handler = devnet_ownable_ibc_handler::DevnetOwnableIBCHandler::new(
+    //     this.ibc_handler.address(),
+    //     signer_middleware,
+    // );
+
+    // ibc_handler
+    //     .setup_initial_channel(
+    //         "connection-0".into(),
+    //         IbcCoreConnectionV1ConnectionEndData {
+    //             client_id: "cometbls-new-0".into(),
+    //             versions: vec![IbcCoreConnectionV1VersionData {
+    //                 identifier: "1".into(),
+    //                 features: vec!["ORDER_ORDERED".into(), "ORDER_UNORDERED".into()],
+    //             }],
+    //             state: 3,
+    //             counterparty: IbcCoreConnectionV1CounterpartyData {
+    //                 client_id: "08-wasm-0".into(),
+    //                 connection_id: "connection-0".into(),
+    //                 prefix: IbcCoreCommitmentV1MerklePrefixData {
+    //                     key_prefix: b"ibc".to_vec().into(),
+    //                 },
+    //             },
+    //             delay_period: 6,
+    //         },
+    //         port_id,
+    //         channel_id.clone(),
+    //         IbcCoreChannelV1ChannelData {
+    //             state: 3,
+    //             ordering: 1,
+    //             counterparty: IbcCoreChannelV1CounterpartyData {
+    //                 port_id: counterparty_port_id,
+    //                 channel_id,
+    //             },
+    //             connection_hops: vec!["connection-0".into()],
+    //             version: "ics20-1".into(),
+    //         },
+    //         module_address.into(),
+    //     )
+    //     .send()
+    //     .await
+    //     .unwrap()
+    //     .await
+    //     .unwrap()
+    //     .unwrap();
+    todo!()
+}

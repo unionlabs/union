@@ -158,14 +158,7 @@ pub fn validate_merkle_branch<'a>(
 mod tests {
     #![allow(clippy::redundant_clone)]
 
-    use unionlabs::{
-        ethereum_consts_traits::{
-            consts::{floorlog2, EXECUTION_PAYLOAD_INDEX},
-            Minimal, SECONDS_PER_SLOT, SEPOLIA,
-        },
-        ibc::lightclients::ethereum::header::Header,
-        TryFromProto,
-    };
+    use unionlabs::ethereum_consts_traits::{Minimal, SECONDS_PER_SLOT, SEPOLIA};
 
     use super::*;
 

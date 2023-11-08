@@ -295,7 +295,6 @@ mod tests {
             header::Header, sync_committee::SyncCommittee,
             trusted_sync_committee::ActiveSyncCommittee,
         },
-        // TryFromProto,
     };
 
     use super::*;
@@ -407,6 +406,7 @@ mod tests {
     //     .into()
     // }
 
+    #[allow(dead_code)] // will thisbe used anywhere?
     fn do_validate_light_client_update(
         header: Header<Minimal>,
     ) -> Result<(), ValidateLightClientError> {

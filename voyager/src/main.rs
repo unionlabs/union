@@ -1,6 +1,6 @@
 #![recursion_limit = "256"]
 // *almost* stable, more than safe enough to use imo https://github.com/rust-lang/rfcs/pull/3425
-#![feature(return_position_impl_trait_in_trait, trait_alias)]
+#![feature(trait_alias)]
 // #![warn(clippy::pedantic)]
 #![allow(
      // required due to return_position_impl_trait_in_trait false positives
@@ -27,12 +27,8 @@ use crate::{
     queue::{AnyQueue, AnyQueueConfig, PgQueueConfig, RunError, Voyager, VoyagerInitError},
 };
 
-pub const DELAY_PERIOD: u64 = 0;
-
 pub mod cli;
 pub mod config;
-
-pub mod msg;
 
 pub mod queue;
 
@@ -157,10 +153,10 @@ async fn do_main(args: cli::AppArgs) -> Result<(), VoyagerError> {
 
                 match chain {
                     AnyChain::EvmMinimal(evm) => {
-                        chain::evm::bind_port(&evm, module_address.into(), port_id).await
+                        chain_utils::evm::bind_port(&evm, module_address.into(), port_id).await
                     }
                     AnyChain::EvmMainnet(evm) => {
-                        chain::evm::bind_port(&evm, module_address.into(), port_id).await
+                        chain_utils::evm::bind_port(&evm, module_address.into(), port_id).await
                     }
                     _ => panic!("Not supported"),
                 };
@@ -176,7 +172,7 @@ async fn do_main(args: cli::AppArgs) -> Result<(), VoyagerError> {
 
                 match chain {
                     AnyChain::EvmMinimal(evm) => {
-                        chain::evm::setup_initial_channel(
+                        chain_utils::evm::setup_initial_channel(
                             &evm,
                             module_address.into(),
                             channel_id,

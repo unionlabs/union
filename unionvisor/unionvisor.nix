@@ -57,27 +57,26 @@
       inherit (unionvisorAll) checks;
       packages = {
         inherit (unionvisorAll.packages) unionvisor;
-        bundle-testnet-3 =
+        bundle-testnet-4 =
           mkBundle {
-            name = "testnet-3";
-            versions = [ "v0.8.0" "v0.9.0" "v0.10.0" "v0.11.0" "v0.12.0" "v0.13.0" ];
-            genesis = ../networks/genesis/union-testnet-3/genesis.json;
+            name = "testnet-4";
+            versions = [ "v0.14.0" ];
+            genesis = ../networks/genesis/union-testnet-4/genesis.json;
             meta = {
               binary_name = "uniond";
               versions_directory = "versions";
-              fallback_version = "v0.8.0";
+              fallback_version = "v0.14.0";
             };
           };
         bundle-testnet-next =
           mkBundle {
-            name = "testnet-3";
-            versions = [ "v0.8.0" "v0.9.0" "v0.10.0" "v0.11.0" "v0.12.0" "v0.13.0" ];
-            nextVersion = "v0.14.0";
-            genesis = ../networks/genesis/union-testnet-3/genesis.json;
+            name = "testnet-4";
+            versions = [ "v0.14.0" ];
+            genesis = ../networks/genesis/union-testnet-4/genesis.json;
             meta = {
               binary_name = "uniond";
               versions_directory = "versions";
-              fallback_version = "v0.8.0";
+              fallback_version = "v0.14.0";
             };
           };
       };
@@ -85,18 +84,35 @@
 
   flake.nixosModules.unionvisor = { lib, pkgs, config, ... }:
     with lib;
-    let cfg = config.services.unionvisor;
-    in {
+    let
+      cfg = config.services.unionvisor;
+
+      wrappedUnionvisor = pkgs.symlinkJoin {
+        name = "unionvisor";
+        paths = [ cfg.bundle ];
+        buildInputs = [ pkgs.makeWrapper ];
+        postBuild = ''
+          wrapProgram $out/unionvisor \
+            --set UNIONVISOR_ROOT /var/lib/unionvisor \
+            --set UNIONVISOR_BUNDLE ${cfg.bundle} \
+            --set HOME /var/lib/unionvisor
+
+          mkdir -p $out/bin/
+          mv $out/unionvisor $out/bin/unionvisor
+        '';
+      };
+    in
+    {
       options.services.unionvisor = {
         enable = mkEnableOption "Unionvisor service";
         bundle = mkOption {
           type = types.package;
-          default = self.packages.${pkgs.system}.bundle-testnet-3;
+          default = self.packages.${pkgs.system}.bundle-testnet-4;
         };
         moniker = mkOption { type = types.str; };
         network = mkOption {
           type = types.str;
-          default = "union-testnet-3";
+          default = "union-testnet-4";
         };
         seeds = mkOption {
           type = types.str;
@@ -105,16 +121,20 @@
       };
 
       config = mkIf cfg.enable {
+        environment.systemPackages = [
+          wrappedUnionvisor
+        ];
+
         systemd.services.unionvisor =
           let
             unionvisor-systemd-script = pkgs.writeShellApplication {
               name = "unionvisor-systemd";
-              runtimeInputs = [ pkgs.coreutils cfg.bundle ];
+              runtimeInputs = [ pkgs.coreutils wrappedUnionvisor ];
               text = ''
                 ${pkgs.coreutils}/bin/mkdir -p /var/lib/unionvisor
                 cd /var/lib/unionvisor
-                HOME=/var/lib/unionvisor ${cfg.bundle}/unionvisor --root /var/lib/unionvisor init --bundle ${cfg.bundle} --moniker ${cfg.moniker} --seeds ${cfg.seeds} --network ${cfg.network} --allow-dirty
-                HOME=/var/lib/unionvisor ${cfg.bundle}/unionvisor --root /var/lib/unionvisor run --bundle ${cfg.bundle} 
+                unionvisor init  --moniker ${cfg.moniker} --seeds ${cfg.seeds} --network ${cfg.network} --allow-dirty
+                unionvisor run
               '';
             };
           in

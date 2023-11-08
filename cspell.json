@@ -30,6 +30,7 @@
     "**/testdata",
     "networks/genesis/union-testnet-2/**",
     "networks/genesis/union-testnet-3/**",
+    "networks/genesis/union-testnet-4/**",
     "hubble/hasura/**"
   ]
 }

@@ -172,5 +172,26 @@ pub mod union_prover_api_client {
             ));
             self.inner.unary(req, path, codec).await
         }
+        ///
+        pub async fn poll(
+            &mut self,
+            request: impl tonic::IntoRequest<super::PollRequest>,
+        ) -> std::result::Result<tonic::Response<super::PollResponse>, tonic::Status> {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path =
+                http::uri::PathAndQuery::from_static("/union.galois.api.v1.UnionProverAPI/Poll");
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "union.galois.api.v1.UnionProverAPI",
+                "Poll",
+            ));
+            self.inner.unary(req, path, codec).await
+        }
     }
 }
