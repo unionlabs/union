@@ -24,7 +24,7 @@ After we see your validator is created, we'll delegate more to your node to ensu
 
 ### 4) Ensure you are creating blocks correctly
 
-Once we see that you've produced blocks for a day, you will have completed the onboarding process.
+Once we see that you've produced blocks for 24 hours, you will have completed the onboarding process. You will receive a notification from us confirming the completion of your onboarding.
 
 ## Feedback
 
