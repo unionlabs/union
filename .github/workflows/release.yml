@@ -215,7 +215,7 @@ jobs:
           # Sort the list of tags in ascending order
           sorted_tags=($(printf "%s\n" "${semantic_version_tags[@]}" | sort -V))
 
-          previous_semantic_version=$sorted_tags[-1]
+          previous_semantic_version=$sorted_tags[-2]
 
           # Download & Install clog-tool/clog-cli
           wget https://github.com/clog-tool/clog-cli/releases/download/v0.9.3/clog-v0.9.3-x86_64-unknown-linux-gnu.tar.gz
