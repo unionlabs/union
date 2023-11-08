@@ -67,5 +67,5 @@ _Where `KEY_NAME` is the name you would like to use when referencing your key._
 To find your validator address you can run the following `uniond` sub-command:
 
 ```sh
-uniond tendermint show-validator
+uniond tendermint show-address
 ```
