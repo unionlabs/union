@@ -1,6 +1,6 @@
 use milagro_bls::AmclError;
 use trie_db::TrieError;
-use unionlabs::ethereum::H256;
+use unionlabs::{bls::BlsPublicKey, ethereum::H256};
 
 #[derive(Debug, PartialEq)]
 pub struct InvalidMerkleBranch {
@@ -11,60 +11,83 @@ pub struct InvalidMerkleBranch {
     pub root: H256,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, thiserror::Error)]
 pub enum Error {
+    #[error("invalid merkle branch ({0:?})")]
     InvalidMerkleBranch(InvalidMerkleBranch),
+    #[error("invalid chain conversion")]
     InvalidChainVersion,
+    #[error("crypto error")]
     Crypto,
+    #[error(
+        "expected current sync committee to be provided since `update_period == current_period`"
+    )]
     ExpectedCurrentSyncCommittee,
+    #[error("expected next sync committee to be provided since `update_period > current_period`")]
     ExpectedNextSyncCommittee,
+    #[error(
+        "irrelevant update since the order of the slots in the update data, and stored data is not correct"
+    )]
     IrrelevantUpdate,
+    #[error("the order of the slots in the update data, and stored data is not correct")]
     InvalidSlots,
-    InvalidSignature,
-    InvalidSignaturePeriod,
-    InvalidPublicKey,
-    NextSyncCommitteeMismatch,
-    InsufficientSyncCommitteeParticipants,
+    #[error(
+        "signature period ({signature_period}) must be equal to `store_period` \
+        ({stored_period}) or `store_period + 1` when the next sync committee is stored"
+    )]
+    InvalidSignaturePeriodWhenNextSyncCommitteeExists {
+        signature_period: u64,
+        stored_period: u64,
+    },
+    #[error(
+        "signature period ({signature_period}) must be equal to `store_period` \
+        ({stored_period}) when the next sync committee is not stored"
+    )]
+    InvalidSignaturePeriodWhenNextSyncCommitteeDoesNotExist {
+        signature_period: u64,
+        stored_period: u64,
+    },
+    #[error(
+        "next sync committee ({got}) does not match with the one in the current state ({expected})"
+    )]
+    NextSyncCommitteeMismatch {
+        expected: BlsPublicKey,
+        got: BlsPublicKey,
+    },
+    #[error(
+        "insufficient number of sync committee participants, expected it to be at least ({min_limit}) but got ({participants})",
+    )]
+    InsufficientSyncCommitteeParticipants {
+        min_limit: usize,
+        participants: usize,
+    },
+    #[error("bls error ({0:?})")]
     Bls(AmclError),
+    #[error("proof is invalid due to value mismatch")]
     ValueMismatch,
+    #[error("trie error ({0:?})")]
     Trie(Box<TrieError<primitive_types::H256, rlp::DecoderError>>),
-    RlpDecode,
-    InvalidHash,
+    #[error("rlp decoding failed ({0})")]
+    RlpDecode(String),
+    #[error("custom query error: ({0})")]
     CustomError(String),
 }
 
-impl core::fmt::Display for Error {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Error::InvalidMerkleBranch(err) => write!(f, "Invalid merkle branch: {err:#?}"),
-            Error::InvalidChainVersion => write!(f, "Invalid chain conversion."),
-            Error::Crypto => write!(f, "Crypto error."),
-            Error::ExpectedCurrentSyncCommittee => write!(f, "Expected current sync committee."),
-            Error::ExpectedNextSyncCommittee => write!(f, "Expected next sync committee"),
-            Error::IrrelevantUpdate => write!(f, "Irrelevant update."),
-            Error::InvalidSlots => write!(f, "Invalid slots."),
-            Error::InvalidSignaturePeriod => write!(
-                f,
-                "Signature period must be equal to `store_period` or `store_period + 1`"
-            ),
-            Error::NextSyncCommitteeMismatch => write!(
-                f,
-                "Next sync committee does not match with the one in the current state."
-            ),
-            Error::InsufficientSyncCommitteeParticipants => {
-                write!(f, "Insufficient number of sync committee participants.")
-            }
-            Error::Bls(e) => write!(f, "Bls error: {e:?}"),
-            Error::InvalidSignature => write!(f, "Signature is not valid."),
-            Error::InvalidPublicKey => write!(f, "Invalid public key."),
-            Error::ValueMismatch => write!(f, "Proof is invalid. Value mismatch."),
-            Error::Trie(e) => write!(f, "Trie error: {e:?}"),
-            Error::RlpDecode => write!(f, "Rlp decoding failed."),
-            Error::InvalidHash => write!(f, "Invalid hash."),
-            Error::CustomError(e) => write!(f, "Custom query error: {}", e),
-        }
-    }
-}
+#[derive(Debug, thiserror::Error, PartialEq)]
+#[error("verify storage absence error: {0}")]
+pub struct VerifyStorageAbsenceError(#[from] Error);
+
+#[derive(Debug, thiserror::Error, PartialEq)]
+#[error("validate light client error: {0}")]
+pub struct ValidateLightClientError(#[from] Error);
+
+#[derive(Debug, thiserror::Error, PartialEq)]
+#[error("verify account storage root error: {0}")]
+pub struct VerifyAccountStorageRootError(#[from] Error);
+
+#[derive(Debug, thiserror::Error, PartialEq)]
+#[error("verify storage proof error: {0}")]
+pub struct VerifyStorageProofError(#[from] Error);
 
 impl From<AmclError> for Error {
     fn from(e: AmclError) -> Self {

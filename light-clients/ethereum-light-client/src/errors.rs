@@ -1,7 +1,13 @@
 use cosmwasm_std::StdError;
+use ethereum_verifier::{
+    ValidateLightClientError, VerifyAccountStorageRootError, VerifyStorageAbsenceError,
+    VerifyStorageProofError,
+};
 use thiserror::Error as ThisError;
 use unionlabs::{
-    ibc::lightclients::ethereum::header::Header, TryFromProtoBytesError, TryFromProtoErrorOf,
+    bls::BlsPublicKey,
+    ibc::{core::client::height::Height, lightclients::ethereum::header::Header},
+    TryFromProtoBytesError, TryFromProtoErrorOf,
 };
 
 use crate::Config;
@@ -11,110 +17,80 @@ pub enum Error {
     #[error("{0}")]
     Std(#[from] StdError),
 
-    #[error("Unimplemented")]
-    Unimplemented,
+    #[error("error while decoding proto ({reason})")]
+    DecodeFromProto { reason: String },
 
-    #[error("Decode error: {0}")]
-    DecodeError(String),
-
-    #[error("Unknown type url")]
-    UnknownTypeUrl,
-
-    #[error("Client state not found")]
+    #[error("client state not found")]
     ClientStateNotFound,
 
-    #[error("Invalid proof format")]
-    InvalidProofFormat,
+    #[error("invalid proof format ({0})")]
+    InvalidProofFormat(String),
 
-    #[error("Invalid client id")]
-    InvalidClientId,
+    #[error(
+        "given trusted sync committee doesn't match the given aggregate public \
+        key ({given_aggregate}) or the stored one ({stored_aggregate})"
+    )]
+    TrustedSyncCommitteeMismatch {
+        stored_aggregate: BlsPublicKey,
+        given_aggregate: BlsPublicKey,
+    },
 
-    #[error("Invalid public key: {0}")]
-    InvalidPublicKey(String),
-
-    #[error("Invalid height")]
-    InvalidHeight,
-
-    #[error("Invalid sync committee")]
-    InvalidSyncCommittee,
-
-    #[error("No next sync committee")]
+    #[error("active sync committee is `next` but there is no next sync committee in the consensus state")]
     NoNextSyncCommittee,
 
-    #[error("Consensus state not found for {0}-{1}")]
-    // REVIEW: Why not just use `Height` directly?
-    ConsensusStateNotFound(u64, u64),
+    #[error("consensus state not found at height {0}")]
+    ConsensusStateNotFound(Height),
 
-    #[error("Timestamp not set")]
-    TimestampNotSet,
+    #[error("{0}")]
+    ValidateLightClient(#[from] ValidateLightClientError),
 
-    #[error("Verification error: {0}")]
-    Verification(String),
+    #[error("{0}")]
+    VerifyAccountStorageRoot(#[from] VerifyAccountStorageRootError),
 
-    #[error("Unexpected timestamp: Expected timestamp {0}, got {1}")]
-    UnexpectedTimestamp(u64, u64),
+    #[error("{0}")]
+    VerifyStorageAbsence(#[from] VerifyStorageAbsenceError),
 
-    #[error("Future period")]
-    FuturePeriod,
+    #[error("{0}")]
+    VerifyStorageProof(#[from] VerifyStorageProofError),
 
-    #[error("Cannot generate proof")]
-    CannotGenerateProof,
+    #[error("IBC path is empty")]
+    EmptyIbcPath,
 
-    #[error("Invalid chain version")]
-    InvalidChainVersion,
-
-    #[error("Invalid path {0}")]
-    InvalidPath(String),
-
-    #[error("Invalid membership value")]
-    InvalidValue,
-
-    #[error("Invalid commitment key. Expected {0}, got {1}.")]
+    #[error("invalid commitment key, expected ({0}) but got ({1})")]
     InvalidCommitmentKey(String, String),
 
-    #[error("Missing field in the protobuf encoded data")]
-    MissingProtoField,
-
-    #[error("Client's store period must be equal to update's finalized period")]
+    #[error("client's store period must be equal to update's finalized period")]
     StorePeriodMustBeEqualToFinalizedPeriod,
 
-    #[error("Proof is empty")]
+    #[error("proof is empty")]
     EmptyProof,
 
-    #[error("Counterparty storage not nil")]
+    #[error("counterparty storage not nil")]
     CounterpartyStorageNotNil,
 
-    #[error("Batching proofs are not supported")]
+    #[error("batching proofs are not supported")]
     BatchingProofsNotSupported,
 
-    #[error("Expected value: '{0}' and stored value '{1}' doesn't match")]
+    #[error("expected value ({0}) and stored value ({1}) doesn't match")]
     ExpectedAndStoredValueMismatch(String, String),
 
-    #[error("Custom query: {0}")]
-    CustomQuery(String),
+    #[error("custom query ({0})")]
+    CustomQuery(CustomQueryError),
 
-    #[error("Storage root mismatch")]
-    StorageRootMismatch,
+    #[error("storage root mismatch, expected ({0}) but got ({1})")]
+    StorageRootMismatch(String, String),
 
-    #[error("Wasm client error: {0}")]
+    #[error("wasm client error ({0})")]
     Wasm(String),
 
-    #[error("Next sync committee can't be changed after being set.")]
+    #[error("next sync committee can't be changed after being set")]
     NextSyncCommitteeCannotBeModified,
 
-    #[error("The slot number that is saved previously to the consensus state cannot be changed.")]
+    #[error("the slot number that is saved previously to the consensus state cannot be changed")]
     SlotCannotBeModified,
 }
 
 impl Error {
-    pub fn decode<S: Into<String>>(s: S) -> Error {
-        Error::DecodeError(s.into())
-    }
-
-    pub fn invalid_public_key<S: ToString>(s: S) -> Error {
-        Error::InvalidPublicKey(s.to_string())
-    }
-
     pub fn invalid_commitment_key<B1: AsRef<[u8]>, B2: AsRef<[u8]>>(
         expected: B1,
         got: B2,
@@ -125,24 +101,38 @@ impl Error {
     pub fn stored_value_mismatch<B1: AsRef<[u8]>, B2: AsRef<[u8]>>(expected: B1, got: B2) -> Error {
         Error::ExpectedAndStoredValueMismatch(hex::encode(expected), hex::encode(got))
     }
-
-    pub fn custom_query<S: ToString>(s: S) -> Error {
-        Error::CustomQuery(s.to_string())
-    }
 }
 
 impl From<TryFromProtoBytesError<TryFromProtoErrorOf<Header<Config>>>> for Error {
     fn from(value: TryFromProtoBytesError<TryFromProtoErrorOf<Header<Config>>>) -> Self {
-        Self::DecodeError(format!("{:?}", value))
+        Self::DecodeFromProto {
+            reason: format!("{:?}", value),
+        }
     }
 }
 
 impl From<ics008_wasm_client::Error> for Error {
     fn from(error: ics008_wasm_client::Error) -> Self {
         match error {
-            ics008_wasm_client::Error::Decode(e) => Error::DecodeError(e),
+            ics008_wasm_client::Error::Decode(e) => Error::DecodeFromProto { reason: e },
             ics008_wasm_client::Error::UnexpectedCallDataFromHostModule(e) => Error::Wasm(e),
-            ics008_wasm_client::Error::ClientStateNotFound => Error::Wasm(format!("{error:#?}")),
+            ics008_wasm_client::Error::ClientStateNotFound => Error::ClientStateNotFound,
         }
+    }
+}
+
+#[derive(ThisError, Debug, PartialEq)]
+pub enum CustomQueryError {
+    #[error("error while running `fast_aggregate_verify` query ({0})")]
+    FastAggregateVerify(String),
+    #[error("error while running `aggregate_public_keys` query ({0})")]
+    AggregatePublicKeys(String),
+    #[error("invalid public key is returned from `aggregate_public_key`")]
+    InvalidAggregatePublicKey,
+}
+
+impl From<CustomQueryError> for Error {
+    fn from(value: CustomQueryError) -> Self {
+        Error::CustomQuery(value)
     }
 }

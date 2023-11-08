@@ -26,6 +26,7 @@ sha3 = { version = "0.10", default-features = false }
 trie-db = { version = "0.27.1", default-features = false }
 typenum = { version = "1.16.0", features = ["const-generics", "no_std"] }
 lazy_static = "1.4.0"
+thiserror = { version = "1.0", package = "thiserror-core", default-features = false }
 
 [dev-dependencies]
 serde_json = "1.0"

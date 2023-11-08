@@ -63,22 +63,20 @@ impl IbcClient for EthereumLightClient {
         mut path: ics008_wasm_client::MerklePath,
         value: ics008_wasm_client::StorageState,
     ) -> Result<ics008_wasm_client::ContractResult, Self::Error> {
-        let consensus_state: WasmConsensusState = read_consensus_state(deps, &height)?.ok_or(
-            Error::ConsensusStateNotFound(height.revision_number, height.revision_height),
-        )?;
+        let consensus_state: WasmConsensusState =
+            read_consensus_state(deps, &height)?.ok_or(Error::ConsensusStateNotFound(height))?;
         let client_state: WasmClientState = read_client_state(deps)?;
 
-        let path = path
-            .key_path
-            .pop()
-            .ok_or(Error::InvalidPath("path is empty".into()))?;
+        let path = path.key_path.pop().ok_or(Error::EmptyIbcPath)?;
 
         // This storage root is verified during the header update, so we don't need to verify it again.
         let storage_root = consensus_state.data.storage_root;
 
         let storage_proof = {
             let mut proofs = StorageProof::try_from_proto_bytes(&proof.0)
-                .map_err(|e| Error::decode(format!("when decoding storage proof: {e:#?}")))?
+                .map_err(|e| Error::DecodeFromProto {
+                    reason: format!("when decoding storage proof: {e:#?}"),
+                })?
                 .proofs;
             if proofs.len() > 1 {
                 return Err(Error::BatchingProofsNotSupported);
@@ -113,10 +111,7 @@ impl IbcClient for EthereumLightClient {
         let trusted_sync_committee = header.trusted_sync_committee;
         let wasm_consensus_state =
             read_consensus_state(deps, &trusted_sync_committee.trusted_height)?.ok_or(
-                Error::ConsensusStateNotFound(
-                    trusted_sync_committee.trusted_height.revision_number,
-                    trusted_sync_committee.trusted_height.revision_height,
-                ),
+                Error::ConsensusStateNotFound(trusted_sync_committee.trusted_height),
             )?;
 
         let trusted_consensus_state = TrustedConsensusState::new(
@@ -140,8 +135,7 @@ impl IbcClient for EthereumLightClient {
             current_slot,
             wasm_client_state.data.genesis_validators_root.clone(),
             VerificationContext { deps },
-        )
-        .map_err(|e| Error::Verification(e.to_string()))?;
+        )?;
 
         let proof_data = header
             .account_update
@@ -151,19 +145,18 @@ impl IbcClient for EthereumLightClient {
 
         verify_account_storage_root(
             header.consensus_update.attested_header.execution.state_root,
-            &proof_data
-                .key
-                .as_slice()
-                .try_into()
-                .map_err(|_| Error::InvalidProofFormat)?,
+            &proof_data.key.as_slice().try_into().map_err(|_| {
+                Error::InvalidProofFormat(
+                    "`proof.key` must be a 20 bytes Ethereum address".to_string(),
+                )
+            })?,
             &proof_data.proof,
-            proof_data
-                .value
-                .as_slice()
-                .try_into()
-                .map_err(|_| Error::InvalidProofFormat)?,
-        )
-        .map_err(|e| Error::Verification(e.to_string()))?;
+            proof_data.value.as_slice().try_into().map_err(|_| {
+                Error::InvalidProofFormat(
+                    "`proof.value` must be a 32 bytes storage hash".to_string(),
+                )
+            })?,
+        )?;
 
         Ok(ContractResult::valid(None))
     }
@@ -185,10 +178,7 @@ impl IbcClient for EthereumLightClient {
 
         let mut consensus_state: WasmConsensusState =
             read_consensus_state(deps.as_ref(), &trusted_sync_committee.trusted_height)?.ok_or(
-                Error::ConsensusStateNotFound(
-                    trusted_sync_committee.trusted_height.revision_number,
-                    trusted_sync_committee.trusted_height.revision_height,
-                ),
+                Error::ConsensusStateNotFound(trusted_sync_committee.trusted_height),
             )?;
 
         let mut client_state: WasmClientState = read_client_state(deps.as_ref())?;
@@ -236,7 +226,11 @@ impl IbcClient for EthereumLightClient {
                 .value
                 .as_slice()
                 .try_into()
-                .map_err(|_| Error::InvalidProofFormat)?;
+                .map_err(|_| {
+                    Error::InvalidProofFormat(
+                        "`proof.value` must be a 32 bytes storage hash".to_string(),
+                    )
+                })?;
             consensus_state.data.storage_root = storage_root;
 
             consensus_state.timestamp = compute_timestamp_at_slot::<Config>(
@@ -294,9 +288,16 @@ impl IbcClient for EthereumLightClient {
                 .value
                 .as_slice()
                 .try_into()
-                .map_err(|_| Error::InvalidProofFormat)?;
+                .map_err(|_| {
+                    Error::InvalidProofFormat(
+                        "`proof.value` must be a 32 bytes storage hash".to_string(),
+                    )
+                })?;
             if consensus_state.data.storage_root != storage_root {
-                return Err(Error::StorageRootMismatch);
+                return Err(Error::StorageRootMismatch(
+                    consensus_state.data.storage_root.to_string(),
+                    storage_root.to_string(),
+                ));
             }
 
             if consensus_state.data.slot != header.consensus_update.attested_header.beacon.slot {
@@ -411,7 +412,7 @@ fn do_verify_membership(
         &rlp::encode(&storage_proof.value.as_slice()),
         &storage_proof.proof,
     )
-    .map_err(|e| Error::Verification(e.to_string()))
+    .map_err(Into::into)
 }
 
 /// Verifies that no value is committed at `path` in the counterparty light client's storage.
@@ -423,9 +424,7 @@ fn do_verify_non_membership(
 ) -> Result<(), Error> {
     check_commitment_key(path, counterparty_commitment_slot, &storage_proof.key)?;
 
-    if verify_storage_absence(storage_root, &storage_proof.key, &storage_proof.proof)
-        .map_err(|e| Error::Verification(e.to_string()))?
-    {
+    if verify_storage_absence(storage_root, &storage_proof.key, &storage_proof.proof)? {
         Ok(())
     } else {
         Err(Error::CounterpartyStorageNotNil)

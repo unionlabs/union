@@ -26,7 +26,8 @@ use crate::{
         compute_domain, compute_epoch_at_slot, compute_fork_version, compute_signing_root,
         compute_sync_committee_period_at_slot, validate_merkle_branch,
     },
-    Error, LightClientContext,
+    Error, LightClientContext, ValidateLightClientError, VerifyAccountStorageRootError,
+    VerifyStorageAbsenceError, VerifyStorageProofError,
 };
 
 pub trait BlsVerify {
@@ -52,13 +53,17 @@ pub fn validate_light_client_update<Ctx: LightClientContext, V: BlsVerify>(
     current_slot: Slot,
     genesis_validators_root: H256,
     bls_verifier: V,
-) -> Result<(), Error> {
+) -> Result<(), ValidateLightClientError> {
     // Verify sync committee has sufficient participants
     let sync_aggregate = &update.sync_aggregate;
     if sync_aggregate.sync_committee_bits.num_set_bits()
         < <Ctx::ChainSpec as MIN_SYNC_COMMITTEE_PARTICIPANTS>::MIN_SYNC_COMMITTEE_PARTICIPANTS::USIZE
     {
-        return Err(Error::InsufficientSyncCommitteeParticipants);
+        Err(Error::InsufficientSyncCommitteeParticipants {
+            min_limit: <Ctx::ChainSpec as MIN_SYNC_COMMITTEE_PARTICIPANTS>::MIN_SYNC_COMMITTEE_PARTICIPANTS::USIZE,
+            participants:
+            sync_aggregate.sync_committee_bits.num_set_bits()
+        })?;
     }
 
     // Verify update does not skip a sync committee period
@@ -70,20 +75,28 @@ pub fn validate_light_client_update<Ctx: LightClientContext, V: BlsVerify>(
         && update.signature_slot > update_attested_slot
         && update_attested_slot >= update_finalized_slot)
     {
-        return Err(Error::InvalidSlots);
+        Err(Error::InvalidSlots)?;
     }
 
-    let store_period =
+    let stored_period =
         compute_sync_committee_period_at_slot::<Ctx::ChainSpec>(ctx.finalized_slot());
-    let update_signature_period =
+    let signature_period =
         compute_sync_committee_period_at_slot::<Ctx::ChainSpec>(update.signature_slot);
 
     if ctx.next_sync_committee().is_some() {
-        if update_signature_period != store_period && update_signature_period != store_period + 1 {
-            return Err(Error::InvalidSignaturePeriod);
+        if signature_period != stored_period && signature_period != stored_period + 1 {
+            Err(Error::InvalidSignaturePeriodWhenNextSyncCommitteeExists {
+                signature_period,
+                stored_period,
+            })?;
         }
-    } else if update_signature_period != store_period {
-        return Err(Error::InvalidSignaturePeriod);
+    } else if signature_period != stored_period {
+        Err(
+            Error::InvalidSignaturePeriodWhenNextSyncCommitteeDoesNotExist {
+                signature_period,
+                stored_period,
+            },
+        )?;
     }
 
     // Verify update is relevant
@@ -91,11 +104,11 @@ pub fn validate_light_client_update<Ctx: LightClientContext, V: BlsVerify>(
         compute_sync_committee_period_at_slot::<Ctx::ChainSpec>(update_attested_slot);
 
     if !(update_attested_slot > ctx.finalized_slot()
-        || (update_attested_period == store_period
+        || (update_attested_period == stored_period
             && update.next_sync_committee.is_some()
             && ctx.next_sync_committee().is_none()))
     {
-        return Err(Error::IrrelevantUpdate);
+        Err(Error::IrrelevantUpdate)?;
     }
 
     // Verify that the `finality_branch`, if present, confirms `finalized_header`
@@ -115,10 +128,13 @@ pub fn validate_light_client_update<Ctx: LightClientContext, V: BlsVerify>(
     // state of the `attested_header` if the store period is equal to the attested period
     if let Some(next_sync_committee) = &update.next_sync_committee {
         if let Some(current_next_sync_committee) = ctx.next_sync_committee() {
-            if update_attested_period == store_period
+            if update_attested_period == stored_period
                 && next_sync_committee != current_next_sync_committee
             {
-                return Err(Error::NextSyncCommitteeMismatch);
+                Err(Error::NextSyncCommitteeMismatch {
+                    expected: current_next_sync_committee.aggregate_pubkey.clone(),
+                    got: next_sync_committee.aggregate_pubkey.clone(),
+                })?;
             }
         }
 
@@ -132,7 +148,7 @@ pub fn validate_light_client_update<Ctx: LightClientContext, V: BlsVerify>(
     }
 
     // Verify sync committee aggregate signature
-    let sync_committee = if update_signature_period == store_period {
+    let sync_committee = if signature_period == stored_period {
         ctx.current_sync_committee()
             .ok_or(Error::ExpectedCurrentSyncCommittee)?
     } else {
@@ -199,17 +215,17 @@ pub fn verify_account_storage_root(
     address: &ExecutionAddress,
     proof: impl IntoIterator<Item = impl AsRef<[u8]>>,
     storage_root: &Hash32,
-) -> Result<(), Error> {
+) -> Result<(), VerifyAccountStorageRootError> {
     match verify_state(root, address.as_ref(), proof)? {
         Some(account) => {
             let account = Account::from_rlp_bytes(account.as_ref())?;
             if &account.storage_root == storage_root {
                 Ok(())
             } else {
-                Err(Error::ValueMismatch)
+                Err(Error::ValueMismatch)?
             }
         }
-        None => Err(Error::ValueMismatch),
+        None => Err(Error::ValueMismatch)?,
     }
 }
 
@@ -226,10 +242,10 @@ pub fn verify_storage_proof(
     key: &[u8],
     expected_value: &[u8],
     proof: impl IntoIterator<Item = impl AsRef<[u8]>>,
-) -> Result<(), Error> {
+) -> Result<(), VerifyStorageProofError> {
     match verify_state(root, key, proof)? {
         Some(value) if value == expected_value => Ok(()),
-        _ => Err(Error::ValueMismatch),
+        _ => Err(Error::ValueMismatch)?,
     }
 }
 
@@ -244,7 +260,7 @@ pub fn verify_storage_absence(
     root: H256,
     key: &[u8],
     proof: impl IntoIterator<Item = impl AsRef<[u8]>>,
-) -> Result<bool, Error> {
+) -> Result<bool, VerifyStorageAbsenceError> {
     Ok(verify_state(root, key, proof)?.is_none())
 }
 
@@ -391,7 +407,9 @@ mod tests {
     // }
 
     #[allow(dead_code)] // will thisbe used anywhere?
-    fn do_validate_light_client_update(header: Header<Minimal>) -> Result<(), Error> {
+    fn do_validate_light_client_update(
+        header: Header<Minimal>,
+    ) -> Result<(), ValidateLightClientError> {
         let genesis_validators_root: H256 = hex::decode(GENESIS_VALIDATORS_ROOT)
             .unwrap()
             .try_into()
@@ -443,10 +461,10 @@ mod tests {
     //     // Setting the sync committee bits to zero will result in no participants.
     //     header.consensus_update.sync_aggregate.sync_committee_bits = Default::default();
 
-    //     assert_eq!(
+    //     assert!(matches!(
     //         do_validate_light_client_update(header),
-    //         Err(Error::InsufficientSyncCommitteeParticipants)
-    //     );
+    //         Err(Error::InsufficientSyncCommitteeParticipants(_, _))
+    //     ));
     // }
 
     // #[test]
@@ -733,7 +751,7 @@ mod tests {
                 &proof_value,
                 VALID_PROOF.iter()
             ),
-            Err(Error::ValueMismatch)
+            Err(Error::ValueMismatch.into())
         );
     }
 
