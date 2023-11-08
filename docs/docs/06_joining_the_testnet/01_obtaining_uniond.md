@@ -97,11 +97,7 @@ services:
     image: ghcr.io/unionlabs/uniond:${UNIOND_VERSION}
     volumes:
       - ~/.union:/.union
-    ports:
-      - "26657:26657"
-      - "26656:26656"
-      - "1317:1317"
-      - "9093:9093"
+    network_mode: "host"
     restart: unless-stopped
     command: start --home /.union
 ```
