@@ -120,6 +120,7 @@ You can obtain the testnet genesis from https://rpc.cryptware.io/genesis or by r
 ```sh
 curl https://rpc.cryptware.io/genesis -o ~/.union/config/genesis.json
 ```
+
 :::
 
 To run your node in detached mode, run:
