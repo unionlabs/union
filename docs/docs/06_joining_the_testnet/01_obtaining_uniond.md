@@ -115,7 +115,11 @@ Before starting your Union node for the first time, you should configure your no
 
 For some configuration recommendations see our [Node Configuration](../04_infrastructure/01_node_operators/node_configuration.md) page.
 
-You can obtain the testnet genesis here [COMING SOON].
+You can obtain the testnet genesis from https://rpc.cryptware.io/genesis or by running this command:
+
+```sh
+curl https://rpc.cryptware.io/genesis -o ~/.union/config/genesis.json
+```
 :::
 
 To run your node in detached mode, run:

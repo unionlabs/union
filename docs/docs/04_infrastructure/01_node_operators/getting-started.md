@@ -22,7 +22,7 @@ Double-check the version and architecture in the link before downloading.
 :::
 
 ```sh
-curl -L -o uniond https://github.com/unionlabs/union/releases/download/v0.13.0/uniond-x86_64-linux
+curl -L -o uniond https://github.com/unionlabs/union/releases/download/v0.14.0/uniond-x86_64-linux
 ```
 
 Verify that the binary works on your server by running:
@@ -42,7 +42,7 @@ mv ./uniond /usr/bin/
 We also provide containers in our [package registry](https://github.com/unionlabs/union/pkgs/container/uniond).
 
 ```sh
-docker pull ghcr.io/unionlabs/uniond:v0.13.0
+docker pull ghcr.io/unionlabs/uniond:v0.14.0
 ```
 
 When running the container, make sure to map a volume to the path passed in `--home` options to ensure data persistence. From here on the guide assumes the usage of a regular binary. The [docker-compose](./docker-compose) section is more suited for docker users.
@@ -53,7 +53,7 @@ When running the container, make sure to map a volume to the path passed in `--h
 
 ## Initialization
 
-We'll need to set up a few configuration files and obtain the [`genesis.json`](https://raw.githubusercontent.com/unionlabs/union/e1f9a3e3b84a8c39faf7046931159eda3e95fdb2/networks/genesis/union-testnet-3/genesis.json) before we can run the node.
+We'll need to set up a few configuration files and obtain the [`genesis.json`](https://rpc.cryptware.io/genesis) before we can run the node.
 
 First, set some environment variables, which are used throughout initialization.
 
@@ -61,7 +61,7 @@ First, set some environment variables, which are used throughout initialization.
 export CHAIN_ID=union-testnet-4 # or union-1
 export MONIKER="Unionized Goblin"
 export KEY_NAME=alice
-export GENESIS_URL="[Coming Soon]"
+export GENESIS_URL="https://rpc.cryptware.io/genesis"
 ```
 
 Then we'll have `uniond` initialize our data and configuration directories. By default, `/User/{USER}/.uniond` is used.
