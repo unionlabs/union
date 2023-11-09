@@ -80,25 +80,23 @@
       fetch-membership-data = writeShellApplicationWithArgs {
         name = "fetch-membership-data";
         runtimeInputs = [ pkgs.jq ];
-        arguments = [{
-          arg = "execution_endpoint";
-          required = true;
-        }
-          {
-            arg = "contract";
+        arguments = {
+          execution_endpoint = {
+            required = true;
+          };
+          contract = {
             required = true;
             help = "The address of the contract that we want to read the storage of";
-          }
-          {
-            arg = "commitment_key";
+          };
+          commitment_key = {
             required = true;
             help = "The slot where the value is stored at";
-          }
-          {
-            arg = "at";
+          };
+          at = {
             default = "latest";
             help = "The height of the block that we fetch the data from";
-          }];
+          };
+        };
         text = ''
           curl -s --header "Content-Type: application/json" \
                -X POST \
