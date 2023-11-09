@@ -12,8 +12,8 @@ members = [
   "voyager",
   "cosmwasm/*",
   "hubble",
-  "tools/parse-wasm-client-type"
-  "zerg"
+  "tools/parse-wasm-client-type",
+  "zerg",
 ]
 
 resolver = "2"
