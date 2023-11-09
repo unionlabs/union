@@ -114,7 +114,7 @@ For some configuration recommendations see our [Node Configuration](../04_infras
 You can obtain the testnet genesis from https://rpc.cryptware.io/genesis or by running this command:
 
 ```sh
-curl https://rpc.cryptware.io/genesis -o ~/.union/config/genesis.json
+curl https://rpc.cryptware.io/genesis | jq '.result.genesis' > ~/.union/config/genesis.json
 ```
 
 :::
