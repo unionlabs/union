@@ -74,11 +74,12 @@
 
           copyToRoot = pkgs.buildEnv {
             name = "image-root";
-            paths = [ pkgs.coreutils pkgs.cacert ];
+            paths = [ pkgs.coreutils pkgs.cacert self'.packages.uniond ];
             pathsToLink = [ "/bin" ];
           };
           config = {
-            Entrypoint = [ (pkgs.lib.getExe self'.packages.uniond) ];
+            Entrypoint = [ "uniond" ];
+            Cmd = [ "start" ];
             Env = [ "SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt" ];
           };
         };
