@@ -10,7 +10,7 @@
           else if builtins.hasAttr "rawOpts" arguments.${arg} then "${arguments.${arg}.rawOpts}"
           else ""
         } ${arg.help or ""}") (builtins.attrNames arguments))}
-    ${builtins.concatStringsSep "\n" (map (arg: "argc_${arg}=${arguments.${arg}.default or "0"}") (builtins.attrNames arguments))}
+    ${builtins.concatStringsSep "\n" (map (arg: "argc_${arg}=${arguments.${arg}.default or ""}") (builtins.attrNames arguments))}
 
     eval "$(argc --argc-eval "$0" "$@")"
 
