@@ -30,3 +30,4 @@ thiserror = { version = "1.0", package = "thiserror-core", default-features = fa
 
 [dev-dependencies]
 serde_json = "1.0"
+hex-literal = "0.4.1"

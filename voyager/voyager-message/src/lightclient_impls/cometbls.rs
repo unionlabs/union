@@ -33,9 +33,9 @@ use unionlabs::{
         lightclients::{
             ethereum::{
                 self,
+                account_proof::AccountProof,
                 account_update::AccountUpdate,
                 light_client_update::LightClientUpdate,
-                proof::Proof,
                 trusted_sync_committee::{ActiveSyncCommittee, TrustedSyncCommittee},
             },
             wasm,
@@ -1177,16 +1177,15 @@ where
                     },
                 },
                 account_update: AccountUpdate {
-                    proofs: [Proof {
-                        key: ibc_handler_address.into(),
-                        value: account_update.storage_hash.as_bytes().to_vec(),
+                    account_proof: AccountProof {
+                        contract_address: ibc_handler_address,
+                        storage_root: account_update.storage_hash.into(),
                         proof: account_update
                             .account_proof
                             .into_iter()
                             .map(|x| x.to_vec())
                             .collect(),
-                    }]
-                    .to_vec(),
+                    },
                 },
             },
         };

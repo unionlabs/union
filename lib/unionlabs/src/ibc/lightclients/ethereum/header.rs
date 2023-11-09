@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    errors::MissingField,
+    errors::{required, MissingField},
     ethereum_consts_traits::{BYTES_PER_LOGS_BLOOM, MAX_EXTRA_DATA_BYTES, SYNC_COMMITTEE_SIZE},
     ibc::lightclients::ethereum::{
         account_update::AccountUpdate, light_client_update::LightClientUpdate,
@@ -36,6 +36,7 @@ pub enum TryFromHeaderError<C: SYNC_COMMITTEE_SIZE + BYTES_PER_LOGS_BLOOM + MAX_
     MissingField(MissingField),
     TrustedSyncCommittee(TryFromProtoErrorOf<TrustedSyncCommittee<C>>),
     ConsensusUpdate(TryFromProtoErrorOf<LightClientUpdate<C>>),
+    AccountUpdate(TryFromProtoErrorOf<AccountUpdate>),
 }
 
 impl<C: SYNC_COMMITTEE_SIZE + BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES>
@@ -47,26 +48,15 @@ impl<C: SYNC_COMMITTEE_SIZE + BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES>
         value: protos::union::ibc::lightclients::ethereum::v1::Header,
     ) -> Result<Self, Self::Error> {
         Ok(Self {
-            trusted_sync_committee: value
-                .trusted_sync_committee
-                .ok_or(TryFromHeaderError::MissingField(MissingField(
-                    "trusted_sync_committee",
-                )))?
+            trusted_sync_committee: required!(value.trusted_sync_committee)?
                 .try_into()
                 .map_err(TryFromHeaderError::TrustedSyncCommittee)?,
-            consensus_update: value
-                .consensus_update
-                .ok_or(TryFromHeaderError::MissingField(MissingField(
-                    "consensus_update",
-                )))?
+            consensus_update: required!(value.consensus_update)?
                 .try_into()
                 .map_err(TryFromHeaderError::ConsensusUpdate)?,
-            account_update: value
-                .account_update
-                .ok_or(TryFromHeaderError::MissingField(MissingField(
-                    "account_update",
-                )))?
-                .into(),
+            account_update: required!(value.account_update)?
+                .try_into()
+                .map_err(TryFromHeaderError::AccountUpdate)?,
         })
     }
 }

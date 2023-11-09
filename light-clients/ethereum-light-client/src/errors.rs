@@ -6,6 +6,7 @@ use ethereum_verifier::{
 use thiserror::Error as ThisError;
 use unionlabs::{
     bls::BlsPublicKey,
+    ethereum::H256,
     ibc::{core::client::height::Height, lightclients::ethereum::header::Header},
     TryFromProtoBytesError, TryFromProtoErrorOf,
 };
@@ -56,8 +57,8 @@ pub enum Error {
     #[error("IBC path is empty")]
     EmptyIbcPath,
 
-    #[error("invalid commitment key, expected ({0}) but got ({1})")]
-    InvalidCommitmentKey(String, String),
+    #[error("invalid commitment key, expected ({expected}) but found ({found})")]
+    InvalidCommitmentKey { expected: H256, found: H256 },
 
     #[error("client's store period must be equal to update's finalized period")]
     StorePeriodMustBeEqualToFinalizedPeriod,
@@ -71,14 +72,14 @@ pub enum Error {
     #[error("batching proofs are not supported")]
     BatchingProofsNotSupported,
 
-    #[error("expected value ({0}) and stored value ({1}) doesn't match")]
-    ExpectedAndStoredValueMismatch(String, String),
+    #[error("expected value ({expected}) and stored value ({stored}) don't match")]
+    StoredValueMismatch { expected: H256, stored: H256 },
 
     #[error("custom query ({0})")]
     CustomQuery(CustomQueryError),
 
-    #[error("storage root mismatch, expected ({0}) but got ({1})")]
-    StorageRootMismatch(String, String),
+    #[error("storage root mismatch, expected `{expected}` but found `{found}`")]
+    StorageRootMismatch { expected: H256, found: H256 },
 
     #[error("wasm client error ({0})")]
     Wasm(String),
@@ -88,19 +89,6 @@ pub enum Error {
 
     #[error("the slot number that is saved previously to the consensus state cannot be changed")]
     SlotCannotBeModified,
-}
-
-impl Error {
-    pub fn invalid_commitment_key<B1: AsRef<[u8]>, B2: AsRef<[u8]>>(
-        expected: B1,
-        got: B2,
-    ) -> Error {
-        Error::InvalidCommitmentKey(hex::encode(expected), hex::encode(got))
-    }
-
-    pub fn stored_value_mismatch<B1: AsRef<[u8]>, B2: AsRef<[u8]>>(expected: B1, got: B2) -> Error {
-        Error::ExpectedAndStoredValueMismatch(hex::encode(expected), hex::encode(got))
-    }
 }
 
 impl From<TryFromProtoBytesError<TryFromProtoErrorOf<Header<Config>>>> for Error {

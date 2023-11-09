@@ -67,8 +67,8 @@ pub enum Error {
     ValueMismatch,
     #[error("trie error ({0:?})")]
     Trie(Box<TrieError<primitive_types::H256, rlp::DecoderError>>),
-    #[error("rlp decoding failed ({0})")]
-    RlpDecode(String),
+    #[error("rlp decoding failed ({0:?})")]
+    RlpDecode(rlp::DecoderError),
     #[error("custom query error: ({0})")]
     CustomError(String),
 }

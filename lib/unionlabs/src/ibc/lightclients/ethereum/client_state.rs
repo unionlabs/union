@@ -27,7 +27,7 @@ pub struct ClientState {
     pub trusting_period: u64,
     pub latest_slot: u64,
     pub frozen_height: Option<Height>,
-    pub counterparty_commitment_slot: u64,
+    pub counterparty_commitment_slot: U256,
 }
 
 impl TypeUrl for protos::union::ibc::lightclients::ethereum::v1::ClientState {
@@ -53,7 +53,7 @@ impl From<ClientState> for protos::union::ibc::lightclients::ethereum::v1::Clien
             trusting_period: value.trusting_period,
             latest_slot: value.latest_slot,
             frozen_height: value.frozen_height.map(Into::into),
-            counterparty_commitment_slot: value.counterparty_commitment_slot,
+            counterparty_commitment_slot: value.counterparty_commitment_slot.to_big_endian().into(),
         }
     }
 }
@@ -64,6 +64,7 @@ pub enum TryFromClientStateError {
     ChainId(FromDecStrErr),
     ForkParameters(TryFromProtoErrorOf<ForkParameters>),
     GenesisValidatorsRoot(InvalidLength),
+    CounterpartyCommitmentSlot(InvalidLength),
 }
 
 impl TryFrom<protos::union::ibc::lightclients::ethereum::v1::ClientState> for ClientState {
@@ -100,7 +101,10 @@ impl TryFrom<protos::union::ibc::lightclients::ethereum::v1::ClientState> for Cl
             trusting_period: value.trusting_period,
             latest_slot: value.latest_slot,
             frozen_height: value.frozen_height.map(Into::into),
-            counterparty_commitment_slot: value.counterparty_commitment_slot,
+            counterparty_commitment_slot: U256::try_from_big_endian(
+                &value.counterparty_commitment_slot,
+            )
+            .map_err(TryFromClientStateError::CounterpartyCommitmentSlot)?,
         })
     }
 }

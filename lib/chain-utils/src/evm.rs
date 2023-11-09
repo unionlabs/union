@@ -208,7 +208,7 @@ impl<C: ChainSpec> Chain for Evm<C> {
                         denominator: 3,
                     },
                     frozen_height: None,
-                    counterparty_commitment_slot: 0,
+                    counterparty_commitment_slot: U256::from(0),
                 },
                 code_id: H256::default(),
                 latest_height: beacon_height,

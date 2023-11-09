@@ -12,7 +12,7 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 bytes = { version = "1.2.1", default-features = false }
 cosmwasm-std = { version = "1.3.0", default-features = false, features = ["abort"] }
-ethabi = { version = "18.0.0", default-features = false }
+# ethabi = { version = "18.0.0", default-features = false }
 ethereum-verifier = { workspace = true }
 hex = { version = "0.4", default-features = false }
 prost = { version = "0.11", default-features = false }
@@ -28,6 +28,9 @@ tiny-keccak = { version = "2.0.2", default-features = false, features = ["keccak
 ics008-wasm-client = { workspace = true }
 unionlabs = { workspace = true, default-features = false }
 
+ethers-contract-derive.workspace = true
+ethers-core.workspace = true
+
 [dev-dependencies]
 # ibc = { version = "0.37.0", default-features = false, features = [ "serde" ] }
 unionlabs = { workspace = true, features = ["std"] }
@@ -36,6 +39,7 @@ base64 = "0.21"
 serde_json = "1"
 hex-literal = "0.4.1"
 protos = { workspace = true, default-features = false, features = ["proto_full", "std"] }
+serde-utils.workspace = true
 
 [features]
 default = ["minimal"]
