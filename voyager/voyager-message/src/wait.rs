@@ -148,6 +148,6 @@ pub struct WaitForTimestamp<L: LightClient> {
 pub struct WaitForTrustedHeight<L: LightClient> {
     pub client_id: L::ClientId,
     pub counterparty_client_id: <L::Counterparty as LightClientBase>::ClientId,
-    pub counterparty_chain_id: ChainIdOf<L::Counterparty>,
+    pub counterparty_chain_id: ChainIdOf<ChainOf<L::Counterparty>>,
     pub height: HeightOf<ChainOf<L::Counterparty>>,
 }

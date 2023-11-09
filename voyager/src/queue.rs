@@ -30,7 +30,7 @@ use unionlabs::{
         ConnectionOpenTry, CreateClient, IbcEvent, RecvPacket, SendPacket, SubmitEvidence,
         TimeoutPacket, UpdateClient, WriteAcknowledgement,
     },
-    traits::{Chain, ChainIdOf, ClientState, LightClientBase},
+    traits::{Chain, ChainIdOf, ChainOf, LightClientBase},
     WasmClientType,
 };
 use voyager_message::{event, GetLc, LightClient, RelayerMsg};
@@ -45,7 +45,6 @@ pub mod msg_server;
 #[derive(Debug, Clone)]
 pub struct Voyager<Q> {
     chains: Arc<Chains>,
-    // hasura_client: Option<Arc<hubble::hasura::HasuraDataStore>>,
     num_workers: u16,
     msg_server: msg_server::MsgServer,
     queue: Q,
@@ -60,11 +59,9 @@ pub struct Worker {
 #[derive(Debug, Clone)]
 pub struct Chains {
     // TODO: Use some sort of typemap here instead of individual fields
-    evm_minimal:
-        HashMap<<<Evm<Minimal> as Chain>::SelfClientState as ClientState>::ChainId, Evm<Minimal>>,
-    evm_mainnet:
-        HashMap<<<Evm<Mainnet> as Chain>::SelfClientState as ClientState>::ChainId, Evm<Mainnet>>,
-    union: HashMap<<<Union as Chain>::SelfClientState as ClientState>::ChainId, Union>,
+    evm_minimal: HashMap<ChainIdOf<Evm<Minimal>>, Evm<Minimal>>,
+    evm_mainnet: HashMap<ChainIdOf<Evm<Mainnet>>, Evm<Mainnet>>,
+    union: HashMap<ChainIdOf<Union>, Union>,
 }
 
 pub trait Queue: Clone + Send + Sync + Sized + 'static {
@@ -288,10 +285,9 @@ impl<Q: Queue> Voyager<Q> {
         let mut evm_mainnet = HashMap::new();
 
         fn insert_into_chain_map<C: Chain, Q: Queue>(
-            map: &mut HashMap<<<C as Chain>::SelfClientState as ClientState>::ChainId, C>,
+            map: &mut HashMap<ChainIdOf<C>, C>,
             chain: C,
-        ) -> Result<<<C as Chain>::SelfClientState as ClientState>::ChainId, VoyagerInitError<Q>>
-        {
+        ) -> Result<ChainIdOf<C>, VoyagerInitError<Q>> {
             let chain_id = chain.chain_id();
             map.insert(chain_id.clone(), chain)
                 .map_or(Ok(chain_id), |prev| {
@@ -588,26 +584,26 @@ impl Worker {
 
 // TODO: Implement this on Chains, not Worker
 impl GetLc<CometblsMinimal> for Worker {
-    fn get_lc(&self, chain_id: &ChainIdOf<CometblsMinimal>) -> CometblsMinimal {
+    fn get_lc(&self, chain_id: &ChainIdOf<ChainOf<CometblsMinimal>>) -> CometblsMinimal {
         CometblsMinimal::from_chain(self.chains.evm_minimal.get(chain_id).unwrap().clone())
     }
 }
 
 impl GetLc<CometblsMainnet> for Worker {
-    fn get_lc(&self, chain_id: &ChainIdOf<CometblsMainnet>) -> CometblsMainnet {
+    fn get_lc(&self, chain_id: &ChainIdOf<ChainOf<CometblsMainnet>>) -> CometblsMainnet {
         CometblsMainnet::from_chain(self.chains.evm_mainnet.get(chain_id).unwrap().clone())
     }
 }
 
 impl GetLc<EthereumMinimal> for Worker {
-    fn get_lc(&self, chain_id: &ChainIdOf<EthereumMinimal>) -> EthereumMinimal {
+    fn get_lc(&self, chain_id: &ChainIdOf<ChainOf<EthereumMinimal>>) -> EthereumMinimal {
         // TODO: Ensure that the wasm code is for the correct config
         EthereumMinimal::from_chain(self.chains.union.get(chain_id).unwrap().clone())
     }
 }
 
 impl GetLc<EthereumMainnet> for Worker {
-    fn get_lc(&self, chain_id: &ChainIdOf<EthereumMainnet>) -> EthereumMainnet {
+    fn get_lc(&self, chain_id: &ChainIdOf<ChainOf<EthereumMainnet>>) -> EthereumMainnet {
         // TODO: Ensure that the wasm code is for the correct config
         EthereumMainnet::from_chain(self.chains.union.get(chain_id).unwrap().clone())
     }
@@ -638,7 +634,7 @@ impl GetLc<EthereumMainnet> for Worker {
 // ///   always be fetched whenever it's needed)
 // ///   - `FetchUpdateHeaders<L>`, which delegates to `L::generate_counterparty_updates`
 // fn mk_aggregate_update<L: LightClient>(
-//     chain_id: ChainIdOf<L>,
+//     chain_id: ChainIdOf<ChainOf<L>>,
 //     client_id: L::ClientId,
 //     counterparty_client_id: <L::Counterparty as LightClientBase>::ClientId,
 //     event_height: HeightOf<ChainOf<L>>,

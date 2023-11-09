@@ -22,7 +22,7 @@ use unionlabs::{
         CommitmentPath, ConnectionPath, IbcPath, IbcStateRead,
     },
     tendermint::abci::{event::Event, event_attribute::EventAttribute},
-    traits::{Chain, ClientState, ClientStateOf, ConsensusStateOf},
+    traits::{Chain, ChainIdOf, ClientIdOf, ClientStateOf, Consensus, ConsensusStateOf, HeightOf},
     validated::ValidateT,
     CosmosAccountId, MaybeRecoverableError, TryFromProto, TryFromProtoErrorOf, WasmClientType,
 };
@@ -55,7 +55,8 @@ pub struct Config {
     pub grpc_url: String,
 }
 
-impl Chain for Union {
+pub struct Cometbls;
+impl Consensus for Cometbls {
     type SelfClientState =
         Any<wasm::client_state::ClientState<cometbls::client_state::ClientState>>;
     type SelfConsensusState =
@@ -64,12 +65,16 @@ impl Chain for Union {
     type Header = cometbls::header::Header;
 
     type Height = Height;
+}
+
+impl Chain for Union {
+    type Consensus = Cometbls;
 
     type ClientId = UnionClientId;
 
     type ClientType = String;
 
-    fn chain_id(&self) -> <Self::SelfClientState as ClientState>::ChainId {
+    fn chain_id(&self) -> ChainIdOf<Self> {
         self.chain_id.clone()
     }
 
@@ -111,10 +116,7 @@ impl Chain for Union {
         }
     }
 
-    fn self_client_state(
-        &self,
-        height: Height,
-    ) -> impl Future<Output = Self::SelfClientState> + '_ {
+    fn self_client_state(&self, height: Height) -> impl Future<Output = ClientStateOf<Self>> + '_ {
         async move {
             let params = protos::cosmos::staking::v1beta1::query_client::QueryClient::connect(
                 self.grpc_url.clone(),
@@ -187,7 +189,7 @@ impl Chain for Union {
     fn self_consensus_state(
         &self,
         height: Height,
-    ) -> impl Future<Output = Self::SelfConsensusState> + '_ {
+    ) -> impl Future<Output = ConsensusStateOf<Self>> + '_ {
         async move {
             let commit = self
                 .tm_client
@@ -1093,7 +1095,7 @@ where
 }
 
 impl<Counterparty> AbciStateRead<Counterparty>
-    for ClientConsensusStatePath<<Union as Chain>::ClientId, <Counterparty as Chain>::Height>
+    for ClientConsensusStatePath<ClientIdOf<Union>, HeightOf<Counterparty>>
 where
     Counterparty: Chain,
     ConsensusStateOf<Counterparty>: TryFromProto,
@@ -1192,7 +1194,7 @@ where
     fn state(
         &self,
         path: P,
-        at: Self::Height,
+        at: HeightOf<Self>,
     ) -> impl Future<Output = <P as IbcPath<Union, Counterparty>>::Output> + '_ {
         async move {
             let mut client =

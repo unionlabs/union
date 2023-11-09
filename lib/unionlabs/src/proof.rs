@@ -13,7 +13,7 @@ use crate::{
         connection::connection_end::ConnectionEnd,
     },
     id::{ChannelId, ConnectionId, PortId},
-    traits::{self, Chain},
+    traits::{self, Chain, ClientStateOf, ConsensusStateOf, HeightOf},
 };
 
 /// `IbcPath` represents the path to a light client's ibc storage. The values stored at each path
@@ -42,7 +42,7 @@ pub struct ClientStatePath<ClientId: traits::Id> {
 impl<This: Chain, Counterparty: Chain> IbcPath<This, Counterparty>
     for ClientStatePath<This::ClientId>
 {
-    type Output = Counterparty::SelfClientState;
+    type Output = ClientStateOf<Counterparty>;
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, derive_more::Display, clap::Args)]
@@ -64,9 +64,9 @@ pub struct ClientConsensusStatePath<ClientId: traits::Id, Height: IsHeight> {
 }
 
 impl<This: Chain, Counterparty: Chain> IbcPath<This, Counterparty>
-    for ClientConsensusStatePath<This::ClientId, Counterparty::Height>
+    for ClientConsensusStatePath<This::ClientId, HeightOf<Counterparty>>
 {
-    type Output = Counterparty::SelfConsensusState;
+    type Output = ConsensusStateOf<Counterparty>;
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, derive_more::Display, clap::Args)]
@@ -137,16 +137,17 @@ pub enum Path<ClientId: traits::Id, Height: IsHeight> {
 }
 
 pub trait IbcStateRead<Counterparty: Chain, P: IbcPath<Self, Counterparty>>: Chain + Sized {
-    fn proof(&self, path: P, at: Self::Height) -> impl Future<Output = Vec<u8>> + '_;
-    fn state(&self, path: P, at: Self::Height) -> impl Future<Output = P::Output> + '_;
+    fn proof(&self, path: P, at: HeightOf<Self>) -> impl Future<Output = Vec<u8>> + '_;
+    fn state(&self, path: P, at: HeightOf<Self>) -> impl Future<Output = P::Output> + '_;
 }
 
+// NOTE: Fully qualified syntax is required for associated types here, otherwise the trait solver can't see that `ClientId` is on `Chain` and not `IbcStateReadPaths`, causing a cycle.
 pub trait IbcStateReadPaths<Counterparty: Chain>:
     Chain
     + IbcStateRead<Counterparty, ClientStatePath<<Self as Chain>::ClientId>>
     + IbcStateRead<
         Counterparty,
-        ClientConsensusStatePath<<Self as Chain>::ClientId, Counterparty::Height>,
+        ClientConsensusStatePath<<Self as Chain>::ClientId, HeightOf<Counterparty>>,
     > + IbcStateRead<Counterparty, ConnectionPath>
     + IbcStateRead<Counterparty, ChannelEndPath>
     + IbcStateRead<Counterparty, CommitmentPath>
@@ -156,7 +157,7 @@ pub trait IbcStateReadPaths<Counterparty: Chain>:
 
 impl<Counterparty: Chain, T: Chain> IbcStateReadPaths<Counterparty> for T where
     T: IbcStateRead<Counterparty, ClientStatePath<Self::ClientId>>
-        + IbcStateRead<Counterparty, ClientConsensusStatePath<Self::ClientId, Counterparty::Height>>
+        + IbcStateRead<Counterparty, ClientConsensusStatePath<Self::ClientId, HeightOf<Counterparty>>>
         + IbcStateRead<Counterparty, ConnectionPath>
         + IbcStateRead<Counterparty, ChannelEndPath>
         + IbcStateRead<Counterparty, CommitmentPath>

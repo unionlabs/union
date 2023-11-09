@@ -181,6 +181,8 @@ where
     P::from_abci_bytes(query_result.value)
 }
 
+type RawAny = protos::google::protobuf::Any;
+
 async fn query_client_state<L>(
     union: &Union,
     client_id: chain_utils::union::UnionClientId,
@@ -188,14 +190,15 @@ async fn query_client_state<L>(
 ) -> ClientStateOf<<L::Counterparty as LightClientBase>::HostChain>
 where
     L: LightClientBase<HostChain = Union>,
-    ClientStateOf<<L::Counterparty as LightClientBase>::HostChain>: Proto<Proto = protos::google::protobuf::Any>
-        + TryFrom<protos::google::protobuf::Any>
-        + TryFromProto<Proto = protos::google::protobuf::Any>,
+
+    // not sure why the `Proto<Proto = RawAny> + TryFrom<RawAny>` bound is necessary, since they're supertraits of TryFromProto ¯\_(ツ)_/¯
+    ClientStateOf<ChainOf<L::Counterparty>>:
+        Proto<Proto = RawAny> + TryFrom<RawAny> + TryFromProto<Proto = RawAny>,
+    ClientStateOf<ChainOf<L::Counterparty>>:
+        Proto<Proto = RawAny> + TryFrom<RawAny> + TryFromProto<Proto = RawAny>,
+
     // NOTE: This bound can be removed once we don't unwrap anymore
-    TryFromProtoErrorOf<ClientStateOf<<L::Counterparty as LightClientBase>::HostChain>>: Debug,
-    <<L::Counterparty as LightClientBase>::HostChain as Chain>::SelfClientState: Proto<Proto = protos::google::protobuf::Any>
-        + TryFrom<protos::google::protobuf::Any>
-        + TryFromProto<Proto = protos::google::protobuf::Any>,
+    TryFromProtoErrorOf<ClientStateOf<ChainOf<L::Counterparty>>>: Debug,
 {
     let mut client =
         protos::cosmos::base::tendermint::v1beta1::service_client::ServiceClient::connect(
@@ -204,7 +207,7 @@ where
         .await
         .unwrap();
 
-    <ClientStateOf<<L::Counterparty as LightClientBase>::HostChain>>::try_from_proto_bytes(
+    <ClientStateOf<ChainOf<L::Counterparty>>>::try_from_proto_bytes(
         &client
             .abci_query(
                 protos::cosmos::base::tendermint::v1beta1::AbciQueryRequest {

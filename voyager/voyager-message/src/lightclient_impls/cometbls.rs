@@ -42,7 +42,7 @@ use unionlabs::{
         },
     },
     traits::{
-        Chain, ChainOf, ClientState, ClientStateOf, ConsensusStateOf, HeaderOf, HeightOf,
+        Chain, ChainIdOf, ChainOf, ClientStateOf, ConsensusStateOf, HeaderOf, HeightOf,
         LightClientBase,
     },
     EthAbi, IntoEthAbi, IntoProto, MaybeRecoverableError, Proto,
@@ -633,7 +633,7 @@ where
 
 fn make_create_update<C, L>(
     req: FetchUpdateHeaders<L>,
-    chain_id: <<Evm<C> as Chain>::SelfClientState as ClientState>::ChainId,
+    chain_id: ChainIdOf<Evm<C>>,
     currently_trusted_slot: u64,
     light_client_update: LightClientUpdate<C>,
     is_next: bool,
@@ -704,13 +704,9 @@ async fn do_msg<C, L>(evm: &Evm<C>, msg: Msg<L>) -> Result<(), TxSubmitError>
 where
     C: ChainSpec,
     L: LightClient<HostChain = Evm<C>, Config = CometblsConfig>,
-    ClientStateOf<<L::Counterparty as LightClientBase>::HostChain>: Proto + IntoProto,
-    ConsensusStateOf<<L::Counterparty as LightClientBase>::HostChain>: Proto + IntoProto,
-    HeaderOf<<L::Counterparty as LightClientBase>::HostChain>: EthAbi + IntoEthAbi,
-    // not sure why these bounds are required
-    <<L::BaseCounterparty as LightClientBase>::HostChain as Chain>::SelfClientState: Proto,
-    <<L::BaseCounterparty as LightClientBase>::HostChain as Chain>::SelfConsensusState: Proto,
-    <<L::BaseCounterparty as LightClientBase>::HostChain as Chain>::Header: EthAbi,
+    ClientStateOf<ChainOf<L::BaseCounterparty>>: Proto + IntoProto,
+    ConsensusStateOf<ChainOf<L::BaseCounterparty>>: Proto + IntoProto,
+    HeaderOf<ChainOf<L::BaseCounterparty>>: EthAbi + IntoEthAbi,
 {
     evm.ibc_handlers
         .with(|ibc_handler| async move {
@@ -1096,7 +1092,7 @@ pub struct GetProof<C: ChainSpec, L: LightClient<HostChain = Evm<C>>> {
         <L::HostChain as Chain>::ClientId,
         HeightOf<ChainOf<L::Counterparty>>,
     >,
-    height: <Evm<C> as Chain>::Height,
+    height: HeightOf<Evm<C>>,
 }
 
 impl<L, C> UseAggregate<L> for Identified<L, CreateUpdateData<L, C>>

@@ -1,4 +1,4 @@
-use std::{fmt::Debug, ops::Div, str::FromStr, sync::Arc};
+use std::{fmt::Debug, marker::PhantomData, ops::Div, str::FromStr, sync::Arc};
 
 use beacon_api::client::BeaconApiClient;
 use contracts::{
@@ -47,7 +47,7 @@ use unionlabs::{
         AcknowledgementPath, ChannelEndPath, ClientConsensusStatePath, ClientStatePath,
         CommitmentPath, ConnectionPath, IbcPath, IbcStateRead,
     },
-    traits::{Chain, ClientState, ClientStateOf, ConsensusStateOf},
+    traits::{Chain, ChainIdOf, ClientIdOf, ClientStateOf, Consensus, ConsensusStateOf, HeightOf},
     validated::ValidateT,
     EmptyString, TryFromEthAbiErrorOf, TryFromProto, TryFromProtoErrorOf,
 };
@@ -88,7 +88,9 @@ pub struct Config {
     pub hasura_config: Option<HasuraConfig>,
 }
 
-impl<C: ChainSpec> Chain for Evm<C> {
+pub struct EthereumConsensus<C: ChainSpec>(PhantomData<fn() -> C>);
+
+impl<C: ChainSpec> Consensus for EthereumConsensus<C> {
     // TODO: Unwrap these out of wasm, and re-wrap them in union
     type SelfClientState =
         Any<wasm::client_state::ClientState<ethereum::client_state::ClientState>>;
@@ -98,16 +100,20 @@ impl<C: ChainSpec> Chain for Evm<C> {
     type Header = wasm::header::Header<ethereum::header::Header<C>>;
 
     type Height = Height;
+}
+
+impl<C: ChainSpec> Chain for Evm<C> {
+    type Consensus = EthereumConsensus<C>;
 
     type ClientId = EvmClientId;
 
     type ClientType = String;
 
-    fn chain_id(&self) -> <Self::SelfClientState as ClientState>::ChainId {
+    fn chain_id(&self) -> ChainIdOf<Self> {
         self.chain_id
     }
 
-    fn query_latest_height(&self) -> impl Future<Output = Height> + '_ {
+    fn query_latest_height(&self) -> impl Future<Output = HeightOf<Self>> + '_ {
         async move {
             let height = self
                 .beacon_api_client
@@ -123,7 +129,7 @@ impl<C: ChainSpec> Chain for Evm<C> {
         }
     }
 
-    fn query_latest_height_as_destination(&self) -> impl Future<Output = Height> + '_ {
+    fn query_latest_height_as_destination(&self) -> impl Future<Output = HeightOf<Self>> + '_ {
         async move {
             let height = self
                 .beacon_api_client
@@ -180,7 +186,7 @@ impl<C: ChainSpec> Chain for Evm<C> {
     fn self_client_state(
         &self,
         beacon_height: Height,
-    ) -> impl Future<Output = Self::SelfClientState> + '_ {
+    ) -> impl Future<Output = ClientStateOf<Self>> + '_ {
         async move {
             let genesis = self.beacon_api_client.genesis().await.unwrap().data;
 
@@ -219,7 +225,7 @@ impl<C: ChainSpec> Chain for Evm<C> {
     fn self_consensus_state(
         &self,
         beacon_height: Height,
-    ) -> impl Future<Output = Self::SelfConsensusState> + '_ {
+    ) -> impl Future<Output = ConsensusStateOf<Self>> + '_ {
         async move {
             let trusted_header = self
                 .beacon_api_client
@@ -1042,7 +1048,7 @@ where
     fn proof(
         &self,
         path: P,
-        at: Height,
+        at: HeightOf<Self>,
     ) -> impl Future<Output = Vec<u8>> + '_ {
         async move {
             let execution_height = self.execution_height(at).await;
@@ -1092,7 +1098,7 @@ where
         }
     }
 
-    fn state(&self, path: P, at: Self::Height) -> impl Future<Output = <P as IbcPath<Evm<C>, Counterparty>>::Output> + '_
+    fn state(&self, path: P, at: HeightOf<Self>) -> impl Future<Output = <P as IbcPath<Evm<C>, Counterparty>>::Output> + '_
     {
         async move {
             let execution_block_number = self.execution_height(at).await;
@@ -1146,7 +1152,7 @@ where
 }
 
 impl<C: ChainSpec, Counterparty: Chain> EthereumStateRead<C, Counterparty>
-    for ClientConsensusStatePath<<Evm<C> as Chain>::ClientId, <Counterparty as Chain>::Height>
+    for ClientConsensusStatePath<ClientIdOf<Evm<C>>, HeightOf<Counterparty>>
 where
     ConsensusStateOf<Counterparty>: TryFromProto,
     TryFromProtoErrorOf<ConsensusStateOf<Counterparty>>: Debug,

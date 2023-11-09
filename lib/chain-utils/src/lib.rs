@@ -16,7 +16,7 @@ use unionlabs::{
     ethereum::H256,
     events::IbcEvent,
     ibc::core::client::height::Height,
-    traits::{Chain, ClientState},
+    traits::{Chain, ChainIdOf},
 };
 
 pub mod evm;
@@ -37,7 +37,7 @@ pub trait EventSource {
 #[derive(Debug, Clone, PartialEq)]
 pub struct ChainEvent<C: Chain> {
     /// The chain this event originated from.
-    pub chain_id: <C::SelfClientState as ClientState>::ChainId,
+    pub chain_id: ChainIdOf<C>,
     pub block_hash: H256,
     pub height: Height,
     pub event: IbcEvent<C::ClientId, C::ClientType, String>,

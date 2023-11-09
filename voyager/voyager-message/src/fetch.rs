@@ -136,7 +136,7 @@ pub struct FetchPacketAcknowledgement<L: LightClient> {
 #[serde(bound(serialize = "", deserialize = ""))]
 pub struct FetchUpdateHeaders<L: LightClient> {
     pub client_id: L::ClientId,
-    pub counterparty_chain_id: ChainIdOf<L::Counterparty>,
+    pub counterparty_chain_id: ChainIdOf<ChainOf<L::Counterparty>>,
     // id of the counterparty client that will be updated with the fetched headers
     pub counterparty_client_id: <L::Counterparty as LightClientBase>::ClientId,
     pub update_from: HeightOf<L::HostChain>,

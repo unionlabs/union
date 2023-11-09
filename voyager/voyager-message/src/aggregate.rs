@@ -490,7 +490,7 @@ pub struct AggregateUpdateClientWithCounterpartyChainId<L: LightClient> {
     pub update_to: HeightOf<L::HostChain>,
     pub client_id: L::ClientId,
     pub counterparty_client_id: <L::Counterparty as LightClientBase>::ClientId,
-    pub counterparty_chain_id: ChainIdOf<L::Counterparty>,
+    pub counterparty_chain_id: ChainIdOf<ChainOf<L::Counterparty>>,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
@@ -499,7 +499,7 @@ pub struct AggregateMsgUpdateClient<L: LightClient> {
     pub update_to: HeightOf<L::HostChain>,
     pub client_id: L::ClientId,
     pub counterparty_client_id: <L::Counterparty as LightClientBase>::ClientId,
-    pub counterparty_chain_id: ChainIdOf<L::Counterparty>,
+    pub counterparty_chain_id: ChainIdOf<ChainOf<L::Counterparty>>,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
@@ -592,7 +592,7 @@ where
 }
 
 pub fn mk_aggregate_wait_for_update<L: LightClient>(
-    chain_id: ChainIdOf<L>,
+    chain_id: ChainIdOf<ChainOf<L>>,
     client_id: L::ClientId,
     counterparty_client_id: <L::Counterparty as LightClientBase>::ClientId,
     wait_for: HeightOf<L::HostChain>,
@@ -823,7 +823,8 @@ where
         assert_eq!(this_chain_id, self_chain_id);
         assert_eq!(update_client_id, trusted_client_state_client_id);
 
-        let counterparty_chain_id: ChainIdOf<L::Counterparty> = trusted_client_state.chain_id();
+        let counterparty_chain_id: ChainIdOf<ChainOf<L::Counterparty>> =
+            trusted_client_state.chain_id();
 
         RelayerMsg::Aggregate {
             queue: [fetch::<L::Counterparty>(
@@ -879,7 +880,7 @@ where
             },
         }]: Self::AggregatedData,
     ) -> RelayerMsg {
-        let self_chain_id: ChainIdOf<L> = trusted_client_state.chain_id();
+        let self_chain_id: ChainIdOf<ChainOf<L>> = trusted_client_state.chain_id();
 
         assert_eq!(this_chain_id, self_chain_id);
         assert_eq!(
@@ -931,7 +932,8 @@ where
         assert_eq!(trusted_client_state_client_id, client_id);
         assert_eq!(trusted_client_state_chain_id, this_chain_id);
 
-        let counterparty_chain_id: ChainIdOf<L::Counterparty> = trusted_client_state.chain_id();
+        let counterparty_chain_id: ChainIdOf<ChainOf<L::Counterparty>> =
+            trusted_client_state.chain_id();
 
         tracing::debug!("building WaitForTrustedHeight");
 
@@ -1539,7 +1541,8 @@ where
         assert!(consensus_state_proof_height.revision_height() >= trusted_height.revision_height());
         assert!(client_state_proof_height.revision_height() >= trusted_height.revision_height());
 
-        let counterparty_chain_id: ChainIdOf<L::Counterparty> = trusted_client_state.chain_id();
+        let counterparty_chain_id: ChainIdOf<ChainOf<L::Counterparty>> =
+            trusted_client_state.chain_id();
 
         assert_eq!(trusted_client_state_chain_id, this_chain_id);
 
@@ -1641,7 +1644,8 @@ where
         assert!(consensus_state_proof_height.revision_height() >= trusted_height.revision_height());
         assert!(client_state_proof_height.revision_height() >= trusted_height.revision_height());
 
-        let counterparty_chain_id: ChainIdOf<L::Counterparty> = trusted_client_state.chain_id();
+        let counterparty_chain_id: ChainIdOf<ChainOf<L::Counterparty>> =
+            trusted_client_state.chain_id();
 
         assert_eq!(trusted_client_state_chain_id, this_chain_id);
         assert_eq!(client_state_proof_chain_id, this_chain_id);
@@ -1711,7 +1715,8 @@ where
             },
         ]: Self::AggregatedData,
     ) -> RelayerMsg {
-        let counterparty_chain_id: ChainIdOf<L::Counterparty> = trusted_client_state.chain_id();
+        let counterparty_chain_id: ChainIdOf<ChainOf<L::Counterparty>> =
+            trusted_client_state.chain_id();
 
         assert_eq!(trusted_client_state_chain_id, this_chain_id);
         assert_eq!(connection_proof_chain_id, this_chain_id);
@@ -1782,7 +1787,8 @@ where
     ) -> RelayerMsg {
         assert_eq!(this_chain_id, trusted_client_state_chain_id);
 
-        let counterparty_chain_id: ChainIdOf<L::Counterparty> = trusted_client_state.chain_id();
+        let counterparty_chain_id: ChainIdOf<ChainOf<L::Counterparty>> =
+            trusted_client_state.chain_id();
 
         assert_eq!(channel_proof_chain_id, this_chain_id);
 
@@ -1863,7 +1869,8 @@ where
             },
         ]: Self::AggregatedData,
     ) -> RelayerMsg {
-        let counterparty_chain_id: ChainIdOf<L::Counterparty> = trusted_client_state.chain_id();
+        let counterparty_chain_id: ChainIdOf<ChainOf<L::Counterparty>> =
+            trusted_client_state.chain_id();
 
         assert_eq!(trusted_client_state_chain_id, this_chain_id);
         assert_eq!(channel_proof_chain_id, this_chain_id);
@@ -1938,7 +1945,8 @@ where
         assert_eq!(this_chain_id, channel_proof_chain_id);
         assert_eq!(channel_end_chain_id, this_chain_id);
 
-        let counterparty_chain_id: ChainIdOf<L::Counterparty> = trusted_client_state.chain_id();
+        let counterparty_chain_id: ChainIdOf<ChainOf<L::Counterparty>> =
+            trusted_client_state.chain_id();
 
         msg::<L::Counterparty>(
             counterparty_chain_id,
@@ -1997,7 +2005,8 @@ where
         assert_eq!(this_chain_id, trusted_client_state_chain_id);
         assert_eq!(this_chain_id, commitment_proof_chain_id);
 
-        let counterparty_chain_id: ChainIdOf<L::Counterparty> = trusted_client_state.chain_id();
+        let counterparty_chain_id: ChainIdOf<ChainOf<L::Counterparty>> =
+            trusted_client_state.chain_id();
 
         msg::<L::Counterparty>(
             counterparty_chain_id,
@@ -2073,7 +2082,8 @@ where
         assert_eq!(this_chain_id, packet_acknowledgement_chain_id);
         assert_eq!(commitment_proof_chain_id, this_chain_id);
 
-        let counterparty_chain_id: ChainIdOf<L::Counterparty> = trusted_client_state.chain_id();
+        let counterparty_chain_id: ChainIdOf<ChainOf<L::Counterparty>> =
+            trusted_client_state.chain_id();
 
         msg::<L::Counterparty>(
             counterparty_chain_id,
@@ -2126,7 +2136,8 @@ where
     ) -> RelayerMsg {
         assert_eq!(this_chain_id, trusted_client_state_chain_id);
 
-        let counterparty_chain_id: ChainIdOf<L::Counterparty> = trusted_client_state.chain_id();
+        let counterparty_chain_id: ChainIdOf<ChainOf<L::Counterparty>> =
+            trusted_client_state.chain_id();
 
         fetch::<L::Counterparty>(counterparty_chain_id, fetch_)
     }

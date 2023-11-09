@@ -39,7 +39,7 @@ use unionlabs::{
             signed_msg_type::SignedMsgType, simple_validator::SimpleValidator,
         },
     },
-    traits::{Chain, HeightOf, LightClientBase},
+    traits::{Chain, ChainOf, Consensus, HeightOf, LightClientBase},
     union::galois::{
         poll_request::PollRequest,
         poll_response::{PollResponse, ProveRequestDone, ProveRequestFailed},
@@ -803,7 +803,7 @@ where
 async fn do_msg<L, C: ChainSpec>(union: Union, msg: Msg<L>) -> Result<(), BroadcastTxCommitError>
 where
     L: LightClient<HostChain = Union, Config = EthereumConfig, MsgError = BroadcastTxCommitError>,
-    <L::Counterparty as LightClientBase>::HostChain: Chain<
+    <ChainOf<L::Counterparty> as Chain>::Consensus: Consensus<
         SelfClientState = Any<wasm::client_state::ClientState<ethereum::client_state::ClientState>>,
         SelfConsensusState = Any<
             wasm::consensus_state::ConsensusState<ethereum::consensus_state::ConsensusState>,

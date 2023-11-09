@@ -20,7 +20,7 @@ use unionlabs::{
         AcknowledgementPath, ChannelEndPath, ClientConsensusStatePath, ClientStatePath,
         CommitmentPath, ConnectionPath, IbcPath,
     },
-    traits::{Chain, ChainIdOf, ChainOf, LightClientBase},
+    traits::{Chain, ChainIdOf, ChainOf, HeightOf, LightClientBase},
     MaybeRecoverableError,
 };
 
@@ -138,7 +138,7 @@ pub enum RelayerMsg {
 }
 
 pub trait GetLc<L: LightClient> {
-    fn get_lc(&self, chain_id: &ChainIdOf<L>) -> L;
+    fn get_lc(&self, chain_id: &ChainIdOf<ChainOf<L>>) -> L;
 }
 
 impl RelayerMsg {
@@ -486,7 +486,7 @@ pub enum Path2<L: LightClient, P: AnyPath<L>> {
         P::Inner<
             ClientConsensusStatePath<
                 <L::HostChain as Chain>::ClientId,
-                <ChainOf<L::Counterparty> as Chain>::Height,
+                HeightOf<ChainOf<L::Counterparty>>,
             >,
         >,
     ),
@@ -498,7 +498,7 @@ pub enum Path2<L: LightClient, P: AnyPath<L>> {
 
 pub type PathOf<L> = unionlabs::proof::Path<
     <<L as LightClientBase>::HostChain as Chain>::ClientId,
-    <ChainOf<<L as LightClientBase>::Counterparty> as Chain>::Height,
+    HeightOf<ChainOf<<L as LightClientBase>::Counterparty>>,
 >;
 
 pub trait AnyLightClient {
@@ -677,12 +677,12 @@ pub type InnerOf<T, L> = <T as AnyLightClient>::Inner<L>;
 // TODO: `Data: AnyLightClient`
 // prerequisites: derive macro for AnyLightClient
 pub struct Identified<L: LightClient, Data: Debug + Clone + PartialEq> {
-    pub chain_id: ChainIdOf<L>,
+    pub chain_id: ChainIdOf<ChainOf<L>>,
     pub data: Data,
 }
 
 impl<L: LightClient, Data: Debug + Clone + PartialEq> Identified<L, Data> {
-    pub fn new(chain_id: ChainIdOf<L>, data: Data) -> Self {
+    pub fn new(chain_id: ChainIdOf<ChainOf<L>>, data: Data) -> Self {
         Self { chain_id, data }
     }
 }
@@ -721,7 +721,7 @@ pub fn defer_relative(seconds: u64) -> RelayerMsg {
     }
 }
 
-pub fn fetch<L: LightClient>(chain_id: ChainIdOf<L>, t: impl Into<Fetch<L>>) -> RelayerMsg
+pub fn fetch<L: LightClient>(chain_id: ChainIdOf<ChainOf<L>>, t: impl Into<Fetch<L>>) -> RelayerMsg
 where
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<L>)>,
 {
@@ -731,7 +731,7 @@ where
     )))
 }
 
-pub fn msg<L: LightClient>(chain_id: ChainIdOf<L>, t: impl Into<Msg<L>>) -> RelayerMsg
+pub fn msg<L: LightClient>(chain_id: ChainIdOf<ChainOf<L>>, t: impl Into<Msg<L>>) -> RelayerMsg
 where
     AnyLightClientIdentified<AnyMsg>: From<identified!(Msg<L>)>,
 {
@@ -741,7 +741,7 @@ where
     )))
 }
 
-pub fn data<L: LightClient>(chain_id: ChainIdOf<L>, t: impl Into<Data<L>>) -> RelayerMsg
+pub fn data<L: LightClient>(chain_id: ChainIdOf<ChainOf<L>>, t: impl Into<Data<L>>) -> RelayerMsg
 where
     AnyLightClientIdentified<AnyData>: From<identified!(Data<L>)>,
 {
@@ -751,7 +751,7 @@ where
     )))
 }
 
-pub fn wait<L: LightClient>(chain_id: ChainIdOf<L>, t: impl Into<Wait<L>>) -> RelayerMsg
+pub fn wait<L: LightClient>(chain_id: ChainIdOf<ChainOf<L>>, t: impl Into<Wait<L>>) -> RelayerMsg
 where
     AnyLightClientIdentified<AnyWait>: From<identified!(Wait<L>)>,
 {
@@ -761,7 +761,7 @@ where
     )))
 }
 
-pub fn event<L: LightClient>(chain_id: ChainIdOf<L>, t: impl Into<Event<L>>) -> RelayerMsg
+pub fn event<L: LightClient>(chain_id: ChainIdOf<ChainOf<L>>, t: impl Into<Event<L>>) -> RelayerMsg
 where
     AnyLightClientIdentified<AnyEvent>: From<identified!(Event<L>)>,
 {
@@ -772,7 +772,7 @@ where
 }
 
 pub fn aggregate<L: LightClient>(
-    chain_id: ChainIdOf<L>,
+    chain_id: ChainIdOf<ChainOf<L>>,
     t: impl Into<Aggregate<L>>,
 ) -> AnyLightClientIdentified<AnyAggregate>
 where

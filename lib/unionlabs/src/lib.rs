@@ -497,9 +497,7 @@ pub mod traits {
         type FromStrErr = <Self as FromStr>::Err;
     }
 
-    /// Represents a chain. One [`Chain`] may have many related [`LightClient`]s for connecting to
-    /// various other [`Chain`]s, all sharing a common config.
-    pub trait Chain {
+    pub trait Consensus {
         type SelfClientState: Debug
             + Clone
             + PartialEq
@@ -513,32 +511,39 @@ pub mod traits {
 
         // this is just Height
         type Height: IsHeight;
+    }
+
+    /// Represents a chain. One [`Chain`] may have many related [`LightClient`]s for connecting to
+    /// various other [`Chain`]s, all sharing a common config.
+    pub trait Chain {
+        type Consensus: Consensus;
 
         type ClientId: Id;
 
         /// Available client types for this chain.
         type ClientType: Debug + Clone + PartialEq + Serialize + for<'de> Deserialize<'de>;
 
-        fn chain_id(&self) -> <Self::SelfClientState as ClientState>::ChainId;
+        fn chain_id(&self) -> ChainIdOf<Self>;
 
-        fn query_latest_height(&self) -> impl Future<Output = Self::Height> + '_;
+        fn query_latest_height(&self) -> impl Future<Output = HeightOf<Self>> + '_;
 
-        fn query_latest_height_as_destination(&self) -> impl Future<Output = Self::Height> + '_;
+        fn query_latest_height_as_destination(&self) -> impl Future<Output = HeightOf<Self>> + '_;
 
         fn query_latest_timestamp(&self) -> impl Future<Output = i64> + '_;
 
         /// The client state on this chain at the specified `Height`.
         fn self_client_state(
             &self,
-            height: Self::Height,
-        ) -> impl Future<Output = Self::SelfClientState> + '_;
+            height: HeightOf<Self>,
+        ) -> impl Future<Output = ClientStateOf<Self>> + '_;
 
         /// The consensus state on this chain at the specified `Height`.
         fn self_consensus_state(
             &self,
-            height: Self::Height,
-        ) -> impl Future<Output = Self::SelfConsensusState> + '_;
+            height: HeightOf<Self>,
+        ) -> impl Future<Output = ConsensusStateOf<Self>> + '_;
 
+        /// Read the packet acknowledgement for a given packet.
         fn read_ack(
             &self,
             block_hash: H256,
@@ -696,13 +701,17 @@ pub mod traits {
         ) -> impl Future<Output = ClientStateOf<<Self::Counterparty as LightClientBase>::HostChain>> + '_;
     }
 
-    pub type ClientStateOf<C> = <C as Chain>::SelfClientState;
-    pub type ConsensusStateOf<C> = <C as Chain>::SelfConsensusState;
-    pub type HeaderOf<C> = <C as Chain>::Header;
-    pub type HeightOf<C> = <C as Chain>::Height;
+    pub type ConsensusOf<C> = <C as Chain>::Consensus;
+
+    pub type ClientStateOf<C> = <ConsensusOf<C> as Consensus>::SelfClientState;
+    pub type ConsensusStateOf<C> = <ConsensusOf<C> as Consensus>::SelfConsensusState;
+    pub type HeaderOf<C> = <ConsensusOf<C> as Consensus>::Header;
+    pub type HeightOf<C> = <ConsensusOf<C> as Consensus>::Height;
+
+    pub type ClientIdOf<C> = <C as Chain>::ClientId;
+
     pub type ChainOf<L> = <L as LightClientBase>::HostChain;
-    pub type ChainIdOf<L> =
-        <<<L as LightClientBase>::HostChain as Chain>::SelfClientState as ClientState>::ChainId;
+    pub type ChainIdOf<C> = <ClientStateOf<C> as ClientState>::ChainId;
 }
 
 /// An empty string. Will only parse/serialize to/from `""`.
