@@ -165,8 +165,6 @@ impl InitCmd {
         let init = CallCmd {
             bundle: self.bundle.clone(),
             args: vec![
-                OsString::from("--home"),
-                home.clone().into_os_string(),
                 OsString::from("init"),
                 OsString::from(self.moniker.clone()),
                 OsString::from("bn254"),
@@ -242,6 +240,8 @@ impl CallCmd {
         stderr: impl Into<Stdio>,
     ) -> Result<(), CallError> {
         let root = root.into();
+        let home = root.join("home");
+
         let bundle = Bundle::new(self.bundle.clone())?;
         let symlinker = Symlinker::new(root.clone(), bundle);
         let current = symlinker.current_validated()?;
@@ -251,8 +251,17 @@ impl CallCmd {
             "calling uniond binary at {}",
             as_display(current.0.display())
         );
+
+        let args = if self.args.contains(&"--home".to_owned().into()) {
+            self.args.clone()
+        } else {
+            let mut args = vec![OsString::from("--home"), home.clone().into_os_string()];
+            args.extend(self.args.clone());
+            args
+        };
+
         let mut child = std::process::Command::new(&current.0)
-            .args(&self.args)
+            .args(&args)
             .stdin(stdin.into())
             .stderr(stderr.into())
             .stdout(stdout.into())
