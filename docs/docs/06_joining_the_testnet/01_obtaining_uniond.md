@@ -97,10 +97,17 @@ services:
     image: ghcr.io/unionlabs/uniond:${UNIOND_VERSION}
     volumes:
       - ~/.union:/.union
+      - /tmp:/tmp
     network_mode: "host"
     restart: unless-stopped
     command: start --home /.union
 ```
+
+:::note
+
+You only need to mount `/tmp` if you intend to use [State Sync](./state_sync) to join the network
+
+:::
 
 This will mount our chain configuration and settings folder while also exposing ports `26657`, `1317`, and `9093`.
 
@@ -114,7 +121,7 @@ For some configuration recommendations see our [Node Configuration](../04_infras
 You can obtain the testnet genesis from https://rpc.cryptware.io/genesis or by running this command:
 
 ```sh
-curl https://rpc.cryptware.io/genesis -o ~/.union/config/genesis.json
+curl https://rpc.cryptware.io/genesis | jq '.result.genesis' > ~/.union/config/genesis.json
 ```
 
 :::

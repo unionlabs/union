@@ -36,7 +36,7 @@ Find the `statesync` TOML table, and using the information from the last step, s
 ```toml
 [statesync]
 enable = true
-rpc_servers = "https://rpc.cryptware.io,https://rpc.purmuzlu.cc"
+rpc_servers = "https://rpc.cryptware.io:443,https://rpc.purmuzlu.cc:443"
 trust_height = 11143 # <trusted_height>
 trust_hash = "DAD8FE1231B030B27D36634C52DEAECCABDB6AA0AFDECC9459E507A254D4D6C9" # <trusted_hash>
 trust_period = "400s"
