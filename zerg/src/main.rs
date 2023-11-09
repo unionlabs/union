@@ -34,10 +34,6 @@ async fn main() {
                 context.tx_handler()
             );
         }
-        cli::Command::Observe { output: _ } => {
-            // let mut context = Context::new(zerg_config, output, is_rush).await;
-            // let _ = tokio::join!(context.listen_union(), context.listen_eth(),);
-        }
         cli::Command::Process {
             input_file,
             output: _,

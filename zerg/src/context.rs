@@ -156,7 +156,7 @@ impl Context {
                     memo: uuid.to_string(),
                     timeout: None,
                 });
-                let transfer_msg = format!("{}", serde_json::to_string(&transfer_msg).unwrap());
+                let transfer_msg = serde_json::to_string(&transfer_msg).unwrap().to_string();
                 self.union
                     .signers.clone()
                     .with(|signer| async move {
@@ -366,7 +366,6 @@ impl Context {
 
     pub async fn listen_eth(&self) {
         let mut events = Box::pin(self.evm.clone().events(()));
-        // let e = self.evm.readonly_ibc_handler.events().filter.from_block(1).to_block(1));
 
         loop {
             event!(Level::INFO, "Evm: Listening for IBC events...");

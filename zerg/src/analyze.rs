@@ -57,22 +57,19 @@ pub fn analyze(input: String, output: String) -> HashMap<String, ChannelBenchmar
         execution_durations.sort();
         finalization_durations.sort();
 
-        let median_transfer_execution_duration = execution_durations[execution_durations.len() / 2];
-        let mean_transfer_execution_duration: u64 =
+        let median_execution_duration = execution_durations[execution_durations.len() / 2];
+        let mean_execution_duration: u64 =
             execution_durations.iter().sum::<u64>() / (execution_durations.len() as u64);
-        let max_transfer_execution_duration =
-            *execution_durations.last().expect("durations is not empty");
-        let min_transfer_execution_duration =
-            *execution_durations.first().expect("durations is not empty");
+        let max_execution_duration = *execution_durations.last().expect("durations is not empty");
+        let min_execution_duration = *execution_durations.first().expect("durations is not empty");
 
-        let median_transfer_finalization_duration =
-            finalization_durations[finalization_durations.len() / 2];
-        let mean_transfer_finalization_duration: u64 =
+        let median_finalization_duration = finalization_durations[finalization_durations.len() / 2];
+        let mean_finalization_duration: u64 =
             finalization_durations.iter().sum::<u64>() / (finalization_durations.len() as u64);
-        let max_transfer_finalization_duration = *finalization_durations
+        let max_finalization_duration = *finalization_durations
             .last()
             .expect("durations is not empty");
-        let min_transfer_finalization_duration = *finalization_durations
+        let min_finalization_duration = *finalization_durations
             .first()
             .expect("durations is not empty");
 
@@ -84,14 +81,14 @@ pub fn analyze(input: String, output: String) -> HashMap<String, ChannelBenchmar
             ChannelBenchmark {
                 incomplete_transfers,
                 complete_transfers,
-                mean_transfer_execution_duration,
-                median_transfer_execution_duration,
-                max_transfer_execution_duration,
-                min_transfer_execution_duration,
-                mean_transfer_finalization_duration,
-                median_transfer_finalization_duration,
-                max_transfer_finalization_duration,
-                min_transfer_finalization_duration,
+                mean_execution_duration,
+                median_execution_duration,
+                max_execution_duration,
+                min_execution_duration,
+                mean_finalization_duration,
+                median_finalization_duration,
+                max_finalization_duration,
+                min_finalization_duration,
                 from: channel_port_id.to_string(),
             },
         );
@@ -131,14 +128,14 @@ impl Durations {
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, PartialEq, Clone)]
 pub struct ChannelBenchmark {
-    mean_transfer_execution_duration: u64,
-    median_transfer_execution_duration: u64,
-    max_transfer_execution_duration: u64,
-    min_transfer_execution_duration: u64,
-    mean_transfer_finalization_duration: u64,
-    median_transfer_finalization_duration: u64,
-    max_transfer_finalization_duration: u64,
-    min_transfer_finalization_duration: u64,
+    mean_execution_duration: u64,
+    median_execution_duration: u64,
+    max_execution_duration: u64,
+    min_execution_duration: u64,
+    mean_finalization_duration: u64,
+    median_finalization_duration: u64,
+    max_finalization_duration: u64,
+    min_finalization_duration: u64,
     incomplete_transfers: u64,
     complete_transfers: u64,
     from: String,
@@ -173,17 +170,17 @@ impl Display for ChannelBenchmark {
             "Exec",
             "Final",
             "Min",
-            as_min_sec(self.min_transfer_execution_duration),
-            as_min_sec(self.min_transfer_finalization_duration),
+            as_min_sec(self.min_execution_duration),
+            as_min_sec(self.min_finalization_duration),
             "Max",
-            as_min_sec(self.max_transfer_execution_duration),
-            as_min_sec(self.max_transfer_finalization_duration),
+            as_min_sec(self.max_execution_duration),
+            as_min_sec(self.max_finalization_duration),
             "Mean",
-            as_min_sec(self.mean_transfer_execution_duration),
-            as_min_sec(self.mean_transfer_finalization_duration),
+            as_min_sec(self.mean_execution_duration),
+            as_min_sec(self.mean_finalization_duration),
             "Median",
-            as_min_sec(self.median_transfer_execution_duration),
-            as_min_sec(self.median_transfer_finalization_duration),
+            as_min_sec(self.median_execution_duration),
+            as_min_sec(self.median_finalization_duration),
             self.incomplete_transfers,
             self.complete_transfers,
         )

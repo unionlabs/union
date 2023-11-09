@@ -44,9 +44,6 @@ pub struct Event {
 
 impl Event {
     /// Creates an `Event` originating from `chain_id` from the `SendPacket` event data.
-    ///
-    /// Constructs a unique ID from packet information in the form of:
-    /// `<src_port>/<src_channel>/<sequence>`
     pub fn create_send_event(
         chain_id: String,
         uuid: Uuid,
@@ -63,9 +60,6 @@ impl Event {
     }
 
     /// Creates an `Event` originating from `chain_id` from the `RecvPacket` event data.
-    ///
-    /// Constructs a unique ID from packet information in the form of:
-    /// `<src_port>/<src_channel>/<sequence>`
     pub fn create_recv_event(
         chain_id: String,
         uuid: Uuid,
