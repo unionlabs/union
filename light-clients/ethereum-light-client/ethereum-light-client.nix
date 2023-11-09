@@ -23,23 +23,20 @@
       gen-eth-lc-update-test-data = writeShellApplicationWithArgs {
         name = "parse-test-data";
         runtimeInputs = [ pkgs.jq ];
-        arguments = [
-          {
-            arg = "output_path";
+        arguments = {
+          output_path = {
             required = true;
             help = "The output directory to put the update data";
-          }
-          {
-            arg = "finality_update_per_period";
+          };
+          finality_update_per_period = {
             default = "99999999";
             help = "The maximum limit of finality update data to generate per sync committee period";
-          }
-          {
-            arg = "test_data";
+          };
+          test_data = {
             required = true;
             help = "The exported test data that is going to be processed";
-          }
-        ];
+          };
+        };
         text = ''
           I=0
           FINALITY=0
