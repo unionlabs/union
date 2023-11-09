@@ -11,6 +11,9 @@
           partitions = 1;
           partitionType = "count";
         };
+        extraEnv = {
+          doNotLinkInheritedArtifacts = true;
+        };
       };
 
     in
