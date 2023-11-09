@@ -27,14 +27,14 @@ abstract contract IBCStore {
     uint64 public expectedTimePerBlock;
 
     // Sequences for identifier
-    uint64 internal nextClientSequence;
-    uint64 internal nextConnectionSequence;
-    uint64 internal nextChannelSequence;
+    uint64 public nextClientSequence;
+    uint64 public nextConnectionSequence;
+    uint64 public nextChannelSequence;
 
     // Storage accessors
     function getClient(
         string memory clientId
-    ) internal view returns (ILightClient) {
+    ) public view returns (ILightClient) {
         address clientImpl = clientImpls[clientId];
         require(clientImpl != address(0), "IBCStore: client not found");
         return ILightClient(clientImpl);
