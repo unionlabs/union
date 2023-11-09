@@ -3,7 +3,12 @@ use std::{fs::read_to_string, sync::Arc};
 use clap::Parser;
 use cli::Evm;
 use contracts::{
-    erc20,
+    devnet_ownable_ibc_handler, erc20,
+    shared_types::{
+        IbcCoreChannelV1ChannelData, IbcCoreChannelV1CounterpartyData,
+        IbcCoreCommitmentV1MerklePrefixData, IbcCoreConnectionV1ConnectionEndData,
+        IbcCoreConnectionV1CounterpartyData, IbcCoreConnectionV1VersionData,
+    },
     ucs01_relay::{LocalToken, UCS01Relay},
 };
 use ethers::{
@@ -60,6 +65,36 @@ async fn main() {
                             .await
                         }
                     },
+                    cli::EvmTx::InitialChannel {
+                        module_address,
+                        channel_id,
+                        port_id,
+                        counterparty_port_id,
+                        client_id,
+                        connection_id,
+                        counterparty_client_id,
+                        counterparty_connection_id,
+                        counterparty_channel_id,
+                        version,
+                    } => match config.evm {
+                        cli::EvmChainConfig::Minimal(config) => {
+                            setup_initial_channel(
+                                Evm::new(config).await.unwrap(),
+                                module_address.into(),
+                                client_id,
+                                connection_id,
+                                channel_id,
+                                port_id,
+                                counterparty_client_id,
+                                counterparty_connection_id,
+                                counterparty_channel_id,
+                                counterparty_port_id,
+                                version,
+                            )
+                            .await
+                        }
+                        _ => unimplemented!(),
+                    },
                 };
             }
         },
@@ -113,6 +148,72 @@ async fn main() {
             },
         },
     }
+}
+
+// TODO(aeryz): Move these arguments into `channel` struct, and get `channel` and `counterparty_channel` as params
+#[allow(clippy::too_many_arguments)]
+async fn setup_initial_channel(
+    evm: Evm<Minimal>,
+    module_address: Address,
+    client_id: String,
+    connection_id: String,
+    channel_id: String,
+    port_id: String,
+    counterparty_client_id: String,
+    counterparty_connection_id: String,
+    counterparty_channel_id: String,
+    counterparty_port_id: String,
+    version: String,
+) {
+    let signer_middleware = Arc::new(SignerMiddleware::new(
+        evm.provider.clone(),
+        evm.wallet.clone(),
+    ));
+
+    let ibc_handler = devnet_ownable_ibc_handler::DevnetOwnableIBCHandler::new(
+        evm.ibc_handler_address,
+        signer_middleware,
+    );
+
+    ibc_handler
+        .setup_initial_channel(
+            connection_id,
+            IbcCoreConnectionV1ConnectionEndData {
+                client_id,
+                versions: vec![IbcCoreConnectionV1VersionData {
+                    identifier: "1".into(),
+                    features: vec!["ORDER_ORDERED".into(), "ORDER_UNORDERED".into()],
+                }],
+                state: 3,
+                counterparty: IbcCoreConnectionV1CounterpartyData {
+                    client_id: counterparty_client_id,
+                    connection_id: counterparty_connection_id.clone(),
+                    prefix: IbcCoreCommitmentV1MerklePrefixData {
+                        key_prefix: b"ibc".to_vec().into(),
+                    },
+                },
+                delay_period: 6,
+            },
+            port_id,
+            channel_id.clone(),
+            IbcCoreChannelV1ChannelData {
+                state: 3,
+                ordering: 1,
+                counterparty: IbcCoreChannelV1CounterpartyData {
+                    port_id: counterparty_port_id,
+                    channel_id: counterparty_channel_id,
+                },
+                connection_hops: vec![counterparty_connection_id],
+                version,
+            },
+            module_address,
+        )
+        .send()
+        .await
+        .unwrap()
+        .await
+        .unwrap()
+        .unwrap();
 }
 
 async fn handle_ucs_balance<C: ChainSpec>(

@@ -62,6 +62,28 @@ pub enum EvmTx {
         #[arg(long)]
         denom: String,
     },
+    InitialChannel {
+        #[arg(long)]
+        module_address: Address,
+        #[arg(long)]
+        client_id: String,
+        #[arg(long)]
+        connection_id: String,
+        #[arg(long)]
+        channel_id: String,
+        #[arg(long)]
+        port_id: String,
+        #[arg(long)]
+        counterparty_client_id: String,
+        #[arg(long)]
+        counterparty_connection_id: String,
+        #[arg(long)]
+        counterparty_channel_id: String,
+        #[arg(long)]
+        counterparty_port_id: String,
+        #[arg(long)]
+        version: String,
+    },
 }
 
 #[derive(Debug, Subcommand)]
@@ -133,6 +155,7 @@ pub struct Evm<C: ChainSpec> {
     pub wallet: LocalWallet,
     pub provider: Provider<Ws>,
     pub beacon_api_client: BeaconApiClient<C>,
+    pub ibc_handler_address: Address,
 }
 
 impl<C: ChainSpec> Evm<C> {
@@ -150,6 +173,7 @@ impl<C: ChainSpec> Evm<C> {
             provider,
             beacon_api_client: BeaconApiClient::new(config.eth_beacon_rpc_api).await,
             wallet,
+            ibc_handler_address: config.ibc_handler_address,
         })
     }
 }
