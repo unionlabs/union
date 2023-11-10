@@ -5,7 +5,7 @@ use trie_db::{Trie, TrieDBBuilder};
 use typenum::Unsigned;
 use unionlabs::{
     bls::{BlsPublicKey, BlsSignature},
-    ethereum::{DomainType, H256},
+    ethereum::{Address, DomainType, H256},
     ethereum_consts_traits::{
         consts::{
             floorlog2, get_subtree_index, EXECUTION_PAYLOAD_INDEX, FINALIZED_ROOT_INDEX,
@@ -20,7 +20,7 @@ use unionlabs::{
 };
 
 use crate::{
-    primitives::{Account, ExecutionAddress, Hash32, Slot},
+    primitives::Account,
     rlp_node_codec::{keccak_256, EthLayout, KeccakHasher},
     utils::{
         compute_domain, compute_epoch_at_slot, compute_fork_version, compute_signing_root,
@@ -50,7 +50,7 @@ pub trait BlsVerify {
 pub fn validate_light_client_update<Ctx: LightClientContext, V: BlsVerify>(
     ctx: &Ctx,
     update: LightClientUpdate<Ctx::ChainSpec>,
-    current_slot: Slot,
+    current_slot: u64,
     genesis_validators_root: H256,
     bls_verifier: V,
 ) -> Result<(), ValidateLightClientError> {
@@ -189,7 +189,7 @@ pub fn validate_light_client_update<Ctx: LightClientContext, V: BlsVerify>(
 
 fn verify_state(
     root: H256,
-    key: &[u8],
+    key: impl AsRef<[u8]>,
     proof: impl IntoIterator<Item = impl AsRef<[u8]>>,
 ) -> Result<Option<Vec<u8>>, Error> {
     let mut db = MemoryDB::<KeccakHasher, HashKey<_>, Vec<u8>>::default();
@@ -199,7 +199,8 @@ fn verify_state(
 
     let root: primitive_types::H256 = root.into();
     let trie = TrieDBBuilder::<EthLayout>::new(&db, &root).build();
-    Ok(trie.get(&keccak_256(key))?)
+    // REVIEW: Is this arbitrary bytes?
+    Ok(trie.get(&keccak_256(key.as_ref()))?)
 }
 
 /// Verifies if the `storage_root` of a contract can be verified against the state `root`.
@@ -212,13 +213,13 @@ fn verify_state(
 /// NOTE: You must not trust the `root` unless you verified it by calling [`validate_light_client_update`].
 pub fn verify_account_storage_root(
     root: H256,
-    address: &ExecutionAddress,
+    address: &Address,
     proof: impl IntoIterator<Item = impl AsRef<[u8]>>,
-    storage_root: &Hash32,
+    storage_root: &H256,
 ) -> Result<(), VerifyAccountStorageRootError> {
     match verify_state(root, address.as_ref(), proof)? {
         Some(account) => {
-            let account = Account::from_rlp_bytes(account.as_ref())?;
+            let account = rlp::decode::<Account>(account.as_ref()).map_err(Error::RlpDecode)?;
             if &account.storage_root == storage_root {
                 Ok(())
             } else {
@@ -239,11 +240,11 @@ pub fn verify_account_storage_root(
 /// NOTE: You must not trust the `root` unless you verified it by calling [`verify_account_storage_root`].
 pub fn verify_storage_proof(
     root: H256,
-    key: &[u8],
+    key: H256,
     expected_value: &[u8],
     proof: impl IntoIterator<Item = impl AsRef<[u8]>>,
 ) -> Result<(), VerifyStorageProofError> {
-    match verify_state(root, key, proof)? {
+    match verify_state(root, key.as_ref(), proof)? {
         Some(value) if value == expected_value => Ok(()),
         _ => Err(Error::ValueMismatch)?,
     }
@@ -258,10 +259,10 @@ pub fn verify_storage_proof(
 /// NOTE: You must not trust the `root` unless you verified it by calling [`verify_account_storage_root`].
 pub fn verify_storage_absence(
     root: H256,
-    key: &[u8],
+    key: H256,
     proof: impl IntoIterator<Item = impl AsRef<[u8]>>,
 ) -> Result<bool, VerifyStorageAbsenceError> {
-    Ok(verify_state(root, key, proof)?.is_none())
+    Ok(verify_state(root, key.as_ref(), proof)?.is_none())
 }
 
 /// Validates a light client header.
@@ -289,6 +290,7 @@ pub fn is_valid_light_client_header<C: ChainSpec>(
 
 #[cfg(test)]
 mod tests {
+    use hex_literal::hex;
     use unionlabs::{
         ethereum_consts_traits::{Minimal, MINIMAL},
         ibc::lightclients::ethereum::{
@@ -299,30 +301,39 @@ mod tests {
 
     use super::*;
 
-    const GENESIS_VALIDATORS_ROOT: &str =
-        "270d43e74ce340de4bca2b1936beca0f4f5408d9e78aec4850920baf659d5b69";
+    const GENESIS_VALIDATORS_ROOT: H256 = H256(hex!(
+        "270d43e74ce340de4bca2b1936beca0f4f5408d9e78aec4850920baf659d5b69"
+    ));
 
     // These are copied from ethereum light client's tests.
     lazy_static::lazy_static! {
-        static ref VALID_STORAGE_ROOT: H256 =
-            hex::decode("5634f342b966b609cdd8d2f7ed43bb94702c9e83d4e974b08a3c2b8205fd85e3").unwrap().try_into().unwrap();
-        static ref VALID_PROOF_KEY: Vec<u8> =
-            hex::decode("b35cad2b263a62faaae30d8b3f51201fea5501d2df17d59a3eef2751403e684f").unwrap();
-        static ref VALID_RLP_ENCODED_PROOF_VALUE: Vec<u8> =
-            hex::decode("9f272c7c82ac0f0adbfe4ae30614165bf3b94d49754ce8c1955cc255dcc829b5").unwrap();
         static ref VALID_PROOF: Vec<Vec<u8>> = [
             "f871808080a0b9f6e8d11cf768b8034f04b8b2ab45bb5ca792e1c6e3929cf8222a885631ffac808080808080808080a0f7202a06e8dc011d3123f907597f51546fe03542551af2c9c54d21ba0fbafc7280a0d1797d071b81705da736e39e75f1186c8e529ba339f7a7d12a9b4fafe33e43cc80",
             "f842a03a8c7f353aebdcd6b56a67cd1b5829681a3c6e1695282161ab3faa6c3666d4c3a09f272c7c82ac0f0adbfe4ae30614165bf3b94d49754ce8c1955cc255dcc829b5"
         ].into_iter().map(|x| hex::decode(x).unwrap()).collect();
 
-        static ref ABSENT_STORAGE_ROOT: H256 =
-            hex::decode("9e352a10c5a38c301ee06c22a90f0971b679985b2ca6dd66aca224bd7a9957c1").unwrap().try_into().unwrap();
-        static ref ABSENT_PROOF_KEY: Vec<u8> =
-            hex::decode("aae81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b420").unwrap();
         static ref ABSENT_PROOF: Vec<Vec<u8>> = [
             hex::decode("f838a120df6966c971051c3d54ec59162606531493a51404a002842f56009d7e5cf4a8c79594be68fc2d8249eb60bfcf0e71d5a0d2f2e292c4ed").unwrap(),
         ].into();
     }
+
+    const VALID_STORAGE_ROOT: H256 = H256(hex!(
+        "5634f342b966b609cdd8d2f7ed43bb94702c9e83d4e974b08a3c2b8205fd85e3"
+    ));
+    const VALID_PROOF_KEY: H256 = H256(hex!(
+        "b35cad2b263a62faaae30d8b3f51201fea5501d2df17d59a3eef2751403e684f"
+    ));
+    const VALID_RLP_ENCODED_PROOF_VALUE: H256 = H256(hex!(
+        "9f272c7c82ac0f0adbfe4ae30614165bf3b94d49754ce8c1955cc255dcc829b5"
+    ));
+
+    const ABSENT_STORAGE_ROOT: H256 = H256(hex!(
+        "9e352a10c5a38c301ee06c22a90f0971b679985b2ca6dd66aca224bd7a9957c1"
+    ));
+
+    const ABSENT_PROOF_KEY: H256 = H256(hex!(
+        "aae81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b420"
+    ));
 
     struct Context {
         finalized_slot: u64,
@@ -640,7 +651,7 @@ mod tests {
                 &VALID_PROOF_KEY,
                 VALID_PROOF.iter()
             ),
-            Ok(Some(VALID_RLP_ENCODED_PROOF_VALUE.clone()))
+            Ok(Some(VALID_RLP_ENCODED_PROOF_VALUE.into_bytes()))
         );
     }
 
@@ -661,7 +672,7 @@ mod tests {
     #[test]
     fn verify_state_returns_none_when_invalid_key() {
         let mut proof_key = VALID_PROOF_KEY.clone();
-        proof_key[0] = u8::MAX - proof_key[0];
+        proof_key.0[0] = u8::MAX - proof_key.0[0];
 
         assert_eq!(
             verify_state(VALID_STORAGE_ROOT.clone(), &proof_key, VALID_PROOF.iter()),
@@ -683,11 +694,7 @@ mod tests {
     #[test]
     fn verify_absent_storage_works() {
         assert_eq!(
-            verify_storage_absence(
-                ABSENT_STORAGE_ROOT.clone(),
-                &ABSENT_PROOF_KEY,
-                ABSENT_PROOF.iter()
-            ),
+            verify_storage_absence(ABSENT_STORAGE_ROOT, ABSENT_PROOF_KEY, ABSENT_PROOF.iter()),
             Ok(true)
         )
     }
@@ -695,11 +702,7 @@ mod tests {
     #[test]
     fn verify_absent_storage_returns_false_when_storage_exists() {
         assert_eq!(
-            verify_storage_absence(
-                VALID_STORAGE_ROOT.clone(),
-                &VALID_PROOF_KEY,
-                VALID_PROOF.iter()
-            ),
+            verify_storage_absence(VALID_STORAGE_ROOT, VALID_PROOF_KEY, VALID_PROOF.iter()),
             Ok(false)
         );
     }
@@ -730,9 +733,9 @@ mod tests {
     fn verify_storage_proof_works() {
         assert_eq!(
             verify_storage_proof(
-                VALID_STORAGE_ROOT.clone(),
-                &VALID_PROOF_KEY,
-                &VALID_RLP_ENCODED_PROOF_VALUE,
+                VALID_STORAGE_ROOT,
+                VALID_PROOF_KEY,
+                VALID_RLP_ENCODED_PROOF_VALUE.as_ref(),
                 VALID_PROOF.iter()
             ),
             Ok(())
@@ -742,13 +745,13 @@ mod tests {
     #[test]
     fn verify_storage_proof_fails_when_incorrect_value() {
         let mut proof_value = VALID_RLP_ENCODED_PROOF_VALUE.clone();
-        proof_value[0] = u8::MAX - proof_value[0];
+        proof_value.0[0] = u8::MAX - proof_value.0[0];
 
         assert_eq!(
             verify_storage_proof(
-                VALID_STORAGE_ROOT.clone(),
-                &VALID_PROOF_KEY,
-                &proof_value,
+                VALID_STORAGE_ROOT,
+                VALID_PROOF_KEY,
+                proof_value.as_ref(),
                 VALID_PROOF.iter()
             ),
             Err(Error::ValueMismatch.into())

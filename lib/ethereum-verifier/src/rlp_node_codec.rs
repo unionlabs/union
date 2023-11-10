@@ -45,6 +45,7 @@ use hash256_std_hasher::Hash256StdHasher;
 pub struct KeccakHasher;
 
 impl Hasher for KeccakHasher {
+    // TODO: Use `unionlabs::ethereum::H256` here
     type Out = H256;
     type StdHasher = Hash256StdHasher;
     const LENGTH: usize = 32;

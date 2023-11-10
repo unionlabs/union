@@ -4,6 +4,7 @@ use std::{fmt::Debug, str::FromStr};
 use generic_array::GenericArray;
 use hex_literal::hex;
 use serde::{Deserialize, Serialize};
+use serde_utils::HEX_ENCODING_PREFIX;
 use ssz::{Decode, Encode};
 use ssz_types::{BitList, FixedVector, VariableList};
 use tree_hash::TreeHash;
@@ -177,6 +178,25 @@ macro_rules! hex_string_array_wrapper {
 
                 fn try_from(value: &ethers_core::types::Bytes) -> Result<Self, Self::Error> {
                     Self::try_from(&value.0[..])
+                }
+            }
+
+            impl rlp::Encodable for $Struct {
+                fn rlp_append(&self, s: &mut rlp::RlpStream) {
+                    s.encoder().encode_value(self.as_ref());
+                }
+            }
+
+            impl rlp::Decodable for $Struct {
+                fn decode(rlp: &rlp::Rlp) -> Result<Self, rlp::DecoderError> {
+                    rlp.decoder()
+                        .decode_value(|bytes| match bytes.len().cmp(&$N) {
+                            std::cmp::Ordering::Less => Err(rlp::DecoderError::RlpIsTooShort),
+                            std::cmp::Ordering::Greater => Err(rlp::DecoderError::RlpIsTooBig),
+                            std::cmp::Ordering::Equal => {
+                                Ok($Struct(bytes.try_into().expect("size is checked; qed;")))
+                            }
+                        })
                 }
             }
         )+
@@ -386,21 +406,102 @@ impl From<primitive_types::H160> for Address {
     }
 }
 
-// #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
-// pub struct LightClientBootstrap<const SYNC_COMMITTEE_SIZE: usize> {
-//     pub beacon_header: BeaconBlockHeader,
-//     /// Current sync committee corresponding to `beacon_header.state_root`
-//     pub current_sync_committee: SyncCommittee<SYNC_COMMITTEE_SIZE>,
-//     pub current_sync_committee_branch: [H256; CURRENT_SYNC_COMMITTEE_DEPTH],
-// }
-
-// [`primitive_types::U256`] can't roundtrip through string conversion since it parses from hex but displays as decimal.
+/// [`primitive_types::U256`] can't roundtrip through string conversion since it parses from hex but displays as decimal.
 #[derive(
     Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Encode, Decode,
 )]
 #[ssz(struct_behaviour = "transparent")]
 #[repr(transparent)]
 pub struct U256(#[serde(with = "::serde_utils::u256_from_dec_str")] pub primitive_types::U256);
+
+impl From<u64> for U256 {
+    fn from(value: u64) -> Self {
+        Self(primitive_types::U256::from(value))
+    }
+}
+
+impl U256 {
+    #[must_use]
+    pub fn to_big_endian(&self) -> [u8; 32] {
+        let mut buf = [0; 32];
+        self.0.to_big_endian(&mut buf);
+        buf
+    }
+
+    pub fn try_from_big_endian(bz: &[u8]) -> Result<Self, InvalidLength> {
+        let len = bz.len();
+
+        if (1..=32).contains(&len) {
+            Ok(Self(primitive_types::U256::from_big_endian(bz)))
+        } else {
+            Err(InvalidLength {
+                expected: ExpectedLength::Between(1, 32),
+                found: len,
+            })
+        }
+    }
+
+    #[must_use]
+    pub fn from_big_endian(bz: [u8; 32]) -> Self {
+        Self(primitive_types::U256::from_big_endian(&bz))
+    }
+
+    #[must_use]
+    pub fn to_big_endian_hex(&self) -> String {
+        let data = self.to_big_endian();
+        let data = data.as_ref();
+
+        let encoded = hex::encode(data);
+
+        let encoded = encoded.trim_start_matches('0');
+
+        format!(
+            "{HEX_ENCODING_PREFIX}{}",
+            if encoded.is_empty() { "0" } else { encoded }
+        )
+    }
+}
+
+pub mod u256_big_endian_hex {
+    use serde::de::{self, Deserialize};
+
+    use crate::ethereum::U256;
+
+    pub fn serialize<S>(data: &U256, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_str(&data.to_big_endian_hex())
+    }
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<U256, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        <&str>::deserialize(deserializer).and_then(|s| -> Result<U256, D::Error> {
+            if s.is_empty() {
+                return Err(de::Error::custom(
+                    serde_utils::FromHexStringError::EmptyString,
+                ));
+            }
+
+            match s.strip_prefix(serde_utils::HEX_ENCODING_PREFIX) {
+                Some(maybe_hex) => if maybe_hex.len() % 2 == 1 {
+                    hex::decode(format!("0{maybe_hex}"))
+                } else {
+                    hex::decode(maybe_hex)
+                }
+                .map(|x| U256::try_from_big_endian(&x).map_err(de::Error::custom))
+                .map_err(de::Error::custom)?,
+                None => Err(de::Error::custom(
+                    serde_utils::FromHexStringError::MissingPrefix(
+                        String::from_utf8_lossy(s.as_ref()).into_owned(),
+                    ),
+                )),
+            }
+        })
+    }
+}
 
 impl Debug for U256 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -468,13 +569,64 @@ impl Display for U256 {
     }
 }
 
-#[test]
-fn u256_roundtrip() {
+#[cfg(test)]
+mod u256_tests {
+    use super::*;
     use crate::test_utils::{
         assert_json_roundtrip, assert_proto_roundtrip, assert_string_roundtrip,
     };
 
-    assert_json_roundtrip(&U256::from_str("123456").unwrap());
-    assert_proto_roundtrip(&U256::from_str("123456").unwrap());
-    assert_string_roundtrip(&U256::from_str("123456").unwrap());
+    #[test]
+    fn hex_string() {
+        #[derive(Debug, Deserialize, Serialize)]
+        struct T {
+            #[serde(with = "u256_big_endian_hex")]
+            u256: U256,
+        }
+
+        fn assert_big_endian_hex_roundtrip(hex: &'static str) {
+            let n: u64 = {
+                // assume the prefix is provided
+                let hex = &hex[2..];
+                let vec = if hex.len() % 2 == 1 {
+                    hex::decode(format!("0{hex}"))
+                } else {
+                    hex::decode(hex)
+                }
+                .unwrap();
+                let vec: Vec<_> = vec![0; 8 - vec.len()].into_iter().chain(vec).collect();
+                u64::from_be_bytes(vec.try_into().unwrap())
+            };
+
+            let string = format!(r#"{{"u256":"{hex}"}}"#);
+            let t = serde_json::from_str::<T>(&string).unwrap();
+
+            dbg!(H256(t.u256.to_big_endian()));
+
+            assert_eq!(t.u256.0.as_u64(), n);
+
+            let roundtrip = serde_json::to_string(&t).unwrap();
+
+            assert_eq!(string, roundtrip);
+        }
+
+        // even length
+        assert_big_endian_hex_roundtrip("0x1234");
+
+        // odd length
+        assert_big_endian_hex_roundtrip("0x56789");
+
+        // single digit
+        assert_big_endian_hex_roundtrip("0x3");
+
+        // zero
+        assert_big_endian_hex_roundtrip("0x0");
+    }
+
+    #[test]
+    fn roundtrip() {
+        assert_json_roundtrip(&U256::from_str("123456").unwrap());
+        assert_proto_roundtrip(&U256::from_str("123456").unwrap());
+        assert_string_roundtrip(&U256::from_str("123456").unwrap());
+    }
 }

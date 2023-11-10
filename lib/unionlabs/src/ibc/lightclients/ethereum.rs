@@ -1,3 +1,4 @@
+pub mod account_proof;
 pub mod account_update;
 pub mod beacon_block_header;
 pub mod client_state;

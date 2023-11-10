@@ -6,18 +6,36 @@ pub struct StorageProof {
     #[prost(message, repeated, tag = "1")]
     pub proofs: ::prost::alloc::vec::Vec<Proof>,
 }
+/// Value returned by eth_getProof
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Proof {
+    /// NOTE: U256
     #[prost(bytes = "vec", tag = "1")]
     #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))]
     pub key: ::prost::alloc::vec::Vec<u8>,
+    /// NOTE: U256
     #[prost(bytes = "vec", tag = "2")]
     #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))]
     pub value: ::prost::alloc::vec::Vec<u8>,
     #[prost(bytes = "vec", repeated, tag = "3")]
     #[cfg_attr(feature = "serde", serde(with = "::serde_utils::inner_base64"))]
+    pub proof: ::prost::alloc::vec::Vec<::prost::alloc::vec::Vec<u8>>,
+}
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct AccountProof {
+    /// NOTE: 20 bytes
+    #[prost(bytes = "vec", tag = "1")]
+    pub contract_address: ::prost::alloc::vec::Vec<u8>,
+    /// NOTE: H256
+    /// NOTE: eth_getProof.storageHash
+    #[prost(bytes = "vec", tag = "2")]
+    pub storage_root: ::prost::alloc::vec::Vec<u8>,
+    /// NOTE: eth_getProof.accountProof
+    #[prost(bytes = "vec", repeated, tag = "3")]
     pub proof: ::prost::alloc::vec::Vec<::prost::alloc::vec::Vec<u8>>,
 }
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
@@ -51,8 +69,8 @@ pub struct ClientState {
     #[prost(message, optional, tag = "12")]
     pub frozen_height:
         ::core::option::Option<super::super::super::super::super::ibc::core::client::v1::Height>,
-    #[prost(uint64, tag = "13")]
-    pub counterparty_commitment_slot: u64,
+    #[prost(bytes = "vec", tag = "13")]
+    pub counterparty_commitment_slot: ::prost::alloc::vec::Vec<u8>,
 }
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -180,8 +198,8 @@ pub struct ExecutionUpdate {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AccountUpdate {
-    #[prost(message, repeated, tag = "1")]
-    pub proofs: ::prost::alloc::vec::Vec<Proof>,
+    #[prost(message, optional, tag = "1")]
+    pub account_proof: ::core::option::Option<AccountProof>,
 }
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]

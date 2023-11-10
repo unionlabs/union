@@ -1,29 +1,41 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{ibc::lightclients::ethereum::proof::Proof, Proto, TypeUrl};
+use crate::{
+    errors::{required, MissingField},
+    ibc::lightclients::ethereum::account_proof::{AccountProof, TryFromAccountProofError},
+    Proto, TypeUrl,
+};
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct AccountUpdate {
-    pub proofs: Vec<Proof>,
+    pub account_proof: AccountProof,
 }
 
 impl From<AccountUpdate> for protos::union::ibc::lightclients::ethereum::v1::AccountUpdate {
     fn from(value: AccountUpdate) -> Self {
         Self {
-            proofs: value
-                .proofs
-                .into_iter()
-                .map(|proof| Into::<Proof>::into(proof).into())
-                .collect(),
+            account_proof: Some(value.account_proof.into()),
         }
     }
 }
 
-impl From<protos::union::ibc::lightclients::ethereum::v1::AccountUpdate> for AccountUpdate {
-    fn from(value: protos::union::ibc::lightclients::ethereum::v1::AccountUpdate) -> Self {
-        Self {
-            proofs: value.proofs.into_iter().map(Into::into).collect(),
-        }
+#[derive(Debug)]
+pub enum TryFromAccountUpdateError {
+    MissingField(MissingField),
+    AccountProof(TryFromAccountProofError),
+}
+
+impl TryFrom<protos::union::ibc::lightclients::ethereum::v1::AccountUpdate> for AccountUpdate {
+    type Error = TryFromAccountUpdateError;
+
+    fn try_from(
+        value: protos::union::ibc::lightclients::ethereum::v1::AccountUpdate,
+    ) -> Result<Self, Self::Error> {
+        Ok(Self {
+            account_proof: required!(value.account_proof)?
+                .try_into()
+                .map_err(TryFromAccountUpdateError::AccountProof)?,
+        })
     }
 }
 

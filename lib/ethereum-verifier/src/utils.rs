@@ -7,16 +7,13 @@ use unionlabs::{
     ibc::lightclients::ethereum::fork_parameters::ForkParameters,
 };
 
-use crate::{
-    primitives::{Epoch, Slot, GENESIS_SLOT},
-    Error, InvalidMerkleBranch,
-};
+use crate::{primitives::GENESIS_SLOT, Error, InvalidMerkleBranch};
 
 /// Returns the fork version based on the `epoch` and `fork_parameters`.
 /// NOTE: This implementation is based on capella.
 ///
 /// [See in consensus-spec](https://github.com/ethereum/consensus-specs/blob/dev/specs/capella/fork.md#modified-compute_fork_version)
-pub fn compute_fork_version(fork_parameters: &ForkParameters, epoch: Epoch) -> Version {
+pub fn compute_fork_version(fork_parameters: &ForkParameters, epoch: u64) -> Version {
     if epoch >= fork_parameters.eip4844.epoch {
         fork_parameters.eip4844.version.clone()
     } else if epoch >= fork_parameters.capella.epoch {
@@ -36,7 +33,7 @@ pub fn compute_fork_version(fork_parameters: &ForkParameters, epoch: Epoch) -> V
 pub fn compute_sync_committee_period_at_slot<
     C: SLOTS_PER_EPOCH + EPOCHS_PER_SYNC_COMMITTEE_PERIOD,
 >(
-    slot: Slot,
+    slot: u64,
 ) -> u64 {
     compute_sync_committee_period::<C>(compute_epoch_at_slot::<C>(slot))
 }
@@ -44,21 +41,21 @@ pub fn compute_sync_committee_period_at_slot<
 /// Returns the epoch at a given `slot`.
 ///
 /// [See in consensus-spec](https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#compute_epoch_at_slot)
-pub fn compute_epoch_at_slot<C: SLOTS_PER_EPOCH>(slot: Slot) -> Epoch {
+pub fn compute_epoch_at_slot<C: SLOTS_PER_EPOCH>(slot: u64) -> u64 {
     slot / C::SLOTS_PER_EPOCH::U64
 }
 
 /// Returns the sync committee period at a given `epoch`.
 ///
 /// [See in consensus-spec](https://github.com/ethereum/consensus-specs/blob/dev/specs/altair/validator.md#sync-committee)
-pub fn compute_sync_committee_period<C: EPOCHS_PER_SYNC_COMMITTEE_PERIOD>(epoch: Epoch) -> Slot {
+pub fn compute_sync_committee_period<C: EPOCHS_PER_SYNC_COMMITTEE_PERIOD>(epoch: u64) -> u64 {
     epoch / C::EPOCHS_PER_SYNC_COMMITTEE_PERIOD::U64
 }
 
 /// Returns the timestamp at a `slot`, respect to `genesis_time`.
 ///
 /// [See in consensus-spec](https://github.com/ethereum/consensus-specs/blob/dev/specs/bellatrix/beacon-chain.md#compute_timestamp_at_slot)
-pub fn compute_timestamp_at_slot<C: SECONDS_PER_SLOT>(genesis_time: u64, slot: Slot) -> u64 {
+pub fn compute_timestamp_at_slot<C: SECONDS_PER_SLOT>(genesis_time: u64, slot: u64) -> u64 {
     // REVIEW: Should genesis slot be a config param or a constant?
     let slots_since_genesis = slot - GENESIS_SLOT;
     genesis_time + (slots_since_genesis * C::SECONDS_PER_SLOT::U64)

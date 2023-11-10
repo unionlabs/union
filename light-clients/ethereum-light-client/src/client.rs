@@ -1,9 +1,7 @@
 use cosmwasm_std::{Binary, Deps, DepsMut, Env};
-use ethabi::ethereum_types::U256 as ethabi_U256;
 use ethereum_verifier::{
-    compute_sync_committee_period_at_slot, compute_timestamp_at_slot, primitives::Slot,
-    validate_light_client_update, verify_account_storage_root, verify_storage_absence,
-    verify_storage_proof,
+    compute_sync_committee_period_at_slot, compute_timestamp_at_slot, validate_light_client_update,
+    verify_account_storage_root, verify_storage_absence, verify_storage_proof,
 };
 use ics008_wasm_client::{
     storage_utils::{
@@ -14,7 +12,7 @@ use ics008_wasm_client::{
 };
 use sha3::Digest;
 use unionlabs::{
-    ethereum::H256,
+    ethereum::{H256, U256},
     ibc::{
         core::client::height::Height,
         lightclients::ethereum::{
@@ -137,25 +135,13 @@ impl IbcClient for EthereumLightClient {
             VerificationContext { deps },
         )?;
 
-        let proof_data = header
-            .account_update
-            .proofs
-            .first()
-            .ok_or(Error::EmptyProof)?;
+        let proof_data = header.account_update.account_proof;
 
         verify_account_storage_root(
             header.consensus_update.attested_header.execution.state_root,
-            &proof_data.key.as_slice().try_into().map_err(|_| {
-                Error::InvalidProofFormat(
-                    "`proof.key` must be a 20 bytes Ethereum address".to_string(),
-                )
-            })?,
+            &proof_data.contract_address,
             &proof_data.proof,
-            proof_data.value.as_slice().try_into().map_err(|_| {
-                Error::InvalidProofFormat(
-                    "`proof.value` must be a 32 bytes storage hash".to_string(),
-                )
-            })?,
+            &proof_data.storage_root,
         )?;
 
         Ok(ContractResult::valid(None))
@@ -219,19 +205,7 @@ impl IbcClient for EthereumLightClient {
         if consensus_update.attested_header.beacon.slot > consensus_state.data.slot {
             consensus_state.data.slot = consensus_update.attested_header.beacon.slot;
 
-            let storage_root = account_update
-                .proofs
-                .first()
-                .ok_or(Error::EmptyProof)?
-                .value
-                .as_slice()
-                .try_into()
-                .map_err(|_| {
-                    Error::InvalidProofFormat(
-                        "`proof.value` must be a 32 bytes storage hash".to_string(),
-                    )
-                })?;
-            consensus_state.data.storage_root = storage_root;
+            consensus_state.data.storage_root = account_update.account_proof.storage_root;
 
             consensus_state.timestamp = compute_timestamp_at_slot::<Config>(
                 client_state.data.genesis_time,
@@ -280,24 +254,12 @@ impl IbcClient for EthereumLightClient {
             read_consensus_state::<CustomQuery, ConsensusState>(deps, &height)?
         {
             // New header is given with the same height but the storage roots don't match.
-            let storage_root = header
-                .account_update
-                .proofs
-                .first()
-                .ok_or(Error::EmptyProof)?
-                .value
-                .as_slice()
-                .try_into()
-                .map_err(|_| {
-                    Error::InvalidProofFormat(
-                        "`proof.value` must be a 32 bytes storage hash".to_string(),
-                    )
-                })?;
-            if consensus_state.data.storage_root != storage_root {
-                return Err(Error::StorageRootMismatch(
-                    consensus_state.data.storage_root.to_string(),
-                    storage_root.to_string(),
-                ));
+            if consensus_state.data.storage_root != header.account_update.account_proof.storage_root
+            {
+                return Err(Error::StorageRootMismatch {
+                    expected: consensus_state.data.storage_root,
+                    found: header.account_update.account_proof.storage_root,
+                });
             }
 
             if consensus_state.data.slot != header.consensus_update.attested_header.beacon.slot {
@@ -386,30 +348,32 @@ impl IbcClient for EthereumLightClient {
 fn do_verify_membership(
     path: String,
     storage_root: H256,
-    counterparty_commitment_slot: Slot,
+    counterparty_commitment_slot: U256,
     storage_proof: Proof,
     value: Vec<u8>,
 ) -> Result<(), Error> {
-    check_commitment_key(path, counterparty_commitment_slot, &storage_proof.key)?;
+    check_commitment_key(
+        path,
+        counterparty_commitment_slot,
+        H256(storage_proof.key.to_big_endian()),
+    )?;
 
     // We store the hash of the data, not the data itself to the commitments map.
-    let expected_value_hash = sha3::Keccak256::new().chain_update(value).finalize();
+    let expected_value_hash = H256::from(sha3::Keccak256::new().chain_update(value).finalize());
 
-    let expected_value = ethabi_U256::from_big_endian(&expected_value_hash);
+    let proof_value = H256::from(storage_proof.value.to_big_endian());
 
-    let proof_value = ethabi_U256::from_big_endian(storage_proof.value.as_slice());
-
-    if expected_value != proof_value {
-        return Err(Error::stored_value_mismatch(
-            expected_value_hash,
-            storage_proof.value.as_slice(),
-        ));
+    if expected_value_hash != proof_value {
+        return Err(Error::StoredValueMismatch {
+            expected: expected_value_hash,
+            stored: proof_value,
+        });
     }
 
     verify_storage_proof(
         storage_root,
-        &storage_proof.key,
-        &rlp::encode(&storage_proof.value.as_slice()),
+        H256(storage_proof.key.to_big_endian()),
+        &rlp::encode(&storage_proof.value.to_big_endian().as_ref()),
         &storage_proof.proof,
     )
     .map_err(Into::into)
@@ -419,12 +383,20 @@ fn do_verify_membership(
 fn do_verify_non_membership(
     path: String,
     storage_root: H256,
-    counterparty_commitment_slot: Slot,
+    counterparty_commitment_slot: U256,
     storage_proof: Proof,
 ) -> Result<(), Error> {
-    check_commitment_key(path, counterparty_commitment_slot, &storage_proof.key)?;
+    check_commitment_key(
+        path,
+        counterparty_commitment_slot,
+        H256(storage_proof.key.to_big_endian()),
+    )?;
 
-    if verify_storage_absence(storage_root, &storage_proof.key, &storage_proof.proof)? {
+    if verify_storage_absence(
+        storage_root,
+        H256(storage_proof.key.to_big_endian()),
+        &storage_proof.proof,
+    )? {
         Ok(())
     } else {
         Err(Error::CounterpartyStorageNotNil)
@@ -433,14 +405,17 @@ fn do_verify_non_membership(
 
 fn check_commitment_key(
     path: String,
-    counterparty_commitment_slot: Slot,
-    key: &[u8],
+    counterparty_commitment_slot: U256,
+    key: H256,
 ) -> Result<(), Error> {
     let expected_commitment_key = generate_commitment_key(path, counterparty_commitment_slot);
 
     // Data MUST be stored to the commitment path that is defined in ICS23.
     if expected_commitment_key != key {
-        Err(Error::invalid_commitment_key(expected_commitment_key, key))
+        Err(Error::InvalidCommitmentKey {
+            expected: expected_commitment_key,
+            found: key,
+        })
     } else {
         Ok(())
     }
@@ -483,12 +458,15 @@ mod test {
 
     #[derive(Deserialize)]
     struct MembershipTest<T> {
-        key: HexBinary,
-        value: HexBinary,
-        proof: Vec<HexBinary>,
-        storage_root: HexBinary,
+        #[serde(with = "unionlabs::ethereum::u256_big_endian_hex")]
+        key: U256,
+        #[serde(with = "unionlabs::ethereum::u256_big_endian_hex")]
+        value: U256,
+        #[serde(with = "::serde_utils::hex_string_list")]
+        proof: Vec<Vec<u8>>,
+        storage_root: H256,
         commitment_path: String,
-        commitments_map_slot: Slot,
+        commitments_map_slot: U256,
         expected_data: T,
     }
 
@@ -694,8 +672,8 @@ mod test {
                 );
                 // Storage root is updated.
                 assert_eq!(
-                    wasm_consensus_state.data.storage_root.into_bytes(),
-                    update.account_update.proofs[0].value,
+                    wasm_consensus_state.data.storage_root,
+                    update.account_update.account_proof.storage_root,
                 );
                 // Latest slot is updated.
                 // TODO(aeryz): Add cases for `store_period == update_period` and `update_period == store_period + 1`
@@ -848,7 +826,7 @@ mod test {
                     .unwrap(),
             }
             .to_string(),
-            0,
+            U256::from(0),
         );
 
         println!("KEY: {}", hex::encode(key));
@@ -875,7 +853,7 @@ mod test {
     }
     fn membership_data<T: serde::de::DeserializeOwned>(
         path: &str,
-    ) -> (Proof, String, Slot, H256, T) {
+    ) -> (Proof, String, U256, H256, T) {
         let data: MembershipTest<T> =
             serde_json::from_str(&fs::read_to_string(path).unwrap()).unwrap();
 
@@ -926,12 +904,12 @@ mod test {
         let proofs = vec![
             {
                 let mut proof = proof.clone();
-                proof.value[10] = u8::MAX - proof.value[10]; // Makes sure that produced value is always valid and different
+                proof.key = U256(proof.key.0 - U256::from(10).0); // Makes sure that produced value is always valid and different
                 proof
             },
             {
                 let mut proof = proof.clone();
-                proof.key[5] = u8::MAX - proof.key[5];
+                proof.key = U256(proof.key.0 - U256::from(1).0);
                 proof
             },
             {

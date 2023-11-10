@@ -9,9 +9,22 @@ message StorageProof {
   repeated Proof proofs = 1;
 }
 
+// Value returned by eth_getProof
 message Proof {
+  // NOTE: U256
   bytes key = 1;
+  // NOTE: U256
   bytes value = 2;
+  repeated bytes proof = 3;
+}
+
+message AccountProof {
+  // NOTE: 20 bytes
+  bytes contract_address = 1;
+  // NOTE: H256
+  // NOTE: eth_getProof.storageHash
+  bytes storage_root = 2;
+  // NOTE: eth_getProof.accountProof
   repeated bytes proof = 3;
 }
 
@@ -28,7 +41,7 @@ message ClientState {
   uint64 trusting_period = 10;
   uint64 latest_slot = 11;
   .ibc.core.client.v1.Height frozen_height = 12;
-  uint64 counterparty_commitment_slot = 13;
+  bytes counterparty_commitment_slot = 13;
 }
 
 
@@ -97,7 +110,7 @@ message ExecutionUpdate {
 }
 
 message AccountUpdate {
-  repeated Proof proofs = 1;
+  AccountProof account_proof = 1;
 }
 
 message LightClientHeader {

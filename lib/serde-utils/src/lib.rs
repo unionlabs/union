@@ -4,7 +4,7 @@ use core::fmt::Debug;
 
 use hex::FromHexError;
 
-const HEX_ENCODING_PREFIX: &str = "0x";
+pub const HEX_ENCODING_PREFIX: &str = "0x";
 
 #[derive(Debug, Clone)]
 pub enum FromHexStringError {
