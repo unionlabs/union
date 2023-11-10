@@ -73,10 +73,23 @@ impl Symlinker {
 
     /// Only used by the `Symlinker` internally. Consumers of the current link should use [`current_validated`]
     fn current_path(&self) -> PathBuf {
+        self.root.join("uniond")
+    }
+
+    fn legacy_path(&self) -> PathBuf {
         self.root.join("current")
     }
 
-    /// Returns a [`ValidVersionPath`] if teh `current` symlink is valid.
+    pub fn fix_legacy_paths(&self) -> std::io::Result<()> {
+        // We previously referred to the binary as `current`, which does not show up nicely in metrics.
+        // Upgrading to unionvisor requires us renaming `current` to `uniond`.
+        if self.root.join("current").exists() {
+            std::fs::rename(self.legacy_path(), self.current_path())?;
+        }
+        Ok(())
+    }
+
+    /// Returns a [`ValidVersionPath`] if the `current` symlink is valid.
     pub fn current_validated(&self) -> Result<ValidVersionPath, ValidateVersionPathError> {
         UnvalidatedVersionPath::new(self.current_path()).validate()
     }

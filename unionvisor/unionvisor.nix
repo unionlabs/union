@@ -94,8 +94,7 @@
         postBuild = ''
           wrapProgram $out/unionvisor \
             --set UNIONVISOR_ROOT /var/lib/unionvisor \
-            --set UNIONVISOR_BUNDLE ${cfg.bundle} \
-            --set HOME /var/lib/unionvisor
+            --set UNIONVISOR_BUNDLE ${cfg.bundle}
 
           mkdir -p $out/bin/
           mv $out/unionvisor $out/bin/unionvisor

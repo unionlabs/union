@@ -168,6 +168,8 @@ pub enum RuntimeError {
     UniondExit { code: ExitStatus },
     #[error("unknown FileReaderError while polling for upgrades")]
     FileReader(#[from] FileReaderError),
+    #[error("cannot fixup legacy files")]
+    Fixup(#[from] std::io::Error),
 }
 
 pub fn run_and_upgrade<S: AsRef<OsStr>, I: IntoIterator<Item = S> + Clone>(
@@ -178,6 +180,7 @@ pub fn run_and_upgrade<S: AsRef<OsStr>, I: IntoIterator<Item = S> + Clone>(
     pol_interval: Duration,
 ) -> Result<(), RuntimeError> {
     let root = root.into();
+    symlinker.fix_legacy_paths()?;
     let mut supervisor = Supervisor::new(root.clone(), symlinker.clone());
     let home = supervisor.home_dir();
     let mut watcher = FileReader::new(home.join("data/upgrade-info.json"));
