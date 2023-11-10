@@ -312,18 +312,14 @@
           '';
         };
 
-        # Stack too deep even if --ir-minimum
-        # evm-coverage =
-        #   pkgs.runCommand "evm-coverage.log"
-        #     {
-        #       buildInputs = [ wrappedForge pkgs.lcov ];
-        #     } "forge coverage --ir-minimum --report lcov && genhtml lcov.info -o $out --branch-coverage";
-
         evm-coverage =
           pkgs.runCommand "evm-coverage.log"
             {
               buildInputs = [ wrappedForge pkgs.lcov ];
-            } "forge coverage --ir-minimum --report lcov && genhtml lcov.info -o $out --branch-coverage";
+            } ''
+            forge coverage --ir-minimum --report lcov && \
+            genhtml lcov.info -o $out --branch-coverag
+          '';
 
         forge = wrappedForge;
       } //
