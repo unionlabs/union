@@ -7,19 +7,19 @@ The main issue that we have come across is that the `08-wasm` module isn't just 
 - When relaying, it becomes impossible to know what the type of the light client is since all clients are `08-wasm-N`. We have resorted to including a global in the wasm bytecode directly and parsing that, which is far from ideal - but it enables us to statelessly know how to parse the inner types without requiring an extra indirection with `Any`.
    - given that `08-wasm` is intended to be a "proxy light client", one could say that the inner types aren't supposed to be parsed - but how else is one supposed to construct the correct messages?
 
-- ibc-go does too much validation (see https://github.com/cosmos/ibc-go/blob/feat/wasm-clients/modules/core/02-client/keeper/keeper.go#L285). We have removed this check in our fork, since we mostly run wasm clients; the validation is done in the contract, not ibc-go (and our consensus is a fork of tendermint as well, so the check would fail anyways).
+- ibc-go does too much validation (see https://github.com/cosmos/ibc-go/blob/feat/wasm-clients/modules/core/02-client/keeper/keeper.go#L285). We have removed this check in our fork, since we mostly run wasm clients; the validation is done in the contract, not ibc-go.
 
-- Since wasm clients are now expected to write their own states in instantiate (https://github.com/cosmos/ibc-go/pull/4033), there is a possible discrepency between the message types (`wasm.*`, wrapping the actual types) and the stored states. This makes both relaying and verification more complex, since either the relayer needs to unpack the wasm wrappers when sending messages to counterparties, and repack them when sending back, or the receiving end needs to do the packing and unpacking manually (which can get very expensive when working in highly restrictive environments). Counterparty clients (and/or the relayer) are also now expected to know whether or not the wasm client stores unwraps it's state, since it's no longer standard (i.e. always wrapped in `wasm.*`) - adding an additional layer of complexity.
+- Since wasm clients are now expected to write their own states in instantiate (https://github.com/cosmos/ibc-go/pull/4033), there is a possible discrepency between the message types (`wasm.*`, wrapping the actual types) and the stored states. This makes both relaying and verification more complex, since either the relayer needs to unpack the wasm wrappers when sending messages to counterparties, and repack them when sending back, or the receiving end needs to do the packing and unpacking manually (which can get very expensive when working in highly restrictive environments). Counterparty clients (and/or the relayer) are also now expected to know whether or not the wasm client unwraps it's state, since it's no longer standard (i.e. always wrapped in `wasm.*`) - adding an additional layer of complexity.
 
-# Preamble
+This boils down to these 4 points:
 
-The current implementation of `08-wasm` light clients leaks implementation details into it's ibc interface, when it would ideally be a completely opaque wrapper around the wasm contracts, just sending and receiving bytes.
+1. The current implementation of `08-wasm` light clients leaks implementation details into it's ibc interface, when it would ideally be a completely opaque wrapper around the wasm contracts, just sending and receiving bytes.
 
-The `ClientState` envelope leaks information specific to the contract (`code_hash`), since the wasm module doesn't store any sort of mapping between client id and contract address. It also stores `LatestHeight` directly, instead of querying the contract, requiring duplication of information in a client state (a tendermint light client in wasm would have the `LatestHeight` stored both in `tendermint.ClientState` and `wasm.ClientState`)
+2. The `ClientState` envelope leaks information specific to the contract (`code_hash`), since the wasm module doesn't store any sort of mapping between client id and contract address. It also stores `LatestHeight` directly, instead of querying the contract, requiring duplication of information in a client state (a tendermint light client in wasm would have the `LatestHeight` stored both in `tendermint.ClientState` and `wasm.ClientState`!)
 
-`08-wasm` clients are always of type `08-wasm`, which makes routing very difficult - we have resorted to embedding a client type directly into the wasm byte code and parsing the blob in our relayer.
+3. `08-wasm` clients are always of type `08-wasm`, which makes routing very difficult.
 
-`ConsensusState` and `ClientMessage` have been whittled down to just being thin envelopes around the data passed to the contract, serving no purpose other than routing the message to the `08-wasm` module.
+4. `ConsensusState` and `ClientMessage` have been whittled down to just being thin envelopes around the data passed to the contract, serving no purpose other than routing the message to the `08-wasm` module.
 
 # Proposal
 
@@ -27,7 +27,9 @@ Add a field `client_type` to `MsgCreateClient`, and make the states arbitrary by
 
 ```go
 type MsgCreateClient struct {
-	ClientType string // <- new
+  // new
+	ClientType string
+  // now arbitrary bytes
 	ClientState []byte
 	ConsensusState []byte
 	Signer string
