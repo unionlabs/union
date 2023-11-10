@@ -1,4 +1,4 @@
-use std::{fmt::Debug, num::ParseIntError, sync::Arc};
+use std::{fmt::Debug, marker::PhantomData, num::ParseIntError, sync::Arc};
 
 use dashmap::DashMap;
 use ethers::prelude::k256::ecdsa;
@@ -56,6 +56,18 @@ pub struct Config {
 }
 
 pub struct Cometbls;
+pub struct Wasm<T: Consensus>(PhantomData<fn() -> T>);
+
+impl<T: Consensus> Consensus for Wasm<T> {
+    type SelfClientState = Any<wasm::client_state::ClientState<T::SelfClientState>>;
+
+    type SelfConsensusState;
+
+    type Header;
+
+    type Height;
+}
+
 impl Consensus for Cometbls {
     type SelfClientState =
         Any<wasm::client_state::ClientState<cometbls::client_state::ClientState>>;
@@ -178,10 +190,7 @@ impl Chain for Union {
                 },
                 // TODO: Get this somehow
                 code_id: H256::default(),
-                latest_height: Height {
-                    revision_number: self.chain_id.split('-').last().unwrap().parse().unwrap(),
-                    revision_height: height.value(),
-                },
+                latest_height: self.make_height(height.value()),
             })
         }
     }
@@ -1221,3 +1230,71 @@ where
         }
     }
 }
+
+struct Lc<On: Chain, Tracking: Chain> {
+    on: On,
+    __marker: PhantomData<Tracking>,
+}
+
+type EthereumTrackingCometbls = Lc<Evm<_>, Union>;
+type UnionTrackingEthereum = Lc<Union, Evm<_>>;
+type CosmosTrackingCometbls = Lc<Cosmos, Union>;
+type UnionTrackingTendermint = Lc<Union, Cosmos>;
+
+struct Cosmos {}
+
+impl IbcInterface for () {}
+
+type WasmCometbls = Wasm<Cometbls>;
+
+impl<T: IbcInterface> IbcInterface<T> for Wasm<T> {
+    type SelfClientState = Any<wasm::client_state::ClientState<T::SelfClientState>>;
+    type SelfConsensusState = Any<wasm::consensus_state::ConsensusState<T::SelfConsensusState>>;
+    type Header = T::Header;
+
+    type Height = T::Height;
+
+    type ClientId = T::ClientId;
+    type ClientType = T::ClientType;
+}
+
+// type Cometbls = Noop<Cometbls>;
+
+trait IbcInterface<Inner: IbcInterface = ()> {
+    type SelfClientState: Debug
+        + Clone
+        + PartialEq
+        + Serialize
+        + for<'de> Deserialize<'de>
+        // TODO: Bound ChainId in the same way
+        + ClientState<Height = Self::Height>;
+    type SelfConsensusState: Debug + Clone + PartialEq + Serialize + for<'de> Deserialize<'de>;
+
+    type Header: Header + Debug + Clone + PartialEq + Serialize + for<'de> Deserialize<'de>;
+
+    // this is just Height
+    type Height: IsHeight;
+
+    type ClientId;
+
+    type ClientType;
+
+    fn chain_id(&self) -> ChainIdOf<Self>;
+
+    fn query_latest_height(&self) -> impl Future<Output = Height> + '_;
+
+    fn query_latest_height_as_destination(&self) -> impl Future<Output = Height> + '_;
+
+    fn query_latest_timestamp(&self) -> impl Future<Output = i64> + '_;
+
+    fn self_client_state(&self, height: Height) -> impl Future<Output = ClientStateOf<Self>> + '_;
+
+    fn self_consensus_state(
+        &self,
+        height: Height,
+    ) -> impl Future<Output = ConsensusStateOf<Self>> + '_;
+}
+
+// trait WasmWrappableClientState {
+//     fn code_id(&self) -> H256 {}
+// }

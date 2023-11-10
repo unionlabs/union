@@ -831,29 +831,7 @@ where
 
                     Any(data.msg).into_proto_with_signer(&signer)
                 }
-                Msg::UpdateClient(data) => {
-                    // check if update has already been done
-                    // let existing_consensus_height = L::from_chain(union.clone())
-                    //     .query_client_state(
-                    //         data.msg.client_id.clone().into(),
-                    //         union.query_latest_height().await,
-                    //     )
-                    //     .await
-                    //     .0
-                    //     .latest_height;
-
-                    // let update_height = data.update_from;
-                    // if dbg!(existing_consensus_height) >= dbg!(update_height.into_height()) {
-                    //     tracing::warn!(
-                    //         "consensus state has already been updated to or past {update_height}, found {existing_consensus_height}"
-                    //     );
-
-                    //     // don't do the update, already has been done
-                    //     return;
-                    // }
-
-                    Any(data.msg).into_proto_with_signer(&signer)
-                }
+                Msg::UpdateClient(data) => Any(data.msg).into_proto_with_signer(&signer),
             };
 
             union.broadcast_tx_commit(signer, [msg_any]).await
