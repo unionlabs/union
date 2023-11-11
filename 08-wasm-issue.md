@@ -150,7 +150,57 @@ message MsgCreateClient {
 }
 ```
 
-This would allow for keeping the same interface for existing native light clients (using `ibc.core.client.v1.MsgCreateClient`), but without support for `08-wasm` clients - instead, introduce the above message as `ibc.core.client.v2.MsgCreateClient` that supports both native and non-native light clients via the routing system described above - the v1 messages could easily be routed to the v2 handler internally, and the v1 messages could be eventually deprecated
+This would allow for keeping the same interface for existing native light clients (using `ibc.core.client.v1.MsgCreateClient`), but without support for `08-wasm` clients - instead, introduce the above message as `ibc.core.client.v2.MsgCreateClient` that supports both native and non-native light clients via the routing system described above - the v1 messages could easily be routed to the v2 handler internally, and the v1 messages could be eventually deprecated.
+
+The following other changes would be required to `client.v1`, to be added as new messages in `client.v2`:
+
+`MsgUpdateClient`
+
+```protobuf
+message MsgUpdateClient {
+  option (cosmos.msg.v1.signer) = "signer";
+
+  option (gogoproto.goproto_getters) = false;
+
+  // client unique identifier
+  string client_id = 1;
+  // client message to update the light client
+  // NOTE: This is now bytes, instead of any - parsing is handled by the light client handler pointed to by `client_id`.
+  bytes client_message = 2;
+  // signer address
+  string signer = 3;
+}
+```
+
+Since MsgUpdateClient now encompasses both misbehaviour and regular updating, `client_message` is now bytes to allow for the target module to do the parsing, instead of enforcing `Any` - allowing for wasm clients to use alternate encodings depending on the usecase (protobuf oneOf, ethabi, etc). Existing native clients can and will continue to use this field as an `Any`.
+
+`MsgUpgradeClient`
+
+```protobuf
+message MsgUpgradeClient {
+  option (cosmos.msg.v1.signer) = "signer";
+
+  option (gogoproto.goproto_getters) = false;
+
+  // client unique identifier
+  string client_id = 1;
+  // upgraded client state
+  // NOTE: Now bytes, instead of `Any`
+  bytes client_state = 2;
+  // upgraded consensus state, only contains enough information to serve as a
+  // basis of trust in update logic
+  // NOTE: Now bytes, instead of `Any`
+  bytes consensus_state = 3;
+  // proof that old chain committed to new client
+  bytes proof_upgrade_client = 4;
+  // proof that old chain committed to new consensus state
+  bytes proof_upgrade_consensus_state = 5;
+  // signer address
+  string signer = 6;
+}
+```
+
+`client_state` and `consensus_state` fields have changed for the same reason as `MsgUpdateClient` and `MsgCreateClient` - to allow for the target module to parse the bytes how it wishes.
 
 # TLDR
 
