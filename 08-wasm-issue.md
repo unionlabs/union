@@ -7,7 +7,7 @@ The main issue that we have come across is that the `08-wasm` module isn't just 
 - When relaying, it becomes impossible to know what the type of the light client is since all clients are `08-wasm-N`. We have resorted to including a global in the wasm bytecode directly and parsing that, which is far from ideal - but it enables us to statelessly know how to parse the inner types without requiring an extra indirection with `Any`.
    - given that `08-wasm` is intended to be a "proxy light client", one could say that the inner types aren't supposed to be parsed outside of the contracts - but how else is one supposed to construct the correct messages?
 
-- Since wasm clients are now expected to write their own states in instantiate (https://github.com/cosmos/ibc-go/pull/4033), there is a possible discrepency between the message types (`wasm.*`, wrapping the actual types) and the stored states. This makes both relaying and verification more complex, since either the relayer needs to unpack the wasm wrappers when sending messages to counterparties, and repack them when sending back, or the receiving end needs to do the packing and unpacking manually (which can get very expensive when working in highly restrictive environments). Counterparty clients (and/or the relayer) are also now expected to know whether or not the wasm client unwraps it's state, since it's no longer standard (i.e. always wrapped in `wasm.*`) - adding an additional layer of complexity.
+- Since wasm clients are now expected to write their own states in instantiate (https://github.com/cosmos/ibc-go/pull/4033), there is a possible discrepancy between the message types (`wasm.*`, wrapping the actual types) and the stored states. This makes both relaying and verification more complex, since either the relayer needs to unpack the wasm wrappers when sending messages to counterparties, and repack them when sending back, or the receiving end needs to do the packing and unpacking manually (which can get very expensive when working in highly restrictive environments). Counterparty clients (and/or the relayer) are also now expected to know whether or not the wasm client unwraps it's state, since it's no longer standard (i.e. always wrapped in `wasm.*`) - adding an additional layer of complexity.
 
 This boils down to these 4 points:
 
@@ -126,11 +126,11 @@ If the client type points to an existing handler, the handler would handle the m
 
 ## Upgrading contracts
 
-When upgrading a contract (https://github.com/cosmos/ibc-go/issues/3956), the existing mapping of clientType => codeHash will be updated to point to the new codeHash.
+When upgrading a contract (https://github.com/cosmos/ibc-go/issues/3956), the existing mapping of `clientType => codeHash` will be updated to point to the new `codeHash`.
 
 # Backwards Compatability 
 
-Since this proposal break backwards compatabiility with existing light client implementations and relayers by changing the existing `MsgCreateClient` message, we propose deprecating `ibc.core.client.v1.MsgCreateClient` and create a new msg as follows: 
+Since this proposal breaks backwards compatibility with existing light client implementations and relayers by changing the existing `MsgCreateClient` message, we propose deprecating `ibc.core.client.v1.MsgCreateClient` and create a new msg as follows: 
 
 ```protobuf
 message MsgCreateClient {
@@ -150,7 +150,7 @@ message MsgCreateClient {
 }
 ```
 
-This would allow for keeping the same interface for existing native light clients (using `ibc.core.client.v1.MsgCreateClient`), but without support for `08-wasm` clients - instead, introduce the above message as `ibc.core.client.v2.MsgCreateClient` that supports both native and non-native light clients via the routing system described above. Given that 08-wasm is still incomplete, this is the perfect time to make this change - the v1 messages could easily be routed to the v2 handler internally, and the v1 messages could be eventually deprecated.a
+This would allow for keeping the same interface for existing native light clients (using `ibc.core.client.v1.MsgCreateClient`), but without support for `08-wasm` clients - instead, introduce the above message as `ibc.core.client.v2.MsgCreateClient` that supports both native and non-native light clients via the routing system described above - the v1 messages could easily be routed to the v2 handler internally, and the v1 messages could be eventually deprecated
 
 # TLDR
 
@@ -159,4 +159,4 @@ This would allow for keeping the same interface for existing native light client
 - add `wasm.v1.MsgRegisterClient`
 - remove the envelope types from `wasm.v1`
 
-We would also like to note that we are ready and willing to implement this ASAP if this is accepted!
+We would also like to note that we are ready and willing to implement this ASAP if this is accepted. Since it is much more difficult to do larger scale structural changes after the release of a feature, we believe that this is the perfect time to make this change.
