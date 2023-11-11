@@ -153,3 +153,12 @@ message MsgCreateClient {
 ```
 
 This would allow for keeping the same interface for existing native light clients (using `ibc.core.client.v1.MsgCreateClient`), but without support for `08-wasm` clients - instead, introduce the above message as `ibc.core.client.v2.MsgCreateClient` that supports both native and non-native light clients via the routing system described above. Given that 08-wasm is still incomplete, this is the perfect time to make this change - the v1 messages could easily be routed to the v2 handler internally, and the v1 messages could be eventually deprecated.a
+
+# TLDR
+
+- deprecate the existing `v1.MsgCreateClient` interface
+- add a new `v2.MsgCreateClient`, which contains a client type field
+- add `wasm.v1.MsgRegisterClient`
+- remove the envelope types from `wasm.v1`
+
+We would also like to note that we are ready and willing to implement this ASAP if this is accepted!
