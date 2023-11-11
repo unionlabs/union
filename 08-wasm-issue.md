@@ -69,18 +69,6 @@ The flow for creating client would be as follows:
 }
 ```
 
-{
-  "client_type": "07-tendermint",
-  "client_state": {
-    "@type": "ibc.lightclients.tendermint.v1.ClientState",
-    "value": "0x..."
-  }, 
-  "consensus_state": {
-    "@type": "ibc.lightclients.tendermint.v1.ConsensusState",
-    "value": "0x..."
-  } 
-}
-
 this msg is received by `core.keeper.Keeper`, which then inspects the client type by checking it's registry:
 
 ```go
@@ -97,7 +85,7 @@ func (k Keeper) CreateClient(goCtx context.Context, msg *clienttypes.MsgCreateCl
 }
 ```
 
-If the client type points to an existing handler, the handler would handle the msg however it likes. for `07-tendermint`, this would be as simple as keeping the exact same code that exists now - verifying that the values contained in the states are the correct `Any<ibc.lightclients.tendermint.v1.*State>` types, and `08-wasm` passing the bytes through to the contract directly.
+If the client type points to an existing handler, the handler would handle the msg however it likes. for `07-tendermint`, the tendermint module would deserialize to `ibc.lightclients.tendermint.v1.ClientState/ConsensusState`, and `08-wasm` would pass the bytes through to the contract directly.
 
 ### `08-wasm` specific flow
 
@@ -164,4 +152,4 @@ message MsgCreateClient {
 }
 ```
 
-This would allow for keeping the same interface for existing native light clients (using `ibc.core.client.v1.MsgCreateClient`), but without support for `08-wasm` clients - instead, introduce the above message as `ibc.core.client.v2.MsgCreateClient` that supports both native and non-native light clients via the routing system described above. Given that 08-wasm is still incomplete, this is the perfect time to make this change - the v1 messages could easily be routed to the v2 handler, simply by constructing the v2 message from the the fields in v1.
+This would allow for keeping the same interface for existing native light clients (using `ibc.core.client.v1.MsgCreateClient`), but without support for `08-wasm` clients - instead, introduce the above message as `ibc.core.client.v2.MsgCreateClient` that supports both native and non-native light clients via the routing system described above. Given that 08-wasm is still incomplete, this is the perfect time to make this change - the v1 messages could easily be routed to the v2 handler internally, and the v1 messages could be eventually deprecated.a
