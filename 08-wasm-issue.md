@@ -130,7 +130,7 @@ When upgrading a contract (https://github.com/cosmos/ibc-go/issues/3956), the ex
 
 # Backwards Compatability 
 
-Since this proposal breaks backwards compatibility with existing light client implementations and relayers by changing the existing `MsgCreateClient` message, we propose deprecating `ibc.core.client.v1.MsgCreateClient` and create a new msg as follows: 
+Since this proposal breaks backwards compatibility with existing relayers by changing the existing `MsgCreateClient` message, we propose deprecating `ibc.core.client.v1.MsgCreateClient` and create a new msg as follows: 
 
 ```protobuf
 message MsgCreateClient {
