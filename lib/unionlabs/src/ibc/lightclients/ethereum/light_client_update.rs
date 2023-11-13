@@ -3,11 +3,11 @@ use ssz::{Decode, Encode};
 
 use crate::{
     errors::{MissingField, TryFromBranchError},
-    ethereum::H256,
-    ethereum_consts_traits::{
+    ethereum::config::{
         consts::{floorlog2, FINALIZED_ROOT_INDEX, NEXT_SYNC_COMMITTEE_INDEX},
         BYTES_PER_LOGS_BLOOM, MAX_EXTRA_DATA_BYTES, SYNC_COMMITTEE_SIZE,
     },
+    hash::H256,
     ibc::lightclients::ethereum::{
         light_client_header::LightClientHeader, sync_aggregate::SyncAggregate,
         sync_committee::SyncCommittee,

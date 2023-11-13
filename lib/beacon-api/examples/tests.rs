@@ -1,5 +1,5 @@
 use beacon_api::client::{BeaconApiClient, BlockId};
-use unionlabs::ethereum_consts_traits::Minimal;
+use unionlabs::ethereum::config::Minimal;
 
 #[tokio::main]
 async fn main() {

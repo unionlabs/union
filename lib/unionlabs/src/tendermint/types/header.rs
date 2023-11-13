@@ -5,8 +5,8 @@ use serde::{Deserialize, Serialize};
 use crate::{
     bounded::{BoundedI64, BoundedIntError},
     errors::{required, InvalidLength, MissingField},
-    ethereum::{Address, H256},
     google::protobuf::timestamp::Timestamp,
+    hash::{H160, H256},
     tendermint::{types::block_id::BlockId, version::consensus::Consensus},
     Proto, TryFromProtoErrorOf, TypeUrl,
 };
@@ -44,7 +44,7 @@ pub struct Header {
     /// evidence included in the block
     pub evidence_hash: H256,
     /// original proposer of the block
-    pub proposer_address: Address,
+    pub proposer_address: H160,
 }
 
 impl Header {

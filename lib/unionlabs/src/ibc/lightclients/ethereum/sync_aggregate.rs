@@ -4,8 +4,7 @@ use ssz_types::BitVector;
 use tree_hash::TreeHash;
 
 use crate::{
-    bls::BlsSignature, errors::InvalidLength, ethereum_consts_traits::SYNC_COMMITTEE_SIZE, Proto,
-    TypeUrl,
+    bls::BlsSignature, errors::InvalidLength, ethereum::config::SYNC_COMMITTEE_SIZE, Proto, TypeUrl,
 };
 
 #[derive(Clone, PartialEq, Deserialize, Serialize, Encode, Decode, TreeHash)]

@@ -7,7 +7,7 @@ use clap::builder::{StringValueParser, TypedValueParser};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    ethereum::H256,
+    hash::H256,
     ibc::core::{
         channel::channel::Channel, client::height::IsHeight,
         connection::connection_end::ConnectionEnd,

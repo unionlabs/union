@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{bls::BlsPublicKey, errors::InvalidLength, ethereum::H256, Proto, TypeUrl};
+use crate::{bls::BlsPublicKey, errors::InvalidLength, hash::H256, Proto, TypeUrl};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ConsensusState {

@@ -26,14 +26,14 @@ use prost::Message;
 use serde::{Deserialize, Serialize};
 use typenum::Unsigned;
 use unionlabs::{
-    ethereum::{Address, H256, U256},
-    ethereum_consts_traits::ChainSpec,
+    ethereum::config::ChainSpec,
     events::{
         AcknowledgePacket, ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit, ChannelOpenTry,
         ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit, ConnectionOpenTry,
         CreateClient, IbcEvent, RecvPacket, SendPacket,
     },
     google::protobuf::any::Any,
+    hash::{H160, H256},
     ibc::{
         core::{
             channel::channel::Channel,
@@ -48,6 +48,7 @@ use unionlabs::{
         CommitmentPath, ConnectionPath, IbcPath, IbcStateRead,
     },
     traits::{Chain, ClientState, ClientStateOf, ConsensusStateOf},
+    uint::U256,
     validated::ValidateT,
     EmptyString, TryFromEthAbiErrorOf, TryFromProto, TryFromProtoErrorOf,
 };
@@ -75,7 +76,7 @@ pub struct Evm<C: ChainSpec> {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
     /// The address of the `IBCHandler` smart contract.
-    pub ibc_handler_address: Address,
+    pub ibc_handler_address: H160,
 
     /// The signer that will be used to submit transactions by voyager.
     pub signers: Vec<PrivateKey<ecdsa::SigningKey>>,
@@ -1236,7 +1237,7 @@ impl<C: ChainSpec, Counterparty: Chain> EthereumStateRead<C, Counterparty> for A
     }
 }
 
-pub async fn bind_port<C: ChainSpec>(this: &Evm<C>, module_address: Address, port_id: String) {
+pub async fn bind_port<C: ChainSpec>(this: &Evm<C>, module_address: H160, port_id: String) {
     // HACK: This will pop the top item out of the queue, but binding the port requires the contract owner;
     // this will work as long as the first signer in the list is the owner.
     this.ibc_handlers
@@ -1256,7 +1257,7 @@ pub async fn bind_port<C: ChainSpec>(this: &Evm<C>, module_address: Address, por
 #[allow(unused_variables)]
 pub async fn setup_initial_channel<C: ChainSpec>(
     this: &Evm<C>,
-    module_address: Address,
+    module_address: H160,
     channel_id: String,
     port_id: String,
     counterparty_port_id: String,

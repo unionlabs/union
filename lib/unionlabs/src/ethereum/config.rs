@@ -62,7 +62,6 @@ pub enum AnyChainSpec<T: ChainSpecParameterizable> {
     Mainnet(T::Inner<Mainnet>),
     Minimal(T::Inner<Minimal>),
 }
-// }
 
 macro_rules! consts_traits {
     ($($CONST:ident $(,)?),+) => {
@@ -266,6 +265,13 @@ pub mod preset {
     };
 }
 
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+pub struct Config {
+    pub preset: preset::Preset,
+    pub fork_parameters: ForkParameters,
+    pub min_genesis_time: u64,
+}
+
 pub const GOERLI: Config = Config {
     preset: preset::MAINNET,
     fork_parameters: ForkParameters {
@@ -378,10 +384,3 @@ pub const SEPOLIA: Config = Config {
     },
     min_genesis_time: 1_655_647_200,
 };
-
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-pub struct Config {
-    pub preset: preset::Preset,
-    pub fork_parameters: ForkParameters,
-    pub min_genesis_time: u64,
-}

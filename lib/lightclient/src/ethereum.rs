@@ -4,7 +4,7 @@ use std::fmt::Debug;
 use chain_utils::union::{AbciStateRead, Union};
 use serde::{Deserialize, Serialize};
 use unionlabs::{
-    ethereum::H256,
+    hash::H256,
     ibc::core::{client::height::Height, connection::connection_end::ConnectionEnd},
     id::ClientId,
     proof::{ChannelEndPath, ClientStatePath, ConnectionPath, IbcPath},

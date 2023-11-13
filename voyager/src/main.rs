@@ -1,5 +1,4 @@
 #![recursion_limit = "256"]
-// *almost* stable, more than safe enough to use imo https://github.com/rust-lang/rfcs/pull/3425
 #![feature(trait_alias)]
 // #![warn(clippy::pedantic)]
 #![allow(
@@ -15,7 +14,7 @@ use chain_utils::{evm::Evm, union::Union};
 use clap::Parser;
 use sqlx::PgPool;
 use tikv_jemallocator::Jemalloc;
-use unionlabs::ethereum_consts_traits::Mainnet;
+use unionlabs::ethereum::config::Mainnet;
 
 #[global_allocator]
 static GLOBAL: Jemalloc = Jemalloc;

@@ -4,11 +4,11 @@ use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use frunk::{hlist_pat, HList};
 use serde::{Deserialize, Serialize};
 use unionlabs::{
-    ethereum::H256,
     events::{
         ChannelOpenAck, ChannelOpenInit, ChannelOpenTry, ConnectionOpenAck, ConnectionOpenInit,
         ConnectionOpenTry, RecvPacket, SendPacket,
     },
+    hash::H256,
     ibc::core::{
         channel::{
             self, channel::Channel, msg_acknowledgement::MsgAcknowledgement,

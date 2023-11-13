@@ -23,7 +23,7 @@ use sqlx::postgres::PgPoolOptions;
 use tokio::task::JoinSet;
 use tokio_util::sync::CancellationToken;
 use unionlabs::{
-    ethereum_consts_traits::{Mainnet, Minimal},
+    ethereum::config::{Mainnet, Minimal},
     events::{
         AcknowledgePacket, ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit, ChannelOpenTry,
         ClientMisbehaviour, ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit,

@@ -5,8 +5,9 @@ use tree_hash::TreeHash;
 
 use crate::{
     errors::InvalidLength,
-    ethereum::{Address, H256, U256},
-    ethereum_consts_traits::{BYTES_PER_LOGS_BLOOM, MAX_EXTRA_DATA_BYTES},
+    ethereum::config::{BYTES_PER_LOGS_BLOOM, MAX_EXTRA_DATA_BYTES},
+    hash::{H160, H256},
+    uint::U256,
     Proto, TypeUrl,
 };
 
@@ -14,7 +15,7 @@ use crate::{
 #[serde(bound(serialize = "", deserialize = ""))]
 pub struct ExecutionPayloadHeader<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> {
     pub parent_hash: H256,
-    pub fee_recipient: Address,
+    pub fee_recipient: H160,
     pub state_root: H256,
     pub receipts_root: H256,
     #[serde(with = "::serde_utils::hex_string")]

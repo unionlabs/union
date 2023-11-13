@@ -3,9 +3,9 @@ use std::future::Future;
 use chain_utils::evm::{EthCallExt, EthereumStateRead, Evm, TupleToOption};
 use serde::{Deserialize, Serialize};
 use unionlabs::{
-    ethereum::Address,
-    ethereum_consts_traits::{ChainSpec, Mainnet, Minimal},
+    ethereum::config::{ChainSpec, Mainnet, Minimal},
     google::protobuf::any::Any,
+    hash::H160,
     ibc::{
         core::{client::height::Height, connection::connection_end::ConnectionEnd},
         lightclients::{cometbls, wasm},
@@ -31,7 +31,7 @@ pub struct CometblsMainnet {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CometblsConfig {
     pub client_type: String,
-    pub cometbls_client_address: Address,
+    pub cometbls_client_address: H160,
 }
 
 impl LightClientBase for CometblsMainnet {

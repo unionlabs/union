@@ -3,7 +3,7 @@ use std::fmt::Display;
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use serde::{Deserialize, Serialize};
 use unionlabs::{
-    ethereum::H256,
+    hash::H256,
     traits::{Chain, ChainOf, HeightOf, LightClientBase},
     QueryHeight,
 };

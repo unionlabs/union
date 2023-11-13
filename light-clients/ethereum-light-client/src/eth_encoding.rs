@@ -1,5 +1,5 @@
 use sha3::Digest;
-use unionlabs::ethereum::{H256, U256};
+use unionlabs::{hash::H256, uint::U256};
 
 /// Calculates the slot for a `path` at saved in the commitment map in `slot`
 ///

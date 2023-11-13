@@ -4,13 +4,13 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     errors::InvalidLength,
-    ethereum::{Address, H256},
+    hash::{H160, H256},
 };
 
 // REVIEW: H256 or actual arbitrary bytes?
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub struct AccountProof {
-    pub contract_address: Address,
+    pub contract_address: H160,
     pub storage_root: H256,
     #[serde(with = "::serde_utils::hex_string_list")]
     pub proof: Vec<Vec<u8>>,

@@ -1,6 +1,6 @@
 use ethereum_verifier::LightClientContext as TLightClientContext;
 use unionlabs::{
-    ethereum_consts_traits::ChainSpec,
+    ethereum::config::ChainSpec,
     ibc::lightclients::ethereum::{
         client_state::ClientState, fork_parameters::ForkParameters, sync_committee::SyncCommittee,
         trusted_sync_committee::ActiveSyncCommittee,

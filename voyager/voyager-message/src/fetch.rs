@@ -6,7 +6,7 @@ use std::{
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use serde::{Deserialize, Serialize};
 use unionlabs::{
-    ethereum::H256,
+    hash::H256,
     id::{ChannelId, ConnectionId, PortId},
     proof,
     traits::{Chain, ChainIdOf, ChainOf, HeightOf, LightClientBase},

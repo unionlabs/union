@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     errors::{required, InvalidLength, MissingField},
-    ethereum::H256,
+    hash::H256,
     union::galois::zero_knowledge_proof::ZeroKnowledgeProof,
     Proto, TypeUrl,
 };

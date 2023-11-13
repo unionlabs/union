@@ -3,7 +3,7 @@ use std::fmt::Debug;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    errors::InvalidLength, ethereum::H256, ibc::core::client::height::Height, IntoProto, Proto,
+    errors::InvalidLength, hash::H256, ibc::core::client::height::Height, IntoProto, Proto,
     TryFromProto, TryFromProtoBytesError, TryFromProtoErrorOf, TypeUrl,
 };
 

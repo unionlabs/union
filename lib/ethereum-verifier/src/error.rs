@@ -1,6 +1,6 @@
 use milagro_bls::AmclError;
 use trie_db::TrieError;
-use unionlabs::{bls::BlsPublicKey, ethereum::H256};
+use unionlabs::{bls::BlsPublicKey, hash::H256};
 
 #[derive(Debug, PartialEq)]
 pub struct InvalidMerkleBranch {

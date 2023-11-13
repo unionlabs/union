@@ -2,8 +2,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     errors::{required, InvalidLength, MissingField},
-    ethereum::{Address, H512},
     google::protobuf::timestamp::Timestamp,
+    hash::{H160, H512},
     tendermint::types::block_id_flag::BlockIdFlag,
     Proto, TryFromProtoErrorOf, TypeUrl,
 };
@@ -11,7 +11,7 @@ use crate::{
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CommitSig {
     pub block_id_flag: BlockIdFlag,
-    pub validator_address: Address,
+    pub validator_address: H160,
     pub timestamp: Timestamp,
     // REVIEW: Is this a fixed hash? Testing concludes that it's a 64-byte hash (for cometbls at least).
     pub signature: H512,

@@ -19,7 +19,7 @@ use sha2::Digest;
 
 use crate::{
     errors::TryFromBranchError,
-    ethereum::H256,
+    hash::H256,
     ibc::core::client::height::{HeightFromStrError, IsHeight},
     id::Bounded,
     validated::Validated,
@@ -51,20 +51,23 @@ pub mod bls;
 /// Well-known events emitted by ibc-enabled chains.
 pub mod events;
 
-pub mod ethereum_consts_traits;
-
 pub mod bounded;
 
 pub mod proof;
 
 pub mod validated;
 
+pub mod hash;
+
+// TODO: Replace with something like <https://github.com/recmo/uint>
+pub mod uint;
+
 pub(crate) mod macros;
 
 pub mod errors {
     use std::fmt::{Debug, Display};
 
-    use crate::ethereum::H256;
+    use crate::hash::H256;
 
     #[derive(Debug, Clone)]
     pub struct UnknownEnumVariant<T>(pub T);
@@ -452,9 +455,9 @@ pub mod traits {
     use serde::{Deserialize, Serialize};
 
     use crate::{
-        ethereum::{H256, U256},
-        ethereum_consts_traits::ChainSpec,
+        ethereum::config::ChainSpec,
         google::protobuf::any::Any,
+        hash::H256,
         ibc::{
             core::{
                 channel::channel::Channel,
@@ -465,6 +468,7 @@ pub mod traits {
         },
         id::{ChannelId, ConnectionId, PortId},
         proof::IbcStateReadPaths,
+        uint::U256,
         validated::{Validate, Validated},
     };
 

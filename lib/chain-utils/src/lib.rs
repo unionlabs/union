@@ -13,8 +13,8 @@ use std::{
 use crossbeam_queue::ArrayQueue;
 use futures::{Future, Stream};
 use unionlabs::{
-    ethereum::H256,
     events::IbcEvent,
+    hash::H256,
     ibc::core::client::height::Height,
     traits::{Chain, ClientState},
 };

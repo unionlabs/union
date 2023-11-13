@@ -25,9 +25,9 @@ use typenum::Unsigned;
 use unionlabs::{
     ethereum::{
         beacon::{GenesisData, LightClientBootstrap, LightClientFinalityUpdate},
-        Address,
+        config::{ChainSpec, Mainnet, Minimal},
     },
-    ethereum_consts_traits::{ChainSpec, Mainnet, Minimal},
+    hash::H160,
     ibc::{
         core::client::{height::Height, msg_update_client::MsgUpdateClient},
         lightclients::{
@@ -257,7 +257,7 @@ pub struct BootstrapData<C: ChainSpec> {
 #[serde(bound(serialize = "", deserialize = ""))]
 pub struct AccountUpdateData<C: ChainSpec> {
     pub slot: u64,
-    pub ibc_handler_address: Address,
+    pub ibc_handler_address: H160,
     pub update: EIP1186ProofResponse,
     #[serde(skip)]
     pub __marker: PhantomData<fn() -> C>,

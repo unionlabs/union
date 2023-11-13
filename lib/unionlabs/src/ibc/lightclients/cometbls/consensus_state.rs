@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     errors::{required, InvalidLength, MissingField},
-    ethereum::H256,
+    hash::H256,
     ibc::core::commitment::merkle_root::MerkleRoot,
     Proto, TryFromProtoErrorOf, TypeUrl,
 };

@@ -4,7 +4,7 @@ use tree_hash::TreeHash;
 
 use crate::{
     errors::MissingField,
-    ethereum_consts_traits::SYNC_COMMITTEE_SIZE,
+    ethereum::config::SYNC_COMMITTEE_SIZE,
     ibc::{core::client::height::Height, lightclients::ethereum::sync_committee::SyncCommittee},
     Proto, TryFromProtoErrorOf, TypeUrl,
 };

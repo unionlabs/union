@@ -1,3 +1,186 @@
+macro_rules! hex_string_array_wrapper {
+    (
+        $(
+            pub struct $Struct:ident(pub [u8; $N:literal]);
+        )+
+    ) => {
+        $(
+            #[derive(
+                Clone,
+                PartialEq,
+                Eq,
+                ::ssz::Encode,
+                ::ssz::Decode,
+                ::serde::Serialize,
+                ::serde::Deserialize,
+                Hash
+            )]
+            #[ssz(struct_behaviour = "transparent")]
+            pub struct $Struct(#[serde(with = "::serde_utils::hex_string")] pub [u8; $N]);
+
+            impl $Struct {
+                #[doc = concat!("The [`Display`] impl for [`", stringify!($Struct), "`]")]
+                /// prefixes the output with `0x`, which may not be desirable in all contexts.
+                /// This fn serves as a convenience around [`hex::encode(&self)`].
+                #[must_use]
+                pub fn to_string_unprefixed(&self) -> String {
+                    hex::encode(&self)
+                }
+            }
+
+            impl std::str::FromStr for $Struct {
+                type Err = serde_utils::FromHexStringError;
+
+                fn from_str(s: &str) -> Result<Self, Self::Err> {
+                    serde_utils::parse_hex(s)
+                }
+            }
+
+            impl Default for $Struct {
+                fn default() -> Self {
+                    Self([0_u8; $N])
+                }
+            }
+
+            impl TryFrom<Vec<u8>> for $Struct {
+                type Error = crate::errors::InvalidLength;
+
+                fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
+                    value
+                        .try_into()
+                        .map(Self)
+                        .map_err(|invalid| crate::errors::InvalidLength {
+                            expected: crate::errors::ExpectedLength::Exact($N),
+                            found: invalid.len(),
+                        })
+                }
+            }
+
+            impl TryFrom<&[u8]> for $Struct {
+                type Error = crate::errors::InvalidLength;
+
+                fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
+                    value
+                        .try_into()
+                        .map(Self)
+                        .map_err(|_| crate::errors::InvalidLength {
+                            expected: crate::errors::ExpectedLength::Exact($N),
+                            found: value.len(),
+                        })
+                }
+            }
+
+            impl From<$Struct> for Vec<u8> {
+                fn from(value: $Struct) -> Self {
+                    value.0.into()
+                }
+            }
+
+            impl From<$Struct> for [u8; $N] {
+                fn from(value: $Struct) -> Self {
+                    value.0
+                }
+            }
+
+            impl From<[u8; $N]> for $Struct {
+                fn from(value: [u8; $N]) -> Self {
+                    Self(value)
+                }
+            }
+
+            impl ::std::fmt::Debug for $Struct {
+                fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+                    write!(f, "{}({self})", stringify!($Struct))
+                }
+            }
+
+            impl ::std::fmt::Display for $Struct {
+                fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+                    write!(f, "0x{}", hex::encode(self.0).as_str())
+                }
+            }
+
+            // arrays and `FixedVector`s are effectively the exact same type, implement
+            // the former in terms of the latter
+            impl ::tree_hash::TreeHash for $Struct {
+                fn tree_hash_type() -> tree_hash::TreeHashType {
+                    ssz_types::FixedVector::<u8, ::typenum::U<$N>>::tree_hash_type()
+                }
+
+                fn tree_hash_packed_encoding(&self) -> tree_hash::PackedEncoding {
+                    ssz_types::FixedVector::<u8, ::typenum::U<$N>>::tree_hash_packed_encoding(&self.0.into())
+                }
+
+                fn tree_hash_packing_factor() -> usize {
+                    ssz_types::FixedVector::<u8, ::typenum::U<$N>>::tree_hash_packing_factor()
+                }
+
+                fn tree_hash_root(&self) -> tree_hash::Hash256 {
+                    ssz_types::FixedVector::<u8, ::typenum::U<$N>>::tree_hash_root(&self.0.into())
+                }
+            }
+
+            impl From<::generic_array::GenericArray<u8, ::typenum::U<$N>>> for $Struct {
+                fn from(arr: ::generic_array::GenericArray<u8, ::typenum::U<$N>>) -> Self {
+                    Self(arr.to_vec().try_into().expect("GenericArray has the correct length; qed;"))
+                }
+            }
+
+            #[cfg(feature = "ethabi")]
+            impl From<$Struct> for ::ethers_core::types::Bytes {
+                fn from(value: $Struct) -> Self {
+                    ::ethers_core::types::Bytes::from(value.0)
+                }
+            }
+
+            #[cfg(feature = "ethabi")]
+            impl TryFrom<::ethers_core::types::Bytes> for $Struct {
+                type Error = <Self as TryFrom<Vec<u8>>>::Error;
+
+                fn try_from(value: ::ethers_core::types::Bytes) -> Result<Self, Self::Error> {
+                    Self::try_from(&value.0[..])
+                }
+            }
+
+            #[cfg(feature = "ethabi")]
+            impl TryFrom<&'_ ::ethers_core::types::Bytes> for $Struct {
+                type Error = <Self as TryFrom<Vec<u8>>>::Error;
+
+                fn try_from(value: &::ethers_core::types::Bytes) -> Result<Self, Self::Error> {
+                    Self::try_from(&value.0[..])
+                }
+            }
+
+            impl AsRef<[u8]> for $Struct {
+                fn as_ref(&self) -> &[u8] {
+                    &self.0
+                }
+            }
+
+            impl ::rlp::Encodable for $Struct {
+                fn rlp_append(&self, s: &mut ::rlp::RlpStream) {
+                    s.encoder().encode_value(self.as_ref());
+                }
+            }
+
+            impl ::rlp::Decodable for $Struct {
+                fn decode(rlp: &rlp::Rlp) -> Result<Self, ::rlp::DecoderError> {
+                    rlp.decoder()
+                        .decode_value(|bytes| match bytes.len().cmp(&$N) {
+                            ::std::cmp::Ordering::Less => Err(::rlp::DecoderError::RlpIsTooShort),
+                            ::std::cmp::Ordering::Greater => Err(::rlp::DecoderError::RlpIsTooBig),
+                            ::std::cmp::Ordering::Equal => {
+                                Ok($Struct(bytes.try_into().expect("size is checked; qed;")))
+                            }
+                        })
+                }
+            }
+        )+
+    };
+}
+
+pub(crate) use hex_string_array_wrapper;
+
 macro_rules! wrapper_enum {
     (
         #[proto($Proto:ty)]

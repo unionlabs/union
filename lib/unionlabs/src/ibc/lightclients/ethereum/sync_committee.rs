@@ -4,8 +4,7 @@ use ssz_types::{fixed_vector, FixedVector};
 use tree_hash::TreeHash;
 
 use crate::{
-    bls::BlsPublicKey, errors::InvalidLength, ethereum_consts_traits::SYNC_COMMITTEE_SIZE, Proto,
-    TypeUrl,
+    bls::BlsPublicKey, errors::InvalidLength, ethereum::config::SYNC_COMMITTEE_SIZE, Proto, TypeUrl,
 };
 
 #[derive(Clone, Debug, PartialEq, Encode, Decode, TreeHash, Serialize, Deserialize)]

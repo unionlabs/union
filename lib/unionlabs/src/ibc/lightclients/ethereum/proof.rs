@@ -2,14 +2,14 @@ use std::fmt::Debug;
 
 use serde::{Deserialize, Serialize};
 
-use crate::{errors::InvalidLength, ethereum::U256};
+use crate::{errors::InvalidLength, uint::U256};
 
 // REVIEW: H256 or actual arbitrary bytes?
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub struct Proof {
-    #[serde(with = "crate::ethereum::u256_big_endian_hex")]
+    #[serde(with = "crate::uint::u256_big_endian_hex")]
     pub key: U256,
-    #[serde(with = "crate::ethereum::u256_big_endian_hex")]
+    #[serde(with = "crate::uint::u256_big_endian_hex")]
     pub value: U256,
     #[serde(with = "::serde_utils::hex_string_list")]
     pub proof: Vec<Vec<u8>>,
