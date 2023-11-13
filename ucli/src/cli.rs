@@ -11,10 +11,7 @@ use ethers::{
 };
 use serde::{Deserialize, Serialize};
 use tendermint_rpc::WebSocketClientUrl;
-use unionlabs::{
-    ethereum::{Address, U256},
-    ethereum_consts_traits::ChainSpec,
-};
+use unionlabs::{ethereum::config::ChainSpec, hash::H160, uint::U256};
 
 #[derive(Debug, Parser)]
 #[command(arg_required_else_help = true)]
@@ -49,7 +46,7 @@ pub enum TxCmd {
 pub enum EvmTx {
     Transfer {
         #[arg(long)]
-        relay_address: Address,
+        relay_address: H160,
         // #[arg(long)]
         // from: Address,
         // #[arg(long)]
@@ -78,17 +75,17 @@ pub enum EvmQuery {
     // TODO(aeryz): Check if native denoms present in the `denomToAddress` mapping.
     Ucs01Balance {
         #[arg(long)]
-        contract_address: Address,
+        contract_address: H160,
         #[arg(long)]
         denom: String,
         #[arg(long)]
-        address: Address,
+        address: H160,
     },
     Erc20Balance {
         #[arg(long)]
-        contract_address: Address,
+        contract_address: H160,
         #[arg(long)]
-        address: Address,
+        address: H160,
     },
 }
 
@@ -109,7 +106,7 @@ pub enum EvmChainConfig {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EvmChainConfigFields {
     /// The address of the `IBCHandler` smart contract.
-    pub ibc_handler_address: Address,
+    pub ibc_handler_address: H160,
 
     /// The signer that will be used to submit transactions by voyager.
     pub signer: PrivateKey<ecdsa::SigningKey>,

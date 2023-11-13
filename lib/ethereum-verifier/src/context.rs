@@ -1,5 +1,5 @@
 use unionlabs::{
-    ethereum_consts_traits::ChainSpec,
+    ethereum::config::ChainSpec,
     ibc::lightclients::ethereum::{fork_parameters::ForkParameters, sync_committee::SyncCommittee},
 };
 

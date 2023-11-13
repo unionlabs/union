@@ -2,7 +2,7 @@ use chain_utils::{
     evm::{Evm, EvmInitError},
     union::{Union, UnionInitError},
 };
-use unionlabs::ethereum_consts_traits::{Mainnet, Minimal};
+use unionlabs::ethereum::config::{Mainnet, Minimal};
 
 use crate::{
     config::{self, ChainConfig, EvmChainConfig},

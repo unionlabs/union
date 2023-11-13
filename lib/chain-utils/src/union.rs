@@ -8,9 +8,9 @@ use serde::{Deserialize, Serialize};
 use sha2::Digest;
 use tendermint_rpc::{query::Query, Client, Order, WebSocketClient, WebSocketClientUrl};
 use unionlabs::{
-    ethereum::H256,
     events::{IbcEvent, TryFromTendermintEventError, WriteAcknowledgement},
     google::protobuf::{any::Any, duration::Duration},
+    hash::H256,
     ibc::{
         core::{client::height::Height, commitment::merkle_root::MerkleRoot},
         lightclients::{cometbls, wasm},

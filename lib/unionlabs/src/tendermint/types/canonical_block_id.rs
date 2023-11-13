@@ -1,8 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    ethereum::H256, tendermint::types::canonical_block_header::CanonicalPartSetHeader, Proto,
-    TypeUrl,
+    hash::H256, tendermint::types::canonical_block_header::CanonicalPartSetHeader, Proto, TypeUrl,
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

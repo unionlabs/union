@@ -5,11 +5,12 @@ use uint::FromDecStrErr;
 
 use crate::{
     errors::{InvalidLength, MissingField},
-    ethereum::{H256, U256},
+    hash::H256,
     ibc::{
         core::client::height::Height,
         lightclients::{ethereum::fork_parameters::ForkParameters, tendermint::fraction::Fraction},
     },
+    uint::U256,
     Proto, TryFromProtoErrorOf, TypeUrl,
 };
 

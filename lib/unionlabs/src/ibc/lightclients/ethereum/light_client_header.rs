@@ -6,11 +6,11 @@ use typenum::U;
 
 use crate::{
     errors::{InvalidLength, MissingField},
-    ethereum::H256,
-    ethereum_consts_traits::{
+    ethereum::config::{
         consts::{floorlog2, EXECUTION_PAYLOAD_INDEX},
         BYTES_PER_LOGS_BLOOM, MAX_EXTRA_DATA_BYTES,
     },
+    hash::H256,
     ibc::lightclients::ethereum::{
         beacon_block_header::BeaconBlockHeader, execution_payload_header::ExecutionPayloadHeader,
     },

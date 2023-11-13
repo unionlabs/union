@@ -6,7 +6,7 @@ use ethereum_verifier::{
 use thiserror::Error as ThisError;
 use unionlabs::{
     bls::BlsPublicKey,
-    ethereum::H256,
+    hash::H256,
     ibc::{core::client::height::Height, lightclients::ethereum::header::Header},
     TryFromProtoBytesError, TryFromProtoErrorOf,
 };

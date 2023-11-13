@@ -5,14 +5,17 @@ use trie_db::{Trie, TrieDBBuilder};
 use typenum::Unsigned;
 use unionlabs::{
     bls::{BlsPublicKey, BlsSignature},
-    ethereum::{Address, DomainType, H256},
-    ethereum_consts_traits::{
-        consts::{
-            floorlog2, get_subtree_index, EXECUTION_PAYLOAD_INDEX, FINALIZED_ROOT_INDEX,
-            NEXT_SYNC_COMMITTEE_INDEX,
+    ethereum::{
+        config::{
+            consts::{
+                floorlog2, get_subtree_index, EXECUTION_PAYLOAD_INDEX, FINALIZED_ROOT_INDEX,
+                NEXT_SYNC_COMMITTEE_INDEX,
+            },
+            ChainSpec, MIN_SYNC_COMMITTEE_PARTICIPANTS,
         },
-        ChainSpec, MIN_SYNC_COMMITTEE_PARTICIPANTS,
+        DomainType,
     },
+    hash::{H160, H256},
     ibc::lightclients::ethereum::{
         fork_parameters::ForkParameters, light_client_header::LightClientHeader,
         light_client_update::LightClientUpdate,
@@ -213,7 +216,7 @@ fn verify_state(
 /// NOTE: You must not trust the `root` unless you verified it by calling [`validate_light_client_update`].
 pub fn verify_account_storage_root(
     root: H256,
-    address: &Address,
+    address: &H160,
     proof: impl IntoIterator<Item = impl AsRef<[u8]>>,
     storage_root: &H256,
 ) -> Result<(), VerifyAccountStorageRootError> {
@@ -292,7 +295,7 @@ pub fn is_valid_light_client_header<C: ChainSpec>(
 mod tests {
     use hex_literal::hex;
     use unionlabs::{
-        ethereum_consts_traits::{Minimal, MINIMAL},
+        ethereum::config::{Minimal, MINIMAL},
         ibc::lightclients::ethereum::{
             header::Header, sync_committee::SyncCommittee,
             trusted_sync_committee::ActiveSyncCommittee,

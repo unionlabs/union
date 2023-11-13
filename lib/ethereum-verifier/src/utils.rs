@@ -2,8 +2,11 @@ use sha2::{Digest, Sha256};
 use tree_hash::TreeHash;
 use typenum::Unsigned;
 use unionlabs::{
-    ethereum::{Domain, DomainType, ForkData, SigningData, Version, H256},
-    ethereum_consts_traits::{EPOCHS_PER_SYNC_COMMITTEE_PERIOD, SECONDS_PER_SLOT, SLOTS_PER_EPOCH},
+    ethereum::{
+        config::{EPOCHS_PER_SYNC_COMMITTEE_PERIOD, SECONDS_PER_SLOT, SLOTS_PER_EPOCH},
+        Domain, DomainType, ForkData, SigningData, Version,
+    },
+    hash::H256,
     ibc::lightclients::ethereum::fork_parameters::ForkParameters,
 };
 
@@ -155,7 +158,7 @@ pub fn validate_merkle_branch<'a>(
 mod tests {
     #![allow(clippy::redundant_clone)]
 
-    use unionlabs::ethereum_consts_traits::{Minimal, SECONDS_PER_SLOT, SEPOLIA};
+    use unionlabs::ethereum::config::{Minimal, SECONDS_PER_SLOT, SEPOLIA};
 
     use super::*;
 

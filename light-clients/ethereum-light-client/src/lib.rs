@@ -7,9 +7,9 @@ pub mod errors;
 pub mod eth_encoding;
 
 #[cfg(feature = "mainnet")]
-pub use unionlabs::ethereum_consts_traits::Mainnet as Config;
+pub use unionlabs::ethereum::config::Mainnet as Config;
 #[cfg(feature = "minimal")]
-pub use unionlabs::ethereum_consts_traits::Minimal as Config;
+pub use unionlabs::ethereum::config::Minimal as Config;
 
 #[cfg(all(feature = "minimal", feature = "mainnet"))]
 compile_error!(r#"cannot enable both "minimal" and "mainnet""#);

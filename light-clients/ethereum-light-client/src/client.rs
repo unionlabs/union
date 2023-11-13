@@ -12,7 +12,7 @@ use ics008_wasm_client::{
 };
 use sha3::Digest;
 use unionlabs::{
-    ethereum::{H256, U256},
+    hash::H256,
     ibc::{
         core::client::height::Height,
         lightclients::ethereum::{
@@ -20,6 +20,7 @@ use unionlabs::{
             proof::Proof, storage_proof::StorageProof,
         },
     },
+    uint::U256,
     TryFromProto,
 };
 
@@ -444,7 +445,7 @@ mod test {
     use serde::Deserialize;
     use unionlabs::{
         bls::BlsPublicKey,
-        ethereum_consts_traits::Mainnet,
+        ethereum::config::Mainnet,
         ibc::{
             core::connection::connection_end::ConnectionEnd,
             lightclients::{cometbls, ethereum, wasm},

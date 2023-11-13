@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     errors::{required, MissingField},
-    ethereum_consts_traits::{BYTES_PER_LOGS_BLOOM, MAX_EXTRA_DATA_BYTES, SYNC_COMMITTEE_SIZE},
+    ethereum::config::{BYTES_PER_LOGS_BLOOM, MAX_EXTRA_DATA_BYTES, SYNC_COMMITTEE_SIZE},
     ibc::lightclients::ethereum::{
         account_update::AccountUpdate, light_client_update::LightClientUpdate,
         trusted_sync_committee::TrustedSyncCommittee,

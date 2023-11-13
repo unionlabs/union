@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     errors::{InvalidLength, MissingField},
-    ethereum::H256,
+    hash::H256,
     tendermint::types::part_set_header::PartSetHeader,
     Proto, TryFromProtoErrorOf, TypeUrl,
 };

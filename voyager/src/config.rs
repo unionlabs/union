@@ -5,7 +5,7 @@ use ethers::prelude::k256::ecdsa;
 use hubble::hasura::HasuraConfig;
 use serde::{Deserialize, Serialize};
 use tendermint_rpc::WebSocketClientUrl;
-use unionlabs::ethereum::Address;
+use unionlabs::hash::H160;
 
 use crate::{
     chain::{AnyChain, AnyChainTryFromConfigError},
@@ -63,7 +63,7 @@ pub enum EvmChainConfig {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EvmChainConfigFields {
     /// The address of the `IBCHandler` smart contract.
-    pub ibc_handler_address: Address,
+    pub ibc_handler_address: H160,
 
     /// The signer that will be used to submit transactions by voyager.
     pub signers: Vec<PrivateKey<ecdsa::SigningKey>>,

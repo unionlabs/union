@@ -7,22 +7,24 @@ use typenum::U;
 use crate::{
     bls::{BlsPublicKey, BlsSignature},
     ethereum::{
-        Address, Attestation, AttesterSlashing, Deposit, Eth1Data, ProposerSlashing,
-        SignedVoluntaryExit, Version, H256, U256,
+        config::{
+            consts::{floorlog2, CURRENT_SYNC_COMMITTEE_INDEX, FINALIZED_ROOT_INDEX},
+            BYTES_PER_LOGS_BLOOM, DEPOSIT_CONTRACT_TREE_DEPTH, MAX_ATTESTATIONS,
+            MAX_ATTESTER_SLASHINGS, MAX_BLS_TO_EXECUTION_CHANGES, MAX_BYTES_PER_TRANSACTION,
+            MAX_DEPOSITS, MAX_EXTRA_DATA_BYTES, MAX_PROPOSER_SLASHINGS,
+            MAX_TRANSACTIONS_PER_PAYLOAD, MAX_VALIDATORS_PER_COMMITTEE, MAX_VOLUNTARY_EXITS,
+            MAX_WITHDRAWALS_PER_PAYLOAD, SYNC_COMMITTEE_SIZE,
+        },
+        Attestation, AttesterSlashing, Deposit, Eth1Data, ProposerSlashing, SignedVoluntaryExit,
+        Version,
     },
-    ethereum_consts_traits::{
-        consts::{floorlog2, CURRENT_SYNC_COMMITTEE_INDEX, FINALIZED_ROOT_INDEX},
-        BYTES_PER_LOGS_BLOOM, DEPOSIT_CONTRACT_TREE_DEPTH, MAX_ATTESTATIONS,
-        MAX_ATTESTER_SLASHINGS, MAX_BLS_TO_EXECUTION_CHANGES, MAX_BYTES_PER_TRANSACTION,
-        MAX_DEPOSITS, MAX_EXTRA_DATA_BYTES, MAX_PROPOSER_SLASHINGS, MAX_TRANSACTIONS_PER_PAYLOAD,
-        MAX_VALIDATORS_PER_COMMITTEE, MAX_VOLUNTARY_EXITS, MAX_WITHDRAWALS_PER_PAYLOAD,
-        SYNC_COMMITTEE_SIZE,
-    },
+    hash::{H160, H256},
     ibc::lightclients::ethereum::{
         beacon_block_header::BeaconBlockHeader, execution_payload_header::ExecutionPayloadHeader,
         light_client_header::LightClientHeader, sync_aggregate::SyncAggregate,
         sync_committee::SyncCommittee,
     },
+    uint::U256,
 };
 
 /// <https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#beaconblock>
@@ -120,7 +122,7 @@ pub struct BeaconBlockBody<
 pub struct BlsToExecutionChange {
     pub validator_index: u64,
     pub from_bls_public_key: BlsPublicKey,
-    pub to_execution_address: Address,
+    pub to_execution_address: H160,
 }
 
 #[derive(Clone, Debug, PartialEq, Encode, Decode, TreeHash, Serialize, Deserialize)]
@@ -140,7 +142,7 @@ pub struct ExecutionPayload<
 > {
     /// Execution block header fields
     pub parent_hash: H256,
-    pub fee_recipient: Address,
+    pub fee_recipient: H160,
     pub state_root: H256,
     pub receipts_root: H256,
     pub logs_bloom: FixedVector<u8, C::BYTES_PER_LOGS_BLOOM>,
@@ -198,7 +200,7 @@ pub struct Withdrawal {
     pub index: u64,
     // REVIEW: Should this be u64?
     pub validator_index: usize,
-    pub address: Address,
+    pub address: H160,
     pub amount: u64,
 }
 
@@ -247,7 +249,7 @@ mod tests {
 
     use super::*;
     use crate::{
-        ethereum_consts_traits::Minimal,
+        ethereum::config::Minimal,
         test_utils::{assert_json_roundtrip, assert_proto_roundtrip},
     };
 

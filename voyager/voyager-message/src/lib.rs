@@ -840,8 +840,8 @@ mod tests {
     };
     use serde::{de::DeserializeOwned, Serialize};
     use unionlabs::{
-        ethereum::{Address, H256, U256},
         events::{ConnectionOpenAck, ConnectionOpenTry},
+        hash::{H160, H256},
         ibc::core::{
             channel::{
                 self, channel::Channel, msg_channel_open_init::MsgChannelOpenInit, order::Order,
@@ -852,6 +852,7 @@ mod tests {
                 msg_connection_open_try::MsgConnectionOpenTry, version::Version,
             },
         },
+        uint::U256,
         validated::ValidateT,
         EmptyString, QueryHeight, DELAY_PERIOD,
     };
@@ -1036,7 +1037,7 @@ mod tests {
                         AggregateCreateClient {
                             config: CometblsConfig {
                                 client_type: "cometbls".to_string(),
-                                cometbls_client_address: Address(hex!(
+                                cometbls_client_address: H160(hex!(
                                     "83428c7db9815f482a39a1715684dcf755021997"
                                 )),
                             },

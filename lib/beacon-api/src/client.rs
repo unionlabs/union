@@ -7,9 +7,10 @@ use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use unionlabs::{
     ethereum::{
         beacon::{GenesisData, LightClientBootstrap, LightClientFinalityUpdate},
-        SignedBeaconBlock, H256,
+        config::ChainSpec,
+        SignedBeaconBlock,
     },
-    ethereum_consts_traits::ChainSpec,
+    hash::H256,
 };
 
 use crate::{

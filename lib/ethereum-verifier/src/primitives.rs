@@ -1,6 +1,6 @@
 use primitive_types::U256;
 use rlp::RlpDecodable;
-use unionlabs::ethereum::H256;
+use unionlabs::hash::H256;
 
 pub const GENESIS_SLOT: u64 = 0;
 pub const GENESIS_EPOCH: u64 = 0;

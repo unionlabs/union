@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{errors::InvalidLength, ethereum::H256, Proto, TypeUrl};
+use crate::{errors::InvalidLength, hash::H256, Proto, TypeUrl};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct PubKey {

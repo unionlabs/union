@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use ssz::{Decode, Encode};
 use tree_hash::TreeHash;
 
-use crate::{errors::InvalidLength, ethereum::H256, Proto, TypeUrl};
+use crate::{errors::InvalidLength, hash::H256, Proto, TypeUrl};
 
 #[derive(Clone, Debug, PartialEq, Encode, Decode, TreeHash, Serialize, Deserialize)]
 pub struct BeaconBlockHeader {

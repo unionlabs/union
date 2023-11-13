@@ -22,9 +22,9 @@ use serde::{Deserialize, Serialize};
 use tendermint_rpc::Client;
 use unionlabs::{
     bounded::BoundedI64,
-    ethereum::{Address, H256, H512},
-    ethereum_consts_traits::{ChainSpec, Mainnet, Minimal},
+    ethereum::config::{ChainSpec, Mainnet, Minimal},
     google::protobuf::{any::Any, timestamp::Timestamp},
+    hash::{H160, H256, H512},
     ibc::{
         core::client::{height::Height, msg_update_client::MsgUpdateClient},
         lightclients::{cometbls, ethereum, wasm},
@@ -260,7 +260,7 @@ where
                         .map(|sig| match sig {
                             tendermint::block::CommitSig::BlockIdFlagAbsent => CommitSig {
                                 block_id_flag: BlockIdFlag::Absent,
-                                validator_address: Address([0; 20]),
+                                validator_address: H160([0; 20]),
                                 timestamp: unionlabs::google::protobuf::timestamp::Timestamp {
                                     seconds: 0.try_into().unwrap(),
                                     nanos: 0.try_into().unwrap(),

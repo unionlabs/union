@@ -11,7 +11,7 @@ use ethers::{
     signers::Signer,
     types::{Address, U256},
 };
-use unionlabs::ethereum_consts_traits::{ChainSpec, Mainnet, Minimal};
+use unionlabs::ethereum::config::{ChainSpec, Mainnet, Minimal};
 
 use crate::cli::{AppArgs, Config};
 
