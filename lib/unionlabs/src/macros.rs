@@ -151,6 +151,41 @@ macro_rules! hex_string_array_wrapper {
                 }
             }
 
+            #[cfg(feature = "ethabi")]
+            impl ::ethers_core::abi::AbiType for $Struct {
+                fn param_type() -> ::ethers_core::abi::ParamType {
+                    ::ethers_core::abi::ParamType::FixedBytes($N)
+                }
+            }
+
+            #[cfg(feature = "ethabi")]
+            impl ::ethers_core::abi::AbiArrayType for $Struct {}
+
+            #[cfg(feature = "ethabi")]
+            impl ::ethers_core::abi::AbiEncode for $Struct {
+                fn encode(self) -> Vec<u8> {
+                    self.0.encode()
+                }
+            }
+
+            #[cfg(feature = "ethabi")]
+            impl ::ethers_core::abi::AbiDecode for $Struct {
+                fn decode(bytes: impl AsRef<[u8]>) -> Result<Self, ::ethers_core::abi::AbiError> {
+                    <[u8; $N]>::decode(bytes).map(Self)
+                }
+            }
+
+            #[cfg(feature = "ethabi")]
+            impl ::ethers_core::abi::Tokenizable for $Struct {
+                fn from_token(token: ::ethers_core::abi::Token) -> Result<Self, ::ethers_core::abi::InvalidOutputType> {
+                    <[u8; $N]>::from_token(token).map(Self)
+                }
+
+                fn into_token(self) -> ::ethers_core::abi::Token {
+                    self.0.into_token()
+                }
+            }
+
             impl AsRef<[u8]> for $Struct {
                 fn as_ref(&self) -> &[u8] {
                     &self.0
