@@ -22,12 +22,21 @@ pub trait IbcPath<This: Chain, Counterparty: Chain>: Display + Clone + Sized {
     type Output: Debug + Clone + Serialize;
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, derive_more::Display, clap::Args)]
+#[derive(
+    Debug,
+    Clone,
+    PartialEq,
+    Serialize,
+    Deserialize,
+    parse_display::Display,
+    parse_display::FromStr,
+    clap::Args,
+)]
 #[serde(bound(
     serialize = "ClientId: Serialize",
     deserialize = "ClientId: for<'d> Deserialize<'d>",
 ))]
-#[display(fmt = "clients/{client_id}/clientState")]
+#[display("clients/{client_id}/clientState")]
 pub struct ClientStatePath<ClientId: traits::Id> {
     #[arg(
         value_parser = StringValueParser::new()
@@ -45,12 +54,21 @@ impl<This: Chain, Counterparty: Chain> IbcPath<This, Counterparty>
     type Output = Counterparty::SelfClientState;
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, derive_more::Display, clap::Args)]
+#[derive(
+    Debug,
+    Clone,
+    PartialEq,
+    Serialize,
+    Deserialize,
+    parse_display::Display,
+    parse_display::FromStr,
+    clap::Args,
+)]
 #[serde(bound(
     serialize = "ClientId: Serialize",
     deserialize = "ClientId: for<'d> Deserialize<'d>",
 ))]
-#[display(fmt = "clients/{client_id}/consensusStates/{height}")]
+#[display("clients/{client_id}/consensusStates/{height}")]
 pub struct ClientConsensusStatePath<ClientId: traits::Id, Height: IsHeight> {
     #[arg(
         value_parser = StringValueParser::new()
@@ -69,8 +87,17 @@ impl<This: Chain, Counterparty: Chain> IbcPath<This, Counterparty>
     type Output = Counterparty::SelfConsensusState;
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, derive_more::Display, clap::Args)]
-#[display(fmt = "connections/{connection_id}")]
+#[derive(
+    Debug,
+    Clone,
+    PartialEq,
+    Serialize,
+    Deserialize,
+    parse_display::Display,
+    parse_display::FromStr,
+    clap::Args,
+)]
+#[display("connections/{connection_id}")]
 pub struct ConnectionPath {
     pub connection_id: ConnectionId,
 }
@@ -79,8 +106,17 @@ impl<This: Chain, Counterparty: Chain> IbcPath<This, Counterparty> for Connectio
     type Output = ConnectionEnd<This::ClientId, Counterparty::ClientId, String>;
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, derive_more::Display, clap::Args)]
-#[display(fmt = "channelEnds/ports/{port_id}/channels/{channel_id}")]
+#[derive(
+    Debug,
+    Clone,
+    PartialEq,
+    Serialize,
+    Deserialize,
+    parse_display::Display,
+    parse_display::FromStr,
+    clap::Args,
+)]
+#[display("channelEnds/ports/{port_id}/channels/{channel_id}")]
 pub struct ChannelEndPath {
     pub port_id: PortId,
     pub channel_id: ChannelId,
@@ -90,8 +126,17 @@ impl<This: Chain, Counterparty: Chain> IbcPath<This, Counterparty> for ChannelEn
     type Output = Channel;
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, derive_more::Display, clap::Args)]
-#[display(fmt = "commitments/ports/{port_id}/channels/{channel_id}/sequences/{sequence}")]
+#[derive(
+    Debug,
+    Clone,
+    PartialEq,
+    Serialize,
+    Deserialize,
+    parse_display::Display,
+    parse_display::FromStr,
+    clap::Args,
+)]
+#[display("commitments/ports/{port_id}/channels/{channel_id}/sequences/{sequence}")]
 pub struct CommitmentPath {
     pub port_id: PortId,
     pub channel_id: ChannelId,
@@ -102,8 +147,17 @@ impl<This: Chain, Counterparty: Chain> IbcPath<This, Counterparty> for Commitmen
     type Output = H256;
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, derive_more::Display, clap::Args)]
-#[display(fmt = "acks/ports/{port_id}/channels/{channel_id}/sequences/{sequence}")]
+#[derive(
+    Debug,
+    Clone,
+    PartialEq,
+    Serialize,
+    Deserialize,
+    parse_display::Display,
+    parse_display::FromStr,
+    clap::Args,
+)]
+#[display("acks/ports/{port_id}/channels/{channel_id}/sequences/{sequence}")]
 pub struct AcknowledgementPath {
     pub port_id: PortId,
     pub channel_id: ChannelId,
@@ -115,24 +169,31 @@ impl<This: Chain, Counterparty: Chain> IbcPath<This, Counterparty> for Acknowled
 }
 
 #[derive(
-    Debug, Clone, PartialEq, Serialize, Deserialize, derive_more::Display, clap::Subcommand,
+    Debug,
+    Clone,
+    PartialEq,
+    Serialize,
+    Deserialize,
+    parse_display::Display,
+    parse_display::FromStr,
+    clap::Subcommand,
 )]
 #[serde(bound(
     serialize = "ClientId: Serialize",
     deserialize = "ClientId: for<'d> Deserialize<'d>",
 ))]
 pub enum Path<ClientId: traits::Id, Height: IsHeight> {
-    #[display(fmt = "{_0}")]
+    #[display("{0}")]
     ClientStatePath(ClientStatePath<ClientId>),
-    #[display(fmt = "{_0}")]
+    #[display("{0}")]
     ClientConsensusStatePath(ClientConsensusStatePath<ClientId, Height>),
-    #[display(fmt = "{_0}")]
+    #[display("{0}")]
     ConnectionPath(ConnectionPath),
-    #[display(fmt = "{_0}")]
+    #[display("{0}")]
     ChannelEndPath(ChannelEndPath),
-    #[display(fmt = "{_0}")]
+    #[display("{0}")]
     CommitmentPath(CommitmentPath),
-    #[display(fmt = "{_0}")]
+    #[display("{0}")]
     AcknowledgementPath(AcknowledgementPath),
 }
 
@@ -162,4 +223,68 @@ impl<Counterparty: Chain, T: Chain> IbcStateReadPaths<Counterparty> for T where
         + IbcStateRead<Counterparty, CommitmentPath>
         + IbcStateRead<Counterparty, AcknowledgementPath>
 {
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{ibc::core::client::height::Height, validated::ValidateT};
+
+    #[test]
+    fn parse_ibc_paths_from_str() {
+        type PathT = Path<String, Height>;
+        assert_eq!(
+            "clients/08-wasm-0/clientState".parse::<PathT>().unwrap(),
+            Path::ClientStatePath(ClientStatePath {
+                client_id: "08-wasm-0".to_string()
+            })
+        );
+        assert_eq!(
+            "clients/08-wasm-0/consensusStates/0-1"
+                .parse::<PathT>()
+                .unwrap(),
+            Path::ClientConsensusStatePath(ClientConsensusStatePath {
+                client_id: "08-wasm-0".to_string(),
+                height: Height {
+                    revision_number: 0,
+                    revision_height: 1
+                }
+            })
+        );
+        assert_eq!(
+            "connections/connection-0".parse::<PathT>().unwrap(),
+            Path::ConnectionPath(ConnectionPath {
+                connection_id: "connection-0".to_string().validate().unwrap()
+            })
+        );
+        assert_eq!(
+            "channelEnds/ports/port/channels/channel-0"
+                .parse::<PathT>()
+                .unwrap(),
+            Path::ChannelEndPath(ChannelEndPath {
+                port_id: "port".to_string().validate().unwrap(),
+                channel_id: "channel-0".to_string().validate().unwrap()
+            })
+        );
+        assert_eq!(
+            "commitments/ports/port/channels/channel-0/sequences/1"
+                .parse::<PathT>()
+                .unwrap(),
+            Path::CommitmentPath(CommitmentPath {
+                port_id: "port".to_string().validate().unwrap(),
+                channel_id: "channel-0".to_string().validate().unwrap(),
+                sequence: 1
+            })
+        );
+        assert_eq!(
+            "acks/ports/port/channels/channel-0/sequences/1"
+                .parse::<PathT>()
+                .unwrap(),
+            Path::AcknowledgementPath(AcknowledgementPath {
+                port_id: "port".to_string().validate().unwrap(),
+                channel_id: "channel-0".to_string().validate().unwrap(),
+                sequence: 1
+            })
+        );
+    }
 }

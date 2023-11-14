@@ -49,7 +49,6 @@ hubble.workspace = true
 sqlx = { version = "0.7.2", features = ["postgres", "tls-rustls"] }
 thiserror = "1.0.49"
 crossbeam-queue = "0.3.8"
-derive_more = "0.99.17"
 
 tikv-jemallocator = "0.5"
 tokio-util = "0.7.9"

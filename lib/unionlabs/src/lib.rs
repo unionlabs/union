@@ -106,13 +106,13 @@ pub mod errors {
         pub found: usize,
     }
 
-    #[derive(Debug, PartialEq, Eq, derive_more::Display)]
+    #[derive(Debug, PartialEq, Eq, parse_display::Display)]
     pub enum ExpectedLength {
-        #[display(fmt = "exactly {_0}")]
+        #[display("exactly {0}")]
         Exact(usize),
-        #[display(fmt = "less than {_0}")]
+        #[display("less than {0}")]
         LessThan(usize),
-        #[display(fmt = "between ({_0}, {_0})")]
+        #[display("between ({0}, {1})")]
         Between(usize, usize),
     }
 
