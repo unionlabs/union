@@ -9,8 +9,8 @@ use sha2::Digest;
 use tendermint_rpc::{query::Query, Client, Order, WebSocketClient, WebSocketClientUrl};
 use unionlabs::{
     events::{IbcEvent, TryFromTendermintEventError, WriteAcknowledgement},
-    google::protobuf::{any::Any, duration::Duration},
     hash::H256,
+    google::protobuf::any::Any,
     ibc::{
         core::{client::height::Height, commitment::merkle_root::MerkleRoot},
         lightclients::{cometbls, wasm},
@@ -136,42 +136,29 @@ impl Chain for Union {
 
             let height = commit.signed_header.header.height;
 
-            let unbonding_period = std::time::Duration::new(
-                params
-                    .unbonding_time
-                    .clone()
-                    .unwrap()
-                    .seconds
-                    .try_into()
-                    .unwrap(),
-                params
-                    .unbonding_time
-                    .clone()
-                    .unwrap()
-                    .nanos
-                    .try_into()
-                    .unwrap(),
-            );
+            let unbonding_period: u64 = params
+                .unbonding_time
+                .clone()
+                .unwrap()
+                .seconds
+                .try_into()
+                .unwrap();
 
             Any(wasm::client_state::ClientState {
                 data: cometbls::client_state::ClientState {
                     chain_id: self.chain_id.clone(),
                     // https://github.com/cosmos/relayer/blob/23d1e5c864b35d133cad6a0ef06970a2b1e1b03f/relayer/chains/cosmos/provider.go#L177
-                    trusting_period: Duration::new(
-                        (unbonding_period * 85 / 100).as_secs() as i64,
-                        (unbonding_period * 85 / 100).subsec_nanos() as i32,
-                    )
-                    .unwrap(),
-                    unbonding_period: Duration::new(
-                        unbonding_period.as_secs() as i64,
-                        unbonding_period.subsec_nanos() as i32,
-                    )
-                    .unwrap(),
+                    trusting_period: unbonding_period * 85 / 100,
+                    unbonding_period,
                     // https://github.com/cosmos/relayer/blob/23d1e5c864b35d133cad6a0ef06970a2b1e1b03f/relayer/chains/cosmos/provider.go#L177
-                    max_clock_drift: Duration::new(60 * 10, 0).unwrap(),
+                    max_clock_drift: 60 * 20,
                     frozen_height: Height {
                         revision_number: 0,
                         revision_height: 0,
+                    },
+                    latest_height: Height {
+                        revision_number: self.chain_id.split('-').last().unwrap().parse().unwrap(),
+                        revision_height: height.value(),
                     },
                 },
                 // TODO: Get this somehow
@@ -196,6 +183,13 @@ impl Chain for Union {
                 .unwrap();
 
             let state = cometbls::consensus_state::ConsensusState {
+                timestamp: commit
+                    .signed_header
+                    .header
+                    .time
+                    .unix_timestamp()
+                    .try_into()
+                    .unwrap(),
                 root: MerkleRoot {
                     hash: commit
                         .signed_header

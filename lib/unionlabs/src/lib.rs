@@ -567,6 +567,36 @@ pub mod traits {
         fn chain_id(&self) -> Self::ChainId;
     }
 
+    impl ClientState for ethereum::client_state::ClientState {
+        type ChainId = U256;
+        type Height = Height;
+
+        fn height(&self) -> Self::Height {
+            Height {
+                // TODO: Make EVM_REVISION_NUMBER a constant in this crate
+                revision_number: 0,
+                revision_height: self.latest_slot,
+            }
+        }
+
+        fn chain_id(&self) -> Self::ChainId {
+            self.chain_id
+        }
+    }
+
+    impl ClientState for cometbls::client_state::ClientState {
+        type ChainId = String;
+        type Height = Height;
+
+        fn height(&self) -> Height {
+            self.latest_height
+        }
+
+        fn chain_id(&self) -> Self::ChainId {
+            self.chain_id.clone()
+        }
+    }
+
     impl ClientState for wasm::client_state::ClientState<ethereum::client_state::ClientState> {
         type ChainId = U256;
         type Height = Height;

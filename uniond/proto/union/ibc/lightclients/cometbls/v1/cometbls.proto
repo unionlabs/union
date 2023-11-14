@@ -13,22 +13,24 @@ import "ibc/core/commitment/v1/commitment.proto";
 import "gogoproto/gogo.proto";
 
 message ClientState {
-  string   chain_id    = 1;
+  string chain_id = 1;
   // duration of the period since the LastestTimestamp during which the
   // submitted headers are valid for upgrade
-  google.protobuf.Duration trusting_period = 2
-        [(gogoproto.nullable) = false, (gogoproto.stdduration) = true];
+  uint64 trusting_period = 2;
   // duration of the staking unbonding period
-  google.protobuf.Duration unbonding_period = 3
-        [(gogoproto.nullable) = false, (gogoproto.stdduration) = true];
+  uint64 unbonding_period = 3;
   // defines how much new (untrusted) header's Time can drift into the future.
-  google.protobuf.Duration max_clock_drift = 4
-        [(gogoproto.nullable) = false, (gogoproto.stdduration) = true];
+  uint64 max_clock_drift = 4;
   // Block height when the client was frozen due to a misbehaviour
   .ibc.core.client.v1.Height frozen_height = 5;
+  // Latest height the client was updated to
+  .ibc.core.client.v1.Height latest_height = 6;
 }
 
 message ConsensusState {
+  // timestamp that corresponds to the block height in which the ConsensusState
+  // was stored.
+  uint64 timestamp = 1;
   // commitment root (i.e app hash)
   .ibc.core.commitment.v1.MerkleRoot root = 2
         [(gogoproto.nullable) = false];
@@ -36,8 +38,8 @@ message ConsensusState {
 }
 
 message Misbehaviour {
-  Header header_1  = 2;
-  Header header_2  = 3;
+  Header header_1  = 1;
+  Header header_2  = 2;
 }
 
 message Header {

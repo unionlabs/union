@@ -333,7 +333,6 @@ proto_full = [
 "tokenfactory+v1beta1" = ["cosmos+bank+v1beta1", "cosmos+base+v1beta1"]
 "union+galois+api+v1" = ["tendermint+types"]
 "union+ibc+lightclients+cometbls+v1" = [
-  "google+protobuf",
   "ibc+core+client+v1",
   "ibc+core+commitment+v1",
   "tendermint+types",

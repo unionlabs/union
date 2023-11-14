@@ -6,25 +6,30 @@ pub struct ClientState {
     pub chain_id: ::prost::alloc::string::String,
     /// duration of the period since the LastestTimestamp during which the
     /// submitted headers are valid for upgrade
-    #[prost(message, optional, tag = "2")]
-    pub trusting_period:
-        ::core::option::Option<super::super::super::super::super::google::protobuf::Duration>,
+    #[prost(uint64, tag = "2")]
+    pub trusting_period: u64,
     /// duration of the staking unbonding period
-    #[prost(message, optional, tag = "3")]
-    pub unbonding_period:
-        ::core::option::Option<super::super::super::super::super::google::protobuf::Duration>,
+    #[prost(uint64, tag = "3")]
+    pub unbonding_period: u64,
     /// defines how much new (untrusted) header's Time can drift into the future.
-    #[prost(message, optional, tag = "4")]
-    pub max_clock_drift:
-        ::core::option::Option<super::super::super::super::super::google::protobuf::Duration>,
+    #[prost(uint64, tag = "4")]
+    pub max_clock_drift: u64,
     /// Block height when the client was frozen due to a misbehaviour
     #[prost(message, optional, tag = "5")]
     pub frozen_height:
+        ::core::option::Option<super::super::super::super::super::ibc::core::client::v1::Height>,
+    /// Latest height the client was updated to
+    #[prost(message, optional, tag = "6")]
+    pub latest_height:
         ::core::option::Option<super::super::super::super::super::ibc::core::client::v1::Height>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ConsensusState {
+    /// timestamp that corresponds to the block height in which the ConsensusState
+    /// was stored.
+    #[prost(uint64, tag = "1")]
+    pub timestamp: u64,
     /// commitment root (i.e app hash)
     #[prost(message, optional, tag = "2")]
     pub root: ::core::option::Option<
@@ -36,9 +41,9 @@ pub struct ConsensusState {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Misbehaviour {
-    #[prost(message, optional, tag = "2")]
+    #[prost(message, optional, tag = "1")]
     pub header_1: ::core::option::Option<Header>,
-    #[prost(message, optional, tag = "3")]
+    #[prost(message, optional, tag = "2")]
     pub header_2: ::core::option::Option<Header>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]

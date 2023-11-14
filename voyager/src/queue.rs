@@ -478,11 +478,9 @@ impl<Q: Queue> Voyager<Q> {
 
                 loop {
                     tokio::select! {
-                        _ = tokio::time::sleep(std::time::Duration::from_secs(3)) => {
-                            if ct.is_cancelled() {
-                                tracing::info!("shutting down event listener");
-                                break;
-                            }
+                        _ = ct.cancelled() => {
+                            tracing::info!("shutting down event listener");
+                            break;
                         }
                         msg = events.select_next_some() => {
                             let msg = msg.map_err(|x| format!("{x:?}"))?;

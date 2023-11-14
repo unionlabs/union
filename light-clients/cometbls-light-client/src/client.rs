@@ -75,9 +75,9 @@ impl IbcClient for CometblsLightClient {
         }
 
         let trusted_timestamp = consensus_state.timestamp;
-        let untrusted_timestamp = header.signed_header.header.time.seconds;
+        let untrusted_timestamp = header.signed_header.header.time.seconds.inner() as u64;
 
-        if untrusted_timestamp.inner() as u64 <= trusted_timestamp {
+        if untrusted_timestamp <= trusted_timestamp {
             return Err(Error::InvalidHeader(
                 "header time <= consensus state time".into(),
             ));
@@ -92,15 +92,17 @@ impl IbcClient for CometblsLightClient {
         if current_time
             .duration_since(&header.signed_header.header.time)
             .ok_or(Error::DurationAdditionOverflow)?
+            .seconds()
+            .inner() as u64
             > client_state.data.trusting_period
         {
             return Err(Error::InvalidHeader("header expired".into()));
         }
 
         let max_clock_drift =
-            current_time.seconds.inner() + client_state.data.max_clock_drift.seconds().inner();
+            current_time.seconds.inner() as u64 + client_state.data.max_clock_drift;
 
-        if untrusted_timestamp.inner() >= max_clock_drift {
+        if untrusted_timestamp >= max_clock_drift {
             return Err(Error::InvalidHeader("header back to the future".into()));
         }
 
@@ -255,14 +257,7 @@ impl IbcClient for CometblsLightClient {
 
         if is_client_expired(
             consensus_state.timestamp,
-            client_state
-                .data
-                .trusting_period
-                .seconds()
-                .inner()
-                // NOTE: trusting_period *should* be strictly positive; enforce this somehow?
-                .try_into()
-                .unwrap_or_default(),
+            client_state.data.trusting_period,
             env.block.time.seconds(),
         ) {
             return Ok(Status::Expired.into());

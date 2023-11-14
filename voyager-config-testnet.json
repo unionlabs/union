@@ -2,14 +2,14 @@
   "chain": {
     "ethereum-testnet": {
       "chain_type": "evm",
-      "preset_base": "minimal",
-      "ibc_handler_address": "0x971A9631b0a4E0e78954c764C7060e9D95d5cfD6",
+      "preset_base": "mainnet",
+      "ibc_handler_address": "0xbd3f2BCD8f7FbB11B3Ae4fe83451A9A1bF3B1Dc0",
       "signers": [
         {
           "raw": "0x227bfab7b601429981d3fbffb1b7625fb13464965cd4368ae48090c8d44b417e"
         }
       ],
-      "eth_rpc_api": "wss://eth-sepolia.g.alchemy.com/v2/Xn_VBUDyUtXUYb9O6b5ZmuBNDaSlH-BB",
+      "eth_rpc_api": "wss://rpc.ankr.com/eth_sepolia/ws/864e6497c4508f901b2dbaec5ae848868e2163370ec1776d3262960137dc38eb",
       "eth_beacon_rpc_api": "https://sepolia.cryptware.io"
     },
     "union-testnet": {
@@ -20,20 +20,22 @@
         }
       ],
       "fee_denom": "muno",
-      "ws_url": "wss://rpc.0xc0dejug.uno/websocket",
+      "ws_url": "wss://rpc.cryptware.io/websocket",
       "prover_endpoint": "https://prover.cryptware.io:443",
       "dump_path": "dump",
-      "grpc_url": "https://grpc.0xc0dejug.uno"
+      "grpc_url": "https://grpc.cryptware.io"
     }
   },
   "voyager": {
-    "hasura": {
-      "url": "https://graphql.union.build/v1/graphql",
-      "secret": "3N5Mt2f4Y1AC7dE663AsGqRy66yiHBuZ3RMgUjM6X4Q3Ma8G2jihgfchsdasdsadasda"
-    },
-    "num_workers": 1,
+    "hasura": null,
+    "num_workers": 20,
     "queue": {
-      "type": "in-memory"
+      "type": "pg-queue",
+      "database_url": "postgres://voyager:voyager@92.243.27.237/voyager",
+      "max_connections": 20,
+      "min_connections": 20,
+      "idle_timeout": null,
+      "max_lifetime": null
     }
   }
 }

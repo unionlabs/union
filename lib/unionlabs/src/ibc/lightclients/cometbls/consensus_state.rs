@@ -9,6 +9,7 @@ use crate::{
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ConsensusState {
+    pub timestamp: u64,
     pub root: MerkleRoot,
     pub next_validators_hash: H256,
 }
@@ -27,6 +28,7 @@ impl TryFrom<protos::union::ibc::lightclients::cometbls::v1::ConsensusState> for
         value: protos::union::ibc::lightclients::cometbls::v1::ConsensusState,
     ) -> Result<Self, Self::Error> {
         Ok(Self {
+            timestamp: value.timestamp,
             root: required!(value.root)?
                 .try_into()
                 .map_err(TryFromConsensusStateError::Root)?,
@@ -49,6 +51,7 @@ impl Proto for ConsensusState {
 impl From<ConsensusState> for protos::union::ibc::lightclients::cometbls::v1::ConsensusState {
     fn from(value: ConsensusState) -> Self {
         Self {
+            timestamp: value.timestamp,
             root: Some(value.root.into()),
             next_validators_hash: value.next_validators_hash.into(),
         }
@@ -59,6 +62,7 @@ impl From<ConsensusState> for protos::union::ibc::lightclients::cometbls::v1::Co
 impl From<ConsensusState> for contracts::glue::UnionIbcLightclientsCometblsV1ConsensusStateData {
     fn from(value: ConsensusState) -> Self {
         Self {
+            timestamp: value.timestamp,
             root: value.root.into(),
             next_validators_hash: value.next_validators_hash.into(),
         }

@@ -89,7 +89,7 @@ contract CometblsClient is ILightClient {
         latestHeights[clientId] = latestHeight;
         codeIds[clientId] = codeId;
         OptimizedConsensusState memory optimizedConsensusState = consensusState
-            .toOptimizedConsensusState(timestamp);
+            .optimize();
         consensusStates[
             stateIndex(clientId, latestHeight.toUint128())
         ] = optimizedConsensusState;
@@ -160,20 +160,17 @@ contract CometblsClient is ILightClient {
             "LC: header time <= consensus state time"
         );
 
-        GoogleProtobufDuration.Data memory currentTime = GoogleProtobufDuration
-            .Data({Seconds: int64(uint64(block.timestamp)), nanos: 0});
         require(
             !CometblsHelp.isExpired(
                 header.signed_header.header.time,
                 clientState.trusting_period,
-                currentTime
+                uint64(block.timestamp)
             ),
             "LC: header expired"
         );
 
-        uint64 maxClockDrift = uint64(
-            currentTime.Seconds + clientState.max_clock_drift.Seconds
-        );
+        uint64 maxClockDrift = uint64(block.timestamp) +
+            clientState.max_clock_drift;
         require(
             untrustedTimestamp < maxClockDrift,
             "LC: header back to the future"
@@ -208,7 +205,7 @@ contract CometblsClient is ILightClient {
         TendermintTypesCanonicalVote.Data memory vote = header
             .signed_header
             .commit
-            .toCanonicalVote(clientState.chain_id, expectedBlockHash);
+            .canonicalize(clientState.chain_id, expectedBlockHash);
         bytes memory signedVote = Encoder.encodeDelim(
             TendermintTypesCanonicalVote.encode(vote)
         );
