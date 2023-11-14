@@ -48,7 +48,7 @@ Take note of your `address` here and continue to [Receiving Testnet Tokens](#rec
 
 ## Receiving Testnet Tokens
 
-Once you've been accepted to the Testnet, you will receive a form to submit your Union address as well as your node address.
+Once you've been accepted to the Testnet, you can submit your Union address as well as your node address to our [Validator Intake Form](https://7xv16fh3twz.typeform.com/to/eYTMvi11).
 
 ### Finding your Union Address
 
