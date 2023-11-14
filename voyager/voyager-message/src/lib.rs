@@ -511,22 +511,22 @@ pub trait AnyLightClient {
 }
 
 #[derive(
-    DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, derive_more::Display,
+    DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, parse_display::Display,
 )]
 #[serde(bound(serialize = "", deserialize = ""))]
 #[allow(clippy::large_enum_variant)]
 pub enum AnyLightClientIdentified<T: AnyLightClient> {
     // The 08-wasm client tracking the state of Evm<Mainnet>.
-    #[display(fmt = "EthereumMainnet({}, {})", "_0.chain_id", "_0.data")]
+    #[display("EthereumMainnet({0.chain_id}, {0.data})")]
     EthereumMainnet(Identified<EthereumMainnet, InnerOf<T, EthereumMainnet>>),
     // The 08-wasm client tracking the state of Evm<Minimal>.
-    #[display(fmt = "EthereumMinimal({}, {})", "_0.chain_id", "_0.data")]
+    #[display("EthereumMinimal({0.chain_id}, {0.data})")]
     EthereumMinimal(Identified<EthereumMinimal, InnerOf<T, EthereumMinimal>>),
     // The solidity client on Evm<Mainnet> tracking the state of Union.
-    #[display(fmt = "CometblsMainnet({}, {})", "_0.chain_id", "_0.data")]
+    #[display("CometblsMainnet({0.chain_id}, {0.data})")]
     CometblsMainnet(Identified<CometblsMainnet, InnerOf<T, CometblsMainnet>>),
     // The solidity client on Evm<Minimal> tracking the state of Union.
-    #[display(fmt = "CometblsMinimal({}, {})", "_0.chain_id", "_0.data")]
+    #[display("CometblsMinimal({0.chain_id}, {0.data})")]
     CometblsMinimal(Identified<CometblsMinimal, InnerOf<T, CometblsMinimal>>),
 }
 

@@ -1050,12 +1050,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "convert_case"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6245d59a3e82a7fc217c5828a6692dbc6dfb63a0c8c90495621f7b9d79704a0e"
-
-[[package]]
 name = "core-foundation"
 version = "0.9.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1453,10 +1447,8 @@ version = "0.99.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4fb810d30a7c1953f91334de7244731fc3f3c10d7fe163338a35b9f640960321"
 dependencies = [
- "convert_case",
  "proc-macro2",
  "quote",
- "rustc_version",
  "syn 1.0.109",
 ]
 
@@ -6368,7 +6360,6 @@ dependencies = [
  "clap",
  "contracts",
  "cosmwasm-std",
- "derive_more",
  "either",
  "ethereum_ssz",
  "ethers-core 2.0.10 (git+https://github.com/unionlabs/ethers-rs?branch=ethers-core-wasm)",
@@ -6520,7 +6511,6 @@ dependencies = [
  "clap",
  "contracts",
  "crossbeam-queue",
- "derive_more",
  "either",
  "ethers",
  "frame-support-procedural",
@@ -6567,7 +6557,6 @@ dependencies = [
  "beacon-api",
  "chain-utils",
  "contracts",
- "derive_more",
  "ethers",
  "frame-support-procedural",
  "frunk",
@@ -6575,6 +6564,7 @@ dependencies = [
  "hex-literal",
  "lightclient",
  "num-bigint",
+ "parse-display",
  "prost",
  "protos",
  "serde",

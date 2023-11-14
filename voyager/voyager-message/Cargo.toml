@@ -11,7 +11,6 @@ frame-support-procedural = "18.0.0"
 unionlabs = { workspace = true, features = ["ethabi"] }
 serde-utils.workspace = true
 lightclient.workspace = true
-derive_more = "0.99.17"
 chain-utils.workspace = true
 frunk = "0.4.2"
 futures = "0.3.28"
@@ -30,6 +29,7 @@ ethers = { workspace = true, features = ["rustls", "ws"] }
 thiserror = "1.0.50"
 serde_json = "1.0.108"
 tokio = { version = "1.33.0", default-features = false, features = ["time"] }
+parse-display = { workspace = true }
 
 [dev-dependencies]
 hex-literal = "0.4.1"

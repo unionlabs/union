@@ -107,7 +107,7 @@ pub(crate) mod tests {
     #[test]
     fn hlist_try_from_iter() {
         enum_variants_conversions! {
-            #[derive(Debug, PartialEq, derive_more::Display)]
+            #[derive(Debug, PartialEq, parse_display::Display)]
             pub enum A {
                 B(B),
                 C(C),
@@ -115,13 +115,13 @@ pub(crate) mod tests {
             }
         }
 
-        #[derive(Debug, PartialEq, derive_more::Display)]
+        #[derive(Debug, PartialEq, parse_display::Display)]
         pub struct B;
 
-        #[derive(Debug, PartialEq, derive_more::Display)]
+        #[derive(Debug, PartialEq, parse_display::Display)]
         pub struct C;
 
-        #[derive(Debug, PartialEq, derive_more::Display)]
+        #[derive(Debug, PartialEq, parse_display::Display)]
         pub struct D;
 
         // correct items, correct order

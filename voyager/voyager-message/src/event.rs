@@ -371,12 +371,12 @@ impl<L: LightClient> Display for IbcEvent<L> {
 
 #[allow(non_camel_case_types, non_upper_case_globals)]
 #[derive(
-    DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, derive_more::Display,
+    DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, parse_display::Display,
 )]
 #[serde(bound(serialize = "", deserialize = ""))]
-#[display(fmt = "Command::{}")]
+#[display("Command::{}")]
 pub enum Command<L: LightClient> {
-    #[display(fmt = "UpdateClient({client_id}, {counterparty_client_id})")]
+    #[display("UpdateClient({client_id}, {counterparty_client_id})")]
     UpdateClient {
         client_id: L::ClientId,
         counterparty_client_id: <L::Counterparty as LightClientBase>::ClientId,
