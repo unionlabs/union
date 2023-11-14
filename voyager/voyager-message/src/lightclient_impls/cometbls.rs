@@ -45,7 +45,7 @@ use unionlabs::{
         Chain, ChainOf, ClientState, ClientStateOf, ConsensusStateOf, HeaderOf, HeightOf,
         LightClientBase,
     },
-    EthAbi, IntoEthAbi, IntoProto, MaybeRecoverableError, Proto,
+    IntoEthAbi, MaybeRecoverableError, Proto,
 };
 
 use crate::{
@@ -704,13 +704,15 @@ async fn do_msg<C, L>(evm: &Evm<C>, msg: Msg<L>) -> Result<(), TxSubmitError>
 where
     C: ChainSpec,
     L: LightClient<HostChain = Evm<C>, Config = CometblsConfig>,
-    ClientStateOf<<L::Counterparty as LightClientBase>::HostChain>: Proto + IntoProto,
-    ConsensusStateOf<<L::Counterparty as LightClientBase>::HostChain>: Proto + IntoProto,
-    HeaderOf<<L::Counterparty as LightClientBase>::HostChain>: EthAbi + IntoEthAbi,
-    // not sure why these bounds are required
+    ClientStateOf<<L::Counterparty as LightClientBase>::HostChain>: IntoEthAbi,
+    ConsensusStateOf<<L::Counterparty as LightClientBase>::HostChain>: IntoEthAbi,
+    HeaderOf<<L::Counterparty as LightClientBase>::HostChain>: IntoEthAbi,
+// not sure why these bounds are required
     <<L::BaseCounterparty as LightClientBase>::HostChain as Chain>::SelfClientState: Proto,
     <<L::BaseCounterparty as LightClientBase>::HostChain as Chain>::SelfConsensusState: Proto,
-    <<L::BaseCounterparty as LightClientBase>::HostChain as Chain>::Header: EthAbi,
+    <<L::BaseCounterparty as LightClientBase>::HostChain as Chain>::Header: IntoEthAbi,
+    <<<L as LightClient>::BaseCounterparty as LightClientBase>::HostChain as unionlabs::traits::Chain>::SelfClientState: IntoEthAbi,
+    <<<L as LightClient>::BaseCounterparty as LightClientBase>::HostChain as unionlabs::traits::Chain>::SelfConsensusState: IntoEthAbi,
 {
     evm.ibc_handlers
         .with(|ibc_handler| async move {
@@ -795,12 +797,14 @@ where
                         CreateClientCall {
                             msg: contracts::shared_types::MsgCreateClient {
                                 client_type: data.config.client_type,
-                                client_state_bytes: data.msg.client_state.into_proto_bytes().into(),
-                                consensus_state_bytes: data
-                                    .msg
-                                    .consensus_state
-                                    .into_proto_bytes()
-                                    .into(),
+                                client_state_bytes: encode_dynamic_singleton_tuple(
+                                    data.msg.client_state.into_eth_abi(),
+                                )
+                                .into(),
+                                consensus_state_bytes: encode_dynamic_singleton_tuple(
+                                    data.msg.consensus_state.into_eth_abi(),
+                                )
+                                .into(),
                             },
                         },
                     )

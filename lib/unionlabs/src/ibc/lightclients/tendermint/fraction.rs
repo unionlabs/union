@@ -1,5 +1,12 @@
 use serde::{Deserialize, Serialize};
 
+#[cfg_attr(
+    feature = "ethabi",
+    derive(
+        ethers_contract_derive::EthAbiType,
+        ethers_contract_derive::EthAbiCodec
+    )
+)]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Fraction {
     pub numerator: u64,

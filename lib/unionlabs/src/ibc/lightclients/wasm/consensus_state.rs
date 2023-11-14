@@ -3,12 +3,19 @@ use std::fmt::Debug;
 use prost::Message;
 use serde::{Deserialize, Serialize};
 
-use crate::{IntoProto, Proto, TryFromProto, TryFromProtoBytesError, TryFromProtoErrorOf, TypeUrl};
+use crate::{
+    EthAbi, IntoProto, Proto, TryFromProto, TryFromProtoBytesError, TryFromProtoErrorOf, TypeUrl,
+};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ConsensusState<Data> {
     pub data: Data,
     pub timestamp: u64,
+}
+
+#[cfg(feature = "ethabi")]
+impl<Data: EthAbi> EthAbi for ConsensusState<Data> {
+    type EthAbi = Data::EthAbi;
 }
 
 impl<Data: IntoProto> From<ConsensusState<Data>>

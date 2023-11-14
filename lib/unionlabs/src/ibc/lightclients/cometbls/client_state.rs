@@ -2,10 +2,18 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     errors::{required, MissingField},
-    ibc::core::client::height::Height,
-    Proto, TypeUrl,
+    google::protobuf::any::Any,
+    ibc::{core::client::height::Height, lightclients::wasm},
+    EthAbi, Proto, TypeUrl,
 };
 
+#[cfg_attr(
+    feature = "ethabi",
+    derive(
+        ethers_contract_derive::EthAbiType,
+        ethers_contract_derive::EthAbiCodec
+    )
+)]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ClientState {
     pub chain_id: String,
@@ -14,6 +22,12 @@ pub struct ClientState {
     pub max_clock_drift: u64,
     pub frozen_height: Height,
     pub latest_height: Height,
+}
+
+impl From<Any<wasm::client_state::ClientState<ClientState>>> for ClientState {
+    fn from(value: Any<wasm::client_state::ClientState<ClientState>>) -> Self {
+        value.0.data
+    }
 }
 
 impl From<ClientState> for protos::union::ibc::lightclients::cometbls::v1::ClientState {
@@ -27,6 +41,11 @@ impl From<ClientState> for protos::union::ibc::lightclients::cometbls::v1::Clien
             latest_height: Some(value.latest_height.into()),
         }
     }
+}
+
+#[cfg(feature = "ethabi")]
+impl EthAbi for ClientState {
+    type EthAbi = ClientState;
 }
 
 impl TypeUrl for protos::union::ibc::lightclients::cometbls::v1::ClientState {

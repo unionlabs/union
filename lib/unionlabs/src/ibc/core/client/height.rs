@@ -8,7 +8,6 @@ use serde::{Deserialize, Serialize};
 use ssz::{Decode, Encode};
 use tree_hash::TreeHash;
 
-#[derive(Clone, Copy, PartialEq, Encode, Decode, TreeHash, Serialize, Deserialize)]
 #[cfg_attr(
     feature = "ethabi",
     derive(
@@ -16,6 +15,7 @@ use tree_hash::TreeHash;
         ethers_contract_derive::EthAbiCodec
     )
 )]
+#[derive(Clone, Copy, PartialEq, Encode, Decode, TreeHash, Serialize, Deserialize)]
 pub struct Height {
     // REVIEW: Why default?
     #[serde(default)]

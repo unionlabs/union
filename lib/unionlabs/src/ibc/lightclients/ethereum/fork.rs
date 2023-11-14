@@ -3,6 +3,13 @@ use ssz::{Decode, Encode};
 
 use crate::{errors::InvalidLength, ethereum::Version, Proto, TypeUrl};
 
+#[cfg_attr(
+    feature = "ethabi",
+    derive(
+        ethers_contract_derive::EthAbiType,
+        ethers_contract_derive::EthAbiCodec
+    )
+)]
 #[derive(Debug, Clone, PartialEq, Encode, Decode, Serialize, Deserialize)]
 pub struct Fork {
     pub version: Version,

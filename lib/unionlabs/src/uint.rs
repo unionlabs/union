@@ -13,6 +13,13 @@ use crate::{
 };
 
 /// [`primitive_types::U256`] can't roundtrip through string conversion since it parses from hex but displays as decimal.
+#[cfg_attr(
+    feature = "ethabi",
+    derive(
+        ethers_contract_derive::EthAbiType,
+        ethers_contract_derive::EthAbiCodec
+    )
+)]
 #[derive(
     Clone,
     Copy,

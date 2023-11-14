@@ -211,7 +211,10 @@ impl<C: ChainSpec> Chain for Evm<C> {
                         numerator: 1,
                         denominator: 3,
                     },
-                    frozen_height: None,
+                    frozen_height: Height {
+                        revision_number: 0,
+                        revision_height: 0,
+                    },
                     counterparty_commitment_slot: U256::from(0),
                 },
                 code_id: H256::default(),

@@ -4,6 +4,13 @@ use serde::{Deserialize, Serialize};
 
 use crate::{errors::InvalidLength, hash::H256, Proto, TypeUrl};
 
+#[cfg_attr(
+    feature = "ethabi",
+    derive(
+        ethers_contract_derive::EthAbiType,
+        ethers_contract_derive::EthAbiCodec
+    )
+)]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct MerkleRoot {
     pub hash: H256,

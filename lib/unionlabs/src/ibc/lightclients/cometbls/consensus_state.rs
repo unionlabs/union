@@ -2,16 +2,30 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     errors::{required, InvalidLength, MissingField},
+    google::protobuf::any::Any,
     hash::H256,
-    ibc::core::commitment::merkle_root::MerkleRoot,
-    Proto, TryFromProtoErrorOf, TypeUrl,
+    ibc::{core::commitment::merkle_root::MerkleRoot, lightclients::wasm},
+    EthAbi, Proto, TryFromProtoErrorOf, TypeUrl,
 };
 
+#[cfg_attr(
+    feature = "ethabi",
+    derive(
+        ethers_contract_derive::EthAbiType,
+        ethers_contract_derive::EthAbiCodec
+    )
+)]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ConsensusState {
     pub timestamp: u64,
     pub root: MerkleRoot,
     pub next_validators_hash: H256,
+}
+
+impl From<Any<wasm::consensus_state::ConsensusState<ConsensusState>>> for ConsensusState {
+    fn from(value: Any<wasm::consensus_state::ConsensusState<ConsensusState>>) -> Self {
+        value.0.data
+    }
 }
 
 #[derive(Debug)]
@@ -38,6 +52,11 @@ impl TryFrom<protos::union::ibc::lightclients::cometbls::v1::ConsensusState> for
                 .map_err(TryFromConsensusStateError::NextValidatorsHash)?,
         })
     }
+}
+
+#[cfg(feature = "ethabi")]
+impl EthAbi for ConsensusState {
+    type EthAbi = ConsensusState;
 }
 
 impl TypeUrl for protos::union::ibc::lightclients::cometbls::v1::ConsensusState {

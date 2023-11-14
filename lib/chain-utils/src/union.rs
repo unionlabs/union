@@ -9,8 +9,8 @@ use sha2::Digest;
 use tendermint_rpc::{query::Query, Client, Order, WebSocketClient, WebSocketClientUrl};
 use unionlabs::{
     events::{IbcEvent, TryFromTendermintEventError, WriteAcknowledgement},
-    hash::H256,
     google::protobuf::any::Any,
+    hash::H256,
     ibc::{
         core::{client::height::Height, commitment::merkle_root::MerkleRoot},
         lightclients::{cometbls, wasm},
