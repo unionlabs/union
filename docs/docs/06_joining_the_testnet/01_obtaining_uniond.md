@@ -10,7 +10,7 @@ This guide assumes you have [Docker](https://www.docker.com/get-started/) correc
 
 ## Getting the Docker Image
 
-To get the `uniond` image, you can visit [our container on the GitHub Container Registry](https://github.com/unionlabs/union/pkgs/container/uniond), or run the following command:
+To get the `uniond` image, you can visit [our container on the GitHub Container Registry](https://github.com/orgs/unionlabs/packages/container/package/uniond), or run the following command:
 
 ```sh
 export UNIOND_VERSION='v0.14.0'
