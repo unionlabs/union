@@ -3,7 +3,7 @@ use std::fmt::Debug;
 use prost::Message;
 use serde::{Deserialize, Serialize};
 
-use crate::{IntoProto, Proto, TryFromProto, TryFromProtoBytesError, TryFromProtoErrorOf, TypeUrl};
+use crate::{encoding::Decode, IntoProto, Proto, TypeUrl};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ConsensusState<Data> {
@@ -24,7 +24,7 @@ impl TypeUrl for protos::ibc::lightclients::wasm::v1::ConsensusState {
     const TYPE_URL: &'static str = "/ibc.lightclients.wasm.v1.ConsensusState";
 }
 
-impl<Data: Proto> Proto for ConsensusState<Data> {
+impl<Data> Proto for ConsensusState<Data> {
     type Proto = protos::ibc::lightclients::wasm::v1::ConsensusState;
 }
 
@@ -36,17 +36,15 @@ pub enum TryFromWasmConsensusStateError<Err> {
 
 impl<Data> TryFrom<protos::ibc::lightclients::wasm::v1::ConsensusState> for ConsensusState<Data>
 where
-    Data: TryFromProto,
-    <Data as Proto>::Proto: prost::Message + Default,
-    TryFromProtoErrorOf<Data>: Debug,
+    Data: Decode<crate::encoding::Proto>,
 {
-    type Error = TryFromWasmConsensusStateError<TryFromProtoBytesError<TryFromProtoErrorOf<Data>>>;
+    type Error = TryFromWasmConsensusStateError<Data::Error>;
 
     fn try_from(
         value: protos::ibc::lightclients::wasm::v1::ConsensusState,
     ) -> Result<Self, Self::Error> {
         Ok(Self {
-            data: Data::try_from_proto_bytes(&value.data)
+            data: Data::decode(&value.data)
                 .map_err(TryFromWasmConsensusStateError::TryFromProto)?,
         })
     }

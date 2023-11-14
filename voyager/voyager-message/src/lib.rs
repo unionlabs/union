@@ -5,30 +5,36 @@ use std::{
     collections::VecDeque,
     fmt::{Debug, Display},
     future::Future,
+    marker::PhantomData,
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
+use chain_utils::{
+    evm::Evm,
+    union::{broadcast_tx_commit, BroadcastTxCommitError, CosmosSdkChain, Union},
+};
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use futures::{future::BoxFuture, FutureExt};
-use lightclient::{
-    cometbls::{CometblsMainnet, CometblsMinimal},
-    ethereum::{EthereumMainnet, EthereumMinimal},
-};
 use serde::{Deserialize, Serialize};
 use unionlabs::{
-    proof::{
-        AcknowledgementPath, ChannelEndPath, ClientConsensusStatePath, ClientStatePath,
-        CommitmentPath, ConnectionPath, IbcPath,
+    encoding::Proto,
+    ethereum::config::{Mainnet, Minimal},
+    google::protobuf::any::{mk_any, Any},
+    hash::H256,
+    ibc::{core::client::height::IsHeight, lightclients::wasm},
+    proof::{self},
+    traits::{
+        Chain, ChainIdOf, ClientIdOf, ClientState, ClientStateOf, ConsensusStateOf, HeaderOf,
+        HeightOf,
     },
-    traits::{Chain, ChainIdOf, ChainOf, LightClientBase},
-    MaybeRecoverableError,
+    IntoProto, MaybeRecoverableError, TypeUrl,
 };
 
 use crate::{
     aggregate::{Aggregate, AnyAggregate},
-    data::{AnyData, Data, LightClientSpecificData},
+    data::{AnyData, Data},
     event::{AnyEvent, Event},
-    fetch::{AnyFetch, Fetch, FetchStateProof, FetchUpdateHeaders, LightClientSpecificFetch},
+    fetch::{AnyFetch, DoFetch, Fetch, FetchUpdateHeaders},
     msg::{AnyMsg, Msg},
     wait::{AnyWait, Wait},
 };
@@ -43,49 +49,39 @@ pub mod msg;
 pub mod wait;
 
 // TODO: Rename this module to something better, `lightclient` clashes with the workspace crate (could also rename the crate)
-pub mod lightclient_impls;
+pub mod chain_impls;
 
-pub trait LightClient: LightClientBase<Counterparty = Self::BaseCounterparty> {
-    // https://github.com/rust-lang/rust/issues/20671
-    type BaseCounterparty: LightClient<BaseCounterparty = Self, Counterparty = Self>;
+pub trait RelayerMsgDatagram =
+    Debug + Display + Clone + PartialEq + Serialize + for<'de> Deserialize<'de> + 'static;
 
-    type Data: Debug
-        + Display
-        + Clone
-        + PartialEq
-        + Serialize
-        + for<'de> Deserialize<'de>
-        + Into<LightClientSpecificData<Self>>;
-    type Fetch: Debug
-        + Display
-        + Clone
-        + PartialEq
-        + Serialize
-        + for<'de> Deserialize<'de>
-        + Into<LightClientSpecificFetch<Self>>;
-    type Aggregate: Debug
-        + Display
-        + Clone
-        + PartialEq
-        + Serialize
-        + for<'de> Deserialize<'de>
-        // + Into<LightClientSpecificAggregate<Self>>
-        + DoAggregate<Self>;
+pub trait ChainExt: Chain {
+    type Data<Tr: ChainExt>: RelayerMsgDatagram;
+    type Fetch<Tr: ChainExt>: RelayerMsgDatagram;
+    type Aggregate<Tr: ChainExt>: RelayerMsgDatagram;
 
     /// Error type for [`Self::msg`].
-    type MsgError: MaybeRecoverableError;
+    type MsgError: Debug + MaybeRecoverableError;
 
-    fn proof(&self, msg: FetchStateProof<Self>) -> RelayerMsg;
+    /// The config required to construct this light client.
+    type Config: Debug + Clone + PartialEq + Serialize + for<'de> Deserialize<'de>;
 
-    fn msg(&self, msg: Msg<Self>) -> impl Future<Output = Result<(), Self::MsgError>> + '_;
+    // // i hate this
+    // fn encode_client_state_for_counterparty<Tr: ChainExt>(cs: Tr::SelfClientState) -> Vec<u8>
+    // where
+    //     Tr::SelfClientState: Encode<Self::IbcStateEncoding>;
+    // fn encode_consensus_state_for_counterparty<Tr: ChainExt>(cs: Tr::SelfConsensusState) -> Vec<u8>
+    // where
+    //     Tr::SelfConsensusState: Encode<Self::IbcStateEncoding>;
 
-    fn do_fetch(&self, msg: Self::Fetch) -> impl Future<Output = Vec<RelayerMsg>> + '_;
-
-    // Should (eventually) resolve to UpdateClientData
-    fn generate_counterparty_updates(
+    fn do_fetch<Tr: ChainExt>(
         &self,
-        update_info: FetchUpdateHeaders<Self>,
-    ) -> Vec<RelayerMsg>;
+        msg: Self::Fetch<Tr>,
+    ) -> impl Future<Output = Vec<RelayerMsg>> + '_
+    where
+        Self::Fetch<Tr>: DoFetch<Self>,
+    {
+        DoFetch::do_fetch(self, msg)
+    }
 }
 
 pub trait IntoRelayerMsg {
@@ -137,8 +133,8 @@ pub enum RelayerMsg {
     },
 }
 
-pub trait GetLc<L: LightClient> {
-    fn get_lc(&self, chain_id: &ChainIdOf<L>) -> L;
+pub trait GetChain<Hc: ChainExt> {
+    fn get_chain(&self, chain_id: &ChainIdOf<Hc>) -> Hc;
 }
 
 impl RelayerMsg {
@@ -147,14 +143,9 @@ impl RelayerMsg {
         self,
         g: &G,
         depth: usize,
-    ) -> BoxFuture<'_, Result<Vec<RelayerMsg>, HandleMsgError>>
+    ) -> BoxFuture<'_, Result<Vec<RelayerMsg>, Box<dyn std::error::Error>>>
     where
-        G: Send
-            + Sync
-            + GetLc<EthereumMinimal>
-            + GetLc<EthereumMainnet>
-            + GetLc<CometblsMinimal>
-            + GetLc<CometblsMainnet>,
+        G: Send + Sync + GetChain<Evm<Mainnet>> + GetChain<Evm<Minimal>> + GetChain<Wasm<Union>>,
     {
         tracing::info!(
             depth,
@@ -165,10 +156,10 @@ impl RelayerMsg {
         macro_rules! any_lc {
             (|$msg:ident| $expr:expr) => {
                 match $msg {
-                    AnyLightClientIdentified::EthereumMainnet($msg) => $expr,
-                    AnyLightClientIdentified::EthereumMinimal($msg) => $expr,
-                    AnyLightClientIdentified::CometblsMainnet($msg) => $expr,
-                    AnyLightClientIdentified::CometblsMinimal($msg) => $expr,
+                    AnyLightClientIdentified::EvmMainnetOnUnion($msg) => $expr,
+                    AnyLightClientIdentified::UnionOnEvmMainnet($msg) => $expr,
+                    AnyLightClientIdentified::EvmMinimalOnUnion($msg) => $expr,
+                    AnyLightClientIdentified::UnionOnEvmMinimal($msg) => $expr,
                 }
             };
         }
@@ -176,7 +167,7 @@ impl RelayerMsg {
         async move {
             match self {
                 RelayerMsg::Event(event) => any_lc! {
-                    |event| Ok(event.data.handle(g.get_lc(&event.chain_id)))
+                    |event| Ok(event.data.handle(g.get_chain(&event.chain_id)))
                 },
                 RelayerMsg::Data(data) => {
                     tracing::error!(
@@ -187,29 +178,22 @@ impl RelayerMsg {
                     Ok([].into())
                 }
                 RelayerMsg::Fetch(fetch) => any_lc! {
-                    |fetch| Ok(fetch.data.handle(g.get_lc(&fetch.chain_id)).await)
+                    |fetch| Ok(fetch.data.handle(g.get_chain(&fetch.chain_id)).await)
                 },
                 RelayerMsg::Msg(msg) => {
-                        // NOTE: `Msg`s don't requeue any `RelayerMsg`s; they are side-effect only.
+                    // NOTE: `Msg`s don't requeue any `RelayerMsg`s; they are side-effect only.
                     match msg {
-                        AnyLightClientIdentified::EthereumMainnet(msg) => {
-                            GetLc::<EthereumMainnet>::get_lc(g, &msg.chain_id).msg(msg.data).await.map_err(|e| AnyLcError::EthereumMainnet(LcError::Msg(e)))?;
-                        }
-                        AnyLightClientIdentified::EthereumMinimal(msg) => {
-                            GetLc::<EthereumMinimal>::get_lc(g, &msg.chain_id).msg(msg.data).await.map_err(|e| AnyLcError::EthereumMinimal(LcError::Msg(e)))?;
-                        }
-                        AnyLightClientIdentified::CometblsMainnet(msg) => {
-                            GetLc::<CometblsMainnet>::get_lc(g, &msg.chain_id).msg(msg.data).await.map_err(|e| AnyLcError::CometblsMainnet(LcError::Msg(e)))?;
-                        }
-                        AnyLightClientIdentified::CometblsMinimal(msg) => {
-                            GetLc::<CometblsMinimal>::get_lc(g, &msg.chain_id).msg(msg.data).await.map_err(|e| AnyLcError::CometblsMinimal(LcError::Msg(e)))?;
-                        }
-                    };
+  AnyLightClientIdentified::EvmMainnetOnUnion(msg) => DoMsg::msg(&GetChain::<Wasm<Union>>::get_chain(g, &msg.chain_id),msg.data).await?,
+  AnyLightClientIdentified::EvmMinimalOnUnion(msg) => DoMsg::msg(&GetChain::<Wasm<Union>>::get_chain(g, &msg.chain_id),msg.data).await?,
+  AnyLightClientIdentified::UnionOnEvmMainnet(msg) => DoMsg::msg(&GetChain::<Evm<Mainnet>>::get_chain(g, &msg.chain_id),msg.data).await?,
+  AnyLightClientIdentified::UnionOnEvmMinimal(msg) => DoMsg::msg(&GetChain::<Evm<Minimal>>::get_chain(g, &msg.chain_id),msg.data).await?,
+
+  };
 
                     Ok([].into())
                 },
                 RelayerMsg::Wait(wait) => any_lc! {
-                    |wait| Ok(wait.data.handle(g.get_lc(&wait.chain_id)).await)
+                    |wait| Ok(wait.data.handle(g.get_chain(&wait.chain_id)).await)
                 },
 
                 RelayerMsg::DeferUntil { point: DeferPoint::Relative, seconds } =>
@@ -305,16 +289,16 @@ impl RelayerMsg {
                         // queue is empty, handle msg
 
                         let res = match receiver {
-                            AnyLightClientIdentified::EthereumMainnet(msg) => {
+                            AnyLightClientIdentified::EvmMainnetOnUnion(msg) => {
                                 msg.handle(data)
                             }
-                            AnyLightClientIdentified::EthereumMinimal(msg) => {
+                            AnyLightClientIdentified::EvmMinimalOnUnion(msg) => {
                                 msg.handle(data)
                             }
-                            AnyLightClientIdentified::CometblsMainnet(msg) => {
+                            AnyLightClientIdentified::UnionOnEvmMainnet(msg) => {
                                 msg.handle(data)
                             }
-                            AnyLightClientIdentified::CometblsMinimal(msg) => {
+                            AnyLightClientIdentified::UnionOnEvmMinimal(msg) => {
                                 msg.handle(data)
                             }
                         };
@@ -332,29 +316,27 @@ impl RelayerMsg {
     }
 }
 
-#[derive(Debug, thiserror::Error)]
-pub enum HandleMsgError {
-    #[error(transparent)]
-    Lc(#[from] AnyLcError),
-}
+// #[derive(Debug, thiserror::Error)]
+// pub enum HandleMsgError {
+//     #[error(transparent)]
+//     Lc(#[from] AnyLightClientIdentified<AnyLcError>),
+// }
 
-enum_variants_conversions! {
-    #[derive(Debug, thiserror::Error)]
-    pub enum AnyLcError {
-        // The 08-wasm client tracking the state of Evm<Mainnet>.
-        #[error(transparent)]
-        EthereumMainnet(LcError<EthereumMainnet>),
-        // The 08-wasm client tracking the state of Evm<Minimal>.
-        #[error(transparent)]
-        EthereumMinimal(LcError<EthereumMinimal>),
-        // The solidity client on Evm<Mainnet> tracking the state of Union.
-        #[error(transparent)]
-        CometblsMainnet(LcError<CometblsMainnet>),
-        // The solidity client on Evm<Minimal> tracking the state of Union.
-        #[error(transparent)]
-        CometblsMinimal(LcError<CometblsMinimal>),
-    }
-}
+// pub enum AnyLcError {}
+// impl AnyLightClient for AnyLcError {
+//     type Inner<Hc: ChainExt, Tr: ChainExt> = LcError<Hc, Tr>;
+// }
+
+// pub enum AnyLcError {
+//     #[error(transparent)]
+//     EthereumMainnet(identified!(LcError<Wasm<Union>, Evm<Mainnet>>)),
+//     #[error(transparent)]
+//     CometblsMainnet(identified!(LcError<Evm<Mainnet>, Wasm<Union>>)),
+//     #[error(transparent)]
+//     EthereumMinimal(identified!(LcError<Wasm<Union>, Evm<Minimal>>)),
+//     #[error(transparent)]
+//     CometblsMinimal(identified!(LcError<Evm<Minimal>, Wasm<Union>>)),
+// }
 
 impl std::fmt::Display for RelayerMsg {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -422,7 +404,7 @@ macro_rules! any_enum {
     (
         $(#[doc = $outer_doc:literal])*
         #[any = $Any:ident]
-        pub enum $Enum:ident<L: LightClient> {
+        pub enum $Enum:ident<Hc: ChainExt, Tr: ChainExt> {
             $(
                 $(#[doc = $doc:literal])*
                 $Variant:ident$((
@@ -436,7 +418,7 @@ macro_rules! any_enum {
         #[serde(bound(serialize = "", deserialize = ""))]
         $(#[doc = $outer_doc])*
         #[allow(clippy::large_enum_variant)]
-        pub enum $Enum<L: LightClient> {
+        pub enum $Enum<Hc: ChainExt, Tr: ChainExt> {
             $(
                 $(#[doc = $doc])*
                 $Variant$((
@@ -448,15 +430,15 @@ macro_rules! any_enum {
 
         pub enum $Any {}
         impl crate::AnyLightClient for $Any {
-            type Inner<L: LightClient> = $Enum<L>;
+            type Inner<Hc: ChainExt, Tr: ChainExt> = $Enum<Hc, Tr>;
         }
 
         $(
             $(
-                impl<L: LightClient> TryFrom<$Enum<L>> for $VariantInner {
-                    type Error = $Enum<L>;
+                impl<Hc: ChainExt, Tr: ChainExt> TryFrom<$Enum<Hc, Tr>> for $VariantInner {
+                    type Error = $Enum<Hc, Tr>;
 
-                    fn try_from(value: $Enum<L>) -> Result<Self, Self::Error> {
+                    fn try_from(value: $Enum<Hc, Tr>) -> Result<Self, Self::Error> {
                         match value {
                             $Enum::$Variant(t) => Ok(t),
                             _ => Err(value),
@@ -464,7 +446,7 @@ macro_rules! any_enum {
                     }
                 }
 
-                impl<L: LightClient> From<$VariantInner> for $Enum<L> {
+                impl<Hc: ChainExt, Tr: ChainExt> From<$VariantInner> for $Enum<Hc, Tr> {
                     fn from(value: $VariantInner) -> Self {
                         Self::$Variant(value)
                     }
@@ -476,33 +458,35 @@ macro_rules! any_enum {
 
 pub(crate) use any_enum;
 
-pub trait AnyPath<L: LightClient> {
-    type Inner<P: IbcPath<L::HostChain, ChainOf<L::Counterparty>>>;
-}
+// pub trait AnyPath<
+//     Hc: ChainExt,
+//     Tr: ChainExt + onnectTo<Hc>,
+// >
+// {
+//     type Inner<P: IbcPath<Hc, Tr>>;
+// }
 
-pub enum Path2<L: LightClient, P: AnyPath<L>> {
-    ClientStatePath(P::Inner<ClientStatePath<<L::HostChain as Chain>::ClientId>>),
-    ClientConsensusStatePath(
-        P::Inner<
-            ClientConsensusStatePath<
-                <L::HostChain as Chain>::ClientId,
-                <ChainOf<L::Counterparty> as Chain>::Height,
-            >,
-        >,
-    ),
-    ConnectionPath(P::Inner<ConnectionPath>),
-    ChannelEndPath(P::Inner<ChannelEndPath>),
-    CommitmentPath(P::Inner<CommitmentPath>),
-    AcknowledgementPath(P::Inner<AcknowledgementPath>),
-}
+// pub enum Path2<
+//     Hc: ChainExt,
+//     Tr: ChainExt,
+//     P: AnyPath<Hc, Tr>,
+// > {
+//     ClientStatePath(P::Inner<ClientStatePath<<Hc as Chain>::ClientId>>),
+//     ClientConsensusStatePath(
+//         P::Inner<
+//             ClientConsensusStatePath<<Hc as Chain>::ClientId, <Tr as Chain>::Height>,
+//         >,
+//     ),
+//     ConnectionPath(P::Inner<ConnectionPath>),
+//     ChannelEndPath(P::Inner<ChannelEndPath>),
+//     CommitmentPath(P::Inner<CommitmentPath>),
+//     AcknowledgementPath(P::Inner<AcknowledgementPath>),
+// }
 
-pub type PathOf<L> = unionlabs::proof::Path<
-    <<L as LightClientBase>::HostChain as Chain>::ClientId,
-    <ChainOf<<L as LightClientBase>::Counterparty> as Chain>::Height,
->;
+pub type PathOf<Hc, Tr> = proof::Path<ClientIdOf<Hc>, HeightOf<Tr>>;
 
 pub trait AnyLightClient {
-    type Inner<L: LightClient>: Debug
+    type Inner<Hc: ChainExt, Tr: ChainExt>: Debug
         + Display
         + Clone
         + PartialEq
@@ -510,111 +494,37 @@ pub trait AnyLightClient {
         + for<'de> Deserialize<'de>;
 }
 
+pub type InnerOf<T, Hc, Tr> = <T as AnyLightClient>::Inner<Hc, Tr>;
+
 #[derive(
-    DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, derive_more::Display,
+    DebugNoBound,
+    CloneNoBound,
+    PartialEqNoBound,
+    Serialize,
+    Deserialize,
+    derive_more::Display,
+    enumorph::Enumorph,
 )]
 #[serde(bound(serialize = "", deserialize = ""))]
 #[allow(clippy::large_enum_variant)]
 pub enum AnyLightClientIdentified<T: AnyLightClient> {
     // The 08-wasm client tracking the state of Evm<Mainnet>.
-    #[display(fmt = "EthereumMainnet({}, {})", "_0.chain_id", "_0.data")]
-    EthereumMainnet(Identified<EthereumMainnet, InnerOf<T, EthereumMainnet>>),
+    #[display(fmt = "EvmMainnetOnUnion({}, {})", "_0.chain_id", "_0.data")]
+    EvmMainnetOnUnion(Identified<Wasm<Union>, Evm<Mainnet>, InnerOf<T, Wasm<Union>, Evm<Mainnet>>>),
+    // The solidity client on Evm<Mainnet> tracking the state of Wasm<Union>.
+    #[display(fmt = "UnionOnEvmMainnet({}, {})", "_0.chain_id", "_0.data")]
+    UnionOnEvmMainnet(Identified<Evm<Mainnet>, Wasm<Union>, InnerOf<T, Evm<Mainnet>, Wasm<Union>>>),
+
     // The 08-wasm client tracking the state of Evm<Minimal>.
-    #[display(fmt = "EthereumMinimal({}, {})", "_0.chain_id", "_0.data")]
-    EthereumMinimal(Identified<EthereumMinimal, InnerOf<T, EthereumMinimal>>),
-    // The solidity client on Evm<Mainnet> tracking the state of Union.
-    #[display(fmt = "CometblsMainnet({}, {})", "_0.chain_id", "_0.data")]
-    CometblsMainnet(Identified<CometblsMainnet, InnerOf<T, CometblsMainnet>>),
-    // The solidity client on Evm<Minimal> tracking the state of Union.
-    #[display(fmt = "CometblsMinimal({}, {})", "_0.chain_id", "_0.data")]
-    CometblsMinimal(Identified<CometblsMinimal, InnerOf<T, CometblsMinimal>>),
-}
-
-impl<T: AnyLightClient> From<Identified<EthereumMainnet, InnerOf<T, EthereumMainnet>>>
-    for AnyLightClientIdentified<T>
-{
-    fn from(v: Identified<EthereumMainnet, InnerOf<T, EthereumMainnet>>) -> Self {
-        Self::EthereumMainnet(v)
-    }
-}
-
-impl<T: AnyLightClient> TryFrom<AnyLightClientIdentified<T>>
-    for Identified<EthereumMainnet, InnerOf<T, EthereumMainnet>>
-{
-    type Error = AnyLightClientIdentified<T>;
-    fn try_from(v: AnyLightClientIdentified<T>) -> Result<Self, Self::Error> {
-        if let AnyLightClientIdentified::EthereumMainnet(v) = v {
-            Ok(v)
-        } else {
-            Err(v)
-        }
-    }
-}
-
-impl<T: AnyLightClient> From<Identified<EthereumMinimal, InnerOf<T, EthereumMinimal>>>
-    for AnyLightClientIdentified<T>
-{
-    fn from(v: Identified<EthereumMinimal, InnerOf<T, EthereumMinimal>>) -> Self {
-        Self::EthereumMinimal(v)
-    }
-}
-
-impl<T: AnyLightClient> TryFrom<AnyLightClientIdentified<T>>
-    for Identified<EthereumMinimal, InnerOf<T, EthereumMinimal>>
-{
-    type Error = AnyLightClientIdentified<T>;
-    fn try_from(v: AnyLightClientIdentified<T>) -> Result<Self, Self::Error> {
-        if let AnyLightClientIdentified::EthereumMinimal(v) = v {
-            Ok(v)
-        } else {
-            Err(v)
-        }
-    }
-}
-
-impl<T: AnyLightClient> From<Identified<CometblsMainnet, InnerOf<T, CometblsMainnet>>>
-    for AnyLightClientIdentified<T>
-{
-    fn from(v: Identified<CometblsMainnet, InnerOf<T, CometblsMainnet>>) -> Self {
-        Self::CometblsMainnet(v)
-    }
-}
-
-impl<T: AnyLightClient> TryFrom<AnyLightClientIdentified<T>>
-    for Identified<CometblsMainnet, InnerOf<T, CometblsMainnet>>
-{
-    type Error = AnyLightClientIdentified<T>;
-    fn try_from(v: AnyLightClientIdentified<T>) -> Result<Self, Self::Error> {
-        if let AnyLightClientIdentified::CometblsMainnet(v) = v {
-            Ok(v)
-        } else {
-            Err(v)
-        }
-    }
-}
-
-impl<T: AnyLightClient> From<Identified<CometblsMinimal, InnerOf<T, CometblsMinimal>>>
-    for AnyLightClientIdentified<T>
-{
-    fn from(v: Identified<CometblsMinimal, InnerOf<T, CometblsMinimal>>) -> Self {
-        Self::CometblsMinimal(v)
-    }
-}
-
-impl<T: AnyLightClient> TryFrom<AnyLightClientIdentified<T>>
-    for Identified<CometblsMinimal, InnerOf<T, CometblsMinimal>>
-{
-    type Error = AnyLightClientIdentified<T>;
-    fn try_from(v: AnyLightClientIdentified<T>) -> Result<Self, Self::Error> {
-        if let AnyLightClientIdentified::CometblsMinimal(v) = v {
-            Ok(v)
-        } else {
-            Err(v)
-        }
-    }
+    #[display(fmt = "EvmMinimalOnUnion({}, {})", "_0.chain_id", "_0.data")]
+    EvmMinimalOnUnion(Identified<Wasm<Union>, Evm<Minimal>, InnerOf<T, Wasm<Union>, Evm<Minimal>>>),
+    // The solidity client on Evm<Minimal> tracking the state of Wasm<Union>.
+    #[display(fmt = "UnionOnEvmMinimal({}, {})", "_0.chain_id", "_0.data")]
+    UnionOnEvmMinimal(Identified<Evm<Minimal>, Wasm<Union>, InnerOf<T, Evm<Minimal>, Wasm<Union>>>),
 }
 
 #[macro_export]
+// TODO: Replace al luses of this with enumorph
 macro_rules! enum_variants_conversions {
     (
         $(#[$meta:meta])*
@@ -656,45 +566,105 @@ macro_rules! enum_variants_conversions {
 
 #[macro_export]
 macro_rules! identified {
-    ($Ty:ident<$L:ty>) => {
-        $crate::Identified<$L, $Ty<$L>>
+    ($Ty:ident<$Hc:ty, $Tr:ty>) => {
+        $crate::Identified<$Hc, $Tr, $Ty<$Hc, $Tr>>
     };
 }
 
 #[derive(DebugNoBound, thiserror::Error)]
-pub enum LcError<L: LightClient> {
+pub enum LcError<Hc: ChainExt, Tr: ChainExt> {
     #[error(transparent)]
-    Msg(L::MsgError),
+    Msg(Hc::MsgError),
+    __Marker(PhantomData<fn() -> Tr>),
 }
 
-pub type InnerOf<T, L> = <T as AnyLightClient>::Inner<L>;
-
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
 #[serde(bound(
     serialize = "Data: ::serde::Serialize",
     deserialize = "Data: for<'d> Deserialize<'d>"
 ))]
 // TODO: `Data: AnyLightClient`
 // prerequisites: derive macro for AnyLightClient
-pub struct Identified<L: LightClient, Data: Debug + Clone + PartialEq> {
-    pub chain_id: ChainIdOf<L>,
+pub struct Identified<Hc: Chain, Tr, Data> {
+    pub chain_id: ChainIdOf<Hc>,
     pub data: Data,
+    #[serde(skip)]
+    pub __marker: PhantomData<fn() -> Tr>,
 }
 
-impl<L: LightClient, Data: Debug + Clone + PartialEq> Identified<L, Data> {
-    pub fn new(chain_id: ChainIdOf<L>, data: Data) -> Self {
-        Self { chain_id, data }
+impl<Hc: Chain, Tr, Data: PartialEq> PartialEq for Identified<Hc, Tr, Data> {
+    fn eq(&self, other: &Self) -> bool {
+        self.chain_id == other.chain_id && self.data == other.data
     }
 }
 
-pub trait DoAggregate<L>: Sized + Debug + Clone + PartialEq
-where
-    L: LightClient,
+impl<Hc: Chain, Tr, Data: std::error::Error + Debug + Clone + PartialEq> std::error::Error
+    for Identified<Hc, Tr, Data>
 {
-    fn do_aggregate(
-        _: Identified<L, Self>,
-        _: VecDeque<AnyLightClientIdentified<AnyData>>,
-    ) -> Vec<RelayerMsg>;
+}
+
+impl<Hc: Chain, Tr, Data: std::fmt::Display + Debug + Clone + PartialEq> std::fmt::Display
+    for Identified<Hc, Tr, Data>
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "(chain id `{}`): {}", self.chain_id, self.data)
+    }
+}
+
+impl<Hc: Chain, Tr, Data: Debug> Debug for Identified<Hc, Tr, Data> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Identified")
+            .field("chain_id", &self.chain_id)
+            .field("data", &self.data)
+            .finish()
+    }
+}
+
+impl<Hc: Chain, Tr, Data: Clone> Clone for Identified<Hc, Tr, Data> {
+    fn clone(&self) -> Self {
+        Self {
+            chain_id: self.chain_id.clone(),
+            data: self.data.clone(),
+            __marker: PhantomData,
+        }
+    }
+}
+
+impl<Hc: Chain, Tr, Data: Debug + Clone + PartialEq> Identified<Hc, Tr, Data> {
+    pub fn new(chain_id: ChainIdOf<Hc>, data: Data) -> Self {
+        Self {
+            chain_id,
+            data,
+            __marker: PhantomData,
+        }
+    }
+}
+
+pub trait DoAggregate: Sized + Debug + Clone + PartialEq {
+    fn do_aggregate(_: Self, _: VecDeque<AnyLightClientIdentified<AnyData>>) -> Vec<RelayerMsg>;
+}
+
+pub trait DoFetchState<Hc: ChainExt, Tr: ChainExt>: ChainExt {
+    fn state(hc: &Hc, at: Hc::Height, path: PathOf<Hc, Tr>) -> RelayerMsg;
+
+    #[deprecated = "will be removed in favor of an aggregation with state"]
+    fn query_client_state(
+        hc: &Hc,
+        client_id: Hc::ClientId,
+        height: Hc::Height,
+    ) -> impl Future<Output = Hc::StoredClientState<Tr>> + '_;
+}
+
+pub trait DoFetchProof<Hc: ChainExt, Tr: ChainExt>: ChainExt {
+    fn proof(hc: &Hc, at: HeightOf<Hc>, path: PathOf<Hc, Tr>) -> RelayerMsg;
+}
+
+pub trait DoFetchUpdateHeaders<Hc: ChainExt, Tr: ChainExt>: ChainExt {
+    fn fetch_update_headers(hc: &Hc, update_info: FetchUpdateHeaders<Hc, Tr>) -> RelayerMsg;
+}
+
+pub trait DoMsg<Hc: ChainExt, Tr: ChainExt>: ChainExt {
+    fn msg(&self, msg: Msg<Hc, Tr>) -> impl Future<Output = Result<(), Self::MsgError>> + '_;
 }
 
 // helper fns
@@ -721,9 +691,12 @@ pub fn defer_relative(seconds: u64) -> RelayerMsg {
     }
 }
 
-pub fn fetch<L: LightClient>(chain_id: ChainIdOf<L>, t: impl Into<Fetch<L>>) -> RelayerMsg
+pub fn fetch<Hc: ChainExt, Tr: ChainExt>(
+    chain_id: ChainIdOf<Hc>,
+    t: impl Into<Fetch<Hc, Tr>>,
+) -> RelayerMsg
 where
-    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<L>)>,
+    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Hc, Tr>)>,
 {
     RelayerMsg::Fetch(AnyLightClientIdentified::from(Identified::new(
         chain_id,
@@ -731,9 +704,12 @@ where
     )))
 }
 
-pub fn msg<L: LightClient>(chain_id: ChainIdOf<L>, t: impl Into<Msg<L>>) -> RelayerMsg
+pub fn msg<Hc: ChainExt, Tr: ChainExt>(
+    chain_id: ChainIdOf<Hc>,
+    t: impl Into<Msg<Hc, Tr>>,
+) -> RelayerMsg
 where
-    AnyLightClientIdentified<AnyMsg>: From<identified!(Msg<L>)>,
+    AnyLightClientIdentified<AnyMsg>: From<identified!(Msg<Hc, Tr>)>,
 {
     RelayerMsg::Msg(AnyLightClientIdentified::from(Identified::new(
         chain_id,
@@ -741,9 +717,12 @@ where
     )))
 }
 
-pub fn data<L: LightClient>(chain_id: ChainIdOf<L>, t: impl Into<Data<L>>) -> RelayerMsg
+pub fn data<Hc: ChainExt, Tr: ChainExt>(
+    chain_id: ChainIdOf<Hc>,
+    t: impl Into<Data<Hc, Tr>>,
+) -> RelayerMsg
 where
-    AnyLightClientIdentified<AnyData>: From<identified!(Data<L>)>,
+    AnyLightClientIdentified<AnyData>: From<identified!(Data<Hc, Tr>)>,
 {
     RelayerMsg::Data(AnyLightClientIdentified::from(Identified::new(
         chain_id,
@@ -751,9 +730,12 @@ where
     )))
 }
 
-pub fn wait<L: LightClient>(chain_id: ChainIdOf<L>, t: impl Into<Wait<L>>) -> RelayerMsg
+pub fn wait<Hc: ChainExt, Tr: ChainExt>(
+    chain_id: ChainIdOf<Hc>,
+    t: impl Into<Wait<Hc, Tr>>,
+) -> RelayerMsg
 where
-    AnyLightClientIdentified<AnyWait>: From<identified!(Wait<L>)>,
+    AnyLightClientIdentified<AnyWait>: From<identified!(Wait<Hc, Tr>)>,
 {
     RelayerMsg::Wait(AnyLightClientIdentified::from(Identified::new(
         chain_id,
@@ -761,9 +743,12 @@ where
     )))
 }
 
-pub fn event<L: LightClient>(chain_id: ChainIdOf<L>, t: impl Into<Event<L>>) -> RelayerMsg
+pub fn event<Hc: ChainExt, Tr: ChainExt>(
+    chain_id: ChainIdOf<Hc>,
+    t: impl Into<Event<Hc, Tr>>,
+) -> RelayerMsg
 where
-    AnyLightClientIdentified<AnyEvent>: From<identified!(Event<L>)>,
+    AnyLightClientIdentified<AnyEvent>: From<identified!(Event<Hc, Tr>)>,
 {
     RelayerMsg::Event(AnyLightClientIdentified::from(Identified::new(
         chain_id,
@@ -771,12 +756,12 @@ where
     )))
 }
 
-pub fn aggregate<L: LightClient>(
-    chain_id: ChainIdOf<L>,
-    t: impl Into<Aggregate<L>>,
+pub fn aggregate<Hc: ChainExt, Tr: ChainExt>(
+    chain_id: ChainIdOf<Hc>,
+    t: impl Into<Aggregate<Hc, Tr>>,
 ) -> AnyLightClientIdentified<AnyAggregate>
 where
-    AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<L>)>,
+    AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<Hc, Tr>)>,
 {
     AnyLightClientIdentified::from(Identified::new(chain_id, t.into()))
 }
@@ -833,13 +818,11 @@ mod tests {
 
     use std::{collections::VecDeque, fmt::Debug, marker::PhantomData};
 
+    use chain_utils::{evm::Evm, union::Union};
     use hex_literal::hex;
-    use lightclient::{
-        cometbls::{CometblsConfig, CometblsMinimal},
-        ethereum::{EthereumConfig, EthereumMinimal},
-    };
     use serde::{de::DeserializeOwned, Serialize};
     use unionlabs::{
+        ethereum::config::Minimal,
         events::{ConnectionOpenAck, ConnectionOpenTry},
         hash::{H160, H256},
         ibc::core::{
@@ -852,6 +835,7 @@ mod tests {
                 msg_connection_open_try::MsgConnectionOpenTry, version::Version,
             },
         },
+        proof::ConnectionPath,
         uint::U256,
         validated::ValidateT,
         EmptyString, QueryHeight, DELAY_PERIOD,
@@ -860,20 +844,18 @@ mod tests {
     use crate::{
         aggregate,
         aggregate::{Aggregate, AggregateCreateClient, AnyAggregate},
+        chain_impls::evm::EvmConfig,
         data::Data,
         defer_relative, event,
         event::{Event, IbcEvent},
         fetch,
-        fetch::{
-            AnyFetch, Fetch, FetchConnectionEnd, FetchSelfClientState, FetchSelfConsensusState,
-            FetchTrustedClientState,
-        },
+        fetch::{AnyFetch, Fetch, FetchSelfClientState, FetchSelfConsensusState, FetchState},
         msg,
         msg::{
             AnyMsg, Msg, MsgChannelOpenInitData, MsgConnectionOpenInitData,
             MsgConnectionOpenTryData,
         },
-        seq, Identified, RelayerMsg,
+        seq, Identified, RelayerMsg, Wasm, WasmConfig,
     };
 
     macro_rules! parse {
@@ -887,7 +869,7 @@ mod tests {
         let union_chain_id: String = parse!("union-devnet-1");
         let eth_chain_id: U256 = parse!("32382");
 
-        print_json(msg::<EthereumMinimal>(
+        print_json(msg::<Wasm<Union>, Evm<Minimal>>(
             union_chain_id.clone(),
             MsgConnectionOpenInitData {
                 msg: MsgConnectionOpenInit {
@@ -908,7 +890,7 @@ mod tests {
             },
         ));
 
-        print_json(msg::<EthereumMinimal>(
+        print_json(msg::<Wasm<Union>, Evm<Minimal>>(
             union_chain_id.clone(),
             MsgChannelOpenInitData {
                 msg: MsgChannelOpenInit {
@@ -928,7 +910,7 @@ mod tests {
             },
         ));
 
-        print_json(msg::<CometblsMinimal>(
+        print_json(msg::<Evm<Minimal>, Wasm<Union>>(
             eth_chain_id,
             MsgChannelOpenInitData {
                 msg: MsgChannelOpenInit {
@@ -948,7 +930,7 @@ mod tests {
             },
         ));
 
-        print_json(msg::<CometblsMinimal>(
+        print_json(msg::<Evm<Minimal>, Wasm<Union>>(
             eth_chain_id,
             MsgConnectionOpenInitData {
                 msg: MsgConnectionOpenInit {
@@ -969,7 +951,7 @@ mod tests {
             },
         ));
 
-        print_json(event::<CometblsMinimal>(
+        print_json(event::<Evm<Minimal>, Wasm<Union>>(
             eth_chain_id,
             IbcEvent {
                 block_hash: H256([0; 32]),
@@ -986,7 +968,7 @@ mod tests {
         print_json(RelayerMsg::Repeat {
             times: u64::MAX,
             msg: Box::new(seq([
-                event::<CometblsMinimal>(
+                event::<Evm<Minimal>, Wasm<Union>>(
                     eth_chain_id,
                     crate::event::Command::UpdateClient {
                         client_id: parse!("cometbls-0"),
@@ -1000,7 +982,7 @@ mod tests {
         print_json(RelayerMsg::Repeat {
             times: u64::MAX,
             msg: Box::new(seq([
-                event::<EthereumMinimal>(
+                event::<Wasm<Union>, Evm<Minimal>>(
                     union_chain_id.clone(),
                     crate::event::Command::UpdateClient {
                         client_id: parse!("08-wasm-0"),
@@ -1017,58 +999,64 @@ mod tests {
             [
                 RelayerMsg::Aggregate {
                     queue: [
-                        fetch::<EthereumMinimal>(
+                        fetch::<Wasm<Union>, Evm<Minimal>>(
                             union_chain_id.clone(),
                             FetchSelfClientState {
                                 at: QueryHeight::Latest,
+                                __marker: PhantomData,
                             },
                         ),
-                        fetch::<EthereumMinimal>(
+                        fetch::<Wasm<Union>, Evm<Minimal>>(
                             union_chain_id.clone(),
                             FetchSelfConsensusState {
                                 at: QueryHeight::Latest,
+                                __marker: PhantomData,
                             },
-                        )
+                        ),
                     ]
                     .into(),
                     data: [].into_iter().collect(),
-                    receiver: aggregate::<CometblsMinimal>(
+                    receiver: aggregate::<Evm<Minimal>, Wasm<Union>>(
                         eth_chain_id,
                         AggregateCreateClient {
-                            config: CometblsConfig {
+                            config: EvmConfig {
                                 client_type: "cometbls".to_string(),
-                                cometbls_client_address: H160(hex!(
+                                client_address: H160(hex!(
                                     "83428c7db9815f482a39a1715684dcf755021997"
                                 )),
                             },
+                            __marker: PhantomData,
                         },
                     ),
                 },
                 RelayerMsg::Aggregate {
                     queue: [
-                        fetch::<CometblsMinimal>(
+                        fetch::<Evm<Minimal>, Wasm<Union>>(
                             eth_chain_id,
                             FetchSelfClientState {
                                 at: QueryHeight::Latest,
+                                __marker: PhantomData,
                             },
                         ),
-                        fetch::<CometblsMinimal>(
+                        fetch::<Evm<Minimal>, Wasm<Union>>(
                             eth_chain_id,
                             FetchSelfConsensusState {
                                 at: QueryHeight::Latest,
+                                __marker: PhantomData,
                             },
-                        )
+                        ),
                     ]
                     .into(),
                     data: [].into_iter().collect(),
-                    receiver: aggregate::<EthereumMinimal>(
+                    receiver: aggregate::<Wasm<Union>, Evm<Minimal>>(
                         union_chain_id.clone(),
                         AggregateCreateClient {
-                            config: EthereumConfig {
+                            config: WasmConfig {
                                 checksum: H256(hex!(
                                     "78266014ea77f3b785e45a33d1f8d3709444a076b3b38b2aeef265b39ad1e494"
                                 )),
                             },
+                            __marker: PhantomData,
                         },
                     ),
                 },
@@ -1091,11 +1079,14 @@ mod tests {
         //         },
         //     },
         // ))));
-        print_json(fetch::<EthereumMinimal>(
+        print_json(fetch::<Wasm<Union>, Evm<Minimal>>(
             union_chain_id.clone(),
-            FetchConnectionEnd {
+            FetchState {
                 at: parse!("1-103"),
-                connection_id: parse!("connection-1"),
+                path: ConnectionPath {
+                    connection_id: parse!("connection-1"),
+                }
+                .into(),
             },
         ))
     }
@@ -1108,5 +1099,441 @@ mod tests {
         let from_json = serde_json::from_str(&json).unwrap();
 
         assert_eq!(&msg, &from_json, "json roundtrip failed");
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct Wasm<C: Chain>(pub C);
+
+pub trait Wraps<T: CosmosSdkChain + ChainExt>: CosmosSdkChain + ChainExt {
+    fn inner(&self) -> &T;
+}
+
+impl<T: CosmosSdkChain> CosmosSdkChain for Wasm<T> {
+    fn grpc_url(&self) -> String {
+        self.0.grpc_url()
+    }
+
+    fn fee_denom(&self) -> String {
+        self.0.fee_denom()
+    }
+
+    fn tm_client(&self) -> &tendermint_rpc::WebSocketClient {
+        self.0.tm_client()
+    }
+
+    fn signers(&self) -> &chain_utils::Pool<unionlabs::CosmosAccountId> {
+        self.0.signers()
+    }
+
+    // fn decode_client_state<Cs: Decode<Proto>>(bz: &[u8]) -> Cs {
+    //     dbg!(serde_utils::to_hex(bz));
+    //     <Any<wasm::client_state::ClientState<Cs>> as Decode<Proto>>::decode(bz)
+    //         .unwrap()
+    //         .0
+    //         .data
+    // }
+
+    // fn decode_consensus_state<Cs: Decode<Proto>>(bz: &[u8]) -> Cs {
+    //     <Any<wasm::consensus_state::ConsensusState<Cs>> as Decode<Proto>>::decode(bz)
+    //         .unwrap()
+    //         .0
+    //         .data
+    // }
+}
+
+impl<T: CosmosSdkChain + ChainExt> Wraps<T> for T {
+    fn inner(&self) -> &T {
+        self
+    }
+}
+
+impl<T: CosmosSdkChain + ChainExt> Wraps<T> for Wasm<T>
+where
+    Wasm<T>: ChainExt,
+{
+    fn inner(&self) -> &T {
+        &self.0
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct WasmConfig {
+    pub checksum: H256,
+    // pub inner: T,
+}
+
+impl<Hc: CosmosSdkChain> Chain for Wasm<Hc> {
+    type SelfClientState = Hc::SelfClientState;
+    type SelfConsensusState = Hc::SelfConsensusState;
+    type Header = Hc::Header;
+
+    type StoredClientState<Tr: Chain> = Any<wasm::client_state::ClientState<Tr::SelfClientState>>;
+    type StoredConsensusState<Tr: Chain> =
+        Any<wasm::consensus_state::ConsensusState<Tr::SelfConsensusState>>;
+
+    type Height = Hc::Height;
+
+    type ClientId = Hc::ClientId;
+    type ClientType = Hc::ClientType;
+
+    type Error = Hc::Error;
+
+    type IbcStateEncoding = Proto;
+
+    fn chain_id(&self) -> <Self::SelfClientState as unionlabs::traits::ClientState>::ChainId {
+        self.0.chain_id()
+    }
+
+    fn query_latest_height(&self) -> impl Future<Output = Result<Self::Height, Self::Error>> + '_ {
+        self.0.query_latest_height()
+    }
+
+    fn query_latest_height_as_destination(
+        &self,
+    ) -> impl Future<Output = Result<Self::Height, Self::Error>> + '_ {
+        self.0.query_latest_height_as_destination()
+    }
+
+    fn query_latest_timestamp(&self) -> impl Future<Output = Result<i64, Self::Error>> + '_ {
+        self.0.query_latest_timestamp()
+    }
+
+    fn self_client_state(
+        &self,
+        height: Self::Height,
+    ) -> impl Future<Output = Self::SelfClientState> + '_ {
+        self.0.self_client_state(height)
+    }
+
+    fn self_consensus_state(
+        &self,
+        height: Self::Height,
+    ) -> impl Future<Output = Self::SelfConsensusState> + '_ {
+        self.0.self_consensus_state(height)
+    }
+
+    fn read_ack(
+        &self,
+        block_hash: unionlabs::hash::H256,
+        destination_channel_id: unionlabs::id::ChannelId,
+        destination_port_id: unionlabs::id::PortId,
+        sequence: u64,
+    ) -> impl Future<Output = Vec<u8>> + '_ {
+        self.0.read_ack(
+            block_hash,
+            destination_channel_id,
+            destination_port_id,
+            sequence,
+        )
+    }
+}
+
+#[derive(
+    DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, derive_more::Display,
+)]
+#[serde(bound(serialize = "", deserialize = ""))]
+#[display(fmt = "{_0}")]
+pub struct WasmDataMsg<Hc: ChainExt, Tr: ChainExt>(pub Hc::Data<Tr>);
+
+#[derive(
+    DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, derive_more::Display,
+)]
+#[serde(bound(serialize = "", deserialize = ""))]
+#[display(fmt = "{_0}")]
+pub struct WasmFetchMsg<Hc: ChainExt, Tr: ChainExt>(pub Hc::Fetch<Tr>);
+
+#[derive(
+    DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, derive_more::Display,
+)]
+#[serde(bound(serialize = "", deserialize = ""))]
+#[display(fmt = "{_0}")]
+pub struct WasmAggregateMsg<Hc: ChainExt, Tr: ChainExt>(pub Hc::Aggregate<Tr>);
+
+impl<Hc: CosmosSdkChain + ChainExt, Tr: ChainExt> DoAggregate for identified!(WasmAggregateMsg<Hc, Tr>)
+where
+    Identified<Hc, Tr, Hc::Aggregate<Tr>>: DoAggregate,
+{
+    fn do_aggregate(i: Self, v: VecDeque<AnyLightClientIdentified<AnyData>>) -> Vec<RelayerMsg> {
+        <Identified<_, _, Hc::Aggregate<Tr>>>::do_aggregate(
+            Identified {
+                chain_id: i.chain_id,
+                data: i.data.0,
+                __marker: PhantomData,
+            },
+            v,
+        )
+    }
+}
+
+// impl<Hc> ChainExt for Wasm<Hc>
+// where
+//     Self: Chain<ClientId = Hc::ClientId, ClientType = Hc::ClientType, Height = Hc::Height>,
+
+//     Hc: ChainExt + CosmosSdkChain,
+// {
+//     type Data<Tr: ChainExt> = WasmDataMsg<Hc, Tr>;
+//     type Fetch<Tr: ChainExt> = WasmFetchMsg<Hc, Tr>;
+//     type Aggregate<Tr: ChainExt> = WasmAggregateMsg<Hc, Tr>;
+
+//     type MsgError = Hc::MsgError;
+
+//     type Config = WasmConfig;
+// }
+
+impl<Hc, Tr> DoMsg<Self, Tr> for Wasm<Hc>
+where
+    Hc: ChainExt<MsgError = BroadcastTxCommitError> + CosmosSdkChain,
+    Tr: ChainExt,
+
+    ConsensusStateOf<Tr>: IntoProto,
+    <ConsensusStateOf<Tr> as unionlabs::Proto>::Proto: TypeUrl,
+
+    ClientStateOf<Tr>: IntoProto,
+    <ClientStateOf<Tr> as unionlabs::Proto>::Proto: TypeUrl,
+
+    HeaderOf<Tr>: IntoProto,
+    <HeaderOf<Tr> as unionlabs::Proto>::Proto: TypeUrl,
+
+    ConsensusStateOf<Hc>: IntoProto,
+    <ConsensusStateOf<Hc> as unionlabs::Proto>::Proto: TypeUrl,
+
+    ClientStateOf<Hc>: IntoProto,
+    <ClientStateOf<Hc> as unionlabs::Proto>::Proto: TypeUrl,
+
+    HeaderOf<Hc>: IntoProto,
+    <HeaderOf<Hc> as unionlabs::Proto>::Proto: TypeUrl,
+
+    // TODO: Move this associated type to this trait
+    Wasm<Hc>: ChainExt<
+        SelfClientState = Hc::SelfClientState,
+        SelfConsensusState = Hc::SelfConsensusState,
+        MsgError = BroadcastTxCommitError,
+        Config = WasmConfig,
+    >,
+
+    Tr::StoredClientState<Wasm<Hc>>: IntoProto,
+{
+    async fn msg(&self, msg: Msg<Self, Tr>) -> Result<(), Self::MsgError> {
+        self.0
+            .signers()
+            .with(|signer| async {
+                let msg_any = match msg {
+                    Msg::ConnectionOpenInit(data) => {
+                        mk_any(&protos::ibc::core::connection::v1::MsgConnectionOpenInit {
+                            client_id: data.msg.client_id.to_string(),
+                            counterparty: Some(data.msg.counterparty.into()),
+                            version: Some(data.msg.version.into()),
+                            signer: signer.to_string(),
+                            delay_period: data.msg.delay_period,
+                        })
+                    }
+                    Msg::ConnectionOpenTry(data) =>
+                    {
+                        #[allow(deprecated)]
+                        mk_any(&protos::ibc::core::connection::v1::MsgConnectionOpenTry {
+                            client_id: data.msg.client_id.to_string(),
+                            previous_connection_id: String::new(),
+                            client_state: Some(dbg!(Any(wasm::client_state::ClientState {
+                                latest_height: data.msg.client_state.height().into(),
+                                data: data.msg.client_state,
+                                checksum: H256::default(),
+                            })
+                            .into())),
+                            counterparty: Some(data.msg.counterparty.into()),
+                            delay_period: data.msg.delay_period,
+                            counterparty_versions: data
+                                .msg
+                                .counterparty_versions
+                                .into_iter()
+                                .map(Into::into)
+                                .collect(),
+                            proof_height: Some(data.msg.proof_height.into_height().into()),
+                            proof_init: data.msg.proof_init,
+                            proof_client: data.msg.proof_client,
+                            proof_consensus: data.msg.proof_consensus,
+                            consensus_height: Some(data.msg.consensus_height.into_height().into()),
+                            signer: signer.to_string(),
+                            host_consensus_state_proof: vec![],
+                        })
+                    }
+                    Msg::ConnectionOpenAck(data) => {
+                        mk_any(&protos::ibc::core::connection::v1::MsgConnectionOpenAck {
+                            client_state: Some(
+                                Any(wasm::client_state::ClientState {
+                                    latest_height: data.msg.client_state.height().into(),
+                                    data: data.msg.client_state,
+                                    checksum: H256::default(),
+                                })
+                                .into(),
+                            ),
+                            proof_height: Some(data.msg.proof_height.into_height().into()),
+                            proof_client: data.msg.proof_client,
+                            proof_consensus: data.msg.proof_consensus,
+                            consensus_height: Some(data.msg.consensus_height.into_height().into()),
+                            signer: signer.to_string(),
+                            host_consensus_state_proof: vec![],
+                            connection_id: data.msg.connection_id.to_string(),
+                            counterparty_connection_id: data
+                                .msg
+                                .counterparty_connection_id
+                                .to_string(),
+                            version: Some(data.msg.version.into()),
+                            proof_try: data.msg.proof_try,
+                        })
+                    }
+                    Msg::ConnectionOpenConfirm(data) => mk_any(
+                        &protos::ibc::core::connection::v1::MsgConnectionOpenConfirm {
+                            connection_id: data.msg.connection_id.to_string(),
+                            proof_ack: data.msg.proof_ack,
+                            proof_height: Some(data.msg.proof_height.into_height().into()),
+                            signer: signer.to_string(),
+                        },
+                    ),
+                    Msg::ChannelOpenInit(data) => {
+                        mk_any(&protos::ibc::core::channel::v1::MsgChannelOpenInit {
+                            port_id: data.msg.port_id.to_string(),
+                            channel: Some(data.msg.channel.into()),
+                            signer: signer.to_string(),
+                        })
+                    }
+                    Msg::ChannelOpenTry(data) =>
+                    {
+                        #[allow(deprecated)]
+                        mk_any(&protos::ibc::core::channel::v1::MsgChannelOpenTry {
+                            port_id: data.msg.port_id.to_string(),
+                            channel: Some(data.msg.channel.into()),
+                            counterparty_version: data.msg.counterparty_version,
+                            proof_init: data.msg.proof_init,
+                            proof_height: Some(data.msg.proof_height.into()),
+                            previous_channel_id: String::new(),
+                            signer: signer.to_string(),
+                        })
+                    }
+                    Msg::ChannelOpenAck(data) => {
+                        mk_any(&protos::ibc::core::channel::v1::MsgChannelOpenAck {
+                            port_id: data.msg.port_id.to_string(),
+                            channel_id: data.msg.channel_id.to_string(),
+                            counterparty_version: data.msg.counterparty_version,
+                            counterparty_channel_id: data.msg.counterparty_channel_id.to_string(),
+                            proof_try: data.msg.proof_try,
+                            proof_height: Some(data.msg.proof_height.into_height().into()),
+                            signer: signer.to_string(),
+                        })
+                    }
+                    Msg::ChannelOpenConfirm(data) => {
+                        mk_any(&protos::ibc::core::channel::v1::MsgChannelOpenConfirm {
+                            port_id: data.msg.port_id.to_string(),
+                            channel_id: data.msg.channel_id.to_string(),
+                            proof_height: Some(data.msg.proof_height.into_height().into()),
+                            signer: signer.to_string(),
+                            proof_ack: data.msg.proof_ack,
+                        })
+                    }
+                    Msg::RecvPacket(data) => {
+                        mk_any(&protos::ibc::core::channel::v1::MsgRecvPacket {
+                            packet: Some(data.msg.packet.into()),
+                            proof_height: Some(data.msg.proof_height.into()),
+                            signer: signer.to_string(),
+                            proof_commitment: data.msg.proof_commitment,
+                        })
+                    }
+                    Msg::AckPacket(data) => {
+                        mk_any(&protos::ibc::core::channel::v1::MsgAcknowledgement {
+                            packet: Some(data.msg.packet.into()),
+                            acknowledgement: data.msg.acknowledgement,
+                            proof_acked: data.msg.proof_acked,
+                            proof_height: Some(data.msg.proof_height.into()),
+                            signer: signer.to_string(),
+                        })
+                    }
+                    Msg::CreateClient(data) => {
+                        mk_any(&protos::ibc::core::client::v1::MsgCreateClient {
+                            client_state: Some(
+                                Any(wasm::client_state::ClientState {
+                                    latest_height: data.msg.client_state.height().into(),
+                                    data: data.msg.client_state,
+                                    checksum: data.config.checksum,
+                                })
+                                .into(),
+                            ),
+                            consensus_state: Some(
+                                Any(wasm::consensus_state::ConsensusState {
+                                    data: data.msg.consensus_state,
+                                })
+                                .into(),
+                            ),
+                            signer: signer.to_string(),
+                        })
+                    }
+                    Msg::UpdateClient(data) => {
+                        mk_any(&protos::ibc::core::client::v1::MsgUpdateClient {
+                            signer: signer.to_string(),
+                            client_id: data.msg.client_id.to_string(),
+                            client_message: Some(
+                                Any(wasm::client_message::ClientMessage {
+                                    data: data.msg.client_message,
+                                })
+                                .into(),
+                            ),
+                        })
+                    }
+                };
+
+                broadcast_tx_commit(&self.0, signer, [msg_any])
+                    .await
+                    .map(|_| ())
+            })
+            .await
+    }
+}
+
+impl<Hc: ChainExt + CosmosSdkChain + DoFetchProof<Wasm<Hc>, Tr>, Tr: ChainExt>
+    DoFetchProof<Self, Tr> for Wasm<Hc>
+where
+    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Wasm<Hc>, Tr>)>,
+    AnyLightClientIdentified<AnyWait>: From<identified!(Wait<Wasm<Hc>, Tr>)>,
+    Wasm<Hc>: ChainExt,
+{
+    fn proof(hc: &Self, at: HeightOf<Self>, path: PathOf<Wasm<Hc>, Tr>) -> RelayerMsg {
+        Hc::proof(hc, at, path)
+    }
+}
+
+impl<Hc: ChainExt + CosmosSdkChain + DoFetchState<Wasm<Hc>, Tr>, Tr: ChainExt>
+    DoFetchState<Self, Tr> for Wasm<Hc>
+where
+    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Wasm<Hc>, Tr>)>,
+    Wasm<Hc>: ChainExt,
+{
+    fn state(hc: &Self, at: HeightOf<Self>, path: PathOf<Wasm<Hc>, Tr>) -> RelayerMsg {
+        Hc::state(hc, at, path)
+    }
+
+    fn query_client_state(
+        hc: &Self,
+        client_id: Self::ClientId,
+        height: Self::Height,
+    ) -> impl Future<Output = Self::StoredClientState<Tr>> + '_ {
+        Hc::query_client_state(hc, client_id, height)
+    }
+}
+
+impl<Hc: ChainExt + CosmosSdkChain + DoFetchUpdateHeaders<Self, Tr>, Tr: ChainExt>
+    DoFetchUpdateHeaders<Self, Tr> for Wasm<Hc>
+where
+    Wasm<Hc>: ChainExt,
+{
+    fn fetch_update_headers(hc: &Self, update_info: FetchUpdateHeaders<Self, Tr>) -> RelayerMsg {
+        Hc::fetch_update_headers(
+            hc,
+            FetchUpdateHeaders {
+                client_id: update_info.client_id,
+                counterparty_chain_id: update_info.counterparty_chain_id,
+                counterparty_client_id: update_info.counterparty_client_id,
+                update_from: update_info.update_from,
+                update_to: update_info.update_to,
+            },
+        )
     }
 }

@@ -8,7 +8,7 @@ use crate::{
         connection::{counterparty::Counterparty, version::Version},
     },
     traits::Id,
-    CosmosAccountId, IntoProto, MsgIntoProto, TypeUrl,
+    IntoProto, TypeUrl,
 };
 
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
@@ -82,51 +82,6 @@ impl<
 
 impl TypeUrl for protos::ibc::core::connection::v1::MsgConnectionOpenTry {
     const TYPE_URL: &'static str = "/ibc.core.connection.v1.MsgConnectionOpenTry";
-}
-
-impl<
-        ClientState,
-        ClientId,
-        CounterpartyClientId,
-        ProofHeight: IsHeight,
-        ConsensusHeight: IsHeight,
-    > MsgIntoProto
-    for MsgConnectionOpenTry<
-        ClientState,
-        ClientId,
-        CounterpartyClientId,
-        ProofHeight,
-        ConsensusHeight,
-    >
-where
-    ClientState: IntoProto<Proto = protos::google::protobuf::Any>,
-    ClientId: Id,
-    CounterpartyClientId: Id,
-{
-    type Proto = protos::ibc::core::connection::v1::MsgConnectionOpenTry;
-
-    fn into_proto_with_signer(self, signer: &CosmosAccountId) -> Self::Proto {
-        #[allow(deprecated)]
-        Self::Proto {
-            client_id: self.client_id.to_string(),
-            previous_connection_id: String::new(),
-            client_state: Some(self.client_state.into_proto()),
-            counterparty: Some(self.counterparty.into()),
-            delay_period: self.delay_period,
-            counterparty_versions: self
-                .counterparty_versions
-                .into_iter()
-                .map(Into::into)
-                .collect(),
-            proof_height: Some(self.proof_height.into_height().into()),
-            proof_init: self.proof_init,
-            proof_client: self.proof_client,
-            proof_consensus: self.proof_consensus,
-            consensus_height: Some(self.consensus_height.into_height().into()),
-            signer: signer.to_string(),
-            host_consensus_state_proof: vec![],
-        }
-    }
 }
 
 #[cfg(feature = "ethabi")]

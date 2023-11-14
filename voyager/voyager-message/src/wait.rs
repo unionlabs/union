@@ -4,35 +4,37 @@ use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use serde::{Deserialize, Serialize};
 use unionlabs::{
     ibc::core::client::height::IsHeight,
-    traits::{Chain, ChainIdOf, ChainOf, ClientIdOf, ClientState, HeightOf},
-    QueryHeight,
+    proof::ClientStatePath,
+    traits::{ChainIdOf, ClientState, HeightOf},
 };
 
 use crate::{
     any_enum, defer, fetch,
-    fetch::{AnyFetch, Fetch, FetchTrustedClientState},
-    identified, now, seq, wait, AnyLightClientIdentified, LightClient, RelayerMsg,
+    fetch::{AnyFetch, Fetch, FetchState},
+    identified, now, seq, wait, AnyLightClientIdentified, ChainExt, DoFetchState, RelayerMsg,
 };
 
 any_enum! {
     /// Defines messages that are sent *to* the lightclient `L`.
     #[any = AnyWait]
-    pub enum Wait<L: LightClient> {
-        Block(WaitForBlock<L>),
-        Timestamp(WaitForTimestamp<L>),
-        TrustedHeight(WaitForTrustedHeight<L>),
+    pub enum Wait<Hc: ChainExt, Tr: ChainExt> {
+        Block(WaitForBlock<Hc, Tr>),
+        Timestamp(WaitForTimestamp<Hc, Tr>),
+        TrustedHeight(WaitForTrustedHeight<Hc, Tr>),
     }
 }
 
-impl<L: LightClient> Wait<L> {
-    pub async fn handle(self, l: L) -> Vec<RelayerMsg>
-    where
-        AnyLightClientIdentified<AnyWait>: From<identified!(Wait<L>)>,
-        AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<L::Counterparty>)>,
-    {
+impl<Hc, Tr> Wait<Hc, Tr>
+where
+    AnyLightClientIdentified<AnyWait>: From<identified!(Wait<Hc, Tr>)>,
+    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Tr, Hc>)>,
+    Hc: ChainExt + DoFetchState<Hc, Tr>,
+    Tr: ChainExt,
+{
+    pub async fn handle(self, c: Hc) -> Vec<RelayerMsg> {
         match self {
-            Wait::Block(WaitForBlock(height)) => {
-                let chain_height = l.chain().query_latest_height().await.unwrap();
+            Wait::Block(WaitForBlock { height, __marker }) => {
+                let chain_height = c.query_latest_height().await.unwrap();
 
                 assert_eq!(
                     chain_height.revision_number(),
@@ -46,7 +48,7 @@ impl<L: LightClient> Wait<L> {
                     [seq([
                         // REVIEW: Defer until `now + chain.block_time()`? Would require a new method on chain
                         defer(now() + 1),
-                        wait::<L>(l.chain().chain_id(), WaitForBlock(height)),
+                        wait::<Hc, Tr>(c.chain_id(), WaitForBlock { height, __marker }),
                     ])]
                     .into()
                 }
@@ -55,7 +57,7 @@ impl<L: LightClient> Wait<L> {
                 timestamp,
                 __marker,
             }) => {
-                let chain_ts = l.chain().query_latest_timestamp().await.unwrap();
+                let chain_ts = c.query_latest_timestamp().await.unwrap();
 
                 if chain_ts >= timestamp {
                     [].into()
@@ -63,8 +65,8 @@ impl<L: LightClient> Wait<L> {
                     [seq([
                         // REVIEW: Defer until `now + chain.block_time()`? Would require a new method on chain
                         defer(now() + 1),
-                        wait::<L>(
-                            l.chain().chain_id(),
+                        wait::<Hc, Tr>(
+                            c.chain_id(),
                             WaitForTimestamp {
                                 timestamp,
                                 __marker,
@@ -76,17 +78,14 @@ impl<L: LightClient> Wait<L> {
             }
             Wait::TrustedHeight(WaitForTrustedHeight {
                 client_id,
-                height,
                 counterparty_client_id,
                 counterparty_chain_id,
+                height,
             }) => {
-                let latest_height = l
-                    .chain()
-                    .query_latest_height_as_destination()
-                    .await
-                    .unwrap();
+                let latest_height = c.query_latest_height_as_destination().await.unwrap();
+
                 let trusted_client_state =
-                    l.query_client_state(client_id.clone(), latest_height).await;
+                    Hc::query_client_state(&c, client_id.clone(), latest_height).await;
 
                 if trusted_client_state.height().revision_height() >= height.revision_height() {
                     tracing::debug!(
@@ -95,11 +94,14 @@ impl<L: LightClient> Wait<L> {
                         height
                     );
 
-                    [fetch::<L::Counterparty>(
+                    [fetch::<Tr, Hc>(
                         counterparty_chain_id,
-                        FetchTrustedClientState {
-                            at: QueryHeight::Specific(trusted_client_state.height()),
-                            client_id: counterparty_client_id.clone(),
+                        FetchState {
+                            at: trusted_client_state.height(),
+                            path: ClientStatePath {
+                                client_id: counterparty_client_id.clone(),
+                            }
+                            .into(),
                         },
                     )]
                     .into()
@@ -107,8 +109,8 @@ impl<L: LightClient> Wait<L> {
                     [seq([
                         // REVIEW: Defer until `now + counterparty_chain.block_time()`? Would require a new method on chain
                         defer(now() + 1),
-                        wait::<L>(
-                            l.chain().chain_id(),
+                        wait::<Hc, Tr>(
+                            c.chain_id(),
                             Wait::TrustedHeight(WaitForTrustedHeight {
                                 client_id,
                                 height,
@@ -124,10 +126,10 @@ impl<L: LightClient> Wait<L> {
     }
 }
 
-impl<L: LightClient> Display for Wait<L> {
+impl<Hc: ChainExt, Tr: ChainExt> Display for Wait<Hc, Tr> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Wait::Block(block) => write!(f, "Block({})", block.0),
+            Wait::Block(block) => write!(f, "Block({})", block.height),
             Wait::Timestamp(ts) => write!(f, "Timestamp({})", ts.timestamp),
             Wait::TrustedHeight(th) => write!(f, "TrustedHeight({})", th.height),
         }
@@ -136,21 +138,25 @@ impl<L: LightClient> Display for Wait<L> {
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""))]
-pub struct WaitForBlock<L: LightClient>(pub HeightOf<ChainOf<L>>);
-
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
-pub struct WaitForTimestamp<L: LightClient> {
-    pub timestamp: i64,
+pub struct WaitForBlock<Hc: ChainExt, Tr: ChainExt> {
+    pub height: HeightOf<Hc>,
     #[serde(skip)]
-    pub __marker: PhantomData<L>,
+    pub __marker: PhantomData<fn() -> Tr>,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""))]
-pub struct WaitForTrustedHeight<L: LightClient> {
-    pub client_id: ClientIdOf<ChainOf<L>>,
-    pub counterparty_client_id: ClientIdOf<ChainOf<L::Counterparty>>,
-    pub counterparty_chain_id: ChainIdOf<L::Counterparty>,
-    pub height: HeightOf<ChainOf<L::Counterparty>>,
+pub struct WaitForTimestamp<Hc: ChainExt, Tr: ChainExt> {
+    pub timestamp: i64,
+    #[serde(skip)]
+    pub __marker: PhantomData<fn() -> (Hc, Tr)>,
+}
+
+#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
+#[serde(bound(serialize = "", deserialize = ""))]
+pub struct WaitForTrustedHeight<Hc: ChainExt, Tr: ChainExt> {
+    pub client_id: Hc::ClientId,
+    pub counterparty_client_id: Tr::ClientId,
+    pub counterparty_chain_id: ChainIdOf<Tr>,
+    pub height: Tr::Height,
 }

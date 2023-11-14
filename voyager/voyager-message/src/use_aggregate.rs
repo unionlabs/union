@@ -2,12 +2,12 @@ use std::{collections::VecDeque, fmt::Display, ops::ControlFlow};
 
 use frunk::{HCons, HNil};
 
-use crate::{data::AnyData, AnyLightClientIdentified, LightClient, RelayerMsg};
+use crate::{data::AnyData, AnyLightClientIdentified, RelayerMsg};
 
 pub trait IsAggregateData = TryFrom<AnyLightClientIdentified<AnyData>, Error = AnyLightClientIdentified<AnyData>>
     + Into<AnyLightClientIdentified<AnyData>>;
 
-pub fn do_aggregate<L: LightClient, T: UseAggregate<L>>(
+pub fn do_aggregate<T: UseAggregate>(
     event: T,
     data: VecDeque<AnyLightClientIdentified<AnyData>>,
 ) -> RelayerMsg {
@@ -91,7 +91,7 @@ impl<U> HListTryFromIterator<U> for HNil {
     }
 }
 
-pub trait UseAggregate<L: LightClient> {
+pub trait UseAggregate {
     type AggregatedData: HListTryFromIterator<AnyLightClientIdentified<AnyData>>;
 
     fn aggregate(this: Self, data: Self::AggregatedData) -> RelayerMsg;

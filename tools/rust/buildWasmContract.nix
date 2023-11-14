@@ -60,7 +60,6 @@ let
         ls target/wasm32-unknown-unknown/release
 
         sha256sum target/wasm32-unknown-unknown/release/${contractFileNameWithoutExt}.wasm  
-
       '';
 
       cargoBuildInstallPhase =

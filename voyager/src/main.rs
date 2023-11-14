@@ -1,5 +1,5 @@
 #![recursion_limit = "256"]
-#![feature(trait_alias)]
+#![feature(trait_alias, extract_if)]
 // #![warn(clippy::pedantic)]
 #![allow(
      // required due to return_position_impl_trait_in_trait false positives
@@ -14,7 +14,8 @@ use chain_utils::{evm::Evm, union::Union};
 use clap::Parser;
 use sqlx::PgPool;
 use tikv_jemallocator::Jemalloc;
-use unionlabs::ethereum::config::Mainnet;
+use unionlabs::ethereum::config::{Mainnet, Minimal};
+use voyager_message::Wasm;
 
 #[global_allocator]
 static GLOBAL: Jemalloc = Jemalloc;
@@ -22,7 +23,7 @@ static GLOBAL: Jemalloc = Jemalloc;
 use crate::{
     chain::AnyChain,
     cli::{any_state_proof_to_json, AppArgs, Command, QueryCmd},
-    config::{Config, GetChainError},
+    config::{Config, GetChainError, VoyagerConfig},
     queue::{AnyQueue, AnyQueueConfig, PgQueueConfig, RunError, Voyager, VoyagerInitError},
 };
 
@@ -189,18 +190,40 @@ async fn do_main(args: cli::AppArgs) -> Result<(), VoyagerError> {
         Command::Query { on, at, cmd } => {
             let on = voyager_config.get_chain(&on).await?;
 
+            let voyager = Voyager::new(crate::config::Config {
+                chain: voyager_config.chain,
+                voyager: VoyagerConfig {
+                    num_workers: 1,
+                    queue: (),
+                },
+            })
+            .await
+            .unwrap();
+
             match cmd {
                 QueryCmd::IbcPath(path) => {
                     let json = match on {
                         AnyChain::EvmMainnet(evm) => {
-                            any_state_proof_to_json::<Union, _>(path, evm, at).await
+                            any_state_proof_to_json::<Evm<Mainnet>, Wasm<Union>>(
+                                voyager, path, evm, at,
+                            )
+                            .await
                         }
                         AnyChain::EvmMinimal(evm) => {
-                            any_state_proof_to_json::<Union, _>(path, evm, at).await
+                            any_state_proof_to_json::<Evm<Minimal>, Wasm<Union>>(
+                                voyager, path, evm, at,
+                            )
+                            .await
                         }
                         AnyChain::Union(union) => {
                             // NOTE: ChainSpec is arbitrary
-                            any_state_proof_to_json::<Evm<Mainnet>, _>(path, union, at).await
+                            any_state_proof_to_json::<Wasm<Union>, Evm<Mainnet>>(
+                                voyager,
+                                path,
+                                Wasm(union),
+                                at,
+                            )
+                            .await
                         }
                     };
 

@@ -3,12 +3,9 @@
      // required due to return_position_impl_trait_in_trait false positives
     clippy::manual_async_fn,
 )]
+#![feature(trait_alias)]
 
-use std::{
-    error::Error,
-    fmt::{Debug, Display},
-    sync::Arc,
-};
+use std::{fmt::Debug, sync::Arc};
 
 use crossbeam_queue::ArrayQueue;
 use futures::{Future, Stream};
@@ -42,29 +39,6 @@ pub struct ChainEvent<C: Chain> {
     pub height: Height,
     pub event: IbcEvent<C::ClientId, C::ClientType, String>,
 }
-
-// TODO: Make this a more generic error and put it in unionlabs::errors
-#[derive(Debug, Clone, PartialEq)]
-pub struct ChainClientIdParseError {
-    expected: &'static [&'static str],
-    found: String,
-}
-
-impl Display for ChainClientIdParseError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_fmt(format_args!(
-            "expected one of `{}`, found `{}`",
-            self.expected
-                .iter()
-                .map(|exp| format!("`{exp}`"))
-                .collect::<Vec<_>>()
-                .join(","),
-            self.found,
-        ))
-    }
-}
-
-impl Error for ChainClientIdParseError {}
 
 #[derive(Debug, Clone)]
 pub struct Pool<T> {

@@ -31,12 +31,6 @@ impl Debug for Height {
 
 impl Height {
     #[must_use]
-    pub fn increment(mut self) -> Self {
-        self.revision_height += 1;
-        self
-    }
-
-    #[must_use]
     pub fn new(revision_number: u64, revision_height: u64) -> Self {
         Height {
             revision_number,

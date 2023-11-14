@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use uint::FromDecStrErr;
 
 use crate::{
-    errors::{InvalidLength, MissingField},
+    errors::{required, InvalidLength, MissingField},
     hash::{H160, H256},
     ibc::{
         core::client::height::Height,
@@ -80,38 +80,23 @@ impl TryFrom<protos::union::ibc::lightclients::ethereum::v1::ClientState> for Cl
         value: protos::union::ibc::lightclients::ethereum::v1::ClientState,
     ) -> Result<Self, Self::Error> {
         Ok(Self {
-            chain_id: U256::from_str(dbg!(&value.chain_id))
-                .map_err(TryFromClientStateError::ChainId)?,
+            chain_id: U256::from_str(&value.chain_id).map_err(TryFromClientStateError::ChainId)?,
             genesis_validators_root: value
                 .genesis_validators_root
                 .try_into()
                 .map_err(TryFromClientStateError::GenesisValidatorsRoot)?,
             min_sync_committee_participants: value.min_sync_committee_participants,
             genesis_time: value.genesis_time,
-            fork_parameters: value
-                .fork_parameters
-                .ok_or(TryFromClientStateError::MissingField(MissingField(
-                    "fork_parameters",
-                )))?
+            fork_parameters: required!(value.fork_parameters)?
                 .try_into()
                 .map_err(TryFromClientStateError::ForkParameters)?,
             seconds_per_slot: value.seconds_per_slot,
             slots_per_epoch: value.slots_per_epoch,
             epochs_per_sync_committee_period: value.epochs_per_sync_committee_period,
-            trust_level: value
-                .trust_level
-                .ok_or(TryFromClientStateError::MissingField(MissingField(
-                    "trust_level",
-                )))?
-                .into(),
+            trust_level: required!(value.trust_level)?.into(),
             trusting_period: value.trusting_period,
             latest_slot: value.latest_slot,
-            frozen_height: value
-                .frozen_height
-                .ok_or(TryFromClientStateError::MissingField(MissingField(
-                    "frozen_height",
-                )))?
-                .into(),
+            frozen_height: value.frozen_height.unwrap_or_default().into(),
             counterparty_commitment_slot: U256::try_from_big_endian(
                 &value.counterparty_commitment_slot,
             )

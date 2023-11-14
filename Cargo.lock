@@ -1675,6 +1675,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "enumorph"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6d3e2610493c0a1fc3bf33fb420650c6ebf7990c55e3d5e71a57bee374486824"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.38",
+]
+
+[[package]]
 name = "equivalent"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3168,17 +3179,6 @@ dependencies = [
  "cc",
  "pkg-config",
  "vcpkg",
-]
-
-[[package]]
-name = "lightclient"
-version = "0.1.0"
-dependencies = [
- "chain-utils",
- "hex-literal",
- "protos",
- "serde",
- "unionlabs",
 ]
 
 [[package]]
@@ -6191,6 +6191,7 @@ dependencies = [
  "cosmwasm-std",
  "derive_more",
  "either",
+ "enumorph",
  "ethereum_ssz",
  "ethers-contract-derive",
  "ethers-core",
@@ -6352,7 +6353,6 @@ dependencies = [
  "futures",
  "hex",
  "hex-literal",
- "lightclient",
  "num-bigint",
  "pg-queue",
  "pin-utils",
@@ -6391,12 +6391,13 @@ dependencies = [
  "chain-utils",
  "contracts",
  "derive_more",
+ "enumorph",
  "ethers",
  "frame-support-procedural",
  "frunk",
  "futures",
+ "hex",
  "hex-literal",
- "lightclient",
  "num-bigint",
  "prost 0.11.9",
  "protos",

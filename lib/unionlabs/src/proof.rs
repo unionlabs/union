@@ -1,6 +1,5 @@
 use std::{
     fmt::{Debug, Display},
-    future::Future,
     str::FromStr,
 };
 
@@ -14,7 +13,7 @@ use crate::{
         connection::connection_end::ConnectionEnd,
     },
     id::{ChannelId, ConnectionId, PortId},
-    traits::{self, Chain},
+    traits::{self, Chain, ClientIdOf, HeightOf},
 };
 
 fn eat_static_segment(s: Option<&str>, expecting: &'static str) -> Result<(), PathParseError> {
@@ -68,8 +67,18 @@ pub enum PathParseError {
 
 /// `IbcPath` represents the path to a light client's ibc storage. The values stored at each path
 /// are strongly typed, i.e. `connections/{connection_id}` always stores a [`ConnectionEnd`].
-pub trait IbcPath<This: Chain, Counterparty: Chain>: Display + Clone + Sized {
-    type Output: Debug + Clone + Serialize;
+pub trait IbcPath<Hc: Chain, Tr: Chain>:
+    Debug
+    + Clone
+    + PartialEq
+    + Serialize
+    + for<'de> Deserialize<'de>
+    + Display
+    + Sized
+    + TryFrom<Path<ClientIdOf<Hc>, HeightOf<Tr>>, Error = Path<ClientIdOf<Hc>, HeightOf<Tr>>>
+    + Into<Path<ClientIdOf<Hc>, HeightOf<Tr>>>
+{
+    type Output: Debug + Clone + PartialEq + Serialize + for<'de> Deserialize<'de>;
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, derive_more::Display, clap::Args)]
@@ -104,10 +113,11 @@ impl<ClientId: traits::Id> FromStr for ClientStatePath<ClientId> {
     }
 }
 
-impl<This: Chain, Counterparty: Chain> IbcPath<This, Counterparty>
-    for ClientStatePath<This::ClientId>
+impl<Hc: Chain, Tr: Chain> IbcPath<Hc, Tr> for ClientStatePath<Hc::ClientId>
+// where
+//     Tr::SelfClientState: Encode<Hc::IbcStateEncoding> + Decode<Hc::IbcStateEncoding>,
 {
-    type Output = Counterparty::SelfClientState;
+    type Output = Hc::StoredClientState<Tr>;
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, derive_more::Display, clap::Args)]
@@ -146,10 +156,11 @@ impl<ClientId: traits::Id, Height: IsHeight> FromStr
     }
 }
 
-impl<This: Chain, Counterparty: Chain> IbcPath<This, Counterparty>
-    for ClientConsensusStatePath<This::ClientId, Counterparty::Height>
+impl<Hc: Chain, Tr: Chain> IbcPath<Hc, Tr> for ClientConsensusStatePath<Hc::ClientId, Tr::Height>
+// where
+//     Tr::SelfClientState: Encode<Hc::IbcStateEncoding> + Decode<Hc::IbcStateEncoding>,
 {
-    type Output = Counterparty::SelfConsensusState;
+    type Output = Hc::StoredConsensusState<Tr>;
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, derive_more::Display, clap::Args)]
@@ -172,8 +183,8 @@ impl FromStr for ConnectionPath {
     }
 }
 
-impl<This: Chain, Counterparty: Chain> IbcPath<This, Counterparty> for ConnectionPath {
-    type Output = ConnectionEnd<This::ClientId, Counterparty::ClientId, String>;
+impl<Hc: Chain, Tr: Chain> IbcPath<Hc, Tr> for ConnectionPath {
+    type Output = ConnectionEnd<Hc::ClientId, Tr::ClientId, String>;
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, derive_more::Display, clap::Args)]
@@ -203,7 +214,7 @@ impl FromStr for ChannelEndPath {
     }
 }
 
-impl<This: Chain, Counterparty: Chain> IbcPath<This, Counterparty> for ChannelEndPath {
+impl<Hc: Chain, Tr: Chain> IbcPath<Hc, Tr> for ChannelEndPath {
     type Output = Channel;
 }
 
@@ -238,7 +249,7 @@ impl FromStr for CommitmentPath {
     }
 }
 
-impl<This: Chain, Counterparty: Chain> IbcPath<This, Counterparty> for CommitmentPath {
+impl<Hc: Chain, Tr: Chain> IbcPath<Hc, Tr> for CommitmentPath {
     type Output = H256;
 }
 
@@ -273,12 +284,19 @@ impl FromStr for AcknowledgementPath {
     }
 }
 
-impl<This: Chain, Counterparty: Chain> IbcPath<This, Counterparty> for AcknowledgementPath {
+impl<Hc: Chain, Tr: Chain> IbcPath<Hc, Tr> for AcknowledgementPath {
     type Output = H256;
 }
 
 #[derive(
-    Debug, Clone, PartialEq, Serialize, Deserialize, derive_more::Display, clap::Subcommand,
+    Debug,
+    Clone,
+    PartialEq,
+    Serialize,
+    Deserialize,
+    derive_more::Display,
+    clap::Subcommand,
+    enumorph::Enumorph,
 )]
 #[serde(bound(
     serialize = "ClientId: Serialize",
@@ -313,33 +331,118 @@ impl<ClientId: traits::Id, Height: IsHeight> FromStr for Path<ClientId, Height> 
     }
 }
 
-pub trait IbcStateRead<Counterparty: Chain, P: IbcPath<Self, Counterparty>>: Chain + Sized {
-    fn proof(&self, path: P, at: Self::Height) -> impl Future<Output = Vec<u8>> + '_;
-    fn state(&self, path: P, at: Self::Height) -> impl Future<Output = P::Output> + '_;
-}
+// pub trait IbcStateRead: Chain + Sized {
+//     fn client_state<Tracking: Chain>(
+//         &self,
+//         at: Height,
+//         path: ClientStatePath<ClientIdOf<Self>>,
+//     ) -> impl Future<Output = <ClientStatePath<ClientIdOf<Self>> as IbcPath<Self, Tracking>>::Output>
+//     where
+//         ClientStateOf<Tracking>: Decode<Self::IbcStateEncoding>;
 
-pub trait IbcStateReadPaths<Counterparty: Chain>:
-    Chain
-    + IbcStateRead<Counterparty, ClientStatePath<<Self as Chain>::ClientId>>
-    + IbcStateRead<
-        Counterparty,
-        ClientConsensusStatePath<<Self as Chain>::ClientId, Counterparty::Height>,
-    > + IbcStateRead<Counterparty, ConnectionPath>
-    + IbcStateRead<Counterparty, ChannelEndPath>
-    + IbcStateRead<Counterparty, CommitmentPath>
-    + IbcStateRead<Counterparty, AcknowledgementPath>
-{
-}
+//     fn client_consensus_state<Tracking: Chain>(
+//         &self,
+//         at: Height,
+//         path: ClientConsensusStatePath<ClientIdOf<Self>, HeightOf<Tracking>>,
+//     ) -> impl Future<
+//         Output = <ClientConsensusStatePath<ClientIdOf<Self>, HeightOf<Tracking>> as IbcPath<
+//             Self,
+//             Tracking,
+//         >>::Output,
+//     >
+//     where
+//         ConsensusStateOf<Tracking>: Decode<Self::IbcStateEncoding>;
 
-impl<Counterparty: Chain, T: Chain> IbcStateReadPaths<Counterparty> for T where
-    T: IbcStateRead<Counterparty, ClientStatePath<Self::ClientId>>
-        + IbcStateRead<Counterparty, ClientConsensusStatePath<Self::ClientId, Counterparty::Height>>
-        + IbcStateRead<Counterparty, ConnectionPath>
-        + IbcStateRead<Counterparty, ChannelEndPath>
-        + IbcStateRead<Counterparty, CommitmentPath>
-        + IbcStateRead<Counterparty, AcknowledgementPath>
-{
-}
+//     fn connection<Tracking: Chain>(
+//         &self,
+//         at: Height,
+//         path: ConnectionPath,
+//     ) -> impl Future<Output = <ConnectionPath as IbcPath<Self, Tracking>>::Output>;
+
+//     fn channel_end<Tracking: Chain>(
+//         &self,
+//         at: Height,
+//         path: ChannelEndPath,
+//     ) -> impl Future<Output = <ChannelEndPath as IbcPath<Self, Tracking>>::Output>;
+
+//     fn commitment<Tracking: Chain>(
+//         &self,
+//         at: Height,
+//         path: CommitmentPath,
+//     ) -> impl Future<Output = <CommitmentPath as IbcPath<Self, Tracking>>::Output>;
+
+//     fn acknowledgement<Tracking: Chain>(
+//         &self,
+//         at: Height,
+//         path: AcknowledgementPath,
+//     ) -> impl Future<Output = <AcknowledgementPath as IbcPath<Self, Tracking>>::Output>;
+// }
+
+// // NOTE: Where clauses here aren't strictly required, but make things a bit easier for now
+// pub trait IbcStateProve: Chain + Sized {
+//     fn client_state<Tracking: Chain>(
+//         &self,
+//         at: Height,
+//         path: ClientStatePath<ClientIdOf<Self>>,
+//     ) -> impl Future<Output = Vec<u8>>
+//     where
+//         ClientStateOf<Tracking>: Decode<Self::IbcStateEncoding>;
+
+//     fn client_consensus_state<Tracking: Chain>(
+//         &self,
+//         at: Height,
+//         path: ClientConsensusStatePath<ClientIdOf<Self>, HeightOf<Tracking>>,
+//     ) -> impl Future<Output = Vec<u8>>
+//     where
+//         ConsensusStateOf<Tracking>: Decode<Self::IbcStateEncoding>;
+
+//     fn connection<Tracking: Chain>(
+//         &self,
+//         at: Height,
+//         path: ConnectionPath,
+//     ) -> impl Future<Output = Vec<u8>>;
+
+//     fn channel_end<Tracking: Chain>(
+//         &self,
+//         at: Height,
+//         path: ChannelEndPath,
+//     ) -> impl Future<Output = Vec<u8>>;
+
+//     fn commitment<Tracking: Chain>(
+//         &self,
+//         at: Height,
+//         path: CommitmentPath,
+//     ) -> impl Future<Output = Vec<u8>>;
+
+//     fn acknowledgement<Tracking: Chain>(
+//         &self,
+//         at: Height,
+//         path: AcknowledgementPath,
+//     ) -> impl Future<Output = Vec<u8>>;
+// }
+
+// pub trait IbcStateReadPaths<Tr: Chain>:
+//     Chain
+//     + IbcStateRead<Tr, ClientStatePath<<Self as Chain>::ClientId>>
+//     + IbcStateRead<
+//         Tr,
+//         ClientConsensusStatePath<<Self as Chain>::ClientId, Tr::Height>,
+//     > + IbcStateRead<Tr, ConnectionPath>
+//     + IbcStateRead<Tr, ChannelEndPath>
+//     + IbcStateRead<Tr, CommitmentPath>
+//     + IbcStateRead<Tr, AcknowledgementPath>
+// {
+// }
+
+// impl<Tr: Chain, T: Chain> IbcStateReadPaths<Tr> for T where
+//     T: IbcStateRead<Tr, ClientStatePath<Self::ClientId>>
+//         + IbcStateRead<Tr, ClientConsensusStatePath<Self::ClientId, Tr::Height>>
+//         + IbcStateRead<Tr, ConnectionPath>
+//         + IbcStateRead<Tr, ChannelEndPath>
+//         + IbcStateRead<Tr, CommitmentPath>
+//         + IbcStateRead<Tr, AcknowledgementPath>
+// {
+// }
 
 #[cfg(test)]
 mod tests {

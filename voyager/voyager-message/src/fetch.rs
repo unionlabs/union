@@ -1,53 +1,67 @@
-use std::{fmt::Display, marker::PhantomData};
+use std::{
+    fmt::{Debug, Display},
+    marker::PhantomData,
+};
 
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
+use futures::Future;
 use serde::{Deserialize, Serialize};
 use unionlabs::{
     hash::H256,
-    id::{ChannelId, ConnectionId, PortId},
-    proof,
-    traits::{Chain, ChainIdOf, ChainOf, ClientIdOf, HeightOf},
+    id::{ChannelId, PortId},
+    proof::{self, ClientStatePath},
+    traits::{ChainIdOf, ClientIdOf, HeightOf},
     QueryHeight,
 };
 
 use crate::{
     any_enum, data,
-    data::{
-        AnyData, ChannelEnd, ConnectionEnd, Data, PacketAcknowledgement, SelfClientState,
-        SelfConsensusState, TrustedClientState,
-    },
-    identified, AnyLightClientIdentified, LightClient, RelayerMsg,
+    data::{AnyData, Data, PacketAcknowledgement, SelfClientState, SelfConsensusState},
+    fetch, identified, AnyLightClientIdentified, ChainExt, DoFetchProof, DoFetchState,
+    DoFetchUpdateHeaders, RelayerMsg,
 };
 
 any_enum! {
     /// Fetch some data that will likely be used in a [`RelayerMsg::Aggregate`].
     #[any = AnyFetch]
-    pub enum Fetch<L: LightClient> {
-        TrustedClientState(FetchTrustedClientState<L>),
+    pub enum Fetch<Hc: ChainExt, Tr: ChainExt> {
+        State(FetchState<Hc, Tr>),
+        Proof(FetchProof<Hc, Tr>),
 
-        StateProof(FetchStateProof<L>),
-        SelfClientState(FetchSelfClientState<L>),
-        SelfConsensusState(FetchSelfConsensusState<L>),
+        LatestClientState(FetchLatestClientState<Hc, Tr>),
 
-        ChannelEnd(FetchChannelEnd<L>),
-        ConnectionEnd(FetchConnectionEnd<L>),
+        SelfClientState(FetchSelfClientState<Hc, Tr>),
+        SelfConsensusState(FetchSelfConsensusState<Hc, Tr>),
 
-        PacketAcknowledgement(FetchPacketAcknowledgement<L>),
+        PacketAcknowledgement(FetchPacketAcknowledgement<Hc, Tr>),
 
-        UpdateHeaders(FetchUpdateHeaders<L>),
-        LightClientSpecific(LightClientSpecificFetch<L>),
+        UpdateHeaders(FetchUpdateHeaders<Hc, Tr>),
+
+        LightClientSpecific(LightClientSpecificFetch<Hc, Tr>),
     }
 }
 
-impl<L: LightClient> Display for Fetch<L> {
+pub trait DoFetch<Hc: ChainExt>: Sized + Debug + Clone + PartialEq {
+    fn do_fetch(c: &Hc, _: Self) -> impl Future<Output = Vec<RelayerMsg>>;
+}
+
+impl<Hc: ChainExt, Tr: ChainExt> Display for Fetch<Hc, Tr> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let path_display = |path: &_| match path {
+            proof::Path::ClientStatePath(_) => "ClientState",
+            proof::Path::ClientConsensusStatePath(_) => "ClientConsensusState",
+            proof::Path::ConnectionPath(_) => "Connection",
+            proof::Path::ChannelEndPath(_) => "ChannelEnd",
+            proof::Path::CommitmentPath(_) => "Commitment",
+            proof::Path::AcknowledgementPath(_) => "Acknowledgement",
+        };
+
         match self {
-            Fetch::TrustedClientState(_) => write!(f, "TrustedClientState"),
-            Fetch::StateProof(sp) => write!(f, "{sp}"),
+            Fetch::State(fetch) => write!(f, "State({})", path_display(&fetch.path)),
+            Fetch::Proof(fetch) => write!(f, "Proof({})", path_display(&fetch.path)),
+            Fetch::LatestClientState(_) => write!(f, "LatestClientState"),
             Fetch::SelfClientState(_) => write!(f, "SelfClientState"),
             Fetch::SelfConsensusState(_) => write!(f, "SelfConsensusState"),
-            Fetch::ChannelEnd(_) => write!(f, "ChannelEnd"),
-            Fetch::ConnectionEnd(_) => write!(f, "ConnectionEnd"),
             Fetch::PacketAcknowledgement(_) => write!(f, "PacketAcknowledgement"),
             Fetch::UpdateHeaders(_) => write!(f, "UpdateHeaders"),
             Fetch::LightClientSpecific(fetch) => write!(f, "LightClientSpecific({})", fetch.0),
@@ -57,140 +71,115 @@ impl<L: LightClient> Display for Fetch<L> {
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""))]
-pub struct FetchSelfClientState<L: LightClient> {
-    pub at: QueryHeight<HeightOf<ChainOf<L>>>,
+pub struct FetchSelfClientState<Hc: ChainExt, Tr: ChainExt> {
+    pub at: QueryHeight<HeightOf<Hc>>,
+    #[serde(skip)]
+    pub __marker: PhantomData<fn() -> (Hc, Tr)>,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""))]
-pub struct FetchSelfConsensusState<L: LightClient> {
-    pub at: QueryHeight<HeightOf<ChainOf<L>>>,
+pub struct FetchSelfConsensusState<Hc: ChainExt, Tr: ChainExt> {
+    pub at: QueryHeight<HeightOf<Hc>>,
+    #[serde(skip)]
+    pub __marker: PhantomData<fn() -> (Hc, Tr)>,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""))]
-pub struct FetchTrustedClientState<L: LightClient> {
-    pub at: QueryHeight<HeightOf<ChainOf<L>>>,
-    pub client_id: ClientIdOf<ChainOf<L>>,
+pub struct FetchProof<Hc: ChainExt, Tr: ChainExt> {
+    pub at: HeightOf<Hc>,
+    pub path: proof::Path<Hc::ClientId, Tr::Height>,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""))]
-pub struct FetchCounterpartyTrustedClientState<L: LightClient> {
-    pub at: QueryHeight<HeightOf<ChainOf<L::Counterparty>>>,
-    pub client_id: ClientIdOf<ChainOf<L::Counterparty>>,
+pub struct FetchState<Hc: ChainExt, Tr: ChainExt> {
+    pub at: HeightOf<Hc>,
+    pub path: proof::Path<Hc::ClientId, Tr::Height>,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""))]
-pub struct FetchStateProof<L: LightClient> {
-    pub at: HeightOf<ChainOf<L>>,
-    pub path: proof::Path<<ChainOf<L> as Chain>::ClientId, HeightOf<ChainOf<L::Counterparty>>>,
-}
-
-impl<L: LightClient> Display for FetchStateProof<L> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "StateProof::")?;
-
-        match self.path {
-            proof::Path::ClientStatePath(_) => write!(f, "ClientStatePath"),
-            proof::Path::ClientConsensusStatePath(_) => write!(f, "ClientConsensusStatePath"),
-            proof::Path::ConnectionPath(_) => write!(f, "ConnectionPath"),
-            proof::Path::ChannelEndPath(_) => write!(f, "ChannelEndPath"),
-            proof::Path::CommitmentPath(_) => write!(f, "CommitmentPath"),
-            proof::Path::AcknowledgementPath(_) => write!(f, "AcknowledgementPath"),
-        }
-    }
+pub struct FetchLatestClientState<Hc: ChainExt, Tr: ChainExt> {
+    pub path: ClientStatePath<Hc::ClientId>,
+    #[serde(skip)]
+    pub __marker: PhantomData<fn() -> (Hc, Tr)>,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""))]
-pub struct FetchChannelEnd<L: LightClient> {
-    pub at: HeightOf<ChainOf<L>>,
-    pub port_id: PortId,
-    pub channel_id: ChannelId,
-}
-
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
-pub struct FetchConnectionEnd<L: LightClient> {
-    pub at: HeightOf<ChainOf<L>>,
-    pub connection_id: ConnectionId,
-}
-
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
-pub struct FetchPacketAcknowledgement<L: LightClient> {
+pub struct FetchPacketAcknowledgement<Hc: ChainExt, Tr: ChainExt> {
     pub block_hash: H256,
     pub destination_port_id: PortId,
     pub destination_channel_id: ChannelId,
     pub sequence: u64,
     #[serde(skip)]
-    pub __marker: PhantomData<fn() -> L>,
+    pub __marker: PhantomData<fn() -> (Hc, Tr)>,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""))]
-pub struct FetchUpdateHeaders<L: LightClient> {
-    pub client_id: ClientIdOf<ChainOf<L>>,
-    pub counterparty_chain_id: ChainIdOf<L::Counterparty>,
+pub struct FetchUpdateHeaders<Hc: ChainExt, Tr: ChainExt> {
+    pub client_id: ClientIdOf<Hc>,
+    pub counterparty_chain_id: ChainIdOf<Tr>,
     // id of the counterparty client that will be updated with the fetched headers
-    pub counterparty_client_id: ClientIdOf<ChainOf<L::Counterparty>>,
-    pub update_from: HeightOf<L::HostChain>,
-    pub update_to: HeightOf<L::HostChain>,
+    pub counterparty_client_id: ClientIdOf<Tr>,
+    pub update_from: HeightOf<Hc>,
+    pub update_to: HeightOf<Hc>,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""))]
-pub struct LightClientSpecificFetch<L: LightClient>(pub L::Fetch);
+pub struct LightClientSpecificFetch<Hc: ChainExt, Tr: ChainExt>(pub Hc::Fetch<Tr>);
 
-impl<L: LightClient> Fetch<L> {
-    pub async fn handle(self, l: L) -> Vec<RelayerMsg>
-    where
-        AnyLightClientIdentified<AnyData>: From<identified!(Data<L>)>,
-    {
-        let relayer_msg = match self {
-            Fetch::TrustedClientState(FetchTrustedClientState { at, client_id }) => {
+impl<Hc, Tr> Fetch<Hc, Tr>
+where
+    Hc: ChainExt + DoFetchState<Hc, Tr> + DoFetchProof<Hc, Tr> + DoFetchUpdateHeaders<Hc, Tr>,
+    Hc::Fetch<Tr>: DoFetch<Hc>,
+    Tr: ChainExt,
+    AnyLightClientIdentified<AnyData>: From<identified!(Data<Hc, Tr>)>,
+    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Hc, Tr>)>,
+{
+    pub async fn handle(self, c: Hc) -> Vec<RelayerMsg> {
+        match self {
+            Fetch::Proof(msg) => [Hc::proof(&c, msg.at, msg.path)].into(),
+            Fetch::State(msg) => [Hc::state(&c, msg.at, msg.path)].into(),
+            Fetch::SelfClientState(FetchSelfClientState {
+                at: height,
+                __marker: _,
+            }) => {
                 // TODO: Split this into a separate query and aggregate
-                let height = match at {
-                    QueryHeight::Latest => l.chain().query_latest_height().await.unwrap(),
+                let height = match height {
+                    QueryHeight::Latest => c.query_latest_height().await.unwrap(),
                     QueryHeight::Specific(h) => h,
                 };
 
                 [data(
-                    l.chain().chain_id(),
-                    TrustedClientState {
-                        fetched_at: height,
-                        client_id: client_id.clone(),
-                        trusted_client_state: l.query_client_state(client_id, height).await,
+                    c.chain_id(),
+                    SelfClientState {
+                        self_client_state: c.self_client_state(height).await,
+                        __marker: PhantomData,
                     },
                 )]
                 .into()
             }
-            Fetch::StateProof(msg) => [l.proof(msg)].into(),
-            Fetch::SelfClientState(FetchSelfClientState { at: height }) => {
+            Fetch::SelfConsensusState(FetchSelfConsensusState {
+                at: height,
+                __marker: _,
+            }) => {
                 // TODO: Split this into a separate query and aggregate
                 let height = match height {
-                    QueryHeight::Latest => l.chain().query_latest_height().await.unwrap(),
+                    QueryHeight::Latest => c.query_latest_height().await.unwrap(),
                     QueryHeight::Specific(h) => h,
                 };
 
                 [data(
-                    l.chain().chain_id(),
-                    SelfClientState(l.chain().self_client_state(height).await),
-                )]
-                .into()
-            }
-            Fetch::SelfConsensusState(FetchSelfConsensusState { at: height }) => {
-                // TODO: Split this into a separate query and aggregate
-                let height = match height {
-                    QueryHeight::Latest => l.chain().query_latest_height().await.unwrap(),
-                    QueryHeight::Specific(h) => h,
-                };
-
-                [data(
-                    l.chain().chain_id(),
-                    SelfConsensusState(l.chain().self_consensus_state(height).await),
+                    c.chain_id(),
+                    SelfConsensusState {
+                        self_consensus_state: c.self_consensus_state(height).await,
+                        __marker: PhantomData,
+                    },
                 )]
                 .into()
             }
@@ -201,8 +190,7 @@ impl<L: LightClient> Fetch<L> {
                 sequence,
                 __marker,
             }) => {
-                let ack = l
-                    .chain()
+                let ack = c
                     .read_ack(
                         block_hash.clone(),
                         destination_channel_id.clone(),
@@ -212,7 +200,7 @@ impl<L: LightClient> Fetch<L> {
                     .await;
 
                 [data(
-                    l.chain().chain_id(),
+                    c.chain_id(),
                     PacketAcknowledgement {
                         fetched_by: FetchPacketAcknowledgement {
                             block_hash,
@@ -227,28 +215,19 @@ impl<L: LightClient> Fetch<L> {
                 .into()
             }
             Fetch::UpdateHeaders(fetch_update_headers) => {
-                l.generate_counterparty_updates(fetch_update_headers)
+                [Hc::fetch_update_headers(&c, fetch_update_headers)].into()
             }
-            Fetch::LightClientSpecific(LightClientSpecificFetch(fetch)) => l.do_fetch(fetch).await,
-            Fetch::ChannelEnd(FetchChannelEnd {
-                at,
-                port_id,
-                channel_id,
-            }) => [data(
-                l.chain().chain_id(),
-                ChannelEnd {
-                    channel: l.channel(channel_id, port_id, at).await,
-                    __marker: PhantomData,
-                },
-            )]
-            .into(),
-            Fetch::ConnectionEnd(FetchConnectionEnd { at, connection_id }) => [data(
-                l.chain().chain_id(),
-                ConnectionEnd(l.connection(connection_id, at).await),
-            )]
-            .into(),
-        };
-
-        relayer_msg
+            Fetch::LightClientSpecific(LightClientSpecificFetch(fetch)) => c.do_fetch(fetch).await,
+            Fetch::LatestClientState(FetchLatestClientState { path, __marker }) => {
+                [fetch::<Hc, Tr>(
+                    c.chain_id(),
+                    FetchState {
+                        at: c.query_latest_height().await.unwrap(),
+                        path: path.into(),
+                    },
+                )]
+                .into()
+            }
+        }
     }
 }
