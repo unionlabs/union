@@ -55,10 +55,6 @@ jobs:
               # Do not run on both systems
               [.attr] | inside(
                 [
-                  "uniond-release",
-                  "devnet",
-                  "devnet-union",
-                  "devnet-eth",
                   "docgen",
                   "download-circuit",
                   "evm",
@@ -95,9 +91,6 @@ jobs:
             (
               [.attr] | inside(
                 [
-                  "devnet",
-                  "devnet-union",
-                  "devnet-eth",
                   "evm",
                   "evm-contracts"
                 ]
