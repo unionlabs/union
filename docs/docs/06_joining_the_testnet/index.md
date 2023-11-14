@@ -12,7 +12,7 @@ Follow the instructions from our [Obtaining the uniond Binary](./01_obtaining_un
 
 ### 1) Fill out our intake form
 
-You'll need to follow our instructions from the [Getting Testnet Tokens](./02_getting_tokens.md) page to get the information required to fill out our intake form.
+You'll need to follow our instructions from the [Getting Testnet Tokens](./02_getting_tokens.md) page to get the information required to fill out our intake form. Once you have the information ready - continue to filling out our [Validator Intake Form](https://7xv16fh3twz.typeform.com/to/eYTMvi11).
 
 ### 2) Receive UNO and Create your validator
 
