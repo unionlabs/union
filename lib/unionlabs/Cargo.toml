@@ -39,6 +39,8 @@ ethers-core = { workspace = true, optional = true }
 serde_json = { version = "1.0.96", optional = true }
 bitvec = "1.0.1"
 
+parse-display = "0.8.2"
+
 wasmparser = { version = "0.113" }
 
 paste = { version = "1.0" }
@@ -47,7 +49,6 @@ clap = { version = "4.4.6", default-features = false, features = ["derive", "std
 either = "1.9.0"
 thiserror = "1.0.49"
 rlp = { version = "0.5.2", features = ["derive"] }
-parse-display = "0.8.2"
 
 [dev-dependencies]
 rand = "0.8.5"
