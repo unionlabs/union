@@ -1,6 +1,6 @@
 use color_eyre::eyre::{bail, Report};
 use futures::future::join_all;
-use hubble::hasura::*;
+use hubble::datastore::*;
 use tendermint::{block::Height, genesis::Genesis, Time};
 use tendermint_rpc::{
     endpoint::block_results::Response as BlockResponse,
@@ -9,6 +9,7 @@ use tendermint_rpc::{
     response_error::Code,
     Client, Error, HttpClient, Order,
 };
+use time::OffsetDateTime;
 use tokio::time::{sleep, Duration};
 use tracing::{debug, info};
 use url::Url;
@@ -210,16 +211,16 @@ async fn batch_sync<D: Datastore>(
                 on_conflict: None,
             }),
             hash: Some(header.header.hash().to_string()),
-            height: Some(header.header.height.value().into()),
+            height: Some(header.header.height.value() as i64),
             id: None,
             created_at: None,
             updated_at: None,
             is_finalized: Some(true),
             data: Some(serde_json::to_value(header.clone())?.replace_escape_chars()),
-            time: Some(header.header.time.to_rfc3339()),
+            time: Some(header.header.time.into()),
             transactions: Some(transactions_into_many_blocks_input(
                 txs,
-                header.header.time.to_rfc3339(),
+                header.header.time.into(),
             )),
         })
     }))
@@ -306,15 +307,12 @@ async fn sync_next<D: Datastore>(
             }),
             hash: Some(header.hash().to_string()),
             data: Some(serde_json::to_value(header.clone())?.replace_escape_chars()),
-            height: Some(header.height.value().into()),
+            height: Some(header.height.value() as i64),
             id: None,
             is_finalized: Some(true),
             updated_at: None,
-            time: Some(header.time.to_rfc3339()),
-            transactions: Some(transactions_into_many_blocks_input(
-                txs,
-                header.time.to_rfc3339(),
-            )),
+            time: Some(header.time.into()),
+            transactions: Some(transactions_into_many_blocks_input(txs, header.time.into())),
         }],
     };
 
@@ -372,50 +370,46 @@ async fn fetch_transactions_for_block(
 
 fn transactions_into_many_blocks_input(
     txs: Vec<tendermint_rpc::endpoint::tx::Response>,
-    time: String,
+    time: OffsetDateTime,
 ) -> crate::tm::insert_blocks_many::V0TransactionsArrRelInsertInput {
     let mut index = 0;
     crate::tm::insert_blocks_many::V0TransactionsArrRelInsertInput {
         data: txs
             .into_iter()
-            .map(
-                |tx| hubble::hasura::insert_blocks_many::V0TransactionsInsertInput {
-                    block: None,
-                    block_id: None,
-                    created_at: None,
-                    updated_at: None,
-                    data: Some(serde_json::to_value(&tx).unwrap().replace_escape_chars()),
-                    hash: Some(tx.hash.to_string()),
-                    id: None,
-                    index: Some(tx.index.into()),
-                    events: Some(insert_blocks_many::V0EventsArrRelInsertInput {
-                        data: tx
-                            .tx_result
-                            .events
-                            .into_iter()
-                            .map(|r| {
-                                let input = insert_blocks_many::V0EventsInsertInput {
-                                    block: None,
-                                    block_id: None,
-                                    created_at: None,
-                                    data: Some(
-                                        serde_json::to_value(r).unwrap().replace_escape_chars(),
-                                    ),
-                                    index: Some(index),
-                                    time: Some(time.clone()),
-                                    updated_at: None,
-                                    transaction: None,
-                                    transaction_id: None,
-                                    stage: Some(STAGE_TX),
-                                };
-                                index += 1;
-                                input
-                            })
-                            .collect(),
-                        on_conflict: None,
-                    }),
-                },
-            )
+            .map(|tx| insert_blocks_many::V0TransactionsInsertInput {
+                block: None,
+                block_id: None,
+                created_at: None,
+                updated_at: None,
+                data: Some(serde_json::to_value(&tx).unwrap().replace_escape_chars()),
+                hash: Some(tx.hash.to_string()),
+                id: None,
+                index: Some(tx.index.into()),
+                events: Some(insert_blocks_many::V0EventsArrRelInsertInput {
+                    data: tx
+                        .tx_result
+                        .events
+                        .into_iter()
+                        .map(|r| {
+                            let input = insert_blocks_many::V0EventsInsertInput {
+                                block: None,
+                                block_id: None,
+                                created_at: None,
+                                data: Some(serde_json::to_value(r).unwrap().replace_escape_chars()),
+                                index: Some(index),
+                                time: Some(time),
+                                updated_at: None,
+                                transaction: None,
+                                transaction_id: None,
+                                stage: Some(STAGE_TX),
+                            };
+                            index += 1;
+                            input
+                        })
+                        .collect(),
+                    on_conflict: None,
+                }),
+            })
             .collect(),
         on_conflict: None,
     }
@@ -440,7 +434,7 @@ impl BlockExt for BlockResponse {
                 updated_at: None,
                 index: Some(i as i64),
                 data: Some(serde_json::to_value(e).unwrap().replace_escape_chars()),
-                time: Some(timestamp.to_rfc3339()),
+                time: Some((*timestamp).into()),
                 stage: Some(STAGE_BEGIN_BLOCK),
                 transaction_id: None,
                 transaction: None,
@@ -456,7 +450,7 @@ impl BlockExt for BlockResponse {
                     updated_at: None,
                     index: Some(i as i64),
                     data: Some(serde_json::to_value(e).unwrap().replace_escape_chars()),
-                    time: Some(timestamp.to_rfc3339()),
+                    time: Some((*timestamp).into()),
                     stage: Some(STAGE_END_BLOCK),
                     transaction_id: None,
                     transaction: None,
@@ -472,7 +466,7 @@ impl BlockExt for BlockResponse {
                     updated_at: None,
                     index: Some(i as i64),
                     data: Some(serde_json::to_value(e).unwrap().replace_escape_chars()),
-                    time: Some(timestamp.to_rfc3339()),
+                    time: Some((*timestamp).into()),
                     stage: Some(STAGE_FINALIZE_BLOCK),
                     transaction_id: None,
                     transaction: None,
@@ -492,7 +486,7 @@ impl BlockExt for BlockResponse {
                         .unwrap()
                         .replace_escape_chars(),
                 ),
-                time: Some(timestamp.to_rfc3339()),
+                time: Some((*timestamp).into()),
                 stage: Some(STAGE_VALIDATOR_UPDATES),
                 transaction_id: None,
                 transaction: None,
@@ -512,7 +506,7 @@ impl BlockExt for BlockResponse {
                             .unwrap()
                             .replace_escape_chars(),
                     ),
-                    time: Some(timestamp.to_rfc3339()),
+                    time: Some((*timestamp).into()),
                     stage: Some(STAGE_CONSENSUS_PARAM_UPDATES),
                     transaction_id: None,
                     transaction: None,

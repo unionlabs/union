@@ -3,6 +3,7 @@
 **/target
 
 **/target
+**/.env
 
 # Dependencies
 **/node_modules

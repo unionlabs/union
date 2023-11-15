@@ -1,7 +1,7 @@
 use std::{net::SocketAddr, str::FromStr};
 
 use clap::Parser;
-use hubble::hasura::Datastore;
+use hubble::datastore::Datastore;
 use url::Url;
 
 /// Hubble is state machine observer.
@@ -9,11 +9,30 @@ use url::Url;
 #[command(author, version, about, long_about = None)]
 pub struct Args {
     /// The url to the hasura graphql endpoint.
-    #[arg(short, long, env = "HUBBLE_URL")]
-    pub url: Url,
+    #[arg(short, long, env = "HUBBLE_HASURA_URL")]
+    pub url: Option<Url>,
+
     /// The admin secret used to authenticate with hasura.
-    #[arg(short, long, env = "HUBBLE_SECRET")]
-    pub secret: String,
+    #[arg(
+        requires("url"),
+        group = "datastore",
+        required = true,
+        short = 's',
+        long,
+        env = "HUBBLE_HASURA_ADMIN_SECRET"
+    )]
+    pub hasura_admin_secret: Option<String>,
+
+    /// The database url used to connect with timescaledb.
+    #[arg(
+        group = "datastore",
+        required = true,
+        short,
+        long,
+        env = "HUBBLE_DATABASE_URL"
+    )]
+    pub database_url: Option<String>,
+
     /// Indexer configurations to start.
     #[arg(short, long, env = "HUBBLE_INDEXERS")]
     pub indexers: Indexers,
