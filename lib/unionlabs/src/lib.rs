@@ -568,13 +568,19 @@ pub mod traits {
         /// Available client types for this chain.
         type ClientType: Debug + Clone + PartialEq + Serialize + for<'de> Deserialize<'de>;
 
+        type Error: Debug;
+
         fn chain_id(&self) -> <Self::SelfClientState as ClientState>::ChainId;
 
-        fn query_latest_height(&self) -> impl Future<Output = Self::Height> + '_;
+        fn query_latest_height(
+            &self,
+        ) -> impl Future<Output = Result<Self::Height, Self::Error>> + '_;
 
-        fn query_latest_height_as_destination(&self) -> impl Future<Output = Self::Height> + '_;
+        fn query_latest_height_as_destination(
+            &self,
+        ) -> impl Future<Output = Result<Self::Height, Self::Error>> + '_;
 
-        fn query_latest_timestamp(&self) -> impl Future<Output = i64> + '_;
+        fn query_latest_timestamp(&self) -> impl Future<Output = Result<i64, Self::Error>> + '_;
 
         /// The client state on this chain at the specified `Height`.
         fn self_client_state(

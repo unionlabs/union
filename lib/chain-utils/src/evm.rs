@@ -98,30 +98,29 @@ impl<C: ChainSpec> Chain for Evm<C> {
 
     type ClientType = String;
 
+    type Error = beacon_api::errors::Error;
+
     fn chain_id(&self) -> <Self::SelfClientState as ClientState>::ChainId {
         self.chain_id
     }
 
-    fn query_latest_height(&self) -> impl Future<Output = Height> + '_ {
+    fn query_latest_height(&self) -> impl Future<Output = Result<Height, Self::Error>> + '_ {
         async move {
-            let height = self
-                .beacon_api_client
+            self.beacon_api_client
                 .finality_update()
                 .await
-                .map(|height| height.data.attested_header.beacon.slot)
-                .unwrap_or(0);
-
-            self.make_height(height)
+                .map(|height| self.make_height(height.data.attested_header.beacon.slot))
         }
     }
 
-    fn query_latest_height_as_destination(&self) -> impl Future<Output = Height> + '_ {
+    fn query_latest_height_as_destination(
+        &self,
+    ) -> impl Future<Output = Result<Height, Self::Error>> + '_ {
         async move {
             let height = self
                 .beacon_api_client
                 .block(beacon_api::client::BlockId::Head)
-                .await
-                .unwrap()
+                .await?
                 .data
                 .message
                 .slot;
@@ -138,8 +137,7 @@ impl<C: ChainSpec> Chain for Evm<C> {
                 let next_height = self
                     .beacon_api_client
                     .block(beacon_api::client::BlockId::Head)
-                    .await
-                    .unwrap()
+                    .await?
                     .data
                     .message
                     .slot;
@@ -150,22 +148,22 @@ impl<C: ChainSpec> Chain for Evm<C> {
                 tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
             }
 
-            self.make_height(height)
+            Ok(self.make_height(height))
         }
     }
 
-    fn query_latest_timestamp(&self) -> impl Future<Output = i64> + '_ {
+    fn query_latest_timestamp(&self) -> impl Future<Output = Result<i64, Self::Error>> + '_ {
         async move {
-            self.beacon_api_client
+            Ok(self
+                .beacon_api_client
                 .finality_update()
-                .await
-                .unwrap()
+                .await?
                 .data
                 .attested_header
                 .execution
                 .timestamp
                 .try_into()
-                .unwrap()
+                .unwrap())
         }
     }
 
@@ -447,7 +445,15 @@ impl<C: ChainSpec> EventSource for Evm<C> {
 
     fn events(self, _seed: Self::Seed) -> impl Stream<Item = Result<Self::Event, Self::Error>> {
         async move {
-            let latest_height = self.query_latest_height().await;
+            let genesis_time = self
+                .beacon_api_client
+                .genesis()
+                .await
+                .unwrap()
+                .data
+                .genesis_time;
+
+            let latest_height = self.query_latest_height().await.unwrap();
 
             stream::unfold(
                 (self, latest_height),
@@ -457,7 +463,13 @@ impl<C: ChainSpec> EventSource for Evm<C> {
                     let current_beacon_height = loop {
                         tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
 
-                        let current_beacon_height = this.query_latest_height().await;
+                        let current_beacon_height = match this.query_latest_height().await {
+                            Ok(current_beacon_height) => current_beacon_height,
+                            Err(e) => {
+                                tracing::error!(error = %e, "Error getting height from beacon. Trying again in 1 second.");
+                                continue;
+                            }
+                        };
 
                         tracing::debug!(%current_beacon_height, %previous_beacon_height);
 

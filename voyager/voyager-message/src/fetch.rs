@@ -153,7 +153,7 @@ impl<L: LightClient> Fetch<L> {
             Fetch::TrustedClientState(FetchTrustedClientState { at, client_id }) => {
                 // TODO: Split this into a separate query and aggregate
                 let height = match at {
-                    QueryHeight::Latest => l.chain().query_latest_height().await,
+                    QueryHeight::Latest => l.chain().query_latest_height().await.unwrap(),
                     QueryHeight::Specific(h) => h,
                 };
 
@@ -171,7 +171,7 @@ impl<L: LightClient> Fetch<L> {
             Fetch::SelfClientState(FetchSelfClientState { at: height }) => {
                 // TODO: Split this into a separate query and aggregate
                 let height = match height {
-                    QueryHeight::Latest => l.chain().query_latest_height().await,
+                    QueryHeight::Latest => l.chain().query_latest_height().await.unwrap(),
                     QueryHeight::Specific(h) => h,
                 };
 
@@ -184,7 +184,7 @@ impl<L: LightClient> Fetch<L> {
             Fetch::SelfConsensusState(FetchSelfConsensusState { at: height }) => {
                 // TODO: Split this into a separate query and aggregate
                 let height = match height {
-                    QueryHeight::Latest => l.chain().query_latest_height().await,
+                    QueryHeight::Latest => l.chain().query_latest_height().await.unwrap(),
                     QueryHeight::Specific(h) => h,
                 };
 

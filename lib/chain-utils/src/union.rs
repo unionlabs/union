@@ -66,38 +66,38 @@ impl Chain for Union {
 
     type ClientType = String;
 
+    type Error = tendermint_rpc::Error;
+
     fn chain_id(&self) -> <Self::SelfClientState as ClientState>::ChainId {
         self.chain_id.clone()
     }
 
-    fn query_latest_height(&self) -> impl Future<Output = Height> + '_ {
+    fn query_latest_height(&self) -> impl Future<Output = Result<Height, Self::Error>> + '_ {
         async move {
-            let height = self
-                .tm_client
+            self.tm_client
                 .latest_block()
                 .await
-                .map(|height| height.block.header.height.value())
-                .unwrap_or(0);
-
-            self.make_height(height)
+                .map(|height| self.make_height(height.block.header.height.value()))
         }
     }
 
-    fn query_latest_height_as_destination(&self) -> impl Future<Output = Height> + '_ {
+    fn query_latest_height_as_destination(
+        &self,
+    ) -> impl Future<Output = Result<Height, Self::Error>> + '_ {
         self.query_latest_height()
     }
 
-    fn query_latest_timestamp(&self) -> impl Future<Output = i64> + '_ {
+    fn query_latest_timestamp(&self) -> impl Future<Output = Result<i64, Self::Error>> + '_ {
         async move {
-            let height = self.query_latest_height().await;
-            self.tm_client
+            let height = self.query_latest_height().await?;
+            Ok(self
+                .tm_client
                 .block(u32::try_from(height.revision_height).unwrap())
-                .await
-                .unwrap()
+                .await?
                 .block
                 .header
                 .time
-                .unix_timestamp()
+                .unix_timestamp())
         }
     }
 
@@ -473,11 +473,11 @@ impl Union {
             return Ok(tx_hash);
         };
 
-        let mut target_height = self.query_latest_height().await.increment();
+        let mut target_height = self.query_latest_height().await?.increment();
         let mut i = 0;
         loop {
             let reached_height = 'l: loop {
-                let current_height = self.query_latest_height().await;
+                let current_height = self.query_latest_height().await?;
                 if current_height >= target_height {
                     break 'l current_height;
                 }
@@ -620,7 +620,7 @@ impl EventSource for Union {
         async move {
             let chain_revision = self.chain_revision;
 
-            let latest_height = self.query_latest_height().await;
+            let latest_height = self.query_latest_height().await.unwrap();
 
             stream::unfold(
                 (self, latest_height),
@@ -630,7 +630,13 @@ impl EventSource for Union {
                     let current_height = loop {
                         tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
 
-                        let current_height = this.query_latest_height().await;
+                        let current_height = match this.query_latest_height().await {
+                            Ok(current_height) => current_height,
+                            Err(e) => {
+                                tracing::error!(error = %e, "Error getting height from Union. Trying again in 1 second.");
+                                continue;
+                            }
+                        };
 
                         tracing::debug!(%current_height, %previous_height);
 

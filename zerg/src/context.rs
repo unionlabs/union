@@ -135,12 +135,18 @@ impl Context {
             let mut height = previous_height;
 
             while height == previous_height {
-                let maybe_height = self.union.query_latest_height().await.revision_height;
-                height = if maybe_height == 0 {
-                    height
-                } else {
-                    maybe_height
-                };
+                match self.union.query_latest_height().await {
+                    Ok(maybe_height) => {
+                        height = if maybe_height.revision_height == 0 {
+                            height
+                        } else {
+                            maybe_height.revision_height
+                        };
+                    }
+                    Err(e) => {
+                        tracing::error!(error = %e, "Error getting height from Union.");
+                    }
+                }
                 tokio::time::sleep(Duration::from_secs(1)).await;
             }
             previous_height = height;

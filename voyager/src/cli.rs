@@ -65,7 +65,7 @@ pub async fn any_state_proof_to_json<Counterparty: Chain, This: IbcStateReadPath
     use serde_json::to_string_pretty as json;
 
     let height = match height {
-        QueryHeight::Latest => c.query_latest_height().await,
+        QueryHeight::Latest => c.query_latest_height().await.unwrap(),
         QueryHeight::Specific(height) => height,
     };
 
