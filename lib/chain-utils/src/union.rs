@@ -375,7 +375,7 @@ impl Union {
         &self,
         signer: CosmosAccountId,
         messages: impl IntoIterator<Item = protos::google::protobuf::Any> + Clone,
-    ) -> Result<String, BroadcastTxCommitError> {
+    ) -> Result<H256, BroadcastTxCommitError> {
         use protos::cosmos::tx;
 
         let account = self.account_info_of_signer(&signer).await;
@@ -445,7 +445,7 @@ impl Union {
             .is_ok()
         {
             tracing::info!(%tx_hash, "tx already included");
-            return Ok(tx_hash);
+            return Ok(tx_hash.parse().unwrap());
         }
 
         let response_result = self.tm_client.broadcast_tx_sync(tx_raw_bytes.clone()).await;
@@ -470,7 +470,7 @@ impl Union {
 
             tracing::error!("cosmos tx failed: {}", value);
 
-            return Ok(tx_hash);
+            return Ok(tx_hash.parse().unwrap());
         };
 
         let mut target_height = self.query_latest_height().await?.increment();
@@ -489,7 +489,7 @@ impl Union {
             tracing::debug!(?tx_inclusion);
 
             match tx_inclusion {
-                Ok(_) => break Ok(tx_hash),
+                Ok(_) => break Ok(tx_hash.parse().unwrap()),
                 Err(err) if i > 5 => {
                     tracing::warn!("tx inclusion couldn't be retrieved after {} try", i);
                     break Err(BroadcastTxCommitError::Inclusion(err));

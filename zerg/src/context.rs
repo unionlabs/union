@@ -185,7 +185,7 @@ impl Context {
                                 let tx_res = self
                                     .union
                                     .tm_client
-                                    .tx(tx_hash.clone().parse().unwrap(), false)
+                                    .tx(tx_hash.clone().into_bytes().try_into().expect("Bytes are Hash"), false)
                                     .await
                                     .unwrap();
                                 let events: Result<Vec<_>, _> = tx_res
