@@ -689,9 +689,9 @@ impl EventSource for Union {
                         }))
                         .then(|res| async {
                             match res {
-                                Ok((height, event)) => {
-                                    if let Ok(block) = this.tm_client.block(height).await {
-                                        Ok(ChainEvent {
+                                Ok((height, event)) =>
+                                    match this.tm_client.block(height).await {
+                                    Ok(block) => Ok(ChainEvent {
                                             chain_id: this.chain_id(),
                                             block_hash: block
                                                 .block_id
@@ -704,16 +704,9 @@ impl EventSource for Union {
                                                 revision_height: height.try_into().unwrap(),
                                             },
                                             event,
-                                        })
-                                    } else {
-                                        Err(UnionEventSourceError::TryFromTendermintEvent(
-                                            TryFromTendermintEventError::UnknownField(
-                                                "".to_owned(),
-                                            ),
-                                        ))
-                                    }
-                                }
-                                Err(err) => Err(err),
+                                        }),
+                                        Err(e) => Err(UnionEventSourceError::Subscription(e)), },
+                                Err(err) => Err(err)
                             }
                         })
                         .collect::<Vec<_>>()
