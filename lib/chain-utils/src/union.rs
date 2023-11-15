@@ -9,11 +9,10 @@ use sha2::Digest;
 use tendermint_rpc::{query::Query, Client, Order, WebSocketClient, WebSocketClientUrl};
 use unionlabs::{
     events::{IbcEvent, TryFromTendermintEventError, WriteAcknowledgement},
-    google::protobuf::any::Any,
     hash::H256,
     ibc::{
         core::{client::height::Height, commitment::merkle_root::MerkleRoot},
-        lightclients::{cometbls, wasm},
+        lightclients::cometbls,
     },
     id::{ClientId, ConnectionId},
     parse_wasm_client_type,
@@ -56,10 +55,8 @@ pub struct Config {
 }
 
 impl Chain for Union {
-    type SelfClientState =
-        Any<wasm::client_state::ClientState<cometbls::client_state::ClientState>>;
-    type SelfConsensusState =
-        Any<wasm::consensus_state::ConsensusState<cometbls::consensus_state::ConsensusState>>;
+    type SelfClientState = cometbls::client_state::ClientState;
+    type SelfConsensusState = cometbls::consensus_state::ConsensusState;
 
     type Header = cometbls::header::Header;
 
@@ -144,30 +141,22 @@ impl Chain for Union {
                 .try_into()
                 .unwrap();
 
-            Any(wasm::client_state::ClientState {
-                data: cometbls::client_state::ClientState {
-                    chain_id: self.chain_id.clone(),
-                    // https://github.com/cosmos/relayer/blob/23d1e5c864b35d133cad6a0ef06970a2b1e1b03f/relayer/chains/cosmos/provider.go#L177
-                    trusting_period: unbonding_period * 85 / 100,
-                    unbonding_period,
-                    // https://github.com/cosmos/relayer/blob/23d1e5c864b35d133cad6a0ef06970a2b1e1b03f/relayer/chains/cosmos/provider.go#L177
-                    max_clock_drift: 60 * 20,
-                    frozen_height: Height {
-                        revision_number: 0,
-                        revision_height: 0,
-                    },
-                    latest_height: Height {
-                        revision_number: self.chain_id.split('-').last().unwrap().parse().unwrap(),
-                        revision_height: height.value(),
-                    },
+            cometbls::client_state::ClientState {
+                chain_id: self.chain_id.clone(),
+                // https://github.com/cosmos/relayer/blob/23d1e5c864b35d133cad6a0ef06970a2b1e1b03f/relayer/chains/cosmos/provider.go#L177
+                trusting_period: unbonding_period * 85 / 100,
+                unbonding_period,
+                // https://github.com/cosmos/relayer/blob/23d1e5c864b35d133cad6a0ef06970a2b1e1b03f/relayer/chains/cosmos/provider.go#L177
+                max_clock_drift: 60 * 20,
+                frozen_height: Height {
+                    revision_number: 0,
+                    revision_height: 0,
                 },
-                // TODO: Get this somehow
-                code_id: H256::default(),
                 latest_height: Height {
                     revision_number: self.chain_id.split('-').last().unwrap().parse().unwrap(),
                     revision_height: height.value(),
                 },
-            })
+            }
         }
     }
 
@@ -182,7 +171,7 @@ impl Chain for Union {
                 .await
                 .unwrap();
 
-            let state = cometbls::consensus_state::ConsensusState {
+            cometbls::consensus_state::ConsensusState {
                 timestamp: commit
                     .signed_header
                     .header
@@ -208,18 +197,7 @@ impl Chain for Union {
                     .to_vec()
                     .try_into()
                     .unwrap(),
-            };
-
-            Any(wasm::consensus_state::ConsensusState {
-                data: state,
-                timestamp: commit
-                    .signed_header
-                    .header
-                    .time
-                    .unix_timestamp()
-                    .try_into()
-                    .unwrap(),
-            })
+            }
         }
     }
 

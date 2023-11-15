@@ -45,7 +45,7 @@ use unionlabs::{
         Chain, ChainOf, ClientState, ClientStateOf, ConsensusStateOf, HeaderOf, HeightOf,
         LightClientBase,
     },
-    IntoEthAbi, MaybeRecoverableError, Proto,
+    EthAbi, IntoEthAbi, MaybeRecoverableError,
 };
 
 use crate::{
@@ -707,12 +707,10 @@ where
     ClientStateOf<<L::Counterparty as LightClientBase>::HostChain>: IntoEthAbi,
     ConsensusStateOf<<L::Counterparty as LightClientBase>::HostChain>: IntoEthAbi,
     HeaderOf<<L::Counterparty as LightClientBase>::HostChain>: IntoEthAbi,
-// not sure why these bounds are required
-    <<L::BaseCounterparty as LightClientBase>::HostChain as Chain>::SelfClientState: Proto,
-    <<L::BaseCounterparty as LightClientBase>::HostChain as Chain>::SelfConsensusState: Proto,
-    <<L::BaseCounterparty as LightClientBase>::HostChain as Chain>::Header: IntoEthAbi,
-    <<<L as LightClient>::BaseCounterparty as LightClientBase>::HostChain as unionlabs::traits::Chain>::SelfClientState: IntoEthAbi,
-    <<<L as LightClient>::BaseCounterparty as LightClientBase>::HostChain as unionlabs::traits::Chain>::SelfConsensusState: IntoEthAbi,
+    // not sure why these bounds are required
+    <<L::BaseCounterparty as LightClientBase>::HostChain as Chain>::Header: EthAbi,
+    <<L::BaseCounterparty as LightClientBase>::HostChain as Chain>::SelfClientState: EthAbi,
+    <<L::BaseCounterparty as LightClientBase>::HostChain as Chain>::SelfConsensusState: EthAbi,
 {
     evm.ibc_handlers
         .with(|ibc_handler| async move {

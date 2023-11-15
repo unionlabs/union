@@ -4,11 +4,10 @@ use chain_utils::evm::{EthCallExt, EthereumStateRead, Evm, TupleToOption};
 use serde::{Deserialize, Serialize};
 use unionlabs::{
     ethereum::config::{ChainSpec, Mainnet, Minimal},
-    google::protobuf::any::Any,
     hash::H160,
     ibc::{
         core::{client::height::Height, connection::connection_end::ConnectionEnd},
-        lightclients::{cometbls, wasm},
+        lightclients::cometbls,
     },
     id::ClientId,
     proof::{ChannelEndPath, ConnectionPath, IbcPath},
@@ -160,7 +159,7 @@ async fn query_client_state<C: ChainSpec>(
     evm: &Evm<C>,
     client_id: chain_utils::evm::EvmClientId,
     height: Height,
-) -> Any<wasm::client_state::ClientState<cometbls::client_state::ClientState>> {
+) -> cometbls::client_state::ClientState {
     let execution_height = evm.execution_height(height).await;
 
     let (client_state_bytes, is_found) = evm
@@ -172,14 +171,13 @@ async fn query_client_state<C: ChainSpec>(
 
     assert!(is_found);
 
-    Any::try_from_proto_bytes(&client_state_bytes).unwrap()
+    cometbls::client_state::ClientState::try_from_proto_bytes(&client_state_bytes).unwrap()
 }
 
-
 async fn read_ibc_state<Counterparty, C, P>(
-evm: &Evm<C>,
-p: P,
-at: HeightOf<Evm<C>>,
+    evm: &Evm<C>,
+    p: P,
+    at: HeightOf<Evm<C>>,
 ) -> P::Output
 where
 Counterparty: Chain,

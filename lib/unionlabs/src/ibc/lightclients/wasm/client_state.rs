@@ -3,7 +3,7 @@ use std::fmt::Debug;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    errors::InvalidLength, hash::H256, ibc::core::client::height::Height, EthAbi, IntoProto, Proto,
+    errors::InvalidLength, hash::H256, ibc::core::client::height::Height, IntoProto, Proto,
     TryFromProto, TryFromProtoBytesError, TryFromProtoErrorOf, TypeUrl,
 };
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -11,11 +11,6 @@ pub struct ClientState<Data> {
     pub data: Data,
     pub code_id: H256,
     pub latest_height: Height,
-}
-
-#[cfg(feature = "ethabi")]
-impl<Data: EthAbi> EthAbi for ClientState<Data> {
-    type EthAbi = Data::EthAbi;
 }
 
 impl TypeUrl for protos::ibc::lightclients::wasm::v1::ClientState {

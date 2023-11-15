@@ -8,7 +8,7 @@ use serde::{
 };
 
 use crate::{
-    CosmosAccountId, EthAbi, IntoProto, MsgIntoProto, Proto, TryFromProto, TryFromProtoBytesError,
+    CosmosAccountId, IntoProto, MsgIntoProto, Proto, TryFromProto, TryFromProtoBytesError,
     TryFromProtoErrorOf, TypeUrl,
 };
 
@@ -109,11 +109,6 @@ where
             value: val.0.into_proto().encode_to_vec(),
         }
     }
-}
-
-#[cfg(feature = "ethabi")]
-impl<T: EthAbi> EthAbi for Any<T> {
-    type EthAbi = T::EthAbi;
 }
 
 impl<T> Proto for Any<T>

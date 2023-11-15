@@ -93,7 +93,6 @@ pub struct Config {
 }
 
 impl<C: ChainSpec> Chain for Evm<C> {
-    // TODO: Unwrap these out of wasm, and re-wrap them in union
     type SelfClientState =
         Any<wasm::client_state::ClientState<ethereum::client_state::ClientState>>;
     type SelfConsensusState =

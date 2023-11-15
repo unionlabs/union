@@ -15,7 +15,7 @@ use tree_hash::TreeHash;
         ethers_contract_derive::EthAbiCodec
     )
 )]
-#[derive(Clone, Copy, PartialEq, Encode, Decode, TreeHash, Serialize, Deserialize)]
+#[derive(Clone, Copy, PartialEq, Encode, Decode, TreeHash, Serialize, Deserialize, Default)]
 pub struct Height {
     // REVIEW: Why default?
     #[serde(default)]
@@ -42,10 +42,6 @@ impl Height {
             revision_number,
             revision_height,
         }
-    }
-
-    pub fn is_zero(&self) -> bool {
-        self.revision_number == 0 && self.revision_height == 0
     }
 }
 

@@ -26,7 +26,13 @@ use unionlabs::{
     google::protobuf::{any::Any, timestamp::Timestamp},
     hash::{H160, H256, H512},
     ibc::{
-        core::client::{height::Height, msg_update_client::MsgUpdateClient},
+        core::{
+            client::{height::Height, msg_update_client::MsgUpdateClient},
+            connection::{
+                msg_connection_open_ack::MsgConnectionOpenAck,
+                msg_connection_open_try::MsgConnectionOpenTry,
+            },
+        },
         lightclients::{cometbls, ethereum, wasm},
     },
     tendermint::{
@@ -803,21 +809,46 @@ where
 async fn do_msg<L, C: ChainSpec>(union: Union, msg: Msg<L>) -> Result<(), BroadcastTxCommitError>
 where
     L: LightClient<HostChain = Union, Config = EthereumConfig, MsgError = BroadcastTxCommitError>,
-    <L::Counterparty as LightClientBase>::HostChain: Chain<
-        SelfClientState = Any<wasm::client_state::ClientState<ethereum::client_state::ClientState>>,
-        SelfConsensusState = Any<
-            wasm::consensus_state::ConsensusState<ethereum::consensus_state::ConsensusState>,
-        >,
-        Header = wasm::header::Header<ethereum::header::Header<C>>,
-    >,
+    L::Counterparty: LightClientBase<HostChain = Evm<C>>,
 {
     union
         .signers
         .with(|signer| async {
             let msg_any = match msg {
                 Msg::ConnectionOpenInit(data) => Any(data.msg).into_proto_with_signer(&signer),
-                Msg::ConnectionOpenTry(data) => Any(data.msg).into_proto_with_signer(&signer),
-                Msg::ConnectionOpenAck(data) => Any(data.msg).into_proto_with_signer(&signer),
+                Msg::ConnectionOpenTry(data) => Any(MsgConnectionOpenTry {
+                    client_id: data.msg.client_id,
+                    client_state: Any(wasm::client_state::ClientState {
+                        latest_height: data.msg.client_state.latest_height,
+                        data: data.msg.client_state,
+                        code_id: H256::default(),
+                    }),
+                    counterparty: data.msg.counterparty,
+                    delay_period: data.msg.delay_period,
+                    counterparty_versions: data.msg.counterparty_versions,
+                    proof_height: data.msg.proof_height,
+                    proof_init: data.msg.proof_init,
+                    proof_client: data.msg.proof_client,
+                    proof_consensus: data.msg.proof_consensus,
+                    consensus_height: data.msg.consensus_height,
+                })
+                .into_proto_with_signer(&signer),
+                Msg::ConnectionOpenAck(data) => Any(MsgConnectionOpenAck {
+                    client_state: Any(wasm::client_state::ClientState {
+                        latest_height: data.msg.client_state.latest_height,
+                        data: data.msg.client_state,
+                        code_id: H256::default(),
+                    }),
+                    proof_height: data.msg.proof_height,
+                    proof_try: data.msg.proof_try,
+                    proof_client: data.msg.proof_client,
+                    proof_consensus: data.msg.proof_consensus,
+                    consensus_height: data.msg.consensus_height,
+                    connection_id: data.msg.connection_id,
+                    counterparty_connection_id: data.msg.counterparty_connection_id,
+                    version: data.msg.version,
+                })
+                .into_proto_with_signer(&signer),
                 Msg::ConnectionOpenConfirm(data) => Any(data.0).into_proto_with_signer(&signer),
                 Msg::ChannelOpenInit(data) => Any(data.msg).into_proto_with_signer(&signer),
                 Msg::ChannelOpenTry(data) => Any(data.msg).into_proto_with_signer(&signer),

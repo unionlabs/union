@@ -11,16 +11,9 @@ use crate::{
         lightclients::{ethereum::fork_parameters::ForkParameters, tendermint::fraction::Fraction},
     },
     uint::U256,
-    EthAbi, Proto, TryFromProtoErrorOf, TypeUrl,
+    Proto, TryFromProtoErrorOf, TypeUrl,
 };
 
-#[cfg_attr(
-    feature = "ethabi",
-    derive(
-        ethers_contract_derive::EthAbiType,
-        ethers_contract_derive::EthAbiCodec
-    )
-)]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ClientState {
     pub chain_id: U256,
@@ -37,10 +30,6 @@ pub struct ClientState {
     // even though it would be better to have option, ethabicodec don't handle it as zero struct...
     pub frozen_height: Height,
     pub counterparty_commitment_slot: U256,
-}
-
-impl EthAbi for ClientState {
-    type EthAbi = ClientState;
 }
 
 impl TypeUrl for protos::union::ibc::lightclients::ethereum::v1::ClientState {
