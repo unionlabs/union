@@ -65,6 +65,12 @@ tendermint-rpc = { git = "https://github.com/unionlabs/tendermint-rs", branch = 
 ethers = { git = "https://github.com/unionlabs/ethers-rs", branch = "ethers-core-wasm", default-features = false }
 ethers-contract-derive = { git = "https://github.com/unionlabs/ethers-rs", branch = "ethers-core-wasm", default-features = false }
 ethers-core = { git = "https://github.com/unionlabs/ethers-rs", branch = "ethers-core-wasm", default-features = false }
+ethers-contract-abigen = { git = "https://github.com/unionlabs/ethers-rs", branch = "ethers-core-wasm", default-features = false }
+
+# ethers = { path = "/home/ben/projects/union/ethers-rs/ethers", default-features = false }
+# ethers-contract-derive = { path = "/home/ben/projects/union/ethers-rs/ethers-contract/ethers-contract-derive", default-features = false }
+# ethers-core = { path = "/home/ben/projects/union/ethers-rs/ethers-core", default-features = false }
+# ethers-contract-abigen = { path = "/home/ben/projects/union/ethers-rs/ethers-core" }
 
 [patch.crates-io]
 typenum = { git = "https://github.com/unionlabs/typenum", branch = "ben/192-const-generic-32-bit" }

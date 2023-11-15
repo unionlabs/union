@@ -1753,7 +1753,7 @@ dependencies = [
  "cosmwasm-std",
  "ethereum-verifier",
  "ethers-contract-derive",
- "ethers-core 2.0.10 (git+https://github.com/unionlabs/ethers-rs?branch=ethers-core-wasm)",
+ "ethers-core",
  "hex",
  "hex-literal",
  "ics008-wasm-client",
@@ -1863,11 +1863,11 @@ dependencies = [
 [[package]]
 name = "ethers"
 version = "2.0.10"
-source = "git+https://github.com/unionlabs/ethers-rs?branch=ethers-core-wasm#b00a8b076f966b6b6fb181b4ee9789dad2694790"
+source = "git+https://github.com/unionlabs/ethers-rs?branch=ethers-core-wasm#fad2a12b0247377d444f73c625219a74e6a5ad4f"
 dependencies = [
  "ethers-addressbook",
  "ethers-contract",
- "ethers-core 2.0.10 (git+https://github.com/unionlabs/ethers-rs?branch=ethers-core-wasm)",
+ "ethers-core",
  "ethers-etherscan",
  "ethers-middleware",
  "ethers-providers",
@@ -1878,9 +1878,9 @@ dependencies = [
 [[package]]
 name = "ethers-addressbook"
 version = "2.0.10"
-source = "git+https://github.com/unionlabs/ethers-rs?branch=ethers-core-wasm#b00a8b076f966b6b6fb181b4ee9789dad2694790"
+source = "git+https://github.com/unionlabs/ethers-rs?branch=ethers-core-wasm#fad2a12b0247377d444f73c625219a74e6a5ad4f"
 dependencies = [
- "ethers-core 2.0.10 (git+https://github.com/unionlabs/ethers-rs?branch=ethers-core-wasm)",
+ "ethers-core",
  "once_cell",
  "serde",
  "serde_json",
@@ -1889,12 +1889,12 @@ dependencies = [
 [[package]]
 name = "ethers-contract"
 version = "2.0.10"
-source = "git+https://github.com/unionlabs/ethers-rs?branch=ethers-core-wasm#b00a8b076f966b6b6fb181b4ee9789dad2694790"
+source = "git+https://github.com/unionlabs/ethers-rs?branch=ethers-core-wasm#fad2a12b0247377d444f73c625219a74e6a5ad4f"
 dependencies = [
  "const-hex",
- "ethers-contract-abigen 2.0.10 (git+https://github.com/unionlabs/ethers-rs?branch=ethers-core-wasm)",
+ "ethers-contract-abigen",
  "ethers-contract-derive",
- "ethers-core 2.0.10 (git+https://github.com/unionlabs/ethers-rs?branch=ethers-core-wasm)",
+ "ethers-core",
  "ethers-providers",
  "futures-util",
  "once_cell",
@@ -1907,33 +1907,12 @@ dependencies = [
 [[package]]
 name = "ethers-contract-abigen"
 version = "2.0.10"
-source = "git+https://github.com/unionlabs/ethers-rs?branch=benluelo/fix-name-collisions#01aea2576816031d1a4365325af63400d1d5734a"
+source = "git+https://github.com/unionlabs/ethers-rs?branch=ethers-core-wasm#fad2a12b0247377d444f73c625219a74e6a5ad4f"
 dependencies = [
  "Inflector",
  "const-hex",
  "dunce",
- "ethers-core 2.0.10 (git+https://github.com/unionlabs/ethers-rs?branch=benluelo/fix-name-collisions)",
- "eyre",
- "prettyplease",
- "proc-macro2",
- "quote",
- "regex",
- "serde",
- "serde_json",
- "syn 2.0.38",
- "toml 0.8.2",
- "walkdir",
-]
-
-[[package]]
-name = "ethers-contract-abigen"
-version = "2.0.10"
-source = "git+https://github.com/unionlabs/ethers-rs?branch=ethers-core-wasm#b00a8b076f966b6b6fb181b4ee9789dad2694790"
-dependencies = [
- "Inflector",
- "const-hex",
- "dunce",
- "ethers-core 2.0.10 (git+https://github.com/unionlabs/ethers-rs?branch=ethers-core-wasm)",
+ "ethers-core",
  "ethers-etherscan",
  "eyre",
  "prettyplease",
@@ -1951,12 +1930,12 @@ dependencies = [
 [[package]]
 name = "ethers-contract-derive"
 version = "2.0.10"
-source = "git+https://github.com/unionlabs/ethers-rs?branch=ethers-core-wasm#b00a8b076f966b6b6fb181b4ee9789dad2694790"
+source = "git+https://github.com/unionlabs/ethers-rs?branch=ethers-core-wasm#fad2a12b0247377d444f73c625219a74e6a5ad4f"
 dependencies = [
  "Inflector",
  "const-hex",
- "ethers-contract-abigen 2.0.10 (git+https://github.com/unionlabs/ethers-rs?branch=ethers-core-wasm)",
- "ethers-core 2.0.10 (git+https://github.com/unionlabs/ethers-rs?branch=ethers-core-wasm)",
+ "ethers-contract-abigen",
+ "ethers-core",
  "proc-macro2",
  "quote",
  "serde_json",
@@ -1966,36 +1945,7 @@ dependencies = [
 [[package]]
 name = "ethers-core"
 version = "2.0.10"
-source = "git+https://github.com/unionlabs/ethers-rs?branch=benluelo/fix-name-collisions#01aea2576816031d1a4365325af63400d1d5734a"
-dependencies = [
- "arrayvec",
- "bytes",
- "cargo_metadata",
- "chrono",
- "const-hex",
- "elliptic-curve",
- "ethabi",
- "generic-array",
- "k256",
- "num_enum",
- "once_cell",
- "open-fastrlp",
- "rand",
- "rlp",
- "serde",
- "serde_json",
- "strum",
- "syn 2.0.38",
- "tempfile",
- "thiserror",
- "tiny-keccak",
- "unicode-xid",
-]
-
-[[package]]
-name = "ethers-core"
-version = "2.0.10"
-source = "git+https://github.com/unionlabs/ethers-rs?branch=ethers-core-wasm#b00a8b076f966b6b6fb181b4ee9789dad2694790"
+source = "git+https://github.com/unionlabs/ethers-rs?branch=ethers-core-wasm#fad2a12b0247377d444f73c625219a74e6a5ad4f"
 dependencies = [
  "arrayvec",
  "bytes",
@@ -2025,9 +1975,9 @@ dependencies = [
 [[package]]
 name = "ethers-etherscan"
 version = "2.0.10"
-source = "git+https://github.com/unionlabs/ethers-rs?branch=ethers-core-wasm#b00a8b076f966b6b6fb181b4ee9789dad2694790"
+source = "git+https://github.com/unionlabs/ethers-rs?branch=ethers-core-wasm#fad2a12b0247377d444f73c625219a74e6a5ad4f"
 dependencies = [
- "ethers-core 2.0.10 (git+https://github.com/unionlabs/ethers-rs?branch=ethers-core-wasm)",
+ "ethers-core",
  "reqwest",
  "semver",
  "serde",
@@ -2039,12 +1989,12 @@ dependencies = [
 [[package]]
 name = "ethers-middleware"
 version = "2.0.10"
-source = "git+https://github.com/unionlabs/ethers-rs?branch=ethers-core-wasm#b00a8b076f966b6b6fb181b4ee9789dad2694790"
+source = "git+https://github.com/unionlabs/ethers-rs?branch=ethers-core-wasm#fad2a12b0247377d444f73c625219a74e6a5ad4f"
 dependencies = [
  "async-trait",
  "auto_impl",
  "ethers-contract",
- "ethers-core 2.0.10 (git+https://github.com/unionlabs/ethers-rs?branch=ethers-core-wasm)",
+ "ethers-core",
  "ethers-etherscan",
  "ethers-providers",
  "ethers-signers",
@@ -2065,7 +2015,7 @@ dependencies = [
 [[package]]
 name = "ethers-providers"
 version = "2.0.10"
-source = "git+https://github.com/unionlabs/ethers-rs?branch=ethers-core-wasm#b00a8b076f966b6b6fb181b4ee9789dad2694790"
+source = "git+https://github.com/unionlabs/ethers-rs?branch=ethers-core-wasm#fad2a12b0247377d444f73c625219a74e6a5ad4f"
 dependencies = [
  "async-trait",
  "auto_impl",
@@ -2073,7 +2023,7 @@ dependencies = [
  "bytes",
  "const-hex",
  "enr",
- "ethers-core 2.0.10 (git+https://github.com/unionlabs/ethers-rs?branch=ethers-core-wasm)",
+ "ethers-core",
  "futures-channel",
  "futures-core",
  "futures-timer",
@@ -2102,7 +2052,7 @@ dependencies = [
 [[package]]
 name = "ethers-signers"
 version = "2.0.10"
-source = "git+https://github.com/unionlabs/ethers-rs?branch=ethers-core-wasm#b00a8b076f966b6b6fb181b4ee9789dad2694790"
+source = "git+https://github.com/unionlabs/ethers-rs?branch=ethers-core-wasm#fad2a12b0247377d444f73c625219a74e6a5ad4f"
 dependencies = [
  "async-trait",
  "coins-bip32",
@@ -2110,7 +2060,7 @@ dependencies = [
  "const-hex",
  "elliptic-curve",
  "eth-keystore",
- "ethers-core 2.0.10 (git+https://github.com/unionlabs/ethers-rs?branch=ethers-core-wasm)",
+ "ethers-core",
  "rand",
  "sha2 0.10.8",
  "thiserror",
@@ -2120,13 +2070,13 @@ dependencies = [
 [[package]]
 name = "ethers-solc"
 version = "2.0.10"
-source = "git+https://github.com/unionlabs/ethers-rs?branch=ethers-core-wasm#b00a8b076f966b6b6fb181b4ee9789dad2694790"
+source = "git+https://github.com/unionlabs/ethers-rs?branch=ethers-core-wasm#fad2a12b0247377d444f73c625219a74e6a5ad4f"
 dependencies = [
  "cfg-if",
  "const-hex",
  "dirs",
  "dunce",
- "ethers-core 2.0.10 (git+https://github.com/unionlabs/ethers-rs?branch=ethers-core-wasm)",
+ "ethers-core",
  "glob",
  "home",
  "md-5",
@@ -2555,7 +2505,7 @@ name = "generate-rust-sol-bindings"
 version = "0.1.0"
 dependencies = [
  "clap",
- "ethers-contract-abigen 2.0.10 (git+https://github.com/unionlabs/ethers-rs?branch=benluelo/fix-name-collisions)",
+ "ethers-contract-abigen",
 ]
 
 [[package]]
@@ -6370,7 +6320,7 @@ dependencies = [
  "either",
  "ethereum_ssz",
  "ethers-contract-derive",
- "ethers-core 2.0.10 (git+https://github.com/unionlabs/ethers-rs?branch=ethers-core-wasm)",
+ "ethers-core",
  "generic-array",
  "hex",
  "hex-literal",

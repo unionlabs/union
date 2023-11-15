@@ -8,7 +8,7 @@ edition = "2021"
 [dependencies]
 unionlabs = { workspace = true, default-features = true }
 beacon-api = { workspace = true, default-features = false }
-contracts.workspace = true
+contracts = { workspace = true, features = ["providers"] }
 serde-utils.workspace = true
 protos = { workspace = true, default-features = true, features = [ "client" ] }
 
