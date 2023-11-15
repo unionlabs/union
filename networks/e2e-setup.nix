@@ -105,10 +105,10 @@
             default = "http://0.0.0.0:16657";
             help = "Endpoint that serves galois";
           };
-          # galois_tls = {
-          #   type = "flag";
-          #   help = "Connect to galois using TLS";
-          # };
+          galois_tls = {
+            type = "flag";
+            help = "Connect to galois using TLS";
+          };
           circuit_path = {
             help = "Path to the circuit files to run galois locally (if not specified, galois won't be run)";
           };
@@ -117,7 +117,7 @@
             help = "Rpc endpoint for the evm beacon chain";
           };
           evm_ws_url = {
-            default = "http://localhost:8546";
+            default = "ws://localhost:8546";
             help = "Websocket endpoint for the evm execution chain";
           };
           union_rpc_url = {
@@ -129,7 +129,7 @@
             help = "gRpc endpoint for union";
           };
           union_ws_url = {
-            default = "http://localhost:26657/websocket";
+            default = "ws://localhost:26657/websocket";
             help = "Websocket endpoint for union";
           };
           voyager_config_file = {
@@ -180,7 +180,14 @@
               exit 1
             fi
             echo "Starting galois.."
-            ${self'.packages.galoisd}/bin/galoisd serve "$argc_galois_url"
+            
+
+            command="${self'.packages.galoisd}/bin/galoisd serve $argc_galois_url"
+            if [[ -n "$argc_galois_tls" ]]; then
+              command="$command $argc_galois_tls"
+            fi
+
+            eval "$command"
           }
 
           evm_contracts_outfile=$(mktemp)
@@ -214,10 +221,10 @@
             rm "$evm_contracts_outfile"
 
 
-            # cometbls_address=$(echo "$evm_contracts_arg" | jq .cometbls_client_address -r)
+            cometbls_client_address=$(echo "$evm_contracts_arg" | jq .cometbls_client_address -r)
             ibc_handler_address=$(echo "$evm_contracts_arg" | jq .ibc_handler_address -r)
             # ucs01relay=$(echo "$evm_contracts_arg" | jq .ucs01_relay_address -r)
-            # wasm_code_id=$(cat ${self'.packages.devnet-genesis}/code-ids/ethereum_light_client_minimal)
+            wasm_code_id=$(cat ${self'.packages.devnet-genesis}/code-ids/ethereum_light_client_minimal)
             evm_wallet=$(cat ${self'.packages.devnet-evm-config}/dev-key0.prv)
 
             # TODO(aeryz): fetch fee denom
@@ -243,7 +250,16 @@
                   "prover_endpoint": "'"$argc_galois_url"'",
                   "grpc_url": "'"$argc_union_grpc_url"'"
                 }
-              }              }' | jq > "$argc_voyager_config_file"
+              },
+              "voyager": {
+                "hasura": null,
+                "num_workers": 10,
+                "queue": {
+                  "type": "pg-queue",
+                  "database_url": "postgres://postgres:postgrespassword@localhost:5432/default"
+                }
+              }
+            }' | jq > "$argc_voyager_config_file"
 
               deployEVMPingPong
           }
@@ -256,6 +272,125 @@
             ${instantiatePingPong}/bin/instantiate-ping-pong "$argc_ping_pong_timeout"
           }
 
+          createClients() {
+            curl localhost:65534/msg -H 'Content-Type: application/json' -d \
+              '
+              {
+                "Sequence": [
+                  {
+                    "Aggregate": {
+                      "queue": [
+                        {
+                          "Fetch": {
+                            "EthereumMinimal": {
+                              "chain_id": "union-devnet-1",
+                              "data": {
+                                "SelfClientState": {
+                                  "at": "latest"
+                                }
+                              }
+                            }
+                          }
+                        },
+                        {
+                          "Fetch": {
+                            "EthereumMinimal": {
+                              "chain_id": "union-devnet-1",
+                              "data": {
+                                "SelfConsensusState": {
+                                  "at": "latest"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      ],
+                      "data": [],
+                      "receiver": {
+                        "CometblsMinimal": {
+                          "chain_id": "32382",
+                          "data": {
+                            "CreateClient": {
+                              "config": {
+                                "client_type": "cometbls",
+                                "cometbls_client_address": "'"$cometbls_client_address"'"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "Aggregate": {
+                      "queue": [
+                        {
+                          "Fetch": {
+                            "CometblsMinimal": {
+                              "chain_id": "32382",
+                              "data": {
+                                "SelfClientState": {
+                                  "at": "latest"
+                                }
+                              }
+                            }
+                          }
+                        },
+                        {
+                          "Fetch": {
+                            "CometblsMinimal": {
+                              "chain_id": "32382",
+                              "data": {
+                                "SelfConsensusState": {
+                                  "at": "latest"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      ],
+                      "data": [],
+                      "receiver": {
+                        "EthereumMinimal": {
+                          "chain_id": "union-devnet-1",
+                          "data": {
+                            "CreateClient": {
+                              "config": {
+                                "code_id": "0x'"$wasm_code_id"'"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                ]
+              }
+              '
+
+            while ! ${self'.packages.voyager}/bin/voyager -c "$argc_voyager_config_file" query --on union-devnet ibc-path client-state-path 08-wasm-0
+            do
+              echo ".. Waiting for the client to be created on union.."
+              sleep 5
+            done
+            echo "The client on union is created."
+
+            while ! ${self'.packages.voyager}/bin/voyager -c "$argc_voyager_config_file" query --on ethereum-devnet ibc-path client-state-path cometbls-0
+            do
+              echo ".. Waiting for the client to be created on ethereum.."
+              sleep 5
+            done
+            echo "The client on ethereum is created."
+          }
+
+          waitVoyagerToBeOnline() {
+            # TODO(aeryz): Make this configurable as well
+            while ! curl localhost:65534/health
+            do
+              echo ".. Waiting for voyager to be online. Config path: $argc_voyager_config_file"
+              sleep 2
+            done
+          }
 
           downloadGaloisCircuits
           ethAliveTest
@@ -265,6 +400,8 @@
           sleep 6
           instantiatePingPong
           deployEVMContracts
+          waitVoyagerToBeOnline
+          createClients
 
           # Voyager requires the scheme to be included (http(s)) but galoisd returns an error when
           # it is run with a scheme in the URL.
