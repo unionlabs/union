@@ -4,35 +4,18 @@
 	import Tagline from '$lib/Tagline.svelte';
 </script>
 
-<main class="bg-background flex-1 max-w-screen relative flex items-center justify-center overflow-hidden">
-	<div class="flex flex-col justify-center items-center">
-		<Logo />
-		<Tagline />
-		<div class="z-20 flex flex-row md:flex-row gap-[16px] md:gap-[32px]">
-			<div class="buttonFly"><ButtonA href="/blog">Read More &gt;</ButtonA></div>
-		</div>
-		<div class="h-[33px] md:h-[67px]" />
-		<!--
-    <p class="text-xl font-semibold">Infrastructure for <span class="text-accent font-bold">shared security</span>.<p>
-    !-->
+<main class="bg-black flex-1 flex-col max-w-screen relative flex gap-8 items-center justify-center p-4 mt-40">
+	<div class="text-center">
+		<div class="font-black text-8xl  text-center max-w-6xl">Infrastructure for the</div> 
+		<div class="italic text-accent text-9xl shadow-2xl font-black -mt-10">next century</div>
+	</div>
+	<div class="text-lg md:text-3xl font-mono md:max-w-4xl">Union is a hyper-efficient, zero-knowledge interoperability layer that connects appchains, layer 1, and layer 2 networks.</div> 
+	<div>
+		<button class=" bg-accent px-4 py-2 mt-8 text-lg md:text-2xl font-bold text-black">EXPLORE -></button>
+	</div>
+
+	<div>
+		<h2 class="text-3xl font-bold mt-80">Backed by industry experts</h2>
+
 	</div>
 </main>
-
-<style lang="postcss">
-	@keyframes fadeIn {
-		0% {
-			opacity: 0;
-		}
-		100% {
-			opacity: 1;
-		}
-	}
-
-	.buttonFly {
-		animation-duration: 0.5s;
-		animation-delay: 3.9s;
-		animation-name: fadeIn;
-		animation-timing-function: ease-in;
-		animation-fill-mode: both;
-	}
-</style>

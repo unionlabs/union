@@ -19,7 +19,7 @@ export default {
         background: "#1b1b1d",
         bgDark: "#242526",
         sub: "#252525",
-        accent: "#00FFF0",
+        accent: "#FF87C3",
         primary: "#fff",
       },
     },

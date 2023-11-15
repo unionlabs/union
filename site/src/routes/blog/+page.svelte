@@ -15,7 +15,7 @@
 </script>
 
 
-<main class="bg-background flex flex-1 justify-center sm:pt-4 ">
+<main class="bg-black flex flex-1 justify-center sm:pt-4 ">
 	<div class="flex flex-col gap-4 max-w-2xl">
 		{#each filteredPosts as [path, {metadata}] }
 			<a class="block p-4" href={extractSlug(path)}>
