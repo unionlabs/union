@@ -43,6 +43,10 @@ impl Height {
             revision_height,
         }
     }
+
+    pub fn is_zero(&self) -> bool {
+        self.revision_number == 0 && self.revision_height == 0
+    }
 }
 
 impl FromStr for Height {
