@@ -5,6 +5,7 @@ use std::{
     str::FromStr,
 };
 
+use ethers_contract_derive::{EthAbiCodec, EthAbiType};
 use serde::{
     de::{self, Unexpected},
     Deserialize, Serialize,
@@ -46,7 +47,7 @@ type PositiveNanos = BoundedI32<0, DURATION_MAX_NANOS>;
 ///   of one second or more, a non-zero value for the `nanos` field must be
 ///   of the same sign as the `seconds` field. Must be from -999,999,999
 ///   to +999,999,999 inclusive.
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, EthAbiCodec, EthAbiType)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct Duration(
     BoundedI128<

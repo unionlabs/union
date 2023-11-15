@@ -1,3 +1,4 @@
+use ethers_contract_derive::{EthAbiCodec, EthAbiType};
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -7,10 +8,14 @@ use crate::{
     Proto, TryFromProtoErrorOf, TypeUrl,
 };
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, EthAbiCodec, EthAbiType)]
 pub struct ConsensusState {
     pub root: MerkleRoot,
     pub next_validators_hash: H256,
+}
+
+impl crate::EthAbi for ConsensusState {
+    type EthAbi = Self;
 }
 
 #[derive(Debug)]

@@ -101,6 +101,41 @@ macro_rules! bounded_int {
                 }
             }
 
+           #[cfg(feature = "ethabi")]
+            impl<const MIN: $ty, const MAX: $ty> ::ethers_core::abi::AbiType for $Struct<MIN, MAX> {
+                fn param_type() -> ::ethers_core::abi::ParamType {
+                    <$ty>::param_type()
+                }
+            }
+
+            #[cfg(feature = "ethabi")]
+            impl<const MIN: $ty, const MAX: $ty> ::ethers_core::abi::AbiArrayType for $Struct<MIN, MAX> {}
+
+            #[cfg(feature = "ethabi")]
+            impl<const MIN: $ty, const MAX: $ty> ::ethers_core::abi::AbiEncode for $Struct<MIN, MAX> {
+                fn encode(self) -> Vec<u8> {
+                    self.0.encode()
+                }
+            }
+
+            #[cfg(feature = "ethabi")]
+            impl<const MIN: $ty, const MAX: $ty> ::ethers_core::abi::AbiDecode for $Struct<MIN, MAX> {
+                fn decode(bytes: impl AsRef<[u8]>) -> Result<Self, ::ethers_core::abi::AbiError> {
+                    <$ty>::decode(bytes).map(Self)
+                }
+            }
+
+            #[cfg(feature = "ethabi")]
+            impl<const MIN: $ty, const MAX: $ty> ::ethers_core::abi::Tokenizable for $Struct<MIN, MAX> {
+                fn from_token(token: ::ethers_core::abi::Token) -> Result<Self, ::ethers_core::abi::InvalidOutputType> {
+                    <$ty>::from_token(token).map(Self)
+                }
+
+                fn into_token(self) -> ::ethers_core::abi::Token {
+                    self.0.into_token()
+                }
+            }
+
             $(
                 const _: () = assert!(
                     <$ty>::MIN.abs_diff(0) == 0,

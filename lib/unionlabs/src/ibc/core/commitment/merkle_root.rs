@@ -1,10 +1,11 @@
 #[cfg(feature = "ethabi")]
 use contracts::glue::IbcCoreCommitmentV1MerkleRootData;
+use ethers_contract_derive::{EthAbiCodec, EthAbiType};
 use serde::{Deserialize, Serialize};
 
 use crate::{errors::InvalidLength, hash::H256, Proto, TypeUrl};
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, EthAbiCodec, EthAbiType)]
 pub struct MerkleRoot {
     pub hash: H256,
 }

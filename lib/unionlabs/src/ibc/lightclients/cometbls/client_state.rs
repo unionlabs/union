@@ -1,3 +1,4 @@
+use ethers_contract_derive::{EthAbiCodec, EthAbiType};
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -7,13 +8,17 @@ use crate::{
     Proto, TryFromProtoErrorOf, TypeUrl,
 };
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, EthAbiType, EthAbiCodec)]
 pub struct ClientState {
     pub chain_id: String,
     pub trusting_period: Duration,
     pub unbonding_period: Duration,
     pub max_clock_drift: Duration,
     pub frozen_height: Height,
+}
+
+impl crate::EthAbi for ClientState {
+    type EthAbi = Self;
 }
 
 impl From<ClientState> for protos::union::ibc::lightclients::cometbls::v1::ClientState {

@@ -12,16 +12,23 @@ use ics008_wasm_client::{
 };
 use sha3::Digest;
 use unionlabs::{
+    google::protobuf::any::Any,
     hash::H256,
     ibc::{
         core::client::height::Height,
-        lightclients::ethereum::{
-            client_state::ClientState, consensus_state::ConsensusState, header::Header,
-            proof::Proof, storage_proof::StorageProof,
+        lightclients::{
+            cometbls,
+            ethereum::{
+                client_state::ClientState, consensus_state::ConsensusState, header::Header,
+                proof::Proof, storage_proof::StorageProof,
+            },
+            wasm,
         },
     },
+    id::ClientId,
+    proof::Path,
     uint::U256,
-    TryFromProto,
+    IntoEthAbi, TryFromProto,
 };
 
 use crate::{
@@ -33,9 +40,8 @@ use crate::{
     Config,
 };
 
-type WasmClientState = unionlabs::ibc::lightclients::wasm::client_state::ClientState<ClientState>;
-type WasmConsensusState =
-    unionlabs::ibc::lightclients::wasm::consensus_state::ConsensusState<ConsensusState>;
+type WasmClientState = wasm::client_state::ClientState<ClientState>;
+type WasmConsensusState = wasm::consensus_state::ConsensusState<ConsensusState>;
 
 pub struct EthereumLightClient;
 
@@ -353,6 +359,24 @@ fn do_verify_membership(
     storage_proof: Proof,
     value: Vec<u8>,
 ) -> Result<(), Error> {
+    let value = match path.parse::<Path<ClientId, Height>>().unwrap() {
+        Path::ClientStatePath(_) => {
+            let client_state = Any::<
+                wasm::client_state::ClientState<cometbls::client_state::ClientState>,
+            >::try_from_proto_bytes(&value)
+            .unwrap();
+            client_state.0.data.into_eth_abi_bytes()
+        }
+        Path::ClientConsensusStatePath(_) => {
+            let consensus_state = Any::<
+                wasm::client_state::ClientState<cometbls::client_state::ClientState>,
+            >::try_from_proto_bytes(&value)
+            .unwrap();
+            consensus_state.0.data.into_eth_abi_bytes()
+        }
+        _ => value,
+    };
+
     check_commitment_key(
         path,
         counterparty_commitment_slot,
