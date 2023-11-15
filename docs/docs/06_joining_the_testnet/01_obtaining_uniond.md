@@ -80,7 +80,7 @@ For example, in `zsh`, you can add the following alias to your `.zshrc`:
 
 ```sh
 export UNIOND_VERSION='v0.14.0'
-alias uniond='docker run -v ~/.union:/.union -it ghcr.io/unionlabs/uniond:$UNIOND_VERSION --home /.union'
+alias uniond='docker run -v ~/.union:/.union --network host -it ghcr.io/unionlabs/uniond:$UNIOND_VERSION --home /.union'
 ```
 
 This will enable you to issue `uniond` sub-commands with such as `uniond keys add` with ease.
