@@ -9,7 +9,7 @@
 	<Header />
 	<div class="flex flex-col items-center">
 		<div class="font-black text-8xl text-center max-w-6xl mt-[120px]">Infrastructure for the</div> 
-		<div class="italic text-accent text-9xl text-shadow-2xl font-black -mt-10 text-center">next century</div>
+		<div class="italic text-accent text-9xl big-text-shadow font-black -mt-12 text-center">next century</div>
 		<div class="text-lg md:text-3xl font-mono md:max-w-4xl mt-8">Union is a hyper-efficient, zero-knowledge interoperability layer that connects appchains, layer 1, and layer 2 networks.</div> 
 		<div>
 			<button class=" bg-accent px-4 py-2 mt-8 text-lg md:text-2xl font-bold text-black">EXPLORE </button>
@@ -48,5 +48,9 @@
 			cover,
 			var(--grid-size) var(--grid-size), 
 			var(--grid-size) var(--grid-size); 
+	}
+
+	.big-text-shadow {
+		text-shadow: 3px 3px #c63f73;
 	}
 </style>
