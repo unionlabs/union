@@ -9,9 +9,9 @@ These endpoints may be helpful while joining the network and ensuring the correc
 ## RPC
 
 - https://rpc.cryptware.io/
-- https://rpc.bonlulu.uno/
+- https://rpc.testnet.bonlulu.uno/
 
 ## REST API
 
 - https://api.cryptware.io/
-- https://api.bonlulu.uno/
+- https://api.testnet.bonlulu.uno/
