@@ -47,7 +47,7 @@
 			<img class="block w-[220px]"src="/images/investors/lightshift.png" alt="Lightshift"/>
 		</div>
 		<div class="mt-4">
-			<a class="skew-button" href="/blog/ics20-transfers-to-ethereum/"><span>READ THE ANNOUNCEMENT -&gt;</span></a>
+			<a class="skew-button" href="/blog"><span>READ THE ANNOUNCEMENT -&gt;</span></a>
 		</div>
 	</section>
 </main>	
