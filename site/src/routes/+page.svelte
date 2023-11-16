@@ -13,7 +13,7 @@
 			appchains, layer 1, and layer 2 networks.
 		</div> 
 		<div>
-			<button class=" bg-accent px-4 py-2 mt-8 text-lg md:text-2xl font-bold text-black">EXPLORE -&gt;</button>
+			<a class="skew-button" href="https://docs.union.build"><span>EXPLORE -&gt;</span></a>
 		</div>
 	</div>
 
@@ -141,5 +141,37 @@
 			margin-top: 16px;
 		}
 		
+	}
+
+	.skew-button {
+	  font-size: 12px;
+	  margin-top: 16px;
+
+	  @media(min-width: 600px) {
+	  	font-size: 16px;
+	  }
+
+	  @media(min-width: 1024px) {
+		margin-top: 24px;
+;		font-size: 18px;
+		
+	  }
+	  --skew: 16deg;
+	  color: theme(colors.black);
+	  background: theme(colors.accent);
+	  font-weight: 700;
+	  text-align: center;
+	  text-decoration: none;
+	  border: 0;
+	  outline: 0;
+	  padding: 8px 24px;
+	  display: inline-block;
+	  transform: skew(calc(var(--skew) * -1));
+	}
+
+    /* Un-skew the text */
+	.skew-button > span {
+	  display: inline-block;
+	  transform: skew(var(--skew));
 	}
 </style>
