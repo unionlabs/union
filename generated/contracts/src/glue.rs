@@ -933,7 +933,7 @@ pub mod glue {
         pub trusted_height: IbcCoreClientV1HeightData,
         pub trusted_validators: Data,
     }
-    ///`OptimizedConsensusState(bytes32,bytes32,uint64)`
+    ///`OptimizedConsensusState(uint64,bytes32,bytes32)`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
