@@ -3,8 +3,6 @@
 	import Header from '$lib/Header.svelte';
 </script>
 
-<div class="flex flex-col min-h-screen grid-effect-bg flex-1 flex-col flex gap-8 shadow-effect-bg p-4">
-	<Header />
 	<main class="flex-1">
 	<div class="flex flex-col items-center">
 		<div class="main-text">Infrastructure for the</div> 
@@ -16,6 +14,22 @@
 		</div> 
 		<div>
 			<a class="skew-button" href="https://docs.union.build"><span>EXPLORE -&gt;</span></a>
+		</div>
+	</div>
+
+
+
+	<div class="my-60">
+		<img class="w-[500px] absolute left-[50%] -ml-[250px] z-10 -mt-[100px] eth-logo" src="/images/ethereum.svg" alt="Ethereum"/>
+		<div class="flex flex-col items-center z-20 relative">
+			<h2 class="text-xl md:text-6xl font-bold text-center">ETH &lt;-&gt; IBC</h2>
+			<h3 class="text-xl md:text-[27px] font-bold text-center text-gray-300">Union's flagship product</h3>
+			<p class="text-2xl mt-4 text-center mt-10">Built using Zero-Knowledge Cryptography and BLS Signatures, a</p>
+			<div class="text-5xl text-accent font-black italic">Trustless Ethereum IBC Connection</div>
+			<p class="text-2xl text-gray-300">Live between Union' Testnet and Ethereum's Testnet.</p>
+			<div class="mt-4">
+				<a class="skew-button" href="/blog/ics20-transfers-to-ethereum/"><span>TRY IT OUT -&gt;</span></a>
+			</div>
 		</div>
 	</div>
 
@@ -35,29 +49,9 @@
 		
 	</div>
 	</main>	
-	<Footer />
-</div>
 
 
 <style lang="postcss">
-	.grid-effect-bg {
-		--grid-size: 4rem;
-		@media (min-width: 1024px) { 
-			--grid-size: 6rem;
-		}
-		--grid-line-color: rgba(20, 20, 20, 1);
-
-	  background: black;
-	  background-image: 
-			radial-gradient(rgba(255, 135, 195, 0.02), rgba(0, 0, 0, 1)),
-			linear-gradient(var(--grid-line-color) .1em, transparent .1em), 
-			linear-gradient(90deg, var(--grid-line-color) .1em, transparent .1em);
-	  background-position: center center;
-	  background-size: 
-			cover,
-			var(--grid-size) var(--grid-size), 
-			var(--grid-size) var(--grid-size); 
-	}
 
 	.main-text {
 		margin-top: 2rem;
@@ -177,5 +171,10 @@
 	.skew-button > span {
 	  display: inline-block;
 	  transform: skew(var(--skew));
+	}
+
+	.eth-logo {
+		opacity: 0.2;
+
 	}
 </style>
