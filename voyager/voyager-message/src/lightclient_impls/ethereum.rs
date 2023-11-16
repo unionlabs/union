@@ -516,7 +516,7 @@ where
 }
 
 #[derive(
-    DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, parse_display::Display,
+    DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, derive_more::Display,
 )]
 #[serde(bound(serialize = "", deserialize = ""))]
 #[allow(clippy::large_enum_variant)]
@@ -525,33 +525,33 @@ pub enum EthereumDataMsg<C: ChainSpec> {
     // TrustedCommit {
     //     height: Height,
     // },
-    #[display("UntrustedCommit")]
+    #[display(fmt = "UntrustedCommit")]
     UntrustedCommit(UntrustedCommit<C>),
-    #[display("Validators")]
+    #[display(fmt = "Validators")]
     Validators(Validators<C>),
-    #[display("ProveResponse")]
+    #[display(fmt = "ProveResponse")]
     ProveResponse(ProveResponse<C>),
 }
 
 #[derive(
-    DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, parse_display::Display,
+    DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, derive_more::Display,
 )]
 #[serde(bound(serialize = "", deserialize = ""))]
 #[allow(clippy::large_enum_variant)]
 pub enum EthereumFetchMsg<L: LightClient<HostChain = Union>, C: ChainSpec> {
     // FetchTrustedCommit { height: Height },
-    #[display("FetchUntrustedCommit")]
+    #[display(fmt = "FetchUntrustedCommit")]
     FetchUntrustedCommit(FetchUntrustedCommit<C>),
-    #[display("FetchValidators")]
+    #[display(fmt = "FetchValidators")]
     FetchValidators(FetchValidators<C>),
-    #[display("FetchProveRequest")]
+    #[display(fmt = "FetchProveRequest")]
     FetchProveRequest(FetchProveRequest<C>),
-    #[display("FetchAbciQuery")]
+    #[display(fmt = "FetchAbciQuery")]
     AbciQuery(FetchAbciQuery<L>),
 }
 
 #[derive(
-    DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, parse_display::Display,
+    DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, derive_more::Display,
 )]
 #[serde(bound(serialize = "", deserialize = ""))]
 #[allow(clippy::large_enum_variant)]
@@ -561,9 +561,9 @@ where
     L: LightClient<HostChain = Union>,
     L::Counterparty: LightClient<HostChain = Evm<C>>,
 {
-    #[display("AggregateProveRequest")]
+    #[display(fmt = "AggregateProveRequest")]
     AggregateProveRequest(AggregateProveRequest<L>),
-    #[display("AggregateHeader")]
+    #[display(fmt = "AggregateHeader")]
     AggregateHeader(AggregateHeader<L>),
 }
 

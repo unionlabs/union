@@ -29,7 +29,7 @@ ethers = { workspace = true, features = ["rustls", "ws"] }
 thiserror = "1.0.50"
 serde_json = "1.0.108"
 tokio = { version = "1.33.0", default-features = false, features = ["time"] }
-parse-display = { workspace = true }
+derive_more = { workspace = true, features = ["display"] }
 
 [dev-dependencies]
 hex-literal = "0.4.1"

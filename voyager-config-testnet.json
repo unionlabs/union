@@ -27,7 +27,6 @@
     }
   },
   "voyager": {
-    "hasura": null,
     "num_workers": 20,
     "queue": {
       "type": "pg-queue",

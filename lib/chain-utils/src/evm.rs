@@ -21,10 +21,6 @@ use ethers::{
     utils::{keccak256, secret_key_to_address},
 };
 use futures::{stream, Future, FutureExt, Stream, StreamExt};
-use hubble::datastore::{
-    hasura::{HasuraConfig, HasuraDataStore},
-    insert_demo_tx, Datastore, InsertDemoTx,
-};
 use prost::Message;
 use serde::{Deserialize, Serialize};
 use typenum::Unsigned;
@@ -72,8 +68,6 @@ pub struct Evm<C: ChainSpec> {
     pub ibc_handlers: Pool<IBCHandler<CometblsMiddleware>>,
     pub provider: Provider<Ws>,
     pub beacon_api_client: BeaconApiClient<C>,
-
-    pub hasura_client: Option<HasuraDataStore>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -88,8 +82,6 @@ pub struct Config {
     pub eth_rpc_api: String,
     /// The RPC endpoint for the beacon chain.
     pub eth_beacon_rpc_api: String,
-
-    pub hasura_config: Option<HasuraConfig>,
 }
 
 impl<C: ChainSpec> Chain for Evm<C> {
@@ -358,14 +350,6 @@ impl<C: ChainSpec> Evm<C> {
             ),
             provider,
             beacon_api_client: BeaconApiClient::new(config.eth_beacon_rpc_api).await,
-            // wallet,
-            hasura_client: config.hasura_config.map(|hasura_config| {
-                HasuraDataStore::new(
-                    reqwest::Client::new(),
-                    hasura_config.url,
-                    hasura_config.secret,
-                )
-            }),
         })
     }
 
@@ -918,17 +902,6 @@ impl<C: ChainSpec> EventSource for Evm<C> {
 
                                 let next_epoch_ts =
                                     next_epoch_timestamp::<C>(current_slot, genesis_time);
-
-                                if let Some(hc) = &this.hasura_client {
-                                    hc.do_post::<InsertDemoTx>(insert_demo_tx::Variables {
-                                        data: serde_json::json! {{
-                                            "latest_execution_block_hash": event.block_hash,
-                                            "timestamp": next_epoch_ts,
-                                        }},
-                                    })
-                                    .await
-                                    .unwrap();
-                                }
                             }
 
                             // pass it back through

@@ -347,43 +347,43 @@ try_from_relayer_msg! {
 }
 
 #[derive(
-    DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, parse_display::Display,
+    DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, derive_more::Display,
 )]
 #[serde(bound(serialize = "", deserialize = ""))]
 pub enum CometblsFetchMsg<L: LightClient<HostChain = Evm<C>>, C: ChainSpec> {
-    #[display("FetchFinalityUpdate")]
+    #[display(fmt = "FetchFinalityUpdate")]
     FetchFinalityUpdate(PhantomData<C>),
-    #[display("FetchLightClientUpdates")]
+    #[display(fmt = "FetchLightClientUpdates")]
     FetchLightClientUpdates(FetchLightClientUpdates<C>),
-    #[display("FetchLightClientUpdate")]
+    #[display(fmt = "FetchLightClientUpdate")]
     FetchLightClientUpdate(FetchLightClientUpdate<C>),
-    #[display("FetchBootstrap")]
+    #[display(fmt = "FetchBootstrap")]
     FetchBootstrap(FetchBootstrap<C>),
-    #[display("FetchAccountUpdate")]
+    #[display(fmt = "FetchAccountUpdate")]
     FetchAccountUpdate(FetchAccountUpdate<C>),
-    #[display("FetchBeaconGenesis")]
+    #[display(fmt = "FetchBeaconGenesis")]
     FetchBeaconGenesis(FetchBeaconGenesis<C>),
-    #[display("FetchGetProof::{0.path}")]
+    #[display(fmt = "FetchGetProof::{}", "_0.path")]
     FetchGetProof(GetProof<C, L>),
 }
 
 #[derive(
-    DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, parse_display::Display,
+    DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, derive_more::Display,
 )]
 #[serde(bound(serialize = "", deserialize = ""))]
 #[allow(clippy::large_enum_variant)]
 pub enum CometblsDataMsg<C: ChainSpec> {
-    #[display("FinalityUpdate")]
+    #[display(fmt = "FinalityUpdate")]
     FinalityUpdate(FinalityUpdate<C>),
-    #[display("LightClientUpdates")]
+    #[display(fmt = "LightClientUpdates")]
     LightClientUpdates(LightClientUpdates<C>),
-    #[display("LightClientUpdate")]
+    #[display(fmt = "LightClientUpdate")]
     LightClientUpdate(LightClientUpdate<C>),
-    #[display("Bootstrap")]
+    #[display(fmt = "Bootstrap")]
     Bootstrap(BootstrapData<C>),
-    #[display("AccountUpdate")]
+    #[display(fmt = "AccountUpdate")]
     AccountUpdate(AccountUpdateData<C>),
-    #[display("BeaconGenesis")]
+    #[display(fmt = "BeaconGenesis")]
     BeaconGenesis(BeaconGenesisData<C>),
 }
 
@@ -560,16 +560,16 @@ where
 }
 
 #[derive(
-    DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, parse_display::Display,
+    DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, derive_more::Display,
 )]
 #[serde(bound(serialize = "", deserialize = ""))]
 #[allow(clippy::large_enum_variant)]
 pub enum CometblsAggregateMsg<L: LightClient<HostChain = Evm<C>>, C: ChainSpec> {
-    #[display("CreateUpdate")]
+    #[display(fmt = "CreateUpdate")]
     CreateUpdate(CreateUpdateData<L, C>),
-    #[display("MakeCreateUpdates")]
+    #[display(fmt = "MakeCreateUpdates")]
     MakeCreateUpdates(MakeCreateUpdatesData<L, C>),
-    #[display("MakeCreateUpdatesFromLightClientUpdates")]
+    #[display(fmt = "MakeCreateUpdatesFromLightClientUpdates")]
     MakeCreateUpdatesFromLightClientUpdates(MakeCreateUpdatesFromLightClientUpdatesData<L, C>),
 }
 

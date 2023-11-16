@@ -785,7 +785,6 @@ dependencies = [
  "ethers",
  "futures",
  "hex",
- "hubble",
  "num_enum",
  "prost",
  "protos",
@@ -3701,32 +3700,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "parse-display"
-version = "0.8.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c6509d08722b53e8dafe97f2027b22ccbe3a5db83cb352931e9716b0aa44bc5c"
-dependencies = [
- "once_cell",
- "parse-display-derive",
- "regex",
-]
-
-[[package]]
-name = "parse-display-derive"
-version = "0.8.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "68517892c8daf78da08c0db777fcc17e07f2f63ef70041718f8a7630ad84f341"
-dependencies = [
- "once_cell",
- "proc-macro2",
- "quote",
- "regex",
- "regex-syntax 0.7.5",
- "structmeta",
- "syn 2.0.38",
-]
-
-[[package]]
 name = "parse-wasm-client-type"
 version = "0.1.0"
 dependencies = [
@@ -5329,29 +5302,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "73473c0e59e6d5812c5dfe2a064a6444949f089e20eec9a2e5506596494e4623"
 
 [[package]]
-name = "structmeta"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "78ad9e09554f0456d67a69c1584c9798ba733a5b50349a6c0d0948710523922d"
-dependencies = [
- "proc-macro2",
- "quote",
- "structmeta-derive",
- "syn 2.0.38",
-]
-
-[[package]]
-name = "structmeta-derive"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a60bcaff7397072dca0017d1db428e30d5002e00b6847703e2e42005c95fbe00"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.38",
-]
-
-[[package]]
 name = "strum"
 version = "0.25.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6317,6 +6267,7 @@ dependencies = [
  "clap",
  "contracts",
  "cosmwasm-std",
+ "derive_more",
  "either",
  "ethereum_ssz",
  "ethers-contract-derive",
@@ -6326,7 +6277,6 @@ dependencies = [
  "hex-literal",
  "k256",
  "milagro_bls",
- "parse-display",
  "paste",
  "primitive-types",
  "prost",
@@ -6476,7 +6426,6 @@ dependencies = [
  "futures",
  "hex",
  "hex-literal",
- "hubble",
  "lightclient",
  "num-bigint",
  "pg-queue",
@@ -6515,6 +6464,7 @@ dependencies = [
  "beacon-api",
  "chain-utils",
  "contracts",
+ "derive_more",
  "ethers",
  "frame-support-procedural",
  "frunk",
@@ -6522,7 +6472,6 @@ dependencies = [
  "hex-literal",
  "lightclient",
  "num-bigint",
- "parse-display",
  "prost",
  "protos",
  "serde",

@@ -45,7 +45,6 @@ pub mod msg_server;
 #[derive(Debug, Clone)]
 pub struct Voyager<Q> {
     chains: Arc<Chains>,
-    // hasura_client: Option<Arc<hubble::hasura::HasuraDataStore>>,
     num_workers: u16,
     msg_server: msg_server::MsgServer,
     queue: Q,
@@ -279,10 +278,6 @@ impl<Q: Queue> Voyager<Q> {
     }
 
     pub async fn new(config: Config<Q>) -> Result<Self, VoyagerInitError<Q>> {
-        if config.voyager.hasura.is_none() {
-            tracing::warn!("no hasura config supplied, no messages will be indexed");
-        }
-
         let mut union = HashMap::new();
         let mut evm_minimal = HashMap::new();
         let mut evm_mainnet = HashMap::new();

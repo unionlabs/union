@@ -35,7 +35,6 @@ impl AnyChain {
                     signers: evm.signers,
                     eth_rpc_api: evm.eth_rpc_api,
                     eth_beacon_rpc_api: evm.eth_beacon_rpc_api,
-                    hasura_config: voyager_config.hasura.clone(),
                 })
                 .await?,
             ),
@@ -45,7 +44,6 @@ impl AnyChain {
                     signers: evm.signers,
                     eth_rpc_api: evm.eth_rpc_api,
                     eth_beacon_rpc_api: evm.eth_beacon_rpc_api,
-                    hasura_config: voyager_config.hasura.clone(),
                 })
                 .await?,
             ),
