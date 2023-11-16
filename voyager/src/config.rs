@@ -28,7 +28,7 @@ pub struct VoyagerConfig<Q: Queue> {
 impl<Q: Queue> Config<Q> {
     pub async fn get_chain(&self, name: &str) -> Result<AnyChain, GetChainError> {
         match self.chain.get(name) {
-            Some(config) => Ok(AnyChain::try_from_config(&self.voyager, config.clone()).await?),
+            Some(config) => Ok(AnyChain::try_from_config::<Q>(config.clone()).await?),
             None => Err(GetChainError::ChainNotFound {
                 name: name.to_string(),
             }),

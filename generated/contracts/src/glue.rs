@@ -270,9 +270,9 @@ pub mod glue {
                                     name: ::std::string::String::new(),
                                     kind: ::ethers::core::abi::ethabi::ParamType::Tuple(
                                         ::std::vec![
-                                            ::ethers::core::abi::ethabi::ParamType::FixedBytes(32usize),
-                                            ::ethers::core::abi::ethabi::ParamType::FixedBytes(32usize),
                                             ::ethers::core::abi::ethabi::ParamType::Uint(64usize),
+                                            ::ethers::core::abi::ethabi::ParamType::FixedBytes(32usize),
+                                            ::ethers::core::abi::ethabi::ParamType::FixedBytes(32usize),
                                         ],
                                     ),
                                     internal_type: ::core::option::Option::Some(
@@ -945,9 +945,9 @@ pub mod glue {
         Hash,
     )]
     pub struct OptimizedConsensusState {
+        pub timestamp: u64,
         pub root: [u8; 32],
         pub next_validators_hash: [u8; 32],
-        pub timestamp: u64,
     }
     ///`ProcessedMoment(uint128,uint128)`
     #[derive(

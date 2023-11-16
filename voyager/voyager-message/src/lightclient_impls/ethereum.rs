@@ -33,7 +33,7 @@ use unionlabs::{
                 msg_connection_open_try::MsgConnectionOpenTry,
             },
         },
-        lightclients::{cometbls, ethereum, wasm},
+        lightclients::{cometbls, wasm},
     },
     tendermint::{
         crypto::public_key::PublicKey,

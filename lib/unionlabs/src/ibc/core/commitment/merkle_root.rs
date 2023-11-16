@@ -24,6 +24,12 @@ impl From<MerkleRoot> for protos::ibc::core::commitment::v1::MerkleRoot {
     }
 }
 
+impl From<H256> for MerkleRoot {
+    fn from(value: H256) -> Self {
+        Self { hash: value }
+    }
+}
+
 #[derive(Debug)]
 pub enum TryFromMerkleRootError {
     Hash(InvalidLength),
@@ -48,6 +54,20 @@ impl From<MerkleRoot> for IbcCoreCommitmentV1MerkleRootData {
         Self {
             hash: value.hash.into(),
         }
+    }
+}
+
+#[cfg(feature = "ethabi")]
+impl TryFrom<IbcCoreCommitmentV1MerkleRootData> for MerkleRoot {
+    type Error = TryFromMerkleRootError;
+
+    fn try_from(value: IbcCoreCommitmentV1MerkleRootData) -> Result<Self, Self::Error> {
+        Ok(Self {
+            hash: value
+                .hash
+                .try_into()
+                .map_err(TryFromMerkleRootError::Hash)?,
+        })
     }
 }
 

@@ -5,7 +5,7 @@ use chain_utils::{
 use unionlabs::ethereum::config::{Mainnet, Minimal};
 
 use crate::{
-    config::{self, ChainConfig, EvmChainConfig},
+    config::{ChainConfig, EvmChainConfig},
     queue::Queue,
 };
 
@@ -25,7 +25,6 @@ pub enum AnyChainTryFromConfigError {
 
 impl AnyChain {
     pub async fn try_from_config<Q: Queue>(
-        voyager_config: &config::VoyagerConfig<Q>,
         config: ChainConfig,
     ) -> Result<Self, AnyChainTryFromConfigError> {
         Ok(match config {

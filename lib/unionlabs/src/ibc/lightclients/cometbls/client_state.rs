@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+#[cfg(feature = "ethabi")]
+use crate::InlineFields;
 use crate::{
     errors::{required, MissingField},
     ibc::core::client::height::Height,
@@ -31,7 +33,7 @@ impl From<ClientState> for protos::union::ibc::lightclients::cometbls::v1::Clien
 
 #[cfg(feature = "ethabi")]
 impl crate::EthAbi for ClientState {
-    type EthAbi = contracts::glue::UnionIbcLightclientsCometblsV1ClientStateData;
+    type EthAbi = InlineFields<contracts::glue::UnionIbcLightclientsCometblsV1ClientStateData>;
 }
 
 impl TypeUrl for protos::union::ibc::lightclients::cometbls::v1::ClientState {
@@ -79,6 +81,15 @@ impl From<ClientState> for contracts::glue::UnionIbcLightclientsCometblsV1Client
 }
 
 #[cfg(feature = "ethabi")]
+impl From<ClientState>
+    for InlineFields<contracts::glue::UnionIbcLightclientsCometblsV1ClientStateData>
+{
+    fn from(value: ClientState) -> Self {
+        Self(value.into())
+    }
+}
+
+#[cfg(feature = "ethabi")]
 impl TryFrom<contracts::glue::UnionIbcLightclientsCometblsV1ClientStateData> for ClientState {
     type Error = TryFromClientStateError;
 
@@ -93,5 +104,18 @@ impl TryFrom<contracts::glue::UnionIbcLightclientsCometblsV1ClientStateData> for
             frozen_height: value.frozen_height.into(),
             latest_height: value.latest_height.into(),
         })
+    }
+}
+
+#[cfg(feature = "ethabi")]
+impl TryFrom<InlineFields<contracts::glue::UnionIbcLightclientsCometblsV1ClientStateData>>
+    for ClientState
+{
+    type Error = TryFromClientStateError;
+
+    fn try_from(
+        value: InlineFields<contracts::glue::UnionIbcLightclientsCometblsV1ClientStateData>,
+    ) -> Result<Self, Self::Error> {
+        value.0.try_into()
     }
 }

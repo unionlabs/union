@@ -16,9 +16,9 @@ import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {GoogleProtobufAny as Any} from "../proto/GoogleProtobufAny.sol";
 
 struct OptimizedConsensusState {
+    uint64 timestamp;
     bytes32 root;
     bytes32 nextValidatorsHash;
-    uint64 timestamp;
 }
 
 struct ProcessedMoment {

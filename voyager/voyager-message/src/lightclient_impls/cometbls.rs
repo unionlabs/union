@@ -69,14 +69,6 @@ use crate::{
 
 pub const EVM_REVISION_NUMBER: u64 = 0;
 
-fn encode_dynamic_singleton_tuple(t: impl AbiEncode) -> Vec<u8> {
-    U256::from(32)
-        .encode()
-        .into_iter()
-        .chain(t.encode())
-        .collect::<Vec<_>>()
-}
-
 impl LightClient for CometblsMainnet {
     type BaseCounterparty = Self::Counterparty;
 
@@ -650,9 +642,11 @@ where
 {
     // When we fetch the update at this height, the `next_sync_committee` will
     // be the current sync committee of the period that we want to update to.
-    let previous_period = light_client_update.attested_header.beacon.slot
-        / (C::SLOTS_PER_EPOCH::U64 * C::EPOCHS_PER_SYNC_COMMITTEE_PERIOD::U64)
-        - 1;
+    let previous_period = u64::max(
+        1,
+        light_client_update.attested_header.beacon.slot
+            / (C::SLOTS_PER_EPOCH::U64 * C::EPOCHS_PER_SYNC_COMMITTEE_PERIOD::U64),
+    ) - 1;
     RelayerMsg::Aggregate {
         queue: [
             fetch::<L>(
@@ -795,14 +789,16 @@ where
                         CreateClientCall {
                             msg: contracts::shared_types::MsgCreateClient {
                                 client_type: data.config.client_type,
-                                client_state_bytes: encode_dynamic_singleton_tuple(
-                                    data.msg.client_state.into_eth_abi(),
-                                )
-                                .into(),
-                                consensus_state_bytes: encode_dynamic_singleton_tuple(
-                                    data.msg.consensus_state.into_eth_abi(),
-                                )
-                                .into(),
+                                client_state_bytes: data
+                                    .msg
+                                    .client_state
+                                    .into_eth_abi_bytes()
+                                    .into(),
+                                consensus_state_bytes: data
+                                    .msg
+                                    .consensus_state
+                                    .into_eth_abi_bytes()
+                                    .into(),
                             },
                         },
                     )
@@ -812,10 +808,12 @@ where
                     UpdateClientCall {
                         msg: ibc_handler::MsgUpdateClient {
                             client_id: data.msg.client_id.to_string(),
-                            client_message: encode_dynamic_singleton_tuple(
-                                data.msg.client_message.clone().into_eth_abi(),
-                            )
-                            .into(),
+                            client_message: data
+                                .msg
+                                .client_message
+                                .clone()
+                                .into_eth_abi_bytes()
+                                .into(),
                         },
                     },
                 ),

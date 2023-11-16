@@ -316,6 +316,49 @@ impl<T> FromEthAbi for T where T: EthAbi + From<T::EthAbi> {}
 #[cfg(feature = "ethabi")]
 impl<T> TryFromEthAbi for T where T: EthAbi + TryFrom<T::EthAbi> {}
 
+#[cfg(feature = "ethabi")]
+pub struct InlineFields<T>(pub T);
+
+#[cfg(feature = "ethabi")]
+impl<T> From<T> for InlineFields<T> {
+    fn from(value: T) -> Self {
+        Self(value)
+    }
+}
+
+#[cfg(feature = "ethabi")]
+impl<T> ethers_core::abi::AbiEncode for InlineFields<T>
+where
+    T: ethers_core::abi::AbiEncode,
+{
+    fn encode(self) -> Vec<u8> {
+        // Prefixed by the offset at which the 'dynamic' tuple is starting
+        ethers_core::types::U256::from(32)
+            .encode()
+            .into_iter()
+            .chain(self.0.encode())
+            .collect::<Vec<_>>()
+    }
+}
+
+#[cfg(feature = "ethabi")]
+impl<T> ethers_core::abi::AbiDecode for InlineFields<T>
+where
+    T: ethers_core::abi::AbiDecode,
+{
+    fn decode(bytes: impl AsRef<[u8]>) -> Result<Self, ethers_core::abi::AbiError> {
+        // Wipe the prefix
+        Ok(Self(T::decode(
+            bytes
+                .as_ref()
+                .iter()
+                .copied()
+                .skip(core::mem::size_of::<ethers_core::types::U256>())
+                .collect::<Vec<_>>(),
+        )?))
+    }
+}
+
 /// A simple wrapper around a cosmos account, easily representable as a bech32 string.
 #[derive(Debug, Clone)]
 pub struct CosmosAccountId {

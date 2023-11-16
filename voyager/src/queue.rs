@@ -297,7 +297,7 @@ impl<Q: Queue> Voyager<Q> {
         }
 
         for (chain_name, chain_config) in config.chain {
-            let chain = AnyChain::try_from_config(&config.voyager, chain_config).await?;
+            let chain = AnyChain::try_from_config::<Q>(chain_config).await?;
 
             match chain {
                 AnyChain::Union(c) => {

@@ -2,6 +2,8 @@ use std::fmt::Debug;
 
 use serde::{Deserialize, Serialize};
 
+#[cfg(feature = "ethabi")]
+use crate::InlineFields;
 use crate::{
     errors::{InvalidLength, MissingField},
     ibc::core::client::height::Height,
@@ -52,8 +54,15 @@ impl From<Header> for contracts::glue::UnionIbcLightclientsCometblsV1HeaderData 
 }
 
 #[cfg(feature = "ethabi")]
+impl From<Header> for InlineFields<contracts::glue::UnionIbcLightclientsCometblsV1HeaderData> {
+    fn from(value: Header) -> Self {
+        Self(value.into())
+    }
+}
+
+#[cfg(feature = "ethabi")]
 impl crate::EthAbi for Header {
-    type EthAbi = contracts::glue::UnionIbcLightclientsCometblsV1HeaderData;
+    type EthAbi = InlineFields<contracts::glue::UnionIbcLightclientsCometblsV1HeaderData>;
 }
 
 #[derive(Debug)]

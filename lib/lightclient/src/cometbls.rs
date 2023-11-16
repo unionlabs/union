@@ -12,7 +12,7 @@ use unionlabs::{
     id::ClientId,
     proof::{ChannelEndPath, ConnectionPath, IbcPath},
     traits::{Chain, ChainOf, ClientStateOf, HeightOf, LightClientBase},
-    TryFromProto,
+    TryFromEthAbi,
 };
 
 use crate::ethereum::{EthereumMainnet, EthereumMinimal};
@@ -171,7 +171,7 @@ async fn query_client_state<C: ChainSpec>(
 
     assert!(is_found);
 
-    cometbls::client_state::ClientState::try_from_proto_bytes(&client_state_bytes).unwrap()
+    cometbls::client_state::ClientState::try_from_eth_abi_bytes(&client_state_bytes).unwrap()
 }
 
 async fn read_ibc_state<Counterparty, C, P>(

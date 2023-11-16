@@ -49,7 +49,7 @@ use unionlabs::{
     traits::{Chain, ClientState, ClientStateOf, ConsensusStateOf},
     uint::U256,
     validated::ValidateT,
-    EmptyString, TryFromEthAbiErrorOf, TryFromProto, TryFromProtoErrorOf,
+    EmptyString, TryFromEthAbi, TryFromEthAbiErrorOf,
 };
 
 use crate::{private_key::PrivateKey, ChainEvent, EventSource, Pool};
@@ -449,14 +449,6 @@ impl<C: ChainSpec> EventSource for Evm<C> {
 
     fn events(self, _seed: Self::Seed) -> impl Stream<Item = Result<Self::Event, Self::Error>> {
         async move {
-            let genesis_time = self
-                .beacon_api_client
-                .genesis()
-                .await
-                .unwrap()
-                .data
-                .genesis_time;
-
             let latest_height = self.query_latest_height().await;
 
             stream::unfold(
@@ -794,14 +786,13 @@ impl<C: ChainSpec> EventSource for Evm<C> {
 
                                 assert!(success);
 
-                                let client_state = <Any<
-                                    wasm::client_state::ClientState<
-                                        cometbls::client_state::ClientState,
-                                    >,
-                                >>::try_from_proto_bytes(
-                                    &client_state
-                                )
-                                .unwrap();
+                                dbg!(hex::encode(&client_state));
+
+                                let client_state =
+                                    cometbls::client_state::ClientState::try_from_eth_abi_bytes(
+                                        &client_state,
+                                    )
+                                    .unwrap();
 
                                 Some(IbcEvent::CreateClient(CreateClient {
                                     client_id: event
@@ -809,7 +800,7 @@ impl<C: ChainSpec> EventSource for Evm<C> {
                                         .parse()
                                         .map_err(EvmEventSourceError::ClientIdParse)?,
                                     client_type,
-                                    consensus_height: client_state.0.latest_height,
+                                    consensus_height: client_state.latest_height,
                                 }))
                             }
                             IBCHandlerEvents::RecvPacketFilter(event) => {
@@ -894,20 +885,7 @@ impl<C: ChainSpec> EventSource for Evm<C> {
                             }
                         }))
                     })
-                    .filter_map(|x| async { x.transpose() })
-                    .then(
-                        |event: Result<ChainEvent<Evm<C>>, EvmEventSourceError>| async {
-                            if let Ok(ref event) = event {
-                                let current_slot = event.height.revision_height;
-
-                                let next_epoch_ts =
-                                    next_epoch_timestamp::<C>(current_slot, genesis_time);
-                            }
-
-                            // pass it back through
-                            event
-                        },
-                    );
+                    .filter_map(|x| async { x.transpose() });
 
                     let iter = futures::stream::iter(packets.collect::<Vec<_>>().await);
 
@@ -1106,8 +1084,8 @@ where
 impl<C: ChainSpec, Counterparty: Chain> EthereumStateRead<C, Counterparty>
     for ClientStatePath<<Evm<C> as Chain>::ClientId>
 where
-    ClientStateOf<Counterparty>: TryFromProto,
-    TryFromProtoErrorOf<ClientStateOf<Counterparty>>: Debug,
+    ClientStateOf<Counterparty>: TryFromEthAbi,
+    TryFromEthAbiErrorOf<ClientStateOf<Counterparty>>: Debug,
 {
     type Encoded = Vec<u8>;
 
@@ -1120,15 +1098,15 @@ where
     }
 
     fn decode_ibc_state(encoded: Self::Encoded) -> Self::Output {
-        TryFromProto::try_from_proto_bytes(&encoded).unwrap()
+        Self::Output::try_from_eth_abi_bytes(&encoded).unwrap()
     }
 }
 
 impl<C: ChainSpec, Counterparty: Chain> EthereumStateRead<C, Counterparty>
     for ClientConsensusStatePath<<Evm<C> as Chain>::ClientId, <Counterparty as Chain>::Height>
 where
-    ConsensusStateOf<Counterparty>: TryFromProto,
-    TryFromProtoErrorOf<ConsensusStateOf<Counterparty>>: Debug,
+    ConsensusStateOf<Counterparty>: TryFromEthAbi,
+    TryFromEthAbiErrorOf<ConsensusStateOf<Counterparty>>: Debug,
 {
     type Encoded = Vec<u8>;
 
@@ -1142,7 +1120,8 @@ where
     }
 
     fn decode_ibc_state(encoded: Self::Encoded) -> Self::Output {
-        TryFromProto::try_from_proto_bytes(&encoded).unwrap()
+        dbg!(hex::encode(&encoded));
+        Self::Output::try_from_eth_abi_bytes(&encoded).unwrap()
     }
 }
 
