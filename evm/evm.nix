@@ -110,13 +110,11 @@
           network = "devnet";
           rpc-url = "http://localhost:8545";
           private-key = builtins.readFile ./../networks/genesis/devnet-evm/dev-key0.prv;
-          zkp-verifier-prefix = "";
         }
         {
           network = "testnet";
           rpc-url = "https://rpc-sepolia.rockx.com/";
           private-key = ''"$1"'';
-          zkp-verifier-prefix = "";
         }
       ];
 
@@ -139,7 +137,7 @@
         echo "${name} => ''$${pkgs.lib.toUpper name}"
       '';
 
-      deploy-ibc-contracts = { network, zkp-verifier-prefix, rpc-url, private-key }:
+      deploy-ibc-contracts = { network, rpc-url, private-key }:
         pkgs.writeShellApplication {
           name = "evm-${network}-deploy";
           runtimeInputs = [ pkgs.jq wrappedForge ];
@@ -158,9 +156,9 @@
               { path = "core/DevnetIBCHandlerInit.sol"; name = "DevnetIBCHandlerInit"; }
               { path = "core/DevnetOwnableIBCHandler.sol"; name = "DevnetOwnableIBCHandler"; args = ''--constructor-args "$IBCCLIENT" "$IBCCONNECTION" "$IBCCHANNELHANDSHAKE" "$IBCPACKET" "$DEVNETIBCHANDLERINIT"''; }
 
-              { path = "clients/${zkp-verifier-prefix}Verifier.sol"; name = "${zkp-verifier-prefix}Verifier"; }
+              { path = "clients/Verifier.sol"; name = "Verifier"; }
               { path = "clients/ICS23MembershipVerifier.sol"; name = "ICS23MembershipVerifier"; }
-              { path = "clients/CometblsClientV2.sol"; name = "CometblsClient"; args = ''--constructor-args "$DEVNETOWNABLEIBCHANDLER" "''$${pkgs.lib.strings.toUpper zkp-verifier-prefix}VERIFIER" "$ICS23MEMBERSHIPVERIFIER"''; }
+              { path = "clients/CometblsClientV2.sol"; name = "CometblsClient"; args = ''--constructor-args "$DEVNETOWNABLEIBCHANDLER" "$VERIFIER" "$ICS23MEMBERSHIPVERIFIER"''; }
 
               { path = "apps/ucs/01-relay/Relay.sol"; name = "UCS01Relay"; args = ''--constructor-args "$DEVNETOWNABLEIBCHANDLER" "1"'';}
             ]}
