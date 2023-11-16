@@ -1,8 +1,9 @@
 <script lang="ts">
-	type PostMeta = { metadata: { title: string, date: string, author: string, preview: string, published: bool }};
+	type PostMeta = { metadata: { title: string, date: string, author: string, preview: string, published: boolean }};
 	const posts: Record<string, PostMeta> = import.meta.globEager('../**/*.md');
 	const filteredPosts = Object.entries(posts)
-		.filter(([_path, post], _) => post.metadata.published); 
+		.filter(([_path, post], _) => post.metadata.published)
+		.sort((a, b) => a[1].metadata.date > b[1].metadata.date ? -1 : 1); // show newest at the top
 	const slugRegex = /\/([^/]+)\//;
 
 	function extractSlug(path: string): string {
