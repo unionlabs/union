@@ -21,17 +21,15 @@ contract CometblsClient is ILightClient {
     using IBCHeight for IbcCoreClientV1Height.Data;
     using CometblsHelp for TendermintTypesHeader.Data;
     using CometblsHelp for TendermintTypesCommit.Data;
-    using CometblsHelp for UnionIbcLightclientsCometblsV1ConsensusState.Data;
     using CometblsHelp for UnionIbcLightclientsCometblsV1ClientState.Data;
     using CometblsHelp for OptimizedConsensusState;
     using CometblsHelp for bytes;
     using CometblsHelp for IZKVerifierV2;
 
-    // OptimizedConsensusState
     mapping(string => UnionIbcLightclientsCometblsV1ClientState.Data)
-        internal clientStates;
-    mapping(bytes32 => OptimizedConsensusState) internal consensusStates;
-    mapping(bytes32 => ProcessedMoment) internal processedMoments;
+        public clientStates;
+    mapping(bytes32 => OptimizedConsensusState) public consensusStates;
+    mapping(bytes32 => ProcessedMoment) public processedMoments;
 
     address internal ibcHandler;
     IZKVerifierV2 internal zkVerifier;
