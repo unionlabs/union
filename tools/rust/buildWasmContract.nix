@@ -54,7 +54,7 @@ let
       pnameSuffix = featuresString;
 
       cargoBuildExtraArgs = "--no-default-features --lib ${if features != null then lib.concatStringsSep " " ([ "--features" ] ++ features) else ""}";
-      rustflags = "-C target-feature=-sign-ext -C link-arg=-s -C target-cpu=mvp";
+      rustflags = "-C target-feature=-sign-ext -C link-arg=-s -C target-cpu=mvp -C opt-level=z -C passes=adce,loop-deletion";
 
       cargoBuildCheckPhase = ''
         ls target/wasm32-unknown-unknown/release
