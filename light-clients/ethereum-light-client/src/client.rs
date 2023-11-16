@@ -320,7 +320,7 @@ impl IbcClient for EthereumLightClient {
     fn status(deps: Deps<Self::CustomQuery>, env: &Env) -> Result<QueryResponse, Self::Error> {
         let client_state: WasmClientState = read_client_state(deps)?;
 
-        if client_state.data.frozen_height == Height::default() {
+        if client_state.data.frozen_height != Height::default() {
             return Ok(Status::Frozen.into());
         }
 

@@ -242,8 +242,7 @@ impl IbcClient for CometblsLightClient {
     ) -> Result<ics008_wasm_client::QueryResponse, Self::Error> {
         let client_state: WasmClientState = read_client_state(deps)?;
 
-        // TODO(aeryz): make client state optional
-        if client_state.data.frozen_height.revision_height == 0 {
+        if client_state.data.frozen_height != Default::default() {
             return Ok(Status::Frozen.into());
         }
 
