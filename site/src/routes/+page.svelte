@@ -3,7 +3,7 @@
 	import Header from '$lib/Header.svelte';
 </script>
 
-	<main class="flex-1">
+<main class="flex flex-col flex-1 gap-[100px] md:gap-[200px] my-[50px] md:my-[100px]">
 	<div class="flex flex-col items-center">
 		<div class="main-text">Infrastructure for the</div> 
 		<div class="next-century-text">next century</div>
@@ -13,27 +13,27 @@
 			appchains, layer 1, and layer 2 networks.
 		</div> 
 		<div>
-			<a class="skew-button" href="https://docs.union.build"><span>EXPLORE -&gt;</span></a>
+			<a class="skew-button" href="https://docs.union.build"><span>EXPLORE THE DOCS -&gt;</span></a>
 		</div>
 	</div>
 
 
 
-	<div class="my-60">
-		<img class="w-[500px] absolute left-[50%] -ml-[250px] z-10 -mt-[100px] eth-logo" src="/images/ethereum.svg" alt="Ethereum"/>
+	<section>
+		<img class="w-[300px] md:w-[500px] absolute left-[50%] -ml-[150px] md:-ml-[250px] z-10 -mt-[50px] md:-mt-[100px] eth-logo" src="/images/ethereum.svg" alt="Ethereum"/>
 		<div class="flex flex-col items-center z-20 relative">
-			<h2 class="text-xl md:text-6xl font-bold text-center">ETH &lt;-&gt; IBC</h2>
-			<h3 class="text-xl md:text-[27px] font-bold text-center text-gray-300">Union's flagship product</h3>
-			<p class="text-2xl mt-4 text-center mt-10">Built using Zero-Knowledge Cryptography and BLS Signatures, a</p>
-			<div class="text-5xl text-accent font-black italic">Trustless Ethereum IBC Connection</div>
-			<p class="text-2xl text-gray-300">Live between Union' Testnet and Ethereum's Testnet.</p>
+			<h2 class="text-4xl md:text-6xl font-bold text-center">ETH &lt;-&gt; IBC</h2>
+			<h3 class="text-[16px] md:text-[27px] font-bold text-center text-gray-300">Union's flagship product</h3>
+			<p class="md:text-2xl mt-4 text-center mt-10">Built using Zero-Knowledge Cryptography and BLS Signatures, a</p>
+			<div class="text-center text-2xl md:text-5xl text-accent font-black italic">Trustless Ethereum IBC Connection</div>
+			<p class="text-center md:text-2xl">Live between Union' Testnet and Ethereum's Testnet.</p>
 			<div class="mt-4">
 				<a class="skew-button" href="/blog/ics20-transfers-to-ethereum/"><span>TRY IT OUT -&gt;</span></a>
 			</div>
 		</div>
-	</div>
+	</section>
 
-	<div class="flex flex-col items-center mt-40">
+	<section class="flex flex-col items-center">
 		<h2 class="text-xl md:text-3xl font-bold">Backed by industry experts</h2>
 
 		<div class="flex flex-col md:flex-row gap-[24px] mt-[24px] items-center">
@@ -46,15 +46,16 @@
 			<img class="block w-[220px]"src="/images/investors/semantic.png" alt="Semantic"/>
 			<img class="block w-[220px]"src="/images/investors/lightshift.png" alt="Lightshift"/>
 		</div>
-		
-	</div>
-	</main>	
+		<div class="mt-4">
+			<a class="skew-button" href="/blog/ics20-transfers-to-ethereum/"><span>READ THE ANNOUNCEMENT -&gt;</span></a>
+		</div>
+	</section>
+</main>	
 
 
 <style lang="postcss">
 
 	.main-text {
-		margin-top: 2rem;
 		max-width: 72rem; 
 		font-size: 26px;
 		line-height: 2.5rem; 
@@ -79,7 +80,6 @@
 
 		@media (min-width: 1024px) { 
 			font-size: 90px;
-			margin-top: 120px;
 		 }
 	}
 
