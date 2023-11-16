@@ -18,17 +18,17 @@
 	</div>
 
 	<div class="flex flex-col items-center mt-40">
-		<h2 class="text-3xl font-bold">Backed by industry experts</h2>
+		<h2 class="text-xl md:text-3xl font-bold">Backed by industry experts</h2>
 
-		<div class="flex flex-col md:flex-row gap-6 items-center">
-			<img class="block w-[180px] lg:w-[200px]" src="/images/investors/galileo.svg" alt="Galileo"/>
-			<img class="block w-[140px] lg:w-[200px]"src="/images/investors/nascent.svg" alt="Nascent"/>
-			<img class="block w-[180px] lg:w-[200px]"src="/images/investors/tioga.png" alt="Tioga"/>
+		<div class="flex flex-col md:flex-row gap-[24px] mt-[24px] items-center">
+			<img class="block w-[200px]" src="/images/investors/galileo.svg" alt="Galileo"/>
+			<img class="block w-[60px] mx-8"src="/images/investors/nascent.svg" alt="Nascent"/>
+			<img class="block w-[200px]"src="/images/investors/tioga.png" alt="Tioga"/>
 		</div>
 
-		<div class="flex flex-col md:flex-row gap-6 items-center ">
-			<img class="block w-[200px] lg:w-[220px]"src="/images/investors/semantic.png" alt="Semantic"/>
-			<img class="block w-[200px] lg:w-[220px]"src="/images/investors/lightshift.png" alt="Lightshift"/>
+		<div class="flex flex-col md:flex-row gap-[24px] mt-[24px] items-center ">
+			<img class="block w-[220px]"src="/images/investors/semantic.png" alt="Semantic"/>
+			<img class="block w-[220px]"src="/images/investors/lightshift.png" alt="Lightshift"/>
 		</div>
 		
 	</div>
