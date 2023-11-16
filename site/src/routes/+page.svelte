@@ -1,9 +1,11 @@
 <script lang="ts">
+    import Footer from '$lib/Footer.svelte';
 	import Header from '$lib/Header.svelte';
 </script>
 
-<main class="grid-effect-bg flex-1 flex-col flex gap-8 shadow-effect-bg p-4">
+<div class="flex flex-col min-h-screen grid-effect-bg flex-1 flex-col flex gap-8 shadow-effect-bg p-4">
 	<Header />
+	<main class="flex-1">
 	<div class="flex flex-col items-center">
 		<div class="main-text">Infrastructure for the</div> 
 		<div class="next-century-text">next century</div>
@@ -32,7 +34,9 @@
 		</div>
 		
 	</div>
-</main>
+	</main>	
+	<Footer />
+</div>
 
 
 <style lang="postcss">

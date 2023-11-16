@@ -8,10 +8,7 @@
 	<title>Union</title>
 </svelte:head>
 
-<div class="flex flex-col min-h-screen">
-	<slot />
-	<Footer />
-</div>
+<slot />
 
 <style lang="postcss">
 	:global(body) {
