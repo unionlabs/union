@@ -830,6 +830,15 @@ mod test {
     }
 
     #[test]
+    fn verify_header_fails_when_ibc_contract_address_is_different() {
+        let (deps, mut update, env) = prepare_test_data();
+
+        update.account_update.account_proof.contract_address.0[0] += 1;
+
+        assert!(EthereumLightClient::verify_header(deps.as_ref(), env, update).is_err());
+    }
+
+    #[test]
     fn verify_header_fails_when_sync_committee_aggregate_pubkey_is_incorrect() {
         let (deps, mut update, env) = prepare_test_data();
 
