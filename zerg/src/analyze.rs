@@ -120,6 +120,7 @@ impl Durations {
             finalization_durations: vec![finalization_duration],
         }
     }
+
     fn push(&mut self, execution_duration: u64, finalization_duration: u64) {
         self.execution_durations.push(execution_duration);
         self.finalization_durations.push(finalization_duration);
@@ -148,6 +149,7 @@ fn as_min_sec(duration: u64) -> String {
 fn as_to_from(src_id: String) -> String {
     match src_id.as_str() {
         "union-testnet-3" => "Union -> Sepolia".to_string(),
+        "union-testnet-4" => "Union -> Sepolia".to_string(),
         "11155111" => "Sepolia -> Union".to_string(),
         _ => format!("From {}", src_id),
     }
