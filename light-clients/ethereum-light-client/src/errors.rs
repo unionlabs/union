@@ -93,7 +93,7 @@ pub enum Error {
     #[error("the proof path {0} is not unknown")]
     UnknownIbcPath(String),
 
-    #[error("the proof ({given}) belongs to a contract other than the one in the client state ({expected})")]
+    #[error("the given contract address ({given}) doesn't match the stored value ({expected})")]
     IbcContractAddressMismatch { given: H160, expected: H160 },
 }
 
