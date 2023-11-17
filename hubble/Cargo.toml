@@ -29,3 +29,4 @@ lazy_static = "1.4.0"
 axum = { version = "0.6.20", features = ["macros"] }
 sqlx = { version = "0.7.2", features = ["postgres", "runtime-tokio", "tls-rustls", "time" ] }
 time = { version = "0.3.30", features = ["serde"] }
+ethers.workspace = true
