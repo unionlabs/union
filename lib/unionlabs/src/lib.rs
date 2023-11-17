@@ -627,6 +627,19 @@ pub mod traits {
         }
     }
 
+    impl<Data: ClientState> ClientState for wasm::client_state::ClientState<Data> {
+        type ChainId = Data::ChainId;
+        type Height = Data::Height;
+
+        fn height(&self) -> Data::Height {
+            self.data.height()
+        }
+
+        fn chain_id(&self) -> Self::ChainId {
+            self.data.chain_id()
+        }
+    }
+
     impl ClientState for cometbls::client_state::ClientState {
         type ChainId = String;
         type Height = Height;
@@ -637,39 +650,6 @@ pub mod traits {
 
         fn chain_id(&self) -> Self::ChainId {
             self.chain_id.clone()
-        }
-    }
-
-    impl ClientState for wasm::client_state::ClientState<ethereum::client_state::ClientState> {
-        type ChainId = U256;
-        type Height = Height;
-
-        fn height(&self) -> Height {
-            Height {
-                // TODO: Make EVM_REVISION_NUMBER a constant in this crate
-                revision_number: 0,
-                revision_height: self.data.latest_slot,
-            }
-        }
-
-        fn chain_id(&self) -> Self::ChainId {
-            self.data.chain_id
-        }
-    }
-
-    impl ClientState for wasm::client_state::ClientState<cometbls::client_state::ClientState> {
-        type ChainId = String;
-        type Height = Height;
-
-        fn height(&self) -> Height {
-            // NOTE: cometbls::ClientState doesn't store a height, as it's always wrapped in
-            // wasm::ClientState (for our use cases)
-            // TODO: Add it back
-            self.latest_height
-        }
-
-        fn chain_id(&self) -> Self::ChainId {
-            self.data.chain_id.clone()
         }
     }
 
