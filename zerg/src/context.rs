@@ -16,9 +16,9 @@ use cosmwasm_std::Uint128;
 use ecdsa::SigningKey;
 use ethers::{
     abi::Address,
-    contract::EthEvent,
+    contract::EthLogDecode,
     core::k256::ecdsa,
-    prelude::SignerMiddleware,
+    middleware::SignerMiddleware,
     providers::Middleware,
     signers::{LocalWallet, Signer, Wallet},
     types::U256,
@@ -31,7 +31,7 @@ use ucs01_relay::msg::{ExecuteMsg, TransferMsg};
 use ucs01_relay_api::types::Ucs01TransferPacket;
 use unionlabs::{
     cosmos::base::coin::Coin, cosmwasm::wasm::msg_execute_contract::MsgExecuteContract,
-    ethereum_consts_traits::Minimal, events::IbcEvent, google::protobuf::any::Any, traits::Chain,
+    ethereum::config::Minimal, events::IbcEvent, google::protobuf::any::Any, traits::Chain,
     IntoProto,
 };
 
@@ -74,7 +74,7 @@ impl Context {
 
         let mut evm_accounts = HashMap::new();
 
-        let chain_id = evm.provider.get_chainid().await.unwrap().as_u64();
+        let chain_id = evm.chain_id().0.as_u64();
         let ucs01_relay = ucs01relay::UCS01Relay::new(
             zerg_config.evm_contract.clone(),
             evm.provider.clone().into(),

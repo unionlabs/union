@@ -445,14 +445,6 @@ impl<C: ChainSpec> EventSource for Evm<C> {
 
     fn events(self, _seed: Self::Seed) -> impl Stream<Item = Result<Self::Event, Self::Error>> {
         async move {
-            let genesis_time = self
-                .beacon_api_client
-                .genesis()
-                .await
-                .unwrap()
-                .data
-                .genesis_time;
-
             let latest_height = self.query_latest_height().await.unwrap();
 
             stream::unfold(
