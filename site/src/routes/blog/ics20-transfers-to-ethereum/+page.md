@@ -17,9 +17,22 @@ published: true
     import SepoliaFaucetButton from './SepoliaFaucetButton.svelte';
     import SendUnoToUnionButton from './SendUnoToUnionButton.svelte';
     import SendUnoToUnionStatus from './SendUnoToUnionStatus.svelte';
+    import WarningBox from '$lib/WarningBox.svelte';
 </script>
 
 In our inaugural post, we showcased the first IBC connection to Ethereum by showing two contracts playing [ping-pong](../the-journey-so-far) through general message passing. Today we have something even more exciting: a first look at Union Chain Standard 1 (UCS-1), the adjusted version of ICS-20 for asset transfers between EVM and Cosmos-SDK-based chains. Our improvements are related to batch transfers to more efficiently transfer funds.
+
+
+<WarningBox>
+<h2 class="text-2xl">MIGRATION IN PROCESS</h2>
+<p class="mt-4">We are currently migrating this demo from <span class="font-mono">union-testnet-3</span> (internal) to <span class="font-mono">union-testnet-4</span>, the public testnet for which we've recently shared validator onboarding announcements. (<a class="underline" href="https://x.com/union_build/status/1721904666789986737">first validator batch</a>, <a href="https://twitter.com/union_build/status/1724440251207204902">second validator batch</a>)</p>
+
+<p class="mt-4">
+During this migration, this transfer demo is temporarily unavailable.
+</p>
+
+
+</WarningBox>
 
 Union already has experimental support for [Metamask](https://metamask.io/) through [Leap Snaps](https://www.leapwallet.io/snaps). This allows us to handle the different account models while ensuring you only need one wallet installed.
 

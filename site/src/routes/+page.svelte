@@ -26,7 +26,7 @@
 			<h3 class="text-[16px] md:text-[27px] font-bold text-center text-gray-300">Union's flagship product</h3>
 			<p class="md:text-2xl mt-4 text-center mt-10">Built using Zero-Knowledge Cryptography and BLS Signatures, a</p>
 			<div class="text-center text-2xl md:text-5xl text-accent font-black italic">Trustless Ethereum IBC Connection</div>
-			<p class="text-center md:text-2xl">Live between Union' Testnet and Ethereum's Testnet.</p>
+			<p class="text-center md:text-2xl">Live between Union's Testnet and Ethereum's Testnet.</p>
 			<div class="mt-4">
 				<a class="skew-button" href="/blog/ics20-transfers-to-ethereum/"><span>TRY IT OUT -&gt;</span></a>
 			</div>
