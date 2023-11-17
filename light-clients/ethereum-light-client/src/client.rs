@@ -144,6 +144,13 @@ impl IbcClient for EthereumLightClient {
 
         let proof_data = header.account_update.account_proof;
 
+        if proof_data.contract_address != wasm_client_state.data.ibc_contract_address {
+            return Err(Error::IbcContractAddressMismatch {
+                given: proof_data.contract_address,
+                expected: wasm_client_state.data.ibc_contract_address,
+            });
+        }
+
         verify_account_storage_root(
             header.consensus_update.attested_header.execution.state_root,
             &proof_data.contract_address,
