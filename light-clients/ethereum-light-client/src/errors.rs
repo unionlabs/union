@@ -6,7 +6,7 @@ use ethereum_verifier::{
 use thiserror::Error as ThisError;
 use unionlabs::{
     bls::BlsPublicKey,
-    hash::H256,
+    hash::{H160, H256},
     ibc::{core::client::height::Height, lightclients::ethereum::header::Header},
     TryFromProtoBytesError, TryFromProtoErrorOf,
 };
@@ -92,6 +92,9 @@ pub enum Error {
 
     #[error("the proof path {0} is not unknown")]
     UnknownIbcPath(String),
+
+    #[error("the given contract address ({given}) doesn't match the stored value ({expected})")]
+    IbcContractAddressMismatch { given: H160, expected: H160 },
 }
 
 impl From<TryFromProtoBytesError<TryFromProtoErrorOf<Header<Config>>>> for Error {

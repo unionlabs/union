@@ -207,6 +207,7 @@ impl<C: ChainSpec> Chain for Evm<C> {
                         revision_height: 0,
                     },
                     counterparty_commitment_slot: U256::from(0),
+                    ibc_contract_address: self.readonly_ibc_handler.address().into(),
                 },
                 code_id: H256::default(),
                 latest_height: beacon_height,
