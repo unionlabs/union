@@ -55,10 +55,7 @@ func (k Keeper) GetSelfConsensusState(ctx sdk.Context, height exported.Height, c
 		return nil, errorsmod.Wrapf(errors.ErrNotFound, "no historical info found at height %d", selfHeight.RevisionHeight)
 	}
 
-	timestamp := uint64(histInfo.Header.Time.Unix())
-
 	cometblsConsensusState := &ConsensusState{
-		Timestamp:          timestamp,
 		Root:               commitmenttypes.NewMerkleRoot(histInfo.Header.GetAppHash()),
 		NextValidatorsHash: histInfo.Header.NextValidatorsHash,
 	}
@@ -70,7 +67,7 @@ func (k Keeper) GetSelfConsensusState(ctx sdk.Context, height exported.Height, c
 
 	consensusState := &wasmtypes.ConsensusState{
 		Data:      wasmData,
-		Timestamp: timestamp,
+		Timestamp: uint64(histInfo.Header.Time.Unix()),
 	}
 
 	return consensusState, nil
