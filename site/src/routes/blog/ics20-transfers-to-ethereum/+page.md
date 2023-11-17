@@ -24,7 +24,7 @@ In our inaugural post, we showcased the first IBC connection to Ethereum by show
 
 
 <WarningBox>
-<h2 class="text-2xl">MIGRATION IN PROCESS</h2>
+<h2 class="text-2xl">MIGRATION IN PROGRESS</h2>
 <p class="mt-4">We are currently migrating this demo from <span class="font-mono">union-testnet-3</span> (internal) to <span class="font-mono">union-testnet-4</span>, the public testnet for which we've recently shared validator onboarding announcements. (<a class="underline" href="https://x.com/union_build/status/1721904666789986737">first validator batch</a>, <a href="https://twitter.com/union_build/status/1724440251207204902">second validator batch</a>)</p>
 
 <p class="mt-4">
