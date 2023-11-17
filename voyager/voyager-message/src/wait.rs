@@ -4,7 +4,7 @@ use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use serde::{Deserialize, Serialize};
 use unionlabs::{
     ibc::core::client::height::IsHeight,
-    traits::{Chain, ChainIdOf, ChainOf, ClientState, HeightOf, LightClientBase},
+    traits::{Chain, ChainIdOf, ChainOf, ClientIdOf, ClientState, HeightOf},
     QueryHeight,
 };
 
@@ -81,9 +81,8 @@ impl<L: LightClient> Wait<L> {
                 counterparty_chain_id,
             }) => {
                 let latest_height = l.chain().query_latest_height_as_destination().await;
-                let trusted_client_state = l
-                    .query_client_state(client_id.clone().into(), latest_height)
-                    .await;
+                let trusted_client_state =
+                    l.query_client_state(client_id.clone(), latest_height).await;
 
                 if trusted_client_state.height().revision_height() >= height.revision_height() {
                     tracing::debug!(
@@ -146,8 +145,8 @@ pub struct WaitForTimestamp<L: LightClient> {
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""))]
 pub struct WaitForTrustedHeight<L: LightClient> {
-    pub client_id: L::ClientId,
-    pub counterparty_client_id: <L::Counterparty as LightClientBase>::ClientId,
+    pub client_id: ClientIdOf<ChainOf<L>>,
+    pub counterparty_client_id: ClientIdOf<ChainOf<L::Counterparty>>,
     pub counterparty_chain_id: ChainIdOf<L::Counterparty>,
     pub height: HeightOf<ChainOf<L::Counterparty>>,
 }

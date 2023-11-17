@@ -29,7 +29,7 @@ use unionlabs::{
         self, AcknowledgementPath, ChannelEndPath, ClientConsensusStatePath, ClientStatePath,
         CommitmentPath, ConnectionPath,
     },
-    traits::{ChainIdOf, ChainOf, ClientState, HeightOf, LightClientBase},
+    traits::{ChainIdOf, ChainOf, ClientIdOf, ClientState, HeightOf},
     QueryHeight, DELAY_PERIOD,
 };
 
@@ -359,21 +359,21 @@ impl<L: LightClient> Display for Aggregate<L> {
 #[serde(bound(serialize = "", deserialize = ""))]
 pub struct AggregateConnectionOpenTry<L: LightClient> {
     pub event_height: HeightOf<L::HostChain>,
-    pub event: ConnectionOpenInit<L::ClientId, <L::Counterparty as LightClientBase>::ClientId>,
+    pub event: ConnectionOpenInit<ClientIdOf<ChainOf<L>>, ClientIdOf<ChainOf<L::Counterparty>>>,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""))]
 pub struct AggregateConnectionOpenAck<L: LightClient> {
     pub event_height: HeightOf<L::HostChain>,
-    pub event: ConnectionOpenTry<L::ClientId, <L::Counterparty as LightClientBase>::ClientId>,
+    pub event: ConnectionOpenTry<ClientIdOf<ChainOf<L>>, ClientIdOf<ChainOf<L::Counterparty>>>,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""))]
 pub struct AggregateConnectionOpenConfirm<L: LightClient> {
     pub event_height: HeightOf<L::HostChain>,
-    pub event: ConnectionOpenAck<L::ClientId, <L::Counterparty as LightClientBase>::ClientId>,
+    pub event: ConnectionOpenAck<ClientIdOf<ChainOf<L>>, ClientIdOf<ChainOf<L::Counterparty>>>,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
@@ -411,7 +411,7 @@ pub struct AggregateAckPacket<L: LightClient> {
     pub event: RecvPacket,
     // HACK: Need to pass the block hash through, figure out a better/cleaner way to do this
     pub block_hash: H256,
-    pub counterparty_client_id: <L::Counterparty as LightClientBase>::ClientId,
+    pub counterparty_client_id: ClientIdOf<ChainOf<L::Counterparty>>,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
@@ -457,39 +457,39 @@ pub enum PacketEvent {
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""))]
 pub struct AggregateFetchCounterpartyStateProof<L: LightClient> {
-    pub counterparty_client_id: <L::Counterparty as LightClientBase>::ClientId,
+    pub counterparty_client_id: ClientIdOf<ChainOf<L::Counterparty>>,
     pub fetch: FetchStateProof<L::Counterparty>,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""))]
 pub struct AggregateUpdateClientFromClientId<L: LightClient> {
-    pub client_id: L::ClientId,
-    pub counterparty_client_id: <L::Counterparty as LightClientBase>::ClientId,
+    pub client_id: ClientIdOf<ChainOf<L>>,
+    pub counterparty_client_id: ClientIdOf<ChainOf<L::Counterparty>>,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""))]
 pub struct AggregateUpdateClient<L: LightClient> {
     pub update_to: HeightOf<L::HostChain>,
-    pub client_id: L::ClientId,
-    pub counterparty_client_id: <L::Counterparty as LightClientBase>::ClientId,
+    pub client_id: ClientIdOf<ChainOf<L>>,
+    pub counterparty_client_id: ClientIdOf<ChainOf<L::Counterparty>>,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""))]
 pub struct AggregateWaitForTrustedHeight<L: LightClient> {
     pub wait_for: HeightOf<L::HostChain>,
-    pub client_id: L::ClientId,
-    pub counterparty_client_id: <L::Counterparty as LightClientBase>::ClientId,
+    pub client_id: ClientIdOf<ChainOf<L>>,
+    pub counterparty_client_id: ClientIdOf<ChainOf<L::Counterparty>>,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""))]
 pub struct AggregateUpdateClientWithCounterpartyChainId<L: LightClient> {
     pub update_to: HeightOf<L::HostChain>,
-    pub client_id: L::ClientId,
-    pub counterparty_client_id: <L::Counterparty as LightClientBase>::ClientId,
+    pub client_id: ClientIdOf<ChainOf<L>>,
+    pub counterparty_client_id: ClientIdOf<ChainOf<L::Counterparty>>,
     pub counterparty_chain_id: ChainIdOf<L::Counterparty>,
 }
 
@@ -497,8 +497,8 @@ pub struct AggregateUpdateClientWithCounterpartyChainId<L: LightClient> {
 #[serde(bound(serialize = "", deserialize = ""))]
 pub struct AggregateMsgUpdateClient<L: LightClient> {
     pub update_to: HeightOf<L::HostChain>,
-    pub client_id: L::ClientId,
-    pub counterparty_client_id: <L::Counterparty as LightClientBase>::ClientId,
+    pub client_id: ClientIdOf<ChainOf<L>>,
+    pub counterparty_client_id: ClientIdOf<ChainOf<L::Counterparty>>,
     pub counterparty_chain_id: ChainIdOf<L::Counterparty>,
 }
 
@@ -593,8 +593,8 @@ where
 
 pub fn mk_aggregate_wait_for_update<L: LightClient>(
     chain_id: ChainIdOf<L>,
-    client_id: L::ClientId,
-    counterparty_client_id: <L::Counterparty as LightClientBase>::ClientId,
+    client_id: ClientIdOf<ChainOf<L>>,
+    counterparty_client_id: ClientIdOf<ChainOf<L::Counterparty>>,
     wait_for: HeightOf<L::HostChain>,
 ) -> RelayerMsg
 where
@@ -1013,7 +1013,7 @@ where
                             FetchStateProof {
                                 at: trusted_client_state_fetched_at_height,
                                 path: proof::Path::ClientStatePath(ClientStatePath {
-                                    client_id: event.client_id.clone().into(),
+                                    client_id: event.client_id.clone(),
                                 }),
                             },
                         ),
@@ -1023,7 +1023,7 @@ where
                                 at: trusted_client_state_fetched_at_height,
                                 path: proof::Path::ClientConsensusStatePath(
                                     ClientConsensusStatePath {
-                                        client_id: event.client_id.clone().into(),
+                                        client_id: event.client_id.clone(),
                                         height: trusted_client_state_height,
                                     },
                                 ),
@@ -1093,7 +1093,7 @@ where
                             FetchStateProof {
                                 at: trusted_client_state_fetched_at_height,
                                 path: proof::Path::ClientStatePath(ClientStatePath {
-                                    client_id: event.client_id.clone().into(),
+                                    client_id: event.client_id.clone(),
                                 }),
                             },
                         ),
@@ -1103,7 +1103,7 @@ where
                                 at: trusted_client_state_fetched_at_height,
                                 path: proof::Path::ClientConsensusStatePath(
                                     ClientConsensusStatePath {
-                                        client_id: event.client_id.clone().into(),
+                                        client_id: event.client_id.clone(),
                                         height: trusted_client_state_height,
                                     },
                                 ),

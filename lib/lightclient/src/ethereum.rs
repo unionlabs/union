@@ -6,7 +6,6 @@ use serde::{Deserialize, Serialize};
 use unionlabs::{
     hash::H256,
     ibc::core::{client::height::Height, connection::connection_end::ConnectionEnd},
-    id::ClientId,
     proof::{ChannelEndPath, ClientStatePath, ConnectionPath, IbcPath},
     traits::{Chain, ChainOf, ClientStateOf, ConsensusStateOf, HeightOf, LightClientBase},
     Proto, TryFromProto, TryFromProtoErrorOf,
@@ -33,9 +32,6 @@ impl LightClientBase for EthereumMinimal {
     type HostChain = Union;
     type Counterparty = CometblsMinimal;
 
-    type ClientId = ClientId;
-    type ClientType = String;
-
     type Config = EthereumConfig;
 
     fn chain(&self) -> &Self::HostChain {
@@ -77,8 +73,8 @@ impl LightClientBase for EthereumMinimal {
         at: HeightOf<Self::HostChain>,
     ) -> impl Future<
         Output = ConnectionEnd<
-            Self::ClientId,
-            <Self::Counterparty as LightClientBase>::ClientId,
+            <Self::HostChain as Chain>::ClientId,
+            <<Self::Counterparty as LightClientBase>::HostChain as Chain>::ClientId,
             String,
         >,
     > + '_ {
@@ -94,9 +90,6 @@ impl LightClientBase for EthereumMainnet {
     type HostChain = Union;
     type Counterparty = CometblsMainnet;
 
-    type ClientId = ClientId;
-    type ClientType = String;
-
     type Config = EthereumConfig;
 
     fn chain(&self) -> &Self::HostChain {
@@ -138,8 +131,8 @@ impl LightClientBase for EthereumMainnet {
         at: HeightOf<Self::HostChain>,
     ) -> impl Future<
         Output = ConnectionEnd<
-            Self::ClientId,
-            <Self::Counterparty as LightClientBase>::ClientId,
+            <Self::HostChain as Chain>::ClientId,
+            <<Self::Counterparty as LightClientBase>::HostChain as Chain>::ClientId,
             String,
         >,
     > + '_ {

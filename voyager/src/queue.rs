@@ -1,3 +1,5 @@
+#![allow(clippy::type_complexity)]
+
 use std::{
     collections::{HashMap, VecDeque},
     error::Error,
@@ -30,7 +32,7 @@ use unionlabs::{
         ConnectionOpenTry, CreateClient, IbcEvent, RecvPacket, SendPacket, SubmitEvidence,
         TimeoutPacket, UpdateClient, WriteAcknowledgement,
     },
-    traits::{Chain, ChainIdOf, ClientState, LightClientBase},
+    traits::{Chain, ChainIdOf, ChainOf, ClientIdOf, ClientState, ClientTypeOf, LightClientBase},
     WasmClientType,
 };
 use voyager_message::{event, GetLc, LightClient, RelayerMsg};
@@ -634,7 +636,7 @@ impl GetLc<EthereumMainnet> for Worker {
 // ///   - `FetchUpdateHeaders<L>`, which delegates to `L::generate_counterparty_updates`
 // fn mk_aggregate_update<L: LightClient>(
 //     chain_id: ChainIdOf<L>,
-//     client_id: L::ClientId,
+//     client_id: ClientIdOf<ChainOf<L>>,
 //     counterparty_client_id: <L::Counterparty as LightClientBase>::ClientId,
 //     event_height: HeightOf<ChainOf<L>>,
 // ) -> RelayerMsg
@@ -665,12 +667,10 @@ impl GetLc<EthereumMainnet> for Worker {
 // }
 
 fn chain_event_to_lc_event<L: LightClient>(
-    event: IbcEvent<<L::HostChain as Chain>::ClientId, <L::HostChain as Chain>::ClientType, String>,
-) -> IbcEvent<L::ClientId, L::ClientType, <L::Counterparty as LightClientBase>::ClientId>
+    event: IbcEvent<ClientIdOf<ChainOf<L>>, ClientTypeOf<ChainOf<L>>, String>,
+) -> IbcEvent<ClientIdOf<ChainOf<L>>, ClientTypeOf<ChainOf<L>>, ClientIdOf<ChainOf<L>>>
 where
-    <L::ClientId as TryFrom<<L::HostChain as Chain>::ClientId>>::Error: Debug,
-    <L::ClientType as TryFrom<<L::HostChain as Chain>::ClientType>>::Error: Debug,
-    <<L::Counterparty as LightClientBase>::ClientId as FromStr>::Err: Debug,
+    <ClientIdOf<ChainOf<L::Counterparty>> as FromStr>::Err: Debug,
 {
     match event {
         IbcEvent::CreateClient(CreateClient {
@@ -678,8 +678,8 @@ where
             client_type,
             consensus_height,
         }) => IbcEvent::CreateClient(CreateClient {
-            client_id: client_id.try_into().unwrap(),
-            client_type: client_type.try_into().unwrap(),
+            client_id,
+            client_type,
             consensus_height,
         }),
         IbcEvent::UpdateClient(UpdateClient {
@@ -688,8 +688,8 @@ where
             consensus_heights,
             header,
         }) => IbcEvent::UpdateClient(UpdateClient {
-            client_id: client_id.try_into().unwrap(),
-            client_type: client_type.try_into().unwrap(),
+            client_id,
+            client_type,
             consensus_heights,
             header,
         }),
@@ -698,8 +698,8 @@ where
             client_type,
             consensus_height,
         }) => IbcEvent::ClientMisbehaviour(ClientMisbehaviour {
-            client_id: client_id.try_into().unwrap(),
-            client_type: client_type.try_into().unwrap(),
+            client_id,
+            client_type,
             consensus_height,
         }),
         IbcEvent::SubmitEvidence(SubmitEvidence { evidence_hash }) => {
@@ -712,7 +712,7 @@ where
             counterparty_connection_id,
         }) => IbcEvent::ConnectionOpenInit(ConnectionOpenInit {
             connection_id,
-            client_id: client_id.try_into().unwrap(),
+            client_id,
             counterparty_client_id: counterparty_client_id.parse().unwrap(),
             counterparty_connection_id,
         }),
@@ -723,7 +723,7 @@ where
             counterparty_connection_id,
         }) => IbcEvent::ConnectionOpenTry(ConnectionOpenTry {
             connection_id,
-            client_id: client_id.try_into().unwrap(),
+            client_id,
             counterparty_client_id: counterparty_client_id.parse().unwrap(),
             counterparty_connection_id,
         }),
@@ -734,7 +734,7 @@ where
             counterparty_connection_id,
         }) => IbcEvent::ConnectionOpenAck(ConnectionOpenAck {
             connection_id,
-            client_id: client_id.try_into().unwrap(),
+            client_id,
             counterparty_client_id: counterparty_client_id.parse().unwrap(),
             counterparty_connection_id,
         }),
@@ -745,7 +745,7 @@ where
             counterparty_connection_id,
         }) => IbcEvent::ConnectionOpenConfirm(ConnectionOpenConfirm {
             connection_id,
-            client_id: client_id.try_into().unwrap(),
+            client_id,
             counterparty_client_id: counterparty_client_id.parse().unwrap(),
             counterparty_connection_id,
         }),

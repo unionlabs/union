@@ -4,7 +4,7 @@ use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use serde::{Deserialize, Serialize};
 use unionlabs::{
     hash::H256,
-    traits::{Chain, ChainOf, HeightOf, LightClientBase},
+    traits::{Chain, ChainOf, ClientIdOf, ClientTypeOf, HeightOf},
     QueryHeight,
 };
 
@@ -337,9 +337,9 @@ pub struct IbcEvent<L: LightClient> {
     pub block_hash: H256,
     pub height: HeightOf<ChainOf<L>>,
     pub event: unionlabs::events::IbcEvent<
-        L::ClientId,
-        L::ClientType,
-        <L::Counterparty as LightClientBase>::ClientId,
+        ClientIdOf<ChainOf<L>>,
+        ClientTypeOf<ChainOf<L>>,
+        ClientIdOf<ChainOf<L::Counterparty>>,
     >,
 }
 
@@ -378,7 +378,7 @@ impl<L: LightClient> Display for IbcEvent<L> {
 pub enum Command<L: LightClient> {
     #[display(fmt = "UpdateClient({client_id}, {counterparty_client_id})")]
     UpdateClient {
-        client_id: L::ClientId,
-        counterparty_client_id: <L::Counterparty as LightClientBase>::ClientId,
+        client_id: ClientIdOf<ChainOf<L>>,
+        counterparty_client_id: ClientIdOf<ChainOf<L::Counterparty>>,
     },
 }
