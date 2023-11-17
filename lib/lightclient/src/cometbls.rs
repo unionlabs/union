@@ -9,7 +9,6 @@ use unionlabs::{
         core::{client::height::Height, connection::connection_end::ConnectionEnd},
         lightclients::cometbls,
     },
-    id::ClientId,
     proof::{ChannelEndPath, ConnectionPath, IbcPath},
     traits::{Chain, ChainOf, ClientStateOf, HeightOf, LightClientBase},
     TryFromEthAbi,
@@ -37,9 +36,6 @@ impl LightClientBase for CometblsMainnet {
     type HostChain = Evm<Mainnet>;
     type Counterparty = EthereumMainnet;
 
-    type ClientId = ClientId;
-    type ClientType = String;
-
     type Config = CometblsConfig;
 
     fn chain(&self) -> &Self::HostChain {
@@ -72,8 +68,8 @@ impl LightClientBase for CometblsMainnet {
         at: HeightOf<Self::HostChain>,
     ) -> impl Future<
         Output = ConnectionEnd<
-            Self::ClientId,
-            <Self::Counterparty as LightClientBase>::ClientId,
+            <Self::HostChain as Chain>::ClientId,
+            <<Self::Counterparty as LightClientBase>::HostChain as Chain>::ClientId,
             String,
         >,
     > + '_ {
@@ -98,9 +94,6 @@ impl LightClientBase for CometblsMinimal {
     type HostChain = Evm<Minimal>;
     type Counterparty = EthereumMinimal;
 
-    type ClientId = ClientId;
-    type ClientType = String;
-
     type Config = CometblsConfig;
 
     fn chain(&self) -> &Self::HostChain {
@@ -133,8 +126,8 @@ impl LightClientBase for CometblsMinimal {
         at: HeightOf<Self::HostChain>,
     ) -> impl Future<
         Output = ConnectionEnd<
-            Self::ClientId,
-            <Self::Counterparty as LightClientBase>::ClientId,
+            <Self::HostChain as Chain>::ClientId,
+            <<Self::Counterparty as LightClientBase>::HostChain as Chain>::ClientId,
             String,
         >,
     > + '_ {

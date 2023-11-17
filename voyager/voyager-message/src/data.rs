@@ -5,7 +5,9 @@ use serde::{Deserialize, Serialize};
 use unionlabs::{
     self,
     ibc::core::channel::channel::Channel,
-    traits::{ChainOf, ClientStateOf, ConsensusStateOf, HeaderOf, HeightOf, LightClientBase},
+    traits::{
+        ChainOf, ClientIdOf, ClientStateOf, ConsensusStateOf, HeaderOf, HeightOf, LightClientBase,
+    },
 };
 
 use crate::{
@@ -128,8 +130,8 @@ pub struct ChannelEnd<L: LightClient> {
 #[serde(bound(serialize = "", deserialize = ""))]
 pub struct ConnectionEnd<L: LightClient>(
     pub  unionlabs::ibc::core::connection::connection_end::ConnectionEnd<
-        L::ClientId,
-        <L::Counterparty as LightClientBase>::ClientId,
+        ClientIdOf<ChainOf<L>>,
+        ClientIdOf<ChainOf<L::Counterparty>>,
         // NOTE: String used here since it may be empty; figure out a way to more strongly type this
         String,
     >,
@@ -146,7 +148,7 @@ pub struct PacketAcknowledgement<L: LightClient> {
 #[serde(bound(serialize = "", deserialize = ""))]
 pub struct TrustedClientState<L: LightClient> {
     pub fetched_at: HeightOf<ChainOf<L>>,
-    pub client_id: L::ClientId,
+    pub client_id: ClientIdOf<ChainOf<L>>,
     pub trusted_client_state: ClientStateOf<<L::Counterparty as LightClientBase>::HostChain>,
 }
 

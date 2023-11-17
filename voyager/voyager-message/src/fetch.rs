@@ -1,7 +1,4 @@
-use std::{
-    fmt::{Debug, Display},
-    marker::PhantomData,
-};
+use std::{fmt::Display, marker::PhantomData};
 
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use serde::{Deserialize, Serialize};
@@ -9,7 +6,7 @@ use unionlabs::{
     hash::H256,
     id::{ChannelId, ConnectionId, PortId},
     proof,
-    traits::{Chain, ChainIdOf, ChainOf, HeightOf, LightClientBase},
+    traits::{Chain, ChainIdOf, ChainOf, ClientIdOf, HeightOf},
     QueryHeight,
 };
 
@@ -74,14 +71,14 @@ pub struct FetchSelfConsensusState<L: LightClient> {
 #[serde(bound(serialize = "", deserialize = ""))]
 pub struct FetchTrustedClientState<L: LightClient> {
     pub at: QueryHeight<HeightOf<ChainOf<L>>>,
-    pub client_id: L::ClientId,
+    pub client_id: ClientIdOf<ChainOf<L>>,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""))]
 pub struct FetchCounterpartyTrustedClientState<L: LightClient> {
     pub at: QueryHeight<HeightOf<ChainOf<L::Counterparty>>>,
-    pub client_id: <L::Counterparty as LightClientBase>::ClientId,
+    pub client_id: ClientIdOf<ChainOf<L::Counterparty>>,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
@@ -135,10 +132,10 @@ pub struct FetchPacketAcknowledgement<L: LightClient> {
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""))]
 pub struct FetchUpdateHeaders<L: LightClient> {
-    pub client_id: L::ClientId,
+    pub client_id: ClientIdOf<ChainOf<L>>,
     pub counterparty_chain_id: ChainIdOf<L::Counterparty>,
     // id of the counterparty client that will be updated with the fetched headers
-    pub counterparty_client_id: <L::Counterparty as LightClientBase>::ClientId,
+    pub counterparty_client_id: ClientIdOf<ChainOf<L::Counterparty>>,
     pub update_from: HeightOf<L::HostChain>,
     pub update_to: HeightOf<L::HostChain>,
 }
@@ -151,13 +148,6 @@ impl<L: LightClient> Fetch<L> {
     pub async fn handle(self, l: L) -> Vec<RelayerMsg>
     where
         AnyLightClientIdentified<AnyData>: From<identified!(Data<L>)>,
-        // TODO: Remove once we no longer unwrap
-        <<L as LightClientBase>::ClientId as TryFrom<
-            <<L as LightClientBase>::HostChain as Chain>::ClientId,
-        >>::Error: Debug,
-        <<L::Counterparty as LightClientBase>::ClientId as TryFrom<
-            <<L::Counterparty as LightClientBase>::HostChain as Chain>::ClientId,
-        >>::Error: Debug,
     {
         let relayer_msg = match self {
             Fetch::TrustedClientState(FetchTrustedClientState { at, client_id }) => {
@@ -172,7 +162,7 @@ impl<L: LightClient> Fetch<L> {
                     TrustedClientState {
                         fetched_at: height,
                         client_id: client_id.clone(),
-                        trusted_client_state: l.query_client_state(client_id.into(), height).await,
+                        trusted_client_state: l.query_client_state(client_id, height).await,
                     },
                 )]
                 .into()

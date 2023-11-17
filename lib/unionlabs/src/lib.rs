@@ -701,22 +701,6 @@ pub mod traits {
             + IbcStateReadPaths<<Self::Counterparty as LightClientBase>::HostChain>;
         type Counterparty: LightClientBase<Counterparty = Self>;
 
-        type ClientId: Id
-            + TryFrom<<Self::HostChain as Chain>::ClientId>
-            + Into<<Self::HostChain as Chain>::ClientId>;
-        type ClientType: Display
-            + FromStr
-            + Debug
-            + Clone
-            + PartialEq
-            + Serialize
-            + for<'de> Deserialize<'de>
-            + Send
-            + Sync
-            + TryFrom<<Self::HostChain as Chain>::ClientType>
-            + Into<<Self::HostChain as Chain>::ClientType>
-            + 'static;
-
         /// The config required to construct this light client.
         type Config: Debug + Clone + PartialEq + Serialize + for<'de> Deserialize<'de>;
 
@@ -738,8 +722,8 @@ pub mod traits {
             at: HeightOf<Self::HostChain>,
         ) -> impl Future<
             Output = ConnectionEnd<
-                Self::ClientId,
-                <Self::Counterparty as LightClientBase>::ClientId,
+                <Self::HostChain as Chain>::ClientId,
+                <<Self::Counterparty as LightClientBase>::HostChain as Chain>::ClientId,
                 String,
             >,
         > + '_;
@@ -760,6 +744,8 @@ pub mod traits {
     pub type ChainOf<L> = <L as LightClientBase>::HostChain;
     pub type ChainIdOf<L> =
         <<<L as LightClientBase>::HostChain as Chain>::SelfClientState as ClientState>::ChainId;
+    pub type ClientIdOf<C> = <C as Chain>::ClientId;
+    pub type ClientTypeOf<C> = <C as Chain>::ClientType;
 }
 
 /// An empty string. Will only parse/serialize to/from `""`.
