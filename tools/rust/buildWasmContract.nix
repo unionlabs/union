@@ -63,7 +63,10 @@ let
 
       '';
 
-      cargoBuildInstallPhase = ''
+      cargoBuildInstallPhase = let
+        outputFilePath = "$out/lib/${contractFileNameWithoutExt}${dashesToUnderscores featuresString}.wasm";
+      in
+      ''
         ${
           builtins.concatStringsSep
             "\n\n"
@@ -74,13 +77,13 @@ let
         }
 
         mkdir -p $out/lib
-        mv target/wasm32-unknown-unknown/release/${contractFileNameWithoutExt}.wasm $out/lib/${contractFileNameWithoutExt}${dashesToUnderscores featuresString}.wasm
-        # TODO: Re-enable this?
-        # Optimize the binary size a little bit more
-        # ${pkgs.binaryen}/bin/wasm-opt -Os target/wasm32-unknown-unknown/release/${contractFileNameWithoutExt}.wasm -o $out/lib/${contractFileNameWithoutExt}.wasm
+        mv target/wasm32-unknown-unknown/release/${contractFileNameWithoutExt}.wasm ${outputFilePath}
+
+        ${pkgs.binaryen}/bin/wasm-opt -O3 ${outputFilePath} -o ${outputFilePath}
 
         # gzip the binary to ensure it's not too large to upload
-        gzip -fk $out/lib/${contractFileNameWithoutExt}${dashesToUnderscores featuresString}.wasm
+        gzip -fk ${outputFilePath}
+
         # TODO: check that the size isn't over the max size allowed to be uploaded?
       '';
     };
